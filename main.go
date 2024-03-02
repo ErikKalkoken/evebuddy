@@ -1,16 +1,21 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/pkg/browser"
 )
 
@@ -107,38 +112,18 @@ func ssoCallback(w http.ResponseWriter, req *http.Request) {
 	}
 
 	tokenObj := tokenPayload{}
-	jsonErr := json.Unmarshal(body, &tokenObj)
-	if jsonErr != nil {
-		log.Fatal(jsonErr)
+	if err := json.Unmarshal(body, &tokenObj); err != nil {
+		log.Fatal(err)
 	}
-	log.Printf("Received token payload from ESI: %v", tokenObj)
 	fmt.Fprintf(w, "Authentication completed. You can close this window now.")
 
+	claims := validateToken(tokenObj.AccessToken)
+	for key, value := range claims {
+		fmt.Printf("%s\t%v\n", key, value)
+	}
+	characterID, err := strconv.Atoi(strings.Split(claims["sub"].(string), ":")[2])
 	// make authenticated ESI request
-	v = url.Values{}
-	v.Set("token", tokenObj.AccessToken)
-	fullUrl := fmt.Sprintf("%s/characters/%d/contacts/?%v", esiBaseUrl, 93330670, v.Encode())
-	log.Printf("Fetching contacts from %v", fullUrl)
-	resp, err = httpClient.Get(fullUrl)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
-
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var contacts []characterContact
-	jsonErr = json.Unmarshal(body, &contacts)
-	if jsonErr != nil {
-		log.Fatal(jsonErr)
-	}
-
-	fmt.Printf("%v", contacts)
+	fetchContacts(characterID, tokenObj.AccessToken)
 }
 
 // Generate a random state string
@@ -147,4 +132,96 @@ func generateState() string {
 	rand.Read(b)
 	state := base64.URLEncoding.EncodeToString(b)
 	return state
+}
+
+func validateToken(tokenString string) jwt.MapClaims {
+	token, err := jwt.Parse(tokenString, getKey)
+	if err != nil {
+		panic(err)
+	}
+	claims := token.Claims.(jwt.MapClaims)
+	return claims
+}
+
+func fetchJson(url string) []byte {
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if resp.Body != nil {
+		defer resp.Body.Close()
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return body
+}
+
+func getKey(token *jwt.Token) (interface{}, error) {
+	jwksURL, err := fetchJwksURL()
+	if err != nil {
+		return nil, err
+	}
+	// TODO: cache response so we don't have to make a request every time
+	// we want to verify a JWT
+	set, err := jwk.Fetch(context.Background(), jwksURL)
+	if err != nil {
+		return nil, err
+	}
+
+	keyID, ok := token.Header["kid"].(string)
+	if !ok {
+		return nil, errors.New("expecting JWT header to have string kid")
+	}
+
+	key, ok := set.LookupKeyID(keyID)
+	if !ok {
+		return nil, fmt.Errorf("unable to find key %q", keyID)
+	}
+
+	var rawKey interface{}
+	if err := key.Raw(&rawKey); err != nil {
+		return nil, fmt.Errorf("failed to create public key: %s", err)
+	}
+	return rawKey, nil
+}
+
+func fetchJwksURL() (string, error) {
+	const url = "https://login.eveonline.com/.well-known/oauth-authorization-server"
+	body := fetchJson(url)
+	var data map[string]interface{}
+	if err := json.Unmarshal(body, &data); err != nil {
+		return "", err
+	}
+	jwksURL := data["jwks_uri"].(string)
+	return jwksURL, nil
+}
+
+func fetchContacts(characterID int, tokenString string) {
+	v := url.Values{}
+	v.Set("token", tokenString)
+	fullUrl := fmt.Sprintf("%s/characters/%d/contacts/?%v", esiBaseUrl, characterID, v.Encode())
+	log.Printf("Fetching contacts from %v", fullUrl)
+	resp, err := http.Get(fullUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if resp.Body != nil {
+		defer resp.Body.Close()
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var contacts []characterContact
+	if err := json.Unmarshal(body, &contacts); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("%v", contacts)
 }
