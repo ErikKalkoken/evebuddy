@@ -71,7 +71,7 @@ func Authenticate(scopes []string) (*Token, error) {
 		}
 
 		code := v.Get("code")
-		rawToken, err := retrieveToken(code)
+		rawToken, err := retrieveTokenPayload(code)
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -127,35 +127,12 @@ func Authenticate(scopes []string) (*Token, error) {
 	return token, nil
 }
 
-// build Token object
-func buildToken(rawToken *tokenPayload, claims jwt.MapClaims) (*Token, error) {
-	// calc character ID
-	characterID, err := strconv.Atoi(strings.Split(claims["sub"].(string), ":")[2])
-	if err != nil {
-		return nil, err
-	}
-
-	// calc scopes
-	var scopes []string
-	for _, v := range claims["scp"].([]interface{}) {
-		s := v.(string)
-		scopes = append(scopes, s)
-	}
-
-	// calc expires at
-	expiresAt := time.Now().Add(time.Second * time.Duration(rawToken.ExpiresIn))
-
-	token := Token{
-		AccessToken:   rawToken.AccessToken,
-		CharacterID:   int32(characterID),
-		CharacterName: claims["name"].(string),
-		ExpiresAt:     expiresAt,
-		RefreshToken:  rawToken.RefreshToken,
-		Scopes:        scopes,
-		TokenType:     rawToken.TokenType,
-	}
-
-	return &token, nil
+// Generate a random state string
+func generateState() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	state := base64.URLEncoding.EncodeToString(b)
+	return state
 }
 
 // Open browser and show character selection for SSO
@@ -173,7 +150,7 @@ func startSSO(state string, scopes []string) error {
 }
 
 // Retrieve SSO token from API in exchange for code
-func retrieveToken(code string) (*tokenPayload, error) {
+func retrieveTokenPayload(code string) (*tokenPayload, error) {
 	form := url.Values{"grant_type": {"authorization_code"}, "code": {code}}
 	req, err := http.NewRequest(
 		"POST",
@@ -181,7 +158,7 @@ func retrieveToken(code string) (*tokenPayload, error) {
 		strings.NewReader(form.Encode()),
 	)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	encoded := base64.URLEncoding.EncodeToString([]byte(ssoClientId + ":" + ssoClientSecret))
 	req.Header.Add("Authorization", "Basic "+encoded)
@@ -208,14 +185,6 @@ func retrieveToken(code string) (*tokenPayload, error) {
 		return nil, err
 	}
 	return &token, nil
-}
-
-// Generate a random state string
-func generateState() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	state := base64.URLEncoding.EncodeToString(b)
-	return state
 }
 
 // Validate JWT token and return claims
@@ -297,4 +266,35 @@ func determineJwksURL() (string, error) {
 	}
 	jwksURL := data["jwks_uri"].(string)
 	return jwksURL, nil
+}
+
+// build Token object
+func buildToken(rawToken *tokenPayload, claims jwt.MapClaims) (*Token, error) {
+	// calc character ID
+	characterID, err := strconv.Atoi(strings.Split(claims["sub"].(string), ":")[2])
+	if err != nil {
+		return nil, err
+	}
+
+	// calc scopes
+	var scopes []string
+	for _, v := range claims["scp"].([]interface{}) {
+		s := v.(string)
+		scopes = append(scopes, s)
+	}
+
+	// calc expires at
+	expiresAt := time.Now().Add(time.Second * time.Duration(rawToken.ExpiresIn))
+
+	token := Token{
+		AccessToken:   rawToken.AccessToken,
+		CharacterID:   int32(characterID),
+		CharacterName: claims["name"].(string),
+		ExpiresAt:     expiresAt,
+		RefreshToken:  rawToken.RefreshToken,
+		Scopes:        scopes,
+		TokenType:     rawToken.TokenType,
+	}
+
+	return &token, nil
 }
