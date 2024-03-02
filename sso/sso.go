@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/lestrrat-go/jwx/v2/jwk"
@@ -37,13 +38,20 @@ const (
 )
 
 type Token struct {
-	AccessToken   string `json:"access_token"`
-	ExpiresIn     int32  `json:"expires_in"`
-	TokenType     string `json:"token_type"`
-	RefreshToken  string `json:"refresh_token"`
+	AccessToken   string
+	ExpiresAt     time.Time
+	TokenType     string
+	RefreshToken  string
 	CharacterID   int32
 	CharacterName string
 	Scopes        []string
+}
+
+type tokenPayload struct {
+	AccessToken  string `json:"access_token"`
+	ExpiresIn    int32  `json:"expires_in"`
+	TokenType    string `json:"token_type"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 // Authenticate an Eve Online character via SSO
@@ -63,37 +71,26 @@ func Authenticate(scopes []string) (*Token, error) {
 		}
 
 		code := v.Get("code")
-		token, err := retrieveToken(code)
+		rawToken, err := retrieveToken(code)
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		claims, err := validateToken(token.AccessToken)
+		claims, err := validateToken(rawToken.AccessToken)
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		characterID, err := extractCharacterID(claims)
+		token, err := buildToken(rawToken, claims)
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		token.CharacterID = int32(characterID)
-		token.CharacterName = claims["name"].(string)
-
-		var scopes []string
-		for _, v := range claims["scp"].([]interface{}) {
-			s := v.(string)
-			scopes = append(scopes, s)
-		}
-
-		token.Scopes = scopes
 		ctx = context.WithValue(ctx, keyToken, token)
 
 		fmt.Fprintf(
@@ -130,6 +127,37 @@ func Authenticate(scopes []string) (*Token, error) {
 	return token, nil
 }
 
+// build Token object
+func buildToken(rawToken *tokenPayload, claims jwt.MapClaims) (*Token, error) {
+	// calc character ID
+	characterID, err := strconv.Atoi(strings.Split(claims["sub"].(string), ":")[2])
+	if err != nil {
+		return nil, err
+	}
+
+	// calc scopes
+	var scopes []string
+	for _, v := range claims["scp"].([]interface{}) {
+		s := v.(string)
+		scopes = append(scopes, s)
+	}
+
+	// calc expires at
+	expiresAt := time.Now().Add(time.Second * time.Duration(rawToken.ExpiresIn))
+
+	token := Token{
+		AccessToken:   rawToken.AccessToken,
+		CharacterID:   int32(characterID),
+		CharacterName: claims["name"].(string),
+		ExpiresAt:     expiresAt,
+		RefreshToken:  rawToken.RefreshToken,
+		Scopes:        scopes,
+		TokenType:     rawToken.TokenType,
+	}
+
+	return &token, nil
+}
+
 // Open browser and show character selection for SSO
 func startSSO(state string, scopes []string) error {
 	v := url.Values{}
@@ -145,7 +173,7 @@ func startSSO(state string, scopes []string) error {
 }
 
 // Retrieve SSO token from API in exchange for code
-func retrieveToken(code string) (*Token, error) {
+func retrieveToken(code string) (*tokenPayload, error) {
 	form := url.Values{"grant_type": {"authorization_code"}, "code": {code}}
 	req, err := http.NewRequest(
 		"POST",
@@ -175,7 +203,7 @@ func retrieveToken(code string) (*Token, error) {
 		return nil, err
 	}
 
-	token := Token{}
+	token := tokenPayload{}
 	if err := json.Unmarshal(body, &token); err != nil {
 		return nil, err
 	}
@@ -269,10 +297,4 @@ func determineJwksURL() (string, error) {
 	}
 	jwksURL := data["jwks_uri"].(string)
 	return jwksURL, nil
-}
-
-// Extract character ID from JWT claims
-func extractCharacterID(claims jwt.MapClaims) (int, error) {
-	characterID, err := strconv.Atoi(strings.Split(claims["sub"].(string), ":")[2])
-	return characterID, err
 }
