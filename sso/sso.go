@@ -190,17 +190,30 @@ func generateState() string {
 	return state
 }
 
-// Validate SSO token and return claims
+// Validate JWT token and return claims
 func validateToken(tokenString string) (jwt.MapClaims, error) {
+	// parse token and validate signature
 	token, err := jwt.Parse(tokenString, getKey)
 	if err != nil {
 		return nil, err
 	}
+
+	// validate issuer claim
 	claims := token.Claims.(jwt.MapClaims)
 	iss := claims["iss"].(string)
 	if iss != "login.eveonline.com" && iss != "https://login.eveonline.com" {
 		return nil, fmt.Errorf("invalid issuer claim")
 	}
+
+	// validate audience claim
+	aud := claims["aud"].([]interface{})
+	if aud[0].(string) != ssoClientId {
+		return nil, fmt.Errorf("invalid first audience claim")
+	}
+	if aud[1].(string) != "EVE Online" {
+		return nil, fmt.Errorf("invalid 2nd audience claim")
+	}
+
 	return claims, nil
 }
 
