@@ -26,6 +26,7 @@ const (
 	ssoClientId     = "882b6f0cbd4e44ad93aead900d07219b"
 	ssoClientSecret = "DtCjMrMyoGfqq9TLXCbcJU90aEKEKFCMVWLloYaz"
 	ssoCallbackPath = "/sso/callback"
+	oauthURL        = "https://login.eveonline.com/.well-known/oauth-authorization-server"
 )
 
 type key int
@@ -187,7 +188,7 @@ func generateState() string {
 	return state
 }
 
-// validate SSO token
+// Validate SSO token and return claims
 func validateToken(tokenString string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, getKey)
 	if err != nil {
@@ -201,25 +202,9 @@ func validateToken(tokenString string) (jwt.MapClaims, error) {
 	return claims, nil
 }
 
-func fetchJson(url string) []byte {
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return body
-}
-
+// Return public key for JWT token
 func getKey(token *jwt.Token) (interface{}, error) {
-	jwksURL, err := fetchJwksURL()
+	jwksURL, err := determineJwksURL()
 	if err != nil {
 		return nil, err
 	}
@@ -247,9 +232,22 @@ func getKey(token *jwt.Token) (interface{}, error) {
 	return rawKey, nil
 }
 
-func fetchJwksURL() (string, error) {
-	const url = "https://login.eveonline.com/.well-known/oauth-authorization-server"
-	body := fetchJson(url)
+// Determine URL for JWK sets dynamically from web site and return it
+func determineJwksURL() (string, error) {
+	resp, err := http.Get(oauthURL)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.Body != nil {
+		defer resp.Body.Close()
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
 	var data map[string]interface{}
 	if err := json.Unmarshal(body, &data); err != nil {
 		return "", err
@@ -258,6 +256,7 @@ func fetchJwksURL() (string, error) {
 	return jwksURL, nil
 }
 
+// Extract character ID from JWT claims
 func extractCharacterID(claims jwt.MapClaims) (int, error) {
 	characterID, err := strconv.Atoi(strings.Split(claims["sub"].(string), ":")[2])
 	return characterID, err
