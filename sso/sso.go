@@ -26,7 +26,6 @@ const (
 	ssoClientId     = "882b6f0cbd4e44ad93aead900d07219b"
 	ssoClientSecret = "DtCjMrMyoGfqq9TLXCbcJU90aEKEKFCMVWLloYaz"
 	ssoCallbackPath = "/sso/callback"
-	ssoScopes       = "esi-characters.read_contacts.v1"
 )
 
 type key int
@@ -43,11 +42,12 @@ type Token struct {
 	RefreshToken  string `json:"refresh_token"`
 	CharacterID   int32
 	CharacterName string
+	Scopes        []string
 }
 
 // Authenticate an Eve Online character via SSO
-// Returns an SSO token
-func Authenticate() Token {
+// Returns an SSO token and an error
+func Authenticate(scopes []string) (*Token, error) {
 	state := generateState()
 	ctx := context.WithValue(context.Background(), keyState, state)
 	ctx, cancel := context.WithCancel(ctx)
@@ -57,26 +57,51 @@ func Authenticate() Token {
 		v := req.URL.Query()
 		newState := v.Get("state")
 		if newState != ctx.Value(keyState).(string) {
-			log.Fatal("Wrong state")
+			http.Error(w, "Invalid state", http.StatusForbidden)
+			return
 		}
 
 		code := v.Get("code")
-		tokenObj := retrieveToken(code)
-		fmt.Fprintf(w, "Authentication completed. You can close this window now.")
+		token, err := retrieveToken(code)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-		cancel() // shutdown http server
+		claims, err := validateToken(token.AccessToken)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-		claims := validateToken(tokenObj.AccessToken)
 		characterID, err := extractCharacterID(claims)
 		if err != nil {
-			log.Fatal(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
-		tokenObj.CharacterID = int32(characterID)
-		tokenObj.CharacterName = claims["name"].(string)
-		ctx = context.WithValue(ctx, keyToken, tokenObj)
+
+		token.CharacterID = int32(characterID)
+		token.CharacterName = claims["name"].(string)
+
+		var scopes []string
+		for _, v := range claims["scp"].([]interface{}) {
+			s := v.(string)
+			scopes = append(scopes, s)
+		}
+
+		token.Scopes = scopes
+		ctx = context.WithValue(ctx, keyToken, token)
+
+		fmt.Fprintf(
+			w,
+			"Authentication completed for %s. Scopes granted: %s. You can close this window now.",
+			token.CharacterName,
+			strings.Join(scopes, ", "),
+		)
+		cancel() // shutdown http server
 	})
 
-	startSSO(state)
+	startSSO(state, scopes)
 	server := &http.Server{
 		Addr: address,
 	}
@@ -92,22 +117,22 @@ func Authenticate() Token {
 
 	err := server.Shutdown(context.Background())
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 	log.Println("Web server stopped")
 
-	token := ctx.Value(keyToken).(Token)
-	return token
+	token := ctx.Value(keyToken).(*Token)
+	return token, nil
 }
 
 // Open browser and show character selection for SSO
-func startSSO(state string) {
+func startSSO(state string, scopes []string) {
 	v := url.Values{}
 	v.Set("response_type", "code")
 	v.Set("redirect_uri", "http://"+address+ssoCallbackPath)
 	v.Set("client_id", ssoClientId)
 	v.Set("state", state)
-	v.Set("scope", ssoScopes)
+	v.Set("scope", strings.Join(scopes, " "))
 
 	url := fmt.Sprintf("https://login.eveonline.com/v2/oauth/authorize/?%v", v.Encode())
 	err := browser.OpenURL(url)
@@ -116,7 +141,8 @@ func startSSO(state string) {
 	}
 }
 
-func retrieveToken(code string) Token {
+// Retrieve SSO token from API in exchange for code
+func retrieveToken(code string) (*Token, error) {
 	form := url.Values{"grant_type": {"authorization_code"}, "code": {code}}
 	req, err := http.NewRequest(
 		"POST",
@@ -146,11 +172,11 @@ func retrieveToken(code string) Token {
 		log.Fatal(readErr)
 	}
 
-	tokenObj := Token{}
-	if err := json.Unmarshal(body, &tokenObj); err != nil {
+	token := Token{}
+	if err := json.Unmarshal(body, &token); err != nil {
 		log.Fatal(err)
 	}
-	return tokenObj
+	return &token, nil
 }
 
 // Generate a random state string
@@ -161,13 +187,18 @@ func generateState() string {
 	return state
 }
 
-func validateToken(tokenString string) jwt.MapClaims {
+// validate SSO token
+func validateToken(tokenString string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, getKey)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	claims := token.Claims.(jwt.MapClaims)
-	return claims
+	iss := claims["iss"].(string)
+	if iss != "login.eveonline.com" && iss != "https://login.eveonline.com" {
+		return nil, fmt.Errorf("invalid issuer claim")
+	}
+	return claims, nil
 }
 
 func fetchJson(url string) []byte {
