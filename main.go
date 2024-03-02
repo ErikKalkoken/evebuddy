@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/pkg/browser"
 )
 
 const (
@@ -43,13 +45,13 @@ type characterContact struct {
 }
 
 func main() {
-	http.HandleFunc("/", index)
 	http.HandleFunc(ssoCallbackPath, ssoCallback)
 	fmt.Printf("Running server at %v\n", siteUrl)
+	start()
 	http.ListenAndServe(port, nil)
 }
 
-func index(w http.ResponseWriter, req *http.Request) {
+func start() {
 	v := url.Values{}
 	v.Set("response_type", "code")
 	v.Set("redirect_uri", siteUrl+ssoCallbackPath)
@@ -58,7 +60,10 @@ func index(w http.ResponseWriter, req *http.Request) {
 	v.Set("scope", ssoScopes)
 
 	url := fmt.Sprintf("https://login.eveonline.com/v2/oauth/authorize/?%v", v.Encode())
-	fmt.Fprintf(w, "<a href=\"%v\">login</a>\n", url)
+	err := browser.OpenURL(url)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func ssoCallback(w http.ResponseWriter, req *http.Request) {
@@ -107,6 +112,7 @@ func ssoCallback(w http.ResponseWriter, req *http.Request) {
 		log.Fatal(jsonErr)
 	}
 	log.Printf("Received token payload from ESI: %v", tokenObj)
+	fmt.Fprintf(w, "Authentication completed. You can close this window now.")
 
 	// make authenticated ESI request
 	v = url.Values{}
