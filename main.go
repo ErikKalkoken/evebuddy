@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	address         = "http://127.0.0.1"
+	host            = "127.0.0.1"
 	port            = ":8000"
-	siteUrl         = address + port
+	address         = host + port
 	ssoClientId     = "882b6f0cbd4e44ad93aead900d07219b"
 	ssoClientSecret = "DtCjMrMyoGfqq9TLXCbcJU90aEKEKFCMVWLloYaz"
 	ssoCallbackPath = "/sso/callback"
@@ -50,39 +50,63 @@ type characterContact struct {
 }
 
 func main() {
-	http.HandleFunc(ssoCallbackPath, ssoCallback)
-	fmt.Printf("Running server at %v\n", siteUrl)
-	start()
-	http.ListenAndServe(port, nil)
-}
+	ctx, cancel := context.WithCancel(context.Background())
 
-func start() {
-	v := url.Values{}
-	v.Set("response_type", "code")
-	v.Set("redirect_uri", siteUrl+ssoCallbackPath)
-	v.Set("client_id", ssoClientId)
-	v.Set("state", state)
-	v.Set("scope", ssoScopes)
+	http.HandleFunc(ssoCallbackPath, func(w http.ResponseWriter, req *http.Request) {
+		log.Print("Received SSO callback")
+		v := req.URL.Query()
+		newState := v.Get("state")
+		if newState != state {
+			log.Fatal("Wrong state")
+		}
 
-	url := fmt.Sprintf("https://login.eveonline.com/v2/oauth/authorize/?%v", v.Encode())
-	err := browser.OpenURL(url)
+		code := v.Get("code")
+		tokenObj := retrieveToken(code)
+		fmt.Fprintf(w, "Authentication completed. You can close this window now.")
+
+		cancel() // shutdown http server
+
+		claims := validateToken(tokenObj.AccessToken)
+		characterID, err := extractCharacterID(claims)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// make authenticated ESI request
+		contacts := fetchContacts(characterID, tokenObj.AccessToken)
+		fmt.Printf("%v", contacts)
+	})
+
+	server := &http.Server{
+		Addr: address,
+	}
+	fmt.Printf("Running server at %v\n", address)
+	startSSO()
+	go func() {
+		err := server.ListenAndServe()
+		if err != http.ErrServerClosed {
+			log.Println(err)
+		}
+	}()
+
+	<-ctx.Done() // wait for the signal to gracefully shutdown the server
+
+	// gracefully shutdown the server:
+	// waiting indefinitely for connections to return to idle and then shut down.
+	err := server.Shutdown(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
+
+	log.Println("done.")
 }
 
-func ssoCallback(w http.ResponseWriter, req *http.Request) {
-	log.Print("Received SSO callback")
-	v := req.URL.Query()
-	newState := v.Get("state")
-	if newState != state {
-		log.Fatal("Wrong state")
-	}
+func extractCharacterID(claims jwt.MapClaims) (int, error) {
+	characterID, err := strconv.Atoi(strings.Split(claims["sub"].(string), ":")[2])
+	return characterID, err
+}
 
-	code := v.Get("code")
-
-	httpClient := &http.Client{}
-
+func retrieveToken(code string) tokenPayload {
 	form := url.Values{"grant_type": {"authorization_code"}, "code": {code}}
 	req, err := http.NewRequest(
 		"POST",
@@ -97,6 +121,7 @@ func ssoCallback(w http.ResponseWriter, req *http.Request) {
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	log.Print("Sending auth request to SSO API")
+	httpClient := &http.Client{}
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		log.Fatal(err)
@@ -115,15 +140,22 @@ func ssoCallback(w http.ResponseWriter, req *http.Request) {
 	if err := json.Unmarshal(body, &tokenObj); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Fprintf(w, "Authentication completed. You can close this window now.")
+	return tokenObj
+}
 
-	claims := validateToken(tokenObj.AccessToken)
-	for key, value := range claims {
-		fmt.Printf("%s\t%v\n", key, value)
+func startSSO() {
+	v := url.Values{}
+	v.Set("response_type", "code")
+	v.Set("redirect_uri", "http://"+address+ssoCallbackPath)
+	v.Set("client_id", ssoClientId)
+	v.Set("state", state)
+	v.Set("scope", ssoScopes)
+
+	url := fmt.Sprintf("https://login.eveonline.com/v2/oauth/authorize/?%v", v.Encode())
+	err := browser.OpenURL(url)
+	if err != nil {
+		log.Fatal(err)
 	}
-	characterID, err := strconv.Atoi(strings.Split(claims["sub"].(string), ":")[2])
-	// make authenticated ESI request
-	fetchContacts(characterID, tokenObj.AccessToken)
 }
 
 // Generate a random state string
@@ -200,7 +232,7 @@ func fetchJwksURL() (string, error) {
 	return jwksURL, nil
 }
 
-func fetchContacts(characterID int, tokenString string) {
+func fetchContacts(characterID int, tokenString string) []characterContact {
 	v := url.Values{}
 	v.Set("token", tokenString)
 	fullUrl := fmt.Sprintf("%s/characters/%d/contacts/?%v", esiBaseUrl, characterID, v.Encode())
@@ -222,6 +254,5 @@ func fetchContacts(characterID int, tokenString string) {
 	if err := json.Unmarshal(body, &contacts); err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Printf("%v", contacts)
+	return contacts
 }
