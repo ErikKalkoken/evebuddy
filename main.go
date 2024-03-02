@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"example/goesi-play/esi"
-	"example/goesi-play/sso"
+	"example/esiapp/esi"
+	"example/esiapp/sso"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module example/goesi-play
+module example/esiapp
 
 go 1.21.6
 
