@@ -65,18 +65,21 @@ func Authenticate(scopes []string) (*Token, error) {
 		code := v.Get("code")
 		token, err := retrieveToken(code)
 		if err != nil {
+			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		claims, err := validateToken(token.AccessToken)
 		if err != nil {
+			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		characterID, err := extractCharacterID(claims)
 		if err != nil {
+			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -102,14 +105,15 @@ func Authenticate(scopes []string) (*Token, error) {
 		cancel() // shutdown http server
 	})
 
-	startSSO(state, scopes)
+	if err := startSSO(state, scopes); err != nil {
+		return nil, err
+	}
 	server := &http.Server{
 		Addr: address,
 	}
 	go func() {
 		log.Printf("Web server started at %v\n", address)
-		err := server.ListenAndServe()
-		if err != http.ErrServerClosed {
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			log.Println(err)
 		}
 	}()
@@ -127,7 +131,7 @@ func Authenticate(scopes []string) (*Token, error) {
 }
 
 // Open browser and show character selection for SSO
-func startSSO(state string, scopes []string) {
+func startSSO(state string, scopes []string) error {
 	v := url.Values{}
 	v.Set("response_type", "code")
 	v.Set("redirect_uri", "http://"+address+ssoCallbackPath)
@@ -137,9 +141,7 @@ func startSSO(state string, scopes []string) {
 
 	url := fmt.Sprintf("https://login.eveonline.com/v2/oauth/authorize/?%v", v.Encode())
 	err := browser.OpenURL(url)
-	if err != nil {
-		log.Fatal(err)
-	}
+	return err
 }
 
 // Retrieve SSO token from API in exchange for code
@@ -161,7 +163,7 @@ func retrieveToken(code string) (*Token, error) {
 	httpClient := &http.Client{}
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	if resp.Body != nil {
@@ -170,12 +172,12 @@ func retrieveToken(code string) (*Token, error) {
 
 	body, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
-		log.Fatal(readErr)
+		return nil, err
 	}
 
 	token := Token{}
 	if err := json.Unmarshal(body, &token); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	return &token, nil
 }
