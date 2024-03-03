@@ -71,7 +71,8 @@ func Authenticate(scopes []string) (*Token, error) {
 
 	ctx, cancel := context.WithCancel(ctx)
 
-	http.HandleFunc(ssoCallbackPath, func(w http.ResponseWriter, req *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc(ssoCallbackPath, func(w http.ResponseWriter, req *http.Request) {
 		log.Print("Received SSO callback")
 		v := req.URL.Query()
 		newState := v.Get("state")
@@ -123,7 +124,8 @@ func Authenticate(scopes []string) (*Token, error) {
 		return nil, err
 	}
 	server := &http.Server{
-		Addr: address,
+		Addr:    address,
+		Handler: mux,
 	}
 	go func() {
 		log.Printf("Web server started at %v\n", address)
