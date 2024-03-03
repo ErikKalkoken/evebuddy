@@ -1,7 +1,7 @@
 package main
 
 import (
-	"example/esiapp/sso"
+	"example/esiapp/internal/sso"
 	"fmt"
 	"log"
 
@@ -29,7 +29,7 @@ func main() {
 
 	content := container.NewBorder(button, nil, nil, nil, middle)
 	myWindow.SetContent(content)
-	myWindow.Resize(fyne.NewSize(500, 300))
+	myWindow.Resize(fyne.NewSize(800, 600))
 	myWindow.ShowAndRun()
 
 	// scopes := []string{"esi-characters.read_contacts.v1", "esi-universe.read_structures.v1"}
