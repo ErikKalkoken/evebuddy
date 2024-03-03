@@ -34,8 +34,9 @@ type key int
 
 const (
 	keyCodeVerifier key = iota
-	keyToken        key = iota
+	keyError        key = iota
 	keyState        key = iota
+	keyToken        key = iota
 )
 
 type Token struct {
@@ -83,6 +84,7 @@ func Authenticate(scopes []string) (*Token, error) {
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			ctx = context.WithValue(ctx, keyError, err)
 			cancel()
 			return
 		}
@@ -91,6 +93,7 @@ func Authenticate(scopes []string) (*Token, error) {
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			ctx = context.WithValue(ctx, keyError, err)
 			cancel()
 			return
 		}
@@ -99,6 +102,7 @@ func Authenticate(scopes []string) (*Token, error) {
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			ctx = context.WithValue(ctx, keyError, err)
 			cancel()
 			return
 		}
@@ -134,11 +138,12 @@ func Authenticate(scopes []string) (*Token, error) {
 	}
 	log.Println("Web server stopped")
 
-	v := ctx.Value(keyToken)
-	if v == nil {
-		return nil, fmt.Errorf("authentication failed")
+	errValue := ctx.Value(keyError)
+	if errValue != nil {
+		return nil, errValue.(error)
 	}
-	token := v.(*Token)
+
+	token := ctx.Value(keyToken).(*Token)
 	return token, nil
 }
 
