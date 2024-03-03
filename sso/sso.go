@@ -28,6 +28,8 @@ const (
 	ssoClientId     = "882b6f0cbd4e44ad93aead900d07219b"
 	ssoCallbackPath = "/sso/callback"
 	oauthURL        = "https://login.eveonline.com/.well-known/oauth-authorization-server"
+	ssoIssuer1      = "login.eveonline.com"
+	ssoIssuer2      = "https://login.eveonline.com"
 )
 
 type key int
@@ -236,7 +238,7 @@ func validateToken(tokenString string) (jwt.MapClaims, error) {
 	// validate issuer claim
 	claims := token.Claims.(jwt.MapClaims)
 	iss := claims["iss"].(string)
-	if iss != "login.eveonline.com" && iss != "https://login.eveonline.com" {
+	if iss != ssoIssuer1 && iss != ssoIssuer2 {
 		return nil, fmt.Errorf("invalid issuer claim")
 	}
 
