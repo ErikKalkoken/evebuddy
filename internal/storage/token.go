@@ -1,8 +1,13 @@
 package storage
 
 import (
+	"fmt"
 	"log"
+	"net/url"
 	"time"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/storage"
 )
 
 type Token struct {
@@ -12,6 +17,32 @@ type Token struct {
 	ExpiresAt     time.Time
 	RefreshToken  string
 	TokenType     string
+}
+
+func (t Token) String() string {
+	return t.CharacterName
+}
+
+type MyURL struct {
+	url.URL
+}
+
+func (u MyURL) Authority() string {
+	return ""
+}
+
+func (u MyURL) Extension() string {
+	return ""
+}
+
+func (t *Token) IconUrl(size int) fyne.URI {
+	s := fmt.Sprintf("https://images.evetech.net/characters/%d/portrait?size=%d", t.CharacterID, size)
+	u, err := storage.ParseURI(s)
+	if err != nil {
+		log.Fatal((err))
+	}
+	log.Println(u)
+	return u
 }
 
 func (t *Token) Store() error {
@@ -26,7 +57,7 @@ func (t *Token) Store() error {
 		)
 		VALUES(?, ?, ?, ?, ?, ?);
 	`
-	_, err := DB.Exec(
+	_, err := db.Exec(
 		s,
 		t.AccessToken,
 		t.CharacterID,
@@ -47,7 +78,7 @@ func FindToken(characterId int32) (*Token, error) {
 		FROM tokens WHERE character_id = ?;
 	`
 	var t Token
-	err := DB.QueryRow(s, characterId).Scan(
+	err := db.QueryRow(s, characterId).Scan(
 		&t.AccessToken,
 		&t.CharacterID,
 		&t.CharacterName,
@@ -58,4 +89,33 @@ func FindToken(characterId int32) (*Token, error) {
 		return nil, err
 	}
 	return &t, nil
+}
+
+func FindAllToken() ([]Token, error) {
+	s := `
+		SELECT access_token, character_id, character_name, refresh_token, token_type
+		FROM tokens;
+	`
+	rows, err := db.Query(s)
+	if err != nil {
+		return nil, err
+	}
+	var tokens []Token
+	for rows.Next() {
+		var t Token
+		err = rows.Scan(
+			&t.AccessToken,
+			&t.CharacterID,
+			&t.CharacterName,
+			&t.RefreshToken,
+			&t.TokenType,
+		)
+		if err != nil {
+			return nil, err
+		}
+		tokens = append(tokens, t)
+	}
+	rows.Close() //good habit to close
+
+	return tokens, nil
 }

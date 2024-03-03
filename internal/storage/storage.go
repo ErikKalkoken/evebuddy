@@ -7,16 +7,15 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var DB *sql.DB
+var db *sql.DB
 
 // Open the database (needs to be called once)
 func Open() *sql.DB {
-	db, err := sql.Open("sqlite3", "./storage.sqlite")
+	myDb, err := sql.Open("sqlite3", "./storage.sqlite")
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Println("Connected to database")
-	DB = db
 	s := `
 		CREATE TABLE IF NOT EXISTS tokens (
 			access_token text not null,
@@ -27,9 +26,10 @@ func Open() *sql.DB {
 			token_type text not null
 		);
 	`
-	_, err = db.Exec(s)
+	_, err = myDb.Exec(s)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return db
+	db = myDb
+	return myDb
 }

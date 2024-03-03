@@ -6,6 +6,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
@@ -14,8 +15,8 @@ import (
 )
 
 func main() {
-	conn := storage.Open()
-	defer conn.Close()
+	db := storage.Open()
+	defer db.Close()
 
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Eve Online App")
@@ -32,15 +33,19 @@ func main() {
 		middle.SetText(fmt.Sprintf("Authenticated: %v", token.CharacterName))
 	})
 
-	buttonLoad := widget.NewButton("Load Character", func() {
-		token, err := storage.FindToken(93330670)
-		if err != nil {
-			log.Fatal(err)
-		}
-		middle.SetText(fmt.Sprintf("Found token: %v", token.CharacterName))
-	})
+	tokens, err := storage.FindAllToken()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	content := container.NewBorder(buttonAdd, buttonLoad, nil, nil, middle)
+	characters := container.NewVBox(buttonAdd)
+	for _, t := range tokens {
+		image := canvas.NewImageFromURI(t.IconUrl(128))
+		image.FillMode = canvas.ImageFillOriginal
+		characters.Add(image)
+	}
+
+	content := container.NewBorder(nil, nil, characters, nil, middle)
 	myWindow.SetContent(content)
 	myWindow.Resize(fyne.NewSize(800, 600))
 	myWindow.ShowAndRun()
