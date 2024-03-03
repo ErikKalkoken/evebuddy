@@ -3,6 +3,7 @@ package sso
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -25,7 +26,6 @@ const (
 	port            = ":8000"
 	address         = host + port
 	ssoClientId     = "882b6f0cbd4e44ad93aead900d07219b"
-	ssoClientSecret = "DtCjMrMyoGfqq9TLXCbcJU90aEKEKFCMVWLloYaz"
 	ssoCallbackPath = "/sso/callback"
 	oauthURL        = "https://login.eveonline.com/.well-known/oauth-authorization-server"
 )
@@ -33,8 +33,9 @@ const (
 type key int
 
 const (
-	keyToken key = iota
-	keyState key = iota
+	keyCodeVerifier key = iota
+	keyToken        key = iota
+	keyState        key = iota
 )
 
 type Token struct {
@@ -48,17 +49,23 @@ type Token struct {
 }
 
 type tokenPayload struct {
-	AccessToken  string `json:"access_token"`
-	ExpiresIn    int32  `json:"expires_in"`
-	TokenType    string `json:"token_type"`
-	RefreshToken string `json:"refresh_token"`
+	AccessToken      string `json:"access_token"`
+	ExpiresIn        int32  `json:"expires_in"`
+	TokenType        string `json:"token_type"`
+	RefreshToken     string `json:"refresh_token"`
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description"`
 }
 
 // Authenticate an Eve Online character via SSO and return SSO token.
 // The process runs in a newly opened browser tab
 func Authenticate(scopes []string) (*Token, error) {
-	state := generateState()
-	ctx := context.WithValue(context.Background(), keyState, state)
+	codeVerifier := generateRandomString(32)
+	ctx := context.WithValue(context.Background(), keyCodeVerifier, codeVerifier)
+
+	state := generateRandomString(16)
+	ctx = context.WithValue(ctx, keyState, state)
+
 	ctx, cancel := context.WithCancel(ctx)
 
 	http.HandleFunc(ssoCallbackPath, func(w http.ResponseWriter, req *http.Request) {
@@ -71,10 +78,12 @@ func Authenticate(scopes []string) (*Token, error) {
 		}
 
 		code := v.Get("code")
-		rawToken, err := retrieveTokenPayload(code)
+		codeVerifier := ctx.Value(keyCodeVerifier).(string)
+		rawToken, err := retrieveTokenPayload(code, codeVerifier)
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			cancel()
 			return
 		}
 
@@ -82,6 +91,7 @@ func Authenticate(scopes []string) (*Token, error) {
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			cancel()
 			return
 		}
 
@@ -89,6 +99,7 @@ func Authenticate(scopes []string) (*Token, error) {
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			cancel()
 			return
 		}
 		ctx = context.WithValue(ctx, keyToken, token)
@@ -102,7 +113,7 @@ func Authenticate(scopes []string) (*Token, error) {
 		cancel() // shutdown http server
 	})
 
-	if err := startSSO(state, scopes); err != nil {
+	if err := startSSO(state, codeVerifier, scopes); err != nil {
 		return nil, err
 	}
 	server := &http.Server{
@@ -123,35 +134,54 @@ func Authenticate(scopes []string) (*Token, error) {
 	}
 	log.Println("Web server stopped")
 
-	token := ctx.Value(keyToken).(*Token)
+	v := ctx.Value(keyToken)
+	if v == nil {
+		return nil, fmt.Errorf("authentication failed")
+	}
+	token := v.(*Token)
 	return token, nil
 }
 
-// Generate a random state string
-func generateState() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	state := base64.URLEncoding.EncodeToString(b)
-	return state
+// Generate a random string of given length
+func generateRandomString(length int) string {
+	data := make([]byte, length)
+	rand.Read(data)
+	v := base64.URLEncoding.EncodeToString(data)
+	return v
 }
 
 // Open browser and show character selection for SSO
-func startSSO(state string, scopes []string) error {
+func startSSO(state string, codeVerifier string, scopes []string) error {
 	v := url.Values{}
 	v.Set("response_type", "code")
 	v.Set("redirect_uri", "http://"+address+ssoCallbackPath)
 	v.Set("client_id", ssoClientId)
-	v.Set("state", state)
 	v.Set("scope", strings.Join(scopes, " "))
+	v.Set("state", state)
+	v.Set("code_challenge", calcCodeChallenge(codeVerifier))
+	v.Set("code_challenge_method", "S256")
 
 	url := fmt.Sprintf("https://login.eveonline.com/v2/oauth/authorize/?%v", v.Encode())
 	err := browser.OpenURL(url)
 	return err
 }
 
+func calcCodeChallenge(codeVerifier string) string {
+	h := sha256.New()
+	h.Write([]byte(codeVerifier))
+	bs := h.Sum(nil)
+	challenge := base64.RawURLEncoding.EncodeToString(bs)
+	return challenge
+}
+
 // Retrieve SSO token from API in exchange for code
-func retrieveTokenPayload(code string) (*tokenPayload, error) {
-	form := url.Values{"grant_type": {"authorization_code"}, "code": {code}}
+func retrieveTokenPayload(code, codeVerifier string) (*tokenPayload, error) {
+	form := url.Values{
+		"grant_type":    {"authorization_code"},
+		"code":          {code},
+		"client_id":     {ssoClientId},
+		"code_verifier": {codeVerifier},
+	}
 	req, err := http.NewRequest(
 		"POST",
 		"https://login.eveonline.com/v2/oauth/token",
@@ -160,8 +190,6 @@ func retrieveTokenPayload(code string) (*tokenPayload, error) {
 	if err != nil {
 		return nil, err
 	}
-	encoded := base64.URLEncoding.EncodeToString([]byte(ssoClientId + ":" + ssoClientSecret))
-	req.Header.Add("Authorization", "Basic "+encoded)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	log.Print("Sending auth request to SSO API")
@@ -180,9 +208,14 @@ func retrieveTokenPayload(code string) (*tokenPayload, error) {
 		return nil, err
 	}
 
+	log.Printf("Response from API: %v", string(body))
+
 	token := tokenPayload{}
 	if err := json.Unmarshal(body, &token); err != nil {
 		return nil, err
+	}
+	if token.Error != "" {
+		return nil, fmt.Errorf("API response: %v: %v", token.Error, token.ErrorDescription)
 	}
 	return &token, nil
 }
