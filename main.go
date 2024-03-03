@@ -16,7 +16,6 @@ import (
 
 func main() {
 	db := storage.Open()
-	defer db.Close()
 
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Eve Online App")
@@ -29,13 +28,14 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		token.Store()
+		db.Create(token)
 		middle.SetText(fmt.Sprintf("Authenticated: %v", token.CharacterName))
 	})
 
-	tokens, err := storage.FindAllToken()
-	if err != nil {
-		log.Fatal(err)
+	var tokens []storage.Token
+	result := db.Find(&tokens)
+	if result.Error != nil {
+		log.Fatal(result.Error)
 	}
 
 	characters := container.NewVBox(buttonAdd)
