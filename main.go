@@ -28,7 +28,9 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		db.Create(token)
+		if err = db.Save(token).Error; err != nil {
+			log.Fatal(err)
+		}
 		middle.SetText(fmt.Sprintf("Authenticated: %v", token.CharacterName))
 	})
 

@@ -11,12 +11,14 @@ import (
 func Open() *gorm.DB {
 	db, err := gorm.Open(sqlite.Open("storage.sqlite"), &gorm.Config{})
 	if err != nil {
-		panic("failed to connect database")
+		log.Fatal(err)
 	}
 	log.Println("Connected to database")
 
 	// Migrate the schema
-	db.AutoMigrate(&Token{})
-
+	err = db.AutoMigrate(&Token{})
+	if err != nil {
+		log.Fatal(err)
+	}
 	return db
 }
