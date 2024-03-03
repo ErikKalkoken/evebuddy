@@ -6,6 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.4.4
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/lestrrat-go/jwx/v2 v2.0.20
+	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 )
 

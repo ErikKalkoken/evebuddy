@@ -19,6 +19,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/pkg/browser"
+
+	"example/esiapp/internal/storage"
 )
 
 const (
@@ -41,16 +43,6 @@ const (
 	keyToken        key = iota
 )
 
-type Token struct {
-	AccessToken   string
-	ExpiresAt     time.Time
-	TokenType     string
-	RefreshToken  string
-	CharacterID   int32
-	CharacterName string
-	Scopes        []string
-}
-
 type tokenPayload struct {
 	AccessToken      string `json:"access_token"`
 	ExpiresIn        int32  `json:"expires_in"`
@@ -62,7 +54,7 @@ type tokenPayload struct {
 
 // Authenticate an Eve Online character via SSO and return SSO token.
 // The process runs in a newly opened browser tab
-func Authenticate(scopes []string) (*Token, error) {
+func Authenticate(scopes []string) (*storage.Token, error) {
 	codeVerifier := generateRandomString(32)
 	ctx := context.WithValue(context.Background(), keyCodeVerifier, codeVerifier)
 
@@ -147,7 +139,7 @@ func Authenticate(scopes []string) (*Token, error) {
 		return nil, errValue.(error)
 	}
 
-	token := ctx.Value(keyToken).(*Token)
+	token := ctx.Value(keyToken).(*storage.Token)
 	return token, nil
 }
 
@@ -310,8 +302,8 @@ func determineJwksURL() (string, error) {
 	return jwksURL, nil
 }
 
-// build Token object
-func buildToken(rawToken *tokenPayload, claims jwt.MapClaims) (*Token, error) {
+// build storage.Token object
+func buildToken(rawToken *tokenPayload, claims jwt.MapClaims) (*storage.Token, error) {
 	// calc character ID
 	characterID, err := strconv.Atoi(strings.Split(claims["sub"].(string), ":")[2])
 	if err != nil {
@@ -319,22 +311,21 @@ func buildToken(rawToken *tokenPayload, claims jwt.MapClaims) (*Token, error) {
 	}
 
 	// calc scopes
-	var scopes []string
-	for _, v := range claims["scp"].([]interface{}) {
-		s := v.(string)
-		scopes = append(scopes, s)
-	}
+	// var scopes []string
+	// for _, v := range claims["scp"].([]interface{}) {
+	// 	s := v.(string)
+	// 	scopes = append(scopes, s)
+	// }
 
 	// calc expires at
 	expiresAt := time.Now().Add(time.Second * time.Duration(rawToken.ExpiresIn))
 
-	token := Token{
+	token := storage.Token{
 		AccessToken:   rawToken.AccessToken,
 		CharacterID:   int32(characterID),
 		CharacterName: claims["name"].(string),
 		ExpiresAt:     expiresAt,
 		RefreshToken:  rawToken.RefreshToken,
-		Scopes:        scopes,
 		TokenType:     rawToken.TokenType,
 	}
 
