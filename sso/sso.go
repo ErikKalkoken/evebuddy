@@ -54,8 +54,8 @@ type tokenPayload struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-// Authenticate an Eve Online character via SSO
-// Returns an SSO token and an error
+// Authenticate an Eve Online character via SSO and return SSO token.
+// The process runs in a newly opened browser tab
 func Authenticate(scopes []string) (*Token, error) {
 	state := generateState()
 	ctx := context.WithValue(context.Background(), keyState, state)

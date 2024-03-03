@@ -3,5 +3,8 @@
         "goesi",
         "jwks",
         "lestrrat"
+    ],
+    "cSpell.ignoreWords": [
+        "esiapp"
     ]
 }
