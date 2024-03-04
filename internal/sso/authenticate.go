@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -17,32 +16,19 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/pkg/browser"
-
-	"example/esiapp/internal/storage"
-)
-
-const (
-	host            = "127.0.0.1"
-	port            = ":8000"
-	address         = host + port
-	ssoClientId     = "882b6f0cbd4e44ad93aead900d07219b"
-	ssoCallbackPath = "/sso/callback"
-	oauthURL        = "https://login.eveonline.com/.well-known/oauth-authorization-server"
-	ssoIssuer1      = "login.eveonline.com"
-	ssoIssuer2      = "https://login.eveonline.com"
 )
 
 type key int
 
 const (
-	keyCodeVerifier key = iota
-	keyError        key = iota
-	keyState        key = iota
-	keyToken        key = iota
+	keyCodeVerifier           key = iota
+	keyError                  key = iota
+	keyState                  key = iota
+	keyAuthenticatedCharacter key = iota
 )
 
+// token payload as returned from SSO API
 type tokenPayload struct {
 	AccessToken      string `json:"access_token"`
 	ExpiresIn        int32  `json:"expires_in"`
@@ -52,9 +38,19 @@ type tokenPayload struct {
 	ErrorDescription string `json:"error_description"`
 }
 
+// SSO token for Eve Online
+type Token struct {
+	AccessToken   string
+	CharacterID   int32
+	CharacterName string
+	ExpiresAt     time.Time
+	RefreshToken  string
+	TokenType     string
+}
+
 // Authenticate an Eve Online character via SSO and return SSO token.
 // The process runs in a newly opened browser tab
-func Authenticate(scopes []string) (*storage.Token, error) {
+func Authenticate(scopes []string) (*Token, error) {
 	codeVerifier := generateRandomString(32)
 	ctx := context.WithValue(context.Background(), keyCodeVerifier, codeVerifier)
 
@@ -93,7 +89,7 @@ func Authenticate(scopes []string) (*storage.Token, error) {
 			return
 		}
 
-		token, err := buildToken(rawToken, claims)
+		character, err := buildToken(rawToken, claims)
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -101,12 +97,12 @@ func Authenticate(scopes []string) (*storage.Token, error) {
 			cancel()
 			return
 		}
-		ctx = context.WithValue(ctx, keyToken, token)
+		ctx = context.WithValue(ctx, keyAuthenticatedCharacter, character)
 
 		fmt.Fprintf(
 			w,
 			"Authentication completed for %s. Scopes granted: %s. You can close this window now.",
-			token.CharacterName,
+			character.CharacterName,
 			strings.Join(scopes, ", "),
 		)
 		cancel() // shutdown http server
@@ -139,8 +135,8 @@ func Authenticate(scopes []string) (*storage.Token, error) {
 		return nil, errValue.(error)
 	}
 
-	token := ctx.Value(keyToken).(*storage.Token)
-	return token, nil
+	character := ctx.Value(keyAuthenticatedCharacter).(*Token)
+	return character, nil
 }
 
 // Generate a random string of given length
@@ -192,6 +188,7 @@ func retrieveTokenPayload(code, codeVerifier string) (*tokenPayload, error) {
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Host", ssoHost)
 
 	log.Print("Sending auth request to SSO API")
 	httpClient := &http.Client{}
@@ -221,89 +218,8 @@ func retrieveTokenPayload(code, codeVerifier string) (*tokenPayload, error) {
 	return &token, nil
 }
 
-// Validate JWT token and return claims
-func validateToken(tokenString string) (jwt.MapClaims, error) {
-	// parse token and validate signature
-	token, err := jwt.Parse(tokenString, getKey)
-	if err != nil {
-		return nil, err
-	}
-
-	// validate issuer claim
-	claims := token.Claims.(jwt.MapClaims)
-	iss := claims["iss"].(string)
-	if iss != ssoIssuer1 && iss != ssoIssuer2 {
-		return nil, fmt.Errorf("invalid issuer claim")
-	}
-
-	// validate audience claim
-	aud := claims["aud"].([]interface{})
-	if aud[0].(string) != ssoClientId {
-		return nil, fmt.Errorf("invalid first audience claim")
-	}
-	if aud[1].(string) != "EVE Online" {
-		return nil, fmt.Errorf("invalid 2nd audience claim")
-	}
-
-	return claims, nil
-}
-
-// Return public key for JWT token
-func getKey(token *jwt.Token) (interface{}, error) {
-	jwksURL, err := determineJwksURL()
-	if err != nil {
-		return nil, err
-	}
-	// TODO: cache response so we don't have to make a request every time
-	// we want to verify a JWT
-	set, err := jwk.Fetch(context.Background(), jwksURL)
-	if err != nil {
-		return nil, err
-	}
-
-	keyID, ok := token.Header["kid"].(string)
-	if !ok {
-		return nil, errors.New("expecting JWT header to have string kid")
-	}
-
-	key, ok := set.LookupKeyID(keyID)
-	if !ok {
-		return nil, fmt.Errorf("unable to find key %q", keyID)
-	}
-
-	var rawKey interface{}
-	if err := key.Raw(&rawKey); err != nil {
-		return nil, fmt.Errorf("failed to create public key: %s", err)
-	}
-	return rawKey, nil
-}
-
-// Determine URL for JWK sets dynamically from web site and return it
-func determineJwksURL() (string, error) {
-	resp, err := http.Get(oauthURL)
-	if err != nil {
-		return "", err
-	}
-
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	var data map[string]interface{}
-	if err := json.Unmarshal(body, &data); err != nil {
-		return "", err
-	}
-	jwksURL := data["jwks_uri"].(string)
-	return jwksURL, nil
-}
-
 // build storage.Token object
-func buildToken(rawToken *tokenPayload, claims jwt.MapClaims) (*storage.Token, error) {
+func buildToken(rawToken *tokenPayload, claims jwt.MapClaims) (*Token, error) {
 	// calc character ID
 	characterID, err := strconv.Atoi(strings.Split(claims["sub"].(string), ":")[2])
 	if err != nil {
@@ -317,17 +233,76 @@ func buildToken(rawToken *tokenPayload, claims jwt.MapClaims) (*storage.Token, e
 	// 	scopes = append(scopes, s)
 	// }
 
-	// calc expires at
-	expiresAt := time.Now().Add(time.Second * time.Duration(rawToken.ExpiresIn))
-
-	token := storage.Token{
+	token := Token{
 		AccessToken:   rawToken.AccessToken,
 		CharacterID:   int32(characterID),
 		CharacterName: claims["name"].(string),
-		ExpiresAt:     expiresAt,
+		ExpiresAt:     calcExpiresAt(rawToken),
 		RefreshToken:  rawToken.RefreshToken,
 		TokenType:     rawToken.TokenType,
 	}
 
+	return &token, nil
+}
+
+func calcExpiresAt(rawToken *tokenPayload) time.Time {
+	expiresAt := time.Now().Add(time.Second * time.Duration(rawToken.ExpiresIn))
+	return expiresAt
+}
+
+// Update given token with new instance from SSO API
+func RefreshToken(refreshToken string) (*Token, error) {
+	form := url.Values{
+		"grant_type":    {"refresh_token"},
+		"refresh_token": {refreshToken},
+		"client_id":     {ssoClientId},
+	}
+	rawToken, err := fetchOauthToken(form)
+	if err != nil {
+		return nil, err
+	}
+	character := Token{
+		AccessToken:  rawToken.AccessToken,
+		RefreshToken: rawToken.RefreshToken,
+		ExpiresAt:    calcExpiresAt(rawToken),
+	}
+	return &character, nil
+}
+
+func fetchOauthToken(form url.Values) (*tokenPayload, error) {
+	req, err := http.NewRequest(
+		"POST", ssoTokenUrl, strings.NewReader(form.Encode()),
+	)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Host", "login.eveonline.com")
+
+	log.Printf("Requesting token from SSO API by %s", form.Get("grant_type"))
+	httpClient := &http.Client{}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Body != nil {
+		defer resp.Body.Close()
+	}
+
+	body, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		return nil, err
+	}
+
+	log.Printf("Response from SSO API: %v", string(body))
+
+	token := tokenPayload{}
+	if err := json.Unmarshal(body, &token); err != nil {
+		return nil, err
+	}
+	if token.Error != "" {
+		return nil, fmt.Errorf("SSO API error: %v: %v", token.Error, token.ErrorDescription)
+	}
 	return &token, nil
 }

@@ -16,7 +16,7 @@ func Open() *gorm.DB {
 	log.Println("Connected to database")
 
 	// Migrate the schema
-	err = db.AutoMigrate(&Token{})
+	err = db.AutoMigrate(&Character{}, &Token{})
 	if err != nil {
 		log.Fatal(err)
 	}

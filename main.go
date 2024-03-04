@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
 	"example/esiapp/internal/sso"
@@ -20,34 +21,48 @@ func main() {
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Eve Online App")
 
-	middle := widget.NewLabel("content")
-
 	buttonAdd := widget.NewButton("Add Character", func() {
 		scopes := []string{"esi-characters.read_contacts.v1", "esi-universe.read_structures.v1"}
-		token, err := sso.Authenticate(scopes)
+		ssoToken, err := sso.Authenticate(scopes)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err = db.Save(token).Error; err != nil {
+		character := storage.Character{
+			ID:   ssoToken.CharacterID,
+			Name: ssoToken.CharacterName,
+		}
+		if err = db.Save(&character).Error; err != nil {
 			log.Fatal(err)
 		}
-		middle.SetText(fmt.Sprintf("Authenticated: %v", token.CharacterName))
+		token := storage.Token{
+			AccessToken:  ssoToken.AccessToken,
+			Character:    character,
+			ExpiresAt:    ssoToken.ExpiresAt,
+			RefreshToken: ssoToken.RefreshToken,
+			TokenType:    ssoToken.TokenType,
+		}
+		if err = db.Where("character_id = ?", character.ID).Save(&token).Error; err != nil {
+			log.Fatal(err)
+		}
+		info := dialog.NewInformation("Authentication completed", fmt.Sprintf("Authenticated: %v", ssoToken.CharacterName), myWindow)
+		info.Show()
 	})
 
-	var tokens []storage.Token
-	result := db.Find(&tokens)
-	if result.Error != nil {
-		log.Fatal(result.Error)
-	}
-
-	characters := container.NewVBox(buttonAdd)
-	for _, t := range tokens {
-		image := canvas.NewImageFromURI(t.IconUrl(128))
+	currentUser := container.NewHBox()
+	var token storage.Token
+	if db.Joins("Character").First(&token).Error != nil {
+		currentUser.Add(widget.NewLabel("Not authenticated"))
+		log.Print("No token found")
+	} else {
+		image := canvas.NewImageFromURI(token.IconUrl(64))
 		image.FillMode = canvas.ImageFillOriginal
-		characters.Add(image)
+		currentUser.Add(image)
+		currentUser.Add(widget.NewLabel(token.Character.Name))
 	}
+	currentUser.Add(buttonAdd)
 
-	content := container.NewBorder(nil, nil, characters, nil, middle)
+	middle := widget.NewLabel("PLACEHOLDER")
+	content := container.NewBorder(currentUser, nil, nil, nil, middle)
 	myWindow.SetContent(content)
 	myWindow.Resize(fyne.NewSize(800, 600))
 	myWindow.ShowAndRun()
