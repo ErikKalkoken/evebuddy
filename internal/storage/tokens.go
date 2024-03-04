@@ -9,12 +9,6 @@ import (
 	"fyne.io/fyne/v2/storage"
 )
 
-// An Eve Online character
-type Character struct {
-	ID   int32 `gorm:"primaryKey"`
-	Name string
-}
-
 // A SSO token belonging to a character
 type Token struct {
 	AccessToken  string
@@ -23,6 +17,13 @@ type Token struct {
 	ExpiresAt    time.Time
 	RefreshToken string
 	TokenType    string
+}
+
+func (t *Token) Save() error {
+	if err := db.Where("character_id = ?", t.CharacterID).Save(t).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 func (t *Token) IsValid() bool {
@@ -45,21 +46,19 @@ func (t *Token) IconUrl(size int) fyne.URI {
 	return u
 }
 
-// A mail header belonging to a character
-type MailHeader struct {
-	CharacterID int32
-	Character   Character
-	FromID      int32
-	From        EveEntity
-	MailID      int32
-	IsRead      bool
-	Subject     string
-	TimeStamp   time.Time
+func FirstToken() (*Token, error) {
+	var token Token
+	if err := db.Joins("Character").First(&token).Error; err != nil {
+		return nil, err
+	}
+	return &token, nil
 }
 
-// An entity in Eve Online
-type EveEntity struct {
-	Category string
-	ID       int32 `gorm:"primaryKey"`
-	Name     string
+func FindToken(characterId int32) (*Token, error) {
+	var token Token
+	err := db.Joins("Character").First(&token, "character_id = ?", characterId).Error
+	if err != nil {
+		return nil, err
+	}
+	return &token, nil
 }

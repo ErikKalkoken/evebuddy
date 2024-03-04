@@ -20,8 +20,7 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 
-	db, err := storage.Open()
-	if err != nil {
+	if err := storage.Initialize(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -42,7 +41,7 @@ func main() {
 			ID:   ssoToken.CharacterID,
 			Name: ssoToken.CharacterName,
 		}
-		if err = db.Save(&character).Error; err != nil {
+		if err = character.Save(); err != nil {
 			log.Fatal(err)
 		}
 		token := storage.Token{
@@ -52,7 +51,7 @@ func main() {
 			RefreshToken: ssoToken.RefreshToken,
 			TokenType:    ssoToken.TokenType,
 		}
-		if err = db.Where("character_id = ?", character.ID).Save(&token).Error; err != nil {
+		if err = token.Save(); err != nil {
 			log.Fatal(err)
 		}
 		info := dialog.NewInformation("Authentication completed", fmt.Sprintf("Authenticated: %v", ssoToken.CharacterName), myWindow)
@@ -60,8 +59,8 @@ func main() {
 	})
 
 	currentUser := container.NewHBox()
-	var token storage.Token
-	if db.Joins("Character").First(&token).Error != nil {
+	token, err := storage.FirstToken()
+	if err != nil {
 		currentUser.Add(widget.NewLabel("Not authenticated"))
 		log.Print("No token found")
 	} else {
@@ -73,7 +72,7 @@ func main() {
 	currentUser.Add(buttonAdd)
 
 	buttonFetch := widget.NewButton("Fetch mail", func() {
-		err := core.FetchMail(db, 93330670)
+		err := core.FetchMail(93330670)
 		if err != nil {
 			log.Fatal(err)
 		}

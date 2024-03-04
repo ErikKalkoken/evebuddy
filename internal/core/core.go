@@ -5,12 +5,10 @@ import (
 	"example/esiapp/internal/sso"
 	"example/esiapp/internal/storage"
 	"log"
-
-	"gorm.io/gorm"
 )
 
-func FetchMail(db *gorm.DB, characterId int32) error {
-	token, err := fetchValidToken(db, characterId)
+func FetchMail(characterId int32) error {
+	token, err := fetchValidToken(characterId)
 	if err != nil {
 		return err
 	}
@@ -26,14 +24,13 @@ func FetchMail(db *gorm.DB, characterId int32) error {
 			MailID:    header.ID,
 			Subject:   header.Subject,
 		}
-		db.Where("character_id = ? AND mail_id = ?", characterId, header.ID).Save(&mail)
+		mail.Save()
 	}
 	return nil
 }
 
-func fetchValidToken(db *gorm.DB, characterId int32) (*storage.Token, error) {
-	var token storage.Token
-	err := db.Preload("Character").First(&token, "character_id = ?", characterId).Error
+func fetchValidToken(characterId int32) (*storage.Token, error) {
+	token, err := storage.FindToken(characterId)
 	if err != nil {
 		return nil, err
 	}
@@ -46,11 +43,11 @@ func fetchValidToken(db *gorm.DB, characterId int32) (*storage.Token, error) {
 		token.AccessToken = rawToken.AccessToken
 		token.RefreshToken = rawToken.RefreshToken
 		token.ExpiresAt = rawToken.ExpiresAt
-		err = db.Where("character_id = ?", characterId).Save(&token).Error
+		err = token.Save()
 		if err != nil {
 			return nil, err
 		}
 		log.Printf("Refreshed token for %v", characterId)
 	}
-	return &token, nil
+	return token, nil
 }
