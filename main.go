@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
+	"example/esiapp/internal/esi"
 	"example/esiapp/internal/sso"
 	"example/esiapp/internal/storage"
 )
@@ -22,7 +23,11 @@ func main() {
 	myWindow := myApp.NewWindow("Eve Online App")
 
 	buttonAdd := widget.NewButton("Add Character", func() {
-		scopes := []string{"esi-characters.read_contacts.v1", "esi-universe.read_structures.v1"}
+		scopes := []string{
+			"esi-characters.read_contacts.v1",
+			"esi-universe.read_structures.v1",
+			"esi-mail.read_mail.v1",
+		}
 		ssoToken, err := sso.Authenticate(scopes)
 		if err != nil {
 			log.Fatal(err)
@@ -61,8 +66,17 @@ func main() {
 	}
 	currentUser.Add(buttonAdd)
 
+	buttonFetch := widget.NewButton("Fetch mail", func() {
+		mail, err := esi.FetchMailHeaders(token.CharacterID, token.AccessToken)
+		if err != nil {
+			log.Println(err)
+		} else {
+			fmt.Println(mail)
+		}
+	})
+
 	middle := widget.NewLabel("PLACEHOLDER")
-	content := container.NewBorder(currentUser, nil, nil, nil, middle)
+	content := container.NewBorder(currentUser, nil, nil, buttonFetch, middle)
 	myWindow.SetContent(content)
 	myWindow.Resize(fyne.NewSize(800, 600))
 	myWindow.ShowAndRun()

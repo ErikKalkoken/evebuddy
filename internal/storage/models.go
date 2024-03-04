@@ -7,7 +7,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/storage"
-	"gorm.io/gorm"
 )
 
 // An Eve Online character
@@ -46,10 +45,21 @@ func (t *Token) IconUrl(size int) fyne.URI {
 	return u
 }
 
-type Contact struct {
-	gorm.Model
-	ID       uint
+// A mail header belonging to a character
+type MailHeader struct {
+	CharacterID int32
+	Character   Character
+	FromID      int32
+	From        EveEntity
+	MailID      int32
+	IsRead      bool
+	Subject     string
+	TimeStamp   time.Time
+}
+
+// An entity in Eve Online
+type EveEntity struct {
+	Category string
+	ID       int32 `gorm:"primaryKey"`
 	Name     string
-	Type     string
-	Standing float32
 }
