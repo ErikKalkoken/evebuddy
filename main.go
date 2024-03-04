@@ -75,6 +75,9 @@ func main() {
 		}
 	})
 
+	result, _ := esi.ResolveEntityIDs([]int32{95465499, 30000142})
+	fmt.Println(result)
+
 	middle := widget.NewLabel("PLACEHOLDER")
 	content := container.NewBorder(currentUser, nil, nil, buttonFetch, middle)
 	myWindow.SetContent(content)

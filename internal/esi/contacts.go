@@ -1,9 +1,7 @@
 package esi
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -24,18 +22,5 @@ func FetchContacts(characterID int32, tokenString string) ([]CharacterContact, e
 	if err != nil {
 		return nil, err
 	}
-
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	var contacts []CharacterContact
-	if err := json.Unmarshal(body, &contacts); err != nil {
-		log.Fatal(err)
-	}
-	return contacts, nil
+	return UnmarshalResponse[[]CharacterContact](resp)
 }

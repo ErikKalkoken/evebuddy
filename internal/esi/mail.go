@@ -1,9 +1,7 @@
 package esi
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -34,17 +32,5 @@ func FetchMailHeaders(characterID int32, tokenString string) ([]MailHeader, erro
 		return nil, err
 	}
 
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	var mails []MailHeader
-	if err := json.Unmarshal(body, &mails); err != nil {
-		return nil, err
-	}
-	return mails, nil
+	return UnmarshalResponse[[]MailHeader](resp)
 }

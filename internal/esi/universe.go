@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 )
@@ -31,17 +30,5 @@ func ResolveEntityIDs(ids []int32) ([]EveEntity, error) {
 		return nil, err
 	}
 
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var entities []EveEntity
-	if err := json.Unmarshal(body, &entities); err != nil {
-		log.Fatal(err)
-	}
-	return entities, nil
+	return UnmarshalResponse[[]EveEntity](resp)
 }
