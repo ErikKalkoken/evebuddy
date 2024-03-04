@@ -8,17 +8,17 @@ import (
 )
 
 // Open the database (needs to be called once)
-func Open() *gorm.DB {
+func Open() (*gorm.DB, error) {
 	db, err := gorm.Open(sqlite.Open("storage.sqlite"), &gorm.Config{})
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	log.Println("Connected to database")
 
 	// Migrate the schema
-	err = db.AutoMigrate(&Character{}, &Token{})
+	err = db.AutoMigrate(&Character{}, &Token{}, &EveEntity{}, &MailHeader{})
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return db
+	return db, nil
 }

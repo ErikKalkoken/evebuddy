@@ -252,6 +252,9 @@ func calcExpiresAt(rawToken *tokenPayload) time.Time {
 
 // Update given token with new instance from SSO API
 func RefreshToken(refreshToken string) (*Token, error) {
+	if refreshToken == "" {
+		return nil, fmt.Errorf("missing refresh token")
+	}
 	form := url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {refreshToken},
@@ -279,7 +282,9 @@ func fetchOauthToken(form url.Values) (*tokenPayload, error) {
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Host", "login.eveonline.com")
 
-	log.Printf("Requesting token from SSO API by %s", form.Get("grant_type"))
+	log.Printf("Requesting token from SSO API by %s from %s", form.Get("grant_type"), ssoTokenUrl)
+	log.Printf("Request: %v", form)
+
 	httpClient := &http.Client{}
 	resp, err := httpClient.Do(req)
 	if err != nil {

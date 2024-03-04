@@ -11,13 +11,19 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
+	"example/esiapp/internal/core"
 	"example/esiapp/internal/esi"
 	"example/esiapp/internal/sso"
 	"example/esiapp/internal/storage"
 )
 
 func main() {
-	db := storage.Open()
+	log.SetFlags(log.LstdFlags | log.Llongfile)
+
+	db, err := storage.Open()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Eve Online App")
@@ -67,11 +73,9 @@ func main() {
 	currentUser.Add(buttonAdd)
 
 	buttonFetch := widget.NewButton("Fetch mail", func() {
-		mail, err := esi.FetchMailHeaders(token.CharacterID, token.AccessToken)
+		err := core.FetchMail(db, 93330670)
 		if err != nil {
-			log.Println(err)
-		} else {
-			fmt.Println(mail)
+			log.Fatal(err)
 		}
 	})
 
