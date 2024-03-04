@@ -1,3 +1,4 @@
+// Package esi contains all logic for communicating with the ESI API
 package esi
 
 const (

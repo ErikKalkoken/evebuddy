@@ -1,3 +1,4 @@
+// Package sso contains all logic for character authentication with the Eve Online SSO API
 package sso
 
 const (

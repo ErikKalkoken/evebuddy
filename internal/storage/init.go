@@ -1,3 +1,5 @@
+// Package storage contains all models for persistent storage.
+// All DB access is abstracted through receivers and helper functions
 package storage
 
 import (

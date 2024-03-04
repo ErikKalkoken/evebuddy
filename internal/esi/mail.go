@@ -13,7 +13,7 @@ type MailRecipient struct {
 }
 
 type MailHeader struct {
-	From       int32           `json:"from"`
+	FromID     int32           `json:"from"`
 	IsRead     bool            `json:"is_read"`
 	ID         int32           `json:"mail_id"`
 	Labels     []int32         `json:"labels"`
