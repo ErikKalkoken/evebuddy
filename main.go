@@ -141,7 +141,21 @@ func main() {
 		mailBody.SetText(blue.Sanitize(text))
 	}
 
-	main := container.NewHSplit(headers, detail)
+	folders := widget.NewList(
+		func() int {
+			return 5
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("from")
+		},
+		func(i widget.ListItemID, o fyne.CanvasObject) {
+			o.(*widget.Label).SetText("PLACEHOLDER")
+		})
+
+	mainMails := container.NewHSplit(headers, detail)
+	mainMails.SetOffset(0.35)
+	main := container.NewHSplit(folders, mainMails)
+	main.SetOffset(0.15)
 
 	content := container.NewBorder(currentUser, buttonFetch, nil, nil, main)
 	myWindow.SetContent(content)
