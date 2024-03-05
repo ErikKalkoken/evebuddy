@@ -32,3 +32,12 @@ func FetchMailIDs(characterId int32) ([]int32, error) {
 	}
 	return ids, nil
 }
+
+func FetchMail(characterId int32) ([]MailHeader, error) {
+	var headers []MailHeader
+	err := db.Preload("From").Where("character_id = ?", characterId).Find(&headers).Error
+	if err != nil {
+		return nil, err
+	}
+	return headers, nil
+}

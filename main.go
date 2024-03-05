@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"example/esiapp/internal/core"
-	"example/esiapp/internal/esi"
 	"example/esiapp/internal/sso"
 	"example/esiapp/internal/storage"
 )
@@ -78,11 +77,33 @@ func main() {
 		}
 	})
 
-	result, _ := esi.ResolveEntityIDs([]int32{95465499, 30000142})
-	fmt.Println(result)
+	mails, err := storage.FetchMail(93330670)
+	if err != nil {
+		log.Fatalf("Failed to fetch mail: %v", err)
+	}
 
-	middle := widget.NewLabel("PLACEHOLDER")
-	content := container.NewBorder(currentUser, nil, nil, buttonFetch, middle)
+	table := widget.NewTableWithHeaders(
+		func() (int, int) {
+			return len(mails), 3
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+		},
+		func(i widget.TableCellID, o fyne.CanvasObject) {
+			mail := mails[i.Row]
+			text := ""
+			switch i.Col {
+			case 0:
+				text = mail.TimeStamp.String()
+			case 1:
+				text = mail.From.Name
+			case 2:
+				text = mail.Subject
+			}
+			o.(*widget.Label).SetText(text)
+		})
+
+	content := container.NewBorder(currentUser, buttonFetch, nil, nil, table)
 	myWindow.SetContent(content)
 	myWindow.Resize(fyne.NewSize(800, 600))
 	myWindow.ShowAndRun()
