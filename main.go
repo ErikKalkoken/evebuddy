@@ -64,6 +64,7 @@ func main() {
 		))
 
 	currentUser := container.NewHBox()
+	var characterID int32
 	character, err := storage.FetchFirstCharacter()
 	if err != nil {
 		currentUser.Add(widget.NewLabel("No characters"))
@@ -73,10 +74,11 @@ func main() {
 		image.FillMode = canvas.ImageFillOriginal
 		currentUser.Add(image)
 		currentUser.Add(widget.NewLabel(character.Name))
+		characterID = character.ID
 	}
 	currentUser.Add(buttonAdd)
 
-	mails, err := storage.FetchAllMails(character.ID)
+	mails, err := storage.FetchAllMails(characterID)
 	if err != nil {
 		log.Fatalf("Failed to fetch mail: %v", err)
 	}
@@ -129,7 +131,7 @@ func main() {
 	}
 
 	folderActions := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-		err := core.UpdateMails(character.ID)
+		err := core.UpdateMails(characterID)
 		if err != nil {
 			log.Fatal(err)
 		}
