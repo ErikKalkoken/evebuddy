@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"example/esiapp/internal/core"
@@ -34,7 +33,6 @@ func main() {
 
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Eve Online App")
-	blue := bluemonday.StripTagsPolicy()
 
 	buttonAdd := widget.NewButton("Add Character", func() {
 		scopes := []string{
@@ -95,63 +93,55 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to fetch mail: %v", err)
 	}
-	defaultForegroundColor := theme.ForegroundColor()
-	textSizeLarger := theme.TextSize() * 1.15
+	mailHeaderSubject := widget.NewLabel("")
+	mailHeaderSubject.TextStyle = fyne.TextStyle{Bold: true}
+	mailHeaderSubject.Truncation = fyne.TextTruncateEllipsis
 
-	mailHeaderSubject := canvas.NewText("", defaultForegroundColor)
-	mailHeaderFrom := canvas.NewText("", defaultForegroundColor)
-	mailHeaderTimestamp := canvas.NewText("", defaultForegroundColor)
+	mailHeaderFrom := widget.NewLabel("")
+	mailHeaderTimestamp := widget.NewLabel("")
 	mailHeader := container.NewVBox(mailHeaderSubject, mailHeaderFrom, mailHeaderTimestamp)
 	mailBody := widget.NewLabel("Text")
 	mailBody.Wrapping = fyne.TextWrapBreak
 
 	detail := container.NewVBox(mailHeader, mailBody)
 
-	list := widget.NewList(
+	blue := bluemonday.StrictPolicy()
+	headers := widget.NewList(
 		func() int {
 			return len(mails)
 		},
 		func() fyne.CanvasObject {
-			from := canvas.NewText("from", defaultForegroundColor)
-			timestamp := canvas.NewText("timestamp", defaultForegroundColor)
-			subject := canvas.NewText("subject", defaultForegroundColor)
-			subject.TextSize = textSizeLarger
+			from := widget.NewLabel("from")
+			timestamp := widget.NewLabel("timestamp")
+			subject := widget.NewLabel("subject")
+			subject.TextStyle = fyne.TextStyle{Bold: true}
+			subject.Truncation = fyne.TextTruncateEllipsis
 			return container.NewVBox(
 				container.NewHBox(from, layout.NewSpacer(), timestamp), subject,
 			)
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {
 			mail := mails[i]
-			style := fyne.TextStyle{Bold: !mail.IsRead}
+			// style := fyne.TextStyle{Bold: !mail.IsRead}
 			parent := o.(*fyne.Container)
 			top := parent.Objects[0].(*fyne.Container)
-			from := top.Objects[0].(*canvas.Text)
-			from.Text = mail.From.Name
-			from.TextStyle = style
-			from.Refresh()
-			timestamp := top.Objects[2].(*canvas.Text)
-			timestamp.Text = mail.TimeStamp.Format(myDateTime)
-			timestamp.TextStyle = style
-			timestamp.Refresh()
-			subject := parent.Objects[1].(*canvas.Text)
-			subject.Text = mail.Subject
-			subject.TextStyle = style
-			subject.Refresh()
+			from := top.Objects[0].(*widget.Label)
+			from.SetText(mail.From.Name)
+			timestamp := top.Objects[2].(*widget.Label)
+			timestamp.SetText(mail.TimeStamp.Format(myDateTime))
+			subject := parent.Objects[1].(*widget.Label)
+			subject.SetText(mail.Subject)
 		})
-	list.OnSelected = func(id widget.ListItemID) {
+	headers.OnSelected = func(id widget.ListItemID) {
 		mail := mails[id]
-		mailHeaderSubject.Text = mail.Subject
-		mailHeaderSubject.TextSize = textSizeLarger
-		mailHeaderSubject.Refresh()
-		mailHeaderFrom.Text = "From: " + mail.From.Name
-		mailHeaderFrom.Refresh()
-		mailHeaderTimestamp.Text = "Received: " + mail.TimeStamp.Format(myDateTime)
-		mailHeaderTimestamp.Refresh()
+		mailHeaderSubject.SetText(mail.Subject)
+		mailHeaderFrom.SetText("From: " + mail.From.Name)
+		mailHeaderTimestamp.SetText("Received: " + mail.TimeStamp.Format(myDateTime))
 		text := strings.ReplaceAll(mail.Body, "<br>", "\n")
 		mailBody.SetText(blue.Sanitize(text))
 	}
 
-	main := container.NewHSplit(list, detail)
+	main := container.NewHSplit(headers, detail)
 
 	content := container.NewBorder(currentUser, buttonFetch, nil, nil, main)
 	myWindow.SetContent(content)
