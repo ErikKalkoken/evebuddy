@@ -9,6 +9,7 @@ import (
 	"example/esiapp/internal/storage"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -138,14 +139,32 @@ func fetchValidToken(characterId int32) (*storage.Token, error) {
 	return token, nil
 }
 
+// TODO: Add error handling
+
+// fetchMailBodies fetches multiple mails from ESI concurrently and returns them.
 func fetchMailBodies(token *storage.Token, ids []int32) (map[int32]string, error) {
+	var wg sync.WaitGroup
+	var contexts = sync.Map{}
+
+	for _, i := range ids {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			mail, err := esi.FetchMail(token.CharacterID, i, token.AccessToken)
+			if err != nil {
+				log.Printf("Error when fetching mail bodies: %v", err)
+			}
+			contexts.Store(i, mail.Body)
+		}()
+	}
+	wg.Wait()
+
 	res := make(map[int32]string, len(ids))
-	for _, mailID := range ids {
-		mail, err := esi.FetchMail(token.CharacterID, mailID, token.AccessToken)
-		if err != nil {
-			return nil, err
+	for _, i := range ids {
+		v, ok := contexts.Load(i)
+		if ok {
+			res[i] = v.(string)
 		}
-		res[mailID] = mail.Body
 	}
 	return res, nil
 }
