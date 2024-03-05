@@ -103,7 +103,7 @@ func main() {
 	mailBody := widget.NewLabel("Text")
 	mailBody.Wrapping = fyne.TextWrapBreak
 
-	detail := container.NewVBox(mailHeader, mailBody)
+	detail := container.NewBorder(mailHeader, nil, nil, nil, container.NewVScroll(mailBody))
 
 	blue := bluemonday.StrictPolicy()
 	headers := widget.NewList(
