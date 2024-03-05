@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -94,14 +95,30 @@ func main() {
 			text := ""
 			switch i.Col {
 			case 0:
-				text = mail.TimeStamp.String()
-			case 1:
 				text = mail.From.Name
-			case 2:
+			case 1:
 				text = mail.Subject
+			case 2:
+				text = mail.TimeStamp.Format(time.DateTime)
 			}
 			o.(*widget.Label).SetText(text)
 		})
+
+	table.CreateHeader = func() fyne.CanvasObject {
+		return widget.NewLabel("")
+	}
+	table.UpdateHeader = func(i widget.TableCellID, o fyne.CanvasObject) {
+		text := ""
+		switch i.Col {
+		case 0:
+			text = "Sender"
+		case 1:
+			text = "Subject"
+		case 2:
+			text = "Received"
+		}
+		o.(*widget.Label).SetText(text)
+	}
 
 	content := container.NewBorder(currentUser, buttonFetch, nil, nil, table)
 	myWindow.SetContent(content)
