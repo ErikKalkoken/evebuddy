@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"time"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -17,6 +17,12 @@ import (
 	"example/esiapp/internal/core"
 	"example/esiapp/internal/sso"
 	"example/esiapp/internal/storage"
+
+	"github.com/microcosm-cc/bluemonday"
+)
+
+const (
+	myDateTime = "2006-01-02 15:04"
 )
 
 func main() {
@@ -28,6 +34,7 @@ func main() {
 
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Eve Online App")
+	blue := bluemonday.StripTagsPolicy()
 
 	buttonAdd := widget.NewButton("Add Character", func() {
 		scopes := []string{
@@ -56,7 +63,11 @@ func main() {
 		if err = token.Save(); err != nil {
 			log.Fatal(err)
 		}
-		info := dialog.NewInformation("Authentication completed", fmt.Sprintf("Authenticated: %v", ssoToken.CharacterName), myWindow)
+		info := dialog.NewInformation(
+			"Authentication completed",
+			fmt.Sprintf("Authenticated: %v", ssoToken.CharacterName),
+			myWindow,
+		)
 		info.Show()
 	})
 
@@ -74,7 +85,7 @@ func main() {
 	currentUser.Add(buttonAdd)
 
 	buttonFetch := widget.NewButton("Fetch mail", func() {
-		err := core.FetchMail(93330670)
+		err := core.UpdateMails(93330670)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -91,7 +102,9 @@ func main() {
 	mailHeaderFrom := canvas.NewText("", defaultForegroundColor)
 	mailHeaderTimestamp := canvas.NewText("", defaultForegroundColor)
 	mailHeader := container.NewVBox(mailHeaderSubject, mailHeaderFrom, mailHeaderTimestamp)
-	mailBody := widget.NewLabel("")
+	mailBody := widget.NewLabel("Text")
+	mailBody.Wrapping = fyne.TextWrapBreak
+
 	detail := container.NewVBox(mailHeader, mailBody)
 
 	list := widget.NewList(
@@ -117,7 +130,7 @@ func main() {
 			from.TextStyle = style
 			from.Refresh()
 			timestamp := top.Objects[2].(*canvas.Text)
-			timestamp.Text = mail.TimeStamp.Format(time.DateTime)
+			timestamp.Text = mail.TimeStamp.Format(myDateTime)
 			timestamp.TextStyle = style
 			timestamp.Refresh()
 			subject := parent.Objects[1].(*canvas.Text)
@@ -132,9 +145,10 @@ func main() {
 		mailHeaderSubject.Refresh()
 		mailHeaderFrom.Text = "From: " + mail.From.Name
 		mailHeaderFrom.Refresh()
-		mailHeaderTimestamp.Text = "Received: " + mail.TimeStamp.Format(time.DateTime)
+		mailHeaderTimestamp.Text = "Received: " + mail.TimeStamp.Format(myDateTime)
 		mailHeaderTimestamp.Refresh()
-		mailBody.SetText("Text")
+		text := strings.ReplaceAll(mail.Body, "<br>", "\n")
+		mailBody.SetText(blue.Sanitize(text))
 	}
 
 	main := container.NewHSplit(list, detail)
@@ -143,12 +157,4 @@ func main() {
 	myWindow.SetContent(content)
 	myWindow.Resize(fyne.NewSize(800, 600))
 	myWindow.ShowAndRun()
-
-	// scopes := []string{"esi-characters.read_contacts.v1", "esi-universe.read_structures.v1"}
-	// token, err := sso.Authenticate(scopes)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// contacts := esi.FetchContacts(token.CharacterID, token.AccessToken)
-	// fmt.Println(contacts)
 }

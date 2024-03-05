@@ -12,7 +12,8 @@ import (
 	"time"
 )
 
-func FetchMail(characterId int32) error {
+// UpdateMails fetches and stores new mails from ESI for a character.
+func UpdateMails(characterId int32) error {
 	token, err := fetchValidToken(characterId)
 	if err != nil {
 		return err
@@ -23,9 +24,16 @@ func FetchMail(characterId int32) error {
 		return err
 	}
 
+	mailIds := helpers.NewSet([]int32{})
 	entityIds := helpers.NewSet([]int32{})
 	for _, header := range headers {
 		entityIds.Add(header.FromID)
+		mailIds.Add(header.ID)
+	}
+
+	bodies, err := fetchMailBodies(token, mailIds.ToSlice())
+	if err != nil {
+		return err
 	}
 
 	addMissingEveEntities(entityIds.ToSlice())
@@ -41,7 +49,7 @@ func FetchMail(characterId int32) error {
 		if existingIds.Has(header.ID) {
 			continue
 		}
-		mail := storage.MailHeader{
+		mail := storage.Mail{
 			Character: character,
 			MailID:    header.ID,
 			Subject:   header.Subject,
@@ -50,16 +58,23 @@ func FetchMail(characterId int32) error {
 		timestamp, err := time.Parse(time.RFC3339, header.Timestamp)
 		if err != nil {
 			log.Printf("Failed to parse timestamp for mail %d: %v", header.ID, err)
-		} else {
-			mail.TimeStamp = timestamp
+			continue
 		}
+		mail.TimeStamp = timestamp
 
 		from, err := storage.GetEveEntity(header.FromID)
 		if err != nil {
 			log.Printf("Failed to parse \"from\" mail %d: %v", header.FromID, err)
-		} else {
-			mail.From = *from
+			continue
 		}
+		mail.From = *from
+
+		body, ok := bodies[header.ID]
+		if !ok {
+			log.Printf("No body found for mail %d", header.ID)
+			continue
+		}
+		mail.Body = body
 
 		mail.Save()
 		createdCount++
@@ -90,6 +105,18 @@ func fetchValidToken(characterId int32) (*storage.Token, error) {
 		log.Printf("Refreshed token for %v", characterId)
 	}
 	return token, nil
+}
+
+func fetchMailBodies(token *storage.Token, ids []int32) (map[int32]string, error) {
+	res := make(map[int32]string, len(ids))
+	for _, mailID := range ids {
+		mail, err := esi.FetchMail(token.CharacterID, mailID, token.AccessToken)
+		if err != nil {
+			return nil, err
+		}
+		res[mailID] = mail.Body
+	}
+	return res, nil
 }
 
 func addMissingEveEntities(ids []int32) error {

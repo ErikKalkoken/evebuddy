@@ -2,8 +2,9 @@ package storage
 
 import "time"
 
-// A mail header belonging to a character
-type MailHeader struct {
+// A mail belonging to a character
+type Mail struct {
+	Body        string
 	CharacterID int32
 	Character   Character
 	FromID      int32
@@ -14,14 +15,14 @@ type MailHeader struct {
 	TimeStamp   time.Time
 }
 
-func (m *MailHeader) Save() error {
+func (m *Mail) Save() error {
 	err := db.Where("character_id = ? AND mail_id = ?", m.CharacterID, m.MailID).Save(m).Error
 	return err
 }
 
 // Return mail IDs of existing mail for a character
 func FetchMailIDs(characterId int32) ([]int32, error) {
-	var headers []MailHeader
+	var headers []Mail
 	err := db.Select("mail_id").Where("character_id = ?", characterId).Find(&headers).Error
 	if err != nil {
 		return nil, err
@@ -33,8 +34,8 @@ func FetchMailIDs(characterId int32) ([]int32, error) {
 	return ids, nil
 }
 
-func FetchMail(characterId int32) ([]MailHeader, error) {
-	var headers []MailHeader
+func FetchMail(characterId int32) ([]Mail, error) {
+	var headers []Mail
 	err := db.Preload("From").Where("character_id = ?", characterId).Order("time_stamp desc").Find(&headers).Error
 	if err != nil {
 		return nil, err
