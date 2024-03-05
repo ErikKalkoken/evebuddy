@@ -1,5 +1,7 @@
 package storage
 
+import "fmt"
+
 // An entity in Eve Online
 type EveEntity struct {
 	Category string
@@ -26,17 +28,15 @@ func FetchEntityIDs() ([]int32, error) {
 	return ids, nil
 }
 
-func GetOrCreateEveEntity(id int32) (*EveEntity, bool, error) {
+// GetEveEntity return an EveEntity object if it exists or nil
+func GetEveEntity(id int32) (*EveEntity, error) {
 	var e EveEntity
 	err := db.Limit(1).Find(&e, id).Error
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
-	created := false
 	if e.ID == 0 {
-		e.ID = id
-		e.Save()
-		created = true
+		return nil, fmt.Errorf("EveEntity object not found for ID %d", id)
 	}
-	return &e, created, nil
+	return &e, nil
 }

@@ -1,5 +1,6 @@
 // Package storage contains all models for persistent storage.
-// All DB access is abstracted through receivers and helper functions
+// All DB access is abstracted through receivers and helper functions.
+// This package should not access any other internal packages, except helpers.
 package storage
 
 import (

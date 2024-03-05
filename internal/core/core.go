@@ -1,4 +1,5 @@
-// Package core contains the main logic and accesses all the other internal packages
+// Package core contains the main business logic.
+// This package will access all other internal packages.
 package core
 
 import (
@@ -6,6 +7,7 @@ import (
 	"example/esiapp/internal/helpers"
 	"example/esiapp/internal/sso"
 	"example/esiapp/internal/storage"
+	"fmt"
 	"log"
 	"time"
 )
@@ -26,7 +28,7 @@ func FetchMail(characterId int32) error {
 		entityIds.Add(header.FromID)
 	}
 
-	// addMissingEveEntities(entityIds.ToSlice())
+	addMissingEveEntities(entityIds.ToSlice())
 
 	ids, err := storage.FetchMailIDs(characterId)
 	if err != nil {
@@ -39,23 +41,26 @@ func FetchMail(characterId int32) error {
 		if existingIds.Has(header.ID) {
 			continue
 		}
-		from, _, err := storage.GetOrCreateEveEntity(header.FromID)
-		if err != nil {
-			log.Printf("Failed to parse \"from\" mail %d: %v", header.FromID, err)
-			continue
-		}
 		mail := storage.MailHeader{
 			Character: character,
-			From:      *from,
 			MailID:    header.ID,
 			Subject:   header.Subject,
 		}
+
 		timestamp, err := time.Parse(time.RFC3339, header.Timestamp)
-		if err == nil {
-			mail.TimeStamp = timestamp
-		} else {
+		if err != nil {
 			log.Printf("Failed to parse timestamp for mail %d: %v", header.ID, err)
+		} else {
+			mail.TimeStamp = timestamp
 		}
+
+		from, err := storage.GetEveEntity(header.FromID)
+		if err != nil {
+			log.Printf("Failed to parse \"from\" mail %d: %v", header.FromID, err)
+		} else {
+			mail.From = *from
+		}
+
 		mail.Save()
 		createdCount++
 	}
@@ -87,20 +92,33 @@ func fetchValidToken(characterId int32) (*storage.Token, error) {
 	return token, nil
 }
 
-// func addMissingEveEntities(ids []int32) error {
-// 	c, err := storage.FetchEntityIDs()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	current := helpers.NewSet(c)
-// 	incoming := helpers.NewSet(ids)
+func addMissingEveEntities(ids []int32) error {
+	c, err := storage.FetchEntityIDs()
+	if err != nil {
+		return err
+	}
+	current := helpers.NewSet(c)
+	incoming := helpers.NewSet(ids)
+	missing := incoming.Difference(current)
 
-// 	if newEntityIds.Size() > 0 {
-// 		entities, err := esi.ResolveEntityIDs(newEntityIds.ToSlice())
-// 		if err != nil {
-// 			log.Printf("Failed to resolve IDs: %v", err)
-// 		} else {
+	if missing.Size() == 0 {
+		log.Println("No missing eve entities")
+		return nil
+	}
 
-// 		}
-// 	}
-// }
+	entities, err := esi.ResolveEntityIDs(missing.ToSlice())
+	if err != nil {
+		return fmt.Errorf("failed to resolve IDs: %v", err)
+	}
+
+	for _, entity := range entities {
+		e := storage.EveEntity{ID: entity.ID, Category: entity.Category, Name: entity.Name}
+		err := e.Save()
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Printf("Added %d missing eve entities", len(entities))
+	return nil
+}
