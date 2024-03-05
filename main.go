@@ -10,6 +10,8 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"example/esiapp/internal/core"
@@ -83,44 +85,40 @@ func main() {
 		log.Fatalf("Failed to fetch mail: %v", err)
 	}
 
-	table := widget.NewTableWithHeaders(
-		func() (int, int) {
-			return len(mails), 3
+	list := widget.NewList(
+		func() int {
+			return len(mails)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+			c := theme.ForegroundColor()
+			from := canvas.NewText("from", c)
+			timestamp := canvas.NewText("timestamp", c)
+			subject := canvas.NewText("subject", c)
+			subject.TextSize = theme.TextSize() * 1.15
+			return container.NewVBox(
+				container.NewHBox(from, layout.NewSpacer(), timestamp), subject,
+			)
 		},
-		func(i widget.TableCellID, o fyne.CanvasObject) {
-			mail := mails[i.Row]
-			text := ""
-			switch i.Col {
-			case 0:
-				text = mail.From.Name
-			case 1:
-				text = mail.Subject
-			case 2:
-				text = mail.TimeStamp.Format(time.DateTime)
-			}
-			o.(*widget.Label).SetText(text)
+		func(i widget.ListItemID, o fyne.CanvasObject) {
+			mail := mails[i]
+			style := fyne.TextStyle{Bold: !mail.IsRead}
+			parent := o.(*fyne.Container)
+			top := parent.Objects[0].(*fyne.Container)
+			from := top.Objects[0].(*canvas.Text)
+			from.Text = mail.From.Name
+			from.TextStyle = style
+			timestamp := top.Objects[2].(*canvas.Text)
+			timestamp.Text = mail.TimeStamp.Format(time.DateTime)
+			timestamp.TextStyle = style
+			subject := parent.Objects[1].(*canvas.Text)
+			subject.Text = mail.Subject
+			subject.TextStyle = style
+			from.Refresh()
+			timestamp.Refresh()
+			subject.Refresh()
 		})
 
-	table.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("")
-	}
-	table.UpdateHeader = func(i widget.TableCellID, o fyne.CanvasObject) {
-		text := ""
-		switch i.Col {
-		case 0:
-			text = "Sender"
-		case 1:
-			text = "Subject"
-		case 2:
-			text = "Received"
-		}
-		o.(*widget.Label).SetText(text)
-	}
-
-	content := container.NewBorder(currentUser, buttonFetch, nil, nil, table)
+	content := container.NewBorder(currentUser, buttonFetch, nil, nil, list)
 	myWindow.SetContent(content)
 	myWindow.Resize(fyne.NewSize(800, 600))
 	myWindow.ShowAndRun()
