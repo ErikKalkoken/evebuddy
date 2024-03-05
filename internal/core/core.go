@@ -12,6 +12,37 @@ import (
 	"time"
 )
 
+// AddCharacter adds a new character via SSO authentication and returns the new token.
+func AddCharacter() (*storage.Token, error) {
+	scopes := []string{
+		"esi-characters.read_contacts.v1",
+		"esi-universe.read_structures.v1",
+		"esi-mail.read_mail.v1",
+	}
+	ssoToken, err := sso.Authenticate(scopes)
+	if err != nil {
+		return nil, err
+	}
+	character := storage.Character{
+		ID:   ssoToken.CharacterID,
+		Name: ssoToken.CharacterName,
+	}
+	if err = character.Save(); err != nil {
+		return nil, err
+	}
+	token := storage.Token{
+		AccessToken:  ssoToken.AccessToken,
+		Character:    character,
+		ExpiresAt:    ssoToken.ExpiresAt,
+		RefreshToken: ssoToken.RefreshToken,
+		TokenType:    ssoToken.TokenType,
+	}
+	if err = token.Save(); err != nil {
+		return nil, err
+	}
+	return &token, nil
+}
+
 // UpdateMails fetches and stores new mails from ESI for a character.
 func UpdateMails(characterId int32) error {
 	token, err := fetchValidToken(characterId)
@@ -85,7 +116,7 @@ func UpdateMails(characterId int32) error {
 }
 
 func fetchValidToken(characterId int32) (*storage.Token, error) {
-	token, err := storage.FindToken(characterId)
+	token, err := storage.FetchToken(characterId)
 	if err != nil {
 		return nil, err
 	}

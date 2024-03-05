@@ -7,11 +7,13 @@ import (
 	"net/url"
 )
 
+// A mail recipient returned from ESI.
 type MailRecipient struct {
 	ID   int32  `json:"recipient_id"`
 	Type string `json:"recipient_type"`
 }
 
+// A mail header returned from ESI.
 type MailHeader struct {
 	FromID     int32           `json:"from"`
 	IsRead     bool            `json:"is_read"`
@@ -22,6 +24,7 @@ type MailHeader struct {
 	Timestamp  string          `json:"timestamp"`
 }
 
+// FetchMailHeaders fetches all mail headers for a character from ESI and returns them.
 func FetchMailHeaders(characterID int32, tokenString string) ([]MailHeader, error) {
 	v := url.Values{}
 	v.Set("token", tokenString)
@@ -35,11 +38,13 @@ func FetchMailHeaders(characterID int32, tokenString string) ([]MailHeader, erro
 	return UnmarshalResponse[[]MailHeader](resp)
 }
 
+// A mail returned from ESI.
 type Mail struct {
 	MailHeader
 	Body string `json:"body"`
 }
 
+// FetchMail fetches a mail for a character from ESI and returns it.
 func FetchMail(characterID int32, mailID int32, tokenString string) (*Mail, error) {
 	v := url.Values{}
 	v.Set("token", tokenString)

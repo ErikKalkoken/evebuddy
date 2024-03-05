@@ -9,12 +9,13 @@ type EveEntity struct {
 	Name     string
 }
 
+// Save updates or creates an eve entity.
 func (e *EveEntity) Save() error {
 	err := db.Save(e).Error
 	return err
 }
 
-// Return all existing entity IDs
+// FetchEntityIDs returns all existing entity IDs.
 func FetchEntityIDs() ([]int32, error) {
 	var objs []EveEntity
 	err := db.Select("id").Find(&objs).Error
@@ -28,7 +29,7 @@ func FetchEntityIDs() ([]int32, error) {
 	return ids, nil
 }
 
-// GetEveEntity return an EveEntity object if it exists or nil
+// GetEveEntity return an EveEntity object if it exists or nil.
 func GetEveEntity(id int32) (*EveEntity, error) {
 	var e EveEntity
 	err := db.Limit(1).Find(&e, id).Error

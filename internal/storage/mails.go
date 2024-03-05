@@ -2,7 +2,7 @@ package storage
 
 import "time"
 
-// A mail belonging to a character
+// An Eve mail belonging to a character
 type Mail struct {
 	Body        string
 	CharacterID int32
@@ -15,30 +15,32 @@ type Mail struct {
 	TimeStamp   time.Time
 }
 
+// Save creates or updates a mail
 func (m *Mail) Save() error {
 	err := db.Where("character_id = ? AND mail_id = ?", m.CharacterID, m.MailID).Save(m).Error
 	return err
 }
 
-// Return mail IDs of existing mail for a character
+// FetchMailIDs return mail IDs of all existing mails for a character
 func FetchMailIDs(characterId int32) ([]int32, error) {
-	var headers []Mail
-	err := db.Select("mail_id").Where("character_id = ?", characterId).Find(&headers).Error
+	var objs []Mail
+	err := db.Select("mail_id").Where("character_id = ?", characterId).Find(&objs).Error
 	if err != nil {
 		return nil, err
 	}
 	var ids []int32
-	for _, header := range headers {
+	for _, header := range objs {
 		ids = append(ids, header.MailID)
 	}
 	return ids, nil
 }
 
-func FetchMail(characterId int32) ([]Mail, error) {
-	var headers []Mail
-	err := db.Preload("From").Where("character_id = ?", characterId).Order("time_stamp desc").Find(&headers).Error
+// FetchAllMails returns all mails for a character
+func FetchAllMails(characterId int32) ([]Mail, error) {
+	var objs []Mail
+	err := db.Preload("From").Where("character_id = ?", characterId).Order("time_stamp desc").Find(&objs).Error
 	if err != nil {
 		return nil, err
 	}
-	return headers, nil
+	return objs, nil
 }

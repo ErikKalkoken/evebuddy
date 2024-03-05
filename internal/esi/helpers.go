@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// UnmarshalResponse converts a JSON response from ESI into an object.
 func UnmarshalResponse[T any](resp *http.Response) (T, error) {
 	var objs T
 	if resp.Body != nil {

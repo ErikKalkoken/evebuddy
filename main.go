@@ -11,10 +11,10 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"example/esiapp/internal/core"
-	"example/esiapp/internal/sso"
 	"example/esiapp/internal/storage"
 
 	"github.com/microcosm-cc/bluemonday"
@@ -34,62 +34,49 @@ func main() {
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Eve Online App")
 
-	buttonAdd := widget.NewButton("Add Character", func() {
-		scopes := []string{
-			"esi-characters.read_contacts.v1",
-			"esi-universe.read_structures.v1",
-			"esi-mail.read_mail.v1",
-		}
-		ssoToken, err := sso.Authenticate(scopes)
-		if err != nil {
-			log.Fatal(err)
-		}
-		character := storage.Character{
-			ID:   ssoToken.CharacterID,
-			Name: ssoToken.CharacterName,
-		}
-		if err = character.Save(); err != nil {
-			log.Fatal(err)
-		}
-		token := storage.Token{
-			AccessToken:  ssoToken.AccessToken,
-			Character:    character,
-			ExpiresAt:    ssoToken.ExpiresAt,
-			RefreshToken: ssoToken.RefreshToken,
-			TokenType:    ssoToken.TokenType,
-		}
-		if err = token.Save(); err != nil {
-			log.Fatal(err)
-		}
-		info := dialog.NewInformation(
-			"Authentication completed",
-			fmt.Sprintf("Authenticated: %v", ssoToken.CharacterName),
-			myWindow,
-		)
-		info.Show()
-	})
+	characters, err := storage.FetchAllCharacters()
+	if err != nil {
+		log.Fatal(err)
+	}
+	shareItem := fyne.NewMenuItem("Switch character", nil)
+
+	var items []*fyne.MenuItem
+	for _, c := range characters {
+		item := fyne.NewMenuItem(c.Name, func() { log.Printf("selected %v", c.Name) })
+		items = append(items, item)
+	}
+	shareItem.ChildMenu = fyne.NewMenu("", items...)
+	buttonAdd := newContextMenuButton(
+		"Manage Characters", fyne.NewMenu("",
+			fyne.NewMenuItem("Add Character", func() {
+				token, err := core.AddCharacter()
+				if err != nil {
+					log.Fatal(err)
+				}
+				info := dialog.NewInformation(
+					"Authentication completed",
+					fmt.Sprintf("Authenticated: %v", token.Character.Name),
+					myWindow,
+				)
+				info.Show()
+			}),
+			shareItem,
+		))
 
 	currentUser := container.NewHBox()
-	token, err := storage.FirstToken()
+	character, err := storage.FetchFirstCharacter()
 	if err != nil {
-		currentUser.Add(widget.NewLabel("Not authenticated"))
+		currentUser.Add(widget.NewLabel("No characters"))
 		log.Print("No token found")
 	} else {
-		image := canvas.NewImageFromURI(token.IconUrl(64))
+		image := canvas.NewImageFromURI(character.PortraitURL(64))
 		image.FillMode = canvas.ImageFillOriginal
 		currentUser.Add(image)
-		currentUser.Add(widget.NewLabel(token.Character.Name))
+		currentUser.Add(widget.NewLabel(character.Name))
 	}
 	currentUser.Add(buttonAdd)
 
-	buttonFetch := widget.NewButton("Fetch mail", func() {
-		err := core.UpdateMails(93330670)
-		if err != nil {
-			log.Fatal(err)
-		}
-	})
-
-	mails, err := storage.FetchMail(93330670)
+	mails, err := storage.FetchAllMails(character.ID)
 	if err != nil {
 		log.Fatalf("Failed to fetch mail: %v", err)
 	}
@@ -141,6 +128,13 @@ func main() {
 		mailBody.SetText(blue.Sanitize(text))
 	}
 
+	folderActions := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+		err := core.UpdateMails(character.ID)
+		if err != nil {
+			log.Fatal(err)
+		}
+	})
+
 	folders := widget.NewList(
 		func() int {
 			return 5
@@ -152,12 +146,14 @@ func main() {
 			o.(*widget.Label).SetText("PLACEHOLDER")
 		})
 
+	foldersPage := container.NewBorder(folderActions, nil, nil, nil, folders)
+
 	mainMails := container.NewHSplit(headers, detail)
 	mainMails.SetOffset(0.35)
-	main := container.NewHSplit(folders, mainMails)
+	main := container.NewHSplit(foldersPage, mainMails)
 	main.SetOffset(0.15)
 
-	content := container.NewBorder(currentUser, buttonFetch, nil, nil, main)
+	content := container.NewBorder(currentUser, nil, nil, nil, main)
 	myWindow.SetContent(content)
 	myWindow.Resize(fyne.NewSize(800, 600))
 	myWindow.ShowAndRun()

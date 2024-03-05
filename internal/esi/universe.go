@@ -8,6 +8,7 @@ import (
 	"net/http"
 )
 
+// An Eve entity returned from ESI.
 type EveEntity struct {
 	Category string `json:"category"`
 	ID       int32  `json:"id"`
