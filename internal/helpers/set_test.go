@@ -72,6 +72,32 @@ func TestSetCanClear(t *testing.T) {
 
 func TestSetCanConvertToSlice(t *testing.T) {
 	s := NewSet([]int{1, 2})
-	r := s.ToSlice()
-	assert.Equal(t, []int{1, 2}, r)
+	got := s.ToSlice()
+	assert.Equal(t, len(got), 2)
+	assert.Contains(t, got, 1)
+	assert.Contains(t, got, 2)
+}
+
+func TestSetCanUnion(t *testing.T) {
+	s1 := NewSet([]int{1, 2})
+	s2 := NewSet([]int{2, 3})
+	want := NewSet([]int{1, 2, 3})
+	got := s1.Union(s2)
+	assert.Equal(t, want, got)
+}
+
+func TestSetCanIntersect(t *testing.T) {
+	s1 := NewSet([]int{1, 2})
+	s2 := NewSet([]int{2, 3})
+	want := NewSet([]int{2})
+	got := s1.Intersect(s2)
+	assert.Equal(t, want, got)
+}
+
+func TestSetCanDifference(t *testing.T) {
+	s1 := NewSet([]int{1, 2})
+	s2 := NewSet([]int{2, 3})
+	want := NewSet([]int{1})
+	got := s1.Difference(s2)
+	assert.Equal(t, want, got)
 }

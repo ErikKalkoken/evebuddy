@@ -1,40 +1,41 @@
 // Package helpers contains generic helper functions and types,
-// which can be used across all packages.
+// which are meant be used across all internal packages.
 package helpers
 
-// A generic set type
+// Set is a generic set.
 type Set[T comparable] struct {
 	items map[T]struct{}
 }
 
-// Add an element to a set
+// Add adds an element to the set
 func (s *Set[T]) Add(v T) {
 	s.items[v] = struct{}{}
 }
 
-// Remove an element from a set.
-// Do nothing when the element does not exist.
+// Remove removes an element from a set.
+// It does nothing when the element doesn't exist.
 func (s *Set[T]) Remove(v T) {
 	delete(s.items, v)
 }
 
-// Clear a set
+// Clear removes all elements from a set.
 func (s *Set[T]) Clear() {
 	s.items = make(map[T]struct{})
 }
 
-// Return the size of a set
+// Size returns the number of elements in a set.
 func (s *Set[T]) Size() int {
 	return len(s.items)
 }
 
-// Report if item is in this set
+// Has reports wether an item is in this set.
 func (s *Set[T]) Has(item T) bool {
 	_, ok := s.items[item]
 	return ok
 }
 
-// Convert a set to a slice
+// ToSlice converts a set to a slice and returns it.
+// Note that the elements in the slice have no defined order.
 func (s *Set[T]) ToSlice() []T {
 	slice := make([]T, 0, s.Size())
 	for v := range s.items {
@@ -43,7 +44,45 @@ func (s *Set[T]) ToSlice() []T {
 	return slice
 }
 
-// Return new set
+// Union returns a new set containing the combined elements from both sets.
+func (s *Set[T]) Union(other *Set[T]) *Set[T] {
+	n := NewSet([]T{})
+	for v := range s.items {
+		n.Add(v)
+	}
+
+	for v := range other.items {
+		n.Add(v)
+	}
+	return n
+}
+
+// Intersect returns a new set which contains elements found in both sets only.
+func (s *Set[T]) Intersect(other *Set[T]) *Set[T] {
+	n := NewSet([]T{})
+	for v := range s.items {
+		if !other.Has(v) {
+			continue
+		}
+		n.Add(v)
+	}
+	return n
+}
+
+// Difference returns a new set which elements from current set,
+// that does not exist in other set.
+func (s *Set[T]) Difference(other *Set[T]) *Set[T] {
+	n := NewSet([]T{})
+	for v := range s.items {
+		if other.Has(v) {
+			continue
+		}
+		n.Add(v)
+	}
+	return n
+}
+
+// NewSet returns a new set from a slice.
 func NewSet[T comparable](slice []T) *Set[T] {
 	var s Set[T]
 	s.items = make(map[T]struct{}, len(slice))
