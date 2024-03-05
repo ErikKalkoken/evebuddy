@@ -84,17 +84,25 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to fetch mail: %v", err)
 	}
+	defaultForegroundColor := theme.ForegroundColor()
+	textSizeLarger := theme.TextSize() * 1.15
+
+	mailHeaderSubject := canvas.NewText("", defaultForegroundColor)
+	mailHeaderFrom := canvas.NewText("", defaultForegroundColor)
+	mailHeaderTimestamp := canvas.NewText("", defaultForegroundColor)
+	mailHeader := container.NewVBox(mailHeaderSubject, mailHeaderFrom, mailHeaderTimestamp)
+	mailBody := widget.NewLabel("")
+	detail := container.NewVBox(mailHeader, mailBody)
 
 	list := widget.NewList(
 		func() int {
 			return len(mails)
 		},
 		func() fyne.CanvasObject {
-			c := theme.ForegroundColor()
-			from := canvas.NewText("from", c)
-			timestamp := canvas.NewText("timestamp", c)
-			subject := canvas.NewText("subject", c)
-			subject.TextSize = theme.TextSize() * 1.15
+			from := canvas.NewText("from", defaultForegroundColor)
+			timestamp := canvas.NewText("timestamp", defaultForegroundColor)
+			subject := canvas.NewText("subject", defaultForegroundColor)
+			subject.TextSize = textSizeLarger
 			return container.NewVBox(
 				container.NewHBox(from, layout.NewSpacer(), timestamp), subject,
 			)
@@ -107,18 +115,31 @@ func main() {
 			from := top.Objects[0].(*canvas.Text)
 			from.Text = mail.From.Name
 			from.TextStyle = style
+			from.Refresh()
 			timestamp := top.Objects[2].(*canvas.Text)
 			timestamp.Text = mail.TimeStamp.Format(time.DateTime)
 			timestamp.TextStyle = style
+			timestamp.Refresh()
 			subject := parent.Objects[1].(*canvas.Text)
 			subject.Text = mail.Subject
 			subject.TextStyle = style
-			from.Refresh()
-			timestamp.Refresh()
 			subject.Refresh()
 		})
+	list.OnSelected = func(id widget.ListItemID) {
+		mail := mails[id]
+		mailHeaderSubject.Text = mail.Subject
+		mailHeaderSubject.TextSize = textSizeLarger
+		mailHeaderSubject.Refresh()
+		mailHeaderFrom.Text = "From: " + mail.From.Name
+		mailHeaderFrom.Refresh()
+		mailHeaderTimestamp.Text = "Received: " + mail.TimeStamp.Format(time.DateTime)
+		mailHeaderTimestamp.Refresh()
+		mailBody.SetText("Text")
+	}
 
-	content := container.NewBorder(currentUser, buttonFetch, nil, nil, list)
+	main := container.NewHSplit(list, detail)
+
+	content := container.NewBorder(currentUser, buttonFetch, nil, nil, main)
 	myWindow.SetContent(content)
 	myWindow.Resize(fyne.NewSize(800, 600))
 	myWindow.ShowAndRun()
