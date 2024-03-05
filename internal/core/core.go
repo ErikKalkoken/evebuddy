@@ -21,22 +21,25 @@ func FetchMail(characterId int32) error {
 		return err
 	}
 
+	entityIds := helpers.NewSet([]int32{})
+	for _, header := range headers {
+		entityIds.Add(header.FromID)
+	}
+
+	// addMissingEveEntities(entityIds.ToSlice())
+
 	ids, err := storage.FetchMailIDs(characterId)
 	if err != nil {
 		return err
 	}
-	existingIds := helpers.NewSetFromSlice(ids)
+	existingIds := helpers.NewSet(ids)
 
 	createdCount := 0
-	newEntityIds := helpers.NewSet[int32]()
 	for _, header := range headers {
 		if existingIds.Has(header.ID) {
 			continue
 		}
-		from, created, err := storage.GetOrCreateEveEntity(header.FromID)
-		if created {
-			newEntityIds.Add(from.ID)
-		}
+		from, _, err := storage.GetOrCreateEveEntity(header.FromID)
 		if err != nil {
 			log.Printf("Failed to parse \"from\" mail %d: %v", header.FromID, err)
 			continue
@@ -57,15 +60,6 @@ func FetchMail(characterId int32) error {
 		createdCount++
 	}
 	log.Printf("Stored %d new mails", createdCount)
-
-	// if len(newEntityIds) > 0 {
-	// 	entities, err := esi.ResolveEntityIDs(newEntityIds)
-	// 	if err != nil {
-	// 		log.Printf("Failed to resolve IDs: %v", err)
-	// 	} else {
-
-	// 	}
-	// }
 
 	return nil
 }
@@ -92,3 +86,21 @@ func fetchValidToken(characterId int32) (*storage.Token, error) {
 	}
 	return token, nil
 }
+
+// func addMissingEveEntities(ids []int32) error {
+// 	c, err := storage.FetchEntityIDs()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	current := helpers.NewSet(c)
+// 	incoming := helpers.NewSet(ids)
+
+// 	if newEntityIds.Size() > 0 {
+// 		entities, err := esi.ResolveEntityIDs(newEntityIds.ToSlice())
+// 		if err != nil {
+// 			log.Printf("Failed to resolve IDs: %v", err)
+// 		} else {
+
+// 		}
+// 	}
+// }

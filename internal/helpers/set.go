@@ -12,7 +12,8 @@ func (s *Set[T]) Add(v T) {
 	s.items[v] = struct{}{}
 }
 
-// Remove an element from a set
+// Remove an element from a set.
+// Do nothing when the element does not exist.
 func (s *Set[T]) Remove(v T) {
 	delete(s.items, v)
 }
@@ -35,22 +36,15 @@ func (s *Set[T]) Has(item T) bool {
 
 // Convert a set to a slice
 func (s *Set[T]) ToSlice() []T {
-	slice := make([]T, s.Size())
+	slice := make([]T, 0, s.Size())
 	for v := range s.items {
 		slice = append(slice, v)
 	}
 	return slice
 }
 
-// Return new empty set
-func NewSet[T comparable]() *Set[T] {
-	var s Set[T]
-	s.items = make(map[T]struct{})
-	return &s
-}
-
-// Return new set created from a slice
-func NewSetFromSlice[T comparable](slice []T) *Set[T] {
+// Return new set
+func NewSet[T comparable](slice []T) *Set[T] {
 	var s Set[T]
 	s.items = make(map[T]struct{}, len(slice))
 	for _, el := range slice {

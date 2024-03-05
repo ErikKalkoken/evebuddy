@@ -12,6 +12,20 @@ func (e *EveEntity) Save() error {
 	return err
 }
 
+// Return all existing entity IDs
+func FetchEntityIDs() ([]int32, error) {
+	var objs []EveEntity
+	err := db.Select("id").Find(&objs).Error
+	if err != nil {
+		return nil, err
+	}
+	var ids []int32
+	for _, o := range objs {
+		ids = append(ids, o.ID)
+	}
+	return ids, nil
+}
+
 func GetOrCreateEveEntity(id int32) (*EveEntity, bool, error) {
 	var e EveEntity
 	err := db.Limit(1).Find(&e, id).Error
