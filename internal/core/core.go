@@ -52,12 +52,15 @@ func AddCharacter() (*storage.Token, error) {
 
 // UpdateMails fetches and stores new mails from ESI for a character.
 func UpdateMails(characterId int32) error {
-	token, err := fetchValidToken(characterId)
+	token, err := storage.FetchToken(characterId)
 	if err != nil {
 		return err
 	}
 	character := token.Character
 
+	if err := ensureFreshToken(token); err != nil {
+		return err
+	}
 	lists, err := esi.FetchMailLists(httpClient, token.CharacterID, token.AccessToken)
 	if err != nil {
 		return err
@@ -66,6 +69,9 @@ func UpdateMails(characterId int32) error {
 		return err
 	}
 
+	if err := ensureFreshToken(token); err != nil {
+		return err
+	}
 	headers, err := esi.FetchMailHeaders(httpClient, token.CharacterID, token.AccessToken)
 	if err != nil {
 		return err
@@ -91,6 +97,9 @@ func UpdateMails(characterId int32) error {
 			continue
 		}
 
+		if err := ensureFreshToken(token); err != nil {
+			return err
+		}
 		m, err := esi.FetchMail(httpClient, token.CharacterID, header.ID, token.AccessToken)
 		if err != nil {
 			log.Printf("Failed to process mail %d: %v", header.ID, err)
@@ -127,6 +136,7 @@ func UpdateMails(characterId int32) error {
 	return nil
 }
 
+// updateMailLists stores mail lists
 func updateMailLists(l []esi.MailList) error {
 	for _, o := range l {
 		e := storage.EveEntity{ID: o.ID, Name: o.Name, Category: "mail_list"}
@@ -137,27 +147,24 @@ func updateMailLists(l []esi.MailList) error {
 	return nil
 }
 
-func fetchValidToken(characterId int32) (*storage.Token, error) {
-	token, err := storage.FetchToken(characterId)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Current token: %v", token)
-	if !token.IsValid() {
+// ensureFreshToken will automatically try to refresh a token that is already or about to become invalid.
+func ensureFreshToken(token *storage.Token) error {
+	if !token.RemainsValid(time.Second * 30) {
+		log.Printf("Need to refresh token: %v", token)
 		rawToken, err := sso.RefreshToken(token.RefreshToken)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		token.AccessToken = rawToken.AccessToken
 		token.RefreshToken = rawToken.RefreshToken
 		token.ExpiresAt = rawToken.ExpiresAt
 		err = token.Save()
 		if err != nil {
-			return nil, err
+			return err
 		}
-		log.Printf("Refreshed token for %v", characterId)
+		log.Printf("Refreshed token for %v", token.CharacterID)
 	}
-	return token, nil
+	return nil
 }
 
 // // TODO: Add error handling

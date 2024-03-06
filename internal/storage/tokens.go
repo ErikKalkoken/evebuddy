@@ -22,9 +22,9 @@ func (t *Token) Save() error {
 	return nil
 }
 
-// IsValid reports wether a token is still valid.
-func (t *Token) IsValid() bool {
-	return t.ExpiresAt.After(time.Now())
+// RemainsValid reports wether a token remains valid within a duration
+func (t *Token) RemainsValid(d time.Duration) bool {
+	return t.ExpiresAt.After(time.Now().Add(d))
 }
 
 // FetchToken returns the token for a character
