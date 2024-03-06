@@ -1,6 +1,8 @@
 package esi
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -8,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCanFetchMailHeader(t *testing.T) {
+func TestCanFetchSingleMailHeader(t *testing.T) {
 	// given
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -33,8 +35,11 @@ func TestCanFetchMailHeader(t *testing.T) {
 			}
 		]`
 
-	httpmock.RegisterResponder("GET", "https://esi.evetech.net/latest/characters/1/mail/?token=token",
-		httpmock.NewStringResponder(200, fixture))
+	httpmock.RegisterResponder(
+		"GET",
+		"https://esi.evetech.net/latest/characters/1/mail/?token=token",
+		httpmock.NewStringResponder(200, fixture),
+	)
 
 	c := &http.Client{}
 
@@ -56,4 +61,62 @@ func TestCanFetchMailHeader(t *testing.T) {
 	}
 	assert.Equal(t, expected, mails[0])
 
+}
+
+func jsonMarshal(v any) string {
+	data, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(data)
+
+}
+
+func TestCanFetchManyMailHeaders(t *testing.T) {
+	// given
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	objs := []MailHeader{}
+	var mailIDs []int32
+	for i := range 55 {
+		id := int32(1000 - i)
+		mailIDs = append(mailIDs, id)
+		o := MailHeader{
+			FromID:     90000001,
+			IsRead:     true,
+			Labels:     []int32{3},
+			ID:         id,
+			Recipients: []MailRecipient{{ID: 90000002, Type: "character"}},
+			Subject:    fmt.Sprintf("Test Mail %d", id),
+			Timestamp:  "2015-09-30T16:07:00Z",
+		}
+		objs = append(objs, o)
+	}
+	httpmock.RegisterResponder(
+		"GET",
+		"https://esi.evetech.net/latest/characters/1/mail/?token=token",
+		httpmock.NewStringResponder(200, jsonMarshal(objs[:50])),
+	)
+	httpmock.RegisterResponder(
+		"GET",
+		"https://esi.evetech.net/latest/characters/1/mail/?last_mail_id=951&token=token",
+		httpmock.NewStringResponder(200, jsonMarshal(objs[50:])),
+	)
+
+	c := &http.Client{}
+
+	// when
+	mails, err := FetchMailHeaders(c, 1, "token")
+
+	// then
+	assert.Nil(t, err)
+	assert.Equal(t, 2, httpmock.GetTotalCallCount())
+	assert.Equal(t, 55, len(mails))
+
+	newIDs := make([]int32, 0, 55)
+	for _, m := range mails {
+		newIDs = append(newIDs, m.ID)
+	}
+	assert.Equal(t, mailIDs, newIDs)
 }

@@ -5,7 +5,11 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"slices"
+	"strconv"
 )
+
+const maxHeadersPerPage = 50 // maximum header objects returned per page
 
 // A mail recipient returned from ESI.
 type MailRecipient struct {
@@ -26,8 +30,33 @@ type MailHeader struct {
 
 // FetchMailHeaders fetches all mail headers for a character from ESI and returns them.
 func FetchMailHeaders(httpClient *http.Client, characterID int32, tokenString string) ([]MailHeader, error) {
+	var result []MailHeader
+	lastMailID := int32(0)
+	for {
+		objs, err := fetchMailHeadersPage(httpClient, characterID, tokenString, lastMailID)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, objs...)
+		if len(objs) < maxHeadersPerPage {
+			break
+		}
+		ids := make([]int32, 0)
+		for _, o := range objs {
+			ids = append(ids, o.ID)
+		}
+		lastMailID = slices.Min(ids)
+	}
+
+	return result, nil
+}
+
+func fetchMailHeadersPage(httpClient *http.Client, characterID int32, tokenString string, lastMailID int32) ([]MailHeader, error) {
 	v := url.Values{}
 	v.Set("token", tokenString)
+	if lastMailID > 0 {
+		v.Set("last_mail_id", strconv.Itoa(int(lastMailID)))
+	}
 	fullUrl := fmt.Sprintf("%s/characters/%d/mail/?%v", esiBaseUrl, characterID, v.Encode())
 	log.Printf("Fetching mail headers for %d", characterID)
 	resp, err := httpClient.Get(fullUrl)
