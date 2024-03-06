@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
 	"time"
 )
 
@@ -71,37 +70,38 @@ func UpdateMails(characterId int32) error {
 	if err != nil {
 		return err
 	}
-
-	incomingIDs := helpers.NewSet([]int32{})
-	entityIDs := helpers.NewSet([]int32{})
-	for _, header := range headers {
-		entityIDs.Add(header.FromID)
-		incomingIDs.Add(header.ID)
-	}
-
-	addMissingEveEntities(entityIDs.ToSlice())
+	log.Printf("Received %d mail headers from ESI for character %d", len(headers), token.CharacterID)
 
 	ids, err := storage.FetchMailIDs(characterId)
 	if err != nil {
 		return err
 	}
-	existingIds := helpers.NewSet(ids)
-	missingIDs := incomingIDs.Difference(existingIds)
-
-	bodies, err := fetchMailBodies(token, missingIDs.ToSlice())
-	if err != nil {
-		return err
-	}
+	existingIDs := helpers.NewSet(ids)
 
 	createdCount := 0
 	for _, header := range headers {
-		if existingIds.Has(header.ID) {
+		if existingIDs.Has(header.ID) {
 			continue
 		}
+
+		entityIDs := helpers.NewSet([]int32{})
+		entityIDs.Add(header.FromID)
+		if err := addMissingEveEntities(entityIDs.ToSlice()); err != nil {
+			log.Printf("Failed to process mail %d: %v", header.ID, err)
+			continue
+		}
+
+		m, err := esi.FetchMail(httpClient, token.CharacterID, header.ID, token.AccessToken)
+		if err != nil {
+			log.Printf("Failed to process mail %d: %v", header.ID, err)
+			continue
+		}
+
 		mail := storage.Mail{
 			Character: character,
 			MailID:    header.ID,
 			Subject:   header.Subject,
+			Body:      m.Body,
 		}
 
 		timestamp, err := time.Parse(time.RFC3339, header.Timestamp)
@@ -118,15 +118,9 @@ func UpdateMails(characterId int32) error {
 		}
 		mail.From = *from
 
-		body, ok := bodies[header.ID]
-		if !ok {
-			log.Printf("No body found for mail %d", header.ID)
-			continue
-		}
-		mail.Body = body
-
 		mail.Save()
 		createdCount++
+		log.Printf("Stored new mail %d for character %v", header.ID, token.CharacterID)
 	}
 	log.Printf("Stored %d new mails", createdCount)
 
@@ -166,36 +160,36 @@ func fetchValidToken(characterId int32) (*storage.Token, error) {
 	return token, nil
 }
 
-// TODO: Add error handling
+// // TODO: Add error handling
 
-// fetchMailBodies fetches multiple mails from ESI concurrently and returns them.
-func fetchMailBodies(token *storage.Token, ids []int32) (map[int32]string, error) {
-	var wg sync.WaitGroup
-	var contexts = sync.Map{}
+// // fetchMailBodies fetches multiple mails from ESI concurrently and returns them.
+// func fetchMailBodies(token *storage.Token, ids []int32) (map[int32]string, error) {
+// 	var wg sync.WaitGroup
+// 	var contexts = sync.Map{}
 
-	for _, i := range ids {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			mail, err := esi.FetchMail(httpClient, token.CharacterID, i, token.AccessToken)
-			if err != nil {
-				log.Printf("Failed to fetch mail body ID %d for character ID %d: %v", i, token.CharacterID, err)
-			} else {
-				contexts.Store(i, mail.Body)
-			}
-		}()
-	}
-	wg.Wait()
+// 	for _, i := range ids {
+// 		wg.Add(1)
+// 		go func() {
+// 			defer wg.Done()
+// 			mail, err := esi.FetchMail(httpClient, token.CharacterID, i, token.AccessToken)
+// 			if err != nil {
+// 				log.Printf("Failed to fetch mail body ID %d for character ID %d: %v", i, token.CharacterID, err)
+// 			} else {
+// 				contexts.Store(i, mail.Body)
+// 			}
+// 		}()
+// 	}
+// 	wg.Wait()
 
-	res := make(map[int32]string, len(ids))
-	for _, i := range ids {
-		v, ok := contexts.Load(i)
-		if ok {
-			res[i] = v.(string)
-		}
-	}
-	return res, nil
-}
+// 	res := make(map[int32]string, len(ids))
+// 	for _, i := range ids {
+// 		v, ok := contexts.Load(i)
+// 		if ok {
+// 			res[i] = v.(string)
+// 		}
+// 	}
+// 	return res, nil
+// }
 
 func addMissingEveEntities(ids []int32) error {
 	c, err := storage.FetchEntityIDs()
@@ -207,7 +201,6 @@ func addMissingEveEntities(ids []int32) error {
 	missing := incoming.Difference(current)
 
 	if missing.Size() == 0 {
-		log.Println("No missing eve entities")
 		return nil
 	}
 
