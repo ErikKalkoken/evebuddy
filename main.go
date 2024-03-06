@@ -95,8 +95,9 @@ func main() {
 
 	detail := container.NewBorder(mailHeader, nil, nil, nil, container.NewVScroll(mailBody))
 
+	headersTotal := widget.NewLabel(fmt.Sprintf("%d mails", len(mails)))
 	blue := bluemonday.StrictPolicy()
-	headers := widget.NewList(
+	headersList := widget.NewList(
 		func() int {
 			return len(mails)
 		},
@@ -122,7 +123,7 @@ func main() {
 			subject := parent.Objects[1].(*widget.Label)
 			subject.SetText(mail.Subject)
 		})
-	headers.OnSelected = func(id widget.ListItemID) {
+	headersList.OnSelected = func(id widget.ListItemID) {
 		mail := mails[id]
 		mailHeaderSubject.SetText(mail.Subject)
 		mailHeaderFrom.SetText("From: " + mail.From.Name)
@@ -151,6 +152,8 @@ func main() {
 		})
 
 	foldersPage := container.NewBorder(folderActions, nil, nil, nil, folders)
+
+	headers := container.NewBorder(headersTotal, nil, nil, nil, headersList)
 
 	mainMails := container.NewHSplit(headers, detail)
 	mainMails.SetOffset(0.35)
