@@ -56,25 +56,26 @@ func UpdateMails(characterId int32) error {
 		return err
 	}
 
-	mailIds := helpers.NewSet([]int32{})
-	entityIds := helpers.NewSet([]int32{})
+	incomingIDs := helpers.NewSet([]int32{})
+	entityIDs := helpers.NewSet([]int32{})
 	for _, header := range headers {
-		entityIds.Add(header.FromID)
-		mailIds.Add(header.ID)
+		entityIDs.Add(header.FromID)
+		incomingIDs.Add(header.ID)
 	}
 
-	bodies, err := fetchMailBodies(token, mailIds.ToSlice())
-	if err != nil {
-		return err
-	}
-
-	addMissingEveEntities(entityIds.ToSlice())
+	addMissingEveEntities(entityIDs.ToSlice())
 
 	ids, err := storage.FetchMailIDs(characterId)
 	if err != nil {
 		return err
 	}
 	existingIds := helpers.NewSet(ids)
+	missingIDs := incomingIDs.Difference(existingIds)
+
+	bodies, err := fetchMailBodies(token, missingIDs.ToSlice())
+	if err != nil {
+		return err
+	}
 
 	createdCount := 0
 	for _, header := range headers {
