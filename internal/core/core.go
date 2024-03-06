@@ -9,9 +9,16 @@ import (
 	"example/esiapp/internal/storage"
 	"fmt"
 	"log"
+	"net/http"
 	"sync"
 	"time"
 )
+
+var httpClient *http.Client
+
+func init() {
+	httpClient = &http.Client{}
+}
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.
 func AddCharacter() (*storage.Token, error) {
@@ -51,7 +58,7 @@ func UpdateMails(characterId int32) error {
 		return err
 	}
 	character := token.Character
-	headers, err := esi.FetchMailHeaders(token.CharacterID, token.AccessToken)
+	headers, err := esi.FetchMailHeaders(httpClient, token.CharacterID, token.AccessToken)
 	if err != nil {
 		return err
 	}
@@ -151,11 +158,12 @@ func fetchMailBodies(token *storage.Token, ids []int32) (map[int32]string, error
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			mail, err := esi.FetchMail(token.CharacterID, i, token.AccessToken)
+			mail, err := esi.FetchMail(httpClient, token.CharacterID, i, token.AccessToken)
 			if err != nil {
-				log.Printf("Error when fetching mail bodies: %v", err)
+				log.Printf("Failed to fetch mail body ID %d for character ID %d: %v", i, token.CharacterID, err)
+			} else {
+				contexts.Store(i, mail.Body)
 			}
-			contexts.Store(i, mail.Body)
 		}()
 	}
 	wg.Wait()
@@ -184,7 +192,7 @@ func addMissingEveEntities(ids []int32) error {
 		return nil
 	}
 
-	entities, err := esi.ResolveEntityIDs(missing.ToSlice())
+	entities, err := esi.ResolveEntityIDs(httpClient, missing.ToSlice())
 	if err != nil {
 		return fmt.Errorf("failed to resolve IDs: %v", err)
 	}

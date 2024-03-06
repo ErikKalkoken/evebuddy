@@ -19,7 +19,7 @@ type EveEntity struct {
 // TODO: Add smart handling for unsolvable IDs
 
 // ResolveEntityIDs tries to resolve IDs to Eve entity objects and returns them.
-func ResolveEntityIDs(ids []int32) ([]EveEntity, error) {
+func ResolveEntityIDs(httpClient *http.Client, ids []int32) ([]EveEntity, error) {
 	if len(ids) > 1000 {
 		return nil, fmt.Errorf("too many ids")
 	}
@@ -30,10 +30,10 @@ func ResolveEntityIDs(ids []int32) ([]EveEntity, error) {
 
 	fullUrl := fmt.Sprintf("%s/universe/names/", esiBaseUrl)
 	log.Printf("Resolving IDs from %v", fullUrl)
-	resp, err := http.Post(fullUrl, "application/json", bytes.NewBuffer(data))
+	resp, err := httpClient.Post(fullUrl, "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
 
-	return UnmarshalResponse[[]EveEntity](resp)
+	return unmarshalResponse[[]EveEntity](resp)
 }
