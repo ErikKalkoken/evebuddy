@@ -58,6 +58,15 @@ func UpdateMails(characterId int32) error {
 		return err
 	}
 	character := token.Character
+
+	lists, err := esi.FetchMailLists(httpClient, token.CharacterID, token.AccessToken)
+	if err != nil {
+		return err
+	}
+	if err := updateMailLists(lists); err != nil {
+		return err
+	}
+
 	headers, err := esi.FetchMailHeaders(httpClient, token.CharacterID, token.AccessToken)
 	if err != nil {
 		return err
@@ -121,6 +130,16 @@ func UpdateMails(characterId int32) error {
 	}
 	log.Printf("Stored %d new mails", createdCount)
 
+	return nil
+}
+
+func updateMailLists(l []esi.MailList) error {
+	for _, o := range l {
+		e := storage.EveEntity{ID: o.ID, Name: o.Name, Category: "mail_list"}
+		if err := e.Save(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

@@ -12,6 +12,8 @@
         "bluemonday",
         "esiapp",
         "gock",
-        "httpmock"
+        "httpmock",
+        "jarcoal",
+        "stretchr"
     ]
 }
