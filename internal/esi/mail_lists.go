@@ -14,16 +14,15 @@ type MailList struct {
 }
 
 // FetchMailLists fetches a character's subscribed mail lists from ESI and returns them.
-func FetchMailLists(httpClient *http.Client, characterID int32, tokenString string) ([]MailList, error) {
+func FetchMailLists(client *http.Client, characterID int32, tokenString string) ([]MailList, error) {
 	v := url.Values{}
 	v.Set("token", tokenString)
-	fullUrl := fmt.Sprintf("%s/characters/%d/mail/lists/?%v", esiBaseUrl, characterID, v.Encode())
+	path := fmt.Sprintf("/characters/%d/mail/lists/?%v", characterID, v.Encode())
 	log.Printf("Fetching mail lists for character ID %d", characterID)
-	resp, err := httpClient.Get(fullUrl)
+	resp, err := getESI(client, path)
 	if err != nil {
 		return nil, err
 	}
-
 	m, err := unmarshalResponse[[]MailList](resp)
 	return m, err
 }
