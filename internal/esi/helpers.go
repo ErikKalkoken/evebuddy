@@ -2,26 +2,32 @@ package esi
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
-	"log"
 	"net/http"
 )
 
+// A generic error returned from ESI
+type EsiError struct {
+	Error string `json:"error"`
+}
+
 // unmarshalResponse converts a JSON response from ESI into an object.
 func unmarshalResponse[T any](resp *http.Response) (T, error) {
-	var objs T
+	var o T
 	if resp.Body != nil {
 		defer resp.Body.Close()
 	} else {
-		return objs, nil
+		return o, nil
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return objs, err
+		return o, err
 	}
-	if err := json.Unmarshal(body, &objs); err != nil {
-		log.Fatal(err)
+
+	if err := json.Unmarshal(body, &o); err != nil {
+		return o, fmt.Errorf("%v: %v", err, string(body))
 	}
-	return objs, nil
+	return o, nil
 }

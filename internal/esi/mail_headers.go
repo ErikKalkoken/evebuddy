@@ -58,11 +58,10 @@ func fetchMailHeadersPage(httpClient *http.Client, characterID int32, tokenStrin
 		v.Set("last_mail_id", strconv.Itoa(int(lastMailID)))
 	}
 	fullUrl := fmt.Sprintf("%s/characters/%d/mail/?%v", esiBaseUrl, characterID, v.Encode())
-	log.Printf("Fetching mail headers for %d", characterID)
+	log.Printf("Fetching mail headers for character ID %d with last ID %d", characterID, lastMailID)
 	resp, err := httpClient.Get(fullUrl)
 	if err != nil {
 		return nil, err
 	}
-
 	return unmarshalResponse[[]MailHeader](resp)
 }
