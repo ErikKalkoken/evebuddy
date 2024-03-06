@@ -76,6 +76,7 @@ func main() {
 		currentUser.Add(widget.NewLabel(character.Name))
 		characterID = character.ID
 	}
+	currentUser.Add(layout.NewSpacer())
 	currentUser.Add(buttonAdd)
 
 	mails, err := storage.FetchAllMails(characterID)
@@ -137,15 +138,16 @@ func main() {
 		}
 	})
 
+	labels := []string{"All Mails", "Inbox", "Sent", "[Corp]", "[Alliance]"}
 	folders := widget.NewList(
 		func() int {
-			return 5
+			return len(labels)
 		},
 		func() fyne.CanvasObject {
 			return widget.NewLabel("from")
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {
-			o.(*widget.Label).SetText("PLACEHOLDER")
+			o.(*widget.Label).SetText(labels[i])
 		})
 
 	foldersPage := container.NewBorder(folderActions, nil, nil, nil, folders)
