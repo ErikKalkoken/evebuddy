@@ -15,22 +15,28 @@ type ESIError struct {
 
 func getESI(c *http.Client, path string) (*http.Response, error) {
 	url := fmt.Sprintf("%s%s", esiBaseUrl, path)
-	for i := 0; i < 3; i++ {
+	maxRetries := 3
+	retries := 0
+	for {
 		r, err := c.Get(url)
 		if err != nil {
 			return nil, err
 		}
-		if r.StatusCode < 400 {
+		if r.StatusCode == http.StatusOK {
 			return r, nil
 		}
 
-		log.Printf("ESI returned error: %v", r.Status)
+		log.Printf("ESI status response not OK: %v", r.Status)
 		if r.StatusCode == http.StatusBadGateway || r.StatusCode == http.StatusGatewayTimeout || r.StatusCode == http.StatusServiceUnavailable {
-			continue // retry
+			if retries < maxRetries {
+				log.Printf("Retrying %d / %d", retries, maxRetries)
+				retries++
+				continue
+			}
+			return nil, fmt.Errorf("too many retries")
 		}
 		return nil, fmt.Errorf("error %v", r.Status)
 	}
-	return nil, fmt.Errorf("too many retries")
 }
 
 // unmarshalResponse converts a JSON response from ESI into an object.
