@@ -1,14 +1,20 @@
 package storage
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 // An Eve mail belonging to a character
 type Mail struct {
+	gorm.Model
 	Body        string
 	CharacterID int32
 	Character   Character
 	FromID      int32
 	From        EveEntity
+	Labels      []MailLabel `gorm:"many2many:mail_mail_labels;"`
 	MailID      int32
 	IsRead      bool
 	Subject     string

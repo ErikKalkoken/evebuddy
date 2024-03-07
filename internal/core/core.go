@@ -53,8 +53,8 @@ func AddCharacter() (*storage.Token, error) {
 }
 
 // UpdateMails fetches and stores new mails from ESI for a character.
-func UpdateMails(characterId int32) error {
-	token, err := storage.FetchToken(characterId)
+func UpdateMails(characterID int32) error {
+	token, err := storage.FetchToken(characterID)
 	if err != nil {
 		return err
 	}
@@ -74,13 +74,26 @@ func UpdateMails(characterId int32) error {
 	if err := ensureFreshToken(token); err != nil {
 		return err
 	}
+	l, err := esi.FetchMailLabels(httpClient, token.CharacterID, token.AccessToken)
+	if err != nil {
+		return err
+	}
+	labels := l.Labels
+	log.Printf("Received %d mail labels from ESI for character %d", len(labels), token.CharacterID)
+	if err := updateMailLabels(characterID, labels); err != nil {
+		return err
+	}
+
+	if err := ensureFreshToken(token); err != nil {
+		return err
+	}
 	headers, err := esi.FetchMailHeaders(httpClient, token.CharacterID, token.AccessToken)
 	if err != nil {
 		return err
 	}
 	log.Printf("Received %d mail headers from ESI for character %d", len(headers), token.CharacterID)
 
-	ids, err := storage.FetchMailIDs(characterId)
+	ids, err := storage.FetchMailIDs(characterID)
 	if err != nil {
 		return err
 	}
@@ -133,6 +146,14 @@ func UpdateMails(characterId int32) error {
 			}
 			mail.From = *from
 
+			labels, err := storage.FetchMailLabels(characterID, m.Labels)
+			if err != nil {
+				log.Printf("Skipping mail %d: %v", header.ID, err)
+				return
+			}
+			log.Printf("mail %d - label: %v", header.ID, labels)
+			mail.Labels = labels
+
 			mail.Save()
 			log.Printf("Stored new mail %d for character %v", header.ID, token.CharacterID)
 			c.Add(1)
@@ -143,6 +164,22 @@ func UpdateMails(characterId int32) error {
 		log.Printf("No new mail")
 	} else {
 		log.Printf("Stored %d new mails", total)
+	}
+	return nil
+}
+
+func updateMailLabels(characterID int32, l []esi.MailLabel) error {
+	for _, o := range l {
+		e := storage.MailLabel{
+			CharacterID: characterID,
+			ID:          o.ID,
+			Name:        o.Name,
+			Color:       o.Color,
+			UnreadCount: o.UnreadCount,
+		}
+		if err := e.Save(); err != nil {
+			return err
+		}
 	}
 	return nil
 }

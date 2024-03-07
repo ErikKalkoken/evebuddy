@@ -35,7 +35,7 @@ func Initialize() error {
 	}
 	log.Println("Connected to database")
 
-	err = myDb.AutoMigrate(&Character{}, &Token{}, &EveEntity{}, &Mail{})
+	err = myDb.AutoMigrate(&Character{}, &Token{}, &EveEntity{}, &Mail{}, &MailLabel{})
 	if err != nil {
 		return err
 	}

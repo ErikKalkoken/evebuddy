@@ -1,9 +1,14 @@
 package storage
 
-import "fmt"
+import (
+	"fmt"
+
+	"gorm.io/gorm"
+)
 
 // An entity in Eve Online
 type EveEntity struct {
+	gorm.Model
 	Category string
 	ID       int32 `gorm:"primaryKey"`
 	Name     string

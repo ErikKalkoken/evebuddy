@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -24,6 +25,8 @@ const (
 	myDateTime = "2006-01-02 15:04"
 )
 
+var characterID int32
+
 func main() {
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 
@@ -34,30 +37,40 @@ func main() {
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Eve Online App")
 
-	currentUser, characterID := makeCurrentUserSegment(myWindow)
-	mails := makeMailsSegment(characterID)
-	folders := makeFoldersSegment(myWindow, characterID)
+	c, err := storage.FetchFirstCharacter()
+	if err != nil {
+		log.Printf("Failed to load any character: %v", err)
+	} else {
+		characterID = c.ID
+	}
 
-	main := container.NewHSplit(folders, mails)
+	user := makeUserSegment(myWindow)
+	mails := makeMailsSegment()
+
+	// folder segment
+	refreshButton := makeRefreshButton(myWindow)
+	folders, data := makeFolders()
+
+	labels, err := storage.FetchAllMailLabels(characterID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, l := range labels {
+		data.Append(l.Name)
+	}
+
+	folderSegment := container.NewBorder(refreshButton, nil, nil, nil, folders)
+
+	main := container.NewHSplit(folderSegment, mails)
 	main.SetOffset(0.15)
 
-	buttonTest := widget.NewButton("Test", func() {
-		c := myWindow.Canvas()
-		p := widget.NewPopUp(widget.NewLabel("Hi there"), c)
-		s := c.Content().Size()
-		x := s.Width/2 - p.Size().Width/2
-		y := s.Height/2 - p.Size().Height/2
-		p.ShowAtPosition(fyne.NewPos(x, y))
-		p.Show()
-	})
-
-	c := container.NewBorder(currentUser, buttonTest, nil, nil, main)
-	myWindow.SetContent(c)
+	content := container.NewBorder(user, nil, nil, nil, main)
+	myWindow.SetContent(content)
 	myWindow.Resize(fyne.NewSize(800, 600))
 	myWindow.ShowAndRun()
 }
 
-func makeCurrentUserSegment(myWindow fyne.Window) (*fyne.Container, int32) {
+func makeUserSegment(myWindow fyne.Window) *fyne.Container {
 	shareItem := makeShareItem()
 	buttonAdd := newContextMenuButton(
 		"Manage Characters", fyne.NewMenu("",
@@ -77,32 +90,31 @@ func makeCurrentUserSegment(myWindow fyne.Window) (*fyne.Container, int32) {
 		))
 
 	currentUser := container.NewHBox()
-	var characterID int32
-	character, err := storage.FetchFirstCharacter()
+	c, err := storage.FetchCharacter(characterID)
 	if err != nil {
 		currentUser.Add(widget.NewLabel("No characters"))
 		log.Print("No token found")
 	} else {
-		image := canvas.NewImageFromURI(character.PortraitURL(64))
+		image := canvas.NewImageFromURI(c.PortraitURL(64))
 		image.FillMode = canvas.ImageFillOriginal
 		currentUser.Add(image)
-		currentUser.Add(widget.NewLabel(character.Name))
-		characterID = character.ID
+		currentUser.Add(widget.NewLabel(c.Name))
+		characterID = c.ID
 	}
 	currentUser.Add(layout.NewSpacer())
 	currentUser.Add(buttonAdd)
-	return currentUser, characterID
+	return currentUser
 }
 
 func makeShareItem() *fyne.MenuItem {
-	characters, err := storage.FetchAllCharacters()
+	cc, err := storage.FetchAllCharacters()
 	if err != nil {
 		log.Fatal(err)
 	}
 	shareItem := fyne.NewMenuItem("Switch character", nil)
 
 	var items []*fyne.MenuItem
-	for _, c := range characters {
+	for _, c := range cc {
 		item := fyne.NewMenuItem(c.Name, func() { log.Printf("selected %v", c.Name) })
 		items = append(items, item)
 	}
@@ -110,13 +122,13 @@ func makeShareItem() *fyne.MenuItem {
 	return shareItem
 }
 
-func makeFoldersSegment(myWindow fyne.Window, characterID int32) fyne.CanvasObject {
-	folderActions := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+func makeRefreshButton(w fyne.Window) *widget.Button {
+	b := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
 		if characterID == 0 {
 			info := dialog.NewInformation(
 				"Warning",
 				"Please select a character first.",
-				myWindow,
+				w,
 			)
 			info.Show()
 			return
@@ -126,24 +138,23 @@ func makeFoldersSegment(myWindow fyne.Window, characterID int32) fyne.CanvasObje
 			log.Fatal(err)
 		}
 	})
+	return b
+}
 
-	labels := []string{"All Mails", "Inbox", "Sent", "[Corp]", "[Alliance]"}
-	folders := widget.NewList(
-		func() int {
-			return len(labels)
-		},
+func makeFolders() (fyne.CanvasObject, binding.ExternalStringList) {
+	data := binding.BindStringList(&[]string{"All Mail"})
+	folders := widget.NewListWithData(
+		data,
 		func() fyne.CanvasObject {
 			return widget.NewLabel("from")
 		},
-		func(i widget.ListItemID, o fyne.CanvasObject) {
-			o.(*widget.Label).SetText(labels[i])
+		func(i binding.DataItem, o fyne.CanvasObject) {
+			o.(*widget.Label).Bind(i.(binding.String))
 		})
-
-	foldersPage := container.NewBorder(folderActions, nil, nil, nil, folders)
-	return foldersPage
+	return folders, data
 }
 
-func makeMailsSegment(characterID int32) fyne.CanvasObject {
+func makeMailsSegment() fyne.CanvasObject {
 	mails, err := storage.FetchAllMails(characterID)
 	if err != nil {
 		log.Fatalf("Failed to fetch mail: %v", err)

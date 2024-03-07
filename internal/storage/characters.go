@@ -6,10 +6,12 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/storage"
+	"gorm.io/gorm"
 )
 
 // An Eve Online character.
 type Character struct {
+	gorm.Model
 	ID   int32 `gorm:"primaryKey"`
 	Name string
 }
@@ -43,6 +45,14 @@ func (c *Character) PortraitURL(size int) fyne.URI {
 func FetchFirstCharacter() (*Character, error) {
 	var obj Character
 	if err := db.First(&obj).Error; err != nil {
+		return nil, err
+	}
+	return &obj, nil
+}
+
+func FetchCharacter(characterID int32) (*Character, error) {
+	var obj Character
+	if err := db.First(&obj, characterID).Error; err != nil {
 		return nil, err
 	}
 	return &obj, nil

@@ -2,10 +2,13 @@ package storage
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // A SSO token belonging to a character.
 type Token struct {
+	gorm.Model
 	AccessToken  string
 	CharacterID  int32
 	Character    Character
