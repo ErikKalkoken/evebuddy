@@ -8,9 +8,10 @@ type MailLabel struct {
 	gorm.Model
 	CharacterID int32
 	Character   Character
-	ID          int32
-	Name        string
 	Color       string
+	ID          int32
+	Mails       []Mail `gorm:"many2many:mail_mail_labels;"`
+	Name        string
 	UnreadCount int32
 }
 

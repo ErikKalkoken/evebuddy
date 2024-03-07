@@ -41,12 +41,13 @@ func FetchMailIDs(characterId int32) ([]int32, error) {
 	return ids, nil
 }
 
-// FetchAllMails returns all mails for a character
-func FetchAllMails(characterId int32) ([]Mail, error) {
-	var objs []Mail
-	err := db.Preload("From").Where("character_id = ?", characterId).Order("time_stamp desc").Find(&objs).Error
+// FetchMailsForLabel returns all mails for a character
+func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
+	var mm []Mail
+
+	err := db.Preload("From").Where("character_id = ?", characterID).Order("time_stamp desc").Find(&mm).Error
 	if err != nil {
 		return nil, err
 	}
-	return objs, nil
+	return mm, nil
 }

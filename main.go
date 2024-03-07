@@ -174,7 +174,7 @@ func makeFolders() (fyne.CanvasObject, binding.ExternalUntypedList) {
 }
 
 func makeMailsSegment() fyne.CanvasObject {
-	mails, err := storage.FetchAllMails(characterID)
+	mails, err := storage.FetchMailsForLabel(characterID, 2)
 	if err != nil {
 		log.Fatalf("Failed to fetch mail: %v", err)
 	}
