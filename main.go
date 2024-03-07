@@ -27,6 +27,11 @@ const (
 
 var characterID int32
 
+type labelItem struct {
+	id   int32
+	name string
+}
+
 func main() {
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 
@@ -56,7 +61,7 @@ func main() {
 		log.Fatal(err)
 	}
 	for _, l := range labels {
-		data.Append(l.Name)
+		data.Append(labelItem{id: l.ID, name: l.Name})
 	}
 
 	folderSegment := container.NewBorder(refreshButton, nil, nil, nil, folders)
@@ -141,16 +146,30 @@ func makeRefreshButton(w fyne.Window) *widget.Button {
 	return b
 }
 
-func makeFolders() (fyne.CanvasObject, binding.ExternalStringList) {
-	data := binding.BindStringList(&[]string{"All Mail"})
+func makeFolders() (fyne.CanvasObject, binding.ExternalUntypedList) {
+	var ii []interface{}
+	ii = append(ii, labelItem{id: 0, name: "All Mails"})
+	data := binding.BindUntypedList(&ii)
 	folders := widget.NewListWithData(
 		data,
 		func() fyne.CanvasObject {
 			return widget.NewLabel("from")
 		},
 		func(i binding.DataItem, o fyne.CanvasObject) {
-			o.(*widget.Label).Bind(i.(binding.String))
+			if entry, err := i.(binding.Untyped).Get(); err != nil {
+				log.Println("Failed to Get item")
+			} else {
+				w := o.(*widget.Label)
+				w.SetText(entry.(labelItem).name)
+			}
 		})
+
+	folders.OnSelected = func(id widget.ListItemID) {
+		d, _ := data.Get()
+		n := d[id].(labelItem).name
+		log.Printf("Selected label %v", n)
+	}
+
 	return folders, data
 }
 
