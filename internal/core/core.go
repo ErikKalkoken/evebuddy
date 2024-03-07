@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -89,6 +90,7 @@ func UpdateMails(characterId int32) error {
 		return err
 	}
 
+	var c atomic.Int32
 	var wg sync.WaitGroup
 	for _, header := range headers {
 		if existingIDs.Has(header.ID) {
@@ -133,11 +135,15 @@ func UpdateMails(characterId int32) error {
 
 			mail.Save()
 			log.Printf("Stored new mail %d for character %v", header.ID, token.CharacterID)
+			c.Add(1)
 		}()
 	}
 	wg.Wait()
-	log.Printf("Stored new mails")
-
+	if total := c.Load(); total == 0 {
+		log.Printf("No new mail")
+	} else {
+		log.Printf("Stored %d new mails", total)
+	}
 	return nil
 }
 

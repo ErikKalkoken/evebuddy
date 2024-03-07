@@ -5,16 +5,31 @@ package storage
 
 import (
 	"log"
+	"os"
+	"time"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var db *gorm.DB
 
 // Initialize initializes the database (needs to be called once).
 func Initialize() error {
-	myDb, err := gorm.Open(sqlite.Open("storage.sqlite"), &gorm.Config{})
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		logger.Config{
+			SlowThreshold:             time.Second * 5, // Slow SQL threshold
+			LogLevel:                  logger.Silent,   // Log level
+			IgnoreRecordNotFoundError: true,            // Ignore ErrRecordNotFound error for logger
+			ParameterizedQueries:      true,            // Don't include params in the SQL log
+			Colorful:                  false,           // Disable color
+		},
+	)
+	myDb, err := gorm.Open(sqlite.Open("storage.sqlite"), &gorm.Config{
+		Logger: newLogger,
+	})
 	if err != nil {
 		return err
 	}

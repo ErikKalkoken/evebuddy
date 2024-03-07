@@ -34,6 +34,30 @@ func main() {
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Eve Online App")
 
+	currentUser, characterID := makeCurrentUserSegment(myWindow)
+	mails := makeMailsSegment(characterID)
+	folders := makeFoldersSegment(myWindow, characterID)
+
+	main := container.NewHSplit(folders, mails)
+	main.SetOffset(0.15)
+
+	buttonTest := widget.NewButton("Test", func() {
+		c := myWindow.Canvas()
+		p := widget.NewPopUp(widget.NewLabel("Hi there"), c)
+		s := c.Content().Size()
+		x := s.Width/2 - p.Size().Width/2
+		y := s.Height/2 - p.Size().Height/2
+		p.ShowAtPosition(fyne.NewPos(x, y))
+		p.Show()
+	})
+
+	c := container.NewBorder(currentUser, buttonTest, nil, nil, main)
+	myWindow.SetContent(c)
+	myWindow.Resize(fyne.NewSize(800, 600))
+	myWindow.ShowAndRun()
+}
+
+func makeCurrentUserSegment(myWindow fyne.Window) (*fyne.Container, int32) {
 	characters, err := storage.FetchAllCharacters()
 	if err != nil {
 		log.Fatal(err)
@@ -78,7 +102,43 @@ func main() {
 	}
 	currentUser.Add(layout.NewSpacer())
 	currentUser.Add(buttonAdd)
+	return currentUser, characterID
+}
 
+func makeFoldersSegment(myWindow fyne.Window, characterID int32) fyne.CanvasObject {
+	folderActions := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+		if characterID == 0 {
+			info := dialog.NewInformation(
+				"Warning",
+				"Please select a character first.",
+				myWindow,
+			)
+			info.Show()
+			return
+		}
+		err := core.UpdateMails(characterID)
+		if err != nil {
+			log.Fatal(err)
+		}
+	})
+
+	labels := []string{"All Mails", "Inbox", "Sent", "[Corp]", "[Alliance]"}
+	folders := widget.NewList(
+		func() int {
+			return len(labels)
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("from")
+		},
+		func(i widget.ListItemID, o fyne.CanvasObject) {
+			o.(*widget.Label).SetText(labels[i])
+		})
+
+	foldersPage := container.NewBorder(folderActions, nil, nil, nil, folders)
+	return foldersPage
+}
+
+func makeMailsSegment(characterID int32) fyne.CanvasObject {
 	mails, err := storage.FetchAllMails(characterID)
 	if err != nil {
 		log.Fatalf("Failed to fetch mail: %v", err)
@@ -90,7 +150,7 @@ func main() {
 	mailHeaderFrom := widget.NewLabel("")
 	mailHeaderTimestamp := widget.NewLabel("")
 	mailHeader := container.NewVBox(mailHeaderSubject, mailHeaderFrom, mailHeaderTimestamp)
-	mailBody := widget.NewLabel("Text")
+	mailBody := widget.NewLabel("")
 	mailBody.Wrapping = fyne.TextWrapBreak
 
 	detail := container.NewBorder(mailHeader, nil, nil, nil, container.NewVScroll(mailBody))
@@ -133,46 +193,10 @@ func main() {
 		mailBody.SetText(blue.Sanitize(text))
 	}
 
-	folderActions := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-		err := core.UpdateMails(characterID)
-		if err != nil {
-			log.Fatal(err)
-		}
-	})
-
-	labels := []string{"All Mails", "Inbox", "Sent", "[Corp]", "[Alliance]"}
-	folders := widget.NewList(
-		func() int {
-			return len(labels)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("from")
-		},
-		func(i widget.ListItemID, o fyne.CanvasObject) {
-			o.(*widget.Label).SetText(labels[i])
-		})
-
-	foldersPage := container.NewBorder(folderActions, nil, nil, nil, folders)
-
 	headers := container.NewBorder(headersTotal, nil, nil, nil, headersList)
 
 	mainMails := container.NewHSplit(headers, detail)
 	mainMails.SetOffset(0.35)
-	main := container.NewHSplit(foldersPage, mainMails)
-	main.SetOffset(0.15)
 
-	buttonTest := widget.NewButton("Test", func() {
-		c := myWindow.Canvas()
-		p := widget.NewPopUp(widget.NewLabel("Hi there"), c)
-		s := c.Content().Size()
-		x := s.Width/2 - p.Size().Width/2
-		y := s.Height/2 - p.Size().Height/2
-		p.ShowAtPosition(fyne.NewPos(x, y))
-		p.Show()
-	})
-
-	content := container.NewBorder(currentUser, buttonTest, nil, nil, main)
-	myWindow.SetContent(content)
-	myWindow.Resize(fyne.NewSize(800, 600))
-	myWindow.ShowAndRun()
+	return mainMails
 }
