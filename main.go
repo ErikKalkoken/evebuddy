@@ -49,16 +49,16 @@ func main() {
 	buttonAdd := newContextMenuButton(
 		"Manage Characters", fyne.NewMenu("",
 			fyne.NewMenuItem("Add Character", func() {
-				token, err := core.AddCharacter()
-				if err != nil {
-					log.Fatal(err)
-				}
 				info := dialog.NewInformation(
-					"Authentication completed",
-					fmt.Sprintf("Authenticated: %v", token.Character.Name),
+					"Add Character",
+					"Please follow instructions in your browser to add a new character.",
 					myWindow,
 				)
 				info.Show()
+				_, err := core.AddCharacter()
+				if err != nil {
+					log.Printf("Failed to add a new character: %v", err)
+				}
 			}),
 			shareItem,
 		))
@@ -108,7 +108,8 @@ func main() {
 			subject.TextStyle = fyne.TextStyle{Bold: true}
 			subject.Truncation = fyne.TextTruncateEllipsis
 			return container.NewVBox(
-				container.NewHBox(from, layout.NewSpacer(), timestamp), subject,
+				container.NewHBox(from, layout.NewSpacer(), timestamp),
+				subject,
 			)
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {
@@ -160,7 +161,17 @@ func main() {
 	main := container.NewHSplit(foldersPage, mainMails)
 	main.SetOffset(0.15)
 
-	content := container.NewBorder(currentUser, nil, nil, nil, main)
+	buttonTest := widget.NewButton("Test", func() {
+		c := myWindow.Canvas()
+		p := widget.NewPopUp(widget.NewLabel("Hi there"), c)
+		s := c.Content().Size()
+		x := s.Width/2 - p.Size().Width/2
+		y := s.Height/2 - p.Size().Height/2
+		p.ShowAtPosition(fyne.NewPos(x, y))
+		p.Show()
+	})
+
+	content := container.NewBorder(currentUser, buttonTest, nil, nil, main)
 	myWindow.SetContent(content)
 	myWindow.Resize(fyne.NewSize(800, 600))
 	myWindow.ShowAndRun()
