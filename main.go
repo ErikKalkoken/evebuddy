@@ -58,18 +58,7 @@ func main() {
 }
 
 func makeCurrentUserSegment(myWindow fyne.Window) (*fyne.Container, int32) {
-	characters, err := storage.FetchAllCharacters()
-	if err != nil {
-		log.Fatal(err)
-	}
-	shareItem := fyne.NewMenuItem("Switch character", nil)
-
-	var items []*fyne.MenuItem
-	for _, c := range characters {
-		item := fyne.NewMenuItem(c.Name, func() { log.Printf("selected %v", c.Name) })
-		items = append(items, item)
-	}
-	shareItem.ChildMenu = fyne.NewMenu("", items...)
+	shareItem := makeShareItem()
 	buttonAdd := newContextMenuButton(
 		"Manage Characters", fyne.NewMenu("",
 			fyne.NewMenuItem("Add Character", func() {
@@ -103,6 +92,22 @@ func makeCurrentUserSegment(myWindow fyne.Window) (*fyne.Container, int32) {
 	currentUser.Add(layout.NewSpacer())
 	currentUser.Add(buttonAdd)
 	return currentUser, characterID
+}
+
+func makeShareItem() *fyne.MenuItem {
+	characters, err := storage.FetchAllCharacters()
+	if err != nil {
+		log.Fatal(err)
+	}
+	shareItem := fyne.NewMenuItem("Switch character", nil)
+
+	var items []*fyne.MenuItem
+	for _, c := range characters {
+		item := fyne.NewMenuItem(c.Name, func() { log.Printf("selected %v", c.Name) })
+		items = append(items, item)
+	}
+	shareItem.ChildMenu = fyne.NewMenu("", items...)
+	return shareItem
 }
 
 func makeFoldersSegment(myWindow fyne.Window, characterID int32) fyne.CanvasObject {
