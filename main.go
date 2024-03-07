@@ -39,6 +39,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// storage.Test()
+
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Eve Online App")
 
@@ -174,7 +176,7 @@ func makeFolders() (fyne.CanvasObject, binding.ExternalUntypedList) {
 }
 
 func makeMailsSegment() fyne.CanvasObject {
-	mails, err := storage.FetchMailsForLabel(characterID, 2)
+	mails, err := storage.FetchMailsForLabel(characterID, 4)
 	if err != nil {
 		log.Fatalf("Failed to fetch mail: %v", err)
 	}

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"log"
 	"time"
 
 	"gorm.io/gorm"
@@ -41,13 +42,35 @@ func FetchMailIDs(characterId int32) ([]int32, error) {
 	return ids, nil
 }
 
-// FetchMailsForLabel returns all mails for a character
+// FetchMailsForLabel returns a character's mails for a label
 func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	var mm []Mail
 
-	err := db.Preload("From").Where("character_id = ?", characterID).Order("time_stamp desc").Find(&mm).Error
+	var err error
+	if labelID == 0 {
+		err = db.Preload("From").Where("character_id = ?", characterID).Order("time_stamp desc").Find(&mm).Error
+	} else {
+		var l MailLabel
+		db.First(&l, labelID)
+		err = db.Preload("From").Where("character_id = ?", characterID).Order("time_stamp desc").Model(&l).Association("Mails").Find(&mm)
+	}
 	if err != nil {
 		return nil, err
 	}
+
 	return mm, nil
+}
+
+func Test() {
+
+	var l MailLabel
+	db.First(&l, 4)
+
+	var mm []Mail
+	err := db.Model(&l).Association("Mails").Find(&mm)
+	log.Print(err)
+	log.Print(mm)
+	log.Print(len(mm))
+
+	panic("Stop")
 }
