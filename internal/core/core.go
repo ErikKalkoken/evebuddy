@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -84,54 +85,58 @@ func UpdateMails(characterId int32) error {
 	}
 	existingIDs := helpers.NewSet(ids)
 
-	createdCount := 0
+	if err := ensureFreshToken(token); err != nil {
+		return err
+	}
+
+	var wg sync.WaitGroup
 	for _, header := range headers {
 		if existingIDs.Has(header.ID) {
 			continue
 		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			entityIDs := helpers.NewSet([]int32{})
+			entityIDs.Add(header.FromID)
+			if err := addMissingEveEntities(entityIDs.ToSlice()); err != nil {
+				log.Printf("Failed to process mail %d: %v", header.ID, err)
+				return
+			}
 
-		entityIDs := helpers.NewSet([]int32{})
-		entityIDs.Add(header.FromID)
-		if err := addMissingEveEntities(entityIDs.ToSlice()); err != nil {
-			log.Printf("Failed to process mail %d: %v", header.ID, err)
-			continue
-		}
+			m, err := esi.FetchMail(httpClient, token.CharacterID, header.ID, token.AccessToken)
+			if err != nil {
+				log.Printf("Failed to process mail %d: %v", header.ID, err)
+				return
+			}
 
-		if err := ensureFreshToken(token); err != nil {
-			return err
-		}
-		m, err := esi.FetchMail(httpClient, token.CharacterID, header.ID, token.AccessToken)
-		if err != nil {
-			log.Printf("Failed to process mail %d: %v", header.ID, err)
-			continue
-		}
+			mail := storage.Mail{
+				Character: character,
+				MailID:    header.ID,
+				Subject:   header.Subject,
+				Body:      m.Body,
+			}
 
-		mail := storage.Mail{
-			Character: character,
-			MailID:    header.ID,
-			Subject:   header.Subject,
-			Body:      m.Body,
-		}
+			timestamp, err := time.Parse(time.RFC3339, header.Timestamp)
+			if err != nil {
+				log.Printf("Failed to parse timestamp for mail %d: %v", header.ID, err)
+				return
+			}
+			mail.TimeStamp = timestamp
 
-		timestamp, err := time.Parse(time.RFC3339, header.Timestamp)
-		if err != nil {
-			log.Printf("Failed to parse timestamp for mail %d: %v", header.ID, err)
-			continue
-		}
-		mail.TimeStamp = timestamp
+			from, err := storage.GetEveEntity(header.FromID)
+			if err != nil {
+				log.Printf("Failed to parse \"from\" mail %d: %v", header.FromID, err)
+				return
+			}
+			mail.From = *from
 
-		from, err := storage.GetEveEntity(header.FromID)
-		if err != nil {
-			log.Printf("Failed to parse \"from\" mail %d: %v", header.FromID, err)
-			continue
-		}
-		mail.From = *from
-
-		mail.Save()
-		createdCount++
-		log.Printf("Stored new mail %d for character %v", header.ID, token.CharacterID)
+			mail.Save()
+			log.Printf("Stored new mail %d for character %v", header.ID, token.CharacterID)
+		}()
 	}
-	log.Printf("Stored %d new mails", createdCount)
+	wg.Wait()
+	log.Printf("Stored new mails")
 
 	return nil
 }
@@ -149,7 +154,7 @@ func updateMailLists(l []esi.MailList) error {
 
 // ensureFreshToken will automatically try to refresh a token that is already or about to become invalid.
 func ensureFreshToken(token *storage.Token) error {
-	if !token.RemainsValid(time.Second * 30) {
+	if !token.RemainsValid(time.Second * 60) {
 		log.Printf("Need to refresh token: %v", token)
 		rawToken, err := sso.RefreshToken(token.RefreshToken)
 		if err != nil {
