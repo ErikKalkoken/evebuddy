@@ -24,6 +24,7 @@ type headers struct {
 	container  fyne.CanvasObject
 	boundList  binding.ExternalUntypedList
 	boundTotal binding.String
+	mail       *mail
 }
 
 func (m *headers) update(charID int32, labelID int32) {
@@ -45,6 +46,10 @@ func (m *headers) update(charID int32, labelID int32) {
 
 	s := fmt.Sprintf("%d mails", len(mm))
 	m.boundTotal.Set(s)
+
+	if len(mm) > 0 {
+		m.mail.update(mm[0].ID)
+	}
 }
 
 func (e *esiApp) newHeaders(mail *mail) *headers {
@@ -98,6 +103,7 @@ func (e *esiApp) newHeaders(mail *mail) *headers {
 		container:  c,
 		boundList:  boundList,
 		boundTotal: boundTotal,
+		mail:       mail,
 	}
 	return &m
 }

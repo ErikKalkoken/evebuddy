@@ -22,6 +22,7 @@ type folders struct {
 	container   fyne.CanvasObject
 	boundList   binding.ExternalUntypedList
 	boundCharID binding.ExternalInt
+	headers     *headers
 }
 
 func (f *folders) update(charID int32) {
@@ -34,19 +35,25 @@ func (f *folders) update(charID int32) {
 		f.boundList.Append(labelItem{id: l.ID, name: l.Name})
 	}
 
+	f.headers.update(charID, allMailsLabelID)
 }
 
 func (e *esiApp) newFolders(headers *headers) *folders {
 	list, boundList, boundCharID := makeFolderList(headers)
 	button := makeRefreshButton(e.main, boundCharID)
 	c := container.NewBorder(button, nil, nil, nil, list)
-	f := folders{container: c, boundList: boundList, boundCharID: boundCharID}
+	f := folders{
+		container:   c,
+		boundList:   boundList,
+		boundCharID: boundCharID,
+		headers:     headers,
+	}
 	return &f
 }
 
 func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList, binding.ExternalInt) {
 	var ii []interface{}
-	ii = append(ii, labelItem{id: 0, name: "All Mails"})
+	ii = append(ii, labelItem{id: allMailsLabelID, name: "All Mails"})
 	boundList := binding.BindUntypedList(&ii)
 
 	var charID int

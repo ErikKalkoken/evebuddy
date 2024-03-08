@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	myDateTime = "2006.01.02 15:04"
+	myDateTime      = "2006.01.02 15:04"
+	allMailsLabelID = 0
 )
 
 type esiApp struct {
