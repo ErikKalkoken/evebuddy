@@ -47,7 +47,7 @@ func FetchMailIDs(characterId int32) ([]int32, error) {
 func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	var mm []Mail
 
-	tx := db.Preload("From").Preload("Recipients").Where("character_id = ?", characterID).Order("time_stamp desc")
+	tx := db.Preload("From").Where("character_id = ?", characterID).Order("time_stamp desc")
 	var err error
 	if labelID == 0 {
 		err = tx.Find(&mm).Error
@@ -61,6 +61,15 @@ func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	}
 
 	return mm, nil
+}
+
+func FetchMailByID(ID uint) (*Mail, error) {
+	var m Mail
+	err := db.Preload("From").Preload("Recipients").Find(&m, ID).Error
+	if err != nil {
+		return nil, err
+	}
+	return &m, nil
 }
 
 func Test() {

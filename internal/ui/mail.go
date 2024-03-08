@@ -3,6 +3,7 @@ package ui
 import (
 	"example/esiapp/internal/storage"
 	"html"
+	"log"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -19,7 +20,13 @@ type mail struct {
 	policy    *bluemonday.Policy
 }
 
-func (m *mail) update(mail storage.Mail) {
+func (m *mail) update(mailID uint) {
+	mail, err := storage.FetchMailByID(mailID)
+	if err != nil {
+		log.Printf("Failed to render mail: %v", err)
+		return
+	}
+
 	m.subject.SetText(mail.Subject)
 	var names []string
 	for _, n := range mail.Recipients {
@@ -28,7 +35,6 @@ func (m *mail) update(mail storage.Mail) {
 	m.header.SetText("From: " + mail.From.Name + "\nSent: " + mail.TimeStamp.Format(myDateTime) + "\nTo: " + strings.Join(names, ", "))
 	text := strings.ReplaceAll(mail.Body, "<br>", "\n")
 	m.body.SetText(html.UnescapeString(m.policy.Sanitize(text)))
-
 }
 
 func newMail() *mail {

@@ -31,6 +31,7 @@ func NewEsiApp(a fyne.App) fyne.Window {
 
 	characters := e.newCharacters()
 	mails := e.newMails()
+	mails.update(e.characterID, 0)
 
 	folders := e.newFolders()
 	folders.update(e.characterID)

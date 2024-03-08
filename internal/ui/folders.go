@@ -52,16 +52,21 @@ func makeFolderList() (*widget.List, binding.ExternalUntypedList) {
 			return widget.NewLabel("from")
 		},
 		func(i binding.DataItem, o fyne.CanvasObject) {
-			if entry, err := i.(binding.Untyped).Get(); err != nil {
+			entry, err := i.(binding.Untyped).Get()
+			if err != nil {
 				log.Println("Failed to Get item")
-			} else {
-				w := o.(*widget.Label)
-				w.SetText(entry.(labelItem).name)
+				return
 			}
+			w := o.(*widget.Label)
+			w.SetText(entry.(labelItem).name)
 		})
 
 	container.OnSelected = func(id widget.ListItemID) {
-		d, _ := data.Get()
+		d, err := data.Get()
+		if err != nil {
+			log.Println("Failed to Get item")
+			return
+		}
 		n := d[id].(labelItem).name
 		log.Printf("Selected label %v", n)
 	}
