@@ -34,15 +34,15 @@ func (f *folders) update(characterID int32) {
 
 }
 
-func (e *esiApp) newFolders() *folders {
-	list, data := makeFolderList()
+func (e *esiApp) newFolders(headers *headers) *folders {
+	list, data := makeFolderList(headers, e.charID)
 	button := makeRefreshButton(e.main, e.charID)
 	c := container.NewBorder(button, nil, nil, nil, list)
 	f := folders{container: c, data: data}
 	return &f
 }
 
-func makeFolderList() (*widget.List, binding.ExternalUntypedList) {
+func makeFolderList(headers *headers, charID int32) (*widget.List, binding.ExternalUntypedList) {
 	var ii []interface{}
 	ii = append(ii, labelItem{id: 0, name: "All Mails"})
 	data := binding.BindUntypedList(&ii)
@@ -67,8 +67,9 @@ func makeFolderList() (*widget.List, binding.ExternalUntypedList) {
 			log.Println("Failed to Get item")
 			return
 		}
-		n := d[id].(labelItem).name
-		log.Printf("Selected label %v", n)
+		n := d[id].(labelItem)
+		headers.update(charID, n.id)
+
 	}
 	return container, data
 }

@@ -34,9 +34,8 @@ func NewEsiApp(a fyne.App) fyne.Window {
 	mail := e.newMail()
 
 	headers := e.newHeaders(mail)
-	headers.update(e.charID, 0)
 
-	folders := e.newFolders()
+	folders := e.newFolders(headers)
 	folders.update(e.charID)
 
 	headersMail := container.NewHSplit(headers.container, mail.container)
