@@ -15,11 +15,7 @@ import (
 	"time"
 )
 
-var httpClient *http.Client
-
-func init() {
-	httpClient = &http.Client{}
-}
+var httpClient http.Client
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.
 func AddCharacter() (*storage.Token, error) {

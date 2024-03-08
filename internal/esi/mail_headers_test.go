@@ -41,7 +41,7 @@ func TestCanFetchSingleMailHeader(t *testing.T) {
 		httpmock.NewStringResponder(200, fixture),
 	)
 
-	c := &http.Client{}
+	c := http.Client{}
 
 	// when
 	mails, err := FetchMailHeaders(c, 1, "token")
@@ -104,7 +104,7 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 		httpmock.NewStringResponder(200, jsonMarshal(objs[50:])),
 	)
 
-	c := &http.Client{}
+	c := http.Client{}
 
 	// when
 	mails, err := FetchMailHeaders(c, 1, "token")

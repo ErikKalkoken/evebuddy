@@ -2,6 +2,7 @@ package ui
 
 import (
 	"example/esiapp/internal/storage"
+	"fmt"
 	"html"
 	"log"
 	"strings"
@@ -32,7 +33,13 @@ func (m *mail) update(mailID uint) {
 	for _, n := range mail.Recipients {
 		names = append(names, n.Name)
 	}
-	m.header.SetText("From: " + mail.From.Name + "\nSent: " + mail.TimeStamp.Format(myDateTime) + "\nTo: " + strings.Join(names, ", "))
+	t := fmt.Sprintf(
+		"From: %s\nSent:%s\nTo:%s",
+		mail.From.Name,
+		mail.TimeStamp.Format(myDateTime),
+		strings.Join(names, ", "),
+	)
+	m.header.SetText(t)
 	text := strings.ReplaceAll(mail.Body, "<br>", "\n")
 	m.body.SetText(html.UnescapeString(m.policy.Sanitize(text)))
 }

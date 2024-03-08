@@ -19,7 +19,7 @@ type EveEntity struct {
 // TODO: Add smart handling for unsolvable IDs
 
 // ResolveEntityIDs tries to resolve IDs to Eve entity objects and returns them.
-func ResolveEntityIDs(httpClient *http.Client, ids []int32) ([]EveEntity, error) {
+func ResolveEntityIDs(httpClient http.Client, ids []int32) ([]EveEntity, error) {
 	if len(ids) > 1000 {
 		return nil, fmt.Errorf("too many ids")
 	}

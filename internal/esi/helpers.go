@@ -13,7 +13,7 @@ type ESIError struct {
 	Error string `json:"error"`
 }
 
-func getESI(c *http.Client, path string) (*http.Response, error) {
+func getESI(c http.Client, path string) (*http.Response, error) {
 	url := fmt.Sprintf("%s%s", esiBaseUrl, path)
 	maxRetries := 3
 	retries := 0
