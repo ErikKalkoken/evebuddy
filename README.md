@@ -11,14 +11,15 @@ MVP is reaching feature parity with Member Audit mail.
 - [x] Fetch mail bodies concurrently
 - [x] Add paging to allow fetching more then 50 mails from ESI
 - [x] Add error handling when fetching mails concurrently
-- [ ] Preselect mail after opening app
-- [ ] Update "is_read" for mails from ESI
-- [ ] Update list of characters after adding new character
-- [ ] Add error handling for mailing lists
+- [x] Preselect mail after opening app
 - [x] Auto retry ESI calls on known common errors
-- [ ] Allow selecting mails by folder
+- [x] Allow selecting mails by folder
+- [x] Refactor gui part into own package
+- [ ] Update list of characters after adding new character
+- [ ] Show mailing lists as folder
+- [ ] Update "is_read" for mails from ESI
+- [ ] Add error handling for mailing lists
 - [ ] Add basic unit tests
-- [ ] Refactor gui part into own package
 
 ### Future releases
 

@@ -23,6 +23,7 @@ type folders struct {
 	boundList   binding.ExternalUntypedList
 	boundCharID binding.ExternalInt
 	headers     *headers
+	list        *widget.List
 }
 
 func (f *folders) update(charID int32) {
@@ -35,6 +36,7 @@ func (f *folders) update(charID int32) {
 		f.boundList.Append(labelItem{id: l.ID, name: l.Name})
 	}
 
+	f.list.Select(0)
 	f.headers.update(charID, allMailsLabelID)
 }
 
@@ -47,6 +49,7 @@ func (e *esiApp) newFolders(headers *headers) *folders {
 		boundList:   boundList,
 		boundCharID: boundCharID,
 		headers:     headers,
+		list:        list,
 	}
 	return &f
 }
@@ -67,7 +70,7 @@ func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList
 		func(i binding.DataItem, o fyne.CanvasObject) {
 			entry, err := i.(binding.Untyped).Get()
 			if err != nil {
-				log.Println("Failed to Get item")
+				log.Println("Failed to label item")
 				return
 			}
 			w := o.(*widget.Label)
@@ -77,7 +80,7 @@ func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList
 	container.OnSelected = func(iID widget.ListItemID) {
 		d, err := boundList.Get()
 		if err != nil {
-			log.Println("Failed to Get item")
+			log.Println("Failed to char ID item")
 			return
 		}
 		n := d[iID].(labelItem)

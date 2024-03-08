@@ -22,12 +22,13 @@ type mailItem struct {
 
 type headers struct {
 	container  fyne.CanvasObject
+	list       *widget.List
 	boundList  binding.ExternalUntypedList
 	boundTotal binding.String
 	mail       *mail
 }
 
-func (m *headers) update(charID int32, labelID int32) {
+func (h *headers) update(charID int32, labelID int32) {
 	mm, err := storage.FetchMailsForLabel(charID, labelID)
 	if err != nil {
 		log.Fatalf("Failed to fetch mail: %v", err)
@@ -42,20 +43,21 @@ func (m *headers) update(charID int32, labelID int32) {
 		}
 		d = append(d, o)
 	}
-	m.boundList.Set(d)
+	h.boundList.Set(d)
 
 	s := fmt.Sprintf("%d mails", len(mm))
-	m.boundTotal.Set(s)
+	h.boundTotal.Set(s)
 
 	if len(mm) > 0 {
-		m.mail.update(mm[0].ID)
+		h.mail.update(mm[0].ID)
+		h.list.Select(0)
 	}
 }
 
 func (e *esiApp) newHeaders(mail *mail) *headers {
 	var x []interface{}
 	boundList := binding.BindUntypedList(&x)
-	headersList := widget.NewListWithData(
+	list := widget.NewListWithData(
 		boundList,
 		func() fyne.CanvasObject {
 			from := widget.NewLabel("from")
@@ -85,10 +87,10 @@ func (e *esiApp) newHeaders(mail *mail) *headers {
 			subject.SetText(m.subject)
 		})
 
-	headersList.OnSelected = func(id widget.ListItemID) {
+	list.OnSelected = func(id widget.ListItemID) {
 		d, err := boundList.Get()
 		if err != nil {
-			log.Println("Failed to Get item")
+			log.Println("Failed to mail item")
 			return
 		}
 		m := d[id].(mailItem)
@@ -97,10 +99,11 @@ func (e *esiApp) newHeaders(mail *mail) *headers {
 
 	boundTotal := binding.NewString()
 	total := widget.NewLabelWithData(boundTotal)
-	c := container.NewBorder(total, nil, nil, nil, headersList)
+	c := container.NewBorder(total, nil, nil, nil, list)
 
 	m := headers{
 		container:  c,
+		list:       list,
 		boundList:  boundList,
 		boundTotal: boundTotal,
 		mail:       mail,
