@@ -20,16 +20,13 @@ type mailItem struct {
 	timestamp time.Time
 }
 
-type mails struct {
+type headers struct {
 	container  fyne.CanvasObject
 	boundList  binding.ExternalUntypedList
 	boundTotal binding.String
 }
 
-func (e *esiApp) newMails() *mails {
-
-	mail := newMail()
-
+func (e *esiApp) newHeaders(mail *mail) *headers {
 	var x []interface{}
 	boundList := binding.BindUntypedList(&x)
 	headersList := widget.NewListWithData(
@@ -74,12 +71,12 @@ func (e *esiApp) newMails() *mails {
 
 	boundTotal := binding.NewString()
 	total := widget.NewLabelWithData(boundTotal)
-	headers := container.NewBorder(total, nil, nil, nil, headersList)
+	c := container.NewBorder(total, nil, nil, nil, headersList)
 
-	mailsC := container.NewHSplit(headers, mail.container)
+	mailsC := container.NewHSplit(c, mail.container)
 	mailsC.SetOffset(0.35)
 
-	m := mails{
+	m := headers{
 		container:  mailsC,
 		boundList:  boundList,
 		boundTotal: boundTotal,
@@ -87,7 +84,7 @@ func (e *esiApp) newMails() *mails {
 	return &m
 }
 
-func (m *mails) update(charID int32, labelID int32) {
+func (m *headers) update(charID int32, labelID int32) {
 	mm, err := storage.FetchMailsForLabel(charID, labelID)
 	if err != nil {
 		log.Fatalf("Failed to fetch mail: %v", err)

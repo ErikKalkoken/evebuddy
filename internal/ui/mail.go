@@ -37,7 +37,7 @@ func (m *mail) update(mailID uint) {
 	m.body.SetText(html.UnescapeString(m.policy.Sanitize(text)))
 }
 
-func newMail() *mail {
+func (e *esiApp) newMail() *mail {
 	subject := widget.NewLabel("")
 	subject.TextStyle = fyne.TextStyle{Bold: true}
 	subject.Truncation = fyne.TextTruncateEllipsis
