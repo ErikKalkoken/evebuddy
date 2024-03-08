@@ -176,7 +176,7 @@ func makeFolders() (fyne.CanvasObject, binding.ExternalUntypedList) {
 }
 
 func makeMailsSegment() fyne.CanvasObject {
-	mails, err := storage.FetchMailsForLabel(characterID, 4)
+	mails, err := storage.FetchMailsForLabel(characterID, 0)
 	if err != nil {
 		log.Fatalf("Failed to fetch mail: %v", err)
 	}
@@ -184,9 +184,8 @@ func makeMailsSegment() fyne.CanvasObject {
 	mailHeaderSubject.TextStyle = fyne.TextStyle{Bold: true}
 	mailHeaderSubject.Truncation = fyne.TextTruncateEllipsis
 
-	mailHeaderFrom := widget.NewLabel("")
-	mailHeaderTimestamp := widget.NewLabel("")
-	mailHeader := container.NewVBox(mailHeaderSubject, mailHeaderFrom, mailHeaderTimestamp)
+	mailHeaderBlock := widget.NewLabel("")
+	mailHeader := container.NewVBox(mailHeaderSubject, mailHeaderBlock)
 	mailBody := widget.NewLabel("")
 	mailBody.Wrapping = fyne.TextWrapBreak
 
@@ -224,8 +223,11 @@ func makeMailsSegment() fyne.CanvasObject {
 	headersList.OnSelected = func(id widget.ListItemID) {
 		mail := mails[id]
 		mailHeaderSubject.SetText(mail.Subject)
-		mailHeaderFrom.SetText("From: " + mail.From.Name)
-		mailHeaderTimestamp.SetText("Received: " + mail.TimeStamp.Format(myDateTime))
+		var names []string
+		for _, n := range mail.Recipients {
+			names = append(names, n.Name)
+		}
+		mailHeaderBlock.SetText("From: " + mail.From.Name + "\nSent: " + mail.TimeStamp.Format(myDateTime) + "\nTo: " + strings.Join(names, ", "))
 		text := strings.ReplaceAll(mail.Body, "<br>", "\n")
 		mailBody.SetText(blue.Sanitize(text))
 	}

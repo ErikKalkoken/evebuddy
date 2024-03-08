@@ -114,6 +114,9 @@ func UpdateMails(characterID int32) error {
 			defer wg.Done()
 			entityIDs := helpers.NewSet([]int32{})
 			entityIDs.Add(header.FromID)
+			for _, r := range header.Recipients {
+				entityIDs.Add(r.ID)
+			}
 			if err := addMissingEveEntities(entityIDs.ToSlice()); err != nil {
 				log.Printf("Failed to process mail %d: %v", header.ID, err)
 				return
@@ -146,13 +149,24 @@ func UpdateMails(characterID int32) error {
 			}
 			mail.From = *from
 
+			var rr []storage.EveEntity
+			for _, r := range header.Recipients {
+				o, err := storage.GetEveEntity(r.ID)
+				if err != nil {
+					log.Printf("Failed to resolve recipient %v for mail %d", r, header.ID)
+					continue
+				} else {
+					rr = append(rr, *o)
+				}
+			}
+			mail.Recipients = rr
+
 			labels, err := storage.FetchMailLabels(characterID, m.Labels)
 			if err != nil {
-				log.Printf("Skipping mail %d: %v", header.ID, err)
-				return
+				log.Printf("Failed to resolve labels for mail %d: %v", header.ID, err)
+			} else {
+				mail.Labels = labels
 			}
-			log.Printf("mail %d - label: %v", header.ID, labels)
-			mail.Labels = labels
 
 			mail.Save()
 			log.Printf("Stored new mail %d for character %v", header.ID, token.CharacterID)

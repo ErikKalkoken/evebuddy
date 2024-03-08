@@ -16,8 +16,9 @@ type Mail struct {
 	FromID      int32
 	From        EveEntity
 	Labels      []MailLabel `gorm:"many2many:mail_mail_labels;"`
-	MailID      int32
 	IsRead      bool
+	MailID      int32
+	Recipients  []EveEntity `gorm:"many2many:mail_recipients;"`
 	Subject     string
 	TimeStamp   time.Time
 }
@@ -46,13 +47,14 @@ func FetchMailIDs(characterId int32) ([]int32, error) {
 func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	var mm []Mail
 
+	tx := db.Preload("From").Preload("Recipients").Where("character_id = ?", characterID).Order("time_stamp desc")
 	var err error
 	if labelID == 0 {
-		err = db.Preload("From").Where("character_id = ?", characterID).Order("time_stamp desc").Find(&mm).Error
+		err = tx.Find(&mm).Error
 	} else {
 		var l MailLabel
 		db.First(&l, labelID)
-		err = db.Preload("From").Where("character_id = ?", characterID).Order("time_stamp desc").Model(&l).Association("Mails").Find(&mm)
+		err = tx.Model(&l).Association("Mails").Find(&mm)
 	}
 	if err != nil {
 		return nil, err
