@@ -28,6 +28,8 @@ const (
 	keyAuthenticatedCharacter key = iota
 )
 
+var httpClient http.Client
+
 // token payload as returned from SSO API
 type tokenPayload struct {
 	AccessToken      string `json:"access_token"`
@@ -191,7 +193,6 @@ func retrieveTokenPayload(code, codeVerifier string) (*tokenPayload, error) {
 	req.Header.Add("Host", ssoHost)
 
 	log.Print("Sending auth request to SSO API")
-	httpClient := &http.Client{}
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -285,7 +286,6 @@ func fetchOauthToken(form url.Values) (*tokenPayload, error) {
 	log.Printf("Requesting token from SSO API by %s from %s", form.Get("grant_type"), ssoTokenUrl)
 	log.Printf("Request: %v", form)
 
-	httpClient := &http.Client{}
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err

@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+const maxMails = 1000
+
 var httpClient http.Client
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.
@@ -83,7 +85,7 @@ func UpdateMails(characterID int32) error {
 	if err := ensureFreshToken(token); err != nil {
 		return err
 	}
-	headers, err := esi.FetchMailHeaders(httpClient, token.CharacterID, token.AccessToken)
+	headers, err := esi.FetchMailHeaders(httpClient, token.CharacterID, token.AccessToken, maxMails)
 	if err != nil {
 		return err
 	}

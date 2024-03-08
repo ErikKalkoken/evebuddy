@@ -44,7 +44,7 @@ func TestCanFetchSingleMailHeader(t *testing.T) {
 	c := http.Client{}
 
 	// when
-	mails, err := FetchMailHeaders(c, 1, "token")
+	mails, err := FetchMailHeaders(c, 1, "token", 0)
 
 	// then
 	assert.Nil(t, err)
@@ -107,7 +107,7 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 	c := http.Client{}
 
 	// when
-	mails, err := FetchMailHeaders(c, 1, "token")
+	mails, err := FetchMailHeaders(c, 1, "token", 0)
 
 	// then
 	assert.Nil(t, err)
