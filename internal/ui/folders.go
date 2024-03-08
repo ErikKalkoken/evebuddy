@@ -19,35 +19,41 @@ type labelItem struct {
 }
 
 type folders struct {
-	container fyne.CanvasObject
-	data      binding.ExternalUntypedList
+	container   fyne.CanvasObject
+	boundList   binding.ExternalUntypedList
+	boundCharID binding.ExternalInt
 }
 
-func (f *folders) update(characterID int32) {
-	labels, err := storage.FetchAllMailLabels(characterID)
+func (f *folders) update(charID int32) {
+	labels, err := storage.FetchAllMailLabels(charID)
 	if err != nil {
 		log.Fatal(err)
 	}
+	f.boundCharID.Set(int(charID))
 	for _, l := range labels {
-		f.data.Append(labelItem{id: l.ID, name: l.Name})
+		f.boundList.Append(labelItem{id: l.ID, name: l.Name})
 	}
 
 }
 
 func (e *esiApp) newFolders(headers *headers) *folders {
-	list, data := makeFolderList(headers, e.charID)
-	button := makeRefreshButton(e.main, e.charID)
+	list, boundList, boundCharID := makeFolderList(headers)
+	button := makeRefreshButton(e.main, boundCharID)
 	c := container.NewBorder(button, nil, nil, nil, list)
-	f := folders{container: c, data: data}
+	f := folders{container: c, boundList: boundList, boundCharID: boundCharID}
 	return &f
 }
 
-func makeFolderList(headers *headers, charID int32) (*widget.List, binding.ExternalUntypedList) {
+func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList, binding.ExternalInt) {
 	var ii []interface{}
 	ii = append(ii, labelItem{id: 0, name: "All Mails"})
-	data := binding.BindUntypedList(&ii)
+	boundList := binding.BindUntypedList(&ii)
+
+	var charID int
+	boundCharID := binding.BindInt(&charID)
+
 	container := widget.NewListWithData(
-		data,
+		boundList,
 		func() fyne.CanvasObject {
 			return widget.NewLabel("from")
 		},
@@ -61,22 +67,31 @@ func makeFolderList(headers *headers, charID int32) (*widget.List, binding.Exter
 			w.SetText(entry.(labelItem).name)
 		})
 
-	container.OnSelected = func(id widget.ListItemID) {
-		d, err := data.Get()
+	container.OnSelected = func(iID widget.ListItemID) {
+		d, err := boundList.Get()
 		if err != nil {
 			log.Println("Failed to Get item")
 			return
 		}
-		n := d[id].(labelItem)
-		headers.update(charID, n.id)
+		n := d[iID].(labelItem)
+		cID, err := boundCharID.Get()
+		if err != nil {
+			log.Println("Failed to Get item")
+			return
+		}
+		headers.update(int32(cID), n.id)
 
 	}
-	return container, data
+	return container, boundList, boundCharID
 }
 
-func makeRefreshButton(w fyne.Window, characterID int32) *widget.Button {
+func makeRefreshButton(w fyne.Window, boundCharID binding.ExternalInt) *widget.Button {
 	b := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-		if characterID == 0 {
+		charID, err := boundCharID.Get()
+		if err != nil {
+			log.Fatal(err)
+		}
+		if charID == 0 {
 			info := dialog.NewInformation(
 				"Warning",
 				"Please select a character first.",
@@ -85,8 +100,7 @@ func makeRefreshButton(w fyne.Window, characterID int32) *widget.Button {
 			info.Show()
 			return
 		}
-		err := core.UpdateMails(characterID)
-		if err != nil {
+		if err := core.UpdateMails(int32(charID)); err != nil {
 			log.Fatal(err)
 		}
 	})

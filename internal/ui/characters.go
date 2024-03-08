@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func (e *esiApp) newCharacters() *fyne.Container {
+func (e *esiApp) newCharacters(charID int32) *fyne.Container {
 	shareItem := makeShareItem()
 	buttonAdd := newContextMenuButton(
 		"Manage Characters", fyne.NewMenu("",
@@ -33,7 +33,7 @@ func (e *esiApp) newCharacters() *fyne.Container {
 		))
 
 	currentUser := container.NewHBox()
-	c, err := storage.FetchCharacter(e.charID)
+	c, err := storage.FetchCharacter(charID)
 	if err != nil {
 		currentUser.Add(widget.NewLabel("No characters"))
 		log.Print("No token found")
@@ -42,7 +42,6 @@ func (e *esiApp) newCharacters() *fyne.Container {
 		image.FillMode = canvas.ImageFillOriginal
 		currentUser.Add(image)
 		currentUser.Add(widget.NewLabel(c.Name))
-		e.charID = c.ID
 	}
 	currentUser.Add(layout.NewSpacer())
 	currentUser.Add(buttonAdd)

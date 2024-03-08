@@ -14,29 +14,29 @@ const (
 )
 
 type esiApp struct {
-	main   fyne.Window
-	charID int32
+	main fyne.Window
 }
 
 func NewEsiApp(a fyne.App) fyne.Window {
 	w := a.NewWindow("Eve Online App")
 	e := &esiApp{main: w}
 
+	var charID int32
 	c, err := storage.FetchFirstCharacter()
 	if err != nil {
 		log.Printf("Failed to load any character: %v", err)
 	} else {
-		e.charID = c.ID
+		charID = c.ID
 	}
 
-	characters := e.newCharacters()
+	characters := e.newCharacters(charID)
 
 	mail := e.newMail()
 
 	headers := e.newHeaders(mail)
 
 	folders := e.newFolders(headers)
-	folders.update(e.charID)
+	folders.update(charID)
 
 	headersMail := container.NewHSplit(headers.container, mail.container)
 	headersMail.SetOffset(0.35)
