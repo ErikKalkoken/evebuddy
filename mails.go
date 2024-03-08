@@ -18,7 +18,7 @@ type mails struct {
 	container fyne.CanvasObject
 }
 
-func (e *esiapp) newMails() *mails {
+func (e *esiApp) newMails() *mails {
 	mm, err := storage.FetchMailsForLabel(e.characterID, 0)
 	if err != nil {
 		log.Fatalf("Failed to fetch mail: %v", err)

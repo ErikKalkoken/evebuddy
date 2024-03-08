@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func (e *esiapp) newCharacters(myWindow fyne.Window) *fyne.Container {
+func (e *esiApp) newCharacters() *fyne.Container {
 	shareItem := makeShareItem()
 	buttonAdd := newContextMenuButton(
 		"Manage Characters", fyne.NewMenu("",
@@ -21,7 +21,7 @@ func (e *esiapp) newCharacters(myWindow fyne.Window) *fyne.Container {
 				info := dialog.NewInformation(
 					"Add Character",
 					"Please follow instructions in your browser to add a new character.",
-					myWindow,
+					e.main,
 				)
 				info.Show()
 				_, err := core.AddCharacter()
