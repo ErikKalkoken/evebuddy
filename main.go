@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html"
 	"log"
 	"strings"
 
@@ -22,7 +23,7 @@ import (
 )
 
 const (
-	myDateTime = "2006-01-02 15:04"
+	myDateTime = "2006.01.02 15:04"
 )
 
 var characterID int32
@@ -183,9 +184,9 @@ func makeMailsSegment() fyne.CanvasObject {
 	mailHeaderSubject := widget.NewLabel("")
 	mailHeaderSubject.TextStyle = fyne.TextStyle{Bold: true}
 	mailHeaderSubject.Truncation = fyne.TextTruncateEllipsis
-
 	mailHeaderBlock := widget.NewLabel("")
 	mailHeader := container.NewVBox(mailHeaderSubject, mailHeaderBlock)
+
 	mailBody := widget.NewLabel("")
 	mailBody.Wrapping = fyne.TextWrapBreak
 
@@ -229,7 +230,7 @@ func makeMailsSegment() fyne.CanvasObject {
 		}
 		mailHeaderBlock.SetText("From: " + mail.From.Name + "\nSent: " + mail.TimeStamp.Format(myDateTime) + "\nTo: " + strings.Join(names, ", "))
 		text := strings.ReplaceAll(mail.Body, "<br>", "\n")
-		mailBody.SetText(blue.Sanitize(text))
+		mailBody.SetText(html.UnescapeString(blue.Sanitize(text)))
 	}
 
 	headers := container.NewBorder(headersTotal, nil, nil, nil, headersList)
