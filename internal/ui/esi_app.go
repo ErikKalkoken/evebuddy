@@ -1,4 +1,5 @@
-package main
+// Package UI contains the code for rendering the UI.
+package ui
 
 import (
 	"example/esiapp/internal/storage"
@@ -8,12 +9,16 @@ import (
 	"fyne.io/fyne/v2/container"
 )
 
+const (
+	myDateTime = "2006.01.02 15:04"
+)
+
 type esiApp struct {
 	main        fyne.Window
 	characterID int32
 }
 
-func newEsiApp(a fyne.App) fyne.Window {
+func NewEsiApp(a fyne.App) fyne.Window {
 	w := a.NewWindow("Eve Online App")
 	e := &esiApp{main: w}
 
@@ -35,6 +40,7 @@ func newEsiApp(a fyne.App) fyne.Window {
 
 	content := container.NewBorder(characters, nil, nil, nil, main)
 	w.SetContent(content)
+	w.Resize(fyne.NewSize(800, 600))
 
 	return w
 }

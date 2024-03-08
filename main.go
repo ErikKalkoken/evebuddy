@@ -3,14 +3,10 @@ package main
 import (
 	"log"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 
 	"example/esiapp/internal/storage"
-)
-
-const (
-	myDateTime = "2006.01.02 15:04"
+	"example/esiapp/internal/ui"
 )
 
 func main() {
@@ -23,7 +19,6 @@ func main() {
 	// storage.Test()
 
 	a := app.New()
-	w := newEsiApp(a)
-	w.Resize(fyne.NewSize(800, 600))
+	w := ui.NewEsiApp(a)
 	w.ShowAndRun()
 }
