@@ -33,7 +33,7 @@ func (e *esiApp) newCharacters() *fyne.Container {
 		))
 
 	currentUser := container.NewHBox()
-	c, err := storage.FetchCharacter(e.characterID)
+	c, err := storage.FetchCharacter(e.charID)
 	if err != nil {
 		currentUser.Add(widget.NewLabel("No characters"))
 		log.Print("No token found")
@@ -42,7 +42,7 @@ func (e *esiApp) newCharacters() *fyne.Container {
 		image.FillMode = canvas.ImageFillOriginal
 		currentUser.Add(image)
 		currentUser.Add(widget.NewLabel(c.Name))
-		e.characterID = c.ID
+		e.charID = c.ID
 	}
 	currentUser.Add(layout.NewSpacer())
 	currentUser.Add(buttonAdd)

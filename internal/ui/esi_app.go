@@ -14,8 +14,8 @@ const (
 )
 
 type esiApp struct {
-	main        fyne.Window
-	characterID int32
+	main   fyne.Window
+	charID int32
 }
 
 func NewEsiApp(a fyne.App) fyne.Window {
@@ -26,7 +26,7 @@ func NewEsiApp(a fyne.App) fyne.Window {
 	if err != nil {
 		log.Printf("Failed to load any character: %v", err)
 	} else {
-		e.characterID = c.ID
+		e.charID = c.ID
 	}
 
 	characters := e.newCharacters()
@@ -34,12 +34,15 @@ func NewEsiApp(a fyne.App) fyne.Window {
 	mail := e.newMail()
 
 	headers := e.newHeaders(mail)
-	headers.update(e.characterID, 0)
+	headers.update(e.charID, 0)
 
 	folders := e.newFolders()
-	folders.update(e.characterID)
+	folders.update(e.charID)
 
-	main := container.NewHSplit(folders.container, headers.container)
+	headersMail := container.NewHSplit(headers.container, mail.container)
+	headersMail.SetOffset(0.35)
+
+	main := container.NewHSplit(folders.container, headersMail)
 	main.SetOffset(0.15)
 
 	content := container.NewBorder(characters, nil, nil, nil, main)

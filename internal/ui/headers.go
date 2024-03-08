@@ -26,6 +26,27 @@ type headers struct {
 	boundTotal binding.String
 }
 
+func (m *headers) update(charID int32, labelID int32) {
+	mm, err := storage.FetchMailsForLabel(charID, labelID)
+	if err != nil {
+		log.Fatalf("Failed to fetch mail: %v", err)
+	}
+	var d []interface{}
+	for _, m := range mm {
+		o := mailItem{
+			id:        m.ID,
+			from:      m.From.Name,
+			subject:   m.Subject,
+			timestamp: m.TimeStamp,
+		}
+		d = append(d, o)
+	}
+	m.boundList.Set(d)
+
+	s := fmt.Sprintf("%d mails", len(mm))
+	m.boundTotal.Set(s)
+}
+
 func (e *esiApp) newHeaders(mail *mail) *headers {
 	var x []interface{}
 	boundList := binding.BindUntypedList(&x)
@@ -73,34 +94,10 @@ func (e *esiApp) newHeaders(mail *mail) *headers {
 	total := widget.NewLabelWithData(boundTotal)
 	c := container.NewBorder(total, nil, nil, nil, headersList)
 
-	mailsC := container.NewHSplit(c, mail.container)
-	mailsC.SetOffset(0.35)
-
 	m := headers{
-		container:  mailsC,
+		container:  c,
 		boundList:  boundList,
 		boundTotal: boundTotal,
 	}
 	return &m
-}
-
-func (m *headers) update(charID int32, labelID int32) {
-	mm, err := storage.FetchMailsForLabel(charID, labelID)
-	if err != nil {
-		log.Fatalf("Failed to fetch mail: %v", err)
-	}
-	var d []interface{}
-	for _, m := range mm {
-		o := mailItem{
-			id:        m.ID,
-			from:      m.From.Name,
-			subject:   m.Subject,
-			timestamp: m.TimeStamp,
-		}
-		d = append(d, o)
-	}
-	m.boundList.Set(d)
-
-	s := fmt.Sprintf("%d mails", len(mm))
-	m.boundTotal.Set(s)
 }

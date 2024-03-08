@@ -36,7 +36,7 @@ func (f *folders) update(characterID int32) {
 
 func (e *esiApp) newFolders() *folders {
 	list, data := makeFolderList()
-	button := makeRefreshButton(e.main, e.characterID)
+	button := makeRefreshButton(e.main, e.charID)
 	c := container.NewBorder(button, nil, nil, nil, list)
 	f := folders{container: c, data: data}
 	return &f
