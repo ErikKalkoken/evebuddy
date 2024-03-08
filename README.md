@@ -15,7 +15,7 @@ MVP is reaching feature parity with Member Audit mail.
 - [ ] Update "is_read" for mails from ESI
 - [ ] Update list of characters after adding new character
 - [ ] Add error handling for mailing lists
-- [ ] Auto retry ESI calls on known common errors
+- [x] Auto retry ESI calls on known common errors
 - [ ] Allow selecting mails by folder
 - [ ] Add basic unit tests
 - [ ] Refactor gui part into own package
