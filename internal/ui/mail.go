@@ -15,6 +15,7 @@ import (
 
 type mail struct {
 	container fyne.CanvasObject
+	bodyC     *container.Scroll
 	subject   *widget.Label
 	header    *widget.Label
 	body      *widget.Label
@@ -42,6 +43,7 @@ func (m *mail) update(mailID uint) {
 	m.header.SetText(t)
 	text := strings.ReplaceAll(mail.Body, "<br>", "\n")
 	m.body.SetText(html.UnescapeString(m.policy.Sanitize(text)))
+	m.bodyC.ScrollToTop()
 }
 
 func (e *esiApp) newMail() *mail {
@@ -53,10 +55,12 @@ func (e *esiApp) newMail() *mail {
 
 	body := widget.NewLabel("")
 	body.Wrapping = fyne.TextWrapBreak
-	c := container.NewBorder(wrapper, nil, nil, nil, container.NewVScroll(body))
+	bodyWithScroll := container.NewVScroll(body)
+	c := container.NewBorder(wrapper, nil, nil, nil, bodyWithScroll)
 	policy := bluemonday.StrictPolicy()
 	m := mail{
 		container: c,
+		bodyC:     bodyWithScroll,
 		subject:   subject,
 		header:    header,
 		body:      body,

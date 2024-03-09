@@ -37,6 +37,7 @@ func (f *folders) update(charID int32) {
 	}
 
 	f.list.Select(0)
+	f.list.ScrollToTop()
 	f.headers.update(charID, allMailsLabelID)
 }
 
