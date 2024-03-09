@@ -3,10 +3,12 @@ package ui
 import (
 	"example/esiapp/internal/storage"
 	"fmt"
+	"image/color"
 	"log"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
@@ -63,15 +65,13 @@ func (e *esiApp) newHeaders(mail *mail) *headers {
 	list := widget.NewListWithData(
 		boundList,
 		func() fyne.CanvasObject {
-			from := widget.NewLabel("from")
-			timestamp := widget.NewLabel("timestamp")
-			subject := widget.NewLabel("subject")
-			subject.TextStyle = fyne.TextStyle{Bold: true}
-			subject.Truncation = fyne.TextTruncateEllipsis
-			return container.NewVBox(
+			from := canvas.NewText("xxxxxxxxxxxxxxx", color.White)
+			timestamp := canvas.NewText("xxxxxxxxxxxxxxx", color.White)
+			subject := canvas.NewText("subject", color.White)
+			return container.NewPadded(container.NewPadded(container.NewVBox(
 				container.NewHBox(from, layout.NewSpacer(), timestamp),
 				subject,
-			)
+			)))
 		},
 		func(i binding.DataItem, o fyne.CanvasObject) {
 			entry, err := i.(binding.Untyped).Get()
@@ -80,14 +80,21 @@ func (e *esiApp) newHeaders(mail *mail) *headers {
 				return
 			}
 			m := entry.(mailItem)
-			parent := o.(*fyne.Container)
+			parent := o.(*fyne.Container).Objects[0].(*fyne.Container).Objects[0].(*fyne.Container)
 			top := parent.Objects[0].(*fyne.Container)
-			from := top.Objects[0].(*widget.Label)
-			from.SetText(m.from)
-			timestamp := top.Objects[2].(*widget.Label)
-			timestamp.SetText(m.timestamp.Format(myDateTime))
-			subject := parent.Objects[1].(*widget.Label)
-			subject.SetText(m.subject)
+
+			from := top.Objects[0].(*canvas.Text)
+			from.Text = m.from
+			from.Refresh()
+
+			timestamp := top.Objects[2].(*canvas.Text)
+			timestamp.Text = m.timestamp.Format(myDateTime)
+			timestamp.Refresh()
+
+			subject := parent.Objects[1].(*canvas.Text)
+			subject.Text = m.subject
+			subject.TextStyle = fyne.TextStyle{Bold: true}
+			subject.Refresh()
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {

@@ -42,12 +42,14 @@ func (m *mail) update(mailID uint) {
 		names = append(names, n.Name)
 	}
 	t := fmt.Sprintf(
-		"From: %s\nSent:%s\nTo:%s",
+		"From: %s\nSent: %s\nTo: %s",
 		mail.From.Name,
 		mail.TimeStamp.Format(myDateTime),
 		strings.Join(names, ", "),
 	)
 	header := widget.NewLabel(t)
+	header.Wrapping = fyne.TextWrapBreak
+
 	wrapper := container.NewVBox(subject, header)
 
 	text := strings.ReplaceAll(mail.Body, "<br>", "\n")
