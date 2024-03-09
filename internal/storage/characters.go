@@ -1,11 +1,9 @@
 package storage
 
 import (
-	"fmt"
-	"log"
+	"example/esiapp/internal/esi"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/storage"
 	"gorm.io/gorm"
 )
 
@@ -26,19 +24,7 @@ func (c *Character) Save() error {
 
 // PortraitURL returns an image URL for a portrait of a character
 func (c *Character) PortraitURL(size int) fyne.URI {
-	switch size {
-	case 32, 64, 128, 256, 512, 1024:
-		// valid size
-	default:
-		log.Fatalf("Invalid size %d", size)
-	}
-	s := fmt.Sprintf("https://images.evetech.net/characters/%d/portrait?size=%d", c.ID, size)
-	u, err := storage.ParseURI(s)
-	if err != nil {
-		log.Fatal((err))
-	}
-	log.Println(u)
-	return u
+	return esi.CharacterPortraitURL(c.ID, size)
 }
 
 // FetchFirstCharacter returns a random character.
