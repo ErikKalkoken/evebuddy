@@ -52,6 +52,8 @@ func (h *headers) update(charID int32, labelID int32) {
 		h.mail.update(mm[0].ID)
 		h.list.Select(0)
 		h.list.ScrollToTop()
+	} else {
+		h.mail.clear()
 	}
 }
 

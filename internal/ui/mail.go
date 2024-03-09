@@ -14,22 +14,29 @@ import (
 )
 
 type mail struct {
-	container fyne.CanvasObject
-	bodyC     *container.Scroll
-	subject   *widget.Label
-	header    *widget.Label
-	body      *widget.Label
+	container *fyne.Container
 	policy    *bluemonday.Policy
 }
 
+func (m *mail) clear() {
+	m.container.RemoveAll()
+	m.container.Refresh()
+}
+
 func (m *mail) update(mailID uint) {
+	m.container.RemoveAll()
+	defer m.container.Refresh()
+
 	mail, err := storage.FetchMailByID(mailID)
 	if err != nil {
-		log.Printf("Failed to render mail: %v", err)
+		log.Printf("Failed to fetch mail %v: %v", mailID, err)
 		return
 	}
 
-	m.subject.SetText(mail.Subject)
+	subject := widget.NewLabel(mail.Subject)
+	subject.TextStyle = fyne.TextStyle{Bold: true}
+	subject.Truncation = fyne.TextTruncateEllipsis
+
 	var names []string
 	for _, n := range mail.Recipients {
 		names = append(names, n.Name)
@@ -40,30 +47,24 @@ func (m *mail) update(mailID uint) {
 		mail.TimeStamp.Format(myDateTime),
 		strings.Join(names, ", "),
 	)
-	m.header.SetText(t)
+	header := widget.NewLabel(t)
+	wrapper := container.NewVBox(subject, header)
+
 	text := strings.ReplaceAll(mail.Body, "<br>", "\n")
-	m.body.SetText(html.UnescapeString(m.policy.Sanitize(text)))
-	m.bodyC.ScrollToTop()
+	body := widget.NewLabel(html.UnescapeString(m.policy.Sanitize(text)))
+	body.Wrapping = fyne.TextWrapBreak
+	bodyWithScroll := container.NewVScroll(body)
+
+	inner := container.NewBorder(wrapper, nil, nil, nil, bodyWithScroll)
+
+	m.container.Add(inner)
 }
 
 func (e *esiApp) newMail() *mail {
-	subject := widget.NewLabel("")
-	subject.TextStyle = fyne.TextStyle{Bold: true}
-	subject.Truncation = fyne.TextTruncateEllipsis
-	header := widget.NewLabel("")
-	wrapper := container.NewVBox(subject, header)
-
-	body := widget.NewLabel("")
-	body.Wrapping = fyne.TextWrapBreak
-	bodyWithScroll := container.NewVScroll(body)
-	c := container.NewBorder(wrapper, nil, nil, nil, bodyWithScroll)
 	policy := bluemonday.StrictPolicy()
+	c := container.NewStack()
 	m := mail{
 		container: c,
-		bodyC:     bodyWithScroll,
-		subject:   subject,
-		header:    header,
-		body:      body,
 		policy:    policy,
 	}
 	return &m
