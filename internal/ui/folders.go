@@ -32,10 +32,14 @@ func (f *folders) update(charID int32) {
 		log.Fatal(err)
 	}
 	f.boundCharID.Set(int(charID))
-	for _, l := range labels {
-		f.boundList.Append(labelItem{id: l.ID, name: l.Name})
+	var ii []interface{}
+	if len(labels) > 0 {
+		ii = append(ii, labelItem{id: allMailsLabelID, name: "All Mails"})
+		for _, l := range labels {
+			ii = append(ii, labelItem{id: l.ID, name: l.Name})
+		}
 	}
-
+	f.boundList.Set(ii)
 	f.list.Select(0)
 	f.list.ScrollToTop()
 	f.headers.update(charID, allMailsLabelID)
@@ -57,7 +61,6 @@ func (e *esiApp) newFolders(headers *headers) *folders {
 
 func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList, binding.ExternalInt) {
 	var ii []interface{}
-	ii = append(ii, labelItem{id: allMailsLabelID, name: "All Mails"})
 	boundList := binding.BindUntypedList(&ii)
 
 	var charID int
