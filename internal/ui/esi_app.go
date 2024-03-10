@@ -15,7 +15,8 @@ const (
 )
 
 type esiApp struct {
-	main fyne.Window
+	main      fyne.Window
+	statusBar *statusBar
 }
 
 func NewEsiApp(a fyne.App) fyne.Window {
@@ -42,7 +43,11 @@ func NewEsiApp(a fyne.App) fyne.Window {
 	main := container.NewHSplit(folders.container, headersMail)
 	main.SetOffset(0.15)
 
-	content := container.NewBorder(characters.container, nil, nil, nil, main)
+	bar := e.newStatusBar()
+	bar.update("PLACEHOLDER")
+	e.statusBar = bar
+
+	content := container.NewBorder(characters.container, bar.content, nil, nil, main)
 	w.SetContent(content)
 	w.Resize(fyne.NewSize(800, 600))
 
