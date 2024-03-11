@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -49,24 +48,16 @@ func (f *folders) updateMails() {
 		log.Print("Failed to get character ID")
 		return
 	}
-	p := widget.NewProgressBarInfinite()
-	l := widget.NewLabel("Updating mails...")
-	c := container.NewVBox(l, p)
-	d := dialog.NewCustomWithoutButtons(
-		"Refresh mails",
-		c,
-		f.esiApp.main,
-	)
-	d.Show()
 	statusLabel := f.esiApp.statusBar.label
-	err = core.UpdateMails(int32(charID), statusLabel)
-	d.Hide()
-	if err != nil {
-		statusLabel.Set("Failed to fetch mail")
-		log.Printf("Failed to update mails for character %d: %v", charID, err)
-		return
-	}
-	f.update(int32(charID))
+	go func() {
+		err = core.UpdateMails(int32(charID), statusLabel)
+		if err != nil {
+			statusLabel.Set("Failed to fetch mail")
+			log.Printf("Failed to update mails for character %d: %v", charID, err)
+			return
+		}
+		f.update(int32(charID))
+	}()
 }
 
 func (f *folders) update(charID int32) {
@@ -75,19 +66,20 @@ func (f *folders) update(charID int32) {
 	} else {
 		f.refreshButton.Enable()
 	}
-	labels, err := storage.FetchAllMailLabels(charID)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = f.boundCharID.Set(int(charID))
-	if err != nil {
+	if err := f.boundCharID.Set(int(charID)); err != nil {
 		log.Printf("Failed to set char ID: %v", err)
 	}
+
 	var ii []interface{}
-	if len(labels) > 0 {
-		ii = append(ii, labelItem{id: allMailsLabelID, name: "All Mails"})
-		for _, l := range labels {
-			ii = append(ii, labelItem{id: l.ID, name: l.Name})
+	labels, err := storage.FetchAllMailLabels(charID)
+	if err != nil {
+		log.Printf("Failed to fetch mail labels: %v", err)
+	} else {
+		if len(labels) > 0 {
+			ii = append(ii, labelItem{id: allMailsLabelID, name: "All Mails"})
+			for _, l := range labels {
+				ii = append(ii, labelItem{id: l.ID, name: l.Name})
+			}
 		}
 	}
 	f.boundList.Set(ii)
