@@ -31,6 +31,10 @@ func NewEsiApp(a fyne.App) fyne.Window {
 		charID = c.ID
 	}
 
+	bar := e.newStatusBar()
+	e.statusBar = bar
+	bar.update("PLACEHOLDER")
+
 	mail := e.newMail()
 	headers := e.newHeaders(mail)
 	folders := e.newFolders(headers)
@@ -42,10 +46,6 @@ func NewEsiApp(a fyne.App) fyne.Window {
 
 	main := container.NewHSplit(folders.container, headersMail)
 	main.SetOffset(0.15)
-
-	bar := e.newStatusBar()
-	bar.update("PLACEHOLDER")
-	e.statusBar = bar
 
 	content := container.NewBorder(characters.container, bar.content, nil, nil, main)
 	w.SetContent(content)

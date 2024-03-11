@@ -58,9 +58,11 @@ func (f *folders) updateMails() {
 		f.esiApp.main,
 	)
 	d.Show()
-	err = core.UpdateMails(int32(charID))
+	statusLabel := f.esiApp.statusBar.label
+	err = core.UpdateMails(int32(charID), statusLabel)
 	d.Hide()
 	if err != nil {
+		statusLabel.Set("Failed to fetch mail")
 		log.Printf("Failed to update mails for character %d: %v", charID, err)
 		return
 	}

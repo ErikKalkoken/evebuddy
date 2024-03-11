@@ -31,7 +31,7 @@ func (c *characters) update(charID int32) {
 	c.container.Add(layout.NewSpacer())
 	c.container.Add(buttonAdd)
 	c.container.Refresh()
-	c.folders.updateMailsWithID(charID)
+	c.folders.update(charID)
 }
 
 func (c *characters) makeManageButton(charID int32) *contextMenuButton {
@@ -47,6 +47,7 @@ func (c *characters) makeManageButton(charID int32) *contextMenuButton {
 			log.Printf("Failed to add a new character: %v", err)
 		} else {
 			c.update(t.CharacterID)
+			c.folders.updateMailsWithID(charID)
 		}
 		info.Hide()
 	})

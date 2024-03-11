@@ -13,6 +13,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"fyne.io/fyne/v2/data/binding"
 )
 
 const maxMails = 1000
@@ -51,13 +53,14 @@ func AddCharacter() (*storage.Token, error) {
 }
 
 // UpdateMails fetches and stores new mails from ESI for a character.
-func UpdateMails(characterID int32) error {
+func UpdateMails(characterID int32, statusLabel binding.String) error {
 	token, err := storage.FetchToken(characterID)
 	if err != nil {
 		return err
 	}
 	character := token.Character
 
+	statusLabel.Set(fmt.Sprintf("Checking for new mail for %v", character.Name))
 	if err := ensureFreshToken(token); err != nil {
 		return err
 	}
@@ -96,6 +99,18 @@ func UpdateMails(characterID int32) error {
 		return err
 	}
 	existingIDs := helpers.NewSet(ids)
+	incomingIDs := helpers.NewSet([]int32{})
+	for _, h := range headers {
+		incomingIDs.Add(h.ID)
+	}
+	missingIDs := incomingIDs.Difference(existingIDs)
+	newMailsCount := missingIDs.Size()
+	if newMailsCount == 0 {
+		s := "No new mail"
+		statusLabel.Set(s)
+		log.Print(s)
+		return nil
+	}
 
 	if err := ensureFreshToken(token); err != nil {
 		return err
@@ -169,14 +184,19 @@ func UpdateMails(characterID int32) error {
 			mail.Save()
 			log.Printf("Stored new mail %d for character %v", header.ID, token.CharacterID)
 			c.Add(1)
+			current := c.Load()
+			statusLabel.Set(fmt.Sprintf("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name))
 		}()
 	}
 	wg.Wait()
-	if total := c.Load(); total == 0 {
-		log.Printf("No new mail")
-	} else {
-		log.Printf("Stored %d new mails", total)
+	total := c.Load()
+	if total == 0 {
+		statusLabel.Set("")
+		return nil
 	}
+	s := fmt.Sprintf("Stored %d new mails", total)
+	statusLabel.Set(s)
+	log.Print(s)
 	return nil
 }
 
@@ -226,37 +246,6 @@ func ensureFreshToken(token *storage.Token) error {
 	}
 	return nil
 }
-
-// // TODO: Add error handling
-
-// // fetchMailBodies fetches multiple mails from ESI concurrently and returns them.
-// func fetchMailBodies(token *storage.Token, ids []int32) (map[int32]string, error) {
-// 	var wg sync.WaitGroup
-// 	var contexts = sync.Map{}
-
-// 	for _, i := range ids {
-// 		wg.Add(1)
-// 		go func() {
-// 			defer wg.Done()
-// 			mail, err := esi.FetchMail(httpClient, token.CharacterID, i, token.AccessToken)
-// 			if err != nil {
-// 				log.Printf("Failed to fetch mail body ID %d for character ID %d: %v", i, token.CharacterID, err)
-// 			} else {
-// 				contexts.Store(i, mail.Body)
-// 			}
-// 		}()
-// 	}
-// 	wg.Wait()
-
-// 	res := make(map[int32]string, len(ids))
-// 	for _, i := range ids {
-// 		v, ok := contexts.Load(i)
-// 		if ok {
-// 			res[i] = v.(string)
-// 		}
-// 	}
-// 	return res, nil
-// }
 
 func addMissingEveEntities(ids []int32) error {
 	c, err := storage.FetchEntityIDs()
