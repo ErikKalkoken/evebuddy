@@ -23,7 +23,7 @@ type characters struct {
 }
 
 func (c *characters) update(charID int32) {
-	buttonAdd := c.makeManageButton()
+	buttonAdd := c.makeManageButton(charID)
 	image, name := makeCharacter(charID)
 	c.container.RemoveAll()
 	c.container.Add(image)
@@ -34,33 +34,41 @@ func (c *characters) update(charID int32) {
 	c.folders.update(charID)
 }
 
-func (c *characters) makeManageButton() *contextMenuButton {
-	shareItem := c.makeShareItem()
-	buttonAdd := newContextMenuButton(
-		"Manage Characters", fyne.NewMenu("",
-			fyne.NewMenuItem("Add Character", func() {
-				info := dialog.NewInformation(
-					"Add Character",
-					"Please follow instructions in your browser to add a new character.",
-					c.esiApp.main,
-				)
-				info.Show()
-				t, err := core.AddCharacter()
-				if err != nil {
-					log.Printf("Failed to add a new character: %v", err)
-				} else {
-					c.update(t.CharacterID)
-				}
-			}),
-			shareItem,
-		))
+func (c *characters) makeManageButton(charID int32) *contextMenuButton {
+	addChar := fyne.NewMenuItem("Add Character", func() {
+		info := dialog.NewCustomWithoutButtons(
+			"Add Character",
+			widget.NewLabel("Please follow instructions in your browser to add a new character."),
+			c.esiApp.main,
+		)
+		info.Show()
+		t, err := core.AddCharacter()
+		if err != nil {
+			log.Printf("Failed to add a new character: %v", err)
+		} else {
+			c.update(t.CharacterID)
+		}
+		info.Hide()
+	})
+	menu := fyne.NewMenu("", addChar)
+	switchChar, err := c.makeMenuItem(charID)
+	if err != nil {
+		log.Printf("Failed to make menu item: %v", err)
+	}
+	if switchChar != nil {
+		menu.Items = append(menu.Items, switchChar)
+	}
+	buttonAdd := newContextMenuButton("Manage Characters", menu)
 	return buttonAdd
 }
 
-func (c *characters) makeShareItem() *fyne.MenuItem {
+func (c *characters) makeMenuItem(charID int32) (*fyne.MenuItem, error) {
 	chars, err := storage.FetchAllCharacters()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
+	}
+	if len(chars) == 0 {
+		return nil, nil
 	}
 	shareItem := fyne.NewMenuItem("Switch character", nil)
 
@@ -69,10 +77,16 @@ func (c *characters) makeShareItem() *fyne.MenuItem {
 		item := fyne.NewMenuItem(char.Name, func() {
 			c.update(char.ID)
 		})
+		if char.ID == charID {
+			item.Disabled = true
+		}
 		items = append(items, item)
 	}
+	if len(chars) < 2 {
+		return nil, nil
+	}
 	shareItem.ChildMenu = fyne.NewMenu("", items...)
-	return shareItem
+	return shareItem, nil
 }
 
 func makeCharacter(charID int32) (*canvas.Image, *widget.Label) {
