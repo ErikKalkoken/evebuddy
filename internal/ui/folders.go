@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -19,14 +18,20 @@ type labelItem struct {
 }
 
 type folders struct {
-	container   fyne.CanvasObject
-	boundList   binding.ExternalUntypedList
-	boundCharID binding.ExternalInt
-	headers     *headers
-	list        *widget.List
+	container     fyne.CanvasObject
+	boundList     binding.ExternalUntypedList
+	boundCharID   binding.ExternalInt
+	headers       *headers
+	list          *widget.List
+	refreshButton *widget.Button
 }
 
 func (f *folders) update(charID int32) {
+	if charID == 0 {
+		f.refreshButton.Disable()
+	} else {
+		f.refreshButton.Enable()
+	}
 	labels, err := storage.FetchAllMailLabels(charID)
 	if err != nil {
 		log.Fatal(err)
@@ -47,14 +52,15 @@ func (f *folders) update(charID int32) {
 
 func (e *esiApp) newFolders(headers *headers) *folders {
 	list, boundList, boundCharID := makeFolderList(headers)
-	button := makeRefreshButton(e.main, boundCharID)
-	c := container.NewBorder(button, nil, nil, nil, list)
+	b := makeRefreshButton(boundCharID)
+	c := container.NewBorder(b, nil, nil, nil, list)
 	f := folders{
-		container:   c,
-		boundList:   boundList,
-		boundCharID: boundCharID,
-		headers:     headers,
-		list:        list,
+		container:     c,
+		boundList:     boundList,
+		boundCharID:   boundCharID,
+		headers:       headers,
+		list:          list,
+		refreshButton: b,
 	}
 	return &f
 }
@@ -99,23 +105,16 @@ func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList
 	return container, boundList, boundCharID
 }
 
-func makeRefreshButton(w fyne.Window, boundCharID binding.ExternalInt) *widget.Button {
+func makeRefreshButton(boundCharID binding.ExternalInt) *widget.Button {
 	b := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
 		charID, err := boundCharID.Get()
 		if err != nil {
-			log.Fatal(err)
-		}
-		if charID == 0 {
-			info := dialog.NewInformation(
-				"Warning",
-				"Please select a character first.",
-				w,
-			)
-			info.Show()
+			log.Print("Failed to get character ID")
 			return
 		}
 		if err := core.UpdateMails(int32(charID)); err != nil {
-			log.Fatal(err)
+			log.Printf("Failed to update mails for character %d: %v", charID, err)
+			return
 		}
 	})
 	return b
