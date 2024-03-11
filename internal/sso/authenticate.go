@@ -28,8 +28,6 @@ const (
 	keyAuthenticatedCharacter key = iota
 )
 
-var httpClient http.Client
-
 // token payload as returned from SSO API
 type tokenPayload struct {
 	AccessToken      string `json:"access_token"`
@@ -52,7 +50,7 @@ type Token struct {
 
 // Authenticate an Eve Online character via SSO and return SSO token.
 // The process runs in a newly opened browser tab
-func Authenticate(scopes []string) (*Token, error) {
+func Authenticate(client http.Client, scopes []string) (*Token, error) {
 	codeVerifier := generateRandomString(32)
 	ctx := context.WithValue(context.Background(), keyCodeVerifier, codeVerifier)
 
@@ -73,7 +71,7 @@ func Authenticate(scopes []string) (*Token, error) {
 
 		code := v.Get("code")
 		codeVerifier := ctx.Value(keyCodeVerifier).(string)
-		rawToken, err := retrieveTokenPayload(code, codeVerifier)
+		rawToken, err := retrieveTokenPayload(client, code, codeVerifier)
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -174,7 +172,7 @@ func calcCodeChallenge(codeVerifier string) string {
 }
 
 // Retrieve SSO token from API in exchange for code
-func retrieveTokenPayload(code, codeVerifier string) (*tokenPayload, error) {
+func retrieveTokenPayload(client http.Client, code, codeVerifier string) (*tokenPayload, error) {
 	form := url.Values{
 		"grant_type":    {"authorization_code"},
 		"code":          {code},
@@ -193,7 +191,7 @@ func retrieveTokenPayload(code, codeVerifier string) (*tokenPayload, error) {
 	req.Header.Add("Host", ssoHost)
 
 	log.Print("Sending auth request to SSO API")
-	resp, err := httpClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +250,7 @@ func calcExpiresAt(rawToken *tokenPayload) time.Time {
 }
 
 // Update given token with new instance from SSO API
-func RefreshToken(refreshToken string) (*Token, error) {
+func RefreshToken(client http.Client, refreshToken string) (*Token, error) {
 	if refreshToken == "" {
 		return nil, fmt.Errorf("missing refresh token")
 	}
@@ -261,7 +259,7 @@ func RefreshToken(refreshToken string) (*Token, error) {
 		"refresh_token": {refreshToken},
 		"client_id":     {ssoClientId},
 	}
-	rawToken, err := fetchOauthToken(form)
+	rawToken, err := fetchOauthToken(client, form)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +271,7 @@ func RefreshToken(refreshToken string) (*Token, error) {
 	return &character, nil
 }
 
-func fetchOauthToken(form url.Values) (*tokenPayload, error) {
+func fetchOauthToken(client http.Client, form url.Values) (*tokenPayload, error) {
 	req, err := http.NewRequest(
 		"POST", ssoTokenUrl, strings.NewReader(form.Encode()),
 	)
@@ -286,7 +284,7 @@ func fetchOauthToken(form url.Values) (*tokenPayload, error) {
 	log.Printf("Requesting token from SSO API by %s from %s", form.Get("grant_type"), ssoTokenUrl)
 	log.Printf("Request: %v", form)
 
-	resp, err := httpClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

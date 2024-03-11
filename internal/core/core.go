@@ -26,7 +26,7 @@ func AddCharacter() (*storage.Token, error) {
 		"esi-universe.read_structures.v1",
 		"esi-mail.read_mail.v1",
 	}
-	ssoToken, err := sso.Authenticate(scopes)
+	ssoToken, err := sso.Authenticate(httpClient, scopes)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func updateMailLists(l []esi.MailList) error {
 func ensureFreshToken(token *storage.Token) error {
 	if !token.RemainsValid(time.Second * 60) {
 		log.Printf("Need to refresh token: %v", token)
-		rawToken, err := sso.RefreshToken(token.RefreshToken)
+		rawToken, err := sso.RefreshToken(httpClient, token.RefreshToken)
 		if err != nil {
 			return err
 		}
