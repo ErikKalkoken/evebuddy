@@ -31,19 +31,20 @@ type headers struct {
 }
 
 func (h *headers) update(charID int32, labelID int32) {
+	var d []interface{}
 	mm, err := storage.FetchMailsForLabel(charID, labelID)
 	if err != nil {
-		log.Fatalf("Failed to fetch mail: %v", err)
-	}
-	var d []interface{}
-	for _, m := range mm {
-		o := mailItem{
-			id:        m.ID,
-			from:      m.From.Name,
-			subject:   m.Subject,
-			timestamp: m.TimeStamp,
+		log.Printf("Failed to fetch mail: %v", err)
+	} else {
+		for _, m := range mm {
+			o := mailItem{
+				id:        m.ID,
+				from:      m.From.Name,
+				subject:   m.Subject,
+				timestamp: m.TimeStamp,
+			}
+			d = append(d, o)
 		}
-		d = append(d, o)
 	}
 	h.boundList.Set(d)
 
