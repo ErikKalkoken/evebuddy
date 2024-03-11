@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -18,12 +19,52 @@ type labelItem struct {
 }
 
 type folders struct {
+	esiApp        *esiApp
 	container     fyne.CanvasObject
 	boundList     binding.ExternalUntypedList
 	boundCharID   binding.ExternalInt
 	headers       *headers
 	list          *widget.List
 	refreshButton *widget.Button
+}
+
+func (f *folders) addRefreshButton() {
+	b := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+		f.updateMails()
+	})
+	f.refreshButton = b
+}
+
+func (f *folders) updateMailsWithID(charID int32) {
+	err := f.boundCharID.Set(int(charID))
+	if err != nil {
+		log.Printf("Failed to set char ID: %v", err)
+	}
+	f.updateMails()
+}
+
+func (f *folders) updateMails() {
+	charID, err := f.boundCharID.Get()
+	if err != nil {
+		log.Print("Failed to get character ID")
+		return
+	}
+	p := widget.NewProgressBarInfinite()
+	l := widget.NewLabel("Updating mails...")
+	c := container.NewVBox(l, p)
+	d := dialog.NewCustomWithoutButtons(
+		"Refresh mails",
+		c,
+		f.esiApp.main,
+	)
+	d.Show()
+	err = core.UpdateMails(int32(charID))
+	d.Hide()
+	if err != nil {
+		log.Printf("Failed to update mails for character %d: %v", charID, err)
+		return
+	}
+	f.update(int32(charID))
 }
 
 func (f *folders) update(charID int32) {
@@ -36,7 +77,10 @@ func (f *folders) update(charID int32) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	f.boundCharID.Set(int(charID))
+	err = f.boundCharID.Set(int(charID))
+	if err != nil {
+		log.Printf("Failed to set char ID: %v", err)
+	}
 	var ii []interface{}
 	if len(labels) > 0 {
 		ii = append(ii, labelItem{id: allMailsLabelID, name: "All Mails"})
@@ -52,16 +96,16 @@ func (f *folders) update(charID int32) {
 
 func (e *esiApp) newFolders(headers *headers) *folders {
 	list, boundList, boundCharID := makeFolderList(headers)
-	b := makeRefreshButton(boundCharID)
-	c := container.NewBorder(b, nil, nil, nil, list)
 	f := folders{
-		container:     c,
-		boundList:     boundList,
-		boundCharID:   boundCharID,
-		headers:       headers,
-		list:          list,
-		refreshButton: b,
+		esiApp:      e,
+		boundList:   boundList,
+		boundCharID: boundCharID,
+		headers:     headers,
+		list:        list,
 	}
+	f.addRefreshButton()
+	c := container.NewBorder(f.refreshButton, nil, nil, nil, f.list)
+	f.container = c
 	return &f
 }
 
@@ -103,19 +147,4 @@ func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList
 
 	}
 	return container, boundList, boundCharID
-}
-
-func makeRefreshButton(boundCharID binding.ExternalInt) *widget.Button {
-	b := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-		charID, err := boundCharID.Get()
-		if err != nil {
-			log.Print("Failed to get character ID")
-			return
-		}
-		if err := core.UpdateMails(int32(charID)); err != nil {
-			log.Printf("Failed to update mails for character %d: %v", charID, err)
-			return
-		}
-	})
-	return b
 }
