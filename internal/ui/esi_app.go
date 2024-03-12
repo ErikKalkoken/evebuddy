@@ -33,7 +33,6 @@ func NewEsiApp(a fyne.App) fyne.Window {
 
 	bar := e.newStatusBar()
 	e.statusBar = bar
-	bar.update("PLACEHOLDER")
 
 	mail := e.newMail()
 	headers := e.newHeaders(mail)

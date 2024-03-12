@@ -14,59 +14,68 @@ import (
 )
 
 type mail struct {
-	content *fyne.Container
+	content fyne.CanvasObject
+	bodyC   *container.Scroll
+	subject *widget.Label
+	header  *widget.Label
+	body    *widget.Label
 	policy  *bluemonday.Policy
 }
 
-func (m *mail) clear() {
-	m.content.RemoveAll()
-	m.content.Refresh()
-}
-
 func (m *mail) update(mailID uint) {
-	m.content.RemoveAll()
-	defer m.content.Refresh()
-
 	mail, err := storage.FetchMailByID(mailID)
 	if err != nil {
-		log.Printf("Failed to fetch mail %v: %v", mailID, err)
+		log.Printf("Failed to render mail: %v", err)
 		return
 	}
-
-	subject := widget.NewLabel(mail.Subject)
-	subject.TextStyle = fyne.TextStyle{Bold: true}
-	subject.Truncation = fyne.TextTruncateEllipsis
 
 	var names []string
 	for _, n := range mail.Recipients {
 		names = append(names, n.Name)
 	}
-	t := fmt.Sprintf(
-		"From: %s\nSent: %s\nTo: %s",
+	header := fmt.Sprintf(
+		"From: %s\nSent:%s\nTo:%s",
 		mail.From.Name,
 		mail.TimeStamp.Format(myDateTime),
 		strings.Join(names, ", "),
 	)
-	header := widget.NewLabel(t)
-	header.Wrapping = fyne.TextWrapBreak
+	t := strings.ReplaceAll(mail.Body, "<br>", "\n")
+	body := html.UnescapeString(m.policy.Sanitize(t))
 
-	wrapper := container.NewVBox(subject, header)
+	m.updateContent(mail.Subject, header, body)
+}
 
-	text := strings.ReplaceAll(mail.Body, "<br>", "\n")
-	body := widget.NewLabel(html.UnescapeString(m.policy.Sanitize(text)))
-	body.Wrapping = fyne.TextWrapBreak
-	bodyWithScroll := container.NewVScroll(body)
+func (m *mail) clear() {
+	m.updateContent("", "", "")
+}
 
-	inner := container.NewBorder(wrapper, nil, nil, nil, bodyWithScroll)
-
-	m.content.Add(inner)
+func (m *mail) updateContent(s string, h string, b string) {
+	m.subject.SetText(s)
+	m.header.SetText(h)
+	m.body.SetText(b)
+	m.bodyC.ScrollToTop()
 }
 
 func (e *esiApp) newMail() *mail {
+	subject := widget.NewLabel("")
+	subject.TextStyle = fyne.TextStyle{Bold: true}
+	subject.Truncation = fyne.TextTruncateEllipsis
+
+	header := widget.NewLabel("")
+	header.Truncation = fyne.TextTruncateEllipsis
+	wrapper := container.NewVBox(subject, header)
+
+	body := widget.NewLabel("")
+	body.Wrapping = fyne.TextWrapBreak
+	bodyWithScroll := container.NewVScroll(body)
+	content := container.NewBorder(wrapper, nil, nil, nil, bodyWithScroll)
 	policy := bluemonday.StrictPolicy()
-	c := container.NewStack()
 	m := mail{
-		content: c,
+		content: content,
+		bodyC:   bodyWithScroll,
+		subject: subject,
+		header:  header,
+		body:    body,
 		policy:  policy,
 	}
 	return &m
