@@ -23,9 +23,50 @@ func UpdateMails(characterID int32, statusLabelText binding.String) error {
 	if err != nil {
 		return err
 	}
-	character := token.Character
+	status.SetText("Checking for new mail for %v", token.Character.Name)
+	if err := updateMailLists(token); err != nil {
+		return err
+	}
+	if err := updateMailLabels(token); err != nil {
+		return err
+	}
+	headers, err := fetchMailHeaders(token)
+	if err != nil {
+		return err
+	}
+	err = updateMails(token, headers, status)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-	status.SetText("Checking for new mail for %v", character.Name)
+func updateMailLabels(token *storage.Token) error {
+	if err := ensureFreshToken(token); err != nil {
+		return err
+	}
+	ll, err := esi.FetchMailLabels(httpClient, token.CharacterID, token.AccessToken)
+	if err != nil {
+		return err
+	}
+	labels := ll.Labels
+	log.Printf("Received %d mail labels from ESI for character %d", len(labels), token.CharacterID)
+	for _, o := range labels {
+		e := storage.MailLabel{
+			CharacterID: token.CharacterID,
+			ID:          o.ID,
+			Name:        o.Name,
+			Color:       o.Color,
+			UnreadCount: o.UnreadCount,
+		}
+		if err := e.Save(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func updateMailLists(token *storage.Token) error {
 	if err := ensureFreshToken(token); err != nil {
 		return err
 	}
@@ -33,42 +74,32 @@ func UpdateMails(characterID int32, statusLabelText binding.String) error {
 	if err != nil {
 		return err
 	}
-	if err := updateMailLists(lists); err != nil {
-		return err
+	for _, o := range lists {
+		e := storage.EveEntity{ID: o.ID, Name: o.Name, Category: "mail_list"}
+		if err := e.Save(); err != nil {
+			return err
+		}
 	}
+	return nil
+}
 
+func fetchMailHeaders(token *storage.Token) ([]esi.MailHeader, error) {
 	if err := ensureFreshToken(token); err != nil {
-		return err
-	}
-	l, err := esi.FetchMailLabels(httpClient, token.CharacterID, token.AccessToken)
-	if err != nil {
-		return err
-	}
-	labels := l.Labels
-	log.Printf("Received %d mail labels from ESI for character %d", len(labels), token.CharacterID)
-	if err := updateMailLabels(characterID, labels); err != nil {
-		return err
-	}
-
-	if err := ensureFreshToken(token); err != nil {
-		return err
+		return nil, err
 	}
 	headers, err := esi.FetchMailHeaders(httpClient, token.CharacterID, token.AccessToken, maxMails)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Printf("Received %d mail headers from ESI for character %d", len(headers), token.CharacterID)
+	return headers, nil
+}
 
-	ids, err := storage.FetchMailIDs(characterID)
+func updateMails(token *storage.Token, headers []esi.MailHeader, status statusLabel) error {
+	existingIDs, missingIDs, err := determineMailIDs(token.CharacterID, headers)
 	if err != nil {
 		return err
 	}
-	existingIDs := helpers.NewSet(ids)
-	incomingIDs := helpers.NewSet([]int32{})
-	for _, h := range headers {
-		incomingIDs.Add(h.ID)
-	}
-	missingIDs := incomingIDs.Difference(existingIDs)
 	newMailsCount := missingIDs.Size()
 	if newMailsCount == 0 {
 		s := "No new mail"
@@ -107,7 +138,7 @@ func UpdateMails(characterID int32, statusLabelText binding.String) error {
 			}
 
 			mail := storage.Mail{
-				Character: character,
+				Character: token.Character,
 				MailID:    header.ID,
 				Subject:   header.Subject,
 				Body:      m.Body,
@@ -139,7 +170,7 @@ func UpdateMails(characterID int32, statusLabelText binding.String) error {
 			}
 			mail.Recipients = rr
 
-			labels, err := storage.FetchMailLabels(characterID, m.Labels)
+			labels, err := storage.FetchMailLabels(token.CharacterID, m.Labels)
 			if err != nil {
 				log.Printf("Failed to resolve labels for mail %d: %v", header.ID, err)
 			} else {
@@ -165,31 +196,18 @@ func UpdateMails(characterID int32, statusLabelText binding.String) error {
 	return nil
 }
 
-func updateMailLabels(characterID int32, l []esi.MailLabel) error {
-	for _, o := range l {
-		e := storage.MailLabel{
-			CharacterID: characterID,
-			ID:          o.ID,
-			Name:        o.Name,
-			Color:       o.Color,
-			UnreadCount: o.UnreadCount,
-		}
-		if err := e.Save(); err != nil {
-			return err
-		}
+func determineMailIDs(characterID int32, headers []esi.MailHeader) (*helpers.Set[int32], *helpers.Set[int32], error) {
+	ids, err := storage.FetchMailIDs(characterID)
+	if err != nil {
+		return nil, nil, err
 	}
-	return nil
-}
-
-// updateMailLists stores mail lists
-func updateMailLists(l []esi.MailList) error {
-	for _, o := range l {
-		e := storage.EveEntity{ID: o.ID, Name: o.Name, Category: "mail_list"}
-		if err := e.Save(); err != nil {
-			return err
-		}
+	existingIDs := helpers.NewSet(ids)
+	incomingIDs := helpers.NewSet([]int32{})
+	for _, h := range headers {
+		incomingIDs.Add(h.ID)
 	}
-	return nil
+	missingIDs := incomingIDs.Difference(existingIDs)
+	return existingIDs, missingIDs, nil
 }
 
 // ensureFreshToken will automatically try to refresh a token that is already or about to become invalid.
