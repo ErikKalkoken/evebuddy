@@ -41,10 +41,10 @@ func NewEsiApp(a fyne.App) fyne.Window {
 	characters := e.newCharacters(folders)
 	characters.update(charID)
 
-	headersMail := container.NewHSplit(headers.container, mail.container)
+	headersMail := container.NewHSplit(headers.content, mail.content)
 	headersMail.SetOffset(0.35)
 
-	main := container.NewHSplit(folders.container, headersMail)
+	main := container.NewHSplit(folders.content, headersMail)
 	main.SetOffset(0.15)
 
 	content := container.NewBorder(characters.container, bar.content, nil, nil, main)

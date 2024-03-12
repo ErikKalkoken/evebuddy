@@ -19,7 +19,7 @@ type labelItem struct {
 
 type folders struct {
 	esiApp        *esiApp
-	container     fyne.CanvasObject
+	content       fyne.CanvasObject
 	boundList     binding.ExternalUntypedList
 	boundCharID   binding.ExternalInt
 	headers       *headers
@@ -99,7 +99,7 @@ func (e *esiApp) newFolders(headers *headers) *folders {
 	}
 	f.addRefreshButton()
 	c := container.NewBorder(f.refreshButton, nil, nil, nil, f.list)
-	f.container = c
+	f.content = c
 	return &f
 }
 

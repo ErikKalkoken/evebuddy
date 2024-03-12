@@ -23,7 +23,7 @@ type mailItem struct {
 }
 
 type headers struct {
-	container  fyne.CanvasObject
+	content    fyne.CanvasObject
 	list       *widget.List
 	boundList  binding.ExternalUntypedList
 	boundTotal binding.String
@@ -113,7 +113,7 @@ func (e *esiApp) newHeaders(mail *mail) *headers {
 	c := container.NewBorder(total, nil, nil, nil, list)
 
 	m := headers{
-		container:  c,
+		content:    c,
 		list:       list,
 		boundList:  boundList,
 		boundTotal: boundTotal,

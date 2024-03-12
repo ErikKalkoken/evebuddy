@@ -14,18 +14,18 @@ import (
 )
 
 type mail struct {
-	container *fyne.Container
-	policy    *bluemonday.Policy
+	content *fyne.Container
+	policy  *bluemonday.Policy
 }
 
 func (m *mail) clear() {
-	m.container.RemoveAll()
-	m.container.Refresh()
+	m.content.RemoveAll()
+	m.content.Refresh()
 }
 
 func (m *mail) update(mailID uint) {
-	m.container.RemoveAll()
-	defer m.container.Refresh()
+	m.content.RemoveAll()
+	defer m.content.Refresh()
 
 	mail, err := storage.FetchMailByID(mailID)
 	if err != nil {
@@ -59,15 +59,15 @@ func (m *mail) update(mailID uint) {
 
 	inner := container.NewBorder(wrapper, nil, nil, nil, bodyWithScroll)
 
-	m.container.Add(inner)
+	m.content.Add(inner)
 }
 
 func (e *esiApp) newMail() *mail {
 	policy := bluemonday.StrictPolicy()
 	c := container.NewStack()
 	m := mail{
-		container: c,
-		policy:    policy,
+		content: c,
+		policy:  policy,
 	}
 	return &m
 }
