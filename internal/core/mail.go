@@ -17,14 +17,15 @@ import (
 const maxMails = 1000
 
 // UpdateMails fetches and stores new mails from ESI for a character.
-func UpdateMails(characterID int32, statusLabel binding.String) error {
+func UpdateMails(characterID int32, statusLabelText binding.String) error {
+	status := newStatusLabel(statusLabelText)
 	token, err := storage.FetchToken(characterID)
 	if err != nil {
 		return err
 	}
 	character := token.Character
 
-	statusLabel.Set(fmt.Sprintf("Checking for new mail for %v", character.Name))
+	status.SetText("Checking for new mail for %v", character.Name)
 	if err := ensureFreshToken(token); err != nil {
 		return err
 	}
@@ -71,7 +72,7 @@ func UpdateMails(characterID int32, statusLabel binding.String) error {
 	newMailsCount := missingIDs.Size()
 	if newMailsCount == 0 {
 		s := "No new mail"
-		statusLabel.Set(s)
+		status.SetText(s)
 		log.Print(s)
 		return nil
 	}
@@ -149,17 +150,17 @@ func UpdateMails(characterID int32, statusLabel binding.String) error {
 			log.Printf("Stored new mail %d for character %v", header.ID, token.CharacterID)
 			c.Add(1)
 			current := c.Load()
-			statusLabel.Set(fmt.Sprintf("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name))
+			status.SetText("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name)
 		}()
 	}
 	wg.Wait()
 	total := c.Load()
 	if total == 0 {
-		statusLabel.Set("")
+		status.Clear()
 		return nil
 	}
 	s := fmt.Sprintf("Stored %d new mails", total)
-	statusLabel.Set(s)
+	status.SetText(s)
 	log.Print(s)
 	return nil
 }
