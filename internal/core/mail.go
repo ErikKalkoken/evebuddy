@@ -121,7 +121,7 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status statusLa
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			entityIDs := set.New([]int32{})
+			entityIDs := set.New[int32]()
 			entityIDs.Add(header.FromID)
 			for _, r := range header.Recipients {
 				entityIDs.Add(r.ID)
@@ -201,8 +201,8 @@ func determineMailIDs(characterID int32, headers []esi.MailHeader) (*set.Set[int
 	if err != nil {
 		return nil, nil, err
 	}
-	existingIDs := set.New(ids)
-	incomingIDs := set.New([]int32{})
+	existingIDs := set.NewFromSlice(ids)
+	incomingIDs := set.New[int32]()
 	for _, h := range headers {
 		incomingIDs.Add(h.ID)
 	}
@@ -235,8 +235,8 @@ func addMissingEveEntities(ids []int32) error {
 	if err != nil {
 		return err
 	}
-	current := set.New(c)
-	incoming := set.New(ids)
+	current := set.NewFromSlice(c)
+	incoming := set.NewFromSlice(ids)
 	missing := incoming.Difference(current)
 
 	if missing.Size() == 0 {
