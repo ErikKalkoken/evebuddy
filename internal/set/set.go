@@ -1,6 +1,5 @@
-// Package helpers contains generic helper functions and types,
-// which are meant be used across all internal packages.
-package helpers
+// Package set defines a generic set type
+package set
 
 // Set is a generic set.
 type Set[T comparable] struct {
@@ -46,7 +45,7 @@ func (s *Set[T]) ToSlice() []T {
 
 // Union returns a new set containing the combined elements from both sets.
 func (s *Set[T]) Union(other *Set[T]) *Set[T] {
-	n := NewSet([]T{})
+	n := New([]T{})
 	for v := range s.items {
 		n.Add(v)
 	}
@@ -59,7 +58,7 @@ func (s *Set[T]) Union(other *Set[T]) *Set[T] {
 
 // Intersect returns a new set which contains elements found in both sets only.
 func (s *Set[T]) Intersect(other *Set[T]) *Set[T] {
-	n := NewSet([]T{})
+	n := New([]T{})
 	for v := range s.items {
 		if !other.Has(v) {
 			continue
@@ -72,7 +71,7 @@ func (s *Set[T]) Intersect(other *Set[T]) *Set[T] {
 // Difference returns a new set which elements from current set,
 // that does not exist in other set.
 func (s *Set[T]) Difference(other *Set[T]) *Set[T] {
-	n := NewSet([]T{})
+	n := New([]T{})
 	for v := range s.items {
 		if other.Has(v) {
 			continue
@@ -82,8 +81,8 @@ func (s *Set[T]) Difference(other *Set[T]) *Set[T] {
 	return n
 }
 
-// NewSet returns a new set from a slice.
-func NewSet[T comparable](slice []T) *Set[T] {
+// New returns a new set from a slice.
+func New[T comparable](slice []T) *Set[T] {
 	var s Set[T]
 	s.items = make(map[T]struct{}, len(slice))
 	for _, el := range slice {

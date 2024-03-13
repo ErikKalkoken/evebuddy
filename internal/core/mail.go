@@ -2,7 +2,7 @@ package core
 
 import (
 	"example/esiapp/internal/esi"
-	"example/esiapp/internal/helpers"
+	"example/esiapp/internal/set"
 	"example/esiapp/internal/sso"
 	"example/esiapp/internal/storage"
 	"fmt"
@@ -121,7 +121,7 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status statusLa
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			entityIDs := helpers.NewSet([]int32{})
+			entityIDs := set.New([]int32{})
 			entityIDs.Add(header.FromID)
 			for _, r := range header.Recipients {
 				entityIDs.Add(r.ID)
@@ -196,13 +196,13 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status statusLa
 	return nil
 }
 
-func determineMailIDs(characterID int32, headers []esi.MailHeader) (*helpers.Set[int32], *helpers.Set[int32], error) {
+func determineMailIDs(characterID int32, headers []esi.MailHeader) (*set.Set[int32], *set.Set[int32], error) {
 	ids, err := storage.FetchMailIDs(characterID)
 	if err != nil {
 		return nil, nil, err
 	}
-	existingIDs := helpers.NewSet(ids)
-	incomingIDs := helpers.NewSet([]int32{})
+	existingIDs := set.New(ids)
+	incomingIDs := set.New([]int32{})
 	for _, h := range headers {
 		incomingIDs.Add(h.ID)
 	}
@@ -235,8 +235,8 @@ func addMissingEveEntities(ids []int32) error {
 	if err != nil {
 		return err
 	}
-	current := helpers.NewSet(c)
-	incoming := helpers.NewSet(ids)
+	current := set.New(c)
+	incoming := set.New(ids)
 	missing := incoming.Difference(current)
 
 	if missing.Size() == 0 {

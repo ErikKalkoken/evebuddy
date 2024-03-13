@@ -1,4 +1,4 @@
-package helpers
+package set
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestSetHas(t *testing.T) {
-	s := NewSet([]int{3, 7, 9})
+	s := New([]int{3, 7, 9})
 
 	cases := []struct {
 		in   int
@@ -28,50 +28,50 @@ func TestSetHas(t *testing.T) {
 }
 
 func TestSetCanAddToEmpty(t *testing.T) {
-	got := NewSet([]int{})
+	got := New([]int{})
 	got.Add(3)
-	want := NewSet([]int{3})
+	want := New([]int{3})
 	assert.Equal(t, want, got)
 }
 
 func TestSetCanAddToFull(t *testing.T) {
-	got := NewSet([]int{1, 2})
+	got := New([]int{1, 2})
 	got.Add(3)
-	want := NewSet([]int{1, 2, 3})
+	want := New([]int{1, 2, 3})
 	assert.Equal(t, want, got)
 }
 
 func TestSetSize(t *testing.T) {
-	s1 := NewSet([]int{1, 2, 3})
+	s1 := New([]int{1, 2, 3})
 	assert.Equal(t, 3, s1.Size())
 
-	s2 := NewSet([]int{})
+	s2 := New([]int{})
 	assert.Equal(t, 0, s2.Size())
 }
 
 func TestSetCanRemoveWhenExists(t *testing.T) {
-	got := NewSet([]int{1, 2})
+	got := New([]int{1, 2})
 	got.Remove(2)
-	want := NewSet([]int{1})
+	want := New([]int{1})
 	assert.Equal(t, want, got)
 }
 
 func TestSetCanRemoveWhenNotExists(t *testing.T) {
-	got := NewSet([]int{1, 2})
+	got := New([]int{1, 2})
 	got.Remove(3)
-	want := NewSet([]int{1, 2})
+	want := New([]int{1, 2})
 	assert.Equal(t, want, got)
 }
 
 func TestSetCanClear(t *testing.T) {
-	got := NewSet([]int{1, 2})
+	got := New([]int{1, 2})
 	got.Clear()
-	want := NewSet([]int{})
+	want := New([]int{})
 	assert.Equal(t, want, got)
 }
 
 func TestSetCanConvertToSlice(t *testing.T) {
-	s := NewSet([]int{1, 2})
+	s := New([]int{1, 2})
 	got := s.ToSlice()
 	assert.Equal(t, len(got), 2)
 	assert.Contains(t, got, 1)
@@ -79,25 +79,25 @@ func TestSetCanConvertToSlice(t *testing.T) {
 }
 
 func TestSetCanUnion(t *testing.T) {
-	s1 := NewSet([]int{1, 2})
-	s2 := NewSet([]int{2, 3})
-	want := NewSet([]int{1, 2, 3})
+	s1 := New([]int{1, 2})
+	s2 := New([]int{2, 3})
+	want := New([]int{1, 2, 3})
 	got := s1.Union(s2)
 	assert.Equal(t, want, got)
 }
 
 func TestSetCanIntersect(t *testing.T) {
-	s1 := NewSet([]int{1, 2})
-	s2 := NewSet([]int{2, 3})
-	want := NewSet([]int{2})
+	s1 := New([]int{1, 2})
+	s2 := New([]int{2, 3})
+	want := New([]int{2})
 	got := s1.Intersect(s2)
 	assert.Equal(t, want, got)
 }
 
 func TestSetCanDifference(t *testing.T) {
-	s1 := NewSet([]int{1, 2})
-	s2 := NewSet([]int{2, 3})
-	want := NewSet([]int{1})
+	s1 := New([]int{1, 2})
+	s2 := New([]int{2, 3})
+	want := New([]int{1})
 	got := s1.Difference(s2)
 	assert.Equal(t, want, got)
 }

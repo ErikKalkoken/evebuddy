@@ -5,13 +5,14 @@ import (
 	"example/esiapp/internal/storage"
 )
 
+var scopes = []string{
+	"esi-characters.read_contacts.v1",
+	"esi-universe.read_structures.v1",
+	"esi-mail.read_mail.v1",
+}
+
 // AddCharacter adds a new character via SSO authentication and returns the new token.
 func AddCharacter() (*storage.Token, error) {
-	scopes := []string{
-		"esi-characters.read_contacts.v1",
-		"esi-universe.read_structures.v1",
-		"esi-mail.read_mail.v1",
-	}
 	ssoToken, err := sso.Authenticate(httpClient, scopes)
 	if err != nil {
 		return nil, err
