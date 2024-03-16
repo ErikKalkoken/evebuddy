@@ -1,33 +1,32 @@
 package ui
 
 import (
-	"log"
+	"fmt"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 )
 
 type statusBar struct {
 	content *fyne.Container
-	label   binding.String
+	label   *widget.Label
 }
 
-func (s *statusBar) update(text string) {
-	err := s.label.Set(text)
-	if err != nil {
-		log.Printf("Failed to set status label: %v", err)
-	}
+func (s *statusBar) setText(format string, a ...any) {
+	s.label.SetText(fmt.Sprintf(format, a...))
+}
+
+func (s *statusBar) clear() {
+	s.setText("")
 }
 
 func (e *esiApp) newStatusBar() *statusBar {
-	label := binding.NewString()
-	l := widget.NewLabelWithData(label)
+	l := widget.NewLabel("")
 	c := container.NewVBox(widget.NewSeparator(), l)
 	s := statusBar{
 		content: c,
-		label:   label,
+		label:   l,
 	}
 	return &s
 }

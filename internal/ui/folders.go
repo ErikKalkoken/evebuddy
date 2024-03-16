@@ -56,11 +56,11 @@ func (f *folders) updateMails() {
 		log.Print("Failed to get character ID")
 		return
 	}
-	statusLabel := f.esiApp.statusBar.label
+	status := f.esiApp.statusBar
 	go func() {
-		err = UpdateMails(int32(charID), statusLabel)
+		err = UpdateMails(int32(charID), status)
 		if err != nil {
-			statusLabel.Set("Failed to fetch mail")
+			status.setText("Failed to fetch mail")
 			log.Printf("Failed to update mails for character %d: %v", charID, err)
 			return
 		}
@@ -152,13 +152,12 @@ func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList
 }
 
 // UpdateMails fetches and stores new mails from ESI for a character.
-func UpdateMails(characterID int32, statusLabelText binding.String) error {
-	status := newStatusLabel(statusLabelText)
+func UpdateMails(characterID int32, status *statusBar) error {
 	token, err := storage.FetchToken(characterID)
 	if err != nil {
 		return err
 	}
-	status.SetText("Checking for new mail for %v", token.Character.Name)
+	status.setText("Checking for new mail for %v", token.Character.Name)
 	if err := updateMailLists(token); err != nil {
 		return err
 	}
@@ -230,7 +229,7 @@ func fetchMailHeaders(token *storage.Token) ([]esi.MailHeader, error) {
 	return headers, nil
 }
 
-func updateMails(token *storage.Token, headers []esi.MailHeader, status statusLabel) error {
+func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusBar) error {
 	existingIDs, missingIDs, err := determineMailIDs(token.CharacterID, headers)
 	if err != nil {
 		return err
@@ -238,7 +237,7 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status statusLa
 	newMailsCount := missingIDs.Size()
 	if newMailsCount == 0 {
 		s := "No new mail"
-		status.SetText(s)
+		status.setText(s)
 		log.Print(s)
 		return nil
 	}
@@ -316,17 +315,17 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status statusLa
 			log.Printf("Stored new mail %d for character %v", header.ID, token.CharacterID)
 			c.Add(1)
 			current := c.Load()
-			status.SetText("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name)
+			status.setText("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name)
 		}()
 	}
 	wg.Wait()
 	total := c.Load()
 	if total == 0 {
-		status.Clear()
+		status.clear()
 		return nil
 	}
 	s := fmt.Sprintf("Stored %d new mails", total)
-	status.SetText(s)
+	status.setText(s)
 	log.Print(s)
 	return nil
 }
