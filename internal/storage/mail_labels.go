@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"log"
+
 	"gorm.io/gorm"
 )
 
@@ -37,4 +39,23 @@ func FetchAllMailLabels(characterID int32) ([]MailLabel, error) {
 		return nil, err
 	}
 	return ll, nil
+}
+
+func UpdateOrCreateMailLabel(characterID int32, labelID int32, color string, name string, unreadCount int32) (*MailLabel, error) {
+	var l MailLabel
+	err := db.Where("character_id = ? AND label_id = ?", characterID, labelID).Find(&l).Error
+	if err != nil {
+		return nil, err
+	}
+	l.CharacterID = characterID
+	l.LabelID = labelID
+	l.Color = color
+	l.Name = name
+	l.UnreadCount = unreadCount
+	err = l.Save()
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Updated mail label %d", l.LabelID)
+	return &l, nil
 }

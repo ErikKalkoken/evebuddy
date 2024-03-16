@@ -84,15 +84,9 @@ func updateMailLabels(token *storage.Token) error {
 	labels := ll.Labels
 	log.Printf("Received %d mail labels from ESI for character %d", len(labels), token.CharacterID)
 	for _, o := range labels {
-		e := storage.MailLabel{
-			CharacterID: token.CharacterID,
-			LabelID:     o.LabelID,
-			Name:        o.Name,
-			Color:       o.Color,
-			UnreadCount: o.UnreadCount,
-		}
-		if err := e.Save(); err != nil {
-			return err
+		_, err := storage.UpdateOrCreateMailLabel(token.CharacterID, o.LabelID, o.Color, o.Name, o.UnreadCount)
+		if err != nil {
+			log.Printf("Error when trying to update mail label: %v", err)
 		}
 	}
 	return nil
