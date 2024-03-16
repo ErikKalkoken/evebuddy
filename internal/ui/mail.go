@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"log"
+	"net/http"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -12,6 +13,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/microcosm-cc/bluemonday"
 )
+
+var httpClient http.Client
 
 type mail struct {
 	content fyne.CanvasObject
