@@ -78,7 +78,7 @@ func (f *folders) update(charID int32) {
 		if len(labels) > 0 {
 			ii = append(ii, labelItem{id: allMailsLabelID, name: "All Mails"})
 			for _, l := range labels {
-				ii = append(ii, labelItem{id: l.ID, name: l.Name})
+				ii = append(ii, labelItem{id: l.LabelID, name: l.Name})
 			}
 		}
 	}

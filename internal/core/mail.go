@@ -54,7 +54,7 @@ func updateMailLabels(token *storage.Token) error {
 	for _, o := range labels {
 		e := storage.MailLabel{
 			CharacterID: token.CharacterID,
-			ID:          o.ID,
+			LabelID:     o.LabelID,
 			Name:        o.Name,
 			Color:       o.Color,
 			UnreadCount: o.UnreadCount,

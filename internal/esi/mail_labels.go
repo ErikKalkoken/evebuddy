@@ -8,7 +8,7 @@ import (
 )
 
 type MailLabel struct {
-	ID          int32  `json:"label_id"`
+	LabelID     int32  `json:"label_id"`
 	Name        string `json:"name"`
 	Color       string `json:"color"`
 	UnreadCount int32  `json:"unread_count"`

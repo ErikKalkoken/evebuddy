@@ -9,7 +9,7 @@ type MailLabel struct {
 	CharacterID int32
 	Character   Character
 	Color       string
-	ID          int32
+	LabelID     int32
 	Mails       []Mail `gorm:"many2many:mail_mail_labels;"`
 	Name        string
 	UnreadCount int32
@@ -17,7 +17,7 @@ type MailLabel struct {
 
 // Save creates or updates a mail label
 func (l *MailLabel) Save() error {
-	err := db.Where("character_id = ? AND id = ?", l.CharacterID, l.ID).Save(l).Error
+	err := db.Where("character_id = ? AND label_id = ?", l.CharacterID, l.LabelID).Save(l).Error
 	return err
 }
 
