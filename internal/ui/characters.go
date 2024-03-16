@@ -53,7 +53,7 @@ func (c *characters) makeManageButton(charID int32) *contextMenuButton {
 			log.Printf("Failed to add a new character: %v", err)
 		} else {
 			c.update(t.CharacterID)
-			c.folders.updateMailsWithID(charID)
+			c.folders.updateMailsWithID(t.CharacterID)
 		}
 		info.Hide()
 	})
