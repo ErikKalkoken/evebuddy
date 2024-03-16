@@ -1,4 +1,4 @@
-package ui
+package gui
 
 import (
 	"example/esiapp/internal/storage"

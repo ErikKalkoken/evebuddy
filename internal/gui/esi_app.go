@@ -1,5 +1,5 @@
 // Package UI contains the code for rendering the UI.
-package ui
+package gui
 
 import (
 	"example/esiapp/internal/storage"

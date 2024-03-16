@@ -5,8 +5,8 @@ import (
 
 	"fyne.io/fyne/v2/app"
 
+	"example/esiapp/internal/gui"
 	"example/esiapp/internal/storage"
-	"example/esiapp/internal/ui"
 )
 
 func main() {
@@ -19,6 +19,6 @@ func main() {
 	// storage.Test()
 
 	a := app.New()
-	w := ui.NewEsiApp(a)
+	w := gui.NewEsiApp(a)
 	w.ShowAndRun()
 }
