@@ -32,6 +32,7 @@ func (c *characters) update(charID int32) {
 	c.container.Add(buttonAdd)
 	c.container.Refresh()
 	c.folders.update(charID)
+	c.folders.updateMails()
 }
 
 func (c *characters) makeManageButton(charID int32) *contextMenuButton {

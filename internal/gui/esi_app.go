@@ -50,5 +50,7 @@ func NewEsiApp(a fyne.App) fyne.Window {
 	w.SetContent(content)
 	w.Resize(fyne.NewSize(800, 600))
 
+	folders.updateMails()
+
 	return w
 }
