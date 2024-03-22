@@ -30,9 +30,6 @@ func AddCharacter(ctx context.Context) (*storage.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	if ssoToken == nil {
-		return nil, fmt.Errorf("auth process canceled prematurely")
-	}
 	character := storage.Character{
 		ID:   ssoToken.CharacterID,
 		Name: ssoToken.CharacterName,

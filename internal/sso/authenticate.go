@@ -137,7 +137,7 @@ func Authenticate(ctx context.Context, client http.Client, scopes []string) (*To
 
 	character, ok := serverCtx.Value(keyAuthenticatedCharacter).(*Token)
 	if !ok {
-		return nil, nil
+		return nil, fmt.Errorf("auth process canceled prematurely")
 	}
 	return character, nil
 }
