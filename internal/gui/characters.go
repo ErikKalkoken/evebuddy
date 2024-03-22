@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"context"
 	"example/esiapp/internal/esi"
 	"example/esiapp/internal/storage"
 	"log"
@@ -35,15 +36,18 @@ func (c *characters) update(charID int32) {
 
 func (c *characters) makeManageButton(charID int32) *contextMenuButton {
 	addChar := fyne.NewMenuItem("Add Character", func() {
+		ctx, cancel := context.WithCancel(context.Background())
 		dlg := dialog.NewCustom(
 			"Add Character",
 			"Cancel",
 			widget.NewLabel("Please follow instructions in your browser to add a new character."),
 			c.esiApp.main,
 		)
+		dlg.SetOnClosed(cancel)
 		go func() {
+			defer cancel()
 			defer dlg.Hide()
-			token, err := AddCharacter()
+			token, err := AddCharacter(ctx)
 			if err != nil {
 				log.Printf("Failed to add a new character: %v", err)
 			} else {

@@ -50,32 +50,32 @@ type Token struct {
 
 // Authenticate an Eve Online character via SSO and return SSO token.
 // The process runs in a newly opened browser tab
-func Authenticate(client http.Client, scopes []string) (*Token, error) {
+func Authenticate(ctx context.Context, client http.Client, scopes []string) (*Token, error) {
 	codeVerifier := generateRandomString(32)
-	ctx := context.WithValue(context.Background(), keyCodeVerifier, codeVerifier)
+	serverCtx := context.WithValue(ctx, keyCodeVerifier, codeVerifier)
 
 	state := generateRandomString(16)
-	ctx = context.WithValue(ctx, keyState, state)
+	serverCtx = context.WithValue(serverCtx, keyState, state)
 
-	ctx, cancel := context.WithCancel(ctx)
+	serverCtx, cancel := context.WithCancel(serverCtx)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(ssoCallbackPath, func(w http.ResponseWriter, req *http.Request) {
 		log.Print("Received SSO callback")
 		v := req.URL.Query()
 		newState := v.Get("state")
-		if newState != ctx.Value(keyState).(string) {
+		if newState != serverCtx.Value(keyState).(string) {
 			http.Error(w, "Invalid state", http.StatusForbidden)
 			return
 		}
 
 		code := v.Get("code")
-		codeVerifier := ctx.Value(keyCodeVerifier).(string)
+		codeVerifier := serverCtx.Value(keyCodeVerifier).(string)
 		rawToken, err := retrieveTokenPayload(client, code, codeVerifier)
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			ctx = context.WithValue(ctx, keyError, err)
+			serverCtx = context.WithValue(serverCtx, keyError, err)
 			cancel()
 			return
 		}
@@ -84,7 +84,7 @@ func Authenticate(client http.Client, scopes []string) (*Token, error) {
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			ctx = context.WithValue(ctx, keyError, err)
+			serverCtx = context.WithValue(serverCtx, keyError, err)
 			cancel()
 			return
 		}
@@ -93,11 +93,11 @@ func Authenticate(client http.Client, scopes []string) (*Token, error) {
 		if err != nil {
 			log.Printf("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			ctx = context.WithValue(ctx, keyError, err)
+			serverCtx = context.WithValue(serverCtx, keyError, err)
 			cancel()
 			return
 		}
-		ctx = context.WithValue(ctx, keyAuthenticatedCharacter, character)
+		serverCtx = context.WithValue(serverCtx, keyAuthenticatedCharacter, character)
 
 		fmt.Fprintf(
 			w,
@@ -122,7 +122,7 @@ func Authenticate(client http.Client, scopes []string) (*Token, error) {
 		}
 	}()
 
-	<-ctx.Done() // wait for the signal to gracefully shutdown the server
+	<-serverCtx.Done() // wait for the signal to gracefully shutdown the server
 
 	err := server.Shutdown(context.Background())
 	if err != nil {
@@ -130,12 +130,15 @@ func Authenticate(client http.Client, scopes []string) (*Token, error) {
 	}
 	log.Println("Web server stopped")
 
-	errValue := ctx.Value(keyError)
+	errValue := serverCtx.Value(keyError)
 	if errValue != nil {
 		return nil, errValue.(error)
 	}
 
-	character := ctx.Value(keyAuthenticatedCharacter).(*Token)
+	character, ok := serverCtx.Value(keyAuthenticatedCharacter).(*Token)
+	if !ok {
+		return nil, nil
+	}
 	return character, nil
 }
 

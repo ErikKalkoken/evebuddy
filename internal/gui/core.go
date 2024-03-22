@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"context"
 	"example/esiapp/internal/esi"
 	"example/esiapp/internal/set"
 	"example/esiapp/internal/sso"
@@ -24,10 +25,13 @@ var scopes = []string{
 }
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.
-func AddCharacter() (*storage.Token, error) {
-	ssoToken, err := sso.Authenticate(httpClient, scopes)
+func AddCharacter(ctx context.Context) (*storage.Token, error) {
+	ssoToken, err := sso.Authenticate(ctx, httpClient, scopes)
 	if err != nil {
 		return nil, err
+	}
+	if ssoToken == nil {
+		return nil, fmt.Errorf("auth process canceled prematurely")
 	}
 	character := storage.Character{
 		ID:   ssoToken.CharacterID,
