@@ -35,20 +35,23 @@ func (c *characters) update(charID int32) {
 
 func (c *characters) makeManageButton(charID int32) *contextMenuButton {
 	addChar := fyne.NewMenuItem("Add Character", func() {
-		info := dialog.NewCustomWithoutButtons(
+		dlg := dialog.NewCustom(
 			"Add Character",
+			"Cancel",
 			widget.NewLabel("Please follow instructions in your browser to add a new character."),
 			c.esiApp.main,
 		)
-		info.Show()
-		t, err := AddCharacter()
-		if err != nil {
-			log.Printf("Failed to add a new character: %v", err)
-		} else {
-			c.update(t.CharacterID)
-			c.folders.updateMailsWithID(t.CharacterID)
-		}
-		info.Hide()
+		go func() {
+			defer dlg.Hide()
+			token, err := AddCharacter()
+			if err != nil {
+				log.Printf("Failed to add a new character: %v", err)
+			} else {
+				c.update(token.CharacterID)
+				c.folders.updateMailsWithID(token.CharacterID)
+			}
+		}()
+		dlg.Show()
 	})
 	menu := fyne.NewMenu("", addChar)
 	switchChar, err := c.makeMenuItem(charID)

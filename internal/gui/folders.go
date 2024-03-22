@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -97,7 +98,12 @@ func (e *esiApp) newFolders(headers *headers) *folders {
 		list:        list,
 	}
 	f.addRefreshButton()
-	c := container.NewBorder(f.refreshButton, nil, nil, nil, f.list)
+	b := widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
+		d := dialog.NewInformation("New message", "PLACEHOLDER", e.main)
+		d.Show()
+	})
+	top := container.NewHBox(f.refreshButton, b)
+	c := container.NewBorder(top, nil, nil, nil, f.list)
 	f.content = c
 	return &f
 }
