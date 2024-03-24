@@ -34,26 +34,26 @@ func (c *Character) PortraitURL(size int) fyne.URI {
 
 // FetchFirstCharacter returns a random character.
 func FetchFirstCharacter() (*Character, error) {
-	var obj Character
-	if err := db.Get(&obj, "SELECT * FROM characters LIMIT 1;"); err != nil {
+	var o Character
+	if err := db.Get(&o, "SELECT * FROM characters LIMIT 1;"); err != nil {
 		return nil, err
 	}
-	return &obj, nil
+	return &o, nil
 }
 
 func FetchCharacter(characterID int32) (*Character, error) {
-	var obj Character
-	if err := db.Get(&obj, "SELECT * FROM characters WHERE id = ?;", characterID); err != nil {
+	var o Character
+	if err := db.Get(&o, "SELECT * FROM characters WHERE id = ?;", characterID); err != nil {
 		return nil, err
 	}
-	return &obj, nil
+	return &o, nil
 }
 
 // FetchAllCharacters returns all characters.
 func FetchAllCharacters() ([]Character, error) {
-	var objs []Character
-	if err := db.Select(&objs, "SELECT * FROM characters ORDER BY name;"); err != nil {
+	var oo []Character
+	if err := db.Select(&oo, "SELECT * FROM characters ORDER BY name;"); err != nil {
 		return nil, err
 	}
-	return objs, nil
+	return oo, nil
 }

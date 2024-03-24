@@ -19,7 +19,7 @@ func main() {
 		panic(err)
 	}
 
-	storage.Test()
+	// storage.Test()
 
 	a := app.New()
 	w := gui.NewEsiApp(a)

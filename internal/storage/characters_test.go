@@ -26,8 +26,9 @@ func TestCharacterCanSaveNew(t *testing.T) {
 	// when
 	r, err := FetchFirstCharacter()
 	// then
-	assert.Nil(t, err)
-	assert.Equal(t, c, *r)
+	if assert.NoError(t, err) {
+		assert.Equal(t, c, *r)
+	}
 }
 
 func TestCharacterCanUpdate(t *testing.T) {
@@ -35,40 +36,44 @@ func TestCharacterCanUpdate(t *testing.T) {
 	truncateTables()
 	c := createCharacter(1, "Erik")
 	c.Name = "John"
-	assert.Nil(t, c.Save())
+	assert.NoError(t, c.Save())
 	// when
 	got, err := FetchFirstCharacter()
 	// then
-	assert.Nil(t, err)
-	assert.Equal(t, c, *got)
+	if assert.NoError(t, err) {
+		assert.Equal(t, c, *got)
+	}
 }
 
 func TestCharacterCanFetchByCharacterID(t *testing.T) {
 	// given
 	truncateTables()
 	c1 := Character{ID: 1, Name: "Erik"}
-	assert.Nil(t, c1.Save())
+	assert.NoError(t, c1.Save())
 	c2 := Character{ID: 2, Name: "Naoko"}
-	assert.Nil(t, c2.Save())
+	assert.NoError(t, c2.Save())
 	// when
 	r, err := FetchCharacter(2)
 	// then
-	assert.Nil(t, err)
-	assert.Equal(t, c2, *r)
+	if assert.NoError(t, err) {
+		assert.Equal(t, c2, *r)
+	}
 }
 
 func TestCharacterCanFetchAll(t *testing.T) {
 	// given
 	truncateTables()
 	c1 := Character{ID: 1, Name: "Naoko"}
-	assert.Nil(t, c1.Save())
+	assert.NoError(t, c1.Save())
 	c2 := Character{ID: 2, Name: "Erik"}
-	assert.Nil(t, c2.Save())
+	assert.NoError(t, c2.Save())
 	// when
 	got, err := FetchAllCharacters()
 	// then
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(got))
-	assert.Equal(t, "Erik", got[0].Name)
-	assert.Equal(t, "Naoko", got[1].Name)
+	if assert.NoError(t, err) {
+		assert.Equal(t, 2, len(got))
+		assert.Equal(t, "Erik", got[0].Name)
+		assert.Equal(t, "Naoko", got[1].Name)
+
+	}
 }

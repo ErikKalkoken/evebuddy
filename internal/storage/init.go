@@ -64,10 +64,9 @@ var schema = `
 	);
 
 	CREATE TABLE IF NOT EXISTS tokens (
-		id integer PRIMARY KEY AUTOINCREMENT,
 		access_token text,
-		character_id integer,
-		expires_at text,
+		character_id integer PRIMARY KEY,
+		expires_at datetime,
 		refresh_token text,
 		token_type text,
 		FOREIGN KEY (character_id) REFERENCES characters(id)

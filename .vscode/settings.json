@@ -11,6 +11,7 @@
         "AUTOINCREMENT",
         "Equalf",
         "bluemonday",
+        "datetime",
         "esiapp",
         "gock",
         "httpmock",

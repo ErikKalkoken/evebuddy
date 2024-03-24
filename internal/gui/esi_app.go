@@ -26,7 +26,7 @@ func NewEsiApp(a fyne.App) fyne.Window {
 	var charID int32
 	c, err := storage.FetchFirstCharacter()
 	if err != nil {
-		slog.Warn("Failed to load any character: %v", err)
+		slog.Warn("Failed to load any character", "error", err)
 	} else {
 		charID = c.ID
 	}
