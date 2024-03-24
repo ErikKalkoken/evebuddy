@@ -61,7 +61,7 @@ func Authenticate(ctx context.Context, client http.Client, scopes []string) (*To
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(ssoCallbackPath, func(w http.ResponseWriter, req *http.Request) {
-		slog.Info("Received SSO callback")
+		slog.Info("Received SSO callback request")
 		v := req.URL.Query()
 		newState := v.Get("state")
 		if newState != serverCtx.Value(keyState).(string) {
@@ -73,8 +73,9 @@ func Authenticate(ctx context.Context, client http.Client, scopes []string) (*To
 		codeVerifier := serverCtx.Value(keyCodeVerifier).(string)
 		rawToken, err := retrieveTokenPayload(client, code, codeVerifier)
 		if err != nil {
-			slog.Info("Error: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			msg := "Failed to retrieve token payload"
+			slog.Error(msg, "error", err)
+			http.Error(w, msg, http.StatusInternalServerError)
 			serverCtx = context.WithValue(serverCtx, keyError, err)
 			cancel()
 			return
@@ -82,8 +83,9 @@ func Authenticate(ctx context.Context, client http.Client, scopes []string) (*To
 
 		claims, err := validateToken(rawToken.AccessToken)
 		if err != nil {
-			slog.Info("Error: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			msg := "Failed to validate token"
+			slog.Error(msg, "token", rawToken.AccessToken, "error", err)
+			http.Error(w, msg, http.StatusInternalServerError)
 			serverCtx = context.WithValue(serverCtx, keyError, err)
 			cancel()
 			return
@@ -91,8 +93,9 @@ func Authenticate(ctx context.Context, client http.Client, scopes []string) (*To
 
 		character, err := buildToken(rawToken, claims)
 		if err != nil {
-			slog.Info("Error: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			msg := "Failed to construct token"
+			slog.Error(msg, "error", err)
+			http.Error(w, msg, http.StatusInternalServerError)
 			serverCtx = context.WithValue(serverCtx, keyError, err)
 			cancel()
 			return
@@ -118,7 +121,7 @@ func Authenticate(ctx context.Context, client http.Client, scopes []string) (*To
 	go func() {
 		slog.Info("Web server started", "address", address)
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			slog.Error("Web server terminated", "error", err)
+			slog.Error("Web server terminated prematurely", "error", err)
 		}
 	}()
 
@@ -208,7 +211,7 @@ func retrieveTokenPayload(client http.Client, code, codeVerifier string) (*token
 		return nil, err
 	}
 
-	slog.Debug("Response from API", "body", body)
+	slog.Debug("Response from API", "body", string(body))
 
 	token := tokenPayload{}
 	if err := json.Unmarshal(body, &token); err != nil {
@@ -301,7 +304,7 @@ func fetchOauthToken(client http.Client, form url.Values) (*tokenPayload, error)
 		return nil, err
 	}
 
-	slog.Info("Response from SSO API", "body", string(body))
+	slog.Debug("Response from SSO API", "body", string(body))
 
 	token := tokenPayload{}
 	if err := json.Unmarshal(body, &token); err != nil {

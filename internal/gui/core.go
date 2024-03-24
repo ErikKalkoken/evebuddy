@@ -87,7 +87,7 @@ func updateMailLabels(token *storage.Token) error {
 	for _, o := range labels {
 		_, err := storage.UpdateOrCreateMailLabel(token.CharacterID, o.LabelID, o.Color, o.Name, o.UnreadCount)
 		if err != nil {
-			slog.Error("Trying to update mail label", "error", err)
+			slog.Error("Failed to update mail label", "labelID", o.LabelID, "error", err)
 		}
 	}
 	return nil
@@ -283,6 +283,6 @@ func addMissingEveEntities(ids []int32) error {
 		}
 	}
 
-	slog.Info("Added missing eve entities", "count", len(entities))
+	slog.Debug("Added missing eve entities", "count", len(entities))
 	return nil
 }

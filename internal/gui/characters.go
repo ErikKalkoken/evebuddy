@@ -50,7 +50,7 @@ func (c *characters) makeManageButton(charID int32) *contextMenuButton {
 			defer dlg.Hide()
 			token, err := AddCharacter(ctx)
 			if err != nil {
-				slog.Info("Failed to add a new character: %v", err)
+				slog.Error("Failed to add a new character", "error", err)
 			} else {
 				c.update(token.CharacterID)
 				c.folders.updateMailsWithID(token.CharacterID)
@@ -61,7 +61,7 @@ func (c *characters) makeManageButton(charID int32) *contextMenuButton {
 	menu := fyne.NewMenu("", addChar)
 	switchChar, err := c.makeMenuItem(charID)
 	if err != nil {
-		slog.Info("Failed to make menu item: %v", err)
+		slog.Warn("Failed to make menu item", "error", err)
 	}
 	if switchChar != nil {
 		menu.Items = append(menu.Items, switchChar)

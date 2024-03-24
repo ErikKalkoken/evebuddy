@@ -37,15 +37,16 @@ func (f *folders) addRefreshButton() {
 func (f *folders) updateMailsWithID(charID int32) {
 	err := f.boundCharID.Set(int(charID))
 	if err != nil {
-		slog.Info("Failed to set char ID: %v", err)
+		slog.Error("Failed to set char ID", "error", err)
+	} else {
+		f.updateMails()
 	}
-	f.updateMails()
 }
 
 func (f *folders) updateMails() {
 	charID, err := f.boundCharID.Get()
 	if err != nil {
-		slog.Info("Failed to get character ID")
+		slog.Error("Failed to get character ID", "erro", err)
 		return
 	}
 	status := f.esiApp.statusBar
@@ -67,13 +68,13 @@ func (f *folders) update(charID int32) {
 		f.refreshButton.Enable()
 	}
 	if err := f.boundCharID.Set(int(charID)); err != nil {
-		slog.Info("Failed to set char ID: %v", err)
+		slog.Error("Failed to set char ID", "characterID", charID, "error", err)
 	}
 
 	var ii []interface{}
 	labels, err := storage.FetchAllMailLabels(charID)
 	if err != nil {
-		slog.Info("Failed to fetch mail labels: %v", err)
+		slog.Error("Failed to fetch mail labels", "characterID", charID, "error", err)
 	} else {
 		if len(labels) > 0 {
 			ii = append(ii, labelItem{id: allMailsLabelID, name: "All Mails"})
@@ -123,7 +124,7 @@ func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList
 		func(i binding.DataItem, o fyne.CanvasObject) {
 			entry, err := i.(binding.Untyped).Get()
 			if err != nil {
-				slog.Info("Failed to label item")
+				slog.Error("Failed to get label", "error", err)
 				return
 			}
 			w := o.(*widget.Label)
@@ -133,13 +134,13 @@ func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList
 	container.OnSelected = func(iID widget.ListItemID) {
 		d, err := boundList.Get()
 		if err != nil {
-			slog.Info("Failed to char ID item")
+			slog.Error("Failed to char ID item", "error", err)
 			return
 		}
 		n := d[iID].(labelItem)
 		cID, err := boundCharID.Get()
 		if err != nil {
-			slog.Info("Failed to Get item")
+			slog.Error("Failed to get item", "error", err)
 			return
 		}
 		headers.update(int32(cID), n.id)
