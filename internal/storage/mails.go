@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"log"
+	"log/slog"
 	"time"
 
 	"gorm.io/gorm"
@@ -79,9 +79,7 @@ func Test() {
 
 	var mm []Mail
 	err := db.Model(&l).Association("Mails").Find(&mm)
-	log.Print(err)
-	log.Print(mm)
-	log.Print(len(mm))
+	slog.Info("result", "mails", mm, "mailsCount", len(mm), "error", err)
 
 	panic("Stop")
 }

@@ -5,6 +5,7 @@ package storage
 
 import (
 	"log"
+	"log/slog"
 	"os"
 	"time"
 
@@ -33,7 +34,7 @@ func Initialize() error {
 	if err != nil {
 		return err
 	}
-	log.Println("Connected to database")
+	slog.Info("Connected to database")
 
 	err = myDb.AutoMigrate(&Character{}, &Token{}, &EveEntity{}, &Mail{}, &MailLabel{})
 	if err != nil {

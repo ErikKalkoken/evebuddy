@@ -2,7 +2,7 @@ package esi
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 )
@@ -24,7 +24,7 @@ func FetchMailLabels(client http.Client, characterID int32, tokenString string) 
 	v := url.Values{}
 	v.Set("token", tokenString)
 	path := fmt.Sprintf("/characters/%d/mail/labels/?%v", characterID, v.Encode())
-	log.Printf("Fetching mail labels for character ID %d", characterID)
+	slog.Info("Fetching mail labels for character", "characterID", characterID)
 	resp, err := getESI(client, path)
 	if err != nil {
 		return nil, err

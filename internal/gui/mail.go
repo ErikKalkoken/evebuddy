@@ -4,7 +4,7 @@ import (
 	"example/esiapp/internal/storage"
 	"fmt"
 	"html"
-	"log"
+	"log/slog"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -25,7 +25,7 @@ type mail struct {
 func (m *mail) update(mailID uint) {
 	mail, err := storage.FetchMailByID(mailID)
 	if err != nil {
-		log.Printf("Failed to render mail: %v", err)
+		slog.Info("Failed to render mail: %v", err)
 		return
 	}
 

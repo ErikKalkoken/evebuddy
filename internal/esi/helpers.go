@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -26,10 +26,10 @@ func getESI(c http.Client, path string) (*http.Response, error) {
 			return r, nil
 		}
 
-		log.Printf("ESI status response not OK: %v", r.Status)
+		slog.Info("ESI status response not OK", "status", r.Status)
 		if r.StatusCode == http.StatusBadGateway || r.StatusCode == http.StatusGatewayTimeout || r.StatusCode == http.StatusServiceUnavailable {
 			if retries < maxRetries {
-				log.Printf("Retrying %d / %d", retries, maxRetries)
+				slog.Info("Retrying", "retries", retries, "maxRetries", maxRetries)
 				retries++
 				continue
 			}

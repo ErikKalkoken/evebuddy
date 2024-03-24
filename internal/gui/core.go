@@ -7,7 +7,7 @@ import (
 	"example/esiapp/internal/sso"
 	"example/esiapp/internal/storage"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -83,11 +83,11 @@ func updateMailLabels(token *storage.Token) error {
 		return err
 	}
 	labels := ll.Labels
-	log.Printf("Received %d mail labels from ESI for character %d", len(labels), token.CharacterID)
+	slog.Info("Received mail labels from ESI", "labelsCount", len(labels), "characterID", token.CharacterID)
 	for _, o := range labels {
 		_, err := storage.UpdateOrCreateMailLabel(token.CharacterID, o.LabelID, o.Color, o.Name, o.UnreadCount)
 		if err != nil {
-			log.Printf("Error when trying to update mail label: %v", err)
+			slog.Error("Trying to update mail label", "error", err)
 		}
 	}
 	return nil
@@ -118,7 +118,7 @@ func fetchMailHeaders(token *storage.Token) ([]esi.MailHeader, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Received %d mail headers from ESI for character %d", len(headers), token.CharacterID)
+	slog.Info("Received mail headers from ESI", "count", len(headers), "characterID", token.CharacterID)
 	return headers, nil
 }
 
@@ -131,7 +131,7 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusB
 	if newMailsCount == 0 {
 		s := "No new mail"
 		status.setText(s)
-		log.Print(s)
+		slog.Info(s, "characterID", token.CharacterID)
 		return nil
 	}
 
@@ -154,13 +154,13 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusB
 				entityIDs.Add(r.ID)
 			}
 			if err := addMissingEveEntities(entityIDs.ToSlice()); err != nil {
-				log.Printf("Failed to process mail %d: %v", header.ID, err)
+				slog.Error("Failed to process mail", "mailID", header.ID, "error", err)
 				return
 			}
 
 			m, err := esi.FetchMail(httpClient, token.CharacterID, header.ID, token.AccessToken)
 			if err != nil {
-				log.Printf("Failed to process mail %d: %v", header.ID, err)
+				slog.Error("Failed to process mail", "header", header, "error", err)
 				return
 			}
 
@@ -173,14 +173,14 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusB
 
 			timestamp, err := time.Parse(time.RFC3339, header.Timestamp)
 			if err != nil {
-				log.Printf("Failed to parse timestamp for mail %d: %v", header.ID, err)
+				slog.Error("Failed to parse timestamp for mail", "header", header, "error", err)
 				return
 			}
 			mail.TimeStamp = timestamp
 
 			from, err := storage.GetEveEntity(header.FromID)
 			if err != nil {
-				log.Printf("Failed to parse \"from\" mail %d: %v", header.FromID, err)
+				slog.Error("Failed to parse \"from\" in mail", "header", header, "error", err)
 				return
 			}
 			mail.From = *from
@@ -189,7 +189,7 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusB
 			for _, r := range header.Recipients {
 				o, err := storage.GetEveEntity(r.ID)
 				if err != nil {
-					log.Printf("Failed to resolve recipient %v for mail %d", r, header.ID)
+					slog.Error("Failed to resolve mail recipient", "header", header, "recipient", r)
 					continue
 				} else {
 					rr = append(rr, *o)
@@ -199,13 +199,13 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusB
 
 			labels, err := storage.FetchMailLabels(token.CharacterID, m.Labels)
 			if err != nil {
-				log.Printf("Failed to resolve labels for mail %d: %v", header.ID, err)
+				slog.Error("Failed to resolve mail labels", "header", header, "error", err)
 			} else {
 				mail.Labels = labels
 			}
 
 			mail.Save()
-			log.Printf("Stored new mail %d for character %v", header.ID, token.CharacterID)
+			slog.Info("Stored new mail", "mailID", header.ID, "characterID", token.CharacterID)
 			c.Add(1)
 			current := c.Load()
 			status.setText("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name)
@@ -219,7 +219,7 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusB
 	}
 	s := fmt.Sprintf("Stored %d new mails", total)
 	status.setText(s)
-	log.Print(s)
+	slog.Info(s)
 	return nil
 }
 
@@ -240,7 +240,7 @@ func determineMailIDs(characterID int32, headers []esi.MailHeader) (*set.Set[int
 // ensureFreshToken will automatically try to refresh a token that is already or about to become invalid.
 func ensureFreshToken(token *storage.Token) error {
 	if !token.RemainsValid(time.Second * 60) {
-		log.Printf("Need to refresh token: %v", token)
+		slog.Debug("Need to refresh token", "characterID", token.CharacterID)
 		rawToken, err := sso.RefreshToken(httpClient, token.RefreshToken)
 		if err != nil {
 			return err
@@ -252,7 +252,7 @@ func ensureFreshToken(token *storage.Token) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("Refreshed token for %v", token.CharacterID)
+		slog.Info("Token refreshed", "characterID", token.CharacterID)
 	}
 	return nil
 }
@@ -283,6 +283,6 @@ func addMissingEveEntities(ids []int32) error {
 		}
 	}
 
-	log.Printf("Added %d missing eve entities", len(entities))
+	slog.Info("Added missing eve entities", "count", len(entities))
 	return nil
 }

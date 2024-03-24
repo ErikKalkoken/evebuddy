@@ -2,7 +2,7 @@ package esi
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 )
@@ -18,7 +18,7 @@ func FetchMail(client http.Client, characterID int32, mailID int32, tokenString 
 	v := url.Values{}
 	v.Set("token", tokenString)
 	path := fmt.Sprintf("/characters/%d/mail/%d/?%v", characterID, mailID, v.Encode())
-	log.Printf("Fetching mail with ID %d for %d", mailID, characterID)
+	slog.Info("Fetching mail for character", "mailID", mailID, "characterID", characterID)
 	resp, err := getESI(client, path)
 	if err != nil {
 		return nil, err

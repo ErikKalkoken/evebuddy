@@ -2,7 +2,7 @@ package esi
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"slices"
@@ -58,7 +58,7 @@ func fetchMailHeadersPage(client http.Client, characterID int32, tokenString str
 		v.Set("last_mail_id", strconv.Itoa(int(lastMailID)))
 	}
 	path := fmt.Sprintf("/characters/%d/mail/?%v", characterID, v.Encode())
-	log.Printf("Fetching mail headers for character ID %d with last ID %d", characterID, lastMailID)
+	slog.Info("Fetching mail headers", "characterID", characterID, "lastMailID", lastMailID)
 	resp, err := getESI(client, path)
 	if err != nil {
 		return nil, err

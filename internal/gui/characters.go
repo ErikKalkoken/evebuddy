@@ -4,7 +4,7 @@ import (
 	"context"
 	"example/esiapp/internal/esi"
 	"example/esiapp/internal/storage"
-	"log"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -50,7 +50,7 @@ func (c *characters) makeManageButton(charID int32) *contextMenuButton {
 			defer dlg.Hide()
 			token, err := AddCharacter(ctx)
 			if err != nil {
-				log.Printf("Failed to add a new character: %v", err)
+				slog.Info("Failed to add a new character: %v", err)
 			} else {
 				c.update(token.CharacterID)
 				c.folders.updateMailsWithID(token.CharacterID)
@@ -61,7 +61,7 @@ func (c *characters) makeManageButton(charID int32) *contextMenuButton {
 	menu := fyne.NewMenu("", addChar)
 	switchChar, err := c.makeMenuItem(charID)
 	if err != nil {
-		log.Printf("Failed to make menu item: %v", err)
+		slog.Info("Failed to make menu item: %v", err)
 	}
 	if switchChar != nil {
 		menu.Items = append(menu.Items, switchChar)

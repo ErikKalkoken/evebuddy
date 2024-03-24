@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"log"
+	"log/slog"
 
 	"gorm.io/gorm"
 )
@@ -56,6 +56,6 @@ func UpdateOrCreateMailLabel(characterID int32, labelID int32, color string, nam
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Updated mail label %d", l.LabelID)
+	slog.Info("Updated mail label", "ID", l.ID, "name", l.Name)
 	return &l, nil
 }

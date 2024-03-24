@@ -13,7 +13,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 
 	if err := storage.Initialize(); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	// storage.Test()

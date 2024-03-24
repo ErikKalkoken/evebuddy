@@ -2,7 +2,6 @@ package esi
 
 import (
 	"fmt"
-	"log"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/storage"
@@ -16,12 +15,12 @@ func CharacterPortraitURL(charID int32, size int) fyne.URI {
 	case 32, 64, 128, 256, 512, 1024:
 		// valid size
 	default:
-		log.Fatalf("Invalid size %d", size)
+		panic(fmt.Sprintf("Invalid size %d", size))
 	}
 	s := fmt.Sprintf("https://images.evetech.net/characters/%d/portrait?size=%d", charID, size)
 	u, err := storage.ParseURI(s)
 	if err != nil {
-		log.Fatal((err))
+		panic(err)
 	}
 	return u
 }

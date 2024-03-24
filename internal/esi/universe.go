@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -29,7 +29,7 @@ func ResolveEntityIDs(httpClient http.Client, ids []int32) ([]EveEntity, error) 
 	}
 
 	fullUrl := fmt.Sprintf("%s/universe/names/", esiBaseUrl)
-	log.Printf("Resolving IDs from %v", fullUrl)
+	slog.Info("Resolving IDs", "url", fullUrl)
 	resp, err := httpClient.Post(fullUrl, "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err

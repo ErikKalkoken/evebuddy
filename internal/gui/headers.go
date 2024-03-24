@@ -4,7 +4,7 @@ import (
 	"example/esiapp/internal/storage"
 	"fmt"
 	"image/color"
-	"log"
+	"log/slog"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -34,7 +34,7 @@ func (h *headers) update(charID int32, labelID int32) {
 	var d []interface{}
 	mm, err := storage.FetchMailsForLabel(charID, labelID)
 	if err != nil {
-		log.Printf("Failed to fetch mail: %v", err)
+		slog.Info("Failed to fetch mail: %v", err)
 	} else {
 		for _, m := range mm {
 			o := mailItem{
@@ -77,7 +77,7 @@ func (e *esiApp) newHeaders(mail *mail) *headers {
 		func(i binding.DataItem, o fyne.CanvasObject) {
 			entry, err := i.(binding.Untyped).Get()
 			if err != nil {
-				log.Println("Failed to Get item")
+				slog.Info("Failed to Get item")
 				return
 			}
 			m := entry.(mailItem)
@@ -101,7 +101,7 @@ func (e *esiApp) newHeaders(mail *mail) *headers {
 	list.OnSelected = func(id widget.ListItemID) {
 		d, err := boundList.Get()
 		if err != nil {
-			log.Println("Failed to mail item")
+			slog.Info("Failed to mail item")
 			return
 		}
 		m := d[id].(mailItem)

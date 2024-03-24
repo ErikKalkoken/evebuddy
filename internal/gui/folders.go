@@ -2,7 +2,7 @@ package gui
 
 import (
 	"example/esiapp/internal/storage"
-	"log"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -37,7 +37,7 @@ func (f *folders) addRefreshButton() {
 func (f *folders) updateMailsWithID(charID int32) {
 	err := f.boundCharID.Set(int(charID))
 	if err != nil {
-		log.Printf("Failed to set char ID: %v", err)
+		slog.Info("Failed to set char ID: %v", err)
 	}
 	f.updateMails()
 }
@@ -45,7 +45,7 @@ func (f *folders) updateMailsWithID(charID int32) {
 func (f *folders) updateMails() {
 	charID, err := f.boundCharID.Get()
 	if err != nil {
-		log.Print("Failed to get character ID")
+		slog.Info("Failed to get character ID")
 		return
 	}
 	status := f.esiApp.statusBar
@@ -53,7 +53,7 @@ func (f *folders) updateMails() {
 		err = UpdateMails(int32(charID), status)
 		if err != nil {
 			status.setText("Failed to fetch mail")
-			log.Printf("Failed to update mails for character %d: %v", charID, err)
+			slog.Error("Failed to update mails", "characterID", charID, "error", err)
 			return
 		}
 		f.update(int32(charID))
@@ -67,13 +67,13 @@ func (f *folders) update(charID int32) {
 		f.refreshButton.Enable()
 	}
 	if err := f.boundCharID.Set(int(charID)); err != nil {
-		log.Printf("Failed to set char ID: %v", err)
+		slog.Info("Failed to set char ID: %v", err)
 	}
 
 	var ii []interface{}
 	labels, err := storage.FetchAllMailLabels(charID)
 	if err != nil {
-		log.Printf("Failed to fetch mail labels: %v", err)
+		slog.Info("Failed to fetch mail labels: %v", err)
 	} else {
 		if len(labels) > 0 {
 			ii = append(ii, labelItem{id: allMailsLabelID, name: "All Mails"})
@@ -123,7 +123,7 @@ func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList
 		func(i binding.DataItem, o fyne.CanvasObject) {
 			entry, err := i.(binding.Untyped).Get()
 			if err != nil {
-				log.Println("Failed to label item")
+				slog.Info("Failed to label item")
 				return
 			}
 			w := o.(*widget.Label)
@@ -133,13 +133,13 @@ func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList
 	container.OnSelected = func(iID widget.ListItemID) {
 		d, err := boundList.Get()
 		if err != nil {
-			log.Println("Failed to char ID item")
+			slog.Info("Failed to char ID item")
 			return
 		}
 		n := d[iID].(labelItem)
 		cID, err := boundCharID.Get()
 		if err != nil {
-			log.Println("Failed to Get item")
+			slog.Info("Failed to Get item")
 			return
 		}
 		headers.update(int32(cID), n.id)

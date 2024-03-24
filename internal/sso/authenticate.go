@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -61,7 +61,7 @@ func Authenticate(ctx context.Context, client http.Client, scopes []string) (*To
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(ssoCallbackPath, func(w http.ResponseWriter, req *http.Request) {
-		log.Print("Received SSO callback")
+		slog.Info("Received SSO callback")
 		v := req.URL.Query()
 		newState := v.Get("state")
 		if newState != serverCtx.Value(keyState).(string) {
@@ -73,7 +73,7 @@ func Authenticate(ctx context.Context, client http.Client, scopes []string) (*To
 		codeVerifier := serverCtx.Value(keyCodeVerifier).(string)
 		rawToken, err := retrieveTokenPayload(client, code, codeVerifier)
 		if err != nil {
-			log.Printf("Error: %v", err)
+			slog.Info("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			serverCtx = context.WithValue(serverCtx, keyError, err)
 			cancel()
@@ -82,7 +82,7 @@ func Authenticate(ctx context.Context, client http.Client, scopes []string) (*To
 
 		claims, err := validateToken(rawToken.AccessToken)
 		if err != nil {
-			log.Printf("Error: %v", err)
+			slog.Info("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			serverCtx = context.WithValue(serverCtx, keyError, err)
 			cancel()
@@ -91,7 +91,7 @@ func Authenticate(ctx context.Context, client http.Client, scopes []string) (*To
 
 		character, err := buildToken(rawToken, claims)
 		if err != nil {
-			log.Printf("Error: %v", err)
+			slog.Info("Error: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			serverCtx = context.WithValue(serverCtx, keyError, err)
 			cancel()
@@ -116,9 +116,9 @@ func Authenticate(ctx context.Context, client http.Client, scopes []string) (*To
 		Handler: mux,
 	}
 	go func() {
-		log.Printf("Web server started at %v\n", address)
+		slog.Info("Web server started", "address", address)
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			log.Println(err)
+			slog.Error("Web server terminated", "error", err)
 		}
 	}()
 
@@ -128,7 +128,7 @@ func Authenticate(ctx context.Context, client http.Client, scopes []string) (*To
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Web server stopped")
+	slog.Info("Web server stopped")
 
 	errValue := serverCtx.Value(keyError)
 	if errValue != nil {
@@ -193,7 +193,7 @@ func retrieveTokenPayload(client http.Client, code, codeVerifier string) (*token
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Host", ssoHost)
 
-	log.Print("Sending auth request to SSO API")
+	slog.Info("Sending auth request to SSO API")
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -208,7 +208,7 @@ func retrieveTokenPayload(client http.Client, code, codeVerifier string) (*token
 		return nil, err
 	}
 
-	log.Printf("Response from API: %v", string(body))
+	slog.Debug("Response from API", "body", body)
 
 	token := tokenPayload{}
 	if err := json.Unmarshal(body, &token); err != nil {
@@ -284,8 +284,8 @@ func fetchOauthToken(client http.Client, form url.Values) (*tokenPayload, error)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Host", "login.eveonline.com")
 
-	log.Printf("Requesting token from SSO API by %s from %s", form.Get("grant_type"), ssoTokenUrl)
-	log.Printf("Request: %v", form)
+	slog.Info("Requesting token from SSO API", "grant_type", form.Get("grant_type"), "url", ssoTokenUrl)
+	slog.Debug("Request", "form", form)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -301,7 +301,7 @@ func fetchOauthToken(client http.Client, form url.Values) (*tokenPayload, error)
 		return nil, err
 	}
 
-	log.Printf("Response from SSO API: %v", string(body))
+	slog.Info("Response from SSO API", "body", string(body))
 
 	token := tokenPayload{}
 	if err := json.Unmarshal(body, &token); err != nil {
