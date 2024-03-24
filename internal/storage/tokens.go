@@ -2,13 +2,10 @@ package storage
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 // A SSO token belonging to a character.
 type Token struct {
-	gorm.Model
 	AccessToken  string
 	CharacterID  int32
 	Character    Character
@@ -19,9 +16,9 @@ type Token struct {
 
 // Save updates or creates a token.
 func (t *Token) Save() error {
-	if err := db.Where("character_id = ?", t.CharacterID).Save(t).Error; err != nil {
-		return err
-	}
+	// if err := db.Where("character_id = ?", t.CharacterID).Save(t).Error; err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -33,9 +30,9 @@ func (t *Token) RemainsValid(d time.Duration) bool {
 // FetchToken returns the token for a character
 func FetchToken(characterId int32) (*Token, error) {
 	var token Token
-	err := db.Joins("Character").First(&token, "character_id = ?", characterId).Error
-	if err != nil {
-		return nil, err
-	}
+	// err := db.Joins("Character").First(&token, "character_id = ?", characterId).Error
+	// if err != nil {
+	// 	return nil, err
+	// }
 	return &token, nil
 }

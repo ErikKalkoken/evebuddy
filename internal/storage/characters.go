@@ -4,19 +4,24 @@ import (
 	"example/esiapp/internal/esi"
 
 	"fyne.io/fyne/v2"
-	"gorm.io/gorm"
 )
 
 // An Eve Online character.
 type Character struct {
-	gorm.Model
-	ID   int32 `gorm:"primaryKey"`
+	ID   int32
 	Name string
 }
 
 // Save updates or creates a character.
 func (c *Character) Save() error {
-	if err := db.Save(c).Error; err != nil {
+	_, err := db.NamedExec(`
+		INSERT INTO characters (id, name)
+		VALUES (:id, :name)
+		ON CONFLICT (id) DO
+		UPDATE SET name=:name;`,
+		*c,
+	)
+	if err != nil {
 		return err
 	}
 	return nil
@@ -30,7 +35,7 @@ func (c *Character) PortraitURL(size int) fyne.URI {
 // FetchFirstCharacter returns a random character.
 func FetchFirstCharacter() (*Character, error) {
 	var obj Character
-	if err := db.First(&obj).Error; err != nil {
+	if err := db.Get(&obj, "SELECT * FROM characters LIMIT 1;"); err != nil {
 		return nil, err
 	}
 	return &obj, nil
@@ -38,7 +43,7 @@ func FetchFirstCharacter() (*Character, error) {
 
 func FetchCharacter(characterID int32) (*Character, error) {
 	var obj Character
-	if err := db.First(&obj, characterID).Error; err != nil {
+	if err := db.Get(&obj, "SELECT * FROM characters WHERE id = ?;", characterID); err != nil {
 		return nil, err
 	}
 	return &obj, nil
@@ -47,8 +52,7 @@ func FetchCharacter(characterID int32) (*Character, error) {
 // FetchAllCharacters returns all characters.
 func FetchAllCharacters() ([]Character, error) {
 	var objs []Character
-	err := db.Order("name").Find(&objs).Error
-	if err != nil {
+	if err := db.Select(&objs, "SELECT * FROM characters ORDER BY name;"); err != nil {
 		return nil, err
 	}
 	return objs, nil

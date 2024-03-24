@@ -8,12 +8,14 @@
         "objs"
     ],
     "cSpell.ignoreWords": [
+        "AUTOINCREMENT",
         "Equalf",
         "bluemonday",
         "esiapp",
         "gock",
         "httpmock",
         "jarcoal",
+        "sqlx",
         "stretchr"
     ]
 }

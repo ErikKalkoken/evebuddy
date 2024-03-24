@@ -1,48 +1,42 @@
 package storage
 
-import (
-	"fmt"
-
-	"gorm.io/gorm"
-)
-
 // An entity in Eve Online
 type EveEntity struct {
-	gorm.Model
 	Category string
-	ID       int32 `gorm:"primaryKey"`
+	ID       int32
 	Name     string
 }
 
 // Save updates or creates an eve entity.
 func (e *EveEntity) Save() error {
-	err := db.Save(e).Error
-	return err
+	// err := db.Save(e).Error
+	return nil
 }
 
 // FetchEntityIDs returns all existing entity IDs.
 func FetchEntityIDs() ([]int32, error) {
-	var objs []EveEntity
-	err := db.Select("id").Find(&objs).Error
-	if err != nil {
-		return nil, err
-	}
-	var ids []int32
-	for _, o := range objs {
-		ids = append(ids, o.ID)
-	}
-	return ids, nil
+	// var objs []EveEntity
+	// err := db.Select("id").Find(&objs).Error
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// var ids []int32
+	// for _, o := range objs {
+	// 	ids = append(ids, o.ID)
+	// }
+	// return ids, nil
+	return nil, nil
 }
 
 // GetEveEntity return an EveEntity object if it exists or nil.
 func GetEveEntity(id int32) (*EveEntity, error) {
 	var e EveEntity
-	err := db.Limit(1).Find(&e, id).Error
-	if err != nil {
-		return nil, err
-	}
-	if e.ID == 0 {
-		return nil, fmt.Errorf("EveEntity object not found for ID %d", id)
-	}
+	// err := db.Limit(1).Find(&e, id).Error
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if e.ID == 0 {
+	// 	return nil, fmt.Errorf("EveEntity object not found for ID %d", id)
+	// }
 	return &e, nil
 }
