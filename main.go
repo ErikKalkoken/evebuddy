@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"log"
+	"log/slog"
 
 	"fyne.io/fyne/v2/app"
 
@@ -10,8 +12,9 @@ import (
 )
 
 func main() {
+	flag.Parse()
+	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-
 	if err := storage.Initialize(); err != nil {
 		panic(err)
 	}
