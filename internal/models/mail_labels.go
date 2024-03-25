@@ -1,6 +1,10 @@
 package models
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/jmoiron/sqlx"
+)
 
 type MailLabel struct {
 	ID          uint64
@@ -69,11 +73,28 @@ func FetchMailLabel(characterID int32, labelID int32) (*MailLabel, error) {
 }
 
 func FetchMailLabels(characterID int32, labelIDs []int32) ([]MailLabel, error) {
+	query, args, err := sqlx.In(
+		"SELECT * FROM mail_labels WHERE character_id = ? AND label_id IN (?)",
+		characterID,
+		labelIDs,
+	)
+	if err != nil {
+		return nil, err
+	}
+	query = db.Rebind(query)
+	rows, err := db.Queryx(query, args...)
+	if err != nil {
+		return nil, err
+	}
 	var ll []MailLabel
-	// err := db.Where("character_id = ? AND id IN (?)", characterID, labelIDs).Find(&ll).Error
-	// if err != nil {
-	// 	return nil, err
-	// }
+	for rows.Next() {
+		var l MailLabel
+		err := rows.StructScan(&l)
+		if err != nil {
+			return nil, err
+		}
+		ll = append(ll, l)
+	}
 	return ll, nil
 }
 

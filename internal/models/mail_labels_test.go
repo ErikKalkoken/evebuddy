@@ -83,14 +83,18 @@ func TestMailLabelCanFetchAllLabelsReturnsSlice(t *testing.T) {
 	}
 }
 
-func TestMailLabelCanFetchAllLabels(t *testing.T) {
+func TestCanFetchAllMailLabelsForCharacter(t *testing.T) {
 	// given
 	models.TruncateTables()
-	c := createCharacter()
-	createMailLabel(models.MailLabel{Character: c, LabelID: 3})
-	createMailLabel(models.MailLabel{Character: c, LabelID: 7})
+	c1 := createCharacter()
+	l1 := createMailLabel(models.MailLabel{Character: c1, LabelID: 3})
+	fmt.Println(l1)
+	l2 := createMailLabel(models.MailLabel{Character: c1, LabelID: 7})
+	fmt.Println(l2)
+	c2 := createCharacter()
+	createMailLabel(models.MailLabel{Character: c2, LabelID: 13})
 	// when
-	ll, err := models.FetchAllMailLabels(c.ID)
+	ll, err := models.FetchAllMailLabels(c1.ID)
 	if assert.NoError(t, err) {
 		gotIDs := set.New[int32]()
 		for _, l := range ll {
@@ -109,5 +113,24 @@ func TesFetchAllMailLabelsReturnsEmptySliceWhenNoRows(t *testing.T) {
 	ll, err := models.FetchAllMailLabels(c.ID)
 	if assert.NoError(t, err) {
 		assert.Equal(t, 0, len(ll))
+	}
+}
+
+func TestFetchMailLabels(t *testing.T) {
+	// given
+	models.TruncateTables()
+	c := createCharacter()
+	createMailLabel(models.MailLabel{Character: c, LabelID: 3})
+	createMailLabel(models.MailLabel{Character: c, LabelID: 7})
+	createMailLabel(models.MailLabel{Character: c, LabelID: 13})
+	// when
+	ll, err := models.FetchMailLabels(c.ID, []int32{3, 13})
+	if assert.NoError(t, err) {
+		gotIDs := set.New[int32]()
+		for _, l := range ll {
+			gotIDs.Add(l.LabelID)
+		}
+		wantIDs := set.NewFromSlice([]int32{3, 13})
+		assert.Equal(t, wantIDs, gotIDs)
 	}
 }

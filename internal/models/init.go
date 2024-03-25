@@ -93,6 +93,7 @@ func Initialize(dataSourceName string) error {
 // TruncateTables will purge data from all tables. This is meant for tests.
 func TruncateTables() {
 	sql := `
+		DELETE FROM mail_labels;
 		DELETE FROM mails;
 		DELETE FROM tokens;
 		DELETE FROM characters;
@@ -100,6 +101,7 @@ func TruncateTables() {
 	`
 	db.MustExec(sql)
 	sql = `
+		DELETE FROM SQLITE_SEQUENCE WHERE name='mail_labels';
 		DELETE FROM SQLITE_SEQUENCE WHERE name='mails';
 		DELETE FROM SQLITE_SEQUENCE WHERE name='tokens';
 		DELETE FROM SQLITE_SEQUENCE WHERE name='characters';
