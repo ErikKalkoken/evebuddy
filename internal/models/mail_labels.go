@@ -79,10 +79,10 @@ func FetchMailLabels(characterID int32, labelIDs []int32) ([]MailLabel, error) {
 
 func FetchAllMailLabels(characterID int32) ([]MailLabel, error) {
 	var ll []MailLabel
-	// err := db.Where("character_id = ?", characterID).Order("id").Find(&ll).Error
-	// if err != nil {
-	// 	return nil, err
-	// }
+	err := db.Select(&ll, "SELECT * FROM mail_labels WHERE character_id = ?", characterID)
+	if err != nil {
+		return nil, err
+	}
 	return ll, nil
 }
 
