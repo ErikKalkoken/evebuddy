@@ -1,7 +1,7 @@
 package models
 
 import (
-	"example/esiapp/internal/set"
+	"example/esiapp/internal/helpers/set"
 	"fmt"
 )
 

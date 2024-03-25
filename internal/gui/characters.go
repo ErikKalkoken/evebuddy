@@ -2,7 +2,7 @@ package gui
 
 import (
 	"context"
-	"example/esiapp/internal/esi"
+	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/models"
 	"log/slog"
 

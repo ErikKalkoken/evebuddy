@@ -2,7 +2,7 @@ package esi_test
 
 import (
 	"encoding/json"
-	"example/esiapp/internal/esi"
+	"example/esiapp/internal/api/esi"
 	"fmt"
 	"net/http"
 	"testing"

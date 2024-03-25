@@ -1,7 +1,7 @@
 package esi_test
 
 import (
-	"example/esiapp/internal/esi"
+	"example/esiapp/internal/api/esi"
 	"net/http"
 	"testing"
 

@@ -1,7 +1,7 @@
 package models
 
 import (
-	"example/esiapp/internal/esi"
+	"example/esiapp/internal/api/esi"
 
 	"fyne.io/fyne/v2"
 )

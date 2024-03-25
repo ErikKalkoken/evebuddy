@@ -1,8 +1,8 @@
 package models_test
 
 import (
+	"example/esiapp/internal/helpers/set"
 	"example/esiapp/internal/models"
-	"example/esiapp/internal/set"
 	"fmt"
 	"math/rand/v2"
 	"slices"

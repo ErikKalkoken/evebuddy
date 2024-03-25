@@ -2,10 +2,10 @@ package gui
 
 import (
 	"context"
-	"example/esiapp/internal/esi"
+	"example/esiapp/internal/api/esi"
+	"example/esiapp/internal/api/sso"
+	"example/esiapp/internal/helpers/set"
 	"example/esiapp/internal/models"
-	"example/esiapp/internal/set"
-	"example/esiapp/internal/sso"
 	"fmt"
 	"log/slog"
 	"net/http"
