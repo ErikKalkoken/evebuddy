@@ -15,14 +15,14 @@ type Mail struct {
 	Labels      []MailLabel // `gorm:"many2many:mail_mail_labels;"`
 	IsRead      bool        `db:"is_read"`
 	ID          uint64
-	MailID      int32       `db:"mail_id"`
-	Recipients  []EveEntity // `gorm:"many2many:mail_recipients;"`
+	MailID      int32 `db:"mail_id"`
+	Recipients  []EveEntity
 	Subject     string
 	Timestamp   time.Time
 }
 
-// Save creates or updates a mail
-func (m *Mail) Save() error {
+// Create creates a new mail
+func (m *Mail) Create() error {
 	if m.Character.ID != 0 {
 		m.CharacterID = m.Character.ID
 	}
@@ -53,14 +53,7 @@ func (m *Mail) Save() error {
 			:mail_id,
 			:subject,
 			:timestamp
-		)
-		ON CONFLICT (character_id, mail_id) DO
-		UPDATE SET
-			body=:body,
-			from_id=:from_id,
-			is_read=:is_read,
-			subject=:subject,
-			timestamp=:timestamp`,
+		)`,
 		*m,
 	)
 	if err != nil {
@@ -71,7 +64,61 @@ func (m *Mail) Save() error {
 		return err
 	}
 	m.ID = uint64(newID)
+	for _, r := range m.Recipients {
+		_, err := db.Exec(`
+			INSERT INTO mail_recipients (mail_id, eve_entity_id)
+			VALUES (?, ?);
+			`,
+			m.ID,
+			r.ID,
+		)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+// FetchMail returns a mail.
+func FetchMail(id uint64) (*Mail, error) {
+	row := db.QueryRow(
+		`SELECT *
+		FROM mails
+		JOIN eve_entities ON eve_entities.id = mails.from_id
+		WHERE mails.id = ?;`,
+		id,
+	)
+	var m Mail
+	err := row.Scan(
+		&m.ID,
+		&m.Body,
+		&m.CharacterID,
+		&m.FromID,
+		&m.IsRead,
+		&m.MailID,
+		&m.Subject,
+		&m.Timestamp,
+		&m.From.ID,
+		&m.From.Category,
+		&m.From.Name,
+	)
+	if err != nil {
+		return nil, err
+	}
+	var rr []EveEntity
+	err = db.Select(
+		&rr,
+		`SELECT eve_entities.*
+		FROM eve_entities
+		JOIN mail_recipients ON mail_recipients.eve_entity_id = eve_entities.id
+		WHERE mail_id = ?
+		`, m.ID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	m.Recipients = rr
+	return &m, nil
 }
 
 // FetchMailIDs return mail IDs of all existing mails for a character
@@ -102,40 +149,6 @@ func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	// }
 
 	return mm, nil
-}
-
-// FetchMail returns a mail.
-func FetchMail(id uint64) (*Mail, error) {
-	row := db.QueryRow(
-		`SELECT *
-		FROM mails
-		JOIN eve_entities ON eve_entities.id = mails.from_id
-		WHERE mails.id = ?;`,
-		id,
-	)
-	var m Mail
-	err := row.Scan(
-		&m.ID,
-		&m.Body,
-		&m.CharacterID,
-		&m.FromID,
-		&m.IsRead,
-		&m.MailID,
-		&m.Subject,
-		&m.Timestamp,
-		&m.From.ID,
-		&m.From.Category,
-		&m.From.Name,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &m, nil
-	// err := db.Preload("From").Preload("Recipients").Find(&m, ID).Error
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// return &m, nil
 }
 
 func Test() {

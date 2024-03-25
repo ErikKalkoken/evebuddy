@@ -210,8 +210,8 @@ func updateMails(token *models.Token, headers []esi.MailHeader, status *statusBa
 				mail.Labels = labels
 			}
 
-			mail.Save()
-			slog.Info("Stored new mail", "mailID", header.ID, "characterID", token.CharacterID)
+			mail.Create()
+			slog.Info("Created new mail", "mailID", header.ID, "characterID", token.CharacterID)
 			c.Add(1)
 			current := c.Load()
 			status.setText("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name)

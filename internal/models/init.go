@@ -25,7 +25,7 @@ var schema = `
 		label_id integer NOT NULL,
 		name text NOT NULL,
 		unread_count integer NOT NULL,
-		FOREIGN KEY (character_id) REFERENCES characters(id)
+		FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
 		UNIQUE (character_id, label_id)
 	);
 
@@ -33,8 +33,8 @@ var schema = `
 		mail_id integer NOT NULL,
 		eve_entity_id integer NOT NULL,
 		PRIMARY KEY (mail_id,eve_entity_id),
-		FOREIGN KEY (mail_id) REFERENCES mails(id),
-		FOREIGN KEY (eve_entity_id) REFERENCES eve_entities(id)
+		FOREIGN KEY (mail_id) REFERENCES mails(id) ON DELETE CASCADE,
+		FOREIGN KEY (eve_entity_id) REFERENCES eve_entities(id) ON DELETE CASCADE
 	);
 
 	CREATE TABLE IF NOT EXISTS mails (
@@ -46,8 +46,8 @@ var schema = `
 		mail_id integer NOT NULL,
 		subject text NOT NULL,
 		timestamp datetime NOT NULL,
-		FOREIGN KEY (character_id) REFERENCES characters(id),
-		FOREIGN KEY (from_id) REFERENCES eve_entities(id),
+		FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+		FOREIGN KEY (from_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
 		UNIQUE (character_id, mail_id)
 	);
 
@@ -55,12 +55,12 @@ var schema = `
 		mail_label_id integer NOT NULL,
 		mail_id integer NOT NULL,
 		PRIMARY KEY (mail_label_id,mail_id),
-		FOREIGN KEY (mail_label_id) REFERENCES mail_labels(id),
-		FOREIGN KEY (mail_id) REFERENCES mails(id)
+		FOREIGN KEY (mail_label_id) REFERENCES mail_labels(id) ON DELETE CASCADE,
+		FOREIGN KEY (mail_id) REFERENCES mails(id) ON DELETE CASCADE
 	);
 
 	CREATE TABLE IF NOT EXISTS eve_entities (
-		id integer PRIMARY KEY NO NULL,
+		id integer PRIMARY KEY NOT NULL,
 		category text NOT NULL,
 		name text NOT NULL
 	);
@@ -71,7 +71,7 @@ var schema = `
 		expires_at datetime NOT NULL,
 		refresh_token text NOT NULL,
 		token_type text NOT NULL,
-		FOREIGN KEY (character_id) REFERENCES characters(id)
+		FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
 	);
 `
 

@@ -42,35 +42,44 @@ func createMail(args ...models.Mail) models.Mail {
 	if m.Timestamp.IsZero() {
 		m.Timestamp = time.Now()
 	}
-	if err := m.Save(); err != nil {
+	if err := m.Create(); err != nil {
 		panic(err)
 	}
 	return m
 }
 
-func TestMailCanSaveNew(t *testing.T) {
+func TestMailCanCreateNew(t *testing.T) {
 	// given
 	models.TruncateTables()
-	char := createCharacter()
-	from := createEveEntity()
+	c := createCharacter()
+	f := createEveEntity()
+	r := createEveEntity()
 	m := models.Mail{
-		Body:      "body",
-		Character: char,
-		From:      from,
-		MailID:    7,
-		Subject:   "subject",
-		Timestamp: time.Now(),
+		Body:       "body",
+		Character:  c,
+		From:       f,
+		MailID:     7,
+		Recipients: []models.EveEntity{r},
+		Subject:    "subject",
+		Timestamp:  time.Now(),
 	}
 	// when
-	err := m.Save()
+	err := m.Create()
 	// then
 	assert.NoError(t, err)
-	r, err := models.FetchMail(m.ID)
+	m2, err := models.FetchMail(m.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, m.MailID, r.MailID)
+	assert.Equal(t, m.MailID, m2.MailID)
+	assert.Equal(t, m.Body, m2.Body)
+	assert.Equal(t, f.ID, m2.FromID)
+	assert.Equal(t, f, m2.From)
+	assert.Equal(t, c.ID, m2.CharacterID)
+	assert.Equal(t, m.Subject, m2.Subject)
+	assert.Equal(t, m.Timestamp.Unix(), m2.Timestamp.Unix())
+	assert.Equal(t, []models.EveEntity{r}, m2.Recipients)
 }
 
-func TestMailSaveShouldReturnErrorWhenCharacterIDMissing(t *testing.T) {
+func TestMailCreateShouldReturnErrorWhenCharacterIDMissing(t *testing.T) {
 	// given
 	models.TruncateTables()
 	from := createEveEntity()
@@ -82,12 +91,12 @@ func TestMailSaveShouldReturnErrorWhenCharacterIDMissing(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 	// when
-	err := m.Save()
+	err := m.Create()
 	// then
 	assert.Error(t, err)
 }
 
-func TestMailSaveShouldReturnErrorWhenFromIDMissing(t *testing.T) {
+func TestMailCreateShouldReturnErrorWhenFromIDMissing(t *testing.T) {
 	// given
 	models.TruncateTables()
 	c := createCharacter()
@@ -99,23 +108,9 @@ func TestMailSaveShouldReturnErrorWhenFromIDMissing(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 	// when
-	err := m.Save()
+	err := m.Create()
 	// then
 	assert.Error(t, err)
-}
-func TestMailCanUpdateExisting(t *testing.T) {
-	// given
-	models.TruncateTables()
-	m := createMail()
-	m.Subject = "other"
-	// when
-	err := m.Save()
-	// then
-	assert.NoError(t, err)
-	r, err := models.FetchMail(m.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, m.MailID, r.MailID)
-	assert.Equal(t, m.Subject, r.Subject)
 }
 
 func TestMailCanFetchMailIDs(t *testing.T) {

@@ -59,7 +59,7 @@ func TestEntitiesShouldReturnErrorWhenCategoryNotValid(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestEntitiesCanUpdateExisting(t *testing.T) {
+func TestEveEntitiesCanUpdateExisting(t *testing.T) {
 	// given
 	models.TruncateTables()
 	o := createEveEntity(models.EveEntity{ID: 42, Name: "alpha", Category: "character"})
@@ -75,7 +75,7 @@ func TestEntitiesCanUpdateExisting(t *testing.T) {
 	assert.Equal(t, o2.Category, "corporation")
 }
 
-func TestEntitiesCanFetchById(t *testing.T) {
+func TestCanFetchEveEntity(t *testing.T) {
 	// given
 	models.TruncateTables()
 	o := createEveEntity()
@@ -87,7 +87,7 @@ func TestEntitiesCanFetchById(t *testing.T) {
 	}
 }
 
-func TestEntitiesShouldReturnErrorWhenNotFound(t *testing.T) {
+func TestFetchEveEntityShouldReturnErrorWhenNotFound(t *testing.T) {
 	// given
 	models.TruncateTables()
 	r, err := models.FetchEveEntity(42)
