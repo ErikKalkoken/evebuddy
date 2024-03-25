@@ -3,25 +3,28 @@ package models_test
 import (
 	"example/esiapp/internal/models"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMailLabelSaveNew(t *testing.T) {
 	// given
 	models.TruncateTables()
-	// char := createCharacter(1, "Erik")
-	// from := createEveEntity(EveEntityArgs{})
-	// m := storage.MailLabel{
-	// 	Character: char,
-	// 	From:      from,
-	// 	MailID:    7,
-	// 	Subject:   "subject",
-	// 	Timestamp: time.Now(),
-	// }
-	// // when
-	// err := m.Save()
-	// // then
-	// assert.NoError(t, err)
-	// r, err := storage.FetchMail(m.ID)
-	// assert.NoError(t, err)
-	// assert.Equal(t, m.MailID, r.MailID)
+	c := createCharacter()
+	l := models.MailLabel{
+		Character:   c,
+		Color:       "xyz",
+		LabelID:     1,
+		Name:        "Dummy",
+		UnreadCount: 42,
+	}
+	// when
+	err := l.Save()
+	// then
+	if assert.NoError(t, err) {
+		l2, err := models.FetchMailLabel(c.ID, l.LabelID)
+		if assert.NoError(t, err) {
+			assert.Equal(t, l.Name, l2.Name)
+		}
+	}
 }

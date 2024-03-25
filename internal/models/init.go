@@ -26,6 +26,7 @@ var schema = `
 		name text,
 		unread_count integer,
 		FOREIGN KEY (character_id) REFERENCES characters(id)
+		UNIQUE (character_id, label_id)
 	);
 
 	CREATE TABLE IF NOT EXISTS mail_recipients (
