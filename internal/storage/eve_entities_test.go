@@ -9,8 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type EveEntityArgs struct {
+	Category string
+	ID       int32
+	Name     string
+}
+
 // createEveEntity creates a test objects.
-func createEveEntity(e storage.EveEntity) storage.EveEntity {
+func createEveEntity(p EveEntityArgs) storage.EveEntity {
+	e := storage.EveEntity{ID: p.ID, Category: p.Category, Name: p.Name}
 	if e.ID == 0 {
 		ids, err := storage.FetchEntityIDs()
 		if err != nil {
@@ -72,7 +79,7 @@ func TestEntitiesCanUpdateExisting(t *testing.T) {
 func TestEntitiesCanFetchById(t *testing.T) {
 	// given
 	storage.TruncateTables()
-	o := createEveEntity(storage.EveEntity{ID: 42})
+	o := createEveEntity(EveEntityArgs{ID: 42})
 	// when
 	r, err := storage.FetchEveEntity(42)
 	// then
@@ -93,8 +100,8 @@ func TestEntitiesShouldReturnErrorWhenNotFound(t *testing.T) {
 func TestEntitiesCanReturnAllIDs(t *testing.T) {
 	// given
 	storage.TruncateTables()
-	createEveEntity(storage.EveEntity{ID: 42})
-	createEveEntity(storage.EveEntity{ID: 12})
+	createEveEntity(EveEntityArgs{ID: 42})
+	createEveEntity(EveEntityArgs{ID: 12})
 	// when
 	r, err := storage.FetchEntityIDs()
 	// then
