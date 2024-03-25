@@ -1,20 +1,20 @@
 package gui
 
 import (
-	"fmt"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 )
 
 type statusBar struct {
 	content *fyne.Container
-	label   *widget.Label
+	text    binding.String
 }
 
-func (s *statusBar) setText(format string, a ...any) {
-	s.label.SetText(fmt.Sprintf(format, a...))
+func (s *statusBar) setText(text string) error {
+	err := s.text.Set(text)
+	return err
 }
 
 func (s *statusBar) clear() {
@@ -22,11 +22,12 @@ func (s *statusBar) clear() {
 }
 
 func (e *esiApp) newStatusBar() *statusBar {
-	l := widget.NewLabel("")
-	c := container.NewVBox(widget.NewSeparator(), l)
-	s := statusBar{
-		content: c,
-		label:   l,
+	text := binding.NewString()
+	label := widget.NewLabelWithData(text)
+	content := container.NewVBox(widget.NewSeparator(), label)
+	b := statusBar{
+		content: content,
+		text:    text,
 	}
-	return &s
+	return &b
 }

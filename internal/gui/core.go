@@ -56,7 +56,8 @@ func UpdateMails(characterID int32, status *statusBar) error {
 	if err != nil {
 		return err
 	}
-	status.setText("Checking for new mail for %v", token.Character.Name)
+	s := fmt.Sprintf("Checking for new mail for %v", token.Character.Name)
+	status.setText(s)
 	if err := updateMailLists(token); err != nil {
 		return err
 	}
@@ -214,7 +215,8 @@ func updateMails(token *models.Token, headers []esi.MailHeader, status *statusBa
 			slog.Info("Created new mail", "mailID", header.ID, "characterID", token.CharacterID)
 			c.Add(1)
 			current := c.Load()
-			status.setText("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name)
+			s := fmt.Sprintf("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name)
+			status.setText(s)
 		}()
 	}
 	wg.Wait()
