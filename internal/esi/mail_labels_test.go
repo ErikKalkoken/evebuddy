@@ -1,6 +1,7 @@
-package esi
+package esi_test
 
 import (
+	"example/esiapp/internal/esi"
 	"net/http"
 	"testing"
 
@@ -41,7 +42,7 @@ func TestCanFetchMailLabels(t *testing.T) {
 	c := http.Client{}
 
 	// when
-	r, err := FetchMailLabels(c, 1, "token")
+	r, err := esi.FetchMailLabels(c, 1, "token")
 
 	// then
 	assert.Nil(t, err)
@@ -49,5 +50,5 @@ func TestCanFetchMailLabels(t *testing.T) {
 
 	assert.Equal(t, int32(5), r.TotalUnreadCount)
 	assert.Equal(t, len(r.Labels), 2)
-	assert.Equal(t, r.Labels[0], MailLabel{LabelID: 16, Name: "PINK", Color: "#660066", UnreadCount: 4})
+	assert.Equal(t, r.Labels[0], esi.MailLabel{LabelID: 16, Name: "PINK", Color: "#660066", UnreadCount: 4})
 }

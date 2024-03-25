@@ -1,7 +1,8 @@
-package esi
+package esi_test
 
 import (
 	"encoding/json"
+	"example/esiapp/internal/esi"
 	"fmt"
 	"net/http"
 	"testing"
@@ -44,18 +45,18 @@ func TestCanFetchSingleMailHeader(t *testing.T) {
 	c := http.Client{}
 
 	// when
-	mails, err := FetchMailHeaders(c, 1, "token", 0)
+	mails, err := esi.FetchMailHeaders(c, 1, "token", 0)
 
 	// then
 	assert.Nil(t, err)
 	assert.Equal(t, 1, httpmock.GetTotalCallCount())
 	assert.Equal(t, 1, len(mails))
-	expected := MailHeader{
+	expected := esi.MailHeader{
 		FromID:     90000001,
 		IsRead:     true,
 		Labels:     []int32{3},
 		ID:         7,
-		Recipients: []MailRecipient{{ID: 90000002, Type: "character"}},
+		Recipients: []esi.MailRecipient{{ID: 90000002, Type: "character"}},
 		Subject:    "Title for EVE Mail",
 		Timestamp:  "2015-09-30T16:07:00Z",
 	}
@@ -77,17 +78,17 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
-	objs := []MailHeader{}
+	objs := []esi.MailHeader{}
 	var mailIDs []int32
 	for i := range 55 {
 		id := int32(1000 - i)
 		mailIDs = append(mailIDs, id)
-		o := MailHeader{
+		o := esi.MailHeader{
 			FromID:     90000001,
 			IsRead:     true,
 			Labels:     []int32{3},
 			ID:         id,
-			Recipients: []MailRecipient{{ID: 90000002, Type: "character"}},
+			Recipients: []esi.MailRecipient{{ID: 90000002, Type: "character"}},
 			Subject:    fmt.Sprintf("Test Mail %d", id),
 			Timestamp:  "2015-09-30T16:07:00Z",
 		}
@@ -107,7 +108,7 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 	c := http.Client{}
 
 	// when
-	mails, err := FetchMailHeaders(c, 1, "token", 0)
+	mails, err := esi.FetchMailHeaders(c, 1, "token", 0)
 
 	// then
 	assert.Nil(t, err)

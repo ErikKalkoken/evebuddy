@@ -1,6 +1,7 @@
-package esi
+package esi_test
 
 import (
+	"example/esiapp/internal/esi"
 	"net/http"
 	"testing"
 
@@ -29,7 +30,7 @@ func TestFetchMailLists(t *testing.T) {
 
 	c := http.Client{}
 	// when
-	objs, err := FetchMailLists(c, 1, "token")
+	objs, err := esi.FetchMailLists(c, 1, "token")
 
 	// then
 	assert.Nil(t, err)
