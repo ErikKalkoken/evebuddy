@@ -15,10 +15,11 @@ func main() {
 	flag.Parse()
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-	if err := models.Initialize("storage2.sqlite"); err != nil {
+	db, err := models.Initialize("storage2.sqlite")
+	if err != nil {
 		panic(err)
 	}
-
+	defer db.Close()
 	// storage.Test()
 
 	a := app.New()

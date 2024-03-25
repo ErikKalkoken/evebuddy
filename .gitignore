@@ -2,3 +2,5 @@ main.go.bak
 .vscode/launch.json
 *.sqlite
 temp/
+*.sqlite-shm
+*.sqlite-wal

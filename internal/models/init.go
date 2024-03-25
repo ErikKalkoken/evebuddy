@@ -17,6 +17,7 @@ var schema = `
 		id integer PRIMARY KEY NOT NULL,
 		name text NOT NULL
 	);
+	CREATE INDEX IF NOT EXISTS mails_timestamp_idx ON characters (name ASC);
 
 	CREATE TABLE IF NOT EXISTS mail_labels (
 		id integer PRIMARY KEY AUTOINCREMENT,
@@ -50,6 +51,7 @@ var schema = `
 		FOREIGN KEY (from_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
 		UNIQUE (character_id, mail_id)
 	);
+	CREATE INDEX IF NOT EXISTS mails_timestamp_idx ON mails (timestamp DESC);
 
 	CREATE TABLE IF NOT EXISTS mail_mail_labels (
 		mail_label_id integer NOT NULL,
@@ -73,21 +75,25 @@ var schema = `
 		token_type text NOT NULL,
 		FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
 	);
+	PRAGMA journal_mode = WAL;
+	PRAGMA synchronous = normal;
+	PRAGMA temp_store = memory;
+	PRAGMA mmap_size = 30000000000;
 `
 
 // Initialize initializes the database (needs to be called once).
-func Initialize(dataSourceName string) error {
+func Initialize(dataSourceName string) (*sqlx.DB, error) {
 	myDb, err := sqlx.Connect("sqlite3", dataSourceName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	slog.Info("Connected to database")
 	_, err = myDb.Exec(schema)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	db = myDb
-	return nil
+	return myDb, nil
 }
 
 // TruncateTables will purge data from all tables. This is meant for tests.

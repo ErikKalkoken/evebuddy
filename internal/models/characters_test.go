@@ -12,7 +12,8 @@ import (
 
 // Initialize the test database for this test package
 func init() {
-	if err := models.Initialize(":memory:"); err != nil {
+	_, err := models.Initialize(":memory:")
+	if err != nil {
 		panic(err)
 	}
 }
