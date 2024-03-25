@@ -9,10 +9,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func createMail(m models.Mail) models.Mail {
+	// if m.Character.ID == 0 {
+	// 	m.Character = createCharacter()
+	// }
+	if err := m.Save(); err != nil {
+		panic(err)
+	}
+	return m
+}
+
 func TestMailCanSaveNew(t *testing.T) {
 	// given
 	models.TruncateTables()
-	char := createCharacter(1, "Erik")
+	char := createCharacter()
 	from := createEveEntity(models.EveEntity{})
 	m := models.Mail{
 		Body:      "body",
@@ -34,7 +44,7 @@ func TestMailCanSaveNew(t *testing.T) {
 func TestMailCanUpdateExisting(t *testing.T) {
 	// given
 	models.TruncateTables()
-	char := createCharacter(1, "Erik")
+	char := createCharacter()
 	from := createEveEntity(models.EveEntity{})
 	m := models.Mail{
 		Body:      "body",
@@ -59,7 +69,7 @@ func TestMailCanUpdateExisting(t *testing.T) {
 func TestMailCanFetchMailIDs(t *testing.T) {
 	// given
 	models.TruncateTables()
-	char := createCharacter(7, "Erik")
+	char := createCharacter()
 	from := createEveEntity(models.EveEntity{})
 	for i := range 3 {
 		m := models.Mail{
@@ -74,7 +84,7 @@ func TestMailCanFetchMailIDs(t *testing.T) {
 		assert.NoError(t, err)
 	}
 	// when
-	ids, err := models.FetchMailIDs(7)
+	ids, err := models.FetchMailIDs(char.ID)
 	assert.NoError(t, err)
 	got := set.NewFromSlice(ids)
 	want := set.NewFromSlice([]int32{10, 11, 12})

@@ -2,19 +2,40 @@ package models_test
 
 import (
 	"example/esiapp/internal/models"
+	"example/esiapp/internal/set"
+	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+// Initialize the test database for this test package
 func init() {
 	if err := models.Initialize(":memory:"); err != nil {
 		panic(err)
 	}
 }
 
-func createCharacter(id int32, name string) models.Character {
-	c := models.Character{ID: id, Name: name}
+func createCharacter(args ...models.Character) models.Character {
+	var c models.Character
+	if len(args) > 0 {
+		c = args[0]
+	}
+	if c.ID == 0 {
+		ids, err := models.FetchCharacterIDs()
+		if err != nil {
+			panic(err)
+		}
+		if len(ids) == 0 {
+			c.ID = 1
+		} else {
+			c.ID = slices.Max(ids) + 1
+		}
+	}
+	if c.Name == "" {
+		c.Name = fmt.Sprintf("Generated character #%d", c.ID)
+	}
 	err := c.Save()
 	if err != nil {
 		panic(err)
@@ -25,7 +46,7 @@ func createCharacter(id int32, name string) models.Character {
 func TestCharacterCanSaveNew(t *testing.T) {
 	// given
 	models.TruncateTables()
-	c := createCharacter(1, "Erik")
+	c := createCharacter()
 	// when
 	r, err := models.FetchFirstCharacter()
 	// then
@@ -37,7 +58,7 @@ func TestCharacterCanSaveNew(t *testing.T) {
 func TestCharacterCanUpdate(t *testing.T) {
 	// given
 	models.TruncateTables()
-	c := createCharacter(1, "Erik")
+	c := createCharacter(models.Character{Name: "Erik"})
 	c.Name = "John"
 	assert.NoError(t, c.Save())
 	// when
@@ -51,9 +72,8 @@ func TestCharacterCanUpdate(t *testing.T) {
 func TestCharacterCanFetchByCharacterID(t *testing.T) {
 	// given
 	models.TruncateTables()
-	c1 := models.Character{ID: 1, Name: "Erik"}
-	assert.NoError(t, c1.Save())
-	c2 := models.Character{ID: 2, Name: "Naoko"}
+	createCharacter()
+	c2 := createCharacter()
 	assert.NoError(t, c2.Save())
 	// when
 	r, err := models.FetchCharacter(2)
@@ -66,17 +86,17 @@ func TestCharacterCanFetchByCharacterID(t *testing.T) {
 func TestCharacterCanFetchAll(t *testing.T) {
 	// given
 	models.TruncateTables()
-	c1 := models.Character{ID: 1, Name: "Naoko"}
-	assert.NoError(t, c1.Save())
-	c2 := models.Character{ID: 2, Name: "Erik"}
+	c1 := createCharacter()
+	c2 := createCharacter()
 	assert.NoError(t, c2.Save())
 	// when
 	got, err := models.FetchAllCharacters()
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, 2, len(got))
-		assert.Equal(t, "Erik", got[0].Name)
-		assert.Equal(t, "Naoko", got[1].Name)
+		gotIDs := set.NewFromSlice([]int32{got[0].ID, got[1].ID})
+		wantIDs := set.NewFromSlice([]int32{c1.ID, c2.ID})
+		assert.Equal(t, wantIDs, gotIDs)
 
 	}
 }

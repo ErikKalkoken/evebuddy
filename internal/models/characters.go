@@ -57,3 +57,13 @@ func FetchAllCharacters() ([]Character, error) {
 	}
 	return cc, nil
 }
+
+// FetchCharacterIDs returns all existing character IDs.
+func FetchCharacterIDs() ([]int32, error) {
+	var ids []int32
+	err := db.Select(&ids, "SELECT id FROM characters;")
+	if err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
