@@ -176,7 +176,7 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusB
 				slog.Error("Failed to parse timestamp for mail", "header", header, "error", err)
 				return
 			}
-			mail.TimeStamp = timestamp
+			mail.Timestamp = timestamp
 
 			from, err := storage.FetchEveEntity(header.FromID)
 			if err != nil {

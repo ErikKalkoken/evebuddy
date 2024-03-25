@@ -1,17 +1,33 @@
 package storage
 
 import (
+	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func createEveEntity(id int32, name string, category string) EveEntity {
-	e := EveEntity{ID: id, Name: name, Category: category}
-	err := e.Save()
-	if err != nil {
-		panic(err)
+// createEveEntity creates a test objects.
+func createEveEntity(e EveEntity) EveEntity {
+	if e.ID == 0 {
+		ids, err := FetchEntityIDs()
+		if err != nil {
+			panic(err)
+		}
+		if len(ids) > 0 {
+			e.ID = slices.Max(ids) + 1
+		} else {
+			e.ID = 1
+		}
 	}
+	if e.Name == "" {
+		e.Name = fmt.Sprintf("generated #%d", e.ID)
+	}
+	if e.Category == "" {
+		e.Category = "character"
+	}
+	e.MustSave()
 	return e
 }
 
@@ -38,8 +54,8 @@ func TestEntitiesShouldReturnErrorWhenCategoryNotValid(t *testing.T) {
 func TestEntitiesCanUpdateExisting(t *testing.T) {
 	// given
 	truncateTables()
-	o := createEveEntity(42, "alpha", "character")
-	assert.NoError(t, o.Save())
+	o := EveEntity{ID: 42, Name: "alpha", Category: "character"}
+	o.MustSave()
 	o.Name = "bravo"
 	o.Category = "corporation"
 	// when
@@ -55,7 +71,7 @@ func TestEntitiesCanUpdateExisting(t *testing.T) {
 func TestEntitiesCanFetchById(t *testing.T) {
 	// given
 	truncateTables()
-	o := createEveEntity(42, "dummy", "character")
+	o := createEveEntity(EveEntity{ID: 42})
 	// when
 	r, err := FetchEveEntity(42)
 	// then
@@ -76,8 +92,8 @@ func TestEntitiesShouldReturnErrorWhenNotFound(t *testing.T) {
 func TestEntitiesCanReturnAllIDs(t *testing.T) {
 	// given
 	truncateTables()
-	createEveEntity(42, "alpha", "character")
-	createEveEntity(12, "bravo", "character")
+	createEveEntity(EveEntity{ID: 42})
+	createEveEntity(EveEntity{ID: 12})
 	// when
 	r, err := FetchEntityIDs()
 	// then

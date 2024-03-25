@@ -16,7 +16,7 @@ import (
 )
 
 type mailItem struct {
-	id        uint
+	id        uint64
 	subject   string
 	from      string
 	timestamp time.Time
@@ -41,7 +41,7 @@ func (h *headers) update(charID int32, labelID int32) {
 				id:        m.ID,
 				from:      m.From.Name,
 				subject:   m.Subject,
-				timestamp: m.TimeStamp,
+				timestamp: m.Timestamp,
 			}
 			d = append(d, o)
 		}

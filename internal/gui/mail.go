@@ -22,7 +22,7 @@ type mail struct {
 	policy  *bluemonday.Policy
 }
 
-func (m *mail) update(mailID uint) {
+func (m *mail) update(mailID uint64) {
 	mail, err := storage.FetchMailByID(mailID)
 	if err != nil {
 		slog.Error("Failed to render mail", "mailID", mailID, "error", err)
@@ -36,7 +36,7 @@ func (m *mail) update(mailID uint) {
 	header := fmt.Sprintf(
 		"From: %s\nSent:%s\nTo:%s",
 		mail.From.Name,
-		mail.TimeStamp.Format(myDateTime),
+		mail.Timestamp.Format(myDateTime),
 		strings.Join(names, ", "),
 	)
 	t := strings.ReplaceAll(mail.Body, "<br>", "\n")

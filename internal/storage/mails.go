@@ -1,29 +1,69 @@
 package storage
 
 import (
+	"fmt"
 	"time"
 )
 
 // An Eve mail belonging to a character
 type Mail struct {
 	Body        string
-	CharacterID int32
+	CharacterID int32 `db:"character_id"`
 	Character   Character
-	FromID      int32
+	FromID      int32 `db:"from_id"`
 	From        EveEntity
 	Labels      []MailLabel // `gorm:"many2many:mail_mail_labels;"`
-	IsRead      bool
-	ID          uint
-	MailID      int32
+	IsRead      bool        `db:"is_read"`
+	ID          uint64
+	MailID      int32       `db:"mail_id"`
 	Recipients  []EveEntity // `gorm:"many2many:mail_recipients;"`
 	Subject     string
-	TimeStamp   time.Time
+	Timestamp   time.Time
 }
 
 // Save creates or updates a mail
 func (m *Mail) Save() error {
-	// err := db.Where("character_id = ? AND mail_id = ?", m.CharacterID, m.MailID).Save(m).Error
-	// return err
+	if m.Character.ID == 0 {
+		return fmt.Errorf("can not save mail without character")
+	}
+	m.CharacterID = m.Character.ID
+	if m.From.ID == 0 {
+		return fmt.Errorf("can not save mail without from")
+	}
+	m.FromID = m.From.ID
+	_, err := db.NamedExec(`
+		INSERT INTO mails (
+			body,
+			character_id,
+			from_id,
+			is_read,
+			mail_id,
+			subject,
+			timestamp
+		)
+		VALUES (
+			:body,
+			:character_id,
+			:from_id,
+			:is_read,
+			:mail_id,
+			:subject,
+			:timestamp
+		)
+		ON CONFLICT (id) DO
+		UPDATE SET
+			body=:body,
+			character_id=:character_id,
+			from_id=:from_id,
+			is_read=:is_read,
+			mail_id=:mail_id,
+			subject=:subject,
+			timestamp=:timestamp`,
+		*m,
+	)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -62,7 +102,7 @@ func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	return mm, nil
 }
 
-func FetchMailByID(ID uint) (*Mail, error) {
+func FetchMailByID(ID uint64) (*Mail, error) {
 	var m Mail
 	// err := db.Preload("From").Preload("Recipients").Find(&m, ID).Error
 	// if err != nil {

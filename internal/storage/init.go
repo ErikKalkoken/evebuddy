@@ -44,7 +44,7 @@ var schema = `
 		is_read numeric,
 		mail_id integer,
 		subject text,
-		time_stamp text,
+		timestamp text,
 		FOREIGN KEY (character_id) REFERENCES characters(id),
 		FOREIGN KEY (from_id) REFERENCES eve_entities(id)
 	);
