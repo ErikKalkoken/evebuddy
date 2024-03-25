@@ -2,6 +2,7 @@ package models_test
 
 import (
 	"example/esiapp/internal/models"
+	"example/esiapp/internal/set"
 	"fmt"
 	"slices"
 	"testing"
@@ -10,7 +11,11 @@ import (
 )
 
 // createEveEntity is a test factory for EveEntity objects.
-func createEveEntity(e models.EveEntity) models.EveEntity {
+func createEveEntity(args ...models.EveEntity) models.EveEntity {
+	var e models.EveEntity
+	if len(args) > 0 {
+		e = args[0]
+	}
 	if e.ID == 0 {
 		ids, err := models.FetchEntityIDs()
 		if err != nil {
@@ -73,9 +78,9 @@ func TestEntitiesCanUpdateExisting(t *testing.T) {
 func TestEntitiesCanFetchById(t *testing.T) {
 	// given
 	models.TruncateTables()
-	o := createEveEntity(models.EveEntity{ID: 42})
+	o := createEveEntity()
 	// when
-	r, err := models.FetchEveEntity(42)
+	r, err := models.FetchEveEntity(o.ID)
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, o, *r)
@@ -94,12 +99,14 @@ func TestEntitiesShouldReturnErrorWhenNotFound(t *testing.T) {
 func TestEntitiesCanReturnAllIDs(t *testing.T) {
 	// given
 	models.TruncateTables()
-	createEveEntity(models.EveEntity{ID: 42})
-	createEveEntity(models.EveEntity{ID: 12})
+	e1 := createEveEntity()
+	e2 := createEveEntity()
 	// when
 	r, err := models.FetchEntityIDs()
 	// then
 	if assert.NoError(t, err) {
-		assert.Equal(t, []int32{12, 42}, r)
+		gotIDs := set.NewFromSlice([]int32{e1.ID, e2.ID})
+		wantIDs := set.NewFromSlice(r)
+		assert.Equal(t, wantIDs, gotIDs)
 	}
 }

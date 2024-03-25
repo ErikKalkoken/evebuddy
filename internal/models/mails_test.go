@@ -3,16 +3,45 @@ package models_test
 import (
 	"example/esiapp/internal/models"
 	"example/esiapp/internal/set"
+	"fmt"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func createMail(m models.Mail) models.Mail {
-	// if m.Character.ID == 0 {
-	// 	m.Character = createCharacter()
-	// }
+func createMail(args ...models.Mail) models.Mail {
+	var m models.Mail
+	if len(args) > 0 {
+		m = args[0]
+	}
+	if m.Character.ID == 0 {
+		m.Character = createCharacter()
+	}
+	if m.From.ID == 0 {
+		m.From = createEveEntity(models.EveEntity{Category: models.EveEntityCharacter})
+	}
+	if m.MailID == 0 {
+		ids, err := models.FetchMailIDs(m.Character.ID)
+		if err != nil {
+			panic(err)
+		}
+		if len(ids) > 0 {
+			m.MailID = slices.Max(ids) + 1
+		} else {
+			m.MailID = 1
+		}
+	}
+	if m.Body == "" {
+		m.Body = fmt.Sprintf("Generated body #%d", m.MailID)
+	}
+	if m.Subject == "" {
+		m.Body = fmt.Sprintf("Generated subject #%d", m.MailID)
+	}
+	if m.Timestamp.IsZero() {
+		m.Timestamp = time.Now()
+	}
 	if err := m.Save(); err != nil {
 		panic(err)
 	}
@@ -23,7 +52,7 @@ func TestMailCanSaveNew(t *testing.T) {
 	// given
 	models.TruncateTables()
 	char := createCharacter()
-	from := createEveEntity(models.EveEntity{})
+	from := createEveEntity()
 	m := models.Mail{
 		Body:      "body",
 		Character: char,
@@ -44,17 +73,7 @@ func TestMailCanSaveNew(t *testing.T) {
 func TestMailCanUpdateExisting(t *testing.T) {
 	// given
 	models.TruncateTables()
-	char := createCharacter()
-	from := createEveEntity(models.EveEntity{})
-	m := models.Mail{
-		Body:      "body",
-		Character: char,
-		From:      from,
-		MailID:    7,
-		Subject:   "subject",
-		Timestamp: time.Now(),
-	}
-	assert.NoError(t, m.Save())
+	m := createMail()
 	m.Subject = "other"
 	// when
 	err := m.Save()
@@ -70,18 +89,11 @@ func TestMailCanFetchMailIDs(t *testing.T) {
 	// given
 	models.TruncateTables()
 	char := createCharacter()
-	from := createEveEntity(models.EveEntity{})
 	for i := range 3 {
-		m := models.Mail{
-			Body:      "body",
+		createMail(models.Mail{
 			Character: char,
-			From:      from,
 			MailID:    int32(10 + i),
-			Subject:   "subject",
-			Timestamp: time.Now(),
-		}
-		err := m.Save()
-		assert.NoError(t, err)
+		})
 	}
 	// when
 	ids, err := models.FetchMailIDs(char.ID)

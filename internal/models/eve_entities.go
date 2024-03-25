@@ -12,7 +12,14 @@ type EveEntity struct {
 	Name     string
 }
 
-var categories = set.NewFromSlice([]string{"character", "corporation", "alliance"})
+// Supported categories of EveEntity
+const (
+	EveEntityAlliance    = "alliance"
+	EveEntityCharacter   = "character"
+	EveEntityCorporation = "corporation"
+)
+
+var categories = set.NewFromSlice([]string{EveEntityAlliance, EveEntityCharacter, EveEntityCorporation})
 
 // Save updates or creates an eve entity.
 func (e *EveEntity) Save() error {
