@@ -54,10 +54,12 @@ func TestMailCanCreateNew(t *testing.T) {
 	c := createCharacter()
 	f := createEveEntity()
 	r := createEveEntity()
+	l := createMailLabel(models.MailLabel{Character: c})
 	m := models.Mail{
 		Body:       "body",
 		Character:  c,
 		From:       f,
+		Labels:     []models.MailLabel{l},
 		MailID:     7,
 		Recipients: []models.EveEntity{r},
 		Subject:    "subject",
@@ -77,6 +79,8 @@ func TestMailCanCreateNew(t *testing.T) {
 	assert.Equal(t, m.Subject, m2.Subject)
 	assert.Equal(t, m.Timestamp.Unix(), m2.Timestamp.Unix())
 	assert.Equal(t, []models.EveEntity{r}, m2.Recipients)
+	assert.Equal(t, l.Name, m2.Labels[0].Name)
+	assert.Equal(t, l.LabelID, m2.Labels[0].LabelID)
 }
 
 func TestMailCreateShouldReturnErrorWhenCharacterIDMissing(t *testing.T) {

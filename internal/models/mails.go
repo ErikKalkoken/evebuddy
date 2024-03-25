@@ -64,6 +64,16 @@ func (m *Mail) Create() error {
 		return err
 	}
 	m.ID = uint64(newID)
+	if err := m.addRecipients(); err != nil {
+		return err
+	}
+	if err := m.addLabels(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *Mail) addRecipients() error {
 	for _, r := range m.Recipients {
 		_, err := db.Exec(`
 			INSERT INTO mail_recipients (mail_id, eve_entity_id)
@@ -71,6 +81,22 @@ func (m *Mail) Create() error {
 			`,
 			m.ID,
 			r.ID,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *Mail) addLabels() error {
+	for _, l := range m.Labels {
+		_, err := db.Exec(`
+			INSERT INTO mail_mail_labels (mail_label_id, mail_id)
+			VALUES (?, ?);
+			`,
+			l.ID,
+			m.ID,
 		)
 		if err != nil {
 			return err
@@ -105,20 +131,41 @@ func FetchMail(id uint64) (*Mail, error) {
 	if err != nil {
 		return nil, err
 	}
+	m.Recipients, err = fetchMailRecipients(m.ID)
+	if err != nil {
+		return nil, err
+	}
+	m.Labels, err = fetchMailLabels(m.ID)
+	if err != nil {
+		return nil, err
+	}
+	return &m, nil
+}
+
+func fetchMailRecipients(mailID uint64) ([]EveEntity, error) {
 	var rr []EveEntity
-	err = db.Select(
+	err := db.Select(
 		&rr,
 		`SELECT eve_entities.*
 		FROM eve_entities
 		JOIN mail_recipients ON mail_recipients.eve_entity_id = eve_entities.id
 		WHERE mail_id = ?
-		`, m.ID,
+		`, mailID,
 	)
-	if err != nil {
-		return nil, err
-	}
-	m.Recipients = rr
-	return &m, nil
+	return rr, err
+}
+
+func fetchMailLabels(mailID uint64) ([]MailLabel, error) {
+	var ll []MailLabel
+	err := db.Select(
+		&ll,
+		`SELECT mail_labels.*
+		FROM mail_labels
+		JOIN mail_mail_labels ON mail_mail_labels.mail_label_id = mail_labels.id
+		WHERE mail_id = ?
+		`, mailID,
+	)
+	return ll, err
 }
 
 // FetchMailIDs return mail IDs of all existing mails for a character
