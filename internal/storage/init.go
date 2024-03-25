@@ -75,37 +75,31 @@ var schema = `
 `
 
 // Initialize initializes the database (needs to be called once).
-func Initialize() error {
-	myDb, err := sqlx.Connect("sqlite3", "storage2.sqlite")
+func Initialize(dataSourceName string) error {
+	myDb, err := sqlx.Connect("sqlite3", dataSourceName)
 	if err != nil {
 		return err
 	}
 	slog.Info("Connected to database")
-	myDb.MustExec(schema)
-	db = myDb
-	return nil
-}
-
-// Initialize initializes the database for testing
-func InitializeTest() error {
-	myDb, err := sqlx.Connect("sqlite3", ":memory:")
+	_, err = myDb.Exec(schema)
 	if err != nil {
 		return err
 	}
-	myDb.MustExec(schema)
 	db = myDb
 	return nil
 }
 
-// Truncate all tables
+// TruncateTables will purge data from all tables. This is meant for tests.
 func TruncateTables() {
 	sql := `
+		DELETE FROM mails;
 		DELETE FROM tokens;
 		DELETE FROM characters;
 		DELETE FROM eve_entities;
 	`
 	db.MustExec(sql)
 	sql = `
+		DELETE FROM SQLITE_SEQUENCE WHERE name='mails';
 		DELETE FROM SQLITE_SEQUENCE WHERE name='tokens';
 		DELETE FROM SQLITE_SEQUENCE WHERE name='characters';
 		DELETE FROM SQLITE_SEQUENCE WHERE name='eve_entities';

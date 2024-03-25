@@ -8,7 +8,9 @@ import (
 )
 
 func init() {
-	storage.InitializeTest()
+	if err := storage.Initialize(":memory:"); err != nil {
+		panic(err)
+	}
 }
 
 func createCharacter(id int32, name string) storage.Character {
