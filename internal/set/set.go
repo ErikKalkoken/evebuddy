@@ -1,9 +1,15 @@
 // Package set defines a generic set type
 package set
 
+import "fmt"
+
 // Set is a generic set.
 type Set[T comparable] struct {
 	items map[T]struct{}
+}
+
+func (s *Set[T]) String() string {
+	return fmt.Sprint(s.ToSlice())
 }
 
 // Add adds an element to the set
