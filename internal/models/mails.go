@@ -7,18 +7,18 @@ import (
 
 // An Eve mail belonging to a character
 type Mail struct {
-	Body        string
-	CharacterID int32 `db:"character_id"`
-	Character   Character
-	FromID      int32 `db:"from_id"`
-	From        EveEntity
-	Labels      []MailLabel // `gorm:"many2many:mail_mail_labels;"`
+	Body        string      `db:"body"`
+	CharacterID int32       `db:"character_id"`
+	Character   Character   `db:"character"`
+	FromID      int32       `db:"from_id"`
+	From        EveEntity   `db:"eve_entity"`
+	Labels      []MailLabel `db:"labels"`
 	IsRead      bool        `db:"is_read"`
-	ID          uint64
-	MailID      int32 `db:"mail_id"`
-	Recipients  []EveEntity
-	Subject     string
-	Timestamp   time.Time
+	ID          uint64      `db:"id"`
+	MailID      int32       `db:"mail_id"`
+	Recipients  []EveEntity `db:"recipients"`
+	Subject     string      `db:"subject"`
+	Timestamp   time.Time   `db:"timestamp"`
 }
 
 // Create creates a new mail
@@ -180,9 +180,43 @@ func FetchMailIDs(characterID int32) ([]int32, error) {
 
 // FetchMailsForLabel returns a character's mails for a label in descending order by timestamp.
 func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
+	rows, err := db.Query(
+		`SELECT mails.*, eve_entities.*
+		FROM mails
+		JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
+		JOIN eve_entities ON eve_entities.id = mails.from_id
+		WHERE character_id = ?
+		AND mail_label_id = ?
+		ORDER BY timestamp DESC`,
+		characterID,
+		labelID,
+	)
+	if err != nil {
+		return nil, err
+	}
 	var mm []Mail
+	for rows.Next() {
+		var m Mail
+		err := rows.Scan(
+			&m.ID,
+			&m.Body,
+			&m.CharacterID,
+			&m.FromID,
+			&m.IsRead,
+			&m.MailID,
+			&m.Subject,
+			&m.Timestamp,
+			&m.From.ID,
+			&m.From.Category,
+			&m.From.Name,
+		)
+		if err != nil {
+			return nil, err
+		}
+		mm = append(mm, m)
+	}
+	return mm, nil
 
-	// tx := db.Preload("From").Where("character_id = ?", characterID).Order("time_stamp desc")
 	// var err error
 	// if labelID == 0 {
 	// 	err = tx.Find(&mm).Error
@@ -195,7 +229,6 @@ func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	// 	return nil, err
 	// }
 
-	return mm, nil
 }
 
 func Test() {

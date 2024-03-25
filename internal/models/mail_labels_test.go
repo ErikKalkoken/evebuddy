@@ -126,7 +126,7 @@ func TesFetchAllMailLabelsReturnsEmptySliceWhenNoRows(t *testing.T) {
 	// when
 	ll, err := models.FetchAllMailLabels(c.ID)
 	if assert.NoError(t, err) {
-		assert.Equal(t, 0, len(ll))
+		assert.Empty(t, ll)
 	}
 }
 

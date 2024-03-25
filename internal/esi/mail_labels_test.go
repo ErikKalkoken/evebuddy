@@ -49,6 +49,6 @@ func TestCanFetchMailLabels(t *testing.T) {
 	assert.Equal(t, 1, httpmock.GetTotalCallCount())
 
 	assert.Equal(t, int32(5), r.TotalUnreadCount)
-	assert.Equal(t, len(r.Labels), 2)
+	assert.Len(t, r.Labels, 2)
 	assert.Equal(t, r.Labels[0], esi.MailLabel{LabelID: 16, Name: "PINK", Color: "#660066", UnreadCount: 4})
 }

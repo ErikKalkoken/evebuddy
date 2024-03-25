@@ -30,12 +30,12 @@ func TestFetchMailLists(t *testing.T) {
 
 	c := http.Client{}
 	// when
-	objs, err := esi.FetchMailLists(c, 1, "token")
+	ll, err := esi.FetchMailLists(c, 1, "token")
 
 	// then
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(objs))
-	o := objs[0]
+	assert.Len(t, ll, 1)
+	o := ll[0]
 	assert.Equal(t, int32(1), o.ID)
 	assert.Equal(t, "test_mailing_list", o.Name)
 }

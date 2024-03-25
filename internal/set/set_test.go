@@ -73,7 +73,7 @@ func TestSetCanClear(t *testing.T) {
 func TestSetCanConvertToSlice(t *testing.T) {
 	s := NewFromSlice([]int{1, 2})
 	got := s.ToSlice()
-	assert.Equal(t, len(got), 2)
+	assert.Len(t, got, 2)
 	assert.Contains(t, got, 1)
 	assert.Contains(t, got, 2)
 }

@@ -93,7 +93,7 @@ func TestCharacterCanFetchAll(t *testing.T) {
 	got, err := models.FetchAllCharacters()
 	// then
 	if assert.NoError(t, err) {
-		assert.Equal(t, 2, len(got))
+		assert.Len(t, got, 2)
 		gotIDs := set.NewFromSlice([]int32{got[0].ID, got[1].ID})
 		wantIDs := set.NewFromSlice([]int32{c1.ID, c2.ID})
 		assert.Equal(t, wantIDs, gotIDs)

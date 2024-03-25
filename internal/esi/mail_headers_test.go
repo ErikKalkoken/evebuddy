@@ -50,7 +50,7 @@ func TestCanFetchSingleMailHeader(t *testing.T) {
 	// then
 	assert.Nil(t, err)
 	assert.Equal(t, 1, httpmock.GetTotalCallCount())
-	assert.Equal(t, 1, len(mails))
+	assert.Len(t, mails, 1)
 	expected := esi.MailHeader{
 		FromID:     90000001,
 		IsRead:     true,
@@ -113,7 +113,7 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 	// then
 	assert.Nil(t, err)
 	assert.Equal(t, 2, httpmock.GetTotalCallCount())
-	assert.Equal(t, 55, len(mails))
+	assert.Len(t, mails, 55)
 
 	newIDs := make([]int32, 0, 55)
 	for _, m := range mails {
