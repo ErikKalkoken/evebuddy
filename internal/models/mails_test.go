@@ -70,6 +70,39 @@ func TestMailCanSaveNew(t *testing.T) {
 	assert.Equal(t, m.MailID, r.MailID)
 }
 
+func TestMailSaveShouldReturnErrorWhenCharacterIDMissing(t *testing.T) {
+	// given
+	models.TruncateTables()
+	from := createEveEntity()
+	m := models.Mail{
+		Body:      "body",
+		From:      from,
+		MailID:    7,
+		Subject:   "subject",
+		Timestamp: time.Now(),
+	}
+	// when
+	err := m.Save()
+	// then
+	assert.Error(t, err)
+}
+
+func TestMailSaveShouldReturnErrorWhenFromIDMissing(t *testing.T) {
+	// given
+	models.TruncateTables()
+	c := createCharacter()
+	m := models.Mail{
+		Body:      "body",
+		Character: c,
+		MailID:    7,
+		Subject:   "subject",
+		Timestamp: time.Now(),
+	}
+	// when
+	err := m.Save()
+	// then
+	assert.Error(t, err)
+}
 func TestMailCanUpdateExisting(t *testing.T) {
 	// given
 	models.TruncateTables()

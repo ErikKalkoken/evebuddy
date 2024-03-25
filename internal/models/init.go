@@ -14,24 +14,24 @@ var db *sqlx.DB
 
 var schema = `
 	CREATE TABLE IF NOT EXISTS characters (
-		id integer PRIMARY KEY AUTOINCREMENT,
-		name text
+		id integer PRIMARY KEY NOT NULL,
+		name text NOT NULL
 	);
 
 	CREATE TABLE IF NOT EXISTS mail_labels (
 		id integer PRIMARY KEY AUTOINCREMENT,
-		character_id integer,
-		color text,
-		label_id integer,
-		name text,
-		unread_count integer,
+		character_id integer NOT NULL,
+		color text NOT NULL,
+		label_id integer NOT NULL,
+		name text NOT NULL,
+		unread_count integer NOT NULL,
 		FOREIGN KEY (character_id) REFERENCES characters(id)
 		UNIQUE (character_id, label_id)
 	);
 
 	CREATE TABLE IF NOT EXISTS mail_recipients (
-		mail_id integer,
-		eve_entity_id integer,
+		mail_id integer NOT NULL,
+		eve_entity_id integer NOT NULL,
 		PRIMARY KEY (mail_id,eve_entity_id),
 		FOREIGN KEY (mail_id) REFERENCES mails(id),
 		FOREIGN KEY (eve_entity_id) REFERENCES eve_entities(id)
@@ -39,38 +39,38 @@ var schema = `
 
 	CREATE TABLE IF NOT EXISTS mails (
 		id integer PRIMARY KEY AUTOINCREMENT,
-		body text,
-		character_id integer,
-		from_id integer,
-		is_read numeric,
-		mail_id integer,
-		subject text,
-		timestamp datetime,
+		body text NOT NULL,
+		character_id integer NOT NULL,
+		from_id integer NOT NULL,
+		is_read numeric NOT NULL,
+		mail_id integer NOT NULL,
+		subject text NOT NULL,
+		timestamp datetime NOT NULL,
 		FOREIGN KEY (character_id) REFERENCES characters(id),
 		FOREIGN KEY (from_id) REFERENCES eve_entities(id),
 		UNIQUE (character_id, mail_id)
 	);
 
 	CREATE TABLE IF NOT EXISTS mail_mail_labels (
-		mail_label_id integer,
-		mail_id integer,
+		mail_label_id integer NOT NULL,
+		mail_id integer NOT NULL,
 		PRIMARY KEY (mail_label_id,mail_id),
 		FOREIGN KEY (mail_label_id) REFERENCES mail_labels(id),
 		FOREIGN KEY (mail_id) REFERENCES mails(id)
 	);
 
 	CREATE TABLE IF NOT EXISTS eve_entities (
-		id integer PRIMARY KEY AUTOINCREMENT,
-		category text,
-		name text
+		id integer PRIMARY KEY NO NULL,
+		category text NOT NULL,
+		name text NOT NULL
 	);
 
 	CREATE TABLE IF NOT EXISTS tokens (
-		access_token text,
-		character_id integer PRIMARY KEY,
-		expires_at datetime,
-		refresh_token text,
-		token_type text,
+		access_token text NOT NULL,
+		character_id integer PRIMARY KEY NOT NULL,
+		expires_at datetime NOT NULL,
+		refresh_token text NOT NULL,
+		token_type text NOT NULL,
 		FOREIGN KEY (character_id) REFERENCES characters(id)
 	);
 `

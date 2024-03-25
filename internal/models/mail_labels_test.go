@@ -72,6 +72,20 @@ func TestMailLabelSaveNew(t *testing.T) {
 	}
 }
 
+func TestMailLabelShouldReturnErrorWhenNoCharacter(t *testing.T) {
+	// given
+	models.TruncateTables()
+	l := models.MailLabel{
+		Color:       "xyz",
+		LabelID:     1,
+		Name:        "Dummy",
+		UnreadCount: 42,
+	}
+	// when
+	err := l.Save()
+	// then
+	assert.Error(t, err)
+}
 func TestMailLabelCanFetchAllLabelsReturnsSlice(t *testing.T) {
 	// given
 	models.TruncateTables()

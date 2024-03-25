@@ -23,14 +23,18 @@ type Mail struct {
 
 // Save creates or updates a mail
 func (m *Mail) Save() error {
-	if m.Character.ID == 0 {
-		return fmt.Errorf("can not save mail without character")
+	if m.Character.ID != 0 {
+		m.CharacterID = m.Character.ID
 	}
-	m.CharacterID = m.Character.ID
-	if m.From.ID == 0 {
-		return fmt.Errorf("can not save mail without from")
+	if m.CharacterID == 0 {
+		return fmt.Errorf("CharacterID can not be zero")
 	}
-	m.FromID = m.From.ID
+	if m.From.ID != 0 {
+		m.FromID = m.From.ID
+	}
+	if m.FromID == 0 {
+		return fmt.Errorf("FormID can not be zero")
+	}
 	r, err := db.NamedExec(`
 		INSERT INTO mails (
 			body,
@@ -80,7 +84,7 @@ func FetchMailIDs(characterID int32) ([]int32, error) {
 	return ids, nil
 }
 
-// FetchMailsForLabel returns a character's mails for a label
+// FetchMailsForLabel returns a character's mails for a label in descending order by timestamp.
 func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	var mm []Mail
 

@@ -17,14 +17,14 @@ type MailLabel struct {
 	UnreadCount int32 `db:"unread_count"`
 }
 
-// Save creates or updates a mail label
+// Save creates or updates a mail label.
 func (l *MailLabel) Save() error {
-	// err := db.Where("character_id = ? AND label_id = ?", l.CharacterID, l.LabelID).Save(l).Error
-	// return err
-	if l.Character.ID == 0 {
-		return fmt.Errorf("can not save mail label without character")
+	if l.Character.ID != 0 {
+		l.CharacterID = l.Character.ID
 	}
-	l.CharacterID = l.Character.ID
+	if l.CharacterID == 0 {
+		return fmt.Errorf("CharacterID can not be zero")
+	}
 	r, err := db.NamedExec(`
 		INSERT INTO mail_labels (
 			character_id,
