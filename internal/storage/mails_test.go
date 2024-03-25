@@ -13,7 +13,7 @@ func TestMailCanSaveNew(t *testing.T) {
 	// given
 	storage.TruncateTables()
 	char := createCharacter(1, "Erik")
-	from := createEveEntity(EveEntityArgs{})
+	from := createEveEntity(storage.EveEntity{})
 	m := storage.Mail{
 		Body:      "body",
 		Character: char,
@@ -35,7 +35,7 @@ func TestMailCanUpdateExisting(t *testing.T) {
 	// given
 	storage.TruncateTables()
 	char := createCharacter(1, "Erik")
-	from := createEveEntity(EveEntityArgs{})
+	from := createEveEntity(storage.EveEntity{})
 	m := storage.Mail{
 		Body:      "body",
 		Character: char,
@@ -60,7 +60,7 @@ func TestMailCanFetchMailIDs(t *testing.T) {
 	// given
 	storage.TruncateTables()
 	char := createCharacter(7, "Erik")
-	from := createEveEntity(EveEntityArgs{})
+	from := createEveEntity(storage.EveEntity{})
 	for i := range 3 {
 		m := storage.Mail{
 			Body:      "body",

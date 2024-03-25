@@ -9,15 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type EveEntityArgs struct {
-	Category string
-	ID       int32
-	Name     string
-}
-
-// createEveEntity creates a test objects.
-func createEveEntity(p EveEntityArgs) storage.EveEntity {
-	e := storage.EveEntity{ID: p.ID, Category: p.Category, Name: p.Name}
+// createEveEntity is a test factory for EveEntity objects.
+func createEveEntity(e storage.EveEntity) storage.EveEntity {
 	if e.ID == 0 {
 		ids, err := storage.FetchEntityIDs()
 		if err != nil {
@@ -35,7 +28,9 @@ func createEveEntity(p EveEntityArgs) storage.EveEntity {
 	if e.Category == "" {
 		e.Category = "character"
 	}
-	e.MustSave()
+	if err := e.Save(); err != nil {
+		panic(err)
+	}
 	return e
 }
 
@@ -62,8 +57,7 @@ func TestEntitiesShouldReturnErrorWhenCategoryNotValid(t *testing.T) {
 func TestEntitiesCanUpdateExisting(t *testing.T) {
 	// given
 	storage.TruncateTables()
-	o := storage.EveEntity{ID: 42, Name: "alpha", Category: "character"}
-	o.MustSave()
+	o := createEveEntity(storage.EveEntity{ID: 42, Name: "alpha", Category: "character"})
 	o.Name = "bravo"
 	o.Category = "corporation"
 	// when
@@ -79,7 +73,7 @@ func TestEntitiesCanUpdateExisting(t *testing.T) {
 func TestEntitiesCanFetchById(t *testing.T) {
 	// given
 	storage.TruncateTables()
-	o := createEveEntity(EveEntityArgs{ID: 42})
+	o := createEveEntity(storage.EveEntity{ID: 42})
 	// when
 	r, err := storage.FetchEveEntity(42)
 	// then
@@ -100,8 +94,8 @@ func TestEntitiesShouldReturnErrorWhenNotFound(t *testing.T) {
 func TestEntitiesCanReturnAllIDs(t *testing.T) {
 	// given
 	storage.TruncateTables()
-	createEveEntity(EveEntityArgs{ID: 42})
-	createEveEntity(EveEntityArgs{ID: 12})
+	createEveEntity(storage.EveEntity{ID: 42})
+	createEveEntity(storage.EveEntity{ID: 12})
 	// when
 	r, err := storage.FetchEntityIDs()
 	// then

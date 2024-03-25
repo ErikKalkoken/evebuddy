@@ -14,14 +14,6 @@ type EveEntity struct {
 
 var categories = set.NewFromSlice([]string{"character", "corporation", "alliance"})
 
-// MustSave updates or created an eve entity and panics on any error.
-func (e *EveEntity) MustSave() {
-	err := e.Save()
-	if err != nil {
-		panic(err)
-	}
-}
-
 // Save updates or creates an eve entity.
 func (e *EveEntity) Save() error {
 	if !categories.Has(e.Category) {
