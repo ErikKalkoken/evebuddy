@@ -1,6 +1,9 @@
 package storage
 
-import "fmt"
+import (
+	"example/esiapp/internal/set"
+	"fmt"
+)
 
 // An entity in Eve Online
 type EveEntity struct {
@@ -9,8 +12,13 @@ type EveEntity struct {
 	Name     string
 }
 
+var categories = set.NewFromSlice([]string{"character", "corporation", "alliance"})
+
 // Save updates or creates an eve entity.
 func (e *EveEntity) Save() error {
+	if !categories.Has(e.Category) {
+		return fmt.Errorf("invalid category: %s", e.Category)
+	}
 	_, err := db.NamedExec(`
 		INSERT INTO eve_entities (id, name, category)
 		VALUES (:id, :name, :category)

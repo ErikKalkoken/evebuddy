@@ -25,6 +25,16 @@ func TestEntitiesCanSaveNew(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestEntitiesShouldReturnErrorWhenCategoryNotValid(t *testing.T) {
+	// given
+	truncateTables()
+	o := EveEntity{ID: 1, Name: "Erik", Category: "django"}
+	// when
+	err := o.Save()
+	// then
+	assert.Error(t, err)
+}
+
 func TestEntitiesCanUpdateExisting(t *testing.T) {
 	// given
 	truncateTables()
