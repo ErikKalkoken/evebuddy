@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"example/esiapp/internal/storage"
+	"example/esiapp/internal/models"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -72,7 +72,7 @@ func (f *folders) update(charID int32) {
 	}
 
 	var ii []interface{}
-	labels, err := storage.FetchAllMailLabels(charID)
+	labels, err := models.FetchAllMailLabels(charID)
 	if err != nil {
 		slog.Error("Failed to fetch mail labels", "characterID", charID, "error", err)
 	} else {

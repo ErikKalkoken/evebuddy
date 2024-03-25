@@ -1,13 +1,13 @@
-package storage_test
+package models_test
 
 import (
-	"example/esiapp/internal/storage"
+	"example/esiapp/internal/models"
 	"testing"
 )
 
 func TestMailLabelSaveNew(t *testing.T) {
 	// given
-	storage.TruncateTables()
+	models.TruncateTables()
 	// char := createCharacter(1, "Erik")
 	// from := createEveEntity(EveEntityArgs{})
 	// m := storage.MailLabel{

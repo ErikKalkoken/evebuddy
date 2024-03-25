@@ -1,4 +1,4 @@
-package storage
+package models
 
 import (
 	"example/esiapp/internal/esi"

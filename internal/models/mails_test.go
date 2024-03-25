@@ -1,8 +1,8 @@
-package storage_test
+package models_test
 
 import (
+	"example/esiapp/internal/models"
 	"example/esiapp/internal/set"
-	"example/esiapp/internal/storage"
 	"testing"
 	"time"
 
@@ -11,10 +11,10 @@ import (
 
 func TestMailCanSaveNew(t *testing.T) {
 	// given
-	storage.TruncateTables()
+	models.TruncateTables()
 	char := createCharacter(1, "Erik")
-	from := createEveEntity(storage.EveEntity{})
-	m := storage.Mail{
+	from := createEveEntity(models.EveEntity{})
+	m := models.Mail{
 		Body:      "body",
 		Character: char,
 		From:      from,
@@ -26,17 +26,17 @@ func TestMailCanSaveNew(t *testing.T) {
 	err := m.Save()
 	// then
 	assert.NoError(t, err)
-	r, err := storage.FetchMail(m.ID)
+	r, err := models.FetchMail(m.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, m.MailID, r.MailID)
 }
 
 func TestMailCanUpdateExisting(t *testing.T) {
 	// given
-	storage.TruncateTables()
+	models.TruncateTables()
 	char := createCharacter(1, "Erik")
-	from := createEveEntity(storage.EveEntity{})
-	m := storage.Mail{
+	from := createEveEntity(models.EveEntity{})
+	m := models.Mail{
 		Body:      "body",
 		Character: char,
 		From:      from,
@@ -50,7 +50,7 @@ func TestMailCanUpdateExisting(t *testing.T) {
 	err := m.Save()
 	// then
 	assert.NoError(t, err)
-	r, err := storage.FetchMail(m.ID)
+	r, err := models.FetchMail(m.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, m.MailID, r.MailID)
 	assert.Equal(t, m.Subject, r.Subject)
@@ -58,11 +58,11 @@ func TestMailCanUpdateExisting(t *testing.T) {
 
 func TestMailCanFetchMailIDs(t *testing.T) {
 	// given
-	storage.TruncateTables()
+	models.TruncateTables()
 	char := createCharacter(7, "Erik")
-	from := createEveEntity(storage.EveEntity{})
+	from := createEveEntity(models.EveEntity{})
 	for i := range 3 {
-		m := storage.Mail{
+		m := models.Mail{
 			Body:      "body",
 			Character: char,
 			From:      from,
@@ -74,7 +74,7 @@ func TestMailCanFetchMailIDs(t *testing.T) {
 		assert.NoError(t, err)
 	}
 	// when
-	ids, err := storage.FetchMailIDs(7)
+	ids, err := models.FetchMailIDs(7)
 	assert.NoError(t, err)
 	got := set.NewFromSlice(ids)
 	want := set.NewFromSlice([]int32{10, 11, 12})

@@ -3,9 +3,9 @@ package gui
 import (
 	"context"
 	"example/esiapp/internal/esi"
+	"example/esiapp/internal/models"
 	"example/esiapp/internal/set"
 	"example/esiapp/internal/sso"
-	"example/esiapp/internal/storage"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -25,19 +25,19 @@ var scopes = []string{
 }
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.
-func AddCharacter(ctx context.Context) (*storage.Token, error) {
+func AddCharacter(ctx context.Context) (*models.Token, error) {
 	ssoToken, err := sso.Authenticate(ctx, httpClient, scopes)
 	if err != nil {
 		return nil, err
 	}
-	character := storage.Character{
+	character := models.Character{
 		ID:   ssoToken.CharacterID,
 		Name: ssoToken.CharacterName,
 	}
 	if err = character.Save(); err != nil {
 		return nil, err
 	}
-	token := storage.Token{
+	token := models.Token{
 		AccessToken:  ssoToken.AccessToken,
 		Character:    character,
 		ExpiresAt:    ssoToken.ExpiresAt,
@@ -52,7 +52,7 @@ func AddCharacter(ctx context.Context) (*storage.Token, error) {
 
 // UpdateMails fetches and stores new mails from ESI for a character.
 func UpdateMails(characterID int32, status *statusBar) error {
-	token, err := storage.FetchToken(characterID)
+	token, err := models.FetchToken(characterID)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func UpdateMails(characterID int32, status *statusBar) error {
 	return nil
 }
 
-func updateMailLabels(token *storage.Token) error {
+func updateMailLabels(token *models.Token) error {
 	if err := ensureFreshToken(token); err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func updateMailLabels(token *storage.Token) error {
 	labels := ll.Labels
 	slog.Info("Received mail labels from ESI", "labelsCount", len(labels), "characterID", token.CharacterID)
 	for _, o := range labels {
-		_, err := storage.UpdateOrCreateMailLabel(token.CharacterID, o.LabelID, o.Color, o.Name, o.UnreadCount)
+		_, err := models.UpdateOrCreateMailLabel(token.CharacterID, o.LabelID, o.Color, o.Name, o.UnreadCount)
 		if err != nil {
 			slog.Error("Failed to update mail label", "labelID", o.LabelID, "error", err)
 		}
@@ -93,7 +93,7 @@ func updateMailLabels(token *storage.Token) error {
 	return nil
 }
 
-func updateMailLists(token *storage.Token) error {
+func updateMailLists(token *models.Token) error {
 	if err := ensureFreshToken(token); err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func updateMailLists(token *storage.Token) error {
 		return err
 	}
 	for _, o := range lists {
-		e := storage.EveEntity{ID: o.ID, Name: o.Name, Category: "mail_list"}
+		e := models.EveEntity{ID: o.ID, Name: o.Name, Category: "mail_list"}
 		if err := e.Save(); err != nil {
 			return err
 		}
@@ -110,7 +110,7 @@ func updateMailLists(token *storage.Token) error {
 	return nil
 }
 
-func fetchMailHeaders(token *storage.Token) ([]esi.MailHeader, error) {
+func fetchMailHeaders(token *models.Token) ([]esi.MailHeader, error) {
 	if err := ensureFreshToken(token); err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func fetchMailHeaders(token *storage.Token) ([]esi.MailHeader, error) {
 	return headers, nil
 }
 
-func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusBar) error {
+func updateMails(token *models.Token, headers []esi.MailHeader, status *statusBar) error {
 	existingIDs, missingIDs, err := determineMailIDs(token.CharacterID, headers)
 	if err != nil {
 		return err
@@ -164,7 +164,7 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusB
 				return
 			}
 
-			mail := storage.Mail{
+			mail := models.Mail{
 				Character: token.Character,
 				MailID:    header.ID,
 				Subject:   header.Subject,
@@ -178,16 +178,16 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusB
 			}
 			mail.Timestamp = timestamp
 
-			from, err := storage.FetchEveEntity(header.FromID)
+			from, err := models.FetchEveEntity(header.FromID)
 			if err != nil {
 				slog.Error("Failed to parse \"from\" in mail", "header", header, "error", err)
 				return
 			}
 			mail.From = *from
 
-			var rr []storage.EveEntity
+			var rr []models.EveEntity
 			for _, r := range header.Recipients {
-				o, err := storage.FetchEveEntity(r.ID)
+				o, err := models.FetchEveEntity(r.ID)
 				if err != nil {
 					slog.Error("Failed to resolve mail recipient", "header", header, "recipient", r)
 					continue
@@ -197,7 +197,7 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusB
 			}
 			mail.Recipients = rr
 
-			labels, err := storage.FetchMailLabels(token.CharacterID, m.Labels)
+			labels, err := models.FetchMailLabels(token.CharacterID, m.Labels)
 			if err != nil {
 				slog.Error("Failed to resolve mail labels", "header", header, "error", err)
 			} else {
@@ -224,7 +224,7 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusB
 }
 
 func determineMailIDs(characterID int32, headers []esi.MailHeader) (*set.Set[int32], *set.Set[int32], error) {
-	ids, err := storage.FetchMailIDs(characterID)
+	ids, err := models.FetchMailIDs(characterID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -238,7 +238,7 @@ func determineMailIDs(characterID int32, headers []esi.MailHeader) (*set.Set[int
 }
 
 // ensureFreshToken will automatically try to refresh a token that is already or about to become invalid.
-func ensureFreshToken(token *storage.Token) error {
+func ensureFreshToken(token *models.Token) error {
 	if !token.RemainsValid(time.Second * 60) {
 		slog.Debug("Need to refresh token", "characterID", token.CharacterID)
 		rawToken, err := sso.RefreshToken(httpClient, token.RefreshToken)
@@ -258,7 +258,7 @@ func ensureFreshToken(token *storage.Token) error {
 }
 
 func addMissingEveEntities(ids []int32) error {
-	c, err := storage.FetchEntityIDs()
+	c, err := models.FetchEntityIDs()
 	if err != nil {
 		return err
 	}
@@ -276,7 +276,7 @@ func addMissingEveEntities(ids []int32) error {
 	}
 
 	for _, entity := range entities {
-		e := storage.EveEntity{ID: entity.ID, Category: entity.Category, Name: entity.Name}
+		e := models.EveEntity{ID: entity.ID, Category: entity.Category, Name: entity.Name}
 		err := e.Save()
 		if err != nil {
 			return err

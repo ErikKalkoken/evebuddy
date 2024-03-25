@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"example/esiapp/internal/storage"
+	"example/esiapp/internal/models"
 	"fmt"
 	"image/color"
 	"log/slog"
@@ -32,7 +32,7 @@ type headers struct {
 
 func (h *headers) update(charID int32, labelID int32) {
 	var d []interface{}
-	mm, err := storage.FetchMailsForLabel(charID, labelID)
+	mm, err := models.FetchMailsForLabel(charID, labelID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "characterID", charID, "error", err)
 	} else {

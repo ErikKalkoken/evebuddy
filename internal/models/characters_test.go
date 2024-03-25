@@ -1,20 +1,20 @@
-package storage_test
+package models_test
 
 import (
-	"example/esiapp/internal/storage"
+	"example/esiapp/internal/models"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func init() {
-	if err := storage.Initialize(":memory:"); err != nil {
+	if err := models.Initialize(":memory:"); err != nil {
 		panic(err)
 	}
 }
 
-func createCharacter(id int32, name string) storage.Character {
-	c := storage.Character{ID: id, Name: name}
+func createCharacter(id int32, name string) models.Character {
+	c := models.Character{ID: id, Name: name}
 	err := c.Save()
 	if err != nil {
 		panic(err)
@@ -24,10 +24,10 @@ func createCharacter(id int32, name string) storage.Character {
 
 func TestCharacterCanSaveNew(t *testing.T) {
 	// given
-	storage.TruncateTables()
+	models.TruncateTables()
 	c := createCharacter(1, "Erik")
 	// when
-	r, err := storage.FetchFirstCharacter()
+	r, err := models.FetchFirstCharacter()
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, c, *r)
@@ -36,12 +36,12 @@ func TestCharacterCanSaveNew(t *testing.T) {
 
 func TestCharacterCanUpdate(t *testing.T) {
 	// given
-	storage.TruncateTables()
+	models.TruncateTables()
 	c := createCharacter(1, "Erik")
 	c.Name = "John"
 	assert.NoError(t, c.Save())
 	// when
-	got, err := storage.FetchFirstCharacter()
+	got, err := models.FetchFirstCharacter()
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, c, *got)
@@ -50,13 +50,13 @@ func TestCharacterCanUpdate(t *testing.T) {
 
 func TestCharacterCanFetchByCharacterID(t *testing.T) {
 	// given
-	storage.TruncateTables()
-	c1 := storage.Character{ID: 1, Name: "Erik"}
+	models.TruncateTables()
+	c1 := models.Character{ID: 1, Name: "Erik"}
 	assert.NoError(t, c1.Save())
-	c2 := storage.Character{ID: 2, Name: "Naoko"}
+	c2 := models.Character{ID: 2, Name: "Naoko"}
 	assert.NoError(t, c2.Save())
 	// when
-	r, err := storage.FetchCharacter(2)
+	r, err := models.FetchCharacter(2)
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, c2, *r)
@@ -65,13 +65,13 @@ func TestCharacterCanFetchByCharacterID(t *testing.T) {
 
 func TestCharacterCanFetchAll(t *testing.T) {
 	// given
-	storage.TruncateTables()
-	c1 := storage.Character{ID: 1, Name: "Naoko"}
+	models.TruncateTables()
+	c1 := models.Character{ID: 1, Name: "Naoko"}
 	assert.NoError(t, c1.Save())
-	c2 := storage.Character{ID: 2, Name: "Erik"}
+	c2 := models.Character{ID: 2, Name: "Erik"}
 	assert.NoError(t, c2.Save())
 	// when
-	got, err := storage.FetchAllCharacters()
+	got, err := models.FetchAllCharacters()
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, 2, len(got))

@@ -3,7 +3,7 @@ package gui
 import (
 	"context"
 	"example/esiapp/internal/esi"
-	"example/esiapp/internal/storage"
+	"example/esiapp/internal/models"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -71,7 +71,7 @@ func (c *characters) makeManageButton(charID int32) *contextMenuButton {
 }
 
 func (c *characters) makeMenuItem(charID int32) (*fyne.MenuItem, error) {
-	chars, err := storage.FetchAllCharacters()
+	chars, err := models.FetchAllCharacters()
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (c *characters) makeMenuItem(charID int32) (*fyne.MenuItem, error) {
 }
 
 func makeCharacter(charID int32) (*canvas.Image, *widget.Label) {
-	char, err := storage.FetchCharacter(charID)
+	char, err := models.FetchCharacter(charID)
 	var label string
 	var uri fyne.URI
 	if err != nil {
