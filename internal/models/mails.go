@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 )
@@ -181,19 +182,37 @@ func FetchMailIDs(characterID int32) ([]int32, error) {
 // FetchMailsForLabel returns a character's mails for a label in descending order by timestamp.
 // Return mails for all labels, when labelID = 0
 func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
-	sql := `
-	SELECT mails.*, eve_entities.*
-	FROM mails
-	JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
-	JOIN eve_entities ON eve_entities.id = mails.from_id
-	WHERE character_id = ?`
-	if labelID > 0 {
-		sql += "AND mail_label_id = ?"
-	}
-	sql += "ORDER BY timestamp DESC"
-	rows, err := db.Query(sql, characterID, labelID)
-	if err != nil {
-		return nil, err
+	var rows *sql.Rows
+	if labelID == AllMailsLabelID {
+		sql := `
+			SELECT mails.*, eve_entities.*
+			FROM mails
+			JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
+			JOIN eve_entities ON eve_entities.id = mails.from_id
+			WHERE character_id = ?
+			ORDER BY timestamp DESC
+		`
+		r, err := db.Query(sql, characterID)
+		if err != nil {
+			return nil, err
+		}
+		rows = r
+	} else {
+		sql := `
+			SELECT mails.*, eve_entities.*
+			FROM mails
+			JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
+			JOIN mail_labels ON mail_labels.id = mail_mail_labels.mail_label_id
+			JOIN eve_entities ON eve_entities.id = mails.from_id
+			WHERE mails.character_id = ?
+			AND label_id = ?
+			ORDER BY timestamp DESC
+		`
+		r, err := db.Query(sql, characterID, labelID)
+		if err != nil {
+			return nil, err
+		}
+		rows = r
 	}
 	var mm []Mail
 	for rows.Next() {

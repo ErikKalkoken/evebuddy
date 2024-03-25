@@ -84,7 +84,7 @@ func updateMailLabels(token *models.Token) error {
 		return err
 	}
 	labels := ll.Labels
-	slog.Info("Received mail labels from ESI", "labelsCount", len(labels), "characterID", token.CharacterID)
+	slog.Info("Received mail labels from ESI", "count", len(labels), "characterID", token.CharacterID)
 	for _, o := range labels {
 		l := models.MailLabel{
 			CharacterID: token.CharacterID,
@@ -94,7 +94,7 @@ func updateMailLabels(token *models.Token) error {
 			UnreadCount: o.UnreadCount,
 		}
 		if err := l.Save(); err != nil {
-			slog.Error("Failed to update mail label", "labelID", o.LabelID, "error", err)
+			slog.Error("Failed to update mail label", "labelID", o.LabelID, "characterID", token.CharacterID, "error", err)
 		}
 	}
 	return nil

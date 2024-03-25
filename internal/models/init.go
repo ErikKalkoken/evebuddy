@@ -1,5 +1,5 @@
-// Package storage contains all models for persistent storage.
-// All DB access is abstracted through receivers and helper functions.
+// Package models contains all models for persistent storage.
+// No direct DB access allowed outside this package.
 // This package should not access any other internal packages, except helpers.
 package models
 
@@ -75,6 +75,8 @@ var schema = `
 		token_type text NOT NULL,
 		FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
 	);
+`
+var pragmas = `
 	PRAGMA journal_mode = WAL;
 	PRAGMA synchronous = normal;
 	PRAGMA temp_store = memory;
@@ -82,7 +84,7 @@ var schema = `
 `
 
 // Initialize initializes the database (needs to be called once).
-func Initialize(dataSourceName string) (*sqlx.DB, error) {
+func Initialize(dataSourceName string, productionMode bool) (*sqlx.DB, error) {
 	myDb, err := sqlx.Connect("sqlite3", dataSourceName)
 	if err != nil {
 		return nil, err
@@ -91,6 +93,12 @@ func Initialize(dataSourceName string) (*sqlx.DB, error) {
 	_, err = myDb.Exec(schema)
 	if err != nil {
 		return nil, err
+	}
+	if productionMode {
+		_, err = myDb.Exec(pragmas)
+		if err != nil {
+			return nil, err
+		}
 	}
 	db = myDb
 	return myDb, nil

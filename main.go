@@ -15,7 +15,7 @@ func main() {
 	flag.Parse()
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-	db, err := models.Initialize("storage2.sqlite")
+	db, err := models.Initialize("storage2.sqlite", true)
 	if err != nil {
 		panic(err)
 	}

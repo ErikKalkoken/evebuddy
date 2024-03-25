@@ -189,3 +189,30 @@ func TestFetchMailsForLabelReturnEmptyWhenNoMatch(t *testing.T) {
 		assert.Empty(t, mm)
 	}
 }
+
+func TestCanCreateMailWithLabelsForOtherCharacter(t *testing.T) {
+	// given
+	models.TruncateTables()
+	c1 := createCharacter()
+	l1 := createMailLabel(models.MailLabel{Character: c1, LabelID: 1})
+	createMail(models.Mail{Character: c1, Labels: []models.MailLabel{l1}})
+	c2 := createCharacter()
+	l2 := createMailLabel(models.MailLabel{Character: c2, LabelID: 1})
+	// when
+	from := createEveEntity()
+	m := models.Mail{
+		Body:      "body",
+		From:      from,
+		MailID:    7,
+		Character: c2,
+		Subject:   "subject",
+		Labels:    []models.MailLabel{l2},
+		Timestamp: time.Now(),
+	}
+	assert.NoError(t, m.Create())
+	// when
+	mm, err := models.FetchMailsForLabel(c2.ID, l2.LabelID)
+	if assert.NoError(t, err) {
+		assert.Len(t, mm, 1)
+	}
+}
