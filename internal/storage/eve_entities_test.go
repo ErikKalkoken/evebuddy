@@ -1,6 +1,7 @@
-package storage
+package storage_test
 
 import (
+	"example/esiapp/internal/storage"
 	"fmt"
 	"slices"
 	"testing"
@@ -9,9 +10,9 @@ import (
 )
 
 // createEveEntity creates a test objects.
-func createEveEntity(e EveEntity) EveEntity {
+func createEveEntity(e storage.EveEntity) storage.EveEntity {
 	if e.ID == 0 {
-		ids, err := FetchEntityIDs()
+		ids, err := storage.FetchEntityIDs()
 		if err != nil {
 			panic(err)
 		}
@@ -33,8 +34,8 @@ func createEveEntity(e EveEntity) EveEntity {
 
 func TestEntitiesCanSaveNew(t *testing.T) {
 	// given
-	truncateTables()
-	o := EveEntity{ID: 1, Name: "Erik", Category: "character"}
+	storage.TruncateTables()
+	o := storage.EveEntity{ID: 1, Name: "Erik", Category: "character"}
 	// when
 	err := o.Save()
 	// then
@@ -43,8 +44,8 @@ func TestEntitiesCanSaveNew(t *testing.T) {
 
 func TestEntitiesShouldReturnErrorWhenCategoryNotValid(t *testing.T) {
 	// given
-	truncateTables()
-	o := EveEntity{ID: 1, Name: "Erik", Category: "django"}
+	storage.TruncateTables()
+	o := storage.EveEntity{ID: 1, Name: "Erik", Category: "django"}
 	// when
 	err := o.Save()
 	// then
@@ -53,8 +54,8 @@ func TestEntitiesShouldReturnErrorWhenCategoryNotValid(t *testing.T) {
 
 func TestEntitiesCanUpdateExisting(t *testing.T) {
 	// given
-	truncateTables()
-	o := EveEntity{ID: 42, Name: "alpha", Category: "character"}
+	storage.TruncateTables()
+	o := storage.EveEntity{ID: 42, Name: "alpha", Category: "character"}
 	o.MustSave()
 	o.Name = "bravo"
 	o.Category = "corporation"
@@ -62,7 +63,7 @@ func TestEntitiesCanUpdateExisting(t *testing.T) {
 	err := o.Save()
 	// then
 	assert.NoError(t, err)
-	o2, err := FetchEveEntity(42)
+	o2, err := storage.FetchEveEntity(42)
 	assert.NoError(t, err)
 	assert.Equal(t, o2.Name, "bravo")
 	assert.Equal(t, o2.Category, "corporation")
@@ -70,10 +71,10 @@ func TestEntitiesCanUpdateExisting(t *testing.T) {
 
 func TestEntitiesCanFetchById(t *testing.T) {
 	// given
-	truncateTables()
-	o := createEveEntity(EveEntity{ID: 42})
+	storage.TruncateTables()
+	o := createEveEntity(storage.EveEntity{ID: 42})
 	// when
-	r, err := FetchEveEntity(42)
+	r, err := storage.FetchEveEntity(42)
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, o, *r)
@@ -82,8 +83,8 @@ func TestEntitiesCanFetchById(t *testing.T) {
 
 func TestEntitiesShouldReturnErrorWhenNotFound(t *testing.T) {
 	// given
-	truncateTables()
-	r, err := FetchEveEntity(42)
+	storage.TruncateTables()
+	r, err := storage.FetchEveEntity(42)
 	// then
 	assert.Error(t, err)
 	assert.Nil(t, r)
@@ -91,11 +92,11 @@ func TestEntitiesShouldReturnErrorWhenNotFound(t *testing.T) {
 
 func TestEntitiesCanReturnAllIDs(t *testing.T) {
 	// given
-	truncateTables()
-	createEveEntity(EveEntity{ID: 42})
-	createEveEntity(EveEntity{ID: 12})
+	storage.TruncateTables()
+	createEveEntity(storage.EveEntity{ID: 42})
+	createEveEntity(storage.EveEntity{ID: 12})
 	// when
-	r, err := FetchEntityIDs()
+	r, err := storage.FetchEntityIDs()
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, []int32{12, 42}, r)

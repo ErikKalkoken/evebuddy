@@ -23,7 +23,7 @@ type mail struct {
 }
 
 func (m *mail) update(mailID uint64) {
-	mail, err := storage.FetchMailByID(mailID)
+	mail, err := storage.FetchMail(mailID)
 	if err != nil {
 		slog.Error("Failed to render mail", "mailID", mailID, "error", err)
 		return

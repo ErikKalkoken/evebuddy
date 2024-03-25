@@ -1,6 +1,7 @@
-package storage
+package storage_test
 
 import (
+	"example/esiapp/internal/storage"
 	"testing"
 	"time"
 
@@ -9,13 +10,13 @@ import (
 
 func TestTokenCanSaveNew(t *testing.T) {
 	// given
-	truncateTables()
+	storage.TruncateTables()
 	c := createCharacter(1, "Erik")
-	o := Token{AccessToken: "access", Character: c, CharacterID: c.ID, ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
+	o := storage.Token{AccessToken: "access", Character: c, CharacterID: c.ID, ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
 	// when
 	err := o.Save()
 	assert.NoError(t, err)
-	r, err := FetchToken(1)
+	r, err := storage.FetchToken(1)
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, o.AccessToken, r.AccessToken)
@@ -26,16 +27,16 @@ func TestTokenCanSaveNew(t *testing.T) {
 
 func TestTokenCanUpdate(t *testing.T) {
 	// given
-	truncateTables()
+	storage.TruncateTables()
 	createCharacter(2, "Naoko")
 	c := createCharacter(1, "Erik")
-	o := Token{AccessToken: "access", Character: c, CharacterID: c.ID, ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
+	o := storage.Token{AccessToken: "access", Character: c, CharacterID: c.ID, ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
 	assert.NoError(t, o.Save())
 	o.AccessToken = "new-access"
 	// when
 	err := o.Save()
 	assert.NoError(t, err)
-	r, err := FetchToken(1)
+	r, err := storage.FetchToken(1)
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, o.AccessToken, r.AccessToken)
@@ -46,15 +47,15 @@ func TestTokenCanUpdate(t *testing.T) {
 
 func TestTokenCanFetchByID(t *testing.T) {
 	// given
-	truncateTables()
+	storage.TruncateTables()
 	c1 := createCharacter(1, "Erik")
-	o1 := Token{AccessToken: "one", Character: c1, CharacterID: c1.ID, ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
+	o1 := storage.Token{AccessToken: "one", Character: c1, CharacterID: c1.ID, ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
 	assert.NoError(t, o1.Save())
 	c2 := createCharacter(2, "Naoko")
-	o2 := Token{AccessToken: "two", Character: c2, CharacterID: c2.ID, ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
+	o2 := storage.Token{AccessToken: "two", Character: c2, CharacterID: c2.ID, ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
 	assert.NoError(t, o2.Save())
 	// when
-	r, err := FetchToken(2)
+	r, err := storage.FetchToken(2)
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, o2.AccessToken, r.AccessToken)

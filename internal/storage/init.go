@@ -44,9 +44,10 @@ var schema = `
 		is_read numeric,
 		mail_id integer,
 		subject text,
-		timestamp text,
+		timestamp datetime,
 		FOREIGN KEY (character_id) REFERENCES characters(id),
-		FOREIGN KEY (from_id) REFERENCES eve_entities(id)
+		FOREIGN KEY (from_id) REFERENCES eve_entities(id),
+		UNIQUE (character_id, mail_id)
 	);
 
 	CREATE TABLE IF NOT EXISTS mail_mail_labels (
@@ -86,7 +87,7 @@ func Initialize() error {
 }
 
 // Initialize initializes the database for testing
-func initializeTest() error {
+func InitializeTest() error {
 	myDb, err := sqlx.Connect("sqlite3", ":memory:")
 	if err != nil {
 		return err
@@ -97,7 +98,7 @@ func initializeTest() error {
 }
 
 // Truncate all tables
-func truncateTables() {
+func TruncateTables() {
 	sql := `
 		DELETE FROM tokens;
 		DELETE FROM characters;

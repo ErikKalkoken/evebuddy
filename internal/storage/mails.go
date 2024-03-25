@@ -31,7 +31,7 @@ func (m *Mail) Save() error {
 		return fmt.Errorf("can not save mail without from")
 	}
 	m.FromID = m.From.ID
-	_, err := db.NamedExec(`
+	r, err := db.NamedExec(`
 		INSERT INTO mails (
 			body,
 			character_id,
@@ -50,13 +50,11 @@ func (m *Mail) Save() error {
 			:subject,
 			:timestamp
 		)
-		ON CONFLICT (id) DO
+		ON CONFLICT (character_id, mail_id) DO
 		UPDATE SET
 			body=:body,
-			character_id=:character_id,
 			from_id=:from_id,
 			is_read=:is_read,
-			mail_id=:mail_id,
 			subject=:subject,
 			timestamp=:timestamp`,
 		*m,
@@ -64,22 +62,22 @@ func (m *Mail) Save() error {
 	if err != nil {
 		return err
 	}
+	newID, err := r.LastInsertId()
+	if err != nil {
+		return err
+	}
+	m.ID = uint64(newID)
 	return nil
 }
 
 // FetchMailIDs return mail IDs of all existing mails for a character
-func FetchMailIDs(characterId int32) ([]int32, error) {
-	// var objs []Mail
-	// err := db.Select("mail_id").Where("character_id = ?", characterId).Find(&objs).Error
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// var ids []int32
-	// for _, header := range objs {
-	// 	ids = append(ids, header.MailID)
-	// }
-	// return ids, nil
-	return nil, nil
+func FetchMailIDs(characterID int32) ([]int32, error) {
+	var ids []int32
+	err := db.Select(&ids, "SELECT mail_id FROM mails WHERE character_id = ?", characterID)
+	if err != nil {
+		return nil, err
+	}
+	return ids, nil
 }
 
 // FetchMailsForLabel returns a character's mails for a label
@@ -102,13 +100,38 @@ func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	return mm, nil
 }
 
-func FetchMailByID(ID uint64) (*Mail, error) {
+// FetchMail returns a mail.
+func FetchMail(id uint64) (*Mail, error) {
+	row := db.QueryRow(
+		`SELECT *
+		FROM mails
+		JOIN eve_entities ON eve_entities.id = mails.from_id
+		WHERE mails.id = ?;`,
+		id,
+	)
 	var m Mail
+	err := row.Scan(
+		&m.ID,
+		&m.Body,
+		&m.CharacterID,
+		&m.FromID,
+		&m.IsRead,
+		&m.MailID,
+		&m.Subject,
+		&m.Timestamp,
+		&m.From.ID,
+		&m.From.Category,
+		&m.From.Name,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &m, nil
 	// err := db.Preload("From").Preload("Recipients").Find(&m, ID).Error
 	// if err != nil {
 	// 	return nil, err
 	// }
-	return &m, nil
+	// return &m, nil
 }
 
 func Test() {

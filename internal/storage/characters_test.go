@@ -1,17 +1,18 @@
-package storage
+package storage_test
 
 import (
+	"example/esiapp/internal/storage"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func init() {
-	initializeTest()
+	storage.InitializeTest()
 }
 
-func createCharacter(id int32, name string) Character {
-	c := Character{ID: id, Name: name}
+func createCharacter(id int32, name string) storage.Character {
+	c := storage.Character{ID: id, Name: name}
 	err := c.Save()
 	if err != nil {
 		panic(err)
@@ -21,10 +22,10 @@ func createCharacter(id int32, name string) Character {
 
 func TestCharacterCanSaveNew(t *testing.T) {
 	// given
-	truncateTables()
+	storage.TruncateTables()
 	c := createCharacter(1, "Erik")
 	// when
-	r, err := FetchFirstCharacter()
+	r, err := storage.FetchFirstCharacter()
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, c, *r)
@@ -33,12 +34,12 @@ func TestCharacterCanSaveNew(t *testing.T) {
 
 func TestCharacterCanUpdate(t *testing.T) {
 	// given
-	truncateTables()
+	storage.TruncateTables()
 	c := createCharacter(1, "Erik")
 	c.Name = "John"
 	assert.NoError(t, c.Save())
 	// when
-	got, err := FetchFirstCharacter()
+	got, err := storage.FetchFirstCharacter()
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, c, *got)
@@ -47,13 +48,13 @@ func TestCharacterCanUpdate(t *testing.T) {
 
 func TestCharacterCanFetchByCharacterID(t *testing.T) {
 	// given
-	truncateTables()
-	c1 := Character{ID: 1, Name: "Erik"}
+	storage.TruncateTables()
+	c1 := storage.Character{ID: 1, Name: "Erik"}
 	assert.NoError(t, c1.Save())
-	c2 := Character{ID: 2, Name: "Naoko"}
+	c2 := storage.Character{ID: 2, Name: "Naoko"}
 	assert.NoError(t, c2.Save())
 	// when
-	r, err := FetchCharacter(2)
+	r, err := storage.FetchCharacter(2)
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, c2, *r)
@@ -62,13 +63,13 @@ func TestCharacterCanFetchByCharacterID(t *testing.T) {
 
 func TestCharacterCanFetchAll(t *testing.T) {
 	// given
-	truncateTables()
-	c1 := Character{ID: 1, Name: "Naoko"}
+	storage.TruncateTables()
+	c1 := storage.Character{ID: 1, Name: "Naoko"}
 	assert.NoError(t, c1.Save())
-	c2 := Character{ID: 2, Name: "Erik"}
+	c2 := storage.Character{ID: 2, Name: "Erik"}
 	assert.NoError(t, c2.Save())
 	// when
-	got, err := FetchAllCharacters()
+	got, err := storage.FetchAllCharacters()
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, 2, len(got))
