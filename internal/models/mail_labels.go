@@ -6,6 +6,9 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// Label ID for selecting all labels
+const AllMailsLabelID = 0
+
 type MailLabel struct {
 	ID          uint64    `db:"id"`
 	CharacterID int32     `db:"character_id"`
@@ -73,6 +76,10 @@ func FetchMailLabel(characterID int32, labelID int32) (*MailLabel, error) {
 }
 
 func FetchMailLabels(characterID int32, labelIDs []int32) ([]MailLabel, error) {
+	var ll []MailLabel
+	if len(labelIDs) == 0 {
+		return ll, nil
+	}
 	query, args, err := sqlx.In(
 		"SELECT * FROM mail_labels WHERE character_id = ? AND label_id IN (?)",
 		characterID,
@@ -86,7 +93,6 @@ func FetchMailLabels(characterID int32, labelIDs []int32) ([]MailLabel, error) {
 	if err != nil {
 		return nil, err
 	}
-	var ll []MailLabel
 	for rows.Next() {
 		var l MailLabel
 		err := rows.StructScan(&l)

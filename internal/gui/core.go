@@ -108,7 +108,7 @@ func updateMailLists(token *models.Token) error {
 		return err
 	}
 	for _, o := range lists {
-		e := models.EveEntity{ID: o.ID, Name: o.Name, Category: "mail_list"}
+		e := models.EveEntity{ID: o.ID, Name: o.Name, Category: models.EveEntityMailList}
 		if err := e.Save(); err != nil {
 			return err
 		}

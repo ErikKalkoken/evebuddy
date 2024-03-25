@@ -179,18 +179,19 @@ func FetchMailIDs(characterID int32) ([]int32, error) {
 }
 
 // FetchMailsForLabel returns a character's mails for a label in descending order by timestamp.
+// Return mails for all labels, when labelID = 0
 func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
-	rows, err := db.Query(
-		`SELECT mails.*, eve_entities.*
-		FROM mails
-		JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
-		JOIN eve_entities ON eve_entities.id = mails.from_id
-		WHERE character_id = ?
-		AND mail_label_id = ?
-		ORDER BY timestamp DESC`,
-		characterID,
-		labelID,
-	)
+	sql := `
+	SELECT mails.*, eve_entities.*
+	FROM mails
+	JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
+	JOIN eve_entities ON eve_entities.id = mails.from_id
+	WHERE character_id = ?`
+	if labelID > 0 {
+		sql += "AND mail_label_id = ?"
+	}
+	sql += "ORDER BY timestamp DESC"
+	rows, err := db.Query(sql, characterID, labelID)
 	if err != nil {
 		return nil, err
 	}

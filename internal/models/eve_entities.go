@@ -17,9 +17,10 @@ const (
 	EveEntityAlliance    = "alliance"
 	EveEntityCharacter   = "character"
 	EveEntityCorporation = "corporation"
+	EveEntityMailList    = "mail_list"
 )
 
-var categories = set.NewFromSlice([]string{EveEntityAlliance, EveEntityCharacter, EveEntityCorporation})
+var categories = set.NewFromSlice([]string{EveEntityAlliance, EveEntityCharacter, EveEntityCorporation, EveEntityMailList})
 
 // Save updates or creates an eve entity.
 func (e *EveEntity) Save() error {

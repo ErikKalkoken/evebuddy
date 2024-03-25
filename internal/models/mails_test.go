@@ -135,7 +135,7 @@ func TestMailCanFetchMailIDs(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func TestFetchMailsForLabel(t *testing.T) {
+func TestCanFetchMailsForCharacterAndLabel(t *testing.T) {
 	// given
 	models.TruncateTables()
 	c := createCharacter()
@@ -157,6 +157,27 @@ func TestFetchMailsForLabel(t *testing.T) {
 	}
 }
 
+func TestCanFetchAllMailsForCharacter(t *testing.T) {
+	// given
+	models.TruncateTables()
+	c := createCharacter()
+	l1 := createMailLabel(models.MailLabel{Character: c})
+	l2 := createMailLabel(models.MailLabel{Character: c})
+	m1 := createMail(models.Mail{Character: c, Labels: []models.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -120)})
+	m2 := createMail(models.Mail{Character: c, Labels: []models.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -60)})
+	m3 := createMail(models.Mail{Character: c, Labels: []models.MailLabel{l2}, Timestamp: time.Now().Add(time.Second * -240)})
+	// when
+	mm, err := models.FetchMailsForLabel(c.ID, models.AllMailsLabelID)
+	// then
+	if assert.NoError(t, err) {
+		var gotIDs []int32
+		for _, m := range mm {
+			gotIDs = append(gotIDs, m.MailID)
+		}
+		wantIDs := []int32{m2.MailID, m1.MailID, m3.MailID}
+		assert.Equal(t, wantIDs, gotIDs)
+	}
+}
 func TestFetchMailsForLabelReturnEmptyWhenNoMatch(t *testing.T) {
 	// given
 	models.TruncateTables()
