@@ -178,7 +178,7 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusB
 			}
 			mail.TimeStamp = timestamp
 
-			from, err := storage.GetEveEntity(header.FromID)
+			from, err := storage.FetchEveEntity(header.FromID)
 			if err != nil {
 				slog.Error("Failed to parse \"from\" in mail", "header", header, "error", err)
 				return
@@ -187,7 +187,7 @@ func updateMails(token *storage.Token, headers []esi.MailHeader, status *statusB
 
 			var rr []storage.EveEntity
 			for _, r := range header.Recipients {
-				o, err := storage.GetEveEntity(r.ID)
+				o, err := storage.FetchEveEntity(r.ID)
 				if err != nil {
 					slog.Error("Failed to resolve mail recipient", "header", header, "recipient", r)
 					continue

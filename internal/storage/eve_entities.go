@@ -1,5 +1,7 @@
 package storage
 
+import "fmt"
+
 // An entity in Eve Online
 type EveEntity struct {
 	Category string
@@ -9,34 +11,37 @@ type EveEntity struct {
 
 // Save updates or creates an eve entity.
 func (e *EveEntity) Save() error {
-	// err := db.Save(e).Error
+	_, err := db.NamedExec(`
+		INSERT INTO eve_entities (id, name, category)
+		VALUES (:id, :name, :category)
+		ON CONFLICT (id) DO
+		UPDATE SET name=:name, category=:category;`,
+		*e,
+	)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // FetchEntityIDs returns all existing entity IDs.
 func FetchEntityIDs() ([]int32, error) {
-	// var objs []EveEntity
-	// err := db.Select("id").Find(&objs).Error
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// var ids []int32
-	// for _, o := range objs {
-	// 	ids = append(ids, o.ID)
-	// }
-	// return ids, nil
-	return nil, nil
+	var ids []int32
+	err := db.Select(&ids, "SELECT id FROM eve_entities;")
+	if err != nil {
+		return nil, err
+	}
+	return ids, nil
 }
 
-// GetEveEntity return an EveEntity object if it exists or nil.
-func GetEveEntity(id int32) (*EveEntity, error) {
+// FetchEveEntity return an EveEntity object if it exists or nil.
+func FetchEveEntity(id int32) (*EveEntity, error) {
 	var e EveEntity
-	// err := db.Limit(1).Find(&e, id).Error
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// if e.ID == 0 {
-	// 	return nil, fmt.Errorf("EveEntity object not found for ID %d", id)
-	// }
+	if err := db.Get(&e, "SELECT * FROM eve_entities WHERE id = ?;", id); err != nil {
+		return nil, err
+	}
+	if e.ID == 0 {
+		return nil, fmt.Errorf("EveEntity object not found for ID %d", id)
+	}
 	return &e, nil
 }

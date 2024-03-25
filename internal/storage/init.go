@@ -99,11 +99,15 @@ func initializeTest() error {
 // Truncate all tables
 func truncateTables() {
 	sql := `
+		DELETE FROM tokens;
 		DELETE FROM characters;
+		DELETE FROM eve_entities;
 	`
 	db.MustExec(sql)
 	sql = `
+		DELETE FROM SQLITE_SEQUENCE WHERE name='tokens';
 		DELETE FROM SQLITE_SEQUENCE WHERE name='characters';
+		DELETE FROM SQLITE_SEQUENCE WHERE name='eve_entities';
 	`
 	db.MustExec(sql)
 }
