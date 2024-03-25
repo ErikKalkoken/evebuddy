@@ -85,8 +85,14 @@ func updateMailLabels(token *models.Token) error {
 	labels := ll.Labels
 	slog.Info("Received mail labels from ESI", "labelsCount", len(labels), "characterID", token.CharacterID)
 	for _, o := range labels {
-		_, err := models.UpdateOrCreateMailLabel(token.CharacterID, o.LabelID, o.Color, o.Name, o.UnreadCount)
-		if err != nil {
+		l := models.MailLabel{
+			CharacterID: token.CharacterID,
+			LabelID:     o.LabelID,
+			Color:       o.Color,
+			Name:        o.Name,
+			UnreadCount: o.UnreadCount,
+		}
+		if err := l.Save(); err != nil {
 			slog.Error("Failed to update mail label", "labelID", o.LabelID, "error", err)
 		}
 	}

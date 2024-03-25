@@ -17,6 +17,8 @@
         "gock",
         "httpmock",
         "jarcoal",
+        "jmoiron",
+        "mattn",
         "sqlx",
         "stretchr"
     ]
