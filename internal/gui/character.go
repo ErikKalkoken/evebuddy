@@ -1,16 +1,13 @@
 package gui
 
 import (
-	"context"
 	"example/esiapp/internal/api/images"
 	"example/esiapp/internal/model"
 	"example/esiapp/internal/widgets"
-	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
@@ -24,63 +21,42 @@ type characters struct {
 }
 
 func (c *characters) update(charID int32) {
-	buttonAdd := c.makeManageButton(charID)
+	btnSwitch, err := c.makeSwitchButton(charID)
+	if err != nil {
+		panic(err)
+	}
 	image, name := makeCharacter(charID)
 	c.container.RemoveAll()
 	c.container.Add(image)
 	c.container.Add(name)
 	c.container.Add(layout.NewSpacer())
-	c.container.Add(buttonAdd)
+	c.container.Add(btnSwitch)
 	c.container.Refresh()
 	c.folders.update(charID)
 	c.folders.updateMails()
 }
 
-func (c *characters) makeManageButton(charID int32) *widgets.ContextMenuButton {
-	addChar := fyne.NewMenuItem("Add Character", func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		dlg := dialog.NewCustom(
-			"Add Character",
-			"Cancel",
-			widget.NewLabel("Please follow instructions in your browser to add a new character."),
-			c.esiApp.main,
-		)
-		dlg.SetOnClosed(cancel)
-		go func() {
-			defer cancel()
-			defer dlg.Hide()
-			token, err := AddCharacter(ctx)
-			if err != nil {
-				slog.Error("Failed to add a new character", "error", err)
-			} else {
-				c.update(token.CharacterID)
-				c.folders.updateMailsWithID(token.CharacterID)
-			}
-		}()
-		dlg.Show()
-	})
-	menu := fyne.NewMenu("", addChar)
-	switchChar, err := c.makeMenuItem(charID)
-	if err != nil {
-		slog.Warn("Failed to make menu item", "error", err)
-	}
-	if switchChar != nil {
-		menu.Items = append(menu.Items, switchChar)
-	}
-	buttonAdd := widgets.NewContextMenuButton("Manage Characters", menu)
-	return buttonAdd
-}
-
-func (c *characters) makeMenuItem(charID int32) (*fyne.MenuItem, error) {
-	chars, err := model.FetchAllCharacters()
+func (c *characters) makeSwitchButton(charID int32) (*widgets.ContextMenuButton, error) {
+	menu, ok, err := c.makeSwitchMenu(charID)
 	if err != nil {
 		return nil, err
 	}
-	if len(chars) == 0 {
-		return nil, nil
+	b := widgets.NewContextMenuButton("Switch Character", menu)
+	if !ok {
+		b.Disable()
 	}
-	shareItem := fyne.NewMenuItem("Switch character", nil)
+	return b, nil
+}
 
+func (c *characters) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
+	menu := fyne.NewMenu("")
+	chars, err := model.FetchAllCharacters()
+	if err != nil {
+		return nil, false, err
+	}
+	if len(chars) == 0 {
+		return menu, false, nil
+	}
 	var items []*fyne.MenuItem
 	for _, char := range chars {
 		item := fyne.NewMenuItem(char.Name, func() {
@@ -92,10 +68,10 @@ func (c *characters) makeMenuItem(charID int32) (*fyne.MenuItem, error) {
 		items = append(items, item)
 	}
 	if len(chars) < 2 {
-		return nil, nil
+		return menu, false, nil
 	}
-	shareItem.ChildMenu = fyne.NewMenu("", items...)
-	return shareItem, nil
+	menu.Items = items
+	return menu, true, nil
 }
 
 func makeCharacter(charID int32) (*canvas.Image, *widget.Label) {

@@ -15,7 +15,7 @@ func main() {
 	flag.Parse()
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-	db, err := model.Initialize("storage2.sqlite", true)
+	db, err := model.Initialize("storage.sqlite", true)
 	if err != nil {
 		panic(err)
 	}
@@ -23,7 +23,6 @@ func main() {
 	// storage.Test()
 
 	a := app.New()
-	w := gui.NewEsiApp(a)
-	w.SetMainMenu(gui.MakeMenu(w))
-	w.ShowAndRun()
+	e := gui.NewEsiApp(a)
+	e.Main.ShowAndRun()
 }

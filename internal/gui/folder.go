@@ -100,7 +100,7 @@ func (e *esiApp) newFolders(headers *headers) *folders {
 	}
 	f.addRefreshButton()
 	b := widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
-		d := dialog.NewInformation("New message", "PLACEHOLDER", e.main)
+		d := dialog.NewInformation("New message", "PLACEHOLDER", e.Main)
 		d.Show()
 	})
 	top := container.NewHBox(f.refreshButton, b)

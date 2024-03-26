@@ -50,7 +50,7 @@ func FetchCharacter(characterID int32) (*Character, error) {
 	return &c, nil
 }
 
-// FetchAllCharacters returns all characters.
+// FetchAllCharacters returns all characters ordered by name.
 func FetchAllCharacters() ([]Character, error) {
 	var cc []Character
 	if err := db.Select(&cc, "SELECT * FROM characters ORDER BY name;"); err != nil {

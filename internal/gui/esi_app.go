@@ -14,13 +14,14 @@ const (
 )
 
 type esiApp struct {
-	main      fyne.Window
-	statusBar *statusBar
+	Main       fyne.Window
+	statusBar  *statusBar
+	characters *characters
 }
 
-func NewEsiApp(a fyne.App) fyne.Window {
+func NewEsiApp(a fyne.App) *esiApp {
 	w := a.NewWindow("Eve Online App")
-	e := &esiApp{main: w}
+	e := &esiApp{Main: w}
 
 	var charID int32
 	c, err := model.FetchFirstCharacter()
@@ -38,6 +39,7 @@ func NewEsiApp(a fyne.App) fyne.Window {
 	folders := e.newFolders(headers)
 	characters := e.newCharacters(folders)
 	characters.update(charID)
+	e.characters = characters
 
 	headersMail := container.NewHSplit(headers.content, mail.content)
 	headersMail.SetOffset(0.35)
@@ -51,5 +53,7 @@ func NewEsiApp(a fyne.App) fyne.Window {
 
 	folders.updateMails()
 
-	return w
+	w.SetMainMenu(MakeMenu(a, e))
+	w.SetMaster()
+	return e
 }
