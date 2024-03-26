@@ -21,7 +21,7 @@ func (s *statusBar) clear() {
 	s.setText("")
 }
 
-func (e *esiApp) newStatusBar() *statusBar {
+func (e *eveApp) newStatusBar() *statusBar {
 	text := binding.NewString()
 	label := widget.NewLabelWithData(text)
 	content := container.NewVBox(widget.NewSeparator(), label)

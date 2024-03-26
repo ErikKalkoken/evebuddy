@@ -60,7 +60,7 @@ func (h *headers) update(charID int32, labelID int32) {
 	}
 }
 
-func (e *esiApp) newHeaders(mail *mail) *headers {
+func (e *eveApp) newHeaders(mail *mail) *headers {
 	var x []interface{}
 	boundList := binding.BindUntypedList(&x)
 	list := widget.NewListWithData(

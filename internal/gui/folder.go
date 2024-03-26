@@ -18,7 +18,7 @@ type labelItem struct {
 }
 
 type folders struct {
-	esiApp        *esiApp
+	esiApp        *eveApp
 	content       fyne.CanvasObject
 	boundList     binding.ExternalUntypedList
 	boundCharID   binding.ExternalInt
@@ -89,7 +89,7 @@ func (f *folders) update(charID int32) {
 	f.headers.update(charID, model.AllMailsLabelID)
 }
 
-func (e *esiApp) newFolders(headers *headers) *folders {
+func (e *eveApp) newFolders(headers *headers) *folders {
 	list, boundList, boundCharID := makeFolderList(headers)
 	f := folders{
 		esiApp:      e,

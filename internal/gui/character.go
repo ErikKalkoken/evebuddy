@@ -17,7 +17,7 @@ const defaultIconSize = 64
 type characters struct {
 	container *fyne.Container
 	folders   *folders
-	esiApp    *esiApp
+	esiApp    *eveApp
 }
 
 func (c *characters) update(charID int32) {
@@ -91,7 +91,7 @@ func makeCharacter(charID int32) (*canvas.Image, *widget.Label) {
 	return image, name
 }
 
-func (e *esiApp) newCharacters(f *folders) *characters {
+func (e *eveApp) newCharacters(f *folders) *characters {
 	c := characters{esiApp: e, folders: f}
 	c.container = container.NewHBox()
 	return &c

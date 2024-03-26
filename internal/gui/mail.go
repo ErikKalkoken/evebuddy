@@ -56,7 +56,7 @@ func (m *mail) updateContent(s string, h string, b string) {
 	m.bodyC.ScrollToTop()
 }
 
-func (e *esiApp) newMail() *mail {
+func (e *eveApp) newMail() *mail {
 	subject := widget.NewLabel("")
 	subject.TextStyle = fyne.TextStyle{Bold: true}
 	subject.Truncation = fyne.TextTruncateEllipsis

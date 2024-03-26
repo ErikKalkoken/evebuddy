@@ -20,6 +20,6 @@ func main() {
 	defer db.Close()
 	// storage.Test()
 
-	e := gui.NewEsiApp()
+	e := gui.NewEveApp()
 	e.ShowAndRun()
 }

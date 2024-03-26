@@ -14,20 +14,21 @@ const (
 	myDateTime = "2006.01.02 15:04"
 )
 
-type esiApp struct {
+// Main type for the core app structure
+type eveApp struct {
 	winMain    fyne.Window
 	statusBar  *statusBar
 	characters *characters
 }
 
-func (e *esiApp) ShowAndRun() {
+func (e *eveApp) ShowAndRun() {
 	e.winMain.ShowAndRun()
 }
 
-func NewEsiApp() *esiApp {
+func NewEveApp() *eveApp {
 	a := app.New()
 	w := a.NewWindow("Eve Online App")
-	e := &esiApp{winMain: w}
+	e := &eveApp{winMain: w}
 
 	var charID int32
 	c, err := model.FetchFirstCharacter()

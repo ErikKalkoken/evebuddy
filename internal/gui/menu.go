@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func MakeMenu(a fyne.App, e *esiApp) *fyne.MainMenu {
+func MakeMenu(a fyne.App, e *eveApp) *fyne.MainMenu {
 	file := fyne.NewMenu("File")
 
 	manageItem := fyne.NewMenuItem("Manage", func() {
