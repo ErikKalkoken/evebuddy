@@ -54,7 +54,7 @@ func NewEveApp() *eveApp {
 	main := container.NewHSplit(folders.content, headersMail)
 	main.SetOffset(0.15)
 
-	content := container.NewBorder(characters.container, bar.content, nil, nil, main)
+	content := container.NewBorder(characters.content, bar.content, nil, nil, main)
 	w.SetContent(content)
 	w.Resize(fyne.NewSize(800, 600))
 

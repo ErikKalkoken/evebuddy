@@ -15,9 +15,9 @@ import (
 const defaultIconSize = 64
 
 type characters struct {
-	container *fyne.Container
-	folders   *folders
-	esiApp    *eveApp
+	content *fyne.Container
+	folders *folders
+	esiApp  *eveApp
 }
 
 func (c *characters) update(charID int32) {
@@ -26,12 +26,12 @@ func (c *characters) update(charID int32) {
 		panic(err)
 	}
 	image, name := makeCharacter(charID)
-	c.container.RemoveAll()
-	c.container.Add(image)
-	c.container.Add(name)
-	c.container.Add(layout.NewSpacer())
-	c.container.Add(btnSwitch)
-	c.container.Refresh()
+	c.content.RemoveAll()
+	c.content.Add(image)
+	c.content.Add(name)
+	c.content.Add(layout.NewSpacer())
+	c.content.Add(btnSwitch)
+	c.content.Refresh()
 	c.folders.update(charID)
 	c.folders.updateMails()
 }
@@ -93,6 +93,6 @@ func makeCharacter(charID int32) (*canvas.Image, *widget.Label) {
 
 func (e *eveApp) newCharacters(f *folders) *characters {
 	c := characters{esiApp: e, folders: f}
-	c.container = container.NewHBox()
+	c.content = container.NewHBox()
 	return &c
 }
