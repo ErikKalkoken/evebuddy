@@ -10,14 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Initialize the test database for this test package
-func init() {
-	_, err := model.Initialize(":memory:", false)
-	if err != nil {
-		panic(err)
-	}
-}
-
 func createCharacter(args ...model.Character) model.Character {
 	var c model.Character
 	if len(args) > 0 {

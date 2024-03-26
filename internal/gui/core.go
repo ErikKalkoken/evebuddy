@@ -149,7 +149,7 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status *statusBar
 
 	var c atomic.Int32
 	var wg sync.WaitGroup
-	maxGoroutines := 10
+	maxGoroutines := 20
 	guard := make(chan struct{}, maxGoroutines)
 	for _, header := range headers {
 		if existingIDs.Has(header.ID) {
