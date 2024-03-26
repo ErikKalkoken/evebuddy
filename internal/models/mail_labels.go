@@ -10,14 +10,13 @@ import (
 const AllMailsLabelID = 0
 
 type MailLabel struct {
-	ID          uint64    `db:"id"`
-	CharacterID int32     `db:"character_id"`
-	Character   Character `db:"character"`
-	Color       string    `db:"color"`
-	LabelID     int32     `db:"label_id"`
-	Mails       []Mail    `db:"mails"`
-	Name        string    `db:"name"`
-	UnreadCount int32     `db:"unread_count"`
+	ID          uint64
+	CharacterID int32 `db:"character_id"`
+	Character   Character
+	Color       string
+	LabelID     int32 `db:"label_id"`
+	Name        string
+	UnreadCount int32 `db:"unread_count"`
 }
 
 // Save creates or updates a mail label.

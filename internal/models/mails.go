@@ -8,18 +8,18 @@ import (
 
 // An Eve mail belonging to a character
 type Mail struct {
-	Body        string      `db:"body"`
-	CharacterID int32       `db:"character_id"`
-	Character   Character   `db:"character"`
-	FromID      int32       `db:"from_id"`
-	From        EveEntity   `db:"eve_entity"`
-	Labels      []MailLabel `db:"labels"`
-	IsRead      bool        `db:"is_read"`
-	ID          uint64      `db:"id"`
-	MailID      int32       `db:"mail_id"`
-	Recipients  []EveEntity `db:"recipients"`
-	Subject     string      `db:"subject"`
-	Timestamp   time.Time   `db:"timestamp"`
+	Body        string
+	CharacterID int32 `db:"character_id"`
+	Character   Character
+	FromID      int32     `db:"from_id"`
+	From        EveEntity `db:"eve_entity"`
+	Labels      []MailLabel
+	IsRead      bool `db:"is_read"`
+	ID          uint64
+	MailID      int32 `db:"mail_id"`
+	Recipients  []EveEntity
+	Subject     string
+	Timestamp   time.Time
 }
 
 // Create creates a new mail
