@@ -4,6 +4,7 @@
 package model
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/jmoiron/sqlx"
@@ -85,7 +86,8 @@ var pragmas = `
 
 // Initialize initializes the database (needs to be called once).
 func Initialize(dataSourceName string, productionMode bool) (*sqlx.DB, error) {
-	myDb, err := sqlx.Connect("sqlite3", dataSourceName)
+	dsn := fmt.Sprintf("%s?_fk=on", dataSourceName)
+	myDb, err := sqlx.Connect("sqlite3", dsn)
 	if err != nil {
 		return nil, err
 	}
