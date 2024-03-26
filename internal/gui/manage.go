@@ -15,8 +15,9 @@ import (
 )
 
 type characterList struct {
-	content *fyne.Container
-	window  fyne.Window
+	content    *fyne.Container
+	window     fyne.Window
+	characters *characters
 }
 
 func (c *characterList) update() {
@@ -30,7 +31,11 @@ func (c *characterList) update() {
 		image := canvas.NewImageFromURI(uri)
 		image.FillMode = canvas.ImageFillOriginal
 		name := widget.NewLabel(char.Name)
-		button := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {
+		btnSelect := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
+			c.characters.update(char.ID)
+			c.window.Hide()
+		})
+		btnDelete := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {
 			err := char.Delete()
 			if err != nil {
 				dlg := dialog.NewError(err, c.window)
@@ -38,26 +43,26 @@ func (c *characterList) update() {
 			}
 			c.update()
 		})
-		button.Importance = widget.DangerImportance
-		item := container.NewHBox(image, name, layout.NewSpacer(), button)
+		btnDelete.Importance = widget.DangerImportance
+		item := container.NewHBox(image, name, layout.NewSpacer(), btnSelect, btnDelete)
 		c.content.Add(item)
 		c.content.Add(widget.NewSeparator())
 	}
 	c.content.Refresh()
 }
 
-func newCharacterList(w fyne.Window) *characterList {
+func newCharacterList(w fyne.Window, characters *characters) *characterList {
 	content := container.NewVBox()
-	c := &characterList{window: w, content: content}
+	c := &characterList{window: w, content: content, characters: characters}
 	return c
 }
 
 func makeManageWindow(a fyne.App, e *eveApp) fyne.Window {
 	w := a.NewWindow("Manage Characters")
-	c := newCharacterList(w)
+	c := newCharacterList(w, e.characters)
 	c.update()
 	btnAdd := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-		showAddCharacterDialog(e.winMain, e.characters, c)
+		showAddCharacterDialog(e.winMain, c)
 	})
 	btnAdd.Importance = widget.HighImportance
 	btnClose := widget.NewButtonWithIcon("Close", theme.CancelIcon(), func() {
@@ -66,10 +71,13 @@ func makeManageWindow(a fyne.App, e *eveApp) fyne.Window {
 	content := container.NewBorder(btnAdd, btnClose, nil, nil, c.content)
 	w.SetContent(content)
 	w.Resize(fyne.NewSize(600, 400))
+	w.SetOnClosed(func() {
+		e.winMain.RequestFocus()
+	})
 	return w
 }
 
-func showAddCharacterDialog(w fyne.Window, characters *characters, list *characterList) {
+func showAddCharacterDialog(w fyne.Window, list *characterList) {
 	ctx, cancel := context.WithCancel(context.Background())
 	dlg := dialog.NewCustom(
 		"Add Character",
@@ -85,7 +93,6 @@ func showAddCharacterDialog(w fyne.Window, characters *characters, list *charact
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
 		} else {
-			// characters.update(token.CharacterID)
 			list.update()
 		}
 	}()
