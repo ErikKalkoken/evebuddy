@@ -1,4 +1,5 @@
-package esi
+// Package images provides image URLs for the Eve Online image server.
+package images
 
 import (
 	"fmt"

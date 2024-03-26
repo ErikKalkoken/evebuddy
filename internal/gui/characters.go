@@ -2,7 +2,7 @@ package gui
 
 import (
 	"context"
-	"example/esiapp/internal/api/esi"
+	"example/esiapp/internal/api/images"
 	"example/esiapp/internal/models"
 	"log/slog"
 
@@ -103,7 +103,7 @@ func makeCharacter(charID int32) (*canvas.Image, *widget.Label) {
 	var uri fyne.URI
 	if err != nil {
 		label = "No characters"
-		uri = esi.CharacterPortraitURL(esi.PlaceholderCharacterID, defaultIconSize)
+		uri = images.CharacterPortraitURL(images.PlaceholderCharacterID, defaultIconSize)
 	} else {
 		label = char.Name
 		uri = char.PortraitURL(defaultIconSize)

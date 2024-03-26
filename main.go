@@ -24,5 +24,6 @@ func main() {
 
 	a := app.New()
 	w := gui.NewEsiApp(a)
+	w.SetMainMenu(gui.MakeMenu(w))
 	w.ShowAndRun()
 }

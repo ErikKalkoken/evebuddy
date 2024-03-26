@@ -34,7 +34,7 @@ func (m *mail) update(mailID uint64) {
 		names = append(names, n.Name)
 	}
 	header := fmt.Sprintf(
-		"From: %s\nSent:%s\nTo:%s",
+		"From: %s\nSent: %s\nTo: %s",
 		mail.From.Name,
 		mail.Timestamp.Format(myDateTime),
 		strings.Join(names, ", "),

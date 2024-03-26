@@ -1,7 +1,7 @@
 package models
 
 import (
-	"example/esiapp/internal/api/esi"
+	"example/esiapp/internal/api/images"
 
 	"fyne.io/fyne/v2"
 )
@@ -29,7 +29,7 @@ func (c *Character) Save() error {
 
 // PortraitURL returns an image URL for a portrait of a character
 func (c *Character) PortraitURL(size int) fyne.URI {
-	return esi.CharacterPortraitURL(c.ID, size)
+	return images.CharacterPortraitURL(c.ID, size)
 }
 
 // FetchFirstCharacter returns a random character.
