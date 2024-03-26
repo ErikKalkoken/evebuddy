@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"example/esiapp/internal/models"
+	"example/esiapp/internal/model"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -72,12 +72,12 @@ func (f *folders) update(charID int32) {
 	}
 
 	var ii []interface{}
-	labels, err := models.FetchAllMailLabels(charID)
+	labels, err := model.FetchAllMailLabels(charID)
 	if err != nil {
 		slog.Error("Failed to fetch mail labels", "characterID", charID, "error", err)
 	} else {
 		if len(labels) > 0 {
-			ii = append(ii, labelItem{id: models.AllMailsLabelID, name: "All Mails"})
+			ii = append(ii, labelItem{id: model.AllMailsLabelID, name: "All Mails"})
 			for _, l := range labels {
 				ii = append(ii, labelItem{id: l.LabelID, name: l.Name})
 			}
@@ -86,7 +86,7 @@ func (f *folders) update(charID int32) {
 	f.boundList.Set(ii)
 	f.list.Select(0)
 	f.list.ScrollToTop()
-	f.headers.update(charID, models.AllMailsLabelID)
+	f.headers.update(charID, model.AllMailsLabelID)
 }
 
 func (e *esiApp) newFolders(headers *headers) *folders {

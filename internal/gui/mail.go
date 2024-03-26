@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"example/esiapp/internal/models"
+	"example/esiapp/internal/model"
 	"fmt"
 	"html"
 	"log/slog"
@@ -23,7 +23,7 @@ type mail struct {
 }
 
 func (m *mail) update(mailID uint64) {
-	mail, err := models.FetchMail(mailID)
+	mail, err := model.FetchMail(mailID)
 	if err != nil {
 		slog.Error("Failed to render mail", "mailID", mailID, "error", err)
 		return

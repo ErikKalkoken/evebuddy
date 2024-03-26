@@ -1,4 +1,4 @@
-package models
+package model
 
 import (
 	"example/esiapp/internal/api/images"

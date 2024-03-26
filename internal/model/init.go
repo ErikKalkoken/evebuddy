@@ -1,7 +1,7 @@
 // Package models contains all models for persistent storage.
 // No direct DB access allowed outside this package.
 // This package should not access any other internal packages, except helpers.
-package models
+package model
 
 import (
 	"log/slog"

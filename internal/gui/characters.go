@@ -3,7 +3,8 @@ package gui
 import (
 	"context"
 	"example/esiapp/internal/api/images"
-	"example/esiapp/internal/models"
+	"example/esiapp/internal/model"
+	"example/esiapp/internal/widgets"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -35,7 +36,7 @@ func (c *characters) update(charID int32) {
 	c.folders.updateMails()
 }
 
-func (c *characters) makeManageButton(charID int32) *contextMenuButton {
+func (c *characters) makeManageButton(charID int32) *widgets.ContextMenuButton {
 	addChar := fyne.NewMenuItem("Add Character", func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		dlg := dialog.NewCustom(
@@ -66,12 +67,12 @@ func (c *characters) makeManageButton(charID int32) *contextMenuButton {
 	if switchChar != nil {
 		menu.Items = append(menu.Items, switchChar)
 	}
-	buttonAdd := newContextMenuButton("Manage Characters", menu)
+	buttonAdd := widgets.NewContextMenuButton("Manage Characters", menu)
 	return buttonAdd
 }
 
 func (c *characters) makeMenuItem(charID int32) (*fyne.MenuItem, error) {
-	chars, err := models.FetchAllCharacters()
+	chars, err := model.FetchAllCharacters()
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +99,7 @@ func (c *characters) makeMenuItem(charID int32) (*fyne.MenuItem, error) {
 }
 
 func makeCharacter(charID int32) (*canvas.Image, *widget.Label) {
-	char, err := models.FetchCharacter(charID)
+	char, err := model.FetchCharacter(charID)
 	var label string
 	var uri fyne.URI
 	if err != nil {

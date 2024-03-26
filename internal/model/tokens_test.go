@@ -1,7 +1,7 @@
-package models_test
+package model_test
 
 import (
-	"example/esiapp/internal/models"
+	"example/esiapp/internal/model"
 	"fmt"
 	"math/rand/v2"
 	"testing"
@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func createToken(args ...models.Token) models.Token {
-	var t models.Token
+func createToken(args ...model.Token) model.Token {
+	var t model.Token
 	if len(args) > 0 {
 		t = args[0]
 	}
@@ -39,14 +39,14 @@ func createToken(args ...models.Token) models.Token {
 
 func TestTokenCanSaveNew(t *testing.T) {
 	// given
-	models.TruncateTables()
+	model.TruncateTables()
 	c := createCharacter()
-	o := models.Token{AccessToken: "access", Character: c, CharacterID: c.ID, ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
+	o := model.Token{AccessToken: "access", Character: c, CharacterID: c.ID, ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
 	// when
 	err := o.Save()
 	// then
 	assert.NoError(t, err)
-	r, err := models.FetchToken(c.ID)
+	r, err := model.FetchToken(c.ID)
 	if assert.NoError(t, err) {
 		assert.Equal(t, o.AccessToken, r.AccessToken)
 		assert.Equal(t, o.CharacterID, r.CharacterID)
@@ -56,8 +56,8 @@ func TestTokenCanSaveNew(t *testing.T) {
 
 func TestTokenSaveReturnErrorWhenNoCharacter(t *testing.T) {
 	// given
-	models.TruncateTables()
-	o := models.Token{AccessToken: "access", ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
+	model.TruncateTables()
+	o := model.Token{AccessToken: "access", ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
 	// when
 	err := o.Save()
 	// then
@@ -67,7 +67,7 @@ func TestTokenSaveReturnErrorWhenNoCharacter(t *testing.T) {
 
 func TestTokenCanUpdate(t *testing.T) {
 	// given
-	models.TruncateTables()
+	model.TruncateTables()
 	createCharacter()
 	o := createToken()
 	assert.NoError(t, o.Save())
@@ -75,7 +75,7 @@ func TestTokenCanUpdate(t *testing.T) {
 	// when
 	err := o.Save()
 	assert.NoError(t, err)
-	r, err := models.FetchToken(o.CharacterID)
+	r, err := model.FetchToken(o.CharacterID)
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, o.AccessToken, r.AccessToken)
@@ -86,11 +86,11 @@ func TestTokenCanUpdate(t *testing.T) {
 
 func TestTokenCanFetchByID(t *testing.T) {
 	// given
-	models.TruncateTables()
+	model.TruncateTables()
 	createToken()
 	o := createToken()
 	// when
-	r, err := models.FetchToken(o.CharacterID)
+	r, err := model.FetchToken(o.CharacterID)
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, o.AccessToken, r.AccessToken)

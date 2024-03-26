@@ -1,8 +1,8 @@
-package models_test
+package model_test
 
 import (
-	"example/esiapp/internal/helpers/set"
-	"example/esiapp/internal/models"
+	"example/esiapp/internal/helper/set"
+	"example/esiapp/internal/model"
 	"fmt"
 	"slices"
 	"testing"
@@ -11,13 +11,13 @@ import (
 )
 
 // createEveEntity is a test factory for EveEntity objects.
-func createEveEntity(args ...models.EveEntity) models.EveEntity {
-	var e models.EveEntity
+func createEveEntity(args ...model.EveEntity) model.EveEntity {
+	var e model.EveEntity
 	if len(args) > 0 {
 		e = args[0]
 	}
 	if e.ID == 0 {
-		ids, err := models.FetchEntityIDs()
+		ids, err := model.FetchEntityIDs()
 		if err != nil {
 			panic(err)
 		}
@@ -41,8 +41,8 @@ func createEveEntity(args ...models.EveEntity) models.EveEntity {
 
 func TestEntitiesCanSaveNew(t *testing.T) {
 	// given
-	models.TruncateTables()
-	o := models.EveEntity{ID: 1, Name: "Erik", Category: "character"}
+	model.TruncateTables()
+	o := model.EveEntity{ID: 1, Name: "Erik", Category: "character"}
 	// when
 	err := o.Save()
 	// then
@@ -51,8 +51,8 @@ func TestEntitiesCanSaveNew(t *testing.T) {
 
 func TestEntitiesShouldReturnErrorWhenCategoryNotValid(t *testing.T) {
 	// given
-	models.TruncateTables()
-	o := models.EveEntity{ID: 1, Name: "Erik", Category: "django"}
+	model.TruncateTables()
+	o := model.EveEntity{ID: 1, Name: "Erik", Category: "django"}
 	// when
 	err := o.Save()
 	// then
@@ -61,15 +61,15 @@ func TestEntitiesShouldReturnErrorWhenCategoryNotValid(t *testing.T) {
 
 func TestEveEntitiesCanUpdateExisting(t *testing.T) {
 	// given
-	models.TruncateTables()
-	o := createEveEntity(models.EveEntity{ID: 42, Name: "alpha", Category: "character"})
+	model.TruncateTables()
+	o := createEveEntity(model.EveEntity{ID: 42, Name: "alpha", Category: "character"})
 	o.Name = "bravo"
 	o.Category = "corporation"
 	// when
 	err := o.Save()
 	// then
 	assert.NoError(t, err)
-	o2, err := models.FetchEveEntity(42)
+	o2, err := model.FetchEveEntity(42)
 	assert.NoError(t, err)
 	assert.Equal(t, o2.Name, "bravo")
 	assert.Equal(t, o2.Category, "corporation")
@@ -77,10 +77,10 @@ func TestEveEntitiesCanUpdateExisting(t *testing.T) {
 
 func TestCanFetchEveEntity(t *testing.T) {
 	// given
-	models.TruncateTables()
+	model.TruncateTables()
 	o := createEveEntity()
 	// when
-	r, err := models.FetchEveEntity(o.ID)
+	r, err := model.FetchEveEntity(o.ID)
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, o, *r)
@@ -89,8 +89,8 @@ func TestCanFetchEveEntity(t *testing.T) {
 
 func TestFetchEveEntityShouldReturnErrorWhenNotFound(t *testing.T) {
 	// given
-	models.TruncateTables()
-	r, err := models.FetchEveEntity(42)
+	model.TruncateTables()
+	r, err := model.FetchEveEntity(42)
 	// then
 	assert.Error(t, err)
 	assert.Nil(t, r)
@@ -98,11 +98,11 @@ func TestFetchEveEntityShouldReturnErrorWhenNotFound(t *testing.T) {
 
 func TestEntitiesCanReturnAllIDs(t *testing.T) {
 	// given
-	models.TruncateTables()
+	model.TruncateTables()
 	e1 := createEveEntity()
 	e2 := createEveEntity()
 	// when
-	r, err := models.FetchEntityIDs()
+	r, err := model.FetchEntityIDs()
 	// then
 	if assert.NoError(t, err) {
 		gotIDs := set.NewFromSlice([]int32{e1.ID, e2.ID})

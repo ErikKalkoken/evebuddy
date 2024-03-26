@@ -4,8 +4,8 @@ import (
 	"context"
 	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/api/sso"
-	"example/esiapp/internal/helpers/set"
-	"example/esiapp/internal/models"
+	"example/esiapp/internal/helper/set"
+	"example/esiapp/internal/model"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -25,19 +25,19 @@ var scopes = []string{
 }
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.
-func AddCharacter(ctx context.Context) (*models.Token, error) {
+func AddCharacter(ctx context.Context) (*model.Token, error) {
 	ssoToken, err := sso.Authenticate(ctx, httpClient, scopes)
 	if err != nil {
 		return nil, err
 	}
-	character := models.Character{
+	character := model.Character{
 		ID:   ssoToken.CharacterID,
 		Name: ssoToken.CharacterName,
 	}
 	if err = character.Save(); err != nil {
 		return nil, err
 	}
-	token := models.Token{
+	token := model.Token{
 		AccessToken:  ssoToken.AccessToken,
 		Character:    character,
 		ExpiresAt:    ssoToken.ExpiresAt,
@@ -53,7 +53,7 @@ func AddCharacter(ctx context.Context) (*models.Token, error) {
 // TODO: Add ability to update existing mails
 // UpdateMails fetches and stores new mails from ESI for a character.
 func UpdateMails(characterID int32, status *statusBar) error {
-	token, err := models.FetchToken(characterID)
+	token, err := model.FetchToken(characterID)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func UpdateMails(characterID int32, status *statusBar) error {
 	return nil
 }
 
-func updateMailLabels(token *models.Token) error {
+func updateMailLabels(token *model.Token) error {
 	if err := ensureFreshToken(token); err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func updateMailLabels(token *models.Token) error {
 	labels := ll.Labels
 	slog.Info("Received mail labels from ESI", "count", len(labels), "characterID", token.CharacterID)
 	for _, o := range labels {
-		l := models.MailLabel{
+		l := model.MailLabel{
 			CharacterID: token.CharacterID,
 			LabelID:     o.LabelID,
 			Color:       o.Color,
@@ -101,7 +101,7 @@ func updateMailLabels(token *models.Token) error {
 	return nil
 }
 
-func updateMailLists(token *models.Token) error {
+func updateMailLists(token *model.Token) error {
 	if err := ensureFreshToken(token); err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func updateMailLists(token *models.Token) error {
 		return err
 	}
 	for _, o := range lists {
-		e := models.EveEntity{ID: o.ID, Name: o.Name, Category: models.EveEntityMailList}
+		e := model.EveEntity{ID: o.ID, Name: o.Name, Category: model.EveEntityMailList}
 		if err := e.Save(); err != nil {
 			return err
 		}
@@ -118,7 +118,7 @@ func updateMailLists(token *models.Token) error {
 	return nil
 }
 
-func fetchMailHeaders(token *models.Token) ([]esi.MailHeader, error) {
+func fetchMailHeaders(token *model.Token) ([]esi.MailHeader, error) {
 	if err := ensureFreshToken(token); err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func fetchMailHeaders(token *models.Token) ([]esi.MailHeader, error) {
 	return headers, nil
 }
 
-func updateMails(token *models.Token, headers []esi.MailHeader, status *statusBar) error {
+func updateMails(token *model.Token, headers []esi.MailHeader, status *statusBar) error {
 	existingIDs, missingIDs, err := determineMailIDs(token.CharacterID, headers)
 	if err != nil {
 		return err
@@ -172,7 +172,7 @@ func updateMails(token *models.Token, headers []esi.MailHeader, status *statusBa
 				return
 			}
 
-			mail := models.Mail{
+			mail := model.Mail{
 				Character: token.Character,
 				MailID:    header.ID,
 				Subject:   header.Subject,
@@ -186,16 +186,16 @@ func updateMails(token *models.Token, headers []esi.MailHeader, status *statusBa
 			}
 			mail.Timestamp = timestamp
 
-			from, err := models.FetchEveEntity(header.FromID)
+			from, err := model.FetchEveEntity(header.FromID)
 			if err != nil {
 				slog.Error("Failed to parse \"from\" in mail", "header", header, "error", err)
 				return
 			}
 			mail.From = *from
 
-			var rr []models.EveEntity
+			var rr []model.EveEntity
 			for _, r := range header.Recipients {
-				o, err := models.FetchEveEntity(r.ID)
+				o, err := model.FetchEveEntity(r.ID)
 				if err != nil {
 					slog.Error("Failed to resolve mail recipient", "header", header, "recipient", r)
 					continue
@@ -205,7 +205,7 @@ func updateMails(token *models.Token, headers []esi.MailHeader, status *statusBa
 			}
 			mail.Recipients = rr
 
-			labels, err := models.FetchMailLabels(token.CharacterID, m.Labels)
+			labels, err := model.FetchMailLabels(token.CharacterID, m.Labels)
 			if err != nil {
 				slog.Error("Failed to resolve mail labels", "header", header, "error", err)
 			} else {
@@ -233,7 +233,7 @@ func updateMails(token *models.Token, headers []esi.MailHeader, status *statusBa
 }
 
 func determineMailIDs(characterID int32, headers []esi.MailHeader) (*set.Set[int32], *set.Set[int32], error) {
-	ids, err := models.FetchMailIDs(characterID)
+	ids, err := model.FetchMailIDs(characterID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -247,7 +247,7 @@ func determineMailIDs(characterID int32, headers []esi.MailHeader) (*set.Set[int
 }
 
 // ensureFreshToken will automatically try to refresh a token that is already or about to become invalid.
-func ensureFreshToken(token *models.Token) error {
+func ensureFreshToken(token *model.Token) error {
 	if !token.RemainsValid(time.Second * 60) {
 		slog.Debug("Need to refresh token", "characterID", token.CharacterID)
 		rawToken, err := sso.RefreshToken(httpClient, token.RefreshToken)
@@ -267,7 +267,7 @@ func ensureFreshToken(token *models.Token) error {
 }
 
 func addMissingEveEntities(ids []int32) error {
-	c, err := models.FetchEntityIDs()
+	c, err := model.FetchEntityIDs()
 	if err != nil {
 		return err
 	}
@@ -285,7 +285,7 @@ func addMissingEveEntities(ids []int32) error {
 	}
 
 	for _, entity := range entities {
-		e := models.EveEntity{ID: entity.ID, Category: entity.Category, Name: entity.Name}
+		e := model.EveEntity{ID: entity.ID, Category: entity.Category, Name: entity.Name}
 		err := e.Save()
 		if err != nil {
 			return err

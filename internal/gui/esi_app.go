@@ -2,7 +2,7 @@
 package gui
 
 import (
-	"example/esiapp/internal/models"
+	"example/esiapp/internal/model"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -23,7 +23,7 @@ func NewEsiApp(a fyne.App) fyne.Window {
 	e := &esiApp{main: w}
 
 	var charID int32
-	c, err := models.FetchFirstCharacter()
+	c, err := model.FetchFirstCharacter()
 	if err != nil {
 		slog.Warn("Failed to load any character", "error", err)
 	} else {

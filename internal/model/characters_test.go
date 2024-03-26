@@ -1,8 +1,8 @@
-package models_test
+package model_test
 
 import (
-	"example/esiapp/internal/helpers/set"
-	"example/esiapp/internal/models"
+	"example/esiapp/internal/helper/set"
+	"example/esiapp/internal/model"
 	"fmt"
 	"slices"
 	"testing"
@@ -12,19 +12,19 @@ import (
 
 // Initialize the test database for this test package
 func init() {
-	_, err := models.Initialize(":memory:", false)
+	_, err := model.Initialize(":memory:", false)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func createCharacter(args ...models.Character) models.Character {
-	var c models.Character
+func createCharacter(args ...model.Character) model.Character {
+	var c model.Character
 	if len(args) > 0 {
 		c = args[0]
 	}
 	if c.ID == 0 {
-		ids, err := models.FetchCharacterIDs()
+		ids, err := model.FetchCharacterIDs()
 		if err != nil {
 			panic(err)
 		}
@@ -46,10 +46,10 @@ func createCharacter(args ...models.Character) models.Character {
 
 func TestCharacterCanSaveNew(t *testing.T) {
 	// given
-	models.TruncateTables()
+	model.TruncateTables()
 	c := createCharacter()
 	// when
-	r, err := models.FetchFirstCharacter()
+	r, err := model.FetchFirstCharacter()
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, c, *r)
@@ -58,12 +58,12 @@ func TestCharacterCanSaveNew(t *testing.T) {
 
 func TestCharacterCanUpdate(t *testing.T) {
 	// given
-	models.TruncateTables()
-	c := createCharacter(models.Character{Name: "Erik"})
+	model.TruncateTables()
+	c := createCharacter(model.Character{Name: "Erik"})
 	c.Name = "John"
 	assert.NoError(t, c.Save())
 	// when
-	got, err := models.FetchFirstCharacter()
+	got, err := model.FetchFirstCharacter()
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, c, *got)
@@ -72,12 +72,12 @@ func TestCharacterCanUpdate(t *testing.T) {
 
 func TestCharacterCanFetchByCharacterID(t *testing.T) {
 	// given
-	models.TruncateTables()
+	model.TruncateTables()
 	createCharacter()
 	c2 := createCharacter()
 	assert.NoError(t, c2.Save())
 	// when
-	r, err := models.FetchCharacter(2)
+	r, err := model.FetchCharacter(2)
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, c2, *r)
@@ -86,12 +86,12 @@ func TestCharacterCanFetchByCharacterID(t *testing.T) {
 
 func TestCharacterCanFetchAll(t *testing.T) {
 	// given
-	models.TruncateTables()
+	model.TruncateTables()
 	c1 := createCharacter()
 	c2 := createCharacter()
 	assert.NoError(t, c2.Save())
 	// when
-	got, err := models.FetchAllCharacters()
+	got, err := model.FetchAllCharacters()
 	// then
 	if assert.NoError(t, err) {
 		assert.Len(t, got, 2)

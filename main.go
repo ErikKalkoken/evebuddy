@@ -8,14 +8,14 @@ import (
 	"fyne.io/fyne/v2/app"
 
 	"example/esiapp/internal/gui"
-	"example/esiapp/internal/models"
+	"example/esiapp/internal/model"
 )
 
 func main() {
 	flag.Parse()
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-	db, err := models.Initialize("storage2.sqlite", true)
+	db, err := model.Initialize("storage2.sqlite", true)
 	if err != nil {
 		panic(err)
 	}

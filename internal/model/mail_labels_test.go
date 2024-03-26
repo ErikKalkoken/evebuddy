@@ -1,8 +1,8 @@
-package models_test
+package model_test
 
 import (
-	"example/esiapp/internal/helpers/set"
-	"example/esiapp/internal/models"
+	"example/esiapp/internal/helper/set"
+	"example/esiapp/internal/model"
 	"fmt"
 	"math/rand/v2"
 	"slices"
@@ -12,8 +12,8 @@ import (
 )
 
 // createMailLabel is a test factory for MailLabel objects
-func createMailLabel(args ...models.MailLabel) models.MailLabel {
-	var l models.MailLabel
+func createMailLabel(args ...model.MailLabel) model.MailLabel {
+	var l model.MailLabel
 	if len(args) > 0 {
 		l = args[0]
 	}
@@ -21,7 +21,7 @@ func createMailLabel(args ...models.MailLabel) models.MailLabel {
 		l.Character = createCharacter()
 	}
 	if l.LabelID == 0 {
-		ll, err := models.FetchAllMailLabels(l.Character.ID)
+		ll, err := model.FetchAllMailLabels(l.Character.ID)
 		if err != nil {
 			panic(err)
 		}
@@ -52,9 +52,9 @@ func createMailLabel(args ...models.MailLabel) models.MailLabel {
 
 func TestMailLabelSaveNew(t *testing.T) {
 	// given
-	models.TruncateTables()
+	model.TruncateTables()
 	c := createCharacter()
-	l := models.MailLabel{
+	l := model.MailLabel{
 		Character:   c,
 		Color:       "xyz",
 		LabelID:     1,
@@ -65,7 +65,7 @@ func TestMailLabelSaveNew(t *testing.T) {
 	err := l.Save()
 	// then
 	if assert.NoError(t, err) {
-		l2, err := models.FetchMailLabel(c.ID, l.LabelID)
+		l2, err := model.FetchMailLabel(c.ID, l.LabelID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, l.Name, l2.Name)
 		}
@@ -74,8 +74,8 @@ func TestMailLabelSaveNew(t *testing.T) {
 
 func TestMailLabelShouldReturnErrorWhenNoCharacter(t *testing.T) {
 	// given
-	models.TruncateTables()
-	l := models.MailLabel{
+	model.TruncateTables()
+	l := model.MailLabel{
 		Color:       "xyz",
 		LabelID:     1,
 		Name:        "Dummy",
@@ -88,10 +88,10 @@ func TestMailLabelShouldReturnErrorWhenNoCharacter(t *testing.T) {
 }
 func TestMailLabelCanFetchAllLabelsReturnsSlice(t *testing.T) {
 	// given
-	models.TruncateTables()
+	model.TruncateTables()
 	l := createMailLabel()
 	// when
-	l2, err := models.FetchMailLabel(l.Character.ID, l.LabelID)
+	l2, err := model.FetchMailLabel(l.Character.ID, l.LabelID)
 	if assert.NoError(t, err) {
 		assert.Equal(t, l.Name, l2.Name)
 	}
@@ -99,16 +99,16 @@ func TestMailLabelCanFetchAllLabelsReturnsSlice(t *testing.T) {
 
 func TestCanFetchAllMailLabelsForCharacter(t *testing.T) {
 	// given
-	models.TruncateTables()
+	model.TruncateTables()
 	c1 := createCharacter()
-	l1 := createMailLabel(models.MailLabel{Character: c1, LabelID: 3})
+	l1 := createMailLabel(model.MailLabel{Character: c1, LabelID: 3})
 	fmt.Println(l1)
-	l2 := createMailLabel(models.MailLabel{Character: c1, LabelID: 7})
+	l2 := createMailLabel(model.MailLabel{Character: c1, LabelID: 7})
 	fmt.Println(l2)
 	c2 := createCharacter()
-	createMailLabel(models.MailLabel{Character: c2, LabelID: 13})
+	createMailLabel(model.MailLabel{Character: c2, LabelID: 13})
 	// when
-	ll, err := models.FetchAllMailLabels(c1.ID)
+	ll, err := model.FetchAllMailLabels(c1.ID)
 	if assert.NoError(t, err) {
 		gotIDs := set.New[int32]()
 		for _, l := range ll {
@@ -121,10 +121,10 @@ func TestCanFetchAllMailLabelsForCharacter(t *testing.T) {
 
 func TesFetchAllMailLabelsReturnsEmptySliceWhenNoRows(t *testing.T) {
 	// given
-	models.TruncateTables()
+	model.TruncateTables()
 	c := createCharacter()
 	// when
-	ll, err := models.FetchAllMailLabels(c.ID)
+	ll, err := model.FetchAllMailLabels(c.ID)
 	if assert.NoError(t, err) {
 		assert.Empty(t, ll)
 	}
@@ -132,13 +132,13 @@ func TesFetchAllMailLabelsReturnsEmptySliceWhenNoRows(t *testing.T) {
 
 func TestFetchMailLabels(t *testing.T) {
 	// given
-	models.TruncateTables()
+	model.TruncateTables()
 	c := createCharacter()
-	createMailLabel(models.MailLabel{Character: c, LabelID: 3})
-	createMailLabel(models.MailLabel{Character: c, LabelID: 7})
-	createMailLabel(models.MailLabel{Character: c, LabelID: 13})
+	createMailLabel(model.MailLabel{Character: c, LabelID: 3})
+	createMailLabel(model.MailLabel{Character: c, LabelID: 7})
+	createMailLabel(model.MailLabel{Character: c, LabelID: 13})
 	// when
-	ll, err := models.FetchMailLabels(c.ID, []int32{3, 13})
+	ll, err := model.FetchMailLabels(c.ID, []int32{3, 13})
 	if assert.NoError(t, err) {
 		gotIDs := set.New[int32]()
 		for _, l := range ll {
