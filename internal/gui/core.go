@@ -156,68 +156,7 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status *statusBar
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			entityIDs := set.New[int32]()
-			entityIDs.Add(header.FromID)
-			for _, r := range header.Recipients {
-				entityIDs.Add(r.ID)
-			}
-			if err := addMissingEveEntities(entityIDs.ToSlice()); err != nil {
-				slog.Error("Failed to process mail", "mailID", header.ID, "error", err)
-				return
-			}
-
-			m, err := esi.FetchMail(httpClient, token.CharacterID, header.ID, token.AccessToken)
-			if err != nil {
-				slog.Error("Failed to process mail", "header", header, "error", err)
-				return
-			}
-
-			mail := model.Mail{
-				Character: token.Character,
-				MailID:    header.ID,
-				Subject:   header.Subject,
-				Body:      m.Body,
-			}
-
-			timestamp, err := time.Parse(time.RFC3339, header.Timestamp)
-			if err != nil {
-				slog.Error("Failed to parse timestamp for mail", "header", header, "error", err)
-				return
-			}
-			mail.Timestamp = timestamp
-
-			from, err := model.FetchEveEntity(header.FromID)
-			if err != nil {
-				slog.Error("Failed to parse \"from\" in mail", "header", header, "error", err)
-				return
-			}
-			mail.From = *from
-
-			var rr []model.EveEntity
-			for _, r := range header.Recipients {
-				o, err := model.FetchEveEntity(r.ID)
-				if err != nil {
-					slog.Error("Failed to resolve mail recipient", "header", header, "recipient", r)
-					continue
-				} else {
-					rr = append(rr, *o)
-				}
-			}
-			mail.Recipients = rr
-
-			labels, err := model.FetchMailLabels(token.CharacterID, m.Labels)
-			if err != nil {
-				slog.Error("Failed to resolve mail labels", "header", header, "error", err)
-			} else {
-				mail.Labels = labels
-			}
-
-			mail.Create()
-			slog.Info("Created new mail", "mailID", header.ID, "characterID", token.CharacterID)
-			c.Add(1)
-			current := c.Load()
-			s := fmt.Sprintf("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name)
-			status.setText(s)
+			fetchAndStoreMail(header, token, newMailsCount, &c, status)
 		}()
 	}
 	wg.Wait()
@@ -230,6 +169,71 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status *statusBar
 	status.setText(s)
 	slog.Info(s)
 	return nil
+}
+
+func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount int, c *atomic.Int32, status *statusBar) {
+	entityIDs := set.New[int32]()
+	entityIDs.Add(header.FromID)
+	for _, r := range header.Recipients {
+		entityIDs.Add(r.ID)
+	}
+	if err := addMissingEveEntities(entityIDs.ToSlice()); err != nil {
+		slog.Error("Failed to process mail", "mailID", header.ID, "error", err)
+		return
+	}
+
+	m, err := esi.FetchMail(httpClient, token.CharacterID, header.ID, token.AccessToken)
+	if err != nil {
+		slog.Error("Failed to process mail", "header", header, "error", err)
+		return
+	}
+
+	mail := model.Mail{
+		Character: token.Character,
+		MailID:    header.ID,
+		Subject:   header.Subject,
+		Body:      m.Body,
+	}
+
+	timestamp, err := time.Parse(time.RFC3339, header.Timestamp)
+	if err != nil {
+		slog.Error("Failed to parse timestamp for mail", "header", header, "error", err)
+		return
+	}
+	mail.Timestamp = timestamp
+
+	from, err := model.FetchEveEntity(header.FromID)
+	if err != nil {
+		slog.Error("Failed to parse \"from\" in mail", "header", header, "error", err)
+		return
+	}
+	mail.From = *from
+
+	var rr []model.EveEntity
+	for _, r := range header.Recipients {
+		o, err := model.FetchEveEntity(r.ID)
+		if err != nil {
+			slog.Error("Failed to resolve mail recipient", "header", header, "recipient", r)
+			continue
+		} else {
+			rr = append(rr, *o)
+		}
+	}
+	mail.Recipients = rr
+
+	labels, err := model.FetchMailLabels(token.CharacterID, m.Labels)
+	if err != nil {
+		slog.Error("Failed to resolve mail labels", "header", header, "error", err)
+	} else {
+		mail.Labels = labels
+	}
+
+	mail.Create()
+	slog.Info("Created new mail", "mailID", header.ID, "characterID", token.CharacterID)
+	c.Add(1)
+	current := c.Load()
+	s := fmt.Sprintf("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name)
+	status.setText(s)
 }
 
 func determineMailIDs(characterID int32, headers []esi.MailHeader) (*set.Set[int32], *set.Set[int32], error) {
