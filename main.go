@@ -5,8 +5,6 @@ import (
 	"log"
 	"log/slog"
 
-	"fyne.io/fyne/v2/app"
-
 	"example/esiapp/internal/gui"
 	"example/esiapp/internal/model"
 )
@@ -22,7 +20,6 @@ func main() {
 	defer db.Close()
 	// storage.Test()
 
-	a := app.New()
-	e := gui.NewEsiApp(a)
-	e.Main.ShowAndRun()
+	e := gui.NewEsiApp()
+	e.ShowAndRun()
 }

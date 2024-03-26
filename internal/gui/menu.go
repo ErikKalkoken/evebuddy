@@ -21,7 +21,7 @@ func MakeMenu(a fyne.App, e *esiApp) *fyne.MainMenu {
 				"Add Character",
 				"Cancel",
 				widget.NewLabel("Please follow instructions in your browser to add a new character."),
-				e.Main,
+				e.winMain,
 			)
 			dlg.SetOnClosed(cancel)
 			go func() {
@@ -44,7 +44,7 @@ func MakeMenu(a fyne.App, e *esiApp) *fyne.MainMenu {
 	character := fyne.NewMenu("Character", manageItem)
 
 	aboutItem := fyne.NewMenuItem("About", func() {
-		d := dialog.NewInformation("About", "esiapp v0.1.0", e.Main)
+		d := dialog.NewInformation("About", "esiapp v0.1.0", e.winMain)
 		d.Show()
 	})
 	help := fyne.NewMenu("Help", aboutItem)

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 )
 
@@ -14,14 +15,19 @@ const (
 )
 
 type esiApp struct {
-	Main       fyne.Window
+	winMain    fyne.Window
 	statusBar  *statusBar
 	characters *characters
 }
 
-func NewEsiApp(a fyne.App) *esiApp {
+func (e *esiApp) ShowAndRun() {
+	e.winMain.ShowAndRun()
+}
+
+func NewEsiApp() *esiApp {
+	a := app.New()
 	w := a.NewWindow("Eve Online App")
-	e := &esiApp{Main: w}
+	e := &esiApp{winMain: w}
 
 	var charID int32
 	c, err := model.FetchFirstCharacter()

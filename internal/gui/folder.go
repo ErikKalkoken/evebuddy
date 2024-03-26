@@ -34,14 +34,14 @@ func (f *folders) addRefreshButton() {
 	f.refreshButton = b
 }
 
-func (f *folders) updateMailsWithID(charID int32) {
-	err := f.boundCharID.Set(int(charID))
-	if err != nil {
-		slog.Error("Failed to set char ID", "error", err)
-	} else {
-		f.updateMails()
-	}
-}
+// func (f *folders) updateMailsWithID(charID int32) {
+// 	err := f.boundCharID.Set(int(charID))
+// 	if err != nil {
+// 		slog.Error("Failed to set char ID", "error", err)
+// 	} else {
+// 		f.updateMails()
+// 	}
+// }
 
 func (f *folders) updateMails() {
 	charID, err := f.boundCharID.Get()
@@ -100,7 +100,7 @@ func (e *esiApp) newFolders(headers *headers) *folders {
 	}
 	f.addRefreshButton()
 	b := widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
-		d := dialog.NewInformation("New message", "PLACEHOLDER", e.Main)
+		d := dialog.NewInformation("New message", "PLACEHOLDER", e.winMain)
 		d.Show()
 	})
 	top := container.NewHBox(f.refreshButton, b)
