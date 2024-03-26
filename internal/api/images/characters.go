@@ -9,19 +9,20 @@ import (
 )
 
 const PlaceholderCharacterID = 1
+const baseURL = "https://images.evetech.net"
 
 // PortraitURL returns an image URL for a portrait of a character
-func CharacterPortraitURL(charID int32, size int) fyne.URI {
+func CharacterPortraitURL(charID int32, size int) (fyne.URI, error) {
 	switch size {
 	case 32, 64, 128, 256, 512, 1024:
 		// valid size
 	default:
-		panic(fmt.Sprintf("Invalid size %d", size))
+		return nil, fmt.Errorf("invalid size %d", size)
 	}
-	s := fmt.Sprintf("https://images.evetech.net/characters/%d/portrait?size=%d", charID, size)
+	s := fmt.Sprintf("%s/characters/%d/portrait?size=%d", baseURL, charID, size)
 	u, err := storage.ParseURI(s)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return u
+	return u, nil
 }

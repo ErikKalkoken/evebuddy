@@ -50,6 +50,7 @@ func AddCharacter(ctx context.Context) (*models.Token, error) {
 	return &token, nil
 }
 
+// TODO: Add ability to update existing mails
 // UpdateMails fetches and stores new mails from ESI for a character.
 func UpdateMails(characterID int32, status *statusBar) error {
 	token, err := models.FetchToken(characterID)

@@ -103,7 +103,7 @@ func makeCharacter(charID int32) (*canvas.Image, *widget.Label) {
 	var uri fyne.URI
 	if err != nil {
 		label = "No characters"
-		uri = images.CharacterPortraitURL(images.PlaceholderCharacterID, defaultIconSize)
+		uri, _ = images.CharacterPortraitURL(images.PlaceholderCharacterID, defaultIconSize)
 	} else {
 		label = char.Name
 		uri = char.PortraitURL(defaultIconSize)

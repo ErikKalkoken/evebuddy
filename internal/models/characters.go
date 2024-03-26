@@ -29,7 +29,8 @@ func (c *Character) Save() error {
 
 // PortraitURL returns an image URL for a portrait of a character
 func (c *Character) PortraitURL(size int) fyne.URI {
-	return images.CharacterPortraitURL(c.ID, size)
+	u, _ := images.CharacterPortraitURL(c.ID, size)
+	return u
 }
 
 // FetchFirstCharacter returns a random character.
