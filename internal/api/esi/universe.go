@@ -28,12 +28,12 @@ func ResolveEntityIDs(httpClient http.Client, ids []int32) ([]EveEntity, error) 
 		return nil, err
 	}
 
-	fullUrl := fmt.Sprintf("%s/universe/names/", esiBaseUrl)
-	slog.Info("Resolving IDs", "url", fullUrl)
-	resp, err := httpClient.Post(fullUrl, "application/json", bytes.NewBuffer(data))
+	fullURL := fmt.Sprintf("%s/universe/names/", esiBaseUrl)
+	slog.Info("Request to resolve IDs", "url", fullURL, "count", len(ids))
+	slog.Debug("IDs to resolve", "ids", ids)
+	resp, err := httpClient.Post(fullURL, "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
-
 	return unmarshalResponse[[]EveEntity](resp)
 }

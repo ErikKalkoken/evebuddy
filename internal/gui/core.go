@@ -149,14 +149,18 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status *statusBar
 
 	var c atomic.Int32
 	var wg sync.WaitGroup
+	maxGoroutines := 10
+	guard := make(chan struct{}, maxGoroutines)
 	for _, header := range headers {
 		if existingIDs.Has(header.ID) {
 			continue
 		}
+		guard <- struct{}{}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			fetchAndStoreMail(header, token, newMailsCount, &c, status)
+			<-guard
 		}()
 	}
 	wg.Wait()
@@ -286,7 +290,7 @@ func addMissingEveEntities(ids []int32) error {
 
 	entities, err := esi.ResolveEntityIDs(httpClient, missing.ToSlice())
 	if err != nil {
-		return fmt.Errorf("failed to resolve IDs: %v", err)
+		return fmt.Errorf("failed to resolve IDs: %v %v", err, ids)
 	}
 
 	for _, entity := range entities {

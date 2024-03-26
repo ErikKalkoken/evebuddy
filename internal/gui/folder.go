@@ -18,20 +18,14 @@ type labelItem struct {
 }
 
 type folders struct {
-	esiApp        *eveApp
-	content       fyne.CanvasObject
-	boundList     binding.ExternalUntypedList
-	boundCharID   binding.ExternalInt
-	headers       *headers
-	list          *widget.List
-	refreshButton *widget.Button
-}
-
-func (f *folders) addRefreshButton() {
-	b := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-		f.updateMails()
-	})
-	f.refreshButton = b
+	esiApp      *eveApp
+	content     fyne.CanvasObject
+	boundList   binding.ExternalUntypedList
+	boundCharID binding.ExternalInt
+	headers     *headers
+	list        *widget.List
+	btnRefresh  *widget.Button
+	btnNew      *widget.Button
 }
 
 // func (f *folders) updateMailsWithID(charID int32) {
@@ -46,7 +40,7 @@ func (f *folders) addRefreshButton() {
 func (f *folders) updateMails() {
 	charID, err := f.boundCharID.Get()
 	if err != nil {
-		slog.Error("Failed to get character ID", "erro", err)
+		slog.Error("Failed to get character ID", "error", err)
 		return
 	}
 	status := f.esiApp.statusBar
@@ -63,9 +57,11 @@ func (f *folders) updateMails() {
 
 func (f *folders) update(charID int32) {
 	if charID == 0 {
-		f.refreshButton.Disable()
+		f.btnRefresh.Disable()
+		f.btnNew.Disable()
 	} else {
-		f.refreshButton.Enable()
+		f.btnRefresh.Enable()
+		f.btnNew.Enable()
 	}
 	if err := f.boundCharID.Set(int(charID)); err != nil {
 		slog.Error("Failed to set char ID", "characterID", charID, "error", err)
@@ -98,12 +94,18 @@ func (e *eveApp) newFolders(headers *headers) *folders {
 		headers:     headers,
 		list:        list,
 	}
-	f.addRefreshButton()
-	b := widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
+	btnRefresh := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+		f.updateMails()
+	})
+	f.btnRefresh = btnRefresh
+
+	btnNew := widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
 		d := dialog.NewInformation("New message", "PLACEHOLDER", e.winMain)
 		d.Show()
 	})
-	top := container.NewHBox(f.refreshButton, b)
+	f.btnNew = btnNew
+
+	top := container.NewHBox(f.btnRefresh, btnNew)
 	c := container.NewBorder(top, nil, nil, nil, f.list)
 	f.content = c
 	return &f

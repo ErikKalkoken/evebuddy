@@ -52,6 +52,7 @@ func unmarshalResponse[T any](resp *http.Response) (T, error) {
 	if err != nil {
 		return o, err
 	}
+	slog.Debug("ESI response", "body", string(body))
 
 	if err := json.Unmarshal(body, &o); err != nil {
 		return o, fmt.Errorf("%v: %v", err, string(body))
