@@ -15,9 +15,10 @@ import (
 const defaultIconSize = 64
 
 type characters struct {
-	content *fyne.Container
-	folders *folders
-	esiApp  *eveApp
+	content       *fyne.Container
+	folders       *folders
+	esiApp        *eveApp
+	currentCharID int32
 }
 
 func (c *characters) update(charID int32) {
@@ -34,6 +35,7 @@ func (c *characters) update(charID int32) {
 	c.content.Refresh()
 	c.folders.update(charID)
 	c.folders.updateMails()
+	c.currentCharID = charID
 }
 
 func (c *characters) makeSwitchButton(charID int32) (*widgets.ContextMenuButton, error) {

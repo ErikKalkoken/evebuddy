@@ -42,6 +42,9 @@ func (c *characterList) update() {
 				dlg.Show()
 			}
 			c.update()
+			if char.ID == c.characters.currentCharID {
+				c.characters.update(0)
+			}
 		})
 		btnDelete.Importance = widget.DangerImportance
 		item := container.NewHBox(image, name, layout.NewSpacer(), btnSelect, btnDelete)
