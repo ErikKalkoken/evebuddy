@@ -101,3 +101,16 @@ func TestCharacterCanFetchAll(t *testing.T) {
 
 	}
 }
+
+func TestCharacterCanDelete(t *testing.T) {
+	// given
+	model.TruncateTables()
+	c := createCharacter()
+	// when
+	err := c.Delete()
+	// then
+	if assert.NoError(t, err) {
+		_, err := model.FetchCharacter(c.ID)
+		assert.Error(t, err)
+	}
+}

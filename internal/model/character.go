@@ -2,6 +2,7 @@ package model
 
 import (
 	"example/esiapp/internal/api/images"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
 )
@@ -24,6 +25,16 @@ func (c *Character) Save() error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// Delete deletes this character with all it's data
+func (c *Character) Delete() error {
+	_, err := db.Exec("DELETE FROM characters WHERE id = ?", c.ID)
+	if err != nil {
+		return err
+	}
+	slog.Info("Deleted character", "ID", c.ID)
 	return nil
 }
 
