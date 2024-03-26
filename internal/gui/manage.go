@@ -65,13 +65,13 @@ func makeManageWindow(a fyne.App, e *eveApp) fyne.Window {
 	c := newCharacterList(w, e.characters)
 	c.update()
 	btnAdd := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-		showAddCharacterDialog(e.winMain, c)
+		showAddCharacterDialog(w, c)
 	})
 	btnAdd.Importance = widget.HighImportance
 	btnClose := widget.NewButtonWithIcon("Close", theme.CancelIcon(), func() {
 		w.Hide()
 	})
-	content := container.NewBorder(btnAdd, btnClose, nil, nil, c.content)
+	content := container.NewBorder(nil, container.NewVBox(btnAdd, btnClose), nil, nil, c.content)
 	w.SetContent(content)
 	w.Resize(fyne.NewSize(600, 400))
 	w.SetOnClosed(func() {
