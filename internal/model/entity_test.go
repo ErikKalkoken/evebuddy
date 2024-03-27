@@ -1,6 +1,7 @@
 package model_test
 
 import (
+	"database/sql"
 	"example/esiapp/internal/helper/set"
 	"example/esiapp/internal/model"
 	"fmt"
@@ -39,74 +40,71 @@ func createEveEntity(args ...model.EveEntity) model.EveEntity {
 	return e
 }
 
-func TestEntitiesCanSaveNew(t *testing.T) {
-	// given
-	model.TruncateTables()
-	o := model.EveEntity{ID: 1, Name: "Erik", Category: "character"}
-	// when
-	err := o.Save()
-	// then
-	assert.NoError(t, err)
-}
-
-func TestEntitiesShouldReturnErrorWhenCategoryNotValid(t *testing.T) {
-	// given
-	model.TruncateTables()
-	o := model.EveEntity{ID: 1, Name: "Erik", Category: "django"}
-	// when
-	err := o.Save()
-	// then
-	assert.Error(t, err)
-}
-
-func TestEveEntitiesCanUpdateExisting(t *testing.T) {
-	// given
-	model.TruncateTables()
-	o := createEveEntity(model.EveEntity{ID: 42, Name: "alpha", Category: "character"})
-	o.Name = "bravo"
-	o.Category = "corporation"
-	// when
-	err := o.Save()
-	// then
-	assert.NoError(t, err)
-	o2, err := model.FetchEveEntity(42)
-	assert.NoError(t, err)
-	assert.Equal(t, o2.Name, "bravo")
-	assert.Equal(t, o2.Category, "corporation")
-}
-
-func TestCanFetchEveEntity(t *testing.T) {
-	// given
-	model.TruncateTables()
-	o := createEveEntity()
-	// when
-	r, err := model.FetchEveEntity(o.ID)
-	// then
-	if assert.NoError(t, err) {
-		assert.Equal(t, o, *r)
-	}
-}
-
-func TestFetchEveEntityShouldReturnErrorWhenNotFound(t *testing.T) {
-	// given
-	model.TruncateTables()
-	r, err := model.FetchEveEntity(42)
-	// then
-	assert.Error(t, err)
-	assert.Nil(t, r)
-}
-
-func TestEntitiesCanReturnAllIDs(t *testing.T) {
-	// given
-	model.TruncateTables()
-	e1 := createEveEntity()
-	e2 := createEveEntity()
-	// when
-	r, err := model.FetchEntityIDs()
-	// then
-	if assert.NoError(t, err) {
-		gotIDs := set.NewFromSlice([]int32{e1.ID, e2.ID})
-		wantIDs := set.NewFromSlice(r)
-		assert.Equal(t, wantIDs, gotIDs)
-	}
+func TestEveEntities(t *testing.T) {
+	t.Run("can save new", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		o := model.EveEntity{ID: 1, Name: "Erik", Category: "character"}
+		// when
+		err := o.Save()
+		// then
+		assert.NoError(t, err)
+	})
+	t.Run("should return error for invalid category", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		o := model.EveEntity{ID: 1, Name: "Erik", Category: "django"}
+		// when
+		err := o.Save()
+		// then
+		assert.Error(t, err)
+	})
+	t.Run("can update existing", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		o := createEveEntity(model.EveEntity{ID: 42, Name: "alpha", Category: "character"})
+		o.Name = "bravo"
+		o.Category = "corporation"
+		// when
+		err := o.Save()
+		// then
+		assert.NoError(t, err)
+		o2, err := model.FetchEveEntity(42)
+		assert.NoError(t, err)
+		assert.Equal(t, o2.Name, "bravo")
+		assert.Equal(t, o2.Category, "corporation")
+	})
+	t.Run("can fetch existing", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		o := createEveEntity()
+		// when
+		r, err := model.FetchEveEntity(o.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, o, *r)
+		}
+	})
+	t.Run("should return error when not found", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		r, err := model.FetchEveEntity(42)
+		// then
+		assert.Equal(t, sql.ErrNoRows, err)
+		assert.Nil(t, r)
+	})
+	t.Run("can return all existing IDs", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		e1 := createEveEntity()
+		e2 := createEveEntity()
+		// when
+		r, err := model.FetchEntityIDs()
+		// then
+		if assert.NoError(t, err) {
+			gotIDs := set.NewFromSlice([]int32{e1.ID, e2.ID})
+			wantIDs := set.NewFromSlice(r)
+			assert.Equal(t, wantIDs, gotIDs)
+		}
+	})
 }
