@@ -88,7 +88,7 @@ var pragmas = `
 
 // TODO: Add pragmas as DSN param
 // InitDB initializes the database (needs to be called once).
-func InitDB(dataSourceName string, productionMode bool) (*sqlx.DB, error) {
+func InitDB(dataSourceName string) (*sqlx.DB, error) {
 	dsn := fmt.Sprintf("%s?_fk=on", dataSourceName)
 	myDb, err := sqlx.Connect("sqlite3", dsn)
 	if err != nil {
@@ -99,11 +99,9 @@ func InitDB(dataSourceName string, productionMode bool) (*sqlx.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	if productionMode {
-		_, err = myDb.Exec(pragmas)
-		if err != nil {
-			return nil, err
-		}
+	_, err = myDb.Exec(pragmas)
+	if err != nil {
+		return nil, err
 	}
 	db = myDb
 	return myDb, nil

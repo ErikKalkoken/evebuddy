@@ -1,6 +1,7 @@
 package esi
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -25,13 +26,13 @@ func FetchMailLabels(client *http.Client, characterID int32, tokenString string)
 	v.Set("token", tokenString)
 	path := fmt.Sprintf("/characters/%d/mail/labels/?%v", characterID, v.Encode())
 	slog.Info("Fetching mail labels for character", "characterID", characterID)
-	resp, err := getESI(client, path)
+	body, err := getESI(client, path)
 	if err != nil {
 		return nil, err
 	}
-	m, err := unmarshalResponse[MailLabelPayload](resp)
-	if err != nil {
-		return nil, err
+	var m MailLabelPayload
+	if err := json.Unmarshal(body, &m); err != nil {
+		return nil, fmt.Errorf("%v: %v", err, string(body))
 	}
 	return &m, err
 }

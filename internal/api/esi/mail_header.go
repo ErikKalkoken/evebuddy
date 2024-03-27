@@ -1,6 +1,7 @@
 package esi
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -59,9 +60,13 @@ func fetchMailHeadersPage(client *http.Client, characterID int32, tokenString st
 	}
 	path := fmt.Sprintf("/characters/%d/mail/?%v", characterID, v.Encode())
 	slog.Info("Fetching mail headers", "characterID", characterID, "lastMailID", lastMailID)
-	resp, err := getESI(client, path)
+	body, err := getESI(client, path)
 	if err != nil {
 		return nil, err
 	}
-	return unmarshalResponse[[]MailHeader](resp)
+	var mm []MailHeader
+	if err := json.Unmarshal(body, &mm); err != nil {
+		return nil, fmt.Errorf("%v: %v", err, string(body))
+	}
+	return mm, nil
 }

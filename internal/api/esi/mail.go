@@ -1,6 +1,7 @@
 package esi
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -19,14 +20,13 @@ func FetchMail(client *http.Client, characterID int32, mailID int32, tokenString
 	v.Set("token", tokenString)
 	path := fmt.Sprintf("/characters/%d/mail/%d/?%v", characterID, mailID, v.Encode())
 	slog.Info("Fetching mail for character", "mailID", mailID, "characterID", characterID)
-	resp, err := getESI(client, path)
+	body, err := getESI(client, path)
 	if err != nil {
 		return nil, err
 	}
-
-	m, err := unmarshalResponse[Mail](resp)
-	if err != nil {
-		return nil, err
+	var m Mail
+	if err := json.Unmarshal(body, &m); err != nil {
+		return nil, fmt.Errorf("%v: %v", err, string(body))
 	}
 	return &m, err
 }

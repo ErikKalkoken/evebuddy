@@ -2,7 +2,6 @@ package esi
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -14,7 +13,7 @@ type esiError struct {
 	Error string `json:"error"`
 }
 
-func getESI(client *http.Client, path string) (*http.Response, error) {
+func getESI(client *http.Client, path string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, buildEsiUrl(path), nil)
 	if err != nil {
 		return nil, err
@@ -22,7 +21,7 @@ func getESI(client *http.Client, path string) (*http.Response, error) {
 	return sendRequest(client, req)
 }
 
-func postESI(client *http.Client, path string, data []byte) (*http.Response, error) {
+func postESI(client *http.Client, path string, data []byte) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, buildEsiUrl(path), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
@@ -37,7 +36,7 @@ func buildEsiUrl(path string) string {
 }
 
 // TODO: retry also on timeouts
-func sendRequest(client *http.Client, req *http.Request) (*http.Response, error) {
+func sendRequest(client *http.Client, req *http.Request) ([]byte, error) {
 	maxRetries := 3
 	retry := 0
 	for {
@@ -47,7 +46,17 @@ func sendRequest(client *http.Client, req *http.Request) (*http.Response, error)
 			return nil, err
 		}
 		if r.StatusCode == http.StatusOK {
-			return r, nil
+			if r.Body != nil {
+				defer r.Body.Close()
+			} else {
+				return nil, nil
+			}
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				return nil, err
+			}
+			slog.Debug("ESI response", "body", string(body))
+			return body, nil
 		}
 
 		slog.Warn("ESI status response not OK", "status", r.Status)
@@ -64,20 +73,20 @@ func sendRequest(client *http.Client, req *http.Request) (*http.Response, error)
 }
 
 // unmarshalResponse converts a JSON response from ESI into an object.
-func unmarshalResponse[T any](resp *http.Response) (T, error) {
-	var o T
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	} else {
-		return o, nil
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return o, err
-	}
-	slog.Debug("ESI response", "body", string(body))
-	if err := json.Unmarshal(body, &o); err != nil {
-		return o, fmt.Errorf("%v: %v", err, string(body))
-	}
-	return o, nil
-}
+// func unmarshalResponse[T any](resp *http.Response) (T, error) {
+// 	var o T
+// 	if resp.Body != nil {
+// 		defer resp.Body.Close()
+// 	} else {
+// 		return o, nil
+// 	}
+// 	body, err := io.ReadAll(resp.Body)
+// 	if err != nil {
+// 		return o, err
+// 	}
+// 	slog.Debug("ESI response", "body", string(body))
+// 	if err := json.Unmarshal(body, &o); err != nil {
+// 		return o, fmt.Errorf("%v: %v", err, string(body))
+// 	}
+// 	return o, nil
+// }

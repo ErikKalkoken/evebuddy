@@ -1,6 +1,7 @@
 package esi
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -19,10 +20,13 @@ func FetchMailLists(client *http.Client, characterID int32, tokenString string) 
 	v.Set("token", tokenString)
 	path := fmt.Sprintf("/characters/%d/mail/lists/?%v", characterID, v.Encode())
 	slog.Info("Fetching mail lists for character", "characterID", characterID)
-	resp, err := getESI(client, path)
+	body, err := getESI(client, path)
 	if err != nil {
 		return nil, err
 	}
-	return unmarshalResponse[[]MailList](resp)
-
+	var mm []MailList
+	if err := json.Unmarshal(body, &mm); err != nil {
+		return nil, fmt.Errorf("%v: %v", err, string(body))
+	}
+	return mm, err
 }
