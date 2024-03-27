@@ -30,5 +30,8 @@ func FetchMailLabels(client http.Client, characterID int32, tokenString string) 
 		return nil, err
 	}
 	m, err := unmarshalResponse[MailLabelPayload](resp)
+	if err != nil {
+		return nil, err
+	}
 	return &m, err
 }

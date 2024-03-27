@@ -14,6 +14,12 @@ import (
 var db *sqlx.DB
 
 var schema = `
+	CREATE TABLE IF NOT EXISTS eve_entities (
+		id integer PRIMARY KEY NOT NULL,
+		category text NOT NULL,
+		name text NOT NULL
+	);
+
 	CREATE TABLE IF NOT EXISTS characters (
 		id integer PRIMARY KEY NOT NULL,
 		name text NOT NULL
@@ -62,12 +68,6 @@ var schema = `
 		FOREIGN KEY (mail_id) REFERENCES mails(id) ON DELETE CASCADE
 	);
 
-	CREATE TABLE IF NOT EXISTS eve_entities (
-		id integer PRIMARY KEY NOT NULL,
-		category text NOT NULL,
-		name text NOT NULL
-	);
-
 	CREATE TABLE IF NOT EXISTS tokens (
 		access_token text NOT NULL,
 		character_id integer PRIMARY KEY NOT NULL,
@@ -84,8 +84,9 @@ var pragmas = `
 	PRAGMA mmap_size = 30000000000;
 `
 
-// Initialize initializes the database (needs to be called once).
-func Initialize(dataSourceName string, productionMode bool) (*sqlx.DB, error) {
+// TODO: Add pragmas as DSN param
+// InitDB initializes the database (needs to be called once).
+func InitDB(dataSourceName string, productionMode bool) (*sqlx.DB, error) {
 	dsn := fmt.Sprintf("%s?_fk=on", dataSourceName)
 	myDb, err := sqlx.Connect("sqlite3", dsn)
 	if err != nil {

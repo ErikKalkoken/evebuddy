@@ -9,7 +9,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// Initialize the test database for this test package
-	db, err := model.Initialize(":memory:", false)
+	db, err := model.InitDB(":memory:", false)
 	if err != nil {
 		log.Fatal(err)
 	}

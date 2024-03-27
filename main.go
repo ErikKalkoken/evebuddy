@@ -13,7 +13,7 @@ func main() {
 	flag.Parse()
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-	db, err := model.Initialize("storage.sqlite", true)
+	db, err := model.InitDB("storage.sqlite", true)
 	if err != nil {
 		panic(err)
 	}

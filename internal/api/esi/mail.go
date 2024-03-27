@@ -25,5 +25,8 @@ func FetchMail(client http.Client, characterID int32, mailID int32, tokenString 
 	}
 
 	m, err := unmarshalResponse[Mail](resp)
+	if err != nil {
+		return nil, err
+	}
 	return &m, err
 }

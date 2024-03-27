@@ -30,15 +30,15 @@ type MailHeader struct {
 
 // FetchMailHeaders fetches all mail headers for a character from ESI and returns them.
 func FetchMailHeaders(httpClient http.Client, characterID int32, tokenString string, maxMails int) ([]MailHeader, error) {
-	var result []MailHeader
+	var mm []MailHeader
 	lastMailID := int32(0)
 	for {
 		objs, err := fetchMailHeadersPage(httpClient, characterID, tokenString, lastMailID)
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, objs...)
-		if len(objs) < maxHeadersPerPage || (maxMails != 0 && len(result)+50 > maxMails) {
+		mm = append(mm, objs...)
+		if len(objs) < maxHeadersPerPage || (maxMails != 0 && len(mm)+50 > maxMails) {
 			break
 		}
 		ids := make([]int32, 0)
@@ -48,7 +48,7 @@ func FetchMailHeaders(httpClient http.Client, characterID int32, tokenString str
 		lastMailID = slices.Min(ids)
 	}
 
-	return result, nil
+	return mm, nil
 }
 
 func fetchMailHeadersPage(client http.Client, characterID int32, tokenString string, lastMailID int32) ([]MailHeader, error) {

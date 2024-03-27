@@ -23,6 +23,6 @@ func FetchMailLists(client http.Client, characterID int32, tokenString string) (
 	if err != nil {
 		return nil, err
 	}
-	m, err := unmarshalResponse[[]MailList](resp)
-	return m, err
+	return unmarshalResponse[[]MailList](resp)
+
 }
