@@ -313,7 +313,11 @@ func addMissingEveEntities(ids []int32) error {
 	}
 
 	for _, entity := range entities {
-		e := model.EveEntity{ID: entity.ID, Category: entity.Category, Name: entity.Name}
+		e := model.EveEntity{
+			ID:       entity.ID,
+			Category: model.EveEntityCategory(entity.Category),
+			Name:     entity.Name,
+		}
 		err := e.Save()
 		if err != nil {
 			return err

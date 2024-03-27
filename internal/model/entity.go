@@ -10,20 +10,22 @@ import (
 
 // An entity in Eve Online
 type EveEntity struct {
-	Category string
+	Category EveEntityCategory
 	ID       int32
 	Name     string
 }
 
+type EveEntityCategory string
+
 // Supported categories of EveEntity
 const (
-	EveEntityAlliance    = "alliance"
-	EveEntityCharacter   = "character"
-	EveEntityCorporation = "corporation"
-	EveEntityMailList    = "mail_list"
+	EveEntityAlliance    EveEntityCategory = "alliance"
+	EveEntityCharacter   EveEntityCategory = "character"
+	EveEntityCorporation EveEntityCategory = "corporation"
+	EveEntityMailList    EveEntityCategory = "mail_list"
 )
 
-var categories = set.NewFromSlice([]string{EveEntityAlliance, EveEntityCharacter, EveEntityCorporation, EveEntityMailList})
+var categories = set.NewFromSlice([]EveEntityCategory{EveEntityAlliance, EveEntityCharacter, EveEntityCorporation, EveEntityMailList})
 
 // Save updates or creates an eve entity.
 func (e *EveEntity) Save() error {

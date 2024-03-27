@@ -32,7 +32,7 @@ func createEveEntity(args ...model.EveEntity) model.EveEntity {
 		e.Name = fmt.Sprintf("generated #%d", e.ID)
 	}
 	if e.Category == "" {
-		e.Category = "character"
+		e.Category = model.EveEntityCharacter
 	}
 	if err := e.Save(); err != nil {
 		panic(err)
@@ -44,13 +44,13 @@ func TestEveEntities(t *testing.T) {
 	t.Run("can save new", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		o := model.EveEntity{ID: 1, Name: "Erik", Category: "character"}
+		o := model.EveEntity{ID: 1, Name: "Erik", Category: model.EveEntityCharacter}
 		// when
 		err := o.Save()
 		// then
 		assert.NoError(t, err)
 	})
-	t.Run("should return error for invalid category", func(t *testing.T) {
+	t.Run("should return error when trying to save with invalid category", func(t *testing.T) {
 		// given
 		model.TruncateTables()
 		o := model.EveEntity{ID: 1, Name: "Erik", Category: "django"}
@@ -72,7 +72,7 @@ func TestEveEntities(t *testing.T) {
 		o2, err := model.FetchEveEntity(42)
 		assert.NoError(t, err)
 		assert.Equal(t, o2.Name, "bravo")
-		assert.Equal(t, o2.Category, "corporation")
+		assert.Equal(t, o2.Category, model.EveEntityCorporation)
 	})
 	t.Run("can fetch existing", func(t *testing.T) {
 		// given
@@ -106,5 +106,17 @@ func TestEveEntities(t *testing.T) {
 			wantIDs := set.NewFromSlice(r)
 			assert.Equal(t, wantIDs, gotIDs)
 		}
+	})
+}
+
+func TestEveEntitiesImageURL(t *testing.T) {
+	model.TruncateTables()
+	t.Run("can return for character", func(t *testing.T) {
+		// given
+		o := model.EveEntity{ID: 1, Name: "Erik", Category: "character"}
+		// when
+		err := o.Save()
+		// then
+		assert.NoError(t, err)
 	})
 }
