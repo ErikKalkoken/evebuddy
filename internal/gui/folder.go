@@ -45,11 +45,13 @@ func (f *folders) updateMails() {
 	}
 	status := f.esiApp.statusBar
 	go func() {
-		err = UpdateMails(int32(charID), status)
-		if err != nil {
-			status.setText("Failed to fetch mail")
-			slog.Error("Failed to update mails", "characterID", charID, "error", err)
-			return
+		if charID != 0 {
+			err = UpdateMails(int32(charID), status)
+			if err != nil {
+				status.setText("Failed to fetch mail")
+				slog.Error("Failed to update mails", "characterID", charID, "error", err)
+				return
+			}
 		}
 		f.update(int32(charID))
 	}()

@@ -2,6 +2,7 @@
 package gui
 
 import (
+	"database/sql"
 	"example/esiapp/internal/model"
 	"log/slog"
 
@@ -33,7 +34,9 @@ func NewEveApp() *eveApp {
 	var charID int32
 	c, err := model.FetchFirstCharacter()
 	if err != nil {
-		slog.Warn("Failed to load any character", "error", err)
+		if err != sql.ErrNoRows {
+			slog.Error("Failed to load any character", "error", err)
+		}
 	} else {
 		charID = c.ID
 	}
