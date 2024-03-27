@@ -1,7 +1,6 @@
 package esi
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -27,11 +26,9 @@ func ResolveEntityIDs(httpClient http.Client, ids []int32) ([]EveEntity, error) 
 	if err != nil {
 		return nil, err
 	}
-
-	fullURL := fmt.Sprintf("%s/universe/names/", esiBaseUrl)
-	slog.Info("Request to resolve IDs", "url", fullURL, "count", len(ids))
+	slog.Info("Request to resolve IDs", "count", len(ids))
 	slog.Debug("IDs to resolve", "ids", ids)
-	resp, err := httpClient.Post(fullURL, "application/json", bytes.NewBuffer(data))
+	resp, err := postESI(httpClient, "/universe/names/", data)
 	if err != nil {
 		return nil, err
 	}

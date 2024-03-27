@@ -19,20 +19,20 @@ func TestUnmarshalResponse(t *testing.T) {
 		json := `{"alpha": 42}`
 		resp := http.Response{Body: io.NopCloser(strings.NewReader(json))}
 		// when
-		d, err := unmarshalResponse[myData](&resp)
+		o, err := unmarshalResponse[myData](&resp)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, 42, d.Alpha)
+			assert.Equal(t, 42, o.Alpha)
 		}
 	})
 	t.Run("should return zero values when Body is empty", func(t *testing.T) {
 		// given
 		resp := http.Response{Body: nil}
 		// when
-		d, err := unmarshalResponse[myData](&resp)
+		o, err := unmarshalResponse[myData](&resp)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, 0, d.Alpha)
+			assert.Equal(t, 0, o.Alpha)
 		}
 	})
 	t.Run("should return error when body can not be marshalled", func(t *testing.T) {
@@ -40,11 +40,10 @@ func TestUnmarshalResponse(t *testing.T) {
 		json := `{"alpha": "wrong"}`
 		resp := http.Response{Body: io.NopCloser(strings.NewReader(json))}
 		// when
-		d, err := unmarshalResponse[myData](&resp)
+		o, err := unmarshalResponse[myData](&resp)
 		// then
 		if assert.Error(t, err) {
-			assert.Equal(t, 0, d.Alpha)
+			assert.Equal(t, 0, o.Alpha)
 		}
 	})
-
 }
