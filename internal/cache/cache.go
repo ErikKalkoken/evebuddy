@@ -1,4 +1,4 @@
-package model
+package cache
 
 import (
 	"database/sql"
@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type CacheEntry struct {
+type cacheEntry struct {
 	Key       string
 	Value     []byte
 	ExpiresAt time.Time `db:"expires_at"`
@@ -15,8 +15,8 @@ type CacheEntry struct {
 
 var ErrCacheMiss = errors.New("cache miss")
 
-func CacheGet(key string) ([]byte, error) {
-	var v CacheEntry
+func Get(key string) ([]byte, error) {
+	var v cacheEntry
 	err := db.Get(&v, "SELECT * FROM cache_keys WHERE key = ? AND expires_at > ?;", key, time.Now())
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -27,12 +27,12 @@ func CacheGet(key string) ([]byte, error) {
 	return v.Value, nil
 }
 
-func CacheSet(key string, value []byte, timeout int) error {
+func Set(key string, value []byte, timeout int) error {
 	if timeout < 0 {
 		return fmt.Errorf("timeout invalid: %d", timeout)
 	}
 	e := time.Now().Add(time.Second * time.Duration(timeout))
-	c := CacheEntry{Key: key, Value: value, ExpiresAt: e}
+	c := cacheEntry{Key: key, Value: value, ExpiresAt: e}
 	_, err := db.NamedExec(`
 		INSERT INTO cache_keys (key, value, expires_at)
 		VALUES (:key, :value, :expires_at)
@@ -46,8 +46,8 @@ func CacheSet(key string, value []byte, timeout int) error {
 	return nil
 }
 
-// CacheDelete deletes the item for the given key. ErrCacheMiss is returned if the specified item can not be found.
-func CacheDelete(key string) error {
+// Delete deletes the item for the given key. ErrCacheMiss is returned if the specified item can not be found.
+func Delete(key string) error {
 	r, err := db.Exec("DELETE FROM cache_keys WHERE key=?", key)
 	if err != nil {
 		return err
@@ -60,4 +60,10 @@ func CacheDelete(key string) error {
 		return ErrCacheMiss
 	}
 	return nil
+}
+
+// Clear removes all cache keys.
+func Clear() error {
+	_, err := db.Exec("DELETE FROM cache_keys;")
+	return err
 }
