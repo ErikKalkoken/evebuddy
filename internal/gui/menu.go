@@ -8,14 +8,8 @@ import (
 func MakeMenu(a fyne.App, e *eveApp) *fyne.MainMenu {
 	file := fyne.NewMenu("File")
 
-	var w2 fyne.Window
 	manageItem := fyne.NewMenuItem("Manage", func() {
-		if w2 != nil {
-			w2.Show()
-		} else {
-			w2 = makeManageWindow(a, e)
-			w2.Show()
-		}
+		showManageDialog(e)
 	})
 	character := fyne.NewMenu("Character", manageItem)
 

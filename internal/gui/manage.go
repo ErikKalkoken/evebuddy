@@ -3,6 +3,7 @@ package gui
 import (
 	"context"
 	"example/esiapp/internal/model"
+	"fmt"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -18,6 +19,7 @@ type characterList struct {
 	content    *fyne.Container
 	window     fyne.Window
 	characters *characters
+	dialog     *dialog.CustomDialog
 }
 
 func (c *characterList) update() {
@@ -33,18 +35,28 @@ func (c *characterList) update() {
 		name := widget.NewLabel(char.Name)
 		btnSelect := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
 			c.characters.update(char.ID)
-			c.window.Hide()
+			c.dialog.Hide()
 		})
 		btnDelete := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {
-			err := char.Delete()
-			if err != nil {
-				dlg := dialog.NewError(err, c.window)
-				dlg.Show()
-			}
-			c.update()
-			if char.ID == c.characters.currentCharID {
-				c.characters.update(0)
-			}
+			dlg := dialog.NewConfirm(
+				"Delete Character",
+				fmt.Sprintf("Are you sure you want to delete %s?", char.Name),
+				func(confirmed bool) {
+					if confirmed {
+						err := char.Delete()
+						if err != nil {
+							d := dialog.NewError(err, c.window)
+							d.Show()
+						}
+						c.update()
+						if char.ID == c.characters.currentCharID {
+							c.characters.update(0)
+						}
+					}
+				},
+				c.window,
+			)
+			dlg.Show()
 		})
 		btnDelete.Importance = widget.DangerImportance
 		item := container.NewHBox(image, name, layout.NewSpacer(), btnSelect, btnDelete)
@@ -60,24 +72,17 @@ func newCharacterList(w fyne.Window, characters *characters) *characterList {
 	return c
 }
 
-func makeManageWindow(a fyne.App, e *eveApp) fyne.Window {
-	w := a.NewWindow("Manage Characters")
-	c := newCharacterList(w, e.characters)
+func showManageDialog(e *eveApp) {
+	c := newCharacterList(e.winMain, e.characters)
 	c.update()
 	btnAdd := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-		showAddCharacterDialog(w, c)
+		showAddCharacterDialog(e.winMain, c)
 	})
 	btnAdd.Importance = widget.HighImportance
-	btnClose := widget.NewButtonWithIcon("Close", theme.CancelIcon(), func() {
-		w.Hide()
-	})
-	content := container.NewBorder(btnAdd, container.NewHBox(layout.NewSpacer(), layout.NewSpacer(), btnClose), nil, nil, c.content)
-	w.SetContent(content)
-	w.Resize(fyne.NewSize(600, 400))
-	w.SetOnClosed(func() {
-		e.winMain.RequestFocus()
-	})
-	return w
+	content := container.NewBorder(btnAdd, nil, nil, nil, c.content)
+	dlg := dialog.NewCustom("Manage Characters", "Close", content, e.winMain)
+	c.dialog = dlg
+	dlg.Show()
 }
 
 func showAddCharacterDialog(w fyne.Window, list *characterList) {
