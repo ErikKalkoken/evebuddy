@@ -29,6 +29,9 @@ func createCharacter(args ...model.Character) model.Character {
 	if c.Name == "" {
 		c.Name = fmt.Sprintf("Generated character #%d", c.ID)
 	}
+	if c.Corporation.ID == 0 {
+		c.Corporation = createEveEntity(model.EveEntity{Category: model.EveEntityCorporation})
+	}
 	err := c.Save()
 	if err != nil {
 		panic(err)
@@ -39,12 +42,16 @@ func createCharacter(args ...model.Character) model.Character {
 func TestCharacterCanSaveNew(t *testing.T) {
 	// given
 	model.TruncateTables()
-	c := createCharacter()
+	corp := createEveEntity(model.EveEntity{Category: model.EveEntityCorporation})
+	c := model.Character{ID: 1, Name: "Erik", Corporation: corp}
 	// when
-	r, err := model.FetchFirstCharacter()
+	err := c.Save()
 	// then
 	if assert.NoError(t, err) {
-		assert.Equal(t, c, *r)
+		r, err := model.FetchCharacter(c.ID)
+		if assert.NoError(t, err) {
+			assert.Equal(t, c, *r)
+		}
 	}
 }
 
@@ -55,7 +62,7 @@ func TestCharacterCanUpdate(t *testing.T) {
 	c.Name = "John"
 	assert.NoError(t, c.Save())
 	// when
-	got, err := model.FetchFirstCharacter()
+	got, err := model.FetchCharacter(c.ID)
 	// then
 	if assert.NoError(t, err) {
 		assert.Equal(t, c, *got)

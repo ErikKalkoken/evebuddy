@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2/theme"
 )
 
 const defaultIconSize = 64
@@ -26,10 +26,10 @@ func (c *characters) update(charID int32) {
 	if err != nil {
 		panic(err)
 	}
-	image, name := makeCharacter(charID)
+	image, name, corporation := makeCharacter(charID)
 	c.content.RemoveAll()
 	c.content.Add(image)
-	c.content.Add(name)
+	c.content.Add(container.NewVBox(name, corporation))
 	c.content.Add(layout.NewSpacer())
 	c.content.Add(btnSwitch)
 	c.content.Refresh()
@@ -76,21 +76,25 @@ func (c *characters) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
 	return menu, true, nil
 }
 
-func makeCharacter(charID int32) (*canvas.Image, *widget.Label) {
+func makeCharacter(charID int32) (*canvas.Image, *canvas.Text, *canvas.Text) {
 	char, err := model.FetchCharacter(charID)
-	var label string
+	var characterName, corporationName string
 	var uri fyne.URI
 	if err != nil {
-		label = "No characters"
+		characterName = "No characters"
 		uri, _ = images.CharacterPortraitURL(images.PlaceholderCharacterID, defaultIconSize)
 	} else {
-		label = char.Name
+		characterName = char.Name
+		corporationName = char.Corporation.Name
 		uri = char.PortraitURL(defaultIconSize)
 	}
 	image := canvas.NewImageFromURI(uri)
 	image.FillMode = canvas.ImageFillOriginal
-	name := widget.NewLabel(label)
-	return image, name
+	color := theme.ForegroundColor()
+	name := canvas.NewText(characterName, color)
+	name.TextStyle = fyne.TextStyle{Bold: true}
+	corporation := canvas.NewText(corporationName, color)
+	return image, name, corporation
 }
 
 func (e *eveApp) newCharacters(f *folders) *characters {

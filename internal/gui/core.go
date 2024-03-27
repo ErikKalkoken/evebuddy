@@ -30,9 +30,26 @@ func AddCharacter(ctx context.Context) (*model.Token, error) {
 	if err != nil {
 		return nil, err
 	}
+	charID := ssoToken.CharacterID
+	charEsi, err := esi.FetchCharacter(httpClient, charID)
+	if err != nil {
+		return nil, err
+	}
+	ids := []int32{charID, charEsi.CorporationID}
+	if charEsi.AllianceID != 0 {
+		ids = append(ids, charEsi.AllianceID)
+	}
+	if charEsi.FactionID != 0 {
+		ids = append(ids, charEsi.FactionID)
+	}
+	err = addMissingEveEntities(ids)
+	if err != nil {
+		return nil, err
+	}
 	character := model.Character{
-		ID:   ssoToken.CharacterID,
-		Name: ssoToken.CharacterName,
+		ID:            charID,
+		Name:          charEsi.Name,
+		CorporationID: charEsi.CorporationID,
 	}
 	if err = character.Save(); err != nil {
 		return nil, err

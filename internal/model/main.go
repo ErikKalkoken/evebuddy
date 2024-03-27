@@ -22,7 +22,9 @@ var schema = `
 
 	CREATE TABLE IF NOT EXISTS characters (
 		id integer PRIMARY KEY NOT NULL,
-		name text NOT NULL
+		name text NOT NULL,
+		corporation_id integer NOT NULL,
+		FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE
 	);
 	CREATE INDEX IF NOT EXISTS mails_timestamp_idx ON characters (name ASC);
 

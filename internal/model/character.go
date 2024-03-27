@@ -2,6 +2,7 @@ package model
 
 import (
 	"example/esiapp/internal/api/images"
+	"fmt"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -9,17 +10,25 @@ import (
 
 // An Eve Online character.
 type Character struct {
-	ID   int32
-	Name string
+	ID            int32
+	Name          string
+	CorporationID int32 `db:"corporation_id"`
+	Corporation   EveEntity
 }
 
 // Save updates or creates a character.
 func (c *Character) Save() error {
+	if c.Corporation.ID != 0 {
+		c.CorporationID = c.Corporation.ID
+	}
+	if c.CorporationID == 0 {
+		return fmt.Errorf("CorporationID can not be zero")
+	}
 	_, err := db.NamedExec(`
-		INSERT INTO characters (id, name)
-		VALUES (:id, :name)
+		INSERT INTO characters (id, name, corporation_id)
+		VALUES (:id, :name, :corporation_id)
 		ON CONFLICT (id) DO
-		UPDATE SET name=:name;`,
+		UPDATE SET name=:name, corporation_id=:corporation_id;`,
 		*c,
 	)
 	if err != nil {
@@ -54,8 +63,23 @@ func FetchFirstCharacter() (*Character, error) {
 }
 
 func FetchCharacter(characterID int32) (*Character, error) {
+	row := db.QueryRow(
+		`SELECT *
+		FROM characters
+		JOIN eve_entities ON eve_entities.id = characters.corporation_id
+		WHERE characters.id = ?;`,
+		characterID,
+	)
 	var c Character
-	if err := db.Get(&c, "SELECT * FROM characters WHERE id = ?;", characterID); err != nil {
+	err := row.Scan(
+		&c.ID,
+		&c.Name,
+		&c.CorporationID,
+		&c.Corporation.ID,
+		&c.Corporation.Category,
+		&c.Corporation.Name,
+	)
+	if err != nil {
 		return nil, err
 	}
 	return &c, nil
