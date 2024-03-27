@@ -46,3 +46,23 @@ func TestCache(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestCacheDelete(t *testing.T) {
+	t.Run("can delete existing key", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		assert.NoError(t, model.CacheSet("dummy", []byte("test"), 100))
+		// when
+		err := model.CacheDelete("dummy")
+		// then
+		assert.NoError(t, err)
+	})
+	t.Run("should return cache miss error when key does not exit", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		// when
+		err := model.CacheDelete("dummy")
+		// then
+		assert.Equal(t, model.ErrCacheMiss, err)
+	})
+}

@@ -45,3 +45,19 @@ func CacheSet(key string, value []byte, timeout int) error {
 	}
 	return nil
 }
+
+// CacheDelete deletes the item for the given key. ErrCacheMiss is returned if the specified item can not be found.
+func CacheDelete(key string) error {
+	r, err := db.Exec("DELETE FROM cache_keys WHERE key=?", key)
+	if err != nil {
+		return err
+	}
+	affected, err := r.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return ErrCacheMiss
+	}
+	return nil
+}
