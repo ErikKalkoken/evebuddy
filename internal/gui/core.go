@@ -16,7 +16,9 @@ import (
 
 const maxMails = 1000
 
-var httpClient = &http.Client{}
+var httpClient = &http.Client{
+	Timeout: time.Second * 30, // Timeout after 30 seconds
+}
 
 var scopes = []string{
 	"esi-characters.read_contacts.v1",

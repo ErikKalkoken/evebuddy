@@ -35,9 +35,11 @@ func buildEsiUrl(path string) string {
 	u := fmt.Sprintf("%s%s", esiBaseUrl, path)
 	return u
 }
+
+// TODO: retry also on timeouts
 func sendRequest(client *http.Client, req *http.Request) (*http.Response, error) {
 	maxRetries := 3
-	retries := 0
+	retry := 0
 	for {
 		slog.Info("Sending HTTP request", "method", req.Method, "url", req.URL)
 		r, err := client.Do(req)
@@ -50,9 +52,9 @@ func sendRequest(client *http.Client, req *http.Request) (*http.Response, error)
 
 		slog.Warn("ESI status response not OK", "status", r.Status)
 		if r.StatusCode == http.StatusBadGateway || r.StatusCode == http.StatusGatewayTimeout || r.StatusCode == http.StatusServiceUnavailable {
-			if retries < maxRetries {
-				slog.Info("Retrying", "retries", retries, "maxRetries", maxRetries)
-				retries++
+			if retry < maxRetries {
+				retry++
+				slog.Info("Retrying", "retry", retry, "maxRetries", maxRetries)
 				continue
 			}
 			return nil, fmt.Errorf("too many retries")
