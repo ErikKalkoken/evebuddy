@@ -89,7 +89,9 @@ func showManageDialog(e *eveApp) {
 		showAddCharacterDialog(e.winMain, c)
 	})
 	btnAdd.Importance = widget.HighImportance
-	content := container.NewBorder(btnAdd, nil, nil, nil, c.content)
+	c2 := container.NewScroll(c.content)
+	c2.SetMinSize(fyne.NewSize(400, 400))
+	content := container.NewBorder(btnAdd, nil, nil, nil, c2)
 	dlg := dialog.NewCustom("Manage Characters", "Close", content, e.winMain)
 	c.dialog = dlg
 	dlg.SetOnClosed(func() {
