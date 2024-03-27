@@ -2,11 +2,15 @@ package esi
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 )
+
+const EsiMaxRetries = 3
 
 // A generic error returned from ESI
 type esiError struct {
@@ -37,7 +41,6 @@ func buildEsiUrl(path string) string {
 
 // TODO: retry also on timeouts
 func sendRequest(client *http.Client, req *http.Request) ([]byte, error) {
-	maxRetries := 3
 	retry := 0
 	for {
 		slog.Info("Sending HTTP request", "method", req.Method, "url", req.URL)
@@ -45,30 +48,34 @@ func sendRequest(client *http.Client, req *http.Request) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+		if r.Body != nil {
+			defer r.Body.Close()
+		} else {
+			return nil, nil
+		}
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			return nil, err
+		}
+		slog.Debug("ESI response", "body", string(body))
 		if r.StatusCode == http.StatusOK {
-			if r.Body != nil {
-				defer r.Body.Close()
-			} else {
-				return nil, nil
-			}
-			body, err := io.ReadAll(r.Body)
-			if err != nil {
-				return nil, err
-			}
-			slog.Debug("ESI response", "body", string(body))
 			return body, nil
 		}
-
 		slog.Warn("ESI status response not OK", "status", r.Status)
 		if r.StatusCode == http.StatusBadGateway || r.StatusCode == http.StatusGatewayTimeout || r.StatusCode == http.StatusServiceUnavailable {
-			if retry < maxRetries {
+			if retry < EsiMaxRetries {
 				retry++
-				slog.Info("Retrying", "retry", retry, "maxRetries", maxRetries)
+				slog.Info("Retrying", "retry", retry, "maxRetries", EsiMaxRetries)
+				wait := time.Millisecond * time.Duration(200*retry)
+				time.Sleep(wait)
 				continue
 			}
-			return nil, fmt.Errorf("too many retries")
 		}
-		return nil, fmt.Errorf("error %v", r.Status)
+		var e esiError
+		if err := json.Unmarshal(body, &e); err != nil {
+			return nil, fmt.Errorf("error %v", r.Status)
+		}
+		return nil, fmt.Errorf("error %v: %s", r.Status, e.Error)
 	}
 }
 
