@@ -16,10 +16,11 @@ import (
 )
 
 type characterList struct {
-	content    *fyne.Container
-	window     fyne.Window
-	characters *characters
-	dialog     *dialog.CustomDialog
+	content        *fyne.Container
+	window         fyne.Window
+	characters     *characters
+	dialog         *dialog.CustomDialog
+	selectedCharID int32
 }
 
 func (c *characterList) update() {
@@ -34,9 +35,13 @@ func (c *characterList) update() {
 		image.FillMode = canvas.ImageFillOriginal
 		name := widget.NewLabel(char.Name)
 		btnSelect := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
-			c.characters.update(char.ID)
+			c.selectedCharID = char.ID
 			c.dialog.Hide()
 		})
+		isCurrentChar := char.ID == c.characters.currentCharID
+		if isCurrentChar {
+			btnSelect.Disable()
+		}
 		btnDelete := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {
 			dlg := dialog.NewConfirm(
 				"Delete Character",
@@ -49,7 +54,7 @@ func (c *characterList) update() {
 							d.Show()
 						}
 						c.update()
-						if char.ID == c.characters.currentCharID {
+						if isCurrentChar {
 							c.characters.update(0)
 						}
 					}
@@ -68,7 +73,12 @@ func (c *characterList) update() {
 
 func newCharacterList(w fyne.Window, characters *characters) *characterList {
 	content := container.NewVBox()
-	c := &characterList{window: w, content: content, characters: characters}
+	c := &characterList{
+		window:         w,
+		content:        content,
+		characters:     characters,
+		selectedCharID: characters.currentCharID,
+	}
 	return c
 }
 
@@ -82,6 +92,9 @@ func showManageDialog(e *eveApp) {
 	content := container.NewBorder(btnAdd, nil, nil, nil, c.content)
 	dlg := dialog.NewCustom("Manage Characters", "Close", content, e.winMain)
 	c.dialog = dlg
+	dlg.SetOnClosed(func() {
+		c.characters.update(c.selectedCharID)
+	})
 	dlg.Show()
 }
 
