@@ -28,7 +28,7 @@ func TestFetchMailLists(t *testing.T) {
 		httpmock.NewStringResponder(200, fixture),
 	)
 
-	c := http.Client{}
+	c := &http.Client{}
 	// when
 	ll, err := esi.FetchMailLists(c, 1, "token")
 

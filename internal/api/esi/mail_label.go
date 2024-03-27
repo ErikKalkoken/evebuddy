@@ -20,7 +20,7 @@ type MailLabelPayload struct {
 }
 
 // FetchMailLabels fetches a character's mail labels from ESI and returns them.
-func FetchMailLabels(client http.Client, characterID int32, tokenString string) (*MailLabelPayload, error) {
+func FetchMailLabels(client *http.Client, characterID int32, tokenString string) (*MailLabelPayload, error) {
 	v := url.Values{}
 	v.Set("token", tokenString)
 	path := fmt.Sprintf("/characters/%d/mail/labels/?%v", characterID, v.Encode())

@@ -13,7 +13,7 @@ type Character struct {
 	Name          string `json:"name"`
 }
 
-func FetchCharacter(client http.Client, characterID int32) (*Character, error) {
+func FetchCharacter(client *http.Client, characterID int32) (*Character, error) {
 	path := fmt.Sprintf("/characters/%d/", characterID)
 	slog.Info("Fetching character", "ID", characterID)
 	resp, err := getESI(client, path)

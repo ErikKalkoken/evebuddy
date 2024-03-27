@@ -33,7 +33,7 @@ func TestFetchMail(t *testing.T) {
 		httpmock.NewStringResponder(200, fixture),
 	)
 
-	c := http.Client{}
+	c := &http.Client{}
 	// when
 	m, err := esi.FetchMail(c, 1, 7, "token")
 

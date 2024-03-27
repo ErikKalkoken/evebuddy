@@ -14,33 +14,33 @@ type esiError struct {
 	Error string `json:"error"`
 }
 
-func getESI(c http.Client, path string) (*http.Response, error) {
+func getESI(client *http.Client, path string) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, buildEsiUrl(path), nil)
 	if err != nil {
 		return nil, err
 	}
-	return sendRequest(c, req)
+	return sendRequest(client, req)
 }
 
-func postESI(c http.Client, path string, data []byte) (*http.Response, error) {
+func postESI(client *http.Client, path string, data []byte) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, buildEsiUrl(path), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	return sendRequest(c, req)
+	return sendRequest(client, req)
 }
 
 func buildEsiUrl(path string) string {
 	u := fmt.Sprintf("%s%s", esiBaseUrl, path)
 	return u
 }
-func sendRequest(c http.Client, req *http.Request) (*http.Response, error) {
+func sendRequest(client *http.Client, req *http.Request) (*http.Response, error) {
 	maxRetries := 3
 	retries := 0
 	for {
 		slog.Info("Sending HTTP request", "method", req.Method, "url", req.URL)
-		r, err := c.Do(req)
+		r, err := client.Do(req)
 		if err != nil {
 			return nil, err
 		}

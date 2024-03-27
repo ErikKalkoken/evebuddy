@@ -16,7 +16,7 @@ import (
 
 const maxMails = 1000
 
-var httpClient http.Client
+var httpClient = &http.Client{}
 
 var scopes = []string{
 	"esi-characters.read_contacts.v1",

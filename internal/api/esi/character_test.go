@@ -32,7 +32,7 @@ func TestCanFetchCharacter(t *testing.T) {
 		httpmock.NewStringResponder(200, json),
 	)
 
-	c := http.Client{}
+	c := &http.Client{}
 
 	// when
 	r, err := esi.FetchCharacter(c, 1)

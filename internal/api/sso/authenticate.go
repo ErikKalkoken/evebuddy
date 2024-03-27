@@ -50,7 +50,7 @@ type Token struct {
 
 // Authenticate an Eve Online character via SSO and return SSO token.
 // The process runs in a newly opened browser tab
-func Authenticate(ctx context.Context, client http.Client, scopes []string) (*Token, error) {
+func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*Token, error) {
 	codeVerifier := generateRandomString(32)
 	serverCtx := context.WithValue(ctx, keyCodeVerifier, codeVerifier)
 
@@ -178,7 +178,7 @@ func calcCodeChallenge(codeVerifier string) string {
 }
 
 // Retrieve SSO token from API in exchange for code
-func retrieveTokenPayload(client http.Client, code, codeVerifier string) (*tokenPayload, error) {
+func retrieveTokenPayload(client *http.Client, code, codeVerifier string) (*tokenPayload, error) {
 	form := url.Values{
 		"grant_type":    {"authorization_code"},
 		"code":          {code},
@@ -256,7 +256,7 @@ func calcExpiresAt(rawToken *tokenPayload) time.Time {
 }
 
 // Update given token with new instance from SSO API
-func RefreshToken(client http.Client, refreshToken string) (*Token, error) {
+func RefreshToken(client *http.Client, refreshToken string) (*Token, error) {
 	if refreshToken == "" {
 		return nil, fmt.Errorf("missing refresh token")
 	}
@@ -277,7 +277,7 @@ func RefreshToken(client http.Client, refreshToken string) (*Token, error) {
 	return &character, nil
 }
 
-func fetchOauthToken(client http.Client, form url.Values) (*tokenPayload, error) {
+func fetchOauthToken(client *http.Client, form url.Values) (*tokenPayload, error) {
 	req, err := http.NewRequest(
 		"POST", ssoTokenUrl, strings.NewReader(form.Encode()),
 	)

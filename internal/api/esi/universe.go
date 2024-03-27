@@ -18,7 +18,7 @@ type EveEntity struct {
 // TODO: Add smart handling for unsolvable IDs
 
 // ResolveEntityIDs tries to resolve IDs to Eve entity objects and returns them.
-func ResolveEntityIDs(httpClient http.Client, ids []int32) ([]EveEntity, error) {
+func ResolveEntityIDs(client *http.Client, ids []int32) ([]EveEntity, error) {
 	if len(ids) > 1000 {
 		return nil, fmt.Errorf("too many ids")
 	}
@@ -28,7 +28,7 @@ func ResolveEntityIDs(httpClient http.Client, ids []int32) ([]EveEntity, error) 
 	}
 	slog.Info("Request to resolve IDs", "count", len(ids))
 	slog.Debug("IDs to resolve", "ids", ids)
-	resp, err := postESI(httpClient, "/universe/names/", data)
+	resp, err := postESI(client, "/universe/names/", data)
 	if err != nil {
 		return nil, err
 	}

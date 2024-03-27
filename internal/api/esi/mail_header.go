@@ -29,7 +29,7 @@ type MailHeader struct {
 }
 
 // FetchMailHeaders fetches all mail headers for a character from ESI and returns them.
-func FetchMailHeaders(httpClient http.Client, characterID int32, tokenString string, maxMails int) ([]MailHeader, error) {
+func FetchMailHeaders(httpClient *http.Client, characterID int32, tokenString string, maxMails int) ([]MailHeader, error) {
 	var mm []MailHeader
 	lastMailID := int32(0)
 	for {
@@ -51,7 +51,7 @@ func FetchMailHeaders(httpClient http.Client, characterID int32, tokenString str
 	return mm, nil
 }
 
-func fetchMailHeadersPage(client http.Client, characterID int32, tokenString string, lastMailID int32) ([]MailHeader, error) {
+func fetchMailHeadersPage(client *http.Client, characterID int32, tokenString string, lastMailID int32) ([]MailHeader, error) {
 	v := url.Values{}
 	v.Set("token", tokenString)
 	if lastMailID > 0 {

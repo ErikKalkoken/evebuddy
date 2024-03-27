@@ -39,7 +39,7 @@ func TestCanFetchMailLabels(t *testing.T) {
 		httpmock.NewStringResponder(200, json),
 	)
 
-	c := http.Client{}
+	c := &http.Client{}
 
 	// when
 	r, err := esi.FetchMailLabels(c, 1, "token")
