@@ -80,9 +80,9 @@ func makeCharacter(charID int32) *fyne.Container {
 	var charName, corpName string
 	var charURI, corpURI fyne.URI
 	if err != nil {
-		charName = "No characters"
+		charName = "No character"
 		charURI, _ = images.CharacterPortraitURL(images.PlaceholderCharacterID, defaultIconSize)
-		corpURI, _ = images.CorporationLogoURL(images.PlaceholderCharacterID, defaultIconSize)
+		corpURI, _ = images.CorporationLogoURL(images.PlaceholderCorporationID, defaultIconSize)
 	} else {
 		charName = char.Name
 		corpName = char.Corporation.Name
@@ -93,11 +93,13 @@ func makeCharacter(charID int32) *fyne.Container {
 	charImage.FillMode = canvas.ImageFillOriginal
 	corpImage := canvas.NewImageFromURI(corpURI)
 	corpImage.FillMode = canvas.ImageFillOriginal
+
 	color := theme.ForegroundColor()
 	character := canvas.NewText(charName, color)
 	character.TextStyle = fyne.TextStyle{Bold: true}
 	corporation := canvas.NewText(corpName, color)
-	content := container.NewHBox(charImage, corpImage, container.NewVBox(character, corporation))
+	names := container.NewVBox(character, corporation)
+	content := container.NewHBox(charImage, corpImage, names)
 	return content
 }
 

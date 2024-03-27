@@ -16,6 +16,7 @@ const (
 )
 
 const PlaceholderCharacterID = 1
+const PlaceholderCorporationID = 1
 const baseURL = "https://images.evetech.net"
 
 // CharacterPortraitURL returns an image URL for a character portrait
