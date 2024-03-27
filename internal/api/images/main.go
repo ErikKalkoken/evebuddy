@@ -8,9 +8,11 @@ import (
 	"fyne.io/fyne/v2/storage"
 )
 
+type category string
+
 const (
-	categoryCharacter   = "characters"
-	categoryCorporation = "corporations"
+	categoryCharacter   category = "characters"
+	categoryCorporation category = "corporations"
 )
 
 const PlaceholderCharacterID = 1
@@ -26,22 +28,22 @@ func CorporationLogoURL(id int32, size int) (fyne.URI, error) {
 	return imageURL(categoryCorporation, id, size)
 }
 
-func imageURL(category string, id int32, size int) (fyne.URI, error) {
+func imageURL(c category, id int32, size int) (fyne.URI, error) {
 	switch size {
 	case 32, 64, 128, 256, 512, 1024:
 		// valid size
 	default:
 		return nil, fmt.Errorf("invalid size %d", size)
 	}
-	category2Class := map[string]string{
+	category2Class := map[category]string{
 		categoryCharacter:   "portrait",
 		categoryCorporation: "logo",
 	}
-	class, ok := category2Class[category]
+	class, ok := category2Class[c]
 	if !ok {
-		return nil, fmt.Errorf("class not defined for this category: %v", category)
+		return nil, fmt.Errorf("class not defined for this category: %v", c)
 	}
-	s := fmt.Sprintf("%s/%s/%d/%s?size=%d", baseURL, category, id, class, size)
+	s := fmt.Sprintf("%s/%s/%d/%s?size=%d", baseURL, c, id, class, size)
 	u, err := storage.ParseURI(s)
 	if err != nil {
 		return nil, err
