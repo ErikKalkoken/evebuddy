@@ -1,8 +1,11 @@
 package model
 
 import (
+	"example/esiapp/internal/api/images"
 	"example/esiapp/internal/helper/set"
 	"fmt"
+
+	"fyne.io/fyne/v2"
 )
 
 // An entity in Eve Online
@@ -38,6 +41,20 @@ func (e *EveEntity) Save() error {
 		return err
 	}
 	return nil
+}
+
+// ImageURL returns an image URL for an entity
+func (e *EveEntity) ImageURL(size int) fyne.URI {
+	var u fyne.URI
+	switch e.Category {
+	case EveEntityCharacter:
+		u, _ = images.CharacterPortraitURL(e.ID, size)
+	case EveEntityCorporation:
+		u, _ = images.CorporationLogoURL(e.ID, size)
+	default:
+		panic(fmt.Sprintf("ImageURL not defined for category %s", e.Category))
+	}
+	return u
 }
 
 // FetchEntityIDs returns all existing entity IDs.

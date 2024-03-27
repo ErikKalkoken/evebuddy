@@ -26,10 +26,9 @@ func (c *characters) update(charID int32) {
 	if err != nil {
 		panic(err)
 	}
-	image, name, corporation := makeCharacter(charID)
+	character := makeCharacter(charID)
 	c.content.RemoveAll()
-	c.content.Add(image)
-	c.content.Add(container.NewVBox(name, corporation))
+	c.content.Add(character)
 	c.content.Add(layout.NewSpacer())
 	c.content.Add(btnSwitch)
 	c.content.Refresh()
@@ -76,25 +75,30 @@ func (c *characters) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
 	return menu, true, nil
 }
 
-func makeCharacter(charID int32) (*canvas.Image, *canvas.Text, *canvas.Text) {
+func makeCharacter(charID int32) *fyne.Container {
 	char, err := model.FetchCharacter(charID)
-	var characterName, corporationName string
-	var uri fyne.URI
+	var charName, corpName string
+	var charURI, corpURI fyne.URI
 	if err != nil {
-		characterName = "No characters"
-		uri, _ = images.CharacterPortraitURL(images.PlaceholderCharacterID, defaultIconSize)
+		charName = "No characters"
+		charURI, _ = images.CharacterPortraitURL(images.PlaceholderCharacterID, defaultIconSize)
+		corpURI, _ = images.CorporationLogoURL(images.PlaceholderCharacterID, defaultIconSize)
 	} else {
-		characterName = char.Name
-		corporationName = char.Corporation.Name
-		uri = char.PortraitURL(defaultIconSize)
+		charName = char.Name
+		corpName = char.Corporation.Name
+		charURI = char.PortraitURL(defaultIconSize)
+		corpURI = char.Corporation.ImageURL(defaultIconSize)
 	}
-	image := canvas.NewImageFromURI(uri)
-	image.FillMode = canvas.ImageFillOriginal
+	charImage := canvas.NewImageFromURI(charURI)
+	charImage.FillMode = canvas.ImageFillOriginal
+	corpImage := canvas.NewImageFromURI(corpURI)
+	corpImage.FillMode = canvas.ImageFillOriginal
 	color := theme.ForegroundColor()
-	name := canvas.NewText(characterName, color)
-	name.TextStyle = fyne.TextStyle{Bold: true}
-	corporation := canvas.NewText(corporationName, color)
-	return image, name, corporation
+	character := canvas.NewText(charName, color)
+	character.TextStyle = fyne.TextStyle{Bold: true}
+	corporation := canvas.NewText(corpName, color)
+	content := container.NewHBox(charImage, corpImage, container.NewVBox(character, corporation))
+	return content
 }
 
 func (e *eveApp) newCharacters(f *folders) *characters {
