@@ -78,6 +78,13 @@ var schema = `
 		token_type text NOT NULL,
 		FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
 	);
+
+	CREATE TABLE IF NOT EXISTS cache_keys (
+		key text PRIMARY KEY NOT NULL,
+		value blob NOT NULL,
+		expires_at datetime NOT NULL
+	);
+	CREATE INDEX IF NOT EXISTS cache_keys_expires_at_idx ON cache_keys (expires_at);
 `
 var pragmas = `
 	PRAGMA journal_mode = WAL;
