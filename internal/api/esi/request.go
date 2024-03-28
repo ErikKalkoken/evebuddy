@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"example/esiapp/internal/cache"
 	"fmt"
 	"io"
 	"log/slog"
@@ -87,13 +86,10 @@ func sendRequest(client *http.Client, req *http.Request) ([]byte, string, error)
 func sendRequestCached(client *http.Client, req *http.Request) ([]byte, error) {
 	keyBase := fmt.Sprintf("%s-%s", req.URL.String(), req.Method)
 	key := makeMD5Hash(keyBase)
-	body, err := cache.Get(key)
-	if err == nil {
+	body, found := cache.Get(key)
+	if found {
 		slog.Debug("Returning cached response", "key", keyBase)
 		return body, nil
-	}
-	if err != cache.ErrCacheMiss {
-		return nil, err
 	}
 	body, expires, err := sendRequest(client, req)
 	if err != nil {
