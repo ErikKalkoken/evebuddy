@@ -1,4 +1,4 @@
-// Package UI contains the code for rendering the UI.
+// Package gui contains the code for rendering the UI.
 package gui
 
 import (
