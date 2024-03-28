@@ -96,7 +96,7 @@ func sendRequestCached(client *http.Client, req *http.Request) (*esiResponse, er
 	v, found := cache.Get(key)
 	if found {
 		slog.Debug("Returning cached response", "key", keyBase)
-		res := esiResponse{body: v.([]byte)}
+		res := v.(esiResponse)
 		return &res, nil
 	}
 	res, err := sendRequest(client, req)
@@ -113,7 +113,7 @@ func sendRequestCached(client *http.Client, req *http.Request) (*esiResponse, er
 	}
 	duration := time.Until(expiresAt)
 	timeout := int(max(0, math.Floor(duration.Seconds())))
-	cache.Set(key, res.body, timeout)
+	cache.Set(key, *res, timeout)
 	return res, nil
 }
 
