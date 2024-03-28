@@ -12,6 +12,8 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
+const cacheTimeoutJWKSet = 6 * 3600
+
 // Validate JWT token and return claims
 func validateToken(tokenString string) (jwt.MapClaims, error) {
 	// parse token and validate signature
@@ -41,17 +43,10 @@ func validateToken(tokenString string) (jwt.MapClaims, error) {
 
 // Return public key for JWT token
 func getKey(token *jwt.Token) (interface{}, error) {
-	jwksURL, err := determineJwksURL()
+	set, err := fetchJWKSet()
 	if err != nil {
 		return nil, err
 	}
-	// TODO: cache response so we don't have to make a request every time
-	// we want to verify a JWT
-	set, err := jwk.Fetch(context.Background(), jwksURL)
-	if err != nil {
-		return nil, err
-	}
-
 	keyID, ok := token.Header["kid"].(string)
 	if !ok {
 		return nil, errors.New("expecting JWT header to have string kid")
@@ -67,6 +62,24 @@ func getKey(token *jwt.Token) (interface{}, error) {
 		return nil, fmt.Errorf("failed to create public key: %s", err)
 	}
 	return rawKey, nil
+}
+
+func fetchJWKSet() (jwk.Set, error) {
+	key := "jwk-set"
+	v, found := cache.Get(key)
+	if found {
+		return v.(jwk.Set), nil
+	}
+	jwksURL, err := determineJwksURL()
+	if err != nil {
+		return nil, err
+	}
+	set, err := jwk.Fetch(context.Background(), jwksURL)
+	if err != nil {
+		return nil, err
+	}
+	cache.Set(key, set, cacheTimeoutJWKSet)
+	return set, nil
 }
 
 // Determine URL for JWK sets dynamically from web site and return it

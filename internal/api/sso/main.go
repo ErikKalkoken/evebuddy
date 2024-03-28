@@ -2,6 +2,8 @@
 // This package should not access any other internal packages, except helpers.
 package sso
 
+import memcache "example/esiapp/internal/cache"
+
 const (
 	host            = "127.0.0.1"
 	port            = ":8000"
@@ -14,3 +16,5 @@ const (
 	ssoIssuer2      = "https://login.eveonline.com"
 	ssoTokenUrl     = "https://login.eveonline.com/v2/oauth/token"
 )
+
+var cache = memcache.New()
