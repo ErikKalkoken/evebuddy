@@ -20,7 +20,19 @@ type esiError struct {
 	Error string `json:"error"`
 }
 
-func getESI(client *http.Client, path string) ([]byte, error) {
+type esiResponse struct {
+	body       []byte
+	headers    map[string]string
+	statusCode int
+}
+
+func NewEsiResponse() *esiResponse {
+	var r esiResponse
+	r.headers = make(map[string]string)
+	return &r
+}
+
+func getESI(client *http.Client, path string) (*esiResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, buildEsiUrl(path), nil)
 	if err != nil {
 		return nil, err
@@ -28,7 +40,7 @@ func getESI(client *http.Client, path string) ([]byte, error) {
 	return sendRequestCached(client, req)
 }
 
-func postESI(client *http.Client, path string, data []byte) ([]byte, error) {
+func postESI(client *http.Client, path string, data []byte) (*esiResponse, error) {
 	req, err := http.NewRequest(http.MethodPost, buildEsiUrl(path), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
@@ -43,27 +55,30 @@ func buildEsiUrl(path string) string {
 }
 
 // TODO: retry also on timeouts
-func sendRequest(client *http.Client, req *http.Request) ([]byte, string, error) {
+func sendRequest(client *http.Client, req *http.Request) (*esiResponse, error) {
 	retry := 0
 	for {
 		slog.Info("Sending HTTP request", "method", req.Method, "url", req.URL)
 		r, err := client.Do(req)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
+		res := NewEsiResponse()
+		res.statusCode = r.StatusCode
+		res.headers["Expires"] = r.Header.Get("Expires")
 		if r.Body != nil {
 			defer r.Body.Close()
 		} else {
-			return nil, "", nil
+			return res, nil
 		}
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
+		res.body = body
 		slog.Debug("ESI response", "body", string(body))
 		if r.StatusCode == http.StatusOK {
-			expires := r.Header.Get("Expires")
-			return body, expires, nil
+			return res, nil
 		}
 		slog.Warn("ESI status response not OK", "status", r.Status)
 		if r.StatusCode == http.StatusBadGateway || r.StatusCode == http.StatusGatewayTimeout || r.StatusCode == http.StatusServiceUnavailable {
@@ -77,32 +92,38 @@ func sendRequest(client *http.Client, req *http.Request) ([]byte, string, error)
 		}
 		var e esiError
 		if err := json.Unmarshal(body, &e); err != nil {
-			return nil, "", fmt.Errorf("error %v", r.Status)
+			return nil, fmt.Errorf("error %v", r.Status)
 		}
-		return nil, "", fmt.Errorf("error %v: %s", r.Status, e.Error)
+		return nil, fmt.Errorf("error %v: %s", r.Status, e.Error)
 	}
 }
 
-func sendRequestCached(client *http.Client, req *http.Request) ([]byte, error) {
+func sendRequestCached(client *http.Client, req *http.Request) (*esiResponse, error) {
 	keyBase := fmt.Sprintf("%s-%s", req.URL.String(), req.Method)
 	key := makeMD5Hash(keyBase)
-	body, found := cache.Get(key)
+	b, found := cache.Get(key)
 	if found {
 		slog.Debug("Returning cached response", "key", keyBase)
-		return body, nil
+		res := NewEsiResponse()
+		res.body = b
+		return res, nil
 	}
-	body, expires, err := sendRequest(client, req)
+	res, err := sendRequest(client, req)
 	if err != nil {
 		return nil, err
 	}
+	expires, ok := res.headers["Expires"]
+	if !ok {
+		return res, nil
+	}
 	expiresAt, err := time.Parse(time.RFC1123, expires)
 	if err != nil {
-		return body, nil
+		return res, nil
 	}
 	duration := time.Until(expiresAt)
 	timeout := int(max(0, math.Floor(duration.Seconds())))
-	cache.Set(key, body, timeout)
-	return body, nil
+	cache.Set(key, res.body, timeout)
+	return res, nil
 }
 
 func makeMD5Hash(text string) string {

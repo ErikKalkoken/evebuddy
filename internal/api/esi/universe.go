@@ -28,13 +28,13 @@ func ResolveEntityIDs(client *http.Client, ids []int32) ([]EveEntity, error) {
 	}
 	slog.Info("Request to resolve IDs", "count", len(ids))
 	slog.Debug("IDs to resolve", "ids", ids)
-	body, err := postESI(client, "/universe/names/", data)
+	r, err := postESI(client, "/universe/names/", data)
 	if err != nil {
 		return nil, err
 	}
 	var ee []EveEntity
-	if err := json.Unmarshal(body, &ee); err != nil {
-		return nil, fmt.Errorf("%v: %v", err, string(body))
+	if err := json.Unmarshal(r.body, &ee); err != nil {
+		return nil, fmt.Errorf("%v: %v", err, string(r.body))
 	}
 	return ee, err
 

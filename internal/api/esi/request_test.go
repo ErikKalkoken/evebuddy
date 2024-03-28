@@ -3,6 +3,7 @@ package esi
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -22,10 +23,10 @@ func TestSendRequest(t *testing.T) {
 			httpmock.NewStringResponder(200, fixture),
 		)
 		// when
-		b, err := getESI(c, "/dummy")
+		r, err := getESI(c, "/dummy")
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, []byte(fixture), b)
+			assert.Equal(t, []byte(fixture), r.body)
 		}
 	})
 	t.Run("should return error on http error", func(t *testing.T) {
@@ -39,11 +40,11 @@ func TestSendRequest(t *testing.T) {
 			httpmock.NewStringResponder(404, fixture),
 		)
 		// when
-		b, err := getESI(c, "/dummy")
+		r, err := getESI(c, "/dummy")
 		// then
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "custom error")
-			assert.Nil(t, b)
+			assert.Nil(t, r)
 			assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		}
 	})
@@ -58,12 +59,41 @@ func TestSendRequest(t *testing.T) {
 			httpmock.NewStringResponder(503, fixture),
 		)
 		// when
-		b, err := getESI(c, "/dummy")
+		r, err := getESI(c, "/dummy")
 		// then
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "custom error")
-			assert.Nil(t, b)
+			assert.Nil(t, r)
 			assert.Equal(t, 4, httpmock.GetTotalCallCount())
+		}
+	})
+}
+
+func TestSendRequestCached(t *testing.T) {
+	c := &http.Client{}
+
+	t.Run("should return body from cache", func(t *testing.T) {
+		// given
+		cache.Clear()
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		fixture := `{"body": "blah blah blah"}`
+		h := make(http.Header)
+		h.Add("Expires", time.Now().Add(time.Second*120).Format(time.RFC1123))
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/latest/dummy",
+			httpmock.NewStringResponder(200, fixture).HeaderAdd(h),
+		)
+		_, err := getESI(c, "/dummy")
+		if !assert.NoError(t, err) {
+			t.Fail()
+		}
+		// when
+		r, err := getESI(c, "/dummy")
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, []byte(fixture), r.body)
 		}
 	})
 }

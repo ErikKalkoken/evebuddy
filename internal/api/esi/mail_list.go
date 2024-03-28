@@ -20,13 +20,13 @@ func FetchMailLists(client *http.Client, characterID int32, tokenString string) 
 	v.Set("token", tokenString)
 	path := fmt.Sprintf("/characters/%d/mail/lists/?%v", characterID, v.Encode())
 	slog.Info("Fetching mail lists for character", "characterID", characterID)
-	body, err := getESI(client, path)
+	r, err := getESI(client, path)
 	if err != nil {
 		return nil, err
 	}
 	var mm []MailList
-	if err := json.Unmarshal(body, &mm); err != nil {
-		return nil, fmt.Errorf("%v: %v", err, string(body))
+	if err := json.Unmarshal(r.body, &mm); err != nil {
+		return nil, fmt.Errorf("%v: %v", err, string(r.body))
 	}
 	return mm, err
 }

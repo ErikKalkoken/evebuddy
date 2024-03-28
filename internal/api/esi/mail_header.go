@@ -60,13 +60,13 @@ func fetchMailHeadersPage(client *http.Client, characterID int32, tokenString st
 	}
 	path := fmt.Sprintf("/characters/%d/mail/?%v", characterID, v.Encode())
 	slog.Info("Fetching mail headers", "characterID", characterID, "lastMailID", lastMailID)
-	body, err := getESI(client, path)
+	r, err := getESI(client, path)
 	if err != nil {
 		return nil, err
 	}
 	var mm []MailHeader
-	if err := json.Unmarshal(body, &mm); err != nil {
-		return nil, fmt.Errorf("%v: %v", err, string(body))
+	if err := json.Unmarshal(r.body, &mm); err != nil {
+		return nil, fmt.Errorf("%v: %v", err, string(r.body))
 	}
 	return mm, nil
 }

@@ -26,13 +26,13 @@ func FetchMailLabels(client *http.Client, characterID int32, tokenString string)
 	v.Set("token", tokenString)
 	path := fmt.Sprintf("/characters/%d/mail/labels/?%v", characterID, v.Encode())
 	slog.Info("Fetching mail labels for character", "characterID", characterID)
-	body, err := getESI(client, path)
+	r, err := getESI(client, path)
 	if err != nil {
 		return nil, err
 	}
 	var m MailLabelPayload
-	if err := json.Unmarshal(body, &m); err != nil {
-		return nil, fmt.Errorf("%v: %v", err, string(body))
+	if err := json.Unmarshal(r.body, &m); err != nil {
+		return nil, fmt.Errorf("%v: %v", err, string(r.body))
 	}
 	return &m, err
 }
