@@ -4,7 +4,6 @@ package cache
 import (
 	"log/slog"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -12,8 +11,10 @@ const NoTimeout = -1
 const defaultCleanupDuration = time.Minute * 10
 
 type Cache struct {
-	items       sync.Map
-	lastCleanup atomic.Value
+	items sync.Map
+
+	m           sync.Mutex
+	lastCleanup time.Time
 }
 
 type item struct {
@@ -66,9 +67,11 @@ func (c *Cache) Set(key string, value any, timeout int) {
 	at := time.Now().Add(time.Second * time.Duration(timeout))
 	i := item{Value: value, ExpiresAt: at, NeverExpires: expires}
 	c.items.Store(key, i)
-	t := c.lastCleanup.Load().(time.Time)
-	if time.Since(t) > defaultCleanupDuration {
-		c.lastCleanup.Store(time.Now())
+
+	c.m.Lock()
+	defer c.m.Unlock()
+	if time.Since(c.lastCleanup) > defaultCleanupDuration {
+		c.lastCleanup = time.Now()
 		go c.cleanup()
 	}
 }
@@ -88,6 +91,6 @@ func (c *Cache) cleanup() {
 // New creates a new cache and returns it
 func New() *Cache {
 	c := Cache{}
-	c.lastCleanup.Store(time.Now())
+	c.lastCleanup = time.Now()
 	return &c
 }

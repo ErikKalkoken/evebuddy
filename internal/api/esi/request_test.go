@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSendRequest(t *testing.T) {
+func TestRequest(t *testing.T) {
 	c := &http.Client{}
 
 	t.Run("should return body when successful", func(t *testing.T) {
@@ -29,7 +29,7 @@ func TestSendRequest(t *testing.T) {
 			assert.Equal(t, []byte(fixture), r.body)
 		}
 	})
-	t.Run("should return esi error", func(t *testing.T) {
+	t.Run("should return esi error status as error", func(t *testing.T) {
 		// given
 		httpmock.Activate()
 		defer httpmock.DeactivateAndReset()
@@ -43,13 +43,33 @@ func TestSendRequest(t *testing.T) {
 		r, err := getESI(c, "/dummy")
 		// then
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "404")
+			assert.Contains(t, err.Error(), "custom error")
+			assert.Nil(t, r)
+		}
+	})
+	t.Run("should return esi error", func(t *testing.T) {
+		// given
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		fixture := `{"error": "custom error"}`
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/latest/dummy",
+			httpmock.NewStringResponder(404, fixture),
+		)
+		// when
+		r, err := getESIWithStatus(c, "/dummy")
+		// then
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
 			assert.False(t, r.ok())
 			assert.Error(t, r.error())
 			assert.Contains(t, r.error().Error(), "custom error")
 		}
 	})
-	t.Run("should return retry on 503 status", func(t *testing.T) {
+	t.Run("should retry on 503 status", func(t *testing.T) {
 		// given
 		httpmock.Activate()
 		defer httpmock.DeactivateAndReset()
@@ -63,15 +83,11 @@ func TestSendRequest(t *testing.T) {
 		r, err := getESI(c, "/dummy")
 		// then
 		assert.Equal(t, 4, httpmock.GetTotalCallCount())
-		if assert.NoError(t, err) {
-			assert.False(t, r.ok())
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "503")
+			assert.Nil(t, r)
 		}
 	})
-}
-
-func TestSendRequestCached(t *testing.T) {
-	c := &http.Client{}
-
 	t.Run("should return body from cache", func(t *testing.T) {
 		// given
 		cache.Clear()
