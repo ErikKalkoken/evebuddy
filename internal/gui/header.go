@@ -30,9 +30,9 @@ type headers struct {
 	mail       *mail
 }
 
-func (h *headers) update(charID int32, labelID int32) {
+func (h *headers) update(charID int32, folder folderItem) {
 	var d []interface{}
-	mm, err := model.FetchMailsForLabel(charID, labelID)
+	mm, err := model.FetchMailsForLabel(charID, folder.id)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "characterID", charID, "error", err)
 	} else {

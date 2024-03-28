@@ -12,9 +12,17 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type labelItem struct {
-	id   int32
-	name string
+type folderCategory int
+
+const (
+	folderCategoryLabel folderCategory = 1
+	folderCategoryList  folderCategory = 2
+)
+
+type folderItem struct {
+	id       int32
+	name     string
+	category folderCategory
 }
 
 type folders struct {
@@ -71,21 +79,30 @@ func (f *folders) update(charID int32) {
 
 	var ii []interface{}
 	labels, err := model.FetchAllMailLabels(charID)
+	folderItemAll := folderItem{id: model.LabelIDAny, name: "All Mails", category: folderCategoryLabel}
 	if err != nil {
 		slog.Error("Failed to fetch mail labels", "characterID", charID, "error", err)
 	} else {
 		if len(labels) > 0 {
-			ii = append(ii, labelItem{id: model.LabelIDAny, name: "All Mails"})
+			ii = append(ii, folderItemAll)
 			for _, l := range labels {
-				ii = append(ii, labelItem{id: l.LabelID, name: l.Name})
+				ii = append(ii, folderItem{id: l.LabelID, name: l.Name, category: folderCategoryLabel})
 			}
-			ii = append(ii, labelItem{id: model.LabelIDNone, name: "Other"})
 		}
 	}
+	lists, err := model.FetchAllMailLists(charID)
+	if err != nil {
+		slog.Error("Failed to fetch mail lists", "characterID", charID, "error", err)
+	} else {
+		for _, l := range lists {
+			ii = append(ii, folderItem{id: model.LabelIDNone, name: l.EveEntity.Name, category: folderCategoryList})
+		}
+	}
+	ii = append(ii, folderItem{id: model.LabelIDNone, name: "Other", category: folderCategoryLabel})
 	f.boundList.Set(ii)
 	f.list.Select(0)
 	f.list.ScrollToTop()
-	f.headers.update(charID, model.LabelIDAny)
+	f.headers.update(charID, folderItemAll)
 }
 
 func (e *eveApp) newFolders(headers *headers) *folders {
@@ -133,7 +150,7 @@ func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList
 				return
 			}
 			w := o.(*widget.Label)
-			w.SetText(entry.(labelItem).name)
+			w.SetText(entry.(folderItem).name)
 		})
 
 	container.OnSelected = func(iID widget.ListItemID) {
@@ -142,13 +159,13 @@ func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList
 			slog.Error("Failed to char ID item", "error", err)
 			return
 		}
-		n := d[iID].(labelItem)
-		cID, err := boundCharID.Get()
+		f := d[iID].(folderItem)
+		charID, err := boundCharID.Get()
 		if err != nil {
 			slog.Error("Failed to get item", "error", err)
 			return
 		}
-		headers.update(int32(cID), n.id)
+		headers.update(int32(charID), f)
 
 	}
 	return container, boundList, boundCharID

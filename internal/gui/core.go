@@ -69,6 +69,7 @@ func AddCharacter(ctx context.Context) (*model.Token, error) {
 	return &token, nil
 }
 
+// FIXME: Delete obsolete labels and mail lists
 // TODO: Add ability to update existing mails
 // UpdateMails fetches and stores new mails from ESI for a character.
 func UpdateMails(characterID int32, status *statusBar) error {
@@ -131,6 +132,10 @@ func updateMailLists(token *model.Token) error {
 	for _, o := range lists {
 		e := model.EveEntity{ID: o.ID, Name: o.Name, Category: model.EveEntityMailList}
 		if err := e.Save(); err != nil {
+			return err
+		}
+		m := model.MailList{Character: token.Character, EveEntity: e}
+		if err := m.CreateIfNew(); err != nil {
 			return err
 		}
 	}

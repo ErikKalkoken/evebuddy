@@ -28,6 +28,14 @@ var schema = `
 	);
 	CREATE INDEX IF NOT EXISTS mails_timestamp_idx ON characters (name ASC);
 
+	CREATE TABLE IF NOT EXISTS mail_lists (
+		character_id integer NOT NULL,
+		eve_entity_id integer NOT NULL,
+		FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+		FOREIGN KEY (eve_entity_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
+		UNIQUE (character_id, eve_entity_id)
+	);
+
 	CREATE TABLE IF NOT EXISTS mail_labels (
 		id integer PRIMARY KEY AUTOINCREMENT,
 		character_id integer NOT NULL,
