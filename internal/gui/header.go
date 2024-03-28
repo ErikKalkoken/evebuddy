@@ -32,7 +32,14 @@ type headers struct {
 
 func (h *headers) update(charID int32, folder folderItem) {
 	var d []interface{}
-	mm, err := model.FetchMailsForLabel(charID, folder.id)
+	var mm []model.Mail
+	var err error
+	switch folder.category {
+	case folderCategoryLabel:
+		mm, err = model.FetchMailsForLabel(charID, folder.id)
+	case folderCategoryList:
+		mm, err = model.FetchMailsForList(charID, folder.id)
+	}
 	if err != nil {
 		slog.Error("Failed to fetch mail", "characterID", charID, "error", err)
 	} else {

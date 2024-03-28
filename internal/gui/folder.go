@@ -95,10 +95,9 @@ func (f *folders) update(charID int32) {
 		slog.Error("Failed to fetch mail lists", "characterID", charID, "error", err)
 	} else {
 		for _, l := range lists {
-			ii = append(ii, folderItem{id: model.LabelIDNone, name: l.EveEntity.Name, category: folderCategoryList})
+			ii = append(ii, folderItem{id: l.EveEntityID, name: l.EveEntity.Name, category: folderCategoryList})
 		}
 	}
-	ii = append(ii, folderItem{id: model.LabelIDNone, name: "Other", category: folderCategoryLabel})
 	f.boundList.Set(ii)
 	f.list.Select(0)
 	f.list.ScrollToTop()
@@ -166,7 +165,6 @@ func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList
 			return
 		}
 		headers.update(int32(charID), f)
-
 	}
 	return container, boundList, boundCharID
 }

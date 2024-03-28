@@ -237,3 +237,27 @@ func TestFetchMailsForLabel(t *testing.T) {
 		}
 	})
 }
+
+func TestFetchMailsFoList(t *testing.T) {
+	t.Run("should return mail for selected list only", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		c := createCharacter()
+		l1 := createMailList(model.MailList{Character: c})
+		m1 := createMail(model.Mail{Character: c, Recipients: []model.EveEntity{l1.EveEntity}})
+		l2 := createMailList(model.MailList{Character: c})
+		createMail(model.Mail{Character: c, Recipients: []model.EveEntity{l2.EveEntity}})
+		createMail(model.Mail{Character: c})
+		// when
+		mm, err := model.FetchMailsForList(c.ID, l1.EveEntityID)
+		// then
+		if assert.NoError(t, err) {
+			var gotIDs []int32
+			for _, m := range mm {
+				gotIDs = append(gotIDs, m.MailID)
+			}
+			wantIDs := []int32{m1.MailID}
+			assert.Equal(t, wantIDs, gotIDs)
+		}
+	})
+}

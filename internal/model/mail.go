@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 )
 
@@ -229,6 +230,31 @@ func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 		}
 		rows = r
 	}
+	mm, err := scanMail(rows)
+	slog.Debug("Fetched mails for label", "labelID", labelID, "count", len(mm))
+	return mm, err
+}
+
+func FetchMailsForList(characterID int32, listID int32) ([]Mail, error) {
+	sql := `
+		SELECT mails.*, eve_entities.*
+		FROM mails
+		JOIN eve_entities ON eve_entities.id = mails.from_id
+		JOIN mail_recipients ON mail_recipients.mail_id = mails.id
+		WHERE character_id = ?
+		AND mail_recipients.eve_entity_id = ?
+		ORDER BY timestamp DESC
+	`
+	rows, err := db.Query(sql, characterID, listID)
+	if err != nil {
+		return nil, err
+	}
+	mm, err := scanMail(rows)
+	slog.Debug("Fetched mails for list", "listID", listID, "count", len(mm))
+	return mm, err
+}
+
+func scanMail(rows *sql.Rows) ([]Mail, error) {
 	var mm []Mail
 	for rows.Next() {
 		var m Mail
@@ -251,19 +277,6 @@ func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 		mm = append(mm, m)
 	}
 	return mm, nil
-
-	// var err error
-	// if labelID == 0 {
-	// 	err = tx.Find(&mm).Error
-	// } else {
-	// 	var l MailLabel
-	// 	db.First(&l, labelID)
-	// 	err = tx.Model(&l).Association("Mails").Find(&mm)
-	// }
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 }
 
 func Test() {

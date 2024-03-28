@@ -7,6 +7,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// createMailLabel is a test factory for MailList objects
+func createMailList(args ...model.MailList) model.MailList {
+	var l model.MailList
+	if len(args) > 0 {
+		l = args[0]
+	}
+	if l.Character.ID == 0 {
+		l.Character = createCharacter()
+	}
+	if l.EveEntity.ID == 0 {
+		l.EveEntity = createEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+	}
+	if err := l.CreateIfNew(); err != nil {
+		panic(err)
+	}
+	return l
+}
+
 func TestMailList(t *testing.T) {
 	t.Run("can create and fetch", func(t *testing.T) {
 		// given
