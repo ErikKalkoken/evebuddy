@@ -10,11 +10,11 @@ import (
 
 func TestSendRequest(t *testing.T) {
 	c := &http.Client{}
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
 
 	t.Run("should return body when successful", func(t *testing.T) {
 		// given
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
 		fixture := `{"body": "blah blah blah"}`
 		httpmock.RegisterResponder(
 			"GET",
@@ -30,6 +30,8 @@ func TestSendRequest(t *testing.T) {
 	})
 	t.Run("should return error on http error", func(t *testing.T) {
 		// given
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
 		fixture := `{"error": "custom error"}`
 		httpmock.RegisterResponder(
 			"GET",
@@ -47,6 +49,8 @@ func TestSendRequest(t *testing.T) {
 	})
 	t.Run("should return retry on 503 status", func(t *testing.T) {
 		// given
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
 		fixture := `{"error": "custom error"}`
 		httpmock.RegisterResponder(
 			"GET",
