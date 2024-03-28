@@ -48,76 +48,76 @@ func createMail(args ...model.Mail) model.Mail {
 	return m
 }
 
-func TestMailCanCreateNew(t *testing.T) {
-	// given
-	model.TruncateTables()
-	c := createCharacter()
-	f := createEveEntity()
-	r := createEveEntity()
-	l := createMailLabel(model.MailLabel{Character: c})
-	m := model.Mail{
-		Body:       "body",
-		Character:  c,
-		From:       f,
-		Labels:     []model.MailLabel{l},
-		MailID:     7,
-		Recipients: []model.EveEntity{r},
-		Subject:    "subject",
-		Timestamp:  time.Now(),
-	}
-	// when
-	err := m.Create()
-	// then
-	assert.NoError(t, err)
-	m2, err := model.FetchMail(m.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, m.MailID, m2.MailID)
-	assert.Equal(t, m.Body, m2.Body)
-	assert.Equal(t, f.ID, m2.FromID)
-	assert.Equal(t, f, m2.From)
-	assert.Equal(t, c.ID, m2.CharacterID)
-	assert.Equal(t, m.Subject, m2.Subject)
-	assert.Equal(t, m.Timestamp.Unix(), m2.Timestamp.Unix())
-	assert.Equal(t, []model.EveEntity{r}, m2.Recipients)
-	assert.Equal(t, l.Name, m2.Labels[0].Name)
-	assert.Equal(t, l.LabelID, m2.Labels[0].LabelID)
+func TestMailCreate(t *testing.T) {
+	t.Run("can create new", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		c := createCharacter()
+		f := createEveEntity()
+		r := createEveEntity()
+		l := createMailLabel(model.MailLabel{Character: c})
+		m := model.Mail{
+			Body:       "body",
+			Character:  c,
+			From:       f,
+			Labels:     []model.MailLabel{l},
+			MailID:     7,
+			Recipients: []model.EveEntity{r},
+			Subject:    "subject",
+			Timestamp:  time.Now(),
+		}
+		// when
+		err := m.Create()
+		// then
+		assert.NoError(t, err)
+		m2, err := model.FetchMail(m.ID)
+		assert.NoError(t, err)
+		assert.Equal(t, m.MailID, m2.MailID)
+		assert.Equal(t, m.Body, m2.Body)
+		assert.Equal(t, f.ID, m2.FromID)
+		assert.Equal(t, f, m2.From)
+		assert.Equal(t, c.ID, m2.CharacterID)
+		assert.Equal(t, m.Subject, m2.Subject)
+		assert.Equal(t, m.Timestamp.Unix(), m2.Timestamp.Unix())
+		assert.Equal(t, []model.EveEntity{r}, m2.Recipients)
+		assert.Equal(t, l.Name, m2.Labels[0].Name)
+		assert.Equal(t, l.LabelID, m2.Labels[0].LabelID)
+	})
+	t.Run("should return error when no character ID", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		from := createEveEntity()
+		m := model.Mail{
+			Body:      "body",
+			From:      from,
+			MailID:    7,
+			Subject:   "subject",
+			Timestamp: time.Now(),
+		}
+		// when
+		err := m.Create()
+		// then
+		assert.Error(t, err)
+	})
+	t.Run("should return error when no from ID", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		c := createCharacter()
+		m := model.Mail{
+			Body:      "body",
+			Character: c,
+			MailID:    7,
+			Subject:   "subject",
+			Timestamp: time.Now(),
+		}
+		// when
+		err := m.Create()
+		// then
+		assert.Error(t, err)
+	})
 }
 
-func TestMailCreateShouldReturnErrorWhenCharacterIDMissing(t *testing.T) {
-	// given
-	model.TruncateTables()
-	from := createEveEntity()
-	m := model.Mail{
-		Body:      "body",
-		From:      from,
-		MailID:    7,
-		Subject:   "subject",
-		Timestamp: time.Now(),
-	}
-	// when
-	err := m.Create()
-	// then
-	assert.Error(t, err)
-}
-
-func TestMailCreateShouldReturnErrorWhenFromIDMissing(t *testing.T) {
-	// given
-	model.TruncateTables()
-	c := createCharacter()
-	m := model.Mail{
-		Body:      "body",
-		Character: c,
-		MailID:    7,
-		Subject:   "subject",
-		Timestamp: time.Now(),
-	}
-	// when
-	err := m.Create()
-	// then
-	assert.Error(t, err)
-}
-
-func TestMailCanFetchMailIDs(t *testing.T) {
+func TestFetchMailIDs(t *testing.T) {
 	// given
 	model.TruncateTables()
 	char := createCharacter()
@@ -129,91 +129,92 @@ func TestMailCanFetchMailIDs(t *testing.T) {
 	}
 	// when
 	ids, err := model.FetchMailIDs(char.ID)
+	// then
 	assert.NoError(t, err)
 	got := set.NewFromSlice(ids)
 	want := set.NewFromSlice([]int32{10, 11, 12})
 	assert.Equal(t, want, got)
 }
 
-func TestCanFetchMailsForCharacterAndLabel(t *testing.T) {
-	// given
-	model.TruncateTables()
-	c := createCharacter()
-	l1 := createMailLabel(model.MailLabel{Character: c})
-	l2 := createMailLabel(model.MailLabel{Character: c})
-	m1 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -120)})
-	m2 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -60)})
-	createMail(model.Mail{Character: c, Labels: []model.MailLabel{l2}})
-	// when
-	mm, err := model.FetchMailsForLabel(c.ID, l1.LabelID)
-	// then
-	if assert.NoError(t, err) {
-		var gotIDs []int32
-		for _, m := range mm {
-			gotIDs = append(gotIDs, m.MailID)
+func TestFetchMailsForLabel(t *testing.T) {
+	t.Run("can fetch for label", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		c := createCharacter()
+		l1 := createMailLabel(model.MailLabel{Character: c})
+		l2 := createMailLabel(model.MailLabel{Character: c})
+		m1 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -120)})
+		m2 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -60)})
+		createMail(model.Mail{Character: c, Labels: []model.MailLabel{l2}})
+		// when
+		mm, err := model.FetchMailsForLabel(c.ID, l1.LabelID)
+		// then
+		if assert.NoError(t, err) {
+			var gotIDs []int32
+			for _, m := range mm {
+				gotIDs = append(gotIDs, m.MailID)
+			}
+			wantIDs := []int32{m2.MailID, m1.MailID}
+			assert.Equal(t, wantIDs, gotIDs)
 		}
-		wantIDs := []int32{m2.MailID, m1.MailID}
-		assert.Equal(t, wantIDs, gotIDs)
-	}
-}
-
-func TestCanFetchAllMailsForCharacter(t *testing.T) {
-	// given
-	model.TruncateTables()
-	c := createCharacter()
-	l1 := createMailLabel(model.MailLabel{Character: c})
-	l2 := createMailLabel(model.MailLabel{Character: c})
-	m1 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -120)})
-	m2 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -60)})
-	m3 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l2}, Timestamp: time.Now().Add(time.Second * -240)})
-	m4 := createMail(model.Mail{Character: c, Timestamp: time.Now().Add(time.Second * -360)})
-	// when
-	mm, err := model.FetchMailsForLabel(c.ID, model.AllMailsLabelID)
-	// then
-	if assert.NoError(t, err) {
-		var gotIDs []int32
-		for _, m := range mm {
-			gotIDs = append(gotIDs, m.MailID)
+	})
+	t.Run("can fetch for all labels", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		c := createCharacter()
+		l1 := createMailLabel(model.MailLabel{Character: c})
+		l2 := createMailLabel(model.MailLabel{Character: c})
+		m1 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -120)})
+		m2 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -60)})
+		m3 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l2}, Timestamp: time.Now().Add(time.Second * -240)})
+		m4 := createMail(model.Mail{Character: c, Timestamp: time.Now().Add(time.Second * -360)})
+		// when
+		mm, err := model.FetchMailsForLabel(c.ID, model.LabelIDAny)
+		// then
+		if assert.NoError(t, err) {
+			var gotIDs []int32
+			for _, m := range mm {
+				gotIDs = append(gotIDs, m.MailID)
+			}
+			wantIDs := []int32{m2.MailID, m1.MailID, m3.MailID, m4.MailID}
+			assert.Equal(t, wantIDs, gotIDs)
 		}
-		wantIDs := []int32{m2.MailID, m1.MailID, m3.MailID, m4.MailID}
-		assert.Equal(t, wantIDs, gotIDs)
-	}
-}
-func TestFetchMailsForLabelReturnEmptyWhenNoMatch(t *testing.T) {
-	// given
-	model.TruncateTables()
-	c := createCharacter()
-	// when
-	mm, err := model.FetchMailsForLabel(c.ID, 99)
-	// then
-	if assert.NoError(t, err) {
-		assert.Empty(t, mm)
-	}
-}
-
-func TestCanCreateMailWithLabelsForOtherCharacter(t *testing.T) {
-	// given
-	model.TruncateTables()
-	c1 := createCharacter()
-	l1 := createMailLabel(model.MailLabel{Character: c1, LabelID: 1})
-	createMail(model.Mail{Character: c1, Labels: []model.MailLabel{l1}})
-	c2 := createCharacter()
-	l2 := createMailLabel(model.MailLabel{Character: c2, LabelID: 1})
-	// when
-	from := createEveEntity()
-	m := model.Mail{
-		Body:      "body",
-		From:      from,
-		MailID:    7,
-		Character: c2,
-		Subject:   "subject",
-		Labels:    []model.MailLabel{l2},
-		Timestamp: time.Now(),
-	}
-	assert.NoError(t, m.Create())
-	// when
-	mm, err := model.FetchMailsForLabel(c2.ID, l2.LabelID)
-	if assert.NoError(t, err) {
-		assert.Len(t, mm, 1)
-	}
+	})
+	t.Run("should return empty when no match", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		c := createCharacter()
+		// when
+		mm, err := model.FetchMailsForLabel(c.ID, 99)
+		// then
+		if assert.NoError(t, err) {
+			assert.Empty(t, mm)
+		}
+	})
+	t.Run("different characters can have same label ID", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		c1 := createCharacter()
+		l1 := createMailLabel(model.MailLabel{Character: c1, LabelID: 1})
+		createMail(model.Mail{Character: c1, Labels: []model.MailLabel{l1}})
+		c2 := createCharacter()
+		l2 := createMailLabel(model.MailLabel{Character: c2, LabelID: 1})
+		// when
+		from := createEveEntity()
+		m := model.Mail{
+			Body:      "body",
+			From:      from,
+			MailID:    7,
+			Character: c2,
+			Subject:   "subject",
+			Labels:    []model.MailLabel{l2},
+			Timestamp: time.Now(),
+		}
+		assert.NoError(t, m.Create())
+		// when
+		mm, err := model.FetchMailsForLabel(c2.ID, l2.LabelID)
+		if assert.NoError(t, err) {
+			assert.Len(t, mm, 1)
+		}
+	})
 }

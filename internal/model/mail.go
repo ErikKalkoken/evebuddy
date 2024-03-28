@@ -183,7 +183,7 @@ func FetchMailIDs(characterID int32) ([]int32, error) {
 // Return mails for all labels, when labelID = 0
 func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	var rows *sql.Rows
-	if labelID == AllMailsLabelID {
+	if labelID == LabelIDAny {
 		sql := `
 			SELECT mails.*, eve_entities.*
 			FROM mails

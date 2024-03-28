@@ -6,8 +6,9 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Label ID for selecting all labels
-const AllMailsLabelID = 0
+// Special label IDs
+const LabelIDAny = 1<<31 - 1
+const LabelIDNone = 0
 
 type MailLabel struct {
 	ID          uint64

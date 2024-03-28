@@ -41,7 +41,7 @@ func validateToken(tokenString string) (jwt.MapClaims, error) {
 	return claims, nil
 }
 
-// Return public key for JWT token
+// getKey returns the public key for a JWT token.
 func getKey(token *jwt.Token) (interface{}, error) {
 	set, err := fetchJWKSet()
 	if err != nil {
@@ -64,6 +64,7 @@ func getKey(token *jwt.Token) (interface{}, error) {
 	return rawKey, nil
 }
 
+// fetchJWKSet returns the current JWK set from the web. It is cached.
 func fetchJWKSet() (jwk.Set, error) {
 	key := "jwk-set"
 	v, found := cache.Get(key)
@@ -88,16 +89,13 @@ func determineJwksURL() (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	if resp.Body != nil {
 		defer resp.Body.Close()
 	}
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
-
 	var data map[string]interface{}
 	if err := json.Unmarshal(body, &data); err != nil {
 		return "", err

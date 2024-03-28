@@ -75,7 +75,7 @@ func (f *folders) update(charID int32) {
 		slog.Error("Failed to fetch mail labels", "characterID", charID, "error", err)
 	} else {
 		if len(labels) > 0 {
-			ii = append(ii, labelItem{id: model.AllMailsLabelID, name: "All Mails"})
+			ii = append(ii, labelItem{id: model.LabelIDAny, name: "All Mails"})
 			for _, l := range labels {
 				ii = append(ii, labelItem{id: l.LabelID, name: l.Name})
 			}
@@ -84,7 +84,7 @@ func (f *folders) update(charID int32) {
 	f.boundList.Set(ii)
 	f.list.Select(0)
 	f.list.ScrollToTop()
-	f.headers.update(charID, model.AllMailsLabelID)
+	f.headers.update(charID, model.LabelIDAny)
 }
 
 func (e *eveApp) newFolders(headers *headers) *folders {
