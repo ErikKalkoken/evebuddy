@@ -93,10 +93,10 @@ func sendRequest(client *http.Client, req *http.Request) (*esiResponse, error) {
 func sendRequestCached(client *http.Client, req *http.Request) (*esiResponse, error) {
 	keyBase := fmt.Sprintf("%s-%s", req.URL.String(), req.Method)
 	key := makeMD5Hash(keyBase)
-	b, found := cache.Get(key)
+	v, found := cache.Get(key)
 	if found {
 		slog.Debug("Returning cached response", "key", keyBase)
-		res := esiResponse{body: b}
+		res := esiResponse{body: v.([]byte)}
 		return &res, nil
 	}
 	res, err := sendRequest(client, req)

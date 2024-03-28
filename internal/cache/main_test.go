@@ -13,24 +13,24 @@ func TestCache(t *testing.T) {
 	c := cache.New()
 	t.Run("can set a key", func(t *testing.T) {
 		// when
-		c.Set("k1", []byte("xxx"), 100)
+		c.Set("k1", "xxx", 100)
 		// then
 		assert.True(t, c.Exists("k1"))
 	})
 	t.Run("can get a key", func(t *testing.T) {
 		// given
-		c.Set("k2", []byte("xxx"), 100)
+		c.Set("k2", "xxx", 100)
 		// when
 		o, ok := c.Get("k2")
 		// then
 		if assert.True(t, ok) {
-			assert.Equal(t, "xxx", string(o))
+			assert.Equal(t, "xxx", o.(string))
 		}
 	})
 	t.Run("can check if a key exists", func(t *testing.T) {
 		// given
-		c.Set("k5", []byte("xxx"), 0)
-		c.Set("k6", []byte("xxx"), 100)
+		c.Set("k5", "xxx", 0)
+		c.Set("k6", "xxx", 100)
 		// when/then
 		assert.False(t, c.Exists("k5"))
 		assert.True(t, c.Exists("k6"))
@@ -38,13 +38,13 @@ func TestCache(t *testing.T) {
 	})
 	t.Run("can set key that never expires", func(t *testing.T) {
 		// given
-		c.Set("k7", []byte("xxx"), cache.NoTimeout)
+		c.Set("k7", "xxx", cache.NoTimeout)
 		// when/then
 		assert.True(t, c.Exists("k7"))
 	})
 	t.Run("should report when key is expired", func(t *testing.T) {
 		// given
-		c.Set("k3", []byte("xxx"), 0)
+		c.Set("k3", "xxx", 0)
 		// when
 		time.Sleep(time.Millisecond * 50)
 		o, ok := c.Get("k3")
@@ -54,7 +54,7 @@ func TestCache(t *testing.T) {
 	})
 	t.Run("can delete existing key", func(t *testing.T) {
 		// given
-		c.Set("k4", []byte("xxx"), 100)
+		c.Set("k4", "xxx", 100)
 		// when
 		c.Delete("k4")
 		// then
@@ -63,8 +63,8 @@ func TestCache(t *testing.T) {
 	t.Run("can clear all keys", func(t *testing.T) {
 		// given
 		c2 := cache.New()
-		c2.Set("dummy-1", []byte("xxx"), 100)
-		c2.Set("dummy-1", []byte("xxx"), 100)
+		c2.Set("dummy-1", "xxx", 100)
+		c2.Set("dummy-1", "xxx", 100)
 		// when
 		c2.Clear()
 		// then

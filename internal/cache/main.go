@@ -13,7 +13,7 @@ type Cache struct {
 }
 
 type item struct {
-	Value        []byte
+	Value        any
 	ExpiresAt    time.Time
 	NeverExpires bool
 }
@@ -33,7 +33,7 @@ func (c *Cache) Exists(key string) bool {
 }
 
 // Get returns an item if it exits
-func (c *Cache) Get(key string) ([]byte, bool) {
+func (c *Cache) Get(key string) (any, bool) {
 	value, ok := c.items.Load(key)
 	if !ok {
 		return nil, false
@@ -49,7 +49,7 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 //
 // If an item with the same key already exists it will be overwritten.
 // An item with timeout = cache.NoTimeout never expires
-func (c *Cache) Set(key string, value []byte, timeout int) {
+func (c *Cache) Set(key string, value any, timeout int) {
 	expires := timeout == NoTimeout
 	if timeout < 0 {
 		timeout = 0
