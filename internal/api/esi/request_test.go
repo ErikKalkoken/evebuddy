@@ -29,7 +29,7 @@ func TestSendRequest(t *testing.T) {
 			assert.Equal(t, []byte(fixture), r.body)
 		}
 	})
-	t.Run("should return error on http error", func(t *testing.T) {
+	t.Run("should return esi error", func(t *testing.T) {
 		// given
 		httpmock.Activate()
 		defer httpmock.DeactivateAndReset()
@@ -42,10 +42,11 @@ func TestSendRequest(t *testing.T) {
 		// when
 		r, err := getESI(c, "/dummy")
 		// then
-		if assert.Error(t, err) {
-			assert.Contains(t, err.Error(), "custom error")
-			assert.Nil(t, r)
-			assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		if assert.NoError(t, err) {
+			assert.False(t, r.ok())
+			assert.Error(t, r.error())
+			assert.Contains(t, r.error().Error(), "custom error")
 		}
 	})
 	t.Run("should return retry on 503 status", func(t *testing.T) {
@@ -61,10 +62,9 @@ func TestSendRequest(t *testing.T) {
 		// when
 		r, err := getESI(c, "/dummy")
 		// then
-		if assert.Error(t, err) {
-			assert.Contains(t, err.Error(), "custom error")
-			assert.Nil(t, r)
-			assert.Equal(t, 4, httpmock.GetTotalCallCount())
+		assert.Equal(t, 4, httpmock.GetTotalCallCount())
+		if assert.NoError(t, err) {
+			assert.False(t, r.ok())
 		}
 	})
 }

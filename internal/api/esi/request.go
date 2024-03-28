@@ -23,7 +23,20 @@ type esiError struct {
 type esiResponse struct {
 	body       []byte
 	header     http.Header
+	status     string
 	statusCode int
+	errorText  string
+}
+
+func (e esiResponse) ok() bool {
+	return e.statusCode < 400
+}
+
+func (e esiResponse) error() error {
+	if e.ok() {
+		return nil
+	}
+	return fmt.Errorf("ESI error: %s: %s", e.status, e.errorText)
 }
 
 func getESI(client *http.Client, path string) (*esiResponse, error) {
@@ -57,7 +70,7 @@ func sendRequest(client *http.Client, req *http.Request) (*esiResponse, error) {
 		if err != nil {
 			return nil, err
 		}
-		res := &esiResponse{statusCode: r.StatusCode, header: r.Header}
+		res := &esiResponse{status: r.Status, statusCode: r.StatusCode, header: r.Header}
 		if r.Body != nil {
 			defer r.Body.Close()
 		} else {
@@ -83,10 +96,10 @@ func sendRequest(client *http.Client, req *http.Request) (*esiResponse, error) {
 			}
 		}
 		var e esiError
-		if err := json.Unmarshal(body, &e); err != nil {
-			return nil, fmt.Errorf("error %v", r.Status)
+		if err := json.Unmarshal(body, &e); err == nil {
+			res.errorText = e.Error
 		}
-		return nil, fmt.Errorf("error %v: %s", r.Status, e.Error)
+		return res, nil
 	}
 }
 
