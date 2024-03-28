@@ -22,14 +22,8 @@ type esiError struct {
 
 type esiResponse struct {
 	body       []byte
-	headers    map[string]string
+	header     http.Header
 	statusCode int
-}
-
-func NewEsiResponse() *esiResponse {
-	var r esiResponse
-	r.headers = make(map[string]string)
-	return &r
 }
 
 func getESI(client *http.Client, path string) (*esiResponse, error) {
@@ -63,9 +57,7 @@ func sendRequest(client *http.Client, req *http.Request) (*esiResponse, error) {
 		if err != nil {
 			return nil, err
 		}
-		res := NewEsiResponse()
-		res.statusCode = r.StatusCode
-		res.headers["Expires"] = r.Header.Get("Expires")
+		res := &esiResponse{statusCode: r.StatusCode, header: r.Header}
 		if r.Body != nil {
 			defer r.Body.Close()
 		} else {
@@ -104,16 +96,15 @@ func sendRequestCached(client *http.Client, req *http.Request) (*esiResponse, er
 	b, found := cache.Get(key)
 	if found {
 		slog.Debug("Returning cached response", "key", keyBase)
-		res := NewEsiResponse()
-		res.body = b
-		return res, nil
+		res := esiResponse{body: b}
+		return &res, nil
 	}
 	res, err := sendRequest(client, req)
 	if err != nil {
 		return nil, err
 	}
-	expires, ok := res.headers["Expires"]
-	if !ok {
+	expires := res.header.Get("Expires")
+	if expires == "" {
 		return res, nil
 	}
 	expiresAt, err := time.Parse(time.RFC1123, expires)
