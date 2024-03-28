@@ -28,15 +28,15 @@ type esiResponse struct {
 	errorText  string
 }
 
-func (e esiResponse) ok() bool {
-	return e.statusCode < 400
+func (r esiResponse) ok() bool {
+	return r.statusCode < 400
 }
 
-func (e esiResponse) error() error {
-	if e.ok() {
+func (r esiResponse) error() error {
+	if r.ok() {
 		return nil
 	}
-	return fmt.Errorf("ESI error: %s: %s", e.status, e.errorText)
+	return fmt.Errorf("ESI error: %s: %s", r.status, r.errorText)
 }
 
 func getESI(client *http.Client, path string) (*esiResponse, error) {
@@ -44,7 +44,14 @@ func getESI(client *http.Client, path string) (*esiResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	return sendRequestCached(client, req)
+	res, err := sendRequestCached(client, req)
+	if err != nil {
+		return nil, err
+	}
+	if !res.ok() {
+		return nil, res.error()
+	}
+	return res, nil
 }
 
 func postESI(client *http.Client, path string, data []byte) (*esiResponse, error) {
@@ -53,7 +60,14 @@ func postESI(client *http.Client, path string, data []byte) (*esiResponse, error
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	return sendRequestCached(client, req)
+	res, err := sendRequestCached(client, req)
+	if err != nil {
+		return nil, err
+	}
+	if !res.ok() {
+		return nil, res.error()
+	}
+	return res, nil
 }
 
 func buildEsiUrl(path string) string {
@@ -81,11 +95,15 @@ func sendRequest(client *http.Client, req *http.Request) (*esiResponse, error) {
 			return nil, err
 		}
 		res.body = body
-		slog.Debug("ESI response", "body", string(body))
+		slog.Debug("ESI response", "status", res.status, "body", string(res.body), "header", res.header)
 		if r.StatusCode == http.StatusOK {
 			return res, nil
 		}
-		slog.Warn("ESI status response not OK", "status", r.Status)
+		var e esiError
+		if err := json.Unmarshal(body, &e); err == nil {
+			res.errorText = e.Error
+		}
+		slog.Warn("ESI error", "error", res.error())
 		if r.StatusCode == http.StatusBadGateway || r.StatusCode == http.StatusGatewayTimeout || r.StatusCode == http.StatusServiceUnavailable {
 			if retry < EsiMaxRetries {
 				retry++
@@ -94,10 +112,6 @@ func sendRequest(client *http.Client, req *http.Request) (*esiResponse, error) {
 				time.Sleep(wait)
 				continue
 			}
-		}
-		var e esiError
-		if err := json.Unmarshal(body, &e); err == nil {
-			res.errorText = e.Error
 		}
 		return res, nil
 	}
