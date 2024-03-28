@@ -137,7 +137,7 @@ func TestFetchMailIDs(t *testing.T) {
 }
 
 func TestFetchMailsForLabel(t *testing.T) {
-	t.Run("can fetch for label", func(t *testing.T) {
+	t.Run("should return mail for selected label only", func(t *testing.T) {
 		// given
 		model.TruncateTables()
 		c := createCharacter()
@@ -177,6 +177,25 @@ func TestFetchMailsForLabel(t *testing.T) {
 				gotIDs = append(gotIDs, m.MailID)
 			}
 			wantIDs := []int32{m2.MailID, m1.MailID, m3.MailID, m4.MailID}
+			assert.Equal(t, wantIDs, gotIDs)
+		}
+	})
+	t.Run("should return mail without label", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		c := createCharacter()
+		l := createMailLabel(model.MailLabel{Character: c})
+		createMail(model.Mail{Character: c, Labels: []model.MailLabel{l}, Timestamp: time.Now().Add(time.Second * -120)})
+		m := createMail(model.Mail{Character: c})
+		// when
+		mm, err := model.FetchMailsForLabel(c.ID, model.LabelIDNone)
+		// then
+		if assert.NoError(t, err) {
+			var gotIDs []int32
+			for _, m := range mm {
+				gotIDs = append(gotIDs, m.MailID)
+			}
+			wantIDs := []int32{m.MailID}
 			assert.Equal(t, wantIDs, gotIDs)
 		}
 	})

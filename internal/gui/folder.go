@@ -79,6 +79,7 @@ func (f *folders) update(charID int32) {
 			for _, l := range labels {
 				ii = append(ii, labelItem{id: l.LabelID, name: l.Name})
 			}
+			ii = append(ii, labelItem{id: model.LabelIDNone, name: "Other"})
 		}
 	}
 	f.boundList.Set(ii)

@@ -183,7 +183,8 @@ func FetchMailIDs(characterID int32) ([]int32, error) {
 // Return mails for all labels, when labelID = 0
 func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	var rows *sql.Rows
-	if labelID == LabelIDAny {
+	switch labelID {
+	case LabelIDAny:
 		sql := `
 			SELECT mails.*, eve_entities.*
 			FROM mails
@@ -196,7 +197,22 @@ func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 			return nil, err
 		}
 		rows = r
-	} else {
+	case LabelIDNone:
+		sql := `
+			SELECT mails.*, eve_entities.*
+			FROM mails
+			LEFT JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
+			JOIN eve_entities ON eve_entities.id = mails.from_id
+			WHERE character_id = ?
+			AND mail_mail_labels.mail_id IS NULL
+			ORDER BY timestamp DESC
+		`
+		r, err := db.Query(sql, characterID)
+		if err != nil {
+			return nil, err
+		}
+		rows = r
+	default:
 		sql := `
 			SELECT mails.*, eve_entities.*
 			FROM mails
