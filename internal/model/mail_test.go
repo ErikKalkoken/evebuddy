@@ -166,6 +166,7 @@ func TestCanFetchAllMailsForCharacter(t *testing.T) {
 	m1 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -120)})
 	m2 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -60)})
 	m3 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l2}, Timestamp: time.Now().Add(time.Second * -240)})
+	m4 := createMail(model.Mail{Character: c, Timestamp: time.Now().Add(time.Second * -360)})
 	// when
 	mm, err := model.FetchMailsForLabel(c.ID, model.AllMailsLabelID)
 	// then
@@ -174,7 +175,7 @@ func TestCanFetchAllMailsForCharacter(t *testing.T) {
 		for _, m := range mm {
 			gotIDs = append(gotIDs, m.MailID)
 		}
-		wantIDs := []int32{m2.MailID, m1.MailID, m3.MailID}
+		wantIDs := []int32{m2.MailID, m1.MailID, m3.MailID, m4.MailID}
 		assert.Equal(t, wantIDs, gotIDs)
 	}
 }

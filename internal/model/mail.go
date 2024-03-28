@@ -187,7 +187,6 @@ func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 		sql := `
 			SELECT mails.*, eve_entities.*
 			FROM mails
-			JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
 			JOIN eve_entities ON eve_entities.id = mails.from_id
 			WHERE character_id = ?
 			ORDER BY timestamp DESC
