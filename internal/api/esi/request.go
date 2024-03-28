@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -68,7 +69,7 @@ func postESI(client *http.Client, path string, data []byte) (*esiResponse, error
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	res, err := sendRequestCached(client, req)
+	res, err := sendRequest(client, req)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +88,7 @@ func buildEsiUrl(path string) string {
 func sendRequest(client *http.Client, req *http.Request) (*esiResponse, error) {
 	retry := 0
 	for {
-		slog.Info("Sending HTTP request", "method", req.Method, "url", req.URL)
+		slog.Info("HTTP request", "method", req.Method, "url", removeToken(*req.URL))
 		r, err := client.Do(req)
 		if err != nil {
 			return nil, err
@@ -123,6 +124,13 @@ func sendRequest(client *http.Client, req *http.Request) (*esiResponse, error) {
 		}
 		return res, nil
 	}
+}
+
+func removeToken(u url.URL) string {
+	v, _ := url.ParseQuery(u.RawQuery)
+	v.Del("token")
+	u.RawQuery = v.Encode()
+	return u.String()
 }
 
 func sendRequestCached(client *http.Client, req *http.Request) (*esiResponse, error) {

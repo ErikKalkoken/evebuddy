@@ -48,7 +48,7 @@ func FetchMailHeaders(httpClient *http.Client, characterID int32, tokenString st
 		}
 		lastMailID = slices.Min(ids)
 	}
-
+	slog.Info("Received mail headers", "characterID", characterID, "count", len(mm))
 	return mm, nil
 }
 
@@ -59,7 +59,6 @@ func fetchMailHeadersPage(client *http.Client, characterID int32, tokenString st
 		v.Set("last_mail_id", strconv.Itoa(int(lastMailID)))
 	}
 	path := fmt.Sprintf("/characters/%d/mail/?%v", characterID, v.Encode())
-	slog.Info("Fetching mail headers", "characterID", characterID, "lastMailID", lastMailID)
 	r, err := getESI(client, path)
 	if err != nil {
 		return nil, err

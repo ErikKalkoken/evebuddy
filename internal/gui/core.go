@@ -145,7 +145,6 @@ func fetchMailHeaders(token *model.Token) ([]esi.MailHeader, error) {
 	if err != nil {
 		return nil, err
 	}
-	slog.Info("Received mail headers from ESI", "count", len(headers), "characterID", token.CharacterID)
 	return headers, nil
 }
 

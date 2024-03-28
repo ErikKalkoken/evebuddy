@@ -16,7 +16,6 @@ type Character struct {
 
 func FetchCharacter(client *http.Client, characterID int32) (*Character, error) {
 	path := fmt.Sprintf("/characters/%d/", characterID)
-	slog.Info("Fetching character", "ID", characterID)
 	r, err := getESI(client, path)
 	if err != nil {
 		return nil, err
@@ -25,5 +24,6 @@ func FetchCharacter(client *http.Client, characterID int32) (*Character, error) 
 	if err := json.Unmarshal(r.body, &c); err != nil {
 		return nil, fmt.Errorf("%v: %v", err, string(r.body))
 	}
+	slog.Info("Received character from ESI", "ID", characterID)
 	return &c, err
 }

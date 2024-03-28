@@ -19,7 +19,6 @@ func FetchMailLists(client *http.Client, characterID int32, tokenString string) 
 	v := url.Values{}
 	v.Set("token", tokenString)
 	path := fmt.Sprintf("/characters/%d/mail/lists/?%v", characterID, v.Encode())
-	slog.Info("Fetching mail lists for character", "characterID", characterID)
 	r, err := getESI(client, path)
 	if err != nil {
 		return nil, err
@@ -28,5 +27,6 @@ func FetchMailLists(client *http.Client, characterID int32, tokenString string) 
 	if err := json.Unmarshal(r.body, &mm); err != nil {
 		return nil, fmt.Errorf("%v: %v", err, string(r.body))
 	}
+	slog.Info("Received mail lists from ESI", "characterID", characterID, "count", len(mm))
 	return mm, err
 }
