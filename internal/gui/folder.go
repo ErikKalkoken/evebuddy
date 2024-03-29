@@ -140,7 +140,7 @@ func makeFolderList(headers *headers) (*widget.List, binding.ExternalUntypedList
 	container := widget.NewListWithData(
 		boundList,
 		func() fyne.CanvasObject {
-			return widget.NewLabel("from")
+			return widget.NewLabel("folder")
 		},
 		func(i binding.DataItem, o fyne.CanvasObject) {
 			entry, err := i.(binding.Untyped).Get()

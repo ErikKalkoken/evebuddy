@@ -23,6 +23,13 @@ type item struct {
 	NeverExpires bool
 }
 
+// New creates a new cache and returns it
+func New() *Cache {
+	c := Cache{}
+	c.lastCleanup = time.Now()
+	return &c
+}
+
 // Clear removes all cache keys.
 func (c *Cache) Clear() {
 	c.items.Range(func(key, value any) bool {
@@ -60,6 +67,7 @@ func (c *Cache) Get(key any) (any, bool) {
 // If an item with the same key already exists it will be overwritten.
 // An item with timeout = cache.NoTimeout never expires
 func (c *Cache) Set(key any, value any, timeout int) {
+	// store the item
 	expires := timeout == NoTimeout
 	if timeout < 0 {
 		timeout = 0
@@ -67,7 +75,7 @@ func (c *Cache) Set(key any, value any, timeout int) {
 	at := time.Now().Add(time.Second * time.Duration(timeout))
 	i := item{Value: value, ExpiresAt: at, NeverExpires: expires}
 	c.items.Store(key, i)
-
+	// run cleanup when due
 	c.m.Lock()
 	defer c.m.Unlock()
 	if time.Since(c.lastCleanup) > defaultCleanupDuration {
@@ -86,11 +94,4 @@ func (c *Cache) cleanup() {
 		}
 		return true
 	})
-}
-
-// New creates a new cache and returns it
-func New() *Cache {
-	c := Cache{}
-	c.lastCleanup = time.Now()
-	return &c
 }
