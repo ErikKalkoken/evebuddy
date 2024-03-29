@@ -6,6 +6,7 @@ package model
 import (
 	"fmt"
 	"log/slog"
+	"net/url"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
@@ -87,27 +88,20 @@ var schema = `
 		FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
 	);
 `
-var pragmas = `
-	PRAGMA journal_mode = WAL;
-	PRAGMA synchronous = normal;
-	PRAGMA temp_store = memory;
-	PRAGMA mmap_size = 30000000000;
-`
 
-// TODO: Add pragmas as DSN param
 // InitDB initializes the database (needs to be called once).
 func InitDB(dataSourceName string) (*sqlx.DB, error) {
-	dsn := fmt.Sprintf("%s?_fk=on", dataSourceName)
+	v := url.Values{}
+	v.Add("_fk", "on")
+	v.Add("_journal_mode", "WAL")
+	v.Add("_synchronous", "normal")
+	dsn := fmt.Sprintf("%s?%s", dataSourceName, v.Encode())
 	myDb, err := sqlx.Connect("sqlite3", dsn)
 	if err != nil {
 		return nil, err
 	}
 	slog.Info("Connected to database")
 	_, err = myDb.Exec(schema)
-	if err != nil {
-		return nil, err
-	}
-	_, err = myDb.Exec(pragmas)
 	if err != nil {
 		return nil, err
 	}
