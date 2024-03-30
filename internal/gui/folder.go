@@ -22,6 +22,17 @@ const (
 	itemCategoryList   treeItemCategory = 2
 )
 
+const (
+	itemAll      = "all"
+	itemInbox    = "inbox"
+	itemSent     = "sent"
+	itemCorp     = "corp"
+	itemAlliance = "alliance"
+	itemTrash    = "trash"
+	itemLabels   = "labels"
+	itemLists    = "lists"
+)
+
 type treeItem struct {
 	Id       int32
 	Name     string
@@ -113,21 +124,21 @@ func (f *folders) update(charID int32) {
 	if err := f.boundCharID.Set(int(charID)); err != nil {
 		slog.Error("Failed to set char ID", "characterID", charID, "error", err)
 	}
-
+	folderItemAll := treeItem{Id: model.LabelAll, Name: "All Mails", Category: itemCategoryLabel}
 	ids := map[string][]string{
-		"":       {"all", "inbox", "sent", "corp", "alliance", "labels", "lists"},
-		"labels": {},
-		"lists":  {},
+		"":         {itemAll, itemInbox, itemSent, itemCorp, itemAlliance, itemLabels, itemLists},
+		itemLabels: {},
+		itemLists:  {},
 	}
 	values := map[string]string{
-		"all":      treeItem{Id: model.LabelAll, Name: "All Mails", Category: itemCategoryLabel}.toJSON(),
-		"inbox":    treeItem{Id: model.LabelInbox, Name: "Inbox", Category: itemCategoryLabel}.toJSON(),
-		"sent":     treeItem{Id: model.LabelSent, Name: "Sent", Category: itemCategoryLabel}.toJSON(),
-		"corp":     treeItem{Id: model.LabelCorp, Name: "Corp", Category: itemCategoryLabel}.toJSON(),
-		"alliance": treeItem{Id: model.LabelAlliance, Name: "Alliance", Category: itemCategoryLabel}.toJSON(),
+		itemAll:      folderItemAll.toJSON(),
+		itemInbox:    treeItem{Id: model.LabelInbox, Name: "Inbox", Category: itemCategoryLabel}.toJSON(),
+		itemSent:     treeItem{Id: model.LabelSent, Name: "Sent", Category: itemCategoryLabel}.toJSON(),
+		itemCorp:     treeItem{Id: model.LabelCorp, Name: "Corp", Category: itemCategoryLabel}.toJSON(),
+		itemAlliance: treeItem{Id: model.LabelAlliance, Name: "Alliance", Category: itemCategoryLabel}.toJSON(),
 		// "trash":    "Trash",
-		"labels": treeItem{Name: "Labels"}.toJSON(),
-		"lists":  treeItem{Name: "Mailing Lists"}.toJSON(),
+		itemLabels: treeItem{Name: "Labels"}.toJSON(),
+		itemLists:  treeItem{Name: "Mailing Lists"}.toJSON(),
 	}
 	// Add labels to tree
 	labels, err := model.FetchAllMailLabels(charID)
@@ -138,7 +149,7 @@ func (f *folders) update(charID int32) {
 			for _, l := range labels {
 				if l.LabelID > 8 {
 					uid := fmt.Sprintf("label%d", l.LabelID)
-					ids["labels"] = append(ids["labels"], uid)
+					ids[itemLabels] = append(ids[itemLabels], uid)
 					f := treeItem{Id: l.LabelID, Name: l.Name, Category: itemCategoryLabel}
 					values[uid] = f.toJSON()
 				}
@@ -152,15 +163,15 @@ func (f *folders) update(charID int32) {
 	} else {
 		for _, l := range lists {
 			uid := fmt.Sprintf("list%d", l.EveEntityID)
-			ids["lists"] = append(ids["lists"], uid)
+			ids[itemLists] = append(ids[itemLists], uid)
 			f := treeItem{Id: l.EveEntityID, Name: l.EveEntity.Name, Category: itemCategoryList}
 			values[uid] = f.toJSON()
 		}
 	}
-	f.tree.Select("all")
 	f.boundTree.Set(ids, values)
+	f.tree.Select(itemAll)
 	f.tree.ScrollToTop()
-	// f.headers.update(charID, folderItemAll)
+	f.headers.update(charID, folderItemAll)
 }
 
 // func (f *folders) updateMailsWithID(charID int32) {
