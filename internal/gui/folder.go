@@ -82,6 +82,16 @@ func (f *folders) update(charID int32) {
 		slog.Error("Failed to set char ID", "characterID", charID, "error", err)
 	}
 	folderItemAll := node{ID: nodeAllID, ObjID: model.LabelAll, Name: "All Mails", Category: nodeCategoryLabel}
+	ids, values := initialTreeData(folderItemAll)
+	addLabelsToTree(charID, ids, values)
+	addMailListsToTree(charID, ids, values)
+	f.boundTree.Set(ids, values)
+	f.tree.Select(nodeAllID)
+	f.tree.ScrollToTop()
+	f.headers.update(charID, folderItemAll)
+}
+
+func initialTreeData(folderItemAll node) (map[string][]string, map[string]string) {
 	ids := map[string][]string{
 		"":           {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID, nodeTrashID, nodeLabelsID, nodeListsID},
 		nodeLabelsID: {},
@@ -97,7 +107,24 @@ func (f *folders) update(charID int32) {
 		nodeLabelsID:   node{ID: nodeLabelsID, Name: "Labels"}.toJSON(),
 		nodeListsID:    node{ID: nodeListsID, Name: "Mailing Lists"}.toJSON(),
 	}
-	// Add labels to tree
+	return ids, values
+}
+
+func addMailListsToTree(charID int32, ids map[string][]string, values map[string]string) {
+	lists, err := model.FetchAllMailLists(charID)
+	if err != nil {
+		slog.Error("Failed to fetch mail lists", "characterID", charID, "error", err)
+	} else {
+		for _, l := range lists {
+			uid := fmt.Sprintf("list%d", l.EveEntityID)
+			ids[nodeListsID] = append(ids[nodeListsID], uid)
+			n := node{ObjID: l.EveEntityID, Name: l.EveEntity.Name, Category: nodeCategoryList}
+			values[uid] = n.toJSON()
+		}
+	}
+}
+
+func addLabelsToTree(charID int32, ids map[string][]string, values map[string]string) {
 	labels, err := model.FetchAllMailLabels(charID)
 	if err != nil {
 		slog.Error("Failed to fetch mail labels", "characterID", charID, "error", err)
@@ -107,28 +134,12 @@ func (f *folders) update(charID int32) {
 				if l.LabelID > 8 {
 					uid := fmt.Sprintf("label%d", l.LabelID)
 					ids[nodeLabelsID] = append(ids[nodeLabelsID], uid)
-					f := node{ObjID: l.LabelID, Name: l.Name, Category: nodeCategoryLabel}
-					values[uid] = f.toJSON()
+					n := node{ObjID: l.LabelID, Name: l.Name, Category: nodeCategoryLabel}
+					values[uid] = n.toJSON()
 				}
 			}
 		}
 	}
-	// Add mailing lists to tree
-	lists, err := model.FetchAllMailLists(charID)
-	if err != nil {
-		slog.Error("Failed to fetch mail lists", "characterID", charID, "error", err)
-	} else {
-		for _, l := range lists {
-			uid := fmt.Sprintf("list%d", l.EveEntityID)
-			ids[nodeListsID] = append(ids[nodeListsID], uid)
-			f := node{ObjID: l.EveEntityID, Name: l.EveEntity.Name, Category: nodeCategoryList}
-			values[uid] = f.toJSON()
-		}
-	}
-	f.boundTree.Set(ids, values)
-	f.tree.Select(nodeAllID)
-	f.tree.ScrollToTop()
-	f.headers.update(charID, folderItemAll)
 }
 
 // func (f *folders) updateMailsWithID(charID int32) {
