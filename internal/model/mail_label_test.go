@@ -32,7 +32,7 @@ func createMailLabel(args ...model.MailLabel) model.MailLabel {
 		if len(ids) > 0 {
 			l.LabelID = slices.Max(ids) + 1
 		} else {
-			l.LabelID = 1
+			l.LabelID = 100
 		}
 	}
 	if l.Name == "" {
@@ -101,12 +101,12 @@ func TestCanFetchAllMailLabelsForCharacter(t *testing.T) {
 	// given
 	model.TruncateTables()
 	c1 := createCharacter()
-	l1 := createMailLabel(model.MailLabel{Character: c1, LabelID: 3})
+	l1 := createMailLabel(model.MailLabel{Character: c1, LabelID: 103})
 	fmt.Println(l1)
-	l2 := createMailLabel(model.MailLabel{Character: c1, LabelID: 7})
+	l2 := createMailLabel(model.MailLabel{Character: c1, LabelID: 107})
 	fmt.Println(l2)
 	c2 := createCharacter()
-	createMailLabel(model.MailLabel{Character: c2, LabelID: 13})
+	createMailLabel(model.MailLabel{Character: c2, LabelID: 113})
 	// when
 	ll, err := model.FetchAllMailLabels(c1.ID)
 	if assert.NoError(t, err) {
@@ -114,7 +114,7 @@ func TestCanFetchAllMailLabelsForCharacter(t *testing.T) {
 		for _, l := range ll {
 			gotIDs.Add(l.LabelID)
 		}
-		wantIDs := set.NewFromSlice([]int32{3, 7})
+		wantIDs := set.NewFromSlice([]int32{103, 107})
 		assert.Equal(t, wantIDs, gotIDs)
 	}
 }
