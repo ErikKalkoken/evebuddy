@@ -16,8 +16,8 @@ import (
 type folders struct {
 	esiApp      *eveApp
 	content     fyne.CanvasObject
-	boundTree   binding.ExternalStringTree
-	boundCharID binding.ExternalInt
+	boundTree   binding.StringTree
+	boundCharID binding.Int
 	headers     *headers
 	tree        *widget.Tree
 	btnRefresh  *widget.Button
@@ -140,12 +140,9 @@ func (f *folders) update(charID int32) {
 // 	}
 // }
 
-func makeFolderList(headers *headers) (*widget.Tree, binding.ExternalStringTree, binding.ExternalInt) {
-	var charID int
-	boundCharID := binding.BindInt(&charID)
-	ids := make(map[string][]string)
-	values := make(map[string]string)
-	boundTree := binding.BindStringTree(&ids, &values)
+func makeFolderList(headers *headers) (*widget.Tree, binding.StringTree, binding.Int) {
+	boundCharID := binding.NewInt()
+	boundTree := binding.NewStringTree()
 	tree := widget.NewTreeWithData(
 		boundTree,
 		func(isBranch bool) fyne.CanvasObject {
