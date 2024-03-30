@@ -185,7 +185,7 @@ func FetchMailIDs(characterID int32) ([]int32, error) {
 func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	var rows *sql.Rows
 	switch labelID {
-	case LabelIDAny:
+	case LabelAll:
 		sql := `
 			SELECT mails.*, eve_entities.*
 			FROM mails
@@ -198,7 +198,7 @@ func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 			return nil, err
 		}
 		rows = r
-	case LabelIDNone:
+	case LabelNone:
 		sql := `
 			SELECT mails.*, eve_entities.*
 			FROM mails

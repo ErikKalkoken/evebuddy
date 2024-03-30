@@ -6,9 +6,15 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Special label IDs
-const LabelIDAny = 1<<31 - 1
-const LabelIDNone = 0
+// Special mail label IDs
+const (
+	LabelAll      = 1<<31 - 1
+	LabelNone     = 0
+	LabelInbox    = 1
+	LabelSent     = 2
+	LabelCorp     = 4
+	LabelAlliance = 8
+)
 
 type MailLabel struct {
 	ID          uint64
@@ -104,9 +110,18 @@ func FetchMailLabels(characterID int32, labelIDs []int32) ([]MailLabel, error) {
 	return ll, nil
 }
 
+// TODO: Add index for sorting labels
 func FetchAllMailLabels(characterID int32) ([]MailLabel, error) {
 	var ll []MailLabel
-	err := db.Select(&ll, "SELECT * FROM mail_labels WHERE character_id = ?", characterID)
+	err := db.Select(
+		&ll,
+		`SELECT *
+		FROM mail_labels
+		WHERE character_id = ?
+		AND label_id > 8
+		ORDER BY name;`,
+		characterID,
+	)
 	if err != nil {
 		return nil, err
 	}

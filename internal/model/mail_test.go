@@ -169,7 +169,7 @@ func TestFetchMailsForLabel(t *testing.T) {
 		m3 := createMail(model.Mail{Character: c, Labels: []model.MailLabel{l2}, Timestamp: time.Now().Add(time.Second * -240)})
 		m4 := createMail(model.Mail{Character: c, Timestamp: time.Now().Add(time.Second * -360)})
 		// when
-		mm, err := model.FetchMailsForLabel(c.ID, model.LabelIDAny)
+		mm, err := model.FetchMailsForLabel(c.ID, model.LabelAll)
 		// then
 		if assert.NoError(t, err) {
 			var gotIDs []int32
@@ -188,7 +188,7 @@ func TestFetchMailsForLabel(t *testing.T) {
 		createMail(model.Mail{Character: c, Labels: []model.MailLabel{l}, Timestamp: time.Now().Add(time.Second * -120)})
 		m := createMail(model.Mail{Character: c})
 		// when
-		mm, err := model.FetchMailsForLabel(c.ID, model.LabelIDNone)
+		mm, err := model.FetchMailsForLabel(c.ID, model.LabelNone)
 		// then
 		if assert.NoError(t, err) {
 			var gotIDs []int32
