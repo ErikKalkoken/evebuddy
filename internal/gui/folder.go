@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"encoding/json"
 	"example/esiapp/internal/model"
 	"fmt"
 	"log/slog"
@@ -13,48 +12,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
-
-type treeItemCategory int
-
-const (
-	itemCategoryBranch treeItemCategory = 0
-	itemCategoryLabel  treeItemCategory = 1
-	itemCategoryList   treeItemCategory = 2
-)
-
-const (
-	itemAll      = "all"
-	itemInbox    = "inbox"
-	itemSent     = "sent"
-	itemCorp     = "corp"
-	itemAlliance = "alliance"
-	itemTrash    = "trash"
-	itemLabels   = "labels"
-	itemLists    = "lists"
-)
-
-type treeItem struct {
-	Id       int32
-	Name     string
-	Category treeItemCategory
-}
-
-func newTreeItemJSON(s string) treeItem {
-	var f treeItem
-	err := json.Unmarshal([]byte(s), &f)
-	if err != nil {
-		panic(err)
-	}
-	return f
-}
-
-func (f treeItem) toJSON() string {
-	s, err := json.Marshal(f)
-	if err != nil {
-		panic(err)
-	}
-	return string(s)
-}
 
 type folders struct {
 	esiApp      *eveApp
@@ -124,21 +81,21 @@ func (f *folders) update(charID int32) {
 	if err := f.boundCharID.Set(int(charID)); err != nil {
 		slog.Error("Failed to set char ID", "characterID", charID, "error", err)
 	}
-	folderItemAll := treeItem{Id: model.LabelAll, Name: "All Mails", Category: itemCategoryLabel}
+	folderItemAll := node{Id: model.LabelAll, Name: "All Mails", Category: nodeCategoryLabel}
 	ids := map[string][]string{
-		"":         {itemAll, itemInbox, itemSent, itemCorp, itemAlliance, itemLabels, itemLists},
-		itemLabels: {},
-		itemLists:  {},
+		"":           {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID, nodeLabelsID, nodeListsID},
+		nodeLabelsID: {},
+		nodeListsID:  {},
 	}
 	values := map[string]string{
-		itemAll:      folderItemAll.toJSON(),
-		itemInbox:    treeItem{Id: model.LabelInbox, Name: "Inbox", Category: itemCategoryLabel}.toJSON(),
-		itemSent:     treeItem{Id: model.LabelSent, Name: "Sent", Category: itemCategoryLabel}.toJSON(),
-		itemCorp:     treeItem{Id: model.LabelCorp, Name: "Corp", Category: itemCategoryLabel}.toJSON(),
-		itemAlliance: treeItem{Id: model.LabelAlliance, Name: "Alliance", Category: itemCategoryLabel}.toJSON(),
+		nodeAllID:      folderItemAll.toJSON(),
+		nodeInboxID:    node{Id: model.LabelInbox, Name: "Inbox", Category: nodeCategoryLabel}.toJSON(),
+		nodeSentID:     node{Id: model.LabelSent, Name: "Sent", Category: nodeCategoryLabel}.toJSON(),
+		nodeCorpID:     node{Id: model.LabelCorp, Name: "Corp", Category: nodeCategoryLabel}.toJSON(),
+		nodeAllianceID: node{Id: model.LabelAlliance, Name: "Alliance", Category: nodeCategoryLabel}.toJSON(),
 		// "trash":    "Trash",
-		itemLabels: treeItem{Name: "Labels"}.toJSON(),
-		itemLists:  treeItem{Name: "Mailing Lists"}.toJSON(),
+		nodeLabelsID: node{Name: "Labels"}.toJSON(),
+		nodeListsID:  node{Name: "Mailing Lists"}.toJSON(),
 	}
 	// Add labels to tree
 	labels, err := model.FetchAllMailLabels(charID)
@@ -149,8 +106,8 @@ func (f *folders) update(charID int32) {
 			for _, l := range labels {
 				if l.LabelID > 8 {
 					uid := fmt.Sprintf("label%d", l.LabelID)
-					ids[itemLabels] = append(ids[itemLabels], uid)
-					f := treeItem{Id: l.LabelID, Name: l.Name, Category: itemCategoryLabel}
+					ids[nodeLabelsID] = append(ids[nodeLabelsID], uid)
+					f := node{Id: l.LabelID, Name: l.Name, Category: nodeCategoryLabel}
 					values[uid] = f.toJSON()
 				}
 			}
@@ -163,13 +120,13 @@ func (f *folders) update(charID int32) {
 	} else {
 		for _, l := range lists {
 			uid := fmt.Sprintf("list%d", l.EveEntityID)
-			ids[itemLists] = append(ids[itemLists], uid)
-			f := treeItem{Id: l.EveEntityID, Name: l.EveEntity.Name, Category: itemCategoryList}
+			ids[nodeListsID] = append(ids[nodeListsID], uid)
+			f := node{Id: l.EveEntityID, Name: l.EveEntity.Name, Category: nodeCategoryList}
 			values[uid] = f.toJSON()
 		}
 	}
 	f.boundTree.Set(ids, values)
-	f.tree.Select(itemAll)
+	f.tree.Select(nodeAllID)
 	f.tree.ScrollToTop()
 	f.headers.update(charID, folderItemAll)
 }
@@ -206,7 +163,7 @@ func makeFolderList(headers *headers) (*widget.Tree, binding.ExternalStringTree,
 				slog.Error("Failed to fetch data item for tree")
 				return
 			}
-			item := newTreeItemJSON(s)
+			item := newNodeFromJSON(s)
 			co.(*widget.Label).SetText(item.Name)
 		},
 	)
@@ -223,15 +180,16 @@ func makeFolderList(headers *headers) (*widget.Tree, binding.ExternalStringTree,
 			slog.Error("Failed to fetch data item for tree")
 			return
 		}
+		item := newNodeFromJSON(s)
+		if item.isBranch() {
+			return
+		}
 		charID, err := boundCharID.Get()
 		if err != nil {
 			slog.Error("Failed to get char ID", "error", err)
 			return
 		}
-		item := newTreeItemJSON(s)
-		if item.Category != itemCategoryBranch {
-			headers.update(int32(charID), item)
-		}
+		headers.update(int32(charID), item)
 	}
 	return tree, boundTree, boundCharID
 }

@@ -30,14 +30,14 @@ type headers struct {
 	mail       *mail
 }
 
-func (h *headers) update(charID int32, folder treeItem) {
+func (h *headers) update(charID int32, folder node) {
 	var d []interface{}
 	var mm []model.Mail
 	var err error
 	switch folder.Category {
-	case itemCategoryLabel:
+	case nodeCategoryLabel:
 		mm, err = model.FetchMailsForLabel(charID, folder.Id)
-	case itemCategoryList:
+	case nodeCategoryList:
 		mm, err = model.FetchMailsForList(charID, folder.Id)
 	}
 	if err != nil {
