@@ -36,9 +36,9 @@ func (h *headers) update(charID int32, folder node) {
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mm, err = model.FetchMailsForLabel(charID, folder.Id)
+		mm, err = model.FetchMailsForLabel(charID, folder.ObjID)
 	case nodeCategoryList:
-		mm, err = model.FetchMailsForList(charID, folder.Id)
+		mm, err = model.FetchMailsForList(charID, folder.ObjID)
 	}
 	if err != nil {
 		slog.Error("Failed to fetch mail", "characterID", charID, "error", err)

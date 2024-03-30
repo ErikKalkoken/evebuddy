@@ -81,7 +81,7 @@ func (f *folders) update(charID int32) {
 	if err := f.boundCharID.Set(int(charID)); err != nil {
 		slog.Error("Failed to set char ID", "characterID", charID, "error", err)
 	}
-	folderItemAll := node{Id: model.LabelAll, Name: "All Mails", Category: nodeCategoryLabel}
+	folderItemAll := node{ID: nodeAllID, ObjID: model.LabelAll, Name: "All Mails", Category: nodeCategoryLabel}
 	ids := map[string][]string{
 		"":           {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID, nodeLabelsID, nodeListsID},
 		nodeLabelsID: {},
@@ -89,13 +89,13 @@ func (f *folders) update(charID int32) {
 	}
 	values := map[string]string{
 		nodeAllID:      folderItemAll.toJSON(),
-		nodeInboxID:    node{Id: model.LabelInbox, Name: "Inbox", Category: nodeCategoryLabel}.toJSON(),
-		nodeSentID:     node{Id: model.LabelSent, Name: "Sent", Category: nodeCategoryLabel}.toJSON(),
-		nodeCorpID:     node{Id: model.LabelCorp, Name: "Corp", Category: nodeCategoryLabel}.toJSON(),
-		nodeAllianceID: node{Id: model.LabelAlliance, Name: "Alliance", Category: nodeCategoryLabel}.toJSON(),
+		nodeInboxID:    node{ID: nodeInboxID, ObjID: model.LabelInbox, Name: "Inbox", Category: nodeCategoryLabel}.toJSON(),
+		nodeSentID:     node{ID: nodeSentID, ObjID: model.LabelSent, Name: "Sent", Category: nodeCategoryLabel}.toJSON(),
+		nodeCorpID:     node{ID: nodeCorpID, ObjID: model.LabelCorp, Name: "Corp", Category: nodeCategoryLabel}.toJSON(),
+		nodeAllianceID: node{ID: nodeAllianceID, ObjID: model.LabelAlliance, Name: "Alliance", Category: nodeCategoryLabel}.toJSON(),
 		// "trash":    "Trash",
-		nodeLabelsID: node{Name: "Labels"}.toJSON(),
-		nodeListsID:  node{Name: "Mailing Lists"}.toJSON(),
+		nodeLabelsID: node{ID: nodeLabelsID, Name: "Labels"}.toJSON(),
+		nodeListsID:  node{ID: nodeListsID, Name: "Mailing Lists"}.toJSON(),
 	}
 	// Add labels to tree
 	labels, err := model.FetchAllMailLabels(charID)
@@ -107,7 +107,7 @@ func (f *folders) update(charID int32) {
 				if l.LabelID > 8 {
 					uid := fmt.Sprintf("label%d", l.LabelID)
 					ids[nodeLabelsID] = append(ids[nodeLabelsID], uid)
-					f := node{Id: l.LabelID, Name: l.Name, Category: nodeCategoryLabel}
+					f := node{ObjID: l.LabelID, Name: l.Name, Category: nodeCategoryLabel}
 					values[uid] = f.toJSON()
 				}
 			}
@@ -121,7 +121,7 @@ func (f *folders) update(charID int32) {
 		for _, l := range lists {
 			uid := fmt.Sprintf("list%d", l.EveEntityID)
 			ids[nodeListsID] = append(ids[nodeListsID], uid)
-			f := node{Id: l.EveEntityID, Name: l.EveEntity.Name, Category: nodeCategoryList}
+			f := node{ObjID: l.EveEntityID, Name: l.EveEntity.Name, Category: nodeCategoryList}
 			values[uid] = f.toJSON()
 		}
 	}
@@ -148,13 +148,10 @@ func makeFolderList(headers *headers) (*widget.Tree, binding.ExternalStringTree,
 	boundTree := binding.BindStringTree(&ids, &values)
 	tree := widget.NewTreeWithData(
 		boundTree,
-		func(branch bool) fyne.CanvasObject {
-			if branch {
-				return widget.NewLabel("Branch template")
-			}
-			return widget.NewLabel("Leaf template")
+		func(isBranch bool) fyne.CanvasObject {
+			return container.NewHBox(widget.NewIcon(&fyne.StaticResource{}), widget.NewLabel("Branch template"))
 		},
-		func(di binding.DataItem, b bool, co fyne.CanvasObject) {
+		func(di binding.DataItem, isBranch bool, co fyne.CanvasObject) {
 			i := di.(binding.String)
 			s, err := i.Get()
 			if err != nil {
@@ -162,7 +159,10 @@ func makeFolderList(headers *headers) (*widget.Tree, binding.ExternalStringTree,
 				return
 			}
 			item := newNodeFromJSON(s)
-			co.(*widget.Label).SetText(item.Name)
+			icon := co.(*fyne.Container).Objects[0].(*widget.Icon)
+			icon.SetResource(item.icon())
+			label := co.(*fyne.Container).Objects[1].(*widget.Label)
+			label.SetText(item.Name)
 		},
 	)
 	lastUID := ""

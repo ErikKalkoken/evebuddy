@@ -1,6 +1,11 @@
 package gui
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
+)
 
 type nodeCategory int
 
@@ -23,7 +28,8 @@ const (
 
 // A node in the folder tree, e.g. the inbox
 type node struct {
-	Id       int32
+	ID       string
+	ObjID    int32
 	Name     string
 	Category nodeCategory
 }
@@ -47,4 +53,16 @@ func (f node) toJSON() string {
 
 func (f node) isBranch() bool {
 	return f.Category == nodeCategoryBranch
+}
+
+func (f node) icon() fyne.Resource {
+	switch f.ID {
+	case nodeAllID:
+		return theme.FolderIcon()
+	case nodeInboxID:
+		return theme.DownloadIcon()
+	case nodeSentID:
+		return theme.UploadIcon()
+	}
+	return theme.FolderIcon()
 }
