@@ -57,12 +57,12 @@ func (f node) isBranch() bool {
 
 func (f node) icon() fyne.Resource {
 	switch f.ID {
-	case nodeAllID:
-		return theme.FolderIcon()
 	case nodeInboxID:
 		return theme.DownloadIcon()
 	case nodeSentID:
 		return theme.UploadIcon()
+	case nodeTrashID:
+		return theme.DeleteIcon()
 	}
 	return theme.FolderIcon()
 }

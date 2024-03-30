@@ -83,7 +83,7 @@ func (f *folders) update(charID int32) {
 	}
 	folderItemAll := node{ID: nodeAllID, ObjID: model.LabelAll, Name: "All Mails", Category: nodeCategoryLabel}
 	ids := map[string][]string{
-		"":           {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID, nodeLabelsID, nodeListsID},
+		"":           {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID, nodeTrashID, nodeLabelsID, nodeListsID},
 		nodeLabelsID: {},
 		nodeListsID:  {},
 	}
@@ -93,9 +93,9 @@ func (f *folders) update(charID int32) {
 		nodeSentID:     node{ID: nodeSentID, ObjID: model.LabelSent, Name: "Sent", Category: nodeCategoryLabel}.toJSON(),
 		nodeCorpID:     node{ID: nodeCorpID, ObjID: model.LabelCorp, Name: "Corp", Category: nodeCategoryLabel}.toJSON(),
 		nodeAllianceID: node{ID: nodeAllianceID, ObjID: model.LabelAlliance, Name: "Alliance", Category: nodeCategoryLabel}.toJSON(),
-		// "trash":    "Trash",
-		nodeLabelsID: node{ID: nodeLabelsID, Name: "Labels"}.toJSON(),
-		nodeListsID:  node{ID: nodeListsID, Name: "Mailing Lists"}.toJSON(),
+		nodeTrashID:    node{ID: nodeTrashID, Name: "Trash"}.toJSON(),
+		nodeLabelsID:   node{ID: nodeLabelsID, Name: "Labels"}.toJSON(),
+		nodeListsID:    node{ID: nodeListsID, Name: "Mailing Lists"}.toJSON(),
 	}
 	// Add labels to tree
 	labels, err := model.FetchAllMailLabels(charID)
@@ -182,7 +182,6 @@ func makeFolderList(headers *headers) (*widget.Tree, binding.ExternalStringTree,
 		if item.isBranch() {
 			if lastUID != "" {
 				tree.Select(lastUID)
-				slog.Info("selecting lasts uid", "uid", lastUID)
 			}
 			return
 		}
