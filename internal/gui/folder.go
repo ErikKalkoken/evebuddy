@@ -141,13 +141,11 @@ func (f *folders) update(charID int32) {
 // }
 
 func makeFolderList(headers *headers) (*widget.Tree, binding.ExternalStringTree, binding.ExternalInt) {
+	var charID int
+	boundCharID := binding.BindInt(&charID)
 	ids := make(map[string][]string)
 	values := make(map[string]string)
 	boundTree := binding.BindStringTree(&ids, &values)
-
-	var charID int
-	boundCharID := binding.BindInt(&charID)
-
 	tree := widget.NewTreeWithData(
 		boundTree,
 		func(branch bool) fyne.CanvasObject {
@@ -167,7 +165,7 @@ func makeFolderList(headers *headers) (*widget.Tree, binding.ExternalStringTree,
 			co.(*widget.Label).SetText(item.Name)
 		},
 	)
-
+	lastUID := ""
 	tree.OnSelected = func(uid string) {
 		di, err := boundTree.GetItem(uid)
 		if err != nil {
@@ -182,8 +180,13 @@ func makeFolderList(headers *headers) (*widget.Tree, binding.ExternalStringTree,
 		}
 		item := newNodeFromJSON(s)
 		if item.isBranch() {
+			if lastUID != "" {
+				tree.Select(lastUID)
+				slog.Info("selecting lasts uid", "uid", lastUID)
+			}
 			return
 		}
+		lastUID = uid
 		charID, err := boundCharID.Get()
 		if err != nil {
 			slog.Error("Failed to get char ID", "error", err)
