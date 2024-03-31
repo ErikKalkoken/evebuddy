@@ -15,25 +15,22 @@ import (
 
 // folderArea is the UI area showing the mail folders.
 type folderArea struct {
-	esiApp        *ui
 	content       fyne.CanvasObject
-	boundTree     binding.StringTree
-	boundCharID   binding.Int
+	currentCharID int32
 	headerArea    *headerArea
-	tree          *widget.Tree
-	refreshButton *widget.Button
 	newButton     *widget.Button
+	refreshButton *widget.Button
+	tree          *widget.Tree
+	treeData      binding.StringTree
+	ui            *ui
 }
 
 func (e *ui) newFolderArea(headers *headerArea) *folderArea {
-	tree, boundTree, boundCharID := makeFolderList(headers)
 	f := folderArea{
-		esiApp:      e,
-		boundTree:   boundTree,
-		boundCharID: boundCharID,
-		headerArea:  headers,
-		tree:        tree,
+		ui:         e,
+		headerArea: headers,
 	}
+	f.tree, f.treeData = makeFolderTree(headers, &f.currentCharID)
 	f.refreshButton = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
 		f.updateMails()
 	})
@@ -41,7 +38,6 @@ func (e *ui) newFolderArea(headers *headerArea) *folderArea {
 		d := dialog.NewInformation("New message", "PLACEHOLDER", e.window)
 		d.Show()
 	})
-
 	top := container.NewHBox(f.refreshButton, f.newButton)
 	c := container.NewBorder(top, nil, nil, nil, f.tree)
 	f.content = c
@@ -49,22 +45,17 @@ func (e *ui) newFolderArea(headers *headerArea) *folderArea {
 }
 
 func (f *folderArea) updateMails() {
-	charID, err := f.boundCharID.Get()
-	if err != nil {
-		slog.Error("Failed to get character ID", "error", err)
-		return
-	}
-	status := f.esiApp.statusArea
+	status := f.ui.statusArea
 	go func() {
-		if charID != 0 {
-			err = UpdateMails(int32(charID), status)
+		if f.currentCharID != 0 {
+			err := UpdateMails(f.currentCharID, status)
 			if err != nil {
 				status.setText("Failed to fetch mail")
-				slog.Error("Failed to update mails", "characterID", charID, "error", err)
+				slog.Error("Failed to update mails", "characterID", f.currentCharID, "error", err)
 				return
 			}
 		}
-		f.update(int32(charID))
+		f.update(f.currentCharID)
 	}()
 }
 
@@ -76,14 +67,12 @@ func (f *folderArea) update(charID int32) {
 		f.refreshButton.Enable()
 		f.newButton.Enable()
 	}
-	if err := f.boundCharID.Set(int(charID)); err != nil {
-		slog.Error("Failed to set char ID", "characterID", charID, "error", err)
-	}
+	f.currentCharID = charID
 	folderItemAll := node{ID: nodeAllID, ObjID: model.LabelAll, Name: "All Mails", Category: nodeCategoryLabel}
 	ids, values := initialTreeData(folderItemAll)
 	addLabelsToTree(charID, ids, values)
 	addMailListsToTree(charID, ids, values)
-	f.boundTree.Set(ids, values)
+	f.treeData.Set(ids, values)
 	f.tree.Select(nodeAllID)
 	f.tree.ScrollToTop()
 	f.headerArea.update(charID, folderItemAll)
@@ -140,11 +129,10 @@ func addLabelsToTree(charID int32, ids map[string][]string, values map[string]st
 	}
 }
 
-func makeFolderList(headers *headerArea) (*widget.Tree, binding.StringTree, binding.Int) {
-	boundCharID := binding.NewInt()
-	boundTree := binding.NewStringTree()
+func makeFolderTree(headers *headerArea, currentCharID *int32) (*widget.Tree, binding.StringTree) {
+	treeData := binding.NewStringTree()
 	tree := widget.NewTreeWithData(
-		boundTree,
+		treeData,
 		func(isBranch bool) fyne.CanvasObject {
 			return container.NewHBox(widget.NewIcon(&fyne.StaticResource{}), widget.NewLabel("Branch template"))
 		},
@@ -164,7 +152,7 @@ func makeFolderList(headers *headerArea) (*widget.Tree, binding.StringTree, bind
 	)
 	lastUID := ""
 	tree.OnSelected = func(uid string) {
-		di, err := boundTree.GetItem(uid)
+		di, err := treeData.GetItem(uid)
 		if err != nil {
 			slog.Error("Failed to get char ID item", "error", err)
 			return
@@ -183,12 +171,7 @@ func makeFolderList(headers *headerArea) (*widget.Tree, binding.StringTree, bind
 			return
 		}
 		lastUID = uid
-		charID, err := boundCharID.Get()
-		if err != nil {
-			slog.Error("Failed to get char ID", "error", err)
-			return
-		}
-		headers.update(int32(charID), item)
+		headers.update(*currentCharID, item)
 	}
-	return tree, boundTree, boundCharID
+	return tree, treeData
 }
