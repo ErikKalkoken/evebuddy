@@ -23,7 +23,7 @@ type manageArea struct {
 	ui             *ui
 }
 
-func newManageArea(u *ui) *manageArea {
+func (u *ui) newManageArea() *manageArea {
 	content := container.NewVBox()
 	m := &manageArea{
 		ui:             u,
@@ -82,7 +82,7 @@ func (m *manageArea) update() {
 }
 
 func (u *ui) showManageDialog() {
-	m := newManageArea(u)
+	m := u.newManageArea()
 	m.update()
 	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		showAddCharacterDialog(u.window, m)
