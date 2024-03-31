@@ -7,27 +7,28 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type statusBar struct {
+// statusArea is the UI area showing the current status aka status bar.
+type statusArea struct {
 	content *fyne.Container
 	text    binding.String
 }
 
-func (s *statusBar) setText(text string) error {
-	err := s.text.Set(text)
-	return err
-}
-
-func (s *statusBar) clear() {
-	s.setText("")
-}
-
-func (e *eveApp) newStatusBar() *statusBar {
+func (e *eveApp) newStatusArea() *statusArea {
 	text := binding.NewString()
 	label := widget.NewLabelWithData(text)
 	content := container.NewVBox(widget.NewSeparator(), label)
-	b := statusBar{
+	b := statusArea{
 		content: content,
 		text:    text,
 	}
 	return &b
+}
+
+func (s *statusArea) setText(text string) error {
+	err := s.text.Set(text)
+	return err
+}
+
+func (s *statusArea) clear() {
+	s.setText("")
 }

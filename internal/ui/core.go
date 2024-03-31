@@ -72,7 +72,7 @@ func AddCharacter(ctx context.Context) (*model.Token, error) {
 // FIXME: Delete obsolete labels and mail lists
 // TODO: Add ability to update existing mails
 // UpdateMails fetches and stores new mails from ESI for a character.
-func UpdateMails(characterID int32, status *statusBar) error {
+func UpdateMails(characterID int32, status *statusArea) error {
 	token, err := model.FetchToken(characterID)
 	if err != nil {
 		return err
@@ -153,7 +153,7 @@ func fetchMailHeaders(token *model.Token) ([]esi.MailHeader, error) {
 	return headers, nil
 }
 
-func updateMails(token *model.Token, headers []esi.MailHeader, status *statusBar) error {
+func updateMails(token *model.Token, headers []esi.MailHeader, status *statusArea) error {
 	existingIDs, missingIDs, err := determineMailIDs(token.CharacterID, headers)
 	if err != nil {
 		return err
@@ -198,7 +198,7 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status *statusBar
 	return nil
 }
 
-func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount int, c *atomic.Int32, status *statusBar) {
+func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount int, c *atomic.Int32, status *statusArea) {
 	entityIDs := set.New[int32]()
 	entityIDs.Add(header.FromID)
 	for _, r := range header.Recipients {

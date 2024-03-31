@@ -31,44 +31,7 @@ type headerArea struct {
 	mailArea   *mailArea
 }
 
-func (h *headerArea) update(charID int32, folder node) {
-	var d []interface{}
-	var mm []model.Mail
-	var err error
-	switch folder.Category {
-	case nodeCategoryLabel:
-		mm, err = model.FetchMailsForLabel(charID, folder.ObjID)
-	case nodeCategoryList:
-		mm, err = model.FetchMailsForList(charID, folder.ObjID)
-	}
-	if err != nil {
-		slog.Error("Failed to fetch mail", "characterID", charID, "error", err)
-	} else {
-		for _, m := range mm {
-			o := mailItem{
-				id:        m.ID,
-				from:      m.From.Name,
-				subject:   m.Subject,
-				timestamp: m.Timestamp,
-			}
-			d = append(d, o)
-		}
-	}
-	h.boundList.Set(d)
-
-	s := fmt.Sprintf("%d mails", len(mm))
-	h.boundTotal.Set(s)
-
-	if len(mm) > 0 {
-		h.mailArea.update(mm[0].ID)
-		h.list.Select(0)
-		h.list.ScrollToTop()
-	} else {
-		h.mailArea.clear()
-	}
-}
-
-func (e *eveApp) newHeaders(mail *mailArea) *headerArea {
+func (e *eveApp) newHeaderArea(mail *mailArea) *headerArea {
 	var x []interface{}
 	boundList := binding.BindUntypedList(&x)
 	list := widget.NewListWithData(
@@ -128,4 +91,41 @@ func (e *eveApp) newHeaders(mail *mailArea) *headerArea {
 		mailArea:   mail,
 	}
 	return &m
+}
+
+func (h *headerArea) update(charID int32, folder node) {
+	var d []interface{}
+	var mm []model.Mail
+	var err error
+	switch folder.Category {
+	case nodeCategoryLabel:
+		mm, err = model.FetchMailsForLabel(charID, folder.ObjID)
+	case nodeCategoryList:
+		mm, err = model.FetchMailsForList(charID, folder.ObjID)
+	}
+	if err != nil {
+		slog.Error("Failed to fetch mail", "characterID", charID, "error", err)
+	} else {
+		for _, m := range mm {
+			o := mailItem{
+				id:        m.ID,
+				from:      m.From.Name,
+				subject:   m.Subject,
+				timestamp: m.Timestamp,
+			}
+			d = append(d, o)
+		}
+	}
+	h.boundList.Set(d)
+
+	s := fmt.Sprintf("%d mails", len(mm))
+	h.boundTotal.Set(s)
+
+	if len(mm) > 0 {
+		h.mailArea.update(mm[0].ID)
+		h.list.Select(0)
+		h.list.ScrollToTop()
+	} else {
+		h.mailArea.clear()
+	}
 }

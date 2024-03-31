@@ -22,6 +22,12 @@ type characterArea struct {
 	currentCharID int32
 }
 
+func (e *eveApp) newCharacterArea(f *folderArea) *characterArea {
+	c := characterArea{esiApp: e, folderArea: f}
+	c.content = container.NewHBox()
+	return &c
+}
+
 func (c *characterArea) update(charID int32) {
 	btnSwitch, err := c.makeSwitchButton(charID)
 	if err != nil {
@@ -102,10 +108,4 @@ func makeCharacter(charID int32) *fyne.Container {
 	names := container.NewVBox(character, corporation)
 	content := container.NewHBox(charImage, corpImage, names)
 	return content
-}
-
-func (e *eveApp) newCharacters(f *folderArea) *characterArea {
-	c := characterArea{esiApp: e, folderArea: f}
-	c.content = container.NewHBox()
-	return &c
 }

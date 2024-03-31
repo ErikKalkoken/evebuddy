@@ -25,7 +25,7 @@ type folderArea struct {
 	btnNew      *widget.Button
 }
 
-func (e *eveApp) newFolders(headers *headerArea) *folderArea {
+func (e *eveApp) newFolderArea(headers *headerArea) *folderArea {
 	tree, boundTree, boundCharID := makeFolderList(headers)
 	f := folderArea{
 		esiApp:      e,

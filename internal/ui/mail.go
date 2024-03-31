@@ -24,7 +24,7 @@ type mailArea struct {
 	mailID  uint64
 }
 
-func (e *eveApp) newMail() *mailArea {
+func (e *eveApp) newMailArea() *mailArea {
 	btnReply := widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {
 	})
 	btnReplyAll := widget.NewButtonWithIcon("", theme.MailReplyAllIcon(), func() {

@@ -18,12 +18,8 @@ const (
 // Main type for the core app structure
 type eveApp struct {
 	winMain       fyne.Window
-	statusBar     *statusBar
+	statusBar     *statusArea
 	characterArea *characterArea
-}
-
-func (e *eveApp) ShowAndRun() {
-	e.winMain.ShowAndRun()
 }
 
 func NewEveApp() *eveApp {
@@ -41,13 +37,13 @@ func NewEveApp() *eveApp {
 		charID = c.ID
 	}
 
-	bar := e.newStatusBar()
+	bar := e.newStatusArea()
 	e.statusBar = bar
 
-	mail := e.newMail()
-	headers := e.newHeaders(mail)
-	folders := e.newFolders(headers)
-	characters := e.newCharacters(folders)
+	mail := e.newMailArea()
+	headers := e.newHeaderArea(mail)
+	folders := e.newFolderArea(headers)
+	characters := e.newCharacterArea(folders)
 	characters.update(charID)
 	e.characterArea = characters
 
@@ -66,4 +62,8 @@ func NewEveApp() *eveApp {
 	w.SetMainMenu(MakeMenu(a, e))
 	w.SetMaster()
 	return e
+}
+
+func (e *eveApp) ShowAndRun() {
+	e.winMain.ShowAndRun()
 }
