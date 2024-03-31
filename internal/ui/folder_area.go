@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -30,28 +29,7 @@ func (u *ui) NewFolderArea() *folderArea {
 		f.UpdateMails()
 	})
 	f.newButton = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
-		w := u.app.NewWindow("New message")
-		toLabel := widget.NewLabel("To:")
-		toInput := widget.NewEntry()
-		toInput.PlaceHolder = "Yuna Kobayashi"
-		subjectLabel := widget.NewLabel("Subject:")
-		subjectInput := widget.NewEntry()
-		form := container.New(layout.NewFormLayout(), toLabel, toInput, subjectLabel, subjectInput)
-		bodyInput := widget.NewEntry()
-		bodyInput.MultiLine = true
-		cancelButton := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
-			w.Hide()
-		})
-		sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {})
-		sendButton.Importance = widget.HighImportance
-		buttons := container.NewHBox(
-			cancelButton,
-			layout.NewSpacer(),
-			sendButton,
-		)
-		content := container.NewBorder(form, buttons, nil, nil, bodyInput)
-		w.SetContent(content)
-		w.Resize(fyne.NewSize(400, 300))
+		w := u.makeCreateMessageWindow()
 		w.Show()
 	})
 	top := container.NewHBox(f.refreshButton, f.newButton)

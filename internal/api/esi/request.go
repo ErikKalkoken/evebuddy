@@ -80,6 +80,20 @@ func postESI(client *http.Client, path string, data []byte) (*esiResponse, error
 	return res, nil
 }
 
+func postESIWithToken(client *http.Client, path string, data []byte, token string) (*esiResponse, error) {
+	req, err := http.NewRequest(http.MethodPost, buildEsiUrl(path), bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Content-Type", "application/json")
+	res, err := sendRequest(client, req)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func buildEsiUrl(path string) string {
 	u := fmt.Sprintf("%s%s", esiBaseUrl, path)
 	return u
@@ -106,7 +120,7 @@ func sendRequest(client *http.Client, req *http.Request) (*esiResponse, error) {
 		}
 		res.body = body
 		slog.Debug("ESI response", "status", res.status, "body", string(res.body), "header", res.header)
-		if r.StatusCode == http.StatusOK {
+		if res.ok() {
 			return res, nil
 		}
 		var e esiError

@@ -22,8 +22,9 @@ var httpClient = &http.Client{
 
 var scopes = []string{
 	"esi-characters.read_contacts.v1",
-	"esi-universe.read_structures.v1",
 	"esi-mail.read_mail.v1",
+	"esi-mail.organize_mail.v1",
+	"esi-mail.send_mail.v1",
 }
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.
