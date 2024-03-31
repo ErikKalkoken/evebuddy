@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 )
 
 const defaultIconSize = 64
@@ -23,22 +24,23 @@ type characterArea struct {
 
 func (u *ui) NewCharacterArea() *characterArea {
 	c := characterArea{ui: u}
-	c.content = container.NewHBox()
+	c.content = container.NewVBox(container.NewHBox(), widget.NewSeparator())
 	return &c
 }
 
 func (c *characterArea) Redraw() {
-	c.content.RemoveAll()
+	content := c.content.Objects[0].(*fyne.Container)
+	content.RemoveAll()
 	character := c.makeCharacterBadge()
-	c.content.Add(character)
-	c.content.Add(layout.NewSpacer())
+	content.Add(character)
+	content.Add(layout.NewSpacer())
 	button, err := c.makeSwitchButton()
 	if err != nil {
 		slog.Error("Failed to make switch button", "error", "err")
 	} else {
-		c.content.Add(button)
+		content.Add(button)
 	}
-	c.content.Refresh()
+	content.Refresh()
 	c.ui.folderArea.Redraw()
 }
 
