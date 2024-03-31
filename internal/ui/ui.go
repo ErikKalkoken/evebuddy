@@ -1,5 +1,5 @@
-// Package gui contains the code for rendering the UI.
-package gui
+// Package ui contains the code for rendering the UI.
+package ui
 
 import (
 	"database/sql"
@@ -19,7 +19,7 @@ const (
 type eveApp struct {
 	winMain    fyne.Window
 	statusBar  *statusBar
-	characters *characters
+	characters *character
 }
 
 func (e *eveApp) ShowAndRun() {

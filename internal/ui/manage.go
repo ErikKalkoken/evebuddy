@@ -1,4 +1,4 @@
-package gui
+package ui
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 type characterList struct {
 	content        *fyne.Container
 	window         fyne.Window
-	characters     *characters
+	characters     *character
 	dialog         *dialog.CustomDialog
 	selectedCharID int32
 }
@@ -71,7 +71,7 @@ func (c *characterList) update() {
 	c.content.Refresh()
 }
 
-func newCharacterList(w fyne.Window, characters *characters) *characterList {
+func newCharacterList(w fyne.Window, characters *character) *characterList {
 	content := container.NewVBox()
 	c := &characterList{
 		window:         w,

@@ -1,4 +1,4 @@
-package gui
+package ui
 
 import (
 	"example/esiapp/internal/api/images"
@@ -14,14 +14,15 @@ import (
 
 const defaultIconSize = 64
 
-type characters struct {
+// Character area on the UI
+type character struct {
 	content       *fyne.Container
 	folders       *folders
 	esiApp        *eveApp
 	currentCharID int32
 }
 
-func (c *characters) update(charID int32) {
+func (c *character) update(charID int32) {
 	btnSwitch, err := c.makeSwitchButton(charID)
 	if err != nil {
 		panic(err)
@@ -37,7 +38,7 @@ func (c *characters) update(charID int32) {
 	c.currentCharID = charID
 }
 
-func (c *characters) makeSwitchButton(charID int32) (*widgets.ContextMenuButton, error) {
+func (c *character) makeSwitchButton(charID int32) (*widgets.ContextMenuButton, error) {
 	menu, ok, err := c.makeSwitchMenu(charID)
 	if err != nil {
 		return nil, err
@@ -49,7 +50,7 @@ func (c *characters) makeSwitchButton(charID int32) (*widgets.ContextMenuButton,
 	return b, nil
 }
 
-func (c *characters) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
+func (c *character) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
 	menu := fyne.NewMenu("")
 	chars, err := model.FetchAllCharacters()
 	if err != nil {
@@ -103,8 +104,8 @@ func makeCharacter(charID int32) *fyne.Container {
 	return content
 }
 
-func (e *eveApp) newCharacters(f *folders) *characters {
-	c := characters{esiApp: e, folders: f}
+func (e *eveApp) newCharacters(f *folders) *character {
+	c := character{esiApp: e, folders: f}
 	c.content = container.NewHBox()
 	return &c
 }

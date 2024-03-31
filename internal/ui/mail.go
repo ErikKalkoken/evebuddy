@@ -1,4 +1,4 @@
-package gui
+package ui
 
 import (
 	"example/esiapp/internal/model"
@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/microcosm-cc/bluemonday"
 )
 
 type mail struct {
@@ -21,7 +20,6 @@ type mail struct {
 	subject *widget.Label
 	header  *widget.Label
 	body    *widget.Label
-	policy  *bluemonday.Policy
 	mailID  uint64
 }
 

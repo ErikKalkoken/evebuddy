@@ -5,8 +5,8 @@ import (
 	"log"
 	"log/slog"
 
-	"example/esiapp/internal/gui"
 	"example/esiapp/internal/model"
+	"example/esiapp/internal/ui"
 )
 
 func main() {
@@ -20,6 +20,6 @@ func main() {
 	defer db.Close()
 	// storage.Test()
 
-	e := gui.NewEveApp()
+	e := ui.NewEveApp()
 	e.ShowAndRun()
 }

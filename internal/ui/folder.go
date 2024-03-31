@@ -1,4 +1,4 @@
-package gui
+package ui
 
 import (
 	"example/esiapp/internal/model"
@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// folders area on the UI
 type folders struct {
 	esiApp      *eveApp
 	content     fyne.CanvasObject
@@ -33,18 +34,15 @@ func (e *eveApp) newFolders(headers *headers) *folders {
 		headers:     headers,
 		tree:        tree,
 	}
-	btnRefresh := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+	f.btnRefresh = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
 		f.updateMails()
 	})
-	f.btnRefresh = btnRefresh
-
-	btnNew := widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
+	f.btnNew = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
 		d := dialog.NewInformation("New message", "PLACEHOLDER", e.winMain)
 		d.Show()
 	})
-	f.btnNew = btnNew
 
-	top := container.NewHBox(f.btnRefresh, btnNew)
+	top := container.NewHBox(f.btnRefresh, f.btnNew)
 	c := container.NewBorder(top, nil, nil, nil, f.tree)
 	f.content = c
 	return &f
@@ -141,15 +139,6 @@ func addLabelsToTree(charID int32, ids map[string][]string, values map[string]st
 		}
 	}
 }
-
-// func (f *folders) updateMailsWithID(charID int32) {
-// 	err := f.boundCharID.Set(int(charID))
-// 	if err != nil {
-// 		slog.Error("Failed to set char ID", "error", err)
-// 	} else {
-// 		f.updateMails()
-// 	}
-// }
 
 func makeFolderList(headers *headers) (*widget.Tree, binding.StringTree, binding.Int) {
 	boundCharID := binding.NewInt()
