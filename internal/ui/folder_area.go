@@ -15,14 +15,14 @@ import (
 
 // folderArea is the UI area showing the mail folders.
 type folderArea struct {
-	esiApp      *ui
-	content     fyne.CanvasObject
-	boundTree   binding.StringTree
-	boundCharID binding.Int
-	headerArea  *headerArea
-	tree        *widget.Tree
-	btnRefresh  *widget.Button
-	btnNew      *widget.Button
+	esiApp        *ui
+	content       fyne.CanvasObject
+	boundTree     binding.StringTree
+	boundCharID   binding.Int
+	headerArea    *headerArea
+	tree          *widget.Tree
+	refreshButton *widget.Button
+	newButton     *widget.Button
 }
 
 func (e *ui) newFolderArea(headers *headerArea) *folderArea {
@@ -34,15 +34,15 @@ func (e *ui) newFolderArea(headers *headerArea) *folderArea {
 		headerArea:  headers,
 		tree:        tree,
 	}
-	f.btnRefresh = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+	f.refreshButton = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
 		f.updateMails()
 	})
-	f.btnNew = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
+	f.newButton = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
 		d := dialog.NewInformation("New message", "PLACEHOLDER", e.window)
 		d.Show()
 	})
 
-	top := container.NewHBox(f.btnRefresh, f.btnNew)
+	top := container.NewHBox(f.refreshButton, f.newButton)
 	c := container.NewBorder(top, nil, nil, nil, f.tree)
 	f.content = c
 	return &f
@@ -70,11 +70,11 @@ func (f *folderArea) updateMails() {
 
 func (f *folderArea) update(charID int32) {
 	if charID == 0 {
-		f.btnRefresh.Disable()
-		f.btnNew.Disable()
+		f.refreshButton.Disable()
+		f.newButton.Disable()
 	} else {
-		f.btnRefresh.Enable()
-		f.btnNew.Enable()
+		f.refreshButton.Enable()
+		f.newButton.Enable()
 	}
 	if err := f.boundCharID.Set(int(charID)); err != nil {
 		slog.Error("Failed to set char ID", "characterID", charID, "error", err)

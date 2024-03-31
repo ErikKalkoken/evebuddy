@@ -25,15 +25,16 @@ type mailArea struct {
 }
 
 func (e *ui) newMailArea() *mailArea {
-	btnReply := widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {
-	})
-	btnReplyAll := widget.NewButtonWithIcon("", theme.MailReplyAllIcon(), func() {
-	})
-	btnForward := widget.NewButtonWithIcon("", theme.MailForwardIcon(), func() {
-	})
-	btnDelete := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
-	})
-	icons := container.NewHBox(btnReply, btnReplyAll, btnForward, layout.NewSpacer(), btnDelete)
+	icons := container.NewHBox(
+		widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {
+		}),
+		widget.NewButtonWithIcon("", theme.MailReplyAllIcon(), func() {
+		}),
+		widget.NewButtonWithIcon("", theme.MailForwardIcon(), func() {
+		}),
+		layout.NewSpacer(),
+		widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
+		}))
 	for _, i := range []int{0, 1, 2, 4} {
 		icons.Objects[i].(*widget.Button).Disable()
 	}

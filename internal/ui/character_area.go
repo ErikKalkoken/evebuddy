@@ -29,7 +29,7 @@ func (e *ui) newCharacterArea(f *folderArea) *characterArea {
 }
 
 func (c *characterArea) update(charID int32) {
-	btnSwitch, err := c.makeSwitchButton(charID)
+	button, err := c.makeSwitchButton(charID)
 	if err != nil {
 		panic(err)
 	}
@@ -37,7 +37,7 @@ func (c *characterArea) update(charID int32) {
 	c.content.RemoveAll()
 	c.content.Add(character)
 	c.content.Add(layout.NewSpacer())
-	c.content.Add(btnSwitch)
+	c.content.Add(button)
 	c.content.Refresh()
 	c.folderArea.update(charID)
 	c.folderArea.updateMails()

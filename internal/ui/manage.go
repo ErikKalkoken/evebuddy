@@ -15,109 +15,110 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type characterList struct {
+// manageArea is the UI area for managing of characters.
+type manageArea struct {
 	content        *fyne.Container
 	window         fyne.Window
-	characters     *characterArea
+	characterArea  *characterArea
 	dialog         *dialog.CustomDialog
 	selectedCharID int32
 }
 
-func (c *characterList) update() {
+func newManageArea(w fyne.Window, c *characterArea) *manageArea {
+	content := container.NewVBox()
+	m := &manageArea{
+		window:         w,
+		content:        content,
+		characterArea:  c,
+		selectedCharID: c.currentCharID,
+	}
+	return m
+}
+
+func (m *manageArea) update() {
 	chars, err := model.FetchAllCharacters()
 	if err != nil {
 		panic(err)
 	}
-	c.content.RemoveAll()
+	m.content.RemoveAll()
 	for _, char := range chars {
 		uri := char.PortraitURL(defaultIconSize)
 		image := canvas.NewImageFromURI(uri)
 		image.FillMode = canvas.ImageFillOriginal
 		name := widget.NewLabel(char.Name)
-		btnSelect := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
-			c.selectedCharID = char.ID
-			c.dialog.Hide()
+		selectButton := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
+			m.selectedCharID = char.ID
+			m.dialog.Hide()
 		})
-		isCurrentChar := char.ID == c.characters.currentCharID
+		isCurrentChar := char.ID == m.characterArea.currentCharID
 		if isCurrentChar {
-			btnSelect.Disable()
+			selectButton.Disable()
 		}
-		btnDelete := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {
-			dlg := dialog.NewConfirm(
+		deleteButton := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {
+			dialog := dialog.NewConfirm(
 				"Delete Character",
 				fmt.Sprintf("Are you sure you want to delete %s?", char.Name),
 				func(confirmed bool) {
 					if confirmed {
 						err := char.Delete()
 						if err != nil {
-							d := dialog.NewError(err, c.window)
+							d := dialog.NewError(err, m.window)
 							d.Show()
 						}
-						c.update()
+						m.update()
 						if isCurrentChar {
-							c.characters.update(0)
+							m.characterArea.update(0)
 						}
 					}
 				},
-				c.window,
+				m.window,
 			)
-			dlg.Show()
+			dialog.Show()
 		})
-		btnDelete.Importance = widget.DangerImportance
-		item := container.NewHBox(image, name, layout.NewSpacer(), btnSelect, btnDelete)
-		c.content.Add(item)
-		c.content.Add(widget.NewSeparator())
+		deleteButton.Importance = widget.DangerImportance
+		item := container.NewHBox(image, name, layout.NewSpacer(), selectButton, deleteButton)
+		m.content.Add(item)
+		m.content.Add(widget.NewSeparator())
 	}
-	c.content.Refresh()
+	m.content.Refresh()
 }
 
-func newCharacterList(w fyne.Window, characters *characterArea) *characterList {
-	content := container.NewVBox()
-	c := &characterList{
-		window:         w,
-		content:        content,
-		characters:     characters,
-		selectedCharID: characters.currentCharID,
-	}
-	return c
-}
-
-func showManageDialog(e *ui) {
-	c := newCharacterList(e.window, e.characterArea)
-	c.update()
-	btnAdd := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-		showAddCharacterDialog(e.window, c)
+func showManageDialog(u *ui) {
+	m := newManageArea(u.window, u.characterArea)
+	m.update()
+	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
+		showAddCharacterDialog(u.window, m)
 	})
-	btnAdd.Importance = widget.HighImportance
-	c2 := container.NewScroll(c.content)
-	c2.SetMinSize(fyne.NewSize(400, 400))
-	content := container.NewBorder(btnAdd, nil, nil, nil, c2)
-	dlg := dialog.NewCustom("Manage Characters", "Close", content, e.window)
-	c.dialog = dlg
-	dlg.SetOnClosed(func() {
-		c.characters.update(c.selectedCharID)
+	button.Importance = widget.HighImportance
+	c := container.NewScroll(m.content)
+	c.SetMinSize(fyne.NewSize(400, 400))
+	content := container.NewBorder(button, nil, nil, nil, c)
+	dialog := dialog.NewCustom("Manage Characters", "Close", content, u.window)
+	m.dialog = dialog
+	dialog.SetOnClosed(func() {
+		m.characterArea.update(m.selectedCharID)
 	})
-	dlg.Show()
+	dialog.Show()
 }
 
-func showAddCharacterDialog(w fyne.Window, list *characterList) {
+func showAddCharacterDialog(w fyne.Window, m *manageArea) {
 	ctx, cancel := context.WithCancel(context.Background())
-	dlg := dialog.NewCustom(
+	dialog := dialog.NewCustom(
 		"Add Character",
 		"Cancel",
 		widget.NewLabel("Please follow instructions in your browser to add a new character."),
 		w,
 	)
-	dlg.SetOnClosed(cancel)
+	dialog.SetOnClosed(cancel)
 	go func() {
 		defer cancel()
-		defer dlg.Hide()
+		defer dialog.Hide()
 		_, err := AddCharacter(ctx)
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
 		} else {
-			list.update()
+			m.update()
 		}
 	}()
-	dlg.Show()
+	dialog.Show()
 }
