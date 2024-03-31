@@ -15,7 +15,10 @@ const (
 	myDateTime = "2006.01.02 15:04"
 )
 
-// The ui is the root of the UI tree that holds all UI areas together
+// The ui is the root element of the UI, which contains all UI areas.
+//
+// Each UI area holds a pointer of the ui instance,
+// which allow it to access the other UI areas and shared variables
 type ui struct {
 	window        fyne.Window
 	characterArea *characterArea
@@ -26,7 +29,7 @@ type ui struct {
 	currentCharID int32
 }
 
-// NewUI returns a new ui instance.
+// NewUI build the UI and returns it.
 func NewUI() *ui {
 	a := app.New()
 	w := a.NewWindow("Eve Online App")
@@ -73,6 +76,7 @@ func NewUI() *ui {
 	return u
 }
 
+// ShowAndRun shows the UI and runs it (blocking).
 func (u *ui) ShowAndRun() {
 	u.window.ShowAndRun()
 }

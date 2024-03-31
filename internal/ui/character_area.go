@@ -4,6 +4,7 @@ import (
 	"example/esiapp/internal/api/images"
 	"example/esiapp/internal/model"
 	"example/esiapp/internal/widgets"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -27,61 +28,22 @@ func (u *ui) NewCharacterArea() *characterArea {
 }
 
 func (c *characterArea) Redraw() {
-	id := c.ui.currentCharID
-	button, err := c.makeSwitchButton(id)
-	if err != nil {
-		panic(err)
-	}
-	character := makeCharacter(id)
 	c.content.RemoveAll()
+	character := c.makeCharacterBadge()
 	c.content.Add(character)
 	c.content.Add(layout.NewSpacer())
-	c.content.Add(button)
+	button, err := c.makeSwitchButton()
+	if err != nil {
+		slog.Error("Failed to make switch button", "error", "err")
+	} else {
+		c.content.Add(button)
+	}
 	c.content.Refresh()
 	c.ui.folderArea.Redraw()
 }
 
-func (c *characterArea) makeSwitchButton(charID int32) (*widgets.ContextMenuButton, error) {
-	menu, ok, err := c.makeSwitchMenu(charID)
-	if err != nil {
-		return nil, err
-	}
-	b := widgets.NewContextMenuButton("Switch Character", menu)
-	if !ok {
-		b.Disable()
-	}
-	return b, nil
-}
-
-func (c *characterArea) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
-	menu := fyne.NewMenu("")
-	chars, err := model.FetchAllCharacters()
-	if err != nil {
-		return nil, false, err
-	}
-	if len(chars) == 0 {
-		return menu, false, nil
-	}
-	var items []*fyne.MenuItem
-	for _, char := range chars {
-		item := fyne.NewMenuItem(char.Name, func() {
-			c.ui.currentCharID = char.ID
-			c.Redraw()
-		})
-		if char.ID == charID {
-			item.Disabled = true
-		}
-		items = append(items, item)
-	}
-	if len(chars) < 2 {
-		return menu, false, nil
-	}
-	menu.Items = items
-	return menu, true, nil
-}
-
-func makeCharacter(charID int32) *fyne.Container {
-	char, err := model.FetchCharacter(charID)
+func (c *characterArea) makeCharacterBadge() *fyne.Container {
+	char, err := model.FetchCharacter(c.ui.currentCharID)
 	var charName, corpName string
 	var charURI, corpURI fyne.URI
 	if err != nil {
@@ -106,4 +68,43 @@ func makeCharacter(charID int32) *fyne.Container {
 	names := container.NewVBox(character, corporation)
 	content := container.NewHBox(charImage, corpImage, names)
 	return content
+}
+
+func (c *characterArea) makeSwitchButton() (*widgets.ContextMenuButton, error) {
+	menu, ok, err := c.makeSwitchMenu(c.ui.currentCharID)
+	if err != nil {
+		return nil, err
+	}
+	button := widgets.NewContextMenuButton("Switch Character", menu)
+	if !ok {
+		button.Disable()
+	}
+	return button, nil
+}
+
+func (c *characterArea) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
+	menu := fyne.NewMenu("")
+	characters, err := model.FetchAllCharacters()
+	if err != nil {
+		return nil, false, err
+	}
+	if len(characters) == 0 {
+		return menu, false, nil
+	}
+	var items []*fyne.MenuItem
+	for _, char := range characters {
+		item := fyne.NewMenuItem(char.Name, func() {
+			c.ui.currentCharID = char.ID
+			c.Redraw()
+		})
+		if char.ID == charID {
+			item.Disabled = true
+		}
+		items = append(items, item)
+	}
+	if len(characters) < 2 {
+		return menu, false, nil
+	}
+	menu.Items = items
+	return menu, true, nil
 }
