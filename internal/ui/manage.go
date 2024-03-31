@@ -18,7 +18,7 @@ import (
 type characterList struct {
 	content        *fyne.Container
 	window         fyne.Window
-	characters     *character
+	characters     *characterArea
 	dialog         *dialog.CustomDialog
 	selectedCharID int32
 }
@@ -71,7 +71,7 @@ func (c *characterList) update() {
 	c.content.Refresh()
 }
 
-func newCharacterList(w fyne.Window, characters *character) *characterList {
+func newCharacterList(w fyne.Window, characters *characterArea) *characterList {
 	content := container.NewVBox()
 	c := &characterList{
 		window:         w,
@@ -83,7 +83,7 @@ func newCharacterList(w fyne.Window, characters *character) *characterList {
 }
 
 func showManageDialog(e *eveApp) {
-	c := newCharacterList(e.winMain, e.characters)
+	c := newCharacterList(e.winMain, e.characterArea)
 	c.update()
 	btnAdd := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		showAddCharacterDialog(e.winMain, c)

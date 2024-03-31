@@ -17,9 +17,9 @@ const (
 
 // Main type for the core app structure
 type eveApp struct {
-	winMain    fyne.Window
-	statusBar  *statusBar
-	characters *character
+	winMain       fyne.Window
+	statusBar     *statusBar
+	characterArea *characterArea
 }
 
 func (e *eveApp) ShowAndRun() {
@@ -49,7 +49,7 @@ func NewEveApp() *eveApp {
 	folders := e.newFolders(headers)
 	characters := e.newCharacters(folders)
 	characters.update(charID)
-	e.characters = characters
+	e.characterArea = characters
 
 	headersMail := container.NewHSplit(headers.content, mail.content)
 	headersMail.SetOffset(0.35)

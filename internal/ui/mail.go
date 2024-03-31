@@ -13,7 +13,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type mail struct {
+// mailArea is the UI area showing the current mail.
+type mailArea struct {
 	content fyne.CanvasObject
 	icons   *fyne.Container
 	bodyC   *container.Scroll
@@ -23,7 +24,7 @@ type mail struct {
 	mailID  uint64
 }
 
-func (e *eveApp) newMail() *mail {
+func (e *eveApp) newMail() *mailArea {
 	btnReply := widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {
 	})
 	btnReplyAll := widget.NewButtonWithIcon("", theme.MailReplyAllIcon(), func() {
@@ -50,7 +51,7 @@ func (e *eveApp) newMail() *mail {
 	body.Wrapping = fyne.TextWrapBreak
 	bodyWithScroll := container.NewVScroll(body)
 	content := container.NewBorder(wrapper, nil, nil, nil, bodyWithScroll)
-	m := mail{
+	m := mailArea{
 		content: content,
 		bodyC:   bodyWithScroll,
 		subject: subject,
@@ -61,7 +62,7 @@ func (e *eveApp) newMail() *mail {
 	return &m
 }
 
-func (m *mail) update(mailID uint64) {
+func (m *mailArea) update(mailID uint64) {
 	mail, err := model.FetchMail(mailID)
 	if err != nil {
 		slog.Error("Failed to render mail", "mailID", mailID, "error", err)
@@ -85,11 +86,11 @@ func (m *mail) update(mailID uint64) {
 	// }
 }
 
-func (m *mail) clear() {
+func (m *mailArea) clear() {
 	m.updateContent("", "", "")
 }
 
-func (m *mail) updateContent(s string, h string, b string) {
+func (m *mailArea) updateContent(s string, h string, b string) {
 	m.subject.SetText(s)
 	m.header.SetText(h)
 	m.body.SetText(b)

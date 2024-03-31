@@ -14,15 +14,15 @@ import (
 
 const defaultIconSize = 64
 
-// Character area on the UI
-type character struct {
+// characterArea is the UI area showing the active character
+type characterArea struct {
 	content       *fyne.Container
-	folders       *folders
+	folderArea    *folderArea
 	esiApp        *eveApp
 	currentCharID int32
 }
 
-func (c *character) update(charID int32) {
+func (c *characterArea) update(charID int32) {
 	btnSwitch, err := c.makeSwitchButton(charID)
 	if err != nil {
 		panic(err)
@@ -33,12 +33,12 @@ func (c *character) update(charID int32) {
 	c.content.Add(layout.NewSpacer())
 	c.content.Add(btnSwitch)
 	c.content.Refresh()
-	c.folders.update(charID)
-	c.folders.updateMails()
+	c.folderArea.update(charID)
+	c.folderArea.updateMails()
 	c.currentCharID = charID
 }
 
-func (c *character) makeSwitchButton(charID int32) (*widgets.ContextMenuButton, error) {
+func (c *characterArea) makeSwitchButton(charID int32) (*widgets.ContextMenuButton, error) {
 	menu, ok, err := c.makeSwitchMenu(charID)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (c *character) makeSwitchButton(charID int32) (*widgets.ContextMenuButton, 
 	return b, nil
 }
 
-func (c *character) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
+func (c *characterArea) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
 	menu := fyne.NewMenu("")
 	chars, err := model.FetchAllCharacters()
 	if err != nil {
@@ -104,8 +104,8 @@ func makeCharacter(charID int32) *fyne.Container {
 	return content
 }
 
-func (e *eveApp) newCharacters(f *folders) *character {
-	c := character{esiApp: e, folders: f}
+func (e *eveApp) newCharacters(f *folderArea) *characterArea {
+	c := characterArea{esiApp: e, folderArea: f}
 	c.content = container.NewHBox()
 	return &c
 }

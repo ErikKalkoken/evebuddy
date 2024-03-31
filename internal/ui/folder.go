@@ -13,25 +13,25 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// folders area on the UI
-type folders struct {
+// folderArea is the UI area showing the mail folders.
+type folderArea struct {
 	esiApp      *eveApp
 	content     fyne.CanvasObject
 	boundTree   binding.StringTree
 	boundCharID binding.Int
-	headers     *headers
+	headerArea  *headerArea
 	tree        *widget.Tree
 	btnRefresh  *widget.Button
 	btnNew      *widget.Button
 }
 
-func (e *eveApp) newFolders(headers *headers) *folders {
+func (e *eveApp) newFolders(headers *headerArea) *folderArea {
 	tree, boundTree, boundCharID := makeFolderList(headers)
-	f := folders{
+	f := folderArea{
 		esiApp:      e,
 		boundTree:   boundTree,
 		boundCharID: boundCharID,
-		headers:     headers,
+		headerArea:  headers,
 		tree:        tree,
 	}
 	f.btnRefresh = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
@@ -48,7 +48,7 @@ func (e *eveApp) newFolders(headers *headers) *folders {
 	return &f
 }
 
-func (f *folders) updateMails() {
+func (f *folderArea) updateMails() {
 	charID, err := f.boundCharID.Get()
 	if err != nil {
 		slog.Error("Failed to get character ID", "error", err)
@@ -68,7 +68,7 @@ func (f *folders) updateMails() {
 	}()
 }
 
-func (f *folders) update(charID int32) {
+func (f *folderArea) update(charID int32) {
 	if charID == 0 {
 		f.btnRefresh.Disable()
 		f.btnNew.Disable()
@@ -86,7 +86,7 @@ func (f *folders) update(charID int32) {
 	f.boundTree.Set(ids, values)
 	f.tree.Select(nodeAllID)
 	f.tree.ScrollToTop()
-	f.headers.update(charID, folderItemAll)
+	f.headerArea.update(charID, folderItemAll)
 }
 
 func initialTreeData(folderItemAll node) (map[string][]string, map[string]string) {
@@ -140,7 +140,7 @@ func addLabelsToTree(charID int32, ids map[string][]string, values map[string]st
 	}
 }
 
-func makeFolderList(headers *headers) (*widget.Tree, binding.StringTree, binding.Int) {
+func makeFolderList(headers *headerArea) (*widget.Tree, binding.StringTree, binding.Int) {
 	boundCharID := binding.NewInt()
 	boundTree := binding.NewStringTree()
 	tree := widget.NewTreeWithData(

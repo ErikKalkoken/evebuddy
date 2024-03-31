@@ -22,15 +22,16 @@ type mailItem struct {
 	timestamp time.Time
 }
 
-type headers struct {
+// headerArea is the UI area showing the list of mail headers.
+type headerArea struct {
 	content    fyne.CanvasObject
 	list       *widget.List
 	boundList  binding.ExternalUntypedList
 	boundTotal binding.String
-	mail       *mail
+	mailArea   *mailArea
 }
 
-func (h *headers) update(charID int32, folder node) {
+func (h *headerArea) update(charID int32, folder node) {
 	var d []interface{}
 	var mm []model.Mail
 	var err error
@@ -59,15 +60,15 @@ func (h *headers) update(charID int32, folder node) {
 	h.boundTotal.Set(s)
 
 	if len(mm) > 0 {
-		h.mail.update(mm[0].ID)
+		h.mailArea.update(mm[0].ID)
 		h.list.Select(0)
 		h.list.ScrollToTop()
 	} else {
-		h.mail.clear()
+		h.mailArea.clear()
 	}
 }
 
-func (e *eveApp) newHeaders(mail *mail) *headers {
+func (e *eveApp) newHeaders(mail *mailArea) *headerArea {
 	var x []interface{}
 	boundList := binding.BindUntypedList(&x)
 	list := widget.NewListWithData(
@@ -119,12 +120,12 @@ func (e *eveApp) newHeaders(mail *mail) *headers {
 	total := widget.NewLabelWithData(boundTotal)
 	c := container.NewBorder(total, nil, nil, nil, list)
 
-	m := headers{
+	m := headerArea{
 		content:    c,
 		list:       list,
 		boundList:  boundList,
 		boundTotal: boundTotal,
-		mail:       mail,
+		mailArea:   mail,
 	}
 	return &m
 }
