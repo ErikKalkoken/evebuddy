@@ -14,34 +14,31 @@ import (
 
 const defaultIconSize = 64
 
-// characterArea is the UI area showing the active character
+// characterArea is the UI area that shows the active character
 type characterArea struct {
-	content       *fyne.Container
-	folderArea    *folderArea
-	ui            *ui
-	currentCharID int32
+	content *fyne.Container
+	ui      *ui
 }
 
-func (u *ui) NewCharacterArea(f *folderArea) *characterArea {
-	c := characterArea{ui: u, folderArea: f}
+func (u *ui) NewCharacterArea() *characterArea {
+	c := characterArea{ui: u}
 	c.content = container.NewHBox()
 	return &c
 }
 
-func (c *characterArea) Redraw(charID int32) {
-	button, err := c.makeSwitchButton(charID)
+func (c *characterArea) Redraw() {
+	id := c.ui.currentCharID
+	button, err := c.makeSwitchButton(id)
 	if err != nil {
 		panic(err)
 	}
-	character := makeCharacter(charID)
+	character := makeCharacter(id)
 	c.content.RemoveAll()
 	c.content.Add(character)
 	c.content.Add(layout.NewSpacer())
 	c.content.Add(button)
 	c.content.Refresh()
-	c.folderArea.Redraw(charID)
-	c.folderArea.UpdateMails()
-	c.currentCharID = charID
+	c.ui.folderArea.Redraw()
 }
 
 func (c *characterArea) makeSwitchButton(charID int32) (*widgets.ContextMenuButton, error) {
@@ -68,7 +65,8 @@ func (c *characterArea) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
 	var items []*fyne.MenuItem
 	for _, char := range chars {
 		item := fyne.NewMenuItem(char.Name, func() {
-			c.Redraw(char.ID)
+			c.ui.currentCharID = char.ID
+			c.Redraw()
 		})
 		if char.ID == charID {
 			item.Disabled = true

@@ -16,8 +16,6 @@ import (
 // folderArea is the UI area showing the mail folders.
 type folderArea struct {
 	content       fyne.CanvasObject
-	currentCharID int32
-	headerArea    *headerArea
 	newButton     *widget.Button
 	refreshButton *widget.Button
 	tree          *widget.Tree
@@ -25,12 +23,9 @@ type folderArea struct {
 	ui            *ui
 }
 
-func (u *ui) NewFolderArea(headers *headerArea) *folderArea {
-	f := folderArea{
-		ui:         u,
-		headerArea: headers,
-	}
-	f.tree, f.treeData = makeFolderTree(headers, &f.currentCharID)
+func (u *ui) NewFolderArea() *folderArea {
+	f := folderArea{ui: u}
+	f.tree, f.treeData = makeFolderTree(u)
 	f.refreshButton = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
 		f.UpdateMails()
 	})
@@ -44,7 +39,7 @@ func (u *ui) NewFolderArea(headers *headerArea) *folderArea {
 	return &f
 }
 
-func makeFolderTree(headers *headerArea, currentCharID *int32) (*widget.Tree, binding.StringTree) {
+func makeFolderTree(u *ui) (*widget.Tree, binding.StringTree) {
 	treeData := binding.NewStringTree()
 	tree := widget.NewTreeWithData(
 		treeData,
@@ -86,12 +81,13 @@ func makeFolderTree(headers *headerArea, currentCharID *int32) (*widget.Tree, bi
 			return
 		}
 		lastUID = uid
-		headers.Redraw(*currentCharID, item)
+		u.headerArea.Redraw(item)
 	}
 	return tree, treeData
 }
 
-func (f *folderArea) Redraw(charID int32) {
+func (f *folderArea) Redraw() {
+	charID := f.ui.currentCharID
 	if charID == 0 {
 		f.refreshButton.Disable()
 		f.newButton.Disable()
@@ -99,7 +95,6 @@ func (f *folderArea) Redraw(charID int32) {
 		f.refreshButton.Enable()
 		f.newButton.Enable()
 	}
-	f.currentCharID = charID
 	folderItemAll := node{ID: nodeAllID, ObjID: model.LabelAll, Name: "All Mails", Category: nodeCategoryLabel}
 	ids, values := initialTreeData(folderItemAll)
 	addLabelsToTree(charID, ids, values)
@@ -107,7 +102,7 @@ func (f *folderArea) Redraw(charID int32) {
 	f.treeData.Set(ids, values)
 	f.tree.Select(nodeAllID)
 	f.tree.ScrollToTop()
-	f.headerArea.Redraw(charID, folderItemAll)
+	f.ui.headerArea.Redraw(folderItemAll)
 }
 
 func initialTreeData(folderItemAll node) (map[string][]string, map[string]string) {
@@ -164,14 +159,14 @@ func addLabelsToTree(charID int32, ids map[string][]string, values map[string]st
 func (f *folderArea) UpdateMails() {
 	status := f.ui.statusArea
 	go func() {
-		if f.currentCharID != 0 {
-			err := UpdateMails(f.currentCharID, status)
+		if f.ui.currentCharID != 0 {
+			err := UpdateMails(f.ui.currentCharID, status)
 			if err != nil {
 				status.setText("Failed to fetch mail")
-				slog.Error("Failed to update mails", "characterID", f.currentCharID, "error", err)
+				slog.Error("Failed to update mails", "characterID", f.ui.currentCharID, "error", err)
 				return
 			}
 		}
-		f.Redraw(f.currentCharID)
+		f.Redraw()
 	}()
 }

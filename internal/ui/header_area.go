@@ -28,11 +28,10 @@ type headerArea struct {
 	list       *widget.List
 	boundList  binding.ExternalUntypedList
 	boundTotal binding.String
-	mailArea   *mailArea
 	ui         *ui
 }
 
-func (u *ui) NewHeaderArea(mail *mailArea) *headerArea {
+func (u *ui) NewHeaderArea() *headerArea {
 	var x []interface{}
 	boundList := binding.BindUntypedList(&x)
 	list := widget.NewListWithData(
@@ -77,7 +76,7 @@ func (u *ui) NewHeaderArea(mail *mailArea) *headerArea {
 			return
 		}
 		m := d[id].(mailItem)
-		mail.Redraw(m.id)
+		u.mailArea.Redraw(m.id)
 	}
 
 	boundTotal := binding.NewString()
@@ -89,16 +88,16 @@ func (u *ui) NewHeaderArea(mail *mailArea) *headerArea {
 		list:       list,
 		boundList:  boundList,
 		boundTotal: boundTotal,
-		mailArea:   mail,
 		ui:         u,
 	}
 	return &m
 }
 
-func (h *headerArea) Redraw(charID int32, folder node) {
+func (h *headerArea) Redraw(folder node) {
 	var d []interface{}
 	var mm []model.Mail
 	var err error
+	charID := h.ui.currentCharID
 	switch folder.Category {
 	case nodeCategoryLabel:
 		mm, err = model.FetchMailsForLabel(charID, folder.ObjID)
@@ -124,10 +123,10 @@ func (h *headerArea) Redraw(charID int32, folder node) {
 	h.boundTotal.Set(s)
 
 	if len(mm) > 0 {
-		h.mailArea.Redraw(mm[0].ID)
+		h.ui.mailArea.Redraw(mm[0].ID)
 		h.list.Select(0)
 		h.list.ScrollToTop()
 	} else {
-		h.mailArea.Clear()
+		h.ui.mailArea.Clear()
 	}
 }

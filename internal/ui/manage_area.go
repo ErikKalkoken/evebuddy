@@ -17,17 +17,16 @@ import (
 
 // manageArea is the UI area for managing of characters.
 type manageArea struct {
-	content        *fyne.Container
-	dialog         *dialog.CustomDialog
-	selectedCharID int32
-	ui             *ui
+	content *fyne.Container
+	dialog  *dialog.CustomDialog
+	ui      *ui
 }
 
 func (u *ui) ShowManageDialog() {
 	m := u.NewManageArea()
 	m.Redraw()
 	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-		showAddCharacterDialog(u.window, m)
+		m.showAddCharacterDialog()
 	})
 	button.Importance = widget.HighImportance
 	c := container.NewScroll(m.content)
@@ -36,39 +35,16 @@ func (u *ui) ShowManageDialog() {
 	dialog := dialog.NewCustom("Manage Characters", "Close", content, u.window)
 	m.dialog = dialog
 	dialog.SetOnClosed(func() {
-		u.characterArea.Redraw(m.selectedCharID)
+		u.characterArea.Redraw()
 	})
-	dialog.Show()
-}
-
-func showAddCharacterDialog(w fyne.Window, m *manageArea) {
-	ctx, cancel := context.WithCancel(context.Background())
-	dialog := dialog.NewCustom(
-		"Add Character",
-		"Cancel",
-		widget.NewLabel("Please follow instructions in your browser to add a new character."),
-		w,
-	)
-	dialog.SetOnClosed(cancel)
-	go func() {
-		defer cancel()
-		defer dialog.Hide()
-		_, err := AddCharacter(ctx)
-		if err != nil {
-			slog.Error("Failed to add a new character", "error", err)
-		} else {
-			m.Redraw()
-		}
-	}()
 	dialog.Show()
 }
 
 func (u *ui) NewManageArea() *manageArea {
 	content := container.NewVBox()
 	m := &manageArea{
-		ui:             u,
-		content:        content,
-		selectedCharID: u.characterArea.currentCharID,
+		ui:      u,
+		content: content,
 	}
 	return m
 }
@@ -85,10 +61,10 @@ func (m *manageArea) Redraw() {
 		image.FillMode = canvas.ImageFillOriginal
 		name := widget.NewLabel(char.Name)
 		selectButton := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
-			m.selectedCharID = char.ID
+			m.ui.currentCharID = char.ID
 			m.dialog.Hide()
 		})
-		isCurrentChar := char.ID == m.ui.characterArea.currentCharID
+		isCurrentChar := char.ID == m.ui.currentCharID
 		if isCurrentChar {
 			selectButton.Disable()
 		}
@@ -105,7 +81,8 @@ func (m *manageArea) Redraw() {
 						}
 						m.Redraw()
 						if isCurrentChar {
-							m.ui.characterArea.Redraw(0)
+							m.ui.currentCharID = 0
+							m.ui.characterArea.Redraw()
 						}
 					}
 				},
@@ -119,4 +96,26 @@ func (m *manageArea) Redraw() {
 		m.content.Add(widget.NewSeparator())
 	}
 	m.content.Refresh()
+}
+
+func (m *manageArea) showAddCharacterDialog() {
+	ctx, cancel := context.WithCancel(context.Background())
+	dialog := dialog.NewCustom(
+		"Add Character",
+		"Cancel",
+		widget.NewLabel("Please follow instructions in your browser to add a new character."),
+		m.ui.window,
+	)
+	dialog.SetOnClosed(cancel)
+	go func() {
+		defer cancel()
+		defer dialog.Hide()
+		_, err := AddCharacter(ctx)
+		if err != nil {
+			slog.Error("Failed to add a new character", "error", err)
+		} else {
+			m.Redraw()
+		}
+	}()
+	dialog.Show()
 }
