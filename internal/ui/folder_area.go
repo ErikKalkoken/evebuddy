@@ -15,7 +15,7 @@ import (
 
 // folderArea is the UI area showing the mail folders.
 type folderArea struct {
-	esiApp      *eveApp
+	esiApp      *ui
 	content     fyne.CanvasObject
 	boundTree   binding.StringTree
 	boundCharID binding.Int
@@ -25,7 +25,7 @@ type folderArea struct {
 	btnNew      *widget.Button
 }
 
-func (e *eveApp) newFolderArea(headers *headerArea) *folderArea {
+func (e *ui) newFolderArea(headers *headerArea) *folderArea {
 	tree, boundTree, boundCharID := makeFolderList(headers)
 	f := folderArea{
 		esiApp:      e,
@@ -38,7 +38,7 @@ func (e *eveApp) newFolderArea(headers *headerArea) *folderArea {
 		f.updateMails()
 	})
 	f.btnNew = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
-		d := dialog.NewInformation("New message", "PLACEHOLDER", e.winMain)
+		d := dialog.NewInformation("New message", "PLACEHOLDER", e.window)
 		d.Show()
 	})
 
@@ -54,7 +54,7 @@ func (f *folderArea) updateMails() {
 		slog.Error("Failed to get character ID", "error", err)
 		return
 	}
-	status := f.esiApp.statusBar
+	status := f.esiApp.statusArea
 	go func() {
 		if charID != 0 {
 			err = UpdateMails(int32(charID), status)

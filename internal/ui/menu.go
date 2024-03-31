@@ -5,7 +5,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 )
 
-func MakeMenu(a fyne.App, e *eveApp) *fyne.MainMenu {
+func MakeMenu(a fyne.App, e *ui) *fyne.MainMenu {
 	file := fyne.NewMenu("File")
 
 	manageItem := fyne.NewMenuItem("Manage", func() {
@@ -14,7 +14,7 @@ func MakeMenu(a fyne.App, e *eveApp) *fyne.MainMenu {
 	character := fyne.NewMenu("Character", manageItem)
 
 	aboutItem := fyne.NewMenuItem("About", func() {
-		d := dialog.NewInformation("About", "esiapp v0.1.0", e.winMain)
+		d := dialog.NewInformation("About", "esiapp v0.1.0", e.window)
 		d.Show()
 	})
 	help := fyne.NewMenu("Help", aboutItem)

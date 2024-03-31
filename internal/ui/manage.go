@@ -82,17 +82,17 @@ func newCharacterList(w fyne.Window, characters *characterArea) *characterList {
 	return c
 }
 
-func showManageDialog(e *eveApp) {
-	c := newCharacterList(e.winMain, e.characterArea)
+func showManageDialog(e *ui) {
+	c := newCharacterList(e.window, e.characterArea)
 	c.update()
 	btnAdd := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-		showAddCharacterDialog(e.winMain, c)
+		showAddCharacterDialog(e.window, c)
 	})
 	btnAdd.Importance = widget.HighImportance
 	c2 := container.NewScroll(c.content)
 	c2.SetMinSize(fyne.NewSize(400, 400))
 	content := container.NewBorder(btnAdd, nil, nil, nil, c2)
-	dlg := dialog.NewCustom("Manage Characters", "Close", content, e.winMain)
+	dlg := dialog.NewCustom("Manage Characters", "Close", content, e.window)
 	c.dialog = dlg
 	dlg.SetOnClosed(func() {
 		c.characters.update(c.selectedCharID)

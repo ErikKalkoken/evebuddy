@@ -18,11 +18,11 @@ const defaultIconSize = 64
 type characterArea struct {
 	content       *fyne.Container
 	folderArea    *folderArea
-	esiApp        *eveApp
+	esiApp        *ui
 	currentCharID int32
 }
 
-func (e *eveApp) newCharacterArea(f *folderArea) *characterArea {
+func (e *ui) newCharacterArea(f *folderArea) *characterArea {
 	c := characterArea{esiApp: e, folderArea: f}
 	c.content = container.NewHBox()
 	return &c

@@ -15,17 +15,17 @@ const (
 	myDateTime = "2006.01.02 15:04"
 )
 
-// Main type for the core app structure
-type eveApp struct {
-	winMain       fyne.Window
-	statusBar     *statusArea
+// The UI is the root type that holds all UI areas together
+type ui struct {
+	window        fyne.Window
+	statusArea    *statusArea
 	characterArea *characterArea
 }
 
-func NewEveApp() *eveApp {
+func NewUI() *ui {
 	a := app.New()
 	w := a.NewWindow("Eve Online App")
-	e := &eveApp{winMain: w}
+	e := &ui{window: w}
 
 	var charID int32
 	c, err := model.FetchFirstCharacter()
@@ -38,7 +38,7 @@ func NewEveApp() *eveApp {
 	}
 
 	bar := e.newStatusArea()
-	e.statusBar = bar
+	e.statusArea = bar
 
 	mail := e.newMailArea()
 	headers := e.newHeaderArea(mail)
@@ -64,6 +64,6 @@ func NewEveApp() *eveApp {
 	return e
 }
 
-func (e *eveApp) ShowAndRun() {
-	e.winMain.ShowAndRun()
+func (e *ui) ShowAndRun() {
+	e.window.ShowAndRun()
 }
