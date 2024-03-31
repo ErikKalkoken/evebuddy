@@ -9,7 +9,7 @@ func MakeMenu(a fyne.App, u *ui) *fyne.MainMenu {
 	file := fyne.NewMenu("File")
 
 	manageItem := fyne.NewMenuItem("Manage", func() {
-		u.showManageDialog()
+		u.ShowManageDialog()
 	})
 	character := fyne.NewMenu("Character", manageItem)
 

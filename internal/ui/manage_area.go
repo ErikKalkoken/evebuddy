@@ -23,7 +23,47 @@ type manageArea struct {
 	ui             *ui
 }
 
-func (u *ui) newManageArea() *manageArea {
+func (u *ui) ShowManageDialog() {
+	m := u.NewManageArea()
+	m.Redraw()
+	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
+		showAddCharacterDialog(u.window, m)
+	})
+	button.Importance = widget.HighImportance
+	c := container.NewScroll(m.content)
+	c.SetMinSize(fyne.NewSize(400, 400))
+	content := container.NewBorder(button, nil, nil, nil, c)
+	dialog := dialog.NewCustom("Manage Characters", "Close", content, u.window)
+	m.dialog = dialog
+	dialog.SetOnClosed(func() {
+		u.characterArea.Redraw(m.selectedCharID)
+	})
+	dialog.Show()
+}
+
+func showAddCharacterDialog(w fyne.Window, m *manageArea) {
+	ctx, cancel := context.WithCancel(context.Background())
+	dialog := dialog.NewCustom(
+		"Add Character",
+		"Cancel",
+		widget.NewLabel("Please follow instructions in your browser to add a new character."),
+		w,
+	)
+	dialog.SetOnClosed(cancel)
+	go func() {
+		defer cancel()
+		defer dialog.Hide()
+		_, err := AddCharacter(ctx)
+		if err != nil {
+			slog.Error("Failed to add a new character", "error", err)
+		} else {
+			m.Redraw()
+		}
+	}()
+	dialog.Show()
+}
+
+func (u *ui) NewManageArea() *manageArea {
 	content := container.NewVBox()
 	m := &manageArea{
 		ui:             u,
@@ -33,7 +73,7 @@ func (u *ui) newManageArea() *manageArea {
 	return m
 }
 
-func (m *manageArea) update() {
+func (m *manageArea) Redraw() {
 	chars, err := model.FetchAllCharacters()
 	if err != nil {
 		panic(err)
@@ -63,9 +103,9 @@ func (m *manageArea) update() {
 							d := dialog.NewError(err, m.ui.window)
 							d.Show()
 						}
-						m.update()
+						m.Redraw()
 						if isCurrentChar {
-							m.ui.characterArea.update(0)
+							m.ui.characterArea.Redraw(0)
 						}
 					}
 				},
@@ -79,44 +119,4 @@ func (m *manageArea) update() {
 		m.content.Add(widget.NewSeparator())
 	}
 	m.content.Refresh()
-}
-
-func (u *ui) showManageDialog() {
-	m := u.newManageArea()
-	m.update()
-	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-		showAddCharacterDialog(u.window, m)
-	})
-	button.Importance = widget.HighImportance
-	c := container.NewScroll(m.content)
-	c.SetMinSize(fyne.NewSize(400, 400))
-	content := container.NewBorder(button, nil, nil, nil, c)
-	dialog := dialog.NewCustom("Manage Characters", "Close", content, u.window)
-	m.dialog = dialog
-	dialog.SetOnClosed(func() {
-		u.characterArea.update(m.selectedCharID)
-	})
-	dialog.Show()
-}
-
-func showAddCharacterDialog(w fyne.Window, m *manageArea) {
-	ctx, cancel := context.WithCancel(context.Background())
-	dialog := dialog.NewCustom(
-		"Add Character",
-		"Cancel",
-		widget.NewLabel("Please follow instructions in your browser to add a new character."),
-		w,
-	)
-	dialog.SetOnClosed(cancel)
-	go func() {
-		defer cancel()
-		defer dialog.Hide()
-		_, err := AddCharacter(ctx)
-		if err != nil {
-			slog.Error("Failed to add a new character", "error", err)
-		} else {
-			m.update()
-		}
-	}()
-	dialog.Show()
 }

@@ -25,14 +25,14 @@ type folderArea struct {
 	ui            *ui
 }
 
-func (u *ui) newFolderArea(headers *headerArea) *folderArea {
+func (u *ui) NewFolderArea(headers *headerArea) *folderArea {
 	f := folderArea{
 		ui:         u,
 		headerArea: headers,
 	}
 	f.tree, f.treeData = makeFolderTree(headers, &f.currentCharID)
 	f.refreshButton = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-		f.updateMails()
+		f.UpdateMails()
 	})
 	f.newButton = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
 		d := dialog.NewInformation("New message", "PLACEHOLDER", u.window)
@@ -44,22 +44,54 @@ func (u *ui) newFolderArea(headers *headerArea) *folderArea {
 	return &f
 }
 
-func (f *folderArea) updateMails() {
-	status := f.ui.statusArea
-	go func() {
-		if f.currentCharID != 0 {
-			err := UpdateMails(f.currentCharID, status)
+func makeFolderTree(headers *headerArea, currentCharID *int32) (*widget.Tree, binding.StringTree) {
+	treeData := binding.NewStringTree()
+	tree := widget.NewTreeWithData(
+		treeData,
+		func(isBranch bool) fyne.CanvasObject {
+			return container.NewHBox(widget.NewIcon(&fyne.StaticResource{}), widget.NewLabel("Branch template"))
+		},
+		func(di binding.DataItem, isBranch bool, co fyne.CanvasObject) {
+			i := di.(binding.String)
+			s, err := i.Get()
 			if err != nil {
-				status.setText("Failed to fetch mail")
-				slog.Error("Failed to update mails", "characterID", f.currentCharID, "error", err)
+				slog.Error("Failed to fetch data item for tree")
 				return
 			}
+			item := newNodeFromJSON(s)
+			icon := co.(*fyne.Container).Objects[0].(*widget.Icon)
+			icon.SetResource(item.icon())
+			label := co.(*fyne.Container).Objects[1].(*widget.Label)
+			label.SetText(item.Name)
+		},
+	)
+	lastUID := ""
+	tree.OnSelected = func(uid string) {
+		di, err := treeData.GetItem(uid)
+		if err != nil {
+			slog.Error("Failed to get char ID item", "error", err)
+			return
 		}
-		f.update(f.currentCharID)
-	}()
+		i := di.(binding.String)
+		s, err := i.Get()
+		if err != nil {
+			slog.Error("Failed to fetch data item for tree")
+			return
+		}
+		item := newNodeFromJSON(s)
+		if item.isBranch() {
+			if lastUID != "" {
+				tree.Select(lastUID)
+			}
+			return
+		}
+		lastUID = uid
+		headers.Redraw(*currentCharID, item)
+	}
+	return tree, treeData
 }
 
-func (f *folderArea) update(charID int32) {
+func (f *folderArea) Redraw(charID int32) {
 	if charID == 0 {
 		f.refreshButton.Disable()
 		f.newButton.Disable()
@@ -75,7 +107,7 @@ func (f *folderArea) update(charID int32) {
 	f.treeData.Set(ids, values)
 	f.tree.Select(nodeAllID)
 	f.tree.ScrollToTop()
-	f.headerArea.update(charID, folderItemAll)
+	f.headerArea.Redraw(charID, folderItemAll)
 }
 
 func initialTreeData(folderItemAll node) (map[string][]string, map[string]string) {
@@ -129,49 +161,17 @@ func addLabelsToTree(charID int32, ids map[string][]string, values map[string]st
 	}
 }
 
-func makeFolderTree(headers *headerArea, currentCharID *int32) (*widget.Tree, binding.StringTree) {
-	treeData := binding.NewStringTree()
-	tree := widget.NewTreeWithData(
-		treeData,
-		func(isBranch bool) fyne.CanvasObject {
-			return container.NewHBox(widget.NewIcon(&fyne.StaticResource{}), widget.NewLabel("Branch template"))
-		},
-		func(di binding.DataItem, isBranch bool, co fyne.CanvasObject) {
-			i := di.(binding.String)
-			s, err := i.Get()
+func (f *folderArea) UpdateMails() {
+	status := f.ui.statusArea
+	go func() {
+		if f.currentCharID != 0 {
+			err := UpdateMails(f.currentCharID, status)
 			if err != nil {
-				slog.Error("Failed to fetch data item for tree")
+				status.setText("Failed to fetch mail")
+				slog.Error("Failed to update mails", "characterID", f.currentCharID, "error", err)
 				return
 			}
-			item := newNodeFromJSON(s)
-			icon := co.(*fyne.Container).Objects[0].(*widget.Icon)
-			icon.SetResource(item.icon())
-			label := co.(*fyne.Container).Objects[1].(*widget.Label)
-			label.SetText(item.Name)
-		},
-	)
-	lastUID := ""
-	tree.OnSelected = func(uid string) {
-		di, err := treeData.GetItem(uid)
-		if err != nil {
-			slog.Error("Failed to get char ID item", "error", err)
-			return
 		}
-		i := di.(binding.String)
-		s, err := i.Get()
-		if err != nil {
-			slog.Error("Failed to fetch data item for tree")
-			return
-		}
-		item := newNodeFromJSON(s)
-		if item.isBranch() {
-			if lastUID != "" {
-				tree.Select(lastUID)
-			}
-			return
-		}
-		lastUID = uid
-		headers.update(*currentCharID, item)
-	}
-	return tree, treeData
+		f.Redraw(f.currentCharID)
+	}()
 }

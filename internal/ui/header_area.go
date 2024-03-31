@@ -32,7 +32,7 @@ type headerArea struct {
 	ui         *ui
 }
 
-func (u *ui) newHeaderArea(mail *mailArea) *headerArea {
+func (u *ui) NewHeaderArea(mail *mailArea) *headerArea {
 	var x []interface{}
 	boundList := binding.BindUntypedList(&x)
 	list := widget.NewListWithData(
@@ -77,7 +77,7 @@ func (u *ui) newHeaderArea(mail *mailArea) *headerArea {
 			return
 		}
 		m := d[id].(mailItem)
-		mail.update(m.id)
+		mail.Redraw(m.id)
 	}
 
 	boundTotal := binding.NewString()
@@ -95,7 +95,7 @@ func (u *ui) newHeaderArea(mail *mailArea) *headerArea {
 	return &m
 }
 
-func (h *headerArea) update(charID int32, folder node) {
+func (h *headerArea) Redraw(charID int32, folder node) {
 	var d []interface{}
 	var mm []model.Mail
 	var err error
@@ -124,10 +124,10 @@ func (h *headerArea) update(charID int32, folder node) {
 	h.boundTotal.Set(s)
 
 	if len(mm) > 0 {
-		h.mailArea.update(mm[0].ID)
+		h.mailArea.Redraw(mm[0].ID)
 		h.list.Select(0)
 		h.list.ScrollToTop()
 	} else {
-		h.mailArea.clear()
+		h.mailArea.Clear()
 	}
 }

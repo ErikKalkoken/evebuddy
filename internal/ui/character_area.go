@@ -22,13 +22,13 @@ type characterArea struct {
 	currentCharID int32
 }
 
-func (u *ui) newCharacterArea(f *folderArea) *characterArea {
+func (u *ui) NewCharacterArea(f *folderArea) *characterArea {
 	c := characterArea{ui: u, folderArea: f}
 	c.content = container.NewHBox()
 	return &c
 }
 
-func (c *characterArea) update(charID int32) {
+func (c *characterArea) Redraw(charID int32) {
 	button, err := c.makeSwitchButton(charID)
 	if err != nil {
 		panic(err)
@@ -39,8 +39,8 @@ func (c *characterArea) update(charID int32) {
 	c.content.Add(layout.NewSpacer())
 	c.content.Add(button)
 	c.content.Refresh()
-	c.folderArea.update(charID)
-	c.folderArea.updateMails()
+	c.folderArea.Redraw(charID)
+	c.folderArea.UpdateMails()
 	c.currentCharID = charID
 }
 
@@ -68,7 +68,7 @@ func (c *characterArea) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
 	var items []*fyne.MenuItem
 	for _, char := range chars {
 		item := fyne.NewMenuItem(char.Name, func() {
-			c.update(char.ID)
+			c.Redraw(char.ID)
 		})
 		if char.ID == charID {
 			item.Disabled = true

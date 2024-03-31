@@ -25,7 +25,7 @@ type mailArea struct {
 	ui      *ui
 }
 
-func (u *ui) newMailArea() *mailArea {
+func (u *ui) NewMailArea() *mailArea {
 	icons := container.NewHBox(
 		widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {
 		}),
@@ -65,7 +65,11 @@ func (u *ui) newMailArea() *mailArea {
 	return &m
 }
 
-func (m *mailArea) update(mailID uint64) {
+func (m *mailArea) Clear() {
+	m.updateContent("", "", "")
+}
+
+func (m *mailArea) Redraw(mailID uint64) {
 	mail, err := model.FetchMail(mailID)
 	if err != nil {
 		slog.Error("Failed to render mail", "mailID", mailID, "error", err)
@@ -87,10 +91,6 @@ func (m *mailArea) update(mailID uint64) {
 	// for _, i := range []int{0, 1, 2, 4} {
 	// 	m.icons.Objects[i].(*widget.Button).Enable()
 	// }
-}
-
-func (m *mailArea) clear() {
-	m.updateContent("", "", "")
 }
 
 func (m *mailArea) updateContent(s string, h string, b string) {

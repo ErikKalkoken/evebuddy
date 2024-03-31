@@ -40,11 +40,11 @@ func NewUI() *ui {
 	bar := u.newStatusArea()
 	u.statusArea = bar
 
-	mail := u.newMailArea()
-	headers := u.newHeaderArea(mail)
-	folders := u.newFolderArea(headers)
-	characters := u.newCharacterArea(folders)
-	characters.update(charID)
+	mail := u.NewMailArea()
+	headers := u.NewHeaderArea(mail)
+	folders := u.NewFolderArea(headers)
+	characters := u.NewCharacterArea(folders)
+	characters.Redraw(charID)
 	u.characterArea = characters
 
 	headersMail := container.NewHSplit(headers.content, mail.content)
@@ -57,7 +57,7 @@ func NewUI() *ui {
 	w.SetContent(content)
 	w.Resize(fyne.NewSize(800, 600))
 
-	folders.updateMails()
+	folders.UpdateMails()
 
 	w.SetMainMenu(MakeMenu(a, u))
 	w.SetMaster()
