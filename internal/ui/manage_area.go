@@ -18,19 +18,17 @@ import (
 // manageArea is the UI area for managing of characters.
 type manageArea struct {
 	content        *fyne.Container
-	window         fyne.Window
-	characterArea  *characterArea
 	dialog         *dialog.CustomDialog
 	selectedCharID int32
+	ui             *ui
 }
 
-func newManageArea(w fyne.Window, c *characterArea) *manageArea {
+func newManageArea(u *ui) *manageArea {
 	content := container.NewVBox()
 	m := &manageArea{
-		window:         w,
+		ui:             u,
 		content:        content,
-		characterArea:  c,
-		selectedCharID: c.currentCharID,
+		selectedCharID: u.characterArea.currentCharID,
 	}
 	return m
 }
@@ -50,7 +48,7 @@ func (m *manageArea) update() {
 			m.selectedCharID = char.ID
 			m.dialog.Hide()
 		})
-		isCurrentChar := char.ID == m.characterArea.currentCharID
+		isCurrentChar := char.ID == m.ui.characterArea.currentCharID
 		if isCurrentChar {
 			selectButton.Disable()
 		}
@@ -62,16 +60,16 @@ func (m *manageArea) update() {
 					if confirmed {
 						err := char.Delete()
 						if err != nil {
-							d := dialog.NewError(err, m.window)
+							d := dialog.NewError(err, m.ui.window)
 							d.Show()
 						}
 						m.update()
 						if isCurrentChar {
-							m.characterArea.update(0)
+							m.ui.characterArea.update(0)
 						}
 					}
 				},
-				m.window,
+				m.ui.window,
 			)
 			dialog.Show()
 		})
@@ -83,8 +81,8 @@ func (m *manageArea) update() {
 	m.content.Refresh()
 }
 
-func showManageDialog(u *ui) {
-	m := newManageArea(u.window, u.characterArea)
+func (u *ui) showManageDialog() {
+	m := newManageArea(u)
 	m.update()
 	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		showAddCharacterDialog(u.window, m)
@@ -96,7 +94,7 @@ func showManageDialog(u *ui) {
 	dialog := dialog.NewCustom("Manage Characters", "Close", content, u.window)
 	m.dialog = dialog
 	dialog.SetOnClosed(func() {
-		m.characterArea.update(m.selectedCharID)
+		u.characterArea.update(m.selectedCharID)
 	})
 	dialog.Show()
 }

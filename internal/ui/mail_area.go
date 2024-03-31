@@ -22,6 +22,7 @@ type mailArea struct {
 	header  *widget.Label
 	body    *widget.Label
 	mailID  uint64
+	ui      *ui
 }
 
 func (u *ui) newMailArea() *mailArea {
@@ -59,6 +60,7 @@ func (u *ui) newMailArea() *mailArea {
 		header:  header,
 		body:    body,
 		icons:   icons,
+		ui:      u,
 	}
 	return &m
 }

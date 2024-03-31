@@ -11,6 +11,7 @@ import (
 type statusArea struct {
 	content *fyne.Container
 	text    binding.String
+	ui      *ui
 }
 
 func (u *ui) newStatusArea() *statusArea {
@@ -20,6 +21,7 @@ func (u *ui) newStatusArea() *statusArea {
 	b := statusArea{
 		content: content,
 		text:    text,
+		ui:      u,
 	}
 	return &b
 }

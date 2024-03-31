@@ -29,6 +29,7 @@ type headerArea struct {
 	boundList  binding.ExternalUntypedList
 	boundTotal binding.String
 	mailArea   *mailArea
+	ui         *ui
 }
 
 func (u *ui) newHeaderArea(mail *mailArea) *headerArea {
@@ -89,6 +90,7 @@ func (u *ui) newHeaderArea(mail *mailArea) *headerArea {
 		boundList:  boundList,
 		boundTotal: boundTotal,
 		mailArea:   mail,
+		ui:         u,
 	}
 	return &m
 }
