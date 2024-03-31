@@ -25,7 +25,7 @@ type ui struct {
 func NewUI() *ui {
 	a := app.New()
 	w := a.NewWindow("Eve Online App")
-	e := &ui{window: w}
+	u := &ui{window: w}
 
 	var charID int32
 	c, err := model.FetchFirstCharacter()
@@ -37,15 +37,15 @@ func NewUI() *ui {
 		charID = c.ID
 	}
 
-	bar := e.newStatusArea()
-	e.statusArea = bar
+	bar := u.newStatusArea()
+	u.statusArea = bar
 
-	mail := e.newMailArea()
-	headers := e.newHeaderArea(mail)
-	folders := e.newFolderArea(headers)
-	characters := e.newCharacterArea(folders)
+	mail := u.newMailArea()
+	headers := u.newHeaderArea(mail)
+	folders := u.newFolderArea(headers)
+	characters := u.newCharacterArea(folders)
 	characters.update(charID)
-	e.characterArea = characters
+	u.characterArea = characters
 
 	headersMail := container.NewHSplit(headers.content, mail.content)
 	headersMail.SetOffset(0.35)
@@ -59,11 +59,11 @@ func NewUI() *ui {
 
 	folders.updateMails()
 
-	w.SetMainMenu(MakeMenu(a, e))
+	w.SetMainMenu(MakeMenu(a, u))
 	w.SetMaster()
-	return e
+	return u
 }
 
-func (e *ui) ShowAndRun() {
-	e.window.ShowAndRun()
+func (u *ui) ShowAndRun() {
+	u.window.ShowAndRun()
 }

@@ -24,7 +24,7 @@ type mailArea struct {
 	mailID  uint64
 }
 
-func (ui *ui) newMailArea() *mailArea {
+func (u *ui) newMailArea() *mailArea {
 	icons := container.NewHBox(
 		widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {
 		}),
