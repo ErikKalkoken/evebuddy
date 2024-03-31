@@ -97,7 +97,7 @@ func (h *headerArea) Redraw(folder node) {
 	var d []interface{}
 	var mm []model.Mail
 	var err error
-	charID := h.ui.currentCharID
+	charID := h.ui.CurrentCharID()
 	switch folder.Category {
 	case nodeCategoryLabel:
 		mm, err = model.FetchMailsForLabel(charID, folder.ObjID)

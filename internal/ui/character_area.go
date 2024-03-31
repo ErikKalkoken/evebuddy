@@ -43,7 +43,7 @@ func (c *characterArea) Redraw() {
 }
 
 func (c *characterArea) makeCharacterBadge() *fyne.Container {
-	char, err := model.FetchCharacter(c.ui.currentCharID)
+	char, err := model.FetchCharacter(c.ui.CurrentCharID())
 	var charName, corpName string
 	var charURI, corpURI fyne.URI
 	if err != nil {
@@ -71,7 +71,7 @@ func (c *characterArea) makeCharacterBadge() *fyne.Container {
 }
 
 func (c *characterArea) makeSwitchButton() (*widgets.ContextMenuButton, error) {
-	menu, ok, err := c.makeSwitchMenu(c.ui.currentCharID)
+	menu, ok, err := c.makeSwitchMenu(c.ui.CurrentCharID())
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (c *characterArea) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
 	var items []*fyne.MenuItem
 	for _, char := range characters {
 		item := fyne.NewMenuItem(char.Name, func() {
-			c.ui.currentCharID = char.ID
+			c.ui.SetCurrentCharID(char.ID)
 			c.Redraw()
 		})
 		if char.ID == charID {

@@ -61,10 +61,10 @@ func (m *manageArea) Redraw() {
 		image.FillMode = canvas.ImageFillOriginal
 		name := widget.NewLabel(char.Name)
 		selectButton := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
-			m.ui.currentCharID = char.ID
+			m.ui.SetCurrentCharID(char.ID)
 			m.dialog.Hide()
 		})
-		isCurrentChar := char.ID == m.ui.currentCharID
+		isCurrentChar := char.ID == m.ui.CurrentCharID()
 		if isCurrentChar {
 			selectButton.Disable()
 		}
@@ -81,7 +81,7 @@ func (m *manageArea) Redraw() {
 						}
 						m.Redraw()
 						if isCurrentChar {
-							m.ui.currentCharID = 0
+							m.ui.SetCurrentCharID(0)
 							m.ui.characterArea.Redraw()
 						}
 					}

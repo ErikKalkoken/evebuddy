@@ -88,9 +88,9 @@ func (m *mailArea) Redraw(mailID uint64) {
 	)
 	b := mail.BodyPlain()
 	m.updateContent(mail.Subject, header, b)
-	// for _, i := range []int{0, 1, 2, 4} {
-	// 	m.icons.Objects[i].(*widget.Button).Enable()
-	// }
+	for _, i := range []int{0, 1, 2, 4} {
+		m.icons.Objects[i].(*widget.Button).Enable()
+	}
 }
 
 func (m *mailArea) updateContent(s string, h string, b string) {

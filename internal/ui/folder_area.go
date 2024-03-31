@@ -87,7 +87,7 @@ func makeFolderTree(u *ui) (*widget.Tree, binding.StringTree) {
 }
 
 func (f *folderArea) Redraw() {
-	charID := f.ui.currentCharID
+	charID := f.ui.CurrentCharID()
 	if charID == 0 {
 		f.refreshButton.Disable()
 		f.newButton.Disable()
@@ -159,11 +159,12 @@ func addLabelsToTree(charID int32, ids map[string][]string, values map[string]st
 func (f *folderArea) UpdateMails() {
 	status := f.ui.statusArea
 	go func() {
-		if f.ui.currentCharID != 0 {
-			err := UpdateMails(f.ui.currentCharID, status)
+		charID := f.ui.CurrentCharID()
+		if charID != 0 {
+			err := UpdateMails(charID, status)
 			if err != nil {
 				status.setText("Failed to fetch mail")
-				slog.Error("Failed to update mails", "characterID", f.ui.currentCharID, "error", err)
+				slog.Error("Failed to update mails", "characterID", charID, "error", err)
 				return
 			}
 		}

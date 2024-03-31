@@ -80,3 +80,11 @@ func NewUI() *ui {
 func (u *ui) ShowAndRun() {
 	u.window.ShowAndRun()
 }
+
+func (u *ui) CurrentCharID() int32 {
+	return u.currentCharID
+}
+
+func (u *ui) SetCurrentCharID(id int32) {
+	u.currentCharID = id
+}
