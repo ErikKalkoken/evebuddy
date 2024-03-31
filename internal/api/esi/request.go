@@ -49,12 +49,21 @@ func raiseError(res *esiResponse, err error) (*esiResponse, error) {
 }
 
 // getESI sends a GET request to ESI and returns the response.
-// HTTP error codes are returned as error values.
 func getESI(client *http.Client, path string) (*esiResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, buildEsiUrl(path), nil)
 	if err != nil {
 		return nil, err
 	}
+	return sendRequestCached(client, req)
+}
+
+// getESIWithToken sends a GET request to ESI and returns the response.
+func getESIWithToken(client *http.Client, path string, token string) (*esiResponse, error) {
+	req, err := http.NewRequest(http.MethodGet, buildEsiUrl(path), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	return sendRequestCached(client, req)
 }
 

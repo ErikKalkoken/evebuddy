@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 )
 
 // A mail returned from ESI.
@@ -16,10 +15,8 @@ type Mail struct {
 
 // FetchMail fetches a mail for a character from ESI and returns it.
 func FetchMail(client *http.Client, characterID int32, mailID int32, tokenString string) (*Mail, error) {
-	v := url.Values{}
-	v.Set("token", tokenString)
-	path := fmt.Sprintf("/characters/%d/mail/%d/?%v", characterID, mailID, v.Encode())
-	r, err := raiseError(getESI(client, path))
+	path := fmt.Sprintf("/characters/%d/mail/%d/", characterID, mailID)
+	r, err := raiseError(getESIWithToken(client, path, tokenString))
 	if err != nil {
 		return nil, err
 	}

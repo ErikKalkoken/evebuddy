@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 )
 
 // A mail list a character has subscribed to
@@ -16,10 +15,8 @@ type MailList struct {
 
 // FetchMailLists fetches a character's subscribed mail lists from ESI and returns them.
 func FetchMailLists(client *http.Client, characterID int32, tokenString string) ([]MailList, error) {
-	v := url.Values{}
-	v.Set("token", tokenString)
-	path := fmt.Sprintf("/characters/%d/mail/lists/?%v", characterID, v.Encode())
-	r, err := raiseError(getESI(client, path))
+	path := fmt.Sprintf("/characters/%d/mail/lists/", characterID)
+	r, err := raiseError(getESIWithToken(client, path, tokenString))
 	if err != nil {
 		return nil, err
 	}

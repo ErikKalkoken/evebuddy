@@ -38,7 +38,7 @@ func TestCanFetchSingleMailHeader(t *testing.T) {
 
 	httpmock.RegisterResponder(
 		"GET",
-		"https://esi.evetech.net/latest/characters/1/mail/?token=token",
+		"https://esi.evetech.net/latest/characters/1/mail/",
 		httpmock.NewStringResponder(200, fixture),
 	)
 
@@ -96,12 +96,12 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 	}
 	httpmock.RegisterResponder(
 		"GET",
-		"https://esi.evetech.net/latest/characters/1/mail/?token=token",
+		"https://esi.evetech.net/latest/characters/1/mail/",
 		httpmock.NewStringResponder(200, jsonMarshal(objs[:50])),
 	)
 	httpmock.RegisterResponder(
 		"GET",
-		"https://esi.evetech.net/latest/characters/1/mail/?last_mail_id=951&token=token",
+		"https://esi.evetech.net/latest/characters/1/mail/?last_mail_id=951",
 		httpmock.NewStringResponder(200, jsonMarshal(objs[50:])),
 	)
 

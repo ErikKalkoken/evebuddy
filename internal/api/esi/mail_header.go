@@ -54,12 +54,11 @@ func FetchMailHeaders(httpClient *http.Client, characterID int32, tokenString st
 
 func fetchMailHeadersPage(client *http.Client, characterID int32, tokenString string, lastMailID int32) ([]MailHeader, error) {
 	v := url.Values{}
-	v.Set("token", tokenString)
 	if lastMailID > 0 {
 		v.Set("last_mail_id", strconv.Itoa(int(lastMailID)))
 	}
 	path := fmt.Sprintf("/characters/%d/mail/?%v", characterID, v.Encode())
-	r, err := raiseError(getESI(client, path))
+	r, err := raiseError(getESIWithToken(client, path, tokenString))
 	if err != nil {
 		return nil, err
 	}

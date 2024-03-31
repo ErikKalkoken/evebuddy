@@ -35,7 +35,7 @@ func TestCanFetchMailLabels(t *testing.T) {
 
 	httpmock.RegisterResponder(
 		"GET",
-		"https://esi.evetech.net/latest/characters/1/mail/labels/?token=token",
+		"https://esi.evetech.net/latest/characters/1/mail/labels/",
 		httpmock.NewStringResponder(200, json),
 	)
 

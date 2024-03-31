@@ -24,7 +24,7 @@ func TestFetchMailLists(t *testing.T) {
 
 	httpmock.RegisterResponder(
 		"GET",
-		"https://esi.evetech.net/latest/characters/1/mail/lists/?token=token",
+		"https://esi.evetech.net/latest/characters/1/mail/lists/",
 		httpmock.NewStringResponder(200, fixture),
 	)
 

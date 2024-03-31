@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 )
 
 type MailLabel struct {
@@ -22,10 +21,8 @@ type MailLabelPayload struct {
 
 // FetchMailLabels fetches a character's mail labels from ESI and returns them.
 func FetchMailLabels(client *http.Client, characterID int32, tokenString string) (*MailLabelPayload, error) {
-	v := url.Values{}
-	v.Set("token", tokenString)
-	path := fmt.Sprintf("/characters/%d/mail/labels/?%v", characterID, v.Encode())
-	r, err := raiseError(getESI(client, path))
+	path := fmt.Sprintf("/characters/%d/mail/labels/", characterID)
+	r, err := raiseError(getESIWithToken(client, path, tokenString))
 	if err != nil {
 		return nil, err
 	}
