@@ -16,7 +16,7 @@ type Character struct {
 
 func FetchCharacter(client *http.Client, characterID int32) (*Character, error) {
 	path := fmt.Sprintf("/characters/%d/", characterID)
-	r, err := getESI(client, path)
+	r, err := raiseError(getESI(client, path))
 	if err != nil {
 		return nil, err
 	}

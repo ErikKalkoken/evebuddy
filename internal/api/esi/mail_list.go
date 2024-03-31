@@ -19,7 +19,7 @@ func FetchMailLists(client *http.Client, characterID int32, tokenString string) 
 	v := url.Values{}
 	v.Set("token", tokenString)
 	path := fmt.Sprintf("/characters/%d/mail/lists/?%v", characterID, v.Encode())
-	r, err := getESI(client, path)
+	r, err := raiseError(getESI(client, path))
 	if err != nil {
 		return nil, err
 	}

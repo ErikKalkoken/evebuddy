@@ -40,7 +40,7 @@ func TestRequest(t *testing.T) {
 			httpmock.NewStringResponder(404, fixture),
 		)
 		// when
-		r, err := getESI(c, "/dummy")
+		r, err := raiseError(getESI(c, "/dummy"))
 		// then
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.Error(t, err) {
@@ -60,7 +60,7 @@ func TestRequest(t *testing.T) {
 			httpmock.NewStringResponder(404, fixture),
 		)
 		// when
-		r, err := getESIWithStatus(c, "/dummy")
+		r, err := getESI(c, "/dummy")
 		// then
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
@@ -82,10 +82,10 @@ func TestRequest(t *testing.T) {
 		// when
 		r, err := getESI(c, "/dummy")
 		// then
-		assert.Equal(t, 4, httpmock.GetTotalCallCount())
-		if assert.Error(t, err) {
-			assert.Contains(t, err.Error(), "503")
-			assert.Nil(t, r)
+		if assert.NoError(t, err) {
+			assert.Equal(t, 4, httpmock.GetTotalCallCount())
+			assert.Equal(t, 503, r.statusCode)
+
 		}
 	})
 	t.Run("should return body from cache", func(t *testing.T) {

@@ -19,7 +19,7 @@ func FetchMail(client *http.Client, characterID int32, mailID int32, tokenString
 	v := url.Values{}
 	v.Set("token", tokenString)
 	path := fmt.Sprintf("/characters/%d/mail/%d/?%v", characterID, mailID, v.Encode())
-	r, err := getESI(client, path)
+	r, err := raiseError(getESI(client, path))
 	if err != nil {
 		return nil, err
 	}

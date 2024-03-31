@@ -20,20 +20,21 @@ const (
 // Each UI area holds a pointer of the ui instance,
 // which allow it to access the other UI areas and shared variables
 type ui struct {
-	window        fyne.Window
+	app           fyne.App
 	characterArea *characterArea
+	currentCharID int32
 	folderArea    *folderArea
 	headerArea    *headerArea
 	mailArea      *mailArea
 	statusArea    *statusArea
-	currentCharID int32
+	window        fyne.Window
 }
 
 // NewUI build the UI and returns it.
 func NewUI() *ui {
 	a := app.New()
 	w := a.NewWindow("Eve Online App")
-	u := &ui{window: w}
+	u := &ui{app: a, window: w}
 
 	c, err := model.FetchFirstCharacter()
 	if err != nil {

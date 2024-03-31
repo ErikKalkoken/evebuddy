@@ -40,22 +40,17 @@ func (r esiResponse) error() error {
 	return fmt.Errorf("ESI error: %s: %s", r.status, r.errorText)
 }
 
-// getESI sends a GET request to ESI and returns the response.
-// HTTP error codes are returned as error values.
-func getESI(client *http.Client, path string) (*esiResponse, error) {
-	res, err := getESIWithStatus(client, path)
-	if err != nil {
-		return nil, err
-	}
+// raiseError wraps a request function and returns HTTP errors as error value.
+func raiseError(res *esiResponse, err error) (*esiResponse, error) {
 	if !res.ok() {
 		return nil, res.error()
 	}
-	return res, nil
+	return res, err
 }
 
 // getESI sends a GET request to ESI and returns the response.
-// HTTP error codes are not returned in the esiResponse.
-func getESIWithStatus(client *http.Client, path string) (*esiResponse, error) {
+// HTTP error codes are returned as error values.
+func getESI(client *http.Client, path string) (*esiResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, buildEsiUrl(path), nil)
 	if err != nil {
 		return nil, err
@@ -72,9 +67,6 @@ func postESI(client *http.Client, path string, data []byte) (*esiResponse, error
 	res, err := sendRequest(client, req)
 	if err != nil {
 		return nil, err
-	}
-	if !res.ok() {
-		return nil, res.error()
 	}
 	return res, nil
 }

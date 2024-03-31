@@ -27,7 +27,7 @@ func ResolveEntityIDs(client *http.Client, ids []int32) ([]EveEntity, error) {
 		return nil, err
 	}
 	slog.Debug("Trying to resolve IDs", "ids", ids)
-	r, err := postESI(client, "/universe/names/", data)
+	r, err := raiseError(postESI(client, "/universe/names/", data))
 	if err != nil {
 		return nil, err
 	}
