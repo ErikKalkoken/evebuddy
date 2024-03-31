@@ -83,17 +83,17 @@ func (m *manageArea) update() {
 	m.content.Refresh()
 }
 
-func showManageDialog(u *ui) {
-	m := newManageArea(u.window, u.characterArea)
+func showManageDialog(ui *ui) {
+	m := newManageArea(ui.window, ui.characterArea)
 	m.update()
 	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-		showAddCharacterDialog(u.window, m)
+		showAddCharacterDialog(ui.window, m)
 	})
 	button.Importance = widget.HighImportance
 	c := container.NewScroll(m.content)
 	c.SetMinSize(fyne.NewSize(400, 400))
 	content := container.NewBorder(button, nil, nil, nil, c)
-	dialog := dialog.NewCustom("Manage Characters", "Close", content, u.window)
+	dialog := dialog.NewCustom("Manage Characters", "Close", content, ui.window)
 	m.dialog = dialog
 	dialog.SetOnClosed(func() {
 		m.characterArea.update(m.selectedCharID)

@@ -25,9 +25,9 @@ type folderArea struct {
 	ui            *ui
 }
 
-func (e *ui) newFolderArea(headers *headerArea) *folderArea {
+func (ui *ui) newFolderArea(headers *headerArea) *folderArea {
 	f := folderArea{
-		ui:         e,
+		ui:         ui,
 		headerArea: headers,
 	}
 	f.tree, f.treeData = makeFolderTree(headers, &f.currentCharID)
@@ -35,7 +35,7 @@ func (e *ui) newFolderArea(headers *headerArea) *folderArea {
 		f.updateMails()
 	})
 	f.newButton = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
-		d := dialog.NewInformation("New message", "PLACEHOLDER", e.window)
+		d := dialog.NewInformation("New message", "PLACEHOLDER", ui.window)
 		d.Show()
 	})
 	top := container.NewHBox(f.refreshButton, f.newButton)

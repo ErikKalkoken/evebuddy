@@ -13,7 +13,7 @@ type statusArea struct {
 	text    binding.String
 }
 
-func (e *ui) newStatusArea() *statusArea {
+func (ui *ui) newStatusArea() *statusArea {
 	text := binding.NewString()
 	label := widget.NewLabelWithData(text)
 	content := container.NewVBox(widget.NewSeparator(), label)

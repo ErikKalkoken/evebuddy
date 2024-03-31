@@ -31,7 +31,7 @@ type headerArea struct {
 	mailArea   *mailArea
 }
 
-func (e *ui) newHeaderArea(mail *mailArea) *headerArea {
+func (ui *ui) newHeaderArea(mail *mailArea) *headerArea {
 	var x []interface{}
 	boundList := binding.BindUntypedList(&x)
 	list := widget.NewListWithData(
