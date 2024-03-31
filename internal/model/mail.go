@@ -3,9 +3,15 @@ package model
 import (
 	"database/sql"
 	"fmt"
+	"html"
 	"log/slog"
+	"strings"
 	"time"
+
+	"github.com/microcosm-cc/bluemonday"
 )
+
+var bodyPolicy = bluemonday.StrictPolicy()
 
 // An Eve mail belonging to a character
 type Mail struct {
@@ -105,6 +111,13 @@ func (m *Mail) addLabels() error {
 		}
 	}
 	return nil
+}
+
+// BodyPlain returns a mail's body as plain text.
+func (m *Mail) BodyPlain() string {
+	t := strings.ReplaceAll(m.Body, "<br>", "\n")
+	b := html.UnescapeString(bodyPolicy.Sanitize(t))
+	return b
 }
 
 // FetchMail returns a mail.

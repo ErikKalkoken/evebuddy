@@ -3,7 +3,6 @@ package gui
 import (
 	"example/esiapp/internal/model"
 	"fmt"
-	"html"
 	"log/slog"
 	"strings"
 
@@ -53,14 +52,12 @@ func (e *eveApp) newMail() *mail {
 	body.Wrapping = fyne.TextWrapBreak
 	bodyWithScroll := container.NewVScroll(body)
 	content := container.NewBorder(wrapper, nil, nil, nil, bodyWithScroll)
-	policy := bluemonday.StrictPolicy()
 	m := mail{
 		content: content,
 		bodyC:   bodyWithScroll,
 		subject: subject,
 		header:  header,
 		body:    body,
-		policy:  policy,
 		icons:   icons,
 	}
 	return &m
@@ -83,9 +80,8 @@ func (m *mail) update(mailID uint64) {
 		mail.Timestamp.Format(myDateTime),
 		strings.Join(names, ", "),
 	)
-	t := strings.ReplaceAll(mail.Body, "<br>", "\n")
-	body := html.UnescapeString(m.policy.Sanitize(t))
-	m.updateContent(mail.Subject, header, body)
+	b := mail.BodyPlain()
+	m.updateContent(mail.Subject, header, b)
 	// for _, i := range []int{0, 1, 2, 4} {
 	// 	m.icons.Objects[i].(*widget.Button).Enable()
 	// }
