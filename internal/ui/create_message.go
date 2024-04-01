@@ -3,7 +3,6 @@ package ui
 import (
 	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/model"
-	"fmt"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -16,7 +15,11 @@ import (
 
 func (u *ui) makeCreateMessageWindow() (fyne.Window, error) {
 	currentChar := *u.CurrentChar()
-	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", currentChar.Name))
+	w := u.app.NewWindow("New message")
+	fromLabel := widget.NewLabel("From:")
+	fromInput := widget.NewEntry()
+	fromInput.Disable()
+	fromInput.SetPlaceHolder(currentChar.Name)
 	toLabel := widget.NewLabel("To:")
 	toInput := widget2.NewCompletionEntry([]string{})
 	ee := []model.EveEntity{}
@@ -40,7 +43,7 @@ func (u *ui) makeCreateMessageWindow() (fyne.Window, error) {
 	}
 	subjectLabel := widget.NewLabel("Subject:")
 	subjectInput := widget.NewEntry()
-	form := container.New(layout.NewFormLayout(), toLabel, toInput, subjectLabel, subjectInput)
+	form := container.New(layout.NewFormLayout(), fromLabel, fromInput, toLabel, toInput, subjectLabel, subjectInput)
 	bodyInput := widget.NewEntry()
 	bodyInput.MultiLine = true
 	cancelButton := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
