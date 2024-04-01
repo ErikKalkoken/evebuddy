@@ -25,6 +25,7 @@ var scopes = []string{
 	"esi-mail.read_mail.v1",
 	"esi-mail.organize_mail.v1",
 	"esi-mail.send_mail.v1",
+	"esi-search.search_structures.v1",
 }
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.
