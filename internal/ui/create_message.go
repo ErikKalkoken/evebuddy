@@ -44,12 +44,31 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	toInput := widget.NewEntry()
 	subjectLabel := widget.NewLabel("Subject:")
 	subjectInput := widget.NewEntry()
+	bodyInput := widget.NewEntry()
+	bodyInput.MultiLine = true
 
 	if mail != nil {
 		switch mode {
 		case CreateMessageReply:
 			toInput.SetText(mail.From.Name)
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
+			bodyInput.SetText(mail.ToString(myDateTime))
+		case CreateMessageReplyAll:
+			var names []string
+			for _, r := range mail.Recipients {
+				if r.Name == currentChar.Name {
+					continue
+				}
+				names = append(names, r.Name)
+			}
+			names = append(names, mail.From.Name)
+			s := makeRecipientText(names)
+			toInput.SetText(s)
+			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
+			bodyInput.SetText(mail.ToString(myDateTime))
+		case CreateMessageForward:
+			subjectInput.SetText(fmt.Sprintf("Fw: %s", mail.Subject))
+			bodyInput.SetText(mail.ToString(myDateTime))
 		default:
 			return nil, fmt.Errorf("undefined mode for create message: %v", mode)
 		}
@@ -92,8 +111,6 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	})
 	toInputWrap := container.NewBorder(nil, nil, nil, addButton, toInput)
 	form := container.New(layout.NewFormLayout(), fromLabel, fromInput, toLabel, toInputWrap, subjectLabel, subjectInput)
-	bodyInput := widget.NewEntry()
-	bodyInput.MultiLine = true
 	cancelButton := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
 		w.Hide()
 	})

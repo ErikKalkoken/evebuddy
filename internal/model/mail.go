@@ -120,6 +120,29 @@ func (m *Mail) BodyPlain() string {
 	return b
 }
 
+// BodyForward returns a mail's body for a mail forward or reply
+func (m *Mail) ToString(format string) string {
+	s := "\n---\n"
+	s += m.MakeHeaderText(format)
+	s += "\n\n"
+	s += m.BodyPlain()
+	return s
+}
+
+func (m *Mail) MakeHeaderText(format string) string {
+	var names []string
+	for _, n := range m.Recipients {
+		names = append(names, n.Name)
+	}
+	header := fmt.Sprintf(
+		"From: %s\nSent: %s\nTo: %s",
+		m.From.Name,
+		m.Timestamp.Format(format),
+		strings.Join(names, ", "),
+	)
+	return header
+}
+
 // FetchMail returns a mail.
 func FetchMail(id uint64) (*Mail, error) {
 	row := db.QueryRow(

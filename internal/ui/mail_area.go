@@ -2,9 +2,7 @@ package ui
 
 import (
 	"example/esiapp/internal/model"
-	"fmt"
 	"log/slog"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -72,10 +70,12 @@ func (m *mailArea) Redraw(mailID uint64) {
 	)
 	m.icons.Add(
 		widget.NewButtonWithIcon("", theme.MailReplyAllIcon(), func() {
+			m.ui.ShowCreateMessageWindow(CreateMessageReplyAll, mail)
 		}),
 	)
 	m.icons.Add(
 		widget.NewButtonWithIcon("", theme.MailForwardIcon(), func() {
+			m.ui.ShowCreateMessageWindow(CreateMessageForward, mail)
 		}),
 	)
 	m.icons.Add(layout.NewSpacer())
@@ -83,16 +83,7 @@ func (m *mailArea) Redraw(mailID uint64) {
 		widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
 		}),
 	)
-	var names []string
-	for _, n := range mail.Recipients {
-		names = append(names, n.Name)
-	}
-	header := fmt.Sprintf(
-		"From: %s\nSent: %s\nTo: %s",
-		mail.From.Name,
-		mail.Timestamp.Format(myDateTime),
-		strings.Join(names, ", "),
-	)
+	header := mail.MakeHeaderText(myDateTime)
 	b := mail.BodyPlain()
 	m.updateContent(mail.Subject, header, b)
 	for _, i := range []int{0, 1, 2, 4} {
