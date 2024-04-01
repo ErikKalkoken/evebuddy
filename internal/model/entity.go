@@ -59,8 +59,8 @@ func (e *EveEntity) ImageURL(size int) fyne.URI {
 	return u
 }
 
-// FetchEntityIDs returns all existing entity IDs.
-func FetchEntityIDs() ([]int32, error) {
+// FetchEveEntityIDs returns all existing entity IDs.
+func FetchEveEntityIDs() ([]int32, error) {
 	var ids []int32
 	err := db.Select(&ids, "SELECT id FROM eve_entities;")
 	if err != nil {
@@ -79,4 +79,23 @@ func FetchEveEntity(id int32) (*EveEntity, error) {
 		return nil, fmt.Errorf("EveEntity object not found for ID %d", id)
 	}
 	return &e, nil
+}
+
+// FetchEveEntityCharacters returns all character names in ascending order.
+func FetchEveEntityCharacters(partial string) ([]EveEntity, error) {
+	var ee []EveEntity
+	err := db.Select(
+		&ee,
+		`SELECT *
+		FROM eve_entities
+		WHERE category = "character"
+		AND name LIKE '%'||?||'%'
+		ORDER BY name
+		COLLATE NOCASE;`,
+		partial,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return ee, nil
 }

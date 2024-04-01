@@ -300,7 +300,7 @@ func ensureFreshToken(token *model.Token) error {
 }
 
 func addMissingEveEntities(ids []int32) error {
-	c, err := model.FetchEntityIDs()
+	c, err := model.FetchEveEntityIDs()
 	if err != nil {
 		return err
 	}

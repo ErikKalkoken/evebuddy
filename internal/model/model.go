@@ -20,6 +20,8 @@ var schema = `
 		category text NOT NULL,
 		name text NOT NULL
 	);
+	CREATE INDEX IF NOT EXISTS eve_entities_name_idx ON eve_entities (name);
+	CREATE INDEX IF NOT EXISTS eve_entities_category_idx ON eve_entities (category);
 
 	CREATE TABLE IF NOT EXISTS characters (
 		id integer PRIMARY KEY NOT NULL,

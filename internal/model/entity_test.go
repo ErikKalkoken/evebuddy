@@ -18,7 +18,7 @@ func createEveEntity(args ...model.EveEntity) model.EveEntity {
 		e = args[0]
 	}
 	if e.ID == 0 {
-		ids, err := model.FetchEntityIDs()
+		ids, err := model.FetchEveEntityIDs()
 		if err != nil {
 			panic(err)
 		}
@@ -99,12 +99,31 @@ func TestEveEntities(t *testing.T) {
 		e1 := createEveEntity()
 		e2 := createEveEntity()
 		// when
-		r, err := model.FetchEntityIDs()
+		r, err := model.FetchEveEntityIDs()
 		// then
 		if assert.NoError(t, err) {
 			gotIDs := set.NewFromSlice([]int32{e1.ID, e2.ID})
 			wantIDs := set.NewFromSlice(r)
 			assert.Equal(t, wantIDs, gotIDs)
+		}
+	})
+	t.Run("should return all character names in order", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		createEveEntity(model.EveEntity{Name: "Yalpha2", Category: "character"})
+		createEveEntity(model.EveEntity{Name: "Xalpha1", Category: "character"})
+		createEveEntity(model.EveEntity{Name: "charlie", Category: "character"})
+		createEveEntity(model.EveEntity{Name: "other", Category: "corporation"})
+		// when
+		ee, err := model.FetchEveEntityCharacters("ALPHA")
+		// then
+		if assert.NoError(t, err) {
+			var got []string
+			for _, e := range ee {
+				got = append(got, e.Name)
+			}
+			want := []string{"Xalpha1", "Yalpha2"}
+			assert.Equal(t, want, got)
 		}
 	})
 }
