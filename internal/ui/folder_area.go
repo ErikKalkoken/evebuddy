@@ -29,12 +29,7 @@ func (u *ui) NewFolderArea() *folderArea {
 		f.UpdateMails()
 	})
 	f.newButton = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
-		w, err := u.makeCreateMessageWindow()
-		if err != nil {
-			slog.Error("failed to create new message window", "error", err)
-		} else {
-			w.Show()
-		}
+		f.ui.ShowCreateMessageWindow(CreateMessageNew, nil)
 	})
 	top := container.NewHBox(f.refreshButton, f.newButton)
 	c := container.NewBorder(top, nil, nil, nil, f.tree)

@@ -26,19 +26,7 @@ type mailArea struct {
 }
 
 func (u *ui) NewMailArea() *mailArea {
-	icons := container.NewHBox(
-		widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {
-		}),
-		widget.NewButtonWithIcon("", theme.MailReplyAllIcon(), func() {
-		}),
-		widget.NewButtonWithIcon("", theme.MailForwardIcon(), func() {
-		}),
-		layout.NewSpacer(),
-		widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
-		}))
-	for _, i := range []int{0, 1, 2, 4} {
-		icons.Objects[i].(*widget.Button).Disable()
-	}
+	icons := container.NewHBox()
 
 	subject := widget.NewLabel("")
 	subject.TextStyle = fyne.TextStyle{Bold: true}
@@ -76,6 +64,25 @@ func (m *mailArea) Redraw(mailID uint64) {
 		return
 	}
 	m.mailID = mailID
+	m.icons.RemoveAll()
+	m.icons.Add(
+		widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {
+			m.ui.ShowCreateMessageWindow(CreateMessageReply, mail)
+		}),
+	)
+	m.icons.Add(
+		widget.NewButtonWithIcon("", theme.MailReplyAllIcon(), func() {
+		}),
+	)
+	m.icons.Add(
+		widget.NewButtonWithIcon("", theme.MailForwardIcon(), func() {
+		}),
+	)
+	m.icons.Add(layout.NewSpacer())
+	m.icons.Add(
+		widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
+		}),
+	)
 	var names []string
 	for _, n := range mail.Recipients {
 		names = append(names, n.Name)

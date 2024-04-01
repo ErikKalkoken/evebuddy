@@ -3,6 +3,7 @@ package ui
 import (
 	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/model"
+	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -16,7 +17,23 @@ import (
 	widget2 "fyne.io/x/fyne/widget"
 )
 
-func (u *ui) makeCreateMessageWindow() (fyne.Window, error) {
+const (
+	CreateMessageNew = iota
+	CreateMessageReply
+	CreateMessageReplyAll
+	CreateMessageForward
+)
+
+func (u *ui) ShowCreateMessageWindow(mode int, mail *model.Mail) {
+	w, err := u.makeCreateMessageWindow(mode, mail)
+	if err != nil {
+		slog.Error("failed to create new message window", "error", err)
+	} else {
+		w.Show()
+	}
+}
+
+func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, error) {
 	currentChar := *u.CurrentChar()
 	w := u.app.NewWindow("New message")
 	fromLabel := widget.NewLabel("From:")
@@ -25,6 +42,18 @@ func (u *ui) makeCreateMessageWindow() (fyne.Window, error) {
 	fromInput.SetPlaceHolder(currentChar.Name)
 	toLabel := widget.NewLabel("To:")
 	toInput := widget.NewEntry()
+	subjectLabel := widget.NewLabel("Subject:")
+	subjectInput := widget.NewEntry()
+
+	if mail != nil {
+		switch mode {
+		case CreateMessageReply:
+			toInput.SetText(mail.From.Name)
+			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
+		default:
+			return nil, fmt.Errorf("undefined mode for create message: %v", mode)
+		}
+	}
 
 	addButton := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
 		label := widget.NewLabel("Search")
@@ -35,7 +64,6 @@ func (u *ui) makeCreateMessageWindow() (fyne.Window, error) {
 				entry.HideCompletion()
 				return
 			}
-			var err error
 			ee, err := model.FetchEveEntityCharacters(search)
 			if err != nil {
 				entry.HideCompletion()
@@ -53,19 +81,16 @@ func (u *ui) makeCreateMessageWindow() (fyne.Window, error) {
 				if confirmed {
 					ss := parseNames(toInput.Text)
 					ss = append(ss, entry.Text)
-					slices.Sort(ss)
-					s := strings.Join(ss, ", ")
+					s := makeRecipientText(ss)
 					toInput.SetText(s)
 				}
 			},
 			w,
 		)
-		d.Resize(fyne.Size{Width: 300, Height: 200})
+		d.Resize(fyne.Size{Width: 500, Height: 300})
 		d.Show()
 	})
 	toInputWrap := container.NewBorder(nil, nil, nil, addButton, toInput)
-	subjectLabel := widget.NewLabel("Subject:")
-	subjectInput := widget.NewEntry()
 	form := container.New(layout.NewFormLayout(), fromLabel, fromInput, toLabel, toInputWrap, subjectLabel, subjectInput)
 	bodyInput := widget.NewEntry()
 	bodyInput.MultiLine = true
@@ -96,6 +121,12 @@ func (u *ui) makeCreateMessageWindow() (fyne.Window, error) {
 	w.SetContent(content)
 	w.Resize(fyne.NewSize(400, 300))
 	return w, nil
+}
+
+func makeRecipientText(ss []string) string {
+	slices.Sort(ss)
+	s := strings.Join(ss, ", ")
+	return s
 }
 
 func parseNames(t string) []string {
