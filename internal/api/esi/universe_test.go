@@ -63,3 +63,62 @@ func TestResolveEntityIDs(t *testing.T) {
 		assert.Nil(t, r)
 	})
 }
+
+func TestResolveEntityNames(t *testing.T) {
+	// given
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	c := &http.Client{}
+
+	t.Run("should return data", func(t *testing.T) {
+		json := `
+		{
+			"characters": [
+			  {
+				"id": 95465499,
+				"name": "CCP Bartender"
+			  },
+			  {
+				"id": 2112625428,
+				"name": "CCP Zoetrope"
+			  }
+			],
+			"systems": [
+			  {
+				"id": 30000142,
+				"name": "Jita"
+			  }
+			]
+		}`
+		httpmock.RegisterResponder(
+			"POST",
+			"https://esi.evetech.net/latest/universe/ids/",
+			httpmock.NewStringResponder(200, json),
+		)
+
+		// when
+		r, err := esi.ResolveEntityNames(c, []string{"alpha", "bravo"})
+
+		// then
+		assert.Nil(t, err)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount())
+		assert.Equal(t, int32(95465499), r.Characters[0].ID)
+		assert.Equal(t, "CCP Bartender", r.Characters[0].Name)
+	})
+	t.Run("should return error when too many IDs", func(t *testing.T) {
+		httpmock.RegisterResponder(
+			"POST",
+			"https://esi.evetech.net/latest/universe/ids/",
+			httpmock.NewStringResponder(200, ""),
+		)
+		names := make([]string, 1100)
+		for i := range 1100 {
+			names[i] = "dummy"
+		}
+		// when
+		r, err := esi.ResolveEntityNames(c, names)
+		// then
+		assert.Error(t, err)
+		assert.Nil(t, r)
+	})
+}

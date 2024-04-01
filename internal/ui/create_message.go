@@ -26,7 +26,6 @@ func (u *ui) makeCreateMessageWindow() (fyne.Window, error) {
 	toLabel := widget.NewLabel("To:")
 	toInput := widget.NewEntry()
 
-	ee := []model.EveEntity{}
 	addButton := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
 		label := widget.NewLabel("Search")
 		entry := widget2.NewCompletionEntry([]string{})
@@ -74,19 +73,13 @@ func (u *ui) makeCreateMessageWindow() (fyne.Window, error) {
 		w.Hide()
 	})
 	sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {
-		name := toInput.Text
-		var selected *model.EveEntity
-		for _, e := range ee {
-			if e.Name == name {
-				selected = &e
-				break
-			}
-		}
-		if selected == nil {
-			slog.Error("Failed to match recipient", "name", name)
+		names := parseNames(toInput.Text)
+		recipients, err := esi.ResolveEntityNames(httpClient, names)
+		if err != nil {
+			slog.Error("Failed to resolve names", "error", err)
 			return
 		}
-		err := sendMail(currentChar.ID, subjectInput.Text, selected.ID, bodyInput.Text)
+		err = sendMail(currentChar.ID, subjectInput.Text, recipients, bodyInput.Text)
 		if err != nil {
 			slog.Error("Failed to send mail", "error", err)
 		} else {
@@ -123,7 +116,7 @@ func parseNames(t string) []string {
 	return names
 }
 
-func sendMail(characterID int32, subject string, recipientID int32, body string) error {
+func sendMail(characterID int32, subject string, recipients *esi.UniverseIDsResponse, body string) error {
 	token, err := model.FetchToken(characterID)
 	if err != nil {
 		return err
@@ -132,10 +125,14 @@ func sendMail(characterID int32, subject string, recipientID int32, body string)
 	if err != nil {
 		return err
 	}
+	rr := []esi.MailRecipient{}
+	for _, r := range recipients.Characters {
+		rr = append(rr, esi.MailRecipient{ID: r.ID, Type: "character"})
+	}
 	m := esi.MailSend{
 		Body:       body,
 		Subject:    subject,
-		Recipients: []esi.MailRecipient{{ID: recipientID, Type: "character"}},
+		Recipients: rr,
 	}
 	_, err = esi.SendMail(httpClient, characterID, token.AccessToken, m)
 	if err != nil {
