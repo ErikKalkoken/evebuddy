@@ -3,6 +3,7 @@ package ui
 import (
 	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/model"
+	"fmt"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -13,7 +14,8 @@ import (
 )
 
 func (u *ui) makeCreateMessageWindow() fyne.Window {
-	w := u.app.NewWindow("New message")
+	character := *u.CurrentChar()
+	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", character.Name))
 	toLabel := widget.NewLabel("To:")
 	toInput := widget.NewEntry()
 	toInput.PlaceHolder = "Yuna Kobayashi"
@@ -26,7 +28,7 @@ func (u *ui) makeCreateMessageWindow() fyne.Window {
 		w.Hide()
 	})
 	sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {
-		err := sendMail(u.CurrentCharID(), subjectInput.Text, bodyInput.Text)
+		err := sendMail(character.ID, subjectInput.Text, bodyInput.Text)
 		if err != nil {
 			slog.Error("Failed to send mail", "error", err)
 		} else {

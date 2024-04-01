@@ -96,7 +96,7 @@ func (c *characterArea) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
 	var items []*fyne.MenuItem
 	for _, char := range characters {
 		item := fyne.NewMenuItem(char.Name, func() {
-			c.ui.SetCurrentCharID(char.ID)
+			c.ui.SetCurrentCharacter(&char)
 			c.Redraw()
 		})
 		if char.ID == charID {

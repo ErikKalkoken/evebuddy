@@ -20,14 +20,14 @@ const (
 // Each UI area holds a pointer of the ui instance,
 // which allow it to access the other UI areas and shared variables
 type ui struct {
-	app           fyne.App
-	characterArea *characterArea
-	currentCharID int32
-	folderArea    *folderArea
-	headerArea    *headerArea
-	mailArea      *mailArea
-	statusArea    *statusArea
-	window        fyne.Window
+	app              fyne.App
+	characterArea    *characterArea
+	currentCharacter *model.Character
+	folderArea       *folderArea
+	headerArea       *headerArea
+	mailArea         *mailArea
+	statusArea       *statusArea
+	window           fyne.Window
 }
 
 // NewUI build the UI and returns it.
@@ -42,7 +42,7 @@ func NewUI() *ui {
 			slog.Error("Failed to load any character", "error", err)
 		}
 	} else {
-		u.currentCharID = c.ID
+		u.currentCharacter = c
 	}
 
 	mail := u.NewMailArea()
@@ -83,9 +83,20 @@ func (u *ui) ShowAndRun() {
 }
 
 func (u *ui) CurrentCharID() int32 {
-	return u.currentCharID
+	if u.currentCharacter == nil {
+		return 0
+	}
+	return u.currentCharacter.ID
 }
 
-func (u *ui) SetCurrentCharID(id int32) {
-	u.currentCharID = id
+func (u *ui) CurrentChar() *model.Character {
+	return u.currentCharacter
+}
+
+func (u *ui) SetCurrentCharacter(c *model.Character) {
+	u.currentCharacter = c
+}
+
+func (u *ui) ResetCurrentCharacter() {
+	u.currentCharacter = nil
 }
