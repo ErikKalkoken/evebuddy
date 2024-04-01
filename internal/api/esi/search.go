@@ -24,7 +24,7 @@ type SearchResult struct {
 
 // Search makes a search request to ESI and returns the results
 func Search(client *http.Client, characterID int32, search string, tokenString string) (*SearchResult, error) {
-	v := url.Values{}
+	v := url.Values{"categories": {"character"}}
 	v.Set("search", search)
 	p := fmt.Sprintf("/characters/%d/search/?%v", characterID, v.Encode())
 	r, err := raiseError(getESIWithToken(client, p, tokenString))

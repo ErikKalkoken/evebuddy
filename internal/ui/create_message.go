@@ -15,20 +15,19 @@ import (
 )
 
 func (u *ui) makeCreateMessageWindow() (fyne.Window, error) {
-	character := *u.CurrentChar()
-	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", character.Name))
+	currentChar := *u.CurrentChar()
+	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", currentChar.Name))
 	toLabel := widget.NewLabel("To:")
 	toInput := widget2.NewCompletionEntry([]string{})
 	ee := []model.EveEntity{}
-	toInput.OnChanged = func(s string) {
-		if len(s) < 3 {
+	toInput.OnChanged = func(search string) {
+		if len(search) < 3 {
 			toInput.HideCompletion()
 			return
 		}
 		var err error
-		ee, err = model.FetchEveEntityCharacters(s)
+		ee, err = resolveInputString(currentChar.ID, search)
 		if err != nil {
-			slog.Error("Failed to fetch character names", "error", "err")
 			toInput.HideCompletion()
 			return
 		}
@@ -60,7 +59,7 @@ func (u *ui) makeCreateMessageWindow() (fyne.Window, error) {
 			slog.Error("Failed to match recipient", "name", name)
 			return
 		}
-		err := sendMail(character.ID, subjectInput.Text, selected.ID, bodyInput.Text)
+		err := sendMail(currentChar.ID, subjectInput.Text, selected.ID, bodyInput.Text)
 		if err != nil {
 			slog.Error("Failed to send mail", "error", err)
 		} else {
@@ -77,6 +76,27 @@ func (u *ui) makeCreateMessageWindow() (fyne.Window, error) {
 	w.SetContent(content)
 	w.Resize(fyne.NewSize(400, 300))
 	return w, nil
+}
+
+func resolveInputString(characterID int32, search string) ([]model.EveEntity, error) {
+	token, err := model.FetchToken(characterID)
+	if err != nil {
+		return nil, err
+	}
+	err = ensureFreshToken(token)
+	if err != nil {
+		return nil, err
+	}
+	r, err := esi.Search(httpClient, characterID, search, token.AccessToken)
+	if err != nil {
+		return nil, err
+	}
+	addMissingEveEntities(r.Character)
+	ee, err := model.FetchEveEntityCharacters(search)
+	if err != nil {
+		return nil, err
+	}
+	return ee, nil
 }
 
 func sendMail(characterID int32, subject string, recipientID int32, body string) error {
