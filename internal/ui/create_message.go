@@ -3,6 +3,7 @@ package ui
 import (
 	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/model"
+	"example/esiapp/internal/widgets"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -14,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	widget2 "fyne.io/x/fyne/widget"
 )
 
 const (
@@ -76,7 +76,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 
 	addButton := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
 		label := widget.NewLabel("Search")
-		entry := widget2.NewCompletionEntry([]string{})
+		entry := widgets.NewCompletionEntry([]string{})
 		content := container.New(layout.NewFormLayout(), label, entry)
 		entry.OnChanged = func(search string) {
 			if len(search) < 2 {
@@ -106,7 +106,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 			},
 			w,
 		)
-		d.Resize(fyne.Size{Width: 500, Height: 300})
+		d.Resize(fyne.Size{Width: 500, Height: 500})
 		d.Show()
 	})
 	toInputWrap := container.NewBorder(nil, nil, nil, addButton, toInput)
@@ -136,7 +136,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	)
 	content := container.NewBorder(form, buttons, nil, nil, bodyInput)
 	w.SetContent(content)
-	w.Resize(fyne.NewSize(400, 300))
+	w.Resize(fyne.NewSize(600, 400))
 	return w, nil
 }
 
