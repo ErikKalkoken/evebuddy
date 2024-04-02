@@ -41,6 +41,8 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	fromInput.SetPlaceHolder(currentChar.Name)
 	toLabel := widget.NewLabel("To:")
 	toInput := widget.NewEntry()
+	toInput.MultiLine = true
+	toInput.Wrapping = fyne.TextWrapWord
 	subjectLabel := widget.NewLabel("Subject:")
 	subjectInput := widget.NewEntry()
 	bodyInput := widget.NewEntry()
@@ -76,7 +78,8 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 		w.Hide()
 	})
 	sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {
-		recipients, err := badgeStringToEsiRecipients(toInput.Text)
+		rr := NewRecipientsFromText(toInput.Text)
+		recipients, err := rr.ToEsiRecipients()
 		if err != nil {
 			slog.Error("Failed to resolve names", "error", err)
 			return
@@ -98,23 +101,6 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	w.SetContent(content)
 	w.Resize(fyne.NewSize(600, 500))
 	return w, nil
-}
-
-func badgeStringToEsiRecipients(s string) ([]esi.MailRecipient, error) {
-	r := NewRecipientsFromText(s)
-	n := r.names()
-	resp, err := esi.ResolveEntityNames(httpClient, n)
-	var rr []esi.MailRecipient
-	for _, o := range resp.Alliances {
-		rr = append(rr, esi.MailRecipient{ID: o.ID, Type: "character"})
-	}
-	for _, o := range resp.Characters {
-		rr = append(rr, esi.MailRecipient{ID: o.ID, Type: "corporation"})
-	}
-	for _, o := range resp.Corporations {
-		rr = append(rr, esi.MailRecipient{ID: o.ID, Type: "alliance"})
-	}
-	return rr, err
 }
 
 func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {

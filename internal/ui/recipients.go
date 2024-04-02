@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/model"
 	"fmt"
 	"regexp"
@@ -141,4 +142,20 @@ func (rr *recipients) names() []string {
 
 func (rr *recipients) Size() int {
 	return len(rr.list)
+}
+
+func (rr *recipients) ToEsiRecipients() ([]esi.MailRecipient, error) {
+	n := rr.names()
+	resp, err := esi.ResolveEntityNames(httpClient, n)
+	var mm []esi.MailRecipient
+	for _, o := range resp.Alliances {
+		mm = append(mm, esi.MailRecipient{ID: o.ID, Type: "character"})
+	}
+	for _, o := range resp.Characters {
+		mm = append(mm, esi.MailRecipient{ID: o.ID, Type: "corporation"})
+	}
+	for _, o := range resp.Corporations {
+		mm = append(mm, esi.MailRecipient{ID: o.ID, Type: "alliance"})
+	}
+	return mm, err
 }
