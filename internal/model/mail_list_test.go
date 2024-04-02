@@ -17,7 +17,7 @@ func createMailList(args ...model.MailList) model.MailList {
 		l.Character = createCharacter()
 	}
 	if l.EveEntity.ID == 0 {
-		l.EveEntity = createEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+		l.EveEntity = CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 	}
 	if err := l.CreateIfNew(); err != nil {
 		panic(err)
@@ -30,7 +30,7 @@ func TestMailList(t *testing.T) {
 		// given
 		model.TruncateTables()
 		c := createCharacter()
-		e := createEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+		e := CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 		l := model.MailList{
 			Character: c,
 			EveEntity: e,
@@ -47,10 +47,10 @@ func TestMailList(t *testing.T) {
 		// given
 		model.TruncateTables()
 		c := createCharacter()
-		e1 := createEveEntity(model.EveEntity{Category: model.EveEntityMailList, Name: "alpha"})
+		e1 := CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList, Name: "alpha"})
 		l1 := model.MailList{Character: c, EveEntity: e1}
 		assert.NoError(t, l1.CreateIfNew())
-		e2 := createEveEntity(model.EveEntity{Category: model.EveEntityMailList, Name: "bravo"})
+		e2 := CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList, Name: "bravo"})
 		l2 := model.MailList{Character: c, EveEntity: e2}
 		assert.NoError(t, l2.CreateIfNew())
 		// when

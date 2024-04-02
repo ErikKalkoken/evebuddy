@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// createEveEntity is a test factory for EveEntity objects.
-func createEveEntity(args ...model.EveEntity) model.EveEntity {
+// CreateEveEntity is a test factory for EveEntity objects.
+func CreateEveEntity(args ...model.EveEntity) model.EveEntity {
 	var e model.EveEntity
 	if len(args) > 0 {
 		e = args[0]
@@ -62,7 +62,7 @@ func TestEveEntities(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		o := createEveEntity(model.EveEntity{ID: 42, Name: "alpha", Category: "character"})
+		o := CreateEveEntity(model.EveEntity{ID: 42, Name: "alpha", Category: "character"})
 		o.Name = "bravo"
 		o.Category = "corporation"
 		// when
@@ -77,7 +77,7 @@ func TestEveEntities(t *testing.T) {
 	t.Run("can fetch existing", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		o := createEveEntity()
+		o := CreateEveEntity()
 		// when
 		r, err := model.FetchEveEntity(o.ID)
 		// then
@@ -96,8 +96,8 @@ func TestEveEntities(t *testing.T) {
 	t.Run("can return all existing IDs", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		e1 := createEveEntity()
-		e2 := createEveEntity()
+		e1 := CreateEveEntity()
+		e2 := CreateEveEntity()
 		// when
 		r, err := model.FetchEveEntityIDs()
 		// then
@@ -110,10 +110,10 @@ func TestEveEntities(t *testing.T) {
 	t.Run("should return all character names in order", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		createEveEntity(model.EveEntity{Name: "Yalpha2", Category: "character"})
-		createEveEntity(model.EveEntity{Name: "Xalpha1", Category: "character"})
-		createEveEntity(model.EveEntity{Name: "charlie", Category: "character"})
-		createEveEntity(model.EveEntity{Name: "other", Category: "corporation"})
+		CreateEveEntity(model.EveEntity{Name: "Yalpha2", Category: "character"})
+		CreateEveEntity(model.EveEntity{Name: "Xalpha1", Category: "character"})
+		CreateEveEntity(model.EveEntity{Name: "charlie", Category: "character"})
+		CreateEveEntity(model.EveEntity{Name: "other", Category: "corporation"})
 		// when
 		ee, err := model.FetchEveEntityNameSearch("ALPHA")
 		// then

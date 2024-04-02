@@ -20,7 +20,7 @@ func createMail(args ...model.Mail) model.Mail {
 		m.Character = createCharacter()
 	}
 	if m.From.ID == 0 {
-		m.From = createEveEntity(model.EveEntity{Category: model.EveEntityCharacter})
+		m.From = CreateEveEntity(model.EveEntity{Category: model.EveEntityCharacter})
 	}
 	if m.MailID == 0 {
 		ids, err := model.FetchMailIDs(m.Character.ID)
@@ -53,8 +53,8 @@ func TestMailCreate(t *testing.T) {
 		// given
 		model.TruncateTables()
 		c := createCharacter()
-		f := createEveEntity()
-		r := createEveEntity()
+		f := CreateEveEntity()
+		r := CreateEveEntity()
 		l := createMailLabel(model.MailLabel{Character: c})
 		m := model.Mail{
 			Body:       "body",
@@ -86,7 +86,7 @@ func TestMailCreate(t *testing.T) {
 	t.Run("should return error when no character ID", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		from := createEveEntity()
+		from := CreateEveEntity()
 		m := model.Mail{
 			Body:      "body",
 			From:      from,
@@ -219,7 +219,7 @@ func TestFetchMailsForLabel(t *testing.T) {
 		c2 := createCharacter()
 		l2 := createMailLabel(model.MailLabel{Character: c2, LabelID: 1})
 		// when
-		from := createEveEntity()
+		from := CreateEveEntity()
 		m := model.Mail{
 			Body:      "body",
 			From:      from,

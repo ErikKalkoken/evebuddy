@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -50,20 +49,14 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	if mail != nil {
 		switch mode {
 		case CreateMessageReply:
-			toInput.SetText(mail.From.Name)
+			r := NewRecipients()
+			r.add(mail.From)
+			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
 		case CreateMessageReplyAll:
-			var names []string
-			for _, r := range mail.Recipients {
-				if r.Name == currentChar.Name {
-					continue
-				}
-				names = append(names, r.Name)
-			}
-			names = append(names, mail.From.Name)
-			s := makeRecipientText(names)
-			toInput.SetText(s)
+			r := NewRecipientsFromEntities(mail.Recipients)
+			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
 		case CreateMessageForward:
@@ -83,8 +76,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 		w.Hide()
 	})
 	sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {
-		names := parseNames(toInput.Text)
-		recipients, err := esi.ResolveEntityNames(httpClient, names)
+		recipients, err := badgeStringToEsiRecipients(toInput.Text)
 		if err != nil {
 			slog.Error("Failed to resolve names", "error", err)
 			return
@@ -108,6 +100,23 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	return w, nil
 }
 
+func badgeStringToEsiRecipients(s string) ([]esi.MailRecipient, error) {
+	r := NewRecipientsFromText(s)
+	n := r.names()
+	resp, err := esi.ResolveEntityNames(httpClient, n)
+	var rr []esi.MailRecipient
+	for _, o := range resp.Alliances {
+		rr = append(rr, esi.MailRecipient{ID: o.ID, Type: "character"})
+	}
+	for _, o := range resp.Characters {
+		rr = append(rr, esi.MailRecipient{ID: o.ID, Type: "corporation"})
+	}
+	for _, o := range resp.Corporations {
+		rr = append(rr, esi.MailRecipient{ID: o.ID, Type: "alliance"})
+	}
+	return rr, err
+}
+
 func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 	label := widget.NewLabel("Search")
 	entry := widgets.NewCompletionEntry([]string{})
@@ -117,7 +126,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 			entry.HideCompletion()
 			return
 		}
-		names, err := makeNameOptions(search)
+		names, err := makeRecipientOptions(search)
 		if err != nil {
 			entry.HideCompletion()
 			return
@@ -151,7 +160,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 				slog.Error("Failed to fetch missing IDs", "error", err)
 				return
 			}
-			names, err := makeNameOptions(search)
+			names, err := makeRecipientOptions(search)
 			if err != nil {
 				slog.Error("Failed to make name options", "error", err)
 				return
@@ -163,11 +172,9 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 	d := dialog.NewCustomConfirm(
 		"Add recipient", "Add", "Cancel", content, func(confirmed bool) {
 			if confirmed {
-				ss := parseNames(toInput.Text)
-				i := strings.Replace(entry.Text, "[Character]", "", 1)
-				ss = append(ss, i)
-				s := makeRecipientText(ss)
-				toInput.SetText(s)
+				r := NewRecipientsFromText(toInput.Text)
+				r.addFromText(entry.Text)
+				toInput.SetText(r.String())
 			}
 		},
 		w,
@@ -176,43 +183,20 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 	d.Show()
 }
 
-func makeNameOptions(search string) ([]string, error) {
+func makeRecipientOptions(search string) ([]string, error) {
 	ee, err := model.FetchEveEntityNameSearch(search)
 	if err != nil {
 		return nil, err
 	}
 	names := []string{}
 	for _, e := range ee {
-		names = append(names, fmt.Sprintf("%s [%s]", e.Name, e.CategoryLabel()))
+		r := NewRecipientFromEveEntity(e)
+		names = append(names, r.String())
 	}
 	return names, nil
 }
 
-func makeRecipientText(ss []string) string {
-	slices.Sort(ss)
-	s := strings.Join(ss, ", ")
-	return s
-}
-
-func parseNames(t string) []string {
-	// split string into slice of names
-	names := strings.Split(t, ",")
-	for i, s := range names {
-		names[i] = strings.Trim(s, " ")
-	}
-	// remove empty names from slice
-	temp := names[:0]
-	for _, s := range names {
-		if len(s) == 0 {
-			continue
-		}
-		temp = append(temp, s)
-	}
-	names = temp
-	return names
-}
-
-func sendMail(characterID int32, subject string, recipients *esi.UniverseIDsResponse, body string) error {
+func sendMail(characterID int32, subject string, recipients []esi.MailRecipient, body string) error {
 	token, err := model.FetchToken(characterID)
 	if err != nil {
 		return err
@@ -221,14 +205,10 @@ func sendMail(characterID int32, subject string, recipients *esi.UniverseIDsResp
 	if err != nil {
 		return err
 	}
-	rr := []esi.MailRecipient{}
-	for _, r := range recipients.Characters {
-		rr = append(rr, esi.MailRecipient{ID: r.ID, Type: "character"})
-	}
 	m := esi.MailSend{
 		Body:       body,
 		Subject:    subject,
-		Recipients: rr,
+		Recipients: recipients,
 	}
 	_, err = esi.SendMail(httpClient, characterID, token.AccessToken, m)
 	if err != nil {
