@@ -76,6 +76,10 @@ func (r *recipient) String() string {
 	return s
 }
 
+func (r *recipient) Empty() bool {
+	return r.name == "" && r.category == recipientCategoryUnknown
+}
+
 // All recipients in a mail
 type recipients struct {
 	list []recipient
@@ -96,13 +100,20 @@ func NewRecipientsFromEntities(ee []model.EveEntity) *recipients {
 }
 
 func NewRecipientsFromText(s string) *recipients {
+	rr := NewRecipients()
+	if s == "" {
+		return rr
+	}
 	ss := strings.Split(s, ",")
 	for i, x := range ss {
 		ss[i] = strings.Trim(x, " ")
 	}
-	rr := NewRecipients()
 	for _, s := range ss {
-		rr.add(NewRecipientFromText(s))
+		r := NewRecipientFromText(s)
+		if r.Empty() {
+			continue
+		}
+		rr.add(r)
 	}
 	return rr
 }
@@ -126,4 +137,8 @@ func (rr *recipients) names() []string {
 		ss[i] = r.name
 	}
 	return ss
+}
+
+func (rr *recipients) Size() int {
+	return len(rr.list)
 }

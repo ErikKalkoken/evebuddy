@@ -88,8 +88,6 @@ func TestNewRecipientsFromText(t *testing.T) {
 }
 
 func TestRecipients(t *testing.T) {
-	r := recipients{}
-	r.add(NewRecipientFromText("Erik Kalkoken"))
-	s := r.String()
-	assert.Equal(t, "Erik Kalkoken", s)
+	r := NewRecipientsFromText("")
+	assert.Equal(t, r.Size(), 0)
 }
