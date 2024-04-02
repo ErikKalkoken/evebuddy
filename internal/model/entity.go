@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"fyne.io/fyne/v2"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // An entity in Eve Online
@@ -26,6 +28,9 @@ const (
 )
 
 var categories = set.NewFromSlice([]EveEntityCategory{EveEntityAlliance, EveEntityCharacter, EveEntityCorporation, EveEntityMailList})
+var categoryLabels = map[EveEntityCategory]string{
+	EveEntityMailList: "Mailing List",
+}
 
 // Save updates or creates an eve entity.
 func (e *EveEntity) Save() error {
@@ -57,6 +62,15 @@ func (e *EveEntity) ImageURL(size int) fyne.URI {
 		panic(fmt.Sprintf("ImageURL not defined for category %s", e.Category))
 	}
 	return u
+}
+
+func (e *EveEntity) CategoryLabel() string {
+	l, ok := categoryLabels[e.Category]
+	if !ok {
+		l = string(e.Category)
+	}
+	c := cases.Title(language.English)
+	return c.String(string(l))
 }
 
 // FetchEveEntityIDs returns all existing entity IDs.

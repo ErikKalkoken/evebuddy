@@ -15,8 +15,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const (
@@ -184,9 +182,8 @@ func makeNameOptions(search string) ([]string, error) {
 		return nil, err
 	}
 	names := []string{}
-	c := cases.Title(language.English)
 	for _, e := range ee {
-		names = append(names, fmt.Sprintf("%s [%s]", e.Name, c.String(string(e.Category))))
+		names = append(names, fmt.Sprintf("%s [%s]", e.Name, e.CategoryLabel()))
 	}
 	return names, nil
 }

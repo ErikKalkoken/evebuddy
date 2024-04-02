@@ -28,7 +28,8 @@ func TestSearch(t *testing.T) {
 
 	c := &http.Client{}
 	// when
-	r, err := esi.Search(c, 1, "dummy", "token")
+	categories := []esi.SearchCategory{esi.SearchCategoryCharacter}
+	r, err := esi.Search(c, 1, "dummy", categories, "token")
 
 	// then
 	if assert.NoError(t, err) {
