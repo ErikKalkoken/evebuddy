@@ -136,7 +136,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	)
 	content := container.NewBorder(form, buttons, nil, nil, bodyInput)
 	w.SetContent(content)
-	w.Resize(fyne.NewSize(600, 400))
+	w.Resize(fyne.NewSize(600, 500))
 	return w, nil
 }
 

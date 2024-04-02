@@ -94,16 +94,15 @@ func (c *CompletionEntry) maxSize() fyne.Size {
 		c.itemHeight = c.navigableList.CreateItem().MinSize().Height
 	}
 
-	listheight := float32(len(c.Options))*(c.itemHeight+2*theme.Padding()+theme.SeparatorThicknessSize()) + 2*theme.Padding()
+	listHeight := float32(len(c.Options))*(c.itemHeight+2*theme.Padding()+theme.SeparatorThicknessSize()) + 2*theme.Padding()
 	canvasSize := cnv.Size()
 	entrySize := c.Size()
-	if canvasSize.Height > listheight {
-		return fyne.NewSize(entrySize.Width, listheight)
+	// PATCH: Adjusting maxHeight to make the popup fit into out dialog
+	maxHeight := canvasSize.Height - c.popUpPos().Y - theme.Padding()
+	if listHeight > maxHeight {
+		listHeight = maxHeight
 	}
-
-	return fyne.NewSize(
-		entrySize.Width,
-		canvasSize.Height-c.Position().Y-entrySize.Height-theme.InputBorderSize()-theme.Padding())
+	return fyne.NewSize(entrySize.Width, listHeight)
 }
 
 // calculate where the popup should appear
