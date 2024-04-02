@@ -155,17 +155,20 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 				return
 			}
 			ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
-			err = addMissingEveEntities(ids)
+			missingIDs, err := addMissingEveEntities(ids)
 			if err != nil {
 				slog.Error("Failed to fetch missing IDs", "error", err)
 				return
 			}
-			names, err := makeRecipientOptions(search)
+			if len(missingIDs) == 0 {
+				return // no need to update when not changed
+			}
+			names2, err := makeRecipientOptions(search)
 			if err != nil {
 				slog.Error("Failed to make name options", "error", err)
 				return
 			}
-			entry.SetOptions(names)
+			entry.SetOptions(names2)
 			entry.ShowCompletion()
 		}()
 	}

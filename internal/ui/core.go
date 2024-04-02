@@ -46,7 +46,7 @@ func AddCharacter(ctx context.Context) (*model.Token, error) {
 	if charEsi.FactionID != 0 {
 		ids = append(ids, charEsi.FactionID)
 	}
-	err = addMissingEveEntities(ids)
+	_, err = addMissingEveEntities(ids)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +206,8 @@ func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount 
 	for _, r := range header.Recipients {
 		entityIDs.Add(r.ID)
 	}
-	if err := addMissingEveEntities(entityIDs.ToSlice()); err != nil {
+	_, err := addMissingEveEntities(entityIDs.ToSlice())
+	if err != nil {
 		slog.Error("Failed to process mail", "header", header, "error", err)
 		return
 	}
@@ -300,22 +301,22 @@ func ensureFreshToken(token *model.Token) error {
 	return nil
 }
 
-func addMissingEveEntities(ids []int32) error {
+func addMissingEveEntities(ids []int32) ([]int32, error) {
 	c, err := model.FetchEveEntityIDs()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	current := set.NewFromSlice(c)
 	incoming := set.NewFromSlice(ids)
 	missing := incoming.Difference(current)
 
 	if missing.Size() == 0 {
-		return nil
+		return nil, nil
 	}
 
 	entities, err := esi.ResolveEntityIDs(httpClient, missing.ToSlice())
 	if err != nil {
-		return fmt.Errorf("failed to resolve IDs: %v %v", err, ids)
+		return nil, fmt.Errorf("failed to resolve IDs: %v %v", err, ids)
 	}
 
 	for _, entity := range entities {
@@ -326,10 +327,10 @@ func addMissingEveEntities(ids []int32) error {
 		}
 		err := e.Save()
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	slog.Debug("Added missing eve entities", "count", len(entities))
-	return nil
+	return missing.ToSlice(), nil
 }
