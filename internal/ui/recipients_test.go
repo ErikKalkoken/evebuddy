@@ -12,7 +12,7 @@ func TestRecipient(t *testing.T) {
 		// given
 		e := model.EveEntity{ID: 7, Name: "Dummy", Category: model.EveEntityCharacter}
 		// when
-		r := NewRecipientFromEveEntity(e)
+		r := NewRecipientFromEntity(e)
 		// then
 		assert.Equal(t, "Dummy", r.name)
 		assert.Equal(t, recipientCategoryCharacter, r.category)
@@ -68,5 +68,28 @@ func TestNewRecipientFromText(t *testing.T) {
 	}
 }
 
+func TestNewRecipientsFromText(t *testing.T) {
+	var cases = []struct {
+		name string
+		in   string
+		out  string
+	}{
+		{"can create from text", "Erik Kalkoken [Character]", "Erik Kalkoken [Character]"},
+		{"can create from text", "Erik Kalkoken", "Erik Kalkoken"},
+		{"can create from text", "", ""},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			r := NewRecipientsFromText(tt.in)
+			s := r.String()
+			assert.Equal(t, tt.out, s)
+		})
+	}
+}
+
 func TestRecipients(t *testing.T) {
+	r := recipients{}
+	r.add(NewRecipientFromText("Erik Kalkoken"))
+	s := r.String()
+	assert.Equal(t, "Erik Kalkoken", s)
 }

@@ -50,7 +50,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 		switch mode {
 		case CreateMessageReply:
 			r := NewRecipients()
-			r.add(mail.From)
+			r.add(NewRecipientFromEntity(mail.From))
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
@@ -173,7 +173,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 		"Add recipient", "Add", "Cancel", content, func(confirmed bool) {
 			if confirmed {
 				r := NewRecipientsFromText(toInput.Text)
-				r.addFromText(entry.Text)
+				r.add(NewRecipientFromText(entry.Text))
 				toInput.SetText(r.String())
 			}
 		},
@@ -190,7 +190,7 @@ func makeRecipientOptions(search string) ([]string, error) {
 	}
 	names := []string{}
 	for _, e := range ee {
-		r := NewRecipientFromEveEntity(e)
+		r := NewRecipientFromEntity(e)
 		names = append(names, r.String())
 	}
 	return names, nil

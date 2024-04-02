@@ -35,12 +35,13 @@ func (r recipientCategory) String() string {
 	return recipientCategoryLabels[r]
 }
 
+// A recipient in a mail
 type recipient struct {
 	name     string
 	category recipientCategory
 }
 
-func NewRecipientFromEveEntity(e model.EveEntity) recipient {
+func NewRecipientFromEntity(e model.EveEntity) recipient {
 	r := recipient{name: e.Name}
 	c, ok := recipientMapCategories[e.Category]
 	if ok {
@@ -75,6 +76,7 @@ func (r *recipient) String() string {
 	return s
 }
 
+// All recipients in a mail
 type recipients struct {
 	list []recipient
 }
@@ -87,7 +89,7 @@ func NewRecipients() *recipients {
 func NewRecipientsFromEntities(ee []model.EveEntity) *recipients {
 	rr := NewRecipients()
 	for _, e := range ee {
-		o := NewRecipientFromEveEntity(e)
+		o := NewRecipientFromEntity(e)
 		rr.list = append(rr.list, o)
 	}
 	return rr
@@ -100,7 +102,7 @@ func NewRecipientsFromText(s string) *recipients {
 	}
 	rr := NewRecipients()
 	for _, s := range ss {
-		rr.addFromText(s)
+		rr.add(NewRecipientFromText(s))
 	}
 	return rr
 }
@@ -114,13 +116,7 @@ func (rr *recipients) String() string {
 	return s
 }
 
-func (rr *recipients) add(e model.EveEntity) {
-	r := NewRecipientFromEveEntity(e)
-	rr.list = append(rr.list, r)
-}
-
-func (rr *recipients) addFromText(s string) {
-	r := NewRecipientFromText(s)
+func (rr *recipients) add(r recipient) {
 	rr.list = append(rr.list, r)
 }
 
