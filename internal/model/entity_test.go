@@ -115,7 +115,7 @@ func TestEveEntities(t *testing.T) {
 		createEveEntity(model.EveEntity{Name: "charlie", Category: "character"})
 		createEveEntity(model.EveEntity{Name: "other", Category: "corporation"})
 		// when
-		ee, err := model.FetchEveEntityCharacters("ALPHA")
+		ee, err := model.FetchEveEntityNameSearch("ALPHA")
 		// then
 		if assert.NoError(t, err) {
 			var got []string

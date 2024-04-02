@@ -81,15 +81,14 @@ func FetchEveEntity(id int32) (*EveEntity, error) {
 	return &e, nil
 }
 
-// FetchEveEntityCharacters returns all character names in ascending order.
-func FetchEveEntityCharacters(partial string) ([]EveEntity, error) {
+// FetchEveEntityNameSearch returns all entities partially matching a string in ascending order.
+func FetchEveEntityNameSearch(partial string) ([]EveEntity, error) {
 	var ee []EveEntity
 	err := db.Select(
 		&ee,
 		`SELECT *
 		FROM eve_entities
-		WHERE category = "character"
-		AND name LIKE '%'||?||'%'
+		WHERE name LIKE '%'||?||'%'
 		ORDER BY name
 		COLLATE NOCASE;`,
 		partial,

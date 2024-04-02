@@ -15,6 +15,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -75,39 +77,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	}
 
 	addButton := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		label := widget.NewLabel("Search")
-		entry := widgets.NewCompletionEntry([]string{})
-		content := container.New(layout.NewFormLayout(), label, entry)
-		entry.OnChanged = func(search string) {
-			if len(search) < 2 {
-				entry.HideCompletion()
-				return
-			}
-			ee, err := model.FetchEveEntityCharacters(search)
-			if err != nil {
-				entry.HideCompletion()
-				return
-			}
-			names := []string{}
-			for _, e := range ee {
-				names = append(names, e.Name)
-			}
-			entry.SetOptions(names)
-			entry.ShowCompletion()
-		}
-		d := dialog.NewCustomConfirm(
-			"Add recipient", "Add", "Cancel", content, func(confirmed bool) {
-				if confirmed {
-					ss := parseNames(toInput.Text)
-					ss = append(ss, entry.Text)
-					s := makeRecipientText(ss)
-					toInput.SetText(s)
-				}
-			},
-			w,
-		)
-		d.Resize(fyne.Size{Width: 500, Height: 500})
-		d.Show()
+		showAddDialog(w, toInput, currentChar.ID)
 	})
 	toInputWrap := container.NewBorder(nil, nil, nil, addButton, toInput)
 	form := container.New(layout.NewFormLayout(), fromLabel, fromInput, toLabel, toInputWrap, subjectLabel, subjectInput)
@@ -138,6 +108,87 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	w.SetContent(content)
 	w.Resize(fyne.NewSize(600, 500))
 	return w, nil
+}
+
+func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
+	label := widget.NewLabel("Search")
+	entry := widgets.NewCompletionEntry([]string{})
+	content := container.New(layout.NewFormLayout(), label, entry)
+	entry.OnChanged = func(search string) {
+		if len(search) < 3 {
+			entry.HideCompletion()
+			return
+		}
+		names, err := makeNameOptions(search)
+		if err != nil {
+			entry.HideCompletion()
+			return
+		}
+		entry.SetOptions(names)
+		entry.ShowCompletion()
+		go func() {
+			token, err := model.FetchToken(characterID)
+			if err != nil {
+				slog.Error("Failed to fetch token", "error", err)
+				return
+			}
+			err = ensureFreshToken(token)
+			if err != nil {
+				slog.Error("Failed to refresh token", "error", err)
+				return
+			}
+			categories := []esi.SearchCategory{
+				esi.SearchCategoryCorporation,
+				esi.SearchCategoryCharacter,
+				esi.SearchCategoryAlliance,
+			}
+			r, err := esi.Search(httpClient, characterID, search, categories, token.AccessToken)
+			if err != nil {
+				slog.Error("Failed to search on ESI", "error", err)
+				return
+			}
+			ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
+			err = addMissingEveEntities(ids)
+			if err != nil {
+				slog.Error("Failed to fetch missing IDs", "error", err)
+				return
+			}
+			names, err := makeNameOptions(search)
+			if err != nil {
+				slog.Error("Failed to make name options", "error", err)
+				return
+			}
+			entry.SetOptions(names)
+			entry.ShowCompletion()
+		}()
+	}
+	d := dialog.NewCustomConfirm(
+		"Add recipient", "Add", "Cancel", content, func(confirmed bool) {
+			if confirmed {
+				ss := parseNames(toInput.Text)
+				i := strings.Replace(entry.Text, "[Character]", "", 1)
+				ss = append(ss, i)
+				s := makeRecipientText(ss)
+				toInput.SetText(s)
+			}
+		},
+		w,
+	)
+	d.Resize(fyne.Size{Width: 500, Height: 175})
+	d.Show()
+}
+
+func makeNameOptions(search string) ([]string, error) {
+	ee, err := model.FetchEveEntityNameSearch(search)
+	if err != nil {
+		return nil, err
+	}
+	names := []string{}
+	c := cases.Title(language.English)
+	for _, e := range ee {
+		names = append(names, fmt.Sprintf("%s [%s]", e.Name, c.String(string(e.Category))))
+	}
+	return names, nil
 }
 
 func makeRecipientText(ss []string) string {

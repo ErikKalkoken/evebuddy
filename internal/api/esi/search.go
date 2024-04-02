@@ -3,8 +3,17 @@ package esi
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
+)
+
+type SearchCategory string
+
+const (
+	SearchCategoryAlliance    SearchCategory = "alliance"
+	SearchCategoryCharacter   SearchCategory = "character"
+	SearchCategoryCorporation SearchCategory = "corporation"
 )
 
 // An Eve entity returned from ESI.
@@ -23,8 +32,12 @@ type SearchResult struct {
 }
 
 // Search makes a search request to ESI and returns the results
-func Search(client *http.Client, characterID int32, search string, tokenString string) (*SearchResult, error) {
-	v := url.Values{"categories": {"character"}}
+func Search(client *http.Client, characterID int32, search string, categories []SearchCategory, tokenString string) (*SearchResult, error) {
+	c := make([]string, len(categories))
+	for i, x := range categories {
+		c[i] = string(x)
+	}
+	v := url.Values{"categories": c}
 	v.Set("search", search)
 	p := fmt.Sprintf("/characters/%d/search/?%v", characterID, v.Encode())
 	r, err := raiseError(getESIWithToken(client, p, tokenString))
@@ -35,5 +48,6 @@ func Search(client *http.Client, characterID int32, search string, tokenString s
 	if err := json.Unmarshal(r.body, &s); err != nil {
 		return nil, fmt.Errorf("%v: %v", err, string(r.body))
 	}
+	slog.Debug("Search results", "search", search, "categories", categories, "results", s)
 	return &s, err
 }
