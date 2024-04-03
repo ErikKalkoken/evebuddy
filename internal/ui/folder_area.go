@@ -31,6 +31,7 @@ func (u *ui) NewFolderArea() *folderArea {
 	f.newButton = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
 		f.ui.ShowCreateMessageWindow(CreateMessageNew, nil)
 	})
+	f.newButton.Importance = widget.HighImportance
 	top := container.NewHBox(f.refreshButton, f.newButton)
 	c := container.NewBorder(top, nil, nil, nil, f.tree)
 	f.content = c
@@ -105,7 +106,7 @@ func (f *folderArea) Redraw() {
 
 func initialTreeData(folderItemAll node) (map[string][]string, map[string]string) {
 	ids := map[string][]string{
-		"":           {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID, nodeTrashID, nodeLabelsID, nodeListsID},
+		"":           {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID, nodeLabelsID, nodeListsID},
 		nodeLabelsID: {},
 		nodeListsID:  {},
 	}
@@ -115,7 +116,6 @@ func initialTreeData(folderItemAll node) (map[string][]string, map[string]string
 		nodeSentID:     node{ID: nodeSentID, ObjID: model.LabelSent, Name: "Sent", Category: nodeCategoryLabel}.toJSON(),
 		nodeCorpID:     node{ID: nodeCorpID, ObjID: model.LabelCorp, Name: "Corp", Category: nodeCategoryLabel}.toJSON(),
 		nodeAllianceID: node{ID: nodeAllianceID, ObjID: model.LabelAlliance, Name: "Alliance", Category: nodeCategoryLabel}.toJSON(),
-		nodeTrashID:    node{ID: nodeTrashID, Name: "Trash"}.toJSON(),
 		nodeLabelsID:   node{ID: nodeLabelsID, Name: "Labels"}.toJSON(),
 		nodeListsID:    node{ID: nodeListsID, Name: "Mailing Lists"}.toJSON(),
 	}
