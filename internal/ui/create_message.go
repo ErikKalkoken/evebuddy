@@ -2,6 +2,7 @@ package ui
 
 import (
 	"example/esiapp/internal/api/esi"
+	"example/esiapp/internal/logic"
 	"example/esiapp/internal/model"
 	"example/esiapp/internal/widgets"
 	"fmt"
@@ -131,7 +132,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 		entry.SetOptions(names)
 		entry.ShowCompletion()
 		go func() {
-			token, err := FetchValidToken(characterID)
+			token, err := logic.FetchValidToken(characterID)
 			if err != nil {
 				slog.Error("Failed to fetch token", "error", err)
 				return
@@ -147,7 +148,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 				return
 			}
 			ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
-			missingIDs, err := AddMissingEveEntities(ids)
+			missingIDs, err := logic.AddMissingEveEntities(ids)
 			if err != nil {
 				slog.Error("Failed to fetch missing IDs", "error", err)
 				return
@@ -189,7 +190,7 @@ func makeRecipientOptions(search string) ([]string, error) {
 }
 
 func sendMail(characterID int32, subject string, recipients []esi.MailRecipient, body string) error {
-	token, err := FetchValidToken(characterID)
+	token, err := logic.FetchValidToken(characterID)
 	if err != nil {
 		return err
 	}

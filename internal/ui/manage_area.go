@@ -2,8 +2,7 @@ package ui
 
 import (
 	"context"
-	"example/esiapp/internal/api/esi"
-	"example/esiapp/internal/api/sso"
+	"example/esiapp/internal/logic"
 	"example/esiapp/internal/model"
 	"fmt"
 	"log/slog"
@@ -16,14 +15,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
-
-var esiScopes = []string{
-	"esi-characters.read_contacts.v1",
-	"esi-mail.read_mail.v1",
-	"esi-mail.organize_mail.v1",
-	"esi-mail.send_mail.v1",
-	"esi-search.search_structures.v1",
-}
 
 // manageArea is the UI area for managing of characters.
 type manageArea struct {
@@ -120,7 +111,7 @@ func (m *manageArea) showAddCharacterDialog() {
 	go func() {
 		defer cancel()
 		defer dialog.Hide()
-		_, err := addCharacter(ctx)
+		_, err := logic.AddCharacter(ctx)
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
 		} else {
@@ -128,47 +119,4 @@ func (m *manageArea) showAddCharacterDialog() {
 		}
 	}()
 	dialog.Show()
-}
-
-// addCharacter adds a new character via SSO authentication and returns the new token.
-func addCharacter(ctx context.Context) (*model.Token, error) {
-	ssoToken, err := sso.Authenticate(ctx, httpClient, esiScopes)
-	if err != nil {
-		return nil, err
-	}
-	charID := ssoToken.CharacterID
-	charEsi, err := esi.FetchCharacter(httpClient, charID)
-	if err != nil {
-		return nil, err
-	}
-	ids := []int32{charID, charEsi.CorporationID}
-	if charEsi.AllianceID != 0 {
-		ids = append(ids, charEsi.AllianceID)
-	}
-	if charEsi.FactionID != 0 {
-		ids = append(ids, charEsi.FactionID)
-	}
-	_, err = AddMissingEveEntities(ids)
-	if err != nil {
-		return nil, err
-	}
-	character := model.Character{
-		ID:            charID,
-		Name:          charEsi.Name,
-		CorporationID: charEsi.CorporationID,
-	}
-	if err = character.Save(); err != nil {
-		return nil, err
-	}
-	token := model.Token{
-		AccessToken:  ssoToken.AccessToken,
-		Character:    character,
-		ExpiresAt:    ssoToken.ExpiresAt,
-		RefreshToken: ssoToken.RefreshToken,
-		TokenType:    ssoToken.TokenType,
-	}
-	if err = token.Save(); err != nil {
-		return nil, err
-	}
-	return &token, nil
 }

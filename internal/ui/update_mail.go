@@ -3,6 +3,7 @@ package ui
 import (
 	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/helper/set"
+	"example/esiapp/internal/logic"
 	"example/esiapp/internal/model"
 	"fmt"
 	"log/slog"
@@ -41,7 +42,7 @@ func UpdateMails(characterID int32, status *statusArea) error {
 }
 
 func updateMailLabels(token *model.Token) error {
-	if err := EnsureValidToken(token); err != nil {
+	if err := logic.EnsureValidToken(token); err != nil {
 		return err
 	}
 	ll, err := esi.FetchMailLabels(httpClient, token.CharacterID, token.AccessToken)
@@ -66,7 +67,7 @@ func updateMailLabels(token *model.Token) error {
 }
 
 func updateMailLists(token *model.Token) error {
-	if err := EnsureValidToken(token); err != nil {
+	if err := logic.EnsureValidToken(token); err != nil {
 		return err
 	}
 	lists, err := esi.FetchMailLists(httpClient, token.CharacterID, token.AccessToken)
@@ -87,7 +88,7 @@ func updateMailLists(token *model.Token) error {
 }
 
 func fetchMailHeaders(token *model.Token) ([]esi.MailHeader, error) {
-	if err := EnsureValidToken(token); err != nil {
+	if err := logic.EnsureValidToken(token); err != nil {
 		return nil, err
 	}
 	headers, err := esi.FetchMailHeaders(httpClient, token.CharacterID, token.AccessToken, maxMails)
@@ -110,7 +111,7 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status *statusAre
 		return nil
 	}
 
-	if err := EnsureValidToken(token); err != nil {
+	if err := logic.EnsureValidToken(token); err != nil {
 		return err
 	}
 
@@ -148,7 +149,7 @@ func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount 
 	for _, r := range header.Recipients {
 		entityIDs.Add(r.ID)
 	}
-	_, err := AddMissingEveEntities(entityIDs.ToSlice())
+	_, err := logic.AddMissingEveEntities(entityIDs.ToSlice())
 	if err != nil {
 		slog.Error("Failed to process mail", "header", header, "error", err)
 		return

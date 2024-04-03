@@ -2,6 +2,7 @@ package ui
 
 import (
 	"example/esiapp/internal/api/esi"
+	"example/esiapp/internal/logic"
 	"example/esiapp/internal/model"
 	"fmt"
 	"log/slog"
@@ -115,7 +116,7 @@ func (m *mailArea) updateContent(s string, h string, b string) {
 }
 
 func deleteMail(m *model.Mail) error {
-	token, err := FetchValidToken(m.CharacterID)
+	token, err := logic.FetchValidToken(m.CharacterID)
 	if err != nil {
 		return err
 	}
