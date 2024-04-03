@@ -30,7 +30,3 @@ func (s *statusArea) setText(text string) error {
 	err := s.text.Set(text)
 	return err
 }
-
-func (s *statusArea) clear() {
-	s.setText("")
-}

@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/logic"
 	"example/esiapp/internal/model"
 	"fmt"
@@ -87,7 +86,7 @@ func (m *mailArea) Redraw(mailID uint64) {
 		t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", mail.Subject)
 		d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
 			if confirmed {
-				err := deleteMail(mail)
+				err := logic.DeleteMail(mail)
 				if err != nil {
 					errorDialog := dialog.NewError(err, m.ui.window)
 					errorDialog.Show()
@@ -113,19 +112,4 @@ func (m *mailArea) updateContent(s string, h string, b string) {
 	m.header.SetText(h)
 	m.body.SetText(b)
 	m.bodyC.ScrollToTop()
-}
-
-func deleteMail(m *model.Mail) error {
-	token, err := logic.FetchValidToken(m.CharacterID)
-	if err != nil {
-		return err
-	}
-	if err := esi.DeleteMail(httpClient, m.CharacterID, m.MailID, token.AccessToken); err != nil {
-		return err
-	}
-	_, err = m.Delete()
-	if err != nil {
-		return err
-	}
-	return nil
 }

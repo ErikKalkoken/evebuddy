@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"example/esiapp/internal/model"
 	"log/slog"
-	"net/http"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -30,10 +28,6 @@ type ui struct {
 	mailArea         *mailArea
 	statusArea       *statusArea
 	window           fyne.Window
-}
-
-var httpClient = &http.Client{
-	Timeout: time.Second * 30, // Timeout after 30 seconds
 }
 
 // NewUI build the UI and returns it.

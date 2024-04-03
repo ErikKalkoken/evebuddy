@@ -1,13 +1,11 @@
 package ui
 
 import (
-	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/logic"
 	"example/esiapp/internal/model"
 	"example/esiapp/internal/widgets"
 	"fmt"
 	"log/slog"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -52,12 +50,12 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	if mail != nil {
 		switch mode {
 		case CreateMessageReply:
-			r := NewRecipientsFromEntities([]model.EveEntity{mail.From})
+			r := logic.NewRecipientsFromEntities([]model.EveEntity{mail.From})
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
 		case CreateMessageReplyAll:
-			r := NewRecipientsFromEntities(mail.Recipients)
+			r := logic.NewRecipientsFromEntities(mail.Recipients)
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
@@ -82,7 +80,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 			if subjectInput.Text == "" {
 				return fmt.Errorf("missing subject")
 			}
-			rr := NewRecipientsFromText(toInput.Text)
+			rr := logic.NewRecipientsFromText(toInput.Text)
 			if rr.Size() == 0 {
 				return fmt.Errorf("missing recipients")
 			}
@@ -132,25 +130,9 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 		entry.SetOptions(names)
 		entry.ShowCompletion()
 		go func() {
-			token, err := logic.FetchValidToken(characterID)
+			missingIDs, err := logic.AddEveEntitiesFromESISearch(characterID, search)
 			if err != nil {
-				slog.Error("Failed to fetch token", "error", err)
-				return
-			}
-			categories := []esi.SearchCategory{
-				esi.SearchCategoryCorporation,
-				esi.SearchCategoryCharacter,
-				esi.SearchCategoryAlliance,
-			}
-			r, err := esi.Search(httpClient, characterID, search, categories, token.AccessToken)
-			if err != nil {
-				slog.Error("Failed to search on ESI", "error", err)
-				return
-			}
-			ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
-			missingIDs, err := logic.AddMissingEveEntities(ids)
-			if err != nil {
-				slog.Error("Failed to fetch missing IDs", "error", err)
+				slog.Error("Failed to search names", "search", "search", "error", err)
 				return
 			}
 			if len(missingIDs) == 0 {
@@ -168,7 +150,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 	d := dialog.NewCustomConfirm(
 		"Add recipient", "Add", "Cancel", content, func(confirmed bool) {
 			if confirmed {
-				r := NewRecipientsFromText(toInput.Text)
+				r := logic.NewRecipientsFromText(toInput.Text)
 				r.AddFromText(entry.Text)
 				toInput.SetText(r.String())
 			}
@@ -184,7 +166,7 @@ func makeRecipientOptions(search string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	rr := NewRecipientsFromEntities(ee)
+	rr := logic.NewRecipientsFromEntities(ee)
 	oo := rr.ToOptions()
 	return oo, nil
 }
