@@ -20,8 +20,8 @@ const (
 	recipientCategoryMailList
 )
 
-var ErrNameNoMatch = fmt.Errorf("recipients: no matching name")
-var ErrNameMultipleMatches = fmt.Errorf("recipients: multiple matching names")
+var ErrNameNoMatch = errors.New("no matching name")
+var ErrNameMultipleMatches = errors.New("multiple matching names")
 
 var recipientCategoryLabels = map[recipientCategory]string{
 	recipientCategoryAlliance:    "Alliance",
@@ -268,10 +268,10 @@ func buildMailRecipientsFromNames(names []string) ([]esi.MailRecipient, error) {
 			return nil, err
 		}
 		if len(ee) == 0 {
-			return nil, fmt.Errorf("for name %s: %w", n, ErrNameNoMatch)
+			return nil, fmt.Errorf("%s: %w", n, ErrNameNoMatch)
 		}
 		if len(ee) > 1 {
-			return nil, fmt.Errorf("for name %s: %w", n, ErrNameMultipleMatches)
+			return nil, fmt.Errorf("%s: %w", n, ErrNameMultipleMatches)
 		}
 		e := ee[0]
 		c, ok := eveEntityCategory2MailRecipientType[e.Category]
