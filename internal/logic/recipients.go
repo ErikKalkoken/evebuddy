@@ -99,17 +99,17 @@ func (r *recipient) empty() bool {
 	return r.name == "" && !r.hasCategory()
 }
 
-// All recipients in a mail
-type recipients struct {
+// A container holding all Recipients in a mail
+type Recipients struct {
 	list []recipient
 }
 
-func NewRecipients() *recipients {
-	var rr recipients
+func NewRecipients() *Recipients {
+	var rr Recipients
 	return &rr
 }
 
-func NewRecipientsFromEntities(ee []model.EveEntity) *recipients {
+func NewRecipientsFromEntities(ee []model.EveEntity) *Recipients {
 	rr := NewRecipients()
 	for _, e := range ee {
 		o := newRecipientFromEntity(e)
@@ -118,7 +118,7 @@ func NewRecipientsFromEntities(ee []model.EveEntity) *recipients {
 	return rr
 }
 
-func NewRecipientsFromText(s string) *recipients {
+func NewRecipientsFromText(s string) *Recipients {
 	rr := NewRecipients()
 	if s == "" {
 		return rr
@@ -137,25 +137,25 @@ func NewRecipientsFromText(s string) *recipients {
 	return rr
 }
 
-func (rr *recipients) AddFromEveEntity(e model.EveEntity) {
+func (rr *Recipients) AddFromEveEntity(e model.EveEntity) {
 	r := newRecipientFromEntity(e)
 	rr.add(r)
 }
 
-func (rr *recipients) AddFromText(s string) {
+func (rr *Recipients) AddFromText(s string) {
 	r := newRecipientFromText(s)
 	rr.add(r)
 }
 
-func (rr *recipients) add(r recipient) {
+func (rr *Recipients) add(r recipient) {
 	rr.list = append(rr.list, r)
 }
 
-func (rr *recipients) Size() int {
+func (rr *Recipients) Size() int {
 	return len(rr.list)
 }
 
-func (rr *recipients) String() string {
+func (rr *Recipients) String() string {
 	var ss []string
 	for _, e := range rr.list {
 		ss = append(ss, e.String())
@@ -164,7 +164,7 @@ func (rr *recipients) String() string {
 	return s
 }
 
-func (rr *recipients) ToOptions() []string {
+func (rr *Recipients) ToOptions() []string {
 	ss := make([]string, len(rr.list))
 	for i, r := range rr.list {
 		ss[i] = r.String()
@@ -179,7 +179,7 @@ var eveEntityCategory2MailRecipientType = map[model.EveEntityCategory]esi.MailRe
 	model.EveEntityMailList:    esi.MailRecipientTypeMailingList,
 }
 
-func (rr *recipients) ToMailRecipients() ([]esi.MailRecipient, error) {
+func (rr *Recipients) ToMailRecipients() ([]esi.MailRecipient, error) {
 	mm1, names, err := rr.buildMailRecipients()
 	if err != nil {
 		return nil, err
@@ -203,7 +203,7 @@ func (rr *recipients) ToMailRecipients() ([]esi.MailRecipient, error) {
 
 // buildMailRecipients tries to build MailRecipients from recipients.
 // It returns resolved recipients and a list of remaining unresolved names (if any)
-func (rr *recipients) buildMailRecipients() ([]esi.MailRecipient, []string, error) {
+func (rr *Recipients) buildMailRecipients() ([]esi.MailRecipient, []string, error) {
 	mm := make([]esi.MailRecipient, 0, len(rr.list))
 	names := make([]string, 0, len(rr.list))
 	for _, r := range rr.list {

@@ -22,5 +22,9 @@
         "sqlx",
         "stretchr",
         "testfactory"
-    ]
+    ],
+    "go.formatFlags": [
+        "-local",
+        "example/",
+    ],
 }

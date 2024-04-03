@@ -15,6 +15,40 @@ import (
 
 const maxMails = 1000
 
+// DeleteMail deleted a mail both on ESI and in the database.
+func DeleteMail(m *model.Mail) error {
+	token, err := FetchValidToken(m.CharacterID)
+	if err != nil {
+		return err
+	}
+	if err := esi.DeleteMail(httpClient, m.CharacterID, m.MailID, token.AccessToken); err != nil {
+		return err
+	}
+	_, err = m.Delete()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// SendMail created a new mail on ESI.
+func SendMail(characterID int32, subject string, recipients []esi.MailRecipient, body string) error {
+	token, err := FetchValidToken(characterID)
+	if err != nil {
+		return err
+	}
+	m := esi.MailSend{
+		Body:       body,
+		Subject:    subject,
+		Recipients: recipients,
+	}
+	_, err = esi.SendMail(httpClient, characterID, token.AccessToken, m)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // FIXME: Delete obsolete labels and mail lists
 // TODO: Add ability to update existing mails
 // UpdateMails fetches and stores new mails from ESI for a character.

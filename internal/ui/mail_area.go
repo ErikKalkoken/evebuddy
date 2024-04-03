@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"example/esiapp/internal/logic"
-	"example/esiapp/internal/model"
 	"fmt"
 	"log/slog"
 
@@ -12,6 +10,9 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"example/esiapp/internal/logic"
+	"example/esiapp/internal/model"
 )
 
 // mailArea is the UI area showing the current mail.
