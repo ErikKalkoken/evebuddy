@@ -6,6 +6,7 @@ import (
 	"example/esiapp/internal/model"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -18,6 +19,9 @@ const (
 	recipientCategoryCharacter
 	recipientCategoryMailList
 )
+
+var ErrNameNoMatch = fmt.Errorf("recipients: no matching name")
+var ErrNameMultipleMatches = fmt.Errorf("recipients: multiple matching names")
 
 var recipientCategoryLabels = map[recipientCategory]string{
 	recipientCategoryAlliance:    "Alliance",
@@ -175,59 +179,107 @@ var eveEntityCategory2MailRecipientType = map[model.EveEntityCategory]esi.MailRe
 	model.EveEntityMailList:    esi.MailRecipientTypeMailingList,
 }
 
-func (rr *recipients) ToEsiRecipients() ([]esi.MailRecipient, error) {
-	mm, names, err := rr.resolveLocally()
+func (rr *recipients) ToMailRecipients() ([]esi.MailRecipient, error) {
+	mm1, names, err := rr.buildMailRecipients()
 	if err != nil {
 		return nil, err
 	}
+	ee, err := resolveNamesRemotely(names)
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range ee {
+		if err := e.Save(); err != nil {
+			return nil, err
+		}
+	}
+	mm2, err := buildMailRecipientsFromNames(names)
+	if err != nil {
+		return nil, err
+	}
+	mm := slices.Concat(mm1, mm2)
+	return mm, nil
+}
+
+// buildMailRecipients tries to build MailRecipients from recipients.
+// It returns resolved recipients and a list of remaining unresolved names (if any)
+func (rr *recipients) buildMailRecipients() ([]esi.MailRecipient, []string, error) {
+	mm := make([]esi.MailRecipient, 0, len(rr.list))
+	names := make([]string, 0, len(rr.list))
+	for _, r := range rr.list {
+		category, ok := r.eveEntityCategory()
+		if !ok {
+			names = append(names, r.name)
+			continue
+		}
+		entity, err := model.FetchEveEntityByNameAndCategory(r.name, category)
+		if err != nil {
+			if errors.Is(err, model.ErrDoesNotExist) {
+				names = append(names, r.name)
+				continue
+			} else {
+				return nil, nil, err
+			}
+		}
+		mailType, ok := eveEntityCategory2MailRecipientType[entity.Category]
+		if !ok {
+			names = append(names, r.name)
+			continue
+		}
+		m := esi.MailRecipient{ID: entity.ID, Type: mailType}
+		mm = append(mm, m)
+	}
+	return mm, names, nil
+}
+
+// resolveNamesRemotely resolves a list of names remotely and returns all matches.
+func resolveNamesRemotely(names []string) ([]model.EveEntity, error) {
+	ee := make([]model.EveEntity, 0, len(names))
 	if len(names) == 0 {
-		return mm, nil
+		return ee, nil
 	}
 	r, err := esi.ResolveEntityNames(httpClient, names)
 	if err != nil {
 		return nil, err
 	}
 	for _, o := range r.Alliances {
-		mm = append(mm, esi.MailRecipient{ID: o.ID, Type: esi.MailRecipientTypeAlliance})
+		e := model.EveEntity{ID: o.ID, Name: o.Name, Category: model.EveEntityAlliance}
+		ee = append(ee, e)
 	}
 	for _, o := range r.Characters {
-		mm = append(mm, esi.MailRecipient{ID: o.ID, Type: esi.MailRecipientTypeCharacter})
+		e := model.EveEntity{ID: o.ID, Name: o.Name, Category: model.EveEntityCharacter}
+		ee = append(ee, e)
 	}
 	for _, o := range r.Corporations {
-		mm = append(mm, esi.MailRecipient{ID: o.ID, Type: esi.MailRecipientTypeCorporation})
+		e := model.EveEntity{ID: o.ID, Name: o.Name, Category: model.EveEntityCorporation}
+		ee = append(ee, e)
 	}
-	return mm, nil
+	return ee, nil
 }
 
-// resolveLocally tries to resolve recipients against known EveEntities.
-// It returns resolved recipients and a list of unresolved names (if any)
-func (rr *recipients) resolveLocally() ([]esi.MailRecipient, []string, error) {
-	mm := make([]esi.MailRecipient, 0, len(rr.list))
-	names := make([]string, 0, len(rr.list))
-	for _, r := range rr.list {
-		if r.hasCategory() {
-			category, ok := r.eveEntityCategory()
-			if !ok {
-				names = append(names, r.name)
-				continue
-			}
-			entity, err := model.FetchEveEntityByNameAndCategory(r.name, category)
-			if err != nil {
-				if errors.Is(err, model.ErrDoesNotExist) {
-					names = append(names, r.name)
-					continue
-				} else {
-					return nil, nil, err
-				}
-			}
-			mailType, ok := eveEntityCategory2MailRecipientType[entity.Category]
-			if !ok {
-				names = append(names, r.name)
-				continue
-			}
-			m := esi.MailRecipient{ID: entity.ID, Type: mailType}
-			mm = append(mm, m)
+// buildMailRecipientsFromNames tries to build MailRecipient objects from given names
+// by checking against EveEntity objects in the database.
+// Will abort with errors if no match is found or if multiple matches are found for a name.
+func buildMailRecipientsFromNames(names []string) ([]esi.MailRecipient, error) {
+	mm := make([]esi.MailRecipient, 0, len(names))
+	for _, n := range names {
+		ee, err := model.FindEveEntitiesByName(n)
+		if err != nil {
+			return nil, err
 		}
+		if len(ee) == 0 {
+			return nil, fmt.Errorf("for name %s: %w", n, ErrNameNoMatch)
+		}
+		if len(ee) > 1 {
+			return nil, fmt.Errorf("for name %s: %w", n, ErrNameMultipleMatches)
+		}
+		e := ee[0]
+		c, ok := eveEntityCategory2MailRecipientType[e.Category]
+		if !ok {
+			return nil, fmt.Errorf("failed to match category for entity: %v", e)
+		}
+		m := esi.MailRecipient{ID: e.ID, Type: c}
+		mm = append(mm, m)
 	}
-	return mm, names, nil
+	return mm, nil
 }

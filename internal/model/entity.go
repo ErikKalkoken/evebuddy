@@ -94,8 +94,18 @@ func FetchEveEntityByNameAndCategory(name string, category EveEntityCategory) (*
 	return &e, nil
 }
 
-// FetchEveEntityNameSearch returns all entities partially matching a string in ascending order.
-func FetchEveEntityNameSearch(partial string) ([]EveEntity, error) {
+// FindEveEntitiesByName return all EveEntity objects matching a name
+func FindEveEntitiesByName(name string) ([]EveEntity, error) {
+	var ee []EveEntity
+	err := db.Select(&ee, "SELECT * FROM eve_entities WHERE name = ?;", name)
+	if err != nil {
+		return nil, err
+	}
+	return ee, nil
+}
+
+// FindEveEntitiesByNamePartial returns all entities partially matching a string in ascending order.
+func FindEveEntitiesByNamePartial(partial string) ([]EveEntity, error) {
 	var ee []EveEntity
 	err := db.Select(
 		&ee,

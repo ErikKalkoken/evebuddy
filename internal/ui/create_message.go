@@ -78,9 +78,10 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	})
 	sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {
 		rr := NewRecipientsFromText(toInput.Text)
-		recipients, err := rr.ToEsiRecipients()
+		recipients, err := rr.ToMailRecipients()
 		if err != nil {
-			slog.Error("Failed to resolve names", "error", err)
+			d := dialog.NewError(err, w)
+			d.Show()
 			return
 		}
 		err = sendMail(currentChar.ID, subjectInput.Text, recipients, bodyInput.Text)
@@ -172,7 +173,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 }
 
 func makeRecipientOptions(search string) ([]string, error) {
-	ee, err := model.FetchEveEntityNameSearch(search)
+	ee, err := model.FindEveEntitiesByNamePartial(search)
 	if err != nil {
 		return nil, err
 	}

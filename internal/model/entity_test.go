@@ -85,7 +85,7 @@ func TestEveEntities(t *testing.T) {
 		factory.CreateEveEntity(model.EveEntity{Name: "charlie", Category: "character"})
 		factory.CreateEveEntity(model.EveEntity{Name: "other", Category: "corporation"})
 		// when
-		ee, err := model.FetchEveEntityNameSearch("ALPHA")
+		ee, err := model.FindEveEntitiesByNamePartial("ALPHA")
 		// then
 		if assert.NoError(t, err) {
 			var got []string
