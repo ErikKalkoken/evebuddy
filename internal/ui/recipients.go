@@ -70,15 +70,28 @@ func newRecipientFromText(s string) recipient {
 }
 
 func (r *recipient) String() string {
-	if r.category == recipientCategoryUnknown {
+	if !r.hasCategory() {
 		return r.name
 	}
 	s := fmt.Sprintf("%s [%s]", r.name, r.category)
 	return s
 }
 
+func (r *recipient) hasCategory() bool {
+	return r.category != recipientCategoryUnknown
+}
+
+func (r *recipient) eveEntityCategory() (model.EveEntityCategory, bool) {
+	for ec, rc := range recipientMapCategories {
+		if rc == r.category {
+			return ec, true
+		}
+	}
+	return "", false
+}
+
 func (r *recipient) empty() bool {
-	return r.name == "" && r.category == recipientCategoryUnknown
+	return r.name == "" && !r.hasCategory()
 }
 
 // All recipients in a mail
@@ -154,26 +167,65 @@ func (rr *recipients) ToOptions() []string {
 	return ss
 }
 
-func (rr *recipients) ToEsiRecipients() ([]esi.MailRecipient, error) {
-	n := rr.names()
-	resp, err := esi.ResolveEntityNames(httpClient, n)
-	var mm []esi.MailRecipient
-	for _, o := range resp.Alliances {
-		mm = append(mm, esi.MailRecipient{ID: o.ID, Type: "character"})
-	}
-	for _, o := range resp.Characters {
-		mm = append(mm, esi.MailRecipient{ID: o.ID, Type: "corporation"})
-	}
-	for _, o := range resp.Corporations {
-		mm = append(mm, esi.MailRecipient{ID: o.ID, Type: "alliance"})
-	}
-	return mm, err
+var eveEntityCategory2MailRecipientType = map[model.EveEntityCategory]esi.MailRecipientType{
+	model.EveEntityAlliance:    esi.MailRecipientTypeAlliance,
+	model.EveEntityCharacter:   esi.MailRecipientTypeCharacter,
+	model.EveEntityCorporation: esi.MailRecipientTypeCorporation,
+	model.EveEntityMailList:    esi.MailRecipientTypeMailingList,
 }
 
-func (rr *recipients) names() []string {
-	ss := make([]string, len(rr.list))
-	for i, r := range rr.list {
-		ss[i] = r.name
+func (rr *recipients) ToEsiRecipients() ([]esi.MailRecipient, error) {
+	mm, names, err := rr.resolveLocally()
+	if err != nil {
+		return nil, err
 	}
-	return ss
+	if len(names) == 0 {
+		return mm, nil
+	}
+	r, err := esi.ResolveEntityNames(httpClient, names)
+	if err != nil {
+		return nil, err
+	}
+	for _, o := range r.Alliances {
+		mm = append(mm, esi.MailRecipient{ID: o.ID, Type: esi.MailRecipientTypeAlliance})
+	}
+	for _, o := range r.Characters {
+		mm = append(mm, esi.MailRecipient{ID: o.ID, Type: esi.MailRecipientTypeCharacter})
+	}
+	for _, o := range r.Corporations {
+		mm = append(mm, esi.MailRecipient{ID: o.ID, Type: esi.MailRecipientTypeCorporation})
+	}
+	return mm, nil
+}
+
+// resolveLocally tries to resolve recipients against known EveEntities.
+// It returns resolved recipients and a list of unresolved names (if any)
+func (rr *recipients) resolveLocally() ([]esi.MailRecipient, []string, error) {
+	var mm []esi.MailRecipient
+	var names []string
+	for _, r := range rr.list {
+		if r.hasCategory() {
+			category, ok := r.eveEntityCategory()
+			if !ok {
+				names = append(names, r.name)
+				continue
+			}
+			entity, err := model.FetchEveEntityByNameAndCategory(r.name, category)
+			if err == model.ErrDoesNotExist {
+				names = append(names, r.name)
+				continue
+			}
+			if err != nil {
+				return nil, nil, err
+			}
+			mailType, ok := eveEntityCategory2MailRecipientType[entity.Category]
+			if !ok {
+				names = append(names, r.name)
+				continue
+			}
+			m := esi.MailRecipient{ID: entity.ID, Type: mailType}
+			mm = append(mm, m)
+		}
+	}
+	return mm, names, nil
 }

@@ -69,7 +69,7 @@ func TestEveEntities(t *testing.T) {
 		err := o.Save()
 		// then
 		assert.NoError(t, err)
-		o2, err := model.FetchEveEntity(42)
+		o2, err := model.FetchEveEntityByID(42)
 		assert.NoError(t, err)
 		assert.Equal(t, o2.Name, "bravo")
 		assert.Equal(t, o2.Category, model.EveEntityCorporation)
@@ -79,7 +79,7 @@ func TestEveEntities(t *testing.T) {
 		model.TruncateTables()
 		o := CreateEveEntity()
 		// when
-		r, err := model.FetchEveEntity(o.ID)
+		r, err := model.FetchEveEntityByID(o.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, o, *r)
@@ -88,7 +88,7 @@ func TestEveEntities(t *testing.T) {
 	t.Run("should return error when not found", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		r, err := model.FetchEveEntity(42)
+		r, err := model.FetchEveEntityByID(42)
 		// then
 		assert.Equal(t, sql.ErrNoRows, err)
 		assert.Nil(t, r)

@@ -170,7 +170,7 @@ func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount 
 		return
 	}
 	mail.Timestamp = timestamp
-	from, err := model.FetchEveEntity(header.FromID)
+	from, err := model.FetchEveEntityByID(header.FromID)
 	if err != nil {
 		slog.Error("Failed to parse \"from\" in mail", "header", header, "error", err)
 		return
@@ -198,7 +198,7 @@ func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount 
 func fetchMailRecipients(header esi.MailHeader) []model.EveEntity {
 	var rr []model.EveEntity
 	for _, r := range header.Recipients {
-		o, err := model.FetchEveEntity(r.ID)
+		o, err := model.FetchEveEntityByID(r.ID)
 		if err != nil {
 			slog.Error("Failed to resolve mail recipient", "header", header, "recipient", r, "error", err)
 			continue

@@ -12,10 +12,19 @@ import (
 
 const maxHeadersPerPage = 50 // maximum header objects returned per page
 
+type MailRecipientType string
+
+const (
+	MailRecipientTypeAlliance    MailRecipientType = "alliance"
+	MailRecipientTypeCharacter   MailRecipientType = "character"
+	MailRecipientTypeCorporation MailRecipientType = "corporation"
+	MailRecipientTypeMailingList MailRecipientType = "mailing_list"
+)
+
 // A mail recipient returned from ESI.
 type MailRecipient struct {
-	ID   int32  `json:"recipient_id"`
-	Type string `json:"recipient_type"`
+	ID   int32             `json:"recipient_id"`
+	Type MailRecipientType `json:"recipient_type"`
 }
 
 // A mail header returned from ESI.

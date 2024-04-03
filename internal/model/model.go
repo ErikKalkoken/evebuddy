@@ -12,6 +12,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+var ErrDoesNotExist = fmt.Errorf("model: Object does not exist in database")
+
 var db *sqlx.DB
 
 var schema = `
