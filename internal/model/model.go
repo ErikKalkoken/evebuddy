@@ -4,6 +4,7 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -12,7 +13,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var ErrDoesNotExist = fmt.Errorf("model: Object does not exist in database")
+var ErrDoesNotExist = errors.New("object does not exist in database")
 
 var db *sqlx.DB
 

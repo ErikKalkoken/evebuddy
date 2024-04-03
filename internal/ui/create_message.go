@@ -77,19 +77,30 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 		w.Hide()
 	})
 	sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {
-		rr := NewRecipientsFromText(toInput.Text)
-		recipients, err := rr.ToMailRecipients()
+		err := func() error {
+			if subjectInput.Text == "" {
+				return fmt.Errorf("missing subject")
+			}
+			rr := NewRecipientsFromText(toInput.Text)
+			if rr.Size() == 0 {
+				return fmt.Errorf("missing recipients")
+			}
+			recipients, err := rr.ToMailRecipients()
+			if err != nil {
+				return err
+			}
+			err = sendMail(currentChar.ID, subjectInput.Text, recipients, bodyInput.Text)
+			if err != nil {
+				return err
+			}
+			return nil
+		}()
 		if err != nil {
 			d := dialog.NewError(err, w)
 			d.Show()
 			return
 		}
-		err = sendMail(currentChar.ID, subjectInput.Text, recipients, bodyInput.Text)
-		if err != nil {
-			slog.Error("Failed to send mail", "error", err)
-		} else {
-			w.Hide()
-		}
+		w.Hide()
 	})
 	sendButton.Importance = widget.HighImportance
 	buttons := container.NewHBox(
