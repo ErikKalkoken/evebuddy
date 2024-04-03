@@ -131,14 +131,9 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 		entry.SetOptions(names)
 		entry.ShowCompletion()
 		go func() {
-			token, err := model.FetchToken(characterID)
+			token, err := FetchValidToken(characterID)
 			if err != nil {
 				slog.Error("Failed to fetch token", "error", err)
-				return
-			}
-			err = EnsureFreshToken(token)
-			if err != nil {
-				slog.Error("Failed to refresh token", "error", err)
 				return
 			}
 			categories := []esi.SearchCategory{
@@ -194,11 +189,7 @@ func makeRecipientOptions(search string) ([]string, error) {
 }
 
 func sendMail(characterID int32, subject string, recipients []esi.MailRecipient, body string) error {
-	token, err := model.FetchToken(characterID)
-	if err != nil {
-		return err
-	}
-	err = EnsureFreshToken(token)
+	token, err := FetchValidToken(characterID)
 	if err != nil {
 		return err
 	}

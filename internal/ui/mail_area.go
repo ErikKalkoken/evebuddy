@@ -115,11 +115,8 @@ func (m *mailArea) updateContent(s string, h string, b string) {
 }
 
 func deleteMail(m *model.Mail) error {
-	token, err := model.FetchToken(m.CharacterID)
+	token, err := FetchValidToken(m.CharacterID)
 	if err != nil {
-		return err
-	}
-	if err := EnsureFreshToken(token); err != nil {
 		return err
 	}
 	if err := esi.DeleteMail(httpClient, m.CharacterID, m.MailID, token.AccessToken); err != nil {

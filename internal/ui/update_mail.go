@@ -41,7 +41,7 @@ func UpdateMails(characterID int32, status *statusArea) error {
 }
 
 func updateMailLabels(token *model.Token) error {
-	if err := EnsureFreshToken(token); err != nil {
+	if err := EnsureValidToken(token); err != nil {
 		return err
 	}
 	ll, err := esi.FetchMailLabels(httpClient, token.CharacterID, token.AccessToken)
@@ -66,7 +66,7 @@ func updateMailLabels(token *model.Token) error {
 }
 
 func updateMailLists(token *model.Token) error {
-	if err := EnsureFreshToken(token); err != nil {
+	if err := EnsureValidToken(token); err != nil {
 		return err
 	}
 	lists, err := esi.FetchMailLists(httpClient, token.CharacterID, token.AccessToken)
@@ -87,7 +87,7 @@ func updateMailLists(token *model.Token) error {
 }
 
 func fetchMailHeaders(token *model.Token) ([]esi.MailHeader, error) {
-	if err := EnsureFreshToken(token); err != nil {
+	if err := EnsureValidToken(token); err != nil {
 		return nil, err
 	}
 	headers, err := esi.FetchMailHeaders(httpClient, token.CharacterID, token.AccessToken, maxMails)
@@ -110,7 +110,7 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status *statusAre
 		return nil
 	}
 
-	if err := EnsureFreshToken(token); err != nil {
+	if err := EnsureValidToken(token); err != nil {
 		return err
 	}
 
