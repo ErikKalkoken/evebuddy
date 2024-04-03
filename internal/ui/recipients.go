@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/model"
 	"fmt"
@@ -201,8 +202,8 @@ func (rr *recipients) ToEsiRecipients() ([]esi.MailRecipient, error) {
 // resolveLocally tries to resolve recipients against known EveEntities.
 // It returns resolved recipients and a list of unresolved names (if any)
 func (rr *recipients) resolveLocally() ([]esi.MailRecipient, []string, error) {
-	var mm []esi.MailRecipient
-	var names []string
+	mm := make([]esi.MailRecipient, 0, len(rr.list))
+	names := make([]string, 0, len(rr.list))
 	for _, r := range rr.list {
 		if r.hasCategory() {
 			category, ok := r.eveEntityCategory()
@@ -211,12 +212,13 @@ func (rr *recipients) resolveLocally() ([]esi.MailRecipient, []string, error) {
 				continue
 			}
 			entity, err := model.FetchEveEntityByNameAndCategory(r.name, category)
-			if err == model.ErrDoesNotExist {
-				names = append(names, r.name)
-				continue
-			}
 			if err != nil {
-				return nil, nil, err
+				if errors.Is(err, model.ErrDoesNotExist) {
+					names = append(names, r.name)
+					continue
+				} else {
+					return nil, nil, err
+				}
 			}
 			mailType, ok := eveEntityCategory2MailRecipientType[entity.Category]
 			if !ok {

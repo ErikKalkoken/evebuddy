@@ -1,49 +1,20 @@
 package model_test
 
 import (
+	"example/esiapp/internal/factory"
 	"example/esiapp/internal/helper/set"
 	"example/esiapp/internal/model"
-	"fmt"
-	"slices"
+
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func createCharacter(args ...model.Character) model.Character {
-	var c model.Character
-	if len(args) > 0 {
-		c = args[0]
-	}
-	if c.ID == 0 {
-		ids, err := model.FetchCharacterIDs()
-		if err != nil {
-			panic(err)
-		}
-		if len(ids) == 0 {
-			c.ID = 1
-		} else {
-			c.ID = slices.Max(ids) + 1
-		}
-	}
-	if c.Name == "" {
-		c.Name = fmt.Sprintf("Generated character #%d", c.ID)
-	}
-	if c.Corporation.ID == 0 {
-		c.Corporation = CreateEveEntity(model.EveEntity{Category: model.EveEntityCorporation})
-	}
-	err := c.Save()
-	if err != nil {
-		panic(err)
-	}
-	return c
-}
-
 func TestCharacter(t *testing.T) {
 	t.Run("can save new", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		corp := CreateEveEntity(model.EveEntity{Category: model.EveEntityCorporation})
+		corp := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityCorporation})
 		c := model.Character{ID: 1, Name: "Erik", Corporation: corp}
 		// when
 		err := c.Save()
@@ -58,7 +29,7 @@ func TestCharacter(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		c := createCharacter(model.Character{Name: "Erik"})
+		c := factory.CreateCharacter(model.Character{Name: "Erik"})
 		c.Name = "John"
 		assert.NoError(t, c.Save())
 		// when
@@ -71,8 +42,8 @@ func TestCharacter(t *testing.T) {
 	t.Run("can fetch character by ID", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		createCharacter()
-		c2 := createCharacter()
+		factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
 		assert.NoError(t, c2.Save())
 		// when
 		r, err := model.FetchCharacter(2)
@@ -84,8 +55,8 @@ func TestCharacter(t *testing.T) {
 	t.Run("can fetch all", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		c1 := createCharacter()
-		c2 := createCharacter()
+		c1 := factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
 		assert.NoError(t, c2.Save())
 		// when
 		got, err := model.FetchAllCharacters()
@@ -101,7 +72,7 @@ func TestCharacter(t *testing.T) {
 	t.Run("can delete", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		c := createCharacter()
+		c := factory.CreateCharacter()
 		// when
 		err := c.Delete()
 		// then

@@ -1,59 +1,19 @@
 package model_test
 
 import (
+	"example/esiapp/internal/factory"
 	"example/esiapp/internal/helper/set"
 	"example/esiapp/internal/model"
 	"fmt"
-	"math/rand/v2"
-	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-// createMailLabel is a test factory for MailLabel objects
-func createMailLabel(args ...model.MailLabel) model.MailLabel {
-	var l model.MailLabel
-	if len(args) > 0 {
-		l = args[0]
-	}
-	if l.Character.ID == 0 {
-		l.Character = createCharacter()
-	}
-	if l.LabelID == 0 {
-		ll, err := model.FetchAllMailLabels(l.Character.ID)
-		if err != nil {
-			panic(err)
-		}
-		var ids []int32
-		for _, o := range ll {
-			ids = append(ids, o.LabelID)
-		}
-		if len(ids) > 0 {
-			l.LabelID = slices.Max(ids) + 1
-		} else {
-			l.LabelID = 100
-		}
-	}
-	if l.Name == "" {
-		l.Name = fmt.Sprintf("Generated name #%d", l.LabelID)
-	}
-	if l.Color == "" {
-		l.Color = "#FFFFFF"
-	}
-	if l.UnreadCount == 0 {
-		l.UnreadCount = int32(rand.IntN(1000))
-	}
-	if err := l.Save(); err != nil {
-		panic(err)
-	}
-	return l
-}
-
 func TestMailLabelSaveNew(t *testing.T) {
 	// given
 	model.TruncateTables()
-	c := createCharacter()
+	c := factory.CreateCharacter()
 	l := model.MailLabel{
 		Character:   c,
 		Color:       "xyz",
@@ -89,7 +49,7 @@ func TestMailLabelShouldReturnErrorWhenNoCharacter(t *testing.T) {
 func TestMailLabelCanFetchAllLabelsReturnsSlice(t *testing.T) {
 	// given
 	model.TruncateTables()
-	l := createMailLabel()
+	l := factory.CreateMailLabel()
 	// when
 	l2, err := model.FetchMailLabel(l.Character.ID, l.LabelID)
 	if assert.NoError(t, err) {
@@ -100,13 +60,13 @@ func TestMailLabelCanFetchAllLabelsReturnsSlice(t *testing.T) {
 func TestCanFetchAllMailLabelsForCharacter(t *testing.T) {
 	// given
 	model.TruncateTables()
-	c1 := createCharacter()
-	l1 := createMailLabel(model.MailLabel{Character: c1, LabelID: 103})
+	c1 := factory.CreateCharacter()
+	l1 := factory.CreateMailLabel(model.MailLabel{Character: c1, LabelID: 103})
 	fmt.Println(l1)
-	l2 := createMailLabel(model.MailLabel{Character: c1, LabelID: 107})
+	l2 := factory.CreateMailLabel(model.MailLabel{Character: c1, LabelID: 107})
 	fmt.Println(l2)
-	c2 := createCharacter()
-	createMailLabel(model.MailLabel{Character: c2, LabelID: 113})
+	c2 := factory.CreateCharacter()
+	factory.CreateMailLabel(model.MailLabel{Character: c2, LabelID: 113})
 	// when
 	ll, err := model.FetchAllMailLabels(c1.ID)
 	if assert.NoError(t, err) {
@@ -122,7 +82,7 @@ func TestCanFetchAllMailLabelsForCharacter(t *testing.T) {
 func TesFetchAllMailLabelsReturnsEmptySliceWhenNoRows(t *testing.T) {
 	// given
 	model.TruncateTables()
-	c := createCharacter()
+	c := factory.CreateCharacter()
 	// when
 	ll, err := model.FetchAllMailLabels(c.ID)
 	if assert.NoError(t, err) {
@@ -133,10 +93,10 @@ func TesFetchAllMailLabelsReturnsEmptySliceWhenNoRows(t *testing.T) {
 func TestFetchMailLabels(t *testing.T) {
 	// given
 	model.TruncateTables()
-	c := createCharacter()
-	createMailLabel(model.MailLabel{Character: c, LabelID: 3})
-	createMailLabel(model.MailLabel{Character: c, LabelID: 7})
-	createMailLabel(model.MailLabel{Character: c, LabelID: 13})
+	c := factory.CreateCharacter()
+	factory.CreateMailLabel(model.MailLabel{Character: c, LabelID: 3})
+	factory.CreateMailLabel(model.MailLabel{Character: c, LabelID: 7})
+	factory.CreateMailLabel(model.MailLabel{Character: c, LabelID: 13})
 	// when
 	ll, err := model.FetchMailLabels(c.ID, []int32{3, 13})
 	if assert.NoError(t, err) {

@@ -2,43 +2,13 @@ package model_test
 
 import (
 	"database/sql"
+	"example/esiapp/internal/factory"
 	"example/esiapp/internal/helper/set"
 	"example/esiapp/internal/model"
-	"fmt"
-	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-// CreateEveEntity is a test factory for EveEntity objects.
-func CreateEveEntity(args ...model.EveEntity) model.EveEntity {
-	var e model.EveEntity
-	if len(args) > 0 {
-		e = args[0]
-	}
-	if e.ID == 0 {
-		ids, err := model.FetchEveEntityIDs()
-		if err != nil {
-			panic(err)
-		}
-		if len(ids) > 0 {
-			e.ID = slices.Max(ids) + 1
-		} else {
-			e.ID = 1
-		}
-	}
-	if e.Name == "" {
-		e.Name = fmt.Sprintf("generated #%d", e.ID)
-	}
-	if e.Category == "" {
-		e.Category = model.EveEntityCharacter
-	}
-	if err := e.Save(); err != nil {
-		panic(err)
-	}
-	return e
-}
 
 func TestEveEntities(t *testing.T) {
 	t.Run("can save new", func(t *testing.T) {
@@ -62,7 +32,7 @@ func TestEveEntities(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		o := CreateEveEntity(model.EveEntity{ID: 42, Name: "alpha", Category: "character"})
+		o := factory.CreateEveEntity(model.EveEntity{ID: 42, Name: "alpha", Category: "character"})
 		o.Name = "bravo"
 		o.Category = "corporation"
 		// when
@@ -77,7 +47,7 @@ func TestEveEntities(t *testing.T) {
 	t.Run("can fetch existing", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		o := CreateEveEntity()
+		o := factory.CreateEveEntity()
 		// when
 		r, err := model.FetchEveEntityByID(o.ID)
 		// then
@@ -96,8 +66,8 @@ func TestEveEntities(t *testing.T) {
 	t.Run("can return all existing IDs", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		e1 := CreateEveEntity()
-		e2 := CreateEveEntity()
+		e1 := factory.CreateEveEntity()
+		e2 := factory.CreateEveEntity()
 		// when
 		r, err := model.FetchEveEntityIDs()
 		// then
@@ -110,10 +80,10 @@ func TestEveEntities(t *testing.T) {
 	t.Run("should return all character names in order", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		CreateEveEntity(model.EveEntity{Name: "Yalpha2", Category: "character"})
-		CreateEveEntity(model.EveEntity{Name: "Xalpha1", Category: "character"})
-		CreateEveEntity(model.EveEntity{Name: "charlie", Category: "character"})
-		CreateEveEntity(model.EveEntity{Name: "other", Category: "corporation"})
+		factory.CreateEveEntity(model.EveEntity{Name: "Yalpha2", Category: "character"})
+		factory.CreateEveEntity(model.EveEntity{Name: "Xalpha1", Category: "character"})
+		factory.CreateEveEntity(model.EveEntity{Name: "charlie", Category: "character"})
+		factory.CreateEveEntity(model.EveEntity{Name: "other", Category: "corporation"})
 		// when
 		ee, err := model.FetchEveEntityNameSearch("ALPHA")
 		// then

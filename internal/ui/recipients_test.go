@@ -2,10 +2,21 @@ package ui
 
 import (
 	"example/esiapp/internal/model"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	// Initialize the test database for this test package
+	db, err := model.InitDB(":memory:")
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+	os.Exit(m.Run())
+}
 
 func TestRecipient(t *testing.T) {
 	t.Run("can create from EveEntity", func(t *testing.T) {
