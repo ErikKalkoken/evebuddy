@@ -1,15 +1,16 @@
-package ui
+package logic
 
 import (
 	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/helper/set"
-	"example/esiapp/internal/logic"
 	"example/esiapp/internal/model"
 	"fmt"
 	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"fyne.io/fyne/v2/data/binding"
 )
 
 const maxMails = 1000
@@ -17,13 +18,13 @@ const maxMails = 1000
 // FIXME: Delete obsolete labels and mail lists
 // TODO: Add ability to update existing mails
 // UpdateMails fetches and stores new mails from ESI for a character.
-func UpdateMails(characterID int32, status *statusArea) error {
+func UpdateMails(characterID int32, status binding.String) error {
 	token, err := model.FetchToken(characterID)
 	if err != nil {
 		return err
 	}
 	s := fmt.Sprintf("Checking for new mail for %v", token.Character.Name)
-	status.setText(s)
+	status.Set(s)
 	if err := updateMailLists(token); err != nil {
 		return err
 	}
@@ -42,7 +43,7 @@ func UpdateMails(characterID int32, status *statusArea) error {
 }
 
 func updateMailLabels(token *model.Token) error {
-	if err := logic.EnsureValidToken(token); err != nil {
+	if err := EnsureValidToken(token); err != nil {
 		return err
 	}
 	ll, err := esi.FetchMailLabels(httpClient, token.CharacterID, token.AccessToken)
@@ -67,7 +68,7 @@ func updateMailLabels(token *model.Token) error {
 }
 
 func updateMailLists(token *model.Token) error {
-	if err := logic.EnsureValidToken(token); err != nil {
+	if err := EnsureValidToken(token); err != nil {
 		return err
 	}
 	lists, err := esi.FetchMailLists(httpClient, token.CharacterID, token.AccessToken)
@@ -88,7 +89,7 @@ func updateMailLists(token *model.Token) error {
 }
 
 func fetchMailHeaders(token *model.Token) ([]esi.MailHeader, error) {
-	if err := logic.EnsureValidToken(token); err != nil {
+	if err := EnsureValidToken(token); err != nil {
 		return nil, err
 	}
 	headers, err := esi.FetchMailHeaders(httpClient, token.CharacterID, token.AccessToken, maxMails)
@@ -98,7 +99,7 @@ func fetchMailHeaders(token *model.Token) ([]esi.MailHeader, error) {
 	return headers, nil
 }
 
-func updateMails(token *model.Token, headers []esi.MailHeader, status *statusArea) error {
+func updateMails(token *model.Token, headers []esi.MailHeader, status binding.String) error {
 	existingIDs, missingIDs, err := determineMailIDs(token.CharacterID, headers)
 	if err != nil {
 		return err
@@ -106,12 +107,12 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status *statusAre
 	newMailsCount := missingIDs.Size()
 	if newMailsCount == 0 {
 		s := "No new mail"
-		status.setText(s)
+		status.Set(s)
 		slog.Info(s, "characterID", token.CharacterID)
 		return nil
 	}
 
-	if err := logic.EnsureValidToken(token); err != nil {
+	if err := EnsureValidToken(token); err != nil {
 		return err
 	}
 
@@ -134,22 +135,22 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status *statusAre
 	wg.Wait()
 	total := c.Load()
 	if total == 0 {
-		status.clear()
+		status.Set("")
 		return nil
 	}
 	s := fmt.Sprintf("Stored %d new mails", total)
-	status.setText(s)
+	status.Set(s)
 	slog.Info(s)
 	return nil
 }
 
-func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount int, c *atomic.Int32, status *statusArea) {
+func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount int, c *atomic.Int32, status binding.String) {
 	entityIDs := set.New[int32]()
 	entityIDs.Add(header.FromID)
 	for _, r := range header.Recipients {
 		entityIDs.Add(r.ID)
 	}
-	_, err := logic.AddMissingEveEntities(entityIDs.ToSlice())
+	_, err := AddMissingEveEntities(entityIDs.ToSlice())
 	if err != nil {
 		slog.Error("Failed to process mail", "header", header, "error", err)
 		return
@@ -194,7 +195,7 @@ func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount 
 	c.Add(1)
 	current := c.Load()
 	s := fmt.Sprintf("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name)
-	status.setText(s)
+	status.Set(s)
 }
 
 func fetchMailRecipients(header esi.MailHeader) []model.EveEntity {

@@ -5,8 +5,6 @@ import (
 	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/api/sso"
 	"example/esiapp/internal/model"
-	"net/http"
-	"time"
 )
 
 var esiScopes = []string{
@@ -15,10 +13,6 @@ var esiScopes = []string{
 	"esi-mail.organize_mail.v1",
 	"esi-mail.send_mail.v1",
 	"esi-search.search_structures.v1",
-}
-
-var httpClient = &http.Client{
-	Timeout: time.Second * 30, // Timeout after 30 seconds
 }
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.

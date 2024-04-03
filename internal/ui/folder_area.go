@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"example/esiapp/internal/logic"
 	"example/esiapp/internal/model"
 	"fmt"
 	"log/slog"
@@ -184,7 +185,7 @@ func (f *folderArea) UpdateMails() {
 	go func() {
 		charID := f.ui.CurrentCharID()
 		if charID != 0 {
-			err := UpdateMails(charID, status)
+			err := logic.UpdateMails(charID, status.text)
 			if err != nil {
 				status.setText("Failed to fetch mail")
 				slog.Error("Failed to update mails", "characterID", charID, "error", err)

@@ -90,7 +90,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 			if err != nil {
 				return err
 			}
-			err = sendMail(currentChar.ID, subjectInput.Text, recipients, bodyInput.Text)
+			err = logic.SendMail(currentChar.ID, subjectInput.Text, recipients, bodyInput.Text)
 			if err != nil {
 				return err
 			}
@@ -187,21 +187,4 @@ func makeRecipientOptions(search string) ([]string, error) {
 	rr := NewRecipientsFromEntities(ee)
 	oo := rr.ToOptions()
 	return oo, nil
-}
-
-func sendMail(characterID int32, subject string, recipients []esi.MailRecipient, body string) error {
-	token, err := logic.FetchValidToken(characterID)
-	if err != nil {
-		return err
-	}
-	m := esi.MailSend{
-		Body:       body,
-		Subject:    subject,
-		Recipients: recipients,
-	}
-	_, err = esi.SendMail(httpClient, characterID, token.AccessToken, m)
-	if err != nil {
-		return err
-	}
-	return nil
 }
