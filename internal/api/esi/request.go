@@ -94,6 +94,19 @@ func postESIWithToken(client *http.Client, path string, data []byte, token strin
 	return res, nil
 }
 
+func deleteESIWithToken(client *http.Client, path string, token string) (*esiResponse, error) {
+	req, err := http.NewRequest(http.MethodDelete, buildEsiUrl(path), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	res, err := sendRequest(client, req)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func buildEsiUrl(path string) string {
 	u := fmt.Sprintf("%s%s", esiBaseUrl, path)
 	return u

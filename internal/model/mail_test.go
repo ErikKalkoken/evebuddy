@@ -224,3 +224,26 @@ func TestFetchMailsFoList(t *testing.T) {
 		}
 	})
 }
+
+func TestDeleteMail(t *testing.T) {
+	t.Run("can delete existing mail", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		m := factory.CreateMail()
+		// when
+		c, err := m.Delete()
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, 1, c)
+		}
+	})
+	t.Run("returns error when trying delete mail with ID", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		m := model.Mail{}
+		// when
+		_, err := m.Delete()
+		// then
+		assert.ErrorIs(t, err, model.ErrDoesNotExist)
+	})
+}

@@ -27,3 +27,14 @@ func FetchMail(client *http.Client, characterID int32, mailID int32, tokenString
 	slog.Info("Received mail from ESI", "characterID", characterID, "mailID", mailID)
 	return &m, err
 }
+
+// DeleteMail deletes a mail via ESI.
+func DeleteMail(client *http.Client, characterID int32, mailID int32, tokenString string) error {
+	path := fmt.Sprintf("/characters/%d/mail/%d/", characterID, mailID)
+	_, err := raiseError(deleteESIWithToken(client, path, tokenString))
+	if err != nil {
+		return err
+	}
+	slog.Info("Deleted mail via ESI", "characterID", characterID, "mailID", mailID)
+	return nil
+}

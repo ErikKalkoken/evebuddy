@@ -24,11 +24,12 @@ type mailItem struct {
 
 // headerArea is the UI area showing the list of mail headers.
 type headerArea struct {
-	content    fyne.CanvasObject
-	list       *widget.List
-	boundList  binding.ExternalUntypedList
-	boundTotal binding.String
-	ui         *ui
+	boundList     binding.ExternalUntypedList
+	boundTotal    binding.String
+	content       fyne.CanvasObject
+	currentFolder node
+	list          *widget.List
+	ui            *ui
 }
 
 func (u *ui) NewHeaderArea() *headerArea {
@@ -93,7 +94,15 @@ func (u *ui) NewHeaderArea() *headerArea {
 	return &m
 }
 
+func (h *headerArea) RedrawCurrent() {
+	h.redraw(h.currentFolder)
+}
+
 func (h *headerArea) Redraw(folder node) {
+	h.redraw(folder)
+}
+
+func (h *headerArea) redraw(folder node) {
 	var d []interface{}
 	var mm []model.Mail
 	var err error
@@ -118,6 +127,7 @@ func (h *headerArea) Redraw(folder node) {
 		}
 	}
 	h.boundList.Set(d)
+	h.currentFolder = folder
 
 	s := fmt.Sprintf("%d mails", len(mm))
 	h.boundTotal.Set(s)

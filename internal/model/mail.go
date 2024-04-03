@@ -113,6 +113,22 @@ func (m *Mail) addLabels() error {
 	return nil
 }
 
+// Delete deletes this mail object from the database
+func (m *Mail) Delete() (int, error) {
+	if m.ID == 0 {
+		return 0, ErrDoesNotExist
+	}
+	r, err := db.Exec("DELETE FROM mails WHERE mails.id = ?;", m.ID)
+	if err != nil {
+		return 0, err
+	}
+	rows, err := r.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return int(rows), nil
+}
+
 // BodyPlain returns a mail's body as plain text.
 func (m *Mail) BodyPlain() string {
 	t := strings.ReplaceAll(m.Body, "<br>", "\n")

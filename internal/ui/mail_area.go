@@ -1,11 +1,14 @@
 package ui
 
 import (
+	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/model"
+	"fmt"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -79,10 +82,23 @@ func (m *mailArea) Redraw(mailID uint64) {
 		}),
 	)
 	m.icons.Add(layout.NewSpacer())
-	m.icons.Add(
-		widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
-		}),
-	)
+	button := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
+		t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", mail.Subject)
+		d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
+			if confirmed {
+				err := deleteMail(mail)
+				if err != nil {
+					errorDialog := dialog.NewError(err, m.ui.window)
+					errorDialog.Show()
+				} else {
+					m.ui.headerArea.RedrawCurrent()
+				}
+			}
+		}, m.ui.window)
+		d.Show()
+	})
+	button.Importance = widget.DangerImportance
+	m.icons.Add(button)
 	header := mail.MakeHeaderText(myDateTime)
 	b := mail.BodyPlain()
 	m.updateContent(mail.Subject, header, b)
@@ -96,4 +112,22 @@ func (m *mailArea) updateContent(s string, h string, b string) {
 	m.header.SetText(h)
 	m.body.SetText(b)
 	m.bodyC.ScrollToTop()
+}
+
+func deleteMail(m *model.Mail) error {
+	token, err := model.FetchToken(m.CharacterID)
+	if err != nil {
+		return err
+	}
+	if err := EnsureFreshToken(token); err != nil {
+		return err
+	}
+	if err := esi.DeleteMail(httpClient, m.CharacterID, m.MailID, token.AccessToken); err != nil {
+		return err
+	}
+	_, err = m.Delete()
+	if err != nil {
+		return err
+	}
+	return nil
 }
