@@ -108,3 +108,17 @@ func TestFetchMailLabels(t *testing.T) {
 		assert.Equal(t, wantIDs, gotIDs)
 	}
 }
+
+func TestFetchMailLabelUnreadCounts(t *testing.T) {
+	// given
+	model.TruncateTables()
+	c := factory.CreateCharacter()
+	factory.CreateMailLabel(model.MailLabel{Character: c, LabelID: model.LabelCorp, UnreadCount: 3})
+	factory.CreateMailLabel(model.MailLabel{Character: c, LabelID: model.LabelInbox, UnreadCount: 2})
+	// when
+	r, err := model.FetchMailLabelUnreadCounts(c.ID)
+	if assert.NoError(t, err) {
+		assert.Equal(t, map[int]int{model.LabelCorp: 3, model.LabelInbox: 2}, r)
+	}
+
+}

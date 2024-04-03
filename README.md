@@ -21,14 +21,12 @@ MVP is reaching feature parity with Member Audit mail.
 - [ ] Add error handling for mailing lists
 - [ ] Add new mails "on the fly" when refreshing
 - [ ] Add basic unit tests
+- [ ] Store logs in a file instead of console
 
 ### Future releases
 
-- Ability to sent new mail
-- Ability to update "is_read" from client
 - Add additional functionality, e.g. contacts (aka address book)
 - Full unit tests
 - Packaging for Linux, Windows and MAC
-- Store logs in a file instead of console
 - Add settings
 - Show mail bodies as rich text

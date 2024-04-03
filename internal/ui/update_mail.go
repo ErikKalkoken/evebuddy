@@ -159,10 +159,11 @@ func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount 
 		return
 	}
 	mail := model.Mail{
+		Body:      m.Body,
 		Character: token.Character,
 		MailID:    header.ID,
 		Subject:   header.Subject,
-		Body:      m.Body,
+		IsRead:    header.IsRead,
 	}
 	timestamp, err := time.Parse(time.RFC3339, header.Timestamp)
 	if err != nil {

@@ -55,8 +55,14 @@ func makeFolderTree(u *ui) (*widget.Tree, binding.StringTree) {
 			item := newNodeFromJSON(s)
 			icon := co.(*fyne.Container).Objects[0].(*widget.Icon)
 			icon.SetResource(item.icon())
+			var text string
+			if item.UnreadCount == 0 {
+				text = item.Name
+			} else {
+				text = fmt.Sprintf("%s (%d)", item.Name, item.UnreadCount)
+			}
 			label := co.(*fyne.Container).Objects[1].(*widget.Label)
-			label.SetText(item.Name)
+			label.SetText(text)
 		},
 	)
 	lastUID := ""
@@ -94,8 +100,12 @@ func (f *folderArea) Redraw() {
 		f.refreshButton.Enable()
 		f.newButton.Enable()
 	}
-	folderItemAll := node{ID: nodeAllID, ObjID: model.LabelAll, Name: "All Mails", Category: nodeCategoryLabel}
-	ids, values := initialTreeData(folderItemAll)
+	ids := map[string][]string{
+		"":           {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID, nodeLabelsID, nodeListsID},
+		nodeLabelsID: {},
+		nodeListsID:  {},
+	}
+	values, folderItemAll := initialTreeValues(charID)
 	addLabelsToTree(charID, ids, values)
 	addMailListsToTree(charID, ids, values)
 	f.treeData.Set(ids, values)
@@ -104,22 +114,37 @@ func (f *folderArea) Redraw() {
 	f.ui.headerArea.Redraw(folderItemAll)
 }
 
-func initialTreeData(folderItemAll node) (map[string][]string, map[string]string) {
-	ids := map[string][]string{
-		"":           {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID, nodeLabelsID, nodeListsID},
-		nodeLabelsID: {},
-		nodeListsID:  {},
+func initialTreeValues(characterID int32) (map[string]string, node) {
+	unreadCounts, err := model.FetchMailLabelUnreadCounts(characterID)
+	if err != nil {
+		panic(err)
 	}
 	values := map[string]string{
-		nodeAllID:      folderItemAll.toJSON(),
-		nodeInboxID:    node{ID: nodeInboxID, ObjID: model.LabelInbox, Name: "Inbox", Category: nodeCategoryLabel}.toJSON(),
-		nodeSentID:     node{ID: nodeSentID, ObjID: model.LabelSent, Name: "Sent", Category: nodeCategoryLabel}.toJSON(),
-		nodeCorpID:     node{ID: nodeCorpID, ObjID: model.LabelCorp, Name: "Corp", Category: nodeCategoryLabel}.toJSON(),
-		nodeAllianceID: node{ID: nodeAllianceID, ObjID: model.LabelAlliance, Name: "Alliance", Category: nodeCategoryLabel}.toJSON(),
-		nodeLabelsID:   node{ID: nodeLabelsID, Name: "Labels"}.toJSON(),
-		nodeListsID:    node{ID: nodeListsID, Name: "Mailing Lists"}.toJSON(),
+		nodeLabelsID: node{ID: nodeLabelsID, Name: "Labels"}.toJSON(),
+		nodeListsID:  node{ID: nodeListsID, Name: "Mailing Lists"}.toJSON(),
 	}
-	return ids, values
+	var totalUnreadCount int
+	f := []struct {
+		nodeID  string
+		labelID int
+		name    string
+	}{
+		{nodeInboxID, model.LabelInbox, "Inbox"},
+		{nodeSentID, model.LabelSent, "Sent"},
+		{nodeCorpID, model.LabelCorp, "Corp"},
+		{nodeAllianceID, model.LabelAlliance, "Alliance"},
+	}
+	for _, o := range f {
+		u, ok := unreadCounts[o.labelID]
+		if !ok {
+			u = 0
+		}
+		totalUnreadCount += u
+		values[o.nodeID] = node{ID: o.nodeID, ObjID: int32(o.labelID), Name: o.name, Category: nodeCategoryLabel, UnreadCount: u}.toJSON()
+	}
+	folderItemAll := node{ID: nodeAllID, ObjID: model.LabelAll, Name: "All Mails", Category: nodeCategoryLabel, UnreadCount: totalUnreadCount}
+	values[nodeAllID] = folderItemAll.toJSON()
+	return values, folderItemAll
 }
 
 func addMailListsToTree(charID int32, ids map[string][]string, values map[string]string) {

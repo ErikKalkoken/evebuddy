@@ -330,15 +330,3 @@ func scanMail(rows *sql.Rows) ([]Mail, error) {
 	}
 	return mm, nil
 }
-
-func Test() {
-
-	// var l MailLabel
-	// db.First(&l, 4)
-
-	// var mm []Mail
-	// err := db.Model(&l).Association("Mails").Find(&mm)
-	// slog.Info("result", "mails", mm, "mailsCount", len(mm), "error", err)
-
-	panic("Stop")
-}
