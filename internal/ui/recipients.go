@@ -42,7 +42,7 @@ type recipient struct {
 	category recipientCategory
 }
 
-func NewRecipientFromEntity(e model.EveEntity) recipient {
+func newRecipientFromEntity(e model.EveEntity) recipient {
 	r := recipient{name: e.Name}
 	c, ok := recipientMapCategories[e.Category]
 	if ok {
@@ -51,7 +51,7 @@ func NewRecipientFromEntity(e model.EveEntity) recipient {
 	return r
 }
 
-func NewRecipientFromText(s string) recipient {
+func newRecipientFromText(s string) recipient {
 	re, _ := regexp.Compile(`^([^\[\]]+)( \[(.*)\])?$`)
 	m := re.FindStringSubmatch(s)
 	var r recipient
@@ -77,7 +77,7 @@ func (r *recipient) String() string {
 	return s
 }
 
-func (r *recipient) Empty() bool {
+func (r *recipient) empty() bool {
 	return r.name == "" && r.category == recipientCategoryUnknown
 }
 
@@ -94,7 +94,7 @@ func NewRecipients() *recipients {
 func NewRecipientsFromEntities(ee []model.EveEntity) *recipients {
 	rr := NewRecipients()
 	for _, e := range ee {
-		o := NewRecipientFromEntity(e)
+		o := newRecipientFromEntity(e)
 		rr.list = append(rr.list, o)
 	}
 	return rr
@@ -110,13 +110,31 @@ func NewRecipientsFromText(s string) *recipients {
 		ss[i] = strings.Trim(x, " ")
 	}
 	for _, s := range ss {
-		r := NewRecipientFromText(s)
-		if r.Empty() {
+		r := newRecipientFromText(s)
+		if r.empty() {
 			continue
 		}
 		rr.add(r)
 	}
 	return rr
+}
+
+func (rr *recipients) AddFromEveEntity(e model.EveEntity) {
+	r := newRecipientFromEntity(e)
+	rr.add(r)
+}
+
+func (rr *recipients) AddFromText(s string) {
+	r := newRecipientFromText(s)
+	rr.add(r)
+}
+
+func (rr *recipients) add(r recipient) {
+	rr.list = append(rr.list, r)
+}
+
+func (rr *recipients) Size() int {
+	return len(rr.list)
 }
 
 func (rr *recipients) String() string {
@@ -128,20 +146,12 @@ func (rr *recipients) String() string {
 	return s
 }
 
-func (rr *recipients) add(r recipient) {
-	rr.list = append(rr.list, r)
-}
-
-func (rr *recipients) names() []string {
+func (rr *recipients) ToOptions() []string {
 	ss := make([]string, len(rr.list))
 	for i, r := range rr.list {
-		ss[i] = r.name
+		ss[i] = r.String()
 	}
 	return ss
-}
-
-func (rr *recipients) Size() int {
-	return len(rr.list)
 }
 
 func (rr *recipients) ToEsiRecipients() ([]esi.MailRecipient, error) {
@@ -158,4 +168,12 @@ func (rr *recipients) ToEsiRecipients() ([]esi.MailRecipient, error) {
 		mm = append(mm, esi.MailRecipient{ID: o.ID, Type: "alliance"})
 	}
 	return mm, err
+}
+
+func (rr *recipients) names() []string {
+	ss := make([]string, len(rr.list))
+	for i, r := range rr.list {
+		ss[i] = r.name
+	}
+	return ss
 }

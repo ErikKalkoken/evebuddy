@@ -12,7 +12,7 @@ func TestRecipient(t *testing.T) {
 		// given
 		e := model.EveEntity{ID: 7, Name: "Dummy", Category: model.EveEntityCharacter}
 		// when
-		r := NewRecipientFromEntity(e)
+		r := newRecipientFromEntity(e)
 		// then
 		assert.Equal(t, "Dummy", r.name)
 		assert.Equal(t, recipientCategoryCharacter, r.category)
@@ -62,7 +62,7 @@ func TestNewRecipientFromText(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			r := NewRecipientFromText(tt.in)
+			r := newRecipientFromText(tt.in)
 			assert.Equal(t, tt.out, r)
 		})
 	}
