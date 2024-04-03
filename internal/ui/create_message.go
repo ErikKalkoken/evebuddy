@@ -124,7 +124,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 				slog.Error("Failed to fetch token", "error", err)
 				return
 			}
-			err = ensureFreshToken(token)
+			err = EnsureFreshToken(token)
 			if err != nil {
 				slog.Error("Failed to refresh token", "error", err)
 				return
@@ -140,7 +140,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 				return
 			}
 			ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
-			missingIDs, err := addMissingEveEntities(ids)
+			missingIDs, err := AddMissingEveEntities(ids)
 			if err != nil {
 				slog.Error("Failed to fetch missing IDs", "error", err)
 				return
@@ -186,7 +186,7 @@ func sendMail(characterID int32, subject string, recipients []esi.MailRecipient,
 	if err != nil {
 		return err
 	}
-	err = ensureFreshToken(token)
+	err = EnsureFreshToken(token)
 	if err != nil {
 		return err
 	}

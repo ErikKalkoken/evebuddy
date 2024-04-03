@@ -4,7 +4,6 @@ go 1.22.0
 
 require (
 	fyne.io/fyne/v2 v2.4.4
-	fyne.io/x/fyne v0.0.0-20240326131024-3ba9170cc3be
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/jmoiron/sqlx v1.3.5
@@ -39,7 +38,6 @@ require (
 	github.com/lestrrat-go/httprc v1.0.4 // indirect
 	github.com/lestrrat-go/iter v1.0.2 // indirect
 	github.com/lestrrat-go/option v1.0.1 // indirect
-	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect

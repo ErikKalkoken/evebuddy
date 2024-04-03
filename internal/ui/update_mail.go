@@ -1,75 +1,17 @@
 package ui
 
 import (
-	"context"
 	"example/esiapp/internal/api/esi"
-	"example/esiapp/internal/api/sso"
 	"example/esiapp/internal/helper/set"
 	"example/esiapp/internal/model"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
 const maxMails = 1000
-
-var httpClient = &http.Client{
-	Timeout: time.Second * 30, // Timeout after 30 seconds
-}
-
-var scopes = []string{
-	"esi-characters.read_contacts.v1",
-	"esi-mail.read_mail.v1",
-	"esi-mail.organize_mail.v1",
-	"esi-mail.send_mail.v1",
-	"esi-search.search_structures.v1",
-}
-
-// AddCharacter adds a new character via SSO authentication and returns the new token.
-func AddCharacter(ctx context.Context) (*model.Token, error) {
-	ssoToken, err := sso.Authenticate(ctx, httpClient, scopes)
-	if err != nil {
-		return nil, err
-	}
-	charID := ssoToken.CharacterID
-	charEsi, err := esi.FetchCharacter(httpClient, charID)
-	if err != nil {
-		return nil, err
-	}
-	ids := []int32{charID, charEsi.CorporationID}
-	if charEsi.AllianceID != 0 {
-		ids = append(ids, charEsi.AllianceID)
-	}
-	if charEsi.FactionID != 0 {
-		ids = append(ids, charEsi.FactionID)
-	}
-	_, err = addMissingEveEntities(ids)
-	if err != nil {
-		return nil, err
-	}
-	character := model.Character{
-		ID:            charID,
-		Name:          charEsi.Name,
-		CorporationID: charEsi.CorporationID,
-	}
-	if err = character.Save(); err != nil {
-		return nil, err
-	}
-	token := model.Token{
-		AccessToken:  ssoToken.AccessToken,
-		Character:    character,
-		ExpiresAt:    ssoToken.ExpiresAt,
-		RefreshToken: ssoToken.RefreshToken,
-		TokenType:    ssoToken.TokenType,
-	}
-	if err = token.Save(); err != nil {
-		return nil, err
-	}
-	return &token, nil
-}
 
 // FIXME: Delete obsolete labels and mail lists
 // TODO: Add ability to update existing mails
@@ -99,7 +41,7 @@ func UpdateMails(characterID int32, status *statusArea) error {
 }
 
 func updateMailLabels(token *model.Token) error {
-	if err := ensureFreshToken(token); err != nil {
+	if err := EnsureFreshToken(token); err != nil {
 		return err
 	}
 	ll, err := esi.FetchMailLabels(httpClient, token.CharacterID, token.AccessToken)
@@ -124,7 +66,7 @@ func updateMailLabels(token *model.Token) error {
 }
 
 func updateMailLists(token *model.Token) error {
-	if err := ensureFreshToken(token); err != nil {
+	if err := EnsureFreshToken(token); err != nil {
 		return err
 	}
 	lists, err := esi.FetchMailLists(httpClient, token.CharacterID, token.AccessToken)
@@ -145,7 +87,7 @@ func updateMailLists(token *model.Token) error {
 }
 
 func fetchMailHeaders(token *model.Token) ([]esi.MailHeader, error) {
-	if err := ensureFreshToken(token); err != nil {
+	if err := EnsureFreshToken(token); err != nil {
 		return nil, err
 	}
 	headers, err := esi.FetchMailHeaders(httpClient, token.CharacterID, token.AccessToken, maxMails)
@@ -168,7 +110,7 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status *statusAre
 		return nil
 	}
 
-	if err := ensureFreshToken(token); err != nil {
+	if err := EnsureFreshToken(token); err != nil {
 		return err
 	}
 
@@ -206,7 +148,7 @@ func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount 
 	for _, r := range header.Recipients {
 		entityIDs.Add(r.ID)
 	}
-	_, err := addMissingEveEntities(entityIDs.ToSlice())
+	_, err := AddMissingEveEntities(entityIDs.ToSlice())
 	if err != nil {
 		slog.Error("Failed to process mail", "header", header, "error", err)
 		return
@@ -279,58 +221,4 @@ func determineMailIDs(characterID int32, headers []esi.MailHeader) (*set.Set[int
 	}
 	missingIDs := incomingIDs.Difference(existingIDs)
 	return existingIDs, missingIDs, nil
-}
-
-// ensureFreshToken will automatically try to refresh a token that is already or about to become invalid.
-func ensureFreshToken(token *model.Token) error {
-	if !token.RemainsValid(time.Second * 60) {
-		slog.Debug("Need to refresh token", "characterID", token.CharacterID)
-		rawToken, err := sso.RefreshToken(httpClient, token.RefreshToken)
-		if err != nil {
-			return err
-		}
-		token.AccessToken = rawToken.AccessToken
-		token.RefreshToken = rawToken.RefreshToken
-		token.ExpiresAt = rawToken.ExpiresAt
-		err = token.Save()
-		if err != nil {
-			return err
-		}
-		slog.Info("Token refreshed", "characterID", token.CharacterID)
-	}
-	return nil
-}
-
-func addMissingEveEntities(ids []int32) ([]int32, error) {
-	c, err := model.FetchEveEntityIDs()
-	if err != nil {
-		return nil, err
-	}
-	current := set.NewFromSlice(c)
-	incoming := set.NewFromSlice(ids)
-	missing := incoming.Difference(current)
-
-	if missing.Size() == 0 {
-		return nil, nil
-	}
-
-	entities, err := esi.ResolveEntityIDs(httpClient, missing.ToSlice())
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve IDs: %v %v", err, ids)
-	}
-
-	for _, entity := range entities {
-		e := model.EveEntity{
-			ID:       entity.ID,
-			Category: model.EveEntityCategory(entity.Category),
-			Name:     entity.Name,
-		}
-		err := e.Save()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	slog.Debug("Added missing eve entities", "count", len(entities))
-	return missing.ToSlice(), nil
 }
