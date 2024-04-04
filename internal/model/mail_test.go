@@ -263,7 +263,7 @@ func TestFetchMailLabelUnreadCounts(t *testing.T) {
 	// when
 	r, err := model.FetchMailLabelUnreadCounts(c.ID)
 	if assert.NoError(t, err) {
-		assert.Equal(t, map[int]int{model.LabelCorp: 2, model.LabelInbox: 1}, r)
+		assert.Equal(t, map[int32]int{model.LabelCorp: 2, model.LabelInbox: 1}, r)
 	}
 }
 
@@ -279,6 +279,6 @@ func TestFetchMailListUnreadCounts(t *testing.T) {
 	// when
 	r, err := model.FetchMailListUnreadCounts(c.ID)
 	if assert.NoError(t, err) {
-		assert.Equal(t, map[int]int{int(l1.EveEntityID): 1}, r)
+		assert.Equal(t, map[int32]int{l1.EveEntityID: 1}, r)
 	}
 }

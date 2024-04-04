@@ -332,11 +332,11 @@ func scanMail(rows *sql.Rows) ([]Mail, error) {
 }
 
 type labelUnreadCount struct {
-	ID    int `db:"label_id"`
-	Count int `db:"unread_count_2"`
+	ID    int32 `db:"label_id"`
+	Count int   `db:"unread_count_2"`
 }
 
-func FetchMailLabelUnreadCounts(characterID int32) (map[int]int, error) {
+func FetchMailLabelUnreadCounts(characterID int32) (map[int32]int, error) {
 	var rr []labelUnreadCount
 	sql := `
 		SELECT label_id, COUNT(mails.id) AS unread_count_2
@@ -350,7 +350,7 @@ func FetchMailLabelUnreadCounts(characterID int32) (map[int]int, error) {
 	if err := db.Select(&rr, sql, characterID); err != nil {
 		return nil, err
 	}
-	m := make(map[int]int)
+	m := make(map[int32]int)
 	for _, r := range rr {
 		m[r.ID] += r.Count
 	}
@@ -358,11 +358,11 @@ func FetchMailLabelUnreadCounts(characterID int32) (map[int]int, error) {
 }
 
 type listUnreadCount struct {
-	ID    int `db:"list_id"`
-	Count int `db:"unread_count_2"`
+	ID    int32 `db:"list_id"`
+	Count int   `db:"unread_count_2"`
 }
 
-func FetchMailListUnreadCounts(characterID int32) (map[int]int, error) {
+func FetchMailListUnreadCounts(characterID int32) (map[int32]int, error) {
 	var rr []listUnreadCount
 	sql := `
 		SELECT eve_entities.id AS list_id, COUNT(mails.id) as unread_count_2
@@ -377,7 +377,7 @@ func FetchMailListUnreadCounts(characterID int32) (map[int]int, error) {
 	if err := db.Select(&rr, sql, characterID); err != nil {
 		return nil, err
 	}
-	m := make(map[int]int)
+	m := make(map[int32]int)
 	for _, r := range rr {
 		m[r.ID] += r.Count
 	}
