@@ -306,7 +306,11 @@ func UpdateMailRead(m *model.Mail) error {
 	if err != nil {
 		return err
 	}
-	data := esi.MailUpdate{Read: true}
+	var labelIDs []int32
+	for _, l := range m.Labels {
+		labelIDs = append(labelIDs, l.LabelID)
+	}
+	data := esi.MailUpdate{Read: true, Labels: labelIDs}
 	if err := esi.UpdateMail(httpClient, m.CharacterID, m.MailID, data, token.AccessToken); err != nil {
 		return err
 	}

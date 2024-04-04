@@ -66,6 +66,14 @@ func (m *mailArea) Redraw(mailID uint64) {
 		return
 	}
 	m.mailID = mailID
+	if !mail.IsRead {
+		go func() {
+			err = logic.UpdateMailRead(mail)
+			if err != nil {
+				slog.Error("Failed to update mail", "mailID", mailID, "error", err)
+			}
+		}()
+	}
 	m.icons.RemoveAll()
 	m.icons.Add(
 		widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {

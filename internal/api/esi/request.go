@@ -133,6 +133,7 @@ func sendRequest(client *http.Client, req *http.Request) (*esiResponse, error) {
 	retry := 0
 	for {
 		slog.Info("HTTP request", "method", req.Method, "url", removeToken(*req.URL))
+		slog.Debug("HTTP request", "request", req)
 		r, err := client.Do(req)
 		if err != nil {
 			return nil, err
