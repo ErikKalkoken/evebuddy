@@ -93,35 +93,39 @@ func makeFolderTree(u *ui) (*widget.Tree, binding.StringTree) {
 }
 
 func (f *folderArea) Redraw() {
-	charID := f.ui.CurrentCharID()
-	if charID == 0 {
+	characterID := f.ui.CurrentCharID()
+	if characterID == 0 {
 		f.refreshButton.Disable()
 		f.newButton.Disable()
 	} else {
 		f.refreshButton.Enable()
 		f.newButton.Enable()
 	}
-	ids := map[string][]string{
-		"":           {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID, nodeLabelsID, nodeListsID},
-		nodeLabelsID: {},
-		nodeListsID:  {},
+	ids, values, folderItemAll, err := buildFolderTree(characterID)
+	if err != nil {
+		slog.Error("Failed to build folder tree", "character", characterID, "error", err)
 	}
-	values, folderItemAll := initialTreeValues(charID)
-	addLabelsToTree(charID, ids, values)
-	addMailListsToTree(charID, ids, values)
 	f.treeData.Set(ids, values)
 	f.tree.Select(nodeAllID)
 	f.tree.ScrollToTop()
 	f.ui.headerArea.Redraw(folderItemAll)
 }
 
-func initialTreeValues(characterID int32) (map[string]string, node) {
-	unreadCounts, err := model.FetchMailLabelUnreadCounts(characterID)
+func buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
+	var totalUnreadCount, totalLabelsUnreadCount, totalListUnreadCount int
+	labelUnreadCounts, err := model.FetchMailLabelUnreadCounts(characterID)
 	if err != nil {
-		panic(err)
+		return nil, nil, node{}, err
 	}
-	var totalUnreadCount int
-	var labelsUnreadCount int
+	listUnreadCounts, err := model.FetchMailListUnreadCounts(characterID)
+	if err != nil {
+		return nil, nil, node{}, err
+	}
+	ids := map[string][]string{
+		"":           {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID, nodeLabelsID, nodeListsID},
+		nodeLabelsID: {},
+		nodeListsID:  {},
+	}
 	folders := make(map[string]string)
 	defaultFolders := []struct {
 		nodeID  string
@@ -134,53 +138,77 @@ func initialTreeValues(characterID int32) (map[string]string, node) {
 		{nodeAllianceID, model.LabelAlliance, "Alliance"},
 	}
 	for _, o := range defaultFolders {
-		u, ok := unreadCounts[o.labelID]
+		u, ok := labelUnreadCounts[o.labelID]
 		if !ok {
 			u = 0
 		}
 		totalUnreadCount += u
 		if o.labelID > model.LabelAlliance {
-			labelsUnreadCount += u
+			totalLabelsUnreadCount += u
 		}
-		folders[o.nodeID] = node{ID: o.nodeID, ObjID: int32(o.labelID), Name: o.name, Category: nodeCategoryLabel, UnreadCount: u}.toJSON()
+		folders[o.nodeID] = node{
+			ID:          o.nodeID,
+			ObjID:       int32(o.labelID),
+			Name:        o.name,
+			Category:    nodeCategoryLabel,
+			UnreadCount: u,
+		}.toJSON()
 	}
-	folderItemAll := node{ID: nodeAllID, ObjID: model.LabelAll, Name: "All Mails", Category: nodeCategoryLabel, UnreadCount: totalUnreadCount}
+	for _, c := range listUnreadCounts {
+		totalListUnreadCount += c
+	}
+	folderItemAll := node{
+		ID:          nodeAllID,
+		ObjID:       model.LabelAll,
+		Name:        "All Mails",
+		Category:    nodeCategoryLabel,
+		UnreadCount: totalUnreadCount,
+	}
 	folders[nodeAllID] = folderItemAll.toJSON()
-	folders[nodeLabelsID] = node{ID: nodeLabelsID, Name: "Labels", UnreadCount: labelsUnreadCount}.toJSON()
-	folders[nodeListsID] = node{ID: nodeListsID, Name: "Mailing Lists"}.toJSON()
-	return folders, folderItemAll
-}
-
-func addMailListsToTree(charID int32, ids map[string][]string, values map[string]string) {
-	lists, err := model.FetchAllMailLists(charID)
+	folders[nodeLabelsID] = node{
+		ID:          nodeLabelsID,
+		Name:        "Labels",
+		UnreadCount: totalLabelsUnreadCount,
+	}.toJSON()
+	folders[nodeListsID] = node{
+		ID:          nodeListsID,
+		Name:        "Mailing Lists",
+		UnreadCount: totalListUnreadCount,
+	}.toJSON()
+	lists, err := model.FetchAllMailLists(characterID)
 	if err != nil {
-		slog.Error("Failed to fetch mail lists", "characterID", charID, "error", err)
-	} else {
-		for _, l := range lists {
-			uid := fmt.Sprintf("list%d", l.EveEntityID)
-			ids[nodeListsID] = append(ids[nodeListsID], uid)
-			n := node{ObjID: l.EveEntityID, Name: l.EveEntity.Name, Category: nodeCategoryList}
-			values[uid] = n.toJSON()
-		}
+		return nil, nil, node{}, err
 	}
-}
-
-func addLabelsToTree(charID int32, ids map[string][]string, values map[string]string) {
-	labels, err := model.FetchAllMailLabels(charID)
+	for _, l := range lists {
+		uid := fmt.Sprintf("list%d", l.EveEntityID)
+		ids[nodeListsID] = append(ids[nodeListsID], uid)
+		u, ok := listUnreadCounts[int(l.EveEntityID)]
+		if !ok {
+			u = 0
+		}
+		n := node{ObjID: l.EveEntityID, Name: l.EveEntity.Name, Category: nodeCategoryList, UnreadCount: u}
+		folders[uid] = n.toJSON()
+	}
+	labels, err := model.FetchAllMailLabels(characterID)
 	if err != nil {
-		slog.Error("Failed to fetch mail labels", "characterID", charID, "error", err)
-	} else {
-		if len(labels) > 0 {
-			for _, l := range labels {
-				if l.LabelID > 8 {
-					uid := fmt.Sprintf("label%d", l.LabelID)
-					ids[nodeLabelsID] = append(ids[nodeLabelsID], uid)
-					n := node{ObjID: l.LabelID, Name: l.Name, Category: nodeCategoryLabel}
-					values[uid] = n.toJSON()
+		return nil, nil, node{}, err
+	}
+	if len(labels) > 0 {
+		for _, l := range labels {
+			if l.LabelID > 8 {
+				uid := fmt.Sprintf("label%d", l.LabelID)
+				ids[nodeLabelsID] = append(ids[nodeLabelsID], uid)
+				u, ok := labelUnreadCounts[int(l.LabelID)]
+				if !ok {
+					u = 0
 				}
+				n := node{ObjID: l.LabelID, Name: l.Name, Category: nodeCategoryLabel, UnreadCount: u}
+				folders[uid] = n.toJSON()
 			}
 		}
+
 	}
+	return ids, folders, folderItemAll, nil
 }
 
 func (f *folderArea) UpdateMails() {
