@@ -111,7 +111,7 @@ func FetchMailLabels(characterID int32, labelIDs []int32) ([]MailLabel, error) {
 }
 
 // TODO: Add index for sorting labels
-func FetchAllMailLabels(characterID int32) ([]MailLabel, error) {
+func FetchCustomMailLabels(characterID int32) ([]MailLabel, error) {
 	var ll []MailLabel
 	err := db.Select(
 		&ll,

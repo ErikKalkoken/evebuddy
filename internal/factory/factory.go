@@ -116,7 +116,7 @@ func CreateMailLabel(args ...model.MailLabel) model.MailLabel {
 		l.Character = CreateCharacter()
 	}
 	if l.LabelID == 0 {
-		ll, err := model.FetchAllMailLabels(l.Character.ID)
+		ll, err := model.FetchCustomMailLabels(l.Character.ID)
 		if err != nil {
 			panic(err)
 		}

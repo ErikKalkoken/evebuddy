@@ -122,9 +122,7 @@ func buildFolderTree(characterID int32) (map[string][]string, map[string]string,
 	}
 	totalUnreadCount, totalLabelsUnreadCount, totalListUnreadCount := calcUnreadTotals(labelUnreadCounts, listUnreadCounts)
 	ids := map[string][]string{
-		"":           {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID, nodeLabelsID, nodeListsID},
-		nodeLabelsID: {},
-		nodeListsID:  {},
+		"": {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID},
 	}
 	folders := makeDefaultFolders(labelUnreadCounts)
 	folderItemAll := node{
@@ -135,36 +133,19 @@ func buildFolderTree(characterID int32) (map[string][]string, map[string]string,
 		UnreadCount: totalUnreadCount,
 	}
 	folders[nodeAllID] = folderItemAll.toJSON()
-	folders[nodeLabelsID] = node{
-		ID:          nodeLabelsID,
-		Name:        "Labels",
-		UnreadCount: totalLabelsUnreadCount,
-	}.toJSON()
-	folders[nodeListsID] = node{
-		ID:          nodeListsID,
-		Name:        "Mailing Lists",
-		UnreadCount: totalListUnreadCount,
-	}.toJSON()
-	lists, err := model.FetchAllMailLists(characterID)
+	labels, err := model.FetchCustomMailLabels(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
-	for _, l := range lists {
-		uid := fmt.Sprintf("list%d", l.EveEntityID)
-		ids[nodeListsID] = append(ids[nodeListsID], uid)
-		u, ok := listUnreadCounts[l.EveEntityID]
-		if !ok {
-			u = 0
-		}
-		n := node{ObjID: l.EveEntityID, Name: l.EveEntity.Name, Category: nodeCategoryList, UnreadCount: u}
-		folders[uid] = n.toJSON()
-	}
-	labels, err := model.FetchAllMailLabels(characterID)
-	if err != nil {
-		return nil, nil, node{}, err
-	}
-	for _, l := range labels {
-		if l.LabelID > 8 {
+	if len(labels) > 0 {
+		ids[""] = append(ids[""], nodeLabelsID)
+		ids[nodeLabelsID] = []string{}
+		folders[nodeLabelsID] = node{
+			ID:          nodeLabelsID,
+			Name:        "Labels",
+			UnreadCount: totalLabelsUnreadCount,
+		}.toJSON()
+		for _, l := range labels {
 			uid := fmt.Sprintf("label%d", l.LabelID)
 			ids[nodeLabelsID] = append(ids[nodeLabelsID], uid)
 			u, ok := labelUnreadCounts[l.LabelID]
@@ -172,6 +153,29 @@ func buildFolderTree(characterID int32) (map[string][]string, map[string]string,
 				u = 0
 			}
 			n := node{ObjID: l.LabelID, Name: l.Name, Category: nodeCategoryLabel, UnreadCount: u}
+			folders[uid] = n.toJSON()
+		}
+	}
+	lists, err := model.FetchAllMailLists(characterID)
+	if err != nil {
+		return nil, nil, node{}, err
+	}
+	if len(lists) > 0 {
+		ids[""] = append(ids[""], nodeListsID)
+		ids[nodeListsID] = []string{}
+		folders[nodeListsID] = node{
+			ID:          nodeListsID,
+			Name:        "Mailing Lists",
+			UnreadCount: totalListUnreadCount,
+		}.toJSON()
+		for _, l := range lists {
+			uid := fmt.Sprintf("list%d", l.EveEntityID)
+			ids[nodeListsID] = append(ids[nodeListsID], uid)
+			u, ok := listUnreadCounts[l.EveEntityID]
+			if !ok {
+				u = 0
+			}
+			n := node{ObjID: l.EveEntityID, Name: l.EveEntity.Name, Category: nodeCategoryList, UnreadCount: u}
 			folders[uid] = n.toJSON()
 		}
 	}
