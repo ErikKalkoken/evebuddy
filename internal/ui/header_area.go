@@ -20,7 +20,7 @@ type mailItem struct {
 	subject   string
 	from      string
 	timestamp time.Time
-	isUnread  bool
+	isRead    bool
 }
 
 // headerArea is the UI area showing the list of mail headers.
@@ -59,17 +59,17 @@ func (u *ui) NewHeaderArea() *headerArea {
 
 			from := top.Objects[0].(*canvas.Text)
 			from.Text = m.from
-			from.TextStyle = fyne.TextStyle{Bold: m.isUnread}
+			from.TextStyle = fyne.TextStyle{Bold: !m.isRead}
 			from.Refresh()
 
 			timestamp := top.Objects[2].(*canvas.Text)
 			timestamp.Text = m.timestamp.Format(myDateTime)
-			timestamp.TextStyle = fyne.TextStyle{Bold: m.isUnread}
+			timestamp.TextStyle = fyne.TextStyle{Bold: !m.isRead}
 			timestamp.Refresh()
 
 			subject := parent.Objects[1].(*canvas.Text)
 			subject.Text = m.subject
-			subject.TextStyle = fyne.TextStyle{Bold: m.isUnread}
+			subject.TextStyle = fyne.TextStyle{Bold: !m.isRead}
 			subject.Refresh()
 		})
 
@@ -125,7 +125,7 @@ func (h *headerArea) redraw(folder node) {
 				from:      m.From.Name,
 				subject:   m.Subject,
 				timestamp: m.Timestamp,
-				isUnread:  m.IsRead,
+				isRead:    m.IsRead,
 			}
 			d = append(d, o)
 		}
