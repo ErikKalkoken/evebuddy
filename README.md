@@ -18,7 +18,8 @@ MVP is reaching feature parity with Member Audit mail.
 - [x] Update list of characters after adding new character
 - [x] Show mailing lists as folder
 - [x] Update "is_read" for mails from ESI
-- [ ] Calculate unread counts for the folders from local mails
+- [x] Calculate unread counts for the folders from local mails
+- [ ] Update "is_unread"
 - [ ] Add error handling for mailing lists
 - [ ] Add new mails "on the fly" when refreshing
 - [ ] Add basic unit tests

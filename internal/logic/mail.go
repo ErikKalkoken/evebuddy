@@ -31,7 +31,7 @@ func DeleteMail(m *model.Mail) error {
 	return nil
 }
 
-// SendMail created a new mail on ESI.
+// SendMail created a new mail on ESI stores it locally.
 func SendMail(characterID int32, subject string, recipients []esi.MailRecipient, body string) error {
 	token, err := FetchValidToken(characterID)
 	if err != nil {
@@ -42,8 +42,47 @@ func SendMail(characterID int32, subject string, recipients []esi.MailRecipient,
 		Subject:    subject,
 		Recipients: recipients,
 	}
-	_, err = esi.SendMail(httpClient, characterID, token.AccessToken, m)
+	mailID, err := esi.SendMail(httpClient, characterID, token.AccessToken, m)
 	if err != nil {
+		return err
+	}
+	ids := []int32{characterID}
+	for _, r := range recipients {
+		ids = append(ids, r.ID)
+	}
+	_, err = AddMissingEveEntities(ids)
+	if err != nil {
+		return err
+	}
+	from, err := model.FetchEveEntityByID(token.CharacterID)
+	if err != nil {
+		return err
+	}
+	// FIXME: Ensure this still works when no labels have yet been loaded from ESI
+	label, err := model.FetchMailLabel(token.CharacterID, model.LabelSent)
+	if err != nil {
+		return err
+	}
+	var rr []model.EveEntity
+	for _, r := range recipients {
+		e, err := model.FetchEveEntityByID(r.ID)
+		if err != nil {
+			return err
+		}
+		rr = append(rr, *e)
+	}
+	mail := model.Mail{
+		Body:       body,
+		Character:  token.Character,
+		From:       *from,
+		Labels:     []model.MailLabel{*label},
+		MailID:     mailID,
+		Recipients: rr,
+		Subject:    subject,
+		IsRead:     true,
+		Timestamp:  time.Now(),
+	}
+	if err := mail.Create(); err != nil {
 		return err
 	}
 	return nil
