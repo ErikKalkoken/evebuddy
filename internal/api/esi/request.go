@@ -41,6 +41,9 @@ func (r esiResponse) error() error {
 
 // raiseError wraps a request function and returns HTTP errors as error value.
 func raiseError(res *esiResponse, err error) (*esiResponse, error) {
+	if err != nil {
+		return nil, err
+	}
 	if !res.ok() {
 		return nil, res.error()
 	}
@@ -81,6 +84,20 @@ func postESI(client *http.Client, path string, data []byte) (*esiResponse, error
 
 func postESIWithToken(client *http.Client, path string, data []byte, token string) (*esiResponse, error) {
 	req, err := http.NewRequest(http.MethodPost, buildEsiUrl(path), bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Content-Type", "application/json")
+	res, err := sendRequest(client, req)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func putESIWithToken(client *http.Client, path string, data []byte, token string) (*esiResponse, error) {
+	req, err := http.NewRequest(http.MethodPut, buildEsiUrl(path), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
