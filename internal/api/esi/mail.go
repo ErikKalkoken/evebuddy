@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 )
 
 // A mail returned from ESI.
@@ -37,4 +38,47 @@ func DeleteMail(client *http.Client, characterID int32, mailID int32, tokenStrin
 	}
 	slog.Info("Deleted mail via ESI", "characterID", characterID, "mailID", mailID)
 	return nil
+}
+
+type MailSend struct {
+	Body       string          `json:"body"`
+	Recipients []MailRecipient `json:"recipients"`
+	Subject    string          `json:"subject"`
+}
+
+func SendMail(client *http.Client, characterID int32, tokenString string, mail MailSend) (int32, error) {
+	path := fmt.Sprintf("/characters/%d/mail/", characterID)
+	data, err := json.Marshal(mail)
+	if err != nil {
+		return 0, err
+	}
+	r, err := raiseError(postESIWithToken(client, path, data, tokenString))
+	if err != nil {
+		return 0, err
+	}
+	mailID, err := strconv.Atoi(string(r.body))
+	if err != nil {
+		return 0, fmt.Errorf("%v: %v", err, string(r.body))
+	}
+	slog.Info("Created new mail", "characterID", characterID, "mailID", mailID)
+	return int32(mailID), err
+}
+
+type MailUpdate struct {
+	Labels []int32 `json:"labels"`
+	Read   bool    `json:"read"`
+}
+
+func UpdateMail(client *http.Client, characterID, mailID int32, content MailUpdate, tokenString string) (int32, error) {
+	path := fmt.Sprintf("/characters/%d/mail/%d/", characterID, mailID)
+	data, err := json.Marshal(content)
+	if err != nil {
+		return 0, err
+	}
+	_, err = raiseError(putESIWithToken(client, path, data, tokenString))
+	if err != nil {
+		return 0, err
+	}
+	slog.Info("Updated mail", "characterID", characterID, "mailID", mailID)
+	return int32(mailID), err
 }
