@@ -103,7 +103,7 @@ func TestUpdateMail(t *testing.T) {
 
 	// when
 	data := esi.MailUpdate{Read: true}
-	_, err := esi.UpdateMail(c, 1, 2, data, "token")
+	err := esi.UpdateMail(c, 1, 2, data, "token")
 
 	// then
 	assert.NoError(t, err)

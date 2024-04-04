@@ -282,3 +282,30 @@ func TestFetchMailListUnreadCounts(t *testing.T) {
 		assert.Equal(t, map[int32]int{l1.EveEntityID: 1}, r)
 	}
 }
+
+func TestMailSave(t *testing.T) {
+	t.Run("can save updates", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		m := factory.CreateMail(model.Mail{IsRead: false})
+		m.IsRead = true
+		// when
+		err := m.Save()
+		// then
+		if assert.NoError(t, err) {
+			m2, err := model.FetchMail(m.ID)
+			if assert.NoError(t, err) {
+				assert.True(t, m2.IsRead)
+			}
+		}
+	})
+	t.Run("should return error when no ID", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		m := model.Mail{}
+		// when
+		err := m.Save()
+		// then
+		assert.ErrorIs(t, err, model.ErrDoesNotExist)
+	})
+}

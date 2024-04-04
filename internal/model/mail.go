@@ -81,6 +81,24 @@ func (m *Mail) Create() error {
 	return nil
 }
 
+// Save updates an existing mail.
+func (m *Mail) Save() error {
+	if m.ID == 0 {
+		return ErrDoesNotExist
+	}
+	_, err := db.Exec(`
+		UPDATE mails
+		SET is_read = ?
+		WHERE id = ?;`,
+		m.IsRead,
+		m.ID,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m *Mail) addRecipients() error {
 	for _, r := range m.Recipients {
 		_, err := db.Exec(`

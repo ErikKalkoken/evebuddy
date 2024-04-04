@@ -89,9 +89,10 @@ func SendMail(characterID int32, subject string, recipients []esi.MailRecipient,
 }
 
 // FIXME: Delete obsolete labels and mail lists
-// TODO: Add ability to update existing mails
-// UpdateMails fetches and stores new mails from ESI for a character.
-func UpdateMails(characterID int32, status binding.String) error {
+// TODO: Add ability to update existing mails for is_read and labels
+
+// FetchMail fetches and stores new mails from ESI for a character.
+func FetchMail(characterID int32, status binding.String) error {
 	token, err := model.FetchToken(characterID)
 	if err != nil {
 		return err
@@ -297,4 +298,22 @@ func determineMailIDs(characterID int32, headers []esi.MailHeader) (*set.Set[int
 	}
 	missingIDs := incomingIDs.Difference(existingIDs)
 	return existingIDs, missingIDs, nil
+}
+
+// UpdateMailRead updates an existing mail as read
+func UpdateMailRead(m *model.Mail) error {
+	token, err := FetchValidToken(m.CharacterID)
+	if err != nil {
+		return err
+	}
+	data := esi.MailUpdate{Read: true}
+	if err := esi.UpdateMail(httpClient, m.CharacterID, m.MailID, data, token.AccessToken); err != nil {
+		return err
+	}
+	m.IsRead = true
+	if err := m.Save(); err != nil {
+		return err
+	}
+	return nil
+
 }
