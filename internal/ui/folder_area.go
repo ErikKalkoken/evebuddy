@@ -120,12 +120,10 @@ func initialTreeValues(characterID int32) (map[string]string, node) {
 	if err != nil {
 		panic(err)
 	}
-	values := map[string]string{
-		nodeLabelsID: node{ID: nodeLabelsID, Name: "Labels"}.toJSON(),
-		nodeListsID:  node{ID: nodeListsID, Name: "Mailing Lists"}.toJSON(),
-	}
 	var totalUnreadCount int
-	f := []struct {
+	var labelsUnreadCount int
+	folders := make(map[string]string)
+	defaultFolders := []struct {
 		nodeID  string
 		labelID int
 		name    string
@@ -135,17 +133,22 @@ func initialTreeValues(characterID int32) (map[string]string, node) {
 		{nodeCorpID, model.LabelCorp, "Corp"},
 		{nodeAllianceID, model.LabelAlliance, "Alliance"},
 	}
-	for _, o := range f {
+	for _, o := range defaultFolders {
 		u, ok := unreadCounts[o.labelID]
 		if !ok {
 			u = 0
 		}
 		totalUnreadCount += u
-		values[o.nodeID] = node{ID: o.nodeID, ObjID: int32(o.labelID), Name: o.name, Category: nodeCategoryLabel, UnreadCount: u}.toJSON()
+		if o.labelID > model.LabelAlliance {
+			labelsUnreadCount += u
+		}
+		folders[o.nodeID] = node{ID: o.nodeID, ObjID: int32(o.labelID), Name: o.name, Category: nodeCategoryLabel, UnreadCount: u}.toJSON()
 	}
 	folderItemAll := node{ID: nodeAllID, ObjID: model.LabelAll, Name: "All Mails", Category: nodeCategoryLabel, UnreadCount: totalUnreadCount}
-	values[nodeAllID] = folderItemAll.toJSON()
-	return values, folderItemAll
+	folders[nodeAllID] = folderItemAll.toJSON()
+	folders[nodeLabelsID] = node{ID: nodeLabelsID, Name: "Labels", UnreadCount: labelsUnreadCount}.toJSON()
+	folders[nodeListsID] = node{ID: nodeListsID, Name: "Mailing Lists"}.toJSON()
+	return folders, folderItemAll
 }
 
 func addMailListsToTree(charID int32, ids map[string][]string, values map[string]string) {
