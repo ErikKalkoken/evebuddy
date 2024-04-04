@@ -247,3 +247,38 @@ func TestDeleteMail(t *testing.T) {
 		assert.ErrorIs(t, err, model.ErrDoesNotExist)
 	})
 }
+
+func TestFetchMailLabelUnreadCounts(t *testing.T) {
+	// given
+	model.TruncateTables()
+	c := factory.CreateCharacter()
+	corp := factory.CreateMailLabel(model.MailLabel{Character: c, LabelID: model.LabelCorp})
+	inbox := factory.CreateMailLabel(model.MailLabel{Character: c, LabelID: model.LabelInbox})
+	factory.CreateMailLabel(model.MailLabel{Character: c, LabelID: model.LabelAlliance})
+	factory.CreateMail(model.Mail{Character: c, Labels: []model.MailLabel{inbox}, IsRead: false})
+	factory.CreateMail(model.Mail{Character: c, Labels: []model.MailLabel{corp}, IsRead: true})
+	factory.CreateMail(model.Mail{Character: c, Labels: []model.MailLabel{corp}, IsRead: false})
+	factory.CreateMail(model.Mail{Character: c, Labels: []model.MailLabel{corp}, IsRead: false})
+	factory.CreateMail(model.Mail{Character: c})
+	// when
+	r, err := model.FetchMailLabelUnreadCounts(c.ID)
+	if assert.NoError(t, err) {
+		assert.Equal(t, map[int]int{model.LabelCorp: 2, model.LabelInbox: 1}, r)
+	}
+}
+
+func TestFetchMailListUnreadCounts(t *testing.T) {
+	// given
+	model.TruncateTables()
+	c := factory.CreateCharacter()
+	l1 := factory.CreateMailList(model.MailList{Character: c})
+	factory.CreateMailList(model.MailList{Character: c})
+	factory.CreateMail(model.Mail{Character: c, Recipients: []model.EveEntity{l1.EveEntity}, IsRead: false})
+	factory.CreateMail(model.Mail{Character: c, Recipients: []model.EveEntity{l1.EveEntity}, IsRead: true})
+	factory.CreateMail(model.Mail{Character: c})
+	// when
+	r, err := model.FetchMailListUnreadCounts(c.ID)
+	if assert.NoError(t, err) {
+		assert.Equal(t, map[int]int{int(l1.EveEntityID): 1}, r)
+	}
+}

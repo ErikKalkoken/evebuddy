@@ -127,29 +127,3 @@ func FetchAllMailLabels(characterID int32) ([]MailLabel, error) {
 	}
 	return ll, nil
 }
-
-type labelUnreadCounts struct {
-	ID    int `db:"label_id"`
-	Count int `db:"unread_count_2"`
-}
-
-func FetchMailLabelUnreadCounts(characterID int32) (map[int]int, error) {
-	var rr []labelUnreadCounts
-	sql := `
-		SELECT label_id, COUNT(mails.id) AS unread_count_2
-		FROM mail_labels
-		JOIN mail_mail_labels ON mail_mail_labels.mail_label_id = mail_labels.id
-		JOIN mails ON mails.id = mail_mail_labels.mail_id
-		WHERE mail_labels.character_id = ?
-		AND is_read IS FALSE
-		GROUP BY label_id;
-	`
-	if err := db.Select(&rr, sql, characterID); err != nil {
-		return nil, err
-	}
-	m := make(map[int]int)
-	for _, r := range rr {
-		m[r.ID] += r.Count
-	}
-	return m, nil
-}

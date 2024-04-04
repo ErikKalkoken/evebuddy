@@ -330,3 +330,56 @@ func scanMail(rows *sql.Rows) ([]Mail, error) {
 	}
 	return mm, nil
 }
+
+type labelUnreadCount struct {
+	ID    int `db:"label_id"`
+	Count int `db:"unread_count_2"`
+}
+
+func FetchMailLabelUnreadCounts(characterID int32) (map[int]int, error) {
+	var rr []labelUnreadCount
+	sql := `
+		SELECT label_id, COUNT(mails.id) AS unread_count_2
+		FROM mail_labels
+		JOIN mail_mail_labels ON mail_mail_labels.mail_label_id = mail_labels.id
+		JOIN mails ON mails.id = mail_mail_labels.mail_id
+		WHERE mail_labels.character_id = ?
+		AND is_read IS FALSE
+		GROUP BY label_id;
+	`
+	if err := db.Select(&rr, sql, characterID); err != nil {
+		return nil, err
+	}
+	m := make(map[int]int)
+	for _, r := range rr {
+		m[r.ID] += r.Count
+	}
+	return m, nil
+}
+
+type listUnreadCount struct {
+	ID    int `db:"list_id"`
+	Count int `db:"unread_count_2"`
+}
+
+func FetchMailListUnreadCounts(characterID int32) (map[int]int, error) {
+	var rr []listUnreadCount
+	sql := `
+		SELECT eve_entities.id AS list_id, COUNT(mails.id) as unread_count_2
+		FROM mails
+		JOIN mail_recipients ON mail_recipients.mail_id = mails.id
+		JOIN eve_entities ON eve_entities.id = mail_recipients.eve_entity_id
+		WHERE character_id = ?
+		AND eve_entities.category = "mail_list"
+		AND mails.is_read IS FALSE
+		GROUP BY eve_entities.id;
+	`
+	if err := db.Select(&rr, sql, characterID); err != nil {
+		return nil, err
+	}
+	m := make(map[int]int)
+	for _, r := range rr {
+		m[r.ID] += r.Count
+	}
+	return m, nil
+}
