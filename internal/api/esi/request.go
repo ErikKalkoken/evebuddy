@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math"
 	"net/http"
 	"net/url"
 	"time"
@@ -182,8 +181,7 @@ func sendRequestCached(client *http.Client, req *http.Request) (*esiResponse, er
 	if err != nil {
 		return res, nil
 	}
-	duration := time.Until(expiresAt)
-	timeout := int(max(0, math.Floor(duration.Seconds())))
+	timeout := time.Until(expiresAt)
 	cache.Set(key, *res, timeout)
 	return res, nil
 }

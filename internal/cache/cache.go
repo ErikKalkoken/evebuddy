@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const NoTimeout = -1
+const NoTimeout time.Duration = -1 * time.Second
 const defaultCleanupDuration = time.Minute * 10
 
 type Cache struct {
@@ -66,13 +66,13 @@ func (c *Cache) Get(key any) (any, bool) {
 //
 // If an item with the same key already exists it will be overwritten.
 // An item with timeout = cache.NoTimeout never expires
-func (c *Cache) Set(key any, value any, timeout int) {
+func (c *Cache) Set(key any, value any, timeout time.Duration) {
 	// store the item
 	expires := timeout == NoTimeout
 	if timeout < 0 {
 		timeout = 0
 	}
-	at := time.Now().Add(time.Second * time.Duration(timeout))
+	at := time.Now().Add(timeout)
 	i := item{Value: value, ExpiresAt: at, NeverExpires: expires}
 	c.items.Store(key, i)
 	// run cleanup when due
@@ -86,7 +86,7 @@ func (c *Cache) Set(key any, value any, timeout int) {
 
 // cleanup removes all expires keys
 func (c *Cache) cleanup() {
-	slog.Debug("Started cleanup")
+	slog.Info("cache: started cleanup")
 	c.items.Range(func(key, value any) bool {
 		_, found := c.Get(key)
 		if !found {

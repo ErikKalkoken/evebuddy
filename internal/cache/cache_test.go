@@ -13,13 +13,13 @@ func TestCache(t *testing.T) {
 	c := cache.New()
 	t.Run("can set a key", func(t *testing.T) {
 		// when
-		c.Set("k1", "xxx", 100)
+		c.Set("k1", "xxx", time.Second*100)
 		// then
 		assert.True(t, c.Exists("k1"))
 	})
 	t.Run("can get a key", func(t *testing.T) {
 		// given
-		c.Set("k2", "xxx", 100)
+		c.Set("k2", "xxx", time.Second*100)
 		// when
 		o, ok := c.Get("k2")
 		// then
@@ -30,7 +30,7 @@ func TestCache(t *testing.T) {
 	t.Run("can check if a key exists", func(t *testing.T) {
 		// given
 		c.Set("k5", "xxx", 0)
-		c.Set("k6", "xxx", 100)
+		c.Set("k6", "xxx", time.Second*100)
 		// when/then
 		assert.False(t, c.Exists("k5"))
 		assert.True(t, c.Exists("k6"))
@@ -54,7 +54,7 @@ func TestCache(t *testing.T) {
 	})
 	t.Run("can delete existing key", func(t *testing.T) {
 		// given
-		c.Set("k4", "xxx", 100)
+		c.Set("k4", "xxx", time.Second*100)
 		// when
 		c.Delete("k4")
 		// then
@@ -63,8 +63,8 @@ func TestCache(t *testing.T) {
 	t.Run("can clear all keys", func(t *testing.T) {
 		// given
 		c2 := cache.New()
-		c2.Set("dummy-1", "xxx", 100)
-		c2.Set("dummy-1", "xxx", 100)
+		c2.Set("dummy-1", "xxx", time.Second*100)
+		c2.Set("dummy-1", "xxx", time.Second*100)
 		// when
 		c2.Clear()
 		// then
