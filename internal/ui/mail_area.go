@@ -59,7 +59,7 @@ func (m *mailArea) Clear() {
 	m.updateContent("", "", "")
 }
 
-func (m *mailArea) Redraw(mailID uint64) {
+func (m *mailArea) Redraw(mailID uint64, listItemID widget.ListItemID) {
 	mail, err := model.FetchMail(mailID)
 	if err != nil {
 		slog.Error("Failed to render mail", "mailID", mailID, "error", err)
@@ -72,6 +72,16 @@ func (m *mailArea) Redraw(mailID uint64) {
 			if err != nil {
 				slog.Error("Failed to update mail", "mailID", mailID, "error", err)
 			}
+			x, err := getMailItem(m.ui.headerArea.boundList, listItemID)
+			if err != nil {
+				slog.Error(err.Error())
+			}
+			x.isRead = true
+			err = m.ui.headerArea.boundList.SetValue(listItemID, *x)
+			if err != nil {
+				slog.Error(err.Error())
+			}
+			m.ui.headerArea.list.Refresh()
 		}()
 	}
 	m.icons.RemoveAll()

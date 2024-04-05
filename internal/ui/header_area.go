@@ -16,7 +16,7 @@ import (
 )
 
 type mailItem struct {
-	id        uint64
+	mailID    uint64
 	subject   string
 	from      string
 	timestamp time.Time
@@ -74,13 +74,12 @@ func (u *ui) NewHeaderArea() *headerArea {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		d, err := boundList.Get()
+		m, err := getMailItem(boundList, id)
 		if err != nil {
 			slog.Error("Failed to get mail item", "error", err)
 			return
 		}
-		m := d[id].(mailItem)
-		u.mailArea.Redraw(m.id)
+		u.mailArea.Redraw(m.mailID, id)
 	}
 
 	boundTotal := binding.NewString()
@@ -95,6 +94,19 @@ func (u *ui) NewHeaderArea() *headerArea {
 		ui:         u,
 	}
 	return &m
+}
+
+func getMailItem(list binding.ExternalUntypedList, id widget.ListItemID) (*mailItem, error) {
+	i, err := list.GetItem(id)
+	if err != nil {
+		return nil, err
+	}
+	entry, err := i.(binding.Untyped).Get()
+	if err != nil {
+		return nil, err
+	}
+	m := entry.(mailItem)
+	return &m, nil
 }
 
 func (h *headerArea) RedrawCurrent() {
@@ -121,7 +133,7 @@ func (h *headerArea) redraw(folder node) {
 	} else {
 		for _, m := range mm {
 			o := mailItem{
-				id:        m.ID,
+				mailID:    m.ID,
 				from:      m.From.Name,
 				subject:   m.Subject,
 				timestamp: m.Timestamp,
@@ -137,7 +149,7 @@ func (h *headerArea) redraw(folder node) {
 	h.boundTotal.Set(s)
 
 	if len(mm) > 0 {
-		h.ui.mailArea.Redraw(mm[0].ID)
+		h.ui.mailArea.Redraw(mm[0].ID, 0)
 		h.list.Select(0)
 		h.list.ScrollToTop()
 	} else {
