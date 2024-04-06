@@ -73,15 +73,11 @@ func (m *mailArea) Redraw(mailID uint64, listItemID widget.ListItemID) {
 				if err != nil {
 					return err
 				}
-				mi, err := getMailItem(m.ui.headerArea.boundList, listItemID)
+				err = m.ui.headerArea.listData.SetValue(listItemID, int(m.mailID))
 				if err != nil {
 					return err
 				}
-				mi.isRead = true
-				err = m.ui.headerArea.boundList.SetValue(listItemID, *mi)
-				if err != nil {
-					return err
-				}
+				m.ui.headerArea.list.RefreshItem(listItemID)
 				return nil
 			}()
 			if err != nil {

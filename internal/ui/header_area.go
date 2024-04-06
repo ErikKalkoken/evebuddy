@@ -4,7 +4,6 @@ import (
 	"example/esiapp/internal/model"
 	"image/color"
 	"log/slog"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -14,17 +13,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type mailItem struct {
-	mailID    uint64
-	subject   string
-	from      string
-	timestamp time.Time
-	isRead    bool
-}
-
 // headerArea is the UI area showing the list of mail headers.
 type headerArea struct {
-	boundList     binding.ExternalUntypedList
+	listData      binding.IntList
 	total         binding.Int
 	content       fyne.CanvasObject
 	currentFolder node
@@ -33,10 +24,9 @@ type headerArea struct {
 }
 
 func (u *ui) NewHeaderArea() *headerArea {
-	var x []interface{}
-	boundList := binding.BindUntypedList(&x)
+	listData := binding.NewIntList()
 	list := widget.NewListWithData(
-		boundList,
+		listData,
 		func() fyne.CanvasObject {
 			from := canvas.NewText("xxxxxxxxxxxxxxx", color.White)
 			timestamp := canvas.NewText("xxxxxxxxxxxxxxx", color.White)
@@ -46,43 +36,50 @@ func (u *ui) NewHeaderArea() *headerArea {
 				subject,
 			)))
 		},
-		func(i binding.DataItem, o fyne.CanvasObject) {
-			b := i.(binding.Untyped)
-			b.AddListener(binding.NewDataListener(func() {
-				entry, err := b.Get()
-				if err != nil {
-					slog.Error("Failed to get item")
-					return
-				}
-				m := entry.(mailItem)
-				parent := o.(*fyne.Container).Objects[0].(*fyne.Container).Objects[0].(*fyne.Container)
-				top := parent.Objects[0].(*fyne.Container)
+		func(di binding.DataItem, co fyne.CanvasObject) {
+			b := di.(binding.Int)
+			mailID, err := b.Get()
+			if err != nil {
+				slog.Error("Failed to get item")
+				return
+			}
+			m, err := model.FetchMail(uint64(mailID))
+			if err != nil {
+				slog.Error("Failed to get mail")
+				return
+			}
+			parent := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects[0].(*fyne.Container)
+			top := parent.Objects[0].(*fyne.Container)
 
-				from := top.Objects[0].(*canvas.Text)
-				from.Text = m.from
-				from.TextStyle = fyne.TextStyle{Bold: !m.isRead}
-				from.Refresh()
+			from := top.Objects[0].(*canvas.Text)
+			from.Text = m.From.Name
+			from.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
+			from.Refresh()
 
-				timestamp := top.Objects[2].(*canvas.Text)
-				timestamp.Text = m.timestamp.Format(myDateTime)
-				timestamp.TextStyle = fyne.TextStyle{Bold: !m.isRead}
-				timestamp.Refresh()
+			timestamp := top.Objects[2].(*canvas.Text)
+			timestamp.Text = m.Timestamp.Format(myDateTime)
+			timestamp.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
+			timestamp.Refresh()
 
-				subject := parent.Objects[1].(*canvas.Text)
-				subject.Text = m.subject
-				subject.TextStyle = fyne.TextStyle{Bold: !m.isRead}
-				subject.Refresh()
-			}))
-
+			subject := parent.Objects[1].(*canvas.Text)
+			subject.Text = m.Subject
+			subject.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
+			subject.Refresh()
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		m, err := getMailItem(boundList, id)
+		di, err := listData.GetItem(id)
 		if err != nil {
-			slog.Error("Failed to get mail item", "error", err)
+			slog.Error("Failed to get data item", "error", err)
 			return
 		}
-		u.mailArea.Redraw(m.mailID, id)
+		b := di.(binding.Int)
+		mailID, err := b.Get()
+		if err != nil {
+			slog.Error("Failed to get item")
+			return
+		}
+		u.mailArea.Redraw(uint64(mailID), id)
 	}
 
 	total := binding.NewInt()
@@ -91,26 +88,13 @@ func (u *ui) NewHeaderArea() *headerArea {
 	c := container.NewBorder(label, nil, nil, nil, list)
 
 	m := headerArea{
-		content:   c,
-		list:      list,
-		boundList: boundList,
-		total:     total,
-		ui:        u,
+		content:  c,
+		list:     list,
+		listData: listData,
+		total:    total,
+		ui:       u,
 	}
 	return &m
-}
-
-func getMailItem(list binding.ExternalUntypedList, id widget.ListItemID) (*mailItem, error) {
-	i, err := list.GetItem(id)
-	if err != nil {
-		return nil, err
-	}
-	entry, err := i.(binding.Untyped).Get()
-	if err != nil {
-		return nil, err
-	}
-	m := entry.(mailItem)
-	return &m, nil
 }
 
 func (h *headerArea) RedrawCurrent() {
@@ -122,7 +106,6 @@ func (h *headerArea) Redraw(folder node) {
 }
 
 func (h *headerArea) redraw(folder node) {
-	var d []interface{}
 	var mm []model.Mail
 	var err error
 	charID := h.ui.CurrentCharID()
@@ -132,21 +115,15 @@ func (h *headerArea) redraw(folder node) {
 	case nodeCategoryList:
 		mm, err = model.FetchMailsForList(charID, folder.ObjID)
 	}
+	var mailIDs []int
 	if err != nil {
 		slog.Error("Failed to fetch mail", "characterID", charID, "error", err)
 	} else {
 		for _, m := range mm {
-			o := mailItem{
-				mailID:    m.ID,
-				from:      m.From.Name,
-				subject:   m.Subject,
-				timestamp: m.Timestamp,
-				isRead:    m.IsRead,
-			}
-			d = append(d, o)
+			mailIDs = append(mailIDs, int(m.ID))
 		}
 	}
-	h.boundList.Set(d)
+	h.listData.Set(mailIDs)
 	h.currentFolder = folder
 	h.total.Set(len(mm))
 

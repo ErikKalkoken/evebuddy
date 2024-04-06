@@ -306,7 +306,7 @@ func UpdateMailRead(m *model.Mail) error {
 	if err != nil {
 		return err
 	}
-	var labelIDs []int32
+	labelIDs := make([]int32, 0, len(m.Labels))
 	for _, l := range m.Labels {
 		labelIDs = append(labelIDs, l.LabelID)
 	}

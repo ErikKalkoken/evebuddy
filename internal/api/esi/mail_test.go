@@ -93,18 +93,19 @@ func TestUpdateMail(t *testing.T) {
 	// given
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-
-	httpmock.RegisterResponder(
-		"PUT",
-		"https://esi.evetech.net/latest/characters/1/mail/2/",
-		httpmock.NewStringResponder(204, ""),
-	)
 	c := &http.Client{}
 
-	// when
-	data := esi.MailUpdate{Read: true}
-	err := esi.UpdateMail(c, 1, 2, data, "token")
+	t.Run("Can update mail", func(t *testing.T) {
+		httpmock.RegisterResponder(
+			"PUT",
+			"https://esi.evetech.net/latest/characters/1/mail/2/",
+			httpmock.NewStringResponder(204, ""),
+		)
+		// when
+		data := esi.MailUpdate{Read: true}
+		err := esi.UpdateMail(c, 1, 2, data, "token")
+		// then
+		assert.NoError(t, err)
 
-	// then
-	assert.NoError(t, err)
+	})
 }
