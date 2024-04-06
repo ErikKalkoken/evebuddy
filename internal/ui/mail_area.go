@@ -23,7 +23,7 @@ type mailArea struct {
 	subject *widget.Label
 	header  *widget.Label
 	body    *widget.Label
-	mailID  uint64
+	mailID  int32
 	ui      *ui
 }
 
@@ -59,8 +59,9 @@ func (m *mailArea) Clear() {
 	m.updateContent("", "", "")
 }
 
-func (m *mailArea) Redraw(mailID uint64, listItemID widget.ListItemID) {
-	mail, err := model.FetchMail(mailID)
+func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
+	characterID := m.ui.CurrentCharID()
+	mail, err := model.FetchMail(characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to render mail", "mailID", mailID, "error", err)
 		return

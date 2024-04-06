@@ -33,7 +33,7 @@ func TestMailCreate(t *testing.T) {
 		err := m.Create()
 		// then
 		assert.NoError(t, err)
-		m2, err := model.FetchMail(m.ID)
+		m2, err := model.FetchMail(c.ID, m.MailID)
 		assert.NoError(t, err)
 		assert.Equal(t, m.MailID, m2.MailID)
 		assert.Equal(t, m.Body, m2.Body)
@@ -293,7 +293,7 @@ func TestMailSave(t *testing.T) {
 		err := m.Save()
 		// then
 		if assert.NoError(t, err) {
-			m2, err := model.FetchMail(m.ID)
+			m2, err := model.FetchMail(m.CharacterID, m.MailID)
 			if assert.NoError(t, err) {
 				assert.True(t, m2.IsRead)
 			}

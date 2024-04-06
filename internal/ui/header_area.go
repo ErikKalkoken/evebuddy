@@ -15,7 +15,7 @@ import (
 
 // headerArea is the UI area showing the list of mail headers.
 type headerArea struct {
-	listData      binding.IntList
+	listData      binding.IntList // list of character's mail IDs
 	total         binding.Int
 	content       fyne.CanvasObject
 	currentFolder node
@@ -43,7 +43,8 @@ func (u *ui) NewHeaderArea() *headerArea {
 				slog.Error("Failed to get item")
 				return
 			}
-			m, err := model.FetchMail(uint64(mailID))
+			characterID := u.CurrentCharID()
+			m, err := model.FetchMail(characterID, int32(mailID))
 			if err != nil {
 				slog.Error("Failed to get mail")
 				return
@@ -79,7 +80,7 @@ func (u *ui) NewHeaderArea() *headerArea {
 			slog.Error("Failed to get item")
 			return
 		}
-		u.mailArea.Redraw(uint64(mailID), id)
+		u.mailArea.Redraw(int32(mailID), id)
 	}
 
 	total := binding.NewInt()
@@ -120,7 +121,7 @@ func (h *headerArea) redraw(folder node) {
 		slog.Error("Failed to fetch mail", "characterID", charID, "error", err)
 	} else {
 		for _, m := range mm {
-			mailIDs = append(mailIDs, int(m.ID))
+			mailIDs = append(mailIDs, int(m.MailID))
 		}
 	}
 	h.listData.Set(mailIDs)
@@ -128,7 +129,7 @@ func (h *headerArea) redraw(folder node) {
 	h.total.Set(len(mm))
 
 	if len(mm) > 0 {
-		h.ui.mailArea.Redraw(mm[0].ID, 0)
+		h.ui.mailArea.Redraw(mm[0].MailID, 0)
 		h.list.Select(0)
 		h.list.ScrollToTop()
 	} else {

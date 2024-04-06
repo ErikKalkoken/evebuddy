@@ -178,13 +178,15 @@ func (m *Mail) MakeHeaderText(format string) string {
 }
 
 // FetchMail returns a mail.
-func FetchMail(id uint64) (*Mail, error) {
+func FetchMail(characterID, mailID int32) (*Mail, error) {
 	row := db.QueryRow(
 		`SELECT *
 		FROM mails
 		JOIN eve_entities ON eve_entities.id = mails.from_id
-		WHERE mails.id = ?;`,
-		id,
+		WHERE character_id = ?
+		AND mail_id = ?;`,
+		characterID,
+		mailID,
 	)
 	var m Mail
 	err := row.Scan(

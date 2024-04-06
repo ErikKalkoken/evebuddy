@@ -92,7 +92,7 @@ func SendMail(characterID int32, subject string, recipients []esi.MailRecipient,
 // TODO: Add ability to update existing mails for is_read and labels
 
 // FetchMail fetches and stores new mails from ESI for a character.
-func FetchMail(characterID int32, status binding.String) error {
+func FetchMail(characterID int32, status binding.String, headerData binding.IntList) error {
 	token, err := model.FetchToken(characterID)
 	if err != nil {
 		return err
@@ -109,7 +109,7 @@ func FetchMail(characterID int32, status binding.String) error {
 	if err != nil {
 		return err
 	}
-	err = updateMails(token, headers, status)
+	err = updateMails(token, headers, status, headerData)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func fetchMailHeaders(token *model.Token) ([]esi.MailHeader, error) {
 	return headers, nil
 }
 
-func updateMails(token *model.Token, headers []esi.MailHeader, status binding.String) error {
+func updateMails(token *model.Token, headers []esi.MailHeader, status binding.String, headerData binding.IntList) error {
 	existingIDs, missingIDs, err := determineMailIDs(token.CharacterID, headers)
 	if err != nil {
 		return err
@@ -202,7 +202,7 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status binding.St
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			fetchAndStoreMail(header, token, newMailsCount, &c, status)
+			fetchAndStoreMail(header, token, newMailsCount, &c, status, headerData)
 			<-guard
 		}()
 	}
@@ -218,7 +218,7 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status binding.St
 	return nil
 }
 
-func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount int, c *atomic.Int32, status binding.String) {
+func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount int, c *atomic.Int32, status binding.String, headerData binding.IntList) {
 	entityIDs := set.New[int32]()
 	entityIDs.Add(header.FromID)
 	for _, r := range header.Recipients {
@@ -263,8 +263,8 @@ func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount 
 		return
 	}
 	mail.Labels = labels
-
 	mail.Create()
+
 	slog.Info("Created new mail", "mailID", header.ID, "characterID", token.CharacterID)
 	c.Add(1)
 	current := c.Load()
@@ -306,9 +306,9 @@ func UpdateMailRead(m *model.Mail) error {
 	if err != nil {
 		return err
 	}
-	labelIDs := make([]int32, 0, len(m.Labels))
-	for _, l := range m.Labels {
-		labelIDs = append(labelIDs, l.LabelID)
+	labelIDs := make([]int32, len(m.Labels))
+	for i, l := range m.Labels {
+		labelIDs[i] = l.LabelID
 	}
 	data := esi.MailUpdate{Read: true, Labels: labelIDs}
 	if err := esi.UpdateMail(httpClient, m.CharacterID, m.MailID, data, token.AccessToken); err != nil {
