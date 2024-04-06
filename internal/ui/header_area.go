@@ -2,7 +2,6 @@ package ui
 
 import (
 	"example/esiapp/internal/model"
-	"fmt"
 	"image/color"
 	"log/slog"
 	"time"
@@ -26,7 +25,7 @@ type mailItem struct {
 // headerArea is the UI area showing the list of mail headers.
 type headerArea struct {
 	boundList     binding.ExternalUntypedList
-	boundTotal    binding.String
+	total         binding.Int
 	content       fyne.CanvasObject
 	currentFolder node
 	list          *widget.List
@@ -86,16 +85,17 @@ func (u *ui) NewHeaderArea() *headerArea {
 		u.mailArea.Redraw(m.mailID, id)
 	}
 
-	boundTotal := binding.NewString()
-	total := widget.NewLabelWithData(boundTotal)
-	c := container.NewBorder(total, nil, nil, nil, list)
+	total := binding.NewInt()
+	totalStr := binding.IntToStringWithFormat(total, "%d mails")
+	label := widget.NewLabelWithData(totalStr)
+	c := container.NewBorder(label, nil, nil, nil, list)
 
 	m := headerArea{
-		content:    c,
-		list:       list,
-		boundList:  boundList,
-		boundTotal: boundTotal,
-		ui:         u,
+		content:   c,
+		list:      list,
+		boundList: boundList,
+		total:     total,
+		ui:        u,
 	}
 	return &m
 }
@@ -148,9 +148,7 @@ func (h *headerArea) redraw(folder node) {
 	}
 	h.boundList.Set(d)
 	h.currentFolder = folder
-
-	s := fmt.Sprintf("%d mails", len(mm))
-	h.boundTotal.Set(s)
+	h.total.Set(len(mm))
 
 	if len(mm) > 0 {
 		h.ui.mailArea.Redraw(mm[0].ID, 0)
