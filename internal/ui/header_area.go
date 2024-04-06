@@ -48,29 +48,33 @@ func (u *ui) NewHeaderArea() *headerArea {
 			)))
 		},
 		func(i binding.DataItem, o fyne.CanvasObject) {
-			entry, err := i.(binding.Untyped).Get()
-			if err != nil {
-				slog.Error("Failed to get item")
-				return
-			}
-			m := entry.(mailItem)
-			parent := o.(*fyne.Container).Objects[0].(*fyne.Container).Objects[0].(*fyne.Container)
-			top := parent.Objects[0].(*fyne.Container)
+			b := i.(binding.Untyped)
+			b.AddListener(binding.NewDataListener(func() {
+				entry, err := b.Get()
+				if err != nil {
+					slog.Error("Failed to get item")
+					return
+				}
+				m := entry.(mailItem)
+				parent := o.(*fyne.Container).Objects[0].(*fyne.Container).Objects[0].(*fyne.Container)
+				top := parent.Objects[0].(*fyne.Container)
 
-			from := top.Objects[0].(*canvas.Text)
-			from.Text = m.from
-			from.TextStyle = fyne.TextStyle{Bold: !m.isRead}
-			from.Refresh()
+				from := top.Objects[0].(*canvas.Text)
+				from.Text = m.from
+				from.TextStyle = fyne.TextStyle{Bold: !m.isRead}
+				from.Refresh()
 
-			timestamp := top.Objects[2].(*canvas.Text)
-			timestamp.Text = m.timestamp.Format(myDateTime)
-			timestamp.TextStyle = fyne.TextStyle{Bold: !m.isRead}
-			timestamp.Refresh()
+				timestamp := top.Objects[2].(*canvas.Text)
+				timestamp.Text = m.timestamp.Format(myDateTime)
+				timestamp.TextStyle = fyne.TextStyle{Bold: !m.isRead}
+				timestamp.Refresh()
 
-			subject := parent.Objects[1].(*canvas.Text)
-			subject.Text = m.subject
-			subject.TextStyle = fyne.TextStyle{Bold: !m.isRead}
-			subject.Refresh()
+				subject := parent.Objects[1].(*canvas.Text)
+				subject.Text = m.subject
+				subject.TextStyle = fyne.TextStyle{Bold: !m.isRead}
+				subject.Refresh()
+			}))
+
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {

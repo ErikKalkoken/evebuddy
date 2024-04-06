@@ -68,20 +68,25 @@ func (m *mailArea) Redraw(mailID uint64, listItemID widget.ListItemID) {
 	m.mailID = mailID
 	if !mail.IsRead {
 		go func() {
-			err = logic.UpdateMailRead(mail)
+			err := func() error {
+				err = logic.UpdateMailRead(mail)
+				if err != nil {
+					return err
+				}
+				mi, err := getMailItem(m.ui.headerArea.boundList, listItemID)
+				if err != nil {
+					return err
+				}
+				mi.isRead = true
+				err = m.ui.headerArea.boundList.SetValue(listItemID, *mi)
+				if err != nil {
+					return err
+				}
+				return nil
+			}()
 			if err != nil {
-				slog.Error("Failed to update mail", "mailID", mailID, "error", err)
+				slog.Error("Failed to mark mail as read", "characterID", mail.CharacterID, "mailID", mail.MailID, "error", err)
 			}
-			x, err := getMailItem(m.ui.headerArea.boundList, listItemID)
-			if err != nil {
-				slog.Error(err.Error())
-			}
-			x.isRead = true
-			err = m.ui.headerArea.boundList.SetValue(listItemID, *x)
-			if err != nil {
-				slog.Error(err.Error())
-			}
-			m.ui.headerArea.list.Refresh()
 		}()
 	}
 	m.icons.RemoveAll()
