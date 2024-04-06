@@ -237,6 +237,6 @@ func (f *folderArea) UpdateMails() {
 				return
 			}
 		}
-		f.Redraw()
+		// f.Redraw()
 	}()
 }

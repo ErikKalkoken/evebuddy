@@ -6,6 +6,7 @@ import (
 	"example/esiapp/internal/model"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -192,6 +193,7 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status binding.St
 
 	var c atomic.Int32
 	var wg sync.WaitGroup
+	mu := &sync.Mutex{}
 	maxGoroutines := 20
 	guard := make(chan struct{}, maxGoroutines)
 	for _, header := range headers {
@@ -202,7 +204,7 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status binding.St
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			fetchAndStoreMail(header, token, newMailsCount, &c, status, headerData)
+			fetchAndStoreMail(header, token, newMailsCount, &c, status, headerData, mu)
 			<-guard
 		}()
 	}
@@ -218,7 +220,7 @@ func updateMails(token *model.Token, headers []esi.MailHeader, status binding.St
 	return nil
 }
 
-func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount int, c *atomic.Int32, status binding.String, headerData binding.IntList) {
+func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount int, c *atomic.Int32, status binding.String, headerData binding.IntList, mu *sync.Mutex) {
 	entityIDs := set.New[int32]()
 	entityIDs.Add(header.FromID)
 	for _, r := range header.Recipients {
@@ -265,11 +267,31 @@ func fetchAndStoreMail(header esi.MailHeader, token *model.Token, newMailsCount 
 	mail.Labels = labels
 	mail.Create()
 
+	updateHeaderData(mu, headerData, mail)
 	slog.Info("Created new mail", "mailID", header.ID, "characterID", token.CharacterID)
 	c.Add(1)
 	current := c.Load()
 	s := fmt.Sprintf("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name)
 	status.Set(s)
+}
+
+func updateHeaderData(mu *sync.Mutex, headerData binding.IntList, mail model.Mail) {
+	mu.Lock()
+	defer mu.Unlock()
+	mailIDs, _ := headerData.Get()
+	newMailID := int(mail.MailID)
+	if len(mailIDs) == 0 {
+		headerData.Append(newMailID)
+	} else if newMailID > slices.Max(mailIDs) {
+		headerData.Prepend(newMailID)
+	} else if newMailID < slices.Min(mailIDs) {
+		headerData.Append(newMailID)
+	} else {
+		mailIDs = append(mailIDs, newMailID)
+		slices.Sort(mailIDs)
+		slices.Reverse(mailIDs)
+		headerData.Set(mailIDs)
+	}
 }
 
 func fetchMailRecipients(header esi.MailHeader) []model.EveEntity {
