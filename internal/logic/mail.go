@@ -157,7 +157,6 @@ func updateMailLists(token *model.Token) error {
 		return err
 	}
 	ctx := newContextWithToken(token)
-	slog.Info("context", "ctx", ctx)
 	lists, _, err := esiClient.ESI.MailApi.GetCharactersCharacterIdMailLists(ctx, token.CharacterID, nil)
 	if err != nil {
 		return err

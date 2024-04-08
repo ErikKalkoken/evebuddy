@@ -28,6 +28,6 @@ func (l *logLevelFlag) Set(value string) error {
 var levelFlag logLevelFlag
 
 func init() {
-	levelFlag.value = slog.LevelDebug
+	levelFlag.value = slog.LevelInfo
 	flag.Var(&levelFlag, "level", "log level name")
 }

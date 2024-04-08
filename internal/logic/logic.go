@@ -2,9 +2,6 @@
 package logic
 
 import (
-	"bytes"
-	"io"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -27,22 +24,3 @@ var esiScopes = []string{
 }
 
 var esiClient = goesi.NewAPIClient(httpClient, "name@example.com")
-
-type requestLogger struct{}
-
-func (r requestLogger) RoundTrip(req *http.Request) (*http.Response, error) {
-	bodyStr := ""
-	if req.Body != nil {
-		body, err := io.ReadAll(req.Body)
-		if err == nil {
-			bodyStr = string(body)
-			req.Body = io.NopCloser(bytes.NewBuffer(body))
-		}
-	}
-	slog.Info("HTTP request", "method", req.Method, "url", req.URL, "body", bodyStr)
-	resp, err := http.DefaultTransport.RoundTrip(req)
-	if err != nil {
-		return resp, err
-	}
-	return resp, err
-}
