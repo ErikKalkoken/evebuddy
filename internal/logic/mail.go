@@ -12,9 +12,13 @@ import (
 
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/antihax/goesi/esi"
+	"github.com/antihax/goesi/optional"
 )
 
-// const maxMails = 1000
+const (
+	maxMails          = 1000
+	maxHeadersPerPage = 50 // maximum header objects returned per page
+)
 
 // DeleteMail deleted a mail both on ESI and in the database.
 func DeleteMail(m *model.Mail) error {
@@ -116,7 +120,7 @@ func FetchMail(characterID int32, status binding.String, headerData binding.IntL
 	if err := updateMailLabels(token); err != nil {
 		return err
 	}
-	headers, err := fetchMailHeaders(token)
+	headers, err := FetchMailHeaders(token)
 	if err != nil {
 		return err
 	}
@@ -174,16 +178,38 @@ func updateMailLists(token *model.Token) error {
 	return nil
 }
 
-// TODO: Add paging and max mails limit
-func fetchMailHeaders(token *model.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
+// FetchMailHeaders fetched mail headers from ESI with paging and returns them.
+func FetchMailHeaders(token *model.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	if err := EnsureValidToken(token); err != nil {
 		return nil, err
 	}
-	headers, _, err := esiClient.ESI.MailApi.GetCharactersCharacterIdMail(newContextWithToken(token), token.CharacterID, nil)
-	if err != nil {
-		return nil, err
+	var mm []esi.GetCharactersCharacterIdMail200Ok
+	lastMailID := int32(0)
+	for {
+		var opts *esi.GetCharactersCharacterIdMailOpts
+		if lastMailID > 0 {
+			l := optional.NewInt32(lastMailID)
+			opts = &esi.GetCharactersCharacterIdMailOpts{LastMailId: l}
+		} else {
+			opts = nil
+		}
+		objs, _, err := esiClient.ESI.MailApi.GetCharactersCharacterIdMail(newContextWithToken(token), token.CharacterID, opts)
+		if err != nil {
+			return nil, err
+		}
+		mm = append(mm, objs...)
+		isLimitExceeded := (maxMails != 0 && len(mm)+maxHeadersPerPage > maxMails)
+		if len(objs) < maxHeadersPerPage || isLimitExceeded {
+			break
+		}
+		ids := make([]int32, 0)
+		for _, o := range objs {
+			ids = append(ids, o.MailId)
+		}
+		lastMailID = slices.Min(ids)
 	}
-	return headers, nil
+	slog.Info("Received mail headers", "characterID", token.CharacterID, "count", len(mm))
+	return mm, nil
 }
 
 func updateMails(token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok, status binding.String, headerData binding.IntList) error {

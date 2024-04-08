@@ -6,6 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.4.4
 	github.com/antihax/goesi v0.0.0-20240126031043-6c54d0cb7f95
 	github.com/golang-jwt/jwt/v5 v5.2.0
+	github.com/jarcoal/httpmock v1.3.1
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lestrrat-go/jwx/v2 v2.0.20
 	github.com/mattn/go-sqlite3 v1.14.22
