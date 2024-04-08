@@ -77,13 +77,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	})
 	sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {
 		err := func() error {
-			if subjectInput.Text == "" {
-				return fmt.Errorf("missing subject")
-			}
 			rr := logic.NewRecipientsFromText(toInput.Text)
-			if rr.Size() == 0 {
-				return fmt.Errorf("missing recipients")
-			}
 			recipients, err := rr.ToMailRecipients()
 			if err != nil {
 				return err

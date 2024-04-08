@@ -1,13 +1,15 @@
 package logic
 
 import (
+	"context"
 	"errors"
-	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/model"
 	"fmt"
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/antihax/goesi/esi"
 )
 
 type recipientCategory uint
@@ -172,14 +174,14 @@ func (rr *Recipients) ToOptions() []string {
 	return ss
 }
 
-var eveEntityCategory2MailRecipientType = map[model.EveEntityCategory]esi.MailRecipientType{
-	model.EveEntityAlliance:    esi.MailRecipientTypeAlliance,
-	model.EveEntityCharacter:   esi.MailRecipientTypeCharacter,
-	model.EveEntityCorporation: esi.MailRecipientTypeCorporation,
-	model.EveEntityMailList:    esi.MailRecipientTypeMailingList,
+var eveEntityCategory2MailRecipientType = map[model.EveEntityCategory]string{
+	model.EveEntityAlliance:    "alliance",
+	model.EveEntityCharacter:   "character",
+	model.EveEntityCorporation: "corporation",
+	model.EveEntityMailList:    "mailing_list",
 }
 
-func (rr *Recipients) ToMailRecipients() ([]esi.MailRecipient, error) {
+func (rr *Recipients) ToMailRecipients() ([]esi.PostCharactersCharacterIdMailRecipient, error) {
 	mm1, names, err := rr.buildMailRecipients()
 	if err != nil {
 		return nil, err
@@ -203,8 +205,8 @@ func (rr *Recipients) ToMailRecipients() ([]esi.MailRecipient, error) {
 
 // buildMailRecipients tries to build MailRecipients from recipients.
 // It returns resolved recipients and a list of remaining unresolved names (if any)
-func (rr *Recipients) buildMailRecipients() ([]esi.MailRecipient, []string, error) {
-	mm := make([]esi.MailRecipient, 0, len(rr.list))
+func (rr *Recipients) buildMailRecipients() ([]esi.PostCharactersCharacterIdMailRecipient, []string, error) {
+	mm := make([]esi.PostCharactersCharacterIdMailRecipient, 0, len(rr.list))
 	names := make([]string, 0, len(rr.list))
 	for _, r := range rr.list {
 		category, ok := r.eveEntityCategory()
@@ -226,7 +228,7 @@ func (rr *Recipients) buildMailRecipients() ([]esi.MailRecipient, []string, erro
 			names = append(names, r.name)
 			continue
 		}
-		m := esi.MailRecipient{ID: entity.ID, Type: mailType}
+		m := esi.PostCharactersCharacterIdMailRecipient{RecipientId: entity.ID, RecipientType: mailType}
 		mm = append(mm, m)
 	}
 	return mm, names, nil
@@ -238,20 +240,20 @@ func resolveNamesRemotely(names []string) ([]model.EveEntity, error) {
 	if len(names) == 0 {
 		return ee, nil
 	}
-	r, err := esi.ResolveEntityNames(httpClient, names)
+	r, _, err := esiClient.ESI.UniverseApi.PostUniverseIds(context.Background(), names, nil)
 	if err != nil {
 		return nil, err
 	}
 	for _, o := range r.Alliances {
-		e := model.EveEntity{ID: o.ID, Name: o.Name, Category: model.EveEntityAlliance}
+		e := model.EveEntity{ID: o.Id, Name: o.Name, Category: model.EveEntityAlliance}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Characters {
-		e := model.EveEntity{ID: o.ID, Name: o.Name, Category: model.EveEntityCharacter}
+		e := model.EveEntity{ID: o.Id, Name: o.Name, Category: model.EveEntityCharacter}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Corporations {
-		e := model.EveEntity{ID: o.ID, Name: o.Name, Category: model.EveEntityCorporation}
+		e := model.EveEntity{ID: o.Id, Name: o.Name, Category: model.EveEntityCorporation}
 		ee = append(ee, e)
 	}
 	return ee, nil
@@ -260,8 +262,8 @@ func resolveNamesRemotely(names []string) ([]model.EveEntity, error) {
 // buildMailRecipientsFromNames tries to build MailRecipient objects from given names
 // by checking against EveEntity objects in the database.
 // Will abort with errors if no match is found or if multiple matches are found for a name.
-func buildMailRecipientsFromNames(names []string) ([]esi.MailRecipient, error) {
-	mm := make([]esi.MailRecipient, 0, len(names))
+func buildMailRecipientsFromNames(names []string) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
+	mm := make([]esi.PostCharactersCharacterIdMailRecipient, 0, len(names))
 	for _, n := range names {
 		ee, err := model.FindEveEntitiesByName(n)
 		if err != nil {
@@ -278,7 +280,7 @@ func buildMailRecipientsFromNames(names []string) ([]esi.MailRecipient, error) {
 		if !ok {
 			return nil, fmt.Errorf("failed to match category for entity: %v", e)
 		}
-		m := esi.MailRecipient{ID: e.ID, Type: c}
+		m := esi.PostCharactersCharacterIdMailRecipient{RecipientId: e.ID, RecipientType: c}
 		mm = append(mm, m)
 	}
 	return mm, nil

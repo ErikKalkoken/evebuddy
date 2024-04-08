@@ -1,13 +1,13 @@
 package logic
 
 import (
-	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/factory"
 	"example/esiapp/internal/model"
 	"fmt"
 	"os"
 	"testing"
 
+	"github.com/antihax/goesi/esi"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -115,7 +115,7 @@ func TestResolveLocally(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Len(t, mm, 1)
 			assert.Len(t, names, 0)
-			assert.Equal(t, e.ID, mm[0].ID)
+			assert.Equal(t, e.ID, mm[0].RecipientId)
 		}
 	})
 	t.Run("should resolve all to existing entities", func(t *testing.T) {
@@ -155,12 +155,12 @@ func TestResolveLocally(t *testing.T) {
 func TestBuildMailRecipientsCategories(t *testing.T) {
 	var cases = []struct {
 		in  model.EveEntityCategory
-		out esi.MailRecipientType
+		out string
 	}{
-		{model.EveEntityAlliance, esi.MailRecipientTypeAlliance},
-		{model.EveEntityCharacter, esi.MailRecipientTypeCharacter},
-		{model.EveEntityCorporation, esi.MailRecipientTypeCorporation},
-		{model.EveEntityMailList, esi.MailRecipientTypeMailingList},
+		{model.EveEntityAlliance, "alliance"},
+		{model.EveEntityCharacter, "character"},
+		{model.EveEntityCorporation, "corporation"},
+		{model.EveEntityMailList, "mailing_list"},
 	}
 	for _, tc := range cases {
 		model.TruncateTables()
@@ -171,8 +171,8 @@ func TestBuildMailRecipientsCategories(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Len(t, mm, 1)
 				assert.Len(t, names, 0)
-				assert.Equal(t, e.ID, mm[0].ID)
-				assert.Equal(t, tc.out, mm[0].Type)
+				assert.Equal(t, e.ID, mm[0].RecipientId)
+				assert.Equal(t, tc.out, mm[0].RecipientType)
 			}
 		})
 	}
@@ -181,23 +181,23 @@ func TestBuildMailRecipientsCategories(t *testing.T) {
 func TestBuildMailRecipientsFromNames(t *testing.T) {
 	var cases = []struct {
 		in  model.EveEntity
-		out esi.MailRecipient
+		out esi.PostCharactersCharacterIdMailRecipient
 	}{
 		{
 			model.EveEntity{ID: 42, Name: "alpha", Category: model.EveEntityCharacter},
-			esi.MailRecipient{ID: 42, Type: esi.MailRecipientTypeCharacter},
+			esi.PostCharactersCharacterIdMailRecipient{RecipientId: 42, RecipientType: "character"},
 		},
 		{
 			model.EveEntity{ID: 42, Name: "alpha", Category: model.EveEntityCorporation},
-			esi.MailRecipient{ID: 42, Type: esi.MailRecipientTypeCorporation},
+			esi.PostCharactersCharacterIdMailRecipient{RecipientId: 42, RecipientType: "corporation"},
 		},
 		{
 			model.EveEntity{ID: 42, Name: "alpha", Category: model.EveEntityAlliance},
-			esi.MailRecipient{ID: 42, Type: esi.MailRecipientTypeAlliance},
+			esi.PostCharactersCharacterIdMailRecipient{RecipientId: 42, RecipientType: "alliance"},
 		},
 		{
 			model.EveEntity{ID: 42, Name: "alpha", Category: model.EveEntityMailList},
-			esi.MailRecipient{ID: 42, Type: esi.MailRecipientTypeMailingList},
+			esi.PostCharactersCharacterIdMailRecipient{RecipientId: 42, RecipientType: "mailing_list"},
 		},
 	}
 	for _, tc := range cases {

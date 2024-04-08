@@ -1,7 +1,7 @@
 package logic
 
 import (
-	"example/esiapp/internal/api/esi"
+	"context"
 	"example/esiapp/internal/helper/set"
 	"example/esiapp/internal/model"
 	"fmt"
@@ -15,12 +15,12 @@ func AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, err
 	if err != nil {
 		return nil, err
 	}
-	categories := []esi.SearchCategory{
-		esi.SearchCategoryCorporation,
-		esi.SearchCategoryCharacter,
-		esi.SearchCategoryAlliance,
+	categories := []string{
+		"corporation",
+		"character",
+		"alliance",
 	}
-	r, err := esi.Search(httpClient, characterID, search, categories, token.AccessToken)
+	r, _, err := esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(newContextWithToken(token), categories, characterID, search, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -47,14 +47,13 @@ func AddMissingEveEntities(ids []int32) ([]int32, error) {
 		return nil, nil
 	}
 
-	entities, err := esi.ResolveEntityIDs(httpClient, missing.ToSlice())
+	entities, _, err := esiClient.ESI.UniverseApi.PostUniverseNames(context.Background(), missing.ToSlice(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve IDs: %v %v", err, ids)
 	}
-
 	for _, entity := range entities {
 		e := model.EveEntity{
-			ID:       entity.ID,
+			ID:       entity.Id,
 			Category: model.EveEntityCategory(entity.Category),
 			Name:     entity.Name,
 		}

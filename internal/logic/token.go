@@ -1,10 +1,13 @@
 package logic
 
 import (
+	"context"
 	"example/esiapp/internal/api/sso"
 	"example/esiapp/internal/model"
 	"log/slog"
 	"time"
+
+	"github.com/antihax/goesi"
 )
 
 // FetchValidToken returns a valid token for a character. Convenience function.
@@ -37,4 +40,9 @@ func EnsureValidToken(token *model.Token) error {
 		slog.Info("Token refreshed", "characterID", token.CharacterID)
 	}
 	return nil
+}
+
+func newContextWithToken(token *model.Token) context.Context {
+	ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, token.AccessToken)
+	return ctx
 }

@@ -2,18 +2,9 @@ package logic
 
 import (
 	"context"
-	"example/esiapp/internal/api/esi"
 	"example/esiapp/internal/api/sso"
 	"example/esiapp/internal/model"
 )
-
-var esiScopes = []string{
-	"esi-characters.read_contacts.v1",
-	"esi-mail.read_mail.v1",
-	"esi-mail.organize_mail.v1",
-	"esi-mail.send_mail.v1",
-	"esi-search.search_structures.v1",
-}
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.
 func AddCharacter(ctx context.Context) (*model.Token, error) {
@@ -22,16 +13,16 @@ func AddCharacter(ctx context.Context) (*model.Token, error) {
 		return nil, err
 	}
 	charID := ssoToken.CharacterID
-	charEsi, err := esi.FetchCharacter(httpClient, charID)
+	charEsi, _, err := esiClient.ESI.CharacterApi.GetCharactersCharacterId(context.Background(), charID, nil)
 	if err != nil {
 		return nil, err
 	}
-	ids := []int32{charID, charEsi.CorporationID}
-	if charEsi.AllianceID != 0 {
-		ids = append(ids, charEsi.AllianceID)
+	ids := []int32{charID, charEsi.CorporationId}
+	if charEsi.AllianceId != 0 {
+		ids = append(ids, charEsi.AllianceId)
 	}
-	if charEsi.FactionID != 0 {
-		ids = append(ids, charEsi.FactionID)
+	if charEsi.FactionId != 0 {
+		ids = append(ids, charEsi.FactionId)
 	}
 	_, err = AddMissingEveEntities(ids)
 	if err != nil {
@@ -40,7 +31,7 @@ func AddCharacter(ctx context.Context) (*model.Token, error) {
 	character := model.Character{
 		ID:            charID,
 		Name:          charEsi.Name,
-		CorporationID: charEsi.CorporationID,
+		CorporationID: charEsi.CorporationId,
 	}
 	if err = character.Save(); err != nil {
 		return nil, err
