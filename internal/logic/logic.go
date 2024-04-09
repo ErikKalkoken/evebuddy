@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"time"
 
+	myHttp "example/evebuddy/internal/helper/http"
+
 	"github.com/antihax/goesi"
 )
 
-var rl = requestLogger{}
-
 var httpClient = &http.Client{
 	Timeout:   time.Second * 30, // Timeout after 30 seconds
-	Transport: rl,
+	Transport: myHttp.CustomTransport{},
 }
 
 var esiScopes = []string{

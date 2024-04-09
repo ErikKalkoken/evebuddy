@@ -1,4 +1,5 @@
-package logic
+// Package http contains HTTP related helpers
+package http
 
 import (
 	"bytes"
@@ -8,9 +9,19 @@ import (
 	"net/http"
 )
 
-type requestLogger struct{}
+type CustomTransport struct{}
 
-func (r requestLogger) RoundTrip(req *http.Request) (*http.Response, error) {
+func (r CustomTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	isDebug := logRequest(req)
+	resp, err := http.DefaultTransport.RoundTrip(req)
+	if err != nil {
+		return resp, err
+	}
+	logResponse(isDebug, resp, req)
+	return resp, err
+}
+
+func logRequest(req *http.Request) bool {
 	isDebug := slog.Default().Enabled(context.Background(), slog.LevelDebug)
 	if isDebug {
 		reqBody := ""
@@ -23,10 +34,10 @@ func (r requestLogger) RoundTrip(req *http.Request) (*http.Response, error) {
 		}
 		slog.Debug("HTTP request", "method", req.Method, "url", req.URL, "header", req.Header, "body", reqBody)
 	}
-	resp, err := http.DefaultTransport.RoundTrip(req)
-	if err != nil {
-		return resp, err
-	}
+	return isDebug
+}
+
+func logResponse(isDebug bool, resp *http.Response, req *http.Request) {
 	if isDebug {
 		respBody := ""
 		if resp.Body != nil {
@@ -45,5 +56,4 @@ func (r requestLogger) RoundTrip(req *http.Request) (*http.Response, error) {
 		level = slog.LevelInfo
 	}
 	slog.Log(context.Background(), level, "HTTP response", "method", req.Method, "url", req.URL, "status", resp.StatusCode)
-	return resp, err
 }
