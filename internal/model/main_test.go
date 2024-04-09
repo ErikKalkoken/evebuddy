@@ -1,7 +1,7 @@
 package model_test
 
 import (
-	"example/esiapp/internal/model"
+	"example/evebuddy/internal/model"
 	"log"
 	"os"
 	"testing"

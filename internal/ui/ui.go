@@ -3,8 +3,8 @@ package ui
 
 import (
 	"database/sql"
-	"example/esiapp/internal/logic"
-	"example/esiapp/internal/model"
+	"example/evebuddy/internal/logic"
+	"example/evebuddy/internal/model"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -34,7 +34,7 @@ type ui struct {
 // NewUI build the UI and returns it.
 func NewUI() *ui {
 	a := app.New()
-	w := a.NewWindow("Eve Online App")
+	w := a.NewWindow("Eve Buddy")
 	u := &ui{app: a, window: w}
 
 	c, err := model.FetchFirstCharacter()

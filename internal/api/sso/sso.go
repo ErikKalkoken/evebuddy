@@ -2,7 +2,7 @@
 // This package should not access any other internal packages, except helpers.
 package sso
 
-import memcache "example/esiapp/internal/cache"
+import memcache "example/evebuddy/internal/cache"
 
 const (
 	host            = "127.0.0.1"

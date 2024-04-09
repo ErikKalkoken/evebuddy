@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"example/esiapp/internal/model"
+	"example/evebuddy/internal/model"
 	"image/color"
 	"log/slog"
 

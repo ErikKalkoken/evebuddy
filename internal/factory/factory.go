@@ -2,7 +2,7 @@
 package factory
 
 import (
-	"example/esiapp/internal/model"
+	"example/evebuddy/internal/model"
 	"fmt"
 	"math/rand/v2"
 	"slices"

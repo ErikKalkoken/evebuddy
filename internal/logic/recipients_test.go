@@ -1,8 +1,8 @@
 package logic
 
 import (
-	"example/esiapp/internal/factory"
-	"example/esiapp/internal/model"
+	"example/evebuddy/internal/factory"
+	"example/evebuddy/internal/model"
 	"fmt"
 	"os"
 	"testing"

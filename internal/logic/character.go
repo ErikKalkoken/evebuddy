@@ -2,8 +2,8 @@ package logic
 
 import (
 	"context"
-	"example/esiapp/internal/api/sso"
-	"example/esiapp/internal/model"
+	"example/evebuddy/internal/api/sso"
+	"example/evebuddy/internal/model"
 )
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.

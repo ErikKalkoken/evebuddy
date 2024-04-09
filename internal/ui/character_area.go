@@ -1,9 +1,9 @@
 package ui
 
 import (
-	"example/esiapp/internal/api/images"
-	"example/esiapp/internal/model"
-	"example/esiapp/internal/widgets"
+	"example/evebuddy/internal/api/images"
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/widgets"
 	"log/slog"
 
 	"fyne.io/fyne/v2"

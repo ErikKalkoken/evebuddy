@@ -2,8 +2,8 @@ package logic
 
 import (
 	"context"
-	"example/esiapp/internal/helper/set"
-	"example/esiapp/internal/model"
+	"example/evebuddy/internal/helper/set"
+	"example/evebuddy/internal/model"
 	"fmt"
 	"log/slog"
 	"slices"

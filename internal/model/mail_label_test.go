@@ -1,9 +1,9 @@
 package model_test
 
 import (
-	"example/esiapp/internal/factory"
-	"example/esiapp/internal/helper/set"
-	"example/esiapp/internal/model"
+	"example/evebuddy/internal/factory"
+	"example/evebuddy/internal/helper/set"
+	"example/evebuddy/internal/model"
 	"fmt"
 	"testing"
 

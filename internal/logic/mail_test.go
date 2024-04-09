@@ -1,7 +1,7 @@
 package logic
 
 import (
-	"example/esiapp/internal/model"
+	"example/evebuddy/internal/model"
 	"fmt"
 	"net/http"
 	"testing"

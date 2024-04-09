@@ -1,7 +1,7 @@
 package model
 
 import (
-	"example/esiapp/internal/api/images"
+	"example/evebuddy/internal/api/images"
 	"fmt"
 	"log/slog"
 

@@ -5,8 +5,8 @@ import (
 	"log"
 	"log/slog"
 
-	"example/esiapp/internal/model"
-	"example/esiapp/internal/ui"
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/ui"
 )
 
 func main() {

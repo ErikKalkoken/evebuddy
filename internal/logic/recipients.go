@@ -3,7 +3,7 @@ package logic
 import (
 	"context"
 	"errors"
-	"example/esiapp/internal/model"
+	"example/evebuddy/internal/model"
 	"fmt"
 	"regexp"
 	"slices"

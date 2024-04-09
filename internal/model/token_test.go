@@ -1,8 +1,8 @@
 package model_test
 
 import (
-	"example/esiapp/internal/factory"
-	"example/esiapp/internal/model"
+	"example/evebuddy/internal/factory"
+	"example/evebuddy/internal/model"
 	"testing"
 	"time"
 

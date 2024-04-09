@@ -1,9 +1,9 @@
 package ui
 
 import (
-	"example/esiapp/internal/logic"
-	"example/esiapp/internal/model"
-	"example/esiapp/internal/widgets"
+	"example/evebuddy/internal/logic"
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/widgets"
 	"fmt"
 	"log/slog"
 

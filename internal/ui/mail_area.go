@@ -11,8 +11,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"example/esiapp/internal/logic"
-	"example/esiapp/internal/model"
+	"example/evebuddy/internal/logic"
+	"example/evebuddy/internal/model"
 )
 
 // mailArea is the UI area showing the current mail.

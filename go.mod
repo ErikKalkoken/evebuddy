@@ -1,4 +1,4 @@
-module example/esiapp
+module example/evebuddy
 
 go 1.22.0
 

@@ -1,8 +1,8 @@
 package model
 
 import (
-	"example/esiapp/internal/api/images"
-	"example/esiapp/internal/helper/set"
+	"example/evebuddy/internal/api/images"
+	"example/evebuddy/internal/helper/set"
 	"fmt"
 
 	"fyne.io/fyne/v2"
