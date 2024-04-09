@@ -107,7 +107,7 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 // TODO: Add ability to update existing mails for is_read and labels
 
 // FetchMail fetches and stores new mails from ESI for a character.
-func FetchMail(characterID int32, status binding.String, headerData binding.IntList) error {
+func FetchMail(characterID int32, status binding.String) error {
 	token, err := model.FetchToken(characterID)
 	if err != nil {
 		return err
@@ -124,7 +124,7 @@ func FetchMail(characterID int32, status binding.String, headerData binding.IntL
 	if err != nil {
 		return err
 	}
-	err = updateMails(token, headers, status, headerData)
+	err = updateMails(token, headers, status)
 	if err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func FetchMailHeaders(token *model.Token) ([]esi.GetCharactersCharacterIdMail200
 	return mm, nil
 }
 
-func updateMails(token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok, status binding.String, headerData binding.IntList) error {
+func updateMails(token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok, status binding.String) error {
 	existingIDs, missingIDs, err := determineMailIDs(token.CharacterID, headers)
 	if err != nil {
 		return err
@@ -231,7 +231,6 @@ func updateMails(token *model.Token, headers []esi.GetCharactersCharacterIdMail2
 
 	var c atomic.Int32
 	var wg sync.WaitGroup
-	mu := &sync.Mutex{}
 	maxGoroutines := 20
 	guard := make(chan struct{}, maxGoroutines)
 	for _, header := range headers {
@@ -242,7 +241,7 @@ func updateMails(token *model.Token, headers []esi.GetCharactersCharacterIdMail2
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			fetchAndStoreMail(header, token, newMailsCount, &c, status, headerData, mu)
+			fetchAndStoreMail(header, token, newMailsCount, &c, status)
 			<-guard
 		}()
 	}
@@ -258,7 +257,7 @@ func updateMails(token *model.Token, headers []esi.GetCharactersCharacterIdMail2
 	return nil
 }
 
-func fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *model.Token, newMailsCount int, c *atomic.Int32, status binding.String, headerData binding.IntList, mu *sync.Mutex) {
+func fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *model.Token, newMailsCount int, c *atomic.Int32, status binding.String) {
 	entityIDs := set.New[int32]()
 	entityIDs.Add(header.From)
 	for _, r := range header.Recipients {
@@ -300,31 +299,11 @@ func fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *mode
 	mail.Labels = labels
 	mail.Create()
 
-	updateHeaderData(mu, headerData, mail)
 	slog.Info("Created new mail", "mailID", header.MailId, "characterID", token.CharacterID)
 	c.Add(1)
 	current := c.Load()
 	s := fmt.Sprintf("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name)
 	status.Set(s)
-}
-
-func updateHeaderData(mu *sync.Mutex, headerData binding.IntList, mail model.Mail) {
-	mu.Lock()
-	defer mu.Unlock()
-	mailIDs, _ := headerData.Get()
-	newMailID := int(mail.MailID)
-	if len(mailIDs) == 0 {
-		headerData.Append(newMailID)
-	} else if newMailID > slices.Max(mailIDs) {
-		headerData.Prepend(newMailID)
-	} else if newMailID < slices.Min(mailIDs) {
-		headerData.Append(newMailID)
-	} else {
-		mailIDs = append(mailIDs, newMailID)
-		slices.Sort(mailIDs)
-		slices.Reverse(mailIDs)
-		headerData.Set(mailIDs)
-	}
 }
 
 func fetchMailRecipients(header esi.GetCharactersCharacterIdMail200Ok) []model.EveEntity {

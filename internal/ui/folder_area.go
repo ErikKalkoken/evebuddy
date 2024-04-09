@@ -230,13 +230,13 @@ func (f *folderArea) UpdateMails() {
 	go func() {
 		charID := f.ui.CurrentCharID()
 		if charID != 0 {
-			err := logic.FetchMail(charID, status.info, f.ui.headerArea.listData)
+			err := logic.FetchMail(charID, status.info)
 			if err != nil {
 				status.setText("Failed to fetch mail")
 				slog.Error("Failed to update mails", "characterID", charID, "error", err)
 				return
 			}
 		}
-		// f.Redraw()
+		f.Redraw()
 	}()
 }

@@ -92,6 +92,11 @@ var schema = `
 		token_type text NOT NULL,
 		FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
 	);
+
+	CREATE TABLE IF NOT EXISTS settings (
+		key string PRIMARY KEY NOT NULL,
+		value string NOT NULL
+	);
 `
 
 // InitDB initializes the database (needs to be called once).
