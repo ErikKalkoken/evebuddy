@@ -16,6 +16,10 @@ const (
 	myDateTime = "2006.01.02 15:04"
 )
 
+const (
+	settingLastCharacterID = "lastCharacterID"
+)
+
 // The ui is the root element of the UI, which contains all UI areas.
 //
 // Each UI area holds a pointer of the ui instance,
@@ -37,15 +41,20 @@ func NewUI() *ui {
 	w := a.NewWindow("Eve Buddy")
 	u := &ui{app: a, window: w}
 
-	c, err := model.FetchFirstCharacter()
+	characterID, err := model.GetSetting[int32](settingLastCharacterID)
 	if err != nil {
-		if err != sql.ErrNoRows {
-			slog.Error("Failed to load any character", "error", err)
-		}
-	} else {
-		u.currentCharacter = c
+		panic(err)
 	}
-
+	if characterID != 0 {
+		c, err := model.FetchCharacter(characterID)
+		if err != nil {
+			if err != sql.ErrNoRows {
+				slog.Error("Failed to load character", "error", err)
+			}
+		} else {
+			u.currentCharacter = c
+		}
+	}
 	mail := u.NewMailArea()
 	u.mailArea = mail
 
@@ -98,8 +107,16 @@ func (u *ui) CurrentChar() *model.Character {
 
 func (u *ui) SetCurrentCharacter(c *model.Character) {
 	u.currentCharacter = c
+	err := model.SetSetting(settingLastCharacterID, c.ID)
+	if err != nil {
+		slog.Error("Failed to update last character setting", "characterID", c.ID)
+	}
 }
 
 func (u *ui) ResetCurrentCharacter() {
 	u.currentCharacter = nil
+	err := model.DeleteSetting(settingLastCharacterID)
+	if err != nil {
+		slog.Error("Failed to delete last character setting")
+	}
 }
