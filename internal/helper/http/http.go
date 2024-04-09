@@ -7,18 +7,34 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 )
 
+const maxRetries = 3
+
+// CustomTransport adds request logging and automatic retrying for common ESI HTTP errors
 type CustomTransport struct{}
+
+// TODO: Add tests
 
 func (r CustomTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	isDebug := logRequest(req)
-	resp, err := http.DefaultTransport.RoundTrip(req)
-	if err != nil {
+	retry := 0
+	for {
+		resp, err := http.DefaultTransport.RoundTrip(req)
+		if err != nil {
+			return resp, err
+		}
+		logResponse(isDebug, resp, req)
+		if (resp.StatusCode == http.StatusBadGateway || resp.StatusCode == http.StatusGatewayTimeout || resp.StatusCode == http.StatusServiceUnavailable) && retry < maxRetries {
+			retry++
+			slog.Warn("Retrying", "method", req.Method, "url", req.URL, "retry", retry, "maxRetries", maxRetries)
+			wait := time.Millisecond * time.Duration(200*retry)
+			time.Sleep(wait)
+			continue
+		}
 		return resp, err
 	}
-	logResponse(isDebug, resp, req)
-	return resp, err
 }
 
 func logRequest(req *http.Request) bool {
