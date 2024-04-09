@@ -44,6 +44,9 @@ func (u *ui) NewHeaderArea() *headerArea {
 				return
 			}
 			characterID := u.CurrentCharID()
+			if characterID == 0 {
+				return
+			}
 			m, err := model.FetchMail(characterID, int32(mailID))
 			if err != nil {
 				slog.Error("Failed to get mail")

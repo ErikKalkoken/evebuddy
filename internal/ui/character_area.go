@@ -42,6 +42,7 @@ func (c *characterArea) Redraw() {
 	}
 	content.Refresh()
 	c.ui.folderArea.Redraw()
+	c.ui.folderArea.UpdateMails()
 }
 
 func (c *characterArea) makeCharacterBadge() *fyne.Container {
@@ -104,7 +105,7 @@ func (c *characterArea) makeSwitchMenu(charID int32) (*fyne.Menu, bool, error) {
 		}
 		items = append(items, item)
 	}
-	if len(characters) < 2 {
+	if charID != 0 && len(characters) < 2 {
 		return menu, false, nil
 	}
 	menu.Items = items

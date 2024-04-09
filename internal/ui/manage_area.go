@@ -82,8 +82,13 @@ func (m *manageArea) Redraw() {
 						}
 						m.Redraw()
 						if isCurrentChar {
-							m.ui.ResetCurrentCharacter()
-							m.ui.characterArea.Redraw()
+							c, err := model.FetchFirstCharacter()
+							if err != nil {
+								m.ui.ResetCurrentCharacter()
+								m.ui.characterArea.Redraw()
+							} else {
+								m.ui.SetCurrentCharacter(c)
+							}
 						}
 					}
 				},
