@@ -3,6 +3,7 @@ package ui
 
 import (
 	"database/sql"
+	"example/esiapp/internal/logic"
 	"example/esiapp/internal/model"
 	"log/slog"
 
@@ -57,8 +58,8 @@ func NewUI() *ui {
 	characters := u.NewCharacterArea()
 	u.characterArea = characters
 
-	bar := u.newStatusArea()
-	u.statusArea = bar
+	status := u.newStatusArea()
+	u.statusArea = status
 
 	characters.Redraw()
 
@@ -68,12 +69,14 @@ func NewUI() *ui {
 	main := container.NewHSplit(folders.content, headersMail)
 	main.SetOffset(0.15)
 
-	content := container.NewBorder(characters.content, bar.content, nil, nil, main)
+	content := container.NewBorder(characters.content, status.content, nil, nil, main)
 	w.SetContent(content)
 	w.Resize(fyne.NewSize(800, 600))
 
 	w.SetMainMenu(MakeMenu(a, u))
 	w.SetMaster()
+
+	logic.StartEsiStatusTicker(status.status)
 	return u
 }
 

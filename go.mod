@@ -13,6 +13,7 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.26
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/stretchr/testify v1.9.0
+	golang.org/x/text v0.14.0
 )
 
 require (
@@ -55,7 +56,6 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20211028175245-ba495a64dcb5 // indirect
 	golang.org/x/sys v0.17.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
