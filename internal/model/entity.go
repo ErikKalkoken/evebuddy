@@ -75,9 +75,6 @@ func FetchEveEntityByID(id int32) (*EveEntity, error) {
 	if err := db.Get(&e, "SELECT * FROM eve_entities WHERE id = ?;", id); err != nil {
 		return nil, err
 	}
-	if e.ID == 0 {
-		return nil, ErrDoesNotExist
-	}
 	return &e, nil
 }
 
@@ -87,9 +84,6 @@ func FetchEveEntityByNameAndCategory(name string, category EveEntityCategory) (*
 	err := db.Get(&e, "SELECT * FROM eve_entities WHERE name = ? AND category = ?;", name, category)
 	if err != nil {
 		return nil, err
-	}
-	if e.ID == 0 {
-		return nil, ErrDoesNotExist
 	}
 	return &e, nil
 }

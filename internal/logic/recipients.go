@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"example/evebuddy/internal/model"
 	"fmt"
@@ -216,7 +217,7 @@ func (rr *Recipients) buildMailRecipients() ([]esi.PostCharactersCharacterIdMail
 		}
 		entity, err := model.FetchEveEntityByNameAndCategory(r.name, category)
 		if err != nil {
-			if errors.Is(err, model.ErrDoesNotExist) {
+			if errors.Is(err, sql.ErrNoRows) {
 				names = append(names, r.name)
 				continue
 			} else {

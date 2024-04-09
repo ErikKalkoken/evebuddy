@@ -1,6 +1,7 @@
 package model_test
 
 import (
+	"database/sql"
 	"example/evebuddy/internal/factory"
 
 	"example/evebuddy/internal/helper/set"
@@ -244,7 +245,7 @@ func TestDeleteMail(t *testing.T) {
 		// when
 		_, err := m.Delete()
 		// then
-		assert.ErrorIs(t, err, model.ErrDoesNotExist)
+		assert.ErrorIs(t, err, sql.ErrNoRows)
 	})
 }
 
@@ -306,6 +307,6 @@ func TestMailSave(t *testing.T) {
 		// when
 		err := m.Save()
 		// then
-		assert.ErrorIs(t, err, model.ErrDoesNotExist)
+		assert.ErrorIs(t, err, sql.ErrNoRows)
 	})
 }

@@ -84,7 +84,7 @@ func (m *Mail) Create() error {
 // Save updates an existing mail.
 func (m *Mail) Save() error {
 	if m.ID == 0 {
-		return ErrDoesNotExist
+		return sql.ErrNoRows
 	}
 	_, err := db.Exec(`
 		UPDATE mails
@@ -132,9 +132,10 @@ func (m *Mail) addLabels() error {
 }
 
 // Delete deletes this mail object from the database
+// Returns error when trying to delete an object that does not exist in the DB
 func (m *Mail) Delete() (int, error) {
 	if m.ID == 0 {
-		return 0, ErrDoesNotExist
+		return 0, sql.ErrNoRows
 	}
 	r, err := db.Exec("DELETE FROM mails WHERE mails.id = ?;", m.ID)
 	if err != nil {
