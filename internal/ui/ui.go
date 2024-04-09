@@ -16,8 +16,14 @@ const (
 	myDateTime = "2006.01.02 15:04"
 )
 
+// Setting keys
 const (
 	settingLastCharacterID = "lastCharacterID"
+)
+
+// Global settings
+const (
+	settingMailUpdateTimeoutSeconds = 60
 )
 
 // The ui is the root element of the UI, which contains all UI areas.

@@ -32,6 +32,9 @@ func CreateCharacter(args ...model.Character) model.Character {
 	if c.Corporation.ID == 0 {
 		c.Corporation = CreateEveEntity(model.EveEntity{Category: model.EveEntityCorporation})
 	}
+	// if c.MailUpdatedAt.IsZero() {
+	// 	c.MailUpdatedAt = time.Now()
+	// }
 	err := c.Save()
 	if err != nil {
 		panic(err)

@@ -30,6 +30,7 @@ var schema = `
 		id INTEGER PRIMARY KEY NOT NULL,
 		name TEXT NOT NULL,
 		corporation_id INTEGER NOT NULL,
+		mail_updated_at DATETIME,
 		FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE
 	);
 	CREATE INDEX IF NOT EXISTS mails_timestamp_idx ON characters (name ASC);

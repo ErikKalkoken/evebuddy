@@ -32,7 +32,12 @@ func (u *ui) newStatusArea() *statusArea {
 	return &b
 }
 
-func (s *statusArea) setText(text string) error {
+func (s *statusArea) setInfo(text string) error {
 	err := s.info.Set(text)
+	return err
+}
+
+func (s *statusArea) clearInfo() error {
+	err := s.info.Set("")
 	return err
 }

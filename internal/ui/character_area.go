@@ -5,6 +5,7 @@ import (
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/widgets"
 	"log/slog"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -31,8 +32,8 @@ func (u *ui) NewCharacterArea() *characterArea {
 func (c *characterArea) Redraw() {
 	content := c.content.Objects[0].(*fyne.Container)
 	content.RemoveAll()
-	character := c.makeCharacterBadge()
-	content.Add(character)
+	badge := c.makeCharacterBadge()
+	content.Add(badge)
 	content.Add(layout.NewSpacer())
 	button, err := c.makeSwitchButton()
 	if err != nil {
@@ -42,7 +43,13 @@ func (c *characterArea) Redraw() {
 	}
 	content.Refresh()
 	c.ui.folderArea.Redraw()
-	c.ui.folderArea.UpdateMails()
+	character := c.ui.CurrentChar()
+	c.ui.statusArea.clearInfo()
+	if character != nil {
+		if character.MailUpdatedAt.Before(time.Now().Add(time.Second * settingMailUpdateTimeoutSeconds * -1)) {
+			c.ui.folderArea.UpdateMails()
+		}
+	}
 }
 
 func (c *characterArea) makeCharacterBadge() *fyne.Container {

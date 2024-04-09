@@ -4,6 +4,7 @@ import (
 	"example/evebuddy/internal/api/images"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"fyne.io/fyne/v2"
 )
@@ -14,6 +15,7 @@ type Character struct {
 	Name          string
 	CorporationID int32 `db:"corporation_id"`
 	Corporation   EveEntity
+	MailUpdatedAt time.Time `db:"mail_updated_at"`
 }
 
 // Save updates or creates a character.
@@ -25,10 +27,10 @@ func (c *Character) Save() error {
 		return fmt.Errorf("CorporationID can not be zero")
 	}
 	_, err := db.NamedExec(`
-		INSERT INTO characters (id, name, corporation_id)
-		VALUES (:id, :name, :corporation_id)
+		INSERT INTO characters (id, name, corporation_id, mail_updated_at)
+		VALUES (:id, :name, :corporation_id, :mail_updated_at)
 		ON CONFLICT (id) DO
-		UPDATE SET name=:name, corporation_id=:corporation_id;`,
+		UPDATE SET name=:name, corporation_id=:corporation_id, mail_updated_at=:mail_updated_at;`,
 		*c,
 	)
 	if err != nil {
@@ -75,6 +77,7 @@ func FetchCharacter(characterID int32) (*Character, error) {
 		&c.ID,
 		&c.Name,
 		&c.CorporationID,
+		&c.MailUpdatedAt,
 		&c.Corporation.ID,
 		&c.Corporation.Category,
 		&c.Corporation.Name,

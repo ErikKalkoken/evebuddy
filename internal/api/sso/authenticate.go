@@ -104,9 +104,8 @@ func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*T
 
 		fmt.Fprintf(
 			w,
-			"Authentication completed for %s. Scopes granted: %s. You can close this window now.",
+			"Authentication completed for %s. You can close this tab now.",
 			character.CharacterName,
-			strings.Join(scopes, ", "),
 		)
 		cancel() // shutdown http server
 	})

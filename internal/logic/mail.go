@@ -128,6 +128,12 @@ func FetchMail(characterID int32, status binding.String) error {
 	if err != nil {
 		return err
 	}
+	c, err := model.FetchCharacter(characterID)
+	if err != nil {
+		return err
+	}
+	c.MailUpdatedAt = time.Now()
+	c.Save()
 	return nil
 }
 

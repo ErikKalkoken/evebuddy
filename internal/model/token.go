@@ -77,6 +77,7 @@ func FetchToken(characterID int32) (*Token, error) {
 		&o.Character.ID,
 		&o.Character.Name,
 		&o.Character.CorporationID,
+		&o.Character.MailUpdatedAt,
 	)
 	if err != nil {
 		return nil, err

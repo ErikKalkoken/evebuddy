@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"database/sql"
 	"example/evebuddy/internal/model"
 	"image/color"
 	"log/slog"
@@ -49,7 +50,9 @@ func (u *ui) NewHeaderArea() *headerArea {
 			}
 			m, err := model.FetchMail(characterID, int32(mailID))
 			if err != nil {
-				slog.Error("Failed to get mail")
+				if err != sql.ErrNoRows {
+					slog.Error("Failed to get mail", "error", err)
+				}
 				return
 			}
 			parent := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects[0].(*fyne.Container)
