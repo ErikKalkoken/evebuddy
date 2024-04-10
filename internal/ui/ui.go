@@ -7,6 +7,7 @@ import (
 	"example/evebuddy/internal/model"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -62,14 +63,14 @@ func NewUI() *ui {
 
 	mailContent := container.NewHSplit(folders.content, headersMail)
 	mailContent.SetOffset(0.15)
-	mailTab := container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), mailContent)
+	mailTab := container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), addTitle(mailContent, "Mail"))
 
 	characterContent := container.NewBorder(nil, nil, nil, nil, widget.NewLabel("PLACEHOLDER"))
-	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), characterContent)
+	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), addTitle(characterContent, "Character Sheet"))
 
 	accountArea := u.NewAccountArea()
 	u.accountArea = accountArea
-	accountTab := container.NewTabItemWithIcon("Manage", theme.SettingsIcon(), accountArea.content)
+	accountTab := container.NewTabItemWithIcon("Manage", theme.SettingsIcon(), addTitle(accountArea.content, "Manage Characters"))
 
 	status := u.newStatusArea()
 	u.statusArea = status
@@ -134,4 +135,10 @@ func (u *ui) ResetCurrentCharacter() {
 		slog.Error("Failed to delete last character setting")
 	}
 	u.folderArea.Redraw()
+}
+
+func addTitle(c fyne.CanvasObject, title string) *fyne.Container {
+	label := widget.NewLabel(strings.ToUpper(title))
+	x := container.NewBorder(container.NewVBox(label, widget.NewSeparator()), nil, nil, nil, c)
+	return x
 }
