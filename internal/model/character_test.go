@@ -10,6 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func mustNoError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func TestCharacter(t *testing.T) {
 	t.Run("can save new", func(t *testing.T) {
 		// given
@@ -31,26 +37,82 @@ func TestCharacter(t *testing.T) {
 		model.TruncateTables()
 		c := factory.CreateCharacter(model.Character{Name: "Erik"})
 		c.Name = "John"
-		assert.NoError(t, c.Save())
+		mustNoError(c.Save())
 		// when
 		got, err := model.FetchCharacter(c.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c, *got)
+			assert.Equal(t, c.Birthday.Unix(), got.Birthday.Unix())
+			assert.Equal(t, c.Name, got.Name)
 		}
 	})
-	t.Run("can fetch character by ID with corporation", func(t *testing.T) {
+	t.Run("can fetch character by ID with corporation only", func(t *testing.T) {
 		// given
 		model.TruncateTables()
 		factory.CreateCharacter()
-		c2 := factory.CreateCharacter()
-		assert.NoError(t, c2.Save())
+		c := factory.CreateCharacter()
+		mustNoError(c.Save())
 		// when
-		r, err := model.FetchCharacter(2)
+		r, err := model.FetchCharacter(c.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c2, *r)
-			assert.Equal(t, c2.Corporation.Name, r.Corporation.Name)
+			assert.Equal(t, c.AllianceID, r.AllianceID)
+			assert.Equal(t, c.Birthday.Unix(), r.Birthday.Unix())
+			assert.Equal(t, c.Corporation, r.Corporation)
+			assert.Equal(t, c.CorporationID, r.CorporationID)
+			assert.Equal(t, c.Description, r.Description)
+			assert.Equal(t, c.FactionID, r.FactionID)
+			assert.Equal(t, c.ID, r.ID)
+			assert.Equal(t, c.Name, r.Name)
+		}
+	})
+	t.Run("can fetch character by ID with alliance and faction", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		factory.CreateCharacter()
+		alliance := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityAlliance})
+		c := factory.CreateCharacter(model.Character{Alliance: alliance})
+		mustNoError(c.Save())
+		// when
+		r, err := model.FetchCharacter(c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, c.AllianceID, r.AllianceID)
+			assert.Equal(t, c.Birthday.Unix(), r.Birthday.Unix())
+			assert.Equal(t, c.Corporation, r.Corporation)
+			assert.Equal(t, c.CorporationID, r.CorporationID)
+			assert.Equal(t, c.Description, r.Description)
+			assert.Equal(t, c.FactionID, r.FactionID)
+			assert.Equal(t, c.ID, r.ID)
+			assert.Equal(t, c.Name, r.Name)
+		}
+	})
+	t.Run("can fetch character alliance from character", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		factory.CreateCharacter()
+		alliance := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityAlliance})
+		c := factory.CreateCharacter(model.Character{Alliance: alliance})
+		mustNoError(c.Save())
+		// when
+		err := c.FetchAlliance()
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, alliance, c.Alliance)
+		}
+	})
+	t.Run("can fetch faction from character", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		factory.CreateCharacter()
+		faction := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityFaction})
+		c := factory.CreateCharacter(model.Character{Faction: faction})
+		mustNoError(c.Save())
+		// when
+		err := c.FetchFaction()
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, faction, c.Faction)
 		}
 	})
 	t.Run("can fetch all", func(t *testing.T) {
@@ -58,7 +120,7 @@ func TestCharacter(t *testing.T) {
 		model.TruncateTables()
 		c1 := factory.CreateCharacter(model.Character{Name: "Bravo"})
 		c2 := factory.CreateCharacter(model.Character{Name: "Alpha"})
-		assert.NoError(t, c2.Save())
+		mustNoError(c2.Save())
 		// when
 		got, err := model.FetchAllCharacters()
 		// then

@@ -23,7 +23,6 @@ func TestTokenSave(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, o.AccessToken, r.AccessToken)
 			assert.Equal(t, o.CharacterID, r.CharacterID)
-			assert.Equal(t, o.Character.ID, r.Character.ID)
 		}
 	})
 	t.Run("should return error when obj has no character", func(t *testing.T) {
@@ -50,7 +49,6 @@ func TestTokenSave(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, o.AccessToken, r.AccessToken)
 			assert.Equal(t, o.CharacterID, r.CharacterID)
-			assert.Equal(t, o.Character.ID, r.Character.ID)
 		}
 
 	})
@@ -68,7 +66,6 @@ func TestFetchToken(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, o.AccessToken, r.AccessToken)
 			assert.Equal(t, o.CharacterID, r.CharacterID)
-			assert.Equal(t, o.Character.ID, r.Character.ID)
 		}
 	})
 	t.Run("should return error when not exists", func(t *testing.T) {
@@ -78,5 +75,21 @@ func TestFetchToken(t *testing.T) {
 		_, err := model.FetchToken(42)
 		// then
 		assert.Error(t, err)
+	})
+	t.Run("can fetch character from token", func(t *testing.T) {
+		// given
+		model.TruncateTables()
+		factory.CreateToken()
+		o := factory.CreateToken()
+		r, err := model.FetchToken(o.CharacterID)
+		if err != nil {
+			panic(err)
+		}
+		// when
+		err = r.FetchCharacter()
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, o.Character.Name, r.Character.Name)
+		}
 	})
 }

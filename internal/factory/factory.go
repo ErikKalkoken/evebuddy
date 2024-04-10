@@ -32,6 +32,12 @@ func CreateCharacter(args ...model.Character) model.Character {
 	if c.Corporation.ID == 0 {
 		c.Corporation = CreateEveEntity(model.EveEntity{Category: model.EveEntityCorporation})
 	}
+	if c.Birthday.IsZero() {
+		c.Birthday = time.Now()
+	}
+	if c.Description == "" {
+		c.Description = "Lorem Ipsum"
+	}
 	// if c.MailUpdatedAt.IsZero() {
 	// 	c.MailUpdatedAt = time.Now()
 	// }

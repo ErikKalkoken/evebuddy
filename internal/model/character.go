@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"example/evebuddy/internal/api/images"
 	"fmt"
 	"log/slog"
@@ -11,11 +12,17 @@ import (
 
 // An Eve Online character.
 type Character struct {
-	ID            int32
-	Name          string
+	AllianceID    sql.NullInt32 `db:"alliance_id"`
+	Alliance      EveEntity
+	Birthday      time.Time
 	CorporationID int32 `db:"corporation_id"`
 	Corporation   EveEntity
+	Description   string
+	FactionID     sql.NullInt32 `db:"faction_id"`
+	Faction       EveEntity
+	ID            int32
 	MailUpdatedAt time.Time `db:"mail_updated_at"`
+	Name          string
 }
 
 // Save updates or creates a character.
@@ -23,14 +30,22 @@ func (c *Character) Save() error {
 	if c.Corporation.ID != 0 {
 		c.CorporationID = c.Corporation.ID
 	}
+	if c.Alliance.ID != 0 {
+		c.AllianceID.Int32 = c.Alliance.ID
+		c.AllianceID.Valid = true
+	}
+	if c.Faction.ID != 0 {
+		c.FactionID.Int32 = c.Faction.ID
+		c.FactionID.Valid = true
+	}
 	if c.CorporationID == 0 {
 		return fmt.Errorf("CorporationID can not be zero")
 	}
 	_, err := db.NamedExec(`
-		INSERT INTO characters (id, name, corporation_id, mail_updated_at)
-		VALUES (:id, :name, :corporation_id, :mail_updated_at)
+		INSERT INTO characters (alliance_id, birthday, corporation_id, description, faction_id, id, mail_updated_at, name)
+		VALUES (:alliance_id, :birthday, :corporation_id, :description, :faction_id, :id, :mail_updated_at, :name)
 		ON CONFLICT (id) DO
-		UPDATE SET name=:name, corporation_id=:corporation_id, mail_updated_at=:mail_updated_at;`,
+		UPDATE SET alliance_id=:alliance_id, birthday=:birthday, corporation_id=:corporation_id, description=:description, faction_id=:faction_id, mail_updated_at=:mail_updated_at, name=:name;`,
 		*c,
 	)
 	if err != nil {
@@ -55,6 +70,30 @@ func (c *Character) PortraitURL(size int) fyne.URI {
 	return u
 }
 
+func (c *Character) FetchAlliance() error {
+	if !c.AllianceID.Valid {
+		return sql.ErrNoRows
+	}
+	e, err := FetchEveEntityByID(c.AllianceID.Int32)
+	if err != nil {
+		return err
+	}
+	c.Alliance = *e
+	return nil
+}
+
+func (c *Character) FetchFaction() error {
+	if !c.FactionID.Valid {
+		return sql.ErrNoRows
+	}
+	e, err := FetchEveEntityByID(c.FactionID.Int32)
+	if err != nil {
+		return err
+	}
+	c.Faction = *e
+	return nil
+}
+
 // FetchFirstCharacter returns a random character.
 func FetchFirstCharacter() (*Character, error) {
 	var c Character
@@ -66,18 +105,22 @@ func FetchFirstCharacter() (*Character, error) {
 
 func FetchCharacter(characterID int32) (*Character, error) {
 	row := db.QueryRow(
-		`SELECT *
+		`SELECT characters.*, corporations.*
 		FROM characters
-		JOIN eve_entities ON eve_entities.id = characters.corporation_id
+		JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 		WHERE characters.id = ?;`,
 		characterID,
 	)
 	var c Character
 	err := row.Scan(
-		&c.ID,
-		&c.Name,
+		&c.AllianceID,
+		&c.Birthday,
 		&c.CorporationID,
+		&c.Description,
+		&c.FactionID,
+		&c.ID,
 		&c.MailUpdatedAt,
+		&c.Name,
 		&c.Corporation.ID,
 		&c.Corporation.Category,
 		&c.Corporation.Name,
@@ -103,10 +146,14 @@ func FetchAllCharacters() ([]Character, error) {
 	for rows.Next() {
 		var c Character
 		err := rows.Scan(
-			&c.ID,
-			&c.Name,
+			&c.AllianceID,
+			&c.Birthday,
 			&c.CorporationID,
+			&c.Description,
+			&c.FactionID,
+			&c.ID,
 			&c.MailUpdatedAt,
+			&c.Name,
 			&c.Corporation.ID,
 			&c.Corporation.Category,
 			&c.Corporation.Name,

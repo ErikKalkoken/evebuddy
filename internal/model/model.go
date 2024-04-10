@@ -24,11 +24,17 @@ var schema = `
 	CREATE INDEX IF NOT EXISTS eve_entities_category_idx ON eve_entities (category);
 
 	CREATE TABLE IF NOT EXISTS characters (
-		id INTEGER PRIMARY KEY NOT NULL,
-		name TEXT NOT NULL,
+		alliance_id INTEGER,
+		birthday DATETIME NOT NULL,
 		corporation_id INTEGER NOT NULL,
+		description TEXT NOT NULL,
+		faction_id INTEGER,
+		id INTEGER PRIMARY KEY NOT NULL,
 		mail_updated_at DATETIME,
-		FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE
+		name TEXT NOT NULL,
+		FOREIGN KEY (alliance_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
+		FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
+		FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL
 	);
 	CREATE INDEX IF NOT EXISTS mails_timestamp_idx ON characters (name ASC);
 

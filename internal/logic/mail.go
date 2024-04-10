@@ -112,6 +112,10 @@ func FetchMail(characterID int32, status binding.String) error {
 	if err != nil {
 		return err
 	}
+	err = token.FetchCharacter()
+	if err != nil {
+		return err
+	}
 	s := fmt.Sprintf("Checking for new mail for %v", token.Character.Name)
 	status.Set(s)
 	if err := updateMailLists(token); err != nil {

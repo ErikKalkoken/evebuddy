@@ -58,29 +58,28 @@ func (t *Token) RemainsValid(d time.Duration) bool {
 	return t.ExpiresAt.After(time.Now().Add(d))
 }
 
+func (t *Token) FetchCharacter() error {
+	c, err := FetchCharacter(t.CharacterID)
+	if err != nil {
+		return err
+	}
+	t.Character = *c
+	return nil
+}
+
 // FetchToken returns the token for a character
 func FetchToken(characterID int32) (*Token, error) {
-	row := db.QueryRow(
-		`SELECT *
+	var t Token
+	err := db.Get(
+		&t,
+		`SELECT tokens.*
 		FROM tokens
 		JOIN characters ON characters.id = tokens.character_id
 		WHERE tokens.character_id = ?;`,
 		characterID,
 	)
-	var o Token
-	err := row.Scan(
-		&o.AccessToken,
-		&o.CharacterID,
-		&o.ExpiresAt,
-		&o.RefreshToken,
-		&o.TokenType,
-		&o.Character.ID,
-		&o.Character.Name,
-		&o.Character.CorporationID,
-		&o.Character.MailUpdatedAt,
-	)
 	if err != nil {
 		return nil, err
 	}
-	return &o, nil
+	return &t, nil
 }
