@@ -39,7 +39,7 @@ func TestCharacter(t *testing.T) {
 			assert.Equal(t, c, *got)
 		}
 	})
-	t.Run("can fetch character by ID", func(t *testing.T) {
+	t.Run("can fetch character by ID with corporation", func(t *testing.T) {
 		// given
 		model.TruncateTables()
 		factory.CreateCharacter()
@@ -50,6 +50,7 @@ func TestCharacter(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c2, *r)
+			assert.Equal(t, c2.Corporation.Name, r.Corporation.Name)
 		}
 	})
 	t.Run("can fetch all", func(t *testing.T) {

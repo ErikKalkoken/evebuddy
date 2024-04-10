@@ -36,6 +36,7 @@ type ui struct {
 	app              fyne.App
 	accountArea      *accountArea
 	characterArea    *characterArea
+	characterTab     *container.TabItem
 	currentCharacter *model.Character
 	folderArea       *folderArea
 	headerArea       *headerArea
@@ -70,6 +71,7 @@ func NewUI() *ui {
 	u.characterArea = characterArea
 	characterContent := container.NewBorder(nil, nil, nil, nil, characterArea.content)
 	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), addTitle(characterContent, "Character Sheet"))
+	u.characterTab = characterTab
 
 	accountArea := u.NewAccountArea()
 	u.accountArea = accountArea
@@ -127,6 +129,11 @@ func (u *ui) SetCurrentCharacter(c *model.Character) {
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
+	uri := c.PortraitURL(defaultIconSize)
+	u.characterTab.Icon, err = fyne.LoadResourceFromURLString(uri.String())
+	if err != nil {
+		u.characterTab.Icon = theme.AccountIcon()
+	}
 	u.accountArea.Redraw()
 	u.folderArea.Redraw()
 	u.characterArea.Redraw()
@@ -138,6 +145,7 @@ func (u *ui) ResetCurrentCharacter() {
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}
+	u.characterTab.Icon = theme.AccountIcon()
 	u.accountArea.Redraw()
 	u.folderArea.Redraw()
 	u.characterArea.Redraw()
