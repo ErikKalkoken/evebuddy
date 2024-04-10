@@ -12,17 +12,19 @@ import (
 
 // An Eve Online character.
 type Character struct {
-	AllianceID    sql.NullInt32 `db:"alliance_id"`
-	Alliance      EveEntity
-	Birthday      time.Time
-	CorporationID int32 `db:"corporation_id"`
-	Corporation   EveEntity
-	Description   string
-	FactionID     sql.NullInt32 `db:"faction_id"`
-	Faction       EveEntity
-	ID            int32
-	MailUpdatedAt time.Time `db:"mail_updated_at"`
-	Name          string
+	AllianceID     sql.NullInt32 `db:"alliance_id"`
+	Alliance       EveEntity
+	Birthday       time.Time
+	CorporationID  int32 `db:"corporation_id"`
+	Corporation    EveEntity
+	Description    string
+	FactionID      sql.NullInt32 `db:"faction_id"`
+	Faction        EveEntity
+	Gender         string
+	ID             int32
+	MailUpdatedAt  time.Time `db:"mail_updated_at"`
+	Name           string
+	SecurityStatus float32 `db:"security_status"`
 }
 
 // Save updates or creates a character.
@@ -42,10 +44,39 @@ func (c *Character) Save() error {
 		return fmt.Errorf("CorporationID can not be zero")
 	}
 	_, err := db.NamedExec(`
-		INSERT INTO characters (alliance_id, birthday, corporation_id, description, faction_id, id, mail_updated_at, name)
-		VALUES (:alliance_id, :birthday, :corporation_id, :description, :faction_id, :id, :mail_updated_at, :name)
+		INSERT INTO characters (
+			alliance_id,
+			birthday,
+			corporation_id,
+			description,
+			gender,
+			faction_id,
+			id,
+			mail_updated_at,
+			name,
+			security_status
+		)
+		VALUES (
+			:alliance_id,
+			:birthday,
+			:corporation_id,
+			:description,
+			:gender,
+			:faction_id,
+			:id,
+			:mail_updated_at,
+			:name,
+			:security_status
+		)
 		ON CONFLICT (id) DO
-		UPDATE SET alliance_id=:alliance_id, birthday=:birthday, corporation_id=:corporation_id, description=:description, faction_id=:faction_id, mail_updated_at=:mail_updated_at, name=:name;`,
+		UPDATE SET
+			alliance_id = :alliance_id,
+			corporation_id = :corporation_id,
+			description = :description,
+			faction_id = :faction_id,
+			mail_updated_at = :mail_updated_at,
+			name = :name,
+			security_status = :security_status;`,
 		*c,
 	)
 	if err != nil {
@@ -72,7 +103,7 @@ func (c *Character) PortraitURL(size int) fyne.URI {
 
 func (c *Character) FetchAlliance() error {
 	if !c.AllianceID.Valid {
-		return sql.ErrNoRows
+		return nil
 	}
 	e, err := FetchEveEntityByID(c.AllianceID.Int32)
 	if err != nil {
@@ -84,7 +115,7 @@ func (c *Character) FetchAlliance() error {
 
 func (c *Character) FetchFaction() error {
 	if !c.FactionID.Valid {
-		return sql.ErrNoRows
+		return nil
 	}
 	e, err := FetchEveEntityByID(c.FactionID.Int32)
 	if err != nil {
@@ -117,10 +148,12 @@ func FetchCharacter(characterID int32) (*Character, error) {
 		&c.Birthday,
 		&c.CorporationID,
 		&c.Description,
+		&c.Gender,
 		&c.FactionID,
 		&c.ID,
 		&c.MailUpdatedAt,
 		&c.Name,
+		&c.SecurityStatus,
 		&c.Corporation.ID,
 		&c.Corporation.Category,
 		&c.Corporation.Name,
@@ -150,10 +183,12 @@ func FetchAllCharacters() ([]Character, error) {
 			&c.Birthday,
 			&c.CorporationID,
 			&c.Description,
+			&c.Gender,
 			&c.FactionID,
 			&c.ID,
 			&c.MailUpdatedAt,
 			&c.Name,
+			&c.SecurityStatus,
 			&c.Corporation.ID,
 			&c.Corporation.Category,
 			&c.Corporation.Name,

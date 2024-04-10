@@ -28,10 +28,12 @@ var schema = `
 		birthday DATETIME NOT NULL,
 		corporation_id INTEGER NOT NULL,
 		description TEXT NOT NULL,
+		gender TEXT NOT NULL,
 		faction_id INTEGER,
 		id INTEGER PRIMARY KEY NOT NULL,
 		mail_updated_at DATETIME,
 		name TEXT NOT NULL,
+		security_status REAL NOT NULL,
 		FOREIGN KEY (alliance_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
 		FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
 		FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL

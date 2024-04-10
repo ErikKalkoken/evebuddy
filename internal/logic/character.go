@@ -29,9 +29,21 @@ func AddCharacter(ctx context.Context) (*model.Token, error) {
 		return nil, err
 	}
 	character := model.Character{
-		ID:            charID,
-		Name:          charEsi.Name,
-		CorporationID: charEsi.CorporationId,
+		Birthday:       charEsi.Birthday,
+		CorporationID:  charEsi.CorporationId,
+		Description:    charEsi.Description,
+		Gender:         charEsi.Gender,
+		ID:             charID,
+		Name:           charEsi.Name,
+		SecurityStatus: charEsi.SecurityStatus,
+	}
+	if charEsi.AllianceId != 0 {
+		character.AllianceID.Int32 = charEsi.AllianceId
+		character.AllianceID.Valid = true
+	}
+	if charEsi.FactionId != 0 {
+		character.FactionID.Int32 = charEsi.FactionId
+		character.FactionID.Valid = true
 	}
 	if err = character.Save(); err != nil {
 		return nil, err

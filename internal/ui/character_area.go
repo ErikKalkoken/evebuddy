@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
@@ -23,16 +25,19 @@ func (u *ui) NewCharacterArea() *characterArea {
 func (c *characterArea) Redraw() {
 	c.items.RemoveAll()
 	character := c.ui.CurrentChar()
+	character.FetchAlliance()
+	character.FetchFaction()
 	var rows = []struct {
 		label string
 		value string
 	}{
 		{"Name", character.Name},
 		{"Corporation", character.Corporation.Name},
-		{"Alliance", character.Corporation.Name},
-		{"Faction", character.Corporation.Name},
-		{"Skill points", "1.000.000"},
-		{"Wallet", "999 ISK"},
+		{"Alliance", valueOrDefault(character.Alliance.Name, "-")},
+		{"Faction", valueOrDefault(character.Faction.Name, "-")},
+		{"Birthday", character.Birthday.Format(myDateTime)},
+		{"Gender", character.Gender},
+		{"Security Status", fmt.Sprintf("%.2f", character.SecurityStatus)},
 	}
 	for _, row := range rows {
 		label := widget.NewLabel(row.label)
@@ -41,4 +46,11 @@ func (c *characterArea) Redraw() {
 		c.items.Add(container.NewHBox(label, layout.NewSpacer(), value))
 		c.items.Add(widget.NewSeparator())
 	}
+}
+
+func valueOrDefault(s, d string) string {
+	if s == "" {
+		return d
+	}
+	return s
 }
