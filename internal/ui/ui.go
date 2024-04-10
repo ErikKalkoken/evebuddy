@@ -57,10 +57,30 @@ func NewUI() *ui {
 	folders := u.NewFolderArea()
 	u.folderArea = folders
 
+	headersMail := container.NewHSplit(headers.content, mail.content)
+	headersMail.SetOffset(0.35)
+
+	mailContent := container.NewHSplit(folders.content, headersMail)
+	mailContent.SetOffset(0.15)
+	mailTab := container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), mailContent)
+
+	characterContent := container.NewBorder(nil, nil, nil, nil, widget.NewLabel("PLACEHOLDER"))
+	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), characterContent)
+
+	accountArea := u.NewAccountArea()
+	u.accountArea = accountArea
+	accountTab := container.NewTabItemWithIcon("Manage", theme.SettingsIcon(), accountArea.content)
+
 	status := u.newStatusArea()
 	u.statusArea = status
 
-	// characters.Redraw()
+	tabs := container.NewAppTabs(characterTab, mailTab, accountTab)
+	tabs.SetTabLocation(container.TabLocationLeading)
+
+	c := container.NewBorder(nil, status.content, nil, nil, tabs)
+	w.SetContent(c)
+	w.Resize(fyne.NewSize(800, 600))
+	w.SetMaster()
 
 	characterID, err := model.GetSetting[int32](settingLastCharacterID)
 	if err != nil {
@@ -76,28 +96,6 @@ func NewUI() *ui {
 			u.SetCurrentCharacter(c)
 		}
 	}
-
-	headersMail := container.NewHSplit(headers.content, mail.content)
-	headersMail.SetOffset(0.35)
-
-	mailContent := container.NewHSplit(folders.content, headersMail)
-	mailContent.SetOffset(0.15)
-	mailTab := container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), mailContent)
-
-	contactContent := container.NewBorder(nil, nil, nil, nil, widget.NewLabel("PLACEHOLDER"))
-	contactTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), contactContent)
-
-	accountArea := u.NewAccountArea()
-	u.accountArea = accountArea
-	accountTab := container.NewTabItemWithIcon("Manage", theme.SettingsIcon(), accountArea.content)
-
-	tabs := container.NewAppTabs(mailTab, contactTab, accountTab)
-	tabs.SetTabLocation(container.TabLocationLeading)
-
-	c := container.NewBorder(nil, status.content, nil, nil, tabs)
-	w.SetContent(c)
-	w.Resize(fyne.NewSize(800, 600))
-	w.SetMaster()
 
 	logic.StartEsiStatusTicker(status.status)
 	return u

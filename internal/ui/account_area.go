@@ -23,24 +23,6 @@ type accountArea struct {
 	ui         *ui
 }
 
-// func (u *ui) ShowManageDialog() {
-// 	m := u.NewManageArea()
-// 	m.Redraw()
-// 	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-// 		m.showAddCharacterDialog()
-// 	})
-// 	button.Importance = widget.HighImportance
-// 	c := container.NewScroll(m.content)
-// 	c.SetMinSize(fyne.NewSize(400, 400))
-// 	content := container.NewBorder(button, nil, nil, nil, c)
-// 	dialog := dialog.NewCustom("Manage Characters", "Close", content, u.window)
-// 	m.dialog = dialog
-// 	dialog.SetOnClosed(func() {
-// 		u.characterArea.Redraw()
-// 	})
-// 	dialog.Show()
-// }
-
 func (u *ui) NewAccountArea() *accountArea {
 	m := &accountArea{
 		ui: u,
