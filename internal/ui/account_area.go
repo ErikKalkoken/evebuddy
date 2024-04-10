@@ -36,7 +36,6 @@ func (u *ui) NewAccountArea() *accountArea {
 	content := container.NewBorder(nil, button, nil, nil, c)
 	m.characters = characters
 	m.content = content
-	m.Redraw()
 	return m
 }
 
@@ -47,10 +46,13 @@ func (m *accountArea) Redraw() {
 	}
 	m.characters.RemoveAll()
 	for _, char := range chars {
-		badge := makeCharacterBadge(char)
+		name := widget.NewLabel(char.Name)
+		name.TextStyle = fyne.TextStyle{Bold: true}
+		uri := char.PortraitURL(defaultIconSize)
+		image := canvas.NewImageFromURI(uri)
+		image.FillMode = canvas.ImageFillOriginal
 		selectButton := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
 			m.ui.SetCurrentCharacter(&char)
-			m.ui.folderArea.Redraw()
 		})
 		isCurrentChar := char.ID == m.ui.CurrentCharID()
 		if isCurrentChar {
@@ -72,7 +74,6 @@ func (m *accountArea) Redraw() {
 							c, err := model.FetchFirstCharacter()
 							if err != nil {
 								m.ui.ResetCurrentCharacter()
-								m.ui.folderArea.Redraw()
 							} else {
 								m.ui.SetCurrentCharacter(c)
 							}
@@ -84,34 +85,11 @@ func (m *accountArea) Redraw() {
 			dialog.Show()
 		})
 		deleteButton.Importance = widget.DangerImportance
-		item := container.NewHBox(badge, layout.NewSpacer(), selectButton, deleteButton)
+		item := container.NewHBox(image, name, layout.NewSpacer(), selectButton, deleteButton)
 		m.characters.Add(item)
 		m.characters.Add(widget.NewSeparator())
 	}
 	m.characters.Refresh()
-}
-
-func makeCharacterBadge(char model.Character) *fyne.Container {
-	var charName, corpName string
-	var charURI, corpURI fyne.URI
-
-	charName = char.Name
-	corpName = char.Corporation.Name
-	charURI = char.PortraitURL(defaultIconSize)
-	corpURI = char.Corporation.ImageURL(defaultIconSize)
-
-	charImage := canvas.NewImageFromURI(charURI)
-	charImage.FillMode = canvas.ImageFillOriginal
-	corpImage := canvas.NewImageFromURI(corpURI)
-	corpImage.FillMode = canvas.ImageFillOriginal
-
-	color := theme.ForegroundColor()
-	character := canvas.NewText(charName, color)
-	character.TextStyle = fyne.TextStyle{Bold: true}
-	corporation := canvas.NewText(corpName, color)
-	names := container.NewVBox(character, corporation)
-	content := container.NewHBox(charImage, corpImage, names)
-	return content
 }
 
 func (m *accountArea) showAddCharacterDialog() {

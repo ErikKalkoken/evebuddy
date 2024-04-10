@@ -35,6 +35,7 @@ const (
 type ui struct {
 	app              fyne.App
 	accountArea      *accountArea
+	characterArea    *characterArea
 	currentCharacter *model.Character
 	folderArea       *folderArea
 	headerArea       *headerArea
@@ -65,7 +66,9 @@ func NewUI() *ui {
 	mailContent.SetOffset(0.15)
 	mailTab := container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), addTitle(mailContent, "Mail"))
 
-	characterContent := container.NewBorder(nil, nil, nil, nil, widget.NewLabel("PLACEHOLDER"))
+	characterArea := u.NewCharacterArea()
+	u.characterArea = characterArea
+	characterContent := container.NewBorder(nil, nil, nil, nil, characterArea.content)
 	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), addTitle(characterContent, "Character Sheet"))
 
 	accountArea := u.NewAccountArea()
@@ -97,7 +100,6 @@ func NewUI() *ui {
 			u.SetCurrentCharacter(c)
 		}
 	}
-
 	logic.StartEsiStatusTicker(status.status)
 	return u
 }
@@ -125,7 +127,9 @@ func (u *ui) SetCurrentCharacter(c *model.Character) {
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
+	u.accountArea.Redraw()
 	u.folderArea.Redraw()
+	u.characterArea.Redraw()
 }
 
 func (u *ui) ResetCurrentCharacter() {
@@ -134,7 +138,9 @@ func (u *ui) ResetCurrentCharacter() {
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}
+	u.accountArea.Redraw()
 	u.folderArea.Redraw()
+	u.characterArea.Redraw()
 }
 
 func addTitle(c fyne.CanvasObject, title string) *fyne.Container {
