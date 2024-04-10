@@ -91,8 +91,31 @@ func FetchCharacter(characterID int32) (*Character, error) {
 // FetchAllCharacters returns all characters ordered by name.
 func FetchAllCharacters() ([]Character, error) {
 	var cc []Character
-	if err := db.Select(&cc, "SELECT * FROM characters ORDER BY name;"); err != nil {
+	rows, err := db.Query(
+		`SELECT *
+		FROM characters
+		JOIN eve_entities ON eve_entities.id = characters.corporation_id
+		ORDER BY name;`,
+	)
+	if err != nil {
 		return nil, err
+	}
+	for rows.Next() {
+		var c Character
+		err := rows.Scan(
+			&c.ID,
+			&c.Name,
+			&c.CorporationID,
+			&c.MailUpdatedAt,
+			&c.Corporation.ID,
+			&c.Corporation.Category,
+			&c.Corporation.Name,
+		)
+		if err != nil {
+			return nil, err
+		}
+		cc = append(cc, c)
+
 	}
 	return cc, nil
 }

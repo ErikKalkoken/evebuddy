@@ -15,8 +15,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-const defaultIconSize = 64
-
 // characterArea is the UI area that shows the active character
 type characterArea struct {
 	content *fyne.Container
@@ -46,7 +44,7 @@ func (c *characterArea) Redraw() {
 	character := c.ui.CurrentChar()
 	c.ui.statusArea.clearInfo()
 	if character != nil {
-		if character.MailUpdatedAt.Before(time.Now().Add(time.Second * settingMailUpdateTimeoutSeconds * -1)) {
+		if character.MailUpdatedAt.Before(time.Now().Add(time.Second * mailUpdateTimeoutSeconds * -1)) {
 			c.ui.folderArea.UpdateMails()
 		}
 	}

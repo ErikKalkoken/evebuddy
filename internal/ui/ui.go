@@ -5,25 +5,26 @@ import (
 	"database/sql"
 	"example/evebuddy/internal/logic"
 	"example/evebuddy/internal/model"
+	"fmt"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 )
 
+// UI constants
 const (
-	myDateTime = "2006.01.02 15:04"
+	myDateTime               = "2006.01.02 15:04"
+	defaultIconSize          = 64
+	mailUpdateTimeoutSeconds = 60
 )
 
 // Setting keys
 const (
 	settingLastCharacterID = "lastCharacterID"
-)
-
-// Global settings
-const (
-	settingMailUpdateTimeoutSeconds = 60
 )
 
 // The ui is the root element of the UI, which contains all UI areas.
@@ -32,7 +33,7 @@ const (
 // which allow it to access the other UI areas and shared variables
 type ui struct {
 	app              fyne.App
-	characterArea    *characterArea
+	accountArea      *accountArea
 	currentCharacter *model.Character
 	folderArea       *folderArea
 	headerArea       *headerArea
@@ -47,6 +48,20 @@ func NewUI() *ui {
 	w := a.NewWindow("Eve Buddy")
 	u := &ui{app: a, window: w}
 
+	mail := u.NewMailArea()
+	u.mailArea = mail
+
+	headers := u.NewHeaderArea()
+	u.headerArea = headers
+
+	folders := u.NewFolderArea()
+	u.folderArea = folders
+
+	status := u.newStatusArea()
+	u.statusArea = status
+
+	// characters.Redraw()
+
 	characterID, err := model.GetSetting[int32](settingLastCharacterID)
 	if err != nil {
 		panic(err)
@@ -58,37 +73,30 @@ func NewUI() *ui {
 				slog.Error("Failed to load character", "error", err)
 			}
 		} else {
-			u.currentCharacter = c
+			u.SetCurrentCharacter(c)
 		}
 	}
-	mail := u.NewMailArea()
-	u.mailArea = mail
-
-	headers := u.NewHeaderArea()
-	u.headerArea = headers
-
-	folders := u.NewFolderArea()
-	u.folderArea = folders
-
-	characters := u.NewCharacterArea()
-	u.characterArea = characters
-
-	status := u.newStatusArea()
-	u.statusArea = status
-
-	characters.Redraw()
 
 	headersMail := container.NewHSplit(headers.content, mail.content)
 	headersMail.SetOffset(0.35)
 
-	main := container.NewHSplit(folders.content, headersMail)
-	main.SetOffset(0.15)
+	mailContent := container.NewHSplit(folders.content, headersMail)
+	mailContent.SetOffset(0.15)
+	mailTab := container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), mailContent)
 
-	content := container.NewBorder(characters.content, status.content, nil, nil, main)
-	w.SetContent(content)
+	contactContent := container.NewBorder(nil, nil, nil, nil, widget.NewLabel("PLACEHOLDER"))
+	contactTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), contactContent)
+
+	accountArea := u.NewAccountArea()
+	u.accountArea = accountArea
+	accountTab := container.NewTabItemWithIcon("Manage", theme.SettingsIcon(), accountArea.content)
+
+	tabs := container.NewAppTabs(mailTab, contactTab, accountTab)
+	tabs.SetTabLocation(container.TabLocationLeading)
+
+	c := container.NewBorder(nil, status.content, nil, nil, tabs)
+	w.SetContent(c)
 	w.Resize(fyne.NewSize(800, 600))
-
-	w.SetMainMenu(MakeMenu(a, u))
 	w.SetMaster()
 
 	logic.StartEsiStatusTicker(status.status)
@@ -113,10 +121,12 @@ func (u *ui) CurrentChar() *model.Character {
 
 func (u *ui) SetCurrentCharacter(c *model.Character) {
 	u.currentCharacter = c
+	u.window.SetTitle(fmt.Sprintf("Eve Buddy [%s]", c.Name))
 	err := model.SetSetting(settingLastCharacterID, c.ID)
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
+	u.folderArea.Redraw()
 }
 
 func (u *ui) ResetCurrentCharacter() {
@@ -125,4 +135,5 @@ func (u *ui) ResetCurrentCharacter() {
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}
+	u.folderArea.Redraw()
 }

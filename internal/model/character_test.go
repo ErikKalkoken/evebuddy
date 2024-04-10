@@ -55,8 +55,8 @@ func TestCharacter(t *testing.T) {
 	t.Run("can fetch all", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		c1 := factory.CreateCharacter()
-		c2 := factory.CreateCharacter()
+		c1 := factory.CreateCharacter(model.Character{Name: "Bravo"})
+		c2 := factory.CreateCharacter(model.Character{Name: "Alpha"})
 		assert.NoError(t, c2.Save())
 		// when
 		got, err := model.FetchAllCharacters()
@@ -64,9 +64,9 @@ func TestCharacter(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Len(t, got, 2)
 			gotIDs := set.NewFromSlice([]int32{got[0].ID, got[1].ID})
-			wantIDs := set.NewFromSlice([]int32{c1.ID, c2.ID})
+			wantIDs := set.NewFromSlice([]int32{c2.ID, c1.ID})
 			assert.Equal(t, wantIDs, gotIDs)
-
+			assert.Equal(t, c2.Corporation.Name, got[0].Corporation.Name)
 		}
 	})
 	t.Run("can delete", func(t *testing.T) {

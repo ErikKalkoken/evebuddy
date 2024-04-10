@@ -25,7 +25,7 @@ func updateESIStatus(text binding.String) error {
 	if err != nil {
 		return err
 	}
-	isOffline := resp.StatusCode >= 500
+	isOffline := resp.StatusCode >= 500 || status.Players == 0
 	var s string
 	if isOffline {
 		s = "OFFLINE"
