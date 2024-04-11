@@ -3,7 +3,6 @@ package ui
 import (
 	"database/sql"
 	"example/evebuddy/internal/model"
-	"image/color"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -11,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -25,13 +25,16 @@ type headerArea struct {
 }
 
 func (u *ui) NewHeaderArea() *headerArea {
+	foregroundColor := theme.ForegroundColor()
+	subjectSize := theme.TextSize() * 1.15
 	listData := binding.NewIntList()
 	list := widget.NewListWithData(
 		listData,
 		func() fyne.CanvasObject {
-			from := canvas.NewText("xxxxxxxxxxxxxxx", color.White)
-			timestamp := canvas.NewText("xxxxxxxxxxxxxxx", color.White)
-			subject := canvas.NewText("subject", color.White)
+			from := canvas.NewText("xxxxxxxxxxxxxxx", foregroundColor)
+			timestamp := canvas.NewText("xxxxxxxxxxxxxxx", foregroundColor)
+			subject := canvas.NewText("subject", foregroundColor)
+			subject.TextSize = subjectSize
 			return container.NewPadded(container.NewPadded(container.NewVBox(
 				container.NewHBox(from, layout.NewSpacer(), timestamp),
 				subject,

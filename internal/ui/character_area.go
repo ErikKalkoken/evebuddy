@@ -39,7 +39,7 @@ func (c *characterArea) Redraw() {
 		{"Faction", stringOrDefault(character.Faction.Name, "-")},
 		{"Birthday", character.Birthday.Format(myDateTime)},
 		{"Gender", character.Gender},
-		{"Security Status", fmt.Sprintf("%.2f", character.SecurityStatus)},
+		{"Security Status", fmt.Sprintf("%.1f", character.SecurityStatus)},
 		{"Skill Points", int64OrDefault(character.SkillPoints, "-")},
 		{"Wallet Balance", float64OrDefault(character.WalletBalance, "-")},
 	}
@@ -63,12 +63,12 @@ func float64OrDefault(v sql.NullFloat64, d string) string {
 	if !v.Valid {
 		return d
 	}
-	return humanize.Number(v.Float64, 2)
+	return humanize.Number(v.Float64, 1)
 }
 
 func int64OrDefault(v sql.NullInt64, d string) string {
 	if !v.Valid {
 		return d
 	}
-	return humanize.Number(float64(v.Int64), 2)
+	return humanize.Number(float64(v.Int64), 1)
 }
