@@ -40,6 +40,7 @@ func (c *characterArea) Redraw() {
 		{"Birthday", character.Birthday.Format(myDateTime)},
 		{"Gender", character.Gender},
 		{"Security Status", fmt.Sprintf("%.2f", character.SecurityStatus)},
+		{"Skill Points", int64OrDefault(character.SkillPoints, "-")},
 		{"Wallet Balance", float64OrDefault(character.WalletBalance, "-")},
 	}
 	for _, row := range rows {
@@ -63,4 +64,11 @@ func float64OrDefault(v sql.NullFloat64, d string) string {
 		return d
 	}
 	return humanize.Number(v.Float64, 2)
+}
+
+func int64OrDefault(v sql.NullInt64, d string) string {
+	if !v.Valid {
+		return d
+	}
+	return humanize.Number(float64(v.Int64), 2)
 }

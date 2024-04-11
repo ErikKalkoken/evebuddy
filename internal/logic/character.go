@@ -53,6 +53,13 @@ func AddCharacter(ctx context.Context) (*model.Token, error) {
 		RefreshToken: ssoToken.RefreshToken,
 		TokenType:    ssoToken.TokenType,
 	}
+	skills, _, err := esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(newContextWithToken(&token), charID, nil)
+	if err != nil {
+		slog.Error("Failed to fetch skills", "error", err)
+	} else {
+		character.SkillPoints.Int64 = skills.TotalSp
+		character.SkillPoints.Valid = true
+	}
 	balance, _, err := esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(newContextWithToken(&token), charID, nil)
 	if err != nil {
 		slog.Error("Failed to fetch wallet balance", "error", err)

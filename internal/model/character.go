@@ -25,6 +25,7 @@ type Character struct {
 	MailUpdatedAt  sql.NullTime `db:"mail_updated_at"`
 	Name           string
 	SecurityStatus float32         `db:"security_status"`
+	SkillPoints    sql.NullInt64   `db:"skill_points"`
 	WalletBalance  sql.NullFloat64 `db:"wallet_balance"`
 }
 
@@ -56,6 +57,7 @@ func (c *Character) Save() error {
 			mail_updated_at,
 			name,
 			security_status,
+			skill_points,
 			wallet_balance
 		)
 		VALUES (
@@ -69,6 +71,7 @@ func (c *Character) Save() error {
 			:mail_updated_at,
 			:name,
 			:security_status,
+			:skill_points,
 			:wallet_balance
 		)
 		ON CONFLICT (id) DO
@@ -80,6 +83,7 @@ func (c *Character) Save() error {
 			mail_updated_at = :mail_updated_at,
 			name = :name,
 			security_status = :security_status,
+			skill_points = :skill_points,
 			wallet_balance = :wallet_balance;`,
 		*c,
 	)
@@ -140,7 +144,22 @@ func FetchFirstCharacter() (*Character, error) {
 
 func FetchCharacter(characterID int32) (*Character, error) {
 	row := db.QueryRowx(
-		`SELECT characters.*, corporations.*
+		`SELECT
+			characters.alliance_id,
+			characters.birthday,
+			characters.corporation_id,
+			characters.description,
+			characters.gender,
+			characters.faction_id,
+			characters.id,
+			characters.mail_updated_at,
+			characters.name,
+			characters.security_status,
+			characters.skill_points,
+			characters.wallet_balance,
+			corporations.id,
+			corporations.category,
+			corporations.name
 		FROM characters
 		JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 		WHERE characters.id = ?;`,
@@ -158,6 +177,7 @@ func FetchCharacter(characterID int32) (*Character, error) {
 		&c.MailUpdatedAt,
 		&c.Name,
 		&c.SecurityStatus,
+		&c.SkillPoints,
 		&c.WalletBalance,
 		&c.Corporation.ID,
 		&c.Corporation.Category,
@@ -173,10 +193,25 @@ func FetchCharacter(characterID int32) (*Character, error) {
 func FetchAllCharacters() ([]Character, error) {
 	var cc []Character
 	rows, err := db.Query(
-		`SELECT *
+		`SELECT
+			characters.alliance_id,
+			characters.birthday,
+			characters.corporation_id,
+			characters.description,
+			characters.gender,
+			characters.faction_id,
+			characters.id,
+			characters.mail_updated_at,
+			characters.name,
+			characters.security_status,
+			characters.skill_points,
+			characters.wallet_balance,
+			corporations.id,
+			corporations.category,
+			corporations.name
 		FROM characters
-		JOIN eve_entities ON eve_entities.id = characters.corporation_id
-		ORDER BY name;`,
+		JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
+		ORDER BY characters.name;`,
 	)
 	if err != nil {
 		return nil, err
@@ -194,6 +229,7 @@ func FetchAllCharacters() ([]Character, error) {
 			&c.MailUpdatedAt,
 			&c.Name,
 			&c.SecurityStatus,
+			&c.SkillPoints,
 			&c.WalletBalance,
 			&c.Corporation.ID,
 			&c.Corporation.Category,
