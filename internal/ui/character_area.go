@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"database/sql"
 	"fmt"
 
 	"fyne.io/fyne/v2"
@@ -33,11 +34,12 @@ func (c *characterArea) Redraw() {
 	}{
 		{"Name", character.Name},
 		{"Corporation", character.Corporation.Name},
-		{"Alliance", valueOrDefault(character.Alliance.Name, "-")},
-		{"Faction", valueOrDefault(character.Faction.Name, "-")},
+		{"Alliance", stringOrDefault(character.Alliance.Name, "-")},
+		{"Faction", stringOrDefault(character.Faction.Name, "-")},
 		{"Birthday", character.Birthday.Format(myDateTime)},
 		{"Gender", character.Gender},
 		{"Security Status", fmt.Sprintf("%.2f", character.SecurityStatus)},
+		{"Wallet Balance", float64OrDefault(character.WalletBalance, "-")},
 	}
 	for _, row := range rows {
 		label := widget.NewLabel(row.label)
@@ -48,9 +50,16 @@ func (c *characterArea) Redraw() {
 	}
 }
 
-func valueOrDefault(s, d string) string {
+func stringOrDefault(s, d string) string {
 	if s == "" {
 		return d
 	}
 	return s
+}
+
+func float64OrDefault(v sql.NullFloat64, d string) string {
+	if !v.Valid {
+		return d
+	}
+	return fmt.Sprintf("%.2f", v.Float64)
 }

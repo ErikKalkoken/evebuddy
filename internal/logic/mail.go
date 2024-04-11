@@ -136,7 +136,8 @@ func FetchMail(characterID int32, status binding.String) error {
 	if err != nil {
 		return err
 	}
-	c.MailUpdatedAt = time.Now()
+	c.MailUpdatedAt.Time = time.Now()
+	c.MailUpdatedAt.Valid = true
 	c.Save()
 	return nil
 }

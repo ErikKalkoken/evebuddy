@@ -21,6 +21,7 @@ var esiScopes = []string{
 	"esi-mail.organize_mail.v1",
 	"esi-mail.send_mail.v1",
 	"esi-search.search_structures.v1",
+	"esi-wallet.read_character_wallet.v1",
 }
 
 var esiClient = goesi.NewAPIClient(httpClient, "name@example.com")

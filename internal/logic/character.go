@@ -4,6 +4,7 @@ import (
 	"context"
 	"example/evebuddy/internal/api/sso"
 	"example/evebuddy/internal/model"
+	"log/slog"
 )
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.
@@ -45,15 +46,22 @@ func AddCharacter(ctx context.Context) (*model.Token, error) {
 		character.FactionID.Int32 = charEsi.FactionId
 		character.FactionID.Valid = true
 	}
-	if err = character.Save(); err != nil {
-		return nil, err
-	}
 	token := model.Token{
 		AccessToken:  ssoToken.AccessToken,
 		Character:    character,
 		ExpiresAt:    ssoToken.ExpiresAt,
 		RefreshToken: ssoToken.RefreshToken,
 		TokenType:    ssoToken.TokenType,
+	}
+	balance, _, err := esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(newContextWithToken(&token), charID, nil)
+	if err != nil {
+		slog.Error("Failed to fetch wallet balance", "error", err)
+	} else {
+		character.WalletBalance.Float64 = balance
+		character.WalletBalance.Valid = true
+	}
+	if err = character.Save(); err != nil {
+		return nil, err
 	}
 	if err = token.Save(); err != nil {
 		return nil, err

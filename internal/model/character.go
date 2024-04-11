@@ -22,9 +22,10 @@ type Character struct {
 	Faction        EveEntity
 	Gender         string
 	ID             int32
-	MailUpdatedAt  time.Time `db:"mail_updated_at"`
+	MailUpdatedAt  sql.NullTime `db:"mail_updated_at"`
 	Name           string
-	SecurityStatus float32 `db:"security_status"`
+	SecurityStatus float32         `db:"security_status"`
+	WalletBalance  sql.NullFloat64 `db:"wallet_balance"`
 }
 
 // Save updates or creates a character.
@@ -54,7 +55,8 @@ func (c *Character) Save() error {
 			id,
 			mail_updated_at,
 			name,
-			security_status
+			security_status,
+			wallet_balance
 		)
 		VALUES (
 			:alliance_id,
@@ -66,7 +68,8 @@ func (c *Character) Save() error {
 			:id,
 			:mail_updated_at,
 			:name,
-			:security_status
+			:security_status,
+			:wallet_balance
 		)
 		ON CONFLICT (id) DO
 		UPDATE SET
@@ -76,7 +79,8 @@ func (c *Character) Save() error {
 			faction_id = :faction_id,
 			mail_updated_at = :mail_updated_at,
 			name = :name,
-			security_status = :security_status;`,
+			security_status = :security_status,
+			wallet_balance = :wallet_balance;`,
 		*c,
 	)
 	if err != nil {
@@ -135,7 +139,7 @@ func FetchFirstCharacter() (*Character, error) {
 }
 
 func FetchCharacter(characterID int32) (*Character, error) {
-	row := db.QueryRow(
+	row := db.QueryRowx(
 		`SELECT characters.*, corporations.*
 		FROM characters
 		JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
@@ -154,6 +158,7 @@ func FetchCharacter(characterID int32) (*Character, error) {
 		&c.MailUpdatedAt,
 		&c.Name,
 		&c.SecurityStatus,
+		&c.WalletBalance,
 		&c.Corporation.ID,
 		&c.Corporation.Category,
 		&c.Corporation.Name,
@@ -189,6 +194,7 @@ func FetchAllCharacters() ([]Character, error) {
 			&c.MailUpdatedAt,
 			&c.Name,
 			&c.SecurityStatus,
+			&c.WalletBalance,
 			&c.Corporation.ID,
 			&c.Corporation.Category,
 			&c.Corporation.Name,

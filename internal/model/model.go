@@ -34,6 +34,7 @@ var schema = `
 		mail_updated_at DATETIME,
 		name TEXT NOT NULL,
 		security_status REAL NOT NULL,
+		wallet_balance REAL,
 		FOREIGN KEY (alliance_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
 		FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
 		FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL
