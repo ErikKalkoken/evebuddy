@@ -52,16 +52,15 @@ func TestEveEntities(t *testing.T) {
 		r, err := model.FetchEveEntityByID(o.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, o, *r)
+			assert.Equal(t, o, r)
 		}
 	})
 	t.Run("should return error when not found", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		r, err := model.FetchEveEntityByID(42)
+		_, err := model.FetchEveEntityByID(42)
 		// then
 		assert.Equal(t, sql.ErrNoRows, err)
-		assert.Nil(t, r)
 	})
 	t.Run("can return all existing IDs", func(t *testing.T) {
 		// given

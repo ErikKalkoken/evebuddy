@@ -84,13 +84,13 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 		if err != nil {
 			return err
 		}
-		rr = append(rr, *e)
+		rr = append(rr, e)
 	}
 	m := model.Mail{
 		Body:       body,
 		Character:  token.Character,
-		From:       *from,
-		Labels:     []model.MailLabel{*label},
+		From:       from,
+		Labels:     []model.MailLabel{label},
 		MailID:     mailID,
 		Recipients: rr,
 		Subject:    subject,
@@ -118,17 +118,17 @@ func FetchMail(characterID int32, status binding.String) error {
 	}
 	s := fmt.Sprintf("Checking for new mail for %v", token.Character.Name)
 	status.Set(s)
-	if err := updateMailLists(token); err != nil {
+	if err := updateMailLists(&token); err != nil {
 		return err
 	}
-	if err := updateMailLabels(token); err != nil {
+	if err := updateMailLabels(&token); err != nil {
 		return err
 	}
-	headers, err := FetchMailHeaders(token)
+	headers, err := FetchMailHeaders(&token)
 	if err != nil {
 		return err
 	}
-	err = updateMails(token, headers, status)
+	err = updateMails(&token, headers, status)
 	if err != nil {
 		return err
 	}
@@ -297,7 +297,7 @@ func fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *mode
 		slog.Error("Failed to parse \"from\" in mail", "header", header, "error", err)
 		return
 	}
-	mail.From = *from
+	mail.From = from
 
 	rr := fetchMailRecipients(header)
 	mail.Recipients = rr
@@ -325,7 +325,7 @@ func fetchMailRecipients(header esi.GetCharactersCharacterIdMail200Ok) []model.E
 			slog.Error("Failed to resolve mail recipient", "header", header, "recipient", r, "error", err)
 			continue
 		} else {
-			rr = append(rr, *o)
+			rr = append(rr, o)
 		}
 	}
 	return rr

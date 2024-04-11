@@ -67,7 +67,7 @@ func (l *MailLabel) Save() error {
 	return nil
 }
 
-func FetchMailLabel(characterID int32, labelID int32) (*MailLabel, error) {
+func FetchMailLabel(characterID int32, labelID int32) (MailLabel, error) {
 	var l MailLabel
 	err := db.Get(
 		&l,
@@ -76,9 +76,9 @@ func FetchMailLabel(characterID int32, labelID int32) (*MailLabel, error) {
 		labelID,
 	)
 	if err != nil {
-		return nil, err
+		return l, err
 	}
-	return &l, nil
+	return l, nil
 }
 
 func FetchMailLabels(characterID int32, labelIDs []int32) ([]MailLabel, error) {

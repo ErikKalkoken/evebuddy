@@ -71,22 +71,22 @@ func FetchEveEntityIDs() ([]int32, error) {
 }
 
 // FetchEveEntityByID return an EveEntity object if it exists or nil.
-func FetchEveEntityByID(id int32) (*EveEntity, error) {
+func FetchEveEntityByID(id int32) (EveEntity, error) {
 	var e EveEntity
 	if err := db.Get(&e, "SELECT * FROM eve_entities WHERE id = ?;", id); err != nil {
-		return nil, err
+		return e, err
 	}
-	return &e, nil
+	return e, nil
 }
 
 // FetchEveEntityByNameAndCategory return an EveEntity object if it exists or nil.
-func FetchEveEntityByNameAndCategory(name string, category EveEntityCategory) (*EveEntity, error) {
+func FetchEveEntityByNameAndCategory(name string, category EveEntityCategory) (EveEntity, error) {
 	var e EveEntity
 	err := db.Get(&e, "SELECT * FROM eve_entities WHERE name = ? AND category = ?;", name, category)
 	if err != nil {
-		return nil, err
+		return e, err
 	}
-	return &e, nil
+	return e, nil
 }
 
 // FindEveEntitiesByName return all EveEntity objects matching a name

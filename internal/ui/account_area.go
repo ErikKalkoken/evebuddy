@@ -75,7 +75,7 @@ func (m *accountArea) Redraw() {
 							if err != nil {
 								m.ui.ResetCurrentCharacter()
 							} else {
-								m.ui.SetCurrentCharacter(c)
+								m.ui.SetCurrentCharacter(&c)
 							}
 						}
 					}

@@ -28,7 +28,7 @@ func TestCharacter(t *testing.T) {
 		if assert.NoError(t, err) {
 			r, err := model.FetchCharacter(c.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, c, *r)
+				assert.Equal(t, c, r)
 			}
 		}
 	})

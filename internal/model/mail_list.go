@@ -46,7 +46,7 @@ func (l *MailList) CreateIfNew() error {
 	return nil
 }
 
-func FetchMailList(characterID int32, entityID int32) (*MailList, error) {
+func FetchMailList(characterID int32, entityID int32) (MailList, error) {
 	var l MailList
 	err := db.Get(
 		&l,
@@ -55,9 +55,9 @@ func FetchMailList(characterID int32, entityID int32) (*MailList, error) {
 		entityID,
 	)
 	if err != nil {
-		return nil, err
+		return l, err
 	}
-	return &l, nil
+	return l, nil
 }
 
 func FetchAllMailLists(characterID int32) ([]MailList, error) {

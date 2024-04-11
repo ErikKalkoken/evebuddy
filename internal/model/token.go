@@ -63,12 +63,12 @@ func (t *Token) FetchCharacter() error {
 	if err != nil {
 		return err
 	}
-	t.Character = *c
+	t.Character = c
 	return nil
 }
 
 // FetchToken returns the token for a character
-func FetchToken(characterID int32) (*Token, error) {
+func FetchToken(characterID int32) (Token, error) {
 	var t Token
 	err := db.Get(
 		&t,
@@ -79,7 +79,7 @@ func FetchToken(characterID int32) (*Token, error) {
 		characterID,
 	)
 	if err != nil {
-		return nil, err
+		return t, err
 	}
-	return &t, nil
+	return t, nil
 }

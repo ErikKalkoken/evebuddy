@@ -179,7 +179,7 @@ func (m *Mail) MakeHeaderText(format string) string {
 }
 
 // FetchMail returns a mail.
-func FetchMail(characterID, mailID int32) (*Mail, error) {
+func FetchMail(characterID, mailID int32) (Mail, error) {
 	row := db.QueryRow(
 		`SELECT *
 		FROM mails
@@ -204,17 +204,17 @@ func FetchMail(characterID, mailID int32) (*Mail, error) {
 		&m.From.Name,
 	)
 	if err != nil {
-		return nil, err
+		return m, err
 	}
 	m.Recipients, err = fetchMailRecipients(m.ID)
 	if err != nil {
-		return nil, err
+		return m, err
 	}
 	m.Labels, err = fetchMailLabels(m.ID)
 	if err != nil {
-		return nil, err
+		return m, err
 	}
-	return &m, nil
+	return m, nil
 }
 
 func fetchMailRecipients(mailID uint64) ([]EveEntity, error) {

@@ -99,7 +99,7 @@ func NewUI() *ui {
 				slog.Error("Failed to load character", "error", err)
 			}
 		} else {
-			u.SetCurrentCharacter(c)
+			u.SetCurrentCharacter(&c)
 		}
 	}
 	logic.StartEsiStatusTicker(status.status)

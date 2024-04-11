@@ -12,14 +12,14 @@ import (
 
 // FetchValidToken returns a valid token for a character. Convenience function.
 func FetchValidToken(characterID int32) (*model.Token, error) {
-	token, err := model.FetchToken(characterID)
+	t, err := model.FetchToken(characterID)
 	if err != nil {
 		return nil, err
 	}
-	if err := EnsureValidToken(token); err != nil {
+	if err := EnsureValidToken(&t); err != nil {
 		return nil, err
 	}
-	return token, nil
+	return &t, nil
 }
 
 // EnsureValidToken will automatically try to refresh a token that is already or about to become invalid.

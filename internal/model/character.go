@@ -117,7 +117,7 @@ func (c *Character) FetchAlliance() error {
 	if err != nil {
 		return err
 	}
-	c.Alliance = *e
+	c.Alliance = e
 	return nil
 }
 
@@ -129,20 +129,20 @@ func (c *Character) FetchFaction() error {
 	if err != nil {
 		return err
 	}
-	c.Faction = *e
+	c.Faction = e
 	return nil
 }
 
 // FetchFirstCharacter returns a random character.
-func FetchFirstCharacter() (*Character, error) {
+func FetchFirstCharacter() (Character, error) {
 	var c Character
 	if err := db.Get(&c, "SELECT * FROM characters LIMIT 1;"); err != nil {
-		return nil, err
+		return c, err
 	}
-	return &c, nil
+	return c, nil
 }
 
-func FetchCharacter(characterID int32) (*Character, error) {
+func FetchCharacter(characterID int32) (Character, error) {
 	row := db.QueryRowx(
 		`SELECT
 			characters.alliance_id,
@@ -184,9 +184,9 @@ func FetchCharacter(characterID int32) (*Character, error) {
 		&c.Corporation.Name,
 	)
 	if err != nil {
-		return nil, err
+		return c, err
 	}
-	return &c, nil
+	return c, nil
 }
 
 // FetchAllCharacters returns all characters ordered by name.

@@ -70,7 +70,7 @@ func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 	if !mail.IsRead {
 		go func() {
 			err := func() error {
-				err = logic.UpdateMailRead(mail)
+				err = logic.UpdateMailRead(&mail)
 				if err != nil {
 					return err
 				}
@@ -89,17 +89,17 @@ func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 	m.icons.RemoveAll()
 	m.icons.Add(
 		widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {
-			m.ui.ShowCreateMessageWindow(CreateMessageReply, mail)
+			m.ui.ShowCreateMessageWindow(CreateMessageReply, &mail)
 		}),
 	)
 	m.icons.Add(
 		widget.NewButtonWithIcon("", theme.MailReplyAllIcon(), func() {
-			m.ui.ShowCreateMessageWindow(CreateMessageReplyAll, mail)
+			m.ui.ShowCreateMessageWindow(CreateMessageReplyAll, &mail)
 		}),
 	)
 	m.icons.Add(
 		widget.NewButtonWithIcon("", theme.MailForwardIcon(), func() {
-			m.ui.ShowCreateMessageWindow(CreateMessageForward, mail)
+			m.ui.ShowCreateMessageWindow(CreateMessageForward, &mail)
 		}),
 	)
 	m.icons.Add(layout.NewSpacer())
@@ -107,7 +107,7 @@ func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 		t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", mail.Subject)
 		d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
 			if confirmed {
-				err := logic.DeleteMail(mail)
+				err := logic.DeleteMail(&mail)
 				if err != nil {
 					errorDialog := dialog.NewError(err, m.ui.window)
 					errorDialog.Show()
