@@ -2,6 +2,7 @@ package ui
 
 import (
 	"database/sql"
+	"example/evebuddy/internal/helper/humanize"
 	"fmt"
 
 	"fyne.io/fyne/v2"
@@ -61,5 +62,5 @@ func float64OrDefault(v sql.NullFloat64, d string) string {
 	if !v.Valid {
 		return d
 	}
-	return fmt.Sprintf("%.2f", v.Float64)
+	return humanize.Number(v.Float64, 2)
 }

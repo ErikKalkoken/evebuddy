@@ -37,7 +37,7 @@ func (s *statusArea) setInfo(text string) error {
 	return err
 }
 
-func (s *statusArea) clearInfo() error {
-	err := s.info.Set("")
-	return err
-}
+// func (s *statusArea) clearInfo() error {
+// 	err := s.info.Set("")
+// 	return err
+// }
