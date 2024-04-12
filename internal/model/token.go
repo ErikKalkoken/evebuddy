@@ -58,8 +58,8 @@ func (t *Token) RemainsValid(d time.Duration) bool {
 	return t.ExpiresAt.After(time.Now().Add(d))
 }
 
-func (t *Token) FetchCharacter() error {
-	c, err := FetchCharacter(t.CharacterID)
+func (t *Token) GetCharacter() error {
+	c, err := GetCharacter(t.CharacterID)
 	if err != nil {
 		return err
 	}
@@ -67,8 +67,8 @@ func (t *Token) FetchCharacter() error {
 	return nil
 }
 
-// FetchToken returns the token for a character
-func FetchToken(characterID int32) (Token, error) {
+// GetToken returns the token for a character
+func GetToken(characterID int32) (Token, error) {
 	var t Token
 	err := db.Get(
 		&t,

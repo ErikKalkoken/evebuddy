@@ -34,7 +34,7 @@ func TestMailCreate(t *testing.T) {
 		err := m.Create()
 		// then
 		assert.NoError(t, err)
-		m2, err := model.FetchMail(c.ID, m.MailID)
+		m2, err := model.GetMail(c.ID, m.MailID)
 		assert.NoError(t, err)
 		assert.Equal(t, m.MailID, m2.MailID)
 		assert.Equal(t, m.Body, m2.Body)
@@ -92,7 +92,7 @@ func TestFetchMailIDs(t *testing.T) {
 		})
 	}
 	// when
-	ids, err := model.FetchMailIDs(char.ID)
+	ids, err := model.ListMailIDs(char.ID)
 	// then
 	assert.NoError(t, err)
 	got := set.NewFromSlice(ids)
@@ -111,7 +111,7 @@ func TestFetchMailsForLabel(t *testing.T) {
 		m2 := factory.CreateMail(model.Mail{Character: c, Labels: []model.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -60)})
 		factory.CreateMail(model.Mail{Character: c, Labels: []model.MailLabel{l2}})
 		// when
-		mm, err := model.FetchMailsForLabel(c.ID, l1.LabelID)
+		mm, err := model.ListMailsForLabel(c.ID, l1.LabelID)
 		// then
 		if assert.NoError(t, err) {
 			var gotIDs []int32
@@ -133,7 +133,7 @@ func TestFetchMailsForLabel(t *testing.T) {
 		m3 := factory.CreateMail(model.Mail{Character: c, Labels: []model.MailLabel{l2}, Timestamp: time.Now().Add(time.Second * -240)})
 		m4 := factory.CreateMail(model.Mail{Character: c, Timestamp: time.Now().Add(time.Second * -360)})
 		// when
-		mm, err := model.FetchMailsForLabel(c.ID, model.LabelAll)
+		mm, err := model.ListMailsForLabel(c.ID, model.LabelAll)
 		// then
 		if assert.NoError(t, err) {
 			var gotIDs []int32
@@ -152,7 +152,7 @@ func TestFetchMailsForLabel(t *testing.T) {
 		factory.CreateMail(model.Mail{Character: c, Labels: []model.MailLabel{l}, Timestamp: time.Now().Add(time.Second * -120)})
 		m := factory.CreateMail(model.Mail{Character: c})
 		// when
-		mm, err := model.FetchMailsForLabel(c.ID, model.LabelNone)
+		mm, err := model.ListMailsForLabel(c.ID, model.LabelNone)
 		// then
 		if assert.NoError(t, err) {
 			var gotIDs []int32
@@ -168,7 +168,7 @@ func TestFetchMailsForLabel(t *testing.T) {
 		model.TruncateTables()
 		c := factory.CreateCharacter()
 		// when
-		mm, err := model.FetchMailsForLabel(c.ID, 99)
+		mm, err := model.ListMailsForLabel(c.ID, 99)
 		// then
 		if assert.NoError(t, err) {
 			assert.Empty(t, mm)
@@ -195,7 +195,7 @@ func TestFetchMailsForLabel(t *testing.T) {
 		}
 		assert.NoError(t, m.Create())
 		// when
-		mm, err := model.FetchMailsForLabel(c2.ID, l2.LabelID)
+		mm, err := model.ListMailsForLabel(c2.ID, l2.LabelID)
 		if assert.NoError(t, err) {
 			assert.Len(t, mm, 1)
 		}
@@ -213,7 +213,7 @@ func TestFetchMailsFoList(t *testing.T) {
 		factory.CreateMail(model.Mail{Character: c, Recipients: []model.EveEntity{l2.EveEntity}})
 		factory.CreateMail(model.Mail{Character: c})
 		// when
-		mm, err := model.FetchMailsForList(c.ID, l1.EveEntityID)
+		mm, err := model.ListMailsForList(c.ID, l1.EveEntityID)
 		// then
 		if assert.NoError(t, err) {
 			var gotIDs []int32
@@ -253,7 +253,7 @@ func TestFetchMailLabelUnreadCounts(t *testing.T) {
 	factory.CreateMail(model.Mail{Character: c, Labels: []model.MailLabel{corp}, IsRead: false})
 	factory.CreateMail(model.Mail{Character: c})
 	// when
-	r, err := model.FetchMailLabelUnreadCounts(c.ID)
+	r, err := model.GetMailLabelUnreadCounts(c.ID)
 	if assert.NoError(t, err) {
 		assert.Equal(t, map[int32]int{model.LabelCorp: 2, model.LabelInbox: 1}, r)
 	}
@@ -269,7 +269,7 @@ func TestFetchMailListUnreadCounts(t *testing.T) {
 	factory.CreateMail(model.Mail{Character: c, Recipients: []model.EveEntity{l1.EveEntity}, IsRead: true})
 	factory.CreateMail(model.Mail{Character: c})
 	// when
-	r, err := model.FetchMailListUnreadCounts(c.ID)
+	r, err := model.GetMailListUnreadCounts(c.ID)
 	if assert.NoError(t, err) {
 		assert.Equal(t, map[int32]int{l1.EveEntityID: 1}, r)
 	}
@@ -285,7 +285,7 @@ func TestMailSave(t *testing.T) {
 		err := m.Save()
 		// then
 		if assert.NoError(t, err) {
-			m2, err := model.FetchMail(m.CharacterID, m.MailID)
+			m2, err := model.GetMail(m.CharacterID, m.MailID)
 			if assert.NoError(t, err) {
 				assert.True(t, m2.IsRead)
 			}

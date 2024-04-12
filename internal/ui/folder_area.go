@@ -112,11 +112,11 @@ func (f *folderArea) Redraw() {
 }
 
 func buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
-	labelUnreadCounts, err := model.FetchMailLabelUnreadCounts(characterID)
+	labelUnreadCounts, err := model.GetMailLabelUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
-	listUnreadCounts, err := model.FetchMailListUnreadCounts(characterID)
+	listUnreadCounts, err := model.GetMailListUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -133,7 +133,7 @@ func buildFolderTree(characterID int32) (map[string][]string, map[string]string,
 		UnreadCount: totalUnreadCount,
 	}
 	folders[nodeAllID] = folderItemAll.toJSON()
-	labels, err := model.FetchCustomMailLabels(characterID)
+	labels, err := model.ListMailLabels(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -156,7 +156,7 @@ func buildFolderTree(characterID int32) (map[string][]string, map[string]string,
 			folders[uid] = n.toJSON()
 		}
 	}
-	lists, err := model.FetchAllMailLists(characterID)
+	lists, err := model.ListMailLists(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -230,7 +230,7 @@ func (f *folderArea) UpdateMails() {
 	go func() {
 		charID := f.ui.CurrentCharID()
 		if charID != 0 {
-			err := logic.FetchMail(charID, status.info)
+			err := logic.GetMail(charID, status.info)
 			if err != nil {
 				status.setInfo("Failed to fetch mail")
 				slog.Error("Failed to update mails", "characterID", charID, "error", err)

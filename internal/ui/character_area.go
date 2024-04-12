@@ -27,8 +27,8 @@ func (u *ui) NewCharacterArea() *characterArea {
 func (c *characterArea) Redraw() {
 	c.items.RemoveAll()
 	character := c.ui.CurrentChar()
-	character.FetchAlliance()
-	character.FetchFaction()
+	character.GetAlliance()
+	character.GetFaction()
 	var rows = []struct {
 		label string
 		value string

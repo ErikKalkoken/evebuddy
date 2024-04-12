@@ -93,7 +93,7 @@ func NewUI() *ui {
 		panic(err)
 	}
 	if characterID != 0 {
-		c, err := model.FetchCharacter(characterID)
+		c, err := model.GetCharacter(characterID)
 		if err != nil {
 			if err != sql.ErrNoRows {
 				slog.Error("Failed to load character", "error", err)

@@ -99,11 +99,11 @@ func (c *Character) PortraitURL(size int) fyne.URI {
 	return u
 }
 
-func (c *Character) FetchAlliance() error {
+func (c *Character) GetAlliance() error {
 	if !c.AllianceID.Valid {
 		return nil
 	}
-	e, err := FetchEveEntityByID(c.AllianceID.Int32)
+	e, err := GetEveEntity(c.AllianceID.Int32)
 	if err != nil {
 		return err
 	}
@@ -111,11 +111,11 @@ func (c *Character) FetchAlliance() error {
 	return nil
 }
 
-func (c *Character) FetchFaction() error {
+func (c *Character) GetFaction() error {
 	if !c.FactionID.Valid {
 		return nil
 	}
-	e, err := FetchEveEntityByID(c.FactionID.Int32)
+	e, err := GetEveEntity(c.FactionID.Int32)
 	if err != nil {
 		return err
 	}
@@ -123,8 +123,8 @@ func (c *Character) FetchFaction() error {
 	return nil
 }
 
-// FetchFirstCharacter returns a random character.
-func FetchFirstCharacter() (Character, error) {
+// GetFirstCharacter returns a random character.
+func GetFirstCharacter() (Character, error) {
 	var c Character
 	if err := db.Get(&c, "SELECT * FROM characters LIMIT 1;"); err != nil {
 		return c, err
@@ -132,7 +132,7 @@ func FetchFirstCharacter() (Character, error) {
 	return c, nil
 }
 
-func FetchCharacter(characterID int32) (Character, error) {
+func GetCharacter(characterID int32) (Character, error) {
 	row := db.QueryRowx(
 		`SELECT
 			characters.alliance_id,
@@ -179,8 +179,8 @@ func FetchCharacter(characterID int32) (Character, error) {
 	return c, nil
 }
 
-// FetchAllCharacters returns all characters ordered by name.
-func FetchAllCharacters() ([]Character, error) {
+// ListCharacters returns all characters ordered by name.
+func ListCharacters() ([]Character, error) {
 	var cc []Character
 	rows, err := db.Query(
 		`SELECT
@@ -234,8 +234,8 @@ func FetchAllCharacters() ([]Character, error) {
 	return cc, nil
 }
 
-// FetchCharacterIDs returns all existing character IDs.
-func FetchCharacterIDs() ([]int32, error) {
+// ListCharacterIDs returns all existing character IDs.
+func ListCharacterIDs() ([]int32, error) {
 	var ids []int32
 	err := db.Select(&ids, "SELECT id FROM characters;")
 	if err != nil {

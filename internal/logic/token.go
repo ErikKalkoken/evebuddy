@@ -10,9 +10,9 @@ import (
 	"github.com/antihax/goesi"
 )
 
-// FetchValidToken returns a valid token for a character. Convenience function.
-func FetchValidToken(characterID int32) (*model.Token, error) {
-	t, err := model.FetchToken(characterID)
+// GetValidToken returns a valid token for a character. Convenience function.
+func GetValidToken(characterID int32) (*model.Token, error) {
+	t, err := model.GetToken(characterID)
 	if err != nil {
 		return nil, err
 	}

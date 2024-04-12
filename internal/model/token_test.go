@@ -19,7 +19,7 @@ func TestTokenSave(t *testing.T) {
 		err := o.Save()
 		// then
 		assert.NoError(t, err)
-		r, err := model.FetchToken(c.ID)
+		r, err := model.GetToken(c.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, o.AccessToken, r.AccessToken)
 			assert.Equal(t, o.CharacterID, r.CharacterID)
@@ -44,7 +44,7 @@ func TestTokenSave(t *testing.T) {
 		// when
 		err := o.Save()
 		assert.NoError(t, err)
-		r, err := model.FetchToken(o.CharacterID)
+		r, err := model.GetToken(o.CharacterID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, o.AccessToken, r.AccessToken)
@@ -61,7 +61,7 @@ func TestFetchToken(t *testing.T) {
 		factory.CreateToken()
 		o := factory.CreateToken()
 		// when
-		r, err := model.FetchToken(o.CharacterID)
+		r, err := model.GetToken(o.CharacterID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, o.AccessToken, r.AccessToken)
@@ -72,7 +72,7 @@ func TestFetchToken(t *testing.T) {
 		// given
 		model.TruncateTables()
 		// when
-		_, err := model.FetchToken(42)
+		_, err := model.GetToken(42)
 		// then
 		assert.Error(t, err)
 	})
@@ -81,12 +81,12 @@ func TestFetchToken(t *testing.T) {
 		model.TruncateTables()
 		factory.CreateToken()
 		o := factory.CreateToken()
-		r, err := model.FetchToken(o.CharacterID)
+		r, err := model.GetToken(o.CharacterID)
 		if err != nil {
 			panic(err)
 		}
 		// when
-		err = r.FetchCharacter()
+		err = r.GetCharacter()
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, o.Character.Name, r.Character.Name)

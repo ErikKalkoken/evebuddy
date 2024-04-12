@@ -16,7 +16,7 @@ func CreateCharacter(args ...model.Character) model.Character {
 		c = args[0]
 	}
 	if c.ID == 0 {
-		ids, err := model.FetchCharacterIDs()
+		ids, err := model.ListCharacterIDs()
 		if err != nil {
 			panic(err)
 		}
@@ -55,7 +55,7 @@ func CreateEveEntity(args ...model.EveEntity) model.EveEntity {
 		e = args[0]
 	}
 	if e.ID == 0 {
-		ids, err := model.FetchEveEntityIDs()
+		ids, err := model.ListEveEntityIDs()
 		if err != nil {
 			panic(err)
 		}
@@ -90,7 +90,7 @@ func CreateMail(args ...model.Mail) model.Mail {
 		m.From = CreateEveEntity(model.EveEntity{Category: model.EveEntityCharacter})
 	}
 	if m.MailID == 0 {
-		ids, err := model.FetchMailIDs(m.Character.ID)
+		ids, err := model.ListMailIDs(m.Character.ID)
 		if err != nil {
 			panic(err)
 		}
@@ -125,7 +125,7 @@ func CreateMailLabel(args ...model.MailLabel) model.MailLabel {
 		l.Character = CreateCharacter()
 	}
 	if l.LabelID == 0 {
-		ll, err := model.FetchCustomMailLabels(l.Character.ID)
+		ll, err := model.ListMailLabels(l.Character.ID)
 		if err != nil {
 			panic(err)
 		}

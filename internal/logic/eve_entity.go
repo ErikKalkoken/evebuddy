@@ -11,7 +11,7 @@ import (
 
 // AddEveEntitiesFromESISearch runs a search on ESI and adds the results as new EveEntity objects to the database.
 func AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, error) {
-	token, err := FetchValidToken(characterID)
+	token, err := GetValidToken(characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, err
 
 // AddMissingEveEntities adds EveEntities from ESI for IDs missing in the database.
 func AddMissingEveEntities(ids []int32) ([]int32, error) {
-	c, err := model.FetchEveEntityIDs()
+	c, err := model.ListEveEntityIDs()
 	if err != nil {
 		return nil, err
 	}

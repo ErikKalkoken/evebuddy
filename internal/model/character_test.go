@@ -26,7 +26,7 @@ func TestCharacter(t *testing.T) {
 		err := c.Save()
 		// then
 		if assert.NoError(t, err) {
-			r, err := model.FetchCharacter(c.ID)
+			r, err := model.GetCharacter(c.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, c, r)
 			}
@@ -39,7 +39,7 @@ func TestCharacter(t *testing.T) {
 		c.Name = "John"
 		mustNoError(c.Save())
 		// when
-		got, err := model.FetchCharacter(c.ID)
+		got, err := model.GetCharacter(c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c.Birthday.Unix(), got.Birthday.Unix())
@@ -53,7 +53,7 @@ func TestCharacter(t *testing.T) {
 		c := factory.CreateCharacter()
 		mustNoError(c.Save())
 		// when
-		r, err := model.FetchCharacter(c.ID)
+		r, err := model.GetCharacter(c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c.AllianceID, r.AllianceID)
@@ -74,7 +74,7 @@ func TestCharacter(t *testing.T) {
 		c := factory.CreateCharacter(model.Character{Alliance: alliance})
 		mustNoError(c.Save())
 		// when
-		r, err := model.FetchCharacter(c.ID)
+		r, err := model.GetCharacter(c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c.AllianceID, r.AllianceID)
@@ -95,7 +95,7 @@ func TestCharacter(t *testing.T) {
 		c := factory.CreateCharacter(model.Character{Alliance: alliance})
 		mustNoError(c.Save())
 		// when
-		err := c.FetchAlliance()
+		err := c.GetAlliance()
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, alliance, c.Alliance)
@@ -109,7 +109,7 @@ func TestCharacter(t *testing.T) {
 		c := factory.CreateCharacter(model.Character{Faction: faction})
 		mustNoError(c.Save())
 		// when
-		err := c.FetchFaction()
+		err := c.GetFaction()
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, faction, c.Faction)
@@ -122,7 +122,7 @@ func TestCharacter(t *testing.T) {
 		c2 := factory.CreateCharacter(model.Character{Name: "Alpha"})
 		mustNoError(c2.Save())
 		// when
-		got, err := model.FetchAllCharacters()
+		got, err := model.ListCharacters()
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, got, 2)
@@ -140,7 +140,7 @@ func TestCharacter(t *testing.T) {
 		err := model.DeleteCharacter(c.ID)
 		// then
 		if assert.NoError(t, err) {
-			_, err := model.FetchCharacter(c.ID)
+			_, err := model.GetCharacter(c.ID)
 			assert.Error(t, err)
 		}
 	})

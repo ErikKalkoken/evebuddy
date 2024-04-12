@@ -51,7 +51,7 @@ func (u *ui) NewHeaderArea() *headerArea {
 			if characterID == 0 {
 				return
 			}
-			m, err := model.FetchMail(characterID, int32(mailID))
+			m, err := model.GetMail(characterID, int32(mailID))
 			if err != nil {
 				if err != sql.ErrNoRows {
 					slog.Error("Failed to get mail", "error", err)
@@ -121,9 +121,9 @@ func (h *headerArea) redraw(folder node) {
 	charID := h.ui.CurrentCharID()
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mm, err = model.FetchMailsForLabel(charID, folder.ObjID)
+		mm, err = model.ListMailsForLabel(charID, folder.ObjID)
 	case nodeCategoryList:
-		mm, err = model.FetchMailsForList(charID, folder.ObjID)
+		mm, err = model.ListMailsForList(charID, folder.ObjID)
 	}
 	var mailIDs []int
 	if err != nil {

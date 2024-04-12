@@ -161,8 +161,8 @@ func (m *Mail) MakeHeaderText(format string) string {
 	return header
 }
 
-// FetchMail returns a mail.
-func FetchMail(characterID, mailID int32) (Mail, error) {
+// GetMail returns a mail.
+func GetMail(characterID, mailID int32) (Mail, error) {
 	row := db.QueryRow(
 		`SELECT *
 		FROM mails
@@ -226,8 +226,8 @@ func fetchMailLabels(mailID uint64) ([]MailLabel, error) {
 	return ll, err
 }
 
-// FetchMailIDs return mail IDs of all existing mails for a character
-func FetchMailIDs(characterID int32) ([]int32, error) {
+// ListMailIDs return mail IDs of all existing mails for a character
+func ListMailIDs(characterID int32) ([]int32, error) {
 	var ids []int32
 	err := db.Select(&ids, "SELECT mail_id FROM mails WHERE character_id = ?", characterID)
 	if err != nil {
@@ -236,9 +236,9 @@ func FetchMailIDs(characterID int32) ([]int32, error) {
 	return ids, nil
 }
 
-// FetchMailsForLabel returns a character's mails for a label in descending order by timestamp.
+// ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
 // Return mails for all labels, when labelID = 0
-func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
+func ListMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	var rows *sql.Rows
 	switch labelID {
 	case LabelAll:
@@ -291,7 +291,7 @@ func FetchMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
 	return mm, err
 }
 
-func FetchMailsForList(characterID int32, listID int32) ([]Mail, error) {
+func ListMailsForList(characterID int32, listID int32) ([]Mail, error) {
 	sql := `
 		SELECT mails.*, eve_entities.*
 		FROM mails
@@ -340,7 +340,7 @@ type labelUnreadCount struct {
 	Count int   `db:"unread_count_2"`
 }
 
-func FetchMailLabelUnreadCounts(characterID int32) (map[int32]int, error) {
+func GetMailLabelUnreadCounts(characterID int32) (map[int32]int, error) {
 	var rr []labelUnreadCount
 	sql := `
 		SELECT label_id, COUNT(mails.id) AS unread_count_2
@@ -366,7 +366,7 @@ type listUnreadCount struct {
 	Count int   `db:"unread_count_2"`
 }
 
-func FetchMailListUnreadCounts(characterID int32) (map[int32]int, error) {
+func GetMailListUnreadCounts(characterID int32) (map[int32]int, error) {
 	var rr []listUnreadCount
 	sql := `
 		SELECT eve_entities.id AS list_id, COUNT(mails.id) as unread_count_2

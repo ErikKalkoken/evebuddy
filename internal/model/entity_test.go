@@ -39,7 +39,7 @@ func TestEveEntities(t *testing.T) {
 		err := o.Save()
 		// then
 		assert.NoError(t, err)
-		o2, err := model.FetchEveEntityByID(42)
+		o2, err := model.GetEveEntity(42)
 		assert.NoError(t, err)
 		assert.Equal(t, o2.Name, "bravo")
 		assert.Equal(t, o2.Category, model.EveEntityCorporation)
@@ -49,7 +49,7 @@ func TestEveEntities(t *testing.T) {
 		model.TruncateTables()
 		o := factory.CreateEveEntity()
 		// when
-		r, err := model.FetchEveEntityByID(o.ID)
+		r, err := model.GetEveEntity(o.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, o, r)
@@ -58,7 +58,7 @@ func TestEveEntities(t *testing.T) {
 	t.Run("should return error when not found", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		_, err := model.FetchEveEntityByID(42)
+		_, err := model.GetEveEntity(42)
 		// then
 		assert.Equal(t, sql.ErrNoRows, err)
 	})
@@ -68,7 +68,7 @@ func TestEveEntities(t *testing.T) {
 		e1 := factory.CreateEveEntity()
 		e2 := factory.CreateEveEntity()
 		// when
-		r, err := model.FetchEveEntityIDs()
+		r, err := model.ListEveEntityIDs()
 		// then
 		if assert.NoError(t, err) {
 			gotIDs := set.NewFromSlice([]int32{e1.ID, e2.ID})
@@ -84,7 +84,7 @@ func TestEveEntities(t *testing.T) {
 		factory.CreateEveEntity(model.EveEntity{Name: "charlie", Category: "character"})
 		factory.CreateEveEntity(model.EveEntity{Name: "other", Category: "corporation"})
 		// when
-		ee, err := model.FindEveEntitiesByNamePartial("ALPHA")
+		ee, err := model.SearchEveEntitiesByName("ALPHA")
 		// then
 		if assert.NoError(t, err) {
 			var got []string

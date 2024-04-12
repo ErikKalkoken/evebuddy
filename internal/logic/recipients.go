@@ -215,7 +215,7 @@ func (rr *Recipients) buildMailRecipients() ([]esi.PostCharactersCharacterIdMail
 			names = append(names, r.name)
 			continue
 		}
-		entity, err := model.FetchEveEntityByNameAndCategory(r.name, category)
+		entity, err := model.GetEveEntityByNameAndCategory(r.name, category)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				names = append(names, r.name)
@@ -266,7 +266,7 @@ func resolveNamesRemotely(names []string) ([]model.EveEntity, error) {
 func buildMailRecipientsFromNames(names []string) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
 	mm := make([]esi.PostCharactersCharacterIdMailRecipient, 0, len(names))
 	for _, n := range names {
-		ee, err := model.FindEveEntitiesByName(n)
+		ee, err := model.ListEveEntitiesByName(n)
 		if err != nil {
 			return nil, err
 		}

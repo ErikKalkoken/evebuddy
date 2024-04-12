@@ -22,7 +22,7 @@ func TestMailList(t *testing.T) {
 		err := l.CreateIfNew()
 		// then
 		if assert.NoError(t, err) {
-			_, err := model.FetchMailList(c.ID, e.ID)
+			_, err := model.GetMailList(c.ID, e.ID)
 			assert.NoError(t, err)
 		}
 	})
@@ -37,7 +37,7 @@ func TestMailList(t *testing.T) {
 		l2 := model.MailList{Character: c, EveEntity: e2}
 		assert.NoError(t, l2.CreateIfNew())
 		// when
-		ll, err := model.FetchAllMailLists(c.ID)
+		ll, err := model.ListMailLists(c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ll, 2)

@@ -40,7 +40,7 @@ func (u *ui) NewAccountArea() *accountArea {
 }
 
 func (m *accountArea) Redraw() {
-	chars, err := model.FetchAllCharacters()
+	chars, err := model.ListCharacters()
 	if err != nil {
 		panic(err)
 	}
@@ -71,7 +71,7 @@ func (m *accountArea) Redraw() {
 						}
 						m.Redraw()
 						if isCurrentChar {
-							c, err := model.FetchFirstCharacter()
+							c, err := model.GetFirstCharacter()
 							if err != nil {
 								m.ui.ResetCurrentCharacter()
 							} else {

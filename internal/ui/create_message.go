@@ -156,7 +156,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 }
 
 func makeRecipientOptions(search string) ([]string, error) {
-	ee, err := model.FindEveEntitiesByNamePartial(search)
+	ee, err := model.SearchEveEntitiesByName(search)
 	if err != nil {
 		return nil, err
 	}

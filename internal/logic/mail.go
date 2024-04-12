@@ -22,7 +22,7 @@ const (
 
 // DeleteMail deleted a mail both on ESI and in the database.
 func DeleteMail(m *model.Mail) error {
-	token, err := FetchValidToken(m.CharacterID)
+	token, err := GetValidToken(m.CharacterID)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 	if len(recipients) == 0 {
 		return fmt.Errorf("missing recipients")
 	}
-	token, err := FetchValidToken(characterID)
+	token, err := GetValidToken(characterID)
 	if err != nil {
 		return err
 	}
@@ -69,18 +69,18 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 	if err != nil {
 		return err
 	}
-	from, err := model.FetchEveEntityByID(token.CharacterID)
+	from, err := model.GetEveEntity(token.CharacterID)
 	if err != nil {
 		return err
 	}
 	// FIXME: Ensure this still works when no labels have yet been loaded from ESI
-	label, err := model.FetchMailLabel(token.CharacterID, model.LabelSent)
+	label, err := model.GetMailLabel(token.CharacterID, model.LabelSent)
 	if err != nil {
 		return err
 	}
 	var rr []model.EveEntity
 	for _, r := range recipients {
-		e, err := model.FetchEveEntityByID(r.RecipientId)
+		e, err := model.GetEveEntity(r.RecipientId)
 		if err != nil {
 			return err
 		}
@@ -106,13 +106,13 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 // FIXME: Delete obsolete labels and mail lists
 // TODO: Add ability to update existing mails for is_read and labels
 
-// FetchMail fetches and stores new mails from ESI for a character.
-func FetchMail(characterID int32, status binding.String) error {
-	token, err := model.FetchToken(characterID)
+// GetMail fetches and stores new mails from ESI for a character.
+func GetMail(characterID int32, status binding.String) error {
+	token, err := model.GetToken(characterID)
 	if err != nil {
 		return err
 	}
-	err = token.FetchCharacter()
+	err = token.GetCharacter()
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func FetchMail(characterID int32, status binding.String) error {
 	if err := updateMailLabels(&token); err != nil {
 		return err
 	}
-	headers, err := FetchMailHeaders(&token)
+	headers, err := ListMailHeaders(&token)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func FetchMail(characterID int32, status binding.String) error {
 	if err != nil {
 		return err
 	}
-	c, err := model.FetchCharacter(characterID)
+	c, err := model.GetCharacter(characterID)
 	if err != nil {
 		return err
 	}
@@ -189,8 +189,8 @@ func updateMailLists(token *model.Token) error {
 	return nil
 }
 
-// FetchMailHeaders fetched mail headers from ESI with paging and returns them.
-func FetchMailHeaders(token *model.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
+// ListMailHeaders fetched mail headers from ESI with paging and returns them.
+func ListMailHeaders(token *model.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	if err := EnsureValidToken(token); err != nil {
 		return nil, err
 	}
@@ -292,7 +292,7 @@ func fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *mode
 		IsRead:    header.IsRead,
 	}
 	mail.Timestamp = header.Timestamp
-	from, err := model.FetchEveEntityByID(header.From)
+	from, err := model.GetEveEntity(header.From)
 	if err != nil {
 		slog.Error("Failed to parse \"from\" in mail", "header", header, "error", err)
 		return
@@ -302,7 +302,7 @@ func fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *mode
 	rr := fetchMailRecipients(header)
 	mail.Recipients = rr
 
-	labels, err := model.FetchMailLabels(token.CharacterID, m.Labels)
+	labels, err := model.ListMailLabelsForIDs(token.CharacterID, m.Labels)
 	if err != nil {
 		slog.Error("Failed to resolve mail labels", "header", header, "error", err)
 		return
@@ -320,7 +320,7 @@ func fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *mode
 func fetchMailRecipients(header esi.GetCharactersCharacterIdMail200Ok) []model.EveEntity {
 	var rr []model.EveEntity
 	for _, r := range header.Recipients {
-		o, err := model.FetchEveEntityByID(r.RecipientId)
+		o, err := model.GetEveEntity(r.RecipientId)
 		if err != nil {
 			slog.Error("Failed to resolve mail recipient", "header", header, "recipient", r, "error", err)
 			continue
@@ -332,7 +332,7 @@ func fetchMailRecipients(header esi.GetCharactersCharacterIdMail200Ok) []model.E
 }
 
 func determineMailIDs(characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) (*set.Set[int32], *set.Set[int32], error) {
-	ids, err := model.FetchMailIDs(characterID)
+	ids, err := model.ListMailIDs(characterID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -347,7 +347,7 @@ func determineMailIDs(characterID int32, headers []esi.GetCharactersCharacterIdM
 
 // UpdateMailRead updates an existing mail as read
 func UpdateMailRead(m *model.Mail) error {
-	token, err := FetchValidToken(m.CharacterID)
+	token, err := GetValidToken(m.CharacterID)
 	if err != nil {
 		return err
 	}

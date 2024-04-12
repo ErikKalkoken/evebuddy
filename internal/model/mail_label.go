@@ -67,7 +67,7 @@ func (l *MailLabel) Save() error {
 	return nil
 }
 
-func FetchMailLabel(characterID int32, labelID int32) (MailLabel, error) {
+func GetMailLabel(characterID int32, labelID int32) (MailLabel, error) {
 	var l MailLabel
 	err := db.Get(
 		&l,
@@ -81,7 +81,7 @@ func FetchMailLabel(characterID int32, labelID int32) (MailLabel, error) {
 	return l, nil
 }
 
-func FetchMailLabels(characterID int32, labelIDs []int32) ([]MailLabel, error) {
+func ListMailLabelsForIDs(characterID int32, labelIDs []int32) ([]MailLabel, error) {
 	var ll []MailLabel
 	if len(labelIDs) == 0 {
 		return ll, nil
@@ -111,7 +111,7 @@ func FetchMailLabels(characterID int32, labelIDs []int32) ([]MailLabel, error) {
 }
 
 // TODO: Add index for sorting labels
-func FetchCustomMailLabels(characterID int32) ([]MailLabel, error) {
+func ListMailLabels(characterID int32) ([]MailLabel, error) {
 	var ll []MailLabel
 	err := db.Select(
 		&ll,
