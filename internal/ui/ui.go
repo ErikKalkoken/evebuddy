@@ -4,7 +4,6 @@ package ui
 import (
 	"database/sql"
 	"example/evebuddy/internal/logic"
-	"example/evebuddy/internal/model"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -82,7 +81,7 @@ func NewUI() *ui {
 	w.SetMaster()
 	w.SetMainMenu(MakeMenu(a, u))
 
-	characterID, err := model.GetSetting[int32](settingLastCharacterID)
+	characterID, err := logic.GetSetting[int32](settingLastCharacterID)
 	if err != nil {
 		panic(err)
 	}
@@ -119,7 +118,7 @@ func (u *ui) CurrentChar() *logic.Character {
 func (u *ui) SetCurrentCharacter(c *logic.Character) {
 	u.currentCharacter = c
 	u.window.SetTitle(fmt.Sprintf("Eve Buddy [%s]", c.Name))
-	err := model.SetSetting(settingLastCharacterID, c.ID)
+	err := logic.SetSetting(settingLastCharacterID, c.ID)
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
@@ -129,7 +128,7 @@ func (u *ui) SetCurrentCharacter(c *logic.Character) {
 
 func (u *ui) ResetCurrentCharacter() {
 	u.currentCharacter = nil
-	err := model.DeleteSetting(settingLastCharacterID)
+	err := logic.DeleteSetting(settingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}
