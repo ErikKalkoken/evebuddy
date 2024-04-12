@@ -16,43 +16,54 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// accountArea is the UI area for managing of characters.
-type accountArea struct {
-	characters *fyne.Container
-	content    *fyne.Container
-	ui         *ui
+// manageArea is the UI area for managing of characters.
+type manageArea struct {
+	content *fyne.Container
+	dialog  *dialog.CustomDialog
+	ui      *ui
 }
 
-func (u *ui) NewAccountArea() *accountArea {
-	m := &accountArea{
-		ui: u,
-	}
-	characters := container.NewVBox()
+func (u *ui) ShowManageDialog() {
+	m := u.NewManageArea()
+	m.Redraw()
 	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		m.showAddCharacterDialog()
 	})
 	button.Importance = widget.HighImportance
-	c := container.NewScroll(characters)
-	content := container.NewBorder(nil, button, nil, nil, c)
-	m.characters = characters
-	m.content = content
+	c := container.NewScroll(m.content)
+	c.SetMinSize(fyne.NewSize(400, 400))
+	content := container.NewBorder(button, nil, nil, nil, c)
+	dialog := dialog.NewCustom("Manage Characters", "Close", content, u.window)
+	m.dialog = dialog
+	dialog.SetOnClosed(func() {
+		u.characterArea.Redraw()
+	})
+	dialog.Show()
+}
+
+func (u *ui) NewManageArea() *manageArea {
+	content := container.NewVBox()
+	m := &manageArea{
+		ui:      u,
+		content: content,
+	}
 	return m
 }
 
-func (m *accountArea) Redraw() {
+func (m *manageArea) Redraw() {
 	chars, err := model.ListCharacters()
 	if err != nil {
 		panic(err)
 	}
-	m.characters.RemoveAll()
+	m.content.RemoveAll()
 	for _, char := range chars {
-		name := widget.NewLabel(char.Name)
-		name.TextStyle = fyne.TextStyle{Bold: true}
 		uri := char.PortraitURL(defaultIconSize)
 		image := canvas.NewImageFromURI(uri)
 		image.FillMode = canvas.ImageFillOriginal
+		name := widget.NewLabel(char.Name)
 		selectButton := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
 			m.ui.SetCurrentCharacter(&char)
+			m.dialog.Hide()
 		})
 		isCurrentChar := char.ID == m.ui.CurrentCharID()
 		if isCurrentChar {
@@ -86,13 +97,13 @@ func (m *accountArea) Redraw() {
 		})
 		deleteButton.Importance = widget.DangerImportance
 		item := container.NewHBox(image, name, layout.NewSpacer(), selectButton, deleteButton)
-		m.characters.Add(item)
-		m.characters.Add(widget.NewSeparator())
+		m.content.Add(item)
+		m.content.Add(widget.NewSeparator())
 	}
-	m.characters.Refresh()
+	m.content.Refresh()
 }
 
-func (m *accountArea) showAddCharacterDialog() {
+func (m *manageArea) showAddCharacterDialog() {
 	ctx, cancel := context.WithCancel(context.Background())
 	dialog := dialog.NewCustom(
 		"Add Character",
