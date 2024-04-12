@@ -123,8 +123,8 @@ func (u *ui) SetCurrentCharacter(c *model.Character) {
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
-	u.folderArea.Redraw()
 	u.characterArea.Redraw()
+	u.folderArea.Redraw()
 }
 
 func (u *ui) ResetCurrentCharacter() {
@@ -133,8 +133,8 @@ func (u *ui) ResetCurrentCharacter() {
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}
-	u.folderArea.Redraw()
 	u.characterArea.Redraw()
+	u.folderArea.Redraw()
 }
 
 func addTitle(c fyne.CanvasObject, title string) *fyne.Container {

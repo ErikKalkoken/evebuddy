@@ -29,7 +29,7 @@ var testCases = []struct {
 
 func TestCharacterPortraitURL(t *testing.T) {
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("characterID:%d sizeID:%d", tc.id, tc.size), func(t *testing.T) {
+		t.Run(fmt.Sprintf("character ID:%d size:%d", tc.id, tc.size), func(t *testing.T) {
 			got, err := images.CharacterPortraitURL(tc.id, tc.size)
 			if tc.valid && assert.NoError(t, err) {
 				s := fmt.Sprintf("https://images.evetech.net/characters/%d/portrait?size=%d", tc.id, tc.size)
@@ -44,10 +44,25 @@ func TestCharacterPortraitURL(t *testing.T) {
 
 func TestCorporationLogoURL(t *testing.T) {
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("characterID:%d sizeID:%d", tc.id, tc.size), func(t *testing.T) {
+		t.Run(fmt.Sprintf("corporation ID:%d size:%d", tc.id, tc.size), func(t *testing.T) {
 			got, err := images.CorporationLogoURL(tc.id, tc.size)
 			if tc.valid && assert.NoError(t, err) {
 				s := fmt.Sprintf("https://images.evetech.net/corporations/%d/logo?size=%d", tc.id, tc.size)
+				want, _ := storage.ParseURI(s)
+				assert.Equal(t, want, got)
+			} else {
+				assert.Error(t, err)
+			}
+		})
+	}
+}
+
+func TestAllianceLogoURL(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("alliance ID:%d size:%d", tc.id, tc.size), func(t *testing.T) {
+			got, err := images.AllianceLogoURL(tc.id, tc.size)
+			if tc.valid && assert.NoError(t, err) {
+				s := fmt.Sprintf("https://images.evetech.net/alliances/%d/logo?size=%d", tc.id, tc.size)
 				want, _ := storage.ParseURI(s)
 				assert.Equal(t, want, got)
 			} else {

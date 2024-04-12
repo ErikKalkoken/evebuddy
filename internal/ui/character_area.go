@@ -2,10 +2,14 @@ package ui
 
 import (
 	"database/sql"
+	"example/evebuddy/internal/api/images"
 	"example/evebuddy/internal/helper/humanize"
+	"example/evebuddy/internal/model"
 	"fmt"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
@@ -27,8 +31,22 @@ func (u *ui) NewCharacterArea() *characterArea {
 func (c *characterArea) Redraw() {
 	c.items.RemoveAll()
 	character := c.ui.CurrentChar()
-	character.GetAlliance()
-	character.GetFaction()
+	if character == nil {
+		return
+	}
+	err := character.GetAlliance()
+	if err != nil {
+		slog.Error(err.Error())
+		return
+	}
+	err = character.GetFaction()
+	if err != nil {
+		slog.Error(err.Error())
+		return
+	}
+	icons := container.NewHBox()
+	c.items.Add(icons)
+	c.items.Add(widget.NewSeparator())
 	var rows = []struct {
 		label string
 		value string
@@ -50,6 +68,52 @@ func (c *characterArea) Redraw() {
 		c.items.Add(container.NewHBox(label, layout.NewSpacer(), value))
 		c.items.Add(widget.NewSeparator())
 	}
+	err = updateIcons(icons, character)
+	if err != nil {
+		slog.Error(err.Error())
+	}
+}
+
+func updateIcons(icons *fyne.Container, c *model.Character) error {
+	u, err := images.CharacterPortraitURL(c.ID, 128)
+	if err != nil {
+		return err
+	}
+	character := canvas.NewImageFromURI(u)
+	character.FillMode = canvas.ImageFillOriginal
+	icons.Add(layout.NewSpacer())
+	icons.Add(character)
+
+	u, err = images.CorporationLogoURL(c.CorporationID, 128)
+	if err != nil {
+		return err
+	}
+	corp := canvas.NewImageFromURI(u)
+	corp.FillMode = canvas.ImageFillOriginal
+	icons.Add(corp)
+
+	if c.AllianceID.Valid {
+		u, err = images.AllianceLogoURL(c.AllianceID.Int32, 128)
+		if err != nil {
+			return err
+		}
+		image := canvas.NewImageFromURI(u)
+		image.FillMode = canvas.ImageFillOriginal
+		icons.Add(image)
+	}
+
+	if c.FactionID.Valid {
+		u, err = images.CorporationLogoURL(c.FactionID.Int32, 128)
+		if err != nil {
+			return err
+		}
+		image := canvas.NewImageFromURI(u)
+		image.FillMode = canvas.ImageFillOriginal
+		icons.Add(image)
+	}
+
+	icons.Add(layout.NewSpacer())
+	return nil
 }
 
 func stringOrDefault(s, d string) string {

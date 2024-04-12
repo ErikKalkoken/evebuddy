@@ -13,11 +13,17 @@ type category string
 const (
 	categoryCharacter   category = "characters"
 	categoryCorporation category = "corporations"
+	categoryAlliance    category = "alliances"
 )
 
 const PlaceholderCharacterID = 1
 const PlaceholderCorporationID = 1
 const baseURL = "https://images.evetech.net"
+
+// AllianceLogoURL returns an image URL for an alliance logo
+func AllianceLogoURL(id int32, size int) (fyne.URI, error) {
+	return imageURL(categoryAlliance, id, size)
+}
 
 // CharacterPortraitURL returns an image URL for a character portrait
 func CharacterPortraitURL(id int32, size int) (fyne.URI, error) {
@@ -37,6 +43,7 @@ func imageURL(c category, id int32, size int) (fyne.URI, error) {
 		return nil, fmt.Errorf("invalid size %d", size)
 	}
 	category2Class := map[category]string{
+		categoryAlliance:    "logo",
 		categoryCharacter:   "portrait",
 		categoryCorporation: "logo",
 	}
