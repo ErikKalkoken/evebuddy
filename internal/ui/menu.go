@@ -14,7 +14,8 @@ func MakeMenu(a fyne.App, u *ui) *fyne.MainMenu {
 	character := fyne.NewMenu("Character", manageItem)
 
 	aboutItem := fyne.NewMenuItem("About", func() {
-		d := dialog.NewInformation("About", "esiapp v0.1.0", u.window)
+		text := "Eve Buddy v0.1.0\n\n(c) 2024 Erik Kalkoken"
+		d := dialog.NewInformation("About", text, u.window)
 		d.Show()
 	})
 	help := fyne.NewMenu("Help", aboutItem)
