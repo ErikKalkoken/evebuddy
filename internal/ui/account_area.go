@@ -64,7 +64,7 @@ func (m *accountArea) Redraw() {
 				fmt.Sprintf("Are you sure you want to delete %s?", char.Name),
 				func(confirmed bool) {
 					if confirmed {
-						err := char.Delete()
+						err := model.DeleteCharacter(char.ID)
 						if err != nil {
 							d := dialog.NewError(err, m.ui.window)
 							d.Show()

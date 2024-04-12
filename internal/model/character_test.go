@@ -137,7 +137,7 @@ func TestCharacter(t *testing.T) {
 		model.TruncateTables()
 		c := factory.CreateCharacter()
 		// when
-		err := c.Delete()
+		err := model.DeleteCharacter(c.ID)
 		// then
 		if assert.NoError(t, err) {
 			_, err := model.FetchCharacter(c.ID)

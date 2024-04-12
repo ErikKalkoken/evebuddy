@@ -131,23 +131,6 @@ func (m *Mail) addLabels() error {
 	return nil
 }
 
-// Delete deletes this mail object from the database
-// Returns error when trying to delete an object that does not exist in the DB
-func (m *Mail) Delete() (int, error) {
-	if m.ID == 0 {
-		return 0, sql.ErrNoRows
-	}
-	r, err := db.Exec("DELETE FROM mails WHERE mails.id = ?;", m.ID)
-	if err != nil {
-		return 0, err
-	}
-	rows, err := r.RowsAffected()
-	if err != nil {
-		return 0, err
-	}
-	return int(rows), nil
-}
-
 // BodyPlain returns a mail's body as plain text.
 func (m *Mail) BodyPlain() string {
 	t := strings.ReplaceAll(m.Body, "<br>", "\n")
@@ -403,4 +386,18 @@ func FetchMailListUnreadCounts(characterID int32) (map[int32]int, error) {
 		m[r.ID] += r.Count
 	}
 	return m, nil
+}
+
+// DeleteMail deletes this mail object from the database
+// Returns error when trying to delete an object that does not exist in the DB
+func DeleteMail(id uint64) (int, error) {
+	r, err := db.Exec("DELETE FROM mails WHERE mails.id = ?;", id)
+	if err != nil {
+		return 0, err
+	}
+	rows, err := r.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return int(rows), nil
 }

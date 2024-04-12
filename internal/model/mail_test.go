@@ -232,20 +232,11 @@ func TestDeleteMail(t *testing.T) {
 		model.TruncateTables()
 		m := factory.CreateMail()
 		// when
-		c, err := m.Delete()
+		c, err := model.DeleteMail(m.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, 1, c)
 		}
-	})
-	t.Run("returns error when trying delete mail with ID", func(t *testing.T) {
-		// given
-		model.TruncateTables()
-		m := model.Mail{}
-		// when
-		_, err := m.Delete()
-		// then
-		assert.ErrorIs(t, err, sql.ErrNoRows)
 	})
 }
 

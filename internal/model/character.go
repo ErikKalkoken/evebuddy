@@ -93,16 +93,6 @@ func (c *Character) Save() error {
 	return nil
 }
 
-// Delete deletes this character with all it's data
-func (c *Character) Delete() error {
-	_, err := db.Exec("DELETE FROM characters WHERE id = ?", c.ID)
-	if err != nil {
-		return err
-	}
-	slog.Info("Deleted character", "ID", c.ID)
-	return nil
-}
-
 // PortraitURL returns an image URL for a portrait of a character
 func (c *Character) PortraitURL(size int) fyne.URI {
 	u, _ := images.CharacterPortraitURL(c.ID, size)
@@ -252,4 +242,14 @@ func FetchCharacterIDs() ([]int32, error) {
 		return nil, err
 	}
 	return ids, nil
+}
+
+// DeleteCharacter deletes this character with all it's data
+func DeleteCharacter(id int32) error {
+	_, err := db.Exec("DELETE FROM characters WHERE id = ?", id)
+	if err != nil {
+		return err
+	}
+	slog.Info("Deleted character", "ID", id)
+	return nil
 }

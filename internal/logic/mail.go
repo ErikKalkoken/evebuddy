@@ -30,7 +30,7 @@ func DeleteMail(m *model.Mail) error {
 	if err != nil {
 		return err
 	}
-	_, err = m.Delete()
+	_, err = model.DeleteMail(m.ID)
 	if err != nil {
 		return err
 	}
