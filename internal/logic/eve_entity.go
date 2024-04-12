@@ -2,12 +2,69 @@ package logic
 
 import (
 	"context"
+	"errors"
+	"example/evebuddy/internal/api/images"
 	"example/evebuddy/internal/helper/set"
 	"example/evebuddy/internal/model"
 	"fmt"
 	"log/slog"
 	"slices"
+
+	"fyne.io/fyne/v2"
 )
+
+type EveEntityCategory int
+
+// Supported categories of EveEntity
+const (
+	EveEntityAlliance EveEntityCategory = iota + 1
+	EveEntityCharacter
+	EveEntityCorporation
+	EveEntityFaction
+	EveEntityMailList
+)
+
+type EveEntity struct {
+	Category EveEntityCategory
+	ID       int32
+	Name     string
+}
+
+func (e *EveEntity) IconURL(size int) (fyne.URI, error) {
+	switch e.Category {
+	case EveEntityAlliance:
+		return images.AllianceLogoURL(e.ID, size)
+	case EveEntityCharacter:
+		return images.CharacterPortraitURL(e.ID, size)
+	case EveEntityCorporation:
+		return images.CorporationLogoURL(e.ID, size)
+	case EveEntityFaction:
+		return images.FactionLogoURL(e.ID, size)
+	}
+	return nil, errors.New("can not match category")
+}
+
+func eveEntityFromDBModel(e model.EveEntity) EveEntity {
+	if e.ID == 0 {
+		return EveEntity{}
+	}
+	categoryMap := map[model.EveEntityCategory]EveEntityCategory{
+		model.EveEntityAlliance:    EveEntityAlliance,
+		model.EveEntityCharacter:   EveEntityCharacter,
+		model.EveEntityCorporation: EveEntityCorporation,
+		model.EveEntityFaction:     EveEntityFaction,
+		model.EveEntityMailList:    EveEntityMailList,
+	}
+	category, ok := categoryMap[e.Category]
+	if !ok {
+		panic(fmt.Sprintf("Can not map unknown category: %s", e.Category))
+	}
+	return EveEntity{
+		Category: category,
+		ID:       e.ID,
+		Name:     e.Name,
+	}
+}
 
 // AddEveEntitiesFromESISearch runs a search on ESI and adds the results as new EveEntity objects to the database.
 func AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, error) {

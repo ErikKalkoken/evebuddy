@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"example/evebuddy/internal/logic"
-	"example/evebuddy/internal/model"
 	"fmt"
 	"log/slog"
 
@@ -51,13 +50,13 @@ func (u *ui) NewManageArea() *manageArea {
 }
 
 func (m *manageArea) Redraw() {
-	chars, err := model.ListCharacters()
+	chars, err := logic.ListCharacters()
 	if err != nil {
 		panic(err)
 	}
 	m.content.RemoveAll()
 	for _, char := range chars {
-		uri := char.PortraitURL(defaultIconSize)
+		uri, _ := char.PortraitURL(defaultIconSize)
 		image := canvas.NewImageFromURI(uri)
 		image.FillMode = canvas.ImageFillOriginal
 		name := widget.NewLabel(char.Name)
@@ -75,14 +74,14 @@ func (m *manageArea) Redraw() {
 				fmt.Sprintf("Are you sure you want to delete %s?", char.Name),
 				func(confirmed bool) {
 					if confirmed {
-						err := model.DeleteCharacter(char.ID)
+						err := char.Delete()
 						if err != nil {
 							d := dialog.NewError(err, m.ui.window)
 							d.Show()
 						}
 						m.Redraw()
 						if isCurrentChar {
-							c, err := model.GetFirstCharacter()
+							c, err := logic.GetFirstCharacter()
 							if err != nil {
 								m.ui.ResetCurrentCharacter()
 							} else {

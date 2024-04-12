@@ -2,12 +2,9 @@ package model
 
 import (
 	"database/sql"
-	"example/evebuddy/internal/api/images"
 	"fmt"
 	"log/slog"
 	"time"
-
-	"fyne.io/fyne/v2"
 )
 
 // An Eve Online character.
@@ -91,12 +88,6 @@ func (c *Character) Save() error {
 		return err
 	}
 	return nil
-}
-
-// PortraitURL returns an image URL for a portrait of a character
-func (c *Character) PortraitURL(size int) fyne.URI {
-	u, _ := images.CharacterPortraitURL(c.ID, size)
-	return u
 }
 
 func (c *Character) GetAlliance() error {

@@ -35,7 +35,7 @@ const (
 type ui struct {
 	app              fyne.App
 	characterArea    *characterArea
-	currentCharacter *model.Character
+	currentCharacter *logic.Character
 	folderArea       *folderArea
 	headerArea       *headerArea
 	mailArea         *mailArea
@@ -87,7 +87,7 @@ func NewUI() *ui {
 		panic(err)
 	}
 	if characterID != 0 {
-		c, err := model.GetCharacter(characterID)
+		c, err := logic.GetCharacter(characterID)
 		if err != nil {
 			if err != sql.ErrNoRows {
 				slog.Error("Failed to load character", "error", err)
@@ -112,11 +112,11 @@ func (u *ui) CurrentCharID() int32 {
 	return u.currentCharacter.ID
 }
 
-func (u *ui) CurrentChar() *model.Character {
+func (u *ui) CurrentChar() *logic.Character {
 	return u.currentCharacter
 }
 
-func (u *ui) SetCurrentCharacter(c *model.Character) {
+func (u *ui) SetCurrentCharacter(c *logic.Character) {
 	u.currentCharacter = c
 	u.window.SetTitle(fmt.Sprintf("Eve Buddy [%s]", c.Name))
 	err := model.SetSetting(settingLastCharacterID, c.ID)

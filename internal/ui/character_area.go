@@ -1,10 +1,9 @@
 package ui
 
 import (
-	"database/sql"
 	"example/evebuddy/internal/api/images"
 	"example/evebuddy/internal/helper/humanize"
-	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/logic"
 	"fmt"
 	"log/slog"
 
@@ -34,16 +33,6 @@ func (c *characterArea) Redraw() {
 	if character == nil {
 		return
 	}
-	err := character.GetAlliance()
-	if err != nil {
-		slog.Error(err.Error())
-		return
-	}
-	err = character.GetFaction()
-	if err != nil {
-		slog.Error(err.Error())
-		return
-	}
 	icons := container.NewHBox()
 	c.items.Add(icons)
 	c.items.Add(widget.NewSeparator())
@@ -58,8 +47,8 @@ func (c *characterArea) Redraw() {
 		{"Birthday", character.Birthday.Format(myDateTime)},
 		{"Gender", character.Gender},
 		{"Security Status", fmt.Sprintf("%.1f", character.SecurityStatus)},
-		{"Skill Points", int64OrDefault(character.SkillPoints, "-")},
-		{"Wallet Balance", float64OrDefault(character.WalletBalance, "-")},
+		{"Skill Points", numberOrDefault(character.SkillPoints, "-")},
+		{"Wallet Balance", numberOrDefault(character.WalletBalance, "-")},
 	}
 	for _, row := range rows {
 		label := widget.NewLabel(row.label)
@@ -68,13 +57,13 @@ func (c *characterArea) Redraw() {
 		c.items.Add(container.NewHBox(label, layout.NewSpacer(), value))
 		c.items.Add(widget.NewSeparator())
 	}
-	err = updateIcons(icons, character)
+	err := updateIcons(icons, character)
 	if err != nil {
 		slog.Error(err.Error())
 	}
 }
 
-func updateIcons(icons *fyne.Container, c *model.Character) error {
+func updateIcons(icons *fyne.Container, c *logic.Character) error {
 	u, err := images.CharacterPortraitURL(c.ID, 128)
 	if err != nil {
 		return err
@@ -84,7 +73,7 @@ func updateIcons(icons *fyne.Container, c *model.Character) error {
 	icons.Add(layout.NewSpacer())
 	icons.Add(character)
 
-	u, err = images.CorporationLogoURL(c.CorporationID, 128)
+	u, err = c.Corporation.IconURL(128)
 	if err != nil {
 		return err
 	}
@@ -92,8 +81,8 @@ func updateIcons(icons *fyne.Container, c *model.Character) error {
 	corp.FillMode = canvas.ImageFillOriginal
 	icons.Add(corp)
 
-	if c.AllianceID.Valid {
-		u, err = images.AllianceLogoURL(c.AllianceID.Int32, 128)
+	if c.HasAlliance() {
+		u, err = c.Alliance.IconURL(128)
 		if err != nil {
 			return err
 		}
@@ -102,8 +91,8 @@ func updateIcons(icons *fyne.Container, c *model.Character) error {
 		icons.Add(image)
 	}
 
-	if c.FactionID.Valid {
-		u, err = images.FactionLogoURL(c.FactionID.Int32, 128)
+	if c.HasFaction() {
+		u, err = c.Faction.IconURL(128)
 		if err != nil {
 			return err
 		}
@@ -123,16 +112,9 @@ func stringOrDefault(s, d string) string {
 	return s
 }
 
-func float64OrDefault(v sql.NullFloat64, d string) string {
-	if !v.Valid {
+func numberOrDefault[T int | float64](v T, d string) string {
+	if v == 0 {
 		return d
 	}
-	return humanize.Number(v.Float64, 1)
-}
-
-func int64OrDefault(v sql.NullInt64, d string) string {
-	if !v.Valid {
-		return d
-	}
-	return humanize.Number(float64(v.Int64), 1)
+	return humanize.Number(float64(v), 1)
 }

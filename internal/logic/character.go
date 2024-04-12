@@ -2,10 +2,101 @@ package logic
 
 import (
 	"context"
+	"example/evebuddy/internal/api/images"
 	"example/evebuddy/internal/api/sso"
 	"example/evebuddy/internal/model"
 	"log/slog"
+	"time"
+
+	"fyne.io/fyne/v2"
 )
+
+// An Eve Online character.
+type Character struct {
+	Alliance       EveEntity
+	Birthday       time.Time
+	Corporation    EveEntity
+	Description    string
+	Faction        EveEntity
+	Gender         string
+	ID             int32
+	Name           string
+	SecurityStatus float32
+	SkillPoints    int
+	WalletBalance  float64
+}
+
+func (c *Character) Delete() error {
+	return model.DeleteCharacter(c.ID)
+}
+
+func (c *Character) HasAlliance() bool {
+	return c.Alliance.ID != 0
+}
+
+func (c *Character) HasFaction() bool {
+	return c.Faction.ID != 0
+}
+
+// PortraitURL returns an image URL for a portrait of a character
+func (c *Character) PortraitURL(size int) (fyne.URI, error) {
+	return images.CharacterPortraitURL(c.ID, size)
+}
+
+func characterFromDBModel(c model.Character) Character {
+	return Character{
+		Alliance:       eveEntityFromDBModel(c.Alliance),
+		Birthday:       c.Birthday,
+		Corporation:    eveEntityFromDBModel(c.Corporation),
+		Description:    c.Description,
+		Faction:        eveEntityFromDBModel(c.Faction),
+		Gender:         c.Gender,
+		ID:             c.ID,
+		Name:           c.Name,
+		SecurityStatus: c.SecurityStatus,
+		SkillPoints:    int(c.SkillPoints.Int64),
+		WalletBalance:  c.WalletBalance.Float64,
+	}
+}
+
+func GetCharacter(id int32) (Character, error) {
+	charDB, err := model.GetCharacter(id)
+	if err != nil {
+		return Character{}, err
+	}
+	err = charDB.GetAlliance()
+	if err != nil {
+		slog.Error(err.Error())
+		return Character{}, err
+	}
+	err = charDB.GetFaction()
+	if err != nil {
+		slog.Error(err.Error())
+		return Character{}, err
+	}
+	c := characterFromDBModel(charDB)
+	return c, nil
+}
+
+func ListCharacters() ([]Character, error) {
+	charsDB, err := model.ListCharacters()
+	if err != nil {
+		return nil, err
+	}
+	cc := make([]Character, len(charsDB))
+	for i, charDB := range charsDB {
+		cc[i] = characterFromDBModel(charDB)
+	}
+	return cc, nil
+}
+
+func GetFirstCharacter() (Character, error) {
+	charDB, err := model.GetFirstCharacter()
+	if err != nil {
+		return Character{}, err
+	}
+	return characterFromDBModel(charDB), nil
+}
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.
 func AddCharacter(ctx context.Context) error {
