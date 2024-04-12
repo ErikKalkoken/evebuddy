@@ -35,6 +35,11 @@ func CorporationLogoURL(id int32, size int) (fyne.URI, error) {
 	return imageURL(categoryCorporation, id, size)
 }
 
+// FactionLogoURL returns an image URL for a faction logo
+func FactionLogoURL(id int32, size int) (fyne.URI, error) {
+	return imageURL(categoryCorporation, id, size)
+}
+
 func imageURL(c category, id int32, size int) (fyne.URI, error) {
 	switch size {
 	case 32, 64, 128, 256, 512, 1024:

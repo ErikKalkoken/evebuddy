@@ -71,3 +71,18 @@ func TestAllianceLogoURL(t *testing.T) {
 		})
 	}
 }
+
+func TestFactionLogoURL(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("faction ID:%d size:%d", tc.id, tc.size), func(t *testing.T) {
+			got, err := images.FactionLogoURL(tc.id, tc.size)
+			if tc.valid && assert.NoError(t, err) {
+				s := fmt.Sprintf("https://images.evetech.net/corporations/%d/logo?size=%d", tc.id, tc.size)
+				want, _ := storage.ParseURI(s)
+				assert.Equal(t, want, got)
+			} else {
+				assert.Error(t, err)
+			}
+		})
+	}
+}

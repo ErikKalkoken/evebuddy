@@ -103,7 +103,7 @@ func updateIcons(icons *fyne.Container, c *model.Character) error {
 	}
 
 	if c.FactionID.Valid {
-		u, err = images.CorporationLogoURL(c.FactionID.Int32, 128)
+		u, err = images.FactionLogoURL(c.FactionID.Int32, 128)
 		if err != nil {
 			return err
 		}
