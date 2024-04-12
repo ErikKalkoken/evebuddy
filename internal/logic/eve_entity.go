@@ -11,7 +11,7 @@ import (
 
 // AddEveEntitiesFromESISearch runs a search on ESI and adds the results as new EveEntity objects to the database.
 func AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, error) {
-	token, err := GetValidToken(characterID)
+	token, err := getValidToken(characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +25,7 @@ func AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, err
 		return nil, err
 	}
 	ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
-	missingIDs, err := AddMissingEveEntities(ids)
+	missingIDs, err := addMissingEveEntities(ids)
 	if err != nil {
 		slog.Error("Failed to fetch missing IDs", "error", err)
 		return nil, err
@@ -33,8 +33,8 @@ func AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, err
 	return missingIDs, nil
 }
 
-// AddMissingEveEntities adds EveEntities from ESI for IDs missing in the database.
-func AddMissingEveEntities(ids []int32) ([]int32, error) {
+// addMissingEveEntities adds EveEntities from ESI for IDs missing in the database.
+func addMissingEveEntities(ids []int32) ([]int32, error) {
 	c, err := model.ListEveEntityIDs()
 	if err != nil {
 		return nil, err

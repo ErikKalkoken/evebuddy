@@ -10,20 +10,20 @@ import (
 	"github.com/antihax/goesi"
 )
 
-// GetValidToken returns a valid token for a character. Convenience function.
-func GetValidToken(characterID int32) (*model.Token, error) {
+// getValidToken returns a valid token for a character. Convenience function.
+func getValidToken(characterID int32) (*model.Token, error) {
 	t, err := model.GetToken(characterID)
 	if err != nil {
 		return nil, err
 	}
-	if err := EnsureValidToken(&t); err != nil {
+	if err := ensureValidToken(&t); err != nil {
 		return nil, err
 	}
 	return &t, nil
 }
 
-// EnsureValidToken will automatically try to refresh a token that is already or about to become invalid.
-func EnsureValidToken(token *model.Token) error {
+// ensureValidToken will automatically try to refresh a token that is already or about to become invalid.
+func ensureValidToken(token *model.Token) error {
 	if !token.RemainsValid(time.Second * 60) {
 		slog.Debug("Need to refresh token", "characterID", token.CharacterID)
 		rawToken, err := sso.RefreshToken(httpClient, token.RefreshToken)

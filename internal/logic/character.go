@@ -8,15 +8,15 @@ import (
 )
 
 // AddCharacter adds a new character via SSO authentication and returns the new token.
-func AddCharacter(ctx context.Context) (*model.Token, error) {
+func AddCharacter(ctx context.Context) error {
 	ssoToken, err := sso.Authenticate(ctx, httpClient, esiScopes)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	charID := ssoToken.CharacterID
 	charEsi, _, err := esiClient.ESI.CharacterApi.GetCharactersCharacterId(context.Background(), charID, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	ids := []int32{charID, charEsi.CorporationId}
 	if charEsi.AllianceId != 0 {
@@ -25,9 +25,9 @@ func AddCharacter(ctx context.Context) (*model.Token, error) {
 	if charEsi.FactionId != 0 {
 		ids = append(ids, charEsi.FactionId)
 	}
-	_, err = AddMissingEveEntities(ids)
+	_, err = addMissingEveEntities(ids)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	character := model.Character{
 		Birthday:       charEsi.Birthday,
@@ -68,10 +68,10 @@ func AddCharacter(ctx context.Context) (*model.Token, error) {
 		character.WalletBalance.Valid = true
 	}
 	if err = character.Save(); err != nil {
-		return nil, err
+		return err
 	}
 	if err = token.Save(); err != nil {
-		return nil, err
+		return err
 	}
-	return &token, nil
+	return nil
 }

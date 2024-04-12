@@ -22,7 +22,7 @@ const (
 
 // DeleteMail deleted a mail both on ESI and in the database.
 func DeleteMail(m *model.Mail) error {
-	token, err := GetValidToken(m.CharacterID)
+	token, err := getValidToken(m.CharacterID)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 	if len(recipients) == 0 {
 		return fmt.Errorf("missing recipients")
 	}
-	token, err := GetValidToken(characterID)
+	token, err := getValidToken(characterID)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 	for _, r := range recipients {
 		ids = append(ids, r.RecipientId)
 	}
-	_, err = AddMissingEveEntities(ids)
+	_, err = addMissingEveEntities(ids)
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func GetMail(characterID int32, status binding.String) error {
 	if err := updateMailLabels(&token); err != nil {
 		return err
 	}
-	headers, err := ListMailHeaders(&token)
+	headers, err := listMailHeaders(&token)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func GetMail(characterID int32, status binding.String) error {
 }
 
 func updateMailLabels(token *model.Token) error {
-	if err := EnsureValidToken(token); err != nil {
+	if err := ensureValidToken(token); err != nil {
 		return err
 	}
 	ll, _, err := esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(newContextWithToken(token), token.CharacterID, nil)
@@ -168,7 +168,7 @@ func updateMailLabels(token *model.Token) error {
 }
 
 func updateMailLists(token *model.Token) error {
-	if err := EnsureValidToken(token); err != nil {
+	if err := ensureValidToken(token); err != nil {
 		return err
 	}
 	ctx := newContextWithToken(token)
@@ -189,9 +189,9 @@ func updateMailLists(token *model.Token) error {
 	return nil
 }
 
-// ListMailHeaders fetched mail headers from ESI with paging and returns them.
-func ListMailHeaders(token *model.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
-	if err := EnsureValidToken(token); err != nil {
+// listMailHeaders fetched mail headers from ESI with paging and returns them.
+func listMailHeaders(token *model.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
+	if err := ensureValidToken(token); err != nil {
 		return nil, err
 	}
 	var mm []esi.GetCharactersCharacterIdMail200Ok
@@ -236,7 +236,7 @@ func updateMails(token *model.Token, headers []esi.GetCharactersCharacterIdMail2
 		return nil
 	}
 
-	if err := EnsureValidToken(token); err != nil {
+	if err := ensureValidToken(token); err != nil {
 		return err
 	}
 
@@ -274,7 +274,7 @@ func fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *mode
 	for _, r := range header.Recipients {
 		entityIDs.Add(r.RecipientId)
 	}
-	_, err := AddMissingEveEntities(entityIDs.ToSlice())
+	_, err := addMissingEveEntities(entityIDs.ToSlice())
 	if err != nil {
 		slog.Error("Failed to process mail", "header", header, "error", err)
 		return
@@ -347,7 +347,7 @@ func determineMailIDs(characterID int32, headers []esi.GetCharactersCharacterIdM
 
 // UpdateMailRead updates an existing mail as read
 func UpdateMailRead(m *model.Mail) error {
-	token, err := GetValidToken(m.CharacterID)
+	token, err := getValidToken(m.CharacterID)
 	if err != nil {
 		return err
 	}

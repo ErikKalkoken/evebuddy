@@ -52,7 +52,7 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 	token := model.Token{AccessToken: "abc", CharacterID: 1, ExpiresAt: time.Now().Add(time.Minute * 10)}
 
 	// when
-	mails, err := ListMailHeaders(&token)
+	mails, err := listMailHeaders(&token)
 
 	// then
 	if assert.NoError(t, err) {
