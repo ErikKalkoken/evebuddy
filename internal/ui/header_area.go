@@ -2,7 +2,7 @@ package ui
 
 import (
 	"database/sql"
-	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/logic"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -51,7 +51,7 @@ func (u *ui) NewHeaderArea() *headerArea {
 			if characterID == 0 {
 				return
 			}
-			m, err := model.GetMail(characterID, int32(mailID))
+			m, err := logic.GetMailFromDB(characterID, int32(mailID))
 			if err != nil {
 				if err != sql.ErrNoRows {
 					slog.Error("Failed to get mail", "error", err)
@@ -116,14 +116,14 @@ func (h *headerArea) Redraw(folder node) {
 }
 
 func (h *headerArea) redraw(folder node) {
-	var mm []model.Mail
+	var mm []logic.Mail
 	var err error
 	charID := h.ui.CurrentCharID()
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mm, err = model.ListMailsForLabel(charID, folder.ObjID)
+		mm, err = logic.ListMailsForLabel(charID, folder.ObjID)
 	case nodeCategoryList:
-		mm, err = model.ListMailsForList(charID, folder.ObjID)
+		mm, err = logic.ListMailsForList(charID, folder.ObjID)
 	}
 	var mailIDs []int
 	if err != nil {

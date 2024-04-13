@@ -173,15 +173,15 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 		rr = append(rr, e)
 	}
 	m := model.Mail{
-		Body:       body,
-		Character:  token.Character,
-		From:       from,
-		Labels:     []model.MailLabel{label},
-		MailID:     mailID,
-		Recipients: rr,
-		Subject:    subject,
-		IsRead:     true,
-		Timestamp:  time.Now(),
+		Body:        body,
+		CharacterID: token.CharacterID,
+		From:        from,
+		Labels:      []model.MailLabel{label},
+		MailID:      mailID,
+		Recipients:  rr,
+		Subject:     subject,
+		IsRead:      true,
+		Timestamp:   time.Now(),
 	}
 	if err := m.Create(); err != nil {
 		return err
@@ -460,4 +460,50 @@ func UpdateMailRead(m *Mail) error {
 	}
 	return nil
 
+}
+
+func GetMailLabelUnreadCounts(characterID int32) (map[int32]int, error) {
+	return model.GetMailLabelUnreadCounts(characterID)
+}
+
+func GetMailListUnreadCounts(characterID int32) (map[int32]int, error) {
+	return model.GetMailListUnreadCounts(characterID)
+}
+
+func ListMailLists(characterID int32) ([]EveEntity, error) {
+	ll, err := model.ListMailLists(characterID)
+	if err != nil {
+		return nil, err
+	}
+	ee := make([]EveEntity, len(ll))
+	for i, l := range ll {
+		ee[i] = eveEntityFromDBModel(l.EveEntity)
+	}
+	return ee, nil
+}
+
+// ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
+// Return mails for all labels, when labelID = 0
+func ListMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
+	mm, err := model.ListMailsForLabel(characterID, labelID)
+	if err != nil {
+		return nil, err
+	}
+	mm2 := make([]Mail, len(mm))
+	for i, m := range mm {
+		mm2[i] = mailFromDBModel(m)
+	}
+	return mm2, nil
+}
+
+func ListMailsForList(characterID int32, listID int32) ([]Mail, error) {
+	mm, err := model.ListMailsForList(characterID, listID)
+	if err != nil {
+		return nil, err
+	}
+	mm2 := make([]Mail, len(mm))
+	for i, m := range mm {
+		mm2[i] = mailFromDBModel(m)
+	}
+	return mm2, nil
 }

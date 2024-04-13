@@ -20,7 +20,7 @@ func (t *Token) Save() error {
 	if t.Character.ID != 0 {
 		t.CharacterID = t.Character.ID
 	}
-	if t.Character.ID == 0 {
+	if t.CharacterID == 0 {
 		return fmt.Errorf("can not save token without character")
 	}
 	t.CharacterID = t.Character.ID

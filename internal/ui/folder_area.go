@@ -2,7 +2,6 @@ package ui
 
 import (
 	"example/evebuddy/internal/logic"
-	"example/evebuddy/internal/model"
 	"fmt"
 	"log/slog"
 
@@ -112,11 +111,11 @@ func (f *folderArea) Redraw() {
 }
 
 func buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
-	labelUnreadCounts, err := model.GetMailLabelUnreadCounts(characterID)
+	labelUnreadCounts, err := logic.GetMailLabelUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
-	listUnreadCounts, err := model.GetMailListUnreadCounts(characterID)
+	listUnreadCounts, err := logic.GetMailListUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -127,13 +126,13 @@ func buildFolderTree(characterID int32) (map[string][]string, map[string]string,
 	folders := makeDefaultFolders(labelUnreadCounts)
 	folderItemAll := node{
 		ID:          nodeAllID,
-		ObjID:       model.LabelAll,
+		ObjID:       logic.LabelAll,
 		Name:        "All Mails",
 		Category:    nodeCategoryLabel,
 		UnreadCount: totalUnreadCount,
 	}
 	folders[nodeAllID] = folderItemAll.toJSON()
-	labels, err := model.ListMailLabels(characterID)
+	labels, err := logic.ListMailLabels(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -156,7 +155,7 @@ func buildFolderTree(characterID int32) (map[string][]string, map[string]string,
 			folders[uid] = n.toJSON()
 		}
 	}
-	lists, err := model.ListMailLists(characterID)
+	lists, err := logic.ListMailLists(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -169,13 +168,13 @@ func buildFolderTree(characterID int32) (map[string][]string, map[string]string,
 			UnreadCount: totalListUnreadCount,
 		}.toJSON()
 		for _, l := range lists {
-			uid := fmt.Sprintf("list%d", l.EveEntityID)
+			uid := fmt.Sprintf("list%d", l.ID)
 			ids[nodeListsID] = append(ids[nodeListsID], uid)
-			u, ok := listUnreadCounts[l.EveEntityID]
+			u, ok := listUnreadCounts[l.ID]
 			if !ok {
 				u = 0
 			}
-			n := node{ObjID: l.EveEntityID, Name: l.EveEntity.Name, Category: nodeCategoryList, UnreadCount: u}
+			n := node{ObjID: l.ID, Name: l.Name, Category: nodeCategoryList, UnreadCount: u}
 			folders[uid] = n.toJSON()
 		}
 	}
@@ -189,10 +188,10 @@ func makeDefaultFolders(labelUnreadCounts map[int32]int) map[string]string {
 		labelID int32
 		name    string
 	}{
-		{nodeInboxID, model.LabelInbox, "Inbox"},
-		{nodeSentID, model.LabelSent, "Sent"},
-		{nodeCorpID, model.LabelCorp, "Corp"},
-		{nodeAllianceID, model.LabelAlliance, "Alliance"},
+		{nodeInboxID, logic.LabelInbox, "Inbox"},
+		{nodeSentID, logic.LabelSent, "Sent"},
+		{nodeCorpID, logic.LabelCorp, "Corp"},
+		{nodeAllianceID, logic.LabelAlliance, "Alliance"},
 	}
 	for _, o := range defaultFolders {
 		u, ok := labelUnreadCounts[o.labelID]
@@ -214,7 +213,7 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 	var total, labels, lists int
 	for id, c := range labelCounts {
 		total += c
-		if id > model.LabelAlliance {
+		if id > logic.LabelAlliance {
 			labels += c
 		}
 	}
