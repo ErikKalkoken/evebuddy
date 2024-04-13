@@ -69,7 +69,7 @@ func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 	if !mail.IsRead {
 		go func() {
 			err := func() error {
-				err = logic.UpdateMailRead(&mail)
+				err = mail.UpdateMailRead()
 				if err != nil {
 					return err
 				}

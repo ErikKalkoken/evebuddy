@@ -40,6 +40,13 @@ var recipientMapCategories = map[EveEntityCategory]recipientCategory{
 	EveEntityMailList:    recipientCategoryMailList,
 }
 
+var eveEntityCategory2MailRecipientType = map[EveEntityCategory]string{
+	EveEntityAlliance:    "alliance",
+	EveEntityCharacter:   "character",
+	EveEntityCorporation: "corporation",
+	EveEntityMailList:    "mailing_list",
+}
+
 func (r recipientCategory) String() string {
 	return recipientCategoryLabels[r]
 }
@@ -173,13 +180,6 @@ func (rr *Recipients) ToOptions() []string {
 		ss[i] = r.String()
 	}
 	return ss
-}
-
-var eveEntityCategory2MailRecipientType = map[EveEntityCategory]string{
-	EveEntityAlliance:    "alliance",
-	EveEntityCharacter:   "character",
-	EveEntityCorporation: "corporation",
-	EveEntityMailList:    "mailing_list",
 }
 
 func (rr *Recipients) ToMailRecipients() ([]esi.PostCharactersCharacterIdMailRecipient, error) {

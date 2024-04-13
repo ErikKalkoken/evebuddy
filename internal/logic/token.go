@@ -50,7 +50,7 @@ func GetValidToken(characterID int32) (*Token, error) {
 		return nil, err
 	}
 	t2 := tokenFromDBModel(t)
-	if err := t2.ensureValid(); err != nil {
+	if err := t2.EnsureValid(); err != nil {
 		return nil, err
 	}
 	return &t2, nil
@@ -70,8 +70,8 @@ func (t *Token) Save() error {
 	return err
 }
 
-// ensureValid will automatically try to refresh a token that is already or about to become invalid.
-func (t *Token) ensureValid() error {
+// EnsureValid will automatically try to refresh a token that is already or about to become invalid.
+func (t *Token) EnsureValid() error {
 	if !t.RemainsValid(time.Second * 60) {
 		slog.Debug("Need to refresh token", "characterID", t.CharacterID)
 		rawToken, err := sso.RefreshToken(httpClient, t.RefreshToken)
@@ -90,7 +90,7 @@ func (t *Token) ensureValid() error {
 	return nil
 }
 
-func (t *Token) newContext() context.Context {
+func (t *Token) NewContext() context.Context {
 	ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, t.AccessToken)
 	return ctx
 }

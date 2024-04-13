@@ -97,7 +97,7 @@ func AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, err
 		"character",
 		"alliance",
 	}
-	r, _, err := esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(token.newContext(), categories, characterID, search, nil)
+	r, _, err := esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(token.NewContext(), categories, characterID, search, nil)
 	if err != nil {
 		return nil, err
 	}
