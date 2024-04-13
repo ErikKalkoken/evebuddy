@@ -48,6 +48,15 @@ func eveEntityFromDBModel(e model.EveEntity) EveEntity {
 	if e.ID == 0 {
 		return EveEntity{}
 	}
+	category := eveEntityCategoryFromDBModel(e.Category)
+	return EveEntity{
+		Category: category,
+		ID:       e.ID,
+		Name:     e.Name,
+	}
+}
+
+func eveEntityCategoryFromDBModel(c model.EveEntityCategory) EveEntityCategory {
 	categoryMap := map[model.EveEntityCategory]EveEntityCategory{
 		model.EveEntityAlliance:    EveEntityAlliance,
 		model.EveEntityCharacter:   EveEntityCharacter,
@@ -55,15 +64,26 @@ func eveEntityFromDBModel(e model.EveEntity) EveEntity {
 		model.EveEntityFaction:     EveEntityFaction,
 		model.EveEntityMailList:    EveEntityMailList,
 	}
-	category, ok := categoryMap[e.Category]
+	c2, ok := categoryMap[c]
 	if !ok {
-		panic(fmt.Sprintf("Can not map unknown category: %s", e.Category))
+		panic(fmt.Sprintf("Can not map unknown category: %s", c))
 	}
-	return EveEntity{
-		Category: category,
-		ID:       e.ID,
-		Name:     e.Name,
+	return c2
+}
+
+func eveEntityDBModelCategoryFromCategory(c EveEntityCategory) model.EveEntityCategory {
+	categoryMap := map[EveEntityCategory]model.EveEntityCategory{
+		EveEntityAlliance:    model.EveEntityAlliance,
+		EveEntityCharacter:   model.EveEntityCharacter,
+		EveEntityCorporation: model.EveEntityCorporation,
+		EveEntityFaction:     model.EveEntityFaction,
+		EveEntityMailList:    model.EveEntityMailList,
 	}
+	c2, ok := categoryMap[c]
+	if !ok {
+		panic(fmt.Sprintf("Can not map unknown category: %v", c))
+	}
+	return c2
 }
 
 // AddEveEntitiesFromESISearch runs a search on ESI and adds the results as new EveEntity objects to the database.
@@ -121,4 +141,16 @@ func addMissingEveEntities(ids []int32) ([]int32, error) {
 	}
 	slog.Debug("Added missing eve entities", "count", len(entities))
 	return missing.ToSlice(), nil
+}
+
+func SearchEveEntitiesByName(partial string) ([]EveEntity, error) {
+	ee, err := model.SearchEveEntitiesByName(partial)
+	if err != nil {
+		return nil, err
+	}
+	ee2 := make([]EveEntity, len(ee))
+	for i, e := range ee {
+		ee2[i] = eveEntityFromDBModel(e)
+	}
+	return ee2, nil
 }

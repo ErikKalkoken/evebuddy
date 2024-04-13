@@ -4,8 +4,10 @@ import (
 	"example/evebuddy/internal/helper/set"
 	"example/evebuddy/internal/model"
 	"fmt"
+	"html"
 	"log/slog"
 	"slices"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/antihax/goesi/esi"
 	"github.com/antihax/goesi/optional"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 const (
@@ -20,13 +23,96 @@ const (
 	maxHeadersPerPage = 50 // maximum header objects returned per page
 )
 
-// DeleteMail deleted a mail both on ESI and in the database.
-func DeleteMail(m *model.Mail) error {
-	token, err := getValidToken(m.CharacterID)
+var bodyPolicy = bluemonday.StrictPolicy()
+
+// An Eve mail belonging to a character
+type Mail struct {
+	Body       string
+	Character  Character
+	From       EveEntity
+	Labels     []MailLabel
+	IsRead     bool
+	ID         uint64
+	MailID     int32
+	Recipients []EveEntity
+	Subject    string
+	Timestamp  time.Time
+}
+
+func mailFromDBModel(m model.Mail) Mail {
+	m2 := Mail{
+		Body:      m.Body,
+		Character: characterFromDBModel(m.Character),
+		From:      eveEntityFromDBModel(m.From),
+		IsRead:    m.IsRead,
+		ID:        m.ID,
+		MailID:    m.MailID,
+		Subject:   m.Subject,
+		Timestamp: m.Timestamp,
+	}
+	for _, r := range m.Recipients {
+		m2.Recipients = append(m2.Recipients, eveEntityFromDBModel(r))
+	}
+	return m2
+}
+
+// Save updates to an existing mail.
+func (m *Mail) Save() error {
+	m2 := model.Mail{
+		Body:        m.Body,
+		CharacterID: m.Character.ID,
+		FromID:      m.From.ID,
+		IsRead:      m.IsRead,
+		ID:          m.ID,
+		MailID:      m.MailID,
+		Subject:     m.Subject,
+		Timestamp:   m.Timestamp,
+	}
+	err := m2.Save()
 	if err != nil {
 		return err
 	}
-	_, err = esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(newContextWithToken(token), m.CharacterID, m.MailID, nil)
+
+	return nil
+}
+
+// BodyPlain returns a mail's body as plain text.
+func (m *Mail) BodyPlain() string {
+	t := strings.ReplaceAll(m.Body, "<br>", "\n")
+	b := html.UnescapeString(bodyPolicy.Sanitize(t))
+	return b
+}
+
+// BodyForward returns a mail's body for a mail forward or reply
+func (m *Mail) ToString(format string) string {
+	s := "\n---\n"
+	s += m.MakeHeaderText(format)
+	s += "\n\n"
+	s += m.BodyPlain()
+	return s
+}
+
+func (m *Mail) MakeHeaderText(format string) string {
+	var names []string
+	for _, n := range m.Recipients {
+		names = append(names, n.Name)
+	}
+	header := fmt.Sprintf(
+		"From: %s\nSent: %s\nTo: %s",
+		m.From.Name,
+		m.Timestamp.Format(format),
+		strings.Join(names, ", "),
+	)
+	return header
+}
+
+// DeleteMail deletes a mail both on ESI and in the database.
+func (m *Mail) Delete() error {
+	token, err := getValidToken(m.Character.ID)
+	if err != nil {
+		return err
+	}
+	_, err = esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(newContextWithToken(token), m.Character.ID, m.MailID, nil)
 	if err != nil {
 		return err
 	}
@@ -103,11 +189,19 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 	return nil
 }
 
+func GetMailFromDB(characterID int32, mailID int32) (Mail, error) {
+	m, err := model.GetMail(characterID, mailID)
+	if err != nil {
+		return Mail{}, err
+	}
+	return mailFromDBModel(m), nil
+}
+
 // FIXME: Delete obsolete labels and mail lists
 // TODO: Add ability to update existing mails for is_read and labels
 
-// GetMail fetches and stores new mails from ESI for a character.
-func GetMail(characterID int32, status binding.String) error {
+// FetchMail fetches and stores new mails from ESI for a character.
+func FetchMail(characterID int32, status binding.String) error {
 	token, err := model.GetToken(characterID)
 	if err != nil {
 		return err
@@ -346,8 +440,8 @@ func determineMailIDs(characterID int32, headers []esi.GetCharactersCharacterIdM
 }
 
 // UpdateMailRead updates an existing mail as read
-func UpdateMailRead(m *model.Mail) error {
-	token, err := getValidToken(m.CharacterID)
+func UpdateMailRead(m *Mail) error {
+	token, err := getValidToken(m.Character.ID)
 	if err != nil {
 		return err
 	}
@@ -356,7 +450,7 @@ func UpdateMailRead(m *model.Mail) error {
 		labelIDs[i] = l.LabelID
 	}
 	contents := esi.PutCharactersCharacterIdMailMailIdContents{Read: true, Labels: labelIDs}
-	_, err = esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(newContextWithToken(token), m.CharacterID, contents, m.MailID, nil)
+	_, err = esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(newContextWithToken(token), m.Character.ID, contents, m.MailID, nil)
 	if err != nil {
 		return err
 	}

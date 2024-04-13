@@ -33,11 +33,11 @@ var recipientCategoryLabels = map[recipientCategory]string{
 	recipientCategoryMailList:    "Mailing List",
 }
 
-var recipientMapCategories = map[model.EveEntityCategory]recipientCategory{
-	model.EveEntityAlliance:    recipientCategoryAlliance,
-	model.EveEntityCharacter:   recipientCategoryCharacter,
-	model.EveEntityCorporation: recipientCategoryCorporation,
-	model.EveEntityMailList:    recipientCategoryMailList,
+var recipientMapCategories = map[EveEntityCategory]recipientCategory{
+	EveEntityAlliance:    recipientCategoryAlliance,
+	EveEntityCharacter:   recipientCategoryCharacter,
+	EveEntityCorporation: recipientCategoryCorporation,
+	EveEntityMailList:    recipientCategoryMailList,
 }
 
 func (r recipientCategory) String() string {
@@ -50,7 +50,7 @@ type recipient struct {
 	category recipientCategory
 }
 
-func newRecipientFromEntity(e model.EveEntity) recipient {
+func newRecipientFromEntity(e EveEntity) recipient {
 	r := recipient{name: e.Name}
 	c, ok := recipientMapCategories[e.Category]
 	if ok {
@@ -89,13 +89,13 @@ func (r *recipient) hasCategory() bool {
 	return r.category != recipientCategoryUnknown
 }
 
-func (r *recipient) eveEntityCategory() (model.EveEntityCategory, bool) {
+func (r *recipient) eveEntityCategory() (EveEntityCategory, bool) {
 	for ec, rc := range recipientMapCategories {
 		if rc == r.category {
 			return ec, true
 		}
 	}
-	return "", false
+	return 0, false
 }
 
 func (r *recipient) empty() bool {
@@ -112,7 +112,7 @@ func NewRecipients() *Recipients {
 	return &rr
 }
 
-func NewRecipientsFromEntities(ee []model.EveEntity) *Recipients {
+func NewRecipientsFromEntities(ee []EveEntity) *Recipients {
 	rr := NewRecipients()
 	for _, e := range ee {
 		o := newRecipientFromEntity(e)
@@ -140,7 +140,7 @@ func NewRecipientsFromText(s string) *Recipients {
 	return rr
 }
 
-func (rr *Recipients) AddFromEveEntity(e model.EveEntity) {
+func (rr *Recipients) AddFromEveEntity(e EveEntity) {
 	r := newRecipientFromEntity(e)
 	rr.add(r)
 }
@@ -175,11 +175,11 @@ func (rr *Recipients) ToOptions() []string {
 	return ss
 }
 
-var eveEntityCategory2MailRecipientType = map[model.EveEntityCategory]string{
-	model.EveEntityAlliance:    "alliance",
-	model.EveEntityCharacter:   "character",
-	model.EveEntityCorporation: "corporation",
-	model.EveEntityMailList:    "mailing_list",
+var eveEntityCategory2MailRecipientType = map[EveEntityCategory]string{
+	EveEntityAlliance:    "alliance",
+	EveEntityCharacter:   "character",
+	EveEntityCorporation: "corporation",
+	EveEntityMailList:    "mailing_list",
 }
 
 func (rr *Recipients) ToMailRecipients() ([]esi.PostCharactersCharacterIdMailRecipient, error) {
@@ -210,12 +210,12 @@ func (rr *Recipients) buildMailRecipients() ([]esi.PostCharactersCharacterIdMail
 	mm := make([]esi.PostCharactersCharacterIdMailRecipient, 0, len(rr.list))
 	names := make([]string, 0, len(rr.list))
 	for _, r := range rr.list {
-		category, ok := r.eveEntityCategory()
+		c, ok := r.eveEntityCategory()
 		if !ok {
 			names = append(names, r.name)
 			continue
 		}
-		entity, err := model.GetEveEntityByNameAndCategory(r.name, category)
+		e, err := model.GetEveEntityByNameAndCategory(r.name, eveEntityDBModelCategoryFromCategory(c))
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				names = append(names, r.name)
@@ -224,12 +224,12 @@ func (rr *Recipients) buildMailRecipients() ([]esi.PostCharactersCharacterIdMail
 				return nil, nil, err
 			}
 		}
-		mailType, ok := eveEntityCategory2MailRecipientType[entity.Category]
+		mailType, ok := eveEntityCategory2MailRecipientType[eveEntityCategoryFromDBModel(e.Category)]
 		if !ok {
 			names = append(names, r.name)
 			continue
 		}
-		m := esi.PostCharactersCharacterIdMailRecipient{RecipientId: entity.ID, RecipientType: mailType}
+		m := esi.PostCharactersCharacterIdMailRecipient{RecipientId: e.ID, RecipientType: mailType}
 		mm = append(mm, m)
 	}
 	return mm, names, nil
@@ -277,7 +277,7 @@ func buildMailRecipientsFromNames(names []string) ([]esi.PostCharactersCharacter
 			return nil, fmt.Errorf("%s: %w", n, ErrNameMultipleMatches)
 		}
 		e := ee[0]
-		c, ok := eveEntityCategory2MailRecipientType[e.Category]
+		c, ok := eveEntityCategory2MailRecipientType[eveEntityCategoryFromDBModel(e.Category)]
 		if !ok {
 			return nil, fmt.Errorf("failed to match category for entity: %v", e)
 		}

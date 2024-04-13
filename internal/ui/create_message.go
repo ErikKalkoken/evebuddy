@@ -2,7 +2,6 @@ package ui
 
 import (
 	"example/evebuddy/internal/logic"
-	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/widgets"
 	"fmt"
 	"log/slog"
@@ -22,7 +21,7 @@ const (
 	CreateMessageForward
 )
 
-func (u *ui) ShowCreateMessageWindow(mode int, mail *model.Mail) {
+func (u *ui) ShowCreateMessageWindow(mode int, mail *logic.Mail) {
 	w, err := u.makeCreateMessageWindow(mode, mail)
 	if err != nil {
 		slog.Error("failed to create new message window", "error", err)
@@ -31,7 +30,7 @@ func (u *ui) ShowCreateMessageWindow(mode int, mail *model.Mail) {
 	}
 }
 
-func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, error) {
+func (u *ui) makeCreateMessageWindow(mode int, mail *logic.Mail) (fyne.Window, error) {
 	currentChar := *u.CurrentChar()
 	w := u.app.NewWindow("New message")
 	fromLabel := widget.NewLabel("From:")
@@ -50,7 +49,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	if mail != nil {
 		switch mode {
 		case CreateMessageReply:
-			r := logic.NewRecipientsFromEntities([]model.EveEntity{mail.From})
+			r := logic.NewRecipientsFromEntities([]logic.EveEntity{mail.From})
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
@@ -156,7 +155,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 }
 
 func makeRecipientOptions(search string) ([]string, error) {
-	ee, err := model.SearchEveEntitiesByName(search)
+	ee, err := logic.SearchEveEntitiesByName(search)
 	if err != nil {
 		return nil, err
 	}

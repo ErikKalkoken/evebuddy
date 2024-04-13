@@ -3,15 +3,9 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"html"
 	"log/slog"
-	"strings"
 	"time"
-
-	"github.com/microcosm-cc/bluemonday"
 )
-
-var bodyPolicy = bluemonday.StrictPolicy()
 
 // An Eve mail belonging to a character
 type Mail struct {
@@ -129,36 +123,6 @@ func (m *Mail) addLabels() error {
 		}
 	}
 	return nil
-}
-
-// BodyPlain returns a mail's body as plain text.
-func (m *Mail) BodyPlain() string {
-	t := strings.ReplaceAll(m.Body, "<br>", "\n")
-	b := html.UnescapeString(bodyPolicy.Sanitize(t))
-	return b
-}
-
-// BodyForward returns a mail's body for a mail forward or reply
-func (m *Mail) ToString(format string) string {
-	s := "\n---\n"
-	s += m.MakeHeaderText(format)
-	s += "\n\n"
-	s += m.BodyPlain()
-	return s
-}
-
-func (m *Mail) MakeHeaderText(format string) string {
-	var names []string
-	for _, n := range m.Recipients {
-		names = append(names, n.Name)
-	}
-	header := fmt.Sprintf(
-		"From: %s\nSent: %s\nTo: %s",
-		m.From.Name,
-		m.Timestamp.Format(format),
-		strings.Join(names, ", "),
-	)
-	return header
 }
 
 // GetMail returns a mail.

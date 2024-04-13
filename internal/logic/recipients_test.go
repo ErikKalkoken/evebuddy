@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 func TestRecipient(t *testing.T) {
 	t.Run("can create from EveEntity", func(t *testing.T) {
 		// given
-		e := model.EveEntity{ID: 7, Name: "Dummy", Category: model.EveEntityCharacter}
+		e := EveEntity{ID: 7, Name: "Dummy", Category: EveEntityCharacter}
 		// when
 		r := newRecipientFromEntity(e)
 		// then
@@ -110,7 +110,7 @@ func TestResolveLocally(t *testing.T) {
 	t.Run("should resolve to existing entities", func(t *testing.T) {
 		model.TruncateTables()
 		e := factory.CreateEveEntity()
-		r := NewRecipientsFromEntities([]model.EveEntity{e})
+		r := NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e)})
 		mm, names, err := r.buildMailRecipients()
 		if assert.NoError(t, err) {
 			assert.Len(t, mm, 1)
@@ -122,7 +122,7 @@ func TestResolveLocally(t *testing.T) {
 		model.TruncateTables()
 		e1 := factory.CreateEveEntity()
 		e2 := factory.CreateEveEntity()
-		r := NewRecipientsFromEntities([]model.EveEntity{e1, e2})
+		r := NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e1), eveEntityFromDBModel(e2)})
 		mm, names, err := r.buildMailRecipients()
 		if assert.NoError(t, err) {
 			assert.Len(t, mm, 2)
@@ -133,7 +133,7 @@ func TestResolveLocally(t *testing.T) {
 		model.TruncateTables()
 		e1 := factory.CreateEveEntity()
 		e2 := factory.CreateEveEntity()
-		r := NewRecipientsFromEntities([]model.EveEntity{e1, e2})
+		r := NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e1), eveEntityFromDBModel(e2)})
 		r.AddFromText("Other")
 		mm, names, err := r.buildMailRecipients()
 		if assert.NoError(t, err) {
@@ -166,7 +166,7 @@ func TestBuildMailRecipientsCategories(t *testing.T) {
 		model.TruncateTables()
 		t.Run(fmt.Sprintf("category %s", tc.in), func(t *testing.T) {
 			e := factory.CreateEveEntity(model.EveEntity{Category: tc.in})
-			r := NewRecipientsFromEntities([]model.EveEntity{e})
+			r := NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e)})
 			mm, names, err := r.buildMailRecipients()
 			if assert.NoError(t, err) {
 				assert.Len(t, mm, 1)
