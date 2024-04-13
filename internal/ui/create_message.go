@@ -77,11 +77,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *logic.Mail) (fyne.Window, e
 	sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {
 		err := func() error {
 			rr := logic.NewRecipientsFromText(toInput.Text)
-			recipients, err := rr.ToMailRecipients()
-			if err != nil {
-				return err
-			}
-			err = logic.SendMail(currentChar.ID, subjectInput.Text, recipients, bodyInput.Text)
+			err := logic.SendMail(currentChar.ID, subjectInput.Text, rr, bodyInput.Text)
 			if err != nil {
 				return err
 			}

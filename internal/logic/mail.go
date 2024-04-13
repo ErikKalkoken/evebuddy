@@ -127,14 +127,18 @@ func (m *Mail) Delete() error {
 }
 
 // SendMail created a new mail on ESI stores it locally.
-func SendMail(characterID int32, subject string, recipients []esi.PostCharactersCharacterIdMailRecipient, body string) error {
+func SendMail(characterID int32, subject string, recipients *Recipients, body string) error {
 	if subject == "" {
 		return fmt.Errorf("missing subject")
 	}
 	if body == "" {
 		return fmt.Errorf("missing body")
 	}
-	if len(recipients) == 0 {
+	rr, err := recipients.ToMailRecipients()
+	if err != nil {
+		return err
+	}
+	if len(rr) == 0 {
 		return fmt.Errorf("missing recipients")
 	}
 	token, err := GetValidToken(characterID)
@@ -144,14 +148,14 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 	mail := esi.PostCharactersCharacterIdMailMail{
 		Body:       body,
 		Subject:    subject,
-		Recipients: recipients,
+		Recipients: rr,
 	}
 	mailID, _, err := esiClient.ESI.MailApi.PostCharactersCharacterIdMail(token.NewContext(), characterID, mail, nil)
 	if err != nil {
 		return err
 	}
 	ids := []int32{characterID}
-	for _, r := range recipients {
+	for _, r := range rr {
 		ids = append(ids, r.RecipientId)
 	}
 	_, err = addMissingEveEntities(ids)
@@ -167,13 +171,13 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 	if err != nil {
 		return err
 	}
-	var rr []model.EveEntity
-	for _, r := range recipients {
+	var ee []model.EveEntity
+	for _, r := range rr {
 		e, err := model.GetEveEntity(r.RecipientId)
 		if err != nil {
 			return err
 		}
-		rr = append(rr, e)
+		ee = append(ee, e)
 	}
 	m := model.Mail{
 		Body:        body,
@@ -181,7 +185,7 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 		From:        from,
 		Labels:      []model.MailLabel{label},
 		MailID:      mailID,
-		Recipients:  rr,
+		Recipients:  ee,
 		Subject:     subject,
 		IsRead:      true,
 		Timestamp:   time.Now(),

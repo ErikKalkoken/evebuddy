@@ -190,6 +190,10 @@ func CreateToken(args ...model.Token) model.Token {
 	if t.TokenType == "" {
 		t.TokenType = "Bearer"
 	}
+	if t.CharacterID == 0 {
+		c := CreateCharacter()
+		t.CharacterID = c.ID
+	}
 	err := t.Save()
 	if err != nil {
 		panic(err)
