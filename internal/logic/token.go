@@ -57,6 +57,26 @@ func (t *Token) Save() error {
 	return err
 }
 
+// ensureValid will automatically try to refresh a token that is already or about to become invalid.
+func (t *Token) ensureValid() error {
+	if !t.RemainsValid(time.Second * 60) {
+		slog.Debug("Need to refresh token", "characterID", t.CharacterID)
+		rawToken, err := sso.RefreshToken(httpClient, t.RefreshToken)
+		if err != nil {
+			return err
+		}
+		t.AccessToken = rawToken.AccessToken
+		t.RefreshToken = rawToken.RefreshToken
+		t.ExpiresAt = rawToken.ExpiresAt
+		err = t.Save()
+		if err != nil {
+			return err
+		}
+		slog.Info("Token refreshed", "characterID", t.CharacterID)
+	}
+	return nil
+}
+
 // getValidToken returns a valid token for a character. Convenience function.
 func getValidToken(characterID int32) (*Token, error) {
 	t, err := model.GetToken(characterID)
@@ -64,33 +84,13 @@ func getValidToken(characterID int32) (*Token, error) {
 		return nil, err
 	}
 	t2 := tokenFromDBModel(t)
-	if err := ensureValidToken(&t2); err != nil {
+	if err := t2.ensureValid(); err != nil {
 		return nil, err
 	}
 	return &t2, nil
 }
 
-// ensureValidToken will automatically try to refresh a token that is already or about to become invalid.
-func ensureValidToken(token *Token) error {
-	if !token.RemainsValid(time.Second * 60) {
-		slog.Debug("Need to refresh token", "characterID", token.CharacterID)
-		rawToken, err := sso.RefreshToken(httpClient, token.RefreshToken)
-		if err != nil {
-			return err
-		}
-		token.AccessToken = rawToken.AccessToken
-		token.RefreshToken = rawToken.RefreshToken
-		token.ExpiresAt = rawToken.ExpiresAt
-		err = token.Save()
-		if err != nil {
-			return err
-		}
-		slog.Info("Token refreshed", "characterID", token.CharacterID)
-	}
-	return nil
-}
-
-func newContextWithToken(token *Token) context.Context {
+func (token *Token) newContext() context.Context {
 	ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, token.AccessToken)
 	return ctx
 }

@@ -115,7 +115,7 @@ func (m *Mail) Delete() error {
 	if err != nil {
 		return err
 	}
-	_, err = esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(newContextWithToken(token), m.CharacterID, m.MailID, nil)
+	_, err = esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(token.newContext(), m.CharacterID, m.MailID, nil)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 		Subject:    subject,
 		Recipients: recipients,
 	}
-	mailID, _, err := esiClient.ESI.MailApi.PostCharactersCharacterIdMail(newContextWithToken(token), characterID, mail, nil)
+	mailID, _, err := esiClient.ESI.MailApi.PostCharactersCharacterIdMail(token.newContext(), characterID, mail, nil)
 	if err != nil {
 		return err
 	}
@@ -236,10 +236,10 @@ func FetchMail(characterID int32, status binding.String) error {
 }
 
 func updateMailLabels(token *Token) error {
-	if err := ensureValidToken(token); err != nil {
+	if err := token.ensureValid(); err != nil {
 		return err
 	}
-	ll, _, err := esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(newContextWithToken(token), token.CharacterID, nil)
+	ll, _, err := esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(token.newContext(), token.CharacterID, nil)
 	if err != nil {
 		return err
 	}
@@ -261,10 +261,10 @@ func updateMailLabels(token *Token) error {
 }
 
 func updateMailLists(token *Token) error {
-	if err := ensureValidToken(token); err != nil {
+	if err := token.ensureValid(); err != nil {
 		return err
 	}
-	ctx := newContextWithToken(token)
+	ctx := token.newContext()
 	lists, _, err := esiClient.ESI.MailApi.GetCharactersCharacterIdMailLists(ctx, token.CharacterID, nil)
 	if err != nil {
 		return err
@@ -284,7 +284,7 @@ func updateMailLists(token *Token) error {
 
 // listMailHeaders fetched mail headers from ESI with paging and returns them.
 func listMailHeaders(token *Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
-	if err := ensureValidToken(token); err != nil {
+	if err := token.ensureValid(); err != nil {
 		return nil, err
 	}
 	var mm []esi.GetCharactersCharacterIdMail200Ok
@@ -297,7 +297,7 @@ func listMailHeaders(token *Token) ([]esi.GetCharactersCharacterIdMail200Ok, err
 		} else {
 			opts = nil
 		}
-		objs, _, err := esiClient.ESI.MailApi.GetCharactersCharacterIdMail(newContextWithToken(token), token.CharacterID, opts)
+		objs, _, err := esiClient.ESI.MailApi.GetCharactersCharacterIdMail(token.newContext(), token.CharacterID, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -329,7 +329,7 @@ func updateMails(token *Token, headers []esi.GetCharactersCharacterIdMail200Ok, 
 		return nil
 	}
 
-	if err := ensureValidToken(token); err != nil {
+	if err := token.ensureValid(); err != nil {
 		return err
 	}
 	character, err := model.GetCharacter(token.CharacterID)
@@ -376,7 +376,7 @@ func fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *Toke
 		slog.Error("Failed to process mail", "header", header, "error", err)
 		return
 	}
-	m, _, err := esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(newContextWithToken(token), token.CharacterID, header.MailId, nil)
+	m, _, err := esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(token.newContext(), token.CharacterID, header.MailId, nil)
 	if err != nil {
 		slog.Error("Failed to process mail", "header", header, "error", err)
 		return
@@ -453,7 +453,7 @@ func UpdateMailRead(m *Mail) error {
 		labelIDs[i] = l.LabelID
 	}
 	contents := esi.PutCharactersCharacterIdMailMailIdContents{Read: true, Labels: labelIDs}
-	_, err = esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(newContextWithToken(token), m.CharacterID, contents, m.MailID, nil)
+	_, err = esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(token.newContext(), m.CharacterID, contents, m.MailID, nil)
 	if err != nil {
 		return err
 	}
