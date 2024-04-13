@@ -114,7 +114,7 @@ func (m *manageArea) showAddCharacterDialog() {
 	go func() {
 		defer cancel()
 		defer dialog.Hide()
-		err := logic.AddCharacter(ctx)
+		err := logic.CreateOrUpdateCharacterFromSSO(ctx)
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
 		} else {

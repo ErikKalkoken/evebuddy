@@ -99,8 +99,8 @@ func GetFirstCharacter() (Character, error) {
 	return characterFromDBModel(charDB), nil
 }
 
-// AddCharacter adds a new character via SSO authentication and returns the new token.
-func AddCharacter(ctx context.Context) error {
+// CreateOrUpdateCharacterFromSSO creates or updates a character via SSO authentication.
+func CreateOrUpdateCharacterFromSSO(ctx context.Context) error {
 	ssoToken, err := sso.Authenticate(ctx, httpClient, esiScopes)
 	if err != nil {
 		return err
