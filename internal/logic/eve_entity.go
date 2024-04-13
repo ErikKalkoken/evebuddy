@@ -88,7 +88,7 @@ func eveEntityDBModelCategoryFromCategory(c EveEntityCategory) model.EveEntityCa
 
 // AddEveEntitiesFromESISearch runs a search on ESI and adds the results as new EveEntity objects to the database.
 func AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, error) {
-	token, err := getValidToken(characterID)
+	token, err := GetValidToken(characterID)
 	if err != nil {
 		return nil, err
 	}

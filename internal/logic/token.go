@@ -43,6 +43,19 @@ func tokenDBModelFromToken(t Token) model.Token {
 	}
 }
 
+// GetValidToken returns a valid token for a character. Convenience function.
+func GetValidToken(characterID int32) (*Token, error) {
+	t, err := model.GetToken(characterID)
+	if err != nil {
+		return nil, err
+	}
+	t2 := tokenFromDBModel(t)
+	if err := t2.ensureValid(); err != nil {
+		return nil, err
+	}
+	return &t2, nil
+}
+
 // RemainsValid reports wether a token remains valid within a duration
 func (t *Token) RemainsValid(d time.Duration) bool {
 	return t.ExpiresAt.After(time.Now().Add(d))
@@ -77,20 +90,7 @@ func (t *Token) ensureValid() error {
 	return nil
 }
 
-// getValidToken returns a valid token for a character. Convenience function.
-func getValidToken(characterID int32) (*Token, error) {
-	t, err := model.GetToken(characterID)
-	if err != nil {
-		return nil, err
-	}
-	t2 := tokenFromDBModel(t)
-	if err := t2.ensureValid(); err != nil {
-		return nil, err
-	}
-	return &t2, nil
-}
-
-func (token *Token) newContext() context.Context {
-	ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, token.AccessToken)
+func (t *Token) newContext() context.Context {
+	ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, t.AccessToken)
 	return ctx
 }

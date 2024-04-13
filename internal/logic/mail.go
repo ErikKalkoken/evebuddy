@@ -111,7 +111,7 @@ func (m *Mail) MakeHeaderText(format string) string {
 
 // DeleteMail deletes a mail both on ESI and in the database.
 func (m *Mail) Delete() error {
-	token, err := getValidToken(m.CharacterID)
+	token, err := GetValidToken(m.CharacterID)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func SendMail(characterID int32, subject string, recipients []esi.PostCharacters
 	if len(recipients) == 0 {
 		return fmt.Errorf("missing recipients")
 	}
-	token, err := getValidToken(characterID)
+	token, err := GetValidToken(characterID)
 	if err != nil {
 		return err
 	}
@@ -205,7 +205,7 @@ func GetMailFromDB(characterID int32, mailID int32) (Mail, error) {
 
 // FetchMail fetches and stores new mails from ESI for a character.
 func FetchMail(characterID int32, status binding.String) error {
-	token, err := getValidToken(characterID)
+	token, err := GetValidToken(characterID)
 	if err != nil {
 		return err
 	}
@@ -444,7 +444,7 @@ func determineMailIDs(characterID int32, headers []esi.GetCharactersCharacterIdM
 
 // UpdateMailRead updates an existing mail as read
 func UpdateMailRead(m *Mail) error {
-	token, err := getValidToken(m.CharacterID)
+	token, err := GetValidToken(m.CharacterID)
 	if err != nil {
 		return err
 	}
