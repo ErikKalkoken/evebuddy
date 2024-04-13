@@ -24,7 +24,7 @@ type folderArea struct {
 
 func (u *ui) NewFolderArea() *folderArea {
 	f := folderArea{ui: u}
-	f.tree, f.treeData = makeFolderTree(u)
+	f.tree, f.treeData = u.makeFolderTree()
 	f.refreshButton = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
 		f.UpdateMails()
 	})
@@ -38,7 +38,7 @@ func (u *ui) NewFolderArea() *folderArea {
 	return &f
 }
 
-func makeFolderTree(u *ui) (*widget.Tree, binding.StringTree) {
+func (u *ui) makeFolderTree() (*widget.Tree, binding.StringTree) {
 	treeData := binding.NewStringTree()
 	tree := widget.NewTreeWithData(
 		treeData,

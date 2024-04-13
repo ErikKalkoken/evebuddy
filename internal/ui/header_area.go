@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"example/evebuddy/internal/logic"
 	"log/slog"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -62,7 +63,13 @@ func (u *ui) NewHeaderArea() *headerArea {
 			top := parent.Objects[0].(*fyne.Container)
 
 			from := top.Objects[0].(*canvas.Text)
-			from.Text = m.From.Name
+			var t string
+			if u.headerArea != nil && u.headerArea.currentFolder.isSent() {
+				t = strings.Join(m.RecipientNames(), ", ")
+			} else {
+				t = m.From.Name
+			}
+			from.Text = t
 			from.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
 			from.Refresh()
 

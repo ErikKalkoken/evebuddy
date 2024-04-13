@@ -67,3 +67,7 @@ func (f node) icon() fyne.Resource {
 	}
 	return theme.FolderIcon()
 }
+
+func (f node) isSent() bool {
+	return f.ID == nodeSentID
+}

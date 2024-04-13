@@ -109,6 +109,14 @@ func (m *Mail) MakeHeaderText(format string) string {
 	return header
 }
 
+func (m *Mail) RecipientNames() []string {
+	ss := make([]string, len(m.Recipients))
+	for i, r := range m.Recipients {
+		ss[i] = r.Name
+	}
+	return ss
+}
+
 // DeleteMail deletes a mail both on ESI and in the database.
 func (m *Mail) Delete() error {
 	token, err := GetValidToken(m.CharacterID)

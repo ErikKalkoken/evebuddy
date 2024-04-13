@@ -19,9 +19,10 @@ MVP is reaching feature parity with Member Audit mail.
 - [x] Show mailing lists as folder
 - [x] Update "is_read" for mails from ESI
 - [x] Calculate unread counts for the folders from local mails
+- [ ] Migrate to sqlc
 - [ ] Update "is_unread"
+- [x] Show recipients in header list for sent mail
 - [ ] Add error handling for mailing lists
-- [ ] Add new mails "on the fly" when refreshing
 - [ ] Add basic unit tests
 - [ ] Store logs in a file instead of console
 
