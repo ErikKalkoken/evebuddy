@@ -27,28 +27,31 @@ var bodyPolicy = bluemonday.StrictPolicy()
 
 // An Eve mail belonging to a character
 type Mail struct {
-	Body       string
-	Character  Character
-	From       EveEntity
-	Labels     []MailLabel
-	IsRead     bool
-	ID         uint64
-	MailID     int32
-	Recipients []EveEntity
-	Subject    string
-	Timestamp  time.Time
+	Body        string
+	CharacterID int32
+	From        EveEntity
+	Labels      []MailLabel
+	IsRead      bool
+	ID          uint64
+	MailID      int32
+	Recipients  []EveEntity
+	Subject     string
+	Timestamp   time.Time
 }
 
 func mailFromDBModel(m model.Mail) Mail {
+	if m.CharacterID == 0 {
+		panic("missing character ID")
+	}
 	m2 := Mail{
-		Body:      m.Body,
-		Character: characterFromDBModel(m.Character),
-		From:      eveEntityFromDBModel(m.From),
-		IsRead:    m.IsRead,
-		ID:        m.ID,
-		MailID:    m.MailID,
-		Subject:   m.Subject,
-		Timestamp: m.Timestamp,
+		Body:        m.Body,
+		CharacterID: m.CharacterID,
+		From:        eveEntityFromDBModel(m.From),
+		IsRead:      m.IsRead,
+		ID:          m.ID,
+		MailID:      m.MailID,
+		Subject:     m.Subject,
+		Timestamp:   m.Timestamp,
 	}
 	for _, r := range m.Recipients {
 		m2.Recipients = append(m2.Recipients, eveEntityFromDBModel(r))
@@ -60,7 +63,7 @@ func mailFromDBModel(m model.Mail) Mail {
 func (m *Mail) Save() error {
 	m2 := model.Mail{
 		Body:        m.Body,
-		CharacterID: m.Character.ID,
+		CharacterID: m.CharacterID,
 		FromID:      m.From.ID,
 		IsRead:      m.IsRead,
 		ID:          m.ID,
@@ -108,11 +111,11 @@ func (m *Mail) MakeHeaderText(format string) string {
 
 // DeleteMail deletes a mail both on ESI and in the database.
 func (m *Mail) Delete() error {
-	token, err := getValidToken(m.Character.ID)
+	token, err := getValidToken(m.CharacterID)
 	if err != nil {
 		return err
 	}
-	_, err = esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(newContextWithToken(token), m.Character.ID, m.MailID, nil)
+	_, err = esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(newContextWithToken(token), m.CharacterID, m.MailID, nil)
 	if err != nil {
 		return err
 	}
@@ -202,41 +205,37 @@ func GetMailFromDB(characterID int32, mailID int32) (Mail, error) {
 
 // FetchMail fetches and stores new mails from ESI for a character.
 func FetchMail(characterID int32, status binding.String) error {
-	token, err := model.GetToken(characterID)
+	token, err := getValidToken(characterID)
 	if err != nil {
 		return err
 	}
-	err = token.GetCharacter()
+	character, err := model.GetCharacter(characterID)
 	if err != nil {
 		return err
 	}
-	s := fmt.Sprintf("Checking for new mail for %v", token.Character.Name)
+	s := fmt.Sprintf("Checking for new mail for %v", character.Name)
 	status.Set(s)
-	if err := updateMailLists(&token); err != nil {
+	if err := updateMailLists(token); err != nil {
 		return err
 	}
-	if err := updateMailLabels(&token); err != nil {
+	if err := updateMailLabels(token); err != nil {
 		return err
 	}
-	headers, err := listMailHeaders(&token)
+	headers, err := listMailHeaders(token)
 	if err != nil {
 		return err
 	}
-	err = updateMails(&token, headers, status)
+	err = updateMails(token, headers, status)
 	if err != nil {
 		return err
 	}
-	c, err := model.GetCharacter(characterID)
-	if err != nil {
-		return err
-	}
-	c.MailUpdatedAt.Time = time.Now()
-	c.MailUpdatedAt.Valid = true
-	c.Save()
+	character.MailUpdatedAt.Time = time.Now()
+	character.MailUpdatedAt.Valid = true
+	character.Save()
 	return nil
 }
 
-func updateMailLabels(token *model.Token) error {
+func updateMailLabels(token *Token) error {
 	if err := ensureValidToken(token); err != nil {
 		return err
 	}
@@ -261,7 +260,7 @@ func updateMailLabels(token *model.Token) error {
 	return nil
 }
 
-func updateMailLists(token *model.Token) error {
+func updateMailLists(token *Token) error {
 	if err := ensureValidToken(token); err != nil {
 		return err
 	}
@@ -275,7 +274,7 @@ func updateMailLists(token *model.Token) error {
 		if err := e.Save(); err != nil {
 			return err
 		}
-		m := model.MailList{Character: token.Character, EveEntity: e}
+		m := model.MailList{CharacterID: token.CharacterID, EveEntity: e}
 		if err := m.CreateIfNew(); err != nil {
 			return err
 		}
@@ -284,7 +283,7 @@ func updateMailLists(token *model.Token) error {
 }
 
 // listMailHeaders fetched mail headers from ESI with paging and returns them.
-func listMailHeaders(token *model.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
+func listMailHeaders(token *Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	if err := ensureValidToken(token); err != nil {
 		return nil, err
 	}
@@ -317,7 +316,7 @@ func listMailHeaders(token *model.Token) ([]esi.GetCharactersCharacterIdMail200O
 	return mm, nil
 }
 
-func updateMails(token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok, status binding.String) error {
+func updateMails(token *Token, headers []esi.GetCharactersCharacterIdMail200Ok, status binding.String) error {
 	existingIDs, missingIDs, err := determineMailIDs(token.CharacterID, headers)
 	if err != nil {
 		return err
@@ -333,6 +332,10 @@ func updateMails(token *model.Token, headers []esi.GetCharactersCharacterIdMail2
 	if err := ensureValidToken(token); err != nil {
 		return err
 	}
+	character, err := model.GetCharacter(token.CharacterID)
+	if err != nil {
+		return err
+	}
 
 	var c atomic.Int32
 	var wg sync.WaitGroup
@@ -346,7 +349,7 @@ func updateMails(token *model.Token, headers []esi.GetCharactersCharacterIdMail2
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			fetchAndStoreMail(header, token, newMailsCount, &c, status)
+			fetchAndStoreMail(header, token, newMailsCount, &c, status, character.Name)
 			<-guard
 		}()
 	}
@@ -362,7 +365,7 @@ func updateMails(token *model.Token, headers []esi.GetCharactersCharacterIdMail2
 	return nil
 }
 
-func fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *model.Token, newMailsCount int, c *atomic.Int32, status binding.String) {
+func fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *Token, newMailsCount int, c *atomic.Int32, status binding.String, characterName string) {
 	entityIDs := set.New[int32]()
 	entityIDs.Add(header.From)
 	for _, r := range header.Recipients {
@@ -379,11 +382,11 @@ func fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *mode
 		return
 	}
 	mail := model.Mail{
-		Body:      m.Body,
-		Character: token.Character,
-		MailID:    header.MailId,
-		Subject:   header.Subject,
-		IsRead:    header.IsRead,
+		Body:        m.Body,
+		CharacterID: token.CharacterID,
+		MailID:      header.MailId,
+		Subject:     header.Subject,
+		IsRead:      header.IsRead,
 	}
 	mail.Timestamp = header.Timestamp
 	from, err := model.GetEveEntity(header.From)
@@ -407,7 +410,7 @@ func fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *mode
 	slog.Info("Created new mail", "mailID", header.MailId, "characterID", token.CharacterID)
 	c.Add(1)
 	current := c.Load()
-	s := fmt.Sprintf("Fetched %d / %d new mails for %v", current, newMailsCount, token.Character.Name)
+	s := fmt.Sprintf("Fetched %d / %d new mails for %v", current, newMailsCount, characterName)
 	status.Set(s)
 }
 
@@ -441,7 +444,7 @@ func determineMailIDs(characterID int32, headers []esi.GetCharactersCharacterIdM
 
 // UpdateMailRead updates an existing mail as read
 func UpdateMailRead(m *Mail) error {
-	token, err := getValidToken(m.Character.ID)
+	token, err := getValidToken(m.CharacterID)
 	if err != nil {
 		return err
 	}
@@ -450,7 +453,7 @@ func UpdateMailRead(m *Mail) error {
 		labelIDs[i] = l.LabelID
 	}
 	contents := esi.PutCharactersCharacterIdMailMailIdContents{Read: true, Labels: labelIDs}
-	_, err = esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(newContextWithToken(token), m.Character.ID, contents, m.MailID, nil)
+	_, err = esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(newContextWithToken(token), m.CharacterID, contents, m.MailID, nil)
 	if err != nil {
 		return err
 	}

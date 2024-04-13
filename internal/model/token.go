@@ -7,9 +7,8 @@ import (
 
 // A SSO token belonging to a character.
 type Token struct {
-	AccessToken  string `db:"access_token"`
-	CharacterID  int32  `db:"character_id"`
-	Character    Character
+	AccessToken  string    `db:"access_token"`
+	CharacterID  int32     `db:"character_id"`
 	ExpiresAt    time.Time `db:"expires_at"`
 	RefreshToken string    `db:"refresh_token"`
 	TokenType    string    `db:"token_type"`
@@ -17,13 +16,9 @@ type Token struct {
 
 // Save updates or creates a token.
 func (t *Token) Save() error {
-	if t.Character.ID != 0 {
-		t.CharacterID = t.Character.ID
-	}
 	if t.CharacterID == 0 {
 		return fmt.Errorf("can not save token without character")
 	}
-	t.CharacterID = t.Character.ID
 	_, err := db.NamedExec(`
 		INSERT INTO tokens (
 			access_token,
@@ -50,20 +45,6 @@ func (t *Token) Save() error {
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-// RemainsValid reports wether a token remains valid within a duration
-func (t *Token) RemainsValid(d time.Duration) bool {
-	return t.ExpiresAt.After(time.Now().Add(d))
-}
-
-func (t *Token) GetCharacter() error {
-	c, err := GetCharacter(t.CharacterID)
-	if err != nil {
-		return err
-	}
-	t.Character = c
 	return nil
 }
 

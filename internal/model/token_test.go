@@ -14,7 +14,7 @@ func TestTokenSave(t *testing.T) {
 		// given
 		model.TruncateTables()
 		c := factory.CreateCharacter()
-		o := model.Token{AccessToken: "access", Character: c, CharacterID: c.ID, ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
+		o := model.Token{AccessToken: "access", CharacterID: c.ID, ExpiresAt: time.Now(), RefreshToken: "refresh", TokenType: "xxx"}
 		// when
 		err := o.Save()
 		// then
@@ -75,21 +75,5 @@ func TestFetchToken(t *testing.T) {
 		_, err := model.GetToken(42)
 		// then
 		assert.Error(t, err)
-	})
-	t.Run("can fetch character from token", func(t *testing.T) {
-		// given
-		model.TruncateTables()
-		factory.CreateToken()
-		o := factory.CreateToken()
-		r, err := model.GetToken(o.CharacterID)
-		if err != nil {
-			panic(err)
-		}
-		// when
-		err = r.GetCharacter()
-		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, o.Character.Name, r.Character.Name)
-		}
 	})
 }

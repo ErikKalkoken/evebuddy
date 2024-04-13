@@ -178,9 +178,6 @@ func CreateToken(args ...model.Token) model.Token {
 	if len(args) > 0 {
 		t = args[0]
 	}
-	if t.Character.ID == 0 || t.CharacterID == 0 {
-		t.Character = CreateCharacter()
-	}
 	if t.AccessToken == "" {
 		t.AccessToken = fmt.Sprintf("GeneratedAccessToken#%d", rand.IntN(1000000))
 	}

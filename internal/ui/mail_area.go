@@ -81,7 +81,7 @@ func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 				return nil
 			}()
 			if err != nil {
-				slog.Error("Failed to mark mail as read", "characterID", mail.Character.ID, "mailID", mail.MailID, "error", err)
+				slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", mail.MailID, "error", err)
 			}
 		}()
 	}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"github.com/antihax/goesi"
 )
 
 // An Eve Online character.
@@ -105,7 +106,7 @@ func AddCharacter(ctx context.Context) error {
 		return err
 	}
 	charID := ssoToken.CharacterID
-	charEsi, _, err := esiClient.ESI.CharacterApi.GetCharactersCharacterId(context.Background(), charID, nil)
+	charEsi, _, err := esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, charID, nil)
 	if err != nil {
 		return err
 	}
@@ -137,21 +138,22 @@ func AddCharacter(ctx context.Context) error {
 		character.FactionID.Int32 = charEsi.FactionId
 		character.FactionID.Valid = true
 	}
-	token := model.Token{
+	token := Token{
 		AccessToken:  ssoToken.AccessToken,
-		Character:    character,
+		CharacterID:  charID,
 		ExpiresAt:    ssoToken.ExpiresAt,
 		RefreshToken: ssoToken.RefreshToken,
 		TokenType:    ssoToken.TokenType,
 	}
-	skills, _, err := esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(newContextWithToken(&token), charID, nil)
+	ctx2 := context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
+	skills, _, err := esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx2, charID, nil)
 	if err != nil {
 		slog.Error("Failed to fetch skills", "error", err)
 	} else {
 		character.SkillPoints.Int64 = skills.TotalSp
 		character.SkillPoints.Valid = true
 	}
-	balance, _, err := esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(newContextWithToken(&token), charID, nil)
+	balance, _, err := esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx2, charID, nil)
 	if err != nil {
 		slog.Error("Failed to fetch wallet balance", "error", err)
 	} else {
