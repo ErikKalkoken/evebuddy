@@ -1,5 +1,5 @@
-// Package logic contains the app's business logic
-package logic
+// Package service contains the business logic
+package service
 
 import (
 	"net/http"

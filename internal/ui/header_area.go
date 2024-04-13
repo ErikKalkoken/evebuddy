@@ -2,7 +2,7 @@ package ui
 
 import (
 	"database/sql"
-	"example/evebuddy/internal/logic"
+	"example/evebuddy/internal/service"
 	"log/slog"
 	"strings"
 
@@ -52,7 +52,7 @@ func (u *ui) NewHeaderArea() *headerArea {
 			if characterID == 0 {
 				return
 			}
-			m, err := logic.GetMailFromDB(characterID, int32(mailID))
+			m, err := service.GetMailFromDB(characterID, int32(mailID))
 			if err != nil {
 				if err != sql.ErrNoRows {
 					slog.Error("Failed to get mail", "error", err)
@@ -123,14 +123,14 @@ func (h *headerArea) Redraw(folder node) {
 }
 
 func (h *headerArea) redraw(folder node) {
-	var mm []logic.Mail
+	var mm []service.Mail
 	var err error
 	charID := h.ui.CurrentCharID()
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mm, err = logic.ListMailsForLabel(charID, folder.ObjID)
+		mm, err = service.ListMailsForLabel(charID, folder.ObjID)
 	case nodeCategoryList:
-		mm, err = logic.ListMailsForList(charID, folder.ObjID)
+		mm, err = service.ListMailsForList(charID, folder.ObjID)
 	}
 	var mailIDs []int
 	if err != nil {

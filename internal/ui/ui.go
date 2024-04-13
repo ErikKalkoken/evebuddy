@@ -3,7 +3,7 @@ package ui
 
 import (
 	"database/sql"
-	"example/evebuddy/internal/logic"
+	"example/evebuddy/internal/service"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -34,7 +34,7 @@ const (
 type ui struct {
 	app              fyne.App
 	characterArea    *characterArea
-	currentCharacter *logic.Character
+	currentCharacter *service.Character
 	folderArea       *folderArea
 	headerArea       *headerArea
 	mailArea         *mailArea
@@ -81,12 +81,12 @@ func NewUI() *ui {
 	w.SetMaster()
 	w.SetMainMenu(MakeMenu(a, u))
 
-	characterID, err := logic.GetSetting[int32](settingLastCharacterID)
+	characterID, err := service.GetSetting[int32](settingLastCharacterID)
 	if err != nil {
 		panic(err)
 	}
 	if characterID != 0 {
-		c, err := logic.GetCharacter(characterID)
+		c, err := service.GetCharacter(characterID)
 		if err != nil {
 			if err != sql.ErrNoRows {
 				slog.Error("Failed to load character", "error", err)
@@ -95,7 +95,7 @@ func NewUI() *ui {
 			u.SetCurrentCharacter(&c)
 		}
 	}
-	logic.StartEsiStatusTicker(status.status)
+	service.StartEsiStatusTicker(status.status)
 	return u
 }
 
@@ -111,14 +111,14 @@ func (u *ui) CurrentCharID() int32 {
 	return u.currentCharacter.ID
 }
 
-func (u *ui) CurrentChar() *logic.Character {
+func (u *ui) CurrentChar() *service.Character {
 	return u.currentCharacter
 }
 
-func (u *ui) SetCurrentCharacter(c *logic.Character) {
+func (u *ui) SetCurrentCharacter(c *service.Character) {
 	u.currentCharacter = c
 	u.window.SetTitle(fmt.Sprintf("Eve Buddy [%s]", c.Name))
-	err := logic.SetSetting(settingLastCharacterID, c.ID)
+	err := service.SetSetting(settingLastCharacterID, c.ID)
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
@@ -128,7 +128,7 @@ func (u *ui) SetCurrentCharacter(c *logic.Character) {
 
 func (u *ui) ResetCurrentCharacter() {
 	u.currentCharacter = nil
-	err := logic.DeleteSetting(settingLastCharacterID)
+	err := service.DeleteSetting(settingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}

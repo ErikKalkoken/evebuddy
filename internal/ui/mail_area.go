@@ -11,7 +11,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"example/evebuddy/internal/logic"
+	"example/evebuddy/internal/service"
 )
 
 // mailArea is the UI area showing the current mail.
@@ -60,7 +60,7 @@ func (m *mailArea) Clear() {
 
 func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 	characterID := m.ui.CurrentCharID()
-	mail, err := logic.GetMailFromDB(characterID, mailID)
+	mail, err := service.GetMailFromDB(characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to render mail", "mailID", mailID, "error", err)
 		return

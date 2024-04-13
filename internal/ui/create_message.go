@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"example/evebuddy/internal/logic"
+	"example/evebuddy/internal/service"
 	"example/evebuddy/internal/widgets"
 	"fmt"
 	"log/slog"
@@ -21,7 +21,7 @@ const (
 	CreateMessageForward
 )
 
-func (u *ui) ShowCreateMessageWindow(mode int, mail *logic.Mail) {
+func (u *ui) ShowCreateMessageWindow(mode int, mail *service.Mail) {
 	w, err := u.makeCreateMessageWindow(mode, mail)
 	if err != nil {
 		slog.Error("failed to create new message window", "error", err)
@@ -30,7 +30,7 @@ func (u *ui) ShowCreateMessageWindow(mode int, mail *logic.Mail) {
 	}
 }
 
-func (u *ui) makeCreateMessageWindow(mode int, mail *logic.Mail) (fyne.Window, error) {
+func (u *ui) makeCreateMessageWindow(mode int, mail *service.Mail) (fyne.Window, error) {
 	currentChar := *u.CurrentChar()
 	w := u.app.NewWindow("New message")
 	fromLabel := widget.NewLabel("From:")
@@ -49,12 +49,12 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *logic.Mail) (fyne.Window, e
 	if mail != nil {
 		switch mode {
 		case CreateMessageReply:
-			r := logic.NewRecipientsFromEntities([]logic.EveEntity{mail.From})
+			r := service.NewRecipientsFromEntities([]service.EveEntity{mail.From})
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
 		case CreateMessageReplyAll:
-			r := logic.NewRecipientsFromEntities(mail.Recipients)
+			r := service.NewRecipientsFromEntities(mail.Recipients)
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
@@ -76,8 +76,8 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *logic.Mail) (fyne.Window, e
 	})
 	sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {
 		err := func() error {
-			rr := logic.NewRecipientsFromText(toInput.Text)
-			err := logic.SendMail(currentChar.ID, subjectInput.Text, rr, bodyInput.Text)
+			rr := service.NewRecipientsFromText(toInput.Text)
+			err := service.SendMail(currentChar.ID, subjectInput.Text, rr, bodyInput.Text)
 			if err != nil {
 				return err
 			}
@@ -119,7 +119,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 		entry.SetOptions(names)
 		entry.ShowCompletion()
 		go func() {
-			missingIDs, err := logic.AddEveEntitiesFromESISearch(characterID, search)
+			missingIDs, err := service.AddEveEntitiesFromESISearch(characterID, search)
 			if err != nil {
 				slog.Error("Failed to search names", "search", "search", "error", err)
 				return
@@ -139,7 +139,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 	d := dialog.NewCustomConfirm(
 		"Add recipient", "Add", "Cancel", content, func(confirmed bool) {
 			if confirmed {
-				r := logic.NewRecipientsFromText(toInput.Text)
+				r := service.NewRecipientsFromText(toInput.Text)
 				r.AddFromText(entry.Text)
 				toInput.SetText(r.String())
 			}
@@ -151,11 +151,11 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 }
 
 func makeRecipientOptions(search string) ([]string, error) {
-	ee, err := logic.SearchEveEntitiesByName(search)
+	ee, err := service.SearchEveEntitiesByName(search)
 	if err != nil {
 		return nil, err
 	}
-	rr := logic.NewRecipientsFromEntities(ee)
+	rr := service.NewRecipientsFromEntities(ee)
 	oo := rr.ToOptions()
 	return oo, nil
 }

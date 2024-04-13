@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"example/evebuddy/internal/logic"
+	"example/evebuddy/internal/service"
 	"fmt"
 	"log/slog"
 
@@ -111,11 +111,11 @@ func (f *folderArea) Redraw() {
 }
 
 func buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
-	labelUnreadCounts, err := logic.GetMailLabelUnreadCounts(characterID)
+	labelUnreadCounts, err := service.GetMailLabelUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
-	listUnreadCounts, err := logic.GetMailListUnreadCounts(characterID)
+	listUnreadCounts, err := service.GetMailListUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -126,13 +126,13 @@ func buildFolderTree(characterID int32) (map[string][]string, map[string]string,
 	folders := makeDefaultFolders(labelUnreadCounts)
 	folderItemAll := node{
 		ID:          nodeAllID,
-		ObjID:       logic.LabelAll,
+		ObjID:       service.LabelAll,
 		Name:        "All Mails",
 		Category:    nodeCategoryLabel,
 		UnreadCount: totalUnreadCount,
 	}
 	folders[nodeAllID] = folderItemAll.toJSON()
-	labels, err := logic.ListMailLabels(characterID)
+	labels, err := service.ListMailLabels(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -155,7 +155,7 @@ func buildFolderTree(characterID int32) (map[string][]string, map[string]string,
 			folders[uid] = n.toJSON()
 		}
 	}
-	lists, err := logic.ListMailLists(characterID)
+	lists, err := service.ListMailLists(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -188,10 +188,10 @@ func makeDefaultFolders(labelUnreadCounts map[int32]int) map[string]string {
 		labelID int32
 		name    string
 	}{
-		{nodeInboxID, logic.LabelInbox, "Inbox"},
-		{nodeSentID, logic.LabelSent, "Sent"},
-		{nodeCorpID, logic.LabelCorp, "Corp"},
-		{nodeAllianceID, logic.LabelAlliance, "Alliance"},
+		{nodeInboxID, service.LabelInbox, "Inbox"},
+		{nodeSentID, service.LabelSent, "Sent"},
+		{nodeCorpID, service.LabelCorp, "Corp"},
+		{nodeAllianceID, service.LabelAlliance, "Alliance"},
 	}
 	for _, o := range defaultFolders {
 		u, ok := labelUnreadCounts[o.labelID]
@@ -213,7 +213,7 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 	var total, labels, lists int
 	for id, c := range labelCounts {
 		total += c
-		if id > logic.LabelAlliance {
+		if id > service.LabelAlliance {
 			labels += c
 		}
 	}
@@ -229,7 +229,7 @@ func (f *folderArea) UpdateMails() {
 	go func() {
 		charID := f.ui.CurrentCharID()
 		if charID != 0 {
-			err := logic.FetchMail(charID, status.info)
+			err := service.FetchMail(charID, status.info)
 			if err != nil {
 				status.setInfo("Failed to fetch mail")
 				slog.Error("Failed to update mails", "characterID", charID, "error", err)

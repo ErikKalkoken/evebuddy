@@ -1,8 +1,8 @@
-package logic_test
+package service_test
 
 import (
-	"example/evebuddy/internal/logic"
 	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/service"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,10 +13,10 @@ func TestSetting(t *testing.T) {
 		// given
 		model.TruncateTables()
 		// when
-		err := logic.SetSetting("alpha", "john")
+		err := service.SetSetting("alpha", "john")
 		// then
 		if assert.NoError(t, err) {
-			v, err := logic.GetSetting[string]("alpha")
+			v, err := service.GetSetting[string]("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "john", v)
 			}
@@ -26,10 +26,10 @@ func TestSetting(t *testing.T) {
 		// given
 		model.TruncateTables()
 		// when
-		err := logic.SetSetting("alpha", 42)
+		err := service.SetSetting("alpha", 42)
 		// then
 		if assert.NoError(t, err) {
-			v, err := logic.GetSetting[int]("alpha")
+			v, err := service.GetSetting[int]("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, 42, v)
 			}
@@ -38,15 +38,15 @@ func TestSetting(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		err := logic.SetSetting("alpha", "john")
+		err := service.SetSetting("alpha", "john")
 		if err != nil {
 			panic(err)
 		}
 		// when
-		err = logic.SetSetting("alpha", "peter")
+		err = service.SetSetting("alpha", "peter")
 		// then
 		if assert.NoError(t, err) {
-			v, err := logic.GetSetting[string]("alpha")
+			v, err := service.GetSetting[string]("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "peter", v)
 			}
@@ -56,7 +56,7 @@ func TestSetting(t *testing.T) {
 		// given
 		model.TruncateTables()
 		// when
-		v, err := logic.GetSetting[string]("alpha")
+		v, err := service.GetSetting[string]("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "", v)
@@ -66,7 +66,7 @@ func TestSetting(t *testing.T) {
 		// given
 		model.TruncateTables()
 		// when
-		v, err := logic.GetSetting[int]("alpha")
+		v, err := service.GetSetting[int]("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, 0, v)
@@ -75,15 +75,15 @@ func TestSetting(t *testing.T) {
 	t.Run("can delete existing key", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		err := logic.SetSetting("alpha", "abc")
+		err := service.SetSetting("alpha", "abc")
 		if err != nil {
 			panic(err)
 		}
 		// when
-		err = logic.DeleteSetting("alpha")
+		err = service.DeleteSetting("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, err := logic.GetSetting[string]("alpha")
+			v, err := service.GetSetting[string]("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}
@@ -93,10 +93,10 @@ func TestSetting(t *testing.T) {
 		// given
 		model.TruncateTables()
 		// when
-		err := logic.DeleteSetting("alpha")
+		err := service.DeleteSetting("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, err := logic.GetSetting[string]("alpha")
+			v, err := service.GetSetting[string]("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}
