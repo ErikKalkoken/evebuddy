@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/service"
 	"example/evebuddy/internal/ui"
 )
 
@@ -20,6 +21,7 @@ func main() {
 	defer db.Close()
 	// storage.Test()
 
-	e := ui.NewUI()
+	s := service.NewService()
+	e := ui.NewUI(s)
 	e.ShowAndRun()
 }

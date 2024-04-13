@@ -49,12 +49,12 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *service.Mail) (fyne.Window,
 	if mail != nil {
 		switch mode {
 		case CreateMessageReply:
-			r := service.NewRecipientsFromEntities([]service.EveEntity{mail.From})
+			r := u.service.NewRecipientsFromEntities([]service.EveEntity{mail.From})
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
 		case CreateMessageReplyAll:
-			r := service.NewRecipientsFromEntities(mail.Recipients)
+			r := u.service.NewRecipientsFromEntities(mail.Recipients)
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
@@ -67,7 +67,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *service.Mail) (fyne.Window,
 	}
 
 	addButton := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		showAddDialog(w, toInput, currentChar.ID)
+		u.showAddDialog(w, toInput, currentChar.ID)
 	})
 	toInputWrap := container.NewBorder(nil, nil, nil, addButton, toInput)
 	form := container.New(layout.NewFormLayout(), fromLabel, fromInput, toLabel, toInputWrap, subjectLabel, subjectInput)
@@ -76,8 +76,8 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *service.Mail) (fyne.Window,
 	})
 	sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {
 		err := func() error {
-			rr := service.NewRecipientsFromText(toInput.Text)
-			err := service.SendMail(currentChar.ID, subjectInput.Text, rr, bodyInput.Text)
+			rr := u.service.NewRecipientsFromText(toInput.Text)
+			err := u.service.SendMail(currentChar.ID, subjectInput.Text, rr, bodyInput.Text)
 			if err != nil {
 				return err
 			}
@@ -102,7 +102,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *service.Mail) (fyne.Window,
 	return w, nil
 }
 
-func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
+func (u *ui) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 	label := widget.NewLabel("Search")
 	entry := widgets.NewCompletionEntry([]string{})
 	content := container.New(layout.NewFormLayout(), label, entry)
@@ -111,7 +111,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 			entry.HideCompletion()
 			return
 		}
-		names, err := makeRecipientOptions(search)
+		names, err := u.makeRecipientOptions(search)
 		if err != nil {
 			entry.HideCompletion()
 			return
@@ -119,7 +119,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 		entry.SetOptions(names)
 		entry.ShowCompletion()
 		go func() {
-			missingIDs, err := service.AddEveEntitiesFromESISearch(characterID, search)
+			missingIDs, err := u.service.AddEveEntitiesFromESISearch(characterID, search)
 			if err != nil {
 				slog.Error("Failed to search names", "search", "search", "error", err)
 				return
@@ -127,7 +127,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 			if len(missingIDs) == 0 {
 				return // no need to update when not changed
 			}
-			names2, err := makeRecipientOptions(search)
+			names2, err := u.makeRecipientOptions(search)
 			if err != nil {
 				slog.Error("Failed to make name options", "error", err)
 				return
@@ -139,7 +139,7 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 	d := dialog.NewCustomConfirm(
 		"Add recipient", "Add", "Cancel", content, func(confirmed bool) {
 			if confirmed {
-				r := service.NewRecipientsFromText(toInput.Text)
+				r := u.service.NewRecipientsFromText(toInput.Text)
 				r.AddFromText(entry.Text)
 				toInput.SetText(r.String())
 			}
@@ -150,12 +150,12 @@ func showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 	d.Show()
 }
 
-func makeRecipientOptions(search string) ([]string, error) {
-	ee, err := service.SearchEveEntitiesByName(search)
+func (u *ui) makeRecipientOptions(search string) ([]string, error) {
+	ee, err := u.service.SearchEveEntitiesByName(search)
 	if err != nil {
 		return nil, err
 	}
-	rr := service.NewRecipientsFromEntities(ee)
+	rr := u.service.NewRecipientsFromEntities(ee)
 	oo := rr.ToOptions()
 	return oo, nil
 }

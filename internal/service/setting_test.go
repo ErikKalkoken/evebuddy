@@ -9,14 +9,15 @@ import (
 )
 
 func TestSetting(t *testing.T) {
+	s := service.NewService()
 	t.Run("can create new string", func(t *testing.T) {
 		// given
 		model.TruncateTables()
 		// when
-		err := service.SetSetting("alpha", "john")
+		err := s.SetSettingString("alpha", "john")
 		// then
 		if assert.NoError(t, err) {
-			v, err := service.GetSetting[string]("alpha")
+			v, err := s.GetSettingString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "john", v)
 			}
@@ -26,27 +27,27 @@ func TestSetting(t *testing.T) {
 		// given
 		model.TruncateTables()
 		// when
-		err := service.SetSetting("alpha", 42)
+		err := s.SetSettingInt32("alpha", 42)
 		// then
 		if assert.NoError(t, err) {
-			v, err := service.GetSetting[int]("alpha")
+			v, err := s.GetSettingInt32("alpha")
 			if assert.NoError(t, err) {
-				assert.Equal(t, 42, v)
+				assert.Equal(t, int32(42), v)
 			}
 		}
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		err := service.SetSetting("alpha", "john")
+		err := s.SetSettingString("alpha", "john")
 		if err != nil {
 			panic(err)
 		}
 		// when
-		err = service.SetSetting("alpha", "peter")
+		err = s.SetSettingString("alpha", "peter")
 		// then
 		if assert.NoError(t, err) {
-			v, err := service.GetSetting[string]("alpha")
+			v, err := s.GetSettingString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "peter", v)
 			}
@@ -56,7 +57,7 @@ func TestSetting(t *testing.T) {
 		// given
 		model.TruncateTables()
 		// when
-		v, err := service.GetSetting[string]("alpha")
+		v, err := s.GetSettingString("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "", v)
@@ -66,24 +67,24 @@ func TestSetting(t *testing.T) {
 		// given
 		model.TruncateTables()
 		// when
-		v, err := service.GetSetting[int]("alpha")
+		v, err := s.GetSettingInt32("alpha")
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, 0, v)
+			assert.Equal(t, int32(0), v)
 		}
 	})
 	t.Run("can delete existing key", func(t *testing.T) {
 		// given
 		model.TruncateTables()
-		err := service.SetSetting("alpha", "abc")
+		err := s.SetSettingString("alpha", "abc")
 		if err != nil {
 			panic(err)
 		}
 		// when
-		err = service.DeleteSetting("alpha")
+		err = s.DeleteSetting("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, err := service.GetSetting[string]("alpha")
+			v, err := s.GetSettingString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}
@@ -93,10 +94,10 @@ func TestSetting(t *testing.T) {
 		// given
 		model.TruncateTables()
 		// when
-		err := service.DeleteSetting("alpha")
+		err := s.DeleteSetting("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, err := service.GetSetting[string]("alpha")
+			v, err := s.GetSettingString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}

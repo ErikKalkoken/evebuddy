@@ -10,11 +10,6 @@ import (
 	"github.com/antihax/goesi"
 )
 
-var httpClient = &http.Client{
-	Timeout:   time.Second * 30, // Timeout after 30 seconds
-	Transport: myHttp.CustomTransport{},
-}
-
 var esiScopes = []string{
 	"esi-characters.read_contacts.v1",
 	"esi-mail.read_mail.v1",
@@ -25,4 +20,20 @@ var esiScopes = []string{
 	"esi-wallet.read_character_wallet.v1",
 }
 
-var esiClient = goesi.NewAPIClient(httpClient, "erik.kalkoken@gmail.com")
+type Service struct {
+	httpClient *http.Client
+	esiClient  *goesi.APIClient
+}
+
+func NewService() *Service {
+	httpClient := &http.Client{
+		Timeout:   time.Second * 30, // Timeout after 30 seconds
+		Transport: myHttp.CustomTransport{},
+	}
+	esiClient := goesi.NewAPIClient(httpClient, "erik.kalkoken@gmail.com")
+	s := Service{
+		httpClient: httpClient,
+		esiClient:  esiClient,
+	}
+	return &s
+}

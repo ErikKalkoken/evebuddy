@@ -52,7 +52,7 @@ func (u *ui) NewHeaderArea() *headerArea {
 			if characterID == 0 {
 				return
 			}
-			m, err := service.GetMailFromDB(characterID, int32(mailID))
+			m, err := u.service.GetMailFromDB(characterID, int32(mailID))
 			if err != nil {
 				if err != sql.ErrNoRows {
 					slog.Error("Failed to get mail", "error", err)
@@ -128,9 +128,9 @@ func (h *headerArea) redraw(folder node) {
 	charID := h.ui.CurrentCharID()
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mm, err = service.ListMailsForLabel(charID, folder.ObjID)
+		mm, err = h.ui.service.ListMailsForLabel(charID, folder.ObjID)
 	case nodeCategoryList:
-		mm, err = service.ListMailsForList(charID, folder.ObjID)
+		mm, err = h.ui.service.ListMailsForList(charID, folder.ObjID)
 	}
 	var mailIDs []int
 	if err != nil {

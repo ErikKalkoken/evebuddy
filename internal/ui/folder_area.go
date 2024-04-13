@@ -1,9 +1,10 @@
 package ui
 
 import (
-	"example/evebuddy/internal/service"
 	"fmt"
 	"log/slog"
+
+	"example/evebuddy/internal/service"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -100,7 +101,7 @@ func (f *folderArea) Redraw() {
 		f.refreshButton.Enable()
 		f.newButton.Enable()
 	}
-	ids, values, folderItemAll, err := buildFolderTree(characterID)
+	ids, values, folderItemAll, err := f.buildFolderTree(characterID)
 	if err != nil {
 		slog.Error("Failed to build folder tree", "character", characterID, "error", err)
 	}
@@ -110,12 +111,12 @@ func (f *folderArea) Redraw() {
 	f.ui.headerArea.Redraw(folderItemAll)
 }
 
-func buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
-	labelUnreadCounts, err := service.GetMailLabelUnreadCounts(characterID)
+func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
+	labelUnreadCounts, err := f.ui.service.GetMailLabelUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
-	listUnreadCounts, err := service.GetMailListUnreadCounts(characterID)
+	listUnreadCounts, err := f.ui.service.GetMailListUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -132,7 +133,7 @@ func buildFolderTree(characterID int32) (map[string][]string, map[string]string,
 		UnreadCount: totalUnreadCount,
 	}
 	folders[nodeAllID] = folderItemAll.toJSON()
-	labels, err := service.ListMailLabels(characterID)
+	labels, err := f.ui.service.ListMailLabels(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -155,7 +156,7 @@ func buildFolderTree(characterID int32) (map[string][]string, map[string]string,
 			folders[uid] = n.toJSON()
 		}
 	}
-	lists, err := service.ListMailLists(characterID)
+	lists, err := f.ui.service.ListMailLists(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -229,7 +230,7 @@ func (f *folderArea) UpdateMails() {
 	go func() {
 		charID := f.ui.CurrentCharID()
 		if charID != 0 {
-			err := service.FetchMail(charID, status.info)
+			err := f.ui.service.FetchMail(charID, status.info)
 			if err != nil {
 				status.setInfo("Failed to fetch mail")
 				slog.Error("Failed to update mails", "characterID", charID, "error", err)

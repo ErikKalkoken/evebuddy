@@ -83,6 +83,7 @@ func TestNewRecipientFromText(t *testing.T) {
 }
 
 func TestNewRecipientsFromText(t *testing.T) {
+	s := NewService()
 	var cases = []struct {
 		name string
 		in   string
@@ -94,7 +95,7 @@ func TestNewRecipientsFromText(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			r := NewRecipientsFromText(tt.in)
+			r := s.NewRecipientsFromText(tt.in)
 			s := r.String()
 			assert.Equal(t, tt.out, s)
 		})
@@ -102,15 +103,17 @@ func TestNewRecipientsFromText(t *testing.T) {
 }
 
 func TestNewRecipientsFromText2(t *testing.T) {
-	r := NewRecipientsFromText("")
+	s := NewService()
+	r := s.NewRecipientsFromText("")
 	assert.Equal(t, r.Size(), 0)
 }
 
 func TestResolveLocally(t *testing.T) {
+	s := NewService()
 	t.Run("should resolve to existing entities", func(t *testing.T) {
 		model.TruncateTables()
 		e := factory.CreateEveEntity()
-		r := NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e)})
+		r := s.NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e)})
 		mm, names, err := r.buildMailRecipients()
 		if assert.NoError(t, err) {
 			assert.Len(t, mm, 1)
@@ -122,7 +125,7 @@ func TestResolveLocally(t *testing.T) {
 		model.TruncateTables()
 		e1 := factory.CreateEveEntity()
 		e2 := factory.CreateEveEntity()
-		r := NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e1), eveEntityFromDBModel(e2)})
+		r := s.NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e1), eveEntityFromDBModel(e2)})
 		mm, names, err := r.buildMailRecipients()
 		if assert.NoError(t, err) {
 			assert.Len(t, mm, 2)
@@ -133,7 +136,7 @@ func TestResolveLocally(t *testing.T) {
 		model.TruncateTables()
 		e1 := factory.CreateEveEntity()
 		e2 := factory.CreateEveEntity()
-		r := NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e1), eveEntityFromDBModel(e2)})
+		r := s.NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e1), eveEntityFromDBModel(e2)})
 		r.AddFromText("Other")
 		mm, names, err := r.buildMailRecipients()
 		if assert.NoError(t, err) {
@@ -143,7 +146,7 @@ func TestResolveLocally(t *testing.T) {
 	})
 	t.Run("should resolve to names", func(t *testing.T) {
 		model.TruncateTables()
-		r := NewRecipientsFromText("Other")
+		r := s.NewRecipientsFromText("Other")
 		mm, names, err := r.buildMailRecipients()
 		if assert.NoError(t, err) {
 			assert.Len(t, mm, 0)
@@ -153,6 +156,7 @@ func TestResolveLocally(t *testing.T) {
 }
 
 func TestBuildMailRecipientsCategories(t *testing.T) {
+	s := NewService()
 	var cases = []struct {
 		in  model.EveEntityCategory
 		out string
@@ -166,7 +170,7 @@ func TestBuildMailRecipientsCategories(t *testing.T) {
 		model.TruncateTables()
 		t.Run(fmt.Sprintf("category %s", tc.in), func(t *testing.T) {
 			e := factory.CreateEveEntity(model.EveEntity{Category: tc.in})
-			r := NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e)})
+			r := s.NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e)})
 			mm, names, err := r.buildMailRecipients()
 			if assert.NoError(t, err) {
 				assert.Len(t, mm, 1)
@@ -179,6 +183,7 @@ func TestBuildMailRecipientsCategories(t *testing.T) {
 }
 
 func TestBuildMailRecipientsFromNames(t *testing.T) {
+	s := NewService()
 	var cases = []struct {
 		in  model.EveEntity
 		out esi.PostCharactersCharacterIdMailRecipient
@@ -204,7 +209,7 @@ func TestBuildMailRecipientsFromNames(t *testing.T) {
 		t.Run("should return mail recipient when match is found", func(t *testing.T) {
 			model.TruncateTables()
 			factory.CreateEveEntity(tc.in)
-			rr, err := buildMailRecipientsFromNames([]string{tc.in.Name})
+			rr, err := s.buildMailRecipientsFromNames([]string{tc.in.Name})
 			if assert.NoError(t, err) {
 				assert.Len(t, rr, 1)
 				assert.Equal(t, rr[0], tc.out)
@@ -213,7 +218,7 @@ func TestBuildMailRecipientsFromNames(t *testing.T) {
 	}
 	t.Run("should abort with specific error when a name does not match", func(t *testing.T) {
 		model.TruncateTables()
-		r, err := buildMailRecipientsFromNames([]string{"dummy"})
+		r, err := s.buildMailRecipientsFromNames([]string{"dummy"})
 		assert.ErrorIs(t, err, ErrNameNoMatch)
 		assert.Nil(t, r)
 	})
@@ -221,7 +226,7 @@ func TestBuildMailRecipientsFromNames(t *testing.T) {
 		model.TruncateTables()
 		factory.CreateEveEntity(model.EveEntity{Name: "alpha", Category: model.EveEntityCharacter})
 		factory.CreateEveEntity(model.EveEntity{Name: "alpha", Category: model.EveEntityAlliance})
-		r, err := buildMailRecipientsFromNames([]string{"alpha"})
+		r, err := s.buildMailRecipientsFromNames([]string{"alpha"})
 		assert.ErrorIs(t, err, ErrNameMultipleMatches)
 		assert.Nil(t, r)
 	})

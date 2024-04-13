@@ -10,30 +10,30 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 )
 
-func StartEsiStatusTicker(text binding.String) {
+func (s *Service) StartEsiStatusTicker(text binding.String) {
 	ticker := time.NewTicker(60 * time.Second)
 	go func() {
 		for {
-			updateESIStatus(text)
+			s.updateESIStatus(text)
 			<-ticker.C
 		}
 	}()
 }
 
-func updateESIStatus(text binding.String) error {
-	status, resp, err := esiClient.ESI.StatusApi.GetStatus(context.Background(), nil)
+func (s *Service) updateESIStatus(text binding.String) error {
+	status, resp, err := s.esiClient.ESI.StatusApi.GetStatus(context.Background(), nil)
 	if err != nil {
 		return err
 	}
 	isOffline := resp.StatusCode >= 500 || status.Players == 0
-	var s string
+	var t string
 	if isOffline {
-		s = "OFFLINE"
+		t = "OFFLINE"
 	} else {
 		p := message.NewPrinter(language.English)
-		s = p.Sprintf("%d players", status.Players)
+		t = p.Sprintf("%d players", status.Players)
 	}
-	err = text.Set(s)
+	err = text.Set(t)
 	if err != nil {
 		return err
 	}

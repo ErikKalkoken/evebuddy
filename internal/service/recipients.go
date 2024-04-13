@@ -114,13 +114,13 @@ type Recipients struct {
 	list []recipient
 }
 
-func NewRecipients() *Recipients {
+func (s *Service) NewRecipients() *Recipients {
 	var rr Recipients
 	return &rr
 }
 
-func NewRecipientsFromEntities(ee []EveEntity) *Recipients {
-	rr := NewRecipients()
+func (s *Service) NewRecipientsFromEntities(ee []EveEntity) *Recipients {
+	rr := s.NewRecipients()
 	for _, e := range ee {
 		o := newRecipientFromEntity(e)
 		rr.list = append(rr.list, o)
@@ -128,12 +128,12 @@ func NewRecipientsFromEntities(ee []EveEntity) *Recipients {
 	return rr
 }
 
-func NewRecipientsFromText(s string) *Recipients {
-	rr := NewRecipients()
-	if s == "" {
+func (s *Service) NewRecipientsFromText(t string) *Recipients {
+	rr := s.NewRecipients()
+	if t == "" {
 		return rr
 	}
-	ss := strings.Split(s, ",")
+	ss := strings.Split(t, ",")
 	for i, x := range ss {
 		ss[i] = strings.Trim(x, " ")
 	}
@@ -182,12 +182,12 @@ func (rr *Recipients) ToOptions() []string {
 	return ss
 }
 
-func (rr *Recipients) ToMailRecipients() ([]esi.PostCharactersCharacterIdMailRecipient, error) {
+func (rr *Recipients) ToMailRecipients(s *Service) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
 	mm1, names, err := rr.buildMailRecipients()
 	if err != nil {
 		return nil, err
 	}
-	ee, err := resolveNamesRemotely(names)
+	ee, err := s.resolveNamesRemotely(names)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (rr *Recipients) ToMailRecipients() ([]esi.PostCharactersCharacterIdMailRec
 			return nil, err
 		}
 	}
-	mm2, err := buildMailRecipientsFromNames(names)
+	mm2, err := s.buildMailRecipientsFromNames(names)
 	if err != nil {
 		return nil, err
 	}
@@ -236,12 +236,12 @@ func (rr *Recipients) buildMailRecipients() ([]esi.PostCharactersCharacterIdMail
 }
 
 // resolveNamesRemotely resolves a list of names remotely and returns all matches.
-func resolveNamesRemotely(names []string) ([]model.EveEntity, error) {
+func (s *Service) resolveNamesRemotely(names []string) ([]model.EveEntity, error) {
 	ee := make([]model.EveEntity, 0, len(names))
 	if len(names) == 0 {
 		return ee, nil
 	}
-	r, _, err := esiClient.ESI.UniverseApi.PostUniverseIds(context.Background(), names, nil)
+	r, _, err := s.esiClient.ESI.UniverseApi.PostUniverseIds(context.Background(), names, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func resolveNamesRemotely(names []string) ([]model.EveEntity, error) {
 // buildMailRecipientsFromNames tries to build MailRecipient objects from given names
 // by checking against EveEntity objects in the database.
 // Will abort with errors if no match is found or if multiple matches are found for a name.
-func buildMailRecipientsFromNames(names []string) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
+func (s *Service) buildMailRecipientsFromNames(names []string) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
 	mm := make([]esi.PostCharactersCharacterIdMailRecipient, 0, len(names))
 	for _, n := range names {
 		ee, err := model.ListEveEntitiesByName(n)

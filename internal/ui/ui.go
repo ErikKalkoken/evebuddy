@@ -39,14 +39,15 @@ type ui struct {
 	headerArea       *headerArea
 	mailArea         *mailArea
 	statusArea       *statusArea
+	service          *service.Service
 	window           fyne.Window
 }
 
 // NewUI build the UI and returns it.
-func NewUI() *ui {
+func NewUI(s *service.Service) *ui {
 	a := app.New()
 	w := a.NewWindow("Eve Buddy")
-	u := &ui{app: a, window: w}
+	u := &ui{app: a, window: w, service: s}
 
 	mail := u.NewMailArea()
 	u.mailArea = mail
@@ -81,12 +82,12 @@ func NewUI() *ui {
 	w.SetMaster()
 	w.SetMainMenu(MakeMenu(a, u))
 
-	characterID, err := service.GetSetting[int32](settingLastCharacterID)
+	characterID, err := s.GetSettingInt32(settingLastCharacterID)
 	if err != nil {
 		panic(err)
 	}
 	if characterID != 0 {
-		c, err := service.GetCharacter(characterID)
+		c, err := s.GetCharacter(characterID)
 		if err != nil {
 			if err != sql.ErrNoRows {
 				slog.Error("Failed to load character", "error", err)
@@ -95,7 +96,7 @@ func NewUI() *ui {
 			u.SetCurrentCharacter(&c)
 		}
 	}
-	service.StartEsiStatusTicker(status.status)
+	s.StartEsiStatusTicker(status.status)
 	return u
 }
 
@@ -118,7 +119,7 @@ func (u *ui) CurrentChar() *service.Character {
 func (u *ui) SetCurrentCharacter(c *service.Character) {
 	u.currentCharacter = c
 	u.window.SetTitle(fmt.Sprintf("Eve Buddy [%s]", c.Name))
-	err := service.SetSetting(settingLastCharacterID, c.ID)
+	err := u.service.SetSettingInt32(settingLastCharacterID, c.ID)
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
@@ -128,7 +129,7 @@ func (u *ui) SetCurrentCharacter(c *service.Character) {
 
 func (u *ui) ResetCurrentCharacter() {
 	u.currentCharacter = nil
-	err := service.DeleteSetting(settingLastCharacterID)
+	err := u.service.DeleteSetting(settingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}

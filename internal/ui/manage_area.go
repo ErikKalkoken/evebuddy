@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"example/evebuddy/internal/service"
 	"fmt"
 	"log/slog"
 
@@ -50,7 +49,7 @@ func (u *ui) NewManageArea() *manageArea {
 }
 
 func (m *manageArea) Redraw() {
-	chars, err := service.ListCharacters()
+	chars, err := m.ui.service.ListCharacters()
 	if err != nil {
 		panic(err)
 	}
@@ -81,7 +80,7 @@ func (m *manageArea) Redraw() {
 						}
 						m.Redraw()
 						if isCurrentChar {
-							c, err := service.GetFirstCharacter()
+							c, err := m.ui.service.GetFirstCharacter()
 							if err != nil {
 								m.ui.ResetCurrentCharacter()
 							} else {
@@ -114,7 +113,7 @@ func (m *manageArea) showAddCharacterDialog() {
 	go func() {
 		defer cancel()
 		defer dialog.Hide()
-		err := service.CreateOrUpdateCharacterFromSSO(ctx)
+		err := m.ui.service.CreateOrUpdateCharacterFromSSO(ctx)
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
 		} else {

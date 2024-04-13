@@ -32,7 +32,7 @@ func mailLabelFromDBModel(l model.MailLabel) MailLabel {
 	}
 }
 
-func ListMailLabels(characterID int32) ([]MailLabel, error) {
+func (s *Service) ListMailLabels(characterID int32) ([]MailLabel, error) {
 	ll, err := model.ListMailLabels(characterID)
 	if err != nil {
 		return nil, err

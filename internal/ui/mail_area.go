@@ -10,8 +10,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"example/evebuddy/internal/service"
 )
 
 // mailArea is the UI area showing the current mail.
@@ -60,7 +58,7 @@ func (m *mailArea) Clear() {
 
 func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 	characterID := m.ui.CurrentCharID()
-	mail, err := service.GetMailFromDB(characterID, mailID)
+	mail, err := m.ui.service.GetMailFromDB(characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to render mail", "mailID", mailID, "error", err)
 		return
@@ -69,7 +67,7 @@ func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 	if !mail.IsRead {
 		go func() {
 			err := func() error {
-				err = mail.UpdateMailRead()
+				err = m.ui.service.UpdateMailRead(&mail)
 				if err != nil {
 					return err
 				}
@@ -106,7 +104,7 @@ func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 		t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", mail.Subject)
 		d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
 			if confirmed {
-				err := mail.Delete()
+				err := m.ui.service.DeleteMail(&mail)
 				if err != nil {
 					errorDialog := dialog.NewError(err, m.ui.window)
 					errorDialog.Show()

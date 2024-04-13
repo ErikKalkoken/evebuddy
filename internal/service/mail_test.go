@@ -16,6 +16,7 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
+	s := NewService()
 	var objs []esi.GetCharactersCharacterIdMail200Ok
 	var mailIDs []int32
 	for i := range 55 {
@@ -51,7 +52,7 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 	token := Token{AccessToken: "abc", CharacterID: 1, ExpiresAt: time.Now().Add(time.Minute * 10)}
 
 	// when
-	mails, err := listMailHeaders(&token)
+	mails, err := s.listMailHeaders(&token)
 
 	// then
 	if assert.NoError(t, err) {

@@ -44,13 +44,13 @@ func tokenDBModelFromToken(t Token) model.Token {
 }
 
 // GetValidToken returns a valid token for a character. Convenience function.
-func GetValidToken(characterID int32) (*Token, error) {
+func (s *Service) GetValidToken(characterID int32) (*Token, error) {
 	t, err := model.GetToken(characterID)
 	if err != nil {
 		return nil, err
 	}
 	t2 := tokenFromDBModel(t)
-	if err := t2.EnsureValid(); err != nil {
+	if err := s.EnsureValid(&t2); err != nil {
 		return nil, err
 	}
 	return &t2, nil
@@ -71,10 +71,10 @@ func (t *Token) Save() error {
 }
 
 // EnsureValid will automatically try to refresh a token that is already or about to become invalid.
-func (t *Token) EnsureValid() error {
+func (s *Service) EnsureValid(t *Token) error {
 	if !t.RemainsValid(time.Second * 60) {
 		slog.Debug("Need to refresh token", "characterID", t.CharacterID)
-		rawToken, err := sso.RefreshToken(httpClient, t.RefreshToken)
+		rawToken, err := sso.RefreshToken(s.httpClient, t.RefreshToken)
 		if err != nil {
 			return err
 		}

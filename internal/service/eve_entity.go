@@ -87,8 +87,8 @@ func eveEntityDBModelCategoryFromCategory(c EveEntityCategory) model.EveEntityCa
 }
 
 // AddEveEntitiesFromESISearch runs a search on ESI and adds the results as new EveEntity objects to the database.
-func AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, error) {
-	token, err := GetValidToken(characterID)
+func (s *Service) AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, error) {
+	token, err := s.GetValidToken(characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -97,12 +97,12 @@ func AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, err
 		"character",
 		"alliance",
 	}
-	r, _, err := esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(token.NewContext(), categories, characterID, search, nil)
+	r, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(token.NewContext(), categories, characterID, search, nil)
 	if err != nil {
 		return nil, err
 	}
 	ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
-	missingIDs, err := addMissingEveEntities(ids)
+	missingIDs, err := s.addMissingEveEntities(ids)
 	if err != nil {
 		slog.Error("Failed to fetch missing IDs", "error", err)
 		return nil, err
@@ -111,7 +111,7 @@ func AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, err
 }
 
 // addMissingEveEntities adds EveEntities from ESI for IDs missing in the database.
-func addMissingEveEntities(ids []int32) ([]int32, error) {
+func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 	c, err := model.ListEveEntityIDs()
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func addMissingEveEntities(ids []int32) ([]int32, error) {
 		return nil, nil
 	}
 
-	entities, _, err := esiClient.ESI.UniverseApi.PostUniverseNames(context.Background(), missing.ToSlice(), nil)
+	entities, _, err := s.esiClient.ESI.UniverseApi.PostUniverseNames(context.Background(), missing.ToSlice(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve IDs: %v %v", err, ids)
 	}
@@ -143,7 +143,7 @@ func addMissingEveEntities(ids []int32) ([]int32, error) {
 	return missing.ToSlice(), nil
 }
 
-func SearchEveEntitiesByName(partial string) ([]EveEntity, error) {
+func (s *Service) SearchEveEntitiesByName(partial string) ([]EveEntity, error) {
 	ee, err := model.SearchEveEntitiesByName(partial)
 	if err != nil {
 		return nil, err

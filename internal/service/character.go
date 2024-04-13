@@ -60,7 +60,7 @@ func characterFromDBModel(c model.Character) Character {
 	}
 }
 
-func GetCharacter(id int32) (Character, error) {
+func (s *Service) GetCharacter(id int32) (Character, error) {
 	charDB, err := model.GetCharacter(id)
 	if err != nil {
 		return Character{}, err
@@ -79,7 +79,7 @@ func GetCharacter(id int32) (Character, error) {
 	return c, nil
 }
 
-func ListCharacters() ([]Character, error) {
+func (s *Service) ListCharacters() ([]Character, error) {
 	charsDB, err := model.ListCharacters()
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func ListCharacters() ([]Character, error) {
 	return cc, nil
 }
 
-func GetFirstCharacter() (Character, error) {
+func (s *Service) GetFirstCharacter() (Character, error) {
 	charDB, err := model.GetFirstCharacter()
 	if err != nil {
 		return Character{}, err
@@ -100,13 +100,13 @@ func GetFirstCharacter() (Character, error) {
 }
 
 // CreateOrUpdateCharacterFromSSO creates or updates a character via SSO authentication.
-func CreateOrUpdateCharacterFromSSO(ctx context.Context) error {
-	ssoToken, err := sso.Authenticate(ctx, httpClient, esiScopes)
+func (s *Service) CreateOrUpdateCharacterFromSSO(ctx context.Context) error {
+	ssoToken, err := sso.Authenticate(ctx, s.httpClient, esiScopes)
 	if err != nil {
 		return err
 	}
 	charID := ssoToken.CharacterID
-	charEsi, _, err := esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, charID, nil)
+	charEsi, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, charID, nil)
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func CreateOrUpdateCharacterFromSSO(ctx context.Context) error {
 	if charEsi.FactionId != 0 {
 		ids = append(ids, charEsi.FactionId)
 	}
-	_, err = addMissingEveEntities(ids)
+	_, err = s.addMissingEveEntities(ids)
 	if err != nil {
 		return err
 	}
@@ -146,14 +146,14 @@ func CreateOrUpdateCharacterFromSSO(ctx context.Context) error {
 		TokenType:    ssoToken.TokenType,
 	}
 	ctx2 := context.WithValue(ctx, goesi.ContextAccessToken, token.AccessToken)
-	skills, _, err := esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx2, charID, nil)
+	skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx2, charID, nil)
 	if err != nil {
 		slog.Error("Failed to fetch skills", "error", err)
 	} else {
 		character.SkillPoints.Int64 = skills.TotalSp
 		character.SkillPoints.Valid = true
 	}
-	balance, _, err := esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx2, charID, nil)
+	balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx2, charID, nil)
 	if err != nil {
 		slog.Error("Failed to fetch wallet balance", "error", err)
 	} else {
