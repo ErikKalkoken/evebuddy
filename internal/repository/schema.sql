@@ -57,7 +57,7 @@ CREATE TABLE mails (
     body TEXT NOT NULL,
     character_id INTEGER NOT NULL,
     from_id INTEGER NOT NULL,
-    is_read numeric NOT NULL,
+    is_read BOOL NOT NULL,
     mail_id INTEGER NOT NULL,
     subject TEXT NOT NULL,
     timestamp DATETIME NOT NULL,

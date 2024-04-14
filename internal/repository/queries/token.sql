@@ -3,7 +3,7 @@ SELECT *
 FROM tokens
 WHERE character_id = ?;
 
--- name: UpdateOrCreateToken :one
+-- name: UpdateOrCreateToken :exec
 INSERT INTO tokens (
     access_token,
     expires_at,
@@ -20,4 +20,4 @@ UPDATE SET
     expires_at = ?,
     refresh_token = ?,
     token_type = ?
-RETURNING *;
+;

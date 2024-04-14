@@ -3,12 +3,13 @@ package service
 import (
 	"context"
 	"errors"
-	"example/evebuddy/internal/api/sso"
-	"example/evebuddy/internal/model"
 	"log/slog"
 	"time"
 
 	"github.com/antihax/goesi"
+
+	"example/evebuddy/internal/api/sso"
+	"example/evebuddy/internal/repository"
 )
 
 // A SSO token belonging to a character.
@@ -20,23 +21,13 @@ type Token struct {
 	TokenType    string
 }
 
-func tokenFromDBModel(t model.Token) Token {
+func tokenFromDBModel(t repository.Token) Token {
 	if t.CharacterID == 0 {
 		panic("missing character ID")
 	}
 	return Token{
 		AccessToken:  t.AccessToken,
-		CharacterID:  t.CharacterID,
-		ExpiresAt:    t.ExpiresAt,
-		RefreshToken: t.RefreshToken,
-		TokenType:    t.TokenType,
-	}
-}
-
-func tokenDBModelFromToken(t Token) model.Token {
-	return model.Token{
-		AccessToken:  t.AccessToken,
-		CharacterID:  t.CharacterID,
+		CharacterID:  int32(t.CharacterID),
 		ExpiresAt:    t.ExpiresAt,
 		RefreshToken: t.RefreshToken,
 		TokenType:    t.TokenType,
@@ -45,7 +36,7 @@ func tokenDBModelFromToken(t Token) model.Token {
 
 // GetValidToken returns a valid token for a character. Convenience function.
 func (s *Service) GetValidToken(characterID int32) (*Token, error) {
-	t, err := model.GetToken(characterID)
+	t, err := s.queries.GetToken(context.Background(), int64(characterID))
 	if err != nil {
 		return nil, err
 	}
@@ -61,12 +52,18 @@ func (t *Token) RemainsValid(d time.Duration) bool {
 	return t.ExpiresAt.After(time.Now().Add(d))
 }
 
-func (t *Token) Save() error {
+func (s *Service) UpdateOrCreateToken(t *Token) error {
 	if t.CharacterID == 0 {
 		return errors.New("can not save token without character")
 	}
-	t2 := tokenDBModelFromToken(*t)
-	err := t2.Save()
+	arg := repository.UpdateOrCreateTokenParams{
+		AccessToken:  t.AccessToken,
+		CharacterID:  int64(t.CharacterID),
+		ExpiresAt:    t.ExpiresAt,
+		RefreshToken: t.RefreshToken,
+		TokenType:    t.TokenType,
+	}
+	err := s.queries.UpdateOrCreateToken(context.Background(), arg)
 	return err
 }
 
@@ -81,7 +78,7 @@ func (s *Service) EnsureValid(t *Token) error {
 		t.AccessToken = rawToken.AccessToken
 		t.RefreshToken = rawToken.RefreshToken
 		t.ExpiresAt = rawToken.ExpiresAt
-		err = t.Save()
+		err = s.UpdateOrCreateToken(t)
 		if err != nil {
 			return err
 		}

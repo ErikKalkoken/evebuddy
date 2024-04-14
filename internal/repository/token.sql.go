@@ -29,7 +29,7 @@ func (q *Queries) GetToken(ctx context.Context, characterID int64) (Token, error
 	return i, err
 }
 
-const updateOrCreateToken = `-- name: UpdateOrCreateToken :one
+const updateOrCreateToken = `-- name: UpdateOrCreateToken :exec
 INSERT INTO tokens (
     access_token,
     expires_at,
@@ -46,7 +46,6 @@ UPDATE SET
     expires_at = ?,
     refresh_token = ?,
     token_type = ?
-RETURNING access_token, character_id, expires_at, refresh_token, token_type
 `
 
 type UpdateOrCreateTokenParams struct {
@@ -57,21 +56,13 @@ type UpdateOrCreateTokenParams struct {
 	CharacterID  int64
 }
 
-func (q *Queries) UpdateOrCreateToken(ctx context.Context, arg UpdateOrCreateTokenParams) (Token, error) {
-	row := q.db.QueryRowContext(ctx, updateOrCreateToken,
+func (q *Queries) UpdateOrCreateToken(ctx context.Context, arg UpdateOrCreateTokenParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateToken,
 		arg.AccessToken,
 		arg.ExpiresAt,
 		arg.RefreshToken,
 		arg.TokenType,
 		arg.CharacterID,
 	)
-	var i Token
-	err := row.Scan(
-		&i.AccessToken,
-		&i.CharacterID,
-		&i.ExpiresAt,
-		&i.RefreshToken,
-		&i.TokenType,
-	)
-	return i, err
+	return err
 }

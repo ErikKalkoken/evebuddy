@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"example/evebuddy/internal/model"
 	"fmt"
 	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/antihax/goesi/esi"
+
+	"example/evebuddy/internal/repository"
 )
 
 type recipientCategory uint
@@ -215,7 +216,7 @@ func (rr *Recipients) buildMailRecipients() ([]esi.PostCharactersCharacterIdMail
 			names = append(names, r.name)
 			continue
 		}
-		e, err := model.GetEveEntityByNameAndCategory(r.name, eveEntityDBModelCategoryFromCategory(c))
+		e, err := repository.GetEveEntityByNameAndCategory(r.name, eveEntityDBModelCategoryFromCategory(c))
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				names = append(names, r.name)
@@ -236,8 +237,8 @@ func (rr *Recipients) buildMailRecipients() ([]esi.PostCharactersCharacterIdMail
 }
 
 // resolveNamesRemotely resolves a list of names remotely and returns all matches.
-func (s *Service) resolveNamesRemotely(names []string) ([]model.EveEntity, error) {
-	ee := make([]model.EveEntity, 0, len(names))
+func (s *Service) resolveNamesRemotely(names []string) ([]repository.EveEntity, error) {
+	ee := make([]repository.EveEntity, 0, len(names))
 	if len(names) == 0 {
 		return ee, nil
 	}
@@ -246,15 +247,15 @@ func (s *Service) resolveNamesRemotely(names []string) ([]model.EveEntity, error
 		return nil, err
 	}
 	for _, o := range r.Alliances {
-		e := model.EveEntity{ID: o.Id, Name: o.Name, Category: model.EveEntityAlliance}
+		e := repository.EveEntity{ID: o.Id, Name: o.Name, Category: repository.EveEntityAlliance}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Characters {
-		e := model.EveEntity{ID: o.Id, Name: o.Name, Category: model.EveEntityCharacter}
+		e := repository.EveEntity{ID: o.Id, Name: o.Name, Category: repository.EveEntityCharacter}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Corporations {
-		e := model.EveEntity{ID: o.Id, Name: o.Name, Category: model.EveEntityCorporation}
+		e := repository.EveEntity{ID: o.Id, Name: o.Name, Category: repository.EveEntityCorporation}
 		ee = append(ee, e)
 	}
 	return ee, nil
@@ -266,7 +267,7 @@ func (s *Service) resolveNamesRemotely(names []string) ([]model.EveEntity, error
 func (s *Service) buildMailRecipientsFromNames(names []string) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
 	mm := make([]esi.PostCharactersCharacterIdMailRecipient, 0, len(names))
 	for _, n := range names {
-		ee, err := model.ListEveEntitiesByName(n)
+		ee, err := repository.ListEveEntitiesByName(n)
 		if err != nil {
 			return nil, err
 		}

@@ -1,8 +1,10 @@
 package service
 
 import (
+	"context"
 	"example/evebuddy/internal/helper/set"
-	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/repository"
+
 	"fmt"
 	"html"
 	"log/slog"
@@ -32,26 +34,26 @@ type Mail struct {
 	From        EveEntity
 	Labels      []MailLabel
 	IsRead      bool
-	ID          uint64
+	ID          int64
 	MailID      int32
 	Recipients  []EveEntity
 	Subject     string
 	Timestamp   time.Time
 }
 
-func mailFromDBModel(m model.Mail) Mail {
-	if m.CharacterID == 0 {
+func mailFromDBModel(r repository.GetMailRow) Mail {
+	if r.Mail.CharacterID == 0 {
 		panic("missing character ID")
 	}
 	m2 := Mail{
-		Body:        m.Body,
-		CharacterID: m.CharacterID,
-		From:        eveEntityFromDBModel(m.From),
-		IsRead:      m.IsRead,
-		ID:          m.ID,
-		MailID:      m.MailID,
-		Subject:     m.Subject,
-		Timestamp:   m.Timestamp,
+		Body:        r.Mail.Body,
+		CharacterID: int32(r.Mail.CharacterID),
+		From:        eveEntityFromDBModel(r.EveEntity),
+		IsRead:      r.Mail.IsRead,
+		ID:          r.Mail.ID,
+		MailID:      int32(r.Mail.MailID),
+		Subject:     r.Mail.Subject,
+		Timestamp:   r.Mail.Timestamp,
 	}
 	for _, r := range m.Recipients {
 		m2.Recipients = append(m2.Recipients, eveEntityFromDBModel(r))
@@ -61,7 +63,7 @@ func mailFromDBModel(m model.Mail) Mail {
 
 // Save updates to an existing mail.
 func (m *Mail) Save() error {
-	m2 := model.Mail{
+	m2 := repository.Mail{
 		Body:        m.Body,
 		CharacterID: m.CharacterID,
 		FromID:      m.From.ID,
@@ -123,11 +125,12 @@ func (s *Service) DeleteMail(m *Mail) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(token.NewContext(), m.CharacterID, m.MailID, nil)
+	ctx := token.NewContext()
+	_, err = s.esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(ctx, m.CharacterID, m.MailID, nil)
 	if err != nil {
 		return err
 	}
-	_, err = model.DeleteMail(m.ID)
+	err = s.queries.DeleteMail(ctx, m.ID)
 	if err != nil {
 		return err
 	}
@@ -153,12 +156,13 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 	if err != nil {
 		return err
 	}
-	mail := esi.PostCharactersCharacterIdMailMail{
+	esiMail := esi.PostCharactersCharacterIdMailMail{
 		Body:       body,
 		Subject:    subject,
 		Recipients: rr,
 	}
-	mailID, _, err := s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(token.NewContext(), characterID, mail, nil)
+	ctx := token.NewContext()
+	mailID, _, err := s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esiMail, nil)
 	if err != nil {
 		return err
 	}
@@ -170,36 +174,49 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 	if err != nil {
 		return err
 	}
-	from, err := model.GetEveEntity(token.CharacterID)
+	from, err := s.queries.GetEveEntity(ctx, int64(token.CharacterID))
 	if err != nil {
 		return err
 	}
 	// FIXME: Ensure this still works when no labels have yet been loaded from ESI
-	label, err := model.GetMailLabel(token.CharacterID, model.LabelSent)
+	mailLabelParams := repository.GetMailLabelParams{CharacterID: int64(token.CharacterID), LabelID: LabelSent}
+	label, err := s.queries.GetMailLabel(ctx, mailLabelParams)
 	if err != nil {
 		return err
 	}
-	var ee []model.EveEntity
+	var ee []repository.EveEntity
 	for _, r := range rr {
-		e, err := model.GetEveEntity(r.RecipientId)
+		e, err := s.queries.GetEveEntity(ctx, int64(r.RecipientId))
 		if err != nil {
 			return err
 		}
 		ee = append(ee, e)
 	}
-	m := model.Mail{
+	mailParams := repository.CreateMailParams{
 		Body:        body,
-		CharacterID: token.CharacterID,
-		From:        from,
-		Labels:      []model.MailLabel{label},
-		MailID:      mailID,
-		Recipients:  ee,
+		CharacterID: int64(token.CharacterID),
+		FromID:      from.ID,
+		MailID:      int64(mailID),
 		Subject:     subject,
 		IsRead:      true,
 		Timestamp:   time.Now(),
 	}
-	if err := m.Create(); err != nil {
+	mail, err := s.queries.CreateMail(ctx, mailParams)
+	if err != nil {
 		return err
+	}
+	mailMailLabelParams := repository.CreateMailMailLabelParams{
+		MailID: mail.ID, MailLabelID: label.ID,
+	}
+	if err := s.queries.CreateMailMailLabel(ctx, mailMailLabelParams); err != nil {
+		return err
+	}
+	for _, e := range ee {
+		p := repository.CreateMailRecipientParams{MailID: mail.ID, EveEntityID: e.ID}
+		err := s.queries.CreateMailRecipient(ctx, p)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -228,11 +245,15 @@ func (s *Service) UpdateMailRead(m *Mail) error {
 }
 
 func (s *Service) GetMailFromDB(characterID int32, mailID int32) (Mail, error) {
-	m, err := model.GetMail(characterID, mailID)
+	p := repository.GetMailParams{
+		CharacterID: int64(characterID),
+		MailID:      int64(mailID),
+	}
+	row, err := s.queries.GetMail(context.Background(), p)
 	if err != nil {
 		return Mail{}, err
 	}
-	return mailFromDBModel(m), nil
+	return mailFromDBModel(row), nil
 }
 
 // FIXME: Delete obsolete labels and mail lists
@@ -240,14 +261,16 @@ func (s *Service) GetMailFromDB(characterID int32, mailID int32) (Mail, error) {
 
 // FetchMail fetches and stores new mails from ESI for a character.
 func (s *Service) FetchMail(characterID int32, status binding.String) error {
+	ctx := context.Background()
 	token, err := s.GetValidToken(characterID)
 	if err != nil {
 		return err
 	}
-	character, err := model.GetCharacter(characterID)
+	row, err := s.queries.GetCharacter(ctx, int64(characterID))
 	if err != nil {
 		return err
 	}
+	character := characterFromDBModel(row.Character, row.EveEntity, row.EveEntity_2, row.EveEntity_3)
 	status.Set(fmt.Sprintf("Checking for new mail for %v", character.Name))
 	if err := s.updateMailLists(token); err != nil {
 		return err
@@ -263,9 +286,10 @@ func (s *Service) FetchMail(characterID int32, status binding.String) error {
 	if err != nil {
 		return err
 	}
-	character.MailUpdatedAt.Time = time.Now()
-	character.MailUpdatedAt.Valid = true
-	character.Save()
+	character.MailUpdatedAt = time.Now()
+	if err := s.queries.UpdateCharacter(ctx, character.ToDBUpdateParams()); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -273,21 +297,22 @@ func (s *Service) updateMailLabels(token *Token) error {
 	if err := s.EnsureValid(token); err != nil {
 		return err
 	}
-	ll, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(token.NewContext(), token.CharacterID, nil)
+	ctx := token.NewContext()
+	ll, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(ctx, token.CharacterID, nil)
 	if err != nil {
 		return err
 	}
 	labels := ll.Labels
 	slog.Info("Received mail labels from ESI", "count", len(labels), "characterID", token.CharacterID)
 	for _, o := range labels {
-		l := model.MailLabel{
-			CharacterID: token.CharacterID,
-			LabelID:     o.LabelId,
+		arg := repository.UpdateOrCreateMailLabelParams{
+			CharacterID: int64(token.CharacterID),
+			LabelID:     int64(o.LabelId),
 			Color:       o.Color,
 			Name:        o.Name,
-			UnreadCount: o.UnreadCount,
+			UnreadCount: int64(o.UnreadCount),
 		}
-		if err := l.Save(); err != nil {
+		if err := s.queries.UpdateOrCreateMailLabel(ctx, arg); err != nil {
 			slog.Error("Failed to update mail label", "labelID", o.LabelId, "characterID", token.CharacterID, "error", err)
 		}
 	}
@@ -304,11 +329,11 @@ func (s *Service) updateMailLists(token *Token) error {
 		return err
 	}
 	for _, o := range lists {
-		e := model.EveEntity{ID: o.MailingListId, Name: o.Name, Category: model.EveEntityMailList}
+		e := repository.EveEntity{ID: o.MailingListId, Name: o.Name, Category: repository.EveEntityMailList}
 		if err := e.Save(); err != nil {
 			return err
 		}
-		m := model.MailList{CharacterID: token.CharacterID, EveEntity: e}
+		m := repository.MailList{CharacterID: token.CharacterID, EveEntity: e}
 		if err := m.CreateIfNew(); err != nil {
 			return err
 		}
@@ -366,7 +391,8 @@ func (s *Service) updateMails(token *Token, headers []esi.GetCharactersCharacter
 	if err := s.EnsureValid(token); err != nil {
 		return err
 	}
-	character, err := model.GetCharacter(token.CharacterID)
+	ctx := token.NewContext()
+	characterRow, err := s.queries.GetCharacter(ctx, int64(token.CharacterID))
 	if err != nil {
 		return err
 	}
@@ -383,7 +409,7 @@ func (s *Service) updateMails(token *Token, headers []esi.GetCharactersCharacter
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			s.fetchAndStoreMail(header, token, newMailsCount, &c, status, character.Name)
+			s.fetchAndStoreMail(ctx, header, token, newMailsCount, &c, status, characterRow.Character.Name)
 			<-guard
 		}()
 	}
@@ -399,7 +425,7 @@ func (s *Service) updateMails(token *Token, headers []esi.GetCharactersCharacter
 	return nil
 }
 
-func (s *Service) fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok, token *Token, newMailsCount int, c *atomic.Int32, status binding.String, characterName string) {
+func (s *Service) fetchAndStoreMail(ctx context.Context, header esi.GetCharactersCharacterIdMail200Ok, token *Token, newMailsCount int, c *atomic.Int32, status binding.String, characterName string) {
 	entityIDs := set.New[int32]()
 	entityIDs.Add(header.From)
 	for _, r := range header.Recipients {
@@ -410,36 +436,39 @@ func (s *Service) fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok
 		slog.Error("Failed to process mail", "header", header, "error", err)
 		return
 	}
-	m, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(token.NewContext(), token.CharacterID, header.MailId, nil)
+	m, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, token.CharacterID, header.MailId, nil)
 	if err != nil {
 		slog.Error("Failed to process mail", "header", header, "error", err)
 		return
 	}
-	mail := model.Mail{
-		Body:        m.Body,
-		CharacterID: token.CharacterID,
-		MailID:      header.MailId,
-		Subject:     header.Subject,
-		IsRead:      header.IsRead,
-	}
-	mail.Timestamp = header.Timestamp
-	from, err := model.GetEveEntity(header.From)
+	from, err := s.queries.GetEveEntity(ctx, int64(header.From))
 	if err != nil {
 		slog.Error("Failed to parse \"from\" in mail", "header", header, "error", err)
 		return
 	}
-	mail.From = from
-
-	rr := fetchMailRecipients(header)
-	mail.Recipients = rr
-
-	labels, err := model.ListMailLabelsByIDs(token.CharacterID, m.Labels)
+	mailArg := repository.CreateMailParams{
+		Body:        m.Body,
+		CharacterID: int64(token.CharacterID),
+		FromID:      from.ID,
+		MailID:      int64(header.MailId),
+		Subject:     header.Subject,
+		IsRead:      header.IsRead,
+		Timestamp:   header.Timestamp,
+	}
+	mail, err := s.queries.CreateMail(ctx, mailArg)
 	if err != nil {
-		slog.Error("Failed to resolve mail labels", "header", header, "error", err)
+		slog.Error(err.Error())
 		return
 	}
-	mail.Labels = labels
-	mail.Create()
+	if err := s.fetchAndStoreMailRecipients(ctx, mail.ID, header); err != nil {
+		slog.Error(err.Error())
+		return
+	}
+
+	if err := s.fetchAndStoreMailLabels(ctx, mail, m.Labels); err != nil {
+		slog.Error(err.Error())
+		return
+	}
 
 	slog.Info("Created new mail", "mailID", header.MailId, "characterID", token.CharacterID)
 	c.Add(1)
@@ -447,26 +476,51 @@ func (s *Service) fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok
 	status.Set(fmt.Sprintf("Fetched %d / %d new mails for %v", current, newMailsCount, characterName))
 }
 
-func fetchMailRecipients(header esi.GetCharactersCharacterIdMail200Ok) []model.EveEntity {
-	var rr []model.EveEntity
+func (s *Service) fetchAndStoreMailRecipients(ctx context.Context, mailID int64, header esi.GetCharactersCharacterIdMail200Ok) error {
 	for _, r := range header.Recipients {
-		o, err := model.GetEveEntity(r.RecipientId)
+		entity, err := s.queries.GetEveEntity(ctx, int64(r.RecipientId))
 		if err != nil {
-			slog.Error("Failed to resolve mail recipient", "header", header, "recipient", r, "error", err)
-			continue
-		} else {
-			rr = append(rr, o)
+			return fmt.Errorf("failed to resolve mail recipient %s: %s", r, err)
+		}
+		arg := repository.CreateMailRecipientParams{
+			MailID:      mailID,
+			EveEntityID: entity.ID,
+		}
+		if err := s.queries.CreateMailRecipient(ctx, arg); err != nil {
+			return err
 		}
 	}
-	return rr
+	return nil
 }
 
-func determineMailIDs(characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) (*set.Set[int32], *set.Set[int32], error) {
-	ids, err := model.ListMailIDs(characterID)
+func (s *Service) fetchAndStoreMailLabels(ctx context.Context, mail repository.Mail, labelIDs []int32) error {
+	labelIDs2 := convertNumericSlice[int32, int64](labelIDs)
+	labelArg := repository.ListMailLabelsByIDsParams{
+		CharacterID: mail.CharacterID,
+		Ids:         labelIDs2,
+	}
+	labels, err := s.queries.ListMailLabelsByIDs(ctx, labelArg)
+	if err != nil {
+		return fmt.Errorf("Failed to resolve mail labels %v: %s", labelIDs, err)
+	}
+	for _, label := range labels {
+		arg := repository.CreateMailMailLabelParams{
+			MailLabelID: label.ID, MailID: mail.ID,
+		}
+		if err := s.queries.CreateMailMailLabel(ctx, arg); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) determineMailIDs(characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) (*set.Set[int32], *set.Set[int32], error) {
+	ids, err := s.queries.ListMailIDs(context.Background(), int64(characterID))
 	if err != nil {
 		return nil, nil, err
 	}
-	existingIDs := set.NewFromSlice(ids)
+	ids2 := convertNumericSlice[int64, int32](ids)
+	existingIDs := set.NewFromSlice(ids2)
 	incomingIDs := set.New[int32]()
 	for _, h := range headers {
 		incomingIDs.Add(h.MailId)
@@ -476,15 +530,31 @@ func determineMailIDs(characterID int32, headers []esi.GetCharactersCharacterIdM
 }
 
 func (s *Service) GetMailLabelUnreadCounts(characterID int32) (map[int32]int, error) {
-	return model.GetMailLabelUnreadCounts(characterID)
+	rows, err := s.queries.GetMailLabelUnreadCounts(context.Background(), int64(characterID))
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[int32]int)
+	for _, r := range rows {
+		result[int32(r.LabelID)] = int(r.UnreadCount2)
+	}
+	return result, nil
 }
 
 func (s *Service) GetMailListUnreadCounts(characterID int32) (map[int32]int, error) {
-	return model.GetMailListUnreadCounts(characterID)
+	rows, err := s.queries.GetMailListUnreadCounts(context.Background(), int64(characterID))
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[int32]int)
+	for _, r := range rows {
+		result[int32(r.ListID)] = int(r.UnreadCount2)
+	}
+	return result, nil
 }
 
 func (s *Service) ListMailLists(characterID int32) ([]EveEntity, error) {
-	ll, err := model.ListMailLists(characterID)
+	ll, err := repository.ListMailLists(characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -498,7 +568,7 @@ func (s *Service) ListMailLists(characterID int32) ([]EveEntity, error) {
 // ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
 // Return mails for all labels, when labelID = 0
 func (s *Service) ListMailsForLabel(characterID int32, labelID int32) ([]Mail, error) {
-	mm, err := model.ListMailsForLabel(characterID, labelID)
+	mm, err := repository.ListMailsForLabel(characterID, labelID)
 	if err != nil {
 		return nil, err
 	}
@@ -510,7 +580,7 @@ func (s *Service) ListMailsForLabel(characterID int32, labelID int32) ([]Mail, e
 }
 
 func (s *Service) ListMailsForList(characterID int32, listID int32) ([]Mail, error) {
-	mm, err := model.ListMailsForList(characterID, listID)
+	mm, err := repository.ListMailsForList(characterID, listID)
 	if err != nil {
 		return nil, err
 	}

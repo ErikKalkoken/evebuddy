@@ -35,7 +35,7 @@ type Mail struct {
 	Body        string
 	CharacterID int64
 	FromID      int64
-	IsRead      float64
+	IsRead      bool
 	MailID      int64
 	Subject     string
 	Timestamp   time.Time

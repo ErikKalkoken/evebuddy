@@ -9,7 +9,7 @@ import (
 	"context"
 )
 
-const createEveEntity = `-- name: CreateEveEntity :one
+const createEveEntity = `-- name: CreateEveEntity :exec
 INSERT INTO eve_entities (
     id,
     category,
@@ -18,7 +18,6 @@ INSERT INTO eve_entities (
 VALUES (
     ?, ?, ?
 )
-RETURNING id, category, name
 `
 
 type CreateEveEntityParams struct {
@@ -27,11 +26,9 @@ type CreateEveEntityParams struct {
 	Name     string
 }
 
-func (q *Queries) CreateEveEntity(ctx context.Context, arg CreateEveEntityParams) (EveEntity, error) {
-	row := q.db.QueryRowContext(ctx, createEveEntity, arg.ID, arg.Category, arg.Name)
-	var i EveEntity
-	err := row.Scan(&i.ID, &i.Category, &i.Name)
-	return i, err
+func (q *Queries) CreateEveEntity(ctx context.Context, arg CreateEveEntityParams) error {
+	_, err := q.db.ExecContext(ctx, createEveEntity, arg.ID, arg.Category, arg.Name)
+	return err
 }
 
 const getEveEntity = `-- name: GetEveEntity :one

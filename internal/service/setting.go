@@ -2,37 +2,38 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/gob"
 	"errors"
 
-	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/repository"
 )
 
 // GetSetting returns the value for a settings key, when it exists.
 // Otherwise it returns it's zero value.
 func (s *Service) GetSettingInt32(key string) (int32, error) {
-	bb, err := model.GetSetting(key)
+	obj, err := s.queries.GetSetting(context.Background(), key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, nil
 		}
 		return 0, err
 	}
-	return anyFromBytes[int32](bb)
+	return anyFromBytes[int32](obj.Value)
 }
 
 // GetSetting returns the value for a settings key, when it exists.
 // Otherwise it returns it's zero value.
 func (s *Service) GetSettingString(key string) (string, error) {
-	bb, err := model.GetSetting(key)
+	obj, err := s.queries.GetSetting(context.Background(), key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", nil
 		}
 		return "", err
 	}
-	return anyFromBytes[string](bb)
+	return anyFromBytes[string](obj.Value)
 }
 
 // SetSetting sets the value for a settings key.
@@ -41,7 +42,11 @@ func (s *Service) SetSettingInt32(key string, value int32) error {
 	if err != nil {
 		return err
 	}
-	if err := model.SetSetting(key, bb); err != nil {
+	arg := repository.UpdateOrCreateSettingParams{
+		Value: bb,
+		Key:   key,
+	}
+	if err := s.queries.UpdateOrCreateSetting(context.Background(), arg); err != nil {
 		return err
 	}
 	return nil
@@ -53,7 +58,11 @@ func (s *Service) SetSettingString(key string, value string) error {
 	if err != nil {
 		return err
 	}
-	if err := model.SetSetting(key, bb); err != nil {
+	arg := repository.UpdateOrCreateSettingParams{
+		Value: bb,
+		Key:   key,
+	}
+	if err := s.queries.UpdateOrCreateSetting(context.Background(), arg); err != nil {
 		return err
 	}
 	return nil
@@ -79,5 +88,5 @@ func bytesFromAny[T any](value T) ([]byte, error) {
 }
 
 func (s *Service) DeleteSetting(key string) error {
-	return model.DeleteSetting(key)
+	return s.queries.DeleteSetting(context.Background(), key)
 }

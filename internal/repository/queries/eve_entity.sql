@@ -1,4 +1,4 @@
--- name: CreateEveEntity :one
+-- name: CreateEveEntity :exec
 INSERT INTO eve_entities (
     id,
     category,
@@ -6,8 +6,7 @@ INSERT INTO eve_entities (
 )
 VALUES (
     ?, ?, ?
-)
-RETURNING *;
+);
 
 -- name: GetEveEntity :one
 SELECT *

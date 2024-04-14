@@ -30,7 +30,7 @@ type CreateMailParams struct {
 	Body        string
 	CharacterID int64
 	FromID      int64
-	IsRead      float64
+	IsRead      bool
 	MailID      int64
 	Subject     string
 	Timestamp   time.Time
@@ -60,13 +60,12 @@ func (q *Queries) CreateMail(ctx context.Context, arg CreateMailParams) (Mail, e
 	return i, err
 }
 
-const createMailMailLabel = `-- name: CreateMailMailLabel :one
+const createMailMailLabel = `-- name: CreateMailMailLabel :exec
 INSERT INTO mail_mail_labels (
     mail_label_id,
     mail_id
 )
 VALUES (?, ?)
-RETURNING mail_label_id, mail_id
 `
 
 type CreateMailMailLabelParams struct {
@@ -74,20 +73,17 @@ type CreateMailMailLabelParams struct {
 	MailID      int64
 }
 
-func (q *Queries) CreateMailMailLabel(ctx context.Context, arg CreateMailMailLabelParams) (MailMailLabel, error) {
-	row := q.db.QueryRowContext(ctx, createMailMailLabel, arg.MailLabelID, arg.MailID)
-	var i MailMailLabel
-	err := row.Scan(&i.MailLabelID, &i.MailID)
-	return i, err
+func (q *Queries) CreateMailMailLabel(ctx context.Context, arg CreateMailMailLabelParams) error {
+	_, err := q.db.ExecContext(ctx, createMailMailLabel, arg.MailLabelID, arg.MailID)
+	return err
 }
 
-const createMailRecipient = `-- name: CreateMailRecipient :one
+const createMailRecipient = `-- name: CreateMailRecipient :exec
 INSERT INTO mail_recipients (
     mail_id,
     eve_entity_id
 )
 VALUES (?, ?)
-RETURNING mail_id, eve_entity_id
 `
 
 type CreateMailRecipientParams struct {
@@ -95,11 +91,9 @@ type CreateMailRecipientParams struct {
 	EveEntityID int64
 }
 
-func (q *Queries) CreateMailRecipient(ctx context.Context, arg CreateMailRecipientParams) (MailRecipient, error) {
-	row := q.db.QueryRowContext(ctx, createMailRecipient, arg.MailID, arg.EveEntityID)
-	var i MailRecipient
-	err := row.Scan(&i.MailID, &i.EveEntityID)
-	return i, err
+func (q *Queries) CreateMailRecipient(ctx context.Context, arg CreateMailRecipientParams) error {
+	_, err := q.db.ExecContext(ctx, createMailRecipient, arg.MailID, arg.EveEntityID)
+	return err
 }
 
 const deleteMail = `-- name: DeleteMail :exec

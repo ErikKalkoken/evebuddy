@@ -22,53 +22,91 @@ func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
 }
 
 const getCharacter = `-- name: GetCharacter :one
-SELECT alliance_id, birthday, corporation_id, description, gender, faction_id, id, mail_updated_at, name, security_status, skill_points, wallet_balance
+SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.mail_updated_at, characters.name, characters.security_status, characters.skill_points, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name
 FROM characters
-WHERE id = ?
+JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
+LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
+LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
+WHERE characters.id = ?
 `
 
-func (q *Queries) GetCharacter(ctx context.Context, id int64) (Character, error) {
+type GetCharacterRow struct {
+	Character   Character
+	EveEntity   EveEntity
+	EveEntity_2 EveEntity
+	EveEntity_3 EveEntity
+}
+
+func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, error) {
 	row := q.db.QueryRowContext(ctx, getCharacter, id)
-	var i Character
+	var i GetCharacterRow
 	err := row.Scan(
-		&i.AllianceID,
-		&i.Birthday,
-		&i.CorporationID,
-		&i.Description,
-		&i.Gender,
-		&i.FactionID,
-		&i.ID,
-		&i.MailUpdatedAt,
-		&i.Name,
-		&i.SecurityStatus,
-		&i.SkillPoints,
-		&i.WalletBalance,
+		&i.Character.AllianceID,
+		&i.Character.Birthday,
+		&i.Character.CorporationID,
+		&i.Character.Description,
+		&i.Character.Gender,
+		&i.Character.FactionID,
+		&i.Character.ID,
+		&i.Character.MailUpdatedAt,
+		&i.Character.Name,
+		&i.Character.SecurityStatus,
+		&i.Character.SkillPoints,
+		&i.Character.WalletBalance,
+		&i.EveEntity.ID,
+		&i.EveEntity.Category,
+		&i.EveEntity.Name,
+		&i.EveEntity_2.ID,
+		&i.EveEntity_2.Category,
+		&i.EveEntity_2.Name,
+		&i.EveEntity_3.ID,
+		&i.EveEntity_3.Category,
+		&i.EveEntity_3.Name,
 	)
 	return i, err
 }
 
 const getFirstCharacter = `-- name: GetFirstCharacter :one
-SELECT alliance_id, birthday, corporation_id, description, gender, faction_id, id, mail_updated_at, name, security_status, skill_points, wallet_balance
+SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.mail_updated_at, characters.name, characters.security_status, characters.skill_points, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name
 FROM characters
+JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
+LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
+LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 LIMIT 1
 `
 
-func (q *Queries) GetFirstCharacter(ctx context.Context) (Character, error) {
+type GetFirstCharacterRow struct {
+	Character   Character
+	EveEntity   EveEntity
+	EveEntity_2 EveEntity
+	EveEntity_3 EveEntity
+}
+
+func (q *Queries) GetFirstCharacter(ctx context.Context) (GetFirstCharacterRow, error) {
 	row := q.db.QueryRowContext(ctx, getFirstCharacter)
-	var i Character
+	var i GetFirstCharacterRow
 	err := row.Scan(
-		&i.AllianceID,
-		&i.Birthday,
-		&i.CorporationID,
-		&i.Description,
-		&i.Gender,
-		&i.FactionID,
-		&i.ID,
-		&i.MailUpdatedAt,
-		&i.Name,
-		&i.SecurityStatus,
-		&i.SkillPoints,
-		&i.WalletBalance,
+		&i.Character.AllianceID,
+		&i.Character.Birthday,
+		&i.Character.CorporationID,
+		&i.Character.Description,
+		&i.Character.Gender,
+		&i.Character.FactionID,
+		&i.Character.ID,
+		&i.Character.MailUpdatedAt,
+		&i.Character.Name,
+		&i.Character.SecurityStatus,
+		&i.Character.SkillPoints,
+		&i.Character.WalletBalance,
+		&i.EveEntity.ID,
+		&i.EveEntity.Category,
+		&i.EveEntity.Name,
+		&i.EveEntity_2.ID,
+		&i.EveEntity_2.Category,
+		&i.EveEntity_2.Name,
+		&i.EveEntity_3.ID,
+		&i.EveEntity_3.Category,
+		&i.EveEntity_3.Name,
 	)
 	return i, err
 }
@@ -102,33 +140,52 @@ func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
 }
 
 const listCharacters = `-- name: ListCharacters :many
-SELECT alliance_id, birthday, corporation_id, description, gender, faction_id, id, mail_updated_at, name, security_status, skill_points, wallet_balance
+SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.mail_updated_at, characters.name, characters.security_status, characters.skill_points, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name
 FROM characters
+JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
+LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
+LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 ORDER BY name
 `
 
-func (q *Queries) ListCharacters(ctx context.Context) ([]Character, error) {
+type ListCharactersRow struct {
+	Character   Character
+	EveEntity   EveEntity
+	EveEntity_2 EveEntity
+	EveEntity_3 EveEntity
+}
+
+func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, error) {
 	rows, err := q.db.QueryContext(ctx, listCharacters)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Character
+	var items []ListCharactersRow
 	for rows.Next() {
-		var i Character
+		var i ListCharactersRow
 		if err := rows.Scan(
-			&i.AllianceID,
-			&i.Birthday,
-			&i.CorporationID,
-			&i.Description,
-			&i.Gender,
-			&i.FactionID,
-			&i.ID,
-			&i.MailUpdatedAt,
-			&i.Name,
-			&i.SecurityStatus,
-			&i.SkillPoints,
-			&i.WalletBalance,
+			&i.Character.AllianceID,
+			&i.Character.Birthday,
+			&i.Character.CorporationID,
+			&i.Character.Description,
+			&i.Character.Gender,
+			&i.Character.FactionID,
+			&i.Character.ID,
+			&i.Character.MailUpdatedAt,
+			&i.Character.Name,
+			&i.Character.SecurityStatus,
+			&i.Character.SkillPoints,
+			&i.Character.WalletBalance,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+			&i.EveEntity_2.ID,
+			&i.EveEntity_2.Category,
+			&i.EveEntity_2.Name,
+			&i.EveEntity_3.ID,
+			&i.EveEntity_3.Category,
+			&i.EveEntity_3.Name,
 		); err != nil {
 			return nil, err
 		}

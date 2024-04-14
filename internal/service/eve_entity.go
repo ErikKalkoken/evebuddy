@@ -5,7 +5,7 @@ import (
 	"errors"
 	"example/evebuddy/internal/api/images"
 	"example/evebuddy/internal/helper/set"
-	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/repository"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -44,25 +44,25 @@ func (e *EveEntity) IconURL(size int) (fyne.URI, error) {
 	return nil, errors.New("can not match category")
 }
 
-func eveEntityFromDBModel(e model.EveEntity) EveEntity {
+func eveEntityFromDBModel(e repository.EveEntity) EveEntity {
 	if e.ID == 0 {
 		return EveEntity{}
 	}
 	category := eveEntityCategoryFromDBModel(e.Category)
 	return EveEntity{
 		Category: category,
-		ID:       e.ID,
+		ID:       int32(e.ID),
 		Name:     e.Name,
 	}
 }
 
-func eveEntityCategoryFromDBModel(c model.EveEntityCategory) EveEntityCategory {
-	categoryMap := map[model.EveEntityCategory]EveEntityCategory{
-		model.EveEntityAlliance:    EveEntityAlliance,
-		model.EveEntityCharacter:   EveEntityCharacter,
-		model.EveEntityCorporation: EveEntityCorporation,
-		model.EveEntityFaction:     EveEntityFaction,
-		model.EveEntityMailList:    EveEntityMailList,
+func eveEntityCategoryFromDBModel(c string) EveEntityCategory {
+	categoryMap := map[string]EveEntityCategory{
+		repository.EveEntityAlliance:    EveEntityAlliance,
+		repository.EveEntityCharacter:   EveEntityCharacter,
+		repository.EveEntityCorporation: EveEntityCorporation,
+		repository.EveEntityFaction:     EveEntityFaction,
+		repository.EveEntityMailList:    EveEntityMailList,
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
@@ -71,13 +71,28 @@ func eveEntityCategoryFromDBModel(c model.EveEntityCategory) EveEntityCategory {
 	return c2
 }
 
-func eveEntityDBModelCategoryFromCategory(c EveEntityCategory) model.EveEntityCategory {
-	categoryMap := map[EveEntityCategory]model.EveEntityCategory{
-		EveEntityAlliance:    model.EveEntityAlliance,
-		EveEntityCharacter:   model.EveEntityCharacter,
-		EveEntityCorporation: model.EveEntityCorporation,
-		EveEntityFaction:     model.EveEntityFaction,
-		EveEntityMailList:    model.EveEntityMailList,
+func eveEntityDBModelCategoryFromCategory(c EveEntityCategory) string {
+	categoryMap := map[EveEntityCategory]string{
+		EveEntityAlliance:    repository.EveEntityAlliance,
+		EveEntityCharacter:   repository.EveEntityCharacter,
+		EveEntityCorporation: repository.EveEntityCorporation,
+		EveEntityFaction:     repository.EveEntityFaction,
+		EveEntityMailList:    repository.EveEntityMailList,
+	}
+	c2, ok := categoryMap[c]
+	if !ok {
+		panic(fmt.Sprintf("Can not map unknown category: %v", c))
+	}
+	return c2
+}
+
+func eveEntityESCategoryFromESICategory(c string) string {
+	categoryMap := map[string]string{
+		"alliance":     repository.EveEntityAlliance,
+		"character":    repository.EveEntityCharacter,
+		"corporation":  repository.EveEntityCorporation,
+		"faction":      repository.EveEntityFaction,
+		"mailing:list": repository.EveEntityMailList,
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
@@ -112,11 +127,15 @@ func (s *Service) AddEveEntitiesFromESISearch(characterID int32, search string) 
 
 // addMissingEveEntities adds EveEntities from ESI for IDs missing in the database.
 func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
-	c, err := model.ListEveEntityIDs()
+	c, err := s.queries.ListEveEntityIDs(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	current := set.NewFromSlice(c)
+	c2 := make([]int32, len(c))
+	for i, id := range c {
+		c2[i] = int32(id)
+	}
+	current := set.NewFromSlice(c2)
 	incoming := set.NewFromSlice(ids)
 	missing := incoming.Difference(current)
 
@@ -129,12 +148,12 @@ func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 		return nil, fmt.Errorf("failed to resolve IDs: %v %v", err, ids)
 	}
 	for _, entity := range entities {
-		e := model.EveEntity{
-			ID:       entity.Id,
-			Category: model.EveEntityCategory(entity.Category),
+		p := repository.CreateEveEntityParams{
+			ID:       int64(entity.Id),
+			Category: eveEntityESCategoryFromESICategory(entity.Category),
 			Name:     entity.Name,
 		}
-		err := e.Save()
+		err := s.queries.CreateEveEntity(context.Background(), p)
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +163,7 @@ func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 }
 
 func (s *Service) SearchEveEntitiesByName(partial string) ([]EveEntity, error) {
-	ee, err := model.ListEveEntitiesByPartialName(partial)
+	ee, err := s.queries.ListEveEntitiesByPartialName(context.Background(), partial)
 	if err != nil {
 		return nil, err
 	}

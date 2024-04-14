@@ -1,6 +1,9 @@
 package service
 
-import "example/evebuddy/internal/model"
+import (
+	"context"
+	"example/evebuddy/internal/repository"
+)
 
 // Special mail label IDs
 const (
@@ -13,27 +16,27 @@ const (
 )
 
 type MailLabel struct {
-	ID          uint64
+	ID          int64
 	CharacterID int32
 	Color       string
 	LabelID     int32
 	Name        string
-	UnreadCount int32
+	UnreadCount int
 }
 
-func mailLabelFromDBModel(l model.MailLabel) MailLabel {
+func mailLabelFromDBModel(l repository.MailLabel) MailLabel {
 	return MailLabel{
 		ID:          l.ID,
-		CharacterID: l.CharacterID,
+		CharacterID: int32(l.CharacterID),
 		Color:       l.Color,
-		LabelID:     l.LabelID,
+		LabelID:     int32(l.LabelID),
 		Name:        l.Name,
-		UnreadCount: l.UnreadCount,
+		UnreadCount: int(l.UnreadCount),
 	}
 }
 
 func (s *Service) ListMailLabels(characterID int32) ([]MailLabel, error) {
-	ll, err := model.ListMailLabels(characterID)
+	ll, err := s.queries.ListMailLabels(context.Background(), int64(characterID))
 	if err != nil {
 		return nil, err
 	}

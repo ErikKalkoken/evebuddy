@@ -10,48 +10,6 @@ import (
 	"strings"
 )
 
-const createMailLabel = `-- name: CreateMailLabel :one
-INSERT INTO mail_labels (
-    character_id,
-    color,
-    label_id,
-    name,
-    unread_count
-)
-VALUES (
-    ?, ?, ?, ?, ?
-)
-RETURNING id, character_id, color, label_id, name, unread_count
-`
-
-type CreateMailLabelParams struct {
-	CharacterID int64
-	Color       string
-	LabelID     int64
-	Name        string
-	UnreadCount int64
-}
-
-func (q *Queries) CreateMailLabel(ctx context.Context, arg CreateMailLabelParams) (MailLabel, error) {
-	row := q.db.QueryRowContext(ctx, createMailLabel,
-		arg.CharacterID,
-		arg.Color,
-		arg.LabelID,
-		arg.Name,
-		arg.UnreadCount,
-	)
-	var i MailLabel
-	err := row.Scan(
-		&i.ID,
-		&i.CharacterID,
-		&i.Color,
-		&i.LabelID,
-		&i.Name,
-		&i.UnreadCount,
-	)
-	return i, err
-}
-
 const getMailLabel = `-- name: GetMailLabel :one
 SELECT id, character_id, color, label_id, name, unread_count
 FROM mail_labels
@@ -167,21 +125,40 @@ func (q *Queries) ListMailLabelsByIDs(ctx context.Context, arg ListMailLabelsByI
 	return items, nil
 }
 
-const updateMailLabel = `-- name: UpdateMailLabel :exec
-UPDATE mail_labels
+const updateOrCreateMailLabel = `-- name: UpdateOrCreateMailLabel :exec
+INSERT INTO mail_labels (
+    color,
+    name,
+    unread_count,
+    character_id,
+    label_id
+)
+VALUES (
+    ?, ?, ?, ?, ?
+)
+ON CONFLICT (character_id, label, id) DO
+UPDATE
 SET
     color = ?,
     name = ?,
     unread_count = ?
 `
 
-type UpdateMailLabelParams struct {
+type UpdateOrCreateMailLabelParams struct {
 	Color       string
 	Name        string
 	UnreadCount int64
+	CharacterID int64
+	LabelID     int64
 }
 
-func (q *Queries) UpdateMailLabel(ctx context.Context, arg UpdateMailLabelParams) error {
-	_, err := q.db.ExecContext(ctx, updateMailLabel, arg.Color, arg.Name, arg.UnreadCount)
+func (q *Queries) UpdateOrCreateMailLabel(ctx context.Context, arg UpdateOrCreateMailLabelParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateMailLabel,
+		arg.Color,
+		arg.Name,
+		arg.UnreadCount,
+		arg.CharacterID,
+		arg.LabelID,
+	)
 	return err
 }

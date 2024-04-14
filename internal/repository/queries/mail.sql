@@ -13,21 +13,19 @@ VALUES (
 )
 RETURNING *;
 
--- name: CreateMailRecipient :one
+-- name: CreateMailRecipient :exec
 INSERT INTO mail_recipients (
     mail_id,
     eve_entity_id
 )
-VALUES (?, ?)
-RETURNING *;
+VALUES (?, ?);
 
--- name: CreateMailMailLabel :one
+-- name: CreateMailMailLabel :exec
 INSERT INTO mail_mail_labels (
     mail_label_id,
     mail_id
 )
-VALUES (?, ?)
-RETURNING *;
+VALUES (?, ?);
 
 -- name: DeleteMail :exec
 DELETE FROM mails
