@@ -6,6 +6,7 @@ import (
 	"time"
 
 	myHttp "example/evebuddy/internal/helper/http"
+	"example/evebuddy/internal/repository"
 
 	"github.com/antihax/goesi"
 )
@@ -23,9 +24,10 @@ var esiScopes = []string{
 type Service struct {
 	httpClient *http.Client
 	esiClient  *goesi.APIClient
+	queries    *repository.Queries
 }
 
-func NewService() *Service {
+func NewService(queries *repository.Queries) *Service {
 	httpClient := &http.Client{
 		Timeout:   time.Second * 30, // Timeout after 30 seconds
 		Transport: myHttp.CustomTransport{},
@@ -34,6 +36,7 @@ func NewService() *Service {
 	s := Service{
 		httpClient: httpClient,
 		esiClient:  esiClient,
+		queries:    queries,
 	}
 	return &s
 }

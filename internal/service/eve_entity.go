@@ -144,7 +144,7 @@ func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 }
 
 func (s *Service) SearchEveEntitiesByName(partial string) ([]EveEntity, error) {
-	ee, err := model.SearchEveEntitiesByName(partial)
+	ee, err := model.ListEveEntitiesByPartialName(partial)
 	if err != nil {
 		return nil, err
 	}

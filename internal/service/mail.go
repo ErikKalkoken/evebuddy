@@ -433,7 +433,7 @@ func (s *Service) fetchAndStoreMail(header esi.GetCharactersCharacterIdMail200Ok
 	rr := fetchMailRecipients(header)
 	mail.Recipients = rr
 
-	labels, err := model.ListMailLabelsForIDs(token.CharacterID, m.Labels)
+	labels, err := model.ListMailLabelsByIDs(token.CharacterID, m.Labels)
 	if err != nil {
 		slog.Error("Failed to resolve mail labels", "header", header, "error", err)
 		return

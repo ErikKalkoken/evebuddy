@@ -16,7 +16,7 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
-	s := NewService()
+	s := NewService(nil)
 	var objs []esi.GetCharactersCharacterIdMail200Ok
 	var mailIDs []int32
 	for i := range 55 {

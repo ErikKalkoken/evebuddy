@@ -1,0 +1,117 @@
+-- name: CreateMail :one
+INSERT INTO mails (
+    body,
+    character_id,
+    from_id,
+    is_read,
+    mail_id,
+    subject,
+    timestamp
+)
+VALUES (
+    ?, ?, ?, ?, ?, ?, ?
+)
+RETURNING *;
+
+-- name: CreateMailRecipient :one
+INSERT INTO mail_recipients (
+    mail_id,
+    eve_entity_id
+)
+VALUES (?, ?)
+RETURNING *;
+
+-- name: CreateMailMailLabel :one
+INSERT INTO mail_mail_labels (
+    mail_label_id,
+    mail_id
+)
+VALUES (?, ?)
+RETURNING *;
+
+-- name: DeleteMail :exec
+DELETE FROM mails
+WHERE mails.id = ?;
+
+-- name: GetMail :one
+SELECT sqlc.embed(mails), sqlc.embed(eve_entities)
+FROM mails
+JOIN eve_entities ON eve_entities.id = mails.from_id
+WHERE character_id = ?
+AND mail_id = ?;
+
+-- name: GetMailRecipients :many
+SELECT eve_entities.*
+FROM eve_entities
+JOIN mail_recipients ON mail_recipients.eve_entity_id = eve_entities.id
+WHERE mail_id = ?;
+
+-- name: GetMailLabels :many
+SELECT mail_labels.*
+FROM mail_labels
+JOIN mail_mail_labels ON mail_mail_labels.mail_label_id = mail_labels.id
+WHERE mail_id = ?;
+
+-- name: GetMailLabelUnreadCounts :many
+SELECT label_id, COUNT(mails.id) AS unread_count_2
+FROM mail_labels
+JOIN mail_mail_labels ON mail_mail_labels.mail_label_id = mail_labels.id
+JOIN mails ON mails.id = mail_mail_labels.mail_id
+WHERE mail_labels.character_id = ?
+AND is_read IS FALSE
+GROUP BY label_id;
+
+-- name: GetMailListUnreadCounts :many
+SELECT eve_entities.id AS list_id, COUNT(mails.id) as unread_count_2
+FROM mails
+JOIN mail_recipients ON mail_recipients.mail_id = mails.id
+JOIN eve_entities ON eve_entities.id = mail_recipients.eve_entity_id
+WHERE character_id = ?
+AND eve_entities.category = "mail_list"
+AND mails.is_read IS FALSE
+GROUP BY eve_entities.id;
+
+-- name: ListMailIDs :many
+SELECT mail_id
+FROM mails
+WHERE character_id = ?;
+
+-- name: ListMailsForLabelAll :many
+SELECT sqlc.embed(mails), sqlc.embed(eve_entities)
+FROM mails
+JOIN eve_entities ON eve_entities.id = mails.from_id
+WHERE character_id = ?
+ORDER BY timestamp DESC;
+
+-- name: ListMailsForLabelNone :many
+SELECT sqlc.embed(mails), sqlc.embed(eve_entities)
+FROM mails
+LEFT JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
+JOIN eve_entities ON eve_entities.id = mails.from_id
+WHERE character_id = ?
+AND mail_mail_labels.mail_id IS NULL
+ORDER BY timestamp DESC;
+
+-- name: ListMailsForOneLabel :many
+SELECT sqlc.embed(mails), sqlc.embed(eve_entities)
+FROM mails
+JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
+JOIN mail_labels ON mail_labels.id = mail_mail_labels.mail_label_id
+JOIN eve_entities ON eve_entities.id = mails.from_id
+WHERE mails.character_id = ?
+AND label_id = ?
+ORDER BY timestamp DESC;
+
+-- name: ListMailsForList :many
+SELECT sqlc.embed(mails), sqlc.embed(eve_entities)
+FROM mails
+JOIN eve_entities ON eve_entities.id = mails.from_id
+JOIN mail_recipients ON mail_recipients.mail_id = mails.id
+WHERE character_id = ?
+AND mail_recipients.eve_entity_id = ?
+ORDER BY timestamp DESC;
+
+-- name: UpdateMailSetRead :exec
+UPDATE mails
+SET is_read = TRUE
+WHERE id = ?;

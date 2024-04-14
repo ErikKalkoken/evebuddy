@@ -82,8 +82,8 @@ func ListEveEntitiesByName(name string) ([]EveEntity, error) {
 	return ee, nil
 }
 
-// SearchEveEntitiesByName returns all entities partially matching a string in ascending order.
-func SearchEveEntitiesByName(partial string) ([]EveEntity, error) {
+// ListEveEntitiesByPartialName returns all entities partially matching a string in ascending order.
+func ListEveEntitiesByPartialName(partial string) ([]EveEntity, error) {
 	var ee []EveEntity
 	err := db.Select(
 		&ee,

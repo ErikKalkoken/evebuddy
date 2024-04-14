@@ -81,7 +81,7 @@ func GetMailLabel(characterID int32, labelID int32) (MailLabel, error) {
 	return l, nil
 }
 
-func ListMailLabelsForIDs(characterID int32, labelIDs []int32) ([]MailLabel, error) {
+func ListMailLabelsByIDs(characterID int32, labelIDs []int32) ([]MailLabel, error) {
 	var ll []MailLabel
 	if len(labelIDs) == 0 {
 		return ll, nil
