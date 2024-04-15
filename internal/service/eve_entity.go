@@ -3,14 +3,16 @@ package service
 import (
 	"context"
 	"errors"
-	"example/evebuddy/internal/api/images"
-	"example/evebuddy/internal/helper/set"
-	"example/evebuddy/internal/repository"
 	"fmt"
 	"log/slog"
 	"slices"
 
 	"fyne.io/fyne/v2"
+
+	"example/evebuddy/internal/api/images"
+	"example/evebuddy/internal/helper/set"
+	islices "example/evebuddy/internal/helper/slices"
+	"example/evebuddy/internal/repository"
 )
 
 type EveEntityCategory int
@@ -127,23 +129,15 @@ func (s *Service) AddEveEntitiesFromESISearch(characterID int32, search string) 
 
 // addMissingEveEntities adds EveEntities from ESI for IDs missing in the database.
 func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
-	c, err := s.queries.ListEveEntityIDs(context.Background())
+	ctx := context.Background()
+	missing, err := s.missingEveEntityIDs(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
-	c2 := make([]int32, len(c))
-	for i, id := range c {
-		c2[i] = int32(id)
-	}
-	current := set.NewFromSlice(c2)
-	incoming := set.NewFromSlice(ids)
-	missing := incoming.Difference(current)
-
 	if missing.Size() == 0 {
 		return nil, nil
 	}
-
-	entities, _, err := s.esiClient.ESI.UniverseApi.PostUniverseNames(context.Background(), missing.ToSlice(), nil)
+	entities, _, err := s.esiClient.ESI.UniverseApi.PostUniverseNames(ctx, missing.ToSlice(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve IDs: %v %v", err, ids)
 	}
@@ -153,13 +147,25 @@ func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 			Category: eveEntityESCategoryFromESICategory(entity.Category),
 			Name:     entity.Name,
 		}
-		err := s.queries.CreateEveEntity(context.Background(), arg)
+		err := s.queries.CreateEveEntity(ctx, arg)
 		if err != nil {
 			return nil, err
 		}
 	}
 	slog.Debug("Added missing eve entities", "count", len(entities))
 	return missing.ToSlice(), nil
+}
+
+func (s *Service) missingEveEntityIDs(ctx context.Context, ids []int32) (*set.Set[int32], error) {
+	currentIDs, err := s.queries.ListEveEntityIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	currentIDs2 := islices.ConvertNumeric[int64, int32](currentIDs)
+	current := set.NewFromSlice(currentIDs2)
+	incoming := set.NewFromSlice(ids)
+	missing := incoming.Difference(current)
+	return missing, nil
 }
 
 func (s *Service) SearchEveEntitiesByName(partial string) ([]EveEntity, error) {

@@ -184,18 +184,12 @@ func (rr *Recipients) ToOptions() []string {
 }
 
 func (rr *Recipients) ToMailRecipients(s *Service) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
-	mm1, names, err := rr.buildMailRecipients()
+	mm1, names, err := rr.buildMailRecipients(s)
 	if err != nil {
 		return nil, err
 	}
-	ee, err := s.resolveNamesRemotely(names)
-	if err != nil {
+	if err := s.resolveNamesRemotely(names); err != nil {
 		return nil, err
-	}
-	for _, e := range ee {
-		if err := e.Save(); err != nil {
-			return nil, err
-		}
 	}
 	mm2, err := s.buildMailRecipientsFromNames(names)
 	if err != nil {
@@ -207,7 +201,7 @@ func (rr *Recipients) ToMailRecipients(s *Service) ([]esi.PostCharactersCharacte
 
 // buildMailRecipients tries to build MailRecipients from recipients.
 // It returns resolved recipients and a list of remaining unresolved names (if any)
-func (rr *Recipients) buildMailRecipients() ([]esi.PostCharactersCharacterIdMailRecipient, []string, error) {
+func (rr *Recipients) buildMailRecipients(s *Service) ([]esi.PostCharactersCharacterIdMailRecipient, []string, error) {
 	mm := make([]esi.PostCharactersCharacterIdMailRecipient, 0, len(rr.list))
 	names := make([]string, 0, len(rr.list))
 	for _, r := range rr.list {
@@ -216,7 +210,11 @@ func (rr *Recipients) buildMailRecipients() ([]esi.PostCharactersCharacterIdMail
 			names = append(names, r.name)
 			continue
 		}
-		e, err := repository.GetEveEntityByNameAndCategory(r.name, eveEntityDBModelCategoryFromCategory(c))
+		arg := repository.GetEveEntityByNameAndCategoryParams{
+			Name:     r.name,
+			Category: eveEntityDBModelCategoryFromCategory(c),
+		}
+		e, err := s.queries.GetEveEntityByNameAndCategory(context.Background(), arg)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				names = append(names, r.name)
@@ -230,35 +228,55 @@ func (rr *Recipients) buildMailRecipients() ([]esi.PostCharactersCharacterIdMail
 			names = append(names, r.name)
 			continue
 		}
-		m := esi.PostCharactersCharacterIdMailRecipient{RecipientId: e.ID, RecipientType: mailType}
+		m := esi.PostCharactersCharacterIdMailRecipient{RecipientId: int32(e.ID), RecipientType: mailType}
 		mm = append(mm, m)
 	}
 	return mm, names, nil
 }
 
-// resolveNamesRemotely resolves a list of names remotely and returns all matches.
-func (s *Service) resolveNamesRemotely(names []string) ([]repository.EveEntity, error) {
-	ee := make([]repository.EveEntity, 0, len(names))
+// resolveNamesRemotely resolves a list of names remotely.
+// Will create all missing EveEntities int the DB.
+func (s *Service) resolveNamesRemotely(names []string) error {
+	ctx := context.Background()
 	if len(names) == 0 {
-		return ee, nil
+		return nil
 	}
 	r, _, err := s.esiClient.ESI.UniverseApi.PostUniverseIds(context.Background(), names, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	ee := make([]repository.CreateEveEntityParams, 0, len(names))
 	for _, o := range r.Alliances {
-		e := repository.EveEntity{ID: o.Id, Name: o.Name, Category: repository.EveEntityAlliance}
+		e := repository.CreateEveEntityParams{ID: int64(o.Id), Name: o.Name, Category: repository.EveEntityAlliance}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Characters {
-		e := repository.EveEntity{ID: o.Id, Name: o.Name, Category: repository.EveEntityCharacter}
+		e := repository.CreateEveEntityParams{ID: int64(o.Id), Name: o.Name, Category: repository.EveEntityCharacter}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Corporations {
-		e := repository.EveEntity{ID: o.Id, Name: o.Name, Category: repository.EveEntityCorporation}
+		e := repository.CreateEveEntityParams{ID: int64(o.Id), Name: o.Name, Category: repository.EveEntityCorporation}
 		ee = append(ee, e)
 	}
-	return ee, nil
+	ids := make([]int32, len(ee))
+	for i, e := range ee {
+		ids[i] = int32(e.ID)
+	}
+	missing, err := s.missingEveEntityIDs(ctx, ids)
+	if err != nil {
+		return err
+	}
+	if missing.Size() == 0 {
+		return nil
+	}
+	for _, e := range ee {
+		if missing.Has(int32(e.ID)) {
+			if err := s.queries.CreateEveEntity(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // buildMailRecipientsFromNames tries to build MailRecipient objects from given names
@@ -267,7 +285,7 @@ func (s *Service) resolveNamesRemotely(names []string) ([]repository.EveEntity, 
 func (s *Service) buildMailRecipientsFromNames(names []string) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
 	mm := make([]esi.PostCharactersCharacterIdMailRecipient, 0, len(names))
 	for _, n := range names {
-		ee, err := repository.ListEveEntitiesByName(n)
+		ee, err := s.queries.ListEveEntitiesByName(context.Background(), n)
 		if err != nil {
 			return nil, err
 		}
@@ -282,7 +300,7 @@ func (s *Service) buildMailRecipientsFromNames(names []string) ([]esi.PostCharac
 		if !ok {
 			return nil, fmt.Errorf("failed to match category for entity: %v", e)
 		}
-		m := esi.PostCharactersCharacterIdMailRecipient{RecipientId: e.ID, RecipientType: c}
+		m := esi.PostCharactersCharacterIdMailRecipient{RecipientId: int32(e.ID), RecipientType: c}
 		mm = append(mm, m)
 	}
 	return mm, nil
