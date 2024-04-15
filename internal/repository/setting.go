@@ -7,7 +7,7 @@ import (
 	"encoding/gob"
 	"errors"
 
-	"example/evebuddy/internal/repository/sqlc"
+	"example/evebuddy/internal/sqlc"
 )
 
 // GetSetting returns the value for a settings key, when it exists.

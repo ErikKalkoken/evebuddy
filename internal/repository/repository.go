@@ -2,7 +2,7 @@ package repository
 
 import (
 	"database/sql"
-	"example/evebuddy/internal/repository/sqlc"
+	"example/evebuddy/internal/sqlc"
 	"fmt"
 	"log/slog"
 	"net/url"

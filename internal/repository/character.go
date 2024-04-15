@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"example/evebuddy/internal/api/images"
-	"example/evebuddy/internal/repository/sqlc"
+	"example/evebuddy/internal/sqlc"
 	"time"
 
 	"fyne.io/fyne/v2"

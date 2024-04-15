@@ -7,7 +7,7 @@ import (
 	"example/evebuddy/internal/helper/set"
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/repository"
-	"example/evebuddy/internal/repository/sqlc"
+	"example/evebuddy/internal/sqlc"
 
 	"fmt"
 	"log/slog"

@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"example/evebuddy/internal/repository/sqlc"
+	"example/evebuddy/internal/sqlc"
 )
 
 // Special mail label IDs

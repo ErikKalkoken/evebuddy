@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"example/evebuddy/internal/repository/sqlc"
+	"example/evebuddy/internal/sqlc"
 	"fmt"
 	"html"
 	"strings"

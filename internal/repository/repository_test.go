@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"example/evebuddy/internal/factory"
 	"example/evebuddy/internal/repository"
-	"example/evebuddy/internal/repository/sqlc"
+	"example/evebuddy/internal/sqlc"
 )
 
 func setUpDB() (*sql.DB, *sqlc.Queries, factory.Factory) {

@@ -3,7 +3,7 @@ package factory
 
 import (
 	"context"
-	"example/evebuddy/internal/repository/sqlc"
+	"example/evebuddy/internal/sqlc"
 	"fmt"
 	"slices"
 	"time"

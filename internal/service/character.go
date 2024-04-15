@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"example/evebuddy/internal/api/sso"
-	"example/evebuddy/internal/repository/sqlc"
+	"example/evebuddy/internal/sqlc"
 
 	"github.com/antihax/goesi"
 )

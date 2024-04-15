@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
-	"example/evebuddy/internal/repository/sqlc"
+	"example/evebuddy/internal/sqlc"
 	"time"
 
 	"github.com/antihax/goesi"

@@ -6,7 +6,7 @@ import (
 	"example/evebuddy/internal/api/images"
 	"example/evebuddy/internal/helper/set"
 	islices "example/evebuddy/internal/helper/slices"
-	"example/evebuddy/internal/repository/sqlc"
+	"example/evebuddy/internal/sqlc"
 	"fmt"
 
 	"fyne.io/fyne/v2"
