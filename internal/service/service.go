@@ -40,3 +40,5 @@ func NewService(queries *repository.Queries) *Service {
 	}
 	return &s
 }
+
+// TODO: Add context to all DB methods

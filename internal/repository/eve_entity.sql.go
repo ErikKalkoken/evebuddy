@@ -149,3 +149,29 @@ func (q *Queries) ListEveEntityIDs(ctx context.Context) ([]int64, error) {
 	}
 	return items, nil
 }
+
+const updateOrCreateEveEntity = `-- name: UpdateOrCreateEveEntity :exec
+INSERT INTO eve_entities (
+    category,
+    name,
+    id
+)
+VALUES (
+    ?, ?, ?
+)
+ON CONFLICT (id) DO
+UPDATE SET
+    category = ?,
+    name = ?
+`
+
+type UpdateOrCreateEveEntityParams struct {
+	Category string
+	Name     string
+	ID       int64
+}
+
+func (q *Queries) UpdateOrCreateEveEntity(ctx context.Context, arg UpdateOrCreateEveEntityParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateEveEntity, arg.Category, arg.Name, arg.ID)
+	return err
+}

@@ -9,7 +9,7 @@ import (
 	"context"
 )
 
-const createMailList = `-- name: CreateMailList :one
+const createMailList = `-- name: CreateMailList :exec
 INSERT OR IGNORE INTO mail_lists (
     character_id,
     eve_entity_id
@@ -17,7 +17,6 @@ INSERT OR IGNORE INTO mail_lists (
 VALUES (
     ?, ?
 )
-RETURNING character_id, eve_entity_id
 `
 
 type CreateMailListParams struct {
@@ -25,11 +24,9 @@ type CreateMailListParams struct {
 	EveEntityID int64
 }
 
-func (q *Queries) CreateMailList(ctx context.Context, arg CreateMailListParams) (MailList, error) {
-	row := q.db.QueryRowContext(ctx, createMailList, arg.CharacterID, arg.EveEntityID)
-	var i MailList
-	err := row.Scan(&i.CharacterID, &i.EveEntityID)
-	return i, err
+func (q *Queries) CreateMailList(ctx context.Context, arg CreateMailListParams) error {
+	_, err := q.db.ExecContext(ctx, createMailList, arg.CharacterID, arg.EveEntityID)
+	return err
 }
 
 const getMailList = `-- name: GetMailList :one

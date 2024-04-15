@@ -148,12 +148,12 @@ func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 		return nil, fmt.Errorf("failed to resolve IDs: %v %v", err, ids)
 	}
 	for _, entity := range entities {
-		p := repository.CreateEveEntityParams{
+		arg := repository.CreateEveEntityParams{
 			ID:       int64(entity.Id),
 			Category: eveEntityESCategoryFromESICategory(entity.Category),
 			Name:     entity.Name,
 		}
-		err := s.queries.CreateEveEntity(context.Background(), p)
+		err := s.queries.CreateEveEntity(context.Background(), arg)
 		if err != nil {
 			return nil, err
 		}

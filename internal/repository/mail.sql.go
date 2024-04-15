@@ -316,44 +316,34 @@ func (q *Queries) ListMailIDs(ctx context.Context, characterID int64) ([]int64, 
 	return items, nil
 }
 
-const listMailsForLabelAll = `-- name: ListMailsForLabelAll :many
-SELECT mails.id, mails.body, mails.character_id, mails.from_id, mails.is_read, mails.mail_id, mails.subject, mails.timestamp, eve_entities.id, eve_entities.category, eve_entities.name
+const listMailIDsForLabelOrdered = `-- name: ListMailIDsForLabelOrdered :many
+SELECT mails.mail_id
 FROM mails
-JOIN eve_entities ON eve_entities.id = mails.from_id
-WHERE character_id = ?
+JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
+JOIN mail_labels ON mail_labels.id = mail_mail_labels.mail_label_id
+WHERE mails.character_id = ?
+AND label_id = ?
 ORDER BY timestamp DESC
 `
 
-type ListMailsForLabelAllRow struct {
-	Mail      Mail
-	EveEntity EveEntity
+type ListMailIDsForLabelOrderedParams struct {
+	CharacterID int64
+	LabelID     int64
 }
 
-func (q *Queries) ListMailsForLabelAll(ctx context.Context, characterID int64) ([]ListMailsForLabelAllRow, error) {
-	rows, err := q.db.QueryContext(ctx, listMailsForLabelAll, characterID)
+func (q *Queries) ListMailIDsForLabelOrdered(ctx context.Context, arg ListMailIDsForLabelOrderedParams) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listMailIDsForLabelOrdered, arg.CharacterID, arg.LabelID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListMailsForLabelAllRow
+	var items []int64
 	for rows.Next() {
-		var i ListMailsForLabelAllRow
-		if err := rows.Scan(
-			&i.Mail.ID,
-			&i.Mail.Body,
-			&i.Mail.CharacterID,
-			&i.Mail.FromID,
-			&i.Mail.IsRead,
-			&i.Mail.MailID,
-			&i.Mail.Subject,
-			&i.Mail.Timestamp,
-			&i.EveEntity.ID,
-			&i.EveEntity.Category,
-			&i.EveEntity.Name,
-		); err != nil {
+		var mail_id int64
+		if err := rows.Scan(&mail_id); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, mail_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -364,101 +354,33 @@ func (q *Queries) ListMailsForLabelAll(ctx context.Context, characterID int64) (
 	return items, nil
 }
 
-const listMailsForLabelNone = `-- name: ListMailsForLabelNone :many
-SELECT mails.id, mails.body, mails.character_id, mails.from_id, mails.is_read, mails.mail_id, mails.subject, mails.timestamp, eve_entities.id, eve_entities.category, eve_entities.name
+const listMailIDsForList = `-- name: ListMailIDsForList :many
+SELECT mails.mail_id
 FROM mails
-LEFT JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
-JOIN eve_entities ON eve_entities.id = mails.from_id
-WHERE character_id = ?
-AND mail_mail_labels.mail_id IS NULL
-ORDER BY timestamp DESC
-`
-
-type ListMailsForLabelNoneRow struct {
-	Mail      Mail
-	EveEntity EveEntity
-}
-
-func (q *Queries) ListMailsForLabelNone(ctx context.Context, characterID int64) ([]ListMailsForLabelNoneRow, error) {
-	rows, err := q.db.QueryContext(ctx, listMailsForLabelNone, characterID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListMailsForLabelNoneRow
-	for rows.Next() {
-		var i ListMailsForLabelNoneRow
-		if err := rows.Scan(
-			&i.Mail.ID,
-			&i.Mail.Body,
-			&i.Mail.CharacterID,
-			&i.Mail.FromID,
-			&i.Mail.IsRead,
-			&i.Mail.MailID,
-			&i.Mail.Subject,
-			&i.Mail.Timestamp,
-			&i.EveEntity.ID,
-			&i.EveEntity.Category,
-			&i.EveEntity.Name,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listMailsForList = `-- name: ListMailsForList :many
-SELECT mails.id, mails.body, mails.character_id, mails.from_id, mails.is_read, mails.mail_id, mails.subject, mails.timestamp, eve_entities.id, eve_entities.category, eve_entities.name
-FROM mails
-JOIN eve_entities ON eve_entities.id = mails.from_id
 JOIN mail_recipients ON mail_recipients.mail_id = mails.id
 WHERE character_id = ?
 AND mail_recipients.eve_entity_id = ?
 ORDER BY timestamp DESC
 `
 
-type ListMailsForListParams struct {
+type ListMailIDsForListParams struct {
 	CharacterID int64
 	EveEntityID int64
 }
 
-type ListMailsForListRow struct {
-	Mail      Mail
-	EveEntity EveEntity
-}
-
-func (q *Queries) ListMailsForList(ctx context.Context, arg ListMailsForListParams) ([]ListMailsForListRow, error) {
-	rows, err := q.db.QueryContext(ctx, listMailsForList, arg.CharacterID, arg.EveEntityID)
+func (q *Queries) ListMailIDsForList(ctx context.Context, arg ListMailIDsForListParams) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listMailIDsForList, arg.CharacterID, arg.EveEntityID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListMailsForListRow
+	var items []int64
 	for rows.Next() {
-		var i ListMailsForListRow
-		if err := rows.Scan(
-			&i.Mail.ID,
-			&i.Mail.Body,
-			&i.Mail.CharacterID,
-			&i.Mail.FromID,
-			&i.Mail.IsRead,
-			&i.Mail.MailID,
-			&i.Mail.Subject,
-			&i.Mail.Timestamp,
-			&i.EveEntity.ID,
-			&i.EveEntity.Category,
-			&i.EveEntity.Name,
-		); err != nil {
+		var mail_id int64
+		if err := rows.Scan(&mail_id); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, mail_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -469,52 +391,58 @@ func (q *Queries) ListMailsForList(ctx context.Context, arg ListMailsForListPara
 	return items, nil
 }
 
-const listMailsForOneLabel = `-- name: ListMailsForOneLabel :many
-SELECT mails.id, mails.body, mails.character_id, mails.from_id, mails.is_read, mails.mail_id, mails.subject, mails.timestamp, eve_entities.id, eve_entities.category, eve_entities.name
+const listMailIDsNoLabelOrdered = `-- name: ListMailIDsNoLabelOrdered :many
+SELECT mails.mail_id
 FROM mails
-JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
-JOIN mail_labels ON mail_labels.id = mail_mail_labels.mail_label_id
-JOIN eve_entities ON eve_entities.id = mails.from_id
-WHERE mails.character_id = ?
-AND label_id = ?
+LEFT JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
+WHERE character_id = ?
+AND mail_mail_labels.mail_id IS NULL
 ORDER BY timestamp DESC
 `
 
-type ListMailsForOneLabelParams struct {
-	CharacterID int64
-	LabelID     int64
-}
-
-type ListMailsForOneLabelRow struct {
-	Mail      Mail
-	EveEntity EveEntity
-}
-
-func (q *Queries) ListMailsForOneLabel(ctx context.Context, arg ListMailsForOneLabelParams) ([]ListMailsForOneLabelRow, error) {
-	rows, err := q.db.QueryContext(ctx, listMailsForOneLabel, arg.CharacterID, arg.LabelID)
+func (q *Queries) ListMailIDsNoLabelOrdered(ctx context.Context, characterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listMailIDsNoLabelOrdered, characterID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListMailsForOneLabelRow
+	var items []int64
 	for rows.Next() {
-		var i ListMailsForOneLabelRow
-		if err := rows.Scan(
-			&i.Mail.ID,
-			&i.Mail.Body,
-			&i.Mail.CharacterID,
-			&i.Mail.FromID,
-			&i.Mail.IsRead,
-			&i.Mail.MailID,
-			&i.Mail.Subject,
-			&i.Mail.Timestamp,
-			&i.EveEntity.ID,
-			&i.EveEntity.Category,
-			&i.EveEntity.Name,
-		); err != nil {
+		var mail_id int64
+		if err := rows.Scan(&mail_id); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, mail_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMailIDsOrdered = `-- name: ListMailIDsOrdered :many
+SELECT mail_id
+FROM mails
+WHERE character_id = ?
+ORDER BY timestamp DESC
+`
+
+func (q *Queries) ListMailIDsOrdered(ctx context.Context, characterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listMailIDsOrdered, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var mail_id int64
+		if err := rows.Scan(&mail_id); err != nil {
+			return nil, err
+		}
+		items = append(items, mail_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

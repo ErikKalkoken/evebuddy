@@ -30,8 +30,8 @@ func (s *Service) updateESIStatus(text binding.String) error {
 	if isOffline {
 		t = "OFFLINE"
 	} else {
-		p := message.NewPrinter(language.English)
-		t = p.Sprintf("%d players", status.Players)
+		arg := message.NewPrinter(language.English)
+		t = arg.Sprintf("%d players", status.Players)
 	}
 	err = text.Set(t)
 	if err != nil {

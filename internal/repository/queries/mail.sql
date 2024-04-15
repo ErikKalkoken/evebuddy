@@ -74,36 +74,32 @@ SELECT mail_id
 FROM mails
 WHERE character_id = ?;
 
--- name: ListMailsForLabelAll :many
-SELECT sqlc.embed(mails), sqlc.embed(eve_entities)
+-- name: ListMailIDsOrdered :many
+SELECT mail_id
 FROM mails
-JOIN eve_entities ON eve_entities.id = mails.from_id
 WHERE character_id = ?
 ORDER BY timestamp DESC;
 
--- name: ListMailsForLabelNone :many
-SELECT sqlc.embed(mails), sqlc.embed(eve_entities)
+-- name: ListMailIDsNoLabelOrdered :many
+SELECT mails.mail_id
 FROM mails
 LEFT JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
-JOIN eve_entities ON eve_entities.id = mails.from_id
 WHERE character_id = ?
 AND mail_mail_labels.mail_id IS NULL
 ORDER BY timestamp DESC;
 
--- name: ListMailsForOneLabel :many
-SELECT sqlc.embed(mails), sqlc.embed(eve_entities)
+-- name: ListMailIDsForLabelOrdered :many
+SELECT mails.mail_id
 FROM mails
 JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
 JOIN mail_labels ON mail_labels.id = mail_mail_labels.mail_label_id
-JOIN eve_entities ON eve_entities.id = mails.from_id
 WHERE mails.character_id = ?
 AND label_id = ?
 ORDER BY timestamp DESC;
 
--- name: ListMailsForList :many
-SELECT sqlc.embed(mails), sqlc.embed(eve_entities)
+-- name: ListMailIDsForList :many
+SELECT mails.mail_id
 FROM mails
-JOIN eve_entities ON eve_entities.id = mails.from_id
 JOIN mail_recipients ON mail_recipients.mail_id = mails.id
 WHERE character_id = ?
 AND mail_recipients.eve_entity_id = ?

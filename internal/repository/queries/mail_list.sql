@@ -1,12 +1,11 @@
--- name: CreateMailList :one
+-- name: CreateMailList :exec
 INSERT OR IGNORE INTO mail_lists (
     character_id,
     eve_entity_id
 )
 VALUES (
     ?, ?
-)
-RETURNING *;
+);
 
 -- name: GetMailList :one
 SELECT *

@@ -2,7 +2,6 @@ package ui
 
 import (
 	"database/sql"
-	"example/evebuddy/internal/service"
 	"log/slog"
 	"strings"
 
@@ -13,6 +12,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	islices "example/evebuddy/internal/helper/slices"
 )
 
 // headerArea is the UI area showing the list of mail headers.
@@ -123,29 +124,25 @@ func (h *headerArea) Redraw(folder node) {
 }
 
 func (h *headerArea) redraw(folder node) {
-	var mm []service.Mail
+	var mailIDs []int32
 	var err error
 	charID := h.ui.CurrentCharID()
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mm, err = h.ui.service.ListMailsForLabel(charID, folder.ObjID)
+		mailIDs, err = h.ui.service.ListMailIDsForLabelOrdered(charID, folder.ObjID)
 	case nodeCategoryList:
-		mm, err = h.ui.service.ListMailsForList(charID, folder.ObjID)
+		mailIDs, err = h.ui.service.ListMailIDsForListOrdered(charID, folder.ObjID)
 	}
-	var mailIDs []int
 	if err != nil {
 		slog.Error("Failed to fetch mail", "characterID", charID, "error", err)
-	} else {
-		for _, m := range mm {
-			mailIDs = append(mailIDs, int(m.MailID))
-		}
 	}
-	h.listData.Set(mailIDs)
+	ids := islices.ConvertNumeric[int32, int](mailIDs)
+	h.listData.Set(ids)
 	h.currentFolder = folder
-	h.total.Set(len(mm))
+	h.total.Set(len(mailIDs))
 
-	if len(mm) > 0 {
-		h.ui.mailArea.Redraw(mm[0].MailID, 0)
+	if len(mailIDs) > 0 {
+		h.ui.mailArea.Redraw(mailIDs[0], 0)
 		h.list.Select(0)
 		h.list.ScrollToTop()
 	} else {

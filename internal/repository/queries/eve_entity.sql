@@ -33,3 +33,18 @@ COLLATE NOCASE;
 -- name: ListEveEntityIDs :many
 SELECT id
 FROM eve_entities;
+
+-- name: UpdateOrCreateEveEntity :exec
+INSERT INTO eve_entities (
+    category,
+    name,
+    id
+)
+VALUES (
+    ?, ?, ?
+)
+ON CONFLICT (id) DO
+UPDATE SET
+    category = ?,
+    name = ?
+;

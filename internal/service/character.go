@@ -101,7 +101,7 @@ func characterFromDBModel(character repository.Character, corporation repository
 	}
 }
 
-func (s *Service) GetCharacter(id int) (Character, error) {
+func (s *Service) GetCharacter(id int32) (Character, error) {
 	row, err := s.queries.GetCharacter(context.Background(), int64(id))
 	if err != nil {
 		return Character{}, err
