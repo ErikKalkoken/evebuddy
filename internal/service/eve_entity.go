@@ -26,7 +26,8 @@ func eveEntityCategoryFromESICategory(c string) repository.EveEntityCategory {
 
 // AddEveEntitiesFromESISearch runs a search on ESI and adds the results as new EveEntity objects to the database.
 func (s *Service) AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, error) {
-	token, err := s.GetValidToken(characterID)
+	ctx := context.Background()
+	token, err := s.GetValidToken(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +36,8 @@ func (s *Service) AddEveEntitiesFromESISearch(characterID int32, search string) 
 		"character",
 		"alliance",
 	}
-	r, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(token.NewContext(), categories, characterID, search, nil)
+	ctx = contextWithToken(ctx, token.AccessToken)
+	r, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, categories, characterID, search, nil)
 	if err != nil {
 		return nil, err
 	}

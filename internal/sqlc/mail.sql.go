@@ -354,7 +354,7 @@ func (q *Queries) ListMailIDsForLabelOrdered(ctx context.Context, arg ListMailID
 	return items, nil
 }
 
-const listMailIDsForList = `-- name: ListMailIDsForList :many
+const listMailIDsForListOrdered = `-- name: ListMailIDsForListOrdered :many
 SELECT mails.mail_id
 FROM mails
 JOIN mail_recipients ON mail_recipients.mail_id = mails.id
@@ -363,13 +363,13 @@ AND mail_recipients.eve_entity_id = ?
 ORDER BY timestamp DESC
 `
 
-type ListMailIDsForListParams struct {
+type ListMailIDsForListOrderedParams struct {
 	CharacterID int64
 	EveEntityID int64
 }
 
-func (q *Queries) ListMailIDsForList(ctx context.Context, arg ListMailIDsForListParams) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listMailIDsForList, arg.CharacterID, arg.EveEntityID)
+func (q *Queries) ListMailIDsForListOrdered(ctx context.Context, arg ListMailIDsForListOrderedParams) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listMailIDsForListOrdered, arg.CharacterID, arg.EveEntityID)
 	if err != nil {
 		return nil, err
 	}

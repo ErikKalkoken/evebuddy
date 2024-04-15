@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"example/evebuddy/internal/api/images"
 	"example/evebuddy/internal/helper/set"
@@ -137,4 +138,29 @@ func (r *Repository) MissingEveEntityIDs(ctx context.Context, ids []int32) (*set
 	incoming := set.NewFromSlice(ids)
 	missing := incoming.Difference(current)
 	return missing, nil
+}
+
+func (r *Repository) UpdateEveEntity(ctx context.Context, id int32, name string, category EveEntityCategory) error {
+	categoryDB := eveEntityDBModelCategoryFromCategory(category)
+	arg1 := sqlc.UpdateEveEntityParams{
+		ID:       int64(id),
+		Name:     name,
+		Category: categoryDB,
+	}
+	if err := r.q.UpdateEveEntity(ctx, arg1); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			arg := sqlc.CreateEveEntityParams{
+				ID:       int64(id),
+				Name:     name,
+				Category: categoryDB,
+			}
+			_, err := r.q.CreateEveEntity(ctx, arg)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+	return nil
 }

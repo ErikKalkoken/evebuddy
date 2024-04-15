@@ -281,6 +281,7 @@ SET
     security_status = ?,
     skill_points = ?,
     wallet_balance = ?
+WHERE id = ?
 `
 
 type UpdateCharacterParams struct {
@@ -293,6 +294,7 @@ type UpdateCharacterParams struct {
 	SecurityStatus float64
 	SkillPoints    sql.NullInt64
 	WalletBalance  sql.NullFloat64
+	ID             int64
 }
 
 func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams) error {
@@ -306,6 +308,7 @@ func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams
 		arg.SecurityStatus,
 		arg.SkillPoints,
 		arg.WalletBalance,
+		arg.ID,
 	)
 	return err
 }

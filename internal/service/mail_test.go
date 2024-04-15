@@ -1,6 +1,7 @@
 package service
 
 import (
+	"example/evebuddy/internal/repository"
 	"fmt"
 	"net/http"
 	"testing"
@@ -49,7 +50,7 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 			return resp, err
 		},
 	)
-	token := Token{AccessToken: "abc", CharacterID: 1, ExpiresAt: time.Now().Add(time.Minute * 10)}
+	token := repository.Token{AccessToken: "abc", CharacterID: 1, ExpiresAt: time.Now().Add(time.Minute * 10)}
 
 	// when
 	mails, err := s.listMailHeaders(&token)

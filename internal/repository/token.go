@@ -5,8 +5,6 @@ import (
 	"errors"
 	"example/evebuddy/internal/sqlc"
 	"time"
-
-	"github.com/antihax/goesi"
 )
 
 // A SSO token belonging to a character.
@@ -34,12 +32,6 @@ func tokenFromDBModel(t sqlc.Token) Token {
 // RemainsValid reports wether a token remains valid within a duration
 func (t *Token) RemainsValid(d time.Duration) bool {
 	return t.ExpiresAt.After(time.Now().Add(d))
-}
-
-// TODO: Move into service
-func (t *Token) NewContext() context.Context {
-	ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, t.AccessToken)
-	return ctx
 }
 
 func (r *Repository) GetToken(ctx context.Context, characterID int32) (Token, error) {

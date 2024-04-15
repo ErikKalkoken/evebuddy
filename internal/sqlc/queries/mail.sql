@@ -97,7 +97,7 @@ WHERE mails.character_id = ?
 AND label_id = ?
 ORDER BY timestamp DESC;
 
--- name: ListMailIDsForList :many
+-- name: ListMailIDsForListOrdered :many
 SELECT mails.mail_id
 FROM mails
 JOIN mail_recipients ON mail_recipients.mail_id = mails.id

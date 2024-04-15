@@ -130,3 +130,64 @@ func (r *Repository) GetFirstCharacter(ctx context.Context) (Character, error) {
 	}
 	return characterFromDBModel(row.Character, row.EveEntity, row.EveEntity_2, row.EveEntity_3), nil
 }
+
+func (r *Repository) UpdateOrCreateCharacter(ctx context.Context, c *Character) error {
+	arg := sqlc.CreateCharacterParams{
+		Birthday:       c.Birthday,
+		CorporationID:  int64(c.Corporation.ID),
+		Description:    c.Description,
+		Gender:         c.Gender,
+		ID:             int64(c.ID),
+		Name:           c.Name,
+		SecurityStatus: float64(c.SecurityStatus),
+	}
+	if c.Alliance.ID != 0 {
+		arg.AllianceID.Int64 = int64(c.Alliance.ID)
+		arg.AllianceID.Valid = true
+	}
+	if c.Faction.ID != 0 {
+		arg.FactionID.Int64 = int64(c.Faction.ID)
+		arg.FactionID.Valid = true
+	}
+	if c.SkillPoints != 0 {
+		arg.SkillPoints.Int64 = int64(c.SkillPoints)
+		arg.SkillPoints.Valid = true
+	}
+	if c.WalletBalance != 0 {
+		arg.WalletBalance.Float64 = c.WalletBalance
+		arg.WalletBalance.Valid = true
+	}
+	_, err := r.q.CreateCharacter(ctx, arg)
+	if err != nil {
+		if !isSqlite3ErrConstraint(err) {
+			return err
+		}
+		arg := sqlc.UpdateCharacterParams{
+			CorporationID:  int64(c.Corporation.ID),
+			Description:    c.Description,
+			ID:             int64(c.ID),
+			Name:           c.Name,
+			SecurityStatus: float64(c.SecurityStatus),
+		}
+		if c.Alliance.ID != 0 {
+			arg.AllianceID.Int64 = int64(c.Alliance.ID)
+			arg.AllianceID.Valid = true
+		}
+		if c.Faction.ID != 0 {
+			arg.FactionID.Int64 = int64(c.Faction.ID)
+			arg.FactionID.Valid = true
+		}
+		if c.SkillPoints != 0 {
+			arg.SkillPoints.Int64 = int64(c.SkillPoints)
+			arg.SkillPoints.Valid = true
+		}
+		if c.WalletBalance != 0 {
+			arg.WalletBalance.Float64 = c.WalletBalance
+			arg.WalletBalance.Valid = true
+		}
+		if err := r.q.UpdateCharacter(ctx, arg); err != nil {
+			return err
+		}
+	}
+	return nil
+}

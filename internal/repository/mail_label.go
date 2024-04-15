@@ -46,3 +46,29 @@ func (r *Repository) ListMailLabels(ctx context.Context, characterID int32) ([]M
 	}
 	return ll2, nil
 }
+
+func (r *Repository) UpdateOrCreateMailLabel(ctx context.Context, characterID int32, labelID int32, name string, color string, unreadCount int) error {
+	arg := sqlc.CreateMailLabelParams{
+		CharacterID: int64(characterID),
+		LabelID:     int64(labelID),
+		Color:       color,
+		Name:        name,
+		UnreadCount: int64(unreadCount),
+	}
+	if err := r.q.CreateMailLabel(ctx, arg); err != nil {
+		if !isSqlite3ErrConstraint(err) {
+			return err
+		}
+		arg := sqlc.UpdateMailLabelParams{
+			CharacterID: int64(characterID),
+			LabelID:     int64(labelID),
+			Color:       color,
+			Name:        name,
+			UnreadCount: int64(unreadCount),
+		}
+		if err := r.q.UpdateMailLabel(ctx, arg); err != nil {
+			return err
+		}
+	}
+	return nil
+}

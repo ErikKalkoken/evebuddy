@@ -61,4 +61,5 @@ SET
     name = ?,
     security_status = ?,
     skill_points = ?,
-    wallet_balance = ?;
+    wallet_balance = ?
+WHERE id = ?;
