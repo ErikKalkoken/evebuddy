@@ -3,25 +3,25 @@ package factory
 
 import (
 	"context"
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/repository/sqlc"
 	"fmt"
 	"slices"
 	"time"
 )
 
 type Factory struct {
-	q *repository.Queries
+	q *sqlc.Queries
 }
 
-func New(q *repository.Queries) Factory {
+func New(q *sqlc.Queries) Factory {
 	f := Factory{q: q}
 	return f
 }
 
 // CreateCharacter is a test factory for character objects.
-func (f Factory) CreateCharacter(args ...repository.CreateCharacterParams) repository.Character {
+func (f Factory) CreateCharacter(args ...sqlc.CreateCharacterParams) sqlc.Character {
 	ctx := context.Background()
-	var arg repository.CreateCharacterParams
+	var arg sqlc.CreateCharacterParams
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -40,7 +40,7 @@ func (f Factory) CreateCharacter(args ...repository.CreateCharacterParams) repos
 		arg.Name = fmt.Sprintf("Generated character #%d", arg.ID)
 	}
 	if arg.CorporationID == 0 {
-		e, err := f.q.CreateEveEntity(ctx, repository.CreateEveEntityParams{Category: repository.EveEntityCorporation})
+		e, err := f.q.CreateEveEntity(ctx, sqlc.CreateEveEntityParams{Category: sqlc.EveEntityCorporation})
 		if err != nil {
 			panic(err)
 		}
@@ -63,8 +63,8 @@ func (f Factory) CreateCharacter(args ...repository.CreateCharacterParams) repos
 }
 
 // CreateEveEntity is a test factory for EveEntity objects.
-func (f Factory) CreateEveEntity(args ...repository.CreateEveEntityParams) repository.EveEntity {
-	var arg repository.CreateEveEntityParams
+func (f Factory) CreateEveEntity(args ...sqlc.CreateEveEntityParams) sqlc.EveEntity {
+	var arg sqlc.CreateEveEntityParams
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
@@ -84,7 +84,7 @@ func (f Factory) CreateEveEntity(args ...repository.CreateEveEntityParams) repos
 		arg.Name = fmt.Sprintf("generated #%d", arg.ID)
 	}
 	if arg.Category == "" {
-		arg.Category = repository.EveEntityCharacter
+		arg.Category = sqlc.EveEntityCharacter
 	}
 	e, err := f.q.CreateEveEntity(ctx, arg)
 	if err != nil {

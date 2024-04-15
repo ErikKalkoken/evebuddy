@@ -20,8 +20,8 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
-	queries := repository.New(db)
-	s := service.NewService(queries)
+	repository := repository.New(db)
+	s := service.NewService(repository)
 	e := ui.NewUI(s)
 	e.ShowAndRun()
 }

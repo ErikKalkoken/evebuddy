@@ -3,7 +3,7 @@
 //   sqlc v1.26.0
 // source: mail_list.sql
 
-package repository
+package sqlc
 
 import (
 	"context"

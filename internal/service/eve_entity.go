@@ -2,94 +2,15 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
 
-	"fyne.io/fyne/v2"
-
-	"example/evebuddy/internal/api/images"
-	"example/evebuddy/internal/helper/set"
-	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/repository"
 )
 
-type EveEntityCategory int
-
-// Supported categories of EveEntity
-const (
-	EveEntityAlliance EveEntityCategory = iota + 1
-	EveEntityCharacter
-	EveEntityCorporation
-	EveEntityFaction
-	EveEntityMailList
-)
-
-type EveEntity struct {
-	Category EveEntityCategory
-	ID       int32
-	Name     string
-}
-
-func (e *EveEntity) IconURL(size int) (fyne.URI, error) {
-	switch e.Category {
-	case EveEntityAlliance:
-		return images.AllianceLogoURL(e.ID, size)
-	case EveEntityCharacter:
-		return images.CharacterPortraitURL(e.ID, size)
-	case EveEntityCorporation:
-		return images.CorporationLogoURL(e.ID, size)
-	case EveEntityFaction:
-		return images.FactionLogoURL(e.ID, size)
-	}
-	return nil, errors.New("can not match category")
-}
-
-func eveEntityFromDBModel(e repository.EveEntity) EveEntity {
-	if e.ID == 0 {
-		return EveEntity{}
-	}
-	category := eveEntityCategoryFromDBModel(e.Category)
-	return EveEntity{
-		Category: category,
-		ID:       int32(e.ID),
-		Name:     e.Name,
-	}
-}
-
-func eveEntityCategoryFromDBModel(c string) EveEntityCategory {
-	categoryMap := map[string]EveEntityCategory{
-		repository.EveEntityAlliance:    EveEntityAlliance,
-		repository.EveEntityCharacter:   EveEntityCharacter,
-		repository.EveEntityCorporation: EveEntityCorporation,
-		repository.EveEntityFaction:     EveEntityFaction,
-		repository.EveEntityMailList:    EveEntityMailList,
-	}
-	c2, ok := categoryMap[c]
-	if !ok {
-		panic(fmt.Sprintf("Can not map unknown category: %s", c))
-	}
-	return c2
-}
-
-func eveEntityDBModelCategoryFromCategory(c EveEntityCategory) string {
-	categoryMap := map[EveEntityCategory]string{
-		EveEntityAlliance:    repository.EveEntityAlliance,
-		EveEntityCharacter:   repository.EveEntityCharacter,
-		EveEntityCorporation: repository.EveEntityCorporation,
-		EveEntityFaction:     repository.EveEntityFaction,
-		EveEntityMailList:    repository.EveEntityMailList,
-	}
-	c2, ok := categoryMap[c]
-	if !ok {
-		panic(fmt.Sprintf("Can not map unknown category: %v", c))
-	}
-	return c2
-}
-
-func eveEntityESCategoryFromESICategory(c string) string {
-	categoryMap := map[string]string{
+func eveEntityCategoryFromESICategory(c string) repository.EveEntityCategory {
+	categoryMap := map[string]repository.EveEntityCategory{
 		"alliance":     repository.EveEntityAlliance,
 		"character":    repository.EveEntityCharacter,
 		"corporation":  repository.EveEntityCorporation,
@@ -130,7 +51,7 @@ func (s *Service) AddEveEntitiesFromESISearch(characterID int32, search string) 
 // addMissingEveEntities adds EveEntities from ESI for IDs missing in the database.
 func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 	ctx := context.Background()
-	missing, err := s.missingEveEntityIDs(ctx, ids)
+	missing, err := s.r.MissingEveEntityIDs(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -142,12 +63,7 @@ func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 		return nil, fmt.Errorf("failed to resolve IDs: %v %v", err, ids)
 	}
 	for _, entity := range entities {
-		arg := repository.CreateEveEntityParams{
-			ID:       int64(entity.Id),
-			Category: eveEntityESCategoryFromESICategory(entity.Category),
-			Name:     entity.Name,
-		}
-		_, err := s.q.CreateEveEntity(ctx, arg)
+		_, err := s.r.CreateEveEntity(ctx, entity.Id, entity.Name, eveEntityCategoryFromESICategory(entity.Category))
 		if err != nil {
 			return nil, err
 		}
@@ -156,26 +72,6 @@ func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 	return missing.ToSlice(), nil
 }
 
-func (s *Service) missingEveEntityIDs(ctx context.Context, ids []int32) (*set.Set[int32], error) {
-	currentIDs, err := s.q.ListEveEntityIDs(ctx)
-	if err != nil {
-		return nil, err
-	}
-	currentIDs2 := islices.ConvertNumeric[int64, int32](currentIDs)
-	current := set.NewFromSlice(currentIDs2)
-	incoming := set.NewFromSlice(ids)
-	missing := incoming.Difference(current)
-	return missing, nil
-}
-
-func (s *Service) SearchEveEntitiesByName(partial string) ([]EveEntity, error) {
-	ee, err := s.q.ListEveEntitiesByPartialName(context.Background(), fmt.Sprintf("%%%s%%", partial))
-	if err != nil {
-		return nil, err
-	}
-	ee2 := make([]EveEntity, len(ee))
-	for i, e := range ee {
-		ee2[i] = eveEntityFromDBModel(e)
-	}
-	return ee2, nil
+func (s *Service) SearchEveEntitiesByName(partial string) ([]repository.EveEntity, error) {
+	return s.r.SearchEveEntitiesByName(context.Background(), partial)
 }

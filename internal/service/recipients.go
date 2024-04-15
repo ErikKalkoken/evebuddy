@@ -11,7 +11,7 @@ import (
 
 	"github.com/antihax/goesi/esi"
 
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/sqlc"
 )
 
 type recipientCategory uint
@@ -210,11 +210,11 @@ func (rr *Recipients) buildMailRecipients(s *Service) ([]esi.PostCharactersChara
 			names = append(names, r.name)
 			continue
 		}
-		arg := repository.GetEveEntityByNameAndCategoryParams{
+		arg := sqlc.GetEveEntityByNameAndCategoryParams{
 			Name:     r.name,
 			Category: eveEntityDBModelCategoryFromCategory(c),
 		}
-		e, err := s.q.GetEveEntityByNameAndCategory(context.Background(), arg)
+		e, err := s.r.GetEveEntityByNameAndCategory(context.Background(), arg)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				names = append(names, r.name)
@@ -245,17 +245,17 @@ func (s *Service) resolveNamesRemotely(names []string) error {
 	if err != nil {
 		return err
 	}
-	ee := make([]repository.CreateEveEntityParams, 0, len(names))
+	ee := make([]sqlc.CreateEveEntityParams, 0, len(names))
 	for _, o := range r.Alliances {
-		e := repository.CreateEveEntityParams{ID: int64(o.Id), Name: o.Name, Category: repository.EveEntityAlliance}
+		e := sqlc.CreateEveEntityParams{ID: int64(o.Id), Name: o.Name, Category: sqlc.EveEntityAlliance}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Characters {
-		e := repository.CreateEveEntityParams{ID: int64(o.Id), Name: o.Name, Category: repository.EveEntityCharacter}
+		e := sqlc.CreateEveEntityParams{ID: int64(o.Id), Name: o.Name, Category: sqlc.EveEntityCharacter}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Corporations {
-		e := repository.CreateEveEntityParams{ID: int64(o.Id), Name: o.Name, Category: repository.EveEntityCorporation}
+		e := sqlc.CreateEveEntityParams{ID: int64(o.Id), Name: o.Name, Category: sqlc.EveEntityCorporation}
 		ee = append(ee, e)
 	}
 	ids := make([]int32, len(ee))
@@ -271,7 +271,7 @@ func (s *Service) resolveNamesRemotely(names []string) error {
 	}
 	for _, e := range ee {
 		if missing.Has(int32(e.ID)) {
-			_, err := s.q.CreateEveEntity(ctx, e)
+			_, err := s.r.CreateEveEntity(ctx, e)
 			if err != nil {
 				return err
 			}
@@ -286,7 +286,7 @@ func (s *Service) resolveNamesRemotely(names []string) error {
 func (s *Service) buildMailRecipientsFromNames(names []string) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
 	mm := make([]esi.PostCharactersCharacterIdMailRecipient, 0, len(names))
 	for _, n := range names {
-		ee, err := s.q.ListEveEntitiesByName(context.Background(), n)
+		ee, err := s.r.ListEveEntitiesByName(context.Background(), n)
 		if err != nil {
 			return nil, err
 		}

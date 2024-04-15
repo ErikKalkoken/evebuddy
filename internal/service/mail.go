@@ -7,12 +7,11 @@ import (
 	"example/evebuddy/internal/helper/set"
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/repository/sqlc"
 
 	"fmt"
-	"html"
 	"log/slog"
 	"slices"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -20,7 +19,6 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/antihax/goesi/esi"
 	"github.com/antihax/goesi/optional"
-	"github.com/microcosm-cc/bluemonday"
 )
 
 const (
@@ -28,89 +26,8 @@ const (
 	maxHeadersPerPage = 50 // maximum header objects returned per page
 )
 
-var bodyPolicy = bluemonday.StrictPolicy()
-
-// An Eve mail belonging to a character
-type Mail struct {
-	Body        string
-	CharacterID int32
-	From        EveEntity
-	Labels      []MailLabel
-	IsRead      bool
-	ID          int64
-	MailID      int32
-	Recipients  []EveEntity
-	Subject     string
-	Timestamp   time.Time
-}
-
-func mailFromDBModel(mail repository.Mail, from repository.EveEntity, labels []repository.MailLabel, recipients []repository.EveEntity) Mail {
-	if mail.CharacterID == 0 {
-		panic("missing character ID")
-	}
-	var ll []MailLabel
-	for _, l := range labels {
-		ll = append(ll, mailLabelFromDBModel(l))
-	}
-	var rr []EveEntity
-	for _, r := range recipients {
-		rr = append(rr, eveEntityFromDBModel(r))
-	}
-	m := Mail{
-		Body:        mail.Body,
-		CharacterID: int32(mail.CharacterID),
-		From:        eveEntityFromDBModel(from),
-		IsRead:      mail.IsRead,
-		ID:          mail.ID,
-		Labels:      ll,
-		MailID:      int32(mail.MailID),
-		Recipients:  rr,
-		Subject:     mail.Subject,
-		Timestamp:   mail.Timestamp,
-	}
-	return m
-}
-
-// BodyPlain returns a mail's body as plain text.
-func (m *Mail) BodyPlain() string {
-	t := strings.ReplaceAll(m.Body, "<br>", "\n")
-	b := html.UnescapeString(bodyPolicy.Sanitize(t))
-	return b
-}
-
-// BodyForward returns a mail's body for a mail forward or reply
-func (m *Mail) ToString(format string) string {
-	s := "\n---\n"
-	s += m.MakeHeaderText(format)
-	s += "\n\n"
-	s += m.BodyPlain()
-	return s
-}
-
-func (m *Mail) MakeHeaderText(format string) string {
-	var names []string
-	for _, n := range m.Recipients {
-		names = append(names, n.Name)
-	}
-	header := fmt.Sprintf(
-		"From: %s\nSent: %s\nTo: %s",
-		m.From.Name,
-		m.Timestamp.Format(format),
-		strings.Join(names, ", "),
-	)
-	return header
-}
-
-func (m *Mail) RecipientNames() []string {
-	ss := make([]string, len(m.Recipients))
-	for i, r := range m.Recipients {
-		ss[i] = r.Name
-	}
-	return ss
-}
-
 // DeleteMail deletes a mail both on ESI and in the database.
-func (s *Service) DeleteMail(m *Mail) error {
+func (s *Service) DeleteMail(m *repository.Mail) error {
 	token, err := s.GetValidToken(m.CharacterID)
 	if err != nil {
 		return err
@@ -120,7 +37,7 @@ func (s *Service) DeleteMail(m *Mail) error {
 	if err != nil {
 		return err
 	}
-	err = s.q.DeleteMail(ctx, m.ID)
+	err = s.r.DeleteMail(ctx, m.ID)
 	if err != nil {
 		return err
 	}
@@ -164,25 +81,25 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 	if err != nil {
 		return err
 	}
-	from, err := s.q.GetEveEntity(ctx, int64(token.CharacterID))
+	from, err := s.r.GetEveEntity(ctx, token.CharacterID)
 	if err != nil {
 		return err
 	}
 	// FIXME: Ensure this still works when no labels have yet been loaded from ESI
-	mailLabelParams := repository.GetMailLabelParams{CharacterID: int64(token.CharacterID), LabelID: LabelSent}
-	label, err := s.q.GetMailLabel(ctx, mailLabelParams)
+	mailLabelParams := sqlc.GetMailLabelParams{CharacterID: int64(token.CharacterID), LabelID: LabelSent}
+	label, err := s.r.GetMailLabel(ctx, mailLabelParams)
 	if err != nil {
 		return err
 	}
-	var ee []repository.EveEntity
+	var ee []sqlc.EveEntity
 	for _, r := range rr {
-		e, err := s.q.GetEveEntity(ctx, int64(r.RecipientId))
+		e, err := s.r.GetEveEntity(ctx, r.RecipientId)
 		if err != nil {
 			return err
 		}
 		ee = append(ee, e)
 	}
-	mailParams := repository.CreateMailParams{
+	mailParams := sqlc.CreateMailParams{
 		Body:        body,
 		CharacterID: int64(token.CharacterID),
 		FromID:      from.ID,
@@ -191,19 +108,19 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 		IsRead:      true,
 		Timestamp:   time.Now(),
 	}
-	mail, err := s.q.CreateMail(ctx, mailParams)
+	mail, err := s.r.CreateMail(ctx, mailParams)
 	if err != nil {
 		return err
 	}
-	mailMailLabelParams := repository.CreateMailMailLabelParams{
+	mailMailLabelParams := sqlc.CreateMailMailLabelParams{
 		MailID: mail.ID, MailLabelID: label.ID,
 	}
-	if err := s.q.CreateMailMailLabel(ctx, mailMailLabelParams); err != nil {
+	if err := s.r.CreateMailMailLabel(ctx, mailMailLabelParams); err != nil {
 		return err
 	}
 	for _, e := range ee {
-		arg := repository.CreateMailRecipientParams{MailID: mail.ID, EveEntityID: e.ID}
-		err := s.q.CreateMailRecipient(ctx, arg)
+		arg := sqlc.CreateMailRecipientParams{MailID: mail.ID, EveEntityID: e.ID}
+		err := s.r.CreateMailRecipient(ctx, arg)
 		if err != nil {
 			return err
 		}
@@ -212,7 +129,7 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 }
 
 // UpdateMailRead updates an existing mail as read
-func (s *Service) UpdateMailRead(m *Mail) error {
+func (s *Service) UpdateMailRead(m *repository.Mail) error {
 	token, err := s.GetValidToken(m.CharacterID)
 	if err != nil {
 		return err
@@ -228,32 +145,32 @@ func (s *Service) UpdateMailRead(m *Mail) error {
 		return err
 	}
 	m.IsRead = true
-	if err := s.q.UpdateMailSetRead(ctx, m.ID); err != nil {
+	if err := s.r.UpdateMailSetRead(ctx, m.ID); err != nil {
 		return err
 	}
 	return nil
 
 }
 
-func (s *Service) GetMailFromDB(characterID int32, mailID int32) (Mail, error) {
+func (s *Service) GetMailFromDB(characterID int32, mailID int32) (repository.Mail, error) {
 	ctx := context.Background()
-	arg := repository.GetMailParams{
+	arg := sqlc.GetMailParams{
 		CharacterID: int64(characterID),
 		MailID:      int64(mailID),
 	}
-	row, err := s.q.GetMail(ctx, arg)
+	row, err := s.r.GetMail(ctx, arg)
 	if err != nil {
-		return Mail{}, err
+		return repository.Mail{}, err
 	}
-	ll, err := s.q.GetMailLabels(ctx, row.Mail.ID)
+	ll, err := s.r.GetMailLabels(ctx, row.repository.Mail.ID)
 	if err != nil {
-		return Mail{}, err
+		return repository.Mail{}, err
 	}
-	rr, err := s.q.GetMailRecipients(ctx, row.Mail.ID)
+	rr, err := s.r.GetMailRecipients(ctx, row.repository.Mail.ID)
 	if err != nil {
-		return Mail{}, err
+		return repository.Mail{}, err
 	}
-	return mailFromDBModel(row.Mail, row.EveEntity, ll, rr), nil
+	return mailFromDBModel(row.repository.Mail, row.EveEntity, ll, rr), nil
 }
 
 // FIXME: Delete obsolete labels and mail lists
@@ -266,7 +183,7 @@ func (s *Service) FetchMail(characterID int32, status binding.String) error {
 	if err != nil {
 		return err
 	}
-	row, err := s.q.GetCharacter(ctx, int64(characterID))
+	row, err := s.r.GetCharacter(ctx, int64(characterID))
 	if err != nil {
 		return err
 	}
@@ -287,7 +204,7 @@ func (s *Service) FetchMail(characterID int32, status binding.String) error {
 		return err
 	}
 	character.MailUpdatedAt = time.Now()
-	if err := s.q.UpdateCharacter(ctx, character.ToDBUpdateParams()); err != nil {
+	if err := s.r.UpdateCharacter(ctx, character.ToDBUpdateParams()); err != nil {
 		return err
 	}
 	return nil
@@ -305,25 +222,25 @@ func (s *Service) updateMailLabels(token *Token) error {
 	labels := ll.Labels
 	slog.Info("Received mail labels from ESI", "count", len(labels), "characterID", token.CharacterID)
 	for _, o := range labels {
-		arg := repository.CreateMailLabelParams{
+		arg := sqlc.CreateMailLabelParams{
 			CharacterID: int64(token.CharacterID),
 			LabelID:     int64(o.LabelId),
 			Color:       o.Color,
 			Name:        o.Name,
 			UnreadCount: int64(o.UnreadCount),
 		}
-		if err := s.q.CreateMailLabel(ctx, arg); err != nil {
+		if err := s.r.CreateMailLabel(ctx, arg); err != nil {
 			if !isSqlite3ErrConstraint(err) {
 				return err
 			}
-			arg := repository.UpdateMailLabelParams{
+			arg := sqlc.UpdateMailLabelParams{
 				CharacterID: int64(token.CharacterID),
 				LabelID:     int64(o.LabelId),
 				Color:       o.Color,
 				Name:        o.Name,
 				UnreadCount: int64(o.UnreadCount),
 			}
-			if err := s.q.UpdateMailLabel(ctx, arg); err != nil {
+			if err := s.r.UpdateMailLabel(ctx, arg); err != nil {
 				return err
 			}
 		}
@@ -341,19 +258,19 @@ func (s *Service) updateMailLists(token *Token) error {
 		return err
 	}
 	for _, o := range lists {
-		arg1 := repository.UpdateEveEntityParams{
+		arg1 := sqlc.UpdateEveEntityParams{
 			ID:       int64(o.MailingListId),
 			Name:     o.Name,
-			Category: repository.EveEntityMailList,
+			Category: sqlc.EveEntityMailList,
 		}
-		if err := s.q.UpdateEveEntity(ctx, arg1); err != nil {
+		if err := s.r.UpdateEveEntity(ctx, arg1); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				arg := repository.CreateEveEntityParams{
+				arg := sqlc.CreateEveEntityParams{
 					ID:       int64(o.MailingListId),
 					Name:     o.Name,
-					Category: repository.EveEntityMailList,
+					Category: sqlc.EveEntityMailList,
 				}
-				_, err := s.q.CreateEveEntity(ctx, arg)
+				_, err := s.r.CreateEveEntity(ctx, arg)
 				if err != nil {
 					return err
 				}
@@ -361,8 +278,8 @@ func (s *Service) updateMailLists(token *Token) error {
 				return err
 			}
 		}
-		arg2 := repository.CreateMailListParams{CharacterID: int64(token.CharacterID), EveEntityID: arg1.ID}
-		if err := s.q.CreateMailList(ctx, arg2); err != nil {
+		arg2 := sqlc.CreateMailListParams{CharacterID: int64(token.CharacterID), EveEntityID: arg1.ID}
+		if err := s.r.CreateMailList(ctx, arg2); err != nil {
 			return err
 		}
 	}
@@ -420,7 +337,7 @@ func (s *Service) updateMails(token *Token, headers []esi.GetCharactersCharacter
 		return err
 	}
 	ctx := token.NewContext()
-	characterRow, err := s.q.GetCharacter(ctx, int64(token.CharacterID))
+	characterRow, err := s.r.GetCharacter(ctx, int64(token.CharacterID))
 	if err != nil {
 		return err
 	}
@@ -469,12 +386,12 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, header esi.GetCharacter
 		slog.Error("Failed to process mail", "header", header, "error", err)
 		return
 	}
-	from, err := s.q.GetEveEntity(ctx, int64(header.From))
+	from, err := s.r.GetEveEntity(ctx, int64(header.From))
 	if err != nil {
 		slog.Error("Failed to parse \"from\" in mail", "header", header, "error", err)
 		return
 	}
-	mailArg := repository.CreateMailParams{
+	mailArg := sqlc.CreateMailParams{
 		Body:        m.Body,
 		CharacterID: int64(token.CharacterID),
 		FromID:      from.ID,
@@ -483,7 +400,7 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, header esi.GetCharacter
 		IsRead:      header.IsRead,
 		Timestamp:   header.Timestamp,
 	}
-	mail, err := s.q.CreateMail(ctx, mailArg)
+	mail, err := s.r.CreateMail(ctx, mailArg)
 	if err != nil {
 		slog.Error(err.Error())
 		return
@@ -506,36 +423,36 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, header esi.GetCharacter
 
 func (s *Service) fetchAndStoreMailRecipients(ctx context.Context, mailID int64, header esi.GetCharactersCharacterIdMail200Ok) error {
 	for _, r := range header.Recipients {
-		entity, err := s.q.GetEveEntity(ctx, int64(r.RecipientId))
+		entity, err := s.r.GetEveEntity(ctx, int64(r.RecipientId))
 		if err != nil {
 			return fmt.Errorf("failed to resolve mail recipient %v: %s", r, err)
 		}
-		arg := repository.CreateMailRecipientParams{
+		arg := sqlc.CreateMailRecipientParams{
 			MailID:      mailID,
 			EveEntityID: entity.ID,
 		}
-		if err := s.q.CreateMailRecipient(ctx, arg); err != nil {
+		if err := s.r.CreateMailRecipient(ctx, arg); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *Service) fetchAndStoreMailLabels(ctx context.Context, mail repository.Mail, labelIDs []int32) error {
+func (s *Service) fetchAndStoreMailLabels(ctx context.Context, mail sqlc.repository.Mail, labelIDs []int32) error {
 	labelIDs2 := islices.ConvertNumeric[int32, int64](labelIDs)
-	labelArg := repository.ListMailLabelsByIDsParams{
+	labelArg := sqlc.ListMailLabelsByIDsParams{
 		CharacterID: mail.CharacterID,
 		Ids:         labelIDs2,
 	}
-	labels, err := s.q.ListMailLabelsByIDs(ctx, labelArg)
+	labels, err := s.r.ListMailLabelsByIDs(ctx, labelArg)
 	if err != nil {
 		return fmt.Errorf("failed to resolve mail labels %v: %s", labelIDs, err)
 	}
 	for _, label := range labels {
-		arg := repository.CreateMailMailLabelParams{
+		arg := sqlc.CreateMailMailLabelParams{
 			MailLabelID: label.ID, MailID: mail.ID,
 		}
-		if err := s.q.CreateMailMailLabel(ctx, arg); err != nil {
+		if err := s.r.CreateMailMailLabel(ctx, arg); err != nil {
 			return err
 		}
 	}
@@ -543,7 +460,7 @@ func (s *Service) fetchAndStoreMailLabels(ctx context.Context, mail repository.M
 }
 
 func (s *Service) determineMailIDs(characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) (*set.Set[int32], *set.Set[int32], error) {
-	ids, err := s.q.ListMailIDs(context.Background(), int64(characterID))
+	ids, err := s.r.ListMailIDs(context.Background(), int64(characterID))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -558,7 +475,7 @@ func (s *Service) determineMailIDs(characterID int32, headers []esi.GetCharacter
 }
 
 func (s *Service) GetMailLabelUnreadCounts(characterID int32) (map[int32]int, error) {
-	rows, err := s.q.GetMailLabelUnreadCounts(context.Background(), int64(characterID))
+	rows, err := s.r.GetMailLabelUnreadCounts(context.Background(), int64(characterID))
 	if err != nil {
 		return nil, err
 	}
@@ -570,7 +487,7 @@ func (s *Service) GetMailLabelUnreadCounts(characterID int32) (map[int32]int, er
 }
 
 func (s *Service) GetMailListUnreadCounts(characterID int32) (map[int32]int, error) {
-	rows, err := s.q.GetMailListUnreadCounts(context.Background(), int64(characterID))
+	rows, err := s.r.GetMailListUnreadCounts(context.Background(), int64(characterID))
 	if err != nil {
 		return nil, err
 	}
@@ -582,7 +499,7 @@ func (s *Service) GetMailListUnreadCounts(characterID int32) (map[int32]int, err
 }
 
 func (s *Service) ListMailLists(characterID int32) ([]EveEntity, error) {
-	ll, err := s.q.ListMailLists(context.Background(), int64(characterID))
+	ll, err := s.r.ListMailLists(context.Background(), int64(characterID))
 	if err != nil {
 		return nil, err
 	}
@@ -599,25 +516,25 @@ func (s *Service) ListMailIDsForLabelOrdered(characterID int32, labelID int32) (
 	ctx := context.Background()
 	switch labelID {
 	case LabelAll:
-		ids, err := s.q.ListMailIDsOrdered(ctx, int64(characterID))
+		ids, err := s.r.ListMailIDsOrdered(ctx, int64(characterID))
 		if err != nil {
 			return nil, err
 		}
 		ids2 := islices.ConvertNumeric[int64, int32](ids)
 		return ids2, nil
 	case LabelNone:
-		ids, err := s.q.ListMailIDsNoLabelOrdered(ctx, int64(characterID))
+		ids, err := s.r.ListMailIDsNoLabelOrdered(ctx, int64(characterID))
 		if err != nil {
 			return nil, err
 		}
 		ids2 := islices.ConvertNumeric[int64, int32](ids)
 		return ids2, nil
 	default:
-		arg := repository.ListMailIDsForLabelOrderedParams{
+		arg := sqlc.ListMailIDsForLabelOrderedParams{
 			CharacterID: int64(characterID),
 			LabelID:     int64(labelID),
 		}
-		ids, err := s.q.ListMailIDsForLabelOrdered(ctx, arg)
+		ids, err := s.r.ListMailIDsForLabelOrdered(ctx, arg)
 		if err != nil {
 			return nil, err
 		}
@@ -627,11 +544,11 @@ func (s *Service) ListMailIDsForLabelOrdered(characterID int32, labelID int32) (
 }
 
 func (s *Service) ListMailIDsForListOrdered(characterID int32, listID int32) ([]int32, error) {
-	arg := repository.ListMailIDsForListParams{
+	arg := sqlc.ListMailIDsForListParams{
 		CharacterID: int64(characterID),
 		EveEntityID: int64(listID),
 	}
-	ids, err := s.q.ListMailIDsForList(context.Background(), arg)
+	ids, err := s.r.ListMailIDsForList(context.Background(), arg)
 	if err != nil {
 		return nil, err
 	}

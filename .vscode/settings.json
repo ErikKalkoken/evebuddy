@@ -23,6 +23,7 @@
         "jarcoal",
         "jmoiron",
         "mattn",
+        "sqlc",
         "sqlx",
         "stretchr",
         "testfactory"

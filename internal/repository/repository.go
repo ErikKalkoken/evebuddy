@@ -2,16 +2,21 @@ package repository
 
 import (
 	"database/sql"
-	_ "embed"
+	"example/evebuddy/internal/repository/sqlc"
 	"fmt"
 	"log/slog"
 	"net/url"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
-//go:embed schema.sql
-var schema string
+type Repository struct {
+	q  *sqlc.Queries
+	db sqlc.DBTX
+}
+
+func New(db sqlc.DBTX) *Repository {
+	r := &Repository{q: sqlc.New(db), db: db}
+	return r
+}
 
 // ConnectDB initializes the database and returns it.
 func ConnectDB(dataSourceName string, create bool) (*sql.DB, error) {
@@ -27,23 +32,13 @@ func ConnectDB(dataSourceName string, create bool) (*sql.DB, error) {
 	}
 	slog.Info("Connected to database")
 	if create {
-		_, err = db.Exec(schema)
+		_, err = db.Exec(sqlc.Schema())
 		if err != nil {
 			return nil, err
 		}
 
 	}
 	return db, nil
-}
-
-type Repository struct {
-	q  *Queries
-	db DBTX
-}
-
-func NewRepository(db DBTX) *Repository {
-	r := &Repository{q: New(db), db: db}
-	return r
 }
 
 // TruncateTables will purge data from all tables. This is meant for tests.

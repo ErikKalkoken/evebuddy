@@ -1,25 +1,24 @@
-package service_test
+package repository_test
 
 import (
 	"example/evebuddy/internal/repository"
-	"example/evebuddy/internal/service"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSetting(t *testing.T) {
-	db, q, _ := setUpDB()
+	db, _, _ := setUpDB()
 	defer db.Close()
-	s := service.NewService(q)
+	r := repository.New(db)
 	t.Run("can create new string", func(t *testing.T) {
 		// given
 		repository.TruncateTables(db)
 		// when
-		err := s.SetSettingString("alpha", "john")
+		err := r.SetSettingString("alpha", "john")
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.GetSettingString("alpha")
+			v, err := r.GetSettingString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "john", v)
 			}
@@ -29,10 +28,10 @@ func TestSetting(t *testing.T) {
 		// given
 		repository.TruncateTables(db)
 		// when
-		err := s.SetSettingInt32("alpha", 42)
+		err := r.SetSettingInt32("alpha", 42)
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.GetSettingInt32("alpha")
+			v, err := r.GetSettingInt32("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, int32(42), v)
 			}
@@ -41,15 +40,15 @@ func TestSetting(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		repository.TruncateTables(db)
-		err := s.SetSettingString("alpha", "john")
+		err := r.SetSettingString("alpha", "john")
 		if err != nil {
 			panic(err)
 		}
 		// when
-		err = s.SetSettingString("alpha", "peter")
+		err = r.SetSettingString("alpha", "peter")
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.GetSettingString("alpha")
+			v, err := r.GetSettingString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "peter", v)
 			}
@@ -59,7 +58,7 @@ func TestSetting(t *testing.T) {
 		// given
 		repository.TruncateTables(db)
 		// when
-		v, err := s.GetSettingString("alpha")
+		v, err := r.GetSettingString("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "", v)
@@ -69,7 +68,7 @@ func TestSetting(t *testing.T) {
 		// given
 		repository.TruncateTables(db)
 		// when
-		v, err := s.GetSettingInt32("alpha")
+		v, err := r.GetSettingInt32("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(0), v)
@@ -78,15 +77,15 @@ func TestSetting(t *testing.T) {
 	t.Run("can delete existing key", func(t *testing.T) {
 		// given
 		repository.TruncateTables(db)
-		err := s.SetSettingString("alpha", "abc")
+		err := r.SetSettingString("alpha", "abc")
 		if err != nil {
 			panic(err)
 		}
 		// when
-		err = s.DeleteSetting("alpha")
+		err = r.DeleteSetting("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.GetSettingString("alpha")
+			v, err := r.GetSettingString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}
@@ -96,10 +95,10 @@ func TestSetting(t *testing.T) {
 		// given
 		repository.TruncateTables(db)
 		// when
-		err := s.DeleteSetting("alpha")
+		err := r.DeleteSetting("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.GetSettingString("alpha")
+			v, err := r.GetSettingString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}

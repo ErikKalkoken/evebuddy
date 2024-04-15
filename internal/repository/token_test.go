@@ -1,9 +1,8 @@
-package service_test
+package repository_test
 
 import (
 	"context"
 	"example/evebuddy/internal/repository"
-	"example/evebuddy/internal/service"
 	"testing"
 	"time"
 
@@ -13,13 +12,13 @@ import (
 func TestToken(t *testing.T) {
 	db, q, factory := setUpDB()
 	defer db.Close()
-	s := service.NewService(q)
+	s := repository.New(db)
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		repository.TruncateTables(db)
 		c := factory.CreateCharacter()
-		o := service.Token{
+		o := repository.Token{
 			AccessToken:  "access",
 			CharacterID:  int32(c.ID),
 			ExpiresAt:    time.Now(),
@@ -27,7 +26,7 @@ func TestToken(t *testing.T) {
 			TokenType:    "xxx",
 		}
 		// when
-		err := s.UpdateOrCreateToken(&o)
+		err := s.UpdateOrCreateToken(ctx, &o)
 		// then
 		assert.NoError(t, err)
 		r, err := q.GetToken(ctx, c.ID)
@@ -40,19 +39,19 @@ func TestToken(t *testing.T) {
 		// given
 		repository.TruncateTables(db)
 		c := factory.CreateCharacter()
-		o := service.Token{
+		o := repository.Token{
 			AccessToken:  "access",
 			CharacterID:  int32(c.ID),
 			ExpiresAt:    time.Now(),
 			RefreshToken: "refresh",
 			TokenType:    "xxx",
 		}
-		if err := s.UpdateOrCreateToken(&o); err != nil {
+		if err := s.UpdateOrCreateToken(ctx, &o); err != nil {
 			panic(err)
 		}
 		o.AccessToken = "changed"
 		// when
-		err := s.UpdateOrCreateToken(&o)
+		err := s.UpdateOrCreateToken(ctx, &o)
 		// then
 		assert.NoError(t, err)
 		r, err := q.GetToken(ctx, c.ID)

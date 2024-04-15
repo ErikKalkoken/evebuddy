@@ -1,8 +1,8 @@
 version: "2"
 sql:
   - engine: "sqlite"
-    queries: "internal/repository/queries"
-    schema: "internal/repository/schema.sql"
+    queries: "internal/repository/sqlc/queries"
+    schema: "internal/repository/sqlc/schema.sql"
     gen:
       go:
-        out: "internal/repository"
+        out: "internal/repository/sqlc"

@@ -1,8 +1,8 @@
-package service
+package repository
 
 import (
 	"context"
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/repository/sqlc"
 )
 
 // Special mail label IDs
@@ -24,7 +24,7 @@ type MailLabel struct {
 	UnreadCount int
 }
 
-func mailLabelFromDBModel(l repository.MailLabel) MailLabel {
+func mailLabelFromDBModel(l sqlc.MailLabel) MailLabel {
 	return MailLabel{
 		ID:          l.ID,
 		CharacterID: int32(l.CharacterID),
@@ -35,8 +35,8 @@ func mailLabelFromDBModel(l repository.MailLabel) MailLabel {
 	}
 }
 
-func (s *Service) ListMailLabels(characterID int32) ([]MailLabel, error) {
-	ll, err := s.q.ListMailLabels(context.Background(), int64(characterID))
+func (r *Repository) ListMailLabels(ctx context.Context, characterID int32) ([]MailLabel, error) {
+	ll, err := r.q.ListMailLabels(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}

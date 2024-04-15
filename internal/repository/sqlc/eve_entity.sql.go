@@ -3,7 +3,7 @@
 //   sqlc v1.26.0
 // source: eve_entity.sql
 
-package repository
+package sqlc
 
 import (
 	"context"

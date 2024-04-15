@@ -1,4 +1,4 @@
-package service
+package repository
 
 import (
 	"bytes"
@@ -7,13 +7,13 @@ import (
 	"encoding/gob"
 	"errors"
 
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/repository/sqlc"
 )
 
 // GetSetting returns the value for a settings key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Service) GetSettingInt32(key string) (int32, error) {
-	obj, err := s.q.GetSetting(context.Background(), key)
+func (r *Repository) GetSettingInt32(key string) (int32, error) {
+	obj, err := r.q.GetSetting(context.Background(), key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, nil
@@ -25,8 +25,8 @@ func (s *Service) GetSettingInt32(key string) (int32, error) {
 
 // GetSetting returns the value for a settings key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Service) GetSettingString(key string) (string, error) {
-	obj, err := s.q.GetSetting(context.Background(), key)
+func (r *Repository) GetSettingString(key string) (string, error) {
+	obj, err := r.q.GetSetting(context.Background(), key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", nil
@@ -37,32 +37,32 @@ func (s *Service) GetSettingString(key string) (string, error) {
 }
 
 // SetSetting sets the value for a settings key.
-func (s *Service) SetSettingInt32(key string, value int32) error {
+func (r *Repository) SetSettingInt32(key string, value int32) error {
 	bb, err := bytesFromAny(value)
 	if err != nil {
 		return err
 	}
-	if err := s.setSetting(key, bb); err != nil {
+	if err := r.setSetting(key, bb); err != nil {
 		return err
 	}
 	return nil
 }
 
 // SetSetting sets the value for a settings key.
-func (s *Service) SetSettingString(key string, value string) error {
+func (r *Repository) SetSettingString(key string, value string) error {
 	bb, err := bytesFromAny(value)
 	if err != nil {
 		return err
 	}
-	if err := s.setSetting(key, bb); err != nil {
+	if err := r.setSetting(key, bb); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *Service) setSetting(key string, bb []byte) error {
+func (s *Repository) setSetting(key string, bb []byte) error {
 	ctx := context.Background()
-	arg := repository.CreateSettingParams{
+	arg := sqlc.CreateSettingParams{
 		Value: bb,
 		Key:   key,
 	}
@@ -70,7 +70,7 @@ func (s *Service) setSetting(key string, bb []byte) error {
 		if !isSqlite3ErrConstraint(err) {
 			return err
 		}
-		arg := repository.UpdateSettingParams{
+		arg := sqlc.UpdateSettingParams{
 			Value: bb,
 			Key:   key,
 		}
@@ -100,6 +100,6 @@ func bytesFromAny[T any](value T) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (s *Service) DeleteSetting(key string) error {
+func (s *Repository) DeleteSetting(key string) error {
 	return s.q.DeleteSetting(context.Background(), key)
 }
