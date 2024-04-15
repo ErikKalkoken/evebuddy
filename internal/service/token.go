@@ -36,7 +36,7 @@ func tokenFromDBModel(t repository.Token) Token {
 
 // GetValidToken returns a valid token for a character. Convenience function.
 func (s *Service) GetValidToken(characterID int32) (*Token, error) {
-	t, err := s.queries.GetToken(context.Background(), int64(characterID))
+	t, err := s.q.GetToken(context.Background(), int64(characterID))
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (s *Service) UpdateOrCreateToken(t *Token) error {
 		RefreshToken: t.RefreshToken,
 		TokenType:    t.TokenType,
 	}
-	err := s.queries.UpdateOrCreateToken(context.Background(), arg)
+	err := s.q.UpdateOrCreateToken(context.Background(), arg)
 	return err
 }
 

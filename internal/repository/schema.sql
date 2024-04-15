@@ -23,7 +23,6 @@ CREATE TABLE characters (
     FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL
 );
-CREATE INDEX mails_timestamp_idx ON characters (name ASC);
 
 CREATE TABLE mail_lists (
     character_id INTEGER NOT NULL,

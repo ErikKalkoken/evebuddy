@@ -26,6 +26,7 @@ func (l *logLevelFlag) Set(value string) error {
 }
 
 var levelFlag logLevelFlag
+var createDBFlag = flag.Bool("createdb", false, "whether to create the database")
 
 func init() {
 	levelFlag.value = slog.LevelInfo

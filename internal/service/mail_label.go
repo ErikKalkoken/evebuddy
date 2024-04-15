@@ -36,7 +36,7 @@ func mailLabelFromDBModel(l repository.MailLabel) MailLabel {
 }
 
 func (s *Service) ListMailLabels(characterID int32) ([]MailLabel, error) {
-	ll, err := s.queries.ListMailLabels(context.Background(), int64(characterID))
+	ll, err := s.q.ListMailLabels(context.Background(), int64(characterID))
 	if err != nil {
 		return nil, err
 	}

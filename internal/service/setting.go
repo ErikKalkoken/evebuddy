@@ -13,7 +13,7 @@ import (
 // GetSetting returns the value for a settings key, when it exists.
 // Otherwise it returns it's zero value.
 func (s *Service) GetSettingInt32(key string) (int32, error) {
-	obj, err := s.queries.GetSetting(context.Background(), key)
+	obj, err := s.q.GetSetting(context.Background(), key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, nil
@@ -26,7 +26,7 @@ func (s *Service) GetSettingInt32(key string) (int32, error) {
 // GetSetting returns the value for a settings key, when it exists.
 // Otherwise it returns it's zero value.
 func (s *Service) GetSettingString(key string) (string, error) {
-	obj, err := s.queries.GetSetting(context.Background(), key)
+	obj, err := s.q.GetSetting(context.Background(), key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", nil
@@ -46,7 +46,7 @@ func (s *Service) SetSettingInt32(key string, value int32) error {
 		Value: bb,
 		Key:   key,
 	}
-	if err := s.queries.UpdateOrCreateSetting(context.Background(), arg); err != nil {
+	if err := s.q.UpdateOrCreateSetting(context.Background(), arg); err != nil {
 		return err
 	}
 	return nil
@@ -62,7 +62,7 @@ func (s *Service) SetSettingString(key string, value string) error {
 		Value: bb,
 		Key:   key,
 	}
-	if err := s.queries.UpdateOrCreateSetting(context.Background(), arg); err != nil {
+	if err := s.q.UpdateOrCreateSetting(context.Background(), arg); err != nil {
 		return err
 	}
 	return nil
@@ -88,5 +88,5 @@ func bytesFromAny[T any](value T) ([]byte, error) {
 }
 
 func (s *Service) DeleteSetting(key string) error {
-	return s.queries.DeleteSetting(context.Background(), key)
+	return s.q.DeleteSetting(context.Background(), key)
 }

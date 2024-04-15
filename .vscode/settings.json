@@ -9,6 +9,7 @@
     ],
     "cSpell.ignoreWords": [
         "AUTOINCREMENT",
+        "DBTX",
         "Equalf",
         "Queryx",
         "antihax",
@@ -30,4 +31,5 @@
         "-local",
         "example/",
     ],
+    "go.coverOnSingleTestFile": true,
 }

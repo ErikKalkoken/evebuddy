@@ -113,7 +113,7 @@ func (m *manageArea) showAddCharacterDialog() {
 	go func() {
 		defer cancel()
 		defer dialog.Hide()
-		err := m.ui.service.CreateOrUpdateCharacterFromSSO(ctx)
+		err := m.ui.service.UpdateOrCreateCharacterFromSSO(ctx)
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
 		} else {

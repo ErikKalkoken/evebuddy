@@ -14,7 +14,8 @@ func main() {
 	flag.Parse()
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-	db, err := repository.NewDB("storage.sqlite")
+	slog.Info("current flags", "createDB", *createDBFlag)
+	db, err := repository.ConnectDB("storage.sqlite", *createDBFlag)
 	if err != nil {
 		panic(err)
 	}

@@ -147,7 +147,7 @@ func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 			Category: eveEntityESCategoryFromESICategory(entity.Category),
 			Name:     entity.Name,
 		}
-		err := s.queries.CreateEveEntity(ctx, arg)
+		_, err := s.q.CreateEveEntity(ctx, arg)
 		if err != nil {
 			return nil, err
 		}
@@ -157,7 +157,7 @@ func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 }
 
 func (s *Service) missingEveEntityIDs(ctx context.Context, ids []int32) (*set.Set[int32], error) {
-	currentIDs, err := s.queries.ListEveEntityIDs(ctx)
+	currentIDs, err := s.q.ListEveEntityIDs(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (s *Service) missingEveEntityIDs(ctx context.Context, ids []int32) (*set.Se
 }
 
 func (s *Service) SearchEveEntitiesByName(partial string) ([]EveEntity, error) {
-	ee, err := s.queries.ListEveEntitiesByPartialName(context.Background(), partial)
+	ee, err := s.q.ListEveEntitiesByPartialName(context.Background(), fmt.Sprintf("%%%s%%", partial))
 	if err != nil {
 		return nil, err
 	}

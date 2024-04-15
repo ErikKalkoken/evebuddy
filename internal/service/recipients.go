@@ -214,7 +214,7 @@ func (rr *Recipients) buildMailRecipients(s *Service) ([]esi.PostCharactersChara
 			Name:     r.name,
 			Category: eveEntityDBModelCategoryFromCategory(c),
 		}
-		e, err := s.queries.GetEveEntityByNameAndCategory(context.Background(), arg)
+		e, err := s.q.GetEveEntityByNameAndCategory(context.Background(), arg)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				names = append(names, r.name)
@@ -271,7 +271,8 @@ func (s *Service) resolveNamesRemotely(names []string) error {
 	}
 	for _, e := range ee {
 		if missing.Has(int32(e.ID)) {
-			if err := s.queries.CreateEveEntity(ctx, e); err != nil {
+			_, err := s.q.CreateEveEntity(ctx, e)
+			if err != nil {
 				return err
 			}
 		}
@@ -285,7 +286,7 @@ func (s *Service) resolveNamesRemotely(names []string) error {
 func (s *Service) buildMailRecipientsFromNames(names []string) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
 	mm := make([]esi.PostCharactersCharacterIdMailRecipient, 0, len(names))
 	for _, n := range names {
-		ee, err := s.queries.ListEveEntitiesByName(context.Background(), n)
+		ee, err := s.q.ListEveEntitiesByName(context.Background(), n)
 		if err != nil {
 			return nil, err
 		}

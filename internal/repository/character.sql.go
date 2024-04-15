@@ -11,6 +11,75 @@ import (
 	"time"
 )
 
+const createCharacter = `-- name: CreateCharacter :one
+INSERT INTO characters (
+    alliance_id,
+    corporation_id,
+    description,
+    faction_id,
+    mail_updated_at,
+    name,
+    security_status,
+    skill_points,
+    wallet_balance,
+    id,
+    birthday,
+    gender
+)
+VALUES (
+    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?
+)
+RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id, id, mail_updated_at, name, security_status, skill_points, wallet_balance
+`
+
+type CreateCharacterParams struct {
+	AllianceID     sql.NullInt64
+	CorporationID  int64
+	Description    string
+	FactionID      sql.NullInt64
+	MailUpdatedAt  sql.NullTime
+	Name           string
+	SecurityStatus float64
+	SkillPoints    sql.NullInt64
+	WalletBalance  sql.NullFloat64
+	ID             int64
+	Birthday       time.Time
+	Gender         string
+}
+
+func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams) (Character, error) {
+	row := q.db.QueryRowContext(ctx, createCharacter,
+		arg.AllianceID,
+		arg.CorporationID,
+		arg.Description,
+		arg.FactionID,
+		arg.MailUpdatedAt,
+		arg.Name,
+		arg.SecurityStatus,
+		arg.SkillPoints,
+		arg.WalletBalance,
+		arg.ID,
+		arg.Birthday,
+		arg.Gender,
+	)
+	var i Character
+	err := row.Scan(
+		&i.AllianceID,
+		&i.Birthday,
+		&i.CorporationID,
+		&i.Description,
+		&i.Gender,
+		&i.FactionID,
+		&i.ID,
+		&i.MailUpdatedAt,
+		&i.Name,
+		&i.SecurityStatus,
+		&i.SkillPoints,
+		&i.WalletBalance,
+	)
+	return i, err
+}
+
 const deleteCharacter = `-- name: DeleteCharacter :exec
 DELETE FROM characters
 WHERE id = ?
@@ -145,7 +214,7 @@ FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
-ORDER BY name
+ORDER BY characters.name
 `
 
 type ListCharactersRow struct {
@@ -239,84 +308,4 @@ func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams
 		arg.WalletBalance,
 	)
 	return err
-}
-
-const updateOrCreateCharacter = `-- name: UpdateOrCreateCharacter :one
-INSERT INTO characters (
-    alliance_id,
-    corporation_id,
-    description,
-    faction_id,
-    mail_updated_at,
-    name,
-    security_status,
-    skill_points,
-    wallet_balance,
-    id,
-    birthday,
-    gender
-)
-VALUES (
-    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?
-)
-ON CONFLICT (id) DO
-UPDATE SET
-    alliance_id = ?,
-    corporation_id = ?,
-    description = ?,
-    faction_id = ?,
-    mail_updated_at = ?,
-    name = ?,
-    security_status = ?,
-    skill_points = ?,
-    wallet_balance = ?
-RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id, id, mail_updated_at, name, security_status, skill_points, wallet_balance
-`
-
-type UpdateOrCreateCharacterParams struct {
-	AllianceID     sql.NullInt64
-	CorporationID  int64
-	Description    string
-	FactionID      sql.NullInt64
-	MailUpdatedAt  sql.NullTime
-	Name           string
-	SecurityStatus float64
-	SkillPoints    sql.NullInt64
-	WalletBalance  sql.NullFloat64
-	ID             int64
-	Birthday       time.Time
-	Gender         string
-}
-
-func (q *Queries) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreateCharacterParams) (Character, error) {
-	row := q.db.QueryRowContext(ctx, updateOrCreateCharacter,
-		arg.AllianceID,
-		arg.CorporationID,
-		arg.Description,
-		arg.FactionID,
-		arg.MailUpdatedAt,
-		arg.Name,
-		arg.SecurityStatus,
-		arg.SkillPoints,
-		arg.WalletBalance,
-		arg.ID,
-		arg.Birthday,
-		arg.Gender,
-	)
-	var i Character
-	err := row.Scan(
-		&i.AllianceID,
-		&i.Birthday,
-		&i.CorporationID,
-		&i.Description,
-		&i.Gender,
-		&i.FactionID,
-		&i.ID,
-		&i.MailUpdatedAt,
-		&i.Name,
-		&i.SecurityStatus,
-		&i.SkillPoints,
-		&i.WalletBalance,
-	)
-	return i, err
 }

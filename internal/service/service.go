@@ -24,7 +24,7 @@ var esiScopes = []string{
 type Service struct {
 	httpClient *http.Client
 	esiClient  *goesi.APIClient
-	queries    *repository.Queries
+	q          *repository.Queries
 }
 
 func NewService(queries *repository.Queries) *Service {
@@ -36,7 +36,7 @@ func NewService(queries *repository.Queries) *Service {
 	s := Service{
 		httpClient: httpClient,
 		esiClient:  esiClient,
-		queries:    queries,
+		q:          queries,
 	}
 	return &s
 }

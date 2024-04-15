@@ -13,28 +13,37 @@ import (
 //go:embed schema.sql
 var schema string
 
-// NewDB initializes the database and returns it.
-func NewDB(dataSourceName string) (*sql.DB, error) {
-	u, err := url.ParseRequestURI(dataSourceName)
-	if err != nil {
-		return nil, err
-	}
-	v := u.Query()
+// ConnectDB initializes the database and returns it.
+func ConnectDB(dataSourceName string, create bool) (*sql.DB, error) {
+	v := url.Values{}
 	v.Add("_fk", "on")
 	v.Add("_journal_mode", "WAL")
 	v.Add("_synchronous", "normal")
-	dsn := fmt.Sprintf("%s:%s?%s", u.Scheme, u.Opaque, v.Encode())
+	dsn := fmt.Sprintf("%s?%s", dataSourceName, v.Encode())
 	slog.Debug("Connecting to sqlite", "dsn", dsn)
 	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, err
 	}
 	slog.Info("Connected to database")
-	_, err = db.Exec(schema)
-	if err != nil {
-		return nil, err
+	if create {
+		_, err = db.Exec(schema)
+		if err != nil {
+			return nil, err
+		}
+
 	}
 	return db, nil
+}
+
+type Repository struct {
+	q  *Queries
+	db DBTX
+}
+
+func NewRepository(db DBTX) *Repository {
+	r := &Repository{q: New(db), db: db}
+	return r
 }
 
 // TruncateTables will purge data from all tables. This is meant for tests.
