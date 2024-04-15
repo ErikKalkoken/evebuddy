@@ -6,6 +6,7 @@ import (
 	"example/evebuddy/internal/repository"
 	"fmt"
 	"slices"
+	"time"
 )
 
 type Factory struct {
@@ -17,44 +18,49 @@ func New(q *repository.Queries) Factory {
 	return f
 }
 
-// // CreateCharacter is a test factory for character objects.
-// func (f factory) CreateCharacter(args ...repository.Character) repository.Character {
-// 	var c repository.Character
-// 	if len(args) > 0 {
-// 		c = args[0]
-// 	}
-// 	if c.ID == 0 {
-// 		ids, err := f.q.ListCharacterIDs()
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 		if len(ids) == 0 {
-// 			c.ID = 1
-// 		} else {
-// 			c.ID = slices.Max(ids) + 1
-// 		}
-// 	}
-// 	if c.Name == "" {
-// 		c.Name = fmt.Sprintf("Generated character #%d", c.ID)
-// 	}
-// 	if c.Corporation.ID == 0 {
-// 		c.Corporation = f.CreateEveEntity(repository.EveEntity{Category: repository.EveEntityCorporation})
-// 	}
-// 	if c.Birthday.IsZero() {
-// 		c.Birthday = time.Now()
-// 	}
-// 	if c.Description == "" {
-// 		c.Description = "Lorem Ipsum"
-// 	}
-// 	// if c.MailUpdatedAt.IsZero() {
-// 	// 	c.MailUpdatedAt = time.Now()
-// 	// }
-// 	err := c.Save()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	return c
-// }
+// CreateCharacter is a test factory for character objects.
+func (f Factory) CreateCharacter(args ...repository.CreateCharacterParams) repository.Character {
+	ctx := context.Background()
+	var arg repository.CreateCharacterParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		ids, err := f.q.ListCharacterIDs(ctx)
+		if err != nil {
+			panic(err)
+		}
+		if len(ids) == 0 {
+			arg.ID = 1
+		} else {
+			arg.ID = slices.Max(ids) + 1
+		}
+	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Generated character #%d", arg.ID)
+	}
+	if arg.CorporationID == 0 {
+		e, err := f.q.CreateEveEntity(ctx, repository.CreateEveEntityParams{Category: repository.EveEntityCorporation})
+		if err != nil {
+			panic(err)
+		}
+		arg.CorporationID = e.ID
+	}
+	if arg.Birthday.IsZero() {
+		arg.Birthday = time.Now()
+	}
+	if arg.Description == "" {
+		arg.Description = "Lorem Ipsum"
+	}
+	// if c.MailUpdatedAt.IsZero() {
+	// 	c.MailUpdatedAt = time.Now()
+	// }
+	character, err := f.q.CreateCharacter(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	return character
+}
 
 // CreateEveEntity is a test factory for EveEntity objects.
 func (f Factory) CreateEveEntity(args ...repository.CreateEveEntityParams) repository.EveEntity {

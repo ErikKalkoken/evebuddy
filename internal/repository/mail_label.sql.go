@@ -10,6 +10,38 @@ import (
 	"strings"
 )
 
+const createMailLabel = `-- name: CreateMailLabel :exec
+INSERT INTO mail_labels (
+    color,
+    name,
+    unread_count,
+    character_id,
+    label_id
+)
+VALUES (
+    ?, ?, ?, ?, ?
+)
+`
+
+type CreateMailLabelParams struct {
+	Color       string
+	Name        string
+	UnreadCount int64
+	CharacterID int64
+	LabelID     int64
+}
+
+func (q *Queries) CreateMailLabel(ctx context.Context, arg CreateMailLabelParams) error {
+	_, err := q.db.ExecContext(ctx, createMailLabel,
+		arg.Color,
+		arg.Name,
+		arg.UnreadCount,
+		arg.CharacterID,
+		arg.LabelID,
+	)
+	return err
+}
+
 const getMailLabel = `-- name: GetMailLabel :one
 SELECT id, character_id, color, label_id, name, unread_count
 FROM mail_labels
@@ -125,26 +157,17 @@ func (q *Queries) ListMailLabelsByIDs(ctx context.Context, arg ListMailLabelsByI
 	return items, nil
 }
 
-const updateOrCreateMailLabel = `-- name: UpdateOrCreateMailLabel :exec
-INSERT INTO mail_labels (
-    color,
-    name,
-    unread_count,
-    character_id,
-    label_id
-)
-VALUES (
-    ?, ?, ?, ?, ?
-)
-ON CONFLICT (character_id, label, id) DO
-UPDATE
+const updateMailLabel = `-- name: UpdateMailLabel :exec
+UPDATE mail_labels
 SET
     color = ?,
     name = ?,
     unread_count = ?
+WHERE character_id = ?
+AND label_id = ?
 `
 
-type UpdateOrCreateMailLabelParams struct {
+type UpdateMailLabelParams struct {
 	Color       string
 	Name        string
 	UnreadCount int64
@@ -152,8 +175,8 @@ type UpdateOrCreateMailLabelParams struct {
 	LabelID     int64
 }
 
-func (q *Queries) UpdateOrCreateMailLabel(ctx context.Context, arg UpdateOrCreateMailLabelParams) error {
-	_, err := q.db.ExecContext(ctx, updateOrCreateMailLabel,
+func (q *Queries) UpdateMailLabel(ctx context.Context, arg UpdateMailLabelParams) error {
+	_, err := q.db.ExecContext(ctx, updateMailLabel,
 		arg.Color,
 		arg.Name,
 		arg.UnreadCount,

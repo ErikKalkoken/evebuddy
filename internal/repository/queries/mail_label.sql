@@ -1,3 +1,15 @@
+-- name: CreateMailLabel :exec
+INSERT INTO mail_labels (
+    color,
+    name,
+    unread_count,
+    character_id,
+    label_id
+)
+VALUES (
+    ?, ?, ?, ?, ?
+);
+
 -- name: GetMailLabel :one
 SELECT *
 FROM mail_labels
@@ -15,20 +27,11 @@ SELECT *
 FROM mail_labels
 WHERE character_id = ? AND label_id IN (sqlc.slice('ids'));
 
--- name: UpdateOrCreateMailLabel :exec
-INSERT INTO mail_labels (
-    color,
-    name,
-    unread_count,
-    character_id,
-    label_id
-)
-VALUES (
-    ?, ?, ?, ?, ?
-)
-ON CONFLICT (character_id, label, id) DO
-UPDATE
+-- name: UpdateMailLabel :exec
+UPDATE mail_labels
 SET
     color = ?,
     name = ?,
-    unread_count = ?;
+    unread_count = ?
+WHERE character_id = ?
+AND label_id = ?;

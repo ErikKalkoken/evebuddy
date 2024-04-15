@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"example/evebuddy/internal/helper/set"
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/repository"
@@ -303,15 +305,27 @@ func (s *Service) updateMailLabels(token *Token) error {
 	labels := ll.Labels
 	slog.Info("Received mail labels from ESI", "count", len(labels), "characterID", token.CharacterID)
 	for _, o := range labels {
-		arg := repository.UpdateOrCreateMailLabelParams{
+		arg := repository.CreateMailLabelParams{
 			CharacterID: int64(token.CharacterID),
 			LabelID:     int64(o.LabelId),
 			Color:       o.Color,
 			Name:        o.Name,
 			UnreadCount: int64(o.UnreadCount),
 		}
-		if err := s.q.UpdateOrCreateMailLabel(ctx, arg); err != nil {
-			slog.Error("Failed to update mail label", "labelID", o.LabelId, "characterID", token.CharacterID, "error", err)
+		if err := s.q.CreateMailLabel(ctx, arg); err != nil {
+			if !isSqlite3ErrConstraint(err) {
+				return err
+			}
+			arg := repository.UpdateMailLabelParams{
+				CharacterID: int64(token.CharacterID),
+				LabelID:     int64(o.LabelId),
+				Color:       o.Color,
+				Name:        o.Name,
+				UnreadCount: int64(o.UnreadCount),
+			}
+			if err := s.q.UpdateMailLabel(ctx, arg); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -327,13 +341,25 @@ func (s *Service) updateMailLists(token *Token) error {
 		return err
 	}
 	for _, o := range lists {
-		arg1 := repository.UpdateOrCreateEveEntityParams{
+		arg1 := repository.UpdateEveEntityParams{
 			ID:       int64(o.MailingListId),
 			Name:     o.Name,
 			Category: repository.EveEntityMailList,
 		}
-		if err := s.q.UpdateOrCreateEveEntity(ctx, arg1); err != nil {
-			return err
+		if err := s.q.UpdateEveEntity(ctx, arg1); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				arg := repository.CreateEveEntityParams{
+					ID:       int64(o.MailingListId),
+					Name:     o.Name,
+					Category: repository.EveEntityMailList,
+				}
+				_, err := s.q.CreateEveEntity(ctx, arg)
+				if err != nil {
+					return err
+				}
+			} else {
+				return err
+			}
 		}
 		arg2 := repository.CreateMailListParams{CharacterID: int64(token.CharacterID), EveEntityID: arg1.ID}
 		if err := s.q.CreateMailList(ctx, arg2); err != nil {

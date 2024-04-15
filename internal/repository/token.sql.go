@@ -10,6 +10,38 @@ import (
 	"time"
 )
 
+const createToken = `-- name: CreateToken :exec
+INSERT INTO tokens (
+    access_token,
+    expires_at,
+    refresh_token,
+    token_type,
+    character_id
+)
+VALUES (
+    ?, ?, ?, ?, ?
+)
+`
+
+type CreateTokenParams struct {
+	AccessToken  string
+	ExpiresAt    time.Time
+	RefreshToken string
+	TokenType    string
+	CharacterID  int64
+}
+
+func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) error {
+	_, err := q.db.ExecContext(ctx, createToken,
+		arg.AccessToken,
+		arg.ExpiresAt,
+		arg.RefreshToken,
+		arg.TokenType,
+		arg.CharacterID,
+	)
+	return err
+}
+
 const getToken = `-- name: GetToken :one
 SELECT access_token, character_id, expires_at, refresh_token, token_type
 FROM tokens
@@ -29,26 +61,17 @@ func (q *Queries) GetToken(ctx context.Context, characterID int64) (Token, error
 	return i, err
 }
 
-const updateOrCreateToken = `-- name: UpdateOrCreateToken :exec
-INSERT INTO tokens (
-    access_token,
-    expires_at,
-    refresh_token,
-    token_type,
-    character_id
-)
-VALUES (
-    ?, ?, ?, ?, ?
-)
-ON CONFLICT (character_id) DO
-UPDATE SET
+const updateToken = `-- name: UpdateToken :exec
+UPDATE tokens
+SET
     access_token = ?,
     expires_at = ?,
     refresh_token = ?,
     token_type = ?
+WHERE character_id = ?
 `
 
-type UpdateOrCreateTokenParams struct {
+type UpdateTokenParams struct {
 	AccessToken  string
 	ExpiresAt    time.Time
 	RefreshToken string
@@ -56,8 +79,8 @@ type UpdateOrCreateTokenParams struct {
 	CharacterID  int64
 }
 
-func (q *Queries) UpdateOrCreateToken(ctx context.Context, arg UpdateOrCreateTokenParams) error {
-	_, err := q.db.ExecContext(ctx, updateOrCreateToken,
+func (q *Queries) UpdateToken(ctx context.Context, arg UpdateTokenParams) error {
+	_, err := q.db.ExecContext(ctx, updateToken,
 		arg.AccessToken,
 		arg.ExpiresAt,
 		arg.RefreshToken,

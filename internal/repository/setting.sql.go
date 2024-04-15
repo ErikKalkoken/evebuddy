@@ -9,6 +9,24 @@ import (
 	"context"
 )
 
+const createSetting = `-- name: CreateSetting :exec
+INSERT INTO settings (
+    value,
+    key
+)
+VALUES (?, ?)
+`
+
+type CreateSettingParams struct {
+	Value []byte
+	Key   string
+}
+
+func (q *Queries) CreateSetting(ctx context.Context, arg CreateSettingParams) error {
+	_, err := q.db.ExecContext(ctx, createSetting, arg.Value, arg.Key)
+	return err
+}
+
 const deleteSetting = `-- name: DeleteSetting :exec
 DELETE FROM settings
 WHERE key = ?
@@ -32,22 +50,18 @@ func (q *Queries) GetSetting(ctx context.Context, key string) (Setting, error) {
 	return i, err
 }
 
-const updateOrCreateSetting = `-- name: UpdateOrCreateSetting :exec
-INSERT INTO settings (
-    value,
-    key
-)
-VALUES (?, ?)
-ON CONFLICT (key) DO
-UPDATE SET value = ?
+const updateSetting = `-- name: UpdateSetting :exec
+UPDATE settings
+SET value = ?
+WHERE key = ?
 `
 
-type UpdateOrCreateSettingParams struct {
+type UpdateSettingParams struct {
 	Value []byte
 	Key   string
 }
 
-func (q *Queries) UpdateOrCreateSetting(ctx context.Context, arg UpdateOrCreateSettingParams) error {
-	_, err := q.db.ExecContext(ctx, updateOrCreateSetting, arg.Value, arg.Key)
+func (q *Queries) UpdateSetting(ctx context.Context, arg UpdateSettingParams) error {
+	_, err := q.db.ExecContext(ctx, updateSetting, arg.Value, arg.Key)
 	return err
 }

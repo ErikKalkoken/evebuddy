@@ -42,11 +42,7 @@ func (s *Service) SetSettingInt32(key string, value int32) error {
 	if err != nil {
 		return err
 	}
-	arg := repository.UpdateOrCreateSettingParams{
-		Value: bb,
-		Key:   key,
-	}
-	if err := s.q.UpdateOrCreateSetting(context.Background(), arg); err != nil {
+	if err := s.setSetting(key, bb); err != nil {
 		return err
 	}
 	return nil
@@ -58,12 +54,29 @@ func (s *Service) SetSettingString(key string, value string) error {
 	if err != nil {
 		return err
 	}
-	arg := repository.UpdateOrCreateSettingParams{
+	if err := s.setSetting(key, bb); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) setSetting(key string, bb []byte) error {
+	ctx := context.Background()
+	arg := repository.CreateSettingParams{
 		Value: bb,
 		Key:   key,
 	}
-	if err := s.q.UpdateOrCreateSetting(context.Background(), arg); err != nil {
-		return err
+	if err := s.q.CreateSetting(ctx, arg); err != nil {
+		if !isSqlite3ErrConstraint(err) {
+			return err
+		}
+		arg := repository.UpdateSettingParams{
+			Value: bb,
+			Key:   key,
+		}
+		if err := s.q.UpdateSetting(ctx, arg); err != nil {
+			return err
+		}
 	}
 	return nil
 }

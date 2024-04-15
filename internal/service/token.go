@@ -56,15 +56,31 @@ func (s *Service) UpdateOrCreateToken(t *Token) error {
 	if t.CharacterID == 0 {
 		return errors.New("can not save token without character")
 	}
-	arg := repository.UpdateOrCreateTokenParams{
+	ctx := context.Background()
+	arg := repository.CreateTokenParams{
 		AccessToken:  t.AccessToken,
 		CharacterID:  int64(t.CharacterID),
 		ExpiresAt:    t.ExpiresAt,
 		RefreshToken: t.RefreshToken,
 		TokenType:    t.TokenType,
 	}
-	err := s.q.UpdateOrCreateToken(context.Background(), arg)
-	return err
+	err := s.q.CreateToken(ctx, arg)
+	if err != nil {
+		if !isSqlite3ErrConstraint(err) {
+			return err
+		}
+		arg := repository.UpdateTokenParams{
+			AccessToken:  t.AccessToken,
+			CharacterID:  int64(t.CharacterID),
+			ExpiresAt:    t.ExpiresAt,
+			RefreshToken: t.RefreshToken,
+			TokenType:    t.TokenType,
+		}
+		if err := s.q.UpdateToken(ctx, arg); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // EnsureValid will automatically try to refresh a token that is already or about to become invalid.
