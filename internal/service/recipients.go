@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"regexp"
@@ -212,7 +211,7 @@ func (rr *Recipients) buildMailRecipients(s *Service) ([]esi.PostCharactersChara
 		}
 		e, err := s.r.GetEveEntityByNameAndCategory(context.Background(), r.name, c)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
+			if errors.Is(err, repository.ErrNotFound) {
 				names = append(names, r.name)
 				continue
 			} else {

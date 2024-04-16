@@ -116,6 +116,9 @@ func (r *Repository) GetEveEntityByNameAndCategory(ctx context.Context, name str
 	}
 	e, err := r.q.GetEveEntityByNameAndCategory(ctx, arg)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrNotFound
+		}
 		return EveEntity{}, err
 	}
 	e2 := eveEntityFromDBModel(e)

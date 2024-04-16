@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/sqlc"
 	"fmt"
@@ -172,6 +174,9 @@ func (r *Repository) GetMail(ctx context.Context, characterID, mailID int32) (Ma
 	}
 	row, err := r.q.GetMail(ctx, arg)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Mail{}, ErrNotFound
+		}
 		return Mail{}, err
 	}
 	ll, err := r.q.GetMailLabels(ctx, row.Mail.ID)

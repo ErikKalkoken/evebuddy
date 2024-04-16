@@ -2,7 +2,7 @@
 package ui
 
 import (
-	"database/sql"
+	"errors"
 	"example/evebuddy/internal/repository"
 	"example/evebuddy/internal/service"
 	"fmt"
@@ -90,7 +90,7 @@ func NewUI(s *service.Service) *ui {
 	if characterID != 0 {
 		c, err := s.GetCharacter(characterID)
 		if err != nil {
-			if err != sql.ErrNoRows {
+			if !errors.Is(err, repository.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
 			}
 		} else {

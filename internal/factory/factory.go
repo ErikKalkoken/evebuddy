@@ -79,7 +79,7 @@ func (f Factory) CreateEveEntity(args ...repository.EveEntity) repository.EveEnt
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("generated #%d", arg.ID)
 	}
-	if arg.Category == 0 {
+	if arg.Category == repository.EveEntityUndefined {
 		arg.Category = repository.EveEntityCharacter
 	}
 	e, err := f.r.CreateEveEntity(ctx, arg.ID, arg.Name, arg.Category)
@@ -90,23 +90,23 @@ func (f Factory) CreateEveEntity(args ...repository.EveEntity) repository.EveEnt
 }
 
 func (f Factory) CreateEveEntityCharacter(args ...repository.EveEntity) repository.EveEntity {
-	var arg repository.EveEntity
-	if len(args) > 0 {
-		arg = args[0]
-	}
-	arg.Category = repository.EveEntityCharacter
-	args2 := []repository.EveEntity{arg}
+	args2 := eveEntityWithCategory(args, repository.EveEntityCharacter)
 	return f.CreateEveEntity(args2...)
 }
 
 func (f Factory) CreateEveEntityCorporation(args ...repository.EveEntity) repository.EveEntity {
+	args2 := eveEntityWithCategory(args, repository.EveEntityCorporation)
+	return f.CreateEveEntity(args2...)
+}
+
+func eveEntityWithCategory(args []repository.EveEntity, category repository.EveEntityCategory) []repository.EveEntity {
 	var arg repository.EveEntity
 	if len(args) > 0 {
 		arg = args[0]
 	}
-	arg.Category = repository.EveEntityCorporation
+	arg.Category = category
 	args2 := []repository.EveEntity{arg}
-	return f.CreateEveEntity(args2...)
+	return args2
 }
 
 // // CreateMail is a test factory for Mail objects

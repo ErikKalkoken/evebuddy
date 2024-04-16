@@ -2,11 +2,14 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"example/evebuddy/internal/sqlc"
 	"fmt"
 	"log/slog"
 	"net/url"
 )
+
+var ErrNotFound = errors.New("object not found")
 
 type Repository struct {
 	q  *sqlc.Queries

@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"database/sql"
+	"errors"
 	"log/slog"
 	"strings"
 
@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	islices "example/evebuddy/internal/helper/slices"
+	"example/evebuddy/internal/repository"
 )
 
 // headerArea is the UI area showing the list of mail headers.
@@ -55,7 +56,7 @@ func (u *ui) NewHeaderArea() *headerArea {
 			}
 			m, err := u.service.GetMailFromDB(characterID, int32(mailID))
 			if err != nil {
-				if err != sql.ErrNoRows {
+				if !errors.Is(err, repository.ErrNotFound) {
 					slog.Error("Failed to get mail", "error", err)
 				}
 				return

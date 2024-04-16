@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"example/evebuddy/internal/api/images"
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/sqlc"
@@ -85,6 +86,9 @@ func (r *Repository) DeleteCharacter(ctx context.Context, c *Character) error {
 func (r *Repository) GetCharacter(ctx context.Context, id int32) (Character, error) {
 	row, err := r.q.GetCharacter(ctx, int64(id))
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrNotFound
+		}
 		return Character{}, err
 	}
 	var mailUpdateAt time.Time

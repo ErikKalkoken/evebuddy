@@ -1,15 +1,22 @@
 package repository_test
 
-// import (
-// 	"context"
-// 	"database/sql"
-// 	"example/evebuddy/internal/factory"
-// 	"example/evebuddy/internal/helper/set"
-// 	"example/evebuddy/internal/sqlc"
-// 	"testing"
+import (
+	"context"
+	"example/evebuddy/internal/repository"
+	"testing"
 
-// 	"github.com/stretchr/testify/assert"
-// )
+	"github.com/stretchr/testify/assert"
+)
+
+func TestEveEntity(t *testing.T) {
+	db, r, _ := setUpDB()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return error when no object found", func(t *testing.T) {
+		_, err := r.GetEveEntityByNameAndCategory(ctx, "dummy", repository.EveEntityAlliance)
+		assert.ErrorIs(t, err, repository.ErrNotFound)
+	})
+}
 
 // func TestEveEntity(t *testing.T) {
 // 	// setup
