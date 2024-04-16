@@ -128,7 +128,7 @@ func makeToolbar(u *ui) *fyne.Container {
 			u.ShowManageDialog()
 		}),
 	)
-	return toolbar
+	return container.NewVBox(toolbar, widget.NewSeparator())
 }
 
 // ShowAndRun shows the UI and runs it (blocking).
