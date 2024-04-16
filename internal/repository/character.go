@@ -7,6 +7,7 @@ import (
 	"example/evebuddy/internal/api/images"
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/sqlc"
+	"fmt"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -80,7 +81,8 @@ func (c *Character) ToDBUpdateParams() sqlc.UpdateCharacterParams {
 }
 
 func (r *Repository) DeleteCharacter(ctx context.Context, c *Character) error {
-	return r.q.DeleteCharacter(ctx, int64(c.ID))
+	err := r.q.DeleteCharacter(ctx, int64(c.ID))
+	return fmt.Errorf("failed to delete character %d: %w", c.ID, err)
 }
 
 func (r *Repository) GetCharacter(ctx context.Context, id int32) (Character, error) {
@@ -89,7 +91,7 @@ func (r *Repository) GetCharacter(ctx context.Context, id int32) (Character, err
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return Character{}, err
+		return Character{}, fmt.Errorf("failed to get character %d: %w", id, err)
 	}
 	var mailUpdateAt time.Time
 	if row.MailUpdatedAt.Valid {
@@ -130,7 +132,7 @@ func (r *Repository) GetCharacter(ctx context.Context, id int32) (Character, err
 func (r *Repository) GetFirstCharacter(ctx context.Context) (Character, error) {
 	row, err := r.q.GetFirstCharacter(ctx)
 	if err != nil {
-		return Character{}, err
+		return Character{}, fmt.Errorf("failed to get first character: %w", err)
 	}
 	var mailUpdateAt time.Time
 	if row.MailUpdatedAt.Valid {
@@ -171,7 +173,8 @@ func (r *Repository) GetFirstCharacter(ctx context.Context) (Character, error) {
 func (r *Repository) ListCharacters(ctx context.Context) ([]Character, error) {
 	rows, err := r.q.ListCharacters(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list characters: %w", err)
+
 	}
 	cc := make([]Character, len(rows))
 	for i, row := range rows {
@@ -216,52 +219,25 @@ func (r *Repository) ListCharacters(ctx context.Context) ([]Character, error) {
 func (r *Repository) ListCharacterIDs(ctx context.Context) ([]int32, error) {
 	ids, err := r.q.ListCharacterIDs(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list character IDs: %w", err)
 	}
 	ids2 := islices.ConvertNumeric[int64, int32](ids)
 	return ids2, nil
 }
 
 func (r *Repository) UpdateOrCreateCharacter(ctx context.Context, c *Character) error {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	qtx := r.q.WithTx(tx)
-	arg := sqlc.CreateCharacterParams{
-		Birthday:       c.Birthday,
-		CorporationID:  int64(c.Corporation.ID),
-		Description:    c.Description,
-		Gender:         c.Gender,
-		ID:             int64(c.ID),
-		Name:           c.Name,
-		SecurityStatus: float64(c.SecurityStatus),
-	}
-	if c.Alliance.ID != 0 {
-		arg.AllianceID.Int64 = int64(c.Alliance.ID)
-		arg.AllianceID.Valid = true
-	}
-	if c.Faction.ID != 0 {
-		arg.FactionID.Int64 = int64(c.Faction.ID)
-		arg.FactionID.Valid = true
-	}
-	if c.SkillPoints != 0 {
-		arg.SkillPoints.Int64 = int64(c.SkillPoints)
-		arg.SkillPoints.Valid = true
-	}
-	if c.WalletBalance != 0 {
-		arg.WalletBalance.Float64 = c.WalletBalance
-		arg.WalletBalance.Valid = true
-	}
-	_, err = qtx.CreateCharacter(ctx, arg)
-	if err != nil {
-		if !isSqlite3ErrConstraint(err) {
+	err := func() error {
+		tx, err := r.db.Begin()
+		if err != nil {
 			return err
 		}
-		arg := sqlc.UpdateCharacterParams{
+		defer tx.Rollback()
+		qtx := r.q.WithTx(tx)
+		arg := sqlc.CreateCharacterParams{
+			Birthday:       c.Birthday,
 			CorporationID:  int64(c.Corporation.ID),
 			Description:    c.Description,
+			Gender:         c.Gender,
 			ID:             int64(c.ID),
 			Name:           c.Name,
 			SecurityStatus: float64(c.SecurityStatus),
@@ -282,9 +258,42 @@ func (r *Repository) UpdateOrCreateCharacter(ctx context.Context, c *Character) 
 			arg.WalletBalance.Float64 = c.WalletBalance
 			arg.WalletBalance.Valid = true
 		}
-		if err := qtx.UpdateCharacter(ctx, arg); err != nil {
-			return err
+		_, err = qtx.CreateCharacter(ctx, arg)
+		if err != nil {
+			if !isSqlite3ErrConstraint(err) {
+				return err
+			}
+			arg := sqlc.UpdateCharacterParams{
+				CorporationID:  int64(c.Corporation.ID),
+				Description:    c.Description,
+				ID:             int64(c.ID),
+				Name:           c.Name,
+				SecurityStatus: float64(c.SecurityStatus),
+			}
+			if c.Alliance.ID != 0 {
+				arg.AllianceID.Int64 = int64(c.Alliance.ID)
+				arg.AllianceID.Valid = true
+			}
+			if c.Faction.ID != 0 {
+				arg.FactionID.Int64 = int64(c.Faction.ID)
+				arg.FactionID.Valid = true
+			}
+			if c.SkillPoints != 0 {
+				arg.SkillPoints.Int64 = int64(c.SkillPoints)
+				arg.SkillPoints.Valid = true
+			}
+			if c.WalletBalance != 0 {
+				arg.WalletBalance.Float64 = c.WalletBalance
+				arg.WalletBalance.Valid = true
+			}
+			if err := qtx.UpdateCharacter(ctx, arg); err != nil {
+				return err
+			}
 		}
+		return tx.Commit()
+	}()
+	if err != nil {
+		return fmt.Errorf("failed to update or create character %d: %w", c.ID, err)
 	}
-	return tx.Commit()
+	return nil
 }

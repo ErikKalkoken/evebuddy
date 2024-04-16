@@ -25,6 +25,25 @@ const (
 	EveEntityMailList
 )
 
+func (e EveEntityCategory) String() string {
+	switch e {
+	case EveEntityUndefined:
+		return "undefined"
+	case EveEntityAlliance:
+		return "alliance"
+	case EveEntityCharacter:
+		return "character"
+	case EveEntityCorporation:
+		return "corporation"
+	case EveEntityFaction:
+		return "faction"
+	case EveEntityMailList:
+		return "mailing list"
+	default:
+		return "unknown"
+	}
+}
+
 type EveEntity struct {
 	Category EveEntityCategory
 	ID       int32
@@ -131,7 +150,7 @@ func (r *Repository) GetEveEntityByNameAndCategory(ctx context.Context, name str
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return EveEntity{}, err
+		return EveEntity{}, fmt.Errorf("failed to get EveEntity by name %s and category %s: %w", name, category, err)
 	}
 	e2 := eveEntityFromDBModel(e)
 	return e2, nil
@@ -140,7 +159,7 @@ func (r *Repository) GetEveEntityByNameAndCategory(ctx context.Context, name str
 func (r *Repository) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]EveEntity, error) {
 	ee, err := r.q.ListEveEntitiesByPartialName(ctx, fmt.Sprintf("%%%s%%", partial))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list EveEntity by partial name %s: %w", partial, err)
 	}
 	ee2 := make([]EveEntity, len(ee))
 	for i, e := range ee {
@@ -152,7 +171,7 @@ func (r *Repository) ListEveEntitiesByPartialName(ctx context.Context, partial s
 func (r *Repository) ListEveEntityIDs(ctx context.Context) ([]int32, error) {
 	ids, err := r.q.ListEveEntityIDs(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list EveEntity IDs: %w", err)
 	}
 	ids2 := islices.ConvertNumeric[int64, int32](ids)
 	return ids2, nil
@@ -161,7 +180,7 @@ func (r *Repository) ListEveEntityIDs(ctx context.Context) ([]int32, error) {
 func (r *Repository) ListEveEntitiesByName(ctx context.Context, name string) ([]EveEntity, error) {
 	ee, err := r.q.ListEveEntitiesByName(ctx, name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list EveEntities by name %s: %w", name, err)
 	}
 	ee2 := make([]EveEntity, len(ee))
 	for i, e := range ee {
@@ -182,36 +201,42 @@ func (r *Repository) MissingEveEntityIDs(ctx context.Context, ids []int32) (*set
 }
 
 func (r *Repository) UpdateOrCreateEveEntity(ctx context.Context, id int32, name string, category EveEntityCategory) (EveEntity, error) {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return EveEntity{}, err
-	}
-	defer tx.Rollback()
-	qtx := r.q.WithTx(tx)
-	categoryDB := eveEntityDBModelCategoryFromCategory(category)
-	arg := sqlc.CreateEveEntityParams{
-		ID:       int64(id),
-		Name:     name,
-		Category: categoryDB,
-	}
-	var e sqlc.EveEntity
-	e, err = qtx.CreateEveEntity(ctx, arg)
-	if err != nil {
-		if !isSqlite3ErrConstraint(err) {
+	e, err := func() (EveEntity, error) {
+		tx, err := r.db.Begin()
+		if err != nil {
 			return EveEntity{}, err
 		}
-		arg := sqlc.UpdateEveEntityParams{
+		defer tx.Rollback()
+		qtx := r.q.WithTx(tx)
+		categoryDB := eveEntityDBModelCategoryFromCategory(category)
+		arg := sqlc.CreateEveEntityParams{
 			ID:       int64(id),
 			Name:     name,
 			Category: categoryDB,
 		}
-		e, err = qtx.UpdateEveEntity(ctx, arg)
+		var e sqlc.EveEntity
+		e, err = qtx.CreateEveEntity(ctx, arg)
 		if err != nil {
+			if !isSqlite3ErrConstraint(err) {
+				return EveEntity{}, err
+			}
+			arg := sqlc.UpdateEveEntityParams{
+				ID:       int64(id),
+				Name:     name,
+				Category: categoryDB,
+			}
+			e, err = qtx.UpdateEveEntity(ctx, arg)
+			if err != nil {
+				return EveEntity{}, err
+			}
+		}
+		if err := tx.Commit(); err != nil {
 			return EveEntity{}, err
 		}
+		return eveEntityFromDBModel(e), nil
+	}()
+	if err != nil {
+		return EveEntity{}, fmt.Errorf("failed to update or create EveEntity %d: %w", id, err)
 	}
-	if err := tx.Commit(); err != nil {
-		return EveEntity{}, err
-	}
-	return eveEntityFromDBModel(e), nil
+	return e, nil
 }
