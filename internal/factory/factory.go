@@ -115,43 +115,51 @@ func eveEntityWithCategory(args []repository.EveEntity, category repository.EveE
 	return args2
 }
 
-// // CreateMail is a test factory for Mail objects
-// func (f factory) CreateMail(args ...repository.Mail) repository.Mail {
-// 	var m repository.Mail
-// 	if len(args) > 0 {
-// 		m = args[0]
-// 	}
-// 	if m.Character.ID == 0 {
-// 		m.Character = f.CreateCharacter()
-// 	}
-// 	if m.From.ID == 0 {
-// 		m.From = f.CreateEveEntity(repository.EveEntity{Category: repository.EveEntityCharacter})
-// 	}
-// 	if m.MailID == 0 {
-// 		ids, err := repository.ListMailIDs(m.Character.ID)
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 		if len(ids) > 0 {
-// 			m.MailID = slices.Max(ids) + 1
-// 		} else {
-// 			m.MailID = 1
-// 		}
-// 	}
-// 	if m.Body == "" {
-// 		m.Body = fmt.Sprintf("Generated body #%d", m.MailID)
-// 	}
-// 	if m.Subject == "" {
-// 		m.Body = fmt.Sprintf("Generated subject #%d", m.MailID)
-// 	}
-// 	if m.Timestamp.IsZero() {
-// 		m.Timestamp = time.Now()
-// 	}
-// 	if err := m.Create(); err != nil {
-// 		panic(err)
-// 	}
-// 	return m
-// }
+// CreateMail is a test factory for Mail objects
+func (f Factory) CreateMail(args ...repository.CreateMailParams) {
+	var arg repository.CreateMailParams
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		c := f.CreateCharacter()
+		arg.CharacterID = c.ID
+	}
+	if arg.FromID == 0 {
+		from := f.CreateEveEntityCharacter()
+		arg.FromID = from.ID
+	}
+	if arg.MailID == 0 {
+		ids, err := f.r.ListMailIDs(ctx, arg.CharacterID)
+		if err != nil {
+			panic(err)
+		}
+		if len(ids) > 0 {
+			arg.MailID = slices.Max(ids) + 1
+		} else {
+			arg.MailID = 1
+		}
+	}
+	if arg.Body == "" {
+		arg.Body = fmt.Sprintf("Generated body #%d", arg.MailID)
+	}
+	if arg.Subject == "" {
+		arg.Body = fmt.Sprintf("Generated subject #%d", arg.MailID)
+	}
+	if arg.Timestamp.IsZero() {
+		arg.Timestamp = time.Now()
+	}
+	_, err := f.r.CreateMail(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	// mail, err := f.r.GetMail(ctx, arg.CharacterID, arg.MailID)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// return mail
+}
 
 // CreateMailLabel is a test factory for MailLabel objects
 func (f Factory) CreateMailLabel(args ...repository.MailLabel) repository.MailLabel {

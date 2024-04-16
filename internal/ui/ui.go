@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -102,7 +103,15 @@ func NewUI(s *service.Service) *ui {
 			u.SetCurrentCharacter(&c)
 		}
 	}
-	s.StartEsiStatusTicker(status.status)
+	go func() {
+		// TODO: There is a race condition with laying out the window before the
+		// window creation animation on Ubuntu (and other DEs?) finishes, where
+		// the window will be misdrawn into a smaller area if the animation hasn't finished.
+		// This makes it much less likely to occur (not seen on dozens of startups)
+		// but is a hacky "solution"!
+		time.Sleep(500 * time.Millisecond)
+		s.StartEsiStatusTicker(status.status)
+	}()
 	return u
 }
 
