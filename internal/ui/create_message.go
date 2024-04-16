@@ -32,7 +32,7 @@ func (u *ui) ShowCreateMessageWindow(mode int, mail *repository.Mail) {
 
 func (u *ui) makeCreateMessageWindow(mode int, mail *repository.Mail) (fyne.Window, error) {
 	currentChar := *u.CurrentChar()
-	w := u.app.NewWindow("New message")
+	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", currentChar.Name))
 	fromLabel := widget.NewLabel("From:")
 	fromInput := widget.NewEntry()
 	fromInput.Disable()

@@ -7,7 +7,6 @@ import (
 	"example/evebuddy/internal/service"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -184,8 +183,8 @@ func (u *ui) ResetCurrentCharacter() {
 	u.folderArea.Redraw()
 }
 
-func addTitle(c fyne.CanvasObject, title string) *fyne.Container {
-	label := widget.NewLabel(strings.ToUpper(title))
-	x := container.NewBorder(container.NewVBox(label, widget.NewSeparator()), nil, nil, nil, c)
-	return x
+func addTitle(c fyne.CanvasObject, title string) fyne.CanvasObject {
+	// label := widget.NewLabel(strings.ToUpper(title))
+	// x := container.NewBorder(container.NewVBox(label, widget.NewSeparator()), nil, nil, nil, c)
+	return c
 }
