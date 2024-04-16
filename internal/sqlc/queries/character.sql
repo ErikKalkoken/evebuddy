@@ -23,7 +23,7 @@ DELETE FROM characters
 WHERE id = ?;
 
 -- name: GetCharacter :one
-SELECT sqlc.embed(characters), sqlc.embed(corporations), sqlc.embed(alliances), sqlc.embed(factions)
+SELECT characters.*, corporations.*, alliances.*, factions.*
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
@@ -31,7 +31,7 @@ LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 WHERE characters.id = ?;
 
 -- name: GetFirstCharacter :one
-SELECT sqlc.embed(characters), sqlc.embed(corporations), sqlc.embed(alliances), sqlc.embed(factions)
+SELECT characters.*, corporations.*, alliances.*, factions.*
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
@@ -39,7 +39,7 @@ LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 LIMIT 1;
 
 -- name: ListCharacters :many
-SELECT sqlc.embed(characters), sqlc.embed(corporations), sqlc.embed(alliances), sqlc.embed(factions)
+SELECT characters.*, corporations.*, alliances.*, factions.*
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id

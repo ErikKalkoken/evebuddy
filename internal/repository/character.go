@@ -77,27 +77,6 @@ func (c *Character) ToDBUpdateParams() sqlc.UpdateCharacterParams {
 	}
 }
 
-func characterFromDBModel(character sqlc.Character, corporation sqlc.EveEntity, alliance sqlc.EveEntity, faction sqlc.EveEntity) Character {
-	var mailUpdateAt time.Time
-	if character.MailUpdatedAt.Valid {
-		mailUpdateAt = character.MailUpdatedAt.Time
-	}
-	return Character{
-		Alliance:       eveEntityFromDBModel(alliance),
-		Birthday:       character.Birthday,
-		Corporation:    eveEntityFromDBModel(corporation),
-		Description:    character.Description,
-		Faction:        eveEntityFromDBModel(faction),
-		Gender:         character.Gender,
-		ID:             int32(character.ID),
-		MailUpdatedAt:  mailUpdateAt,
-		Name:           character.Name,
-		SecurityStatus: character.SecurityStatus,
-		SkillPoints:    int(character.SkillPoints.Int64),
-		WalletBalance:  character.WalletBalance.Float64,
-	}
-}
-
 func (r *Repository) DeleteCharacter(ctx context.Context, c *Character) error {
 	return r.q.DeleteCharacter(ctx, int64(c.ID))
 }
@@ -107,7 +86,39 @@ func (r *Repository) GetCharacter(ctx context.Context, id int32) (Character, err
 	if err != nil {
 		return Character{}, err
 	}
-	c := characterFromDBModel(row.Character, row.EveEntity, row.EveEntity_2, row.EveEntity_3)
+	var mailUpdateAt time.Time
+	if row.MailUpdatedAt.Valid {
+		mailUpdateAt = row.MailUpdatedAt.Time
+	}
+	c := Character{
+		Birthday: row.Birthday,
+		Corporation: EveEntity{ID: int32(row.CorporationID),
+			Name:     row.Name_2,
+			Category: eveEntityCategoryFromDBModel(row.Category),
+		},
+		Description:    row.Description,
+		Gender:         row.Gender,
+		ID:             int32(row.ID),
+		MailUpdatedAt:  mailUpdateAt,
+		Name:           row.Name,
+		SecurityStatus: row.SecurityStatus,
+		SkillPoints:    int(row.SkillPoints.Int64),
+		WalletBalance:  row.WalletBalance.Float64,
+	}
+	if row.AllianceID.Valid {
+		c.Alliance = EveEntity{
+			ID:       int32(row.AllianceID.Int64),
+			Name:     row.Name_3.String,
+			Category: eveEntityCategoryFromDBModel(row.Category_2.String),
+		}
+	}
+	if row.FactionID.Valid {
+		c.Faction = EveEntity{
+			ID:       int32(row.FactionID.Int64),
+			Name:     row.Name_4.String,
+			Category: eveEntityCategoryFromDBModel(row.Category_3.String),
+		}
+	}
 	return c, nil
 }
 
@@ -116,7 +127,40 @@ func (r *Repository) GetFirstCharacter(ctx context.Context) (Character, error) {
 	if err != nil {
 		return Character{}, err
 	}
-	return characterFromDBModel(row.Character, row.EveEntity, row.EveEntity_2, row.EveEntity_3), nil
+	var mailUpdateAt time.Time
+	if row.MailUpdatedAt.Valid {
+		mailUpdateAt = row.MailUpdatedAt.Time
+	}
+	c := Character{
+		Birthday: row.Birthday,
+		Corporation: EveEntity{ID: int32(row.CorporationID),
+			Name:     row.Name_2,
+			Category: eveEntityCategoryFromDBModel(row.Category),
+		},
+		Description:    row.Description,
+		Gender:         row.Gender,
+		ID:             int32(row.ID),
+		MailUpdatedAt:  mailUpdateAt,
+		Name:           row.Name,
+		SecurityStatus: row.SecurityStatus,
+		SkillPoints:    int(row.SkillPoints.Int64),
+		WalletBalance:  row.WalletBalance.Float64,
+	}
+	if row.AllianceID.Valid {
+		c.Alliance = EveEntity{
+			ID:       int32(row.AllianceID.Int64),
+			Name:     row.Name_3.String,
+			Category: eveEntityCategoryFromDBModel(row.Category_2.String),
+		}
+	}
+	if row.FactionID.Valid {
+		c.Faction = EveEntity{
+			ID:       int32(row.FactionID.Int64),
+			Name:     row.Name_4.String,
+			Category: eveEntityCategoryFromDBModel(row.Category_3.String),
+		}
+	}
+	return c, nil
 }
 
 func (r *Repository) ListCharacters(ctx context.Context) ([]Character, error) {
@@ -125,8 +169,41 @@ func (r *Repository) ListCharacters(ctx context.Context) ([]Character, error) {
 		return nil, err
 	}
 	cc := make([]Character, len(rows))
-	for i, charDB := range rows {
-		cc[i] = characterFromDBModel(charDB.Character, charDB.EveEntity, charDB.EveEntity_2, charDB.EveEntity_3)
+	for i, row := range rows {
+		var mailUpdateAt time.Time
+		if row.MailUpdatedAt.Valid {
+			mailUpdateAt = row.MailUpdatedAt.Time
+		}
+		c := Character{
+			Birthday: row.Birthday,
+			Corporation: EveEntity{ID: int32(row.CorporationID),
+				Name:     row.Name_2,
+				Category: eveEntityCategoryFromDBModel(row.Category),
+			},
+			Description:    row.Description,
+			Gender:         row.Gender,
+			ID:             int32(row.ID),
+			MailUpdatedAt:  mailUpdateAt,
+			Name:           row.Name,
+			SecurityStatus: row.SecurityStatus,
+			SkillPoints:    int(row.SkillPoints.Int64),
+			WalletBalance:  row.WalletBalance.Float64,
+		}
+		if row.AllianceID.Valid {
+			c.Alliance = EveEntity{
+				ID:       int32(row.AllianceID.Int64),
+				Name:     row.Name_3.String,
+				Category: eveEntityCategoryFromDBModel(row.Category_2.String),
+			}
+		}
+		if row.FactionID.Valid {
+			c.Faction = EveEntity{
+				ID:       int32(row.FactionID.Int64),
+				Name:     row.Name_4.String,
+				Category: eveEntityCategoryFromDBModel(row.Category_3.String),
+			}
+		}
+		cc[i] = c
 	}
 	return cc, nil
 }

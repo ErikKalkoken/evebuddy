@@ -100,37 +100,54 @@ WHERE characters.id = ?
 `
 
 type GetCharacterRow struct {
-	Character   Character
-	EveEntity   EveEntity
-	EveEntity_2 EveEntity
-	EveEntity_3 EveEntity
+	AllianceID     sql.NullInt64
+	Birthday       time.Time
+	CorporationID  int64
+	Description    string
+	Gender         string
+	FactionID      sql.NullInt64
+	ID             int64
+	MailUpdatedAt  sql.NullTime
+	Name           string
+	SecurityStatus float64
+	SkillPoints    sql.NullInt64
+	WalletBalance  sql.NullFloat64
+	ID_2           int64
+	Category       string
+	Name_2         string
+	ID_3           sql.NullInt64
+	Category_2     sql.NullString
+	Name_3         sql.NullString
+	ID_4           sql.NullInt64
+	Category_3     sql.NullString
+	Name_4         sql.NullString
 }
 
 func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, error) {
 	row := q.db.QueryRowContext(ctx, getCharacter, id)
 	var i GetCharacterRow
 	err := row.Scan(
-		&i.Character.AllianceID,
-		&i.Character.Birthday,
-		&i.Character.CorporationID,
-		&i.Character.Description,
-		&i.Character.Gender,
-		&i.Character.FactionID,
-		&i.Character.ID,
-		&i.Character.MailUpdatedAt,
-		&i.Character.Name,
-		&i.Character.SecurityStatus,
-		&i.Character.SkillPoints,
-		&i.Character.WalletBalance,
-		&i.EveEntity.ID,
-		&i.EveEntity.Category,
-		&i.EveEntity.Name,
-		&i.EveEntity_2.ID,
-		&i.EveEntity_2.Category,
-		&i.EveEntity_2.Name,
-		&i.EveEntity_3.ID,
-		&i.EveEntity_3.Category,
-		&i.EveEntity_3.Name,
+		&i.AllianceID,
+		&i.Birthday,
+		&i.CorporationID,
+		&i.Description,
+		&i.Gender,
+		&i.FactionID,
+		&i.ID,
+		&i.MailUpdatedAt,
+		&i.Name,
+		&i.SecurityStatus,
+		&i.SkillPoints,
+		&i.WalletBalance,
+		&i.ID_2,
+		&i.Category,
+		&i.Name_2,
+		&i.ID_3,
+		&i.Category_2,
+		&i.Name_3,
+		&i.ID_4,
+		&i.Category_3,
+		&i.Name_4,
 	)
 	return i, err
 }
@@ -145,37 +162,54 @@ LIMIT 1
 `
 
 type GetFirstCharacterRow struct {
-	Character   Character
-	EveEntity   EveEntity
-	EveEntity_2 EveEntity
-	EveEntity_3 EveEntity
+	AllianceID     sql.NullInt64
+	Birthday       time.Time
+	CorporationID  int64
+	Description    string
+	Gender         string
+	FactionID      sql.NullInt64
+	ID             int64
+	MailUpdatedAt  sql.NullTime
+	Name           string
+	SecurityStatus float64
+	SkillPoints    sql.NullInt64
+	WalletBalance  sql.NullFloat64
+	ID_2           int64
+	Category       string
+	Name_2         string
+	ID_3           sql.NullInt64
+	Category_2     sql.NullString
+	Name_3         sql.NullString
+	ID_4           sql.NullInt64
+	Category_3     sql.NullString
+	Name_4         sql.NullString
 }
 
 func (q *Queries) GetFirstCharacter(ctx context.Context) (GetFirstCharacterRow, error) {
 	row := q.db.QueryRowContext(ctx, getFirstCharacter)
 	var i GetFirstCharacterRow
 	err := row.Scan(
-		&i.Character.AllianceID,
-		&i.Character.Birthday,
-		&i.Character.CorporationID,
-		&i.Character.Description,
-		&i.Character.Gender,
-		&i.Character.FactionID,
-		&i.Character.ID,
-		&i.Character.MailUpdatedAt,
-		&i.Character.Name,
-		&i.Character.SecurityStatus,
-		&i.Character.SkillPoints,
-		&i.Character.WalletBalance,
-		&i.EveEntity.ID,
-		&i.EveEntity.Category,
-		&i.EveEntity.Name,
-		&i.EveEntity_2.ID,
-		&i.EveEntity_2.Category,
-		&i.EveEntity_2.Name,
-		&i.EveEntity_3.ID,
-		&i.EveEntity_3.Category,
-		&i.EveEntity_3.Name,
+		&i.AllianceID,
+		&i.Birthday,
+		&i.CorporationID,
+		&i.Description,
+		&i.Gender,
+		&i.FactionID,
+		&i.ID,
+		&i.MailUpdatedAt,
+		&i.Name,
+		&i.SecurityStatus,
+		&i.SkillPoints,
+		&i.WalletBalance,
+		&i.ID_2,
+		&i.Category,
+		&i.Name_2,
+		&i.ID_3,
+		&i.Category_2,
+		&i.Name_3,
+		&i.ID_4,
+		&i.Category_3,
+		&i.Name_4,
 	)
 	return i, err
 }
@@ -218,10 +252,27 @@ ORDER BY characters.name
 `
 
 type ListCharactersRow struct {
-	Character   Character
-	EveEntity   EveEntity
-	EveEntity_2 EveEntity
-	EveEntity_3 EveEntity
+	AllianceID     sql.NullInt64
+	Birthday       time.Time
+	CorporationID  int64
+	Description    string
+	Gender         string
+	FactionID      sql.NullInt64
+	ID             int64
+	MailUpdatedAt  sql.NullTime
+	Name           string
+	SecurityStatus float64
+	SkillPoints    sql.NullInt64
+	WalletBalance  sql.NullFloat64
+	ID_2           int64
+	Category       string
+	Name_2         string
+	ID_3           sql.NullInt64
+	Category_2     sql.NullString
+	Name_3         sql.NullString
+	ID_4           sql.NullInt64
+	Category_3     sql.NullString
+	Name_4         sql.NullString
 }
 
 func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, error) {
@@ -234,27 +285,27 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 	for rows.Next() {
 		var i ListCharactersRow
 		if err := rows.Scan(
-			&i.Character.AllianceID,
-			&i.Character.Birthday,
-			&i.Character.CorporationID,
-			&i.Character.Description,
-			&i.Character.Gender,
-			&i.Character.FactionID,
-			&i.Character.ID,
-			&i.Character.MailUpdatedAt,
-			&i.Character.Name,
-			&i.Character.SecurityStatus,
-			&i.Character.SkillPoints,
-			&i.Character.WalletBalance,
-			&i.EveEntity.ID,
-			&i.EveEntity.Category,
-			&i.EveEntity.Name,
-			&i.EveEntity_2.ID,
-			&i.EveEntity_2.Category,
-			&i.EveEntity_2.Name,
-			&i.EveEntity_3.ID,
-			&i.EveEntity_3.Category,
-			&i.EveEntity_3.Name,
+			&i.AllianceID,
+			&i.Birthday,
+			&i.CorporationID,
+			&i.Description,
+			&i.Gender,
+			&i.FactionID,
+			&i.ID,
+			&i.MailUpdatedAt,
+			&i.Name,
+			&i.SecurityStatus,
+			&i.SkillPoints,
+			&i.WalletBalance,
+			&i.ID_2,
+			&i.Category,
+			&i.Name_2,
+			&i.ID_3,
+			&i.Category_2,
+			&i.Name_3,
+			&i.ID_4,
+			&i.Category_3,
+			&i.Name_4,
 		); err != nil {
 			return nil, err
 		}
