@@ -25,7 +25,7 @@ const (
 // DeleteMail deletes a mail both on ESI and in the database.
 func (s *Service) DeleteMail(characterID, mailID int32) error {
 	ctx := context.Background()
-	token, err := s.GetValidToken(ctx, characterID)
+	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -39,6 +39,11 @@ func (s *Service) DeleteMail(characterID, mailID int32) error {
 		return err
 	}
 	return nil
+}
+
+func (s *Service) GetMail(characterID int32, mailID int32) (repository.Mail, error) {
+	ctx := context.Background()
+	return s.r.GetMail(ctx, characterID, mailID)
 }
 
 // SendMail created a new mail on ESI stores it locally.
@@ -57,7 +62,7 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 		return fmt.Errorf("missing recipients")
 	}
 	ctx := context.Background()
-	token, err := s.GetValidToken(ctx, characterID)
+	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -107,43 +112,13 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 	return nil
 }
 
-// UpdateMailRead updates an existing mail as read
-func (s *Service) UpdateMailRead(m *repository.Mail) error {
-	ctx := context.Background()
-	token, err := s.GetValidToken(ctx, m.CharacterID)
-	if err != nil {
-		return err
-	}
-	ctx = contextWithToken(ctx, token.AccessToken)
-	labelIDs := make([]int32, len(m.Labels))
-	for i, l := range m.Labels {
-		labelIDs[i] = l.LabelID
-	}
-	contents := esi.PutCharactersCharacterIdMailMailIdContents{Read: true, Labels: labelIDs}
-	_, err = s.esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(ctx, m.CharacterID, contents, m.MailID, nil)
-	if err != nil {
-		return err
-	}
-	m.IsRead = true
-	if err := s.r.UpdateMailSetRead(ctx, m.ID); err != nil {
-		return err
-	}
-	return nil
-
-}
-
-func (s *Service) GetMailFromDB(characterID int32, mailID int32) (repository.Mail, error) {
-	ctx := context.Background()
-	return s.r.GetMail(ctx, characterID, mailID)
-}
-
 // FIXME: Delete obsolete labels and mail lists
 // TODO: Add ability to update existing mails for is_read and labels
 
 // FetchMail fetches and stores new mails from ESI for a character.
 func (s *Service) FetchMail(characterID int32, status binding.String) error {
 	ctx := context.Background()
-	token, err := s.GetValidToken(ctx, characterID)
+	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -174,7 +149,7 @@ func (s *Service) FetchMail(characterID int32, status binding.String) error {
 }
 
 func (s *Service) updateMailLabels(ctx context.Context, token *repository.Token) error {
-	if err := s.EnsureValidToken(ctx, token); err != nil {
+	if err := s.ensureValidToken(ctx, token); err != nil {
 		return err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
@@ -201,7 +176,7 @@ func (s *Service) updateMailLabels(ctx context.Context, token *repository.Token)
 }
 
 func (s *Service) updateMailLists(ctx context.Context, token *repository.Token) error {
-	if err := s.EnsureValidToken(ctx, token); err != nil {
+	if err := s.ensureValidToken(ctx, token); err != nil {
 		return err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
@@ -223,7 +198,7 @@ func (s *Service) updateMailLists(ctx context.Context, token *repository.Token) 
 
 // listMailHeaders fetched mail headers from ESI with paging and returns them.
 func (s *Service) listMailHeaders(ctx context.Context, token *repository.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
-	if err := s.EnsureValidToken(ctx, token); err != nil {
+	if err := s.ensureValidToken(ctx, token); err != nil {
 		return nil, err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
@@ -269,7 +244,7 @@ func (s *Service) updateMails(ctx context.Context, token *repository.Token, head
 		return nil
 	}
 
-	if err := s.EnsureValidToken(ctx, token); err != nil {
+	if err := s.ensureValidToken(ctx, token); err != nil {
 		return err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
@@ -396,4 +371,33 @@ func (s *Service) ListMailIDsForListOrdered(characterID int32, listID int32) ([]
 func (s *Service) ListMailLabels(characterID int32) ([]repository.MailLabel, error) {
 	ctx := context.Background()
 	return s.r.ListMailLabels(ctx, characterID)
+}
+
+// UpdateMailRead updates an existing mail as read
+func (s *Service) UpdateMailRead(characterID, mailID int32) error {
+	ctx := context.Background()
+	token, err := s.getValidToken(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	ctx = contextWithToken(ctx, token.AccessToken)
+	m, err := s.r.GetMail(ctx, characterID, mailID)
+	if err != nil {
+		return err
+	}
+	labelIDs := make([]int32, len(m.Labels))
+	for i, l := range m.Labels {
+		labelIDs[i] = l.LabelID
+	}
+	contents := esi.PutCharactersCharacterIdMailMailIdContents{Read: true, Labels: labelIDs}
+	_, err = s.esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(ctx, m.CharacterID, contents, m.MailID, nil)
+	if err != nil {
+		return err
+	}
+	m.IsRead = true
+	if err := s.r.UpdateMailSetRead(ctx, m.ID); err != nil {
+		return err
+	}
+	return nil
+
 }

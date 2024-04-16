@@ -54,7 +54,7 @@ func (u *ui) NewHeaderArea() *headerArea {
 			if characterID == 0 {
 				return
 			}
-			m, err := u.service.GetMailFromDB(characterID, int32(mailID))
+			m, err := u.service.GetMail(characterID, int32(mailID))
 			if err != nil {
 				if !errors.Is(err, repository.ErrNotFound) {
 					slog.Error("Failed to get mail", "error", err)

@@ -58,7 +58,7 @@ func (m *mailArea) Clear() {
 
 func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 	characterID := m.ui.CurrentCharID()
-	mail, err := m.ui.service.GetMailFromDB(characterID, mailID)
+	mail, err := m.ui.service.GetMail(characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to render mail", "mailID", mailID, "error", err)
 		return
@@ -67,7 +67,7 @@ func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 	if !mail.IsRead {
 		go func() {
 			err := func() error {
-				err = m.ui.service.UpdateMailRead(&mail)
+				err = m.ui.service.UpdateMailRead(characterID, mail.MailID)
 				if err != nil {
 					return err
 				}
