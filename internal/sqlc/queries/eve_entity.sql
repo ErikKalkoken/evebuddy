@@ -35,9 +35,10 @@ COLLATE NOCASE;
 SELECT id
 FROM eve_entities;
 
--- name: UpdateEveEntity :exec
+-- name: UpdateEveEntity :one
 UPDATE eve_entities
 SET
     category = ?,
     name = ?
-WHERE id = ?;
+WHERE id = ?
+RETURNING *;

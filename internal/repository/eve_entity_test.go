@@ -9,9 +9,43 @@ import (
 )
 
 func TestEveEntity(t *testing.T) {
-	db, r, _ := setUpDB()
+	db, r, factory := setUpDB()
 	defer db.Close()
 	ctx := context.Background()
+	t.Run("can create new", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		// when
+		e, err := r.CreateEveEntity(ctx, 42, "Dummy", repository.EveEntityAlliance)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, e.ID, int32(42))
+			assert.Equal(t, e.Name, "Dummy")
+			assert.Equal(t, e.Category, repository.EveEntityAlliance)
+		}
+	})
+	t.Run("can update existing", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		// given
+		e1 := factory.CreateEveEntity(
+			repository.EveEntity{
+				ID:       42,
+				Name:     "Alpha",
+				Category: repository.EveEntityCharacter,
+			})
+		// when
+		_, err := r.UpdateOrCreateEveEntity(ctx, e1.ID, "Erik", repository.EveEntityCorporation)
+		// then
+		if assert.NoError(t, err) {
+			e2, err := r.GetEveEntity(ctx, e1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, e1.ID, e2.ID)
+				assert.Equal(t, "Erik", e2.Name)
+				assert.Equal(t, repository.EveEntityCorporation, e2.Category)
+			}
+		}
+	})
 	t.Run("should return error when no object found", func(t *testing.T) {
 		_, err := r.GetEveEntityByNameAndCategory(ctx, "dummy", repository.EveEntityAlliance)
 		assert.ErrorIs(t, err, repository.ErrNotFound)

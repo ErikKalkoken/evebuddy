@@ -183,7 +183,8 @@ func (s *Service) updateMailLists(ctx context.Context, token *repository.Token) 
 		return err
 	}
 	for _, o := range lists {
-		if err := s.r.UpdateEveEntity(ctx, o.MailingListId, o.Name, repository.EveEntityMailList); err != nil {
+		_, err := s.r.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, repository.EveEntityMailList)
+		if err != nil {
 			return err
 		}
 		if err := s.r.CreateMailList(ctx, token.CharacterID, o.MailingListId); err != nil {

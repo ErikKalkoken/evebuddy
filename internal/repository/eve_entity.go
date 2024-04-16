@@ -178,27 +178,28 @@ func (r *Repository) MissingEveEntityIDs(ctx context.Context, ids []int32) (*set
 	return missing, nil
 }
 
-func (r *Repository) UpdateEveEntity(ctx context.Context, id int32, name string, category EveEntityCategory) error {
+func (r *Repository) UpdateOrCreateEveEntity(ctx context.Context, id int32, name string, category EveEntityCategory) (EveEntity, error) {
 	categoryDB := eveEntityDBModelCategoryFromCategory(category)
-	arg1 := sqlc.UpdateEveEntityParams{
+	arg := sqlc.CreateEveEntityParams{
 		ID:       int64(id),
 		Name:     name,
 		Category: categoryDB,
 	}
-	if err := r.q.UpdateEveEntity(ctx, arg1); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			arg := sqlc.CreateEveEntityParams{
-				ID:       int64(id),
-				Name:     name,
-				Category: categoryDB,
-			}
-			_, err := r.q.CreateEveEntity(ctx, arg)
-			if err != nil {
-				return err
-			}
-		} else {
-			return err
+	e, err := r.q.CreateEveEntity(ctx, arg)
+	if err != nil {
+		if !isSqlite3ErrConstraint(err) {
+			return EveEntity{}, err
 		}
+		arg := sqlc.UpdateEveEntityParams{
+			ID:       int64(id),
+			Name:     name,
+			Category: categoryDB,
+		}
+		e, err := r.q.UpdateEveEntity(ctx, arg)
+		if err != nil {
+			return EveEntity{}, err
+		}
+		return eveEntityFromDBModel(e), nil
 	}
-	return nil
+	return eveEntityFromDBModel(e), nil
 }

@@ -153,12 +153,13 @@ func (q *Queries) ListEveEntityIDs(ctx context.Context) ([]int64, error) {
 	return items, nil
 }
 
-const updateEveEntity = `-- name: UpdateEveEntity :exec
+const updateEveEntity = `-- name: UpdateEveEntity :one
 UPDATE eve_entities
 SET
     category = ?,
     name = ?
 WHERE id = ?
+RETURNING id, category, name
 `
 
 type UpdateEveEntityParams struct {
@@ -167,7 +168,9 @@ type UpdateEveEntityParams struct {
 	ID       int64
 }
 
-func (q *Queries) UpdateEveEntity(ctx context.Context, arg UpdateEveEntityParams) error {
-	_, err := q.db.ExecContext(ctx, updateEveEntity, arg.Category, arg.Name, arg.ID)
-	return err
+func (q *Queries) UpdateEveEntity(ctx context.Context, arg UpdateEveEntityParams) (EveEntity, error) {
+	row := q.db.QueryRowContext(ctx, updateEveEntity, arg.Category, arg.Name, arg.ID)
+	var i EveEntity
+	err := row.Scan(&i.ID, &i.Category, &i.Name)
+	return i, err
 }
