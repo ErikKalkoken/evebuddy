@@ -2,7 +2,10 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"example/evebuddy/internal/sqlc"
+	"fmt"
 )
 
 // Special mail label IDs
@@ -35,6 +38,22 @@ func mailLabelFromDBModel(l sqlc.MailLabel) MailLabel {
 	}
 }
 
+func (r *Repository) GetMailLabel(ctx context.Context, characterID, labelID int32) (MailLabel, error) {
+	arg := sqlc.GetMailLabelParams{
+		CharacterID: int64(characterID),
+		LabelID:     int64(labelID),
+	}
+	l, err := r.q.GetMailLabel(ctx, arg)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrNotFound
+		}
+		return MailLabel{}, fmt.Errorf("failed to get MailLabel %v: %w", arg, err)
+	}
+	l2 := mailLabelFromDBModel(l)
+	return l2, nil
+}
+
 func (r *Repository) ListMailLabels(ctx context.Context, characterID int32) ([]MailLabel, error) {
 	ll, err := r.q.ListMailLabels(ctx, int64(characterID))
 	if err != nil {
@@ -47,28 +66,42 @@ func (r *Repository) ListMailLabels(ctx context.Context, characterID int32) ([]M
 	return ll2, nil
 }
 
-func (r *Repository) UpdateOrCreateMailLabel(ctx context.Context, characterID int32, labelID int32, name string, color string, unreadCount int) error {
-	arg := sqlc.CreateMailLabelParams{
-		CharacterID: int64(characterID),
-		LabelID:     int64(labelID),
-		Color:       color,
-		Name:        name,
-		UnreadCount: int64(unreadCount),
-	}
-	if err := r.q.CreateMailLabel(ctx, arg); err != nil {
-		if !isSqlite3ErrConstraint(err) {
-			return err
+type UpdateOrCreateMailLabelParams struct {
+	CharacterID int32
+	Color       string
+	LabelID     int32
+	Name        string
+	UnreadCount int
+}
+
+func (r *Repository) UpdateOrCreateMailLabel(ctx context.Context, arg UpdateOrCreateMailLabelParams) error {
+	err := func() error {
+		arg1 := sqlc.CreateMailLabelParams{
+			CharacterID: int64(arg.CharacterID),
+			LabelID:     int64(arg.LabelID),
+			Color:       arg.Color,
+			Name:        arg.Name,
+			UnreadCount: int64(arg.UnreadCount),
 		}
-		arg := sqlc.UpdateMailLabelParams{
-			CharacterID: int64(characterID),
-			LabelID:     int64(labelID),
-			Color:       color,
-			Name:        name,
-			UnreadCount: int64(unreadCount),
+		if err := r.q.CreateMailLabel(ctx, arg1); err != nil {
+			if !isSqlite3ErrConstraint(err) {
+				return err
+			}
+			arg := sqlc.UpdateMailLabelParams{
+				CharacterID: int64(arg.CharacterID),
+				LabelID:     int64(arg.LabelID),
+				Color:       arg.Color,
+				Name:        arg.Name,
+				UnreadCount: int64(arg.UnreadCount),
+			}
+			if err := r.q.UpdateMailLabel(ctx, arg); err != nil {
+				return err
+			}
 		}
-		if err := r.q.UpdateMailLabel(ctx, arg); err != nil {
-			return err
-		}
+		return nil
+	}()
+	if err != nil {
+		return fmt.Errorf("failed to update or create MailLabel %v: %w", arg, err)
 	}
 	return nil
 }

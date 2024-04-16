@@ -176,7 +176,14 @@ func (s *Service) updateMailLabels(ctx context.Context, token *repository.Token)
 	labels := ll.Labels
 	slog.Info("Received mail labels from ESI", "count", len(labels), "characterID", token.CharacterID)
 	for _, o := range labels {
-		err := s.r.UpdateOrCreateMailLabel(ctx, token.CharacterID, o.LabelId, o.Name, o.Color, int(o.UnreadCount))
+		arg := repository.UpdateOrCreateMailLabelParams{
+			CharacterID: token.CharacterID,
+			Color:       o.Color,
+			LabelID:     o.LabelId,
+			Name:        o.Name,
+			UnreadCount: int(o.UnreadCount),
+		}
+		err := s.r.UpdateOrCreateMailLabel(ctx, arg)
 		if err != nil {
 			return err
 		}
