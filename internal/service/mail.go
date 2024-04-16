@@ -23,18 +23,18 @@ const (
 )
 
 // DeleteMail deletes a mail both on ESI and in the database.
-func (s *Service) DeleteMail(m *repository.Mail) error {
+func (s *Service) DeleteMail(characterID, mailID int32) error {
 	ctx := context.Background()
-	token, err := s.GetValidToken(ctx, m.CharacterID)
+	token, err := s.GetValidToken(ctx, characterID)
 	if err != nil {
 		return err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
-	_, err = s.esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(ctx, m.CharacterID, m.MailID, nil)
+	_, err = s.esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
 	if err != nil {
 		return err
 	}
-	err = s.r.DeleteMail(ctx, m.ID)
+	err = s.r.DeleteMail(ctx, characterID, mailID)
 	if err != nil {
 		return err
 	}

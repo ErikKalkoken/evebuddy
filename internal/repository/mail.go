@@ -189,10 +189,14 @@ func (r *Repository) GetMail(ctx context.Context, characterID, mailID int32) (Ma
 	return mail, nil
 }
 
-func (r *Repository) DeleteMail(ctx context.Context, mailID int64) error {
-	err := r.q.DeleteMail(ctx, mailID)
+func (r *Repository) DeleteMail(ctx context.Context, characterID, mailID int32) error {
+	arg := sqlc.DeleteMailParams{
+		CharacterID: int64(characterID),
+		MailID:      int64(mailID),
+	}
+	err := r.q.DeleteMail(ctx, arg)
 	if err != nil {
-		return fmt.Errorf("failed to delete mail %d: %w", mailID, err)
+		return fmt.Errorf("failed to delete mail for character %d with ID%d: %w", characterID, mailID, err)
 	}
 	return nil
 }

@@ -80,10 +80,10 @@ func (c *Character) ToDBUpdateParams() sqlc.UpdateCharacterParams {
 	}
 }
 
-func (r *Repository) DeleteCharacter(ctx context.Context, c *Character) error {
-	err := r.q.DeleteCharacter(ctx, int64(c.ID))
+func (r *Repository) DeleteCharacter(ctx context.Context, characterID int32) error {
+	err := r.q.DeleteCharacter(ctx, int64(characterID))
 	if err != nil {
-		return fmt.Errorf("failed to delete character %d: %w", c.ID, err)
+		return fmt.Errorf("failed to delete character %d: %w", characterID, err)
 	}
 	return nil
 }

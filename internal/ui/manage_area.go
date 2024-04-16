@@ -73,7 +73,7 @@ func (m *manageArea) Redraw() {
 				fmt.Sprintf("Are you sure you want to delete %s?", char.Name),
 				func(confirmed bool) {
 					if confirmed {
-						err := m.ui.service.DeleteCharacter(&char)
+						err := m.ui.service.DeleteCharacter(char.ID)
 						if err != nil {
 							d := dialog.NewError(err, m.ui.window)
 							d.Show()

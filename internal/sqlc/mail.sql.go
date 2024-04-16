@@ -98,11 +98,17 @@ func (q *Queries) CreateMailRecipient(ctx context.Context, arg CreateMailRecipie
 
 const deleteMail = `-- name: DeleteMail :exec
 DELETE FROM mails
-WHERE mails.id = ?
+WHERE mails.character_id = ?
+AND mails.mail_id = ?
 `
 
-func (q *Queries) DeleteMail(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteMail, id)
+type DeleteMailParams struct {
+	CharacterID int64
+	MailID      int64
+}
+
+func (q *Queries) DeleteMail(ctx context.Context, arg DeleteMailParams) error {
+	_, err := q.db.ExecContext(ctx, deleteMail, arg.CharacterID, arg.MailID)
 	return err
 }
 

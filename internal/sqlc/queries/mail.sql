@@ -29,7 +29,8 @@ VALUES (?, ?);
 
 -- name: DeleteMail :exec
 DELETE FROM mails
-WHERE mails.id = ?;
+WHERE mails.character_id = ?
+AND mails.mail_id = ?;
 
 -- name: GetMail :one
 SELECT sqlc.embed(mails), sqlc.embed(eve_entities)

@@ -6,12 +6,12 @@ import (
 	"example/evebuddy/internal/repository"
 )
 
-func (s *Service) DeleteCharacter(c *repository.Character) error {
-	return s.r.DeleteCharacter(context.Background(), c)
+func (s *Service) DeleteCharacter(characterID int32) error {
+	return s.r.DeleteCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetCharacter(id int32) (repository.Character, error) {
-	return s.r.GetCharacter(context.Background(), id)
+func (s *Service) GetCharacter(characterID int32) (repository.Character, error) {
+	return s.r.GetCharacter(context.Background(), characterID)
 }
 
 func (s *Service) GetFirstCharacter() (repository.Character, error) {

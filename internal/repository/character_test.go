@@ -59,11 +59,11 @@ func TestCharacter(t *testing.T) {
 		repository.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
-		err := r.DeleteCharacter(ctx, &c)
+		err := r.DeleteCharacter(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			_, err := r.GetCharacter(ctx, c.ID)
-			assert.Error(t, err)
+			assert.ErrorIs(t, err, repository.ErrNotFound)
 		}
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
