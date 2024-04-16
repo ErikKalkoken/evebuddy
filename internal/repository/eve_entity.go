@@ -99,6 +99,19 @@ func (r *Repository) CreateEveEntity(ctx context.Context, id int32, name string,
 	return eveEntityFromDBModel(e), nil
 }
 
+func (r *Repository) GetEveEntityByNameAndCategory(ctx context.Context, name string, category EveEntityCategory) (EveEntity, error) {
+	arg := sqlc.GetEveEntityByNameAndCategoryParams{
+		Name:     name,
+		Category: eveEntityDBModelCategoryFromCategory(category),
+	}
+	e, err := r.q.GetEveEntityByNameAndCategory(ctx, arg)
+	if err != nil {
+		return EveEntity{}, err
+	}
+	e2 := eveEntityFromDBModel(e)
+	return e2, nil
+}
+
 func (r *Repository) GetEveEntity(ctx context.Context, id int32) (EveEntity, error) {
 	e, err := r.q.GetEveEntity(ctx, int64(id))
 	if err != nil {
@@ -127,6 +140,18 @@ func (r *Repository) ListEveEntityIDs(ctx context.Context) ([]int32, error) {
 	}
 	ids2 := islices.ConvertNumeric[int64, int32](ids)
 	return ids2, nil
+}
+
+func (r *Repository) ListEveEntitiesByName(ctx context.Context, name string) ([]EveEntity, error) {
+	ee, err := r.q.ListEveEntitiesByName(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	ee2 := make([]EveEntity, len(ee))
+	for i, e := range ee {
+		ee2[i] = eveEntityFromDBModel(e)
+	}
+	return ee2, nil
 }
 
 func (r *Repository) MissingEveEntityIDs(ctx context.Context, ids []int32) (*set.Set[int32], error) {

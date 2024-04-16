@@ -60,13 +60,13 @@ func (r *Repository) SetSettingString(key string, value string) error {
 	return nil
 }
 
-func (s *Repository) setSetting(key string, bb []byte) error {
+func (r *Repository) setSetting(key string, bb []byte) error {
 	ctx := context.Background()
 	arg := sqlc.CreateSettingParams{
 		Value: bb,
 		Key:   key,
 	}
-	if err := s.q.CreateSetting(ctx, arg); err != nil {
+	if err := r.q.CreateSetting(ctx, arg); err != nil {
 		if !isSqlite3ErrConstraint(err) {
 			return err
 		}
@@ -74,7 +74,7 @@ func (s *Repository) setSetting(key string, bb []byte) error {
 			Value: bb,
 			Key:   key,
 		}
-		if err := s.q.UpdateSetting(ctx, arg); err != nil {
+		if err := r.q.UpdateSetting(ctx, arg); err != nil {
 			return err
 		}
 	}
@@ -100,6 +100,6 @@ func bytesFromAny[T any](value T) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (s *Repository) DeleteSetting(key string) error {
-	return s.q.DeleteSetting(context.Background(), key)
+func (r *Repository) DeleteSetting(key string) error {
+	return r.q.DeleteSetting(context.Background(), key)
 }

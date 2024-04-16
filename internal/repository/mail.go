@@ -271,12 +271,12 @@ func (r *Repository) ListMailIDsForLabelOrdered(ctx context.Context, characterID
 	}
 }
 
-func (s *Repository) ListMailIDsForListOrdered(ctx context.Context, characterID int32, listID int32) ([]int32, error) {
+func (r *Repository) ListMailIDsForListOrdered(ctx context.Context, characterID int32, listID int32) ([]int32, error) {
 	arg := sqlc.ListMailIDsForListOrderedParams{
 		CharacterID: int64(characterID),
 		EveEntityID: int64(listID),
 	}
-	ids, err := s.q.ListMailIDsForListOrdered(ctx, arg)
+	ids, err := r.q.ListMailIDsForListOrdered(ctx, arg)
 	if err != nil {
 		return nil, err
 	}

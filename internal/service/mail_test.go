@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"example/evebuddy/internal/repository"
 	"fmt"
 	"net/http"
@@ -16,6 +17,7 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 	// given
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
+	ctx := context.Background()
 
 	s := NewService(nil)
 	var objs []esi.GetCharactersCharacterIdMail200Ok
@@ -53,7 +55,7 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 	token := repository.Token{AccessToken: "abc", CharacterID: 1, ExpiresAt: time.Now().Add(time.Minute * 10)}
 
 	// when
-	mails, err := s.listMailHeaders(&token)
+	mails, err := s.listMailHeaders(ctx, &token)
 
 	// then
 	if assert.NoError(t, err) {

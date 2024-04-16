@@ -11,7 +11,7 @@ import (
 
 	"github.com/antihax/goesi/esi"
 
-	"example/evebuddy/internal/sqlc"
+	"example/evebuddy/internal/repository"
 )
 
 type recipientCategory uint
@@ -34,18 +34,18 @@ var recipientCategoryLabels = map[recipientCategory]string{
 	recipientCategoryMailList:    "Mailing List",
 }
 
-var recipientMapCategories = map[EveEntityCategory]recipientCategory{
-	EveEntityAlliance:    recipientCategoryAlliance,
-	EveEntityCharacter:   recipientCategoryCharacter,
-	EveEntityCorporation: recipientCategoryCorporation,
-	EveEntityMailList:    recipientCategoryMailList,
+var recipientMapCategories = map[repository.EveEntityCategory]recipientCategory{
+	repository.EveEntityAlliance:    recipientCategoryAlliance,
+	repository.EveEntityCharacter:   recipientCategoryCharacter,
+	repository.EveEntityCorporation: recipientCategoryCorporation,
+	repository.EveEntityMailList:    recipientCategoryMailList,
 }
 
-var eveEntityCategory2MailRecipientType = map[EveEntityCategory]string{
-	EveEntityAlliance:    "alliance",
-	EveEntityCharacter:   "character",
-	EveEntityCorporation: "corporation",
-	EveEntityMailList:    "mailing_list",
+var eveEntityCategory2MailRecipientType = map[repository.EveEntityCategory]string{
+	repository.EveEntityAlliance:    "alliance",
+	repository.EveEntityCharacter:   "character",
+	repository.EveEntityCorporation: "corporation",
+	repository.EveEntityMailList:    "mailing_list",
 }
 
 func (r recipientCategory) String() string {
@@ -58,7 +58,7 @@ type recipient struct {
 	category recipientCategory
 }
 
-func newRecipientFromEntity(e EveEntity) recipient {
+func newRecipientFromEntity(e repository.EveEntity) recipient {
 	r := recipient{name: e.Name}
 	c, ok := recipientMapCategories[e.Category]
 	if ok {
@@ -97,7 +97,7 @@ func (r *recipient) hasCategory() bool {
 	return r.category != recipientCategoryUnknown
 }
 
-func (r *recipient) eveEntityCategory() (EveEntityCategory, bool) {
+func (r *recipient) eveEntityCategory() (repository.EveEntityCategory, bool) {
 	for ec, rc := range recipientMapCategories {
 		if rc == r.category {
 			return ec, true
@@ -120,7 +120,7 @@ func (s *Service) NewRecipients() *Recipients {
 	return &rr
 }
 
-func (s *Service) NewRecipientsFromEntities(ee []EveEntity) *Recipients {
+func (s *Service) NewRecipientsFromEntities(ee []repository.EveEntity) *Recipients {
 	rr := s.NewRecipients()
 	for _, e := range ee {
 		o := newRecipientFromEntity(e)
@@ -148,7 +148,7 @@ func (s *Service) NewRecipientsFromText(t string) *Recipients {
 	return rr
 }
 
-func (rr *Recipients) AddFromEveEntity(e EveEntity) {
+func (rr *Recipients) AddFromEveEntity(e repository.EveEntity) {
 	r := newRecipientFromEntity(e)
 	rr.add(r)
 }
@@ -210,11 +210,7 @@ func (rr *Recipients) buildMailRecipients(s *Service) ([]esi.PostCharactersChara
 			names = append(names, r.name)
 			continue
 		}
-		arg := sqlc.GetEveEntityByNameAndCategoryParams{
-			Name:     r.name,
-			Category: eveEntityDBModelCategoryFromCategory(c),
-		}
-		e, err := s.r.GetEveEntityByNameAndCategory(context.Background(), arg)
+		e, err := s.r.GetEveEntityByNameAndCategory(context.Background(), r.name, c)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				names = append(names, r.name)
@@ -223,7 +219,7 @@ func (rr *Recipients) buildMailRecipients(s *Service) ([]esi.PostCharactersChara
 				return nil, nil, err
 			}
 		}
-		mailType, ok := eveEntityCategory2MailRecipientType[eveEntityCategoryFromDBModel(e.Category)]
+		mailType, ok := eveEntityCategory2MailRecipientType[e.Category]
 		if !ok {
 			names = append(names, r.name)
 			continue
@@ -235,34 +231,34 @@ func (rr *Recipients) buildMailRecipients(s *Service) ([]esi.PostCharactersChara
 }
 
 // resolveNamesRemotely resolves a list of names remotely.
-// Will create all missing EveEntities int the DB.
+// Will create all missing EveEntities in the DB.
 func (s *Service) resolveNamesRemotely(names []string) error {
 	ctx := context.Background()
 	if len(names) == 0 {
 		return nil
 	}
-	r, _, err := s.esiClient.ESI.UniverseApi.PostUniverseIds(context.Background(), names, nil)
+	r, _, err := s.esiClient.ESI.UniverseApi.PostUniverseIds(ctx, names, nil)
 	if err != nil {
 		return err
 	}
-	ee := make([]sqlc.CreateEveEntityParams, 0, len(names))
+	ee := make([]repository.EveEntity, 0, len(names))
 	for _, o := range r.Alliances {
-		e := sqlc.CreateEveEntityParams{ID: int64(o.Id), Name: o.Name, Category: sqlc.EveEntityAlliance}
+		e := repository.EveEntity{ID: o.Id, Name: o.Name, Category: repository.EveEntityAlliance}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Characters {
-		e := sqlc.CreateEveEntityParams{ID: int64(o.Id), Name: o.Name, Category: sqlc.EveEntityCharacter}
+		e := repository.EveEntity{ID: o.Id, Name: o.Name, Category: repository.EveEntityCharacter}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Corporations {
-		e := sqlc.CreateEveEntityParams{ID: int64(o.Id), Name: o.Name, Category: sqlc.EveEntityCorporation}
+		e := repository.EveEntity{ID: o.Id, Name: o.Name, Category: repository.EveEntityCorporation}
 		ee = append(ee, e)
 	}
 	ids := make([]int32, len(ee))
 	for i, e := range ee {
-		ids[i] = int32(e.ID)
+		ids[i] = e.ID
 	}
-	missing, err := s.missingEveEntityIDs(ctx, ids)
+	missing, err := s.r.MissingEveEntityIDs(ctx, ids)
 	if err != nil {
 		return err
 	}
@@ -271,7 +267,7 @@ func (s *Service) resolveNamesRemotely(names []string) error {
 	}
 	for _, e := range ee {
 		if missing.Has(int32(e.ID)) {
-			_, err := s.r.CreateEveEntity(ctx, e)
+			_, err := s.r.CreateEveEntity(ctx, e.ID, e.Name, e.Category)
 			if err != nil {
 				return err
 			}
@@ -297,7 +293,7 @@ func (s *Service) buildMailRecipientsFromNames(names []string) ([]esi.PostCharac
 			return nil, fmt.Errorf("%s: %w", n, ErrNameMultipleMatches)
 		}
 		e := ee[0]
-		c, ok := eveEntityCategory2MailRecipientType[eveEntityCategoryFromDBModel(e.Category)]
+		c, ok := eveEntityCategory2MailRecipientType[e.Category]
 		if !ok {
 			return nil, fmt.Errorf("failed to match category for entity: %v", e)
 		}
