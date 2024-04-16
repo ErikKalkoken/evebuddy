@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"example/evebuddy/internal/api/images"
+	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/sqlc"
 	"time"
 
@@ -206,6 +207,15 @@ func (r *Repository) ListCharacters(ctx context.Context) ([]Character, error) {
 		cc[i] = c
 	}
 	return cc, nil
+}
+
+func (r *Repository) ListCharacterIDs(ctx context.Context) ([]int32, error) {
+	ids, err := r.q.ListCharacterIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ids2 := islices.ConvertNumeric[int64, int32](ids)
+	return ids2, nil
 }
 
 func (r *Repository) UpdateOrCreateCharacter(ctx context.Context, c *Character) error {

@@ -17,7 +17,8 @@ type EveEntityCategory int
 
 // Supported categories of EveEntity
 const (
-	EveEntityAlliance EveEntityCategory = iota + 1
+	EveEntityUndefined EveEntityCategory = iota
+	EveEntityAlliance
 	EveEntityCharacter
 	EveEntityCorporation
 	EveEntityFaction
@@ -56,13 +57,22 @@ func eveEntityFromDBModel(e sqlc.EveEntity) EveEntity {
 	}
 }
 
+// Eve Entity categories in DB models
+const (
+	eveEntityAllianceCategoryDB    = "alliance"
+	eveEntityCharacterCategoryDB   = "character"
+	eveEntityCorporationCategoryDB = "corporation"
+	eveEntityFactionCategoryDB     = "faction"
+	eveEntityMailListCategoryDB    = "mail_list"
+)
+
 func eveEntityCategoryFromDBModel(c string) EveEntityCategory {
 	categoryMap := map[string]EveEntityCategory{
-		sqlc.EveEntityAlliance:    EveEntityAlliance,
-		sqlc.EveEntityCharacter:   EveEntityCharacter,
-		sqlc.EveEntityCorporation: EveEntityCorporation,
-		sqlc.EveEntityFaction:     EveEntityFaction,
-		sqlc.EveEntityMailList:    EveEntityMailList,
+		eveEntityAllianceCategoryDB:    EveEntityAlliance,
+		eveEntityCharacterCategoryDB:   EveEntityCharacter,
+		eveEntityCorporationCategoryDB: EveEntityCorporation,
+		eveEntityFactionCategoryDB:     EveEntityFaction,
+		eveEntityMailListCategoryDB:    EveEntityMailList,
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
@@ -73,11 +83,11 @@ func eveEntityCategoryFromDBModel(c string) EveEntityCategory {
 
 func eveEntityDBModelCategoryFromCategory(c EveEntityCategory) string {
 	categoryMap := map[EveEntityCategory]string{
-		EveEntityAlliance:    sqlc.EveEntityAlliance,
-		EveEntityCharacter:   sqlc.EveEntityCharacter,
-		EveEntityCorporation: sqlc.EveEntityCorporation,
-		EveEntityFaction:     sqlc.EveEntityFaction,
-		EveEntityMailList:    sqlc.EveEntityMailList,
+		EveEntityAlliance:    eveEntityAllianceCategoryDB,
+		EveEntityCharacter:   eveEntityCharacterCategoryDB,
+		EveEntityCorporation: eveEntityCorporationCategoryDB,
+		EveEntityFaction:     eveEntityFactionCategoryDB,
+		EveEntityMailList:    eveEntityMailListCategoryDB,
 	}
 	c2, ok := categoryMap[c]
 	if !ok {

@@ -10,9 +10,8 @@ import (
 )
 
 func TestToken(t *testing.T) {
-	db, q, factory := setUpDB()
+	db, r, factory := setUpDB()
 	defer db.Close()
-	s := repository.New(db)
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
@@ -26,10 +25,10 @@ func TestToken(t *testing.T) {
 			TokenType:    "xxx",
 		}
 		// when
-		err := s.UpdateOrCreateToken(ctx, &o)
+		err := r.UpdateOrCreateToken(ctx, &o)
 		// then
 		assert.NoError(t, err)
-		r, err := q.GetToken(ctx, c.ID)
+		r, err := r.GetToken(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, o.AccessToken, r.AccessToken)
 			assert.Equal(t, c.ID, r.CharacterID)
@@ -46,15 +45,15 @@ func TestToken(t *testing.T) {
 			RefreshToken: "refresh",
 			TokenType:    "xxx",
 		}
-		if err := s.UpdateOrCreateToken(ctx, &o); err != nil {
+		if err := r.UpdateOrCreateToken(ctx, &o); err != nil {
 			panic(err)
 		}
 		o.AccessToken = "changed"
 		// when
-		err := s.UpdateOrCreateToken(ctx, &o)
+		err := r.UpdateOrCreateToken(ctx, &o)
 		// then
 		assert.NoError(t, err)
-		r, err := q.GetToken(ctx, c.ID)
+		r, err := r.GetToken(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, o.AccessToken, r.AccessToken)
 			assert.Equal(t, c.ID, r.CharacterID)

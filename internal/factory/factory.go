@@ -1,73 +1,72 @@
-// Package factory contains factories for creating test objects in the database
+// Package factory contains factories for creating test objects in the repository
 package factory
 
 import (
 	"context"
-	"example/evebuddy/internal/sqlc"
+	"example/evebuddy/internal/repository"
 	"fmt"
 	"slices"
 	"time"
 )
 
 type Factory struct {
-	q *sqlc.Queries
+	r *repository.Repository
 }
 
-func New(q *sqlc.Queries) Factory {
-	f := Factory{q: q}
+func New(r *repository.Repository) Factory {
+	f := Factory{r: r}
 	return f
 }
 
 // CreateCharacter is a test factory for character objects.
-func (f Factory) CreateCharacter(args ...sqlc.CreateCharacterParams) sqlc.Character {
+func (f Factory) CreateCharacter(args ...repository.Character) repository.Character {
 	ctx := context.Background()
-	var arg sqlc.CreateCharacterParams
+	var c repository.Character
 	if len(args) > 0 {
-		arg = args[0]
+		c = args[0]
 	}
-	if arg.ID == 0 {
-		ids, err := f.q.ListCharacterIDs(ctx)
+	if c.ID == 0 {
+		ids, err := f.r.ListCharacterIDs(ctx)
 		if err != nil {
 			panic(err)
 		}
 		if len(ids) == 0 {
-			arg.ID = 1
+			c.ID = 1
 		} else {
-			arg.ID = slices.Max(ids) + 1
+			c.ID = slices.Max(ids) + 1
 		}
 	}
-	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Generated character #%d", arg.ID)
+	if c.Name == "" {
+		c.Name = fmt.Sprintf("Generated character #%d", c.ID)
 	}
-	if arg.CorporationID == 0 {
-		e := f.CreateEveEntity(sqlc.CreateEveEntityParams{Category: sqlc.EveEntityCorporation})
-		arg.CorporationID = e.ID
+	if c.Corporation.ID == 0 {
+		c.Corporation = f.CreateEveEntityCorporation()
 	}
-	if arg.Birthday.IsZero() {
-		arg.Birthday = time.Now()
+	if c.Birthday.IsZero() {
+		c.Birthday = time.Now()
 	}
-	if arg.Description == "" {
-		arg.Description = "Lorem Ipsum"
+	if c.Description == "" {
+		c.Description = "Lorem Ipsum"
 	}
 	// if c.MailUpdatedAt.IsZero() {
 	// 	c.MailUpdatedAt = time.Now()
 	// }
-	character, err := f.q.CreateCharacter(ctx, arg)
+	err := f.r.UpdateOrCreateCharacter(ctx, &c)
 	if err != nil {
 		panic(err)
 	}
-	return character
+	return c
 }
 
 // CreateEveEntity is a test factory for EveEntity objects.
-func (f Factory) CreateEveEntity(args ...sqlc.CreateEveEntityParams) sqlc.EveEntity {
-	var arg sqlc.CreateEveEntityParams
+func (f Factory) CreateEveEntity(args ...repository.EveEntity) repository.EveEntity {
+	var arg repository.EveEntity
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
 	if arg.ID == 0 {
-		ids, err := f.q.ListEveEntityIDs(ctx)
+		ids, err := f.r.ListEveEntityIDs(ctx)
 		if err != nil {
 			panic(err)
 		}
@@ -80,14 +79,34 @@ func (f Factory) CreateEveEntity(args ...sqlc.CreateEveEntityParams) sqlc.EveEnt
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("generated #%d", arg.ID)
 	}
-	if arg.Category == "" {
-		arg.Category = sqlc.EveEntityCharacter
+	if arg.Category == 0 {
+		arg.Category = repository.EveEntityCharacter
 	}
-	e, err := f.q.CreateEveEntity(ctx, arg)
+	e, err := f.r.CreateEveEntity(ctx, arg.ID, arg.Name, arg.Category)
 	if err != nil {
 		panic(err)
 	}
 	return e
+}
+
+func (f Factory) CreateEveEntityCharacter(args ...repository.EveEntity) repository.EveEntity {
+	var arg repository.EveEntity
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	arg.Category = repository.EveEntityCharacter
+	args2 := []repository.EveEntity{arg}
+	return f.CreateEveEntity(args2...)
+}
+
+func (f Factory) CreateEveEntityCorporation(args ...repository.EveEntity) repository.EveEntity {
+	var arg repository.EveEntity
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	arg.Category = repository.EveEntityCorporation
+	args2 := []repository.EveEntity{arg}
+	return f.CreateEveEntity(args2...)
 }
 
 // // CreateMail is a test factory for Mail objects
