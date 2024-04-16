@@ -76,7 +76,7 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 		recipientIDs[i] = r.RecipientId
 	}
 	ids := slices.Concat(recipientIDs, []int32{characterID})
-	_, err = s.addMissingEveEntities(ids)
+	_, err = s.addMissingEveEntities(ctx, ids)
 	if err != nil {
 		return err
 	}
@@ -286,7 +286,7 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, header esi.GetCharacter
 		for _, r := range header.Recipients {
 			entityIDs.Add(r.RecipientId)
 		}
-		_, err := s.addMissingEveEntities(entityIDs.ToSlice())
+		_, err := s.addMissingEveEntities(ctx, entityIDs.ToSlice())
 		if err != nil {
 			return err
 		}

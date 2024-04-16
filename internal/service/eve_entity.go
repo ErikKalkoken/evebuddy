@@ -42,7 +42,7 @@ func (s *Service) AddEveEntitiesFromESISearch(characterID int32, search string) 
 		return nil, err
 	}
 	ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
-	missingIDs, err := s.addMissingEveEntities(ids)
+	missingIDs, err := s.addMissingEveEntities(ctx, ids)
 	if err != nil {
 		slog.Error("Failed to fetch missing IDs", "error", err)
 		return nil, err
@@ -51,8 +51,7 @@ func (s *Service) AddEveEntitiesFromESISearch(characterID int32, search string) 
 }
 
 // addMissingEveEntities adds EveEntities from ESI for IDs missing in the database.
-func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
-	ctx := context.Background()
+func (s *Service) addMissingEveEntities(ctx context.Context, ids []int32) ([]int32, error) {
 	missing, err := s.r.MissingEveEntityIDs(ctx, ids)
 	if err != nil {
 		return nil, err
@@ -62,7 +61,7 @@ func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 	}
 	entities, _, err := s.esiClient.ESI.UniverseApi.PostUniverseNames(ctx, missing.ToSlice(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve IDs: %v %v", err, ids)
+		return nil, fmt.Errorf("failed to resolve IDs on ESI %v: %w", ids, err)
 	}
 	for _, entity := range entities {
 		_, err := s.r.CreateEveEntity(ctx, entity.Id, entity.Name, eveEntityCategoryFromESICategory(entity.Category))
@@ -70,7 +69,6 @@ func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 			return nil, err
 		}
 	}
-	slog.Debug("Added missing eve entities", "count", len(entities))
 	return missing.ToSlice(), nil
 }
 

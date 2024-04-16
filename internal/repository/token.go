@@ -46,6 +46,12 @@ func (r *Repository) UpdateOrCreateToken(ctx context.Context, t *Token) error {
 	if t.CharacterID == 0 {
 		return errors.New("can not save token without character")
 	}
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	qtx := r.q.WithTx(tx)
 	arg := sqlc.CreateTokenParams{
 		AccessToken:  t.AccessToken,
 		CharacterID:  int64(t.CharacterID),
@@ -53,8 +59,7 @@ func (r *Repository) UpdateOrCreateToken(ctx context.Context, t *Token) error {
 		RefreshToken: t.RefreshToken,
 		TokenType:    t.TokenType,
 	}
-	err := r.q.CreateToken(ctx, arg)
-	if err != nil {
+	if err := qtx.CreateToken(ctx, arg); err != nil {
 		if !isSqlite3ErrConstraint(err) {
 			return err
 		}
@@ -65,9 +70,9 @@ func (r *Repository) UpdateOrCreateToken(ctx context.Context, t *Token) error {
 			RefreshToken: t.RefreshToken,
 			TokenType:    t.TokenType,
 		}
-		if err := r.q.UpdateToken(ctx, arg); err != nil {
+		if err := qtx.UpdateToken(ctx, arg); err != nil {
 			return err
 		}
 	}
-	return nil
+	return tx.Commit()
 }

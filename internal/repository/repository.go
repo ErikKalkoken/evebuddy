@@ -13,10 +13,10 @@ var ErrNotFound = errors.New("object not found")
 
 type Repository struct {
 	q  *sqlc.Queries
-	db sqlc.DBTX
+	db *sql.DB
 }
 
-func New(db sqlc.DBTX) *Repository {
+func New(db *sql.DB) *Repository {
 	r := &Repository{q: sqlc.New(db), db: db}
 	return r
 }

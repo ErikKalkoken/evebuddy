@@ -48,7 +48,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	if charEsi.FactionId != 0 {
 		ids = append(ids, charEsi.FactionId)
 	}
-	_, err = s.addMissingEveEntities(ids)
+	_, err = s.addMissingEveEntities(ctx, ids)
 	if err != nil {
 		return err
 	}

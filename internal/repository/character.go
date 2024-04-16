@@ -223,6 +223,12 @@ func (r *Repository) ListCharacterIDs(ctx context.Context) ([]int32, error) {
 }
 
 func (r *Repository) UpdateOrCreateCharacter(ctx context.Context, c *Character) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	qtx := r.q.WithTx(tx)
 	arg := sqlc.CreateCharacterParams{
 		Birthday:       c.Birthday,
 		CorporationID:  int64(c.Corporation.ID),
@@ -248,7 +254,7 @@ func (r *Repository) UpdateOrCreateCharacter(ctx context.Context, c *Character) 
 		arg.WalletBalance.Float64 = c.WalletBalance
 		arg.WalletBalance.Valid = true
 	}
-	_, err := r.q.CreateCharacter(ctx, arg)
+	_, err = qtx.CreateCharacter(ctx, arg)
 	if err != nil {
 		if !isSqlite3ErrConstraint(err) {
 			return err
@@ -276,9 +282,9 @@ func (r *Repository) UpdateOrCreateCharacter(ctx context.Context, c *Character) 
 			arg.WalletBalance.Float64 = c.WalletBalance
 			arg.WalletBalance.Valid = true
 		}
-		if err := r.q.UpdateCharacter(ctx, arg); err != nil {
+		if err := qtx.UpdateCharacter(ctx, arg); err != nil {
 			return err
 		}
 	}
-	return nil
+	return tx.Commit()
 }

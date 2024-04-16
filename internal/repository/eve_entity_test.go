@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"context"
+	"example/evebuddy/internal/helper/set"
 	"example/evebuddy/internal/repository"
 	"testing"
 
@@ -49,6 +50,37 @@ func TestEveEntity(t *testing.T) {
 	t.Run("should return error when no object found", func(t *testing.T) {
 		_, err := r.GetEveEntityByNameAndCategory(ctx, "dummy", repository.EveEntityAlliance)
 		assert.ErrorIs(t, err, repository.ErrNotFound)
+	})
+}
+
+func TestEveEntityIDs(t *testing.T) {
+	db, r, factory := setUpDB()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should list existing entity IDs", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		factory.CreateEveEntity(repository.EveEntity{ID: 5})
+		factory.CreateEveEntity(repository.EveEntity{ID: 42})
+		// when
+		got, err := r.ListEveEntityIDs(ctx)
+		// then
+		if assert.NoError(t, err) {
+			want := []int32{5, 42}
+			assert.Equal(t, want, got)
+		}
+	})
+	t.Run("should return missing IDs", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		factory.CreateEveEntity(repository.EveEntity{ID: 42})
+		// when
+		got, err := r.MissingEveEntityIDs(ctx, []int32{42, 5})
+		// then
+		if assert.NoError(t, err) {
+			want := set.NewFromSlice([]int32{5})
+			assert.Equal(t, want, got)
+		}
 	})
 }
 

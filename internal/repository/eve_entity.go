@@ -104,7 +104,7 @@ func (r *Repository) CreateEveEntity(ctx context.Context, id int32, name string,
 	}
 	e, err := r.q.CreateEveEntity(ctx, arg)
 	if err != nil {
-		return EveEntity{}, err
+		return EveEntity{}, fmt.Errorf("failed to create eve entity %v, %w", arg, err)
 	}
 	return eveEntityFromDBModel(e), nil
 }
@@ -147,7 +147,7 @@ func (r *Repository) ListEveEntitiesByPartialName(ctx context.Context, partial s
 }
 
 func (r *Repository) ListEveEntityIDs(ctx context.Context) ([]int32, error) {
-	ids, err := r.q.ListCharacterIDs(ctx)
+	ids, err := r.q.ListEveEntityIDs(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -179,13 +179,20 @@ func (r *Repository) MissingEveEntityIDs(ctx context.Context, ids []int32) (*set
 }
 
 func (r *Repository) UpdateOrCreateEveEntity(ctx context.Context, id int32, name string, category EveEntityCategory) (EveEntity, error) {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return EveEntity{}, err
+	}
+	defer tx.Rollback()
+	qtx := r.q.WithTx(tx)
 	categoryDB := eveEntityDBModelCategoryFromCategory(category)
 	arg := sqlc.CreateEveEntityParams{
 		ID:       int64(id),
 		Name:     name,
 		Category: categoryDB,
 	}
-	e, err := r.q.CreateEveEntity(ctx, arg)
+	var e sqlc.EveEntity
+	e, err = qtx.CreateEveEntity(ctx, arg)
 	if err != nil {
 		if !isSqlite3ErrConstraint(err) {
 			return EveEntity{}, err
@@ -195,11 +202,13 @@ func (r *Repository) UpdateOrCreateEveEntity(ctx context.Context, id int32, name
 			Name:     name,
 			Category: categoryDB,
 		}
-		e, err := r.q.UpdateEveEntity(ctx, arg)
+		e, err = qtx.UpdateEveEntity(ctx, arg)
 		if err != nil {
 			return EveEntity{}, err
 		}
-		return eveEntityFromDBModel(e), nil
+	}
+	if err := tx.Commit(); err != nil {
+		return EveEntity{}, err
 	}
 	return eveEntityFromDBModel(e), nil
 }
