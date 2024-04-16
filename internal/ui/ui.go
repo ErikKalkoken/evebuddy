@@ -109,9 +109,11 @@ func NewUI(s *service.Service) *ui {
 		// the window will be misdrawn into a smaller area if the animation hasn't finished.
 		// This makes it much less likely to occur (not seen on dozens of startups)
 		// but is a hacky "solution"!
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(250 * time.Millisecond)
 		s.StartEsiStatusTicker(status.status)
+		//TODO: Find better workaround
 		w.Resize(fyne.NewSize(800, 601))
+		w.Resize(fyne.NewSize(800, 600))
 	}()
 	return u
 }
