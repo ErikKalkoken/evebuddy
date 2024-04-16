@@ -11,7 +11,10 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -41,6 +44,7 @@ type ui struct {
 	mailArea         *mailArea
 	statusArea       *statusArea
 	service          *service.Service
+	toolbarBadge     *fyne.Container
 	window           fyne.Window
 }
 
@@ -77,11 +81,12 @@ func NewUI(s *service.Service) *ui {
 	tabs := container.NewAppTabs(characterTab, mailTab)
 	tabs.SetTabLocation(container.TabLocationLeading)
 
-	c := container.NewBorder(nil, status.content, nil, nil, tabs)
+	toolbar := makeToolbar(u)
+	c := container.NewBorder(toolbar, status.content, nil, nil, tabs)
 	w.SetContent(c)
 	w.Resize(fyne.NewSize(800, 600))
 	w.SetMaster()
-	w.SetMainMenu(MakeMenu(a, u))
+	// w.SetMainMenu(MakeMenu(a, u))
 
 	characterID, err := s.GetSettingInt32(settingLastCharacterID)
 	if err != nil {
@@ -99,6 +104,24 @@ func NewUI(s *service.Service) *ui {
 	}
 	s.StartEsiStatusTicker(status.status)
 	return u
+}
+
+func makeToolbar(u *ui) *fyne.Container {
+	badge := container.NewHBox()
+	u.toolbarBadge = badge
+	toolbar := container.NewHBox(
+		badge,
+		layout.NewSpacer(),
+		widget.NewButtonWithIcon("", theme.InfoIcon(), func() {
+			text := "Eve Buddy v0.1.0\n\n(c) 2024 Erik Kalkoken"
+			d := dialog.NewInformation("About", text, u.window)
+			d.Show()
+		}),
+		widget.NewButtonWithIcon("", theme.AccountIcon(), func() {
+			u.ShowManageDialog()
+		}),
+	)
+	return toolbar
 }
 
 // ShowAndRun shows the UI and runs it (blocking).
@@ -119,7 +142,7 @@ func (u *ui) CurrentChar() *repository.Character {
 
 func (u *ui) SetCurrentCharacter(c *repository.Character) {
 	u.currentCharacter = c
-	u.window.SetTitle(fmt.Sprintf("Eve Buddy [%s]", c.Name))
+	u.updateToolbarBadge(c)
 	err := u.service.SetSettingInt32(settingLastCharacterID, c.ID)
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
@@ -128,8 +151,24 @@ func (u *ui) SetCurrentCharacter(c *repository.Character) {
 	u.folderArea.Redraw()
 }
 
+func (u *ui) updateToolbarBadge(c *repository.Character) {
+	if c == nil {
+		u.toolbarBadge.RemoveAll()
+		return
+	}
+	uri, _ := c.PortraitURL(32)
+	image := canvas.NewImageFromURI(uri)
+	image.FillMode = canvas.ImageFillOriginal
+	name := widget.NewLabel(fmt.Sprintf("%s (%s)", c.Name, c.Corporation.Name))
+	name.TextStyle = fyne.TextStyle{Bold: true}
+	u.toolbarBadge.RemoveAll()
+	u.toolbarBadge.Add(container.NewPadded(image))
+	u.toolbarBadge.Add(name)
+}
+
 func (u *ui) ResetCurrentCharacter() {
 	u.currentCharacter = nil
+	u.updateToolbarBadge(nil)
 	err := u.service.DeleteSetting(settingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
