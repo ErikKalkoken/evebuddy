@@ -6,12 +6,17 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"errors"
+	"fmt"
 
 	"example/evebuddy/internal/sqlc"
 )
 
 func (r *Repository) DeleteSetting(key string) error {
-	return r.q.DeleteSetting(context.Background(), key)
+	err := r.q.DeleteSetting(context.Background(), key)
+	if err != nil {
+		return fmt.Errorf("failed to delete setting for key %s: %w", key, err)
+	}
+	return nil
 }
 
 // GetSetting returns the value for a settings key, when it exists.
@@ -22,7 +27,7 @@ func (r *Repository) GetSettingInt32(key string) (int32, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, nil
 		}
-		return 0, err
+		return 0, fmt.Errorf("failed to get setting for key %s: %w", key, err)
 	}
 	return anyFromBytes[int32](obj.Value)
 }
@@ -35,7 +40,7 @@ func (r *Repository) GetSettingString(key string) (string, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", nil
 		}
-		return "", err
+		return "", fmt.Errorf("failed to get setting for key %s: %w", key, err)
 	}
 	return anyFromBytes[string](obj.Value)
 }
@@ -65,22 +70,34 @@ func (r *Repository) SetSettingString(key string, value string) error {
 }
 
 func (r *Repository) setSetting(key string, bb []byte) error {
-	ctx := context.Background()
-	arg := sqlc.CreateSettingParams{
-		Value: bb,
-		Key:   key,
-	}
-	if err := r.q.CreateSetting(ctx, arg); err != nil {
-		if !isSqlite3ErrConstraint(err) {
+	err := func() error {
+		ctx := context.Background()
+		tx, err := r.db.Begin()
+		if err != nil {
 			return err
 		}
-		arg := sqlc.UpdateSettingParams{
+		defer tx.Rollback()
+		qtx := r.q.WithTx(tx)
+		arg := sqlc.CreateSettingParams{
 			Value: bb,
 			Key:   key,
 		}
-		if err := r.q.UpdateSetting(ctx, arg); err != nil {
-			return err
+		if err := qtx.CreateSetting(ctx, arg); err != nil {
+			if !isSqlite3ErrConstraint(err) {
+				return err
+			}
+			arg := sqlc.UpdateSettingParams{
+				Value: bb,
+				Key:   key,
+			}
+			if err := qtx.UpdateSetting(ctx, arg); err != nil {
+				return err
+			}
 		}
+		return tx.Commit()
+	}()
+	if err != nil {
+		return fmt.Errorf("failed to set setting for key %s: %w", key, err)
 	}
 	return nil
 }

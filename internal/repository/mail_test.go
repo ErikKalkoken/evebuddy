@@ -19,13 +19,14 @@ func TestMailCreate(t *testing.T) {
 		c := factory.CreateCharacter()
 		f := factory.CreateEveEntity()
 		recipient := factory.CreateEveEntity()
-		// l := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID})
+		label := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID})
 		// when
 		arg := repository.CreateMailParams{
 			Body:         "body",
 			CharacterID:  c.ID,
 			FromID:       f.ID,
 			IsRead:       false,
+			LabelIDs:     []int32{label.LabelID},
 			MailID:       42,
 			RecipientIDs: []int32{recipient.ID},
 			Subject:      "subject",
@@ -43,8 +44,8 @@ func TestMailCreate(t *testing.T) {
 			assert.Equal(t, "subject", m.Subject)
 			assert.False(t, m.Timestamp.IsZero())
 			assert.Equal(t, []repository.EveEntity{recipient}, m.Recipients)
-			// assert.Equal(t, l.Name, m.Labels[0].Name)
-			// assert.Equal(t, l.LabelID, m.Labels[0].LabelID)
+			assert.Equal(t, label.Name, m.Labels[0].Name)
+			assert.Equal(t, label.LabelID, m.Labels[0].LabelID)
 		}
 	})
 }

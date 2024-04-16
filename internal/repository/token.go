@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"example/evebuddy/internal/sqlc"
+	"fmt"
 	"time"
 )
 
@@ -41,42 +42,48 @@ func (r *Repository) GetToken(ctx context.Context, characterID int32) (Token, er
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return Token{}, err
+		return Token{}, fmt.Errorf("failed to get token for character %d: %w", characterID, err)
 	}
 	t2 := tokenFromDBModel(t)
 	return t2, nil
 }
 func (r *Repository) UpdateOrCreateToken(ctx context.Context, t *Token) error {
-	if t.CharacterID == 0 {
-		return errors.New("can not save token without character")
-	}
-	tx, err := r.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	qtx := r.q.WithTx(tx)
-	arg := sqlc.CreateTokenParams{
-		AccessToken:  t.AccessToken,
-		CharacterID:  int64(t.CharacterID),
-		ExpiresAt:    t.ExpiresAt,
-		RefreshToken: t.RefreshToken,
-		TokenType:    t.TokenType,
-	}
-	if err := qtx.CreateToken(ctx, arg); err != nil {
-		if !isSqlite3ErrConstraint(err) {
+	err := func() error {
+		if t.CharacterID == 0 {
+			return errors.New("can not save token without character")
+		}
+		tx, err := r.db.Begin()
+		if err != nil {
 			return err
 		}
-		arg := sqlc.UpdateTokenParams{
+		defer tx.Rollback()
+		qtx := r.q.WithTx(tx)
+		arg := sqlc.CreateTokenParams{
 			AccessToken:  t.AccessToken,
 			CharacterID:  int64(t.CharacterID),
 			ExpiresAt:    t.ExpiresAt,
 			RefreshToken: t.RefreshToken,
 			TokenType:    t.TokenType,
 		}
-		if err := qtx.UpdateToken(ctx, arg); err != nil {
-			return err
+		if err := qtx.CreateToken(ctx, arg); err != nil {
+			if !isSqlite3ErrConstraint(err) {
+				return err
+			}
+			arg := sqlc.UpdateTokenParams{
+				AccessToken:  t.AccessToken,
+				CharacterID:  int64(t.CharacterID),
+				ExpiresAt:    t.ExpiresAt,
+				RefreshToken: t.RefreshToken,
+				TokenType:    t.TokenType,
+			}
+			if err := qtx.UpdateToken(ctx, arg); err != nil {
+				return err
+			}
 		}
+		return tx.Commit()
+	}()
+	if err != nil {
+		return fmt.Errorf("failed to update or create token for character %d: %w", t.CharacterID, err)
 	}
-	return tx.Commit()
+	return nil
 }

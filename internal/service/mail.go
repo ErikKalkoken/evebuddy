@@ -327,11 +327,8 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, header esi.GetCharacter
 			Subject:      m.Subject,
 			Timestamp:    m.Timestamp,
 		}
-		mailID, err := s.r.CreateMail(ctx, arg)
+		_, err = s.r.CreateMail(ctx, arg)
 		if err != nil {
-			return err
-		}
-		if err := s.r.AddMailLabelsToMail(ctx, token.CharacterID, mailID, m.Labels); err != nil {
 			return err
 		}
 		c.Add(1)

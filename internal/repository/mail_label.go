@@ -57,7 +57,7 @@ func (r *Repository) GetMailLabel(ctx context.Context, characterID, labelID int3
 func (r *Repository) ListMailLabels(ctx context.Context, characterID int32) ([]MailLabel, error) {
 	ll, err := r.q.ListMailLabels(ctx, int64(characterID))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list mail label IDs for character %d: %w", characterID, err)
 	}
 	ll2 := make([]MailLabel, len(ll))
 	for i, l := range ll {
