@@ -82,7 +82,10 @@ func (c *Character) ToDBUpdateParams() sqlc.UpdateCharacterParams {
 
 func (r *Repository) DeleteCharacter(ctx context.Context, c *Character) error {
 	err := r.q.DeleteCharacter(ctx, int64(c.ID))
-	return fmt.Errorf("failed to delete character %d: %w", c.ID, err)
+	if err != nil {
+		return fmt.Errorf("failed to delete character %d: %w", c.ID, err)
+	}
+	return nil
 }
 
 func (r *Repository) GetCharacter(ctx context.Context, id int32) (Character, error) {

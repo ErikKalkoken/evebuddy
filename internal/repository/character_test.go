@@ -74,4 +74,43 @@ func TestCharacter(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, repository.ErrNotFound)
 	})
+	t.Run("can fetch character by ID with corporation only", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c := factory.CreateCharacter()
+		// when
+		r, err := r.GetCharacter(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, c.Alliance, r.Alliance)
+			assert.Equal(t, c.Birthday.Unix(), r.Birthday.Unix())
+			assert.Equal(t, c.Corporation, r.Corporation)
+			assert.Equal(t, c.Corporation, r.Corporation)
+			assert.Equal(t, c.Description, r.Description)
+			assert.Equal(t, c.Faction, r.Faction)
+			assert.Equal(t, c.ID, r.ID)
+			assert.Equal(t, c.Name, r.Name)
+		}
+	})
+	t.Run("can fetch character by ID with alliance and faction", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		factory.CreateCharacter()
+		alliance := factory.CreateEveEntityAlliance()
+		faction := factory.CreateEveEntity()
+		c := factory.CreateCharacter(repository.Character{Alliance: alliance, Faction: faction})
+		// when
+		r, err := r.GetCharacter(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, alliance, r.Alliance)
+			assert.Equal(t, c.Birthday.Unix(), r.Birthday.Unix())
+			assert.Equal(t, c.Corporation, r.Corporation)
+			assert.Equal(t, c.Corporation, r.Corporation)
+			assert.Equal(t, c.Description, r.Description)
+			assert.Equal(t, faction, r.Faction)
+			assert.Equal(t, c.ID, r.ID)
+			assert.Equal(t, c.Name, r.Name)
+		}
+	})
 }

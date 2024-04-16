@@ -47,6 +47,25 @@ func TestEveEntity(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can fetch existing", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		// given
+		e1 := factory.CreateEveEntity(
+			repository.EveEntity{
+				ID:       42,
+				Name:     "Alpha",
+				Category: repository.EveEntityCharacter,
+			})
+		// when
+		e2, err := r.GetEveEntity(ctx, e1.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, e1.ID, e2.ID)
+			assert.Equal(t, "Alpha", e2.Name)
+			assert.Equal(t, repository.EveEntityCharacter, e2.Category)
+		}
+	})
 	t.Run("should return error when no object found 1", func(t *testing.T) {
 		_, err := r.GetEveEntity(ctx, 99)
 		assert.ErrorIs(t, err, repository.ErrNotFound)

@@ -220,31 +220,32 @@ func (f Factory) CreateMailLabel(args ...repository.MailLabel) repository.MailLa
 // 	return l
 // }
 
-// // CreateToken is a test factory for Token objects.
-// func (f factory) CreateToken(args ...repository.Token) repository.Token {
-// 	var t repository.Token
-// 	if len(args) > 0 {
-// 		t = args[0]
-// 	}
-// 	if t.AccessToken == "" {
-// 		t.AccessToken = fmt.Sprintf("GeneratedAccessToken#%d", rand.IntN(1000000))
-// 	}
-// 	if t.RefreshToken == "" {
-// 		t.RefreshToken = fmt.Sprintf("GeneratedRefreshToken#%d", rand.IntN(1000000))
-// 	}
-// 	if t.ExpiresAt.IsZero() {
-// 		t.ExpiresAt = time.Now().Add(time.Minute * 20)
-// 	}
-// 	if t.TokenType == "" {
-// 		t.TokenType = "Bearer"
-// 	}
-// 	if t.CharacterID == 0 {
-// 		c := f.CreateCharacter()
-// 		t.CharacterID = c.ID
-// 	}
-// 	err := t.Save()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	return t
-// }
+// CreateToken is a test factory for Token objects.
+func (f Factory) CreateToken(args ...repository.Token) repository.Token {
+	var t repository.Token
+	ctx := context.Background()
+	if len(args) > 0 {
+		t = args[0]
+	}
+	if t.AccessToken == "" {
+		t.AccessToken = fmt.Sprintf("GeneratedAccessToken#%d", rand.IntN(1000000))
+	}
+	if t.RefreshToken == "" {
+		t.RefreshToken = fmt.Sprintf("GeneratedRefreshToken#%d", rand.IntN(1000000))
+	}
+	if t.ExpiresAt.IsZero() {
+		t.ExpiresAt = time.Now().Add(time.Minute * 20)
+	}
+	if t.TokenType == "" {
+		t.TokenType = "Bearer"
+	}
+	if t.CharacterID == 0 {
+		c := f.CreateCharacter()
+		t.CharacterID = c.ID
+	}
+	err := f.r.UpdateOrCreateToken(ctx, &t)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}

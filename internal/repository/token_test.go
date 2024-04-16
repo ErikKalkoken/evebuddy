@@ -19,7 +19,7 @@ func TestToken(t *testing.T) {
 		c := factory.CreateCharacter()
 		o := repository.Token{
 			AccessToken:  "access",
-			CharacterID:  int32(c.ID),
+			CharacterID:  c.ID,
 			ExpiresAt:    time.Now(),
 			RefreshToken: "refresh",
 			TokenType:    "xxx",
@@ -32,6 +32,21 @@ func TestToken(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, o.AccessToken, r.AccessToken)
 			assert.Equal(t, c.ID, r.CharacterID)
+		}
+	})
+	t.Run("can fetch existing", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c := factory.CreateToken()
+		// when
+		r, err := r.GetToken(ctx, c.CharacterID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, c.AccessToken, r.AccessToken)
+			assert.Equal(t, c.CharacterID, r.CharacterID)
+			assert.Equal(t, c.ExpiresAt.Unix(), c.ExpiresAt.Unix())
+			assert.Equal(t, c.RefreshToken, r.RefreshToken)
+			assert.Equal(t, c.TokenType, r.TokenType)
 		}
 	})
 	t.Run("can update existing", func(t *testing.T) {
@@ -59,6 +74,7 @@ func TestToken(t *testing.T) {
 			assert.Equal(t, c.ID, r.CharacterID)
 		}
 	})
+
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
 		repository.TruncateTables(db)
