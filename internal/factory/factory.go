@@ -5,6 +5,7 @@ import (
 	"context"
 	"example/evebuddy/internal/repository"
 	"fmt"
+	"math/rand/v2"
 	"slices"
 	"time"
 )
@@ -152,44 +153,54 @@ func eveEntityWithCategory(args []repository.EveEntity, category repository.EveE
 // 	return m
 // }
 
-// // CreateMailLabel is a test factory for MailLabel objects
-// func (f factory) CreateMailLabel(args ...repository.MailLabel) repository.MailLabel {
-// 	var l repository.MailLabel
-// 	if len(args) > 0 {
-// 		l = args[0]
-// 	}
-// 	if l.Character.ID == 0 {
-// 		l.Character = f.CreateCharacter()
-// 	}
-// 	if l.LabelID == 0 {
-// 		ll, err := repository.ListMailLabels(l.Character.ID)
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 		var ids []int32
-// 		for _, o := range ll {
-// 			ids = append(ids, o.LabelID)
-// 		}
-// 		if len(ids) > 0 {
-// 			l.LabelID = slices.Max(ids) + 1
-// 		} else {
-// 			l.LabelID = 100
-// 		}
-// 	}
-// 	if l.Name == "" {
-// 		l.Name = fmt.Sprintf("Generated name #%d", l.LabelID)
-// 	}
-// 	if l.Color == "" {
-// 		l.Color = "#FFFFFF"
-// 	}
-// 	if l.UnreadCount == 0 {
-// 		l.UnreadCount = int32(rand.IntN(1000))
-// 	}
-// 	if err := l.Save(); err != nil {
-// 		panic(err)
-// 	}
-// 	return l
-// }
+// CreateMailLabel is a test factory for MailLabel objects
+func (f Factory) CreateMailLabel(args ...repository.MailLabel) repository.MailLabel {
+	ctx := context.Background()
+	var arg repository.UpdateOrCreateMailLabelParams
+	if len(args) > 0 {
+		l := args[0]
+		arg = repository.UpdateOrCreateMailLabelParams{
+			CharacterID: l.CharacterID,
+			Color:       l.Color,
+			LabelID:     l.LabelID,
+			Name:        l.Name,
+			UnreadCount: l.UnreadCount,
+		}
+	}
+	if arg.CharacterID == 0 {
+		c := f.CreateCharacter()
+		arg.CharacterID = c.ID
+	}
+	if arg.LabelID == 0 {
+		ll, err := f.r.ListMailLabels(ctx, arg.CharacterID)
+		if err != nil {
+			panic(err)
+		}
+		var ids []int32
+		for _, o := range ll {
+			ids = append(ids, o.LabelID)
+		}
+		if len(ids) > 0 {
+			arg.LabelID = slices.Max(ids) + 1
+		} else {
+			arg.LabelID = 100
+		}
+	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Generated name #%d", arg.LabelID)
+	}
+	if arg.Color == "" {
+		arg.Color = "#FFFFFF"
+	}
+	if arg.UnreadCount == 0 {
+		arg.UnreadCount = int(rand.IntN(1000))
+	}
+	label, err := f.r.UpdateOrCreateMailLabel(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	return label
+}
 
 // // CreateMailLabel is a test factory for MailList objects.
 // func (f factory) CreateMailList(args ...repository.MailList) repository.MailList {

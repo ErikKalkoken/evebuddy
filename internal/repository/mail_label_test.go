@@ -24,7 +24,31 @@ func TestMailLabel(t *testing.T) {
 			UnreadCount: 99,
 		}
 		// when
-		err := r.UpdateOrCreateMailLabel(ctx, arg)
+		_, err := r.UpdateOrCreateMailLabel(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			l, err := r.GetMailLabel(ctx, c.ID, 42)
+			if assert.NoError(t, err) {
+				assert.Equal(t, "Dummy", l.Name)
+				assert.Equal(t, "xyz", l.Color)
+				assert.Equal(t, 99, l.UnreadCount)
+			}
+		}
+	})
+	t.Run("can update existing", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID, LabelID: 42})
+		arg := repository.UpdateOrCreateMailLabelParams{
+			CharacterID: c.ID,
+			Color:       "xyz",
+			LabelID:     42,
+			Name:        "Dummy",
+			UnreadCount: 99,
+		}
+		// when
+		_, err := r.UpdateOrCreateMailLabel(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			l, err := r.GetMailLabel(ctx, c.ID, 42)

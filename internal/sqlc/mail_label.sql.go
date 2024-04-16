@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const createMailLabel = `-- name: CreateMailLabel :exec
+const createMailLabel = `-- name: CreateMailLabel :one
 INSERT INTO mail_labels (
     color,
     name,
@@ -21,6 +21,7 @@ INSERT INTO mail_labels (
 VALUES (
     ?, ?, ?, ?, ?
 )
+RETURNING id, character_id, color, label_id, name, unread_count
 `
 
 type CreateMailLabelParams struct {
@@ -31,15 +32,24 @@ type CreateMailLabelParams struct {
 	LabelID     int64
 }
 
-func (q *Queries) CreateMailLabel(ctx context.Context, arg CreateMailLabelParams) error {
-	_, err := q.db.ExecContext(ctx, createMailLabel,
+func (q *Queries) CreateMailLabel(ctx context.Context, arg CreateMailLabelParams) (MailLabel, error) {
+	row := q.db.QueryRowContext(ctx, createMailLabel,
 		arg.Color,
 		arg.Name,
 		arg.UnreadCount,
 		arg.CharacterID,
 		arg.LabelID,
 	)
-	return err
+	var i MailLabel
+	err := row.Scan(
+		&i.ID,
+		&i.CharacterID,
+		&i.Color,
+		&i.LabelID,
+		&i.Name,
+		&i.UnreadCount,
+	)
+	return i, err
 }
 
 const getMailLabel = `-- name: GetMailLabel :one
@@ -157,7 +167,7 @@ func (q *Queries) ListMailLabelsByIDs(ctx context.Context, arg ListMailLabelsByI
 	return items, nil
 }
 
-const updateMailLabel = `-- name: UpdateMailLabel :exec
+const updateMailLabel = `-- name: UpdateMailLabel :one
 UPDATE mail_labels
 SET
     color = ?,
@@ -165,6 +175,7 @@ SET
     unread_count = ?
 WHERE character_id = ?
 AND label_id = ?
+RETURNING id, character_id, color, label_id, name, unread_count
 `
 
 type UpdateMailLabelParams struct {
@@ -175,13 +186,22 @@ type UpdateMailLabelParams struct {
 	LabelID     int64
 }
 
-func (q *Queries) UpdateMailLabel(ctx context.Context, arg UpdateMailLabelParams) error {
-	_, err := q.db.ExecContext(ctx, updateMailLabel,
+func (q *Queries) UpdateMailLabel(ctx context.Context, arg UpdateMailLabelParams) (MailLabel, error) {
+	row := q.db.QueryRowContext(ctx, updateMailLabel,
 		arg.Color,
 		arg.Name,
 		arg.UnreadCount,
 		arg.CharacterID,
 		arg.LabelID,
 	)
-	return err
+	var i MailLabel
+	err := row.Scan(
+		&i.ID,
+		&i.CharacterID,
+		&i.Color,
+		&i.LabelID,
+		&i.Name,
+		&i.UnreadCount,
+	)
+	return i, err
 }

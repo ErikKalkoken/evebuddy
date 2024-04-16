@@ -74,8 +74,15 @@ type UpdateOrCreateMailLabelParams struct {
 	UnreadCount int
 }
 
-func (r *Repository) UpdateOrCreateMailLabel(ctx context.Context, arg UpdateOrCreateMailLabelParams) error {
-	err := func() error {
+func (r *Repository) UpdateOrCreateMailLabel(ctx context.Context, arg UpdateOrCreateMailLabelParams) (MailLabel, error) {
+	label, err := func() (MailLabel, error) {
+		var l sqlc.MailLabel
+		tx, err := r.db.Begin()
+		if err != nil {
+			return MailLabel{}, err
+		}
+		defer tx.Rollback()
+		qtx := r.q.WithTx(tx)
 		arg1 := sqlc.CreateMailLabelParams{
 			CharacterID: int64(arg.CharacterID),
 			LabelID:     int64(arg.LabelID),
@@ -83,25 +90,31 @@ func (r *Repository) UpdateOrCreateMailLabel(ctx context.Context, arg UpdateOrCr
 			Name:        arg.Name,
 			UnreadCount: int64(arg.UnreadCount),
 		}
-		if err := r.q.CreateMailLabel(ctx, arg1); err != nil {
+		l, err = qtx.CreateMailLabel(ctx, arg1)
+		if err != nil {
 			if !isSqlite3ErrConstraint(err) {
-				return err
+				return MailLabel{}, err
 			}
-			arg := sqlc.UpdateMailLabelParams{
+			arg2 := sqlc.UpdateMailLabelParams{
 				CharacterID: int64(arg.CharacterID),
 				LabelID:     int64(arg.LabelID),
 				Color:       arg.Color,
 				Name:        arg.Name,
 				UnreadCount: int64(arg.UnreadCount),
 			}
-			if err := r.q.UpdateMailLabel(ctx, arg); err != nil {
-				return err
+			l, err = qtx.UpdateMailLabel(ctx, arg2)
+			if err != nil {
+				return MailLabel{}, err
 			}
 		}
-		return nil
+		if err := tx.Commit(); err != nil {
+			return MailLabel{}, err
+		}
+		l2 := mailLabelFromDBModel(l)
+		return l2, nil
 	}()
 	if err != nil {
-		return fmt.Errorf("failed to update or create MailLabel %v: %w", arg, err)
+		return label, fmt.Errorf("failed to update or create MailLabel %v: %w", arg, err)
 	}
-	return nil
+	return label, nil
 }

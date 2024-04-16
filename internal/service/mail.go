@@ -183,7 +183,7 @@ func (s *Service) updateMailLabels(ctx context.Context, token *repository.Token)
 			Name:        o.Name,
 			UnreadCount: int(o.UnreadCount),
 		}
-		err := s.r.UpdateOrCreateMailLabel(ctx, arg)
+		_, err := s.r.UpdateOrCreateMailLabel(ctx, arg)
 		if err != nil {
 			return err
 		}
