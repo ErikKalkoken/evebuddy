@@ -49,9 +49,9 @@ func (f Factory) CreateCharacter(args ...repository.Character) repository.Charac
 	if c.Description == "" {
 		c.Description = "Lorem Ipsum"
 	}
-	// if c.MailUpdatedAt.IsZero() {
-	// 	c.MailUpdatedAt = time.Now()
-	// }
+	if c.MailUpdatedAt.IsZero() {
+		c.MailUpdatedAt = time.Now()
+	}
 	err := f.r.UpdateOrCreateCharacter(ctx, &c)
 	if err != nil {
 		panic(err)

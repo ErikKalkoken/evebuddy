@@ -130,6 +130,8 @@ func TestMail(t *testing.T) {
 	})
 }
 
+// TODO: Reimplement tests
+
 // func TestFetchMailsForLabel(t *testing.T) {
 // 	t.Run("should return mail for selected label only", func(t *testing.T) {
 // 		// given

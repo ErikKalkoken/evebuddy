@@ -83,10 +83,10 @@ func NewUI(s *service.Service) *ui {
 	tabs.SetTabLocation(container.TabLocationLeading)
 
 	toolbar := makeToolbar(u)
-	c := container.NewBorder(toolbar, status.content, nil, nil, tabs)
-	w.SetContent(c)
-	w.Resize(fyne.NewSize(800, 600))
+	mainContent := container.NewBorder(toolbar, status.content, nil, nil, tabs)
+	w.SetContent(mainContent)
 	w.SetMaster()
+	w.Resize(fyne.NewSize(800, 600))
 	// w.SetMainMenu(MakeMenu(a, u))
 
 	characterID, err := s.GetSettingInt32(settingLastCharacterID)
@@ -111,6 +111,7 @@ func NewUI(s *service.Service) *ui {
 		// but is a hacky "solution"!
 		time.Sleep(500 * time.Millisecond)
 		s.StartEsiStatusTicker(status.status)
+		w.Resize(fyne.NewSize(800, 601))
 	}()
 	return u
 }

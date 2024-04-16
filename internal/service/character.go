@@ -14,7 +14,7 @@ func (s *Service) GetCharacter(characterID int32) (repository.Character, error) 
 	return s.r.GetCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetFirstCharacter() (repository.Character, error) {
+func (s *Service) GetAnyCharacter() (repository.Character, error) {
 	return s.r.GetFirstCharacter(context.Background())
 }
 

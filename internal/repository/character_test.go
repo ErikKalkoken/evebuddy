@@ -74,6 +74,26 @@ func TestCharacter(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, repository.ErrNotFound)
 	})
+	t.Run("should return first character", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		factory.CreateCharacter()
+		// when
+		r, err := r.GetFirstCharacter(ctx)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, c1.ID, r.ID)
+		}
+	})
+	t.Run("should return correct error when not found", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		// when
+		_, err := r.GetFirstCharacter(ctx)
+		// then
+		assert.ErrorIs(t, err, repository.ErrNotFound)
+	})
 	t.Run("can fetch character by ID with corporation only", func(t *testing.T) {
 		// given
 		repository.TruncateTables(db)

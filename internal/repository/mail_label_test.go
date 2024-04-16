@@ -104,6 +104,8 @@ func TestMailLabel(t *testing.T) {
 	})
 }
 
+// TODO: Reimplement tests
+
 // func TestMailLabelShouldReturnErrorWhenNoCharacter(t *testing.T) {
 // 	// given
 // 	repository.TruncateTables()

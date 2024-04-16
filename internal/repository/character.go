@@ -135,6 +135,9 @@ func (r *Repository) GetCharacter(ctx context.Context, id int32) (Character, err
 func (r *Repository) GetFirstCharacter(ctx context.Context) (Character, error) {
 	row, err := r.q.GetFirstCharacter(ctx)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrNotFound
+		}
 		return Character{}, fmt.Errorf("failed to get first character: %w", err)
 	}
 	var mailUpdateAt time.Time
