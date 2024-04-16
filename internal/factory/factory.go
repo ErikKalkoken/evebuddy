@@ -156,10 +156,10 @@ func eveEntityWithCategory(args []repository.EveEntity, category repository.EveE
 // CreateMailLabel is a test factory for MailLabel objects
 func (f Factory) CreateMailLabel(args ...repository.MailLabel) repository.MailLabel {
 	ctx := context.Background()
-	var arg repository.UpdateOrCreateMailLabelParams
+	var arg repository.MailLabelParams
 	if len(args) > 0 {
 		l := args[0]
-		arg = repository.UpdateOrCreateMailLabelParams{
+		arg = repository.MailLabelParams{
 			CharacterID: l.CharacterID,
 			Color:       l.Color,
 			LabelID:     l.LabelID,

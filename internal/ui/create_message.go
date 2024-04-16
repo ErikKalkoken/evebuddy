@@ -84,6 +84,8 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *repository.Mail) (fyne.Wind
 			return nil
 		}()
 		if err != nil {
+			// TODO: Replace with user friendly error messages
+			slog.Error(err.Error())
 			d := dialog.NewError(err, w)
 			d.Show()
 			return

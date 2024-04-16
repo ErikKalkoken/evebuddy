@@ -48,10 +48,59 @@ func (r *Repository) GetMailLabel(ctx context.Context, characterID, labelID int3
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return MailLabel{}, fmt.Errorf("failed to get MailLabel %v: %w", arg, err)
+		return MailLabel{}, fmt.Errorf("failed to get mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
 	}
 	l2 := mailLabelFromDBModel(l)
 	return l2, nil
+}
+
+type MailLabelParams struct {
+	CharacterID int32
+	Color       string
+	LabelID     int32
+	Name        string
+	UnreadCount int
+}
+
+func (r *Repository) GetOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (MailLabel, error) {
+	label, err := func() (MailLabel, error) {
+		var l sqlc.MailLabel
+		tx, err := r.db.Begin()
+		if err != nil {
+			return MailLabel{}, err
+		}
+		defer tx.Rollback()
+		qtx := r.q.WithTx(tx)
+		arg2 := sqlc.GetMailLabelParams{
+			CharacterID: int64(arg.CharacterID),
+			LabelID:     int64(arg.LabelID),
+		}
+		l, err = qtx.GetMailLabel(ctx, arg2)
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				return MailLabel{}, err
+			}
+			arg3 := sqlc.CreateMailLabelParams{
+				CharacterID: int64(arg.CharacterID),
+				LabelID:     int64(arg.LabelID),
+				Color:       arg.Color,
+				Name:        arg.Name,
+				UnreadCount: int64(arg.UnreadCount),
+			}
+			l, err = qtx.CreateMailLabel(ctx, arg3)
+			if err != nil {
+				return MailLabel{}, err
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			return MailLabel{}, err
+		}
+		return mailLabelFromDBModel(l), nil
+	}()
+	if err != nil {
+		return label, fmt.Errorf("failed to get or create mail label for character %d and label %d: %w", arg.CharacterID, arg.LabelID, err)
+	}
+	return label, nil
 }
 
 func (r *Repository) ListMailLabels(ctx context.Context, characterID int32) ([]MailLabel, error) {
@@ -66,15 +115,7 @@ func (r *Repository) ListMailLabels(ctx context.Context, characterID int32) ([]M
 	return ll2, nil
 }
 
-type UpdateOrCreateMailLabelParams struct {
-	CharacterID int32
-	Color       string
-	LabelID     int32
-	Name        string
-	UnreadCount int
-}
-
-func (r *Repository) UpdateOrCreateMailLabel(ctx context.Context, arg UpdateOrCreateMailLabelParams) (MailLabel, error) {
+func (r *Repository) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (MailLabel, error) {
 	label, err := func() (MailLabel, error) {
 		var l sqlc.MailLabel
 		tx, err := r.db.Begin()
@@ -114,7 +155,7 @@ func (r *Repository) UpdateOrCreateMailLabel(ctx context.Context, arg UpdateOrCr
 		return l2, nil
 	}()
 	if err != nil {
-		return label, fmt.Errorf("failed to update or create MailLabel %v: %w", arg, err)
+		return MailLabel{}, fmt.Errorf("failed to update or create mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
 	}
 	return label, nil
 }

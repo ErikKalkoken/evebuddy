@@ -154,7 +154,7 @@ func (r *Repository) CreateMail(ctx context.Context, arg CreateMailParams) (int6
 		return mail.ID, nil
 	}()
 	if err != nil {
-		return 0, fmt.Errorf("failed to create mail %v: %w", arg, err)
+		return 0, fmt.Errorf("failed to create mail for character %d and mail ID %d: %w", arg.CharacterID, arg.MailID, err)
 	}
 	return id, err
 }

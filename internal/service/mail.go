@@ -80,7 +80,16 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 	if err != nil {
 		return err
 	}
-	arg := repository.CreateMailParams{
+	arg1 := repository.MailLabelParams{
+		CharacterID: characterID,
+		LabelID:     repository.LabelSent,
+		Name:        "Sent",
+	}
+	_, err = s.r.GetOrCreateMailLabel(ctx, arg1) // make sure sent label exists
+	if err != nil {
+		return err
+	}
+	arg2 := repository.CreateMailParams{
 		Body:         body,
 		CharacterID:  characterID,
 		FromID:       characterID,
@@ -91,7 +100,7 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 		Subject:      subject,
 		Timestamp:    time.Now(),
 	}
-	_, err = s.r.CreateMail(ctx, arg)
+	_, err = s.r.CreateMail(ctx, arg2)
 	if err != nil {
 		return err
 	}
@@ -176,7 +185,7 @@ func (s *Service) updateMailLabels(ctx context.Context, token *repository.Token)
 	labels := ll.Labels
 	slog.Info("Received mail labels from ESI", "count", len(labels), "characterID", token.CharacterID)
 	for _, o := range labels {
-		arg := repository.UpdateOrCreateMailLabelParams{
+		arg := repository.MailLabelParams{
 			CharacterID: token.CharacterID,
 			Color:       o.Color,
 			LabelID:     o.LabelId,
@@ -273,17 +282,17 @@ func (s *Service) updateMails(ctx context.Context, token *repository.Token, head
 	var wg sync.WaitGroup
 	maxGoroutines := 20
 	guard := make(chan struct{}, maxGoroutines)
-	for _, header := range headers {
-		if existingIDs.Has(header.MailId) {
+	for _, h := range headers {
+		if existingIDs.Has(h.MailId) {
 			continue
 		}
 		guard <- struct{}{}
 		wg.Add(1)
-		go func() {
+		go func(h esi.GetCharactersCharacterIdMail200Ok) {
 			defer wg.Done()
-			s.fetchAndStoreMail(ctx, header, token, newMailsCount, &c, status, character.Name)
+			s.fetchAndStoreMail(ctx, character, h, newMailsCount, &c, status)
 			<-guard
-		}()
+		}(h)
 	}
 	wg.Wait()
 	total := c.Load()
@@ -297,7 +306,7 @@ func (s *Service) updateMails(ctx context.Context, token *repository.Token, head
 	return nil
 }
 
-func (s *Service) fetchAndStoreMail(ctx context.Context, header esi.GetCharactersCharacterIdMail200Ok, token *repository.Token, newMailsCount int, c *atomic.Int32, status binding.String, characterName string) {
+func (s *Service) fetchAndStoreMail(ctx context.Context, character repository.Character, header esi.GetCharactersCharacterIdMail200Ok, newMailsCount int, c *atomic.Int32, status binding.String) {
 	err := func() error {
 		entityIDs := set.New[int32]()
 		entityIDs.Add(header.From)
@@ -308,7 +317,7 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, header esi.GetCharacter
 		if err != nil {
 			return err
 		}
-		m, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, token.CharacterID, header.MailId, nil)
+		m, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, character.ID, header.MailId, nil)
 		if err != nil {
 			return err
 		}
@@ -318,7 +327,7 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, header esi.GetCharacter
 		}
 		arg := repository.CreateMailParams{
 			Body:         m.Body,
-			CharacterID:  token.CharacterID,
+			CharacterID:  character.ID,
 			FromID:       header.From,
 			IsRead:       false,
 			LabelIDs:     header.Labels,
@@ -333,7 +342,7 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, header esi.GetCharacter
 		}
 		c.Add(1)
 		current := c.Load()
-		if err := status.Set(fmt.Sprintf("Fetched %d / %d new mails for %v", current, newMailsCount, characterName)); err != nil {
+		if err := status.Set(fmt.Sprintf("Fetched %d / %d new mails for %v", current, newMailsCount, character.Name)); err != nil {
 			return err
 		}
 		return nil
