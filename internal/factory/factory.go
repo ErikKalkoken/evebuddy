@@ -89,6 +89,11 @@ func (f Factory) CreateEveEntity(args ...repository.EveEntity) repository.EveEnt
 	return e
 }
 
+func (f Factory) CreateEveEntityAlliance(args ...repository.EveEntity) repository.EveEntity {
+	args2 := eveEntityWithCategory(args, repository.EveEntityAlliance)
+	return f.CreateEveEntity(args2...)
+}
+
 func (f Factory) CreateEveEntityCharacter(args ...repository.EveEntity) repository.EveEntity {
 	args2 := eveEntityWithCategory(args, repository.EveEntityCharacter)
 	return f.CreateEveEntity(args2...)

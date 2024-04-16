@@ -47,9 +47,32 @@ func TestEveEntity(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should return error when no object found", func(t *testing.T) {
+	t.Run("should return error when no object found 1", func(t *testing.T) {
+		_, err := r.GetEveEntity(ctx, 99)
+		assert.ErrorIs(t, err, repository.ErrNotFound)
+	})
+	t.Run("should return error when no object found 2", func(t *testing.T) {
 		_, err := r.GetEveEntityByNameAndCategory(ctx, "dummy", repository.EveEntityAlliance)
 		assert.ErrorIs(t, err, repository.ErrNotFound)
+	})
+	t.Run("should return objs with matching names in order", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		factory.CreateEveEntityCharacter(repository.EveEntity{Name: "Yalpha2"})
+		factory.CreateEveEntityAlliance(repository.EveEntity{Name: "Xalpha1"})
+		factory.CreateEveEntityCharacter(repository.EveEntity{Name: "charlie"})
+		factory.CreateEveEntityCharacter(repository.EveEntity{Name: "other"})
+		// when
+		ee, err := r.ListEveEntitiesByPartialName(ctx, "%ALPHA%")
+		// then
+		if assert.NoError(t, err) {
+			var got []string
+			for _, e := range ee {
+				got = append(got, e.Name)
+			}
+			want := []string{"Xalpha1", "Yalpha2"}
+			assert.Equal(t, want, got)
+		}
 	})
 }
 
@@ -83,67 +106,3 @@ func TestEveEntityIDs(t *testing.T) {
 		}
 	})
 }
-
-// func TestEveEntity(t *testing.T) {
-// 	// setup
-// 	db, q, factory := setUpDB()
-// 	defer db.Close()
-// 	ctx := context.Background()
-// 	t.Run("can create EveEntity", func(t *testing.T) {
-// 		// given
-// 		sqlc.TruncateTables(db)
-// 		factory.CreateEveEntity(sqlc.CreateEveEntityParams{
-// 			ID:   42,
-// 			Name: "Dummy",
-// 		})
-// 		// when
-// 		e, err := q.GetEveEntity(ctx, 42)
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			assert.Equal(t, e.Name, "Dummy")
-// 		}
-// 	})
-// 	t.Run("can return all existing IDs", func(t *testing.T) {
-// 		// given
-// 		sqlc.TruncateTables(db)
-// 		e1 := factory.CreateEveEntity()
-// 		e2 := factory.CreateEveEntity()
-// 		// when
-// 		r, err := q.ListEveEntityIDs(ctx)
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			gotIDs := set.NewFromSlice([]int64{e1.ID, e2.ID})
-// 			wantIDs := set.NewFromSlice(r)
-// 			assert.Equal(t, wantIDs, gotIDs)
-// 		}
-// 	})
-// 	t.Run("should return all character names in order", func(t *testing.T) {
-// 		// given
-// 		sqlc.TruncateTables(db)
-// 		factory.CreateEveEntity(sqlc.CreateEveEntityParams{Name: "Yalpha2", Category: sqlc.EveEntityCharacter})
-// 		factory.CreateEveEntity(sqlc.CreateEveEntityParams{Name: "Xalpha1", Category: sqlc.EveEntityCharacter})
-// 		factory.CreateEveEntity(sqlc.CreateEveEntityParams{Name: "charlie", Category: sqlc.EveEntityCharacter})
-// 		factory.CreateEveEntity(sqlc.CreateEveEntityParams{Name: "other", Category: sqlc.EveEntityCharacter})
-// 		// when
-// 		ee, err := q.ListEveEntitiesByPartialName(ctx, "%ALPHA%")
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			var got []string
-// 			for _, e := range ee {
-// 				got = append(got, e.Name)
-// 			}
-// 			want := []string{"Xalpha1", "Yalpha2"}
-// 			assert.Equal(t, want, got)
-// 		}
-// 	})
-// }
-
-// func setUpDB() (*sql.DB, *sqlc.Queries, factory.Factory) {
-// 	db, err := sqlc.ConnectDB(":memory:", true)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	q := sqlc.New(db)
-// 	factory := factory.New(q)
-// 	return db, q, factory
-// }

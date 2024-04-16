@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"example/evebuddy/internal/sqlc"
 	"time"
@@ -37,6 +38,9 @@ func (t *Token) RemainsValid(d time.Duration) bool {
 func (r *Repository) GetToken(ctx context.Context, characterID int32) (Token, error) {
 	t, err := r.q.GetToken(ctx, int64(characterID))
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrNotFound
+		}
 		return Token{}, err
 	}
 	t2 := tokenFromDBModel(t)

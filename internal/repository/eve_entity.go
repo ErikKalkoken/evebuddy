@@ -109,6 +109,18 @@ func (r *Repository) CreateEveEntity(ctx context.Context, id int32, name string,
 	return eveEntityFromDBModel(e), nil
 }
 
+func (r *Repository) GetEveEntity(ctx context.Context, id int32) (EveEntity, error) {
+	e, err := r.q.GetEveEntity(ctx, int64(id))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrNotFound
+		}
+		return EveEntity{}, fmt.Errorf("failed to get EveEntity for id %d: %w", id, err)
+	}
+	e2 := eveEntityFromDBModel(e)
+	return e2, nil
+}
+
 func (r *Repository) GetEveEntityByNameAndCategory(ctx context.Context, name string, category EveEntityCategory) (EveEntity, error) {
 	arg := sqlc.GetEveEntityByNameAndCategoryParams{
 		Name:     name,
@@ -119,15 +131,6 @@ func (r *Repository) GetEveEntityByNameAndCategory(ctx context.Context, name str
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return EveEntity{}, err
-	}
-	e2 := eveEntityFromDBModel(e)
-	return e2, nil
-}
-
-func (r *Repository) GetEveEntity(ctx context.Context, id int32) (EveEntity, error) {
-	e, err := r.q.GetEveEntity(ctx, int64(id))
-	if err != nil {
 		return EveEntity{}, err
 	}
 	e2 := eveEntityFromDBModel(e)

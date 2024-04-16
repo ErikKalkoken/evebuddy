@@ -96,22 +96,16 @@ func (m *Mail) RecipientNames() []string {
 	return ss
 }
 
-func (r *Repository) CreateMail(ctx context.Context, characterID int32, mailID int32, subject string, recipientIDs []int32, body string) (int64, error) {
+func (r *Repository) CreateMail(ctx context.Context, characterID, mailID, fromID int32, subject string, recipientIDs []int32, body string, labelIDs []int32) (int64, error) {
 	characterID2 := int64(characterID)
-	from, err := r.q.GetEveEntity(ctx, characterID2)
-	if err != nil {
-		return 0, err
-	}
-	// FIXME: Ensure this still works when no labels have yet been loaded from ESI
-	mailLabelParams := sqlc.GetMailLabelParams{CharacterID: characterID2, LabelID: LabelSent}
-	label, err := r.q.GetMailLabel(ctx, mailLabelParams)
+	from, err := r.GetEveEntity(ctx, fromID)
 	if err != nil {
 		return 0, err
 	}
 	mailParams := sqlc.CreateMailParams{
 		Body:        body,
 		CharacterID: characterID2,
-		FromID:      from.ID,
+		FromID:      int64(from.ID),
 		MailID:      int64(mailID),
 		Subject:     subject,
 		IsRead:      true,
@@ -121,16 +115,24 @@ func (r *Repository) CreateMail(ctx context.Context, characterID int32, mailID i
 	if err != nil {
 		return 0, err
 	}
-	mailMailLabelParams := sqlc.CreateMailMailLabelParams{
-		MailID: mail.ID, MailLabelID: label.ID,
-	}
-	if err := r.q.CreateMailMailLabel(ctx, mailMailLabelParams); err != nil {
-		return 0, err
-	}
 	for _, id := range recipientIDs {
 		arg := sqlc.CreateMailRecipientParams{MailID: mail.ID, EveEntityID: int64(id)}
 		err := r.q.CreateMailRecipient(ctx, arg)
 		if err != nil {
+			return 0, err
+		}
+	}
+	if len(labelIDs) > 0 {
+		// FIXME: Ensure this still works when no labels have yet been loaded from ESI
+		mailLabelParams := sqlc.GetMailLabelParams{CharacterID: characterID2, LabelID: LabelSent}
+		label, err := r.q.GetMailLabel(ctx, mailLabelParams)
+		if err != nil {
+			return 0, err
+		}
+		mailMailLabelParams := sqlc.CreateMailMailLabelParams{
+			MailID: mail.ID, MailLabelID: label.ID,
+		}
+		if err := r.q.CreateMailMailLabel(ctx, mailMailLabelParams); err != nil {
 			return 0, err
 		}
 	}

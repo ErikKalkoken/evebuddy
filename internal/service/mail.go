@@ -80,7 +80,7 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 	if err != nil {
 		return err
 	}
-	_, err = s.r.CreateMail(ctx, characterID, mailID, subject, recipientIDs, body)
+	_, err = s.r.CreateMail(ctx, characterID, mailID, characterID, subject, recipientIDs, body, []int32{repository.LabelSent})
 	if err != nil {
 		return err
 	}
@@ -298,7 +298,7 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, header esi.GetCharacter
 		for i, r := range m.Recipients {
 			ids[i] = r.RecipientId
 		}
-		mailID, err := s.r.CreateMail(ctx, token.CharacterID, header.MailId, m.Subject, ids, m.Body)
+		mailID, err := s.r.CreateMail(ctx, token.CharacterID, header.MailId, header.From, m.Subject, ids, m.Body, header.Labels)
 		if err != nil {
 			return err
 		}

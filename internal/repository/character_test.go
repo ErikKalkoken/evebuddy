@@ -66,4 +66,12 @@ func TestCharacter(t *testing.T) {
 			assert.Error(t, err)
 		}
 	})
+	t.Run("should return correct error when not found", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		// when
+		_, err := r.GetCharacter(ctx, 99)
+		// then
+		assert.ErrorIs(t, err, repository.ErrNotFound)
+	})
 }
