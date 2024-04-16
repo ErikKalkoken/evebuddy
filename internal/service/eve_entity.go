@@ -74,6 +74,6 @@ func (s *Service) addMissingEveEntities(ids []int32) ([]int32, error) {
 	return missing.ToSlice(), nil
 }
 
-func (s *Service) SearchEveEntitiesByName(partial string) ([]repository.EveEntity, error) {
-	return s.r.SearchEveEntitiesByName(context.Background(), partial)
+func (s *Service) ListEveEntitiesByPartialName(partial string) ([]repository.EveEntity, error) {
+	return s.r.ListEveEntitiesByPartialName(context.Background(), partial)
 }

@@ -98,6 +98,10 @@ func characterFromDBModel(character sqlc.Character, corporation sqlc.EveEntity, 
 	}
 }
 
+func (r *Repository) DeleteCharacter(ctx context.Context, c *Character) error {
+	return r.q.DeleteCharacter(ctx, int64(c.ID))
+}
+
 func (r *Repository) GetCharacter(ctx context.Context, id int32) (Character, error) {
 	row, err := r.q.GetCharacter(ctx, int64(id))
 	if err != nil {
@@ -107,28 +111,24 @@ func (r *Repository) GetCharacter(ctx context.Context, id int32) (Character, err
 	return c, nil
 }
 
-func (r *Repository) DeleteCharacter(ctx context.Context, c *Character) error {
-	return r.q.DeleteCharacter(ctx, int64(c.ID))
-}
-
-func (r *Repository) ListCharacters(ctx context.Context) ([]Character, error) {
-	row, err := r.q.ListCharacters(ctx)
-	if err != nil {
-		return nil, err
-	}
-	cc := make([]Character, len(row))
-	for i, charDB := range row {
-		cc[i] = characterFromDBModel(charDB.Character, charDB.EveEntity, charDB.EveEntity_2, charDB.EveEntity_3)
-	}
-	return cc, nil
-}
-
 func (r *Repository) GetFirstCharacter(ctx context.Context) (Character, error) {
 	row, err := r.q.GetFirstCharacter(ctx)
 	if err != nil {
 		return Character{}, err
 	}
 	return characterFromDBModel(row.Character, row.EveEntity, row.EveEntity_2, row.EveEntity_3), nil
+}
+
+func (r *Repository) ListCharacters(ctx context.Context) ([]Character, error) {
+	rows, err := r.q.ListCharacters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cc := make([]Character, len(rows))
+	for i, charDB := range rows {
+		cc[i] = characterFromDBModel(charDB.Character, charDB.EveEntity, charDB.EveEntity_2, charDB.EveEntity_3)
+	}
+	return cc, nil
 }
 
 func (r *Repository) UpdateOrCreateCharacter(ctx context.Context, c *Character) error {

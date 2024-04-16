@@ -6,6 +6,22 @@ import (
 	"example/evebuddy/internal/repository"
 )
 
+func (s *Service) DeleteCharacter(c *repository.Character) error {
+	return s.r.DeleteCharacter(context.Background(), c)
+}
+
+func (s *Service) GetCharacter(id int32) (repository.Character, error) {
+	return s.r.GetCharacter(context.Background(), id)
+}
+
+func (s *Service) GetFirstCharacter() (repository.Character, error) {
+	return s.r.GetFirstCharacter(context.Background())
+}
+
+func (s *Service) ListCharacters() ([]repository.Character, error) {
+	return s.r.ListCharacters(context.Background())
+}
+
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
 func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	ssoToken, err := sso.Authenticate(ctx, s.httpClient, esiScopes)

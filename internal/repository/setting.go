@@ -10,6 +10,10 @@ import (
 	"example/evebuddy/internal/sqlc"
 )
 
+func (r *Repository) DeleteSetting(key string) error {
+	return r.q.DeleteSetting(context.Background(), key)
+}
+
 // GetSetting returns the value for a settings key, when it exists.
 // Otherwise it returns it's zero value.
 func (r *Repository) GetSettingInt32(key string) (int32, error) {
@@ -98,8 +102,4 @@ func bytesFromAny[T any](value T) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
-}
-
-func (r *Repository) DeleteSetting(key string) error {
-	return r.q.DeleteSetting(context.Background(), key)
 }

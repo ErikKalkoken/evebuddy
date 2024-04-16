@@ -356,3 +356,8 @@ func (s *Service) ListMailIDsForListOrdered(characterID int32, listID int32) ([]
 	ctx := context.Background()
 	return s.r.ListMailIDsForListOrdered(ctx, characterID, listID)
 }
+
+func (s *Service) ListMailLabels(characterID int32) ([]repository.MailLabel, error) {
+	ctx := context.Background()
+	return s.r.ListMailLabels(ctx, characterID)
+}

@@ -186,10 +186,6 @@ func (r *Repository) GetMail(ctx context.Context, characterID, mailID int32) (Ma
 	return mail, nil
 }
 
-func (r *Repository) UpdateMailSetRead(ctx context.Context, id int64) error {
-	return r.q.UpdateMailSetRead(ctx, id)
-}
-
 func (r *Repository) DeleteMail(ctx context.Context, mailID int64) error {
 	return r.q.DeleteMail(ctx, mailID)
 }
@@ -303,4 +299,8 @@ func (r *Repository) AddMailLabelsToMail(ctx context.Context, characterID int32,
 		}
 	}
 	return nil
+}
+
+func (r *Repository) UpdateMailSetRead(ctx context.Context, id int64) error {
+	return r.q.UpdateMailSetRead(ctx, id)
 }

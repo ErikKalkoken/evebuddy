@@ -3,6 +3,7 @@ package ui
 
 import (
 	"database/sql"
+	"example/evebuddy/internal/repository"
 	"example/evebuddy/internal/service"
 	"fmt"
 	"log/slog"
@@ -34,7 +35,7 @@ const (
 type ui struct {
 	app              fyne.App
 	characterArea    *characterArea
-	currentCharacter *service.Character
+	currentCharacter *repository.Character
 	folderArea       *folderArea
 	headerArea       *headerArea
 	mailArea         *mailArea
@@ -112,11 +113,11 @@ func (u *ui) CurrentCharID() int32 {
 	return u.currentCharacter.ID
 }
 
-func (u *ui) CurrentChar() *service.Character {
+func (u *ui) CurrentChar() *repository.Character {
 	return u.currentCharacter
 }
 
-func (u *ui) SetCurrentCharacter(c *service.Character) {
+func (u *ui) SetCurrentCharacter(c *repository.Character) {
 	u.currentCharacter = c
 	u.window.SetTitle(fmt.Sprintf("Eve Buddy [%s]", c.Name))
 	err := u.service.SetSettingInt32(settingLastCharacterID, c.ID)

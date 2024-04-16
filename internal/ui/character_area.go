@@ -3,7 +3,7 @@ package ui
 import (
 	"example/evebuddy/internal/api/images"
 	"example/evebuddy/internal/helper/humanize"
-	"example/evebuddy/internal/service"
+	"example/evebuddy/internal/repository"
 	"fmt"
 	"log/slog"
 
@@ -63,7 +63,7 @@ func (c *characterArea) Redraw() {
 	}
 }
 
-func updateIcons(icons *fyne.Container, c *service.Character) error {
+func updateIcons(icons *fyne.Container, c *repository.Character) error {
 	u, err := images.CharacterPortraitURL(c.ID, 128)
 	if err != nil {
 		return err

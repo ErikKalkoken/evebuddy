@@ -121,7 +121,7 @@ func (r *Repository) GetEveEntity(ctx context.Context, id int32) (EveEntity, err
 	return e2, nil
 }
 
-func (r *Repository) SearchEveEntitiesByName(ctx context.Context, partial string) ([]EveEntity, error) {
+func (r *Repository) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]EveEntity, error) {
 	ee, err := r.q.ListEveEntitiesByPartialName(ctx, fmt.Sprintf("%%%s%%", partial))
 	if err != nil {
 		return nil, err

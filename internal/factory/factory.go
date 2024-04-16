@@ -40,10 +40,7 @@ func (f Factory) CreateCharacter(args ...sqlc.CreateCharacterParams) sqlc.Charac
 		arg.Name = fmt.Sprintf("Generated character #%d", arg.ID)
 	}
 	if arg.CorporationID == 0 {
-		e, err := f.q.CreateEveEntity(ctx, sqlc.CreateEveEntityParams{Category: sqlc.EveEntityCorporation})
-		if err != nil {
-			panic(err)
-		}
+		e := f.CreateEveEntity(sqlc.CreateEveEntityParams{Category: sqlc.EveEntityCorporation})
 		arg.CorporationID = e.ID
 	}
 	if arg.Birthday.IsZero() {
