@@ -11,8 +11,8 @@ import (
 	"example/evebuddy/internal/sqlc"
 )
 
-func (r *Repository) DeleteSetting(key string) error {
-	err := r.q.DeleteSetting(context.Background(), key)
+func (r *Repository) DeleteSetting(ctx context.Context, key string) error {
+	err := r.q.DeleteSetting(ctx, key)
 	if err != nil {
 		return fmt.Errorf("failed to delete setting for key %s: %w", key, err)
 	}
@@ -21,8 +21,8 @@ func (r *Repository) DeleteSetting(key string) error {
 
 // GetSetting returns the value for a settings key, when it exists.
 // Otherwise it returns it's zero value.
-func (r *Repository) GetSettingInt32(key string) (int32, error) {
-	obj, err := r.q.GetSetting(context.Background(), key)
+func (r *Repository) GetSettingInt32(ctx context.Context, key string) (int32, error) {
+	obj, err := r.q.GetSetting(ctx, key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, nil
@@ -34,8 +34,8 @@ func (r *Repository) GetSettingInt32(key string) (int32, error) {
 
 // GetSetting returns the value for a settings key, when it exists.
 // Otherwise it returns it's zero value.
-func (r *Repository) GetSettingString(key string) (string, error) {
-	obj, err := r.q.GetSetting(context.Background(), key)
+func (r *Repository) GetSettingString(ctx context.Context, key string) (string, error) {
+	obj, err := r.q.GetSetting(ctx, key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", nil
@@ -46,32 +46,31 @@ func (r *Repository) GetSettingString(key string) (string, error) {
 }
 
 // SetSetting sets the value for a settings key.
-func (r *Repository) SetSettingInt32(key string, value int32) error {
+func (r *Repository) SetSettingInt32(ctx context.Context, key string, value int32) error {
 	bb, err := bytesFromAny(value)
 	if err != nil {
 		return err
 	}
-	if err := r.setSetting(key, bb); err != nil {
+	if err := r.setSetting(ctx, key, bb); err != nil {
 		return err
 	}
 	return nil
 }
 
 // SetSetting sets the value for a settings key.
-func (r *Repository) SetSettingString(key string, value string) error {
+func (r *Repository) SetSettingString(ctx context.Context, key string, value string) error {
 	bb, err := bytesFromAny(value)
 	if err != nil {
 		return err
 	}
-	if err := r.setSetting(key, bb); err != nil {
+	if err := r.setSetting(ctx, key, bb); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *Repository) setSetting(key string, bb []byte) error {
+func (r *Repository) setSetting(ctx context.Context, key string, bb []byte) error {
 	err := func() error {
-		ctx := context.Background()
 		tx, err := r.db.Begin()
 		if err != nil {
 			return err

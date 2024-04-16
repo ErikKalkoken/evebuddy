@@ -136,7 +136,7 @@ func TestMailLabel(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateMailLabel()
 		// when
-		labels, err := r.ListMailListsOrdered(ctx, c.ID)
+		labels, err := r.ListMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Len(t, labels, 0)
 		}
