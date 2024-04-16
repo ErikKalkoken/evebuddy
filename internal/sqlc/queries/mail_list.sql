@@ -12,7 +12,7 @@ SELECT *
 FROM mail_lists
 WHERE character_id = ? AND eve_entity_id = ?;
 
--- name: ListMailLists :many
+-- name: ListMailListsOrdered :many
 SELECT eve_entities.*
 FROM mail_lists
 JOIN eve_entities ON eve_entities.id = mail_lists.eve_entity_id

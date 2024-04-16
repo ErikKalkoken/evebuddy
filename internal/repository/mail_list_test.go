@@ -31,7 +31,7 @@ func TestMailList(t *testing.T) {
 		e2 := factory.CreateEveEntity(repository.EveEntity{Category: repository.EveEntityMailList, Name: "bravo"})
 		assert.NoError(t, r.CreateMailList(ctx, c.ID, e2.ID))
 		// when
-		ll, err := r.ListMailLists(ctx, c.ID)
+		ll, err := r.ListMailListsOrdered(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ll, 2)

@@ -234,8 +234,8 @@ func (r *Repository) GetMailListUnreadCounts(ctx context.Context, characterID in
 	return result, nil
 }
 
-func (r *Repository) ListMailLists(ctx context.Context, characterID int32) ([]EveEntity, error) {
-	ll, err := r.q.ListMailLists(ctx, int64(characterID))
+func (r *Repository) ListMailListsOrdered(ctx context.Context, characterID int32) ([]EveEntity, error) {
+	ll, err := r.q.ListMailListsOrdered(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list mail lists for character %d: %w", characterID, err)
 	}

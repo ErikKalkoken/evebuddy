@@ -47,7 +47,7 @@ func (q *Queries) GetMailList(ctx context.Context, arg GetMailListParams) (MailL
 	return i, err
 }
 
-const listMailLists = `-- name: ListMailLists :many
+const listMailListsOrdered = `-- name: ListMailListsOrdered :many
 SELECT eve_entities.id, eve_entities.category, eve_entities.name
 FROM mail_lists
 JOIN eve_entities ON eve_entities.id = mail_lists.eve_entity_id
@@ -55,8 +55,8 @@ WHERE character_id = ?
 ORDER by eve_entities.name
 `
 
-func (q *Queries) ListMailLists(ctx context.Context, characterID int64) ([]EveEntity, error) {
-	rows, err := q.db.QueryContext(ctx, listMailLists, characterID)
+func (q *Queries) ListMailListsOrdered(ctx context.Context, characterID int64) ([]EveEntity, error) {
+	rows, err := q.db.QueryContext(ctx, listMailListsOrdered, characterID)
 	if err != nil {
 		return nil, err
 	}

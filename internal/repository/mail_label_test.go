@@ -116,59 +116,29 @@ func TestMailLabel(t *testing.T) {
 			assert.Equal(t, want, got)
 		}
 	})
+	t.Run("can return all mail labels for a character", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c := factory.CreateCharacter()
+		l1 := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID, Name: "bravo"})
+		l2 := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID, Name: "alpha"})
+		factory.CreateMailLabel()
+		// when
+		got, err := r.ListMailLabelsOrdered(ctx, c.ID)
+		if assert.NoError(t, err) {
+			want := []repository.MailLabel{l2, l1}
+			assert.Equal(t, want, got)
+		}
+	})
+	t.Run("should return empty list when character ha no mail labels", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateMailLabel()
+		// when
+		labels, err := r.ListMailListsOrdered(ctx, c.ID)
+		if assert.NoError(t, err) {
+			assert.Len(t, labels, 0)
+		}
+	})
 }
-
-// TODO: Reimplement tests
-
-// func TestCanFetchAllMailLabelsForCharacter(t *testing.T) {
-// 	// given
-// 	repository.TruncateTables()
-// 	c1 := factory.CreateCharacter()
-// 	factory.CreateMailLabel(repository.MailLabel{Character: c1, LabelID: repository.LabelAlliance})
-// 	l1 := factory.CreateMailLabel(repository.MailLabel{Character: c1, LabelID: 103})
-// 	fmt.Println(l1)
-// 	l2 := factory.CreateMailLabel(repository.MailLabel{Character: c1, LabelID: 107})
-// 	fmt.Println(l2)
-// 	c2 := factory.CreateCharacter()
-// 	factory.CreateMailLabel(repository.MailLabel{Character: c2, LabelID: 113})
-// 	// when
-// 	ll, err := repository.ListMailLabels(c1.ID)
-// 	if assert.NoError(t, err) {
-// 		gotIDs := set.New[int32]()
-// 		for _, l := range ll {
-// 			gotIDs.Add(l.LabelID)
-// 		}
-// 		wantIDs := set.NewFromSlice([]int32{103, 107})
-// 		assert.Equal(t, wantIDs, gotIDs)
-// 	}
-// }
-
-// func TesFetchAllMailLabelsReturnsEmptySliceWhenNoRows(t *testing.T) {
-// 	// given
-// 	repository.TruncateTables()
-// 	c := factory.CreateCharacter()
-// 	// when
-// 	ll, err := repository.ListMailLabels(c.ID)
-// 	if assert.NoError(t, err) {
-// 		assert.Empty(t, ll)
-// 	}
-// }
-
-// func TestFetchMailLabels(t *testing.T) {
-// 	// given
-// 	repository.TruncateTables()
-// 	c := factory.CreateCharacter()
-// 	factory.CreateMailLabel(repository.MailLabel{Character: c, LabelID: 3})
-// 	factory.CreateMailLabel(repository.MailLabel{Character: c, LabelID: 7})
-// 	factory.CreateMailLabel(repository.MailLabel{Character: c, LabelID: 13})
-// 	// when
-// 	ll, err := repository.ListMailLabelsByIDs(c.ID, []int32{3, 13})
-// 	if assert.NoError(t, err) {
-// 		gotIDs := set.New[int32]()
-// 		for _, l := range ll {
-// 			gotIDs.Add(l.LabelID)
-// 		}
-// 		wantIDs := set.NewFromSlice([]int32{3, 13})
-// 		assert.Equal(t, wantIDs, gotIDs)
-// 	}
-// }

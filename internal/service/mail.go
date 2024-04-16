@@ -353,7 +353,7 @@ func (s *Service) GetMailListUnreadCounts(characterID int32) (map[int32]int, err
 
 func (s *Service) ListMailLists(characterID int32) ([]repository.EveEntity, error) {
 	ctx := context.Background()
-	return s.r.ListMailLists(ctx, characterID)
+	return s.r.ListMailListsOrdered(ctx, characterID)
 }
 
 // ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
