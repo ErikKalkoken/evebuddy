@@ -96,33 +96,45 @@ func (m *Mail) RecipientNames() []string {
 	return ss
 }
 
-func (r *Repository) CreateMail(ctx context.Context, characterID, mailID, fromID int32, subject string, recipientIDs []int32, body string, labelIDs []int32) (int64, error) {
-	characterID2 := int64(characterID)
-	from, err := r.GetEveEntity(ctx, fromID)
+type CreateMailParams struct {
+	Body         string
+	CharacterID  int32
+	FromID       int32
+	LabelIDs     []int32
+	IsRead       bool
+	MailID       int32
+	RecipientIDs []int32
+	Subject      string
+	Timestamp    time.Time
+}
+
+func (r *Repository) CreateMail(ctx context.Context, arg CreateMailParams) (int64, error) {
+	characterID2 := int64(arg.CharacterID)
+	from, err := r.GetEveEntity(ctx, arg.FromID)
 	if err != nil {
 		return 0, err
 	}
 	mailParams := sqlc.CreateMailParams{
-		Body:        body,
+		Body:        arg.Body,
 		CharacterID: characterID2,
 		FromID:      int64(from.ID),
-		MailID:      int64(mailID),
-		Subject:     subject,
+		MailID:      int64(arg.MailID),
+		Subject:     arg.Subject,
 		IsRead:      true,
-		Timestamp:   time.Now(),
+		Timestamp:   arg.Timestamp,
 	}
 	mail, err := r.q.CreateMail(ctx, mailParams)
 	if err != nil {
 		return 0, err
 	}
-	for _, id := range recipientIDs {
+	for _, id := range arg.RecipientIDs {
 		arg := sqlc.CreateMailRecipientParams{MailID: mail.ID, EveEntityID: int64(id)}
 		err := r.q.CreateMailRecipient(ctx, arg)
 		if err != nil {
 			return 0, err
 		}
 	}
-	if len(labelIDs) > 0 {
+	if len(arg.LabelIDs) > 0 {
 		// FIXME: Ensure this still works when no labels have yet been loaded from ESI
 		mailLabelParams := sqlc.GetMailLabelParams{CharacterID: characterID2, LabelID: LabelSent}
 		label, err := r.q.GetMailLabel(ctx, mailLabelParams)
@@ -136,7 +148,7 @@ func (r *Repository) CreateMail(ctx context.Context, characterID, mailID, fromID
 			return 0, err
 		}
 	}
-	slog.Info("Created new mail", "characterID", characterID, "mailID", mailID)
+	slog.Info("Created new mail", "characterID", arg.CharacterID, "mailID", arg.MailID)
 	return mail.ID, nil
 }
 

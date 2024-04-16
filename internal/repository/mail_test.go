@@ -21,7 +21,17 @@ func TestMailCreate(t *testing.T) {
 		recipient := factory.CreateEveEntity()
 		// l := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID})
 		// when
-		_, err := r.CreateMail(ctx, c.ID, 42, f.ID, "subject", []int32{recipient.ID}, "body", []int32{})
+		arg := repository.CreateMailParams{
+			Body:         "body",
+			CharacterID:  c.ID,
+			FromID:       f.ID,
+			IsRead:       false,
+			MailID:       42,
+			RecipientIDs: []int32{recipient.ID},
+			Subject:      "subject",
+			Timestamp:    time.Now(),
+		}
+		_, err := r.CreateMail(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			m, err := r.GetMail(ctx, c.ID, 42)

@@ -80,7 +80,18 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 	if err != nil {
 		return err
 	}
-	_, err = s.r.CreateMail(ctx, characterID, mailID, characterID, subject, recipientIDs, body, []int32{repository.LabelSent})
+	arg := repository.CreateMailParams{
+		Body:         body,
+		CharacterID:  characterID,
+		FromID:       characterID,
+		IsRead:       true,
+		LabelIDs:     []int32{repository.LabelSent},
+		MailID:       mailID,
+		RecipientIDs: recipientIDs,
+		Subject:      subject,
+		Timestamp:    time.Now(),
+	}
+	_, err = s.r.CreateMail(ctx, arg)
 	if err != nil {
 		return err
 	}
@@ -294,11 +305,22 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, header esi.GetCharacter
 		if err != nil {
 			return err
 		}
-		ids := make([]int32, len(m.Recipients))
+		recipientIDs := make([]int32, len(m.Recipients))
 		for i, r := range m.Recipients {
-			ids[i] = r.RecipientId
+			recipientIDs[i] = r.RecipientId
 		}
-		mailID, err := s.r.CreateMail(ctx, token.CharacterID, header.MailId, header.From, m.Subject, ids, m.Body, header.Labels)
+		arg := repository.CreateMailParams{
+			Body:         m.Body,
+			CharacterID:  token.CharacterID,
+			FromID:       header.From,
+			IsRead:       false,
+			LabelIDs:     header.Labels,
+			MailID:       header.MailId,
+			RecipientIDs: recipientIDs,
+			Subject:      m.Subject,
+			Timestamp:    m.Timestamp,
+		}
+		mailID, err := s.r.CreateMail(ctx, arg)
 		if err != nil {
 			return err
 		}
