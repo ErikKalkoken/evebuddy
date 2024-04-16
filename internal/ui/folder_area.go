@@ -133,7 +133,7 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		UnreadCount: totalUnreadCount,
 	}
 	folders[nodeAllID] = folderItemAll.toJSON()
-	labels, err := f.ui.service.ListMailLabels(characterID)
+	labels, err := f.ui.service.ListMailLabelsOrdered(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}

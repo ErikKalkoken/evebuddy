@@ -180,7 +180,7 @@ func (f Factory) CreateMailLabel(args ...repository.MailLabel) repository.MailLa
 		arg.CharacterID = c.ID
 	}
 	if arg.LabelID == 0 {
-		ll, err := f.r.ListMailLabels(ctx, arg.CharacterID)
+		ll, err := f.r.ListMailLabelsOrdered(ctx, arg.CharacterID)
 		if err != nil {
 			panic(err)
 		}

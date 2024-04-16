@@ -103,8 +103,8 @@ func (r *Repository) GetOrCreateMailLabel(ctx context.Context, arg MailLabelPara
 	return label, nil
 }
 
-func (r *Repository) ListMailLabels(ctx context.Context, characterID int32) ([]MailLabel, error) {
-	ll, err := r.q.ListMailLabels(ctx, int64(characterID))
+func (r *Repository) ListMailLabelsOrdered(ctx context.Context, characterID int32) ([]MailLabel, error) {
+	ll, err := r.q.ListMailLabelsOrdered(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list mail label IDs for character %d: %w", characterID, err)
 	}

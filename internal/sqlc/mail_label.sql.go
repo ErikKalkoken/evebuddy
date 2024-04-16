@@ -77,16 +77,30 @@ func (q *Queries) GetMailLabel(ctx context.Context, arg GetMailLabelParams) (Mai
 	return i, err
 }
 
-const listMailLabels = `-- name: ListMailLabels :many
+const listMailLabelsByIDs = `-- name: ListMailLabelsByIDs :many
 SELECT id, character_id, color, label_id, name, unread_count
 FROM mail_labels
-WHERE character_id = ?
-AND label_id > 8
-ORDER BY name
+WHERE character_id = ? AND label_id IN (/*SLICE:ids*/?)
 `
 
-func (q *Queries) ListMailLabels(ctx context.Context, characterID int64) ([]MailLabel, error) {
-	rows, err := q.db.QueryContext(ctx, listMailLabels, characterID)
+type ListMailLabelsByIDsParams struct {
+	CharacterID int64
+	Ids         []int64
+}
+
+func (q *Queries) ListMailLabelsByIDs(ctx context.Context, arg ListMailLabelsByIDsParams) ([]MailLabel, error) {
+	query := listMailLabelsByIDs
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.Ids) > 0 {
+		for _, v := range arg.Ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -115,30 +129,16 @@ func (q *Queries) ListMailLabels(ctx context.Context, characterID int64) ([]Mail
 	return items, nil
 }
 
-const listMailLabelsByIDs = `-- name: ListMailLabelsByIDs :many
+const listMailLabelsOrdered = `-- name: ListMailLabelsOrdered :many
 SELECT id, character_id, color, label_id, name, unread_count
 FROM mail_labels
-WHERE character_id = ? AND label_id IN (/*SLICE:ids*/?)
+WHERE character_id = ?
+AND label_id > 8
+ORDER BY name
 `
 
-type ListMailLabelsByIDsParams struct {
-	CharacterID int64
-	Ids         []int64
-}
-
-func (q *Queries) ListMailLabelsByIDs(ctx context.Context, arg ListMailLabelsByIDsParams) ([]MailLabel, error) {
-	query := listMailLabelsByIDs
-	var queryParams []interface{}
-	queryParams = append(queryParams, arg.CharacterID)
-	if len(arg.Ids) > 0 {
-		for _, v := range arg.Ids {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+func (q *Queries) ListMailLabelsOrdered(ctx context.Context, characterID int64) ([]MailLabel, error) {
+	rows, err := q.db.QueryContext(ctx, listMailLabelsOrdered, characterID)
 	if err != nil {
 		return nil, err
 	}

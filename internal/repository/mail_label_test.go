@@ -102,34 +102,23 @@ func TestMailLabel(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can return all mail labels for a character ordered by name", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c := factory.CreateCharacter()
+		l1 := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID, Name: "bravo"})
+		l2 := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID, Name: "alpha"})
+		factory.CreateMailLabel()
+		// when
+		got, err := r.ListMailLabelsOrdered(ctx, c.ID)
+		if assert.NoError(t, err) {
+			want := []repository.MailLabel{l2, l1}
+			assert.Equal(t, want, got)
+		}
+	})
 }
 
 // TODO: Reimplement tests
-
-// func TestMailLabelShouldReturnErrorWhenNoCharacter(t *testing.T) {
-// 	// given
-// 	repository.TruncateTables()
-// 	l := repository.MailLabel{
-// 		Color:       "xyz",
-// 		LabelID:     1,
-// 		Name:        "Dummy",
-// 		UnreadCount: 42,
-// 	}
-// 	// when
-// 	err := l.Save()
-// 	// then
-// 	assert.Error(t, err)
-// }
-// func TestMailLabelCanFetchAllLabelsReturnsSlice(t *testing.T) {
-// 	// given
-// 	repository.TruncateTables()
-// 	l := factory.CreateMailLabel()
-// 	// when
-// 	l2, err := repository.GetMailLabel(l.Character.ID, l.LabelID)
-// 	if assert.NoError(t, err) {
-// 		assert.Equal(t, l.Name, l2.Name)
-// 	}
-// }
 
 // func TestCanFetchAllMailLabelsForCharacter(t *testing.T) {
 // 	// given

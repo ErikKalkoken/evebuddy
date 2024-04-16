@@ -17,7 +17,7 @@ SELECT *
 FROM mail_labels
 WHERE character_id = ? AND label_id = ?;
 
--- name: ListMailLabels :many
+-- name: ListMailLabelsOrdered :many
 SELECT *
 FROM mail_labels
 WHERE character_id = ?

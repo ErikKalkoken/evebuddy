@@ -368,9 +368,9 @@ func (s *Service) ListMailIDsForListOrdered(characterID int32, listID int32) ([]
 	return s.r.ListMailIDsForListOrdered(ctx, characterID, listID)
 }
 
-func (s *Service) ListMailLabels(characterID int32) ([]repository.MailLabel, error) {
+func (s *Service) ListMailLabelsOrdered(characterID int32) ([]repository.MailLabel, error) {
 	ctx := context.Background()
-	return s.r.ListMailLabels(ctx, characterID)
+	return s.r.ListMailLabelsOrdered(ctx, characterID)
 }
 
 // UpdateMailRead updates an existing mail as read

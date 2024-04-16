@@ -104,14 +104,9 @@ func NewUI(s *service.Service) *ui {
 		}
 	}
 	go func() {
-		// TODO: There is a race condition with laying out the window before the
-		// window creation animation on Ubuntu (and other DEs?) finishes, where
-		// the window will be misdrawn into a smaller area if the animation hasn't finished.
-		// This makes it much less likely to occur (not seen on dozens of startups)
-		// but is a hacky "solution"!
+		//TODO: Find better workaround
 		time.Sleep(250 * time.Millisecond)
 		s.StartEsiStatusTicker(status.status)
-		//TODO: Find better workaround
 		w.Resize(fyne.NewSize(800, 601))
 		w.Resize(fyne.NewSize(800, 600))
 	}()
