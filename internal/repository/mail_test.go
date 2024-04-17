@@ -55,52 +55,6 @@ func TestMail(t *testing.T) {
 	db, r, factory := setUpDB()
 	defer db.Close()
 	ctx := context.Background()
-	t.Run("can create new", func(t *testing.T) {
-		// given
-		repository.TruncateTables(db)
-		c := factory.CreateCharacter()
-		o := repository.Token{
-			AccessToken:  "access",
-			CharacterID:  int32(c.ID),
-			ExpiresAt:    time.Now(),
-			RefreshToken: "refresh",
-			TokenType:    "xxx",
-		}
-		// when
-		err := r.UpdateOrCreateToken(ctx, &o)
-		// then
-		assert.NoError(t, err)
-		r, err := r.GetToken(ctx, c.ID)
-		if assert.NoError(t, err) {
-			assert.Equal(t, o.AccessToken, r.AccessToken)
-			assert.Equal(t, c.ID, r.CharacterID)
-		}
-	})
-	t.Run("can update existing", func(t *testing.T) {
-		// given
-		repository.TruncateTables(db)
-		c := factory.CreateCharacter()
-		o := repository.Token{
-			AccessToken:  "access",
-			CharacterID:  int32(c.ID),
-			ExpiresAt:    time.Now(),
-			RefreshToken: "refresh",
-			TokenType:    "xxx",
-		}
-		if err := r.UpdateOrCreateToken(ctx, &o); err != nil {
-			panic(err)
-		}
-		o.AccessToken = "changed"
-		// when
-		err := r.UpdateOrCreateToken(ctx, &o)
-		// then
-		assert.NoError(t, err)
-		r, err := r.GetToken(ctx, c.ID)
-		if assert.NoError(t, err) {
-			assert.Equal(t, o.AccessToken, r.AccessToken)
-			assert.Equal(t, c.ID, r.CharacterID)
-		}
-	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
 		repository.TruncateTables(db)
@@ -128,9 +82,21 @@ func TestMail(t *testing.T) {
 		want := set.NewFromSlice([]int32{10, 11, 12})
 		assert.Equal(t, want, got)
 	})
+	t.Run("can delete existing mail", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		m := factory.CreateMail()
+		// when
+		err := r.DeleteMail(ctx, m.CharacterID, m.MailID)
+		// then
+		if assert.NoError(t, err) {
+			_, err := r.GetMail(ctx, m.CharacterID, m.MailID)
+			assert.ErrorIs(t, err, repository.ErrNotFound)
+		}
+	})
 }
 
-func TestListMailIDsForLabelOrdered(t *testing.T) {
+func TestListMailID(t *testing.T) {
 	db, r, factory := setUpDB()
 	defer db.Close()
 	ctx := context.Background()
@@ -222,106 +188,74 @@ func TestListMailIDsForLabelOrdered(t *testing.T) {
 			assert.Len(t, mm, 1)
 		}
 	})
+	t.Run("should return mail for selected list only", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c := factory.CreateCharacter()
+		l1 := factory.CreateMailList(c.ID)
+		m1 := factory.CreateMail(repository.CreateMailParams{
+			CharacterID:  c.ID,
+			RecipientIDs: []int32{l1.ID},
+		})
+		l2 := factory.CreateMailList(c.ID)
+		factory.CreateMail(repository.CreateMailParams{
+			CharacterID:  c.ID,
+			RecipientIDs: []int32{l2.ID},
+		})
+		factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID})
+		// when
+		got, err := r.ListMailIDsForListOrdered(ctx, c.ID, l1.ID)
+		// then
+		if assert.NoError(t, err) {
+			want := []int32{m1.MailID}
+			assert.Equal(t, want, got)
+		}
+	})
 }
 
-// TODO: Reimplement tests
-
-// func TestFetchMailsFoList(t *testing.T) {
-// 	t.Run("should return mail for selected list only", func(t *testing.T) {
-// 		// given
-// 		repository.TruncateTables(db)
-// 		c := factory.CreateCharacter()
-// 		l1 := factory.CreateMailList(repository.MailList{Character: c})
-// 		m1 := factory.CreateMail(repository.Mail{Character: c, Recipients: []repository.EveEntity{l1.EveEntity}})
-// 		l2 := factory.CreateMailList(repository.MailList{Character: c})
-// 		factory.CreateMail(repository.Mail{Character: c, Recipients: []repository.EveEntity{l2.EveEntity}})
-// 		factory.CreateMail(repository.Mail{Character: c})
-// 		// when
-// 		mm, err := repository.ListMailsForList(c.ID, l1.EveEntityID)
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			var gotIDs []int32
-// 			for _, m := range mm {
-// 				gotIDs = append(gotIDs, m.MailID)
-// 			}
-// 			wantIDs := []int32{m1.MailID}
-// 			assert.Equal(t, wantIDs, gotIDs)
-// 		}
-// 	})
-// }
-
-// func TestDeleteMail(t *testing.T) {
-// 	t.Run("can delete existing mail", func(t *testing.T) {
-// 		// given
-// 		repository.TruncateTables(db)
-// 		m := factory.CreateMail()
-// 		// when
-// 		c, err := repository.DeleteMail(m.ID)
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			assert.Equal(t, 1, c)
-// 		}
-// 	})
-// }
-
-// func TestFetchMailLabelUnreadCounts(t *testing.T) {
-// 	// given
-// 	repository.TruncateTables(db)
-// 	c := factory.CreateCharacter()
-// 	corp := factory.CreateMailLabel(repository.MailLabel{Character: c, LabelID: repository.LabelCorp})
-// 	inbox := factory.CreateMailLabel(repository.MailLabel{Character: c, LabelID: repository.LabelInbox})
-// 	factory.CreateMailLabel(repository.MailLabel{Character: c, LabelID: repository.LabelAlliance})
-// 	factory.CreateMail(repository.Mail{Character: c, Labels: []repository.MailLabel{inbox}, IsRead: false})
-// 	factory.CreateMail(repository.Mail{Character: c, Labels: []repository.MailLabel{corp}, IsRead: true})
-// 	factory.CreateMail(repository.Mail{Character: c, Labels: []repository.MailLabel{corp}, IsRead: false})
-// 	factory.CreateMail(repository.Mail{Character: c, Labels: []repository.MailLabel{corp}, IsRead: false})
-// 	factory.CreateMail(repository.Mail{Character: c})
-// 	// when
-// 	r, err := repository.GetMailLabelUnreadCounts(c.ID)
-// 	if assert.NoError(t, err) {
-// 		assert.Equal(t, map[int32]int{repository.LabelCorp: 2, repository.LabelInbox: 1}, r)
-// 	}
-// }
-
-// func TestFetchMailListUnreadCounts(t *testing.T) {
-// 	// given
-// 	repository.TruncateTables(db)
-// 	c := factory.CreateCharacter()
-// 	l1 := factory.CreateMailList(repository.MailList{Character: c})
-// 	factory.CreateMailList(repository.MailList{Character: c})
-// 	factory.CreateMail(repository.Mail{Character: c, Recipients: []repository.EveEntity{l1.EveEntity}, IsRead: false})
-// 	factory.CreateMail(repository.Mail{Character: c, Recipients: []repository.EveEntity{l1.EveEntity}, IsRead: true})
-// 	factory.CreateMail(repository.Mail{Character: c})
-// 	// when
-// 	r, err := repository.GetMailListUnreadCounts(c.ID)
-// 	if assert.NoError(t, err) {
-// 		assert.Equal(t, map[int32]int{l1.EveEntityID: 1}, r)
-// 	}
-// }
-
-// func TestMailSave(t *testing.T) {
-// 	t.Run("can save updates", func(t *testing.T) {
-// 		// given
-// 		repository.TruncateTables(db)
-// 		m := factory.CreateMail(repository.Mail{IsRead: false})
-// 		m.IsRead = true
-// 		// when
-// 		err := m.Save()
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			m2, err := repository.GetMail(m.CharacterID, m.MailID)
-// 			if assert.NoError(t, err) {
-// 				assert.True(t, m2.IsRead)
-// 			}
-// 		}
-// 	})
-// 	t.Run("should return error when no ID", func(t *testing.T) {
-// 		// given
-// 		repository.TruncateTables(db)
-// 		m := repository.Mail{}
-// 		// when
-// 		err := m.Save()
-// 		// then
-// 		assert.ErrorIs(t, err, sql.ErrNoRows)
-// 	})
-// }
+func TestFetchUnreadCounts(t *testing.T) {
+	db, r, factory := setUpDB()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can get mail label unread counts", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c := factory.CreateCharacter()
+		corp := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID, LabelID: repository.LabelCorp})
+		inbox := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID, LabelID: repository.LabelInbox})
+		factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID, LabelID: repository.LabelAlliance})
+		factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{inbox.LabelID}, IsRead: false})
+		factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{corp.LabelID}, IsRead: true})
+		factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{corp.LabelID}, IsRead: false})
+		factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{corp.LabelID}, IsRead: false})
+		factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID})
+		// when
+		r, err := r.GetMailLabelUnreadCounts(ctx, c.ID)
+		if assert.NoError(t, err) {
+			assert.Equal(t, map[int32]int{repository.LabelCorp: 2, repository.LabelInbox: 1}, r)
+		}
+	})
+	t.Run("can get mail list unread counts", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c := factory.CreateCharacter()
+		l1 := factory.CreateMailList(c.ID)
+		factory.CreateMailList(c.ID)
+		factory.CreateMail(repository.CreateMailParams{
+			CharacterID:  c.ID,
+			RecipientIDs: []int32{l1.ID},
+			IsRead:       false,
+		})
+		factory.CreateMail(repository.CreateMailParams{
+			CharacterID:  c.ID,
+			RecipientIDs: []int32{l1.ID},
+			IsRead:       true,
+		})
+		factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID})
+		// when
+		r, err := r.GetMailListUnreadCounts(ctx, c.ID)
+		if assert.NoError(t, err) {
+			assert.Equal(t, map[int32]int{l1.ID: 1}, r)
+		}
+	})
+}

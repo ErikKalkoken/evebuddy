@@ -210,23 +210,25 @@ func (f Factory) CreateMailLabel(args ...repository.MailLabel) repository.MailLa
 	return label
 }
 
-// // CreateMailLabel is a test factory for MailList objects.
-// func (f factory) CreateMailList(args ...repository.MailList) repository.MailList {
-// 	var l repository.MailList
-// 	if len(args) > 0 {
-// 		l = args[0]
-// 	}
-// 	if l.Character.ID == 0 {
-// 		l.Character = f.CreateCharacter()
-// 	}
-// 	if l.EveEntity.ID == 0 {
-// 		l.EveEntity = f.CreateEveEntity(repository.EveEntity{Category: repository.EveEntityMailList})
-// 	}
-// 	if err := l.CreateIfNew(); err != nil {
-// 		panic(err)
-// 	}
-// 	return l
-// }
+// CreateMailList is a test factory for MailList objects.
+func (f Factory) CreateMailList(characterID int32, args ...repository.EveEntity) repository.EveEntity {
+	var e repository.EveEntity
+	ctx := context.Background()
+	if len(args) > 0 {
+		e = args[0]
+	}
+	if characterID == 0 {
+		c := f.CreateCharacter()
+		characterID = c.ID
+	}
+	if e.ID == 0 {
+		e = f.CreateEveEntity(repository.EveEntity{Category: repository.EveEntityMailList})
+	}
+	if err := f.r.CreateMailList(ctx, characterID, e.ID); err != nil {
+		panic(err)
+	}
+	return e
+}
 
 // CreateToken is a test factory for Token objects.
 func (f Factory) CreateToken(args ...repository.Token) repository.Token {

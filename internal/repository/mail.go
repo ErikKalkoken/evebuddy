@@ -121,7 +121,7 @@ func (r *Repository) CreateMail(ctx context.Context, arg CreateMailParams) (int6
 			FromID:      int64(from.ID),
 			MailID:      int64(arg.MailID),
 			Subject:     arg.Subject,
-			IsRead:      true,
+			IsRead:      arg.IsRead,
 			Timestamp:   arg.Timestamp,
 		}
 		mail, err := r.q.CreateMail(ctx, mailParams)
