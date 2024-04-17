@@ -18,7 +18,7 @@ func TestEveEntity(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		// when
 		e, err := r.CreateEveEntity(ctx, 42, "Dummy", model.EveEntityAlliance)
 		// then
@@ -30,7 +30,7 @@ func TestEveEntity(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		// given
 		e1 := factory.CreateEveEntity(
 			model.EveEntity{
@@ -52,7 +52,7 @@ func TestEveEntity(t *testing.T) {
 	})
 	t.Run("can fetch existing", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		// given
 		e1 := factory.CreateEveEntity(
 			model.EveEntity{
@@ -79,7 +79,7 @@ func TestEveEntity(t *testing.T) {
 	})
 	t.Run("should return objs with matching names in order", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		factory.CreateEveEntityCharacter(model.EveEntity{Name: "Yalpha2"})
 		factory.CreateEveEntityAlliance(model.EveEntity{Name: "Xalpha1"})
 		factory.CreateEveEntityCharacter(model.EveEntity{Name: "charlie"})
@@ -104,7 +104,7 @@ func TestEveEntityIDs(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should list existing entity IDs", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		factory.CreateEveEntity(model.EveEntity{ID: 5})
 		factory.CreateEveEntity(model.EveEntity{ID: 42})
 		// when
@@ -117,7 +117,7 @@ func TestEveEntityIDs(t *testing.T) {
 	})
 	t.Run("should return missing IDs", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		factory.CreateEveEntity(model.EveEntity{ID: 42})
 		// when
 		got, err := r.MissingEveEntityIDs(ctx, []int32{42, 5})

@@ -1,20 +1,18 @@
 package service
 
 import (
-	// "example/evebuddy/internal/factory"
-
+	"fmt"
 	"testing"
 
-	// "github.com/antihax/goesi/esi"
+	"github.com/antihax/goesi/esi"
 	"github.com/stretchr/testify/assert"
 
 	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/testutil"
 )
 
-// TODO: Reimplement tests
-
 func TestRecipient(t *testing.T) {
-	t.Run("can create from EveEntity", func(t *testing.T) {
+	t.Run("can create from model.EveEntity", func(t *testing.T) {
 		// given
 		e := model.EveEntity{ID: 7, Name: "Dummy", Category: model.EveEntityCharacter}
 		// when
@@ -100,126 +98,133 @@ func TestNewRecipientsFromText(t *testing.T) {
 	})
 }
 
-// func TestResolveLocally(t *testing.T) {
-// 	s := NewService(nil)
-// 	t.Run("should resolve to existing entities", func(t *testing.T) {
-// 		repository.TruncateTables()
-// 		e := factory.CreateEveEntity()
-// 		r := s.NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e)})
-// 		mm, names, err := r.buildMailRecipients()
-// 		if assert.NoError(t, err) {
-// 			assert.Len(t, mm, 1)
-// 			assert.Len(t, names, 0)
-// 			assert.Equal(t, e.ID, mm[0].RecipientId)
-// 		}
-// 	})
-// 	t.Run("should resolve all to existing entities", func(t *testing.T) {
-// 		repository.TruncateTables()
-// 		e1 := factory.CreateEveEntity()
-// 		e2 := factory.CreateEveEntity()
-// 		r := s.NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e1), eveEntityFromDBModel(e2)})
-// 		mm, names, err := r.buildMailRecipients()
-// 		if assert.NoError(t, err) {
-// 			assert.Len(t, mm, 2)
-// 			assert.Len(t, names, 0)
-// 		}
-// 	})
-// 	t.Run("should resolve to existing entities and names", func(t *testing.T) {
-// 		repository.TruncateTables()
-// 		e1 := factory.CreateEveEntity()
-// 		e2 := factory.CreateEveEntity()
-// 		r := s.NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e1), eveEntityFromDBModel(e2)})
-// 		r.AddFromText("Other")
-// 		mm, names, err := r.buildMailRecipients()
-// 		if assert.NoError(t, err) {
-// 			assert.Len(t, mm, 2)
-// 			assert.Len(t, names, 1)
-// 		}
-// 	})
-// 	t.Run("should resolve to names", func(t *testing.T) {
-// 		repository.TruncateTables()
-// 		r := s.NewRecipientsFromText("Other")
-// 		mm, names, err := r.buildMailRecipients()
-// 		if assert.NoError(t, err) {
-// 			assert.Len(t, mm, 0)
-// 			assert.Len(t, names, 1)
-// 		}
-// 	})
-// }
+func TestResolveLocally(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	s := NewService(r)
+	// ctx := context.Background()
+	t.Run("should resolve to existing entities", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		e := factory.CreateEveEntity()
+		r := s.NewRecipientsFromEntities([]model.EveEntity{e})
+		mm, names, err := r.buildMailRecipients(s)
+		if assert.NoError(t, err) {
+			assert.Len(t, mm, 1)
+			assert.Len(t, names, 0)
+			assert.Equal(t, e.ID, mm[0].RecipientId)
+		}
+	})
+	t.Run("should resolve all to existing entities", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		e1 := factory.CreateEveEntity()
+		e2 := factory.CreateEveEntity()
+		r := s.NewRecipientsFromEntities([]model.EveEntity{e1, e2})
+		mm, names, err := r.buildMailRecipients(s)
+		if assert.NoError(t, err) {
+			assert.Len(t, mm, 2)
+			assert.Len(t, names, 0)
+		}
+	})
+	t.Run("should resolve to existing entities and names", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		e1 := factory.CreateEveEntity()
+		e2 := factory.CreateEveEntity()
+		r := s.NewRecipientsFromEntities([]model.EveEntity{e1, e2})
+		r.AddFromText("Other")
+		mm, names, err := r.buildMailRecipients(s)
+		if assert.NoError(t, err) {
+			assert.Len(t, mm, 2)
+			assert.Len(t, names, 1)
+		}
+	})
+	t.Run("should resolve to names", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		r := s.NewRecipientsFromText("Other")
+		mm, names, err := r.buildMailRecipients(s)
+		if assert.NoError(t, err) {
+			assert.Len(t, mm, 0)
+			assert.Len(t, names, 1)
+		}
+	})
+}
 
-// func TestBuildMailRecipientsCategories(t *testing.T) {
-// 	s := NewService(nil)
-// 	var cases = []struct {
-// 		in  repository.EveEntityCategory
-// 		out string
-// 	}{
-// 		{repository.EveEntityAlliance, "alliance"},
-// 		{repository.EveEntityCharacter, "character"},
-// 		{repository.EveEntityCorporation, "corporation"},
-// 		{repository.EveEntityMailList, "mailing_list"},
-// 	}
-// 	for _, tc := range cases {
-// 		repository.TruncateTables()
-// 		t.Run(fmt.Sprintf("category %s", tc.in), func(t *testing.T) {
-// 			e := factory.CreateEveEntity(repository.EveEntity{Category: tc.in})
-// 			r := s.NewRecipientsFromEntities([]EveEntity{eveEntityFromDBModel(e)})
-// 			mm, names, err := r.buildMailRecipients()
-// 			if assert.NoError(t, err) {
-// 				assert.Len(t, mm, 1)
-// 				assert.Len(t, names, 0)
-// 				assert.Equal(t, e.ID, mm[0].RecipientId)
-// 				assert.Equal(t, tc.out, mm[0].RecipientType)
-// 			}
-// 		})
-// 	}
-// }
+func TestBuildMailRecipientsCategories(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	s := NewService(r)
+	var cases = []struct {
+		in  model.EveEntityCategory
+		out string
+	}{
+		{model.EveEntityAlliance, "alliance"},
+		{model.EveEntityCharacter, "character"},
+		{model.EveEntityCorporation, "corporation"},
+		{model.EveEntityMailList, "mailing_list"},
+	}
+	for _, tc := range cases {
+		testutil.TruncateTables(db)
+		t.Run(fmt.Sprintf("category %s", tc.in), func(t *testing.T) {
+			e := factory.CreateEveEntity(model.EveEntity{Category: tc.in})
+			r := s.NewRecipientsFromEntities([]model.EveEntity{e})
+			mm, names, err := r.buildMailRecipients(s)
+			if assert.NoError(t, err) {
+				assert.Len(t, mm, 1)
+				assert.Len(t, names, 0)
+				assert.Equal(t, e.ID, mm[0].RecipientId)
+				assert.Equal(t, tc.out, mm[0].RecipientType)
+			}
+		})
+	}
+}
 
-// func TestBuildMailRecipientsFromNames(t *testing.T) {
-// 	s := NewService(nil)
-// 	var cases = []struct {
-// 		in  repository.EveEntity
-// 		out esi.PostCharactersCharacterIdMailRecipient
-// 	}{
-// 		{
-// 			repository.EveEntity{ID: 42, Name: "alpha", Category: repository.EveEntityCharacter},
-// 			esi.PostCharactersCharacterIdMailRecipient{RecipientId: 42, RecipientType: "character"},
-// 		},
-// 		{
-// 			repository.EveEntity{ID: 42, Name: "alpha", Category: repository.EveEntityCorporation},
-// 			esi.PostCharactersCharacterIdMailRecipient{RecipientId: 42, RecipientType: "corporation"},
-// 		},
-// 		{
-// 			repository.EveEntity{ID: 42, Name: "alpha", Category: repository.EveEntityAlliance},
-// 			esi.PostCharactersCharacterIdMailRecipient{RecipientId: 42, RecipientType: "alliance"},
-// 		},
-// 		{
-// 			repository.EveEntity{ID: 42, Name: "alpha", Category: repository.EveEntityMailList},
-// 			esi.PostCharactersCharacterIdMailRecipient{RecipientId: 42, RecipientType: "mailing_list"},
-// 		},
-// 	}
-// 	for _, tc := range cases {
-// 		t.Run("should return mail recipient when match is found", func(t *testing.T) {
-// 			repository.TruncateTables()
-// 			factory.CreateEveEntity(tc.in)
-// 			rr, err := s.buildMailRecipientsFromNames([]string{tc.in.Name})
-// 			if assert.NoError(t, err) {
-// 				assert.Len(t, rr, 1)
-// 				assert.Equal(t, rr[0], tc.out)
-// 			}
-// 		})
-// 	}
-// 	t.Run("should abort with specific error when a name does not match", func(t *testing.T) {
-// 		repository.TruncateTables()
-// 		r, err := s.buildMailRecipientsFromNames([]string{"dummy"})
-// 		assert.ErrorIs(t, err, ErrNameNoMatch)
-// 		assert.Nil(t, r)
-// 	})
-// 	t.Run("should abort with specific error when a name matches more then once", func(t *testing.T) {
-// 		repository.TruncateTables()
-// 		factory.CreateEveEntity(repository.EveEntity{Name: "alpha", Category: repository.EveEntityCharacter})
-// 		factory.CreateEveEntity(repository.EveEntity{Name: "alpha", Category: repository.EveEntityAlliance})
-// 		r, err := s.buildMailRecipientsFromNames([]string{"alpha"})
-// 		assert.ErrorIs(t, err, ErrNameMultipleMatches)
-// 		assert.Nil(t, r)
-// 	})
-// }
+func TestBuildMailRecipientsFromNames(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	s := NewService(r)
+	var cases = []struct {
+		in  model.EveEntity
+		out esi.PostCharactersCharacterIdMailRecipient
+	}{
+		{
+			model.EveEntity{ID: 42, Name: "alpha", Category: model.EveEntityCharacter},
+			esi.PostCharactersCharacterIdMailRecipient{RecipientId: 42, RecipientType: "character"},
+		},
+		{
+			model.EveEntity{ID: 42, Name: "alpha", Category: model.EveEntityCorporation},
+			esi.PostCharactersCharacterIdMailRecipient{RecipientId: 42, RecipientType: "corporation"},
+		},
+		{
+			model.EveEntity{ID: 42, Name: "alpha", Category: model.EveEntityAlliance},
+			esi.PostCharactersCharacterIdMailRecipient{RecipientId: 42, RecipientType: "alliance"},
+		},
+		{
+			model.EveEntity{ID: 42, Name: "alpha", Category: model.EveEntityMailList},
+			esi.PostCharactersCharacterIdMailRecipient{RecipientId: 42, RecipientType: "mailing_list"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run("should return mail recipient when match is found", func(t *testing.T) {
+			testutil.TruncateTables(db)
+			factory.CreateEveEntity(tc.in)
+			rr, err := s.buildMailRecipientsFromNames([]string{tc.in.Name})
+			if assert.NoError(t, err) {
+				assert.Len(t, rr, 1)
+				assert.Equal(t, rr[0], tc.out)
+			}
+		})
+	}
+	t.Run("should abort with specific error when a name does not match", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		r, err := s.buildMailRecipientsFromNames([]string{"dummy"})
+		assert.ErrorIs(t, err, ErrNameNoMatch)
+		assert.Nil(t, r)
+	})
+	t.Run("should abort with specific error when a name matches more then once", func(t *testing.T) {
+		testutil.TruncateTables(db)
+		factory.CreateEveEntity(model.EveEntity{Name: "alpha", Category: model.EveEntityCharacter})
+		factory.CreateEveEntity(model.EveEntity{Name: "alpha", Category: model.EveEntityAlliance})
+		r, err := s.buildMailRecipientsFromNames([]string{"alpha"})
+		assert.ErrorIs(t, err, ErrNameMultipleMatches)
+		assert.Nil(t, r)
+	})
+}

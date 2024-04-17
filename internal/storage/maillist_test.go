@@ -3,7 +3,6 @@ package storage_test
 import (
 	"context"
 	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage"
 	"example/evebuddy/internal/testutil"
 	"testing"
 
@@ -16,7 +15,7 @@ func TestMailList(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		l := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 		// when
@@ -26,7 +25,7 @@ func TestMailList(t *testing.T) {
 	})
 	t.Run("can fetch all mail lists for a character", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		e1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList, Name: "alpha"})
 		assert.NoError(t, r.CreateMailList(ctx, c.ID, e1.ID))

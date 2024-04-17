@@ -17,7 +17,7 @@ func TestCharacter(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		corp := factory.CreateEveEntityCorporation()
 		c := model.Character{ID: 1, Name: "Erik", Corporation: corp}
 		// when
@@ -32,7 +32,7 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
 		c.Name = "Erik"
@@ -47,7 +47,7 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("can list characters", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		factory.CreateCharacter()
 		factory.CreateCharacter()
 		// when
@@ -59,7 +59,7 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("can delete", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
 		err := r.DeleteCharacter(ctx, c.ID)
@@ -71,7 +71,7 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		// when
 		_, err := r.GetCharacter(ctx, 99)
 		// then
@@ -79,7 +79,7 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("should return first character", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
 		factory.CreateCharacter()
 		// when
@@ -91,7 +91,7 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		// when
 		_, err := r.GetFirstCharacter(ctx)
 		// then
@@ -99,7 +99,7 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("can fetch character by ID with corporation only", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
 		r, err := r.GetCharacter(ctx, c.ID)
@@ -117,7 +117,7 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("can fetch character by ID with alliance and faction", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		factory.CreateCharacter()
 		alliance := factory.CreateEveEntityAlliance()
 		faction := factory.CreateEveEntity()

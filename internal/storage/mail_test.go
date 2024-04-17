@@ -18,7 +18,7 @@ func TestMailCreate(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		f := factory.CreateEveEntity()
 		recipient := factory.CreateEveEntity()
@@ -59,7 +59,7 @@ func TestMail(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
 		_, err := r.GetMail(ctx, c.ID, 99)
@@ -68,7 +68,7 @@ func TestMail(t *testing.T) {
 	})
 	t.Run("can list mail IDs", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		for i := range 3 {
 			factory.CreateMail(storage.CreateMailParams{
@@ -86,7 +86,7 @@ func TestMail(t *testing.T) {
 	})
 	t.Run("can delete existing mail", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		m := factory.CreateMail()
 		// when
 		err := r.DeleteMail(ctx, m.CharacterID, m.MailID)
@@ -104,7 +104,7 @@ func TestListMailID(t *testing.T) {
 	ctx := context.Background()
 	t.Run("should return mail for selected label only", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		l1 := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID})
 		l2 := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID})
@@ -121,7 +121,7 @@ func TestListMailID(t *testing.T) {
 	})
 	t.Run("can fetch for all labels", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		l1 := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID})
 		l2 := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID})
@@ -139,7 +139,7 @@ func TestListMailID(t *testing.T) {
 	})
 	t.Run("should return mail without label only", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		l := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID})
 		factory.CreateMail(storage.CreateMailParams{
@@ -158,7 +158,7 @@ func TestListMailID(t *testing.T) {
 	})
 	t.Run("should return empty when no match", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
 		mm, err := r.ListMailIDsForLabelOrdered(ctx, c.ID, 99)
@@ -169,7 +169,7 @@ func TestListMailID(t *testing.T) {
 	})
 	t.Run("different characters can have same label ID", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
 		l1 := factory.CreateMailLabel(model.MailLabel{CharacterID: c1.ID, LabelID: 1})
 		factory.CreateMail(storage.CreateMailParams{
@@ -192,7 +192,7 @@ func TestListMailID(t *testing.T) {
 	})
 	t.Run("should return mail for selected list only", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		l1 := factory.CreateMailList(c.ID)
 		m1 := factory.CreateMail(storage.CreateMailParams{
@@ -221,7 +221,7 @@ func TestFetchUnreadCounts(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can get mail label unread counts", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		corp := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: model.MailLabelCorp})
 		inbox := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: model.MailLabelInbox})
@@ -239,7 +239,7 @@ func TestFetchUnreadCounts(t *testing.T) {
 	})
 	t.Run("can get mail list unread counts", func(t *testing.T) {
 		// given
-		storage.TruncateTables(db)
+		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		l1 := factory.CreateMailList(c.ID)
 		factory.CreateMailList(c.ID)
