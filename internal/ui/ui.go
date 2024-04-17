@@ -105,9 +105,10 @@ func NewUI(s *service.Service) *ui {
 	go func() {
 		//TODO: Find better workaround
 		time.Sleep(250 * time.Millisecond)
-		s.StartEsiStatusTicker(status.status)
 		w.Resize(fyne.NewSize(800, 601))
 		w.Resize(fyne.NewSize(800, 600))
+		s.StartEsiStatusTicker(status.status)
+		s.StartCharacterUpdateTask()
 	}()
 	return u
 }

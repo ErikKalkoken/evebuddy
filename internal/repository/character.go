@@ -88,13 +88,13 @@ func (r *Repository) DeleteCharacter(ctx context.Context, characterID int32) err
 	return nil
 }
 
-func (r *Repository) GetCharacter(ctx context.Context, id int32) (Character, error) {
-	row, err := r.q.GetCharacter(ctx, int64(id))
+func (r *Repository) GetCharacter(ctx context.Context, characterID int32) (Character, error) {
+	row, err := r.q.GetCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return Character{}, fmt.Errorf("failed to get character %d: %w", id, err)
+		return Character{}, fmt.Errorf("failed to get character %d: %w", characterID, err)
 	}
 	var mailUpdateAt time.Time
 	if row.MailUpdatedAt.Valid {

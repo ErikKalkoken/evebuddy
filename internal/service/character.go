@@ -4,6 +4,8 @@ import (
 	"context"
 	"example/evebuddy/internal/api/sso"
 	"example/evebuddy/internal/repository"
+	"log/slog"
+	"time"
 )
 
 func (s *Service) DeleteCharacter(characterID int32) error {
@@ -79,6 +81,9 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 		}
 		c.Faction = e
 	}
+	if err = s.updateCharacter(ctx, &c); err != nil {
+		return err
+	}
 	if err = s.r.UpdateOrCreateCharacter(ctx, &c); err != nil {
 		return err
 	}
@@ -88,12 +93,93 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	return nil
 }
 
-// TODO: Add later
-// skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, charID, nil)
-// if err != nil {
-// 	return err
-// }
-// balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, charID, nil)
-// if err != nil {
-// 	return err
-// }
+func (s *Service) updateCharacter(ctx context.Context, c *repository.Character) error {
+	skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, c.ID, nil)
+	if err != nil {
+		return err
+	}
+	balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, c.ID, nil)
+	if err != nil {
+		return err
+	}
+	c.SkillPoints = int(skills.TotalSp)
+	c.WalletBalance = balance
+	rr, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
+	if err != nil {
+		return err
+	}
+	if len(rr) == 0 {
+		return nil
+	}
+	r := rr[0]
+	ids := []int32{r.CorporationId}
+	if r.AllianceId != 0 {
+		ids = append(ids, r.AllianceId)
+	}
+	if r.FactionId != 0 {
+		ids = append(ids, r.FactionId)
+	}
+	_, err = s.addMissingEveEntities(ctx, ids)
+	if err != nil {
+		return err
+	}
+	corporation, err := s.r.GetEveEntity(ctx, r.CorporationId)
+	if err != nil {
+		return err
+	}
+	c.Corporation = corporation
+	var alliance repository.EveEntity
+	if r.AllianceId != 0 {
+		alliance, err = s.r.GetEveEntity(ctx, r.AllianceId)
+		if err != nil {
+			return err
+		}
+	}
+	c.Alliance = alliance
+	var faction repository.EveEntity
+	if r.FactionId != 0 {
+		faction, err = s.r.GetEveEntity(ctx, r.FactionId)
+		if err != nil {
+			return err
+		}
+	}
+	c.Faction = faction
+	return nil
+}
+
+func (s *Service) StartCharacterUpdateTask() {
+	ticker := time.NewTicker(120 * time.Second)
+	go func() {
+		for {
+			s.updateCharacters()
+			<-ticker.C
+		}
+	}()
+}
+
+func (s *Service) updateCharacters() error {
+	ctx := context.Background()
+	cc, err := s.r.ListCharacters(ctx)
+	if err != nil {
+		return err
+	}
+	slog.Info("Start updating characters", "count", len(cc))
+	for _, c := range cc {
+		token, err := s.getValidToken(ctx, c.ID)
+		if err != nil {
+			slog.Error("Failed to update character", "characterID", c.ID, "err", err)
+			continue
+		}
+		ctx = contextWithToken(ctx, token.AccessToken)
+		if err := s.updateCharacter(ctx, &c); err != nil {
+			slog.Error("Failed to update character", "characterID", c.ID, "err", err)
+			continue
+		}
+		if err := s.r.UpdateOrCreateCharacter(ctx, &c); err != nil {
+			slog.Error("Failed to update character", "characterID", c.ID, "err", err)
+			continue
+		}
+		slog.Info("Completed updating character", "characterID", c.ID)
+	}
+	return nil
+}
