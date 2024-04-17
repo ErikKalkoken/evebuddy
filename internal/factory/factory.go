@@ -116,7 +116,7 @@ func eveEntityWithCategory(args []repository.EveEntity, category repository.EveE
 }
 
 // CreateMail is a test factory for Mail objects
-func (f Factory) CreateMail(args ...repository.CreateMailParams) {
+func (f Factory) CreateMail(args ...repository.CreateMailParams) repository.Mail {
 	var arg repository.CreateMailParams
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -154,11 +154,11 @@ func (f Factory) CreateMail(args ...repository.CreateMailParams) {
 	if err != nil {
 		panic(err)
 	}
-	// mail, err := f.r.GetMail(ctx, arg.CharacterID, arg.MailID)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// return mail
+	mail, err := f.r.GetMail(ctx, arg.CharacterID, arg.MailID)
+	if err != nil {
+		panic(err)
+	}
+	return mail
 }
 
 // CreateMailLabel is a test factory for MailLabel objects

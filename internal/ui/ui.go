@@ -69,12 +69,12 @@ func NewUI(s *service.Service) *ui {
 
 	mailContent := container.NewHSplit(folders.content, headersMail)
 	mailContent.SetOffset(0.15)
-	mailTab := container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), addTitle(mailContent, "Mail"))
+	mailTab := container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), mailContent)
 
 	characterArea := u.NewCharacterArea()
 	u.characterArea = characterArea
 	characterContent := container.NewBorder(nil, nil, nil, nil, characterArea.content)
-	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), addTitle(characterContent, "Character Sheet"))
+	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), characterContent)
 
 	statusArea := u.newStatusArea()
 	u.statusArea = statusArea
@@ -186,10 +186,4 @@ func (u *ui) ResetCurrentCharacter() {
 	}
 	u.characterArea.Redraw()
 	u.folderArea.Redraw()
-}
-
-func addTitle(c fyne.CanvasObject, title string) fyne.CanvasObject {
-	// label := widget.NewLabel(strings.ToUpper(title))
-	// x := container.NewBorder(container.NewVBox(label, widget.NewSeparator()), nil, nil, nil, c)
-	return c
 }

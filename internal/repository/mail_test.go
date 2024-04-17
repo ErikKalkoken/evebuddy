@@ -130,109 +130,101 @@ func TestMail(t *testing.T) {
 	})
 }
 
-// TODO: Reimplement tests
+func TestListMailIDsForLabelOrdered(t *testing.T) {
+	db, r, factory := setUpDB()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return mail for selected label only", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c := factory.CreateCharacter()
+		l1 := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID})
+		l2 := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID})
+		m1 := factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
+		m2 := factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -60)})
+		factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}})
+		// when
+		got, err := r.ListMailIDsForLabelOrdered(ctx, c.ID, l1.LabelID)
+		// then
+		if assert.NoError(t, err) {
+			want := []int32{m2.MailID, m1.MailID}
+			assert.Equal(t, want, got)
+		}
+	})
+	t.Run("can fetch for all labels", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c := factory.CreateCharacter()
+		l1 := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID})
+		l2 := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID})
+		m1 := factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
+		m2 := factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -60)})
+		m3 := factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}, Timestamp: time.Now().Add(time.Second * -240)})
+		m4 := factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID, Timestamp: time.Now().Add(time.Second * -360)})
+		// when
+		got, err := r.ListMailIDsForLabelOrdered(ctx, c.ID, repository.LabelAll)
+		// then
+		if assert.NoError(t, err) {
+			want := []int32{m2.MailID, m1.MailID, m3.MailID, m4.MailID}
+			assert.Equal(t, want, got)
+		}
+	})
+	t.Run("should return mail without label only", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c := factory.CreateCharacter()
+		l := factory.CreateMailLabel(repository.MailLabel{CharacterID: c.ID})
+		factory.CreateMail(repository.CreateMailParams{
+			CharacterID: c.ID,
+			LabelIDs:    []int32{l.LabelID},
+			Timestamp:   time.Now().Add(time.Second * -120),
+		})
+		m := factory.CreateMail(repository.CreateMailParams{CharacterID: c.ID})
+		// when
+		got, err := r.ListMailIDsForLabelOrdered(ctx, c.ID, repository.LabelNone)
+		// then
+		if assert.NoError(t, err) {
+			want := []int32{m.MailID}
+			assert.Equal(t, want, got)
+		}
+	})
+	t.Run("should return empty when no match", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c := factory.CreateCharacter()
+		// when
+		mm, err := r.ListMailIDsForLabelOrdered(ctx, c.ID, 99)
+		// then
+		if assert.NoError(t, err) {
+			assert.Empty(t, mm)
+		}
+	})
+	t.Run("different characters can have same label ID", func(t *testing.T) {
+		// given
+		repository.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		l1 := factory.CreateMailLabel(repository.MailLabel{CharacterID: c1.ID, LabelID: 1})
+		factory.CreateMail(repository.CreateMailParams{
+			CharacterID: c1.ID,
+			LabelIDs:    []int32{l1.LabelID},
+		})
+		c2 := factory.CreateCharacter()
+		l2 := factory.CreateMailLabel(repository.MailLabel{CharacterID: c2.ID, LabelID: 1})
+		from := factory.CreateEveEntity()
+		factory.CreateMail(repository.CreateMailParams{
+			FromID:      from.ID,
+			CharacterID: c2.ID,
+			LabelIDs:    []int32{l2.LabelID},
+		})
+		// when
+		mm, err := r.ListMailIDsForLabelOrdered(ctx, c2.ID, l2.LabelID)
+		if assert.NoError(t, err) {
+			assert.Len(t, mm, 1)
+		}
+	})
+}
 
-// func TestFetchMailsForLabel(t *testing.T) {
-// 	t.Run("should return mail for selected label only", func(t *testing.T) {
-// 		// given
-// 		repository.TruncateTables(db)
-// 		c := factory.CreateCharacter()
-// 		l1 := factory.CreateMailLabel(repository.MailLabel{Character: c})
-// 		l2 := factory.CreateMailLabel(repository.MailLabel{Character: c})
-// 		m1 := factory.CreateMail(repository.Mail{Character: c, Labels: []repository.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -120)})
-// 		m2 := factory.CreateMail(repository.Mail{Character: c, Labels: []repository.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -60)})
-// 		factory.CreateMail(repository.Mail{Character: c, Labels: []repository.MailLabel{l2}})
-// 		// when
-// 		mm, err := repository.ListMailsForLabel(c.ID, l1.LabelID)
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			var gotIDs []int32
-// 			for _, m := range mm {
-// 				gotIDs = append(gotIDs, m.MailID)
-// 			}
-// 			wantIDs := []int32{m2.MailID, m1.MailID}
-// 			assert.Equal(t, wantIDs, gotIDs)
-// 		}
-// 	})
-// 	t.Run("can fetch for all labels", func(t *testing.T) {
-// 		// given
-// 		repository.TruncateTables(db)
-// 		c := factory.CreateCharacter()
-// 		l1 := factory.CreateMailLabel(repository.MailLabel{Character: c})
-// 		l2 := factory.CreateMailLabel(repository.MailLabel{Character: c})
-// 		m1 := factory.CreateMail(repository.Mail{Character: c, Labels: []repository.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -120)})
-// 		m2 := factory.CreateMail(repository.Mail{Character: c, Labels: []repository.MailLabel{l1}, Timestamp: time.Now().Add(time.Second * -60)})
-// 		m3 := factory.CreateMail(repository.Mail{Character: c, Labels: []repository.MailLabel{l2}, Timestamp: time.Now().Add(time.Second * -240)})
-// 		m4 := factory.CreateMail(repository.Mail{Character: c, Timestamp: time.Now().Add(time.Second * -360)})
-// 		// when
-// 		mm, err := repository.ListMailsForLabel(c.ID, repository.LabelAll)
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			var gotIDs []int32
-// 			for _, m := range mm {
-// 				gotIDs = append(gotIDs, m.MailID)
-// 			}
-// 			wantIDs := []int32{m2.MailID, m1.MailID, m3.MailID, m4.MailID}
-// 			assert.Equal(t, wantIDs, gotIDs)
-// 		}
-// 	})
-// 	t.Run("should return mail without label", func(t *testing.T) {
-// 		// given
-// 		repository.TruncateTables(db)
-// 		c := factory.CreateCharacter()
-// 		l := factory.CreateMailLabel(repository.MailLabel{Character: c})
-// 		factory.CreateMail(repository.Mail{Character: c, Labels: []repository.MailLabel{l}, Timestamp: time.Now().Add(time.Second * -120)})
-// 		m := factory.CreateMail(repository.Mail{Character: c})
-// 		// when
-// 		mm, err := repository.ListMailsForLabel(c.ID, repository.LabelNone)
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			var gotIDs []int32
-// 			for _, m := range mm {
-// 				gotIDs = append(gotIDs, m.MailID)
-// 			}
-// 			wantIDs := []int32{m.MailID}
-// 			assert.Equal(t, wantIDs, gotIDs)
-// 		}
-// 	})
-// 	t.Run("should return empty when no match", func(t *testing.T) {
-// 		// given
-// 		repository.TruncateTables(db)
-// 		c := factory.CreateCharacter()
-// 		// when
-// 		mm, err := repository.ListMailsForLabel(c.ID, 99)
-// 		// then
-// 		if assert.NoError(t, err) {
-// 			assert.Empty(t, mm)
-// 		}
-// 	})
-// 	t.Run("different characters can have same label ID", func(t *testing.T) {
-// 		// given
-// 		repository.TruncateTables(db)
-// 		c1 := factory.CreateCharacter()
-// 		l1 := factory.CreateMailLabel(repository.MailLabel{Character: c1, LabelID: 1})
-// 		factory.CreateMail(repository.Mail{Character: c1, Labels: []repository.MailLabel{l1}})
-// 		c2 := factory.CreateCharacter()
-// 		l2 := factory.CreateMailLabel(repository.MailLabel{Character: c2, LabelID: 1})
-// 		// when
-// 		from := factory.CreateEveEntity()
-// 		m := repository.Mail{
-// 			Body:      "body",
-// 			From:      from,
-// 			MailID:    7,
-// 			Character: c2,
-// 			Subject:   "subject",
-// 			Labels:    []repository.MailLabel{l2},
-// 			Timestamp: time.Now(),
-// 		}
-// 		assert.NoError(t, m.Create())
-// 		// when
-// 		mm, err := repository.ListMailsForLabel(c2.ID, l2.LabelID)
-// 		if assert.NoError(t, err) {
-// 			assert.Len(t, mm, 1)
-// 		}
-// 	})
-// }
+// TODO: Reimplement tests
 
 // func TestFetchMailsFoList(t *testing.T) {
 // 	t.Run("should return mail for selected list only", func(t *testing.T) {
