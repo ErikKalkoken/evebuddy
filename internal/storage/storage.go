@@ -11,13 +11,13 @@ import (
 
 var ErrNotFound = errors.New("object not found")
 
-type Repository struct {
+type Storage struct {
 	q  *sqlc.Queries
 	db *sql.DB
 }
 
-func New(db *sql.DB) *Repository {
-	r := &Repository{q: sqlc.New(db), db: db}
+func New(db *sql.DB) *Storage {
+	r := &Storage{q: sqlc.New(db), db: db}
 	return r
 }
 

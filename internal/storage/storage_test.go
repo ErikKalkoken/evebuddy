@@ -6,7 +6,7 @@ import (
 	"example/evebuddy/internal/storage"
 )
 
-func setUpDB() (*sql.DB, *storage.Repository, factory.Factory) {
+func setUpDB() (*sql.DB, *storage.Storage, factory.Factory) {
 	db, err := storage.ConnectDB(":memory:", true)
 	if err != nil {
 		panic(err)

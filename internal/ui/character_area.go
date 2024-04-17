@@ -1,9 +1,6 @@
 package ui
 
 import (
-	"example/evebuddy/internal/api/images"
-	"example/evebuddy/internal/helper/humanize"
-	"example/evebuddy/internal/storage"
 	"fmt"
 	"log/slog"
 
@@ -12,6 +9,10 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+
+	"example/evebuddy/internal/api/images"
+	"example/evebuddy/internal/helper/humanize"
+	"example/evebuddy/internal/model"
 )
 
 // characterArea is the UI area that shows the character sheet
@@ -63,7 +64,7 @@ func (c *characterArea) Redraw() {
 	}
 }
 
-func updateIcons(icons *fyne.Container, c *storage.Character) error {
+func updateIcons(icons *fyne.Container, c *model.Character) error {
 	u, err := images.CharacterPortraitURL(c.ID, 128)
 	if err != nil {
 		return err

@@ -2,11 +2,13 @@ package service
 
 import (
 	// "example/evebuddy/internal/factory"
-	"example/evebuddy/internal/storage"
+
 	"testing"
 
 	// "github.com/antihax/goesi/esi"
 	"github.com/stretchr/testify/assert"
+
+	"example/evebuddy/internal/model"
 )
 
 // TODO: Reimplement tests
@@ -14,7 +16,7 @@ import (
 func TestRecipient(t *testing.T) {
 	t.Run("can create from EveEntity", func(t *testing.T) {
 		// given
-		e := storage.EveEntity{ID: 7, Name: "Dummy", Category: storage.EveEntityCharacter}
+		e := model.EveEntity{ID: 7, Name: "Dummy", Category: model.EveEntityCharacter}
 		// when
 		r := newRecipientFromEntity(e)
 		// then

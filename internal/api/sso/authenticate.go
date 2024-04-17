@@ -222,7 +222,7 @@ func retrieveTokenPayload(client *http.Client, code, codeVerifier string) (*toke
 	return &token, nil
 }
 
-// build storage.Token object
+// build model.Token object
 func buildToken(rawToken *tokenPayload, claims jwt.MapClaims) (*Token, error) {
 	// calc character ID
 	characterID, err := strconv.Atoi(strings.Split(claims["sub"].(string), ":")[2])

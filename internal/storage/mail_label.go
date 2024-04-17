@@ -4,31 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"example/evebuddy/internal/sqlc"
 	"fmt"
+
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/sqlc"
 )
 
-// Special mail label IDs
-const (
-	LabelAll      = 1<<31 - 1
-	LabelNone     = 0
-	LabelInbox    = 1
-	LabelSent     = 2
-	LabelCorp     = 4
-	LabelAlliance = 8
-)
-
-type MailLabel struct {
-	ID          int64
-	CharacterID int32
-	Color       string
-	LabelID     int32
-	Name        string
-	UnreadCount int
-}
-
-func mailLabelFromDBModel(l sqlc.MailLabel) MailLabel {
-	return MailLabel{
+func mailLabelFromDBModel(l sqlc.MailLabel) model.MailLabel {
+	return model.MailLabel{
 		ID:          l.ID,
 		CharacterID: int32(l.CharacterID),
 		Color:       l.Color,
@@ -38,7 +21,7 @@ func mailLabelFromDBModel(l sqlc.MailLabel) MailLabel {
 	}
 }
 
-func (r *Repository) GetMailLabel(ctx context.Context, characterID, labelID int32) (MailLabel, error) {
+func (r *Storage) GetMailLabel(ctx context.Context, characterID, labelID int32) (model.MailLabel, error) {
 	arg := sqlc.GetMailLabelParams{
 		CharacterID: int64(characterID),
 		LabelID:     int64(labelID),
@@ -48,7 +31,7 @@ func (r *Repository) GetMailLabel(ctx context.Context, characterID, labelID int3
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return MailLabel{}, fmt.Errorf("failed to get mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
+		return model.MailLabel{}, fmt.Errorf("failed to get mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
 	}
 	l2 := mailLabelFromDBModel(l)
 	return l2, nil
@@ -62,12 +45,12 @@ type MailLabelParams struct {
 	UnreadCount int
 }
 
-func (r *Repository) GetOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (MailLabel, error) {
-	label, err := func() (MailLabel, error) {
+func (r *Storage) GetOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (model.MailLabel, error) {
+	label, err := func() (model.MailLabel, error) {
 		var l sqlc.MailLabel
 		tx, err := r.db.Begin()
 		if err != nil {
-			return MailLabel{}, err
+			return model.MailLabel{}, err
 		}
 		defer tx.Rollback()
 		qtx := r.q.WithTx(tx)
@@ -78,7 +61,7 @@ func (r *Repository) GetOrCreateMailLabel(ctx context.Context, arg MailLabelPara
 		l, err = qtx.GetMailLabel(ctx, arg2)
 		if err != nil {
 			if !errors.Is(err, sql.ErrNoRows) {
-				return MailLabel{}, err
+				return model.MailLabel{}, err
 			}
 			arg3 := sqlc.CreateMailLabelParams{
 				CharacterID: int64(arg.CharacterID),
@@ -89,11 +72,11 @@ func (r *Repository) GetOrCreateMailLabel(ctx context.Context, arg MailLabelPara
 			}
 			l, err = qtx.CreateMailLabel(ctx, arg3)
 			if err != nil {
-				return MailLabel{}, err
+				return model.MailLabel{}, err
 			}
 		}
 		if err := tx.Commit(); err != nil {
-			return MailLabel{}, err
+			return model.MailLabel{}, err
 		}
 		return mailLabelFromDBModel(l), nil
 	}()
@@ -103,24 +86,24 @@ func (r *Repository) GetOrCreateMailLabel(ctx context.Context, arg MailLabelPara
 	return label, nil
 }
 
-func (r *Repository) ListMailLabelsOrdered(ctx context.Context, characterID int32) ([]MailLabel, error) {
+func (r *Storage) ListMailLabelsOrdered(ctx context.Context, characterID int32) ([]model.MailLabel, error) {
 	ll, err := r.q.ListMailLabelsOrdered(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list mail label IDs for character %d: %w", characterID, err)
 	}
-	ll2 := make([]MailLabel, len(ll))
+	ll2 := make([]model.MailLabel, len(ll))
 	for i, l := range ll {
 		ll2[i] = mailLabelFromDBModel(l)
 	}
 	return ll2, nil
 }
 
-func (r *Repository) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (MailLabel, error) {
-	label, err := func() (MailLabel, error) {
+func (r *Storage) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (model.MailLabel, error) {
+	label, err := func() (model.MailLabel, error) {
 		var l sqlc.MailLabel
 		tx, err := r.db.Begin()
 		if err != nil {
-			return MailLabel{}, err
+			return model.MailLabel{}, err
 		}
 		defer tx.Rollback()
 		qtx := r.q.WithTx(tx)
@@ -134,7 +117,7 @@ func (r *Repository) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelP
 		l, err = qtx.CreateMailLabel(ctx, arg1)
 		if err != nil {
 			if !isSqlite3ErrConstraint(err) {
-				return MailLabel{}, err
+				return model.MailLabel{}, err
 			}
 			arg2 := sqlc.UpdateMailLabelParams{
 				CharacterID: int64(arg.CharacterID),
@@ -145,17 +128,17 @@ func (r *Repository) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelP
 			}
 			l, err = qtx.UpdateMailLabel(ctx, arg2)
 			if err != nil {
-				return MailLabel{}, err
+				return model.MailLabel{}, err
 			}
 		}
 		if err := tx.Commit(); err != nil {
-			return MailLabel{}, err
+			return model.MailLabel{}, err
 		}
 		l2 := mailLabelFromDBModel(l)
 		return l2, nil
 	}()
 	if err != nil {
-		return MailLabel{}, fmt.Errorf("failed to update or create mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
+		return model.MailLabel{}, fmt.Errorf("failed to update or create mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
 	}
 	return label, nil
 }

@@ -3,8 +3,6 @@ package ui
 
 import (
 	"errors"
-	"example/evebuddy/internal/service"
-	"example/evebuddy/internal/storage"
 	"fmt"
 	"log/slog"
 	"runtime"
@@ -18,6 +16,10 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/service"
+	"example/evebuddy/internal/storage"
 )
 
 // UI constants
@@ -39,7 +41,7 @@ const (
 type ui struct {
 	app              fyne.App
 	characterArea    *characterArea
-	currentCharacter *storage.Character
+	currentCharacter *model.Character
 	folderArea       *folderArea
 	headerArea       *headerArea
 	mailArea         *mailArea
@@ -147,11 +149,11 @@ func (u *ui) CurrentCharID() int32 {
 	return u.currentCharacter.ID
 }
 
-func (u *ui) CurrentChar() *storage.Character {
+func (u *ui) CurrentChar() *model.Character {
 	return u.currentCharacter
 }
 
-func (u *ui) SetCurrentCharacter(c *storage.Character) {
+func (u *ui) SetCurrentCharacter(c *model.Character) {
 	u.currentCharacter = c
 	u.updateToolbarBadge(c)
 	err := u.service.SetSettingInt32(settingLastCharacterID, c.ID)
@@ -162,7 +164,7 @@ func (u *ui) SetCurrentCharacter(c *storage.Character) {
 	u.folderArea.Redraw()
 }
 
-func (u *ui) updateToolbarBadge(c *storage.Character) {
+func (u *ui) updateToolbarBadge(c *model.Character) {
 	if c == nil {
 		u.toolbarBadge.RemoveAll()
 		return

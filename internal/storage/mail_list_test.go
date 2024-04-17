@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"context"
+	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage"
 	"testing"
 
@@ -16,7 +17,7 @@ func TestMailList(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		l := factory.CreateEveEntity(storage.EveEntity{Category: storage.EveEntityMailList})
+		l := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 		// when
 		err := r.CreateMailList(ctx, c.ID, l.ID)
 		// then
@@ -26,9 +27,9 @@ func TestMailList(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		e1 := factory.CreateEveEntity(storage.EveEntity{Category: storage.EveEntityMailList, Name: "alpha"})
+		e1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList, Name: "alpha"})
 		assert.NoError(t, r.CreateMailList(ctx, c.ID, e1.ID))
-		e2 := factory.CreateEveEntity(storage.EveEntity{Category: storage.EveEntityMailList, Name: "bravo"})
+		e2 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList, Name: "bravo"})
 		assert.NoError(t, r.CreateMailList(ctx, c.ID, e2.ID))
 		// when
 		ll, err := r.ListMailListsOrdered(ctx, c.ID)

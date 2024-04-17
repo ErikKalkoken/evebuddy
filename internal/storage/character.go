@@ -4,83 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"example/evebuddy/internal/api/images"
 	islices "example/evebuddy/internal/helper/slices"
+	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/sqlc"
 	"fmt"
 	"time"
-
-	"fyne.io/fyne/v2"
 )
 
-// An Eve Online character.
-type Character struct {
-	Alliance       EveEntity
-	Birthday       time.Time
-	Corporation    EveEntity
-	Description    string
-	Faction        EveEntity
-	Gender         string
-	ID             int32
-	MailUpdatedAt  time.Time
-	Name           string
-	SecurityStatus float64
-	SkillPoints    int
-	WalletBalance  float64
-}
-
-func (c *Character) HasAlliance() bool {
-	return c.Alliance.ID != 0
-}
-
-func (c *Character) HasFaction() bool {
-	return c.Faction.ID != 0
-}
-
-// PortraitURL returns an image URL for a portrait of a character
-func (c *Character) PortraitURL(size int) (fyne.URI, error) {
-	return images.CharacterPortraitURL(int32(c.ID), size)
-}
-
-func (c *Character) ToDBUpdateParams() sqlc.UpdateCharacterParams {
-	var allianceID, factionID sql.NullInt64
-	if c.HasAlliance() {
-		allianceID.Int64 = int64(c.Alliance.ID)
-		allianceID.Valid = true
-	}
-	if c.HasFaction() {
-		factionID.Int64 = int64(c.Alliance.ID)
-		factionID.Valid = true
-	}
-	var mailUpdatedAt sql.NullTime
-	if !c.MailUpdatedAt.IsZero() {
-		mailUpdatedAt.Time = c.MailUpdatedAt
-		mailUpdatedAt.Valid = true
-	}
-	var skillPoints sql.NullInt64
-	if c.SkillPoints != 0 {
-		skillPoints.Int64 = int64(c.SkillPoints)
-		skillPoints.Valid = true
-	}
-	var walletBallance sql.NullFloat64
-	if c.WalletBalance != 0 {
-		walletBallance.Float64 = c.WalletBalance
-		walletBallance.Valid = true
-	}
-	return sqlc.UpdateCharacterParams{
-		AllianceID:     allianceID,
-		CorporationID:  int64(c.Corporation.ID),
-		Description:    c.Description,
-		FactionID:      factionID,
-		MailUpdatedAt:  mailUpdatedAt,
-		Name:           c.Name,
-		SecurityStatus: c.SecurityStatus,
-		SkillPoints:    skillPoints,
-		WalletBalance:  walletBallance,
-	}
-}
-
-func (r *Repository) DeleteCharacter(ctx context.Context, characterID int32) error {
+func (r *Storage) DeleteCharacter(ctx context.Context, characterID int32) error {
 	err := r.q.DeleteCharacter(ctx, int64(characterID))
 	if err != nil {
 		return fmt.Errorf("failed to delete character %d: %w", characterID, err)
@@ -88,21 +19,21 @@ func (r *Repository) DeleteCharacter(ctx context.Context, characterID int32) err
 	return nil
 }
 
-func (r *Repository) GetCharacter(ctx context.Context, characterID int32) (Character, error) {
+func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Character, error) {
 	row, err := r.q.GetCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return Character{}, fmt.Errorf("failed to get character %d: %w", characterID, err)
+		return model.Character{}, fmt.Errorf("failed to get character %d: %w", characterID, err)
 	}
 	var mailUpdateAt time.Time
 	if row.MailUpdatedAt.Valid {
 		mailUpdateAt = row.MailUpdatedAt.Time
 	}
-	c := Character{
+	c := model.Character{
 		Birthday: row.Birthday,
-		Corporation: EveEntity{ID: int32(row.CorporationID),
+		Corporation: model.EveEntity{ID: int32(row.CorporationID),
 			Name:     row.Name_2,
 			Category: eveEntityCategoryFromDBModel(row.Category),
 		},
@@ -116,14 +47,14 @@ func (r *Repository) GetCharacter(ctx context.Context, characterID int32) (Chara
 		WalletBalance:  row.WalletBalance.Float64,
 	}
 	if row.AllianceID.Valid {
-		c.Alliance = EveEntity{
+		c.Alliance = model.EveEntity{
 			ID:       int32(row.AllianceID.Int64),
 			Name:     row.Name_3.String,
 			Category: eveEntityCategoryFromDBModel(row.Category_2.String),
 		}
 	}
 	if row.FactionID.Valid {
-		c.Faction = EveEntity{
+		c.Faction = model.EveEntity{
 			ID:       int32(row.FactionID.Int64),
 			Name:     row.Name_4.String,
 			Category: eveEntityCategoryFromDBModel(row.Category_3.String),
@@ -132,21 +63,21 @@ func (r *Repository) GetCharacter(ctx context.Context, characterID int32) (Chara
 	return c, nil
 }
 
-func (r *Repository) GetFirstCharacter(ctx context.Context) (Character, error) {
+func (r *Storage) GetFirstCharacter(ctx context.Context) (model.Character, error) {
 	row, err := r.q.GetFirstCharacter(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return Character{}, fmt.Errorf("failed to get first character: %w", err)
+		return model.Character{}, fmt.Errorf("failed to get first character: %w", err)
 	}
 	var mailUpdateAt time.Time
 	if row.MailUpdatedAt.Valid {
 		mailUpdateAt = row.MailUpdatedAt.Time
 	}
-	c := Character{
+	c := model.Character{
 		Birthday: row.Birthday,
-		Corporation: EveEntity{ID: int32(row.CorporationID),
+		Corporation: model.EveEntity{ID: int32(row.CorporationID),
 			Name:     row.Name_2,
 			Category: eveEntityCategoryFromDBModel(row.Category),
 		},
@@ -160,14 +91,14 @@ func (r *Repository) GetFirstCharacter(ctx context.Context) (Character, error) {
 		WalletBalance:  row.WalletBalance.Float64,
 	}
 	if row.AllianceID.Valid {
-		c.Alliance = EveEntity{
+		c.Alliance = model.EveEntity{
 			ID:       int32(row.AllianceID.Int64),
 			Name:     row.Name_3.String,
 			Category: eveEntityCategoryFromDBModel(row.Category_2.String),
 		}
 	}
 	if row.FactionID.Valid {
-		c.Faction = EveEntity{
+		c.Faction = model.EveEntity{
 			ID:       int32(row.FactionID.Int64),
 			Name:     row.Name_4.String,
 			Category: eveEntityCategoryFromDBModel(row.Category_3.String),
@@ -176,21 +107,21 @@ func (r *Repository) GetFirstCharacter(ctx context.Context) (Character, error) {
 	return c, nil
 }
 
-func (r *Repository) ListCharacters(ctx context.Context) ([]Character, error) {
+func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error) {
 	rows, err := r.q.ListCharacters(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list characters: %w", err)
 
 	}
-	cc := make([]Character, len(rows))
+	cc := make([]model.Character, len(rows))
 	for i, row := range rows {
 		var mailUpdateAt time.Time
 		if row.MailUpdatedAt.Valid {
 			mailUpdateAt = row.MailUpdatedAt.Time
 		}
-		c := Character{
+		c := model.Character{
 			Birthday: row.Birthday,
-			Corporation: EveEntity{ID: int32(row.CorporationID),
+			Corporation: model.EveEntity{ID: int32(row.CorporationID),
 				Name:     row.Name_2,
 				Category: eveEntityCategoryFromDBModel(row.Category),
 			},
@@ -204,14 +135,14 @@ func (r *Repository) ListCharacters(ctx context.Context) ([]Character, error) {
 			WalletBalance:  row.WalletBalance.Float64,
 		}
 		if row.AllianceID.Valid {
-			c.Alliance = EveEntity{
+			c.Alliance = model.EveEntity{
 				ID:       int32(row.AllianceID.Int64),
 				Name:     row.Name_3.String,
 				Category: eveEntityCategoryFromDBModel(row.Category_2.String),
 			}
 		}
 		if row.FactionID.Valid {
-			c.Faction = EveEntity{
+			c.Faction = model.EveEntity{
 				ID:       int32(row.FactionID.Int64),
 				Name:     row.Name_4.String,
 				Category: eveEntityCategoryFromDBModel(row.Category_3.String),
@@ -222,7 +153,7 @@ func (r *Repository) ListCharacters(ctx context.Context) ([]Character, error) {
 	return cc, nil
 }
 
-func (r *Repository) ListCharacterIDs(ctx context.Context) ([]int32, error) {
+func (r *Storage) ListCharacterIDs(ctx context.Context) ([]int32, error) {
 	ids, err := r.q.ListCharacterIDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list character IDs: %w", err)
@@ -231,7 +162,7 @@ func (r *Repository) ListCharacterIDs(ctx context.Context) ([]int32, error) {
 	return ids2, nil
 }
 
-func (r *Repository) UpdateOrCreateCharacter(ctx context.Context, c *Character) error {
+func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Character) error {
 	err := func() error {
 		tx, err := r.db.Begin()
 		if err != nil {

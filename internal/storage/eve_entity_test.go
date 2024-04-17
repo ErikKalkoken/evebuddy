@@ -2,11 +2,13 @@ package storage_test
 
 import (
 	"context"
-	"example/evebuddy/internal/helper/set"
-	"example/evebuddy/internal/storage"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"example/evebuddy/internal/helper/set"
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/storage"
 )
 
 func TestEveEntity(t *testing.T) {
@@ -17,12 +19,12 @@ func TestEveEntity(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		// when
-		e, err := r.CreateEveEntity(ctx, 42, "Dummy", storage.EveEntityAlliance)
+		e, err := r.CreateEveEntity(ctx, 42, "Dummy", model.EveEntityAlliance)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, e.ID, int32(42))
 			assert.Equal(t, e.Name, "Dummy")
-			assert.Equal(t, e.Category, storage.EveEntityAlliance)
+			assert.Equal(t, e.Category, model.EveEntityAlliance)
 		}
 	})
 	t.Run("can update existing", func(t *testing.T) {
@@ -30,20 +32,20 @@ func TestEveEntity(t *testing.T) {
 		storage.TruncateTables(db)
 		// given
 		e1 := factory.CreateEveEntity(
-			storage.EveEntity{
+			model.EveEntity{
 				ID:       42,
 				Name:     "Alpha",
-				Category: storage.EveEntityCharacter,
+				Category: model.EveEntityCharacter,
 			})
 		// when
-		_, err := r.UpdateOrCreateEveEntity(ctx, e1.ID, "Erik", storage.EveEntityCorporation)
+		_, err := r.UpdateOrCreateEveEntity(ctx, e1.ID, "Erik", model.EveEntityCorporation)
 		// then
 		if assert.NoError(t, err) {
 			e2, err := r.GetEveEntity(ctx, e1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, e1.ID, e2.ID)
 				assert.Equal(t, "Erik", e2.Name)
-				assert.Equal(t, storage.EveEntityCorporation, e2.Category)
+				assert.Equal(t, model.EveEntityCorporation, e2.Category)
 			}
 		}
 	})
@@ -52,10 +54,10 @@ func TestEveEntity(t *testing.T) {
 		storage.TruncateTables(db)
 		// given
 		e1 := factory.CreateEveEntity(
-			storage.EveEntity{
+			model.EveEntity{
 				ID:       42,
 				Name:     "Alpha",
-				Category: storage.EveEntityCharacter,
+				Category: model.EveEntityCharacter,
 			})
 		// when
 		e2, err := r.GetEveEntity(ctx, e1.ID)
@@ -63,7 +65,7 @@ func TestEveEntity(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, e1.ID, e2.ID)
 			assert.Equal(t, "Alpha", e2.Name)
-			assert.Equal(t, storage.EveEntityCharacter, e2.Category)
+			assert.Equal(t, model.EveEntityCharacter, e2.Category)
 		}
 	})
 	t.Run("should return error when no object found 1", func(t *testing.T) {
@@ -71,16 +73,16 @@ func TestEveEntity(t *testing.T) {
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})
 	t.Run("should return error when no object found 2", func(t *testing.T) {
-		_, err := r.GetEveEntityByNameAndCategory(ctx, "dummy", storage.EveEntityAlliance)
+		_, err := r.GetEveEntityByNameAndCategory(ctx, "dummy", model.EveEntityAlliance)
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})
 	t.Run("should return objs with matching names in order", func(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
-		factory.CreateEveEntityCharacter(storage.EveEntity{Name: "Yalpha2"})
-		factory.CreateEveEntityAlliance(storage.EveEntity{Name: "Xalpha1"})
-		factory.CreateEveEntityCharacter(storage.EveEntity{Name: "charlie"})
-		factory.CreateEveEntityCharacter(storage.EveEntity{Name: "other"})
+		factory.CreateEveEntityCharacter(model.EveEntity{Name: "Yalpha2"})
+		factory.CreateEveEntityAlliance(model.EveEntity{Name: "Xalpha1"})
+		factory.CreateEveEntityCharacter(model.EveEntity{Name: "charlie"})
+		factory.CreateEveEntityCharacter(model.EveEntity{Name: "other"})
 		// when
 		ee, err := r.ListEveEntitiesByPartialName(ctx, "%ALPHA%")
 		// then
@@ -102,8 +104,8 @@ func TestEveEntityIDs(t *testing.T) {
 	t.Run("should list existing entity IDs", func(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
-		factory.CreateEveEntity(storage.EveEntity{ID: 5})
-		factory.CreateEveEntity(storage.EveEntity{ID: 42})
+		factory.CreateEveEntity(model.EveEntity{ID: 5})
+		factory.CreateEveEntity(model.EveEntity{ID: 42})
 		// when
 		got, err := r.ListEveEntityIDs(ctx)
 		// then
@@ -115,7 +117,7 @@ func TestEveEntityIDs(t *testing.T) {
 	t.Run("should return missing IDs", func(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
-		factory.CreateEveEntity(storage.EveEntity{ID: 42})
+		factory.CreateEveEntity(model.EveEntity{ID: 42})
 		// when
 		got, err := r.MissingEveEntityIDs(ctx, []int32{42, 5})
 		// then

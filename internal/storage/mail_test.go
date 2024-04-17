@@ -3,6 +3,7 @@ package storage_test
 import (
 	"context"
 	"example/evebuddy/internal/helper/set"
+	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage"
 	"testing"
 	"time"
@@ -20,7 +21,7 @@ func TestMailCreate(t *testing.T) {
 		c := factory.CreateCharacter()
 		f := factory.CreateEveEntity()
 		recipient := factory.CreateEveEntity()
-		label := factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID})
+		label := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID})
 		// when
 		arg := storage.CreateMailParams{
 			Body:         "body",
@@ -44,7 +45,7 @@ func TestMailCreate(t *testing.T) {
 			assert.Equal(t, c.ID, m.CharacterID)
 			assert.Equal(t, "subject", m.Subject)
 			assert.False(t, m.Timestamp.IsZero())
-			assert.Equal(t, []storage.EveEntity{recipient}, m.Recipients)
+			assert.Equal(t, []model.EveEntity{recipient}, m.Recipients)
 			assert.Equal(t, label.Name, m.Labels[0].Name)
 			assert.Equal(t, label.LabelID, m.Labels[0].LabelID)
 		}
@@ -104,8 +105,8 @@ func TestListMailID(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		l1 := factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID})
-		l2 := factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID})
+		l1 := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID})
+		l2 := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID})
 		m1 := factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
 		m2 := factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -60)})
 		factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}})
@@ -121,14 +122,14 @@ func TestListMailID(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		l1 := factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID})
-		l2 := factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID})
+		l1 := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID})
+		l2 := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID})
 		m1 := factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
 		m2 := factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -60)})
 		m3 := factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}, Timestamp: time.Now().Add(time.Second * -240)})
 		m4 := factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, Timestamp: time.Now().Add(time.Second * -360)})
 		// when
-		got, err := r.ListMailIDsForLabelOrdered(ctx, c.ID, storage.LabelAll)
+		got, err := r.ListMailIDsForLabelOrdered(ctx, c.ID, model.MailLabelAll)
 		// then
 		if assert.NoError(t, err) {
 			want := []int32{m2.MailID, m1.MailID, m3.MailID, m4.MailID}
@@ -139,7 +140,7 @@ func TestListMailID(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		l := factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID})
+		l := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID})
 		factory.CreateMail(storage.CreateMailParams{
 			CharacterID: c.ID,
 			LabelIDs:    []int32{l.LabelID},
@@ -147,7 +148,7 @@ func TestListMailID(t *testing.T) {
 		})
 		m := factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID})
 		// when
-		got, err := r.ListMailIDsForLabelOrdered(ctx, c.ID, storage.LabelNone)
+		got, err := r.ListMailIDsForLabelOrdered(ctx, c.ID, model.MailLabelNone)
 		// then
 		if assert.NoError(t, err) {
 			want := []int32{m.MailID}
@@ -169,13 +170,13 @@ func TestListMailID(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		c1 := factory.CreateCharacter()
-		l1 := factory.CreateMailLabel(storage.MailLabel{CharacterID: c1.ID, LabelID: 1})
+		l1 := factory.CreateMailLabel(model.MailLabel{CharacterID: c1.ID, LabelID: 1})
 		factory.CreateMail(storage.CreateMailParams{
 			CharacterID: c1.ID,
 			LabelIDs:    []int32{l1.LabelID},
 		})
 		c2 := factory.CreateCharacter()
-		l2 := factory.CreateMailLabel(storage.MailLabel{CharacterID: c2.ID, LabelID: 1})
+		l2 := factory.CreateMailLabel(model.MailLabel{CharacterID: c2.ID, LabelID: 1})
 		from := factory.CreateEveEntity()
 		factory.CreateMail(storage.CreateMailParams{
 			FromID:      from.ID,
@@ -221,9 +222,9 @@ func TestFetchUnreadCounts(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		corp := factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID, LabelID: storage.LabelCorp})
-		inbox := factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID, LabelID: storage.LabelInbox})
-		factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID, LabelID: storage.LabelAlliance})
+		corp := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: model.MailLabelCorp})
+		inbox := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: model.MailLabelInbox})
+		factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: model.MailLabelAlliance})
 		factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{inbox.LabelID}, IsRead: false})
 		factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{corp.LabelID}, IsRead: true})
 		factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{corp.LabelID}, IsRead: false})
@@ -232,7 +233,7 @@ func TestFetchUnreadCounts(t *testing.T) {
 		// when
 		r, err := r.GetMailLabelUnreadCounts(ctx, c.ID)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[int32]int{storage.LabelCorp: 2, storage.LabelInbox: 1}, r)
+			assert.Equal(t, map[int32]int{model.MailLabelCorp: 2, model.MailLabelInbox: 1}, r)
 		}
 	})
 	t.Run("can get mail list unread counts", func(t *testing.T) {

@@ -6,16 +6,16 @@ import (
 	"log/slog"
 	"slices"
 
-	"example/evebuddy/internal/storage"
+	"example/evebuddy/internal/model"
 )
 
-func eveEntityCategoryFromESICategory(c string) storage.EveEntityCategory {
-	categoryMap := map[string]storage.EveEntityCategory{
-		"alliance":     storage.EveEntityAlliance,
-		"character":    storage.EveEntityCharacter,
-		"corporation":  storage.EveEntityCorporation,
-		"faction":      storage.EveEntityFaction,
-		"mailing:list": storage.EveEntityMailList,
+func eveEntityCategoryFromESICategory(c string) model.EveEntityCategory {
+	categoryMap := map[string]model.EveEntityCategory{
+		"alliance":     model.EveEntityAlliance,
+		"character":    model.EveEntityCharacter,
+		"corporation":  model.EveEntityCorporation,
+		"faction":      model.EveEntityFaction,
+		"mailing:list": model.EveEntityMailList,
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
@@ -72,6 +72,6 @@ func (s *Service) addMissingEveEntities(ctx context.Context, ids []int32) ([]int
 	return missing.ToSlice(), nil
 }
 
-func (s *Service) ListEveEntitiesByPartialName(partial string) ([]storage.EveEntity, error) {
+func (s *Service) ListEveEntitiesByPartialName(partial string) ([]model.EveEntity, error) {
 	return s.r.ListEveEntitiesByPartialName(context.Background(), partial)
 }

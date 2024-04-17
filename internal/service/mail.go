@@ -2,9 +2,6 @@ package service
 
 import (
 	"context"
-	"example/evebuddy/internal/helper/set"
-	"example/evebuddy/internal/storage"
-
 	"fmt"
 	"log/slog"
 	"slices"
@@ -15,6 +12,10 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/antihax/goesi/esi"
 	"github.com/antihax/goesi/optional"
+
+	"example/evebuddy/internal/helper/set"
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/storage"
 )
 
 const (
@@ -41,7 +42,7 @@ func (s *Service) DeleteMail(characterID, mailID int32) error {
 	return nil
 }
 
-func (s *Service) GetMail(characterID int32, mailID int32) (storage.Mail, error) {
+func (s *Service) GetMail(characterID int32, mailID int32) (model.Mail, error) {
 	ctx := context.Background()
 	return s.r.GetMail(ctx, characterID, mailID)
 }
@@ -87,7 +88,7 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 	}
 	arg1 := storage.MailLabelParams{
 		CharacterID: characterID,
-		LabelID:     storage.LabelSent,
+		LabelID:     model.MailLabelSent,
 		Name:        "Sent",
 	}
 	_, err = s.r.GetOrCreateMailLabel(ctx, arg1) // make sure sent label exists
@@ -99,7 +100,7 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 		CharacterID:  characterID,
 		FromID:       characterID,
 		IsRead:       true,
-		LabelIDs:     []int32{storage.LabelSent},
+		LabelIDs:     []int32{model.MailLabelSent},
 		MailID:       mailID,
 		RecipientIDs: recipientIDs,
 		Subject:      subject,
@@ -148,7 +149,7 @@ func (s *Service) FetchMail(characterID int32, status binding.String) error {
 	return nil
 }
 
-func (s *Service) updateMailLabels(ctx context.Context, token *storage.Token) error {
+func (s *Service) updateMailLabels(ctx context.Context, token *model.Token) error {
 	if err := s.ensureValidToken(ctx, token); err != nil {
 		return err
 	}
@@ -175,7 +176,7 @@ func (s *Service) updateMailLabels(ctx context.Context, token *storage.Token) er
 	return nil
 }
 
-func (s *Service) updateMailLists(ctx context.Context, token *storage.Token) error {
+func (s *Service) updateMailLists(ctx context.Context, token *model.Token) error {
 	if err := s.ensureValidToken(ctx, token); err != nil {
 		return err
 	}
@@ -185,7 +186,7 @@ func (s *Service) updateMailLists(ctx context.Context, token *storage.Token) err
 		return err
 	}
 	for _, o := range lists {
-		_, err := s.r.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, storage.EveEntityMailList)
+		_, err := s.r.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, model.EveEntityMailList)
 		if err != nil {
 			return err
 		}
@@ -197,7 +198,7 @@ func (s *Service) updateMailLists(ctx context.Context, token *storage.Token) err
 }
 
 // listMailHeaders fetched mail headers from ESI with paging and returns them.
-func (s *Service) listMailHeaders(ctx context.Context, token *storage.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
+func (s *Service) listMailHeaders(ctx context.Context, token *model.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	if err := s.ensureValidToken(ctx, token); err != nil {
 		return nil, err
 	}
@@ -231,7 +232,7 @@ func (s *Service) listMailHeaders(ctx context.Context, token *storage.Token) ([]
 	return mm, nil
 }
 
-func (s *Service) updateMails(ctx context.Context, token *storage.Token, headers []esi.GetCharactersCharacterIdMail200Ok, status binding.String) error {
+func (s *Service) updateMails(ctx context.Context, token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok, status binding.String) error {
 	existingIDs, missingIDs, err := s.determineMailIDs(ctx, token.CharacterID, headers)
 	if err != nil {
 		return err
@@ -281,7 +282,7 @@ func (s *Service) updateMails(ctx context.Context, token *storage.Token, headers
 	return nil
 }
 
-func (s *Service) fetchAndStoreMail(ctx context.Context, character storage.Character, header esi.GetCharactersCharacterIdMail200Ok, newMailsCount int, c *atomic.Int32, status binding.String) {
+func (s *Service) fetchAndStoreMail(ctx context.Context, character model.Character, header esi.GetCharactersCharacterIdMail200Ok, newMailsCount int, c *atomic.Int32, status binding.String) {
 	err := func() error {
 		entityIDs := set.New[int32]()
 		entityIDs.Add(header.From)
@@ -351,7 +352,7 @@ func (s *Service) GetMailListUnreadCounts(characterID int32) (map[int32]int, err
 	return s.r.GetMailListUnreadCounts(ctx, characterID)
 }
 
-func (s *Service) ListMailLists(characterID int32) ([]storage.EveEntity, error) {
+func (s *Service) ListMailLists(characterID int32) ([]model.EveEntity, error) {
 	ctx := context.Background()
 	return s.r.ListMailListsOrdered(ctx, characterID)
 }
@@ -368,7 +369,7 @@ func (s *Service) ListMailIDsForListOrdered(characterID int32, listID int32) ([]
 	return s.r.ListMailIDsForListOrdered(ctx, characterID, listID)
 }
 
-func (s *Service) ListMailLabelsOrdered(characterID int32) ([]storage.MailLabel, error) {
+func (s *Service) ListMailLabelsOrdered(characterID int32) ([]model.MailLabel, error) {
 	ctx := context.Background()
 	return s.r.ListMailLabelsOrdered(ctx, characterID)
 }

@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"log/slog"
 
-	"example/evebuddy/internal/storage"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"example/evebuddy/internal/model"
 )
 
 // folderArea is the UI area showing the mail folders.
@@ -127,7 +127,7 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 	folders := makeDefaultFolders(labelUnreadCounts)
 	folderItemAll := node{
 		ID:          nodeAllID,
-		ObjID:       storage.LabelAll,
+		ObjID:       model.MailLabelAll,
 		Name:        "All Mails",
 		Category:    nodeCategoryLabel,
 		UnreadCount: totalUnreadCount,
@@ -189,10 +189,10 @@ func makeDefaultFolders(labelUnreadCounts map[int32]int) map[string]string {
 		labelID int32
 		name    string
 	}{
-		{nodeInboxID, storage.LabelInbox, "Inbox"},
-		{nodeSentID, storage.LabelSent, "Sent"},
-		{nodeCorpID, storage.LabelCorp, "Corp"},
-		{nodeAllianceID, storage.LabelAlliance, "Alliance"},
+		{nodeInboxID, model.MailLabelInbox, "Inbox"},
+		{nodeSentID, model.MailLabelSent, "Sent"},
+		{nodeCorpID, model.MailLabelCorp, "Corp"},
+		{nodeAllianceID, model.MailLabelAlliance, "Alliance"},
 	}
 	for _, o := range defaultFolders {
 		u, ok := labelUnreadCounts[o.labelID]
@@ -214,7 +214,7 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 	var total, labels, lists int
 	for id, c := range labelCounts {
 		total += c
-		if id > storage.LabelAlliance {
+		if id > model.MailLabelAlliance {
 			labels += c
 		}
 	}

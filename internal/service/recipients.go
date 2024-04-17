@@ -10,6 +10,7 @@ import (
 
 	"github.com/antihax/goesi/esi"
 
+	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage"
 )
 
@@ -33,18 +34,18 @@ var recipientCategoryLabels = map[recipientCategory]string{
 	recipientCategoryMailList:    "Mailing List",
 }
 
-var recipientMapCategories = map[storage.EveEntityCategory]recipientCategory{
-	storage.EveEntityAlliance:    recipientCategoryAlliance,
-	storage.EveEntityCharacter:   recipientCategoryCharacter,
-	storage.EveEntityCorporation: recipientCategoryCorporation,
-	storage.EveEntityMailList:    recipientCategoryMailList,
+var recipientMapCategories = map[model.EveEntityCategory]recipientCategory{
+	model.EveEntityAlliance:    recipientCategoryAlliance,
+	model.EveEntityCharacter:   recipientCategoryCharacter,
+	model.EveEntityCorporation: recipientCategoryCorporation,
+	model.EveEntityMailList:    recipientCategoryMailList,
 }
 
-var eveEntityCategory2MailRecipientType = map[storage.EveEntityCategory]string{
-	storage.EveEntityAlliance:    "alliance",
-	storage.EveEntityCharacter:   "character",
-	storage.EveEntityCorporation: "corporation",
-	storage.EveEntityMailList:    "mailing_list",
+var eveEntityCategory2MailRecipientType = map[model.EveEntityCategory]string{
+	model.EveEntityAlliance:    "alliance",
+	model.EveEntityCharacter:   "character",
+	model.EveEntityCorporation: "corporation",
+	model.EveEntityMailList:    "mailing_list",
 }
 
 func (r recipientCategory) String() string {
@@ -57,7 +58,7 @@ type recipient struct {
 	category recipientCategory
 }
 
-func newRecipientFromEntity(e storage.EveEntity) recipient {
+func newRecipientFromEntity(e model.EveEntity) recipient {
 	r := recipient{name: e.Name}
 	c, ok := recipientMapCategories[e.Category]
 	if ok {
@@ -96,7 +97,7 @@ func (r *recipient) hasCategory() bool {
 	return r.category != recipientCategoryUnknown
 }
 
-func (r *recipient) eveEntityCategory() (storage.EveEntityCategory, bool) {
+func (r *recipient) eveEntityCategory() (model.EveEntityCategory, bool) {
 	for ec, rc := range recipientMapCategories {
 		if rc == r.category {
 			return ec, true
@@ -119,7 +120,7 @@ func (s *Service) NewRecipients() *Recipients {
 	return &rr
 }
 
-func (s *Service) NewRecipientsFromEntities(ee []storage.EveEntity) *Recipients {
+func (s *Service) NewRecipientsFromEntities(ee []model.EveEntity) *Recipients {
 	rr := s.NewRecipients()
 	for _, e := range ee {
 		o := newRecipientFromEntity(e)
@@ -147,7 +148,7 @@ func (s *Service) NewRecipientsFromText(t string) *Recipients {
 	return rr
 }
 
-func (rr *Recipients) AddFromEveEntity(e storage.EveEntity) {
+func (rr *Recipients) AddFromEveEntity(e model.EveEntity) {
 	r := newRecipientFromEntity(e)
 	rr.add(r)
 }
@@ -240,17 +241,17 @@ func (s *Service) resolveNamesRemotely(names []string) error {
 	if err != nil {
 		return err
 	}
-	ee := make([]storage.EveEntity, 0, len(names))
+	ee := make([]model.EveEntity, 0, len(names))
 	for _, o := range r.Alliances {
-		e := storage.EveEntity{ID: o.Id, Name: o.Name, Category: storage.EveEntityAlliance}
+		e := model.EveEntity{ID: o.Id, Name: o.Name, Category: model.EveEntityAlliance}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Characters {
-		e := storage.EveEntity{ID: o.Id, Name: o.Name, Category: storage.EveEntityCharacter}
+		e := model.EveEntity{ID: o.Id, Name: o.Name, Category: model.EveEntityCharacter}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Corporations {
-		e := storage.EveEntity{ID: o.Id, Name: o.Name, Category: storage.EveEntityCorporation}
+		e := model.EveEntity{ID: o.Id, Name: o.Name, Category: model.EveEntityCorporation}
 		ee = append(ee, e)
 	}
 	ids := make([]int32, len(ee))

@@ -24,10 +24,10 @@ var esiScopes = []string{
 type Service struct {
 	httpClient *http.Client
 	esiClient  *goesi.APIClient
-	r          *storage.Repository
+	r          *storage.Storage
 }
 
-func NewService(r *storage.Repository) *Service {
+func NewService(r *storage.Storage) *Service {
 	httpClient := &http.Client{
 		Timeout:   time.Second * 30, // Timeout after 30 seconds
 		Transport: myHttp.CustomTransport{},

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"example/evebuddy/internal/storage"
 	"fmt"
 	"net/http"
 	"testing"
@@ -11,6 +10,8 @@ import (
 	"github.com/antihax/goesi/esi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+
+	"example/evebuddy/internal/model"
 )
 
 func TestCanFetchManyMailHeaders(t *testing.T) {
@@ -52,7 +53,7 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 			return resp, err
 		},
 	)
-	token := storage.Token{AccessToken: "abc", CharacterID: 1, ExpiresAt: time.Now().Add(time.Minute * 10)}
+	token := model.Token{AccessToken: "abc", CharacterID: 1, ExpiresAt: time.Now().Add(time.Minute * 10)}
 
 	// when
 	mails, err := s.listMailHeaders(ctx, &token)

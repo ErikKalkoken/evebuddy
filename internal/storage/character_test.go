@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"context"
+	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage"
 	"testing"
 
@@ -16,7 +17,7 @@ func TestCharacter(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		corp := factory.CreateEveEntityCorporation()
-		c := storage.Character{ID: 1, Name: "Erik", Corporation: corp}
+		c := model.Character{ID: 1, Name: "Erik", Corporation: corp}
 		// when
 		err := r.UpdateOrCreateCharacter(ctx, &c)
 		// then
@@ -118,7 +119,7 @@ func TestCharacter(t *testing.T) {
 		factory.CreateCharacter()
 		alliance := factory.CreateEveEntityAlliance()
 		faction := factory.CreateEveEntity()
-		c := factory.CreateCharacter(storage.Character{Alliance: alliance, Faction: faction})
+		c := factory.CreateCharacter(model.Character{Alliance: alliance, Faction: faction})
 		// when
 		r, err := r.GetCharacter(ctx, c.ID)
 		// then

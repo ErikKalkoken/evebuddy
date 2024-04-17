@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"context"
+	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage"
 	"testing"
 
@@ -39,7 +40,7 @@ func TestMailLabel(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID, LabelID: 42})
+		factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: 42})
 		arg := storage.MailLabelParams{
 			CharacterID: c.ID,
 			Color:       "xyz",
@@ -63,7 +64,7 @@ func TestMailLabel(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID, LabelID: 42, Name: "Dummy"})
+		factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: 42, Name: "Dummy"})
 		arg := storage.MailLabelParams{
 			CharacterID: c.ID,
 			Color:       "xyz",
@@ -106,13 +107,13 @@ func TestMailLabel(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		l1 := factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID, Name: "bravo"})
-		l2 := factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID, Name: "alpha"})
+		l1 := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, Name: "bravo"})
+		l2 := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, Name: "alpha"})
 		factory.CreateMailLabel()
 		// when
 		got, err := r.ListMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
-			want := []storage.MailLabel{l2, l1}
+			want := []model.MailLabel{l2, l1}
 			assert.Equal(t, want, got)
 		}
 	})
@@ -120,13 +121,13 @@ func TestMailLabel(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		l1 := factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID, Name: "bravo"})
-		l2 := factory.CreateMailLabel(storage.MailLabel{CharacterID: c.ID, Name: "alpha"})
+		l1 := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, Name: "bravo"})
+		l2 := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, Name: "alpha"})
 		factory.CreateMailLabel()
 		// when
 		got, err := r.ListMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
-			want := []storage.MailLabel{l2, l1}
+			want := []model.MailLabel{l2, l1}
 			assert.Equal(t, want, got)
 		}
 	})

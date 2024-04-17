@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"example/evebuddy/internal/storage"
-	"example/evebuddy/internal/widgets"
 	"fmt"
 	"log/slog"
 
@@ -12,6 +10,9 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/widgets"
 )
 
 const (
@@ -21,7 +22,7 @@ const (
 	CreateMessageForward
 )
 
-func (u *ui) ShowCreateMessageWindow(mode int, mail *storage.Mail) {
+func (u *ui) ShowCreateMessageWindow(mode int, mail *model.Mail) {
 	w, err := u.makeCreateMessageWindow(mode, mail)
 	if err != nil {
 		slog.Error("failed to create new message window", "error", err)
@@ -30,7 +31,7 @@ func (u *ui) ShowCreateMessageWindow(mode int, mail *storage.Mail) {
 	}
 }
 
-func (u *ui) makeCreateMessageWindow(mode int, mail *storage.Mail) (fyne.Window, error) {
+func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, error) {
 	currentChar := *u.CurrentChar()
 	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", currentChar.Name))
 	fromLabel := widget.NewLabel("From:")
@@ -49,7 +50,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *storage.Mail) (fyne.Window,
 	if mail != nil {
 		switch mode {
 		case CreateMessageReply:
-			r := u.service.NewRecipientsFromEntities([]storage.EveEntity{mail.From})
+			r := u.service.NewRecipientsFromEntities([]model.EveEntity{mail.From})
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))

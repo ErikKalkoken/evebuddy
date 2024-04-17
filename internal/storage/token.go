@@ -4,25 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"example/evebuddy/internal/sqlc"
 	"fmt"
-	"time"
+
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/sqlc"
 )
 
-// A SSO token belonging to a character.
-type Token struct {
-	AccessToken  string
-	CharacterID  int32
-	ExpiresAt    time.Time
-	RefreshToken string
-	TokenType    string
-}
-
-func tokenFromDBModel(t sqlc.Token) Token {
+func tokenFromDBModel(t sqlc.Token) model.Token {
 	if t.CharacterID == 0 {
 		panic("missing character ID")
 	}
-	return Token{
+	return model.Token{
 		AccessToken:  t.AccessToken,
 		CharacterID:  int32(t.CharacterID),
 		ExpiresAt:    t.ExpiresAt,
@@ -31,23 +23,18 @@ func tokenFromDBModel(t sqlc.Token) Token {
 	}
 }
 
-// RemainsValid reports wether a token remains valid within a duration
-func (t *Token) RemainsValid(d time.Duration) bool {
-	return t.ExpiresAt.After(time.Now().Add(d))
-}
-
-func (r *Repository) GetToken(ctx context.Context, characterID int32) (Token, error) {
+func (r *Storage) GetToken(ctx context.Context, characterID int32) (model.Token, error) {
 	t, err := r.q.GetToken(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return Token{}, fmt.Errorf("failed to get token for character %d: %w", characterID, err)
+		return model.Token{}, fmt.Errorf("failed to get token for character %d: %w", characterID, err)
 	}
 	t2 := tokenFromDBModel(t)
 	return t2, nil
 }
-func (r *Repository) UpdateOrCreateToken(ctx context.Context, t *Token) error {
+func (r *Storage) UpdateOrCreateToken(ctx context.Context, t *model.Token) error {
 	err := func() error {
 		if t.CharacterID == 0 {
 			return errors.New("can not save token without character")

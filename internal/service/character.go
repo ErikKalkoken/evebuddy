@@ -2,28 +2,29 @@ package service
 
 import (
 	"context"
-	"example/evebuddy/internal/api/sso"
-	"example/evebuddy/internal/storage"
 	"fmt"
 	"log/slog"
 	"time"
 
 	"fyne.io/fyne/v2/data/binding"
+
+	"example/evebuddy/internal/api/sso"
+	"example/evebuddy/internal/model"
 )
 
 func (s *Service) DeleteCharacter(characterID int32) error {
 	return s.r.DeleteCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetCharacter(characterID int32) (storage.Character, error) {
+func (s *Service) GetCharacter(characterID int32) (model.Character, error) {
 	return s.r.GetCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetAnyCharacter() (storage.Character, error) {
+func (s *Service) GetAnyCharacter() (model.Character, error) {
 	return s.r.GetFirstCharacter(context.Background())
 }
 
-func (s *Service) ListCharacters() ([]storage.Character, error) {
+func (s *Service) ListCharacters() ([]model.Character, error) {
 	return s.r.ListCharacters(context.Background())
 }
 
@@ -34,7 +35,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 		return err
 	}
 	charID := ssoToken.CharacterID
-	token := storage.Token{
+	token := model.Token{
 		AccessToken:  ssoToken.AccessToken,
 		CharacterID:  charID,
 		ExpiresAt:    ssoToken.ExpiresAt,
@@ -61,7 +62,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	c := storage.Character{
+	c := model.Character{
 		Birthday:       charEsi.Birthday,
 		Corporation:    corporation,
 		Description:    charEsi.Description,
@@ -96,7 +97,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) updateCharacter(ctx context.Context, c *storage.Character) error {
+func (s *Service) updateCharacter(ctx context.Context, c *model.Character) error {
 	skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, c.ID, nil)
 	if err != nil {
 		return err
@@ -131,7 +132,7 @@ func (s *Service) updateCharacter(ctx context.Context, c *storage.Character) err
 		return err
 	}
 	c.Corporation = corporation
-	var alliance storage.EveEntity
+	var alliance model.EveEntity
 	if r.AllianceId != 0 {
 		alliance, err = s.r.GetEveEntity(ctx, r.AllianceId)
 		if err != nil {
@@ -139,7 +140,7 @@ func (s *Service) updateCharacter(ctx context.Context, c *storage.Character) err
 		}
 	}
 	c.Alliance = alliance
-	var faction storage.EveEntity
+	var faction model.EveEntity
 	if r.FactionId != 0 {
 		faction, err = s.r.GetEveEntity(ctx, r.FactionId)
 		if err != nil {

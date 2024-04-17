@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"context"
+	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage"
 	"testing"
 	"time"
@@ -17,7 +18,7 @@ func TestToken(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		o := storage.Token{
+		o := model.Token{
 			AccessToken:  "access",
 			CharacterID:  c.ID,
 			ExpiresAt:    time.Now(),
@@ -53,7 +54,7 @@ func TestToken(t *testing.T) {
 		// given
 		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		o := storage.Token{
+		o := model.Token{
 			AccessToken:  "access",
 			CharacterID:  int32(c.ID),
 			ExpiresAt:    time.Now(),
