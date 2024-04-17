@@ -4,6 +4,7 @@ import (
 	"context"
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage"
+	"example/evebuddy/internal/testutil"
 	"testing"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 )
 
 func TestToken(t *testing.T) {
-	db, r, factory := setUpDB()
+	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {

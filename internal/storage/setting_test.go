@@ -3,13 +3,14 @@ package storage_test
 import (
 	"context"
 	"example/evebuddy/internal/storage"
+	"example/evebuddy/internal/testutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSetting(t *testing.T) {
-	db, _, _ := setUpDB()
+	db, _, _ := testutil.New()
 	defer db.Close()
 	r := storage.New(db)
 	ctx := context.Background()

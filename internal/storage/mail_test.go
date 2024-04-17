@@ -5,6 +5,7 @@ import (
 	"example/evebuddy/internal/helper/set"
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage"
+	"example/evebuddy/internal/testutil"
 	"testing"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 )
 
 func TestMailCreate(t *testing.T) {
-	db, r, factory := setUpDB()
+	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -53,7 +54,7 @@ func TestMailCreate(t *testing.T) {
 }
 
 func TestMail(t *testing.T) {
-	db, r, factory := setUpDB()
+	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should return correct error when not found", func(t *testing.T) {
@@ -98,7 +99,7 @@ func TestMail(t *testing.T) {
 }
 
 func TestListMailID(t *testing.T) {
-	db, r, factory := setUpDB()
+	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should return mail for selected label only", func(t *testing.T) {
@@ -215,7 +216,7 @@ func TestListMailID(t *testing.T) {
 }
 
 func TestFetchUnreadCounts(t *testing.T) {
-	db, r, factory := setUpDB()
+	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can get mail label unread counts", func(t *testing.T) {

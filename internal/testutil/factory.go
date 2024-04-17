@@ -1,5 +1,5 @@
 // Package factory contains factories for creating test objects in the repository
-package factory
+package testutil
 
 import (
 	"context"
@@ -16,7 +16,7 @@ type Factory struct {
 	r *storage.Storage
 }
 
-func New(r *storage.Storage) Factory {
+func NewFactory(r *storage.Storage) Factory {
 	f := Factory{r: r}
 	return f
 }

@@ -9,10 +9,11 @@ import (
 	"example/evebuddy/internal/helper/set"
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage"
+	"example/evebuddy/internal/testutil"
 )
 
 func TestEveEntity(t *testing.T) {
-	db, r, factory := setUpDB()
+	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
@@ -98,7 +99,7 @@ func TestEveEntity(t *testing.T) {
 }
 
 func TestEveEntityIDs(t *testing.T) {
-	db, r, factory := setUpDB()
+	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("should list existing entity IDs", func(t *testing.T) {

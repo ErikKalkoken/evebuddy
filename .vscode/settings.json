@@ -26,7 +26,8 @@
         "sqlc",
         "sqlx",
         "stretchr",
-        "testfactory"
+        "testfactory",
+        "testutil"
     ],
     "go.formatFlags": [
         "-local",
