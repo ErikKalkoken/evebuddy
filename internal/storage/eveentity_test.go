@@ -76,11 +76,6 @@ func TestEveEntity(t *testing.T) {
 		_, err := r.GetEveEntity(ctx, 99)
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})
-	t.Run("should return error when no object found 2", func(t *testing.T) {
-		_, err := r.GetEveEntityByNameAndCategory(ctx, "dummy", model.EveEntityAlliance)
-		assert.ErrorIs(t, err, storage.ErrNotFound)
-	})
-
 	t.Run("should return objs with matching names in order", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

@@ -47,24 +47,6 @@ func (q *Queries) GetEveEntity(ctx context.Context, id int64) (EveEntity, error)
 	return i, err
 }
 
-const getEveEntityByNameAndCategory = `-- name: GetEveEntityByNameAndCategory :one
-SELECT id, category, name
-FROM eve_entities
-WHERE name = ? AND category = ?
-`
-
-type GetEveEntityByNameAndCategoryParams struct {
-	Name     string
-	Category string
-}
-
-func (q *Queries) GetEveEntityByNameAndCategory(ctx context.Context, arg GetEveEntityByNameAndCategoryParams) (EveEntity, error) {
-	row := q.db.QueryRowContext(ctx, getEveEntityByNameAndCategory, arg.Name, arg.Category)
-	var i EveEntity
-	err := row.Scan(&i.ID, &i.Category, &i.Name)
-	return i, err
-}
-
 const listEveEntitiesByName = `-- name: ListEveEntitiesByName :many
 SELECT id, category, name
 FROM eve_entities
@@ -104,6 +86,40 @@ COLLATE NOCASE
 
 func (q *Queries) ListEveEntitiesByPartialName(ctx context.Context, name string) ([]EveEntity, error) {
 	rows, err := q.db.QueryContext(ctx, listEveEntitiesByPartialName, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EveEntity
+	for rows.Next() {
+		var i EveEntity
+		if err := rows.Scan(&i.ID, &i.Category, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEveEntityByNameAndCategory = `-- name: ListEveEntityByNameAndCategory :many
+SELECT id, category, name
+FROM eve_entities
+WHERE name = ? AND category = ?
+`
+
+type ListEveEntityByNameAndCategoryParams struct {
+	Name     string
+	Category string
+}
+
+func (q *Queries) ListEveEntityByNameAndCategory(ctx context.Context, arg ListEveEntityByNameAndCategoryParams) ([]EveEntity, error) {
+	rows, err := q.db.QueryContext(ctx, listEveEntityByNameAndCategory, arg.Name, arg.Category)
 	if err != nil {
 		return nil, err
 	}

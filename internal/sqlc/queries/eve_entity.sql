@@ -14,7 +14,7 @@ SELECT *
 FROM eve_entities
 WHERE id = ?;
 
--- name: GetEveEntityByNameAndCategory :one
+-- name: ListEveEntityByNameAndCategory :many
 SELECT *
 FROM eve_entities
 WHERE name = ? AND category = ?;

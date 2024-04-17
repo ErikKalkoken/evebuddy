@@ -91,6 +91,24 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 			httpmock.NewStringResponder(200, data),
 		)
 		factory.CreateEveEntityCharacter(model.EveEntity{Name: "Erik"})
+		factory.CreateEveEntityCorporation(model.EveEntity{Name: "Erik"})
+		e := model.EveEntity{Name: "Erik", Category: model.EveEntityUndefined}
+		// when
+		_, err := s.ResolveUncleanEveEntities([]model.EveEntity{e})
+		// then
+		assert.ErrorIs(t, err, service.ErrEveEntityNameMultipleMatches)
+	})
+	t.Run("Return error when name and category matches more then once", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		data := `{}`
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"POST",
+			"https://esi.evetech.net/v1/universe/ids/",
+			httpmock.NewStringResponder(200, data),
+		)
+		factory.CreateEveEntityCharacter(model.EveEntity{Name: "Erik"})
 		factory.CreateEveEntityCharacter(model.EveEntity{Name: "Erik"})
 		e := model.EveEntity{Name: "Erik", Category: model.EveEntityUndefined}
 		// when

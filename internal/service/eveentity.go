@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage"
 )
 
 var ErrEveEntityNameNoMatch = errors.New("no matching EveEntity name")
@@ -110,16 +109,18 @@ func (s *Service) resolveEveEntityLocally(ctx context.Context, ee []model.EveEnt
 			names = append(names, r.Name)
 			continue
 		}
-		e, err := s.r.GetEveEntityByNameAndCategory(ctx, r.Name, r.Category)
+		ee3, err := s.r.ListEveEntityByNameAndCategory(ctx, r.Name, r.Category)
 		if err != nil {
-			if errors.Is(err, storage.ErrNotFound) {
-				names = append(names, r.Name)
-				continue
-			} else {
-				return nil, nil, err
-			}
+			return nil, nil, err
 		}
-		ee2 = append(ee2, e)
+		if len(ee3) == 0 {
+			names = append(names, r.Name)
+			continue
+		}
+		if len(ee3) > 1 {
+			return nil, nil, fmt.Errorf("entity %v: %w", r, ErrEveEntityNameMultipleMatches)
+		}
+		ee2 = append(ee2, ee3[0])
 	}
 	return ee2, names, nil
 }

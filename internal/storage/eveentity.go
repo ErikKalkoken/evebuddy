@@ -97,20 +97,20 @@ func (r *Storage) GetEveEntity(ctx context.Context, id int32) (model.EveEntity, 
 	return e2, nil
 }
 
-func (r *Storage) GetEveEntityByNameAndCategory(ctx context.Context, name string, category model.EveEntityCategory) (model.EveEntity, error) {
-	arg := sqlc.GetEveEntityByNameAndCategoryParams{
+func (r *Storage) ListEveEntityByNameAndCategory(ctx context.Context, name string, category model.EveEntityCategory) ([]model.EveEntity, error) {
+	var ee2 []model.EveEntity
+	arg := sqlc.ListEveEntityByNameAndCategoryParams{
 		Name:     name,
 		Category: eveEntityDBModelCategoryFromCategory(category),
 	}
-	e, err := r.q.GetEveEntityByNameAndCategory(ctx, arg)
+	ee, err := r.q.ListEveEntityByNameAndCategory(ctx, arg)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
-		}
-		return model.EveEntity{}, fmt.Errorf("failed to get EveEntity by name %s and category %s: %w", name, category, err)
+		return ee2, fmt.Errorf("failed to get EveEntity by name %s and category %s: %w", name, category, err)
 	}
-	e2 := eveEntityFromDBModel(e)
-	return e2, nil
+	for _, e := range ee {
+		ee2 = append(ee2, eveEntityFromDBModel(e))
+	}
+	return ee2, nil
 }
 
 func (r *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name string, category model.EveEntityCategory) (model.EveEntity, error) {
