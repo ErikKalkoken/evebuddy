@@ -32,7 +32,8 @@ func NewService(r *repository.Repository) *Service {
 		Timeout:   time.Second * 30, // Timeout after 30 seconds
 		Transport: myHttp.CustomTransport{},
 	}
-	esiClient := goesi.NewAPIClient(httpClient, "erik.kalkoken@gmail.com")
+	userAgent := "EveBuddy kalkoken87@gmail.com"
+	esiClient := goesi.NewAPIClient(httpClient, userAgent)
 	s := Service{
 		httpClient: httpClient,
 		esiClient:  esiClient,

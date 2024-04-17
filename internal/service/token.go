@@ -7,6 +7,8 @@ import (
 
 	"example/evebuddy/internal/api/sso"
 	"example/evebuddy/internal/repository"
+
+	"github.com/antihax/goesi"
 )
 
 // getValidToken returns a valid token for a character. Convenience function.
@@ -39,4 +41,11 @@ func (s *Service) ensureValidToken(ctx context.Context, t *repository.Token) err
 		slog.Info("Token refreshed", "characterID", t.CharacterID)
 	}
 	return nil
+}
+
+// contextWithToken returns a new context with the ESI access token included
+// so it can be used to authenticate requests with the goesi library.
+func contextWithToken(ctx context.Context, accessToken string) context.Context {
+	ctx = context.WithValue(ctx, goesi.ContextAccessToken, accessToken)
+	return ctx
 }

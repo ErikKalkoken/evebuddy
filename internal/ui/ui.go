@@ -7,6 +7,7 @@ import (
 	"example/evebuddy/internal/service"
 	"fmt"
 	"log/slog"
+	"runtime"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -103,10 +104,13 @@ func NewUI(s *service.Service) *ui {
 		}
 	}
 	go func() {
-		//TODO: Find better workaround
-		time.Sleep(250 * time.Millisecond)
-		w.Resize(fyne.NewSize(800, 601))
-		w.Resize(fyne.NewSize(800, 600))
+		//TODO: Workaround to mitigate a bug that causes the window to sometimes render
+		// only in parts and freeze. The issue is known to happen on Linux desktops.
+		if runtime.GOOS == "linux" {
+			time.Sleep(250 * time.Millisecond)
+			w.Resize(fyne.NewSize(800, 601))
+			w.Resize(fyne.NewSize(800, 600))
+		}
 		s.StartEsiStatusTicker(statusArea.eveStatus)
 		s.StartCharacterUpdateTask(statusArea.infoText)
 	}()
