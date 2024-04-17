@@ -38,12 +38,14 @@ func (e EveEntityCategory) String() string {
 	}
 }
 
+// An EveEntity in EveOnline.
 type EveEntity struct {
 	Category EveEntityCategory
 	ID       int32
 	Name     string
 }
 
+// IconURL returns the URL for an icon image of an entity.
 func (e *EveEntity) IconURL(size int) (fyne.URI, error) {
 	switch e.Category {
 	case EveEntityAlliance:

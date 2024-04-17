@@ -1,3 +1,4 @@
+// Package model contains the entity objects of this app.
 package model
 
 import (
@@ -23,10 +24,12 @@ type Character struct {
 	WalletBalance  float64
 }
 
+// HasAlliance reports wether the character is member of an alliance.
 func (c *Character) HasAlliance() bool {
 	return c.Alliance.ID != 0
 }
 
+// HasFaction reports wether the character is member of a faction.
 func (c *Character) HasFaction() bool {
 	return c.Faction.ID != 0
 }

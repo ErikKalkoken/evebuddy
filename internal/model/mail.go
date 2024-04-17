@@ -30,7 +30,7 @@ type MailLabel struct {
 
 var bodyPolicy = bluemonday.StrictPolicy()
 
-// An Eve mail belonging to a character
+// An Eve mail belonging to a character.
 type Mail struct {
 	Body        string
 	CharacterID int32
@@ -51,7 +51,7 @@ func (m *Mail) BodyPlain() string {
 	return b
 }
 
-// BodyForward returns a mail's body for a mail forward or reply
+// BodyForward returns a mail's body for a mail forward or reply.
 func (m *Mail) ToString(format string) string {
 	s := "\n---\n"
 	s += m.MakeHeaderText(format)
@@ -60,6 +60,7 @@ func (m *Mail) ToString(format string) string {
 	return s
 }
 
+// MakeHeaderText returns the mail's header as formatted text.
 func (m *Mail) MakeHeaderText(format string) string {
 	var names []string
 	for _, n := range m.Recipients {
@@ -74,6 +75,7 @@ func (m *Mail) MakeHeaderText(format string) string {
 	return header
 }
 
+// RecipientNames returns the names of the recipients.
 func (m *Mail) RecipientNames() []string {
 	ss := make([]string, len(m.Recipients))
 	for i, r := range m.Recipients {
