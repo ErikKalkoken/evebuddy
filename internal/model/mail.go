@@ -19,6 +19,7 @@ const (
 	MailLabelAlliance = 8
 )
 
+// A mail label for an Eve mail belonging to a character.
 type MailLabel struct {
 	ID          int64
 	CharacterID int32

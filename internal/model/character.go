@@ -1,4 +1,4 @@
-// Package model contains the entity objects of this app.
+// Package model contains the entity objects, which are used across the app.
 package model
 
 import (
