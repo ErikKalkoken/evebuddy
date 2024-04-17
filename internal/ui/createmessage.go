@@ -50,12 +50,12 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	if mail != nil {
 		switch mode {
 		case CreateMessageReply:
-			r := u.service.NewRecipientsFromEntities([]model.EveEntity{mail.From})
+			r := NewMailRecipientsFromEntities([]model.EveEntity{mail.From})
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
 		case CreateMessageReplyAll:
-			r := u.service.NewRecipientsFromEntities(mail.Recipients)
+			r := NewMailRecipientsFromEntities(mail.Recipients)
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
@@ -77,9 +77,13 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	})
 	sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {
 		err := func() error {
-			rr := u.service.NewRecipientsFromText(toInput.Text)
-			err := u.service.SendMail(currentChar.ID, subjectInput.Text, rr, bodyInput.Text)
+			recipients := NewMailRecipientsFromText(toInput.Text)
+			eeUnclean := recipients.ToEveEntitiesUnclean()
+			ee2, err := u.service.ResolveUncleanEveEntities(eeUnclean)
 			if err != nil {
+				return err
+			}
+			if err := u.service.SendMail(currentChar.ID, subjectInput.Text, ee2, bodyInput.Text); err != nil {
 				return err
 			}
 			return nil
@@ -142,7 +146,7 @@ func (u *ui) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int
 	d := dialog.NewCustomConfirm(
 		"Add recipient", "Add", "Cancel", content, func(confirmed bool) {
 			if confirmed {
-				r := u.service.NewRecipientsFromText(toInput.Text)
+				r := NewMailRecipientsFromText(toInput.Text)
 				r.AddFromText(entry.Text)
 				toInput.SetText(r.String())
 			}
@@ -158,7 +162,7 @@ func (u *ui) makeRecipientOptions(search string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	rr := u.service.NewRecipientsFromEntities(ee)
+	rr := NewMailRecipientsFromEntities(ee)
 	oo := rr.ToOptions()
 	return oo, nil
 }

@@ -23,6 +23,13 @@ const (
 	maxHeadersPerPage = 50 // maximum header objects returned per page
 )
 
+var eveEntityCategory2MailRecipientType = map[model.EveEntityCategory]string{
+	model.EveEntityAlliance:    "alliance",
+	model.EveEntityCharacter:   "character",
+	model.EveEntityCorporation: "corporation",
+	model.EveEntityMailList:    "mailing_list",
+}
+
 // DeleteMail deletes a mail both on ESI and in the database.
 func (s *Service) DeleteMail(characterID, mailID int32) error {
 	ctx := context.Background()
@@ -48,19 +55,19 @@ func (s *Service) GetMail(characterID int32, mailID int32) (model.Mail, error) {
 }
 
 // SendMail created a new mail on ESI stores it locally.
-func (s *Service) SendMail(characterID int32, subject string, recipients *Recipients, body string) error {
+func (s *Service) SendMail(characterID int32, subject string, recipients []model.EveEntity, body string) error {
 	if subject == "" {
 		return fmt.Errorf("missing subject")
 	}
 	if body == "" {
 		return fmt.Errorf("missing body")
 	}
-	rr, err := s.toMailRecipients(recipients)
+	if len(recipients) == 0 {
+		return fmt.Errorf("missing recipients")
+	}
+	rr, err := eveEntitiesToESIMailRecipients(recipients)
 	if err != nil {
 		return err
-	}
-	if len(rr) == 0 {
-		return fmt.Errorf("missing recipients")
 	}
 	ctx := context.Background()
 	token, err := s.getValidToken(ctx, characterID)
@@ -111,6 +118,21 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 		return err
 	}
 	return nil
+}
+
+func eveEntitiesToESIMailRecipients(ee []model.EveEntity) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
+	rr := make([]esi.PostCharactersCharacterIdMailRecipient, len(ee))
+	for i, e := range ee {
+		c, ok := eveEntityCategory2MailRecipientType[e.Category]
+		if !ok {
+			return rr, fmt.Errorf("failed to match EveEntity category to ESI mail recipient type: %v", e)
+		}
+		rr[i] = esi.PostCharactersCharacterIdMailRecipient{
+			RecipientId:   e.ID,
+			RecipientType: c,
+		}
+	}
+	return rr, nil
 }
 
 // FIXME: Delete obsolete labels and mail lists
