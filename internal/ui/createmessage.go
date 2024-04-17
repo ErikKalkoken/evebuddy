@@ -80,6 +80,8 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 			recipients := NewMailRecipientsFromText(toInput.Text)
 			eeUnclean := recipients.ToEveEntitiesUnclean()
 			ee2, err := u.service.ResolveUncleanEveEntities(eeUnclean)
+			slog.Info("recipients", "eeUnclean", eeUnclean)
+			slog.Info("recipients", "ee2", ee2)
 			if err != nil {
 				return err
 			}

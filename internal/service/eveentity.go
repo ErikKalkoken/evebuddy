@@ -101,6 +101,7 @@ func (s *Service) ResolveUncleanEveEntities(ee []model.EveEntity) ([]model.EveEn
 // resolveEveEntityLocally tries to resolve EveEntities locally.
 // It returns resolved recipients and a list of remaining unresolved names (if any)
 func (s *Service) resolveEveEntityLocally(ee []model.EveEntity) ([]model.EveEntity, []string, error) {
+	ee2 := make([]model.EveEntity, 0, len(ee))
 	names := make([]string, 0, len(ee))
 	for _, r := range ee {
 		if r.Category == model.EveEntityUndefined {
@@ -116,9 +117,9 @@ func (s *Service) resolveEveEntityLocally(ee []model.EveEntity) ([]model.EveEnti
 				return nil, nil, err
 			}
 		}
-		ee = append(ee, e)
+		ee2 = append(ee2, e)
 	}
-	return ee, names, nil
+	return ee2, names, nil
 }
 
 // resolveEveEntityNamesRemotely resolves a list of names remotely and stores them as EveEntity objects.
@@ -157,7 +158,7 @@ func (s *Service) resolveEveEntityNamesRemotely(names []string) error {
 	}
 	for _, e := range ee {
 		if missing.Has(int32(e.ID)) {
-			_, err := s.r.CreateEveEntity(ctx, e.ID, e.Name, e.Category)
+			_, err := s.r.GetOrCreateEveEntity(ctx, e.ID, e.Name, e.Category)
 			if err != nil {
 				return err
 			}

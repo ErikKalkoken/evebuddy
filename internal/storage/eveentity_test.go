@@ -100,6 +100,30 @@ func TestEveEntity(t *testing.T) {
 			assert.Equal(t, want, got)
 		}
 	})
+	t.Run("should not store with invalid ID 1", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := r.CreateEveEntity(ctx, 0, "Dummy", model.EveEntityAlliance)
+		// then
+		assert.Error(t, err)
+	})
+	t.Run("should not store with invalid ID 2", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := r.GetOrCreateEveEntity(ctx, 0, "Dummy", model.EveEntityAlliance)
+		// then
+		assert.Error(t, err)
+	})
+	t.Run("should not store with invalid ID 3", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := r.UpdateOrCreateEveEntity(ctx, 0, "Dummy", model.EveEntityAlliance)
+		// then
+		assert.Error(t, err)
+	})
 }
 func TestEveEntityGetOrCreate(t *testing.T) {
 	db, r, factory := testutil.New()

@@ -12,18 +12,6 @@ import (
 	"example/evebuddy/internal/sqlc"
 )
 
-func eveEntityFromDBModel(e sqlc.EveEntity) model.EveEntity {
-	if e.ID == 0 {
-		return model.EveEntity{}
-	}
-	category := eveEntityCategoryFromDBModel(e.Category)
-	return model.EveEntity{
-		Category: category,
-		ID:       int32(e.ID),
-		Name:     e.Name,
-	}
-}
-
 // Eve Entity categories in DB models
 const (
 	eveEntityAllianceCategoryDB    = "alliance"
@@ -63,17 +51,38 @@ func eveEntityDBModelCategoryFromCategory(c model.EveEntityCategory) string {
 	return c2
 }
 
+func eveEntityFromDBModel(e sqlc.EveEntity) model.EveEntity {
+	if e.ID == 0 {
+		return model.EveEntity{}
+	}
+	category := eveEntityCategoryFromDBModel(e.Category)
+	return model.EveEntity{
+		Category: category,
+		ID:       int32(e.ID),
+		Name:     e.Name,
+	}
+}
+
 func (r *Storage) CreateEveEntity(ctx context.Context, id int32, name string, category model.EveEntityCategory) (model.EveEntity, error) {
-	arg := sqlc.CreateEveEntityParams{
-		ID:       int64(id),
-		Category: eveEntityDBModelCategoryFromCategory(category),
-		Name:     name,
-	}
-	e, err := r.q.CreateEveEntity(ctx, arg)
+	e, err := func() (model.EveEntity, error) {
+		if id == 0 {
+			return model.EveEntity{}, fmt.Errorf("invalid ID %d", id)
+		}
+		arg := sqlc.CreateEveEntityParams{
+			ID:       int64(id),
+			Category: eveEntityDBModelCategoryFromCategory(category),
+			Name:     name,
+		}
+		e, err := r.q.CreateEveEntity(ctx, arg)
+		if err != nil {
+			return model.EveEntity{}, fmt.Errorf("failed to create eve entity %v, %w", arg, err)
+		}
+		return eveEntityFromDBModel(e), nil
+	}()
 	if err != nil {
-		return model.EveEntity{}, fmt.Errorf("failed to create eve entity %v, %w", arg, err)
+		return model.EveEntity{}, fmt.Errorf("failed to create EveEntity %d: %w", id, err)
 	}
-	return eveEntityFromDBModel(e), nil
+	return e, nil
 }
 
 func (r *Storage) GetEveEntity(ctx context.Context, id int32) (model.EveEntity, error) {
@@ -107,6 +116,9 @@ func (r *Storage) GetEveEntityByNameAndCategory(ctx context.Context, name string
 func (r *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name string, category model.EveEntityCategory) (model.EveEntity, error) {
 	label, err := func() (model.EveEntity, error) {
 		var e sqlc.EveEntity
+		if id == 0 {
+			return model.EveEntity{}, fmt.Errorf("invalid ID %d", id)
+		}
 		tx, err := r.db.Begin()
 		if err != nil {
 			return model.EveEntity{}, err
@@ -185,6 +197,9 @@ func (r *Storage) MissingEveEntityIDs(ctx context.Context, ids []int32) (*set.Se
 
 func (r *Storage) UpdateOrCreateEveEntity(ctx context.Context, id int32, name string, category model.EveEntityCategory) (model.EveEntity, error) {
 	e, err := func() (model.EveEntity, error) {
+		if id == 0 {
+			return model.EveEntity{}, fmt.Errorf("invalid ID %d", id)
+		}
 		tx, err := r.db.Begin()
 		if err != nil {
 			return model.EveEntity{}, err
