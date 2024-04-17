@@ -107,7 +107,7 @@ func TestResolveLocally(t *testing.T) {
 		testutil.TruncateTables(db)
 		e := factory.CreateEveEntity()
 		r := s.NewRecipientsFromEntities([]model.EveEntity{e})
-		mm, names, err := r.buildMailRecipients(s)
+		mm, names, err := s.buildMailRecipients(r)
 		if assert.NoError(t, err) {
 			assert.Len(t, mm, 1)
 			assert.Len(t, names, 0)
@@ -119,7 +119,7 @@ func TestResolveLocally(t *testing.T) {
 		e1 := factory.CreateEveEntity()
 		e2 := factory.CreateEveEntity()
 		r := s.NewRecipientsFromEntities([]model.EveEntity{e1, e2})
-		mm, names, err := r.buildMailRecipients(s)
+		mm, names, err := s.buildMailRecipients(r)
 		if assert.NoError(t, err) {
 			assert.Len(t, mm, 2)
 			assert.Len(t, names, 0)
@@ -131,7 +131,7 @@ func TestResolveLocally(t *testing.T) {
 		e2 := factory.CreateEveEntity()
 		r := s.NewRecipientsFromEntities([]model.EveEntity{e1, e2})
 		r.AddFromText("Other")
-		mm, names, err := r.buildMailRecipients(s)
+		mm, names, err := s.buildMailRecipients(r)
 		if assert.NoError(t, err) {
 			assert.Len(t, mm, 2)
 			assert.Len(t, names, 1)
@@ -140,7 +140,7 @@ func TestResolveLocally(t *testing.T) {
 	t.Run("should resolve to names", func(t *testing.T) {
 		testutil.TruncateTables(db)
 		r := s.NewRecipientsFromText("Other")
-		mm, names, err := r.buildMailRecipients(s)
+		mm, names, err := s.buildMailRecipients(r)
 		if assert.NoError(t, err) {
 			assert.Len(t, mm, 0)
 			assert.Len(t, names, 1)
@@ -166,7 +166,7 @@ func TestBuildMailRecipientsCategories(t *testing.T) {
 		t.Run(fmt.Sprintf("category %s", tc.in), func(t *testing.T) {
 			e := factory.CreateEveEntity(model.EveEntity{Category: tc.in})
 			r := s.NewRecipientsFromEntities([]model.EveEntity{e})
-			mm, names, err := r.buildMailRecipients(s)
+			mm, names, err := s.buildMailRecipients(r)
 			if assert.NoError(t, err) {
 				assert.Len(t, mm, 1)
 				assert.Len(t, names, 0)

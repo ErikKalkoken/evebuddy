@@ -183,8 +183,8 @@ func (rr *Recipients) ToOptions() []string {
 	return ss
 }
 
-func (rr *Recipients) ToMailRecipients(s *Service) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
-	mm1, names, err := rr.buildMailRecipients(s)
+func (s *Service) toMailRecipients(rr *Recipients) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
+	mm1, names, err := s.buildMailRecipients(rr)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func (rr *Recipients) ToMailRecipients(s *Service) ([]esi.PostCharactersCharacte
 
 // buildMailRecipients tries to build MailRecipients from recipients.
 // It returns resolved recipients and a list of remaining unresolved names (if any)
-func (rr *Recipients) buildMailRecipients(s *Service) ([]esi.PostCharactersCharacterIdMailRecipient, []string, error) {
+func (s *Service) buildMailRecipients(rr *Recipients) ([]esi.PostCharactersCharacterIdMailRecipient, []string, error) {
 	mm := make([]esi.PostCharactersCharacterIdMailRecipient, 0, len(rr.list))
 	names := make([]string, 0, len(rr.list))
 	for _, r := range rr.list {

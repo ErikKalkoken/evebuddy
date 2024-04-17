@@ -55,7 +55,7 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 	if body == "" {
 		return fmt.Errorf("missing body")
 	}
-	rr, err := recipients.ToMailRecipients(s)
+	rr, err := s.toMailRecipients(recipients)
 	if err != nil {
 		return err
 	}
