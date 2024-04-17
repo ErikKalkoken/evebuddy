@@ -64,7 +64,7 @@ func (s *Service) addMissingEveEntities(ctx context.Context, ids []int32) ([]int
 		return nil, fmt.Errorf("failed to resolve IDs on ESI %v: %w", ids, err)
 	}
 	for _, entity := range entities {
-		_, err := s.r.CreateEveEntity(ctx, entity.Id, entity.Name, eveEntityCategoryFromESICategory(entity.Category))
+		_, err := s.r.GetOrCreateEveEntity(ctx, entity.Id, entity.Name, eveEntityCategoryFromESICategory(entity.Category))
 		if err != nil {
 			return nil, err
 		}

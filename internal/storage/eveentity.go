@@ -104,6 +104,41 @@ func (r *Storage) GetEveEntityByNameAndCategory(ctx context.Context, name string
 	return e2, nil
 }
 
+func (r *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name string, category model.EveEntityCategory) (model.EveEntity, error) {
+	label, err := func() (model.EveEntity, error) {
+		var e sqlc.EveEntity
+		tx, err := r.db.Begin()
+		if err != nil {
+			return model.EveEntity{}, err
+		}
+		defer tx.Rollback()
+		qtx := r.q.WithTx(tx)
+		e, err = qtx.GetEveEntity(ctx, int64(id))
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				return model.EveEntity{}, err
+			}
+			arg := sqlc.CreateEveEntityParams{
+				ID:       int64(id),
+				Name:     name,
+				Category: eveEntityDBModelCategoryFromCategory(category),
+			}
+			e, err = qtx.CreateEveEntity(ctx, arg)
+			if err != nil {
+				return model.EveEntity{}, err
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			return model.EveEntity{}, err
+		}
+		return eveEntityFromDBModel(e), nil
+	}()
+	if err != nil {
+		return label, fmt.Errorf("failed to get or create eve entity %d: %w", id, err)
+	}
+	return label, nil
+}
+
 func (r *Storage) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]model.EveEntity, error) {
 	ee, err := r.q.ListEveEntitiesByPartialName(ctx, fmt.Sprintf("%%%s%%", partial))
 	if err != nil {

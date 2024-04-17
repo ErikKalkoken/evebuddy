@@ -20,12 +20,15 @@ func TestEveEntity(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		e, err := r.CreateEveEntity(ctx, 42, "Dummy", model.EveEntityAlliance)
+		_, err := r.CreateEveEntity(ctx, 42, "Dummy", model.EveEntityAlliance)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, e.ID, int32(42))
-			assert.Equal(t, e.Name, "Dummy")
-			assert.Equal(t, e.Category, model.EveEntityAlliance)
+			e, err := r.GetEveEntity(ctx, 42)
+			if assert.NoError(t, err) {
+				assert.Equal(t, e.ID, int32(42))
+				assert.Equal(t, e.Name, "Dummy")
+				assert.Equal(t, e.Category, model.EveEntityAlliance)
+			}
 		}
 	})
 	t.Run("can update existing", func(t *testing.T) {
@@ -77,6 +80,7 @@ func TestEveEntity(t *testing.T) {
 		_, err := r.GetEveEntityByNameAndCategory(ctx, "dummy", model.EveEntityAlliance)
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})
+
 	t.Run("should return objs with matching names in order", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -94,6 +98,45 @@ func TestEveEntity(t *testing.T) {
 			}
 			want := []string{"Xalpha1", "Yalpha2"}
 			assert.Equal(t, want, got)
+		}
+	})
+}
+func TestEveEntityGetOrCreate(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should create new when not exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := r.GetOrCreateEveEntity(ctx, 42, "Dummy", model.EveEntityAlliance)
+		// then
+		if assert.NoError(t, err) {
+			e, err := r.GetEveEntity(ctx, 42)
+			if assert.NoError(t, err) {
+				assert.Equal(t, e.ID, int32(42))
+				assert.Equal(t, e.Name, "Dummy")
+				assert.Equal(t, e.Category, model.EveEntityAlliance)
+			}
+		}
+	})
+	t.Run("should get when exists", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// given
+		factory.CreateEveEntity(
+			model.EveEntity{
+				ID:       42,
+				Name:     "Alpha",
+				Category: model.EveEntityCharacter,
+			})
+		// when
+		e, err := r.GetOrCreateEveEntity(ctx, 42, "Erik", model.EveEntityCorporation)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, int32(42), e.ID)
+			assert.Equal(t, "Alpha", e.Name)
+			assert.Equal(t, model.EveEntityCharacter, e.Category)
 		}
 	})
 }
