@@ -1,8 +1,8 @@
-package repository_test
+package storage_test
 
 import (
 	"context"
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/storage"
 	"testing"
 	"time"
 
@@ -15,9 +15,9 @@ func TestToken(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		o := repository.Token{
+		o := storage.Token{
 			AccessToken:  "access",
 			CharacterID:  c.ID,
 			ExpiresAt:    time.Now(),
@@ -36,7 +36,7 @@ func TestToken(t *testing.T) {
 	})
 	t.Run("can fetch existing", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		c := factory.CreateToken()
 		// when
 		r, err := r.GetToken(ctx, c.CharacterID)
@@ -51,9 +51,9 @@ func TestToken(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		o := repository.Token{
+		o := storage.Token{
 			AccessToken:  "access",
 			CharacterID:  int32(c.ID),
 			ExpiresAt:    time.Now(),
@@ -77,11 +77,11 @@ func TestToken(t *testing.T) {
 
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
 		_, err := r.GetToken(ctx, c.ID)
 		// then
-		assert.ErrorIs(t, err, repository.ErrNotFound)
+		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})
 }

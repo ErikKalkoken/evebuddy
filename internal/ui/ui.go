@@ -3,8 +3,8 @@ package ui
 
 import (
 	"errors"
-	"example/evebuddy/internal/repository"
 	"example/evebuddy/internal/service"
+	"example/evebuddy/internal/storage"
 	"fmt"
 	"log/slog"
 	"runtime"
@@ -39,7 +39,7 @@ const (
 type ui struct {
 	app              fyne.App
 	characterArea    *characterArea
-	currentCharacter *repository.Character
+	currentCharacter *storage.Character
 	folderArea       *folderArea
 	headerArea       *headerArea
 	mailArea         *mailArea
@@ -96,7 +96,7 @@ func NewUI(s *service.Service) *ui {
 	if characterID != 0 {
 		c, err := s.GetCharacter(characterID)
 		if err != nil {
-			if !errors.Is(err, repository.ErrNotFound) {
+			if !errors.Is(err, storage.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
 			}
 		} else {
@@ -147,11 +147,11 @@ func (u *ui) CurrentCharID() int32 {
 	return u.currentCharacter.ID
 }
 
-func (u *ui) CurrentChar() *repository.Character {
+func (u *ui) CurrentChar() *storage.Character {
 	return u.currentCharacter
 }
 
-func (u *ui) SetCurrentCharacter(c *repository.Character) {
+func (u *ui) SetCurrentCharacter(c *storage.Character) {
 	u.currentCharacter = c
 	u.updateToolbarBadge(c)
 	err := u.service.SetSettingInt32(settingLastCharacterID, c.ID)
@@ -162,7 +162,7 @@ func (u *ui) SetCurrentCharacter(c *repository.Character) {
 	u.folderArea.Redraw()
 }
 
-func (u *ui) updateToolbarBadge(c *repository.Character) {
+func (u *ui) updateToolbarBadge(c *storage.Character) {
 	if c == nil {
 		u.toolbarBadge.RemoveAll()
 		return

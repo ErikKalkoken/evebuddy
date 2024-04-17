@@ -3,7 +3,7 @@ package ui
 import (
 	"context"
 	"errors"
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/storage"
 	"fmt"
 	"log/slog"
 
@@ -84,7 +84,7 @@ func (m *manageArea) Redraw() {
 						if isCurrentChar {
 							c, err := m.ui.service.GetAnyCharacter()
 							if err != nil {
-								if errors.Is(err, repository.ErrNotFound) {
+								if errors.Is(err, storage.ErrNotFound) {
 									m.ui.ResetCurrentCharacter()
 								} else {
 									panic(err)

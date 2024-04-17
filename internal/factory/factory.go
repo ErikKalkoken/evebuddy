@@ -3,7 +3,7 @@ package factory
 
 import (
 	"context"
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/storage"
 	"fmt"
 	"math/rand/v2"
 	"slices"
@@ -11,18 +11,18 @@ import (
 )
 
 type Factory struct {
-	r *repository.Repository
+	r *storage.Repository
 }
 
-func New(r *repository.Repository) Factory {
+func New(r *storage.Repository) Factory {
 	f := Factory{r: r}
 	return f
 }
 
 // CreateCharacter is a test factory for character objects.
-func (f Factory) CreateCharacter(args ...repository.Character) repository.Character {
+func (f Factory) CreateCharacter(args ...storage.Character) storage.Character {
 	ctx := context.Background()
-	var c repository.Character
+	var c storage.Character
 	if len(args) > 0 {
 		c = args[0]
 	}
@@ -60,8 +60,8 @@ func (f Factory) CreateCharacter(args ...repository.Character) repository.Charac
 }
 
 // CreateEveEntity is a test factory for EveEntity objects.
-func (f Factory) CreateEveEntity(args ...repository.EveEntity) repository.EveEntity {
-	var arg repository.EveEntity
+func (f Factory) CreateEveEntity(args ...storage.EveEntity) storage.EveEntity {
+	var arg storage.EveEntity
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
@@ -80,8 +80,8 @@ func (f Factory) CreateEveEntity(args ...repository.EveEntity) repository.EveEnt
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("generated #%d", arg.ID)
 	}
-	if arg.Category == repository.EveEntityUndefined {
-		arg.Category = repository.EveEntityCharacter
+	if arg.Category == storage.EveEntityUndefined {
+		arg.Category = storage.EveEntityCharacter
 	}
 	e, err := f.r.CreateEveEntity(ctx, arg.ID, arg.Name, arg.Category)
 	if err != nil {
@@ -90,34 +90,34 @@ func (f Factory) CreateEveEntity(args ...repository.EveEntity) repository.EveEnt
 	return e
 }
 
-func (f Factory) CreateEveEntityAlliance(args ...repository.EveEntity) repository.EveEntity {
-	args2 := eveEntityWithCategory(args, repository.EveEntityAlliance)
+func (f Factory) CreateEveEntityAlliance(args ...storage.EveEntity) storage.EveEntity {
+	args2 := eveEntityWithCategory(args, storage.EveEntityAlliance)
 	return f.CreateEveEntity(args2...)
 }
 
-func (f Factory) CreateEveEntityCharacter(args ...repository.EveEntity) repository.EveEntity {
-	args2 := eveEntityWithCategory(args, repository.EveEntityCharacter)
+func (f Factory) CreateEveEntityCharacter(args ...storage.EveEntity) storage.EveEntity {
+	args2 := eveEntityWithCategory(args, storage.EveEntityCharacter)
 	return f.CreateEveEntity(args2...)
 }
 
-func (f Factory) CreateEveEntityCorporation(args ...repository.EveEntity) repository.EveEntity {
-	args2 := eveEntityWithCategory(args, repository.EveEntityCorporation)
+func (f Factory) CreateEveEntityCorporation(args ...storage.EveEntity) storage.EveEntity {
+	args2 := eveEntityWithCategory(args, storage.EveEntityCorporation)
 	return f.CreateEveEntity(args2...)
 }
 
-func eveEntityWithCategory(args []repository.EveEntity, category repository.EveEntityCategory) []repository.EveEntity {
-	var arg repository.EveEntity
+func eveEntityWithCategory(args []storage.EveEntity, category storage.EveEntityCategory) []storage.EveEntity {
+	var arg storage.EveEntity
 	if len(args) > 0 {
 		arg = args[0]
 	}
 	arg.Category = category
-	args2 := []repository.EveEntity{arg}
+	args2 := []storage.EveEntity{arg}
 	return args2
 }
 
 // CreateMail is a test factory for Mail objects
-func (f Factory) CreateMail(args ...repository.CreateMailParams) repository.Mail {
-	var arg repository.CreateMailParams
+func (f Factory) CreateMail(args ...storage.CreateMailParams) storage.Mail {
+	var arg storage.CreateMailParams
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
@@ -162,12 +162,12 @@ func (f Factory) CreateMail(args ...repository.CreateMailParams) repository.Mail
 }
 
 // CreateMailLabel is a test factory for MailLabel objects
-func (f Factory) CreateMailLabel(args ...repository.MailLabel) repository.MailLabel {
+func (f Factory) CreateMailLabel(args ...storage.MailLabel) storage.MailLabel {
 	ctx := context.Background()
-	var arg repository.MailLabelParams
+	var arg storage.MailLabelParams
 	if len(args) > 0 {
 		l := args[0]
-		arg = repository.MailLabelParams{
+		arg = storage.MailLabelParams{
 			CharacterID: l.CharacterID,
 			Color:       l.Color,
 			LabelID:     l.LabelID,
@@ -211,8 +211,8 @@ func (f Factory) CreateMailLabel(args ...repository.MailLabel) repository.MailLa
 }
 
 // CreateMailList is a test factory for MailList objects.
-func (f Factory) CreateMailList(characterID int32, args ...repository.EveEntity) repository.EveEntity {
-	var e repository.EveEntity
+func (f Factory) CreateMailList(characterID int32, args ...storage.EveEntity) storage.EveEntity {
+	var e storage.EveEntity
 	ctx := context.Background()
 	if len(args) > 0 {
 		e = args[0]
@@ -222,7 +222,7 @@ func (f Factory) CreateMailList(characterID int32, args ...repository.EveEntity)
 		characterID = c.ID
 	}
 	if e.ID == 0 {
-		e = f.CreateEveEntity(repository.EveEntity{Category: repository.EveEntityMailList})
+		e = f.CreateEveEntity(storage.EveEntity{Category: storage.EveEntityMailList})
 	}
 	if err := f.r.CreateMailList(ctx, characterID, e.ID); err != nil {
 		panic(err)
@@ -231,8 +231,8 @@ func (f Factory) CreateMailList(characterID int32, args ...repository.EveEntity)
 }
 
 // CreateToken is a test factory for Token objects.
-func (f Factory) CreateToken(args ...repository.Token) repository.Token {
-	var t repository.Token
+func (f Factory) CreateToken(args ...storage.Token) storage.Token {
+	var t storage.Token
 	ctx := context.Background()
 	if len(args) > 0 {
 		t = args[0]

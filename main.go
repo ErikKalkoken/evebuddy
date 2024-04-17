@@ -5,8 +5,8 @@ import (
 	"log"
 	"log/slog"
 
-	"example/evebuddy/internal/repository"
 	"example/evebuddy/internal/service"
+	"example/evebuddy/internal/storage"
 	"example/evebuddy/internal/ui"
 )
 
@@ -15,12 +15,12 @@ func main() {
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	slog.Info("current flags", "createDB", *createDBFlag)
-	db, err := repository.ConnectDB("storage.sqlite", *createDBFlag)
+	db, err := storage.ConnectDB("storage.sqlite", *createDBFlag)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
-	repository := repository.New(db)
+	repository := storage.New(db)
 	s := service.NewService(repository)
 	e := ui.NewUI(s)
 	e.ShowAndRun()

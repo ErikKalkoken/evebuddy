@@ -1,8 +1,8 @@
-package repository_test
+package storage_test
 
 import (
 	"context"
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/storage"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,11 +11,11 @@ import (
 func TestSetting(t *testing.T) {
 	db, _, _ := setUpDB()
 	defer db.Close()
-	r := repository.New(db)
+	r := storage.New(db)
 	ctx := context.Background()
 	t.Run("can create new string", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		// when
 		err := r.SetSettingString(ctx, "alpha", "john")
 		// then
@@ -28,7 +28,7 @@ func TestSetting(t *testing.T) {
 	})
 	t.Run("can create new int", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		// when
 		err := r.SetSettingInt32(ctx, "alpha", 42)
 		// then
@@ -41,7 +41,7 @@ func TestSetting(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		err := r.SetSettingString(ctx, "alpha", "john")
 		if err != nil {
 			panic(err)
@@ -58,7 +58,7 @@ func TestSetting(t *testing.T) {
 	})
 	t.Run("should return empty string if not found", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		// when
 		v, err := r.GetSettingString(ctx, "alpha")
 		// then
@@ -68,7 +68,7 @@ func TestSetting(t *testing.T) {
 	})
 	t.Run("should return 0 if not found", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		// when
 		v, err := r.GetSettingInt32(ctx, "alpha")
 		// then
@@ -78,7 +78,7 @@ func TestSetting(t *testing.T) {
 	})
 	t.Run("can delete existing key", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		err := r.SetSettingString(ctx, "alpha", "abc")
 		if err != nil {
 			panic(err)
@@ -95,7 +95,7 @@ func TestSetting(t *testing.T) {
 	})
 	t.Run("can delete not existing key", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		// when
 		err := r.DeleteSetting(ctx, "alpha")
 		// then

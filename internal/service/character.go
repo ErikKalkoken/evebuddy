@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"example/evebuddy/internal/api/sso"
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/storage"
 	"fmt"
 	"log/slog"
 	"time"
@@ -15,15 +15,15 @@ func (s *Service) DeleteCharacter(characterID int32) error {
 	return s.r.DeleteCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetCharacter(characterID int32) (repository.Character, error) {
+func (s *Service) GetCharacter(characterID int32) (storage.Character, error) {
 	return s.r.GetCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetAnyCharacter() (repository.Character, error) {
+func (s *Service) GetAnyCharacter() (storage.Character, error) {
 	return s.r.GetFirstCharacter(context.Background())
 }
 
-func (s *Service) ListCharacters() ([]repository.Character, error) {
+func (s *Service) ListCharacters() ([]storage.Character, error) {
 	return s.r.ListCharacters(context.Background())
 }
 
@@ -34,7 +34,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 		return err
 	}
 	charID := ssoToken.CharacterID
-	token := repository.Token{
+	token := storage.Token{
 		AccessToken:  ssoToken.AccessToken,
 		CharacterID:  charID,
 		ExpiresAt:    ssoToken.ExpiresAt,
@@ -61,7 +61,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	c := repository.Character{
+	c := storage.Character{
 		Birthday:       charEsi.Birthday,
 		Corporation:    corporation,
 		Description:    charEsi.Description,
@@ -96,7 +96,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) updateCharacter(ctx context.Context, c *repository.Character) error {
+func (s *Service) updateCharacter(ctx context.Context, c *storage.Character) error {
 	skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, c.ID, nil)
 	if err != nil {
 		return err
@@ -131,7 +131,7 @@ func (s *Service) updateCharacter(ctx context.Context, c *repository.Character) 
 		return err
 	}
 	c.Corporation = corporation
-	var alliance repository.EveEntity
+	var alliance storage.EveEntity
 	if r.AllianceId != 0 {
 		alliance, err = s.r.GetEveEntity(ctx, r.AllianceId)
 		if err != nil {
@@ -139,7 +139,7 @@ func (s *Service) updateCharacter(ctx context.Context, c *repository.Character) 
 		}
 	}
 	c.Alliance = alliance
-	var faction repository.EveEntity
+	var faction storage.EveEntity
 	if r.FactionId != 0 {
 		faction, err = s.r.GetEveEntity(ctx, r.FactionId)
 		if err != nil {

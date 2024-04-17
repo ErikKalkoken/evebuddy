@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/storage"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -127,7 +127,7 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 	folders := makeDefaultFolders(labelUnreadCounts)
 	folderItemAll := node{
 		ID:          nodeAllID,
-		ObjID:       repository.LabelAll,
+		ObjID:       storage.LabelAll,
 		Name:        "All Mails",
 		Category:    nodeCategoryLabel,
 		UnreadCount: totalUnreadCount,
@@ -189,10 +189,10 @@ func makeDefaultFolders(labelUnreadCounts map[int32]int) map[string]string {
 		labelID int32
 		name    string
 	}{
-		{nodeInboxID, repository.LabelInbox, "Inbox"},
-		{nodeSentID, repository.LabelSent, "Sent"},
-		{nodeCorpID, repository.LabelCorp, "Corp"},
-		{nodeAllianceID, repository.LabelAlliance, "Alliance"},
+		{nodeInboxID, storage.LabelInbox, "Inbox"},
+		{nodeSentID, storage.LabelSent, "Sent"},
+		{nodeCorpID, storage.LabelCorp, "Corp"},
+		{nodeAllianceID, storage.LabelAlliance, "Alliance"},
 	}
 	for _, o := range defaultFolders {
 		u, ok := labelUnreadCounts[o.labelID]
@@ -214,7 +214,7 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 	var total, labels, lists int
 	for id, c := range labelCounts {
 		total += c
-		if id > repository.LabelAlliance {
+		if id > storage.LabelAlliance {
 			labels += c
 		}
 	}

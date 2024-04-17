@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"example/evebuddy/internal/helper/set"
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/storage"
 
 	"fmt"
 	"log/slog"
@@ -41,7 +41,7 @@ func (s *Service) DeleteMail(characterID, mailID int32) error {
 	return nil
 }
 
-func (s *Service) GetMail(characterID int32, mailID int32) (repository.Mail, error) {
+func (s *Service) GetMail(characterID int32, mailID int32) (storage.Mail, error) {
 	ctx := context.Background()
 	return s.r.GetMail(ctx, characterID, mailID)
 }
@@ -85,21 +85,21 @@ func (s *Service) SendMail(characterID int32, subject string, recipients *Recipi
 	if err != nil {
 		return err
 	}
-	arg1 := repository.MailLabelParams{
+	arg1 := storage.MailLabelParams{
 		CharacterID: characterID,
-		LabelID:     repository.LabelSent,
+		LabelID:     storage.LabelSent,
 		Name:        "Sent",
 	}
 	_, err = s.r.GetOrCreateMailLabel(ctx, arg1) // make sure sent label exists
 	if err != nil {
 		return err
 	}
-	arg2 := repository.CreateMailParams{
+	arg2 := storage.CreateMailParams{
 		Body:         body,
 		CharacterID:  characterID,
 		FromID:       characterID,
 		IsRead:       true,
-		LabelIDs:     []int32{repository.LabelSent},
+		LabelIDs:     []int32{storage.LabelSent},
 		MailID:       mailID,
 		RecipientIDs: recipientIDs,
 		Subject:      subject,
@@ -148,7 +148,7 @@ func (s *Service) FetchMail(characterID int32, status binding.String) error {
 	return nil
 }
 
-func (s *Service) updateMailLabels(ctx context.Context, token *repository.Token) error {
+func (s *Service) updateMailLabels(ctx context.Context, token *storage.Token) error {
 	if err := s.ensureValidToken(ctx, token); err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ func (s *Service) updateMailLabels(ctx context.Context, token *repository.Token)
 	labels := ll.Labels
 	slog.Info("Received mail labels from ESI", "count", len(labels), "characterID", token.CharacterID)
 	for _, o := range labels {
-		arg := repository.MailLabelParams{
+		arg := storage.MailLabelParams{
 			CharacterID: token.CharacterID,
 			Color:       o.Color,
 			LabelID:     o.LabelId,
@@ -175,7 +175,7 @@ func (s *Service) updateMailLabels(ctx context.Context, token *repository.Token)
 	return nil
 }
 
-func (s *Service) updateMailLists(ctx context.Context, token *repository.Token) error {
+func (s *Service) updateMailLists(ctx context.Context, token *storage.Token) error {
 	if err := s.ensureValidToken(ctx, token); err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func (s *Service) updateMailLists(ctx context.Context, token *repository.Token) 
 		return err
 	}
 	for _, o := range lists {
-		_, err := s.r.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, repository.EveEntityMailList)
+		_, err := s.r.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, storage.EveEntityMailList)
 		if err != nil {
 			return err
 		}
@@ -197,7 +197,7 @@ func (s *Service) updateMailLists(ctx context.Context, token *repository.Token) 
 }
 
 // listMailHeaders fetched mail headers from ESI with paging and returns them.
-func (s *Service) listMailHeaders(ctx context.Context, token *repository.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
+func (s *Service) listMailHeaders(ctx context.Context, token *storage.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	if err := s.ensureValidToken(ctx, token); err != nil {
 		return nil, err
 	}
@@ -231,7 +231,7 @@ func (s *Service) listMailHeaders(ctx context.Context, token *repository.Token) 
 	return mm, nil
 }
 
-func (s *Service) updateMails(ctx context.Context, token *repository.Token, headers []esi.GetCharactersCharacterIdMail200Ok, status binding.String) error {
+func (s *Service) updateMails(ctx context.Context, token *storage.Token, headers []esi.GetCharactersCharacterIdMail200Ok, status binding.String) error {
 	existingIDs, missingIDs, err := s.determineMailIDs(ctx, token.CharacterID, headers)
 	if err != nil {
 		return err
@@ -281,7 +281,7 @@ func (s *Service) updateMails(ctx context.Context, token *repository.Token, head
 	return nil
 }
 
-func (s *Service) fetchAndStoreMail(ctx context.Context, character repository.Character, header esi.GetCharactersCharacterIdMail200Ok, newMailsCount int, c *atomic.Int32, status binding.String) {
+func (s *Service) fetchAndStoreMail(ctx context.Context, character storage.Character, header esi.GetCharactersCharacterIdMail200Ok, newMailsCount int, c *atomic.Int32, status binding.String) {
 	err := func() error {
 		entityIDs := set.New[int32]()
 		entityIDs.Add(header.From)
@@ -300,7 +300,7 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, character repository.Ch
 		for i, r := range m.Recipients {
 			recipientIDs[i] = r.RecipientId
 		}
-		arg := repository.CreateMailParams{
+		arg := storage.CreateMailParams{
 			Body:         m.Body,
 			CharacterID:  character.ID,
 			FromID:       header.From,
@@ -351,7 +351,7 @@ func (s *Service) GetMailListUnreadCounts(characterID int32) (map[int32]int, err
 	return s.r.GetMailListUnreadCounts(ctx, characterID)
 }
 
-func (s *Service) ListMailLists(characterID int32) ([]repository.EveEntity, error) {
+func (s *Service) ListMailLists(characterID int32) ([]storage.EveEntity, error) {
 	ctx := context.Background()
 	return s.r.ListMailListsOrdered(ctx, characterID)
 }
@@ -368,7 +368,7 @@ func (s *Service) ListMailIDsForListOrdered(characterID int32, listID int32) ([]
 	return s.r.ListMailIDsForListOrdered(ctx, characterID, listID)
 }
 
-func (s *Service) ListMailLabelsOrdered(characterID int32) ([]repository.MailLabel, error) {
+func (s *Service) ListMailLabelsOrdered(characterID int32) ([]storage.MailLabel, error) {
 	ctx := context.Background()
 	return s.r.ListMailLabelsOrdered(ctx, characterID)
 }

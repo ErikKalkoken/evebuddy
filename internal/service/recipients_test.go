@@ -2,7 +2,7 @@ package service
 
 import (
 	// "example/evebuddy/internal/factory"
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/storage"
 	"testing"
 
 	// "github.com/antihax/goesi/esi"
@@ -14,7 +14,7 @@ import (
 func TestRecipient(t *testing.T) {
 	t.Run("can create from EveEntity", func(t *testing.T) {
 		// given
-		e := repository.EveEntity{ID: 7, Name: "Dummy", Category: repository.EveEntityCharacter}
+		e := storage.EveEntity{ID: 7, Name: "Dummy", Category: storage.EveEntityCharacter}
 		// when
 		r := newRecipientFromEntity(e)
 		// then

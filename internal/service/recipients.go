@@ -10,7 +10,7 @@ import (
 
 	"github.com/antihax/goesi/esi"
 
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/storage"
 )
 
 type recipientCategory uint
@@ -33,18 +33,18 @@ var recipientCategoryLabels = map[recipientCategory]string{
 	recipientCategoryMailList:    "Mailing List",
 }
 
-var recipientMapCategories = map[repository.EveEntityCategory]recipientCategory{
-	repository.EveEntityAlliance:    recipientCategoryAlliance,
-	repository.EveEntityCharacter:   recipientCategoryCharacter,
-	repository.EveEntityCorporation: recipientCategoryCorporation,
-	repository.EveEntityMailList:    recipientCategoryMailList,
+var recipientMapCategories = map[storage.EveEntityCategory]recipientCategory{
+	storage.EveEntityAlliance:    recipientCategoryAlliance,
+	storage.EveEntityCharacter:   recipientCategoryCharacter,
+	storage.EveEntityCorporation: recipientCategoryCorporation,
+	storage.EveEntityMailList:    recipientCategoryMailList,
 }
 
-var eveEntityCategory2MailRecipientType = map[repository.EveEntityCategory]string{
-	repository.EveEntityAlliance:    "alliance",
-	repository.EveEntityCharacter:   "character",
-	repository.EveEntityCorporation: "corporation",
-	repository.EveEntityMailList:    "mailing_list",
+var eveEntityCategory2MailRecipientType = map[storage.EveEntityCategory]string{
+	storage.EveEntityAlliance:    "alliance",
+	storage.EveEntityCharacter:   "character",
+	storage.EveEntityCorporation: "corporation",
+	storage.EveEntityMailList:    "mailing_list",
 }
 
 func (r recipientCategory) String() string {
@@ -57,7 +57,7 @@ type recipient struct {
 	category recipientCategory
 }
 
-func newRecipientFromEntity(e repository.EveEntity) recipient {
+func newRecipientFromEntity(e storage.EveEntity) recipient {
 	r := recipient{name: e.Name}
 	c, ok := recipientMapCategories[e.Category]
 	if ok {
@@ -96,7 +96,7 @@ func (r *recipient) hasCategory() bool {
 	return r.category != recipientCategoryUnknown
 }
 
-func (r *recipient) eveEntityCategory() (repository.EveEntityCategory, bool) {
+func (r *recipient) eveEntityCategory() (storage.EveEntityCategory, bool) {
 	for ec, rc := range recipientMapCategories {
 		if rc == r.category {
 			return ec, true
@@ -119,7 +119,7 @@ func (s *Service) NewRecipients() *Recipients {
 	return &rr
 }
 
-func (s *Service) NewRecipientsFromEntities(ee []repository.EveEntity) *Recipients {
+func (s *Service) NewRecipientsFromEntities(ee []storage.EveEntity) *Recipients {
 	rr := s.NewRecipients()
 	for _, e := range ee {
 		o := newRecipientFromEntity(e)
@@ -147,7 +147,7 @@ func (s *Service) NewRecipientsFromText(t string) *Recipients {
 	return rr
 }
 
-func (rr *Recipients) AddFromEveEntity(e repository.EveEntity) {
+func (rr *Recipients) AddFromEveEntity(e storage.EveEntity) {
 	r := newRecipientFromEntity(e)
 	rr.add(r)
 }
@@ -211,7 +211,7 @@ func (rr *Recipients) buildMailRecipients(s *Service) ([]esi.PostCharactersChara
 		}
 		e, err := s.r.GetEveEntityByNameAndCategory(context.Background(), r.name, c)
 		if err != nil {
-			if errors.Is(err, repository.ErrNotFound) {
+			if errors.Is(err, storage.ErrNotFound) {
 				names = append(names, r.name)
 				continue
 			} else {
@@ -240,17 +240,17 @@ func (s *Service) resolveNamesRemotely(names []string) error {
 	if err != nil {
 		return err
 	}
-	ee := make([]repository.EveEntity, 0, len(names))
+	ee := make([]storage.EveEntity, 0, len(names))
 	for _, o := range r.Alliances {
-		e := repository.EveEntity{ID: o.Id, Name: o.Name, Category: repository.EveEntityAlliance}
+		e := storage.EveEntity{ID: o.Id, Name: o.Name, Category: storage.EveEntityAlliance}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Characters {
-		e := repository.EveEntity{ID: o.Id, Name: o.Name, Category: repository.EveEntityCharacter}
+		e := storage.EveEntity{ID: o.Id, Name: o.Name, Category: storage.EveEntityCharacter}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Corporations {
-		e := repository.EveEntity{ID: o.Id, Name: o.Name, Category: repository.EveEntityCorporation}
+		e := storage.EveEntity{ID: o.Id, Name: o.Name, Category: storage.EveEntityCorporation}
 		ee = append(ee, e)
 	}
 	ids := make([]int32, len(ee))

@@ -1,8 +1,8 @@
-package repository_test
+package storage_test
 
 import (
 	"context"
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/storage"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,9 +14,9 @@ func TestCharacter(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		corp := factory.CreateEveEntityCorporation()
-		c := repository.Character{ID: 1, Name: "Erik", Corporation: corp}
+		c := storage.Character{ID: 1, Name: "Erik", Corporation: corp}
 		// when
 		err := r.UpdateOrCreateCharacter(ctx, &c)
 		// then
@@ -29,7 +29,7 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
 		c.Name = "Erik"
@@ -44,7 +44,7 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("can list characters", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		factory.CreateCharacter()
 		factory.CreateCharacter()
 		// when
@@ -56,27 +56,27 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("can delete", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
 		err := r.DeleteCharacter(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			_, err := r.GetCharacter(ctx, c.ID)
-			assert.ErrorIs(t, err, repository.ErrNotFound)
+			assert.ErrorIs(t, err, storage.ErrNotFound)
 		}
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		// when
 		_, err := r.GetCharacter(ctx, 99)
 		// then
-		assert.ErrorIs(t, err, repository.ErrNotFound)
+		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})
 	t.Run("should return first character", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		c1 := factory.CreateCharacter()
 		factory.CreateCharacter()
 		// when
@@ -88,15 +88,15 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		// when
 		_, err := r.GetFirstCharacter(ctx)
 		// then
-		assert.ErrorIs(t, err, repository.ErrNotFound)
+		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})
 	t.Run("can fetch character by ID with corporation only", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
 		r, err := r.GetCharacter(ctx, c.ID)
@@ -114,11 +114,11 @@ func TestCharacter(t *testing.T) {
 	})
 	t.Run("can fetch character by ID with alliance and faction", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		factory.CreateCharacter()
 		alliance := factory.CreateEveEntityAlliance()
 		faction := factory.CreateEveEntity()
-		c := factory.CreateCharacter(repository.Character{Alliance: alliance, Faction: faction})
+		c := factory.CreateCharacter(storage.Character{Alliance: alliance, Faction: faction})
 		// when
 		r, err := r.GetCharacter(ctx, c.ID)
 		// then

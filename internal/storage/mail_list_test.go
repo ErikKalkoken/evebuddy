@@ -1,8 +1,8 @@
-package repository_test
+package storage_test
 
 import (
 	"context"
-	"example/evebuddy/internal/repository"
+	"example/evebuddy/internal/storage"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,9 +14,9 @@ func TestMailList(t *testing.T) {
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		l := factory.CreateEveEntity(repository.EveEntity{Category: repository.EveEntityMailList})
+		l := factory.CreateEveEntity(storage.EveEntity{Category: storage.EveEntityMailList})
 		// when
 		err := r.CreateMailList(ctx, c.ID, l.ID)
 		// then
@@ -24,11 +24,11 @@ func TestMailList(t *testing.T) {
 	})
 	t.Run("can fetch all mail lists for a character", func(t *testing.T) {
 		// given
-		repository.TruncateTables(db)
+		storage.TruncateTables(db)
 		c := factory.CreateCharacter()
-		e1 := factory.CreateEveEntity(repository.EveEntity{Category: repository.EveEntityMailList, Name: "alpha"})
+		e1 := factory.CreateEveEntity(storage.EveEntity{Category: storage.EveEntityMailList, Name: "alpha"})
 		assert.NoError(t, r.CreateMailList(ctx, c.ID, e1.ID))
-		e2 := factory.CreateEveEntity(repository.EveEntity{Category: repository.EveEntityMailList, Name: "bravo"})
+		e2 := factory.CreateEveEntity(storage.EveEntity{Category: storage.EveEntityMailList, Name: "bravo"})
 		assert.NoError(t, r.CreateMailList(ctx, c.ID, e2.ID))
 		// when
 		ll, err := r.ListMailListsOrdered(ctx, c.ID)
