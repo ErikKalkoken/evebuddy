@@ -82,15 +82,17 @@ func (s *Service) ListEveEntitiesByPartialName(partial string) ([]model.EveEntit
 }
 
 // Resolve slice of unclean EveEntity objects and return as new slice with resolved objects.
+// Will return an error if some entities can not be resolved.
 func (s *Service) ResolveUncleanEveEntities(ee []model.EveEntity) ([]model.EveEntity, error) {
-	ee1, names, err := s.resolveEveEntityLocally(ee)
+	ctx := context.Background()
+	ee1, names, err := s.resolveEveEntityLocally(ctx, ee)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.resolveEveEntityNamesRemotely(names); err != nil {
+	if err := s.resolveEveEntityNamesRemotely(ctx, names); err != nil {
 		return nil, err
 	}
-	ee2, err := s.findEveEntitiesByName(names)
+	ee2, err := s.findEveEntitiesByName(ctx, names)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +102,7 @@ func (s *Service) ResolveUncleanEveEntities(ee []model.EveEntity) ([]model.EveEn
 
 // resolveEveEntityLocally tries to resolve EveEntities locally.
 // It returns resolved recipients and a list of remaining unresolved names (if any)
-func (s *Service) resolveEveEntityLocally(ee []model.EveEntity) ([]model.EveEntity, []string, error) {
+func (s *Service) resolveEveEntityLocally(ctx context.Context, ee []model.EveEntity) ([]model.EveEntity, []string, error) {
 	ee2 := make([]model.EveEntity, 0, len(ee))
 	names := make([]string, 0, len(ee))
 	for _, r := range ee {
@@ -108,7 +110,7 @@ func (s *Service) resolveEveEntityLocally(ee []model.EveEntity) ([]model.EveEnti
 			names = append(names, r.Name)
 			continue
 		}
-		e, err := s.r.GetEveEntityByNameAndCategory(context.Background(), r.Name, r.Category)
+		e, err := s.r.GetEveEntityByNameAndCategory(ctx, r.Name, r.Category)
 		if err != nil {
 			if errors.Is(err, storage.ErrNotFound) {
 				names = append(names, r.Name)
@@ -123,8 +125,7 @@ func (s *Service) resolveEveEntityLocally(ee []model.EveEntity) ([]model.EveEnti
 }
 
 // resolveEveEntityNamesRemotely resolves a list of names remotely and stores them as EveEntity objects.
-func (s *Service) resolveEveEntityNamesRemotely(names []string) error {
-	ctx := context.Background()
+func (s *Service) resolveEveEntityNamesRemotely(ctx context.Context, names []string) error {
 	if len(names) == 0 {
 		return nil
 	}
@@ -170,10 +171,10 @@ func (s *Service) resolveEveEntityNamesRemotely(names []string) error {
 // findEveEntitiesByName tries to build MailRecipient objects from given names
 // by checking against EveEntity objects in the database.
 // Will abort with errors if no match is found or if multiple matches are found for a name.
-func (s *Service) findEveEntitiesByName(names []string) ([]model.EveEntity, error) {
+func (s *Service) findEveEntitiesByName(ctx context.Context, names []string) ([]model.EveEntity, error) {
 	ee2 := make([]model.EveEntity, 0, len(names))
 	for _, n := range names {
-		ee, err := s.r.ListEveEntitiesByName(context.Background(), n)
+		ee, err := s.r.ListEveEntitiesByName(ctx, n)
 		if err != nil {
 			return nil, err
 		}
