@@ -10,17 +10,17 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 )
 
-func (s *Service) StartEsiStatusTicker(text binding.String) {
+func (s *Service) StartEsiStatusTicker(statusBarText binding.String) {
 	ticker := time.NewTicker(60 * time.Second)
 	go func() {
 		for {
-			s.updateESIStatus(text)
+			s.updateESIStatus(statusBarText)
 			<-ticker.C
 		}
 	}()
 }
 
-func (s *Service) updateESIStatus(text binding.String) error {
+func (s *Service) updateESIStatus(statusBarTex binding.String) error {
 	status, resp, err := s.esiClient.ESI.StatusApi.GetStatus(context.Background(), nil)
 	if err != nil {
 		return err
@@ -33,7 +33,7 @@ func (s *Service) updateESIStatus(text binding.String) error {
 		arg := message.NewPrinter(language.English)
 		t = arg.Sprintf("%d players", status.Players)
 	}
-	err = text.Set(t)
+	err = statusBarTex.Set(t)
 	if err != nil {
 		return err
 	}

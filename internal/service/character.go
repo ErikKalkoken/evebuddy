@@ -4,8 +4,11 @@ import (
 	"context"
 	"example/evebuddy/internal/api/sso"
 	"example/evebuddy/internal/repository"
+	"fmt"
 	"log/slog"
 	"time"
+
+	"fyne.io/fyne/v2/data/binding"
 )
 
 func (s *Service) DeleteCharacter(characterID int32) error {
@@ -147,17 +150,17 @@ func (s *Service) updateCharacter(ctx context.Context, c *repository.Character) 
 	return nil
 }
 
-func (s *Service) StartCharacterUpdateTask() {
+func (s *Service) StartCharacterUpdateTask(statusBarTex binding.String) {
 	ticker := time.NewTicker(120 * time.Second)
 	go func() {
 		for {
-			s.updateCharacters()
+			s.updateCharacters(statusBarTex)
 			<-ticker.C
 		}
 	}()
 }
 
-func (s *Service) updateCharacters() error {
+func (s *Service) updateCharacters(statusBarTex binding.String) error {
 	ctx := context.Background()
 	cc, err := s.r.ListCharacters(ctx)
 	if err != nil {
@@ -180,6 +183,7 @@ func (s *Service) updateCharacters() error {
 			continue
 		}
 		slog.Info("Completed updating character", "characterID", c.ID)
+		statusBarTex.Set(fmt.Sprintf("Updated %d characters", len(cc)))
 	}
 	return nil
 }

@@ -230,7 +230,7 @@ func (f *folderArea) UpdateMails() {
 	go func() {
 		charID := f.ui.CurrentCharID()
 		if charID != 0 {
-			err := f.ui.service.FetchMail(charID, status.info)
+			err := f.ui.service.FetchMail(charID, status.infoText)
 			if err != nil {
 				status.setInfo("Failed to fetch mail")
 				slog.Error("Failed to update mails", "characterID", charID, "error", err)

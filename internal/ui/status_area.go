@@ -10,10 +10,10 @@ import (
 
 // statusArea is the UI area showing the current status aka status bar.
 type statusArea struct {
-	content *fyne.Container
-	info    binding.String
-	status  binding.String
-	ui      *ui
+	content   *fyne.Container
+	infoText  binding.String
+	eveStatus binding.String
+	ui        *ui
 }
 
 func (u *ui) newStatusArea() *statusArea {
@@ -24,16 +24,16 @@ func (u *ui) newStatusArea() *statusArea {
 	c := container.NewHBox(infoLabel, layout.NewSpacer(), statusLabel)
 	content := container.NewVBox(widget.NewSeparator(), c)
 	b := statusArea{
-		content: content,
-		info:    infoText,
-		status:  statusText,
-		ui:      u,
+		content:   content,
+		infoText:  infoText,
+		eveStatus: statusText,
+		ui:        u,
 	}
 	return &b
 }
 
 func (s *statusArea) setInfo(text string) error {
-	err := s.info.Set(text)
+	err := s.infoText.Set(text)
 	return err
 }
 

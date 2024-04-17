@@ -75,14 +75,14 @@ func NewUI(s *service.Service) *ui {
 	characterContent := container.NewBorder(nil, nil, nil, nil, characterArea.content)
 	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), addTitle(characterContent, "Character Sheet"))
 
-	status := u.newStatusArea()
-	u.statusArea = status
+	statusArea := u.newStatusArea()
+	u.statusArea = statusArea
 
 	tabs := container.NewAppTabs(characterTab, mailTab)
 	tabs.SetTabLocation(container.TabLocationLeading)
 
 	toolbar := makeToolbar(u)
-	mainContent := container.NewBorder(toolbar, status.content, nil, nil, tabs)
+	mainContent := container.NewBorder(toolbar, statusArea.content, nil, nil, tabs)
 	w.SetContent(mainContent)
 	w.SetMaster()
 	w.Resize(fyne.NewSize(800, 600))
@@ -107,8 +107,8 @@ func NewUI(s *service.Service) *ui {
 		time.Sleep(250 * time.Millisecond)
 		w.Resize(fyne.NewSize(800, 601))
 		w.Resize(fyne.NewSize(800, 600))
-		s.StartEsiStatusTicker(status.status)
-		s.StartCharacterUpdateTask()
+		s.StartEsiStatusTicker(statusArea.eveStatus)
+		s.StartCharacterUpdateTask(statusArea.infoText)
 	}()
 	return u
 }
