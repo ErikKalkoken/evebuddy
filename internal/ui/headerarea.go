@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -20,7 +21,7 @@ import (
 // headerArea is the UI area showing the list of mail headers.
 type headerArea struct {
 	listData      binding.IntList // list of character's mail IDs
-	total         binding.Int
+	infoText      binding.String
 	content       fyne.CanvasObject
 	currentFolder node
 	list          *widget.List
@@ -101,16 +102,15 @@ func (u *ui) NewHeaderArea() *headerArea {
 		u.mailArea.Redraw(int32(mailID), id)
 	}
 
-	total := binding.NewInt()
-	totalStr := binding.IntToStringWithFormat(total, "%d mails")
-	label := widget.NewLabelWithData(totalStr)
+	infoText := binding.NewString()
+	label := widget.NewLabelWithData(infoText)
 	c := container.NewBorder(label, nil, nil, nil, list)
 
 	m := headerArea{
 		content:  c,
 		list:     list,
 		listData: listData,
-		total:    total,
+		infoText: infoText,
 		ui:       u,
 	}
 	return &m
@@ -140,7 +140,7 @@ func (h *headerArea) redraw(folder node) {
 	ids := islices.ConvertNumeric[int32, int](mailIDs)
 	h.listData.Set(ids)
 	h.currentFolder = folder
-	h.total.Set(len(mailIDs))
+	h.infoText.Set(fmt.Sprintf("%d mails", len(mailIDs)))
 
 	if len(mailIDs) > 0 {
 		h.ui.mailArea.Redraw(mailIDs[0], 0)

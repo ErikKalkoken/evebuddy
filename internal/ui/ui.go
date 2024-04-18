@@ -86,19 +86,23 @@ func NewUI(s *service.Service) *ui {
 	w.Resize(fyne.NewSize(800, 600))
 	// w.SetMainMenu(MakeMenu(a, u))
 
+	var c model.Character
 	cID, err := s.DictionaryInt(model.SettingLastCharacterID)
 	if err != nil {
 		panic(err)
 	}
 	if cID != 0 {
-		c, err := s.GetCharacter(int32(cID))
+		c, err = s.GetCharacter(int32(cID))
 		if err != nil {
 			if !errors.Is(err, storage.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
 			}
-		} else {
-			u.SetCurrentCharacter(&c)
 		}
+	}
+	if c.ID != 0 {
+		u.SetCurrentCharacter(&c)
+	} else {
+		u.ResetCurrentCharacter()
 	}
 	go func() {
 		//TODO: Workaround to mitigate a bug that causes the window to sometimes render
@@ -165,6 +169,9 @@ func (u *ui) SetCurrentCharacter(c *model.Character) {
 func (u *ui) updateToolbarBadge(c *model.Character) {
 	if c == nil {
 		u.toolbarBadge.RemoveAll()
+		l := widget.NewLabel("No character")
+		l.TextStyle = fyne.TextStyle{Italic: true}
+		u.toolbarBadge.Add(l)
 		return
 	}
 	uri, _ := c.PortraitURL(32)
