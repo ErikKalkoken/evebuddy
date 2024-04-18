@@ -24,6 +24,11 @@ type Character struct {
 	WalletBalance  sql.NullFloat64
 }
 
+type Dictionary struct {
+	Key   string
+	Value []byte
+}
+
 type EveEntity struct {
 	ID       int64
 	Category string
@@ -63,11 +68,6 @@ type MailMailLabel struct {
 type MailRecipient struct {
 	MailID      int64
 	EveEntityID int64
-}
-
-type Setting struct {
-	Key   string
-	Value []byte
 }
 
 type Token struct {

@@ -1,27 +1,25 @@
-package storage_test
+package service_test
 
 import (
-	"context"
-	"example/evebuddy/internal/storage"
+	"example/evebuddy/internal/service"
 	"example/evebuddy/internal/testutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSetting(t *testing.T) {
-	db, _, _ := testutil.New()
+func TestDictionary(t *testing.T) {
+	db, r, _ := testutil.New()
 	defer db.Close()
-	r := storage.New(db)
-	ctx := context.Background()
+	s := service.NewService(r)
 	t.Run("can create new string", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		err := r.SetSettingString(ctx, "alpha", "john")
+		err := s.SetDictKeyString("alpha", "john")
 		// then
 		if assert.NoError(t, err) {
-			v, err := r.GetSettingString(ctx, "alpha")
+			v, err := s.GetDictKeyString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "john", v)
 			}
@@ -31,27 +29,27 @@ func TestSetting(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		err := r.SetSettingInt32(ctx, "alpha", 42)
+		err := s.SetDictKeyInt("alpha", 42)
 		// then
 		if assert.NoError(t, err) {
-			v, err := r.GetSettingInt32(ctx, "alpha")
+			v, err := s.GetDictKeyInt("alpha")
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(42), v)
+				assert.Equal(t, 42, v)
 			}
 		}
 	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		err := r.SetSettingString(ctx, "alpha", "john")
+		err := s.SetDictKeyString("alpha", "john")
 		if err != nil {
 			panic(err)
 		}
 		// when
-		err = r.SetSettingString(ctx, "alpha", "peter")
+		err = s.SetDictKeyString("alpha", "peter")
 		// then
 		if assert.NoError(t, err) {
-			v, err := r.GetSettingString(ctx, "alpha")
+			v, err := s.GetDictKeyString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "peter", v)
 			}
@@ -61,7 +59,7 @@ func TestSetting(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		v, err := r.GetSettingString(ctx, "alpha")
+		v, err := s.GetDictKeyString("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "", v)
@@ -71,24 +69,24 @@ func TestSetting(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		v, err := r.GetSettingInt32(ctx, "alpha")
+		v, err := s.GetDictKeyInt("alpha")
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, int32(0), v)
+			assert.Equal(t, 0, v)
 		}
 	})
 	t.Run("can delete existing key", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		err := r.SetSettingString(ctx, "alpha", "abc")
+		err := s.SetDictKeyString("alpha", "abc")
 		if err != nil {
 			panic(err)
 		}
 		// when
-		err = r.DeleteSetting(ctx, "alpha")
+		err = s.DeleteDictKey("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, err := r.GetSettingString(ctx, "alpha")
+			v, err := s.GetDictKeyString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}
@@ -98,10 +96,10 @@ func TestSetting(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		err := r.DeleteSetting(ctx, "alpha")
+		err := s.DeleteDictKey("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, err := r.GetSettingString(ctx, "alpha")
+			v, err := s.GetDictKeyString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}

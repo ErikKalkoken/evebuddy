@@ -26,7 +26,7 @@ func TruncateTables(db *sql.DB) {
 		DELETE FROM tokens;
 		DELETE FROM characters;
 		DELETE FROM eve_entities;
-		DELETE FROM settings;
+		DELETE FROM dictionary;
 	`
 	db.Exec(sql)
 	sql = `

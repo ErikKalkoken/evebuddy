@@ -83,7 +83,7 @@ CREATE TABLE tokens (
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
 );
 
-CREATE TABLE settings (
+CREATE TABLE dictionary (
     key TEXT PRIMARY KEY NOT NULL,
     value BLOB NOT NULL
 );
