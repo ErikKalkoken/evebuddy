@@ -127,20 +127,29 @@ func (h *headerArea) Redraw(folder node) {
 func (h *headerArea) redraw(folder node) {
 	var mailIDs []int32
 	var err error
-	charID := h.ui.CurrentCharID()
+	characterID := h.ui.CurrentCharID()
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mailIDs, err = h.ui.service.ListMailIDsForLabelOrdered(charID, folder.ObjID)
+		mailIDs, err = h.ui.service.ListMailIDsForLabelOrdered(characterID, folder.ObjID)
 	case nodeCategoryList:
-		mailIDs, err = h.ui.service.ListMailIDsForListOrdered(charID, folder.ObjID)
+		mailIDs, err = h.ui.service.ListMailIDsForListOrdered(characterID, folder.ObjID)
 	}
 	if err != nil {
-		slog.Error("Failed to fetch mail", "characterID", charID, "error", err)
+		slog.Error("Failed to fetch mail", "characterID", characterID, "error", err)
 	}
 	ids := islices.ConvertNumeric[int32, int](mailIDs)
 	h.listData.Set(ids)
 	h.currentFolder = folder
-	h.infoText.Set(fmt.Sprintf("%d mails", len(mailIDs)))
+	s := "?"
+	updatedAt, err := h.ui.service.MailUpdatedAt(characterID)
+	if err != nil {
+		slog.Error("Failed to fetch mail update at: %s", err)
+	} else {
+		if !updatedAt.IsZero() {
+			s = updatedAt.Format(myDateTime)
+		}
+	}
+	h.infoText.Set(fmt.Sprintf("%d mails - Update at %s", len(mailIDs), s))
 
 	if len(mailIDs) > 0 {
 		h.ui.mailArea.Redraw(mailIDs[0], 0)

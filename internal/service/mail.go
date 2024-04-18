@@ -160,15 +160,21 @@ func (s *Service) UpdateMails(characterID int32, status binding.String) error {
 	if err != nil {
 		return err
 	}
-	err = s.updateMails(ctx, &token, headers, status)
-	if err != nil {
+	if err := s.updateMails(ctx, &token, headers, status); err != nil {
 		return err
 	}
-	character.MailUpdatedAt = time.Now()
-	if err := s.r.UpdateOrCreateCharacter(ctx, &character); err != nil {
+	if err := s.DictionarySetTime(makeMailUpdateAtDictKey(characterID), time.Now()); err != nil {
 		return err
 	}
 	return nil
+}
+
+func makeMailUpdateAtDictKey(characterID int32) string {
+	return fmt.Sprintf("mail-updated-at-%d", characterID)
+}
+
+func (s *Service) MailUpdatedAt(characterID int32) (time.Time, error) {
+	return s.DictionaryTime(makeMailUpdateAtDictKey(characterID))
 }
 
 func (s *Service) updateMailLabels(ctx context.Context, token *model.Token) error {
