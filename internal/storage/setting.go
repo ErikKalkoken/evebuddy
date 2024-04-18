@@ -34,6 +34,19 @@ func (r *Storage) GetSettingInt32(ctx context.Context, key string) (int32, error
 
 // GetSetting returns the value for a settings key, when it exists.
 // Otherwise it returns it's zero value.
+func (r *Storage) GetSettingInt(ctx context.Context, key string) (int, error) {
+	obj, err := r.q.GetSetting(ctx, key)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("failed to get setting for key %s: %w", key, err)
+	}
+	return anyFromBytes[int](obj.Value)
+}
+
+// GetSetting returns the value for a settings key, when it exists.
+// Otherwise it returns it's zero value.
 func (r *Storage) GetSettingString(ctx context.Context, key string) (string, error) {
 	obj, err := r.q.GetSetting(ctx, key)
 	if err != nil {
@@ -47,6 +60,18 @@ func (r *Storage) GetSettingString(ctx context.Context, key string) (string, err
 
 // SetSetting sets the value for a settings key.
 func (r *Storage) SetSettingInt32(ctx context.Context, key string, value int32) error {
+	bb, err := bytesFromAny(value)
+	if err != nil {
+		return err
+	}
+	if err := r.setSetting(ctx, key, bb); err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetSetting sets the value for a settings key.
+func (r *Storage) SetSettingInt(ctx context.Context, key string, value int) error {
 	bb, err := bytesFromAny(value)
 	if err != nil {
 		return err

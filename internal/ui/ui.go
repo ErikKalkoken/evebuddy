@@ -29,11 +29,6 @@ const (
 	mailUpdateTimeoutSeconds = 60
 )
 
-// Setting keys
-const (
-	settingLastCharacterID = "lastCharacterID"
-)
-
 // The ui is the root element of the UI, which contains all UI areas.
 //
 // Each UI area holds a pointer of the ui instance,
@@ -91,7 +86,7 @@ func NewUI(s *service.Service) *ui {
 	w.Resize(fyne.NewSize(800, 600))
 	// w.SetMainMenu(MakeMenu(a, u))
 
-	characterID, err := s.GetSettingInt32(settingLastCharacterID)
+	characterID, err := s.GetSettingInt32(model.SettingLastCharacterID)
 	if err != nil {
 		panic(err)
 	}
@@ -130,6 +125,9 @@ func makeToolbar(u *ui) *fyne.Container {
 			d := dialog.NewInformation("About", text, u.window)
 			d.Show()
 		}),
+		widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
+			u.ShowSettingsDialog()
+		}),
 		widget.NewButtonWithIcon("", theme.AccountIcon(), func() {
 			u.ShowManageDialog()
 		}),
@@ -156,7 +154,7 @@ func (u *ui) CurrentChar() *model.Character {
 func (u *ui) SetCurrentCharacter(c *model.Character) {
 	u.currentCharacter = c
 	u.updateToolbarBadge(c)
-	err := u.service.SetSettingInt32(settingLastCharacterID, c.ID)
+	err := u.service.SetSettingInt32(model.SettingLastCharacterID, c.ID)
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
@@ -182,7 +180,7 @@ func (u *ui) updateToolbarBadge(c *model.Character) {
 func (u *ui) ResetCurrentCharacter() {
 	u.currentCharacter = nil
 	u.updateToolbarBadge(nil)
-	err := u.service.DeleteSetting(settingLastCharacterID)
+	err := u.service.DeleteSetting(model.SettingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}
