@@ -86,7 +86,7 @@ func NewUI(s *service.Service) *ui {
 	w.Resize(fyne.NewSize(800, 600))
 	// w.SetMainMenu(MakeMenu(a, u))
 
-	cID, err := s.GetDictKeyInt(model.SettingLastCharacterID)
+	cID, err := s.DictionaryInt(model.SettingLastCharacterID)
 	if err != nil {
 		panic(err)
 	}
@@ -154,7 +154,7 @@ func (u *ui) CurrentChar() *model.Character {
 func (u *ui) SetCurrentCharacter(c *model.Character) {
 	u.currentCharacter = c
 	u.updateToolbarBadge(c)
-	err := u.service.SetDictKeyInt(model.SettingLastCharacterID, int(c.ID))
+	err := u.service.DictionarySetInt(model.SettingLastCharacterID, int(c.ID))
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
@@ -180,7 +180,7 @@ func (u *ui) updateToolbarBadge(c *model.Character) {
 func (u *ui) ResetCurrentCharacter() {
 	u.currentCharacter = nil
 	u.updateToolbarBadge(nil)
-	err := u.service.DeleteDictKey(model.SettingLastCharacterID)
+	err := u.service.DictionaryDelete(model.SettingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}

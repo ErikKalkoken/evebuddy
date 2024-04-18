@@ -8,14 +8,15 @@ import (
 	"errors"
 )
 
-// DeleteDictKey deletes a key from the dictionary.
+// DictionaryDelete deletes a key from the dictionary.
 // If the key does not exist no error will be raised.
-func (s *Service) DeleteDictKey(key string) error {
+func (s *Service) DictionaryDelete(key string) error {
 	ctx := context.Background()
 	return s.r.DeleteDictEntry(ctx, key)
 }
 
-func (s *Service) ExistsDictKey(key string) (bool, error) {
+// DictionaryExists reports wether a key exists in the dictionary.
+func (s *Service) DictionaryExists(key string) (bool, error) {
 	ctx := context.Background()
 	_, err := s.r.GetDictEntry(ctx, key)
 	if err != nil {
@@ -27,9 +28,9 @@ func (s *Service) ExistsDictKey(key string) (bool, error) {
 	return true, nil
 }
 
-// GetDictKeyInt returns the value for a dictionary key, when it exists.
+// DictionaryInt returns the int value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Service) GetDictKeyInt(key string) (int, error) {
+func (s *Service) DictionaryInt(key string) (int, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
 	if err != nil {
@@ -41,9 +42,9 @@ func (s *Service) GetDictKeyInt(key string) (int, error) {
 	return anyFromBytes[int](data)
 }
 
-// GetDictKeyString returns the value for a dictionary key, when it exists.
+// DictionaryString returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Service) GetDictKeyString(key string) (string, error) {
+func (s *Service) DictionaryString(key string) (string, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
 	if err != nil {
@@ -55,8 +56,8 @@ func (s *Service) GetDictKeyString(key string) (string, error) {
 	return anyFromBytes[string](data)
 }
 
-// SetDictKeyInt sets the value for a dictionary key.
-func (s *Service) SetDictKeyInt(key string, value int) error {
+// DictionarySetInt sets the value for a dictionary key.
+func (s *Service) DictionarySetInt(key string, value int) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
 	if err != nil {
@@ -68,8 +69,8 @@ func (s *Service) SetDictKeyInt(key string, value int) error {
 	return nil
 }
 
-// SetDictKeyString sets the value for a dictionary key.
-func (s *Service) SetDictKeyString(key string, value string) error {
+// DictionarySetString sets the value for a dictionary key.
+func (s *Service) DictionarySetString(key string, value string) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
 	if err != nil {

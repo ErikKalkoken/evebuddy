@@ -28,7 +28,7 @@ func (u *ui) ShowSettingsDialog() {
 }
 
 func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
-	maxMails, err := u.service.GetDictKeyInt(model.SettingMaxMails)
+	maxMails, err := u.service.DictionaryInt(model.SettingMaxMails)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 			if err != nil {
 				return
 			}
-			u.service.SetDictKeyInt(model.SettingMaxMails, maxMails)
+			u.service.DictionarySetInt(model.SettingMaxMails, maxMails)
 			d.Hide()
 		},
 		OnCancel: func() {

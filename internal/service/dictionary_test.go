@@ -16,10 +16,10 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		err := s.SetDictKeyString("alpha", "john")
+		err := s.DictionarySetString("alpha", "john")
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.GetDictKeyString("alpha")
+			v, err := s.DictionaryString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "john", v)
 			}
@@ -29,10 +29,10 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		err := s.SetDictKeyInt("alpha", 42)
+		err := s.DictionarySetInt("alpha", 42)
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.GetDictKeyInt("alpha")
+			v, err := s.DictionaryInt("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, 42, v)
 			}
@@ -41,15 +41,15 @@ func TestDictionary(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		err := s.SetDictKeyString("alpha", "john")
+		err := s.DictionarySetString("alpha", "john")
 		if err != nil {
 			panic(err)
 		}
 		// when
-		err = s.SetDictKeyString("alpha", "peter")
+		err = s.DictionarySetString("alpha", "peter")
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.GetDictKeyString("alpha")
+			v, err := s.DictionaryString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "peter", v)
 			}
@@ -59,7 +59,7 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		v, err := s.GetDictKeyString("alpha")
+		v, err := s.DictionaryString("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "", v)
@@ -69,7 +69,7 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		v, err := s.GetDictKeyInt("alpha")
+		v, err := s.DictionaryInt("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, 0, v)
@@ -78,15 +78,15 @@ func TestDictionary(t *testing.T) {
 	t.Run("can delete existing key", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		err := s.SetDictKeyString("alpha", "abc")
+		err := s.DictionarySetString("alpha", "abc")
 		if err != nil {
 			panic(err)
 		}
 		// when
-		err = s.DeleteDictKey("alpha")
+		err = s.DictionaryDelete("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.GetDictKeyString("alpha")
+			v, err := s.DictionaryString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}
@@ -96,10 +96,10 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		err := s.DeleteDictKey("alpha")
+		err := s.DictionaryDelete("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.GetDictKeyString("alpha")
+			v, err := s.DictionaryString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}
@@ -109,7 +109,7 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		v, err := s.ExistsDictKey("alpha")
+		v, err := s.DictionaryExists("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, v)
@@ -118,11 +118,11 @@ func TestDictionary(t *testing.T) {
 	t.Run("should return true when key exists", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		if err := s.SetDictKeyString("alpha", "abc"); err != nil {
+		if err := s.DictionarySetString("alpha", "abc"); err != nil {
 			panic(err)
 		}
 		// when
-		v, err := s.ExistsDictKey("alpha")
+		v, err := s.DictionaryExists("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, v)
