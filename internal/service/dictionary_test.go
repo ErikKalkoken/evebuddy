@@ -105,4 +105,27 @@ func TestDictionary(t *testing.T) {
 			}
 		}
 	})
+	t.Run("should return false when key doesn't exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		v, err := s.ExistsDictKey("alpha")
+		// then
+		if assert.NoError(t, err) {
+			assert.False(t, v)
+		}
+	})
+	t.Run("should return true when key exists", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		if err := s.SetDictKeyString("alpha", "abc"); err != nil {
+			panic(err)
+		}
+		// when
+		v, err := s.ExistsDictKey("alpha")
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, v)
+		}
+	})
 }

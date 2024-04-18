@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"errors"
-	"fmt"
 )
 
 // DeleteDictKey deletes a key from the dictionary.
@@ -14,6 +13,18 @@ import (
 func (s *Service) DeleteDictKey(key string) error {
 	ctx := context.Background()
 	return s.r.DeleteDictEntry(ctx, key)
+}
+
+func (s *Service) ExistsDictKey(key string) (bool, error) {
+	ctx := context.Background()
+	_, err := s.r.GetDictEntry(ctx, key)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 // GetDictKeyInt returns the value for a dictionary key, when it exists.
@@ -39,7 +50,7 @@ func (s *Service) GetDictKeyString(key string) (string, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", nil
 		}
-		return "", fmt.Errorf("failed to get setting for key %s: %w", key, err)
+		return "", err
 	}
 	return anyFromBytes[string](data)
 }
