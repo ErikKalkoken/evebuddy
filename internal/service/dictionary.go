@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"errors"
+	"time"
 )
 
 // DictionaryDelete deletes a key from the dictionary.
@@ -56,7 +57,21 @@ func (s *Service) DictionaryString(key string) (string, error) {
 	return anyFromBytes[string](data)
 }
 
-// DictionarySetInt sets the value for a dictionary key.
+// DictionaryTime returns the time value for a dictionary key, when it exists.
+// Otherwise it returns it's zero value.
+func (s *Service) DictionaryTime(key string) (time.Time, error) {
+	ctx := context.Background()
+	data, err := s.r.GetDictEntry(ctx, key)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return time.Time{}, nil
+		}
+		return time.Time{}, err
+	}
+	return anyFromBytes[time.Time](data)
+}
+
+// DictionarySetInt sets the value for a dictionary int entry.
 func (s *Service) DictionarySetInt(key string, value int) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
@@ -69,8 +84,21 @@ func (s *Service) DictionarySetInt(key string, value int) error {
 	return nil
 }
 
-// DictionarySetString sets the value for a dictionary key.
+// DictionarySetString sets the value for a dictionary string entry.
 func (s *Service) DictionarySetString(key string, value string) error {
+	ctx := context.Background()
+	bb, err := bytesFromAny(value)
+	if err != nil {
+		return err
+	}
+	if err := s.r.SetDictEntry(ctx, key, bb); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DictionarySetTime sets the value for a dictionary time entry.
+func (s *Service) DictionarySetTime(key string, value time.Time) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"example/evebuddy/internal/service"
 	"example/evebuddy/internal/testutil"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -12,7 +13,7 @@ func TestDictionary(t *testing.T) {
 	db, r, _ := testutil.New()
 	defer db.Close()
 	s := service.NewService(r)
-	t.Run("can create new string", func(t *testing.T) {
+	t.Run("can use string entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
@@ -25,7 +26,7 @@ func TestDictionary(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can create new int", func(t *testing.T) {
+	t.Run("can use int entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
@@ -38,7 +39,21 @@ func TestDictionary(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can update existing", func(t *testing.T) {
+	t.Run("can use time entries", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		v := time.Now()
+		// when
+		err := s.DictionarySetTime("alpha", v)
+		// then
+		if assert.NoError(t, err) {
+			v2, err := s.DictionaryTime("alpha")
+			if assert.NoError(t, err) {
+				assert.Equal(t, v.UnixMicro(), v2.UnixMicro())
+			}
+		}
+	})
+	t.Run("can update existing entry", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		err := s.DictionarySetString("alpha", "john")
@@ -73,6 +88,16 @@ func TestDictionary(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, 0, v)
+		}
+	})
+	t.Run("should return zero time if not found", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		v, err := s.DictionaryTime("alpha")
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, v.IsZero())
 		}
 	})
 	t.Run("can delete existing key", func(t *testing.T) {

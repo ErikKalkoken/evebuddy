@@ -138,8 +138,8 @@ func eveEntitiesToESIMailRecipients(ee []model.EveEntity) ([]esi.PostCharactersC
 // FIXME: Delete obsolete labels and mail lists
 // TODO: Add ability to update existing mails for is_read and labels
 
-// FetchMail fetches and stores new mails from ESI for a character.
-func (s *Service) FetchMail(characterID int32, status binding.String) error {
+// UpdateMails fetches and stores new mails from ESI for a character.
+func (s *Service) UpdateMails(characterID int32, status binding.String) error {
 	ctx := context.Background()
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
