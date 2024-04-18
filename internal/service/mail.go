@@ -332,9 +332,9 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, character model.Charact
 		arg := storage.CreateMailParams{
 			Body:         m.Body,
 			CharacterID:  character.ID,
-			FromID:       header.From,
-			IsRead:       false,
-			LabelIDs:     header.Labels,
+			FromID:       m.From,
+			IsRead:       m.Read,
+			LabelIDs:     m.Labels,
 			MailID:       header.MailId,
 			RecipientIDs: recipientIDs,
 			Subject:      m.Subject,
