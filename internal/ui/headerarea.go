@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dustin/go-humanize"
 
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/storage"
@@ -146,10 +147,10 @@ func (h *headerArea) redraw(folder node) {
 		slog.Error("Failed to fetch mail update at: %s", err)
 	} else {
 		if !updatedAt.IsZero() {
-			s = updatedAt.Format(myDateTime)
+			s = humanize.Time(updatedAt)
 		}
 	}
-	h.infoText.Set(fmt.Sprintf("%d mails - Update at %s", len(mailIDs), s))
+	h.infoText.Set(fmt.Sprintf("%d mails (%s)", len(mailIDs), s))
 
 	if len(mailIDs) > 0 {
 		h.ui.mailArea.Redraw(mailIDs[0], 0)

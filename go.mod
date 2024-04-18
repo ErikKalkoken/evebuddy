@@ -5,6 +5,7 @@ go 1.22.0
 require (
 	fyne.io/fyne/v2 v2.4.5
 	github.com/antihax/goesi v0.0.0-20240126031043-6c54d0cb7f95
+	github.com/dustin/go-humanize v1.0.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/lestrrat-go/jwx/v2 v2.0.21
