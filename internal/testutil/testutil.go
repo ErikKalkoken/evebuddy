@@ -7,7 +7,7 @@ import (
 )
 
 func New() (*sql.DB, *storage.Storage, Factory) {
-	db, err := storage.ConnectDB(":memory:", true)
+	db, err := storage.InitDB(":memory:")
 	if err != nil {
 		panic(err)
 	}

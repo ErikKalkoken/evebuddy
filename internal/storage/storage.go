@@ -16,30 +16,46 @@ type Storage struct {
 	db *sql.DB
 }
 
+// New returns a new storage object.
 func New(db *sql.DB) *Storage {
 	r := &Storage{q: sqlc.New(db), db: db}
 	return r
 }
 
-// ConnectDB initializes the database and returns it.
-func ConnectDB(dataSourceName string, create bool) (*sql.DB, error) {
+// InitDB initializes the database and returns it.
+func InitDB(dsn string) (*sql.DB, error) {
 	v := url.Values{}
 	v.Add("_fk", "on")
 	v.Add("_journal_mode", "WAL")
 	v.Add("_synchronous", "normal")
-	dsn := fmt.Sprintf("%s?%s", dataSourceName, v.Encode())
-	slog.Debug("Connecting to sqlite", "dsn", dsn)
-	db, err := sql.Open("sqlite3", dsn)
+	dsn2 := fmt.Sprintf("%s?%s", dsn, v.Encode())
+	slog.Debug("Connecting to sqlite", "dsn", dsn2)
+	db, err := sql.Open("sqlite3", dsn2)
 	if err != nil {
 		return nil, err
 	}
-	slog.Info("Connected to database")
-	if create {
+	slog.Info(fmt.Sprintf("Connected to database: %s", dsn))
+	hasSchema, err := schemaExists(db)
+	if err != nil {
+		return nil, err
+	}
+	if !hasSchema {
 		_, err = db.Exec(sqlc.Schema())
 		if err != nil {
 			return nil, err
 		}
-
+		slog.Info("Database created")
 	}
 	return db, nil
+}
+
+func schemaExists(db *sql.DB) (bool, error) {
+	rows, err := db.Query("SELECT NAME from sqlite_master;")
+	if err != nil {
+		return false, err
+	}
+	for rows.Next() {
+		return true, nil
+	}
+	return false, nil
 }

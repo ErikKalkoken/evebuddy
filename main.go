@@ -14,8 +14,7 @@ func main() {
 	flag.Parse()
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-	slog.Info("current flags", "createDB", *createDBFlag)
-	db, err := storage.ConnectDB("storage.sqlite", *createDBFlag)
+	db, err := storage.InitDB("evebuddy.sqlite")
 	if err != nil {
 		panic(err)
 	}

@@ -25,8 +25,10 @@ func (l *logLevelFlag) Set(value string) error {
 	return nil
 }
 
-var levelFlag logLevelFlag
-var createDBFlag = flag.Bool("createdb", false, "whether to create the database")
+// defined flags
+var (
+	levelFlag logLevelFlag
+)
 
 func init() {
 	levelFlag.value = slog.LevelInfo
