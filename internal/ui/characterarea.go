@@ -2,13 +2,12 @@ package ui
 
 import (
 	"fmt"
-	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2/theme"
 
 	"example/evebuddy/internal/api/images"
 	"example/evebuddy/internal/helper/humanize"
@@ -34,34 +33,42 @@ func (c *characterArea) Redraw() {
 	if character == nil {
 		return
 	}
-	icons := container.NewHBox()
-	c.items.Add(icons)
-	c.items.Add(widget.NewSeparator())
+
+	u, _ := images.CharacterPortraitURL(character.ID, 128)
+	characterIcon := canvas.NewImageFromURI(u)
+	characterIcon.FillMode = canvas.ImageFillOriginal
+	c.items.Add(container.NewHBox(characterIcon, layout.NewSpacer()))
+	fg := theme.ForegroundColor()
+	x := canvas.NewText(character.Name, fg)
+	x.TextSize = theme.TextHeadingSize()
+	c.items.Add(container.NewPadded(x))
 	var rows = []struct {
 		label string
 		value string
 	}{
-		{"Name", character.Name},
+		{"Born", character.Birthday.Format(myDateTime)},
+		{"Wallet Balance", numberOrDefault(character.WalletBalance, "-")},
+		{"Security Status", fmt.Sprintf("%.1f", character.SecurityStatus)},
+		{"Home Station", "?"},
 		{"Corporation", character.Corporation.Name},
 		{"Alliance", stringOrDefault(character.Alliance.Name, "-")},
 		{"Faction", stringOrDefault(character.Faction.Name, "-")},
-		{"Birthday", character.Birthday.Format(myDateTime)},
 		{"Gender", character.Gender},
-		{"Security Status", fmt.Sprintf("%.1f", character.SecurityStatus)},
 		{"Skill Points", numberOrDefault(character.SkillPoints, "-")},
-		{"Wallet Balance", numberOrDefault(character.WalletBalance, "-")},
 	}
+	form := container.New(layout.NewFormLayout())
 	for _, row := range rows {
-		label := widget.NewLabel(row.label)
+		label := canvas.NewText(row.label+":", fg)
 		label.TextStyle = fyne.TextStyle{Bold: true}
-		value := widget.NewLabel(row.value)
-		c.items.Add(container.NewHBox(label, layout.NewSpacer(), value))
-		c.items.Add(widget.NewSeparator())
+		value := canvas.NewText(row.value, fg)
+		form.Add(container.NewPadded(label))
+		form.Add(container.NewPadded(value))
 	}
-	err := updateIcons(icons, character)
-	if err != nil {
-		slog.Error(err.Error())
-	}
+	c.items.Add(form)
+	// err := updateIcons(icons, character)
+	// if err != nil {
+	// 	slog.Error(err.Error())
+	// }
 }
 
 func updateIcons(icons *fyne.Container, c *model.Character) error {
