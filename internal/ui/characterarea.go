@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"log/slog"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -141,4 +142,20 @@ func numberOrDefault[T int | float64](v T, d string) string {
 		return d
 	}
 	return humanize.Number(float64(v), 1)
+}
+
+func (c *characterArea) StartUpdateTicker() {
+	ticker := time.NewTicker(120 * time.Second)
+	go func() {
+		for {
+			characterID := c.ui.CurrentCharID()
+			err := c.ui.service.UpdateCharacter(characterID)
+			if err != nil {
+				slog.Error(err.Error())
+			} else {
+				c.Redraw()
+			}
+			<-ticker.C
+		}
+	}()
 }

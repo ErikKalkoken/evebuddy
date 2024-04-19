@@ -104,17 +104,6 @@ func NewUI(s *service.Service) *ui {
 	} else {
 		u.ResetCurrentCharacter()
 	}
-	go func() {
-		//TODO: Workaround to mitigate a bug that causes the window to sometimes render
-		// only in parts and freeze. The issue is known to happen on Linux desktops.
-		if runtime.GOOS == "linux" {
-			time.Sleep(400 * time.Millisecond)
-			w.Resize(fyne.NewSize(800, 601))
-			w.Resize(fyne.NewSize(800, 600))
-		}
-		s.StartEsiStatusTicker(statusArea.eveStatus)
-		s.StartCharacterUpdateTask(statusArea.infoText)
-	}()
 	return u
 }
 
@@ -141,6 +130,17 @@ func makeToolbar(u *ui) *fyne.Container {
 
 // ShowAndRun shows the UI and runs it (blocking).
 func (u *ui) ShowAndRun() {
+	go func() {
+		//TODO: Workaround to mitigate a bug that causes the window to sometimes render
+		// only in parts and freeze. The issue is known to happen on Linux desktops.
+		if runtime.GOOS == "linux" {
+			time.Sleep(400 * time.Millisecond)
+			u.window.Resize(fyne.NewSize(800, 601))
+			u.window.Resize(fyne.NewSize(800, 600))
+		}
+		u.statusArea.StartUpdateTicker()
+		u.characterArea.StartUpdateTicker()
+	}()
 	u.window.ShowAndRun()
 }
 

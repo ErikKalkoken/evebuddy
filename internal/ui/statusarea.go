@@ -1,6 +1,9 @@
 package ui
 
 import (
+	"log/slog"
+	"time"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
@@ -10,10 +13,10 @@ import (
 
 // statusArea is the UI area showing the current status aka status bar.
 type statusArea struct {
-	content   *fyne.Container
-	infoText  binding.String
-	eveStatus binding.String
-	ui        *ui
+	content       *fyne.Container
+	infoText      binding.String
+	eveStatusText binding.String
+	ui            *ui
 }
 
 func (u *ui) newStatusArea() *statusArea {
@@ -24,10 +27,10 @@ func (u *ui) newStatusArea() *statusArea {
 	c := container.NewHBox(infoLabel, layout.NewSpacer(), statusLabel)
 	content := container.NewVBox(widget.NewSeparator(), c)
 	b := statusArea{
-		content:   content,
-		infoText:  infoText,
-		eveStatus: statusText,
-		ui:        u,
+		content:       content,
+		infoText:      infoText,
+		eveStatusText: statusText,
+		ui:            u,
 	}
 	return &b
 }
@@ -41,3 +44,20 @@ func (s *statusArea) setInfo(text string) error {
 // 	err := s.info.Set("")
 // 	return err
 // }
+
+func (s *statusArea) StartUpdateTicker() {
+	ticker := time.NewTicker(60 * time.Second)
+	go func() {
+		for {
+			t, err := s.ui.service.FetchESIStatus()
+			if err != nil {
+				slog.Error(err.Error())
+			} else {
+				if err := s.eveStatusText.Set(t); err != nil {
+					slog.Error(err.Error())
+				}
+			}
+			<-ticker.C
+		}
+	}()
+}

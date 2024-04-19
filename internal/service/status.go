@@ -2,40 +2,21 @@ package service
 
 import (
 	"context"
-	"time"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-
-	"fyne.io/fyne/v2/data/binding"
 )
 
-func (s *Service) StartEsiStatusTicker(statusBarText binding.String) {
-	ticker := time.NewTicker(60 * time.Second)
-	go func() {
-		for {
-			s.updateESIStatus(statusBarText)
-			<-ticker.C
-		}
-	}()
-}
-
-func (s *Service) updateESIStatus(statusBarTex binding.String) error {
+func (s *Service) FetchESIStatus() (string, error) {
 	status, resp, err := s.esiClient.ESI.StatusApi.GetStatus(context.Background(), nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 	isOffline := resp.StatusCode >= 500 || status.Players == 0
-	var t string
 	if isOffline {
-		t = "OFFLINE"
-	} else {
-		arg := message.NewPrinter(language.English)
-		t = arg.Sprintf("%d players", status.Players)
+		return "OFFLINE", nil
 	}
-	err = statusBarTex.Set(t)
-	if err != nil {
-		return err
-	}
-	return nil
+	arg := message.NewPrinter(language.English)
+	t := arg.Sprintf("%d players", status.Players)
+	return t, nil
 }

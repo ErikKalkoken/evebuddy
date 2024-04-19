@@ -2,11 +2,7 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
-	"time"
-
-	"fyne.io/fyne/v2/data/binding"
 
 	"example/evebuddy/internal/api/sso"
 	"example/evebuddy/internal/model"
@@ -151,40 +147,23 @@ func (s *Service) updateCharacter(ctx context.Context, c *model.Character) error
 	return nil
 }
 
-func (s *Service) StartCharacterUpdateTask(statusBarTex binding.String) {
-	ticker := time.NewTicker(120 * time.Second)
-	go func() {
-		for {
-			s.updateCharacters(statusBarTex)
-			<-ticker.C
-		}
-	}()
-}
-
-func (s *Service) updateCharacters(statusBarTex binding.String) error {
+func (s *Service) UpdateCharacter(characterID int32) error {
 	ctx := context.Background()
-	cc, err := s.r.ListCharacters(ctx)
+	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return err
 	}
-	slog.Info("Start updating characters", "count", len(cc))
-	for _, c := range cc {
-		token, err := s.getValidToken(ctx, c.ID)
-		if err != nil {
-			slog.Error("Failed to update character", "characterID", c.ID, "err", err)
-			continue
-		}
-		ctx = contextWithToken(ctx, token.AccessToken)
-		if err := s.updateCharacter(ctx, &c); err != nil {
-			slog.Error("Failed to update character", "characterID", c.ID, "err", err)
-			continue
-		}
-		if err := s.r.UpdateOrCreateCharacter(ctx, &c); err != nil {
-			slog.Error("Failed to update character", "characterID", c.ID, "err", err)
-			continue
-		}
-		slog.Info("Completed updating character", "characterID", c.ID)
-		statusBarTex.Set(fmt.Sprintf("Updated %d characters", len(cc)))
+	ctx = contextWithToken(ctx, token.AccessToken)
+	c, err := s.r.GetCharacter(ctx, characterID)
+	if err != nil {
+		return err
 	}
+	if err := s.updateCharacter(ctx, &c); err != nil {
+		return err
+	}
+	if err := s.r.UpdateOrCreateCharacter(ctx, &c); err != nil {
+		return err
+	}
+	slog.Info("Finished updating character", "characterID", characterID)
 	return nil
 }
