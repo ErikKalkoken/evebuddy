@@ -14,20 +14,30 @@ import (
 
 // Eve Entity categories in DB models
 const (
-	eveEntityAllianceCategoryDB    = "alliance"
-	eveEntityCharacterCategoryDB   = "character"
-	eveEntityCorporationCategoryDB = "corporation"
-	eveEntityFactionCategoryDB     = "faction"
-	eveEntityMailListCategoryDB    = "mail_list"
+	eveEntityAlliance      = "alliance"
+	eveEntityCharacter     = "character"
+	eveEntityCorporation   = "corporation"
+	eveEntityConstellation = "constellation"
+	eveEntityFaction       = "faction"
+	eveEntityInventoryType = "inventory_type"
+	eveEntityMailList      = "mail_list"
+	eveEntityRegion        = "region"
+	eveEntitySolarSystem   = "solar_system"
+	eveEntityStation       = "station"
 )
 
 func eveEntityCategoryFromDBModel(c string) model.EveEntityCategory {
 	categoryMap := map[string]model.EveEntityCategory{
-		eveEntityAllianceCategoryDB:    model.EveEntityAlliance,
-		eveEntityCharacterCategoryDB:   model.EveEntityCharacter,
-		eveEntityCorporationCategoryDB: model.EveEntityCorporation,
-		eveEntityFactionCategoryDB:     model.EveEntityFaction,
-		eveEntityMailListCategoryDB:    model.EveEntityMailList,
+		eveEntityAlliance:      model.EveEntityAlliance,
+		eveEntityCharacter:     model.EveEntityCharacter,
+		eveEntityConstellation: model.EveEntityConstellation,
+		eveEntityCorporation:   model.EveEntityCorporation,
+		eveEntityFaction:       model.EveEntityFaction,
+		eveEntityMailList:      model.EveEntityMailList,
+		eveEntityInventoryType: model.EveEntityInventoryType,
+		eveEntityRegion:        model.EveEntityRegion,
+		eveEntitySolarSystem:   model.EveEntitySolarSystem,
+		eveEntityStation:       model.EveEntityStation,
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
@@ -38,11 +48,16 @@ func eveEntityCategoryFromDBModel(c string) model.EveEntityCategory {
 
 func eveEntityDBModelCategoryFromCategory(c model.EveEntityCategory) string {
 	categoryMap := map[model.EveEntityCategory]string{
-		model.EveEntityAlliance:    eveEntityAllianceCategoryDB,
-		model.EveEntityCharacter:   eveEntityCharacterCategoryDB,
-		model.EveEntityCorporation: eveEntityCorporationCategoryDB,
-		model.EveEntityFaction:     eveEntityFactionCategoryDB,
-		model.EveEntityMailList:    eveEntityMailListCategoryDB,
+		model.EveEntityAlliance:      eveEntityAlliance,
+		model.EveEntityCharacter:     eveEntityCharacter,
+		model.EveEntityConstellation: eveEntityConstellation,
+		model.EveEntityCorporation:   eveEntityCorporation,
+		model.EveEntityFaction:       eveEntityFaction,
+		model.EveEntityMailList:      eveEntityMailList,
+		model.EveEntityInventoryType: eveEntityInventoryType,
+		model.EveEntityRegion:        eveEntityRegion,
+		model.EveEntitySolarSystem:   eveEntitySolarSystem,
+		model.EveEntityStation:       eveEntityStation,
 	}
 	c2, ok := categoryMap[c]
 	if !ok {

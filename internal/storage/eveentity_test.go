@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -120,6 +121,7 @@ func TestEveEntity(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
 func TestEveEntityGetOrCreate(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
@@ -189,4 +191,35 @@ func TestEveEntityIDs(t *testing.T) {
 			assert.Equal(t, want, got)
 		}
 	})
+}
+
+func TestEveEntityCreateCategories(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	testutil.TruncateTables(db)
+	var categories = []model.EveEntityCategory{
+		model.EveEntityAlliance,
+		model.EveEntityCharacter,
+		model.EveEntityConstellation,
+		model.EveEntityCorporation,
+		model.EveEntityFaction,
+		model.EveEntityInventoryType,
+		model.EveEntityMailList,
+		model.EveEntityRegion,
+		model.EveEntitySolarSystem,
+		model.EveEntityStation,
+	}
+	for _, c := range categories {
+		t.Run(fmt.Sprintf("can create new with category %s", c), func(t *testing.T) {
+			// when
+			e := factory.CreateEveEntity(model.EveEntity{Category: c})
+			// then
+			e, err := r.GetEveEntity(ctx, e.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, e.Category, c)
+			}
+
+		})
+	}
 }

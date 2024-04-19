@@ -14,9 +14,14 @@ const (
 	EveEntityUndefined EveEntityCategory = iota
 	EveEntityAlliance
 	EveEntityCharacter
+	EveEntityConstellation
 	EveEntityCorporation
 	EveEntityFaction
+	EveEntityInventoryType
 	EveEntityMailList
+	EveEntityRegion
+	EveEntitySolarSystem
+	EveEntityStation
 )
 
 func (e EveEntityCategory) String() string {
@@ -27,12 +32,22 @@ func (e EveEntityCategory) String() string {
 		return "alliance"
 	case EveEntityCharacter:
 		return "character"
+	case EveEntityConstellation:
+		return "constellation"
 	case EveEntityCorporation:
 		return "corporation"
 	case EveEntityFaction:
 		return "faction"
+	case EveEntityInventoryType:
+		return "inventory type"
 	case EveEntityMailList:
 		return "mailing list"
+	case EveEntityRegion:
+		return "region"
+	case EveEntitySolarSystem:
+		return "solar system"
+	case EveEntityStation:
+		return "station"
 	default:
 		return "unknown"
 	}

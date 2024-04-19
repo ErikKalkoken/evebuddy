@@ -58,7 +58,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	c := model.Character{
+	character := model.Character{
 		Birthday:       charEsi.Birthday,
 		Corporation:    corporation,
 		Description:    charEsi.Description,
@@ -72,24 +72,40 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		c.Alliance = e
+		character.Alliance = e
 	}
 	if charEsi.FactionId != 0 {
 		e, err := s.r.GetEveEntity(ctx, charEsi.FactionId)
 		if err != nil {
 			return err
 		}
-		c.Faction = e
+		character.Faction = e
 	}
-	if err = s.updateCharacter(ctx, &c); err != nil {
+	if err := s.r.UpdateOrCreateToken(ctx, &token); err != nil {
 		return err
 	}
-	if err = s.r.UpdateOrCreateCharacter(ctx, &c); err != nil {
+	go s.UpdateCharacter(character.ID)
+	return nil
+}
+
+func (s *Service) UpdateCharacter(characterID int32) error {
+	ctx := context.Background()
+	token, err := s.getValidToken(ctx, characterID)
+	if err != nil {
 		return err
 	}
-	if err = s.r.UpdateOrCreateToken(ctx, &token); err != nil {
+	ctx = contextWithToken(ctx, token.AccessToken)
+	c, err := s.r.GetCharacter(ctx, characterID)
+	if err != nil {
 		return err
 	}
+	if err := s.updateCharacter(ctx, &c); err != nil {
+		return err
+	}
+	if err := s.r.UpdateOrCreateCharacter(ctx, &c); err != nil {
+		return err
+	}
+	slog.Info("Finished updating character", "characterID", characterID)
 	return nil
 }
 
@@ -144,26 +160,5 @@ func (s *Service) updateCharacter(ctx context.Context, c *model.Character) error
 		}
 	}
 	c.Faction = faction
-	return nil
-}
-
-func (s *Service) UpdateCharacter(characterID int32) error {
-	ctx := context.Background()
-	token, err := s.getValidToken(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	ctx = contextWithToken(ctx, token.AccessToken)
-	c, err := s.r.GetCharacter(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	if err := s.updateCharacter(ctx, &c); err != nil {
-		return err
-	}
-	if err := s.r.UpdateOrCreateCharacter(ctx, &c); err != nil {
-		return err
-	}
-	slog.Info("Finished updating character", "characterID", characterID)
 	return nil
 }

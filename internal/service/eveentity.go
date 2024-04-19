@@ -15,11 +15,16 @@ var ErrEveEntityNameMultipleMatches = errors.New("multiple matching EveEntity na
 
 func eveEntityCategoryFromESICategory(c string) model.EveEntityCategory {
 	categoryMap := map[string]model.EveEntityCategory{
-		"alliance":     model.EveEntityAlliance,
-		"character":    model.EveEntityCharacter,
-		"corporation":  model.EveEntityCorporation,
-		"faction":      model.EveEntityFaction,
-		"mailing:list": model.EveEntityMailList,
+		"alliance":       model.EveEntityAlliance,
+		"character":      model.EveEntityCharacter,
+		"corporation":    model.EveEntityCorporation,
+		"constellation":  model.EveEntityConstellation,
+		"faction":        model.EveEntityFaction,
+		"inventory_type": model.EveEntityInventoryType,
+		"mailing_list":   model.EveEntityMailList,
+		"region":         model.EveEntityRegion,
+		"solar_system":   model.EveEntitySolarSystem,
+		"station":        model.EveEntityStation,
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
