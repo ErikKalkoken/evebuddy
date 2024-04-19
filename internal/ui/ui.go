@@ -108,7 +108,7 @@ func NewUI(s *service.Service) *ui {
 		//TODO: Workaround to mitigate a bug that causes the window to sometimes render
 		// only in parts and freeze. The issue is known to happen on Linux desktops.
 		if runtime.GOOS == "linux" {
-			time.Sleep(250 * time.Millisecond)
+			time.Sleep(400 * time.Millisecond)
 			w.Resize(fyne.NewSize(800, 601))
 			w.Resize(fyne.NewSize(800, 600))
 		}

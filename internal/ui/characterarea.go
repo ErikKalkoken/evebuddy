@@ -2,6 +2,8 @@ package ui
 
 import (
 	"fmt"
+	"image/color"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -13,6 +15,11 @@ import (
 	"example/evebuddy/internal/helper/humanize"
 	"example/evebuddy/internal/model"
 )
+
+type item struct {
+	label string
+	value string
+}
 
 // characterArea is the UI area that shows the character sheet
 type characterArea struct {
@@ -34,41 +41,51 @@ func (c *characterArea) Redraw() {
 		return
 	}
 
-	u, _ := images.CharacterPortraitURL(character.ID, 128)
-	characterIcon := canvas.NewImageFromURI(u)
-	characterIcon.FillMode = canvas.ImageFillOriginal
-	c.items.Add(container.NewHBox(characterIcon, layout.NewSpacer()))
+	icons := container.NewHBox()
+	c.items.Add(icons)
+
 	fg := theme.ForegroundColor()
 	x := canvas.NewText(character.Name, fg)
 	x.TextSize = theme.TextHeadingSize()
 	c.items.Add(container.NewPadded(x))
-	var rows = []struct {
-		label string
-		value string
-	}{
-		{"Born", character.Birthday.Format(myDateTime)},
-		{"Wallet Balance", numberOrDefault(character.WalletBalance, "-")},
-		{"Security Status", fmt.Sprintf("%.1f", character.SecurityStatus)},
-		{"Home Station", "?"},
+
+	var r = []item{
 		{"Corporation", character.Corporation.Name},
 		{"Alliance", stringOrDefault(character.Alliance.Name, "-")},
 		{"Faction", stringOrDefault(character.Faction.Name, "-")},
+		{"Race", "PLACEHOLDER"},
 		{"Gender", character.Gender},
-		{"Skill Points", numberOrDefault(character.SkillPoints, "-")},
+		{"Born", character.Birthday.Format(myDateTime)},
+		{"Security Status", fmt.Sprintf("%.1f", character.SecurityStatus)},
 	}
-	form := container.New(layout.NewFormLayout())
+	form1 := makeForm(r, fg)
+	r = []item{
+		{"Skill Points", numberOrDefault(character.SkillPoints, "-")},
+		{"Wallet Balance", numberOrDefault(character.WalletBalance, "-")},
+		{"Home Station", "PLACEHOLDER"},
+		{"Location", "PLACEHOLDER"},
+		{"Ship", "PLACEHOLDER"},
+		{"Last Login", "PLACEHOLDER"},
+	}
+	form2 := makeForm(r, fg)
+	c.items.Add(container.NewGridWithColumns(2, form1, form2))
+
+	err := updateIcons(icons, character)
+	if err != nil {
+		slog.Error(err.Error())
+	}
+}
+
+func makeForm(rows []item, fg color.Color) *fyne.Container {
+	form1 := container.New(layout.NewFormLayout())
 	for _, row := range rows {
 		label := canvas.NewText(row.label+":", fg)
 		label.TextStyle = fyne.TextStyle{Bold: true}
 		value := canvas.NewText(row.value, fg)
-		form.Add(container.NewPadded(label))
-		form.Add(container.NewPadded(value))
+		form1.Add(container.NewPadded(label))
+		form1.Add(container.NewPadded(value))
 	}
-	c.items.Add(form)
-	// err := updateIcons(icons, character)
-	// if err != nil {
-	// 	slog.Error(err.Error())
-	// }
+	return form1
 }
 
 func updateIcons(icons *fyne.Container, c *model.Character) error {
@@ -78,7 +95,6 @@ func updateIcons(icons *fyne.Container, c *model.Character) error {
 	}
 	character := canvas.NewImageFromURI(u)
 	character.FillMode = canvas.ImageFillOriginal
-	icons.Add(layout.NewSpacer())
 	icons.Add(character)
 
 	u, err = c.Corporation.IconURL(128)
