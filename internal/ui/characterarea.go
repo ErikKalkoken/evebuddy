@@ -22,6 +22,7 @@ import (
 type item struct {
 	label string
 	value string
+	color color.Color
 }
 
 // characterArea is the UI area that shows the character sheet
@@ -47,30 +48,42 @@ func (c *characterArea) Redraw() {
 	icons := container.NewHBox()
 	c.items.Add(icons)
 
-	fg := theme.ForegroundColor()
-	x := canvas.NewText(character.Name, fg)
+	defaultColor := theme.ForegroundColor()
+	dangerColor := theme.ErrorColor()
+	successColor := theme.SuccessColor()
+	x := canvas.NewText(character.Name, defaultColor)
 	x.TextSize = theme.TextHeadingSize()
 	c.items.Add(container.NewPadded(x))
 
+	var secColor color.Color
+	switch s := character.SecurityStatus; {
+	case s < 0:
+		secColor = dangerColor
+	case s > 0:
+		secColor = successColor
+	default:
+		secColor = defaultColor
+	}
+
 	var r = []item{
-		{"Corporation", character.Corporation.Name},
-		{"Alliance", stringOrDefault(character.Alliance.Name, "-")},
-		{"Faction", stringOrDefault(character.Faction.Name, "-")},
-		{"Race", character.Race.Name},
-		{"Gender", character.Gender},
-		{"Born", character.Birthday.Format(myDateTime)},
-		{"Security Status", fmt.Sprintf("%.1f", character.SecurityStatus)},
+		{"Corporation", character.Corporation.Name, defaultColor},
+		{"Alliance", stringOrDefault(character.Alliance.Name, "-"), defaultColor},
+		{"Faction", stringOrDefault(character.Faction.Name, "-"), defaultColor},
+		{"Race", character.Race.Name, defaultColor},
+		{"Gender", character.Gender, defaultColor},
+		{"Born", character.Birthday.Format(myDateTime), defaultColor},
+		{"Security Status", fmt.Sprintf("%.1f", character.SecurityStatus), secColor},
 	}
-	form1 := makeForm(r, fg)
+	form1 := makeForm(r)
 	r = []item{
-		{"Skill Points", numberOrDefault(character.SkillPoints, "?")},
-		{"Wallet Balance", numberOrDefault(character.WalletBalance, "?")},
-		{"Home Station", "PLACEHOLDER"},
-		{"Location", stringOrDefault(character.SolarSystem.Name, "?")},
-		{"Ship", "PLACEHOLDER"},
-		{"Last Login", humanize.Time(character.LastLoginAt)},
+		{"Skill Points", numberOrDefault(character.SkillPoints, "?"), defaultColor},
+		{"Wallet Balance", numberOrDefault(character.WalletBalance, "?"), defaultColor},
+		{"Home Station", "PLACEHOLDER", defaultColor},
+		{"Location", stringOrDefault(character.SolarSystem.Name, "?"), defaultColor},
+		{"Ship", "PLACEHOLDER", defaultColor},
+		{"Last Login", humanize.Time(character.LastLoginAt), defaultColor},
 	}
-	form2 := makeForm(r, fg)
+	form2 := makeForm(r)
 	c.items.Add(container.NewGridWithColumns(2, form1, form2))
 
 	err := updateIcons(icons, character)
@@ -79,12 +92,17 @@ func (c *characterArea) Redraw() {
 	}
 }
 
-func makeForm(rows []item, fg color.Color) *fyne.Container {
+func makeForm(rows []item) *fyne.Container {
+	fg := theme.ForegroundColor()
 	form1 := container.New(layout.NewFormLayout())
 	for _, row := range rows {
 		label := canvas.NewText(row.label+":", fg)
 		label.TextStyle = fyne.TextStyle{Bold: true}
-		value := canvas.NewText(row.value, fg)
+		v := row.value
+		if len(row.value) > 20 {
+			v = fmt.Sprintf("%s...", row.value[:25])
+		}
+		value := canvas.NewText(v, row.color)
 		form1.Add(container.NewPadded(label))
 		form1.Add(container.NewPadded(value))
 	}
