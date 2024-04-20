@@ -26,6 +26,7 @@ const (
 	eveEntityRegion        = "region"
 	eveEntitySolarSystem   = "solar_system"
 	eveEntityStation       = "station"
+	eveEntityInvalid       = "invalid"
 )
 
 func (r *Storage) CreateEveEntity(ctx context.Context, id int32, name string, category model.EveEntityCategory) (model.EveEntity, error) {
@@ -217,6 +218,7 @@ func eveEntityCategoryFromDBModel(c string) model.EveEntityCategory {
 		eveEntityRegion:        model.EveEntityRegion,
 		eveEntitySolarSystem:   model.EveEntitySolarSystem,
 		eveEntityStation:       model.EveEntityStation,
+		eveEntityInvalid:       model.EveEntityInvalid,
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
@@ -237,6 +239,7 @@ func eveEntityDBModelCategoryFromCategory(c model.EveEntityCategory) string {
 		model.EveEntityRegion:        eveEntityRegion,
 		model.EveEntitySolarSystem:   eveEntitySolarSystem,
 		model.EveEntityStation:       eveEntityStation,
+		model.EveEntityInvalid:       eveEntityInvalid,
 	}
 	c2, ok := categoryMap[c]
 	if !ok {

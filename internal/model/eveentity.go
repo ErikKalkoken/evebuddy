@@ -22,6 +22,7 @@ const (
 	EveEntityRegion
 	EveEntitySolarSystem
 	EveEntityStation
+	EveEntityInvalid
 )
 
 func (e EveEntityCategory) String() string {

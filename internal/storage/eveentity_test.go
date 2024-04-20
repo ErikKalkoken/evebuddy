@@ -193,7 +193,7 @@ func TestEveEntityIDs(t *testing.T) {
 	})
 }
 
-func TestEveEntityCreateCategories(t *testing.T) {
+func TestEveEntityCanCreateAllCategories(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
@@ -209,6 +209,7 @@ func TestEveEntityCreateCategories(t *testing.T) {
 		model.EveEntityRegion,
 		model.EveEntitySolarSystem,
 		model.EveEntityStation,
+		model.EveEntityInvalid,
 	}
 	for _, c := range categories {
 		t.Run(fmt.Sprintf("can create new with category %s", c), func(t *testing.T) {

@@ -72,12 +72,14 @@ func (s *Service) addMissingEveEntities(ctx context.Context, ids []int32) ([]int
 	}
 	ids2 := missing.ToSlice()
 	var ee []esi.PostUniverseNames200Ok
+	var badIDs []int32
 	for _, chunk := range chunkBy(ids2, 1000) { // PostUniverseNames max is 1000 IDs
-		eeChunk, _, err := s.resolveIDs(ctx, chunk)
+		eeChunk, badChunk, err := s.resolveIDs(ctx, chunk)
 		if err != nil {
 			return nil, err
 		}
-		ee = slices.Concat(ee, eeChunk)
+		ee = append(ee, eeChunk...)
+		badIDs = append(badIDs, badChunk...)
 	}
 	for _, entity := range ee {
 		_, err := s.r.GetOrCreateEveEntity(
@@ -89,6 +91,9 @@ func (s *Service) addMissingEveEntities(ctx context.Context, ids []int32) ([]int
 		if err != nil {
 			return nil, err
 		}
+	}
+	for _, id := range badIDs {
+		s.r.GetOrCreateEveEntity(ctx, id, "?", model.EveEntityInvalid)
 	}
 	return ids2, nil
 }
