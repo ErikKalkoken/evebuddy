@@ -11,17 +11,6 @@ import (
 	"github.com/antihax/goesi"
 )
 
-var esiScopes = []string{
-	"esi-characters.read_contacts.v1",
-	"esi-location.read_location.v1",
-	"esi-mail.read_mail.v1",
-	"esi-mail.organize_mail.v1",
-	"esi-mail.send_mail.v1",
-	"esi-search.search_structures.v1",
-	"esi-skills.read_skills.v1",
-	"esi-wallet.read_character_wallet.v1",
-}
-
 type Service struct {
 	httpClient *http.Client
 	esiClient  *goesi.APIClient

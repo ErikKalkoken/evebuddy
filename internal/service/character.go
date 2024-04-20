@@ -8,6 +8,18 @@ import (
 	"example/evebuddy/internal/model"
 )
 
+var esiScopes = []string{
+	"esi-characters.read_contacts.v1",
+	"esi-location.read_location.v1",
+	"esi-location.read_online.v1",
+	"esi-mail.read_mail.v1",
+	"esi-mail.organize_mail.v1",
+	"esi-mail.send_mail.v1",
+	"esi-search.search_structures.v1",
+	"esi-skills.read_skills.v1",
+	"esi-wallet.read_character_wallet.v1",
+}
+
 func (s *Service) DeleteCharacter(characterID int32) error {
 	return s.r.DeleteCharacter(context.Background(), characterID)
 }
@@ -127,6 +139,11 @@ func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Charac
 	}
 	c.SkillPoints = int(skills.TotalSp)
 	c.WalletBalance = balance
+	online, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, c.ID, nil)
+	if err != nil {
+		return err
+	}
+	c.LastLoginAt = online.LastLogin
 	location, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, c.ID, nil)
 	if err != nil {
 		return err

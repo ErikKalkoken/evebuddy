@@ -12,8 +12,10 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 
+	"github.com/dustin/go-humanize"
+
 	"example/evebuddy/internal/api/images"
-	"example/evebuddy/internal/helper/humanize"
+	ihumanize "example/evebuddy/internal/helper/humanize"
 	"example/evebuddy/internal/model"
 )
 
@@ -66,7 +68,7 @@ func (c *characterArea) Redraw() {
 		{"Home Station", "PLACEHOLDER"},
 		{"Location", stringOrDefault(character.SolarSystem.Name, "?")},
 		{"Ship", "PLACEHOLDER"},
-		{"Last Login", "PLACEHOLDER"},
+		{"Last Login", humanize.Time(character.LastLoginAt)},
 	}
 	form2 := makeForm(r, fg)
 	c.items.Add(container.NewGridWithColumns(2, form1, form2))
@@ -141,7 +143,7 @@ func numberOrDefault[T int | float64](v T, d string) string {
 	if v == 0 {
 		return d
 	}
-	return humanize.Number(float64(v), 1)
+	return ihumanize.Number(float64(v), 1)
 }
 
 func (c *characterArea) StartUpdateTicker() {
