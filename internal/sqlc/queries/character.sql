@@ -27,18 +27,18 @@ WHERE id = ?;
 SELECT characters.*, corporations.*, alliances.*, factions.*, systems.*
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
+JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
-LEFT JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
 WHERE characters.id = ?;
 
 -- name: ListCharacters :many
 SELECT characters.*, corporations.*, alliances.*, factions.*, systems.*
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
+JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
-LEFT JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
 ORDER BY characters.name;
 
 -- name: ListCharacterIDs :many

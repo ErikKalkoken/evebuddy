@@ -20,9 +20,9 @@ type Character struct {
 	MailUpdatedAt  sql.NullTime
 	Name           string
 	SecurityStatus float64
-	SkillPoints    sql.NullInt64
-	SolarSystemID  sql.NullInt64
-	WalletBalance  sql.NullFloat64
+	SkillPoints    int64
+	SolarSystemID  int64
+	WalletBalance  float64
 }
 
 type Dictionary struct {

@@ -37,8 +37,13 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		ID:             int32(row.ID),
 		Name:           row.Name,
 		SecurityStatus: row.SecurityStatus,
-		SkillPoints:    int(row.SkillPoints.Int64),
-		WalletBalance:  row.WalletBalance.Float64,
+		SkillPoints:    int(row.SkillPoints),
+		SolarSystem: model.EveEntity{
+			ID:       int32(row.SolarSystemID),
+			Name:     row.Name_5,
+			Category: eveEntityCategoryFromDBModel(row.Category_4),
+		},
+		WalletBalance: row.WalletBalance,
 	}
 	if row.AllianceID.Valid {
 		c.Alliance = model.EveEntity{
@@ -52,13 +57,6 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 			ID:       int32(row.FactionID.Int64),
 			Name:     row.Name_4.String,
 			Category: eveEntityCategoryFromDBModel(row.Category_3.String),
-		}
-	}
-	if row.SolarSystemID.Valid {
-		c.SolarSystem = model.EveEntity{
-			ID:       int32(row.SolarSystemID.Int64),
-			Name:     row.Name_5.String,
-			Category: eveEntityCategoryFromDBModel(row.Category_4.String),
 		}
 	}
 	if row.MailUpdatedAt.Valid {
@@ -98,8 +96,13 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 			ID:             int32(row.ID),
 			Name:           row.Name,
 			SecurityStatus: row.SecurityStatus,
-			SkillPoints:    int(row.SkillPoints.Int64),
-			WalletBalance:  row.WalletBalance.Float64,
+			SkillPoints:    int(row.SkillPoints),
+			SolarSystem: model.EveEntity{
+				ID:       int32(row.SolarSystemID),
+				Name:     row.Name_5,
+				Category: eveEntityCategoryFromDBModel(row.Category_4),
+			},
+			WalletBalance: row.WalletBalance,
 		}
 		if row.AllianceID.Valid {
 			c.Alliance = model.EveEntity{
@@ -113,13 +116,6 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 				ID:       int32(row.FactionID.Int64),
 				Name:     row.Name_4.String,
 				Category: eveEntityCategoryFromDBModel(row.Category_3.String),
-			}
-		}
-		if row.SolarSystemID.Valid {
-			c.SolarSystem = model.EveEntity{
-				ID:       int32(row.SolarSystemID.Int64),
-				Name:     row.Name_5.String,
-				Category: eveEntityCategoryFromDBModel(row.Category_4.String),
 			}
 		}
 		if row.MailUpdatedAt.Valid {
@@ -140,6 +136,12 @@ func (r *Storage) ListCharacterIDs(ctx context.Context) ([]int32, error) {
 }
 
 func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Character) error {
+	if c.Corporation.ID == 0 {
+		return fmt.Errorf("can not store character without a corporation: %d", c.ID)
+	}
+	if c.SolarSystem.ID == 0 {
+		return fmt.Errorf("can not store character without a solar system: %d", c.ID)
+	}
 	err := func() error {
 		tx, err := r.db.Begin()
 		if err != nil {
@@ -155,6 +157,9 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 			ID:             int64(c.ID),
 			Name:           c.Name,
 			SecurityStatus: float64(c.SecurityStatus),
+			SkillPoints:    int64(c.SkillPoints),
+			SolarSystemID:  int64(c.SolarSystem.ID),
+			WalletBalance:  c.WalletBalance,
 		}
 		if c.Alliance.ID != 0 {
 			arg.AllianceID.Int64 = int64(c.Alliance.ID)
@@ -163,18 +168,6 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 		if c.Faction.ID != 0 {
 			arg.FactionID.Int64 = int64(c.Faction.ID)
 			arg.FactionID.Valid = true
-		}
-		if c.SkillPoints != 0 {
-			arg.SkillPoints.Int64 = int64(c.SkillPoints)
-			arg.SkillPoints.Valid = true
-		}
-		if c.SolarSystem.ID != 0 {
-			arg.SolarSystemID.Int64 = int64(c.SolarSystem.ID)
-			arg.SolarSystemID.Valid = true
-		}
-		if c.WalletBalance != 0 {
-			arg.WalletBalance.Float64 = c.WalletBalance
-			arg.WalletBalance.Valid = true
 		}
 		_, err = qtx.CreateCharacter(ctx, arg)
 		if err != nil {
@@ -187,6 +180,9 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 				ID:             int64(c.ID),
 				Name:           c.Name,
 				SecurityStatus: float64(c.SecurityStatus),
+				SkillPoints:    int64(c.SkillPoints),
+				SolarSystemID:  int64(c.SolarSystem.ID),
+				WalletBalance:  c.WalletBalance,
 			}
 			if c.Alliance.ID != 0 {
 				arg.AllianceID.Int64 = int64(c.Alliance.ID)
@@ -195,18 +191,6 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 			if c.Faction.ID != 0 {
 				arg.FactionID.Int64 = int64(c.Faction.ID)
 				arg.FactionID.Valid = true
-			}
-			if c.SkillPoints != 0 {
-				arg.SkillPoints.Int64 = int64(c.SkillPoints)
-				arg.SkillPoints.Valid = true
-			}
-			if c.SolarSystem.ID != 0 {
-				arg.SolarSystemID.Int64 = int64(c.SolarSystem.ID)
-				arg.SolarSystemID.Valid = true
-			}
-			if c.WalletBalance != 0 {
-				arg.WalletBalance.Float64 = c.WalletBalance
-				arg.WalletBalance.Valid = true
 			}
 			if err := qtx.UpdateCharacter(ctx, arg); err != nil {
 				return err

@@ -19,7 +19,8 @@ func TestCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		corp := factory.CreateEveEntityCorporation()
-		c := model.Character{ID: 1, Name: "Erik", Corporation: corp}
+		system := factory.CreateEveEntitySolarSystem()
+		c := model.Character{ID: 1, Name: "Erik", Corporation: corp, SolarSystem: system}
 		// when
 		err := r.UpdateOrCreateCharacter(ctx, &c)
 		// then
@@ -98,9 +99,9 @@ func TestCharacter(t *testing.T) {
 			assert.Equal(t, c1.Description, c2.Description)
 			assert.Equal(t, c1.ID, c2.ID)
 			assert.Equal(t, c1.Name, c2.Name)
+			assert.Equal(t, c1.SolarSystem, c2.SolarSystem)
 			assert.Equal(t, int32(0), c2.Alliance.ID)
 			assert.Equal(t, int32(0), c2.Faction.ID)
-			assert.Equal(t, int32(0), c2.SolarSystem.ID)
 		}
 	})
 	t.Run("can fetch character by ID with all fields populated", func(t *testing.T) {
@@ -112,11 +113,9 @@ func TestCharacter(t *testing.T) {
 		system := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntitySolarSystem})
 		c1 := factory.CreateCharacter(
 			model.Character{
-				Alliance:      alliance,
-				Faction:       faction,
-				SolarSystem:   system,
-				SkillPoints:   1234567,
-				WalletBalance: 12345.67,
+				Alliance:    alliance,
+				Faction:     faction,
+				SolarSystem: system,
 			})
 		// when
 		c2, err := r.GetCharacter(ctx, c1.ID)

@@ -41,9 +41,9 @@ type CreateCharacterParams struct {
 	MailUpdatedAt  sql.NullTime
 	Name           string
 	SecurityStatus float64
-	SkillPoints    sql.NullInt64
-	SolarSystemID  sql.NullInt64
-	WalletBalance  sql.NullFloat64
+	SkillPoints    int64
+	SolarSystemID  int64
+	WalletBalance  float64
 	ID             int64
 	Birthday       time.Time
 	Gender         string
@@ -98,9 +98,9 @@ const getCharacter = `-- name: GetCharacter :one
 SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.mail_updated_at, characters.name, characters.security_status, characters.skill_points, characters.solar_system_id, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name, systems.id, systems.category, systems.name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
+JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
-LEFT JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
 WHERE characters.id = ?
 `
 
@@ -115,9 +115,9 @@ type GetCharacterRow struct {
 	MailUpdatedAt  sql.NullTime
 	Name           string
 	SecurityStatus float64
-	SkillPoints    sql.NullInt64
-	SolarSystemID  sql.NullInt64
-	WalletBalance  sql.NullFloat64
+	SkillPoints    int64
+	SolarSystemID  int64
+	WalletBalance  float64
 	ID_2           int64
 	Category       string
 	Name_2         string
@@ -127,9 +127,9 @@ type GetCharacterRow struct {
 	ID_4           sql.NullInt64
 	Category_3     sql.NullString
 	Name_4         sql.NullString
-	ID_5           sql.NullInt64
-	Category_4     sql.NullString
-	Name_5         sql.NullString
+	ID_5           int64
+	Category_4     string
+	Name_5         string
 }
 
 func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, error) {
@@ -197,9 +197,9 @@ const listCharacters = `-- name: ListCharacters :many
 SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.mail_updated_at, characters.name, characters.security_status, characters.skill_points, characters.solar_system_id, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name, systems.id, systems.category, systems.name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
+JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
-LEFT JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
 ORDER BY characters.name
 `
 
@@ -214,9 +214,9 @@ type ListCharactersRow struct {
 	MailUpdatedAt  sql.NullTime
 	Name           string
 	SecurityStatus float64
-	SkillPoints    sql.NullInt64
-	SolarSystemID  sql.NullInt64
-	WalletBalance  sql.NullFloat64
+	SkillPoints    int64
+	SolarSystemID  int64
+	WalletBalance  float64
 	ID_2           int64
 	Category       string
 	Name_2         string
@@ -226,9 +226,9 @@ type ListCharactersRow struct {
 	ID_4           sql.NullInt64
 	Category_3     sql.NullString
 	Name_4         sql.NullString
-	ID_5           sql.NullInt64
-	Category_4     sql.NullString
-	Name_5         sql.NullString
+	ID_5           int64
+	Category_4     string
+	Name_5         string
 }
 
 func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, error) {
@@ -304,9 +304,9 @@ type UpdateCharacterParams struct {
 	MailUpdatedAt  sql.NullTime
 	Name           string
 	SecurityStatus float64
-	SkillPoints    sql.NullInt64
-	SolarSystemID  sql.NullInt64
-	WalletBalance  sql.NullFloat64
+	SkillPoints    int64
+	SolarSystemID  int64
+	WalletBalance  float64
 	ID             int64
 }
 

@@ -17,12 +17,13 @@ CREATE TABLE characters (
     mail_updated_at DATETIME,
     name TEXT NOT NULL,
     security_status REAL NOT NULL,
-    skill_points INTEGER,
-    solar_system_id INTEGER,
-    wallet_balance REAL,
+    skill_points INTEGER NOT NULL,
+    solar_system_id INTEGER NOT NULL,
+    wallet_balance REAL NOT NULL,
     FOREIGN KEY (alliance_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
     FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
-    FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL
+    FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
+    FOREIGN KEY (solar_system_id) REFERENCES eve_entities(id) ON DELETE CASCADE
 );
 
 CREATE TABLE mail_lists (
