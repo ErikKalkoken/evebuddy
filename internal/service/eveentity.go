@@ -8,6 +8,8 @@ import (
 	"slices"
 
 	"example/evebuddy/internal/model"
+
+	"github.com/antihax/goesi/esi"
 )
 
 var ErrEveEntityNameNoMatch = errors.New("no matching EveEntity name")
@@ -68,17 +70,59 @@ func (s *Service) addMissingEveEntities(ctx context.Context, ids []int32) ([]int
 	if missing.Size() == 0 {
 		return nil, nil
 	}
-	entities, _, err := s.esiClient.ESI.UniverseApi.PostUniverseNames(ctx, missing.ToSlice(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve IDs on ESI %v: %w", ids, err)
+	ids2 := missing.ToSlice()
+	var ee []esi.PostUniverseNames200Ok
+	for _, chunk := range chunkBy(ids2, 1000) { // PostUniverseNames max is 1000 IDs
+		eeChunk, _, err := s.resolveIDs(ctx, chunk)
+		if err != nil {
+			return nil, err
+		}
+		ee = slices.Concat(ee, eeChunk)
 	}
-	for _, entity := range entities {
-		_, err := s.r.GetOrCreateEveEntity(ctx, entity.Id, entity.Name, eveEntityCategoryFromESICategory(entity.Category))
+	for _, entity := range ee {
+		_, err := s.r.GetOrCreateEveEntity(
+			ctx,
+			entity.Id,
+			entity.Name,
+			eveEntityCategoryFromESICategory(entity.Category),
+		)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return missing.ToSlice(), nil
+	return ids2, nil
+}
+
+func (s *Service) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostUniverseNames200Ok, []int32, error) {
+	slog.Info("Trying to resolve IDs", "count", len(ids))
+	ee, resp, err := s.esiClient.ESI.UniverseApi.PostUniverseNames(ctx, ids, nil)
+	if resp.StatusCode == 404 {
+		if len(ids) == 1 {
+			slog.Warn("found unresolvable ID", "id", ids)
+			return []esi.PostUniverseNames200Ok{}, ids, nil
+		} else {
+			i := len(ids) / 2
+			ee1, bad1, err := s.resolveIDs(ctx, ids[:i])
+			if err != nil {
+				return nil, nil, err
+			}
+			ee2, bad2, err := s.resolveIDs(ctx, ids[i:])
+			if err != nil {
+				return nil, nil, err
+			}
+			return slices.Concat(ee1, ee2), slices.Concat(bad1, bad2), nil
+		}
+	} else if err != nil {
+		return nil, nil, err
+	}
+	return ee, []int32{}, nil
+}
+
+func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
+	for chunkSize < len(items) {
+		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
+	}
+	return append(chunks, items)
 }
 
 func (s *Service) ListEveEntitiesByPartialName(partial string) ([]model.EveEntity, error) {
