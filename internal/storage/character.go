@@ -45,8 +45,8 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		},
 		SecurityStatus: row.SecurityStatus,
 		SkillPoints:    int(row.SkillPoints),
-		SolarSystem: model.EveEntity{
-			ID:       int32(row.SolarSystemID),
+		Location: model.EveEntity{
+			ID:       int32(row.LocationID),
 			Name:     row.Name_5,
 			Category: eveEntityCategoryFromDBModel(row.Category_4),
 		},
@@ -106,8 +106,8 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 			Race:           model.Race{ID: int32(row.RaceID), Name: row.RaceName},
 			SecurityStatus: row.SecurityStatus,
 			SkillPoints:    int(row.SkillPoints),
-			SolarSystem: model.EveEntity{
-				ID:       int32(row.SolarSystemID),
+			Location: model.EveEntity{
+				ID:       int32(row.LocationID),
 				Name:     row.Name_5,
 				Category: eveEntityCategoryFromDBModel(row.Category_4),
 			},
@@ -148,7 +148,7 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 	if c.Corporation.ID == 0 {
 		return fmt.Errorf("can not store character without a corporation: %d", c.ID)
 	}
-	if c.SolarSystem.ID == 0 {
+	if c.Location.ID == 0 {
 		return fmt.Errorf("can not store character without a solar system: %d", c.ID)
 	}
 	if c.Race.ID == 0 {
@@ -172,7 +172,7 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 			RaceID:         int64(c.Race.ID),
 			SecurityStatus: float64(c.SecurityStatus),
 			SkillPoints:    int64(c.SkillPoints),
-			SolarSystemID:  int64(c.SolarSystem.ID),
+			LocationID:     int64(c.Location.ID),
 			WalletBalance:  c.WalletBalance,
 		}
 		if c.Alliance.ID != 0 {
@@ -197,7 +197,7 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 				Name:           c.Name,
 				SecurityStatus: float64(c.SecurityStatus),
 				SkillPoints:    int64(c.SkillPoints),
-				SolarSystemID:  int64(c.SolarSystem.ID),
+				LocationID:     int64(c.Location.ID),
 				WalletBalance:  c.WalletBalance,
 			}
 			if c.Alliance.ID != 0 {

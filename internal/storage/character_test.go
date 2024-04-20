@@ -21,7 +21,7 @@ func TestCharacter(t *testing.T) {
 		corp := factory.CreateEveEntityCorporation()
 		race := factory.CreateRace()
 		system := factory.CreateEveEntitySolarSystem()
-		c := model.Character{ID: 1, Name: "Erik", Corporation: corp, Race: race, SolarSystem: system}
+		c := model.Character{ID: 1, Name: "Erik", Corporation: corp, Race: race, Location: system}
 		// when
 		err := r.UpdateOrCreateCharacter(ctx, &c)
 		// then
@@ -100,7 +100,7 @@ func TestCharacter(t *testing.T) {
 			assert.Equal(t, c1.Description, c2.Description)
 			assert.Equal(t, c1.ID, c2.ID)
 			assert.Equal(t, c1.Name, c2.Name)
-			assert.Equal(t, c1.SolarSystem, c2.SolarSystem)
+			assert.Equal(t, c1.Location, c2.Location)
 			assert.Equal(t, int32(0), c2.Alliance.ID)
 			assert.Equal(t, int32(0), c2.Faction.ID)
 		}
@@ -114,9 +114,9 @@ func TestCharacter(t *testing.T) {
 		system := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntitySolarSystem})
 		c1 := factory.CreateCharacter(
 			model.Character{
-				Alliance:    alliance,
-				Faction:     faction,
-				SolarSystem: system,
+				Alliance: alliance,
+				Faction:  faction,
+				Location: system,
 			})
 		// when
 		c2, err := r.GetCharacter(ctx, c1.ID)
@@ -130,7 +130,7 @@ func TestCharacter(t *testing.T) {
 			assert.Equal(t, c1.ID, c2.ID)
 			assert.Equal(t, c1.Name, c2.Name)
 			assert.Equal(t, c1.SkillPoints, c2.SkillPoints)
-			assert.Equal(t, c1.SolarSystem, c2.SolarSystem)
+			assert.Equal(t, c1.Location, c2.Location)
 			assert.Equal(t, c1.WalletBalance, c2.WalletBalance)
 		}
 	})
@@ -150,7 +150,7 @@ func TestCharacterList(t *testing.T) {
 			model.Character{
 				Alliance:      alliance,
 				Faction:       faction,
-				SolarSystem:   system,
+				Location:      system,
 				SkillPoints:   1234567,
 				WalletBalance: 12345.67,
 			})
@@ -168,7 +168,7 @@ func TestCharacterList(t *testing.T) {
 			assert.Equal(t, c1.ID, c2.ID)
 			assert.Equal(t, c1.Name, c2.Name)
 			assert.Equal(t, c1.SkillPoints, c2.SkillPoints)
-			assert.Equal(t, c1.SolarSystem, c2.SolarSystem)
+			assert.Equal(t, c1.Location, c2.Location)
 			assert.Equal(t, c1.WalletBalance, c2.WalletBalance)
 		}
 	})

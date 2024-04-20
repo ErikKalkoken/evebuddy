@@ -201,6 +201,6 @@ func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Charac
 	if err != nil {
 		return err
 	}
-	c.SolarSystem = system
+	c.Location = system
 	return nil
 }

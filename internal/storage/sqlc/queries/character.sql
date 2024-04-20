@@ -10,7 +10,7 @@ INSERT INTO characters (
     race_id,
     security_status,
     skill_points,
-    solar_system_id,
+    location_id,
     wallet_balance,
     id,
     birthday,
@@ -29,7 +29,7 @@ WHERE id = ?;
 SELECT characters.*, corporations.*, alliances.*, factions.*, races.Name as race_name, systems.*
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
-JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
+JOIN eve_entities AS systems ON systems.id = characters.location_id
 JOIN races ON races.id = characters.race_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
@@ -40,7 +40,7 @@ SELECT characters.*, corporations.*, alliances.*, factions.*, races.Name as race
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 JOIN races ON races.id = characters.race_id
-JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
+JOIN eve_entities AS systems ON systems.id = characters.location_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 ORDER BY characters.name;
@@ -61,6 +61,6 @@ SET
     name = ?,
     security_status = ?,
     skill_points = ?,
-    solar_system_id = ?,
+    location_id = ?,
     wallet_balance = ?
 WHERE id = ?;

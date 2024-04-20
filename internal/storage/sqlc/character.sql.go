@@ -23,7 +23,7 @@ INSERT INTO characters (
     race_id,
     security_status,
     skill_points,
-    solar_system_id,
+    location_id,
     wallet_balance,
     id,
     birthday,
@@ -32,7 +32,7 @@ INSERT INTO characters (
 VALUES (
     ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?, ?, ?
 )
-RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id, id, last_login_at, mail_updated_at, name, race_id, security_status, skill_points, solar_system_id, wallet_balance
+RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id, id, last_login_at, mail_updated_at, name, race_id, security_status, skill_points, location_id, wallet_balance
 `
 
 type CreateCharacterParams struct {
@@ -46,7 +46,7 @@ type CreateCharacterParams struct {
 	RaceID         int64
 	SecurityStatus float64
 	SkillPoints    int64
-	SolarSystemID  int64
+	LocationID     int64
 	WalletBalance  float64
 	ID             int64
 	Birthday       time.Time
@@ -65,7 +65,7 @@ func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams
 		arg.RaceID,
 		arg.SecurityStatus,
 		arg.SkillPoints,
-		arg.SolarSystemID,
+		arg.LocationID,
 		arg.WalletBalance,
 		arg.ID,
 		arg.Birthday,
@@ -86,7 +86,7 @@ func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams
 		&i.RaceID,
 		&i.SecurityStatus,
 		&i.SkillPoints,
-		&i.SolarSystemID,
+		&i.LocationID,
 		&i.WalletBalance,
 	)
 	return i, err
@@ -103,10 +103,10 @@ func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
 }
 
 const getCharacter = `-- name: GetCharacter :one
-SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.mail_updated_at, characters.name, characters.race_id, characters.security_status, characters.skill_points, characters.solar_system_id, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name, races.Name as race_name, systems.id, systems.category, systems.name
+SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.mail_updated_at, characters.name, characters.race_id, characters.security_status, characters.skill_points, characters.location_id, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name, races.Name as race_name, systems.id, systems.category, systems.name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
-JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
+JOIN eve_entities AS systems ON systems.id = characters.location_id
 JOIN races ON races.id = characters.race_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
@@ -127,7 +127,7 @@ type GetCharacterRow struct {
 	RaceID         int64
 	SecurityStatus float64
 	SkillPoints    int64
-	SolarSystemID  int64
+	LocationID     int64
 	WalletBalance  float64
 	ID_2           int64
 	Category       string
@@ -161,7 +161,7 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.RaceID,
 		&i.SecurityStatus,
 		&i.SkillPoints,
-		&i.SolarSystemID,
+		&i.LocationID,
 		&i.WalletBalance,
 		&i.ID_2,
 		&i.Category,
@@ -209,11 +209,11 @@ func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
 }
 
 const listCharacters = `-- name: ListCharacters :many
-SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.mail_updated_at, characters.name, characters.race_id, characters.security_status, characters.skill_points, characters.solar_system_id, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name, races.Name as race_name, systems.id, systems.category, systems.name
+SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.mail_updated_at, characters.name, characters.race_id, characters.security_status, characters.skill_points, characters.location_id, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name, races.Name as race_name, systems.id, systems.category, systems.name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 JOIN races ON races.id = characters.race_id
-JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
+JOIN eve_entities AS systems ON systems.id = characters.location_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 ORDER BY characters.name
@@ -233,7 +233,7 @@ type ListCharactersRow struct {
 	RaceID         int64
 	SecurityStatus float64
 	SkillPoints    int64
-	SolarSystemID  int64
+	LocationID     int64
 	WalletBalance  float64
 	ID_2           int64
 	Category       string
@@ -273,7 +273,7 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.RaceID,
 			&i.SecurityStatus,
 			&i.SkillPoints,
-			&i.SolarSystemID,
+			&i.LocationID,
 			&i.WalletBalance,
 			&i.ID_2,
 			&i.Category,
@@ -314,7 +314,7 @@ SET
     name = ?,
     security_status = ?,
     skill_points = ?,
-    solar_system_id = ?,
+    location_id = ?,
     wallet_balance = ?
 WHERE id = ?
 `
@@ -329,7 +329,7 @@ type UpdateCharacterParams struct {
 	Name           string
 	SecurityStatus float64
 	SkillPoints    int64
-	SolarSystemID  int64
+	LocationID     int64
 	WalletBalance  float64
 	ID             int64
 }
@@ -345,7 +345,7 @@ func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams
 		arg.Name,
 		arg.SecurityStatus,
 		arg.SkillPoints,
-		arg.SolarSystemID,
+		arg.LocationID,
 		arg.WalletBalance,
 		arg.ID,
 	)

@@ -23,7 +23,7 @@ type Character struct {
 	RaceID         int64
 	SecurityStatus float64
 	SkillPoints    int64
-	SolarSystemID  int64
+	LocationID     int64
 	WalletBalance  float64
 }
 

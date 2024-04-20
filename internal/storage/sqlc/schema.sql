@@ -21,18 +21,18 @@ CREATE TABLE characters (
     faction_id INTEGER,
     id INTEGER PRIMARY KEY NOT NULL,
     last_login_at DATETIME NOT NULL,
+    location_id INTEGER NOT NULL,
     mail_updated_at DATETIME,
     name TEXT NOT NULL,
     race_id INTEGER NOT NULL,
     security_status REAL NOT NULL,
     skill_points INTEGER NOT NULL,
-    solar_system_id INTEGER NOT NULL,
     wallet_balance REAL NOT NULL,
     FOREIGN KEY (alliance_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
     FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
-    FOREIGN KEY (race_id) REFERENCES races(id) ON DELETE CASCADE,
-    FOREIGN KEY (solar_system_id) REFERENCES eve_entities(id) ON DELETE CASCADE
+    FOREIGN KEY (location_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
+    FOREIGN KEY (race_id) REFERENCES races(id) ON DELETE CASCADE
 );
 
 CREATE TABLE mail_lists (

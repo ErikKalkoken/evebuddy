@@ -79,7 +79,7 @@ func (c *characterArea) Redraw() {
 		{"Skill Points", numberOrDefault(character.SkillPoints, "?"), defaultColor},
 		{"Wallet Balance", numberOrDefault(character.WalletBalance, "?"), defaultColor},
 		{"Home Station", "PLACEHOLDER", defaultColor},
-		{"Location", stringOrDefault(character.SolarSystem.Name, "?"), defaultColor},
+		{"Location", stringOrDefault(character.Location.Name, "?"), defaultColor},
 		{"Ship", "PLACEHOLDER", defaultColor},
 		{"Last Login", humanize.Time(character.LastLoginAt), defaultColor},
 	}
