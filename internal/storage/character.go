@@ -53,7 +53,7 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		Location: model.EveEntity{
 			ID:       int32(row.LocationID),
 			Name:     row.LocationName,
-			Category: model.EveEntitySolarSystem,
+			Category: eveEntityCategoryFromDBModel(row.LocationCategory),
 		},
 		WalletBalance: row.WalletBalance,
 	}
@@ -114,7 +114,7 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 			Location: model.EveEntity{
 				ID:       int32(row.LocationID),
 				Name:     row.LocationName,
-				Category: model.EveEntitySolarSystem,
+				Category: eveEntityCategoryFromDBModel(row.LocationCategory),
 			},
 			Ship: model.EveEntity{
 				ID:       int32(row.ShipID),

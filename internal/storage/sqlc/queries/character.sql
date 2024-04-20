@@ -34,6 +34,7 @@ SELECT
     factions.name as faction_name,
     races.Name as race_name,
     locations.Name as location_name,
+    locations.Category as location_category,
     ships.name as ship_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
@@ -52,6 +53,7 @@ SELECT
     factions.name as faction_name,
     races.Name as race_name,
     locations.Name as location_name,
+    locations.Category as location_category,
     ships.name as ship_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id

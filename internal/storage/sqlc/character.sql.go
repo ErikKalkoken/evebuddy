@@ -114,6 +114,7 @@ SELECT
     factions.name as faction_name,
     races.Name as race_name,
     locations.Name as location_name,
+    locations.Category as location_category,
     ships.name as ship_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
@@ -126,28 +127,29 @@ WHERE characters.id = ?
 `
 
 type GetCharacterRow struct {
-	AllianceID      sql.NullInt64
-	Birthday        time.Time
-	CorporationID   int64
-	Description     string
-	Gender          string
-	FactionID       sql.NullInt64
-	ID              int64
-	LastLoginAt     time.Time
-	LocationID      int64
-	MailUpdatedAt   sql.NullTime
-	Name            string
-	RaceID          int64
-	SecurityStatus  float64
-	ShipID          int64
-	SkillPoints     int64
-	WalletBalance   float64
-	CorporationName string
-	AllianceName    sql.NullString
-	FactionName     sql.NullString
-	RaceName        string
-	LocationName    string
-	ShipName        string
+	AllianceID       sql.NullInt64
+	Birthday         time.Time
+	CorporationID    int64
+	Description      string
+	Gender           string
+	FactionID        sql.NullInt64
+	ID               int64
+	LastLoginAt      time.Time
+	LocationID       int64
+	MailUpdatedAt    sql.NullTime
+	Name             string
+	RaceID           int64
+	SecurityStatus   float64
+	ShipID           int64
+	SkillPoints      int64
+	WalletBalance    float64
+	CorporationName  string
+	AllianceName     sql.NullString
+	FactionName      sql.NullString
+	RaceName         string
+	LocationName     string
+	LocationCategory string
+	ShipName         string
 }
 
 func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, error) {
@@ -175,6 +177,7 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.FactionName,
 		&i.RaceName,
 		&i.LocationName,
+		&i.LocationCategory,
 		&i.ShipName,
 	)
 	return i, err
@@ -216,6 +219,7 @@ SELECT
     factions.name as faction_name,
     races.Name as race_name,
     locations.Name as location_name,
+    locations.Category as location_category,
     ships.name as ship_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
@@ -228,28 +232,29 @@ ORDER BY characters.name
 `
 
 type ListCharactersRow struct {
-	AllianceID      sql.NullInt64
-	Birthday        time.Time
-	CorporationID   int64
-	Description     string
-	Gender          string
-	FactionID       sql.NullInt64
-	ID              int64
-	LastLoginAt     time.Time
-	LocationID      int64
-	MailUpdatedAt   sql.NullTime
-	Name            string
-	RaceID          int64
-	SecurityStatus  float64
-	ShipID          int64
-	SkillPoints     int64
-	WalletBalance   float64
-	CorporationName string
-	AllianceName    sql.NullString
-	FactionName     sql.NullString
-	RaceName        string
-	LocationName    string
-	ShipName        string
+	AllianceID       sql.NullInt64
+	Birthday         time.Time
+	CorporationID    int64
+	Description      string
+	Gender           string
+	FactionID        sql.NullInt64
+	ID               int64
+	LastLoginAt      time.Time
+	LocationID       int64
+	MailUpdatedAt    sql.NullTime
+	Name             string
+	RaceID           int64
+	SecurityStatus   float64
+	ShipID           int64
+	SkillPoints      int64
+	WalletBalance    float64
+	CorporationName  string
+	AllianceName     sql.NullString
+	FactionName      sql.NullString
+	RaceName         string
+	LocationName     string
+	LocationCategory string
+	ShipName         string
 }
 
 func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, error) {
@@ -283,6 +288,7 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.FactionName,
 			&i.RaceName,
 			&i.LocationName,
+			&i.LocationCategory,
 			&i.ShipName,
 		); err != nil {
 			return nil, err

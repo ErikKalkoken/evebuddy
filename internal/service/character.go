@@ -137,7 +137,6 @@ func (s *Service) UpdateCharacter(characterID int32) error {
 
 // updateCharacterDetailsESI updates character details and related information from ESI.
 func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Character) error {
-	entityIDs := []int32{c.ID}
 	skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, c.ID, nil)
 	if err != nil {
 		return err
@@ -153,15 +152,20 @@ func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Charac
 		return err
 	}
 	c.LastLoginAt = online.LastLogin
-	location, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, c.ID, nil)
+	locationESI, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, c.ID, nil)
 	if err != nil {
 		return err
+	}
+	entityIDs := []int32{c.ID}
+	entityIDs = append(entityIDs, locationESI.SolarSystemId)
+	if locationESI.StationId != 0 {
+		entityIDs = append(entityIDs, locationESI.StationId)
 	}
 	ship, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, c.ID, nil)
 	if err != nil {
 		return err
 	}
-	entityIDs = append(entityIDs, location.SolarSystemId, ship.ShipTypeId)
+	entityIDs = append(entityIDs, ship.ShipTypeId)
 	rr, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
 	if err != nil {
 		return err
@@ -202,11 +206,16 @@ func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Charac
 		}
 	}
 	c.Faction = faction
-	l, err := s.r.GetEveEntity(ctx, location.SolarSystemId)
+	var location model.EveEntity
+	if locationESI.StationId != 0 {
+		location, err = s.r.GetEveEntity(ctx, locationESI.StationId)
+	} else {
+		location, err = s.r.GetEveEntity(ctx, locationESI.SolarSystemId)
+	}
 	if err != nil {
 		return err
 	}
-	c.Location = l
+	c.Location = location
 	o, err := s.r.GetEveEntity(ctx, ship.ShipTypeId)
 	if err != nil {
 		return err

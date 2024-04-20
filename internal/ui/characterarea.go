@@ -72,13 +72,12 @@ func (c *characterArea) Redraw() {
 		{"Race", character.Race.Name, defaultColor},
 		{"Gender", character.Gender, defaultColor},
 		{"Born", character.Birthday.Format(myDateTime), defaultColor},
-		{"Security Status", fmt.Sprintf("%.1f", character.SecurityStatus), secColor},
 	}
 	form1 := makeForm(r)
 	r = []item{
-		{"Skill Points", numberOrDefault(character.SkillPoints, "?"), defaultColor},
 		{"Wallet Balance", numberOrDefault(character.WalletBalance, "?"), defaultColor},
-		{"Home Station", "PLACEHOLDER", defaultColor},
+		{"Skill Points", numberOrDefault(character.SkillPoints, "?"), defaultColor},
+		{"Security Status", fmt.Sprintf("%.1f", character.SecurityStatus), secColor},
 		{"Location", stringOrDefault(character.Location.Name, "?"), defaultColor},
 		{"Ship", character.Ship.Name, defaultColor},
 		{"Last Login", humanize.Time(character.LastLoginAt), defaultColor},
