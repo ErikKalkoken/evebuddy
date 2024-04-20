@@ -113,11 +113,13 @@ SELECT
     alliances.name as alliance_name,
     factions.name as faction_name,
     races.Name as race_name,
-    locations.Name as location_name
+    locations.Name as location_name,
+    ships.name as ship_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 JOIN eve_entities AS locations ON locations.id = characters.location_id
 JOIN races ON races.id = characters.race_id
+JOIN eve_entities AS ships ON ships.id = characters.ship_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 WHERE characters.id = ?
@@ -145,6 +147,7 @@ type GetCharacterRow struct {
 	FactionName     sql.NullString
 	RaceName        string
 	LocationName    string
+	ShipName        string
 }
 
 func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, error) {
@@ -172,6 +175,7 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.FactionName,
 		&i.RaceName,
 		&i.LocationName,
+		&i.ShipName,
 	)
 	return i, err
 }
@@ -211,11 +215,13 @@ SELECT
     alliances.name as alliance_name,
     factions.name as faction_name,
     races.Name as race_name,
-    locations.Name as location_name
+    locations.Name as location_name,
+    ships.name as ship_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 JOIN eve_entities AS locations ON locations.id = characters.location_id
 JOIN races ON races.id = characters.race_id
+JOIN eve_entities AS ships ON ships.id = characters.ship_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 ORDER BY characters.name
@@ -243,6 +249,7 @@ type ListCharactersRow struct {
 	FactionName     sql.NullString
 	RaceName        string
 	LocationName    string
+	ShipName        string
 }
 
 func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, error) {
@@ -276,6 +283,7 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.FactionName,
 			&i.RaceName,
 			&i.LocationName,
+			&i.ShipName,
 		); err != nil {
 			return nil, err
 		}
