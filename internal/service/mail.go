@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/antihax/goesi/esi"
 	"github.com/antihax/goesi/optional"
+	"golang.org/x/sync/errgroup"
 
 	"example/evebuddy/internal/helper/set"
 	"example/evebuddy/internal/model"
@@ -264,32 +263,31 @@ func (s *Service) updateMails(ctx context.Context, token *model.Token, headers [
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
 
-	var c atomic.Int32
-	var wg sync.WaitGroup
-	maxGoroutines := 20
-	guard := make(chan struct{}, maxGoroutines)
+	count := 0
+	g := new(errgroup.Group)
+	g.SetLimit(20)
 	for _, h := range headers {
 		if existingIDs.Has(h.MailId) {
 			continue
 		}
-		guard <- struct{}{}
-		wg.Add(1)
-		go func(mailID int32) {
-			defer wg.Done()
-			err := s.fetchAndStoreMail(ctx, token.CharacterID, mailID, &c)
+		count++
+		mailID := h.MailId
+		g.Go(func() error {
+			err := s.fetchAndStoreMail(ctx, token.CharacterID, mailID)
 			if err != nil {
-				slog.Error("Failed to fetch new mail", "characterID", token.CharacterID, "mailID", mailID, "error", err)
+				return fmt.Errorf("failed to fetch mail %d: %w", mailID, err)
 			}
-			<-guard
-		}(h.MailId)
+			return nil
+		})
 	}
-	wg.Wait()
-	total := c.Load()
-	slog.Info("Received new mail", "count", total)
+	if err = g.Wait(); err != nil {
+		slog.Error("Failed to fetch new mail", "characterID", token.CharacterID, "error", err)
+	}
+	slog.Info("Received new mail", "count", count)
 	return nil
 }
 
-func (s *Service) fetchAndStoreMail(ctx context.Context, characterID, mailID int32, c *atomic.Int32) error {
+func (s *Service) fetchAndStoreMail(ctx context.Context, characterID, mailID int32) error {
 	m, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
 	if err != nil {
 		return err
@@ -322,7 +320,6 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, characterID, mailID int
 	if err != nil {
 		return err
 	}
-	c.Add(1)
 	return nil
 }
 
