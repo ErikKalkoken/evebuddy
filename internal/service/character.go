@@ -81,6 +81,9 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 		}
 		character.Faction = e
 	}
+	if err := s.r.UpdateOrCreateCharacter(ctx, &character); err != nil {
+		return err
+	}
 	if err := s.r.UpdateOrCreateToken(ctx, &token); err != nil {
 		return err
 	}

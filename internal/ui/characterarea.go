@@ -149,11 +149,13 @@ func (c *characterArea) StartUpdateTicker() {
 	go func() {
 		for {
 			characterID := c.ui.CurrentCharID()
-			err := c.ui.service.UpdateCharacter(characterID)
-			if err != nil {
-				slog.Error(err.Error())
-			} else {
-				c.Redraw()
+			if characterID != 0 {
+				err := c.ui.service.UpdateCharacter(characterID)
+				if err != nil {
+					slog.Error(err.Error())
+				} else {
+					c.Redraw()
+				}
 			}
 			<-ticker.C
 		}

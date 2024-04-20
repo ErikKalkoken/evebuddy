@@ -64,47 +64,15 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 }
 
 func (r *Storage) GetFirstCharacter(ctx context.Context) (model.Character, error) {
-	row, err := r.q.GetFirstCharacter(ctx)
+	ids, err := r.ListCharacterIDs(ctx)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrNotFound
-		}
-		return model.Character{}, fmt.Errorf("failed to get first character: %w", err)
+		return model.Character{}, nil
 	}
-	var mailUpdateAt time.Time
-	if row.MailUpdatedAt.Valid {
-		mailUpdateAt = row.MailUpdatedAt.Time
+	if len(ids) == 0 {
+		return model.Character{}, ErrNotFound
 	}
-	c := model.Character{
-		Birthday: row.Birthday,
-		Corporation: model.EveEntity{ID: int32(row.CorporationID),
-			Name:     row.Name_2,
-			Category: eveEntityCategoryFromDBModel(row.Category),
-		},
-		Description:    row.Description,
-		Gender:         row.Gender,
-		ID:             int32(row.ID),
-		MailUpdatedAt:  mailUpdateAt,
-		Name:           row.Name,
-		SecurityStatus: row.SecurityStatus,
-		SkillPoints:    int(row.SkillPoints.Int64),
-		WalletBalance:  row.WalletBalance.Float64,
-	}
-	if row.AllianceID.Valid {
-		c.Alliance = model.EveEntity{
-			ID:       int32(row.AllianceID.Int64),
-			Name:     row.Name_3.String,
-			Category: eveEntityCategoryFromDBModel(row.Category_2.String),
-		}
-	}
-	if row.FactionID.Valid {
-		c.Faction = model.EveEntity{
-			ID:       int32(row.FactionID.Int64),
-			Name:     row.Name_4.String,
-			Category: eveEntityCategoryFromDBModel(row.Category_3.String),
-		}
-	}
-	return c, nil
+	return r.GetCharacter(ctx, ids[0])
+
 }
 
 func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error) {
