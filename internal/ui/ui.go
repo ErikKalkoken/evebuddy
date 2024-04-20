@@ -39,7 +39,7 @@ type ui struct {
 	currentCharacter *model.Character
 	folderArea       *folderArea
 	headerArea       *headerArea
-	mailArea         *mailArea
+	mailArea         *mailDetailArea
 	statusArea       *statusArea
 	service          *service.Service
 	toolbarBadge     *fyne.Container

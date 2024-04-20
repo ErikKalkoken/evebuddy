@@ -12,8 +12,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// mailArea is the UI area showing the current mail.
-type mailArea struct {
+// mailDetailArea is the UI area showing the current mail.
+type mailDetailArea struct {
 	content fyne.CanvasObject
 	icons   *fyne.Container
 	bodyC   *container.Scroll
@@ -24,7 +24,7 @@ type mailArea struct {
 	ui      *ui
 }
 
-func (u *ui) NewMailArea() *mailArea {
+func (u *ui) NewMailArea() *mailDetailArea {
 	icons := container.NewHBox()
 
 	subject := widget.NewLabel("")
@@ -40,7 +40,7 @@ func (u *ui) NewMailArea() *mailArea {
 	body.Wrapping = fyne.TextWrapBreak
 	bodyWithScroll := container.NewVScroll(body)
 	content := container.NewBorder(wrapper, nil, nil, nil, bodyWithScroll)
-	m := mailArea{
+	m := mailDetailArea{
 		content: content,
 		bodyC:   bodyWithScroll,
 		subject: subject,
@@ -52,11 +52,11 @@ func (u *ui) NewMailArea() *mailArea {
 	return &m
 }
 
-func (m *mailArea) Clear() {
+func (m *mailDetailArea) Clear() {
 	m.updateContent("", "", "")
 }
 
-func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
+func (m *mailDetailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 	characterID := m.ui.CurrentCharID()
 	mail, err := m.ui.service.GetMail(characterID, mailID)
 	if err != nil {
@@ -125,7 +125,7 @@ func (m *mailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 	}
 }
 
-func (m *mailArea) updateContent(s string, h string, b string) {
+func (m *mailDetailArea) updateContent(s string, h string, b string) {
 	m.subject.SetText(s)
 	m.header.SetText(h)
 	m.body.SetText(b)
