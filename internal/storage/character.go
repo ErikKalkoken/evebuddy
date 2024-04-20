@@ -8,7 +8,6 @@ import (
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/sqlc"
 	"fmt"
-	"time"
 )
 
 func (r *Storage) DeleteCharacter(ctx context.Context, characterID int32) error {
@@ -27,10 +26,6 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		}
 		return model.Character{}, fmt.Errorf("failed to get character %d: %w", characterID, err)
 	}
-	var mailUpdateAt time.Time
-	if row.MailUpdatedAt.Valid {
-		mailUpdateAt = row.MailUpdatedAt.Time
-	}
 	c := model.Character{
 		Birthday: row.Birthday,
 		Corporation: model.EveEntity{ID: int32(row.CorporationID),
@@ -40,7 +35,6 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		Description:    row.Description,
 		Gender:         row.Gender,
 		ID:             int32(row.ID),
-		MailUpdatedAt:  mailUpdateAt,
 		Name:           row.Name,
 		SecurityStatus: row.SecurityStatus,
 		SkillPoints:    int(row.SkillPoints.Int64),
@@ -59,6 +53,16 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 			Name:     row.Name_4.String,
 			Category: eveEntityCategoryFromDBModel(row.Category_3.String),
 		}
+	}
+	if row.SolarSystemID.Valid {
+		c.SolarSystem = model.EveEntity{
+			ID:       int32(row.SolarSystemID.Int64),
+			Name:     row.Name_5.String,
+			Category: eveEntityCategoryFromDBModel(row.Category_4.String),
+		}
+	}
+	if row.MailUpdatedAt.Valid {
+		c.MailUpdatedAt = row.MailUpdatedAt.Time
 	}
 	return c, nil
 }
@@ -83,10 +87,6 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 	}
 	cc := make([]model.Character, len(rows))
 	for i, row := range rows {
-		var mailUpdateAt time.Time
-		if row.MailUpdatedAt.Valid {
-			mailUpdateAt = row.MailUpdatedAt.Time
-		}
 		c := model.Character{
 			Birthday: row.Birthday,
 			Corporation: model.EveEntity{ID: int32(row.CorporationID),
@@ -96,7 +96,6 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 			Description:    row.Description,
 			Gender:         row.Gender,
 			ID:             int32(row.ID),
-			MailUpdatedAt:  mailUpdateAt,
 			Name:           row.Name,
 			SecurityStatus: row.SecurityStatus,
 			SkillPoints:    int(row.SkillPoints.Int64),
@@ -115,6 +114,16 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 				Name:     row.Name_4.String,
 				Category: eveEntityCategoryFromDBModel(row.Category_3.String),
 			}
+		}
+		if row.SolarSystemID.Valid {
+			c.Faction = model.EveEntity{
+				ID:       int32(row.SolarSystemID.Int64),
+				Name:     row.Name_5.String,
+				Category: eveEntityCategoryFromDBModel(row.Category_4.String),
+			}
+		}
+		if row.MailUpdatedAt.Valid {
+			c.MailUpdatedAt = row.MailUpdatedAt.Time
 		}
 		cc[i] = c
 	}
@@ -159,6 +168,10 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 			arg.SkillPoints.Int64 = int64(c.SkillPoints)
 			arg.SkillPoints.Valid = true
 		}
+		if c.SolarSystem.ID != 0 {
+			arg.SolarSystemID.Int64 = int64(c.SolarSystem.ID)
+			arg.SolarSystemID.Valid = true
+		}
 		if c.WalletBalance != 0 {
 			arg.WalletBalance.Float64 = c.WalletBalance
 			arg.WalletBalance.Valid = true
@@ -186,6 +199,10 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 			if c.SkillPoints != 0 {
 				arg.SkillPoints.Int64 = int64(c.SkillPoints)
 				arg.SkillPoints.Valid = true
+			}
+			if c.SolarSystem.ID != 0 {
+				arg.SolarSystemID.Int64 = int64(c.SolarSystem.ID)
+				arg.SolarSystemID.Valid = true
 			}
 			if c.WalletBalance != 0 {
 				arg.WalletBalance.Float64 = c.WalletBalance

@@ -61,10 +61,10 @@ func (c *characterArea) Redraw() {
 	}
 	form1 := makeForm(r, fg)
 	r = []item{
-		{"Skill Points", numberOrDefault(character.SkillPoints, "-")},
-		{"Wallet Balance", numberOrDefault(character.WalletBalance, "-")},
+		{"Skill Points", numberOrDefault(character.SkillPoints, "?")},
+		{"Wallet Balance", numberOrDefault(character.WalletBalance, "?")},
 		{"Home Station", "PLACEHOLDER"},
-		{"Location", "PLACEHOLDER"},
+		{"Location", stringOrDefault(character.SolarSystem.Name, "?")},
 		{"Ship", "PLACEHOLDER"},
 		{"Last Login", "PLACEHOLDER"},
 	}

@@ -8,13 +8,14 @@ INSERT INTO characters (
     name,
     security_status,
     skill_points,
+    solar_system_id,
     wallet_balance,
     id,
     birthday,
     gender
 )
 VALUES (
-    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?
+    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?
 )
 RETURNING *;
 
@@ -23,19 +24,21 @@ DELETE FROM characters
 WHERE id = ?;
 
 -- name: GetCharacter :one
-SELECT characters.*, corporations.*, alliances.*, factions.*
+SELECT characters.*, corporations.*, alliances.*, factions.*, systems.*
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
+LEFT JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
 WHERE characters.id = ?;
 
 -- name: ListCharacters :many
-SELECT characters.*, corporations.*, alliances.*, factions.*
+SELECT characters.*, corporations.*, alliances.*, factions.*, systems.*
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
+LEFT JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
 ORDER BY characters.name;
 
 -- name: ListCharacterIDs :many
@@ -53,5 +56,6 @@ SET
     name = ?,
     security_status = ?,
     skill_points = ?,
+    solar_system_id = ?,
     wallet_balance = ?
 WHERE id = ?;

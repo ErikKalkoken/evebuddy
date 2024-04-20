@@ -79,11 +79,11 @@ func (f Factory) CreateEveEntity(args ...model.EveEntity) model.EveEntity {
 			arg.ID = 1
 		}
 	}
-	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("generated #%d", arg.ID)
-	}
 	if arg.Category == model.EveEntityUndefined {
 		arg.Category = model.EveEntityCharacter
+	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("%s #%d", arg.Category, arg.ID)
 	}
 	e, err := f.r.CreateEveEntity(ctx, arg.ID, arg.Name, arg.Category)
 	if err != nil {

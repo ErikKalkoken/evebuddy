@@ -97,7 +97,7 @@ func TestCharacter(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})
-	t.Run("can fetch character by ID with corporation only", func(t *testing.T) {
+	t.Run("can fetch character by ID with minimal fields populated only", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
@@ -105,23 +105,31 @@ func TestCharacter(t *testing.T) {
 		r, err := r.GetCharacter(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c.Alliance, r.Alliance)
 			assert.Equal(t, c.Birthday.Unix(), r.Birthday.Unix())
 			assert.Equal(t, c.Corporation, r.Corporation)
-			assert.Equal(t, c.Corporation, r.Corporation)
 			assert.Equal(t, c.Description, r.Description)
-			assert.Equal(t, c.Faction, r.Faction)
 			assert.Equal(t, c.ID, r.ID)
 			assert.Equal(t, c.Name, r.Name)
+			assert.Equal(t, int32(0), r.Alliance.ID)
+			assert.Equal(t, int32(0), r.Faction.ID)
+			assert.Equal(t, int32(0), r.SolarSystem.ID)
 		}
 	})
-	t.Run("can fetch character by ID with alliance and faction", func(t *testing.T) {
+	t.Run("can fetch character by ID with all fields populated", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		factory.CreateCharacter()
 		alliance := factory.CreateEveEntityAlliance()
 		faction := factory.CreateEveEntity()
-		c := factory.CreateCharacter(model.Character{Alliance: alliance, Faction: faction})
+		system := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntitySolarSystem})
+		c := factory.CreateCharacter(
+			model.Character{
+				Alliance:      alliance,
+				Faction:       faction,
+				SolarSystem:   system,
+				SkillPoints:   1234567,
+				WalletBalance: 12345.67,
+			})
 		// when
 		r, err := r.GetCharacter(ctx, c.ID)
 		// then
@@ -129,11 +137,13 @@ func TestCharacter(t *testing.T) {
 			assert.Equal(t, alliance, r.Alliance)
 			assert.Equal(t, c.Birthday.Unix(), r.Birthday.Unix())
 			assert.Equal(t, c.Corporation, r.Corporation)
-			assert.Equal(t, c.Corporation, r.Corporation)
 			assert.Equal(t, c.Description, r.Description)
 			assert.Equal(t, faction, r.Faction)
 			assert.Equal(t, c.ID, r.ID)
 			assert.Equal(t, c.Name, r.Name)
+			assert.Equal(t, c.SkillPoints, r.SkillPoints)
+			assert.Equal(t, c.SolarSystem, r.SolarSystem)
+			assert.Equal(t, c.WalletBalance, r.WalletBalance)
 		}
 	})
 }
