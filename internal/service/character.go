@@ -81,13 +81,15 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 		}
 		character.Faction = e
 	}
+	if err := s.updateCharacterDetailsESI(ctx, &character); err != nil {
+		return err
+	}
 	if err := s.r.UpdateOrCreateCharacter(ctx, &character); err != nil {
 		return err
 	}
 	if err := s.r.UpdateOrCreateToken(ctx, &token); err != nil {
 		return err
 	}
-	go s.UpdateCharacter(character.ID)
 	return nil
 }
 
@@ -102,7 +104,7 @@ func (s *Service) UpdateCharacter(characterID int32) error {
 	if err != nil {
 		return err
 	}
-	if err := s.updateCharacter(ctx, &c); err != nil {
+	if err := s.updateCharacterDetailsESI(ctx, &c); err != nil {
 		return err
 	}
 	if err := s.r.UpdateOrCreateCharacter(ctx, &c); err != nil {
@@ -112,7 +114,8 @@ func (s *Service) UpdateCharacter(characterID int32) error {
 	return nil
 }
 
-func (s *Service) updateCharacter(ctx context.Context, c *model.Character) error {
+// updateCharacterDetailsESI updates character details and related information from ESI.
+func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Character) error {
 	entityIDs := []int32{c.ID}
 	skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, c.ID, nil)
 	if err != nil {

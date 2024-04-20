@@ -116,7 +116,7 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 			}
 		}
 		if row.SolarSystemID.Valid {
-			c.Faction = model.EveEntity{
+			c.SolarSystem = model.EveEntity{
 				ID:       int32(row.SolarSystemID.Int64),
 				Name:     row.Name_5.String,
 				Category: eveEntityCategoryFromDBModel(row.Category_4.String),

@@ -1,8 +1,8 @@
 package model
 
 import (
-	"errors"
 	"example/evebuddy/internal/api/images"
+	"fmt"
 
 	"fyne.io/fyne/v2"
 )
@@ -72,5 +72,5 @@ func (e *EveEntity) IconURL(size int) (fyne.URI, error) {
 	case EveEntityFaction:
 		return images.FactionLogoURL(e.ID, size)
 	}
-	return nil, errors.New("can not match category")
+	return nil, fmt.Errorf("can not match category: %v", e.Category)
 }
