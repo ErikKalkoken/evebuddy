@@ -15,6 +15,7 @@
         "antihax",
         "bluemonday",
         "datetime",
+        "errgroup",
         "esiapp",
         "evebuddy",
         "gock",

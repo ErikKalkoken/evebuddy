@@ -2,7 +2,10 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+
+	"golang.org/x/sync/errgroup"
 
 	"example/evebuddy/internal/api/sso"
 	"example/evebuddy/internal/model"
@@ -137,89 +140,118 @@ func (s *Service) UpdateCharacter(characterID int32) error {
 
 // updateCharacterDetailsESI updates character details and related information from ESI.
 func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Character) error {
-	skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, c.ID, nil)
-	if err != nil {
-		return err
-	}
-	balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, c.ID, nil)
-	if err != nil {
-		return err
-	}
-	c.SkillPoints = int(skills.TotalSp)
-	c.WalletBalance = balance
-	online, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, c.ID, nil)
-	if err != nil {
-		return err
-	}
-	c.LastLoginAt = online.LastLogin
-	locationESI, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, c.ID, nil)
-	if err != nil {
-		return err
-	}
-	entityIDs := []int32{c.ID}
-	entityIDs = append(entityIDs, locationESI.SolarSystemId)
-	if locationESI.StationId != 0 {
-		entityIDs = append(entityIDs, locationESI.StationId)
-	}
-	ship, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, c.ID, nil)
-	if err != nil {
-		return err
-	}
-	entityIDs = append(entityIDs, ship.ShipTypeId)
-	rr, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
-	if err != nil {
-		return err
-	}
-	if len(rr) == 0 {
+	g := new(errgroup.Group)
+	g.Go(func() error {
+		skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, c.ID, nil)
+		if err != nil {
+			return err
+		}
+		c.SkillPoints = int(skills.TotalSp)
 		return nil
-	}
-	r := rr[0]
-	entityIDs = append(entityIDs, r.CorporationId)
-	if r.AllianceId != 0 {
-		entityIDs = append(entityIDs, r.AllianceId)
-	}
-	if r.FactionId != 0 {
-		entityIDs = append(entityIDs, r.FactionId)
-	}
-	_, err = s.addMissingEveEntities(ctx, entityIDs)
-	if err != nil {
-		return err
-	}
-	corporation, err := s.r.GetEveEntity(ctx, r.CorporationId)
-	if err != nil {
-		return err
-	}
-	c.Corporation = corporation
-	var alliance model.EveEntity
-	if r.AllianceId != 0 {
-		alliance, err = s.r.GetEveEntity(ctx, r.AllianceId)
+	})
+	g.Go(func() error {
+		balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, c.ID, nil)
 		if err != nil {
 			return err
 		}
-	}
-	c.Alliance = alliance
-	var faction model.EveEntity
-	if r.FactionId != 0 {
-		faction, err = s.r.GetEveEntity(ctx, r.FactionId)
+		c.WalletBalance = balance
+		return nil
+	})
+	g.Go(func() error {
+		online, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, c.ID, nil)
 		if err != nil {
 			return err
 		}
+		c.LastLoginAt = online.LastLogin
+		return nil
+	})
+	g.Go(func() error {
+		locationESI, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, c.ID, nil)
+		if err != nil {
+			return err
+		}
+		entityIDs := []int32{locationESI.SolarSystemId}
+		if locationESI.StationId != 0 {
+			entityIDs = append(entityIDs, locationESI.StationId)
+		}
+		_, err = s.addMissingEveEntities(ctx, entityIDs)
+		if err != nil {
+			return err
+		}
+		var location model.EveEntity
+		if locationESI.StationId != 0 {
+			location, err = s.r.GetEveEntity(ctx, locationESI.StationId)
+		} else {
+			location, err = s.r.GetEveEntity(ctx, locationESI.SolarSystemId)
+		}
+		if err != nil {
+			return err
+		}
+		c.Location = location
+		return nil
+	})
+	g.Go(func() error {
+		ship, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, c.ID, nil)
+		if err != nil {
+			return err
+		}
+		_, err = s.addMissingEveEntities(ctx, []int32{ship.ShipTypeId})
+		if err != nil {
+			return err
+		}
+		o, err := s.r.GetEveEntity(ctx, ship.ShipTypeId)
+		if err != nil {
+			return err
+		}
+		c.Ship = o
+		return nil
+	})
+	g.Go(func() error {
+		rr, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
+		if err != nil {
+			return err
+		}
+		if len(rr) == 0 {
+			return nil
+		}
+		r := rr[0]
+		entityIDs := []int32{c.ID}
+		entityIDs = append(entityIDs, r.CorporationId)
+		if r.AllianceId != 0 {
+			entityIDs = append(entityIDs, r.AllianceId)
+		}
+		if r.FactionId != 0 {
+			entityIDs = append(entityIDs, r.FactionId)
+		}
+		_, err = s.addMissingEveEntities(ctx, entityIDs)
+		if err != nil {
+			return err
+		}
+		corporation, err := s.r.GetEveEntity(ctx, r.CorporationId)
+		if err != nil {
+			return err
+		}
+		c.Corporation = corporation
+		var alliance model.EveEntity
+		if r.AllianceId != 0 {
+			alliance, err = s.r.GetEveEntity(ctx, r.AllianceId)
+			if err != nil {
+				return err
+			}
+		}
+		c.Alliance = alliance
+		var faction model.EveEntity
+		if r.FactionId != 0 {
+			faction, err = s.r.GetEveEntity(ctx, r.FactionId)
+			if err != nil {
+				return err
+			}
+		}
+		c.Faction = faction
+		return nil
+	})
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("failed to update character %d: %w", c.ID, err)
 	}
-	c.Faction = faction
-	var location model.EveEntity
-	if locationESI.StationId != 0 {
-		location, err = s.r.GetEveEntity(ctx, locationESI.StationId)
-	} else {
-		location, err = s.r.GetEveEntity(ctx, locationESI.SolarSystemId)
-	}
-	if err != nil {
-		return err
-	}
-	c.Location = location
-	o, err := s.r.GetEveEntity(ctx, ship.ShipTypeId)
-	if err != nil {
-		return err
-	}
-	c.Ship = o
 	return nil
 }
