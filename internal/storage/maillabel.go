@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/sqlc"
+	"example/evebuddy/internal/storage/sqlc"
 
 	"github.com/mattn/go-sqlite3"
 )

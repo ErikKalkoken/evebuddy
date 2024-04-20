@@ -3,7 +3,7 @@ package storage
 import (
 	"database/sql"
 	"errors"
-	"example/evebuddy/internal/sqlc"
+	"example/evebuddy/internal/storage/sqlc"
 	"fmt"
 	"log/slog"
 	"net/url"

@@ -10,7 +10,7 @@ import (
 
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/sqlc"
+	"example/evebuddy/internal/storage/sqlc"
 )
 
 func mailFromDBModel(mail sqlc.Mail, from sqlc.EveEntity, labels []sqlc.MailLabel, recipients []sqlc.EveEntity) model.Mail {

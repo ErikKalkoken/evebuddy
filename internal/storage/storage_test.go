@@ -2,7 +2,7 @@ package storage
 
 import (
 	"database/sql"
-	"example/evebuddy/internal/sqlc"
+	"example/evebuddy/internal/storage/sqlc"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

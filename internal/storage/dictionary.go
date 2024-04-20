@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"example/evebuddy/internal/sqlc"
+	"example/evebuddy/internal/storage/sqlc"
 
 	"github.com/mattn/go-sqlite3"
 )

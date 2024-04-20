@@ -6,7 +6,7 @@ import (
 	"errors"
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/sqlc"
+	"example/evebuddy/internal/storage/sqlc"
 	"fmt"
 )
 

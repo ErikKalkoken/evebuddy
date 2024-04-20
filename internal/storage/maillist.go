@@ -2,7 +2,7 @@ package storage
 
 import (
 	"context"
-	"example/evebuddy/internal/sqlc"
+	"example/evebuddy/internal/storage/sqlc"
 	"fmt"
 )
 
