@@ -228,15 +228,18 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 func (f *folderArea) UpdateMails() {
 	status := f.ui.statusArea
 	go func() {
-		charID := f.ui.CurrentCharID()
-		if charID != 0 {
-			err := f.ui.service.UpdateMails(charID)
-			if err != nil {
-				status.setInfo("Failed to fetch mail")
-				slog.Error("Failed to update mails", "characterID", charID, "error", err)
-				return
-			}
+		character := f.ui.CurrentChar()
+		if character == nil {
+			return
 		}
+		status.setInfo(fmt.Sprintf("Fetching mail for %s", character.Name))
+		count, err := f.ui.service.UpdateMails(character.ID)
+		if err != nil {
+			status.setInfo("Failed to fetch mail")
+			slog.Error("Failed to update mails", "characterID", character.ID, "error", err)
+			return
+		}
+		status.setInfo(fmt.Sprintf("Retrieved %d new mail for %s", count, character.Name))
 		f.Redraw()
 	}()
 }

@@ -137,29 +137,30 @@ func eveEntitiesToESIMailRecipients(ee []model.EveEntity) ([]esi.PostCharactersC
 // TODO: Add ability to update existing mails for is_read and labels
 
 // UpdateMails fetches and stores new mails from ESI for a character.
-func (s *Service) UpdateMails(characterID int32) error {
+func (s *Service) UpdateMails(characterID int32) (int, error) {
 	ctx := context.Background()
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if err := s.updateMailLists(ctx, &token); err != nil {
-		return err
+		return 0, err
 	}
 	if err := s.updateMailLabels(ctx, &token); err != nil {
-		return err
+		return 0, err
 	}
 	headers, err := s.listMailHeaders(ctx, &token)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	if err := s.updateMails(ctx, &token, headers); err != nil {
-		return err
+	count, err := s.updateMails(ctx, &token, headers)
+	if err != nil {
+		return 0, err
 	}
 	if err := s.DictionarySetTime(makeMailUpdateAtDictKey(characterID), time.Now()); err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return count, nil
 }
 
 func makeMailUpdateAtDictKey(characterID int32) string {
@@ -253,13 +254,13 @@ func (s *Service) listMailHeaders(ctx context.Context, token *model.Token) ([]es
 	return mm, nil
 }
 
-func (s *Service) updateMails(ctx context.Context, token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok) error {
+func (s *Service) updateMails(ctx context.Context, token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok) (int, error) {
 	existingIDs, _, err := s.determineMailIDs(ctx, token.CharacterID, headers)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if err := s.ensureValidToken(ctx, token); err != nil {
-		return err
+		return 0, err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
 
@@ -281,10 +282,10 @@ func (s *Service) updateMails(ctx context.Context, token *model.Token, headers [
 		})
 	}
 	if err = g.Wait(); err != nil {
-		slog.Error("Failed to fetch new mail", "characterID", token.CharacterID, "error", err)
+		return 0, err
 	}
-	slog.Info("Received new mail", "count", count)
-	return nil
+	slog.Info("Received new mail", "characterID", token.CharacterID, "count", count)
+	return count, nil
 }
 
 func (s *Service) fetchAndStoreMail(ctx context.Context, characterID, mailID int32) error {
