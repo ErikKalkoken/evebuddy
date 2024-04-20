@@ -22,6 +22,7 @@ INSERT INTO characters (
     name,
     race_id,
     security_status,
+    ship_id,
     skill_points,
     location_id,
     wallet_balance,
@@ -30,9 +31,9 @@ INSERT INTO characters (
     gender
 )
 VALUES (
-    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?, ?, ?
+    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?
 )
-RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id, id, last_login_at, mail_updated_at, name, race_id, security_status, skill_points, location_id, wallet_balance
+RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id, id, last_login_at, location_id, mail_updated_at, name, race_id, security_status, ship_id, skill_points, wallet_balance
 `
 
 type CreateCharacterParams struct {
@@ -45,6 +46,7 @@ type CreateCharacterParams struct {
 	Name           string
 	RaceID         int64
 	SecurityStatus float64
+	ShipID         int64
 	SkillPoints    int64
 	LocationID     int64
 	WalletBalance  float64
@@ -64,6 +66,7 @@ func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams
 		arg.Name,
 		arg.RaceID,
 		arg.SecurityStatus,
+		arg.ShipID,
 		arg.SkillPoints,
 		arg.LocationID,
 		arg.WalletBalance,
@@ -81,12 +84,13 @@ func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams
 		&i.FactionID,
 		&i.ID,
 		&i.LastLoginAt,
+		&i.LocationID,
 		&i.MailUpdatedAt,
 		&i.Name,
 		&i.RaceID,
 		&i.SecurityStatus,
+		&i.ShipID,
 		&i.SkillPoints,
-		&i.LocationID,
 		&i.WalletBalance,
 	)
 	return i, err
@@ -103,10 +107,16 @@ func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
 }
 
 const getCharacter = `-- name: GetCharacter :one
-SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.mail_updated_at, characters.name, characters.race_id, characters.security_status, characters.skill_points, characters.location_id, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name, races.Name as race_name, systems.id, systems.category, systems.name
+SELECT
+    characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.location_id, characters.mail_updated_at, characters.name, characters.race_id, characters.security_status, characters.ship_id, characters.skill_points, characters.wallet_balance,
+    corporations.name as corporation_name,
+    alliances.name as alliance_name,
+    factions.name as faction_name,
+    races.Name as race_name,
+    locations.Name as location_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
-JOIN eve_entities AS systems ON systems.id = characters.location_id
+JOIN eve_entities AS locations ON locations.id = characters.location_id
 JOIN races ON races.id = characters.race_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
@@ -114,34 +124,27 @@ WHERE characters.id = ?
 `
 
 type GetCharacterRow struct {
-	AllianceID     sql.NullInt64
-	Birthday       time.Time
-	CorporationID  int64
-	Description    string
-	Gender         string
-	FactionID      sql.NullInt64
-	ID             int64
-	LastLoginAt    time.Time
-	MailUpdatedAt  sql.NullTime
-	Name           string
-	RaceID         int64
-	SecurityStatus float64
-	SkillPoints    int64
-	LocationID     int64
-	WalletBalance  float64
-	ID_2           int64
-	Category       string
-	Name_2         string
-	ID_3           sql.NullInt64
-	Category_2     sql.NullString
-	Name_3         sql.NullString
-	ID_4           sql.NullInt64
-	Category_3     sql.NullString
-	Name_4         sql.NullString
-	RaceName       string
-	ID_5           int64
-	Category_4     string
-	Name_5         string
+	AllianceID      sql.NullInt64
+	Birthday        time.Time
+	CorporationID   int64
+	Description     string
+	Gender          string
+	FactionID       sql.NullInt64
+	ID              int64
+	LastLoginAt     time.Time
+	LocationID      int64
+	MailUpdatedAt   sql.NullTime
+	Name            string
+	RaceID          int64
+	SecurityStatus  float64
+	ShipID          int64
+	SkillPoints     int64
+	WalletBalance   float64
+	CorporationName string
+	AllianceName    sql.NullString
+	FactionName     sql.NullString
+	RaceName        string
+	LocationName    string
 }
 
 func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, error) {
@@ -156,26 +159,19 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.FactionID,
 		&i.ID,
 		&i.LastLoginAt,
+		&i.LocationID,
 		&i.MailUpdatedAt,
 		&i.Name,
 		&i.RaceID,
 		&i.SecurityStatus,
+		&i.ShipID,
 		&i.SkillPoints,
-		&i.LocationID,
 		&i.WalletBalance,
-		&i.ID_2,
-		&i.Category,
-		&i.Name_2,
-		&i.ID_3,
-		&i.Category_2,
-		&i.Name_3,
-		&i.ID_4,
-		&i.Category_3,
-		&i.Name_4,
+		&i.CorporationName,
+		&i.AllianceName,
+		&i.FactionName,
 		&i.RaceName,
-		&i.ID_5,
-		&i.Category_4,
-		&i.Name_5,
+		&i.LocationName,
 	)
 	return i, err
 }
@@ -209,45 +205,44 @@ func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
 }
 
 const listCharacters = `-- name: ListCharacters :many
-SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.mail_updated_at, characters.name, characters.race_id, characters.security_status, characters.skill_points, characters.location_id, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name, races.Name as race_name, systems.id, systems.category, systems.name
+SELECT
+    characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.location_id, characters.mail_updated_at, characters.name, characters.race_id, characters.security_status, characters.ship_id, characters.skill_points, characters.wallet_balance,
+    corporations.name as corporation_name,
+    alliances.name as alliance_name,
+    factions.name as faction_name,
+    races.Name as race_name,
+    locations.Name as location_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
+JOIN eve_entities AS locations ON locations.id = characters.location_id
 JOIN races ON races.id = characters.race_id
-JOIN eve_entities AS systems ON systems.id = characters.location_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 ORDER BY characters.name
 `
 
 type ListCharactersRow struct {
-	AllianceID     sql.NullInt64
-	Birthday       time.Time
-	CorporationID  int64
-	Description    string
-	Gender         string
-	FactionID      sql.NullInt64
-	ID             int64
-	LastLoginAt    time.Time
-	MailUpdatedAt  sql.NullTime
-	Name           string
-	RaceID         int64
-	SecurityStatus float64
-	SkillPoints    int64
-	LocationID     int64
-	WalletBalance  float64
-	ID_2           int64
-	Category       string
-	Name_2         string
-	ID_3           sql.NullInt64
-	Category_2     sql.NullString
-	Name_3         sql.NullString
-	ID_4           sql.NullInt64
-	Category_3     sql.NullString
-	Name_4         sql.NullString
-	RaceName       string
-	ID_5           int64
-	Category_4     string
-	Name_5         string
+	AllianceID      sql.NullInt64
+	Birthday        time.Time
+	CorporationID   int64
+	Description     string
+	Gender          string
+	FactionID       sql.NullInt64
+	ID              int64
+	LastLoginAt     time.Time
+	LocationID      int64
+	MailUpdatedAt   sql.NullTime
+	Name            string
+	RaceID          int64
+	SecurityStatus  float64
+	ShipID          int64
+	SkillPoints     int64
+	WalletBalance   float64
+	CorporationName string
+	AllianceName    sql.NullString
+	FactionName     sql.NullString
+	RaceName        string
+	LocationName    string
 }
 
 func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, error) {
@@ -268,26 +263,19 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.FactionID,
 			&i.ID,
 			&i.LastLoginAt,
+			&i.LocationID,
 			&i.MailUpdatedAt,
 			&i.Name,
 			&i.RaceID,
 			&i.SecurityStatus,
+			&i.ShipID,
 			&i.SkillPoints,
-			&i.LocationID,
 			&i.WalletBalance,
-			&i.ID_2,
-			&i.Category,
-			&i.Name_2,
-			&i.ID_3,
-			&i.Category_2,
-			&i.Name_3,
-			&i.ID_4,
-			&i.Category_3,
-			&i.Name_4,
+			&i.CorporationName,
+			&i.AllianceName,
+			&i.FactionName,
 			&i.RaceName,
-			&i.ID_5,
-			&i.Category_4,
-			&i.Name_5,
+			&i.LocationName,
 		); err != nil {
 			return nil, err
 		}
@@ -313,6 +301,7 @@ SET
     mail_updated_at = ?,
     name = ?,
     security_status = ?,
+    ship_id = ?,
     skill_points = ?,
     location_id = ?,
     wallet_balance = ?
@@ -328,6 +317,7 @@ type UpdateCharacterParams struct {
 	MailUpdatedAt  sql.NullTime
 	Name           string
 	SecurityStatus float64
+	ShipID         int64
 	SkillPoints    int64
 	LocationID     int64
 	WalletBalance  float64
@@ -344,6 +334,7 @@ func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams
 		arg.MailUpdatedAt,
 		arg.Name,
 		arg.SecurityStatus,
+		arg.ShipID,
 		arg.SkillPoints,
 		arg.LocationID,
 		arg.WalletBalance,

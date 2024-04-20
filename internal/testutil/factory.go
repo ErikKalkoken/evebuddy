@@ -54,17 +54,20 @@ func (f Factory) CreateCharacter(args ...model.Character) model.Character {
 	if c.LastLoginAt.IsZero() {
 		c.LastLoginAt = time.Now()
 	}
+	if c.Location.ID == 0 {
+		c.Location = f.CreateEveEntitySolarSystem()
+	}
 	if c.MailUpdatedAt.IsZero() {
 		c.MailUpdatedAt = time.Now()
 	}
 	if c.Race.ID == 0 {
 		c.Race = f.CreateRace()
 	}
+	if c.Ship.ID == 0 {
+		c.Ship = f.CreateEveEntityInventoryType()
+	}
 	if c.SkillPoints == 0 {
 		c.SkillPoints = rand.IntN(100_000_000)
-	}
-	if c.Location.ID == 0 {
-		c.Location = f.CreateEveEntity(model.EveEntity{Category: model.EveEntitySolarSystem})
 	}
 	if c.WalletBalance == 0 {
 		c.WalletBalance = rand.Float64() * 100_000_000_000
@@ -124,6 +127,11 @@ func (f Factory) CreateEveEntityCorporation(args ...model.EveEntity) model.EveEn
 
 func (f Factory) CreateEveEntitySolarSystem(args ...model.EveEntity) model.EveEntity {
 	args2 := eveEntityWithCategory(args, model.EveEntitySolarSystem)
+	return f.CreateEveEntity(args2...)
+}
+
+func (f Factory) CreateEveEntityInventoryType(args ...model.EveEntity) model.EveEntity {
+	args2 := eveEntityWithCategory(args, model.EveEntityInventoryType)
 	return f.CreateEveEntity(args2...)
 }
 

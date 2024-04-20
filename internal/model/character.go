@@ -23,6 +23,7 @@ type Character struct {
 	Name           string
 	Race           Race
 	SecurityStatus float64
+	Ship           EveEntity
 	SkillPoints    int
 	WalletBalance  float64
 }

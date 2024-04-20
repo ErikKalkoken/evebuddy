@@ -18,12 +18,13 @@ type Character struct {
 	FactionID      sql.NullInt64
 	ID             int64
 	LastLoginAt    time.Time
+	LocationID     int64
 	MailUpdatedAt  sql.NullTime
 	Name           string
 	RaceID         int64
 	SecurityStatus float64
+	ShipID         int64
 	SkillPoints    int64
-	LocationID     int64
 	WalletBalance  float64
 }
 

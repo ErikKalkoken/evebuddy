@@ -21,7 +21,8 @@ func TestCharacter(t *testing.T) {
 		corp := factory.CreateEveEntityCorporation()
 		race := factory.CreateRace()
 		system := factory.CreateEveEntitySolarSystem()
-		c := model.Character{ID: 1, Name: "Erik", Corporation: corp, Race: race, Location: system}
+		ship := factory.CreateEveEntityInventoryType()
+		c := model.Character{ID: 1, Name: "Erik", Corporation: corp, Race: race, Location: system, Ship: ship}
 		// when
 		err := r.UpdateOrCreateCharacter(ctx, &c)
 		// then
@@ -110,7 +111,7 @@ func TestCharacter(t *testing.T) {
 		testutil.TruncateTables(db)
 		factory.CreateCharacter()
 		alliance := factory.CreateEveEntityAlliance()
-		faction := factory.CreateEveEntity()
+		faction := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityFaction})
 		system := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntitySolarSystem})
 		c1 := factory.CreateCharacter(
 			model.Character{
@@ -144,7 +145,7 @@ func TestCharacterList(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		alliance := factory.CreateEveEntityAlliance()
-		faction := factory.CreateEveEntity()
+		faction := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityFaction})
 		system := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntitySolarSystem})
 		c1 := factory.CreateCharacter(
 			model.Character{

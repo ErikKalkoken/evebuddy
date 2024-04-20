@@ -12,6 +12,7 @@ var esiScopes = []string{
 	"esi-characters.read_contacts.v1",
 	"esi-location.read_location.v1",
 	"esi-location.read_online.v1",
+	"esi-location.read_ship_type.v1",
 	"esi-mail.read_mail.v1",
 	"esi-mail.organize_mail.v1",
 	"esi-mail.send_mail.v1",
@@ -156,7 +157,11 @@ func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Charac
 	if err != nil {
 		return err
 	}
-	entityIDs = append(entityIDs, location.SolarSystemId)
+	ship, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, c.ID, nil)
+	if err != nil {
+		return err
+	}
+	entityIDs = append(entityIDs, location.SolarSystemId, ship.ShipTypeId)
 	rr, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
 	if err != nil {
 		return err
@@ -197,10 +202,15 @@ func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Charac
 		}
 	}
 	c.Faction = faction
-	system, err := s.r.GetEveEntity(ctx, location.SolarSystemId)
+	l, err := s.r.GetEveEntity(ctx, location.SolarSystemId)
 	if err != nil {
 		return err
 	}
-	c.Location = system
+	c.Location = l
+	o, err := s.r.GetEveEntity(ctx, ship.ShipTypeId)
+	if err != nil {
+		return err
+	}
+	c.Ship = o
 	return nil
 }

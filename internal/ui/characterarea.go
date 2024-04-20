@@ -80,7 +80,7 @@ func (c *characterArea) Redraw() {
 		{"Wallet Balance", numberOrDefault(character.WalletBalance, "?"), defaultColor},
 		{"Home Station", "PLACEHOLDER", defaultColor},
 		{"Location", stringOrDefault(character.Location.Name, "?"), defaultColor},
-		{"Ship", "PLACEHOLDER", defaultColor},
+		{"Ship", character.Ship.Name, defaultColor},
 		{"Last Login", humanize.Time(character.LastLoginAt), defaultColor},
 	}
 	form2 := makeForm(r)

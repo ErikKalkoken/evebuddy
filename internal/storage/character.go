@@ -31,8 +31,8 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 	c := model.Character{
 		Birthday: row.Birthday,
 		Corporation: model.EveEntity{ID: int32(row.CorporationID),
-			Name:     row.Name_2,
-			Category: eveEntityCategoryFromDBModel(row.Category),
+			Name:     row.CorporationName,
+			Category: model.EveEntityCorporation,
 		},
 		Description: row.Description,
 		Gender:      row.Gender,
@@ -47,23 +47,23 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		SkillPoints:    int(row.SkillPoints),
 		Location: model.EveEntity{
 			ID:       int32(row.LocationID),
-			Name:     row.Name_5,
-			Category: eveEntityCategoryFromDBModel(row.Category_4),
+			Name:     row.LocationName,
+			Category: model.EveEntitySolarSystem,
 		},
 		WalletBalance: row.WalletBalance,
 	}
 	if row.AllianceID.Valid {
 		c.Alliance = model.EveEntity{
 			ID:       int32(row.AllianceID.Int64),
-			Name:     row.Name_3.String,
-			Category: eveEntityCategoryFromDBModel(row.Category_2.String),
+			Name:     row.AllianceName.String,
+			Category: model.EveEntityAlliance,
 		}
 	}
 	if row.FactionID.Valid {
 		c.Faction = model.EveEntity{
 			ID:       int32(row.FactionID.Int64),
-			Name:     row.Name_4.String,
-			Category: eveEntityCategoryFromDBModel(row.Category_3.String),
+			Name:     row.FactionName.String,
+			Category: model.EveEntityFaction,
 		}
 	}
 	if row.MailUpdatedAt.Valid {
@@ -95,8 +95,8 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 		c := model.Character{
 			Birthday: row.Birthday,
 			Corporation: model.EveEntity{ID: int32(row.CorporationID),
-				Name:     row.Name_2,
-				Category: eveEntityCategoryFromDBModel(row.Category),
+				Name:     row.CorporationName,
+				Category: model.EveEntityCorporation,
 			},
 			Description:    row.Description,
 			Gender:         row.Gender,
@@ -108,23 +108,23 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 			SkillPoints:    int(row.SkillPoints),
 			Location: model.EveEntity{
 				ID:       int32(row.LocationID),
-				Name:     row.Name_5,
-				Category: eveEntityCategoryFromDBModel(row.Category_4),
+				Name:     row.LocationName,
+				Category: model.EveEntitySolarSystem,
 			},
 			WalletBalance: row.WalletBalance,
 		}
 		if row.AllianceID.Valid {
 			c.Alliance = model.EveEntity{
 				ID:       int32(row.AllianceID.Int64),
-				Name:     row.Name_3.String,
-				Category: eveEntityCategoryFromDBModel(row.Category_2.String),
+				Name:     row.AllianceName.String,
+				Category: model.EveEntityAlliance,
 			}
 		}
 		if row.FactionID.Valid {
 			c.Faction = model.EveEntity{
 				ID:       int32(row.FactionID.Int64),
-				Name:     row.Name_4.String,
-				Category: eveEntityCategoryFromDBModel(row.Category_3.String),
+				Name:     row.FactionName.String,
+				Category: model.EveEntityFaction,
 			}
 		}
 		if row.MailUpdatedAt.Valid {
@@ -145,15 +145,6 @@ func (r *Storage) ListCharacterIDs(ctx context.Context) ([]int32, error) {
 }
 
 func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Character) error {
-	if c.Corporation.ID == 0 {
-		return fmt.Errorf("can not store character without a corporation: %d", c.ID)
-	}
-	if c.Location.ID == 0 {
-		return fmt.Errorf("can not store character without a solar system: %d", c.ID)
-	}
-	if c.Race.ID == 0 {
-		return fmt.Errorf("can not store character without a race: %d", c.ID)
-	}
 	err := func() error {
 		tx, err := r.db.Begin()
 		if err != nil {
@@ -171,6 +162,7 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 			Name:           c.Name,
 			RaceID:         int64(c.Race.ID),
 			SecurityStatus: float64(c.SecurityStatus),
+			ShipID:         int64(c.Ship.ID),
 			SkillPoints:    int64(c.SkillPoints),
 			LocationID:     int64(c.Location.ID),
 			WalletBalance:  c.WalletBalance,
@@ -196,6 +188,7 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 				LastLoginAt:    c.LastLoginAt,
 				Name:           c.Name,
 				SecurityStatus: float64(c.SecurityStatus),
+				ShipID:         int64(c.Ship.ID),
 				SkillPoints:    int64(c.SkillPoints),
 				LocationID:     int64(c.Location.ID),
 				WalletBalance:  c.WalletBalance,

@@ -9,6 +9,7 @@ INSERT INTO characters (
     name,
     race_id,
     security_status,
+    ship_id,
     skill_points,
     location_id,
     wallet_balance,
@@ -17,7 +18,7 @@ INSERT INTO characters (
     gender
 )
 VALUES (
-    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?, ?, ?
+    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?
 )
 RETURNING *;
 
@@ -26,21 +27,33 @@ DELETE FROM characters
 WHERE id = ?;
 
 -- name: GetCharacter :one
-SELECT characters.*, corporations.*, alliances.*, factions.*, races.Name as race_name, systems.*
+SELECT
+    characters.*,
+    corporations.name as corporation_name,
+    alliances.name as alliance_name,
+    factions.name as faction_name,
+    races.Name as race_name,
+    locations.Name as location_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
-JOIN eve_entities AS systems ON systems.id = characters.location_id
+JOIN eve_entities AS locations ON locations.id = characters.location_id
 JOIN races ON races.id = characters.race_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 WHERE characters.id = ?;
 
 -- name: ListCharacters :many
-SELECT characters.*, corporations.*, alliances.*, factions.*, races.Name as race_name, systems.*
+SELECT
+    characters.*,
+    corporations.name as corporation_name,
+    alliances.name as alliance_name,
+    factions.name as faction_name,
+    races.Name as race_name,
+    locations.Name as location_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
+JOIN eve_entities AS locations ON locations.id = characters.location_id
 JOIN races ON races.id = characters.race_id
-JOIN eve_entities AS systems ON systems.id = characters.location_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 ORDER BY characters.name;
@@ -60,6 +73,7 @@ SET
     mail_updated_at = ?,
     name = ?,
     security_status = ?,
+    ship_id = ?,
     skill_points = ?,
     location_id = ?,
     wallet_balance = ?
