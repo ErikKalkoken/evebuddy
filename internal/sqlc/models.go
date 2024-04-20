@@ -17,6 +17,7 @@ type Character struct {
 	Gender         string
 	FactionID      sql.NullInt64
 	ID             int64
+	LastLoginAt    time.Time
 	MailUpdatedAt  sql.NullTime
 	Name           string
 	SecurityStatus float64

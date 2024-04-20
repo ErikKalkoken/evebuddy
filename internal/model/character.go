@@ -17,6 +17,7 @@ type Character struct {
 	Faction        EveEntity
 	Gender         string
 	ID             int32
+	LastLoginAt    time.Time
 	MailUpdatedAt  time.Time
 	Name           string
 	SecurityStatus float64

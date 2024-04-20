@@ -14,6 +14,7 @@ CREATE TABLE characters (
     gender TEXT NOT NULL,
     faction_id INTEGER,
     id INTEGER PRIMARY KEY NOT NULL,
+    last_login_at DATETIME NOT NULL,
     mail_updated_at DATETIME,
     name TEXT NOT NULL,
     security_status REAL NOT NULL,

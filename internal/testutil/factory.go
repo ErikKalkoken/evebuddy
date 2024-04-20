@@ -51,6 +51,9 @@ func (f Factory) CreateCharacter(args ...model.Character) model.Character {
 	if c.Description == "" {
 		c.Description = "Lorem Ipsum"
 	}
+	if c.LastLoginAt.IsZero() {
+		c.LastLoginAt = time.Now()
+	}
 	if c.MailUpdatedAt.IsZero() {
 		c.MailUpdatedAt = time.Now()
 	}

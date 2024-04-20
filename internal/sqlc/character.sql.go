@@ -17,6 +17,7 @@ INSERT INTO characters (
     corporation_id,
     description,
     faction_id,
+    last_login_at,
     mail_updated_at,
     name,
     security_status,
@@ -28,9 +29,9 @@ INSERT INTO characters (
     gender
 )
 VALUES (
-    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?
+    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?, ?
 )
-RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id, id, mail_updated_at, name, security_status, skill_points, solar_system_id, wallet_balance
+RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id, id, last_login_at, mail_updated_at, name, security_status, skill_points, solar_system_id, wallet_balance
 `
 
 type CreateCharacterParams struct {
@@ -38,6 +39,7 @@ type CreateCharacterParams struct {
 	CorporationID  int64
 	Description    string
 	FactionID      sql.NullInt64
+	LastLoginAt    time.Time
 	MailUpdatedAt  sql.NullTime
 	Name           string
 	SecurityStatus float64
@@ -55,6 +57,7 @@ func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams
 		arg.CorporationID,
 		arg.Description,
 		arg.FactionID,
+		arg.LastLoginAt,
 		arg.MailUpdatedAt,
 		arg.Name,
 		arg.SecurityStatus,
@@ -74,6 +77,7 @@ func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams
 		&i.Gender,
 		&i.FactionID,
 		&i.ID,
+		&i.LastLoginAt,
 		&i.MailUpdatedAt,
 		&i.Name,
 		&i.SecurityStatus,
@@ -95,7 +99,7 @@ func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
 }
 
 const getCharacter = `-- name: GetCharacter :one
-SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.mail_updated_at, characters.name, characters.security_status, characters.skill_points, characters.solar_system_id, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name, systems.id, systems.category, systems.name
+SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.mail_updated_at, characters.name, characters.security_status, characters.skill_points, characters.solar_system_id, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name, systems.id, systems.category, systems.name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
@@ -112,6 +116,7 @@ type GetCharacterRow struct {
 	Gender         string
 	FactionID      sql.NullInt64
 	ID             int64
+	LastLoginAt    time.Time
 	MailUpdatedAt  sql.NullTime
 	Name           string
 	SecurityStatus float64
@@ -143,6 +148,7 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.Gender,
 		&i.FactionID,
 		&i.ID,
+		&i.LastLoginAt,
 		&i.MailUpdatedAt,
 		&i.Name,
 		&i.SecurityStatus,
@@ -194,7 +200,7 @@ func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
 }
 
 const listCharacters = `-- name: ListCharacters :many
-SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.mail_updated_at, characters.name, characters.security_status, characters.skill_points, characters.solar_system_id, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name, systems.id, systems.category, systems.name
+SELECT characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.mail_updated_at, characters.name, characters.security_status, characters.skill_points, characters.solar_system_id, characters.wallet_balance, corporations.id, corporations.category, corporations.name, alliances.id, alliances.category, alliances.name, factions.id, factions.category, factions.name, systems.id, systems.category, systems.name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 JOIN eve_entities AS systems ON systems.id = characters.solar_system_id
@@ -211,6 +217,7 @@ type ListCharactersRow struct {
 	Gender         string
 	FactionID      sql.NullInt64
 	ID             int64
+	LastLoginAt    time.Time
 	MailUpdatedAt  sql.NullTime
 	Name           string
 	SecurityStatus float64
@@ -248,6 +255,7 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.Gender,
 			&i.FactionID,
 			&i.ID,
+			&i.LastLoginAt,
 			&i.MailUpdatedAt,
 			&i.Name,
 			&i.SecurityStatus,
@@ -287,6 +295,7 @@ SET
     corporation_id = ?,
     description = ?,
     faction_id = ?,
+    last_login_at = ?,
     mail_updated_at = ?,
     name = ?,
     security_status = ?,
@@ -301,6 +310,7 @@ type UpdateCharacterParams struct {
 	CorporationID  int64
 	Description    string
 	FactionID      sql.NullInt64
+	LastLoginAt    time.Time
 	MailUpdatedAt  sql.NullTime
 	Name           string
 	SecurityStatus float64
@@ -316,6 +326,7 @@ func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams
 		arg.CorporationID,
 		arg.Description,
 		arg.FactionID,
+		arg.LastLoginAt,
 		arg.MailUpdatedAt,
 		arg.Name,
 		arg.SecurityStatus,
