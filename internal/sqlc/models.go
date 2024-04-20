@@ -21,6 +21,7 @@ type Character struct {
 	Name           string
 	SecurityStatus float64
 	SkillPoints    sql.NullInt64
+	SolarSystemID  sql.NullInt64
 	WalletBalance  sql.NullFloat64
 }
 

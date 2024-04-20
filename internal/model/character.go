@@ -21,6 +21,7 @@ type Character struct {
 	Name           string
 	SecurityStatus float64
 	SkillPoints    int
+	SolarSystem    EveEntity
 	WalletBalance  float64
 }
 

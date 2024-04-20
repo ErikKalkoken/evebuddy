@@ -113,6 +113,7 @@ func (s *Service) UpdateCharacter(characterID int32) error {
 }
 
 func (s *Service) updateCharacter(ctx context.Context, c *model.Character) error {
+	entityIDs := []int32{c.ID}
 	skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, c.ID, nil)
 	if err != nil {
 		return err
@@ -123,6 +124,11 @@ func (s *Service) updateCharacter(ctx context.Context, c *model.Character) error
 	}
 	c.SkillPoints = int(skills.TotalSp)
 	c.WalletBalance = balance
+	location, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, c.ID, nil)
+	if err != nil {
+		return err
+	}
+	entityIDs = append(entityIDs, location.SolarSystemId)
 	rr, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
 	if err != nil {
 		return err
@@ -131,14 +137,14 @@ func (s *Service) updateCharacter(ctx context.Context, c *model.Character) error
 		return nil
 	}
 	r := rr[0]
-	ids := []int32{r.CorporationId}
+	entityIDs = append(entityIDs, r.CorporationId)
 	if r.AllianceId != 0 {
-		ids = append(ids, r.AllianceId)
+		entityIDs = append(entityIDs, r.AllianceId)
 	}
 	if r.FactionId != 0 {
-		ids = append(ids, r.FactionId)
+		entityIDs = append(entityIDs, r.FactionId)
 	}
-	_, err = s.addMissingEveEntities(ctx, ids)
+	_, err = s.addMissingEveEntities(ctx, entityIDs)
 	if err != nil {
 		return err
 	}
@@ -163,5 +169,10 @@ func (s *Service) updateCharacter(ctx context.Context, c *model.Character) error
 		}
 	}
 	c.Faction = faction
+	system, err := s.r.GetEveEntity(ctx, location.SolarSystemId)
+	if err != nil {
+		return err
+	}
+	c.SolarSystem = system
 	return nil
 }
