@@ -11,9 +11,10 @@ import (
 type category string
 
 const (
-	categoryCharacter   category = "characters"
-	categoryCorporation category = "corporations"
-	categoryAlliance    category = "alliances"
+	categoryCharacter     category = "characters"
+	categoryCorporation   category = "corporations"
+	categoryAlliance      category = "alliances"
+	categoryInventoryType category = "types"
 )
 
 const PlaceholderCharacterID = 1
@@ -40,6 +41,11 @@ func FactionLogoURL(id int32, size int) (fyne.URI, error) {
 	return imageURL(categoryCorporation, id, size)
 }
 
+// InventoryTypeRenderURL returns an image URL for inventory type render
+func InventoryTypeRenderURL(id int32, size int) (fyne.URI, error) {
+	return imageURL(categoryInventoryType, id, size)
+}
+
 func imageURL(c category, id int32, size int) (fyne.URI, error) {
 	switch size {
 	case 32, 64, 128, 256, 512, 1024:
@@ -48,9 +54,10 @@ func imageURL(c category, id int32, size int) (fyne.URI, error) {
 		return nil, fmt.Errorf("invalid size %d", size)
 	}
 	category2Class := map[category]string{
-		categoryAlliance:    "logo",
-		categoryCharacter:   "portrait",
-		categoryCorporation: "logo",
+		categoryAlliance:      "logo",
+		categoryCharacter:     "portrait",
+		categoryCorporation:   "logo",
+		categoryInventoryType: "render",
 	}
 	class, ok := category2Class[c]
 	if !ok {

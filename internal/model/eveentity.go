@@ -71,6 +71,8 @@ func (e *EveEntity) IconURL(size int) (fyne.URI, error) {
 		return images.CorporationLogoURL(e.ID, size)
 	case EveEntityFaction:
 		return images.FactionLogoURL(e.ID, size)
+	case EveEntityInventoryType:
+		return images.InventoryTypeRenderURL(e.ID, size)
 	}
 	return nil, fmt.Errorf("can not match category: %v", e.Category)
 }

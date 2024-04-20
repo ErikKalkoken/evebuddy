@@ -145,6 +145,14 @@ func updateIcons(icons *fyne.Container, c *model.Character) error {
 		icons.Add(image)
 	}
 
+	u, err = c.Ship.IconURL(128)
+	if err != nil {
+		return err
+	}
+	ship := canvas.NewImageFromURI(u)
+	ship.FillMode = canvas.ImageFillOriginal
+	icons.Add(ship)
+
 	icons.Add(layout.NewSpacer())
 	return nil
 }
