@@ -8,6 +8,8 @@ import (
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/sqlc"
 	"fmt"
+
+	"github.com/mattn/go-sqlite3"
 )
 
 func (r *Storage) DeleteCharacter(ctx context.Context, characterID int32) error {
@@ -32,11 +34,15 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 			Name:     row.Name_2,
 			Category: eveEntityCategoryFromDBModel(row.Category),
 		},
-		Description:    row.Description,
-		Gender:         row.Gender,
-		ID:             int32(row.ID),
-		LastLoginAt:    row.LastLoginAt,
-		Name:           row.Name,
+		Description: row.Description,
+		Gender:      row.Gender,
+		ID:          int32(row.ID),
+		LastLoginAt: row.LastLoginAt,
+		Name:        row.Name,
+		Race: model.Race{
+			ID:   int32(row.RaceID),
+			Name: row.RaceName,
+		},
 		SecurityStatus: row.SecurityStatus,
 		SkillPoints:    int(row.SkillPoints),
 		SolarSystem: model.EveEntity{
@@ -95,8 +101,9 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 			Description:    row.Description,
 			Gender:         row.Gender,
 			ID:             int32(row.ID),
-			Name:           row.Name,
 			LastLoginAt:    row.LastLoginAt,
+			Name:           row.Name,
+			Race:           model.Race{ID: int32(row.RaceID), Name: row.RaceName},
 			SecurityStatus: row.SecurityStatus,
 			SkillPoints:    int(row.SkillPoints),
 			SolarSystem: model.EveEntity{
@@ -144,6 +151,9 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 	if c.SolarSystem.ID == 0 {
 		return fmt.Errorf("can not store character without a solar system: %d", c.ID)
 	}
+	if c.Race.ID == 0 {
+		return fmt.Errorf("can not store character without a race: %d", c.ID)
+	}
 	err := func() error {
 		tx, err := r.db.Begin()
 		if err != nil {
@@ -159,6 +169,7 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 			ID:             int64(c.ID),
 			LastLoginAt:    c.LastLoginAt,
 			Name:           c.Name,
+			RaceID:         int64(c.Race.ID),
 			SecurityStatus: float64(c.SecurityStatus),
 			SkillPoints:    int64(c.SkillPoints),
 			SolarSystemID:  int64(c.SolarSystem.ID),
@@ -174,7 +185,8 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 		}
 		_, err = qtx.CreateCharacter(ctx, arg)
 		if err != nil {
-			if !isSqlite3ErrConstraint(err) {
+			sqlErr, ok := err.(sqlite3.Error)
+			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintPrimaryKey {
 				return err
 			}
 			arg := sqlc.UpdateCharacterParams{

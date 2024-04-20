@@ -10,6 +10,8 @@ import (
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/sqlc"
+
+	"github.com/mattn/go-sqlite3"
 )
 
 // Eve Entity categories in DB models
@@ -25,58 +27,6 @@ const (
 	eveEntitySolarSystem   = "solar_system"
 	eveEntityStation       = "station"
 )
-
-func eveEntityCategoryFromDBModel(c string) model.EveEntityCategory {
-	categoryMap := map[string]model.EveEntityCategory{
-		eveEntityAlliance:      model.EveEntityAlliance,
-		eveEntityCharacter:     model.EveEntityCharacter,
-		eveEntityConstellation: model.EveEntityConstellation,
-		eveEntityCorporation:   model.EveEntityCorporation,
-		eveEntityFaction:       model.EveEntityFaction,
-		eveEntityMailList:      model.EveEntityMailList,
-		eveEntityInventoryType: model.EveEntityInventoryType,
-		eveEntityRegion:        model.EveEntityRegion,
-		eveEntitySolarSystem:   model.EveEntitySolarSystem,
-		eveEntityStation:       model.EveEntityStation,
-	}
-	c2, ok := categoryMap[c]
-	if !ok {
-		panic(fmt.Sprintf("Can not map unknown category: %s", c))
-	}
-	return c2
-}
-
-func eveEntityDBModelCategoryFromCategory(c model.EveEntityCategory) string {
-	categoryMap := map[model.EveEntityCategory]string{
-		model.EveEntityAlliance:      eveEntityAlliance,
-		model.EveEntityCharacter:     eveEntityCharacter,
-		model.EveEntityConstellation: eveEntityConstellation,
-		model.EveEntityCorporation:   eveEntityCorporation,
-		model.EveEntityFaction:       eveEntityFaction,
-		model.EveEntityMailList:      eveEntityMailList,
-		model.EveEntityInventoryType: eveEntityInventoryType,
-		model.EveEntityRegion:        eveEntityRegion,
-		model.EveEntitySolarSystem:   eveEntitySolarSystem,
-		model.EveEntityStation:       eveEntityStation,
-	}
-	c2, ok := categoryMap[c]
-	if !ok {
-		panic(fmt.Sprintf("Can not map unknown category: %v", c))
-	}
-	return c2
-}
-
-func eveEntityFromDBModel(e sqlc.EveEntity) model.EveEntity {
-	if e.ID == 0 {
-		return model.EveEntity{}
-	}
-	category := eveEntityCategoryFromDBModel(e.Category)
-	return model.EveEntity{
-		Category: category,
-		ID:       int32(e.ID),
-		Name:     e.Name,
-	}
-}
 
 func (r *Storage) CreateEveEntity(ctx context.Context, id int32, name string, category model.EveEntityCategory) (model.EveEntity, error) {
 	e, err := func() (model.EveEntity, error) {
@@ -230,7 +180,8 @@ func (r *Storage) UpdateOrCreateEveEntity(ctx context.Context, id int32, name st
 		var e sqlc.EveEntity
 		e, err = qtx.CreateEveEntity(ctx, arg)
 		if err != nil {
-			if !isSqlite3ErrConstraint(err) {
+			sqlErr, ok := err.(sqlite3.Error)
+			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintPrimaryKey {
 				return model.EveEntity{}, err
 			}
 			arg := sqlc.UpdateEveEntityParams{
@@ -252,4 +203,56 @@ func (r *Storage) UpdateOrCreateEveEntity(ctx context.Context, id int32, name st
 		return model.EveEntity{}, fmt.Errorf("failed to update or create EveEntity %d: %w", id, err)
 	}
 	return e, nil
+}
+
+func eveEntityCategoryFromDBModel(c string) model.EveEntityCategory {
+	categoryMap := map[string]model.EveEntityCategory{
+		eveEntityAlliance:      model.EveEntityAlliance,
+		eveEntityCharacter:     model.EveEntityCharacter,
+		eveEntityConstellation: model.EveEntityConstellation,
+		eveEntityCorporation:   model.EveEntityCorporation,
+		eveEntityFaction:       model.EveEntityFaction,
+		eveEntityMailList:      model.EveEntityMailList,
+		eveEntityInventoryType: model.EveEntityInventoryType,
+		eveEntityRegion:        model.EveEntityRegion,
+		eveEntitySolarSystem:   model.EveEntitySolarSystem,
+		eveEntityStation:       model.EveEntityStation,
+	}
+	c2, ok := categoryMap[c]
+	if !ok {
+		panic(fmt.Sprintf("Can not map unknown category: %s", c))
+	}
+	return c2
+}
+
+func eveEntityDBModelCategoryFromCategory(c model.EveEntityCategory) string {
+	categoryMap := map[model.EveEntityCategory]string{
+		model.EveEntityAlliance:      eveEntityAlliance,
+		model.EveEntityCharacter:     eveEntityCharacter,
+		model.EveEntityConstellation: eveEntityConstellation,
+		model.EveEntityCorporation:   eveEntityCorporation,
+		model.EveEntityFaction:       eveEntityFaction,
+		model.EveEntityMailList:      eveEntityMailList,
+		model.EveEntityInventoryType: eveEntityInventoryType,
+		model.EveEntityRegion:        eveEntityRegion,
+		model.EveEntitySolarSystem:   eveEntitySolarSystem,
+		model.EveEntityStation:       eveEntityStation,
+	}
+	c2, ok := categoryMap[c]
+	if !ok {
+		panic(fmt.Sprintf("Can not map unknown category: %v", c))
+	}
+	return c2
+}
+
+func eveEntityFromDBModel(e sqlc.EveEntity) model.EveEntity {
+	if e.ID == 0 {
+		return model.EveEntity{}
+	}
+	category := eveEntityCategoryFromDBModel(e.Category)
+	return model.EveEntity{
+		Category: category,
+		ID:       int32(e.ID),
+		Name:     e.Name,
+	}
 }

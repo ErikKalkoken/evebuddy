@@ -56,7 +56,7 @@ func (c *characterArea) Redraw() {
 		{"Corporation", character.Corporation.Name},
 		{"Alliance", stringOrDefault(character.Alliance.Name, "-")},
 		{"Faction", stringOrDefault(character.Faction.Name, "-")},
-		{"Race", "PLACEHOLDER"},
+		{"Race", character.Race.Name},
 		{"Gender", character.Gender},
 		{"Born", character.Birthday.Format(myDateTime)},
 		{"Security Status", fmt.Sprintf("%.1f", character.SecurityStatus)},

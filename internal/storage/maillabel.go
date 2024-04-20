@@ -8,6 +8,8 @@ import (
 
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/sqlc"
+
+	"github.com/mattn/go-sqlite3"
 )
 
 func mailLabelFromDBModel(l sqlc.MailLabel) model.MailLabel {
@@ -116,7 +118,8 @@ func (r *Storage) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelPara
 		}
 		l, err = qtx.CreateMailLabel(ctx, arg1)
 		if err != nil {
-			if !isSqlite3ErrConstraint(err) {
+			sqlErr, ok := err.(sqlite3.Error)
+			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintUnique {
 				return model.MailLabel{}, err
 			}
 			arg2 := sqlc.UpdateMailLabelParams{

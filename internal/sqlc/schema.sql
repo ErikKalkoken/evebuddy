@@ -6,6 +6,12 @@ CREATE TABLE eve_entities (
 CREATE INDEX eve_entities_name_idx ON eve_entities (name);
 CREATE INDEX eve_entities_category_idx ON eve_entities (category);
 
+CREATE TABLE races (
+    id INTEGER PRIMARY KEY NOT NULL,
+    description TEXT NOT NULL,
+    name TEXT NOT NULL
+);
+
 CREATE TABLE characters (
     alliance_id INTEGER,
     birthday DATETIME NOT NULL,
@@ -17,6 +23,7 @@ CREATE TABLE characters (
     last_login_at DATETIME NOT NULL,
     mail_updated_at DATETIME,
     name TEXT NOT NULL,
+    race_id INTEGER NOT NULL,
     security_status REAL NOT NULL,
     skill_points INTEGER NOT NULL,
     solar_system_id INTEGER NOT NULL,
@@ -24,6 +31,7 @@ CREATE TABLE characters (
     FOREIGN KEY (alliance_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
     FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
+    FOREIGN KEY (race_id) REFERENCES races(id) ON DELETE CASCADE,
     FOREIGN KEY (solar_system_id) REFERENCES eve_entities(id) ON DELETE CASCADE
 );
 

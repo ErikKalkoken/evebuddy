@@ -57,6 +57,9 @@ func (f Factory) CreateCharacter(args ...model.Character) model.Character {
 	if c.MailUpdatedAt.IsZero() {
 		c.MailUpdatedAt = time.Now()
 	}
+	if c.Race.ID == 0 {
+		c.Race = f.CreateRace()
+	}
 	if c.SkillPoints == 0 {
 		c.SkillPoints = rand.IntN(100_000_000)
 	}
@@ -247,6 +250,36 @@ func (f Factory) CreateMailList(characterID int32, args ...model.EveEntity) mode
 		panic(err)
 	}
 	return e
+}
+
+func (f Factory) CreateRace(args ...model.Race) model.Race {
+	var arg model.Race
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		ids, err := f.r.ListRaceIDs(ctx)
+		if err != nil {
+			panic(err)
+		}
+		if len(ids) > 0 {
+			arg.ID = slices.Max(ids) + 1
+		} else {
+			arg.ID = 1
+		}
+	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Race #%d", arg.ID)
+	}
+	if arg.Description == "" {
+		arg.Description = fmt.Sprintf("Description #%d", arg.ID)
+	}
+	r, err := f.r.CreateRace(ctx, arg.ID, arg.Description, arg.Name)
+	if err != nil {
+		panic(err)
+	}
+	return r
 }
 
 // CreateToken is a test factory for Token objects.

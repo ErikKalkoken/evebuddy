@@ -19,8 +19,9 @@ func TestCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		corp := factory.CreateEveEntityCorporation()
+		race := factory.CreateRace()
 		system := factory.CreateEveEntitySolarSystem()
-		c := model.Character{ID: 1, Name: "Erik", Corporation: corp, SolarSystem: system}
+		c := model.Character{ID: 1, Name: "Erik", Corporation: corp, Race: race, SolarSystem: system}
 		// when
 		err := r.UpdateOrCreateCharacter(ctx, &c)
 		// then

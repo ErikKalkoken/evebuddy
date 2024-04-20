@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"example/evebuddy/internal/sqlc"
+
+	"github.com/mattn/go-sqlite3"
 )
 
 func (r *Storage) GetDictEntry(ctx context.Context, key string) ([]byte, error) {
@@ -35,7 +37,8 @@ func (r *Storage) SetDictEntry(ctx context.Context, key string, bb []byte) error
 			Key:   key,
 		}
 		if err := qtx.CreateDictEntry(ctx, arg); err != nil {
-			if !isSqlite3ErrConstraint(err) {
+			sqlErr, ok := err.(sqlite3.Error)
+			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintPrimaryKey {
 				return err
 			}
 			arg := sqlc.UpdateDictEntryParams{

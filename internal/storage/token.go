@@ -8,6 +8,8 @@ import (
 
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/sqlc"
+
+	"github.com/mattn/go-sqlite3"
 )
 
 func tokenFromDBModel(t sqlc.Token) model.Token {
@@ -53,7 +55,8 @@ func (r *Storage) UpdateOrCreateToken(ctx context.Context, t *model.Token) error
 			TokenType:    t.TokenType,
 		}
 		if err := qtx.CreateToken(ctx, arg); err != nil {
-			if !isSqlite3ErrConstraint(err) {
+			sqlErr, ok := err.(sqlite3.Error)
+			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintPrimaryKey {
 				return err
 			}
 			arg := sqlc.UpdateTokenParams{

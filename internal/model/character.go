@@ -20,6 +20,7 @@ type Character struct {
 	LastLoginAt    time.Time
 	MailUpdatedAt  time.Time
 	Name           string
+	Race           Race
 	SecurityStatus float64
 	SkillPoints    int
 	SolarSystem    EveEntity

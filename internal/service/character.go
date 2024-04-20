@@ -70,6 +70,13 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if err := s.updateRacesESI(ctx); err != nil {
+		return err
+	}
+	race, err := s.r.GetRace(ctx, charEsi.RaceId)
+	if err != nil {
+		return err
+	}
 	character := model.Character{
 		Birthday:       charEsi.Birthday,
 		Corporation:    corporation,
@@ -77,6 +84,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 		Gender:         charEsi.Gender,
 		ID:             charID,
 		Name:           charEsi.Name,
+		Race:           race,
 		SecurityStatus: float64(charEsi.SecurityStatus),
 	}
 	if charEsi.AllianceId != 0 {

@@ -20,6 +20,7 @@ type Character struct {
 	LastLoginAt    time.Time
 	MailUpdatedAt  sql.NullTime
 	Name           string
+	RaceID         int64
 	SecurityStatus float64
 	SkillPoints    int64
 	SolarSystemID  int64
@@ -70,6 +71,12 @@ type MailMailLabel struct {
 type MailRecipient struct {
 	MailID      int64
 	EveEntityID int64
+}
+
+type Race struct {
+	ID          int64
+	Description string
+	Name        string
 }
 
 type Token struct {
