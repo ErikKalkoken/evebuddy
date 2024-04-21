@@ -20,6 +20,7 @@ type folderArea struct {
 	newButton     *widget.Button
 	refreshButton *widget.Button
 	lastUID       string
+	lastFolderAll node
 	tree          *widget.Tree
 	treeData      binding.StringTree
 	ui            *ui
@@ -102,14 +103,19 @@ func (f *folderArea) Refresh() {
 		f.refreshButton.Enable()
 		f.newButton.Enable()
 	}
-	ids, values, folderItemAll, err := f.buildFolderTree(characterID)
+	ids, values, folderAll, err := f.buildFolderTree(characterID)
 	if err != nil {
 		slog.Error("Failed to build folder tree", "character", characterID, "error", err)
 	}
 	f.treeData.Set(ids, values)
-	f.tree.Select(nodeAllID)
-	f.tree.ScrollToTop()
-	f.ui.headerArea.DrawFolder(folderItemAll)
+	if f.lastUID == "" || f.lastFolderAll != folderAll {
+		f.tree.Select(nodeAllID)
+		f.tree.ScrollToTop()
+		f.ui.headerArea.DrawFolder(folderAll)
+	} else {
+		f.ui.headerArea.Refresh()
+	}
+	f.lastFolderAll = folderAll
 }
 
 func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
@@ -126,7 +132,7 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		"": {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID},
 	}
 	folders := makeDefaultFolders(characterID, labelUnreadCounts)
-	folderItemAll := node{
+	folderAll := node{
 		Category:    nodeCategoryLabel,
 		CharacterID: characterID,
 		ID:          nodeAllID,
@@ -134,7 +140,7 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		ObjID:       model.MailLabelAll,
 		UnreadCount: totalUnreadCount,
 	}
-	folders[nodeAllID] = folderItemAll.toJSON()
+	folders[nodeAllID] = folderAll.toJSON()
 	labels, err := f.ui.service.ListMailLabelsOrdered(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
@@ -183,7 +189,7 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 			folders[uid] = n.toJSON()
 		}
 	}
-	return ids, folders, folderItemAll, nil
+	return ids, folders, folderAll, nil
 }
 
 func makeDefaultFolders(characterID int32, labelUnreadCounts map[int32]int) map[string]string {
