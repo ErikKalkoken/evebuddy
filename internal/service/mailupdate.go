@@ -27,6 +27,14 @@ const (
 // UpdateMails fetches and stores new mails from ESI for a character.
 func (s *Service) UpdateMails(characterID int32) (int, error) {
 	ctx := context.Background()
+	key := fmt.Sprintf("UpdateMails-%d", characterID)
+	x, err, _ := s.singleGroup.Do(key, func() (interface{}, error) {
+		return s.updateMails(ctx, characterID)
+	})
+	return x.(int), err
+}
+
+func (s *Service) updateMails(ctx context.Context, characterID int32) (int, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return 0, err
@@ -50,7 +58,7 @@ func (s *Service) UpdateMails(characterID int32) (int, error) {
 	}
 	count := 0
 	if len(headers) > 0 {
-		count, err = s.updateMails(ctx, &token, headers)
+		count, err = s.updateMailsESI(ctx, &token, headers)
 		if err != nil {
 			return 0, err
 		}
@@ -196,7 +204,7 @@ func (s *Service) resolveMailEntities(ctx context.Context, mm []esi.GetCharacter
 	return nil
 }
 
-func (s *Service) updateMails(ctx context.Context, token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok) (int, error) {
+func (s *Service) updateMailsESI(ctx context.Context, token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok) (int, error) {
 	if err := s.ensureValidToken(ctx, token); err != nil {
 		return 0, err
 	}

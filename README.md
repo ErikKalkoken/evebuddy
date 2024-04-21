@@ -23,10 +23,9 @@ MVP is reaching feature parity with Member Audit mail.
 - [x] Update "is_unread"
 - [x] Show recipients in header list for sent mail
 - [x] Add settings
-- [ ] Migrate "EveEntity" to "MailEntity" to reflect mailing lists usage
 - [x] Add error handling for mailing lists
-- [ ] Update all data periodically and automatic
-- [ ] Add basic unit tests
+- [x] Update all data periodically and automatic
+- [x] Add basic unit tests
 
 ### Future releases
 

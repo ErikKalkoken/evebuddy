@@ -117,8 +117,17 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) UpdateCharacter(characterID int32) error {
+func (s *Service) UpdateCharacterDetails(characterID int32) error {
 	ctx := context.Background()
+	key := fmt.Sprintf("UpdateCharacterDetails-%d", characterID)
+	_, err, _ := s.singleGroup.Do(key, func() (interface{}, error) {
+		err := s.updateCharacterDetails(ctx, characterID)
+		return struct{}{}, err
+	})
+	return err
+}
+
+func (s *Service) updateCharacterDetails(ctx context.Context, characterID int32) error {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return err

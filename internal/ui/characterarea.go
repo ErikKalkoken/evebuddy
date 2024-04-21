@@ -177,7 +177,7 @@ func (c *characterArea) StartUpdateTicker() {
 		for {
 			characterID := c.ui.CurrentCharID()
 			if characterID != 0 {
-				err := c.ui.service.UpdateCharacter(characterID)
+				err := c.ui.service.UpdateCharacterDetails(characterID)
 				if err != nil {
 					slog.Error(err.Error())
 				} else {

@@ -5,16 +5,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/antihax/goesi"
+	"golang.org/x/sync/singleflight"
+
 	myHttp "example/evebuddy/internal/helper/http"
 	"example/evebuddy/internal/storage"
-
-	"github.com/antihax/goesi"
 )
 
 type Service struct {
-	httpClient *http.Client
-	esiClient  *goesi.APIClient
-	r          *storage.Storage
+	httpClient  *http.Client
+	esiClient   *goesi.APIClient
+	r           *storage.Storage
+	singleGroup *singleflight.Group
 }
 
 func NewService(r *storage.Storage) *Service {
@@ -25,9 +27,10 @@ func NewService(r *storage.Storage) *Service {
 	userAgent := "EveBuddy kalkoken87@gmail.com"
 	esiClient := goesi.NewAPIClient(httpClient, userAgent)
 	s := Service{
-		httpClient: httpClient,
-		esiClient:  esiClient,
-		r:          r,
+		httpClient:  httpClient,
+		esiClient:   esiClient,
+		r:           r,
+		singleGroup: new(singleflight.Group),
 	}
 	return &s
 }
