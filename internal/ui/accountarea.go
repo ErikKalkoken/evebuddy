@@ -16,15 +16,15 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// manageArea is the UI area for managing of characters.
-type manageArea struct {
+// accountArea is the UI area for managing of characters.
+type accountArea struct {
 	content *fyne.Container
 	dialog  *dialog.CustomDialog
 	ui      *ui
 }
 
-func (u *ui) ShowManageDialog() {
-	m := u.NewManageArea()
+func (u *ui) ShowAccountDialog() {
+	m := u.NewAccountArea()
 	m.Redraw()
 	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		m.showAddCharacterDialog()
@@ -41,16 +41,16 @@ func (u *ui) ShowManageDialog() {
 	dialog.Show()
 }
 
-func (u *ui) NewManageArea() *manageArea {
+func (u *ui) NewAccountArea() *accountArea {
 	content := container.NewVBox()
-	m := &manageArea{
+	m := &accountArea{
 		ui:      u,
 		content: content,
 	}
 	return m
 }
 
-func (m *manageArea) Redraw() {
+func (m *accountArea) Redraw() {
 	chars, err := m.ui.service.ListCharacters()
 	if err != nil {
 		panic(err)
@@ -107,7 +107,7 @@ func (m *manageArea) Redraw() {
 	m.content.Refresh()
 }
 
-func (m *manageArea) showAddCharacterDialog() {
+func (m *accountArea) showAddCharacterDialog() {
 	ctx, cancel := context.WithCancel(context.Background())
 	dialog := dialog.NewCustom(
 		"Add Character",

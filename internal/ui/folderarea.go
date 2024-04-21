@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"log/slog"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -27,7 +28,7 @@ func (u *ui) NewFolderArea() *folderArea {
 	f := folderArea{ui: u}
 	f.tree, f.treeData = u.makeFolderTree()
 	f.refreshButton = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-		f.UpdateMails()
+		go f.UpdateMails()
 	})
 	f.newButton = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
 		f.ui.ShowCreateMessageWindow(CreateMessageNew, nil)
@@ -87,7 +88,7 @@ func (u *ui) makeFolderTree() (*widget.Tree, binding.StringTree) {
 			return
 		}
 		lastUID = uid
-		u.headerArea.Redraw(item)
+		u.headerArea.DrawFolder(item)
 	}
 	return tree, treeData
 }
@@ -108,7 +109,7 @@ func (f *folderArea) Redraw() {
 	f.treeData.Set(ids, values)
 	f.tree.Select(nodeAllID)
 	f.tree.ScrollToTop()
-	f.ui.headerArea.Redraw(folderItemAll)
+	f.ui.headerArea.DrawFolder(folderItemAll)
 }
 
 func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
@@ -226,20 +227,28 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 }
 
 func (f *folderArea) UpdateMails() {
+	character := f.ui.CurrentChar()
+	if character == nil {
+		return
+	}
 	status := f.ui.statusArea
+	status.setInfo(fmt.Sprintf("Fetching mail for %s...", character.Name))
+	count, err := f.ui.service.UpdateMails(character.ID)
+	if err != nil {
+		status.setInfo("Failed to fetch mail")
+		slog.Error("Failed to update mails", "characterID", character.ID, "error", err)
+		return
+	}
+	status.setInfo(fmt.Sprintf("Retrieved %d new mail for %s", count, character.Name))
+	f.Redraw()
+}
+
+func (f *folderArea) StartUpdateTicker() {
+	ticker := time.NewTicker(60 * time.Second)
 	go func() {
-		character := f.ui.CurrentChar()
-		if character == nil {
-			return
+		for {
+			f.UpdateMails()
+			<-ticker.C
 		}
-		status.setInfo(fmt.Sprintf("Fetching mail for %s", character.Name))
-		count, err := f.ui.service.UpdateMails(character.ID)
-		if err != nil {
-			status.setInfo("Failed to fetch mail")
-			slog.Error("Failed to update mails", "characterID", character.ID, "error", err)
-			return
-		}
-		status.setInfo(fmt.Sprintf("Retrieved %d new mail for %s", count, character.Name))
-		f.Redraw()
 	}()
 }

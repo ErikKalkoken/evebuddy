@@ -109,7 +109,7 @@ func (m *mailDetailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 					errorDialog := dialog.NewError(err, m.ui.window)
 					errorDialog.Show()
 				} else {
-					m.ui.headerArea.RedrawCurrent()
+					m.ui.headerArea.Refresh()
 				}
 			}
 		}, m.ui.window)

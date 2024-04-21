@@ -117,11 +117,11 @@ func (u *ui) NewHeaderArea() *headerArea {
 	return &m
 }
 
-func (h *headerArea) RedrawCurrent() {
+func (h *headerArea) Refresh() {
 	h.redraw(h.currentFolder)
 }
 
-func (h *headerArea) Redraw(folder node) {
+func (h *headerArea) DrawFolder(folder node) {
 	h.redraw(folder)
 }
 

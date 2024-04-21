@@ -122,7 +122,7 @@ func makeToolbar(u *ui) *fyne.Container {
 			u.ShowSettingsDialog()
 		}),
 		widget.NewButtonWithIcon("", theme.AccountIcon(), func() {
-			u.ShowManageDialog()
+			u.ShowAccountDialog()
 		}),
 	)
 	return container.NewVBox(toolbar, widget.NewSeparator())
@@ -164,6 +164,9 @@ func (u *ui) SetCurrentCharacter(c *model.Character) {
 	}
 	u.characterArea.Redraw()
 	u.folderArea.Redraw()
+	if c.MailUpdatedAt.IsZero() {
+		u.folderArea.UpdateMails()
+	}
 }
 
 func (u *ui) updateToolbarBadge(c *model.Character) {
