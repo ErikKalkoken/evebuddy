@@ -30,7 +30,7 @@ func eveEntityCategoryFromESICategory(c string) model.EveEntityCategory {
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
-		panic(fmt.Sprintf("Can not map unknown category: %v", c))
+		panic(fmt.Sprintf("Can not map invalid category: %v", c))
 	}
 	return c2
 }
@@ -53,7 +53,7 @@ func (s *Service) AddEveEntitiesFromESISearch(characterID int32, search string) 
 		return nil, err
 	}
 	ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
-	missingIDs, err := s.addMissingEveEntities(ctx, ids)
+	missingIDs, err := s.AddMissingEveEntities(ctx, ids)
 	if err != nil {
 		slog.Error("Failed to fetch missing IDs", "error", err)
 		return nil, err
@@ -61,8 +61,8 @@ func (s *Service) AddEveEntitiesFromESISearch(characterID int32, search string) 
 	return missingIDs, nil
 }
 
-// addMissingEveEntities adds EveEntities from ESI for IDs missing in the database.
-func (s *Service) addMissingEveEntities(ctx context.Context, ids []int32) ([]int32, error) {
+// AddMissingEveEntities adds EveEntities from ESI for IDs missing in the database.
+func (s *Service) AddMissingEveEntities(ctx context.Context, ids []int32) ([]int32, error) {
 	missing, err := s.r.MissingEveEntityIDs(ctx, ids)
 	if err != nil {
 		return nil, err
@@ -92,8 +92,11 @@ func (s *Service) addMissingEveEntities(ctx context.Context, ids []int32) ([]int
 			return nil, err
 		}
 	}
-	for _, id := range badIDs {
-		s.r.GetOrCreateEveEntity(ctx, id, "?", model.EveEntityInvalid)
+	if len(badIDs) > 0 {
+		for _, id := range badIDs {
+			s.r.GetOrCreateEveEntity(ctx, id, "?", model.EveEntityUnknown)
+		}
+		slog.Warn("Failed to resolve Eve Entity IDs", "ids", badIDs)
 	}
 	return ids2, nil
 }
@@ -101,23 +104,24 @@ func (s *Service) addMissingEveEntities(ctx context.Context, ids []int32) ([]int
 func (s *Service) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostUniverseNames200Ok, []int32, error) {
 	slog.Info("Trying to resolve IDs", "count", len(ids))
 	ee, resp, err := s.esiClient.ESI.UniverseApi.PostUniverseNames(ctx, ids, nil)
-	if resp.StatusCode == 404 {
-		if len(ids) == 1 {
-			slog.Warn("found unresolvable ID", "id", ids)
-			return []esi.PostUniverseNames200Ok{}, ids, nil
-		} else {
-			i := len(ids) / 2
-			ee1, bad1, err := s.resolveIDs(ctx, ids[:i])
-			if err != nil {
-				return nil, nil, err
+	if err != nil {
+		if resp != nil && resp.StatusCode == 404 {
+			if len(ids) == 1 {
+				slog.Warn("found unresolvable ID", "id", ids)
+				return []esi.PostUniverseNames200Ok{}, ids, nil
+			} else {
+				i := len(ids) / 2
+				ee1, bad1, err := s.resolveIDs(ctx, ids[:i])
+				if err != nil {
+					return nil, nil, err
+				}
+				ee2, bad2, err := s.resolveIDs(ctx, ids[i:])
+				if err != nil {
+					return nil, nil, err
+				}
+				return slices.Concat(ee1, ee2), slices.Concat(bad1, bad2), nil
 			}
-			ee2, bad2, err := s.resolveIDs(ctx, ids[i:])
-			if err != nil {
-				return nil, nil, err
-			}
-			return slices.Concat(ee1, ee2), slices.Concat(bad1, bad2), nil
 		}
-	} else if err != nil {
 		return nil, nil, err
 	}
 	return ee, []int32{}, nil

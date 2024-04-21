@@ -209,7 +209,7 @@ func TestEveEntityCanCreateAllCategories(t *testing.T) {
 		model.EveEntityRegion,
 		model.EveEntitySolarSystem,
 		model.EveEntityStation,
-		model.EveEntityInvalid,
+		model.EveEntityUnknown,
 	}
 	for _, c := range categories {
 		t.Run(fmt.Sprintf("can create new with category %s", c), func(t *testing.T) {

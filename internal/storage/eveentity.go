@@ -26,7 +26,7 @@ const (
 	eveEntityRegion        = "region"
 	eveEntitySolarSystem   = "solar_system"
 	eveEntityStation       = "station"
-	eveEntityInvalid       = "invalid"
+	eveEntityUnknown       = "unknown"
 )
 
 func (r *Storage) CreateEveEntity(ctx context.Context, id int32, name string, category model.EveEntityCategory) (model.EveEntity, error) {
@@ -218,11 +218,11 @@ func eveEntityCategoryFromDBModel(c string) model.EveEntityCategory {
 		eveEntityRegion:        model.EveEntityRegion,
 		eveEntitySolarSystem:   model.EveEntitySolarSystem,
 		eveEntityStation:       model.EveEntityStation,
-		eveEntityInvalid:       model.EveEntityInvalid,
+		eveEntityUnknown:       model.EveEntityUnknown,
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
-		panic(fmt.Sprintf("Can not map unknown category: %s", c))
+		panic(fmt.Sprintf("Can not map invalid category: %s", c))
 	}
 	return c2
 }
@@ -239,11 +239,11 @@ func eveEntityDBModelCategoryFromCategory(c model.EveEntityCategory) string {
 		model.EveEntityRegion:        eveEntityRegion,
 		model.EveEntitySolarSystem:   eveEntitySolarSystem,
 		model.EveEntityStation:       eveEntityStation,
-		model.EveEntityInvalid:       eveEntityInvalid,
+		model.EveEntityUnknown:       eveEntityUnknown,
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
-		panic(fmt.Sprintf("Can not map unknown category: %v", c))
+		panic(fmt.Sprintf("Can not map invalid category: %v", c))
 	}
 	return c2
 }

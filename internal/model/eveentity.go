@@ -22,7 +22,7 @@ const (
 	EveEntityRegion
 	EveEntitySolarSystem
 	EveEntityStation
-	EveEntityInvalid
+	EveEntityUnknown
 )
 
 func (e EveEntityCategory) String() string {
@@ -49,8 +49,10 @@ func (e EveEntityCategory) String() string {
 		return "solar system"
 	case EveEntityStation:
 		return "station"
-	default:
+	case EveEntityUnknown:
 		return "unknown"
+	default:
+		return "?"
 	}
 }
 
@@ -75,5 +77,5 @@ func (e *EveEntity) IconURL(size int) (fyne.URI, error) {
 	case EveEntityInventoryType:
 		return images.InventoryTypeRenderURL(e.ID, size)
 	}
-	return nil, fmt.Errorf("can not match category: %v", e.Category)
+	return nil, fmt.Errorf("no icon URL available for category: %v", e.Category)
 }

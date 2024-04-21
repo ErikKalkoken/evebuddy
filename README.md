@@ -22,8 +22,9 @@ MVP is reaching feature parity with Member Audit mail.
 - [x] Migrate to sqlc
 - [x] Update "is_unread"
 - [x] Show recipients in header list for sent mail
+- [x] Add settings
 - [ ] Migrate "EveEntity" to "MailEntity" to reflect mailing lists usage
-- [ ] Add error handling for mailing lists
+- [x] Add error handling for mailing lists
 - [ ] Update all data periodically and automatic
 - [ ] Add basic unit tests
 
@@ -33,5 +34,4 @@ MVP is reaching feature parity with Member Audit mail.
 - Full unit tests
 - Packaging for Linux, Windows and MAC
 - Store logs in a file instead of console
-- Add settings
 - Show mail bodies as rich text

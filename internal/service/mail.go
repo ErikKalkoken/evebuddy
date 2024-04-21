@@ -77,7 +77,7 @@ func (s *Service) SendMail(characterID int32, subject string, recipients []model
 		recipientIDs[i] = r.RecipientId
 	}
 	ids := slices.Concat(recipientIDs, []int32{characterID})
-	_, err = s.addMissingEveEntities(ctx, ids)
+	_, err = s.AddMissingEveEntities(ctx, ids)
 	if err != nil {
 		return err
 	}

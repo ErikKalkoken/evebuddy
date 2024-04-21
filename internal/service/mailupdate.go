@@ -189,7 +189,7 @@ func (s *Service) resolveMailEntities(ctx context.Context, mm []esi.GetCharacter
 			entityIDs.Add(r.RecipientId)
 		}
 	}
-	_, err := s.addMissingEveEntities(ctx, entityIDs.ToSlice())
+	_, err := s.AddMissingEveEntities(ctx, entityIDs.ToSlice())
 	if err != nil {
 		return err
 	}

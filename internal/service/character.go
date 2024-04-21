@@ -66,7 +66,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	if charEsi.FactionId != 0 {
 		ids = append(ids, charEsi.FactionId)
 	}
-	_, err = s.addMissingEveEntities(ctx, ids)
+	_, err = s.AddMissingEveEntities(ctx, ids)
 	if err != nil {
 		return err
 	}
@@ -174,7 +174,7 @@ func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Charac
 		if locationESI.StationId != 0 {
 			entityIDs = append(entityIDs, locationESI.StationId)
 		}
-		_, err = s.addMissingEveEntities(ctx, entityIDs)
+		_, err = s.AddMissingEveEntities(ctx, entityIDs)
 		if err != nil {
 			return err
 		}
@@ -195,7 +195,7 @@ func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Charac
 		if err != nil {
 			return err
 		}
-		_, err = s.addMissingEveEntities(ctx, []int32{ship.ShipTypeId})
+		_, err = s.AddMissingEveEntities(ctx, []int32{ship.ShipTypeId})
 		if err != nil {
 			return err
 		}
@@ -223,7 +223,7 @@ func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Charac
 		if r.FactionId != 0 {
 			entityIDs = append(entityIDs, r.FactionId)
 		}
-		_, err = s.addMissingEveEntities(ctx, entityIDs)
+		_, err = s.AddMissingEveEntities(ctx, entityIDs)
 		if err != nil {
 			return err
 		}
