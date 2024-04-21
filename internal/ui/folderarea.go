@@ -253,10 +253,10 @@ func (f *folderArea) UpdateMails(respondToUser bool) {
 	}
 	if unreadCount > 0 {
 		status.setInfo(fmt.Sprintf("%s has %d new mail", character.Name, unreadCount))
-		f.Refresh()
 	} else if respondToUser {
 		status.setInfo(fmt.Sprintf("No new mail for %s", character.Name))
 	}
+	f.Refresh()
 }
 
 func (f *folderArea) StartUpdateTicker() {

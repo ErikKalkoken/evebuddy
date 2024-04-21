@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -76,24 +77,25 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 		w.Hide()
 	})
 	sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {
-		err := func() error {
-			recipients := NewMailRecipientsFromText(toInput.Text)
-			eeUnclean := recipients.ToEveEntitiesUnclean()
-			ee2, err := u.service.ResolveUncleanEveEntities(eeUnclean)
-			slog.Info("recipients", "eeUnclean", eeUnclean)
-			slog.Info("recipients", "ee2", ee2)
-			if err != nil {
-				return err
-			}
-			if err := u.service.SendMail(currentChar.ID, subjectInput.Text, ee2, bodyInput.Text); err != nil {
-				return err
-			}
-			return nil
-		}()
+		recipients := NewMailRecipientsFromText(toInput.Text)
+		err := checkInput(subjectInput.Text, recipients, bodyInput.Text)
+		if err == nil {
+			err = func() error {
+				eeUnclean := recipients.ToEveEntitiesUnclean()
+				ee2, err := u.service.ResolveUncleanEveEntities(eeUnclean)
+				if err != nil {
+					return err
+				}
+				if err := u.service.SendMail(currentChar.ID, subjectInput.Text, ee2, bodyInput.Text); err != nil {
+					return err
+				}
+				return nil
+			}()
+
+		}
 		if err != nil {
-			// TODO: Replace with user friendly error messages
 			slog.Error(err.Error())
-			d := dialog.NewError(err, w)
+			d := dialog.NewInformation("Failed to send mail", fmt.Sprintf("An error occurred: %s", err), w)
 			d.Show()
 			return
 		}
@@ -109,6 +111,19 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 	w.SetContent(content)
 	w.Resize(fyne.NewSize(600, 500))
 	return w, nil
+}
+
+func checkInput(subject string, recipients *MailRecipients, body string) error {
+	if len(subject) == 0 {
+		return errors.New("missing subject")
+	}
+	if len(body) == 0 {
+		return errors.New("missing text")
+	}
+	if recipients.Size() == 0 {
+		return errors.New("missing recipients")
+	}
+	return nil
 }
 
 func (u *ui) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
