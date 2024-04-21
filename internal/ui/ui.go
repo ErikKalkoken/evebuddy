@@ -166,7 +166,7 @@ func (u *ui) SetCurrentCharacter(c *model.Character) {
 	u.characterArea.Redraw()
 	u.folderArea.Refresh()
 	if c.MailUpdatedAt.IsZero() {
-		u.folderArea.UpdateMails()
+		go u.folderArea.UpdateMails(true)
 	}
 }
 

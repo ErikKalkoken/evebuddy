@@ -30,7 +30,7 @@ func (u *ui) NewFolderArea() *folderArea {
 	f := folderArea{ui: u}
 	f.tree, f.treeData = u.makeFolderTree()
 	f.refreshButton = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-		go f.UpdateMails()
+		go f.UpdateMails(true)
 	})
 	f.newButton = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
 		f.ui.ShowCreateMessageWindow(CreateMessageNew, nil)
@@ -236,28 +236,34 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 	return total, labels, lists
 }
 
-func (f *folderArea) UpdateMails() {
+func (f *folderArea) UpdateMails(respondToUser bool) {
 	character := f.ui.CurrentChar()
 	if character == nil {
 		return
 	}
 	status := f.ui.statusArea
-	status.setInfo(fmt.Sprintf("Fetching mail for %s...", character.Name))
+	if respondToUser {
+		status.setInfo(fmt.Sprintf("Checking mail for %s", character.Name))
+	}
 	count, err := f.ui.service.UpdateMails(character.ID)
 	if err != nil {
-		status.setInfo("Failed to fetch mail")
+		status.setInfo("ERROR: Failed to fetch mail")
 		slog.Error("Failed to update mails", "characterID", character.ID, "error", err)
 		return
 	}
-	status.setInfo(fmt.Sprintf("Retrieved %d new mail for %s", count, character.Name))
-	f.Refresh()
+	if count > 0 {
+		status.setInfo(fmt.Sprintf("%s has new mail", character.Name))
+		f.Refresh()
+	} else if respondToUser {
+		status.setInfo(fmt.Sprintf("No new mail for %s", character.Name))
+	}
 }
 
 func (f *folderArea) StartUpdateTicker() {
 	ticker := time.NewTicker(60 * time.Second)
 	go func() {
 		for {
-			f.UpdateMails()
+			f.UpdateMails(false)
 			<-ticker.C
 		}
 	}()
