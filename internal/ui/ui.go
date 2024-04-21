@@ -163,7 +163,7 @@ func (u *ui) SetCurrentCharacter(c *model.Character) {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
 	u.characterArea.Redraw()
-	u.folderArea.Redraw()
+	u.folderArea.Refresh()
 	if c.MailUpdatedAt.IsZero() {
 		u.folderArea.UpdateMails()
 	}
@@ -195,5 +195,5 @@ func (u *ui) ResetCurrentCharacter() {
 		slog.Error("Failed to delete last character setting")
 	}
 	u.characterArea.Redraw()
-	u.folderArea.Redraw()
+	u.folderArea.Refresh()
 }

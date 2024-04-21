@@ -19,6 +19,7 @@ type folderArea struct {
 	content       fyne.CanvasObject
 	newButton     *widget.Button
 	refreshButton *widget.Button
+	lastUID       string
 	tree          *widget.Tree
 	treeData      binding.StringTree
 	ui            *ui
@@ -67,7 +68,6 @@ func (u *ui) makeFolderTree() (*widget.Tree, binding.StringTree) {
 			label.SetText(text)
 		},
 	)
-	lastUID := ""
 	tree.OnSelected = func(uid string) {
 		di, err := treeData.GetItem(uid)
 		if err != nil {
@@ -82,18 +82,18 @@ func (u *ui) makeFolderTree() (*widget.Tree, binding.StringTree) {
 		}
 		item := newNodeFromJSON(s)
 		if item.isBranch() {
-			if lastUID != "" {
-				tree.Select(lastUID)
+			if u.folderArea.lastUID != "" {
+				tree.Select(u.folderArea.lastUID)
 			}
 			return
 		}
-		lastUID = uid
+		u.folderArea.lastUID = uid
 		u.headerArea.DrawFolder(item)
 	}
 	return tree, treeData
 }
 
-func (f *folderArea) Redraw() {
+func (f *folderArea) Refresh() {
 	characterID := f.ui.CurrentCharID()
 	if characterID == 0 {
 		f.refreshButton.Disable()
@@ -244,7 +244,7 @@ func (f *folderArea) UpdateMails() {
 		return
 	}
 	status.setInfo(fmt.Sprintf("Retrieved %d new mail for %s", count, character.Name))
-	f.Redraw()
+	f.Refresh()
 }
 
 func (f *folderArea) StartUpdateTicker() {
