@@ -7,12 +7,12 @@ import (
 	"fmt"
 
 	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage/sqlc"
+	"example/evebuddy/internal/storage/queries"
 
 	"github.com/mattn/go-sqlite3"
 )
 
-func tokenFromDBModel(t sqlc.Token) model.Token {
+func tokenFromDBModel(t queries.Token) model.Token {
 	if t.CharacterID == 0 {
 		panic("missing character ID")
 	}
@@ -47,7 +47,7 @@ func (r *Storage) UpdateOrCreateToken(ctx context.Context, t *model.Token) error
 		}
 		defer tx.Rollback()
 		qtx := r.q.WithTx(tx)
-		arg := sqlc.CreateTokenParams{
+		arg := queries.CreateTokenParams{
 			AccessToken:  t.AccessToken,
 			CharacterID:  int64(t.CharacterID),
 			ExpiresAt:    t.ExpiresAt,
@@ -59,7 +59,7 @@ func (r *Storage) UpdateOrCreateToken(ctx context.Context, t *model.Token) error
 			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintPrimaryKey {
 				return err
 			}
-			arg := sqlc.UpdateTokenParams{
+			arg := queries.UpdateTokenParams{
 				AccessToken:  t.AccessToken,
 				CharacterID:  int64(t.CharacterID),
 				ExpiresAt:    t.ExpiresAt,

@@ -3,7 +3,7 @@
 //   sqlc v1.26.0
 // source: character.sql
 
-package sqlc
+package queries
 
 import (
 	"context"

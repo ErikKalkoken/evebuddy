@@ -9,7 +9,7 @@ import (
 	"example/evebuddy/internal/helper/set"
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage/sqlc"
+	"example/evebuddy/internal/storage/queries"
 
 	"github.com/mattn/go-sqlite3"
 )
@@ -34,7 +34,7 @@ func (r *Storage) CreateEveEntity(ctx context.Context, id int32, name string, ca
 		if id == 0 {
 			return model.EveEntity{}, fmt.Errorf("invalid ID %d", id)
 		}
-		arg := sqlc.CreateEveEntityParams{
+		arg := queries.CreateEveEntityParams{
 			ID:       int64(id),
 			Category: eveEntityDBModelCategoryFromCategory(category),
 			Name:     name,
@@ -65,7 +65,7 @@ func (r *Storage) GetEveEntity(ctx context.Context, id int32) (model.EveEntity, 
 
 func (r *Storage) ListEveEntityByNameAndCategory(ctx context.Context, name string, category model.EveEntityCategory) ([]model.EveEntity, error) {
 	var ee2 []model.EveEntity
-	arg := sqlc.ListEveEntityByNameAndCategoryParams{
+	arg := queries.ListEveEntityByNameAndCategoryParams{
 		Name:     name,
 		Category: eveEntityDBModelCategoryFromCategory(category),
 	}
@@ -81,7 +81,7 @@ func (r *Storage) ListEveEntityByNameAndCategory(ctx context.Context, name strin
 
 func (r *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name string, category model.EveEntityCategory) (model.EveEntity, error) {
 	label, err := func() (model.EveEntity, error) {
-		var e sqlc.EveEntity
+		var e queries.EveEntity
 		if id == 0 {
 			return model.EveEntity{}, fmt.Errorf("invalid ID %d", id)
 		}
@@ -96,7 +96,7 @@ func (r *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name strin
 			if !errors.Is(err, sql.ErrNoRows) {
 				return model.EveEntity{}, err
 			}
-			arg := sqlc.CreateEveEntityParams{
+			arg := queries.CreateEveEntityParams{
 				ID:       int64(id),
 				Name:     name,
 				Category: eveEntityDBModelCategoryFromCategory(category),
@@ -173,19 +173,19 @@ func (r *Storage) UpdateOrCreateEveEntity(ctx context.Context, id int32, name st
 		defer tx.Rollback()
 		qtx := r.q.WithTx(tx)
 		categoryDB := eveEntityDBModelCategoryFromCategory(category)
-		arg := sqlc.CreateEveEntityParams{
+		arg := queries.CreateEveEntityParams{
 			ID:       int64(id),
 			Name:     name,
 			Category: categoryDB,
 		}
-		var e sqlc.EveEntity
+		var e queries.EveEntity
 		e, err = qtx.CreateEveEntity(ctx, arg)
 		if err != nil {
 			sqlErr, ok := err.(sqlite3.Error)
 			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintPrimaryKey {
 				return model.EveEntity{}, err
 			}
-			arg := sqlc.UpdateEveEntityParams{
+			arg := queries.UpdateEveEntityParams{
 				ID:       int64(id),
 				Name:     name,
 				Category: categoryDB,
@@ -248,7 +248,7 @@ func eveEntityDBModelCategoryFromCategory(c model.EveEntityCategory) string {
 	return c2
 }
 
-func eveEntityFromDBModel(e sqlc.EveEntity) model.EveEntity {
+func eveEntityFromDBModel(e queries.EveEntity) model.EveEntity {
 	if e.ID == 0 {
 		return model.EveEntity{}
 	}

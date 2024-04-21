@@ -1,4 +1,4 @@
-package sqlc
+package queries
 
 import (
 	_ "embed"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"example/evebuddy/internal/storage/sqlc"
+	"example/evebuddy/internal/storage/queries"
 
 	"github.com/mattn/go-sqlite3"
 )
@@ -32,7 +32,7 @@ func (r *Storage) SetDictEntry(ctx context.Context, key string, bb []byte) error
 		}
 		defer tx.Rollback()
 		qtx := r.q.WithTx(tx)
-		arg := sqlc.CreateDictEntryParams{
+		arg := queries.CreateDictEntryParams{
 			Value: bb,
 			Key:   key,
 		}
@@ -41,7 +41,7 @@ func (r *Storage) SetDictEntry(ctx context.Context, key string, bb []byte) error
 			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintPrimaryKey {
 				return err
 			}
-			arg := sqlc.UpdateDictEntryParams{
+			arg := queries.UpdateDictEntryParams{
 				Value: bb,
 				Key:   key,
 			}

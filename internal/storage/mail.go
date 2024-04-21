@@ -10,10 +10,10 @@ import (
 
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage/sqlc"
+	"example/evebuddy/internal/storage/queries"
 )
 
-func mailFromDBModel(mail sqlc.Mail, from sqlc.EveEntity, labels []sqlc.MailLabel, recipients []sqlc.EveEntity) model.Mail {
+func mailFromDBModel(mail queries.Mail, from queries.EveEntity, labels []queries.MailLabel, recipients []queries.EveEntity) model.Mail {
 	if mail.CharacterID == 0 {
 		panic("missing character ID")
 	}
@@ -59,7 +59,7 @@ func (r *Storage) CreateMail(ctx context.Context, arg CreateMailParams) (int64, 
 		if err != nil {
 			return 0, err
 		}
-		mailParams := sqlc.CreateMailParams{
+		mailParams := queries.CreateMailParams{
 			Body:        arg.Body,
 			CharacterID: characterID2,
 			FromID:      int64(from.ID),
@@ -73,7 +73,7 @@ func (r *Storage) CreateMail(ctx context.Context, arg CreateMailParams) (int64, 
 			return 0, err
 		}
 		for _, id := range arg.RecipientIDs {
-			arg := sqlc.CreateMailRecipientParams{MailID: mail.ID, EveEntityID: int64(id)}
+			arg := queries.CreateMailRecipientParams{MailID: mail.ID, EveEntityID: int64(id)}
 			err := r.q.CreateMailRecipient(ctx, arg)
 			if err != nil {
 				return 0, err
@@ -86,7 +86,7 @@ func (r *Storage) CreateMail(ctx context.Context, arg CreateMailParams) (int64, 
 				if err != nil {
 					return 0, err
 				}
-				mailMailLabelParams := sqlc.CreateMailMailLabelParams{
+				mailMailLabelParams := queries.CreateMailMailLabelParams{
 					MailID: mail.ID, MailLabelID: label.ID,
 				}
 				if err := r.q.CreateMailMailLabel(ctx, mailMailLabelParams); err != nil {
@@ -105,7 +105,7 @@ func (r *Storage) CreateMail(ctx context.Context, arg CreateMailParams) (int64, 
 
 func (r *Storage) GetMail(ctx context.Context, characterID, mailID int32) (model.Mail, error) {
 	mail, err := func() (model.Mail, error) {
-		arg := sqlc.GetMailParams{
+		arg := queries.GetMailParams{
 			CharacterID: int64(characterID),
 			MailID:      int64(mailID),
 		}
@@ -139,7 +139,7 @@ func (r *Storage) GetMailUnreadCount(ctx context.Context, characterID int32) (in
 }
 
 func (r *Storage) DeleteMail(ctx context.Context, characterID, mailID int32) error {
-	arg := sqlc.DeleteMailParams{
+	arg := queries.DeleteMailParams{
 		CharacterID: int64(characterID),
 		MailID:      int64(mailID),
 	}
@@ -214,7 +214,7 @@ func (r *Storage) ListMailIDsForLabelOrdered(ctx context.Context, characterID in
 		ids2 := islices.ConvertNumeric[int64, int32](ids)
 		return ids2, nil
 	default:
-		arg := sqlc.ListMailIDsForLabelOrderedParams{
+		arg := queries.ListMailIDsForLabelOrderedParams{
 			CharacterID: int64(characterID),
 			LabelID:     int64(labelID),
 		}
@@ -228,7 +228,7 @@ func (r *Storage) ListMailIDsForLabelOrdered(ctx context.Context, characterID in
 }
 
 func (r *Storage) ListMailIDsForListOrdered(ctx context.Context, characterID int32, listID int32) ([]int32, error) {
-	arg := sqlc.ListMailIDsForListOrderedParams{
+	arg := queries.ListMailIDsForListOrderedParams{
 		CharacterID: int64(characterID),
 		EveEntityID: int64(listID),
 	}

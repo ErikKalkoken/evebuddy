@@ -3,7 +3,7 @@ package storage
 import (
 	"database/sql"
 	"errors"
-	"example/evebuddy/internal/storage/sqlc"
+	"example/evebuddy/internal/storage/queries"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -12,13 +12,13 @@ import (
 var ErrNotFound = errors.New("object not found")
 
 type Storage struct {
-	q  *sqlc.Queries
+	q  *queries.Queries
 	db *sql.DB
 }
 
 // New returns a new storage object.
 func New(db *sql.DB) *Storage {
-	r := &Storage{q: sqlc.New(db), db: db}
+	r := &Storage{q: queries.New(db), db: db}
 	return r
 }
 
@@ -40,7 +40,7 @@ func InitDB(dsn string) (*sql.DB, error) {
 		return nil, err
 	}
 	if !hasSchema {
-		_, err = db.Exec(sqlc.Schema())
+		_, err = db.Exec(queries.Schema())
 		if err != nil {
 			return nil, err
 		}

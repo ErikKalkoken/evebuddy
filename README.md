@@ -26,6 +26,8 @@ MVP is reaching feature parity with Member Audit mail.
 - [x] Add error handling for mailing lists
 - [x] Update all data periodically and automatic
 - [x] Add basic unit tests
+- [ ] Add caching for API requests
+- [ ] Add more tests
 
 ### Future releases
 

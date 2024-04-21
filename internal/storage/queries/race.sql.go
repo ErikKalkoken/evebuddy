@@ -3,7 +3,7 @@
 //   sqlc v1.26.0
 // source: race.sql
 
-package sqlc
+package queries
 
 import (
 	"context"

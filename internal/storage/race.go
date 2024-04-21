@@ -6,12 +6,12 @@ import (
 	"errors"
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage/sqlc"
+	"example/evebuddy/internal/storage/queries"
 	"fmt"
 )
 
 func (r *Storage) CreateRace(ctx context.Context, id int32, description, name string) (model.Race, error) {
-	arg := sqlc.CreateRaceParams{
+	arg := queries.CreateRaceParams{
 		ID:          int64(id),
 		Description: description,
 		Name:        name,
@@ -44,7 +44,7 @@ func (r *Storage) ListRaceIDs(ctx context.Context) ([]int32, error) {
 	return ids2, nil
 }
 
-func raceFromDBModel(r sqlc.Race) model.Race {
+func raceFromDBModel(r queries.Race) model.Race {
 	if r.ID == 0 {
 		return model.Race{}
 	}

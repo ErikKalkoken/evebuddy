@@ -7,12 +7,12 @@ import (
 	"fmt"
 
 	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage/sqlc"
+	"example/evebuddy/internal/storage/queries"
 
 	"github.com/mattn/go-sqlite3"
 )
 
-func mailLabelFromDBModel(l sqlc.MailLabel) model.MailLabel {
+func mailLabelFromDBModel(l queries.MailLabel) model.MailLabel {
 	return model.MailLabel{
 		ID:          l.ID,
 		CharacterID: int32(l.CharacterID),
@@ -24,7 +24,7 @@ func mailLabelFromDBModel(l sqlc.MailLabel) model.MailLabel {
 }
 
 func (r *Storage) GetMailLabel(ctx context.Context, characterID, labelID int32) (model.MailLabel, error) {
-	arg := sqlc.GetMailLabelParams{
+	arg := queries.GetMailLabelParams{
 		CharacterID: int64(characterID),
 		LabelID:     int64(labelID),
 	}
@@ -49,14 +49,14 @@ type MailLabelParams struct {
 
 func (r *Storage) GetOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (model.MailLabel, error) {
 	label, err := func() (model.MailLabel, error) {
-		var l sqlc.MailLabel
+		var l queries.MailLabel
 		tx, err := r.db.Begin()
 		if err != nil {
 			return model.MailLabel{}, err
 		}
 		defer tx.Rollback()
 		qtx := r.q.WithTx(tx)
-		arg2 := sqlc.GetMailLabelParams{
+		arg2 := queries.GetMailLabelParams{
 			CharacterID: int64(arg.CharacterID),
 			LabelID:     int64(arg.LabelID),
 		}
@@ -65,7 +65,7 @@ func (r *Storage) GetOrCreateMailLabel(ctx context.Context, arg MailLabelParams)
 			if !errors.Is(err, sql.ErrNoRows) {
 				return model.MailLabel{}, err
 			}
-			arg3 := sqlc.CreateMailLabelParams{
+			arg3 := queries.CreateMailLabelParams{
 				CharacterID: int64(arg.CharacterID),
 				LabelID:     int64(arg.LabelID),
 				Color:       arg.Color,
@@ -102,14 +102,14 @@ func (r *Storage) ListMailLabelsOrdered(ctx context.Context, characterID int32) 
 
 func (r *Storage) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (model.MailLabel, error) {
 	label, err := func() (model.MailLabel, error) {
-		var l sqlc.MailLabel
+		var l queries.MailLabel
 		tx, err := r.db.Begin()
 		if err != nil {
 			return model.MailLabel{}, err
 		}
 		defer tx.Rollback()
 		qtx := r.q.WithTx(tx)
-		arg1 := sqlc.CreateMailLabelParams{
+		arg1 := queries.CreateMailLabelParams{
 			CharacterID: int64(arg.CharacterID),
 			LabelID:     int64(arg.LabelID),
 			Color:       arg.Color,
@@ -122,7 +122,7 @@ func (r *Storage) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelPara
 			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintUnique {
 				return model.MailLabel{}, err
 			}
-			arg2 := sqlc.UpdateMailLabelParams{
+			arg2 := queries.UpdateMailLabelParams{
 				CharacterID: int64(arg.CharacterID),
 				LabelID:     int64(arg.LabelID),
 				Color:       arg.Color,

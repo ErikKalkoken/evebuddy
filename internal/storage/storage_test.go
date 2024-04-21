@@ -2,7 +2,7 @@ package storage
 
 import (
 	"database/sql"
-	"example/evebuddy/internal/storage/sqlc"
+	"example/evebuddy/internal/storage/queries"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,7 +21,7 @@ func TestSchemaExists(t *testing.T) {
 		})
 		t.Run("should return true when schema exists", func(t *testing.T) {
 			// given
-			_, err = db.Exec(sqlc.Schema())
+			_, err = db.Exec(queries.Schema())
 			if assert.NoError(t, err) {
 				// when
 				r, err := schemaExists(db)

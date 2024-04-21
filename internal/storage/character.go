@@ -6,7 +6,7 @@ import (
 	"errors"
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage/sqlc"
+	"example/evebuddy/internal/storage/queries"
 	"fmt"
 
 	"github.com/mattn/go-sqlite3"
@@ -156,7 +156,7 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 		}
 		defer tx.Rollback()
 		qtx := r.q.WithTx(tx)
-		arg := sqlc.CreateCharacterParams{
+		arg := queries.CreateCharacterParams{
 			Birthday:       c.Birthday,
 			CorporationID:  int64(c.Corporation.ID),
 			Description:    c.Description,
@@ -185,7 +185,7 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintPrimaryKey {
 				return err
 			}
-			arg := sqlc.UpdateCharacterParams{
+			arg := queries.UpdateCharacterParams{
 				CorporationID:  int64(c.Corporation.ID),
 				Description:    c.Description,
 				ID:             int64(c.ID),
