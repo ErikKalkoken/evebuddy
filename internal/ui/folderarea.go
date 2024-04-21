@@ -125,12 +125,13 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 	ids := map[string][]string{
 		"": {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID},
 	}
-	folders := makeDefaultFolders(labelUnreadCounts)
+	folders := makeDefaultFolders(characterID, labelUnreadCounts)
 	folderItemAll := node{
-		ID:          nodeAllID,
-		ObjID:       model.MailLabelAll,
-		Name:        "All Mails",
 		Category:    nodeCategoryLabel,
+		CharacterID: characterID,
+		ID:          nodeAllID,
+		Name:        "All Mails",
+		ObjID:       model.MailLabelAll,
 		UnreadCount: totalUnreadCount,
 	}
 	folders[nodeAllID] = folderItemAll.toJSON()
@@ -142,6 +143,7 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		ids[""] = append(ids[""], nodeLabelsID)
 		ids[nodeLabelsID] = []string{}
 		folders[nodeLabelsID] = node{
+			CharacterID: characterID,
 			ID:          nodeLabelsID,
 			Name:        "Labels",
 			UnreadCount: totalLabelsUnreadCount,
@@ -165,6 +167,7 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		ids[""] = append(ids[""], nodeListsID)
 		ids[nodeListsID] = []string{}
 		folders[nodeListsID] = node{
+			CharacterID: characterID,
 			ID:          nodeListsID,
 			Name:        "Mailing Lists",
 			UnreadCount: totalListUnreadCount,
@@ -183,7 +186,7 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 	return ids, folders, folderItemAll, nil
 }
 
-func makeDefaultFolders(labelUnreadCounts map[int32]int) map[string]string {
+func makeDefaultFolders(characterID int32, labelUnreadCounts map[int32]int) map[string]string {
 	folders := make(map[string]string)
 	defaultFolders := []struct {
 		nodeID  string
@@ -201,10 +204,11 @@ func makeDefaultFolders(labelUnreadCounts map[int32]int) map[string]string {
 			u = 0
 		}
 		folders[o.nodeID] = node{
-			ID:          o.nodeID,
-			ObjID:       o.labelID,
-			Name:        o.name,
+			CharacterID: characterID,
 			Category:    nodeCategoryLabel,
+			ID:          o.nodeID,
+			Name:        o.name,
+			ObjID:       o.labelID,
 			UnreadCount: u,
 		}.toJSON()
 	}

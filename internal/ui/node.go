@@ -28,10 +28,11 @@ const (
 
 // A node in the folder tree, e.g. the inbox
 type node struct {
-	ID          string
-	ObjID       int32
-	Name        string
 	Category    nodeCategory
+	CharacterID int32
+	ID          string
+	Name        string
+	ObjID       int32
 	UnreadCount int
 }
 
