@@ -140,6 +140,7 @@ func (u *ui) ShowAndRun() {
 		}
 		u.statusArea.StartUpdateTicker()
 		u.characterArea.StartUpdateTicker()
+		u.folderArea.StartUpdateTicker()
 	}()
 	u.window.ShowAndRun()
 }
