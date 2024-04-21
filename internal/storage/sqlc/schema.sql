@@ -22,7 +22,6 @@ CREATE TABLE characters (
     id INTEGER PRIMARY KEY NOT NULL,
     last_login_at DATETIME NOT NULL,
     location_id INTEGER NOT NULL,
-    mail_updated_at DATETIME,
     name TEXT NOT NULL,
     race_id INTEGER NOT NULL,
     security_status REAL NOT NULL,

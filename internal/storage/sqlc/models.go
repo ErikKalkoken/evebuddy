@@ -19,7 +19,6 @@ type Character struct {
 	ID             int64
 	LastLoginAt    time.Time
 	LocationID     int64
-	MailUpdatedAt  sql.NullTime
 	Name           string
 	RaceID         int64
 	SecurityStatus float64

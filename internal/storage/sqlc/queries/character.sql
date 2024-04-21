@@ -5,7 +5,6 @@ INSERT INTO characters (
     description,
     faction_id,
     last_login_at,
-    mail_updated_at,
     name,
     race_id,
     security_status,
@@ -18,7 +17,7 @@ INSERT INTO characters (
     gender
 )
 VALUES (
-    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?
+    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?, ?, ?
 )
 RETURNING *;
 
@@ -76,7 +75,6 @@ SET
     description = ?,
     faction_id = ?,
     last_login_at = ?,
-    mail_updated_at = ?,
     name = ?,
     security_status = ?,
     ship_id = ?,

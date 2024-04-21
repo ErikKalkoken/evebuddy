@@ -18,7 +18,6 @@ INSERT INTO characters (
     description,
     faction_id,
     last_login_at,
-    mail_updated_at,
     name,
     race_id,
     security_status,
@@ -31,9 +30,9 @@ INSERT INTO characters (
     gender
 )
 VALUES (
-    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?
+    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?, ?, ?
 )
-RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id, id, last_login_at, location_id, mail_updated_at, name, race_id, security_status, ship_id, skill_points, wallet_balance
+RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id, id, last_login_at, location_id, name, race_id, security_status, ship_id, skill_points, wallet_balance
 `
 
 type CreateCharacterParams struct {
@@ -42,7 +41,6 @@ type CreateCharacterParams struct {
 	Description    string
 	FactionID      sql.NullInt64
 	LastLoginAt    time.Time
-	MailUpdatedAt  sql.NullTime
 	Name           string
 	RaceID         int64
 	SecurityStatus float64
@@ -62,7 +60,6 @@ func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams
 		arg.Description,
 		arg.FactionID,
 		arg.LastLoginAt,
-		arg.MailUpdatedAt,
 		arg.Name,
 		arg.RaceID,
 		arg.SecurityStatus,
@@ -85,7 +82,6 @@ func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams
 		&i.ID,
 		&i.LastLoginAt,
 		&i.LocationID,
-		&i.MailUpdatedAt,
 		&i.Name,
 		&i.RaceID,
 		&i.SecurityStatus,
@@ -108,7 +104,7 @@ func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
 
 const getCharacter = `-- name: GetCharacter :one
 SELECT
-    characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.location_id, characters.mail_updated_at, characters.name, characters.race_id, characters.security_status, characters.ship_id, characters.skill_points, characters.wallet_balance,
+    characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.location_id, characters.name, characters.race_id, characters.security_status, characters.ship_id, characters.skill_points, characters.wallet_balance,
     corporations.name as corporation_name,
     alliances.name as alliance_name,
     factions.name as faction_name,
@@ -136,7 +132,6 @@ type GetCharacterRow struct {
 	ID               int64
 	LastLoginAt      time.Time
 	LocationID       int64
-	MailUpdatedAt    sql.NullTime
 	Name             string
 	RaceID           int64
 	SecurityStatus   float64
@@ -165,7 +160,6 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.ID,
 		&i.LastLoginAt,
 		&i.LocationID,
-		&i.MailUpdatedAt,
 		&i.Name,
 		&i.RaceID,
 		&i.SecurityStatus,
@@ -213,7 +207,7 @@ func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
 
 const listCharacters = `-- name: ListCharacters :many
 SELECT
-    characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.location_id, characters.mail_updated_at, characters.name, characters.race_id, characters.security_status, characters.ship_id, characters.skill_points, characters.wallet_balance,
+    characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.location_id, characters.name, characters.race_id, characters.security_status, characters.ship_id, characters.skill_points, characters.wallet_balance,
     corporations.name as corporation_name,
     alliances.name as alliance_name,
     factions.name as faction_name,
@@ -241,7 +235,6 @@ type ListCharactersRow struct {
 	ID               int64
 	LastLoginAt      time.Time
 	LocationID       int64
-	MailUpdatedAt    sql.NullTime
 	Name             string
 	RaceID           int64
 	SecurityStatus   float64
@@ -276,7 +269,6 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.ID,
 			&i.LastLoginAt,
 			&i.LocationID,
-			&i.MailUpdatedAt,
 			&i.Name,
 			&i.RaceID,
 			&i.SecurityStatus,
@@ -312,7 +304,6 @@ SET
     description = ?,
     faction_id = ?,
     last_login_at = ?,
-    mail_updated_at = ?,
     name = ?,
     security_status = ?,
     ship_id = ?,
@@ -328,7 +319,6 @@ type UpdateCharacterParams struct {
 	Description    string
 	FactionID      sql.NullInt64
 	LastLoginAt    time.Time
-	MailUpdatedAt  sql.NullTime
 	Name           string
 	SecurityStatus float64
 	ShipID         int64
@@ -345,7 +335,6 @@ func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams
 		arg.Description,
 		arg.FactionID,
 		arg.LastLoginAt,
-		arg.MailUpdatedAt,
 		arg.Name,
 		arg.SecurityStatus,
 		arg.ShipID,

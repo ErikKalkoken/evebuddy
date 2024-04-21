@@ -71,9 +71,6 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 			Category: model.EveEntityFaction,
 		}
 	}
-	if row.MailUpdatedAt.Valid {
-		c.MailUpdatedAt = row.MailUpdatedAt.Time
-	}
 	return c, nil
 }
 
@@ -136,9 +133,6 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 				Name:     row.FactionName.String,
 				Category: model.EveEntityFaction,
 			}
-		}
-		if row.MailUpdatedAt.Valid {
-			c.MailUpdatedAt = row.MailUpdatedAt.Time
 		}
 		cc[i] = c
 	}

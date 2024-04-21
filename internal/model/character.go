@@ -19,7 +19,6 @@ type Character struct {
 	ID             int32
 	LastLoginAt    time.Time
 	Location       EveEntity
-	MailUpdatedAt  time.Time
 	Name           string
 	Race           Race
 	SecurityStatus float64
