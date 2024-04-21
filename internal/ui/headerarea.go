@@ -19,13 +19,16 @@ import (
 	"example/evebuddy/internal/storage"
 )
 
+const undefinedListItemID = -1
+
 // headerArea is the UI area showing the list of mail headers.
 type headerArea struct {
 	listData      binding.IntList // list of character's mail IDs
-	infoText      binding.String
 	content       fyne.CanvasObject
 	currentFolder node
+	infoText      binding.String
 	list          *widget.List
+	lastSelected  widget.ListItemID
 	ui            *ui
 }
 
@@ -87,7 +90,6 @@ func (u *ui) NewHeaderArea() *headerArea {
 			subject.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
 			subject.Refresh()
 		})
-
 	list.OnSelected = func(id widget.ListItemID) {
 		di, err := listData.GetItem(id)
 		if err != nil {
@@ -101,31 +103,32 @@ func (u *ui) NewHeaderArea() *headerArea {
 			return
 		}
 		u.mailArea.Redraw(int32(mailID), id)
+		u.headerArea.lastSelected = id
 	}
-
 	infoText := binding.NewString()
 	label := widget.NewLabelWithData(infoText)
 	c := container.NewBorder(label, nil, nil, nil, list)
-
 	m := headerArea{
-		content:  c,
-		list:     list,
-		listData: listData,
-		infoText: infoText,
-		ui:       u,
+		content:      c,
+		infoText:     infoText,
+		lastSelected: undefinedListItemID,
+		list:         list,
+		listData:     listData,
+		ui:           u,
 	}
 	return &m
 }
 
 func (h *headerArea) Refresh() {
-	h.redraw(h.currentFolder)
+	doRedraw := h.lastSelected == undefinedListItemID
+	h.redraw(h.currentFolder, doRedraw)
 }
 
 func (h *headerArea) DrawFolder(folder node) {
-	h.redraw(folder)
+	h.redraw(folder, true)
 }
 
-func (h *headerArea) redraw(folder node) {
+func (h *headerArea) redraw(folder node, doRedraw bool) {
 	var mailIDs []int32
 	var err error
 	switch folder.Category {
@@ -151,11 +154,13 @@ func (h *headerArea) redraw(folder node) {
 	}
 	h.infoText.Set(fmt.Sprintf("%d mails (%s)", len(mailIDs), s))
 
-	if len(mailIDs) > 0 {
+	if len(mailIDs) == 0 {
+		h.ui.mailArea.Clear()
+		return
+	}
+	if doRedraw {
 		h.ui.mailArea.Redraw(mailIDs[0], 0)
 		h.list.Select(0)
 		h.list.ScrollToTop()
-	} else {
-		h.ui.mailArea.Clear()
 	}
 }
