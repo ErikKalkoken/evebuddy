@@ -245,14 +245,14 @@ func (f *folderArea) UpdateMails(respondToUser bool) {
 	if respondToUser {
 		status.setInfo(fmt.Sprintf("Checking mail for %s", character.Name))
 	}
-	count, err := f.ui.service.UpdateMails(character.ID)
+	unreadCount, err := f.ui.service.UpdateMails(character.ID)
 	if err != nil {
 		status.setInfo("ERROR: Failed to fetch mail")
 		slog.Error("Failed to update mails", "characterID", character.ID, "error", err)
 		return
 	}
-	if count > 0 {
-		status.setInfo(fmt.Sprintf("%s has new mail", character.Name))
+	if unreadCount > 0 {
+		status.setInfo(fmt.Sprintf("%s has %d new mail", character.Name, unreadCount))
 		f.Refresh()
 	} else if respondToUser {
 		status.setInfo(fmt.Sprintf("No new mail for %s", character.Name))

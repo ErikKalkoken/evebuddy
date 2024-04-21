@@ -25,6 +25,7 @@ const (
 // TODO: Add ability to update existing mails for is_read and labels
 
 // UpdateMails fetches and stores new mails from ESI for a character.
+// It returns the number of unread mail.
 func (s *Service) UpdateMails(characterID int32) (int, error) {
 	ctx := context.Background()
 	key := fmt.Sprintf("UpdateMails-%d", characterID)
@@ -56,17 +57,19 @@ func (s *Service) updateMails(ctx context.Context, characterID int32) (int, erro
 	if err != nil {
 		return 0, err
 	}
-	count := 0
 	if len(headers) > 0 {
-		count, err = s.updateMailsESI(ctx, &token, headers)
-		if err != nil {
+		if err := s.updateMailsESI(ctx, &token, headers); err != nil {
 			return 0, err
 		}
 	}
 	if err := s.DictionarySetTime(makeMailUpdateAtDictKey(characterID), time.Now()); err != nil {
 		return 0, err
 	}
-	return count, nil
+	unreadCount, err := s.r.GetMailUnreadCount(ctx, characterID)
+	if err != nil {
+		return 0, err
+	}
+	return unreadCount, nil
 }
 
 func (s *Service) MailUpdatedAt(characterID int32) time.Time {
@@ -209,12 +212,11 @@ func (s *Service) resolveMailEntities(ctx context.Context, mm []esi.GetCharacter
 	return nil
 }
 
-func (s *Service) updateMailsESI(ctx context.Context, token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok) (int, error) {
+func (s *Service) updateMailsESI(ctx context.Context, token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok) error {
 	if err := s.ensureValidToken(ctx, token); err != nil {
-		return 0, err
+		return err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
-
 	count := 0
 	g := new(errgroup.Group)
 	g.SetLimit(20)
@@ -230,10 +232,10 @@ func (s *Service) updateMailsESI(ctx context.Context, token *model.Token, header
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return 0, err
+		return err
 	}
-	slog.Info("Received new mail", "characterID", token.CharacterID, "count", count)
-	return count, nil
+	slog.Info("Received new mail from ESI", "characterID", token.CharacterID, "count", count)
+	return nil
 }
 
 func (s *Service) fetchAndStoreMail(ctx context.Context, characterID, mailID int32) error {

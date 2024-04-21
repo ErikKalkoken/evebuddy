@@ -260,4 +260,35 @@ func TestFetchUnreadCounts(t *testing.T) {
 			assert.Equal(t, map[int32]int{l1.ID: 1}, r)
 		}
 	})
+	t.Run("can get total unread count", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		corp := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: model.MailLabelCorp})
+		inbox := factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: model.MailLabelInbox})
+		factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: model.MailLabelAlliance})
+		factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{inbox.LabelID}, IsRead: false})
+		factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{corp.LabelID}, IsRead: true})
+		factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{corp.LabelID}, IsRead: false})
+		factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID, LabelIDs: []int32{corp.LabelID}, IsRead: false})
+		factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID})
+		l1 := factory.CreateMailList(c.ID)
+		factory.CreateMailList(c.ID)
+		factory.CreateMail(storage.CreateMailParams{
+			CharacterID:  c.ID,
+			RecipientIDs: []int32{l1.ID},
+			IsRead:       false,
+		})
+		factory.CreateMail(storage.CreateMailParams{
+			CharacterID:  c.ID,
+			RecipientIDs: []int32{l1.ID},
+			IsRead:       true,
+		})
+		factory.CreateMail(storage.CreateMailParams{CharacterID: c.ID})
+		// when
+		r, err := r.GetMailUnreadCount(ctx, c.ID)
+		if assert.NoError(t, err) {
+			assert.Equal(t, 6, r)
+		}
+	})
 }

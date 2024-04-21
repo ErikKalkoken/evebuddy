@@ -133,6 +133,11 @@ func (r *Storage) GetMail(ctx context.Context, characterID, mailID int32) (model
 	return mail, nil
 }
 
+func (r *Storage) GetMailUnreadCount(ctx context.Context, characterID int32) (int, error) {
+	count, err := r.q.GetMailUnreadCount(ctx, int64(characterID))
+	return int(count), err
+}
+
 func (r *Storage) DeleteMail(ctx context.Context, characterID, mailID int32) error {
 	arg := sqlc.DeleteMailParams{
 		CharacterID: int64(characterID),
