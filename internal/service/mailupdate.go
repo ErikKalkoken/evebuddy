@@ -69,8 +69,13 @@ func (s *Service) updateMails(ctx context.Context, characterID int32) (int, erro
 	return count, nil
 }
 
-func (s *Service) MailUpdatedAt(characterID int32) (time.Time, error) {
-	return s.DictionaryTime(makeMailUpdateAtDictKey(characterID))
+func (s *Service) MailUpdatedAt(characterID int32) time.Time {
+	t, err := s.DictionaryTime(makeMailUpdateAtDictKey(characterID))
+	if err != nil {
+		slog.Error(err.Error())
+		return time.Time{}
+	}
+	return t
 }
 
 func makeMailUpdateAtDictKey(characterID int32) string {
