@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"time"
 
 	"github.com/antihax/goesi/esi"
 	"github.com/antihax/goesi/optional"
@@ -62,27 +61,12 @@ func (s *Service) updateMails(ctx context.Context, characterID int32) (int, erro
 			return 0, err
 		}
 	}
-	if err := s.DictionarySetTime(makeMailUpdateAtDictKey(characterID), time.Now()); err != nil {
-		return 0, err
-	}
+	s.SectionSetNow(characterID, UpdateSectionMail)
 	unreadCount, err := s.r.GetMailUnreadCount(ctx, characterID)
 	if err != nil {
 		return 0, err
 	}
 	return unreadCount, nil
-}
-
-func (s *Service) MailUpdatedAt(characterID int32) time.Time {
-	t, err := s.DictionaryTime(makeMailUpdateAtDictKey(characterID))
-	if err != nil {
-		slog.Error(err.Error())
-		return time.Time{}
-	}
-	return t
-}
-
-func makeMailUpdateAtDictKey(characterID int32) string {
-	return fmt.Sprintf("mail-updated-at-%d", characterID)
 }
 
 func (s *Service) updateMailLabels(ctx context.Context, token *model.Token) error {

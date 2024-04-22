@@ -162,7 +162,7 @@ func (u *ui) SetCurrentCharacter(c *model.Character) {
 	}
 	u.characterArea.Redraw()
 	u.folderArea.Refresh()
-	updatedAt := u.service.MailUpdatedAt(c.ID)
+	updatedAt := u.service.SectionUpdatedAt(c.ID, service.UpdateSectionMail)
 	if updatedAt.IsZero() {
 		go u.folderArea.UpdateMails(true)
 	}
