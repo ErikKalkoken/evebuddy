@@ -255,6 +255,8 @@ func (f *folderArea) UpdateMails(respondToUser bool) {
 		status.setInfo(fmt.Sprintf("%s has %d new mail", character.Name, unreadCount))
 	} else if respondToUser {
 		status.setInfo(fmt.Sprintf("No new mail for %s", character.Name))
+	} else {
+		status.clearInfo()
 	}
 	f.Refresh()
 }
