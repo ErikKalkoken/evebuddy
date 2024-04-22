@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"runtime"
+	"runtime/debug"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -114,9 +116,7 @@ func makeToolbar(u *ui) *fyne.Container {
 		badge,
 		layout.NewSpacer(),
 		widget.NewButtonWithIcon("", theme.InfoIcon(), func() {
-			text := "Eve Buddy v0.1.0\n\n(c) 2024 Erik Kalkoken"
-			d := dialog.NewInformation("About", text, u.window)
-			d.Show()
+			u.ShowAboutDialog()
 		}),
 		widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
 			u.ShowSettingsDialog()
@@ -126,6 +126,20 @@ func makeToolbar(u *ui) *fyne.Container {
 		}),
 	)
 	return container.NewVBox(toolbar, widget.NewSeparator())
+}
+
+func (u *ui) ShowAboutDialog() {
+	c := container.NewVBox()
+	info, _ := debug.ReadBuildInfo()
+	c.Add(widget.NewLabel(fmt.Sprintf("Eve Buddy %s", info.Main.Version)))
+	uri, err := url.Parse("https://github.com/ErikKalkoken/evebuddy")
+	if err != nil {
+		panic(err)
+	}
+	c.Add(widget.NewHyperlink("Website", uri))
+	c.Add(widget.NewLabel("(c) 2024 Erik Kalkoken"))
+	d := dialog.NewCustom("About", "OK", c, u.window)
+	d.Show()
 }
 
 // ShowAndRun shows the UI and runs it (blocking).

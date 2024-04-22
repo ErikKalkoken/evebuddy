@@ -35,18 +35,23 @@ func (u *ui) ShowCreateMessageWindow(mode int, mail *model.Mail) {
 func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, error) {
 	currentChar := *u.CurrentChar()
 	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", currentChar.Name))
-	fromLabel := widget.NewLabel("From:")
+
 	fromInput := widget.NewEntry()
 	fromInput.Disable()
 	fromInput.SetPlaceHolder(currentChar.Name)
-	toLabel := widget.NewLabel("To:")
+
 	toInput := widget.NewEntry()
 	toInput.MultiLine = true
 	toInput.Wrapping = fyne.TextWrapWord
-	subjectLabel := widget.NewLabel("Subject:")
+	toInput.Validator = NewNonEmptyStringValidator()
+
 	subjectInput := widget.NewEntry()
+	subjectInput.Validator = NewNonEmptyStringValidator()
+
 	bodyInput := widget.NewEntry()
 	bodyInput.MultiLine = true
+	bodyInput.SetMinRowsVisible(14)
+	bodyInput.Validator = NewNonEmptyStringValidator()
 
 	if mail != nil {
 		switch mode {
@@ -72,43 +77,52 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 		u.showAddDialog(w, toInput, currentChar.ID)
 	})
 	toInputWrap := container.NewBorder(nil, nil, nil, addButton, toInput)
-	form := container.New(layout.NewFormLayout(), fromLabel, fromInput, toLabel, toInputWrap, subjectLabel, subjectInput)
-	cancelButton := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
-		w.Hide()
-	})
-	sendButton := widget.NewButtonWithIcon("Send", theme.ConfirmIcon(), func() {
-		recipients := NewMailRecipientsFromText(toInput.Text)
-		err := checkInput(subjectInput.Text, recipients, bodyInput.Text)
-		if err == nil {
-			err = func() error {
-				eeUnclean := recipients.ToEveEntitiesUnclean()
-				ee2, err := u.service.ResolveUncleanEveEntities(eeUnclean)
-				if err != nil {
-					return err
-				}
-				if err := u.service.SendMail(currentChar.ID, subjectInput.Text, ee2, bodyInput.Text); err != nil {
-					return err
-				}
-				return nil
-			}()
+	form := &widget.Form{
+		Items: []*widget.FormItem{
+			{Text: "From", Widget: fromInput},
+			{
+				Text:   "To",
+				Widget: toInputWrap,
+			},
+			{
+				Text:   "Subject",
+				Widget: subjectInput,
+			},
+			{
+				Text:   "Text",
+				Widget: bodyInput,
+			},
+		},
+		OnSubmit: func() {
+			recipients := NewMailRecipientsFromText(toInput.Text)
+			err := checkInput(subjectInput.Text, recipients, bodyInput.Text)
+			if err == nil {
+				err = func() error {
+					eeUnclean := recipients.ToEveEntitiesUnclean()
+					ee2, err := u.service.ResolveUncleanEveEntities(eeUnclean)
+					if err != nil {
+						return err
+					}
+					if err := u.service.SendMail(currentChar.ID, subjectInput.Text, ee2, bodyInput.Text); err != nil {
+						return err
+					}
+					return nil
+				}()
+			}
+			if err != nil {
+				slog.Error(err.Error())
+				d := dialog.NewInformation("Failed to send mail", fmt.Sprintf("An error occurred: %s", err), w)
+				d.Show()
+				return
+			}
+			w.Hide()
+		},
+		OnCancel: func() {
+			w.Hide()
+		},
+	}
 
-		}
-		if err != nil {
-			slog.Error(err.Error())
-			d := dialog.NewInformation("Failed to send mail", fmt.Sprintf("An error occurred: %s", err), w)
-			d.Show()
-			return
-		}
-		w.Hide()
-	})
-	sendButton.Importance = widget.HighImportance
-	buttons := container.NewHBox(
-		cancelButton,
-		layout.NewSpacer(),
-		sendButton,
-	)
-	content := container.NewBorder(form, buttons, nil, nil, bodyInput)
-	w.SetContent(content)
+	w.SetContent(form)
 	w.Resize(fyne.NewSize(600, 500))
 	return w, nil
 }
@@ -182,4 +196,14 @@ func (u *ui) makeRecipientOptions(search string) ([]string, error) {
 	rr := NewMailRecipientsFromEntities(ee)
 	oo := rr.ToOptions()
 	return oo, nil
+}
+
+func NewNonEmptyStringValidator() fyne.StringValidator {
+	myErr := errors.New("can not be empty")
+	return func(text string) error {
+		if len(text) == 0 {
+			return myErr
+		}
+		return nil
+	}
 }
