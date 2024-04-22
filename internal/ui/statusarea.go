@@ -13,31 +13,23 @@ import (
 // statusArea is the UI area showing the current status aka status bar.
 type statusArea struct {
 	content   *fyne.Container
-	info      *widget.Label
+	Info      *statusInfo
 	eveStatus *widget.Label
 	ui        *ui
 }
 
 func (u *ui) newStatusArea() *statusArea {
-	infoLabel := widget.NewLabel("")
+	info := newStatusInfo()
 	statusLabel := widget.NewLabel("")
-	c := container.NewHBox(infoLabel, layout.NewSpacer(), statusLabel)
+	c := container.NewHBox(info.content, layout.NewSpacer(), statusLabel)
 	content := container.NewVBox(widget.NewSeparator(), c)
 	b := statusArea{
 		content:   content,
-		info:      infoLabel,
+		Info:      info,
 		eveStatus: statusLabel,
 		ui:        u,
 	}
 	return &b
-}
-
-func (s *statusArea) setInfo(text string) {
-	s.info.SetText(text)
-}
-
-func (s *statusArea) clearInfo() {
-	s.setInfo("")
 }
 
 func (s *statusArea) StartUpdateTicker() {
@@ -53,4 +45,33 @@ func (s *statusArea) StartUpdateTicker() {
 			<-ticker.C
 		}
 	}()
+}
+
+type statusInfo struct {
+	content *fyne.Container
+}
+
+func newStatusInfo() *statusInfo {
+	return &statusInfo{content: container.NewHBox()}
+}
+
+func (s *statusInfo) Set(text string) {
+	s.content.RemoveAll()
+	s.content.Add(widget.NewLabel(text))
+}
+
+func (s *statusInfo) SetWithProgress(text string) {
+	s.Set(text)
+	s.content.Add(widget.NewProgressBarInfinite())
+}
+
+func (s *statusInfo) SetError(text string) {
+	s.content.RemoveAll()
+	l := widget.NewLabel(text)
+	l.Importance = widget.DangerImportance
+	s.content.Add(l)
+}
+
+func (s *statusInfo) Clear() {
+	s.Set("")
 }
