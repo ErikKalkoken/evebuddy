@@ -4,3 +4,4 @@ main.go.bak
 .temp/
 *.sqlite-shm
 *.sqlite-wal
+evebuddy

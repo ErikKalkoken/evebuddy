@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/url"
 	"runtime"
-	"runtime/debug"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -130,8 +129,11 @@ func makeToolbar(u *ui) *fyne.Container {
 
 func (u *ui) ShowAboutDialog() {
 	c := container.NewVBox()
-	info, _ := debug.ReadBuildInfo()
-	c.Add(widget.NewLabel(fmt.Sprintf("Eve Buddy %s", info.Main.Version)))
+	info := u.app.Metadata()
+	appData := widget.NewRichTextFromMarkdown(
+		"## " + info.Name + "\n**Version:** " + info.Version)
+	// c.Add(widget.NewLabel(fmt.Sprintf("Eve Buddy %s", info.Main.Version)))
+	c.Add(appData)
 	uri, err := url.Parse("https://github.com/ErikKalkoken/evebuddy")
 	if err != nil {
 		panic(err)

@@ -36,3 +36,7 @@ MVP is reaching feature parity with Member Audit mail.
 - Packaging for Linux, Windows and MAC
 - Store logs in a file instead of console
 - Show mail bodies as rich text
+
+### Credits
+
+- Spaceship icon by Icon8: https://icons8.com/icon/bY5t0noHcfXn/rocket
