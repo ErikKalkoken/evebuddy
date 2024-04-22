@@ -262,5 +262,6 @@ func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Charac
 	if err := g.Wait(); err != nil {
 		return fmt.Errorf("failed to update character %d: %w", c.ID, err)
 	}
+	s.SectionSetUpdated(c.ID, UpdateSectionDetails)
 	return nil
 }

@@ -17,6 +17,7 @@ import (
 	"example/evebuddy/internal/api/images"
 	ihumanize "example/evebuddy/internal/helper/humanize"
 	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/service"
 )
 
 type item struct {
@@ -172,18 +173,23 @@ func numberOrDefault[T int | float64](v T, d string) string {
 }
 
 func (c *characterArea) StartUpdateTicker() {
-	ticker := time.NewTicker(120 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	go func() {
 		for {
-			characterID := c.ui.CurrentCharID()
-			if characterID != 0 {
-				err := c.ui.service.UpdateCharacterDetails(characterID)
-				if err != nil {
-					slog.Error(err.Error())
-				} else {
-					c.Redraw()
+			func() {
+				characterID := c.ui.CurrentCharID()
+				if characterID == 0 {
+					return
 				}
-			}
+				if !c.ui.service.SectionUpdatedExpired(characterID, service.UpdateSectionDetails) {
+					return
+				}
+				if err := c.ui.service.UpdateCharacterDetails(characterID); err != nil {
+					slog.Error(err.Error())
+					return
+				}
+				c.Redraw()
+			}()
 			<-ticker.C
 		}
 	}()

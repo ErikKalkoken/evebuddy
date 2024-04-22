@@ -61,7 +61,7 @@ func (s *Service) updateMails(ctx context.Context, characterID int32) (int, erro
 			return 0, err
 		}
 	}
-	s.SectionSetNow(characterID, UpdateSectionMail)
+	s.SectionSetUpdated(characterID, UpdateSectionMail)
 	unreadCount, err := s.r.GetMailUnreadCount(ctx, characterID)
 	if err != nil {
 		return 0, err
