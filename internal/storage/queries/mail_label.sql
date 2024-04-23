@@ -11,7 +11,6 @@ VALUES (
 )
 RETURNING *;
 
-
 -- name: GetMailLabel :one
 SELECT *
 FROM mail_labels
@@ -29,12 +28,22 @@ SELECT *
 FROM mail_labels
 WHERE character_id = ? AND label_id IN (sqlc.slice('ids'));
 
--- name: UpdateMailLabel :one
-UPDATE mail_labels
-SET
-    color = ?,
-    name = ?,
-    unread_count = ?
-WHERE character_id = ?
-AND label_id = ?
+-- name: UpdateOrCreateMailLabel :one
+INSERT INTO mail_labels (
+    character_id,
+    label_id,
+    color,
+    name,
+    unread_count
+)
+VALUES (
+    ?1, ?2, ?3, ?4, ?5
+)
+ON CONFLICT(character_id, label_id) DO
+UPDATE SET
+    color = ?3,
+    name = ?4,
+    unread_count = ?5
+WHERE character_id = ?1
+AND label_id = ?2
 RETURNING *;

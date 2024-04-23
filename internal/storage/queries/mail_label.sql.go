@@ -167,32 +167,42 @@ func (q *Queries) ListMailLabelsOrdered(ctx context.Context, characterID int64) 
 	return items, nil
 }
 
-const updateMailLabel = `-- name: UpdateMailLabel :one
-UPDATE mail_labels
-SET
-    color = ?,
-    name = ?,
-    unread_count = ?
-WHERE character_id = ?
-AND label_id = ?
+const updateOrCreateMailLabel = `-- name: UpdateOrCreateMailLabel :one
+INSERT INTO mail_labels (
+    character_id,
+    label_id,
+    color,
+    name,
+    unread_count
+)
+VALUES (
+    ?1, ?2, ?3, ?4, ?5
+)
+ON CONFLICT(character_id, label_id) DO
+UPDATE SET
+    color = ?3,
+    name = ?4,
+    unread_count = ?5
+WHERE character_id = ?1
+AND label_id = ?2
 RETURNING id, character_id, color, label_id, name, unread_count
 `
 
-type UpdateMailLabelParams struct {
+type UpdateOrCreateMailLabelParams struct {
+	CharacterID int64
+	LabelID     int64
 	Color       string
 	Name        string
 	UnreadCount int64
-	CharacterID int64
-	LabelID     int64
 }
 
-func (q *Queries) UpdateMailLabel(ctx context.Context, arg UpdateMailLabelParams) (MailLabel, error) {
-	row := q.db.QueryRowContext(ctx, updateMailLabel,
+func (q *Queries) UpdateOrCreateMailLabel(ctx context.Context, arg UpdateOrCreateMailLabelParams) (MailLabel, error) {
+	row := q.db.QueryRowContext(ctx, updateOrCreateMailLabel,
+		arg.CharacterID,
+		arg.LabelID,
 		arg.Color,
 		arg.Name,
 		arg.UnreadCount,
-		arg.CharacterID,
-		arg.LabelID,
 	)
 	var i MailLabel
 	err := row.Scan(

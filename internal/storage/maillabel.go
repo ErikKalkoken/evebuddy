@@ -8,8 +8,6 @@ import (
 
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage/queries"
-
-	"github.com/mattn/go-sqlite3"
 )
 
 func mailLabelFromDBModel(l queries.MailLabel) model.MailLabel {
@@ -101,47 +99,17 @@ func (r *Storage) ListMailLabelsOrdered(ctx context.Context, characterID int32) 
 }
 
 func (r *Storage) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (model.MailLabel, error) {
-	label, err := func() (model.MailLabel, error) {
-		var l queries.MailLabel
-		tx, err := r.db.Begin()
-		if err != nil {
-			return model.MailLabel{}, err
-		}
-		defer tx.Rollback()
-		qtx := r.q.WithTx(tx)
-		arg1 := queries.CreateMailLabelParams{
-			CharacterID: int64(arg.CharacterID),
-			LabelID:     int64(arg.LabelID),
-			Color:       arg.Color,
-			Name:        arg.Name,
-			UnreadCount: int64(arg.UnreadCount),
-		}
-		l, err = qtx.CreateMailLabel(ctx, arg1)
-		if err != nil {
-			sqlErr, ok := err.(sqlite3.Error)
-			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintUnique {
-				return model.MailLabel{}, err
-			}
-			arg2 := queries.UpdateMailLabelParams{
-				CharacterID: int64(arg.CharacterID),
-				LabelID:     int64(arg.LabelID),
-				Color:       arg.Color,
-				Name:        arg.Name,
-				UnreadCount: int64(arg.UnreadCount),
-			}
-			l, err = qtx.UpdateMailLabel(ctx, arg2)
-			if err != nil {
-				return model.MailLabel{}, err
-			}
-		}
-		if err := tx.Commit(); err != nil {
-			return model.MailLabel{}, err
-		}
-		l2 := mailLabelFromDBModel(l)
-		return l2, nil
-	}()
+	arg1 := queries.UpdateOrCreateMailLabelParams{
+		CharacterID: int64(arg.CharacterID),
+		LabelID:     int64(arg.LabelID),
+		Color:       arg.Color,
+		Name:        arg.Name,
+		UnreadCount: int64(arg.UnreadCount),
+	}
+	l, err := r.q.UpdateOrCreateMailLabel(ctx, arg1)
 	if err != nil {
 		return model.MailLabel{}, fmt.Errorf("failed to update or create mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
 	}
+	label := mailLabelFromDBModel(l)
 	return label, nil
 }
