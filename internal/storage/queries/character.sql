@@ -1,9 +1,12 @@
 -- name: CreateCharacter :one
 INSERT INTO characters (
+    id,
     alliance_id,
+    birthday,
     corporation_id,
     description,
     faction_id,
+    gender,
     last_login_at,
     name,
     race_id,
@@ -11,10 +14,7 @@ INSERT INTO characters (
     ship_id,
     skill_points,
     location_id,
-    wallet_balance,
-    id,
-    birthday,
-    gender
+    wallet_balance
 )
 VALUES (
     ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?, ?, ?
@@ -85,6 +85,7 @@ WHERE id = ?;
 
 -- name: UpdateOrCreateCharacter :one
 INSERT INTO characters (
+    id,
     alliance_id,
     birthday,
     corporation_id,
@@ -92,7 +93,6 @@ INSERT INTO characters (
     faction_id,
     gender,
     last_login_at,
-    id,
     name,
     race_id,
     security_status,
@@ -106,16 +106,16 @@ VALUES (
 )
 ON CONFLICT(id) DO
 UPDATE SET
-    alliance_id = ?1,
-    corporation_id = ?3,
-    description = ?4,
-    faction_id = ?5,
-    last_login_at = ?7,
+    alliance_id = ?2,
+    corporation_id = ?4,
+    description = ?5,
+    faction_id = ?6,
+    last_login_at = ?8,
     name = ?9,
     security_status = ?11,
     ship_id = ?12,
     skill_points = ?13,
     location_id = ?14,
     wallet_balance = ?15
-WHERE id = ?8
+WHERE id = ?1
 RETURNING *;

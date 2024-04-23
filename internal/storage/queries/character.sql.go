@@ -13,10 +13,13 @@ import (
 
 const createCharacter = `-- name: CreateCharacter :one
 INSERT INTO characters (
+    id,
     alliance_id,
+    birthday,
     corporation_id,
     description,
     faction_id,
+    gender,
     last_login_at,
     name,
     race_id,
@@ -24,10 +27,7 @@ INSERT INTO characters (
     ship_id,
     skill_points,
     location_id,
-    wallet_balance,
-    id,
-    birthday,
-    gender
+    wallet_balance
 )
 VALUES (
     ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ? ,?, ?, ?, ?
@@ -36,10 +36,13 @@ RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id
 `
 
 type CreateCharacterParams struct {
+	ID             int64
 	AllianceID     sql.NullInt64
+	Birthday       time.Time
 	CorporationID  int64
 	Description    string
 	FactionID      sql.NullInt64
+	Gender         string
 	LastLoginAt    time.Time
 	Name           string
 	RaceID         int64
@@ -48,17 +51,17 @@ type CreateCharacterParams struct {
 	SkillPoints    int64
 	LocationID     int64
 	WalletBalance  float64
-	ID             int64
-	Birthday       time.Time
-	Gender         string
 }
 
 func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams) (Character, error) {
 	row := q.db.QueryRowContext(ctx, createCharacter,
+		arg.ID,
 		arg.AllianceID,
+		arg.Birthday,
 		arg.CorporationID,
 		arg.Description,
 		arg.FactionID,
+		arg.Gender,
 		arg.LastLoginAt,
 		arg.Name,
 		arg.RaceID,
@@ -67,9 +70,6 @@ func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams
 		arg.SkillPoints,
 		arg.LocationID,
 		arg.WalletBalance,
-		arg.ID,
-		arg.Birthday,
-		arg.Gender,
 	)
 	var i Character
 	err := row.Scan(
@@ -348,6 +348,7 @@ func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams
 
 const updateOrCreateCharacter = `-- name: UpdateOrCreateCharacter :one
 INSERT INTO characters (
+    id,
     alliance_id,
     birthday,
     corporation_id,
@@ -355,7 +356,6 @@ INSERT INTO characters (
     faction_id,
     gender,
     last_login_at,
-    id,
     name,
     race_id,
     security_status,
@@ -369,22 +369,23 @@ VALUES (
 )
 ON CONFLICT(id) DO
 UPDATE SET
-    alliance_id = ?1,
-    corporation_id = ?3,
-    description = ?4,
-    faction_id = ?5,
-    last_login_at = ?7,
+    alliance_id = ?2,
+    corporation_id = ?4,
+    description = ?5,
+    faction_id = ?6,
+    last_login_at = ?8,
     name = ?9,
     security_status = ?11,
     ship_id = ?12,
     skill_points = ?13,
     location_id = ?14,
     wallet_balance = ?15
-WHERE id = ?8
+WHERE id = ?1
 RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id, id, last_login_at, location_id, name, race_id, security_status, ship_id, skill_points, wallet_balance
 `
 
 type UpdateOrCreateCharacterParams struct {
+	ID             int64
 	AllianceID     sql.NullInt64
 	Birthday       time.Time
 	CorporationID  int64
@@ -392,7 +393,6 @@ type UpdateOrCreateCharacterParams struct {
 	FactionID      sql.NullInt64
 	Gender         string
 	LastLoginAt    time.Time
-	ID             int64
 	Name           string
 	RaceID         int64
 	SecurityStatus float64
@@ -404,6 +404,7 @@ type UpdateOrCreateCharacterParams struct {
 
 func (q *Queries) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreateCharacterParams) (Character, error) {
 	row := q.db.QueryRowContext(ctx, updateOrCreateCharacter,
+		arg.ID,
 		arg.AllianceID,
 		arg.Birthday,
 		arg.CorporationID,
@@ -411,7 +412,6 @@ func (q *Queries) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreat
 		arg.FactionID,
 		arg.Gender,
 		arg.LastLoginAt,
-		arg.ID,
 		arg.Name,
 		arg.RaceID,
 		arg.SecurityStatus,
