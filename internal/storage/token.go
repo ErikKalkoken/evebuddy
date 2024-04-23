@@ -8,8 +8,6 @@ import (
 
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage/queries"
-
-	"github.com/mattn/go-sqlite3"
 )
 
 func tokenFromDBModel(t queries.Token) model.Token {
@@ -36,43 +34,16 @@ func (r *Storage) GetToken(ctx context.Context, characterID int32) (model.Token,
 	t2 := tokenFromDBModel(t)
 	return t2, nil
 }
+
 func (r *Storage) UpdateOrCreateToken(ctx context.Context, t *model.Token) error {
-	err := func() error {
-		if t.CharacterID == 0 {
-			return errors.New("can not save token without character")
-		}
-		tx, err := r.db.Begin()
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-		qtx := r.q.WithTx(tx)
-		arg := queries.CreateTokenParams{
-			AccessToken:  t.AccessToken,
-			CharacterID:  int64(t.CharacterID),
-			ExpiresAt:    t.ExpiresAt,
-			RefreshToken: t.RefreshToken,
-			TokenType:    t.TokenType,
-		}
-		if err := qtx.CreateToken(ctx, arg); err != nil {
-			sqlErr, ok := err.(sqlite3.Error)
-			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintPrimaryKey {
-				return err
-			}
-			arg := queries.UpdateTokenParams{
-				AccessToken:  t.AccessToken,
-				CharacterID:  int64(t.CharacterID),
-				ExpiresAt:    t.ExpiresAt,
-				RefreshToken: t.RefreshToken,
-				TokenType:    t.TokenType,
-			}
-			if err := qtx.UpdateToken(ctx, arg); err != nil {
-				return err
-			}
-		}
-		return tx.Commit()
-	}()
-	if err != nil {
+	arg := queries.UpdateOrCreateTokenParams{
+		AccessToken:  t.AccessToken,
+		CharacterID:  int64(t.CharacterID),
+		ExpiresAt:    t.ExpiresAt,
+		RefreshToken: t.RefreshToken,
+		TokenType:    t.TokenType,
+	}
+	if err := r.q.UpdateOrCreateToken(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update or create token for character %d: %w", t.CharacterID, err)
 	}
 	return nil
