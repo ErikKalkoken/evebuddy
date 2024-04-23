@@ -35,10 +35,18 @@ COLLATE NOCASE;
 SELECT id
 FROM eve_entities;
 
--- name: UpdateEveEntity :one
-UPDATE eve_entities
-SET
-    category = ?,
-    name = ?
-WHERE id = ?
+-- name: UpdateOrCreateEveEntity :one
+INSERT INTO eve_entities (
+    id,
+    category,
+    name
+)
+VALUES (
+    ?1, ?2, ?3
+)
+ON CONFLICT(id) DO
+UPDATE SET
+    category = ?2,
+    name = ?3
+WHERE id = ?1
 RETURNING *;

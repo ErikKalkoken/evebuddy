@@ -10,8 +10,6 @@ import (
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage/queries"
-
-	"github.com/mattn/go-sqlite3"
 )
 
 // Eve Entity categories in DB models
@@ -162,48 +160,20 @@ func (r *Storage) MissingEveEntityIDs(ctx context.Context, ids []int32) (*set.Se
 }
 
 func (r *Storage) UpdateOrCreateEveEntity(ctx context.Context, id int32, name string, category model.EveEntityCategory) (model.EveEntity, error) {
-	e, err := func() (model.EveEntity, error) {
-		if id == 0 {
-			return model.EveEntity{}, fmt.Errorf("invalid ID %d", id)
-		}
-		tx, err := r.db.Begin()
-		if err != nil {
-			return model.EveEntity{}, err
-		}
-		defer tx.Rollback()
-		qtx := r.q.WithTx(tx)
-		categoryDB := eveEntityDBModelCategoryFromCategory(category)
-		arg := queries.CreateEveEntityParams{
-			ID:       int64(id),
-			Name:     name,
-			Category: categoryDB,
-		}
-		var e queries.EveEntity
-		e, err = qtx.CreateEveEntity(ctx, arg)
-		if err != nil {
-			sqlErr, ok := err.(sqlite3.Error)
-			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintPrimaryKey {
-				return model.EveEntity{}, err
-			}
-			arg := queries.UpdateEveEntityParams{
-				ID:       int64(id),
-				Name:     name,
-				Category: categoryDB,
-			}
-			e, err = qtx.UpdateEveEntity(ctx, arg)
-			if err != nil {
-				return model.EveEntity{}, err
-			}
-		}
-		if err := tx.Commit(); err != nil {
-			return model.EveEntity{}, err
-		}
-		return eveEntityFromDBModel(e), nil
-	}()
+	if id == 0 {
+		return model.EveEntity{}, fmt.Errorf("can't update or create EveEntity with ID %d", id)
+	}
+	categoryDB := eveEntityDBModelCategoryFromCategory(category)
+	arg := queries.UpdateOrCreateEveEntityParams{
+		ID:       int64(id),
+		Name:     name,
+		Category: categoryDB,
+	}
+	e, err := r.q.UpdateOrCreateEveEntity(ctx, arg)
 	if err != nil {
 		return model.EveEntity{}, fmt.Errorf("failed to update or create EveEntity %d: %w", id, err)
 	}
-	return e, nil
+	return eveEntityFromDBModel(e), nil
 }
 
 func eveEntityCategoryFromDBModel(c string) model.EveEntityCategory {
