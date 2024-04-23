@@ -82,3 +82,40 @@ SET
     location_id = ?,
     wallet_balance = ?
 WHERE id = ?;
+
+-- name: UpdateOrCreateCharacter :one
+INSERT INTO characters (
+    alliance_id,
+    birthday,
+    corporation_id,
+    description,
+    faction_id,
+    gender,
+    last_login_at,
+    id,
+    name,
+    race_id,
+    security_status,
+    ship_id,
+    skill_points,
+    location_id,
+    wallet_balance
+)
+VALUES (
+    ?1, ?2, ?3, ?4, ?5 ,?6, ?7, ?8, ?9, ?10, ?11 ,?12, ?13, ?14, ?15
+)
+ON CONFLICT(id) DO
+UPDATE SET
+    alliance_id = ?1,
+    corporation_id = ?3,
+    description = ?4,
+    faction_id = ?5,
+    last_login_at = ?7,
+    name = ?9,
+    security_status = ?11,
+    ship_id = ?12,
+    skill_points = ?13,
+    location_id = ?14,
+    wallet_balance = ?15
+WHERE id = ?8
+RETURNING *;

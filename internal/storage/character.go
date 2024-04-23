@@ -8,8 +8,6 @@ import (
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage/queries"
 	"fmt"
-
-	"github.com/mattn/go-sqlite3"
 )
 
 func (r *Storage) DeleteCharacter(ctx context.Context, characterID int32) error {
@@ -149,68 +147,30 @@ func (r *Storage) ListCharacterIDs(ctx context.Context) ([]int32, error) {
 }
 
 func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Character) error {
-	err := func() error {
-		tx, err := r.db.Begin()
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-		qtx := r.q.WithTx(tx)
-		arg := queries.CreateCharacterParams{
-			Birthday:       c.Birthday,
-			CorporationID:  int64(c.Corporation.ID),
-			Description:    c.Description,
-			Gender:         c.Gender,
-			ID:             int64(c.ID),
-			LastLoginAt:    c.LastLoginAt,
-			Name:           c.Name,
-			RaceID:         int64(c.Race.ID),
-			SecurityStatus: float64(c.SecurityStatus),
-			ShipID:         int64(c.Ship.ID),
-			SkillPoints:    int64(c.SkillPoints),
-			LocationID:     int64(c.Location.ID),
-			WalletBalance:  c.WalletBalance,
-		}
-		if c.Alliance.ID != 0 {
-			arg.AllianceID.Int64 = int64(c.Alliance.ID)
-			arg.AllianceID.Valid = true
-		}
-		if c.Faction.ID != 0 {
-			arg.FactionID.Int64 = int64(c.Faction.ID)
-			arg.FactionID.Valid = true
-		}
-		_, err = qtx.CreateCharacter(ctx, arg)
-		if err != nil {
-			sqlErr, ok := err.(sqlite3.Error)
-			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintPrimaryKey {
-				return err
-			}
-			arg := queries.UpdateCharacterParams{
-				CorporationID:  int64(c.Corporation.ID),
-				Description:    c.Description,
-				ID:             int64(c.ID),
-				LastLoginAt:    c.LastLoginAt,
-				Name:           c.Name,
-				SecurityStatus: float64(c.SecurityStatus),
-				ShipID:         int64(c.Ship.ID),
-				SkillPoints:    int64(c.SkillPoints),
-				LocationID:     int64(c.Location.ID),
-				WalletBalance:  c.WalletBalance,
-			}
-			if c.Alliance.ID != 0 {
-				arg.AllianceID.Int64 = int64(c.Alliance.ID)
-				arg.AllianceID.Valid = true
-			}
-			if c.Faction.ID != 0 {
-				arg.FactionID.Int64 = int64(c.Faction.ID)
-				arg.FactionID.Valid = true
-			}
-			if err := qtx.UpdateCharacter(ctx, arg); err != nil {
-				return err
-			}
-		}
-		return tx.Commit()
-	}()
+	arg := queries.UpdateOrCreateCharacterParams{
+		Birthday:       c.Birthday,
+		CorporationID:  int64(c.Corporation.ID),
+		Description:    c.Description,
+		Gender:         c.Gender,
+		ID:             int64(c.ID),
+		LastLoginAt:    c.LastLoginAt,
+		Name:           c.Name,
+		RaceID:         int64(c.Race.ID),
+		SecurityStatus: float64(c.SecurityStatus),
+		ShipID:         int64(c.Ship.ID),
+		SkillPoints:    int64(c.SkillPoints),
+		LocationID:     int64(c.Location.ID),
+		WalletBalance:  c.WalletBalance,
+	}
+	if c.Alliance.ID != 0 {
+		arg.AllianceID.Int64 = int64(c.Alliance.ID)
+		arg.AllianceID.Valid = true
+	}
+	if c.Faction.ID != 0 {
+		arg.FactionID.Int64 = int64(c.Faction.ID)
+		arg.FactionID.Valid = true
+	}
+	_, err := r.q.UpdateOrCreateCharacter(ctx, arg)
 	if err != nil {
 		return fmt.Errorf("failed to update or create character %d: %w", c.ID, err)
 	}

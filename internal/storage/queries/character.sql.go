@@ -345,3 +345,98 @@ func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams
 	)
 	return err
 }
+
+const updateOrCreateCharacter = `-- name: UpdateOrCreateCharacter :one
+INSERT INTO characters (
+    alliance_id,
+    birthday,
+    corporation_id,
+    description,
+    faction_id,
+    gender,
+    last_login_at,
+    id,
+    name,
+    race_id,
+    security_status,
+    ship_id,
+    skill_points,
+    location_id,
+    wallet_balance
+)
+VALUES (
+    ?1, ?2, ?3, ?4, ?5 ,?6, ?7, ?8, ?9, ?10, ?11 ,?12, ?13, ?14, ?15
+)
+ON CONFLICT(id) DO
+UPDATE SET
+    alliance_id = ?1,
+    corporation_id = ?3,
+    description = ?4,
+    faction_id = ?5,
+    last_login_at = ?7,
+    name = ?9,
+    security_status = ?11,
+    ship_id = ?12,
+    skill_points = ?13,
+    location_id = ?14,
+    wallet_balance = ?15
+WHERE id = ?8
+RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id, id, last_login_at, location_id, name, race_id, security_status, ship_id, skill_points, wallet_balance
+`
+
+type UpdateOrCreateCharacterParams struct {
+	AllianceID     sql.NullInt64
+	Birthday       time.Time
+	CorporationID  int64
+	Description    string
+	FactionID      sql.NullInt64
+	Gender         string
+	LastLoginAt    time.Time
+	ID             int64
+	Name           string
+	RaceID         int64
+	SecurityStatus float64
+	ShipID         int64
+	SkillPoints    int64
+	LocationID     int64
+	WalletBalance  float64
+}
+
+func (q *Queries) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreateCharacterParams) (Character, error) {
+	row := q.db.QueryRowContext(ctx, updateOrCreateCharacter,
+		arg.AllianceID,
+		arg.Birthday,
+		arg.CorporationID,
+		arg.Description,
+		arg.FactionID,
+		arg.Gender,
+		arg.LastLoginAt,
+		arg.ID,
+		arg.Name,
+		arg.RaceID,
+		arg.SecurityStatus,
+		arg.ShipID,
+		arg.SkillPoints,
+		arg.LocationID,
+		arg.WalletBalance,
+	)
+	var i Character
+	err := row.Scan(
+		&i.AllianceID,
+		&i.Birthday,
+		&i.CorporationID,
+		&i.Description,
+		&i.Gender,
+		&i.FactionID,
+		&i.ID,
+		&i.LastLoginAt,
+		&i.LocationID,
+		&i.Name,
+		&i.RaceID,
+		&i.SecurityStatus,
+		&i.ShipID,
+		&i.SkillPoints,
+		&i.WalletBalance,
+	)
+	return i, err
+}

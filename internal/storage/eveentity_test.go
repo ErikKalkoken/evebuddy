@@ -13,25 +13,10 @@ import (
 	"example/evebuddy/internal/testutil"
 )
 
-func TestEveEntity(t *testing.T) {
+func TestEveEntityUpdateOrCreate(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
-	t.Run("can create new", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		// when
-		_, err := r.CreateEveEntity(ctx, 42, "Dummy", model.EveEntityAlliance)
-		// then
-		if assert.NoError(t, err) {
-			e, err := r.GetEveEntity(ctx, 42)
-			if assert.NoError(t, err) {
-				assert.Equal(t, e.ID, int32(42))
-				assert.Equal(t, e.Name, "Dummy")
-				assert.Equal(t, e.Category, model.EveEntityAlliance)
-			}
-		}
-	})
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -51,6 +36,35 @@ func TestEveEntity(t *testing.T) {
 				assert.Equal(t, e1.ID, e2.ID)
 				assert.Equal(t, "Erik", e2.Name)
 				assert.Equal(t, model.EveEntityCorporation, e2.Category)
+			}
+		}
+	})
+	t.Run("should not store with invalid ID 3", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := r.UpdateOrCreateEveEntity(ctx, 0, "Dummy", model.EveEntityAlliance)
+		// then
+		assert.Error(t, err)
+	})
+}
+
+func TestEveEntity(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can create new", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := r.CreateEveEntity(ctx, 42, "Dummy", model.EveEntityAlliance)
+		// then
+		if assert.NoError(t, err) {
+			e, err := r.GetEveEntity(ctx, 42)
+			if assert.NoError(t, err) {
+				assert.Equal(t, e.ID, int32(42))
+				assert.Equal(t, e.Name, "Dummy")
+				assert.Equal(t, e.Category, model.EveEntityAlliance)
 			}
 		}
 	})
@@ -109,14 +123,6 @@ func TestEveEntity(t *testing.T) {
 		testutil.TruncateTables(db)
 		// when
 		_, err := r.GetOrCreateEveEntity(ctx, 0, "Dummy", model.EveEntityAlliance)
-		// then
-		assert.Error(t, err)
-	})
-	t.Run("should not store with invalid ID 3", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		// when
-		_, err := r.UpdateOrCreateEveEntity(ctx, 0, "Dummy", model.EveEntityAlliance)
 		// then
 		assert.Error(t, err)
 	})
