@@ -9,24 +9,6 @@ import (
 	"context"
 )
 
-const createDictEntry = `-- name: CreateDictEntry :exec
-INSERT INTO dictionary (
-    value,
-    key
-)
-VALUES (?, ?)
-`
-
-type CreateDictEntryParams struct {
-	Value []byte
-	Key   string
-}
-
-func (q *Queries) CreateDictEntry(ctx context.Context, arg CreateDictEntryParams) error {
-	_, err := q.db.ExecContext(ctx, createDictEntry, arg.Value, arg.Key)
-	return err
-}
-
 const deleteDictEntry = `-- name: DeleteDictEntry :exec
 DELETE FROM dictionary
 WHERE key = ?
@@ -50,18 +32,23 @@ func (q *Queries) GetDictEntry(ctx context.Context, key string) (Dictionary, err
 	return i, err
 }
 
-const updateDictEntry = `-- name: UpdateDictEntry :exec
-UPDATE dictionary
-SET value = ?
-WHERE key = ?
+const updateOrCreateDictEntry = `-- name: UpdateOrCreateDictEntry :exec
+INSERT INTO dictionary (
+    key,
+    value
+)
+VALUES (?1, ?2)
+ON CONFLICT(key) DO
+UPDATE SET value = ?2
+WHERE key = ?1
 `
 
-type UpdateDictEntryParams struct {
-	Value []byte
+type UpdateOrCreateDictEntryParams struct {
 	Key   string
+	Value []byte
 }
 
-func (q *Queries) UpdateDictEntry(ctx context.Context, arg UpdateDictEntryParams) error {
-	_, err := q.db.ExecContext(ctx, updateDictEntry, arg.Value, arg.Key)
+func (q *Queries) UpdateOrCreateDictEntry(ctx context.Context, arg UpdateOrCreateDictEntryParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateDictEntry, arg.Key, arg.Value)
 	return err
 }

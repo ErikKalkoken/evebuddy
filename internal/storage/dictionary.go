@@ -5,8 +5,6 @@ import (
 	"fmt"
 
 	"example/evebuddy/internal/storage/queries"
-
-	"github.com/mattn/go-sqlite3"
 )
 
 func (r *Storage) GetDictEntry(ctx context.Context, key string) ([]byte, error) {
@@ -25,33 +23,11 @@ func (r *Storage) DeleteDictEntry(ctx context.Context, key string) error {
 }
 
 func (r *Storage) SetDictEntry(ctx context.Context, key string, bb []byte) error {
-	err := func() error {
-		tx, err := r.db.Begin()
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-		qtx := r.q.WithTx(tx)
-		arg := queries.CreateDictEntryParams{
-			Value: bb,
-			Key:   key,
-		}
-		if err := qtx.CreateDictEntry(ctx, arg); err != nil {
-			sqlErr, ok := err.(sqlite3.Error)
-			if !ok || sqlErr.ExtendedCode != sqlite3.ErrConstraintPrimaryKey {
-				return err
-			}
-			arg := queries.UpdateDictEntryParams{
-				Value: bb,
-				Key:   key,
-			}
-			if err := qtx.UpdateDictEntry(ctx, arg); err != nil {
-				return err
-			}
-		}
-		return tx.Commit()
-	}()
-	if err != nil {
+	arg := queries.UpdateOrCreateDictEntryParams{
+		Value: bb,
+		Key:   key,
+	}
+	if err := r.q.UpdateOrCreateDictEntry(ctx, arg); err != nil {
 		return fmt.Errorf("failed to set setting for key %s: %w", key, err)
 	}
 	return nil
