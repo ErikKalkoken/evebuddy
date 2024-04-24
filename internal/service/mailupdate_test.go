@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/testutil"
 )
 
 func TestCanFetchManyMailHeaders(t *testing.T) {
@@ -19,7 +20,6 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	ctx := context.Background()
-
 	s := NewService(nil)
 	var objs []esi.GetCharactersCharacterIdMail200Ok
 	var mailIDs []int32
@@ -69,4 +69,109 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 		}
 		assert.Equal(t, mailIDs, newIDs)
 	}
+}
+
+func TestUpdateMailLabel(t *testing.T) {
+	// given
+	db, r, factory := testutil.New()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	ctx := context.Background()
+	s := NewService(r)
+	t.Run("should create new mail labels", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		token := factory.CreateToken(model.Token{CharacterID: c.ID})
+		dataMailLabel := map[string]any{
+			"labels": []map[string]any{
+				{
+					"color":        "#660066",
+					"label_id":     16,
+					"name":         "PINK",
+					"unread_count": 4,
+				},
+				{
+					"color":        "#FFFFFF",
+					"label_id":     32,
+					"name":         "WHITE",
+					"unread_count": 0,
+				},
+			},
+			"total_unread_count": 4,
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c.ID),
+			func(req *http.Request) (*http.Response, error) {
+				resp, err := httpmock.NewJsonResponse(200, dataMailLabel)
+				if err != nil {
+					return httpmock.NewStringResponse(500, ""), nil
+				}
+				return resp, nil
+			})
+		// when
+		err := s.updateMailLabels(ctx, &token)
+		// then
+		if assert.NoError(t, err) {
+			labels, err := r.ListMailLabelsOrdered(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.Len(t, labels, 2)
+			}
+		}
+	})
+	t.Run("should update existing mail labels", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		token := factory.CreateToken(model.Token{CharacterID: c.ID})
+		l1 := factory.CreateMailLabel(model.MailLabel{
+			CharacterID: c.ID,
+			LabelID:     16,
+			Name:        "BLACK",
+			Color:       "#000000",
+			UnreadCount: 99,
+		})
+		dataMailLabel := map[string]any{
+			"labels": []map[string]any{
+				{
+					"color":        "#660066",
+					"label_id":     16,
+					"name":         "PINK",
+					"unread_count": 4,
+				},
+				{
+					"color":        "#FFFFFF",
+					"label_id":     32,
+					"name":         "WHITE",
+					"unread_count": 0,
+				},
+			},
+			"total_unread_count": 4,
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c.ID),
+			func(req *http.Request) (*http.Response, error) {
+				resp, err := httpmock.NewJsonResponse(200, dataMailLabel)
+				if err != nil {
+					return httpmock.NewStringResponse(500, ""), nil
+				}
+				return resp, nil
+			})
+		// when
+		err := s.updateMailLabels(ctx, &token)
+		// then
+		if assert.NoError(t, err) {
+			l2, err := r.GetMailLabel(ctx, c.ID, l1.LabelID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, "PINK", l2.Name)
+				assert.Equal(t, "#660066", l2.Color)
+				assert.Equal(t, 4, l2.UnreadCount)
+			}
+		}
+	})
 }
