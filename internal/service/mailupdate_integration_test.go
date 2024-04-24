@@ -100,6 +100,12 @@ func TestUpdateMail(t *testing.T) {
 					"name":         "PINK",
 					"unread_count": 4,
 				},
+				{
+					"color":        "#FFFFFF",
+					"label_id":     5,
+					"name":         "WHITE",
+					"unread_count": 0,
+				},
 			},
 			"total_unread_count": 4,
 		}
@@ -133,6 +139,7 @@ func TestUpdateMail(t *testing.T) {
 		factory.CreateEveEntityCharacter(model.EveEntity{ID: 90000001})
 		factory.CreateEveEntityCharacter(model.EveEntity{ID: 90000002})
 		factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: 3})
+		factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: 5})
 		timestamp, _ := time.Parse("2006-01-02T15:04:05.999MST", "2015-09-30T16:07:00Z")
 		factory.CreateMail(storage.CreateMailParams{
 			Body:        "blah blah blah",
@@ -148,7 +155,7 @@ func TestUpdateMail(t *testing.T) {
 			{
 				"from":    90000001,
 				"is_read": true,
-				"labels":  []int{3},
+				"labels":  []int{5},
 				"mail_id": 7,
 				"recipients": []map[string]any{
 					{
@@ -174,7 +181,7 @@ func TestUpdateMail(t *testing.T) {
 		dataMail := map[string]any{
 			"body":      "blah blah blah",
 			"from":      90000001,
-			"labels":    []int{3},
+			"labels":    []int{5},
 			"read":      true,
 			"subject":   "test",
 			"timestamp": "2015-09-30T16:07:00Z",
@@ -215,6 +222,12 @@ func TestUpdateMail(t *testing.T) {
 					"name":         "PINK",
 					"unread_count": 4,
 				},
+				{
+					"color":        "#FFFFFF",
+					"label_id":     5,
+					"name":         "WHITE",
+					"unread_count": 0,
+				},
 			},
 			"total_unread_count": 4,
 		}
@@ -237,6 +250,8 @@ func TestUpdateMail(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, "blah blah blah", m.Body)
 				assert.True(t, m.IsRead)
+				assert.Len(t, m.Labels, 1)
+				assert.Equal(t, int32(5), m.Labels[0].LabelID)
 			}
 		}
 	})

@@ -112,6 +112,16 @@ func (q *Queries) DeleteMail(ctx context.Context, arg DeleteMailParams) error {
 	return err
 }
 
+const deleteMailMailLabels = `-- name: DeleteMailMailLabels :exec
+DELETE FROM mail_mail_labels
+WHERE mail_mail_labels.mail_id = ?
+`
+
+func (q *Queries) DeleteMailMailLabels(ctx context.Context, mailID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteMailMailLabels, mailID)
+	return err
+}
+
 const getMail = `-- name: GetMail :one
 SELECT mails.id, mails.body, mails.character_id, mails.from_id, mails.is_read, mails.mail_id, mails.subject, mails.timestamp, eve_entities.id, eve_entities.category, eve_entities.name
 FROM mails
@@ -475,18 +485,16 @@ func (q *Queries) ListMailIDsOrdered(ctx context.Context, characterID int64) ([]
 
 const updateMail = `-- name: UpdateMail :exec
 UPDATE mails
-SET is_read = ?3
-WHERE character_id = ?1
-AND mail_id = ?2
+SET is_read = ?2
+WHERE id = ?1
 `
 
 type UpdateMailParams struct {
-	CharacterID int64
-	MailID      int64
-	IsRead      bool
+	ID     int64
+	IsRead bool
 }
 
 func (q *Queries) UpdateMail(ctx context.Context, arg UpdateMailParams) error {
-	_, err := q.db.ExecContext(ctx, updateMail, arg.CharacterID, arg.MailID, arg.IsRead)
+	_, err := q.db.ExecContext(ctx, updateMail, arg.ID, arg.IsRead)
 	return err
 }

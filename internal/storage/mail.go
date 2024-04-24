@@ -80,19 +80,8 @@ func (r *Storage) CreateMail(ctx context.Context, arg CreateMailParams) (int64, 
 			}
 		}
 		// TODO: Ensure this still works when no labels have yet been loaded from ESI
-		if len(arg.LabelIDs) > 0 {
-			for _, labelID := range arg.LabelIDs {
-				label, err := r.GetMailLabel(ctx, arg.CharacterID, labelID)
-				if err != nil {
-					return 0, err
-				}
-				mailMailLabelParams := queries.CreateMailMailLabelParams{
-					MailID: mail.ID, MailLabelID: label.ID,
-				}
-				if err := r.q.CreateMailMailLabel(ctx, mailMailLabelParams); err != nil {
-					return 0, err
-				}
-			}
+		if err := r.updateMailLabels(ctx, arg.CharacterID, mail.ID, arg.LabelIDs); err != nil {
+			return 0, err
 		}
 		slog.Info("Created new mail", "characterID", arg.CharacterID, "mailID", arg.MailID)
 		return mail.ID, nil
@@ -101,6 +90,38 @@ func (r *Storage) CreateMail(ctx context.Context, arg CreateMailParams) (int64, 
 		return 0, fmt.Errorf("failed to create mail for character %d and mail ID %d: %w", arg.CharacterID, arg.MailID, err)
 	}
 	return id, err
+}
+
+func (r *Storage) updateMailLabels(ctx context.Context, characterID int32, mailPK int64, labelIDs []int32) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	qtx := r.q.WithTx(tx)
+	if err := qtx.DeleteMailMailLabels(ctx, mailPK); err != nil {
+		return err
+	}
+	for _, l := range labelIDs {
+		arg := queries.GetMailLabelParams{
+			CharacterID: int64(characterID),
+			LabelID:     int64(l),
+		}
+		label, err := qtx.GetMailLabel(ctx, arg)
+		if err != nil {
+			return err
+		}
+		mailMailLabelParams := queries.CreateMailMailLabelParams{
+			MailID: mailPK, MailLabelID: label.ID,
+		}
+		if err := qtx.CreateMailMailLabel(ctx, mailMailLabelParams); err != nil {
+			return err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *Storage) GetMail(ctx context.Context, characterID, mailID int32) (model.Mail, error) {
@@ -240,15 +261,16 @@ func (r *Storage) ListMailIDsForListOrdered(ctx context.Context, characterID int
 	return ids2, nil
 }
 
-func (r *Storage) UpdateMail(ctx context.Context, characterID, mailID int32, isRead bool) error {
+func (r *Storage) UpdateMail(ctx context.Context, characterID int32, mailPK int64, isRead bool, labelIDs []int32) error {
 	arg := queries.UpdateMailParams{
-		CharacterID: int64(characterID),
-		MailID:      int64(mailID),
-		IsRead:      isRead,
+		ID:     mailPK,
+		IsRead: isRead,
 	}
-	err := r.q.UpdateMail(ctx, arg)
-	if err != nil {
-		return fmt.Errorf("failed to update mail ID %d for character %d: %w", mailID, characterID, err)
+	if err := r.q.UpdateMail(ctx, arg); err != nil {
+		return fmt.Errorf("failed to update mail PK %d for character %d: %w", mailPK, characterID, err)
+	}
+	if err := r.updateMailLabels(ctx, characterID, mailPK, labelIDs); err != nil {
+		return fmt.Errorf("failed to update labels for mail PK %d and character %d: %w", mailPK, characterID, err)
 	}
 	return nil
 }

@@ -32,6 +32,10 @@ DELETE FROM mails
 WHERE mails.character_id = ?
 AND mails.mail_id = ?;
 
+-- name: DeleteMailMailLabels :exec
+DELETE FROM mail_mail_labels
+WHERE mail_mail_labels.mail_id = ?;
+
 -- name: GetMail :one
 SELECT sqlc.embed(mails), sqlc.embed(eve_entities)
 FROM mails
@@ -114,6 +118,5 @@ ORDER BY timestamp DESC;
 
 -- name: UpdateMail :exec
 UPDATE mails
-SET is_read = ?3
-WHERE character_id = ?1
-AND mail_id = ?2;
+SET is_read = ?2
+WHERE id = ?1;

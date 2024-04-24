@@ -154,32 +154,3 @@ func (s *Service) ListMailLabelsOrdered(characterID int32) ([]model.MailLabel, e
 	ctx := context.Background()
 	return s.r.ListMailLabelsOrdered(ctx, characterID)
 }
-
-// UpdateMailRead updates an existing mail as read
-func (s *Service) UpdateMailRead(characterID, mailID int32) error {
-	ctx := context.Background()
-	token, err := s.getValidToken(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	ctx = contextWithToken(ctx, token.AccessToken)
-	m, err := s.r.GetMail(ctx, characterID, mailID)
-	if err != nil {
-		return err
-	}
-	labelIDs := make([]int32, len(m.Labels))
-	for i, l := range m.Labels {
-		labelIDs[i] = l.LabelID
-	}
-	contents := esi.PutCharactersCharacterIdMailMailIdContents{Read: true, Labels: labelIDs}
-	_, err = s.esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(ctx, m.CharacterID, contents, m.MailID, nil)
-	if err != nil {
-		return err
-	}
-	m.IsRead = true
-	if err := s.r.UpdateMail(ctx, characterID, mailID, true); err != nil {
-		return err
-	}
-	return nil
-
-}
