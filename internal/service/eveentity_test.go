@@ -38,7 +38,7 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 	t.Run("Can resolve name through ESI", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		data := map[string][]map[string]interface{}{
+		data := map[string][]map[string]any{
 			"characters": {
 				{"id": 47, "name": "Erik"},
 			}}

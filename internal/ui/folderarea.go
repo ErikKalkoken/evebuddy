@@ -246,7 +246,7 @@ func (f *folderArea) UpdateMails(respondToUser bool) {
 	if respondToUser {
 		status.Info.SetWithProgress(fmt.Sprintf("Checking mail for %s", character.Name))
 	}
-	unreadCount, err := f.ui.service.UpdateMails(character.ID)
+	unreadCount, err := f.ui.service.UpdateMail(character.ID)
 	if err != nil {
 		status.Info.SetError("Failed to fetch mail")
 		slog.Error("Failed to fetch mails", "characterID", character.ID, "error", err)

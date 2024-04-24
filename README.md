@@ -28,6 +28,7 @@ MVP is reaching feature parity with Member Audit mail.
 - [x] Add basic unit tests
 - [ ] Add caching for API requests
 - [ ] Add more tests
+- [ ] Add migration instrumentation
 
 ### Future releases
 

@@ -23,18 +23,18 @@ const (
 // FIXME: Delete obsolete labels and mail lists
 // TODO: Add ability to update existing mails for is_read and labels
 
-// UpdateMails fetches and stores new mails from ESI for a character.
+// UpdateMail fetches and stores new mails from ESI for a character.
 // It returns the number of unread mail.
-func (s *Service) UpdateMails(characterID int32) (int, error) {
+func (s *Service) UpdateMail(characterID int32) (int, error) {
 	ctx := context.Background()
 	key := fmt.Sprintf("UpdateMails-%d", characterID)
 	x, err, _ := s.singleGroup.Do(key, func() (interface{}, error) {
-		return s.updateMails(ctx, characterID)
+		return s.updateMail(ctx, characterID)
 	})
 	return x.(int), err
 }
 
-func (s *Service) updateMails(ctx context.Context, characterID int32) (int, error) {
+func (s *Service) updateMail(ctx context.Context, characterID int32) (int, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return 0, err

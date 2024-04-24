@@ -102,7 +102,7 @@ func (f Factory) CreateEveEntity(args ...model.EveEntity) model.EveEntity {
 	}
 	e, err := f.r.CreateEveEntity(ctx, arg.ID, arg.Name, arg.Category)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("failed to create EveEntity %v: %s", arg, err))
 	}
 	return e
 }
