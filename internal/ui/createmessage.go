@@ -103,7 +103,8 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 					if err != nil {
 						return err
 					}
-					if err := u.service.SendMail(currentChar.ID, subjectInput.Text, ee2, bodyInput.Text); err != nil {
+					_, err = u.service.SendMail(currentChar.ID, subjectInput.Text, ee2, bodyInput.Text)
+					if err != nil {
 						return err
 					}
 					return nil

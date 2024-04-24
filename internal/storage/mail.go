@@ -79,7 +79,6 @@ func (r *Storage) CreateMail(ctx context.Context, arg CreateMailParams) (int64, 
 				return 0, err
 			}
 		}
-		// TODO: Ensure this still works when no labels have yet been loaded from ESI
 		if err := r.updateMailLabels(ctx, arg.CharacterID, mail.ID, arg.LabelIDs); err != nil {
 			return 0, err
 		}

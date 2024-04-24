@@ -42,25 +42,25 @@ func (s *Service) GetMail(characterID int32, mailID int32) (model.Mail, error) {
 	return s.r.GetMail(ctx, characterID, mailID)
 }
 
-// SendMail created a new mail on ESI stores it locally.
-func (s *Service) SendMail(characterID int32, subject string, recipients []model.EveEntity, body string) error {
+// SendMail creates a new mail on ESI and stores it locally.
+func (s *Service) SendMail(characterID int32, subject string, recipients []model.EveEntity, body string) (int32, error) {
 	if subject == "" {
-		return fmt.Errorf("missing subject")
+		return 0, fmt.Errorf("missing subject")
 	}
 	if body == "" {
-		return fmt.Errorf("missing body")
+		return 0, fmt.Errorf("missing body")
 	}
 	if len(recipients) == 0 {
-		return fmt.Errorf("missing recipients")
+		return 0, fmt.Errorf("missing recipients")
 	}
 	rr, err := eveEntitiesToESIMailRecipients(recipients)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	ctx := context.Background()
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	esiMail := esi.PostCharactersCharacterIdMailMail{
 		Body:       body,
@@ -70,7 +70,7 @@ func (s *Service) SendMail(characterID int32, subject string, recipients []model
 	ctx = contextWithToken(ctx, token.AccessToken)
 	mailID, _, err := s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esiMail, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	recipientIDs := make([]int32, len(rr))
 	for i, r := range rr {
@@ -79,7 +79,7 @@ func (s *Service) SendMail(characterID int32, subject string, recipients []model
 	ids := slices.Concat(recipientIDs, []int32{characterID})
 	_, err = s.AddMissingEveEntities(ctx, ids)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	arg1 := storage.MailLabelParams{
 		CharacterID: characterID,
@@ -88,7 +88,7 @@ func (s *Service) SendMail(characterID int32, subject string, recipients []model
 	}
 	_, err = s.r.GetOrCreateMailLabel(ctx, arg1) // make sure sent label exists
 	if err != nil {
-		return err
+		return 0, err
 	}
 	arg2 := storage.CreateMailParams{
 		Body:         body,
@@ -103,9 +103,9 @@ func (s *Service) SendMail(characterID int32, subject string, recipients []model
 	}
 	_, err = s.r.CreateMail(ctx, arg2)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return mailID, nil
 }
 
 func eveEntitiesToESIMailRecipients(ee []model.EveEntity) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
