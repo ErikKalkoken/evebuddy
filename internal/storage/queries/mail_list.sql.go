@@ -29,6 +29,33 @@ func (q *Queries) CreateMailList(ctx context.Context, arg CreateMailListParams) 
 	return err
 }
 
+const deleteObsoleteMailLists = `-- name: DeleteObsoleteMailLists :exec
+DELETE FROM mail_lists
+WHERE mail_lists.character_id = ?
+AND eve_entity_id NOT IN (
+    SELECT eve_entity_id
+    FROM mail_recipients
+    JOIN mails ON mails.id = mail_recipients.mail_id
+    WHERE mails.character_id = ?
+)
+AND eve_entity_id NOT IN (
+    SELECT from_id
+    FROM mails
+    WHERE mails.character_id = ?
+)
+`
+
+type DeleteObsoleteMailListsParams struct {
+	CharacterID   int64
+	CharacterID_2 int64
+	CharacterID_3 int64
+}
+
+func (q *Queries) DeleteObsoleteMailLists(ctx context.Context, arg DeleteObsoleteMailListsParams) error {
+	_, err := q.db.ExecContext(ctx, deleteObsoleteMailLists, arg.CharacterID, arg.CharacterID_2, arg.CharacterID_3)
+	return err
+}
+
 const getMailList = `-- name: GetMailList :one
 SELECT character_id, eve_entity_id
 FROM mail_lists

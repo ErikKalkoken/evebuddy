@@ -20,8 +20,6 @@ const (
 	maxHeadersPerPage = 50 // maximum header objects returned per page
 )
 
-// FIXME: Delete obsolete mail lists
-
 // UpdateMail fetches and stores new mails from ESI for a character.
 // It returns the number of unread mail.
 func (s *Service) UpdateMail(characterID int32) (int, error) {
@@ -56,7 +54,7 @@ func (s *Service) updateMail(ctx context.Context, characterID int32) (int, error
 		return 0, err
 	}
 	if len(newHeaders) > 0 {
-		if err := s.updateMailsESI(ctx, &token, newHeaders); err != nil {
+		if err := s.fetchNewMailsESI(ctx, &token, newHeaders); err != nil {
 			return 0, err
 		}
 	}
@@ -66,6 +64,9 @@ func (s *Service) updateMail(ctx context.Context, characterID int32) (int, error
 		}
 	}
 	if err := s.r.DeleteObsoleteMailLabels(ctx, characterID); err != nil {
+		return 0, err
+	}
+	if err := s.r.DeleteObsoleteMailLists(ctx, characterID); err != nil {
 		return 0, err
 	}
 	s.SectionSetUpdated(characterID, UpdateSectionMail)
@@ -205,7 +206,7 @@ func (s *Service) resolveMailEntities(ctx context.Context, mm []esi.GetCharacter
 	return nil
 }
 
-func (s *Service) updateMailsESI(ctx context.Context, token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok) error {
+func (s *Service) fetchNewMailsESI(ctx context.Context, token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok) error {
 	if err := s.ensureValidToken(ctx, token); err != nil {
 		return err
 	}

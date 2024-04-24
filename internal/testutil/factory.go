@@ -177,6 +177,10 @@ func (f Factory) CreateMail(args ...storage.CreateMailParams) model.Mail {
 	if arg.Timestamp.IsZero() {
 		arg.Timestamp = time.Now()
 	}
+	if len(arg.RecipientIDs) == 0 {
+		e1 := f.CreateEveEntityCharacter()
+		arg.RecipientIDs = []int32{e1.ID}
+	}
 	_, err := f.r.CreateMail(ctx, arg)
 	if err != nil {
 		panic(err)

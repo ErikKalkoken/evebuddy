@@ -2,7 +2,9 @@ package storage_test
 
 import (
 	"context"
+	"example/evebuddy/internal/helper/set"
 	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/storage"
 	"example/evebuddy/internal/testutil"
 	"testing"
 
@@ -40,4 +42,46 @@ func TestMailList(t *testing.T) {
 			assert.Equal(t, o.Name, "alpha")
 		}
 	})
+	t.Run("can delete obsolete mail lists for a character", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		e1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+		mustNotFail(r.CreateMailList(ctx, c1.ID, e1.ID))
+		factory.CreateMail(storage.CreateMailParams{CharacterID: c1.ID, RecipientIDs: []int32{e1.ID}})
+		e2 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+		mustNotFail(r.CreateMailList(ctx, c1.ID, e2.ID))
+		c2 := factory.CreateCharacter()
+		e3 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+		mustNotFail(r.CreateMailList(ctx, c2.ID, e3.ID))
+		// when
+		err := r.DeleteObsoleteMailLists(ctx, c1.ID)
+		// then
+		if assert.NoError(t, err) {
+			lists, err := r.ListMailListsOrdered(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				got := set.New[int32]()
+				for _, l := range lists {
+					got.Add(l.ID)
+				}
+				want := set.NewFromSlice([]int32{e1.ID})
+				assert.Equal(t, want, got)
+			}
+			lists, err = r.ListMailListsOrdered(ctx, c2.ID)
+			if assert.NoError(t, err) {
+				got := set.New[int32]()
+				for _, l := range lists {
+					got.Add(l.ID)
+				}
+				want := set.NewFromSlice([]int32{e3.ID})
+				assert.Equal(t, want, got)
+			}
+		}
+	})
+}
+
+func mustNotFail(err error) {
+	if err != nil {
+		panic(err)
+	}
 }

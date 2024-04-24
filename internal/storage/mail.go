@@ -54,6 +54,9 @@ type CreateMailParams struct {
 
 func (r *Storage) CreateMail(ctx context.Context, arg CreateMailParams) (int64, error) {
 	id, err := func() (int64, error) {
+		if len(arg.RecipientIDs) == 0 {
+			return 0, errors.New("can not create mail without recipients")
+		}
 		characterID2 := int64(arg.CharacterID)
 		from, err := r.GetEveEntity(ctx, arg.FromID)
 		if err != nil {
