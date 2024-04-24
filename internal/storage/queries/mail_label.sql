@@ -11,6 +11,16 @@ VALUES (
 )
 RETURNING *;
 
+-- name: DeleteObsoleteMailLabels :exec
+DELETE FROM mail_labels
+WHERE mail_labels.character_id = ?
+AND id NOT IN (
+    SELECT mail_label_id
+    FROM mail_mail_labels
+    JOIN mails ON mails.id = mail_mail_labels.mail_id
+    WHERE mail_labels.character_id = ?
+);
+
 -- name: GetMailLabel :one
 SELECT *
 FROM mail_labels

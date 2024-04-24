@@ -21,6 +21,17 @@ func mailLabelFromDBModel(l queries.MailLabel) model.MailLabel {
 	}
 }
 
+func (r *Storage) DeleteObsoleteMailLabels(ctx context.Context, characterID int32) error {
+	arg := queries.DeleteObsoleteMailLabelsParams{
+		CharacterID:   int64(characterID),
+		CharacterID_2: int64(characterID),
+	}
+	if err := r.q.DeleteObsoleteMailLabels(ctx, arg); err != nil {
+		return fmt.Errorf("failed to delete obsolete mail labels for character %d: %w", characterID, err)
+	}
+	return nil
+}
+
 func (r *Storage) GetMailLabel(ctx context.Context, characterID, labelID int32) (model.MailLabel, error) {
 	arg := queries.GetMailLabelParams{
 		CharacterID: int64(characterID),

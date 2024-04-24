@@ -52,6 +52,27 @@ func (q *Queries) CreateMailLabel(ctx context.Context, arg CreateMailLabelParams
 	return i, err
 }
 
+const deleteObsoleteMailLabels = `-- name: DeleteObsoleteMailLabels :exec
+DELETE FROM mail_labels
+WHERE mail_labels.character_id = ?
+AND id NOT IN (
+    SELECT mail_label_id
+    FROM mail_mail_labels
+    JOIN mails ON mails.id = mail_mail_labels.mail_id
+    WHERE mail_labels.character_id = ?
+)
+`
+
+type DeleteObsoleteMailLabelsParams struct {
+	CharacterID   int64
+	CharacterID_2 int64
+}
+
+func (q *Queries) DeleteObsoleteMailLabels(ctx context.Context, arg DeleteObsoleteMailLabelsParams) error {
+	_, err := q.db.ExecContext(ctx, deleteObsoleteMailLabels, arg.CharacterID, arg.CharacterID_2)
+	return err
+}
+
 const getMailLabel = `-- name: GetMailLabel :one
 SELECT id, character_id, color, label_id, name, unread_count
 FROM mail_labels

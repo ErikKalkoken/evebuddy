@@ -20,7 +20,7 @@ const (
 	maxHeadersPerPage = 50 // maximum header objects returned per page
 )
 
-// FIXME: Delete obsolete labels and mail lists
+// FIXME: Delete obsolete mail lists
 
 // UpdateMail fetches and stores new mails from ESI for a character.
 // It returns the number of unread mail.
@@ -64,6 +64,9 @@ func (s *Service) updateMail(ctx context.Context, characterID int32) (int, error
 		if err := s.updateExistingMail(ctx, characterID, existingHeaders); err != nil {
 			return 0, err
 		}
+	}
+	if err := s.r.DeleteObsoleteMailLabels(ctx, characterID); err != nil {
+		return 0, err
 	}
 	s.SectionSetUpdated(characterID, UpdateSectionMail)
 	unreadCount, err := s.r.GetMailUnreadCount(ctx, characterID)

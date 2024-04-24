@@ -132,7 +132,7 @@ func TestMailLabel(t *testing.T) {
 			assert.Equal(t, want, got)
 		}
 	})
-	t.Run("should return empty list when character ha no mail labels", func(t *testing.T) {
+	t.Run("should return empty list when character has no mail labels", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
@@ -141,6 +141,37 @@ func TestMailLabel(t *testing.T) {
 		labels, err := r.ListMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Len(t, labels, 0)
+		}
+	})
+}
+
+func TestDeleteObsoleteMailLabels(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can delete obsolete mail labels for a character", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		l1 := factory.CreateMailLabel(model.MailLabel{CharacterID: c1.ID})
+		factory.CreateMailLabel(model.MailLabel{CharacterID: c1.ID}) // to delete
+		factory.CreateMail(storage.CreateMailParams{CharacterID: c1.ID, LabelIDs: []int32{l1.LabelID}})
+		c2 := factory.CreateCharacter()
+		l2 := factory.CreateMailLabel(model.MailLabel{CharacterID: c2.ID})
+		factory.CreateMail(storage.CreateMailParams{CharacterID: c2.ID, LabelIDs: []int32{l2.LabelID}})
+		// when
+		err := r.DeleteObsoleteMailLabels(ctx, c1.ID)
+		if assert.NoError(t, err) {
+			ids1, err := r.ListMailLabelsOrdered(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.Len(t, ids1, 1)
+				assert.Equal(t, l1.LabelID, ids1[0].LabelID)
+			}
+			ids2, err := r.ListMailLabelsOrdered(ctx, c2.ID)
+			if assert.NoError(t, err) {
+				assert.Len(t, ids2, 1)
+				assert.Equal(t, l2.LabelID, ids2[0].LabelID)
+			}
 		}
 	})
 }

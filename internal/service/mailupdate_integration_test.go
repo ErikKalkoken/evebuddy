@@ -1,6 +1,8 @@
 package service_test
 
 import (
+	"context"
+	"example/evebuddy/internal/helper/set"
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/service"
 	"example/evebuddy/internal/storage"
@@ -251,6 +253,15 @@ func TestUpdateMail(t *testing.T) {
 				assert.True(t, m.IsRead)
 				assert.Len(t, m.Labels, 1)
 				assert.Equal(t, int32(32), m.Labels[0].LabelID)
+			}
+			labels, err := r.ListMailLabelsOrdered(context.Background(), c.ID)
+			if assert.NoError(t, err) {
+				got := set.New[int32]()
+				for _, l := range labels {
+					got.Add(l.LabelID)
+				}
+				want := set.NewFromSlice([]int32{32})
+				assert.Equal(t, want, got)
 			}
 		}
 	})
