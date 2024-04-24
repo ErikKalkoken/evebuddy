@@ -30,7 +30,7 @@ func validateToken(tokenString string) (jwt.MapClaims, error) {
 	}
 
 	// validate audience claim
-	aud := claims["aud"].([]interface{})
+	aud := claims["aud"].([]any)
 	if aud[0].(string) != ssoClientId {
 		return nil, fmt.Errorf("invalid first audience claim")
 	}
@@ -42,7 +42,7 @@ func validateToken(tokenString string) (jwt.MapClaims, error) {
 }
 
 // getKey returns the public key for a JWT token.
-func getKey(token *jwt.Token) (interface{}, error) {
+func getKey(token *jwt.Token) (any, error) {
 	set, err := fetchJWKSet()
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func getKey(token *jwt.Token) (interface{}, error) {
 		return nil, fmt.Errorf("unable to find key %q", keyID)
 	}
 
-	var rawKey interface{}
+	var rawKey any
 	if err := key.Raw(&rawKey); err != nil {
 		return nil, fmt.Errorf("failed to create public key: %s", err)
 	}
@@ -96,7 +96,7 @@ func determineJwksURL() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var data map[string]interface{}
+	var data map[string]any
 	if err := json.Unmarshal(body, &data); err != nil {
 		return "", err
 	}

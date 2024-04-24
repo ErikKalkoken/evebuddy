@@ -120,7 +120,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 func (s *Service) UpdateCharacterDetails(characterID int32) error {
 	ctx := context.Background()
 	key := fmt.Sprintf("UpdateCharacterDetails-%d", characterID)
-	_, err, _ := s.singleGroup.Do(key, func() (interface{}, error) {
+	_, err, _ := s.singleGroup.Do(key, func() (any, error) {
 		err := s.updateCharacterDetails(ctx, characterID)
 		return struct{}{}, err
 	})

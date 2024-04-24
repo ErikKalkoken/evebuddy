@@ -27,7 +27,7 @@ const (
 func (s *Service) UpdateMail(characterID int32) (int, error) {
 	ctx := context.Background()
 	key := fmt.Sprintf("UpdateMails-%d", characterID)
-	x, err, _ := s.singleGroup.Do(key, func() (interface{}, error) {
+	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
 		return s.updateMail(ctx, characterID)
 	})
 	return x.(int), err

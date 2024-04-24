@@ -143,7 +143,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	t.Run("can resolve missing entities", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		data := []map[string]interface{}{
+		data := []map[string]any{
 			{"id": 47, "name": "Erik", "category": "character"},
 		}
 		httpmock.Reset()
@@ -185,7 +185,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		e1 := factory.CreateEveEntityAlliance()
-		data := []map[string]interface{}{
+		data := []map[string]any{
 			{"id": 47, "name": "Erik", "category": "character"},
 		}
 		httpmock.Reset()
@@ -213,11 +213,11 @@ func TestAddMissingEveEntities(t *testing.T) {
 		testutil.TruncateTables(db)
 		const count = 1001
 		ids := make([]int32, count)
-		data := make([]map[string]interface{}, count)
+		data := make([]map[string]any, count)
 		for i := range count {
 			id := int32(i) + 1
 			ids[i] = id
-			obj := map[string]interface{}{
+			obj := map[string]any{
 				"id":       id,
 				"name":     fmt.Sprintf("Name #%d", id),
 				"category": "character",
@@ -272,7 +272,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	t.Run("can deal with a mix of valid and invalid IDs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		data := []map[string]interface{}{
+		data := []map[string]any{
 			{"id": 47, "name": "Erik", "category": "character"},
 		}
 		httpmock.Reset()
