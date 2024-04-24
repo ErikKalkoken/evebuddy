@@ -177,7 +177,7 @@ func (s *Service) UpdateMailRead(characterID, mailID int32) error {
 		return err
 	}
 	m.IsRead = true
-	if err := s.r.UpdateMailSetRead(ctx, m.ID); err != nil {
+	if err := s.r.UpdateMail(ctx, characterID, mailID, true); err != nil {
 		return err
 	}
 	return nil

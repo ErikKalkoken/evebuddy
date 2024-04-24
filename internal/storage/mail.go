@@ -240,10 +240,15 @@ func (r *Storage) ListMailIDsForListOrdered(ctx context.Context, characterID int
 	return ids2, nil
 }
 
-func (r *Storage) UpdateMailSetRead(ctx context.Context, mailID int64) error {
-	err := r.q.UpdateMailSetRead(ctx, mailID)
+func (r *Storage) UpdateMail(ctx context.Context, characterID, mailID int32, isRead bool) error {
+	arg := queries.UpdateMailParams{
+		CharacterID: int64(characterID),
+		MailID:      int64(mailID),
+		IsRead:      isRead,
+	}
+	err := r.q.UpdateMail(ctx, arg)
 	if err != nil {
-		return fmt.Errorf("failed to update read field for mail ID %d: %w", mailID, err)
+		return fmt.Errorf("failed to update mail ID %d for character %d: %w", mailID, characterID, err)
 	}
 	return nil
 }

@@ -112,7 +112,8 @@ WHERE character_id = ?
 AND mail_recipients.eve_entity_id = ?
 ORDER BY timestamp DESC;
 
--- name: UpdateMailSetRead :exec
+-- name: UpdateMail :exec
 UPDATE mails
-SET is_read = TRUE
-WHERE id = ?;
+SET is_read = ?3
+WHERE character_id = ?1
+AND mail_id = ?2;

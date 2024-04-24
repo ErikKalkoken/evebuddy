@@ -473,13 +473,20 @@ func (q *Queries) ListMailIDsOrdered(ctx context.Context, characterID int64) ([]
 	return items, nil
 }
 
-const updateMailSetRead = `-- name: UpdateMailSetRead :exec
+const updateMail = `-- name: UpdateMail :exec
 UPDATE mails
-SET is_read = TRUE
-WHERE id = ?
+SET is_read = ?3
+WHERE character_id = ?1
+AND mail_id = ?2
 `
 
-func (q *Queries) UpdateMailSetRead(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, updateMailSetRead, id)
+type UpdateMailParams struct {
+	CharacterID int64
+	MailID      int64
+	IsRead      bool
+}
+
+func (q *Queries) UpdateMail(ctx context.Context, arg UpdateMailParams) error {
+	_, err := q.db.ExecContext(ctx, updateMail, arg.CharacterID, arg.MailID, arg.IsRead)
 	return err
 }

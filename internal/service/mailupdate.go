@@ -52,12 +52,17 @@ func (s *Service) updateMail(ctx context.Context, characterID int32) (int, error
 	if err := s.resolveMailEntities(ctx, headers); err != nil {
 		return 0, err
 	}
-	headers, err = s.determineNewMail(ctx, token.CharacterID, headers)
+	newHeaders, existingHeaders, err := s.determineNewMail(ctx, token.CharacterID, headers)
 	if err != nil {
 		return 0, err
 	}
-	if len(headers) > 0 {
-		if err := s.updateMailsESI(ctx, &token, headers); err != nil {
+	if len(newHeaders) > 0 {
+		if err := s.updateMailsESI(ctx, &token, newHeaders); err != nil {
+			return 0, err
+		}
+	}
+	if len(existingHeaders) > 0 {
+		if err := s.updateExistingMail(ctx, characterID, existingHeaders); err != nil {
 			return 0, err
 		}
 	}
@@ -152,19 +157,21 @@ func (s *Service) listMailHeaders(ctx context.Context, token *model.Token) ([]es
 	return mm, nil
 }
 
-func (s *Service) determineNewMail(ctx context.Context, characterID int32, mm []esi.GetCharactersCharacterIdMail200Ok) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
+func (s *Service) determineNewMail(ctx context.Context, characterID int32, mm []esi.GetCharactersCharacterIdMail200Ok) ([]esi.GetCharactersCharacterIdMail200Ok, []esi.GetCharactersCharacterIdMail200Ok, error) {
 	newMail := make([]esi.GetCharactersCharacterIdMail200Ok, 0, len(mm))
+	existingMail := make([]esi.GetCharactersCharacterIdMail200Ok, 0, len(mm))
 	existingIDs, _, err := s.determineMailIDs(ctx, characterID, mm)
 	if err != nil {
-		return newMail, err
+		return newMail, existingMail, err
 	}
 	for _, h := range mm {
 		if existingIDs.Has(h.MailId) {
-			continue
+			existingMail = append(existingMail, h)
+		} else {
+			newMail = append(newMail, h)
 		}
-		newMail = append(newMail, h)
 	}
-	return newMail, nil
+	return newMail, existingMail, nil
 }
 
 func (s *Service) determineMailIDs(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) (*set.Set[int32], *set.Set[int32], error) {
@@ -245,6 +252,22 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, characterID, mailID int
 	_, err = s.r.CreateMail(ctx, arg)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (s *Service) updateExistingMail(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
+	for _, h := range headers {
+		m, err := s.r.GetMail(ctx, characterID, h.MailId)
+		if err != nil {
+			return err
+		}
+		if m.IsRead != h.IsRead {
+			err := s.r.UpdateMail(ctx, characterID, h.MailId, h.IsRead)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
