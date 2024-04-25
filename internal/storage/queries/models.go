@@ -32,16 +32,37 @@ type Dictionary struct {
 	Value []byte
 }
 
+type EveCategory struct {
+	ID          int64
+	Name        string
+	IsPublished bool
+}
+
 type EveEntity struct {
 	ID       int64
 	Category string
 	Name     string
 }
 
+type EveGroup struct {
+	ID            int64
+	EveCategoryID int64
+	Name          string
+	IsPublished   bool
+}
+
 type EveRace struct {
 	ID          int64
 	Description string
 	Name        string
+}
+
+type EveType struct {
+	ID          int64
+	Description string
+	EveGroupID  int64
+	Name        string
+	IsPublished bool
 }
 
 type Mail struct {

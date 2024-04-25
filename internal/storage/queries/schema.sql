@@ -12,6 +12,29 @@ CREATE TABLE eve_races (
     name TEXT NOT NULL
 );
 
+CREATE TABLE eve_categories (
+    id INTEGER PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    is_published BOOL NOT NULL
+);
+
+CREATE TABLE eve_groups (
+    id INTEGER PRIMARY KEY NOT NULL,
+    eve_category_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    is_published BOOL NOT NULL,
+    FOREIGN KEY (eve_category_id) REFERENCES eve_categories(id) ON DELETE CASCADE
+);
+
+CREATE TABLE eve_types (
+    id INTEGER PRIMARY KEY NOT NULL,
+    description TEXT NOT NULL,
+    eve_group_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    is_published BOOL NOT NULL,
+    FOREIGN KEY (eve_group_id) REFERENCES eve_groups(id) ON DELETE CASCADE
+);
+
 CREATE TABLE characters (
     alliance_id INTEGER,
     birthday DATETIME NOT NULL,
