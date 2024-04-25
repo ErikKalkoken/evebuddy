@@ -5,7 +5,8 @@
         "gorm",
         "jwks",
         "lestrrat",
-        "objs"
+        "objs",
+        "Rifter"
     ],
     "cSpell.ignoreWords": [
         "AUTOINCREMENT",

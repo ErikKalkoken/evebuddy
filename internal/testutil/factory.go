@@ -264,22 +264,22 @@ func (f Factory) CreateMailList(characterID int32, args ...model.EveEntity) mode
 }
 
 func (f Factory) CreateEveCategory(args ...model.EveCategory) model.EveCategory {
-	var arg model.EveCategory
+	var x model.EveCategory
 	ctx := context.Background()
 	if len(args) > 0 {
-		arg = args[0]
+		x = args[0]
 	}
-	if arg.ID == 0 {
+	if x.ID == 0 {
 		var max sql.NullInt32
 		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_categories;").Scan(&max); err != nil {
 			panic(err)
 		}
-		arg.ID = max.Int32 + 1
+		x.ID = max.Int32 + 1
 	}
-	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Category #%d", arg.ID)
+	if x.Name == "" {
+		x.Name = fmt.Sprintf("Category #%d", x.ID)
 	}
-	r, err := f.r.CreateEveCategory(ctx, arg.ID, arg.Name, arg.IsPublished)
+	r, err := f.r.CreateEveCategory(ctx, x.ID, x.Name, x.IsPublished)
 	if err != nil {
 		panic(err)
 	}
@@ -287,29 +287,55 @@ func (f Factory) CreateEveCategory(args ...model.EveCategory) model.EveCategory 
 }
 
 func (f Factory) CreateEveGroup(args ...model.EveGroup) model.EveGroup {
-	var g model.EveGroup
+	var x model.EveGroup
 	ctx := context.Background()
 	if len(args) > 0 {
-		g = args[0]
+		x = args[0]
 	}
-	if g.ID == 0 {
+	if x.ID == 0 {
 		var max sql.NullInt32
 		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_groups;").Scan(&max); err != nil {
 			panic(err)
 		}
-		g.ID = max.Int32 + 1
+		x.ID = max.Int32 + 1
 	}
-	if g.Name == "" {
-		g.Name = fmt.Sprintf("Group #%d", g.ID)
+	if x.Name == "" {
+		x.Name = fmt.Sprintf("Group #%d", x.ID)
 	}
-	if g.Category.ID == 0 {
-		g.Category = f.CreateEveCategory()
+	if x.Category.ID == 0 {
+		x.Category = f.CreateEveCategory()
 	}
-	err := f.r.CreateEveGroup(ctx, g.ID, g.Category.ID, g.Name, g.IsPublished)
+	err := f.r.CreateEveGroup(ctx, x.ID, x.Category.ID, x.Name, x.IsPublished)
 	if err != nil {
 		panic(err)
 	}
-	return g
+	return x
+}
+
+func (f Factory) CreateEveType(args ...model.EveType) model.EveType {
+	var x model.EveType
+	ctx := context.Background()
+	if len(args) > 0 {
+		x = args[0]
+	}
+	if x.ID == 0 {
+		var max sql.NullInt32
+		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_types;").Scan(&max); err != nil {
+			panic(err)
+		}
+		x.ID = max.Int32 + 1
+	}
+	if x.Name == "" {
+		x.Name = fmt.Sprintf("Type #%d", x.ID)
+	}
+	if x.Group.ID == 0 {
+		x.Group = f.CreateEveGroup()
+	}
+	err := f.r.CreateEveType(ctx, x.ID, x.Description, x.Group.ID, x.Name, x.IsPublished)
+	if err != nil {
+		panic(err)
+	}
+	return x
 }
 
 func (f Factory) CreateEveRace(args ...model.EveRace) model.EveRace {
