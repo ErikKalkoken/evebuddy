@@ -57,7 +57,7 @@ func (f Factory) CreateCharacter(args ...model.Character) model.Character {
 		c.LastLoginAt = time.Now()
 	}
 	if c.Location.ID == 0 {
-		c.Location = f.CreateEveEntitySolarSystem()
+		c.Location = f.CreateEveSolarSystem()
 	}
 	if c.Race.ID == 0 {
 		c.Race = f.CreateEveRace()

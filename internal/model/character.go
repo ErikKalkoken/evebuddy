@@ -18,7 +18,7 @@ type Character struct {
 	Gender         string
 	ID             int32
 	LastLoginAt    time.Time
-	Location       EveEntity
+	Location       EveSolarSystem
 	Name           string
 	Race           EveRace
 	SecurityStatus float64

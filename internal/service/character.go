@@ -175,24 +175,11 @@ func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Charac
 		return nil
 	})
 	g.Go(func() error {
-		locationESI, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, c.ID, nil)
+		r, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, c.ID, nil)
 		if err != nil {
 			return err
 		}
-		entityIDs := []int32{locationESI.SolarSystemId}
-		if locationESI.StationId != 0 {
-			entityIDs = append(entityIDs, locationESI.StationId)
-		}
-		_, err = s.AddMissingEveEntities(ctx, entityIDs)
-		if err != nil {
-			return err
-		}
-		var location model.EveEntity
-		if locationESI.StationId != 0 {
-			location, err = s.r.GetEveEntity(ctx, locationESI.StationId)
-		} else {
-			location, err = s.r.GetEveEntity(ctx, locationESI.SolarSystemId)
-		}
+		location, err := s.getOrCreateEveSolarSystemESI(ctx, r.SolarSystemId)
 		if err != nil {
 			return err
 		}

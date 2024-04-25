@@ -20,7 +20,7 @@ func TestCharacter(t *testing.T) {
 		testutil.TruncateTables(db)
 		corp := factory.CreateEveEntityCorporation()
 		race := factory.CreateEveRace()
-		system := factory.CreateEveEntitySolarSystem()
+		system := factory.CreateEveSolarSystem()
 		ship := factory.CreateEveType()
 		c := model.Character{ID: 1, Name: "Erik", Corporation: corp, Race: race, Location: system, Ship: ship}
 		// when
@@ -112,7 +112,7 @@ func TestCharacter(t *testing.T) {
 		factory.CreateCharacter()
 		alliance := factory.CreateEveEntityAlliance()
 		faction := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityFaction})
-		system := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntitySolarSystem})
+		system := factory.CreateEveSolarSystem()
 		c1 := factory.CreateCharacter(
 			model.Character{
 				Alliance: alliance,
@@ -146,7 +146,7 @@ func TestCharacterList(t *testing.T) {
 		testutil.TruncateTables(db)
 		alliance := factory.CreateEveEntityAlliance()
 		faction := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityFaction})
-		system := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntitySolarSystem})
+		system := factory.CreateEveSolarSystem()
 		c1 := factory.CreateCharacter(
 			model.Character{
 				Alliance:      alliance,
@@ -169,7 +169,6 @@ func TestCharacterList(t *testing.T) {
 			assert.Equal(t, c1.ID, c2.ID)
 			assert.Equal(t, c1.Name, c2.Name)
 			assert.Equal(t, c1.SkillPoints, c2.SkillPoints)
-			assert.Equal(t, c1.Location, c2.Location)
 			assert.Equal(t, c1.WalletBalance, c2.WalletBalance)
 		}
 	})

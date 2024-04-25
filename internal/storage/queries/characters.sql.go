@@ -110,12 +110,16 @@ SELECT
     eve_categories.id, eve_categories.name, eve_categories.is_published,
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
     eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
-    locations.id, locations.category, locations.name,
+    eve_regions.id, eve_regions.description, eve_regions.name,
+    eve_constellations.id, eve_constellations.eve_region_id, eve_constellations.name,
+    eve_solar_systems.id, eve_solar_systems.eve_constellation_id, eve_solar_systems.name, eve_solar_systems.security_status,
     alliances.name as alliance_name,
     factions.name as faction_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
-JOIN eve_entities AS locations ON locations.id = characters.location_id
+JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
+JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
+JOIN eve_solar_systems ON eve_solar_systems.id = characters.location_id
 JOIN eve_races ON eve_races.id = characters.race_id
 JOIN eve_types ON eve_types.id = characters.ship_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
@@ -126,15 +130,17 @@ WHERE characters.id = ?
 `
 
 type GetCharacterRow struct {
-	Character    Character
-	EveEntity    EveEntity
-	EveRace      EveRace
-	EveCategory  EveCategory
-	EveGroup     EveGroup
-	EveType      EveType
-	EveEntity_2  EveEntity
-	AllianceName sql.NullString
-	FactionName  sql.NullString
+	Character        Character
+	EveEntity        EveEntity
+	EveRace          EveRace
+	EveCategory      EveCategory
+	EveGroup         EveGroup
+	EveType          EveType
+	EveRegion        EveRegion
+	EveConstellation EveConstellation
+	EveSolarSystem   EveSolarSystem
+	AllianceName     sql.NullString
+	FactionName      sql.NullString
 }
 
 func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, error) {
@@ -174,9 +180,16 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.EveType.EveGroupID,
 		&i.EveType.Name,
 		&i.EveType.IsPublished,
-		&i.EveEntity_2.ID,
-		&i.EveEntity_2.Category,
-		&i.EveEntity_2.Name,
+		&i.EveRegion.ID,
+		&i.EveRegion.Description,
+		&i.EveRegion.Name,
+		&i.EveConstellation.ID,
+		&i.EveConstellation.EveRegionID,
+		&i.EveConstellation.Name,
+		&i.EveSolarSystem.ID,
+		&i.EveSolarSystem.EveConstellationID,
+		&i.EveSolarSystem.Name,
+		&i.EveSolarSystem.SecurityStatus,
 		&i.AllianceName,
 		&i.FactionName,
 	)
@@ -216,41 +229,33 @@ SELECT
     characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.location_id, characters.name, characters.race_id, characters.security_status, characters.ship_id, characters.skill_points, characters.wallet_balance,
     corporations.name as corporation_name,
     alliances.name as alliance_name,
-    factions.name as faction_name,
-    eve_races.Name as race_name,
-    locations.Name as location_name,
-    locations.Category as location_category
+    factions.name as faction_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
-JOIN eve_entities AS locations ON locations.id = characters.location_id
-JOIN eve_races ON eve_races.id = characters.race_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 ORDER BY characters.name
 `
 
 type ListCharactersRow struct {
-	AllianceID       sql.NullInt64
-	Birthday         time.Time
-	CorporationID    int64
-	Description      string
-	Gender           string
-	FactionID        sql.NullInt64
-	ID               int64
-	LastLoginAt      time.Time
-	LocationID       int64
-	Name             string
-	RaceID           int64
-	SecurityStatus   float64
-	ShipID           int64
-	SkillPoints      int64
-	WalletBalance    float64
-	CorporationName  string
-	AllianceName     sql.NullString
-	FactionName      sql.NullString
-	RaceName         string
-	LocationName     string
-	LocationCategory string
+	AllianceID      sql.NullInt64
+	Birthday        time.Time
+	CorporationID   int64
+	Description     string
+	Gender          string
+	FactionID       sql.NullInt64
+	ID              int64
+	LastLoginAt     time.Time
+	LocationID      int64
+	Name            string
+	RaceID          int64
+	SecurityStatus  float64
+	ShipID          int64
+	SkillPoints     int64
+	WalletBalance   float64
+	CorporationName string
+	AllianceName    sql.NullString
+	FactionName     sql.NullString
 }
 
 func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, error) {
@@ -281,9 +286,6 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.CorporationName,
 			&i.AllianceName,
 			&i.FactionName,
-			&i.RaceName,
-			&i.LocationName,
-			&i.LocationCategory,
 		); err != nil {
 			return nil, err
 		}

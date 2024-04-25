@@ -75,7 +75,7 @@ CREATE TABLE characters (
     FOREIGN KEY (alliance_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
     FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
-    FOREIGN KEY (location_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
+    FOREIGN KEY (location_id) REFERENCES eve_solar_systems(id) ON DELETE CASCADE,
     FOREIGN KEY (race_id) REFERENCES eve_races(id) ON DELETE CASCADE,
     FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE CASCADE
 );

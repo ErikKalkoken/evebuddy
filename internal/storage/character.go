@@ -26,7 +26,17 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		}
 		return model.Character{}, fmt.Errorf("failed to get character %d: %w", characterID, err)
 	}
-	c := characterFromDBRow(row.Character, row.EveEntity, row.EveRace, row.EveCategory, row.EveGroup, row.EveType, row.EveEntity_2)
+	c := characterFromDBRow(
+		row.Character,
+		row.EveEntity,
+		row.EveRace,
+		row.EveCategory,
+		row.EveGroup,
+		row.EveType,
+		row.EveRegion,
+		row.EveConstellation,
+		row.EveSolarSystem,
+	)
 	if row.Character.AllianceID.Valid {
 		c.Alliance = model.EveEntity{
 			ID:       int32(row.Character.AllianceID.Int64),
@@ -78,11 +88,11 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 			// Race:           model.EveRace{ID: int32(row.RaceID), Name: row.RaceName},
 			SecurityStatus: row.SecurityStatus,
 			SkillPoints:    int(row.SkillPoints),
-			Location: model.EveEntity{
-				ID:       int32(row.LocationID),
-				Name:     row.LocationName,
-				Category: eveEntityCategoryFromDBModel(row.LocationCategory),
-			},
+			// Location: model.EveEntity{
+			// 	ID:       int32(row.LocationID),
+			// 	Name:     row.LocationName,
+			// 	Category: eveEntityCategoryFromDBModel(row.LocationCategory),
+			// },
 			// Ship: model.EveEntity{
 			// 	ID:       int32(row.ShipID),
 			// 	Name:     row.ShipName,
@@ -149,7 +159,17 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 	return nil
 }
 
-func characterFromDBRow(character queries.Character, corporation queries.EveEntity, race queries.EveRace, shipCategory queries.EveCategory, shipGroup queries.EveGroup, shipType queries.EveType, location queries.EveEntity) model.Character {
+func characterFromDBRow(
+	character queries.Character,
+	corporation queries.EveEntity,
+	race queries.EveRace,
+	shipCategory queries.EveCategory,
+	shipGroup queries.EveGroup,
+	shipType queries.EveType,
+	region queries.EveRegion,
+	constellation queries.EveConstellation,
+	solar_system queries.EveSolarSystem,
+) model.Character {
 	x := model.Character{
 		Birthday:       character.Birthday,
 		Corporation:    eveEntityFromDBModel(corporation),
@@ -157,7 +177,7 @@ func characterFromDBRow(character queries.Character, corporation queries.EveEnti
 		Gender:         character.Gender,
 		ID:             int32(character.ID),
 		LastLoginAt:    character.LastLoginAt,
-		Location:       eveEntityFromDBModel(location),
+		Location:       eveSolarSystemFromDBModel(solar_system, constellation, region),
 		Name:           character.Name,
 		Race:           eveRaceFromDBModel(race),
 		SecurityStatus: character.SecurityStatus,

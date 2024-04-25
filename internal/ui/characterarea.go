@@ -75,11 +75,17 @@ func (c *characterArea) Redraw() {
 		{"Born", character.Birthday.Format(myDateTime), defaultColor},
 	}
 	form1 := makeForm(r)
+	location := fmt.Sprintf(
+		"%s %.1f (%s)",
+		character.Location.Name,
+		character.Location.SecurityStatus,
+		character.Location.Constellation.Region.Name,
+	)
 	r = []item{
 		{"Wallet Balance", numberOrDefault(character.WalletBalance, "?"), defaultColor},
 		{"Skill Points", numberOrDefault(character.SkillPoints, "?"), defaultColor},
 		{"Security Status", fmt.Sprintf("%.1f", character.SecurityStatus), secColor},
-		{"Location", stringOrDefault(character.Location.Name, "?"), defaultColor},
+		{"Location", location, defaultColor},
 		{"Ship", character.Ship.Name, defaultColor},
 		{"Last Login", humanize.Time(character.LastLoginAt), defaultColor},
 	}
@@ -93,14 +99,15 @@ func (c *characterArea) Redraw() {
 }
 
 func makeForm(rows []item) *fyne.Container {
+	const maxChars = 25
 	fg := theme.ForegroundColor()
 	form1 := container.New(layout.NewFormLayout())
 	for _, row := range rows {
 		label := canvas.NewText(row.label+":", fg)
 		label.TextStyle = fyne.TextStyle{Bold: true}
 		v := row.value
-		if len(row.value) > 20 {
-			v = fmt.Sprintf("%s...", row.value[:25])
+		if len(row.value) > maxChars {
+			v = fmt.Sprintf("%s...", row.value[:maxChars])
 		}
 		value := canvas.NewText(v, row.color)
 		form1.Add(container.NewPadded(label))
