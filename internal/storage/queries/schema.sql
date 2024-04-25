@@ -56,7 +56,7 @@ CREATE TABLE characters (
     FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
     FOREIGN KEY (location_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     FOREIGN KEY (race_id) REFERENCES eve_races(id) ON DELETE CASCADE,
-    FOREIGN KEY (ship_id) REFERENCES eve_entities(id) ON DELETE CASCADE
+    FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE CASCADE
 );
 
 CREATE TABLE mail_lists (

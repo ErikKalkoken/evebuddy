@@ -34,12 +34,16 @@ SELECT
     eve_races.Name as race_name,
     locations.Name as location_name,
     locations.Category as location_category,
-    ships.name as ship_name
+    sqlc.embed(eve_categories),
+    sqlc.embed(eve_groups),
+    sqlc.embed(eve_types)
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 JOIN eve_entities AS locations ON locations.id = characters.location_id
 JOIN eve_races ON eve_races.id = characters.race_id
-JOIN eve_entities AS ships ON ships.id = characters.ship_id
+JOIN eve_types ON eve_types.id = characters.ship_id
+JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
+JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 WHERE characters.id = ?;
@@ -52,13 +56,11 @@ SELECT
     factions.name as faction_name,
     eve_races.Name as race_name,
     locations.Name as location_name,
-    locations.Category as location_category,
-    ships.name as ship_name
+    locations.Category as location_category
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 JOIN eve_entities AS locations ON locations.id = characters.location_id
 JOIN eve_races ON eve_races.id = characters.race_id
-JOIN eve_entities AS ships ON ships.id = characters.ship_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 ORDER BY characters.name;

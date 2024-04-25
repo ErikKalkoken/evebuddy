@@ -21,7 +21,7 @@ func TestCharacter(t *testing.T) {
 		corp := factory.CreateEveEntityCorporation()
 		race := factory.CreateEveRace()
 		system := factory.CreateEveEntitySolarSystem()
-		ship := factory.CreateEveEntityInventoryType()
+		ship := factory.CreateEveType()
 		c := model.Character{ID: 1, Name: "Erik", Corporation: corp, Race: race, Location: system, Ship: ship}
 		// when
 		err := r.UpdateOrCreateCharacter(ctx, &c)

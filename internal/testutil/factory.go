@@ -63,7 +63,7 @@ func (f Factory) CreateCharacter(args ...model.Character) model.Character {
 		c.Race = f.CreateEveRace()
 	}
 	if c.Ship.ID == 0 {
-		c.Ship = f.CreateEveEntityInventoryType()
+		c.Ship = f.CreateEveType()
 	}
 	if c.SkillPoints == 0 {
 		c.SkillPoints = rand.IntN(100_000_000)

@@ -204,15 +204,11 @@ func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.Charac
 		if err != nil {
 			return err
 		}
-		_, err = s.AddMissingEveEntities(ctx, []int32{ship.ShipTypeId})
+		x, err := s.getOrCreateEveTypeESI(ctx, ship.ShipTypeId)
 		if err != nil {
 			return err
 		}
-		o, err := s.r.GetEveEntity(ctx, ship.ShipTypeId)
-		if err != nil {
-			return err
-		}
-		c.Ship = o
+		c.Ship = x
 		return nil
 	})
 	g.Go(func() error {

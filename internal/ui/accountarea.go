@@ -62,7 +62,11 @@ func (m *accountArea) Redraw() {
 		image.FillMode = canvas.ImageFillOriginal
 		name := widget.NewLabel(char.Name)
 		selectButton := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
-			m.ui.SetCurrentCharacter(&char)
+			c, err := m.ui.service.GetCharacter(char.ID)
+			if err != nil {
+				panic(err)
+			}
+			m.ui.SetCurrentCharacter(&c)
 			m.dialog.Hide()
 		})
 		isCurrentChar := char.ID == m.ui.CurrentCharID()

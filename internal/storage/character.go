@@ -42,12 +42,7 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 			Name: row.RaceName,
 		},
 		SecurityStatus: row.SecurityStatus,
-		Ship: model.EveEntity{
-			ID:       int32(row.ShipID),
-			Name:     row.ShipName,
-			Category: model.EveEntityInventoryType,
-		},
-		SkillPoints: int(row.SkillPoints),
+		SkillPoints:    int(row.SkillPoints),
 		Location: model.EveEntity{
 			ID:       int32(row.LocationID),
 			Name:     row.LocationName,
@@ -55,6 +50,9 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		},
 		WalletBalance: row.WalletBalance,
 	}
+	c.Ship = eveTypeFromDBModel(row.EveType)
+	c.Ship.Group = eveGroupFromDBModel(row.EveGroup)
+	c.Ship.Group.Category = eveCategoryFromDBModel(row.EveCategory)
 	if row.AllianceID.Valid {
 		c.Alliance = model.EveEntity{
 			ID:       int32(row.AllianceID.Int64),
@@ -111,11 +109,11 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 				Name:     row.LocationName,
 				Category: eveEntityCategoryFromDBModel(row.LocationCategory),
 			},
-			Ship: model.EveEntity{
-				ID:       int32(row.ShipID),
-				Name:     row.ShipName,
-				Category: model.EveEntityInventoryType,
-			},
+			// Ship: model.EveEntity{
+			// 	ID:       int32(row.ShipID),
+			// 	Name:     row.ShipName,
+			// 	Category: model.EveEntityInventoryType,
+			// },
 			WalletBalance: row.WalletBalance,
 		}
 		if row.AllianceID.Valid {

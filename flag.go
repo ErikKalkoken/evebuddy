@@ -31,6 +31,6 @@ var (
 )
 
 func init() {
-	levelFlag.value = slog.LevelWarn
+	levelFlag.value = slog.LevelInfo
 	flag.Var(&levelFlag, "level", "log level name")
 }
