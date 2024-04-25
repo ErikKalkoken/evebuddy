@@ -8,20 +8,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEveCategory(t *testing.T) {
-	db, r, _ := testutil.New()
+func TestEveType(t *testing.T) {
+	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		g := factory.CreateEveGroup()
 		// when
-		c1, err := r.CreateEveCategory(ctx, 42, "name", true)
+		err := r.CreateEveType(ctx, 42, "description", g.ID, "name", true)
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetEveCategory(ctx, 42)
+			x, err := r.GetEveType(ctx, 42)
 			if assert.NoError(t, err) {
-				assert.Equal(t, c1, c2)
+				assert.Equal(t, int32(42), x.ID)
+				assert.Equal(t, "name", x.Name)
+				assert.Equal(t, true, x.IsPublished)
+				assert.Equal(t, g, x.Group)
 			}
 		}
 	})

@@ -12,7 +12,7 @@ func New() (*sql.DB, *storage.Storage, Factory) {
 		panic(err)
 	}
 	r := storage.New(db)
-	factory := NewFactory(r)
+	factory := NewFactory(r, db)
 	return db, r, factory
 }
 

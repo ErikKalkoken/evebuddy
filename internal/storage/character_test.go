@@ -19,7 +19,7 @@ func TestCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		corp := factory.CreateEveEntityCorporation()
-		race := factory.CreateRace()
+		race := factory.CreateEveRace()
 		system := factory.CreateEveEntitySolarSystem()
 		ship := factory.CreateEveEntityInventoryType()
 		c := model.Character{ID: 1, Name: "Erik", Corporation: corp, Race: race, Location: system, Ship: ship}

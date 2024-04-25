@@ -3,6 +3,7 @@ package testutil
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"math/rand/v2"
 	"slices"
@@ -13,11 +14,12 @@ import (
 )
 
 type Factory struct {
-	r *storage.Storage
+	r  *storage.Storage
+	db *sql.DB
 }
 
-func NewFactory(r *storage.Storage) Factory {
-	f := Factory{r: r}
+func NewFactory(r *storage.Storage, db *sql.DB) Factory {
+	f := Factory{r: r, db: db}
 	return f
 }
 
@@ -58,7 +60,7 @@ func (f Factory) CreateCharacter(args ...model.Character) model.Character {
 		c.Location = f.CreateEveEntitySolarSystem()
 	}
 	if c.Race.ID == 0 {
-		c.Race = f.CreateRace()
+		c.Race = f.CreateEveRace()
 	}
 	if c.Ship.ID == 0 {
 		c.Ship = f.CreateEveEntityInventoryType()
@@ -268,15 +270,11 @@ func (f Factory) CreateEveCategory(args ...model.EveCategory) model.EveCategory 
 		arg = args[0]
 	}
 	if arg.ID == 0 {
-		ids, err := f.r.ListEveCategoryIDs(ctx)
-		if err != nil {
+		var max sql.NullInt32
+		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_categories;").Scan(&max); err != nil {
 			panic(err)
 		}
-		if len(ids) > 0 {
-			arg.ID = slices.Max(ids) + 1
-		} else {
-			arg.ID = 1
-		}
+		arg.ID = max.Int32 + 1
 	}
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("Category #%d", arg.ID)
@@ -288,7 +286,33 @@ func (f Factory) CreateEveCategory(args ...model.EveCategory) model.EveCategory 
 	return r
 }
 
-func (f Factory) CreateRace(args ...model.EveRace) model.EveRace {
+func (f Factory) CreateEveGroup(args ...model.EveGroup) model.EveGroup {
+	var g model.EveGroup
+	ctx := context.Background()
+	if len(args) > 0 {
+		g = args[0]
+	}
+	if g.ID == 0 {
+		var max sql.NullInt32
+		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_groups;").Scan(&max); err != nil {
+			panic(err)
+		}
+		g.ID = max.Int32 + 1
+	}
+	if g.Name == "" {
+		g.Name = fmt.Sprintf("Group #%d", g.ID)
+	}
+	if g.Category.ID == 0 {
+		g.Category = f.CreateEveCategory()
+	}
+	err := f.r.CreateEveGroup(ctx, g.ID, g.Category.ID, g.Name, g.IsPublished)
+	if err != nil {
+		panic(err)
+	}
+	return g
+}
+
+func (f Factory) CreateEveRace(args ...model.EveRace) model.EveRace {
 	var arg model.EveRace
 	ctx := context.Background()
 	if len(args) > 0 {

@@ -1,0 +1,51 @@
+package storage
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/storage/queries"
+	"fmt"
+)
+
+func (r *Storage) CreateEveType(ctx context.Context, id int32, description string, eve_group_id int32, name string, is_published bool) error {
+	if id == 0 {
+		return fmt.Errorf("invalid ID %d", id)
+	}
+	arg := queries.CreateEveTypeParams{
+		ID:          int64(id),
+		Description: description,
+		EveGroupID:  int64(eve_group_id),
+		IsPublished: is_published,
+		Name:        name,
+	}
+	err := r.q.CreateEveType(ctx, arg)
+	if err != nil {
+		return fmt.Errorf("failed to create EveType %v, %w", arg, err)
+	}
+	return nil
+}
+
+func (r *Storage) GetEveType(ctx context.Context, id int32) (model.EveType, error) {
+	row, err := r.q.GetEveType(ctx, int64(id))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrNotFound
+		}
+		return model.EveType{}, fmt.Errorf("failed to get EveType for id %d: %w", id, err)
+	}
+	t := eveTypeFromDBModel(row.EveType)
+	t.Group = eveGroupFromDBModel(row.EveGroup)
+	t.Group.Category = eveCategoryFromDBModel(row.EveCategory)
+	return t, nil
+}
+
+func eveTypeFromDBModel(c queries.EveType) model.EveType {
+	return model.EveType{
+		ID:          int32(c.ID),
+		Description: c.Description,
+		IsPublished: c.IsPublished,
+		Name:        c.Name,
+	}
+}

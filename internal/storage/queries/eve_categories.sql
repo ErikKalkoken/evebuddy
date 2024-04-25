@@ -13,7 +13,3 @@ RETURNING *;
 SELECT *
 FROM eve_categories
 WHERE id = ?;
-
--- name: ListEveCategoryIDs :many
-SELECT id
-FROM eve_categories;
