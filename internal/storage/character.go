@@ -26,43 +26,17 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		}
 		return model.Character{}, fmt.Errorf("failed to get character %d: %w", characterID, err)
 	}
-	c := model.Character{
-		Birthday: row.Birthday,
-		Corporation: model.EveEntity{ID: int32(row.CorporationID),
-			Name:     row.CorporationName,
-			Category: model.EveEntityCorporation,
-		},
-		Description: row.Description,
-		Gender:      row.Gender,
-		ID:          int32(row.ID),
-		LastLoginAt: row.LastLoginAt,
-		Name:        row.Name,
-		Race: model.EveRace{
-			ID:   int32(row.RaceID),
-			Name: row.RaceName,
-		},
-		SecurityStatus: row.SecurityStatus,
-		SkillPoints:    int(row.SkillPoints),
-		Location: model.EveEntity{
-			ID:       int32(row.LocationID),
-			Name:     row.LocationName,
-			Category: eveEntityCategoryFromDBModel(row.LocationCategory),
-		},
-		WalletBalance: row.WalletBalance,
-	}
-	c.Ship = eveTypeFromDBModel(row.EveType)
-	c.Ship.Group = eveGroupFromDBModel(row.EveGroup)
-	c.Ship.Group.Category = eveCategoryFromDBModel(row.EveCategory)
-	if row.AllianceID.Valid {
+	c := characterFromDBRow(row.Character, row.EveEntity, row.EveRace, row.EveCategory, row.EveGroup, row.EveType, row.EveEntity_2)
+	if row.Character.AllianceID.Valid {
 		c.Alliance = model.EveEntity{
-			ID:       int32(row.AllianceID.Int64),
+			ID:       int32(row.Character.AllianceID.Int64),
 			Name:     row.AllianceName.String,
 			Category: model.EveEntityAlliance,
 		}
 	}
-	if row.FactionID.Valid {
+	if row.Character.FactionID.Valid {
 		c.Faction = model.EveEntity{
-			ID:       int32(row.FactionID.Int64),
+			ID:       int32(row.Character.FactionID.Int64),
 			Name:     row.FactionName.String,
 			Category: model.EveEntityFaction,
 		}
@@ -96,12 +70,12 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 				Name:     row.CorporationName,
 				Category: model.EveEntityCorporation,
 			},
-			Description:    row.Description,
-			Gender:         row.Gender,
-			ID:             int32(row.ID),
-			LastLoginAt:    row.LastLoginAt,
-			Name:           row.Name,
-			Race:           model.EveRace{ID: int32(row.RaceID), Name: row.RaceName},
+			Description: row.Description,
+			Gender:      row.Gender,
+			ID:          int32(row.ID),
+			LastLoginAt: row.LastLoginAt,
+			Name:        row.Name,
+			// Race:           model.EveRace{ID: int32(row.RaceID), Name: row.RaceName},
 			SecurityStatus: row.SecurityStatus,
 			SkillPoints:    int(row.SkillPoints),
 			Location: model.EveEntity{
@@ -173,4 +147,25 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 		return fmt.Errorf("failed to update or create character %d: %w", c.ID, err)
 	}
 	return nil
+}
+
+func characterFromDBRow(character queries.Character, corporation queries.EveEntity, race queries.EveRace, shipCategory queries.EveCategory, shipGroup queries.EveGroup, shipType queries.EveType, location queries.EveEntity) model.Character {
+	x := model.Character{
+		Birthday:       character.Birthday,
+		Corporation:    eveEntityFromDBModel(corporation),
+		Description:    character.Description,
+		Gender:         character.Gender,
+		ID:             int32(character.ID),
+		LastLoginAt:    character.LastLoginAt,
+		Location:       eveEntityFromDBModel(location),
+		Name:           character.Name,
+		Race:           eveRaceFromDBModel(race),
+		SecurityStatus: character.SecurityStatus,
+		SkillPoints:    int(character.SkillPoints),
+		WalletBalance:  character.WalletBalance,
+	}
+	x.Ship = eveTypeFromDBModel(shipType)
+	x.Ship.Group = eveGroupFromDBModel(shipGroup)
+	x.Ship.Group.Category = eveCategoryFromDBModel(shipCategory)
+	return x
 }

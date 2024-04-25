@@ -27,16 +27,15 @@ WHERE id = ?;
 
 -- name: GetCharacter :one
 SELECT
-    characters.*,
-    corporations.name as corporation_name,
-    alliances.name as alliance_name,
-    factions.name as faction_name,
-    eve_races.Name as race_name,
-    locations.Name as location_name,
-    locations.Category as location_category,
+    sqlc.embed(characters),
+    sqlc.embed(corporations),
+    sqlc.embed(eve_races),
     sqlc.embed(eve_categories),
     sqlc.embed(eve_groups),
-    sqlc.embed(eve_types)
+    sqlc.embed(eve_types),
+    sqlc.embed(locations),
+    alliances.name as alliance_name,
+    factions.name as faction_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 JOIN eve_entities AS locations ON locations.id = characters.location_id

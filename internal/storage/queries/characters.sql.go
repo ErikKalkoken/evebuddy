@@ -105,15 +105,14 @@ func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
 const getCharacter = `-- name: GetCharacter :one
 SELECT
     characters.alliance_id, characters.birthday, characters.corporation_id, characters.description, characters.gender, characters.faction_id, characters.id, characters.last_login_at, characters.location_id, characters.name, characters.race_id, characters.security_status, characters.ship_id, characters.skill_points, characters.wallet_balance,
-    corporations.name as corporation_name,
-    alliances.name as alliance_name,
-    factions.name as faction_name,
-    eve_races.Name as race_name,
-    locations.Name as location_name,
-    locations.Category as location_category,
+    corporations.id, corporations.category, corporations.name,
+    eve_races.id, eve_races.description, eve_races.name,
     eve_categories.id, eve_categories.name, eve_categories.is_published,
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
-    eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published
+    eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
+    locations.id, locations.category, locations.name,
+    alliances.name as alliance_name,
+    factions.name as faction_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 JOIN eve_entities AS locations ON locations.id = characters.location_id
@@ -127,57 +126,42 @@ WHERE characters.id = ?
 `
 
 type GetCharacterRow struct {
-	AllianceID       sql.NullInt64
-	Birthday         time.Time
-	CorporationID    int64
-	Description      string
-	Gender           string
-	FactionID        sql.NullInt64
-	ID               int64
-	LastLoginAt      time.Time
-	LocationID       int64
-	Name             string
-	RaceID           int64
-	SecurityStatus   float64
-	ShipID           int64
-	SkillPoints      int64
-	WalletBalance    float64
-	CorporationName  string
-	AllianceName     sql.NullString
-	FactionName      sql.NullString
-	RaceName         string
-	LocationName     string
-	LocationCategory string
-	EveCategory      EveCategory
-	EveGroup         EveGroup
-	EveType          EveType
+	Character    Character
+	EveEntity    EveEntity
+	EveRace      EveRace
+	EveCategory  EveCategory
+	EveGroup     EveGroup
+	EveType      EveType
+	EveEntity_2  EveEntity
+	AllianceName sql.NullString
+	FactionName  sql.NullString
 }
 
 func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, error) {
 	row := q.db.QueryRowContext(ctx, getCharacter, id)
 	var i GetCharacterRow
 	err := row.Scan(
-		&i.AllianceID,
-		&i.Birthday,
-		&i.CorporationID,
-		&i.Description,
-		&i.Gender,
-		&i.FactionID,
-		&i.ID,
-		&i.LastLoginAt,
-		&i.LocationID,
-		&i.Name,
-		&i.RaceID,
-		&i.SecurityStatus,
-		&i.ShipID,
-		&i.SkillPoints,
-		&i.WalletBalance,
-		&i.CorporationName,
-		&i.AllianceName,
-		&i.FactionName,
-		&i.RaceName,
-		&i.LocationName,
-		&i.LocationCategory,
+		&i.Character.AllianceID,
+		&i.Character.Birthday,
+		&i.Character.CorporationID,
+		&i.Character.Description,
+		&i.Character.Gender,
+		&i.Character.FactionID,
+		&i.Character.ID,
+		&i.Character.LastLoginAt,
+		&i.Character.LocationID,
+		&i.Character.Name,
+		&i.Character.RaceID,
+		&i.Character.SecurityStatus,
+		&i.Character.ShipID,
+		&i.Character.SkillPoints,
+		&i.Character.WalletBalance,
+		&i.EveEntity.ID,
+		&i.EveEntity.Category,
+		&i.EveEntity.Name,
+		&i.EveRace.ID,
+		&i.EveRace.Description,
+		&i.EveRace.Name,
 		&i.EveCategory.ID,
 		&i.EveCategory.Name,
 		&i.EveCategory.IsPublished,
@@ -190,6 +174,11 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.EveType.EveGroupID,
 		&i.EveType.Name,
 		&i.EveType.IsPublished,
+		&i.EveEntity_2.ID,
+		&i.EveEntity_2.Category,
+		&i.EveEntity_2.Name,
+		&i.AllianceName,
+		&i.FactionName,
 	)
 	return i, err
 }
