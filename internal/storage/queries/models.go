@@ -38,6 +38,12 @@ type EveCategory struct {
 	IsPublished bool
 }
 
+type EveConstellation struct {
+	ID          int64
+	EveRegionID int64
+	Name        string
+}
+
 type EveEntity struct {
 	ID       int64
 	Category string
@@ -55,6 +61,18 @@ type EveRace struct {
 	ID          int64
 	Description string
 	Name        string
+}
+
+type EveRegion struct {
+	ID   int64
+	Name string
+}
+
+type EveSolarSystem struct {
+	ID                 int64
+	EveConstellationID int64
+	Name               string
+	SecurityStatus     float64
 }
 
 type EveType struct {

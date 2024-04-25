@@ -35,6 +35,26 @@ CREATE TABLE eve_types (
     FOREIGN KEY (eve_group_id) REFERENCES eve_groups(id) ON DELETE CASCADE
 );
 
+CREATE TABLE eve_regions (
+    id INTEGER PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE eve_constellations (
+    id INTEGER PRIMARY KEY NOT NULL,
+    eve_region_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    FOREIGN KEY (eve_region_id) REFERENCES eve_regions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE eve_solar_systems (
+    id INTEGER PRIMARY KEY NOT NULL,
+    eve_constellation_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    security_status REAL NOT NULL,
+    FOREIGN KEY (eve_constellation_id) REFERENCES eve_constellations(id) ON DELETE CASCADE
+);
+
 CREATE TABLE characters (
     alliance_id INTEGER,
     birthday DATETIME NOT NULL,

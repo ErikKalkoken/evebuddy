@@ -338,6 +338,84 @@ func (f Factory) CreateEveType(args ...model.EveType) model.EveType {
 	return x
 }
 
+func (f Factory) CreateEveRegion(args ...model.EveRegion) model.EveRegion {
+	var x model.EveRegion
+	ctx := context.Background()
+	if len(args) > 0 {
+		x = args[0]
+	}
+	if x.ID == 0 {
+		var max sql.NullInt32
+		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_regions;").Scan(&max); err != nil {
+			panic(err)
+		}
+		x.ID = max.Int32 + 1
+	}
+	if x.Name == "" {
+		x.Name = fmt.Sprintf("Region #%d", x.ID)
+	}
+	r, err := f.r.CreateEveRegion(ctx, x.ID, x.Name)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
+
+func (f Factory) CreateEveConstellation(args ...model.EveConstellation) model.EveConstellation {
+	var x model.EveConstellation
+	ctx := context.Background()
+	if len(args) > 0 {
+		x = args[0]
+	}
+	if x.ID == 0 {
+		var max sql.NullInt32
+		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_constellations;").Scan(&max); err != nil {
+			panic(err)
+		}
+		x.ID = max.Int32 + 1
+	}
+	if x.Name == "" {
+		x.Name = fmt.Sprintf("Constellation #%d", x.ID)
+	}
+	if x.Region.ID == 0 {
+		x.Region = f.CreateEveRegion()
+	}
+	err := f.r.CreateEveConstellation(ctx, x.ID, x.Region.ID, x.Name)
+	if err != nil {
+		panic(err)
+	}
+	return x
+}
+
+func (f Factory) CreateEveSolarSystem(args ...model.EveSolarSystem) model.EveSolarSystem {
+	var x model.EveSolarSystem
+	ctx := context.Background()
+	if len(args) > 0 {
+		x = args[0]
+	}
+	if x.ID == 0 {
+		var max sql.NullInt32
+		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_solar_systems;").Scan(&max); err != nil {
+			panic(err)
+		}
+		x.ID = max.Int32 + 1
+	}
+	if x.Name == "" {
+		x.Name = fmt.Sprintf("Solar System #%d", x.ID)
+	}
+	if x.Constellation.ID == 0 {
+		x.Constellation = f.CreateEveConstellation()
+	}
+	if x.SecurityStatus == 0 {
+		x.SecurityStatus = rand.Float64()*10 - 5
+	}
+	err := f.r.CreateEveSolarSystem(ctx, x.ID, x.Constellation.ID, x.Name, x.SecurityStatus)
+	if err != nil {
+		panic(err)
+	}
+	return x
+}
+
 func (f Factory) CreateEveRace(args ...model.EveRace) model.EveRace {
 	var arg model.EveRace
 	ctx := context.Background()
