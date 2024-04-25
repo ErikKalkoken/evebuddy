@@ -354,7 +354,7 @@ func (f Factory) CreateEveRegion(args ...model.EveRegion) model.EveRegion {
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Region #%d", x.ID)
 	}
-	r, err := f.r.CreateEveRegion(ctx, x.ID, x.Name)
+	r, err := f.r.CreateEveRegion(ctx, x.Description, x.ID, x.Name)
 	if err != nil {
 		panic(err)
 	}

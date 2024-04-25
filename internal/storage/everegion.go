@@ -9,13 +9,14 @@ import (
 	"fmt"
 )
 
-func (r *Storage) CreateEveRegion(ctx context.Context, id int32, name string) (model.EveRegion, error) {
+func (r *Storage) CreateEveRegion(ctx context.Context, description string, id int32, name string) (model.EveRegion, error) {
 	if id == 0 {
 		return model.EveRegion{}, fmt.Errorf("invalid ID %d", id)
 	}
 	arg := queries.CreateEveRegionParams{
-		ID:   int64(id),
-		Name: name,
+		ID:          int64(id),
+		Description: description,
+		Name:        name,
 	}
 	e, err := r.q.CreateEveRegion(ctx, arg)
 	if err != nil {
@@ -37,7 +38,8 @@ func (r *Storage) GetEveRegion(ctx context.Context, id int32) (model.EveRegion, 
 
 func eveRegionFromDBModel(c queries.EveRegion) model.EveRegion {
 	return model.EveRegion{
-		ID:   int32(c.ID),
-		Name: c.Name,
+		ID:          int32(c.ID),
+		Description: c.Description,
+		Name:        c.Name,
 	}
 }

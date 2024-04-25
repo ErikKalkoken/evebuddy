@@ -2,8 +2,9 @@ package model
 
 // EveRegion is a region in Eve Online.
 type EveRegion struct {
-	ID   int32
-	Name string
+	Description string
+	ID          int32
+	Name        string
 }
 
 // EveConstellation is a constellation in Eve Online.

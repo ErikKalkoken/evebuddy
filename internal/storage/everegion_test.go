@@ -16,7 +16,7 @@ func TestEveRegion(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		x1, err := r.CreateEveRegion(ctx, 42, "name")
+		x1, err := r.CreateEveRegion(ctx, "description", 42, "name")
 		// then
 		if assert.NoError(t, err) {
 			x2, err := r.GetEveRegion(ctx, 42)

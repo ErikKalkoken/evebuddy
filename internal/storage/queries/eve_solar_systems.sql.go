@@ -39,7 +39,7 @@ func (q *Queries) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarSy
 }
 
 const getEveSolarSystem = `-- name: GetEveSolarSystem :one
-SELECT eve_solar_systems.id, eve_solar_systems.eve_constellation_id, eve_solar_systems.name, eve_solar_systems.security_status, eve_constellations.id, eve_constellations.eve_region_id, eve_constellations.name, eve_regions.id, eve_regions.name
+SELECT eve_solar_systems.id, eve_solar_systems.eve_constellation_id, eve_solar_systems.name, eve_solar_systems.security_status, eve_constellations.id, eve_constellations.eve_region_id, eve_constellations.name, eve_regions.id, eve_regions.description, eve_regions.name
 FROM eve_solar_systems
 JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
 JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
@@ -64,6 +64,7 @@ func (q *Queries) GetEveSolarSystem(ctx context.Context, id int64) (GetEveSolarS
 		&i.EveConstellation.EveRegionID,
 		&i.EveConstellation.Name,
 		&i.EveRegion.ID,
+		&i.EveRegion.Description,
 		&i.EveRegion.Name,
 	)
 	return i, err

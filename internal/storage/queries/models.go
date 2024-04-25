@@ -64,8 +64,9 @@ type EveRace struct {
 }
 
 type EveRegion struct {
-	ID   int64
-	Name string
+	ID          int64
+	Description string
+	Name        string
 }
 
 type EveSolarSystem struct {

@@ -12,28 +12,30 @@ import (
 const createEveRegion = `-- name: CreateEveRegion :one
 INSERT INTO eve_regions (
     id,
+    description,
     name
 )
 VALUES (
-    ?, ?
+    ?, ?, ?
 )
-RETURNING id, name
+RETURNING id, description, name
 `
 
 type CreateEveRegionParams struct {
-	ID   int64
-	Name string
+	ID          int64
+	Description string
+	Name        string
 }
 
 func (q *Queries) CreateEveRegion(ctx context.Context, arg CreateEveRegionParams) (EveRegion, error) {
-	row := q.db.QueryRowContext(ctx, createEveRegion, arg.ID, arg.Name)
+	row := q.db.QueryRowContext(ctx, createEveRegion, arg.ID, arg.Description, arg.Name)
 	var i EveRegion
-	err := row.Scan(&i.ID, &i.Name)
+	err := row.Scan(&i.ID, &i.Description, &i.Name)
 	return i, err
 }
 
 const getEveRegion = `-- name: GetEveRegion :one
-SELECT id, name
+SELECT id, description, name
 FROM eve_regions
 WHERE id = ?
 `
@@ -41,6 +43,6 @@ WHERE id = ?
 func (q *Queries) GetEveRegion(ctx context.Context, id int64) (EveRegion, error) {
 	row := q.db.QueryRowContext(ctx, getEveRegion, id)
 	var i EveRegion
-	err := row.Scan(&i.ID, &i.Name)
+	err := row.Scan(&i.ID, &i.Description, &i.Name)
 	return i, err
 }

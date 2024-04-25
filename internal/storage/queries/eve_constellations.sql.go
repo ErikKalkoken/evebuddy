@@ -32,7 +32,7 @@ func (q *Queries) CreateEveConstellation(ctx context.Context, arg CreateEveConst
 }
 
 const getEveConstellation = `-- name: GetEveConstellation :one
-SELECT eve_constellations.id, eve_constellations.eve_region_id, eve_constellations.name, eve_regions.id, eve_regions.name
+SELECT eve_constellations.id, eve_constellations.eve_region_id, eve_constellations.name, eve_regions.id, eve_regions.description, eve_regions.name
 FROM eve_constellations
 JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
 WHERE eve_constellations.id = ?
@@ -51,6 +51,7 @@ func (q *Queries) GetEveConstellation(ctx context.Context, id int64) (GetEveCons
 		&i.EveConstellation.EveRegionID,
 		&i.EveConstellation.Name,
 		&i.EveRegion.ID,
+		&i.EveRegion.Description,
 		&i.EveRegion.Name,
 	)
 	return i, err

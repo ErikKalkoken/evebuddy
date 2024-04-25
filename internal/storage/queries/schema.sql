@@ -37,6 +37,7 @@ CREATE TABLE eve_types (
 
 CREATE TABLE eve_regions (
     id INTEGER PRIMARY KEY NOT NULL,
+    description TEXT NOT NULL,
     name TEXT NOT NULL
 );
 

@@ -1,10 +1,11 @@
 -- name: CreateEveRegion :one
 INSERT INTO eve_regions (
     id,
+    description,
     name
 )
 VALUES (
-    ?, ?
+    ?, ?, ?
 )
 RETURNING *;
 

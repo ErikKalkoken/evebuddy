@@ -32,7 +32,7 @@ func (s *Service) createEveRegionFromESI(ctx context.Context, id int32) (model.E
 		if err != nil {
 			return dummy, err
 		}
-		return s.r.CreateEveRegion(ctx, r.RegionId, r.Name)
+		return s.r.CreateEveRegion(ctx, r.Description, r.RegionId, r.Name)
 	})
 	if err != nil {
 		return dummy, err
