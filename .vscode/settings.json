@@ -10,6 +10,7 @@
     ],
     "cSpell.ignoreWords": [
         "AUTOINCREMENT",
+        "Akpivem",
         "DBTX",
         "Equalf",
         "Mekashtad",
@@ -30,6 +31,7 @@
         "mattn",
         "sqlc",
         "sqlx",
+        "stargates",
         "stretchr",
         "testfactory",
         "testutil"

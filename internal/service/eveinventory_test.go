@@ -171,4 +171,66 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 			}
 		}
 	})
+	t.Run("should fetch group from ESI and create it (integration)", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+
+		data1 := `{
+			"category_id": 6,
+			"groups": [
+			  25,
+			  26,
+			  27
+			],
+			"name": "Ship",
+			"published": true
+		  }`
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/v1/universe/categories/6/",
+			httpmock.NewStringResponder(200, data1).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+
+		data2 := `{
+			"category_id": 6,
+			"group_id": 25,
+			"name": "Frigate",
+			"published": true,
+			"types": [
+			  587,
+			  586,
+			  585
+			]
+		  }`
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/v1/universe/groups/25/",
+			httpmock.NewStringResponder(200, data2).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+
+		data3 := `{
+			"description": "The Rifter is a...",
+			"group_id": 25,
+			"name": "Rifter",
+			"published": true,
+			"type_id": 587
+		  }`
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/v3/universe/types/587/",
+			httpmock.NewStringResponder(200, data3).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+
+		// when
+		x1, err := s.GetOrCreateEveTypeESI(587)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, int32(587), x1.ID)
+			assert.Equal(t, "Rifter", x1.Name)
+			assert.Equal(t, int32(25), x1.Group.ID)
+			assert.Equal(t, true, x1.IsPublished)
+			x2, err := r.GetEveType(ctx, 587)
+			if assert.NoError(t, err) {
+				assert.Equal(t, x1, x2)
+			}
+		}
+	})
 }
