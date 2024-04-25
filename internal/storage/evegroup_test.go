@@ -17,12 +17,15 @@ func TestEveGroup(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateEveCategory()
 		// when
-		g1, err := r.CreateEveGroup(ctx, 42, c.ID, "dummy", true)
+		err := r.CreateEveGroup(ctx, 42, c.ID, "dummy", true)
 		// then
 		if assert.NoError(t, err) {
-			g2, err := r.GetEveGroup(ctx, 42)
+			g, err := r.GetEveGroup(ctx, 42)
 			if assert.NoError(t, err) {
-				assert.Equal(t, g1, g2)
+				assert.Equal(t, int32(42), g.ID)
+				assert.Equal(t, "dummy", g.Name)
+				assert.Equal(t, true, g.IsPublished)
+				assert.Equal(t, c, g.Category)
 			}
 		}
 	})

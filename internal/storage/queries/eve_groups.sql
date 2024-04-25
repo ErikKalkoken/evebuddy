@@ -1,4 +1,4 @@
--- name: CreateEveGroup :one
+-- name: CreateEveGroup :exec
 INSERT INTO eve_groups (
     id,
     eve_category_id,
@@ -7,10 +7,10 @@ INSERT INTO eve_groups (
 )
 VALUES (
     ?, ?, ?, ?
-)
-RETURNING *;
+);
 
 -- name: GetEveGroup :one
-SELECT *
+SELECT sqlc.embed(eve_groups), sqlc.embed(eve_categories)
 FROM eve_groups
-WHERE id = ?;
+JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
+WHERE eve_groups.id = ?;

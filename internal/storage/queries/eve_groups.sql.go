@@ -9,7 +9,7 @@ import (
 	"context"
 )
 
-const createEveGroup = `-- name: CreateEveGroup :one
+const createEveGroup = `-- name: CreateEveGroup :exec
 INSERT INTO eve_groups (
     id,
     eve_category_id,
@@ -19,7 +19,6 @@ INSERT INTO eve_groups (
 VALUES (
     ?, ?, ?, ?
 )
-RETURNING id, eve_category_id, name, is_published
 `
 
 type CreateEveGroupParams struct {
@@ -29,37 +28,39 @@ type CreateEveGroupParams struct {
 	IsPublished   bool
 }
 
-func (q *Queries) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams) (EveGroup, error) {
-	row := q.db.QueryRowContext(ctx, createEveGroup,
+func (q *Queries) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams) error {
+	_, err := q.db.ExecContext(ctx, createEveGroup,
 		arg.ID,
 		arg.EveCategoryID,
 		arg.Name,
 		arg.IsPublished,
 	)
-	var i EveGroup
-	err := row.Scan(
-		&i.ID,
-		&i.EveCategoryID,
-		&i.Name,
-		&i.IsPublished,
-	)
-	return i, err
+	return err
 }
 
 const getEveGroup = `-- name: GetEveGroup :one
-SELECT id, eve_category_id, name, is_published
+SELECT eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published, eve_categories.id, eve_categories.name, eve_categories.is_published
 FROM eve_groups
-WHERE id = ?
+JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
+WHERE eve_groups.id = ?
 `
 
-func (q *Queries) GetEveGroup(ctx context.Context, id int64) (EveGroup, error) {
+type GetEveGroupRow struct {
+	EveGroup    EveGroup
+	EveCategory EveCategory
+}
+
+func (q *Queries) GetEveGroup(ctx context.Context, id int64) (GetEveGroupRow, error) {
 	row := q.db.QueryRowContext(ctx, getEveGroup, id)
-	var i EveGroup
+	var i GetEveGroupRow
 	err := row.Scan(
-		&i.ID,
-		&i.EveCategoryID,
-		&i.Name,
-		&i.IsPublished,
+		&i.EveGroup.ID,
+		&i.EveGroup.EveCategoryID,
+		&i.EveGroup.Name,
+		&i.EveGroup.IsPublished,
+		&i.EveCategory.ID,
+		&i.EveCategory.Name,
+		&i.EveCategory.IsPublished,
 	)
 	return i, err
 }

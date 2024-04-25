@@ -9,9 +9,9 @@ import (
 	"fmt"
 )
 
-func (r *Storage) CreateEveGroup(ctx context.Context, id, eve_category_id int32, name string, is_published bool) (model.EveGroup, error) {
+func (r *Storage) CreateEveGroup(ctx context.Context, id, eve_category_id int32, name string, is_published bool) error {
 	if id == 0 {
-		return model.EveGroup{}, fmt.Errorf("invalid ID %d", id)
+		return fmt.Errorf("invalid ID %d", id)
 	}
 	arg := queries.CreateEveGroupParams{
 		ID:            int64(id),
@@ -19,22 +19,24 @@ func (r *Storage) CreateEveGroup(ctx context.Context, id, eve_category_id int32,
 		IsPublished:   is_published,
 		Name:          name,
 	}
-	g, err := r.q.CreateEveGroup(ctx, arg)
+	err := r.q.CreateEveGroup(ctx, arg)
 	if err != nil {
-		return model.EveGroup{}, fmt.Errorf("failed to create EveGroup %v, %w", arg, err)
+		return fmt.Errorf("failed to create EveGroup %v, %w", arg, err)
 	}
-	return eveGroupFromDBModel(g), nil
+	return nil
 }
 
 func (r *Storage) GetEveGroup(ctx context.Context, id int32) (model.EveGroup, error) {
-	c, err := r.q.GetEveGroup(ctx, int64(id))
+	row, err := r.q.GetEveGroup(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
 		return model.EveGroup{}, fmt.Errorf("failed to get EveGroup for id %d: %w", id, err)
 	}
-	return eveGroupFromDBModel(c), nil
+	g := eveGroupFromDBModel(row.EveGroup)
+	g.Category = eveCategoryFromDBModel(row.EveCategory)
+	return g, nil
 }
 
 func eveGroupFromDBModel(c queries.EveGroup) model.EveGroup {
