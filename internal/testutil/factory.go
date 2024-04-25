@@ -261,6 +261,33 @@ func (f Factory) CreateMailList(characterID int32, args ...model.EveEntity) mode
 	return e
 }
 
+func (f Factory) CreateEveCategory(args ...model.EveCategory) model.EveCategory {
+	var arg model.EveCategory
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		ids, err := f.r.ListEveCategoryIDs(ctx)
+		if err != nil {
+			panic(err)
+		}
+		if len(ids) > 0 {
+			arg.ID = slices.Max(ids) + 1
+		} else {
+			arg.ID = 1
+		}
+	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Category #%d", arg.ID)
+	}
+	r, err := f.r.CreateEveCategory(ctx, arg.ID, arg.Name, arg.IsPublished)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
+
 func (f Factory) CreateRace(args ...model.EveRace) model.EveRace {
 	var arg model.EveRace
 	ctx := context.Background()
@@ -268,7 +295,7 @@ func (f Factory) CreateRace(args ...model.EveRace) model.EveRace {
 		arg = args[0]
 	}
 	if arg.ID == 0 {
-		ids, err := f.r.ListRaceIDs(ctx)
+		ids, err := f.r.ListEveRaceIDs(ctx)
 		if err != nil {
 			panic(err)
 		}
@@ -284,7 +311,7 @@ func (f Factory) CreateRace(args ...model.EveRace) model.EveRace {
 	if arg.Description == "" {
 		arg.Description = fmt.Sprintf("Description #%d", arg.ID)
 	}
-	r, err := f.r.CreateRace(ctx, arg.ID, arg.Description, arg.Name)
+	r, err := f.r.CreateEveRace(ctx, arg.ID, arg.Description, arg.Name)
 	if err != nil {
 		panic(err)
 	}

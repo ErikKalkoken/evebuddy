@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage/queries"
 	"fmt"
@@ -34,6 +35,15 @@ func (r *Storage) GetEveCategory(ctx context.Context, id int32) (model.EveCatego
 		return model.EveCategory{}, fmt.Errorf("failed to get EveCategory for id %d: %w", id, err)
 	}
 	return eveCategoryFromDBModel(c), nil
+}
+
+func (r *Storage) ListEveCategoryIDs(ctx context.Context) ([]int32, error) {
+	ids, err := r.q.ListEveCategoryIDs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list EveCategory IDs: %w", err)
+	}
+	ids2 := islices.ConvertNumeric[int64, int32](ids)
+	return ids2, nil
 }
 
 func eveCategoryFromDBModel(c queries.EveCategory) model.EveCategory {

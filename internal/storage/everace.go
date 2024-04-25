@@ -10,33 +10,32 @@ import (
 	"fmt"
 )
 
-func (r *Storage) CreateRace(ctx context.Context, id int32, description, name string) (model.EveRace, error) {
-	arg := queries.CreateRaceParams{
+func (r *Storage) CreateEveRace(ctx context.Context, id int32, description, name string) (model.EveRace, error) {
+	arg := queries.CreateEveRaceParams{
 		ID:          int64(id),
 		Description: description,
 		Name:        name,
 	}
-	o, err := r.q.CreateRace(ctx, arg)
+	o, err := r.q.CreateEveRace(ctx, arg)
 	if err != nil {
 		return model.EveRace{}, fmt.Errorf("failed to create race %d: %w", id, err)
 	}
-	return raceFromDBModel(o), nil
+	return eveRaceFromDBModel(o), nil
 }
 
-func (r *Storage) GetRace(ctx context.Context, id int32) (model.EveRace, error) {
-	o, err := r.q.GetRace(ctx, int64(id))
+func (r *Storage) GetEveRace(ctx context.Context, id int32) (model.EveRace, error) {
+	o, err := r.q.GetEveRace(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
 		return model.EveRace{}, fmt.Errorf("failed to get Race for id %d: %w", id, err)
 	}
-	o2 := raceFromDBModel(o)
-	return o2, nil
+	return eveRaceFromDBModel(o), nil
 }
 
-func (r *Storage) ListRaceIDs(ctx context.Context) ([]int32, error) {
-	ids, err := r.q.ListRaceIDs(ctx)
+func (r *Storage) ListEveRaceIDs(ctx context.Context) ([]int32, error) {
+	ids, err := r.q.ListEveRaceIDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list race IDs: %w", err)
 	}
@@ -44,7 +43,7 @@ func (r *Storage) ListRaceIDs(ctx context.Context) ([]int32, error) {
 	return ids2, nil
 }
 
-func raceFromDBModel(r queries.EveRace) model.EveRace {
+func eveRaceFromDBModel(r queries.EveRace) model.EveRace {
 	if r.ID == 0 {
 		return model.EveRace{}
 	}

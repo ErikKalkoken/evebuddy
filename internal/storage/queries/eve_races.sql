@@ -1,4 +1,4 @@
--- name: CreateRace :one
+-- name: CreateEveRace :one
 INSERT INTO eve_races (
     id,
     description,
@@ -9,11 +9,11 @@ VALUES (
 )
 RETURNING *;
 
--- name: GetRace :one
+-- name: GetEveRace :one
 SELECT *
 FROM eve_races
 WHERE id = ?;
 
--- name: ListRaceIDs :many
+-- name: ListEveRaceIDs :many
 SELECT id
 FROM eve_races;

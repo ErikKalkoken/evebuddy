@@ -9,7 +9,7 @@ import (
 	"context"
 )
 
-const createRace = `-- name: CreateRace :one
+const createEveRace = `-- name: CreateEveRace :one
 INSERT INTO eve_races (
     id,
     description,
@@ -21,39 +21,39 @@ VALUES (
 RETURNING id, description, name
 `
 
-type CreateRaceParams struct {
+type CreateEveRaceParams struct {
 	ID          int64
 	Description string
 	Name        string
 }
 
-func (q *Queries) CreateRace(ctx context.Context, arg CreateRaceParams) (EveRace, error) {
-	row := q.db.QueryRowContext(ctx, createRace, arg.ID, arg.Description, arg.Name)
+func (q *Queries) CreateEveRace(ctx context.Context, arg CreateEveRaceParams) (EveRace, error) {
+	row := q.db.QueryRowContext(ctx, createEveRace, arg.ID, arg.Description, arg.Name)
 	var i EveRace
 	err := row.Scan(&i.ID, &i.Description, &i.Name)
 	return i, err
 }
 
-const getRace = `-- name: GetRace :one
+const getEveRace = `-- name: GetEveRace :one
 SELECT id, description, name
 FROM eve_races
 WHERE id = ?
 `
 
-func (q *Queries) GetRace(ctx context.Context, id int64) (EveRace, error) {
-	row := q.db.QueryRowContext(ctx, getRace, id)
+func (q *Queries) GetEveRace(ctx context.Context, id int64) (EveRace, error) {
+	row := q.db.QueryRowContext(ctx, getEveRace, id)
 	var i EveRace
 	err := row.Scan(&i.ID, &i.Description, &i.Name)
 	return i, err
 }
 
-const listRaceIDs = `-- name: ListRaceIDs :many
+const listEveRaceIDs = `-- name: ListEveRaceIDs :many
 SELECT id
 FROM eve_races
 `
 
-func (q *Queries) ListRaceIDs(ctx context.Context) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listRaceIDs)
+func (q *Queries) ListEveRaceIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listEveRaceIDs)
 	if err != nil {
 		return nil, err
 	}

@@ -77,7 +77,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	if err := s.updateRacesESI(ctx); err != nil {
 		return err
 	}
-	race, err := s.r.GetRace(ctx, charEsi.RaceId)
+	race, err := s.r.GetEveRace(ctx, charEsi.RaceId)
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,7 @@ func (s *Service) updateRacesESI(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	ids, err := s.r.ListRaceIDs(ctx)
+	ids, err := s.r.ListEveRaceIDs(ctx)
 	if err != nil {
 		return err
 	}
@@ -21,7 +21,7 @@ func (s *Service) updateRacesESI(ctx context.Context) error {
 		if currentIDs.Has(r.RaceId) {
 			continue
 		}
-		_, err := s.r.CreateRace(ctx, r.RaceId, r.Description, r.Name)
+		_, err := s.r.CreateEveRace(ctx, r.RaceId, r.Description, r.Name)
 		if err != nil {
 			return err
 		}
