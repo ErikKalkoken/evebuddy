@@ -6,7 +6,7 @@ CREATE TABLE eve_entities (
 CREATE INDEX eve_entities_name_idx ON eve_entities (name);
 CREATE INDEX eve_entities_category_idx ON eve_entities (category);
 
-CREATE TABLE races (
+CREATE TABLE eve_races (
     id INTEGER PRIMARY KEY NOT NULL,
     description TEXT NOT NULL,
     name TEXT NOT NULL
@@ -32,7 +32,7 @@ CREATE TABLE characters (
     FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
     FOREIGN KEY (location_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
-    FOREIGN KEY (race_id) REFERENCES races(id) ON DELETE CASCADE,
+    FOREIGN KEY (race_id) REFERENCES eve_races(id) ON DELETE CASCADE,
     FOREIGN KEY (ship_id) REFERENCES eve_entities(id) ON DELETE CASCADE
 );
 

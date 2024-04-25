@@ -108,14 +108,14 @@ SELECT
     corporations.name as corporation_name,
     alliances.name as alliance_name,
     factions.name as faction_name,
-    races.Name as race_name,
+    eve_races.Name as race_name,
     locations.Name as location_name,
     locations.Category as location_category,
     ships.name as ship_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 JOIN eve_entities AS locations ON locations.id = characters.location_id
-JOIN races ON races.id = characters.race_id
+JOIN eve_races ON eve_races.id = characters.race_id
 JOIN eve_entities AS ships ON ships.id = characters.ship_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
@@ -211,14 +211,14 @@ SELECT
     corporations.name as corporation_name,
     alliances.name as alliance_name,
     factions.name as faction_name,
-    races.Name as race_name,
+    eve_races.Name as race_name,
     locations.Name as location_name,
     locations.Category as location_category,
     ships.name as ship_name
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 JOIN eve_entities AS locations ON locations.id = characters.location_id
-JOIN races ON races.id = characters.race_id
+JOIN eve_races ON eve_races.id = characters.race_id
 JOIN eve_entities AS ships ON ships.id = characters.ship_id
 LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
 LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id

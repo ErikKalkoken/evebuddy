@@ -1,5 +1,5 @@
 -- name: CreateRace :one
-INSERT INTO races (
+INSERT INTO eve_races (
     id,
     description,
     name
@@ -11,9 +11,9 @@ RETURNING *;
 
 -- name: GetRace :one
 SELECT *
-FROM races
+FROM eve_races
 WHERE id = ?;
 
 -- name: ListRaceIDs :many
 SELECT id
-FROM races;
+FROM eve_races;

@@ -37,7 +37,7 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		ID:          int32(row.ID),
 		LastLoginAt: row.LastLoginAt,
 		Name:        row.Name,
-		Race: model.Race{
+		Race: model.EveRace{
 			ID:   int32(row.RaceID),
 			Name: row.RaceName,
 		},
@@ -103,7 +103,7 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]model.Character, error)
 			ID:             int32(row.ID),
 			LastLoginAt:    row.LastLoginAt,
 			Name:           row.Name,
-			Race:           model.Race{ID: int32(row.RaceID), Name: row.RaceName},
+			Race:           model.EveRace{ID: int32(row.RaceID), Name: row.RaceName},
 			SecurityStatus: row.SecurityStatus,
 			SkillPoints:    int(row.SkillPoints),
 			Location: model.EveEntity{

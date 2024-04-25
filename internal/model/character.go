@@ -20,7 +20,7 @@ type Character struct {
 	LastLoginAt    time.Time
 	Location       EveEntity
 	Name           string
-	Race           Race
+	Race           EveRace
 	SecurityStatus float64
 	Ship           EveEntity
 	SkillPoints    int

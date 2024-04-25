@@ -10,7 +10,7 @@ import (
 	"fmt"
 )
 
-func (r *Storage) CreateRace(ctx context.Context, id int32, description, name string) (model.Race, error) {
+func (r *Storage) CreateRace(ctx context.Context, id int32, description, name string) (model.EveRace, error) {
 	arg := queries.CreateRaceParams{
 		ID:          int64(id),
 		Description: description,
@@ -18,18 +18,18 @@ func (r *Storage) CreateRace(ctx context.Context, id int32, description, name st
 	}
 	o, err := r.q.CreateRace(ctx, arg)
 	if err != nil {
-		return model.Race{}, fmt.Errorf("failed to create race %d: %w", id, err)
+		return model.EveRace{}, fmt.Errorf("failed to create race %d: %w", id, err)
 	}
 	return raceFromDBModel(o), nil
 }
 
-func (r *Storage) GetRace(ctx context.Context, id int32) (model.Race, error) {
+func (r *Storage) GetRace(ctx context.Context, id int32) (model.EveRace, error) {
 	o, err := r.q.GetRace(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return model.Race{}, fmt.Errorf("failed to get Race for id %d: %w", id, err)
+		return model.EveRace{}, fmt.Errorf("failed to get Race for id %d: %w", id, err)
 	}
 	o2 := raceFromDBModel(o)
 	return o2, nil
@@ -44,11 +44,11 @@ func (r *Storage) ListRaceIDs(ctx context.Context) ([]int32, error) {
 	return ids2, nil
 }
 
-func raceFromDBModel(r queries.Race) model.Race {
+func raceFromDBModel(r queries.EveRace) model.EveRace {
 	if r.ID == 0 {
-		return model.Race{}
+		return model.EveRace{}
 	}
-	return model.Race{
+	return model.EveRace{
 		Description: r.Description,
 		ID:          int32(r.ID),
 		Name:        r.Name,

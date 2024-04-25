@@ -261,8 +261,8 @@ func (f Factory) CreateMailList(characterID int32, args ...model.EveEntity) mode
 	return e
 }
 
-func (f Factory) CreateRace(args ...model.Race) model.Race {
-	var arg model.Race
+func (f Factory) CreateRace(args ...model.EveRace) model.EveRace {
+	var arg model.EveRace
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
