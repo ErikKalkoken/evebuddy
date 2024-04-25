@@ -57,8 +57,7 @@ func (r *Storage) GetEveEntity(ctx context.Context, id int32) (model.EveEntity, 
 		}
 		return model.EveEntity{}, fmt.Errorf("failed to get EveEntity for id %d: %w", id, err)
 	}
-	e2 := eveEntityFromDBModel(e)
-	return e2, nil
+	return eveEntityFromDBModel(e), nil
 }
 
 func (r *Storage) ListEveEntityByNameAndCategory(ctx context.Context, name string, category model.EveEntityCategory) ([]model.EveEntity, error) {
