@@ -34,15 +34,15 @@ func (r *Storage) GetEveGroup(ctx context.Context, id int32) (model.EveGroup, er
 		}
 		return model.EveGroup{}, fmt.Errorf("failed to get EveGroup for id %d: %w", id, err)
 	}
-	g := eveGroupFromDBModel(row.EveGroup)
-	g.Category = eveCategoryFromDBModel(row.EveCategory)
+	g := eveGroupFromDBModel(row.EveGroup, row.EveCategory)
 	return g, nil
 }
 
-func eveGroupFromDBModel(c queries.EveGroup) model.EveGroup {
+func eveGroupFromDBModel(g queries.EveGroup, c queries.EveCategory) model.EveGroup {
 	return model.EveGroup{
-		ID:          int32(c.ID),
-		IsPublished: c.IsPublished,
-		Name:        c.Name,
+		Category:    eveCategoryFromDBModel(c),
+		ID:          int32(g.ID),
+		IsPublished: g.IsPublished,
+		Name:        g.Name,
 	}
 }

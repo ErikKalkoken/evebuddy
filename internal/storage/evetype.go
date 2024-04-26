@@ -35,17 +35,16 @@ func (r *Storage) GetEveType(ctx context.Context, id int32) (model.EveType, erro
 		}
 		return model.EveType{}, fmt.Errorf("failed to get EveType for id %d: %w", id, err)
 	}
-	t := eveTypeFromDBModel(row.EveType)
-	t.Group = eveGroupFromDBModel(row.EveGroup)
-	t.Group.Category = eveCategoryFromDBModel(row.EveCategory)
+	t := eveTypeFromDBModel(row.EveType, row.EveGroup, row.EveCategory)
 	return t, nil
 }
 
-func eveTypeFromDBModel(c queries.EveType) model.EveType {
+func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCategory) model.EveType {
 	return model.EveType{
-		ID:          int32(c.ID),
-		Description: c.Description,
-		IsPublished: c.IsPublished,
-		Name:        c.Name,
+		ID:          int32(t.ID),
+		Description: t.Description,
+		Group:       eveGroupFromDBModel(g, c),
+		IsPublished: t.IsPublished,
+		Name:        t.Name,
 	}
 }

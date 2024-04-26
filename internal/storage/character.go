@@ -27,7 +27,7 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		}
 		return dummy, fmt.Errorf("failed to get character %d: %w", characterID, err)
 	}
-	c := characterFromDBRow(
+	c := characterFromDBModel(
 		row.Character,
 		row.EveEntity,
 		row.EveRace,
@@ -37,9 +37,9 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		row.EveRegion,
 		row.EveConstellation,
 		row.EveSolarSystem,
+		row.CharacterAlliance,
+		row.CharacterFaction,
 	)
-	c.Alliance = eveEntityFromCharacterAlliance(row.CharacterAlliance)
-	c.Faction = eveEntityFromCharacterFaction(row.CharacterFaction)
 	return c, nil
 }
 
@@ -148,7 +148,7 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, c *model.Characte
 	return nil
 }
 
-func characterFromDBRow(
+func characterFromDBModel(
 	character queries.Character,
 	corporation queries.EveEntity,
 	race queries.EveRace,
@@ -158,24 +158,26 @@ func characterFromDBRow(
 	region queries.EveRegion,
 	constellation queries.EveConstellation,
 	solar_system queries.EveSolarSystem,
+	alliance queries.CharacterAlliance,
+	faction queries.CharacterFaction,
 ) model.Character {
 	x := model.Character{
+		Alliance:       eveEntityFromCharacterAlliance(alliance),
 		Birthday:       character.Birthday,
 		Corporation:    eveEntityFromDBModel(corporation),
 		Description:    character.Description,
 		Gender:         character.Gender,
+		Faction:        eveEntityFromCharacterFaction(faction),
 		ID:             int32(character.ID),
 		LastLoginAt:    character.LastLoginAt,
 		Location:       eveSolarSystemFromDBModel(solar_system, constellation, region),
 		Name:           character.Name,
 		Race:           eveRaceFromDBModel(race),
 		SecurityStatus: character.SecurityStatus,
+		Ship:           eveTypeFromDBModel(shipType, shipGroup, shipCategory),
 		SkillPoints:    int(character.SkillPoints),
 		WalletBalance:  character.WalletBalance,
 	}
-	x.Ship = eveTypeFromDBModel(shipType)
-	x.Ship.Group = eveGroupFromDBModel(shipGroup)
-	x.Ship.Group.Category = eveCategoryFromDBModel(shipCategory)
 	return x
 }
 
