@@ -220,11 +220,11 @@ func TestEveEntityCanCreateAllCategories(t *testing.T) {
 	for _, c := range categories {
 		t.Run(fmt.Sprintf("can create new with category %s", c), func(t *testing.T) {
 			// when
-			e := factory.CreateEveEntity(model.EveEntity{Category: c})
+			e1 := factory.CreateEveEntity(model.EveEntity{Category: c})
 			// then
-			e, err := r.GetEveEntity(ctx, e.ID)
+			e2, err := r.GetEveEntity(ctx, e1.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, e.Category, c)
+				assert.Equal(t, e2.Category, c)
 			}
 
 		})

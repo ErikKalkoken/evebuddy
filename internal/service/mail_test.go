@@ -32,7 +32,7 @@ func TestSendMail(t *testing.T) {
 			httpmock.NewStringResponder(201, "123"))
 
 		// when
-		mailID, err := s.SendMail(c.ID, "subject", []model.EveEntity{r}, "body")
+		mailID, err := s.SendMail(c.ID, "subject", []*model.EveEntity{r}, "body")
 		// then
 		if assert.NoError(t, err) {
 			m, err := s.GetMail(c.ID, mailID)

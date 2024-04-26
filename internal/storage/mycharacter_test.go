@@ -63,7 +63,7 @@ func TestMyCharacter(t *testing.T) {
 		c1.Location = newLocation
 		newShip := factory.CreateEveType()
 		c1.Ship = newShip
-		err := r.UpdateOrCreateMyCharacter(ctx, &c1)
+		err := r.UpdateOrCreateMyCharacter(ctx, c1)
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetMyCharacter(ctx, c1.ID)

@@ -61,14 +61,13 @@ func (r *Storage) DeleteEveCharacter(ctx context.Context, characterID int32) err
 	return nil
 }
 
-func (r *Storage) GetEveCharacter(ctx context.Context, characterID int32) (model.EveCharacter, error) {
-	var dummy model.EveCharacter
+func (r *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*model.EveCharacter, error) {
 	row, err := r.q.GetEveCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return dummy, fmt.Errorf("failed to get EveCharacter %d: %w", characterID, err)
+		return nil, fmt.Errorf("failed to get EveCharacter %d: %w", characterID, err)
 	}
 	c := eveCharacterFromDBModel(
 		row.EveCharacter,
@@ -89,7 +88,7 @@ func (r *Storage) ListEveCharacterIDs(ctx context.Context) ([]int32, error) {
 	return ids2, nil
 }
 
-func (r *Storage) UpdateEveCharacter(ctx context.Context, c model.EveCharacter) error {
+func (r *Storage) UpdateEveCharacter(ctx context.Context, c *model.EveCharacter) error {
 	arg := queries.UpdateEveCharacterParams{
 		ID:             int64(c.ID),
 		CorporationID:  int64(c.Corporation.ID),
@@ -97,11 +96,11 @@ func (r *Storage) UpdateEveCharacter(ctx context.Context, c model.EveCharacter) 
 		Name:           c.Name,
 		SecurityStatus: c.SecurityStatus,
 	}
-	if c.Alliance.ID != 0 {
+	if c.HasAlliance() {
 		arg.AllianceID.Int64 = int64(c.Alliance.ID)
 		arg.AllianceID.Valid = true
 	}
-	if c.Faction.ID != 0 {
+	if c.HasFaction() {
 		arg.FactionID.Int64 = int64(c.Faction.ID)
 		arg.FactionID.Valid = true
 	}
@@ -117,7 +116,7 @@ func eveCharacterFromDBModel(
 	race queries.EveRace,
 	alliance queries.EveCharacterAlliance,
 	faction queries.EveCharacterFaction,
-) model.EveCharacter {
+) *model.EveCharacter {
 	x := model.EveCharacter{
 		Alliance:       eveEntityFromEveCharacterAlliance(alliance),
 		Birthday:       character.Birthday,
@@ -130,27 +129,27 @@ func eveCharacterFromDBModel(
 		Race:           eveRaceFromDBModel(race),
 		SecurityStatus: character.SecurityStatus,
 	}
-	return x
+	return &x
 }
 
-func eveEntityFromEveCharacterAlliance(e queries.EveCharacterAlliance) model.EveEntity {
+func eveEntityFromEveCharacterAlliance(e queries.EveCharacterAlliance) *model.EveEntity {
 	if !e.ID.Valid {
-		return model.EveEntity{}
+		return nil
 	}
 	category := eveEntityCategoryFromDBModel(e.Category.String)
-	return model.EveEntity{
+	return &model.EveEntity{
 		Category: category,
 		ID:       int32(e.ID.Int64),
 		Name:     e.Name.String,
 	}
 }
 
-func eveEntityFromEveCharacterFaction(e queries.EveCharacterFaction) model.EveEntity {
+func eveEntityFromEveCharacterFaction(e queries.EveCharacterFaction) *model.EveEntity {
 	if !e.ID.Valid {
-		return model.EveEntity{}
+		return nil
 	}
 	category := eveEntityCategoryFromDBModel(e.Category.String)
-	return model.EveEntity{
+	return &model.EveEntity{
 		Category: category,
 		ID:       int32(e.ID.Int64),
 		Name:     e.Name.String,

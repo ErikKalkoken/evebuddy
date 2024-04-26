@@ -68,8 +68,8 @@ func (c *characterArea) Redraw() {
 
 	var r = []item{
 		{"Corporation", character.Character.Corporation.Name, defaultColor},
-		{"Alliance", stringOrDefault(character.Character.Alliance.Name, "-"), defaultColor},
-		{"Faction", stringOrDefault(character.Character.Faction.Name, "-"), defaultColor},
+		{"Alliance", stringOrDefault(character.Character.AllianceName(), "-"), defaultColor},
+		{"Faction", stringOrDefault(character.Character.FactionName(), "-"), defaultColor},
 		{"Race", character.Character.Race.Name, defaultColor},
 		{"Gender", character.Character.Gender, defaultColor},
 		{"Born", character.Character.Birthday.Format(myDateTime), defaultColor},

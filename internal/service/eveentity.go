@@ -134,13 +134,13 @@ func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
 	return append(chunks, items)
 }
 
-func (s *Service) ListEveEntitiesByPartialName(partial string) ([]model.EveEntity, error) {
+func (s *Service) ListEveEntitiesByPartialName(partial string) ([]*model.EveEntity, error) {
 	return s.r.ListEveEntitiesByPartialName(context.Background(), partial)
 }
 
 // Resolve slice of unclean EveEntity objects and return as new slice with resolved objects.
 // Will return an error if some entities can not be resolved.
-func (s *Service) ResolveUncleanEveEntities(ee []model.EveEntity) ([]model.EveEntity, error) {
+func (s *Service) ResolveUncleanEveEntities(ee []*model.EveEntity) ([]*model.EveEntity, error) {
 	ctx := context.Background()
 	ee1, names, err := s.resolveEveEntityLocally(ctx, ee)
 	if err != nil {
@@ -159,8 +159,8 @@ func (s *Service) ResolveUncleanEveEntities(ee []model.EveEntity) ([]model.EveEn
 
 // resolveEveEntityLocally tries to resolve EveEntities locally.
 // It returns resolved recipients and a list of remaining unresolved names (if any)
-func (s *Service) resolveEveEntityLocally(ctx context.Context, ee []model.EveEntity) ([]model.EveEntity, []string, error) {
-	ee2 := make([]model.EveEntity, 0, len(ee))
+func (s *Service) resolveEveEntityLocally(ctx context.Context, ee []*model.EveEntity) ([]*model.EveEntity, []string, error) {
+	ee2 := make([]*model.EveEntity, 0, len(ee))
 	names := make([]string, 0, len(ee))
 	for _, r := range ee {
 		if r.Category == model.EveEntityUndefined {
@@ -230,8 +230,8 @@ func (s *Service) resolveEveEntityNamesRemotely(ctx context.Context, names []str
 // findEveEntitiesByName tries to build MailRecipient objects from given names
 // by checking against EveEntity objects in the database.
 // Will abort with errors if no match is found or if multiple matches are found for a name.
-func (s *Service) findEveEntitiesByName(ctx context.Context, names []string) ([]model.EveEntity, error) {
-	ee2 := make([]model.EveEntity, 0, len(names))
+func (s *Service) findEveEntitiesByName(ctx context.Context, names []string) ([]*model.EveEntity, error) {
+	ee2 := make([]*model.EveEntity, 0, len(names))
 	for _, n := range names {
 		ee, err := s.r.ListEveEntitiesByName(ctx, n)
 		if err != nil {

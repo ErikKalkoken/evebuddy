@@ -26,24 +26,23 @@ func (r *Storage) CreateEveSolarSystem(ctx context.Context, id int32, eve_conste
 	return nil
 }
 
-func (r *Storage) GetEveSolarSystem(ctx context.Context, id int32) (model.EveSolarSystem, error) {
+func (r *Storage) GetEveSolarSystem(ctx context.Context, id int32) (*model.EveSolarSystem, error) {
 	row, err := r.q.GetEveSolarSystem(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return model.EveSolarSystem{}, fmt.Errorf("failed to get EveSolarSystem for id %d: %w", id, err)
+		return nil, fmt.Errorf("failed to get EveSolarSystem for id %d: %w", id, err)
 	}
 	t := eveSolarSystemFromDBModel(row.EveSolarSystem, row.EveConstellation, row.EveRegion)
 	return t, nil
 }
 
-func eveSolarSystemFromDBModel(s queries.EveSolarSystem, c queries.EveConstellation, r queries.EveRegion) model.EveSolarSystem {
-	x := model.EveSolarSystem{
+func eveSolarSystemFromDBModel(s queries.EveSolarSystem, c queries.EveConstellation, r queries.EveRegion) *model.EveSolarSystem {
+	return &model.EveSolarSystem{
+		Constellation:  eveConstellationFromDBModel(c, r),
 		ID:             int32(s.ID),
 		Name:           s.Name,
 		SecurityStatus: s.SecurityStatus,
 	}
-	x.Constellation = eveConstellationFromDBModel(c, r)
-	return x
 }

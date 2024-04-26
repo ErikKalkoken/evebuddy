@@ -16,7 +16,7 @@ type EveCategory struct {
 // EveGroup is a group in Eve Online.
 type EveGroup struct {
 	ID          int32
-	Category    EveCategory
+	Category    *EveCategory
 	IsPublished bool
 	Name        string
 }
@@ -25,7 +25,7 @@ type EveGroup struct {
 type EveType struct {
 	ID          int32
 	Description string
-	Group       EveGroup
+	Group       *EveGroup
 	IsPublished bool
 	Name        string
 }

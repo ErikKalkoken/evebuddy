@@ -10,11 +10,11 @@ import (
 
 // An owned character in Eve Online.
 type MyCharacter struct {
-	Character     EveCharacter
+	Character     *EveCharacter
 	ID            int32
 	LastLoginAt   time.Time
-	Location      EveSolarSystem
-	Ship          EveType
+	Location      *EveSolarSystem
+	Ship          *EveType
 	SkillPoints   int
 	WalletBalance float64
 }

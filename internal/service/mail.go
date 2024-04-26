@@ -43,7 +43,7 @@ func (s *Service) GetMail(characterID int32, mailID int32) (model.Mail, error) {
 }
 
 // SendMail creates a new mail on ESI and stores it locally.
-func (s *Service) SendMail(characterID int32, subject string, recipients []model.EveEntity, body string) (int32, error) {
+func (s *Service) SendMail(characterID int32, subject string, recipients []*model.EveEntity, body string) (int32, error) {
 	if subject == "" {
 		return 0, fmt.Errorf("missing subject")
 	}
@@ -108,7 +108,7 @@ func (s *Service) SendMail(characterID int32, subject string, recipients []model
 	return mailID, nil
 }
 
-func eveEntitiesToESIMailRecipients(ee []model.EveEntity) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
+func eveEntitiesToESIMailRecipients(ee []*model.EveEntity) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
 	rr := make([]esi.PostCharactersCharacterIdMailRecipient, len(ee))
 	for i, e := range ee {
 		c, ok := eveEntityCategory2MailRecipientType[e.Category]
@@ -133,7 +133,7 @@ func (s *Service) GetMailListUnreadCounts(characterID int32) (map[int32]int, err
 	return s.r.GetMailListUnreadCounts(ctx, characterID)
 }
 
-func (s *Service) ListMailLists(characterID int32) ([]model.EveEntity, error) {
+func (s *Service) ListMailLists(characterID int32) ([]*model.EveEntity, error) {
 	ctx := context.Background()
 	return s.r.ListMailListsOrdered(ctx, characterID)
 }
@@ -150,7 +150,7 @@ func (s *Service) ListMailIDsForListOrdered(characterID int32, listID int32) ([]
 	return s.r.ListMailIDsForListOrdered(ctx, characterID, listID)
 }
 
-func (s *Service) ListMailLabelsOrdered(characterID int32) ([]model.MailLabel, error) {
+func (s *Service) ListMailLabelsOrdered(characterID int32) ([]*model.MailLabel, error) {
 	ctx := context.Background()
 	return s.r.ListMailLabelsOrdered(ctx, characterID)
 }

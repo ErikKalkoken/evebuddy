@@ -41,7 +41,7 @@ type recipient struct {
 	category mailRecipientCategory
 }
 
-func newRecipientFromEntity(e model.EveEntity) recipient {
+func newRecipientFromEntity(e *model.EveEntity) recipient {
 	r := recipient{name: e.Name}
 	c, ok := mailRecipientMapCategories[e.Category]
 	if ok {
@@ -103,7 +103,7 @@ func NewMailRecipients() *MailRecipients {
 	return &rr
 }
 
-func NewMailRecipientsFromEntities(ee []model.EveEntity) *MailRecipients {
+func NewMailRecipientsFromEntities(ee []*model.EveEntity) *MailRecipients {
 	rr := NewMailRecipients()
 	for _, e := range ee {
 		o := newRecipientFromEntity(e)
@@ -131,7 +131,7 @@ func NewMailRecipientsFromText(t string) *MailRecipients {
 	return rr
 }
 
-func (rr *MailRecipients) AddFromEveEntity(e model.EveEntity) {
+func (rr *MailRecipients) AddFromEveEntity(e *model.EveEntity) {
 	r := newRecipientFromEntity(e)
 	rr.add(r)
 }
@@ -168,15 +168,15 @@ func (rr *MailRecipients) ToOptions() []string {
 
 // Returns the mail recipients as unclean EveEntity slice.
 // ID will not be set. And some might not have a category.
-func (rr *MailRecipients) ToEveEntitiesUnclean() []model.EveEntity {
-	ee := make([]model.EveEntity, len(rr.list))
+func (rr *MailRecipients) ToEveEntitiesUnclean() []*model.EveEntity {
+	ee := make([]*model.EveEntity, len(rr.list))
 	for i, r := range rr.list {
 		e := model.EveEntity{Name: r.name}
 		c, ok := r.EveEntityCategory()
 		if ok {
 			e.Category = c
 		}
-		ee[i] = e
+		ee[i] = &e
 	}
 	return ee
 }

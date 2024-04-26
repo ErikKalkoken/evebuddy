@@ -9,9 +9,9 @@ import (
 	"fmt"
 )
 
-func (r *Storage) CreateEveRegion(ctx context.Context, description string, id int32, name string) (model.EveRegion, error) {
+func (r *Storage) CreateEveRegion(ctx context.Context, description string, id int32, name string) (*model.EveRegion, error) {
 	if id == 0 {
-		return model.EveRegion{}, fmt.Errorf("invalid ID %d", id)
+		return nil, fmt.Errorf("invalid ID %d", id)
 	}
 	arg := queries.CreateEveRegionParams{
 		ID:          int64(id),
@@ -20,24 +20,24 @@ func (r *Storage) CreateEveRegion(ctx context.Context, description string, id in
 	}
 	e, err := r.q.CreateEveRegion(ctx, arg)
 	if err != nil {
-		return model.EveRegion{}, fmt.Errorf("failed to create EveRegion %v, %w", arg, err)
+		return nil, fmt.Errorf("failed to create EveRegion %v, %w", arg, err)
 	}
 	return eveRegionFromDBModel(e), nil
 }
 
-func (r *Storage) GetEveRegion(ctx context.Context, id int32) (model.EveRegion, error) {
+func (r *Storage) GetEveRegion(ctx context.Context, id int32) (*model.EveRegion, error) {
 	c, err := r.q.GetEveRegion(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return model.EveRegion{}, fmt.Errorf("failed to get EveRegion for id %d: %w", id, err)
+		return nil, fmt.Errorf("failed to get EveRegion for id %d: %w", id, err)
 	}
 	return eveRegionFromDBModel(c), nil
 }
 
-func eveRegionFromDBModel(c queries.EveRegion) model.EveRegion {
-	return model.EveRegion{
+func eveRegionFromDBModel(c queries.EveRegion) *model.EveRegion {
+	return &model.EveRegion{
 		ID:          int32(c.ID),
 		Description: c.Description,
 		Name:        c.Name,

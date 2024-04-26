@@ -13,7 +13,7 @@ func TestRecipient(t *testing.T) {
 		// given
 		e := model.EveEntity{ID: 7, Name: "Dummy", Category: model.EveEntityCharacter}
 		// when
-		r := newRecipientFromEntity(e)
+		r := newRecipientFromEntity(&e)
 		// then
 		assert.Equal(t, "Dummy", r.name)
 		assert.Equal(t, mailRecipientCategoryCharacter, r.category)

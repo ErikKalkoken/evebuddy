@@ -17,11 +17,11 @@ func mailFromDBModel(mail queries.Mail, from queries.EveEntity, labels []queries
 	if mail.MyCharacterID == 0 {
 		panic("missing character ID")
 	}
-	var ll []model.MailLabel
+	var ll []*model.MailLabel
 	for _, l := range labels {
 		ll = append(ll, mailLabelFromDBModel(l))
 	}
-	var rr []model.EveEntity
+	var rr []*model.EveEntity
 	for _, r := range recipients {
 		rr = append(rr, eveEntityFromDBModel(r))
 	}
@@ -206,12 +206,12 @@ func (r *Storage) GetMailListUnreadCounts(ctx context.Context, characterID int32
 	return result, nil
 }
 
-func (r *Storage) ListMailListsOrdered(ctx context.Context, characterID int32) ([]model.EveEntity, error) {
+func (r *Storage) ListMailListsOrdered(ctx context.Context, characterID int32) ([]*model.EveEntity, error) {
 	ll, err := r.q.ListMailListsOrdered(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list mail lists for character %d: %w", characterID, err)
 	}
-	ee := make([]model.EveEntity, len(ll))
+	ee := make([]*model.EveEntity, len(ll))
 	for i, l := range ll {
 		ee[i] = eveEntityFromDBModel(l)
 	}

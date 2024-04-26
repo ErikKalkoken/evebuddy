@@ -114,7 +114,7 @@ func TestMailLabel(t *testing.T) {
 		// when
 		got, err := r.ListMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
-			want := []model.MailLabel{l2, l1}
+			want := []*model.MailLabel{l2, l1}
 			assert.Equal(t, want, got)
 		}
 	})
@@ -128,7 +128,7 @@ func TestMailLabel(t *testing.T) {
 		// when
 		got, err := r.ListMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
-			want := []model.MailLabel{l2, l1}
+			want := []*model.MailLabel{l2, l1}
 			assert.Equal(t, want, got)
 		}
 	})

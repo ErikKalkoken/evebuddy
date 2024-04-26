@@ -35,12 +35,12 @@ var bodyPolicy = bluemonday.StrictPolicy()
 type Mail struct {
 	Body          string
 	MyCharacterID int32
-	From          EveEntity
-	Labels        []MailLabel
+	From          *EveEntity
+	Labels        []*MailLabel
 	IsRead        bool
 	ID            int64
 	MailID        int32
-	Recipients    []EveEntity
+	Recipients    []*EveEntity
 	Subject       string
 	Timestamp     time.Time
 }

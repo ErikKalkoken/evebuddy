@@ -46,7 +46,7 @@ func TestMailCreate(t *testing.T) {
 			assert.Equal(t, c.ID, m.MyCharacterID)
 			assert.Equal(t, "subject", m.Subject)
 			assert.False(t, m.Timestamp.IsZero())
-			assert.Equal(t, []model.EveEntity{recipient}, m.Recipients)
+			assert.Equal(t, []*model.EveEntity{recipient}, m.Recipients)
 			assert.Equal(t, label.Name, m.Labels[0].Name)
 			assert.Equal(t, label.LabelID, m.Labels[0].LabelID)
 		}

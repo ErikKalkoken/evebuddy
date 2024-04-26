@@ -9,9 +9,9 @@ import (
 	"fmt"
 )
 
-func (r *Storage) CreateEveCategory(ctx context.Context, id int32, name string, is_published bool) (model.EveCategory, error) {
+func (r *Storage) CreateEveCategory(ctx context.Context, id int32, name string, is_published bool) (*model.EveCategory, error) {
 	if id == 0 {
-		return model.EveCategory{}, fmt.Errorf("invalid ID %d", id)
+		return nil, fmt.Errorf("invalid EveCategory ID %d", id)
 	}
 	arg := queries.CreateEveCategoryParams{
 		ID:          int64(id),
@@ -20,24 +20,24 @@ func (r *Storage) CreateEveCategory(ctx context.Context, id int32, name string, 
 	}
 	e, err := r.q.CreateEveCategory(ctx, arg)
 	if err != nil {
-		return model.EveCategory{}, fmt.Errorf("failed to create eve category %v, %w", arg, err)
+		return nil, fmt.Errorf("failed to create EveCategory %v, %w", arg, err)
 	}
 	return eveCategoryFromDBModel(e), nil
 }
 
-func (r *Storage) GetEveCategory(ctx context.Context, id int32) (model.EveCategory, error) {
+func (r *Storage) GetEveCategory(ctx context.Context, id int32) (*model.EveCategory, error) {
 	c, err := r.q.GetEveCategory(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return model.EveCategory{}, fmt.Errorf("failed to get EveCategory for id %d: %w", id, err)
+		return nil, fmt.Errorf("failed to get EveCategory for id %d: %w", id, err)
 	}
 	return eveCategoryFromDBModel(c), nil
 }
 
-func eveCategoryFromDBModel(c queries.EveCategory) model.EveCategory {
-	return model.EveCategory{
+func eveCategoryFromDBModel(c queries.EveCategory) *model.EveCategory {
+	return &model.EveCategory{
 		ID:          int32(c.ID),
 		IsPublished: c.IsPublished,
 		Name:        c.Name,

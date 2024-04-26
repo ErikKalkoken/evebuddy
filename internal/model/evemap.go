@@ -11,12 +11,12 @@ type EveRegion struct {
 type EveConstellation struct {
 	ID     int32
 	Name   string
-	Region EveRegion
+	Region *EveRegion
 }
 
 // EveSolarSystem is a solar system in Eve Online.
 type EveSolarSystem struct {
-	Constellation  EveConstellation
+	Constellation  *EveConstellation
 	ID             int32
 	Name           string
 	SecurityStatus float64

@@ -25,23 +25,22 @@ func (r *Storage) CreateEveConstellation(ctx context.Context, id, eve_region_id 
 	return nil
 }
 
-func (r *Storage) GetEveConstellation(ctx context.Context, id int32) (model.EveConstellation, error) {
+func (r *Storage) GetEveConstellation(ctx context.Context, id int32) (*model.EveConstellation, error) {
 	row, err := r.q.GetEveConstellation(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return model.EveConstellation{}, fmt.Errorf("failed to get EveConstellation for id %d: %w", id, err)
+		return nil, fmt.Errorf("failed to get EveConstellation for id %d: %w", id, err)
 	}
 	g := eveConstellationFromDBModel(row.EveConstellation, row.EveRegion)
 	return g, nil
 }
 
-func eveConstellationFromDBModel(c queries.EveConstellation, r queries.EveRegion) model.EveConstellation {
-	x := model.EveConstellation{
-		ID:   int32(c.ID),
-		Name: c.Name,
+func eveConstellationFromDBModel(c queries.EveConstellation, r queries.EveRegion) *model.EveConstellation {
+	return &model.EveConstellation{
+		ID:     int32(c.ID),
+		Name:   c.Name,
+		Region: eveRegionFromDBModel(r),
 	}
-	x.Region = eveRegionFromDBModel(r)
-	return x
 }

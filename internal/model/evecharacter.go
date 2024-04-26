@@ -10,26 +10,40 @@ import (
 
 // An Eve Online character.
 type EveCharacter struct {
-	Alliance       EveEntity
+	Alliance       *EveEntity
 	Birthday       time.Time
-	Corporation    EveEntity
+	Corporation    *EveEntity
 	Description    string
-	Faction        EveEntity
+	Faction        *EveEntity
 	Gender         string
 	ID             int32
 	Name           string
-	Race           EveRace
+	Race           *EveRace
 	SecurityStatus float64
+}
+
+func (c *EveCharacter) AllianceName() string {
+	if !c.HasAlliance() {
+		return ""
+	}
+	return c.Alliance.Name
+}
+
+func (c *EveCharacter) FactionName() string {
+	if !c.HasFaction() {
+		return ""
+	}
+	return c.Faction.Name
 }
 
 // HasAlliance reports wether the character is member of an alliance.
 func (c *EveCharacter) HasAlliance() bool {
-	return c.Alliance.ID != 0
+	return c.Alliance != nil
 }
 
 // HasFaction reports wether the character is member of a faction.
 func (c *EveCharacter) HasFaction() bool {
-	return c.Faction.ID != 0
+	return c.Faction != nil
 }
 
 // PortraitURL returns an image URL for a portrait of a character

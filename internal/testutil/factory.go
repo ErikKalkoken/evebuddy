@@ -24,7 +24,7 @@ func NewFactory(r *storage.Storage, db *sql.DB) Factory {
 }
 
 // CreateMyCharacter is a test factory for MyCharacter objects.
-func (f Factory) CreateMyCharacter(args ...model.MyCharacter) model.MyCharacter {
+func (f Factory) CreateMyCharacter(args ...model.MyCharacter) *model.MyCharacter {
 	ctx := context.Background()
 	var c model.MyCharacter
 	if len(args) > 0 {
@@ -33,16 +33,16 @@ func (f Factory) CreateMyCharacter(args ...model.MyCharacter) model.MyCharacter 
 	if c.ID == 0 {
 		c.ID = int32(f.calcNewID("my_characters", "id"))
 	}
-	if c.Character.ID == 0 {
+	if c.Character == nil {
 		c.Character = f.CreateEveCharacter()
 	}
 	if c.LastLoginAt.IsZero() {
 		c.LastLoginAt = time.Now()
 	}
-	if c.Location.ID == 0 {
+	if c.Location == nil {
 		c.Location = f.CreateEveSolarSystem()
 	}
-	if c.Ship.ID == 0 {
+	if c.Ship == nil {
 		c.Ship = f.CreateEveType()
 	}
 	if c.SkillPoints == 0 {
@@ -55,11 +55,11 @@ func (f Factory) CreateMyCharacter(args ...model.MyCharacter) model.MyCharacter 
 	if err != nil {
 		panic(err)
 	}
-	return c
+	return &c
 }
 
 // CreateCharacter is a test factory for character objects.
-func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) model.EveCharacter {
+func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *model.EveCharacter {
 	ctx := context.Background()
 	var arg storage.CreateEveCharacterParams
 	if len(args) > 0 {
@@ -97,7 +97,7 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) mo
 }
 
 // CreateEveEntity is a test factory for EveEntity objects.
-func (f Factory) CreateEveEntity(args ...model.EveEntity) model.EveEntity {
+func (f Factory) CreateEveEntity(args ...model.EveEntity) *model.EveEntity {
 	var arg model.EveEntity
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -127,38 +127,38 @@ func (f Factory) CreateEveEntity(args ...model.EveEntity) model.EveEntity {
 	return e
 }
 
-func (f Factory) CreateEveEntityAlliance(args ...model.EveEntity) model.EveEntity {
+func (f Factory) CreateEveEntityAlliance(args ...model.EveEntity) *model.EveEntity {
 	args2 := eveEntityWithCategory(args, model.EveEntityAlliance)
 	return f.CreateEveEntity(args2...)
 }
 
-func (f Factory) CreateEveEntityCharacter(args ...model.EveEntity) model.EveEntity {
+func (f Factory) CreateEveEntityCharacter(args ...model.EveEntity) *model.EveEntity {
 	args2 := eveEntityWithCategory(args, model.EveEntityCharacter)
 	return f.CreateEveEntity(args2...)
 }
 
-func (f Factory) CreateEveEntityCorporation(args ...model.EveEntity) model.EveEntity {
+func (f Factory) CreateEveEntityCorporation(args ...model.EveEntity) *model.EveEntity {
 	args2 := eveEntityWithCategory(args, model.EveEntityCorporation)
 	return f.CreateEveEntity(args2...)
 }
 
-func (f Factory) CreateEveEntitySolarSystem(args ...model.EveEntity) model.EveEntity {
+func (f Factory) CreateEveEntitySolarSystem(args ...model.EveEntity) *model.EveEntity {
 	args2 := eveEntityWithCategory(args, model.EveEntitySolarSystem)
 	return f.CreateEveEntity(args2...)
 }
 
-func (f Factory) CreateEveEntityInventoryType(args ...model.EveEntity) model.EveEntity {
+func (f Factory) CreateEveEntityInventoryType(args ...model.EveEntity) *model.EveEntity {
 	args2 := eveEntityWithCategory(args, model.EveEntityInventoryType)
 	return f.CreateEveEntity(args2...)
 }
 
 func eveEntityWithCategory(args []model.EveEntity, category model.EveEntityCategory) []model.EveEntity {
-	var arg model.EveEntity
+	var e model.EveEntity
 	if len(args) > 0 {
-		arg = args[0]
+		e = args[0]
 	}
-	arg.Category = category
-	args2 := []model.EveEntity{arg}
+	e.Category = category
+	args2 := []model.EveEntity{e}
 	return args2
 }
 
@@ -213,7 +213,7 @@ func (f Factory) CreateMail(args ...storage.CreateMailParams) model.Mail {
 }
 
 // CreateMailLabel is a test factory for MailLabel objects
-func (f Factory) CreateMailLabel(args ...model.MailLabel) model.MailLabel {
+func (f Factory) CreateMailLabel(args ...model.MailLabel) *model.MailLabel {
 	ctx := context.Background()
 	var arg storage.MailLabelParams
 	if len(args) > 0 {
@@ -262,7 +262,7 @@ func (f Factory) CreateMailLabel(args ...model.MailLabel) model.MailLabel {
 }
 
 // CreateMailList is a test factory for MailList objects.
-func (f Factory) CreateMailList(characterID int32, args ...model.EveEntity) model.EveEntity {
+func (f Factory) CreateMailList(characterID int32, args ...model.EveEntity) *model.EveEntity {
 	var e model.EveEntity
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -273,15 +273,15 @@ func (f Factory) CreateMailList(characterID int32, args ...model.EveEntity) mode
 		characterID = c.ID
 	}
 	if e.ID == 0 {
-		e = f.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+		e = *f.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 	}
 	if err := f.r.CreateMailList(ctx, characterID, e.ID); err != nil {
 		panic(err)
 	}
-	return e
+	return &e
 }
 
-func (f Factory) CreateEveCategory(args ...model.EveCategory) model.EveCategory {
+func (f Factory) CreateEveCategory(args ...model.EveCategory) *model.EveCategory {
 	var x model.EveCategory
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -304,7 +304,7 @@ func (f Factory) CreateEveCategory(args ...model.EveCategory) model.EveCategory 
 	return r
 }
 
-func (f Factory) CreateEveGroup(args ...model.EveGroup) model.EveGroup {
+func (f Factory) CreateEveGroup(args ...model.EveGroup) *model.EveGroup {
 	var x model.EveGroup
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -320,17 +320,17 @@ func (f Factory) CreateEveGroup(args ...model.EveGroup) model.EveGroup {
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Group #%d", x.ID)
 	}
-	if x.Category.ID == 0 {
+	if x.Category == nil {
 		x.Category = f.CreateEveCategory()
 	}
 	err := f.r.CreateEveGroup(ctx, x.ID, x.Category.ID, x.Name, x.IsPublished)
 	if err != nil {
 		panic(err)
 	}
-	return x
+	return &x
 }
 
-func (f Factory) CreateEveType(args ...model.EveType) model.EveType {
+func (f Factory) CreateEveType(args ...model.EveType) *model.EveType {
 	var x model.EveType
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -346,17 +346,17 @@ func (f Factory) CreateEveType(args ...model.EveType) model.EveType {
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Type #%d", x.ID)
 	}
-	if x.Group.ID == 0 {
+	if x.Group == nil {
 		x.Group = f.CreateEveGroup()
 	}
 	err := f.r.CreateEveType(ctx, x.ID, x.Description, x.Group.ID, x.Name, x.IsPublished)
 	if err != nil {
 		panic(err)
 	}
-	return x
+	return &x
 }
 
-func (f Factory) CreateEveRegion(args ...model.EveRegion) model.EveRegion {
+func (f Factory) CreateEveRegion(args ...model.EveRegion) *model.EveRegion {
 	var x model.EveRegion
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -379,7 +379,7 @@ func (f Factory) CreateEveRegion(args ...model.EveRegion) model.EveRegion {
 	return r
 }
 
-func (f Factory) CreateEveConstellation(args ...model.EveConstellation) model.EveConstellation {
+func (f Factory) CreateEveConstellation(args ...model.EveConstellation) *model.EveConstellation {
 	var x model.EveConstellation
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -395,17 +395,17 @@ func (f Factory) CreateEveConstellation(args ...model.EveConstellation) model.Ev
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Constellation #%d", x.ID)
 	}
-	if x.Region.ID == 0 {
+	if x.Region == nil {
 		x.Region = f.CreateEveRegion()
 	}
 	err := f.r.CreateEveConstellation(ctx, x.ID, x.Region.ID, x.Name)
 	if err != nil {
 		panic(err)
 	}
-	return x
+	return &x
 }
 
-func (f Factory) CreateEveSolarSystem(args ...model.EveSolarSystem) model.EveSolarSystem {
+func (f Factory) CreateEveSolarSystem(args ...model.EveSolarSystem) *model.EveSolarSystem {
 	var x model.EveSolarSystem
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -421,7 +421,7 @@ func (f Factory) CreateEveSolarSystem(args ...model.EveSolarSystem) model.EveSol
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Solar System #%d", x.ID)
 	}
-	if x.Constellation.ID == 0 {
+	if x.Constellation == nil {
 		x.Constellation = f.CreateEveConstellation()
 	}
 	if x.SecurityStatus == 0 {
@@ -431,10 +431,10 @@ func (f Factory) CreateEveSolarSystem(args ...model.EveSolarSystem) model.EveSol
 	if err != nil {
 		panic(err)
 	}
-	return x
+	return &x
 }
 
-func (f Factory) CreateEveRace(args ...model.EveRace) model.EveRace {
+func (f Factory) CreateEveRace(args ...model.EveRace) *model.EveRace {
 	var arg model.EveRace
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -465,7 +465,7 @@ func (f Factory) CreateEveRace(args ...model.EveRace) model.EveRace {
 }
 
 // CreateToken is a test factory for Token objects.
-func (f Factory) CreateToken(args ...model.Token) model.Token {
+func (f Factory) CreateToken(args ...model.Token) *model.Token {
 	var t model.Token
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -491,7 +491,7 @@ func (f Factory) CreateToken(args ...model.Token) model.Token {
 	if err != nil {
 		panic(err)
 	}
-	return t
+	return &t
 }
 
 func (f *Factory) calcNewID(table, id_field string) int {

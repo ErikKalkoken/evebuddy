@@ -79,8 +79,8 @@ func TestEveCharacter(t *testing.T) {
 			assert.Equal(t, c1.Description, c2.Description)
 			assert.Equal(t, c1.ID, c2.ID)
 			assert.Equal(t, c1.Name, c2.Name)
-			assert.Equal(t, int32(0), c2.Alliance.ID)
-			assert.Equal(t, int32(0), c2.Faction.ID)
+			assert.False(t, c2.HasAlliance())
+			assert.False(t, c2.HasFaction())
 		}
 	})
 	t.Run("can fetch character by ID with all fields populated", func(t *testing.T) {

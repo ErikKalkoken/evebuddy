@@ -113,7 +113,7 @@ func TestUpdateMailLabel(t *testing.T) {
 				return resp, nil
 			})
 		// when
-		err := s.updateMailLabels(ctx, &token)
+		err := s.updateMailLabels(ctx, token)
 		// then
 		if assert.NoError(t, err) {
 			labels, err := r.ListMailLabelsOrdered(ctx, c.ID)
@@ -163,7 +163,7 @@ func TestUpdateMailLabel(t *testing.T) {
 				return resp, nil
 			})
 		// when
-		err := s.updateMailLabels(ctx, &token)
+		err := s.updateMailLabels(ctx, token)
 		// then
 		if assert.NoError(t, err) {
 			l2, err := r.GetMailLabel(ctx, c.ID, l1.LabelID)

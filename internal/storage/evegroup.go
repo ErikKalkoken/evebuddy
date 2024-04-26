@@ -26,20 +26,20 @@ func (r *Storage) CreateEveGroup(ctx context.Context, id, eve_category_id int32,
 	return nil
 }
 
-func (r *Storage) GetEveGroup(ctx context.Context, id int32) (model.EveGroup, error) {
+func (r *Storage) GetEveGroup(ctx context.Context, id int32) (*model.EveGroup, error) {
 	row, err := r.q.GetEveGroup(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return model.EveGroup{}, fmt.Errorf("failed to get EveGroup for id %d: %w", id, err)
+		return nil, fmt.Errorf("failed to get EveGroup for id %d: %w", id, err)
 	}
 	g := eveGroupFromDBModel(row.EveGroup, row.EveCategory)
 	return g, nil
 }
 
-func eveGroupFromDBModel(g queries.EveGroup, c queries.EveCategory) model.EveGroup {
-	return model.EveGroup{
+func eveGroupFromDBModel(g queries.EveGroup, c queries.EveCategory) *model.EveGroup {
+	return &model.EveGroup{
 		Category:    eveCategoryFromDBModel(c),
 		ID:          int32(g.ID),
 		IsPublished: g.IsPublished,

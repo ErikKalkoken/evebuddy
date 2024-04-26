@@ -120,9 +120,9 @@ func (m *mailDetailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 	header := mail.MakeHeaderText(myDateTime)
 	b := mail.BodyPlain()
 	m.updateContent(mail.Subject, header, b)
-	for _, i := range []int{0, 1, 2, 4} {
-		m.icons.Objects[i].(*widget.Button).Enable()
-	}
+	// for _, i := range []int{0, 1, 2, 4} {
+	// 	m.icons.Objects[i].(*widget.Button).Enable()
+	// }
 }
 
 func (m *mailDetailArea) updateContent(s string, h string, b string) {

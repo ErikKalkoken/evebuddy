@@ -27,20 +27,20 @@ func (r *Storage) CreateEveType(ctx context.Context, id int32, description strin
 	return nil
 }
 
-func (r *Storage) GetEveType(ctx context.Context, id int32) (model.EveType, error) {
+func (r *Storage) GetEveType(ctx context.Context, id int32) (*model.EveType, error) {
 	row, err := r.q.GetEveType(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return model.EveType{}, fmt.Errorf("failed to get EveType for id %d: %w", id, err)
+		return nil, fmt.Errorf("failed to get EveType for id %d: %w", id, err)
 	}
 	t := eveTypeFromDBModel(row.EveType, row.EveGroup, row.EveCategory)
 	return t, nil
 }
 
-func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCategory) model.EveType {
-	return model.EveType{
+func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCategory) *model.EveType {
+	return &model.EveType{
 		ID:          int32(t.ID),
 		Description: t.Description,
 		Group:       eveGroupFromDBModel(g, c),

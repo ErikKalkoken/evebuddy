@@ -11,12 +11,12 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (s *Service) GetOrCreateEveCharacterESI(id int32) (model.EveCharacter, error) {
+func (s *Service) GetOrCreateEveCharacterESI(id int32) (*model.EveCharacter, error) {
 	ctx := context.Background()
 	return s.getOrCreateEveCharacterESI(ctx, id)
 }
 
-func (s *Service) getOrCreateEveCharacterESI(ctx context.Context, id int32) (model.EveCharacter, error) {
+func (s *Service) getOrCreateEveCharacterESI(ctx context.Context, id int32) (*model.EveCharacter, error) {
 	x, err := s.r.GetEveCharacter(ctx, id)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
@@ -27,13 +27,12 @@ func (s *Service) getOrCreateEveCharacterESI(ctx context.Context, id int32) (mod
 	return x, nil
 }
 
-func (s *Service) createEveCharacterFromESI(ctx context.Context, id int32) (model.EveCharacter, error) {
-	var dummy model.EveCharacter
+func (s *Service) createEveCharacterFromESI(ctx context.Context, id int32) (*model.EveCharacter, error) {
 	key := fmt.Sprintf("createEveCharacterFromESI-%d", id)
 	y, err, _ := s.singleGroup.Do(key, func() (any, error) {
 		r, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, id, nil)
 		if err != nil {
-			return dummy, err
+			return nil, err
 		}
 		ids := []int32{id, r.CorporationId}
 		if r.AllianceId != 0 {
@@ -44,10 +43,10 @@ func (s *Service) createEveCharacterFromESI(ctx context.Context, id int32) (mode
 		}
 		_, err = s.AddMissingEveEntities(ctx, ids)
 		if err != nil {
-			return dummy, err
+			return nil, err
 		}
 		if err := s.updateRacesESI(ctx); err != nil {
-			return dummy, err
+			return nil, err
 		}
 		arg := storage.CreateEveCharacterParams{
 			AllianceID:     r.AllianceId,
@@ -62,14 +61,14 @@ func (s *Service) createEveCharacterFromESI(ctx context.Context, id int32) (mode
 			SecurityStatus: float64(r.SecurityStatus),
 		}
 		if err := s.r.CreateEveCharacter(ctx, arg); err != nil {
-			return dummy, err
+			return nil, err
 		}
 		return s.r.GetEveCharacter(ctx, id)
 	})
 	if err != nil {
-		return dummy, err
+		return nil, err
 	}
-	return y.(model.EveCharacter), nil
+	return y.(*model.EveCharacter), nil
 }
 
 // UpdateEveCharactersESI updates all known Eve characters from ESI.
@@ -130,22 +129,20 @@ func (s *Service) updateEveCharacterESI(ctx context.Context, characterID int32) 
 			return err
 		}
 		c.Corporation = corporation
-		var alliance model.EveEntity
 		if r.AllianceId != 0 {
-			alliance, err = s.r.GetEveEntity(ctx, r.AllianceId)
+			alliance, err := s.r.GetEveEntity(ctx, r.AllianceId)
 			if err != nil {
 				return err
 			}
+			c.Alliance = alliance
 		}
-		c.Alliance = alliance
-		var faction model.EveEntity
 		if r.FactionId != 0 {
-			faction, err = s.r.GetEveEntity(ctx, r.FactionId)
+			faction, err := s.r.GetEveEntity(ctx, r.FactionId)
 			if err != nil {
 				return err
 			}
+			c.Faction = faction
 		}
-		c.Faction = faction
 		return nil
 	})
 	g.Go(func() error {
