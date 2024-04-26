@@ -38,20 +38,8 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		row.EveConstellation,
 		row.EveSolarSystem,
 	)
-	if row.Character.AllianceID.Valid {
-		e, err := r.q.GetEveEntity(ctx, row.Character.AllianceID.Int64)
-		if err != nil {
-			return dummy, err
-		}
-		c.Alliance = eveEntityFromDBModel(e)
-	}
-	if row.Character.FactionID.Valid {
-		e, err := r.q.GetEveEntity(ctx, row.Character.FactionID.Int64)
-		if err != nil {
-			return dummy, err
-		}
-		c.Faction = eveEntityFromDBModel(e)
-	}
+	c.Alliance = eveEntityFromCharacterAlliance(row.CharacterAlliance)
+	c.Faction = eveEntityFromCharacterFaction(row.CharacterFaction)
 	return c, nil
 }
 
@@ -189,4 +177,28 @@ func characterFromDBRow(
 	x.Ship.Group = eveGroupFromDBModel(shipGroup)
 	x.Ship.Group.Category = eveCategoryFromDBModel(shipCategory)
 	return x
+}
+
+func eveEntityFromCharacterAlliance(e queries.CharacterAlliance) model.EveEntity {
+	if !e.ID.Valid {
+		return model.EveEntity{}
+	}
+	category := eveEntityCategoryFromDBModel(e.Category.String)
+	return model.EveEntity{
+		Category: category,
+		ID:       int32(e.ID.Int64),
+		Name:     e.Name.String,
+	}
+}
+
+func eveEntityFromCharacterFaction(e queries.CharacterFaction) model.EveEntity {
+	if !e.ID.Valid {
+		return model.EveEntity{}
+	}
+	category := eveEntityCategoryFromDBModel(e.Category.String)
+	return model.EveEntity{
+		Category: category,
+		ID:       int32(e.ID.Int64),
+		Name:     e.Name.String,
+	}
 }

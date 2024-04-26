@@ -80,6 +80,16 @@ CREATE TABLE characters (
     FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE CASCADE
 );
 
+CREATE VIEW character_alliances AS
+SELECT eve_entities.*
+FROM characters
+LEFT JOIN eve_entities ON eve_entities.id = characters.alliance_id;
+
+CREATE VIEW character_factions AS
+SELECT eve_entities.*
+FROM characters
+LEFT JOIN eve_entities ON eve_entities.id = characters.faction_id;
+
 CREATE TABLE mail_lists (
     character_id INTEGER NOT NULL,
     eve_entity_id INTEGER NOT NULL,

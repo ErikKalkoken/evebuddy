@@ -27,6 +27,18 @@ type Character struct {
 	WalletBalance  float64
 }
 
+type CharacterAlliance struct {
+	ID       sql.NullInt64
+	Category sql.NullString
+	Name     sql.NullString
+}
+
+type CharacterFaction struct {
+	ID       sql.NullInt64
+	Category sql.NullString
+	Name     sql.NullString
+}
+
 type Dictionary struct {
 	Key   string
 	Value []byte
