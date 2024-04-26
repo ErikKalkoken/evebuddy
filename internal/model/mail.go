@@ -21,28 +21,28 @@ const (
 
 // A mail label for an Eve mail belonging to a character.
 type MailLabel struct {
-	ID          int64
-	CharacterID int32
-	Color       string
-	LabelID     int32
-	Name        string
-	UnreadCount int
+	ID            int64
+	MyCharacterID int32
+	Color         string
+	LabelID       int32
+	Name          string
+	UnreadCount   int
 }
 
 var bodyPolicy = bluemonday.StrictPolicy()
 
 // An Eve mail belonging to a character.
 type Mail struct {
-	Body        string
-	CharacterID int32
-	From        EveEntity
-	Labels      []MailLabel
-	IsRead      bool
-	ID          int64
-	MailID      int32
-	Recipients  []EveEntity
-	Subject     string
-	Timestamp   time.Time
+	Body          string
+	MyCharacterID int32
+	From          EveEntity
+	Labels        []MailLabel
+	IsRead        bool
+	ID            int64
+	MailID        int32
+	Recipients    []EveEntity
+	Subject       string
+	Timestamp     time.Time
 }
 
 // BodyPlain returns a mail's body as plain text.

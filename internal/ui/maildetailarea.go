@@ -104,7 +104,7 @@ func (m *mailDetailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 		t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", mail.Subject)
 		d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
 			if confirmed {
-				err := m.ui.service.DeleteMail(mail.CharacterID, mail.MailID)
+				err := m.ui.service.DeleteMail(mail.MyCharacterID, mail.MailID)
 				if err != nil {
 					errorDialog := dialog.NewError(err, m.ui.window)
 					errorDialog.Show()

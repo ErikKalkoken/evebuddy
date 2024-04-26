@@ -18,7 +18,7 @@ func TestMailList(t *testing.T) {
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateMyCharacter()
 		l := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 		// when
 		err := r.CreateMailList(ctx, c.ID, l.ID)
@@ -28,7 +28,7 @@ func TestMailList(t *testing.T) {
 	t.Run("can fetch all mail lists for a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateMyCharacter()
 		e1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList, Name: "alpha"})
 		assert.NoError(t, r.CreateMailList(ctx, c.ID, e1.ID))
 		e2 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList, Name: "bravo"})
@@ -45,13 +45,13 @@ func TestMailList(t *testing.T) {
 	t.Run("can delete obsolete mail lists for a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateCharacter()
+		c1 := factory.CreateMyCharacter()
 		e1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 		mustNotFail(r.CreateMailList(ctx, c1.ID, e1.ID))
-		factory.CreateMail(storage.CreateMailParams{CharacterID: c1.ID, RecipientIDs: []int32{e1.ID}})
+		factory.CreateMail(storage.CreateMailParams{MyCharacterID: c1.ID, RecipientIDs: []int32{e1.ID}})
 		e2 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 		mustNotFail(r.CreateMailList(ctx, c1.ID, e2.ID))
-		c2 := factory.CreateCharacter()
+		c2 := factory.CreateMyCharacter()
 		e3 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 		mustNotFail(r.CreateMailList(ctx, c2.ID, e3.ID))
 		// when

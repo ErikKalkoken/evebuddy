@@ -35,7 +35,7 @@ const (
 type ui struct {
 	app              fyne.App
 	characterArea    *characterArea
-	currentCharacter *model.Character
+	currentCharacter *model.MyCharacter
 	folderArea       *folderArea
 	headerArea       *headerArea
 	mailArea         *mailDetailArea
@@ -85,7 +85,7 @@ func NewUI(s *service.Service) *ui {
 	w.Resize(fyne.NewSize(800, 600))
 	// w.SetMainMenu(MakeMenu(a, u))
 
-	var c model.Character
+	var c model.MyCharacter
 	cID, err := s.DictionaryInt(model.SettingLastCharacterID)
 	if err != nil {
 		panic(err)
@@ -149,11 +149,11 @@ func (u *ui) CurrentCharID() int32 {
 	return u.currentCharacter.ID
 }
 
-func (u *ui) CurrentChar() *model.Character {
+func (u *ui) CurrentChar() *model.MyCharacter {
 	return u.currentCharacter
 }
 
-func (u *ui) SetCurrentCharacter(c *model.Character) {
+func (u *ui) SetCurrentCharacter(c *model.MyCharacter) {
 	u.currentCharacter = c
 	u.updateToolbarBadge(c)
 	err := u.service.DictionarySetInt(model.SettingLastCharacterID, int(c.ID))
@@ -168,7 +168,7 @@ func (u *ui) SetCurrentCharacter(c *model.Character) {
 	}
 }
 
-func (u *ui) updateToolbarBadge(c *model.Character) {
+func (u *ui) updateToolbarBadge(c *model.MyCharacter) {
 	if c == nil {
 		u.toolbarBadge.RemoveAll()
 		l := widget.NewLabel("No character")
@@ -179,7 +179,7 @@ func (u *ui) updateToolbarBadge(c *model.Character) {
 	uri, _ := c.PortraitURL(32)
 	image := canvas.NewImageFromURI(uri)
 	image.FillMode = canvas.ImageFillOriginal
-	name := widget.NewLabel(fmt.Sprintf("%s (%s)", c.Name, c.Corporation.Name))
+	name := widget.NewLabel(fmt.Sprintf("%s (%s)", c.Character.Name, c.Character.Corporation.Name))
 	name.TextStyle = fyne.TextStyle{Bold: true}
 	u.toolbarBadge.RemoveAll()
 	u.toolbarBadge.Add(container.NewPadded(image))

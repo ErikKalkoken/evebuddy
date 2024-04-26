@@ -132,12 +132,12 @@ func (h *headerArea) redraw(folder node, doRedraw bool) {
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mailIDs, err = h.ui.service.ListMailIDsForLabelOrdered(folder.CharacterID, folder.ObjID)
+		mailIDs, err = h.ui.service.ListMailIDsForLabelOrdered(folder.MyCharacterID, folder.ObjID)
 	case nodeCategoryList:
-		mailIDs, err = h.ui.service.ListMailIDsForListOrdered(folder.CharacterID, folder.ObjID)
+		mailIDs, err = h.ui.service.ListMailIDsForListOrdered(folder.MyCharacterID, folder.ObjID)
 	}
 	if err != nil {
-		slog.Error("Failed to fetch mail", "characterID", folder.CharacterID, "error", err)
+		slog.Error("Failed to fetch mail", "characterID", folder.MyCharacterID, "error", err)
 	}
 	ids := islices.ConvertNumeric[int32, int](mailIDs)
 	h.listData.Set(ids)

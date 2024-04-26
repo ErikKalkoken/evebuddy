@@ -13,7 +13,7 @@ import (
 const createMail = `-- name: CreateMail :one
 INSERT INTO mails (
     body,
-    character_id,
+    my_character_id,
     from_id,
     is_read,
     mail_id,
@@ -23,23 +23,23 @@ INSERT INTO mails (
 VALUES (
     ?, ?, ?, ?, ?, ?, ?
 )
-RETURNING id, body, character_id, from_id, is_read, mail_id, subject, timestamp
+RETURNING id, body, my_character_id, from_id, is_read, mail_id, subject, timestamp
 `
 
 type CreateMailParams struct {
-	Body        string
-	CharacterID int64
-	FromID      int64
-	IsRead      bool
-	MailID      int64
-	Subject     string
-	Timestamp   time.Time
+	Body          string
+	MyCharacterID int64
+	FromID        int64
+	IsRead        bool
+	MailID        int64
+	Subject       string
+	Timestamp     time.Time
 }
 
 func (q *Queries) CreateMail(ctx context.Context, arg CreateMailParams) (Mail, error) {
 	row := q.db.QueryRowContext(ctx, createMail,
 		arg.Body,
-		arg.CharacterID,
+		arg.MyCharacterID,
 		arg.FromID,
 		arg.IsRead,
 		arg.MailID,
@@ -50,7 +50,7 @@ func (q *Queries) CreateMail(ctx context.Context, arg CreateMailParams) (Mail, e
 	err := row.Scan(
 		&i.ID,
 		&i.Body,
-		&i.CharacterID,
+		&i.MyCharacterID,
 		&i.FromID,
 		&i.IsRead,
 		&i.MailID,
@@ -98,17 +98,17 @@ func (q *Queries) CreateMailRecipient(ctx context.Context, arg CreateMailRecipie
 
 const deleteMail = `-- name: DeleteMail :exec
 DELETE FROM mails
-WHERE mails.character_id = ?
+WHERE mails.my_character_id = ?
 AND mails.mail_id = ?
 `
 
 type DeleteMailParams struct {
-	CharacterID int64
-	MailID      int64
+	MyCharacterID int64
+	MailID        int64
 }
 
 func (q *Queries) DeleteMail(ctx context.Context, arg DeleteMailParams) error {
-	_, err := q.db.ExecContext(ctx, deleteMail, arg.CharacterID, arg.MailID)
+	_, err := q.db.ExecContext(ctx, deleteMail, arg.MyCharacterID, arg.MailID)
 	return err
 }
 
@@ -123,16 +123,16 @@ func (q *Queries) DeleteMailMailLabels(ctx context.Context, mailID int64) error 
 }
 
 const getMail = `-- name: GetMail :one
-SELECT mails.id, mails.body, mails.character_id, mails.from_id, mails.is_read, mails.mail_id, mails.subject, mails.timestamp, eve_entities.id, eve_entities.category, eve_entities.name
+SELECT mails.id, mails.body, mails.my_character_id, mails.from_id, mails.is_read, mails.mail_id, mails.subject, mails.timestamp, eve_entities.id, eve_entities.category, eve_entities.name
 FROM mails
 JOIN eve_entities ON eve_entities.id = mails.from_id
-WHERE character_id = ?
+WHERE my_character_id = ?
 AND mail_id = ?
 `
 
 type GetMailParams struct {
-	CharacterID int64
-	MailID      int64
+	MyCharacterID int64
+	MailID        int64
 }
 
 type GetMailRow struct {
@@ -141,12 +141,12 @@ type GetMailRow struct {
 }
 
 func (q *Queries) GetMail(ctx context.Context, arg GetMailParams) (GetMailRow, error) {
-	row := q.db.QueryRowContext(ctx, getMail, arg.CharacterID, arg.MailID)
+	row := q.db.QueryRowContext(ctx, getMail, arg.MyCharacterID, arg.MailID)
 	var i GetMailRow
 	err := row.Scan(
 		&i.Mail.ID,
 		&i.Mail.Body,
-		&i.Mail.CharacterID,
+		&i.Mail.MyCharacterID,
 		&i.Mail.FromID,
 		&i.Mail.IsRead,
 		&i.Mail.MailID,
@@ -164,7 +164,7 @@ SELECT label_id, COUNT(mails.id) AS unread_count_2
 FROM mail_labels
 JOIN mail_mail_labels ON mail_mail_labels.mail_label_id = mail_labels.id
 JOIN mails ON mails.id = mail_mail_labels.mail_id
-WHERE mail_labels.character_id = ?
+WHERE mail_labels.my_character_id = ?
 AND is_read IS FALSE
 GROUP BY label_id
 `
@@ -174,8 +174,8 @@ type GetMailLabelUnreadCountsRow struct {
 	UnreadCount2 int64
 }
 
-func (q *Queries) GetMailLabelUnreadCounts(ctx context.Context, characterID int64) ([]GetMailLabelUnreadCountsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getMailLabelUnreadCounts, characterID)
+func (q *Queries) GetMailLabelUnreadCounts(ctx context.Context, myCharacterID int64) ([]GetMailLabelUnreadCountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getMailLabelUnreadCounts, myCharacterID)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func (q *Queries) GetMailLabelUnreadCounts(ctx context.Context, characterID int6
 }
 
 const getMailLabels = `-- name: GetMailLabels :many
-SELECT mail_labels.id, mail_labels.character_id, mail_labels.color, mail_labels.label_id, mail_labels.name, mail_labels.unread_count
+SELECT mail_labels.id, mail_labels.my_character_id, mail_labels.color, mail_labels.label_id, mail_labels.name, mail_labels.unread_count
 FROM mail_labels
 JOIN mail_mail_labels ON mail_mail_labels.mail_label_id = mail_labels.id
 WHERE mail_id = ?
@@ -215,7 +215,7 @@ func (q *Queries) GetMailLabels(ctx context.Context, mailID int64) ([]MailLabel,
 		var i MailLabel
 		if err := rows.Scan(
 			&i.ID,
-			&i.CharacterID,
+			&i.MyCharacterID,
 			&i.Color,
 			&i.LabelID,
 			&i.Name,
@@ -239,7 +239,7 @@ SELECT eve_entities.id AS list_id, COUNT(mails.id) as unread_count_2
 FROM mails
 JOIN mail_recipients ON mail_recipients.mail_id = mails.id
 JOIN eve_entities ON eve_entities.id = mail_recipients.eve_entity_id
-WHERE character_id = ?
+WHERE my_character_id = ?
 AND eve_entities.category = "mail_list"
 AND mails.is_read IS FALSE
 GROUP BY eve_entities.id
@@ -250,8 +250,8 @@ type GetMailListUnreadCountsRow struct {
 	UnreadCount2 int64
 }
 
-func (q *Queries) GetMailListUnreadCounts(ctx context.Context, characterID int64) ([]GetMailListUnreadCountsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getMailListUnreadCounts, characterID)
+func (q *Queries) GetMailListUnreadCounts(ctx context.Context, myCharacterID int64) ([]GetMailListUnreadCountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getMailListUnreadCounts, myCharacterID)
 	if err != nil {
 		return nil, err
 	}
@@ -306,12 +306,12 @@ func (q *Queries) GetMailRecipients(ctx context.Context, mailID int64) ([]EveEnt
 const getMailUnreadCount = `-- name: GetMailUnreadCount :one
 SELECT COUNT(mails.id)
 FROM mails
-WHERE mails.character_id = ?
+WHERE mails.my_character_id = ?
 AND is_read IS FALSE
 `
 
-func (q *Queries) GetMailUnreadCount(ctx context.Context, characterID int64) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getMailUnreadCount, characterID)
+func (q *Queries) GetMailUnreadCount(ctx context.Context, myCharacterID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getMailUnreadCount, myCharacterID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -320,11 +320,11 @@ func (q *Queries) GetMailUnreadCount(ctx context.Context, characterID int64) (in
 const listMailIDs = `-- name: ListMailIDs :many
 SELECT mail_id
 FROM mails
-WHERE character_id = ?
+WHERE my_character_id = ?
 `
 
-func (q *Queries) ListMailIDs(ctx context.Context, characterID int64) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listMailIDs, characterID)
+func (q *Queries) ListMailIDs(ctx context.Context, myCharacterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listMailIDs, myCharacterID)
 	if err != nil {
 		return nil, err
 	}
@@ -351,18 +351,18 @@ SELECT mails.mail_id
 FROM mails
 JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
 JOIN mail_labels ON mail_labels.id = mail_mail_labels.mail_label_id
-WHERE mails.character_id = ?
+WHERE mails.my_character_id = ?
 AND label_id = ?
 ORDER BY timestamp DESC
 `
 
 type ListMailIDsForLabelOrderedParams struct {
-	CharacterID int64
-	LabelID     int64
+	MyCharacterID int64
+	LabelID       int64
 }
 
 func (q *Queries) ListMailIDsForLabelOrdered(ctx context.Context, arg ListMailIDsForLabelOrderedParams) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listMailIDsForLabelOrdered, arg.CharacterID, arg.LabelID)
+	rows, err := q.db.QueryContext(ctx, listMailIDsForLabelOrdered, arg.MyCharacterID, arg.LabelID)
 	if err != nil {
 		return nil, err
 	}
@@ -388,18 +388,18 @@ const listMailIDsForListOrdered = `-- name: ListMailIDsForListOrdered :many
 SELECT mails.mail_id
 FROM mails
 JOIN mail_recipients ON mail_recipients.mail_id = mails.id
-WHERE character_id = ?
+WHERE my_character_id = ?
 AND mail_recipients.eve_entity_id = ?
 ORDER BY timestamp DESC
 `
 
 type ListMailIDsForListOrderedParams struct {
-	CharacterID int64
-	EveEntityID int64
+	MyCharacterID int64
+	EveEntityID   int64
 }
 
 func (q *Queries) ListMailIDsForListOrdered(ctx context.Context, arg ListMailIDsForListOrderedParams) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listMailIDsForListOrdered, arg.CharacterID, arg.EveEntityID)
+	rows, err := q.db.QueryContext(ctx, listMailIDsForListOrdered, arg.MyCharacterID, arg.EveEntityID)
 	if err != nil {
 		return nil, err
 	}
@@ -425,13 +425,13 @@ const listMailIDsNoLabelOrdered = `-- name: ListMailIDsNoLabelOrdered :many
 SELECT mails.mail_id
 FROM mails
 LEFT JOIN mail_mail_labels ON mail_mail_labels.mail_id = mails.id
-WHERE character_id = ?
+WHERE my_character_id = ?
 AND mail_mail_labels.mail_id IS NULL
 ORDER BY timestamp DESC
 `
 
-func (q *Queries) ListMailIDsNoLabelOrdered(ctx context.Context, characterID int64) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listMailIDsNoLabelOrdered, characterID)
+func (q *Queries) ListMailIDsNoLabelOrdered(ctx context.Context, myCharacterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listMailIDsNoLabelOrdered, myCharacterID)
 	if err != nil {
 		return nil, err
 	}
@@ -456,12 +456,12 @@ func (q *Queries) ListMailIDsNoLabelOrdered(ctx context.Context, characterID int
 const listMailIDsOrdered = `-- name: ListMailIDsOrdered :many
 SELECT mail_id
 FROM mails
-WHERE character_id = ?
+WHERE my_character_id = ?
 ORDER BY timestamp DESC
 `
 
-func (q *Queries) ListMailIDsOrdered(ctx context.Context, characterID int64) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listMailIDsOrdered, characterID)
+func (q *Queries) ListMailIDsOrdered(ctx context.Context, myCharacterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listMailIDsOrdered, myCharacterID)
 	if err != nil {
 		return nil, err
 	}

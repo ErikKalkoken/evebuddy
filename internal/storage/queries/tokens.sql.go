@@ -11,17 +11,17 @@ import (
 )
 
 const getToken = `-- name: GetToken :one
-SELECT access_token, character_id, expires_at, refresh_token, token_type
+SELECT access_token, my_character_id, expires_at, refresh_token, token_type
 FROM tokens
-WHERE character_id = ?
+WHERE my_character_id = ?
 `
 
-func (q *Queries) GetToken(ctx context.Context, characterID int64) (Token, error) {
-	row := q.db.QueryRowContext(ctx, getToken, characterID)
+func (q *Queries) GetToken(ctx context.Context, myCharacterID int64) (Token, error) {
+	row := q.db.QueryRowContext(ctx, getToken, myCharacterID)
 	var i Token
 	err := row.Scan(
 		&i.AccessToken,
-		&i.CharacterID,
+		&i.MyCharacterID,
 		&i.ExpiresAt,
 		&i.RefreshToken,
 		&i.TokenType,
@@ -31,7 +31,7 @@ func (q *Queries) GetToken(ctx context.Context, characterID int64) (Token, error
 
 const updateOrCreateToken = `-- name: UpdateOrCreateToken :exec
 INSERT INTO tokens (
-    character_id,
+    my_character_id,
     access_token,
     expires_at,
     refresh_token,
@@ -40,26 +40,26 @@ INSERT INTO tokens (
 VALUES (
     ?1, ?2, ?3, ?4, ?5
 )
-ON CONFLICT(character_id) DO
+ON CONFLICT(my_character_id) DO
 UPDATE SET
     access_token = ?2,
     expires_at = ?3,
     refresh_token = ?4,
     token_type = ?5
-WHERE character_id = ?1
+WHERE my_character_id = ?1
 `
 
 type UpdateOrCreateTokenParams struct {
-	CharacterID  int64
-	AccessToken  string
-	ExpiresAt    time.Time
-	RefreshToken string
-	TokenType    string
+	MyCharacterID int64
+	AccessToken   string
+	ExpiresAt     time.Time
+	RefreshToken  string
+	TokenType     string
 }
 
 func (q *Queries) UpdateOrCreateToken(ctx context.Context, arg UpdateOrCreateTokenParams) error {
 	_, err := q.db.ExecContext(ctx, updateOrCreateToken,
-		arg.CharacterID,
+		arg.MyCharacterID,
 		arg.AccessToken,
 		arg.ExpiresAt,
 		arg.RefreshToken,

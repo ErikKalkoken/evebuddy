@@ -82,24 +82,24 @@ func (s *Service) SendMail(characterID int32, subject string, recipients []model
 		return 0, err
 	}
 	arg1 := storage.MailLabelParams{
-		CharacterID: characterID,
-		LabelID:     model.MailLabelSent,
-		Name:        "Sent",
+		MyCharacterID: characterID,
+		LabelID:       model.MailLabelSent,
+		Name:          "Sent",
 	}
 	_, err = s.r.GetOrCreateMailLabel(ctx, arg1) // make sure sent label exists
 	if err != nil {
 		return 0, err
 	}
 	arg2 := storage.CreateMailParams{
-		Body:         body,
-		CharacterID:  characterID,
-		FromID:       characterID,
-		IsRead:       true,
-		LabelIDs:     []int32{model.MailLabelSent},
-		MailID:       mailID,
-		RecipientIDs: recipientIDs,
-		Subject:      subject,
-		Timestamp:    time.Now(),
+		Body:          body,
+		MyCharacterID: characterID,
+		FromID:        characterID,
+		IsRead:        true,
+		LabelIDs:      []int32{model.MailLabelSent},
+		MailID:        mailID,
+		RecipientIDs:  recipientIDs,
+		Subject:       subject,
+		Timestamp:     time.Now(),
 	}
 	_, err = s.r.CreateMail(ctx, arg2)
 	if err != nil {

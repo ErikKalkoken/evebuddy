@@ -27,13 +27,13 @@ func TestUpdateMail(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c1 := factory.CreateCharacter()
+		c1 := factory.CreateMyCharacter()
 		factory.CreateToken(model.Token{CharacterID: c1.ID})
 		e1 := factory.CreateEveEntityCharacter()
 		e2 := factory.CreateEveEntityCharacter()
 		m1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 		factory.CreateMailList(c1.ID) // obsolete
-		c2 := factory.CreateCharacter()
+		c2 := factory.CreateMyCharacter()
 		m2 := factory.CreateMailList(c2.ID) // not obsolete
 		recipients := []map[string]any{
 			{
@@ -167,25 +167,25 @@ func TestUpdateMail(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacter()
+		c := factory.CreateMyCharacter()
 		factory.CreateToken(model.Token{CharacterID: c.ID})
 		e1 := factory.CreateEveEntityCharacter()
 		e2 := factory.CreateEveEntityCharacter()
-		factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: 16})
-		factory.CreateMailLabel(model.MailLabel{CharacterID: c.ID, LabelID: 32}) // obsolete
+		factory.CreateMailLabel(model.MailLabel{MyCharacterID: c.ID, LabelID: 16})
+		factory.CreateMailLabel(model.MailLabel{MyCharacterID: c.ID, LabelID: 32}) // obsolete
 		m1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 		timestamp, _ := time.Parse("2006-01-02T15:04:05.999MST", "2015-09-30T16:07:00Z")
 		mailID := int32(7)
 		factory.CreateMail(storage.CreateMailParams{
-			Body:         "blah blah blah",
-			CharacterID:  c.ID,
-			FromID:       e1.ID,
-			LabelIDs:     []int32{16},
-			MailID:       mailID,
-			IsRead:       false,
-			RecipientIDs: []int32{e2.ID, m1.ID},
-			Subject:      "test",
-			Timestamp:    timestamp,
+			Body:          "blah blah blah",
+			MyCharacterID: c.ID,
+			FromID:        e1.ID,
+			LabelIDs:      []int32{16},
+			MailID:        mailID,
+			IsRead:        false,
+			RecipientIDs:  []int32{e2.ID, m1.ID},
+			Subject:       "test",
+			Timestamp:     timestamp,
 		})
 
 		dataMailList := []map[string]any{

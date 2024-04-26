@@ -83,7 +83,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacter()
+		c := factory.CreateMyCharacter()
 		token := factory.CreateToken(model.Token{CharacterID: c.ID})
 		dataMailLabel := map[string]any{
 			"labels": []map[string]any{
@@ -126,14 +126,14 @@ func TestUpdateMailLabel(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateCharacter()
+		c := factory.CreateMyCharacter()
 		token := factory.CreateToken(model.Token{CharacterID: c.ID})
 		l1 := factory.CreateMailLabel(model.MailLabel{
-			CharacterID: c.ID,
-			LabelID:     16,
-			Name:        "BLACK",
-			Color:       "#000000",
-			UnreadCount: 99,
+			MyCharacterID: c.ID,
+			LabelID:       16,
+			Name:          "BLACK",
+			Color:         "#000000",
+			UnreadCount:   99,
 		})
 		dataMailLabel := map[string]any{
 			"labels": []map[string]any{

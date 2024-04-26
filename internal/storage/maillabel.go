@@ -12,19 +12,19 @@ import (
 
 func mailLabelFromDBModel(l queries.MailLabel) model.MailLabel {
 	return model.MailLabel{
-		ID:          l.ID,
-		CharacterID: int32(l.CharacterID),
-		Color:       l.Color,
-		LabelID:     int32(l.LabelID),
-		Name:        l.Name,
-		UnreadCount: int(l.UnreadCount),
+		ID:            l.ID,
+		MyCharacterID: int32(l.MyCharacterID),
+		Color:         l.Color,
+		LabelID:       int32(l.LabelID),
+		Name:          l.Name,
+		UnreadCount:   int(l.UnreadCount),
 	}
 }
 
 func (r *Storage) DeleteObsoleteMailLabels(ctx context.Context, characterID int32) error {
 	arg := queries.DeleteObsoleteMailLabelsParams{
-		CharacterID:   int64(characterID),
-		CharacterID_2: int64(characterID),
+		MyCharacterID:   int64(characterID),
+		MyCharacterID_2: int64(characterID),
 	}
 	if err := r.q.DeleteObsoleteMailLabels(ctx, arg); err != nil {
 		return fmt.Errorf("failed to delete obsolete mail labels for character %d: %w", characterID, err)
@@ -34,26 +34,26 @@ func (r *Storage) DeleteObsoleteMailLabels(ctx context.Context, characterID int3
 
 func (r *Storage) GetMailLabel(ctx context.Context, characterID, labelID int32) (model.MailLabel, error) {
 	arg := queries.GetMailLabelParams{
-		CharacterID: int64(characterID),
-		LabelID:     int64(labelID),
+		MyCharacterID: int64(characterID),
+		LabelID:       int64(labelID),
 	}
 	l, err := r.q.GetMailLabel(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return model.MailLabel{}, fmt.Errorf("failed to get mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
+		return model.MailLabel{}, fmt.Errorf("failed to get mail label for character %d with label %d: %w", arg.MyCharacterID, arg.LabelID, err)
 	}
 	l2 := mailLabelFromDBModel(l)
 	return l2, nil
 }
 
 type MailLabelParams struct {
-	CharacterID int32
-	Color       string
-	LabelID     int32
-	Name        string
-	UnreadCount int
+	MyCharacterID int32
+	Color         string
+	LabelID       int32
+	Name          string
+	UnreadCount   int
 }
 
 func (r *Storage) GetOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (model.MailLabel, error) {
@@ -66,8 +66,8 @@ func (r *Storage) GetOrCreateMailLabel(ctx context.Context, arg MailLabelParams)
 		defer tx.Rollback()
 		qtx := r.q.WithTx(tx)
 		arg2 := queries.GetMailLabelParams{
-			CharacterID: int64(arg.CharacterID),
-			LabelID:     int64(arg.LabelID),
+			MyCharacterID: int64(arg.MyCharacterID),
+			LabelID:       int64(arg.LabelID),
 		}
 		l, err = qtx.GetMailLabel(ctx, arg2)
 		if err != nil {
@@ -75,11 +75,11 @@ func (r *Storage) GetOrCreateMailLabel(ctx context.Context, arg MailLabelParams)
 				return model.MailLabel{}, err
 			}
 			arg3 := queries.CreateMailLabelParams{
-				CharacterID: int64(arg.CharacterID),
-				LabelID:     int64(arg.LabelID),
-				Color:       arg.Color,
-				Name:        arg.Name,
-				UnreadCount: int64(arg.UnreadCount),
+				MyCharacterID: int64(arg.MyCharacterID),
+				LabelID:       int64(arg.LabelID),
+				Color:         arg.Color,
+				Name:          arg.Name,
+				UnreadCount:   int64(arg.UnreadCount),
 			}
 			l, err = qtx.CreateMailLabel(ctx, arg3)
 			if err != nil {
@@ -92,7 +92,7 @@ func (r *Storage) GetOrCreateMailLabel(ctx context.Context, arg MailLabelParams)
 		return mailLabelFromDBModel(l), nil
 	}()
 	if err != nil {
-		return label, fmt.Errorf("failed to get or create mail label for character %d and label %d: %w", arg.CharacterID, arg.LabelID, err)
+		return label, fmt.Errorf("failed to get or create mail label for character %d and label %d: %w", arg.MyCharacterID, arg.LabelID, err)
 	}
 	return label, nil
 }
@@ -111,15 +111,15 @@ func (r *Storage) ListMailLabelsOrdered(ctx context.Context, characterID int32) 
 
 func (r *Storage) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (model.MailLabel, error) {
 	arg1 := queries.UpdateOrCreateMailLabelParams{
-		CharacterID: int64(arg.CharacterID),
-		LabelID:     int64(arg.LabelID),
-		Color:       arg.Color,
-		Name:        arg.Name,
-		UnreadCount: int64(arg.UnreadCount),
+		MyCharacterID: int64(arg.MyCharacterID),
+		LabelID:       int64(arg.LabelID),
+		Color:         arg.Color,
+		Name:          arg.Name,
+		UnreadCount:   int64(arg.UnreadCount),
 	}
 	l, err := r.q.UpdateOrCreateMailLabel(ctx, arg1)
 	if err != nil {
-		return model.MailLabel{}, fmt.Errorf("failed to update or create mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
+		return model.MailLabel{}, fmt.Errorf("failed to update or create mail label for character %d with label %d: %w", arg.MyCharacterID, arg.LabelID, err)
 	}
 	label := mailLabelFromDBModel(l)
 	return label, nil

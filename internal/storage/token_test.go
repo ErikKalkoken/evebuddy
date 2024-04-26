@@ -18,7 +18,7 @@ func TestToken(t *testing.T) {
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateMyCharacter()
 		o := model.Token{
 			AccessToken:  "access",
 			CharacterID:  c.ID,
@@ -54,7 +54,7 @@ func TestToken(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateMyCharacter()
 		o := model.Token{
 			AccessToken:  "access",
 			CharacterID:  int32(c.ID),
@@ -80,7 +80,7 @@ func TestToken(t *testing.T) {
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
+		c := factory.CreateMyCharacter()
 		// when
 		_, err := r.GetToken(ctx, c.ID)
 		// then

@@ -28,12 +28,12 @@ const (
 
 // A node in the folder tree, e.g. the inbox
 type node struct {
-	Category    nodeCategory
-	CharacterID int32
-	ID          string
-	Name        string
-	ObjID       int32
-	UnreadCount int
+	Category      nodeCategory
+	MyCharacterID int32
+	ID            string
+	Name          string
+	ObjID         int32
+	UnreadCount   int
 }
 
 func newNodeFromJSON(s string) node {

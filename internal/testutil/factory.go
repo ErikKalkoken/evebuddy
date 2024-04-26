@@ -23,23 +23,50 @@ func NewFactory(r *storage.Storage, db *sql.DB) Factory {
 	return f
 }
 
-// CreateCharacter is a test factory for character objects.
-func (f Factory) CreateCharacter(args ...model.Character) model.Character {
+// CreateMyCharacter is a test factory for MyCharacter objects.
+func (f Factory) CreateMyCharacter(args ...model.MyCharacter) model.MyCharacter {
 	ctx := context.Background()
-	var c model.Character
+	var c model.MyCharacter
 	if len(args) > 0 {
 		c = args[0]
 	}
 	if c.ID == 0 {
-		ids, err := f.r.ListCharacterIDs(ctx)
-		if err != nil {
-			panic(err)
-		}
-		if len(ids) == 0 {
-			c.ID = 1
-		} else {
-			c.ID = slices.Max(ids) + 1
-		}
+		c.ID = int32(f.calcNewID("my_characters", "id"))
+	}
+	if c.Character.ID == 0 {
+		c.Character = f.CreateEveCharacter()
+	}
+	if c.LastLoginAt.IsZero() {
+		c.LastLoginAt = time.Now()
+	}
+	if c.Location.ID == 0 {
+		c.Location = f.CreateEveSolarSystem()
+	}
+	if c.Ship.ID == 0 {
+		c.Ship = f.CreateEveType()
+	}
+	if c.SkillPoints == 0 {
+		c.SkillPoints = rand.IntN(100_000_000)
+	}
+	if c.WalletBalance == 0 {
+		c.WalletBalance = rand.Float64() * 100_000_000_000
+	}
+	err := f.r.UpdateOrCreateMyCharacter(ctx, &c)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
+// CreateCharacter is a test factory for character objects.
+func (f Factory) CreateEveCharacter(args ...model.EveCharacter) model.EveCharacter {
+	ctx := context.Background()
+	var c model.EveCharacter
+	if len(args) > 0 {
+		c = args[0]
+	}
+	if c.ID == 0 {
+		c.ID = int32(f.calcNewID("eve_characters", "id"))
 	}
 	if c.Name == "" {
 		c.Name = fmt.Sprintf("Generated character #%d", c.ID)
@@ -53,25 +80,10 @@ func (f Factory) CreateCharacter(args ...model.Character) model.Character {
 	if c.Description == "" {
 		c.Description = "Lorem Ipsum"
 	}
-	if c.LastLoginAt.IsZero() {
-		c.LastLoginAt = time.Now()
-	}
-	if c.Location.ID == 0 {
-		c.Location = f.CreateEveSolarSystem()
-	}
 	if c.Race.ID == 0 {
 		c.Race = f.CreateEveRace()
 	}
-	if c.Ship.ID == 0 {
-		c.Ship = f.CreateEveType()
-	}
-	if c.SkillPoints == 0 {
-		c.SkillPoints = rand.IntN(100_000_000)
-	}
-	if c.WalletBalance == 0 {
-		c.WalletBalance = rand.Float64() * 100_000_000_000
-	}
-	err := f.r.UpdateOrCreateCharacter(ctx, &c)
+	err := f.r.UpdateOrCreateEveCharacter(ctx, &c)
 	if err != nil {
 		panic(err)
 	}
@@ -151,16 +163,16 @@ func (f Factory) CreateMail(args ...storage.CreateMailParams) model.Mail {
 	if len(args) > 0 {
 		arg = args[0]
 	}
-	if arg.CharacterID == 0 {
-		c := f.CreateCharacter()
-		arg.CharacterID = c.ID
+	if arg.MyCharacterID == 0 {
+		c := f.CreateMyCharacter()
+		arg.MyCharacterID = c.ID
 	}
 	if arg.FromID == 0 {
 		from := f.CreateEveEntityCharacter()
 		arg.FromID = from.ID
 	}
 	if arg.MailID == 0 {
-		ids, err := f.r.ListMailIDs(ctx, arg.CharacterID)
+		ids, err := f.r.ListMailIDs(ctx, arg.MyCharacterID)
 		if err != nil {
 			panic(err)
 		}
@@ -187,7 +199,7 @@ func (f Factory) CreateMail(args ...storage.CreateMailParams) model.Mail {
 	if err != nil {
 		panic(err)
 	}
-	mail, err := f.r.GetMail(ctx, arg.CharacterID, arg.MailID)
+	mail, err := f.r.GetMail(ctx, arg.MyCharacterID, arg.MailID)
 	if err != nil {
 		panic(err)
 	}
@@ -201,19 +213,19 @@ func (f Factory) CreateMailLabel(args ...model.MailLabel) model.MailLabel {
 	if len(args) > 0 {
 		l := args[0]
 		arg = storage.MailLabelParams{
-			CharacterID: l.CharacterID,
-			Color:       l.Color,
-			LabelID:     l.LabelID,
-			Name:        l.Name,
-			UnreadCount: l.UnreadCount,
+			MyCharacterID: l.MyCharacterID,
+			Color:         l.Color,
+			LabelID:       l.LabelID,
+			Name:          l.Name,
+			UnreadCount:   l.UnreadCount,
 		}
 	}
-	if arg.CharacterID == 0 {
-		c := f.CreateCharacter()
-		arg.CharacterID = c.ID
+	if arg.MyCharacterID == 0 {
+		c := f.CreateMyCharacter()
+		arg.MyCharacterID = c.ID
 	}
 	if arg.LabelID == 0 {
-		ll, err := f.r.ListMailLabelsOrdered(ctx, arg.CharacterID)
+		ll, err := f.r.ListMailLabelsOrdered(ctx, arg.MyCharacterID)
 		if err != nil {
 			panic(err)
 		}
@@ -251,7 +263,7 @@ func (f Factory) CreateMailList(characterID int32, args ...model.EveEntity) mode
 		e = args[0]
 	}
 	if characterID == 0 {
-		c := f.CreateCharacter()
+		c := f.CreateMyCharacter()
 		characterID = c.ID
 	}
 	if e.ID == 0 {
@@ -466,7 +478,7 @@ func (f Factory) CreateToken(args ...model.Token) model.Token {
 		t.TokenType = "Bearer"
 	}
 	if t.CharacterID == 0 {
-		c := f.CreateCharacter()
+		c := f.CreateMyCharacter()
 		t.CharacterID = c.ID
 	}
 	err := f.r.UpdateOrCreateToken(ctx, &t)
@@ -474,4 +486,12 @@ func (f Factory) CreateToken(args ...model.Token) model.Token {
 		panic(err)
 	}
 	return t
+}
+
+func (f *Factory) calcNewID(table, id_field string) int {
+	var max sql.NullInt64
+	if err := f.db.QueryRow(fmt.Sprintf("SELECT MAX(%s) FROM %s;", id_field, table)).Scan(&max); err != nil {
+		panic(err)
+	}
+	return int(max.Int64 + 1)
 }

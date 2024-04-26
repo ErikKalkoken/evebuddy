@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"errors"
+	"example/evebuddy/internal/api/images"
 	"example/evebuddy/internal/storage"
 	"fmt"
 	"log/slog"
@@ -51,22 +52,22 @@ func (u *ui) NewAccountArea() *accountArea {
 }
 
 func (m *accountArea) Redraw() {
-	chars, err := m.ui.service.ListCharacters()
+	chars, err := m.ui.service.ListMyCharacters()
 	if err != nil {
 		panic(err)
 	}
 	m.content.RemoveAll()
 	for _, char := range chars {
-		uri, _ := char.PortraitURL(defaultIconSize)
+		uri, _ := images.CharacterPortraitURL(char.ID, defaultIconSize)
 		image := canvas.NewImageFromURI(uri)
 		image.FillMode = canvas.ImageFillOriginal
 		name := widget.NewLabel(char.Name)
 		selectButton := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
-			c, err := m.ui.service.GetCharacter(char.ID)
+			character, err := m.ui.service.GetCharacter(char.ID)
 			if err != nil {
 				panic(err)
 			}
-			m.ui.SetCurrentCharacter(&c)
+			m.ui.SetCurrentCharacter(&character)
 			m.dialog.Hide()
 		})
 		isCurrentChar := char.ID == m.ui.CurrentCharID()

@@ -34,11 +34,11 @@ func (u *ui) ShowCreateMessageWindow(mode int, mail *model.Mail) {
 
 func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, error) {
 	currentChar := *u.CurrentChar()
-	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", currentChar.Name))
+	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", currentChar.Character.Name))
 
 	fromInput := widget.NewEntry()
 	fromInput.Disable()
-	fromInput.SetPlaceHolder(currentChar.Name)
+	fromInput.SetPlaceHolder(currentChar.Character.Name)
 
 	toInput := widget.NewEntry()
 	toInput.MultiLine = true

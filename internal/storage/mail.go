@@ -14,7 +14,7 @@ import (
 )
 
 func mailFromDBModel(mail queries.Mail, from queries.EveEntity, labels []queries.MailLabel, recipients []queries.EveEntity) model.Mail {
-	if mail.CharacterID == 0 {
+	if mail.MyCharacterID == 0 {
 		panic("missing character ID")
 	}
 	var ll []model.MailLabel
@@ -26,30 +26,30 @@ func mailFromDBModel(mail queries.Mail, from queries.EveEntity, labels []queries
 		rr = append(rr, eveEntityFromDBModel(r))
 	}
 	m := model.Mail{
-		Body:        mail.Body,
-		CharacterID: int32(mail.CharacterID),
-		From:        eveEntityFromDBModel(from),
-		IsRead:      mail.IsRead,
-		ID:          mail.ID,
-		Labels:      ll,
-		MailID:      int32(mail.MailID),
-		Recipients:  rr,
-		Subject:     mail.Subject,
-		Timestamp:   mail.Timestamp,
+		Body:          mail.Body,
+		MyCharacterID: int32(mail.MyCharacterID),
+		From:          eveEntityFromDBModel(from),
+		IsRead:        mail.IsRead,
+		ID:            mail.ID,
+		Labels:        ll,
+		MailID:        int32(mail.MailID),
+		Recipients:    rr,
+		Subject:       mail.Subject,
+		Timestamp:     mail.Timestamp,
 	}
 	return m
 }
 
 type CreateMailParams struct {
-	Body         string
-	CharacterID  int32
-	FromID       int32
-	LabelIDs     []int32
-	IsRead       bool
-	MailID       int32
-	RecipientIDs []int32
-	Subject      string
-	Timestamp    time.Time
+	Body          string
+	MyCharacterID int32
+	FromID        int32
+	LabelIDs      []int32
+	IsRead        bool
+	MailID        int32
+	RecipientIDs  []int32
+	Subject       string
+	Timestamp     time.Time
 }
 
 func (r *Storage) CreateMail(ctx context.Context, arg CreateMailParams) (int64, error) {
@@ -57,19 +57,19 @@ func (r *Storage) CreateMail(ctx context.Context, arg CreateMailParams) (int64, 
 		if len(arg.RecipientIDs) == 0 {
 			return 0, errors.New("can not create mail without recipients")
 		}
-		characterID2 := int64(arg.CharacterID)
+		characterID2 := int64(arg.MyCharacterID)
 		from, err := r.GetEveEntity(ctx, arg.FromID)
 		if err != nil {
 			return 0, err
 		}
 		mailParams := queries.CreateMailParams{
-			Body:        arg.Body,
-			CharacterID: characterID2,
-			FromID:      int64(from.ID),
-			MailID:      int64(arg.MailID),
-			Subject:     arg.Subject,
-			IsRead:      arg.IsRead,
-			Timestamp:   arg.Timestamp,
+			Body:          arg.Body,
+			MyCharacterID: characterID2,
+			FromID:        int64(from.ID),
+			MailID:        int64(arg.MailID),
+			Subject:       arg.Subject,
+			IsRead:        arg.IsRead,
+			Timestamp:     arg.Timestamp,
 		}
 		mail, err := r.q.CreateMail(ctx, mailParams)
 		if err != nil {
@@ -82,14 +82,14 @@ func (r *Storage) CreateMail(ctx context.Context, arg CreateMailParams) (int64, 
 				return 0, err
 			}
 		}
-		if err := r.updateMailLabels(ctx, arg.CharacterID, mail.ID, arg.LabelIDs); err != nil {
+		if err := r.updateMailLabels(ctx, arg.MyCharacterID, mail.ID, arg.LabelIDs); err != nil {
 			return 0, err
 		}
-		slog.Info("Created new mail", "characterID", arg.CharacterID, "mailID", arg.MailID)
+		slog.Info("Created new mail", "characterID", arg.MyCharacterID, "mailID", arg.MailID)
 		return mail.ID, nil
 	}()
 	if err != nil {
-		return 0, fmt.Errorf("failed to create mail for character %d and mail ID %d: %w", arg.CharacterID, arg.MailID, err)
+		return 0, fmt.Errorf("failed to create mail for character %d and mail ID %d: %w", arg.MyCharacterID, arg.MailID, err)
 	}
 	return id, err
 }
@@ -106,8 +106,8 @@ func (r *Storage) updateMailLabels(ctx context.Context, characterID int32, mailP
 	}
 	for _, l := range labelIDs {
 		arg := queries.GetMailLabelParams{
-			CharacterID: int64(characterID),
-			LabelID:     int64(l),
+			MyCharacterID: int64(characterID),
+			LabelID:       int64(l),
 		}
 		label, err := qtx.GetMailLabel(ctx, arg)
 		if err != nil {
@@ -129,8 +129,8 @@ func (r *Storage) updateMailLabels(ctx context.Context, characterID int32, mailP
 func (r *Storage) GetMail(ctx context.Context, characterID, mailID int32) (model.Mail, error) {
 	mail, err := func() (model.Mail, error) {
 		arg := queries.GetMailParams{
-			CharacterID: int64(characterID),
-			MailID:      int64(mailID),
+			MyCharacterID: int64(characterID),
+			MailID:        int64(mailID),
 		}
 		row, err := r.q.GetMail(ctx, arg)
 		if err != nil {
@@ -163,8 +163,8 @@ func (r *Storage) GetMailUnreadCount(ctx context.Context, characterID int32) (in
 
 func (r *Storage) DeleteMail(ctx context.Context, characterID, mailID int32) error {
 	arg := queries.DeleteMailParams{
-		CharacterID: int64(characterID),
-		MailID:      int64(mailID),
+		MyCharacterID: int64(characterID),
+		MailID:        int64(mailID),
 	}
 	err := r.q.DeleteMail(ctx, arg)
 	if err != nil {
@@ -238,8 +238,8 @@ func (r *Storage) ListMailIDsForLabelOrdered(ctx context.Context, characterID in
 		return ids2, nil
 	default:
 		arg := queries.ListMailIDsForLabelOrderedParams{
-			CharacterID: int64(characterID),
-			LabelID:     int64(labelID),
+			MyCharacterID: int64(characterID),
+			LabelID:       int64(labelID),
 		}
 		ids, err := r.q.ListMailIDsForLabelOrdered(ctx, arg)
 		if err != nil {
@@ -252,8 +252,8 @@ func (r *Storage) ListMailIDsForLabelOrdered(ctx context.Context, characterID in
 
 func (r *Storage) ListMailIDsForListOrdered(ctx context.Context, characterID int32, listID int32) ([]int32, error) {
 	arg := queries.ListMailIDsForListOrderedParams{
-		CharacterID: int64(characterID),
-		EveEntityID: int64(listID),
+		MyCharacterID: int64(characterID),
+		EveEntityID:   int64(listID),
 	}
 	ids, err := r.q.ListMailIDsForListOrdered(ctx, arg)
 	if err != nil {

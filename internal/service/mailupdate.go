@@ -90,11 +90,11 @@ func (s *Service) updateMailLabels(ctx context.Context, token *model.Token) erro
 	slog.Info("Received mail labels from ESI", "count", len(labels), "characterID", token.CharacterID)
 	for _, o := range labels {
 		arg := storage.MailLabelParams{
-			CharacterID: token.CharacterID,
-			Color:       o.Color,
-			LabelID:     o.LabelId,
-			Name:        o.Name,
-			UnreadCount: int(o.UnreadCount),
+			MyCharacterID: token.CharacterID,
+			Color:         o.Color,
+			LabelID:       o.LabelId,
+			Name:          o.Name,
+			UnreadCount:   int(o.UnreadCount),
 		}
 		_, err := s.r.UpdateOrCreateMailLabel(ctx, arg)
 		if err != nil {
@@ -242,15 +242,15 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, characterID, mailID int
 		recipientIDs[i] = r.RecipientId
 	}
 	arg := storage.CreateMailParams{
-		Body:         m.Body,
-		CharacterID:  characterID,
-		FromID:       m.From,
-		IsRead:       m.Read,
-		LabelIDs:     m.Labels,
-		MailID:       mailID,
-		RecipientIDs: recipientIDs,
-		Subject:      m.Subject,
-		Timestamp:    m.Timestamp,
+		Body:          m.Body,
+		MyCharacterID: characterID,
+		FromID:        m.From,
+		IsRead:        m.Read,
+		LabelIDs:      m.Labels,
+		MailID:        mailID,
+		RecipientIDs:  recipientIDs,
+		Subject:       m.Subject,
+		Timestamp:     m.Timestamp,
 	}
 	_, err = s.r.CreateMail(ctx, arg)
 	if err != nil {
@@ -292,7 +292,7 @@ func (s *Service) UpdateMailRead(characterID, mailID int32) error {
 		labelIDs[i] = l.LabelID
 	}
 	contents := esi.PutCharactersCharacterIdMailMailIdContents{Read: true, Labels: labelIDs}
-	_, err = s.esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(ctx, m.CharacterID, contents, m.MailID, nil)
+	_, err = s.esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(ctx, m.MyCharacterID, contents, m.MailID, nil)
 	if err != nil {
 		return err
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 // An Eve Online character.
-type Character struct {
+type EveCharacter struct {
 	Alliance       EveEntity
 	Birthday       time.Time
 	Corporation    EveEntity
@@ -17,27 +17,22 @@ type Character struct {
 	Faction        EveEntity
 	Gender         string
 	ID             int32
-	LastLoginAt    time.Time
-	Location       EveSolarSystem
 	Name           string
 	Race           EveRace
 	SecurityStatus float64
-	Ship           EveType
-	SkillPoints    int
-	WalletBalance  float64
 }
 
 // HasAlliance reports wether the character is member of an alliance.
-func (c *Character) HasAlliance() bool {
+func (c *EveCharacter) HasAlliance() bool {
 	return c.Alliance.ID != 0
 }
 
 // HasFaction reports wether the character is member of a faction.
-func (c *Character) HasFaction() bool {
+func (c *EveCharacter) HasFaction() bool {
 	return c.Faction.ID != 0
 }
 
 // PortraitURL returns an image URL for a portrait of a character
-func (c *Character) PortraitURL(size int) (fyne.URI, error) {
+func (c *EveCharacter) PortraitURL(size int) (fyne.URI, error) {
 	return images.CharacterPortraitURL(int32(c.ID), size)
 }

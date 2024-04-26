@@ -52,12 +52,12 @@ func (c *characterArea) Redraw() {
 	defaultColor := theme.ForegroundColor()
 	dangerColor := theme.ErrorColor()
 	successColor := theme.SuccessColor()
-	x := canvas.NewText(character.Name, defaultColor)
+	x := canvas.NewText(character.Character.Name, defaultColor)
 	x.TextSize = theme.TextHeadingSize()
 	c.items.Add(container.NewPadded(x))
 
 	var secColor color.Color
-	switch s := character.SecurityStatus; {
+	switch s := character.Character.SecurityStatus; {
 	case s < 0:
 		secColor = dangerColor
 	case s > 0:
@@ -67,12 +67,12 @@ func (c *characterArea) Redraw() {
 	}
 
 	var r = []item{
-		{"Corporation", character.Corporation.Name, defaultColor},
-		{"Alliance", stringOrDefault(character.Alliance.Name, "-"), defaultColor},
-		{"Faction", stringOrDefault(character.Faction.Name, "-"), defaultColor},
-		{"Race", character.Race.Name, defaultColor},
-		{"Gender", character.Gender, defaultColor},
-		{"Born", character.Birthday.Format(myDateTime), defaultColor},
+		{"Corporation", character.Character.Corporation.Name, defaultColor},
+		{"Alliance", stringOrDefault(character.Character.Alliance.Name, "-"), defaultColor},
+		{"Faction", stringOrDefault(character.Character.Faction.Name, "-"), defaultColor},
+		{"Race", character.Character.Race.Name, defaultColor},
+		{"Gender", character.Character.Gender, defaultColor},
+		{"Born", character.Character.Birthday.Format(myDateTime), defaultColor},
 	}
 	form1 := makeForm(r)
 	location := fmt.Sprintf(
@@ -84,7 +84,7 @@ func (c *characterArea) Redraw() {
 	r = []item{
 		{"Wallet Balance", numberOrDefault(character.WalletBalance, "?"), defaultColor},
 		{"Skill Points", numberOrDefault(character.SkillPoints, "?"), defaultColor},
-		{"Security Status", fmt.Sprintf("%.1f", character.SecurityStatus), secColor},
+		{"Security Status", fmt.Sprintf("%.1f", character.Character.SecurityStatus), secColor},
 		{"Location", location, defaultColor},
 		{"Ship", character.Ship.Name, defaultColor},
 		{"Last Login", humanize.Time(character.LastLoginAt), defaultColor},
@@ -116,7 +116,7 @@ func makeForm(rows []item) *fyne.Container {
 	return form1
 }
 
-func updateIcons(icons *fyne.Container, c *model.Character) error {
+func updateIcons(icons *fyne.Container, c *model.MyCharacter) error {
 	u, err := images.CharacterPortraitURL(c.ID, 128)
 	if err != nil {
 		return err
@@ -125,7 +125,7 @@ func updateIcons(icons *fyne.Container, c *model.Character) error {
 	character.FillMode = canvas.ImageFillOriginal
 	icons.Add(character)
 
-	u, err = c.Corporation.IconURL(128)
+	u, err = c.Character.Corporation.IconURL(128)
 	if err != nil {
 		return err
 	}
@@ -133,8 +133,8 @@ func updateIcons(icons *fyne.Container, c *model.Character) error {
 	corp.FillMode = canvas.ImageFillOriginal
 	icons.Add(corp)
 
-	if c.HasAlliance() {
-		u, err = c.Alliance.IconURL(128)
+	if c.Character.HasAlliance() {
+		u, err = c.Character.Alliance.IconURL(128)
 		if err != nil {
 			return err
 		}
@@ -143,8 +143,8 @@ func updateIcons(icons *fyne.Container, c *model.Character) error {
 		icons.Add(image)
 	}
 
-	if c.HasFaction() {
-		u, err = c.Faction.IconURL(128)
+	if c.Character.HasFaction() {
+		u, err = c.Character.Faction.IconURL(128)
 		if err != nil {
 			return err
 		}

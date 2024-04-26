@@ -11,7 +11,7 @@ import (
 
 const createMailList = `-- name: CreateMailList :exec
 INSERT OR IGNORE INTO mail_lists (
-    character_id,
+    my_character_id,
     eve_entity_id
 )
 VALUES (
@@ -20,57 +20,57 @@ VALUES (
 `
 
 type CreateMailListParams struct {
-	CharacterID int64
-	EveEntityID int64
+	MyCharacterID int64
+	EveEntityID   int64
 }
 
 func (q *Queries) CreateMailList(ctx context.Context, arg CreateMailListParams) error {
-	_, err := q.db.ExecContext(ctx, createMailList, arg.CharacterID, arg.EveEntityID)
+	_, err := q.db.ExecContext(ctx, createMailList, arg.MyCharacterID, arg.EveEntityID)
 	return err
 }
 
 const deleteObsoleteMailLists = `-- name: DeleteObsoleteMailLists :exec
 DELETE FROM mail_lists
-WHERE mail_lists.character_id = ?
+WHERE mail_lists.my_character_id = ?
 AND eve_entity_id NOT IN (
     SELECT eve_entity_id
     FROM mail_recipients
     JOIN mails ON mails.id = mail_recipients.mail_id
-    WHERE mails.character_id = ?
+    WHERE mails.my_character_id = ?
 )
 AND eve_entity_id NOT IN (
     SELECT from_id
     FROM mails
-    WHERE mails.character_id = ?
+    WHERE mails.my_character_id = ?
 )
 `
 
 type DeleteObsoleteMailListsParams struct {
-	CharacterID   int64
-	CharacterID_2 int64
-	CharacterID_3 int64
+	MyCharacterID   int64
+	MyCharacterID_2 int64
+	MyCharacterID_3 int64
 }
 
 func (q *Queries) DeleteObsoleteMailLists(ctx context.Context, arg DeleteObsoleteMailListsParams) error {
-	_, err := q.db.ExecContext(ctx, deleteObsoleteMailLists, arg.CharacterID, arg.CharacterID_2, arg.CharacterID_3)
+	_, err := q.db.ExecContext(ctx, deleteObsoleteMailLists, arg.MyCharacterID, arg.MyCharacterID_2, arg.MyCharacterID_3)
 	return err
 }
 
 const getMailList = `-- name: GetMailList :one
-SELECT character_id, eve_entity_id
+SELECT my_character_id, eve_entity_id
 FROM mail_lists
-WHERE character_id = ? AND eve_entity_id = ?
+WHERE my_character_id = ? AND eve_entity_id = ?
 `
 
 type GetMailListParams struct {
-	CharacterID int64
-	EveEntityID int64
+	MyCharacterID int64
+	EveEntityID   int64
 }
 
 func (q *Queries) GetMailList(ctx context.Context, arg GetMailListParams) (MailList, error) {
-	row := q.db.QueryRowContext(ctx, getMailList, arg.CharacterID, arg.EveEntityID)
+	row := q.db.QueryRowContext(ctx, getMailList, arg.MyCharacterID, arg.EveEntityID)
 	var i MailList
-	err := row.Scan(&i.CharacterID, &i.EveEntityID)
+	err := row.Scan(&i.MyCharacterID, &i.EveEntityID)
 	return i, err
 }
 
@@ -78,12 +78,12 @@ const listMailListsOrdered = `-- name: ListMailListsOrdered :many
 SELECT eve_entities.id, eve_entities.category, eve_entities.name
 FROM mail_lists
 JOIN eve_entities ON eve_entities.id = mail_lists.eve_entity_id
-WHERE character_id = ?
+WHERE my_character_id = ?
 ORDER by eve_entities.name
 `
 
-func (q *Queries) ListMailListsOrdered(ctx context.Context, characterID int64) ([]EveEntity, error) {
-	rows, err := q.db.QueryContext(ctx, listMailListsOrdered, characterID)
+func (q *Queries) ListMailListsOrdered(ctx context.Context, myCharacterID int64) ([]EveEntity, error) {
+	rows, err := q.db.QueryContext(ctx, listMailListsOrdered, myCharacterID)
 	if err != nil {
 		return nil, err
 	}

@@ -9,36 +9,6 @@ import (
 	"time"
 )
 
-type Character struct {
-	AllianceID     sql.NullInt64
-	Birthday       time.Time
-	CorporationID  int64
-	Description    string
-	Gender         string
-	FactionID      sql.NullInt64
-	ID             int64
-	LastLoginAt    time.Time
-	LocationID     int64
-	Name           string
-	RaceID         int64
-	SecurityStatus float64
-	ShipID         int64
-	SkillPoints    int64
-	WalletBalance  float64
-}
-
-type CharacterAlliance struct {
-	ID       sql.NullInt64
-	Category sql.NullString
-	Name     sql.NullString
-}
-
-type CharacterFaction struct {
-	ID       sql.NullInt64
-	Category sql.NullString
-	Name     sql.NullString
-}
-
 type Dictionary struct {
 	Key   string
 	Value []byte
@@ -48,6 +18,31 @@ type EveCategory struct {
 	ID          int64
 	Name        string
 	IsPublished bool
+}
+
+type EveCharacter struct {
+	AllianceID     sql.NullInt64
+	Birthday       time.Time
+	CorporationID  int64
+	Description    string
+	Gender         string
+	FactionID      sql.NullInt64
+	ID             int64
+	Name           string
+	RaceID         int64
+	SecurityStatus float64
+}
+
+type EveCharacterAlliance struct {
+	ID       sql.NullInt64
+	Category sql.NullString
+	Name     sql.NullString
+}
+
+type EveCharacterFaction struct {
+	ID       sql.NullInt64
+	Category sql.NullString
+	Name     sql.NullString
 }
 
 type EveConstellation struct {
@@ -97,28 +92,28 @@ type EveType struct {
 }
 
 type Mail struct {
-	ID          int64
-	Body        string
-	CharacterID int64
-	FromID      int64
-	IsRead      bool
-	MailID      int64
-	Subject     string
-	Timestamp   time.Time
+	ID            int64
+	Body          string
+	MyCharacterID int64
+	FromID        int64
+	IsRead        bool
+	MailID        int64
+	Subject       string
+	Timestamp     time.Time
 }
 
 type MailLabel struct {
-	ID          int64
-	CharacterID int64
-	Color       string
-	LabelID     int64
-	Name        string
-	UnreadCount int64
+	ID            int64
+	MyCharacterID int64
+	Color         string
+	LabelID       int64
+	Name          string
+	UnreadCount   int64
 }
 
 type MailList struct {
-	CharacterID int64
-	EveEntityID int64
+	MyCharacterID int64
+	EveEntityID   int64
 }
 
 type MailMailLabel struct {
@@ -131,10 +126,19 @@ type MailRecipient struct {
 	EveEntityID int64
 }
 
+type MyCharacter struct {
+	ID            int64
+	LastLoginAt   time.Time
+	LocationID    int64
+	ShipID        int64
+	SkillPoints   int64
+	WalletBalance float64
+}
+
 type Token struct {
-	AccessToken  string
-	CharacterID  int64
-	ExpiresAt    time.Time
-	RefreshToken string
-	TokenType    string
+	AccessToken   string
+	MyCharacterID int64
+	ExpiresAt     time.Time
+	RefreshToken  string
+	TokenType     string
 }

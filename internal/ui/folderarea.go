@@ -134,12 +134,12 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 	}
 	folders := makeDefaultFolders(characterID, labelUnreadCounts)
 	folderAll := node{
-		Category:    nodeCategoryLabel,
-		CharacterID: characterID,
-		ID:          nodeAllID,
-		Name:        "All Mails",
-		ObjID:       model.MailLabelAll,
-		UnreadCount: totalUnreadCount,
+		Category:      nodeCategoryLabel,
+		MyCharacterID: characterID,
+		ID:            nodeAllID,
+		Name:          "All Mails",
+		ObjID:         model.MailLabelAll,
+		UnreadCount:   totalUnreadCount,
 	}
 	folders[nodeAllID] = folderAll.toJSON()
 	labels, err := f.ui.service.ListMailLabelsOrdered(characterID)
@@ -150,10 +150,10 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		ids[""] = append(ids[""], nodeLabelsID)
 		ids[nodeLabelsID] = []string{}
 		folders[nodeLabelsID] = node{
-			CharacterID: characterID,
-			ID:          nodeLabelsID,
-			Name:        "Labels",
-			UnreadCount: totalLabelsUnreadCount,
+			MyCharacterID: characterID,
+			ID:            nodeLabelsID,
+			Name:          "Labels",
+			UnreadCount:   totalLabelsUnreadCount,
 		}.toJSON()
 		for _, l := range labels {
 			uid := fmt.Sprintf("label%d", l.LabelID)
@@ -174,10 +174,10 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		ids[""] = append(ids[""], nodeListsID)
 		ids[nodeListsID] = []string{}
 		folders[nodeListsID] = node{
-			CharacterID: characterID,
-			ID:          nodeListsID,
-			Name:        "Mailing Lists",
-			UnreadCount: totalListUnreadCount,
+			MyCharacterID: characterID,
+			ID:            nodeListsID,
+			Name:          "Mailing Lists",
+			UnreadCount:   totalListUnreadCount,
 		}.toJSON()
 		for _, l := range lists {
 			uid := fmt.Sprintf("list%d", l.ID)
@@ -211,12 +211,12 @@ func makeDefaultFolders(characterID int32, labelUnreadCounts map[int32]int) map[
 			u = 0
 		}
 		folders[o.nodeID] = node{
-			CharacterID: characterID,
-			Category:    nodeCategoryLabel,
-			ID:          o.nodeID,
-			Name:        o.name,
-			ObjID:       o.labelID,
-			UnreadCount: u,
+			MyCharacterID: characterID,
+			Category:      nodeCategoryLabel,
+			ID:            o.nodeID,
+			Name:          o.name,
+			ObjID:         o.labelID,
+			UnreadCount:   u,
 		}.toJSON()
 	}
 	return folders
@@ -244,7 +244,7 @@ func (f *folderArea) UpdateMails(respondToUser bool) {
 	}
 	status := f.ui.statusArea
 	if respondToUser {
-		status.Info.SetWithProgress(fmt.Sprintf("Checking mail for %s", character.Name))
+		status.Info.SetWithProgress(fmt.Sprintf("Checking mail for %s", character.Character.Name))
 	}
 	unreadCount, err := f.ui.service.UpdateMail(character.ID)
 	if err != nil {
@@ -253,9 +253,9 @@ func (f *folderArea) UpdateMails(respondToUser bool) {
 		return
 	}
 	if unreadCount > 0 {
-		status.Info.Set(fmt.Sprintf("%s has %d new mail", character.Name, unreadCount))
+		status.Info.Set(fmt.Sprintf("%s has %d new mail", character.Character.Name, unreadCount))
 	} else if respondToUser {
-		status.Info.Set(fmt.Sprintf("No new mail for %s", character.Name))
+		status.Info.Set(fmt.Sprintf("No new mail for %s", character.Character.Name))
 	} else {
 		status.Info.Clear()
 	}

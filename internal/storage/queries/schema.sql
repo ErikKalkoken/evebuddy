@@ -56,7 +56,7 @@ CREATE TABLE eve_solar_systems (
     FOREIGN KEY (eve_constellation_id) REFERENCES eve_constellations(id) ON DELETE CASCADE
 );
 
-CREATE TABLE characters (
+CREATE TABLE eve_characters (
     alliance_id INTEGER,
     birthday DATETIME NOT NULL,
     corporation_id INTEGER NOT NULL,
@@ -64,49 +64,54 @@ CREATE TABLE characters (
     gender TEXT NOT NULL,
     faction_id INTEGER,
     id INTEGER PRIMARY KEY NOT NULL,
-    last_login_at DATETIME NOT NULL,
-    location_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     race_id INTEGER NOT NULL,
     security_status REAL NOT NULL,
-    ship_id INTEGER NOT NULL,
-    skill_points INTEGER NOT NULL,
-    wallet_balance REAL NOT NULL,
     FOREIGN KEY (alliance_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
     FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
+    FOREIGN KEY (race_id) REFERENCES eve_races(id) ON DELETE CASCADE
+);
+
+CREATE VIEW eve_character_alliances AS
+SELECT eve_entities.*
+FROM eve_characters
+LEFT JOIN eve_entities ON eve_entities.id = eve_characters.alliance_id;
+
+CREATE VIEW eve_character_factions AS
+SELECT eve_entities.*
+FROM eve_characters
+LEFT JOIN eve_entities ON eve_entities.id = eve_characters.faction_id;
+
+CREATE TABLE my_characters (
+    id INTEGER PRIMARY KEY NOT NULL,
+    last_login_at DATETIME NOT NULL,
+    location_id INTEGER NOT NULL,
+    ship_id INTEGER NOT NULL,
+    skill_points INTEGER NOT NULL,
+    wallet_balance REAL NOT NULL,
+    FOREIGN KEY (id) REFERENCES eve_characters(id) ON DELETE CASCADE,
     FOREIGN KEY (location_id) REFERENCES eve_solar_systems(id) ON DELETE CASCADE,
-    FOREIGN KEY (race_id) REFERENCES eve_races(id) ON DELETE CASCADE,
     FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE CASCADE
 );
 
-CREATE VIEW character_alliances AS
-SELECT eve_entities.*
-FROM characters
-LEFT JOIN eve_entities ON eve_entities.id = characters.alliance_id;
-
-CREATE VIEW character_factions AS
-SELECT eve_entities.*
-FROM characters
-LEFT JOIN eve_entities ON eve_entities.id = characters.faction_id;
-
 CREATE TABLE mail_lists (
-    character_id INTEGER NOT NULL,
+    my_character_id INTEGER NOT NULL,
     eve_entity_id INTEGER NOT NULL,
-    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
     FOREIGN KEY (eve_entity_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
-    UNIQUE (character_id, eve_entity_id)
+    UNIQUE (my_character_id, eve_entity_id)
 );
 
 CREATE TABLE mail_labels (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    character_id INTEGER NOT NULL,
+    my_character_id INTEGER NOT NULL,
     color TEXT NOT NULL,
     label_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     unread_count INTEGER NOT NULL,
-    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
-    UNIQUE (character_id, label_id)
+    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
+    UNIQUE (my_character_id, label_id)
 );
 
 CREATE TABLE mail_recipients (
@@ -120,15 +125,15 @@ CREATE TABLE mail_recipients (
 CREATE TABLE mails (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     body TEXT NOT NULL,
-    character_id INTEGER NOT NULL,
+    my_character_id INTEGER NOT NULL,
     from_id INTEGER NOT NULL,
     is_read BOOL NOT NULL,
     mail_id INTEGER NOT NULL,
     subject TEXT NOT NULL,
     timestamp DATETIME NOT NULL,
-    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
     FOREIGN KEY (from_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
-    UNIQUE (character_id, mail_id)
+    UNIQUE (my_character_id, mail_id)
 );
 CREATE INDEX mails_timestamp_idx ON mails (timestamp DESC);
 
@@ -142,11 +147,11 @@ CREATE TABLE mail_mail_labels (
 
 CREATE TABLE tokens (
     access_token TEXT NOT NULL,
-    character_id INTEGER PRIMARY KEY NOT NULL,
+    my_character_id INTEGER PRIMARY KEY NOT NULL,
     expires_at DATETIME NOT NULL,
     refresh_token TEXT NOT NULL,
     token_type TEXT NOT NULL,
-    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE
 );
 
 CREATE TABLE dictionary (

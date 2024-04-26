@@ -24,7 +24,8 @@ func TruncateTables(db *sql.DB) {
 		DELETE FROM mail_labels;
 		DELETE FROM mails;
 		DELETE FROM tokens;
-		DELETE FROM characters;
+		DELETE FROM my_characters;
+		DELETE FROM eve_characters;
 		DELETE FROM eve_entities;
 		DELETE FROM eve_categories;
 		DELETE FROM eve_groups;
@@ -33,13 +34,9 @@ func TruncateTables(db *sql.DB) {
 	`
 	db.Exec(sql)
 	sql = `
-		DELETE FROM SQLITE_SEQUENCE WHERE name='mail_recipients';
 		DELETE FROM SQLITE_SEQUENCE WHERE name='mail_mail_labels';
 		DELETE FROM SQLITE_SEQUENCE WHERE name='mail_labels';
 		DELETE FROM SQLITE_SEQUENCE WHERE name='mails';
-		DELETE FROM SQLITE_SEQUENCE WHERE name='tokens';
-		DELETE FROM SQLITE_SEQUENCE WHERE name='characters';
-		DELETE FROM SQLITE_SEQUENCE WHERE name='eve_entities';
 	`
 	db.Exec(sql)
 }

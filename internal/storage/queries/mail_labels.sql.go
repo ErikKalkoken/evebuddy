@@ -15,21 +15,21 @@ INSERT INTO mail_labels (
     color,
     name,
     unread_count,
-    character_id,
+    my_character_id,
     label_id
 )
 VALUES (
     ?, ?, ?, ?, ?
 )
-RETURNING id, character_id, color, label_id, name, unread_count
+RETURNING id, my_character_id, color, label_id, name, unread_count
 `
 
 type CreateMailLabelParams struct {
-	Color       string
-	Name        string
-	UnreadCount int64
-	CharacterID int64
-	LabelID     int64
+	Color         string
+	Name          string
+	UnreadCount   int64
+	MyCharacterID int64
+	LabelID       int64
 }
 
 func (q *Queries) CreateMailLabel(ctx context.Context, arg CreateMailLabelParams) (MailLabel, error) {
@@ -37,13 +37,13 @@ func (q *Queries) CreateMailLabel(ctx context.Context, arg CreateMailLabelParams
 		arg.Color,
 		arg.Name,
 		arg.UnreadCount,
-		arg.CharacterID,
+		arg.MyCharacterID,
 		arg.LabelID,
 	)
 	var i MailLabel
 	err := row.Scan(
 		&i.ID,
-		&i.CharacterID,
+		&i.MyCharacterID,
 		&i.Color,
 		&i.LabelID,
 		&i.Name,
@@ -54,42 +54,42 @@ func (q *Queries) CreateMailLabel(ctx context.Context, arg CreateMailLabelParams
 
 const deleteObsoleteMailLabels = `-- name: DeleteObsoleteMailLabels :exec
 DELETE FROM mail_labels
-WHERE mail_labels.character_id = ?
+WHERE mail_labels.my_character_id = ?
 AND id NOT IN (
     SELECT mail_label_id
     FROM mail_mail_labels
     JOIN mails ON mails.id = mail_mail_labels.mail_id
-    WHERE mail_labels.character_id = ?
+    WHERE mail_labels.my_character_id = ?
 )
 `
 
 type DeleteObsoleteMailLabelsParams struct {
-	CharacterID   int64
-	CharacterID_2 int64
+	MyCharacterID   int64
+	MyCharacterID_2 int64
 }
 
 func (q *Queries) DeleteObsoleteMailLabels(ctx context.Context, arg DeleteObsoleteMailLabelsParams) error {
-	_, err := q.db.ExecContext(ctx, deleteObsoleteMailLabels, arg.CharacterID, arg.CharacterID_2)
+	_, err := q.db.ExecContext(ctx, deleteObsoleteMailLabels, arg.MyCharacterID, arg.MyCharacterID_2)
 	return err
 }
 
 const getMailLabel = `-- name: GetMailLabel :one
-SELECT id, character_id, color, label_id, name, unread_count
+SELECT id, my_character_id, color, label_id, name, unread_count
 FROM mail_labels
-WHERE character_id = ? AND label_id = ?
+WHERE my_character_id = ? AND label_id = ?
 `
 
 type GetMailLabelParams struct {
-	CharacterID int64
-	LabelID     int64
+	MyCharacterID int64
+	LabelID       int64
 }
 
 func (q *Queries) GetMailLabel(ctx context.Context, arg GetMailLabelParams) (MailLabel, error) {
-	row := q.db.QueryRowContext(ctx, getMailLabel, arg.CharacterID, arg.LabelID)
+	row := q.db.QueryRowContext(ctx, getMailLabel, arg.MyCharacterID, arg.LabelID)
 	var i MailLabel
 	err := row.Scan(
 		&i.ID,
-		&i.CharacterID,
+		&i.MyCharacterID,
 		&i.Color,
 		&i.LabelID,
 		&i.Name,
@@ -99,20 +99,20 @@ func (q *Queries) GetMailLabel(ctx context.Context, arg GetMailLabelParams) (Mai
 }
 
 const listMailLabelsByIDs = `-- name: ListMailLabelsByIDs :many
-SELECT id, character_id, color, label_id, name, unread_count
+SELECT id, my_character_id, color, label_id, name, unread_count
 FROM mail_labels
-WHERE character_id = ? AND label_id IN (/*SLICE:ids*/?)
+WHERE my_character_id = ? AND label_id IN (/*SLICE:ids*/?)
 `
 
 type ListMailLabelsByIDsParams struct {
-	CharacterID int64
-	Ids         []int64
+	MyCharacterID int64
+	Ids           []int64
 }
 
 func (q *Queries) ListMailLabelsByIDs(ctx context.Context, arg ListMailLabelsByIDsParams) ([]MailLabel, error) {
 	query := listMailLabelsByIDs
 	var queryParams []interface{}
-	queryParams = append(queryParams, arg.CharacterID)
+	queryParams = append(queryParams, arg.MyCharacterID)
 	if len(arg.Ids) > 0 {
 		for _, v := range arg.Ids {
 			queryParams = append(queryParams, v)
@@ -131,7 +131,7 @@ func (q *Queries) ListMailLabelsByIDs(ctx context.Context, arg ListMailLabelsByI
 		var i MailLabel
 		if err := rows.Scan(
 			&i.ID,
-			&i.CharacterID,
+			&i.MyCharacterID,
 			&i.Color,
 			&i.LabelID,
 			&i.Name,
@@ -151,15 +151,15 @@ func (q *Queries) ListMailLabelsByIDs(ctx context.Context, arg ListMailLabelsByI
 }
 
 const listMailLabelsOrdered = `-- name: ListMailLabelsOrdered :many
-SELECT id, character_id, color, label_id, name, unread_count
+SELECT id, my_character_id, color, label_id, name, unread_count
 FROM mail_labels
-WHERE character_id = ?
+WHERE my_character_id = ?
 AND label_id > 8
 ORDER BY name
 `
 
-func (q *Queries) ListMailLabelsOrdered(ctx context.Context, characterID int64) ([]MailLabel, error) {
-	rows, err := q.db.QueryContext(ctx, listMailLabelsOrdered, characterID)
+func (q *Queries) ListMailLabelsOrdered(ctx context.Context, myCharacterID int64) ([]MailLabel, error) {
+	rows, err := q.db.QueryContext(ctx, listMailLabelsOrdered, myCharacterID)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (q *Queries) ListMailLabelsOrdered(ctx context.Context, characterID int64) 
 		var i MailLabel
 		if err := rows.Scan(
 			&i.ID,
-			&i.CharacterID,
+			&i.MyCharacterID,
 			&i.Color,
 			&i.LabelID,
 			&i.Name,
@@ -190,7 +190,7 @@ func (q *Queries) ListMailLabelsOrdered(ctx context.Context, characterID int64) 
 
 const updateOrCreateMailLabel = `-- name: UpdateOrCreateMailLabel :one
 INSERT INTO mail_labels (
-    character_id,
+    my_character_id,
     label_id,
     color,
     name,
@@ -199,27 +199,27 @@ INSERT INTO mail_labels (
 VALUES (
     ?1, ?2, ?3, ?4, ?5
 )
-ON CONFLICT(character_id, label_id) DO
+ON CONFLICT(my_character_id, label_id) DO
 UPDATE SET
     color = ?3,
     name = ?4,
     unread_count = ?5
-WHERE character_id = ?1
+WHERE my_character_id = ?1
 AND label_id = ?2
-RETURNING id, character_id, color, label_id, name, unread_count
+RETURNING id, my_character_id, color, label_id, name, unread_count
 `
 
 type UpdateOrCreateMailLabelParams struct {
-	CharacterID int64
-	LabelID     int64
-	Color       string
-	Name        string
-	UnreadCount int64
+	MyCharacterID int64
+	LabelID       int64
+	Color         string
+	Name          string
+	UnreadCount   int64
 }
 
 func (q *Queries) UpdateOrCreateMailLabel(ctx context.Context, arg UpdateOrCreateMailLabelParams) (MailLabel, error) {
 	row := q.db.QueryRowContext(ctx, updateOrCreateMailLabel,
-		arg.CharacterID,
+		arg.MyCharacterID,
 		arg.LabelID,
 		arg.Color,
 		arg.Name,
@@ -228,7 +228,7 @@ func (q *Queries) UpdateOrCreateMailLabel(ctx context.Context, arg UpdateOrCreat
 	var i MailLabel
 	err := row.Scan(
 		&i.ID,
-		&i.CharacterID,
+		&i.MyCharacterID,
 		&i.Color,
 		&i.LabelID,
 		&i.Name,
