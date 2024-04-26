@@ -21,6 +21,14 @@ func main() {
 	defer db.Close()
 	repository := storage.New(db)
 	s := service.NewService(repository)
+
+	if *loadMapFlag {
+		err := s.LoadMap()
+		if err != nil {
+			slog.Error("Failed to load map", "err", err)
+		}
+		return
+	}
 	e := ui.NewUI(s)
 	e.ShowAndRun()
 }

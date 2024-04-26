@@ -27,7 +27,8 @@ func (l *logLevelFlag) Set(value string) error {
 
 // defined flags
 var (
-	levelFlag logLevelFlag
+	levelFlag   logLevelFlag
+	loadMapFlag = flag.Bool("loadmap", false, "loads map")
 )
 
 func init() {

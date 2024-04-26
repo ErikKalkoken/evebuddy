@@ -19,12 +19,13 @@ func (r *Storage) DeleteCharacter(ctx context.Context, characterID int32) error 
 }
 
 func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Character, error) {
+	var dummy model.Character
 	row, err := r.q.GetCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return model.Character{}, fmt.Errorf("failed to get character %d: %w", characterID, err)
+		return dummy, fmt.Errorf("failed to get character %d: %w", characterID, err)
 	}
 	c := characterFromDBRow(
 		row.Character,
@@ -38,18 +39,18 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (model.Ch
 		row.EveSolarSystem,
 	)
 	if row.Character.AllianceID.Valid {
-		c.Alliance = model.EveEntity{
-			ID:       int32(row.Character.AllianceID.Int64),
-			Name:     row.AllianceName.String,
-			Category: model.EveEntityAlliance,
+		e, err := r.q.GetEveEntity(ctx, row.Character.AllianceID.Int64)
+		if err != nil {
+			return dummy, err
 		}
+		c.Alliance = eveEntityFromDBModel(e)
 	}
 	if row.Character.FactionID.Valid {
-		c.Faction = model.EveEntity{
-			ID:       int32(row.Character.FactionID.Int64),
-			Name:     row.FactionName.String,
-			Category: model.EveEntityFaction,
+		e, err := r.q.GetEveEntity(ctx, row.Character.FactionID.Int64)
+		if err != nil {
+			return dummy, err
 		}
+		c.Faction = eveEntityFromDBModel(e)
 	}
 	return c, nil
 }

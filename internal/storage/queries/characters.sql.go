@@ -112,9 +112,7 @@ SELECT
     eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
     eve_regions.id, eve_regions.description, eve_regions.name,
     eve_constellations.id, eve_constellations.eve_region_id, eve_constellations.name,
-    eve_solar_systems.id, eve_solar_systems.eve_constellation_id, eve_solar_systems.name, eve_solar_systems.security_status,
-    alliances.name as alliance_name,
-    factions.name as faction_name
+    eve_solar_systems.id, eve_solar_systems.eve_constellation_id, eve_solar_systems.name, eve_solar_systems.security_status
 FROM characters
 JOIN eve_entities AS corporations ON corporations.id = characters.corporation_id
 JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
@@ -124,8 +122,6 @@ JOIN eve_races ON eve_races.id = characters.race_id
 JOIN eve_types ON eve_types.id = characters.ship_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
 JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
-LEFT JOIN eve_entities AS alliances ON alliances.id = characters.alliance_id
-LEFT JOIN eve_entities AS factions ON factions.id = characters.faction_id
 WHERE characters.id = ?
 `
 
@@ -139,8 +135,6 @@ type GetCharacterRow struct {
 	EveRegion        EveRegion
 	EveConstellation EveConstellation
 	EveSolarSystem   EveSolarSystem
-	AllianceName     sql.NullString
-	FactionName      sql.NullString
 }
 
 func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, error) {
@@ -190,8 +184,6 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.EveSolarSystem.EveConstellationID,
 		&i.EveSolarSystem.Name,
 		&i.EveSolarSystem.SecurityStatus,
-		&i.AllianceName,
-		&i.FactionName,
 	)
 	return i, err
 }
