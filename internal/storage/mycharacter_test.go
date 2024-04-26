@@ -20,7 +20,7 @@ func TestMyCharacter(t *testing.T) {
 		testutil.TruncateTables(db)
 		a := factory.CreateEveEntityAlliance()
 		f := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityFaction})
-		eveC := factory.CreateEveCharacter(model.EveCharacter{Alliance: a, Faction: f})
+		eveC := factory.CreateEveCharacter(storage.CreateEveCharacterParams{AllianceID: a.ID, FactionID: f.ID})
 		c := factory.CreateMyCharacter(model.MyCharacter{Character: eveC})
 		// when
 		myC, err := r.GetMyCharacter(ctx, c.ID)

@@ -24,15 +24,15 @@ var esiScopes = []string{
 	"esi-wallet.read_character_wallet.v1",
 }
 
-func (s *Service) DeleteCharacter(characterID int32) error {
+func (s *Service) DeleteMyCharacter(characterID int32) error {
 	return s.r.DeleteMyCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetCharacter(characterID int32) (model.MyCharacter, error) {
+func (s *Service) GetMyCharacter(characterID int32) (model.MyCharacter, error) {
 	return s.r.GetMyCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetAnyCharacter() (model.MyCharacter, error) {
+func (s *Service) GetAnyMyCharacter() (model.MyCharacter, error) {
 	return s.r.GetFirstMyCharacter(context.Background())
 }
 
@@ -40,8 +40,8 @@ func (s *Service) ListMyCharacters() ([]model.MyCharacterShort, error) {
 	return s.r.ListMyCharacters(context.Background())
 }
 
-// UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
-func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
+// UpdateOrCreateMyCharacterFromSSO creates or updates a character via SSO authentication.
+func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context) error {
 	ssoToken, err := sso.Authenticate(ctx, s.httpClient, esiScopes)
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	myCharacter := model.MyCharacter{
 		ID: token.CharacterID,
 	}
-	if err := s.updateCharacterDetailsESI(ctx, &myCharacter); err != nil {
+	if err := s.updateMyCharacterESI(ctx, &myCharacter); err != nil {
 		return err
 	}
 	if err := s.r.UpdateOrCreateMyCharacter(ctx, &myCharacter); err != nil {
@@ -74,17 +74,17 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) UpdateCharacterDetails(characterID int32) error {
+func (s *Service) UpdateMyCharacter(characterID int32) error {
 	ctx := context.Background()
-	key := fmt.Sprintf("UpdateCharacterDetails-%d", characterID)
+	key := fmt.Sprintf("UpdateMyCharacter-%d", characterID)
 	_, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		err := s.updateCharacterDetails(ctx, characterID)
+		err := s.updateMyCharacter(ctx, characterID)
 		return struct{}{}, err
 	})
 	return err
 }
 
-func (s *Service) updateCharacterDetails(ctx context.Context, characterID int32) error {
+func (s *Service) updateMyCharacter(ctx context.Context, characterID int32) error {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return err
@@ -94,7 +94,7 @@ func (s *Service) updateCharacterDetails(ctx context.Context, characterID int32)
 	if err != nil {
 		return err
 	}
-	if err := s.updateCharacterDetailsESI(ctx, &c); err != nil {
+	if err := s.updateMyCharacterESI(ctx, &c); err != nil {
 		return err
 	}
 	if err := s.r.UpdateOrCreateMyCharacter(ctx, &c); err != nil {
@@ -104,8 +104,8 @@ func (s *Service) updateCharacterDetails(ctx context.Context, characterID int32)
 	return nil
 }
 
-// updateCharacterDetailsESI updates character details and related information from ESI.
-func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.MyCharacter) error {
+// updateMyCharacterESI updates character details and related information from ESI.
+func (s *Service) updateMyCharacterESI(ctx context.Context, c *model.MyCharacter) error {
 	g := new(errgroup.Group)
 	g.Go(func() error {
 		skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, c.ID, nil)
@@ -155,53 +155,9 @@ func (s *Service) updateCharacterDetailsESI(ctx context.Context, c *model.MyChar
 		c.Ship = x
 		return nil
 	})
-	// g.Go(func() error {
-	// 	rr, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	if len(rr) == 0 {
-	// 		return nil
-	// 	}
-	// 	r := rr[0]
-	// 	entityIDs := []int32{c.ID}
-	// 	entityIDs = append(entityIDs, r.CorporationId)
-	// 	if r.AllianceId != 0 {
-	// 		entityIDs = append(entityIDs, r.AllianceId)
-	// 	}
-	// 	if r.FactionId != 0 {
-	// 		entityIDs = append(entityIDs, r.FactionId)
-	// 	}
-	// 	_, err = s.AddMissingEveEntities(ctx, entityIDs)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	corporation, err := s.r.GetEveEntity(ctx, r.CorporationId)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	c.Corporation = corporation
-	// 	var alliance model.EveEntity
-	// 	if r.AllianceId != 0 {
-	// 		alliance, err = s.r.GetEveEntity(ctx, r.AllianceId)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 	}
-	// 	c.Alliance = alliance
-	// 	var faction model.EveEntity
-	// 	if r.FactionId != 0 {
-	// 		faction, err = s.r.GetEveEntity(ctx, r.FactionId)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 	}
-	// 	c.Faction = faction
-	// 	return nil
-	// })
 	if err := g.Wait(); err != nil {
-		return fmt.Errorf("failed to update character %d: %w", c.ID, err)
+		return fmt.Errorf("failed to update MyCharacter %d: %w", c.ID, err)
 	}
-	s.SectionSetUpdated(c.ID, UpdateSectionDetails)
+	s.SectionSetUpdated(c.ID, UpdateSectionMyCharacter)
 	return nil
 }

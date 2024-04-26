@@ -33,29 +33,17 @@ LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters
 LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.faction_id
 WHERE eve_characters.id = ?;
 
--- name: UpdateOrCreateEveCharacter :one
-INSERT INTO eve_characters (
-    id,
-    alliance_id,
-    birthday,
-    corporation_id,
-    description,
-    faction_id,
-    gender,
-    name,
-    race_id,
-    security_status
-)
-VALUES (
-    ?1, ?2, ?3, ?4, ?5 ,?6, ?7, ?8, ?9, ?10
-)
-ON CONFLICT(id) DO
-UPDATE SET
+-- name: ListEveCharacterIDs :many
+SELECT id
+FROM eve_characters;
+
+-- name: UpdateEveCharacter :exec
+UPDATE eve_characters
+SET
     alliance_id = ?2,
-    corporation_id = ?4,
-    description = ?5,
-    faction_id = ?6,
-    name = ?8,
-    security_status = ?10
-WHERE id = ?1
-RETURNING *;
+    corporation_id = ?3,
+    description = ?4,
+    faction_id = ?5,
+    name = ?6,
+    security_status = ?7
+WHERE id = ?1;

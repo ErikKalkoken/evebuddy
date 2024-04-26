@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage/queries"
 	"fmt"
@@ -79,16 +80,22 @@ func (r *Storage) GetEveCharacter(ctx context.Context, characterID int32) (model
 	return c, nil
 }
 
-func (r *Storage) UpdateOrCreateEveCharacter(ctx context.Context, c *model.EveCharacter) error {
-	arg := queries.UpdateOrCreateEveCharacterParams{
-		Birthday:       c.Birthday,
+func (r *Storage) ListEveCharacterIDs(ctx context.Context) ([]int32, error) {
+	ids, err := r.q.ListEveCharacterIDs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list EveCharacterIDs: %w", err)
+	}
+	ids2 := islices.ConvertNumeric[int64, int32](ids)
+	return ids2, nil
+}
+
+func (r *Storage) UpdateEveCharacter(ctx context.Context, c model.EveCharacter) error {
+	arg := queries.UpdateEveCharacterParams{
+		ID:             int64(c.ID),
 		CorporationID:  int64(c.Corporation.ID),
 		Description:    c.Description,
-		Gender:         c.Gender,
-		ID:             int64(c.ID),
 		Name:           c.Name,
-		RaceID:         int64(c.Race.ID),
-		SecurityStatus: float64(c.SecurityStatus),
+		SecurityStatus: c.SecurityStatus,
 	}
 	if c.Alliance.ID != 0 {
 		arg.AllianceID.Int64 = int64(c.Alliance.ID)
@@ -98,8 +105,7 @@ func (r *Storage) UpdateOrCreateEveCharacter(ctx context.Context, c *model.EveCh
 		arg.FactionID.Int64 = int64(c.Faction.ID)
 		arg.FactionID.Valid = true
 	}
-	_, err := r.q.UpdateOrCreateEveCharacter(ctx, arg)
-	if err != nil {
+	if err := r.q.UpdateEveCharacter(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update or create EveCharacter %d: %w", c.ID, err)
 	}
 	return nil

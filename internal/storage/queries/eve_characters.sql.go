@@ -121,72 +121,65 @@ func (q *Queries) GetEveCharacter(ctx context.Context, id int64) (GetEveCharacte
 	return i, err
 }
 
-const updateOrCreateEveCharacter = `-- name: UpdateOrCreateEveCharacter :one
-INSERT INTO eve_characters (
-    id,
-    alliance_id,
-    birthday,
-    corporation_id,
-    description,
-    faction_id,
-    gender,
-    name,
-    race_id,
-    security_status
-)
-VALUES (
-    ?1, ?2, ?3, ?4, ?5 ,?6, ?7, ?8, ?9, ?10
-)
-ON CONFLICT(id) DO
-UPDATE SET
-    alliance_id = ?2,
-    corporation_id = ?4,
-    description = ?5,
-    faction_id = ?6,
-    name = ?8,
-    security_status = ?10
-WHERE id = ?1
-RETURNING alliance_id, birthday, corporation_id, description, gender, faction_id, id, name, race_id, security_status
+const listEveCharacterIDs = `-- name: ListEveCharacterIDs :many
+SELECT id
+FROM eve_characters
 `
 
-type UpdateOrCreateEveCharacterParams struct {
+func (q *Queries) ListEveCharacterIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listEveCharacterIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateEveCharacter = `-- name: UpdateEveCharacter :exec
+UPDATE eve_characters
+SET
+    alliance_id = ?2,
+    corporation_id = ?3,
+    description = ?4,
+    faction_id = ?5,
+    name = ?6,
+    security_status = ?7
+WHERE id = ?1
+`
+
+type UpdateEveCharacterParams struct {
 	ID             int64
 	AllianceID     sql.NullInt64
-	Birthday       time.Time
 	CorporationID  int64
 	Description    string
 	FactionID      sql.NullInt64
-	Gender         string
 	Name           string
-	RaceID         int64
 	SecurityStatus float64
 }
 
-func (q *Queries) UpdateOrCreateEveCharacter(ctx context.Context, arg UpdateOrCreateEveCharacterParams) (EveCharacter, error) {
-	row := q.db.QueryRowContext(ctx, updateOrCreateEveCharacter,
+func (q *Queries) UpdateEveCharacter(ctx context.Context, arg UpdateEveCharacterParams) error {
+	_, err := q.db.ExecContext(ctx, updateEveCharacter,
 		arg.ID,
 		arg.AllianceID,
-		arg.Birthday,
 		arg.CorporationID,
 		arg.Description,
 		arg.FactionID,
-		arg.Gender,
 		arg.Name,
-		arg.RaceID,
 		arg.SecurityStatus,
 	)
-	var i EveCharacter
-	err := row.Scan(
-		&i.AllianceID,
-		&i.Birthday,
-		&i.CorporationID,
-		&i.Description,
-		&i.Gender,
-		&i.FactionID,
-		&i.ID,
-		&i.Name,
-		&i.RaceID,
-		&i.SecurityStatus,
-	)
-	return i, err
+	return err
 }

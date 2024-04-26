@@ -10,8 +10,8 @@ type UpdateSection string
 
 // Updated character sections
 const (
-	UpdateSectionMail    = "mail"
-	UpdateSectionDetails = "details"
+	UpdateSectionMail        = "mail"
+	UpdateSectionMyCharacter = "my_character"
 )
 
 // update section timeouts in seconds
@@ -45,8 +45,8 @@ func makeUpdateAtDictKey(characterID int32, section UpdateSection) string {
 
 func sectionUpdateTimeout(section UpdateSection) time.Duration {
 	m := map[UpdateSection]time.Duration{
-		UpdateSectionDetails: updateSectionDetailsTimeout * time.Second,
-		UpdateSectionMail:    updateSectionMailTimeout * time.Second,
+		UpdateSectionMyCharacter: updateSectionDetailsTimeout * time.Second,
+		UpdateSectionMail:        updateSectionMailTimeout * time.Second,
 	}
 	d, ok := m[section]
 	if !ok {

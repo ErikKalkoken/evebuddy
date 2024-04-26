@@ -91,7 +91,7 @@ func NewUI(s *service.Service) *ui {
 		panic(err)
 	}
 	if cID != 0 {
-		c, err = s.GetCharacter(int32(cID))
+		c, err = s.GetMyCharacter(int32(cID))
 		if err != nil {
 			if !errors.Is(err, storage.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -138,6 +138,7 @@ func (u *ui) ShowAndRun() {
 		u.statusArea.StartUpdateTicker()
 		u.characterArea.StartUpdateTicker()
 		u.folderArea.StartUpdateTicker()
+		u.StartUpdateTickerEveCharacters()
 	}()
 	u.window.ShowAndRun()
 }
@@ -195,4 +196,24 @@ func (u *ui) ResetCurrentCharacter() {
 	}
 	u.characterArea.Redraw()
 	u.folderArea.Refresh()
+}
+
+func (u *ui) StartUpdateTickerEveCharacters() {
+	ticker := time.NewTicker(30 * time.Second)
+	key := "eve-characters-last-updated"
+	go func() {
+		for {
+			func() {
+				lastUpdated, err := u.service.DictionaryTime(key)
+				if err != nil {
+					return
+				}
+				if time.Now().Before(lastUpdated.Add(3600 * time.Second)) {
+					return
+				}
+				u.service.UpdateEveCharactersESI()
+			}()
+			<-ticker.C
+		}
+	}()
 }

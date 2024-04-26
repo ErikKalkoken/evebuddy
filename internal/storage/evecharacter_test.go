@@ -20,14 +20,14 @@ func TestEveCharacter(t *testing.T) {
 		testutil.TruncateTables(db)
 		corp := factory.CreateEveEntityCorporation()
 		race := factory.CreateEveRace()
-		c := model.EveCharacter{ID: 1, Name: "Erik", Corporation: corp, Race: race}
+		arg := storage.CreateEveCharacterParams{ID: 1, Name: "Erik", CorporationID: corp.ID, RaceID: race.ID}
 		// when
-		err := r.UpdateOrCreateEveCharacter(ctx, &c)
+		err := r.CreateEveCharacter(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			r, err := r.GetEveCharacter(ctx, c.ID)
+			r, err := r.GetEveCharacter(ctx, arg.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, c.Name, r.Name)
+				assert.Equal(t, arg.Name, r.Name)
 			}
 		}
 	})
@@ -37,7 +37,7 @@ func TestEveCharacter(t *testing.T) {
 		c1 := factory.CreateEveCharacter()
 		// when
 		c1.Name = "Erik"
-		err := r.UpdateOrCreateEveCharacter(ctx, &c1)
+		err := r.UpdateEveCharacter(ctx, c1)
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetEveCharacter(ctx, c1.ID)
@@ -89,11 +89,8 @@ func TestEveCharacter(t *testing.T) {
 		factory.CreateEveCharacter()
 		alliance := factory.CreateEveEntityAlliance()
 		faction := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityFaction})
-		c1 := factory.CreateEveCharacter(
-			model.EveCharacter{
-				Alliance: alliance,
-				Faction:  faction,
-			})
+		arg := storage.CreateEveCharacterParams{AllianceID: alliance.ID, FactionID: faction.ID}
+		c1 := factory.CreateEveCharacter(arg)
 		// when
 		c2, err := r.GetEveCharacter(ctx, c1.ID)
 		// then

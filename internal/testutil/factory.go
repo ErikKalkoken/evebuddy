@@ -59,31 +59,37 @@ func (f Factory) CreateMyCharacter(args ...model.MyCharacter) model.MyCharacter 
 }
 
 // CreateCharacter is a test factory for character objects.
-func (f Factory) CreateEveCharacter(args ...model.EveCharacter) model.EveCharacter {
+func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) model.EveCharacter {
 	ctx := context.Background()
-	var c model.EveCharacter
+	var arg storage.CreateEveCharacterParams
 	if len(args) > 0 {
-		c = args[0]
+		arg = args[0]
 	}
-	if c.ID == 0 {
-		c.ID = int32(f.calcNewID("eve_characters", "id"))
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_characters", "id"))
 	}
-	if c.Name == "" {
-		c.Name = fmt.Sprintf("Generated character #%d", c.ID)
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Generated character #%d", arg.ID)
 	}
-	if c.Corporation.ID == 0 {
-		c.Corporation = f.CreateEveEntityCorporation()
+	if arg.CorporationID == 0 {
+		c := f.CreateEveEntityCorporation()
+		arg.CorporationID = c.ID
 	}
-	if c.Birthday.IsZero() {
-		c.Birthday = time.Now()
+	if arg.Birthday.IsZero() {
+		arg.Birthday = time.Now()
 	}
-	if c.Description == "" {
-		c.Description = "Lorem Ipsum"
+	if arg.Description == "" {
+		arg.Description = "Lorem Ipsum"
 	}
-	if c.Race.ID == 0 {
-		c.Race = f.CreateEveRace()
+	if arg.RaceID == 0 {
+		r := f.CreateEveRace()
+		arg.RaceID = r.ID
 	}
-	err := f.r.UpdateOrCreateEveCharacter(ctx, &c)
+	err := f.r.CreateEveCharacter(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	c, err := f.r.GetEveCharacter(ctx, arg.ID)
 	if err != nil {
 		panic(err)
 	}

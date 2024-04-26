@@ -188,10 +188,10 @@ func (c *characterArea) StartUpdateTicker() {
 				if characterID == 0 {
 					return
 				}
-				if !c.ui.service.SectionUpdatedExpired(characterID, service.UpdateSectionDetails) {
+				if !c.ui.service.SectionUpdatedExpired(characterID, service.UpdateSectionMyCharacter) {
 					return
 				}
-				if err := c.ui.service.UpdateCharacterDetails(characterID); err != nil {
+				if err := c.ui.service.UpdateMyCharacter(characterID); err != nil {
 					slog.Error(err.Error())
 					return
 				}

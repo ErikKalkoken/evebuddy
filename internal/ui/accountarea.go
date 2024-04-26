@@ -63,7 +63,7 @@ func (m *accountArea) Redraw() {
 		image.FillMode = canvas.ImageFillOriginal
 		name := widget.NewLabel(char.Name)
 		selectButton := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
-			character, err := m.ui.service.GetCharacter(char.ID)
+			character, err := m.ui.service.GetMyCharacter(char.ID)
 			if err != nil {
 				panic(err)
 			}
@@ -80,14 +80,14 @@ func (m *accountArea) Redraw() {
 				fmt.Sprintf("Are you sure you want to delete %s?", char.Name),
 				func(confirmed bool) {
 					if confirmed {
-						err := m.ui.service.DeleteCharacter(char.ID)
+						err := m.ui.service.DeleteMyCharacter(char.ID)
 						if err != nil {
 							d := dialog.NewError(err, m.ui.window)
 							d.Show()
 						}
 						m.Redraw()
 						if isCurrentChar {
-							c, err := m.ui.service.GetAnyCharacter()
+							c, err := m.ui.service.GetAnyMyCharacter()
 							if err != nil {
 								if errors.Is(err, storage.ErrNotFound) {
 									m.ui.ResetCurrentCharacter()
@@ -124,7 +124,7 @@ func (m *accountArea) showAddCharacterDialog() {
 	go func() {
 		defer cancel()
 		defer dialog.Hide()
-		err := m.ui.service.UpdateOrCreateCharacterFromSSO(ctx)
+		err := m.ui.service.UpdateOrCreateMyCharacterFromSSO(ctx)
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
 		} else {
