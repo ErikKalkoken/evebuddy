@@ -15,6 +15,28 @@ func TestMyCharacter(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
+	t.Run("can get with all dependencies", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		a := factory.CreateEveEntityAlliance()
+		f := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityFaction})
+		eveC := factory.CreateEveCharacter(model.EveCharacter{Alliance: a, Faction: f})
+		c := factory.CreateMyCharacter(model.MyCharacter{Character: eveC})
+		// when
+		myC, err := r.GetMyCharacter(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, c.ID, myC.ID)
+			assert.Equal(t, c.LastLoginAt.Unix(), myC.LastLoginAt.Unix())
+			assert.Equal(t, c.Ship, myC.Ship)
+			assert.Equal(t, c.Location, myC.Location)
+			assert.Equal(t, c.SkillPoints, myC.SkillPoints)
+			assert.Equal(t, c.WalletBalance, myC.WalletBalance)
+			assert.Equal(t, c.Character.ID, myC.Character.ID)
+			assert.Equal(t, c.Character.Alliance, myC.Character.Alliance)
+			assert.Equal(t, c.Character.Faction, myC.Character.Faction)
+		}
+	})
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

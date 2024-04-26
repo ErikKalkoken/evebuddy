@@ -35,6 +35,11 @@ func (r *Storage) GetMyCharacter(ctx context.Context, characterID int32) (model.
 		row.EveRegion,
 		row.EveConstellation,
 		row.EveSolarSystem,
+		row.EveCharacter,
+		row.EveEntity,
+		row.EveRace,
+		row.EveCharacterAlliance,
+		row.EveCharacterFaction,
 	)
 	return c, nil
 }
@@ -90,21 +95,27 @@ func (r *Storage) UpdateOrCreateMyCharacter(ctx context.Context, c *model.MyChar
 }
 
 func myCharacterFromDBModel(
-	character queries.MyCharacter,
+	myCharacter queries.MyCharacter,
 	shipCategory queries.EveCategory,
 	shipGroup queries.EveGroup,
 	shipType queries.EveType,
 	region queries.EveRegion,
 	constellation queries.EveConstellation,
 	solar_system queries.EveSolarSystem,
+	eveCharacter queries.EveCharacter,
+	corporation queries.EveEntity,
+	race queries.EveRace,
+	alliance queries.EveCharacterAlliance,
+	faction queries.EveCharacterFaction,
 ) model.MyCharacter {
 	x := model.MyCharacter{
-		ID:            int32(character.ID),
-		LastLoginAt:   character.LastLoginAt,
+		Character:     eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
+		ID:            int32(myCharacter.ID),
+		LastLoginAt:   myCharacter.LastLoginAt,
 		Location:      eveSolarSystemFromDBModel(solar_system, constellation, region),
 		Ship:          eveTypeFromDBModel(shipType, shipGroup, shipCategory),
-		SkillPoints:   int(character.SkillPoints),
-		WalletBalance: character.WalletBalance,
+		SkillPoints:   int(myCharacter.SkillPoints),
+		WalletBalance: myCharacter.WalletBalance,
 	}
 	return x
 }
