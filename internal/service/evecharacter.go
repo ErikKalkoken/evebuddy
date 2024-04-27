@@ -45,7 +45,8 @@ func (s *Service) createEveCharacterFromESI(ctx context.Context, id int32) (*mod
 		if err != nil {
 			return nil, err
 		}
-		if err := s.updateRacesESI(ctx); err != nil {
+		_, err = s.getOrCreateEveRaceESI(ctx, r.RaceId)
+		if err != nil {
 			return nil, err
 		}
 		arg := storage.CreateEveCharacterParams{

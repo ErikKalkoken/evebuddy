@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage/queries"
 	"fmt"
@@ -32,15 +31,6 @@ func (r *Storage) GetEveRace(ctx context.Context, id int32) (*model.EveRace, err
 		return nil, fmt.Errorf("failed to get Race for id %d: %w", id, err)
 	}
 	return eveRaceFromDBModel(o), nil
-}
-
-func (r *Storage) ListEveRaceIDs(ctx context.Context) ([]int32, error) {
-	ids, err := r.q.ListEveRaceIDs(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list race IDs: %w", err)
-	}
-	ids2 := islices.ConvertNumeric[int64, int32](ids)
-	return ids2, nil
 }
 
 func eveRaceFromDBModel(r queries.EveRace) *model.EveRace {

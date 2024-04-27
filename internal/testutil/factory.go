@@ -104,15 +104,7 @@ func (f Factory) CreateEveEntity(args ...model.EveEntity) *model.EveEntity {
 		arg = args[0]
 	}
 	if arg.ID == 0 {
-		ids, err := f.r.ListEveEntityIDs(ctx)
-		if err != nil {
-			panic(err)
-		}
-		if len(ids) > 0 {
-			arg.ID = slices.Max(ids) + 1
-		} else {
-			arg.ID = 1
-		}
+		arg.ID = int32(f.calcNewID("eve_entities", "id"))
 	}
 	if arg.Category == model.EveEntityUndefined {
 		arg.Category = model.EveEntityCharacter
@@ -288,11 +280,7 @@ func (f Factory) CreateEveCategory(args ...model.EveCategory) *model.EveCategory
 		x = args[0]
 	}
 	if x.ID == 0 {
-		var max sql.NullInt32
-		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_categories;").Scan(&max); err != nil {
-			panic(err)
-		}
-		x.ID = max.Int32 + 1
+		x.ID = int32(f.calcNewID("eve_categories", "id"))
 	}
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Category #%d", x.ID)
@@ -311,11 +299,7 @@ func (f Factory) CreateEveGroup(args ...model.EveGroup) *model.EveGroup {
 		x = args[0]
 	}
 	if x.ID == 0 {
-		var max sql.NullInt32
-		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_groups;").Scan(&max); err != nil {
-			panic(err)
-		}
-		x.ID = max.Int32 + 1
+		x.ID = int32(f.calcNewID("eve_groups", "id"))
 	}
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Group #%d", x.ID)
@@ -337,11 +321,7 @@ func (f Factory) CreateEveType(args ...model.EveType) *model.EveType {
 		x = args[0]
 	}
 	if x.ID == 0 {
-		var max sql.NullInt32
-		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_types;").Scan(&max); err != nil {
-			panic(err)
-		}
-		x.ID = max.Int32 + 1
+		x.ID = int32(f.calcNewID("eve_types", "id"))
 	}
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Type #%d", x.ID)
@@ -363,11 +343,7 @@ func (f Factory) CreateEveRegion(args ...model.EveRegion) *model.EveRegion {
 		x = args[0]
 	}
 	if x.ID == 0 {
-		var max sql.NullInt32
-		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_regions;").Scan(&max); err != nil {
-			panic(err)
-		}
-		x.ID = max.Int32 + 1
+		x.ID = int32(f.calcNewID("eve_regions", "id"))
 	}
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Region #%d", x.ID)
@@ -386,11 +362,7 @@ func (f Factory) CreateEveConstellation(args ...model.EveConstellation) *model.E
 		x = args[0]
 	}
 	if x.ID == 0 {
-		var max sql.NullInt32
-		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_constellations;").Scan(&max); err != nil {
-			panic(err)
-		}
-		x.ID = max.Int32 + 1
+		x.ID = int32(f.calcNewID("eve_constellations", "id"))
 	}
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Constellation #%d", x.ID)
@@ -412,11 +384,7 @@ func (f Factory) CreateEveSolarSystem(args ...model.EveSolarSystem) *model.EveSo
 		x = args[0]
 	}
 	if x.ID == 0 {
-		var max sql.NullInt32
-		if err := f.db.QueryRow("SELECT MAX(id) FROM eve_solar_systems;").Scan(&max); err != nil {
-			panic(err)
-		}
-		x.ID = max.Int32 + 1
+		x.ID = int32(f.calcNewID("eve_solar_systems", "id"))
 	}
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Solar System #%d", x.ID)
@@ -441,15 +409,7 @@ func (f Factory) CreateEveRace(args ...model.EveRace) *model.EveRace {
 		arg = args[0]
 	}
 	if arg.ID == 0 {
-		ids, err := f.r.ListEveRaceIDs(ctx)
-		if err != nil {
-			panic(err)
-		}
-		if len(ids) > 0 {
-			arg.ID = slices.Max(ids) + 1
-		} else {
-			arg.ID = 1
-		}
+		arg.ID = int32(f.calcNewID("eve_races", "id"))
 	}
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("Race #%d", arg.ID)

@@ -70,10 +70,14 @@ func (s *Service) AddMissingEveEntities(ctx context.Context, ids []int32) ([]int
 	if missing.Size() == 0 {
 		return nil, nil
 	}
-	ids2 := missing.ToSlice()
+	missingIDs := missing.ToSlice()
+	slices.Sort(missingIDs)
+	if len(missingIDs) > 0 {
+		slog.Info("Trying to resolve EveEntity IDs from ESI", "ids", missingIDs)
+	}
 	var ee []esi.PostUniverseNames200Ok
 	var badIDs []int32
-	for _, chunk := range chunkBy(ids2, 1000) { // PostUniverseNames max is 1000 IDs
+	for _, chunk := range chunkBy(missingIDs, 1000) { // PostUniverseNames max is 1000 IDs
 		eeChunk, badChunk, err := s.resolveIDs(ctx, chunk)
 		if err != nil {
 			return nil, err
@@ -96,9 +100,9 @@ func (s *Service) AddMissingEveEntities(ctx context.Context, ids []int32) ([]int
 		for _, id := range badIDs {
 			s.r.GetOrCreateEveEntity(ctx, id, "?", model.EveEntityUnknown)
 		}
-		slog.Warn("Failed to resolve Eve Entity IDs", "ids", badIDs)
+		slog.Warn("Marking unresolvable EveEntity IDs as unknown", "ids", badIDs)
 	}
-	return ids2, nil
+	return missingIDs, nil
 }
 
 func (s *Service) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostUniverseNames200Ok, []int32, error) {

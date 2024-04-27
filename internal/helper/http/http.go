@@ -20,6 +20,9 @@ type LoggedTransport struct{}
 func (r LoggedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	isDebug := logRequest(req)
 	resp, err := http.DefaultTransport.RoundTrip(req)
+	if err != nil {
+		return resp, err
+	}
 	logResponse(isDebug, resp, req)
 	return resp, err
 }
@@ -32,10 +35,10 @@ func (r ESITransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	retry := 0
 	for {
 		resp, err := http.DefaultTransport.RoundTrip(req)
-		logResponse(isDebug, resp, req)
 		if err != nil {
 			return resp, err
 		}
+		logResponse(isDebug, resp, req)
 		if (resp.StatusCode == http.StatusBadGateway || resp.StatusCode == http.StatusGatewayTimeout || resp.StatusCode == http.StatusServiceUnavailable) && retry < maxRetries {
 			retry++
 			slog.Warn("Retrying", "method", req.Method, "url", req.URL, "retry", retry, "maxRetries", maxRetries)
