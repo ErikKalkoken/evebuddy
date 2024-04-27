@@ -152,6 +152,7 @@ func (s *Service) updateEveCharacterESI(ctx context.Context, characterID int32) 
 		if err != nil {
 			return err
 		}
+		c.Description = r2.Description
 		c.SecurityStatus = float64(r2.SecurityStatus)
 		c.Title = r2.Title
 		return nil

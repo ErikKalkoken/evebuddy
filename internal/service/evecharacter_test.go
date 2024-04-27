@@ -106,7 +106,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 			"birthday": "2015-03-24T11:37:00Z",
 			"bloodline_id": 3,
 			"corporation_id": 109299958,
-			"description": "",
+			"description": "bla bla",
 			"gender": "male",
 			"name": "CCP Bartender",
 			"race_id": 2,
@@ -136,8 +136,9 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := r.GetEveCharacter(ctx, characterID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(109299958), x.Corporation.ID)
 				assert.Equal(t, int32(434243723), x.Alliance.ID)
+				assert.Equal(t, int32(109299958), x.Corporation.ID)
+				assert.Equal(t, "bla bla", x.Description)
 				assert.InDelta(t, -9.9, x.SecurityStatus, 0.01)
 				assert.Equal(t, "All round pretty awesome guy", x.Title)
 			}
