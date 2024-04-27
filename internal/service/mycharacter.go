@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"fyne.io/fyne/v2/data/binding"
 	"golang.org/x/sync/errgroup"
 
 	"example/evebuddy/internal/api/sso"
@@ -41,11 +42,12 @@ func (s *Service) ListMyCharacters() ([]model.MyCharacterShort, error) {
 }
 
 // UpdateOrCreateMyCharacterFromSSO creates or updates a character via SSO authentication.
-func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context) error {
+func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) error {
 	ssoToken, err := sso.Authenticate(ctx, s.httpClient, esiScopes)
 	if err != nil {
 		return err
 	}
+	infoText.Set("Fetching character from server. Please wait...")
 	charID := ssoToken.CharacterID
 	token := model.Token{
 		AccessToken:  ssoToken.AccessToken,

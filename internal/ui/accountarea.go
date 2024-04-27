@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -114,22 +115,34 @@ func (m *accountArea) Redraw() {
 
 func (m *accountArea) showAddCharacterDialog() {
 	ctx, cancel := context.WithCancel(context.Background())
-	dialog := dialog.NewCustom(
+	s := "Please follow instructions in your browser to add a new character."
+	infoText := binding.BindString(&s)
+	content := widget.NewLabelWithData(infoText)
+	dlg := dialog.NewCustom(
 		"Add Character",
 		"Cancel",
-		widget.NewLabel("Please follow instructions in your browser to add a new character."),
+		content,
 		m.ui.window,
 	)
-	dialog.SetOnClosed(cancel)
+	dlg.SetOnClosed(cancel)
+	errChan := make(chan error)
 	go func() {
 		defer cancel()
-		defer dialog.Hide()
-		err := m.ui.service.UpdateOrCreateMyCharacterFromSSO(ctx)
-		if err != nil {
-			slog.Error("Failed to add a new character", "error", err)
-		} else {
-			m.Redraw()
-		}
+		defer dlg.Hide()
+		err := m.ui.service.UpdateOrCreateMyCharacterFromSSO(ctx, infoText)
+		errChan <- err
 	}()
-	dialog.Show()
+	dlg.Show()
+	err := <-errChan
+	if err == nil {
+		slog.Error("Failed to add a new character", "error", err)
+		dlg := dialog.NewInformation(
+			"Error",
+			fmt.Sprintf("An error occurred when trying to add a new character:\n%s", err),
+			m.ui.window,
+		)
+		dlg.Show()
+	} else {
+		m.Redraw()
+	}
 }
