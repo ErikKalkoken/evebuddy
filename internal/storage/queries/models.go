@@ -31,6 +31,7 @@ type EveCharacter struct {
 	Name           string
 	RaceID         int64
 	SecurityStatus float64
+	Title          string
 }
 
 type EveCharacterAlliance struct {

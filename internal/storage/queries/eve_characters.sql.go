@@ -22,10 +22,11 @@ INSERT INTO eve_characters (
     gender,
     name,
     race_id,
-    security_status
+    security_status,
+    title
 )
 VALUES (
-    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?
+    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?
 )
 `
 
@@ -40,6 +41,7 @@ type CreateEveCharacterParams struct {
 	Name           string
 	RaceID         int64
 	SecurityStatus float64
+	Title          string
 }
 
 func (q *Queries) CreateEveCharacter(ctx context.Context, arg CreateEveCharacterParams) error {
@@ -54,6 +56,7 @@ func (q *Queries) CreateEveCharacter(ctx context.Context, arg CreateEveCharacter
 		arg.Name,
 		arg.RaceID,
 		arg.SecurityStatus,
+		arg.Title,
 	)
 	return err
 }
@@ -70,7 +73,7 @@ func (q *Queries) DeleteEveCharacter(ctx context.Context, id int64) error {
 
 const getEveCharacter = `-- name: GetEveCharacter :one
 SELECT
-    eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status,
+    eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
     corporations.id, corporations.category, corporations.name,
     eve_races.id, eve_races.description, eve_races.name,
     eve_character_alliances.id, eve_character_alliances.category, eve_character_alliances.name,
@@ -105,6 +108,7 @@ func (q *Queries) GetEveCharacter(ctx context.Context, id int64) (GetEveCharacte
 		&i.EveCharacter.Name,
 		&i.EveCharacter.RaceID,
 		&i.EveCharacter.SecurityStatus,
+		&i.EveCharacter.Title,
 		&i.EveEntity.ID,
 		&i.EveEntity.Category,
 		&i.EveEntity.Name,
@@ -152,34 +156,37 @@ func (q *Queries) ListEveCharacterIDs(ctx context.Context) ([]int64, error) {
 const updateEveCharacter = `-- name: UpdateEveCharacter :exec
 UPDATE eve_characters
 SET
-    alliance_id = ?2,
-    corporation_id = ?3,
-    description = ?4,
-    faction_id = ?5,
-    name = ?6,
-    security_status = ?7
-WHERE id = ?1
+    alliance_id = ?,
+    corporation_id = ?,
+    description = ?,
+    faction_id = ?,
+    name = ?,
+    security_status = ?,
+    title = ?
+WHERE id = ?
 `
 
 type UpdateEveCharacterParams struct {
-	ID             int64
 	AllianceID     sql.NullInt64
 	CorporationID  int64
 	Description    string
 	FactionID      sql.NullInt64
 	Name           string
 	SecurityStatus float64
+	Title          string
+	ID             int64
 }
 
 func (q *Queries) UpdateEveCharacter(ctx context.Context, arg UpdateEveCharacterParams) error {
 	_, err := q.db.ExecContext(ctx, updateEveCharacter,
-		arg.ID,
 		arg.AllianceID,
 		arg.CorporationID,
 		arg.Description,
 		arg.FactionID,
 		arg.Name,
 		arg.SecurityStatus,
+		arg.Title,
+		arg.ID,
 	)
 	return err
 }

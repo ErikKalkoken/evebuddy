@@ -73,6 +73,7 @@ func (c *characterArea) Redraw() {
 		{"Race", character.Character.Race.Name, defaultColor},
 		{"Gender", character.Character.Gender, defaultColor},
 		{"Born", character.Character.Birthday.Format(myDateTime), defaultColor},
+		{"Title", stringOrDefault(character.Character.Title, "-"), defaultColor},
 	}
 	form1 := makeForm(r)
 	location := fmt.Sprintf(

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -45,10 +46,11 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 			"birthday": "2015-03-24T11:37:00Z",
 			"bloodline_id": 3,
 			"corporation_id": 109299958,
-			"description": "",
+			"description": "bla bla",
 			"gender": "male",
 			"name": "CCP Bartender",
 			"race_id": 2,
+			"security_status": -9.9,
 			"title": "All round pretty awesome guy"
 		  }`
 		httpmock.RegisterResponder(
@@ -61,10 +63,24 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, characterID, x1.ID)
+			assert.Equal(t, time.Date(2015, 03, 24, 11, 37, 0, 0, time.UTC), x1.Birthday)
+			assert.Equal(t, int32(109299958), x1.Corporation.ID)
+			assert.Equal(t, "bla bla", x1.Description)
+			assert.Equal(t, "male", x1.Gender)
 			assert.Equal(t, "CCP Bartender", x1.Name)
+			assert.Equal(t, int32(2), x1.Race.ID)
+			assert.Equal(t, "All round pretty awesome guy", x1.Title)
+			assert.InDelta(t, -9.9, x1.SecurityStatus, 0.01)
 			x2, err := r.GetEveCharacter(ctx, characterID)
 			if assert.NoError(t, err) {
+				assert.Equal(t, x1.Birthday.Unix(), x2.Birthday.Unix())
+				assert.Equal(t, x1.Corporation.ID, x2.Corporation.ID)
+				assert.Equal(t, x1.Description, x2.Description)
+				assert.Equal(t, x1.Gender, x2.Gender)
 				assert.Equal(t, x1.Name, x2.Name)
+				assert.Equal(t, x1.Race.ID, x2.Race.ID)
+				assert.Equal(t, x1.SecurityStatus, x2.SecurityStatus)
+				assert.Equal(t, x1.Title, x2.Title)
 			}
 		}
 	})
@@ -94,8 +110,8 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 			"gender": "male",
 			"name": "CCP Bartender",
 			"race_id": 2,
-			"title": "All round pretty awesome guy",
-			"security_status": -9.9
+			"security_status": -9.9,
+			"title": "All round pretty awesome guy"
 		  }`
 		httpmock.RegisterResponder(
 			"GET",
@@ -122,7 +138,8 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, int32(109299958), x.Corporation.ID)
 				assert.Equal(t, int32(434243723), x.Alliance.ID)
-				assert.LessOrEqual(t, -9.9, x.SecurityStatus)
+				assert.InDelta(t, -9.9, x.SecurityStatus, 0.01)
+				assert.Equal(t, "All round pretty awesome guy", x.Title)
 			}
 		}
 	})

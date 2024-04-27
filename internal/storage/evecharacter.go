@@ -22,6 +22,7 @@ type CreateEveCharacterParams struct {
 	Name           string
 	RaceID         int32
 	SecurityStatus float64
+	Title          string
 }
 
 func (r *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacterParams) error {
@@ -37,6 +38,7 @@ func (r *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacter
 		Name:           arg.Name,
 		RaceID:         int64(arg.RaceID),
 		SecurityStatus: arg.SecurityStatus,
+		Title:          arg.Title,
 	}
 	if arg.AllianceID != 0 {
 		arg2.AllianceID.Int64 = int64(arg.AllianceID)
@@ -95,6 +97,7 @@ func (r *Storage) UpdateEveCharacter(ctx context.Context, c *model.EveCharacter)
 		Description:    c.Description,
 		Name:           c.Name,
 		SecurityStatus: c.SecurityStatus,
+		Title:          c.Title,
 	}
 	if c.HasAlliance() {
 		arg.AllianceID.Int64 = int64(c.Alliance.ID)
@@ -128,6 +131,7 @@ func eveCharacterFromDBModel(
 		Name:           character.Name,
 		Race:           eveRaceFromDBModel(race),
 		SecurityStatus: character.SecurityStatus,
+		Title:          character.Title,
 	}
 	return &x
 }

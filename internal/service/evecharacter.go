@@ -60,6 +60,7 @@ func (s *Service) createEveCharacterFromESI(ctx context.Context, id int32) (*mod
 			Name:           r.Name,
 			RaceID:         r.RaceId,
 			SecurityStatus: float64(r.SecurityStatus),
+			Title:          r.Title,
 		}
 		if err := s.r.CreateEveCharacter(ctx, arg); err != nil {
 			return nil, err
@@ -152,6 +153,7 @@ func (s *Service) updateEveCharacterESI(ctx context.Context, characterID int32) 
 			return err
 		}
 		c.SecurityStatus = float64(r2.SecurityStatus)
+		c.Title = r2.Title
 		return nil
 	})
 	if err := g.Wait(); err != nil {

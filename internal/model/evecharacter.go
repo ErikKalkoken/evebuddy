@@ -20,6 +20,7 @@ type EveCharacter struct {
 	Name           string
 	Race           *EveRace
 	SecurityStatus float64
+	Title          string
 }
 
 func (c *EveCharacter) AllianceName() string {

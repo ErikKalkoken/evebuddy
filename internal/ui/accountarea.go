@@ -134,7 +134,7 @@ func (m *accountArea) showAddCharacterDialog() {
 	}()
 	dlg.Show()
 	err := <-errChan
-	if err == nil {
+	if err != nil {
 		slog.Error("Failed to add a new character", "error", err)
 		dlg := dialog.NewInformation(
 			"Error",

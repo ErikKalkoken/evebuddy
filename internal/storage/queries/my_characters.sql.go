@@ -68,7 +68,7 @@ func (q *Queries) DeleteMyCharacter(ctx context.Context, id int64) error {
 const getMyCharacter = `-- name: GetMyCharacter :one
 SELECT
     my_characters.id, my_characters.last_login_at, my_characters.location_id, my_characters.ship_id, my_characters.skill_points, my_characters.wallet_balance,
-    eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status,
+    eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
     eve_categories.id, eve_categories.name, eve_categories.is_published,
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
     eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
@@ -129,6 +129,7 @@ func (q *Queries) GetMyCharacter(ctx context.Context, id int64) (GetMyCharacterR
 		&i.EveCharacter.Name,
 		&i.EveCharacter.RaceID,
 		&i.EveCharacter.SecurityStatus,
+		&i.EveCharacter.Title,
 		&i.EveCategory.ID,
 		&i.EveCategory.Name,
 		&i.EveCategory.IsPublished,

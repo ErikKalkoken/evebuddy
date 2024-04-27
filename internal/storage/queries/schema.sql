@@ -67,6 +67,7 @@ CREATE TABLE eve_characters (
     name TEXT NOT NULL,
     race_id INTEGER NOT NULL,
     security_status REAL NOT NULL,
+    title TEXT NOT NULL,
     FOREIGN KEY (alliance_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
     FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL,

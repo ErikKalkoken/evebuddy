@@ -77,8 +77,12 @@ func TestEveCharacter(t *testing.T) {
 			assert.Equal(t, c1.Birthday.Unix(), c2.Birthday.Unix())
 			assert.Equal(t, c1.Corporation, c2.Corporation)
 			assert.Equal(t, c1.Description, c2.Description)
+			assert.Equal(t, c1.Gender, c2.Gender)
 			assert.Equal(t, c1.ID, c2.ID)
 			assert.Equal(t, c1.Name, c2.Name)
+			assert.Equal(t, c1.Race, c2.Race)
+			assert.Equal(t, c1.SecurityStatus, c2.SecurityStatus)
+			assert.Equal(t, c1.Title, c2.Title)
 			assert.False(t, c2.HasAlliance())
 			assert.False(t, c2.HasFaction())
 		}

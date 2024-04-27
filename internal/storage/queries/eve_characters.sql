@@ -9,10 +9,11 @@ INSERT INTO eve_characters (
     gender,
     name,
     race_id,
-    security_status
+    security_status,
+    title
 )
 VALUES (
-    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?
+    ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?
 );
 
 -- name: DeleteEveCharacter :exec
@@ -40,10 +41,11 @@ FROM eve_characters;
 -- name: UpdateEveCharacter :exec
 UPDATE eve_characters
 SET
-    alliance_id = ?2,
-    corporation_id = ?3,
-    description = ?4,
-    faction_id = ?5,
-    name = ?6,
-    security_status = ?7
-WHERE id = ?1;
+    alliance_id = ?,
+    corporation_id = ?,
+    description = ?,
+    faction_id = ?,
+    name = ?,
+    security_status = ?,
+    title = ?
+WHERE id = ?;
