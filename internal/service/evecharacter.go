@@ -72,8 +72,8 @@ func (s *Service) createEveCharacterFromESI(ctx context.Context, id int32) (*mod
 	return y.(*model.EveCharacter), nil
 }
 
-// UpdateEveCharactersESI updates all known Eve characters from ESI.
-func (s *Service) UpdateEveCharactersESI() error {
+// UpdateAllEveCharactersESI updates all known Eve characters from ESI.
+func (s *Service) UpdateAllEveCharactersESI() error {
 	ctx := context.Background()
 	ids, err := s.r.ListEveCharacterIDs(ctx)
 	if err != nil {

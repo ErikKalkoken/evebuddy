@@ -211,7 +211,7 @@ func (u *ui) StartUpdateTickerEveCharacters() {
 				if time.Now().Before(lastUpdated.Add(3600 * time.Second)) {
 					return
 				}
-				u.service.UpdateEveCharactersESI()
+				u.service.UpdateAllEveCharactersESI()
 			}()
 			<-ticker.C
 		}
