@@ -20,14 +20,18 @@ type Service struct {
 }
 
 func NewService(r *storage.Storage) *Service {
-	httpClient := &http.Client{
-		Timeout:   time.Second * 30, // Timeout after 30 seconds
-		Transport: myHttp.CustomTransport{},
+	defaultHttpClient := &http.Client{
+		Timeout:   time.Second * 30,
+		Transport: myHttp.LoggedTransport{},
+	}
+	esiHttpClient := &http.Client{
+		Timeout:   time.Second * 30,
+		Transport: myHttp.ESITransport{},
 	}
 	userAgent := "EveBuddy kalkoken87@gmail.com"
-	esiClient := goesi.NewAPIClient(httpClient, userAgent)
+	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
 	s := Service{
-		httpClient:  httpClient,
+		httpClient:  defaultHttpClient,
 		esiClient:   esiClient,
 		r:           r,
 		singleGroup: new(singleflight.Group),
