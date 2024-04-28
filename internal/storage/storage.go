@@ -3,10 +3,11 @@ package storage
 import (
 	"database/sql"
 	"errors"
-	"example/evebuddy/internal/storage/queries"
 	"fmt"
 	"log/slog"
 	"net/url"
+
+	"example/evebuddy/internal/storage/queries"
 )
 
 var ErrNotFound = errors.New("object not found")

@@ -3,8 +3,6 @@ package ui
 import (
 	"context"
 	"errors"
-	"example/evebuddy/internal/api/images"
-	"example/evebuddy/internal/storage"
 	"fmt"
 	"log/slog"
 
@@ -16,6 +14,9 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"example/evebuddy/internal/api/images"
+	"example/evebuddy/internal/storage"
 )
 
 // accountArea is the UI area for managing of characters.

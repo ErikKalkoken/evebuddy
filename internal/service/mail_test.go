@@ -1,14 +1,15 @@
 package service_test
 
 import (
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/service"
-	"example/evebuddy/internal/testutil"
 	"fmt"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+
+	"example/evebuddy/internal/helper/testutil"
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/service"
 )
 
 func TestSendMail(t *testing.T) {

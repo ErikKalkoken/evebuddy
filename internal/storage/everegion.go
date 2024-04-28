@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage/queries"
-	"fmt"
 )
 
 func (r *Storage) CreateEveRegion(ctx context.Context, description string, id int32, name string) (*model.EveRegion, error) {

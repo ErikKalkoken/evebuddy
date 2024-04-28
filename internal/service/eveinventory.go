@@ -3,9 +3,10 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage"
-	"fmt"
 )
 
 func (s *Service) GetOrCreateEveCategoryESI(id int32) (*model.EveCategory, error) {

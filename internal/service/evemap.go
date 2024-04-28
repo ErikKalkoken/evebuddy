@@ -3,11 +3,12 @@ package service
 import (
 	"context"
 	"errors"
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage"
 	"fmt"
 
 	"golang.org/x/sync/errgroup"
+
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/storage"
 )
 
 func (s *Service) GetOrCreateEveRegionESI(id int32) (*model.EveRegion, error) {

@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage/queries"
-	"fmt"
 )
 
 func (r *Storage) CreateEveCategory(ctx context.Context, id int32, name string, is_published bool) (*model.EveCategory, error) {

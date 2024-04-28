@@ -2,14 +2,15 @@ package storage_test
 
 import (
 	"context"
-	"example/evebuddy/internal/helper/set"
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage"
-	"example/evebuddy/internal/testutil"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"example/evebuddy/internal/helper/set"
+	"example/evebuddy/internal/helper/testutil"
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/storage"
 )
 
 func TestMailCreate(t *testing.T) {

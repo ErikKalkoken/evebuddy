@@ -1,10 +1,11 @@
 package ui
 
 import (
-	"example/evebuddy/internal/model"
 	"fmt"
 	"regexp"
 	"strings"
+
+	"example/evebuddy/internal/model"
 )
 
 type mailRecipientCategory uint

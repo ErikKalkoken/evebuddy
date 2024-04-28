@@ -1,12 +1,13 @@
 package service_test
 
 import (
-	"example/evebuddy/internal/service"
-	"example/evebuddy/internal/testutil"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"example/evebuddy/internal/helper/testutil"
+	"example/evebuddy/internal/service"
 )
 
 func TestDictionary(t *testing.T) {

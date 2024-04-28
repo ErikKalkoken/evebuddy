@@ -2,10 +2,11 @@ package storage_test
 
 import (
 	"context"
-	"example/evebuddy/internal/testutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"example/evebuddy/internal/helper/testutil"
 )
 
 func TestEveType(t *testing.T) {

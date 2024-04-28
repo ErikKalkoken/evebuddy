@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage/queries"
-	"fmt"
 )
 
 func (r *Storage) CreateEveType(ctx context.Context, id int32, description string, eve_group_id int32, name string, is_published bool) error {

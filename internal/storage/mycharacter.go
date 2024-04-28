@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage/queries"
-	"fmt"
 )
 
 func (r *Storage) DeleteMyCharacter(ctx context.Context, characterID int32) error {

@@ -1,9 +1,9 @@
 package model
 
 import (
-	"example/evebuddy/internal/api/images"
-
 	"fyne.io/fyne/v2"
+
+	"example/evebuddy/internal/api/images"
 )
 
 // EveCategory is a category in Eve Online.

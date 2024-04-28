@@ -2,10 +2,11 @@
 package model
 
 import (
-	"example/evebuddy/internal/api/images"
 	"time"
 
 	"fyne.io/fyne/v2"
+
+	"example/evebuddy/internal/api/images"
 )
 
 // An owned character in Eve Online.

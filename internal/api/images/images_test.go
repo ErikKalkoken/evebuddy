@@ -1,13 +1,14 @@
 package images_test
 
 import (
-	"example/evebuddy/internal/api/images"
 	"fmt"
 
 	"testing"
 
 	"fyne.io/fyne/v2/storage"
 	"github.com/stretchr/testify/assert"
+
+	"example/evebuddy/internal/api/images"
 )
 
 var testCases = []struct {

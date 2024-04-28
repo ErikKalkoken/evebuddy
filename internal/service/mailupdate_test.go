@@ -11,8 +11,8 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
+	"example/evebuddy/internal/helper/testutil"
 	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/testutil"
 )
 
 func TestCanFetchManyMailHeaders(t *testing.T) {

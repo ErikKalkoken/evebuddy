@@ -1,10 +1,11 @@
 package model
 
 import (
-	"example/evebuddy/internal/api/images"
 	"fmt"
 
 	"fyne.io/fyne/v2"
+
+	"example/evebuddy/internal/api/images"
 )
 
 type EveEntityCategory int

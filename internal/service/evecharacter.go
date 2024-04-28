@@ -3,12 +3,13 @@ package service
 import (
 	"context"
 	"errors"
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage"
 	"fmt"
 	"log/slog"
 
 	"golang.org/x/sync/errgroup"
+
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/storage"
 )
 
 func (s *Service) GetOrCreateEveCharacterESI(id int32) (*model.EveCharacter, error) {

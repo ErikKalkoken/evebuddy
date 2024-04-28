@@ -2,13 +2,14 @@ package service
 
 import (
 	"context"
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage"
 	"fmt"
 	"slices"
 	"time"
 
 	"github.com/antihax/goesi/esi"
+
+	"example/evebuddy/internal/model"
+	"example/evebuddy/internal/storage"
 )
 
 var eveEntityCategory2MailRecipientType = map[model.EveEntityCategory]string{

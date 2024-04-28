@@ -1,11 +1,12 @@
 package humanize_test
 
 import (
-	"example/evebuddy/internal/helper/humanize"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"example/evebuddy/internal/helper/humanize"
 )
 
 func TestHumanize(t *testing.T) {

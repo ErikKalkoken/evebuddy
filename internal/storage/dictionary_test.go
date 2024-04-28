@@ -3,10 +3,11 @@ package storage_test
 import (
 	"context"
 	"database/sql"
-	"example/evebuddy/internal/testutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"example/evebuddy/internal/helper/testutil"
 )
 
 func TestDictionary(t *testing.T) {

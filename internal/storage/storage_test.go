@@ -2,10 +2,11 @@ package storage
 
 import (
 	"database/sql"
-	"example/evebuddy/internal/storage/queries"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"example/evebuddy/internal/storage/queries"
 )
 
 func TestSchemaExists(t *testing.T) {

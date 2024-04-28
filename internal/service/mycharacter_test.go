@@ -2,9 +2,9 @@ package service_test
 
 import (
 	"context"
+	"example/evebuddy/internal/helper/testutil"
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/service"
-	"example/evebuddy/internal/testutil"
 	"net/http"
 	"testing"
 

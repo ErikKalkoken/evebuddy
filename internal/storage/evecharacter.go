@@ -4,11 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"time"
+
 	islices "example/evebuddy/internal/helper/slices"
 	"example/evebuddy/internal/model"
 	"example/evebuddy/internal/storage/queries"
-	"fmt"
-	"time"
 )
 
 type CreateEveCharacterParams struct {

@@ -1,11 +1,12 @@
 package cache_test
 
 import (
-	"example/evebuddy/internal/helper/cache"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"example/evebuddy/internal/helper/cache"
 )
 
 func TestCache(t *testing.T) {
