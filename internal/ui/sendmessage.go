@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -23,16 +25,16 @@ const (
 	CreateMessageForward
 )
 
-func (u *ui) ShowCreateMessageWindow(mode int, mail *model.Mail) {
-	w, err := u.makeCreateMessageWindow(mode, mail)
+func (u *ui) ShowSendMessageWindow(mode int, mail *model.Mail) {
+	w, err := u.makeSendMessageWindow(mode, mail)
 	if err != nil {
-		slog.Error("failed to create new message window", "error", err)
+		slog.Error("failed to create send message window", "error", err)
 	} else {
 		w.Show()
 	}
 }
 
-func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, error) {
+func (u *ui) makeSendMessageWindow(mode int, mail *model.Mail) (fyne.Window, error) {
 	currentChar := *u.CurrentChar()
 	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", currentChar.Character.Name))
 
@@ -89,7 +91,7 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 				Widget: subjectInput,
 			},
 			{
-				Text:   "Text",
+				Text:   "",
 				Widget: bodyInput,
 			},
 		},
@@ -107,6 +109,13 @@ func (u *ui) makeCreateMessageWindow(mode int, mail *model.Mail) (fyne.Window, e
 					if err != nil {
 						return err
 					}
+					names := make([]string, len(ee2))
+					for i, e := range ee2 {
+						names[i] = e.Name
+					}
+					slices.Sort(names)
+					s := strings.Join(names, ", ")
+					u.statusArea.Info.Set(fmt.Sprintf("Message sent to %s", s))
 					return nil
 				}()
 			}

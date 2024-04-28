@@ -86,17 +86,17 @@ func (m *mailDetailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 	m.icons.RemoveAll()
 	m.icons.Add(
 		widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {
-			m.ui.ShowCreateMessageWindow(CreateMessageReply, &mail)
+			m.ui.ShowSendMessageWindow(CreateMessageReply, &mail)
 		}),
 	)
 	m.icons.Add(
 		widget.NewButtonWithIcon("", theme.MailReplyAllIcon(), func() {
-			m.ui.ShowCreateMessageWindow(CreateMessageReplyAll, &mail)
+			m.ui.ShowSendMessageWindow(CreateMessageReplyAll, &mail)
 		}),
 	)
 	m.icons.Add(
 		widget.NewButtonWithIcon("", theme.MailForwardIcon(), func() {
-			m.ui.ShowCreateMessageWindow(CreateMessageForward, &mail)
+			m.ui.ShowSendMessageWindow(CreateMessageForward, &mail)
 		}),
 	)
 	m.icons.Add(layout.NewSpacer())

@@ -34,7 +34,7 @@ func (u *ui) NewFolderArea() *folderArea {
 		go f.UpdateMails(true)
 	})
 	f.newButton = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
-		f.ui.ShowCreateMessageWindow(CreateMessageNew, nil)
+		f.ui.ShowSendMessageWindow(CreateMessageNew, nil)
 	})
 	f.newButton.Importance = widget.HighImportance
 	top := container.NewHBox(f.refreshButton, f.newButton)

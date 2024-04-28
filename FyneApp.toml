@@ -1,8 +1,8 @@
 Website = "https://github.com/ErikKalkoken/evebuddy"
 
 [Details]
-Icon = "icon.png"
-Name = "Eve Buddy"
-ID = "com.example.app"
-Version = "0.1.0"
-Build = 1
+  Icon = "icon.png"
+  Name = "Eve Buddy"
+  ID = "com.example.app"
+  Version = "0.1.0"
+  Build = 1
