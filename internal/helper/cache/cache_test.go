@@ -1,7 +1,7 @@
 package cache_test
 
 import (
-	"example/evebuddy/internal/cache"
+	"example/evebuddy/internal/helper/cache"
 	"testing"
 	"time"
 
