@@ -13,6 +13,16 @@ This app is in development.
 
 More features planned...
 
+## Privacy notes
+
+We understand and respect the privacy concerns of our fellow Eve Online players. Therefore all data of this app is stored locally (e.g. character tokens) and not shared with any 3rd party. Internet requests by this app are made to CCP's game server only.
+
+## Developer notes
+
+In general this app can be developed on many popular desktop platforms including Windows, MacOS and Linux.
+
+To setup a local development environment please follow the platform specific instructions for setting up development for a [fye app](https://docs.fyne.io/started/). Fyne is the GUI framework used by Eve Buddy.
+
 ## Credits
 
 "EVE", "EVE Online", "CCP", and all related logos and images are trademarks or registered trademarks of CCP hf.
