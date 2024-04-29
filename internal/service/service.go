@@ -25,8 +25,15 @@ func NewService(r *storage.Storage) *Service {
 		Transport: ihttp.LoggedTransport{},
 	}
 	esiHttpClient := &http.Client{
-		Timeout:   time.Second * 30,
-		Transport: ihttp.ESITransport{},
+		Timeout: time.Second * 30,
+		Transport: ihttp.LoggedTransportWithRetries{
+			MaxRetries: 3,
+			StatusCodesToRetry: []int{
+				http.StatusBadGateway,
+				http.StatusGatewayTimeout,
+				http.StatusServiceUnavailable,
+			},
+		},
 	}
 	userAgent := "EveBuddy kalkoken87@gmail.com"
 	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)

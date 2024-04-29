@@ -7,12 +7,9 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"slices"
 	"time"
 )
-
-const maxRetries = 3
-
-// TODO: Add tests
 
 // LoggedTransport adds request slog logging.
 //
@@ -31,11 +28,29 @@ func (r LoggedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-// ESITransport adds request logging and automatic retrying for common ESI HTTP errors
-type ESITransport struct{}
+// defaults for LoggedTransportWithRetries
+const (
+	defaultMaxRetries        = 3
+	defaultDelayMilliseconds = 200
+)
 
-func (r ESITransport) RoundTrip(req *http.Request) (*http.Response, error) {
+// LoggedTransportWithRetries adds request logging and automatic retrying for common HTTP errors.
+type LoggedTransportWithRetries struct {
+	MaxRetries         int
+	StatusCodesToRetry []int
+	DelayMilliseconds  int
+}
+
+func (t LoggedTransportWithRetries) RoundTrip(req *http.Request) (*http.Response, error) {
 	isDebug := logRequest(req)
+	maxRetries := t.MaxRetries
+	if maxRetries < 1 {
+		maxRetries = defaultMaxRetries
+	}
+	delayMilliseconds := t.DelayMilliseconds
+	if delayMilliseconds < 1 {
+		delayMilliseconds = defaultDelayMilliseconds
+	}
 	retry := 0
 	for {
 		resp, err := http.DefaultTransport.RoundTrip(req)
@@ -43,10 +58,10 @@ func (r ESITransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			return resp, err
 		}
 		logResponse(isDebug, resp, req)
-		if (resp.StatusCode == http.StatusBadGateway || resp.StatusCode == http.StatusGatewayTimeout || resp.StatusCode == http.StatusServiceUnavailable) && retry < maxRetries {
+		if slices.Contains(t.StatusCodesToRetry, resp.StatusCode) && retry < maxRetries {
 			retry++
 			slog.Warn("Retrying", "method", req.Method, "url", req.URL, "retry", retry, "maxRetries", maxRetries)
-			wait := time.Millisecond * time.Duration(200*retry)
+			wait := time.Duration(delayMilliseconds*retry) * time.Millisecond
 			time.Sleep(wait)
 			continue
 		}
