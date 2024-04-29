@@ -20,7 +20,12 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '1.22'
-
+    
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install gcc libgl1-mesa-dev xorg-dev
+    
     - name: Build
       run: go build -v ./...
 
