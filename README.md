@@ -1,43 +1,18 @@
-# esiapp
+# Eve Buddy
 
-A desktop client for Eve mails.
+Eve Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players. It runs on Windows, MacOS and LINUX desktops.
 
-## To-Dos
+![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/go.yml/badge.svg)
 
-### Minimal viable product
+This app is in development.
 
-MVP is reaching feature parity with Member Audit mail.
+## Features
 
-- [x] Fetch mail bodies concurrently
-- [x] Add paging to allow fetching more then 50 mails from ESI
-- [x] Add error handling when fetching mails concurrently
-- [x] Preselect mail after opening app
-- [x] Auto retry ESI calls on known common errors
-- [x] Allow selecting mails by folder
-- [x] Refactor gui part into own package
-- [x] Update list of characters after adding new character
-- [x] Show mailing lists as folder
-- [x] Update "is_read" for mails from ESI
-- [x] Calculate unread counts for the folders from local mails
-- [x] Migrate to sqlc
-- [x] Update "is_unread"
-- [x] Show recipients in header list for sent mail
-- [x] Add settings
-- [x] Add error handling for mailing lists
-- [x] Update all data periodically and automatic
-- [x] Add basic unit tests
-- [ ] Add caching for API requests
-- [ ] Add more tests
-- [ ] Add migration instrumentation
+- Mails: Receiving, sending and deleting of Eve mails
+- Character stats: Display of current information about a character (e.g. location)
 
-### Future releases
+More features planned...
 
-- Add additional functionality, e.g. contacts (aka address book)
-- Full unit tests
-- Packaging for Linux, Windows and MAC
-- Store logs in a file instead of console
-- Show mail bodies as rich text
+## Credits
 
-### Credits
-
-- Spaceship icon by Icon8: https://icons8.com/icon/bY5t0noHcfXn/rocket
+"EVE", "EVE Online", "CCP", and all related logos and images are trademarks or registered trademarks of CCP hf.
