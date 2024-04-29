@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"example/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 )
 
 func TestEveConstellation(t *testing.T) {

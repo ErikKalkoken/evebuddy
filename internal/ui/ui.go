@@ -16,9 +16,9 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/service"
-	"example/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 // UI constants

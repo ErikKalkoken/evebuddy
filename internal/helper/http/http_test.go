@@ -11,7 +11,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	ihttp "example/evebuddy/internal/helper/http"
+	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
 )
 
 func TestLoggedTransport(t *testing.T) {

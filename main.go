@@ -5,9 +5,9 @@ import (
 	"log"
 	"log/slog"
 
-	"example/evebuddy/internal/service"
-	"example/evebuddy/internal/storage"
-	"example/evebuddy/internal/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/ui"
 )
 
 func main() {

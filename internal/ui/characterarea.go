@@ -14,10 +14,10 @@ import (
 
 	"github.com/dustin/go-humanize"
 
-	"example/evebuddy/internal/api/images"
-	ihumanize "example/evebuddy/internal/helper/humanize"
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/api/images"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/service"
 )
 
 type item struct {

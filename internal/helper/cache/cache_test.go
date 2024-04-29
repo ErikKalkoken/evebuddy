@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"example/evebuddy/internal/helper/cache"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 )
 
 func TestCache(t *testing.T) {

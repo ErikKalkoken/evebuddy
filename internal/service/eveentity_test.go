@@ -9,9 +9,9 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"example/evebuddy/internal/helper/testutil"
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/service"
 )
 
 func TestResolveUncleanEveEntities(t *testing.T) {

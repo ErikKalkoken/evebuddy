@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"example/evebuddy/internal/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
 func TestSchemaExists(t *testing.T) {

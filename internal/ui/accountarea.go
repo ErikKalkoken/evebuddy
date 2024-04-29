@@ -15,8 +15,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"example/evebuddy/internal/api/images"
-	"example/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/api/images"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 // accountArea is the UI area for managing of characters.

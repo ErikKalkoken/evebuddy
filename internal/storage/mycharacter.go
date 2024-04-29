@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	islices "example/evebuddy/internal/helper/slices"
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage/queries"
+	islices "github.com/ErikKalkoken/evebuddy/internal/helper/slices"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
 func (r *Storage) DeleteMyCharacter(ctx context.Context, characterID int32) error {

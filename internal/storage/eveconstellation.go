@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
 func (r *Storage) CreateEveConstellation(ctx context.Context, id, eve_region_id int32, name string) error {

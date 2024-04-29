@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 
-	"example/evebuddy/internal/helper/set"
-	islices "example/evebuddy/internal/helper/slices"
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
+	islices "github.com/ErikKalkoken/evebuddy/internal/helper/slices"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
 // Eve Entity categories in DB models

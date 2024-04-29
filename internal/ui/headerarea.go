@@ -14,8 +14,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	islices "example/evebuddy/internal/helper/slices"
-	"example/evebuddy/internal/storage"
+	islices "github.com/ErikKalkoken/evebuddy/internal/helper/slices"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 const undefinedListItemID = -1

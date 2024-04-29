@@ -8,8 +8,8 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 func (s *Service) GetOrCreateEveCharacterESI(id int32) (*model.EveCharacter, error) {

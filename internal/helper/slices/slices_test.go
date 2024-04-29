@@ -1,8 +1,9 @@
 package slices_test
 
 import (
-	"example/evebuddy/internal/helper/slices"
 	"testing"
+
+	"github.com/ErikKalkoken/evebuddy/internal/helper/slices"
 
 	"github.com/stretchr/testify/assert"
 )

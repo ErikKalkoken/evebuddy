@@ -10,9 +10,9 @@ import (
 	"github.com/antihax/goesi/optional"
 	"golang.org/x/sync/errgroup"
 
-	"example/evebuddy/internal/helper/set"
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 const (

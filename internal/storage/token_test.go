@@ -7,9 +7,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"example/evebuddy/internal/helper/testutil"
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 func TestToken(t *testing.T) {

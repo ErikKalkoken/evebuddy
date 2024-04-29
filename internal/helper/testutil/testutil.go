@@ -3,7 +3,7 @@ package testutil
 import (
 	"database/sql"
 
-	"example/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 func New() (*sql.DB, *storage.Storage, Factory) {

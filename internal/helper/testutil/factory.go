@@ -9,8 +9,8 @@ import (
 	"slices"
 	"time"
 
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 type Factory struct {

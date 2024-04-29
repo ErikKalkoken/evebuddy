@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
 func (r *Storage) CreateEveRegion(ctx context.Context, description string, id int32, name string) (*model.EveRegion, error) {

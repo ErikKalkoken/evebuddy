@@ -8,8 +8,8 @@ import (
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
 
-	ihttp "example/evebuddy/internal/helper/http"
-	"example/evebuddy/internal/storage"
+	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 type Service struct {

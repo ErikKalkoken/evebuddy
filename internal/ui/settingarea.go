@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
-	"example/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 // settingsArea is the UI area for settings.

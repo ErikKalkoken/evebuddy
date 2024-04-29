@@ -11,8 +11,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/service"
 )
 
 // folderArea is the UI area showing the mail folders.

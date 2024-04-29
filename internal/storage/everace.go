@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
 func (r *Storage) CreateEveRace(ctx context.Context, id int32, description, name string) (*model.EveRace, error) {

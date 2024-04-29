@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"example/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 type mailRecipientCategory uint

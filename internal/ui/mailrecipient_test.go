@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"example/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 func TestRecipient(t *testing.T) {

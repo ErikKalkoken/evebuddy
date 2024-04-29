@@ -8,8 +8,8 @@ import (
 
 	"github.com/antihax/goesi/esi"
 
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 var eveEntityCategory2MailRecipientType = map[model.EveEntityCategory]string{

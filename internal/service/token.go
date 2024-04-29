@@ -7,8 +7,8 @@ import (
 
 	"github.com/antihax/goesi"
 
-	"example/evebuddy/internal/api/sso"
-	"example/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/api/sso"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 // getValidToken returns a valid token for a character. Convenience function.

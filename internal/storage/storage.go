@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"net/url"
 
-	"example/evebuddy/internal/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
 var ErrNotFound = errors.New("object not found")

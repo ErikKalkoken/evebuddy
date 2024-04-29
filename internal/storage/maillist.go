@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"example/evebuddy/internal/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
 func (r *Storage) CreateMailList(ctx context.Context, characterID, mailListID int32) error {

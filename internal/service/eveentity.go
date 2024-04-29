@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"slices"
 
-	"example/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 
 	"github.com/antihax/goesi/esi"
 )

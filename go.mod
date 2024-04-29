@@ -1,4 +1,4 @@
-module example/evebuddy
+module github.com/ErikKalkoken/evebuddy
 
 go 1.22.0
 

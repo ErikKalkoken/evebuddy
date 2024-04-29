@@ -8,8 +8,8 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"golang.org/x/sync/errgroup"
 
-	"example/evebuddy/internal/api/sso"
-	"example/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/api/sso"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 var esiScopes = []string{

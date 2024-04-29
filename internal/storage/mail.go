@@ -8,9 +8,9 @@ import (
 	"log/slog"
 	"time"
 
-	islices "example/evebuddy/internal/helper/slices"
-	"example/evebuddy/internal/model"
-	"example/evebuddy/internal/storage/queries"
+	islices "github.com/ErikKalkoken/evebuddy/internal/helper/slices"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
 func mailFromDBModel(mail queries.Mail, from queries.EveEntity, labels []queries.MailLabel, recipients []queries.EveEntity) model.Mail {
