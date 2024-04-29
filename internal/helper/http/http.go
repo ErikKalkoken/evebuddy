@@ -14,7 +14,11 @@ const maxRetries = 3
 
 // TODO: Add tests
 
-// LoggedTransport adds request logging
+// LoggedTransport adds request slog logging.
+//
+// Responses with status code below 400 are logged with INFO level.
+// Responses with status code of 400 or higher are logged with WARNING level.
+// When DEBUG logging is enabled, will also log details of request and response.
 type LoggedTransport struct{}
 
 func (r LoggedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -76,7 +80,7 @@ func logResponse(isDebug bool, resp *http.Response, req *http.Request) {
 				resp.Body = io.NopCloser(bytes.NewBuffer(body))
 			}
 		}
-		slog.Debug("HTTP response", "method", req.Method, "url", req.URL, "status", resp.StatusCode, "body", respBody)
+		slog.Debug("HTTP response", "method", req.Method, "url", req.URL, "status", resp.StatusCode, "header", resp.Header, "body", respBody)
 	}
 	var level slog.Level
 	if resp.StatusCode >= 400 {

@@ -8,7 +8,7 @@ import (
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
 
-	myHttp "example/evebuddy/internal/helper/http"
+	ihttp "example/evebuddy/internal/helper/http"
 	"example/evebuddy/internal/storage"
 )
 
@@ -22,11 +22,11 @@ type Service struct {
 func NewService(r *storage.Storage) *Service {
 	defaultHttpClient := &http.Client{
 		Timeout:   time.Second * 30,
-		Transport: myHttp.LoggedTransport{},
+		Transport: ihttp.LoggedTransport{},
 	}
 	esiHttpClient := &http.Client{
 		Timeout:   time.Second * 30,
-		Transport: myHttp.ESITransport{},
+		Transport: ihttp.ESITransport{},
 	}
 	userAgent := "EveBuddy kalkoken87@gmail.com"
 	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
