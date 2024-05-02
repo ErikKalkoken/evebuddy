@@ -118,7 +118,7 @@ func makeToolbar(u *ui) *fyne.Container {
 		widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
 			u.ShowSettingsDialog()
 		}),
-		widget.NewButtonWithIcon("", theme.AccountIcon(), func() {
+		widget.NewButtonWithIcon("", theme.NewThemedResource(resourceGroupSvg), func() {
 			u.ShowAccountDialog()
 		}),
 	)
