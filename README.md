@@ -13,6 +13,28 @@ This app is in development.
 
 More features planned...
 
+## Installation
+
+### Linux
+
+First download the latest release from Github.
+
+Then install the release on your desktop with:
+
+```sh
+sudo tar xvfJ evebuddy_linux_amd64.tar.xz -C /
+```
+
+When everything worked correctly the app should appear under "Applications".
+
+### Windows
+
+tbd
+
+### Mac OS
+
+tbd
+
 ## Privacy notes
 
 We understand and respect the privacy concerns of our fellow Eve Online players. Therefore all data of this app is stored locally (e.g. character tokens) and not shared with any 3rd party. Internet requests by this app are made to CCP's game server only.
