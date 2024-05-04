@@ -1,6 +1,6 @@
 # Main workflow for testing and releasing
 
-name: CI
+name: CI/CD
 
 env:
   GOVERSION: "1.22.1"

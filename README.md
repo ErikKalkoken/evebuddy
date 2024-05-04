@@ -2,13 +2,15 @@
 
 Eve Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players. It runs on Windows, MacOS and LINUX desktops.
 
-![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/go.yml/badge.svg)
+![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)
+![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml/badge.svg)
+![GitHub License](https://img.shields.io/github/license/ErikKalkoken/evebuddy)
 
 This app is in development.
 
 ## Features
 
-- Mails: Receiving, sending and deleting of Eve mails
+- Mails: Full client for Eve Mails
 - Character stats: Display of current information about a character (e.g. location)
 
 More features planned...
