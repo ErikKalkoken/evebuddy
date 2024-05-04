@@ -17,33 +17,41 @@ More features planned...
 
 ### Linux
 
-First download the latest release from Github.
+First download the linux tar file from the latest release on Github.
 
 Then install the release on your desktop with:
 
 ```sh
-sudo tar xvfJ evebuddy_linux_amd64.tar.xz -C /
+sudo tar xvfJ evebuddy-v1.0.0-linux-amd64.tar.xz -C /
 ```
 
-When everything worked correctly the app should appear under "Applications".
+This will install the app for all users on your system. User specific data will be stored in the home directories of each user.
 
 ### Windows
 
-tbd
+First download the windows zip file from the latest release on Github.
+
+Then unzip the file into a directory of your choice and run the .exe file to start the app.
 
 ### Mac OS
 
-tbd
+First download the darwin zip file from the latest release on Github.
+
+Then unzip the file into a directory of your choice and run the .app file to start the app.
+
+## Native Go
+
+If your system is setup to run and compile fyne apps in Go you can start the app directly from the repp with:
+
+```sh
+go run github.com/ErikKalkoken/evebuddy@latest
+```
+
+To setup the necessary local development environment for fyne apps please follow the platform specific instructions in the [fye docs](https://docs.fyne.io/started/).
 
 ## Privacy notes
 
 We understand and respect the privacy concerns of our fellow Eve Online players. Therefore all data of this app is stored locally (e.g. character tokens) and not shared with any 3rd party. Internet requests by this app are made to CCP's game server only.
-
-## Developer notes
-
-In general this app can be developed on many popular desktop platforms including Windows, MacOS and Linux.
-
-To setup a local development environment please follow the platform specific instructions for setting up development for a [fye app](https://docs.fyne.io/started/). Fyne is the GUI framework used by Eve Buddy.
 
 ## Credits
 
