@@ -48,7 +48,7 @@ type ui struct {
 // NewUI build the UI and returns it.
 func NewUI(s *service.Service) *ui {
 	a := app.New()
-	w := a.NewWindow("Eve Buddy")
+	w := a.NewWindow(appName(a))
 	u := &ui{app: a, window: w, service: s}
 
 	mail := u.NewMailArea()
@@ -216,4 +216,13 @@ func (u *ui) StartUpdateTickerEveCharacters() {
 			<-ticker.C
 		}
 	}()
+}
+
+func appName(a fyne.App) string {
+	info := a.Metadata()
+	name := info.Name
+	if name == "" {
+		return "EVE Buddy"
+	}
+	return name
 }

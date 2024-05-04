@@ -12,8 +12,7 @@ func (u *ui) ShowAboutDialog() {
 	c := container.NewVBox()
 	info := u.app.Metadata()
 	appData := widget.NewRichTextFromMarkdown(
-		"## " + info.Name + "\n**Version:** " + info.Version)
-	// c.Add(widget.NewLabel(fmt.Sprintf("Eve Buddy %s", info.Main.Version)))
+		"## " + appName(u.app) + "\n**Version:** " + info.Version)
 	c.Add(appData)
 	uri, err := url.Parse("https://github.com/ErikKalkoken/evebuddy")
 	if err != nil {

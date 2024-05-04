@@ -55,7 +55,7 @@ jobs:
       run: fyne package -os linux
 
     - name: Rename package
-      run: mv "Eve Buddy.tar.xz" ${{ env.PREFIX }}-linux-amd64.tar.xz
+      run: mv "EVE Buddy.tar.xz" ${{ env.PREFIX }}-linux-amd64.tar.xz
 
     - uses: actions/upload-artifact@v4
       with:
@@ -96,7 +96,7 @@ jobs:
       run: fyne package -os windows
 
     - name: ZIP package
-      run: zip ${{ env.PREFIX }}-windows-x64.zip "Eve Buddy.exe"
+      run: zip ${{ env.PREFIX }}-windows-x64.zip "EVE Buddy.exe"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -130,7 +130,7 @@ jobs:
       run: fyne package -os darwin
 
     - name: ZIP app bundle
-      run: zip --symlinks -r ${{ env.PREFIX }}-darwin-x64.zip "Eve Buddy.app/"
+      run: zip --symlinks -r ${{ env.PREFIX }}-darwin-x64.zip "EVE Buddy.app/"
 
     - name: Display structure of downloaded files
       run: ls -R

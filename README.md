@@ -1,6 +1,6 @@
-# Eve Buddy
+# EVE Buddy
 
-Eve Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players. It runs on Windows, MacOS and LINUX desktops.
+EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players. It runs on Windows, MacOS and LINUX desktops.
 
 ![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)
 ![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml/badge.svg)

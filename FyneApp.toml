@@ -2,7 +2,7 @@ Website = "https://github.com/ErikKalkoken/evebuddy"
 
 [Details]
   Icon = "icon.png"
-  Name = "Eve Buddy"
+  Name = "EVE Buddy"
   ID = "com.github.ErikKalkoken.evebuddy"
-  Version = "0.1.0"
+  Version = "0.1.1"
   Build = 1
