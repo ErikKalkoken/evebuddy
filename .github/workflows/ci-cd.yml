@@ -55,12 +55,12 @@ jobs:
       run: fyne package -os linux
 
     - name: Rename package
-      run: mv "Eve Buddy.tar.xz" ${{ env.PREFIX }}-linux-x64.tar.xz
+      run: mv "Eve Buddy.tar.xz" ${{ env.PREFIX }}-linux-amd64.tar.xz
 
     - uses: actions/upload-artifact@v4
       with:
         name: evebuddy-linux
-        path: ${{ env.PREFIX }}-linux-x64.tar.xz
+        path: ${{ env.PREFIX }}-linux-amd64.tar.xz
         if-no-files-found: error
         overwrite: true
 
@@ -164,5 +164,5 @@ jobs:
         fail_on_unmatched_files: true
         files: |
           ${{ env.PREFIX }}-darwin-x64.zip
-          ${{ env.PREFIX }}-linux-x64.tar.xz
+          ${{ env.PREFIX }}-linux-amd64.tar.xz
           ${{ env.PREFIX }}-windows-x64.zip
