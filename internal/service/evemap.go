@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
@@ -116,24 +114,4 @@ func (s *Service) createEveSolarSystemFromESI(ctx context.Context, id int32) (*m
 		return nil, err
 	}
 	return y.(*model.EveSolarSystem), nil
-}
-
-func (s *Service) LoadMap() error {
-	ctx := context.Background()
-	regionIDs, _, err := s.esiClient.ESI.UniverseApi.GetUniverseRegions(ctx, nil)
-	if err != nil {
-		return err
-	}
-	g := new(errgroup.Group)
-	for _, id := range regionIDs {
-		regionID := id
-		g.Go(func() error {
-			_, err := s.getOrCreateEveRegionESI(ctx, regionID)
-			return err
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return err
-	}
-	return nil
 }

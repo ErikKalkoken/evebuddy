@@ -5,3 +5,4 @@ main.go.bak
 *.sqlite-shm
 *.sqlite-wal
 evebuddy
+EVE Buddy.tar.xz

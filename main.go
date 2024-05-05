@@ -18,7 +18,7 @@ type logLevelFlag struct {
 	value slog.Level
 }
 
-func (l *logLevelFlag) String() string {
+func (l logLevelFlag) String() string {
 	return l.value.String()
 }
 
@@ -32,47 +32,59 @@ func (l *logLevelFlag) Set(value string) error {
 	return nil
 }
 
+// TODO: Reset flag defaults for production
+
 // defined flags
 var (
 	levelFlag   logLevelFlag
-	loadMapFlag = flag.Bool("loadmap", false, "loads map")
+	logFileFlag = flag.Bool("logfile", true, "Wether to write a log file")
 )
 
 func init() {
-	levelFlag.value = slog.LevelWarn
-	flag.Var(&levelFlag, "level", "log level name")
+	levelFlag.value = slog.LevelInfo
+	flag.Var(&levelFlag, "loglevel", "set log level")
 }
 
 func main() {
 	flag.Parse()
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-
-	db, err := storage.InitDB(makeDSN())
+	ad := appdirs.New("evebuddy")
+	if *logFileFlag {
+		fn := makeLogFileName(ad)
+		f, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			log.Fatalf("error opening file %s: %v", fn, err)
+		}
+		defer f.Close()
+		log.SetOutput(f)
+	}
+	dsn := makeDSN(ad)
+	db, err := storage.InitDB(dsn)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to connect to database %s: %s", dsn, err)
 	}
 	defer db.Close()
 	repository := storage.New(db)
 	s := service.NewService(repository)
-
-	if *loadMapFlag {
-		err := s.LoadMap()
-		if err != nil {
-			slog.Error("Failed to load map", "err", err)
-		}
-		return
-	}
 	e := ui.NewUI(s)
 	e.ShowAndRun()
 }
 
-func makeDSN() string {
-	ad := appdirs.New("evebuddy")
-	dataPath := ad.UserData()
-	if err := os.MkdirAll(dataPath, os.ModePerm); err != nil {
+func makeLogFileName(ad *appdirs.App) string {
+	path := ad.UserLog()
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
 		panic(err)
 	}
-	dsn := fmt.Sprintf("file:%s/evebuddy.sqlite", dataPath)
+	fn := fmt.Sprintf("%s/evebuddy.log", ad.UserLog())
+	return fn
+}
+
+func makeDSN(ad *appdirs.App) string {
+	path := ad.UserData()
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+		panic(err)
+	}
+	dsn := fmt.Sprintf("file:%s/evebuddy.sqlite", path)
 	return dsn
 }

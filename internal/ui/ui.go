@@ -128,7 +128,7 @@ func makeToolbar(u *ui) *fyne.Container {
 // ShowAndRun shows the UI and runs it (blocking).
 func (u *ui) ShowAndRun() {
 	go func() {
-		//TODO: Workaround to mitigate a bug that causes the window to sometimes render
+		// Workaround to mitigate a bug that causes the window to sometimes render
 		// only in parts and freeze. The issue is known to happen on Linux desktops.
 		if runtime.GOOS == "linux" {
 			time.Sleep(400 * time.Millisecond)

@@ -118,6 +118,7 @@ func (u *ui) NewHeaderArea() *headerArea {
 	return &m
 }
 
+// FIXME: Refresh does sometimes not work, then producing multiple entries and selections
 func (h *headerArea) Refresh() {
 	doRedraw := h.lastSelected == undefinedListItemID
 	h.redraw(h.currentFolder, doRedraw)

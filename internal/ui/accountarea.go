@@ -114,6 +114,7 @@ func (m *accountArea) Redraw() {
 	m.content.Refresh()
 }
 
+// FIXME: Cancel button does not work
 func (m *accountArea) showAddCharacterDialog() {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := "Please follow instructions in your browser to add a new character."
