@@ -6,3 +6,4 @@ main.go.bak
 *.sqlite-wal
 evebuddy
 EVE Buddy.tar.xz
+*.log

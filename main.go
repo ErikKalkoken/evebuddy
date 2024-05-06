@@ -37,7 +37,8 @@ func (l *logLevelFlag) Set(value string) error {
 // defined flags
 var (
 	levelFlag   logLevelFlag
-	logFileFlag = flag.Bool("logfile", true, "Wether to write a log file")
+	logFileFlag = flag.Bool("logfile", false, "Write a log file")
+	debugFlag   = flag.Bool("debug", false, "Run in debug mode")
 )
 
 func init() {
@@ -51,7 +52,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	ad := appdirs.New("evebuddy")
 	if *logFileFlag {
-		fn := makeLogFileName(ad)
+		fn := makeLogFileName(ad, *debugFlag)
 		f, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			log.Fatalf("error opening file %s: %v", fn, err)
@@ -59,7 +60,7 @@ func main() {
 		defer f.Close()
 		log.SetOutput(f)
 	}
-	dsn := makeDSN(ad)
+	dsn := makeDSN(ad, *debugFlag)
 	db, err := storage.InitDB(dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect to database %s: %s", dsn, err)
@@ -71,20 +72,27 @@ func main() {
 	e.ShowAndRun()
 }
 
-func makeLogFileName(ad *appdirs.App) string {
-	path := ad.UserLog()
-	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+func makeLogFileName(ad *appdirs.App, isDebug bool) string {
+	fn := "evebuddy.log"
+	if isDebug {
+		return fn
+	}
+	if err := os.MkdirAll(ad.UserLog(), os.ModePerm); err != nil {
 		panic(err)
 	}
-	fn := fmt.Sprintf("%s/evebuddy.log", ad.UserLog())
-	return fn
+	path := fmt.Sprintf("%s/%s", ad.UserLog(), fn)
+	return path
 }
 
-func makeDSN(ad *appdirs.App) string {
+func makeDSN(ad *appdirs.App, isDebug bool) string {
+	fn := "evebuddy.sqlite"
+	if isDebug {
+		return fmt.Sprintf("file:%s", fn)
+	}
 	path := ad.UserData()
 	if err := os.MkdirAll(path, os.ModePerm); err != nil {
 		panic(err)
 	}
-	dsn := fmt.Sprintf("file:%s/evebuddy.sqlite", path)
+	dsn := fmt.Sprintf("file:%s/%s", path, fn)
 	return dsn
 }

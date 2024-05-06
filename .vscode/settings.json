@@ -32,6 +32,8 @@
         "jarcoal",
         "jmoiron",
         "loadmap",
+        "logfile",
+        "loglevel",
         "mattn",
         "sqlc",
         "sqlx",
