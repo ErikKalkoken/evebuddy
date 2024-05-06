@@ -64,6 +64,18 @@ func (m *accountArea) Redraw() {
 		image := canvas.NewImageFromURI(uri)
 		image.FillMode = canvas.ImageFillOriginal
 		name := widget.NewLabel(char.Name)
+		row := container.NewHBox(image, name)
+
+		hasToken, err := m.ui.service.HasTokenWithScopes(char.ID)
+		if err != nil {
+			slog.Error("Can not check if character has token", "err", err)
+			continue
+		}
+		if !hasToken {
+			row.Add(widget.NewIcon(theme.WarningIcon()))
+		}
+		row.Add(layout.NewSpacer())
+
 		selectButton := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
 			character, err := m.ui.service.GetMyCharacter(char.ID)
 			if err != nil {
@@ -72,6 +84,11 @@ func (m *accountArea) Redraw() {
 			m.ui.SetCurrentCharacter(&character)
 			m.dialog.Hide()
 		})
+		if !hasToken {
+			selectButton.Disable()
+		}
+		row.Add(selectButton)
+
 		isCurrentChar := char.ID == m.ui.CurrentCharID()
 		if isCurrentChar {
 			selectButton.Disable()
@@ -107,8 +124,9 @@ func (m *accountArea) Redraw() {
 			dialog.Show()
 		})
 		deleteButton.Importance = widget.DangerImportance
-		item := container.NewHBox(image, name, layout.NewSpacer(), selectButton, deleteButton)
-		m.content.Add(item)
+		row.Add(deleteButton)
+
+		m.content.Add(row)
 		m.content.Add(widget.NewSeparator())
 	}
 	m.content.Refresh()

@@ -87,6 +87,16 @@ func (s *Set[T]) Difference(other *Set[T]) *Set[T] {
 	return n
 }
 
+// Equal reports wether two sets are equal.
+func (s *Set[T]) Equal(other *Set[T]) bool {
+	if s.Size() != other.Size() {
+		return false
+	}
+	d := s.Difference(other)
+	x := d.Size()
+	return x == 0
+}
+
 // New returns a new set.
 func New[T comparable]() *Set[T] {
 	return NewFromSlice([]T{})

@@ -2,14 +2,46 @@ package service
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
 	"github.com/antihax/goesi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/api/sso"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
+
+var esiScopes = []string{
+	"esi-characters.read_contacts.v1",
+	"esi-location.read_location.v1",
+	"esi-location.read_online.v1",
+	"esi-location.read_ship_type.v1",
+	"esi-mail.read_mail.v1",
+	"esi-mail.organize_mail.v1",
+	"esi-mail.send_mail.v1",
+	"esi-search.search_structures.v1",
+	"esi-skills.read_skills.v1",
+	"esi-skills.read_skillqueue.v1",
+	"esi-wallet.read_character_wallet.v1",
+}
+
+// HasTokenWithScopes reports wether a token with the requested scopes exists for a character.
+func (s *Service) HasTokenWithScopes(characterID int32) (bool, error) {
+	ctx := context.Background()
+	t, err := s.r.GetToken(ctx, characterID)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	got := set.NewFromSlice(t.Scopes)
+	want := set.NewFromSlice(esiScopes)
+	return got.Equal(want), nil
+}
 
 // getValidToken returns a valid token for a character. Convenience function.
 func (s *Service) getValidToken(ctx context.Context, characterID int32) (*model.Token, error) {

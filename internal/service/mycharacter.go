@@ -12,19 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
-var esiScopes = []string{
-	"esi-characters.read_contacts.v1",
-	"esi-location.read_location.v1",
-	"esi-location.read_online.v1",
-	"esi-location.read_ship_type.v1",
-	"esi-mail.read_mail.v1",
-	"esi-mail.organize_mail.v1",
-	"esi-mail.send_mail.v1",
-	"esi-search.search_structures.v1",
-	"esi-skills.read_skills.v1",
-	"esi-wallet.read_character_wallet.v1",
-}
-
 func (s *Service) DeleteMyCharacter(characterID int32) error {
 	return s.r.DeleteMyCharacter(context.Background(), characterID)
 }

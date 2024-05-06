@@ -101,3 +101,31 @@ func TestSetCanDifference(t *testing.T) {
 	got := s1.Difference(s2)
 	assert.Equal(t, want, got)
 }
+
+func TestSetEqual(t *testing.T) {
+	t.Run("report true when sets are equal", func(t *testing.T) {
+		s1 := NewFromSlice([]int{1, 2})
+		s2 := NewFromSlice([]int{1, 2})
+		assert.True(t, s1.Equal(s2))
+	})
+	t.Run("report true when sets are equal and empty", func(t *testing.T) {
+		s1 := NewFromSlice([]int{})
+		s2 := NewFromSlice([]int{})
+		assert.True(t, s1.Equal(s2))
+	})
+	t.Run("report false when sets are not equal 1", func(t *testing.T) {
+		s1 := NewFromSlice([]int{1, 2})
+		s2 := NewFromSlice([]int{1, 2, 3})
+		assert.False(t, s1.Equal(s2))
+	})
+	t.Run("report false when sets are not equal 2", func(t *testing.T) {
+		s1 := NewFromSlice([]int{1, 2, 3})
+		s2 := NewFromSlice([]int{1, 2})
+		assert.False(t, s1.Equal(s2))
+	})
+	t.Run("report false when sets are not equal 3", func(t *testing.T) {
+		s1 := NewFromSlice([]int{1, 2})
+		s2 := NewFromSlice([]int{2, 3})
+		assert.False(t, s1.Equal(s2))
+	})
+}
