@@ -424,6 +424,40 @@ func (f Factory) CreateEveRace(args ...model.EveRace) *model.EveRace {
 	return r
 }
 
+// CreateSkillqueueItem is a test factory for SkillqueueItem objects
+func (f Factory) CreateSkillqueueItem(args ...storage.CreateSkillqueueItemParams) *model.SkillqueueItem {
+	ctx := context.Background()
+	var arg storage.CreateSkillqueueItemParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.EveTypeID == 0 {
+		x := f.CreateEveType()
+		arg.EveTypeID = x.ID
+	}
+	if arg.MyCharacterID == 0 {
+		x := f.CreateMyCharacter()
+		arg.MyCharacterID = x.ID
+	}
+	var maxPos sql.NullInt64
+	q := "SELECT MAX(queue_position) FROM skillqueue_items WHERE my_character_id=?;"
+	if err := f.db.QueryRow(q, arg.MyCharacterID).Scan(&maxPos); err != nil {
+		panic(err)
+	}
+	if maxPos.Valid {
+		arg.QueuePosition = int(maxPos.Int64) + 1
+	}
+	err := f.r.CreateSkillqueueItem(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	i, err := f.r.GetSkillqueueItems(ctx, arg.MyCharacterID, arg.EveTypeID)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
 // CreateToken is a test factory for Token objects.
 func (f Factory) CreateToken(args ...model.Token) *model.Token {
 	var t model.Token

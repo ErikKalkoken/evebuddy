@@ -136,6 +136,18 @@ type MyCharacter struct {
 	WalletBalance float64
 }
 
+type SkillqueueItem struct {
+	EveTypeID       int64
+	FinishDate      sql.NullTime
+	FinishedLevel   int64
+	LevelEndSp      sql.NullInt64
+	LevelStartSp    sql.NullInt64
+	QueuePosition   int64
+	MyCharacterID   int64
+	StartDate       sql.NullTime
+	TrainingStartSp sql.NullInt64
+}
+
 type Token struct {
 	AccessToken   string
 	MyCharacterID int64

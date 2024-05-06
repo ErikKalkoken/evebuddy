@@ -35,6 +35,8 @@
         "logfile",
         "loglevel",
         "mattn",
+        "skillqueue",
+        "skillqueueitems",
         "sqlc",
         "sqlx",
         "stargates",
