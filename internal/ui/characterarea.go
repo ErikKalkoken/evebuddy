@@ -15,7 +15,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/api/images"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 )
@@ -164,20 +163,6 @@ func updateIcons(icons *fyne.Container, c *model.MyCharacter) error {
 
 	icons.Add(layout.NewSpacer())
 	return nil
-}
-
-func stringOrDefault(s, d string) string {
-	if s == "" {
-		return d
-	}
-	return s
-}
-
-func numberOrDefault[T int | float64](v T, d string) string {
-	if v == 0 {
-		return d
-	}
-	return ihumanize.Number(float64(v), 1)
 }
 
 func (c *characterArea) StartUpdateTicker() {

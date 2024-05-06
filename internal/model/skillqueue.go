@@ -3,7 +3,7 @@ package model
 import "time"
 
 type SkillqueueItem struct {
-	EveTypeID       int32
+	SkillName       string
 	FinishDate      time.Time
 	FinishedLevel   int
 	LevelEndSP      int

@@ -444,9 +444,19 @@ func (f Factory) CreateSkillqueueItem(args ...storage.SkillqueueItemParams) *mod
 	if err := f.db.QueryRow(q, arg.MyCharacterID).Scan(&maxPos); err != nil {
 		panic(err)
 	}
+	var lastFinishedAt time.Time
 	if maxPos.Valid {
 		arg.QueuePosition = int(maxPos.Int64) + 1
+		q2 := "SELECT finish_date FROM skillqueue_items WHERE my_character_id=? AND queue_position=?;"
+		if err := f.db.QueryRow(q2, arg.MyCharacterID, maxPos.Int64).Scan(&lastFinishedAt); err != nil {
+			panic(err)
+		}
+	} else {
+		lastFinishedAt = time.Now()
 	}
+	hours := rand.IntN(90)*24 + 3
+	arg.FinishDate = lastFinishedAt.Add(time.Hour * time.Duration(hours))
+
 	err := f.r.CreateSkillqueueItem(ctx, arg)
 	if err != nil {
 		panic(err)

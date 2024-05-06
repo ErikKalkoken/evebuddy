@@ -41,6 +41,7 @@ type ui struct {
 	mailArea         *mailDetailArea
 	statusArea       *statusArea
 	service          *service.Service
+	skillqueueArea   *skillqueueArea
 	toolbarBadge     *fyne.Container
 	window           fyne.Window
 }
@@ -72,10 +73,14 @@ func NewUI(s *service.Service) *ui {
 	characterContent := container.NewBorder(nil, nil, nil, nil, characterArea.content)
 	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), characterContent)
 
+	skillqueueArea := u.NewSkillqueueArea()
+	u.skillqueueArea = skillqueueArea
+	skillqueueTab := container.NewTabItemWithIcon("Skill Queue", theme.NewThemedResource(resourceChecklistrtlSvg), skillqueueArea.content)
+
 	statusArea := u.newStatusArea()
 	u.statusArea = statusArea
 
-	tabs := container.NewAppTabs(characterTab, mailTab)
+	tabs := container.NewAppTabs(characterTab, mailTab, skillqueueTab)
 	tabs.SetTabLocation(container.TabLocationLeading)
 
 	toolbar := makeToolbar(u)
@@ -136,8 +141,9 @@ func (u *ui) ShowAndRun() {
 			u.window.Resize(fyne.NewSize(800, 600))
 		}
 		u.statusArea.StartUpdateTicker()
-		u.characterArea.StartUpdateTicker()
-		u.folderArea.StartUpdateTicker()
+		// u.characterArea.StartUpdateTicker()
+		// u.folderArea.StartUpdateTicker()
+		u.skillqueueArea.StartUpdateTicker()
 		u.StartUpdateTickerEveCharacters()
 	}()
 	u.window.ShowAndRun()
@@ -163,10 +169,7 @@ func (u *ui) SetCurrentCharacter(c *model.MyCharacter) {
 	}
 	u.characterArea.Redraw()
 	u.folderArea.Refresh()
-	updatedAt := u.service.SectionUpdatedAt(c.ID, service.UpdateSectionMail)
-	if updatedAt.IsZero() {
-		go u.folderArea.UpdateMails(true)
-	}
+	u.skillqueueArea.Redraw()
 }
 
 func (u *ui) updateToolbarBadge(c *model.MyCharacter) {

@@ -19,11 +19,14 @@ DELETE FROM skillqueue_items
 WHERE my_character_id = ?;
 
 -- name: GetSkillqueueItem :one
-SELECT *
+SELECT sqlc.embed(skillqueue_items), eve_types.name as skill_name
 FROM skillqueue_items
+JOIN eve_types ON eve_types.id = skillqueue_items.eve_type_id
 WHERE my_character_id = ? and queue_position = ?;
 
 -- name: ListSkillqueueItems :many
-SELECT *
+SELECT sqlc.embed(skillqueue_items), eve_types.name as skill_name
 FROM skillqueue_items
-WHERE my_character_id = ?;
+JOIN eve_types ON eve_types.id = skillqueue_items.eve_type_id
+WHERE my_character_id = ?
+ORDER BY queue_position;

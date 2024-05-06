@@ -160,6 +160,8 @@ CREATE TABLE skillqueue_items (
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
     UNIQUE (my_character_id, queue_position)
 );
+CREATE INDEX skillqueue_items_queue_position_idx ON skillqueue_items (queue_position ASC);
+
 
 CREATE TABLE scopes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

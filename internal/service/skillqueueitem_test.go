@@ -58,10 +58,9 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x, err := s.UpdateSkillqueueESI(c.ID)
+		err := s.UpdateSkillqueueESI(c.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, 3, x)
 			ii, err := r.ListSkillqueueItems(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ii, 3)
