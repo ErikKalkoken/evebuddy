@@ -33,7 +33,7 @@ func skillqueueItemFromDBModel(i queries.SkillqueueItem) *model.SkillqueueItem {
 	return i2
 }
 
-type CreateSkillqueueItemParams struct {
+type SkillqueueItemParams struct {
 	EveTypeID       int32
 	FinishDate      time.Time
 	FinishedLevel   int
@@ -45,7 +45,11 @@ type CreateSkillqueueItemParams struct {
 	TrainingStartSP int
 }
 
-func (r *Storage) CreateSkillqueueItem(ctx context.Context, arg CreateSkillqueueItemParams) error {
+func (r *Storage) CreateSkillqueueItem(ctx context.Context, arg SkillqueueItemParams) error {
+	return createSkillqueueItem(ctx, r.q, arg)
+}
+
+func createSkillqueueItem(ctx context.Context, q *queries.Queries, arg SkillqueueItemParams) error {
 	arg2 := queries.CreateSkillqueueItemParams{
 		EveTypeID:     int64(arg.EveTypeID),
 		FinishedLevel: int64(arg.FinishedLevel),
@@ -72,7 +76,7 @@ func (r *Storage) CreateSkillqueueItem(ctx context.Context, arg CreateSkillqueue
 		arg2.TrainingStartSp.Int64 = int64(arg.TrainingStartSP)
 		arg2.TrainingStartSp.Valid = true
 	}
-	err := r.q.CreateSkillqueueItem(ctx, arg2)
+	err := q.CreateSkillqueueItem(ctx, arg2)
 	return err
 }
 
@@ -81,10 +85,10 @@ func (r *Storage) DeleteSkillqueueItems(ctx context.Context, characterID int32) 
 	return err
 }
 
-func (r *Storage) GetSkillqueueItems(ctx context.Context, characterID int32, eveTypeID int32) (*model.SkillqueueItem, error) {
+func (r *Storage) GetSkillqueueItems(ctx context.Context, characterID int32, pos int) (*model.SkillqueueItem, error) {
 	arg := queries.GetSkillqueueItemParams{
-		EveTypeID:     int64(eveTypeID),
 		MyCharacterID: int64(characterID),
+		QueuePosition: int64(pos),
 	}
 	i, err := r.q.GetSkillqueueItem(ctx, arg)
 	if err != nil {
@@ -103,4 +107,26 @@ func (r *Storage) ListSkillqueueItems(ctx context.Context, characterID int32) ([
 		ii2[i] = skillqueueItemFromDBModel(item)
 	}
 	return ii2, nil
+}
+
+func (r *Storage) ReplaceSkillqueueItems(ctx context.Context, characterID int32, args []SkillqueueItemParams) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	qtx := r.q.WithTx(tx)
+	if err := qtx.DeleteSkillqueueItems(ctx, int64(characterID)); err != nil {
+		return err
+	}
+	for _, arg := range args {
+		err := createSkillqueueItem(ctx, qtx, arg)
+		if err != nil {
+			return err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
 }

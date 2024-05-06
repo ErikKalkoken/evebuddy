@@ -158,7 +158,7 @@ CREATE TABLE skillqueue_items (
     training_start_sp INTEGER,
     FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
-    UNIQUE (my_character_id, eve_type_id)
+    UNIQUE (my_character_id, queue_position)
 );
 
 CREATE TABLE tokens (

@@ -21,7 +21,7 @@ WHERE my_character_id = ?;
 -- name: GetSkillqueueItem :one
 SELECT *
 FROM skillqueue_items
-WHERE my_character_id = ? and eve_type_id = ?;
+WHERE my_character_id = ? and queue_position = ?;
 
 -- name: ListSkillqueueItems :many
 SELECT *

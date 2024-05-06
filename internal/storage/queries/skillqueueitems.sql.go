@@ -67,16 +67,16 @@ func (q *Queries) DeleteSkillqueueItems(ctx context.Context, myCharacterID int64
 const getSkillqueueItem = `-- name: GetSkillqueueItem :one
 SELECT eve_type_id, finish_date, finished_level, level_end_sp, level_start_sp, queue_position, my_character_id, start_date, training_start_sp
 FROM skillqueue_items
-WHERE my_character_id = ? and eve_type_id = ?
+WHERE my_character_id = ? and queue_position = ?
 `
 
 type GetSkillqueueItemParams struct {
 	MyCharacterID int64
-	EveTypeID     int64
+	QueuePosition int64
 }
 
 func (q *Queries) GetSkillqueueItem(ctx context.Context, arg GetSkillqueueItemParams) (SkillqueueItem, error) {
-	row := q.db.QueryRowContext(ctx, getSkillqueueItem, arg.MyCharacterID, arg.EveTypeID)
+	row := q.db.QueryRowContext(ctx, getSkillqueueItem, arg.MyCharacterID, arg.QueuePosition)
 	var i SkillqueueItem
 	err := row.Scan(
 		&i.EveTypeID,

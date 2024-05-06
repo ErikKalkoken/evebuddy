@@ -425,9 +425,9 @@ func (f Factory) CreateEveRace(args ...model.EveRace) *model.EveRace {
 }
 
 // CreateSkillqueueItem is a test factory for SkillqueueItem objects
-func (f Factory) CreateSkillqueueItem(args ...storage.CreateSkillqueueItemParams) *model.SkillqueueItem {
+func (f Factory) CreateSkillqueueItem(args ...storage.SkillqueueItemParams) *model.SkillqueueItem {
 	ctx := context.Background()
-	var arg storage.CreateSkillqueueItemParams
+	var arg storage.SkillqueueItemParams
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -451,7 +451,7 @@ func (f Factory) CreateSkillqueueItem(args ...storage.CreateSkillqueueItemParams
 	if err != nil {
 		panic(err)
 	}
-	i, err := f.r.GetSkillqueueItems(ctx, arg.MyCharacterID, arg.EveTypeID)
+	i, err := f.r.GetSkillqueueItems(ctx, arg.MyCharacterID, arg.QueuePosition)
 	if err != nil {
 		panic(err)
 	}

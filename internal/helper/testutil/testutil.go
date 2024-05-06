@@ -23,6 +23,7 @@ func TruncateTables(db *sql.DB) {
 		DELETE FROM mail_mail_labels;
 		DELETE FROM mail_labels;
 		DELETE FROM mails;
+		DELETE FROM skillqueue_items;
 		DELETE FROM tokens;
 		DELETE FROM my_characters;
 		DELETE FROM eve_characters;
