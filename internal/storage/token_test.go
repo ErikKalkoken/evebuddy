@@ -20,21 +20,31 @@ func TestToken(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		o := model.Token{
+		now := time.Now()
+		o1 := model.Token{
 			AccessToken:  "access",
 			CharacterID:  c.ID,
-			ExpiresAt:    time.Now(),
+			ExpiresAt:    now,
 			RefreshToken: "refresh",
+			Scopes:       []string{"alpha", "bravo"},
 			TokenType:    "xxx",
 		}
 		// when
-		err := r.UpdateOrCreateToken(ctx, &o)
+		err := r.UpdateOrCreateToken(ctx, &o1)
 		// then
 		assert.NoError(t, err)
-		r, err := r.GetToken(ctx, c.ID)
+		assert.Equal(t, "access", o1.AccessToken)
+		assert.Equal(t, c.ID, o1.CharacterID)
+		assert.Equal(t, now.Unix(), o1.ExpiresAt.Unix())
+		assert.Equal(t, []string{"alpha", "bravo"}, o1.Scopes)
+		assert.Equal(t, "xxx", o1.TokenType)
+		o2, err := r.GetToken(ctx, c.ID)
 		if assert.NoError(t, err) {
-			assert.Equal(t, o.AccessToken, r.AccessToken)
-			assert.Equal(t, c.ID, r.CharacterID)
+			assert.Equal(t, o1.AccessToken, o2.AccessToken)
+			assert.Equal(t, c.ID, o2.CharacterID)
+			assert.Equal(t, o1.ExpiresAt.Unix(), o2.ExpiresAt.Unix())
+			assert.Equal(t, o1.Scopes, o2.Scopes)
+			assert.Equal(t, o1.TokenType, o2.TokenType)
 		}
 	})
 	t.Run("can fetch existing", func(t *testing.T) {
@@ -56,25 +66,20 @@ func TestToken(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		o := model.Token{
-			AccessToken:  "access",
-			CharacterID:  int32(c.ID),
-			ExpiresAt:    time.Now(),
-			RefreshToken: "refresh",
-			TokenType:    "xxx",
-		}
-		if err := r.UpdateOrCreateToken(ctx, &o); err != nil {
-			panic(err)
-		}
-		o.AccessToken = "changed"
+		o1 := factory.CreateToken(model.Token{CharacterID: c.ID})
+		o1.AccessToken = "changed"
+		o1.Scopes = []string{"alpha", "bravo"}
 		// when
-		err := r.UpdateOrCreateToken(ctx, &o)
+		err := r.UpdateOrCreateToken(ctx, o1)
 		// then
 		assert.NoError(t, err)
-		r, err := r.GetToken(ctx, c.ID)
+		o2, err := r.GetToken(ctx, c.ID)
 		if assert.NoError(t, err) {
-			assert.Equal(t, o.AccessToken, r.AccessToken)
-			assert.Equal(t, c.ID, r.CharacterID)
+			assert.Equal(t, o1.AccessToken, o2.AccessToken)
+			assert.Equal(t, c.ID, o2.CharacterID)
+			assert.Equal(t, o1.ExpiresAt.Unix(), o2.ExpiresAt.Unix())
+			assert.Equal(t, o1.Scopes, o2.Scopes)
+			assert.Equal(t, o1.TokenType, o2.TokenType)
 		}
 	})
 

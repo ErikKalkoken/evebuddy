@@ -161,6 +161,13 @@ CREATE TABLE skillqueue_items (
     UNIQUE (my_character_id, queue_position)
 );
 
+CREATE TABLE scopes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    UNIQUE (name)
+);
+CREATE INDEX scopes_name_idx ON scopes (name ASC);
+
 CREATE TABLE tokens (
     access_token TEXT NOT NULL,
     my_character_id INTEGER PRIMARY KEY NOT NULL,
@@ -168,6 +175,14 @@ CREATE TABLE tokens (
     refresh_token TEXT NOT NULL,
     token_type TEXT NOT NULL,
     FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE
+);
+
+CREATE TABLE tokens_scopes (
+    token_id INTEGER NOT NULL,
+    scope_id INTEGER NOT NULL,
+    PRIMARY KEY (token_id,scope_id),
+    FOREIGN KEY (token_id) REFERENCES tokens(my_character_id) ON DELETE CASCADE,
+    FOREIGN KEY (scope_id) REFERENCES scopes(id) ON DELETE CASCADE
 );
 
 CREATE TABLE dictionary (

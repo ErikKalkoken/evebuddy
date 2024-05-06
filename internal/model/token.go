@@ -8,6 +8,7 @@ type Token struct {
 	CharacterID  int32
 	ExpiresAt    time.Time
 	RefreshToken string
+	Scopes       []string
 	TokenType    string
 }
 

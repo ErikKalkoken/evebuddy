@@ -12,13 +12,13 @@ import (
 )
 
 // getValidToken returns a valid token for a character. Convenience function.
-func (s *Service) getValidToken(ctx context.Context, characterID int32) (model.Token, error) {
+func (s *Service) getValidToken(ctx context.Context, characterID int32) (*model.Token, error) {
 	t, err := s.r.GetToken(ctx, characterID)
 	if err != nil {
-		return model.Token{}, err
+		return nil, err
 	}
-	if err := s.ensureValidToken(ctx, &t); err != nil {
-		return model.Token{}, err
+	if err := s.ensureValidToken(ctx, t); err != nil {
+		return nil, err
 	}
 	return t, nil
 }

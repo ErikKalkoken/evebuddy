@@ -55,6 +55,7 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 		CharacterID:  charID,
 		ExpiresAt:    ssoToken.ExpiresAt,
 		RefreshToken: ssoToken.RefreshToken,
+		Scopes:       ssoToken.Scopes,
 		TokenType:    ssoToken.TokenType,
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)

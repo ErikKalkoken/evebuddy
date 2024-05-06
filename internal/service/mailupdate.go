@@ -36,13 +36,13 @@ func (s *Service) updateMail(ctx context.Context, characterID int32) (int, error
 	if err != nil {
 		return 0, err
 	}
-	if err := s.updateMailLists(ctx, &token); err != nil {
+	if err := s.updateMailLists(ctx, token); err != nil {
 		return 0, err
 	}
-	if err := s.updateMailLabels(ctx, &token); err != nil {
+	if err := s.updateMailLabels(ctx, token); err != nil {
 		return 0, err
 	}
-	headers, err := s.listMailHeaders(ctx, &token)
+	headers, err := s.listMailHeaders(ctx, token)
 	if err != nil {
 		return 0, err
 	}
@@ -54,7 +54,7 @@ func (s *Service) updateMail(ctx context.Context, characterID int32) (int, error
 		return 0, err
 	}
 	if len(newHeaders) > 0 {
-		if err := s.fetchNewMailsESI(ctx, &token, newHeaders); err != nil {
+		if err := s.fetchNewMailsESI(ctx, token, newHeaders); err != nil {
 			return 0, err
 		}
 	}

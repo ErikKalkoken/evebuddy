@@ -10,6 +10,36 @@ import (
 	"time"
 )
 
+const addTokenScope = `-- name: AddTokenScope :exec
+INSERT INTO tokens_scopes (
+    token_id,
+    scope_id
+)
+VALUES (
+    ?, ?
+)
+`
+
+type AddTokenScopeParams struct {
+	TokenID int64
+	ScopeID int64
+}
+
+func (q *Queries) AddTokenScope(ctx context.Context, arg AddTokenScopeParams) error {
+	_, err := q.db.ExecContext(ctx, addTokenScope, arg.TokenID, arg.ScopeID)
+	return err
+}
+
+const clearTokenScopes = `-- name: ClearTokenScopes :exec
+DELETE FROM tokens_scopes
+WHERE token_id = ?
+`
+
+func (q *Queries) ClearTokenScopes(ctx context.Context, tokenID int64) error {
+	_, err := q.db.ExecContext(ctx, clearTokenScopes, tokenID)
+	return err
+}
+
 const getToken = `-- name: GetToken :one
 SELECT access_token, my_character_id, expires_at, refresh_token, token_type
 FROM tokens
@@ -27,6 +57,37 @@ func (q *Queries) GetToken(ctx context.Context, myCharacterID int64) (Token, err
 		&i.TokenType,
 	)
 	return i, err
+}
+
+const listTokenScopes = `-- name: ListTokenScopes :many
+SELECT scopes.id, scopes.name
+FROM tokens_scopes
+JOIN scopes ON scopes.id = tokens_scopes.scope_id
+WHERE token_id = ?
+ORDER BY scopes.name
+`
+
+func (q *Queries) ListTokenScopes(ctx context.Context, tokenID int64) ([]Scope, error) {
+	rows, err := q.db.QueryContext(ctx, listTokenScopes, tokenID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Scope
+	for rows.Next() {
+		var i Scope
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateOrCreateToken = `-- name: UpdateOrCreateToken :exec

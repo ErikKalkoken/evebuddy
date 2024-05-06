@@ -1,7 +1,27 @@
+-- name: AddTokenScope :exec
+INSERT INTO tokens_scopes (
+    token_id,
+    scope_id
+)
+VALUES (
+    ?, ?
+);
+
+-- name: ClearTokenScopes :exec
+DELETE FROM tokens_scopes
+WHERE token_id = ?;
+
 -- name: GetToken :one
 SELECT *
 FROM tokens
 WHERE my_character_id = ?;
+
+-- name: ListTokenScopes :many
+SELECT scopes.*
+FROM tokens_scopes
+JOIN scopes ON scopes.id = tokens_scopes.scope_id
+WHERE token_id = ?
+ORDER BY scopes.name;
 
 -- name: UpdateOrCreateToken :exec
 INSERT INTO tokens (

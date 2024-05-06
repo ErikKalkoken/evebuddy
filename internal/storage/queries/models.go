@@ -136,6 +136,11 @@ type MyCharacter struct {
 	WalletBalance float64
 }
 
+type Scope struct {
+	ID   int64
+	Name string
+}
+
 type SkillqueueItem struct {
 	EveTypeID       int64
 	FinishDate      sql.NullTime
@@ -154,4 +159,9 @@ type Token struct {
 	ExpiresAt     time.Time
 	RefreshToken  string
 	TokenType     string
+}
+
+type TokensScope struct {
+	TokenID int64
+	ScopeID int64
 }
