@@ -11,11 +11,8 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/browser"
 )
 
@@ -38,16 +35,6 @@ type tokenPayload struct {
 	ErrorDescription string `json:"error_description"`
 }
 
-// SSO token for Eve Online
-type Token struct {
-	AccessToken   string
-	CharacterID   int32
-	CharacterName string
-	ExpiresAt     time.Time
-	RefreshToken  string
-	TokenType     string
-}
-
 // Authenticate an Eve Online character via SSO and return SSO token.
 // The process runs in a newly opened browser tab
 func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*Token, error) {
@@ -68,7 +55,6 @@ func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*T
 			http.Error(w, "Invalid state", http.StatusForbidden)
 			return
 		}
-
 		code := v.Get("code")
 		codeVerifier := serverCtx.Value(keyCodeVerifier).(string)
 		rawToken, err := retrieveTokenPayload(client, code, codeVerifier)
@@ -80,7 +66,6 @@ func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*T
 			cancel()
 			return
 		}
-
 		claims, err := validateToken(rawToken.AccessToken)
 		if err != nil {
 			msg := "Failed to validate token"
@@ -90,8 +75,7 @@ func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*T
 			cancel()
 			return
 		}
-
-		character, err := buildToken(rawToken, claims)
+		token, err := newToken(rawToken, claims)
 		if err != nil {
 			msg := "Failed to construct token"
 			slog.Error(msg, "error", err)
@@ -100,12 +84,11 @@ func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*T
 			cancel()
 			return
 		}
-		serverCtx = context.WithValue(serverCtx, keyAuthenticatedCharacter, character)
-
+		serverCtx = context.WithValue(serverCtx, keyAuthenticatedCharacter, token)
 		fmt.Fprintf(
 			w,
 			"Authentication completed for %s. You can close this tab now.",
-			character.CharacterName,
+			token.CharacterName,
 		)
 		cancel() // shutdown http server
 	})
@@ -137,11 +120,11 @@ func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*T
 		return nil, errValue.(error)
 	}
 
-	character, ok := serverCtx.Value(keyAuthenticatedCharacter).(*Token)
+	token, ok := serverCtx.Value(keyAuthenticatedCharacter).(*Token)
 	if !ok {
 		return nil, fmt.Errorf("auth process canceled prematurely")
 	}
-	return character, nil
+	return token, nil
 }
 
 // Generate a random string of given length
@@ -222,38 +205,6 @@ func retrieveTokenPayload(client *http.Client, code, codeVerifier string) (*toke
 	return &token, nil
 }
 
-// build model.Token object
-func buildToken(rawToken *tokenPayload, claims jwt.MapClaims) (*Token, error) {
-	// calc character ID
-	characterID, err := strconv.Atoi(strings.Split(claims["sub"].(string), ":")[2])
-	if err != nil {
-		return nil, err
-	}
-
-	// calc scopes
-	// var scopes []string
-	// for _, v := range claims["scp"].([]interface{}) {
-	// 	s := v.(string)
-	// 	scopes = append(scopes, s)
-	// }
-
-	token := Token{
-		AccessToken:   rawToken.AccessToken,
-		CharacterID:   int32(characterID),
-		CharacterName: claims["name"].(string),
-		ExpiresAt:     calcExpiresAt(rawToken),
-		RefreshToken:  rawToken.RefreshToken,
-		TokenType:     rawToken.TokenType,
-	}
-
-	return &token, nil
-}
-
-func calcExpiresAt(rawToken *tokenPayload) time.Time {
-	expiresAt := time.Now().Add(time.Second * time.Duration(rawToken.ExpiresIn))
-	return expiresAt
-}
-
 // Update given token with new instance from SSO API
 func RefreshToken(client *http.Client, refreshToken string) (*Token, error) {
 	if refreshToken == "" {
@@ -268,12 +219,12 @@ func RefreshToken(client *http.Client, refreshToken string) (*Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	character := Token{
+	token := Token{
 		AccessToken:  rawToken.AccessToken,
 		RefreshToken: rawToken.RefreshToken,
 		ExpiresAt:    calcExpiresAt(rawToken),
 	}
-	return &character, nil
+	return &token, nil
 }
 
 func fetchOauthToken(client *http.Client, form url.Values) (*tokenPayload, error) {
