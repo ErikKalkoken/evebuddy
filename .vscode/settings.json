@@ -6,7 +6,8 @@
         "jwks",
         "lestrrat",
         "objs",
-        "Rifter"
+        "Rifter",
+        "tappable"
     ],
     "cSpell.ignoreWords": [
         "AUTOINCREMENT",
