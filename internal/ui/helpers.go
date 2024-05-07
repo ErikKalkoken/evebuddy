@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"time"
-
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 )
 
@@ -13,12 +11,12 @@ func stringOrDefault(s, d string) string {
 	return s
 }
 
-func timeFormattedOrDefault(t time.Time, layout, d string) string {
-	if t.IsZero() {
-		return d
-	}
-	return t.Format(layout)
-}
+// func timeFormattedOrDefault(t time.Time, layout, d string) string {
+// 	if t.IsZero() {
+// 		return d
+// 	}
+// 	return t.Format(layout)
+// }
 
 func numberOrDefault[T int | float64](v T, d string) string {
 	if v == 0 {

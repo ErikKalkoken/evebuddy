@@ -8,12 +8,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func skillqueueItemFromDBModel(i queries.SkillqueueItem, skillName string) *model.SkillqueueItem {
+func skillqueueItemFromDBModel(i queries.SkillqueueItem, skillName string, groupName string) *model.SkillqueueItem {
 	i2 := &model.SkillqueueItem{
-		SkillName:     skillName,
+		GroupName:     groupName,
 		FinishedLevel: int(i.FinishedLevel),
 		MyCharacterID: int32(i.MyCharacterID),
 		QueuePosition: int(i.QueuePosition),
+		SkillName:     skillName,
 	}
 	if i.FinishDate.Valid {
 		i2.FinishDate = i.FinishDate.Time
@@ -94,7 +95,7 @@ func (r *Storage) GetSkillqueueItems(ctx context.Context, characterID int32, pos
 	if err != nil {
 		return nil, err
 	}
-	return skillqueueItemFromDBModel(row.SkillqueueItem, row.SkillName), err
+	return skillqueueItemFromDBModel(row.SkillqueueItem, row.SkillName, row.GroupName), err
 }
 
 func (r *Storage) ListSkillqueueItems(ctx context.Context, characterID int32) ([]*model.SkillqueueItem, error) {
@@ -104,7 +105,7 @@ func (r *Storage) ListSkillqueueItems(ctx context.Context, characterID int32) ([
 	}
 	ii2 := make([]*model.SkillqueueItem, len(rows))
 	for i, row := range rows {
-		ii2[i] = skillqueueItemFromDBModel(row.SkillqueueItem, row.SkillName)
+		ii2[i] = skillqueueItemFromDBModel(row.SkillqueueItem, row.SkillName, row.GroupName)
 	}
 	return ii2, nil
 }

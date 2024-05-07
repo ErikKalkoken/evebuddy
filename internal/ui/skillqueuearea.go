@@ -2,12 +2,14 @@ package ui
 
 import (
 	"fmt"
+	"image/color"
 	"log/slog"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -35,12 +37,12 @@ func (a *skillqueueArea) Redraw() {
 	}
 	qq, err := a.ui.service.ListSkillqueue(characterID)
 	if err != nil {
-		t := canvas.NewText("Failed to fetch skillqueue", theme.ErrorColor())
-		a.content.Add(t)
+		slog.Error("failed to fetch skillqueue", "err", err)
+		a.content.Add(makeMessage("Failed to fetch skillqueue", widget.DangerImportance))
 		return
 	}
 	if len(qq) == 0 {
-		a.content.Add(widget.NewLabel("No data"))
+		a.content.Add(makeMessage("No data found", widget.WarningImportance))
 		return
 	}
 
@@ -54,7 +56,7 @@ func (a *skillqueueArea) Redraw() {
 	}
 
 	if len(qq2) == 0 {
-		a.content.Add(widget.NewLabel("Skill queue is not active!"))
+		a.content.Add(makeMessage("Skill queue is not active!", widget.WarningImportance))
 		return
 	}
 
@@ -63,11 +65,11 @@ func (a *skillqueueArea) Redraw() {
 			return len(qq2)
 		},
 		func() fyne.CanvasObject {
-			x := widget.NewProgressBarInfinite()
-			x.Stop()
-			x.Hide()
+			pb := widget.NewProgressBarInfinite()
+			pb.Stop()
+			pb.Hide()
 			return container.NewStack(
-				x,
+				pb,
 				container.NewHBox(
 					widget.NewLabel("skill"),
 					layout.NewSpacer(),
@@ -77,7 +79,7 @@ func (a *skillqueueArea) Redraw() {
 		func(i widget.ListItemID, o fyne.CanvasObject) {
 			q := qq2[i]
 			row := o.(*fyne.Container).Objects[1].(*fyne.Container)
-			name := fmt.Sprintf("%s %s", q.SkillName, romanLetter(q.FinishedLevel))
+			name := q.Name()
 			row.Objects[0].(*widget.Label).SetText(name)
 			var finished string
 			if !q.FinishDate.IsZero() {
@@ -86,29 +88,51 @@ func (a *skillqueueArea) Redraw() {
 				finished = "?"
 			}
 			row.Objects[2].(*widget.Label).SetText(finished)
-			progressBar := o.(*fyne.Container).Objects[0].(*widget.ProgressBarInfinite)
-			if q.StartDate.Before(now) && q.FinishDate.After(now) {
-				progressBar.Show()
-				progressBar.Start()
+			pb := o.(*fyne.Container).Objects[0].(*widget.ProgressBarInfinite)
+			if q.IsActive() {
+				pb.Show()
+				pb.Start()
 			}
 		})
+
+	list.OnSelected = func(id widget.ListItemID) {
+		q := qq2[id]
+
+		var isActive string
+		if q.IsActive() {
+			isActive = "yes"
+		} else {
+			isActive = "no"
+		}
+		data := [][]string{
+			{"Name", q.Name()},
+			{"Group", q.GroupName},
+			{"Start date", q.StartDate.Format(myDateTime)},
+			{"Finish date", q.FinishDate.Format(myDateTime)},
+			{"Duration", humanize.RelTime(q.StartDate, q.FinishDate, "", "")},
+			{"% completed", fmt.Sprintf("%.0f", q.CompletionP()*100)},
+			{"Skill points", humanize.Comma(int64(q.LevelEndSP - q.LevelStartSP))},
+			{"Active?", isActive},
+		}
+		dlg := dialog.NewCustom("Skill Details", "OK", makeDataForm(data), a.ui.window)
+		dlg.Show()
+	}
 
 	a.content.Add(list)
 }
 
-func romanLetter(v int) string {
-	m := map[int]string{
-		1: "I",
-		2: "II",
-		3: "III",
-		4: "IV",
-		5: "V",
+func makeMessage(msg string, importance widget.Importance) *fyne.Container {
+	var c color.Color
+	switch importance {
+	case widget.DangerImportance:
+		c = theme.ErrorColor()
+	case widget.WarningImportance:
+		c = theme.WarningColor()
+	default:
+		c = theme.ForegroundColor()
 	}
-	r, ok := m[v]
-	if !ok {
-		panic(fmt.Sprintf("invalid value: %d", v))
-	}
-	return r
+	t := canvas.NewText(msg, c)
+	return container.NewHBox(layout.NewSpacer(), t, layout.NewSpacer())
 }
 
 func (a *skillqueueArea) StartUpdateTicker() {
@@ -132,4 +156,12 @@ func (a *skillqueueArea) StartUpdateTicker() {
 			<-ticker.C
 		}
 	}()
+}
+
+func makeDataForm(data [][]string) *widget.Form {
+	form := widget.NewForm()
+	for _, row := range data {
+		form.Append(row[0], widget.NewLabel(row[1]))
+	}
+	return form
 }
