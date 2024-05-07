@@ -53,14 +53,19 @@ func (a *skillqueueArea) Redraw() {
 		}
 	}
 	if !isActive {
-		a.items.Add(widget.NewLabel("Skill queue not active!"))
+		a.items.Add(widget.NewLabel("Skill queue is not active!"))
+		a.items.Add(widget.NewLabel(""))
 	}
+	header := container.NewHBox(widget.NewLabel("Skill"), layout.NewSpacer(), widget.NewLabel("Finished At"))
+	a.items.Add(container.NewStack(
+		canvas.NewRectangle(theme.DisabledButtonColor()),
+		header,
+	))
 	for _, q := range qq {
 		if isActive && q.FinishDate.Before(now) {
 			continue
 		}
 		name := widget.NewLabel(fmt.Sprintf("%s %s", q.SkillName, romanLetter(q.FinishedLevel)))
-		started := widget.NewLabel(timeFormattedOrDefault(q.StartDate, myDateTime, "?"))
 		var x string
 		if !q.FinishDate.IsZero() {
 			x = fmt.Sprintf("%s (%s)", q.FinishDate.Format(myDateTime), humanize.Time(q.FinishDate))
@@ -68,7 +73,7 @@ func (a *skillqueueArea) Redraw() {
 			x = "?"
 		}
 		finished := widget.NewLabel(x)
-		row := container.NewHBox(name, layout.NewSpacer(), started, finished)
+		row := container.NewHBox(name, layout.NewSpacer(), finished)
 		wrapper := container.NewStack()
 		if q.StartDate.Before(now) && q.FinishDate.After(now) {
 			wrapper.Add(widget.NewProgressBarInfinite())

@@ -141,8 +141,8 @@ func (u *ui) ShowAndRun() {
 			u.window.Resize(fyne.NewSize(800, 600))
 		}
 		u.statusArea.StartUpdateTicker()
-		// u.characterArea.StartUpdateTicker()
-		// u.folderArea.StartUpdateTicker()
+		u.characterArea.StartUpdateTicker()
+		u.folderArea.StartUpdateTicker()
 		u.skillqueueArea.StartUpdateTicker()
 		u.StartUpdateTickerEveCharacters()
 	}()
