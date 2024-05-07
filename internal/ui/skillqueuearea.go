@@ -65,8 +65,7 @@ func (a *skillqueueArea) Redraw() {
 			return len(qq2)
 		},
 		func() fyne.CanvasObject {
-			pb := widget.NewProgressBarInfinite()
-			pb.Stop()
+			pb := widget.NewProgressBar()
 			pb.Hide()
 			return container.NewStack(
 				pb,
@@ -88,10 +87,10 @@ func (a *skillqueueArea) Redraw() {
 				finished = "?"
 			}
 			row.Objects[2].(*widget.Label).SetText(finished)
-			pb := o.(*fyne.Container).Objects[0].(*widget.ProgressBarInfinite)
+			pb := o.(*fyne.Container).Objects[0].(*widget.ProgressBar)
 			if q.IsActive() {
+				pb.SetValue(q.CompletionP())
 				pb.Show()
-				pb.Start()
 			}
 		})
 
@@ -110,8 +109,9 @@ func (a *skillqueueArea) Redraw() {
 			{"Start date", q.StartDate.Format(myDateTime)},
 			{"Finish date", q.FinishDate.Format(myDateTime)},
 			{"Duration", humanize.RelTime(q.StartDate, q.FinishDate, "", "")},
-			{"% completed", fmt.Sprintf("%.0f", q.CompletionP()*100)},
-			{"Skill points", humanize.Comma(int64(q.LevelEndSP - q.LevelStartSP))},
+			{"Completed", fmt.Sprintf("%.0f%%", q.CompletionP()*100)},
+			{"Trained SP at start", humanize.Comma(int64(q.TrainingStartSP - q.LevelStartSP))},
+			{"Total SP", humanize.Comma(int64(q.LevelEndSP - q.LevelStartSP))},
 			{"Active?", isActive},
 		}
 		dlg := dialog.NewCustom("Skill Details", "OK", makeDataForm(data), a.ui.window)

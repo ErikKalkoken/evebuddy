@@ -40,7 +40,9 @@ func (q *SkillqueueItem) CompletionP() float64 {
 		return 0
 	}
 	remaining := q.FinishDate.Sub(now)
-	return 1 - remaining.Seconds()/q.Duration().Seconds()
+	c := remaining.Seconds() / q.Duration().Seconds()
+	base := float64(q.LevelEndSP-q.TrainingStartSP) / float64(q.LevelEndSP-q.LevelStartSP)
+	return 1 - (c * base)
 }
 
 func (q *SkillqueueItem) Duration() time.Duration {

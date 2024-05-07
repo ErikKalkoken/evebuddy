@@ -23,6 +23,7 @@ EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) player
 ## Features
 
 - Mails: Full client for Eve Mails
+- Skillqueue: Shows current skills in the training queue
 - Character stats: Display of current information about a character (e.g. location)
 
 More features planned...
