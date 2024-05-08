@@ -3,13 +3,14 @@ package humanize_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 )
 
-func TestHumanize(t *testing.T) {
+func TestNumber(t *testing.T) {
 	var cases = []struct {
 		value    float64
 		decimals int
@@ -33,6 +34,22 @@ func TestHumanize(t *testing.T) {
 		t.Run(fmt.Sprintf("Can format numbers: %f", tc.value), func(t *testing.T) {
 			got := humanize.Number(tc.value, tc.decimals)
 			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestDuration(t *testing.T) {
+	var cases = []struct {
+		in  time.Duration
+		out string
+	}{
+		{24*10*time.Hour + 5*time.Hour + 3*time.Minute, "10d 5h"},
+		{5*time.Hour + 3*time.Minute, "5h 3m"},
+	}
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("Can format duration: %v", tc.in), func(t *testing.T) {
+			got := humanize.Duration(tc.in)
+			assert.Equal(t, tc.out, got)
 		})
 	}
 }

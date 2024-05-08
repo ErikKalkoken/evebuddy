@@ -4,6 +4,7 @@ package humanize
 import (
 	"fmt"
 	"math"
+	"time"
 )
 
 // Number returns a humanized number, e.g. 1234 becomes 1.23K
@@ -44,4 +45,17 @@ func Number(value float64, decimals int) string {
 	}
 	r := fmt.Sprintf(f, x) + a
 	return r
+}
+
+// Duration returns a humanized duration, e.g. 22d 10h 5m.
+func Duration(duration time.Duration) string {
+	m := int(math.Round(duration.Abs().Minutes()))
+	d := m / 60 / 24
+	m -= d * 60 * 24
+	h := m / 60
+	m -= h * 60
+	if d > 0 {
+		return fmt.Sprintf("%dd %dh", d, h)
+	}
+	return fmt.Sprintf("%dh %dm", h, m)
 }

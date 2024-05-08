@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/dustin/go-humanize"
@@ -72,7 +73,7 @@ func (a *skillqueueArea) Redraw() {
 			row.Objects[0].(*widget.Label).SetText(name)
 			var duration string
 			if !q.FinishDate.IsZero() {
-				duration = humanizeDuration(q.Duration())
+				duration = ihumanize.Duration(q.Duration())
 			} else {
 				duration = "?"
 			}
@@ -116,7 +117,7 @@ func (a *skillqueueArea) Redraw() {
 		for _, q := range qq2 {
 			total += q.Duration()
 		}
-		s = fmt.Sprintf("Total training time: %s", humanizeDuration(total))
+		s = fmt.Sprintf("Total training time: %s", ihumanize.Duration(total))
 		i = widget.MediumImportance
 	} else {
 		s = "Training not active"
@@ -173,8 +174,4 @@ func makeDataForm(data [][]string) *widget.Form {
 		form.Append(row[0], widget.NewLabel(row[1]))
 	}
 	return form
-}
-
-func humanizeDuration(d time.Duration) string {
-	return humanize.RelTime(time.Now().Add(d), time.Now(), "", "")
 }
