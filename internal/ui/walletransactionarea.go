@@ -2,10 +2,12 @@ package ui
 
 import (
 	"log/slog"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 	"github.com/dustin/go-humanize"
 )
@@ -86,4 +88,27 @@ func (a *walletTransactionArea) Redraw() {
 	}
 
 	a.content.Add(t)
+}
+
+func (a *walletTransactionArea) StartUpdateTicker() {
+	ticker := time.NewTicker(10 * time.Second)
+	go func() {
+		for {
+			func() {
+				characterID := a.ui.CurrentCharID()
+				if characterID == 0 {
+					return
+				}
+				if !a.ui.service.SectionUpdatedExpired(characterID, service.UpdateSectionWalletJournal) {
+					return
+				}
+				if err := a.ui.service.UpdateWalletJournalEntryESI(characterID); err != nil {
+					slog.Error(err.Error())
+					return
+				}
+				a.Redraw()
+			}()
+			<-ticker.C
+		}
+	}()
 }

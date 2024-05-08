@@ -149,8 +149,8 @@ func (u *ui) ShowAndRun() {
 		u.characterArea.StartUpdateTicker()
 		u.folderArea.StartUpdateTicker()
 		u.skillqueueArea.StartUpdateTicker()
+		u.walletTransactionArea.StartUpdateTicker()
 		u.StartUpdateTickerEveCharacters()
-		u.StartUpdateTickerWalletJournal()
 	}()
 	u.window.ShowAndRun()
 }
@@ -228,27 +228,6 @@ func (u *ui) StartUpdateTickerEveCharacters() {
 	}()
 }
 
-func (u *ui) StartUpdateTickerWalletJournal() {
-	ticker := time.NewTicker(10 * time.Second)
-	go func() {
-		for {
-			func() {
-				characterID := u.CurrentCharID()
-				if characterID == 0 {
-					return
-				}
-				if !u.service.SectionUpdatedExpired(characterID, service.UpdateSectionWalletJournal) {
-					return
-				}
-				if err := u.service.UpdateWalletJournalEntryESI(characterID); err != nil {
-					slog.Error(err.Error())
-					return
-				}
-			}()
-			<-ticker.C
-		}
-	}()
-}
 func appName(a fyne.App) string {
 	info := a.Metadata()
 	name := info.Name
