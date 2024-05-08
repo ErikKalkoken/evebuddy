@@ -167,19 +167,19 @@ type TokensScope struct {
 }
 
 type WalletJournalEntry struct {
-	Amount        sql.NullFloat64
-	Balance       sql.NullFloat64
-	ContextID     sql.NullInt64
-	ContextIDType sql.NullString
+	Amount        float64
+	Balance       float64
+	ContextID     int64
+	ContextIDType string
 	Date          time.Time
 	Description   string
 	FirstPartyID  sql.NullInt64
 	ID            int64
 	MyCharacterID int64
-	Reason        sql.NullString
+	Reason        string
 	RefType       string
 	SecondPartyID sql.NullInt64
-	Tax           sql.NullFloat64
+	Tax           float64
 	TaxReceiverID sql.NullInt64
 }
 

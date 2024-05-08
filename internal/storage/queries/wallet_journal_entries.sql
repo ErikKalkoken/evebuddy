@@ -27,6 +27,11 @@ LEFT JOIN wallet_journal_entry_second_parties ON wallet_journal_entry_second_par
 LEFT JOIN wallet_journal_entry_tax_receivers ON wallet_journal_entry_tax_receivers.id = wallet_journal_entries.tax_receiver_id
 WHERE my_character_id = ? and wallet_journal_entries.id = ?;
 
+-- name: ListWalletJournalEntryIDs :many
+SELECT id
+FROM wallet_journal_entries
+WHERE my_character_id = ?;
+
 -- name: ListWalletJournalEntries :many
 -- SELECT sqlc.embed(wallet_journal_entries), sqlc.embed(wallet_journal_entry_first_parties), sqlc.embed(wallet_journal_entry_second_parties), sqlc.embed(wallet_journal_entry_tax_receivers)
 -- FROM wallet_journal_entries

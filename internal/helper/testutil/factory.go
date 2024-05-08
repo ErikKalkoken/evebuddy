@@ -498,6 +498,63 @@ func (f Factory) CreateToken(args ...model.Token) *model.Token {
 	return &t
 }
 
+// CreateWalletJournalEntry is a test factory for WalletJournalEntry objects
+func (f Factory) CreateWalletJournalEntry(args ...storage.CreateWalletJournalEntryParams) *model.WalletJournalEntry {
+	ctx := context.Background()
+	var arg storage.CreateWalletJournalEntryParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.MyCharacterID == 0 {
+		x := f.CreateMyCharacter()
+		arg.MyCharacterID = x.ID
+	}
+	if arg.ID == 0 {
+		arg.ID = int64(f.calcNewID("wallet_journal_entries", "id"))
+	}
+	if arg.Amount == 0 {
+		arg.Amount = rand.Float64() * 10_000_000_000
+	}
+	if arg.Balance == 0 {
+		arg.Amount = rand.Float64() * 100_000_000_000
+	}
+	if arg.Date.IsZero() {
+		arg.Date = time.Now()
+	}
+	if arg.Description == "" {
+		arg.Description = fmt.Sprintf("Description #%d", arg.ID)
+	}
+	if arg.Reason == "" {
+		arg.Reason = fmt.Sprintf("Reason #%d", arg.ID)
+	}
+	if arg.RefType == "" {
+		arg.RefType = "player_donation"
+	}
+	if arg.Tax == 0 {
+		arg.Tax = rand.Float64()
+	}
+	if arg.FirstPartyID == 0 {
+		e := f.CreateEveCharacter()
+		arg.FirstPartyID = e.ID
+	}
+	if arg.SecondPartyID == 0 {
+		e := f.CreateEveCharacter()
+		arg.SecondPartyID = e.ID
+	}
+	if arg.TaxReceiverID == 0 {
+		e := f.CreateEveCharacter()
+		arg.TaxReceiverID = e.ID
+	}
+	err := f.r.CreateWalletJournalEntry(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	i, err := f.r.GetWalletJournalEntry(ctx, arg.MyCharacterID, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
 func (f *Factory) calcNewID(table, id_field string) int {
 	var max sql.NullInt64
 	if err := f.db.QueryRow(fmt.Sprintf("SELECT MAX(%s) FROM %s;", id_field, table)).Scan(&max); err != nil {

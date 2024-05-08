@@ -34,19 +34,19 @@ VALUES (
 `
 
 type CreateWalletJournalEntriesParams struct {
-	Amount        sql.NullFloat64
-	Balance       sql.NullFloat64
-	ContextID     sql.NullInt64
-	ContextIDType sql.NullString
+	Amount        float64
+	Balance       float64
+	ContextID     int64
+	ContextIDType string
 	Date          time.Time
 	Description   string
 	FirstPartyID  sql.NullInt64
 	ID            int64
 	MyCharacterID int64
-	Reason        sql.NullString
+	Reason        string
 	RefType       string
 	SecondPartyID sql.NullInt64
-	Tax           sql.NullFloat64
+	Tax           float64
 	TaxReceiverID sql.NullInt64
 }
 
@@ -120,4 +120,33 @@ func (q *Queries) GetWalletJournalEntry(ctx context.Context, arg GetWalletJourna
 		&i.WalletJournalEntryTaxReceiver.Name,
 	)
 	return i, err
+}
+
+const listWalletJournalEntryIDs = `-- name: ListWalletJournalEntryIDs :many
+SELECT id
+FROM wallet_journal_entries
+WHERE my_character_id = ?
+`
+
+func (q *Queries) ListWalletJournalEntryIDs(ctx context.Context, myCharacterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listWalletJournalEntryIDs, myCharacterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
