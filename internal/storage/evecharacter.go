@@ -122,12 +122,12 @@ func eveCharacterFromDBModel(
 	faction queries.EveCharacterFaction,
 ) *model.EveCharacter {
 	x := model.EveCharacter{
-		Alliance:       eveEntityFromEveCharacterAlliance(alliance),
+		Alliance:       eveEntityFromNullableDBModel(nullEveEntry(alliance)),
 		Birthday:       character.Birthday,
 		Corporation:    eveEntityFromDBModel(corporation),
 		Description:    character.Description,
 		Gender:         character.Gender,
-		Faction:        eveEntityFromEveCharacterFaction(faction),
+		Faction:        eveEntityFromNullableDBModel(nullEveEntry(faction)),
 		ID:             int32(character.ID),
 		Name:           character.Name,
 		Race:           eveRaceFromDBModel(race),
@@ -135,28 +135,4 @@ func eveCharacterFromDBModel(
 		Title:          character.Title,
 	}
 	return &x
-}
-
-func eveEntityFromEveCharacterAlliance(e queries.EveCharacterAlliance) *model.EveEntity {
-	if !e.ID.Valid {
-		return nil
-	}
-	category := eveEntityCategoryFromDBModel(e.Category.String)
-	return &model.EveEntity{
-		Category: category,
-		ID:       int32(e.ID.Int64),
-		Name:     e.Name.String,
-	}
-}
-
-func eveEntityFromEveCharacterFaction(e queries.EveCharacterFaction) *model.EveEntity {
-	if !e.ID.Valid {
-		return nil
-	}
-	category := eveEntityCategoryFromDBModel(e.Category.String)
-	return &model.EveEntity{
-		Category: category,
-		ID:       int32(e.ID.Int64),
-		Name:     e.Name.String,
-	}
 }

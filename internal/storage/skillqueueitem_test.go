@@ -28,7 +28,7 @@ func TestSkillqueueItems(t *testing.T) {
 		err := r.CreateSkillqueueItem(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetSkillqueueItems(ctx, c.ID, 4)
+			i, err := r.GetSkillqueueItem(ctx, c.ID, 4)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 5, i.FinishedLevel)
 			}
@@ -48,7 +48,7 @@ func TestSkillqueueItems(t *testing.T) {
 			assert.Len(t, ii, 3)
 		}
 	})
-	t.Run("can delete items", func(t *testing.T) {
+	t.Run("can replace items", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
@@ -69,23 +69,6 @@ func TestSkillqueueItems(t *testing.T) {
 			ii, err := r.ListSkillqueueItems(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ii, 1)
-			}
-		}
-	})
-	t.Run("can replace queue", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
-		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{MyCharacterID: c.ID})
-		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{MyCharacterID: c.ID})
-		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{MyCharacterID: c.ID})
-		// when
-		err := r.DeleteSkillqueueItems(ctx, c.ID)
-		// then
-		if assert.NoError(t, err) {
-			ii, err := r.ListSkillqueueItems(ctx, c.ID)
-			if assert.NoError(t, err) {
-				assert.Len(t, ii, 0)
 			}
 		}
 	})

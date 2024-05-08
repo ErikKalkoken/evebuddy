@@ -13,33 +13,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func mailFromDBModel(mail queries.Mail, from queries.EveEntity, labels []queries.MailLabel, recipients []queries.EveEntity) model.Mail {
-	if mail.MyCharacterID == 0 {
-		panic("missing character ID")
-	}
-	var ll []*model.MailLabel
-	for _, l := range labels {
-		ll = append(ll, mailLabelFromDBModel(l))
-	}
-	var rr []*model.EveEntity
-	for _, r := range recipients {
-		rr = append(rr, eveEntityFromDBModel(r))
-	}
-	m := model.Mail{
-		Body:          mail.Body,
-		MyCharacterID: int32(mail.MyCharacterID),
-		From:          eveEntityFromDBModel(from),
-		IsRead:        mail.IsRead,
-		ID:            mail.ID,
-		Labels:        ll,
-		MailID:        int32(mail.MailID),
-		Recipients:    rr,
-		Subject:       mail.Subject,
-		Timestamp:     mail.Timestamp,
-	}
-	return m
-}
-
 type CreateMailParams struct {
 	Body          string
 	MyCharacterID int32
@@ -275,4 +248,31 @@ func (r *Storage) UpdateMail(ctx context.Context, characterID int32, mailPK int6
 		return fmt.Errorf("failed to update labels for mail PK %d and character %d: %w", mailPK, characterID, err)
 	}
 	return nil
+}
+
+func mailFromDBModel(mail queries.Mail, from queries.EveEntity, labels []queries.MailLabel, recipients []queries.EveEntity) model.Mail {
+	if mail.MyCharacterID == 0 {
+		panic("missing character ID")
+	}
+	var ll []*model.MailLabel
+	for _, l := range labels {
+		ll = append(ll, mailLabelFromDBModel(l))
+	}
+	var rr []*model.EveEntity
+	for _, r := range recipients {
+		rr = append(rr, eveEntityFromDBModel(r))
+	}
+	m := model.Mail{
+		Body:          mail.Body,
+		MyCharacterID: int32(mail.MyCharacterID),
+		From:          eveEntityFromDBModel(from),
+		IsRead:        mail.IsRead,
+		ID:            mail.ID,
+		Labels:        ll,
+		MailID:        int32(mail.MailID),
+		Recipients:    rr,
+		Subject:       mail.Subject,
+		Timestamp:     mail.Timestamp,
+	}
+	return m
 }

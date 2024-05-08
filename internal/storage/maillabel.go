@@ -10,17 +10,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func mailLabelFromDBModel(l queries.MailLabel) *model.MailLabel {
-	return &model.MailLabel{
-		ID:            l.ID,
-		MyCharacterID: int32(l.MyCharacterID),
-		Color:         l.Color,
-		LabelID:       int32(l.LabelID),
-		Name:          l.Name,
-		UnreadCount:   int(l.UnreadCount),
-	}
-}
-
 func (r *Storage) DeleteObsoleteMailLabels(ctx context.Context, characterID int32) error {
 	arg := queries.DeleteObsoleteMailLabelsParams{
 		MyCharacterID:   int64(characterID),
@@ -123,4 +112,15 @@ func (r *Storage) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelPara
 	}
 	label := mailLabelFromDBModel(l)
 	return label, nil
+}
+
+func mailLabelFromDBModel(l queries.MailLabel) *model.MailLabel {
+	return &model.MailLabel{
+		ID:            l.ID,
+		MyCharacterID: int32(l.MyCharacterID),
+		Color:         l.Color,
+		LabelID:       int32(l.LabelID),
+		Name:          l.Name,
+		UnreadCount:   int(l.UnreadCount),
+	}
 }

@@ -228,3 +228,21 @@ func eveEntityFromDBModel(e queries.EveEntity) *model.EveEntity {
 		Name:     e.Name,
 	}
 }
+
+type nullEveEntry struct {
+	ID       sql.NullInt64
+	Category sql.NullString
+	Name     sql.NullString
+}
+
+func eveEntityFromNullableDBModel(e nullEveEntry) *model.EveEntity {
+	if !e.ID.Valid {
+		return nil
+	}
+	category := eveEntityCategoryFromDBModel(e.Category.String)
+	return &model.EveEntity{
+		Category: category,
+		ID:       int32(e.ID.Int64),
+		Name:     e.Name.String,
+	}
+}

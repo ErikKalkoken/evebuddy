@@ -1,3 +1,9 @@
+CREATE TABLE dictionary (
+    key TEXT PRIMARY KEY NOT NULL,
+    value BLOB NOT NULL
+);
+
+
 CREATE TABLE eve_entities (
     id INTEGER PRIMARY KEY NOT NULL,
     category TEXT NOT NULL,
@@ -187,7 +193,40 @@ CREATE TABLE tokens_scopes (
     FOREIGN KEY (scope_id) REFERENCES scopes(id) ON DELETE CASCADE
 );
 
-CREATE TABLE dictionary (
-    key TEXT PRIMARY KEY NOT NULL,
-    value BLOB NOT NULL
+CREATE TABLE wallet_journal_entries (
+    amount REAL,
+    balance REAL,
+    context_id INTEGER,
+    context_id_type TEXT,
+    date DATETIME NOT NULL,
+    description TEXT NOT NULL,
+    first_party_id INTEGER,
+    id INTEGER NOT NULL PRIMARY KEY,
+    my_character_id INTEGER NOT NULL,
+    reason TEXT,
+    ref_type TEXT NOT NULL,
+    second_party_id INTEGER,
+    tax REAL,
+    tax_receiver_id INTEGER,
+    FOREIGN KEY (first_party_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
+    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (second_party_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
+    FOREIGN KEY (tax_receiver_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
+    UNIQUE (my_character_id, id)
 );
+CREATE INDEX wallet_journal_entries_date_idx ON wallet_journal_entries (date ASC);
+
+CREATE VIEW wallet_journal_entry_first_parties AS
+SELECT eve_entities.*
+FROM wallet_journal_entries
+LEFT JOIN eve_entities ON eve_entities.id = wallet_journal_entries.first_party_id;
+
+CREATE VIEW wallet_journal_entry_second_parties AS
+SELECT eve_entities.*
+FROM wallet_journal_entries
+LEFT JOIN eve_entities ON eve_entities.id = wallet_journal_entries.second_party_id;
+
+CREATE VIEW wallet_journal_entry_tax_receivers AS
+SELECT eve_entities.*
+FROM wallet_journal_entries
+LEFT JOIN eve_entities ON eve_entities.id = wallet_journal_entries.tax_receiver_id;

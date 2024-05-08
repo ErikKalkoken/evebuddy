@@ -461,7 +461,7 @@ func (f Factory) CreateSkillqueueItem(args ...storage.SkillqueueItemParams) *mod
 	if err != nil {
 		panic(err)
 	}
-	i, err := f.r.GetSkillqueueItems(ctx, arg.MyCharacterID, arg.QueuePosition)
+	i, err := f.r.GetSkillqueueItem(ctx, arg.MyCharacterID, arg.QueuePosition)
 	if err != nil {
 		panic(err)
 	}

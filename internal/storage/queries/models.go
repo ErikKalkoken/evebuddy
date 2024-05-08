@@ -165,3 +165,38 @@ type TokensScope struct {
 	TokenID int64
 	ScopeID int64
 }
+
+type WalletJournalEntry struct {
+	Amount        sql.NullFloat64
+	Balance       sql.NullFloat64
+	ContextID     sql.NullInt64
+	ContextIDType sql.NullString
+	Date          time.Time
+	Description   string
+	FirstPartyID  sql.NullInt64
+	ID            int64
+	MyCharacterID int64
+	Reason        sql.NullString
+	RefType       string
+	SecondPartyID sql.NullInt64
+	Tax           sql.NullFloat64
+	TaxReceiverID sql.NullInt64
+}
+
+type WalletJournalEntryFirstParty struct {
+	ID       sql.NullInt64
+	Category sql.NullString
+	Name     sql.NullString
+}
+
+type WalletJournalEntrySecondParty struct {
+	ID       sql.NullInt64
+	Category sql.NullString
+	Name     sql.NullString
+}
+
+type WalletJournalEntryTaxReceiver struct {
+	ID       sql.NullInt64
+	Category sql.NullString
+	Name     sql.NullString
+}

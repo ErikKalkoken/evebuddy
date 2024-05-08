@@ -81,12 +81,7 @@ func createSkillqueueItem(ctx context.Context, q *queries.Queries, arg Skillqueu
 	return err
 }
 
-func (r *Storage) DeleteSkillqueueItems(ctx context.Context, characterID int32) error {
-	err := r.q.DeleteSkillqueueItems(ctx, int64(characterID))
-	return err
-}
-
-func (r *Storage) GetSkillqueueItems(ctx context.Context, characterID int32, pos int) (*model.SkillqueueItem, error) {
+func (r *Storage) GetSkillqueueItem(ctx context.Context, characterID int32, pos int) (*model.SkillqueueItem, error) {
 	arg := queries.GetSkillqueueItemParams{
 		MyCharacterID: int64(characterID),
 		QueuePosition: int64(pos),
