@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -35,42 +36,53 @@ func (a *walletTransactionArea) Redraw() {
 		a.content.Add(makeMessage("Failed to fetch wallet journal", widget.DangerImportance))
 		return
 	}
-	t := widgets.NewStaticTable(
+	const myFloatFormat = "#,###.##"
+	table := widgets.NewStaticTable(
 		func() (rows int, cols int) {
 			return len(ee), 5
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("template")
+			return widget.NewLabel("2024-05-08 18:59")
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			var s string
+			l := co.(*widget.Label)
 			e := ee[tci.Row]
 			switch tci.Col {
 			case 0:
-				s = e.Date.Format(myDateTime)
+				l.SetText(e.Date.Format(myDateTime))
 			case 1:
-				s = e.Type()
+				l.SetText(e.Type())
 			case 2:
-				s = humanize.FormatFloat("#,###.##", e.Amount)
+				l.SetText(humanize.FormatFloat(myFloatFormat, e.Amount))
+				l.Alignment = fyne.TextAlignTrailing
+				switch {
+				case e.Amount < 0:
+					l.Importance = widget.DangerImportance
+				case e.Amount > 0:
+					l.Importance = widget.SuccessImportance
+				default:
+					l.Importance = widget.MediumImportance
+				}
 			case 3:
-				s = humanize.FormatFloat("#,###.##", e.Balance)
+				l.SetText(humanize.FormatFloat(myFloatFormat, e.Balance))
+				l.Alignment = fyne.TextAlignTrailing
 			case 4:
-				s = e.Description
+				l.SetText(e.Description)
+				l.Truncation = fyne.TextTruncateEllipsis
 			}
-			co.(*widget.Label).SetText(s)
 		},
 	)
-	t.SetColumnWidth(0, 150)
-	t.SetColumnWidth(1, 150)
-	t.SetColumnWidth(2, 150)
-	t.SetColumnWidth(3, 150)
-	t.SetColumnWidth(4, 500)
+	table.SetColumnWidth(0, 130)
+	table.SetColumnWidth(1, 130)
+	table.SetColumnWidth(2, 130)
+	table.SetColumnWidth(3, 130)
+	table.SetColumnWidth(4, 450)
 
-	t.ShowHeaderRow = true
-	t.CreateHeader = func() fyne.CanvasObject {
+	table.ShowHeaderRow = true
+	table.CreateHeader = func() fyne.CanvasObject {
 		return widget.NewLabel("Template")
 	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
+	table.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		var s string
 		switch tci.Col {
 		case 0:
@@ -87,7 +99,21 @@ func (a *walletTransactionArea) Redraw() {
 		co.(*widget.Label).SetText(s)
 	}
 
-	a.content.Add(t)
+	var s string
+	var i widget.Importance
+	if len(ee) > 0 {
+		s = fmt.Sprintf("Total: %s", humanize.FormatFloat(myFloatFormat, ee[0].Balance))
+		i = widget.MediumImportance
+	} else {
+		s = "No entries"
+		i = widget.WarningImportance
+	}
+	x := widget.NewLabel(s)
+	x.Importance = i
+	bottom := container.NewVBox(widget.NewSeparator(), x)
+
+	content := container.NewBorder(nil, bottom, nil, nil, table)
+	a.content.Add(content)
 }
 
 func (a *walletTransactionArea) StartUpdateTicker() {
