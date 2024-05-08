@@ -10,16 +10,18 @@ type UpdateSection string
 
 // Updated character sections
 const (
-	UpdateSectionMail        = "mail"
-	UpdateSectionMyCharacter = "my_character"
-	UpdateSectionSkillqueue  = "skillqueue"
+	UpdateSectionMail          = "mail"
+	UpdateSectionMyCharacter   = "my_character"
+	UpdateSectionSkillqueue    = "skillqueue"
+	UpdateSectionWalletJournal = "wallet_journal"
 )
 
 // update section timeouts in seconds
 const (
-	updateSectionMailTimeout       = 600 // TODO: 60
-	updateSectionDetailsTimeout    = 600 // TODO: 120
-	updateSectionSkillqueueTimeout = 600 // TODO: 120
+	updateSectionMailTimeout          = 600 // TODO: 60
+	updateSectionDetailsTimeout       = 600 // TODO: 120
+	updateSectionSkillqueueTimeout    = 600 // TODO: 120
+	updateSectionWalletJournalTimeout = 600 // TODO: 120
 )
 
 func (s *Service) SectionSetUpdated(characterID int32, section UpdateSection) error {
@@ -47,9 +49,10 @@ func makeUpdateAtDictKey(characterID int32, section UpdateSection) string {
 
 func sectionUpdateTimeout(section UpdateSection) time.Duration {
 	m := map[UpdateSection]time.Duration{
-		UpdateSectionMyCharacter: updateSectionDetailsTimeout * time.Second,
-		UpdateSectionMail:        updateSectionMailTimeout * time.Second,
-		UpdateSectionSkillqueue:  updateSectionSkillqueueTimeout * time.Second,
+		UpdateSectionMyCharacter:   updateSectionDetailsTimeout * time.Second,
+		UpdateSectionMail:          updateSectionMailTimeout * time.Second,
+		UpdateSectionSkillqueue:    updateSectionSkillqueueTimeout * time.Second,
+		UpdateSectionWalletJournal: updateSectionWalletJournalTimeout * time.Second,
 	}
 	d, ok := m[section]
 	if !ok {
