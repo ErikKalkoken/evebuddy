@@ -41,11 +41,6 @@ func (a *skillqueueArea) Redraw() {
 		a.content.Add(makeMessage("Failed to fetch skillqueue", widget.DangerImportance))
 		return
 	}
-	if len(qq) == 0 {
-		a.content.Add(makeMessage("No data found", widget.WarningImportance))
-		return
-	}
-
 	now := time.Now()
 	qq2 := make([]*model.SkillqueueItem, 0)
 	for _, q := range qq {
@@ -53,11 +48,6 @@ func (a *skillqueueArea) Redraw() {
 			continue
 		}
 		qq2 = append(qq2, q)
-	}
-
-	if len(qq2) == 0 {
-		a.content.Add(makeMessage("Skill queue is not active!", widget.WarningImportance))
-		return
 	}
 
 	list := widget.NewList(
@@ -80,13 +70,13 @@ func (a *skillqueueArea) Redraw() {
 			row := o.(*fyne.Container).Objects[1].(*fyne.Container)
 			name := q.Name()
 			row.Objects[0].(*widget.Label).SetText(name)
-			var finished string
+			var duration string
 			if !q.FinishDate.IsZero() {
-				finished = humanize.RelTime(q.FinishDate, time.Now(), "", "")
+				duration = humanizeDuration(q.Duration())
 			} else {
-				finished = "?"
+				duration = "?"
 			}
-			row.Objects[2].(*widget.Label).SetText(finished)
+			row.Objects[2].(*widget.Label).SetText(duration)
 			pb := o.(*fyne.Container).Objects[0].(*widget.ProgressBar)
 			if q.IsActive() {
 				pb.SetValue(q.CompletionP())
@@ -119,7 +109,25 @@ func (a *skillqueueArea) Redraw() {
 		dlg.Show()
 	}
 
-	a.content.Add(list)
+	var s string
+	var i widget.Importance
+	if len(qq2) > 0 {
+		var total time.Duration
+		for _, q := range qq2 {
+			total += q.Duration()
+		}
+		s = fmt.Sprintf("Total training time: %s", humanizeDuration(total))
+		i = widget.MediumImportance
+	} else {
+		s = "Training not active"
+		i = widget.WarningImportance
+	}
+	x := widget.NewLabel(s)
+	x.Importance = i
+	x.TextStyle = fyne.TextStyle{Bold: true}
+	bottom := container.NewVBox(widget.NewSeparator(), x)
+	content := container.NewBorder(nil, bottom, nil, nil, list)
+	a.content.Add(content)
 }
 
 func makeMessage(msg string, importance widget.Importance) *fyne.Container {
@@ -165,4 +173,8 @@ func makeDataForm(data [][]string) *widget.Form {
 		form.Append(row[0], widget.NewLabel(row[1]))
 	}
 	return form
+}
+
+func humanizeDuration(d time.Duration) string {
+	return humanize.RelTime(time.Now().Add(d), time.Now(), "", "")
 }
