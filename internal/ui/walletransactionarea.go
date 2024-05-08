@@ -128,11 +128,14 @@ func (a *walletTransactionArea) StartUpdateTicker() {
 				if !a.ui.service.SectionUpdatedExpired(characterID, service.UpdateSectionWalletJournal) {
 					return
 				}
-				if err := a.ui.service.UpdateWalletJournalEntryESI(characterID); err != nil {
+				count, err := a.ui.service.UpdateWalletJournalEntryESI(characterID)
+				if err != nil {
 					slog.Error(err.Error())
 					return
 				}
-				a.Redraw()
+				if count > 0 {
+					a.Redraw()
+				}
 			}()
 			<-ticker.C
 		}

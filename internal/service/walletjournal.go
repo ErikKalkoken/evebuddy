@@ -16,17 +16,19 @@ func (s *Service) ListWalletJournalEntries(characterID int32) ([]*model.WalletJo
 	return s.r.ListWalletJournalEntries(ctx, characterID)
 }
 
-func (s *Service) UpdateWalletJournalEntryESI(characterID int32) error {
+// UpdateWalletJournalEntryESI updates the wallet journal from ESI and returns the count of new entries.
+func (s *Service) UpdateWalletJournalEntryESI(characterID int32) (int, error) {
 	ctx := context.Background()
 	key := fmt.Sprintf("UpdateWalletJournalEntryESI-%d", characterID)
-	_, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		x, err := s.updateWalletJournalEntryESI(ctx, characterID)
+	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
+		count, err := s.updateWalletJournalEntryESI(ctx, characterID)
 		if err != nil {
-			return x, fmt.Errorf("failed to update wallet journal from ESI for character %d: %w", characterID, err)
+			return count, fmt.Errorf("failed to update wallet journal from ESI for character %d: %w", characterID, err)
 		}
-		return x, err
+		return count, err
 	})
-	return err
+	count := x.(int)
+	return count, err
 }
 
 func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID int32) (int, error) {
