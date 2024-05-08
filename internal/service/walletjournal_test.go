@@ -161,3 +161,23 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		}
 	})
 }
+
+func TestListWalletJournalEntries(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	s := service.NewService(r)
+	t.Run("can list existing entries", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateMyCharacter()
+		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
+		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
+		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
+		// when
+		ee, err := s.ListWalletJournalEntries(c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, ee, 3)
+		}
+	})
+}

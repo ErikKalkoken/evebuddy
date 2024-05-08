@@ -33,17 +33,18 @@ const (
 // Each UI area holds a pointer of the ui instance,
 // which allow it to access the other UI areas and shared variables
 type ui struct {
-	app              fyne.App
-	characterArea    *characterArea
-	currentCharacter *model.MyCharacter
-	folderArea       *folderArea
-	headerArea       *headerArea
-	mailArea         *mailDetailArea
-	statusArea       *statusArea
-	service          *service.Service
-	skillqueueArea   *skillqueueArea
-	toolbarBadge     *fyne.Container
-	window           fyne.Window
+	app                   fyne.App
+	characterArea         *characterArea
+	currentCharacter      *model.MyCharacter
+	folderArea            *folderArea
+	headerArea            *headerArea
+	mailArea              *mailDetailArea
+	statusArea            *statusArea
+	service               *service.Service
+	skillqueueArea        *skillqueueArea
+	walletTransactionArea *walletTransactionArea
+	toolbarBadge          *fyne.Container
+	window                fyne.Window
 }
 
 // NewUI build the UI and returns it.
@@ -77,10 +78,14 @@ func NewUI(s *service.Service) *ui {
 	u.skillqueueArea = skillqueueArea
 	skillqueueTab := container.NewTabItemWithIcon("Skill Queue", theme.NewThemedResource(resourceChecklistrtlSvg), skillqueueArea.content)
 
+	walletArea := u.NewWalletTransactionArea()
+	u.walletTransactionArea = walletArea
+	walletTab := container.NewTabItemWithIcon("Wallet", theme.NewThemedResource(resourceAttachmoneySvg), walletArea.content)
+
 	statusArea := u.newStatusArea()
 	u.statusArea = statusArea
 
-	tabs := container.NewAppTabs(characterTab, mailTab, skillqueueTab)
+	tabs := container.NewAppTabs(characterTab, mailTab, skillqueueTab, walletTab)
 	tabs.SetTabLocation(container.TabLocationLeading)
 
 	toolbar := makeToolbar(u)
@@ -171,6 +176,7 @@ func (u *ui) SetCurrentCharacter(c *model.MyCharacter) {
 	u.characterArea.Redraw()
 	u.folderArea.Refresh()
 	u.skillqueueArea.Redraw()
+	u.walletTransactionArea.Redraw()
 }
 
 func (u *ui) updateToolbarBadge(c *model.MyCharacter) {

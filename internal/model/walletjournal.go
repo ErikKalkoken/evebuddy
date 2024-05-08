@@ -1,6 +1,12 @@
 package model
 
-import "time"
+import (
+	"strings"
+	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+)
 
 type WalletJournalEntry struct {
 	Amount        float64
@@ -17,4 +23,11 @@ type WalletJournalEntry struct {
 	SecondParty   *EveEntity
 	Tax           float64
 	TaxReceiver   *EveEntity
+}
+
+func (e *WalletJournalEntry) Type() string {
+	s := strings.ReplaceAll(e.RefType, "_", " ")
+	c := cases.Title(language.English)
+	s = c.String(s)
+	return s
 }

@@ -112,4 +112,18 @@ func TestWalletJournalEntry(t *testing.T) {
 			assert.Equal(t, want, got)
 		}
 	})
+	t.Run("can list existing entries", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateMyCharacter()
+		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
+		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
+		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
+		// when
+		ee, err := r.ListWalletJournalEntries(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, ee, 3)
+		}
+	})
 }

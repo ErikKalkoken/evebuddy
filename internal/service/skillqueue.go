@@ -59,5 +59,6 @@ func (s *Service) updateSkillqueue(ctx context.Context, characterID int32) (int,
 	if err := s.r.ReplaceSkillqueueItems(ctx, characterID, args); err != nil {
 		return 0, err
 	}
+	slog.Info("Updated skillqueue items", "characterID", token.CharacterID, "count", len(args))
 	return len(args), nil
 }

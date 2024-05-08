@@ -75,6 +75,18 @@ func (r *Storage) ListWalletJournalEntryIDs(ctx context.Context, characterID int
 	return r.q.ListWalletJournalEntryIDs(ctx, int64(characterID))
 }
 
+func (r *Storage) ListWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.WalletJournalEntry, error) {
+	rows, err := r.q.ListWalletJournalEntries(ctx, int64(characterID))
+	if err != nil {
+		return nil, err
+	}
+	ee := make([]*model.WalletJournalEntry, len(rows))
+	for i, row := range rows {
+		ee[i] = walletJournalEntryFromDBModel(row.WalletJournalEntry, row.WalletJournalEntryFirstParty, row.WalletJournalEntrySecondParty, row.WalletJournalEntryTaxReceiver)
+	}
+	return ee, nil
+}
+
 func walletJournalEntryFromDBModel(e queries.WalletJournalEntry, firstParty queries.WalletJournalEntryFirstParty, secondParty queries.WalletJournalEntrySecondParty, taxReceiver queries.WalletJournalEntryTaxReceiver) *model.WalletJournalEntry {
 	e2 := &model.WalletJournalEntry{
 		Amount:        e.Amount,

@@ -6,9 +6,15 @@ import (
 	"log/slog"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
 )
+
+func (s *Service) ListWalletJournalEntries(characterID int32) ([]*model.WalletJournalEntry, error) {
+	ctx := context.Background()
+	return s.r.ListWalletJournalEntries(ctx, characterID)
+}
 
 func (s *Service) UpdateWalletJournalEntryESI(characterID int32) error {
 	ctx := context.Background()
@@ -47,7 +53,11 @@ func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID i
 		}
 		newEntries = append(newEntries, e)
 	}
-
+	slog.Info("wallet journal", "existing", existingIDs, "entries", entries)
+	if len(newEntries) == 0 {
+		slog.Info("No new wallet journal entries", "characterID", token.CharacterID)
+		return 0, nil
+	}
 	ids := set.New[int32]()
 	for _, e := range newEntries {
 		if e.FirstPartyId != 0 {
@@ -86,5 +96,6 @@ func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID i
 			return 0, err
 		}
 	}
+	slog.Info("Stored new wallet journal entries", "characterID", token.CharacterID, "entries", len(newEntries))
 	return len(newEntries), nil
 }

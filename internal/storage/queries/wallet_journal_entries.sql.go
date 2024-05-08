@@ -122,6 +122,70 @@ func (q *Queries) GetWalletJournalEntry(ctx context.Context, arg GetWalletJourna
 	return i, err
 }
 
+const listWalletJournalEntries = `-- name: ListWalletJournalEntries :many
+SELECT DISTINCT wallet_journal_entries.amount, wallet_journal_entries.balance, wallet_journal_entries.context_id, wallet_journal_entries.context_id_type, wallet_journal_entries.date, wallet_journal_entries.description, wallet_journal_entries.first_party_id, wallet_journal_entries.id, wallet_journal_entries.my_character_id, wallet_journal_entries.reason, wallet_journal_entries.ref_type, wallet_journal_entries.second_party_id, wallet_journal_entries.tax, wallet_journal_entries.tax_receiver_id, wallet_journal_entry_first_parties.id, wallet_journal_entry_first_parties.category, wallet_journal_entry_first_parties.name, wallet_journal_entry_second_parties.id, wallet_journal_entry_second_parties.category, wallet_journal_entry_second_parties.name, wallet_journal_entry_tax_receivers.id, wallet_journal_entry_tax_receivers.category, wallet_journal_entry_tax_receivers.name
+FROM wallet_journal_entries
+LEFT JOIN wallet_journal_entry_first_parties ON wallet_journal_entry_first_parties.id = wallet_journal_entries.first_party_id
+LEFT JOIN wallet_journal_entry_second_parties ON wallet_journal_entry_second_parties.id = wallet_journal_entries.second_party_id
+LEFT JOIN wallet_journal_entry_tax_receivers ON wallet_journal_entry_tax_receivers.id = wallet_journal_entries.tax_receiver_id
+WHERE my_character_id = ?
+ORDER BY date DESC
+`
+
+type ListWalletJournalEntriesRow struct {
+	WalletJournalEntry            WalletJournalEntry
+	WalletJournalEntryFirstParty  WalletJournalEntryFirstParty
+	WalletJournalEntrySecondParty WalletJournalEntrySecondParty
+	WalletJournalEntryTaxReceiver WalletJournalEntryTaxReceiver
+}
+
+func (q *Queries) ListWalletJournalEntries(ctx context.Context, myCharacterID int64) ([]ListWalletJournalEntriesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listWalletJournalEntries, myCharacterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListWalletJournalEntriesRow
+	for rows.Next() {
+		var i ListWalletJournalEntriesRow
+		if err := rows.Scan(
+			&i.WalletJournalEntry.Amount,
+			&i.WalletJournalEntry.Balance,
+			&i.WalletJournalEntry.ContextID,
+			&i.WalletJournalEntry.ContextIDType,
+			&i.WalletJournalEntry.Date,
+			&i.WalletJournalEntry.Description,
+			&i.WalletJournalEntry.FirstPartyID,
+			&i.WalletJournalEntry.ID,
+			&i.WalletJournalEntry.MyCharacterID,
+			&i.WalletJournalEntry.Reason,
+			&i.WalletJournalEntry.RefType,
+			&i.WalletJournalEntry.SecondPartyID,
+			&i.WalletJournalEntry.Tax,
+			&i.WalletJournalEntry.TaxReceiverID,
+			&i.WalletJournalEntryFirstParty.ID,
+			&i.WalletJournalEntryFirstParty.Category,
+			&i.WalletJournalEntryFirstParty.Name,
+			&i.WalletJournalEntrySecondParty.ID,
+			&i.WalletJournalEntrySecondParty.Category,
+			&i.WalletJournalEntrySecondParty.Name,
+			&i.WalletJournalEntryTaxReceiver.ID,
+			&i.WalletJournalEntryTaxReceiver.Category,
+			&i.WalletJournalEntryTaxReceiver.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listWalletJournalEntryIDs = `-- name: ListWalletJournalEntryIDs :many
 SELECT id
 FROM wallet_journal_entries

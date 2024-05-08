@@ -72,7 +72,7 @@ func (a *skillqueueArea) Redraw() {
 				container.NewHBox(
 					widget.NewLabel("skill"),
 					layout.NewSpacer(),
-					widget.NewLabel("finished"),
+					widget.NewLabel("duration"),
 				))
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {
@@ -82,7 +82,7 @@ func (a *skillqueueArea) Redraw() {
 			row.Objects[0].(*widget.Label).SetText(name)
 			var finished string
 			if !q.FinishDate.IsZero() {
-				finished = fmt.Sprintf("%s (%s)", q.FinishDate.Format(myDateTime), humanize.Time(q.FinishDate))
+				finished = humanize.RelTime(q.FinishDate, time.Now(), "", "")
 			} else {
 				finished = "?"
 			}
@@ -109,6 +109,7 @@ func (a *skillqueueArea) Redraw() {
 			{"Start date", q.StartDate.Format(myDateTime)},
 			{"Finish date", q.FinishDate.Format(myDateTime)},
 			{"Duration", humanize.RelTime(q.StartDate, q.FinishDate, "", "")},
+			{"Remaining", humanize.RelTime(q.FinishDate, time.Now(), "", "")},
 			{"Completed", fmt.Sprintf("%.0f%%", q.CompletionP()*100)},
 			{"Trained SP at start", humanize.Comma(int64(q.TrainingStartSP - q.LevelStartSP))},
 			{"Total SP", humanize.Comma(int64(q.LevelEndSP - q.LevelStartSP))},
