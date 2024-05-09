@@ -3,9 +3,12 @@ package model
 import (
 	"fmt"
 	"html"
+	"log"
 	"strings"
 	"time"
 
+	md "github.com/JohannesKaufmann/html-to-markdown"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/microcosm-cc/bluemonday"
 )
 
@@ -83,4 +86,40 @@ func (m *Mail) RecipientNames() []string {
 		ss[i] = r.Name
 	}
 	return ss
+}
+
+func (m *Mail) BodyToMarkdown() string {
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(m.Body))
+	if err != nil {
+		log.Fatal(err)
+	}
+	doc.Find("loc").Each(func(i int, s *goquery.Selection) {
+		s.Children().Unwrap()
+	})
+	doc.Find("a").Each(func(i int, s *goquery.Selection) {
+		href, ok := s.Attr("href")
+		if ok && href[:9] == "showinfo:" {
+			var url string
+			p := strings.Split(href[9:], "//")
+			switch p[0] {
+			case "1376":
+				url = fmt.Sprintf("https://zkillboard.com/character/%s/", p[1])
+			case "2":
+				url = fmt.Sprintf("https://zkillboard.com/corporation/%s/", p[1])
+			case "16159":
+				url = fmt.Sprintf("https://zkillboard.com/alliance/%s/", p[1])
+			case "5":
+				url = fmt.Sprintf("https://zkillboard.com/system/%s/", p[1])
+			default:
+				url = "#"
+			}
+			s.SetAttr("href", url)
+		}
+		if ok && href[:9] == "killReport:" {
+			s.SetAttr("href", "#")
+		}
+	})
+	converter := md.NewConverter("", true, nil)
+	text := converter.Convert(doc.Selection)
+	return text
 }

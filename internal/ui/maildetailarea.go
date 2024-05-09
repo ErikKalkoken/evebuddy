@@ -16,10 +16,9 @@ import (
 type mailDetailArea struct {
 	content fyne.CanvasObject
 	icons   *fyne.Container
-	bodyC   *container.Scroll
 	subject *widget.Label
 	header  *widget.Label
-	body    *widget.Label
+	body    *fyne.Container
 	mailID  int32
 	ui      *ui
 }
@@ -36,13 +35,10 @@ func (u *ui) NewMailArea() *mailDetailArea {
 
 	wrapper := container.NewVBox(icons, subject, header)
 
-	body := widget.NewLabel("")
-	body.Wrapping = fyne.TextWrapBreak
-	bodyWithScroll := container.NewVScroll(body)
-	content := container.NewBorder(wrapper, nil, nil, nil, bodyWithScroll)
+	body := container.NewVBox()
+	content := container.NewBorder(wrapper, nil, nil, nil, container.NewVScroll(body))
 	m := mailDetailArea{
 		content: content,
-		bodyC:   bodyWithScroll,
 		subject: subject,
 		header:  header,
 		body:    body,
@@ -118,8 +114,7 @@ func (m *mailDetailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 	button.Importance = widget.DangerImportance
 	m.icons.Add(button)
 	header := mail.MakeHeaderText(myDateTime)
-	b := mail.BodyPlain()
-	m.updateContent(mail.Subject, header, b)
+	m.updateContent(mail.Subject, header, mail.BodyToMarkdown())
 	// for _, i := range []int{0, 1, 2, 4} {
 	// 	m.icons.Objects[i].(*widget.Button).Enable()
 	// }
@@ -128,6 +123,8 @@ func (m *mailDetailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 func (m *mailDetailArea) updateContent(s string, h string, b string) {
 	m.subject.SetText(s)
 	m.header.SetText(h)
-	m.body.SetText(b)
-	m.bodyC.ScrollToTop()
+	m.body.RemoveAll()
+	x := widget.NewRichTextFromMarkdown(b)
+	x.Wrapping = fyne.TextWrapBreak
+	m.body.Add(x)
 }

@@ -6,6 +6,8 @@ toolchain go1.22.2
 
 require (
 	fyne.io/fyne/v2 v2.4.5
+	github.com/JohannesKaufmann/html-to-markdown v1.5.0
+	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/antihax/goesi v0.0.0-20240126031043-6c54d0cb7f95
 	github.com/chasinglogic/appdirs v0.0.0-20240404201500-635ea422ee89
 	github.com/dustin/go-humanize v1.0.1
@@ -18,6 +20,8 @@ require (
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/text v0.14.0
 )
+
+require github.com/andybalholm/cascadia v1.3.2 // indirect
 
 require (
 	fyne.io/systray v1.10.1-0.20231115130155-104f5ef7839e // indirect
