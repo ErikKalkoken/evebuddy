@@ -27,6 +27,8 @@ type folderArea struct {
 	ui            *ui
 }
 
+// TODO: Replace date driven tree with direct refresh
+
 func (u *ui) NewFolderArea() *folderArea {
 	f := folderArea{ui: u}
 	f.tree, f.treeData = u.makeFolderTree()
@@ -90,7 +92,7 @@ func (u *ui) makeFolderTree() (*widget.Tree, binding.StringTree) {
 			return
 		}
 		u.folderArea.lastUID = uid
-		u.headerArea.DrawFolder(item)
+		u.headerArea.SetFolder(item)
 	}
 	return tree, treeData
 }
@@ -112,7 +114,7 @@ func (f *folderArea) Refresh() {
 	if f.lastUID == "" || f.lastFolderAll != folderAll {
 		f.tree.Select(nodeAllID)
 		f.tree.ScrollToTop()
-		f.ui.headerArea.DrawFolder(folderAll)
+		f.ui.headerArea.SetFolder(folderAll)
 	} else {
 		f.ui.headerArea.Refresh()
 	}

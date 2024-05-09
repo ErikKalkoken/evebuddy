@@ -14,29 +14,32 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	islices "github.com/ErikKalkoken/evebuddy/internal/helper/slices"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-const undefinedListItemID = -1
-
 // headerArea is the UI area showing the list of mail headers.
 type headerArea struct {
-	listData      binding.IntList // list of character's mail IDs
 	content       fyne.CanvasObject
 	currentFolder node
 	infoText      binding.String
 	list          *widget.List
 	lastSelected  widget.ListItemID
+	mailIDs       []int32
 	ui            *ui
 }
 
 func (u *ui) NewHeaderArea() *headerArea {
+	a := headerArea{
+		mailIDs: make([]int32, 0),
+		ui:      u,
+	}
+
 	foregroundColor := theme.ForegroundColor()
 	subjectSize := theme.TextSize() * 1.15
-	listData := binding.NewIntList()
-	list := widget.NewListWithData(
-		listData,
+	list := widget.NewList(
+		func() int {
+			return len(a.mailIDs)
+		},
 		func() fyne.CanvasObject {
 			from := canvas.NewText("xxxxxxxxxxxxxxx", foregroundColor)
 			timestamp := canvas.NewText("xxxxxxxxxxxxxxx", foregroundColor)
@@ -47,18 +50,12 @@ func (u *ui) NewHeaderArea() *headerArea {
 				subject,
 			)))
 		},
-		func(di binding.DataItem, co fyne.CanvasObject) {
-			b := di.(binding.Int)
-			mailID, err := b.Get()
-			if err != nil {
-				slog.Error("Failed to get item")
-				return
-			}
+		func(lii widget.ListItemID, co fyne.CanvasObject) {
 			characterID := u.CurrentCharID()
 			if characterID == 0 {
 				return
 			}
-			m, err := u.service.GetMail(characterID, int32(mailID))
+			m, err := u.service.GetMail(characterID, a.mailIDs[lii])
 			if err != nil {
 				if !errors.Is(err, storage.ErrNotFound) {
 					slog.Error("Failed to get mail", "error", err)
@@ -90,68 +87,51 @@ func (u *ui) NewHeaderArea() *headerArea {
 			subject.Refresh()
 		})
 	list.OnSelected = func(id widget.ListItemID) {
-		di, err := listData.GetItem(id)
-		if err != nil {
-			slog.Error("Failed to get data item", "error", err)
-			return
-		}
-		b := di.(binding.Int)
-		mailID, err := b.Get()
-		if err != nil {
-			slog.Error("Failed to get item")
-			return
-		}
-		u.mailArea.Redraw(int32(mailID), id)
+		mailID := a.mailIDs[id]
+		u.mailArea.Redraw(mailID, id)
 		u.headerArea.lastSelected = id
 	}
-	infoText := binding.NewString()
-	label := widget.NewLabelWithData(infoText)
-	c := container.NewBorder(label, nil, nil, nil, list)
-	m := headerArea{
-		content:      c,
-		infoText:     infoText,
-		lastSelected: undefinedListItemID,
-		list:         list,
-		listData:     listData,
-		ui:           u,
+
+	a.infoText = binding.NewString()
+	label := widget.NewLabelWithData(a.infoText)
+	a.content = container.NewBorder(label, nil, nil, nil, list)
+	a.list = list
+	return &a
+}
+
+func (a *headerArea) SetFolder(folder node) {
+	a.currentFolder = folder
+	a.Refresh()
+	a.list.ScrollToTop()
+	a.list.UnselectAll()
+	a.ui.mailArea.Clear()
+}
+
+func (a *headerArea) Refresh() {
+	a.updateMails()
+	a.list.Refresh()
+}
+
+func (a *headerArea) updateMails() {
+	folder := a.currentFolder
+	if folder.MyCharacterID == 0 {
+		return
 	}
-	return &m
-}
 
-// FIXME: Refresh does sometimes not work, then producing multiple entries and selections
-func (h *headerArea) Refresh() {
-	doRedraw := h.lastSelected == undefinedListItemID
-	h.redraw(h.currentFolder, doRedraw)
-}
-
-func (h *headerArea) DrawFolder(folder node) {
-	h.redraw(folder, true)
-}
-
-func (h *headerArea) redraw(folder node, doRedraw bool) {
-	var mailIDs []int32
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mailIDs, err = h.ui.service.ListMailIDsForLabelOrdered(folder.MyCharacterID, folder.ObjID)
+		a.mailIDs, err = a.ui.service.ListMailIDsForLabelOrdered(folder.MyCharacterID, folder.ObjID)
 	case nodeCategoryList:
-		mailIDs, err = h.ui.service.ListMailIDsForListOrdered(folder.MyCharacterID, folder.ObjID)
+		a.mailIDs, err = a.ui.service.ListMailIDsForListOrdered(folder.MyCharacterID, folder.ObjID)
 	}
 	if err != nil {
 		slog.Error("Failed to fetch mail", "characterID", folder.MyCharacterID, "error", err)
 	}
-	ids := islices.ConvertNumeric[int32, int](mailIDs)
-	h.listData.Set(ids)
-	h.currentFolder = folder
-	h.infoText.Set(fmt.Sprintf("%d mails", len(mailIDs)))
+	a.infoText.Set(fmt.Sprintf("%d mails", len(a.mailIDs)))
 
-	if len(mailIDs) == 0 {
-		h.ui.mailArea.Clear()
+	if len(a.mailIDs) == 0 {
+		a.ui.mailArea.Clear()
 		return
-	}
-	if doRedraw {
-		h.ui.mailArea.Redraw(mailIDs[0], 0)
-		h.list.Select(0)
-		h.list.ScrollToTop()
 	}
 }

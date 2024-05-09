@@ -23,6 +23,8 @@ type mailDetailArea struct {
 	ui      *ui
 }
 
+// TODO: Replace redraw approach with refresh
+
 func (u *ui) NewMailArea() *mailDetailArea {
 	icons := container.NewHBox()
 
@@ -67,11 +69,7 @@ func (m *mailDetailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 				if err != nil {
 					return err
 				}
-				err = m.ui.headerArea.listData.SetValue(listItemID, int(m.mailID))
-				if err != nil {
-					return err
-				}
-				m.ui.headerArea.list.RefreshItem(listItemID)
+				m.ui.headerArea.Refresh()
 				return nil
 			}()
 			if err != nil {
