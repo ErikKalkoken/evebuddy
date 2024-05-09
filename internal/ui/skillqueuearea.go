@@ -103,6 +103,14 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 	return &a
 }
 
+func makeDataForm(data [][]string) *widget.Form {
+	form := widget.NewForm()
+	for _, row := range data {
+		form.Append(row[0], widget.NewLabel(row[1]))
+	}
+	return form
+}
+
 func (a *skillqueueArea) Refresh() {
 	a.updateItems()
 	a.list.Refresh()
@@ -171,12 +179,4 @@ func (a *skillqueueArea) StartUpdateTicker() {
 			<-ticker.C
 		}
 	}()
-}
-
-func makeDataForm(data [][]string) *widget.Form {
-	form := widget.NewForm()
-	for _, row := range data {
-		form.Append(row[0], widget.NewLabel(row[1]))
-	}
-	return form
 }

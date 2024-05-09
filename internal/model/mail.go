@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"log"
+	"regexp"
 	"strings"
 	"time"
 
@@ -89,13 +90,12 @@ func (m *Mail) RecipientNames() []string {
 }
 
 func (m *Mail) BodyToMarkdown() string {
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(m.Body))
+	t := strings.ReplaceAll(m.Body, "<loc>", "")
+	t = strings.ReplaceAll(t, "</loc>", "")
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(t))
 	if err != nil {
 		log.Fatal(err)
 	}
-	doc.Find("loc").Each(func(i int, s *goquery.Selection) {
-		s.Children().Unwrap()
-	})
 	doc.Find("a").Each(func(i int, s *goquery.Selection) {
 		href, ok := s.Attr("href")
 		if ok && href[:9] == "showinfo:" {
@@ -120,6 +120,12 @@ func (m *Mail) BodyToMarkdown() string {
 		}
 	})
 	converter := md.NewConverter("", true, nil)
-	text := converter.Convert(doc.Selection)
-	return text
+	textMD := converter.Convert(doc.Selection)
+	return patchLinks(textMD)
+}
+
+// patchLinks will apply a workaround to address fyne issue #4340
+func patchLinks(s string) string {
+	r := regexp.MustCompile(`(\[\w*\]\(.*\))(\n\n)`)
+	return string(r.ReplaceAll([]byte(s), []byte("$1 $2")))
 }
