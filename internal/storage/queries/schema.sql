@@ -201,7 +201,7 @@ CREATE TABLE wallet_journal_entries (
     date DATETIME NOT NULL,
     description TEXT NOT NULL,
     first_party_id INTEGER,
-    id INTEGER NOT NULL PRIMARY KEY,
+    id INTEGER NOT NULL,
     my_character_id INTEGER NOT NULL,
     reason TEXT NOT NULL,
     ref_type TEXT NOT NULL,
