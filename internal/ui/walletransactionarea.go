@@ -2,11 +2,15 @@ package ui
 
 import (
 	"fmt"
+	"image/color"
 	"log/slog"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
@@ -140,4 +144,18 @@ func (a *walletTransactionArea) StartUpdateTicker() {
 			<-ticker.C
 		}
 	}()
+}
+
+func makeMessage(msg string, importance widget.Importance) *fyne.Container {
+	var c color.Color
+	switch importance {
+	case widget.DangerImportance:
+		c = theme.ErrorColor()
+	case widget.WarningImportance:
+		c = theme.WarningColor()
+	default:
+		c = theme.ForegroundColor()
+	}
+	t := canvas.NewText(msg, c)
+	return container.NewHBox(layout.NewSpacer(), t, layout.NewSpacer())
 }

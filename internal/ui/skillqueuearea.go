@@ -2,16 +2,13 @@ package ui
 
 import (
 	"fmt"
-	"image/color"
 	"log/slog"
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
@@ -23,37 +20,21 @@ import (
 type skillqueueArea struct {
 	content *fyne.Container
 	ui      *ui
+	items   []*model.SkillqueueItem
+	list    *widget.List
+	total   *widget.Label
+	error   string
 }
 
 func (u *ui) NewSkillqueueArea() *skillqueueArea {
-	c := skillqueueArea{ui: u, content: container.NewStack()}
-	return &c
-}
-
-func (a *skillqueueArea) Redraw() {
-	a.content.RemoveAll()
-	characterID := a.ui.CurrentCharID()
-	if characterID == 0 {
-		return
+	a := skillqueueArea{
+		ui:    u,
+		items: make([]*model.SkillqueueItem, 0),
 	}
-	qq, err := a.ui.service.ListSkillqueue(characterID)
-	if err != nil {
-		slog.Error("failed to fetch skillqueue", "err", err)
-		a.content.Add(makeMessage("Failed to fetch skillqueue", widget.DangerImportance))
-		return
-	}
-	now := time.Now()
-	qq2 := make([]*model.SkillqueueItem, 0)
-	for _, q := range qq {
-		if q.FinishDate.Before(now) {
-			continue
-		}
-		qq2 = append(qq2, q)
-	}
-
+	a.updateItems()
 	list := widget.NewList(
 		func() int {
-			return len(qq2)
+			return len(a.items)
 		},
 		func() fyne.CanvasObject {
 			pb := widget.NewProgressBar()
@@ -67,7 +48,7 @@ func (a *skillqueueArea) Redraw() {
 				))
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {
-			q := qq2[i]
+			q := a.items[i]
 			row := o.(*fyne.Container).Objects[1].(*fyne.Container)
 			name := q.Name()
 			row.Objects[0].(*widget.Label).SetText(name)
@@ -86,7 +67,7 @@ func (a *skillqueueArea) Redraw() {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		q := qq2[id]
+		q := a.items[id]
 
 		var isActive string
 		if q.IsActive() {
@@ -106,43 +87,67 @@ func (a *skillqueueArea) Redraw() {
 			{"Total SP", humanize.Comma(int64(q.LevelEndSP - q.LevelStartSP))},
 			{"Active?", isActive},
 		}
-		dlg := dialog.NewCustom("Skill Details", "OK", makeDataForm(data), a.ui.window)
+		dlg := dialog.NewCustom("Skill Details", "OK", makeDataForm(data), u.window)
 		dlg.Show()
 	}
 
-	var s string
-	var i widget.Importance
-	if len(qq2) > 0 {
-		var total time.Duration
-		for _, q := range qq2 {
-			total += q.Duration()
-		}
-		s = fmt.Sprintf("Total training time: %s", ihumanize.Duration(total))
-		i = widget.MediumImportance
-	} else {
-		s = "Training not active"
-		i = widget.WarningImportance
-	}
-	x := widget.NewLabel(s)
-	x.Importance = i
-	x.TextStyle = fyne.TextStyle{Bold: true}
-	bottom := container.NewVBox(widget.NewSeparator(), x)
-	content := container.NewBorder(nil, bottom, nil, nil, list)
-	a.content.Add(content)
+	s, i := a.makeBottomText()
+	total := widget.NewLabel(s)
+	total.TextStyle = fyne.TextStyle{Bold: true}
+	total.Importance = i
+	bottom := container.NewVBox(widget.NewSeparator(), total)
+
+	a.content = container.NewBorder(nil, bottom, nil, nil, list)
+	a.list = list
+	a.total = total
+	return &a
 }
 
-func makeMessage(msg string, importance widget.Importance) *fyne.Container {
-	var c color.Color
-	switch importance {
-	case widget.DangerImportance:
-		c = theme.ErrorColor()
-	case widget.WarningImportance:
-		c = theme.WarningColor()
-	default:
-		c = theme.ForegroundColor()
+func (a *skillqueueArea) Refresh() {
+	a.updateItems()
+	a.list.Refresh()
+	s, i := a.makeBottomText()
+	a.total.Text = s
+	a.total.Importance = i
+	a.total.Refresh()
+}
+
+func (a *skillqueueArea) makeBottomText() (string, widget.Importance) {
+	if a.error != "" {
+		return a.error, widget.DangerImportance
 	}
-	t := canvas.NewText(msg, c)
-	return container.NewHBox(layout.NewSpacer(), t, layout.NewSpacer())
+	if len(a.items) == 0 {
+		return "Training not active", widget.WarningImportance
+	}
+	var total time.Duration
+	for _, q := range a.items {
+		total += q.Duration()
+	}
+	s := fmt.Sprintf("Total training time: %s", ihumanize.Duration(total))
+	return s, widget.MediumImportance
+}
+
+func (a *skillqueueArea) updateItems() {
+	a.items = a.items[0:0]
+	a.error = ""
+	characterID := a.ui.CurrentCharID()
+	if characterID == 0 {
+		return
+	}
+	qq, err := a.ui.service.ListSkillqueue(characterID)
+	if err != nil {
+		slog.Error("failed to fetch skillqueue", "characterID", characterID, "err", err)
+		c := a.ui.CurrentChar()
+		a.error = fmt.Sprintf("Failed to fetch skillqueue for %s", c.Character.Name)
+		return
+	}
+	now := time.Now()
+	for _, q := range qq {
+		if q.FinishDate.Before(now) {
+			continue
+		}
+		a.items = append(a.items, q)
+	}
 }
 
 func (a *skillqueueArea) StartUpdateTicker() {
@@ -161,7 +166,7 @@ func (a *skillqueueArea) StartUpdateTicker() {
 					slog.Error(err.Error())
 					return
 				}
-				a.Redraw()
+				a.Refresh()
 			}()
 			<-ticker.C
 		}

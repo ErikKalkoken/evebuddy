@@ -175,7 +175,7 @@ func (u *ui) SetCurrentCharacter(c *model.MyCharacter) {
 	}
 	u.characterArea.Redraw()
 	u.folderArea.Refresh()
-	u.skillqueueArea.Redraw()
+	u.skillqueueArea.Refresh()
 	u.walletTransactionArea.Redraw()
 }
 
