@@ -14,7 +14,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 
-	"github.com/ErikKalkoken/evebuddy/internal/api/images"
+	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 )

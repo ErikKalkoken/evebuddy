@@ -8,7 +8,7 @@ import (
 
 	"github.com/antihax/goesi"
 
-	"github.com/ErikKalkoken/evebuddy/internal/api/sso"
+	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"

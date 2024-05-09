@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2/storage"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/api/images"
+	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 )
 
 var testCases = []struct {

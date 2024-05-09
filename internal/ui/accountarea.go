@@ -15,7 +15,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/api/images"
+	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 

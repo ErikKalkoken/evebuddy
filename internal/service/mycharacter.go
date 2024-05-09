@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/ErikKalkoken/evebuddy/internal/api/sso"
+	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 

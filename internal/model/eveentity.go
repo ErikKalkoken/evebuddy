@@ -5,7 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 
-	"github.com/ErikKalkoken/evebuddy/internal/api/images"
+	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 )
 
 type EveEntityCategory int
