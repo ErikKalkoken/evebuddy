@@ -2,63 +2,56 @@ package ui
 
 import (
 	"fmt"
-	"image/color"
 	"log/slog"
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 	"github.com/dustin/go-humanize"
 )
 
+const myFloatFormat = "#,###.##"
+
 // walletTransactionArea is the UI area that shows the skillqueue
 type walletTransactionArea struct {
-	content *fyne.Container
-	ui      *ui
+	content   *fyne.Container
+	entries   []*model.WalletJournalEntry
+	errorText string
+	table     *widgets.StaticTable
+	total     *widget.Label
+	ui        *ui
 }
 
 func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
-	c := walletTransactionArea{ui: u, content: container.NewStack()}
-	return &c
-}
-
-func (a *walletTransactionArea) Redraw() {
-	a.content.RemoveAll()
-	characterID := a.ui.CurrentCharID()
-	if characterID == 0 {
-		return
+	a := walletTransactionArea{
+		ui:      u,
+		entries: make([]*model.WalletJournalEntry, 0),
 	}
-	ee, err := a.ui.service.ListWalletJournalEntries(characterID)
-	if err != nil {
-		slog.Error("failed to fetch wallet journal", "err", err)
-		a.content.Add(makeMessage("Failed to fetch wallet journal", widget.DangerImportance))
-		return
-	}
-	const myFloatFormat = "#,###.##"
+	a.updateEntries()
 	table := widgets.NewStaticTable(
 		func() (rows int, cols int) {
-			return len(ee), 5
+			return len(a.entries), 5
 		},
 		func() fyne.CanvasObject {
 			return widget.NewLabel("2024-05-08 18:59")
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			l := co.(*widget.Label)
-			e := ee[tci.Row]
+			l.Importance = widget.MediumImportance
+			l.Alignment = fyne.TextAlignLeading
+			e := a.entries[tci.Row]
 			switch tci.Col {
 			case 0:
-				l.SetText(e.Date.Format(myDateTime))
+				l.Text = e.Date.Format(myDateTime)
 			case 1:
-				l.SetText(e.Type())
+				l.Text = e.Type()
 			case 2:
-				l.SetText(humanize.FormatFloat(myFloatFormat, e.Amount))
 				l.Alignment = fyne.TextAlignTrailing
+				l.Text = humanize.FormatFloat(myFloatFormat, e.Amount)
 				switch {
 				case e.Amount < 0:
 					l.Importance = widget.DangerImportance
@@ -68,12 +61,13 @@ func (a *walletTransactionArea) Redraw() {
 					l.Importance = widget.MediumImportance
 				}
 			case 3:
-				l.SetText(humanize.FormatFloat(myFloatFormat, e.Balance))
 				l.Alignment = fyne.TextAlignTrailing
+				l.Text = humanize.FormatFloat(myFloatFormat, e.Balance)
 			case 4:
-				l.SetText(e.Description)
 				l.Truncation = fyne.TextTruncateEllipsis
+				l.Text = e.Description
 			}
+			l.Refresh()
 		},
 	)
 	table.SetColumnWidth(0, 130)
@@ -103,21 +97,53 @@ func (a *walletTransactionArea) Redraw() {
 		co.(*widget.Label).SetText(s)
 	}
 
+	s, i := a.makeBottomText()
+	total := widget.NewLabel(s)
+	total.Importance = i
+	bottom := container.NewVBox(widget.NewSeparator(), total)
+
+	a.content = container.NewBorder(nil, bottom, nil, nil, table)
+	a.table = table
+	a.total = total
+	return &a
+}
+
+func (a *walletTransactionArea) Refresh() {
+	a.updateEntries()
+	a.table.Refresh()
+	s, i := a.makeBottomText()
+	a.total.Text = s
+	a.total.Importance = i
+	a.total.Refresh()
+}
+
+func (a *walletTransactionArea) updateEntries() {
+	a.entries = a.entries[0:0]
+	characterID := a.ui.CurrentCharID()
+	if characterID == 0 {
+		return
+	}
+	var err error
+	a.entries, err = a.ui.service.ListWalletJournalEntries(characterID)
+	if err != nil {
+		slog.Error("failed to fetch wallet journal", "err", err)
+		c := a.ui.CurrentChar()
+		a.errorText = fmt.Sprintf("Failed to fetch wallet journal for %s", c.Character.Name)
+		return
+	}
+}
+
+func (a *walletTransactionArea) makeBottomText() (string, widget.Importance) {
 	var s string
 	var i widget.Importance
-	if len(ee) > 0 {
-		s = fmt.Sprintf("Total: %s", humanize.FormatFloat(myFloatFormat, ee[0].Balance))
+	if len(a.entries) > 0 {
+		s = fmt.Sprintf("Total: %s", humanize.FormatFloat(myFloatFormat, a.entries[0].Balance))
 		i = widget.MediumImportance
 	} else {
 		s = "No entries"
 		i = widget.WarningImportance
 	}
-	x := widget.NewLabel(s)
-	x.Importance = i
-	bottom := container.NewVBox(widget.NewSeparator(), x)
-
-	content := container.NewBorder(nil, bottom, nil, nil, table)
-	a.content.Add(content)
+	return s, i
 }
 
 func (a *walletTransactionArea) StartUpdateTicker() {
@@ -138,24 +164,10 @@ func (a *walletTransactionArea) StartUpdateTicker() {
 					return
 				}
 				if count > 0 {
-					a.Redraw()
+					a.Refresh()
 				}
 			}()
 			<-ticker.C
 		}
 	}()
-}
-
-func makeMessage(msg string, importance widget.Importance) *fyne.Container {
-	var c color.Color
-	switch importance {
-	case widget.DangerImportance:
-		c = theme.ErrorColor()
-	case widget.WarningImportance:
-		c = theme.WarningColor()
-	default:
-		c = theme.ForegroundColor()
-	}
-	t := canvas.NewText(msg, c)
-	return container.NewHBox(layout.NewSpacer(), t, layout.NewSpacer())
 }

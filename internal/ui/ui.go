@@ -176,7 +176,7 @@ func (u *ui) SetCurrentCharacter(c *model.MyCharacter) {
 	u.characterArea.Redraw()
 	u.folderArea.Refresh()
 	u.skillqueueArea.Refresh()
-	u.walletTransactionArea.Redraw()
+	u.walletTransactionArea.Refresh()
 }
 
 func (u *ui) updateToolbarBadge(c *model.MyCharacter) {

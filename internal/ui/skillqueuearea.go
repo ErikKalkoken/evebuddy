@@ -18,12 +18,12 @@ import (
 
 // skillqueueArea is the UI area that shows the skillqueue
 type skillqueueArea struct {
-	content *fyne.Container
-	ui      *ui
-	items   []*model.SkillqueueItem
-	list    *widget.List
-	total   *widget.Label
-	error   string
+	content   *fyne.Container
+	errorText string
+	items     []*model.SkillqueueItem
+	list      *widget.List
+	total     *widget.Label
+	ui        *ui
 }
 
 func (u *ui) NewSkillqueueArea() *skillqueueArea {
@@ -121,8 +121,8 @@ func (a *skillqueueArea) Refresh() {
 }
 
 func (a *skillqueueArea) makeBottomText() (string, widget.Importance) {
-	if a.error != "" {
-		return a.error, widget.DangerImportance
+	if a.errorText != "" {
+		return a.errorText, widget.DangerImportance
 	}
 	if len(a.items) == 0 {
 		return "Training not active", widget.WarningImportance
@@ -137,7 +137,7 @@ func (a *skillqueueArea) makeBottomText() (string, widget.Importance) {
 
 func (a *skillqueueArea) updateItems() {
 	a.items = a.items[0:0]
-	a.error = ""
+	a.errorText = ""
 	characterID := a.ui.CurrentCharID()
 	if characterID == 0 {
 		return
@@ -146,7 +146,7 @@ func (a *skillqueueArea) updateItems() {
 	if err != nil {
 		slog.Error("failed to fetch skillqueue", "characterID", characterID, "err", err)
 		c := a.ui.CurrentChar()
-		a.error = fmt.Sprintf("Failed to fetch skillqueue for %s", c.Character.Name)
+		a.errorText = fmt.Sprintf("Failed to fetch skillqueue for %s", c.Character.Name)
 		return
 	}
 	now := time.Now()
