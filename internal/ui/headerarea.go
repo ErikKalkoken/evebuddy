@@ -88,7 +88,7 @@ func (u *ui) NewHeaderArea() *headerArea {
 		})
 	list.OnSelected = func(id widget.ListItemID) {
 		mailID := a.mailIDs[id]
-		u.mailArea.Redraw(mailID, id)
+		u.mailArea.SetMail(mailID, id)
 		u.headerArea.lastSelected = id
 	}
 

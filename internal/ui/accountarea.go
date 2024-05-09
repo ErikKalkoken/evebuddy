@@ -44,6 +44,8 @@ func (u *ui) ShowAccountDialog() {
 	dialog.Show()
 }
 
+// TODO; Replace with panel grid showing characters with details
+
 func (u *ui) NewAccountArea() *accountArea {
 	content := container.NewVBox()
 	m := &accountArea{

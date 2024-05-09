@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 // mailDetailArea is the UI area showing the current mail.
@@ -18,58 +19,89 @@ type mailDetailArea struct {
 	icons   *fyne.Container
 	subject *widget.Label
 	header  *widget.Label
-	body    *fyne.Container
+	body    *widget.RichText
 	mailID  int32
 	ui      *ui
+
+	mail *model.Mail
 }
 
-// TODO: Replace redraw approach with refresh
-
 func (u *ui) NewMailArea() *mailDetailArea {
-	icons := container.NewHBox()
+	a := mailDetailArea{
+		ui: u,
+	}
+	icons := container.NewHBox(
+		widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {
+			u.ShowSendMessageWindow(CreateMessageReply, a.mail)
+		}),
+		widget.NewButtonWithIcon("", theme.MailReplyAllIcon(), func() {
+			u.ShowSendMessageWindow(CreateMessageReplyAll, a.mail)
+		}),
+		widget.NewButtonWithIcon("", theme.MailForwardIcon(), func() {
+			u.ShowSendMessageWindow(CreateMessageForward, a.mail)
+		}),
+		layout.NewSpacer(),
+	)
+	button := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
+		t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Subject)
+		d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
+			if confirmed {
+				err := u.service.DeleteMail(a.mail.MyCharacterID, a.mail.MailID)
+				if err != nil {
+					errorDialog := dialog.NewError(err, u.window)
+					errorDialog.Show()
+				} else {
+					u.headerArea.Refresh()
+				}
+			}
+		}, u.window)
+		d.Show()
+	})
+	button.Importance = widget.DangerImportance
+	icons.Add(button)
+	a.icons = icons
+	a.toogleIcons(false)
 
 	subject := widget.NewLabel("")
 	subject.TextStyle = fyne.TextStyle{Bold: true}
 	subject.Truncation = fyne.TextTruncateEllipsis
+	a.subject = subject
 
 	header := widget.NewLabel("")
 	header.Truncation = fyne.TextTruncateEllipsis
+	a.header = header
 
 	wrapper := container.NewVBox(icons, subject, header)
 
-	body := container.NewVBox()
-	content := container.NewBorder(wrapper, nil, nil, nil, container.NewVScroll(body))
-	m := mailDetailArea{
-		content: content,
-		subject: subject,
-		header:  header,
-		body:    body,
-		icons:   icons,
-		ui:      u,
-	}
-	return &m
+	body := widget.NewRichText()
+	body.Wrapping = fyne.TextWrapBreak
+	a.body = body
+
+	a.content = container.NewBorder(wrapper, nil, nil, nil, container.NewVScroll(body))
+	return &a
 }
 
-func (m *mailDetailArea) Clear() {
-	m.updateContent("", "", "")
+func (a *mailDetailArea) Clear() {
+	a.updateContent("", "", "")
+	a.toogleIcons(false)
 }
 
-func (m *mailDetailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
-	characterID := m.ui.CurrentCharID()
-	mail, err := m.ui.service.GetMail(characterID, mailID)
+func (a *mailDetailArea) SetMail(mailID int32, listItemID widget.ListItemID) {
+	characterID := a.ui.CurrentCharID()
+	mail, err := a.ui.service.GetMail(characterID, mailID)
 	if err != nil {
-		slog.Error("Failed to render mail", "mailID", mailID, "error", err)
+		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		return
 	}
-	m.mailID = mailID
+	a.mailID = mailID
 	if !mail.IsRead {
 		go func() {
 			err := func() error {
-				err = m.ui.service.UpdateMailRead(characterID, mail.MailID)
+				err = a.ui.service.UpdateMailRead(characterID, mail.MailID)
 				if err != nil {
 					return err
 				}
-				m.ui.headerArea.Refresh()
+				a.ui.headerArea.Refresh()
 				return nil
 			}()
 			if err != nil {
@@ -77,52 +109,26 @@ func (m *mailDetailArea) Redraw(mailID int32, listItemID widget.ListItemID) {
 			}
 		}()
 	}
-	m.icons.RemoveAll()
-	m.icons.Add(
-		widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {
-			m.ui.ShowSendMessageWindow(CreateMessageReply, &mail)
-		}),
-	)
-	m.icons.Add(
-		widget.NewButtonWithIcon("", theme.MailReplyAllIcon(), func() {
-			m.ui.ShowSendMessageWindow(CreateMessageReplyAll, &mail)
-		}),
-	)
-	m.icons.Add(
-		widget.NewButtonWithIcon("", theme.MailForwardIcon(), func() {
-			m.ui.ShowSendMessageWindow(CreateMessageForward, &mail)
-		}),
-	)
-	m.icons.Add(layout.NewSpacer())
-	button := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
-		t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", mail.Subject)
-		d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
-			if confirmed {
-				err := m.ui.service.DeleteMail(mail.MyCharacterID, mail.MailID)
-				if err != nil {
-					errorDialog := dialog.NewError(err, m.ui.window)
-					errorDialog.Show()
-				} else {
-					m.ui.headerArea.Refresh()
-				}
-			}
-		}, m.ui.window)
-		d.Show()
-	})
-	button.Importance = widget.DangerImportance
-	m.icons.Add(button)
+
 	header := mail.MakeHeaderText(myDateTime)
-	m.updateContent(mail.Subject, header, mail.BodyToMarkdown())
-	// for _, i := range []int{0, 1, 2, 4} {
-	// 	m.icons.Objects[i].(*widget.Button).Enable()
-	// }
+	a.updateContent(mail.Subject, header, mail.BodyToMarkdown())
+	a.toogleIcons(true)
+
 }
 
-func (m *mailDetailArea) updateContent(s string, h string, b string) {
-	m.subject.SetText(s)
-	m.header.SetText(h)
-	m.body.RemoveAll()
-	x := widget.NewRichTextFromMarkdown(b)
-	x.Wrapping = fyne.TextWrapBreak
-	m.body.Add(x)
+func (a *mailDetailArea) toogleIcons(enabled bool) {
+	for _, i := range []int{0, 1, 2, 4} {
+		b := a.icons.Objects[i].(*widget.Button)
+		if enabled {
+			b.Enable()
+		} else {
+			b.Disable()
+		}
+	}
+}
+
+func (a *mailDetailArea) updateContent(s string, h string, b string) {
+	a.subject.SetText(s)
+	a.header.SetText(h)
+	a.body.ParseMarkdown(b)
 }
