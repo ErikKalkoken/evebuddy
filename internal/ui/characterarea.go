@@ -32,8 +32,6 @@ type characterArea struct {
 	ui      *ui
 }
 
-// TODO: Replace redraw approach with refresh
-
 func (u *ui) NewCharacterArea() *characterArea {
 	items := container.NewVBox()
 	c := characterArea{ui: u, content: container.NewScroll(items), items: items}
