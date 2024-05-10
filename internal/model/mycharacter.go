@@ -26,6 +26,7 @@ func (c *MyCharacter) PortraitURL(size int) (fyne.URI, error) {
 }
 
 type MyCharacterShort struct {
-	ID   int32
-	Name string
+	ID              int32
+	Name            string
+	CorporationName string
 }

@@ -65,7 +65,7 @@ func (r *Storage) ListMyCharacters(ctx context.Context) ([]model.MyCharacterShor
 	}
 	cc := make([]model.MyCharacterShort, len(rows))
 	for i, row := range rows {
-		cc[i] = model.MyCharacterShort{ID: int32(row.ID), Name: row.Name}
+		cc[i] = model.MyCharacterShort{ID: int32(row.ID), Name: row.Name, CorporationName: row.Name_2}
 	}
 	return cc, nil
 }

@@ -197,16 +197,17 @@ func (q *Queries) ListMyCharacterIDs(ctx context.Context) ([]int64, error) {
 }
 
 const listMyCharacters = `-- name: ListMyCharacters :many
-SELECT
-    eve_characters.id, eve_characters.name
+SELECT eve_characters.id, eve_characters.name, corporations.name
 FROM my_characters
 JOIN eve_characters ON eve_characters.id = my_characters.id
+JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
 ORDER BY eve_characters.name
 `
 
 type ListMyCharactersRow struct {
-	ID   int64
-	Name string
+	ID     int64
+	Name   string
+	Name_2 string
 }
 
 func (q *Queries) ListMyCharacters(ctx context.Context) ([]ListMyCharactersRow, error) {
@@ -218,7 +219,7 @@ func (q *Queries) ListMyCharacters(ctx context.Context) ([]ListMyCharactersRow, 
 	var items []ListMyCharactersRow
 	for rows.Next() {
 		var i ListMyCharactersRow
-		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name, &i.Name_2); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
