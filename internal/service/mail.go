@@ -38,7 +38,7 @@ func (s *Service) DeleteMail(characterID, mailID int32) error {
 	return nil
 }
 
-func (s *Service) GetMail(characterID int32, mailID int32) (model.Mail, error) {
+func (s *Service) GetMail(characterID int32, mailID int32) (*model.Mail, error) {
 	ctx := context.Background()
 	return s.r.GetMail(ctx, characterID, mailID)
 }

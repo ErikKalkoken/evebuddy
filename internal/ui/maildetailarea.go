@@ -15,22 +15,18 @@ import (
 
 // mailDetailArea is the UI area showing the current mail.
 type mailDetailArea struct {
-	content fyne.CanvasObject
-	icons   *fyne.Container
-	subject *widget.Label
-	header  *widget.Label
+	actions *fyne.Container
 	body    *widget.RichText
-	mailID  int32
+	content fyne.CanvasObject
+	header  *widget.Label
+	mail    *model.Mail
+	subject *widget.Label
 	ui      *ui
-
-	mail *model.Mail
 }
 
 func (u *ui) NewMailArea() *mailDetailArea {
-	a := mailDetailArea{
-		ui: u,
-	}
-	icons := container.NewHBox(
+	a := mailDetailArea{ui: u}
+	actions := container.NewHBox(
 		widget.NewButtonWithIcon("", theme.MailReplyIcon(), func() {
 			u.ShowSendMessageWindow(CreateMessageReply, a.mail)
 		}),
@@ -42,7 +38,7 @@ func (u *ui) NewMailArea() *mailDetailArea {
 		}),
 		layout.NewSpacer(),
 	)
-	button := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
+	buttonDelete := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
 		t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Subject)
 		d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
 			if confirmed {
@@ -57,10 +53,10 @@ func (u *ui) NewMailArea() *mailDetailArea {
 		}, u.window)
 		d.Show()
 	})
-	button.Importance = widget.DangerImportance
-	icons.Add(button)
-	a.icons = icons
-	a.toogleIcons(false)
+	buttonDelete.Importance = widget.DangerImportance
+	actions.Add(buttonDelete)
+	a.actions = actions
+	a.toogleActions(false)
 
 	subject := widget.NewLabel("")
 	subject.TextStyle = fyne.TextStyle{Bold: true}
@@ -71,7 +67,7 @@ func (u *ui) NewMailArea() *mailDetailArea {
 	header.Truncation = fyne.TextTruncateEllipsis
 	a.header = header
 
-	wrapper := container.NewVBox(icons, subject, header)
+	wrapper := container.NewVBox(actions, subject, header)
 
 	body := widget.NewRichText()
 	body.Wrapping = fyne.TextWrapBreak
@@ -83,21 +79,21 @@ func (u *ui) NewMailArea() *mailDetailArea {
 
 func (a *mailDetailArea) Clear() {
 	a.updateContent("", "", "")
-	a.toogleIcons(false)
+	a.toogleActions(false)
 }
 
 func (a *mailDetailArea) SetMail(mailID int32, listItemID widget.ListItemID) {
 	characterID := a.ui.CurrentCharID()
-	mail, err := a.ui.service.GetMail(characterID, mailID)
+	var err error
+	a.mail, err = a.ui.service.GetMail(characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		return
 	}
-	a.mailID = mailID
-	if !mail.IsRead {
+	if !a.mail.IsRead {
 		go func() {
 			err := func() error {
-				err = a.ui.service.UpdateMailRead(characterID, mail.MailID)
+				err = a.ui.service.UpdateMailRead(characterID, a.mail.MailID)
 				if err != nil {
 					return err
 				}
@@ -105,20 +101,19 @@ func (a *mailDetailArea) SetMail(mailID int32, listItemID widget.ListItemID) {
 				return nil
 			}()
 			if err != nil {
-				slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", mail.MailID, "error", err)
+				slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
 			}
 		}()
 	}
 
-	header := mail.MakeHeaderText(myDateTime)
-	a.updateContent(mail.Subject, header, mail.BodyToMarkdown())
-	a.toogleIcons(true)
-
+	header := a.mail.MakeHeaderText(myDateTime)
+	a.updateContent(a.mail.Subject, header, a.mail.BodyToMarkdown())
+	a.toogleActions(true)
 }
 
-func (a *mailDetailArea) toogleIcons(enabled bool) {
+func (a *mailDetailArea) toogleActions(enabled bool) {
 	for _, i := range []int{0, 1, 2, 4} {
-		b := a.icons.Objects[i].(*widget.Button)
+		b := a.actions.Objects[i].(*widget.Button)
 		if enabled {
 			b.Enable()
 		} else {

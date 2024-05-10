@@ -155,7 +155,7 @@ func eveEntityWithCategory(args []model.EveEntity, category model.EveEntityCateg
 }
 
 // CreateMail is a test factory for Mail objects
-func (f Factory) CreateMail(args ...storage.CreateMailParams) model.Mail {
+func (f Factory) CreateMail(args ...storage.CreateMailParams) *model.Mail {
 	var arg storage.CreateMailParams
 	ctx := context.Background()
 	if len(args) > 0 {

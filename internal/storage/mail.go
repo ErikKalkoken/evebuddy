@@ -99,8 +99,8 @@ func (r *Storage) updateMailLabels(ctx context.Context, characterID int32, mailP
 	return nil
 }
 
-func (r *Storage) GetMail(ctx context.Context, characterID, mailID int32) (model.Mail, error) {
-	mail, err := func() (model.Mail, error) {
+func (r *Storage) GetMail(ctx context.Context, characterID, mailID int32) (*model.Mail, error) {
+	mail, err := func() (*model.Mail, error) {
 		arg := queries.GetMailParams{
 			MyCharacterID: int64(characterID),
 			MailID:        int64(mailID),
@@ -110,21 +110,21 @@ func (r *Storage) GetMail(ctx context.Context, characterID, mailID int32) (model
 			if errors.Is(err, sql.ErrNoRows) {
 				err = ErrNotFound
 			}
-			return model.Mail{}, err
+			return nil, err
 		}
 		ll, err := r.q.GetMailLabels(ctx, row.Mail.ID)
 		if err != nil {
-			return model.Mail{}, err
+			return nil, err
 		}
 		rr, err := r.q.GetMailRecipients(ctx, row.Mail.ID)
 		if err != nil {
-			return model.Mail{}, err
+			return nil, err
 		}
 		mail := mailFromDBModel(row.Mail, row.EveEntity, ll, rr)
 		return mail, nil
 	}()
 	if err != nil {
-		return mail, fmt.Errorf("failed to get mail for character %d with mail ID %d: %w", characterID, mailID, err)
+		return nil, fmt.Errorf("failed to get mail for character %d with mail ID %d: %w", characterID, mailID, err)
 	}
 	return mail, nil
 }
@@ -250,7 +250,7 @@ func (r *Storage) UpdateMail(ctx context.Context, characterID int32, mailPK int6
 	return nil
 }
 
-func mailFromDBModel(mail queries.Mail, from queries.EveEntity, labels []queries.MailLabel, recipients []queries.EveEntity) model.Mail {
+func mailFromDBModel(mail queries.Mail, from queries.EveEntity, labels []queries.MailLabel, recipients []queries.EveEntity) *model.Mail {
 	if mail.MyCharacterID == 0 {
 		panic("missing character ID")
 	}
@@ -274,5 +274,5 @@ func mailFromDBModel(mail queries.Mail, from queries.EveEntity, labels []queries
 		Subject:       mail.Subject,
 		Timestamp:     mail.Timestamp,
 	}
-	return m
+	return &m
 }
