@@ -75,19 +75,38 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 		} else {
 			isActive = "no"
 		}
-		data := [][]string{
-			{"Name", q.Name()},
-			{"Group", q.GroupName},
-			{"Start date", q.StartDate.Format(myDateTime)},
-			{"Finish date", q.FinishDate.Format(myDateTime)},
-			{"Duration", humanize.RelTime(q.StartDate, q.FinishDate, "", "")},
-			{"Remaining", humanize.RelTime(q.FinishDate, time.Now(), "", "")},
-			{"Completed", fmt.Sprintf("%.0f%%", q.CompletionP()*100)},
-			{"Trained SP at start", humanize.Comma(int64(q.TrainingStartSP - q.LevelStartSP))},
-			{"Total SP", humanize.Comma(int64(q.LevelEndSP - q.LevelStartSP))},
-			{"Active?", isActive},
+		var data = []struct {
+			label string
+			value string
+			wrap  bool
+		}{
+			{"Name", q.Name(), false},
+			{"Group", q.GroupName, false},
+			{"Description", q.SkillDescription, true},
+			{"Start date", q.StartDate.Format(myDateTime), false},
+			{"Finish date", q.FinishDate.Format(myDateTime), false},
+			{"Duration", humanize.RelTime(q.StartDate, q.FinishDate, "", ""), false},
+			{"Remaining", humanize.RelTime(q.FinishDate, time.Now(), "", ""), false},
+			{"Completed", fmt.Sprintf("%.0f%%", q.CompletionP()*100), false},
+			{"SP at start", humanize.Comma(int64(q.TrainingStartSP - q.LevelStartSP)), false},
+			{"Total SP", humanize.Comma(int64(q.LevelEndSP - q.LevelStartSP)), false},
+			{"Active?", isActive, false},
 		}
-		dlg := dialog.NewCustom("Skill Details", "OK", makeDataForm(data), u.window)
+		form := widget.NewForm()
+		for _, row := range data {
+			c := widget.NewLabel(row.value)
+			if row.wrap {
+				c.Wrapping = fyne.TextWrapWord
+			}
+			form.Append(row.label, c)
+
+		}
+		s := container.NewScroll(form)
+		s.SetMinSize(fyne.Size{
+			Width:  0.8 * a.ui.window.Canvas().Size().Width,
+			Height: 0.8 * a.ui.window.Canvas().Size().Height,
+		})
+		dlg := dialog.NewCustom("Skill Details", "OK", s, u.window)
 		dlg.Show()
 	}
 
@@ -101,14 +120,6 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 	a.list = list
 	a.total = total
 	return &a
-}
-
-func makeDataForm(data [][]string) *widget.Form {
-	form := widget.NewForm()
-	for _, row := range data {
-		form.Append(row[0], widget.NewLabel(row[1]))
-	}
-	return form
 }
 
 func (a *skillqueueArea) Refresh() {

@@ -8,13 +8,14 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func skillqueueItemFromDBModel(i queries.SkillqueueItem, skillName string, groupName string) *model.SkillqueueItem {
+func skillqueueItemFromDBModel(i queries.SkillqueueItem, skillName, groupName, description string) *model.SkillqueueItem {
 	i2 := &model.SkillqueueItem{
-		GroupName:     groupName,
-		FinishedLevel: int(i.FinishedLevel),
-		MyCharacterID: int32(i.MyCharacterID),
-		QueuePosition: int(i.QueuePosition),
-		SkillName:     skillName,
+		GroupName:        groupName,
+		FinishedLevel:    int(i.FinishedLevel),
+		MyCharacterID:    int32(i.MyCharacterID),
+		QueuePosition:    int(i.QueuePosition),
+		SkillName:        skillName,
+		SkillDescription: description,
 	}
 	if i.FinishDate.Valid {
 		i2.FinishDate = i.FinishDate.Time
@@ -90,7 +91,7 @@ func (r *Storage) GetSkillqueueItem(ctx context.Context, characterID int32, pos 
 	if err != nil {
 		return nil, err
 	}
-	return skillqueueItemFromDBModel(row.SkillqueueItem, row.SkillName, row.GroupName), err
+	return skillqueueItemFromDBModel(row.SkillqueueItem, row.SkillName, row.GroupName, row.SkillDescription), err
 }
 
 func (r *Storage) ListSkillqueueItems(ctx context.Context, characterID int32) ([]*model.SkillqueueItem, error) {
@@ -100,7 +101,7 @@ func (r *Storage) ListSkillqueueItems(ctx context.Context, characterID int32) ([
 	}
 	ii2 := make([]*model.SkillqueueItem, len(rows))
 	for i, row := range rows {
-		ii2[i] = skillqueueItemFromDBModel(row.SkillqueueItem, row.SkillName, row.GroupName)
+		ii2[i] = skillqueueItemFromDBModel(row.SkillqueueItem, row.SkillName, row.GroupName, row.SkillDescription)
 	}
 	return ii2, nil
 }

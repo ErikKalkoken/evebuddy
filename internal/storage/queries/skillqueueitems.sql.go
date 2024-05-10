@@ -65,7 +65,7 @@ func (q *Queries) DeleteSkillqueueItems(ctx context.Context, myCharacterID int64
 }
 
 const getSkillqueueItem = `-- name: GetSkillqueueItem :one
-SELECT skillqueue_items.eve_type_id, skillqueue_items.finish_date, skillqueue_items.finished_level, skillqueue_items.level_end_sp, skillqueue_items.level_start_sp, skillqueue_items.queue_position, skillqueue_items.my_character_id, skillqueue_items.start_date, skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name
+SELECT skillqueue_items.eve_type_id, skillqueue_items.finish_date, skillqueue_items.finished_level, skillqueue_items.level_end_sp, skillqueue_items.level_start_sp, skillqueue_items.queue_position, skillqueue_items.my_character_id, skillqueue_items.start_date, skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name, eve_types.description as skill_description
 FROM skillqueue_items
 JOIN eve_types ON eve_types.id = skillqueue_items.eve_type_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
@@ -78,9 +78,10 @@ type GetSkillqueueItemParams struct {
 }
 
 type GetSkillqueueItemRow struct {
-	SkillqueueItem SkillqueueItem
-	SkillName      string
-	GroupName      string
+	SkillqueueItem   SkillqueueItem
+	SkillName        string
+	GroupName        string
+	SkillDescription string
 }
 
 func (q *Queries) GetSkillqueueItem(ctx context.Context, arg GetSkillqueueItemParams) (GetSkillqueueItemRow, error) {
@@ -98,12 +99,13 @@ func (q *Queries) GetSkillqueueItem(ctx context.Context, arg GetSkillqueueItemPa
 		&i.SkillqueueItem.TrainingStartSp,
 		&i.SkillName,
 		&i.GroupName,
+		&i.SkillDescription,
 	)
 	return i, err
 }
 
 const listSkillqueueItems = `-- name: ListSkillqueueItems :many
-SELECT skillqueue_items.eve_type_id, skillqueue_items.finish_date, skillqueue_items.finished_level, skillqueue_items.level_end_sp, skillqueue_items.level_start_sp, skillqueue_items.queue_position, skillqueue_items.my_character_id, skillqueue_items.start_date, skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name
+SELECT skillqueue_items.eve_type_id, skillqueue_items.finish_date, skillqueue_items.finished_level, skillqueue_items.level_end_sp, skillqueue_items.level_start_sp, skillqueue_items.queue_position, skillqueue_items.my_character_id, skillqueue_items.start_date, skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name, eve_types.description as skill_description
 FROM skillqueue_items
 JOIN eve_types ON eve_types.id = skillqueue_items.eve_type_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
@@ -112,9 +114,10 @@ ORDER BY queue_position
 `
 
 type ListSkillqueueItemsRow struct {
-	SkillqueueItem SkillqueueItem
-	SkillName      string
-	GroupName      string
+	SkillqueueItem   SkillqueueItem
+	SkillName        string
+	GroupName        string
+	SkillDescription string
 }
 
 func (q *Queries) ListSkillqueueItems(ctx context.Context, myCharacterID int64) ([]ListSkillqueueItemsRow, error) {
@@ -138,6 +141,7 @@ func (q *Queries) ListSkillqueueItems(ctx context.Context, myCharacterID int64) 
 			&i.SkillqueueItem.TrainingStartSp,
 			&i.SkillName,
 			&i.GroupName,
+			&i.SkillDescription,
 		); err != nil {
 			return nil, err
 		}

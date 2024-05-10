@@ -6,16 +6,17 @@ import (
 )
 
 type SkillqueueItem struct {
-	GroupName       string
-	FinishDate      time.Time
-	FinishedLevel   int
-	LevelEndSP      int
-	LevelStartSP    int
-	MyCharacterID   int32
-	QueuePosition   int
-	StartDate       time.Time
-	SkillName       string
-	TrainingStartSP int
+	GroupName        string
+	FinishDate       time.Time
+	FinishedLevel    int
+	LevelEndSP       int
+	LevelStartSP     int
+	MyCharacterID    int32
+	QueuePosition    int
+	StartDate        time.Time
+	SkillName        string
+	SkillDescription string
+	TrainingStartSP  int
 }
 
 // Name returns the name of a skillqueue item.

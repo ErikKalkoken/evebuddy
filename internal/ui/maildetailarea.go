@@ -66,7 +66,7 @@ func (u *ui) NewMailArea() *mailDetailArea {
 	wrapper := container.NewVBox(a.toolbar, subject, header)
 
 	body := widget.NewRichText()
-	body.Wrapping = fyne.TextWrapBreak
+	body.Wrapping = fyne.TextWrapWord
 	a.body = body
 
 	a.content = container.NewBorder(wrapper, nil, nil, nil, container.NewVScroll(body))
