@@ -16,6 +16,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
+	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -137,37 +138,34 @@ func (m *accountArea) Redraw() {
 	m.content.Refresh()
 }
 
-// FIXME: Cancel button does not work
 func (m *accountArea) showAddCharacterDialog() {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := "Please follow instructions in your browser to add a new character."
 	infoText := binding.BindString(&s)
 	content := widget.NewLabelWithData(infoText)
-	dlg := dialog.NewCustom(
+	d1 := dialog.NewCustom(
 		"Add Character",
 		"Cancel",
 		content,
 		m.ui.window,
 	)
-	dlg.SetOnClosed(cancel)
-	errChan := make(chan error)
+	d1.SetOnClosed(cancel)
 	go func() {
-		defer cancel()
-		defer dlg.Hide()
 		err := m.ui.service.UpdateOrCreateMyCharacterFromSSO(ctx, infoText)
-		errChan <- err
+		if err != nil {
+			if !errors.Is(err, service.ErrAborted) {
+				slog.Error("Failed to add a new character", "error", err)
+				d2 := dialog.NewInformation(
+					"Error",
+					fmt.Sprintf("An error occurred when trying to add a new character:\n%s", err),
+					m.ui.window,
+				)
+				d2.Show()
+			}
+		} else {
+			m.Redraw()
+		}
+		d1.Hide()
 	}()
-	dlg.Show()
-	err := <-errChan
-	if err != nil {
-		slog.Error("Failed to add a new character", "error", err)
-		dlg := dialog.NewInformation(
-			"Error",
-			fmt.Sprintf("An error occurred when trying to add a new character:\n%s", err),
-			m.ui.window,
-		)
-		dlg.Show()
-	} else {
-		m.Redraw()
-	}
+	d1.Show()
 }

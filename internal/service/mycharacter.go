@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
+
+var ErrAborted = errors.New("process aborted prematurely")
 
 func (s *Service) DeleteMyCharacter(characterID int32) error {
 	return s.r.DeleteMyCharacter(context.Background(), characterID)
@@ -32,6 +35,9 @@ func (s *Service) ListMyCharacters() ([]model.MyCharacterShort, error) {
 func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) error {
 	ssoToken, err := sso.Authenticate(ctx, s.httpClient, esiScopes)
 	if err != nil {
+		if errors.Is(err, sso.ErrAborted) {
+			return ErrAborted
+		}
 		return err
 	}
 	slog.Info("Created new SSO token", "token", ssoToken)

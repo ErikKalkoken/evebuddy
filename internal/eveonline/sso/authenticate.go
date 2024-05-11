@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -23,6 +24,12 @@ const (
 	keyError                  key = iota
 	keyState                  key = iota
 	keyAuthenticatedCharacter key = iota
+)
+
+var (
+	ErrAborted             = errors.New("auth process canceled prematurely")
+	ErrTokenError          = errors.New("token error")
+	ErrMissingRefreshToken = errors.New("missing refresh token")
 )
 
 // token payload as returned from SSO API
@@ -122,7 +129,7 @@ func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*T
 
 	token, ok := serverCtx.Value(keyAuthenticatedCharacter).(*Token)
 	if !ok {
-		return nil, fmt.Errorf("auth process canceled prematurely")
+		return nil, ErrAborted
 	}
 	return token, nil
 }
@@ -200,7 +207,7 @@ func retrieveTokenPayload(client *http.Client, code, codeVerifier string) (*toke
 		return nil, err
 	}
 	if token.Error != "" {
-		return nil, fmt.Errorf("API response: %v: %v", token.Error, token.ErrorDescription)
+		return nil, fmt.Errorf("details %v, %v: %w", token.Error, token.ErrorDescription, ErrTokenError)
 	}
 	return &token, nil
 }
@@ -208,7 +215,7 @@ func retrieveTokenPayload(client *http.Client, code, codeVerifier string) (*toke
 // Update given token with new instance from SSO API
 func RefreshToken(client *http.Client, refreshToken string) (*Token, error) {
 	if refreshToken == "" {
-		return nil, fmt.Errorf("missing refresh token")
+		return nil, ErrMissingRefreshToken
 	}
 	form := url.Values{
 		"grant_type":    {"refresh_token"},
@@ -261,7 +268,7 @@ func fetchOauthToken(client *http.Client, form url.Values) (*tokenPayload, error
 		return nil, err
 	}
 	if token.Error != "" {
-		return nil, fmt.Errorf("SSO API error: %v: %v", token.Error, token.ErrorDescription)
+		return nil, fmt.Errorf("details %v, %v: %w", token.Error, token.ErrorDescription, ErrTokenError)
 	}
 	return &token, nil
 }
