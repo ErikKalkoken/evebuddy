@@ -33,6 +33,7 @@
         "istorage",
         "jarcoal",
         "jmoiron",
+        "julianday",
         "loadmap",
         "logfile",
         "loglevel",
@@ -45,7 +46,8 @@
         "stargates",
         "stretchr",
         "testfactory",
-        "testutil"
+        "testutil",
+        "unixepoch"
     ],
     "go.formatFlags": [
         "-local",

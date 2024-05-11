@@ -4,36 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
-
-func skillqueueItemFromDBModel(i queries.SkillqueueItem, skillName, groupName, description string) *model.SkillqueueItem {
-	i2 := &model.SkillqueueItem{
-		GroupName:        groupName,
-		FinishedLevel:    int(i.FinishedLevel),
-		MyCharacterID:    int32(i.MyCharacterID),
-		QueuePosition:    int(i.QueuePosition),
-		SkillName:        skillName,
-		SkillDescription: description,
-	}
-	if i.FinishDate.Valid {
-		i2.FinishDate = i.FinishDate.Time
-	}
-	if i.LevelEndSp.Valid {
-		i2.LevelEndSP = int(i.LevelEndSp.Int64)
-	}
-	if i.LevelStartSp.Valid {
-		i2.LevelStartSP = int(i.LevelStartSp.Int64)
-	}
-	if i.StartDate.Valid {
-		i2.StartDate = i.StartDate.Time
-	}
-	if i.TrainingStartSp.Valid {
-		i2.TrainingStartSP = int(i.TrainingStartSp.Int64)
-	}
-	return i2
-}
 
 type SkillqueueItemParams struct {
 	EveTypeID       int32
@@ -45,6 +19,20 @@ type SkillqueueItemParams struct {
 	QueuePosition   int
 	StartDate       time.Time
 	TrainingStartSP int
+}
+
+func (r *Storage) GetTotalTrainingTime(ctx context.Context, characterID int32) (types.NullDuration, error) {
+	var d types.NullDuration
+	x, err := r.q.GetTotalTrainingTime(ctx, int64(characterID))
+	if err != nil {
+		return d, err
+	}
+	if !x.Valid {
+		return d, nil
+	}
+	d.Duration = time.Duration(float64(time.Hour) * 24 * x.Float64)
+	d.Valid = true
+	return d, nil
 }
 
 func (r *Storage) CreateSkillqueueItem(ctx context.Context, arg SkillqueueItemParams) error {
@@ -126,4 +114,31 @@ func (r *Storage) ReplaceSkillqueueItems(ctx context.Context, characterID int32,
 		return err
 	}
 	return nil
+}
+
+func skillqueueItemFromDBModel(i queries.SkillqueueItem, skillName, groupName, description string) *model.SkillqueueItem {
+	i2 := &model.SkillqueueItem{
+		GroupName:        groupName,
+		FinishedLevel:    int(i.FinishedLevel),
+		MyCharacterID:    int32(i.MyCharacterID),
+		QueuePosition:    int(i.QueuePosition),
+		SkillName:        skillName,
+		SkillDescription: description,
+	}
+	if i.FinishDate.Valid {
+		i2.FinishDate = i.FinishDate.Time
+	}
+	if i.LevelEndSp.Valid {
+		i2.LevelEndSP = int(i.LevelEndSp.Int64)
+	}
+	if i.LevelStartSp.Valid {
+		i2.LevelStartSP = int(i.LevelStartSp.Int64)
+	}
+	if i.StartDate.Valid {
+		i2.StartDate = i.StartDate.Time
+	}
+	if i.TrainingStartSp.Valid {
+		i2.TrainingStartSP = int(i.TrainingStartSp.Int64)
+	}
+	return i2
 }

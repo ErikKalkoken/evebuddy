@@ -3,6 +3,7 @@ package storage_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -70,6 +71,36 @@ func TestSkillqueueItems(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Len(t, ii, 1)
 			}
+		}
+	})
+
+}
+
+func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can calculate total training time", func(t *testing.T) {
+		// given
+		now := time.Now()
+		testutil.TruncateTables(db)
+		c := factory.CreateMyCharacter()
+		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{
+			MyCharacterID: c.ID,
+			StartDate:     now.Add(1 * time.Hour),
+			FinishDate:    now.Add(3 * time.Hour),
+		})
+		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{
+			MyCharacterID: c.ID,
+			StartDate:     now.Add(3 * time.Hour),
+			FinishDate:    now.Add(4 * time.Hour),
+		})
+		// when
+		v, err := r.GetTotalTrainingTime(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, v.Valid)
+			assert.InDelta(t, 3*time.Hour, v.Duration, float64(time.Second*1))
 		}
 	})
 }

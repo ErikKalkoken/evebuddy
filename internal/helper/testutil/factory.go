@@ -439,23 +439,38 @@ func (f Factory) CreateSkillqueueItem(args ...storage.SkillqueueItemParams) *mod
 		x := f.CreateMyCharacter()
 		arg.MyCharacterID = x.ID
 	}
-	var maxPos sql.NullInt64
-	q := "SELECT MAX(queue_position) FROM skillqueue_items WHERE my_character_id=?;"
-	if err := f.db.QueryRow(q, arg.MyCharacterID).Scan(&maxPos); err != nil {
-		panic(err)
-	}
-	var lastFinishedAt time.Time
-	if maxPos.Valid {
-		arg.QueuePosition = int(maxPos.Int64) + 1
-		q2 := "SELECT finish_date FROM skillqueue_items WHERE my_character_id=? AND queue_position=?;"
-		if err := f.db.QueryRow(q2, arg.MyCharacterID, maxPos.Int64).Scan(&lastFinishedAt); err != nil {
+	if arg.QueuePosition == 0 {
+		var maxPos sql.NullInt64
+		q := "SELECT MAX(queue_position) FROM skillqueue_items WHERE my_character_id=?;"
+		if err := f.db.QueryRow(q, arg.MyCharacterID).Scan(&maxPos); err != nil {
 			panic(err)
 		}
-	} else {
-		lastFinishedAt = time.Now()
+		if maxPos.Valid {
+			arg.QueuePosition = int(maxPos.Int64) + 1
+		} else {
+			arg.QueuePosition = int(maxPos.Int64) + 1
+		}
 	}
-	hours := rand.IntN(90)*24 + 3
-	arg.FinishDate = lastFinishedAt.Add(time.Hour * time.Duration(hours))
+	if arg.StartDate.IsZero() {
+		var v sql.NullString
+		q2 := "SELECT MAX(finish_date) FROM skillqueue_items WHERE my_character_id=?;"
+		if err := f.db.QueryRow(q2, arg.MyCharacterID).Scan(&v); err != nil {
+			panic(err)
+		}
+		if !v.Valid {
+			arg.StartDate = time.Now()
+		} else {
+			maxFinishDate, err := time.Parse("2006-01-02 15:04:05.999999999-07:00", v.String)
+			if err != nil {
+				panic(err)
+			}
+			arg.StartDate = maxFinishDate
+		}
+	}
+	if arg.FinishDate.IsZero() {
+		hours := rand.IntN(90)*24 + 3
+		arg.FinishDate = arg.StartDate.Add(time.Hour * time.Duration(hours))
+	}
 
 	err := f.r.CreateSkillqueueItem(ctx, arg)
 	if err != nil {

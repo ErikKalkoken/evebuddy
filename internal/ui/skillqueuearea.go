@@ -11,19 +11,22 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
+
 	"github.com/dustin/go-humanize"
 )
 
 // skillqueueArea is the UI area that shows the skillqueue
 type skillqueueArea struct {
-	content   *fyne.Container
-	errorText string
-	items     []*model.SkillqueueItem
-	list      *widget.List
-	total     *widget.Label
-	ui        *ui
+	content       *fyne.Container
+	errorText     string
+	items         []*model.SkillqueueItem
+	trainingTotal types.NullDuration
+	list          *widget.List
+	total         *widget.Label
+	ui            *ui
 }
 
 func (u *ui) NewSkillqueueArea() *skillqueueArea {
@@ -31,7 +34,6 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 		ui:    u,
 		items: make([]*model.SkillqueueItem, 0),
 	}
-	a.updateItems()
 	list := widget.NewList(
 		func() int {
 			return len(a.items)
@@ -138,11 +140,13 @@ func (a *skillqueueArea) makeBottomText() (string, widget.Importance) {
 	if len(a.items) == 0 {
 		return "Training not active", widget.WarningImportance
 	}
-	var total time.Duration
-	for _, q := range a.items {
-		total += q.Duration()
+	var x string
+	if a.trainingTotal.Valid {
+		x = ihumanize.Duration(a.trainingTotal.Duration)
+	} else {
+		x = "?"
 	}
-	s := fmt.Sprintf("Total training time: %s", ihumanize.Duration(total))
+	s := fmt.Sprintf("Total training time: %s", x)
 	return s, widget.MediumImportance
 }
 
@@ -166,6 +170,13 @@ func (a *skillqueueArea) updateItems() {
 			continue
 		}
 		a.items = append(a.items, q)
+	}
+	total, err := a.ui.service.GetTotalTrainingTime(characterID)
+	if err != nil {
+		slog.Error("failed to fetch skillqueue", "characterID", characterID, "err", err)
+		a.trainingTotal = types.NullDuration{}
+	} else {
+		a.trainingTotal = total
 	}
 }
 

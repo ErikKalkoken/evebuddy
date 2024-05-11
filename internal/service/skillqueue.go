@@ -5,9 +5,15 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
+
+func (s *Service) GetTotalTrainingTime(characterID int32) (types.NullDuration, error) {
+	ctx := context.Background()
+	return s.r.GetTotalTrainingTime(ctx, characterID)
+}
 
 func (s *Service) ListSkillqueue(characterID int32) ([]*model.SkillqueueItem, error) {
 	ctx := context.Background()

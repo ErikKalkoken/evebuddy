@@ -32,3 +32,8 @@ JOIN eve_types ON eve_types.id = skillqueue_items.eve_type_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
 WHERE my_character_id = ?
 ORDER BY queue_position;
+
+-- name: GetTotalTrainingTime :one
+SELECT SUM(julianday(finish_date) - julianday(start_date))
+FROM skillqueue_items
+WHERE my_character_id = ? and datetime(finish_date) > datetime();

@@ -104,6 +104,19 @@ func (q *Queries) GetSkillqueueItem(ctx context.Context, arg GetSkillqueueItemPa
 	return i, err
 }
 
+const getTotalTrainingTime = `-- name: GetTotalTrainingTime :one
+SELECT SUM(julianday(finish_date) - julianday(start_date))
+FROM skillqueue_items
+WHERE my_character_id = ? and datetime(finish_date) > datetime()
+`
+
+func (q *Queries) GetTotalTrainingTime(ctx context.Context, myCharacterID int64) (sql.NullFloat64, error) {
+	row := q.db.QueryRowContext(ctx, getTotalTrainingTime, myCharacterID)
+	var sum sql.NullFloat64
+	err := row.Scan(&sum)
+	return sum, err
+}
+
 const listSkillqueueItems = `-- name: ListSkillqueueItems :many
 SELECT skillqueue_items.eve_type_id, skillqueue_items.finish_date, skillqueue_items.finished_level, skillqueue_items.level_end_sp, skillqueue_items.level_start_sp, skillqueue_items.queue_position, skillqueue_items.my_character_id, skillqueue_items.start_date, skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name, eve_types.description as skill_description
 FROM skillqueue_items
