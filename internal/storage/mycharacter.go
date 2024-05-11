@@ -19,14 +19,13 @@ func (r *Storage) DeleteMyCharacter(ctx context.Context, characterID int32) erro
 	return nil
 }
 
-func (r *Storage) GetMyCharacter(ctx context.Context, characterID int32) (model.MyCharacter, error) {
-	var dummy model.MyCharacter
+func (r *Storage) GetMyCharacter(ctx context.Context, characterID int32) (*model.MyCharacter, error) {
 	row, err := r.q.GetMyCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return dummy, fmt.Errorf("failed to get MyCharacter %d: %w", characterID, err)
+		return nil, fmt.Errorf("failed to get MyCharacter %d: %w", characterID, err)
 	}
 	c := myCharacterFromDBModel(
 		row.MyCharacter,
@@ -45,27 +44,27 @@ func (r *Storage) GetMyCharacter(ctx context.Context, characterID int32) (model.
 	return c, nil
 }
 
-func (r *Storage) GetFirstMyCharacter(ctx context.Context) (model.MyCharacter, error) {
+func (r *Storage) GetFirstMyCharacter(ctx context.Context) (*model.MyCharacter, error) {
 	ids, err := r.ListMyCharacterIDs(ctx)
 	if err != nil {
-		return model.MyCharacter{}, nil
+		return nil, err
 	}
 	if len(ids) == 0 {
-		return model.MyCharacter{}, ErrNotFound
+		return nil, ErrNotFound
 	}
 	return r.GetMyCharacter(ctx, ids[0])
 
 }
 
-func (r *Storage) ListMyCharacters(ctx context.Context) ([]model.MyCharacterShort, error) {
+func (r *Storage) ListMyCharacters(ctx context.Context) ([]*model.MyCharacterShort, error) {
 	rows, err := r.q.ListMyCharacters(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list MyCharacter objects: %w", err)
 
 	}
-	cc := make([]model.MyCharacterShort, len(rows))
+	cc := make([]*model.MyCharacterShort, len(rows))
 	for i, row := range rows {
-		cc[i] = model.MyCharacterShort{ID: int32(row.ID), Name: row.Name, CorporationName: row.Name_2}
+		cc[i] = &model.MyCharacterShort{ID: int32(row.ID), Name: row.Name, CorporationName: row.Name_2}
 	}
 	return cc, nil
 }
@@ -108,7 +107,7 @@ func myCharacterFromDBModel(
 	race queries.EveRace,
 	alliance queries.EveCharacterAlliance,
 	faction queries.EveCharacterFaction,
-) model.MyCharacter {
+) *model.MyCharacter {
 	x := model.MyCharacter{
 		Character:     eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
 		ID:            int32(myCharacter.ID),
@@ -118,5 +117,5 @@ func myCharacterFromDBModel(
 		SkillPoints:   int(myCharacter.SkillPoints),
 		WalletBalance: myCharacter.WalletBalance,
 	}
-	return x
+	return &x
 }

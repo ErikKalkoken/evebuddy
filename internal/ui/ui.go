@@ -39,6 +39,7 @@ type ui struct {
 	folderArea            *folderArea
 	headerArea            *headerArea
 	mailArea              *mailDetailArea
+	overviewArea          *overviewArea
 	statusArea            *statusArea
 	service               *service.Service
 	skillqueueArea        *skillqueueArea
@@ -74,6 +75,10 @@ func NewUI(service *service.Service) *ui {
 	characterContent := container.NewBorder(nil, nil, nil, nil, characterArea.content)
 	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), characterContent)
 
+	overviewArea := u.NewOverviewArea()
+	u.overviewArea = overviewArea
+	overviewTab := container.NewTabItemWithIcon("Overview", theme.ComputerIcon(), overviewArea.content)
+
 	skillqueueArea := u.NewSkillqueueArea()
 	u.skillqueueArea = skillqueueArea
 	skillqueueTab := container.NewTabItemWithIcon("Skill Queue", theme.NewThemedResource(resourceChecklistrtlSvg), skillqueueArea.content)
@@ -85,7 +90,7 @@ func NewUI(service *service.Service) *ui {
 	statusArea := u.newStatusArea()
 	u.statusArea = statusArea
 
-	tabs := container.NewAppTabs(characterTab, mailTab, skillqueueTab, walletTab)
+	tabs := container.NewAppTabs(characterTab, mailTab, skillqueueTab, walletTab, overviewTab)
 	tabs.SetTabLocation(container.TabLocationLeading)
 
 	toolbar := makeToolbar(u)
@@ -94,7 +99,7 @@ func NewUI(service *service.Service) *ui {
 	w.SetMaster()
 	w.Resize(fyne.NewSize(800, 600))
 
-	var c model.MyCharacter
+	var c *model.MyCharacter
 	cID, err := service.DictionaryInt(model.SettingLastCharacterID)
 	if err != nil {
 		panic(err)
@@ -108,7 +113,7 @@ func NewUI(service *service.Service) *ui {
 		}
 	}
 	if c.ID != 0 {
-		u.SetCurrentCharacter(&c)
+		u.SetCurrentCharacter(c)
 	} else {
 		u.ResetCurrentCharacter()
 	}
@@ -177,6 +182,7 @@ func (u *ui) SetCurrentCharacter(c *model.MyCharacter) {
 	u.folderArea.Refresh()
 	u.skillqueueArea.Refresh()
 	u.walletTransactionArea.Refresh()
+	u.overviewArea.Refresh()
 }
 
 func (u *ui) updateToolbarBadge(c *model.MyCharacter) {

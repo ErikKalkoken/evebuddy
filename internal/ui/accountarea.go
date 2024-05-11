@@ -83,11 +83,11 @@ func (m *accountArea) Redraw() {
 		row.Add(layout.NewSpacer())
 
 		selectButton := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
-			character, err := m.ui.service.GetMyCharacter(char.ID)
+			c, err := m.ui.service.GetMyCharacter(char.ID)
 			if err != nil {
 				panic(err)
 			}
-			m.ui.SetCurrentCharacter(&character)
+			m.ui.SetCurrentCharacter(c)
 			m.dialog.Hide()
 		})
 		if !hasToken {
@@ -120,7 +120,7 @@ func (m *accountArea) Redraw() {
 									panic(err)
 								}
 							} else {
-								m.ui.SetCurrentCharacter(&c)
+								m.ui.SetCurrentCharacter(c)
 							}
 						}
 					}

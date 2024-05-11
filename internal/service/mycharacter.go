@@ -19,15 +19,15 @@ func (s *Service) DeleteMyCharacter(characterID int32) error {
 	return s.r.DeleteMyCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetMyCharacter(characterID int32) (model.MyCharacter, error) {
+func (s *Service) GetMyCharacter(characterID int32) (*model.MyCharacter, error) {
 	return s.r.GetMyCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetAnyMyCharacter() (model.MyCharacter, error) {
+func (s *Service) GetAnyMyCharacter() (*model.MyCharacter, error) {
 	return s.r.GetFirstMyCharacter(context.Background())
 }
 
-func (s *Service) ListMyCharacters() ([]model.MyCharacterShort, error) {
+func (s *Service) ListMyCharacters() ([]*model.MyCharacterShort, error) {
 	return s.r.ListMyCharacters(context.Background())
 }
 
@@ -91,10 +91,10 @@ func (s *Service) updateMyCharacter(ctx context.Context, characterID int32) erro
 	if err != nil {
 		return err
 	}
-	if err := s.updateMyCharacterESI(ctx, &c); err != nil {
+	if err := s.updateMyCharacterESI(ctx, c); err != nil {
 		return err
 	}
-	if err := s.r.UpdateOrCreateMyCharacter(ctx, &c); err != nil {
+	if err := s.r.UpdateOrCreateMyCharacter(ctx, c); err != nil {
 		return err
 	}
 	slog.Info("Finished updating character", "characterID", characterID)
