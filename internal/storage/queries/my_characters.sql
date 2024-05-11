@@ -45,6 +45,34 @@ LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.f
 WHERE my_characters.id = ?;
 
 -- name: ListMyCharacters :many
+SELECT
+    sqlc.embed(my_characters),
+    sqlc.embed(eve_characters),
+    sqlc.embed(eve_categories),
+    sqlc.embed(eve_groups),
+    sqlc.embed(eve_types),
+    sqlc.embed(eve_regions),
+    sqlc.embed(eve_constellations),
+    sqlc.embed(eve_solar_systems),
+    sqlc.embed(corporations),
+    sqlc.embed(eve_races),
+    sqlc.embed(eve_character_alliances),
+    sqlc.embed(eve_character_factions)
+FROM my_characters
+JOIN eve_characters ON eve_characters.id = my_characters.id
+JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
+JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
+JOIN eve_solar_systems ON eve_solar_systems.id = my_characters.location_id
+JOIN eve_types ON eve_types.id = my_characters.ship_id
+JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
+JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
+JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
+JOIN eve_races ON eve_races.id = eve_characters.race_id
+LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
+LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.faction_id
+ORDER BY eve_characters.name;
+
+-- name: ListMyCharactersShort :many
 SELECT eve_characters.id, eve_characters.name, corporations.name
 FROM my_characters
 JOIN eve_characters ON eve_characters.id = my_characters.id

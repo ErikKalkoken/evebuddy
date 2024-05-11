@@ -57,7 +57,7 @@ func (u *ui) NewAccountArea() *accountArea {
 }
 
 func (m *accountArea) Redraw() {
-	chars, err := m.ui.service.ListMyCharacters()
+	chars, err := m.ui.service.ListMyCharactersShort()
 	if err != nil {
 		panic(err)
 	}

@@ -197,17 +197,47 @@ func (q *Queries) ListMyCharacterIDs(ctx context.Context) ([]int64, error) {
 }
 
 const listMyCharacters = `-- name: ListMyCharacters :many
-SELECT eve_characters.id, eve_characters.name, corporations.name
+SELECT
+    my_characters.id, my_characters.last_login_at, my_characters.location_id, my_characters.ship_id, my_characters.skill_points, my_characters.wallet_balance,
+    eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
+    eve_categories.id, eve_categories.name, eve_categories.is_published,
+    eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
+    eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
+    eve_regions.id, eve_regions.description, eve_regions.name,
+    eve_constellations.id, eve_constellations.eve_region_id, eve_constellations.name,
+    eve_solar_systems.id, eve_solar_systems.eve_constellation_id, eve_solar_systems.name, eve_solar_systems.security_status,
+    corporations.id, corporations.category, corporations.name,
+    eve_races.id, eve_races.description, eve_races.name,
+    eve_character_alliances.id, eve_character_alliances.category, eve_character_alliances.name,
+    eve_character_factions.id, eve_character_factions.category, eve_character_factions.name
 FROM my_characters
 JOIN eve_characters ON eve_characters.id = my_characters.id
+JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
+JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
+JOIN eve_solar_systems ON eve_solar_systems.id = my_characters.location_id
+JOIN eve_types ON eve_types.id = my_characters.ship_id
+JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
+JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
 JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
+JOIN eve_races ON eve_races.id = eve_characters.race_id
+LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
+LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.faction_id
 ORDER BY eve_characters.name
 `
 
 type ListMyCharactersRow struct {
-	ID     int64
-	Name   string
-	Name_2 string
+	MyCharacter          MyCharacter
+	EveCharacter         EveCharacter
+	EveCategory          EveCategory
+	EveGroup             EveGroup
+	EveType              EveType
+	EveRegion            EveRegion
+	EveConstellation     EveConstellation
+	EveSolarSystem       EveSolarSystem
+	EveEntity            EveEntity
+	EveRace              EveRace
+	EveCharacterAlliance EveCharacterAlliance
+	EveCharacterFaction  EveCharacterFaction
 }
 
 func (q *Queries) ListMyCharacters(ctx context.Context) ([]ListMyCharactersRow, error) {
@@ -219,6 +249,95 @@ func (q *Queries) ListMyCharacters(ctx context.Context) ([]ListMyCharactersRow, 
 	var items []ListMyCharactersRow
 	for rows.Next() {
 		var i ListMyCharactersRow
+		if err := rows.Scan(
+			&i.MyCharacter.ID,
+			&i.MyCharacter.LastLoginAt,
+			&i.MyCharacter.LocationID,
+			&i.MyCharacter.ShipID,
+			&i.MyCharacter.SkillPoints,
+			&i.MyCharacter.WalletBalance,
+			&i.EveCharacter.AllianceID,
+			&i.EveCharacter.Birthday,
+			&i.EveCharacter.CorporationID,
+			&i.EveCharacter.Description,
+			&i.EveCharacter.Gender,
+			&i.EveCharacter.FactionID,
+			&i.EveCharacter.ID,
+			&i.EveCharacter.Name,
+			&i.EveCharacter.RaceID,
+			&i.EveCharacter.SecurityStatus,
+			&i.EveCharacter.Title,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveType.ID,
+			&i.EveType.Description,
+			&i.EveType.EveGroupID,
+			&i.EveType.Name,
+			&i.EveType.IsPublished,
+			&i.EveRegion.ID,
+			&i.EveRegion.Description,
+			&i.EveRegion.Name,
+			&i.EveConstellation.ID,
+			&i.EveConstellation.EveRegionID,
+			&i.EveConstellation.Name,
+			&i.EveSolarSystem.ID,
+			&i.EveSolarSystem.EveConstellationID,
+			&i.EveSolarSystem.Name,
+			&i.EveSolarSystem.SecurityStatus,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+			&i.EveRace.ID,
+			&i.EveRace.Description,
+			&i.EveRace.Name,
+			&i.EveCharacterAlliance.ID,
+			&i.EveCharacterAlliance.Category,
+			&i.EveCharacterAlliance.Name,
+			&i.EveCharacterFaction.ID,
+			&i.EveCharacterFaction.Category,
+			&i.EveCharacterFaction.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMyCharactersShort = `-- name: ListMyCharactersShort :many
+SELECT eve_characters.id, eve_characters.name, corporations.name
+FROM my_characters
+JOIN eve_characters ON eve_characters.id = my_characters.id
+JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
+ORDER BY eve_characters.name
+`
+
+type ListMyCharactersShortRow struct {
+	ID     int64
+	Name   string
+	Name_2 string
+}
+
+func (q *Queries) ListMyCharactersShort(ctx context.Context) ([]ListMyCharactersShortRow, error) {
+	rows, err := q.db.QueryContext(ctx, listMyCharactersShort)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListMyCharactersShortRow
+	for rows.Next() {
+		var i ListMyCharactersShortRow
 		if err := rows.Scan(&i.ID, &i.Name, &i.Name_2); err != nil {
 			return nil, err
 		}

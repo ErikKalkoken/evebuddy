@@ -136,7 +136,7 @@ func TestMyCharacterList(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateMyCharacter()
 		// when
-		cc, err := r.ListMyCharacters(ctx)
+		cc, err := r.ListMyCharactersShort(ctx)
 		// then
 		if assert.NoError(t, err) {
 			c2 := cc[0]
@@ -150,7 +150,7 @@ func TestMyCharacterList(t *testing.T) {
 		factory.CreateMyCharacter()
 		factory.CreateMyCharacter()
 		// when
-		cc, err := r.ListMyCharacters(ctx)
+		cc, err := r.ListMyCharactersShort(ctx)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, cc, 2)

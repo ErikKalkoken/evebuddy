@@ -56,8 +56,33 @@ func (r *Storage) GetFirstMyCharacter(ctx context.Context) (*model.MyCharacter, 
 
 }
 
-func (r *Storage) ListMyCharacters(ctx context.Context) ([]*model.MyCharacterShort, error) {
+func (r *Storage) ListMyCharacters(ctx context.Context) ([]*model.MyCharacter, error) {
 	rows, err := r.q.ListMyCharacters(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list MyCharacters: %w", err)
+	}
+	cc := make([]*model.MyCharacter, len(rows))
+	for i, row := range rows {
+		cc[i] = myCharacterFromDBModel(
+			row.MyCharacter,
+			row.EveCategory,
+			row.EveGroup,
+			row.EveType,
+			row.EveRegion,
+			row.EveConstellation,
+			row.EveSolarSystem,
+			row.EveCharacter,
+			row.EveEntity,
+			row.EveRace,
+			row.EveCharacterAlliance,
+			row.EveCharacterFaction,
+		)
+	}
+	return cc, nil
+}
+
+func (r *Storage) ListMyCharactersShort(ctx context.Context) ([]*model.MyCharacterShort, error) {
+	rows, err := r.q.ListMyCharactersShort(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list MyCharacter objects: %w", err)
 

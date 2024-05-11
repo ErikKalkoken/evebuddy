@@ -27,8 +27,12 @@ func (s *Service) GetAnyMyCharacter() (*model.MyCharacter, error) {
 	return s.r.GetFirstMyCharacter(context.Background())
 }
 
-func (s *Service) ListMyCharacters() ([]*model.MyCharacterShort, error) {
+func (s *Service) ListMyCharacters() ([]*model.MyCharacter, error) {
 	return s.r.ListMyCharacters(context.Background())
+}
+
+func (s *Service) ListMyCharactersShort() ([]*model.MyCharacterShort, error) {
+	return s.r.ListMyCharactersShort(context.Background())
 }
 
 // UpdateOrCreateMyCharacterFromSSO creates or updates a character via SSO authentication.

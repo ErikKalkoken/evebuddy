@@ -15,16 +15,16 @@ func Number(value float64, decimals int) string {
 	switch {
 	case v2 >= 1000000000000:
 		s = 12
-		a = "T"
+		a = " T"
 	case v2 >= 1000000000:
 		s = 9
-		a = "B"
+		a = " B"
 	case v2 >= 1000000:
 		s = 6
-		a = "M"
+		a = " M"
 	case v2 >= 1000:
 		s = 3
-		a = "K"
+		a = " K"
 	default:
 		s = 0
 		a = ""
