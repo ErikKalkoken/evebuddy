@@ -97,36 +97,36 @@ func (u *ui) makeFolderTree() (*widget.Tree, binding.StringTree) {
 	return tree, treeData
 }
 
-func (f *folderArea) Refresh() {
-	characterID := f.ui.CurrentCharID()
+func (a *folderArea) Refresh() {
+	characterID := a.ui.CurrentCharID()
 	if characterID == 0 {
-		f.refreshButton.Disable()
-		f.newButton.Disable()
+		a.refreshButton.Disable()
+		a.newButton.Disable()
 	} else {
-		f.refreshButton.Enable()
-		f.newButton.Enable()
+		a.refreshButton.Enable()
+		a.newButton.Enable()
 	}
-	ids, values, folderAll, err := f.buildFolderTree(characterID)
+	ids, values, folderAll, err := a.buildFolderTree(characterID)
 	if err != nil {
 		slog.Error("Failed to build folder tree", "character", characterID, "error", err)
 	}
-	f.treeData.Set(ids, values)
-	if f.lastUID == "" || f.lastFolderAll != folderAll {
-		f.tree.Select(nodeAllID)
-		f.tree.ScrollToTop()
-		f.ui.headerArea.SetFolder(folderAll)
+	a.treeData.Set(ids, values)
+	if a.lastUID == "" || a.lastFolderAll != folderAll {
+		a.tree.Select(nodeAllID)
+		a.tree.ScrollToTop()
+		a.ui.headerArea.SetFolder(folderAll)
 	} else {
-		f.ui.headerArea.Refresh()
+		a.ui.headerArea.Refresh()
 	}
-	f.lastFolderAll = folderAll
+	a.lastFolderAll = folderAll
 }
 
-func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
-	labelUnreadCounts, err := f.ui.service.GetMailLabelUnreadCounts(characterID)
+func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
+	labelUnreadCounts, err := a.ui.service.GetMailLabelUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
-	listUnreadCounts, err := f.ui.service.GetMailListUnreadCounts(characterID)
+	listUnreadCounts, err := a.ui.service.GetMailListUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -144,7 +144,7 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		UnreadCount:   totalUnreadCount,
 	}
 	folders[nodeAllID] = folderAll.toJSON()
-	labels, err := f.ui.service.ListMailLabelsOrdered(characterID)
+	labels, err := a.ui.service.ListMailLabelsOrdered(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -168,7 +168,7 @@ func (f *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 			folders[uid] = n.toJSON()
 		}
 	}
-	lists, err := f.ui.service.ListMailLists(characterID)
+	lists, err := a.ui.service.ListMailLists(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -239,16 +239,16 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 	return total, labels, lists
 }
 
-func (f *folderArea) UpdateMails(respondToUser bool) {
-	character := f.ui.CurrentChar()
+func (a *folderArea) UpdateMails(respondToUser bool) {
+	character := a.ui.CurrentChar()
 	if character == nil {
 		return
 	}
-	status := f.ui.statusArea
+	status := a.ui.statusArea
 	if respondToUser {
 		status.Info.SetWithProgress(fmt.Sprintf("Checking mail for %s", character.Character.Name))
 	}
-	unreadCount, err := f.ui.service.UpdateMail(character.ID)
+	unreadCount, err := a.ui.service.UpdateMail(character.ID)
 	if err != nil {
 		status.Info.SetError("Failed to fetch mail")
 		slog.Error("Failed to fetch mails", "characterID", character.ID, "error", err)
@@ -261,22 +261,22 @@ func (f *folderArea) UpdateMails(respondToUser bool) {
 	} else {
 		status.Info.Clear()
 	}
-	f.Refresh()
+	a.Refresh()
 }
 
-func (f *folderArea) StartUpdateTicker() {
+func (a *folderArea) StartUpdateTicker() {
 	ticker := time.NewTicker(10 * time.Second)
 	go func() {
 		for {
 			func() {
-				characterID := f.ui.CurrentCharID()
+				characterID := a.ui.CurrentCharID()
 				if characterID == 0 {
 					return
 				}
-				if !f.ui.service.SectionUpdatedExpired(characterID, service.UpdateSectionMail) {
+				if !a.ui.service.SectionUpdatedExpired(characterID, service.UpdateSectionMail) {
 					return
 				}
-				f.UpdateMails(false)
+				a.UpdateMails(false)
 			}()
 			<-ticker.C
 		}

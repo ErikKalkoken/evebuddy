@@ -48,10 +48,10 @@ type ui struct {
 }
 
 // NewUI build the UI and returns it.
-func NewUI(s *service.Service) *ui {
+func NewUI(service *service.Service) *ui {
 	a := app.New()
 	w := a.NewWindow(appName(a))
-	u := &ui{app: a, window: w, service: s}
+	u := &ui{app: a, window: w, service: service}
 
 	mail := u.NewMailArea()
 	u.mailArea = mail
@@ -93,15 +93,14 @@ func NewUI(s *service.Service) *ui {
 	w.SetContent(mainContent)
 	w.SetMaster()
 	w.Resize(fyne.NewSize(800, 600))
-	// w.SetMainMenu(MakeMenu(a, u))
 
 	var c model.MyCharacter
-	cID, err := s.DictionaryInt(model.SettingLastCharacterID)
+	cID, err := service.DictionaryInt(model.SettingLastCharacterID)
 	if err != nil {
 		panic(err)
 	}
 	if cID != 0 {
-		c, err = s.GetMyCharacter(int32(cID))
+		c, err = service.GetMyCharacter(int32(cID))
 		if err != nil {
 			if !errors.Is(err, storage.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -142,8 +141,9 @@ func (u *ui) ShowAndRun() {
 		// only in parts and freeze. The issue is known to happen on Linux desktops.
 		if runtime.GOOS == "linux" {
 			time.Sleep(400 * time.Millisecond)
-			u.window.Resize(fyne.NewSize(800, 601))
-			u.window.Resize(fyne.NewSize(800, 600))
+			s := u.window.Canvas().Size()
+			u.window.Resize(fyne.NewSize(s.Width, s.Height+0.1))
+			u.window.Resize(fyne.NewSize(s.Width, s.Height))
 		}
 		u.statusArea.StartUpdateTicker()
 		u.characterArea.StartUpdateTicker()

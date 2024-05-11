@@ -32,15 +32,15 @@ func (u *ui) newStatusArea() *statusArea {
 	return &b
 }
 
-func (s *statusArea) StartUpdateTicker() {
+func (a *statusArea) StartUpdateTicker() {
 	ticker := time.NewTicker(60 * time.Second)
 	go func() {
 		for {
-			t, err := s.ui.service.FetchESIStatus()
+			t, err := a.ui.service.FetchESIStatus()
 			if err != nil {
 				slog.Error(err.Error())
 			} else {
-				s.eveStatus.SetText(t)
+				a.eveStatus.SetText(t)
 			}
 			<-ticker.C
 		}

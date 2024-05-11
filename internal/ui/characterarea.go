@@ -38,22 +38,22 @@ func (u *ui) NewCharacterArea() *characterArea {
 	return &c
 }
 
-func (c *characterArea) Redraw() {
-	c.items.RemoveAll()
-	character := c.ui.CurrentChar()
+func (a *characterArea) Redraw() {
+	a.items.RemoveAll()
+	character := a.ui.CurrentChar()
 	if character == nil {
 		return
 	}
 
 	icons := container.NewHBox()
-	c.items.Add(icons)
+	a.items.Add(icons)
 
 	defaultColor := theme.ForegroundColor()
 	dangerColor := theme.ErrorColor()
 	successColor := theme.SuccessColor()
 	x := canvas.NewText(character.Character.Name, defaultColor)
 	x.TextSize = theme.TextHeadingSize()
-	c.items.Add(container.NewPadded(x))
+	a.items.Add(container.NewPadded(x))
 
 	var secColor color.Color
 	switch s := character.Character.SecurityStatus; {
@@ -90,7 +90,7 @@ func (c *characterArea) Redraw() {
 		{"Last Login", humanize.Time(character.LastLoginAt), defaultColor},
 	}
 	form2 := makeForm(r)
-	c.items.Add(container.NewGridWithColumns(2, form1, form2))
+	a.items.Add(container.NewGridWithColumns(2, form1, form2))
 
 	err := updateIcons(icons, character)
 	if err != nil {
@@ -165,23 +165,23 @@ func updateIcons(icons *fyne.Container, c *model.MyCharacter) error {
 	return nil
 }
 
-func (c *characterArea) StartUpdateTicker() {
+func (a *characterArea) StartUpdateTicker() {
 	ticker := time.NewTicker(10 * time.Second)
 	go func() {
 		for {
 			func() {
-				characterID := c.ui.CurrentCharID()
+				characterID := a.ui.CurrentCharID()
 				if characterID == 0 {
 					return
 				}
-				if !c.ui.service.SectionUpdatedExpired(characterID, service.UpdateSectionMyCharacter) {
+				if !a.ui.service.SectionUpdatedExpired(characterID, service.UpdateSectionMyCharacter) {
 					return
 				}
-				if err := c.ui.service.UpdateMyCharacter(characterID); err != nil {
+				if err := a.ui.service.UpdateMyCharacter(characterID); err != nil {
 					slog.Error(err.Error())
 					return
 				}
-				c.Redraw()
+				a.Redraw()
 			}()
 			<-ticker.C
 		}
