@@ -97,7 +97,8 @@ func NewUI(service *service.Service) *ui {
 	mainContent := container.NewBorder(toolbar, statusArea.content, nil, nil, tabs)
 	w.SetContent(mainContent)
 	w.SetMaster()
-	w.Resize(fyne.NewSize(800, 600))
+	// w.Resize(fyne.NewSize(800, 600))
+	w.SetFullScreen(true)
 
 	var c *model.MyCharacter
 	cID, err := service.DictionaryInt(model.SettingLastCharacterID)

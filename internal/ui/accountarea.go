@@ -35,7 +35,7 @@ func (u *ui) ShowAccountDialog() {
 	})
 	button.Importance = widget.HighImportance
 	c := container.NewScroll(m.content)
-	c.SetMinSize(fyne.NewSize(600, 400))
+	c.SetMinSize(fyne.NewSize(500, 400))
 	content := container.NewBorder(button, nil, nil, nil, c)
 	dialog := dialog.NewCustom("Manage Characters", "Close", content, u.window)
 	m.dialog = dialog
@@ -61,16 +61,14 @@ func (m *accountArea) Redraw() {
 	if err != nil {
 		panic(err)
 	}
+	go m.ui.overviewArea.Refresh()
 	m.content.RemoveAll()
-	fg := theme.ForegroundColor()
 	for _, char := range chars {
 		uri, _ := images.CharacterPortraitURL(char.ID, defaultIconSize)
-		charIcon := canvas.NewImageFromURI(uri)
-		charIcon.FillMode = canvas.ImageFillOriginal
-		charName := canvas.NewText(char.Name, fg)
-		charName.TextStyle.Bold = true
-		corpName := canvas.NewText(char.CorporationName, fg)
-		row := container.NewHBox(charIcon, container.NewVBox(charName, corpName))
+		icon := canvas.NewImageFromURI(uri)
+		icon.FillMode = canvas.ImageFillOriginal
+		name := widget.NewLabel(char.Name)
+		row := container.NewHBox(icon, name)
 
 		hasToken, err := m.ui.service.HasTokenWithScopes(char.ID)
 		if err != nil {

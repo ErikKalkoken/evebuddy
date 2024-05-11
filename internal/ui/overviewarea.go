@@ -22,6 +22,7 @@ type overviewArea struct {
 	characters       []*model.MyCharacter
 	skillqueueCounts []types.NullDuration
 	table            *widgets.StaticTable
+	total            *widget.Label
 	ui               *ui
 }
 
@@ -30,7 +31,9 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		ui:               u,
 		characters:       make([]*model.MyCharacter, 0),
 		skillqueueCounts: make([]types.NullDuration, 0),
+		total:            widget.NewLabel(""),
 	}
+	a.total.TextStyle.Bold = true
 	var headers = []struct {
 		text  string
 		width float32
@@ -103,7 +106,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 			case 9:
 				l.Text = c.Ship.Name
 			case 10:
-				l.Text = humanize.Time(c.LastLoginAt)
+				l.Text = humanize.RelTime(c.LastLoginAt, time.Now(), "", "")
 			case 11:
 				l.Text = humanize.RelTime(c.Character.Birthday, time.Now(), "", "")
 			}
@@ -123,17 +126,28 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		table.SetColumnWidth(i, h.width)
 	}
 
-	a.content = container.NewBorder(nil, nil, nil, nil, table)
+	top := container.NewVBox(widget.NewSeparator(), a.total)
+	a.content = container.NewBorder(top, nil, nil, nil, table)
 	a.table = table
 	return &a
 }
 
 func (a *overviewArea) Refresh() {
 	a.updateEntries()
-	for i := range a.characters {
+	var wallet float64
+	var sp int
+	for i, c := range a.characters {
 		a.table.SetRowHeight(i, 50)
+		wallet += c.WalletBalance
+		sp += c.SkillPoints
 	}
 	a.table.Refresh()
+	s := fmt.Sprintf(
+		"Total: %d characters • %s ISK • %s SP", len(a.characters),
+		ihumanize.Number(wallet, 2),
+		ihumanize.Number(float64(sp), 0),
+	)
+	a.total.SetText(s)
 }
 
 func (a *overviewArea) updateEntries() {

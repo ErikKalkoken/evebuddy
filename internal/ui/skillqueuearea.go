@@ -33,7 +33,9 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 	a := skillqueueArea{
 		ui:    u,
 		items: make([]*model.SkillqueueItem, 0),
+		total: widget.NewLabel(""),
 	}
+	a.total.TextStyle.Bold = true
 	list := widget.NewList(
 		func() int {
 			return len(a.items)
@@ -112,28 +114,22 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 		dlg.Show()
 	}
 
-	s, i := a.makeBottomText()
-	total := widget.NewLabel(s)
-	total.TextStyle = fyne.TextStyle{Bold: true}
-	total.Importance = i
-	bottom := container.NewVBox(widget.NewSeparator(), total)
-
-	a.content = container.NewBorder(nil, bottom, nil, nil, list)
+	top := container.NewVBox(a.total, widget.NewSeparator())
+	a.content = container.NewBorder(top, nil, nil, nil, list)
 	a.list = list
-	a.total = total
 	return &a
 }
 
 func (a *skillqueueArea) Refresh() {
 	a.updateItems()
 	a.list.Refresh()
-	s, i := a.makeBottomText()
+	s, i := a.makeTopText()
 	a.total.Text = s
 	a.total.Importance = i
 	a.total.Refresh()
 }
 
-func (a *skillqueueArea) makeBottomText() (string, widget.Importance) {
+func (a *skillqueueArea) makeTopText() (string, widget.Importance) {
 	if a.errorText != "" {
 		return a.errorText, widget.DangerImportance
 	}

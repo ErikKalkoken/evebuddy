@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
@@ -30,8 +31,9 @@ func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
 	a := walletTransactionArea{
 		ui:      u,
 		entries: make([]*model.WalletJournalEntry, 0),
+		total:   widget.NewLabel(""),
 	}
-	a.updateEntries()
+	a.total.TextStyle.Bold = true
 	table := widgets.NewStaticTable(
 		func() (rows int, cols int) {
 			return len(a.entries), 5
@@ -97,21 +99,16 @@ func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
 		co.(*widget.Label).SetText(s)
 	}
 
-	s, i := a.makeBottomText()
-	total := widget.NewLabel(s)
-	total.Importance = i
-	bottom := container.NewVBox(widget.NewSeparator(), total)
-
-	a.content = container.NewBorder(nil, bottom, nil, nil, table)
+	top := container.NewVBox(a.total, widget.NewSeparator())
+	a.content = container.NewBorder(top, nil, nil, nil, table)
 	a.table = table
-	a.total = total
 	return &a
 }
 
 func (a *walletTransactionArea) Refresh() {
 	a.updateEntries()
 	a.table.Refresh()
-	s, i := a.makeBottomText()
+	s, i := a.makeTopText()
 	a.total.Text = s
 	a.total.Importance = i
 	a.total.Refresh()
@@ -133,11 +130,11 @@ func (a *walletTransactionArea) updateEntries() {
 	}
 }
 
-func (a *walletTransactionArea) makeBottomText() (string, widget.Importance) {
+func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 	var s string
 	var i widget.Importance
 	if len(a.entries) > 0 {
-		s = fmt.Sprintf("Total: %s", humanize.FormatFloat(myFloatFormat, a.entries[0].Balance))
+		s = fmt.Sprintf("Total: %s", ihumanize.Number(a.entries[0].Balance, 2))
 		i = widget.MediumImportance
 	} else {
 		s = "No entries"

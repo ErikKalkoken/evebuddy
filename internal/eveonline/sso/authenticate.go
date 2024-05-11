@@ -94,7 +94,7 @@ func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*T
 		serverCtx = context.WithValue(serverCtx, keyAuthenticatedCharacter, token)
 		fmt.Fprintf(
 			w,
-			"Authentication completed for %s. You can close this tab now.",
+			"<p>SSO authentication successful for <b>%s</b>.</p><p>You can close this tab now and return to the app.</p>",
 			token.CharacterName,
 		)
 		cancel() // shutdown http server
