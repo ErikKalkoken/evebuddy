@@ -14,10 +14,11 @@ import (
 
 	"github.com/dustin/go-humanize"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 )
+
+const bigIconSize = 128
 
 type item struct {
 	label string
@@ -92,7 +93,7 @@ func (a *characterArea) Redraw() {
 	form2 := makeForm(r)
 	a.items.Add(container.NewGridWithColumns(2, form1, form2))
 
-	err := updateIcons(icons, character)
+	err := updateIcons(a.ui, icons, character)
 	if err != nil {
 		slog.Error(err.Error())
 	}
@@ -116,48 +117,33 @@ func makeForm(rows []item) *fyne.Container {
 	return form1
 }
 
-func updateIcons(icons *fyne.Container, c *model.MyCharacter) error {
-	u, err := images.CharacterPortraitURL(c.ID, 128)
-	if err != nil {
-		return err
-	}
-	character := canvas.NewImageFromURI(u)
+func updateIcons(u *ui, icons *fyne.Container, c *model.MyCharacter) error {
+	r := u.imageManager.CharacterPortrait(c.ID, bigIconSize)
+	character := canvas.NewImageFromResource(r)
 	character.FillMode = canvas.ImageFillOriginal
 	icons.Add(character)
 
-	u, err = c.Character.Corporation.IconURL(128)
-	if err != nil {
-		return err
-	}
-	corp := canvas.NewImageFromURI(u)
+	r = u.imageManager.CorporationLogo(c.ID, bigIconSize)
+	corp := canvas.NewImageFromResource(r)
 	corp.FillMode = canvas.ImageFillOriginal
 	icons.Add(corp)
 
 	if c.Character.HasAlliance() {
-		u, err = c.Character.Alliance.IconURL(128)
-		if err != nil {
-			return err
-		}
-		image := canvas.NewImageFromURI(u)
+		r = u.imageManager.AllianceLogo(c.ID, bigIconSize)
+		image := canvas.NewImageFromResource(r)
 		image.FillMode = canvas.ImageFillOriginal
 		icons.Add(image)
 	}
 
 	if c.Character.HasFaction() {
-		u, err = c.Character.Faction.IconURL(128)
-		if err != nil {
-			return err
-		}
-		image := canvas.NewImageFromURI(u)
+		r = u.imageManager.FactionLogo(c.ID, bigIconSize)
+		image := canvas.NewImageFromResource(r)
 		image.FillMode = canvas.ImageFillOriginal
 		icons.Add(image)
 	}
 
-	u, err = c.Ship.IconURL(128)
-	if err != nil {
-		return err
-	}
-	ship := canvas.NewImageFromURI(u)
+	r = u.imageManager.InventoryTypeRender(c.Ship.ID, bigIconSize)
+	ship := canvas.NewImageFromResource(r)
 	ship.FillMode = canvas.ImageFillOriginal
 	icons.Add(ship)
 

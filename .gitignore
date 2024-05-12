@@ -2,6 +2,7 @@ main.go.bak
 .vscode/launch.json
 *.sqlite
 .temp/
+temp/
 *.sqlite-shm
 *.sqlite-wal
 evebuddy

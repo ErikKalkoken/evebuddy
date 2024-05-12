@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
@@ -14,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -73,10 +73,10 @@ func (u *ui) NewAccountArea() *accountArea {
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			c := a.characters[id]
 			row := co.(*fyne.Container)
-			go func() {
-				uri, _ := images.CharacterPortraitURL(c.ID, defaultIconSize)
-				setIconFromURI(row.Objects[0].(*widget.Icon), uri)
-			}()
+			icon := row.Objects[0].(*widget.Icon)
+			r := u.imageManager.CharacterPortrait(c.ID, defaultIconSize)
+			image := canvas.NewImageFromResource(r)
+			icon.SetResource(image.Resource)
 			row.Objects[1].(*widget.Label).SetText(c.Name)
 			row.Objects[3].(*widget.Button).OnTapped = func() {
 				d1 := dialog.NewConfirm(

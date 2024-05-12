@@ -1,13 +1,5 @@
 package model
 
-import (
-	"fmt"
-
-	"fyne.io/fyne/v2"
-
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
-)
-
 type EveEntityCategory int
 
 // Supported categories of EveEntity
@@ -62,21 +54,4 @@ type EveEntity struct {
 	Category EveEntityCategory
 	ID       int32
 	Name     string
-}
-
-// IconURL returns the URL for an icon image of an entity.
-func (e *EveEntity) IconURL(size int) (fyne.URI, error) {
-	switch e.Category {
-	case EveEntityAlliance:
-		return images.AllianceLogoURL(e.ID, size)
-	case EveEntityCharacter:
-		return images.CharacterPortraitURL(e.ID, size)
-	case EveEntityCorporation:
-		return images.CorporationLogoURL(e.ID, size)
-	case EveEntityFaction:
-		return images.FactionLogoURL(e.ID, size)
-	case EveEntityInventoryType:
-		return images.InventoryTypeRenderURL(e.ID, size)
-	}
-	return nil, fmt.Errorf("no icon URL available for category: %v", e.Category)
 }

@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 
+	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -42,13 +43,14 @@ type ui struct {
 	walletTransactionArea *walletTransactionArea
 	toolbarArea           *toolbarArea
 	window                fyne.Window
+	imageManager          *images.Manager
 }
 
 // NewUI build the UI and returns it.
-func NewUI(service *service.Service) *ui {
+func NewUI(service *service.Service, imageCachePath string) *ui {
 	a := app.New()
 	w := a.NewWindow(appName(a))
-	u := &ui{app: a, window: w, service: service}
+	u := &ui{app: a, window: w, service: service, imageManager: images.New(imageCachePath)}
 
 	u.mailArea = u.NewMailArea()
 	u.headerArea = u.NewHeaderArea()

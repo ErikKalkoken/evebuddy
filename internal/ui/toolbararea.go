@@ -4,13 +4,11 @@ import (
 	"fmt"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
@@ -54,10 +52,8 @@ func (a *toolbarArea) Refresh() {
 		a.name.Text = "No character"
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
 	} else {
-		go func() {
-			uri, _ := c.PortraitURL(32)
-			setIconFromURI(a.icon, uri)
-		}()
+		r := a.ui.imageManager.CharacterPortrait(c.ID, defaultIconSize)
+		a.icon.SetResource(r)
 		s := fmt.Sprintf("%s (%s)", c.Character.Name, c.Character.Corporation.Name)
 		a.name.Text = s
 		a.name.TextStyle = fyne.TextStyle{Bold: true}
@@ -80,11 +76,7 @@ func (a *toolbarArea) Refresh() {
 			}
 			a.ui.SetCurrentCharacter(newChar)
 		})
-		go func() {
-			uri, _ := images.CharacterPortraitURL(myC.ID, defaultIconSize)
-			image := canvas.NewImageFromURI(uri)
-			i.Icon = image.Resource
-		}()
+		i.Icon = a.ui.imageManager.CharacterPortrait(myC.ID, defaultIconSize)
 		menuItems = append(menuItems, i)
 	}
 	a.switchButton.SetMenuItems(menuItems)

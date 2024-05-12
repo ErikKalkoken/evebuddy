@@ -6,6 +6,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/ErikKalkoken/evebuddy/internal/service"
@@ -68,7 +69,8 @@ func main() {
 	defer db.Close()
 	repository := storage.New(db)
 	s := service.NewService(repository)
-	e := ui.NewUI(s)
+	p := makeImageCachePath(ad, *debugFlag)
+	e := ui.NewUI(s, p)
 	e.ShowAndRun()
 }
 
@@ -95,4 +97,17 @@ func makeDSN(ad *appdirs.App, isDebug bool) string {
 	}
 	dsn := fmt.Sprintf("file:%s/%s", path, fn)
 	return dsn
+}
+
+func makeImageCachePath(ad *appdirs.App, isDebug bool) string {
+	var p string
+	if isDebug {
+		p = filepath.Join(".temp", "images")
+	} else {
+		p = filepath.Join(ad.UserCache(), "images")
+	}
+	if err := os.MkdirAll(p, os.ModePerm); err != nil {
+		panic(err)
+	}
+	return p
 }

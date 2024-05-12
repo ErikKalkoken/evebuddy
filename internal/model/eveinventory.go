@@ -1,11 +1,5 @@
 package model
 
-import (
-	"fyne.io/fyne/v2"
-
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
-)
-
 // EveCategory is a category in Eve Online.
 type EveCategory struct {
 	ID          int32
@@ -28,9 +22,4 @@ type EveType struct {
 	Group       *EveGroup
 	IsPublished bool
 	Name        string
-}
-
-// IconURL returns the URL for an icon image of a type.
-func (t *EveType) IconURL(size int) (fyne.URI, error) {
-	return images.InventoryTypeRenderURL(t.ID, size)
 }

@@ -106,12 +106,13 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 
 		}
 		s := container.NewScroll(form)
-		s.SetMinSize(fyne.Size{
+		dlg := dialog.NewCustom("Skill Details", "OK", s, u.window)
+		dlg.Show()
+		dlg.Resize(fyne.Size{
 			Width:  0.8 * a.ui.window.Canvas().Size().Width,
 			Height: 0.8 * a.ui.window.Canvas().Size().Height,
 		})
-		dlg := dialog.NewCustom("Skill Details", "OK", s, u.window)
-		dlg.Show()
+
 	}
 
 	top := container.NewVBox(a.total, widget.NewSeparator())

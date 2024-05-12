@@ -3,10 +3,6 @@ package model
 
 import (
 	"time"
-
-	"fyne.io/fyne/v2"
-
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 )
 
 // An owned character in Eve Online.
@@ -18,11 +14,6 @@ type MyCharacter struct {
 	Ship          *EveType
 	SkillPoints   int
 	WalletBalance float64
-}
-
-// PortraitURL returns an image URL for a portrait of a character
-func (c *MyCharacter) PortraitURL(size int) (fyne.URI, error) {
-	return images.CharacterPortraitURL(int32(c.ID), size)
 }
 
 type MyCharacterShort struct {

@@ -3,10 +3,6 @@ package model
 
 import (
 	"time"
-
-	"fyne.io/fyne/v2"
-
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 )
 
 // An Eve Online character.
@@ -46,9 +42,4 @@ func (c *EveCharacter) HasAlliance() bool {
 // HasFaction reports wether the character is member of a faction.
 func (c *EveCharacter) HasFaction() bool {
 	return c.Faction != nil
-}
-
-// PortraitURL returns an image URL for a portrait of a character
-func (c *EveCharacter) PortraitURL(size int) (fyne.URI, error) {
-	return images.CharacterPortraitURL(int32(c.ID), size)
 }
