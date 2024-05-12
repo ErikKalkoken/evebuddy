@@ -54,51 +54,38 @@ func NewUI(service *service.Service) *ui {
 	w := a.NewWindow(appName(a))
 	u := &ui{app: a, window: w, service: service}
 
-	mail := u.NewMailArea()
-	u.mailArea = mail
+	u.mailArea = u.NewMailArea()
+	u.headerArea = u.NewHeaderArea()
+	u.folderArea = u.NewFolderArea()
+	split1 := container.NewHSplit(u.headerArea.content, u.mailArea.content)
+	split1.SetOffset(0.35)
+	split2 := container.NewHSplit(u.folderArea.content, split1)
+	split2.SetOffset(0.15)
+	mailTab := container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), split2)
 
-	headers := u.NewHeaderArea()
-	u.headerArea = headers
+	u.characterArea = u.NewCharacterArea()
+	characterContent := container.NewBorder(nil, nil, nil, nil, u.characterArea.content)
+	characterTab := container.NewTabItemWithIcon("Character Sheet", theme.NewThemedResource(resourcePortraitSvg), characterContent)
 
-	folders := u.NewFolderArea()
-	u.folderArea = folders
+	u.overviewArea = u.NewOverviewArea()
+	overviewTab := container.NewTabItemWithIcon("Characters", theme.NewThemedResource(resourceGroupSvg), u.overviewArea.content)
 
-	headersMail := container.NewHSplit(headers.content, mail.content)
-	headersMail.SetOffset(0.35)
+	u.skillqueueArea = u.NewSkillqueueArea()
+	skillqueueTab := container.NewTabItemWithIcon("Skill Queue", theme.NewThemedResource(resourceChecklistrtlSvg), u.skillqueueArea.content)
 
-	mailContent := container.NewHSplit(folders.content, headersMail)
-	mailContent.SetOffset(0.15)
-	mailTab := container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), mailContent)
+	u.walletTransactionArea = u.NewWalletTransactionArea()
+	walletTab := container.NewTabItemWithIcon("Wallet", theme.NewThemedResource(resourceAttachmoneySvg), u.walletTransactionArea.content)
 
-	characterArea := u.NewCharacterArea()
-	u.characterArea = characterArea
-	characterContent := container.NewBorder(nil, nil, nil, nil, characterArea.content)
-	characterTab := container.NewTabItemWithIcon("Character", theme.AccountIcon(), characterContent)
-
-	overviewArea := u.NewOverviewArea()
-	u.overviewArea = overviewArea
-	overviewTab := container.NewTabItemWithIcon("Overview", theme.ComputerIcon(), overviewArea.content)
-
-	skillqueueArea := u.NewSkillqueueArea()
-	u.skillqueueArea = skillqueueArea
-	skillqueueTab := container.NewTabItemWithIcon("Skill Queue", theme.NewThemedResource(resourceChecklistrtlSvg), skillqueueArea.content)
-
-	walletArea := u.NewWalletTransactionArea()
-	u.walletTransactionArea = walletArea
-	walletTab := container.NewTabItemWithIcon("Wallet", theme.NewThemedResource(resourceAttachmoneySvg), walletArea.content)
-
-	statusArea := u.newStatusArea()
-	u.statusArea = statusArea
+	u.statusArea = u.newStatusArea()
 
 	tabs := container.NewAppTabs(characterTab, mailTab, skillqueueTab, walletTab, overviewTab)
 	tabs.SetTabLocation(container.TabLocationLeading)
 
-	toolbar := makeToolbar(u)
-	mainContent := container.NewBorder(toolbar, statusArea.content, nil, nil, tabs)
+	mainContent := container.NewBorder(makeToolbar(u), u.statusArea.content, nil, nil, tabs)
 	w.SetContent(mainContent)
 	w.SetMaster()
-	// w.Resize(fyne.NewSize(800, 600))
-	w.SetFullScreen(true)
+	w.Resize(fyne.NewSize(1000, 800))
+	// w.SetFullScreen(true)
 
 	var c *model.MyCharacter
 	cID, err := service.DictionaryInt(model.SettingLastCharacterID)
@@ -133,7 +120,7 @@ func makeToolbar(u *ui) *fyne.Container {
 		widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
 			u.ShowSettingsDialog()
 		}),
-		widget.NewButtonWithIcon("", theme.NewThemedResource(resourceGroupSvg), func() {
+		widget.NewButtonWithIcon("", theme.NewThemedResource(resourceManageaccountsSvg), func() {
 			u.ShowAccountDialog()
 		}),
 	)
