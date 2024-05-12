@@ -114,6 +114,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		},
 	)
 	table.ShowHeaderRow = true
+	table.StickyColumnCount = 1
 	table.CreateHeader = func() fyne.CanvasObject {
 		return widget.NewLabel("TemplateSecond")
 	}

@@ -63,9 +63,9 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	mailTab := container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), split2)
 
 	u.characterArea = u.NewCharacterArea()
-	characterContent := container.NewBorder(nil, nil, nil, nil, u.characterArea.content)
-	characterTab := container.NewTabItemWithIcon("Character Sheet",
-		theme.NewThemedResource(resourcePortraitSvg), characterContent)
+	// characterContent := container.NewBorder(nil, nil, nil, nil, u.characterArea.content)
+	// characterTab := container.NewTabItemWithIcon("Character Sheet",
+	// 	theme.NewThemedResource(resourcePortraitSvg), characterContent)
 
 	u.overviewArea = u.NewOverviewArea()
 	overviewTab := container.NewTabItemWithIcon("Characters",
@@ -82,7 +82,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	u.statusArea = u.newStatusArea()
 	u.toolbarArea = u.newToolbarArea()
 
-	u.tabs = container.NewAppTabs(characterTab, mailTab, skillqueueTab, walletTab, overviewTab)
+	u.tabs = container.NewAppTabs(mailTab, skillqueueTab, walletTab, overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	mainContent := container.NewBorder(u.toolbarArea.content, u.statusArea.content, nil, nil, u.tabs)

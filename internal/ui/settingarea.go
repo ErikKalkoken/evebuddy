@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"log/slog"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -39,6 +40,22 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	maxMailsEntry.SetText(strconv.Itoa(int(maxMails)))
 	maxMailsEntry.Validator = NewPositiveNumberValidator()
 
+	clearBtn := widget.NewButton("Clear NOW", func() {
+		d := dialog.NewConfirm(
+			"Clear image cache",
+			"Are you sure you want to clear the image cache?",
+			func(confirmed bool) {
+				if !confirmed {
+					return
+				}
+				count := u.imageManager.ClearCache()
+				slog.Info("Cleared images cache", "count", count)
+			},
+			u.window,
+		)
+		d.Show()
+	})
+
 	var d *dialog.CustomDialog
 	form := &widget.Form{
 		Items: []*widget.FormItem{
@@ -46,6 +63,11 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 				Text:     "Maximum mails",
 				Widget:   maxMailsEntry,
 				HintText: "Maximum number of mails downloaded from the server",
+			},
+			{
+				Text:     "Image cache",
+				Widget:   clearBtn,
+				HintText: "Clear the local image cache",
 			},
 		},
 		OnSubmit: func() {

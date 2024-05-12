@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"fyne.io/fyne/v2"
@@ -87,4 +88,16 @@ func (m *Manager) image(uri fyne.URI) fyne.Resource {
 func GetMD5Hash(text string) string {
 	hash := md5.Sum([]byte(text))
 	return hex.EncodeToString(hash[:])
+}
+
+// ClearCache clears the images cache and returns the number of deleted entries.
+func (m *Manager) ClearCache() int {
+	files, err := os.ReadDir(m.path)
+	if err != nil {
+		panic(err)
+	}
+	for _, f := range files {
+		os.RemoveAll(path.Join(m.path, f.Name()))
+	}
+	return len(files)
 }
