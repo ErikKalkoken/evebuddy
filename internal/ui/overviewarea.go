@@ -45,8 +45,8 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		{"Wallet", 80},
 		{"SP", 80},
 		{"Training", 80},
-		{"Location\nSystem", 150},
-		{"Location\nRegion", 150},
+		{"System", 150},
+		{"Region", 150},
 		{"Ship", 150},
 		{"Last Login", 100},
 		{"Age", 100},
@@ -115,7 +115,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 	)
 	table.ShowHeaderRow = true
 	table.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template\nSecond")
+		return widget.NewLabel("TemplateSecond")
 	}
 	table.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		s := headers[tci.Col]
@@ -136,8 +136,7 @@ func (a *overviewArea) Refresh() {
 	a.updateEntries()
 	var wallet float64
 	var sp int
-	for i, c := range a.characters {
-		a.table.SetRowHeight(i, 50)
+	for _, c := range a.characters {
 		wallet += c.WalletBalance
 		sp += c.SkillPoints
 	}

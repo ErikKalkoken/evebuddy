@@ -7,7 +7,6 @@ import (
 	"log/slog"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
@@ -74,9 +73,7 @@ func (u *ui) NewAccountArea() *accountArea {
 			row := co.(*fyne.Container)
 			go func() {
 				uri, _ := images.CharacterPortraitURL(c.ID, defaultIconSize)
-				newIcon := canvas.NewImageFromURI(uri)
-				icon := row.Objects[0].(*widget.Icon)
-				icon.SetResource(newIcon.Resource)
+				setIconFromURI(row.Objects[0].(*widget.Icon), uri)
 			}()
 			row.Objects[1].(*widget.Label).SetText(c.Name)
 			row.Objects[3].(*widget.Button).OnTapped = func() {

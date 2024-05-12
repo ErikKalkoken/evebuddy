@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
@@ -53,9 +54,10 @@ func (a *toolbarArea) Refresh() {
 		a.name.Text = "No character"
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
 	} else {
-		uri, _ := c.PortraitURL(32)
-		image := canvas.NewImageFromURI(uri)
-		a.icon.SetResource(image.Resource)
+		go func() {
+			uri, _ := c.PortraitURL(32)
+			setIconFromURI(a.icon, uri)
+		}()
 		s := fmt.Sprintf("%s (%s)", c.Character.Name, c.Character.Corporation.Name)
 		a.name.Text = s
 		a.name.TextStyle = fyne.TextStyle{Bold: true}
@@ -71,14 +73,19 @@ func (a *toolbarArea) Refresh() {
 		if myC.ID == c.ID {
 			continue
 		}
-		item := fyne.NewMenuItem(myC.Name, func() {
+		i := fyne.NewMenuItem(myC.Name, func() {
 			newChar, err := a.ui.service.GetMyCharacter(myC.ID)
 			if err != nil {
 				panic(err)
 			}
 			a.ui.SetCurrentCharacter(newChar)
 		})
-		menuItems = append(menuItems, item)
+		go func() {
+			uri, _ := images.CharacterPortraitURL(myC.ID, defaultIconSize)
+			image := canvas.NewImageFromURI(uri)
+			i.Icon = image.Resource
+		}()
+		menuItems = append(menuItems, i)
 	}
 	a.switchButton.SetMenuItems(menuItems)
 }
