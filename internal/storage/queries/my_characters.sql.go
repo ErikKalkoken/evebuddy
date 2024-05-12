@@ -197,7 +197,7 @@ func (q *Queries) ListMyCharacterIDs(ctx context.Context) ([]int64, error) {
 }
 
 const listMyCharacters = `-- name: ListMyCharacters :many
-SELECT
+SELECT DISTINCT
     my_characters.id, my_characters.last_login_at, my_characters.location_id, my_characters.ship_id, my_characters.skill_points, my_characters.wallet_balance,
     eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
     eve_categories.id, eve_categories.name, eve_categories.is_published,
@@ -316,7 +316,7 @@ func (q *Queries) ListMyCharacters(ctx context.Context) ([]ListMyCharactersRow, 
 }
 
 const listMyCharactersShort = `-- name: ListMyCharactersShort :many
-SELECT eve_characters.id, eve_characters.name, corporations.name
+SELECT DISTINCT eve_characters.id, eve_characters.name, corporations.name
 FROM my_characters
 JOIN eve_characters ON eve_characters.id = my_characters.id
 JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id

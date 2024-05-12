@@ -26,6 +26,7 @@ type accountArea struct {
 	content    *fyne.Container
 	dialog     *dialog.CustomDialog
 	list       *widget.List
+	total      *widget.Label
 	ui         *ui
 }
 
@@ -34,7 +35,7 @@ func (u *ui) ShowAccountDialog() {
 	dialog := dialog.NewCustom("Manage Characters", "Close", a.content, u.window)
 	a.dialog = dialog
 	dialog.Show()
-	dialog.Resize(fyne.Size{Width: 500, Height: 400})
+	dialog.Resize(fyne.Size{Width: 500, Height: 500})
 	a.Refresh()
 }
 
@@ -43,6 +44,7 @@ func (u *ui) ShowAccountDialog() {
 func (u *ui) NewAccountArea() *accountArea {
 	a := &accountArea{
 		characters: make([]*model.MyCharacterShort, 0),
+		total:      widget.NewLabel(""),
 		ui:         u,
 	}
 
@@ -110,11 +112,15 @@ func (u *ui) NewAccountArea() *accountArea {
 			}
 		})
 
+	a.list.OnSelected = func(id widget.ListItemID) {
+		a.list.UnselectAll() // Hack. Should be replaced by custom list widget.
+	}
+
 	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.showAddCharacterDialog()
 	})
 	button.Importance = widget.HighImportance
-	a.content = container.NewBorder(button, nil, nil, nil, container.NewScroll(a.list))
+	a.content = container.NewBorder(button, a.total, nil, nil, container.NewScroll(a.list))
 	return a
 }
 
@@ -126,6 +132,7 @@ func (a *accountArea) Refresh() {
 		panic(err)
 	}
 	a.list.Refresh()
+	a.total.SetText(fmt.Sprintf("Characters: %d", len(a.characters)))
 }
 
 func (a *accountArea) showAddCharacterDialog() {

@@ -5,7 +5,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// StaticTable is a modification of Fyne's table widget, which does not allow the user to select or hover.
+// StaticTable is a modification of Fyne's table widget, which does not allow the user to select anything.
 // It is useful for displaying data in a table format, when the user is not supposed to interact with it.
 type StaticTable struct {
 	widget.Table
