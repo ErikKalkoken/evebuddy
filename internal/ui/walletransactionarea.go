@@ -134,7 +134,7 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 	var s string
 	var i widget.Importance
 	if len(a.entries) > 0 {
-		s = fmt.Sprintf("Total: %s", ihumanize.Number(a.entries[0].Balance, 2))
+		s = fmt.Sprintf("Total: %s", ihumanize.Number(a.entries[0].Balance, 1))
 		i = widget.MediumImportance
 	} else {
 		s = "No entries"

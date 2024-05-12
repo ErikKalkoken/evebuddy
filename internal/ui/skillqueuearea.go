@@ -52,6 +52,9 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 				))
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {
+			if len(a.items) <= i {
+				return
+			}
 			q := a.items[i]
 			row := o.(*fyne.Container).Objects[1].(*fyne.Container)
 			name := q.Name()

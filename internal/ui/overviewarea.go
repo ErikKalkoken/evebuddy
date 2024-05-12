@@ -21,6 +21,7 @@ type overviewArea struct {
 	content          *fyne.Container
 	characters       []*model.MyCharacter
 	skillqueueCounts []types.NullDuration
+	unreadCounts     []int
 	table            *widgets.StaticTable
 	total            *widget.Label
 	ui               *ui
@@ -31,6 +32,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		ui:               u,
 		characters:       make([]*model.MyCharacter, 0),
 		skillqueueCounts: make([]types.NullDuration, 0),
+		unreadCounts:     make([]int, 0),
 		total:            widget.NewLabel(""),
 	}
 	a.total.TextStyle.Bold = true
@@ -45,6 +47,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		{"Wallet", 80},
 		{"SP", 80},
 		{"Training", 80},
+		{"Unread", 80},
 		{"System", 150},
 		{"Region", 150},
 		{"Ship", 150},
@@ -80,7 +83,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 					l.Importance = widget.DangerImportance
 				}
 			case 4:
-				l.Text = ihumanize.Number(c.WalletBalance, 2)
+				l.Text = ihumanize.Number(c.WalletBalance, 1)
 			case 5:
 				l.Text = ihumanize.Number(float64(c.SkillPoints), 0)
 			case 6:
@@ -92,22 +95,16 @@ func (u *ui) NewOverviewArea() *overviewArea {
 					l.Text = ihumanize.Duration(v.Duration)
 				}
 			case 7:
-				l.Text = fmt.Sprintf("%s %.1f", c.Location.Name, c.Location.SecurityStatus)
-				// switch s := c.Location.SecurityStatus; {
-				// case s < 0:
-				// 	l.Importance = widget.DangerImportance
-				// case s <= 0.5:
-				// 	l.Importance = widget.WarningImportance
-				// case s > 0.5:
-				// 	l.Importance = widget.SuccessImportance
-				// }
+				l.Text = humanize.Comma(int64(a.unreadCounts[tci.Row]))
 			case 8:
-				l.Text = c.Location.Constellation.Region.Name
+				l.Text = fmt.Sprintf("%s %.1f", c.Location.Name, c.Location.SecurityStatus)
 			case 9:
-				l.Text = c.Ship.Name
+				l.Text = c.Location.Constellation.Region.Name
 			case 10:
-				l.Text = humanize.RelTime(c.LastLoginAt, time.Now(), "", "")
+				l.Text = c.Ship.Name
 			case 11:
+				l.Text = humanize.RelTime(c.LastLoginAt, time.Now(), "", "")
+			case 12:
 				l.Text = humanize.RelTime(c.Character.Birthday, time.Now(), "", "")
 			}
 			l.Refresh()
@@ -127,7 +124,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		table.SetColumnWidth(i, h.width)
 	}
 
-	top := container.NewVBox(widget.NewSeparator(), a.total)
+	top := container.NewVBox(a.total, widget.NewSeparator())
 	a.content = container.NewBorder(top, nil, nil, nil, table)
 	a.table = table
 	return &a
@@ -142,10 +139,16 @@ func (a *overviewArea) Refresh() {
 		sp += c.SkillPoints
 	}
 	a.table.Refresh()
+	var totalUnread int
+	for _, x := range a.unreadCounts {
+		totalUnread += x
+	}
 	s := fmt.Sprintf(
-		"Total: %d characters • %s ISK • %s SP", len(a.characters),
-		ihumanize.Number(wallet, 2),
+		"Total: %d characters • %s ISK • %s SP  • %s unread",
+		len(a.characters),
+		ihumanize.Number(wallet, 1),
 		ihumanize.Number(float64(sp), 0),
+		humanize.Comma(int64(totalUnread)),
 	)
 	a.total.SetText(s)
 }
@@ -158,6 +161,7 @@ func (a *overviewArea) updateEntries() {
 		slog.Error("failed to fetch characters", "err", err)
 		return
 	}
+
 	a.skillqueueCounts = slices.Grow(a.skillqueueCounts, len(a.characters))
 	a.skillqueueCounts = a.skillqueueCounts[0:len(a.characters)]
 	for i, c := range a.characters {
@@ -167,5 +171,16 @@ func (a *overviewArea) updateEntries() {
 			continue
 		}
 		a.skillqueueCounts[i] = v
+	}
+
+	a.unreadCounts = slices.Grow(a.unreadCounts, len(a.characters))
+	a.unreadCounts = a.unreadCounts[0:len(a.characters)]
+	for i, c := range a.characters {
+		v, err := a.ui.service.GetMailUnreadCount(c.ID)
+		if err != nil {
+			slog.Error("failed to fetch unread count", "characterID", c.ID, "err", err)
+			continue
+		}
+		a.unreadCounts[i] = v
 	}
 }
