@@ -30,7 +30,7 @@ func (s *Service) SectionSetUpdated(characterID int32, section UpdateSection) er
 }
 
 func (s *Service) SectionUpdatedAt(characterID int32, section UpdateSection) time.Time {
-	t, err := s.DictionaryTime(makeUpdateAtDictKey(characterID, section))
+	t, _, err := s.DictionaryTime(makeUpdateAtDictKey(characterID, section))
 	if err != nil {
 		slog.Error(err.Error())
 		return time.Time{}

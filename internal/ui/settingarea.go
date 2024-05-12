@@ -28,11 +28,11 @@ func (u *ui) ShowSettingsDialog() {
 }
 
 func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
-	maxMails, err := u.service.DictionaryInt(model.SettingMaxMails)
+	maxMails, ok, err := u.service.DictionaryInt(model.SettingMaxMails)
 	if err != nil {
 		return nil, err
 	}
-	if maxMails == 0 {
+	if !ok {
 		maxMails = model.SettingMaxMailsDefault
 	}
 	maxMailsEntry := widget.NewEntry()

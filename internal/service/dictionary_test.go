@@ -21,8 +21,9 @@ func TestDictionary(t *testing.T) {
 		err := s.DictionarySetString("alpha", "john")
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.DictionaryString("alpha")
+			v, ok, err := s.DictionaryString("alpha")
 			if assert.NoError(t, err) {
+				assert.True(t, ok)
 				assert.Equal(t, "john", v)
 			}
 		}
@@ -34,8 +35,9 @@ func TestDictionary(t *testing.T) {
 		err := s.DictionarySetInt("alpha", 42)
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.DictionaryInt("alpha")
+			v, ok, err := s.DictionaryInt("alpha")
 			if assert.NoError(t, err) {
+				assert.True(t, ok)
 				assert.Equal(t, 42, v)
 			}
 		}
@@ -48,8 +50,9 @@ func TestDictionary(t *testing.T) {
 		err := s.DictionarySetTime("alpha", v)
 		// then
 		if assert.NoError(t, err) {
-			v2, err := s.DictionaryTime("alpha")
+			v2, ok, err := s.DictionaryTime("alpha")
 			if assert.NoError(t, err) {
+				assert.True(t, ok)
 				assert.Equal(t, v.UnixMicro(), v2.UnixMicro())
 			}
 		}
@@ -65,40 +68,40 @@ func TestDictionary(t *testing.T) {
 		err = s.DictionarySetString("alpha", "peter")
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.DictionaryString("alpha")
+			v, _, err := s.DictionaryString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "peter", v)
 			}
 		}
 	})
-	t.Run("should return empty string if not found", func(t *testing.T) {
+	t.Run("should return nok when not found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		v, err := s.DictionaryString("alpha")
+		_, ok, err := s.DictionaryString("alpha")
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, "", v)
+			assert.False(t, ok)
 		}
 	})
-	t.Run("should return 0 if not found", func(t *testing.T) {
+	t.Run("should return nok when not found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		v, err := s.DictionaryInt("alpha")
+		_, ok, err := s.DictionaryInt("alpha")
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, 0, v)
+			assert.False(t, ok)
 		}
 	})
-	t.Run("should return zero time if not found", func(t *testing.T) {
+	t.Run("should return nok when not found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		v, err := s.DictionaryTime("alpha")
+		_, ok, err := s.DictionaryTime("alpha")
 		// then
 		if assert.NoError(t, err) {
-			assert.True(t, v.IsZero())
+			assert.False(t, ok)
 		}
 	})
 	t.Run("can delete existing key", func(t *testing.T) {
@@ -112,7 +115,7 @@ func TestDictionary(t *testing.T) {
 		err = s.DictionaryDelete("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.DictionaryString("alpha")
+			v, _, err := s.DictionaryString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}
@@ -125,7 +128,7 @@ func TestDictionary(t *testing.T) {
 		err := s.DictionaryDelete("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, err := s.DictionaryString("alpha")
+			v, _, err := s.DictionaryString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}

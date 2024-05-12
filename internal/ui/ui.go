@@ -89,13 +89,13 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	w.SetMaster()
 
 	keyW := "window-width"
-	width, err := u.service.DictionaryFloat32(keyW)
-	if err != nil || width == 0 {
+	width, ok, err := u.service.DictionaryFloat32(keyW)
+	if err != nil || !ok {
 		width = 1000
 	}
 	keyH := "window-height"
-	height, err := u.service.DictionaryFloat32(keyH)
-	if err != nil || height == 0 {
+	height, ok, err := u.service.DictionaryFloat32(keyH)
+	if err != nil || !ok {
 		width = 600
 	}
 	w.Resize(fyne.NewSize(width, height))
@@ -106,11 +106,11 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	})
 
 	var c *model.MyCharacter
-	cID, err := service.DictionaryInt(model.SettingLastCharacterID)
+	cID, ok, err := service.DictionaryInt(model.SettingLastCharacterID)
 	if err != nil {
 		panic(err)
 	}
-	if cID != 0 {
+	if ok {
 		c, err = service.GetMyCharacter(int32(cID))
 		if err != nil {
 			if !errors.Is(err, storage.ErrNotFound) {
@@ -196,8 +196,8 @@ func (u *ui) StartUpdateTickerEveCharacters() {
 	go func() {
 		for {
 			func() {
-				lastUpdated, err := u.service.DictionaryTime(key)
-				if err != nil {
+				lastUpdated, ok, err := u.service.DictionaryTime(key)
+				if err != nil || !ok {
 					return
 				}
 				if time.Now().Before(lastUpdated.Add(3600 * time.Second)) {

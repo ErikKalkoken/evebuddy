@@ -31,58 +31,68 @@ func (s *Service) DictionaryExists(key string) (bool, error) {
 
 // DictionaryInt returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Service) DictionaryInt(key string) (int, error) {
+func (s *Service) DictionaryInt(key string) (int, bool, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return 0, nil
+			return 0, false, nil
 		}
-		return 0, err
+		return 0, false, err
 	}
 	return anyFromBytes[int](data)
 }
 
 // DictionaryFloat32 returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Service) DictionaryFloat32(key string) (float32, error) {
+func (s *Service) DictionaryFloat32(key string) (float32, bool, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return 0, nil
+			return 0, false, nil
 		}
-		return 0, err
+		return 0, false, err
 	}
 	return anyFromBytes[float32](data)
 }
 
 // DictionaryString returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Service) DictionaryString(key string) (string, error) {
+func (s *Service) DictionaryString(key string) (string, bool, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", nil
+			return "", false, nil
 		}
-		return "", err
+		return "", false, err
 	}
 	return anyFromBytes[string](data)
 }
 
 // DictionaryTime returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Service) DictionaryTime(key string) (time.Time, error) {
+func (s *Service) DictionaryTime(key string) (time.Time, bool, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return time.Time{}, nil
+			return time.Time{}, false, nil
 		}
-		return time.Time{}, err
+		return time.Time{}, false, err
 	}
 	return anyFromBytes[time.Time](data)
+}
+
+func anyFromBytes[T any](bb []byte) (T, bool, error) {
+	var t T
+	buf := bytes.NewBuffer(bb)
+	dec := gob.NewDecoder(buf)
+	if err := dec.Decode(&t); err != nil {
+		return t, false, err
+	}
+	return t, true, nil
 }
 
 // DictionarySetInt sets the value for a dictionary int entry.
@@ -135,16 +145,6 @@ func (s *Service) DictionarySetTime(key string, value time.Time) error {
 		return err
 	}
 	return nil
-}
-
-func anyFromBytes[T any](bb []byte) (T, error) {
-	var t T
-	buf := bytes.NewBuffer(bb)
-	dec := gob.NewDecoder(buf)
-	if err := dec.Decode(&t); err != nil {
-		return t, err
-	}
-	return t, nil
 }
 
 func bytesFromAny[T any](value T) ([]byte, error) {
