@@ -66,7 +66,7 @@ func (a *toolbarArea) Refresh() {
 	}
 	menuItems := make([]*fyne.MenuItem, 0)
 	for _, myC := range cc {
-		if myC.ID == c.ID {
+		if c != nil && myC.ID == c.ID {
 			continue
 		}
 		i := fyne.NewMenuItem(myC.Name, func() {

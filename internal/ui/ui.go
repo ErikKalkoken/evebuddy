@@ -131,7 +131,29 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 		index := u.tabs.SelectedIndex()
 		u.service.DictionarySetInt(keyTabID, index)
 	})
+
+	name, ok, err := u.service.DictionaryString(model.SettingTheme)
+	if err != nil || !ok {
+		name = model.ThemeAuto
+	}
+	u.SetTheme(name)
 	return u
+}
+
+func (u *ui) SetTheme(name string) {
+	switch name {
+	case model.ThemeAuto:
+		switch u.app.Settings().ThemeVariant() {
+		case 0:
+			u.app.Settings().SetTheme(theme.DarkTheme())
+		default:
+			u.app.Settings().SetTheme(theme.LightTheme())
+		}
+	case model.ThemeLight:
+		u.app.Settings().SetTheme(theme.LightTheme())
+	case model.ThemeDark:
+		u.app.Settings().SetTheme(theme.DarkTheme())
+	}
 }
 
 // ShowAndRun shows the UI and runs it (blocking).

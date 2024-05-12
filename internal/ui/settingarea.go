@@ -56,6 +56,14 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 		d.Show()
 	})
 
+	themeRadio := widget.NewRadioGroup(
+		[]string{model.ThemeAuto, model.ThemeDark, model.ThemeLight}, func(s string) {},
+	)
+	name, ok, err := u.service.DictionaryString(model.SettingTheme)
+	if err == nil && ok {
+		themeRadio.SetSelected(name)
+	}
+
 	var d *dialog.CustomDialog
 	form := &widget.Form{
 		Items: []*widget.FormItem{
@@ -65,6 +73,10 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 				HintText: "Maximum number of mails downloaded from the server",
 			},
 			{
+				Text:     "Theme",
+				Widget:   themeRadio,
+				HintText: "Chose the preferred theme",
+			}, {
 				Text:     "Image cache",
 				Widget:   clearBtn,
 				HintText: "Clear the local image cache",
@@ -76,6 +88,8 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 				return
 			}
 			u.service.DictionarySetInt(model.SettingMaxMails, maxMails)
+			u.SetTheme(themeRadio.Selected)
+			u.service.DictionarySetString(model.SettingTheme, themeRadio.Selected)
 			d.Hide()
 		},
 		OnCancel: func() {
