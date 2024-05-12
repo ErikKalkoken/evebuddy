@@ -24,45 +24,41 @@ import (
 type accountArea struct {
 	content *fyne.Container
 	dialog  *dialog.CustomDialog
+	list    *fyne.Container
 	ui      *ui
 }
 
 func (u *ui) ShowAccountDialog() {
-	m := u.NewAccountArea()
-	m.Redraw()
-	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-		m.showAddCharacterDialog()
-	})
-	button.Importance = widget.HighImportance
-	c := container.NewScroll(m.content)
-	c.SetMinSize(fyne.NewSize(500, 400))
-	content := container.NewBorder(button, nil, nil, nil, c)
-	dialog := dialog.NewCustom("Manage Characters", "Close", content, u.window)
-	m.dialog = dialog
-	dialog.SetOnClosed(func() {
-		u.characterArea.Redraw()
-	})
+	a := u.NewAccountArea()
+	dialog := dialog.NewCustom("Manage Characters", "Close", a.content, u.window)
+	a.dialog = dialog
 	dialog.Show()
+	dialog.Resize(fyne.Size{Width: 500, Height: 400})
+	a.Redraw()
 }
 
 // TODO; Replace with panel grid showing characters with details
 
 func (u *ui) NewAccountArea() *accountArea {
-	content := container.NewVBox()
-	m := &accountArea{
-		ui:      u,
-		content: content,
+	a := &accountArea{
+		list: container.NewVBox(),
+		ui:   u,
 	}
-	return m
+	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
+		a.showAddCharacterDialog()
+	})
+	button.Importance = widget.HighImportance
+	a.content = container.NewBorder(button, nil, nil, nil, container.NewScroll(a.list))
+	return a
 }
 
-func (m *accountArea) Redraw() {
-	chars, err := m.ui.service.ListMyCharactersShort()
+func (a *accountArea) Redraw() {
+	chars, err := a.ui.service.ListMyCharactersShort()
 	if err != nil {
 		panic(err)
 	}
-	go m.ui.overviewArea.Refresh()
-	m.content.RemoveAll()
+	go a.ui.overviewArea.Refresh()
+	a.list.RemoveAll()
 	for _, char := range chars {
 		uri, _ := images.CharacterPortraitURL(char.ID, defaultIconSize)
 		icon := canvas.NewImageFromURI(uri)
@@ -70,7 +66,7 @@ func (m *accountArea) Redraw() {
 		name := widget.NewLabel(char.Name)
 		row := container.NewHBox(icon, name)
 
-		hasToken, err := m.ui.service.HasTokenWithScopes(char.ID)
+		hasToken, err := a.ui.service.HasTokenWithScopes(char.ID)
 		if err != nil {
 			slog.Error("Can not check if character has token", "err", err)
 			continue
@@ -81,19 +77,19 @@ func (m *accountArea) Redraw() {
 		row.Add(layout.NewSpacer())
 
 		selectButton := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
-			c, err := m.ui.service.GetMyCharacter(char.ID)
+			c, err := a.ui.service.GetMyCharacter(char.ID)
 			if err != nil {
 				panic(err)
 			}
-			m.ui.SetCurrentCharacter(c)
-			m.dialog.Hide()
+			a.ui.SetCurrentCharacter(c)
+			a.dialog.Hide()
 		})
 		if !hasToken {
 			selectButton.Disable()
 		}
 		row.Add(selectButton)
 
-		isCurrentChar := char.ID == m.ui.CurrentCharID()
+		isCurrentChar := char.ID == a.ui.CurrentCharID()
 		if isCurrentChar {
 			selectButton.Disable()
 		}
@@ -103,40 +99,40 @@ func (m *accountArea) Redraw() {
 				fmt.Sprintf("Are you sure you want to delete %s?", char.Name),
 				func(confirmed bool) {
 					if confirmed {
-						err := m.ui.service.DeleteMyCharacter(char.ID)
+						err := a.ui.service.DeleteMyCharacter(char.ID)
 						if err != nil {
-							d := dialog.NewError(err, m.ui.window)
+							d := dialog.NewError(err, a.ui.window)
 							d.Show()
 						}
-						m.Redraw()
+						a.Redraw()
 						if isCurrentChar {
-							c, err := m.ui.service.GetAnyMyCharacter()
+							c, err := a.ui.service.GetAnyMyCharacter()
 							if err != nil {
 								if errors.Is(err, storage.ErrNotFound) {
-									m.ui.ResetCurrentCharacter()
+									a.ui.ResetCurrentCharacter()
 								} else {
 									panic(err)
 								}
 							} else {
-								m.ui.SetCurrentCharacter(c)
+								a.ui.SetCurrentCharacter(c)
 							}
 						}
 					}
 				},
-				m.ui.window,
+				a.ui.window,
 			)
 			dialog.Show()
 		})
 		deleteButton.Importance = widget.DangerImportance
 		row.Add(deleteButton)
 
-		m.content.Add(row)
-		m.content.Add(widget.NewSeparator())
+		a.list.Add(row)
+		a.list.Add(widget.NewSeparator())
 	}
-	m.content.Refresh()
+	a.list.Refresh()
 }
 
-func (m *accountArea) showAddCharacterDialog() {
+func (a *accountArea) showAddCharacterDialog() {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := "Please follow instructions in your browser to add a new character."
 	infoText := binding.BindString(&s)
@@ -145,23 +141,23 @@ func (m *accountArea) showAddCharacterDialog() {
 		"Add Character",
 		"Cancel",
 		content,
-		m.ui.window,
+		a.ui.window,
 	)
 	d1.SetOnClosed(cancel)
 	go func() {
-		err := m.ui.service.UpdateOrCreateMyCharacterFromSSO(ctx, infoText)
+		err := a.ui.service.UpdateOrCreateMyCharacterFromSSO(ctx, infoText)
 		if err != nil {
 			if !errors.Is(err, service.ErrAborted) {
 				slog.Error("Failed to add a new character", "error", err)
 				d2 := dialog.NewInformation(
 					"Error",
 					fmt.Sprintf("An error occurred when trying to add a new character:\n%s", err),
-					m.ui.window,
+					a.ui.window,
 				)
 				d2.Show()
 			}
 		} else {
-			m.Redraw()
+			a.Redraw()
 		}
 		d1.Hide()
 	}()
