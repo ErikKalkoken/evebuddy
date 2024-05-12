@@ -192,12 +192,13 @@ func (u *ui) updateToolbarBadge(c *model.MyCharacter) {
 	}
 	uri, _ := c.PortraitURL(32)
 	image := canvas.NewImageFromURI(uri)
-	image.FillMode = canvas.ImageFillOriginal
+	icon := widget.NewIcon(theme.AccountIcon())
+	icon.SetResource(image.Resource)
 	s := fmt.Sprintf("%s (%s)", c.Character.Name, c.Character.Corporation.Name)
 	name := widget.NewLabel(s)
 	name.TextStyle = fyne.TextStyle{Bold: true}
 	u.toolbarBadge.RemoveAll()
-	u.toolbarBadge.Add(container.NewPadded(image))
+	u.toolbarBadge.Add(icon)
 	u.toolbarBadge.Add(name)
 	cc, err := u.service.ListMyCharactersShort()
 	if err != nil {

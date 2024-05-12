@@ -16,16 +16,18 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 // accountArea is the UI area for managing of characters.
 type accountArea struct {
-	content *fyne.Container
-	dialog  *dialog.CustomDialog
-	list    *fyne.Container
-	ui      *ui
+	characters []*model.MyCharacterShort
+	content    *fyne.Container
+	dialog     *dialog.CustomDialog
+	list       *widget.List
+	ui         *ui
 }
 
 func (u *ui) ShowAccountDialog() {
@@ -34,16 +36,82 @@ func (u *ui) ShowAccountDialog() {
 	a.dialog = dialog
 	dialog.Show()
 	dialog.Resize(fyne.Size{Width: 500, Height: 400})
-	a.Redraw()
+	a.Refresh()
 }
 
 // TODO; Replace with panel grid showing characters with details
 
 func (u *ui) NewAccountArea() *accountArea {
 	a := &accountArea{
-		list: container.NewVBox(),
-		ui:   u,
+		characters: make([]*model.MyCharacterShort, 0),
+		ui:         u,
 	}
+
+	a.list = widget.NewList(
+		func() int {
+			return len(a.characters)
+		},
+		func() fyne.CanvasObject {
+			icon := widget.NewIcon(theme.AccountIcon())
+			name := widget.NewLabel("Template")
+			b := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {})
+			b.Importance = widget.DangerImportance
+			row := container.NewHBox(icon, name, layout.NewSpacer(), b)
+			return row
+
+			// hasToken, err := a.ui.service.HasTokenWithScopes(char.ID)
+			// if err != nil {
+			// 	slog.Error("Can not check if character has token", "err", err)
+			// 	continue
+			// }
+			// if !hasToken {
+			// 	row.Add(widget.NewIcon(theme.WarningIcon()))
+			// }
+
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			c := a.characters[id]
+			row := co.(*fyne.Container)
+			go func() {
+				uri, _ := images.CharacterPortraitURL(c.ID, defaultIconSize)
+				newIcon := canvas.NewImageFromURI(uri)
+				icon := row.Objects[0].(*widget.Icon)
+				icon.SetResource(newIcon.Resource)
+			}()
+			row.Objects[1].(*widget.Label).SetText(c.Name)
+			row.Objects[3].(*widget.Button).OnTapped = func() {
+				d1 := dialog.NewConfirm(
+					"Delete Character",
+					fmt.Sprintf("Are you sure you want to delete %s?", c.Name),
+					func(confirmed bool) {
+						if confirmed {
+							err := a.ui.service.DeleteMyCharacter(c.ID)
+							if err != nil {
+								d2 := dialog.NewError(err, a.ui.window)
+								d2.Show()
+							}
+							a.Refresh()
+							isCurrentChar := c.ID == a.ui.CurrentCharID()
+							if isCurrentChar {
+								c, err := a.ui.service.GetAnyMyCharacter()
+								if err != nil {
+									if errors.Is(err, storage.ErrNotFound) {
+										a.ui.ResetCurrentCharacter()
+									} else {
+										panic(err)
+									}
+								} else {
+									a.ui.SetCurrentCharacter(c)
+								}
+							}
+						}
+					},
+					a.ui.window,
+				)
+				d1.Show()
+			}
+		})
+
 	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.showAddCharacterDialog()
 	})
@@ -52,82 +120,12 @@ func (u *ui) NewAccountArea() *accountArea {
 	return a
 }
 
-func (a *accountArea) Redraw() {
-	chars, err := a.ui.service.ListMyCharactersShort()
+func (a *accountArea) Refresh() {
+	a.characters = a.characters[0:0]
+	var err error
+	a.characters, err = a.ui.service.ListMyCharactersShort()
 	if err != nil {
 		panic(err)
-	}
-	go a.ui.overviewArea.Refresh()
-	a.list.RemoveAll()
-	for _, char := range chars {
-		uri, _ := images.CharacterPortraitURL(char.ID, defaultIconSize)
-		icon := canvas.NewImageFromURI(uri)
-		icon.FillMode = canvas.ImageFillOriginal
-		name := widget.NewLabel(char.Name)
-		row := container.NewHBox(icon, name)
-
-		hasToken, err := a.ui.service.HasTokenWithScopes(char.ID)
-		if err != nil {
-			slog.Error("Can not check if character has token", "err", err)
-			continue
-		}
-		if !hasToken {
-			row.Add(widget.NewIcon(theme.WarningIcon()))
-		}
-		row.Add(layout.NewSpacer())
-
-		selectButton := widget.NewButtonWithIcon("Select", theme.ConfirmIcon(), func() {
-			c, err := a.ui.service.GetMyCharacter(char.ID)
-			if err != nil {
-				panic(err)
-			}
-			a.ui.SetCurrentCharacter(c)
-			a.dialog.Hide()
-		})
-		if !hasToken {
-			selectButton.Disable()
-		}
-		row.Add(selectButton)
-
-		isCurrentChar := char.ID == a.ui.CurrentCharID()
-		if isCurrentChar {
-			selectButton.Disable()
-		}
-		deleteButton := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {
-			dialog := dialog.NewConfirm(
-				"Delete Character",
-				fmt.Sprintf("Are you sure you want to delete %s?", char.Name),
-				func(confirmed bool) {
-					if confirmed {
-						err := a.ui.service.DeleteMyCharacter(char.ID)
-						if err != nil {
-							d := dialog.NewError(err, a.ui.window)
-							d.Show()
-						}
-						a.Redraw()
-						if isCurrentChar {
-							c, err := a.ui.service.GetAnyMyCharacter()
-							if err != nil {
-								if errors.Is(err, storage.ErrNotFound) {
-									a.ui.ResetCurrentCharacter()
-								} else {
-									panic(err)
-								}
-							} else {
-								a.ui.SetCurrentCharacter(c)
-							}
-						}
-					}
-				},
-				a.ui.window,
-			)
-			dialog.Show()
-		})
-		deleteButton.Importance = widget.DangerImportance
-		row.Add(deleteButton)
-
-		a.list.Add(row)
-		a.list.Add(widget.NewSeparator())
 	}
 	a.list.Refresh()
 }
@@ -157,7 +155,7 @@ func (a *accountArea) showAddCharacterDialog() {
 				d2.Show()
 			}
 		} else {
-			a.Redraw()
+			a.Refresh()
 		}
 		d1.Hide()
 	}()

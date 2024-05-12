@@ -54,7 +54,7 @@
     ],
     "go.formatFlags": [
         "-local",
-        "example/",
+        "github.com/ErikKalkoken/evebuddy",
     ],
     "go.coverOnSingleTestFile": true,
 }
