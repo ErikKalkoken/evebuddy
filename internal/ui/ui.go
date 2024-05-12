@@ -87,8 +87,23 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	mainContent := container.NewBorder(u.toolbarArea.content, u.statusArea.content, nil, nil, tabs)
 	w.SetContent(mainContent)
 	w.SetMaster()
-	w.Resize(fyne.NewSize(1000, 600))
-	// w.SetFullScreen(true)
+
+	keyW := "window-width"
+	width, err := u.service.DictionaryFloat32(keyW)
+	if err != nil || width == 0 {
+		width = 1000
+	}
+	keyH := "window-height"
+	height, err := u.service.DictionaryFloat32(keyH)
+	if err != nil || height == 0 {
+		width = 600
+	}
+	w.Resize(fyne.NewSize(width, height))
+	w.SetOnClosed(func() {
+		s := w.Canvas().Size()
+		u.service.DictionarySetFloat32(keyW, s.Width)
+		u.service.DictionarySetFloat32(keyH, s.Height)
+	})
 
 	var c *model.MyCharacter
 	cID, err := service.DictionaryInt(model.SettingLastCharacterID)

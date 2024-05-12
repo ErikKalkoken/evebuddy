@@ -29,7 +29,7 @@ func (s *Service) DictionaryExists(key string) (bool, error) {
 	return true, nil
 }
 
-// DictionaryInt returns the int value for a dictionary key, when it exists.
+// DictionaryInt returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
 func (s *Service) DictionaryInt(key string) (int, error) {
 	ctx := context.Background()
@@ -41,6 +41,20 @@ func (s *Service) DictionaryInt(key string) (int, error) {
 		return 0, err
 	}
 	return anyFromBytes[int](data)
+}
+
+// DictionaryFloat32 returns the value for a dictionary key, when it exists.
+// Otherwise it returns it's zero value.
+func (s *Service) DictionaryFloat32(key string) (float32, error) {
+	ctx := context.Background()
+	data, err := s.r.GetDictEntry(ctx, key)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return anyFromBytes[float32](data)
 }
 
 // DictionaryString returns the value for a dictionary key, when it exists.
@@ -57,7 +71,7 @@ func (s *Service) DictionaryString(key string) (string, error) {
 	return anyFromBytes[string](data)
 }
 
-// DictionaryTime returns the time value for a dictionary key, when it exists.
+// DictionaryTime returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
 func (s *Service) DictionaryTime(key string) (time.Time, error) {
 	ctx := context.Background()
@@ -73,6 +87,19 @@ func (s *Service) DictionaryTime(key string) (time.Time, error) {
 
 // DictionarySetInt sets the value for a dictionary int entry.
 func (s *Service) DictionarySetInt(key string, value int) error {
+	ctx := context.Background()
+	bb, err := bytesFromAny(value)
+	if err != nil {
+		return err
+	}
+	if err := s.r.SetDictEntry(ctx, key, bb); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DictionarySetFloat32 sets the value for a dictionary int entry.
+func (s *Service) DictionarySetFloat32(key string, value float32) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
 	if err != nil {
