@@ -42,6 +42,7 @@ type ui struct {
 	skillqueueArea        *skillqueueArea
 	walletTransactionArea *walletTransactionArea
 	toolbarArea           *toolbarArea
+	tabs                  *container.AppTabs
 	window                fyne.Window
 	imageManager          *images.Manager
 }
@@ -81,29 +82,12 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	u.statusArea = u.newStatusArea()
 	u.toolbarArea = u.newToolbarArea()
 
-	tabs := container.NewAppTabs(characterTab, mailTab, skillqueueTab, walletTab, overviewTab)
-	tabs.SetTabLocation(container.TabLocationLeading)
+	u.tabs = container.NewAppTabs(characterTab, mailTab, skillqueueTab, walletTab, overviewTab)
+	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	mainContent := container.NewBorder(u.toolbarArea.content, u.statusArea.content, nil, nil, tabs)
+	mainContent := container.NewBorder(u.toolbarArea.content, u.statusArea.content, nil, nil, u.tabs)
 	w.SetContent(mainContent)
 	w.SetMaster()
-
-	keyW := "window-width"
-	width, ok, err := u.service.DictionaryFloat32(keyW)
-	if err != nil || !ok {
-		width = 1000
-	}
-	keyH := "window-height"
-	height, ok, err := u.service.DictionaryFloat32(keyH)
-	if err != nil || !ok {
-		width = 600
-	}
-	w.Resize(fyne.NewSize(width, height))
-	w.SetOnClosed(func() {
-		s := w.Canvas().Size()
-		u.service.DictionarySetFloat32(keyW, s.Width)
-		u.service.DictionarySetFloat32(keyH, s.Height)
-	})
 
 	var c *model.MyCharacter
 	cID, ok, err := service.DictionaryInt(model.SettingLastCharacterID)
@@ -123,6 +107,30 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	} else {
 		u.ResetCurrentCharacter()
 	}
+	keyW := "window-width"
+	width, ok, err := u.service.DictionaryFloat32(keyW)
+	if err != nil || !ok {
+		width = 1000
+	}
+	keyH := "window-height"
+	height, ok, err := u.service.DictionaryFloat32(keyH)
+	if err != nil || !ok {
+		width = 600
+	}
+	w.Resize(fyne.NewSize(width, height))
+
+	keyTabID := "tab-ID"
+	index, ok, err := u.service.DictionaryInt(keyTabID)
+	if err == nil && ok {
+		u.tabs.SelectIndex(index)
+	}
+	w.SetOnClosed(func() {
+		s := w.Canvas().Size()
+		u.service.DictionarySetFloat32(keyW, s.Width)
+		u.service.DictionarySetFloat32(keyH, s.Height)
+		index := u.tabs.SelectedIndex()
+		u.service.DictionarySetInt(keyTabID, index)
+	})
 	return u
 }
 
