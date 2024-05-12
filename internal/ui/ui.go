@@ -19,6 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 // UI constants
@@ -65,16 +66,20 @@ func NewUI(service *service.Service) *ui {
 
 	u.characterArea = u.NewCharacterArea()
 	characterContent := container.NewBorder(nil, nil, nil, nil, u.characterArea.content)
-	characterTab := container.NewTabItemWithIcon("Character Sheet", theme.NewThemedResource(resourcePortraitSvg), characterContent)
+	characterTab := container.NewTabItemWithIcon("Character Sheet",
+		theme.NewThemedResource(resourcePortraitSvg), characterContent)
 
 	u.overviewArea = u.NewOverviewArea()
-	overviewTab := container.NewTabItemWithIcon("Characters", theme.NewThemedResource(resourceGroupSvg), u.overviewArea.content)
+	overviewTab := container.NewTabItemWithIcon("Characters",
+		theme.NewThemedResource(resourceGroupSvg), u.overviewArea.content)
 
 	u.skillqueueArea = u.NewSkillqueueArea()
-	skillqueueTab := container.NewTabItemWithIcon("Skill Queue", theme.NewThemedResource(resourceChecklistrtlSvg), u.skillqueueArea.content)
+	skillqueueTab := container.NewTabItemWithIcon("Skill Queue",
+		theme.NewThemedResource(resourceChecklistrtlSvg), u.skillqueueArea.content)
 
 	u.walletTransactionArea = u.NewWalletTransactionArea()
-	walletTab := container.NewTabItemWithIcon("Wallet", theme.NewThemedResource(resourceAttachmoneySvg), u.walletTransactionArea.content)
+	walletTab := container.NewTabItemWithIcon("Wallet",
+		theme.NewThemedResource(resourceAttachmoneySvg), u.walletTransactionArea.content)
 
 	u.statusArea = u.newStatusArea()
 
@@ -84,7 +89,7 @@ func NewUI(service *service.Service) *ui {
 	mainContent := container.NewBorder(makeToolbar(u), u.statusArea.content, nil, nil, tabs)
 	w.SetContent(mainContent)
 	w.SetMaster()
-	w.Resize(fyne.NewSize(1000, 800))
+	w.Resize(fyne.NewSize(1000, 600))
 	// w.SetFullScreen(true)
 
 	var c *model.MyCharacter
@@ -100,7 +105,7 @@ func NewUI(service *service.Service) *ui {
 			}
 		}
 	}
-	if c.ID != 0 {
+	if c != nil {
 		u.SetCurrentCharacter(c)
 	} else {
 		u.ResetCurrentCharacter()
@@ -166,11 +171,15 @@ func (u *ui) SetCurrentCharacter(c *model.MyCharacter) {
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
+	u.RefreshCurrentCharacter()
+}
+
+func (u *ui) RefreshCurrentCharacter() {
 	u.characterArea.Redraw()
 	u.folderArea.Refresh()
 	u.skillqueueArea.Refresh()
 	u.walletTransactionArea.Refresh()
-	u.overviewArea.Refresh()
+	u.window.Content().Refresh()
 }
 
 func (u *ui) updateToolbarBadge(c *model.MyCharacter) {
@@ -184,11 +193,34 @@ func (u *ui) updateToolbarBadge(c *model.MyCharacter) {
 	uri, _ := c.PortraitURL(32)
 	image := canvas.NewImageFromURI(uri)
 	image.FillMode = canvas.ImageFillOriginal
-	name := widget.NewLabel(fmt.Sprintf("%s (%s)", c.Character.Name, c.Character.Corporation.Name))
+	s := fmt.Sprintf("%s (%s)", c.Character.Name, c.Character.Corporation.Name)
+	name := widget.NewLabel(s)
 	name.TextStyle = fyne.TextStyle{Bold: true}
 	u.toolbarBadge.RemoveAll()
 	u.toolbarBadge.Add(container.NewPadded(image))
 	u.toolbarBadge.Add(name)
+	cc, err := u.service.ListMyCharactersShort()
+	if err != nil {
+		panic(err)
+	}
+	menuItems := make([]*fyne.MenuItem, 0)
+	for _, myC := range cc {
+		if myC.ID == c.ID {
+			continue
+		}
+		item := fyne.NewMenuItem(myC.Name, func() {
+			newChar, err := u.service.GetMyCharacter(myC.ID)
+			if err != nil {
+				panic(err)
+			}
+			u.SetCurrentCharacter(newChar)
+		})
+		menuItems = append(menuItems, item)
+	}
+	menu := fyne.NewMenu("", menuItems...)
+	b := widgets.NewContextMenuButtonWithIcon(
+		theme.NewThemedResource(resourceSwitchaccountSvg), "", menu)
+	u.toolbarBadge.Add(b)
 }
 
 func (u *ui) ResetCurrentCharacter() {
@@ -198,8 +230,7 @@ func (u *ui) ResetCurrentCharacter() {
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}
-	u.characterArea.Redraw()
-	u.folderArea.Refresh()
+	u.RefreshCurrentCharacter()
 }
 
 func (u *ui) StartUpdateTickerEveCharacters() {

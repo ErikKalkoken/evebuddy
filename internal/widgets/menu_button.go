@@ -11,14 +11,15 @@ type ContextMenuButton struct {
 	menu *fyne.Menu
 }
 
-func (b *ContextMenuButton) Tapped(e *fyne.PointEvent) {
-	widget.ShowPopUpMenuAtPosition(b.menu, fyne.CurrentApp().Driver().CanvasForObject(b), e.AbsolutePosition)
-}
-
-func NewContextMenuButton(label string, menu *fyne.Menu) *ContextMenuButton {
+func NewContextMenuButtonWithIcon(icon fyne.Resource, label string, menu *fyne.Menu) *ContextMenuButton {
 	b := &ContextMenuButton{menu: menu}
 	b.Text = label
+	b.Icon = icon
 
 	b.ExtendBaseWidget(b)
 	return b
+}
+
+func (b *ContextMenuButton) Tapped(e *fyne.PointEvent) {
+	widget.ShowPopUpMenuAtPosition(b.menu, fyne.CurrentApp().Driver().CanvasForObject(b), e.AbsolutePosition)
 }
