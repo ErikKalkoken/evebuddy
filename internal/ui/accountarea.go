@@ -104,6 +104,7 @@ func (u *ui) NewAccountArea() *accountArea {
 									a.ui.SetCurrentCharacter(c)
 								}
 							}
+							u.RefreshOverview()
 						}
 					},
 					a.ui.window,
@@ -156,6 +157,7 @@ func (a *accountArea) showAddCharacterDialog() {
 			}
 		} else {
 			a.Refresh()
+			a.ui.RefreshOverview()
 		}
 		d1.Hide()
 	}()

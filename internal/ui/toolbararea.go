@@ -1,0 +1,84 @@
+package ui
+
+import (
+	"fmt"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+)
+
+// toolbarArea is the UI area showing the current status aka status bar.
+type toolbarArea struct {
+	content      *fyne.Container
+	icon         *widget.Icon
+	name         *widget.Label
+	switchButton *widgets.ContextMenuButton
+	ui           *ui
+}
+
+func (u *ui) newToolbarArea() *toolbarArea {
+	a := &toolbarArea{ui: u}
+	a.icon = widget.NewIcon(theme.AccountIcon())
+	a.name = widget.NewLabel("")
+	a.switchButton = widgets.NewContextMenuButtonWithIcon(
+		theme.NewThemedResource(resourceSwitchaccountSvg), "", fyne.NewMenu(""))
+	c := container.NewHBox(
+		container.NewHBox(a.icon, a.name, a.switchButton),
+		layout.NewSpacer(),
+		widget.NewButtonWithIcon("", theme.InfoIcon(), func() {
+			u.ShowAboutDialog()
+		}),
+		widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
+			u.ShowSettingsDialog()
+		}),
+		widget.NewButtonWithIcon("", theme.NewThemedResource(resourceManageaccountsSvg), func() {
+			u.ShowAccountDialog()
+		}),
+	)
+	a.content = container.NewVBox(c, widget.NewSeparator())
+
+	return a
+}
+
+func (a *toolbarArea) Refresh() {
+	c := a.ui.CurrentChar()
+	if c == nil {
+		a.icon.SetResource(theme.AccountIcon())
+		a.name.Text = "No character"
+		a.name.TextStyle = fyne.TextStyle{Italic: true}
+	} else {
+		uri, _ := c.PortraitURL(32)
+		image := canvas.NewImageFromURI(uri)
+		a.icon.SetResource(image.Resource)
+		s := fmt.Sprintf("%s (%s)", c.Character.Name, c.Character.Corporation.Name)
+		a.name.Text = s
+		a.name.TextStyle = fyne.TextStyle{Bold: true}
+	}
+	a.name.Refresh()
+
+	cc, err := a.ui.service.ListMyCharactersShort()
+	if err != nil {
+		panic(err)
+	}
+	menuItems := make([]*fyne.MenuItem, 0)
+	for _, myC := range cc {
+		if myC.ID == c.ID {
+			continue
+		}
+		item := fyne.NewMenuItem(myC.Name, func() {
+			newChar, err := a.ui.service.GetMyCharacter(myC.ID)
+			if err != nil {
+				panic(err)
+			}
+			a.ui.SetCurrentCharacter(newChar)
+		})
+		menuItems = append(menuItems, item)
+	}
+	a.switchButton.SetMenuItems(menuItems)
+}

@@ -3,23 +3,18 @@ package ui
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"runtime"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 // UI constants
@@ -45,7 +40,7 @@ type ui struct {
 	service               *service.Service
 	skillqueueArea        *skillqueueArea
 	walletTransactionArea *walletTransactionArea
-	toolbarBadge          *fyne.Container
+	toolbarArea           *toolbarArea
 	window                fyne.Window
 }
 
@@ -82,11 +77,12 @@ func NewUI(service *service.Service) *ui {
 		theme.NewThemedResource(resourceAttachmoneySvg), u.walletTransactionArea.content)
 
 	u.statusArea = u.newStatusArea()
+	u.toolbarArea = u.newToolbarArea()
 
 	tabs := container.NewAppTabs(characterTab, mailTab, skillqueueTab, walletTab, overviewTab)
 	tabs.SetTabLocation(container.TabLocationLeading)
 
-	mainContent := container.NewBorder(makeToolbar(u), u.statusArea.content, nil, nil, tabs)
+	mainContent := container.NewBorder(u.toolbarArea.content, u.statusArea.content, nil, nil, tabs)
 	w.SetContent(mainContent)
 	w.SetMaster()
 	w.Resize(fyne.NewSize(1000, 600))
@@ -113,25 +109,6 @@ func NewUI(service *service.Service) *ui {
 	return u
 }
 
-func makeToolbar(u *ui) *fyne.Container {
-	badge := container.NewHBox()
-	u.toolbarBadge = badge
-	toolbar := container.NewHBox(
-		badge,
-		layout.NewSpacer(),
-		widget.NewButtonWithIcon("", theme.InfoIcon(), func() {
-			u.ShowAboutDialog()
-		}),
-		widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
-			u.ShowSettingsDialog()
-		}),
-		widget.NewButtonWithIcon("", theme.NewThemedResource(resourceManageaccountsSvg), func() {
-			u.ShowAccountDialog()
-		}),
-	)
-	return container.NewVBox(toolbar, widget.NewSeparator())
-}
-
 // ShowAndRun shows the UI and runs it (blocking).
 func (u *ui) ShowAndRun() {
 	go func() {
@@ -150,6 +127,7 @@ func (u *ui) ShowAndRun() {
 		u.walletTransactionArea.StartUpdateTicker()
 		u.StartUpdateTickerEveCharacters()
 	}()
+	u.RefreshOverview()
 	u.window.ShowAndRun()
 }
 
@@ -166,7 +144,6 @@ func (u *ui) CurrentChar() *model.MyCharacter {
 
 func (u *ui) SetCurrentCharacter(c *model.MyCharacter) {
 	u.currentCharacter = c
-	u.updateToolbarBadge(c)
 	err := u.service.DictionarySetInt(model.SettingLastCharacterID, int(c.ID))
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
@@ -175,6 +152,7 @@ func (u *ui) SetCurrentCharacter(c *model.MyCharacter) {
 }
 
 func (u *ui) RefreshCurrentCharacter() {
+	u.toolbarArea.Refresh()
 	u.characterArea.Redraw()
 	u.folderArea.Refresh()
 	u.skillqueueArea.Refresh()
@@ -182,51 +160,12 @@ func (u *ui) RefreshCurrentCharacter() {
 	u.window.Content().Refresh()
 }
 
-func (u *ui) updateToolbarBadge(c *model.MyCharacter) {
-	if c == nil {
-		u.toolbarBadge.RemoveAll()
-		l := widget.NewLabel("No character")
-		l.TextStyle = fyne.TextStyle{Italic: true}
-		u.toolbarBadge.Add(l)
-		return
-	}
-	uri, _ := c.PortraitURL(32)
-	image := canvas.NewImageFromURI(uri)
-	icon := widget.NewIcon(theme.AccountIcon())
-	icon.SetResource(image.Resource)
-	s := fmt.Sprintf("%s (%s)", c.Character.Name, c.Character.Corporation.Name)
-	name := widget.NewLabel(s)
-	name.TextStyle = fyne.TextStyle{Bold: true}
-	u.toolbarBadge.RemoveAll()
-	u.toolbarBadge.Add(icon)
-	u.toolbarBadge.Add(name)
-	cc, err := u.service.ListMyCharactersShort()
-	if err != nil {
-		panic(err)
-	}
-	menuItems := make([]*fyne.MenuItem, 0)
-	for _, myC := range cc {
-		if myC.ID == c.ID {
-			continue
-		}
-		item := fyne.NewMenuItem(myC.Name, func() {
-			newChar, err := u.service.GetMyCharacter(myC.ID)
-			if err != nil {
-				panic(err)
-			}
-			u.SetCurrentCharacter(newChar)
-		})
-		menuItems = append(menuItems, item)
-	}
-	menu := fyne.NewMenu("", menuItems...)
-	b := widgets.NewContextMenuButtonWithIcon(
-		theme.NewThemedResource(resourceSwitchaccountSvg), "", menu)
-	u.toolbarBadge.Add(b)
+func (u *ui) RefreshOverview() {
+	u.overviewArea.Refresh()
 }
 
 func (u *ui) ResetCurrentCharacter() {
 	u.currentCharacter = nil
-	u.updateToolbarBadge(nil)
 	err := u.service.DictionaryDelete(model.SettingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
