@@ -10,7 +10,7 @@ import (
 func (s *Service) FetchESIStatus() (string, error) {
 	status, resp, err := s.esiClient.ESI.StatusApi.GetStatus(context.Background(), nil)
 	if err != nil {
-		return "", err
+		return "?", err
 	}
 	isOffline := resp.StatusCode >= 500 || status.Players == 0
 	if isOffline {

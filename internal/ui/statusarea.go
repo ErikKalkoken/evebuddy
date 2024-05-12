@@ -12,22 +12,25 @@ import (
 
 // statusArea is the UI area showing the current status aka status bar.
 type statusArea struct {
-	content   *fyne.Container
-	Info      *statusInfo
-	eveStatus *widget.Label
-	ui        *ui
+	content          *fyne.Container
+	Info             *statusInfo
+	eveStatusTraffic *widget.Label
+	eveStatusText    *widget.Label
+	ui               *ui
 }
 
 func (u *ui) newStatusArea() *statusArea {
 	info := newStatusInfo()
-	statusLabel := widget.NewLabel("")
-	c := container.NewHBox(info.content, layout.NewSpacer(), statusLabel)
+	statusTraffic := widget.NewLabel("•")
+	statusText := widget.NewLabel("")
+	c := container.NewHBox(info.content, layout.NewSpacer(), container.NewHBox(statusTraffic, statusText))
 	content := container.NewVBox(widget.NewSeparator(), c)
 	b := statusArea{
-		content:   content,
-		Info:      info,
-		eveStatus: statusLabel,
-		ui:        u,
+		content:          content,
+		Info:             info,
+		eveStatusTraffic: statusTraffic,
+		eveStatusText:    statusText,
+		ui:               u,
 	}
 	return &b
 }
@@ -36,12 +39,21 @@ func (a *statusArea) StartUpdateTicker() {
 	ticker := time.NewTicker(60 * time.Second)
 	go func() {
 		for {
+			var i widget.Importance
 			t, err := a.ui.service.FetchESIStatus()
 			if err != nil {
 				slog.Error(err.Error())
+				i = widget.WarningImportance
 			} else {
-				a.eveStatus.SetText(t)
+				if t == "OFFLINE" {
+					i = widget.SuccessImportance
+				} else {
+					i = widget.SuccessImportance
+				}
 			}
+			a.eveStatusText.SetText(t)
+			a.eveStatusTraffic.Importance = i
+			a.eveStatusTraffic.Refresh()
 			<-ticker.C
 		}
 	}()
