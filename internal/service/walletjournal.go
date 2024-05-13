@@ -25,7 +25,10 @@ func (s *Service) UpdateWalletJournalEntryESI(characterID int32) (int, error) {
 		if err != nil {
 			return count, fmt.Errorf("failed to update wallet journal from ESI for character %d: %w", characterID, err)
 		}
-		return count, err
+		if err := s.SectionSetUpdated(characterID, UpdateSectionWalletJournal); err != nil {
+			slog.Warn("Failed to set updated for skillqueue", "err", err)
+		}
+		return count, nil
 	})
 	count := x.(int)
 	return count, err
@@ -42,7 +45,6 @@ func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID i
 		return 0, err
 	}
 	slog.Info("Received wallet journal from ESI", "entries", len(entries), "characterID", token.CharacterID)
-
 	ii, err := s.r.ListWalletJournalEntryIDs(ctx, characterID)
 	if err != nil {
 		return 0, err

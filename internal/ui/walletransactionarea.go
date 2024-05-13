@@ -108,14 +108,26 @@ func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
 func (a *walletTransactionArea) Refresh() {
 	a.updateEntries()
 	a.table.Refresh()
-	var s string
+	s, i := a.makeTopText()
+	a.total.Text = s
+	a.total.Importance = i
+	a.total.Refresh()
+}
+
+func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 	c := a.ui.CurrentChar()
-	if c != nil {
-		s = fmt.Sprintf("Balance: %s", ihumanize.Number(c.WalletBalance, 1))
-	} else {
-		s = "?"
+	if c == nil {
+		return "No data", widget.LowImportance
 	}
-	a.total.SetText(s)
+	hasData, err := a.ui.service.SectionWasUpdated(c.ID, service.UpdateSectionWalletJournal)
+	if err != nil {
+		return "ERROR", widget.DangerImportance
+	}
+	if !hasData {
+		return "No data", widget.LowImportance
+	}
+	s := fmt.Sprintf("Balance: %s", ihumanize.Number(c.WalletBalance, 1))
+	return s, widget.MediumImportance
 }
 
 func (a *walletTransactionArea) updateEntries() {
@@ -151,14 +163,12 @@ func (a *walletTransactionArea) StartUpdateTicker() {
 				if !isExpired {
 					return
 				}
-				count, err := a.ui.service.UpdateWalletJournalEntryESI(characterID)
+				_, err = a.ui.service.UpdateWalletJournalEntryESI(characterID)
 				if err != nil {
 					slog.Error(err.Error())
 					return
 				}
-				if count > 0 {
-					a.Refresh()
-				}
+				a.Refresh()
 			}()
 			<-ticker.C
 		}

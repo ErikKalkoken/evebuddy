@@ -75,7 +75,9 @@ func (s *Service) updateMail(ctx context.Context, characterID int32) (int, error
 	if err := s.r.DeleteObsoleteMailLists(ctx, characterID); err != nil {
 		return 0, err
 	}
-	s.SectionSetUpdated(characterID, UpdateSectionMail)
+	if err := s.SectionSetUpdated(characterID, UpdateSectionMail); err != nil {
+		slog.Warn("Failed to set updated for mail", "err", err)
+	}
 	unreadCount, err := s.r.GetMailUnreadCount(ctx, characterID)
 	if err != nil {
 		return 0, err

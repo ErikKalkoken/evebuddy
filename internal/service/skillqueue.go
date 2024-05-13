@@ -28,7 +28,10 @@ func (s *Service) UpdateSkillqueueESI(characterID int32) error {
 		if err != nil {
 			return x, fmt.Errorf("failed to update skillqueue from ESI for character %d: %w", characterID, err)
 		}
-		return x, err
+		if err := s.SectionSetUpdated(characterID, UpdateSectionSkillqueue); err != nil {
+			slog.Warn("Failed to set updated for skillqueue", "err", err)
+		}
+		return x, nil
 	})
 	return err
 }
@@ -39,11 +42,11 @@ func (s *Service) updateSkillqueue(ctx context.Context, characterID int32) (int,
 		return 0, err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
-	items, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkillqueue(ctx, token.CharacterID, nil)
+	items, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkillqueue(ctx, characterID, nil)
 	if err != nil {
 		return 0, err
 	}
-	slog.Info("Received skillqueue items from ESI", "count", len(items), "characterID", token.CharacterID)
+	slog.Info("Received skillqueue items from ESI", "count", len(items), "characterID", characterID)
 	args := make([]storage.SkillqueueItemParams, len(items))
 	for i, o := range items {
 		_, err := s.getOrCreateEveTypeESI(ctx, o.SkillId)
@@ -65,6 +68,6 @@ func (s *Service) updateSkillqueue(ctx context.Context, characterID int32) (int,
 	if err := s.r.ReplaceSkillqueueItems(ctx, characterID, args); err != nil {
 		return 0, err
 	}
-	slog.Info("Updated skillqueue items", "characterID", token.CharacterID, "count", len(args))
+	slog.Info("Updated skillqueue items", "characterID", characterID, "count", len(args))
 	return len(args), nil
 }

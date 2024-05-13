@@ -153,6 +153,13 @@ func (a *skillqueueArea) makeTopText() (string, widget.Importance) {
 	if a.errorText != "" {
 		return a.errorText, widget.DangerImportance
 	}
+	hasData, err := a.ui.service.SectionWasUpdated(a.ui.CurrentCharID(), service.UpdateSectionSkillqueue)
+	if err != nil {
+		return "ERROR", widget.DangerImportance
+	}
+	if !hasData {
+		return "No data", widget.LowImportance
+	}
 	if len(a.items) == 0 {
 		return "Training not active", widget.WarningImportance
 	}

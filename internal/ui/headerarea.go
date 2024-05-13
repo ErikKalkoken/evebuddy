@@ -9,11 +9,11 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -21,7 +21,7 @@ import (
 type headerArea struct {
 	content       fyne.CanvasObject
 	currentFolder node
-	infoText      binding.String
+	infoText      *widget.Label
 	list          *widget.List
 	lastSelected  widget.ListItemID
 	mailIDs       []int32
@@ -30,8 +30,9 @@ type headerArea struct {
 
 func (u *ui) NewHeaderArea() *headerArea {
 	a := headerArea{
-		mailIDs: make([]int32, 0),
-		ui:      u,
+		mailIDs:  make([]int32, 0),
+		ui:       u,
+		infoText: widget.NewLabel(""),
 	}
 
 	foregroundColor := theme.ForegroundColor()
@@ -92,9 +93,7 @@ func (u *ui) NewHeaderArea() *headerArea {
 		u.headerArea.lastSelected = id
 	}
 
-	a.infoText = binding.NewString()
-	label := widget.NewLabelWithData(a.infoText)
-	a.content = container.NewBorder(label, nil, nil, nil, list)
+	a.content = container.NewBorder(a.infoText, nil, nil, nil, list)
 	a.list = list
 	return &a
 }
@@ -125,13 +124,33 @@ func (a *headerArea) updateMails() {
 	case nodeCategoryList:
 		a.mailIDs, err = a.ui.service.ListMailIDsForListOrdered(folder.MyCharacterID, folder.ObjID)
 	}
+	var s string
+	var i widget.Importance
 	if err != nil {
 		slog.Error("Failed to fetch mail", "characterID", folder.MyCharacterID, "error", err)
+		s = "ERROR"
+		i = widget.DangerImportance
 	}
-	a.infoText.Set(fmt.Sprintf("%d mails", len(a.mailIDs)))
+	s, i = a.makeTopText()
+	a.infoText.Text = s
+	a.infoText.Importance = i
+	a.infoText.Refresh()
 
 	if len(a.mailIDs) == 0 {
 		a.ui.mailArea.Clear()
 		return
 	}
+}
+
+func (a *headerArea) makeTopText() (string, widget.Importance) {
+	hasData, err := a.ui.service.SectionWasUpdated(a.ui.CurrentCharID(), service.UpdateSectionSkillqueue)
+	if err != nil {
+		return "ERROR", widget.DangerImportance
+	}
+	if !hasData {
+		return "No data", widget.LowImportance
+	}
+	s := fmt.Sprintf("%d mails", len(a.mailIDs))
+	return s, widget.MediumImportance
+
 }
