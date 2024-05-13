@@ -12,7 +12,6 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 	"github.com/dustin/go-humanize"
 )
 
@@ -22,7 +21,7 @@ type overviewArea struct {
 	characters       []*model.MyCharacter
 	skillqueueCounts []types.NullDuration
 	unreadCounts     []int
-	table            *widgets.StaticTable
+	table            *widget.Table
 	total            *widget.Label
 	ui               *ui
 }
@@ -55,7 +54,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		{"Age", 100},
 	}
 
-	table := widgets.NewStaticTable(
+	table := widget.NewTable(
 		func() (rows int, cols int) {
 			return len(a.characters), len(headers)
 		},
@@ -118,6 +117,20 @@ func (u *ui) NewOverviewArea() *overviewArea {
 	table.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		s := headers[tci.Col]
 		co.(*widget.Label).SetText(s.text)
+	}
+	table.OnSelected = func(tci widget.TableCellID) {
+		myC := a.characters[tci.Row]
+		c, err := a.ui.service.GetMyCharacter(myC.ID)
+		if err != nil {
+			panic(err)
+		}
+		a.ui.SetCurrentCharacter(c)
+		if tci.Col == 6 {
+			a.ui.tabs.SelectIndex(1)
+		}
+		if tci.Col == 4 {
+			a.ui.tabs.SelectIndex(2)
+		}
 	}
 
 	for i, h := range headers {

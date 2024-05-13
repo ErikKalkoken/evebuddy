@@ -72,7 +72,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 		theme.NewThemedResource(resourceGroupSvg), u.overviewArea.content)
 
 	u.skillqueueArea = u.NewSkillqueueArea()
-	skillqueueTab := container.NewTabItemWithIcon("Skill Queue",
+	skillqueueTab := container.NewTabItemWithIcon("Training",
 		theme.NewThemedResource(resourceChecklistrtlSvg), u.skillqueueArea.content)
 
 	u.walletTransactionArea = u.NewWalletTransactionArea()

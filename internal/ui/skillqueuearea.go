@@ -57,15 +57,26 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 			}
 			q := a.items[id]
 			row := o.(*fyne.Container).Objects[1].(*fyne.Container)
-			name := q.Name()
-			row.Objects[0].(*widget.Label).SetText(name)
-			var duration string
-			if !q.IsCompleted() {
-				duration = ihumanize.Duration(q.Duration())
+			var i widget.Importance
+			var d string
+			if q.IsCompleted() {
+				i = widget.LowImportance
+				d = "Completed"
+			} else if q.IsActive() {
+				i = widget.MediumImportance
+				d = ihumanize.Duration(q.Duration())
 			} else {
-				duration = "Completed"
+				i = widget.MediumImportance
+				d = ihumanize.Duration(q.Duration())
 			}
-			row.Objects[2].(*widget.Label).SetText(duration)
+			name := row.Objects[0].(*widget.Label)
+			name.Importance = i
+			name.Text = q.Name()
+			name.Refresh()
+			duration := row.Objects[2].(*widget.Label)
+			duration.Text = d
+			duration.Importance = i
+			duration.Refresh()
 			pb := o.(*fyne.Container).Objects[0].(*widget.ProgressBar)
 			if q.IsActive() {
 				pb.SetValue(q.CompletionP())

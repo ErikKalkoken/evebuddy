@@ -8,6 +8,8 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 // statusArea is the UI area showing the current status aka status bar.
@@ -39,19 +41,22 @@ func (a *statusArea) StartUpdateTicker() {
 	ticker := time.NewTicker(60 * time.Second)
 	go func() {
 		for {
+			var s string
 			var i widget.Importance
-			t, err := a.ui.service.FetchESIStatus()
+			x, err := a.ui.service.FetchESIStatus()
 			if err != nil {
-				slog.Error(err.Error())
+				slog.Error("Failed to fetch ESI status", "err", err)
 				i = widget.WarningImportance
+				s = "ERROR"
+			} else if !x.IsOnline {
+				i = widget.DangerImportance
+				s = "OFFLINE"
 			} else {
-				if t == "OFFLINE" {
-					i = widget.SuccessImportance
-				} else {
-					i = widget.SuccessImportance
-				}
+				i = widget.SuccessImportance
+				arg := message.NewPrinter(language.English)
+				s = arg.Sprintf("%d players", x.PlayerCount)
 			}
-			a.eveStatusText.SetText(t)
+			a.eveStatusText.SetText(s)
 			a.eveStatusTraffic.Importance = i
 			a.eveStatusTraffic.Refresh()
 			<-ticker.C
