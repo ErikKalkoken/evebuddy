@@ -36,6 +36,7 @@ type ui struct {
 	folderArea            *folderArea
 	headerArea            *headerArea
 	mailArea              *mailDetailArea
+	mailTab               *container.TabItem
 	overviewArea          *overviewArea
 	statusArea            *statusArea
 	service               *service.Service
@@ -49,9 +50,9 @@ type ui struct {
 
 // NewUI build the UI and returns it.
 func NewUI(service *service.Service, imageCachePath string) *ui {
-	a := app.New()
-	w := a.NewWindow(appName(a))
-	u := &ui{app: a, window: w, service: service, imageManager: images.New(imageCachePath)}
+	app := app.New()
+	w := app.NewWindow(appName(app))
+	u := &ui{app: app, window: w, service: service, imageManager: images.New(imageCachePath)}
 
 	u.mailArea = u.NewMailArea()
 	u.headerArea = u.NewHeaderArea()
@@ -60,7 +61,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	split1.SetOffset(0.35)
 	split2 := container.NewHSplit(u.folderArea.content, split1)
 	split2.SetOffset(0.15)
-	mailTab := container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), split2)
+	u.mailTab = container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), split2)
 
 	u.characterArea = u.NewCharacterArea()
 	// characterContent := container.NewBorder(nil, nil, nil, nil, u.characterArea.content)
@@ -82,7 +83,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	u.statusArea = u.newStatusArea()
 	u.toolbarArea = u.newToolbarArea()
 
-	u.tabs = container.NewAppTabs(mailTab, skillqueueTab, walletTab, overviewTab)
+	u.tabs = container.NewAppTabs(u.mailTab, skillqueueTab, walletTab, overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	mainContent := container.NewBorder(u.toolbarArea.content, u.statusArea.content, nil, nil, u.tabs)

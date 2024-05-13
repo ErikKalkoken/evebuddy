@@ -119,6 +119,14 @@ func (a *folderArea) Refresh() {
 		a.ui.headerArea.Refresh()
 	}
 	a.lastFolderAll = folderAll
+	var s string
+	if folderAll.UnreadCount > 0 {
+		s = fmt.Sprintf("Mail (%d)", folderAll.UnreadCount)
+	} else {
+		s = "Mail"
+	}
+	a.ui.mailTab.Text = s
+	a.ui.tabs.Refresh()
 }
 
 func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
