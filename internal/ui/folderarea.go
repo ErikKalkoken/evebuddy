@@ -246,20 +246,22 @@ func (a *folderArea) UpdateMails(respondToUser bool) {
 	}
 	status := a.ui.statusArea
 	if respondToUser {
-		status.Info.SetWithProgress(fmt.Sprintf("Checking mail for %s", character.Character.Name))
+		status.SetInfoWithProgress(fmt.Sprintf("Checking mail for %s", character.Character.Name))
 	}
 	unreadCount, err := a.ui.service.UpdateMail(character.ID)
 	if err != nil {
-		status.Info.SetError("Failed to fetch mail")
+		status.SetError("Failed to fetch mail")
 		slog.Error("Failed to fetch mails", "characterID", character.ID, "error", err)
 		return
 	}
-	if unreadCount > 0 {
-		status.Info.Set(fmt.Sprintf("%s has %d new mail", character.Character.Name, unreadCount))
-	} else if respondToUser {
-		status.Info.Set(fmt.Sprintf("No new mail for %s", character.Character.Name))
-	} else {
-		status.Info.Clear()
+	if respondToUser {
+		if unreadCount > 0 {
+			status.SetInfo(fmt.Sprintf("%s has %d new mail", character.Character.Name, unreadCount))
+		} else if respondToUser {
+			status.SetInfo(fmt.Sprintf("No new mail for %s", character.Character.Name))
+		} else {
+			status.ClearInfo()
+		}
 	}
 	a.Refresh()
 }

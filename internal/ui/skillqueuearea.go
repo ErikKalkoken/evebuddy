@@ -114,7 +114,6 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 			{"SP at start", humanize.Comma(int64(q.TrainingStartSP - q.LevelStartSP)), false},
 			{"Total SP", humanize.Comma(int64(q.LevelEndSP - q.LevelStartSP)), false},
 			{"Active?", isActive, false},
-			{"Position", fmt.Sprintf("%d", q.QueuePosition), false},
 		}
 		form := widget.NewForm()
 		for _, row := range data {

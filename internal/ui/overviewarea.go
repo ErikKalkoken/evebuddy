@@ -123,7 +123,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		c, err := a.ui.service.GetMyCharacter(myC.ID)
 		if err != nil {
 			slog.Error("Failed to fetch character", "characterID", c.ID, "err", err)
-			a.ui.statusArea.Info.SetError("Failed to fetch character")
+			a.ui.statusArea.SetError("Failed to fetch character")
 			return
 		}
 		switch tci.Col {

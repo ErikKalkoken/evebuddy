@@ -15,26 +15,28 @@ import (
 // statusArea is the UI area showing the current status aka status bar.
 type statusArea struct {
 	content          *fyne.Container
-	Info             *statusInfo
 	eveStatusTraffic *widget.Label
 	eveStatusText    *widget.Label
+	infoText         *widget.Label
+	infoPB           *widget.ProgressBarInfinite
 	ui               *ui
 }
 
 func (u *ui) newStatusArea() *statusArea {
-	info := newStatusInfo()
-	statusTraffic := widget.NewLabel("•")
-	statusText := widget.NewLabel("")
-	c := container.NewHBox(info.content, layout.NewSpacer(), container.NewHBox(statusTraffic, statusText))
-	content := container.NewVBox(widget.NewSeparator(), c)
-	b := statusArea{
-		content:          content,
-		Info:             info,
-		eveStatusTraffic: statusTraffic,
-		eveStatusText:    statusText,
+	a := &statusArea{
+		eveStatusTraffic: widget.NewLabel("•"),
+		eveStatusText:    widget.NewLabel(""),
+		infoText:         widget.NewLabel(""),
+		infoPB:           widget.NewProgressBarInfinite(),
 		ui:               u,
 	}
-	return &b
+	a.infoPB.Hide()
+	c := container.NewHBox(
+		container.NewHBox(a.infoText, a.infoPB),
+		layout.NewSpacer(),
+		container.NewHBox(a.eveStatusTraffic, a.eveStatusText))
+	a.content = container.NewVBox(widget.NewSeparator(), c)
+	return a
 }
 
 func (a *statusArea) StartUpdateTicker() {
@@ -64,31 +66,30 @@ func (a *statusArea) StartUpdateTicker() {
 	}()
 }
 
-type statusInfo struct {
-	content *fyne.Container
+func (s *statusArea) SetInfo(text string) {
+	s.setInfo(text, widget.MediumImportance)
+	s.infoPB.Stop()
+	s.infoPB.Hide()
 }
 
-func newStatusInfo() *statusInfo {
-	return &statusInfo{content: container.NewHBox()}
+func (s *statusArea) SetInfoWithProgress(text string) {
+	s.setInfo(text, widget.MediumImportance)
+	s.infoPB.Start()
+	s.infoPB.Show()
 }
 
-func (s *statusInfo) Set(text string) {
-	s.content.RemoveAll()
-	s.content.Add(widget.NewLabel(text))
+func (s *statusArea) SetError(text string) {
+	s.setInfo(text, widget.DangerImportance)
+	s.infoPB.Stop()
+	s.infoPB.Hide()
 }
 
-func (s *statusInfo) SetWithProgress(text string) {
-	s.Set(text)
-	s.content.Add(widget.NewProgressBarInfinite())
+func (s *statusArea) ClearInfo() {
+	s.SetInfo("")
 }
 
-func (s *statusInfo) SetError(text string) {
-	s.content.RemoveAll()
-	l := widget.NewLabel(text)
-	l.Importance = widget.DangerImportance
-	s.content.Add(l)
-}
-
-func (s *statusInfo) Clear() {
-	s.Set("")
+func (s *statusArea) setInfo(text string, importance widget.Importance) {
+	s.infoText.Text = text
+	s.infoText.Importance = importance
+	s.infoText.Refresh()
 }
