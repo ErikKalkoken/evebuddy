@@ -151,23 +151,15 @@ func (u *ui) NewOverviewArea() *overviewArea {
 
 func (a *overviewArea) Refresh() {
 	a.updateEntries()
-	var wallet float64
-	var sp int
-	for _, c := range a.characters {
-		wallet += c.WalletBalance
-		sp += c.SkillPoints
-	}
 	a.table.Refresh()
-	var totalUnread int
-	for _, x := range a.unreadCounts {
-		totalUnread += x
-	}
+	wallet, sp := a.makeWalletSPText()
+	unread := a.makeUnreadText()
 	s := fmt.Sprintf(
 		"Total: %d characters • %s ISK • %s SP  • %s unread",
 		len(a.characters),
-		ihumanize.Number(wallet, 1),
-		ihumanize.Number(float64(sp), 0),
-		humanize.Comma(int64(totalUnread)),
+		wallet,
+		sp,
+		unread,
 	)
 	a.total.SetText(s)
 }
@@ -202,4 +194,31 @@ func (a *overviewArea) updateEntries() {
 		}
 		a.unreadCounts[i] = v
 	}
+}
+
+func (a *overviewArea) makeWalletSPText() (string, string) {
+	if len(a.unreadCounts) == 0 {
+		return "?", "?"
+	}
+	var wallet float64
+	var sp int
+	for _, c := range a.characters {
+		wallet += c.WalletBalance
+		sp += c.SkillPoints
+	}
+	walletText := ihumanize.Number(wallet, 1)
+	spText := ihumanize.Number(float64(sp), 0)
+	return walletText, spText
+}
+
+func (a *overviewArea) makeUnreadText() string {
+	if len(a.unreadCounts) == 0 {
+		return "?"
+	}
+	var totalUnread int
+	for _, x := range a.unreadCounts {
+		totalUnread += x
+	}
+	unreadText := humanize.Comma(int64(totalUnread))
+	return unreadText
 }

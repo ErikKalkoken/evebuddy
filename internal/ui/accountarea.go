@@ -17,7 +17,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 // accountArea is the UI area for managing of characters.
@@ -53,7 +52,7 @@ func (u *ui) NewAccountArea() *accountArea {
 			return len(a.characters)
 		},
 		func() fyne.CanvasObject {
-			icon := widget.NewIcon(theme.AccountIcon())
+			icon := widget.NewIcon(resourceCharacterplaceholder32Jpeg)
 			name := widget.NewLabel("Template")
 			b := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {})
 			b.Importance = widget.DangerImportance
@@ -92,18 +91,13 @@ func (u *ui) NewAccountArea() *accountArea {
 							a.Refresh()
 							isCurrentChar := c.ID == a.ui.CurrentCharID()
 							if isCurrentChar {
-								c, err := a.ui.service.GetAnyMyCharacter()
+								err := a.ui.SetAnyCharacter()
 								if err != nil {
-									if errors.Is(err, storage.ErrNotFound) {
-										a.ui.ResetCurrentCharacter()
-									} else {
-										panic(err)
-									}
-								} else {
-									a.ui.SetCurrentCharacter(c)
+									panic(err)
 								}
 							}
 							u.RefreshOverview()
+							a.ui.toolbarArea.Refresh()
 						}
 					},
 					a.ui.window,
@@ -160,8 +154,16 @@ func (a *accountArea) showAddCharacterDialog() {
 				d2.Show()
 			}
 		} else {
+			isFirst := len(a.characters) == 0
 			a.Refresh()
 			a.ui.RefreshOverview()
+			a.ui.toolbarArea.Refresh()
+			if isFirst {
+				err := a.ui.SetAnyCharacter()
+				if err != nil {
+					panic(err)
+				}
+			}
 		}
 		d1.Hide()
 	}()

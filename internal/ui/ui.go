@@ -160,7 +160,7 @@ func (u *ui) ShowAndRun() {
 		// Workaround to mitigate a bug that causes the window to sometimes render
 		// only in parts and freeze. The issue is known to happen on Linux desktops.
 		if runtime.GOOS == "linux" {
-			time.Sleep(400 * time.Millisecond)
+			time.Sleep(1000 * time.Millisecond)
 			s := u.window.Canvas().Size()
 			u.window.Resize(fyne.NewSize(s.Width, s.Height-0.1))
 			u.window.Resize(fyne.NewSize(s.Width, s.Height))
@@ -202,7 +202,31 @@ func (u *ui) RefreshCurrentCharacter() {
 	u.folderArea.Refresh()
 	u.skillqueueArea.Refresh()
 	u.walletTransactionArea.Refresh()
+	if u.CurrentChar() == nil {
+		u.tabs.DisableIndex(0)
+		u.tabs.DisableIndex(1)
+		u.tabs.DisableIndex(2)
+		u.tabs.SelectIndex(3)
+	} else {
+		u.tabs.EnableIndex(0)
+		u.tabs.EnableIndex(1)
+		u.tabs.EnableIndex(2)
+	}
 	u.window.Content().Refresh()
+}
+
+func (u *ui) SetAnyCharacter() error {
+	c, err := u.service.GetAnyMyCharacter()
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			u.ResetCurrentCharacter()
+		} else {
+			return err
+		}
+	} else {
+		u.SetCurrentCharacter(c)
+	}
+	return nil
 }
 
 func (u *ui) RefreshOverview() {

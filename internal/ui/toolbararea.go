@@ -20,15 +20,19 @@ type toolbarArea struct {
 	icon         *widget.Icon
 	name         *widget.Label
 	switchButton *widgets.ContextMenuButton
+	manageButton *widget.Button
 	ui           *ui
 }
 
 func (u *ui) newToolbarArea() *toolbarArea {
 	a := &toolbarArea{ui: u}
-	a.icon = widget.NewIcon(theme.AccountIcon())
+	a.icon = widget.NewIcon(resourceCharacterplaceholder32Jpeg)
 	a.name = widget.NewLabel("")
 	a.switchButton = widgets.NewContextMenuButtonWithIcon(
 		theme.NewThemedResource(resourceSwitchaccountSvg), "", fyne.NewMenu(""))
+	a.manageButton = widget.NewButtonWithIcon("", theme.NewThemedResource(resourceManageaccountsSvg), func() {
+		u.ShowAccountDialog()
+	})
 	c := container.NewHBox(
 		container.NewHBox(a.icon, a.name, a.switchButton),
 		layout.NewSpacer(),
@@ -38,9 +42,7 @@ func (u *ui) newToolbarArea() *toolbarArea {
 		widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
 			u.ShowSettingsDialog()
 		}),
-		widget.NewButtonWithIcon("", theme.NewThemedResource(resourceManageaccountsSvg), func() {
-			u.ShowAccountDialog()
-		}),
+		a.manageButton,
 	)
 	a.content = container.NewVBox(c, widget.NewSeparator())
 
@@ -50,7 +52,7 @@ func (u *ui) newToolbarArea() *toolbarArea {
 func (a *toolbarArea) Refresh() {
 	c := a.ui.CurrentChar()
 	if c == nil {
-		a.icon.SetResource(theme.AccountIcon())
+		a.icon.SetResource(resourceCharacterplaceholder32Jpeg)
 		a.name.Text = "No character"
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
 	} else {
@@ -70,6 +72,19 @@ func (a *toolbarArea) Refresh() {
 		return
 	}
 	a.switchButton.SetMenuItems(menuItems)
+	if len(menuItems) == 0 {
+		a.switchButton.Disable()
+	} else {
+		a.switchButton.Enable()
+	}
+	if a.ui.CurrentChar() == nil {
+		a.manageButton.Importance = widget.HighImportance
+		a.manageButton.Refresh()
+	} else {
+		a.manageButton.Importance = widget.MediumImportance
+		a.manageButton.Refresh()
+	}
+
 }
 
 func (a *toolbarArea) makeMenuItems(c *model.MyCharacter) ([]*fyne.MenuItem, error) {
