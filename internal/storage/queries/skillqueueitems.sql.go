@@ -107,7 +107,10 @@ func (q *Queries) GetSkillqueueItem(ctx context.Context, arg GetSkillqueueItemPa
 const getTotalTrainingTime = `-- name: GetTotalTrainingTime :one
 SELECT SUM(julianday(finish_date) - julianday(start_date))
 FROM skillqueue_items
-WHERE my_character_id = ? and datetime(finish_date) > datetime()
+WHERE my_character_id = ?
+AND start_date IS NOT NULL
+AND finish_date IS NOT NULL
+AND datetime(finish_date) > datetime()
 `
 
 func (q *Queries) GetTotalTrainingTime(ctx context.Context, myCharacterID int64) (sql.NullFloat64, error) {

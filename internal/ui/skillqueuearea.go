@@ -64,10 +64,10 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 				d = "Completed"
 			} else if q.IsActive() {
 				i = widget.MediumImportance
-				d = ihumanize.Duration(q.Duration())
+				d = humanizedNullDuration(q.Remaining(), "?")
 			} else {
 				i = widget.MediumImportance
-				d = ihumanize.Duration(q.Duration())
+				d = humanizedNullDuration(q.Duration(), "?")
 			}
 			name := row.Objects[0].(*widget.Label)
 			name.Importance = i
@@ -106,10 +106,10 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 			{"Name", q.Name(), false},
 			{"Group", q.GroupName, false},
 			{"Description", q.SkillDescription, true},
-			{"Start date", q.StartDate.Format(myDateTime), false},
-			{"Finish date", q.FinishDate.Format(myDateTime), false},
-			{"Duration", humanize.RelTime(q.StartDate, q.FinishDate, "", ""), false},
-			{"Remaining", humanize.RelTime(q.FinishDate, time.Now(), "", ""), false},
+			{"Start date", timeFormattedOrFallback(q.StartDate, myDateTime, "?"), false},
+			{"Finish date", timeFormattedOrFallback(q.FinishDate, myDateTime, "?"), false},
+			{"Duration", humanizedNullDuration(q.Duration(), "?"), false},
+			{"Remaining", humanizedNullDuration(q.Remaining(), "?"), false},
 			{"Completed", fmt.Sprintf("%.0f%%", q.CompletionP()*100), false},
 			{"SP at start", humanize.Comma(int64(q.TrainingStartSP - q.LevelStartSP)), false},
 			{"Total SP", humanize.Comma(int64(q.LevelEndSP - q.LevelStartSP)), false},
@@ -174,13 +174,19 @@ func (a *skillqueueArea) updateItems() {
 	if characterID == 0 {
 		return
 	}
-	var err error
-	a.items, err = a.ui.service.ListSkillqueue(characterID)
+	items, err := a.ui.service.ListSkillqueueItems(characterID)
 	if err != nil {
 		slog.Error("failed to fetch skillqueue", "characterID", characterID, "err", err)
 		c := a.ui.CurrentChar()
 		a.errorText = fmt.Sprintf("Failed to fetch skillqueue for %s", c.Character.Name)
 		return
+	}
+	a.items = make([]*model.SkillqueueItem, 0)
+	for _, item := range items {
+		if item.StartDate.IsZero() || item.FinishDate.IsZero() {
+			continue
+		}
+		a.items = append(a.items, item)
 	}
 	total, err := a.ui.service.GetTotalTrainingTime(characterID)
 	if err != nil {

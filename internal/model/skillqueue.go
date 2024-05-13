@@ -3,6 +3,8 @@ package model
 import (
 	"fmt"
 	"time"
+
+	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
 )
 
 type SkillqueueItem struct {
@@ -26,7 +28,7 @@ func (q *SkillqueueItem) Name() string {
 
 func (q *SkillqueueItem) IsActive() bool {
 	now := time.Now()
-	return q.StartDate.Before(now) && q.FinishDate.After(now)
+	return !q.StartDate.IsZero() && q.StartDate.Before(now) && q.FinishDate.After(now)
 }
 
 func (q *SkillqueueItem) IsCompleted() bool {
@@ -34,6 +36,11 @@ func (q *SkillqueueItem) IsCompleted() bool {
 }
 
 func (q *SkillqueueItem) CompletionP() float64 {
+	d := q.Duration()
+	if !d.Valid {
+		return 0
+	}
+	duration := d.Duration
 	now := time.Now()
 	if q.FinishDate.Before(now) {
 		return 1
@@ -41,17 +48,34 @@ func (q *SkillqueueItem) CompletionP() float64 {
 	if q.StartDate.After(now) {
 		return 0
 	}
-	if q.Duration() == 0 {
+	if duration == 0 {
 		return 0
 	}
 	remaining := q.FinishDate.Sub(now)
-	c := remaining.Seconds() / q.Duration().Seconds()
+	c := remaining.Seconds() / duration.Seconds()
 	base := float64(q.LevelEndSP-q.TrainingStartSP) / float64(q.LevelEndSP-q.LevelStartSP)
 	return 1 - (c * base)
 }
 
-func (q *SkillqueueItem) Duration() time.Duration {
-	return q.FinishDate.Sub(q.StartDate)
+func (q *SkillqueueItem) Duration() types.NullDuration {
+	var d types.NullDuration
+	if q.StartDate.IsZero() || q.FinishDate.IsZero() {
+		return d
+	}
+	d.Valid = true
+	d.Duration = q.FinishDate.Sub(q.StartDate)
+	return d
+}
+
+func (q *SkillqueueItem) Remaining() types.NullDuration {
+	var d types.NullDuration
+	if q.StartDate.IsZero() || q.FinishDate.IsZero() {
+		return d
+	}
+	d.Valid = true
+	remainingP := 1 - q.CompletionP()
+	d.Duration = time.Duration(float64(q.Duration().Duration) * remainingP)
+	return d
 }
 
 func romanLetter(v int) string {

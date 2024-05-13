@@ -43,10 +43,10 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		{"Corporation", 200},
 		{"Alliance", 200},
 		{"Security", 80},
-		{"Wallet", 80},
+		{"Unread", 80},
 		{"SP", 80},
 		{"Training", 80},
-		{"Unread", 80},
+		{"Wallet", 80},
 		{"System", 150},
 		{"Region", 150},
 		{"Ship", 150},
@@ -59,7 +59,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 			return len(a.characters), len(headers)
 		},
 		func() fyne.CanvasObject {
-			x := widget.NewLabel("PLACEHOLDER")
+			x := widget.NewLabel("Template")
 			x.Truncation = fyne.TextTruncateEllipsis
 			return x
 		},
@@ -82,7 +82,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 					l.Importance = widget.DangerImportance
 				}
 			case 4:
-				l.Text = ihumanize.Number(c.WalletBalance, 1)
+				l.Text = humanize.Comma(int64(a.unreadCounts[tci.Row]))
 			case 5:
 				l.Text = ihumanize.Number(float64(c.SkillPoints), 0)
 			case 6:
@@ -94,7 +94,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 					l.Text = ihumanize.Duration(v.Duration)
 				}
 			case 7:
-				l.Text = humanize.Comma(int64(a.unreadCounts[tci.Row]))
+				l.Text = ihumanize.Number(c.WalletBalance, 1)
 			case 8:
 				l.Text = fmt.Sprintf("%s %.1f", c.Location.Name, c.Location.SecurityStatus)
 			case 9:
@@ -112,7 +112,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 	table.ShowHeaderRow = true
 	table.StickyColumnCount = 1
 	table.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("TemplateSecond")
+		return widget.NewLabel("Template")
 	}
 	table.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		s := headers[tci.Col]
@@ -122,13 +122,19 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		myC := a.characters[tci.Row]
 		c, err := a.ui.service.GetMyCharacter(myC.ID)
 		if err != nil {
-			panic(err)
+			slog.Error("Failed to fetch character", "characterID", c.ID, "err", err)
+			a.ui.statusArea.Info.SetError("Failed to fetch character")
+			return
 		}
-		a.ui.SetCurrentCharacter(c)
-		if tci.Col == 6 {
+		switch tci.Col {
+		case 4:
+			a.ui.SetCurrentCharacter(c)
+			a.ui.tabs.SelectIndex(0)
+		case 6:
+			a.ui.SetCurrentCharacter(c)
 			a.ui.tabs.SelectIndex(1)
-		}
-		if tci.Col == 4 {
+		case 7:
+			a.ui.SetCurrentCharacter(c)
 			a.ui.tabs.SelectIndex(2)
 		}
 	}

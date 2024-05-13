@@ -68,12 +68,12 @@ func (a *characterArea) Redraw() {
 
 	var r = []item{
 		{"Corporation", character.Character.Corporation.Name, defaultColor},
-		{"Alliance", stringOrDefault(character.Character.AllianceName(), "-"), defaultColor},
-		{"Faction", stringOrDefault(character.Character.FactionName(), "-"), defaultColor},
+		{"Alliance", stringOrFallback(character.Character.AllianceName(), "-"), defaultColor},
+		{"Faction", stringOrFallback(character.Character.FactionName(), "-"), defaultColor},
 		{"Race", character.Character.Race.Name, defaultColor},
 		{"Gender", character.Character.Gender, defaultColor},
 		{"Born", character.Character.Birthday.Format(myDateTime), defaultColor},
-		{"Title", stringOrDefault(character.Character.Title, "-"), defaultColor},
+		{"Title", stringOrFallback(character.Character.Title, "-"), defaultColor},
 	}
 	form1 := makeForm(r)
 	location := fmt.Sprintf(

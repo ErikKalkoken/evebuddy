@@ -164,7 +164,7 @@ func (u *ui) ShowAndRun() {
 		if runtime.GOOS == "linux" {
 			time.Sleep(400 * time.Millisecond)
 			s := u.window.Canvas().Size()
-			u.window.Resize(fyne.NewSize(s.Width, s.Height+0.1))
+			u.window.Resize(fyne.NewSize(s.Width, s.Height-0.1))
 			u.window.Resize(fyne.NewSize(s.Width, s.Height))
 		}
 		u.statusArea.StartUpdateTicker()
