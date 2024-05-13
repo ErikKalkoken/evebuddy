@@ -29,6 +29,10 @@ func (q *SkillqueueItem) IsActive() bool {
 	return q.StartDate.Before(now) && q.FinishDate.After(now)
 }
 
+func (q *SkillqueueItem) IsCompleted() bool {
+	return q.CompletionP() == 1
+}
+
 func (q *SkillqueueItem) CompletionP() float64 {
 	now := time.Now()
 	if q.FinishDate.Before(now) {

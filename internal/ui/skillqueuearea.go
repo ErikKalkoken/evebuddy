@@ -51,29 +51,34 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 					widget.NewLabel("duration"),
 				))
 		},
-		func(i widget.ListItemID, o fyne.CanvasObject) {
-			if len(a.items) <= i {
+		func(id widget.ListItemID, o fyne.CanvasObject) {
+			if len(a.items) <= id {
 				return
 			}
-			q := a.items[i]
+			q := a.items[id]
 			row := o.(*fyne.Container).Objects[1].(*fyne.Container)
 			name := q.Name()
 			row.Objects[0].(*widget.Label).SetText(name)
 			var duration string
-			if !q.FinishDate.IsZero() {
+			if !q.IsCompleted() {
 				duration = ihumanize.Duration(q.Duration())
 			} else {
-				duration = "?"
+				duration = "Completed"
 			}
 			row.Objects[2].(*widget.Label).SetText(duration)
 			pb := o.(*fyne.Container).Objects[0].(*widget.ProgressBar)
 			if q.IsActive() {
 				pb.SetValue(q.CompletionP())
 				pb.Show()
+			} else {
+				pb.Hide()
 			}
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
+		if len(a.items) <= id {
+			return
+		}
 		q := a.items[id]
 
 		var isActive string
@@ -98,6 +103,7 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 			{"SP at start", humanize.Comma(int64(q.TrainingStartSP - q.LevelStartSP)), false},
 			{"Total SP", humanize.Comma(int64(q.LevelEndSP - q.LevelStartSP)), false},
 			{"Active?", isActive, false},
+			{"Position", fmt.Sprintf("%d", q.QueuePosition), false},
 		}
 		form := widget.NewForm()
 		for _, row := range data {
@@ -157,19 +163,13 @@ func (a *skillqueueArea) updateItems() {
 	if characterID == 0 {
 		return
 	}
-	qq, err := a.ui.service.ListSkillqueue(characterID)
+	var err error
+	a.items, err = a.ui.service.ListSkillqueue(characterID)
 	if err != nil {
 		slog.Error("failed to fetch skillqueue", "characterID", characterID, "err", err)
 		c := a.ui.CurrentChar()
 		a.errorText = fmt.Sprintf("Failed to fetch skillqueue for %s", c.Character.Name)
 		return
-	}
-	now := time.Now()
-	for _, q := range qq {
-		if q.FinishDate.Before(now) {
-			continue
-		}
-		a.items = append(a.items, q)
 	}
 	total, err := a.ui.service.GetTotalTrainingTime(characterID)
 	if err != nil {
