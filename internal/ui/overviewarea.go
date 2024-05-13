@@ -12,10 +12,11 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/dustin/go-humanize"
 )
 
-// overviewArea is the UI area that shows the skillqueue
+// overviewArea is the UI area that shows an overview of all the user's characters.
 type overviewArea struct {
 	content          *fyne.Container
 	characters       []*model.MyCharacter
@@ -221,4 +222,32 @@ func (a *overviewArea) makeUnreadText() string {
 	}
 	unreadText := humanize.Comma(int64(totalUnread))
 	return unreadText
+}
+
+func (a *overviewArea) StartUpdateTicker() {
+	ticker := time.NewTicker(10 * time.Second)
+	go func() {
+		for {
+			func() {
+				for _, c := range a.characters {
+					go func(characterID int32) {
+						isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, service.UpdateSectionMyCharacter)
+						if err != nil {
+							slog.Error(err.Error())
+							return
+						}
+						if !isExpired {
+							return
+						}
+						if err := a.ui.service.UpdateMyCharacter(characterID); err != nil {
+							slog.Error(err.Error())
+							return
+						}
+						a.Refresh()
+					}(c.ID)
+				}
+			}()
+			<-ticker.C
+		}
+	}()
 }

@@ -283,7 +283,12 @@ func (a *folderArea) StartUpdateTicker() {
 				if characterID == 0 {
 					return
 				}
-				if !a.ui.service.SectionUpdatedExpired(characterID, service.UpdateSectionMail) {
+				isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, service.UpdateSectionMail)
+				if err != nil {
+					slog.Error(err.Error())
+					return
+				}
+				if !isExpired {
 					return
 				}
 				a.UpdateMails(false)

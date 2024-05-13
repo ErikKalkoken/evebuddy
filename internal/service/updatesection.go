@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"log/slog"
 	"time"
 )
 
@@ -29,18 +28,37 @@ func (s *Service) SectionSetUpdated(characterID int32, section UpdateSection) er
 	return err
 }
 
-func (s *Service) SectionUpdatedAt(characterID int32, section UpdateSection) time.Time {
-	t, _, err := s.DictionaryTime(makeUpdateAtDictKey(characterID, section))
+// SectionUpdatedAt returns when a section was last updated.
+// It will return a zero time when no update has been completed yet.
+func (s *Service) SectionUpdatedAt(characterID int32, section UpdateSection) (time.Time, error) {
+	var zero time.Time
+	t, ok, err := s.DictionaryTime(makeUpdateAtDictKey(characterID, section))
 	if err != nil {
-		slog.Error(err.Error())
-		return time.Time{}
+		return zero, err
 	}
-	return t
+	if !ok {
+		return zero, nil
+	}
+	return t, nil
 }
 
-func (s *Service) SectionUpdatedExpired(characterID int32, section UpdateSection) bool {
-	deadline := s.SectionUpdatedAt(characterID, section).Add(sectionUpdateTimeout(section))
-	return time.Now().After(deadline)
+// SectionWasUpdated reports wether the section has been updated at all.
+func (s *Service) SectionWasUpdated(characterID int32, section UpdateSection) (bool, error) {
+	t, err := s.SectionUpdatedAt(characterID, section)
+	if err != nil {
+		return false, err
+	}
+	return !t.IsZero(), nil
+}
+
+// SectionWasUpdated reports wether the data for a section has expired.
+func (s *Service) SectionIsUpdateExpired(characterID int32, section UpdateSection) (bool, error) {
+	t, err := s.SectionUpdatedAt(characterID, section)
+	if err != nil {
+		return false, err
+	}
+	deadline := t.Add(sectionUpdateTimeout(section))
+	return time.Now().After(deadline), nil
 }
 
 func makeUpdateAtDictKey(characterID int32, section UpdateSection) string {

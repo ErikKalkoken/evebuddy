@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// An owned character in Eve Online.
+// An Eve Online character owners by the user.
 type MyCharacter struct {
 	Character     *EveCharacter
 	ID            int32
@@ -16,6 +16,7 @@ type MyCharacter struct {
 	WalletBalance float64
 }
 
+// A shortened version of MyCharacter.
 type MyCharacterShort struct {
 	ID              int32
 	Name            string

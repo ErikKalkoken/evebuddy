@@ -143,7 +143,12 @@ func (a *walletTransactionArea) StartUpdateTicker() {
 				if characterID == 0 {
 					return
 				}
-				if !a.ui.service.SectionUpdatedExpired(characterID, service.UpdateSectionWalletJournal) {
+				isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, service.UpdateSectionWalletJournal)
+				if err != nil {
+					slog.Error(err.Error())
+					return
+				}
+				if !isExpired {
 					return
 				}
 				count, err := a.ui.service.UpdateWalletJournalEntryESI(characterID)

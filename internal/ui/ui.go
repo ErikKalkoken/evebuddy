@@ -31,7 +31,6 @@ const (
 // which allow it to access the other UI areas and shared variables
 type ui struct {
 	app                   fyne.App
-	characterArea         *characterArea
 	currentCharacter      *model.MyCharacter
 	folderArea            *folderArea
 	headerArea            *headerArea
@@ -62,11 +61,6 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	split2 := container.NewHSplit(u.folderArea.content, split1)
 	split2.SetOffset(0.15)
 	u.mailTab = container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), split2)
-
-	u.characterArea = u.NewCharacterArea()
-	// characterContent := container.NewBorder(nil, nil, nil, nil, u.characterArea.content)
-	// characterTab := container.NewTabItemWithIcon("Character Sheet",
-	// 	theme.NewThemedResource(resourcePortraitSvg), characterContent)
 
 	u.overviewArea = u.NewOverviewArea()
 	overviewTab := container.NewTabItemWithIcon("Characters",
@@ -166,7 +160,7 @@ func (u *ui) ShowAndRun() {
 			u.window.Resize(fyne.NewSize(s.Width, s.Height))
 		}
 		u.statusArea.StartUpdateTicker()
-		u.characterArea.StartUpdateTicker()
+		u.overviewArea.StartUpdateTicker()
 		u.folderArea.StartUpdateTicker()
 		u.skillqueueArea.StartUpdateTicker()
 		u.walletTransactionArea.StartUpdateTicker()
@@ -198,7 +192,6 @@ func (u *ui) SetCurrentCharacter(c *model.MyCharacter) {
 
 func (u *ui) RefreshCurrentCharacter() {
 	u.toolbarArea.Refresh()
-	u.characterArea.Redraw()
 	u.folderArea.Refresh()
 	u.skillqueueArea.Refresh()
 	u.walletTransactionArea.Refresh()

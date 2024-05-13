@@ -205,7 +205,12 @@ func (a *skillqueueArea) StartUpdateTicker() {
 				if characterID == 0 {
 					return
 				}
-				if !a.ui.service.SectionUpdatedExpired(characterID, service.UpdateSectionSkillqueue) {
+				isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, service.UpdateSectionSkillqueue)
+				if err != nil {
+					slog.Error(err.Error())
+					return
+				}
+				if !isExpired {
 					return
 				}
 				if err := a.ui.service.UpdateSkillqueueESI(characterID); err != nil {
