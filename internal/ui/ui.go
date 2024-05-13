@@ -92,10 +92,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 
 	var c *model.MyCharacter
 	cID, ok, err := service.DictionaryInt(model.SettingLastCharacterID)
-	if err != nil {
-		panic(err)
-	}
-	if ok {
+	if err == nil && ok {
 		c, err = service.GetMyCharacter(int32(cID))
 		if err != nil {
 			if !errors.Is(err, storage.ErrNotFound) {

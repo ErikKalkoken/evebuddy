@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -9,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
@@ -60,11 +62,22 @@ func (a *toolbarArea) Refresh() {
 	}
 	a.name.Refresh()
 
+	menuItems, err := a.makeMenuItems(c)
+	if err != nil {
+		msg := "Failed to create switch menu"
+		slog.Error(msg, "err", err)
+		a.ui.statusArea.SetError(msg)
+		return
+	}
+	a.switchButton.SetMenuItems(menuItems)
+}
+
+func (a *toolbarArea) makeMenuItems(c *model.MyCharacter) ([]*fyne.MenuItem, error) {
+	menuItems := make([]*fyne.MenuItem, 0)
 	cc, err := a.ui.service.ListMyCharactersShort()
 	if err != nil {
-		panic(err)
+		return menuItems, err
 	}
-	menuItems := make([]*fyne.MenuItem, 0)
 	for _, myC := range cc {
 		if c != nil && myC.ID == c.ID {
 			continue
@@ -72,12 +85,16 @@ func (a *toolbarArea) Refresh() {
 		i := fyne.NewMenuItem(myC.Name, func() {
 			newChar, err := a.ui.service.GetMyCharacter(myC.ID)
 			if err != nil {
-				panic(err)
+				msg := "Failed to create switch menu"
+				slog.Error(msg, "err", err)
+				a.ui.statusArea.SetError(msg)
+				return
+
 			}
 			a.ui.SetCurrentCharacter(newChar)
 		})
 		i.Icon = a.ui.imageManager.CharacterPortrait(myC.ID, defaultIconSize)
 		menuItems = append(menuItems, i)
 	}
-	a.switchButton.SetMenuItems(menuItems)
+	return menuItems, nil
 }
