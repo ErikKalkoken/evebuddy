@@ -126,6 +126,8 @@ FROM skillqueue_items
 JOIN eve_types ON eve_types.id = skillqueue_items.eve_type_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
 WHERE my_character_id = ?
+AND start_date IS NOT NULL
+AND finish_date IS NOT NULL
 ORDER BY queue_position
 `
 

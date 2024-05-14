@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
@@ -21,25 +22,24 @@ import (
 // skillqueueArea is the UI area that shows the skillqueue
 type skillqueueArea struct {
 	content       *fyne.Container
-	errorText     string
-	items         []*model.SkillqueueItem
-	trainingTotal types.NullDuration
-	list          *widget.List
+	items         binding.UntypedList
+	errorText     binding.String
+	trainingTotal binding.Untyped
 	total         *widget.Label
 	ui            *ui
 }
 
 func (u *ui) NewSkillqueueArea() *skillqueueArea {
 	a := skillqueueArea{
-		ui:    u,
-		items: make([]*model.SkillqueueItem, 0),
-		total: widget.NewLabel(""),
+		items:         binding.NewUntypedList(),
+		errorText:     binding.NewString(),
+		total:         widget.NewLabel(""),
+		trainingTotal: binding.NewUntyped(),
+		ui:            u,
 	}
 	a.total.TextStyle.Bold = true
-	list := widget.NewList(
-		func() int {
-			return len(a.items)
-		},
+	list := widget.NewListWithData(
+		a.items,
 		func() fyne.CanvasObject {
 			pb := widget.NewProgressBar()
 			pb.Hide()
@@ -51,12 +51,16 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 					widget.NewLabel("duration"),
 				))
 		},
-		func(id widget.ListItemID, o fyne.CanvasObject) {
-			if len(a.items) <= id {
+		func(di binding.DataItem, co fyne.CanvasObject) {
+			x, err := di.(binding.Untyped).Get()
+			if err != nil {
+				panic(err)
+			}
+			q, ok := x.(*model.SkillqueueItem)
+			if !ok {
 				return
 			}
-			q := a.items[id]
-			row := o.(*fyne.Container).Objects[1].(*fyne.Container)
+			row := co.(*fyne.Container).Objects[1].(*fyne.Container)
 			var i widget.Importance
 			var d string
 			if q.IsCompleted() {
@@ -77,7 +81,7 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 			duration.Text = d
 			duration.Importance = i
 			duration.Refresh()
-			pb := o.(*fyne.Container).Objects[0].(*widget.ProgressBar)
+			pb := co.(*fyne.Container).Objects[0].(*widget.ProgressBar)
 			if q.IsActive() {
 				pb.SetValue(q.CompletionP())
 				pb.Show()
@@ -87,10 +91,15 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		if len(a.items) <= id {
-			return
+		xx, err := a.items.GetItem(id)
+		if err != nil {
+			panic(err)
 		}
-		q := a.items[id]
+		x, err := xx.(binding.Untyped).Get()
+		if err != nil {
+			panic(err)
+		}
+		q := x.(*model.SkillqueueItem)
 
 		var isActive string
 		if q.IsActive() {
@@ -131,18 +140,15 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 			Width:  0.8 * a.ui.window.Canvas().Size().Width,
 			Height: 0.8 * a.ui.window.Canvas().Size().Height,
 		})
-
 	}
 
 	top := container.NewVBox(a.total, widget.NewSeparator())
 	a.content = container.NewBorder(top, nil, nil, nil, list)
-	a.list = list
 	return &a
 }
 
 func (a *skillqueueArea) Refresh() {
 	a.updateItems()
-	a.list.Refresh()
 	s, i := a.makeTopText()
 	a.total.Text = s
 	a.total.Importance = i
@@ -150,8 +156,12 @@ func (a *skillqueueArea) Refresh() {
 }
 
 func (a *skillqueueArea) makeTopText() (string, widget.Importance) {
-	if a.errorText != "" {
-		return a.errorText, widget.DangerImportance
+	errorText, err := a.errorText.Get()
+	if err != nil {
+		panic(err)
+	}
+	if errorText != "" {
+		return errorText, widget.DangerImportance
 	}
 	hasData, err := a.ui.service.SectionWasUpdated(a.ui.CurrentCharID(), service.UpdateSectionSkillqueue)
 	if err != nil {
@@ -160,46 +170,58 @@ func (a *skillqueueArea) makeTopText() (string, widget.Importance) {
 	if !hasData {
 		return "No data", widget.LowImportance
 	}
-	if len(a.items) == 0 {
+	if a.items.Length() == 0 {
 		return "Training not active", widget.WarningImportance
 	}
-	var x string
-	if a.trainingTotal.Valid {
-		x = ihumanize.Duration(a.trainingTotal.Duration)
-	} else {
-		x = "?"
+	var s string
+	x, err := a.trainingTotal.Get()
+	if err != nil {
+		panic(err)
 	}
-	s := fmt.Sprintf("Total training time: %s", x)
-	return s, widget.MediumImportance
+	d := x.(types.NullDuration)
+	if d.Valid {
+		s = ihumanize.Duration(d.Duration)
+	} else {
+		s = "?"
+	}
+	return fmt.Sprintf("Total training time: %s", s), widget.MediumImportance
 }
 
 func (a *skillqueueArea) updateItems() {
-	a.items = a.items[0:0]
-	a.errorText = ""
+	if err := a.errorText.Set(""); err != nil {
+		panic(err)
+	}
 	characterID := a.ui.CurrentCharID()
 	if characterID == 0 {
-		return
+		err := a.items.Set(make([]any, 0))
+		if err != nil {
+			panic(err)
+		}
 	}
 	items, err := a.ui.service.ListSkillqueueItems(characterID)
 	if err != nil {
 		slog.Error("failed to fetch skillqueue", "characterID", characterID, "err", err)
 		c := a.ui.CurrentChar()
-		a.errorText = fmt.Sprintf("Failed to fetch skillqueue for %s", c.Character.Name)
+		err := a.errorText.Set(fmt.Sprintf("Failed to fetch skillqueue for %s", c.Character.Name))
+		if err != nil {
+			panic(err)
+		}
 		return
 	}
-	a.items = make([]*model.SkillqueueItem, 0)
-	for _, item := range items {
-		if item.StartDate.IsZero() || item.FinishDate.IsZero() {
-			continue
-		}
-		a.items = append(a.items, item)
+	x := make([]any, len(items))
+	for i, item := range items {
+		x[i] = item
+	}
+	if err := a.items.Set(x); err != nil {
+		panic(err)
 	}
 	total, err := a.ui.service.GetTotalTrainingTime(characterID)
 	if err != nil {
 		slog.Error("failed to fetch skillqueue", "characterID", characterID, "err", err)
-		a.trainingTotal = types.NullDuration{}
-	} else {
-		a.trainingTotal = total
+		return
+	}
+	if err := a.trainingTotal.Set(total); err != nil {
+		panic(err)
 	}
 }
 
