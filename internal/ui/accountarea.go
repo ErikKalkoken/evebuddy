@@ -38,8 +38,6 @@ func (u *ui) ShowAccountDialog() {
 	a.Refresh()
 }
 
-// TODO; Replace with panel grid showing characters with details
-
 func (u *ui) NewAccountArea() *accountArea {
 	a := &accountArea{
 		characters: make([]*model.MyCharacterShort, 0),

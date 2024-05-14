@@ -24,7 +24,12 @@ type mailDetailArea struct {
 }
 
 func (u *ui) NewMailArea() *mailDetailArea {
-	a := mailDetailArea{ui: u}
+	a := mailDetailArea{
+		body:    widget.NewRichText(),
+		header:  widget.NewLabel(""),
+		subject: widget.NewLabel(""),
+		ui:      u,
+	}
 	a.toolbar = widget.NewToolbar(
 		widget.NewToolbarAction(theme.MailReplyIcon(), func() {
 			u.ShowSendMessageWindow(CreateMessageReply, a.mail)
@@ -54,22 +59,14 @@ func (u *ui) NewMailArea() *mailDetailArea {
 	)
 	a.toolbar.Hide()
 
-	subject := widget.NewLabel("")
-	subject.TextStyle = fyne.TextStyle{Bold: true}
-	subject.Truncation = fyne.TextTruncateEllipsis
-	a.subject = subject
+	a.subject.TextStyle = fyne.TextStyle{Bold: true}
+	a.subject.Truncation = fyne.TextTruncateEllipsis
+	a.header.Truncation = fyne.TextTruncateEllipsis
+	wrapper := container.NewVBox(a.toolbar, a.subject, a.header)
 
-	header := widget.NewLabel("")
-	header.Truncation = fyne.TextTruncateEllipsis
-	a.header = header
+	a.body.Wrapping = fyne.TextWrapWord
 
-	wrapper := container.NewVBox(a.toolbar, subject, header)
-
-	body := widget.NewRichText()
-	body.Wrapping = fyne.TextWrapWord
-	a.body = body
-
-	a.content = container.NewBorder(wrapper, nil, nil, nil, container.NewVScroll(body))
+	a.content = container.NewBorder(wrapper, nil, nil, nil, container.NewVScroll(a.body))
 	return &a
 }
 

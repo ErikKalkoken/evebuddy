@@ -27,28 +27,13 @@ type folderArea struct {
 	ui            *ui
 }
 
-// TODO: Replace date driven tree with direct refresh
-
 func (u *ui) NewFolderArea() *folderArea {
-	f := folderArea{ui: u}
-	f.tree, f.treeData = u.makeFolderTree()
-	f.refreshButton = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-		go f.UpdateMails(true)
-	})
-	f.newButton = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
-		f.ui.ShowSendMessageWindow(CreateMessageNew, nil)
-	})
-	f.newButton.Importance = widget.HighImportance
-	top := container.NewHBox(f.refreshButton, f.newButton)
-	c := container.NewBorder(top, nil, nil, nil, f.tree)
-	f.content = c
-	return &f
-}
-
-func (u *ui) makeFolderTree() (*widget.Tree, binding.StringTree) {
-	treeData := binding.NewStringTree()
-	tree := widget.NewTreeWithData(
-		treeData,
+	a := &folderArea{
+		treeData: binding.NewStringTree(),
+		ui:       u,
+	}
+	a.tree = widget.NewTreeWithData(
+		a.treeData,
 		func(isBranch bool) fyne.CanvasObject {
 			return container.NewHBox(widget.NewIcon(&fyne.StaticResource{}), widget.NewLabel("Branch template"))
 		},
@@ -72,8 +57,8 @@ func (u *ui) makeFolderTree() (*widget.Tree, binding.StringTree) {
 			label.SetText(text)
 		},
 	)
-	tree.OnSelected = func(uid string) {
-		di, err := treeData.GetItem(uid)
+	a.tree.OnSelected = func(uid string) {
+		di, err := a.treeData.GetItem(uid)
 		if err != nil {
 			slog.Error("Failed to get char ID item", "error", err)
 			return
@@ -87,14 +72,23 @@ func (u *ui) makeFolderTree() (*widget.Tree, binding.StringTree) {
 		item := newNodeFromJSON(s)
 		if item.isBranch() {
 			if u.folderArea.lastUID != "" {
-				tree.Select(u.folderArea.lastUID)
+				a.tree.Select(u.folderArea.lastUID)
 			}
 			return
 		}
 		u.folderArea.lastUID = uid
 		u.headerArea.SetFolder(item)
 	}
-	return tree, treeData
+	a.refreshButton = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+		go a.UpdateMails(true)
+	})
+	a.newButton = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
+		a.ui.ShowSendMessageWindow(CreateMessageNew, nil)
+	})
+	a.newButton.Importance = widget.HighImportance
+	top := container.NewHBox(a.refreshButton, a.newButton)
+	a.content = container.NewBorder(top, nil, nil, nil, a.tree)
+	return a
 }
 
 func (a *folderArea) Refresh() {

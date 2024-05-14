@@ -15,7 +15,7 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-type character struct {
+type overviewCharacter struct {
 	alliance       string
 	birthday       time.Time
 	corporation    string
@@ -36,7 +36,7 @@ type character struct {
 // overviewArea is the UI area that shows an overview of all the user's characters.
 type overviewArea struct {
 	content    *fyne.Container
-	characters binding.UntypedList // []character
+	characters binding.UntypedList // []overviewCharacter
 	table      *widget.Table
 	totalLabel *widget.Label
 	ui         *ui
@@ -79,7 +79,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			l := co.(*widget.Label)
-			c, err := getFromBoundUntypedList[character](a.characters, tci.Row)
+			c, err := getFromBoundUntypedList[overviewCharacter](a.characters, tci.Row)
 			if err != nil {
 				slog.Error("failed to render cell in overview table", "err", err)
 				l.Text = "failed to render"
@@ -139,7 +139,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		co.(*widget.Label).SetText(s.text)
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
-		c, err := getFromBoundUntypedList[character](a.characters, tci.Row)
+		c, err := getFromBoundUntypedList[overviewCharacter](a.characters, tci.Row)
 		if err != nil {
 			panic(err)
 		}
@@ -194,9 +194,9 @@ func (a *overviewArea) updateEntries() (int, int, float64, error) {
 	if err != nil {
 		return 0, 0, 0, fmt.Errorf("failed to fetch characters: %w", err)
 	}
-	cc := make([]character, len(mycc))
+	cc := make([]overviewCharacter, len(mycc))
 	for i, m := range mycc {
-		var c character
+		var c overviewCharacter
 		c.alliance = m.Character.AllianceName()
 		c.birthday = m.Character.Birthday
 		c.corporation = m.Character.Corporation.Name
