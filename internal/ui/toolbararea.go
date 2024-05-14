@@ -98,15 +98,14 @@ func (a *toolbarArea) makeMenuItems(c *model.MyCharacter) ([]*fyne.MenuItem, err
 			continue
 		}
 		i := fyne.NewMenuItem(myC.Name, func() {
-			newChar, err := a.ui.service.GetMyCharacter(myC.ID)
+			err := a.ui.LoadCurrentCharacter(myC.ID)
 			if err != nil {
-				msg := "Failed to create switch menu"
+				msg := "Failed to switch to new character"
 				slog.Error(msg, "err", err)
 				a.ui.statusArea.SetError(msg)
 				return
 
 			}
-			a.ui.SetCurrentCharacter(newChar)
 		})
 		i.Icon = a.ui.imageManager.CharacterPortrait(myC.ID, defaultIconSize)
 		menuItems = append(menuItems, i)

@@ -148,7 +148,7 @@ func (a *headerArea) makeTopText() (string, widget.Importance) {
 		return "ERROR", widget.DangerImportance
 	}
 	if !hasData {
-		return "No data", widget.LowImportance
+		return "No data yet...", widget.LowImportance
 	}
 	s := fmt.Sprintf("%d mails", len(a.mailIDs))
 	return s, widget.MediumImportance

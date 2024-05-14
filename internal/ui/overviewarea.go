@@ -3,39 +3,52 @@ package ui
 import (
 	"fmt"
 	"log/slog"
-	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/dustin/go-humanize"
 )
 
+type character struct {
+	alliance       string
+	birthday       time.Time
+	corporation    string
+	id             int32
+	lastLoginAt    time.Time
+	name           string
+	systemName     string
+	systemSecurity float64
+	region         string
+	ship           string
+	security       float64
+	sp             int
+	training       types.NullDuration
+	unreadCount    int
+	walletBalance  float64
+}
+
 // overviewArea is the UI area that shows an overview of all the user's characters.
 type overviewArea struct {
-	content          *fyne.Container
-	characters       []*model.MyCharacter
-	skillqueueCounts []types.NullDuration
-	unreadCounts     []int
-	table            *widget.Table
-	total            *widget.Label
-	ui               *ui
+	content    *fyne.Container
+	characters binding.UntypedList // []character
+	table      *widget.Table
+	totalLabel *widget.Label
+	ui         *ui
 }
 
 func (u *ui) NewOverviewArea() *overviewArea {
 	a := overviewArea{
-		ui:               u,
-		characters:       make([]*model.MyCharacter, 0),
-		skillqueueCounts: make([]types.NullDuration, 0),
-		unreadCounts:     make([]int, 0),
-		total:            widget.NewLabel(""),
+		characters: binding.NewUntypedList(),
+		totalLabel: widget.NewLabel(""),
+		ui:         u,
 	}
-	a.total.TextStyle.Bold = true
+	a.totalLabel.TextStyle.Bold = true
 	var headers = []struct {
 		text  string
 		width float32
@@ -55,9 +68,9 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		{"Age", 100},
 	}
 
-	table := widget.NewTable(
+	t := widget.NewTable(
 		func() (rows int, cols int) {
-			return len(a.characters), len(headers)
+			return a.characters.Length(), len(headers)
 		},
 		func() fyne.CanvasObject {
 			x := widget.NewLabel("Template")
@@ -66,162 +79,165 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			l := co.(*widget.Label)
-			c := a.characters[tci.Row]
+			c, err := getFromBoundUntypedList[character](a.characters, tci.Row)
+			if err != nil {
+				slog.Error("failed to render cell in overview table", "err", err)
+				l.Text = "failed to render"
+				l.Importance = widget.DangerImportance
+				l.Refresh()
+				return
+			}
 			l.Importance = widget.MediumImportance
 			switch tci.Col {
 			case 0:
-				l.Text = c.Character.Name
+				l.Text = c.name
 			case 1:
-				l.Text = c.Character.Corporation.Name
+				l.Text = c.corporation
 			case 2:
-				l.Text = c.Character.AllianceName()
+				l.Text = c.alliance
 			case 3:
-				l.Text = fmt.Sprintf("%.1f", c.Character.SecurityStatus)
-				if c.Character.SecurityStatus > 0 {
+				l.Text = fmt.Sprintf("%.1f", c.security)
+				if c.security > 0 {
 					l.Importance = widget.SuccessImportance
-				} else if c.Character.SecurityStatus < 0 {
+				} else if c.security < 0 {
 					l.Importance = widget.DangerImportance
 				}
 			case 4:
-				l.Text = humanize.Comma(int64(a.unreadCounts[tci.Row]))
+				l.Text = humanize.Comma(int64(c.unreadCount))
 			case 5:
-				l.Text = ihumanize.Number(float64(c.SkillPoints), 0)
+				l.Text = ihumanize.Number(float64(c.sp), 0)
 			case 6:
-				v := a.skillqueueCounts[tci.Row]
-				if !v.Valid {
+				if !c.training.Valid {
 					l.Text = "Inactive"
 					l.Importance = widget.WarningImportance
 				} else {
-					l.Text = ihumanize.Duration(v.Duration)
+					l.Text = ihumanize.Duration(c.training.Duration)
 				}
 			case 7:
-				l.Text = ihumanize.Number(c.WalletBalance, 1)
+				l.Text = ihumanize.Number(c.walletBalance, 1)
 			case 8:
-				l.Text = fmt.Sprintf("%s %.1f", c.Location.Name, c.Location.SecurityStatus)
+				l.Text = fmt.Sprintf("%s %.1f", c.systemName, c.systemSecurity)
 			case 9:
-				l.Text = c.Location.Constellation.Region.Name
+				l.Text = c.region
 			case 10:
-				l.Text = c.Ship.Name
+				l.Text = c.ship
 			case 11:
-				l.Text = humanize.RelTime(c.LastLoginAt, time.Now(), "", "")
+				l.Text = humanize.RelTime(c.lastLoginAt, time.Now(), "", "")
 			case 12:
-				l.Text = humanize.RelTime(c.Character.Birthday, time.Now(), "", "")
+				l.Text = humanize.RelTime(c.birthday, time.Now(), "", "")
 			}
 			l.Refresh()
 		},
 	)
-	table.ShowHeaderRow = true
-	table.StickyColumnCount = 1
-	table.CreateHeader = func() fyne.CanvasObject {
+	t.ShowHeaderRow = true
+	t.StickyColumnCount = 1
+	t.CreateHeader = func() fyne.CanvasObject {
 		return widget.NewLabel("Template")
 	}
-	table.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
+	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		s := headers[tci.Col]
 		co.(*widget.Label).SetText(s.text)
 	}
-	table.OnSelected = func(tci widget.TableCellID) {
-		myC := a.characters[tci.Row]
-		c, err := a.ui.service.GetMyCharacter(myC.ID)
+	t.OnSelected = func(tci widget.TableCellID) {
+		c, err := getFromBoundUntypedList[character](a.characters, tci.Row)
 		if err != nil {
-			slog.Error("Failed to fetch character", "characterID", c.ID, "err", err)
-			a.ui.statusArea.SetError("Failed to fetch character")
-			return
+			panic(err)
 		}
 		switch tci.Col {
 		case 4:
-			a.ui.SetCurrentCharacter(c)
+			a.ui.LoadCurrentCharacter(c.id)
 			a.ui.tabs.SelectIndex(0)
 		case 6:
-			a.ui.SetCurrentCharacter(c)
+			a.ui.LoadCurrentCharacter(c.id)
 			a.ui.tabs.SelectIndex(1)
 		case 7:
-			a.ui.SetCurrentCharacter(c)
+			a.ui.LoadCurrentCharacter(c.id)
 			a.ui.tabs.SelectIndex(2)
 		}
 	}
 
 	for i, h := range headers {
-		table.SetColumnWidth(i, h.width)
+		t.SetColumnWidth(i, h.width)
 	}
 
-	top := container.NewVBox(a.total, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, table)
-	a.table = table
+	top := container.NewVBox(a.totalLabel, widget.NewSeparator())
+	a.content = container.NewBorder(top, nil, nil, nil, t)
+	a.table = t
+	a.characters.AddListener(binding.NewDataListener(func() {
+		a.table.Refresh()
+	}))
 	return &a
 }
 
 func (a *overviewArea) Refresh() {
-	a.updateEntries()
-	a.table.Refresh()
-	wallet, sp := a.makeWalletSPText()
-	unread := a.makeUnreadText()
-	s := fmt.Sprintf(
-		"Total: %d characters • %s ISK • %s SP  • %s unread",
-		len(a.characters),
-		wallet,
-		sp,
-		unread,
-	)
-	a.total.SetText(s)
-}
-
-func (a *overviewArea) updateEntries() {
-	a.characters = a.characters[0:0]
-	var err error
-	a.characters, err = a.ui.service.ListMyCharacters()
+	sp, unread, wallet, err := a.updateEntries()
 	if err != nil {
-		slog.Error("failed to fetch characters", "err", err)
+		slog.Error("Failed to refresh overview", "err", err)
 		return
-	}
-
-	a.skillqueueCounts = slices.Grow(a.skillqueueCounts, len(a.characters))
-	a.skillqueueCounts = a.skillqueueCounts[0:len(a.characters)]
-	for i, c := range a.characters {
-		v, err := a.ui.service.GetTotalTrainingTime(c.ID)
-		if err != nil {
-			slog.Error("failed to fetch skill queue count", "characterID", c.ID, "err", err)
-			continue
-		}
-		a.skillqueueCounts[i] = v
-	}
-
-	a.unreadCounts = slices.Grow(a.unreadCounts, len(a.characters))
-	a.unreadCounts = a.unreadCounts[0:len(a.characters)]
-	for i, c := range a.characters {
-		v, err := a.ui.service.GetMailUnreadCount(c.ID)
-		if err != nil {
-			slog.Error("failed to fetch unread count", "characterID", c.ID, "err", err)
-			continue
-		}
-		a.unreadCounts[i] = v
-	}
-}
-
-func (a *overviewArea) makeWalletSPText() (string, string) {
-	if len(a.unreadCounts) == 0 {
-		return "?", "?"
-	}
-	var wallet float64
-	var sp int
-	for _, c := range a.characters {
-		wallet += c.WalletBalance
-		sp += c.SkillPoints
 	}
 	walletText := ihumanize.Number(wallet, 1)
 	spText := ihumanize.Number(float64(sp), 0)
-	return walletText, spText
+	unreadText := humanize.Comma(int64(unread))
+	s := fmt.Sprintf(
+		"Total: %d characters • %s ISK • %s SP  • %s unread",
+		a.characters.Length(),
+		walletText,
+		spText,
+		unreadText,
+	)
+	a.totalLabel.SetText(s)
 }
 
-func (a *overviewArea) makeUnreadText() string {
-	if len(a.unreadCounts) == 0 {
-		return "?"
+func (a *overviewArea) updateEntries() (int, int, float64, error) {
+	var err error
+	mycc, err := a.ui.service.ListMyCharacters()
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to fetch characters: %w", err)
 	}
-	var totalUnread int
-	for _, x := range a.unreadCounts {
-		totalUnread += x
+	cc := make([]character, len(mycc))
+	for i, m := range mycc {
+		var c character
+		c.alliance = m.Character.AllianceName()
+		c.birthday = m.Character.Birthday
+		c.corporation = m.Character.Corporation.Name
+		c.lastLoginAt = m.LastLoginAt
+		c.id = m.ID
+		c.name = m.Character.Name
+		c.region = m.Location.Constellation.Region.Name
+		c.security = m.Character.SecurityStatus
+		c.ship = m.Ship.Name
+		c.sp = m.SkillPoints
+		c.systemName = m.Location.Name
+		c.systemSecurity = m.Location.SecurityStatus
+		c.walletBalance = m.WalletBalance
+		cc[i] = c
 	}
-	unreadText := humanize.Comma(int64(totalUnread))
-	return unreadText
+	for i, c := range cc {
+		v, err := a.ui.service.GetTotalTrainingTime(c.id)
+		if err != nil {
+			return 0, 0, 0, fmt.Errorf("failed to fetch skill queue count for character %d, %w", c.id, err)
+		}
+		cc[i].training = v
+	}
+	for i, c := range cc {
+		v, err := a.ui.service.GetMailUnreadCount(c.id)
+		if err != nil {
+			return 0, 0, 0, fmt.Errorf("failed to fetch unread count for character %d, %w", c.id, err)
+		}
+		cc[i].unreadCount = v
+	}
+	if err := a.characters.Set(copyToAnySlice(cc)); err != nil {
+		panic(err)
+	}
+	var sp int
+	var unread int
+	var wallet float64
+	for _, c := range cc {
+		sp += c.sp
+		unread += c.unreadCount
+		wallet += c.walletBalance
+	}
+	return sp, unread, wallet, nil
 }
 
 func (a *overviewArea) StartUpdateTicker() {
@@ -229,7 +245,12 @@ func (a *overviewArea) StartUpdateTicker() {
 	go func() {
 		for {
 			func() {
-				for _, c := range a.characters {
+				cc, err := a.ui.service.ListMyCharactersShort()
+				if err != nil {
+					slog.Error(err.Error())
+					return
+				}
+				for _, c := range cc {
 					go func(characterID int32) {
 						isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, service.UpdateSectionMyCharacter)
 						if err != nil {

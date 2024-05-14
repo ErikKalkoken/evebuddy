@@ -1,8 +1,10 @@
 package ui
 
 import (
+	"fmt"
 	"time"
 
+	"fyne.io/fyne/v2/data/binding"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
 )
@@ -33,4 +35,43 @@ func humanizedNullDuration(d types.NullDuration, fallback string) string {
 		return fallback
 	}
 	return ihumanize.Duration(d.Duration)
+}
+
+// getFromBoundUntypedList returns the value from an untyped list in the target type.
+func getFromBoundUntypedList[T any](l binding.UntypedList, index int) (T, error) {
+	var z T
+	xx, err := l.GetItem(index)
+	if err != nil {
+		return z, err
+	}
+	x, err := xx.(binding.Untyped).Get()
+	if err != nil {
+		return z, err
+	}
+	c := x.(T)
+	return c, nil
+}
+
+// convertDataItem returns the value of the data item in the target type.
+func convertDataItem[T any](i binding.DataItem) (T, error) {
+	var z T
+	x, err := i.(binding.Untyped).Get()
+	if err != nil {
+		return z, err
+	}
+	q, ok := x.(T)
+	if !ok {
+		return z, fmt.Errorf("failed to convert untyped to %T", z)
+	}
+	return q, nil
+
+}
+
+// copyToAnySlice copies a slice of any type into an untyped slice.
+func copyToAnySlice[T any](s []T) []any {
+	x := make([]any, len(s))
+	for i, v := range s {
+		x[i] = v
+	}
+	return x
 }

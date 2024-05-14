@@ -41,6 +41,7 @@
         "logfile",
         "loglevel",
         "mattn",
+        "mycc",
         "showinfo",
         "skillqueue",
         "skillqueueitems",

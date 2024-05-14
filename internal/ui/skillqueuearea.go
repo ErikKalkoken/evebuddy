@@ -52,15 +52,21 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 				))
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
-			x, err := di.(binding.Untyped).Get()
+			row := co.(*fyne.Container).Objects[1].(*fyne.Container)
+			name := row.Objects[0].(*widget.Label)
+			duration := row.Objects[2].(*widget.Label)
+			pb := co.(*fyne.Container).Objects[0].(*widget.ProgressBar)
+
+			q, err := convertDataItem[*model.SkillqueueItem](di)
 			if err != nil {
-				panic(err)
-			}
-			q, ok := x.(*model.SkillqueueItem)
-			if !ok {
+				slog.Error("failed to render row in skillqueue table", "err", err)
+				name.Text = "failed to render"
+				name.Importance = widget.DangerImportance
+				name.Refresh()
+				duration.SetText("")
+				pb.Hide()
 				return
 			}
-			row := co.(*fyne.Container).Objects[1].(*fyne.Container)
 			var i widget.Importance
 			var d string
 			if q.IsCompleted() {
@@ -73,15 +79,12 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 				i = widget.MediumImportance
 				d = humanizedNullDuration(q.Duration(), "?")
 			}
-			name := row.Objects[0].(*widget.Label)
 			name.Importance = i
 			name.Text = q.Name()
 			name.Refresh()
-			duration := row.Objects[2].(*widget.Label)
 			duration.Text = d
 			duration.Importance = i
 			duration.Refresh()
-			pb := co.(*fyne.Container).Objects[0].(*widget.ProgressBar)
 			if q.IsActive() {
 				pb.SetValue(q.CompletionP())
 				pb.Show()
@@ -91,16 +94,11 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		xx, err := a.items.GetItem(id)
+		q, err := getFromBoundUntypedList[*model.SkillqueueItem](a.items, id)
 		if err != nil {
-			panic(err)
+			slog.Error("failed to fetch skillqueue item in list", "err", err)
+			return
 		}
-		x, err := xx.(binding.Untyped).Get()
-		if err != nil {
-			panic(err)
-		}
-		q := x.(*model.SkillqueueItem)
-
 		var isActive string
 		if q.IsActive() {
 			isActive = "yes"

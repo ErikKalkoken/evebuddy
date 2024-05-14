@@ -95,7 +95,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 		}
 	}
 	if c != nil {
-		u.SetCurrentCharacter(c)
+		u.setCurrentCharacter(c)
 	} else {
 		u.ResetCurrentCharacter()
 	}
@@ -156,7 +156,7 @@ func (u *ui) ShowAndRun() {
 		if runtime.GOOS == "linux" {
 			time.Sleep(1000 * time.Millisecond)
 			s := u.window.Canvas().Size()
-			u.window.Resize(fyne.NewSize(s.Width, s.Height-0.1))
+			u.window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
 			u.window.Resize(fyne.NewSize(s.Width, s.Height))
 		}
 		u.statusArea.StartUpdateTicker()
@@ -181,7 +181,16 @@ func (u *ui) CurrentChar() *model.MyCharacter {
 	return u.currentCharacter
 }
 
-func (u *ui) SetCurrentCharacter(c *model.MyCharacter) {
+func (u *ui) LoadCurrentCharacter(characterID int32) error {
+	c, err := u.service.GetMyCharacter(characterID)
+	if err != nil {
+		return err
+	}
+	u.setCurrentCharacter(c)
+	return nil
+}
+
+func (u *ui) setCurrentCharacter(c *model.MyCharacter) {
 	u.currentCharacter = c
 	err := u.service.DictionarySetInt(model.SettingLastCharacterID, int(c.ID))
 	if err != nil {
@@ -217,7 +226,7 @@ func (u *ui) SetAnyCharacter() error {
 			return err
 		}
 	} else {
-		u.SetCurrentCharacter(c)
+		u.setCurrentCharacter(c)
 	}
 	return nil
 }
