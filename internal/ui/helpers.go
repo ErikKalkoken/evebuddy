@@ -67,8 +67,8 @@ func convertDataItem[T any](i binding.DataItem) (T, error) {
 
 }
 
-// copyToAnySlice copies a slice of any type into an untyped slice.
-func copyToAnySlice[T any](s []T) []any {
+// copyToUntypedSlice copies a slice of any type into an untyped slice.
+func copyToUntypedSlice[T any](s []T) []any {
 	x := make([]any, len(s))
 	for i, v := range s {
 		x[i] = v

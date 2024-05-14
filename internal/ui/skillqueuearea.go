@@ -146,7 +146,10 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 }
 
 func (a *skillqueueArea) Refresh() {
-	a.updateItems()
+	if err := a.updateItems(); err != nil {
+		slog.Error("failed to update skillqueue items for character", "characterID", a.ui.CurrentCharID(), "err", err)
+		return
+	}
 	s, i := a.makeTopText()
 	a.total.Text = s
 	a.total.Importance = i
@@ -185,26 +188,20 @@ func (a *skillqueueArea) makeTopText() (string, widget.Importance) {
 	return fmt.Sprintf("Total training time: %s", s), widget.MediumImportance
 }
 
-func (a *skillqueueArea) updateItems() {
+func (a *skillqueueArea) updateItems() error {
 	if err := a.errorText.Set(""); err != nil {
-		panic(err)
+		return err
 	}
 	characterID := a.ui.CurrentCharID()
 	if characterID == 0 {
 		err := a.items.Set(make([]any, 0))
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 	items, err := a.ui.service.ListSkillqueueItems(characterID)
 	if err != nil {
-		slog.Error("failed to fetch skillqueue", "characterID", characterID, "err", err)
-		c := a.ui.CurrentChar()
-		err := a.errorText.Set(fmt.Sprintf("Failed to fetch skillqueue for %s", c.Character.Name))
-		if err != nil {
-			panic(err)
-		}
-		return
+		return err
 	}
 	x := make([]any, len(items))
 	for i, item := range items {
@@ -215,12 +212,12 @@ func (a *skillqueueArea) updateItems() {
 	}
 	total, err := a.ui.service.GetTotalTrainingTime(characterID)
 	if err != nil {
-		slog.Error("failed to fetch skillqueue", "characterID", characterID, "err", err)
-		return
+		return err
 	}
 	if err := a.trainingTotal.Set(total); err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 func (a *skillqueueArea) StartUpdateTicker() {

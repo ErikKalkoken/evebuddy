@@ -15,16 +15,19 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 )
 
+type accountCharacter struct {
+	id   int32
+	name string
+}
+
 // accountArea is the UI area for managing of characters.
 type accountArea struct {
-	characters []*model.MyCharacterShort
+	characters binding.UntypedList
 	content    *fyne.Container
 	dialog     *dialog.CustomDialog
-	list       *widget.List
 	total      *widget.Label
 	ui         *ui
 }
@@ -35,20 +38,22 @@ func (u *ui) ShowAccountDialog() {
 	a.dialog = dialog
 	dialog.Show()
 	dialog.Resize(fyne.Size{Width: 500, Height: 500})
-	a.Refresh()
+	err := a.Refresh()
+	if err != nil {
+		u.statusArea.SetError("Failed to open dialog to manage characters")
+		dialog.Hide()
+	}
 }
 
 func (u *ui) NewAccountArea() *accountArea {
 	a := &accountArea{
-		characters: make([]*model.MyCharacterShort, 0),
+		characters: binding.NewUntypedList(),
 		total:      widget.NewLabel(""),
 		ui:         u,
 	}
 
-	a.list = widget.NewList(
-		func() int {
-			return len(a.characters)
-		},
+	list := widget.NewListWithData(
+		a.characters,
 		func() fyne.CanvasObject {
 			icon := widget.NewIcon(resourceCharacterplaceholder32Jpeg)
 			name := widget.NewLabel("Template")
@@ -67,27 +72,37 @@ func (u *ui) NewAccountArea() *accountArea {
 			// }
 
 		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			c := a.characters[id]
+		func(di binding.DataItem, co fyne.CanvasObject) {
 			row := co.(*fyne.Container)
+			name := row.Objects[1].(*widget.Label)
+			c, err := convertDataItem[accountCharacter](di)
+			if err != nil {
+				slog.Error("failed to render row account table", "err", err)
+				name.Text = "failed to render"
+				name.Importance = widget.DangerImportance
+				name.Refresh()
+				return
+			}
 			icon := row.Objects[0].(*widget.Icon)
-			r := u.imageManager.CharacterPortrait(c.ID, defaultIconSize)
+			r := u.imageManager.CharacterPortrait(c.id, defaultIconSize)
 			image := canvas.NewImageFromResource(r)
 			icon.SetResource(image.Resource)
-			row.Objects[1].(*widget.Label).SetText(c.Name)
+			name.SetText(c.name)
 			row.Objects[3].(*widget.Button).OnTapped = func() {
 				d1 := dialog.NewConfirm(
 					"Delete Character",
-					fmt.Sprintf("Are you sure you want to delete %s?", c.Name),
+					fmt.Sprintf("Are you sure you want to delete %s?", c.name),
 					func(confirmed bool) {
 						if confirmed {
-							err := a.ui.service.DeleteMyCharacter(c.ID)
+							err := a.ui.service.DeleteMyCharacter(c.id)
 							if err != nil {
 								d2 := dialog.NewError(err, a.ui.window)
 								d2.Show()
 							}
-							a.Refresh()
-							isCurrentChar := c.ID == a.ui.CurrentCharID()
+							if err := a.Refresh(); err != nil {
+								panic(err)
+							}
+							isCurrentChar := c.id == a.ui.CurrentCharID()
 							if isCurrentChar {
 								err := a.ui.SetAnyCharacter()
 								if err != nil {
@@ -104,27 +119,32 @@ func (u *ui) NewAccountArea() *accountArea {
 			}
 		})
 
-	a.list.OnSelected = func(id widget.ListItemID) {
-		a.list.UnselectAll() // Hack. Should be replaced by custom list widget.
+	list.OnSelected = func(id widget.ListItemID) {
+		list.UnselectAll() // Hack. Maybe replace with custom list widget?
 	}
 
-	button := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
+	b := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.showAddCharacterDialog()
 	})
-	button.Importance = widget.HighImportance
-	a.content = container.NewBorder(button, a.total, nil, nil, container.NewScroll(a.list))
+	b.Importance = widget.HighImportance
+	a.content = container.NewBorder(b, a.total, nil, nil, container.NewScroll(list))
 	return a
 }
 
-func (a *accountArea) Refresh() {
-	a.characters = a.characters[0:0]
-	var err error
-	a.characters, err = a.ui.service.ListMyCharactersShort()
+func (a *accountArea) Refresh() error {
+	cc, err := a.ui.service.ListMyCharactersShort()
 	if err != nil {
-		panic(err)
+		return err
 	}
-	a.list.Refresh()
-	a.total.SetText(fmt.Sprintf("Characters: %d", len(a.characters)))
+	cc2 := make([]accountCharacter, len(cc))
+	for i, c := range cc {
+		cc2[i] = accountCharacter{id: c.ID, name: c.Name}
+	}
+	if err := a.characters.Set(copyToUntypedSlice(cc2)); err != nil {
+		return err
+	}
+	a.total.SetText(fmt.Sprintf("Characters: %d", a.characters.Length()))
+	return nil
 }
 
 func (a *accountArea) showAddCharacterDialog() {
@@ -152,13 +172,14 @@ func (a *accountArea) showAddCharacterDialog() {
 				d2.Show()
 			}
 		} else {
-			isFirst := len(a.characters) == 0
-			a.Refresh()
+			isFirst := a.characters.Length() == 0
+			if err := a.Refresh(); err != nil {
+				panic(err)
+			}
 			a.ui.RefreshOverview()
 			a.ui.toolbarArea.Refresh()
 			if isFirst {
-				err := a.ui.SetAnyCharacter()
-				if err != nil {
+				if err := a.ui.SetAnyCharacter(); err != nil {
 					panic(err)
 				}
 			}

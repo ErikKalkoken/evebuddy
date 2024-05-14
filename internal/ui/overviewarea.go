@@ -226,7 +226,7 @@ func (a *overviewArea) updateEntries() (int, int, float64, error) {
 		}
 		cc[i].unreadCount = v
 	}
-	if err := a.characters.Set(copyToAnySlice(cc)); err != nil {
+	if err := a.characters.Set(copyToUntypedSlice(cc)); err != nil {
 		panic(err)
 	}
 	var sp int

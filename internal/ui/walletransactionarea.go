@@ -169,7 +169,7 @@ func (a *walletTransactionArea) updateEntries() error {
 		w2.refType = w.Type()
 		entries[i] = w2
 	}
-	if err := a.entries.Set(copyToAnySlice(entries)); err != nil {
+	if err := a.entries.Set(copyToUntypedSlice(entries)); err != nil {
 		return err
 	}
 	return nil
