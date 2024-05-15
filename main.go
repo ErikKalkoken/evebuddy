@@ -40,6 +40,7 @@ var (
 	levelFlag   logLevelFlag
 	logFileFlag = flag.Bool("logfile", false, "Write a log file")
 	debugFlag   = flag.Bool("debug", false, "Run in debug mode")
+	removeFlag  = flag.Bool("remove-user-files", false, "Remove all user files of this app")
 )
 
 func init() {
@@ -52,8 +53,32 @@ func main() {
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	ad := appdirs.New("evebuddy")
+	if *removeFlag {
+		fmt.Print("Are you sure you want to remove all local data of this app (y/N)?")
+		var input string
+		fmt.Scanln(&input)
+		if strings.ToLower(input) == "y" {
+			pp := []struct {
+				name string
+				path string
+			}{
+				{"user data", ad.UserData()},
+				{"user log", ad.UserLog()},
+				{"user cache", ad.UserCache()},
+			}
+			for _, p := range pp {
+				if err := os.RemoveAll(p.path); err != nil {
+					panic(err)
+				}
+				fmt.Printf("Deleted %s: %s\n", p.name, p.path)
+			}
+		} else {
+			fmt.Println("Aborted")
+		}
+		return
+	}
+	fn := makeLogFileName(ad, *debugFlag)
 	if *logFileFlag {
-		fn := makeLogFileName(ad, *debugFlag)
 		f, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			log.Fatalf("error opening file %s: %v", fn, err)
@@ -69,8 +94,8 @@ func main() {
 	defer db.Close()
 	repository := storage.New(db)
 	s := service.NewService(repository)
-	p := makeImageCachePath(ad, *debugFlag)
-	e := ui.NewUI(s, p)
+	cache := makeImageCachePath(ad, *debugFlag)
+	e := ui.NewUI(s, cache)
 	e.ShowAndRun()
 }
 
