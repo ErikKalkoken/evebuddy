@@ -196,23 +196,25 @@ func (u *ui) setCurrentCharacter(c *model.MyCharacter) {
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
-	u.RefreshCurrentCharacter()
+	u.refreshCurrentCharacter()
 }
 
-func (u *ui) RefreshCurrentCharacter() {
+func (u *ui) refreshCurrentCharacter() {
 	u.toolbarArea.Refresh()
 	u.folderArea.Refresh()
 	u.skillqueueArea.Refresh()
 	u.walletTransactionArea.Refresh()
-	if u.CurrentChar() == nil {
+	c := u.CurrentChar()
+	if c != nil {
+		u.tabs.EnableIndex(0)
+		u.tabs.EnableIndex(1)
+		u.tabs.EnableIndex(2)
+		go u.walletTransactionArea.UpdateAndRefresh(c.ID)
+	} else {
 		u.tabs.DisableIndex(0)
 		u.tabs.DisableIndex(1)
 		u.tabs.DisableIndex(2)
 		u.tabs.SelectIndex(3)
-	} else {
-		u.tabs.EnableIndex(0)
-		u.tabs.EnableIndex(1)
-		u.tabs.EnableIndex(2)
 	}
 	u.window.Content().Refresh()
 }
@@ -241,7 +243,7 @@ func (u *ui) ResetCurrentCharacter() {
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}
-	u.RefreshCurrentCharacter()
+	u.refreshCurrentCharacter()
 }
 
 func (u *ui) StartUpdateTickerEveCharacters() {

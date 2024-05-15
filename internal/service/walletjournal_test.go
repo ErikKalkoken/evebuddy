@@ -51,10 +51,10 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		count, err := s.UpdateWalletJournalEntryESI(c.ID)
+		changed, err := s.UpdateWalletJournalEntryESI(c.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, 1, count)
+			assert.True(t, changed)
 			e, err := r.GetWalletJournalEntry(ctx, c.ID, 89)
 			if assert.NoError(t, err) {
 				assert.Equal(t, -100000.0, e.Amount)
@@ -102,10 +102,10 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		count, err := s.UpdateWalletJournalEntryESI(c.ID)
+		changed, err := s.UpdateWalletJournalEntryESI(c.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, 1, count)
+			assert.True(t, changed)
 			e2, err := r.GetWalletJournalEntry(ctx, c.ID, 89)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Contract Deposit", e2.Description)
@@ -149,10 +149,10 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		count, err := s.UpdateWalletJournalEntryESI(c.ID)
+		changed, err := s.UpdateWalletJournalEntryESI(c.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, 0, count)
+			assert.False(t, changed)
 			e2, err := r.GetWalletJournalEntry(ctx, c.ID, 89)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "existing", e2.Description)
@@ -163,6 +163,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			}
 		}
 	})
+
 }
 
 func TestListWalletJournalEntries(t *testing.T) {

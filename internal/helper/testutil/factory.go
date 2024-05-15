@@ -58,6 +58,37 @@ func (f Factory) CreateMyCharacter(args ...model.MyCharacter) *model.MyCharacter
 	return &c
 }
 
+// CreateMailLabel is a test factory for MailLabel objects
+func (f Factory) CreateMyCharacterUpdateStatus(args ...storage.MyCharacterUpdateStatusParams) *model.MyCharacterUpdateStatus {
+	ctx := context.Background()
+	var arg storage.MyCharacterUpdateStatusParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.MyCharacterID == 0 {
+		c := f.CreateMyCharacter()
+		arg.MyCharacterID = c.ID
+	}
+	if arg.Section == "" {
+		panic("missing section")
+	}
+	if arg.ContentHash == "" {
+		arg.ContentHash = fmt.Sprintf("content-hash-%d-%s-%s", arg.MyCharacterID, arg.Section, time.Now())
+	}
+	if arg.UpdatedAt.IsZero() {
+		arg.UpdatedAt = time.Now()
+	}
+	err := f.r.UpdateOrCreateMyCharacterUpdateStatus(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.r.GetMyCharacterUpdateStatus(ctx, arg.MyCharacterID, arg.Section)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 // CreateCharacter is a test factory for character objects.
 func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *model.EveCharacter {
 	ctx := context.Background()
@@ -439,6 +470,12 @@ func (f Factory) CreateSkillqueueItem(args ...storage.SkillqueueItemParams) *mod
 		x := f.CreateMyCharacter()
 		arg.MyCharacterID = x.ID
 	}
+	if arg.FinishedLevel == 0 {
+		arg.FinishedLevel = rand.IntN(5) + 1
+	}
+	if arg.LevelEndSP == 0 {
+		arg.LevelEndSP = rand.IntN(1_000_000)
+	}
 	if arg.QueuePosition == 0 {
 		var maxPos sql.NullInt64
 		q := "SELECT MAX(queue_position) FROM skillqueue_items WHERE my_character_id=?;"
@@ -471,7 +508,6 @@ func (f Factory) CreateSkillqueueItem(args ...storage.SkillqueueItemParams) *mod
 		hours := rand.IntN(90)*24 + 3
 		arg.FinishDate = arg.StartDate.Add(time.Hour * time.Duration(hours))
 	}
-
 	err := f.r.CreateSkillqueueItem(ctx, arg)
 	if err != nil {
 		panic(err)

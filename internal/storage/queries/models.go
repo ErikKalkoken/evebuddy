@@ -136,6 +136,13 @@ type MyCharacter struct {
 	WalletBalance float64
 }
 
+type MyCharacterUpdateStatus struct {
+	ContentHash   string
+	MyCharacterID int64
+	SectionID     string
+	UpdatedAt     time.Time
+}
+
 type Scope struct {
 	ID   int64
 	Name string

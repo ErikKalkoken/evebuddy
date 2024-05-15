@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 
 	islices "github.com/ErikKalkoken/evebuddy/internal/helper/slices"
@@ -159,7 +159,7 @@ func (a *headerArea) updateMails() {
 }
 
 func (a *headerArea) makeTopText() (string, widget.Importance) {
-	hasData, err := a.ui.service.SectionWasUpdated(a.ui.CurrentCharID(), service.UpdateSectionSkillqueue)
+	hasData, err := a.ui.service.SectionWasUpdated(a.ui.CurrentCharID(), model.UpdateSectionSkillqueue)
 	if err != nil {
 		return "ERROR", widget.DangerImportance
 	}

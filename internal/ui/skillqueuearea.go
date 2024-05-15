@@ -11,12 +11,11 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dustin/go-humanize"
+
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
-
-	"github.com/dustin/go-humanize"
 )
 
 // skillqueueArea is the UI area that shows the skillqueue
@@ -164,7 +163,7 @@ func (a *skillqueueArea) makeTopText() (string, widget.Importance) {
 	if errorText != "" {
 		return errorText, widget.DangerImportance
 	}
-	hasData, err := a.ui.service.SectionWasUpdated(a.ui.CurrentCharID(), service.UpdateSectionSkillqueue)
+	hasData, err := a.ui.service.SectionWasUpdated(a.ui.CurrentCharID(), model.UpdateSectionSkillqueue)
 	if err != nil {
 		return "ERROR", widget.DangerImportance
 	}
@@ -229,7 +228,7 @@ func (a *skillqueueArea) StartUpdateTicker() {
 				if characterID == 0 {
 					return
 				}
-				isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, service.UpdateSectionSkillqueue)
+				isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, model.UpdateSectionSkillqueue)
 				if err != nil {
 					slog.Error(err.Error())
 					return

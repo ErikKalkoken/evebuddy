@@ -28,7 +28,7 @@ func (s *Service) UpdateSkillqueueESI(characterID int32) error {
 		if err != nil {
 			return x, fmt.Errorf("failed to update skillqueue from ESI for character %d: %w", characterID, err)
 		}
-		if err := s.SectionSetUpdated(characterID, UpdateSectionSkillqueue); err != nil {
+		if err := s.SectionSetUpdated(characterID, model.UpdateSectionSkillqueue); err != nil {
 			slog.Warn("Failed to set updated for skillqueue", "err", err)
 		}
 		return x, nil

@@ -9,10 +9,11 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dustin/go-humanize"
+
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
-	"github.com/dustin/go-humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 type overviewCharacter struct {
@@ -252,7 +253,7 @@ func (a *overviewArea) StartUpdateTicker() {
 				}
 				for _, c := range cc {
 					go func(characterID int32) {
-						isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, service.UpdateSectionMyCharacter)
+						isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, model.UpdateSectionMyCharacter)
 						if err != nil {
 							slog.Error(err.Error())
 							return

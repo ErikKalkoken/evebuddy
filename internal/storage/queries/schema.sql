@@ -124,7 +124,7 @@ CREATE TABLE mail_labels (
 CREATE TABLE mail_recipients (
     mail_id INTEGER NOT NULL,
     eve_entity_id INTEGER NOT NULL,
-    PRIMARY KEY (mail_id,eve_entity_id),
+    PRIMARY KEY (mail_id, eve_entity_id),
     FOREIGN KEY (mail_id) REFERENCES mails(id) ON DELETE CASCADE,
     FOREIGN KEY (eve_entity_id) REFERENCES eve_entities(id) ON DELETE CASCADE
 );
@@ -147,7 +147,7 @@ CREATE INDEX mails_timestamp_idx ON mails (timestamp DESC);
 CREATE TABLE mail_mail_labels (
     mail_label_id INTEGER NOT NULL,
     mail_id INTEGER NOT NULL,
-    PRIMARY KEY (mail_label_id,mail_id),
+    PRIMARY KEY (mail_label_id, mail_id),
     FOREIGN KEY (mail_label_id) REFERENCES mail_labels(id) ON DELETE CASCADE,
     FOREIGN KEY (mail_id) REFERENCES mails(id) ON DELETE CASCADE
 );
@@ -188,9 +188,18 @@ CREATE TABLE tokens (
 CREATE TABLE tokens_scopes (
     token_id INTEGER NOT NULL,
     scope_id INTEGER NOT NULL,
-    PRIMARY KEY (token_id,scope_id),
+    PRIMARY KEY (token_id, scope_id),
     FOREIGN KEY (token_id) REFERENCES tokens(my_character_id) ON DELETE CASCADE,
     FOREIGN KEY (scope_id) REFERENCES scopes(id) ON DELETE CASCADE
+);
+
+CREATE TABLE my_character_update_status (
+    content_hash TEXT NOT NULL,
+    my_character_id INTEGER NOT NULL,
+    section_id TEXT NOT NULL,
+    updated_at DATETIME NOT NULL,
+    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
+    PRIMARY KEY (my_character_id, section_id)
 );
 
 CREATE TABLE wallet_journal_entries (

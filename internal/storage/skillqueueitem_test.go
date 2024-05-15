@@ -62,6 +62,8 @@ func TestSkillqueueItems(t *testing.T) {
 			FinishedLevel: 5,
 			MyCharacterID: c.ID,
 			QueuePosition: 0,
+			StartDate:     time.Now().Add(1 * time.Hour),
+			FinishDate:    time.Now().Add(3 * time.Hour),
 		}
 		// when
 		err := r.ReplaceSkillqueueItems(ctx, c.ID, []storage.SkillqueueItemParams{arg})

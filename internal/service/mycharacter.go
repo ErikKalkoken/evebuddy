@@ -159,6 +159,6 @@ func (s *Service) updateMyCharacterESI(ctx context.Context, c *model.MyCharacter
 	if err := g.Wait(); err != nil {
 		return fmt.Errorf("failed to update MyCharacter %d: %w", c.ID, err)
 	}
-	s.SectionSetUpdated(c.ID, UpdateSectionMyCharacter)
+	s.SectionSetUpdated(c.ID, model.UpdateSectionMyCharacter)
 	return nil
 }

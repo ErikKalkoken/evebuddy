@@ -9,10 +9,11 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 	"github.com/dustin/go-humanize"
+
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 const myFloatFormat = "#,###.##"
@@ -135,7 +136,7 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 	if c == nil {
 		return "No data yet...", widget.LowImportance
 	}
-	hasData, err := a.ui.service.SectionWasUpdated(c.ID, service.UpdateSectionWalletJournal)
+	hasData, err := a.ui.service.SectionWasUpdated(c.ID, model.UpdateSectionWalletJournal)
 	if err != nil {
 		return "ERROR", widget.DangerImportance
 	}
@@ -176,30 +177,31 @@ func (a *walletTransactionArea) updateEntries() error {
 }
 
 func (a *walletTransactionArea) StartUpdateTicker() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	go func() {
 		for {
 			func() {
-				characterID := a.ui.CurrentCharID()
-				if characterID == 0 {
-					return
-				}
-				isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, service.UpdateSectionWalletJournal)
+				cc, err := a.ui.service.ListMyCharactersShort()
 				if err != nil {
-					slog.Error(err.Error())
+					slog.Error("Failed to fetch list of my characters", "err", err)
 					return
 				}
-				if !isExpired {
-					return
+				for _, c := range cc {
+					a.UpdateAndRefresh(c.ID)
 				}
-				_, err = a.ui.service.UpdateWalletJournalEntryESI(characterID)
-				if err != nil {
-					slog.Error(err.Error())
-					return
-				}
-				a.Refresh()
 			}()
 			<-ticker.C
 		}
 	}()
+}
+
+func (a *walletTransactionArea) UpdateAndRefresh(characterID int32) {
+	changed, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionWalletJournal)
+	if err != nil {
+		slog.Error("Failed to update wallet transaction", "character", characterID, "err", err)
+		return
+	}
+	if changed && characterID == a.ui.CurrentCharID() {
+		a.Refresh()
+	}
 }

@@ -17,7 +17,7 @@ func (s *Service) ListWalletJournalEntries(characterID int32) ([]*model.WalletJo
 }
 
 // UpdateWalletJournalEntryESI updates the wallet journal from ESI and returns the count of new entries.
-func (s *Service) UpdateWalletJournalEntryESI(characterID int32) (int, error) {
+func (s *Service) UpdateWalletJournalEntryESI(characterID int32) (bool, error) {
 	ctx := context.Background()
 	key := fmt.Sprintf("UpdateWalletJournalEntryESI-%d", characterID)
 	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
@@ -25,13 +25,13 @@ func (s *Service) UpdateWalletJournalEntryESI(characterID int32) (int, error) {
 		if err != nil {
 			return count, fmt.Errorf("failed to update wallet journal from ESI for character %d: %w", characterID, err)
 		}
-		if err := s.SectionSetUpdated(characterID, UpdateSectionWalletJournal); err != nil {
+		if err := s.SectionSetUpdated(characterID, model.UpdateSectionWalletJournal); err != nil {
 			slog.Warn("Failed to set updated for skillqueue", "err", err)
 		}
-		return count, nil
+		return count > 0, nil
 	})
-	count := x.(int)
-	return count, err
+	hasChanged := x.(bool)
+	return hasChanged, err
 }
 
 func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID int32) (int, error) {

@@ -28,6 +28,7 @@ func TruncateTables(db *sql.DB) {
 		DELETE FROM tokens_scopes;
 		DELETE FROM scopes;
 		DELETE FROM tokens;
+		DELETE FROM my_character_update_status;
 		DELETE FROM my_characters;
 		DELETE FROM eve_characters;
 		DELETE FROM eve_entities;

@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
 )
 
 // folderArea is the UI area showing the mail folders.
@@ -277,7 +276,7 @@ func (a *folderArea) StartUpdateTicker() {
 				if characterID == 0 {
 					return
 				}
-				isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, service.UpdateSectionMail)
+				isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, model.UpdateSectionMail)
 				if err != nil {
 					slog.Error(err.Error())
 					return

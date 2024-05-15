@@ -25,7 +25,7 @@ type statusArea struct {
 func (u *ui) newStatusArea() *statusArea {
 	a := &statusArea{
 		eveStatusTraffic: widget.NewLabel("•"),
-		eveStatusText:    widget.NewLabel(""),
+		eveStatusText:    widget.NewLabel("Checking..."),
 		infoText:         widget.NewLabel(""),
 		infoPB:           widget.NewProgressBarInfinite(),
 		ui:               u,
