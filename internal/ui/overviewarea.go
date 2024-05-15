@@ -248,7 +248,7 @@ func (a *overviewArea) StartUpdateTicker() {
 			func() {
 				cc, err := a.ui.service.ListMyCharactersShort()
 				if err != nil {
-					slog.Error(err.Error())
+					slog.Error("Failed to fetch list of my characters", "err", err)
 					return
 				}
 				for _, c := range cc {

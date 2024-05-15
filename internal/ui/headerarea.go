@@ -37,7 +37,6 @@ func (u *ui) NewHeaderArea() *headerArea {
 		mailIDs:  binding.NewIntList(),
 		ui:       u,
 	}
-
 	foregroundColor := theme.ForegroundColor()
 	subjectSize := theme.TextSize() * 1.15
 	list := widget.NewListWithData(
@@ -70,6 +69,7 @@ func (u *ui) NewHeaderArea() *headerArea {
 			}
 			parent := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects[0].(*fyne.Container)
 			top := parent.Objects[0].(*fyne.Container)
+			fg := theme.ForegroundColor()
 
 			from := top.Objects[0].(*canvas.Text)
 			var t string
@@ -80,16 +80,19 @@ func (u *ui) NewHeaderArea() *headerArea {
 			}
 			from.Text = t
 			from.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
+			from.Color = fg
 			from.Refresh()
 
 			timestamp := top.Objects[2].(*canvas.Text)
 			timestamp.Text = m.Timestamp.Format(myDateTime)
 			timestamp.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
+			timestamp.Color = fg
 			timestamp.Refresh()
 
 			subject := parent.Objects[1].(*canvas.Text)
 			subject.Text = m.Subject
 			subject.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
+			subject.Color = fg
 			subject.Refresh()
 		})
 	list.OnSelected = func(id widget.ListItemID) {
