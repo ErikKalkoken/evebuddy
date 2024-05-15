@@ -224,25 +224,27 @@ func (a *skillqueueArea) StartUpdateTicker() {
 	go func() {
 		for {
 			func() {
-				characterID := a.ui.CurrentCharID()
-				if characterID == 0 {
-					return
-				}
-				isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, model.UpdateSectionSkillqueue)
+				cc, err := a.ui.service.ListMyCharactersShort()
 				if err != nil {
-					slog.Error(err.Error())
+					slog.Error("Failed to fetch list of my characters", "err", err)
 					return
 				}
-				if !isExpired {
-					return
+				for _, c := range cc {
+					a.UpdateAndRefresh(c.ID)
 				}
-				if err := a.ui.service.UpdateSkillqueueESI(characterID); err != nil {
-					slog.Error(err.Error())
-					return
-				}
-				a.Refresh()
 			}()
 			<-ticker.C
 		}
 	}()
+}
+
+func (a *skillqueueArea) UpdateAndRefresh(characterID int32) {
+	_, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionSkillqueue)
+	if err != nil {
+		slog.Error("Failed to update skillqueue", "character", characterID, "err", err)
+		return
+	}
+	if characterID == a.ui.CurrentCharID() {
+		a.Refresh()
+	}
 }

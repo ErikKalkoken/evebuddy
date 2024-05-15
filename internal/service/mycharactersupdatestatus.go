@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"net/http"
 	"time"
 
+	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
@@ -76,6 +79,8 @@ func (s *Service) UpdateSectionIfExpired(characterID int32, section model.Update
 		return false, nil
 	}
 	switch section {
+	case model.UpdateSectionSkillqueue:
+		return s.UpdateSkillqueueESI(characterID)
 	case model.UpdateSectionWalletJournal:
 		return s.UpdateWalletJournalEntryESI(characterID)
 	}
@@ -94,4 +99,29 @@ func sectionUpdateTimeout(section model.UpdateSection) time.Duration {
 		panic(fmt.Sprintf("Invalid section: %v", section))
 	}
 	return d
+}
+
+// hasSectionChanged reports wether a section has changed based on the given HTTP response.
+func (s *Service) hasSectionChanged(ctx context.Context, characterID int32, section model.UpdateSection, r *http.Response) (bool, error) {
+	hash := ihttp.CalcBodyHash(r)
+	u, err := s.r.GetMyCharacterUpdateStatus(ctx, characterID, section)
+	if errors.Is(err, storage.ErrNotFound) {
+		// section is new
+	} else if err != nil {
+		return false, err
+	} else if u.ContentHash == hash {
+		slog.Debug("Section has not changed", "characterID", characterID, "section", section)
+		return false, nil
+	}
+	slog.Debug("Section has changed", "characterID", characterID, "section", section)
+	arg := storage.MyCharacterUpdateStatusParams{
+		MyCharacterID: characterID,
+		Section:       section,
+		ContentHash:   hash,
+		UpdatedAt:     time.Now(),
+	}
+	if err := s.r.UpdateOrCreateMyCharacterUpdateStatus(ctx, arg); err != nil {
+		return false, err
+	}
+	return true, nil
 }

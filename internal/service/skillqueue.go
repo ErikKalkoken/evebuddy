@@ -20,38 +20,46 @@ func (s *Service) ListSkillqueueItems(characterID int32) ([]*model.SkillqueueIte
 	return s.r.ListSkillqueueItems(ctx, characterID)
 }
 
-func (s *Service) UpdateSkillqueueESI(characterID int32) error {
+func (s *Service) UpdateSkillqueueESI(characterID int32) (bool, error) {
 	ctx := context.Background()
 	key := fmt.Sprintf("UpdateSkillqueueESI-%d", characterID)
-	_, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		x, err := s.updateSkillqueue(ctx, characterID)
+	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
+		changed, err := s.updateSkillqueue(ctx, characterID)
 		if err != nil {
-			return x, fmt.Errorf("failed to update skillqueue from ESI for character %d: %w", characterID, err)
+			return changed, fmt.Errorf("failed to update skillqueue from ESI for character %d: %w", characterID, err)
 		}
 		if err := s.SectionSetUpdated(characterID, model.UpdateSectionSkillqueue); err != nil {
 			slog.Warn("Failed to set updated for skillqueue", "err", err)
 		}
-		return x, nil
+		return changed, nil
 	})
-	return err
+	changed := x.(bool)
+	return changed, err
 }
 
-func (s *Service) updateSkillqueue(ctx context.Context, characterID int32) (int, error) {
+func (s *Service) updateSkillqueue(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
-		return 0, err
+		return false, err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
-	items, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkillqueue(ctx, characterID, nil)
+	items, r, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkillqueue(ctx, characterID, nil)
 	if err != nil {
-		return 0, err
+		return false, err
 	}
 	slog.Info("Received skillqueue items from ESI", "count", len(items), "characterID", characterID)
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionSkillqueue, r)
+	if err != nil {
+		return false, err
+	}
+	if !changed {
+		return false, nil
+	}
 	args := make([]storage.SkillqueueItemParams, len(items))
 	for i, o := range items {
 		_, err := s.getOrCreateEveTypeESI(ctx, o.SkillId)
 		if err != nil {
-			return 0, err
+			return false, err
 		}
 		args[i] = storage.SkillqueueItemParams{
 			EveTypeID:       o.SkillId,
@@ -66,8 +74,8 @@ func (s *Service) updateSkillqueue(ctx context.Context, characterID int32) (int,
 		}
 	}
 	if err := s.r.ReplaceSkillqueueItems(ctx, characterID, args); err != nil {
-		return 0, err
+		return false, err
 	}
 	slog.Info("Updated skillqueue items", "characterID", characterID, "count", len(args))
-	return len(args), nil
+	return true, nil
 }
