@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -14,54 +15,67 @@ import (
 
 // statusArea is the UI area showing the current status aka status bar.
 type statusArea struct {
-	content          *fyne.Container
-	eveStatusTraffic *widget.Label
-	eveStatusText    *widget.Label
-	infoText         *widget.Label
-	infoPB           *widget.ProgressBarInfinite
-	ui               *ui
+	content                  *fyne.Container
+	eveClock                 *widget.Label
+	eveStatusTrafficIcon     *widget.Icon
+	eveStatusTrafficResource fyne.Resource
+	eveStatusText            *widget.Label
+	infoText                 *widget.Label
+	infoPB                   *widget.ProgressBarInfinite
+	ui                       *ui
 }
 
 func (u *ui) newStatusArea() *statusArea {
 	a := &statusArea{
-		eveStatusTraffic: widget.NewLabel("•"),
-		eveStatusText:    widget.NewLabel("Checking..."),
-		infoText:         widget.NewLabel(""),
-		infoPB:           widget.NewProgressBarInfinite(),
-		ui:               u,
+		eveClock:      widget.NewLabel(""),
+		eveStatusText: widget.NewLabel("Checking..."),
+		infoText:      widget.NewLabel(""),
+		infoPB:        widget.NewProgressBarInfinite(),
+		ui:            u,
 	}
 	a.infoPB.Hide()
+	a.eveStatusTrafficResource = theme.MediaRecordIcon()
+	a.eveStatusTrafficIcon = widget.NewIcon(theme.NewDisabledResource(a.eveStatusTrafficResource))
 	c := container.NewHBox(
 		container.NewHBox(a.infoText, a.infoPB),
 		layout.NewSpacer(),
-		container.NewHBox(a.eveStatusTraffic, a.eveStatusText))
+		widget.NewSeparator(),
+		container.NewHBox(
+			a.eveClock, layout.NewSpacer(), widget.NewSeparator(), a.eveStatusTrafficIcon, a.eveStatusText))
 	a.content = container.NewVBox(widget.NewSeparator(), c)
 	return a
 }
 
 func (a *statusArea) StartUpdateTicker() {
-	ticker := time.NewTicker(60 * time.Second)
+	clockTicker := time.NewTicker(1 * time.Second)
+	go func() {
+		for {
+			t := time.Now().UTC()
+			a.eveClock.SetText(t.Format("15:04"))
+			<-clockTicker.C
+		}
+	}()
+	statusTicker := time.NewTicker(60 * time.Second)
 	go func() {
 		for {
 			var s string
-			var i widget.Importance
+			var r fyne.Resource
 			x, err := a.ui.service.FetchESIStatus()
 			if err != nil {
 				slog.Error("Failed to fetch ESI status", "err", err)
-				i = widget.WarningImportance
+				r = theme.NewWarningThemedResource(a.eveStatusTrafficResource)
 				s = "ERROR"
 			} else if !x.IsOnline {
-				i = widget.DangerImportance
+				r = theme.NewErrorThemedResource(a.eveStatusTrafficResource)
 				s = "OFFLINE"
 			} else {
-				i = widget.SuccessImportance
+				r = theme.NewSuccessThemedResource(a.eveStatusTrafficResource)
 				arg := message.NewPrinter(language.English)
 				s = arg.Sprintf("%d players", x.PlayerCount)
 			}
 			a.eveStatusText.SetText(s)
-			a.eveStatusTraffic.Importance = i
-			a.eveStatusTraffic.Refresh()
-			<-ticker.C
+			a.eveStatusTrafficIcon.SetResource(r)
+			<-statusTicker.C
 		}
 	}()
 }

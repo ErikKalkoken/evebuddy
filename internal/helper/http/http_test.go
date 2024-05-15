@@ -99,6 +99,7 @@ func TestLoggedTransportWithRetries(t *testing.T) {
 			httpmock.NewStringResponder(http.StatusOK, "Test"))
 		// when
 		r, err := httpClient.Get("https://www.example.com/")
+		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusOK, r.StatusCode)
 			assert.Equal(t, httpmock.GetTotalCallCount(), 1)
@@ -115,6 +116,7 @@ func TestLoggedTransportWithRetries(t *testing.T) {
 			httpmock.NewStringResponder(http.StatusNotFound, "Test"))
 		// when
 		r, err := httpClient.Get("https://www.example.com/")
+		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusNotFound, r.StatusCode)
 			assert.Equal(t, httpmock.GetTotalCallCount(), 1)
@@ -131,6 +133,7 @@ func TestLoggedTransportWithRetries(t *testing.T) {
 			httpmock.NewStringResponder(http.StatusOK, "Answer"))
 		// when
 		r, err := httpClient.Post("https://www.example.com/", "", bytes.NewBuffer([]byte("Question")))
+		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusOK, r.StatusCode)
 			assert.Equal(t, httpmock.GetTotalCallCount(), 1)
@@ -149,6 +152,7 @@ func TestLoggedTransportWithRetries(t *testing.T) {
 			httpmock.NewStringResponder(http.StatusBadGateway, "Test"))
 		// when
 		r, err := httpClient.Get("https://www.example.com/")
+		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusBadGateway, r.StatusCode)
 			assert.Equal(t, httpmock.GetTotalCallCount(), 4)
@@ -164,9 +168,31 @@ func TestLoggedTransportWithRetries(t *testing.T) {
 			httpmock.NewStringResponder(http.StatusInternalServerError, "Test"))
 		// when
 		r, err := httpClient.Get("https://www.example.com/")
+		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusInternalServerError, r.StatusCode)
 			assert.Equal(t, httpmock.GetTotalCallCount(), 1)
 		}
+	})
+}
+
+func TestCalcBodyHash(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	t.Run("can calculate hash from body", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://www.example.com/",
+			httpmock.NewStringResponder(http.StatusOK, "Test"))
+		r, err := http.Get("https://www.example.com/")
+		if err != nil {
+			panic(err)
+		}
+		// when
+		x := ihttp.CalcBodyHash(r)
+		// then
+		assert.Len(t, x, 32)
 	})
 }
