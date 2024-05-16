@@ -55,7 +55,9 @@ func (u *ui) NewAccountArea() *accountArea {
 	list := widget.NewListWithData(
 		a.characters,
 		func() fyne.CanvasObject {
-			icon := widget.NewIcon(resourceCharacterplaceholder32Jpeg)
+			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
+			icon.FillMode = canvas.ImageFillContain
+			icon.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
 			name := widget.NewLabel("Template")
 			b := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {})
 			b.Importance = widget.DangerImportance
@@ -83,10 +85,11 @@ func (u *ui) NewAccountArea() *accountArea {
 				name.Refresh()
 				return
 			}
-			icon := row.Objects[0].(*widget.Icon)
+			icon := row.Objects[0].(*canvas.Image)
 			r := u.imageManager.CharacterPortrait(c.id, defaultIconSize)
 			image := canvas.NewImageFromResource(r)
-			icon.SetResource(image.Resource)
+			icon.Resource = image.Resource
+			image.Refresh()
 			name.SetText(c.name)
 			row.Objects[3].(*widget.Button).OnTapped = func() {
 				d1 := dialog.NewConfirm(

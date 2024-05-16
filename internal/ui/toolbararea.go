@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -17,7 +18,7 @@ import (
 // toolbarArea is the UI area showing the current status aka status bar.
 type toolbarArea struct {
 	content      *fyne.Container
-	icon         *widget.Icon
+	icon         *canvas.Image
 	name         *widget.Label
 	switchButton *widgets.ContextMenuButton
 	manageButton *widget.Button
@@ -26,7 +27,9 @@ type toolbarArea struct {
 
 func (u *ui) newToolbarArea() *toolbarArea {
 	a := &toolbarArea{ui: u}
-	a.icon = widget.NewIcon(resourceCharacterplaceholder32Jpeg)
+	a.icon = canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
+	a.icon.FillMode = canvas.ImageFillContain
+	a.icon.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
 	a.name = widget.NewLabel("")
 	a.switchButton = widgets.NewContextMenuButtonWithIcon(
 		theme.NewThemedResource(resourceSwitchaccountSvg), "", fyne.NewMenu(""))
@@ -52,12 +55,13 @@ func (u *ui) newToolbarArea() *toolbarArea {
 func (a *toolbarArea) Refresh() {
 	c := a.ui.CurrentChar()
 	if c == nil {
-		a.icon.SetResource(resourceCharacterplaceholder32Jpeg)
+		a.icon.Resource = resourceCharacterplaceholder32Jpeg
+		a.icon.Refresh()
 		a.name.Text = "No character"
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
 	} else {
-		r := a.ui.imageManager.CharacterPortrait(c.ID, defaultIconSize)
-		a.icon.SetResource(r)
+		a.icon.Resource = a.ui.imageManager.CharacterPortrait(c.ID, defaultIconSize)
+		a.icon.Refresh()
 		s := fmt.Sprintf("%s (%s)", c.Character.Name, c.Character.Corporation.Name)
 		a.name.Text = s
 		a.name.TextStyle = fyne.TextStyle{Bold: true}
