@@ -24,14 +24,7 @@ func (s *Service) UpdateSkillqueueESI(characterID int32) (bool, error) {
 	ctx := context.Background()
 	key := fmt.Sprintf("UpdateSkillqueueESI-%d", characterID)
 	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		changed, err := s.updateSkillqueue(ctx, characterID)
-		if err != nil {
-			return changed, fmt.Errorf("failed to update skillqueue from ESI for character %d: %w", characterID, err)
-		}
-		if err := s.SectionSetUpdated(characterID, model.UpdateSectionSkillqueue); err != nil {
-			slog.Warn("Failed to set updated for skillqueue", "err", err)
-		}
-		return changed, nil
+		return s.updateSkillqueue(ctx, characterID)
 	})
 	changed := x.(bool)
 	return changed, err

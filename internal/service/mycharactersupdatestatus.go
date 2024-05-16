@@ -16,6 +16,8 @@ import (
 // update section timeouts in seconds
 const (
 	updateSectionMailTimeout          = 30
+	updateSectionMailLabelsTimeout    = 30
+	updateSectionMailListsTimeout     = 120
 	updateSectionDetailsTimeout       = 30
 	updateSectionSkillqueueTimeout    = 120
 	updateSectionWalletJournalTimeout = 3600
@@ -71,6 +73,8 @@ func (s *Service) SectionIsUpdateExpired(characterID int32, section model.Update
 }
 
 func (s *Service) UpdateSectionIfExpired(characterID int32, section model.UpdateSection) (bool, error) {
+	var err error
+	var changed bool
 	isExpired, err := s.SectionIsUpdateExpired(characterID, section)
 	if err != nil {
 		return false, err
@@ -80,30 +84,35 @@ func (s *Service) UpdateSectionIfExpired(characterID int32, section model.Update
 	}
 	switch section {
 	case model.UpdateSectionMail:
-		_, err := s.UpdateMailESI(characterID)
-		if err != nil {
-			return false, err
-		}
-		return true, nil
-
+		changed, err = s.UpdateMailESI(characterID)
+	case model.UpdateSectionMailLabels:
+		changed, err = s.UpdateMailLabelsESI(characterID)
+	case model.UpdateSectionMailLists:
+		changed, err = s.UpdateMailListsESI(characterID)
 	case model.UpdateSectionSkillqueue:
-		return s.UpdateSkillqueueESI(characterID)
+		changed, err = s.UpdateSkillqueueESI(characterID)
 	case model.UpdateSectionWalletJournal:
-		return s.UpdateWalletJournalEntryESI(characterID)
+		changed, err = s.UpdateWalletJournalEntryESI(characterID)
 	case model.UpdateSectionMyCharacter:
-		err := s.UpdateMyCharacterESI(characterID)
-		if err != nil {
-			return false, err
-		}
-		return true, err
+		changed, err = s.UpdateMyCharacterESI(characterID)
+	default:
+		panic(fmt.Sprintf("Undefined section: %s", section))
 	}
-	panic(fmt.Sprintf("Undefined section: %s", section))
+	if err != nil {
+		return false, fmt.Errorf("failed to update section %s from ESI for character %d: %w", section, characterID, err)
+	}
+	if err := s.SectionSetUpdated(characterID, section); err != nil {
+		return false, err
+	}
+	return changed, err
 }
 
 func sectionUpdateTimeout(section model.UpdateSection) time.Duration {
 	m := map[model.UpdateSection]time.Duration{
 		model.UpdateSectionMyCharacter:   updateSectionDetailsTimeout * time.Second,
 		model.UpdateSectionMail:          updateSectionMailTimeout * time.Second,
+		model.UpdateSectionMailLabels:    updateSectionMailLabelsTimeout * time.Second,
+		model.UpdateSectionMailLists:     updateSectionMailListsTimeout * time.Second,
 		model.UpdateSectionSkillqueue:    updateSectionSkillqueueTimeout * time.Second,
 		model.UpdateSectionWalletJournal: updateSectionWalletJournalTimeout * time.Second,
 	}
@@ -114,7 +123,7 @@ func sectionUpdateTimeout(section model.UpdateSection) time.Duration {
 	return d
 }
 
-// hasSectionChanged reports wether a section has changed based on the given HTTP response.
+// hasSectionChanged reports wether a section has changed based on the given HTTP response and updates it's content hash.
 func (s *Service) hasSectionChanged(ctx context.Context, characterID int32, section model.UpdateSection, r *http.Response) (bool, error) {
 	hash := ihttp.CalcBodyHash(r)
 	u, err := s.r.GetMyCharacterUpdateStatus(ctx, characterID, section)

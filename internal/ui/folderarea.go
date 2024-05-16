@@ -274,12 +274,22 @@ func (a *folderArea) StartUpdateTicker() {
 }
 
 func (a *folderArea) MaybeUpdateAndRefresh(characterID int32) {
-	changed, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionMail)
+	changed1, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionMailLabels)
+	if err != nil {
+		slog.Error("Failed to update mail labels", "character", characterID, "err", err)
+		return
+	}
+	changed2, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionMailLists)
+	if err != nil {
+		slog.Error("Failed to update mail lists", "character", characterID, "err", err)
+		return
+	}
+	changed3, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionMail)
 	if err != nil {
 		slog.Error("Failed to update mail", "character", characterID, "err", err)
 		return
 	}
-	if changed && characterID == a.ui.CurrentCharID() {
+	if (changed1 || changed2 || changed3) && characterID == a.ui.CurrentCharID() {
 		a.Refresh()
 	}
 }

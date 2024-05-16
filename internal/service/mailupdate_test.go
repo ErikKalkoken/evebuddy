@@ -84,7 +84,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		token := factory.CreateToken(model.Token{CharacterID: c.ID})
+		factory.CreateToken(model.Token{CharacterID: c.ID})
 		dataMailLabel := map[string]any{
 			"labels": []map[string]any{
 				{
@@ -113,7 +113,7 @@ func TestUpdateMailLabel(t *testing.T) {
 				return resp, nil
 			})
 		// when
-		err := s.updateMailLabels(ctx, token)
+		_, err := s.updateMailLabels(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			labels, err := r.ListMailLabelsOrdered(ctx, c.ID)
@@ -127,7 +127,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		token := factory.CreateToken(model.Token{CharacterID: c.ID})
+		factory.CreateToken(model.Token{CharacterID: c.ID})
 		l1 := factory.CreateMailLabel(model.MailLabel{
 			MyCharacterID: c.ID,
 			LabelID:       16,
@@ -163,7 +163,7 @@ func TestUpdateMailLabel(t *testing.T) {
 				return resp, nil
 			})
 		// when
-		err := s.updateMailLabels(ctx, token)
+		_, err := s.updateMailLabels(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			l2, err := r.GetMailLabel(ctx, c.ID, l1.LabelID)

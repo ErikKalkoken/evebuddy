@@ -76,14 +76,14 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 	return token.CharacterID, nil
 }
 
-func (s *Service) UpdateMyCharacterESI(characterID int32) error {
+func (s *Service) UpdateMyCharacterESI(characterID int32) (bool, error) {
 	ctx := context.Background()
 	key := fmt.Sprintf("UpdateMyCharacter-%d", characterID)
 	_, err, _ := s.singleGroup.Do(key, func() (any, error) {
 		err := s.updateMyCharacter(ctx, characterID)
 		return struct{}{}, err
 	})
-	return err
+	return true, err
 }
 
 func (s *Service) updateMyCharacter(ctx context.Context, characterID int32) error {

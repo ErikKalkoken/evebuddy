@@ -137,30 +137,36 @@ func TestUpdateMail(t *testing.T) {
 				return resp, nil
 			})
 		// when
-		_, err := s.UpdateMailESI(c1.ID)
-		// then
+		_, err := s.UpdateMailLabelsESI(c1.ID)
 		if assert.NoError(t, err) {
-			m, err := s.GetMail(c1.ID, int32(mailID))
+			_, err = s.UpdateMailListsESI(c1.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, "blah blah blah", m.Body)
-			}
-			lists, err := r.ListMailListsOrdered(ctx, c1.ID)
-			if assert.NoError(t, err) {
-				got := set.New[int32]()
-				for _, l := range lists {
-					got.Add(l.ID)
+				_, err = s.UpdateMailESI(c1.ID)
+				// then
+				if assert.NoError(t, err) {
+					m, err := s.GetMail(c1.ID, int32(mailID))
+					if assert.NoError(t, err) {
+						assert.Equal(t, "blah blah blah", m.Body)
+					}
+					lists, err := r.ListMailListsOrdered(ctx, c1.ID)
+					if assert.NoError(t, err) {
+						got := set.New[int32]()
+						for _, l := range lists {
+							got.Add(l.ID)
+						}
+						want := set.NewFromSlice([]int32{m1.ID})
+						assert.Equal(t, want, got)
+					}
+					lists, err = r.ListMailListsOrdered(ctx, c2.ID)
+					if assert.NoError(t, err) {
+						got := set.New[int32]()
+						for _, l := range lists {
+							got.Add(l.ID)
+						}
+						want := set.NewFromSlice([]int32{m2.ID})
+						assert.Equal(t, want, got)
+					}
 				}
-				want := set.NewFromSlice([]int32{m1.ID})
-				assert.Equal(t, want, got)
-			}
-			lists, err = r.ListMailListsOrdered(ctx, c2.ID)
-			if assert.NoError(t, err) {
-				got := set.New[int32]()
-				for _, l := range lists {
-					got.Add(l.ID)
-				}
-				want := set.NewFromSlice([]int32{m2.ID})
-				assert.Equal(t, want, got)
 			}
 		}
 	})

@@ -20,8 +20,75 @@ const (
 	maxHeadersPerPage = 50 // maximum header objects returned per page
 )
 
-// UpdateMailESI fetches and stores new mails from ESI for a character.
-// It returns the number of unread mail.
+func (s *Service) UpdateMailLabelsESI(characterID int32) (bool, error) {
+	ctx := context.Background()
+	key := fmt.Sprintf("UpdateMailLabelsESI-%d", characterID)
+	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
+		return s.updateMailLabels(ctx, characterID)
+	})
+	return x.(bool), err
+}
+
+func (s *Service) updateMailLabels(ctx context.Context, characterID int32) (bool, error) {
+	token, err := s.getValidToken(ctx, characterID)
+	if err != nil {
+		return false, err
+	}
+	ctx = contextWithToken(ctx, token.AccessToken)
+	ll, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(ctx, token.CharacterID, nil)
+	if err != nil {
+		return false, err
+	}
+	labels := ll.Labels
+	slog.Info("Received mail labels from ESI", "count", len(labels), "characterID", token.CharacterID)
+	for _, o := range labels {
+		arg := storage.MailLabelParams{
+			MyCharacterID: token.CharacterID,
+			Color:         o.Color,
+			LabelID:       o.LabelId,
+			Name:          o.Name,
+			UnreadCount:   int(o.UnreadCount),
+		}
+		_, err := s.r.UpdateOrCreateMailLabel(ctx, arg)
+		if err != nil {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+func (s *Service) UpdateMailListsESI(characterID int32) (bool, error) {
+	ctx := context.Background()
+	key := fmt.Sprintf("UpdateMailListESI-%d", characterID)
+	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
+		return s.updateMailLists(ctx, characterID)
+	})
+	return x.(bool), err
+}
+
+func (s *Service) updateMailLists(ctx context.Context, characterID int32) (bool, error) {
+	token, err := s.getValidToken(ctx, characterID)
+	if err != nil {
+		return false, err
+	}
+	ctx = contextWithToken(ctx, token.AccessToken)
+	lists, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLists(ctx, token.CharacterID, nil)
+	if err != nil {
+		return false, err
+	}
+	for _, o := range lists {
+		_, err := s.r.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, model.EveEntityMailList)
+		if err != nil {
+			return false, err
+		}
+		if err := s.r.CreateMailList(ctx, token.CharacterID, o.MailingListId); err != nil {
+			return false, err
+		}
+	}
+	var changed bool
+	return changed, nil
+}
+
 func (s *Service) UpdateMailESI(characterID int32) (bool, error) {
 	ctx := context.Background()
 	key := fmt.Sprintf("UpdateMailESI-%d", characterID)
@@ -35,12 +102,6 @@ func (s *Service) updateMail(ctx context.Context, characterID int32) (bool, erro
 	var changed bool
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
-		return changed, err
-	}
-	if err := s.updateMailLists(ctx, token); err != nil {
-		return changed, err
-	}
-	if err := s.updateMailLabels(ctx, token); err != nil {
 		return changed, err
 	}
 	headers, err := s.listMailHeaders(ctx, token)
@@ -70,58 +131,7 @@ func (s *Service) updateMail(ctx context.Context, characterID int32) (bool, erro
 	if err := s.r.DeleteObsoleteMailLists(ctx, characterID); err != nil {
 		return changed, err
 	}
-	if err := s.SectionSetUpdated(characterID, model.UpdateSectionMail); err != nil {
-		slog.Warn("Failed to set updated for mail", "err", err)
-	}
 	return changed, nil
-}
-
-func (s *Service) updateMailLabels(ctx context.Context, token *model.Token) error {
-	if err := s.ensureValidToken(ctx, token); err != nil {
-		return err
-	}
-	ctx = contextWithToken(ctx, token.AccessToken)
-	ll, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(ctx, token.CharacterID, nil)
-	if err != nil {
-		return err
-	}
-	labels := ll.Labels
-	slog.Info("Received mail labels from ESI", "count", len(labels), "characterID", token.CharacterID)
-	for _, o := range labels {
-		arg := storage.MailLabelParams{
-			MyCharacterID: token.CharacterID,
-			Color:         o.Color,
-			LabelID:       o.LabelId,
-			Name:          o.Name,
-			UnreadCount:   int(o.UnreadCount),
-		}
-		_, err := s.r.UpdateOrCreateMailLabel(ctx, arg)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Service) updateMailLists(ctx context.Context, token *model.Token) error {
-	if err := s.ensureValidToken(ctx, token); err != nil {
-		return err
-	}
-	ctx = contextWithToken(ctx, token.AccessToken)
-	lists, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLists(ctx, token.CharacterID, nil)
-	if err != nil {
-		return err
-	}
-	for _, o := range lists {
-		_, err := s.r.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, model.EveEntityMailList)
-		if err != nil {
-			return err
-		}
-		if err := s.r.CreateMailList(ctx, token.CharacterID, o.MailingListId); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // listMailHeaders fetched mail headers from ESI with paging and returns them.
