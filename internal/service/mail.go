@@ -43,6 +43,20 @@ func (s *Service) GetMail(characterID int32, mailID int32) (*model.Mail, error) 
 	return s.r.GetMail(ctx, characterID, mailID)
 }
 
+// GetMailUnreadCount returns the number of unread mail for a character.
+func (s *Service) GetMailCounts(characterID int32) (int, int, error) {
+	ctx := context.Background()
+	total, err := s.r.GetMailCount(ctx, characterID)
+	if err != nil {
+		return 0, 0, err
+	}
+	unread, err := s.r.GetMailUnreadCount(ctx, characterID)
+	if err != nil {
+		return 0, 0, err
+	}
+	return total, unread, nil
+}
+
 // SendMail creates a new mail on ESI and stores it locally.
 func (s *Service) SendMail(characterID int32, subject string, recipients []*model.EveEntity, body string) (int32, error) {
 	if subject == "" {

@@ -58,15 +58,13 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 		TokenType:    ssoToken.TokenType,
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
-	_, err = s.getOrCreateEveCharacterESI(ctx, token.CharacterID)
+	character, err := s.getOrCreateEveCharacterESI(ctx, token.CharacterID)
 	if err != nil {
 		return err
 	}
 	myCharacter := &model.MyCharacter{
-		ID: token.CharacterID,
-	}
-	if err := s.updateMyCharacterESI(ctx, myCharacter); err != nil {
-		return err
+		ID:        token.CharacterID,
+		Character: character,
 	}
 	arg := updateParamsFromMyCharacter(myCharacter)
 	if err := s.r.UpdateOrCreateMyCharacter(ctx, arg); err != nil {
@@ -78,7 +76,7 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 	return nil
 }
 
-func (s *Service) UpdateMyCharacter(characterID int32) error {
+func (s *Service) UpdateMyCharacterESI(characterID int32) error {
 	ctx := context.Background()
 	key := fmt.Sprintf("UpdateMyCharacter-%d", characterID)
 	_, err, _ := s.singleGroup.Do(key, func() (any, error) {

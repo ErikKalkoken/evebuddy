@@ -20,12 +20,6 @@ const (
 	maxHeadersPerPage = 50 // maximum header objects returned per page
 )
 
-// GetMailUnreadCount returns the number of unread mail for a character.
-func (s *Service) GetMailUnreadCount(characterID int32) (int, error) {
-	ctx := context.Background()
-	return s.r.GetMailUnreadCount(ctx, characterID)
-}
-
 // UpdateMail fetches and stores new mails from ESI for a character.
 // It returns the number of unread mail.
 func (s *Service) UpdateMail(characterID int32) (int, error) {

@@ -11,12 +11,12 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-// func stringOrFallback(s, fallback string) string {
-// 	if s == "" {
-// 		return fallback
-// 	}
-// 	return s
-// }
+func nullStringOrFallback(s sql.NullString, fallback string) string {
+	if !s.Valid {
+		return fallback
+	}
+	return s.String
+}
 
 func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
 	if t.IsZero() {
@@ -51,6 +51,10 @@ func humanizedNullFloat64(v sql.NullFloat64, decimals int, fallback string) stri
 		return fallback
 	}
 	return ihumanize.Number(v.Float64, decimals)
+}
+
+func humanizedNullInt64(v sql.NullInt64, fallback string) string {
+	return humanizedNullFloat64(sql.NullFloat64{Float64: float64(v.Int64), Valid: v.Valid}, 0, fallback)
 }
 
 // getFromBoundUntypedList returns the value from an untyped list in the target type.

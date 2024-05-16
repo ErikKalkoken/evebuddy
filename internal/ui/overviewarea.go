@@ -24,14 +24,14 @@ type overviewCharacter struct {
 	id             int32
 	lastLoginAt    sql.NullTime
 	name           string
-	systemName     string
-	systemSecurity float64
-	region         string
-	ship           string
+	systemName     sql.NullString
+	systemSecurity sql.NullFloat64
+	region         sql.NullString
+	ship           sql.NullString
 	security       float64
 	sp             sql.NullInt64
 	training       types.NullDuration
-	unreadCount    int
+	unreadCount    sql.NullInt64
 	walletBalance  sql.NullFloat64
 }
 
@@ -105,9 +105,9 @@ func (u *ui) NewOverviewArea() *overviewArea {
 					l.Importance = widget.DangerImportance
 				}
 			case 4:
-				l.Text = humanize.Comma(int64(c.unreadCount))
+				l.Text = humanizedNullInt64(c.unreadCount, "?")
 			case 5:
-				l.Text = humanizedNullFloat64(sql.NullFloat64{Float64: float64(c.sp.Int64), Valid: c.sp.Valid}, 0, "?")
+				l.Text = humanizedNullInt64(c.sp, "?")
 			case 6:
 				if !c.training.Valid {
 					l.Text = "Inactive"
@@ -118,11 +118,15 @@ func (u *ui) NewOverviewArea() *overviewArea {
 			case 7:
 				l.Text = humanizedNullFloat64(c.walletBalance, 1, "?")
 			case 8:
-				l.Text = fmt.Sprintf("%s %.1f", c.systemName, c.systemSecurity)
+				if !c.systemName.Valid || !c.systemSecurity.Valid {
+					l.Text = "?"
+				} else {
+					l.Text = fmt.Sprintf("%s %.1f", c.systemName.String, c.systemSecurity.Float64)
+				}
 			case 9:
-				l.Text = c.region
+				l.Text = nullStringOrFallback(c.region, "?")
 			case 10:
-				l.Text = c.ship
+				l.Text = nullStringOrFallback(c.ship, "?")
 			case 11:
 				l.Text = humanizedNullTime(c.lastLoginAt, "?")
 			case 12:
@@ -177,9 +181,9 @@ func (a *overviewArea) Refresh() {
 		slog.Error("Failed to refresh overview", "err", err)
 		return
 	}
-	walletText := ihumanize.Number(wallet, 1)
-	spText := ihumanize.Number(float64(sp), 0)
-	unreadText := humanize.Comma(int64(unread))
+	walletText := humanizedNullFloat64(wallet, 1, "?")
+	spText := humanizedNullInt64(sp, "?")
+	unreadText := humanizedNullInt64(unread, "?")
 	s := fmt.Sprintf(
 		"Total: %d characters • %s ISK • %s SP  • %s unread",
 		a.characters.Length(),
@@ -190,11 +194,14 @@ func (a *overviewArea) Refresh() {
 	a.totalLabel.SetText(s)
 }
 
-func (a *overviewArea) updateEntries() (int, int, float64, error) {
+func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFloat64, error) {
+	var spTotal sql.NullInt64
+	var unreadTotal sql.NullInt64
+	var walletTotal sql.NullFloat64
 	var err error
 	mycc, err := a.ui.service.ListMyCharacters()
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to fetch characters: %w", err)
+		return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch characters: %w", err)
 	}
 	cc := make([]overviewCharacter, len(mycc))
 	for i, m := range mycc {
@@ -205,45 +212,54 @@ func (a *overviewArea) updateEntries() (int, int, float64, error) {
 		c.lastLoginAt = m.LastLoginAt
 		c.id = m.ID
 		c.name = m.Character.Name
-		c.region = m.Location.Constellation.Region.Name
 		c.security = m.Character.SecurityStatus
-		c.ship = m.Ship.Name
 		c.sp = m.SkillPoints
-		c.systemName = m.Location.Name
-		c.systemSecurity = m.Location.SecurityStatus
 		c.walletBalance = m.WalletBalance
+		if m.Location != nil {
+			c.region = sql.NullString{String: m.Location.Constellation.Region.Name, Valid: true}
+			c.systemName = sql.NullString{String: m.Location.Name, Valid: true}
+			c.systemSecurity = sql.NullFloat64{Float64: m.Location.SecurityStatus, Valid: true}
+		}
+		if m.Ship != nil {
+			c.ship = sql.NullString{String: m.Ship.Name, Valid: true}
+		}
 		cc[i] = c
 	}
 	for i, c := range cc {
 		v, err := a.ui.service.GetTotalTrainingTime(c.id)
 		if err != nil {
-			return 0, 0, 0, fmt.Errorf("failed to fetch skill queue count for character %d, %w", c.id, err)
+			return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch skill queue count for character %d, %w", c.id, err)
 		}
 		cc[i].training = v
 	}
 	for i, c := range cc {
-		v, err := a.ui.service.GetMailUnreadCount(c.id)
+		total, unread, err := a.ui.service.GetMailCounts(c.id)
 		if err != nil {
-			return 0, 0, 0, fmt.Errorf("failed to fetch unread count for character %d, %w", c.id, err)
+			return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch mail counts for character %d, %w", c.id, err)
 		}
-		cc[i].unreadCount = v
+		if total > 0 {
+			cc[i].unreadCount.Int64 = int64(unread)
+			cc[i].unreadCount.Valid = true
+		}
 	}
 	if err := a.characters.Set(copyToUntypedSlice(cc)); err != nil {
 		panic(err)
 	}
-	var sp int
-	var unread int
-	var wallet float64
 	for _, c := range cc {
 		if c.sp.Valid {
-			sp += int(c.sp.Int64)
+			spTotal.Valid = true
+			spTotal.Int64 += c.sp.Int64
 		}
-		unread += c.unreadCount
+		if c.unreadCount.Valid {
+			unreadTotal.Valid = true
+			unreadTotal.Int64 += c.unreadCount.Int64
+		}
 		if c.walletBalance.Valid {
-			wallet += c.walletBalance.Float64
+			walletTotal.Valid = true
+			walletTotal.Float64 += c.walletBalance.Float64
 		}
 	}
-	return sp, unread, wallet, nil
+	return spTotal, unreadTotal, walletTotal, nil
 }
 
 func (a *overviewArea) StartUpdateTicker() {
@@ -266,7 +282,7 @@ func (a *overviewArea) StartUpdateTicker() {
 						if !isExpired {
 							return
 						}
-						if err := a.ui.service.UpdateMyCharacter(characterID); err != nil {
+						if err := a.ui.service.UpdateMyCharacterESI(characterID); err != nil {
 							slog.Error(err.Error())
 							return
 						}

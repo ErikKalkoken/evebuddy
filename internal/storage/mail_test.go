@@ -261,7 +261,14 @@ func TestFetchUnreadCounts(t *testing.T) {
 			assert.Equal(t, map[int32]int{l1.ID: 1}, r)
 		}
 	})
-	t.Run("can get total unread count", func(t *testing.T) {
+
+}
+
+func TestGetMailUnreadCount(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return correct unread count when mails exists", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
@@ -290,6 +297,16 @@ func TestFetchUnreadCounts(t *testing.T) {
 		r, err := r.GetMailUnreadCount(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, 6, r)
+		}
+	})
+	t.Run("should return null when no mail exists", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateMyCharacter()
+		// when
+		r, err := r.GetMailUnreadCount(ctx, c.ID)
+		if assert.NoError(t, err) {
+			assert.Equal(t, 0, r)
 		}
 	})
 }

@@ -159,6 +159,19 @@ func (q *Queries) GetMail(ctx context.Context, arg GetMailParams) (GetMailRow, e
 	return i, err
 }
 
+const getMailCount = `-- name: GetMailCount :one
+SELECT COUNT(*)
+FROM mails
+WHERE mails.my_character_id = ?
+`
+
+func (q *Queries) GetMailCount(ctx context.Context, myCharacterID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getMailCount, myCharacterID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getMailLabelUnreadCounts = `-- name: GetMailLabelUnreadCounts :many
 SELECT label_id, COUNT(mails.id) AS unread_count_2
 FROM mail_labels
@@ -304,7 +317,7 @@ func (q *Queries) GetMailRecipients(ctx context.Context, mailID int64) ([]EveEnt
 }
 
 const getMailUnreadCount = `-- name: GetMailUnreadCount :one
-SELECT COUNT(mails.id)
+SELECT COUNT(*)
 FROM mails
 WHERE mails.my_character_id = ?
 AND is_read IS FALSE

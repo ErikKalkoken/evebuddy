@@ -56,10 +56,15 @@ JOIN mail_mail_labels ON mail_mail_labels.mail_label_id = mail_labels.id
 WHERE mail_id = ?;
 
 -- name: GetMailUnreadCount :one
-SELECT COUNT(mails.id)
+SELECT COUNT(*)
 FROM mails
 WHERE mails.my_character_id = ?
 AND is_read IS FALSE;
+
+-- name: GetMailCount :one
+SELECT COUNT(*)
+FROM mails
+WHERE mails.my_character_id = ?;
 
 -- name: GetMailLabelUnreadCounts :many
 SELECT label_id, COUNT(mails.id) AS unread_count_2
