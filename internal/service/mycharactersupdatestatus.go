@@ -15,10 +15,10 @@ import (
 
 // update section timeouts in seconds
 const (
-	updateSectionMailTimeout          = 600 // TODO: 60
-	updateSectionDetailsTimeout       = 600 // TODO: 120
-	updateSectionSkillqueueTimeout    = 600 // TODO: 120
-	updateSectionWalletJournalTimeout = 600 // TODO: 120
+	updateSectionMailTimeout          = 30
+	updateSectionDetailsTimeout       = 30
+	updateSectionSkillqueueTimeout    = 120
+	updateSectionWalletJournalTimeout = 3600
 )
 
 func (s *Service) SectionSetUpdated(characterID int32, section model.UpdateSection) error {

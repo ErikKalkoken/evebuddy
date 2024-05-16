@@ -23,7 +23,7 @@ func (s *Service) UpdateWalletJournalEntryESI(characterID int32) (bool, error) {
 	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
 		count, err := s.updateWalletJournalEntryESI(ctx, characterID)
 		if err != nil {
-			return count, fmt.Errorf("failed to update wallet journal from ESI for character %d: %w", characterID, err)
+			return false, fmt.Errorf("failed to update wallet journal from ESI for character %d: %w", characterID, err)
 		}
 		if err := s.SectionSetUpdated(characterID, model.UpdateSectionWalletJournal); err != nil {
 			slog.Warn("Failed to set updated for skillqueue", "err", err)

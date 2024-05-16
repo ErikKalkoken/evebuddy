@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -18,7 +19,6 @@ import (
 type folderArea struct {
 	content       fyne.CanvasObject
 	newButton     *widget.Button
-	refreshButton *widget.Button
 	lastUID       string
 	lastFolderAll node
 	tree          *widget.Tree
@@ -78,27 +78,17 @@ func (u *ui) NewFolderArea() *folderArea {
 		u.folderArea.lastUID = uid
 		u.headerArea.SetFolder(item)
 	}
-	a.refreshButton = widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-		go a.UpdateMails(true)
-	})
 	a.newButton = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
 		a.ui.ShowSendMessageWindow(CreateMessageNew, nil)
 	})
 	a.newButton.Importance = widget.HighImportance
-	top := container.NewHBox(a.refreshButton, a.newButton)
+	top := container.NewHBox(layout.NewSpacer(), a.newButton, layout.NewSpacer())
 	a.content = container.NewBorder(top, nil, nil, nil, a.tree)
 	return a
 }
 
 func (a *folderArea) Refresh() {
 	characterID := a.ui.CurrentCharID()
-	if characterID == 0 {
-		a.refreshButton.Disable()
-		a.newButton.Disable()
-	} else {
-		a.refreshButton.Enable()
-		a.newButton.Enable()
-	}
 	ids, values, folderAll, err := a.buildFolderTree(characterID)
 	if err != nil {
 		slog.Error("Failed to build folder tree", "character", characterID, "error", err)
@@ -238,33 +228,6 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 		lists += c
 	}
 	return total, labels, lists
-}
-
-func (a *folderArea) UpdateMails(respondToUser bool) {
-	character := a.ui.CurrentChar()
-	if character == nil {
-		return
-	}
-	status := a.ui.statusArea
-	if respondToUser {
-		status.SetInfoWithProgress(fmt.Sprintf("Checking mail for %s", character.Character.Name))
-	}
-	unreadCount, err := a.ui.service.UpdateMailESI(character.ID)
-	if err != nil {
-		status.SetError("Failed to fetch mail")
-		slog.Error("Failed to fetch mails", "characterID", character.ID, "error", err)
-		return
-	}
-	if respondToUser {
-		if unreadCount > 0 {
-			status.SetInfo(fmt.Sprintf("%s has %d new mail", character.Character.Name, unreadCount))
-		} else if respondToUser {
-			status.SetInfo(fmt.Sprintf("No new mail for %s", character.Character.Name))
-		} else {
-			status.ClearInfo()
-		}
-	}
-	a.Refresh()
 }
 
 // func (a *folderArea) StartUpdateTicker() {

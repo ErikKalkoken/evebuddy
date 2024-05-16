@@ -22,61 +22,58 @@ const (
 
 // UpdateMailESI fetches and stores new mails from ESI for a character.
 // It returns the number of unread mail.
-func (s *Service) UpdateMailESI(characterID int32) (int, error) {
+func (s *Service) UpdateMailESI(characterID int32) (bool, error) {
 	ctx := context.Background()
 	key := fmt.Sprintf("UpdateMailESI-%d", characterID)
 	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
 		return s.updateMail(ctx, characterID)
 	})
-	return x.(int), err
+	return x.(bool), err
 }
 
-func (s *Service) updateMail(ctx context.Context, characterID int32) (int, error) {
+func (s *Service) updateMail(ctx context.Context, characterID int32) (bool, error) {
+	var changed bool
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
-		return 0, err
+		return changed, err
 	}
 	if err := s.updateMailLists(ctx, token); err != nil {
-		return 0, err
+		return changed, err
 	}
 	if err := s.updateMailLabels(ctx, token); err != nil {
-		return 0, err
+		return changed, err
 	}
 	headers, err := s.listMailHeaders(ctx, token)
 	if err != nil {
-		return 0, err
+		return changed, err
 	}
 	if err := s.resolveMailEntities(ctx, headers); err != nil {
-		return 0, err
+		return changed, err
 	}
 	newHeaders, existingHeaders, err := s.determineNewMail(ctx, token.CharacterID, headers)
 	if err != nil {
-		return 0, err
+		return changed, err
 	}
 	if len(newHeaders) > 0 {
 		if err := s.fetchNewMailsESI(ctx, token, newHeaders); err != nil {
-			return 0, err
+			return changed, err
 		}
 	}
 	if len(existingHeaders) > 0 {
 		if err := s.updateExistingMail(ctx, characterID, existingHeaders); err != nil {
-			return 0, err
+			return changed, err
 		}
 	}
 	if err := s.r.DeleteObsoleteMailLabels(ctx, characterID); err != nil {
-		return 0, err
+		return changed, err
 	}
 	if err := s.r.DeleteObsoleteMailLists(ctx, characterID); err != nil {
-		return 0, err
+		return changed, err
 	}
 	if err := s.SectionSetUpdated(characterID, model.UpdateSectionMail); err != nil {
 		slog.Warn("Failed to set updated for mail", "err", err)
 	}
-	unreadCount, err := s.r.GetMailUnreadCount(ctx, characterID)
-	if err != nil {
-		return 0, err
-	}
-	return unreadCount, nil
+	return changed, nil
 }
 
 func (s *Service) updateMailLabels(ctx context.Context, token *model.Token) error {
