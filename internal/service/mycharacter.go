@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 var ErrAborted = errors.New("process aborted prematurely")
@@ -60,13 +62,14 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 	if err != nil {
 		return err
 	}
-	myCharacter := model.MyCharacter{
+	myCharacter := &model.MyCharacter{
 		ID: token.CharacterID,
 	}
-	if err := s.updateMyCharacterESI(ctx, &myCharacter); err != nil {
+	if err := s.updateMyCharacterESI(ctx, myCharacter); err != nil {
 		return err
 	}
-	if err := s.r.UpdateOrCreateMyCharacter(ctx, &myCharacter); err != nil {
+	arg := updateParamsFromMyCharacter(myCharacter)
+	if err := s.r.UpdateOrCreateMyCharacter(ctx, arg); err != nil {
 		return err
 	}
 	if err := s.r.UpdateOrCreateToken(ctx, &token); err != nil {
@@ -98,7 +101,8 @@ func (s *Service) updateMyCharacter(ctx context.Context, characterID int32) erro
 	if err := s.updateMyCharacterESI(ctx, c); err != nil {
 		return err
 	}
-	if err := s.r.UpdateOrCreateMyCharacter(ctx, c); err != nil {
+	arg := updateParamsFromMyCharacter(c)
+	if err := s.r.UpdateOrCreateMyCharacter(ctx, arg); err != nil {
 		return err
 	}
 	slog.Info("Finished updating character", "characterID", characterID)
@@ -113,7 +117,7 @@ func (s *Service) updateMyCharacterESI(ctx context.Context, c *model.MyCharacter
 		if err != nil {
 			return err
 		}
-		c.SkillPoints = int(skills.TotalSp)
+		c.SkillPoints = sql.NullInt64{Int64: skills.TotalSp, Valid: true}
 		return nil
 	})
 	g.Go(func() error {
@@ -121,7 +125,7 @@ func (s *Service) updateMyCharacterESI(ctx context.Context, c *model.MyCharacter
 		if err != nil {
 			return err
 		}
-		c.WalletBalance = balance
+		c.WalletBalance = sql.NullFloat64{Float64: balance, Valid: true}
 		return nil
 	})
 	g.Go(func() error {
@@ -129,7 +133,7 @@ func (s *Service) updateMyCharacterESI(ctx context.Context, c *model.MyCharacter
 		if err != nil {
 			return err
 		}
-		c.LastLoginAt = online.LastLogin
+		c.LastLoginAt = sql.NullTime{Time: online.LastLogin, Valid: true}
 		return nil
 	})
 	g.Go(func() error {
@@ -161,4 +165,22 @@ func (s *Service) updateMyCharacterESI(ctx context.Context, c *model.MyCharacter
 	}
 	s.SectionSetUpdated(c.ID, model.UpdateSectionMyCharacter)
 	return nil
+}
+
+func updateParamsFromMyCharacter(myCharacter *model.MyCharacter) storage.UpdateOrCreateMyCharacterParams {
+	arg := storage.UpdateOrCreateMyCharacterParams{
+		ID:            myCharacter.ID,
+		LastLoginAt:   myCharacter.LastLoginAt,
+		SkillPoints:   myCharacter.SkillPoints,
+		WalletBalance: myCharacter.WalletBalance,
+	}
+	if myCharacter.Location != nil {
+		arg.LocationID.Int32 = myCharacter.Location.ID
+		arg.LocationID.Valid = true
+	}
+	if myCharacter.Ship != nil {
+		arg.ShipID.Int32 = myCharacter.Ship.ID
+		arg.ShipID.Valid = true
+	}
+	return arg
 }

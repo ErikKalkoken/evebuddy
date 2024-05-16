@@ -1,12 +1,14 @@
 package ui
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
 	"fyne.io/fyne/v2/data/binding"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
+	"github.com/dustin/go-humanize"
 )
 
 // func stringOrFallback(s, fallback string) string {
@@ -35,6 +37,20 @@ func humanizedNullDuration(d types.NullDuration, fallback string) string {
 		return fallback
 	}
 	return ihumanize.Duration(d.Duration)
+}
+
+func humanizedNullTime(v sql.NullTime, fallback string) string {
+	if !v.Valid {
+		return fallback
+	}
+	return humanize.RelTime(v.Time, time.Now(), "", "")
+}
+
+func humanizedNullFloat64(v sql.NullFloat64, decimals int, fallback string) string {
+	if !v.Valid {
+		return fallback
+	}
+	return ihumanize.Number(v.Float64, decimals)
 }
 
 // getFromBoundUntypedList returns the value from an untyped list in the target type.

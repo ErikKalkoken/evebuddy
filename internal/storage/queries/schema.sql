@@ -92,14 +92,14 @@ LEFT JOIN eve_entities ON eve_entities.id = eve_characters.faction_id;
 
 CREATE TABLE my_characters (
     id INTEGER PRIMARY KEY NOT NULL,
-    last_login_at DATETIME NOT NULL,
-    location_id INTEGER NOT NULL,
-    ship_id INTEGER NOT NULL,
-    skill_points INTEGER NOT NULL,
-    wallet_balance REAL NOT NULL,
+    last_login_at DATETIME,
+    location_id INTEGER,
+    ship_id INTEGER,
+    skill_points INTEGER,
+    wallet_balance REAL,
     FOREIGN KEY (id) REFERENCES eve_characters(id) ON DELETE CASCADE,
-    FOREIGN KEY (location_id) REFERENCES eve_solar_systems(id) ON DELETE CASCADE,
-    FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE CASCADE
+    FOREIGN KEY (location_id) REFERENCES eve_solar_systems(id) ON DELETE SET NULL,
+    FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE SET NULL
 );
 
 CREATE TABLE mail_lists (

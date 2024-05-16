@@ -2,7 +2,9 @@ package storage_test
 
 import (
 	"context"
+	"database/sql"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -21,36 +23,65 @@ func TestMyCharacter(t *testing.T) {
 		a := factory.CreateEveEntityAlliance()
 		f := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityFaction})
 		eveC := factory.CreateEveCharacter(storage.CreateEveCharacterParams{AllianceID: a.ID, FactionID: f.ID})
-		c := factory.CreateMyCharacter(model.MyCharacter{Character: eveC})
+		c1 := factory.CreateMyCharacter(storage.UpdateOrCreateMyCharacterParams{ID: eveC.ID})
 		// when
-		myC, err := r.GetMyCharacter(ctx, c.ID)
+		c2, err := r.GetMyCharacter(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c.ID, myC.ID)
-			assert.Equal(t, c.LastLoginAt.Unix(), myC.LastLoginAt.Unix())
-			assert.Equal(t, c.Ship, myC.Ship)
-			assert.Equal(t, c.Location, myC.Location)
-			assert.Equal(t, c.SkillPoints, myC.SkillPoints)
-			assert.Equal(t, c.WalletBalance, myC.WalletBalance)
-			assert.Equal(t, c.Character.ID, myC.Character.ID)
-			assert.Equal(t, c.Character.Alliance, myC.Character.Alliance)
-			assert.Equal(t, c.Character.Faction, myC.Character.Faction)
+			assert.Equal(t, c1.ID, c2.ID)
+			assert.Equal(t, c1.LastLoginAt.Time.Unix(), c2.LastLoginAt.Time.Unix())
+			assert.Equal(t, c1.Ship, c2.Ship)
+			assert.Equal(t, c1.Location, c2.Location)
+			assert.Equal(t, c1.SkillPoints, c2.SkillPoints)
+			assert.Equal(t, c1.WalletBalance, c2.WalletBalance)
+			assert.Equal(t, c1.Character.ID, c2.Character.ID)
+			assert.Equal(t, c1.Character.Alliance, c2.Character.Alliance)
+			assert.Equal(t, c1.Character.Faction, c2.Character.Faction)
 		}
 	})
-	t.Run("can create new", func(t *testing.T) {
+	t.Run("can create new minimal", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		character := factory.CreateEveCharacter()
+		arg := storage.UpdateOrCreateMyCharacterParams{
+			ID: character.ID,
+		}
+		// when
+		err := r.UpdateOrCreateMyCharacter(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			r, err := r.GetMyCharacter(ctx, arg.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, character.ID, r.ID)
+			}
+		}
+	})
+	t.Run("can create new full", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		character := factory.CreateEveCharacter()
 		system := factory.CreateEveSolarSystem()
 		ship := factory.CreateEveType()
-		c := model.MyCharacter{ID: 1, Location: system, Ship: ship, Character: character}
+		login := time.Now()
+		arg := storage.UpdateOrCreateMyCharacterParams{
+			ID:            character.ID,
+			LastLoginAt:   sql.NullTime{Time: login, Valid: true},
+			LocationID:    sql.NullInt32{Int32: system.ID, Valid: true},
+			ShipID:        sql.NullInt32{Int32: ship.ID, Valid: true},
+			SkillPoints:   sql.NullInt64{Int64: 123, Valid: true},
+			WalletBalance: sql.NullFloat64{Float64: 1.2, Valid: true},
+		}
 		// when
-		err := r.UpdateOrCreateMyCharacter(ctx, &c)
+		err := r.UpdateOrCreateMyCharacter(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			r, err := r.GetMyCharacter(ctx, c.ID)
+			r, err := r.GetMyCharacter(ctx, arg.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, c.Location, r.Location)
+				assert.Equal(t, login.Unix(), r.LastLoginAt.Time.Unix())
+				assert.Equal(t, system, r.Location)
+				assert.Equal(t, ship, r.Ship)
+				assert.Equal(t, int64(123), r.SkillPoints.Int64)
+				assert.Equal(t, 1.2, r.WalletBalance.Float64)
 			}
 		}
 	})
@@ -60,10 +91,12 @@ func TestMyCharacter(t *testing.T) {
 		c1 := factory.CreateMyCharacter()
 		// when
 		newLocation := factory.CreateEveSolarSystem()
-		c1.Location = newLocation
 		newShip := factory.CreateEveType()
-		c1.Ship = newShip
-		err := r.UpdateOrCreateMyCharacter(ctx, c1)
+		err := r.UpdateOrCreateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
+			ID:         c1.ID,
+			LocationID: sql.NullInt32{Int32: newLocation.ID, Valid: true},
+			ShipID:     sql.NullInt32{Int32: newShip.ID, Valid: true},
+		})
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetMyCharacter(ctx, c1.ID)
@@ -127,7 +160,7 @@ func TestMyCharacter(t *testing.T) {
 	})
 }
 
-func TestMyCharacterList(t *testing.T) {
+func TestListMyCharactersShort(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
@@ -157,4 +190,33 @@ func TestMyCharacterList(t *testing.T) {
 		}
 	})
 
+}
+
+func TestListMyCharacters(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("listed characters have all fields populated", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateMyCharacter()
+		// when
+		cc, err := r.ListMyCharacters(ctx)
+		// then
+		if assert.NoError(t, err) {
+			c2 := cc[0]
+			if assert.NotNil(t, c2) {
+				assert.Len(t, cc, 1)
+				assert.Equal(t, c1.ID, c2.ID)
+				assert.Equal(t, c1.LastLoginAt.Time.Unix(), c2.LastLoginAt.Time.Unix())
+				assert.Equal(t, c1.Ship, c2.Ship)
+				assert.Equal(t, c1.Location, c2.Location)
+				assert.Equal(t, c1.SkillPoints, c2.SkillPoints)
+				assert.Equal(t, c1.WalletBalance, c2.WalletBalance)
+				assert.Equal(t, c1.Character.ID, c2.Character.ID)
+				assert.Equal(t, c1.Character.Alliance, c2.Character.Alliance)
+				assert.Equal(t, c1.Character.Faction, c2.Character.Faction)
+			}
+		}
+	})
 }

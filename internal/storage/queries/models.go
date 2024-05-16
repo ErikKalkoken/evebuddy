@@ -129,11 +129,11 @@ type MailRecipient struct {
 
 type MyCharacter struct {
 	ID            int64
-	LastLoginAt   time.Time
-	LocationID    int64
-	ShipID        int64
-	SkillPoints   int64
-	WalletBalance float64
+	LastLoginAt   sql.NullTime
+	LocationID    sql.NullInt64
+	ShipID        sql.NullInt64
+	SkillPoints   sql.NullInt64
+	WalletBalance sql.NullFloat64
 }
 
 type MyCharacterUpdateStatus struct {

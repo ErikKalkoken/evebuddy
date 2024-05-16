@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
@@ -143,7 +142,7 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 	if !hasData {
 		return "No data yet...", widget.LowImportance
 	}
-	s := fmt.Sprintf("Balance: %s", ihumanize.Number(c.WalletBalance, 1))
+	s := fmt.Sprintf("Balance: %s", humanizedNullFloat64(c.WalletBalance, 1, "?"))
 	return s, widget.MediumImportance
 }
 

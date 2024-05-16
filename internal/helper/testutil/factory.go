@@ -24,38 +24,42 @@ func NewFactory(r *storage.Storage, db *sql.DB) Factory {
 }
 
 // CreateMyCharacter is a test factory for MyCharacter objects.
-func (f Factory) CreateMyCharacter(args ...model.MyCharacter) *model.MyCharacter {
+func (f Factory) CreateMyCharacter(args ...storage.UpdateOrCreateMyCharacterParams) *model.MyCharacter {
 	ctx := context.Background()
-	var c model.MyCharacter
+	var arg storage.UpdateOrCreateMyCharacterParams
 	if len(args) > 0 {
-		c = args[0]
+		arg = args[0]
 	}
-	if c.ID == 0 {
-		c.ID = int32(f.calcNewID("my_characters", "id"))
+	if arg.ID == 0 {
+		c := f.CreateEveCharacter()
+		arg.ID = c.ID
 	}
-	if c.Character == nil {
-		c.Character = f.CreateEveCharacter()
+	if !arg.LastLoginAt.Valid {
+		arg.LastLoginAt = sql.NullTime{Time: time.Now(), Valid: true}
 	}
-	if c.LastLoginAt.IsZero() {
-		c.LastLoginAt = time.Now()
+	if !arg.LocationID.Valid {
+		x := f.CreateEveSolarSystem()
+		arg.LocationID = sql.NullInt32{Int32: x.ID, Valid: true}
 	}
-	if c.Location == nil {
-		c.Location = f.CreateEveSolarSystem()
+	if !arg.ShipID.Valid {
+		x := f.CreateEveSolarSystem()
+		arg.LocationID = sql.NullInt32{Int32: x.ID, Valid: true}
 	}
-	if c.Ship == nil {
-		c.Ship = f.CreateEveType()
+	if !arg.SkillPoints.Valid {
+		arg.SkillPoints = sql.NullInt64{Int64: int64(rand.IntN(100_000_000)), Valid: true}
 	}
-	if c.SkillPoints == 0 {
-		c.SkillPoints = rand.IntN(100_000_000)
+	if !arg.WalletBalance.Valid {
+		arg.WalletBalance = sql.NullFloat64{Float64: rand.Float64() * 100_000_000_000, Valid: true}
 	}
-	if c.WalletBalance == 0 {
-		c.WalletBalance = rand.Float64() * 100_000_000_000
-	}
-	err := f.r.UpdateOrCreateMyCharacter(ctx, &c)
+	err := f.r.UpdateOrCreateMyCharacter(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	return &c
+	c, err := f.r.GetMyCharacter(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 // CreateMailLabel is a test factory for MailLabel objects

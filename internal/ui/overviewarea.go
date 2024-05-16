@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"time"
@@ -21,17 +22,17 @@ type overviewCharacter struct {
 	birthday       time.Time
 	corporation    string
 	id             int32
-	lastLoginAt    time.Time
+	lastLoginAt    sql.NullTime
 	name           string
 	systemName     string
 	systemSecurity float64
 	region         string
 	ship           string
 	security       float64
-	sp             int
+	sp             sql.NullInt64
 	training       types.NullDuration
 	unreadCount    int
-	walletBalance  float64
+	walletBalance  sql.NullFloat64
 }
 
 // overviewArea is the UI area that shows an overview of all the user's characters.
@@ -106,7 +107,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 			case 4:
 				l.Text = humanize.Comma(int64(c.unreadCount))
 			case 5:
-				l.Text = ihumanize.Number(float64(c.sp), 0)
+				l.Text = humanizedNullFloat64(sql.NullFloat64{Float64: float64(c.sp.Int64), Valid: c.sp.Valid}, 0, "?")
 			case 6:
 				if !c.training.Valid {
 					l.Text = "Inactive"
@@ -115,7 +116,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 					l.Text = ihumanize.Duration(c.training.Duration)
 				}
 			case 7:
-				l.Text = ihumanize.Number(c.walletBalance, 1)
+				l.Text = humanizedNullFloat64(c.walletBalance, 1, "?")
 			case 8:
 				l.Text = fmt.Sprintf("%s %.1f", c.systemName, c.systemSecurity)
 			case 9:
@@ -123,7 +124,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 			case 10:
 				l.Text = c.ship
 			case 11:
-				l.Text = humanize.RelTime(c.lastLoginAt, time.Now(), "", "")
+				l.Text = humanizedNullTime(c.lastLoginAt, "?")
 			case 12:
 				l.Text = humanize.RelTime(c.birthday, time.Now(), "", "")
 			}
@@ -234,9 +235,13 @@ func (a *overviewArea) updateEntries() (int, int, float64, error) {
 	var unread int
 	var wallet float64
 	for _, c := range cc {
-		sp += c.sp
+		if c.sp.Valid {
+			sp += int(c.sp.Int64)
+		}
 		unread += c.unreadCount
-		wallet += c.walletBalance
+		if c.walletBalance.Valid {
+			wallet += c.walletBalance.Float64
+		}
 	}
 	return sp, unread, wallet, nil
 }

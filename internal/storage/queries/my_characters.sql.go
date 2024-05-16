@@ -7,7 +7,7 @@ package queries
 
 import (
 	"context"
-	"time"
+	"database/sql"
 )
 
 const createMyCharacter = `-- name: CreateMyCharacter :one
@@ -27,11 +27,11 @@ RETURNING id, last_login_at, location_id, ship_id, skill_points, wallet_balance
 
 type CreateMyCharacterParams struct {
 	ID            int64
-	LastLoginAt   time.Time
-	ShipID        int64
-	SkillPoints   int64
-	LocationID    int64
-	WalletBalance float64
+	LastLoginAt   sql.NullTime
+	ShipID        sql.NullInt64
+	SkillPoints   sql.NullInt64
+	LocationID    sql.NullInt64
+	WalletBalance sql.NullFloat64
 }
 
 func (q *Queries) CreateMyCharacter(ctx context.Context, arg CreateMyCharacterParams) (MyCharacter, error) {
@@ -69,24 +69,14 @@ const getMyCharacter = `-- name: GetMyCharacter :one
 SELECT
     my_characters.id, my_characters.last_login_at, my_characters.location_id, my_characters.ship_id, my_characters.skill_points, my_characters.wallet_balance,
     eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
-    eve_categories.id, eve_categories.name, eve_categories.is_published,
-    eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
-    eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
-    eve_regions.id, eve_regions.description, eve_regions.name,
-    eve_constellations.id, eve_constellations.eve_region_id, eve_constellations.name,
-    eve_solar_systems.id, eve_solar_systems.eve_constellation_id, eve_solar_systems.name, eve_solar_systems.security_status,
     corporations.id, corporations.category, corporations.name,
     eve_races.id, eve_races.description, eve_races.name,
     eve_character_alliances.id, eve_character_alliances.category, eve_character_alliances.name,
-    eve_character_factions.id, eve_character_factions.category, eve_character_factions.name
+    eve_character_factions.id, eve_character_factions.category, eve_character_factions.name,
+    location_id,
+    ship_id
 FROM my_characters
 JOIN eve_characters ON eve_characters.id = my_characters.id
-JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
-JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
-JOIN eve_solar_systems ON eve_solar_systems.id = my_characters.location_id
-JOIN eve_types ON eve_types.id = my_characters.ship_id
-JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
-JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
 JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
 JOIN eve_races ON eve_races.id = eve_characters.race_id
 LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
@@ -97,16 +87,12 @@ WHERE my_characters.id = ?
 type GetMyCharacterRow struct {
 	MyCharacter          MyCharacter
 	EveCharacter         EveCharacter
-	EveCategory          EveCategory
-	EveGroup             EveGroup
-	EveType              EveType
-	EveRegion            EveRegion
-	EveConstellation     EveConstellation
-	EveSolarSystem       EveSolarSystem
 	EveEntity            EveEntity
 	EveRace              EveRace
 	EveCharacterAlliance EveCharacterAlliance
 	EveCharacterFaction  EveCharacterFaction
+	LocationID           sql.NullInt64
+	ShipID               sql.NullInt64
 }
 
 func (q *Queries) GetMyCharacter(ctx context.Context, id int64) (GetMyCharacterRow, error) {
@@ -130,28 +116,6 @@ func (q *Queries) GetMyCharacter(ctx context.Context, id int64) (GetMyCharacterR
 		&i.EveCharacter.RaceID,
 		&i.EveCharacter.SecurityStatus,
 		&i.EveCharacter.Title,
-		&i.EveCategory.ID,
-		&i.EveCategory.Name,
-		&i.EveCategory.IsPublished,
-		&i.EveGroup.ID,
-		&i.EveGroup.EveCategoryID,
-		&i.EveGroup.Name,
-		&i.EveGroup.IsPublished,
-		&i.EveType.ID,
-		&i.EveType.Description,
-		&i.EveType.EveGroupID,
-		&i.EveType.Name,
-		&i.EveType.IsPublished,
-		&i.EveRegion.ID,
-		&i.EveRegion.Description,
-		&i.EveRegion.Name,
-		&i.EveConstellation.ID,
-		&i.EveConstellation.EveRegionID,
-		&i.EveConstellation.Name,
-		&i.EveSolarSystem.ID,
-		&i.EveSolarSystem.EveConstellationID,
-		&i.EveSolarSystem.Name,
-		&i.EveSolarSystem.SecurityStatus,
 		&i.EveEntity.ID,
 		&i.EveEntity.Category,
 		&i.EveEntity.Name,
@@ -164,6 +128,8 @@ func (q *Queries) GetMyCharacter(ctx context.Context, id int64) (GetMyCharacterR
 		&i.EveCharacterFaction.ID,
 		&i.EveCharacterFaction.Category,
 		&i.EveCharacterFaction.Name,
+		&i.LocationID,
+		&i.ShipID,
 	)
 	return i, err
 }
@@ -200,24 +166,14 @@ const listMyCharacters = `-- name: ListMyCharacters :many
 SELECT DISTINCT
     my_characters.id, my_characters.last_login_at, my_characters.location_id, my_characters.ship_id, my_characters.skill_points, my_characters.wallet_balance,
     eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
-    eve_categories.id, eve_categories.name, eve_categories.is_published,
-    eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
-    eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
-    eve_regions.id, eve_regions.description, eve_regions.name,
-    eve_constellations.id, eve_constellations.eve_region_id, eve_constellations.name,
-    eve_solar_systems.id, eve_solar_systems.eve_constellation_id, eve_solar_systems.name, eve_solar_systems.security_status,
     corporations.id, corporations.category, corporations.name,
     eve_races.id, eve_races.description, eve_races.name,
     eve_character_alliances.id, eve_character_alliances.category, eve_character_alliances.name,
-    eve_character_factions.id, eve_character_factions.category, eve_character_factions.name
+    eve_character_factions.id, eve_character_factions.category, eve_character_factions.name,
+    location_id,
+    ship_id
 FROM my_characters
 JOIN eve_characters ON eve_characters.id = my_characters.id
-JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
-JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
-JOIN eve_solar_systems ON eve_solar_systems.id = my_characters.location_id
-JOIN eve_types ON eve_types.id = my_characters.ship_id
-JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
-JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
 JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
 JOIN eve_races ON eve_races.id = eve_characters.race_id
 LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
@@ -228,16 +184,12 @@ ORDER BY eve_characters.name
 type ListMyCharactersRow struct {
 	MyCharacter          MyCharacter
 	EveCharacter         EveCharacter
-	EveCategory          EveCategory
-	EveGroup             EveGroup
-	EveType              EveType
-	EveRegion            EveRegion
-	EveConstellation     EveConstellation
-	EveSolarSystem       EveSolarSystem
 	EveEntity            EveEntity
 	EveRace              EveRace
 	EveCharacterAlliance EveCharacterAlliance
 	EveCharacterFaction  EveCharacterFaction
+	LocationID           sql.NullInt64
+	ShipID               sql.NullInt64
 }
 
 func (q *Queries) ListMyCharacters(ctx context.Context) ([]ListMyCharactersRow, error) {
@@ -267,28 +219,6 @@ func (q *Queries) ListMyCharacters(ctx context.Context) ([]ListMyCharactersRow, 
 			&i.EveCharacter.RaceID,
 			&i.EveCharacter.SecurityStatus,
 			&i.EveCharacter.Title,
-			&i.EveCategory.ID,
-			&i.EveCategory.Name,
-			&i.EveCategory.IsPublished,
-			&i.EveGroup.ID,
-			&i.EveGroup.EveCategoryID,
-			&i.EveGroup.Name,
-			&i.EveGroup.IsPublished,
-			&i.EveType.ID,
-			&i.EveType.Description,
-			&i.EveType.EveGroupID,
-			&i.EveType.Name,
-			&i.EveType.IsPublished,
-			&i.EveRegion.ID,
-			&i.EveRegion.Description,
-			&i.EveRegion.Name,
-			&i.EveConstellation.ID,
-			&i.EveConstellation.EveRegionID,
-			&i.EveConstellation.Name,
-			&i.EveSolarSystem.ID,
-			&i.EveSolarSystem.EveConstellationID,
-			&i.EveSolarSystem.Name,
-			&i.EveSolarSystem.SecurityStatus,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
@@ -301,6 +231,8 @@ func (q *Queries) ListMyCharacters(ctx context.Context) ([]ListMyCharactersRow, 
 			&i.EveCharacterFaction.ID,
 			&i.EveCharacterFaction.Category,
 			&i.EveCharacterFaction.Name,
+			&i.LocationID,
+			&i.ShipID,
 		); err != nil {
 			return nil, err
 		}
@@ -364,11 +296,11 @@ WHERE id = ?
 `
 
 type UpdateMyCharacterParams struct {
-	LastLoginAt   time.Time
-	ShipID        int64
-	SkillPoints   int64
-	LocationID    int64
-	WalletBalance float64
+	LastLoginAt   sql.NullTime
+	ShipID        sql.NullInt64
+	SkillPoints   sql.NullInt64
+	LocationID    sql.NullInt64
+	WalletBalance sql.NullFloat64
 	ID            int64
 }
 
@@ -384,7 +316,7 @@ func (q *Queries) UpdateMyCharacter(ctx context.Context, arg UpdateMyCharacterPa
 	return err
 }
 
-const updateOrCreateMyCharacter = `-- name: UpdateOrCreateMyCharacter :one
+const updateOrCreateMyCharacter = `-- name: UpdateOrCreateMyCharacter :exec
 INSERT INTO my_characters (
     id,
     last_login_at,
@@ -404,20 +336,19 @@ UPDATE SET
     location_id = ?5,
     wallet_balance = ?6
 WHERE id = ?1
-RETURNING id, last_login_at, location_id, ship_id, skill_points, wallet_balance
 `
 
 type UpdateOrCreateMyCharacterParams struct {
 	ID            int64
-	LastLoginAt   time.Time
-	ShipID        int64
-	SkillPoints   int64
-	LocationID    int64
-	WalletBalance float64
+	LastLoginAt   sql.NullTime
+	ShipID        sql.NullInt64
+	SkillPoints   sql.NullInt64
+	LocationID    sql.NullInt64
+	WalletBalance sql.NullFloat64
 }
 
-func (q *Queries) UpdateOrCreateMyCharacter(ctx context.Context, arg UpdateOrCreateMyCharacterParams) (MyCharacter, error) {
-	row := q.db.QueryRowContext(ctx, updateOrCreateMyCharacter,
+func (q *Queries) UpdateOrCreateMyCharacter(ctx context.Context, arg UpdateOrCreateMyCharacterParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateMyCharacter,
 		arg.ID,
 		arg.LastLoginAt,
 		arg.ShipID,
@@ -425,14 +356,5 @@ func (q *Queries) UpdateOrCreateMyCharacter(ctx context.Context, arg UpdateOrCre
 		arg.LocationID,
 		arg.WalletBalance,
 	)
-	var i MyCharacter
-	err := row.Scan(
-		&i.ID,
-		&i.LastLoginAt,
-		&i.LocationID,
-		&i.ShipID,
-		&i.SkillPoints,
-		&i.WalletBalance,
-	)
-	return i, err
+	return err
 }

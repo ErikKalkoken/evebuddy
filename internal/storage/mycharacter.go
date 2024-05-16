@@ -27,20 +27,20 @@ func (r *Storage) GetMyCharacter(ctx context.Context, characterID int32) (*model
 		}
 		return nil, fmt.Errorf("failed to get MyCharacter %d: %w", characterID, err)
 	}
-	c := myCharacterFromDBModel(
+	c, err := r.myCharacterFromDBModel(
+		ctx,
 		row.MyCharacter,
-		row.EveCategory,
-		row.EveGroup,
-		row.EveType,
-		row.EveRegion,
-		row.EveConstellation,
-		row.EveSolarSystem,
 		row.EveCharacter,
 		row.EveEntity,
 		row.EveRace,
 		row.EveCharacterAlliance,
 		row.EveCharacterFaction,
+		row.LocationID,
+		row.ShipID,
 	)
+	if err != nil {
+		return nil, err
+	}
 	return c, nil
 }
 
@@ -63,20 +63,21 @@ func (r *Storage) ListMyCharacters(ctx context.Context) ([]*model.MyCharacter, e
 	}
 	cc := make([]*model.MyCharacter, len(rows))
 	for i, row := range rows {
-		cc[i] = myCharacterFromDBModel(
+		c, err := r.myCharacterFromDBModel(
+			ctx,
 			row.MyCharacter,
-			row.EveCategory,
-			row.EveGroup,
-			row.EveType,
-			row.EveRegion,
-			row.EveConstellation,
-			row.EveSolarSystem,
 			row.EveCharacter,
 			row.EveEntity,
 			row.EveRace,
 			row.EveCharacterAlliance,
 			row.EveCharacterFaction,
+			row.LocationID,
+			row.ShipID,
 		)
+		if err != nil {
+			return nil, err
+		}
+		cc[i] = c
 	}
 	return cc, nil
 }
@@ -103,44 +104,62 @@ func (r *Storage) ListMyCharacterIDs(ctx context.Context) ([]int32, error) {
 	return ids2, nil
 }
 
-func (r *Storage) UpdateOrCreateMyCharacter(ctx context.Context, c *model.MyCharacter) error {
-	arg := queries.UpdateOrCreateMyCharacterParams{
-		ID:            int64(c.ID),
-		LastLoginAt:   c.LastLoginAt,
-		ShipID:        int64(c.Ship.ID),
-		SkillPoints:   int64(c.SkillPoints),
-		LocationID:    int64(c.Location.ID),
-		WalletBalance: c.WalletBalance,
+type UpdateOrCreateMyCharacterParams struct {
+	ID            int32
+	LastLoginAt   sql.NullTime
+	LocationID    sql.NullInt32
+	ShipID        sql.NullInt32
+	SkillPoints   sql.NullInt64
+	WalletBalance sql.NullFloat64
+}
+
+func (r *Storage) UpdateOrCreateMyCharacter(ctx context.Context, arg UpdateOrCreateMyCharacterParams) error {
+	arg2 := queries.UpdateOrCreateMyCharacterParams{
+		ID:            int64(arg.ID),
+		LastLoginAt:   arg.LastLoginAt,
+		LocationID:    sql.NullInt64{Int64: int64(arg.LocationID.Int32), Valid: arg.LocationID.Valid},
+		ShipID:        sql.NullInt64{Int64: int64(arg.ShipID.Int32), Valid: arg.ShipID.Valid},
+		SkillPoints:   arg.SkillPoints,
+		WalletBalance: arg.WalletBalance,
 	}
-	_, err := r.q.UpdateOrCreateMyCharacter(ctx, arg)
-	if err != nil {
-		return fmt.Errorf("failed to update or create MyCharacter %d: %w", c.ID, err)
+
+	if err := r.q.UpdateOrCreateMyCharacter(ctx, arg2); err != nil {
+		return fmt.Errorf("failed to update or create MyCharacter %d: %w", arg.ID, err)
 	}
 	return nil
 }
 
-func myCharacterFromDBModel(
+func (r *Storage) myCharacterFromDBModel(
+	ctx context.Context,
 	myCharacter queries.MyCharacter,
-	shipCategory queries.EveCategory,
-	shipGroup queries.EveGroup,
-	shipType queries.EveType,
-	region queries.EveRegion,
-	constellation queries.EveConstellation,
-	solar_system queries.EveSolarSystem,
 	eveCharacter queries.EveCharacter,
 	corporation queries.EveEntity,
 	race queries.EveRace,
 	alliance queries.EveCharacterAlliance,
 	faction queries.EveCharacterFaction,
-) *model.MyCharacter {
-	x := model.MyCharacter{
+	locationID sql.NullInt64,
+	shipID sql.NullInt64,
+) (*model.MyCharacter, error) {
+	c := model.MyCharacter{
 		Character:     eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
 		ID:            int32(myCharacter.ID),
 		LastLoginAt:   myCharacter.LastLoginAt,
-		Location:      eveSolarSystemFromDBModel(solar_system, constellation, region),
-		Ship:          eveTypeFromDBModel(shipType, shipGroup, shipCategory),
-		SkillPoints:   int(myCharacter.SkillPoints),
+		SkillPoints:   myCharacter.SkillPoints,
 		WalletBalance: myCharacter.WalletBalance,
 	}
-	return &x
+	if locationID.Valid {
+		x, err := r.GetEveSolarSystem(ctx, int32(locationID.Int64))
+		if err != nil {
+			return nil, err
+		}
+		c.Location = x
+	}
+	if shipID.Valid {
+		x, err := r.GetEveType(ctx, int32(shipID.Int64))
+		if err != nil {
+			return nil, err
+		}
+		c.Ship = x
+	}
+	return &c, nil
 }
