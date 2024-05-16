@@ -273,7 +273,7 @@ func (a *overviewArea) StartUpdateTicker() {
 					return
 				}
 				for _, c := range cc {
-					a.UpdateAndRefresh(c.ID)
+					a.MaybeUpdateAndRefresh(c.ID)
 				}
 			}()
 			<-ticker.C
@@ -281,7 +281,7 @@ func (a *overviewArea) StartUpdateTicker() {
 	}()
 }
 
-func (a *overviewArea) UpdateAndRefresh(characterID int32) {
+func (a *overviewArea) MaybeUpdateAndRefresh(characterID int32) {
 	_, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionMyCharacter)
 	if err != nil {
 		slog.Error("Failed to update mycharacter", "character", characterID, "err", err)

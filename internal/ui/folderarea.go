@@ -249,7 +249,7 @@ func (a *folderArea) UpdateMails(respondToUser bool) {
 	if respondToUser {
 		status.SetInfoWithProgress(fmt.Sprintf("Checking mail for %s", character.Character.Name))
 	}
-	unreadCount, err := a.ui.service.UpdateMail(character.ID)
+	unreadCount, err := a.ui.service.UpdateMailESI(character.ID)
 	if err != nil {
 		status.SetError("Failed to fetch mail")
 		slog.Error("Failed to fetch mails", "characterID", character.ID, "error", err)
@@ -267,26 +267,56 @@ func (a *folderArea) UpdateMails(respondToUser bool) {
 	a.Refresh()
 }
 
+// func (a *folderArea) StartUpdateTicker() {
+// 	ticker := time.NewTicker(10 * time.Second)
+// 	go func() {
+// 		for {
+// 			func() {
+// 				characterID := a.ui.CurrentCharID()
+// 				if characterID == 0 {
+// 					return
+// 				}
+// 				isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, model.UpdateSectionMail)
+// 				if err != nil {
+// 					slog.Error(err.Error())
+// 					return
+// 				}
+// 				if !isExpired {
+// 					return
+// 				}
+// 				a.UpdateMails(false)
+// 			}()
+// 			<-ticker.C
+// 		}
+// 	}()
+// }
+
 func (a *folderArea) StartUpdateTicker() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	go func() {
 		for {
 			func() {
-				characterID := a.ui.CurrentCharID()
-				if characterID == 0 {
-					return
-				}
-				isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, model.UpdateSectionMail)
+				cc, err := a.ui.service.ListMyCharactersShort()
 				if err != nil {
-					slog.Error(err.Error())
+					slog.Error("Failed to fetch list of my characters", "err", err)
 					return
 				}
-				if !isExpired {
-					return
+				for _, c := range cc {
+					a.MaybeUpdateAndRefresh(c.ID)
 				}
-				a.UpdateMails(false)
 			}()
 			<-ticker.C
 		}
 	}()
+}
+
+func (a *folderArea) MaybeUpdateAndRefresh(characterID int32) {
+	changed, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionMail)
+	if err != nil {
+		slog.Error("Failed to update mail", "character", characterID, "err", err)
+		return
+	}
+	if changed && characterID == a.ui.CurrentCharID() {
+		a.Refresh()
+	}
 }

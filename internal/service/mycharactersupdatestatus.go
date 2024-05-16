@@ -79,12 +79,22 @@ func (s *Service) UpdateSectionIfExpired(characterID int32, section model.Update
 		return false, nil
 	}
 	switch section {
+	case model.UpdateSectionMail:
+		_, err := s.UpdateMailESI(characterID)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+
 	case model.UpdateSectionSkillqueue:
 		return s.UpdateSkillqueueESI(characterID)
 	case model.UpdateSectionWalletJournal:
 		return s.UpdateWalletJournalEntryESI(characterID)
 	case model.UpdateSectionMyCharacter:
 		err := s.UpdateMyCharacterESI(characterID)
+		if err != nil {
+			return false, err
+		}
 		return true, err
 	}
 	panic(fmt.Sprintf("Undefined section: %s", section))

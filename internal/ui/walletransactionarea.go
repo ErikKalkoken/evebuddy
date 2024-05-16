@@ -186,7 +186,7 @@ func (a *walletTransactionArea) StartUpdateTicker() {
 					return
 				}
 				for _, c := range cc {
-					a.UpdateAndRefresh(c.ID)
+					a.MaybeUpdateAndRefresh(c.ID)
 				}
 			}()
 			<-ticker.C
@@ -194,7 +194,7 @@ func (a *walletTransactionArea) StartUpdateTicker() {
 	}()
 }
 
-func (a *walletTransactionArea) UpdateAndRefresh(characterID int32) {
+func (a *walletTransactionArea) MaybeUpdateAndRefresh(characterID int32) {
 	changed, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionWalletJournal)
 	if err != nil {
 		slog.Error("Failed to update wallet transaction", "character", characterID, "err", err)

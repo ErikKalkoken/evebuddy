@@ -20,11 +20,11 @@ const (
 	maxHeadersPerPage = 50 // maximum header objects returned per page
 )
 
-// UpdateMail fetches and stores new mails from ESI for a character.
+// UpdateMailESI fetches and stores new mails from ESI for a character.
 // It returns the number of unread mail.
-func (s *Service) UpdateMail(characterID int32) (int, error) {
+func (s *Service) UpdateMailESI(characterID int32) (int, error) {
 	ctx := context.Background()
-	key := fmt.Sprintf("UpdateMails-%d", characterID)
+	key := fmt.Sprintf("UpdateMailESI-%d", characterID)
 	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
 		return s.updateMail(ctx, characterID)
 	})

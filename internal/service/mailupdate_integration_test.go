@@ -137,7 +137,7 @@ func TestUpdateMail(t *testing.T) {
 				return resp, nil
 			})
 		// when
-		_, err := s.UpdateMail(c1.ID)
+		_, err := s.UpdateMailESI(c1.ID)
 		// then
 		if assert.NoError(t, err) {
 			m, err := s.GetMail(c1.ID, int32(mailID))
@@ -267,7 +267,7 @@ func TestUpdateMail(t *testing.T) {
 			})
 
 		// when
-		_, err := s.UpdateMail(c.ID)
+		_, err := s.UpdateMailESI(c.ID)
 		// then
 		if assert.NoError(t, err) {
 			m, err := s.GetMail(c.ID, mailID)
