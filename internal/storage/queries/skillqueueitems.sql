@@ -36,7 +36,7 @@ AND finish_date IS NOT NULL
 ORDER BY queue_position;
 
 -- name: GetTotalTrainingTime :one
-SELECT SUM(julianday(finish_date) - julianday(start_date))
+SELECT SUM(julianday(finish_date) - julianday(max(start_date, datetime())))
 FROM skillqueue_items
 WHERE my_character_id = ?
 AND start_date IS NOT NULL

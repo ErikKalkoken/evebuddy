@@ -202,16 +202,15 @@ func (a *skillqueueArea) updateItems() error {
 	if err != nil {
 		return err
 	}
+	var total types.NullDuration
 	x := make([]any, len(items))
 	for i, item := range items {
 		x[i] = item
+		total.Duration += item.Remaining().Duration
+		total.Valid = true
 	}
 	if err := a.items.Set(x); err != nil {
 		panic(err)
-	}
-	total, err := a.ui.service.GetTotalTrainingTime(characterID)
-	if err != nil {
-		return err
 	}
 	if err := a.trainingTotal.Set(total); err != nil {
 		return err

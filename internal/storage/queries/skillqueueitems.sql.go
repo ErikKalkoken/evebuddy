@@ -105,7 +105,7 @@ func (q *Queries) GetSkillqueueItem(ctx context.Context, arg GetSkillqueueItemPa
 }
 
 const getTotalTrainingTime = `-- name: GetTotalTrainingTime :one
-SELECT SUM(julianday(finish_date) - julianday(start_date))
+SELECT SUM(julianday(finish_date) - julianday(max(start_date, datetime())))
 FROM skillqueue_items
 WHERE my_character_id = ?
 AND start_date IS NOT NULL
