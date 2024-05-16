@@ -18,6 +18,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
+const skillqueueUpdateTicker = 10 * time.Second
+
 // skillqueueArea is the UI area that shows the skillqueue
 type skillqueueArea struct {
 	content       *fyne.Container
@@ -219,7 +221,7 @@ func (a *skillqueueArea) updateItems() error {
 }
 
 func (a *skillqueueArea) StartUpdateTicker() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(skillqueueUpdateTicker)
 	go func() {
 		for {
 			func() {
@@ -244,6 +246,6 @@ func (a *skillqueueArea) MaybeUpdateAndRefresh(characterID int32) {
 		return
 	}
 	if characterID == a.ui.CurrentCharID() {
-		a.Refresh()
+		a.Refresh() // need to update even when not changed to render progress bar
 	}
 }

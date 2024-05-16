@@ -2,13 +2,14 @@ package service
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"time"
 
-	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
@@ -137,9 +138,14 @@ func (s *Service) SectionIsUpdateExpired(characterID int32, section model.Update
 	return time.Now().After(deadline), nil
 }
 
-// hasSectionChanged reports wether a section has changed based on the given HTTP response and updates it's content hash.
-func (s *Service) hasSectionChanged(ctx context.Context, characterID int32, section model.UpdateSection, r *http.Response) (bool, error) {
-	hash := ihttp.CalcBodyHash(r)
+// TODO: Need to change the API to accept any data
+
+// hasSectionChanged reports wether a section has changed based on the given data and updates it's content hash.
+func (s *Service) hasSectionChanged(ctx context.Context, characterID int32, section model.UpdateSection, data any) (bool, error) {
+	hash, err := calcHash(data)
+	if err != nil {
+		return false, err
+	}
 	u, err := s.r.GetMyCharacterUpdateStatus(ctx, characterID, section)
 	if errors.Is(err, storage.ErrNotFound) {
 		// section is new
@@ -160,4 +166,14 @@ func (s *Service) hasSectionChanged(ctx context.Context, characterID int32, sect
 		return false, err
 	}
 	return true, nil
+}
+
+func calcHash(data any) (string, error) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	b2 := md5.Sum(b)
+	hash := hex.EncodeToString(b2[:])
+	return hash, nil
 }

@@ -175,24 +175,3 @@ func TestLoggedTransportWithRetries(t *testing.T) {
 		}
 	})
 }
-
-func TestCalcBodyHash(t *testing.T) {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-	t.Run("can calculate hash from body", func(t *testing.T) {
-		// given
-		httpmock.Reset()
-		httpmock.RegisterResponder(
-			"GET",
-			"https://www.example.com/",
-			httpmock.NewStringResponder(http.StatusOK, "Test"))
-		r, err := http.Get("https://www.example.com/")
-		if err != nil {
-			panic(err)
-		}
-		// when
-		x := ihttp.CalcBodyHash(r)
-		// then
-		assert.Len(t, x, 32)
-	})
-}

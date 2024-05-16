@@ -80,11 +80,11 @@ func (s *Service) updateLocationESI(ctx context.Context, characterID int32) (boo
 		return false, err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
-	location, r, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, characterID, nil)
+	location, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, characterID, nil)
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionLocation, r)
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionLocation, location)
 	if err != nil {
 		return false, err
 	}
@@ -112,11 +112,11 @@ func (s *Service) updateOnlineESI(ctx context.Context, characterID int32) (bool,
 		return false, err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
-	online, r, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, characterID, nil)
+	online, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, characterID, nil)
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionOnline, r)
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionOnline, online)
 	if err != nil {
 		return false, err
 	}
@@ -140,11 +140,11 @@ func (s *Service) updateShipESI(ctx context.Context, characterID int32) (bool, e
 		return false, err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
-	ship, r, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, characterID, nil)
+	ship, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, characterID, nil)
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionShip, r)
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionShip, ship)
 	if err != nil {
 		return false, err
 	}
@@ -172,11 +172,11 @@ func (s *Service) updateSkillsESI(ctx context.Context, characterID int32) (bool,
 		return false, err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
-	skills, r, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, characterID, nil)
+	skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, characterID, nil)
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionSkills, r)
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionSkills, skills)
 	if err != nil {
 		return false, err
 	}
@@ -200,11 +200,11 @@ func (s *Service) updateWalletBalanceESI(ctx context.Context, characterID int32)
 		return false, err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
-	balance, r, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, characterID, nil)
+	balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, characterID, nil)
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionWalletBalance, r)
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionWalletBalance, balance)
 	if err != nil {
 		return false, err
 	}

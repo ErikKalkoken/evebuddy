@@ -22,12 +22,12 @@ func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID i
 		return false, err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
-	entries, r, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, token.CharacterID, nil)
+	entries, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, token.CharacterID, nil)
 	if err != nil {
 		return false, err
 	}
 	slog.Info("Received wallet journal from ESI", "entries", len(entries), "characterID", token.CharacterID)
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionWalletJournal, r)
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionWalletJournal, entries)
 	if err != nil {
 		return false, err
 	}

@@ -20,6 +20,8 @@ const (
 	maxHeadersPerPage = 50 // maximum header objects returned per page
 )
 
+// TODO: Add ability to delete obsolete mail labels
+
 // updateMailLabelsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
 func (s *Service) updateMailLabelsESI(ctx context.Context, characterID int32) (bool, error) {
@@ -32,8 +34,15 @@ func (s *Service) updateMailLabelsESI(ctx context.Context, characterID int32) (b
 	if err != nil {
 		return false, err
 	}
+	slog.Info("Received mail labels from ESI", "count", len(ll.Labels), "characterID", token.CharacterID)
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionMailLabels, ll)
+	if err != nil {
+		return false, err
+	}
+	if !changed {
+		return false, nil
+	}
 	labels := ll.Labels
-	slog.Info("Received mail labels from ESI", "count", len(labels), "characterID", token.CharacterID)
 	for _, o := range labels {
 		arg := storage.MailLabelParams{
 			MyCharacterID: token.CharacterID,
@@ -62,6 +71,13 @@ func (s *Service) updateMailListsESI(ctx context.Context, characterID int32) (bo
 	if err != nil {
 		return false, err
 	}
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionMailLists, lists)
+	if err != nil {
+		return false, err
+	}
+	if !changed {
+		return false, nil
+	}
 	for _, o := range lists {
 		_, err := s.r.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, model.EveEntityMailList)
 		if err != nil {
@@ -71,46 +87,51 @@ func (s *Service) updateMailListsESI(ctx context.Context, characterID int32) (bo
 			return false, err
 		}
 	}
-	var changed bool
-	return changed, nil
+	return true, nil
 }
 
 // updateMailESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
 func (s *Service) updateMailESI(ctx context.Context, characterID int32) (bool, error) {
-	var changed bool
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
-		return changed, err
+		return false, err
 	}
 	headers, err := s.listMailHeaders(ctx, token)
 	if err != nil {
-		return changed, err
+		return false, err
+	}
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionMailLists, headers)
+	if err != nil {
+		return false, err
+	}
+	if !changed {
+		return false, nil
 	}
 	if err := s.resolveMailEntities(ctx, headers); err != nil {
-		return changed, err
+		return false, err
 	}
 	newHeaders, existingHeaders, err := s.determineNewMail(ctx, token.CharacterID, headers)
 	if err != nil {
-		return changed, err
+		return false, err
 	}
 	if len(newHeaders) > 0 {
 		if err := s.fetchNewMailsESI(ctx, token, newHeaders); err != nil {
-			return changed, err
+			return false, err
 		}
 	}
 	if len(existingHeaders) > 0 {
 		if err := s.updateExistingMail(ctx, characterID, existingHeaders); err != nil {
-			return changed, err
+			return false, err
 		}
 	}
 	if err := s.r.DeleteObsoleteMailLabels(ctx, characterID); err != nil {
-		return changed, err
+		return false, err
 	}
 	if err := s.r.DeleteObsoleteMailLists(ctx, characterID); err != nil {
-		return changed, err
+		return false, err
 	}
-	return changed, nil
+	return true, nil
 }
 
 // listMailHeaders fetched mail headers from ESI with paging and returns them.

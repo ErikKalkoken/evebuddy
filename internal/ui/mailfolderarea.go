@@ -15,6 +15,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
+const folderUpdateTicker = 10 * time.Second
+
 // folderArea is the UI area showing the mail folders.
 type folderArea struct {
 	content       fyne.CanvasObject
@@ -230,32 +232,8 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 	return total, labels, lists
 }
 
-// func (a *folderArea) StartUpdateTicker() {
-// 	ticker := time.NewTicker(10 * time.Second)
-// 	go func() {
-// 		for {
-// 			func() {
-// 				characterID := a.ui.CurrentCharID()
-// 				if characterID == 0 {
-// 					return
-// 				}
-// 				isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, model.UpdateSectionMail)
-// 				if err != nil {
-// 					slog.Error(err.Error())
-// 					return
-// 				}
-// 				if !isExpired {
-// 					return
-// 				}
-// 				a.UpdateMails(false)
-// 			}()
-// 			<-ticker.C
-// 		}
-// 	}()
-// }
-
 func (a *folderArea) StartUpdateTicker() {
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(folderUpdateTicker)
 	go func() {
 		for {
 			func() {

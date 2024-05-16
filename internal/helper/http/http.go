@@ -4,8 +4,6 @@ package http
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"io"
 	"log/slog"
 	"net/http"
@@ -106,18 +104,4 @@ func logResponse(isDebug bool, resp *http.Response, req *http.Request) {
 		level = slog.LevelInfo
 	}
 	slog.Log(context.Background(), level, "HTTP response", "method", req.Method, "url", req.URL, "status", resp.StatusCode)
-}
-
-// CalcBodyHash returns the calculated hash of a response's body.
-func CalcBodyHash(r *http.Response) string {
-	text := ""
-	if r.Body != nil {
-		body, err := io.ReadAll(r.Body)
-		if err == nil {
-			text = string(body)
-			r.Body = io.NopCloser(bytes.NewBuffer(body))
-		}
-	}
-	hash := md5.Sum([]byte(text))
-	return hex.EncodeToString(hash[:])
 }

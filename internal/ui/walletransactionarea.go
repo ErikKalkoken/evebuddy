@@ -15,7 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
-const myFloatFormat = "#,###.##"
+const walletTransactionUpdateTicker = 60 * time.Second
 
 type walletJournalEntry struct {
 	date        time.Time
@@ -176,7 +176,7 @@ func (a *walletTransactionArea) updateEntries() error {
 }
 
 func (a *walletTransactionArea) StartUpdateTicker() {
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(walletTransactionUpdateTicker)
 	go func() {
 		for {
 			func() {

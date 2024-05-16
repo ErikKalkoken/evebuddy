@@ -27,12 +27,12 @@ func (s *Service) updateSkillqueueESI(ctx context.Context, characterID int32) (b
 		return false, err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
-	items, r, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkillqueue(ctx, characterID, nil)
+	items, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkillqueue(ctx, characterID, nil)
 	if err != nil {
 		return false, err
 	}
 	slog.Info("Received skillqueue from ESI", "items", len(items), "characterID", characterID)
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionSkillqueue, r)
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionSkillqueue, items)
 	if err != nil {
 		return false, err
 	}

@@ -17,6 +17,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
+const overviewUpdateTicker = 60 * time.Second
+
 type overviewCharacter struct {
 	alliance       string
 	birthday       time.Time
@@ -263,7 +265,7 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 }
 
 func (a *overviewArea) StartUpdateTicker() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(overviewUpdateTicker)
 	go func() {
 		for {
 			func() {

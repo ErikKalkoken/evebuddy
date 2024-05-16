@@ -20,15 +20,17 @@ import (
 
 // UI constants
 const (
-	myDateTime               = "2006.01.02 15:04"
-	defaultIconSize          = 32
-	mailUpdateTimeoutSeconds = 60
+	myDateTime                = "2006.01.02 15:04"
+	defaultIconSize           = 32
+	myFloatFormat             = "#,###.##"
+	eveCharacterUpdateTicker  = 60 * time.Second
+	eveCharacterUpdateTimeout = 3600 * time.Second
 )
 
-// The ui is the root element of the UI, which contains all UI areas.
+// The ui is the root object of the UI and contains all UI areas.
 //
-// Each UI area holds a pointer of the ui instance,
-// which allow it to access the other UI areas and shared variables
+// Each UI area holds a pointer of the ui instance, so that areas can
+// call methods on other UI areas and access shared variables in the UI.
 type ui struct {
 	app                   fyne.App
 	currentCharacter      *model.MyCharacter
@@ -250,7 +252,7 @@ func (u *ui) ResetCurrentCharacter() {
 }
 
 func (u *ui) StartUpdateTickerEveCharacters() {
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(eveCharacterUpdateTicker)
 	key := "eve-characters-last-updated"
 	go func() {
 		for {
@@ -259,7 +261,7 @@ func (u *ui) StartUpdateTickerEveCharacters() {
 				if err != nil || !ok {
 					return
 				}
-				if time.Now().Before(lastUpdated.Add(3600 * time.Second)) {
+				if time.Now().Before(lastUpdated.Add(eveCharacterUpdateTimeout)) {
 					return
 				}
 				u.service.UpdateAllEveCharactersESI()
