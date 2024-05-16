@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
@@ -20,17 +19,9 @@ func (s *Service) ListSkillqueueItems(characterID int32) ([]*model.SkillqueueIte
 	return s.r.ListSkillqueueItems(ctx, characterID)
 }
 
-func (s *Service) UpdateSkillqueueESI(characterID int32) (bool, error) {
-	ctx := context.Background()
-	key := fmt.Sprintf("UpdateSkillqueueESI-%d", characterID)
-	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		return s.updateSkillqueue(ctx, characterID)
-	})
-	changed := x.(bool)
-	return changed, err
-}
-
-func (s *Service) updateSkillqueue(ctx context.Context, characterID int32) (bool, error) {
+// updateSkillqueueESI updates the skillqueue for a character from ESI
+// and reports wether it has changed.
+func (s *Service) updateSkillqueueESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -40,7 +31,7 @@ func (s *Service) updateSkillqueue(ctx context.Context, characterID int32) (bool
 	if err != nil {
 		return false, err
 	}
-	slog.Info("Received skillqueue items from ESI", "count", len(items), "characterID", characterID)
+	slog.Info("Received skillqueue from ESI", "items", len(items), "characterID", characterID)
 	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionSkillqueue, r)
 	if err != nil {
 		return false, err

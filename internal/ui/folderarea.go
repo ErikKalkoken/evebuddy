@@ -284,7 +284,7 @@ func (a *folderArea) MaybeUpdateAndRefresh(characterID int32) {
 		slog.Error("Failed to update mail lists", "character", characterID, "err", err)
 		return
 	}
-	changed3, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionMail)
+	changed3, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionMails)
 	if err != nil {
 		slog.Error("Failed to update mail", "character", characterID, "err", err)
 		return

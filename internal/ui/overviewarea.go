@@ -282,10 +282,32 @@ func (a *overviewArea) StartUpdateTicker() {
 }
 
 func (a *overviewArea) MaybeUpdateAndRefresh(characterID int32) {
-	_, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionMyCharacter)
+	changed1, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionLocation)
 	if err != nil {
 		slog.Error("Failed to update mycharacter", "character", characterID, "err", err)
 		return
 	}
-	a.Refresh()
+	changed2, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionOnline)
+	if err != nil {
+		slog.Error("Failed to update mycharacter", "character", characterID, "err", err)
+		return
+	}
+	changed3, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionShip)
+	if err != nil {
+		slog.Error("Failed to update mycharacter", "character", characterID, "err", err)
+		return
+	}
+	changed4, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionSkills)
+	if err != nil {
+		slog.Error("Failed to update mycharacter", "character", characterID, "err", err)
+		return
+	}
+	changed5, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionWalletBalance)
+	if err != nil {
+		slog.Error("Failed to update mycharacter", "character", characterID, "err", err)
+		return
+	}
+	if changed1 || changed2 || changed3 || changed4 || changed5 {
+		a.Refresh()
+	}
 }

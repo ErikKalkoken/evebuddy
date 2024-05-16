@@ -137,11 +137,11 @@ func TestUpdateMail(t *testing.T) {
 				return resp, nil
 			})
 		// when
-		_, err := s.UpdateMailLabelsESI(c1.ID)
+		_, err := s.UpdateSectionIfExpired(c1.ID, model.UpdateSectionMailLabels)
 		if assert.NoError(t, err) {
-			_, err = s.UpdateMailListsESI(c1.ID)
+			_, err := s.UpdateSectionIfExpired(c1.ID, model.UpdateSectionMailLists)
 			if assert.NoError(t, err) {
-				_, err = s.UpdateMailESI(c1.ID)
+				_, err := s.UpdateSectionIfExpired(c1.ID, model.UpdateSectionMails)
 				// then
 				if assert.NoError(t, err) {
 					m, err := s.GetMail(c1.ID, int32(mailID))
@@ -273,7 +273,7 @@ func TestUpdateMail(t *testing.T) {
 			})
 
 		// when
-		_, err := s.UpdateMailESI(c.ID)
+		_, err := s.UpdateSectionIfExpired(c.ID, model.UpdateSectionMails)
 		// then
 		if assert.NoError(t, err) {
 			m, err := s.GetMail(c.ID, mailID)

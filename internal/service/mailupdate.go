@@ -20,16 +20,9 @@ const (
 	maxHeadersPerPage = 50 // maximum header objects returned per page
 )
 
-func (s *Service) UpdateMailLabelsESI(characterID int32) (bool, error) {
-	ctx := context.Background()
-	key := fmt.Sprintf("UpdateMailLabelsESI-%d", characterID)
-	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		return s.updateMailLabels(ctx, characterID)
-	})
-	return x.(bool), err
-}
-
-func (s *Service) updateMailLabels(ctx context.Context, characterID int32) (bool, error) {
+// updateMailLabelsESI updates the skillqueue for a character from ESI
+// and reports wether it has changed.
+func (s *Service) updateMailLabelsESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -57,16 +50,9 @@ func (s *Service) updateMailLabels(ctx context.Context, characterID int32) (bool
 	return true, nil
 }
 
-func (s *Service) UpdateMailListsESI(characterID int32) (bool, error) {
-	ctx := context.Background()
-	key := fmt.Sprintf("UpdateMailListESI-%d", characterID)
-	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		return s.updateMailLists(ctx, characterID)
-	})
-	return x.(bool), err
-}
-
-func (s *Service) updateMailLists(ctx context.Context, characterID int32) (bool, error) {
+// updateMailListsESI updates the skillqueue for a character from ESI
+// and reports wether it has changed.
+func (s *Service) updateMailListsESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -89,16 +75,9 @@ func (s *Service) updateMailLists(ctx context.Context, characterID int32) (bool,
 	return changed, nil
 }
 
-func (s *Service) UpdateMailESI(characterID int32) (bool, error) {
-	ctx := context.Background()
-	key := fmt.Sprintf("UpdateMailESI-%d", characterID)
-	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		return s.updateMail(ctx, characterID)
-	})
-	return x.(bool), err
-}
-
-func (s *Service) updateMail(ctx context.Context, characterID int32) (bool, error) {
+// updateMailESI updates the skillqueue for a character from ESI
+// and reports wether it has changed.
+func (s *Service) updateMailESI(ctx context.Context, characterID int32) (bool, error) {
 	var changed bool
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {

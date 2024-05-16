@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
@@ -16,17 +15,7 @@ func (s *Service) ListWalletJournalEntries(characterID int32) ([]*model.WalletJo
 	return s.r.ListWalletJournalEntries(ctx, characterID)
 }
 
-// UpdateWalletJournalEntryESI updates the wallet journal from ESI and returns the count of new entries.
-func (s *Service) UpdateWalletJournalEntryESI(characterID int32) (bool, error) {
-	ctx := context.Background()
-	key := fmt.Sprintf("UpdateWalletJournalEntryESI-%d", characterID)
-	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		return s.updateWalletJournalEntryESI(ctx, characterID)
-	})
-	hasChanged := x.(bool)
-	return hasChanged, err
-}
-
+// updateWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
 func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {

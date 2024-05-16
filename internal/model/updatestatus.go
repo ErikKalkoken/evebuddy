@@ -6,12 +6,16 @@ type UpdateSection string
 
 // Updated character sections
 const (
-	UpdateSectionMail          UpdateSection = "mail"
-	UpdateSectionMailLists     UpdateSection = "mail_list"
-	UpdateSectionMailLabels    UpdateSection = "mail_label"
-	UpdateSectionMyCharacter   UpdateSection = "my_character"
+	UpdateSectionMails         UpdateSection = "mails"
+	UpdateSectionMailLists     UpdateSection = "mail_lists"
+	UpdateSectionMailLabels    UpdateSection = "mail_labels"
+	UpdateSectionSkills        UpdateSection = "skills"
+	UpdateSectionLocation      UpdateSection = "location"
+	UpdateSectionOnline        UpdateSection = "online"
+	UpdateSectionShip          UpdateSection = "ship"
 	UpdateSectionSkillqueue    UpdateSection = "skillqueue"
 	UpdateSectionWalletJournal UpdateSection = "wallet_journal"
+	UpdateSectionWalletBalance UpdateSection = "wallet_balance"
 )
 
 type MyCharacterUpdateStatus struct {

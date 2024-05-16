@@ -1,4 +1,4 @@
-package service_test
+package service
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
 )
 
 func TestUpdateSkillqueueESI(t *testing.T) {
@@ -19,7 +18,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := service.NewService(r)
+	s := NewService(r)
 	ctx := context.Background()
 	t.Run("should create new queue", func(t *testing.T) {
 		// given
@@ -58,7 +57,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.UpdateSkillqueueESI(c.ID)
+		changed, err := s.updateSkillqueueESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)

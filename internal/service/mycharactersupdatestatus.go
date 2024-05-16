@@ -13,15 +13,29 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-// update section timeouts in seconds
-const (
-	updateSectionMailTimeout          = 30
-	updateSectionMailLabelsTimeout    = 30
-	updateSectionMailListsTimeout     = 120
-	updateSectionDetailsTimeout       = 30
-	updateSectionSkillqueueTimeout    = 120
-	updateSectionWalletJournalTimeout = 3600
-)
+const defaultUpdateSectionTimeout = 3600 * time.Second
+
+// timeoutForUpdateSection returns the time until the data of an update section becomes stale.
+func timeoutForUpdateSection(section model.UpdateSection) time.Duration {
+	m := map[model.UpdateSection]time.Duration{
+		model.UpdateSectionLocation:      30 * time.Second, // 5 seconds min
+		model.UpdateSectionMailLabels:    30 * time.Second,
+		model.UpdateSectionMailLists:     120 * time.Second,
+		model.UpdateSectionMails:         30 * time.Second,
+		model.UpdateSectionOnline:        60 * time.Second,
+		model.UpdateSectionShip:          30 * time.Second, // 5 seconds min
+		model.UpdateSectionSkillqueue:    120 * time.Second,
+		model.UpdateSectionSkills:        120 * time.Second,
+		model.UpdateSectionWalletBalance: 120 * time.Second,
+		model.UpdateSectionWalletJournal: 3600 * time.Second,
+	}
+	duration, ok := m[section]
+	if !ok {
+		slog.Warn("Requested duration for unknown section. Using default.", "section", section)
+		duration = defaultUpdateSectionTimeout
+	}
+	return duration
+}
 
 func (s *Service) SectionSetUpdated(characterID int32, section model.UpdateSection) error {
 	ctx := context.Background()
@@ -62,19 +76,9 @@ func (s *Service) SectionWasUpdated(characterID int32, section model.UpdateSecti
 	return !t.IsZero(), nil
 }
 
-// SectionWasUpdated reports wether the data for a section has expired.
-func (s *Service) SectionIsUpdateExpired(characterID int32, section model.UpdateSection) (bool, error) {
-	t, err := s.SectionUpdatedAt(characterID, section)
-	if err != nil {
-		return false, err
-	}
-	deadline := t.Add(sectionUpdateTimeout(section))
-	return time.Now().After(deadline), nil
-}
-
+// UpdateSectionIfExpired updates a section from ESI if has expired and changed
+// and reports back if it has changed
 func (s *Service) UpdateSectionIfExpired(characterID int32, section model.UpdateSection) (bool, error) {
-	var err error
-	var changed bool
 	isExpired, err := s.SectionIsUpdateExpired(characterID, section)
 	if err != nil {
 		return false, err
@@ -82,45 +86,55 @@ func (s *Service) UpdateSectionIfExpired(characterID int32, section model.Update
 	if !isExpired {
 		return false, nil
 	}
+	ctx := context.Background()
+	var f func(context.Context, int32) (bool, error)
 	switch section {
-	case model.UpdateSectionMail:
-		changed, err = s.UpdateMailESI(characterID)
+	case model.UpdateSectionLocation:
+		f = s.updateLocationESI
+	case model.UpdateSectionMails:
+		f = s.updateMailESI
 	case model.UpdateSectionMailLabels:
-		changed, err = s.UpdateMailLabelsESI(characterID)
+		f = s.updateMailLabelsESI
 	case model.UpdateSectionMailLists:
-		changed, err = s.UpdateMailListsESI(characterID)
+		f = s.updateMailListsESI
+	case model.UpdateSectionOnline:
+		f = s.updateOnlineESI
+	case model.UpdateSectionShip:
+		f = s.updateShipESI
 	case model.UpdateSectionSkillqueue:
-		changed, err = s.UpdateSkillqueueESI(characterID)
+		f = s.updateSkillqueueESI
+	case model.UpdateSectionSkills:
+		f = s.updateSkillsESI
+	case model.UpdateSectionWalletBalance:
+		f = s.updateWalletBalanceESI
 	case model.UpdateSectionWalletJournal:
-		changed, err = s.UpdateWalletJournalEntryESI(characterID)
-	case model.UpdateSectionMyCharacter:
-		changed, err = s.UpdateMyCharacterESI(characterID)
+		f = s.updateWalletJournalEntryESI
 	default:
 		panic(fmt.Sprintf("Undefined section: %s", section))
 	}
+	key := fmt.Sprintf("UpdateESI-%s-%d", section, characterID)
+	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
+		return f(ctx, characterID)
+	})
 	if err != nil {
 		return false, fmt.Errorf("failed to update section %s from ESI for character %d: %w", section, characterID, err)
 	}
 	if err := s.SectionSetUpdated(characterID, section); err != nil {
 		return false, err
 	}
+	changed := x.(bool)
 	return changed, err
 }
 
-func sectionUpdateTimeout(section model.UpdateSection) time.Duration {
-	m := map[model.UpdateSection]time.Duration{
-		model.UpdateSectionMyCharacter:   updateSectionDetailsTimeout * time.Second,
-		model.UpdateSectionMail:          updateSectionMailTimeout * time.Second,
-		model.UpdateSectionMailLabels:    updateSectionMailLabelsTimeout * time.Second,
-		model.UpdateSectionMailLists:     updateSectionMailListsTimeout * time.Second,
-		model.UpdateSectionSkillqueue:    updateSectionSkillqueueTimeout * time.Second,
-		model.UpdateSectionWalletJournal: updateSectionWalletJournalTimeout * time.Second,
+// SectionWasUpdated reports wether the data for a section has expired.
+func (s *Service) SectionIsUpdateExpired(characterID int32, section model.UpdateSection) (bool, error) {
+	t, err := s.SectionUpdatedAt(characterID, section)
+	if err != nil {
+		return false, err
 	}
-	d, ok := m[section]
-	if !ok {
-		panic(fmt.Sprintf("Invalid section: %v", section))
-	}
-	return d
+	duration := timeoutForUpdateSection(section)
+	deadline := t.Add(duration)
+	return time.Now().After(deadline), nil
 }
 
 // hasSectionChanged reports wether a section has changed based on the given HTTP response and updates it's content hash.

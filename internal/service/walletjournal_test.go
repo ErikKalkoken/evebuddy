@@ -1,4 +1,4 @@
-package service_test
+package service
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -21,7 +20,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := service.NewService(r)
+	s := NewService(r)
 	ctx := context.Background()
 	t.Run("should create new entry from scratch", func(t *testing.T) {
 		// given
@@ -51,7 +50,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.UpdateWalletJournalEntryESI(c.ID)
+		changed, err := s.updateWalletJournalEntryESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -102,7 +101,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.UpdateWalletJournalEntryESI(c.ID)
+		changed, err := s.updateWalletJournalEntryESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -149,7 +148,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.UpdateWalletJournalEntryESI(c.ID)
+		changed, err := s.updateWalletJournalEntryESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
@@ -169,7 +168,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 func TestListWalletJournalEntries(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
-	s := service.NewService(r)
+	s := NewService(r)
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

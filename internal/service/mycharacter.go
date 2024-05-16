@@ -4,11 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"log/slog"
 
 	"fyne.io/fyne/v2/data/binding"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
@@ -76,93 +74,152 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 	return token.CharacterID, nil
 }
 
-func (s *Service) UpdateMyCharacterESI(characterID int32) (bool, error) {
-	ctx := context.Background()
-	key := fmt.Sprintf("UpdateMyCharacter-%d", characterID)
-	_, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		err := s.updateMyCharacter(ctx, characterID)
-		return struct{}{}, err
-	})
-	return true, err
-}
-
-func (s *Service) updateMyCharacter(ctx context.Context, characterID int32) error {
+func (s *Service) updateLocationESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
+	location, r, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, characterID, nil)
+	if err != nil {
+		return false, err
+	}
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionLocation, r)
+	if err != nil {
+		return false, err
+	}
+	if !changed {
+		return false, nil
+	}
+	solarSystem, err := s.getOrCreateEveSolarSystemESI(ctx, location.SolarSystemId)
+	if err != nil {
+		return false, err
+	}
 	c, err := s.r.GetMyCharacter(ctx, characterID)
 	if err != nil {
-		return err
+		return false, err
 	}
-	if err := s.updateMyCharacterESI(ctx, c); err != nil {
-		return err
+	c.Location = solarSystem
+	if err := s.r.UpdateOrCreateMyCharacter(ctx, updateParamsFromMyCharacter(c)); err != nil {
+		return false, err
 	}
-	arg := updateParamsFromMyCharacter(c)
-	if err := s.r.UpdateOrCreateMyCharacter(ctx, arg); err != nil {
-		return err
-	}
-	slog.Info("Finished updating character", "characterID", characterID)
-	return nil
+	return true, nil
 }
 
-// updateMyCharacterESI updates character details and related information from ESI.
-func (s *Service) updateMyCharacterESI(ctx context.Context, c *model.MyCharacter) error {
-	g := new(errgroup.Group)
-	g.Go(func() error {
-		skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, c.ID, nil)
-		if err != nil {
-			return err
-		}
-		c.SkillPoints = sql.NullInt64{Int64: skills.TotalSp, Valid: true}
-		return nil
-	})
-	g.Go(func() error {
-		balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, c.ID, nil)
-		if err != nil {
-			return err
-		}
-		c.WalletBalance = sql.NullFloat64{Float64: balance, Valid: true}
-		return nil
-	})
-	g.Go(func() error {
-		online, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, c.ID, nil)
-		if err != nil {
-			return err
-		}
-		c.LastLoginAt = sql.NullTime{Time: online.LastLogin, Valid: true}
-		return nil
-	})
-	g.Go(func() error {
-		r, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, c.ID, nil)
-		if err != nil {
-			return err
-		}
-		location, err := s.getOrCreateEveSolarSystemESI(ctx, r.SolarSystemId)
-		if err != nil {
-			return err
-		}
-		c.Location = location
-		return nil
-	})
-	g.Go(func() error {
-		ship, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, c.ID, nil)
-		if err != nil {
-			return err
-		}
-		x, err := s.getOrCreateEveTypeESI(ctx, ship.ShipTypeId)
-		if err != nil {
-			return err
-		}
-		c.Ship = x
-		return nil
-	})
-	if err := g.Wait(); err != nil {
-		return fmt.Errorf("failed to update MyCharacter %d: %w", c.ID, err)
+func (s *Service) updateOnlineESI(ctx context.Context, characterID int32) (bool, error) {
+	token, err := s.getValidToken(ctx, characterID)
+	if err != nil {
+		return false, err
 	}
-	s.SectionSetUpdated(c.ID, model.UpdateSectionMyCharacter)
-	return nil
+	ctx = contextWithToken(ctx, token.AccessToken)
+	online, r, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, characterID, nil)
+	if err != nil {
+		return false, err
+	}
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionOnline, r)
+	if err != nil {
+		return false, err
+	}
+	if !changed {
+		return false, nil
+	}
+	c, err := s.r.GetMyCharacter(ctx, characterID)
+	if err != nil {
+		return false, err
+	}
+	c.LastLoginAt = sql.NullTime{Time: online.LastLogin, Valid: true}
+	if err := s.r.UpdateOrCreateMyCharacter(ctx, updateParamsFromMyCharacter(c)); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *Service) updateShipESI(ctx context.Context, characterID int32) (bool, error) {
+	token, err := s.getValidToken(ctx, characterID)
+	if err != nil {
+		return false, err
+	}
+	ctx = contextWithToken(ctx, token.AccessToken)
+	ship, r, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, characterID, nil)
+	if err != nil {
+		return false, err
+	}
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionShip, r)
+	if err != nil {
+		return false, err
+	}
+	if !changed {
+		return false, nil
+	}
+	x, err := s.getOrCreateEveTypeESI(ctx, ship.ShipTypeId)
+	if err != nil {
+		return false, err
+	}
+	c, err := s.r.GetMyCharacter(ctx, characterID)
+	if err != nil {
+		return false, err
+	}
+	c.Ship = x
+	if err := s.r.UpdateOrCreateMyCharacter(ctx, updateParamsFromMyCharacter(c)); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *Service) updateSkillsESI(ctx context.Context, characterID int32) (bool, error) {
+	token, err := s.getValidToken(ctx, characterID)
+	if err != nil {
+		return false, err
+	}
+	ctx = contextWithToken(ctx, token.AccessToken)
+	skills, r, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, characterID, nil)
+	if err != nil {
+		return false, err
+	}
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionSkills, r)
+	if err != nil {
+		return false, err
+	}
+	if !changed {
+		return false, nil
+	}
+	c, err := s.r.GetMyCharacter(ctx, characterID)
+	if err != nil {
+		return false, err
+	}
+	c.SkillPoints = sql.NullInt64{Int64: skills.TotalSp, Valid: true}
+	if err := s.r.UpdateOrCreateMyCharacter(ctx, updateParamsFromMyCharacter(c)); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *Service) updateWalletBalanceESI(ctx context.Context, characterID int32) (bool, error) {
+	token, err := s.getValidToken(ctx, characterID)
+	if err != nil {
+		return false, err
+	}
+	ctx = contextWithToken(ctx, token.AccessToken)
+	balance, r, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, characterID, nil)
+	if err != nil {
+		return false, err
+	}
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionWalletBalance, r)
+	if err != nil {
+		return false, err
+	}
+	if !changed {
+		return false, nil
+	}
+	c, err := s.r.GetMyCharacter(ctx, characterID)
+	if err != nil {
+		return false, err
+	}
+	c.WalletBalance = sql.NullFloat64{Float64: balance, Valid: true}
+	if err := s.r.UpdateOrCreateMyCharacter(ctx, updateParamsFromMyCharacter(c)); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func updateParamsFromMyCharacter(myCharacter *model.MyCharacter) storage.UpdateOrCreateMyCharacterParams {
