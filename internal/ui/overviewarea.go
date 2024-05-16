@@ -273,24 +273,19 @@ func (a *overviewArea) StartUpdateTicker() {
 					return
 				}
 				for _, c := range cc {
-					go func(characterID int32) {
-						isExpired, err := a.ui.service.SectionIsUpdateExpired(characterID, model.UpdateSectionMyCharacter)
-						if err != nil {
-							slog.Error(err.Error())
-							return
-						}
-						if !isExpired {
-							return
-						}
-						if err := a.ui.service.UpdateMyCharacterESI(characterID); err != nil {
-							slog.Error(err.Error())
-							return
-						}
-						a.Refresh()
-					}(c.ID)
+					a.UpdateAndRefresh(c.ID)
 				}
 			}()
 			<-ticker.C
 		}
 	}()
+}
+
+func (a *overviewArea) UpdateAndRefresh(characterID int32) {
+	_, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionMyCharacter)
+	if err != nil {
+		slog.Error("Failed to update mycharacter", "character", characterID, "err", err)
+		return
+	}
+	a.Refresh()
 }

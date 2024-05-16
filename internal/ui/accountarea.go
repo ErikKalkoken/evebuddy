@@ -163,7 +163,7 @@ func (a *accountArea) showAddCharacterDialog() {
 	)
 	d1.SetOnClosed(cancel)
 	go func() {
-		err := a.ui.service.UpdateOrCreateMyCharacterFromSSO(ctx, infoText)
+		_, err := a.ui.service.UpdateOrCreateMyCharacterFromSSO(ctx, infoText)
 		if err != nil {
 			if !errors.Is(err, service.ErrAborted) {
 				slog.Error("Failed to add a new character", "error", err)

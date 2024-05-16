@@ -209,6 +209,8 @@ func (u *ui) refreshCurrentCharacter() {
 		u.tabs.EnableIndex(0)
 		u.tabs.EnableIndex(1)
 		u.tabs.EnableIndex(2)
+		go u.skillqueueArea.UpdateAndRefresh(c.ID)
+		go u.overviewArea.UpdateAndRefresh(c.ID)
 		go u.walletTransactionArea.UpdateAndRefresh(c.ID)
 	} else {
 		u.tabs.DisableIndex(0)

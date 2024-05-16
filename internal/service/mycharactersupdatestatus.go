@@ -83,6 +83,9 @@ func (s *Service) UpdateSectionIfExpired(characterID int32, section model.Update
 		return s.UpdateSkillqueueESI(characterID)
 	case model.UpdateSectionWalletJournal:
 		return s.UpdateWalletJournalEntryESI(characterID)
+	case model.UpdateSectionMyCharacter:
+		err := s.UpdateMyCharacterESI(characterID)
+		return true, err
 	}
 	panic(fmt.Sprintf("Undefined section: %s", section))
 }

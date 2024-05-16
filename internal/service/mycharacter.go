@@ -38,13 +38,13 @@ func (s *Service) ListMyCharactersShort() ([]*model.MyCharacterShort, error) {
 }
 
 // UpdateOrCreateMyCharacterFromSSO creates or updates a character via SSO authentication.
-func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) error {
+func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
 	ssoToken, err := sso.Authenticate(ctx, s.httpClient, esiScopes)
 	if err != nil {
 		if errors.Is(err, sso.ErrAborted) {
-			return ErrAborted
+			return 0, ErrAborted
 		}
-		return err
+		return 0, err
 	}
 	slog.Info("Created new SSO token", "token", ssoToken)
 	infoText.Set("Fetching character from server. Please wait...")
@@ -60,7 +60,7 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 	ctx = contextWithToken(ctx, token.AccessToken)
 	character, err := s.getOrCreateEveCharacterESI(ctx, token.CharacterID)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	myCharacter := &model.MyCharacter{
 		ID:        token.CharacterID,
@@ -68,12 +68,12 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 	}
 	arg := updateParamsFromMyCharacter(myCharacter)
 	if err := s.r.UpdateOrCreateMyCharacter(ctx, arg); err != nil {
-		return err
+		return 0, err
 	}
 	if err := s.r.UpdateOrCreateToken(ctx, &token); err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return token.CharacterID, nil
 }
 
 func (s *Service) UpdateMyCharacterESI(characterID int32) error {
