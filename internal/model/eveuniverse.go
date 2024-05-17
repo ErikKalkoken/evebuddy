@@ -1,5 +1,10 @@
 package model
 
+const (
+	EveTypeIDSolarSystem     = 5
+	EveTypeIDAssetSafetyWrap = 60
+)
+
 // EveCategory is a category in Eve Online.
 type EveCategory struct {
 	ID          int32
@@ -50,14 +55,4 @@ type Position struct {
 	X float64
 	Y float64
 	Z float64
-}
-
-// Structure is a structure in Eve Online.
-type Structure struct {
-	ID          int64
-	SolarSystem *EveSolarSystem
-	Type        *EveType
-	Name        string
-	Owner       *EveEntity
-	Position    Position
 }

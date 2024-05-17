@@ -92,6 +92,15 @@ type EveType struct {
 	IsPublished bool
 }
 
+type Location struct {
+	ID               int64
+	EveSolarSystemID sql.NullInt64
+	EveTypeID        sql.NullInt64
+	Name             string
+	OwnerID          sql.NullInt64
+	UpdatedAt        time.Time
+}
+
 type Mail struct {
 	ID            int64
 	Body          string
@@ -158,17 +167,6 @@ type SkillqueueItem struct {
 	MyCharacterID   int64
 	StartDate       sql.NullTime
 	TrainingStartSp sql.NullInt64
-}
-
-type Structure struct {
-	ID               int64
-	EveSolarSystemID int64
-	EveTypeID        sql.NullInt64
-	Name             string
-	OwnerID          int64
-	PositionX        float64
-	PositionY        float64
-	PositionZ        float64
 }
 
 type Token struct {

@@ -175,18 +175,16 @@ CREATE TABLE scopes (
 );
 CREATE INDEX scopes_name_idx ON scopes (name ASC);
 
-CREATE TABLE structures (
+CREATE TABLE locations (
     id INTEGER PRIMARY KEY NOT NULL,
-    eve_solar_system_id INTEGER NOT NULL,
+    eve_solar_system_id INTEGER,
     eve_type_id INTEGER,
     name TEXT NOT NULL,
-    owner_id INTEGER NOT NULL,
-    position_x REAL NOT NULL,
-    position_y REAL NOT NULL,
-    position_z REAL NOT NULL,
-    FOREIGN KEY (eve_solar_system_id) REFERENCES eve_solar_systems(id) ON DELETE CASCADE,
+    owner_id INTEGER,
+    updated_at DATETIME NOT NULL,
+    FOREIGN KEY (eve_solar_system_id) REFERENCES eve_solar_systems(id) ON DELETE SET NULL,
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE SET NULL,
-    FOREIGN KEY (owner_id) REFERENCES eve_entities(id) ON DELETE CASCADE
+    FOREIGN KEY (owner_id) REFERENCES eve_entities(id) ON DELETE SET NULL
 );
 
 CREATE TABLE tokens (

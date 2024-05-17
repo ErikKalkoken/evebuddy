@@ -523,8 +523,8 @@ func (f Factory) CreateSkillqueueItem(args ...storage.SkillqueueItemParams) *mod
 	return i
 }
 
-func (f Factory) CreateStructure(args ...storage.CreateStructureParams) *model.Structure {
-	var arg storage.CreateStructureParams
+func (f Factory) CreateStructure(args ...storage.CreateLocationParams) *model.Location {
+	var arg storage.CreateLocationParams
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
@@ -535,28 +535,26 @@ func (f Factory) CreateStructure(args ...storage.CreateStructureParams) *model.S
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("Structure #%d", arg.ID)
 	}
-	if arg.EveSolarSystemID == 0 {
+	if !arg.EveSolarSystemID.Valid {
 		x := f.CreateEveSolarSystem()
-		arg.EveSolarSystemID = x.ID
+		arg.EveSolarSystemID = sql.NullInt32{Int32: x.ID, Valid: true}
 	}
-	if arg.OwnerID == 0 {
+	if !arg.OwnerID.Valid {
 		x := f.CreateEveEntityCorporation()
-		arg.OwnerID = x.ID
+		arg.OwnerID = sql.NullInt32{Int32: x.ID, Valid: true}
 	}
 	if !arg.EveTypeID.Valid {
 		x := f.CreateEveType()
 		arg.EveTypeID = sql.NullInt32{Int32: x.ID, Valid: true}
 	}
-	if arg.Position.X == 0 && arg.Position.Y == 0 && arg.Position.Z == 0 {
-		arg.Position.X = rand.NormFloat64()
-		arg.Position.Y = rand.NormFloat64()
-		arg.Position.Z = rand.NormFloat64()
+	if arg.UpdatedAt.IsZero() {
+		arg.UpdatedAt = time.Now()
 	}
-	err := f.r.CreateStructure(ctx, arg)
+	err := f.r.UpdateOrCreateLocation(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	x, err := f.r.GetStructure(ctx, arg.ID)
+	x, err := f.r.GetLocation(ctx, arg.ID)
 	if err != nil {
 		panic(err)
 	}

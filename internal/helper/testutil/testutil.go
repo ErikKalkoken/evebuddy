@@ -19,7 +19,7 @@ func New() (*sql.DB, *storage.Storage, Factory) {
 // TruncateTables will purge data from all tables. This is meant for tests.
 func TruncateTables(db *sql.DB) {
 	sql := `
-		DELETE FROM structures;
+		DELETE FROM locations;
 		DELETE FROM mail_recipients;
 		DELETE FROM mail_mail_labels;
 		DELETE FROM mail_labels;
