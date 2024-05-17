@@ -63,10 +63,10 @@ func (a *statusArea) StartUpdateTicker() {
 			x, err := a.ui.service.FetchESIStatus()
 			if err != nil {
 				slog.Error("Failed to fetch ESI status", "err", err)
-				r = theme.NewWarningThemedResource(a.eveStatusTrafficResource)
+				r = theme.NewErrorThemedResource(a.eveStatusTrafficResource)
 				s = "ERROR"
 			} else if !x.IsOnline {
-				r = theme.NewErrorThemedResource(a.eveStatusTrafficResource)
+				r = theme.NewWarningThemedResource(a.eveStatusTrafficResource)
 				s = "OFFLINE"
 			} else {
 				r = theme.NewSuccessThemedResource(a.eveStatusTrafficResource)

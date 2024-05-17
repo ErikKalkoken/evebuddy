@@ -5,12 +5,12 @@ package sso
 import memcache "github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 
 const (
-	host            = "127.0.0.1"
-	port            = ":8000"
+	host            = "localhost"
+	port            = ":30123"
 	address         = host + port
 	oauthURL        = "https://login.eveonline.com/.well-known/oauth-authorization-server"
-	ssoClientId     = "882b6f0cbd4e44ad93aead900d07219b"
-	ssoCallbackPath = "/sso/callback"
+	ssoClientId     = "11ae857fe4d149b2be60d875649c05f1"
+	ssoCallbackPath = "/callback"
 	ssoHost         = "login.eveonline.com"
 	ssoIssuer1      = "login.eveonline.com"
 	ssoIssuer2      = "https://login.eveonline.com"

@@ -17,7 +17,7 @@ EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) player
   - [Mac OS](#mac-os)
   - [Windows](#windows)
   - [Build from source](#build-from-source)
-- [Privacy Notes](#privacy-notes)
+- [Data Privacy](#data-privacy)
 - [Credits](#credits)
 
 ## Features
@@ -70,7 +70,7 @@ When you have all necessary tools installed, you can build and run this app dire
 go run github.com/ErikKalkoken/evebuddy@latest
 ```
 
-## Privacy notes
+## Data privacy
 
 We understand and respect the privacy concerns of our fellow Eve Online players. Therefore all data of this app is stored and kept locally (e.g. character tokens and data). Internet requests by this app are made to CCPs game servers only.
 
