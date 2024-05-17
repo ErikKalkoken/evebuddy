@@ -225,20 +225,33 @@ func TestListMyCharacters(t *testing.T) {
 	})
 }
 
-func TestUpdateMyCharacter(t *testing.T) {
+func TestUpdateMyCharacterFields(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
+	t.Run("can update home", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateMyCharacter()
+		home := factory.CreateLocationStructure()
+		// when
+		err := r.UpdateMyCharacterHome(ctx, c1.ID, sql.NullInt64{Int64: home.ID, Valid: true})
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetMyCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, home, c2.Home)
+			}
+		}
+
+	})
 	t.Run("can update last login", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateMyCharacter()
 		x := time.Now().Add(1 * time.Hour)
 		// when
-		err := r.UpdateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
-			ID:          c1.ID,
-			LastLoginAt: sql.NullTime{Time: x, Valid: true},
-		})
+		err := r.UpdateMyCharacterLastLoginAt(ctx, c1.ID, sql.NullTime{Time: x, Valid: true})
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetMyCharacter(ctx, c1.ID)
@@ -253,10 +266,7 @@ func TestUpdateMyCharacter(t *testing.T) {
 		c1 := factory.CreateMyCharacter()
 		location := factory.CreateLocationStructure()
 		// when
-		err := r.UpdateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
-			ID:         c1.ID,
-			LocationID: sql.NullInt64{Int64: location.ID, Valid: true},
-		})
+		err := r.UpdateMyCharacterLocation(ctx, c1.ID, sql.NullInt64{Int64: location.ID, Valid: true})
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetMyCharacter(ctx, c1.ID)
@@ -271,10 +281,7 @@ func TestUpdateMyCharacter(t *testing.T) {
 		c1 := factory.CreateMyCharacter()
 		x := factory.CreateEveType()
 		// when
-		err := r.UpdateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
-			ID:     c1.ID,
-			ShipID: sql.NullInt32{Int32: x.ID, Valid: true},
-		})
+		err := r.UpdateMyCharacterShip(ctx, c1.ID, sql.NullInt32{Int32: x.ID, Valid: true})
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetMyCharacter(ctx, c1.ID)
@@ -289,10 +296,7 @@ func TestUpdateMyCharacter(t *testing.T) {
 		c1 := factory.CreateMyCharacter()
 		x := int64(rand.IntN(100_000_000))
 		// when
-		err := r.UpdateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
-			ID:          c1.ID,
-			SkillPoints: sql.NullInt64{Int64: x, Valid: true},
-		})
+		err := r.UpdateMyCharacterSkillPoints(ctx, c1.ID, sql.NullInt64{Int64: x, Valid: true})
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetMyCharacter(ctx, c1.ID)
@@ -307,10 +311,7 @@ func TestUpdateMyCharacter(t *testing.T) {
 		c1 := factory.CreateMyCharacter()
 		x := rand.Float64() * 100_000_000
 		// when
-		err := r.UpdateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
-			ID:            c1.ID,
-			WalletBalance: sql.NullFloat64{Float64: x, Valid: true},
-		})
+		err := r.UpdateMyCharacterWalletBalance(ctx, c1.ID, sql.NullFloat64{Float64: x, Valid: true})
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetMyCharacter(ctx, c1.ID)

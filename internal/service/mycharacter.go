@@ -104,18 +104,16 @@ func (s *Service) updateHomeESI(ctx context.Context, characterID int32) (bool, e
 	if !changed {
 		return false, nil
 	}
-	if clones.HomeLocation.LocationId == 0 {
-		return true, nil
+	var home sql.NullInt64
+	if clones.HomeLocation.LocationId != 0 {
+		_, err = s.getOrCreateLocationESI(ctx, clones.HomeLocation.LocationId)
+		if err != nil {
+			return false, err
+		}
+		home.Int64 = clones.HomeLocation.LocationId
+		home.Valid = true
 	}
-	_, err = s.getOrCreateLocationESI(ctx, clones.HomeLocation.LocationId)
-	if err != nil {
-		return false, err
-	}
-	arg := storage.UpdateOrCreateMyCharacterParams{
-		ID:     characterID,
-		HomeID: sql.NullInt64{Int64: clones.HomeLocation.LocationId, Valid: true},
-	}
-	if err := s.r.UpdateMyCharacter(ctx, arg); err != nil {
+	if err := s.r.UpdateMyCharacterHome(ctx, characterID, home); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -151,11 +149,8 @@ func (s *Service) updateLocationESI(ctx context.Context, characterID int32) (boo
 	if err != nil {
 		return false, err
 	}
-	arg := storage.UpdateOrCreateMyCharacterParams{
-		ID:         characterID,
-		LocationID: sql.NullInt64{Int64: locationID, Valid: true},
-	}
-	if err := s.r.UpdateMyCharacter(ctx, arg); err != nil {
+	x := sql.NullInt64{Int64: locationID, Valid: true}
+	if err := s.r.UpdateMyCharacterLocation(ctx, characterID, x); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -178,11 +173,12 @@ func (s *Service) updateOnlineESI(ctx context.Context, characterID int32) (bool,
 	if !changed {
 		return false, nil
 	}
-	arg := storage.UpdateOrCreateMyCharacterParams{
-		ID:          characterID,
-		LastLoginAt: sql.NullTime{Time: online.LastLogin, Valid: true},
+	var x sql.NullTime
+	if !online.LastLogin.IsZero() {
+		x.Time = online.LastLogin
+		x.Valid = true
 	}
-	if err := s.r.UpdateMyCharacter(ctx, arg); err != nil {
+	if err := s.r.UpdateMyCharacterLastLoginAt(ctx, characterID, x); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -205,15 +201,12 @@ func (s *Service) updateShipESI(ctx context.Context, characterID int32) (bool, e
 	if !changed {
 		return false, nil
 	}
-	x, err := s.getOrCreateEveTypeESI(ctx, ship.ShipTypeId)
+	_, err = s.getOrCreateEveTypeESI(ctx, ship.ShipTypeId)
 	if err != nil {
 		return false, err
 	}
-	arg := storage.UpdateOrCreateMyCharacterParams{
-		ID:     characterID,
-		ShipID: sql.NullInt32{Int32: x.ID, Valid: true},
-	}
-	if err := s.r.UpdateMyCharacter(ctx, arg); err != nil {
+	x := sql.NullInt32{Int32: ship.ShipTypeId, Valid: true}
+	if err := s.r.UpdateMyCharacterShip(ctx, characterID, x); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -236,11 +229,8 @@ func (s *Service) updateSkillsESI(ctx context.Context, characterID int32) (bool,
 	if !changed {
 		return false, nil
 	}
-	arg := storage.UpdateOrCreateMyCharacterParams{
-		ID:          characterID,
-		SkillPoints: sql.NullInt64{Int64: skills.TotalSp, Valid: true},
-	}
-	if err := s.r.UpdateMyCharacter(ctx, arg); err != nil {
+	x := sql.NullInt64{Int64: skills.TotalSp, Valid: true}
+	if err := s.r.UpdateMyCharacterSkillPoints(ctx, characterID, x); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -263,11 +253,8 @@ func (s *Service) updateWalletBalanceESI(ctx context.Context, characterID int32)
 	if !changed {
 		return false, nil
 	}
-	arg := storage.UpdateOrCreateMyCharacterParams{
-		ID:            characterID,
-		WalletBalance: sql.NullFloat64{Float64: balance, Valid: true},
-	}
-	if err := s.r.UpdateMyCharacter(ctx, arg); err != nil {
+	x := sql.NullFloat64{Float64: balance, Valid: true}
+	if err := s.r.UpdateMyCharacterWalletBalance(ctx, characterID, x); err != nil {
 		return false, err
 	}
 	return true, nil

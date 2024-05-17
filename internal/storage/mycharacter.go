@@ -116,66 +116,68 @@ type UpdateOrCreateMyCharacterParams struct {
 	WalletBalance sql.NullFloat64
 }
 
-func (r *Storage) UpdateMyCharacter(ctx context.Context, arg UpdateOrCreateMyCharacterParams) error {
-	err := func() error {
-		if arg.HomeID.Valid {
-			arg2 := queries.UpdateMyCharacterHomeIdParams{
-				ID:     int64(arg.ID),
-				HomeID: sql.NullInt64{Int64: arg.HomeID.Int64, Valid: true},
-			}
-			if err := r.q.UpdateMyCharacterHomeId(ctx, arg2); err != nil {
-				return err
-			}
-		}
-		if arg.LastLoginAt.Valid {
-			arg2 := queries.UpdateMyCharacterLastLoginAtParams{
-				ID:          int64(arg.ID),
-				LastLoginAt: arg.LastLoginAt,
-			}
-			if err := r.q.UpdateMyCharacterLastLoginAt(ctx, arg2); err != nil {
-				return err
-			}
-		}
-		if arg.LocationID.Valid {
-			arg2 := queries.UpdateMyCharacterLocationIdParams{
-				ID:         int64(arg.ID),
-				LocationID: sql.NullInt64{Int64: arg.LocationID.Int64, Valid: true},
-			}
-			if err := r.q.UpdateMyCharacterLocationId(ctx, arg2); err != nil {
-				return err
-			}
-		}
-		if arg.ShipID.Valid {
-			arg2 := queries.UpdateMyCharacterShipIdParams{
-				ID:     int64(arg.ID),
-				ShipID: sql.NullInt64{Int64: int64(arg.ShipID.Int32), Valid: true},
-			}
-			if err := r.q.UpdateMyCharacterShipId(ctx, arg2); err != nil {
-				return err
-			}
-		}
-		if arg.SkillPoints.Valid {
-			arg2 := queries.UpdateMyCharacterSkillPointsParams{
-				ID:          int64(arg.ID),
-				SkillPoints: arg.SkillPoints,
-			}
-			if err := r.q.UpdateMyCharacterSkillPoints(ctx, arg2); err != nil {
-				return err
-			}
-		}
-		if arg.WalletBalance.Valid {
-			arg2 := queries.UpdateMyCharacterWalletBalanceParams{
-				ID:            int64(arg.ID),
-				WalletBalance: arg.WalletBalance,
-			}
-			if err := r.q.UpdateMyCharacterWalletBalance(ctx, arg2); err != nil {
-				return err
-			}
-		}
-		return nil
-	}()
-	if err != nil {
-		return fmt.Errorf("failed to update MyCharacter %d: %w", arg.ID, err)
+func (r *Storage) UpdateMyCharacterHome(ctx context.Context, characterID int32, homeID sql.NullInt64) error {
+	arg := queries.UpdateMyCharacterHomeIdParams{
+		ID:     int64(characterID),
+		HomeID: homeID,
+	}
+	if err := r.q.UpdateMyCharacterHomeId(ctx, arg); err != nil {
+		return fmt.Errorf("failed to update home for character %d: %w", characterID, err)
+	}
+	return nil
+}
+
+func (r *Storage) UpdateMyCharacterLastLoginAt(ctx context.Context, characterID int32, v sql.NullTime) error {
+	arg := queries.UpdateMyCharacterLastLoginAtParams{
+		ID:          int64(characterID),
+		LastLoginAt: v,
+	}
+	if err := r.q.UpdateMyCharacterLastLoginAt(ctx, arg); err != nil {
+		return fmt.Errorf("failed to update last login for character %d: %w", characterID, err)
+	}
+	return nil
+}
+
+func (r *Storage) UpdateMyCharacterLocation(ctx context.Context, characterID int32, locationID sql.NullInt64) error {
+	arg := queries.UpdateMyCharacterLocationIdParams{
+		ID:         int64(characterID),
+		LocationID: locationID,
+	}
+	if err := r.q.UpdateMyCharacterLocationId(ctx, arg); err != nil {
+		return fmt.Errorf("failed to update last login for character %d: %w", characterID, err)
+	}
+	return nil
+}
+
+func (r *Storage) UpdateMyCharacterShip(ctx context.Context, characterID int32, shipID sql.NullInt32) error {
+	arg := queries.UpdateMyCharacterShipIdParams{
+		ID:     int64(characterID),
+		ShipID: sql.NullInt64{Int64: int64(shipID.Int32), Valid: shipID.Valid},
+	}
+	if err := r.q.UpdateMyCharacterShipId(ctx, arg); err != nil {
+		return fmt.Errorf("failed to update ship for character %d: %w", characterID, err)
+	}
+	return nil
+}
+
+func (r *Storage) UpdateMyCharacterSkillPoints(ctx context.Context, characterID int32, v sql.NullInt64) error {
+	arg := queries.UpdateMyCharacterSkillPointsParams{
+		ID:          int64(characterID),
+		SkillPoints: v,
+	}
+	if err := r.q.UpdateMyCharacterSkillPoints(ctx, arg); err != nil {
+		return fmt.Errorf("failed to update sp for character %d: %w", characterID, err)
+	}
+	return nil
+}
+
+func (r *Storage) UpdateMyCharacterWalletBalance(ctx context.Context, characterID int32, v sql.NullFloat64) error {
+	arg := queries.UpdateMyCharacterWalletBalanceParams{
+		ID:            int64(characterID),
+		WalletBalance: v,
+	}
+	if err := r.q.UpdateMyCharacterWalletBalance(ctx, arg); err != nil {
+		return fmt.Errorf("failed to update sp for character %d: %w", characterID, err)
 	}
 	return nil
 }
