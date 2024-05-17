@@ -97,7 +97,7 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 	list.OnSelected = func(id widget.ListItemID) {
 		q, err := getFromBoundUntypedList[*model.SkillqueueItem](a.items, id)
 		if err != nil {
-			slog.Error("failed to fetch skillqueue item in list", "err", err)
+			slog.Error("failed to access skillqueue item in list", "err", err)
 			return
 		}
 		var isActive string

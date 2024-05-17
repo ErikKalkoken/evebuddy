@@ -3,33 +3,55 @@ package ui
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 const walletTransactionUpdateTicker = 60 * time.Second
 
 type walletJournalEntry struct {
-	date        time.Time
-	refType     string
 	amount      float64
 	balance     float64
+	date        time.Time
 	description string
+	refType     string
+	reason      string
+}
+
+func (e walletJournalEntry) hasReason() bool {
+	return e.reason != ""
+}
+
+func (e walletJournalEntry) refTypeOutput() string {
+	s := strings.ReplaceAll(e.refType, "_", " ")
+	c := cases.Title(language.English)
+	s = c.String(s)
+	return s
+}
+
+func (e walletJournalEntry) descriptionWithReason() string {
+	if e.reason == "" {
+		return e.description
+	}
+	return fmt.Sprintf("[r] %s", e.description)
 }
 
 // walletTransactionArea is the UI area that shows the skillqueue
 type walletTransactionArea struct {
 	content *fyne.Container
 	entries binding.UntypedList // []walletJournalEntry
-	table   *widgets.StaticTable
+	table   *widget.Table
 	total   *widget.Label
 	ui      *ui
 }
@@ -41,7 +63,7 @@ func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
 		total:   widget.NewLabel(""),
 	}
 	a.total.TextStyle.Bold = true
-	t := widgets.NewStaticTable(
+	t := widget.NewTable(
 		func() (rows int, cols int) {
 			return a.entries.Length(), 5
 		},
@@ -64,7 +86,7 @@ func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
 			case 0:
 				l.Text = w.date.Format(myDateTime)
 			case 1:
-				l.Text = w.refType
+				l.Text = w.refTypeOutput()
 			case 2:
 				l.Alignment = fyne.TextAlignTrailing
 				l.Text = humanize.FormatFloat(myFloatFormat, w.amount)
@@ -81,7 +103,7 @@ func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
 				l.Text = humanize.FormatFloat(myFloatFormat, w.balance)
 			case 4:
 				l.Truncation = fyne.TextTruncateEllipsis
-				l.Text = w.description
+				l.Text = w.descriptionWithReason()
 			}
 			l.Refresh()
 		},
@@ -111,6 +133,18 @@ func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
 			s = "Description"
 		}
 		co.(*widget.Label).SetText(s)
+	}
+	t.OnSelected = func(tci widget.TableCellID) {
+		e, err := getFromBoundUntypedList[walletJournalEntry](a.entries, tci.Row)
+		if err != nil {
+			slog.Error("failed to access entries in list", "err", err)
+			return
+		}
+		if e.hasReason() {
+			c := widget.NewLabel(e.reason)
+			dlg := dialog.NewCustom("Reason", "OK", c, u.window)
+			dlg.Show()
+		}
 	}
 
 	top := container.NewVBox(a.total, widget.NewSeparator())
@@ -166,7 +200,8 @@ func (a *walletTransactionArea) updateEntries() error {
 		w2.balance = w.Balance
 		w2.date = w.Date
 		w2.description = w.Description
-		w2.refType = w.Type()
+		w2.reason = w.Reason
+		w2.refType = w.RefType
 		entries[i] = w2
 	}
 	if err := a.entries.Set(copyToUntypedSlice(entries)); err != nil {
