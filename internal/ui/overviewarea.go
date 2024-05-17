@@ -284,32 +284,24 @@ func (a *overviewArea) StartUpdateTicker() {
 }
 
 func (a *overviewArea) MaybeUpdateAndRefresh(characterID int32) {
-	changed1, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionLocation)
-	if err != nil {
-		slog.Error("Failed to update mycharacter", "character", characterID, "err", err)
-		return
+	sections := []model.UpdateSection{
+		model.UpdateSectionLocation,
+		model.UpdateSectionOnline,
+		model.UpdateSectionShip,
+		model.UpdateSectionSkills,
+		model.UpdateSectionWalletBalance,
 	}
-	changed2, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionOnline)
-	if err != nil {
-		slog.Error("Failed to update mycharacter", "character", characterID, "err", err)
-		return
+	for _, s := range sections {
+		go func(s model.UpdateSection) {
+			changed, err := a.ui.service.UpdateSectionIfExpired(characterID, s)
+			if err != nil {
+				slog.Error("Failed to update character", "character", characterID, "section", s, "err", err)
+				return
+			}
+			if changed {
+				a.Refresh()
+			}
+		}(s)
 	}
-	changed3, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionShip)
-	if err != nil {
-		slog.Error("Failed to update mycharacter", "character", characterID, "err", err)
-		return
-	}
-	changed4, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionSkills)
-	if err != nil {
-		slog.Error("Failed to update mycharacter", "character", characterID, "err", err)
-		return
-	}
-	changed5, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionWalletBalance)
-	if err != nil {
-		slog.Error("Failed to update mycharacter", "character", characterID, "err", err)
-		return
-	}
-	if changed1 || changed2 || changed3 || changed4 || changed5 {
-		a.Refresh()
-	}
+
 }

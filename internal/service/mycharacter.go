@@ -64,7 +64,20 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 		ID:        token.CharacterID,
 		Character: character,
 	}
-	arg := updateParamsFromMyCharacter(myCharacter)
+	arg := storage.UpdateOrCreateMyCharacterParams{
+		ID:            myCharacter.ID,
+		LastLoginAt:   myCharacter.LastLoginAt,
+		SkillPoints:   myCharacter.SkillPoints,
+		WalletBalance: myCharacter.WalletBalance,
+	}
+	if myCharacter.Location != nil {
+		arg.LocationID.Int32 = myCharacter.Location.ID
+		arg.LocationID.Valid = true
+	}
+	if myCharacter.Ship != nil {
+		arg.ShipID.Int32 = myCharacter.Ship.ID
+		arg.ShipID.Valid = true
+	}
 	if err := s.r.UpdateOrCreateMyCharacter(ctx, arg); err != nil {
 		return 0, err
 	}
@@ -95,12 +108,11 @@ func (s *Service) updateLocationESI(ctx context.Context, characterID int32) (boo
 	if err != nil {
 		return false, err
 	}
-	c, err := s.r.GetMyCharacter(ctx, characterID)
-	if err != nil {
-		return false, err
+	arg := storage.UpdateOrCreateMyCharacterParams{
+		ID:         characterID,
+		LocationID: sql.NullInt32{Int32: solarSystem.ID, Valid: true},
 	}
-	c.Location = solarSystem
-	if err := s.r.UpdateOrCreateMyCharacter(ctx, updateParamsFromMyCharacter(c)); err != nil {
+	if err := s.r.UpdateMyCharacter(ctx, arg); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -123,12 +135,11 @@ func (s *Service) updateOnlineESI(ctx context.Context, characterID int32) (bool,
 	if !changed {
 		return false, nil
 	}
-	c, err := s.r.GetMyCharacter(ctx, characterID)
-	if err != nil {
-		return false, err
+	arg := storage.UpdateOrCreateMyCharacterParams{
+		ID:          characterID,
+		LastLoginAt: sql.NullTime{Time: online.LastLogin, Valid: true},
 	}
-	c.LastLoginAt = sql.NullTime{Time: online.LastLogin, Valid: true}
-	if err := s.r.UpdateOrCreateMyCharacter(ctx, updateParamsFromMyCharacter(c)); err != nil {
+	if err := s.r.UpdateMyCharacter(ctx, arg); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -155,12 +166,11 @@ func (s *Service) updateShipESI(ctx context.Context, characterID int32) (bool, e
 	if err != nil {
 		return false, err
 	}
-	c, err := s.r.GetMyCharacter(ctx, characterID)
-	if err != nil {
-		return false, err
+	arg := storage.UpdateOrCreateMyCharacterParams{
+		ID:     characterID,
+		ShipID: sql.NullInt32{Int32: x.ID, Valid: true},
 	}
-	c.Ship = x
-	if err := s.r.UpdateOrCreateMyCharacter(ctx, updateParamsFromMyCharacter(c)); err != nil {
+	if err := s.r.UpdateMyCharacter(ctx, arg); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -183,12 +193,11 @@ func (s *Service) updateSkillsESI(ctx context.Context, characterID int32) (bool,
 	if !changed {
 		return false, nil
 	}
-	c, err := s.r.GetMyCharacter(ctx, characterID)
-	if err != nil {
-		return false, err
+	arg := storage.UpdateOrCreateMyCharacterParams{
+		ID:          characterID,
+		SkillPoints: sql.NullInt64{Int64: skills.TotalSp, Valid: true},
 	}
-	c.SkillPoints = sql.NullInt64{Int64: skills.TotalSp, Valid: true}
-	if err := s.r.UpdateOrCreateMyCharacter(ctx, updateParamsFromMyCharacter(c)); err != nil {
+	if err := s.r.UpdateMyCharacter(ctx, arg); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -211,31 +220,12 @@ func (s *Service) updateWalletBalanceESI(ctx context.Context, characterID int32)
 	if !changed {
 		return false, nil
 	}
-	c, err := s.r.GetMyCharacter(ctx, characterID)
-	if err != nil {
-		return false, err
+	arg := storage.UpdateOrCreateMyCharacterParams{
+		ID:            characterID,
+		WalletBalance: sql.NullFloat64{Float64: balance, Valid: true},
 	}
-	c.WalletBalance = sql.NullFloat64{Float64: balance, Valid: true}
-	if err := s.r.UpdateOrCreateMyCharacter(ctx, updateParamsFromMyCharacter(c)); err != nil {
+	if err := s.r.UpdateMyCharacter(ctx, arg); err != nil {
 		return false, err
 	}
 	return true, nil
-}
-
-func updateParamsFromMyCharacter(myCharacter *model.MyCharacter) storage.UpdateOrCreateMyCharacterParams {
-	arg := storage.UpdateOrCreateMyCharacterParams{
-		ID:            myCharacter.ID,
-		LastLoginAt:   myCharacter.LastLoginAt,
-		SkillPoints:   myCharacter.SkillPoints,
-		WalletBalance: myCharacter.WalletBalance,
-	}
-	if myCharacter.Location != nil {
-		arg.LocationID.Int32 = myCharacter.Location.ID
-		arg.LocationID.Valid = true
-	}
-	if myCharacter.Ship != nil {
-		arg.ShipID.Int32 = myCharacter.Ship.ID
-		arg.ShipID.Valid = true
-	}
-	return arg
 }

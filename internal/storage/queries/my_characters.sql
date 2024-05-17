@@ -63,13 +63,33 @@ ORDER BY eve_characters.name;
 SELECT id
 FROM my_characters;
 
--- name: UpdateMyCharacter :exec
+-- name: UpdateMyCharacterLastLoginAt :exec
 UPDATE my_characters
 SET
-    last_login_at = ?,
-    ship_id = ?,
-    skill_points = ?,
-    location_id = ?,
+    last_login_at = ?
+WHERE id = ?;
+
+-- name: UpdateMyCharacterShipId :exec
+UPDATE my_characters
+SET
+    ship_id = ?
+WHERE id = ?;
+
+-- name: UpdateMyCharacterSkillPoints :exec
+UPDATE my_characters
+SET
+    skill_points = ?
+WHERE id = ?;
+
+-- name: UpdateMyCharacterLocationId :exec
+UPDATE my_characters
+SET
+    location_id = ?
+WHERE id = ?;
+
+-- name: UpdateMyCharacterWalletBalance :exec
+UPDATE my_characters
+SET
     wallet_balance = ?
 WHERE id = ?;
 

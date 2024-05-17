@@ -3,6 +3,7 @@ package storage_test
 import (
 	"context"
 	"database/sql"
+	"math/rand/v2"
 	"testing"
 	"time"
 
@@ -216,6 +217,102 @@ func TestListMyCharacters(t *testing.T) {
 				assert.Equal(t, c1.Character.ID, c2.Character.ID)
 				assert.Equal(t, c1.Character.Alliance, c2.Character.Alliance)
 				assert.Equal(t, c1.Character.Faction, c2.Character.Faction)
+			}
+		}
+	})
+}
+
+func TestUpdateMyCharacter(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can update last login", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateMyCharacter()
+		x := time.Now().Add(1 * time.Hour)
+		// when
+		err := r.UpdateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
+			ID:          c1.ID,
+			LastLoginAt: sql.NullTime{Time: x, Valid: true},
+		})
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetMyCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, x.UTC(), c2.LastLoginAt.Time.UTC())
+			}
+		}
+	})
+	t.Run("can update location", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateMyCharacter()
+		x := factory.CreateEveSolarSystem()
+		// when
+		err := r.UpdateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
+			ID:         c1.ID,
+			LocationID: sql.NullInt32{Int32: x.ID, Valid: true},
+		})
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetMyCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, x, c2.Location)
+			}
+		}
+	})
+	t.Run("can update ship", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateMyCharacter()
+		x := factory.CreateEveType()
+		// when
+		err := r.UpdateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
+			ID:     c1.ID,
+			ShipID: sql.NullInt32{Int32: x.ID, Valid: true},
+		})
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetMyCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, x, c2.Ship)
+			}
+		}
+	})
+	t.Run("can update skill points", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateMyCharacter()
+		x := int64(rand.IntN(100_000_000))
+		// when
+		err := r.UpdateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
+			ID:          c1.ID,
+			SkillPoints: sql.NullInt64{Int64: x, Valid: true},
+		})
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetMyCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, x, c2.SkillPoints.Int64)
+			}
+		}
+	})
+	t.Run("can update wallet balance", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateMyCharacter()
+		x := rand.Float64() * 100_000_000
+		// when
+		err := r.UpdateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
+			ID:            c1.ID,
+			WalletBalance: sql.NullFloat64{Float64: x, Valid: true},
+		})
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetMyCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, x, c2.WalletBalance.Float64)
 			}
 		}
 	})

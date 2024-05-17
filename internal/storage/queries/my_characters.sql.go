@@ -284,35 +284,88 @@ func (q *Queries) ListMyCharactersShort(ctx context.Context) ([]ListMyCharacters
 	return items, nil
 }
 
-const updateMyCharacter = `-- name: UpdateMyCharacter :exec
+const updateMyCharacterLastLoginAt = `-- name: UpdateMyCharacterLastLoginAt :exec
 UPDATE my_characters
 SET
-    last_login_at = ?,
-    ship_id = ?,
-    skill_points = ?,
-    location_id = ?,
+    last_login_at = ?
+WHERE id = ?
+`
+
+type UpdateMyCharacterLastLoginAtParams struct {
+	LastLoginAt sql.NullTime
+	ID          int64
+}
+
+func (q *Queries) UpdateMyCharacterLastLoginAt(ctx context.Context, arg UpdateMyCharacterLastLoginAtParams) error {
+	_, err := q.db.ExecContext(ctx, updateMyCharacterLastLoginAt, arg.LastLoginAt, arg.ID)
+	return err
+}
+
+const updateMyCharacterLocationId = `-- name: UpdateMyCharacterLocationId :exec
+UPDATE my_characters
+SET
+    location_id = ?
+WHERE id = ?
+`
+
+type UpdateMyCharacterLocationIdParams struct {
+	LocationID sql.NullInt64
+	ID         int64
+}
+
+func (q *Queries) UpdateMyCharacterLocationId(ctx context.Context, arg UpdateMyCharacterLocationIdParams) error {
+	_, err := q.db.ExecContext(ctx, updateMyCharacterLocationId, arg.LocationID, arg.ID)
+	return err
+}
+
+const updateMyCharacterShipId = `-- name: UpdateMyCharacterShipId :exec
+UPDATE my_characters
+SET
+    ship_id = ?
+WHERE id = ?
+`
+
+type UpdateMyCharacterShipIdParams struct {
+	ShipID sql.NullInt64
+	ID     int64
+}
+
+func (q *Queries) UpdateMyCharacterShipId(ctx context.Context, arg UpdateMyCharacterShipIdParams) error {
+	_, err := q.db.ExecContext(ctx, updateMyCharacterShipId, arg.ShipID, arg.ID)
+	return err
+}
+
+const updateMyCharacterSkillPoints = `-- name: UpdateMyCharacterSkillPoints :exec
+UPDATE my_characters
+SET
+    skill_points = ?
+WHERE id = ?
+`
+
+type UpdateMyCharacterSkillPointsParams struct {
+	SkillPoints sql.NullInt64
+	ID          int64
+}
+
+func (q *Queries) UpdateMyCharacterSkillPoints(ctx context.Context, arg UpdateMyCharacterSkillPointsParams) error {
+	_, err := q.db.ExecContext(ctx, updateMyCharacterSkillPoints, arg.SkillPoints, arg.ID)
+	return err
+}
+
+const updateMyCharacterWalletBalance = `-- name: UpdateMyCharacterWalletBalance :exec
+UPDATE my_characters
+SET
     wallet_balance = ?
 WHERE id = ?
 `
 
-type UpdateMyCharacterParams struct {
-	LastLoginAt   sql.NullTime
-	ShipID        sql.NullInt64
-	SkillPoints   sql.NullInt64
-	LocationID    sql.NullInt64
+type UpdateMyCharacterWalletBalanceParams struct {
 	WalletBalance sql.NullFloat64
 	ID            int64
 }
 
-func (q *Queries) UpdateMyCharacter(ctx context.Context, arg UpdateMyCharacterParams) error {
-	_, err := q.db.ExecContext(ctx, updateMyCharacter,
-		arg.LastLoginAt,
-		arg.ShipID,
-		arg.SkillPoints,
-		arg.LocationID,
-		arg.WalletBalance,
-		arg.ID,
-	)
+func (q *Queries) UpdateMyCharacterWalletBalance(ctx context.Context, arg UpdateMyCharacterWalletBalanceParams) error {
+	_, err := q.db.ExecContext(ctx, updateMyCharacterWalletBalance, arg.WalletBalance, arg.ID)
 	return err
 }
 

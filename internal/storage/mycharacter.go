@@ -113,6 +113,61 @@ type UpdateOrCreateMyCharacterParams struct {
 	WalletBalance sql.NullFloat64
 }
 
+func (r *Storage) UpdateMyCharacter(ctx context.Context, arg UpdateOrCreateMyCharacterParams) error {
+	err := func() error {
+		if arg.LastLoginAt.Valid {
+			arg2 := queries.UpdateMyCharacterLastLoginAtParams{
+				ID:          int64(arg.ID),
+				LastLoginAt: arg.LastLoginAt,
+			}
+			if err := r.q.UpdateMyCharacterLastLoginAt(ctx, arg2); err != nil {
+				return err
+			}
+		}
+		if arg.LocationID.Valid {
+			arg2 := queries.UpdateMyCharacterLocationIdParams{
+				ID:         int64(arg.ID),
+				LocationID: sql.NullInt64{Int64: int64(arg.LocationID.Int32), Valid: true},
+			}
+			if err := r.q.UpdateMyCharacterLocationId(ctx, arg2); err != nil {
+				return err
+			}
+		}
+		if arg.ShipID.Valid {
+			arg2 := queries.UpdateMyCharacterShipIdParams{
+				ID:     int64(arg.ID),
+				ShipID: sql.NullInt64{Int64: int64(arg.ShipID.Int32), Valid: true},
+			}
+			if err := r.q.UpdateMyCharacterShipId(ctx, arg2); err != nil {
+				return err
+			}
+		}
+		if arg.SkillPoints.Valid {
+			arg2 := queries.UpdateMyCharacterSkillPointsParams{
+				ID:          int64(arg.ID),
+				SkillPoints: arg.SkillPoints,
+			}
+			if err := r.q.UpdateMyCharacterSkillPoints(ctx, arg2); err != nil {
+				return err
+			}
+		}
+		if arg.WalletBalance.Valid {
+			arg2 := queries.UpdateMyCharacterWalletBalanceParams{
+				ID:            int64(arg.ID),
+				WalletBalance: arg.WalletBalance,
+			}
+			if err := r.q.UpdateMyCharacterWalletBalance(ctx, arg2); err != nil {
+				return err
+			}
+		}
+		return nil
+	}()
+	if err != nil {
+		return fmt.Errorf("failed to update MyCharacter %d: %w", arg.ID, err)
+	}
+	return nil
+}
+
 func (r *Storage) UpdateOrCreateMyCharacter(ctx context.Context, arg UpdateOrCreateMyCharacterParams) error {
 	arg2 := queries.UpdateOrCreateMyCharacterParams{
 		ID:            int64(arg.ID),
