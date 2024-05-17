@@ -8,7 +8,7 @@ type MyCharacter struct {
 	Character     *EveCharacter
 	ID            int32
 	LastLoginAt   sql.NullTime
-	Location      *EveSolarSystem
+	Location      *Location
 	Ship          *EveType
 	SkillPoints   sql.NullInt64
 	WalletBalance sql.NullFloat64

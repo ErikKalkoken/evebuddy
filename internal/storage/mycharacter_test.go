@@ -61,13 +61,13 @@ func TestMyCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		character := factory.CreateEveCharacter()
-		system := factory.CreateEveSolarSystem()
+		location := factory.CreateLocationStructure()
 		ship := factory.CreateEveType()
 		login := time.Now()
 		arg := storage.UpdateOrCreateMyCharacterParams{
 			ID:            character.ID,
 			LastLoginAt:   sql.NullTime{Time: login, Valid: true},
-			LocationID:    sql.NullInt32{Int32: system.ID, Valid: true},
+			LocationID:    sql.NullInt64{Int64: location.ID, Valid: true},
 			ShipID:        sql.NullInt32{Int32: ship.ID, Valid: true},
 			SkillPoints:   sql.NullInt64{Int64: 123, Valid: true},
 			WalletBalance: sql.NullFloat64{Float64: 1.2, Valid: true},
@@ -79,7 +79,7 @@ func TestMyCharacter(t *testing.T) {
 			r, err := r.GetMyCharacter(ctx, arg.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, login.Unix(), r.LastLoginAt.Time.Unix())
-				assert.Equal(t, system, r.Location)
+				assert.Equal(t, location, r.Location)
 				assert.Equal(t, ship, r.Ship)
 				assert.Equal(t, int64(123), r.SkillPoints.Int64)
 				assert.Equal(t, 1.2, r.WalletBalance.Float64)
@@ -91,11 +91,11 @@ func TestMyCharacter(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateMyCharacter()
 		// when
-		newLocation := factory.CreateEveSolarSystem()
+		newLocation := factory.CreateLocationStructure()
 		newShip := factory.CreateEveType()
 		err := r.UpdateOrCreateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
 			ID:         c1.ID,
-			LocationID: sql.NullInt32{Int32: newLocation.ID, Valid: true},
+			LocationID: sql.NullInt64{Int64: newLocation.ID, Valid: true},
 			ShipID:     sql.NullInt32{Int32: newShip.ID, Valid: true},
 		})
 		// then
@@ -248,17 +248,17 @@ func TestUpdateMyCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateMyCharacter()
-		x := factory.CreateEveSolarSystem()
+		location := factory.CreateLocationStructure()
 		// when
 		err := r.UpdateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
 			ID:         c1.ID,
-			LocationID: sql.NullInt32{Int32: x.ID, Valid: true},
+			LocationID: sql.NullInt64{Int64: location.ID, Valid: true},
 		})
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetMyCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x, c2.Location)
+				assert.Equal(t, location, c2.Location)
 			}
 		}
 	})

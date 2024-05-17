@@ -107,7 +107,7 @@ func (r *Storage) ListMyCharacterIDs(ctx context.Context) ([]int32, error) {
 type UpdateOrCreateMyCharacterParams struct {
 	ID            int32
 	LastLoginAt   sql.NullTime
-	LocationID    sql.NullInt32
+	LocationID    sql.NullInt64
 	ShipID        sql.NullInt32
 	SkillPoints   sql.NullInt64
 	WalletBalance sql.NullFloat64
@@ -127,7 +127,7 @@ func (r *Storage) UpdateMyCharacter(ctx context.Context, arg UpdateOrCreateMyCha
 		if arg.LocationID.Valid {
 			arg2 := queries.UpdateMyCharacterLocationIdParams{
 				ID:         int64(arg.ID),
-				LocationID: sql.NullInt64{Int64: int64(arg.LocationID.Int32), Valid: true},
+				LocationID: sql.NullInt64{Int64: arg.LocationID.Int64, Valid: true},
 			}
 			if err := r.q.UpdateMyCharacterLocationId(ctx, arg2); err != nil {
 				return err
@@ -172,7 +172,7 @@ func (r *Storage) UpdateOrCreateMyCharacter(ctx context.Context, arg UpdateOrCre
 	arg2 := queries.UpdateOrCreateMyCharacterParams{
 		ID:            int64(arg.ID),
 		LastLoginAt:   arg.LastLoginAt,
-		LocationID:    sql.NullInt64{Int64: int64(arg.LocationID.Int32), Valid: arg.LocationID.Valid},
+		LocationID:    arg.LocationID,
 		ShipID:        sql.NullInt64{Int64: int64(arg.ShipID.Int32), Valid: arg.ShipID.Valid},
 		SkillPoints:   arg.SkillPoints,
 		WalletBalance: arg.WalletBalance,
@@ -203,7 +203,7 @@ func (r *Storage) myCharacterFromDBModel(
 		WalletBalance: myCharacter.WalletBalance,
 	}
 	if locationID.Valid {
-		x, err := r.GetEveSolarSystem(ctx, int32(locationID.Int64))
+		x, err := r.GetLocation(ctx, locationID.Int64)
 		if err != nil {
 			return nil, err
 		}

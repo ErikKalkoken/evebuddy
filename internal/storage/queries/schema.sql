@@ -90,6 +90,18 @@ SELECT eve_entities.*
 FROM eve_characters
 LEFT JOIN eve_entities ON eve_entities.id = eve_characters.faction_id;
 
+CREATE TABLE locations (
+    id INTEGER PRIMARY KEY NOT NULL,
+    eve_solar_system_id INTEGER,
+    eve_type_id INTEGER,
+    name TEXT NOT NULL,
+    owner_id INTEGER,
+    updated_at DATETIME NOT NULL,
+    FOREIGN KEY (eve_solar_system_id) REFERENCES eve_solar_systems(id) ON DELETE SET NULL,
+    FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE SET NULL,
+    FOREIGN KEY (owner_id) REFERENCES eve_entities(id) ON DELETE SET NULL
+);
+
 CREATE TABLE my_characters (
     id INTEGER PRIMARY KEY NOT NULL,
     last_login_at DATETIME,
@@ -98,7 +110,7 @@ CREATE TABLE my_characters (
     skill_points INTEGER,
     wallet_balance REAL,
     FOREIGN KEY (id) REFERENCES eve_characters(id) ON DELETE CASCADE,
-    FOREIGN KEY (location_id) REFERENCES eve_solar_systems(id) ON DELETE SET NULL,
+    FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL,
     FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE SET NULL
 );
 
@@ -174,18 +186,6 @@ CREATE TABLE scopes (
     UNIQUE (name)
 );
 CREATE INDEX scopes_name_idx ON scopes (name ASC);
-
-CREATE TABLE locations (
-    id INTEGER PRIMARY KEY NOT NULL,
-    eve_solar_system_id INTEGER,
-    eve_type_id INTEGER,
-    name TEXT NOT NULL,
-    owner_id INTEGER,
-    updated_at DATETIME NOT NULL,
-    FOREIGN KEY (eve_solar_system_id) REFERENCES eve_solar_systems(id) ON DELETE SET NULL,
-    FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE SET NULL,
-    FOREIGN KEY (owner_id) REFERENCES eve_entities(id) ON DELETE SET NULL
-);
 
 CREATE TABLE tokens (
     access_token TEXT NOT NULL,

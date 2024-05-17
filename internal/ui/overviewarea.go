@@ -25,6 +25,7 @@ type overviewCharacter struct {
 	corporation    string
 	id             int32
 	lastLoginAt    sql.NullTime
+	location       sql.NullString
 	name           string
 	systemName     sql.NullString
 	systemSecurity sql.NullFloat64
@@ -65,6 +66,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		{"SP", 80},
 		{"Training", 80},
 		{"Wallet", 80},
+		{"Location", 150},
 		{"System", 150},
 		{"Region", 150},
 		{"Ship", 150},
@@ -120,18 +122,20 @@ func (u *ui) NewOverviewArea() *overviewArea {
 			case 7:
 				l.Text = humanizedNullFloat64(c.walletBalance, 1, "?")
 			case 8:
+				l.Text = nullStringOrFallback(c.location, "?")
+			case 9:
 				if !c.systemName.Valid || !c.systemSecurity.Valid {
 					l.Text = "?"
 				} else {
 					l.Text = fmt.Sprintf("%s %.1f", c.systemName.String, c.systemSecurity.Float64)
 				}
-			case 9:
-				l.Text = nullStringOrFallback(c.region, "?")
 			case 10:
-				l.Text = nullStringOrFallback(c.ship, "?")
+				l.Text = nullStringOrFallback(c.region, "?")
 			case 11:
-				l.Text = humanizedNullTime(c.lastLoginAt, "?")
+				l.Text = nullStringOrFallback(c.ship, "?")
 			case 12:
+				l.Text = humanizedNullTime(c.lastLoginAt, "?")
+			case 13:
 				l.Text = humanize.RelTime(c.birthday, time.Now(), "", "")
 			}
 			l.Refresh()
@@ -218,9 +222,10 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 		c.sp = m.SkillPoints
 		c.walletBalance = m.WalletBalance
 		if m.Location != nil {
-			c.region = sql.NullString{String: m.Location.Constellation.Region.Name, Valid: true}
-			c.systemName = sql.NullString{String: m.Location.Name, Valid: true}
-			c.systemSecurity = sql.NullFloat64{Float64: m.Location.SecurityStatus, Valid: true}
+			c.region = sql.NullString{String: m.Location.SolarSystem.Constellation.Region.Name, Valid: true}
+			c.location = sql.NullString{String: m.Location.Name, Valid: true}
+			c.systemName = sql.NullString{String: m.Location.SolarSystem.Name, Valid: true}
+			c.systemSecurity = sql.NullFloat64{Float64: m.Location.SolarSystem.SecurityStatus, Valid: true}
 		}
 		if m.Ship != nil {
 			c.ship = sql.NullString{String: m.Ship.Name, Valid: true}

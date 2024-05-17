@@ -11,7 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-type CreateLocationParams struct {
+type UpdateOrCreateLocationParams struct {
 	ID               int64
 	EveSolarSystemID sql.NullInt32
 	EveTypeID        sql.NullInt32
@@ -20,7 +20,7 @@ type CreateLocationParams struct {
 	UpdatedAt        time.Time
 }
 
-func (r *Storage) UpdateOrCreateLocation(ctx context.Context, arg CreateLocationParams) error {
+func (r *Storage) UpdateOrCreateLocation(ctx context.Context, arg UpdateOrCreateLocationParams) error {
 	if arg.ID == 0 {
 		return fmt.Errorf("invalid structure ID %d", arg.ID)
 	}

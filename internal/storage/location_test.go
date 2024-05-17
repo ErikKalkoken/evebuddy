@@ -20,7 +20,7 @@ func TestLocation(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		updatedAt := time.Now()
-		arg := storage.CreateLocationParams{
+		arg := storage.UpdateOrCreateLocationParams{
 			ID:        42,
 			Name:      "Alpha",
 			UpdatedAt: updatedAt,
@@ -43,7 +43,7 @@ func TestLocation(t *testing.T) {
 		system := factory.CreateEveSolarSystem()
 		myType := factory.CreateEveType()
 		updatedAt := time.Now()
-		arg := storage.CreateLocationParams{
+		arg := storage.UpdateOrCreateLocationParams{
 			ID:               42,
 			EveSolarSystemID: sql.NullInt32{Int32: system.ID, Valid: true},
 			EveTypeID:        sql.NullInt32{Int32: myType.ID, Valid: true},
@@ -68,7 +68,7 @@ func TestLocation(t *testing.T) {
 	t.Run("can get existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		factory.CreateStructure(storage.CreateLocationParams{ID: 42, Name: "Alpha"})
+		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 42, Name: "Alpha"})
 		// when
 		x, err := r.GetLocation(ctx, 42)
 		// then
@@ -79,12 +79,12 @@ func TestLocation(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		factory.CreateStructure(storage.CreateLocationParams{ID: 42})
+		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 42})
 		owner := factory.CreateEveEntityCorporation()
 		system := factory.CreateEveSolarSystem()
 		myType := factory.CreateEveType()
 		updatedAt := time.Now()
-		arg := storage.CreateLocationParams{
+		arg := storage.UpdateOrCreateLocationParams{
 			ID:               42,
 			EveSolarSystemID: sql.NullInt32{Int32: system.ID, Valid: true},
 			EveTypeID:        sql.NullInt32{Int32: myType.ID, Valid: true},

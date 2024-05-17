@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type LocationVariant int
 
@@ -22,6 +25,21 @@ type Location struct {
 	Name        string
 	Owner       *EveEntity
 	UpdatedAt   time.Time
+}
+
+func (l Location) NamePlus() string {
+	if l.Name != "" {
+		return l.Name
+	}
+	switch l.Variant() {
+	case LocationVariantUnknown:
+		return "Unknown"
+	case LocationVariantAssetSafety:
+		return "Asset Safety"
+	case LocationVariantStructure:
+		return fmt.Sprintf("Unknown structure #%d", l.ID)
+	}
+	return fmt.Sprintf("Unknown location #%d", l.ID)
 }
 
 func (l Location) Variant() LocationVariant {

@@ -96,7 +96,7 @@ func TestLocationStructures(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateStructure(storage.CreateLocationParams{ID: structureID, Name: "Alpha"})
+		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: structureID, Name: "Alpha"})
 		// when
 		x, err := s.getOrCreateLocationESI(ctx, structureID)
 		// then

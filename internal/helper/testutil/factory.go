@@ -38,12 +38,12 @@ func (f Factory) CreateMyCharacter(args ...storage.UpdateOrCreateMyCharacterPara
 		arg.LastLoginAt = sql.NullTime{Time: time.Now(), Valid: true}
 	}
 	if !arg.LocationID.Valid {
-		x := f.CreateEveSolarSystem()
-		arg.LocationID = sql.NullInt32{Int32: x.ID, Valid: true}
+		x := f.CreateLocationStructure()
+		arg.LocationID = sql.NullInt64{Int64: x.ID, Valid: true}
 	}
 	if !arg.ShipID.Valid {
-		x := f.CreateEveSolarSystem()
-		arg.LocationID = sql.NullInt32{Int32: x.ID, Valid: true}
+		x := f.CreateEveType()
+		arg.ShipID = sql.NullInt32{Int32: x.ID, Valid: true}
 	}
 	if !arg.SkillPoints.Valid {
 		arg.SkillPoints = sql.NullInt64{Int64: int64(rand.IntN(100_000_000)), Valid: true}
@@ -523,14 +523,14 @@ func (f Factory) CreateSkillqueueItem(args ...storage.SkillqueueItemParams) *mod
 	return i
 }
 
-func (f Factory) CreateStructure(args ...storage.CreateLocationParams) *model.Location {
-	var arg storage.CreateLocationParams
+func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationParams) *model.Location {
+	var arg storage.UpdateOrCreateLocationParams
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
 	if arg.ID == 0 {
-		arg.ID = f.calcNewID("structures", "id")
+		arg.ID = f.calcNewID("locations", "id")
 	}
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("Structure #%d", arg.ID)

@@ -32,16 +32,15 @@ func (s *Service) getOrCreateLocationESI(ctx context.Context, id int64) (*model.
 func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*model.Location, error) {
 	key := fmt.Sprintf("createStructureFromESI-%d", id)
 	y, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		var arg storage.CreateLocationParams
+		var arg storage.UpdateOrCreateLocationParams
 		switch model.LocationVariantFromID(id) {
 		case model.LocationVariantUnknown:
 			t, err := s.getOrCreateEveTypeESI(ctx, model.EveTypeIDSolarSystem)
 			if err != nil {
 				return nil, err
 			}
-			arg = storage.CreateLocationParams{
+			arg = storage.UpdateOrCreateLocationParams{
 				ID:        id,
-				Name:      "UNKNOWN",
 				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
 			}
 		case model.LocationVariantAssetSafety:
@@ -49,9 +48,8 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 			if err != nil {
 				return nil, err
 			}
-			arg = storage.CreateLocationParams{
+			arg = storage.UpdateOrCreateLocationParams{
 				ID:        id,
-				Name:      "Asset Safety",
 				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
 			}
 		case model.LocationVariantStation:
@@ -68,7 +66,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 				return nil, err
 			}
 			arg.EveTypeID = sql.NullInt32{Int32: station.TypeId, Valid: true}
-			arg = storage.CreateLocationParams{
+			arg = storage.UpdateOrCreateLocationParams{
 				ID:               id,
 				EveSolarSystemID: sql.NullInt32{Int32: station.SystemId, Valid: true},
 				EveTypeID:        sql.NullInt32{Int32: station.TypeId, Valid: true},
@@ -86,7 +84,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 			structure, r, err := s.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
 			if err != nil {
 				if r != nil && r.StatusCode == http.StatusForbidden {
-					arg = storage.CreateLocationParams{ID: id}
+					arg = storage.UpdateOrCreateLocationParams{ID: id}
 					break
 				}
 				return nil, err
@@ -99,7 +97,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 			if err != nil {
 				return nil, err
 			}
-			arg = storage.CreateLocationParams{
+			arg = storage.UpdateOrCreateLocationParams{
 				ID:               id,
 				EveSolarSystemID: sql.NullInt32{Int32: structure.SolarSystemId, Valid: true},
 				Name:             structure.Name,

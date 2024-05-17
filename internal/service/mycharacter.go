@@ -71,7 +71,7 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 		WalletBalance: myCharacter.WalletBalance,
 	}
 	if myCharacter.Location != nil {
-		arg.LocationID.Int32 = myCharacter.Location.ID
+		arg.LocationID.Int64 = myCharacter.Location.ID
 		arg.LocationID.Valid = true
 	}
 	if myCharacter.Ship != nil {
@@ -104,13 +104,22 @@ func (s *Service) updateLocationESI(ctx context.Context, characterID int32) (boo
 	if !changed {
 		return false, nil
 	}
-	solarSystem, err := s.getOrCreateEveSolarSystemESI(ctx, location.SolarSystemId)
+	var locationID int64
+	switch {
+	case location.StructureId != 0:
+		locationID = location.StructureId
+	case location.StationId != 0:
+		locationID = int64(location.StationId)
+	default:
+		locationID = int64(location.SolarSystemId)
+	}
+	_, err = s.getOrCreateLocationESI(ctx, locationID)
 	if err != nil {
 		return false, err
 	}
 	arg := storage.UpdateOrCreateMyCharacterParams{
 		ID:         characterID,
-		LocationID: sql.NullInt32{Int32: solarSystem.ID, Valid: true},
+		LocationID: sql.NullInt64{Int64: locationID, Valid: true},
 	}
 	if err := s.r.UpdateMyCharacter(ctx, arg); err != nil {
 		return false, err
