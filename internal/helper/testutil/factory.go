@@ -523,6 +523,46 @@ func (f Factory) CreateSkillqueueItem(args ...storage.SkillqueueItemParams) *mod
 	return i
 }
 
+func (f Factory) CreateStructure(args ...storage.CreateStructureParams) *model.Structure {
+	var arg storage.CreateStructureParams
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		arg.ID = f.calcNewID("structures", "id")
+	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Structure #%d", arg.ID)
+	}
+	if arg.EveSolarSystemID == 0 {
+		x := f.CreateEveSolarSystem()
+		arg.EveSolarSystemID = x.ID
+	}
+	if arg.OwnerID == 0 {
+		x := f.CreateEveEntityCorporation()
+		arg.OwnerID = x.ID
+	}
+	if !arg.EveTypeID.Valid {
+		x := f.CreateEveType()
+		arg.EveTypeID = sql.NullInt32{Int32: x.ID, Valid: true}
+	}
+	if arg.Position.X == 0 && arg.Position.Y == 0 && arg.Position.Z == 0 {
+		arg.Position.X = rand.NormFloat64()
+		arg.Position.Y = rand.NormFloat64()
+		arg.Position.Z = rand.NormFloat64()
+	}
+	err := f.r.CreateStructure(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	x, err := f.r.GetStructure(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return x
+}
+
 // CreateToken is a test factory for Token objects.
 func (f Factory) CreateToken(args ...model.Token) *model.Token {
 	var t model.Token
@@ -610,10 +650,10 @@ func (f Factory) CreateWalletJournalEntry(args ...storage.CreateWalletJournalEnt
 	}
 	return i
 }
-func (f *Factory) calcNewID(table, id_field string) int {
+func (f *Factory) calcNewID(table, id_field string) int64 {
 	var max sql.NullInt64
 	if err := f.db.QueryRow(fmt.Sprintf("SELECT MAX(%s) FROM %s;", id_field, table)).Scan(&max); err != nil {
 		panic(err)
 	}
-	return int(max.Int64 + 1)
+	return max.Int64 + 1
 }

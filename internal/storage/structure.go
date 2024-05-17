@@ -39,8 +39,8 @@ func (r *Storage) CreateStructure(ctx context.Context, arg CreateStructureParams
 	return nil
 }
 
-func (r *Storage) GetStructure(ctx context.Context, id int32) (*model.Structure, error) {
-	row, err := r.q.GetStructure(ctx, int64(id))
+func (r *Storage) GetStructure(ctx context.Context, id int64) (*model.Structure, error) {
+	row, err := r.q.GetStructure(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

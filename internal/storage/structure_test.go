@@ -71,4 +71,15 @@ func TestStructure(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can get existing", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		factory.CreateStructure(storage.CreateStructureParams{ID: 42, Name: "Alpha"})
+		// when
+		x, err := r.GetStructure(ctx, 42)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, "Alpha", x.Name)
+		}
+	})
 }
