@@ -160,6 +160,17 @@ type SkillqueueItem struct {
 	TrainingStartSp sql.NullInt64
 }
 
+type Structure struct {
+	ID               int64
+	EveSolarSystemID int64
+	EveTypeID        sql.NullInt64
+	Name             string
+	OwnerID          int64
+	PositionX        float64
+	PositionY        float64
+	PositionZ        float64
+}
+
 type Token struct {
 	AccessToken   string
 	MyCharacterID int64

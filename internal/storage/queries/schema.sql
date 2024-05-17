@@ -168,13 +168,26 @@ CREATE TABLE skillqueue_items (
 );
 CREATE INDEX skillqueue_items_queue_position_idx ON skillqueue_items (queue_position ASC);
 
-
 CREATE TABLE scopes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     UNIQUE (name)
 );
 CREATE INDEX scopes_name_idx ON scopes (name ASC);
+
+CREATE TABLE structures (
+    id INTEGER PRIMARY KEY NOT NULL,
+    eve_solar_system_id INTEGER NOT NULL,
+    eve_type_id INTEGER,
+    name TEXT NOT NULL,
+    owner_id INTEGER NOT NULL,
+    position_x REAL NOT NULL,
+    position_y REAL NOT NULL,
+    position_z REAL NOT NULL,
+    FOREIGN KEY (eve_solar_system_id) REFERENCES eve_solar_systems(id) ON DELETE CASCADE,
+    FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
+    FOREIGN KEY (owner_id) REFERENCES eve_entities(id) ON DELETE CASCADE
+);
 
 CREATE TABLE tokens (
     access_token TEXT NOT NULL,
