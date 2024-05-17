@@ -1,17 +1,3 @@
--- name: CreateMyCharacter :one
-INSERT INTO my_characters (
-    id,
-    last_login_at,
-    ship_id,
-    skill_points,
-    location_id,
-    wallet_balance
-)
-VALUES (
-    ?, ?, ?, ?, ? ,?
-)
-RETURNING *;
-
 -- name: DeleteMyCharacter :exec
 DELETE FROM my_characters
 WHERE id = ?;
@@ -24,6 +10,7 @@ SELECT
     sqlc.embed(eve_races),
     sqlc.embed(eve_character_alliances),
     sqlc.embed(eve_character_factions),
+    home_id,
     location_id,
     ship_id
 FROM my_characters
@@ -42,6 +29,7 @@ SELECT DISTINCT
     sqlc.embed(eve_races),
     sqlc.embed(eve_character_alliances),
     sqlc.embed(eve_character_factions),
+    home_id,
     location_id,
     ship_id
 FROM my_characters
@@ -63,10 +51,22 @@ ORDER BY eve_characters.name;
 SELECT id
 FROM my_characters;
 
+-- name: UpdateMyCharacterHomeId :exec
+UPDATE my_characters
+SET
+    home_id = ?
+WHERE id = ?;
+
 -- name: UpdateMyCharacterLastLoginAt :exec
 UPDATE my_characters
 SET
     last_login_at = ?
+WHERE id = ?;
+
+-- name: UpdateMyCharacterLocationId :exec
+UPDATE my_characters
+SET
+    location_id = ?
 WHERE id = ?;
 
 -- name: UpdateMyCharacterShipId :exec
@@ -81,12 +81,6 @@ SET
     skill_points = ?
 WHERE id = ?;
 
--- name: UpdateMyCharacterLocationId :exec
-UPDATE my_characters
-SET
-    location_id = ?
-WHERE id = ?;
-
 -- name: UpdateMyCharacterWalletBalance :exec
 UPDATE my_characters
 SET
@@ -96,6 +90,7 @@ WHERE id = ?;
 -- name: UpdateOrCreateMyCharacter :exec
 INSERT INTO my_characters (
     id,
+    home_id,
     last_login_at,
     ship_id,
     skill_points,
@@ -103,13 +98,14 @@ INSERT INTO my_characters (
     wallet_balance
 )
 VALUES (
-    ?1, ?2, ?3, ?4, ?5 ,?6
+    ?1, ?2, ?3, ?4, ?5 ,?6, ?7
 )
 ON CONFLICT(id) DO
 UPDATE SET
-    last_login_at = ?2,
-    ship_id = ?3,
-    skill_points = ?4,
-    location_id = ?5,
-    wallet_balance = ?6
+    home_id = ?2,
+    last_login_at = ?3,
+    ship_id = ?4,
+    skill_points = ?5,
+    location_id = ?6,
+    wallet_balance = ?7
 WHERE id = ?1;

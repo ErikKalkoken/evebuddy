@@ -138,6 +138,7 @@ type MailRecipient struct {
 
 type MyCharacter struct {
 	ID            int64
+	HomeID        sql.NullInt64
 	LastLoginAt   sql.NullTime
 	LocationID    sql.NullInt64
 	ShipID        sql.NullInt64

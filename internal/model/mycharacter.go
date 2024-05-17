@@ -6,6 +6,7 @@ import "database/sql"
 // An Eve Online character owners by the user.
 type MyCharacter struct {
 	Character     *EveCharacter
+	Home          *Location
 	ID            int32
 	LastLoginAt   sql.NullTime
 	Location      *Location

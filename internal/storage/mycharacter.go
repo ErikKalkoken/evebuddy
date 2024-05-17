@@ -35,6 +35,7 @@ func (r *Storage) GetMyCharacter(ctx context.Context, characterID int32) (*model
 		row.EveRace,
 		row.EveCharacterAlliance,
 		row.EveCharacterFaction,
+		row.HomeID,
 		row.LocationID,
 		row.ShipID,
 	)
@@ -71,6 +72,7 @@ func (r *Storage) ListMyCharacters(ctx context.Context) ([]*model.MyCharacter, e
 			row.EveRace,
 			row.EveCharacterAlliance,
 			row.EveCharacterFaction,
+			row.HomeID,
 			row.LocationID,
 			row.ShipID,
 		)
@@ -106,6 +108,7 @@ func (r *Storage) ListMyCharacterIDs(ctx context.Context) ([]int32, error) {
 
 type UpdateOrCreateMyCharacterParams struct {
 	ID            int32
+	HomeID        sql.NullInt64
 	LastLoginAt   sql.NullTime
 	LocationID    sql.NullInt64
 	ShipID        sql.NullInt32
@@ -115,6 +118,15 @@ type UpdateOrCreateMyCharacterParams struct {
 
 func (r *Storage) UpdateMyCharacter(ctx context.Context, arg UpdateOrCreateMyCharacterParams) error {
 	err := func() error {
+		if arg.HomeID.Valid {
+			arg2 := queries.UpdateMyCharacterHomeIdParams{
+				ID:     int64(arg.ID),
+				HomeID: sql.NullInt64{Int64: arg.HomeID.Int64, Valid: true},
+			}
+			if err := r.q.UpdateMyCharacterHomeId(ctx, arg2); err != nil {
+				return err
+			}
+		}
 		if arg.LastLoginAt.Valid {
 			arg2 := queries.UpdateMyCharacterLastLoginAtParams{
 				ID:          int64(arg.ID),
@@ -171,6 +183,7 @@ func (r *Storage) UpdateMyCharacter(ctx context.Context, arg UpdateOrCreateMyCha
 func (r *Storage) UpdateOrCreateMyCharacter(ctx context.Context, arg UpdateOrCreateMyCharacterParams) error {
 	arg2 := queries.UpdateOrCreateMyCharacterParams{
 		ID:            int64(arg.ID),
+		HomeID:        arg.HomeID,
 		LastLoginAt:   arg.LastLoginAt,
 		LocationID:    arg.LocationID,
 		ShipID:        sql.NullInt64{Int64: int64(arg.ShipID.Int32), Valid: arg.ShipID.Valid},
@@ -192,6 +205,7 @@ func (r *Storage) myCharacterFromDBModel(
 	race queries.EveRace,
 	alliance queries.EveCharacterAlliance,
 	faction queries.EveCharacterFaction,
+	homeID sql.NullInt64,
 	locationID sql.NullInt64,
 	shipID sql.NullInt64,
 ) (*model.MyCharacter, error) {
@@ -201,6 +215,13 @@ func (r *Storage) myCharacterFromDBModel(
 		LastLoginAt:   myCharacter.LastLoginAt,
 		SkillPoints:   myCharacter.SkillPoints,
 		WalletBalance: myCharacter.WalletBalance,
+	}
+	if homeID.Valid {
+		x, err := r.GetLocation(ctx, homeID.Int64)
+		if err != nil {
+			return nil, err
+		}
+		c.Home = x
 	}
 	if locationID.Valid {
 		x, err := r.GetLocation(ctx, locationID.Int64)

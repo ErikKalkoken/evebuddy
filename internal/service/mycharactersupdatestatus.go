@@ -19,6 +19,7 @@ const defaultUpdateSectionTimeout = 3600 * time.Second
 // timeoutForUpdateSection returns the time until the data of an update section becomes stale.
 func timeoutForUpdateSection(section model.UpdateSection) time.Duration {
 	m := map[model.UpdateSection]time.Duration{
+		model.UpdateSectionHome:          120 * time.Second,
 		model.UpdateSectionLocation:      30 * time.Second, // 5 seconds min
 		model.UpdateSectionMailLabels:    30 * time.Second,
 		model.UpdateSectionMailLists:     120 * time.Second,
@@ -90,6 +91,8 @@ func (s *Service) UpdateSectionIfExpired(characterID int32, section model.Update
 	ctx := context.Background()
 	var f func(context.Context, int32) (bool, error)
 	switch section {
+	case model.UpdateSectionHome:
+		f = s.updateHomeESI
 	case model.UpdateSectionLocation:
 		f = s.updateLocationESI
 	case model.UpdateSectionMails:

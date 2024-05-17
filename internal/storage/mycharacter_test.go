@@ -30,7 +30,7 @@ func TestMyCharacter(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c1.ID, c2.ID)
-			assert.Equal(t, c1.LastLoginAt.Time.Unix(), c2.LastLoginAt.Time.Unix())
+			assert.Equal(t, c1.LastLoginAt.Time.UTC(), c2.LastLoginAt.Time.UTC())
 			assert.Equal(t, c1.Ship, c2.Ship)
 			assert.Equal(t, c1.Location, c2.Location)
 			assert.Equal(t, c1.SkillPoints, c2.SkillPoints)
@@ -61,11 +61,13 @@ func TestMyCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		character := factory.CreateEveCharacter()
+		home := factory.CreateLocationStructure()
 		location := factory.CreateLocationStructure()
 		ship := factory.CreateEveType()
 		login := time.Now()
 		arg := storage.UpdateOrCreateMyCharacterParams{
 			ID:            character.ID,
+			HomeID:        sql.NullInt64{Int64: home.ID, Valid: true},
 			LastLoginAt:   sql.NullTime{Time: login, Valid: true},
 			LocationID:    sql.NullInt64{Int64: location.ID, Valid: true},
 			ShipID:        sql.NullInt32{Int32: ship.ID, Valid: true},
@@ -78,7 +80,8 @@ func TestMyCharacter(t *testing.T) {
 		if assert.NoError(t, err) {
 			r, err := r.GetMyCharacter(ctx, arg.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, login.Unix(), r.LastLoginAt.Time.Unix())
+				assert.Equal(t, home, r.Home)
+				assert.Equal(t, login.UTC(), r.LastLoginAt.Time.UTC())
 				assert.Equal(t, location, r.Location)
 				assert.Equal(t, ship, r.Ship)
 				assert.Equal(t, int64(123), r.SkillPoints.Int64)
@@ -209,7 +212,7 @@ func TestListMyCharacters(t *testing.T) {
 			if assert.NotNil(t, c2) {
 				assert.Len(t, cc, 1)
 				assert.Equal(t, c1.ID, c2.ID)
-				assert.Equal(t, c1.LastLoginAt.Time.Unix(), c2.LastLoginAt.Time.Unix())
+				assert.Equal(t, c1.LastLoginAt.Time.UTC(), c2.LastLoginAt.Time.UTC())
 				assert.Equal(t, c1.Ship, c2.Ship)
 				assert.Equal(t, c1.Location, c2.Location)
 				assert.Equal(t, c1.SkillPoints, c2.SkillPoints)

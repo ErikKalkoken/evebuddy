@@ -34,6 +34,10 @@ func (f Factory) CreateMyCharacter(args ...storage.UpdateOrCreateMyCharacterPara
 		c := f.CreateEveCharacter()
 		arg.ID = c.ID
 	}
+	if !arg.HomeID.Valid {
+		x := f.CreateLocationStructure()
+		arg.HomeID = sql.NullInt64{Int64: x.ID, Valid: true}
+	}
 	if !arg.LastLoginAt.Valid {
 		arg.LastLoginAt = sql.NullTime{Time: time.Now(), Valid: true}
 	}

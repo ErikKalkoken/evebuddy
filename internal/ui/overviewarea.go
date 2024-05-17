@@ -24,6 +24,7 @@ type overviewCharacter struct {
 	birthday       time.Time
 	corporation    string
 	id             int32
+	home           sql.NullString
 	lastLoginAt    sql.NullTime
 	location       sql.NullString
 	name           string
@@ -71,6 +72,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		{"Region", 150},
 		{"Ship", 150},
 		{"Last Login", 100},
+		{"Home", 150},
 		{"Age", 100},
 	}
 
@@ -136,6 +138,8 @@ func (u *ui) NewOverviewArea() *overviewArea {
 			case 12:
 				l.Text = humanizedNullTime(c.lastLoginAt, "?")
 			case 13:
+				l.Text = nullStringOrFallback(c.home, "?")
+			case 14:
 				l.Text = humanize.RelTime(c.birthday, time.Now(), "", "")
 			}
 			l.Refresh()
@@ -221,6 +225,9 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 		c.security = m.Character.SecurityStatus
 		c.sp = m.SkillPoints
 		c.walletBalance = m.WalletBalance
+		if m.Home != nil {
+			c.home = sql.NullString{String: m.Home.Name, Valid: true}
+		}
 		if m.Location != nil {
 			c.region = sql.NullString{String: m.Location.SolarSystem.Constellation.Region.Name, Valid: true}
 			c.location = sql.NullString{String: m.Location.Name, Valid: true}
@@ -290,6 +297,7 @@ func (a *overviewArea) StartUpdateTicker() {
 
 func (a *overviewArea) MaybeUpdateAndRefresh(characterID int32) {
 	sections := []model.UpdateSection{
+		model.UpdateSectionHome,
 		model.UpdateSectionLocation,
 		model.UpdateSectionOnline,
 		model.UpdateSectionShip,

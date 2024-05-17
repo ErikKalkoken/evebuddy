@@ -104,12 +104,14 @@ CREATE TABLE locations (
 
 CREATE TABLE my_characters (
     id INTEGER PRIMARY KEY NOT NULL,
+    home_id INTEGER,
     last_login_at DATETIME,
     location_id INTEGER,
     ship_id INTEGER,
     skill_points INTEGER,
     wallet_balance REAL,
     FOREIGN KEY (id) REFERENCES eve_characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (home_id) REFERENCES locations(id) ON DELETE SET NULL,
     FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL,
     FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE SET NULL
 );
