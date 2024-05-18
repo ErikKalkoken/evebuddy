@@ -15,6 +15,8 @@ func (s *Service) ListWalletJournalEntries(characterID int32) ([]*model.WalletJo
 	return s.r.ListWalletJournalEntries(ctx, characterID)
 }
 
+// TODO: Add ability to fetch more then one page from ESI
+
 // updateWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
 func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
@@ -46,7 +48,7 @@ func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID i
 		}
 		newEntries = append(newEntries, e)
 	}
-	slog.Info("wallet journal", "existing", existingIDs, "entries", entries)
+	slog.Debug("wallet journal", "existing", existingIDs, "entries", entries)
 	if len(newEntries) == 0 {
 		slog.Info("No new wallet journal entries", "characterID", token.CharacterID)
 		return false, nil
@@ -65,22 +67,22 @@ func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID i
 	}
 	_, err = s.AddMissingEveEntities(ctx, ids.ToSlice())
 
-	for _, e := range newEntries {
+	for _, o := range newEntries {
 		arg := storage.CreateWalletJournalEntryParams{
-			Amount:        e.Amount,
-			Balance:       e.Balance,
-			ContextID:     e.ContextId,
-			ContextIDType: e.ContextIdType,
-			Date:          e.Date,
-			Description:   e.Description,
-			FirstPartyID:  e.FirstPartyId,
-			ID:            e.Id,
+			Amount:        o.Amount,
+			Balance:       o.Balance,
+			ContextID:     o.ContextId,
+			ContextIDType: o.ContextIdType,
+			Date:          o.Date,
+			Description:   o.Description,
+			FirstPartyID:  o.FirstPartyId,
+			ID:            o.Id,
 			MyCharacterID: characterID,
-			RefType:       e.RefType,
-			Reason:        e.Reason,
-			SecondPartyID: e.SecondPartyId,
-			Tax:           e.Tax,
-			TaxReceiverID: e.TaxReceiverId,
+			RefType:       o.RefType,
+			Reason:        o.Reason,
+			SecondPartyID: o.SecondPartyId,
+			Tax:           o.Tax,
+			TaxReceiverID: o.TaxReceiverId,
 		}
 		if err != nil {
 			return false, err

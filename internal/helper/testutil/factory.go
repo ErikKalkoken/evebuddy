@@ -105,7 +105,7 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *m
 		arg = args[0]
 	}
 	if arg.ID == 0 {
-		arg.ID = int32(f.calcNewID("eve_characters", "id"))
+		arg.ID = int32(f.calcNewID("eve_characters", "id", 1))
 	}
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("Generated character #%d", arg.ID)
@@ -143,7 +143,7 @@ func (f Factory) CreateEveEntity(args ...model.EveEntity) *model.EveEntity {
 		arg = args[0]
 	}
 	if arg.ID == 0 {
-		arg.ID = int32(f.calcNewID("eve_entities", "id"))
+		arg.ID = int32(f.calcNewID("eve_entities", "id", 1))
 	}
 	if arg.Category == model.EveEntityUndefined {
 		arg.Category = model.EveEntityCharacter
@@ -319,7 +319,7 @@ func (f Factory) CreateEveCategory(args ...model.EveCategory) *model.EveCategory
 		x = args[0]
 	}
 	if x.ID == 0 {
-		x.ID = int32(f.calcNewID("eve_categories", "id"))
+		x.ID = int32(f.calcNewID("eve_categories", "id", 1))
 	}
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Category #%d", x.ID)
@@ -338,7 +338,7 @@ func (f Factory) CreateEveGroup(args ...model.EveGroup) *model.EveGroup {
 		x = args[0]
 	}
 	if x.ID == 0 {
-		x.ID = int32(f.calcNewID("eve_groups", "id"))
+		x.ID = int32(f.calcNewID("eve_groups", "id", 1))
 	}
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Group #%d", x.ID)
@@ -360,7 +360,7 @@ func (f Factory) CreateEveType(args ...model.EveType) *model.EveType {
 		x = args[0]
 	}
 	if x.ID == 0 {
-		x.ID = int32(f.calcNewID("eve_types", "id"))
+		x.ID = int32(f.calcNewID("eve_types", "id", 1))
 	}
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Type #%d", x.ID)
@@ -382,7 +382,7 @@ func (f Factory) CreateEveRegion(args ...model.EveRegion) *model.EveRegion {
 		x = args[0]
 	}
 	if x.ID == 0 {
-		x.ID = int32(f.calcNewID("eve_regions", "id"))
+		x.ID = int32(f.calcNewID("eve_regions", "id", 1))
 	}
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Region #%d", x.ID)
@@ -401,7 +401,7 @@ func (f Factory) CreateEveConstellation(args ...model.EveConstellation) *model.E
 		x = args[0]
 	}
 	if x.ID == 0 {
-		x.ID = int32(f.calcNewID("eve_constellations", "id"))
+		x.ID = int32(f.calcNewID("eve_constellations", "id", 1))
 	}
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Constellation #%d", x.ID)
@@ -423,7 +423,7 @@ func (f Factory) CreateEveSolarSystem(args ...model.EveSolarSystem) *model.EveSo
 		x = args[0]
 	}
 	if x.ID == 0 {
-		x.ID = int32(f.calcNewID("eve_solar_systems", "id"))
+		x.ID = int32(f.calcNewID("eve_solar_systems", "id", 1))
 	}
 	if x.Name == "" {
 		x.Name = fmt.Sprintf("Solar System #%d", x.ID)
@@ -448,7 +448,7 @@ func (f Factory) CreateEveRace(args ...model.EveRace) *model.EveRace {
 		arg = args[0]
 	}
 	if arg.ID == 0 {
-		arg.ID = int32(f.calcNewID("eve_races", "id"))
+		arg.ID = int32(f.calcNewID("eve_races", "id", 1))
 	}
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("Race #%d", arg.ID)
@@ -534,7 +534,7 @@ func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationP
 		arg = args[0]
 	}
 	if arg.ID == 0 {
-		arg.ID = f.calcNewID("locations", "id")
+		arg.ID = f.calcNewID("locations", "id", 1_900_000_000_000)
 	}
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("Structure #%d", arg.ID)
@@ -695,12 +695,15 @@ func (f Factory) CreateWalletTransaction(args ...storage.CreateWalletTransaction
 	return x
 }
 
-func (f *Factory) calcNewID(table, id_field string) int64 {
+func (f *Factory) calcNewID(table, id_field string, start int64) int64 {
+	if start < 1 {
+		panic("start must be a positive number")
+	}
 	var max sql.NullInt64
 	if err := f.db.QueryRow(fmt.Sprintf("SELECT MAX(%s) FROM %s;", id_field, table)).Scan(&max); err != nil {
 		panic(err)
 	}
-	return max.Int64 + 1
+	return max.Int64 + start
 }
 
 func (f *Factory) calcNewIDWithMyCharacter(table, id_field string, characterID int32) int64 {
