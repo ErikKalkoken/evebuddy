@@ -1,4 +1,4 @@
--- name: CreateWalletJournalEntries :exec
+-- name: CreateWalletJournalEntry :exec
 INSERT INTO wallet_journal_entries (
     amount,
     balance,

@@ -217,3 +217,17 @@ type WalletJournalEntryTaxReceiver struct {
 	Category sql.NullString
 	Name     sql.NullString
 }
+
+type WalletTransaction struct {
+	ClientID      int64
+	Date          time.Time
+	EveTypeID     int64
+	IsBuy         bool
+	IsPersonal    bool
+	JournalRefID  int64
+	LocationID    int64
+	MyCharacterID int64
+	Quantity      int64
+	TransactionID int64
+	UnitPrice     float64
+}

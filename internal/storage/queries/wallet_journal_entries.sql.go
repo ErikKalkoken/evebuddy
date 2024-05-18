@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const createWalletJournalEntries = `-- name: CreateWalletJournalEntries :exec
+const createWalletJournalEntry = `-- name: CreateWalletJournalEntry :exec
 INSERT INTO wallet_journal_entries (
     amount,
     balance,
@@ -33,7 +33,7 @@ VALUES (
 )
 `
 
-type CreateWalletJournalEntriesParams struct {
+type CreateWalletJournalEntryParams struct {
 	Amount        float64
 	Balance       float64
 	ContextID     int64
@@ -50,8 +50,8 @@ type CreateWalletJournalEntriesParams struct {
 	TaxReceiverID sql.NullInt64
 }
 
-func (q *Queries) CreateWalletJournalEntries(ctx context.Context, arg CreateWalletJournalEntriesParams) error {
-	_, err := q.db.ExecContext(ctx, createWalletJournalEntries,
+func (q *Queries) CreateWalletJournalEntry(ctx context.Context, arg CreateWalletJournalEntryParams) error {
+	_, err := q.db.ExecContext(ctx, createWalletJournalEntry,
 		arg.Amount,
 		arg.Balance,
 		arg.ContextID,

@@ -30,7 +30,7 @@ func (r *Storage) CreateWalletJournalEntry(ctx context.Context, arg CreateWallet
 	if arg.ID == 0 {
 		return fmt.Errorf("WalletJournalEntry ID can not be zero, Character %d", arg.MyCharacterID)
 	}
-	arg2 := queries.CreateWalletJournalEntriesParams{
+	arg2 := queries.CreateWalletJournalEntryParams{
 		Amount:        arg.Amount,
 		Balance:       arg.Balance,
 		ContextID:     arg.ContextID,
@@ -55,7 +55,7 @@ func (r *Storage) CreateWalletJournalEntry(ctx context.Context, arg CreateWallet
 		arg2.TaxReceiverID.Int64 = int64(arg.TaxReceiverID)
 		arg2.TaxReceiverID.Valid = true
 	}
-	err := r.q.CreateWalletJournalEntries(ctx, arg2)
+	err := r.q.CreateWalletJournalEntry(ctx, arg2)
 	return err
 }
 

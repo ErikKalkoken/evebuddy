@@ -252,3 +252,23 @@ CREATE VIEW wallet_journal_entry_tax_receivers AS
 SELECT eve_entities.*
 FROM wallet_journal_entries
 LEFT JOIN eve_entities ON eve_entities.id = wallet_journal_entries.tax_receiver_id;
+
+CREATE TABLE wallet_transactions (
+    client_id INTEGER NOT NULL,
+    date DATETIME NOT NULL,
+    eve_type_id INTEGER NOT NULL,
+    is_buy BOOL NOT NULL,
+    is_personal BOOL NOT NULL,
+    journal_ref_id INTEGER NOT NULL,
+    location_id INTEGER NOT NULL,
+    my_character_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL,
+    transaction_id INTEGER NOT NULL PRIMARY KEY,
+    unit_price REAL NOT NULL,
+    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (client_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
+    FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
+    FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE,
+    UNIQUE (my_character_id, transaction_id)
+);
+CREATE INDEX wallet_transactions_date_idx ON wallet_transactions (date ASC);

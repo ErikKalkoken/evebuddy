@@ -20,3 +20,19 @@ type WalletJournalEntry struct {
 	Tax           float64
 	TaxReceiver   *EveEntity
 }
+
+type WalletTransaction struct {
+	Client        *EveEntity
+	Date          time.Time
+	EveTypeID     int32
+	EveTypeName   string
+	IsBuy         bool
+	IsPersonal    bool
+	JournalRefID  int64
+	LocationID    int64
+	LocationName  string
+	MyCharacterID int32
+	Quantity      int32
+	TransactionID int64
+	UnitPrice     float64
+}

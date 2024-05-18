@@ -595,7 +595,6 @@ func (f Factory) CreateToken(args ...model.Token) *model.Token {
 	return &t
 }
 
-// CreateWalletJournalEntry is a test factory for WalletJournalEntry objects
 func (f Factory) CreateWalletJournalEntry(args ...storage.CreateWalletJournalEntryParams) *model.WalletJournalEntry {
 	ctx := context.Background()
 	var arg storage.CreateWalletJournalEntryParams
@@ -607,7 +606,7 @@ func (f Factory) CreateWalletJournalEntry(args ...storage.CreateWalletJournalEnt
 		arg.MyCharacterID = x.ID
 	}
 	if arg.ID == 0 {
-		arg.ID = int64(f.calcNewID("wallet_journal_entries", "id"))
+		arg.ID = int64(f.calcNewIDWithMyCharacter("wallet_journal_entries", "id", arg.MyCharacterID))
 	}
 	if arg.Amount == 0 {
 		arg.Amount = rand.Float64() * 10_000_000_000
@@ -652,9 +651,62 @@ func (f Factory) CreateWalletJournalEntry(args ...storage.CreateWalletJournalEnt
 	}
 	return i
 }
+
+func (f Factory) CreateWalletTransaction(args ...storage.CreateWalletTransactionParams) *model.WalletTransaction {
+	ctx := context.Background()
+	var arg storage.CreateWalletTransactionParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ClientID == 0 {
+		x := f.CreateEveCharacter()
+		arg.ClientID = x.ID
+	}
+	if arg.Date.IsZero() {
+		arg.Date = time.Now()
+	}
+	if arg.EveTypeID == 0 {
+		x := f.CreateEveType()
+		arg.EveTypeID = x.ID
+	}
+	if arg.LocationID == 0 {
+		x := f.CreateLocationStructure()
+		arg.LocationID = x.ID
+	}
+	if arg.MyCharacterID == 0 {
+		x := f.CreateMyCharacter()
+		arg.MyCharacterID = x.ID
+	}
+	if arg.TransactionID == 0 {
+		arg.TransactionID = int64(f.calcNewIDWithMyCharacter("wallet_transactions", "transaction_id", arg.MyCharacterID))
+	}
+	if arg.UnitPrice == 0 {
+		arg.UnitPrice = rand.Float64() * 100_000_000
+	}
+
+	err := f.r.CreateWalletTransaction(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	x, err := f.r.GetWalletTransaction(ctx, arg.MyCharacterID, arg.TransactionID)
+	if err != nil {
+		panic(err)
+	}
+	return x
+}
+
 func (f *Factory) calcNewID(table, id_field string) int64 {
 	var max sql.NullInt64
 	if err := f.db.QueryRow(fmt.Sprintf("SELECT MAX(%s) FROM %s;", id_field, table)).Scan(&max); err != nil {
+		panic(err)
+	}
+	return max.Int64 + 1
+}
+
+func (f *Factory) calcNewIDWithMyCharacter(table, id_field string, characterID int32) int64 {
+	var max sql.NullInt64
+	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE my_character_id = ?;", id_field, table)
+	if err := f.db.QueryRow(sql, characterID).Scan(&max); err != nil {
 		panic(err)
 	}
 	return max.Int64 + 1
