@@ -64,24 +64,36 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	split1.SetOffset(0.35)
 	split2 := container.NewHSplit(u.folderArea.content, split1)
 	split2.SetOffset(0.15)
-	u.mailTab = container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), split2)
+	mailTabs := container.NewAppTabs(
+		container.NewTabItem("Mail", split2),
+		// container.NewTabItem("Notifications", widget.NewLabel("PLACEHOLDER")),
+	)
+	u.mailTab = container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), mailTabs)
 
 	u.overviewArea = u.NewOverviewArea()
-	overviewTab := container.NewTabItemWithIcon("Characters",
-		theme.NewThemedResource(resourceGroupSvg), u.overviewArea.content)
+	charactersTabs := container.NewAppTabs(
+		container.NewTabItem("Characters", u.overviewArea.content),
+		// container.NewTabItem("Skills", widget.NewLabel("PLACEHOLDER")),
+	)
+	overviewTab := container.NewTabItemWithIcon("Overview",
+		theme.NewThemedResource(resourceInsightsSvg), charactersTabs)
 
 	u.skillqueueArea = u.NewSkillqueueArea()
-	u.skillqueueTab = container.NewTabItemWithIcon("Training",
-		theme.NewThemedResource(resourceChecklistrtlSvg), u.skillqueueArea.content)
+	skillsTabs := container.NewAppTabs(
+		container.NewTabItem("Skill Queue", u.skillqueueArea.content),
+		// container.NewTabItem("Skills", widget.NewLabel("PLACEHOLDER")),
+	)
+	u.skillqueueTab = container.NewTabItemWithIcon("Skills",
+		theme.NewThemedResource(resourceSchoolSvg), skillsTabs)
 
 	u.walletJournalArea = u.NewWalletJournalArea()
 	u.walletTransactionArea = u.NewWalletTransactionArea()
-	tabs := container.NewAppTabs(
+	walletTabs := container.NewAppTabs(
 		container.NewTabItem("Transactions", u.walletJournalArea.content),
 		container.NewTabItem("Market Transactions", u.walletTransactionArea.content),
 	)
 	walletTab := container.NewTabItemWithIcon("Wallet",
-		theme.NewThemedResource(resourceAttachmoneySvg), tabs)
+		theme.NewThemedResource(resourceAttachmoneySvg), walletTabs)
 
 	u.statusArea = u.newStatusArea()
 	u.toolbarArea = u.newToolbarArea()
