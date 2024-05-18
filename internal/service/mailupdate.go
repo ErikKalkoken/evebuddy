@@ -97,26 +97,26 @@ func (s *Service) updateMailESI(ctx context.Context, characterID int32) (bool, e
 	if err != nil {
 		return false, err
 	}
-	headers, err := s.listMailHeaders(ctx, token)
+	headers, err := s.fetchMailHeadersESI(ctx, token)
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionMailLists, headers)
+	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionMails, headers)
 	if err != nil {
 		return false, err
 	}
 	if !changed {
 		return false, nil
 	}
-	if err := s.resolveMailEntities(ctx, headers); err != nil {
-		return false, err
-	}
 	newHeaders, existingHeaders, err := s.determineNewMail(ctx, token.CharacterID, headers)
 	if err != nil {
 		return false, err
 	}
 	if len(newHeaders) > 0 {
-		if err := s.fetchNewMailsESI(ctx, token, newHeaders); err != nil {
+		if err := s.resolveMailEntities(ctx, newHeaders); err != nil {
+			return false, err
+		}
+		if err := s.addNewMailsESI(ctx, token, newHeaders); err != nil {
 			return false, err
 		}
 	}
@@ -134,8 +134,8 @@ func (s *Service) updateMailESI(ctx context.Context, characterID int32) (bool, e
 	return true, nil
 }
 
-// listMailHeaders fetched mail headers from ESI with paging and returns them.
-func (s *Service) listMailHeaders(ctx context.Context, token *model.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
+// fetchMailHeadersESI fetched mail headers from ESI with paging and returns them.
+func (s *Service) fetchMailHeadersESI(ctx context.Context, token *model.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	if err := s.ensureValidToken(ctx, token); err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (s *Service) resolveMailEntities(ctx context.Context, mm []esi.GetCharacter
 	return nil
 }
 
-func (s *Service) fetchNewMailsESI(ctx context.Context, token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok) error {
+func (s *Service) addNewMailsESI(ctx context.Context, token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok) error {
 	if err := s.ensureValidToken(ctx, token); err != nil {
 		return err
 	}

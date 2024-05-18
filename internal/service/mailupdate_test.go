@@ -15,7 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
-func TestCanFetchManyMailHeaders(t *testing.T) {
+func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 	// given
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -56,7 +56,7 @@ func TestCanFetchManyMailHeaders(t *testing.T) {
 	token := model.Token{AccessToken: "abc", CharacterID: 1, ExpiresAt: time.Now().Add(time.Minute * 10)}
 
 	// when
-	mails, err := s.listMailHeaders(ctx, &token)
+	mails, err := s.fetchMailHeadersESI(ctx, &token)
 
 	// then
 	if assert.NoError(t, err) {
