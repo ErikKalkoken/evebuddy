@@ -29,6 +29,7 @@ func InitDB(dsn string) (*sql.DB, error) {
 	v.Add("_fk", "on")
 	v.Add("_journal_mode", "WAL")
 	v.Add("_synchronous", "normal")
+	v.Add("_txlock", "immediate")
 	dsn2 := fmt.Sprintf("%s?%s", dsn, v.Encode())
 	slog.Debug("Connecting to sqlite", "dsn", dsn2)
 	db, err := sql.Open("sqlite3", dsn2)
