@@ -46,6 +46,7 @@ type ui struct {
 	skillqueueTab         *container.TabItem
 	toolbarArea           *toolbarArea
 	tabs                  *container.AppTabs
+	walletJournalArea     *walletJournalArea
 	walletTransactionArea *walletTransactionArea
 	window                fyne.Window
 }
@@ -73,9 +74,14 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	u.skillqueueTab = container.NewTabItemWithIcon("Training",
 		theme.NewThemedResource(resourceChecklistrtlSvg), u.skillqueueArea.content)
 
+	u.walletJournalArea = u.NewWalletJournalArea()
 	u.walletTransactionArea = u.NewWalletTransactionArea()
+	tabs := container.NewAppTabs(
+		container.NewTabItem("Transactions", u.walletJournalArea.content),
+		container.NewTabItem("Market Transactions", u.walletTransactionArea.content),
+	)
 	walletTab := container.NewTabItemWithIcon("Wallet",
-		theme.NewThemedResource(resourceAttachmoneySvg), u.walletTransactionArea.content)
+		theme.NewThemedResource(resourceAttachmoneySvg), tabs)
 
 	u.statusArea = u.newStatusArea()
 	u.toolbarArea = u.newToolbarArea()
@@ -166,6 +172,7 @@ func (u *ui) ShowAndRun() {
 		u.overviewArea.StartUpdateTicker()
 		u.folderArea.StartUpdateTicker()
 		u.skillqueueArea.StartUpdateTicker()
+		u.walletJournalArea.StartUpdateTicker()
 		u.walletTransactionArea.StartUpdateTicker()
 		u.StartUpdateTickerEveCharacters()
 	}()
@@ -206,6 +213,7 @@ func (u *ui) refreshCurrentCharacter() {
 	u.toolbarArea.Refresh()
 	u.folderArea.Refresh()
 	u.skillqueueArea.Refresh()
+	u.walletJournalArea.Refresh()
 	u.walletTransactionArea.Refresh()
 	c := u.CurrentChar()
 	if c != nil {
@@ -215,6 +223,7 @@ func (u *ui) refreshCurrentCharacter() {
 		go u.folderArea.MaybeUpdateAndRefresh(c.ID)
 		go u.overviewArea.MaybeUpdateAndRefresh(c.ID)
 		go u.skillqueueArea.MaybeUpdateAndRefresh(c.ID)
+		go u.walletJournalArea.MaybeUpdateAndRefresh(c.ID)
 		go u.walletTransactionArea.MaybeUpdateAndRefresh(c.ID)
 	} else {
 		u.tabs.DisableIndex(0)

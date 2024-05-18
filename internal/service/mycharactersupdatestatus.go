@@ -19,17 +19,18 @@ const defaultUpdateSectionTimeout = 3600 * time.Second
 // timeoutForUpdateSection returns the time until the data of an update section becomes stale.
 func timeoutForUpdateSection(section model.UpdateSection) time.Duration {
 	m := map[model.UpdateSection]time.Duration{
-		model.UpdateSectionHome:          120 * time.Second,
-		model.UpdateSectionLocation:      30 * time.Second, // 5 seconds min
-		model.UpdateSectionMailLabels:    30 * time.Second,
-		model.UpdateSectionMailLists:     120 * time.Second,
-		model.UpdateSectionMails:         30 * time.Second,
-		model.UpdateSectionOnline:        60 * time.Second,
-		model.UpdateSectionShip:          30 * time.Second, // 5 seconds min
-		model.UpdateSectionSkillqueue:    120 * time.Second,
-		model.UpdateSectionSkills:        120 * time.Second,
-		model.UpdateSectionWalletBalance: 120 * time.Second,
-		model.UpdateSectionWalletJournal: 3600 * time.Second,
+		model.UpdateSectionHome:               120 * time.Second,
+		model.UpdateSectionLocation:           30 * time.Second, // 5 seconds min
+		model.UpdateSectionMailLabels:         30 * time.Second,
+		model.UpdateSectionMailLists:          120 * time.Second,
+		model.UpdateSectionMails:              30 * time.Second,
+		model.UpdateSectionOnline:             60 * time.Second,
+		model.UpdateSectionShip:               30 * time.Second, // 5 seconds min
+		model.UpdateSectionSkillqueue:         120 * time.Second,
+		model.UpdateSectionSkills:             120 * time.Second,
+		model.UpdateSectionWalletBalance:      120 * time.Second,
+		model.UpdateSectionWalletJournal:      3600 * time.Second,
+		model.UpdateSectionWalletTransactions: 3600 * time.Second,
 	}
 	duration, ok := m[section]
 	if !ok {
@@ -113,6 +114,8 @@ func (s *Service) UpdateSectionIfExpired(characterID int32, section model.Update
 		f = s.updateWalletBalanceESI
 	case model.UpdateSectionWalletJournal:
 		f = s.updateWalletJournalEntryESI
+	case model.UpdateSectionWalletTransactions:
+		f = s.updateWalletTransactionESI
 	default:
 		panic(fmt.Sprintf("Undefined section: %s", section))
 	}

@@ -3,54 +3,33 @@ package ui
 import (
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 const walletTransactionUpdateTicker = 60 * time.Second
 
-type walletJournalEntry struct {
-	amount      float64
-	balance     float64
-	date        time.Time
-	description string
-	refType     string
-	reason      string
-}
-
-func (e walletJournalEntry) hasReason() bool {
-	return e.reason != ""
-}
-
-func (e walletJournalEntry) refTypeOutput() string {
-	s := strings.ReplaceAll(e.refType, "_", " ")
-	c := cases.Title(language.English)
-	s = c.String(s)
-	return s
-}
-
-func (e walletJournalEntry) descriptionWithReason() string {
-	if e.reason == "" {
-		return e.description
-	}
-	return fmt.Sprintf("[r] %s", e.description)
+type walletTransaction struct {
+	client    string
+	date      time.Time
+	location  string
+	quantity  int32
+	total     float64
+	eveType   string
+	unitPrice float64
 }
 
 // walletTransactionArea is the UI area that shows the skillqueue
 type walletTransactionArea struct {
 	content *fyne.Container
-	entries binding.UntypedList // []walletJournalEntry
+	entries binding.UntypedList // []walletTransaction
 	table   *widget.Table
 	total   *widget.Label
 	ui      *ui
@@ -63,20 +42,34 @@ func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
 		total:   widget.NewLabel(""),
 	}
 	a.total.TextStyle.Bold = true
+	var headers = []struct {
+		text  string
+		width float32
+	}{
+		{"Date", 130},
+		{"Quantity", 130},
+		{"Type", 200},
+		{"Unit Price", 130},
+		{"Total", 130},
+		{"Client", 250},
+		{"Where", 250},
+	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
-			return a.entries.Length(), 5
+			return a.entries.Length(), len(headers)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("2024-05-08 18:59")
+			x := widget.NewLabel("Template")
+			x.Truncation = fyne.TextTruncateEllipsis
+			return x
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			l := co.(*widget.Label)
 			l.Importance = widget.MediumImportance
 			l.Alignment = fyne.TextAlignLeading
-			w, err := getFromBoundUntypedList[walletJournalEntry](a.entries, tci.Row)
+			w, err := getFromBoundUntypedList[walletTransaction](a.entries, tci.Row)
 			if err != nil {
-				slog.Error("failed to render cell in wallet journal table", "err", err)
+				slog.Error("failed to render cell in wallet transaction table", "err", err)
 				l.Text = "failed to render"
 				l.Importance = widget.DangerImportance
 				l.Refresh()
@@ -86,65 +79,42 @@ func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
 			case 0:
 				l.Text = w.date.Format(myDateTime)
 			case 1:
-				l.Text = w.refTypeOutput()
-			case 2:
 				l.Alignment = fyne.TextAlignTrailing
-				l.Text = humanize.FormatFloat(myFloatFormat, w.amount)
+				l.Text = humanize.Comma(int64(w.quantity))
+			case 2:
+				l.Text = w.eveType
+			case 3:
+				l.Alignment = fyne.TextAlignTrailing
+				l.Text = humanize.FormatFloat(myFloatFormat, w.unitPrice)
+			case 4:
+				l.Alignment = fyne.TextAlignTrailing
+				l.Text = humanize.FormatFloat(myFloatFormat, w.total)
 				switch {
-				case w.amount < 0:
+				case w.total < 0:
 					l.Importance = widget.DangerImportance
-				case w.amount > 0:
+				case w.total > 0:
 					l.Importance = widget.SuccessImportance
 				default:
 					l.Importance = widget.MediumImportance
 				}
-			case 3:
-				l.Alignment = fyne.TextAlignTrailing
-				l.Text = humanize.FormatFloat(myFloatFormat, w.balance)
-			case 4:
-				l.Truncation = fyne.TextTruncateEllipsis
-				l.Text = w.descriptionWithReason()
+			case 5:
+				l.Text = w.client
+			case 6:
+				l.Text = w.location
 			}
 			l.Refresh()
 		},
 	)
-	t.SetColumnWidth(0, 130)
-	t.SetColumnWidth(1, 130)
-	t.SetColumnWidth(2, 130)
-	t.SetColumnWidth(3, 130)
-	t.SetColumnWidth(4, 450)
-
 	t.ShowHeaderRow = true
 	t.CreateHeader = func() fyne.CanvasObject {
 		return widget.NewLabel("Template")
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		var s string
-		switch tci.Col {
-		case 0:
-			s = "Date"
-		case 1:
-			s = "Type"
-		case 2:
-			s = "Amount"
-		case 3:
-			s = "Balance"
-		case 4:
-			s = "Description"
-		}
-		co.(*widget.Label).SetText(s)
+		s := headers[tci.Col]
+		co.(*widget.Label).SetText(s.text)
 	}
-	t.OnSelected = func(tci widget.TableCellID) {
-		e, err := getFromBoundUntypedList[walletJournalEntry](a.entries, tci.Row)
-		if err != nil {
-			slog.Error("failed to access entries in list", "err", err)
-			return
-		}
-		if e.hasReason() {
-			c := widget.NewLabel(e.reason)
-			dlg := dialog.NewCustom("Reason", "OK", c, u.window)
-			dlg.Show()
-		}
+	for i, h := range headers {
+		t.SetColumnWidth(i, h.width)
 	}
 
 	top := container.NewVBox(a.total, widget.NewSeparator())
@@ -169,15 +139,14 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 	if c == nil {
 		return "No data yet...", widget.LowImportance
 	}
-	hasData, err := a.ui.service.SectionWasUpdated(c.ID, model.UpdateSectionWalletJournal)
+	hasData, err := a.ui.service.SectionWasUpdated(c.ID, model.UpdateSectionWalletTransactions)
 	if err != nil {
 		return "ERROR", widget.DangerImportance
 	}
 	if !hasData {
 		return "No data yet...", widget.LowImportance
 	}
-	s := fmt.Sprintf("Balance: %s", humanizedNullFloat64(c.WalletBalance, 1, "?"))
-	return s, widget.MediumImportance
+	return "", widget.MediumImportance
 }
 
 func (a *walletTransactionArea) updateEntries() error {
@@ -189,19 +158,23 @@ func (a *walletTransactionArea) updateEntries() error {
 			return err
 		}
 	}
-	ww, err := a.ui.service.ListWalletJournalEntries(characterID)
+	ww, err := a.ui.service.ListWalletTransactions(characterID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch wallet journal for character %d: %w", characterID, err)
 	}
-	entries := make([]walletJournalEntry, len(ww))
+	entries := make([]walletTransaction, len(ww))
 	for i, w := range ww {
-		var w2 walletJournalEntry
-		w2.amount = w.Amount
-		w2.balance = w.Balance
+		var w2 walletTransaction
+		w2.client = w.Client.Name
 		w2.date = w.Date
-		w2.description = w.Description
-		w2.reason = w.Reason
-		w2.refType = w.RefType
+		w2.eveType = w.EveTypeName
+		w2.location = w.LocationName
+		w2.quantity = w.Quantity
+		w2.unitPrice = w.UnitPrice
+		w2.total = w.UnitPrice * float64(w.Quantity)
+		if w.IsBuy {
+			w2.total *= -1
+		}
 		entries[i] = w2
 	}
 	if err := a.entries.Set(copyToUntypedSlice(entries)); err != nil {
@@ -230,9 +203,9 @@ func (a *walletTransactionArea) StartUpdateTicker() {
 }
 
 func (a *walletTransactionArea) MaybeUpdateAndRefresh(characterID int32) {
-	changed, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionWalletJournal)
+	changed, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionWalletTransactions)
 	if err != nil {
-		slog.Error("Failed to update wallet transaction", "character", characterID, "err", err)
+		slog.Error("Failed to update wallet transactions", "character", characterID, "err", err)
 		return
 	}
 	if changed && characterID == a.ui.CurrentCharID() {

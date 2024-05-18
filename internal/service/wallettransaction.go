@@ -60,8 +60,19 @@ func (s *Service) updateWalletTransactionESI(ctx context.Context, characterID in
 		}
 	}
 	_, err = s.AddMissingEveEntities(ctx, ids.ToSlice())
+	if err != nil {
+		return false, err
+	}
 
 	for _, o := range newEntries {
+		_, err = s.getOrCreateEveTypeESI(ctx, o.TypeId)
+		if err != nil {
+			return false, err
+		}
+		_, err = s.getOrCreateLocationESI(ctx, o.LocationId)
+		if err != nil {
+			return false, err
+		}
 		arg := storage.CreateWalletTransactionParams{
 			ClientID:      o.ClientId,
 			Date:          o.Date,
@@ -74,9 +85,6 @@ func (s *Service) updateWalletTransactionESI(ctx context.Context, characterID in
 			Quantity:      o.Quantity,
 			TransactionID: o.TransactionId,
 			UnitPrice:     o.UnitPrice,
-		}
-		if err != nil {
-			return false, err
 		}
 		if err := s.r.CreateWalletTransaction(ctx, arg); err != nil {
 			return false, err
