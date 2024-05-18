@@ -97,7 +97,7 @@ func (a *folderArea) Refresh() {
 		slog.Error("Failed to build folder tree", "character", characterID, "error", err)
 	}
 	a.treeData.Set(ids, values)
-	if a.lastUID == "" || a.lastFolderAll != folderAll {
+	if a.lastUID == "" {
 		a.tree.Select(nodeAllID)
 		a.tree.ScrollToTop()
 		a.ui.headerArea.SetFolder(folderAll)

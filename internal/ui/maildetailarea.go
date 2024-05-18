@@ -91,7 +91,6 @@ func (a *mailDetailArea) SetMail(mailID int32, listItemID widget.ListItemID) {
 					return err
 				}
 				a.ui.folderArea.Refresh()
-				a.SetMail(mailID, listItemID)
 				return nil
 			}()
 			if err != nil {
