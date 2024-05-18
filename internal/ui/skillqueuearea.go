@@ -22,21 +22,19 @@ const skillqueueUpdateTicker = 10 * time.Second
 
 // skillqueueArea is the UI area that shows the skillqueue
 type skillqueueArea struct {
-	content       *fyne.Container
-	items         binding.UntypedList
-	errorText     binding.String
-	trainingTotal binding.Untyped
-	total         *widget.Label
-	ui            *ui
+	content   *fyne.Container
+	items     binding.UntypedList
+	errorText binding.String
+	total     *widget.Label
+	ui        *ui
 }
 
 func (u *ui) NewSkillqueueArea() *skillqueueArea {
 	a := skillqueueArea{
-		items:         binding.NewUntypedList(),
-		errorText:     binding.NewString(),
-		total:         widget.NewLabel(""),
-		trainingTotal: binding.NewUntyped(),
-		ui:            u,
+		items:     binding.NewUntypedList(),
+		errorText: binding.NewString(),
+		total:     widget.NewLabel(""),
+		ui:        u,
 	}
 	a.total.TextStyle.Bold = true
 	list := widget.NewListWithData(
@@ -147,17 +145,26 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 }
 
 func (a *skillqueueArea) Refresh() {
-	if err := a.updateItems(); err != nil {
+	total, remaining, err := a.updateItems()
+	if err != nil {
 		slog.Error("failed to update skillqueue items for character", "characterID", a.ui.CurrentCharID(), "err", err)
 		return
 	}
-	s, i := a.makeTopText()
-	a.total.Text = s
+	t, i := a.makeTopText(total, remaining)
+	a.total.Text = t
 	a.total.Importance = i
 	a.total.Refresh()
+
+	// s := "Training"
+	// if a.items.Length() > 0 && total.Valid && remaining.Valid && total.Duration > 0 {
+	// 	p := float64(remaining.Duration) / float64(total.Duration)
+	// 	s += fmt.Sprintf(" (%.0f%%)", p*100)
+	// }
+	// a.ui.skillqueueTab.Text = s
+	// a.ui.tabs.Refresh()
 }
 
-func (a *skillqueueArea) makeTopText() (string, widget.Importance) {
+func (a *skillqueueArea) makeTopText(total types.NullDuration, remaining types.NullDuration) (string, widget.Importance) {
 	errorText, err := a.errorText.Get()
 	if err != nil {
 		panic(err)
@@ -175,49 +182,46 @@ func (a *skillqueueArea) makeTopText() (string, widget.Importance) {
 	if a.items.Length() == 0 {
 		return "Training not active", widget.WarningImportance
 	}
-	var s string
-	x, err := a.trainingTotal.Get()
-	if err != nil {
-		panic(err)
+	training := "?"
+	completion := ""
+	if remaining.Valid {
+		training = ihumanize.Duration(remaining.Duration)
 	}
-	d := x.(types.NullDuration)
-	if d.Valid {
-		s = ihumanize.Duration(d.Duration)
-	} else {
-		s = "?"
+	if a.items.Length() > 0 && total.Valid && remaining.Valid && total.Duration > 0 {
+		p := 1 - float64(remaining.Duration)/float64(total.Duration)
+		completion = fmt.Sprintf("(%.0f%%)", p*100)
 	}
-	return fmt.Sprintf("Total training time: %s", s), widget.MediumImportance
+	return fmt.Sprintf("Total training time: %s %s", training, completion), widget.MediumImportance
 }
 
-func (a *skillqueueArea) updateItems() error {
+func (a *skillqueueArea) updateItems() (types.NullDuration, types.NullDuration, error) {
+	var total, remaining types.NullDuration
 	if err := a.errorText.Set(""); err != nil {
-		return err
+		return total, remaining, err
 	}
 	characterID := a.ui.CurrentCharID()
 	if characterID == 0 {
 		err := a.items.Set(make([]any, 0))
 		if err != nil {
-			return err
+			return total, remaining, err
 		}
 	}
 	items, err := a.ui.service.ListSkillqueueItems(characterID)
 	if err != nil {
-		return err
+		return total, remaining, err
 	}
-	var total types.NullDuration
 	x := make([]any, len(items))
 	for i, item := range items {
 		x[i] = item
-		total.Duration += item.Remaining().Duration
+		remaining.Duration += item.Remaining().Duration
+		remaining.Valid = true
+		total.Duration += item.Duration().Duration
 		total.Valid = true
 	}
 	if err := a.items.Set(x); err != nil {
 		panic(err)
 	}
-	if err := a.trainingTotal.Set(total); err != nil {
-		return err
-	}
-	return nil
+	return total, remaining, nil
 }
 
 func (a *skillqueueArea) StartUpdateTicker() {

@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
@@ -104,11 +105,9 @@ func (a *folderArea) Refresh() {
 		a.ui.headerArea.Refresh()
 	}
 	a.lastFolderAll = folderAll
-	var s string
+	s := "Mail"
 	if folderAll.UnreadCount > 0 {
-		s = fmt.Sprintf("Mail (%d)", folderAll.UnreadCount)
-	} else {
-		s = "Mail"
+		s += fmt.Sprintf(" (%s)", humanize.Comma(int64(folderAll.UnreadCount)))
 	}
 	a.ui.mailTab.Text = s
 	a.ui.tabs.Refresh()

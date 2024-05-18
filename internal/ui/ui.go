@@ -36,17 +36,18 @@ type ui struct {
 	currentCharacter      *model.MyCharacter
 	folderArea            *folderArea
 	headerArea            *headerArea
+	imageManager          *images.Manager
 	mailArea              *mailDetailArea
 	mailTab               *container.TabItem
 	overviewArea          *overviewArea
 	statusArea            *statusArea
 	service               *service.Service
 	skillqueueArea        *skillqueueArea
-	walletTransactionArea *walletTransactionArea
+	skillqueueTab         *container.TabItem
 	toolbarArea           *toolbarArea
 	tabs                  *container.AppTabs
+	walletTransactionArea *walletTransactionArea
 	window                fyne.Window
-	imageManager          *images.Manager
 }
 
 // NewUI build the UI and returns it.
@@ -69,7 +70,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 		theme.NewThemedResource(resourceGroupSvg), u.overviewArea.content)
 
 	u.skillqueueArea = u.NewSkillqueueArea()
-	skillqueueTab := container.NewTabItemWithIcon("Training",
+	u.skillqueueTab = container.NewTabItemWithIcon("Training",
 		theme.NewThemedResource(resourceChecklistrtlSvg), u.skillqueueArea.content)
 
 	u.walletTransactionArea = u.NewWalletTransactionArea()
@@ -79,7 +80,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	u.statusArea = u.newStatusArea()
 	u.toolbarArea = u.newToolbarArea()
 
-	u.tabs = container.NewAppTabs(u.mailTab, skillqueueTab, walletTab, overviewTab)
+	u.tabs = container.NewAppTabs(u.mailTab, u.skillqueueTab, walletTab, overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	mainContent := container.NewBorder(u.toolbarArea.content, u.statusArea.content, nil, nil, u.tabs)
