@@ -64,36 +64,33 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	split1.SetOffset(0.35)
 	split2 := container.NewHSplit(u.folderArea.content, split1)
 	split2.SetOffset(0.15)
-	mailTabs := container.NewAppTabs(
-		container.NewTabItem("Mail", split2),
-		// container.NewTabItem("Notifications", widget.NewLabel("PLACEHOLDER")),
-	)
-	u.mailTab = container.NewTabItemWithIcon("Mail", theme.MailComposeIcon(), mailTabs)
+	u.mailTab = container.NewTabItemWithIcon("Mail",
+		theme.MailComposeIcon(), container.NewAppTabs(
+			container.NewTabItem("Mail", split2),
+			// container.NewTabItem("Notifications", widget.NewLabel("PLACEHOLDER")),
+		))
 
 	u.overviewArea = u.NewOverviewArea()
-	charactersTabs := container.NewAppTabs(
-		container.NewTabItem("Characters", u.overviewArea.content),
-		// container.NewTabItem("Skills", widget.NewLabel("PLACEHOLDER")),
-	)
-	overviewTab := container.NewTabItemWithIcon("Overview",
-		theme.NewThemedResource(resourceInsightsSvg), charactersTabs)
+	overviewTab := container.NewTabItemWithIcon("Characters",
+		theme.NewThemedResource(resourceGroupSvg), container.NewAppTabs(
+			container.NewTabItem("Overview", u.overviewArea.content),
+			// container.NewTabItem("Skills", widget.NewLabel("PLACEHOLDER")),
+		))
 
 	u.skillqueueArea = u.NewSkillqueueArea()
-	skillsTabs := container.NewAppTabs(
-		container.NewTabItem("Skill Queue", u.skillqueueArea.content),
-		// container.NewTabItem("Skills", widget.NewLabel("PLACEHOLDER")),
-	)
 	u.skillqueueTab = container.NewTabItemWithIcon("Skills",
-		theme.NewThemedResource(resourceSchoolSvg), skillsTabs)
+		theme.NewThemedResource(resourceSchoolSvg), container.NewAppTabs(
+			container.NewTabItem("Skill Queue", u.skillqueueArea.content),
+			// container.NewTabItem("Skills", widget.NewLabel("PLACEHOLDER")),
+		))
 
 	u.walletJournalArea = u.NewWalletJournalArea()
 	u.walletTransactionArea = u.NewWalletTransactionArea()
-	walletTabs := container.NewAppTabs(
-		container.NewTabItem("Transactions", u.walletJournalArea.content),
-		container.NewTabItem("Market Transactions", u.walletTransactionArea.content),
-	)
 	walletTab := container.NewTabItemWithIcon("Wallet",
-		theme.NewThemedResource(resourceAttachmoneySvg), walletTabs)
+		theme.NewThemedResource(resourceAttachmoneySvg), container.NewAppTabs(
+			container.NewTabItem("Transactions", u.walletJournalArea.content),
+			container.NewTabItem("Market Transactions", u.walletTransactionArea.content),
+		))
 
 	u.statusArea = u.newStatusArea()
 	u.toolbarArea = u.newToolbarArea()
