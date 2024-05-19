@@ -167,8 +167,8 @@ func (a *walletTransactionArea) updateEntries() error {
 		var w2 walletTransaction
 		w2.client = w.Client.Name
 		w2.date = w.Date
-		w2.eveType = w.EveTypeName
-		w2.location = w.LocationName
+		w2.eveType = w.EveType.Name
+		w2.location = w.Location.Name
 		w2.quantity = w.Quantity
 		w2.unitPrice = w.UnitPrice
 		w2.total = w.UnitPrice * float64(w.Quantity)
