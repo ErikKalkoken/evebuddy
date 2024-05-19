@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 func TestEveConstellation(t *testing.T) {
@@ -16,16 +17,21 @@ func TestEveConstellation(t *testing.T) {
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateEveRegion()
+		region := factory.CreateEveRegion()
+		arg := storage.CreateEveConstellationParams{
+			ID:       42,
+			RegionID: region.ID,
+			Name:     "name",
+		}
 		// when
-		err := r.CreateEveConstellation(ctx, 42, c.ID, "name")
+		err := r.CreateEveConstellation(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			g, err := r.GetEveConstellation(ctx, 42)
+			o, err := r.GetEveConstellation(ctx, 42)
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(42), g.ID)
-				assert.Equal(t, "name", g.Name)
-				assert.Equal(t, c, g.Region)
+				assert.Equal(t, int32(42), o.ID)
+				assert.Equal(t, "name", o.Name)
+				assert.Equal(t, region, o.Region)
 			}
 		}
 	})

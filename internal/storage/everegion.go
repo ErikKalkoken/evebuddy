@@ -10,18 +10,24 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (r *Storage) CreateEveRegion(ctx context.Context, description string, id int32, name string) (*model.EveRegion, error) {
-	if id == 0 {
-		return nil, fmt.Errorf("invalid ID %d", id)
+type CreateEveRegionParams struct {
+	Description string
+	ID          int32
+	Name        string
+}
+
+func (r *Storage) CreateEveRegion(ctx context.Context, arg CreateEveRegionParams) (*model.EveRegion, error) {
+	if arg.ID == 0 {
+		return nil, fmt.Errorf("invalid ID %d", arg.ID)
 	}
-	arg := queries.CreateEveRegionParams{
-		ID:          int64(id),
-		Description: description,
-		Name:        name,
+	arg2 := queries.CreateEveRegionParams{
+		ID:          int64(arg.ID),
+		Description: arg.Description,
+		Name:        arg.Name,
 	}
-	e, err := r.q.CreateEveRegion(ctx, arg)
+	e, err := r.q.CreateEveRegion(ctx, arg2)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create EveRegion %v, %w", arg, err)
+		return nil, fmt.Errorf("failed to create EveRegion %v, %w", arg2, err)
 	}
 	return eveRegionFromDBModel(e), nil
 }

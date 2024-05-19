@@ -10,16 +10,22 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (r *Storage) CreateEveConstellation(ctx context.Context, id, eve_region_id int32, name string) error {
-	if id == 0 {
-		return fmt.Errorf("invalid ID %d", id)
+type CreateEveConstellationParams struct {
+	ID       int32
+	Name     string
+	RegionID int32
+}
+
+func (r *Storage) CreateEveConstellation(ctx context.Context, arg CreateEveConstellationParams) error {
+	if arg.ID == 0 {
+		return fmt.Errorf("invalid ID %d", arg.ID)
 	}
-	arg := queries.CreateEveConstellationParams{
-		ID:          int64(id),
-		EveRegionID: int64(eve_region_id),
-		Name:        name,
+	arg2 := queries.CreateEveConstellationParams{
+		ID:          int64(arg.ID),
+		EveRegionID: int64(arg.RegionID),
+		Name:        arg.Name,
 	}
-	err := r.q.CreateEveConstellation(ctx, arg)
+	err := r.q.CreateEveConstellation(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("failed to create EveConstellation %v, %w", arg, err)
 	}

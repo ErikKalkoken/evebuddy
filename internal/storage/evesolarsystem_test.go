@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 func TestEveSolarSystem(t *testing.T) {
@@ -17,8 +18,14 @@ func TestEveSolarSystem(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateEveConstellation()
+		arg := storage.CreateEveSolarSystemParams{
+			ID:              42,
+			ConstellationID: c.ID,
+			Name:            "name",
+			SecurityStatus:  -8.5,
+		}
 		// when
-		err := r.CreateEveSolarSystem(ctx, 42, c.ID, "name", -8.5)
+		err := r.CreateEveSolarSystem(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			g, err := r.GetEveSolarSystem(ctx, 42)

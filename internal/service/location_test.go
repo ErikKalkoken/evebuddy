@@ -31,7 +31,7 @@ func TestLocationStations(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		owner := factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000003})
-		system := factory.CreateEveSolarSystem(model.EveSolarSystem{ID: 30000148})
+		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 1531})
 		data := `{
 			"max_dockable_ship_volume": 50000000,
@@ -109,7 +109,7 @@ func TestLocationStructures(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		owner := factory.CreateEveEntityCorporation(model.EveEntity{ID: 109299958})
-		system := factory.CreateEveSolarSystem(model.EveSolarSystem{ID: 30000142})
+		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000142})
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 99})
 		data := `{
 			"name": "V-3YG7 VI - The Capital",

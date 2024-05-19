@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 func TestEveRegion(t *testing.T) {
@@ -16,8 +17,13 @@ func TestEveRegion(t *testing.T) {
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		arg := storage.CreateEveRegionParams{
+			ID:          42,
+			Description: "description",
+			Name:        "name",
+		}
 		// when
-		x1, err := r.CreateEveRegion(ctx, "description", 42, "name")
+		x1, err := r.CreateEveRegion(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			x2, err := r.GetEveRegion(ctx, 42)

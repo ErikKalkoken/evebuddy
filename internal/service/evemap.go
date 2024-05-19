@@ -28,11 +28,16 @@ func (s *Service) getOrCreateEveRegionESI(ctx context.Context, id int32) (*model
 func (s *Service) createEveRegionFromESI(ctx context.Context, id int32) (*model.EveRegion, error) {
 	key := fmt.Sprintf("createEveRegionFromESI-%d", id)
 	y, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		r, _, err := s.esiClient.ESI.UniverseApi.GetUniverseRegionsRegionId(ctx, id, nil)
+		region, _, err := s.esiClient.ESI.UniverseApi.GetUniverseRegionsRegionId(ctx, id, nil)
 		if err != nil {
 			return nil, err
 		}
-		return s.r.CreateEveRegion(ctx, r.Description, r.RegionId, r.Name)
+		arg := storage.CreateEveRegionParams{
+			ID:          region.RegionId,
+			Description: region.Description,
+			Name:        region.Name,
+		}
+		return s.r.CreateEveRegion(ctx, arg)
 	})
 	if err != nil {
 		return nil, err
@@ -59,15 +64,20 @@ func (s *Service) getOrCreateEveConstellationESI(ctx context.Context, id int32) 
 func (s *Service) createEveConstellationFromESI(ctx context.Context, id int32) (*model.EveConstellation, error) {
 	key := fmt.Sprintf("createEveConstellationFromESI-%d", id)
 	y, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		r, _, err := s.esiClient.ESI.UniverseApi.GetUniverseConstellationsConstellationId(ctx, id, nil)
+		constellation, _, err := s.esiClient.ESI.UniverseApi.GetUniverseConstellationsConstellationId(ctx, id, nil)
 		if err != nil {
 			return nil, err
 		}
-		c, err := s.getOrCreateEveRegionESI(ctx, r.RegionId)
+		_, err = s.getOrCreateEveRegionESI(ctx, constellation.RegionId)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.r.CreateEveConstellation(ctx, r.ConstellationId, c.ID, r.Name); err != nil {
+		arg := storage.CreateEveConstellationParams{
+			ID:       constellation.ConstellationId,
+			RegionID: constellation.RegionId,
+			Name:     constellation.Name,
+		}
+		if err := s.r.CreateEveConstellation(ctx, arg); err != nil {
 			return nil, err
 		}
 		return s.r.GetEveConstellation(ctx, id)
@@ -97,15 +107,21 @@ func (s *Service) getOrCreateEveSolarSystemESI(ctx context.Context, id int32) (*
 func (s *Service) createEveSolarSystemFromESI(ctx context.Context, id int32) (*model.EveSolarSystem, error) {
 	key := fmt.Sprintf("createEveSolarSystemFromESI-%d", id)
 	y, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		r, _, err := s.esiClient.ESI.UniverseApi.GetUniverseSystemsSystemId(ctx, id, nil)
+		system, _, err := s.esiClient.ESI.UniverseApi.GetUniverseSystemsSystemId(ctx, id, nil)
 		if err != nil {
 			return nil, err
 		}
-		g, err := s.getOrCreateEveConstellationESI(ctx, r.ConstellationId)
+		constellation, err := s.getOrCreateEveConstellationESI(ctx, system.ConstellationId)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.r.CreateEveSolarSystem(ctx, r.SystemId, g.ID, r.Name, float64(r.SecurityStatus)); err != nil {
+		arg := storage.CreateEveSolarSystemParams{
+			ID:              system.SystemId,
+			ConstellationID: constellation.ID,
+			Name:            system.Name,
+			SecurityStatus:  float64(system.SecurityStatus),
+		}
+		if err := s.r.CreateEveSolarSystem(ctx, arg); err != nil {
 			return nil, err
 		}
 		return s.r.GetEveSolarSystem(ctx, id)

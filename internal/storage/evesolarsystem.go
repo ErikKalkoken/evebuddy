@@ -10,17 +10,24 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (r *Storage) CreateEveSolarSystem(ctx context.Context, id int32, eve_constellation_id int32, name string, security_status float64) error {
-	if id == 0 {
-		return fmt.Errorf("invalid ID %d", id)
+type CreateEveSolarSystemParams struct {
+	ConstellationID int32
+	ID              int32
+	Name            string
+	SecurityStatus  float64
+}
+
+func (r *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarSystemParams) error {
+	if arg.ID == 0 {
+		return fmt.Errorf("invalid ID %d", arg.ID)
 	}
-	arg := queries.CreateEveSolarSystemParams{
-		ID:                 int64(id),
-		EveConstellationID: int64(eve_constellation_id),
-		Name:               name,
-		SecurityStatus:     float64(security_status),
+	arg2 := queries.CreateEveSolarSystemParams{
+		ID:                 int64(arg.ID),
+		EveConstellationID: int64(arg.ConstellationID),
+		Name:               arg.Name,
+		SecurityStatus:     arg.SecurityStatus,
 	}
-	err := r.q.CreateEveSolarSystem(ctx, arg)
+	err := r.q.CreateEveSolarSystem(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("failed to create EveSolarSystem %v, %w", arg, err)
 	}

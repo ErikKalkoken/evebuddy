@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 func TestGetOrCreateEveRegionESI(t *testing.T) {
@@ -24,7 +24,7 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveRegion(model.EveRegion{ID: 6})
+		factory.CreateEveRegion(storage.CreateEveRegionParams{ID: 6})
 		// when
 		x1, err := s.GetOrCreateEveRegionESI(6)
 		// then
@@ -75,7 +75,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveConstellation(model.EveConstellation{ID: 25})
+		factory.CreateEveConstellation(storage.CreateEveConstellationParams{ID: 25})
 		// when
 		x1, err := s.GetOrCreateEveConstellationESI(25)
 		// then
@@ -87,7 +87,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveRegion(model.EveRegion{ID: 10000001})
+		factory.CreateEveRegion(storage.CreateEveRegionParams{ID: 10000001})
 		data := `{
 			"constellation_id": 20000009,
 			"name": "Mekashtad",
@@ -133,7 +133,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveSolarSystem(model.EveSolarSystem{ID: 587})
+		factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 587})
 		// when
 		x1, err := s.GetOrCreateEveSolarSystemESI(587)
 		// then
@@ -145,7 +145,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveConstellation(model.EveConstellation{ID: 20000001})
+		factory.CreateEveConstellation(storage.CreateEveConstellationParams{ID: 20000001})
 		data := `{
 			"constellation_id": 20000001,
 			"name": "Akpivem",

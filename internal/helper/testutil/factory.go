@@ -419,70 +419,80 @@ func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *model.EveTy
 	return o
 }
 
-func (f Factory) CreateEveRegion(args ...model.EveRegion) *model.EveRegion {
-	var x model.EveRegion
+func (f Factory) CreateEveRegion(args ...storage.CreateEveRegionParams) *model.EveRegion {
+	var arg storage.CreateEveRegionParams
 	ctx := context.Background()
 	if len(args) > 0 {
-		x = args[0]
+		arg = args[0]
 	}
-	if x.ID == 0 {
-		x.ID = int32(f.calcNewID("eve_regions", "id", 1))
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_regions", "id", 1))
 	}
-	if x.Name == "" {
-		x.Name = fmt.Sprintf("Region #%d", x.ID)
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Region #%d", arg.ID)
 	}
-	r, err := f.r.CreateEveRegion(ctx, x.Description, x.ID, x.Name)
+	o, err := f.r.CreateEveRegion(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	return r
+	return o
 }
 
-func (f Factory) CreateEveConstellation(args ...model.EveConstellation) *model.EveConstellation {
-	var x model.EveConstellation
+func (f Factory) CreateEveConstellation(args ...storage.CreateEveConstellationParams) *model.EveConstellation {
+	var arg storage.CreateEveConstellationParams
 	ctx := context.Background()
 	if len(args) > 0 {
-		x = args[0]
+		arg = args[0]
 	}
-	if x.ID == 0 {
-		x.ID = int32(f.calcNewID("eve_constellations", "id", 1))
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_constellations", "id", 1))
 	}
-	if x.Name == "" {
-		x.Name = fmt.Sprintf("Constellation #%d", x.ID)
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Constellation #%d", arg.ID)
 	}
-	if x.Region == nil {
-		x.Region = f.CreateEveRegion()
+	if arg.RegionID == 0 {
+		x := f.CreateEveRegion()
+		arg.RegionID = x.ID
 	}
-	err := f.r.CreateEveConstellation(ctx, x.ID, x.Region.ID, x.Name)
+	err := f.r.CreateEveConstellation(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	return &x
+	o, err := f.r.GetEveConstellation(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return o
 }
 
-func (f Factory) CreateEveSolarSystem(args ...model.EveSolarSystem) *model.EveSolarSystem {
-	var x model.EveSolarSystem
+func (f Factory) CreateEveSolarSystem(args ...storage.CreateEveSolarSystemParams) *model.EveSolarSystem {
+	var arg storage.CreateEveSolarSystemParams
 	ctx := context.Background()
 	if len(args) > 0 {
-		x = args[0]
+		arg = args[0]
 	}
-	if x.ID == 0 {
-		x.ID = int32(f.calcNewID("eve_solar_systems", "id", 1))
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_solar_systems", "id", 1))
 	}
-	if x.Name == "" {
-		x.Name = fmt.Sprintf("Solar System #%d", x.ID)
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Solar System #%d", arg.ID)
 	}
-	if x.Constellation == nil {
-		x.Constellation = f.CreateEveConstellation()
+	if arg.ConstellationID == 0 {
+		x := f.CreateEveConstellation()
+		arg.ConstellationID = x.ID
 	}
-	if x.SecurityStatus == 0 {
-		x.SecurityStatus = rand.Float64()*10 - 5
+	if arg.SecurityStatus == 0 {
+		arg.SecurityStatus = rand.Float64()*10 - 5
 	}
-	err := f.r.CreateEveSolarSystem(ctx, x.ID, x.Constellation.ID, x.Name, x.SecurityStatus)
+	err := f.r.CreateEveSolarSystem(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	return &x
+	o, err := f.r.GetEveSolarSystem(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return o
 }
 
 func (f Factory) CreateEveRace(args ...model.EveRace) *model.EveRace {
