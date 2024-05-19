@@ -226,7 +226,7 @@ func (u *ui) refreshCurrentCharacter() {
 	u.toolbarArea.Refresh()
 	u.folderArea.Refresh()
 	u.skillqueueArea.Refresh()
-	u.skillCatalogueArea.Refresh()
+	u.skillCatalogueArea.Redraw()
 	u.walletJournalArea.Refresh()
 	u.walletTransactionArea.Refresh()
 	c := u.CurrentChar()

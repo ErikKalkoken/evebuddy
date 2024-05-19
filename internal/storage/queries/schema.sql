@@ -23,6 +23,7 @@ CREATE TABLE eve_categories (
     name TEXT NOT NULL,
     is_published BOOL NOT NULL
 );
+CREATE INDEX eve_categories_name_idx ON eve_categories (name ASC);
 
 CREATE TABLE eve_groups (
     id INTEGER PRIMARY KEY NOT NULL,
@@ -31,6 +32,7 @@ CREATE TABLE eve_groups (
     is_published BOOL NOT NULL,
     FOREIGN KEY (eve_category_id) REFERENCES eve_categories(id) ON DELETE CASCADE
 );
+CREATE INDEX eve_groups_name_idx ON eve_groups (name ASC);
 
 CREATE TABLE eve_types (
     id INTEGER PRIMARY KEY NOT NULL,
@@ -40,12 +42,14 @@ CREATE TABLE eve_types (
     is_published BOOL NOT NULL,
     FOREIGN KEY (eve_group_id) REFERENCES eve_groups(id) ON DELETE CASCADE
 );
+CREATE INDEX eve_types_name_idx ON eve_types (name ASC);
 
 CREATE TABLE eve_regions (
     id INTEGER PRIMARY KEY NOT NULL,
     description TEXT NOT NULL,
     name TEXT NOT NULL
 );
+CREATE INDEX eve_regions_name_idx ON eve_regions (name ASC);
 
 CREATE TABLE eve_constellations (
     id INTEGER PRIMARY KEY NOT NULL,
@@ -53,6 +57,7 @@ CREATE TABLE eve_constellations (
     name TEXT NOT NULL,
     FOREIGN KEY (eve_region_id) REFERENCES eve_regions(id) ON DELETE CASCADE
 );
+CREATE INDEX eve_constellations_name_idx ON eve_constellations (name ASC);
 
 CREATE TABLE eve_solar_systems (
     id INTEGER PRIMARY KEY NOT NULL,
@@ -61,6 +66,7 @@ CREATE TABLE eve_solar_systems (
     security_status REAL NOT NULL,
     FOREIGN KEY (eve_constellation_id) REFERENCES eve_constellations(id) ON DELETE CASCADE
 );
+CREATE INDEX eve_solar_systems_name_idx ON eve_solar_systems (name ASC);
 
 CREATE TABLE eve_characters (
     alliance_id INTEGER,

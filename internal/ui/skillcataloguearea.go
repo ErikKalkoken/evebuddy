@@ -1,0 +1,193 @@
+package ui
+
+import (
+	"fmt"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/dustin/go-humanize"
+)
+
+type skillGroupProgress struct {
+	trained float64
+	id      int32
+	name    string
+	total   float64
+}
+
+func (g skillGroupProgress) completionP() float64 {
+	return g.trained / g.total
+}
+
+type skillTrained struct {
+	activeLevel  int
+	trainedLevel int
+	name         string
+}
+
+// skillCatalogueArea is the UI area that shows the skill catalogue
+type skillCatalogueArea struct {
+	content        *fyne.Container
+	grid           *widget.GridWrap
+	groups         binding.UntypedList
+	list           *widget.List
+	skills         binding.UntypedList
+	total          *widget.Label
+	levelBlocked   *theme.ErrorThemedResource
+	levelTrained   *theme.PrimaryThemedResource
+	levelUnTrained *theme.DisabledResource
+	ui             *ui
+}
+
+func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
+	a := &skillCatalogueArea{
+		groups:         binding.NewUntypedList(),
+		skills:         binding.NewUntypedList(),
+		total:          widget.NewLabel(""),
+		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
+		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
+		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
+		ui:             u,
+	}
+	a.total.TextStyle.Bold = true
+
+	// skill groups
+	a.grid = widget.NewGridWrap(
+		func() int {
+			return a.groups.Length()
+		},
+		func() fyne.CanvasObject {
+			pb := widget.NewProgressBar()
+			pb.TextFormatter = func() string {
+				return ""
+			}
+			row := container.NewPadded(container.NewStack(
+				pb,
+				container.NewHBox(
+					widget.NewLabel("Corporation Management"), layout.NewSpacer(), widget.NewLabel("99"),
+				)))
+			return row
+		},
+		func(id widget.ListItemID, item fyne.CanvasObject) {
+			group, err := getFromBoundUntypedList[skillGroupProgress](a.groups, id)
+			if err != nil {
+				panic(err)
+			}
+			row := item.(*fyne.Container)
+			pb := row.Objects[0].(*fyne.Container).Objects[0].(*widget.ProgressBar)
+			pb.SetValue(group.completionP())
+			c := row.Objects[0].(*fyne.Container).Objects[1].(*fyne.Container)
+			name := c.Objects[0].(*widget.Label)
+			name.SetText(group.name)
+			total := c.Objects[2].(*widget.Label)
+			total.SetText(humanize.Comma(int64(group.total)))
+		},
+	)
+	a.grid.OnSelected = func(id widget.ListItemID) {
+		group, err := getFromBoundUntypedList[skillGroupProgress](a.groups, id)
+		if err != nil {
+			panic(err)
+		}
+		c := a.ui.CurrentChar()
+		if c == nil {
+			return
+		}
+		oo, err := a.ui.service.ListCharacterSkillProgress(c.ID, group.id)
+		if err != nil {
+			panic(err)
+		}
+		skills := make([]skillTrained, len(oo))
+		for i, o := range oo {
+			skills[i] = skillTrained{
+				name:         o.Name,
+				activeLevel:  o.ActiveSkillLevel,
+				trainedLevel: o.TrainedSkillLevel,
+			}
+		}
+		a.skills.Set(copyToUntypedSlice(skills))
+		a.list.Refresh()
+	}
+
+	// details
+	a.list = widget.NewListWithData(
+		a.skills,
+		func() fyne.CanvasObject {
+			x := container.NewHBox(
+				widget.NewIcon(theme.MediaStopIcon()),
+				widget.NewIcon(theme.MediaStopIcon()),
+				widget.NewIcon(theme.MediaStopIcon()),
+				widget.NewIcon(theme.MediaStopIcon()),
+				widget.NewIcon(theme.MediaStopIcon()),
+				widget.NewLabel("skill name"))
+			return x
+		},
+		func(di binding.DataItem, co fyne.CanvasObject) {
+			skill, err := convertDataItem[skillTrained](di)
+			if err != nil {
+				panic(err)
+			}
+			x := co.(*fyne.Container)
+			x.Objects[5].(*widget.Label).SetText(skill.name)
+			for i := range 5 {
+				y := x.Objects[i].(*widget.Icon)
+				if skill.activeLevel > i {
+					y.SetResource(a.levelTrained)
+				} else if skill.trainedLevel > i {
+					y.SetResource(a.levelBlocked)
+				} else {
+					y.SetResource(a.levelUnTrained)
+				}
+			}
+		},
+	)
+
+	s := container.NewVSplit(a.grid, a.list)
+	a.content = container.NewBorder(a.total, nil, nil, nil, s)
+	return a
+}
+
+func (a *skillCatalogueArea) Redraw() {
+	a.grid.UnselectAll()
+	x := make([]skillTrained, 0)
+	a.skills.Set(copyToUntypedSlice(x))
+	a.Refresh()
+}
+
+func (a *skillCatalogueArea) Refresh() {
+	c, err := a.updateGroups()
+	if err != nil {
+		panic(err)
+	}
+	s := "?"
+	if c != nil {
+		s = humanizedNullInt64(c.SkillPoints, "?")
+	}
+	a.total.SetText(fmt.Sprintf("%s Total Skill Points", s))
+}
+
+func (a *skillCatalogueArea) updateGroups() (*model.MyCharacter, error) {
+	c := a.ui.CurrentChar()
+	if c == nil {
+		return nil, nil
+	}
+	gg, err := a.ui.service.ListCharacterSkillGroupsProgress(c.ID)
+	if err != nil {
+		return nil, err
+	}
+	groups := make([]skillGroupProgress, len(gg))
+	for i, g := range gg {
+		groups[i] = skillGroupProgress{
+			trained: g.Trained,
+			id:      g.ID,
+			name:    g.Name,
+			total:   g.Total,
+		}
+	}
+	a.groups.Set(copyToUntypedSlice(groups))
+	return c, nil
+}

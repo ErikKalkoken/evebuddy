@@ -11,6 +11,13 @@ type CharacterSkill struct {
 type ListCharacterSkillGroupProgress struct {
 	ID      int32
 	Name    string
-	Total   int
-	Trained int
+	Total   float64
+	Trained float64
+}
+
+type ListCharacterSkillProgress struct {
+	ID                int32
+	Name              string
+	ActiveSkillLevel  int
+	TrainedSkillLevel int
 }

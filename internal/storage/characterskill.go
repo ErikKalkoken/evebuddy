@@ -39,19 +39,47 @@ func (r *Storage) GetCharacterSkill(ctx context.Context, characterID int32, eveT
 	return t2, nil
 }
 
+func (r *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]model.ListCharacterSkillProgress, error) {
+	arg := queries.ListCharacterSkillProgressParams{
+		MyCharacterID: int64(characterID),
+		EveGroupID:    int64(eveGroupID),
+	}
+	xx, err := r.q.ListCharacterSkillProgress(ctx, arg)
+	if err != nil {
+		return nil, err
+	}
+	oo := make([]model.ListCharacterSkillProgress, len(xx))
+	for i, x := range xx {
+		oo[i] = model.ListCharacterSkillProgress{
+			ID:                int32(x.ID),
+			Name:              x.Name,
+			ActiveSkillLevel:  int(x.ActiveSkillLevel.Int64),
+			TrainedSkillLevel: int(x.TrainedSkillLevel.Int64),
+		}
+	}
+	return oo, nil
+}
+
 func (r *Storage) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]model.ListCharacterSkillGroupProgress, error) {
-	xx, err := r.q.ListCharacterSkillGroupsProgress(ctx, int64(characterID))
+	arg := queries.ListCharacterSkillGroupsProgressParams{
+		MyCharacterID: int64(characterID),
+		EveCategoryID: model.EveCategoryIDSkill,
+	}
+	xx, err := r.q.ListCharacterSkillGroupsProgress(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
 	oo := make([]model.ListCharacterSkillGroupProgress, len(xx))
 	for i, x := range xx {
-		oo[i] = model.ListCharacterSkillGroupProgress{
-			ID:      int32(x.EveGroupID),
-			Name:    x.EveGroupName,
-			Total:   int(x.Total),
-			Trained: int(x.Trained),
+		o := model.ListCharacterSkillGroupProgress{
+			ID:    int32(x.EveGroupID),
+			Name:  x.EveGroupName,
+			Total: float64(x.Total),
 		}
+		if x.Trained.Valid {
+			o.Trained = x.Trained.Float64
+		}
+		oo[i] = o
 	}
 	return oo, nil
 }

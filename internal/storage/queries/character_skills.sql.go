@@ -7,6 +7,7 @@ package queries
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 )
 
@@ -93,25 +94,30 @@ SELECT
     eve_groups.id as eve_group_id,
     eve_groups.name as eve_group_name,
     COUNT(eve_types.id) as total,
-    COUNT(character_skills.eve_type_id) AS trained
+    SUM(character_skills.trained_skill_level / 5.0) AS trained
 FROM eve_types
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id AND eve_groups.is_published IS TRUE
 LEFT JOIN character_skills ON character_skills.eve_type_id = eve_types.id AND character_skills.my_character_id = ?
-WHERE eve_groups.eve_category_id = 16
+WHERE eve_groups.eve_category_id = ?
 AND eve_types.is_published IS TRUE
 GROUP BY eve_groups.name
 ORDER BY eve_groups.name
 `
 
+type ListCharacterSkillGroupsProgressParams struct {
+	MyCharacterID int64
+	EveCategoryID int64
+}
+
 type ListCharacterSkillGroupsProgressRow struct {
 	EveGroupID   int64
 	EveGroupName string
 	Total        int64
-	Trained      int64
+	Trained      sql.NullFloat64
 }
 
-func (q *Queries) ListCharacterSkillGroupsProgress(ctx context.Context, myCharacterID int64) ([]ListCharacterSkillGroupsProgressRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterSkillGroupsProgress, myCharacterID)
+func (q *Queries) ListCharacterSkillGroupsProgress(ctx context.Context, arg ListCharacterSkillGroupsProgressParams) ([]ListCharacterSkillGroupsProgressRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterSkillGroupsProgress, arg.MyCharacterID, arg.EveCategoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +130,59 @@ func (q *Queries) ListCharacterSkillGroupsProgress(ctx context.Context, myCharac
 			&i.EveGroupName,
 			&i.Total,
 			&i.Trained,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterSkillProgress = `-- name: ListCharacterSkillProgress :many
+SELECT
+    eve_types.id,
+    eve_types.name,
+    character_skills.active_skill_level,
+    character_skills.trained_skill_level
+FROM eve_types
+LEFT JOIN character_skills ON character_skills.eve_type_id = eve_types.id AND character_skills.my_character_id = ?
+WHERE eve_types.eve_group_id = ?
+AND eve_types.is_published IS TRUE
+ORDER BY eve_types.name
+`
+
+type ListCharacterSkillProgressParams struct {
+	MyCharacterID int64
+	EveGroupID    int64
+}
+
+type ListCharacterSkillProgressRow struct {
+	ID                int64
+	Name              string
+	ActiveSkillLevel  sql.NullInt64
+	TrainedSkillLevel sql.NullInt64
+}
+
+func (q *Queries) ListCharacterSkillProgress(ctx context.Context, arg ListCharacterSkillProgressParams) ([]ListCharacterSkillProgressRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterSkillProgress, arg.MyCharacterID, arg.EveGroupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterSkillProgressRow
+	for rows.Next() {
+		var i ListCharacterSkillProgressRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.ActiveSkillLevel,
+			&i.TrainedSkillLevel,
 		); err != nil {
 			return nil, err
 		}
