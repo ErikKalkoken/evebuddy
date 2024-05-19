@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +24,7 @@ func TestMyCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveCategory(model.EveCategory{ID: 6})
+		factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: 6})
 		// when
 		x1, err := s.GetOrCreateEveCategoryESI(6)
 		// then

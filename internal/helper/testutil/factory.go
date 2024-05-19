@@ -346,67 +346,77 @@ func (f Factory) CreateMailList(characterID int32, args ...model.EveEntity) *mod
 	return &e
 }
 
-func (f Factory) CreateEveCategory(args ...model.EveCategory) *model.EveCategory {
-	var x model.EveCategory
+func (f Factory) CreateEveCategory(args ...storage.CreateEveCategoryParams) *model.EveCategory {
+	var arg storage.CreateEveCategoryParams
 	ctx := context.Background()
 	if len(args) > 0 {
-		x = args[0]
+		arg = args[0]
 	}
-	if x.ID == 0 {
-		x.ID = int32(f.calcNewID("eve_categories", "id", 1))
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_categories", "id", 1))
 	}
-	if x.Name == "" {
-		x.Name = fmt.Sprintf("Category #%d", x.ID)
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Category #%d", arg.ID)
 	}
-	r, err := f.r.CreateEveCategory(ctx, x.ID, x.Name, x.IsPublished)
+	r, err := f.r.CreateEveCategory(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
 	return r
 }
 
-func (f Factory) CreateEveGroup(args ...model.EveGroup) *model.EveGroup {
-	var x model.EveGroup
+func (f Factory) CreateEveGroup(args ...storage.CreateEveGroupParams) *model.EveGroup {
+	var arg storage.CreateEveGroupParams
 	ctx := context.Background()
 	if len(args) > 0 {
-		x = args[0]
+		arg = args[0]
 	}
-	if x.ID == 0 {
-		x.ID = int32(f.calcNewID("eve_groups", "id", 1))
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_groups", "id", 1))
 	}
-	if x.Name == "" {
-		x.Name = fmt.Sprintf("Group #%d", x.ID)
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Group #%d", arg.ID)
 	}
-	if x.Category == nil {
-		x.Category = f.CreateEveCategory()
+	if arg.CategoryID == 0 {
+		x := f.CreateEveCategory()
+		arg.CategoryID = x.ID
 	}
-	err := f.r.CreateEveGroup(ctx, x.ID, x.Category.ID, x.Name, x.IsPublished)
+	err := f.r.CreateEveGroup(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	return &x
+	o, err := f.r.GetEveGroup(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return o
 }
 
-func (f Factory) CreateEveType(args ...model.EveType) *model.EveType {
-	var x model.EveType
+func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *model.EveType {
+	var arg storage.CreateEveTypeParams
 	ctx := context.Background()
 	if len(args) > 0 {
-		x = args[0]
+		arg = args[0]
 	}
-	if x.ID == 0 {
-		x.ID = int32(f.calcNewID("eve_types", "id", 1))
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_types", "id", 1))
 	}
-	if x.Name == "" {
-		x.Name = fmt.Sprintf("Type #%d", x.ID)
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Type #%d", arg.ID)
 	}
-	if x.Group == nil {
-		x.Group = f.CreateEveGroup()
+	if arg.GroupID == 0 {
+		x := f.CreateEveGroup()
+		arg.GroupID = x.ID
 	}
-	err := f.r.CreateEveType(ctx, x.ID, x.Description, x.Group.ID, x.Name, x.IsPublished)
+	err := f.r.CreateEveType(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	return &x
+	o, err := f.r.GetEveType(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return o
 }
 
 func (f Factory) CreateEveRegion(args ...model.EveRegion) *model.EveRegion {

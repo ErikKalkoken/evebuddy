@@ -11,6 +11,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 func TestUpdateSkillqueueESI(t *testing.T) {
@@ -26,8 +27,8 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
 		factory.CreateToken(model.Token{CharacterID: c.ID})
-		factory.CreateEveType(model.EveType{ID: 100})
-		factory.CreateEveType(model.EveType{ID: 101})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 101})
 		data := `[
 			{
 			  "finish_date": "2016-06-29T10:47:00Z",

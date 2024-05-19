@@ -10,17 +10,24 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (r *Storage) CreateEveGroup(ctx context.Context, id, eve_category_id int32, name string, is_published bool) error {
-	if id == 0 {
-		return fmt.Errorf("invalid ID %d", id)
+type CreateEveGroupParams struct {
+	ID          int32
+	CategoryID  int32
+	IsPublished bool
+	Name        string
+}
+
+func (r *Storage) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams) error {
+	if arg.ID == 0 {
+		return fmt.Errorf("invalid ID %d", arg.ID)
 	}
-	arg := queries.CreateEveGroupParams{
-		ID:            int64(id),
-		EveCategoryID: int64(eve_category_id),
-		IsPublished:   is_published,
-		Name:          name,
+	arg2 := queries.CreateEveGroupParams{
+		ID:            int64(arg.ID),
+		EveCategoryID: int64(arg.CategoryID),
+		IsPublished:   arg.IsPublished,
+		Name:          arg.Name,
 	}
-	err := r.q.CreateEveGroup(ctx, arg)
+	err := r.q.CreateEveGroup(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("failed to create EveGroup %v, %w", arg, err)
 	}

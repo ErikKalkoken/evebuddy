@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -94,9 +95,14 @@ func TestCharacterSkillList(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		// category := factory.CreateEveCategory(model.EveCategory{ID: 16})
-		// group := factory.CreateEveGroup(model.EveGroup{EveCategory: category})
-		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{MyCharacterID: c.ID})
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: model.EveCategoryIDSkill})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
+		myType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			MyCharacterID:     c.ID,
+			EveTypeID:         myType.ID,
+			TrainedSkillLevel: 5,
+		})
 		// when
 		xx, err := r.ListCharacterSkillGroupsProgress(ctx, c.ID)
 		if assert.NoError(t, err) {

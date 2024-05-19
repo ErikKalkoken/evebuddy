@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 func TestEveGroup(t *testing.T) {
@@ -17,8 +18,14 @@ func TestEveGroup(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateEveCategory()
+		arg := storage.CreateEveGroupParams{
+			ID:          42,
+			Name:        "name",
+			CategoryID:  c.ID,
+			IsPublished: true,
+		}
 		// when
-		err := r.CreateEveGroup(ctx, 42, c.ID, "name", true)
+		err := r.CreateEveGroup(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			g, err := r.GetEveGroup(ctx, 42)

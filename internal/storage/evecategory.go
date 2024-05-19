@@ -10,16 +10,22 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (r *Storage) CreateEveCategory(ctx context.Context, id int32, name string, is_published bool) (*model.EveCategory, error) {
-	if id == 0 {
-		return nil, fmt.Errorf("invalid EveCategory ID %d", id)
+type CreateEveCategoryParams struct {
+	ID          int32
+	IsPublished bool
+	Name        string
+}
+
+func (r *Storage) CreateEveCategory(ctx context.Context, arg CreateEveCategoryParams) (*model.EveCategory, error) {
+	if arg.ID == 0 {
+		return nil, fmt.Errorf("invalid EveCategory ID %d", arg.ID)
 	}
-	arg := queries.CreateEveCategoryParams{
-		ID:          int64(id),
-		IsPublished: is_published,
-		Name:        name,
+	arg2 := queries.CreateEveCategoryParams{
+		ID:          int64(arg.ID),
+		IsPublished: arg.IsPublished,
+		Name:        arg.Name,
 	}
-	e, err := r.q.CreateEveCategory(ctx, arg)
+	e, err := r.q.CreateEveCategory(ctx, arg2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create EveCategory %v, %w", arg, err)
 	}

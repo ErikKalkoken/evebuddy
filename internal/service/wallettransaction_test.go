@@ -30,7 +30,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		factory.CreateToken(model.Token{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(model.EveEntity{ID: 54321})
 		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
-		eveType := factory.CreateEveType(model.EveType{ID: 587})
+		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 		data := `[
 			{
 			  "client_id": 54321,
@@ -83,7 +83,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		factory.CreateToken(model.Token{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(model.EveEntity{ID: 54321})
 		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
-		eveType := factory.CreateEveType(model.EveType{ID: 587})
+		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 		data := `[
 			{
 			  "client_id": 54321,

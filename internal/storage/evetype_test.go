@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 func TestEveType(t *testing.T) {
@@ -17,8 +18,15 @@ func TestEveType(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		g := factory.CreateEveGroup()
+		arg := storage.CreateEveTypeParams{
+			ID:          42,
+			Description: "description",
+			GroupID:     g.ID,
+			Name:        "name",
+			IsPublished: true,
+		}
 		// when
-		err := r.CreateEveType(ctx, 42, "description", g.ID, "name", true)
+		err := r.CreateEveType(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			x, err := r.GetEveType(ctx, 42)

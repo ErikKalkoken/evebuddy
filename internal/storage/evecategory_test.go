@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 func TestEveCategory(t *testing.T) {
@@ -16,8 +17,13 @@ func TestEveCategory(t *testing.T) {
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		arg := storage.CreateEveCategoryParams{
+			ID:          42,
+			Name:        "name",
+			IsPublished: true,
+		}
 		// when
-		c1, err := r.CreateEveCategory(ctx, 42, "name", true)
+		c1, err := r.CreateEveCategory(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetEveCategory(ctx, 42)

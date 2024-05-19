@@ -63,7 +63,12 @@ func (s *Service) createEveCategoryFromESI(ctx context.Context, id int32) (*mode
 		if err != nil {
 			return nil, err
 		}
-		return s.r.CreateEveCategory(ctx, id, r.Name, r.Published)
+		arg := storage.CreateEveCategoryParams{
+			ID:          id,
+			Name:        r.Name,
+			IsPublished: r.Published,
+		}
+		return s.r.CreateEveCategory(ctx, arg)
 	})
 	if err != nil {
 		return nil, err
@@ -98,7 +103,13 @@ func (s *Service) createEveGroupFromESI(ctx context.Context, id int32) (*model.E
 		if err != nil {
 			return nil, err
 		}
-		if err := s.r.CreateEveGroup(ctx, id, c.ID, r.Name, r.Published); err != nil {
+		arg := storage.CreateEveGroupParams{
+			ID:          id,
+			Name:        r.Name,
+			CategoryID:  c.ID,
+			IsPublished: r.Published,
+		}
+		if err := s.r.CreateEveGroup(ctx, arg); err != nil {
 			return nil, err
 		}
 		return s.r.GetEveGroup(ctx, id)
@@ -136,7 +147,14 @@ func (s *Service) createEveTypeFromESI(ctx context.Context, id int32) (*model.Ev
 		if err != nil {
 			return nil, err
 		}
-		if err := s.r.CreateEveType(ctx, id, r.Description, g.ID, r.Name, r.Published); err != nil {
+		arg := storage.CreateEveTypeParams{
+			ID:          id,
+			Description: r.Description,
+			GroupID:     g.ID,
+			Name:        r.Name,
+			IsPublished: r.Published,
+		}
+		if err := s.r.CreateEveType(ctx, arg); err != nil {
 			return nil, err
 		}
 		return s.r.GetEveType(ctx, id)

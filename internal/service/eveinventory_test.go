@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 func TestGetOrCreateEveCategoryESI(t *testing.T) {
@@ -24,7 +24,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveCategory(model.EveCategory{ID: 6})
+		factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: 6})
 		// when
 		x1, err := s.GetOrCreateEveCategoryESI(6)
 		// then
@@ -77,7 +77,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveGroup(model.EveGroup{ID: 25})
+		factory.CreateEveGroup(storage.CreateEveGroupParams{ID: 25})
 		// when
 		x1, err := s.GetOrCreateEveGroupESI(25)
 		// then
@@ -89,7 +89,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveCategory(model.EveCategory{ID: 6})
+		factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: 6})
 		data := `{
 			"category_id": 6,
 			"group_id": 25,
@@ -133,7 +133,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveType(model.EveType{ID: 587})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 		// when
 		x1, err := s.GetOrCreateEveTypeESI(587)
 		// then
@@ -145,7 +145,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveGroup(model.EveGroup{ID: 25})
+		factory.CreateEveGroup(storage.CreateEveGroupParams{ID: 25})
 		data := `{
 			"description": "The Rifter is a...",
 			"group_id": 25,

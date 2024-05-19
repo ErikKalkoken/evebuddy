@@ -10,18 +10,26 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (r *Storage) CreateEveType(ctx context.Context, id int32, description string, eve_group_id int32, name string, is_published bool) error {
-	if id == 0 {
-		return fmt.Errorf("invalid ID %d", id)
+type CreateEveTypeParams struct {
+	ID          int32
+	Description string
+	GroupID     int32
+	IsPublished bool
+	Name        string
+}
+
+func (r *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) error {
+	if arg.ID == 0 {
+		return fmt.Errorf("invalid ID %d", arg.ID)
 	}
-	arg := queries.CreateEveTypeParams{
-		ID:          int64(id),
-		Description: description,
-		EveGroupID:  int64(eve_group_id),
-		IsPublished: is_published,
-		Name:        name,
+	arg2 := queries.CreateEveTypeParams{
+		ID:          int64(arg.ID),
+		Description: arg.Description,
+		EveGroupID:  int64(arg.GroupID),
+		IsPublished: arg.IsPublished,
+		Name:        arg.Name,
 	}
-	err := r.q.CreateEveType(ctx, arg)
+	err := r.q.CreateEveType(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("failed to create EveType %v, %w", arg, err)
 	}
