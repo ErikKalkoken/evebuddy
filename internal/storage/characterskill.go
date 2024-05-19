@@ -6,9 +6,22 @@ import (
 	"errors"
 	"fmt"
 
+	islices "github.com/ErikKalkoken/evebuddy/internal/helper/slices"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
+
+func (r *Storage) DeleteExcludedCharacterSkills(ctx context.Context, characterID int32, eveTypeIDs []int32) error {
+	arg := queries.DeleteExcludedCharacterSkillsParams{
+		MyCharacterID: int64(characterID),
+		EveTypeIds:    islices.ConvertNumeric[int32, int64](eveTypeIDs),
+	}
+	err := r.q.DeleteExcludedCharacterSkills(ctx, arg)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 func (r *Storage) GetCharacterSkill(ctx context.Context, characterID int32, eveTypeID int32) (*model.CharacterSkill, error) {
 	arg := queries.GetCharacterSkillParams{

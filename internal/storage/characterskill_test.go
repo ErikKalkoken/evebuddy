@@ -68,4 +68,20 @@ func TestCharacterSkill(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can delete excluded skills", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateMyCharacter()
+		o1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{MyCharacterID: c.ID})
+		o2 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{MyCharacterID: c.ID})
+		// when
+		err := r.DeleteExcludedCharacterSkills(ctx, c.ID, []int32{o2.EveType.ID})
+		// then
+		if assert.NoError(t, err) {
+			_, err := r.GetCharacterSkill(ctx, c.ID, o1.EveType.ID)
+			assert.Error(t, err, storage.ErrNotFound)
+			_, err = r.GetCharacterSkill(ctx, c.ID, o2.EveType.ID)
+			assert.NoError(t, err)
+		}
+	})
 }

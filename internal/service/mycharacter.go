@@ -212,30 +212,6 @@ func (s *Service) updateShipESI(ctx context.Context, characterID int32) (bool, e
 	return true, nil
 }
 
-func (s *Service) updateSkillsESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidToken(ctx, characterID)
-	if err != nil {
-		return false, err
-	}
-	ctx = contextWithToken(ctx, token.AccessToken)
-	skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, characterID, nil)
-	if err != nil {
-		return false, err
-	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionSkills, skills)
-	if err != nil {
-		return false, err
-	}
-	if !changed {
-		return false, nil
-	}
-	x := sql.NullInt64{Int64: skills.TotalSp, Valid: true}
-	if err := s.r.UpdateMyCharacterSkillPoints(ctx, characterID, x); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
 func (s *Service) updateWalletBalanceESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {

@@ -7,7 +7,35 @@ package queries
 
 import (
 	"context"
+	"strings"
 )
+
+const deleteExcludedCharacterSkills = `-- name: DeleteExcludedCharacterSkills :exec
+DELETE FROM character_skills
+WHERE my_character_id = ?
+AND eve_type_id NOT IN (/*SLICE:eve_type_ids*/?)
+`
+
+type DeleteExcludedCharacterSkillsParams struct {
+	MyCharacterID int64
+	EveTypeIds    []int64
+}
+
+func (q *Queries) DeleteExcludedCharacterSkills(ctx context.Context, arg DeleteExcludedCharacterSkillsParams) error {
+	query := deleteExcludedCharacterSkills
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.MyCharacterID)
+	if len(arg.EveTypeIds) > 0 {
+		for _, v := range arg.EveTypeIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:eve_type_ids*/?", strings.Repeat(",?", len(arg.EveTypeIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:eve_type_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
 
 const getCharacterSkill = `-- name: GetCharacterSkill :one
 SELECT
