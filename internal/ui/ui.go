@@ -42,6 +42,7 @@ type ui struct {
 	overviewArea          *overviewArea
 	statusArea            *statusArea
 	service               *service.Service
+	skillCatalogueArea    *skillCatalogueArea
 	skillqueueArea        *skillqueueArea
 	skillqueueTab         *container.TabItem
 	toolbarArea           *toolbarArea
@@ -78,10 +79,11 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 		))
 
 	u.skillqueueArea = u.NewSkillqueueArea()
+	u.skillCatalogueArea = u.NewSkillCatalogueArea()
 	u.skillqueueTab = container.NewTabItemWithIcon("Skills",
 		theme.NewThemedResource(resourceSchoolSvg), container.NewAppTabs(
-			container.NewTabItem("Skill Queue", u.skillqueueArea.content),
-			// container.NewTabItem("Skills", widget.NewLabel("PLACEHOLDER")),
+			container.NewTabItem("Training Queue", u.skillqueueArea.content),
+			container.NewTabItem("Skill Catalogue", u.skillCatalogueArea.content),
 		))
 
 	u.walletJournalArea = u.NewWalletJournalArea()
@@ -222,6 +224,7 @@ func (u *ui) refreshCurrentCharacter() {
 	u.toolbarArea.Refresh()
 	u.folderArea.Refresh()
 	u.skillqueueArea.Refresh()
+	u.skillCatalogueArea.Refresh()
 	u.walletJournalArea.Refresh()
 	u.walletTransactionArea.Refresh()
 	c := u.CurrentChar()
