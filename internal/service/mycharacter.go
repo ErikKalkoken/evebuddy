@@ -44,7 +44,7 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 		}
 		return 0, err
 	}
-	slog.Info("Created new SSO token", "token", ssoToken)
+	slog.Info("Created new SSO token", "characterID", ssoToken.CharacterID, "scopes", ssoToken.Scopes)
 	infoText.Set("Fetching character from server. Please wait...")
 	charID := ssoToken.CharacterID
 	token := model.Token{

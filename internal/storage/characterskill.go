@@ -39,6 +39,23 @@ func (r *Storage) GetCharacterSkill(ctx context.Context, characterID int32, eveT
 	return t2, nil
 }
 
+func (r *Storage) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]model.ListCharacterSkillGroupProgress, error) {
+	xx, err := r.q.ListCharacterSkillGroupsProgress(ctx, int64(characterID))
+	if err != nil {
+		return nil, err
+	}
+	oo := make([]model.ListCharacterSkillGroupProgress, len(xx))
+	for i, x := range xx {
+		oo[i] = model.ListCharacterSkillGroupProgress{
+			ID:      int32(x.EveGroupID),
+			Name:    x.EveGroupName,
+			Total:   int(x.Total),
+			Trained: int(x.Trained),
+		}
+	}
+	return oo, nil
+}
+
 type UpdateOrCreateCharacterSkillParams struct {
 	ActiveSkillLevel   int
 	EveTypeID          int32

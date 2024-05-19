@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -12,6 +13,36 @@ import (
 func (s *Service) GetOrCreateEveCategoryESI(id int32) (*model.EveCategory, error) {
 	ctx := context.Background()
 	return s.getOrCreateEveCategoryESI(ctx, id)
+}
+
+func (s *Service) UpdateEveCategoryWithChildrenESI(categoryID int32) error {
+	ctx := context.Background()
+	key := fmt.Sprintf("UpdateEveCategoryWithChildrenESI-%d", categoryID)
+	_, err, _ := s.singleGroup.Do(key, func() (any, error) {
+		typeIDs := make([]int32, 0)
+		r1, _, err := s.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, categoryID, nil)
+		if err != nil {
+			return nil, err
+		}
+		for _, id := range r1.Groups {
+			r2, _, err := s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
+			if err != nil {
+				return nil, err
+			}
+			typeIDs = slices.Concat(typeIDs, r2.Types)
+		}
+		for _, id := range typeIDs {
+			_, err := s.getOrCreateEveTypeESI(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Service) getOrCreateEveCategoryESI(ctx context.Context, id int32) (*model.EveCategory, error) {

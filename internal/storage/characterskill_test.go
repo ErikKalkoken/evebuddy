@@ -85,3 +85,22 @@ func TestCharacterSkill(t *testing.T) {
 		}
 	})
 }
+
+func TestCharacterSkillList(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return list of skill groups with progress", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateMyCharacter()
+		// category := factory.CreateEveCategory(model.EveCategory{ID: 16})
+		// group := factory.CreateEveGroup(model.EveGroup{EveCategory: category})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{MyCharacterID: c.ID})
+		// when
+		xx, err := r.ListCharacterSkillGroupsProgress(ctx, c.ID)
+		if assert.NoError(t, err) {
+			assert.Len(t, xx, 1)
+		}
+	})
+}

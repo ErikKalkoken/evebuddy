@@ -24,6 +24,7 @@ func TruncateTables(db *sql.DB) {
 		DELETE FROM mail_mail_labels;
 		DELETE FROM mail_labels;
 		DELETE FROM mails;
+		DELETE FROM character_skills;
 		DELETE FROM skillqueue_items;
 		DELETE FROM wallet_transactions;
 		DELETE FROM wallet_journal_entries;

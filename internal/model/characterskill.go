@@ -7,3 +7,10 @@ type CharacterSkill struct {
 	MyCharacterID      int32
 	TrainedSkillLevel  int
 }
+
+type ListCharacterSkillGroupProgress struct {
+	ID      int32
+	Name    string
+	Total   int
+	Trained int
+}

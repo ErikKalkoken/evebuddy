@@ -139,8 +139,8 @@ func (s *Service) SectionIsUpdateExpired(characterID int32, section model.Update
 	if err != nil {
 		return false, err
 	}
-	duration := timeoutForUpdateSection(section)
-	deadline := t.Add(duration)
+	timeout := timeoutForUpdateSection(section)
+	deadline := t.Add(timeout)
 	return time.Now().After(deadline), nil
 }
 

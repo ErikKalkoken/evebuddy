@@ -54,3 +54,8 @@ func (s *Service) updateSkillsESI(ctx context.Context, characterID int32) (bool,
 	}
 	return true, nil
 }
+
+func (s *Service) ListCharacterSkillGroupsProgress(characterID int32) ([]model.ListCharacterSkillGroupProgress, error) {
+	ctx := context.Background()
+	return s.r.ListCharacterSkillGroupsProgress(ctx, characterID)
+}

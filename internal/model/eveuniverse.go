@@ -1,6 +1,7 @@
 package model
 
 const (
+	EveCategoryIDSkill       = 16
 	EveTypeIDSolarSystem     = 5
 	EveTypeIDAssetSafetyWrap = 60
 )

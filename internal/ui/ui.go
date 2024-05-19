@@ -20,11 +20,12 @@ import (
 
 // UI constants
 const (
-	myDateTime                = "2006.01.02 15:04"
-	defaultIconSize           = 32
-	myFloatFormat             = "#,###.##"
-	eveCharacterUpdateTicker  = 60 * time.Second
-	eveCharacterUpdateTimeout = 3600 * time.Second
+	myDateTime                    = "2006.01.02 15:04"
+	defaultIconSize               = 32
+	myFloatFormat                 = "#,###.##"
+	eveDataUpdateTicker           = 60 * time.Second
+	eveCharacterUpdateTimeout     = 3600 * time.Second
+	eveCategorySkillUpdateTimeout = 24 * time.Hour
 )
 
 // The ui is the root object of the UI and contains all UI areas.
@@ -186,6 +187,7 @@ func (u *ui) ShowAndRun() {
 		u.walletJournalArea.StartUpdateTicker()
 		u.walletTransactionArea.StartUpdateTicker()
 		u.StartUpdateTickerEveCharacters()
+		u.StartUpdateTickerEveCategorySkill()
 	}()
 	u.RefreshOverview()
 	u.window.ShowAndRun()
@@ -274,20 +276,63 @@ func (u *ui) ResetCurrentCharacter() {
 }
 
 func (u *ui) StartUpdateTickerEveCharacters() {
-	ticker := time.NewTicker(eveCharacterUpdateTicker)
+	ticker := time.NewTicker(eveDataUpdateTicker)
 	key := "eve-characters-last-updated"
 	go func() {
 		for {
-			func() {
+			err := func() error {
 				lastUpdated, ok, err := u.service.DictionaryTime(key)
-				if err != nil || !ok {
-					return
+				if err != nil {
+					return err
 				}
-				if time.Now().Before(lastUpdated.Add(eveCharacterUpdateTimeout)) {
-					return
+				if ok && time.Now().Before(lastUpdated.Add(eveCharacterUpdateTimeout)) {
+					return nil
 				}
-				u.service.UpdateAllEveCharactersESI()
+				slog.Info("Started updating eve characters")
+				if err := u.service.UpdateAllEveCharactersESI(); err != nil {
+					return err
+				}
+				slog.Info("Finished updating eve characters")
+				if err := u.service.DictionarySetTime(key, time.Now()); err != nil {
+					return err
+				}
+				return nil
 			}()
+			if err != nil {
+				slog.Error("Failed to update eve characters: %s", err)
+			}
+			<-ticker.C
+		}
+	}()
+}
+
+func (u *ui) StartUpdateTickerEveCategorySkill() {
+	ticker := time.NewTicker(eveDataUpdateTicker)
+	key := "eve-category-skill-last-updated"
+	go func() {
+		for {
+			err := func() error {
+				lastUpdated, ok, err := u.service.DictionaryTime(key)
+				if err != nil {
+					return err
+				}
+				if ok && time.Now().Before(lastUpdated.Add(eveCategorySkillUpdateTimeout)) {
+					return nil
+				}
+				slog.Info("Started updating skill category")
+				if err := u.service.UpdateEveCategoryWithChildrenESI(model.EveCategoryIDSkill); err != nil {
+					return err
+				}
+				slog.Info("Finished updating skill category")
+				if err := u.service.DictionarySetTime(key, time.Now()); err != nil {
+					return err
+				}
+				return nil
+			}()
+			if err != nil {
+				slog.Error("Failed to update skill category: %s", err)
+			}
+			u.skillCatalogueArea.Refresh()
 			<-ticker.C
 		}
 	}()

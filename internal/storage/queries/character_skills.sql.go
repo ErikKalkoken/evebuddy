@@ -88,27 +88,42 @@ func (q *Queries) GetCharacterSkill(ctx context.Context, arg GetCharacterSkillPa
 	return i, err
 }
 
-const listCharacterSkills = `-- name: ListCharacterSkills :many
-SELECT active_skill_level, eve_type_id, skill_points_in_skill, my_character_id, trained_skill_level
-FROM character_skills
-WHERE my_character_id = ?
+const listCharacterSkillGroupsProgress = `-- name: ListCharacterSkillGroupsProgress :many
+SELECT
+    eve_groups.id as eve_group_id,
+    eve_groups.name as eve_group_name,
+    COUNT(eve_types.id) as total,
+    COUNT(character_skills.eve_type_id) AS trained
+FROM eve_types
+JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id AND eve_groups.is_published IS TRUE
+LEFT JOIN character_skills ON character_skills.eve_type_id = eve_types.id AND character_skills.my_character_id = ?
+WHERE eve_groups.eve_category_id = 16
+AND eve_types.is_published IS TRUE
+GROUP BY eve_groups.name
+ORDER BY eve_groups.name
 `
 
-func (q *Queries) ListCharacterSkills(ctx context.Context, myCharacterID int64) ([]CharacterSkill, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterSkills, myCharacterID)
+type ListCharacterSkillGroupsProgressRow struct {
+	EveGroupID   int64
+	EveGroupName string
+	Total        int64
+	Trained      int64
+}
+
+func (q *Queries) ListCharacterSkillGroupsProgress(ctx context.Context, myCharacterID int64) ([]ListCharacterSkillGroupsProgressRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterSkillGroupsProgress, myCharacterID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []CharacterSkill
+	var items []ListCharacterSkillGroupsProgressRow
 	for rows.Next() {
-		var i CharacterSkill
+		var i ListCharacterSkillGroupsProgressRow
 		if err := rows.Scan(
-			&i.ActiveSkillLevel,
-			&i.EveTypeID,
-			&i.SkillPointsInSkill,
-			&i.MyCharacterID,
-			&i.TrainedSkillLevel,
+			&i.EveGroupID,
+			&i.EveGroupName,
+			&i.Total,
+			&i.Trained,
 		); err != nil {
 			return nil, err
 		}
