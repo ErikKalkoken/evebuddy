@@ -97,6 +97,40 @@ func (f Factory) CreateMyCharacterUpdateStatus(args ...storage.MyCharacterUpdate
 	return o
 }
 
+func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSkillParams) *model.CharacterSkill {
+	ctx := context.Background()
+	var arg storage.UpdateOrCreateCharacterSkillParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.MyCharacterID == 0 {
+		x := f.CreateMyCharacter()
+		arg.MyCharacterID = x.ID
+	}
+	if arg.EveTypeID == 0 {
+		x := f.CreateEveType()
+		arg.EveTypeID = x.ID
+	}
+	if arg.TrainedSkillLevel == 0 {
+		arg.TrainedSkillLevel = rand.IntN(5) + 1
+	}
+	if arg.ActiveSkillLevel == 0 {
+		arg.TrainedSkillLevel = rand.IntN(arg.TrainedSkillLevel) + 1
+	}
+	if arg.SkillPointsInSkill == 0 {
+		arg.SkillPointsInSkill = rand.IntN(1_000_000)
+	}
+	err := f.r.UpdateOrCreateCharacterSkill(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.r.GetCharacterSkill(ctx, arg.MyCharacterID, arg.EveTypeID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 // CreateCharacter is a test factory for character objects.
 func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *model.EveCharacter {
 	ctx := context.Background()

@@ -166,6 +166,17 @@ CREATE TABLE mail_mail_labels (
     FOREIGN KEY (mail_id) REFERENCES mails(id) ON DELETE CASCADE
 );
 
+CREATE TABLE character_skills (
+    active_skill_level INTEGER NOT NULL,
+    eve_type_id INTEGER NOT NULL,
+    skill_points_in_skill INTEGER NOT NULL,
+    my_character_id INTEGER NOT NULL,
+    trained_skill_level INTEGER NOT NULL,
+    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
+    UNIQUE (my_character_id, eve_type_id)
+);
+
 CREATE TABLE skillqueue_items (
     eve_type_id INTEGER NOT NULL,
     finish_date DATETIME,

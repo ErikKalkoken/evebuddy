@@ -9,6 +9,14 @@ import (
 	"time"
 )
 
+type CharacterSkill struct {
+	ActiveSkillLevel   int64
+	EveTypeID          int64
+	SkillPointsInSkill int64
+	MyCharacterID      int64
+	TrainedSkillLevel  int64
+}
+
 type Dictionary struct {
 	Key   string
 	Value []byte

@@ -1,0 +1,71 @@
+package storage_test
+
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
+)
+
+func TestCharacterSkill(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can create new", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateMyCharacter()
+		eveType := factory.CreateEveType()
+		arg := storage.UpdateOrCreateCharacterSkillParams{
+			ActiveSkillLevel:   3,
+			EveTypeID:          eveType.ID,
+			MyCharacterID:      c.ID,
+			SkillPointsInSkill: 99,
+			TrainedSkillLevel:  5,
+		}
+		// when
+		err := r.UpdateOrCreateCharacterSkill(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			x, err := r.GetCharacterSkill(ctx, c.ID, arg.EveTypeID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, 3, x.ActiveSkillLevel)
+				assert.Equal(t, eveType, x.EveType)
+				assert.Equal(t, 99, x.SkillPointsInSkill)
+				assert.Equal(t, 5, x.TrainedSkillLevel)
+			}
+		}
+	})
+	t.Run("can update existing", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateMyCharacter()
+		o1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			MyCharacterID:      c.ID,
+			ActiveSkillLevel:   3,
+			TrainedSkillLevel:  5,
+			SkillPointsInSkill: 42,
+		})
+		arg := storage.UpdateOrCreateCharacterSkillParams{
+			MyCharacterID:      c.ID,
+			EveTypeID:          o1.EveType.ID,
+			ActiveSkillLevel:   4,
+			TrainedSkillLevel:  4,
+			SkillPointsInSkill: 99,
+		}
+		// when
+		err := r.UpdateOrCreateCharacterSkill(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			o2, err := r.GetCharacterSkill(ctx, c.ID, o1.EveType.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, 4, o2.ActiveSkillLevel)
+				assert.Equal(t, 4, o2.TrainedSkillLevel)
+				assert.Equal(t, 99, o2.SkillPointsInSkill)
+			}
+		}
+	})
+}
