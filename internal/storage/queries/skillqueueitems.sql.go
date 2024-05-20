@@ -10,15 +10,15 @@ import (
 	"database/sql"
 )
 
-const createSkillqueueItem = `-- name: CreateSkillqueueItem :exec
-INSERT INTO skillqueue_items (
+const createCharacterSkillqueueItem = `-- name: CreateCharacterSkillqueueItem :exec
+INSERT INTO character_skillqueue_items (
     eve_type_id,
     finish_date,
     finished_level,
     level_end_sp,
     level_start_sp,
     queue_position,
-    my_character_id,
+    character_id,
     start_date,
     training_start_sp
 )
@@ -27,76 +27,76 @@ VALUES (
 )
 `
 
-type CreateSkillqueueItemParams struct {
+type CreateCharacterSkillqueueItemParams struct {
 	EveTypeID       int64
 	FinishDate      sql.NullTime
 	FinishedLevel   int64
 	LevelEndSp      sql.NullInt64
 	LevelStartSp    sql.NullInt64
 	QueuePosition   int64
-	MyCharacterID   int64
+	CharacterID     int64
 	StartDate       sql.NullTime
 	TrainingStartSp sql.NullInt64
 }
 
-func (q *Queries) CreateSkillqueueItem(ctx context.Context, arg CreateSkillqueueItemParams) error {
-	_, err := q.db.ExecContext(ctx, createSkillqueueItem,
+func (q *Queries) CreateCharacterSkillqueueItem(ctx context.Context, arg CreateCharacterSkillqueueItemParams) error {
+	_, err := q.db.ExecContext(ctx, createCharacterSkillqueueItem,
 		arg.EveTypeID,
 		arg.FinishDate,
 		arg.FinishedLevel,
 		arg.LevelEndSp,
 		arg.LevelStartSp,
 		arg.QueuePosition,
-		arg.MyCharacterID,
+		arg.CharacterID,
 		arg.StartDate,
 		arg.TrainingStartSp,
 	)
 	return err
 }
 
-const deleteSkillqueueItems = `-- name: DeleteSkillqueueItems :exec
-DELETE FROM skillqueue_items
-WHERE my_character_id = ?
+const deleteCharacterSkillqueueItems = `-- name: DeleteCharacterSkillqueueItems :exec
+DELETE FROM character_skillqueue_items
+WHERE character_id = ?
 `
 
-func (q *Queries) DeleteSkillqueueItems(ctx context.Context, myCharacterID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteSkillqueueItems, myCharacterID)
+func (q *Queries) DeleteCharacterSkillqueueItems(ctx context.Context, characterID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteCharacterSkillqueueItems, characterID)
 	return err
 }
 
-const getSkillqueueItem = `-- name: GetSkillqueueItem :one
-SELECT skillqueue_items.eve_type_id, skillqueue_items.finish_date, skillqueue_items.finished_level, skillqueue_items.level_end_sp, skillqueue_items.level_start_sp, skillqueue_items.queue_position, skillqueue_items.my_character_id, skillqueue_items.start_date, skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name, eve_types.description as skill_description
-FROM skillqueue_items
-JOIN eve_types ON eve_types.id = skillqueue_items.eve_type_id
+const getCharacterSkillqueueItem = `-- name: GetCharacterSkillqueueItem :one
+SELECT character_skillqueue_items.character_id, character_skillqueue_items.eve_type_id, character_skillqueue_items.finish_date, character_skillqueue_items.finished_level, character_skillqueue_items.level_end_sp, character_skillqueue_items.level_start_sp, character_skillqueue_items.queue_position, character_skillqueue_items.start_date, character_skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name, eve_types.description as skill_description
+FROM character_skillqueue_items
+JOIN eve_types ON eve_types.id = character_skillqueue_items.eve_type_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
-WHERE my_character_id = ? and queue_position = ?
+WHERE character_id = ? and queue_position = ?
 `
 
-type GetSkillqueueItemParams struct {
-	MyCharacterID int64
+type GetCharacterSkillqueueItemParams struct {
+	CharacterID   int64
 	QueuePosition int64
 }
 
-type GetSkillqueueItemRow struct {
-	SkillqueueItem   SkillqueueItem
-	SkillName        string
-	GroupName        string
-	SkillDescription string
+type GetCharacterSkillqueueItemRow struct {
+	CharacterSkillqueueItem CharacterSkillqueueItem
+	SkillName               string
+	GroupName               string
+	SkillDescription        string
 }
 
-func (q *Queries) GetSkillqueueItem(ctx context.Context, arg GetSkillqueueItemParams) (GetSkillqueueItemRow, error) {
-	row := q.db.QueryRowContext(ctx, getSkillqueueItem, arg.MyCharacterID, arg.QueuePosition)
-	var i GetSkillqueueItemRow
+func (q *Queries) GetCharacterSkillqueueItem(ctx context.Context, arg GetCharacterSkillqueueItemParams) (GetCharacterSkillqueueItemRow, error) {
+	row := q.db.QueryRowContext(ctx, getCharacterSkillqueueItem, arg.CharacterID, arg.QueuePosition)
+	var i GetCharacterSkillqueueItemRow
 	err := row.Scan(
-		&i.SkillqueueItem.EveTypeID,
-		&i.SkillqueueItem.FinishDate,
-		&i.SkillqueueItem.FinishedLevel,
-		&i.SkillqueueItem.LevelEndSp,
-		&i.SkillqueueItem.LevelStartSp,
-		&i.SkillqueueItem.QueuePosition,
-		&i.SkillqueueItem.MyCharacterID,
-		&i.SkillqueueItem.StartDate,
-		&i.SkillqueueItem.TrainingStartSp,
+		&i.CharacterSkillqueueItem.CharacterID,
+		&i.CharacterSkillqueueItem.EveTypeID,
+		&i.CharacterSkillqueueItem.FinishDate,
+		&i.CharacterSkillqueueItem.FinishedLevel,
+		&i.CharacterSkillqueueItem.LevelEndSp,
+		&i.CharacterSkillqueueItem.LevelStartSp,
+		&i.CharacterSkillqueueItem.QueuePosition,
+		&i.CharacterSkillqueueItem.StartDate,
+		&i.CharacterSkillqueueItem.TrainingStartSp,
 		&i.SkillName,
 		&i.GroupName,
 		&i.SkillDescription,
@@ -106,57 +106,57 @@ func (q *Queries) GetSkillqueueItem(ctx context.Context, arg GetSkillqueueItemPa
 
 const getTotalTrainingTime = `-- name: GetTotalTrainingTime :one
 SELECT SUM(julianday(finish_date) - julianday(max(start_date, datetime())))
-FROM skillqueue_items
-WHERE my_character_id = ?
+FROM character_skillqueue_items
+WHERE character_id = ?
 AND start_date IS NOT NULL
 AND finish_date IS NOT NULL
 AND datetime(finish_date) > datetime()
 `
 
-func (q *Queries) GetTotalTrainingTime(ctx context.Context, myCharacterID int64) (sql.NullFloat64, error) {
-	row := q.db.QueryRowContext(ctx, getTotalTrainingTime, myCharacterID)
+func (q *Queries) GetTotalTrainingTime(ctx context.Context, characterID int64) (sql.NullFloat64, error) {
+	row := q.db.QueryRowContext(ctx, getTotalTrainingTime, characterID)
 	var sum sql.NullFloat64
 	err := row.Scan(&sum)
 	return sum, err
 }
 
-const listSkillqueueItems = `-- name: ListSkillqueueItems :many
-SELECT skillqueue_items.eve_type_id, skillqueue_items.finish_date, skillqueue_items.finished_level, skillqueue_items.level_end_sp, skillqueue_items.level_start_sp, skillqueue_items.queue_position, skillqueue_items.my_character_id, skillqueue_items.start_date, skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name, eve_types.description as skill_description
-FROM skillqueue_items
-JOIN eve_types ON eve_types.id = skillqueue_items.eve_type_id
+const listCharacterSkillqueueItems = `-- name: ListCharacterSkillqueueItems :many
+SELECT character_skillqueue_items.character_id, character_skillqueue_items.eve_type_id, character_skillqueue_items.finish_date, character_skillqueue_items.finished_level, character_skillqueue_items.level_end_sp, character_skillqueue_items.level_start_sp, character_skillqueue_items.queue_position, character_skillqueue_items.start_date, character_skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name, eve_types.description as skill_description
+FROM character_skillqueue_items
+JOIN eve_types ON eve_types.id = character_skillqueue_items.eve_type_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
-WHERE my_character_id = ?
+WHERE character_id = ?
 AND start_date IS NOT NULL
 AND finish_date IS NOT NULL
 ORDER BY queue_position
 `
 
-type ListSkillqueueItemsRow struct {
-	SkillqueueItem   SkillqueueItem
-	SkillName        string
-	GroupName        string
-	SkillDescription string
+type ListCharacterSkillqueueItemsRow struct {
+	CharacterSkillqueueItem CharacterSkillqueueItem
+	SkillName               string
+	GroupName               string
+	SkillDescription        string
 }
 
-func (q *Queries) ListSkillqueueItems(ctx context.Context, myCharacterID int64) ([]ListSkillqueueItemsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listSkillqueueItems, myCharacterID)
+func (q *Queries) ListCharacterSkillqueueItems(ctx context.Context, characterID int64) ([]ListCharacterSkillqueueItemsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterSkillqueueItems, characterID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListSkillqueueItemsRow
+	var items []ListCharacterSkillqueueItemsRow
 	for rows.Next() {
-		var i ListSkillqueueItemsRow
+		var i ListCharacterSkillqueueItemsRow
 		if err := rows.Scan(
-			&i.SkillqueueItem.EveTypeID,
-			&i.SkillqueueItem.FinishDate,
-			&i.SkillqueueItem.FinishedLevel,
-			&i.SkillqueueItem.LevelEndSp,
-			&i.SkillqueueItem.LevelStartSp,
-			&i.SkillqueueItem.QueuePosition,
-			&i.SkillqueueItem.MyCharacterID,
-			&i.SkillqueueItem.StartDate,
-			&i.SkillqueueItem.TrainingStartSp,
+			&i.CharacterSkillqueueItem.CharacterID,
+			&i.CharacterSkillqueueItem.EveTypeID,
+			&i.CharacterSkillqueueItem.FinishDate,
+			&i.CharacterSkillqueueItem.FinishedLevel,
+			&i.CharacterSkillqueueItem.LevelEndSp,
+			&i.CharacterSkillqueueItem.LevelStartSp,
+			&i.CharacterSkillqueueItem.QueuePosition,
+			&i.CharacterSkillqueueItem.StartDate,
+			&i.CharacterSkillqueueItem.TrainingStartSp,
 			&i.SkillName,
 			&i.GroupName,
 			&i.SkillDescription,

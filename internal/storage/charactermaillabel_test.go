@@ -20,17 +20,17 @@ func TestMailLabel(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		arg := storage.MailLabelParams{
-			MyCharacterID: c.ID,
-			Color:         "xyz",
-			LabelID:       42,
-			Name:          "Dummy",
-			UnreadCount:   99,
+			CharacterID: c.ID,
+			Color:       "xyz",
+			LabelID:     42,
+			Name:        "Dummy",
+			UnreadCount: 99,
 		}
 		// when
-		_, err := r.UpdateOrCreateMailLabel(ctx, arg)
+		_, err := r.UpdateOrCreateCharacterMailLabel(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetMailLabel(ctx, c.ID, 42)
+			l, err := r.GetCharacterMailLabel(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Dummy", l.Name)
 				assert.Equal(t, "xyz", l.Color)
@@ -44,17 +44,17 @@ func TestMailLabel(t *testing.T) {
 		c := factory.CreateMyCharacter()
 		factory.CreateMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: 42})
 		arg := storage.MailLabelParams{
-			MyCharacterID: c.ID,
-			Color:         "xyz",
-			LabelID:       42,
-			Name:          "Dummy",
-			UnreadCount:   99,
+			CharacterID: c.ID,
+			Color:       "xyz",
+			LabelID:     42,
+			Name:        "Dummy",
+			UnreadCount: 99,
 		}
 		// when
-		_, err := r.UpdateOrCreateMailLabel(ctx, arg)
+		_, err := r.UpdateOrCreateCharacterMailLabel(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetMailLabel(ctx, c.ID, 42)
+			l, err := r.GetCharacterMailLabel(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Dummy", l.Name)
 				assert.Equal(t, "xyz", l.Color)
@@ -68,17 +68,17 @@ func TestMailLabel(t *testing.T) {
 		c := factory.CreateMyCharacter()
 		factory.CreateMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: 42, Name: "Dummy"})
 		arg := storage.MailLabelParams{
-			MyCharacterID: c.ID,
-			Color:         "xyz",
-			LabelID:       42,
-			Name:          "Johnny",
-			UnreadCount:   99,
+			CharacterID: c.ID,
+			Color:       "xyz",
+			LabelID:     42,
+			Name:        "Johnny",
+			UnreadCount: 99,
 		}
 		// when
-		_, err := r.GetOrCreateMailLabel(ctx, arg)
+		_, err := r.GetOrCreateCharacterMailLabel(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetMailLabel(ctx, c.ID, 42)
+			l, err := r.GetCharacterMailLabel(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Dummy", l.Name)
 			}
@@ -89,17 +89,17 @@ func TestMailLabel(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		arg := storage.MailLabelParams{
-			MyCharacterID: c.ID,
-			Color:         "xyz",
-			LabelID:       42,
-			Name:          "Johnny",
-			UnreadCount:   99,
+			CharacterID: c.ID,
+			Color:       "xyz",
+			LabelID:     42,
+			Name:        "Johnny",
+			UnreadCount: 99,
 		}
 		// when
-		_, err := r.GetOrCreateMailLabel(ctx, arg)
+		_, err := r.GetOrCreateCharacterMailLabel(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetMailLabel(ctx, c.ID, 42)
+			l, err := r.GetCharacterMailLabel(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Johnny", l.Name)
 			}
@@ -113,7 +113,7 @@ func TestMailLabel(t *testing.T) {
 		l2 := factory.CreateMailLabel(model.CharacterMailLabel{CharacterID: c.ID, Name: "alpha"})
 		factory.CreateMailLabel()
 		// when
-		got, err := r.ListMailLabelsOrdered(ctx, c.ID)
+		got, err := r.ListCharacterMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
 			want := []*model.CharacterMailLabel{l2, l1}
 			assert.Equal(t, want, got)
@@ -127,7 +127,7 @@ func TestMailLabel(t *testing.T) {
 		l2 := factory.CreateMailLabel(model.CharacterMailLabel{CharacterID: c.ID, Name: "alpha"})
 		factory.CreateMailLabel()
 		// when
-		got, err := r.ListMailLabelsOrdered(ctx, c.ID)
+		got, err := r.ListCharacterMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
 			want := []*model.CharacterMailLabel{l2, l1}
 			assert.Equal(t, want, got)
@@ -139,7 +139,7 @@ func TestMailLabel(t *testing.T) {
 		c := factory.CreateMyCharacter()
 		factory.CreateMailLabel()
 		// when
-		labels, err := r.ListMailLabelsOrdered(ctx, c.ID)
+		labels, err := r.ListCharacterMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Len(t, labels, 0)
 		}
@@ -156,19 +156,19 @@ func TestDeleteObsoleteMailLabels(t *testing.T) {
 		c1 := factory.CreateMyCharacter()
 		l1 := factory.CreateMailLabel(model.CharacterMailLabel{CharacterID: c1.ID})
 		factory.CreateMailLabel(model.CharacterMailLabel{CharacterID: c1.ID}) // to delete
-		factory.CreateMail(storage.CreateMailParams{MyCharacterID: c1.ID, LabelIDs: []int32{l1.LabelID}})
+		factory.CreateMail(storage.CreateCharacterMailParams{CharacterID: c1.ID, LabelIDs: []int32{l1.LabelID}})
 		c2 := factory.CreateMyCharacter()
 		l2 := factory.CreateMailLabel(model.CharacterMailLabel{CharacterID: c2.ID})
-		factory.CreateMail(storage.CreateMailParams{MyCharacterID: c2.ID, LabelIDs: []int32{l2.LabelID}})
+		factory.CreateMail(storage.CreateCharacterMailParams{CharacterID: c2.ID, LabelIDs: []int32{l2.LabelID}})
 		// when
-		err := r.DeleteObsoleteMailLabels(ctx, c1.ID)
+		err := r.DeleteObsoleteCharacterMailLabels(ctx, c1.ID)
 		if assert.NoError(t, err) {
-			ids1, err := r.ListMailLabelsOrdered(ctx, c1.ID)
+			ids1, err := r.ListCharacterMailLabelsOrdered(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids1, 1)
 				assert.Equal(t, l1.LabelID, ids1[0].LabelID)
 			}
-			ids2, err := r.ListMailLabelsOrdered(ctx, c2.ID)
+			ids2, err := r.ListCharacterMailLabelsOrdered(ctx, c2.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids2, 1)
 				assert.Equal(t, l2.LabelID, ids2[0].LabelID)

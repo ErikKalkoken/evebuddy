@@ -94,8 +94,8 @@ func TestEveEntity(t *testing.T) {
 	t.Run("should return objs with matching names in order", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		factory.CreateEveEntityCharacter(model.EveEntity{Name: "Yalpha2"})
-		factory.CreateEveEntityAlliance(model.EveEntity{Name: "Xalpha1"})
+		factory.CreateEveEntityCharacter(model.EveEntity{Name: "Y_alpha2"})
+		factory.CreateEveEntityAlliance(model.EveEntity{Name: "X_alpha1"})
 		factory.CreateEveEntityCharacter(model.EveEntity{Name: "charlie"})
 		factory.CreateEveEntityCharacter(model.EveEntity{Name: "other"})
 		// when
@@ -106,7 +106,7 @@ func TestEveEntity(t *testing.T) {
 			for _, e := range ee {
 				got = append(got, e.Name)
 			}
-			want := []string{"Xalpha1", "Yalpha2"}
+			want := []string{"X_alpha1", "Y_alpha2"}
 			assert.Equal(t, want, got)
 		}
 	})

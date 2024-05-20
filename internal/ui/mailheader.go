@@ -128,16 +128,16 @@ func (a *headerArea) Refresh() {
 
 func (a *headerArea) updateMails() {
 	folder := a.currentFolder
-	if folder.MyCharacterID == 0 {
+	if folder.CharacterID == 0 {
 		return
 	}
 	var mailIDs []int32
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mailIDs, err = a.ui.service.ListMailIDsForLabelOrdered(folder.MyCharacterID, folder.ObjID)
+		mailIDs, err = a.ui.service.ListMailIDsForLabelOrdered(folder.CharacterID, folder.ObjID)
 	case nodeCategoryList:
-		mailIDs, err = a.ui.service.ListMailIDsForListOrdered(folder.MyCharacterID, folder.ObjID)
+		mailIDs, err = a.ui.service.ListMailIDsForListOrdered(folder.CharacterID, folder.ObjID)
 	}
 	x := islices.ConvertNumeric[int32, int](mailIDs)
 	if err := a.mailIDs.Set(x); err != nil {
@@ -146,7 +146,7 @@ func (a *headerArea) updateMails() {
 	var s string
 	var i widget.Importance
 	if err != nil {
-		slog.Error("Failed to fetch mail", "characterID", folder.MyCharacterID, "error", err)
+		slog.Error("Failed to fetch mail", "characterID", folder.CharacterID, "error", err)
 		s = "ERROR"
 		i = widget.DangerImportance
 	}

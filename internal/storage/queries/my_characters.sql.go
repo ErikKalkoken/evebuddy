@@ -10,19 +10,19 @@ import (
 	"database/sql"
 )
 
-const deleteMyCharacter = `-- name: DeleteMyCharacter :exec
-DELETE FROM my_characters
+const deleteCharacter = `-- name: DeleteCharacter :exec
+DELETE FROM characters
 WHERE id = ?
 `
 
-func (q *Queries) DeleteMyCharacter(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteMyCharacter, id)
+func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteCharacter, id)
 	return err
 }
 
-const getMyCharacter = `-- name: GetMyCharacter :one
+const getCharacter = `-- name: GetCharacter :one
 SELECT
-    my_characters.id, my_characters.home_id, my_characters.last_login_at, my_characters.location_id, my_characters.ship_id, my_characters.total_sp, my_characters.unallocated_sp, my_characters.wallet_balance,
+    characters.id, characters.home_id, characters.last_login_at, characters.location_id, characters.ship_id, characters.total_sp, characters.unallocated_sp, characters.wallet_balance,
     eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
     corporations.id, corporations.category, corporations.name,
     eve_races.id, eve_races.description, eve_races.name,
@@ -31,17 +31,17 @@ SELECT
     home_id,
     location_id,
     ship_id
-FROM my_characters
-JOIN eve_characters ON eve_characters.id = my_characters.id
+FROM characters
+JOIN eve_characters ON eve_characters.id = characters.id
 JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
 JOIN eve_races ON eve_races.id = eve_characters.race_id
 LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
 LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.faction_id
-WHERE my_characters.id = ?
+WHERE characters.id = ?
 `
 
-type GetMyCharacterRow struct {
-	MyCharacter          MyCharacter
+type GetCharacterRow struct {
+	Character            Character
 	EveCharacter         EveCharacter
 	EveEntity            EveEntity
 	EveRace              EveRace
@@ -52,18 +52,18 @@ type GetMyCharacterRow struct {
 	ShipID               sql.NullInt64
 }
 
-func (q *Queries) GetMyCharacter(ctx context.Context, id int64) (GetMyCharacterRow, error) {
-	row := q.db.QueryRowContext(ctx, getMyCharacter, id)
-	var i GetMyCharacterRow
+func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, error) {
+	row := q.db.QueryRowContext(ctx, getCharacter, id)
+	var i GetCharacterRow
 	err := row.Scan(
-		&i.MyCharacter.ID,
-		&i.MyCharacter.HomeID,
-		&i.MyCharacter.LastLoginAt,
-		&i.MyCharacter.LocationID,
-		&i.MyCharacter.ShipID,
-		&i.MyCharacter.TotalSp,
-		&i.MyCharacter.UnallocatedSp,
-		&i.MyCharacter.WalletBalance,
+		&i.Character.ID,
+		&i.Character.HomeID,
+		&i.Character.LastLoginAt,
+		&i.Character.LocationID,
+		&i.Character.ShipID,
+		&i.Character.TotalSp,
+		&i.Character.UnallocatedSp,
+		&i.Character.WalletBalance,
 		&i.EveCharacter.AllianceID,
 		&i.EveCharacter.Birthday,
 		&i.EveCharacter.CorporationID,
@@ -94,13 +94,13 @@ func (q *Queries) GetMyCharacter(ctx context.Context, id int64) (GetMyCharacterR
 	return i, err
 }
 
-const listMyCharacterIDs = `-- name: ListMyCharacterIDs :many
+const listCharacterIDs = `-- name: ListCharacterIDs :many
 SELECT id
-FROM my_characters
+FROM characters
 `
 
-func (q *Queries) ListMyCharacterIDs(ctx context.Context) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listMyCharacterIDs)
+func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -122,9 +122,9 @@ func (q *Queries) ListMyCharacterIDs(ctx context.Context) ([]int64, error) {
 	return items, nil
 }
 
-const listMyCharacters = `-- name: ListMyCharacters :many
+const listCharacters = `-- name: ListCharacters :many
 SELECT DISTINCT
-    my_characters.id, my_characters.home_id, my_characters.last_login_at, my_characters.location_id, my_characters.ship_id, my_characters.total_sp, my_characters.unallocated_sp, my_characters.wallet_balance,
+    characters.id, characters.home_id, characters.last_login_at, characters.location_id, characters.ship_id, characters.total_sp, characters.unallocated_sp, characters.wallet_balance,
     eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
     corporations.id, corporations.category, corporations.name,
     eve_races.id, eve_races.description, eve_races.name,
@@ -133,8 +133,8 @@ SELECT DISTINCT
     home_id,
     location_id,
     ship_id
-FROM my_characters
-JOIN eve_characters ON eve_characters.id = my_characters.id
+FROM characters
+JOIN eve_characters ON eve_characters.id = characters.id
 JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
 JOIN eve_races ON eve_races.id = eve_characters.race_id
 LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
@@ -142,8 +142,8 @@ LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.f
 ORDER BY eve_characters.name
 `
 
-type ListMyCharactersRow struct {
-	MyCharacter          MyCharacter
+type ListCharactersRow struct {
+	Character            Character
 	EveCharacter         EveCharacter
 	EveEntity            EveEntity
 	EveRace              EveRace
@@ -154,24 +154,24 @@ type ListMyCharactersRow struct {
 	ShipID               sql.NullInt64
 }
 
-func (q *Queries) ListMyCharacters(ctx context.Context) ([]ListMyCharactersRow, error) {
-	rows, err := q.db.QueryContext(ctx, listMyCharacters)
+func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacters)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListMyCharactersRow
+	var items []ListCharactersRow
 	for rows.Next() {
-		var i ListMyCharactersRow
+		var i ListCharactersRow
 		if err := rows.Scan(
-			&i.MyCharacter.ID,
-			&i.MyCharacter.HomeID,
-			&i.MyCharacter.LastLoginAt,
-			&i.MyCharacter.LocationID,
-			&i.MyCharacter.ShipID,
-			&i.MyCharacter.TotalSp,
-			&i.MyCharacter.UnallocatedSp,
-			&i.MyCharacter.WalletBalance,
+			&i.Character.ID,
+			&i.Character.HomeID,
+			&i.Character.LastLoginAt,
+			&i.Character.LocationID,
+			&i.Character.ShipID,
+			&i.Character.TotalSp,
+			&i.Character.UnallocatedSp,
+			&i.Character.WalletBalance,
 			&i.EveCharacter.AllianceID,
 			&i.EveCharacter.Birthday,
 			&i.EveCharacter.CorporationID,
@@ -212,29 +212,29 @@ func (q *Queries) ListMyCharacters(ctx context.Context) ([]ListMyCharactersRow, 
 	return items, nil
 }
 
-const listMyCharactersShort = `-- name: ListMyCharactersShort :many
+const listCharactersShort = `-- name: ListCharactersShort :many
 SELECT DISTINCT eve_characters.id, eve_characters.name, corporations.name
-FROM my_characters
-JOIN eve_characters ON eve_characters.id = my_characters.id
+FROM characters
+JOIN eve_characters ON eve_characters.id = characters.id
 JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
 ORDER BY eve_characters.name
 `
 
-type ListMyCharactersShortRow struct {
+type ListCharactersShortRow struct {
 	ID     int64
 	Name   string
 	Name_2 string
 }
 
-func (q *Queries) ListMyCharactersShort(ctx context.Context) ([]ListMyCharactersShortRow, error) {
-	rows, err := q.db.QueryContext(ctx, listMyCharactersShort)
+func (q *Queries) ListCharactersShort(ctx context.Context) ([]ListCharactersShortRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharactersShort)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListMyCharactersShortRow
+	var items []ListCharactersShortRow
 	for rows.Next() {
-		var i ListMyCharactersShortRow
+		var i ListCharactersShortRow
 		if err := rows.Scan(&i.ID, &i.Name, &i.Name_2); err != nil {
 			return nil, err
 		}
@@ -249,112 +249,112 @@ func (q *Queries) ListMyCharactersShort(ctx context.Context) ([]ListMyCharacters
 	return items, nil
 }
 
-const updateMyCharacterHomeId = `-- name: UpdateMyCharacterHomeId :exec
-UPDATE my_characters
+const updateCharacterHomeId = `-- name: UpdateCharacterHomeId :exec
+UPDATE characters
 SET
     home_id = ?
 WHERE id = ?
 `
 
-type UpdateMyCharacterHomeIdParams struct {
+type UpdateCharacterHomeIdParams struct {
 	HomeID sql.NullInt64
 	ID     int64
 }
 
-func (q *Queries) UpdateMyCharacterHomeId(ctx context.Context, arg UpdateMyCharacterHomeIdParams) error {
-	_, err := q.db.ExecContext(ctx, updateMyCharacterHomeId, arg.HomeID, arg.ID)
+func (q *Queries) UpdateCharacterHomeId(ctx context.Context, arg UpdateCharacterHomeIdParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterHomeId, arg.HomeID, arg.ID)
 	return err
 }
 
-const updateMyCharacterLastLoginAt = `-- name: UpdateMyCharacterLastLoginAt :exec
-UPDATE my_characters
+const updateCharacterLastLoginAt = `-- name: UpdateCharacterLastLoginAt :exec
+UPDATE characters
 SET
     last_login_at = ?
 WHERE id = ?
 `
 
-type UpdateMyCharacterLastLoginAtParams struct {
+type UpdateCharacterLastLoginAtParams struct {
 	LastLoginAt sql.NullTime
 	ID          int64
 }
 
-func (q *Queries) UpdateMyCharacterLastLoginAt(ctx context.Context, arg UpdateMyCharacterLastLoginAtParams) error {
-	_, err := q.db.ExecContext(ctx, updateMyCharacterLastLoginAt, arg.LastLoginAt, arg.ID)
+func (q *Queries) UpdateCharacterLastLoginAt(ctx context.Context, arg UpdateCharacterLastLoginAtParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterLastLoginAt, arg.LastLoginAt, arg.ID)
 	return err
 }
 
-const updateMyCharacterLocationID = `-- name: UpdateMyCharacterLocationID :exec
-UPDATE my_characters
+const updateCharacterLocationID = `-- name: UpdateCharacterLocationID :exec
+UPDATE characters
 SET
     location_id = ?
 WHERE id = ?
 `
 
-type UpdateMyCharacterLocationIDParams struct {
+type UpdateCharacterLocationIDParams struct {
 	LocationID sql.NullInt64
 	ID         int64
 }
 
-func (q *Queries) UpdateMyCharacterLocationID(ctx context.Context, arg UpdateMyCharacterLocationIDParams) error {
-	_, err := q.db.ExecContext(ctx, updateMyCharacterLocationID, arg.LocationID, arg.ID)
+func (q *Queries) UpdateCharacterLocationID(ctx context.Context, arg UpdateCharacterLocationIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterLocationID, arg.LocationID, arg.ID)
 	return err
 }
 
-const updateMyCharacterSP = `-- name: UpdateMyCharacterSP :exec
-UPDATE my_characters
+const updateCharacterSP = `-- name: UpdateCharacterSP :exec
+UPDATE characters
 SET
     total_sp = ?,
     unallocated_sp = ?
 WHERE id = ?
 `
 
-type UpdateMyCharacterSPParams struct {
+type UpdateCharacterSPParams struct {
 	TotalSp       sql.NullInt64
 	UnallocatedSp sql.NullInt64
 	ID            int64
 }
 
-func (q *Queries) UpdateMyCharacterSP(ctx context.Context, arg UpdateMyCharacterSPParams) error {
-	_, err := q.db.ExecContext(ctx, updateMyCharacterSP, arg.TotalSp, arg.UnallocatedSp, arg.ID)
+func (q *Queries) UpdateCharacterSP(ctx context.Context, arg UpdateCharacterSPParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterSP, arg.TotalSp, arg.UnallocatedSp, arg.ID)
 	return err
 }
 
-const updateMyCharacterShipID = `-- name: UpdateMyCharacterShipID :exec
-UPDATE my_characters
+const updateCharacterShipID = `-- name: UpdateCharacterShipID :exec
+UPDATE characters
 SET
     ship_id = ?
 WHERE id = ?
 `
 
-type UpdateMyCharacterShipIDParams struct {
+type UpdateCharacterShipIDParams struct {
 	ShipID sql.NullInt64
 	ID     int64
 }
 
-func (q *Queries) UpdateMyCharacterShipID(ctx context.Context, arg UpdateMyCharacterShipIDParams) error {
-	_, err := q.db.ExecContext(ctx, updateMyCharacterShipID, arg.ShipID, arg.ID)
+func (q *Queries) UpdateCharacterShipID(ctx context.Context, arg UpdateCharacterShipIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterShipID, arg.ShipID, arg.ID)
 	return err
 }
 
-const updateMyCharacterWalletBalance = `-- name: UpdateMyCharacterWalletBalance :exec
-UPDATE my_characters
+const updateCharacterWalletBalance = `-- name: UpdateCharacterWalletBalance :exec
+UPDATE characters
 SET
     wallet_balance = ?
 WHERE id = ?
 `
 
-type UpdateMyCharacterWalletBalanceParams struct {
+type UpdateCharacterWalletBalanceParams struct {
 	WalletBalance sql.NullFloat64
 	ID            int64
 }
 
-func (q *Queries) UpdateMyCharacterWalletBalance(ctx context.Context, arg UpdateMyCharacterWalletBalanceParams) error {
-	_, err := q.db.ExecContext(ctx, updateMyCharacterWalletBalance, arg.WalletBalance, arg.ID)
+func (q *Queries) UpdateCharacterWalletBalance(ctx context.Context, arg UpdateCharacterWalletBalanceParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterWalletBalance, arg.WalletBalance, arg.ID)
 	return err
 }
 
-const updateOrCreateMyCharacter = `-- name: UpdateOrCreateMyCharacter :exec
-INSERT INTO my_characters (
+const updateOrCreateCharacter = `-- name: UpdateOrCreateCharacter :exec
+INSERT INTO characters (
     id,
     home_id,
     last_login_at,
@@ -379,7 +379,7 @@ UPDATE SET
 WHERE id = ?1
 `
 
-type UpdateOrCreateMyCharacterParams struct {
+type UpdateOrCreateCharacterParams struct {
 	ID            int64
 	HomeID        sql.NullInt64
 	LastLoginAt   sql.NullTime
@@ -390,8 +390,8 @@ type UpdateOrCreateMyCharacterParams struct {
 	WalletBalance sql.NullFloat64
 }
 
-func (q *Queries) UpdateOrCreateMyCharacter(ctx context.Context, arg UpdateOrCreateMyCharacterParams) error {
-	_, err := q.db.ExecContext(ctx, updateOrCreateMyCharacter,
+func (q *Queries) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreateCharacterParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateCharacter,
 		arg.ID,
 		arg.HomeID,
 		arg.LastLoginAt,

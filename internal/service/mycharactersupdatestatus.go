@@ -42,13 +42,13 @@ func timeoutForUpdateSection(section model.UpdateSection) time.Duration {
 
 func (s *Service) SectionSetUpdated(characterID int32, section model.UpdateSection) error {
 	ctx := context.Background()
-	arg := storage.MyCharacterUpdateStatusParams{
-		MyCharacterID: characterID,
-		Section:       section,
-		ContentHash:   "",
-		UpdatedAt:     time.Now(),
+	arg := storage.CharacterUpdateStatusParams{
+		CharacterID: characterID,
+		Section:     section,
+		ContentHash: "",
+		UpdatedAt:   time.Now(),
 	}
-	err := s.r.UpdateOrCreateMyCharacterUpdateStatus(ctx, arg)
+	err := s.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
 	return err
 }
 
@@ -57,7 +57,7 @@ func (s *Service) SectionSetUpdated(characterID int32, section model.UpdateSecti
 func (s *Service) SectionUpdatedAt(characterID int32, section model.UpdateSection) (time.Time, error) {
 	ctx := context.Background()
 	var zero time.Time
-	u, err := s.r.GetMyCharacterUpdateStatus(ctx, characterID, section)
+	u, err := s.r.GetCharacterUpdateStatus(ctx, characterID, section)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return zero, nil
@@ -152,7 +152,7 @@ func (s *Service) hasSectionChanged(ctx context.Context, characterID int32, sect
 	if err != nil {
 		return false, err
 	}
-	u, err := s.r.GetMyCharacterUpdateStatus(ctx, characterID, section)
+	u, err := s.r.GetCharacterUpdateStatus(ctx, characterID, section)
 	if errors.Is(err, storage.ErrNotFound) {
 		// section is new
 	} else if err != nil {
@@ -162,13 +162,13 @@ func (s *Service) hasSectionChanged(ctx context.Context, characterID int32, sect
 		return false, nil
 	}
 	slog.Debug("Section has changed", "characterID", characterID, "section", section)
-	arg := storage.MyCharacterUpdateStatusParams{
-		MyCharacterID: characterID,
-		Section:       section,
-		ContentHash:   hash,
-		UpdatedAt:     time.Now(),
+	arg := storage.CharacterUpdateStatusParams{
+		CharacterID: characterID,
+		Section:     section,
+		ContentHash: hash,
+		UpdatedAt:   time.Now(),
 	}
-	if err := s.r.UpdateOrCreateMyCharacterUpdateStatus(ctx, arg); err != nil {
+	if err := s.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg); err != nil {
 		return false, err
 	}
 	return true, nil

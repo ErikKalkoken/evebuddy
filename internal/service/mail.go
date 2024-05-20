@@ -31,7 +31,7 @@ func (s *Service) DeleteMail(characterID, mailID int32) error {
 	if err != nil {
 		return err
 	}
-	err = s.r.DeleteMail(ctx, characterID, mailID)
+	err = s.r.DeleteCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		return err
 	}
@@ -40,17 +40,17 @@ func (s *Service) DeleteMail(characterID, mailID int32) error {
 
 func (s *Service) GetMail(characterID int32, mailID int32) (*model.CharacterMail, error) {
 	ctx := context.Background()
-	return s.r.GetMail(ctx, characterID, mailID)
+	return s.r.GetCharacterMail(ctx, characterID, mailID)
 }
 
 // GetMailUnreadCount returns the number of unread mail for a character.
 func (s *Service) GetMailCounts(characterID int32) (int, int, error) {
 	ctx := context.Background()
-	total, err := s.r.GetMailCount(ctx, characterID)
+	total, err := s.r.GetCharacterMailCount(ctx, characterID)
 	if err != nil {
 		return 0, 0, err
 	}
-	unread, err := s.r.GetMailUnreadCount(ctx, characterID)
+	unread, err := s.r.GetCharacterMailUnreadCount(ctx, characterID)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -97,26 +97,26 @@ func (s *Service) SendMail(characterID int32, subject string, recipients []*mode
 		return 0, err
 	}
 	arg1 := storage.MailLabelParams{
-		MyCharacterID: characterID,
-		LabelID:       model.MailLabelSent,
-		Name:          "Sent",
+		CharacterID: characterID,
+		LabelID:     model.MailLabelSent,
+		Name:        "Sent",
 	}
-	_, err = s.r.GetOrCreateMailLabel(ctx, arg1) // make sure sent label exists
+	_, err = s.r.GetOrCreateCharacterMailLabel(ctx, arg1) // make sure sent label exists
 	if err != nil {
 		return 0, err
 	}
-	arg2 := storage.CreateMailParams{
-		Body:          body,
-		MyCharacterID: characterID,
-		FromID:        characterID,
-		IsRead:        true,
-		LabelIDs:      []int32{model.MailLabelSent},
-		MailID:        mailID,
-		RecipientIDs:  recipientIDs,
-		Subject:       subject,
-		Timestamp:     time.Now(),
+	arg2 := storage.CreateCharacterMailParams{
+		Body:         body,
+		CharacterID:  characterID,
+		FromID:       characterID,
+		IsRead:       true,
+		LabelIDs:     []int32{model.MailLabelSent},
+		MailID:       mailID,
+		RecipientIDs: recipientIDs,
+		Subject:      subject,
+		Timestamp:    time.Now(),
 	}
-	_, err = s.r.CreateMail(ctx, arg2)
+	_, err = s.r.CreateCharacterMail(ctx, arg2)
 	if err != nil {
 		return 0, err
 	}
@@ -140,32 +140,32 @@ func eveEntitiesToESIMailRecipients(ee []*model.EveEntity) ([]esi.PostCharacters
 
 func (s *Service) GetMailLabelUnreadCounts(characterID int32) (map[int32]int, error) {
 	ctx := context.Background()
-	return s.r.GetMailLabelUnreadCounts(ctx, characterID)
+	return s.r.GetCharacterMailLabelUnreadCounts(ctx, characterID)
 }
 
 func (s *Service) GetMailListUnreadCounts(characterID int32) (map[int32]int, error) {
 	ctx := context.Background()
-	return s.r.GetMailListUnreadCounts(ctx, characterID)
+	return s.r.GetCharacterMailListUnreadCounts(ctx, characterID)
 }
 
 func (s *Service) ListMailLists(characterID int32) ([]*model.EveEntity, error) {
 	ctx := context.Background()
-	return s.r.ListMailListsOrdered(ctx, characterID)
+	return s.r.ListCharacterMailListsOrdered(ctx, characterID)
 }
 
 // ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
 // Return mails for all labels, when labelID = 0
 func (s *Service) ListMailIDsForLabelOrdered(characterID int32, labelID int32) ([]int32, error) {
 	ctx := context.Background()
-	return s.r.ListMailIDsForLabelOrdered(ctx, characterID, labelID)
+	return s.r.ListCharacterMailIDsForLabelOrdered(ctx, characterID, labelID)
 }
 
 func (s *Service) ListMailIDsForListOrdered(characterID int32, listID int32) ([]int32, error) {
 	ctx := context.Background()
-	return s.r.ListMailIDsForListOrdered(ctx, characterID, listID)
+	return s.r.ListCharacterMailIDsForListOrdered(ctx, characterID, listID)
 }
 
 func (s *Service) ListMailLabelsOrdered(characterID int32) ([]*model.CharacterMailLabel, error) {
 	ctx := context.Background()
-	return s.r.ListMailLabelsOrdered(ctx, characterID)
+	return s.r.ListCharacterMailLabelsOrdered(ctx, characterID)
 }

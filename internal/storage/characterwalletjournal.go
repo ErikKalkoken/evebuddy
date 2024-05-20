@@ -9,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-type CreateWalletJournalEntryParams struct {
+type CreateCharacterWalletJournalEntryParams struct {
 	Amount        float64
 	Balance       float64
 	ContextID     int64
@@ -18,7 +18,7 @@ type CreateWalletJournalEntryParams struct {
 	Description   string
 	FirstPartyID  int32
 	ID            int64
-	MyCharacterID int32
+	CharacterID   int32
 	Reason        string
 	RefType       string
 	SecondPartyID int32
@@ -26,11 +26,11 @@ type CreateWalletJournalEntryParams struct {
 	TaxReceiverID int32
 }
 
-func (r *Storage) CreateWalletJournalEntry(ctx context.Context, arg CreateWalletJournalEntryParams) error {
+func (r *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg CreateCharacterWalletJournalEntryParams) error {
 	if arg.ID == 0 {
-		return fmt.Errorf("WalletJournalEntry ID can not be zero, Character %d", arg.MyCharacterID)
+		return fmt.Errorf("CharacterWalletJournalEntry ID can not be zero, Character %d", arg.CharacterID)
 	}
-	arg2 := queries.CreateWalletJournalEntryParams{
+	arg2 := queries.CreateCharacterWalletJournalEntryParams{
 		Amount:        arg.Amount,
 		Balance:       arg.Balance,
 		ContextID:     arg.ContextID,
@@ -38,7 +38,7 @@ func (r *Storage) CreateWalletJournalEntry(ctx context.Context, arg CreateWallet
 		Date:          arg.Date,
 		Description:   arg.Description,
 		ID:            arg.ID,
-		MyCharacterID: int64(arg.MyCharacterID),
+		CharacterID:   int64(arg.CharacterID),
 		RefType:       arg.RefType,
 		Reason:        arg.Reason,
 		Tax:           arg.Tax,
@@ -55,39 +55,49 @@ func (r *Storage) CreateWalletJournalEntry(ctx context.Context, arg CreateWallet
 		arg2.TaxReceiverID.Int64 = int64(arg.TaxReceiverID)
 		arg2.TaxReceiverID.Valid = true
 	}
-	err := r.q.CreateWalletJournalEntry(ctx, arg2)
+	err := r.q.CreateCharacterWalletJournalEntry(ctx, arg2)
 	return err
 }
 
-func (r *Storage) GetWalletJournalEntry(ctx context.Context, characterID int32, entryID int64) (*model.CharacterWalletJournalEntry, error) {
-	arg := queries.GetWalletJournalEntryParams{
-		MyCharacterID: int64(characterID),
-		ID:            entryID,
+func (r *Storage) GetCharacterWalletJournalEntry(ctx context.Context, characterID int32, entryID int64) (*model.CharacterWalletJournalEntry, error) {
+	arg := queries.GetCharacterWalletJournalEntryParams{
+		CharacterID: int64(characterID),
+		ID:          entryID,
 	}
-	row, err := r.q.GetWalletJournalEntry(ctx, arg)
+	row, err := r.q.GetCharacterWalletJournalEntry(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
-	return walletJournalEntryFromDBModel(row.WalletJournalEntry, row.WalletJournalEntryFirstParty, row.WalletJournalEntrySecondParty, row.WalletJournalEntryTaxReceiver), err
+	return characterWalletJournalEntryFromDBModel(
+		row.CharacterWalletJournalEntry,
+		row.WalletJournalEntryFirstParty,
+		row.WalletJournalEntrySecondParty,
+		row.WalletJournalEntryTaxReceiver,
+	), err
 }
 
-func (r *Storage) ListWalletJournalEntryIDs(ctx context.Context, characterID int32) ([]int64, error) {
-	return r.q.ListWalletJournalEntryIDs(ctx, int64(characterID))
+func (r *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int32) ([]int64, error) {
+	return r.q.ListCharacterWalletJournalEntryIDs(ctx, int64(characterID))
 }
 
-func (r *Storage) ListWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
-	rows, err := r.q.ListWalletJournalEntries(ctx, int64(characterID))
+func (r *Storage) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
+	rows, err := r.q.ListCharacterWalletJournalEntries(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}
 	ee := make([]*model.CharacterWalletJournalEntry, len(rows))
 	for i, row := range rows {
-		ee[i] = walletJournalEntryFromDBModel(row.WalletJournalEntry, row.WalletJournalEntryFirstParty, row.WalletJournalEntrySecondParty, row.WalletJournalEntryTaxReceiver)
+		ee[i] = characterWalletJournalEntryFromDBModel(row.CharacterWalletJournalEntry, row.WalletJournalEntryFirstParty, row.WalletJournalEntrySecondParty, row.WalletJournalEntryTaxReceiver)
 	}
 	return ee, nil
 }
 
-func walletJournalEntryFromDBModel(e queries.WalletJournalEntry, firstParty queries.WalletJournalEntryFirstParty, secondParty queries.WalletJournalEntrySecondParty, taxReceiver queries.WalletJournalEntryTaxReceiver) *model.CharacterWalletJournalEntry {
+func characterWalletJournalEntryFromDBModel(
+	e queries.CharacterWalletJournalEntry,
+	firstParty queries.WalletJournalEntryFirstParty,
+	secondParty queries.WalletJournalEntrySecondParty,
+	taxReceiver queries.WalletJournalEntryTaxReceiver,
+) *model.CharacterWalletJournalEntry {
 	e2 := &model.CharacterWalletJournalEntry{
 		Amount:        e.Amount,
 		Balance:       e.Balance,
@@ -97,7 +107,7 @@ func walletJournalEntryFromDBModel(e queries.WalletJournalEntry, firstParty quer
 		Description:   e.Description,
 		FirstParty:    eveEntityFromNullableDBModel(nullEveEntry(firstParty)),
 		ID:            e.ID,
-		CharacterID:   int32(e.MyCharacterID),
+		CharacterID:   int32(e.CharacterID),
 		Reason:        e.Reason,
 		RefType:       e.RefType,
 		SecondParty:   eveEntityFromNullableDBModel(nullEveEntry(secondParty)),

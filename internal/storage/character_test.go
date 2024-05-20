@@ -24,9 +24,9 @@ func TestMyCharacter(t *testing.T) {
 		a := factory.CreateEveEntityAlliance()
 		f := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityFaction})
 		eveC := factory.CreateEveCharacter(storage.CreateEveCharacterParams{AllianceID: a.ID, FactionID: f.ID})
-		c1 := factory.CreateMyCharacter(storage.UpdateOrCreateMyCharacterParams{ID: eveC.ID})
+		c1 := factory.CreateMyCharacter(storage.UpdateOrCreateCharacterParams{ID: eveC.ID})
 		// when
-		c2, err := r.GetMyCharacter(ctx, c1.ID)
+		c2, err := r.GetCharacter(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c1.ID, c2.ID)
@@ -44,14 +44,14 @@ func TestMyCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		character := factory.CreateEveCharacter()
-		arg := storage.UpdateOrCreateMyCharacterParams{
+		arg := storage.UpdateOrCreateCharacterParams{
 			ID: character.ID,
 		}
 		// when
-		err := r.UpdateOrCreateMyCharacter(ctx, arg)
+		err := r.UpdateOrCreateCharacter(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			r, err := r.GetMyCharacter(ctx, arg.ID)
+			r, err := r.GetCharacter(ctx, arg.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, character.ID, r.ID)
 			}
@@ -65,7 +65,7 @@ func TestMyCharacter(t *testing.T) {
 		location := factory.CreateLocationStructure()
 		ship := factory.CreateEveType()
 		login := time.Now()
-		arg := storage.UpdateOrCreateMyCharacterParams{
+		arg := storage.UpdateOrCreateCharacterParams{
 			ID:            character.ID,
 			HomeID:        sql.NullInt64{Int64: home.ID, Valid: true},
 			LastLoginAt:   sql.NullTime{Time: login, Valid: true},
@@ -75,10 +75,10 @@ func TestMyCharacter(t *testing.T) {
 			WalletBalance: sql.NullFloat64{Float64: 1.2, Valid: true},
 		}
 		// when
-		err := r.UpdateOrCreateMyCharacter(ctx, arg)
+		err := r.UpdateOrCreateCharacter(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			r, err := r.GetMyCharacter(ctx, arg.ID)
+			r, err := r.GetCharacter(ctx, arg.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, home, r.Home)
 				assert.Equal(t, login.UTC(), r.LastLoginAt.Time.UTC())
@@ -96,14 +96,14 @@ func TestMyCharacter(t *testing.T) {
 		// when
 		newLocation := factory.CreateLocationStructure()
 		newShip := factory.CreateEveType()
-		err := r.UpdateOrCreateMyCharacter(ctx, storage.UpdateOrCreateMyCharacterParams{
+		err := r.UpdateOrCreateCharacter(ctx, storage.UpdateOrCreateCharacterParams{
 			ID:         c1.ID,
 			LocationID: sql.NullInt64{Int64: newLocation.ID, Valid: true},
 			ShipID:     sql.NullInt32{Int32: newShip.ID, Valid: true},
 		})
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetMyCharacter(ctx, c1.ID)
+			c2, err := r.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, newLocation, c2.Location)
 				assert.Equal(t, newShip, c2.Ship)
@@ -115,10 +115,10 @@ func TestMyCharacter(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		// when
-		err := r.DeleteMyCharacter(ctx, c.ID)
+		err := r.DeleteCharacter(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			_, err := r.GetMyCharacter(ctx, c.ID)
+			_, err := r.GetCharacter(ctx, c.ID)
 			assert.ErrorIs(t, err, storage.ErrNotFound)
 		}
 	})
@@ -126,7 +126,7 @@ func TestMyCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := r.GetMyCharacter(ctx, 99)
+		_, err := r.GetCharacter(ctx, 99)
 		// then
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})
@@ -136,7 +136,7 @@ func TestMyCharacter(t *testing.T) {
 		c1 := factory.CreateMyCharacter()
 		factory.CreateMyCharacter()
 		// when
-		c2, err := r.GetFirstMyCharacter(ctx)
+		c2, err := r.GetFirstCharacter(ctx)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c1.ID, c2.ID)
@@ -146,7 +146,7 @@ func TestMyCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := r.GetFirstMyCharacter(ctx)
+		_, err := r.GetFirstCharacter(ctx)
 		// then
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})
@@ -155,7 +155,7 @@ func TestMyCharacter(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateMyCharacter()
 		// when
-		c2, err := r.GetMyCharacter(ctx, c1.ID)
+		c2, err := r.GetCharacter(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c1.ID, c2.ID)
@@ -173,7 +173,7 @@ func TestListMyCharactersShort(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateMyCharacter()
 		// when
-		cc, err := r.ListMyCharactersShort(ctx)
+		cc, err := r.ListCharactersShort(ctx)
 		// then
 		if assert.NoError(t, err) {
 			c2 := cc[0]
@@ -187,7 +187,7 @@ func TestListMyCharactersShort(t *testing.T) {
 		factory.CreateMyCharacter()
 		factory.CreateMyCharacter()
 		// when
-		cc, err := r.ListMyCharactersShort(ctx)
+		cc, err := r.ListCharactersShort(ctx)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, cc, 2)
@@ -205,7 +205,7 @@ func TestListMyCharacters(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateMyCharacter()
 		// when
-		cc, err := r.ListMyCharacters(ctx)
+		cc, err := r.ListCharacters(ctx)
 		// then
 		if assert.NoError(t, err) {
 			c2 := cc[0]
@@ -235,10 +235,10 @@ func TestUpdateMyCharacterFields(t *testing.T) {
 		c1 := factory.CreateMyCharacter()
 		home := factory.CreateLocationStructure()
 		// when
-		err := r.UpdateMyCharacterHome(ctx, c1.ID, sql.NullInt64{Int64: home.ID, Valid: true})
+		err := r.UpdateCharacterHome(ctx, c1.ID, sql.NullInt64{Int64: home.ID, Valid: true})
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetMyCharacter(ctx, c1.ID)
+			c2, err := r.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, home, c2.Home)
 			}
@@ -251,10 +251,10 @@ func TestUpdateMyCharacterFields(t *testing.T) {
 		c1 := factory.CreateMyCharacter()
 		x := time.Now().Add(1 * time.Hour)
 		// when
-		err := r.UpdateMyCharacterLastLoginAt(ctx, c1.ID, sql.NullTime{Time: x, Valid: true})
+		err := r.UpdateCharacterLastLoginAt(ctx, c1.ID, sql.NullTime{Time: x, Valid: true})
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetMyCharacter(ctx, c1.ID)
+			c2, err := r.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x.UTC(), c2.LastLoginAt.Time.UTC())
 			}
@@ -266,10 +266,10 @@ func TestUpdateMyCharacterFields(t *testing.T) {
 		c1 := factory.CreateMyCharacter()
 		location := factory.CreateLocationStructure()
 		// when
-		err := r.UpdateMyCharacterLocation(ctx, c1.ID, sql.NullInt64{Int64: location.ID, Valid: true})
+		err := r.UpdateCharacterLocation(ctx, c1.ID, sql.NullInt64{Int64: location.ID, Valid: true})
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetMyCharacter(ctx, c1.ID)
+			c2, err := r.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, location, c2.Location)
 			}
@@ -281,10 +281,10 @@ func TestUpdateMyCharacterFields(t *testing.T) {
 		c1 := factory.CreateMyCharacter()
 		x := factory.CreateEveType()
 		// when
-		err := r.UpdateMyCharacterShip(ctx, c1.ID, sql.NullInt32{Int32: x.ID, Valid: true})
+		err := r.UpdateCharacterShip(ctx, c1.ID, sql.NullInt32{Int32: x.ID, Valid: true})
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetMyCharacter(ctx, c1.ID)
+			c2, err := r.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x, c2.Ship)
 			}
@@ -297,10 +297,10 @@ func TestUpdateMyCharacterFields(t *testing.T) {
 		// when
 		totalSP := sql.NullInt64{Int64: int64(rand.IntN(100_000_000)), Valid: true}
 		unallocatedSP := sql.NullInt64{Int64: int64(rand.IntN(10_000_000)), Valid: true}
-		err := r.UpdateMyCharacterSkillPoints(ctx, c1.ID, totalSP, unallocatedSP)
+		err := r.UpdateCharacterSkillPoints(ctx, c1.ID, totalSP, unallocatedSP)
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetMyCharacter(ctx, c1.ID)
+			c2, err := r.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, totalSP, c2.TotalSP)
 				assert.Equal(t, unallocatedSP, c2.UnallocatedSP)
@@ -313,10 +313,10 @@ func TestUpdateMyCharacterFields(t *testing.T) {
 		c1 := factory.CreateMyCharacter()
 		x := rand.Float64() * 100_000_000
 		// when
-		err := r.UpdateMyCharacterWalletBalance(ctx, c1.ID, sql.NullFloat64{Float64: x, Valid: true})
+		err := r.UpdateCharacterWalletBalance(ctx, c1.ID, sql.NullFloat64{Float64: x, Valid: true})
 		// then
 		if assert.NoError(t, err) {
-			c2, err := r.GetMyCharacter(ctx, c1.ID)
+			c2, err := r.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x, c2.WalletBalance.Float64)
 			}

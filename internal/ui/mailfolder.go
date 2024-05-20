@@ -128,12 +128,12 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 	}
 	folders := makeDefaultFolders(characterID, labelUnreadCounts)
 	folderAll := node{
-		Category:      nodeCategoryLabel,
-		MyCharacterID: characterID,
-		ID:            nodeAllID,
-		Name:          "All Mails",
-		ObjID:         model.MailLabelAll,
-		UnreadCount:   totalUnreadCount,
+		Category:    nodeCategoryLabel,
+		CharacterID: characterID,
+		ID:          nodeAllID,
+		Name:        "All Mails",
+		ObjID:       model.MailLabelAll,
+		UnreadCount: totalUnreadCount,
 	}
 	folders[nodeAllID] = folderAll.toJSON()
 	labels, err := a.ui.service.ListMailLabelsOrdered(characterID)
@@ -144,10 +144,10 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		ids[""] = append(ids[""], nodeLabelsID)
 		ids[nodeLabelsID] = []string{}
 		folders[nodeLabelsID] = node{
-			MyCharacterID: characterID,
-			ID:            nodeLabelsID,
-			Name:          "Labels",
-			UnreadCount:   totalLabelsUnreadCount,
+			CharacterID: characterID,
+			ID:          nodeLabelsID,
+			Name:        "Labels",
+			UnreadCount: totalLabelsUnreadCount,
 		}.toJSON()
 		for _, l := range labels {
 			uid := fmt.Sprintf("label%d", l.LabelID)
@@ -168,10 +168,10 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		ids[""] = append(ids[""], nodeListsID)
 		ids[nodeListsID] = []string{}
 		folders[nodeListsID] = node{
-			MyCharacterID: characterID,
-			ID:            nodeListsID,
-			Name:          "Mailing Lists",
-			UnreadCount:   totalListUnreadCount,
+			CharacterID: characterID,
+			ID:          nodeListsID,
+			Name:        "Mailing Lists",
+			UnreadCount: totalListUnreadCount,
 		}.toJSON()
 		for _, l := range lists {
 			uid := fmt.Sprintf("list%d", l.ID)
@@ -205,12 +205,12 @@ func makeDefaultFolders(characterID int32, labelUnreadCounts map[int32]int) map[
 			u = 0
 		}
 		folders[o.nodeID] = node{
-			MyCharacterID: characterID,
-			Category:      nodeCategoryLabel,
-			ID:            o.nodeID,
-			Name:          o.name,
-			ObjID:         o.labelID,
-			UnreadCount:   u,
+			CharacterID: characterID,
+			Category:    nodeCategoryLabel,
+			ID:          o.nodeID,
+			Name:        o.name,
+			ObjID:       o.labelID,
+			UnreadCount: u,
 		}.toJSON()
 	}
 	return folders

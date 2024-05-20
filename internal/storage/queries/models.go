@@ -9,12 +9,116 @@ import (
 	"time"
 )
 
+type Character struct {
+	ID            int64
+	HomeID        sql.NullInt64
+	LastLoginAt   sql.NullTime
+	LocationID    sql.NullInt64
+	ShipID        sql.NullInt64
+	TotalSp       sql.NullInt64
+	UnallocatedSp sql.NullInt64
+	WalletBalance sql.NullFloat64
+}
+
+type CharacterMail struct {
+	ID          int64
+	Body        string
+	CharacterID int64
+	FromID      int64
+	IsRead      bool
+	MailID      int64
+	Subject     string
+	Timestamp   time.Time
+}
+
+type CharacterMailLabel struct {
+	ID          int64
+	CharacterID int64
+	Color       string
+	LabelID     int64
+	Name        string
+	UnreadCount int64
+}
+
+type CharacterMailList struct {
+	CharacterID int64
+	EveEntityID int64
+}
+
+type CharacterMailMailLabel struct {
+	CharacterMailLabelID int64
+	CharacterMailID      int64
+}
+
 type CharacterSkill struct {
 	ActiveSkillLevel   int64
+	CharacterID        int64
 	EveTypeID          int64
 	SkillPointsInSkill int64
-	MyCharacterID      int64
 	TrainedSkillLevel  int64
+}
+
+type CharacterSkillqueueItem struct {
+	CharacterID     int64
+	EveTypeID       int64
+	FinishDate      sql.NullTime
+	FinishedLevel   int64
+	LevelEndSp      sql.NullInt64
+	LevelStartSp    sql.NullInt64
+	QueuePosition   int64
+	StartDate       sql.NullTime
+	TrainingStartSp sql.NullInt64
+}
+
+type CharacterToken struct {
+	AccessToken  string
+	CharacterID  int64
+	ExpiresAt    time.Time
+	RefreshToken string
+	TokenType    string
+}
+
+type CharacterTokenScope struct {
+	TokenID int64
+	ScopeID int64
+}
+
+type CharacterUpdateStatus struct {
+	CharacterID int64
+	ContentHash string
+	SectionID   string
+	UpdatedAt   time.Time
+}
+
+type CharacterWalletJournalEntry struct {
+	Amount        float64
+	Balance       float64
+	CharacterID   int64
+	ContextID     int64
+	ContextIDType string
+	Date          time.Time
+	Description   string
+	FirstPartyID  sql.NullInt64
+	ID            int64
+	Reason        string
+	RefType       string
+	SecondPartyID sql.NullInt64
+	Tax           float64
+	TaxReceiverID sql.NullInt64
+}
+
+type CharacterWalletTransaction struct {
+	CharacterID   int64
+	ClientID      int64
+	Date          time.Time
+	EveTypeID     int64
+	IsBuy         bool
+	IsPersonal    bool
+	JournalRefID  int64
+	LocationID    int64
+	Quantity      int64
+	TransactionID int64
+	UnitPrice     float64
 }
 
 type Dictionary struct {
@@ -109,104 +213,14 @@ type Location struct {
 	UpdatedAt        time.Time
 }
 
-type Mail struct {
-	ID            int64
-	Body          string
-	MyCharacterID int64
-	FromID        int64
-	IsRead        bool
-	MailID        int64
-	Subject       string
-	Timestamp     time.Time
-}
-
-type MailLabel struct {
-	ID            int64
-	MyCharacterID int64
-	Color         string
-	LabelID       int64
-	Name          string
-	UnreadCount   int64
-}
-
-type MailList struct {
-	MyCharacterID int64
-	EveEntityID   int64
-}
-
-type MailMailLabel struct {
-	MailLabelID int64
-	MailID      int64
-}
-
 type MailRecipient struct {
 	MailID      int64
 	EveEntityID int64
 }
 
-type MyCharacter struct {
-	ID            int64
-	HomeID        sql.NullInt64
-	LastLoginAt   sql.NullTime
-	LocationID    sql.NullInt64
-	ShipID        sql.NullInt64
-	TotalSp       sql.NullInt64
-	UnallocatedSp sql.NullInt64
-	WalletBalance sql.NullFloat64
-}
-
-type MyCharacterUpdateStatus struct {
-	ContentHash   string
-	MyCharacterID int64
-	SectionID     string
-	UpdatedAt     time.Time
-}
-
 type Scope struct {
 	ID   int64
 	Name string
-}
-
-type SkillqueueItem struct {
-	EveTypeID       int64
-	FinishDate      sql.NullTime
-	FinishedLevel   int64
-	LevelEndSp      sql.NullInt64
-	LevelStartSp    sql.NullInt64
-	QueuePosition   int64
-	MyCharacterID   int64
-	StartDate       sql.NullTime
-	TrainingStartSp sql.NullInt64
-}
-
-type Token struct {
-	AccessToken   string
-	MyCharacterID int64
-	ExpiresAt     time.Time
-	RefreshToken  string
-	TokenType     string
-}
-
-type TokensScope struct {
-	TokenID int64
-	ScopeID int64
-}
-
-type WalletJournalEntry struct {
-	Amount        float64
-	Balance       float64
-	ContextID     int64
-	ContextIDType string
-	Date          time.Time
-	Description   string
-	FirstPartyID  sql.NullInt64
-	ID            int64
-	MyCharacterID int64
-	Reason        string
-	RefType       string
-	SecondPartyID sql.NullInt64
-	Tax           float64
-	TaxReceiverID sql.NullInt64
 }
 
 type WalletJournalEntryFirstParty struct {
@@ -225,18 +239,4 @@ type WalletJournalEntryTaxReceiver struct {
 	ID       sql.NullInt64
 	Category sql.NullString
 	Name     sql.NullString
-}
-
-type WalletTransaction struct {
-	ClientID      int64
-	Date          time.Time
-	EveTypeID     int64
-	IsBuy         bool
-	IsPersonal    bool
-	JournalRefID  int64
-	LocationID    int64
-	MyCharacterID int64
-	Quantity      int64
-	TransactionID int64
-	UnitPrice     float64
 }

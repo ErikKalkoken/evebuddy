@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
@@ -18,33 +19,40 @@ func New() (*sql.DB, *storage.Storage, Factory) {
 
 // TruncateTables will purge data from all tables. This is meant for tests.
 func TruncateTables(db *sql.DB) {
-	sql := `
-		DELETE FROM locations;
-		DELETE FROM mail_recipients;
-		DELETE FROM mail_mail_labels;
-		DELETE FROM mail_labels;
-		DELETE FROM mails;
-		DELETE FROM character_skills;
-		DELETE FROM skillqueue_items;
-		DELETE FROM wallet_transactions;
-		DELETE FROM wallet_journal_entries;
-		DELETE FROM tokens_scopes;
-		DELETE FROM scopes;
-		DELETE FROM tokens;
-		DELETE FROM my_character_update_status;
-		DELETE FROM my_characters;
-		DELETE FROM eve_characters;
-		DELETE FROM eve_entities;
-		DELETE FROM eve_categories;
-		DELETE FROM eve_groups;
-		DELETE FROM eve_types;
-		DELETE FROM dictionary;
-	`
-	db.Exec(sql)
-	sql = `
-		DELETE FROM SQLITE_SEQUENCE WHERE name='mail_mail_labels';
-		DELETE FROM SQLITE_SEQUENCE WHERE name='mail_labels';
-		DELETE FROM SQLITE_SEQUENCE WHERE name='mails';
-	`
-	db.Exec(sql)
+	_, err := db.Exec("PRAGMA foreign_keys = 0")
+	if err != nil {
+		panic(err)
+	}
+	sql := `SELECT name FROM sqlite_master WHERE type = "table"`
+	rows, err := db.Query(sql)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+	var tables []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			panic(err)
+		}
+		tables = append(tables, name)
+	}
+	for _, n := range tables {
+		sql := fmt.Sprintf("DELETE FROM %s;", n)
+		_, err := db.Exec(sql)
+		if err != nil {
+			panic(err)
+		}
+	}
+	for _, n := range tables {
+		sql := fmt.Sprintf("DELETE FROM SQLITE_SEQUENCE WHERE name='%s'", n)
+		_, err := db.Exec(sql)
+		if err != nil {
+			panic(err)
+		}
+	}
+	_, err = db.Exec("PRAGMA foreign_keys = 1")
+	if err != nil {
+		panic(err)
+	}
 }

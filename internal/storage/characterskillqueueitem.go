@@ -15,7 +15,7 @@ type SkillqueueItemParams struct {
 	FinishedLevel   int
 	LevelEndSP      int
 	LevelStartSP    int
-	MyCharacterID   int32
+	CharacterID     int32
 	QueuePosition   int
 	StartDate       time.Time
 	TrainingStartSP int
@@ -40,10 +40,10 @@ func (r *Storage) CreateSkillqueueItem(ctx context.Context, arg SkillqueueItemPa
 }
 
 func createSkillqueueItem(ctx context.Context, q *queries.Queries, arg SkillqueueItemParams) error {
-	arg2 := queries.CreateSkillqueueItemParams{
+	arg2 := queries.CreateCharacterSkillqueueItemParams{
 		EveTypeID:     int64(arg.EveTypeID),
 		FinishedLevel: int64(arg.FinishedLevel),
-		MyCharacterID: int64(arg.MyCharacterID),
+		CharacterID:   int64(arg.CharacterID),
 		QueuePosition: int64(arg.QueuePosition),
 	}
 	if !arg.FinishDate.IsZero() {
@@ -66,30 +66,30 @@ func createSkillqueueItem(ctx context.Context, q *queries.Queries, arg Skillqueu
 		arg2.TrainingStartSp.Int64 = int64(arg.TrainingStartSP)
 		arg2.TrainingStartSp.Valid = true
 	}
-	err := q.CreateSkillqueueItem(ctx, arg2)
+	err := q.CreateCharacterSkillqueueItem(ctx, arg2)
 	return err
 }
 
 func (r *Storage) GetSkillqueueItem(ctx context.Context, characterID int32, pos int) (*model.CharacterSkillqueueItem, error) {
-	arg := queries.GetSkillqueueItemParams{
-		MyCharacterID: int64(characterID),
+	arg := queries.GetCharacterSkillqueueItemParams{
+		CharacterID:   int64(characterID),
 		QueuePosition: int64(pos),
 	}
-	row, err := r.q.GetSkillqueueItem(ctx, arg)
+	row, err := r.q.GetCharacterSkillqueueItem(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
-	return skillqueueItemFromDBModel(row.SkillqueueItem, row.SkillName, row.GroupName, row.SkillDescription), err
+	return skillqueueItemFromDBModel(row.CharacterSkillqueueItem, row.SkillName, row.GroupName, row.SkillDescription), err
 }
 
 func (r *Storage) ListSkillqueueItems(ctx context.Context, characterID int32) ([]*model.CharacterSkillqueueItem, error) {
-	rows, err := r.q.ListSkillqueueItems(ctx, int64(characterID))
+	rows, err := r.q.ListCharacterSkillqueueItems(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}
 	ii2 := make([]*model.CharacterSkillqueueItem, len(rows))
 	for i, row := range rows {
-		ii2[i] = skillqueueItemFromDBModel(row.SkillqueueItem, row.SkillName, row.GroupName, row.SkillDescription)
+		ii2[i] = skillqueueItemFromDBModel(row.CharacterSkillqueueItem, row.SkillName, row.GroupName, row.SkillDescription)
 	}
 	return ii2, nil
 }
@@ -101,7 +101,7 @@ func (r *Storage) ReplaceSkillqueueItems(ctx context.Context, characterID int32,
 	}
 	defer tx.Rollback()
 	qtx := r.q.WithTx(tx)
-	if err := qtx.DeleteSkillqueueItems(ctx, int64(characterID)); err != nil {
+	if err := qtx.DeleteCharacterSkillqueueItems(ctx, int64(characterID)); err != nil {
 		return err
 	}
 	for _, arg := range args {
@@ -116,11 +116,11 @@ func (r *Storage) ReplaceSkillqueueItems(ctx context.Context, characterID int32,
 	return nil
 }
 
-func skillqueueItemFromDBModel(i queries.SkillqueueItem, skillName, groupName, description string) *model.CharacterSkillqueueItem {
+func skillqueueItemFromDBModel(i queries.CharacterSkillqueueItem, skillName, groupName, description string) *model.CharacterSkillqueueItem {
 	i2 := &model.CharacterSkillqueueItem{
 		GroupName:        groupName,
 		FinishedLevel:    int(i.FinishedLevel),
-		CharacterID:      int32(i.MyCharacterID),
+		CharacterID:      int32(i.CharacterID),
 		QueuePosition:    int(i.QueuePosition),
 		SkillName:        skillName,
 		SkillDescription: description,

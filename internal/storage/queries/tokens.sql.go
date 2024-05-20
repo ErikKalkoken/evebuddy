@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-const addTokenScope = `-- name: AddTokenScope :exec
-INSERT INTO tokens_scopes (
+const addCharacterTokenScope = `-- name: AddCharacterTokenScope :exec
+INSERT INTO character_token_scopes (
     token_id,
     scope_id
 )
@@ -20,38 +20,38 @@ VALUES (
 )
 `
 
-type AddTokenScopeParams struct {
+type AddCharacterTokenScopeParams struct {
 	TokenID int64
 	ScopeID int64
 }
 
-func (q *Queries) AddTokenScope(ctx context.Context, arg AddTokenScopeParams) error {
-	_, err := q.db.ExecContext(ctx, addTokenScope, arg.TokenID, arg.ScopeID)
+func (q *Queries) AddCharacterTokenScope(ctx context.Context, arg AddCharacterTokenScopeParams) error {
+	_, err := q.db.ExecContext(ctx, addCharacterTokenScope, arg.TokenID, arg.ScopeID)
 	return err
 }
 
-const clearTokenScopes = `-- name: ClearTokenScopes :exec
-DELETE FROM tokens_scopes
+const clearCharacterTokenScopes = `-- name: ClearCharacterTokenScopes :exec
+DELETE FROM character_token_scopes
 WHERE token_id = ?
 `
 
-func (q *Queries) ClearTokenScopes(ctx context.Context, tokenID int64) error {
-	_, err := q.db.ExecContext(ctx, clearTokenScopes, tokenID)
+func (q *Queries) ClearCharacterTokenScopes(ctx context.Context, tokenID int64) error {
+	_, err := q.db.ExecContext(ctx, clearCharacterTokenScopes, tokenID)
 	return err
 }
 
-const getToken = `-- name: GetToken :one
-SELECT access_token, my_character_id, expires_at, refresh_token, token_type
-FROM tokens
-WHERE my_character_id = ?
+const getCharacterToken = `-- name: GetCharacterToken :one
+SELECT access_token, character_id, expires_at, refresh_token, token_type
+FROM character_tokens
+WHERE character_id = ?
 `
 
-func (q *Queries) GetToken(ctx context.Context, myCharacterID int64) (Token, error) {
-	row := q.db.QueryRowContext(ctx, getToken, myCharacterID)
-	var i Token
+func (q *Queries) GetCharacterToken(ctx context.Context, characterID int64) (CharacterToken, error) {
+	row := q.db.QueryRowContext(ctx, getCharacterToken, characterID)
+	var i CharacterToken
 	err := row.Scan(
 		&i.AccessToken,
-		&i.MyCharacterID,
+		&i.CharacterID,
 		&i.ExpiresAt,
 		&i.RefreshToken,
 		&i.TokenType,
@@ -59,16 +59,16 @@ func (q *Queries) GetToken(ctx context.Context, myCharacterID int64) (Token, err
 	return i, err
 }
 
-const listTokenScopes = `-- name: ListTokenScopes :many
+const listCharacterTokenScopes = `-- name: ListCharacterTokenScopes :many
 SELECT scopes.id, scopes.name
-FROM tokens_scopes
-JOIN scopes ON scopes.id = tokens_scopes.scope_id
+FROM character_token_scopes
+JOIN scopes ON scopes.id = character_token_scopes.scope_id
 WHERE token_id = ?
 ORDER BY scopes.name
 `
 
-func (q *Queries) ListTokenScopes(ctx context.Context, tokenID int64) ([]Scope, error) {
-	rows, err := q.db.QueryContext(ctx, listTokenScopes, tokenID)
+func (q *Queries) ListCharacterTokenScopes(ctx context.Context, tokenID int64) ([]Scope, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterTokenScopes, tokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -90,9 +90,9 @@ func (q *Queries) ListTokenScopes(ctx context.Context, tokenID int64) ([]Scope, 
 	return items, nil
 }
 
-const updateOrCreateToken = `-- name: UpdateOrCreateToken :exec
-INSERT INTO tokens (
-    my_character_id,
+const updateOrCreateCharacterToken = `-- name: UpdateOrCreateCharacterToken :exec
+INSERT INTO character_tokens (
+    character_id,
     access_token,
     expires_at,
     refresh_token,
@@ -101,26 +101,26 @@ INSERT INTO tokens (
 VALUES (
     ?1, ?2, ?3, ?4, ?5
 )
-ON CONFLICT(my_character_id) DO
+ON CONFLICT(character_id) DO
 UPDATE SET
     access_token = ?2,
     expires_at = ?3,
     refresh_token = ?4,
     token_type = ?5
-WHERE my_character_id = ?1
+WHERE character_id = ?1
 `
 
-type UpdateOrCreateTokenParams struct {
-	MyCharacterID int64
-	AccessToken   string
-	ExpiresAt     time.Time
-	RefreshToken  string
-	TokenType     string
+type UpdateOrCreateCharacterTokenParams struct {
+	CharacterID  int64
+	AccessToken  string
+	ExpiresAt    time.Time
+	RefreshToken string
+	TokenType    string
 }
 
-func (q *Queries) UpdateOrCreateToken(ctx context.Context, arg UpdateOrCreateTokenParams) error {
-	_, err := q.db.ExecContext(ctx, updateOrCreateToken,
-		arg.MyCharacterID,
+func (q *Queries) UpdateOrCreateCharacterToken(ctx context.Context, arg UpdateOrCreateCharacterTokenParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateCharacterToken,
+		arg.CharacterID,
 		arg.AccessToken,
 		arg.ExpiresAt,
 		arg.RefreshToken,

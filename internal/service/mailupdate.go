@@ -45,13 +45,13 @@ func (s *Service) updateMailLabelsESI(ctx context.Context, characterID int32) (b
 	labels := ll.Labels
 	for _, o := range labels {
 		arg := storage.MailLabelParams{
-			MyCharacterID: token.CharacterID,
-			Color:         o.Color,
-			LabelID:       o.LabelId,
-			Name:          o.Name,
-			UnreadCount:   int(o.UnreadCount),
+			CharacterID: token.CharacterID,
+			Color:       o.Color,
+			LabelID:     o.LabelId,
+			Name:        o.Name,
+			UnreadCount: int(o.UnreadCount),
 		}
-		_, err := s.r.UpdateOrCreateMailLabel(ctx, arg)
+		_, err := s.r.UpdateOrCreateCharacterMailLabel(ctx, arg)
 		if err != nil {
 			return false, err
 		}
@@ -83,7 +83,7 @@ func (s *Service) updateMailListsESI(ctx context.Context, characterID int32) (bo
 		if err != nil {
 			return false, err
 		}
-		if err := s.r.CreateMailList(ctx, token.CharacterID, o.MailingListId); err != nil {
+		if err := s.r.CreateCharacterMailList(ctx, token.CharacterID, o.MailingListId); err != nil {
 			return false, err
 		}
 	}
@@ -125,10 +125,10 @@ func (s *Service) updateMailESI(ctx context.Context, characterID int32) (bool, e
 			return false, err
 		}
 	}
-	if err := s.r.DeleteObsoleteMailLabels(ctx, characterID); err != nil {
+	if err := s.r.DeleteObsoleteCharacterMailLabels(ctx, characterID); err != nil {
 		return false, err
 	}
-	if err := s.r.DeleteObsoleteMailLists(ctx, characterID); err != nil {
+	if err := s.r.DeleteObsoleteCharacterMailLists(ctx, characterID); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -187,7 +187,7 @@ func (s *Service) determineNewMail(ctx context.Context, characterID int32, mm []
 }
 
 func (s *Service) determineMailIDs(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) (*set.Set[int32], *set.Set[int32], error) {
-	ids, err := s.r.ListMailIDs(ctx, characterID)
+	ids, err := s.r.ListCharacterMailIDs(ctx, characterID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -250,18 +250,18 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, characterID, mailID int
 	for i, r := range m.Recipients {
 		recipientIDs[i] = r.RecipientId
 	}
-	arg := storage.CreateMailParams{
-		Body:          m.Body,
-		MyCharacterID: characterID,
-		FromID:        m.From,
-		IsRead:        m.Read,
-		LabelIDs:      m.Labels,
-		MailID:        mailID,
-		RecipientIDs:  recipientIDs,
-		Subject:       m.Subject,
-		Timestamp:     m.Timestamp,
+	arg := storage.CreateCharacterMailParams{
+		Body:         m.Body,
+		CharacterID:  characterID,
+		FromID:       m.From,
+		IsRead:       m.Read,
+		LabelIDs:     m.Labels,
+		MailID:       mailID,
+		RecipientIDs: recipientIDs,
+		Subject:      m.Subject,
+		Timestamp:    m.Timestamp,
 	}
-	_, err = s.r.CreateMail(ctx, arg)
+	_, err = s.r.CreateCharacterMail(ctx, arg)
 	if err != nil {
 		return err
 	}
@@ -270,12 +270,12 @@ func (s *Service) fetchAndStoreMail(ctx context.Context, characterID, mailID int
 
 func (s *Service) updateExistingMail(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
 	for _, h := range headers {
-		m, err := s.r.GetMail(ctx, characterID, h.MailId)
+		m, err := s.r.GetCharacterMail(ctx, characterID, h.MailId)
 		if err != nil {
 			return err
 		}
 		if m.IsRead != h.IsRead {
-			err := s.r.UpdateMail(ctx, characterID, m.ID, h.IsRead, h.Labels)
+			err := s.r.UpdateCharacterMail(ctx, characterID, m.ID, h.IsRead, h.Labels)
 			if err != nil {
 				return err
 			}
@@ -292,7 +292,7 @@ func (s *Service) UpdateMailRead(characterID, mailID int32) error {
 		return err
 	}
 	ctx = contextWithToken(ctx, token.AccessToken)
-	m, err := s.r.GetMail(ctx, characterID, mailID)
+	m, err := s.r.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		return err
 	}
@@ -306,7 +306,7 @@ func (s *Service) UpdateMailRead(characterID, mailID int32) error {
 		return err
 	}
 	m.IsRead = true
-	if err := s.r.UpdateMail(ctx, characterID, m.ID, m.IsRead, labelIDs); err != nil {
+	if err := s.r.UpdateCharacterMail(ctx, characterID, m.ID, m.IsRead, labelIDs); err != nil {
 		return err
 	}
 	return nil

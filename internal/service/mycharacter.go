@@ -16,23 +16,23 @@ import (
 var ErrAborted = errors.New("process aborted prematurely")
 
 func (s *Service) DeleteMyCharacter(characterID int32) error {
-	return s.r.DeleteMyCharacter(context.Background(), characterID)
+	return s.r.DeleteCharacter(context.Background(), characterID)
 }
 
 func (s *Service) GetMyCharacter(characterID int32) (*model.Character, error) {
-	return s.r.GetMyCharacter(context.Background(), characterID)
+	return s.r.GetCharacter(context.Background(), characterID)
 }
 
 func (s *Service) GetAnyMyCharacter() (*model.Character, error) {
-	return s.r.GetFirstMyCharacter(context.Background())
+	return s.r.GetFirstCharacter(context.Background())
 }
 
 func (s *Service) ListMyCharacters() ([]*model.Character, error) {
-	return s.r.ListMyCharacters(context.Background())
+	return s.r.ListCharacters(context.Background())
 }
 
 func (s *Service) ListMyCharactersShort() ([]*model.CharacterShort, error) {
-	return s.r.ListMyCharactersShort(context.Background())
+	return s.r.ListCharactersShort(context.Background())
 }
 
 // UpdateOrCreateMyCharacterFromSSO creates or updates a character via SSO authentication.
@@ -64,7 +64,7 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 		ID:           token.CharacterID,
 		EveCharacter: character,
 	}
-	arg := storage.UpdateOrCreateMyCharacterParams{
+	arg := storage.UpdateOrCreateCharacterParams{
 		ID:            myCharacter.ID,
 		LastLoginAt:   myCharacter.LastLoginAt,
 		TotalSP:       myCharacter.TotalSP,
@@ -78,10 +78,10 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 		arg.ShipID.Int32 = myCharacter.Ship.ID
 		arg.ShipID.Valid = true
 	}
-	if err := s.r.UpdateOrCreateMyCharacter(ctx, arg); err != nil {
+	if err := s.r.UpdateOrCreateCharacter(ctx, arg); err != nil {
 		return 0, err
 	}
-	if err := s.r.UpdateOrCreateToken(ctx, &token); err != nil {
+	if err := s.r.UpdateOrCreateCharacterToken(ctx, &token); err != nil {
 		return 0, err
 	}
 	return token.CharacterID, nil
@@ -113,7 +113,7 @@ func (s *Service) updateHomeESI(ctx context.Context, characterID int32) (bool, e
 		home.Int64 = clones.HomeLocation.LocationId
 		home.Valid = true
 	}
-	if err := s.r.UpdateMyCharacterHome(ctx, characterID, home); err != nil {
+	if err := s.r.UpdateCharacterHome(ctx, characterID, home); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -150,7 +150,7 @@ func (s *Service) updateLocationESI(ctx context.Context, characterID int32) (boo
 		return false, err
 	}
 	x := sql.NullInt64{Int64: locationID, Valid: true}
-	if err := s.r.UpdateMyCharacterLocation(ctx, characterID, x); err != nil {
+	if err := s.r.UpdateCharacterLocation(ctx, characterID, x); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -178,7 +178,7 @@ func (s *Service) updateOnlineESI(ctx context.Context, characterID int32) (bool,
 		x.Time = online.LastLogin
 		x.Valid = true
 	}
-	if err := s.r.UpdateMyCharacterLastLoginAt(ctx, characterID, x); err != nil {
+	if err := s.r.UpdateCharacterLastLoginAt(ctx, characterID, x); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -206,7 +206,7 @@ func (s *Service) updateShipESI(ctx context.Context, characterID int32) (bool, e
 		return false, err
 	}
 	x := sql.NullInt32{Int32: ship.ShipTypeId, Valid: true}
-	if err := s.r.UpdateMyCharacterShip(ctx, characterID, x); err != nil {
+	if err := s.r.UpdateCharacterShip(ctx, characterID, x); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -230,7 +230,7 @@ func (s *Service) updateWalletBalanceESI(ctx context.Context, characterID int32)
 		return false, nil
 	}
 	x := sql.NullFloat64{Float64: balance, Valid: true}
-	if err := s.r.UpdateMyCharacterWalletBalance(ctx, characterID, x); err != nil {
+	if err := s.r.UpdateCharacterWalletBalance(ctx, characterID, x); err != nil {
 		return false, err
 	}
 	return true, nil

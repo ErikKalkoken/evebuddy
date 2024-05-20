@@ -30,7 +30,7 @@ func TestToken(t *testing.T) {
 			TokenType:    "xxx",
 		}
 		// when
-		err := r.UpdateOrCreateToken(ctx, &o1)
+		err := r.UpdateOrCreateCharacterToken(ctx, &o1)
 		// then
 		assert.NoError(t, err)
 		assert.Equal(t, "access", o1.AccessToken)
@@ -38,7 +38,7 @@ func TestToken(t *testing.T) {
 		assert.Equal(t, now.Unix(), o1.ExpiresAt.Unix())
 		assert.Equal(t, []string{"alpha", "bravo"}, o1.Scopes)
 		assert.Equal(t, "xxx", o1.TokenType)
-		o2, err := r.GetToken(ctx, c.ID)
+		o2, err := r.GetCharacterToken(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, o1.AccessToken, o2.AccessToken)
 			assert.Equal(t, c.ID, o2.CharacterID)
@@ -52,7 +52,7 @@ func TestToken(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateToken()
 		// when
-		r, err := r.GetToken(ctx, c.CharacterID)
+		r, err := r.GetCharacterToken(ctx, c.CharacterID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c.AccessToken, r.AccessToken)
@@ -70,10 +70,10 @@ func TestToken(t *testing.T) {
 		o1.AccessToken = "changed"
 		o1.Scopes = []string{"alpha", "bravo"}
 		// when
-		err := r.UpdateOrCreateToken(ctx, o1)
+		err := r.UpdateOrCreateCharacterToken(ctx, o1)
 		// then
 		assert.NoError(t, err)
-		o2, err := r.GetToken(ctx, c.ID)
+		o2, err := r.GetCharacterToken(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, o1.AccessToken, o2.AccessToken)
 			assert.Equal(t, c.ID, o2.CharacterID)
@@ -88,7 +88,7 @@ func TestToken(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		// when
-		_, err := r.GetToken(ctx, c.ID)
+		_, err := r.GetCharacterToken(ctx, c.ID)
 		// then
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})

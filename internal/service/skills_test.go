@@ -56,7 +56,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			c2, err := r.GetMyCharacter(ctx, c.ID)
+			c2, err := r.GetCharacter(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.True(t, c2.TotalSP.Valid)
 				assert.Equal(t, int64(90000), c2.TotalSP.Int64)
@@ -81,7 +81,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
 		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
-		// old := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{MyCharacterID: c.ID})
+		// old := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 42})
 		data := `{
@@ -122,9 +122,9 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 // 		// given
 // 		testutil.TruncateTables(db)
 // 		c := factory.CreateMyCharacter()
-// 		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
-// 		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
-// 		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
+// 		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{CharacterID: c.ID})
+// 		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{CharacterID: c.ID})
+// 		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{CharacterID: c.ID})
 // 		// when
 // 		ee, err := s.ListWalletJournalEntries(c.ID)
 // 		// then

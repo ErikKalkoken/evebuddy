@@ -56,7 +56,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			e, err := r.GetWalletTransaction(ctx, c.ID, 1234567890)
+			e, err := r.GetCharacterWalletTransaction(ctx, c.ID, 1234567890)
 			if assert.NoError(t, err) {
 				assert.Equal(t, client, e.Client)
 				assert.Equal(t, time.Date(2016, 10, 24, 9, 0, 0, 0, time.UTC), e.Date)
@@ -68,7 +68,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				assert.Equal(t, eveType.ID, e.EveType.ID)
 				assert.Equal(t, 1.23, e.UnitPrice)
 			}
-			ids, err := r.ListWalletTransactionIDs(ctx, c.ID)
+			ids, err := r.ListCharacterWalletTransactionIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids, 1)
 			}
@@ -79,7 +79,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		factory.CreateWalletTransaction(storage.CreateWalletTransactionParams{MyCharacterID: c.ID})
+		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(model.EveEntity{ID: 54321})
 		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
@@ -109,7 +109,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			e, err := r.GetWalletTransaction(ctx, c.ID, 1234567890)
+			e, err := r.GetCharacterWalletTransaction(ctx, c.ID, 1234567890)
 			if assert.NoError(t, err) {
 				assert.Equal(t, client, e.Client)
 				assert.Equal(t, time.Date(2016, 10, 24, 9, 0, 0, 0, time.UTC), e.Date)
@@ -121,7 +121,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				assert.Equal(t, eveType.ID, e.EveType.ID)
 				assert.Equal(t, 1.23, e.UnitPrice)
 			}
-			ids, err := r.ListWalletTransactionIDs(ctx, c.ID)
+			ids, err := r.ListCharacterWalletTransactionIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids, 2)
 			}
@@ -132,8 +132,8 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		factory.CreateWalletTransaction(storage.CreateWalletTransactionParams{
-			MyCharacterID: c.ID,
+		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{
+			CharacterID:   c.ID,
 			TransactionID: 1234567890,
 		})
 		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
@@ -161,7 +161,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		_, err := s.updateWalletTransactionESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			ids, err := r.ListWalletTransactionIDs(ctx, c.ID)
+			ids, err := r.ListCharacterWalletTransactionIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids, 1)
 			}
@@ -177,9 +177,9 @@ func TestListWalletTransactions(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		factory.CreateWalletTransaction(storage.CreateWalletTransactionParams{MyCharacterID: c.ID})
-		factory.CreateWalletTransaction(storage.CreateWalletTransactionParams{MyCharacterID: c.ID})
-		factory.CreateWalletTransaction(storage.CreateWalletTransactionParams{MyCharacterID: c.ID})
+		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		// when
 		tt, err := s.ListWalletTransactions(c.ID)
 		// then

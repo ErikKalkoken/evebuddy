@@ -10,15 +10,15 @@ import (
 	"time"
 )
 
-const createWalletTransaction = `-- name: CreateWalletTransaction :exec
-INSERT INTO wallet_transactions (
+const createCharacterWalletTransaction = `-- name: CreateCharacterWalletTransaction :exec
+INSERT INTO character_wallet_transactions (
     client_id,
     date,
     eve_type_id,
     is_buy,
     is_personal,
     journal_ref_id,
-    my_character_id,
+    character_id,
     location_id,
     quantity,
     transaction_id,
@@ -29,29 +29,29 @@ VALUES (
 )
 `
 
-type CreateWalletTransactionParams struct {
+type CreateCharacterWalletTransactionParams struct {
 	ClientID      int64
 	Date          time.Time
 	EveTypeID     int64
 	IsBuy         bool
 	IsPersonal    bool
 	JournalRefID  int64
-	MyCharacterID int64
+	CharacterID   int64
 	LocationID    int64
 	Quantity      int64
 	TransactionID int64
 	UnitPrice     float64
 }
 
-func (q *Queries) CreateWalletTransaction(ctx context.Context, arg CreateWalletTransactionParams) error {
-	_, err := q.db.ExecContext(ctx, createWalletTransaction,
+func (q *Queries) CreateCharacterWalletTransaction(ctx context.Context, arg CreateCharacterWalletTransactionParams) error {
+	_, err := q.db.ExecContext(ctx, createCharacterWalletTransaction,
 		arg.ClientID,
 		arg.Date,
 		arg.EveTypeID,
 		arg.IsBuy,
 		arg.IsPersonal,
 		arg.JournalRefID,
-		arg.MyCharacterID,
+		arg.CharacterID,
 		arg.LocationID,
 		arg.Quantity,
 		arg.TransactionID,
@@ -60,42 +60,42 @@ func (q *Queries) CreateWalletTransaction(ctx context.Context, arg CreateWalletT
 	return err
 }
 
-const getWalletTransaction = `-- name: GetWalletTransaction :one
-SELECT wallet_transactions.client_id, wallet_transactions.date, wallet_transactions.eve_type_id, wallet_transactions.is_buy, wallet_transactions.is_personal, wallet_transactions.journal_ref_id, wallet_transactions.location_id, wallet_transactions.my_character_id, wallet_transactions.quantity, wallet_transactions.transaction_id, wallet_transactions.unit_price, eve_entities.id, eve_entities.category, eve_entities.name, eve_types.name as eve_type_name, locations.name as location_name
-FROM wallet_transactions
-JOIN eve_entities ON eve_entities.id = wallet_transactions.client_id
-JOIN eve_types ON eve_types.id = wallet_transactions.eve_type_id
-JOIN locations ON locations.id = wallet_transactions.location_id
-WHERE my_character_id = ? and transaction_id = ?
+const getCharacterWalletTransaction = `-- name: GetCharacterWalletTransaction :one
+SELECT character_wallet_transactions.character_id, character_wallet_transactions.client_id, character_wallet_transactions.date, character_wallet_transactions.eve_type_id, character_wallet_transactions.is_buy, character_wallet_transactions.is_personal, character_wallet_transactions.journal_ref_id, character_wallet_transactions.location_id, character_wallet_transactions.quantity, character_wallet_transactions.transaction_id, character_wallet_transactions.unit_price, eve_entities.id, eve_entities.category, eve_entities.name, eve_types.name as eve_type_name, locations.name as location_name
+FROM character_wallet_transactions
+JOIN eve_entities ON eve_entities.id = character_wallet_transactions.client_id
+JOIN eve_types ON eve_types.id = character_wallet_transactions.eve_type_id
+JOIN locations ON locations.id = character_wallet_transactions.location_id
+WHERE character_id = ? and transaction_id = ?
 `
 
-type GetWalletTransactionParams struct {
-	MyCharacterID int64
+type GetCharacterWalletTransactionParams struct {
+	CharacterID   int64
 	TransactionID int64
 }
 
-type GetWalletTransactionRow struct {
-	WalletTransaction WalletTransaction
-	EveEntity         EveEntity
-	EveTypeName       string
-	LocationName      string
+type GetCharacterWalletTransactionRow struct {
+	CharacterWalletTransaction CharacterWalletTransaction
+	EveEntity                  EveEntity
+	EveTypeName                string
+	LocationName               string
 }
 
-func (q *Queries) GetWalletTransaction(ctx context.Context, arg GetWalletTransactionParams) (GetWalletTransactionRow, error) {
-	row := q.db.QueryRowContext(ctx, getWalletTransaction, arg.MyCharacterID, arg.TransactionID)
-	var i GetWalletTransactionRow
+func (q *Queries) GetCharacterWalletTransaction(ctx context.Context, arg GetCharacterWalletTransactionParams) (GetCharacterWalletTransactionRow, error) {
+	row := q.db.QueryRowContext(ctx, getCharacterWalletTransaction, arg.CharacterID, arg.TransactionID)
+	var i GetCharacterWalletTransactionRow
 	err := row.Scan(
-		&i.WalletTransaction.ClientID,
-		&i.WalletTransaction.Date,
-		&i.WalletTransaction.EveTypeID,
-		&i.WalletTransaction.IsBuy,
-		&i.WalletTransaction.IsPersonal,
-		&i.WalletTransaction.JournalRefID,
-		&i.WalletTransaction.LocationID,
-		&i.WalletTransaction.MyCharacterID,
-		&i.WalletTransaction.Quantity,
-		&i.WalletTransaction.TransactionID,
-		&i.WalletTransaction.UnitPrice,
+		&i.CharacterWalletTransaction.CharacterID,
+		&i.CharacterWalletTransaction.ClientID,
+		&i.CharacterWalletTransaction.Date,
+		&i.CharacterWalletTransaction.EveTypeID,
+		&i.CharacterWalletTransaction.IsBuy,
+		&i.CharacterWalletTransaction.IsPersonal,
+		&i.CharacterWalletTransaction.JournalRefID,
+		&i.CharacterWalletTransaction.LocationID,
+		&i.CharacterWalletTransaction.Quantity,
+		&i.CharacterWalletTransaction.TransactionID,
+		&i.CharacterWalletTransaction.UnitPrice,
 		&i.EveEntity.ID,
 		&i.EveEntity.Category,
 		&i.EveEntity.Name,
@@ -105,14 +105,14 @@ func (q *Queries) GetWalletTransaction(ctx context.Context, arg GetWalletTransac
 	return i, err
 }
 
-const listWalletTransactionIDs = `-- name: ListWalletTransactionIDs :many
+const listCharacterWalletTransactionIDs = `-- name: ListCharacterWalletTransactionIDs :many
 SELECT transaction_id
-FROM wallet_transactions
-WHERE my_character_id = ?
+FROM character_wallet_transactions
+WHERE character_id = ?
 `
 
-func (q *Queries) ListWalletTransactionIDs(ctx context.Context, myCharacterID int64) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listWalletTransactionIDs, myCharacterID)
+func (q *Queries) ListCharacterWalletTransactionIDs(ctx context.Context, characterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterWalletTransactionIDs, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -134,44 +134,44 @@ func (q *Queries) ListWalletTransactionIDs(ctx context.Context, myCharacterID in
 	return items, nil
 }
 
-const listWalletTransactions = `-- name: ListWalletTransactions :many
-SELECT wallet_transactions.client_id, wallet_transactions.date, wallet_transactions.eve_type_id, wallet_transactions.is_buy, wallet_transactions.is_personal, wallet_transactions.journal_ref_id, wallet_transactions.location_id, wallet_transactions.my_character_id, wallet_transactions.quantity, wallet_transactions.transaction_id, wallet_transactions.unit_price, eve_entities.id, eve_entities.category, eve_entities.name, eve_types.name as eve_type_name, locations.name as location_name
-FROM wallet_transactions
-JOIN eve_entities ON eve_entities.id = wallet_transactions.client_id
-JOIN eve_types ON eve_types.id = wallet_transactions.eve_type_id
-JOIN locations ON locations.id = wallet_transactions.location_id
-WHERE my_character_id = ?
+const listCharacterWalletTransactions = `-- name: ListCharacterWalletTransactions :many
+SELECT character_wallet_transactions.character_id, character_wallet_transactions.client_id, character_wallet_transactions.date, character_wallet_transactions.eve_type_id, character_wallet_transactions.is_buy, character_wallet_transactions.is_personal, character_wallet_transactions.journal_ref_id, character_wallet_transactions.location_id, character_wallet_transactions.quantity, character_wallet_transactions.transaction_id, character_wallet_transactions.unit_price, eve_entities.id, eve_entities.category, eve_entities.name, eve_types.name as eve_type_name, locations.name as location_name
+FROM character_wallet_transactions
+JOIN eve_entities ON eve_entities.id = character_wallet_transactions.client_id
+JOIN eve_types ON eve_types.id = character_wallet_transactions.eve_type_id
+JOIN locations ON locations.id = character_wallet_transactions.location_id
+WHERE character_id = ?
 ORDER BY date DESC
 `
 
-type ListWalletTransactionsRow struct {
-	WalletTransaction WalletTransaction
-	EveEntity         EveEntity
-	EveTypeName       string
-	LocationName      string
+type ListCharacterWalletTransactionsRow struct {
+	CharacterWalletTransaction CharacterWalletTransaction
+	EveEntity                  EveEntity
+	EveTypeName                string
+	LocationName               string
 }
 
-func (q *Queries) ListWalletTransactions(ctx context.Context, myCharacterID int64) ([]ListWalletTransactionsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listWalletTransactions, myCharacterID)
+func (q *Queries) ListCharacterWalletTransactions(ctx context.Context, characterID int64) ([]ListCharacterWalletTransactionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterWalletTransactions, characterID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListWalletTransactionsRow
+	var items []ListCharacterWalletTransactionsRow
 	for rows.Next() {
-		var i ListWalletTransactionsRow
+		var i ListCharacterWalletTransactionsRow
 		if err := rows.Scan(
-			&i.WalletTransaction.ClientID,
-			&i.WalletTransaction.Date,
-			&i.WalletTransaction.EveTypeID,
-			&i.WalletTransaction.IsBuy,
-			&i.WalletTransaction.IsPersonal,
-			&i.WalletTransaction.JournalRefID,
-			&i.WalletTransaction.LocationID,
-			&i.WalletTransaction.MyCharacterID,
-			&i.WalletTransaction.Quantity,
-			&i.WalletTransaction.TransactionID,
-			&i.WalletTransaction.UnitPrice,
+			&i.CharacterWalletTransaction.CharacterID,
+			&i.CharacterWalletTransaction.ClientID,
+			&i.CharacterWalletTransaction.Date,
+			&i.CharacterWalletTransaction.EveTypeID,
+			&i.CharacterWalletTransaction.IsBuy,
+			&i.CharacterWalletTransaction.IsPersonal,
+			&i.CharacterWalletTransaction.JournalRefID,
+			&i.CharacterWalletTransaction.LocationID,
+			&i.CharacterWalletTransaction.Quantity,
+			&i.CharacterWalletTransaction.TransactionID,
+			&i.CharacterWalletTransaction.UnitPrice,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,

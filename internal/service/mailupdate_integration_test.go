@@ -148,7 +148,7 @@ func TestUpdateMail(t *testing.T) {
 					if assert.NoError(t, err) {
 						assert.Equal(t, "blah blah blah", m.Body)
 					}
-					lists, err := r.ListMailListsOrdered(ctx, c1.ID)
+					lists, err := r.ListCharacterMailListsOrdered(ctx, c1.ID)
 					if assert.NoError(t, err) {
 						got := set.New[int32]()
 						for _, l := range lists {
@@ -157,7 +157,7 @@ func TestUpdateMail(t *testing.T) {
 						want := set.NewFromSlice([]int32{m1.ID})
 						assert.Equal(t, want, got)
 					}
-					lists, err = r.ListMailListsOrdered(ctx, c2.ID)
+					lists, err = r.ListCharacterMailListsOrdered(ctx, c2.ID)
 					if assert.NoError(t, err) {
 						got := set.New[int32]()
 						for _, l := range lists {
@@ -183,16 +183,16 @@ func TestUpdateMail(t *testing.T) {
 		m1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 		timestamp, _ := time.Parse("2006-01-02T15:04:05.999MST", "2015-09-30T16:07:00Z")
 		mailID := int32(7)
-		factory.CreateMail(storage.CreateMailParams{
-			Body:          "blah blah blah",
-			MyCharacterID: c.ID,
-			FromID:        e1.ID,
-			LabelIDs:      []int32{16},
-			MailID:        mailID,
-			IsRead:        false,
-			RecipientIDs:  []int32{e2.ID, m1.ID},
-			Subject:       "test",
-			Timestamp:     timestamp,
+		factory.CreateMail(storage.CreateCharacterMailParams{
+			Body:         "blah blah blah",
+			CharacterID:  c.ID,
+			FromID:       e1.ID,
+			LabelIDs:     []int32{16},
+			MailID:       mailID,
+			IsRead:       false,
+			RecipientIDs: []int32{e2.ID, m1.ID},
+			Subject:      "test",
+			Timestamp:    timestamp,
 		})
 
 		dataMailList := []map[string]any{
@@ -284,7 +284,7 @@ func TestUpdateMail(t *testing.T) {
 				assert.Equal(t, int32(32), m.Labels[0].LabelID)
 				assert.Len(t, m.Recipients, 2)
 			}
-			labels, err := r.ListMailLabelsOrdered(ctx, c.ID)
+			labels, err := r.ListCharacterMailLabelsOrdered(ctx, c.ID)
 			if assert.NoError(t, err) {
 				got := set.New[int32]()
 				for _, l := range labels {

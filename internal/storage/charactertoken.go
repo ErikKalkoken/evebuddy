@@ -10,15 +10,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (r *Storage) GetToken(ctx context.Context, characterID int32) (*model.CharacterToken, error) {
-	t, err := r.q.GetToken(ctx, int64(characterID))
+func (r *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*model.CharacterToken, error) {
+	t, err := r.q.GetCharacterToken(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to get token for character %d: %w", characterID, err)
 	}
-	ss, err := r.q.ListTokenScopes(ctx, int64(characterID))
+	ss, err := r.q.ListCharacterTokenScopes(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}
@@ -26,19 +26,19 @@ func (r *Storage) GetToken(ctx context.Context, characterID int32) (*model.Chara
 	for i, s := range ss {
 		scopes[i] = s.Name
 	}
-	t2 := tokenFromDBModel(t, scopes)
+	t2 := characterTokenFromDBModel(t, scopes)
 	return t2, nil
 }
 
-func (r *Storage) UpdateOrCreateToken(ctx context.Context, t *model.CharacterToken) error {
-	arg := queries.UpdateOrCreateTokenParams{
-		AccessToken:   t.AccessToken,
-		MyCharacterID: int64(t.CharacterID),
-		ExpiresAt:     t.ExpiresAt,
-		RefreshToken:  t.RefreshToken,
-		TokenType:     t.TokenType,
+func (r *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *model.CharacterToken) error {
+	arg := queries.UpdateOrCreateCharacterTokenParams{
+		AccessToken:  t.AccessToken,
+		CharacterID:  int64(t.CharacterID),
+		ExpiresAt:    t.ExpiresAt,
+		RefreshToken: t.RefreshToken,
+		TokenType:    t.TokenType,
 	}
-	if err := r.q.UpdateOrCreateToken(ctx, arg); err != nil {
+	if err := r.q.UpdateOrCreateCharacterToken(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update or create token for character %d: %w", t.CharacterID, err)
 	}
 	ss := make([]queries.Scope, len(t.Scopes))
@@ -55,15 +55,15 @@ func (r *Storage) UpdateOrCreateToken(ctx context.Context, t *model.CharacterTok
 	}
 	defer tx.Rollback()
 	qtx := r.q.WithTx(tx)
-	if err := qtx.ClearTokenScopes(ctx, int64(t.CharacterID)); err != nil {
+	if err := qtx.ClearCharacterTokenScopes(ctx, int64(t.CharacterID)); err != nil {
 		return err
 	}
 	for _, s := range ss {
-		arg := queries.AddTokenScopeParams{
-			TokenID: arg.MyCharacterID,
+		arg := queries.AddCharacterTokenScopeParams{
+			TokenID: arg.CharacterID,
 			ScopeID: s.ID,
 		}
-		if err := qtx.AddTokenScope(ctx, arg); err != nil {
+		if err := qtx.AddCharacterTokenScope(ctx, arg); err != nil {
 			return err
 		}
 	}
@@ -100,13 +100,13 @@ func (r *Storage) getOrCreateScope(ctx context.Context, name string) (queries.Sc
 	return s, nil
 }
 
-func tokenFromDBModel(t queries.Token, scopes []string) *model.CharacterToken {
-	if t.MyCharacterID == 0 {
+func characterTokenFromDBModel(t queries.CharacterToken, scopes []string) *model.CharacterToken {
+	if t.CharacterID == 0 {
 		panic("missing character ID")
 	}
 	return &model.CharacterToken{
 		AccessToken:  t.AccessToken,
-		CharacterID:  int32(t.MyCharacterID),
+		CharacterID:  int32(t.CharacterID),
 		ExpiresAt:    t.ExpiresAt,
 		RefreshToken: t.RefreshToken,
 		Scopes:       scopes,

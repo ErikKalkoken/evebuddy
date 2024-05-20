@@ -10,33 +10,33 @@ import (
 	"time"
 )
 
-const getMyCharacterUpdateStatus = `-- name: GetMyCharacterUpdateStatus :one
-SELECT content_hash, my_character_id, section_id, updated_at
-FROM my_character_update_status
-WHERE my_character_id = ?
+const getCharacterUpdateStatus = `-- name: GetCharacterUpdateStatus :one
+SELECT character_id, content_hash, section_id, updated_at
+FROM character_update_status
+WHERE character_id = ?
 AND section_id = ?
 `
 
-type GetMyCharacterUpdateStatusParams struct {
-	MyCharacterID int64
-	SectionID     string
+type GetCharacterUpdateStatusParams struct {
+	CharacterID int64
+	SectionID   string
 }
 
-func (q *Queries) GetMyCharacterUpdateStatus(ctx context.Context, arg GetMyCharacterUpdateStatusParams) (MyCharacterUpdateStatus, error) {
-	row := q.db.QueryRowContext(ctx, getMyCharacterUpdateStatus, arg.MyCharacterID, arg.SectionID)
-	var i MyCharacterUpdateStatus
+func (q *Queries) GetCharacterUpdateStatus(ctx context.Context, arg GetCharacterUpdateStatusParams) (CharacterUpdateStatus, error) {
+	row := q.db.QueryRowContext(ctx, getCharacterUpdateStatus, arg.CharacterID, arg.SectionID)
+	var i CharacterUpdateStatus
 	err := row.Scan(
+		&i.CharacterID,
 		&i.ContentHash,
-		&i.MyCharacterID,
 		&i.SectionID,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
-const updateOrCreateMyCharacterUpdateStatus = `-- name: UpdateOrCreateMyCharacterUpdateStatus :exec
-INSERT INTO my_character_update_status (
-    my_character_id,
+const updateOrCreateCharacterUpdateStatus = `-- name: UpdateOrCreateCharacterUpdateStatus :exec
+INSERT INTO character_update_status (
+    character_id,
     section_id,
     updated_at,
     content_hash
@@ -44,24 +44,24 @@ INSERT INTO my_character_update_status (
 VALUES (
     ?1, ?2, ?3, ?4
 )
-ON CONFLICT(my_character_id, section_id) DO
+ON CONFLICT(character_id, section_id) DO
 UPDATE SET
     updated_at = ?3,
     content_hash = ?4
-WHERE my_character_id = ?1
+WHERE character_id = ?1
 AND section_id = ?2
 `
 
-type UpdateOrCreateMyCharacterUpdateStatusParams struct {
-	MyCharacterID int64
-	SectionID     string
-	UpdatedAt     time.Time
-	ContentHash   string
+type UpdateOrCreateCharacterUpdateStatusParams struct {
+	CharacterID int64
+	SectionID   string
+	UpdatedAt   time.Time
+	ContentHash string
 }
 
-func (q *Queries) UpdateOrCreateMyCharacterUpdateStatus(ctx context.Context, arg UpdateOrCreateMyCharacterUpdateStatusParams) error {
-	_, err := q.db.ExecContext(ctx, updateOrCreateMyCharacterUpdateStatus,
-		arg.MyCharacterID,
+func (q *Queries) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg UpdateOrCreateCharacterUpdateStatusParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrCreateCharacterUpdateStatus,
+		arg.CharacterID,
 		arg.SectionID,
 		arg.UpdatedAt,
 		arg.ContentHash,

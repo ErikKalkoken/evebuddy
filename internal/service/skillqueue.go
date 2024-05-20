@@ -51,7 +51,7 @@ func (s *Service) updateSkillqueueESI(ctx context.Context, characterID int32) (b
 			FinishedLevel:   int(o.FinishedLevel),
 			LevelEndSP:      int(o.LevelEndSp),
 			LevelStartSP:    int(o.LevelStartSp),
-			MyCharacterID:   characterID,
+			CharacterID:     characterID,
 			QueuePosition:   int(o.QueuePosition),
 			StartDate:       o.StartDate,
 			TrainingStartSP: int(o.TrainingStartSp),

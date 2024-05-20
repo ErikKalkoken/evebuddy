@@ -27,7 +27,7 @@ func (s *Service) updateCharacterSkillsESI(ctx context.Context, characterID int3
 	}
 	totalSP := sql.NullInt64{Int64: skills.TotalSp, Valid: true}
 	unallocatedSP := sql.NullInt64{Int64: int64(skills.UnallocatedSp), Valid: true}
-	if err := s.r.UpdateMyCharacterSkillPoints(ctx, characterID, totalSP, unallocatedSP); err != nil {
+	if err := s.r.UpdateCharacterSkillPoints(ctx, characterID, totalSP, unallocatedSP); err != nil {
 		return false, err
 	}
 	var existingSkills []int32
@@ -38,7 +38,7 @@ func (s *Service) updateCharacterSkillsESI(ctx context.Context, characterID int3
 			return false, err
 		}
 		arg := storage.UpdateOrCreateCharacterSkillParams{
-			MyCharacterID:      characterID,
+			CharacterID:        characterID,
 			EveTypeID:          o.SkillId,
 			ActiveSkillLevel:   int(o.ActiveSkillLevel),
 			TrainedSkillLevel:  int(o.TrainedSkillLevel),

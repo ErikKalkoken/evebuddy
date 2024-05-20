@@ -12,7 +12,7 @@ import (
 
 func (s *Service) ListWalletTransactions(characterID int32) ([]*model.CharacterWalletTransaction, error) {
 	ctx := context.Background()
-	return s.r.ListWalletTransactions(ctx, characterID)
+	return s.r.ListCharacterWalletTransactions(ctx, characterID)
 }
 
 // TODO: Add ability to fetch more then one page from ESI
@@ -36,7 +36,7 @@ func (s *Service) updateWalletTransactionESI(ctx context.Context, characterID in
 	if !changed {
 		return false, nil
 	}
-	ii, err := s.r.ListWalletTransactionIDs(ctx, characterID)
+	ii, err := s.r.ListCharacterWalletTransactionIDs(ctx, characterID)
 	if err != nil {
 		return false, err
 	}
@@ -73,7 +73,7 @@ func (s *Service) updateWalletTransactionESI(ctx context.Context, characterID in
 		if err != nil {
 			return false, err
 		}
-		arg := storage.CreateWalletTransactionParams{
+		arg := storage.CreateCharacterWalletTransactionParams{
 			ClientID:      o.ClientId,
 			Date:          o.Date,
 			EveTypeID:     o.TypeId,
@@ -81,12 +81,12 @@ func (s *Service) updateWalletTransactionESI(ctx context.Context, characterID in
 			IsPersonal:    o.IsPersonal,
 			JournalRefID:  o.JournalRefId,
 			LocationID:    o.LocationId,
-			MyCharacterID: characterID,
+			CharacterID:   characterID,
 			Quantity:      o.Quantity,
 			TransactionID: o.TransactionId,
 			UnitPrice:     o.UnitPrice,
 		}
-		if err := s.r.CreateWalletTransaction(ctx, arg); err != nil {
+		if err := s.r.CreateCharacterWalletTransaction(ctx, arg); err != nil {
 			return false, err
 		}
 	}

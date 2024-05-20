@@ -1,10 +1,10 @@
--- name: DeleteMyCharacter :exec
-DELETE FROM my_characters
+-- name: DeleteCharacter :exec
+DELETE FROM characters
 WHERE id = ?;
 
--- name: GetMyCharacter :one
+-- name: GetCharacter :one
 SELECT
-    sqlc.embed(my_characters),
+    sqlc.embed(characters),
     sqlc.embed(eve_characters),
     sqlc.embed(corporations),
     sqlc.embed(eve_races),
@@ -13,17 +13,17 @@ SELECT
     home_id,
     location_id,
     ship_id
-FROM my_characters
-JOIN eve_characters ON eve_characters.id = my_characters.id
+FROM characters
+JOIN eve_characters ON eve_characters.id = characters.id
 JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
 JOIN eve_races ON eve_races.id = eve_characters.race_id
 LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
 LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.faction_id
-WHERE my_characters.id = ?;
+WHERE characters.id = ?;
 
--- name: ListMyCharacters :many
+-- name: ListCharacters :many
 SELECT DISTINCT
-    sqlc.embed(my_characters),
+    sqlc.embed(characters),
     sqlc.embed(eve_characters),
     sqlc.embed(corporations),
     sqlc.embed(eve_races),
@@ -32,64 +32,64 @@ SELECT DISTINCT
     home_id,
     location_id,
     ship_id
-FROM my_characters
-JOIN eve_characters ON eve_characters.id = my_characters.id
+FROM characters
+JOIN eve_characters ON eve_characters.id = characters.id
 JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
 JOIN eve_races ON eve_races.id = eve_characters.race_id
 LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
 LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.faction_id
 ORDER BY eve_characters.name;
 
--- name: ListMyCharactersShort :many
+-- name: ListCharactersShort :many
 SELECT DISTINCT eve_characters.id, eve_characters.name, corporations.name
-FROM my_characters
-JOIN eve_characters ON eve_characters.id = my_characters.id
+FROM characters
+JOIN eve_characters ON eve_characters.id = characters.id
 JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
 ORDER BY eve_characters.name;
 
--- name: ListMyCharacterIDs :many
+-- name: ListCharacterIDs :many
 SELECT id
-FROM my_characters;
+FROM characters;
 
--- name: UpdateMyCharacterHomeId :exec
-UPDATE my_characters
+-- name: UpdateCharacterHomeId :exec
+UPDATE characters
 SET
     home_id = ?
 WHERE id = ?;
 
--- name: UpdateMyCharacterLastLoginAt :exec
-UPDATE my_characters
+-- name: UpdateCharacterLastLoginAt :exec
+UPDATE characters
 SET
     last_login_at = ?
 WHERE id = ?;
 
--- name: UpdateMyCharacterLocationID :exec
-UPDATE my_characters
+-- name: UpdateCharacterLocationID :exec
+UPDATE characters
 SET
     location_id = ?
 WHERE id = ?;
 
--- name: UpdateMyCharacterShipID :exec
-UPDATE my_characters
+-- name: UpdateCharacterShipID :exec
+UPDATE characters
 SET
     ship_id = ?
 WHERE id = ?;
 
--- name: UpdateMyCharacterSP :exec
-UPDATE my_characters
+-- name: UpdateCharacterSP :exec
+UPDATE characters
 SET
     total_sp = ?,
     unallocated_sp = ?
 WHERE id = ?;
 
--- name: UpdateMyCharacterWalletBalance :exec
-UPDATE my_characters
+-- name: UpdateCharacterWalletBalance :exec
+UPDATE characters
 SET
     wallet_balance = ?
 WHERE id = ?;
 
--- name: UpdateOrCreateMyCharacter :exec
-INSERT INTO my_characters (
+-- name: UpdateOrCreateCharacter :exec
+INSERT INTO characters (
     id,
     home_id,
     last_login_at,

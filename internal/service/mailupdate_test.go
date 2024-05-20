@@ -116,7 +116,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		_, err := s.updateMailLabelsESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			labels, err := r.ListMailLabelsOrdered(ctx, c.ID)
+			labels, err := r.ListCharacterMailLabelsOrdered(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, labels, 2)
 			}
@@ -166,7 +166,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		_, err := s.updateMailLabelsESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			l2, err := r.GetMailLabel(ctx, c.ID, l1.LabelID)
+			l2, err := r.GetCharacterMailLabel(ctx, c.ID, l1.LabelID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "PINK", l2.Name)
 				assert.Equal(t, "#660066", l2.Color)

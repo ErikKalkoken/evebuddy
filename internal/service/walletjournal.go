@@ -12,7 +12,7 @@ import (
 
 func (s *Service) ListWalletJournalEntries(characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
 	ctx := context.Background()
-	return s.r.ListWalletJournalEntries(ctx, characterID)
+	return s.r.ListCharacterWalletJournalEntries(ctx, characterID)
 }
 
 // TODO: Add ability to fetch more then one page from ESI
@@ -36,7 +36,7 @@ func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID i
 	if !changed {
 		return false, nil
 	}
-	ii, err := s.r.ListWalletJournalEntryIDs(ctx, characterID)
+	ii, err := s.r.ListCharacterWalletJournalEntryIDs(ctx, characterID)
 	if err != nil {
 		return false, err
 	}
@@ -68,7 +68,7 @@ func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID i
 	_, err = s.AddMissingEveEntities(ctx, ids.ToSlice())
 
 	for _, o := range newEntries {
-		arg := storage.CreateWalletJournalEntryParams{
+		arg := storage.CreateCharacterWalletJournalEntryParams{
 			Amount:        o.Amount,
 			Balance:       o.Balance,
 			ContextID:     o.ContextId,
@@ -77,7 +77,7 @@ func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID i
 			Description:   o.Description,
 			FirstPartyID:  o.FirstPartyId,
 			ID:            o.Id,
-			MyCharacterID: characterID,
+			CharacterID:   characterID,
 			RefType:       o.RefType,
 			Reason:        o.Reason,
 			SecondPartyID: o.SecondPartyId,
@@ -87,7 +87,7 @@ func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID i
 		if err != nil {
 			return false, err
 		}
-		if err := s.r.CreateWalletJournalEntry(ctx, arg); err != nil {
+		if err := s.r.CreateCharacterWalletJournalEntry(ctx, arg); err != nil {
 			return false, err
 		}
 	}

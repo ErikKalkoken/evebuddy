@@ -1,5 +1,5 @@
--- name: CreateWalletJournalEntry :exec
-INSERT INTO wallet_journal_entries (
+-- name: CreateCharacterWalletJournalEntry :exec
+INSERT INTO character_wallet_journal_entries (
     amount,
     balance,
     context_id,
@@ -8,7 +8,7 @@ INSERT INTO wallet_journal_entries (
     description,
     first_party_id,
     id,
-    my_character_id,
+    character_id,
     reason,
     ref_type,
     second_party_id,
@@ -19,24 +19,24 @@ VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 );
 
--- name: GetWalletJournalEntry :one
-SELECT sqlc.embed(wallet_journal_entries), sqlc.embed(wallet_journal_entry_first_parties), sqlc.embed(wallet_journal_entry_second_parties), sqlc.embed(wallet_journal_entry_tax_receivers)
-FROM wallet_journal_entries
-LEFT JOIN wallet_journal_entry_first_parties ON wallet_journal_entry_first_parties.id = wallet_journal_entries.first_party_id
-LEFT JOIN wallet_journal_entry_second_parties ON wallet_journal_entry_second_parties.id = wallet_journal_entries.second_party_id
-LEFT JOIN wallet_journal_entry_tax_receivers ON wallet_journal_entry_tax_receivers.id = wallet_journal_entries.tax_receiver_id
-WHERE my_character_id = ? and wallet_journal_entries.id = ?;
+-- name: GetCharacterWalletJournalEntry :one
+SELECT sqlc.embed(character_wallet_journal_entries), sqlc.embed(wallet_journal_entry_first_parties), sqlc.embed(wallet_journal_entry_second_parties), sqlc.embed(wallet_journal_entry_tax_receivers)
+FROM character_wallet_journal_entries
+LEFT JOIN wallet_journal_entry_first_parties ON wallet_journal_entry_first_parties.id = character_wallet_journal_entries.first_party_id
+LEFT JOIN wallet_journal_entry_second_parties ON wallet_journal_entry_second_parties.id = character_wallet_journal_entries.second_party_id
+LEFT JOIN wallet_journal_entry_tax_receivers ON wallet_journal_entry_tax_receivers.id = character_wallet_journal_entries.tax_receiver_id
+WHERE character_id = ? and character_wallet_journal_entries.id = ?;
 
--- name: ListWalletJournalEntryIDs :many
+-- name: ListCharacterWalletJournalEntryIDs :many
 SELECT id
-FROM wallet_journal_entries
-WHERE my_character_id = ?;
+FROM character_wallet_journal_entries
+WHERE character_id = ?;
 
--- name: ListWalletJournalEntries :many
-SELECT DISTINCT sqlc.embed(wallet_journal_entries), sqlc.embed(wallet_journal_entry_first_parties), sqlc.embed(wallet_journal_entry_second_parties), sqlc.embed(wallet_journal_entry_tax_receivers)
-FROM wallet_journal_entries
-LEFT JOIN wallet_journal_entry_first_parties ON wallet_journal_entry_first_parties.id = wallet_journal_entries.first_party_id
-LEFT JOIN wallet_journal_entry_second_parties ON wallet_journal_entry_second_parties.id = wallet_journal_entries.second_party_id
-LEFT JOIN wallet_journal_entry_tax_receivers ON wallet_journal_entry_tax_receivers.id = wallet_journal_entries.tax_receiver_id
-WHERE my_character_id = ?
+-- name: ListCharacterWalletJournalEntries :many
+SELECT DISTINCT sqlc.embed(character_wallet_journal_entries), sqlc.embed(wallet_journal_entry_first_parties), sqlc.embed(wallet_journal_entry_second_parties), sqlc.embed(wallet_journal_entry_tax_receivers)
+FROM character_wallet_journal_entries
+LEFT JOIN wallet_journal_entry_first_parties ON wallet_journal_entry_first_parties.id = character_wallet_journal_entries.first_party_id
+LEFT JOIN wallet_journal_entry_second_parties ON wallet_journal_entry_second_parties.id = character_wallet_journal_entries.second_party_id
+LEFT JOIN wallet_journal_entry_tax_receivers ON wallet_journal_entry_tax_receivers.id = character_wallet_journal_entries.tax_receiver_id
+WHERE character_id = ?
 ORDER BY date DESC;

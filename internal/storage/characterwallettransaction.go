@@ -9,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-type CreateWalletTransactionParams struct {
+type CreateCharacterWalletTransactionParams struct {
 	ClientID      int32
 	Date          time.Time
 	EveTypeID     int32
@@ -17,17 +17,17 @@ type CreateWalletTransactionParams struct {
 	IsPersonal    bool
 	JournalRefID  int64
 	LocationID    int64
-	MyCharacterID int32
+	CharacterID   int32
 	Quantity      int32
 	TransactionID int64
 	UnitPrice     float64
 }
 
-func (r *Storage) CreateWalletTransaction(ctx context.Context, arg CreateWalletTransactionParams) error {
+func (r *Storage) CreateCharacterWalletTransaction(ctx context.Context, arg CreateCharacterWalletTransactionParams) error {
 	if arg.TransactionID == 0 {
-		return fmt.Errorf("WalletTransaction ID can not be zero, Character %d", arg.MyCharacterID)
+		return fmt.Errorf("WalletTransaction ID can not be zero, Character %d", arg.CharacterID)
 	}
-	arg2 := queries.CreateWalletTransactionParams{
+	arg2 := queries.CreateCharacterWalletTransactionParams{
 		ClientID:      int64(arg.ClientID),
 		Date:          arg.Date,
 		EveTypeID:     int64(arg.EveTypeID),
@@ -35,46 +35,46 @@ func (r *Storage) CreateWalletTransaction(ctx context.Context, arg CreateWalletT
 		IsPersonal:    arg.IsPersonal,
 		JournalRefID:  arg.JournalRefID,
 		LocationID:    arg.LocationID,
-		MyCharacterID: int64(arg.MyCharacterID),
+		CharacterID:   int64(arg.CharacterID),
 		Quantity:      int64(arg.Quantity),
 		TransactionID: arg.TransactionID,
 		UnitPrice:     arg.UnitPrice,
 	}
 
-	err := r.q.CreateWalletTransaction(ctx, arg2)
+	err := r.q.CreateCharacterWalletTransaction(ctx, arg2)
 	return err
 }
 
-func (r *Storage) GetWalletTransaction(ctx context.Context, characterID int32, transactionID int64) (*model.CharacterWalletTransaction, error) {
-	arg := queries.GetWalletTransactionParams{
-		MyCharacterID: int64(characterID),
+func (r *Storage) GetCharacterWalletTransaction(ctx context.Context, characterID int32, transactionID int64) (*model.CharacterWalletTransaction, error) {
+	arg := queries.GetCharacterWalletTransactionParams{
+		CharacterID:   int64(characterID),
 		TransactionID: transactionID,
 	}
-	row, err := r.q.GetWalletTransaction(ctx, arg)
+	row, err := r.q.GetCharacterWalletTransaction(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
-	return walletTransactionFromDBModel(row.WalletTransaction, row.EveEntity, row.EveTypeName, row.LocationName), err
+	return characterWalletTransactionFromDBModel(row.CharacterWalletTransaction, row.EveEntity, row.EveTypeName, row.LocationName), err
 }
 
-func (r *Storage) ListWalletTransactionIDs(ctx context.Context, characterID int32) ([]int64, error) {
-	return r.q.ListWalletTransactionIDs(ctx, int64(characterID))
+func (r *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, characterID int32) ([]int64, error) {
+	return r.q.ListCharacterWalletTransactionIDs(ctx, int64(characterID))
 }
 
-func (r *Storage) ListWalletTransactions(ctx context.Context, characterID int32) ([]*model.CharacterWalletTransaction, error) {
-	rows, err := r.q.ListWalletTransactions(ctx, int64(characterID))
+func (r *Storage) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*model.CharacterWalletTransaction, error) {
+	rows, err := r.q.ListCharacterWalletTransactions(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}
 	ee := make([]*model.CharacterWalletTransaction, len(rows))
 	for i, row := range rows {
-		ee[i] = walletTransactionFromDBModel(row.WalletTransaction, row.EveEntity, row.EveTypeName, row.LocationName)
+		ee[i] = characterWalletTransactionFromDBModel(row.CharacterWalletTransaction, row.EveEntity, row.EveTypeName, row.LocationName)
 	}
 	return ee, nil
 }
 
-func walletTransactionFromDBModel(
-	t queries.WalletTransaction,
+func characterWalletTransactionFromDBModel(
+	t queries.CharacterWalletTransaction,
 	client queries.EveEntity,
 	eveTypeName string,
 	locationName string,
@@ -87,7 +87,7 @@ func walletTransactionFromDBModel(
 		IsPersonal:    t.IsPersonal,
 		JournalRefID:  t.JournalRefID,
 		Location:      &model.EntityShort[int64]{ID: t.LocationID, Name: locationName},
-		CharacterID:   int32(t.MyCharacterID),
+		CharacterID:   int32(t.CharacterID),
 		Quantity:      int32(t.Quantity),
 		TransactionID: t.TransactionID,
 		UnitPrice:     t.UnitPrice,

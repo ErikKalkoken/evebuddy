@@ -54,7 +54,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			e, err := r.GetWalletJournalEntry(ctx, c.ID, 89)
+			e, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
 			if assert.NoError(t, err) {
 				assert.Equal(t, -100000.0, e.Amount)
 				assert.Equal(t, 500000.4316, e.Balance)
@@ -66,7 +66,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 				assert.Equal(t, "contract_deposit", e.RefType)
 				assert.Equal(t, secondParty.ID, e.SecondParty.ID)
 			}
-			ids, err := r.ListWalletJournalEntryIDs(ctx, c.ID)
+			ids, err := r.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids, 1)
 			}
@@ -77,7 +77,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
+		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(model.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000132})
@@ -105,11 +105,11 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			e2, err := r.GetWalletJournalEntry(ctx, c.ID, 89)
+			e2, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Contract Deposit", e2.Description)
 			}
-			ids, err := r.ListWalletJournalEntryIDs(ctx, c.ID)
+			ids, err := r.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids, 2)
 			}
@@ -120,10 +120,10 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{
-			MyCharacterID: c.ID,
-			ID:            89,
-			Description:   "existing",
+		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID: c.ID,
+			ID:          89,
+			Description: "existing",
 		})
 		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(model.EveEntity{ID: 2112625428})
@@ -152,11 +152,11 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
-			e2, err := r.GetWalletJournalEntry(ctx, c.ID, 89)
+			e2, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "existing", e2.Description)
 			}
-			ids, err := r.ListWalletJournalEntryIDs(ctx, c.ID)
+			ids, err := r.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids, 1)
 			}
@@ -173,9 +173,9 @@ func TestListWalletJournalEntries(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
-		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
-		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
+		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		// when
 		ee, err := s.ListWalletJournalEntries(c.ID)
 		// then

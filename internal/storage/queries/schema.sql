@@ -3,7 +3,6 @@ CREATE TABLE dictionary (
     value BLOB NOT NULL
 );
 
-
 CREATE TABLE eve_entities (
     id INTEGER PRIMARY KEY NOT NULL,
     category TEXT NOT NULL,
@@ -108,7 +107,7 @@ CREATE TABLE locations (
     FOREIGN KEY (owner_id) REFERENCES eve_entities(id) ON DELETE SET NULL
 );
 
-CREATE TABLE my_characters (
+CREATE TABLE characters (
     id INTEGER PRIMARY KEY NOT NULL,
     home_id INTEGER,
     last_login_at DATETIME,
@@ -123,82 +122,82 @@ CREATE TABLE my_characters (
     FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE SET NULL
 );
 
-CREATE TABLE mail_lists (
-    my_character_id INTEGER NOT NULL,
+CREATE TABLE character_mail_lists (
+    character_id INTEGER NOT NULL,
     eve_entity_id INTEGER NOT NULL,
-    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     FOREIGN KEY (eve_entity_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
-    UNIQUE (my_character_id, eve_entity_id)
+    UNIQUE (character_id, eve_entity_id)
 );
 
-CREATE TABLE mail_labels (
+CREATE TABLE character_mail_labels (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    my_character_id INTEGER NOT NULL,
+    character_id INTEGER NOT NULL,
     color TEXT NOT NULL,
     label_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     unread_count INTEGER NOT NULL,
-    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
-    UNIQUE (my_character_id, label_id)
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    UNIQUE (character_id, label_id)
 );
 
 CREATE TABLE mail_recipients (
     mail_id INTEGER NOT NULL,
     eve_entity_id INTEGER NOT NULL,
     PRIMARY KEY (mail_id, eve_entity_id),
-    FOREIGN KEY (mail_id) REFERENCES mails(id) ON DELETE CASCADE,
+    FOREIGN KEY (mail_id) REFERENCES character_mails(id) ON DELETE CASCADE,
     FOREIGN KEY (eve_entity_id) REFERENCES eve_entities(id) ON DELETE CASCADE
 );
 
-CREATE TABLE mails (
+CREATE TABLE character_mails (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     body TEXT NOT NULL,
-    my_character_id INTEGER NOT NULL,
+    character_id INTEGER NOT NULL,
     from_id INTEGER NOT NULL,
     is_read BOOL NOT NULL,
     mail_id INTEGER NOT NULL,
     subject TEXT NOT NULL,
     timestamp DATETIME NOT NULL,
-    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     FOREIGN KEY (from_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
-    UNIQUE (my_character_id, mail_id)
+    UNIQUE (character_id, mail_id)
 );
-CREATE INDEX mails_timestamp_idx ON mails (timestamp DESC);
+CREATE INDEX character_mails_timestamp_idx ON character_mails (timestamp DESC);
 
-CREATE TABLE mail_mail_labels (
-    mail_label_id INTEGER NOT NULL,
-    mail_id INTEGER NOT NULL,
-    PRIMARY KEY (mail_label_id, mail_id),
-    FOREIGN KEY (mail_label_id) REFERENCES mail_labels(id) ON DELETE CASCADE,
-    FOREIGN KEY (mail_id) REFERENCES mails(id) ON DELETE CASCADE
+CREATE TABLE character_mail_mail_labels (
+    character_mail_label_id INTEGER NOT NULL,
+    character_mail_id INTEGER NOT NULL,
+    PRIMARY KEY (character_mail_label_id, character_mail_id),
+    FOREIGN KEY (character_mail_label_id) REFERENCES character_mail_labels(id) ON DELETE CASCADE,
+    FOREIGN KEY (character_mail_id) REFERENCES character_mails(id) ON DELETE CASCADE
 );
 
 CREATE TABLE character_skills (
     active_skill_level INTEGER NOT NULL,
+    character_id INTEGER NOT NULL,
     eve_type_id INTEGER NOT NULL,
     skill_points_in_skill INTEGER NOT NULL,
-    my_character_id INTEGER NOT NULL,
     trained_skill_level INTEGER NOT NULL,
-    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
-    UNIQUE (my_character_id, eve_type_id)
+    UNIQUE (character_id, eve_type_id)
 );
 
-CREATE TABLE skillqueue_items (
+CREATE TABLE character_skillqueue_items (
+    character_id INTEGER NOT NULL,
     eve_type_id INTEGER NOT NULL,
     finish_date DATETIME,
     finished_level INTEGER NOT NULL,
     level_end_sp INTEGER,
     level_start_sp INTEGER,
     queue_position INTEGER NOT NULL,
-    my_character_id INTEGER NOT NULL,
     start_date DATETIME,
     training_start_sp INTEGER,
-    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
-    UNIQUE (my_character_id, queue_position)
+    UNIQUE (character_id, queue_position)
 );
-CREATE INDEX skillqueue_items_queue_position_idx ON skillqueue_items (queue_position ASC);
+CREATE INDEX skillqueue_items_queue_position_idx ON character_skillqueue_items (queue_position ASC);
 
 CREATE TABLE scopes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -207,71 +206,72 @@ CREATE TABLE scopes (
 );
 CREATE INDEX scopes_name_idx ON scopes (name ASC);
 
-CREATE TABLE tokens (
+CREATE TABLE character_tokens (
     access_token TEXT NOT NULL,
-    my_character_id INTEGER PRIMARY KEY NOT NULL,
+    character_id INTEGER PRIMARY KEY NOT NULL,
     expires_at DATETIME NOT NULL,
     refresh_token TEXT NOT NULL,
     token_type TEXT NOT NULL,
-    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
 );
 
-CREATE TABLE tokens_scopes (
+CREATE TABLE character_token_scopes (
     token_id INTEGER NOT NULL,
     scope_id INTEGER NOT NULL,
     PRIMARY KEY (token_id, scope_id),
-    FOREIGN KEY (token_id) REFERENCES tokens(my_character_id) ON DELETE CASCADE,
+    FOREIGN KEY (token_id) REFERENCES character_tokens(character_id) ON DELETE CASCADE,
     FOREIGN KEY (scope_id) REFERENCES scopes(id) ON DELETE CASCADE
 );
 
-CREATE TABLE my_character_update_status (
+CREATE TABLE character_update_status (
+    character_id INTEGER NOT NULL,
     content_hash TEXT NOT NULL,
-    my_character_id INTEGER NOT NULL,
     section_id TEXT NOT NULL,
     updated_at DATETIME NOT NULL,
-    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
-    PRIMARY KEY (my_character_id, section_id)
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    PRIMARY KEY (character_id, section_id)
 );
 
-CREATE TABLE wallet_journal_entries (
+CREATE TABLE character_wallet_journal_entries (
     amount REAL NOT NULL,
     balance REAL NOT NULL,
+    character_id INTEGER NOT NULL,
     context_id INTEGER NOT NULL,
     context_id_type TEXT NOT NULL,
     date DATETIME NOT NULL,
     description TEXT NOT NULL,
     first_party_id INTEGER,
     id INTEGER NOT NULL,
-    my_character_id INTEGER NOT NULL,
     reason TEXT NOT NULL,
     ref_type TEXT NOT NULL,
     second_party_id INTEGER,
     tax REAL NOT NULL,
     tax_receiver_id INTEGER,
     FOREIGN KEY (first_party_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
-    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     FOREIGN KEY (second_party_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     FOREIGN KEY (tax_receiver_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
-    UNIQUE (my_character_id, id)
+    UNIQUE (character_id, id)
 );
-CREATE INDEX wallet_journal_entries_date_idx ON wallet_journal_entries (date ASC);
+CREATE INDEX character_wallet_journal_entries_date_idx ON character_wallet_journal_entries (date ASC);
 
 CREATE VIEW wallet_journal_entry_first_parties AS
 SELECT eve_entities.*
-FROM wallet_journal_entries
-LEFT JOIN eve_entities ON eve_entities.id = wallet_journal_entries.first_party_id;
+FROM character_wallet_journal_entries
+LEFT JOIN eve_entities ON eve_entities.id = character_wallet_journal_entries.first_party_id;
 
 CREATE VIEW wallet_journal_entry_second_parties AS
 SELECT eve_entities.*
-FROM wallet_journal_entries
-LEFT JOIN eve_entities ON eve_entities.id = wallet_journal_entries.second_party_id;
+FROM character_wallet_journal_entries
+LEFT JOIN eve_entities ON eve_entities.id = character_wallet_journal_entries.second_party_id;
 
 CREATE VIEW wallet_journal_entry_tax_receivers AS
 SELECT eve_entities.*
-FROM wallet_journal_entries
-LEFT JOIN eve_entities ON eve_entities.id = wallet_journal_entries.tax_receiver_id;
+FROM character_wallet_journal_entries
+LEFT JOIN eve_entities ON eve_entities.id = character_wallet_journal_entries.tax_receiver_id;
 
-CREATE TABLE wallet_transactions (
+CREATE TABLE character_wallet_transactions (
+    character_id INTEGER NOT NULL,
     client_id INTEGER NOT NULL,
     date DATETIME NOT NULL,
     eve_type_id INTEGER NOT NULL,
@@ -279,14 +279,13 @@ CREATE TABLE wallet_transactions (
     is_personal BOOL NOT NULL,
     journal_ref_id INTEGER NOT NULL,
     location_id INTEGER NOT NULL,
-    my_character_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL,
     transaction_id INTEGER NOT NULL PRIMARY KEY,
     unit_price REAL NOT NULL,
-    FOREIGN KEY (my_character_id) REFERENCES my_characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     FOREIGN KEY (client_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
     FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE,
-    UNIQUE (my_character_id, transaction_id)
+    UNIQUE (character_id, transaction_id)
 );
-CREATE INDEX wallet_transactions_date_idx ON wallet_transactions (date ASC);
+CREATE INDEX character_wallet_transactions_date_idx ON character_wallet_transactions (date ASC);

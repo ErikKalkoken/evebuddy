@@ -22,7 +22,7 @@ func TestSkillqueueItems(t *testing.T) {
 		arg := storage.SkillqueueItemParams{
 			EveTypeID:     eveType.ID,
 			FinishedLevel: 5,
-			MyCharacterID: c.ID,
+			CharacterID:   c.ID,
 			QueuePosition: 4,
 		}
 		// when
@@ -39,9 +39,9 @@ func TestSkillqueueItems(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{MyCharacterID: c.ID})
-		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{MyCharacterID: c.ID})
-		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{MyCharacterID: c.ID})
+		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
+		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
+		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		// when
 		ii, err := r.ListSkillqueueItems(ctx, c.ID)
 		// then
@@ -53,14 +53,14 @@ func TestSkillqueueItems(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{MyCharacterID: c.ID})
-		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{MyCharacterID: c.ID})
-		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{MyCharacterID: c.ID})
+		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
+		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
+		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		eveType := factory.CreateEveType()
 		arg := storage.SkillqueueItemParams{
 			EveTypeID:     eveType.ID,
 			FinishedLevel: 5,
-			MyCharacterID: c.ID,
+			CharacterID:   c.ID,
 			QueuePosition: 0,
 			StartDate:     time.Now().Add(1 * time.Hour),
 			FinishDate:    time.Now().Add(3 * time.Hour),
@@ -88,14 +88,14 @@ func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{
-			MyCharacterID: c.ID,
-			StartDate:     now.Add(1 * time.Hour),
-			FinishDate:    now.Add(3 * time.Hour),
+			CharacterID: c.ID,
+			StartDate:   now.Add(1 * time.Hour),
+			FinishDate:  now.Add(3 * time.Hour),
 		})
 		factory.CreateSkillqueueItem(storage.SkillqueueItemParams{
-			MyCharacterID: c.ID,
-			StartDate:     now.Add(3 * time.Hour),
-			FinishDate:    now.Add(4 * time.Hour),
+			CharacterID: c.ID,
+			StartDate:   now.Add(3 * time.Hour),
+			FinishDate:  now.Add(4 * time.Hour),
 		})
 		// when
 		v, err := r.GetTotalTrainingTime(ctx, c.ID)

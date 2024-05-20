@@ -1,9 +1,9 @@
--- name: CreateMailLabel :one
-INSERT INTO mail_labels (
+-- name: CreateCharacterMailLabel :one
+INSERT INTO character_mail_labels (
     color,
     name,
     unread_count,
-    my_character_id,
+    character_id,
     label_id
 )
 VALUES (
@@ -11,36 +11,36 @@ VALUES (
 )
 RETURNING *;
 
--- name: DeleteObsoleteMailLabels :exec
-DELETE FROM mail_labels
-WHERE mail_labels.my_character_id = ?
+-- name: DeleteObsoleteCharacterMailLabels :exec
+DELETE FROM character_mail_labels
+WHERE character_mail_labels.character_id = ?
 AND id NOT IN (
-    SELECT mail_label_id
-    FROM mail_mail_labels
-    JOIN mails ON mails.id = mail_mail_labels.mail_id
-    WHERE mail_labels.my_character_id = ?
+    SELECT character_mail_label_id
+    FROM character_mail_mail_labels
+    JOIN character_mails ON character_mails.id = character_mail_mail_labels.character_mail_id
+    WHERE character_mail_labels.character_id = ?
 );
 
--- name: GetMailLabel :one
+-- name: GetCharacterMailLabel :one
 SELECT *
-FROM mail_labels
-WHERE my_character_id = ? AND label_id = ?;
+FROM character_mail_labels
+WHERE character_id = ? AND label_id = ?;
 
--- name: ListMailLabelsOrdered :many
+-- name: ListCharacterMailLabelsOrdered :many
 SELECT *
-FROM mail_labels
-WHERE my_character_id = ?
+FROM character_mail_labels
+WHERE character_id = ?
 AND label_id > 8
 ORDER BY name;
 
--- name: ListMailLabelsByIDs :many
+-- name: ListCharacterMailLabelsByIDs :many
 SELECT *
-FROM mail_labels
-WHERE my_character_id = ? AND label_id IN (sqlc.slice('ids'));
+FROM character_mail_labels
+WHERE character_id = ? AND label_id IN (sqlc.slice('ids'));
 
--- name: UpdateOrCreateMailLabel :one
-INSERT INTO mail_labels (
-    my_character_id,
+-- name: UpdateOrCreateCharacterMailLabel :one
+INSERT INTO character_mail_labels (
+    character_id,
     label_id,
     color,
     name,
@@ -49,11 +49,11 @@ INSERT INTO mail_labels (
 VALUES (
     ?1, ?2, ?3, ?4, ?5
 )
-ON CONFLICT(my_character_id, label_id) DO
+ON CONFLICT(character_id, label_id) DO
 UPDATE SET
     color = ?3,
     name = ?4,
     unread_count = ?5
-WHERE my_character_id = ?1
+WHERE character_id = ?1
 AND label_id = ?2
 RETURNING *;

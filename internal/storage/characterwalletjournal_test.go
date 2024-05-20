@@ -20,7 +20,7 @@ func TestWalletJournalEntry(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		date := time.Now()
-		arg := storage.CreateWalletJournalEntryParams{
+		arg := storage.CreateCharacterWalletJournalEntryParams{
 			Amount:        123.45,
 			Balance:       234.56,
 			ContextID:     42,
@@ -28,16 +28,16 @@ func TestWalletJournalEntry(t *testing.T) {
 			Date:          date,
 			Description:   "bla bla",
 			ID:            4,
-			MyCharacterID: c.ID,
+			CharacterID:   c.ID,
 			Reason:        "my reason",
 			RefType:       "player_donation",
 			Tax:           0.12,
 		}
 		// when
-		err := r.CreateWalletJournalEntry(ctx, arg)
+		err := r.CreateCharacterWalletJournalEntry(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetWalletJournalEntry(ctx, c.ID, 4)
+			i, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 4)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 123.45, i.Amount)
 				assert.Equal(t, 234.56, i.Balance)
@@ -59,7 +59,7 @@ func TestWalletJournalEntry(t *testing.T) {
 		e2 := factory.CreateEveEntity()
 		e3 := factory.CreateEveEntity()
 		date := time.Now()
-		arg := storage.CreateWalletJournalEntryParams{
+		arg := storage.CreateCharacterWalletJournalEntryParams{
 			Amount:        123.45,
 			Balance:       234.56,
 			ContextID:     42,
@@ -68,7 +68,7 @@ func TestWalletJournalEntry(t *testing.T) {
 			Date:          date,
 			Description:   "bla bla",
 			ID:            4,
-			MyCharacterID: c.ID,
+			CharacterID:   c.ID,
 			Reason:        "my reason",
 			RefType:       "player_donation",
 			SecondPartyID: e2.ID,
@@ -76,10 +76,10 @@ func TestWalletJournalEntry(t *testing.T) {
 			TaxReceiverID: e3.ID,
 		}
 		// when
-		err := r.CreateWalletJournalEntry(ctx, arg)
+		err := r.CreateCharacterWalletJournalEntry(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetWalletJournalEntry(ctx, c.ID, 4)
+			i, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 4)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 123.45, i.Amount)
 				assert.Equal(t, 234.56, i.Balance)
@@ -100,11 +100,11 @@ func TestWalletJournalEntry(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		e1 := factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
-		e2 := factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
-		e3 := factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
+		e1 := factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		e2 := factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		e3 := factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		// when
-		ids, err := r.ListWalletJournalEntryIDs(ctx, c.ID)
+		ids, err := r.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			got := set.NewFromSlice(ids)
@@ -116,11 +116,11 @@ func TestWalletJournalEntry(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
-		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
-		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
+		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		// when
-		ee, err := r.ListWalletJournalEntries(ctx, c.ID)
+		ee, err := r.ListCharacterWalletJournalEntries(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ee, 3)

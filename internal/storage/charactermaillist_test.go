@@ -22,7 +22,7 @@ func TestMailList(t *testing.T) {
 		c := factory.CreateMyCharacter()
 		l := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 		// when
-		err := r.CreateMailList(ctx, c.ID, l.ID)
+		err := r.CreateCharacterMailList(ctx, c.ID, l.ID)
 		// then
 		assert.NoError(t, err)
 	})
@@ -31,11 +31,11 @@ func TestMailList(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		e1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList, Name: "alpha"})
-		assert.NoError(t, r.CreateMailList(ctx, c.ID, e1.ID))
+		assert.NoError(t, r.CreateCharacterMailList(ctx, c.ID, e1.ID))
 		e2 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList, Name: "bravo"})
-		assert.NoError(t, r.CreateMailList(ctx, c.ID, e2.ID))
+		assert.NoError(t, r.CreateCharacterMailList(ctx, c.ID, e2.ID))
 		// when
-		ll, err := r.ListMailListsOrdered(ctx, c.ID)
+		ll, err := r.ListCharacterMailListsOrdered(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ll, 2)
@@ -48,18 +48,18 @@ func TestMailList(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateMyCharacter()
 		e1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
-		mustNotFail(r.CreateMailList(ctx, c1.ID, e1.ID))
-		factory.CreateMail(storage.CreateMailParams{MyCharacterID: c1.ID, RecipientIDs: []int32{e1.ID}})
+		mustNotFail(r.CreateCharacterMailList(ctx, c1.ID, e1.ID))
+		factory.CreateMail(storage.CreateCharacterMailParams{CharacterID: c1.ID, RecipientIDs: []int32{e1.ID}})
 		e2 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
-		mustNotFail(r.CreateMailList(ctx, c1.ID, e2.ID))
+		mustNotFail(r.CreateCharacterMailList(ctx, c1.ID, e2.ID))
 		c2 := factory.CreateMyCharacter()
 		e3 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
-		mustNotFail(r.CreateMailList(ctx, c2.ID, e3.ID))
+		mustNotFail(r.CreateCharacterMailList(ctx, c2.ID, e3.ID))
 		// when
-		err := r.DeleteObsoleteMailLists(ctx, c1.ID)
+		err := r.DeleteObsoleteCharacterMailLists(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
-			lists, err := r.ListMailListsOrdered(ctx, c1.ID)
+			lists, err := r.ListCharacterMailListsOrdered(ctx, c1.ID)
 			if assert.NoError(t, err) {
 				got := set.New[int32]()
 				for _, l := range lists {
@@ -68,7 +68,7 @@ func TestMailList(t *testing.T) {
 				want := set.NewFromSlice([]int32{e1.ID})
 				assert.Equal(t, want, got)
 			}
-			lists, err = r.ListMailListsOrdered(ctx, c2.ID)
+			lists, err = r.ListCharacterMailListsOrdered(ctx, c2.ID)
 			if assert.NoError(t, err) {
 				got := set.New[int32]()
 				for _, l := range lists {

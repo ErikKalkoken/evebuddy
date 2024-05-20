@@ -13,19 +13,19 @@ import (
 
 const deleteExcludedCharacterSkills = `-- name: DeleteExcludedCharacterSkills :exec
 DELETE FROM character_skills
-WHERE my_character_id = ?
+WHERE character_id = ?
 AND eve_type_id NOT IN (/*SLICE:eve_type_ids*/?)
 `
 
 type DeleteExcludedCharacterSkillsParams struct {
-	MyCharacterID int64
-	EveTypeIds    []int64
+	CharacterID int64
+	EveTypeIds  []int64
 }
 
 func (q *Queries) DeleteExcludedCharacterSkills(ctx context.Context, arg DeleteExcludedCharacterSkillsParams) error {
 	query := deleteExcludedCharacterSkills
 	var queryParams []interface{}
-	queryParams = append(queryParams, arg.MyCharacterID)
+	queryParams = append(queryParams, arg.CharacterID)
 	if len(arg.EveTypeIds) > 0 {
 		for _, v := range arg.EveTypeIds {
 			queryParams = append(queryParams, v)
@@ -40,7 +40,7 @@ func (q *Queries) DeleteExcludedCharacterSkills(ctx context.Context, arg DeleteE
 
 const getCharacterSkill = `-- name: GetCharacterSkill :one
 SELECT
-    character_skills.active_skill_level, character_skills.eve_type_id, character_skills.skill_points_in_skill, character_skills.my_character_id, character_skills.trained_skill_level,
+    character_skills.active_skill_level, character_skills.character_id, character_skills.eve_type_id, character_skills.skill_points_in_skill, character_skills.trained_skill_level,
     eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
     eve_categories.id, eve_categories.name, eve_categories.is_published
@@ -48,13 +48,13 @@ FROM character_skills
 JOIN eve_types ON eve_types.id = character_skills.eve_type_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
 JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
-WHERE my_character_id = ?
+WHERE character_id = ?
 AND eve_type_id = ?
 `
 
 type GetCharacterSkillParams struct {
-	MyCharacterID int64
-	EveTypeID     int64
+	CharacterID int64
+	EveTypeID   int64
 }
 
 type GetCharacterSkillRow struct {
@@ -65,13 +65,13 @@ type GetCharacterSkillRow struct {
 }
 
 func (q *Queries) GetCharacterSkill(ctx context.Context, arg GetCharacterSkillParams) (GetCharacterSkillRow, error) {
-	row := q.db.QueryRowContext(ctx, getCharacterSkill, arg.MyCharacterID, arg.EveTypeID)
+	row := q.db.QueryRowContext(ctx, getCharacterSkill, arg.CharacterID, arg.EveTypeID)
 	var i GetCharacterSkillRow
 	err := row.Scan(
 		&i.CharacterSkill.ActiveSkillLevel,
+		&i.CharacterSkill.CharacterID,
 		&i.CharacterSkill.EveTypeID,
 		&i.CharacterSkill.SkillPointsInSkill,
-		&i.CharacterSkill.MyCharacterID,
 		&i.CharacterSkill.TrainedSkillLevel,
 		&i.EveType.ID,
 		&i.EveType.Description,
@@ -97,7 +97,7 @@ SELECT
     SUM(character_skills.trained_skill_level / 5.0) AS trained
 FROM eve_types
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id AND eve_groups.is_published IS TRUE
-LEFT JOIN character_skills ON character_skills.eve_type_id = eve_types.id AND character_skills.my_character_id = ?
+LEFT JOIN character_skills ON character_skills.eve_type_id = eve_types.id AND character_skills.character_id = ?
 WHERE eve_groups.eve_category_id = ?
 AND eve_types.is_published IS TRUE
 GROUP BY eve_groups.name
@@ -105,7 +105,7 @@ ORDER BY eve_groups.name
 `
 
 type ListCharacterSkillGroupsProgressParams struct {
-	MyCharacterID int64
+	CharacterID   int64
 	EveCategoryID int64
 }
 
@@ -117,7 +117,7 @@ type ListCharacterSkillGroupsProgressRow struct {
 }
 
 func (q *Queries) ListCharacterSkillGroupsProgress(ctx context.Context, arg ListCharacterSkillGroupsProgressParams) ([]ListCharacterSkillGroupsProgressRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterSkillGroupsProgress, arg.MyCharacterID, arg.EveCategoryID)
+	rows, err := q.db.QueryContext(ctx, listCharacterSkillGroupsProgress, arg.CharacterID, arg.EveCategoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -152,15 +152,15 @@ SELECT
     character_skills.active_skill_level,
     character_skills.trained_skill_level
 FROM eve_types
-LEFT JOIN character_skills ON character_skills.eve_type_id = eve_types.id AND character_skills.my_character_id = ?
+LEFT JOIN character_skills ON character_skills.eve_type_id = eve_types.id AND character_skills.character_id = ?
 WHERE eve_types.eve_group_id = ?
 AND eve_types.is_published IS TRUE
 ORDER BY eve_types.name
 `
 
 type ListCharacterSkillProgressParams struct {
-	MyCharacterID int64
-	EveGroupID    int64
+	CharacterID int64
+	EveGroupID  int64
 }
 
 type ListCharacterSkillProgressRow struct {
@@ -172,7 +172,7 @@ type ListCharacterSkillProgressRow struct {
 }
 
 func (q *Queries) ListCharacterSkillProgress(ctx context.Context, arg ListCharacterSkillProgressParams) ([]ListCharacterSkillProgressRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterSkillProgress, arg.MyCharacterID, arg.EveGroupID)
+	rows, err := q.db.QueryContext(ctx, listCharacterSkillProgress, arg.CharacterID, arg.EveGroupID)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func (q *Queries) ListCharacterSkillProgress(ctx context.Context, arg ListCharac
 
 const updateOrCreateCharacterSkill = `-- name: UpdateOrCreateCharacterSkill :exec
 INSERT INTO character_skills (
-    my_character_id,
+    character_id,
     eve_type_id,
     active_skill_level,
     skill_points_in_skill,
@@ -211,17 +211,17 @@ INSERT INTO character_skills (
 VALUES (
     ?1, ?2, ?3, ?4, ?5
 )
-ON CONFLICT(my_character_id, eve_type_id) DO
+ON CONFLICT(character_id, eve_type_id) DO
 UPDATE SET
     active_skill_level = ?3,
     skill_points_in_skill = ?4,
     trained_skill_level = ?5
-WHERE my_character_id = ?1
+WHERE character_id = ?1
 AND eve_type_id = ?2
 `
 
 type UpdateOrCreateCharacterSkillParams struct {
-	MyCharacterID      int64
+	CharacterID        int64
 	EveTypeID          int64
 	ActiveSkillLevel   int64
 	SkillPointsInSkill int64
@@ -230,7 +230,7 @@ type UpdateOrCreateCharacterSkillParams struct {
 
 func (q *Queries) UpdateOrCreateCharacterSkill(ctx context.Context, arg UpdateOrCreateCharacterSkillParams) error {
 	_, err := q.db.ExecContext(ctx, updateOrCreateCharacterSkill,
-		arg.MyCharacterID,
+		arg.CharacterID,
 		arg.EveTypeID,
 		arg.ActiveSkillLevel,
 		arg.SkillPointsInSkill,

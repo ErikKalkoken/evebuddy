@@ -28,7 +28,7 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		err := s.SectionSetUpdated(c.ID, model.UpdateSectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetMyCharacterUpdateStatus(ctx, c.ID, model.UpdateSectionSkillqueue)
+			x, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.UpdateSectionSkillqueue)
 			if assert.NoError(t, err) {
 				assert.WithinDuration(t, time.Now(), x.UpdatedAt, 30*time.Second)
 			}
@@ -39,10 +39,10 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		updateAt := time.Now().Add(3 * time.Hour)
-		t1 := factory.CreateMyCharacterUpdateStatus(storage.MyCharacterUpdateStatusParams{
-			MyCharacterID: c.ID,
-			Section:       model.UpdateSectionSkillqueue,
-			UpdatedAt:     updateAt,
+		t1 := factory.CreateMyCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+			CharacterID: c.ID,
+			Section:     model.UpdateSectionSkillqueue,
+			UpdatedAt:   updateAt,
 		})
 		// when
 		t2, err := s.SectionUpdatedAt(c.ID, model.UpdateSectionSkillqueue)
@@ -56,10 +56,10 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		updateAt := time.Now().Add(3 * time.Hour)
-		factory.CreateMyCharacterUpdateStatus(storage.MyCharacterUpdateStatusParams{
-			MyCharacterID: c.ID,
-			Section:       model.UpdateSectionSkillqueue,
-			UpdatedAt:     updateAt,
+		factory.CreateMyCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+			CharacterID: c.ID,
+			Section:     model.UpdateSectionSkillqueue,
+			UpdatedAt:   updateAt,
 		})
 		// when
 		x, err := s.SectionWasUpdated(c.ID, model.UpdateSectionSkillqueue)
@@ -84,10 +84,10 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		updateAt := time.Now().Add(-3 * time.Hour)
-		factory.CreateMyCharacterUpdateStatus(storage.MyCharacterUpdateStatusParams{
-			MyCharacterID: c.ID,
-			Section:       model.UpdateSectionSkillqueue,
-			UpdatedAt:     updateAt,
+		factory.CreateMyCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+			CharacterID: c.ID,
+			Section:     model.UpdateSectionSkillqueue,
+			UpdatedAt:   updateAt,
 		})
 		// when
 		x, err := s.SectionIsUpdateExpired(c.ID, model.UpdateSectionSkillqueue)

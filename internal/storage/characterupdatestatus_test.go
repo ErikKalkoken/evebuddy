@@ -21,17 +21,17 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		updatedAt := time.Now()
-		arg := storage.MyCharacterUpdateStatusParams{
-			MyCharacterID: c.ID,
-			Section:       model.UpdateSectionSkillqueue,
-			ContentHash:   "content-hash",
-			UpdatedAt:     updatedAt,
+		arg := storage.CharacterUpdateStatusParams{
+			CharacterID: c.ID,
+			Section:     model.UpdateSectionSkillqueue,
+			ContentHash: "content-hash",
+			UpdatedAt:   updatedAt,
 		}
 		// when
-		err := r.UpdateOrCreateMyCharacterUpdateStatus(ctx, arg)
+		err := r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetMyCharacterUpdateStatus(ctx, c.ID, model.UpdateSectionSkillqueue)
+			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.UpdateSectionSkillqueue)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "content-hash", l.ContentHash)
 				assert.Equal(t, updatedAt.Unix(), l.UpdatedAt.Unix())
@@ -42,22 +42,22 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		factory.CreateMyCharacterUpdateStatus(storage.MyCharacterUpdateStatusParams{
-			MyCharacterID: c.ID,
-			Section:       model.UpdateSectionSkillqueue,
+		factory.CreateMyCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+			CharacterID: c.ID,
+			Section:     model.UpdateSectionSkillqueue,
 		})
 		updatedAt := time.Now().Add(1 * time.Hour)
-		arg := storage.MyCharacterUpdateStatusParams{
-			MyCharacterID: c.ID,
-			Section:       model.UpdateSectionSkillqueue,
-			ContentHash:   "content-hash",
-			UpdatedAt:     updatedAt,
+		arg := storage.CharacterUpdateStatusParams{
+			CharacterID: c.ID,
+			Section:     model.UpdateSectionSkillqueue,
+			ContentHash: "content-hash",
+			UpdatedAt:   updatedAt,
 		}
 		// when
-		err := r.UpdateOrCreateMyCharacterUpdateStatus(ctx, arg)
+		err := r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetMyCharacterUpdateStatus(ctx, c.ID, model.UpdateSectionSkillqueue)
+			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.UpdateSectionSkillqueue)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "content-hash", l.ContentHash)
 				assert.Equal(t, updatedAt.Unix(), l.UpdatedAt.Unix())

@@ -23,7 +23,7 @@ func TestWalletTransaction(t *testing.T) {
 		client := factory.CreateEveEntityCharacter()
 		eveType := factory.CreateEveType()
 		location := factory.CreateLocationStructure()
-		arg := storage.CreateWalletTransactionParams{
+		arg := storage.CreateCharacterWalletTransactionParams{
 			ClientID:      client.ID,
 			Date:          date,
 			EveTypeID:     eveType.ID,
@@ -31,16 +31,16 @@ func TestWalletTransaction(t *testing.T) {
 			IsPersonal:    true,
 			JournalRefID:  99,
 			LocationID:    location.ID,
-			MyCharacterID: c.ID,
+			CharacterID:   c.ID,
 			Quantity:      7,
 			UnitPrice:     123.45,
 			TransactionID: 42,
 		}
 		// when
-		err := r.CreateWalletTransaction(ctx, arg)
+		err := r.CreateCharacterWalletTransaction(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetWalletTransaction(ctx, c.ID, 42)
+			i, err := r.GetCharacterWalletTransaction(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, client, i.Client)
 				assert.Equal(t, date.UTC(), i.Date.UTC())
@@ -61,11 +61,11 @@ func TestWalletTransaction(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		e1 := factory.CreateWalletTransaction(storage.CreateWalletTransactionParams{MyCharacterID: c.ID})
-		e2 := factory.CreateWalletTransaction(storage.CreateWalletTransactionParams{MyCharacterID: c.ID})
-		e3 := factory.CreateWalletTransaction(storage.CreateWalletTransactionParams{MyCharacterID: c.ID})
+		e1 := factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		e2 := factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		e3 := factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		// when
-		ids, err := r.ListWalletTransactionIDs(ctx, c.ID)
+		ids, err := r.ListCharacterWalletTransactionIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			got := set.NewFromSlice(ids)
@@ -77,11 +77,11 @@ func TestWalletTransaction(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		factory.CreateWalletTransaction(storage.CreateWalletTransactionParams{MyCharacterID: c.ID})
-		factory.CreateWalletTransaction(storage.CreateWalletTransactionParams{MyCharacterID: c.ID})
-		factory.CreateWalletTransaction(storage.CreateWalletTransactionParams{MyCharacterID: c.ID})
+		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		// when
-		ee, err := r.ListWalletTransactions(ctx, c.ID)
+		ee, err := r.ListCharacterWalletTransactions(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ee, 3)

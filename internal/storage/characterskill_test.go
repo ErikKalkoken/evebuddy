@@ -23,7 +23,7 @@ func TestCharacterSkill(t *testing.T) {
 		arg := storage.UpdateOrCreateCharacterSkillParams{
 			ActiveSkillLevel:   3,
 			EveTypeID:          eveType.ID,
-			MyCharacterID:      c.ID,
+			CharacterID:        c.ID,
 			SkillPointsInSkill: 99,
 			TrainedSkillLevel:  5,
 		}
@@ -45,13 +45,13 @@ func TestCharacterSkill(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		o1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
-			MyCharacterID:      c.ID,
+			CharacterID:        c.ID,
 			ActiveSkillLevel:   3,
 			TrainedSkillLevel:  5,
 			SkillPointsInSkill: 42,
 		})
 		arg := storage.UpdateOrCreateCharacterSkillParams{
-			MyCharacterID:      c.ID,
+			CharacterID:        c.ID,
 			EveTypeID:          o1.EveType.ID,
 			ActiveSkillLevel:   4,
 			TrainedSkillLevel:  4,
@@ -73,8 +73,8 @@ func TestCharacterSkill(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		o1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{MyCharacterID: c.ID})
-		o2 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{MyCharacterID: c.ID})
+		o1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
+		o2 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
 		// when
 		err := r.DeleteExcludedCharacterSkills(ctx, c.ID, []int32{o2.EveType.ID})
 		// then
@@ -99,7 +99,7 @@ func TestCharacterSkillList(t *testing.T) {
 		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
-			MyCharacterID:     c.ID,
+			CharacterID:       c.ID,
 			EveTypeID:         myType.ID,
 			TrainedSkillLevel: 5,
 		})
