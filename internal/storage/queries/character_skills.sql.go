@@ -148,6 +148,7 @@ const listCharacterSkillProgress = `-- name: ListCharacterSkillProgress :many
 SELECT
     eve_types.id,
     eve_types.name,
+    eve_types.description,
     character_skills.active_skill_level,
     character_skills.trained_skill_level
 FROM eve_types
@@ -165,6 +166,7 @@ type ListCharacterSkillProgressParams struct {
 type ListCharacterSkillProgressRow struct {
 	ID                int64
 	Name              string
+	Description       string
 	ActiveSkillLevel  sql.NullInt64
 	TrainedSkillLevel sql.NullInt64
 }
@@ -181,6 +183,7 @@ func (q *Queries) ListCharacterSkillProgress(ctx context.Context, arg ListCharac
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
+			&i.Description,
 			&i.ActiveSkillLevel,
 			&i.TrainedSkillLevel,
 		); err != nil {

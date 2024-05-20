@@ -34,6 +34,7 @@ ORDER BY eve_groups.name;
 SELECT
     eve_types.id,
     eve_types.name,
+    eve_types.description,
     character_skills.active_skill_level,
     character_skills.trained_skill_level
 FROM eve_types

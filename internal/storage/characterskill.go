@@ -51,9 +51,10 @@ func (r *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, e
 	oo := make([]model.ListCharacterSkillProgress, len(xx))
 	for i, x := range xx {
 		oo[i] = model.ListCharacterSkillProgress{
+			ActiveSkillLevel:  int(x.ActiveSkillLevel.Int64),
+			Description:       x.Description,
 			ID:                int32(x.ID),
 			Name:              x.Name,
-			ActiveSkillLevel:  int(x.ActiveSkillLevel.Int64),
 			TrainedSkillLevel: int(x.TrainedSkillLevel.Int64),
 		}
 	}

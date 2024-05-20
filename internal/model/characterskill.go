@@ -17,6 +17,7 @@ type ListCharacterSkillGroupProgress struct {
 
 type ListCharacterSkillProgress struct {
 	ID                int32
+	Description       string
 	Name              string
 	ActiveSkillLevel  int
 	TrainedSkillLevel int

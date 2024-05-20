@@ -2,10 +2,12 @@ package ui
 
 import (
 	"fmt"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -14,9 +16,9 @@ import (
 )
 
 type skillGroupProgress struct {
-	trained float64
 	id      int32
 	name    string
+	trained float64
 	total   float64
 }
 
@@ -26,8 +28,11 @@ func (g skillGroupProgress) completionP() float64 {
 
 type skillTrained struct {
 	activeLevel  int
-	trainedLevel int
+	description  string
+	groupName    string
+	id           int32
 	name         string
+	trainedLevel int
 }
 
 // skillCatalogueArea is the UI area that shows the skill catalogue
@@ -105,8 +110,11 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 		skills := make([]skillTrained, len(oo))
 		for i, o := range oo {
 			skills[i] = skillTrained{
-				name:         o.Name,
 				activeLevel:  o.ActiveSkillLevel,
+				description:  o.Description,
+				groupName:    group.name,
+				id:           o.ID,
+				name:         o.Name,
 				trainedLevel: o.TrainedSkillLevel,
 			}
 		}
@@ -148,6 +156,39 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 			}
 		},
 	)
+	a.skillsGrid.OnSelected = func(id widget.GridWrapItemID) {
+		o, err := getFromBoundUntypedList[skillTrained](a.skills, id)
+		if err != nil {
+			slog.Error("failed to access skill item", "err", err)
+			return
+		}
+		var data = []struct {
+			label string
+			value string
+			wrap  bool
+		}{
+			{"Name", o.name, false},
+			{"Group", o.groupName, false},
+			{"Description", o.description, true},
+			{"Trained level", fmt.Sprintf("%d", o.trainedLevel), false},
+			{"Active level", fmt.Sprintf("%d", o.activeLevel), false},
+		}
+		form := widget.NewForm()
+		for _, row := range data {
+			c := widget.NewLabel(row.value)
+			if row.wrap {
+				c.Wrapping = fyne.TextWrapWord
+			}
+			form.Append(row.label, c)
+		}
+		s := container.NewScroll(form)
+		dlg := dialog.NewCustom("Skill Details", "OK", s, u.window)
+		dlg.Show()
+		dlg.Resize(fyne.Size{
+			Width:  0.8 * a.ui.window.Canvas().Size().Width,
+			Height: 0.8 * a.ui.window.Canvas().Size().Height,
+		})
+	}
 
 	s := container.NewVSplit(a.groupsGrid, a.skillsGrid)
 	a.content = container.NewBorder(a.total, nil, nil, nil, s)
