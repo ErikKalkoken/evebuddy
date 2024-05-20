@@ -32,10 +32,11 @@ type skillTrained struct {
 
 // skillCatalogueArea is the UI area that shows the skill catalogue
 type skillCatalogueArea struct {
-	content        *fyne.Container
-	grid           *widget.GridWrap
-	groups         binding.UntypedList
-	list           *widget.List
+	content    *fyne.Container
+	groupsGrid *widget.GridWrap
+	groups     binding.UntypedList
+	// list           *widget.List
+	skillsGrid     *widget.GridWrap
 	skills         binding.UntypedList
 	total          *widget.Label
 	levelBlocked   *theme.ErrorThemedResource
@@ -57,7 +58,7 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 	a.total.TextStyle.Bold = true
 
 	// skill groups
-	a.grid = widget.NewGridWrap(
+	a.groupsGrid = widget.NewGridWrap(
 		func() int {
 			return a.groups.Length()
 		},
@@ -73,12 +74,12 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 				)))
 			return row
 		},
-		func(id widget.ListItemID, item fyne.CanvasObject) {
+		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			group, err := getFromBoundUntypedList[skillGroupProgress](a.groups, id)
 			if err != nil {
 				panic(err)
 			}
-			row := item.(*fyne.Container)
+			row := co.(*fyne.Container)
 			pb := row.Objects[0].(*fyne.Container).Objects[0].(*widget.ProgressBar)
 			pb.SetValue(group.completionP())
 			c := row.Objects[0].(*fyne.Container).Objects[1].(*fyne.Container)
@@ -88,7 +89,7 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 			total.SetText(humanize.Comma(int64(group.total)))
 		},
 	)
-	a.grid.OnSelected = func(id widget.ListItemID) {
+	a.groupsGrid.OnSelected = func(id widget.ListItemID) {
 		group, err := getFromBoundUntypedList[skillGroupProgress](a.groups, id)
 		if err != nil {
 			panic(err)
@@ -110,12 +111,14 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 			}
 		}
 		a.skills.Set(copyToUntypedSlice(skills))
-		a.list.Refresh()
+		a.skillsGrid.Refresh()
 	}
 
 	// details
-	a.list = widget.NewListWithData(
-		a.skills,
+	a.skillsGrid = widget.NewGridWrap(
+		func() int {
+			return a.skills.Length()
+		},
 		func() fyne.CanvasObject {
 			x := container.NewHBox(
 				widget.NewIcon(theme.MediaStopIcon()),
@@ -123,18 +126,18 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 				widget.NewIcon(theme.MediaStopIcon()),
 				widget.NewIcon(theme.MediaStopIcon()),
 				widget.NewIcon(theme.MediaStopIcon()),
-				widget.NewLabel("skill name"))
+				widget.NewLabel("Capital Shipboard Compression Technology"))
 			return x
 		},
-		func(di binding.DataItem, co fyne.CanvasObject) {
-			skill, err := convertDataItem[skillTrained](di)
+		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
+			skill, err := getFromBoundUntypedList[skillTrained](a.skills, id)
 			if err != nil {
 				panic(err)
 			}
-			x := co.(*fyne.Container)
-			x.Objects[5].(*widget.Label).SetText(skill.name)
+			row := co.(*fyne.Container)
+			row.Objects[5].(*widget.Label).SetText(skill.name)
 			for i := range 5 {
-				y := x.Objects[i].(*widget.Icon)
+				y := row.Objects[i].(*widget.Icon)
 				if skill.activeLevel > i {
 					y.SetResource(a.levelTrained)
 				} else if skill.trainedLevel > i {
@@ -146,13 +149,13 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 		},
 	)
 
-	s := container.NewVSplit(a.grid, a.list)
+	s := container.NewVSplit(a.groupsGrid, a.skillsGrid)
 	a.content = container.NewBorder(a.total, nil, nil, nil, s)
 	return a
 }
 
 func (a *skillCatalogueArea) Redraw() {
-	a.grid.UnselectAll()
+	a.groupsGrid.UnselectAll()
 	x := make([]skillTrained, 0)
 	a.skills.Set(copyToUntypedSlice(x))
 	a.Refresh()
