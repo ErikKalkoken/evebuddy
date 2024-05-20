@@ -87,3 +87,62 @@ func (q *Queries) GetCharacterImplant(ctx context.Context, arg GetCharacterImpla
 	)
 	return i, err
 }
+
+const listCharacterImplants = `-- name: ListCharacterImplants :many
+SELECT
+    character_implants.id, character_implants.character_id, character_implants.eve_type_id,
+    eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
+    eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
+    eve_categories.id, eve_categories.name, eve_categories.is_published
+FROM character_implants
+JOIN eve_types ON eve_types.id = character_implants.eve_type_id
+JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
+JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
+WHERE character_id = ?
+`
+
+type ListCharacterImplantsRow struct {
+	CharacterImplant CharacterImplant
+	EveType          EveType
+	EveGroup         EveGroup
+	EveCategory      EveCategory
+}
+
+func (q *Queries) ListCharacterImplants(ctx context.Context, characterID int64) ([]ListCharacterImplantsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterImplants, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterImplantsRow
+	for rows.Next() {
+		var i ListCharacterImplantsRow
+		if err := rows.Scan(
+			&i.CharacterImplant.ID,
+			&i.CharacterImplant.CharacterID,
+			&i.CharacterImplant.EveTypeID,
+			&i.EveType.ID,
+			&i.EveType.Description,
+			&i.EveType.EveGroupID,
+			&i.EveType.Name,
+			&i.EveType.IsPublished,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

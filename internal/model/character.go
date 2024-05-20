@@ -31,10 +31,11 @@ type CharacterSection string
 // Updated character sections
 const (
 	CharacterSectionHome               CharacterSection = "home"
+	CharacterSectionImplants           CharacterSection = "implants"
+	CharacterSectionLocation           CharacterSection = "location"
 	CharacterSectionMails              CharacterSection = "mails"
 	CharacterSectionMailLists          CharacterSection = "mail_lists"
 	CharacterSectionMailLabels         CharacterSection = "mail_labels"
-	CharacterSectionLocation           CharacterSection = "location"
 	CharacterSectionOnline             CharacterSection = "online"
 	CharacterSectionShip               CharacterSection = "ship"
 	CharacterSectionSkills             CharacterSection = "skills"

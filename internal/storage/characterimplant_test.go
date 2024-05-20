@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
@@ -33,18 +34,42 @@ func TestCharacterImplant(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can delete for character", func(t *testing.T) {
+	t.Run("can replace implants", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		o := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
+		factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
+		eveType := factory.CreateEveType()
+		arg := storage.CreateCharacterImplantParams{
+			EveTypeID:   eveType.ID,
+			CharacterID: c.ID,
+		}
 		// when
-		err := r.DeleteCharacterImplants(ctx, c.ID)
+		err := r.ReplaceCharacterImplants(ctx, c.ID, []storage.CreateCharacterImplantParams{arg})
 		// then
 		if assert.NoError(t, err) {
-			_, err := r.GetCharacterImplant(ctx, c.ID, o.EveType.ID)
-			assert.ErrorIs(t, err, storage.ErrNotFound)
+			x, err := r.GetCharacterImplant(ctx, c.ID, arg.EveTypeID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, eveType, x.EveType)
+			}
 		}
 	})
-
+	t.Run("can list implants", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		x1 := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
+		x2 := factory.CreateCharacterImplant(storage.CreateCharacterImplantParams{CharacterID: c.ID})
+		// when
+		oo, err := r.ListCharacterImplants(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			got := set.New[int32]()
+			for _, o := range oo {
+				got.Add(o.EveType.ID)
+			}
+			want := set.NewFromSlice([]int32{x1.EveType.ID, x2.EveType.ID})
+			assert.Equal(t, want, got)
+		}
+	})
 }

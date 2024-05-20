@@ -36,10 +36,10 @@ func (r *Storage) GetTotalTrainingTime(ctx context.Context, characterID int32) (
 }
 
 func (r *Storage) CreateSkillqueueItem(ctx context.Context, arg SkillqueueItemParams) error {
-	return createSkillqueueItem(ctx, r.q, arg)
+	return createCharacterSkillqueueItem(ctx, r.q, arg)
 }
 
-func createSkillqueueItem(ctx context.Context, q *queries.Queries, arg SkillqueueItemParams) error {
+func createCharacterSkillqueueItem(ctx context.Context, q *queries.Queries, arg SkillqueueItemParams) error {
 	arg2 := queries.CreateCharacterSkillqueueItemParams{
 		EveTypeID:     int64(arg.EveTypeID),
 		FinishedLevel: int64(arg.FinishedLevel),
@@ -105,7 +105,7 @@ func (r *Storage) ReplaceCharacterSkillqueueItems(ctx context.Context, character
 		return err
 	}
 	for _, arg := range args {
-		err := createSkillqueueItem(ctx, qtx, arg)
+		err := createCharacterSkillqueueItem(ctx, qtx, arg)
 		if err != nil {
 			return err
 		}
