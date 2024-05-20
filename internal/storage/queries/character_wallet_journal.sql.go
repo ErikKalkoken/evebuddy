@@ -71,11 +71,11 @@ func (q *Queries) CreateCharacterWalletJournalEntry(ctx context.Context, arg Cre
 }
 
 const getCharacterWalletJournalEntry = `-- name: GetCharacterWalletJournalEntry :one
-SELECT character_wallet_journal_entries.amount, character_wallet_journal_entries.balance, character_wallet_journal_entries.character_id, character_wallet_journal_entries.context_id, character_wallet_journal_entries.context_id_type, character_wallet_journal_entries.date, character_wallet_journal_entries.description, character_wallet_journal_entries.first_party_id, character_wallet_journal_entries.id, character_wallet_journal_entries.reason, character_wallet_journal_entries.ref_type, character_wallet_journal_entries.second_party_id, character_wallet_journal_entries.tax, character_wallet_journal_entries.tax_receiver_id, wallet_journal_entry_first_parties.id, wallet_journal_entry_first_parties.category, wallet_journal_entry_first_parties.name, wallet_journal_entry_second_parties.id, wallet_journal_entry_second_parties.category, wallet_journal_entry_second_parties.name, wallet_journal_entry_tax_receivers.id, wallet_journal_entry_tax_receivers.category, wallet_journal_entry_tax_receivers.name
+SELECT character_wallet_journal_entries.amount, character_wallet_journal_entries.balance, character_wallet_journal_entries.character_id, character_wallet_journal_entries.context_id, character_wallet_journal_entries.context_id_type, character_wallet_journal_entries.date, character_wallet_journal_entries.description, character_wallet_journal_entries.first_party_id, character_wallet_journal_entries.id, character_wallet_journal_entries.reason, character_wallet_journal_entries.ref_type, character_wallet_journal_entries.second_party_id, character_wallet_journal_entries.tax, character_wallet_journal_entries.tax_receiver_id, character_wallet_journal_entry_first_parties.id, character_wallet_journal_entry_first_parties.category, character_wallet_journal_entry_first_parties.name, character_wallet_journal_entry_second_parties.id, character_wallet_journal_entry_second_parties.category, character_wallet_journal_entry_second_parties.name, character_wallet_journal_entry_tax_receivers.id, character_wallet_journal_entry_tax_receivers.category, character_wallet_journal_entry_tax_receivers.name
 FROM character_wallet_journal_entries
-LEFT JOIN wallet_journal_entry_first_parties ON wallet_journal_entry_first_parties.id = character_wallet_journal_entries.first_party_id
-LEFT JOIN wallet_journal_entry_second_parties ON wallet_journal_entry_second_parties.id = character_wallet_journal_entries.second_party_id
-LEFT JOIN wallet_journal_entry_tax_receivers ON wallet_journal_entry_tax_receivers.id = character_wallet_journal_entries.tax_receiver_id
+LEFT JOIN character_wallet_journal_entry_first_parties ON character_wallet_journal_entry_first_parties.id = character_wallet_journal_entries.first_party_id
+LEFT JOIN character_wallet_journal_entry_second_parties ON character_wallet_journal_entry_second_parties.id = character_wallet_journal_entries.second_party_id
+LEFT JOIN character_wallet_journal_entry_tax_receivers ON character_wallet_journal_entry_tax_receivers.id = character_wallet_journal_entries.tax_receiver_id
 WHERE character_id = ? and character_wallet_journal_entries.id = ?
 `
 
@@ -85,10 +85,10 @@ type GetCharacterWalletJournalEntryParams struct {
 }
 
 type GetCharacterWalletJournalEntryRow struct {
-	CharacterWalletJournalEntry   CharacterWalletJournalEntry
-	WalletJournalEntryFirstParty  WalletJournalEntryFirstParty
-	WalletJournalEntrySecondParty WalletJournalEntrySecondParty
-	WalletJournalEntryTaxReceiver WalletJournalEntryTaxReceiver
+	CharacterWalletJournalEntry            CharacterWalletJournalEntry
+	CharacterWalletJournalEntryFirstParty  CharacterWalletJournalEntryFirstParty
+	CharacterWalletJournalEntrySecondParty CharacterWalletJournalEntrySecondParty
+	CharacterWalletJournalEntryTaxReceiver CharacterWalletJournalEntryTaxReceiver
 }
 
 func (q *Queries) GetCharacterWalletJournalEntry(ctx context.Context, arg GetCharacterWalletJournalEntryParams) (GetCharacterWalletJournalEntryRow, error) {
@@ -109,34 +109,34 @@ func (q *Queries) GetCharacterWalletJournalEntry(ctx context.Context, arg GetCha
 		&i.CharacterWalletJournalEntry.SecondPartyID,
 		&i.CharacterWalletJournalEntry.Tax,
 		&i.CharacterWalletJournalEntry.TaxReceiverID,
-		&i.WalletJournalEntryFirstParty.ID,
-		&i.WalletJournalEntryFirstParty.Category,
-		&i.WalletJournalEntryFirstParty.Name,
-		&i.WalletJournalEntrySecondParty.ID,
-		&i.WalletJournalEntrySecondParty.Category,
-		&i.WalletJournalEntrySecondParty.Name,
-		&i.WalletJournalEntryTaxReceiver.ID,
-		&i.WalletJournalEntryTaxReceiver.Category,
-		&i.WalletJournalEntryTaxReceiver.Name,
+		&i.CharacterWalletJournalEntryFirstParty.ID,
+		&i.CharacterWalletJournalEntryFirstParty.Category,
+		&i.CharacterWalletJournalEntryFirstParty.Name,
+		&i.CharacterWalletJournalEntrySecondParty.ID,
+		&i.CharacterWalletJournalEntrySecondParty.Category,
+		&i.CharacterWalletJournalEntrySecondParty.Name,
+		&i.CharacterWalletJournalEntryTaxReceiver.ID,
+		&i.CharacterWalletJournalEntryTaxReceiver.Category,
+		&i.CharacterWalletJournalEntryTaxReceiver.Name,
 	)
 	return i, err
 }
 
 const listCharacterWalletJournalEntries = `-- name: ListCharacterWalletJournalEntries :many
-SELECT DISTINCT character_wallet_journal_entries.amount, character_wallet_journal_entries.balance, character_wallet_journal_entries.character_id, character_wallet_journal_entries.context_id, character_wallet_journal_entries.context_id_type, character_wallet_journal_entries.date, character_wallet_journal_entries.description, character_wallet_journal_entries.first_party_id, character_wallet_journal_entries.id, character_wallet_journal_entries.reason, character_wallet_journal_entries.ref_type, character_wallet_journal_entries.second_party_id, character_wallet_journal_entries.tax, character_wallet_journal_entries.tax_receiver_id, wallet_journal_entry_first_parties.id, wallet_journal_entry_first_parties.category, wallet_journal_entry_first_parties.name, wallet_journal_entry_second_parties.id, wallet_journal_entry_second_parties.category, wallet_journal_entry_second_parties.name, wallet_journal_entry_tax_receivers.id, wallet_journal_entry_tax_receivers.category, wallet_journal_entry_tax_receivers.name
+SELECT DISTINCT character_wallet_journal_entries.amount, character_wallet_journal_entries.balance, character_wallet_journal_entries.character_id, character_wallet_journal_entries.context_id, character_wallet_journal_entries.context_id_type, character_wallet_journal_entries.date, character_wallet_journal_entries.description, character_wallet_journal_entries.first_party_id, character_wallet_journal_entries.id, character_wallet_journal_entries.reason, character_wallet_journal_entries.ref_type, character_wallet_journal_entries.second_party_id, character_wallet_journal_entries.tax, character_wallet_journal_entries.tax_receiver_id, character_wallet_journal_entry_first_parties.id, character_wallet_journal_entry_first_parties.category, character_wallet_journal_entry_first_parties.name, character_wallet_journal_entry_second_parties.id, character_wallet_journal_entry_second_parties.category, character_wallet_journal_entry_second_parties.name, character_wallet_journal_entry_tax_receivers.id, character_wallet_journal_entry_tax_receivers.category, character_wallet_journal_entry_tax_receivers.name
 FROM character_wallet_journal_entries
-LEFT JOIN wallet_journal_entry_first_parties ON wallet_journal_entry_first_parties.id = character_wallet_journal_entries.first_party_id
-LEFT JOIN wallet_journal_entry_second_parties ON wallet_journal_entry_second_parties.id = character_wallet_journal_entries.second_party_id
-LEFT JOIN wallet_journal_entry_tax_receivers ON wallet_journal_entry_tax_receivers.id = character_wallet_journal_entries.tax_receiver_id
+LEFT JOIN character_wallet_journal_entry_first_parties ON character_wallet_journal_entry_first_parties.id = character_wallet_journal_entries.first_party_id
+LEFT JOIN character_wallet_journal_entry_second_parties ON character_wallet_journal_entry_second_parties.id = character_wallet_journal_entries.second_party_id
+LEFT JOIN character_wallet_journal_entry_tax_receivers ON character_wallet_journal_entry_tax_receivers.id = character_wallet_journal_entries.tax_receiver_id
 WHERE character_id = ?
 ORDER BY date DESC
 `
 
 type ListCharacterWalletJournalEntriesRow struct {
-	CharacterWalletJournalEntry   CharacterWalletJournalEntry
-	WalletJournalEntryFirstParty  WalletJournalEntryFirstParty
-	WalletJournalEntrySecondParty WalletJournalEntrySecondParty
-	WalletJournalEntryTaxReceiver WalletJournalEntryTaxReceiver
+	CharacterWalletJournalEntry            CharacterWalletJournalEntry
+	CharacterWalletJournalEntryFirstParty  CharacterWalletJournalEntryFirstParty
+	CharacterWalletJournalEntrySecondParty CharacterWalletJournalEntrySecondParty
+	CharacterWalletJournalEntryTaxReceiver CharacterWalletJournalEntryTaxReceiver
 }
 
 func (q *Queries) ListCharacterWalletJournalEntries(ctx context.Context, characterID int64) ([]ListCharacterWalletJournalEntriesRow, error) {
@@ -163,15 +163,15 @@ func (q *Queries) ListCharacterWalletJournalEntries(ctx context.Context, charact
 			&i.CharacterWalletJournalEntry.SecondPartyID,
 			&i.CharacterWalletJournalEntry.Tax,
 			&i.CharacterWalletJournalEntry.TaxReceiverID,
-			&i.WalletJournalEntryFirstParty.ID,
-			&i.WalletJournalEntryFirstParty.Category,
-			&i.WalletJournalEntryFirstParty.Name,
-			&i.WalletJournalEntrySecondParty.ID,
-			&i.WalletJournalEntrySecondParty.Category,
-			&i.WalletJournalEntrySecondParty.Name,
-			&i.WalletJournalEntryTaxReceiver.ID,
-			&i.WalletJournalEntryTaxReceiver.Category,
-			&i.WalletJournalEntryTaxReceiver.Name,
+			&i.CharacterWalletJournalEntryFirstParty.ID,
+			&i.CharacterWalletJournalEntryFirstParty.Category,
+			&i.CharacterWalletJournalEntryFirstParty.Name,
+			&i.CharacterWalletJournalEntrySecondParty.ID,
+			&i.CharacterWalletJournalEntrySecondParty.Category,
+			&i.CharacterWalletJournalEntrySecondParty.Name,
+			&i.CharacterWalletJournalEntryTaxReceiver.ID,
+			&i.CharacterWalletJournalEntryTaxReceiver.Category,
+			&i.CharacterWalletJournalEntryTaxReceiver.Name,
 		); err != nil {
 			return nil, err
 		}

@@ -30,8 +30,8 @@ var esiScopes = []string{
 	"esi-wallet.read_character_wallet.v1",
 }
 
-// HasTokenWithScopes reports wether a token with the requested scopes exists for a character.
-func (s *Service) HasTokenWithScopes(characterID int32) (bool, error) {
+// CharacterHasTokenWithScopes reports wether a token with the requested scopes exists for a character.
+func (s *Service) CharacterHasTokenWithScopes(characterID int32) (bool, error) {
 	ctx := context.Background()
 	t, err := s.r.GetCharacterToken(ctx, characterID)
 	if err != nil {
@@ -45,20 +45,20 @@ func (s *Service) HasTokenWithScopes(characterID int32) (bool, error) {
 	return got.Equal(want), nil
 }
 
-// getValidToken returns a valid token for a character. Convenience function.
-func (s *Service) getValidToken(ctx context.Context, characterID int32) (*model.CharacterToken, error) {
+// getValidCharacterToken returns a valid token for a character. Convenience function.
+func (s *Service) getValidCharacterToken(ctx context.Context, characterID int32) (*model.CharacterToken, error) {
 	t, err := s.r.GetCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.ensureValidToken(ctx, t); err != nil {
+	if err := s.ensureValidCharacterToken(ctx, t); err != nil {
 		return nil, err
 	}
 	return t, nil
 }
 
-// ensureValidToken will automatically try to refresh a token that is already or about to become invalid.
-func (s *Service) ensureValidToken(ctx context.Context, t *model.CharacterToken) error {
+// ensureValidCharacterToken will automatically try to refresh a token that is already or about to become invalid.
+func (s *Service) ensureValidCharacterToken(ctx context.Context, t *model.CharacterToken) error {
 	if !t.RemainsValid(time.Second * 60) {
 		slog.Debug("Need to refresh token", "characterID", t.CharacterID)
 		rawToken, err := sso.RefreshToken(s.httpClient, t.RefreshToken)
@@ -77,9 +77,9 @@ func (s *Service) ensureValidToken(ctx context.Context, t *model.CharacterToken)
 	return nil
 }
 
-// contextWithToken returns a new context with the ESI access token included
+// contextWithESIToken returns a new context with the ESI access token included
 // so it can be used to authenticate requests with the goesi library.
-func contextWithToken(ctx context.Context, accessToken string) context.Context {
+func contextWithESIToken(ctx context.Context, accessToken string) context.Context {
 	ctx = context.WithValue(ctx, goesi.ContextAccessToken, accessToken)
 	return ctx
 }

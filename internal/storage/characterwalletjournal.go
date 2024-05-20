@@ -70,9 +70,9 @@ func (r *Storage) GetCharacterWalletJournalEntry(ctx context.Context, characterI
 	}
 	return characterWalletJournalEntryFromDBModel(
 		row.CharacterWalletJournalEntry,
-		row.WalletJournalEntryFirstParty,
-		row.WalletJournalEntrySecondParty,
-		row.WalletJournalEntryTaxReceiver,
+		row.CharacterWalletJournalEntryFirstParty,
+		row.CharacterWalletJournalEntrySecondParty,
+		row.CharacterWalletJournalEntryTaxReceiver,
 	), err
 }
 
@@ -87,16 +87,20 @@ func (r *Storage) ListCharacterWalletJournalEntries(ctx context.Context, charact
 	}
 	ee := make([]*model.CharacterWalletJournalEntry, len(rows))
 	for i, row := range rows {
-		ee[i] = characterWalletJournalEntryFromDBModel(row.CharacterWalletJournalEntry, row.WalletJournalEntryFirstParty, row.WalletJournalEntrySecondParty, row.WalletJournalEntryTaxReceiver)
+		ee[i] = characterWalletJournalEntryFromDBModel(
+			row.CharacterWalletJournalEntry,
+			row.CharacterWalletJournalEntryFirstParty,
+			row.CharacterWalletJournalEntrySecondParty,
+			row.CharacterWalletJournalEntryTaxReceiver)
 	}
 	return ee, nil
 }
 
 func characterWalletJournalEntryFromDBModel(
 	e queries.CharacterWalletJournalEntry,
-	firstParty queries.WalletJournalEntryFirstParty,
-	secondParty queries.WalletJournalEntrySecondParty,
-	taxReceiver queries.WalletJournalEntryTaxReceiver,
+	firstParty queries.CharacterWalletJournalEntryFirstParty,
+	secondParty queries.CharacterWalletJournalEntrySecondParty,
+	taxReceiver queries.CharacterWalletJournalEntryTaxReceiver,
 ) *model.CharacterWalletJournalEntry {
 	e2 := &model.CharacterWalletJournalEntry{
 		Amount:        e.Amount,

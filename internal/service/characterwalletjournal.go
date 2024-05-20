@@ -19,11 +19,11 @@ func (s *Service) ListCharacterWalletJournalEntries(characterID int32) ([]*model
 
 // updateCharacterWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
 func (s *Service) updateCharacterWalletJournalEntryESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return false, err
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	entries, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, token.CharacterID, nil)
 	if err != nil {
 		return false, err

@@ -25,11 +25,11 @@ const (
 // updateCharacterMailLabelsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
 func (s *Service) updateCharacterMailLabelsESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return false, err
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	ll, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(ctx, token.CharacterID, nil)
 	if err != nil {
 		return false, err
@@ -62,11 +62,11 @@ func (s *Service) updateCharacterMailLabelsESI(ctx context.Context, characterID 
 // updateCharacterMailListsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
 func (s *Service) updateCharacterMailListsESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return false, err
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	lists, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLists(ctx, token.CharacterID, nil)
 	if err != nil {
 		return false, err
@@ -93,7 +93,7 @@ func (s *Service) updateCharacterMailListsESI(ctx context.Context, characterID i
 // updateCharacterMailESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
 func (s *Service) updateCharacterMailESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return false, err
 	}
@@ -136,10 +136,10 @@ func (s *Service) updateCharacterMailESI(ctx context.Context, characterID int32)
 
 // fetchMailHeadersESI fetched mail headers from ESI with paging and returns them.
 func (s *Service) fetchMailHeadersESI(ctx context.Context, token *model.CharacterToken) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
-	if err := s.ensureValidToken(ctx, token); err != nil {
+	if err := s.ensureValidCharacterToken(ctx, token); err != nil {
 		return nil, err
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	var mm []esi.GetCharactersCharacterIdMail200Ok
 	lastMailID := int32(0)
 	for {
@@ -216,10 +216,10 @@ func (s *Service) resolveMailEntities(ctx context.Context, mm []esi.GetCharacter
 }
 
 func (s *Service) addNewMailsESI(ctx context.Context, token *model.CharacterToken, headers []esi.GetCharactersCharacterIdMail200Ok) error {
-	if err := s.ensureValidToken(ctx, token); err != nil {
+	if err := s.ensureValidCharacterToken(ctx, token); err != nil {
 		return err
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	count := 0
 	g := new(errgroup.Group)
 	g.SetLimit(20)
@@ -287,11 +287,11 @@ func (s *Service) updateExistingMail(ctx context.Context, characterID int32, hea
 // UpdateMailRead updates an existing mail as read
 func (s *Service) UpdateMailRead(characterID, mailID int32) error {
 	ctx := context.Background()
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return err
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	m, err := s.r.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		return err

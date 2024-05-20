@@ -18,7 +18,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 		c := factory.CreateMyCharacter()
 		factory.CreateToken(model.CharacterToken{CharacterID: c.ID, Scopes: esiScopes})
 		// when
-		x, err := s.HasTokenWithScopes(c.ID)
+		x, err := s.CharacterHasTokenWithScopes(c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, x)

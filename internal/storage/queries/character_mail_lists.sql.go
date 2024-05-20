@@ -34,8 +34,8 @@ DELETE FROM character_mail_lists
 WHERE character_mail_lists.character_id = ?
 AND eve_entity_id NOT IN (
     SELECT eve_entity_id
-    FROM mail_recipients
-    JOIN character_mails ON character_mails.id = mail_recipients.mail_id
+    FROM character_mails_recipients
+    JOIN character_mails ON character_mails.id = character_mails_recipients.mail_id
     WHERE character_mails.character_id = ?
 )
 AND eve_entity_id NOT IN (

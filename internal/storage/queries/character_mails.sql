@@ -14,7 +14,7 @@ VALUES (
 RETURNING *;
 
 -- name: CreateMailRecipient :exec
-INSERT INTO mail_recipients (
+INSERT INTO character_mails_recipients (
     mail_id,
     eve_entity_id
 )
@@ -46,7 +46,7 @@ AND mail_id = ?;
 -- name: GetMailRecipients :many
 SELECT eve_entities.*
 FROM eve_entities
-JOIN mail_recipients ON mail_recipients.eve_entity_id = eve_entities.id
+JOIN character_mails_recipients ON character_mails_recipients.eve_entity_id = eve_entities.id
 WHERE mail_id = ?;
 
 -- name: GetCharacterMailLabels :many
@@ -78,8 +78,8 @@ GROUP BY label_id;
 -- name: GetCharacterMailListUnreadCounts :many
 SELECT eve_entities.id AS list_id, COUNT(character_mails.id) as unread_count_2
 FROM character_mails
-JOIN mail_recipients ON mail_recipients.mail_id = character_mails.id
-JOIN eve_entities ON eve_entities.id = mail_recipients.eve_entity_id
+JOIN character_mails_recipients ON character_mails_recipients.mail_id = character_mails.id
+JOIN eve_entities ON eve_entities.id = character_mails_recipients.eve_entity_id
 WHERE character_id = ?
 AND eve_entities.category = "mail_list"
 AND character_mails.is_read IS FALSE
@@ -116,9 +116,9 @@ ORDER BY timestamp DESC;
 -- name: ListMailIDsForListOrdered :many
 SELECT character_mails.mail_id
 FROM character_mails
-JOIN mail_recipients ON mail_recipients.mail_id = character_mails.id
+JOIN character_mails_recipients ON character_mails_recipients.mail_id = character_mails.id
 WHERE character_id = ?
-AND mail_recipients.eve_entity_id = ?
+AND character_mails_recipients.eve_entity_id = ?
 ORDER BY timestamp DESC;
 
 -- name: UpdateMail :exec

@@ -50,6 +50,11 @@ type CharacterMailMailLabel struct {
 	CharacterMailID      int64
 }
 
+type CharacterMailsRecipient struct {
+	MailID      int64
+	EveEntityID int64
+}
+
 type CharacterSkill struct {
 	ActiveSkillLevel   int64
 	CharacterID        int64
@@ -105,6 +110,24 @@ type CharacterWalletJournalEntry struct {
 	SecondPartyID sql.NullInt64
 	Tax           float64
 	TaxReceiverID sql.NullInt64
+}
+
+type CharacterWalletJournalEntryFirstParty struct {
+	ID       sql.NullInt64
+	Category sql.NullString
+	Name     sql.NullString
+}
+
+type CharacterWalletJournalEntrySecondParty struct {
+	ID       sql.NullInt64
+	Category sql.NullString
+	Name     sql.NullString
+}
+
+type CharacterWalletJournalEntryTaxReceiver struct {
+	ID       sql.NullInt64
+	Category sql.NullString
+	Name     sql.NullString
 }
 
 type CharacterWalletTransaction struct {
@@ -213,30 +236,7 @@ type Location struct {
 	UpdatedAt        time.Time
 }
 
-type MailRecipient struct {
-	MailID      int64
-	EveEntityID int64
-}
-
 type Scope struct {
 	ID   int64
 	Name string
-}
-
-type WalletJournalEntryFirstParty struct {
-	ID       sql.NullInt64
-	Category sql.NullString
-	Name     sql.NullString
-}
-
-type WalletJournalEntrySecondParty struct {
-	ID       sql.NullInt64
-	Category sql.NullString
-	Name     sql.NullString
-}
-
-type WalletJournalEntryTaxReceiver struct {
-	ID       sql.NullInt64
-	Category sql.NullString
-	Name     sql.NullString
 }

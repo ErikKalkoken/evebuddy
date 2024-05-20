@@ -79,7 +79,7 @@ func (q *Queries) CreateMailCharacterMailLabel(ctx context.Context, arg CreateMa
 }
 
 const createMailRecipient = `-- name: CreateMailRecipient :exec
-INSERT INTO mail_recipients (
+INSERT INTO character_mails_recipients (
     mail_id,
     eve_entity_id
 )
@@ -200,8 +200,8 @@ func (q *Queries) GetCharacterMailLabels(ctx context.Context, characterMailID in
 const getCharacterMailListUnreadCounts = `-- name: GetCharacterMailListUnreadCounts :many
 SELECT eve_entities.id AS list_id, COUNT(character_mails.id) as unread_count_2
 FROM character_mails
-JOIN mail_recipients ON mail_recipients.mail_id = character_mails.id
-JOIN eve_entities ON eve_entities.id = mail_recipients.eve_entity_id
+JOIN character_mails_recipients ON character_mails_recipients.mail_id = character_mails.id
+JOIN eve_entities ON eve_entities.id = character_mails_recipients.eve_entity_id
 WHERE character_id = ?
 AND eve_entities.category = "mail_list"
 AND character_mails.is_read IS FALSE
@@ -289,7 +289,7 @@ func (q *Queries) GetMailCount(ctx context.Context, characterID int64) (int64, e
 const getMailRecipients = `-- name: GetMailRecipients :many
 SELECT eve_entities.id, eve_entities.category, eve_entities.name
 FROM eve_entities
-JOIN mail_recipients ON mail_recipients.eve_entity_id = eve_entities.id
+JOIN character_mails_recipients ON character_mails_recipients.eve_entity_id = eve_entities.id
 WHERE mail_id = ?
 `
 
@@ -400,9 +400,9 @@ func (q *Queries) ListMailIDsForLabelOrdered(ctx context.Context, arg ListMailID
 const listMailIDsForListOrdered = `-- name: ListMailIDsForListOrdered :many
 SELECT character_mails.mail_id
 FROM character_mails
-JOIN mail_recipients ON mail_recipients.mail_id = character_mails.id
+JOIN character_mails_recipients ON character_mails_recipients.mail_id = character_mails.id
 WHERE character_id = ?
-AND mail_recipients.eve_entity_id = ?
+AND character_mails_recipients.eve_entity_id = ?
 ORDER BY timestamp DESC
 `
 

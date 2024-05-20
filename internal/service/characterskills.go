@@ -9,11 +9,11 @@ import (
 )
 
 func (s *Service) updateCharacterSkillsESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return false, err
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, characterID, nil)
 	if err != nil {
 		return false, err

@@ -38,7 +38,7 @@ func eveEntityCategoryFromESICategory(c string) model.EveEntityCategory {
 // AddEveEntitiesFromESISearch runs a search on ESI and adds the results as new EveEntity objects to the database.
 func (s *Service) AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, error) {
 	ctx := context.Background()
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (s *Service) AddEveEntitiesFromESISearch(characterID int32, search string) 
 		"character",
 		"alliance",
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	r, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, categories, characterID, search, nil)
 	if err != nil {
 		return nil, err
@@ -231,7 +231,7 @@ func (s *Service) resolveEveEntityNamesRemotely(ctx context.Context, names []str
 	return nil
 }
 
-// findEveEntitiesByName tries to build MailRecipient objects from given names
+// findEveEntitiesByName tries to build EveEntity objects from given names
 // by checking against EveEntity objects in the database.
 // Will abort with errors if no match is found or if multiple matches are found for a name.
 func (s *Service) findEveEntitiesByName(ctx context.Context, names []string) ([]*model.EveEntity, error) {

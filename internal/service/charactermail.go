@@ -22,11 +22,11 @@ var eveEntityCategory2MailRecipientType = map[model.EveEntityCategory]string{
 // DeleteCharacterMail deletes a mail both on ESI and in the database.
 func (s *Service) DeleteCharacterMail(characterID, mailID int32) error {
 	ctx := context.Background()
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return err
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	_, err = s.esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func (s *Service) SendCharacterMail(characterID int32, subject string, recipient
 		return 0, err
 	}
 	ctx := context.Background()
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return 0, err
 	}
@@ -82,7 +82,7 @@ func (s *Service) SendCharacterMail(characterID int32, subject string, recipient
 		Subject:    subject,
 		Recipients: rr,
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	mailID, _, err := s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esiMail, nil)
 	if err != nil {
 		return 0, err

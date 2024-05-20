@@ -141,7 +141,7 @@ CREATE TABLE character_mail_labels (
     UNIQUE (character_id, label_id)
 );
 
-CREATE TABLE mail_recipients (
+CREATE TABLE character_mails_recipients (
     mail_id INTEGER NOT NULL,
     eve_entity_id INTEGER NOT NULL,
     PRIMARY KEY (mail_id, eve_entity_id),
@@ -197,7 +197,7 @@ CREATE TABLE character_skillqueue_items (
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
     UNIQUE (character_id, queue_position)
 );
-CREATE INDEX skillqueue_items_queue_position_idx ON character_skillqueue_items (queue_position ASC);
+CREATE INDEX character_skillqueue_items_queue_position_idx ON character_skillqueue_items (queue_position ASC);
 
 CREATE TABLE scopes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -255,17 +255,17 @@ CREATE TABLE character_wallet_journal_entries (
 );
 CREATE INDEX character_wallet_journal_entries_date_idx ON character_wallet_journal_entries (date ASC);
 
-CREATE VIEW wallet_journal_entry_first_parties AS
+CREATE VIEW character_wallet_journal_entry_first_parties AS
 SELECT eve_entities.*
 FROM character_wallet_journal_entries
 LEFT JOIN eve_entities ON eve_entities.id = character_wallet_journal_entries.first_party_id;
 
-CREATE VIEW wallet_journal_entry_second_parties AS
+CREATE VIEW character_wallet_journal_entry_second_parties AS
 SELECT eve_entities.*
 FROM character_wallet_journal_entries
 LEFT JOIN eve_entities ON eve_entities.id = character_wallet_journal_entries.second_party_id;
 
-CREATE VIEW wallet_journal_entry_tax_receivers AS
+CREATE VIEW character_wallet_journal_entry_tax_receivers AS
 SELECT eve_entities.*
 FROM character_wallet_journal_entries
 LEFT JOIN eve_entities ON eve_entities.id = character_wallet_journal_entries.tax_receiver_id;

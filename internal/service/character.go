@@ -55,7 +55,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText b
 		Scopes:       ssoToken.Scopes,
 		TokenType:    ssoToken.TokenType,
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	character, err := s.getOrCreateEveCharacterESI(ctx, token.CharacterID)
 	if err != nil {
 		return 0, err
@@ -88,11 +88,11 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText b
 }
 
 func (s *Service) updateCharacterHomeESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return false, err
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	clones, _, err := s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdClones(ctx, characterID, nil)
 	if err != nil {
 		return false, err
@@ -120,11 +120,11 @@ func (s *Service) updateCharacterHomeESI(ctx context.Context, characterID int32)
 }
 
 func (s *Service) updateCharacterLocationESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return false, err
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	location, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, characterID, nil)
 	if err != nil {
 		return false, err
@@ -157,11 +157,11 @@ func (s *Service) updateCharacterLocationESI(ctx context.Context, characterID in
 }
 
 func (s *Service) updateCharacterOnlineESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return false, err
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	online, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, characterID, nil)
 	if err != nil {
 		return false, err
@@ -185,11 +185,11 @@ func (s *Service) updateCharacterOnlineESI(ctx context.Context, characterID int3
 }
 
 func (s *Service) updateCharacterShipESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return false, err
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	ship, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, characterID, nil)
 	if err != nil {
 		return false, err
@@ -213,11 +213,11 @@ func (s *Service) updateCharacterShipESI(ctx context.Context, characterID int32)
 }
 
 func (s *Service) updateCharacterWalletBalanceESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return false, err
 	}
-	ctx = contextWithToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, characterID, nil)
 	if err != nil {
 		return false, err
