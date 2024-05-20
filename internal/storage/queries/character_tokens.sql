@@ -1,6 +1,6 @@
 -- name: AddCharacterTokenScope :exec
 INSERT INTO character_token_scopes (
-    token_id,
+    character_token_id,
     scope_id
 )
 VALUES (
@@ -9,7 +9,11 @@ VALUES (
 
 -- name: ClearCharacterTokenScopes :exec
 DELETE FROM character_token_scopes
-WHERE token_id = ?;
+WHERE character_token_id IN (
+    SELECT id
+    FROM character_tokens
+    WHERE character_id = ?
+);
 
 -- name: GetCharacterToken :one
 SELECT *
@@ -20,10 +24,11 @@ WHERE character_id = ?;
 SELECT scopes.*
 FROM character_token_scopes
 JOIN scopes ON scopes.id = character_token_scopes.scope_id
-WHERE token_id = ?
+JOIN character_tokens ON character_tokens.id = character_token_scopes.character_token_id
+WHERE character_id = ?
 ORDER BY scopes.name;
 
--- name: UpdateOrCreateCharacterToken :exec
+-- name: UpdateOrCreateCharacterToken :one
 INSERT INTO character_tokens (
     character_id,
     access_token,
@@ -40,4 +45,5 @@ UPDATE SET
     expires_at = ?3,
     refresh_token = ?4,
     token_type = ?5
-WHERE character_id = ?1;
+WHERE character_id = ?1
+RETURNING *;

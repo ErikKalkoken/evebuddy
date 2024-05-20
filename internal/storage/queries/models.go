@@ -90,9 +90,9 @@ type CharacterToken struct {
 }
 
 type CharacterTokenScope struct {
-	ID      int64
-	TokenID int64
-	ScopeID int64
+	ID               int64
+	CharacterTokenID int64
+	ScopeID          int64
 }
 
 type CharacterUpdateStatus struct {

@@ -38,7 +38,8 @@ func (r *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *model.Cha
 		RefreshToken: t.RefreshToken,
 		TokenType:    t.TokenType,
 	}
-	if err := r.q.UpdateOrCreateCharacterToken(ctx, arg); err != nil {
+	token, err := r.q.UpdateOrCreateCharacterToken(ctx, arg)
+	if err != nil {
 		return fmt.Errorf("failed to update or create token for character %d: %w", t.CharacterID, err)
 	}
 	ss := make([]queries.Scope, len(t.Scopes))
@@ -60,8 +61,8 @@ func (r *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *model.Cha
 	}
 	for _, s := range ss {
 		arg := queries.AddCharacterTokenScopeParams{
-			TokenID: arg.CharacterID,
-			ScopeID: s.ID,
+			CharacterTokenID: token.ID,
+			ScopeID:          s.ID,
 		}
 		if err := qtx.AddCharacterTokenScope(ctx, arg); err != nil {
 			return err

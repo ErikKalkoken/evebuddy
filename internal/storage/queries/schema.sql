@@ -226,11 +226,11 @@ CREATE TABLE character_tokens (
 
 CREATE TABLE character_token_scopes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    token_id INTEGER NOT NULL,
+    character_token_id INTEGER NOT NULL,
     scope_id INTEGER NOT NULL,
-    FOREIGN KEY (token_id) REFERENCES character_tokens(character_id) ON DELETE CASCADE,
+    FOREIGN KEY (character_token_id) REFERENCES character_tokens(id) ON DELETE CASCADE,
     FOREIGN KEY (scope_id) REFERENCES scopes(id) ON DELETE CASCADE,
-    UNIQUE (token_id, scope_id)
+    UNIQUE (character_token_id, scope_id)
 );
 
 CREATE TABLE character_update_status (
