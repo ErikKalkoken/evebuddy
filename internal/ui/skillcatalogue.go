@@ -111,10 +111,10 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 		for i, o := range oo {
 			skills[i] = skillTrained{
 				activeLevel:  o.ActiveSkillLevel,
-				description:  o.Description,
+				description:  o.TypeDescription,
 				groupName:    group.name,
-				id:           o.ID,
-				name:         o.Name,
+				id:           o.TypeID,
+				name:         o.TypeName,
 				trainedLevel: o.TrainedSkillLevel,
 			}
 		}
@@ -228,8 +228,8 @@ func (a *skillCatalogueArea) updateGroups() (*model.Character, error) {
 	for i, g := range gg {
 		groups[i] = skillGroupProgress{
 			trained: g.Trained,
-			id:      g.ID,
-			name:    g.Name,
+			id:      g.GroupID,
+			name:    g.GroupName,
 			total:   g.Total,
 		}
 	}

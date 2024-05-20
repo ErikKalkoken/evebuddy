@@ -45,6 +45,7 @@ const (
 )
 
 type CharacterUpdateStatus struct {
+	ID          int64
 	CharacterID int32
 	SectionID   CharacterSection
 	UpdatedAt   time.Time

@@ -52,9 +52,9 @@ func (r *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, e
 	for i, x := range xx {
 		oo[i] = model.ListCharacterSkillProgress{
 			ActiveSkillLevel:  int(x.ActiveSkillLevel.Int64),
-			Description:       x.Description,
-			ID:                int32(x.ID),
-			Name:              x.Name,
+			TypeDescription:   x.Description,
+			TypeID:            int32(x.ID),
+			TypeName:          x.Name,
 			TrainedSkillLevel: int(x.TrainedSkillLevel.Int64),
 		}
 	}
@@ -73,9 +73,9 @@ func (r *Storage) ListCharacterSkillGroupsProgress(ctx context.Context, characte
 	oo := make([]model.ListCharacterSkillGroupProgress, len(xx))
 	for i, x := range xx {
 		o := model.ListCharacterSkillGroupProgress{
-			ID:    int32(x.EveGroupID),
-			Name:  x.EveGroupName,
-			Total: float64(x.Total),
+			GroupID:   int32(x.EveGroupID),
+			GroupName: x.EveGroupName,
+			Total:     float64(x.Total),
 		}
 		if x.Trained.Valid {
 			o.Trained = x.Trained.Float64
@@ -113,9 +113,10 @@ func characterSkillFromDBModel(o queries.CharacterSkill, t queries.EveType, g qu
 	}
 	return &model.CharacterSkill{
 		ActiveSkillLevel:   int(o.ActiveSkillLevel),
-		EveType:            eveTypeFromDBModel(t, g, c),
-		SkillPointsInSkill: int(o.SkillPointsInSkill),
 		CharacterID:        int32(o.CharacterID),
+		EveType:            eveTypeFromDBModel(t, g, c),
+		ID:                 o.ID,
+		SkillPointsInSkill: int(o.SkillPointsInSkill),
 		TrainedSkillLevel:  int(o.TrainedSkillLevel),
 	}
 }

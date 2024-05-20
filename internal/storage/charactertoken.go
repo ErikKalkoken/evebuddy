@@ -101,16 +101,17 @@ func (r *Storage) getOrCreateScope(ctx context.Context, name string) (queries.Sc
 	return s, nil
 }
 
-func characterTokenFromDBModel(t queries.CharacterToken, scopes []string) *model.CharacterToken {
-	if t.CharacterID == 0 {
+func characterTokenFromDBModel(o queries.CharacterToken, scopes []string) *model.CharacterToken {
+	if o.CharacterID == 0 {
 		panic("missing character ID")
 	}
 	return &model.CharacterToken{
-		AccessToken:  t.AccessToken,
-		CharacterID:  int32(t.CharacterID),
-		ExpiresAt:    t.ExpiresAt,
-		RefreshToken: t.RefreshToken,
+		AccessToken:  o.AccessToken,
+		CharacterID:  int32(o.CharacterID),
+		ExpiresAt:    o.ExpiresAt,
+		ID:           o.ID,
+		RefreshToken: o.RefreshToken,
 		Scopes:       scopes,
-		TokenType:    t.TokenType,
+		TokenType:    o.TokenType,
 	}
 }

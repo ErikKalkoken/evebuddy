@@ -74,23 +74,24 @@ func (r *Storage) ListCharacterWalletTransactions(ctx context.Context, character
 }
 
 func characterWalletTransactionFromDBModel(
-	t queries.CharacterWalletTransaction,
+	o queries.CharacterWalletTransaction,
 	client queries.EveEntity,
 	eveTypeName string,
 	locationName string,
 ) *model.CharacterWalletTransaction {
-	x := &model.CharacterWalletTransaction{
+	o2 := &model.CharacterWalletTransaction{
 		Client:        eveEntityFromDBModel(client),
-		Date:          t.Date,
-		EveType:       &model.EntityShort[int32]{ID: int32(t.EveTypeID), Name: eveTypeName},
-		IsBuy:         t.IsBuy,
-		IsPersonal:    t.IsPersonal,
-		JournalRefID:  t.JournalRefID,
-		Location:      &model.EntityShort[int64]{ID: t.LocationID, Name: locationName},
-		CharacterID:   int32(t.CharacterID),
-		Quantity:      int32(t.Quantity),
-		TransactionID: t.TransactionID,
-		UnitPrice:     t.UnitPrice,
+		Date:          o.Date,
+		EveType:       &model.EntityShort[int32]{ID: int32(o.EveTypeID), Name: eveTypeName},
+		ID:            o.ID,
+		IsBuy:         o.IsBuy,
+		IsPersonal:    o.IsPersonal,
+		JournalRefID:  o.JournalRefID,
+		Location:      &model.EntityShort[int64]{ID: o.LocationID, Name: locationName},
+		CharacterID:   int32(o.CharacterID),
+		Quantity:      int32(o.Quantity),
+		TransactionID: o.TransactionID,
+		UnitPrice:     o.UnitPrice,
 	}
-	return x
+	return o2
 }

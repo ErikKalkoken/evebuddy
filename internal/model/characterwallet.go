@@ -13,6 +13,7 @@ type CharacterWalletJournalEntry struct {
 	Date          time.Time
 	Description   string
 	FirstParty    *EveEntity
+	ID            int64
 	Reason        string
 	RefID         int64
 	RefType       string
@@ -26,6 +27,7 @@ type CharacterWalletTransaction struct {
 	Client        *EveEntity
 	Date          time.Time
 	EveType       *EntityShort[int32]
+	ID            int64
 	IsBuy         bool
 	IsPersonal    bool
 	JournalRefID  int64

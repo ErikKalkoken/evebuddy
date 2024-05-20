@@ -48,11 +48,12 @@ func (r *Storage) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg C
 	return nil
 }
 
-func characterUpdateStatusFromDBModel(s queries.CharacterUpdateStatus) *model.CharacterUpdateStatus {
+func characterUpdateStatusFromDBModel(o queries.CharacterUpdateStatus) *model.CharacterUpdateStatus {
 	return &model.CharacterUpdateStatus{
-		CharacterID: int32(s.CharacterID),
-		SectionID:   model.CharacterSection(s.SectionID),
-		UpdatedAt:   s.UpdatedAt,
-		ContentHash: s.ContentHash,
+		ID:          o.ID,
+		CharacterID: int32(o.CharacterID),
+		SectionID:   model.CharacterSection(o.SectionID),
+		UpdatedAt:   o.UpdatedAt,
+		ContentHash: o.ContentHash,
 	}
 }

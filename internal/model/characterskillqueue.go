@@ -8,12 +8,13 @@ import (
 )
 
 type CharacterSkillqueueItem struct {
+	CharacterID      int32
 	GroupName        string
 	FinishDate       time.Time
 	FinishedLevel    int
 	LevelEndSP       int
 	LevelStartSP     int
-	CharacterID      int32
+	ID               int64
 	QueuePosition    int
 	StartDate        time.Time
 	SkillName        string

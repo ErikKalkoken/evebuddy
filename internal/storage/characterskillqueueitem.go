@@ -116,29 +116,30 @@ func (r *Storage) ReplaceCharacterSkillqueueItems(ctx context.Context, character
 	return nil
 }
 
-func skillqueueItemFromDBModel(i queries.CharacterSkillqueueItem, skillName, groupName, description string) *model.CharacterSkillqueueItem {
+func skillqueueItemFromDBModel(o queries.CharacterSkillqueueItem, skillName, groupName, description string) *model.CharacterSkillqueueItem {
 	i2 := &model.CharacterSkillqueueItem{
+		CharacterID:      int32(o.CharacterID),
 		GroupName:        groupName,
-		FinishedLevel:    int(i.FinishedLevel),
-		CharacterID:      int32(i.CharacterID),
-		QueuePosition:    int(i.QueuePosition),
+		FinishedLevel:    int(o.FinishedLevel),
+		ID:               o.ID,
+		QueuePosition:    int(o.QueuePosition),
 		SkillName:        skillName,
 		SkillDescription: description,
 	}
-	if i.FinishDate.Valid {
-		i2.FinishDate = i.FinishDate.Time
+	if o.FinishDate.Valid {
+		i2.FinishDate = o.FinishDate.Time
 	}
-	if i.LevelEndSp.Valid {
-		i2.LevelEndSP = int(i.LevelEndSp.Int64)
+	if o.LevelEndSp.Valid {
+		i2.LevelEndSP = int(o.LevelEndSp.Int64)
 	}
-	if i.LevelStartSp.Valid {
-		i2.LevelStartSP = int(i.LevelStartSp.Int64)
+	if o.LevelStartSp.Valid {
+		i2.LevelStartSP = int(o.LevelStartSp.Int64)
 	}
-	if i.StartDate.Valid {
-		i2.StartDate = i.StartDate.Time
+	if o.StartDate.Valid {
+		i2.StartDate = o.StartDate.Time
 	}
-	if i.TrainingStartSp.Valid {
-		i2.TrainingStartSP = int(i.TrainingStartSp.Int64)
+	if o.TrainingStartSp.Valid {
+		i2.TrainingStartSP = int(o.TrainingStartSp.Int64)
 	}
 	return i2
 }

@@ -4,21 +4,22 @@ type CharacterSkill struct {
 	ActiveSkillLevel   int
 	CharacterID        int32
 	EveType            *EveType
+	ID                 int64
 	SkillPointsInSkill int
 	TrainedSkillLevel  int
 }
 
 type ListCharacterSkillGroupProgress struct {
-	ID      int32
-	Name    string
-	Total   float64
-	Trained float64
+	GroupID   int32
+	GroupName string
+	Total     float64
+	Trained   float64
 }
 
 type ListCharacterSkillProgress struct {
-	ID                int32
-	Description       string
-	Name              string
 	ActiveSkillLevel  int
 	TrainedSkillLevel int
+	TypeID            int32
+	TypeDescription   string
+	TypeName          string
 }

@@ -97,26 +97,27 @@ func (r *Storage) ListCharacterWalletJournalEntries(ctx context.Context, charact
 }
 
 func characterWalletJournalEntryFromDBModel(
-	e queries.CharacterWalletJournalEntry,
+	o queries.CharacterWalletJournalEntry,
 	firstParty queries.CharacterWalletJournalEntryFirstParty,
 	secondParty queries.CharacterWalletJournalEntrySecondParty,
 	taxReceiver queries.CharacterWalletJournalEntryTaxReceiver,
 ) *model.CharacterWalletJournalEntry {
-	e2 := &model.CharacterWalletJournalEntry{
-		Amount:        e.Amount,
-		Balance:       e.Balance,
-		ContextID:     e.ContextID,
-		ContextIDType: e.ContextIDType,
-		Date:          e.Date,
-		Description:   e.Description,
+	o2 := &model.CharacterWalletJournalEntry{
+		Amount:        o.Amount,
+		Balance:       o.Balance,
+		ContextID:     o.ContextID,
+		ContextIDType: o.ContextIDType,
+		Date:          o.Date,
+		Description:   o.Description,
 		FirstParty:    eveEntityFromNullableDBModel(nullEveEntry(firstParty)),
-		RefID:         e.ID,
-		CharacterID:   int32(e.CharacterID),
-		Reason:        e.Reason,
-		RefType:       e.RefType,
+		ID:            o.ID,
+		RefID:         o.RefID,
+		CharacterID:   int32(o.CharacterID),
+		Reason:        o.Reason,
+		RefType:       o.RefType,
 		SecondParty:   eveEntityFromNullableDBModel(nullEveEntry(secondParty)),
-		Tax:           e.Tax,
+		Tax:           o.Tax,
 		TaxReceiver:   eveEntityFromNullableDBModel(nullEveEntry(taxReceiver)),
 	}
-	return e2
+	return o2
 }
