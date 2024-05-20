@@ -17,7 +17,7 @@ type CreateCharacterWalletJournalEntryParams struct {
 	Date          time.Time
 	Description   string
 	FirstPartyID  int32
-	ID            int64
+	RefID         int64
 	CharacterID   int32
 	Reason        string
 	RefType       string
@@ -27,7 +27,7 @@ type CreateCharacterWalletJournalEntryParams struct {
 }
 
 func (r *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg CreateCharacterWalletJournalEntryParams) error {
-	if arg.ID == 0 {
+	if arg.RefID == 0 {
 		return fmt.Errorf("CharacterWalletJournalEntry ID can not be zero, Character %d", arg.CharacterID)
 	}
 	arg2 := queries.CreateCharacterWalletJournalEntryParams{
@@ -37,7 +37,7 @@ func (r *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg Cre
 		ContextIDType: arg.ContextIDType,
 		Date:          arg.Date,
 		Description:   arg.Description,
-		ID:            arg.ID,
+		RefID:         arg.RefID,
 		CharacterID:   int64(arg.CharacterID),
 		RefType:       arg.RefType,
 		Reason:        arg.Reason,
@@ -59,10 +59,10 @@ func (r *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg Cre
 	return err
 }
 
-func (r *Storage) GetCharacterWalletJournalEntry(ctx context.Context, characterID int32, entryID int64) (*model.CharacterWalletJournalEntry, error) {
+func (r *Storage) GetCharacterWalletJournalEntry(ctx context.Context, characterID int32, refID int64) (*model.CharacterWalletJournalEntry, error) {
 	arg := queries.GetCharacterWalletJournalEntryParams{
 		CharacterID: int64(characterID),
-		ID:          entryID,
+		RefID:       refID,
 	}
 	row, err := r.q.GetCharacterWalletJournalEntry(ctx, arg)
 	if err != nil {
@@ -77,7 +77,7 @@ func (r *Storage) GetCharacterWalletJournalEntry(ctx context.Context, characterI
 }
 
 func (r *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int32) ([]int64, error) {
-	return r.q.ListCharacterWalletJournalEntryIDs(ctx, int64(characterID))
+	return r.q.ListCharacterWalletJournalEntryRefIDs(ctx, int64(characterID))
 }
 
 func (r *Storage) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
@@ -110,7 +110,7 @@ func characterWalletJournalEntryFromDBModel(
 		Date:          e.Date,
 		Description:   e.Description,
 		FirstParty:    eveEntityFromNullableDBModel(nullEveEntry(firstParty)),
-		ID:            e.ID,
+		RefID:         e.ID,
 		CharacterID:   int32(e.CharacterID),
 		Reason:        e.Reason,
 		RefType:       e.RefType,

@@ -27,7 +27,7 @@ func TestWalletJournalEntry(t *testing.T) {
 			ContextIDType: "character",
 			Date:          date,
 			Description:   "bla bla",
-			ID:            4,
+			RefID:         4,
 			CharacterID:   c.ID,
 			Reason:        "my reason",
 			RefType:       "player_donation",
@@ -67,7 +67,7 @@ func TestWalletJournalEntry(t *testing.T) {
 			FirstPartyID:  e1.ID,
 			Date:          date,
 			Description:   "bla bla",
-			ID:            4,
+			RefID:         4,
 			CharacterID:   c.ID,
 			Reason:        "my reason",
 			RefType:       "player_donation",
@@ -108,7 +108,7 @@ func TestWalletJournalEntry(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			got := set.NewFromSlice(ids)
-			want := set.NewFromSlice([]int64{e1.ID, e2.ID, e3.ID})
+			want := set.NewFromSlice([]int64{e1.RefID, e2.RefID, e3.RefID})
 			assert.Equal(t, want, got)
 		}
 	})

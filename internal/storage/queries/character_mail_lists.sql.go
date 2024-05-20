@@ -57,7 +57,7 @@ func (q *Queries) DeleteObsoleteCharacterMailLists(ctx context.Context, arg Dele
 }
 
 const getCharacterMailList = `-- name: GetCharacterMailList :one
-SELECT character_id, eve_entity_id
+SELECT id, character_id, eve_entity_id
 FROM character_mail_lists
 WHERE character_id = ? AND eve_entity_id = ?
 `
@@ -70,7 +70,7 @@ type GetCharacterMailListParams struct {
 func (q *Queries) GetCharacterMailList(ctx context.Context, arg GetCharacterMailListParams) (CharacterMailList, error) {
 	row := q.db.QueryRowContext(ctx, getCharacterMailList, arg.CharacterID, arg.EveEntityID)
 	var i CharacterMailList
-	err := row.Scan(&i.CharacterID, &i.EveEntityID)
+	err := row.Scan(&i.ID, &i.CharacterID, &i.EveEntityID)
 	return i, err
 }
 

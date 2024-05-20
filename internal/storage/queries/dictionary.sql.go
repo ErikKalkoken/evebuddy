@@ -20,7 +20,7 @@ func (q *Queries) DeleteDictEntry(ctx context.Context, key string) error {
 }
 
 const getDictEntry = `-- name: GetDictEntry :one
-SELECT "key", value
+SELECT id, "key", value
 FROM dictionary
 WHERE key = ?
 `
@@ -28,7 +28,7 @@ WHERE key = ?
 func (q *Queries) GetDictEntry(ctx context.Context, key string) (Dictionary, error) {
 	row := q.db.QueryRowContext(ctx, getDictEntry, key)
 	var i Dictionary
-	err := row.Scan(&i.Key, &i.Value)
+	err := row.Scan(&i.ID, &i.Key, &i.Value)
 	return i, err
 }
 

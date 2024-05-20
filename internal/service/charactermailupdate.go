@@ -34,7 +34,7 @@ func (s *Service) updateCharacterMailLabelsESI(ctx context.Context, characterID 
 	if err != nil {
 		return false, err
 	}
-	slog.Info("Received mail labels from ESI", "count", len(ll.Labels), "characterID", token.CharacterID)
+	slog.Info("Received mail labels from ESI", "characterID", characterID, "count", len(ll.Labels))
 	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionMailLabels, ll)
 	if err != nil {
 		return false, err

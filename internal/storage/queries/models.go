@@ -41,21 +41,25 @@ type CharacterMailLabel struct {
 }
 
 type CharacterMailList struct {
+	ID          int64
 	CharacterID int64
 	EveEntityID int64
 }
 
 type CharacterMailMailLabel struct {
+	ID                   int64
 	CharacterMailLabelID int64
 	CharacterMailID      int64
 }
 
 type CharacterMailsRecipient struct {
+	ID          int64
 	MailID      int64
 	EveEntityID int64
 }
 
 type CharacterSkill struct {
+	ID                 int64
 	ActiveSkillLevel   int64
 	CharacterID        int64
 	EveTypeID          int64
@@ -64,6 +68,7 @@ type CharacterSkill struct {
 }
 
 type CharacterSkillqueueItem struct {
+	ID              int64
 	CharacterID     int64
 	EveTypeID       int64
 	FinishDate      sql.NullTime
@@ -76,6 +81,7 @@ type CharacterSkillqueueItem struct {
 }
 
 type CharacterToken struct {
+	ID           int64
 	AccessToken  string
 	CharacterID  int64
 	ExpiresAt    time.Time
@@ -84,11 +90,13 @@ type CharacterToken struct {
 }
 
 type CharacterTokenScope struct {
+	ID      int64
 	TokenID int64
 	ScopeID int64
 }
 
 type CharacterUpdateStatus struct {
+	ID          int64
 	CharacterID int64
 	ContentHash string
 	SectionID   string
@@ -96,6 +104,7 @@ type CharacterUpdateStatus struct {
 }
 
 type CharacterWalletJournalEntry struct {
+	ID            int64
 	Amount        float64
 	Balance       float64
 	CharacterID   int64
@@ -104,7 +113,7 @@ type CharacterWalletJournalEntry struct {
 	Date          time.Time
 	Description   string
 	FirstPartyID  sql.NullInt64
-	ID            int64
+	RefID         int64
 	Reason        string
 	RefType       string
 	SecondPartyID sql.NullInt64
@@ -131,6 +140,7 @@ type CharacterWalletJournalEntryTaxReceiver struct {
 }
 
 type CharacterWalletTransaction struct {
+	ID            int64
 	CharacterID   int64
 	ClientID      int64
 	Date          time.Time
@@ -145,6 +155,7 @@ type CharacterWalletTransaction struct {
 }
 
 type Dictionary struct {
+	ID    int64
 	Key   string
 	Value []byte
 }

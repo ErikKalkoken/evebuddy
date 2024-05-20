@@ -41,7 +41,7 @@ func (q *Queries) ClearCharacterTokenScopes(ctx context.Context, tokenID int64) 
 }
 
 const getCharacterToken = `-- name: GetCharacterToken :one
-SELECT access_token, character_id, expires_at, refresh_token, token_type
+SELECT id, access_token, character_id, expires_at, refresh_token, token_type
 FROM character_tokens
 WHERE character_id = ?
 `
@@ -50,6 +50,7 @@ func (q *Queries) GetCharacterToken(ctx context.Context, characterID int64) (Cha
 	row := q.db.QueryRowContext(ctx, getCharacterToken, characterID)
 	var i CharacterToken
 	err := row.Scan(
+		&i.ID,
 		&i.AccessToken,
 		&i.CharacterID,
 		&i.ExpiresAt,

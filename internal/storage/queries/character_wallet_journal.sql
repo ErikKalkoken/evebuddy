@@ -7,7 +7,7 @@ INSERT INTO character_wallet_journal_entries (
     date,
     description,
     first_party_id,
-    id,
+    ref_id,
     character_id,
     reason,
     ref_type,
@@ -25,10 +25,10 @@ FROM character_wallet_journal_entries
 LEFT JOIN character_wallet_journal_entry_first_parties ON character_wallet_journal_entry_first_parties.id = character_wallet_journal_entries.first_party_id
 LEFT JOIN character_wallet_journal_entry_second_parties ON character_wallet_journal_entry_second_parties.id = character_wallet_journal_entries.second_party_id
 LEFT JOIN character_wallet_journal_entry_tax_receivers ON character_wallet_journal_entry_tax_receivers.id = character_wallet_journal_entries.tax_receiver_id
-WHERE character_id = ? and character_wallet_journal_entries.id = ?;
+WHERE character_id = ? and character_wallet_journal_entries.ref_id = ?;
 
--- name: ListCharacterWalletJournalEntryIDs :many
-SELECT id
+-- name: ListCharacterWalletJournalEntryRefIDs :many
+SELECT ref_id
 FROM character_wallet_journal_entries
 WHERE character_id = ?;
 

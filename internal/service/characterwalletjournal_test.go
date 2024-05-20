@@ -122,7 +122,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		c := factory.CreateMyCharacter()
 		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
 			CharacterID: c.ID,
-			ID:          89,
+			RefID:       89,
 			Description: "existing",
 		})
 		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})

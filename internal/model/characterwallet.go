@@ -13,8 +13,8 @@ type CharacterWalletJournalEntry struct {
 	Date          time.Time
 	Description   string
 	FirstParty    *EveEntity
-	ID            int64
 	Reason        string
+	RefID         int64
 	RefType       string
 	SecondParty   *EveEntity
 	Tax           float64

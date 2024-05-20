@@ -65,7 +65,7 @@ func (q *Queries) DeleteCharacterSkillqueueItems(ctx context.Context, characterI
 }
 
 const getCharacterSkillqueueItem = `-- name: GetCharacterSkillqueueItem :one
-SELECT character_skillqueue_items.character_id, character_skillqueue_items.eve_type_id, character_skillqueue_items.finish_date, character_skillqueue_items.finished_level, character_skillqueue_items.level_end_sp, character_skillqueue_items.level_start_sp, character_skillqueue_items.queue_position, character_skillqueue_items.start_date, character_skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name, eve_types.description as skill_description
+SELECT character_skillqueue_items.id, character_skillqueue_items.character_id, character_skillqueue_items.eve_type_id, character_skillqueue_items.finish_date, character_skillqueue_items.finished_level, character_skillqueue_items.level_end_sp, character_skillqueue_items.level_start_sp, character_skillqueue_items.queue_position, character_skillqueue_items.start_date, character_skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name, eve_types.description as skill_description
 FROM character_skillqueue_items
 JOIN eve_types ON eve_types.id = character_skillqueue_items.eve_type_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
@@ -88,6 +88,7 @@ func (q *Queries) GetCharacterSkillqueueItem(ctx context.Context, arg GetCharact
 	row := q.db.QueryRowContext(ctx, getCharacterSkillqueueItem, arg.CharacterID, arg.QueuePosition)
 	var i GetCharacterSkillqueueItemRow
 	err := row.Scan(
+		&i.CharacterSkillqueueItem.ID,
 		&i.CharacterSkillqueueItem.CharacterID,
 		&i.CharacterSkillqueueItem.EveTypeID,
 		&i.CharacterSkillqueueItem.FinishDate,
@@ -121,7 +122,7 @@ func (q *Queries) GetTotalTrainingTime(ctx context.Context, characterID int64) (
 }
 
 const listCharacterSkillqueueItems = `-- name: ListCharacterSkillqueueItems :many
-SELECT character_skillqueue_items.character_id, character_skillqueue_items.eve_type_id, character_skillqueue_items.finish_date, character_skillqueue_items.finished_level, character_skillqueue_items.level_end_sp, character_skillqueue_items.level_start_sp, character_skillqueue_items.queue_position, character_skillqueue_items.start_date, character_skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name, eve_types.description as skill_description
+SELECT character_skillqueue_items.id, character_skillqueue_items.character_id, character_skillqueue_items.eve_type_id, character_skillqueue_items.finish_date, character_skillqueue_items.finished_level, character_skillqueue_items.level_end_sp, character_skillqueue_items.level_start_sp, character_skillqueue_items.queue_position, character_skillqueue_items.start_date, character_skillqueue_items.training_start_sp, eve_types.name as skill_name, eve_groups.name as group_name, eve_types.description as skill_description
 FROM character_skillqueue_items
 JOIN eve_types ON eve_types.id = character_skillqueue_items.eve_type_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
@@ -148,6 +149,7 @@ func (q *Queries) ListCharacterSkillqueueItems(ctx context.Context, characterID 
 	for rows.Next() {
 		var i ListCharacterSkillqueueItemsRow
 		if err := rows.Scan(
+			&i.CharacterSkillqueueItem.ID,
 			&i.CharacterSkillqueueItem.CharacterID,
 			&i.CharacterSkillqueueItem.EveTypeID,
 			&i.CharacterSkillqueueItem.FinishDate,

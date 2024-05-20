@@ -659,8 +659,8 @@ func (f Factory) CreateWalletJournalEntry(args ...storage.CreateCharacterWalletJ
 		x := f.CreateMyCharacter()
 		arg.CharacterID = x.ID
 	}
-	if arg.ID == 0 {
-		arg.ID = int64(f.calcNewIDWithCharacter("character_wallet_journal_entries", "id", arg.CharacterID))
+	if arg.RefID == 0 {
+		arg.RefID = int64(f.calcNewIDWithCharacter("character_wallet_journal_entries", "id", arg.CharacterID))
 	}
 	if arg.Amount == 0 {
 		arg.Amount = rand.Float64() * 10_000_000_000
@@ -672,10 +672,10 @@ func (f Factory) CreateWalletJournalEntry(args ...storage.CreateCharacterWalletJ
 		arg.Date = time.Now()
 	}
 	if arg.Description == "" {
-		arg.Description = fmt.Sprintf("Description #%d", arg.ID)
+		arg.Description = fmt.Sprintf("Description #%d", arg.RefID)
 	}
 	if arg.Reason == "" {
-		arg.Reason = fmt.Sprintf("Reason #%d", arg.ID)
+		arg.Reason = fmt.Sprintf("Reason #%d", arg.RefID)
 	}
 	if arg.RefType == "" {
 		arg.RefType = "player_donation"
@@ -699,7 +699,7 @@ func (f Factory) CreateWalletJournalEntry(args ...storage.CreateCharacterWalletJ
 	if err != nil {
 		panic(err)
 	}
-	i, err := f.r.GetCharacterWalletJournalEntry(ctx, arg.CharacterID, arg.ID)
+	i, err := f.r.GetCharacterWalletJournalEntry(ctx, arg.CharacterID, arg.RefID)
 	if err != nil {
 		panic(err)
 	}

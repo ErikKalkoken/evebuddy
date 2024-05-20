@@ -1,6 +1,8 @@
 CREATE TABLE dictionary (
-    key TEXT PRIMARY KEY NOT NULL,
-    value BLOB NOT NULL
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key TEXT NOT NULL,
+    value BLOB NOT NULL,
+    UNIQUE (key)
 );
 
 CREATE TABLE eve_entities (
@@ -123,6 +125,7 @@ CREATE TABLE characters (
 );
 
 CREATE TABLE character_mail_lists (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     character_id INTEGER NOT NULL,
     eve_entity_id INTEGER NOT NULL,
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
@@ -142,11 +145,12 @@ CREATE TABLE character_mail_labels (
 );
 
 CREATE TABLE character_mails_recipients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     mail_id INTEGER NOT NULL,
     eve_entity_id INTEGER NOT NULL,
-    PRIMARY KEY (mail_id, eve_entity_id),
     FOREIGN KEY (mail_id) REFERENCES character_mails(id) ON DELETE CASCADE,
-    FOREIGN KEY (eve_entity_id) REFERENCES eve_entities(id) ON DELETE CASCADE
+    FOREIGN KEY (eve_entity_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
+    UNIQUE (mail_id, eve_entity_id)
 );
 
 CREATE TABLE character_mails (
@@ -165,14 +169,16 @@ CREATE TABLE character_mails (
 CREATE INDEX character_mails_timestamp_idx ON character_mails (timestamp DESC);
 
 CREATE TABLE character_mail_mail_labels (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     character_mail_label_id INTEGER NOT NULL,
     character_mail_id INTEGER NOT NULL,
-    PRIMARY KEY (character_mail_label_id, character_mail_id),
     FOREIGN KEY (character_mail_label_id) REFERENCES character_mail_labels(id) ON DELETE CASCADE,
-    FOREIGN KEY (character_mail_id) REFERENCES character_mails(id) ON DELETE CASCADE
+    FOREIGN KEY (character_mail_id) REFERENCES character_mails(id) ON DELETE CASCADE,
+    UNIQUE (character_mail_label_id, character_mail_id)
 );
 
 CREATE TABLE character_skills (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     active_skill_level INTEGER NOT NULL,
     character_id INTEGER NOT NULL,
     eve_type_id INTEGER NOT NULL,
@@ -184,6 +190,7 @@ CREATE TABLE character_skills (
 );
 
 CREATE TABLE character_skillqueue_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     character_id INTEGER NOT NULL,
     eve_type_id INTEGER NOT NULL,
     finish_date DATETIME,
@@ -207,32 +214,37 @@ CREATE TABLE scopes (
 CREATE INDEX scopes_name_idx ON scopes (name ASC);
 
 CREATE TABLE character_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     access_token TEXT NOT NULL,
-    character_id INTEGER PRIMARY KEY NOT NULL,
+    character_id INTEGER NOT NULL,
     expires_at DATETIME NOT NULL,
     refresh_token TEXT NOT NULL,
     token_type TEXT NOT NULL,
-    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    UNIQUE (character_id)
 );
 
 CREATE TABLE character_token_scopes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     token_id INTEGER NOT NULL,
     scope_id INTEGER NOT NULL,
-    PRIMARY KEY (token_id, scope_id),
     FOREIGN KEY (token_id) REFERENCES character_tokens(character_id) ON DELETE CASCADE,
-    FOREIGN KEY (scope_id) REFERENCES scopes(id) ON DELETE CASCADE
+    FOREIGN KEY (scope_id) REFERENCES scopes(id) ON DELETE CASCADE,
+    UNIQUE (token_id, scope_id)
 );
 
 CREATE TABLE character_update_status (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     character_id INTEGER NOT NULL,
     content_hash TEXT NOT NULL,
     section_id TEXT NOT NULL,
     updated_at DATETIME NOT NULL,
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
-    PRIMARY KEY (character_id, section_id)
+    UNIQUE (character_id, section_id)
 );
 
 CREATE TABLE character_wallet_journal_entries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     amount REAL NOT NULL,
     balance REAL NOT NULL,
     character_id INTEGER NOT NULL,
@@ -241,7 +253,7 @@ CREATE TABLE character_wallet_journal_entries (
     date DATETIME NOT NULL,
     description TEXT NOT NULL,
     first_party_id INTEGER,
-    id INTEGER NOT NULL,
+    ref_id INTEGER NOT NULL,
     reason TEXT NOT NULL,
     ref_type TEXT NOT NULL,
     second_party_id INTEGER,
@@ -271,6 +283,7 @@ FROM character_wallet_journal_entries
 LEFT JOIN eve_entities ON eve_entities.id = character_wallet_journal_entries.tax_receiver_id;
 
 CREATE TABLE character_wallet_transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     character_id INTEGER NOT NULL,
     client_id INTEGER NOT NULL,
     date DATETIME NOT NULL,
@@ -280,7 +293,7 @@ CREATE TABLE character_wallet_transactions (
     journal_ref_id INTEGER NOT NULL,
     location_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL,
-    transaction_id INTEGER NOT NULL PRIMARY KEY,
+    transaction_id INTEGER NOT NULL,
     unit_price REAL NOT NULL,
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     FOREIGN KEY (client_id) REFERENCES eve_entities(id) ON DELETE CASCADE,

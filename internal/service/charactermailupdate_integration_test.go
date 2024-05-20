@@ -47,14 +47,14 @@ func TestUpdateMail(t *testing.T) {
 			},
 		}
 		mailID := 7
-		labels := []int{16}
+		labelIDs := []int32{16}
 		timestamp := "2015-09-30T16:07:00Z"
 		subject := "test"
 		dataHeader := []map[string]any{
 			{
 				"from":       e1.ID,
 				"is_read":    true,
-				"labels":     labels,
+				"labels":     labelIDs,
 				"mail_id":    mailID,
 				"recipients": recipients,
 				"subject":    subject,
@@ -75,7 +75,7 @@ func TestUpdateMail(t *testing.T) {
 		dataMail := map[string]any{
 			"body":       "blah blah blah",
 			"from":       e1.ID,
-			"labels":     labels,
+			"labels":     labelIDs,
 			"read":       true,
 			"recipients": recipients,
 			"subject":    "test",
@@ -148,16 +148,16 @@ func TestUpdateMail(t *testing.T) {
 					if assert.NoError(t, err) {
 						assert.Equal(t, "blah blah blah", m.Body)
 					}
-					lists, err := r.ListCharacterMailListsOrdered(ctx, c1.ID)
+					labels, err := r.ListCharacterMailLabelsOrdered(ctx, c1.ID)
 					if assert.NoError(t, err) {
 						got := set.New[int32]()
-						for _, l := range lists {
-							got.Add(l.ID)
+						for _, l := range labels {
+							got.Add(l.LabelID)
 						}
-						want := set.NewFromSlice([]int32{m1.ID})
+						want := set.NewFromSlice(labelIDs)
 						assert.Equal(t, want, got)
 					}
-					lists, err = r.ListCharacterMailListsOrdered(ctx, c2.ID)
+					lists, err := r.ListCharacterMailListsOrdered(ctx, c2.ID)
 					if assert.NoError(t, err) {
 						got := set.New[int32]()
 						for _, l := range lists {

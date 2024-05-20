@@ -11,7 +11,7 @@ import (
 )
 
 const getCharacterUpdateStatus = `-- name: GetCharacterUpdateStatus :one
-SELECT character_id, content_hash, section_id, updated_at
+SELECT id, character_id, content_hash, section_id, updated_at
 FROM character_update_status
 WHERE character_id = ?
 AND section_id = ?
@@ -26,6 +26,7 @@ func (q *Queries) GetCharacterUpdateStatus(ctx context.Context, arg GetCharacter
 	row := q.db.QueryRowContext(ctx, getCharacterUpdateStatus, arg.CharacterID, arg.SectionID)
 	var i CharacterUpdateStatus
 	err := row.Scan(
+		&i.ID,
 		&i.CharacterID,
 		&i.ContentHash,
 		&i.SectionID,

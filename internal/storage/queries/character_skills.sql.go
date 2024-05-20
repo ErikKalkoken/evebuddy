@@ -40,7 +40,7 @@ func (q *Queries) DeleteExcludedCharacterSkills(ctx context.Context, arg DeleteE
 
 const getCharacterSkill = `-- name: GetCharacterSkill :one
 SELECT
-    character_skills.active_skill_level, character_skills.character_id, character_skills.eve_type_id, character_skills.skill_points_in_skill, character_skills.trained_skill_level,
+    character_skills.id, character_skills.active_skill_level, character_skills.character_id, character_skills.eve_type_id, character_skills.skill_points_in_skill, character_skills.trained_skill_level,
     eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
     eve_categories.id, eve_categories.name, eve_categories.is_published
@@ -68,6 +68,7 @@ func (q *Queries) GetCharacterSkill(ctx context.Context, arg GetCharacterSkillPa
 	row := q.db.QueryRowContext(ctx, getCharacterSkill, arg.CharacterID, arg.EveTypeID)
 	var i GetCharacterSkillRow
 	err := row.Scan(
+		&i.CharacterSkill.ID,
 		&i.CharacterSkill.ActiveSkillLevel,
 		&i.CharacterSkill.CharacterID,
 		&i.CharacterSkill.EveTypeID,

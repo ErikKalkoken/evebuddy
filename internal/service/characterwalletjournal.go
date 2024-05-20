@@ -76,7 +76,7 @@ func (s *Service) updateCharacterWalletJournalEntryESI(ctx context.Context, char
 			Date:          o.Date,
 			Description:   o.Description,
 			FirstPartyID:  o.FirstPartyId,
-			ID:            o.Id,
+			RefID:         o.Id,
 			CharacterID:   characterID,
 			RefType:       o.RefType,
 			Reason:        o.Reason,
