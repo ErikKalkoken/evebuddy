@@ -20,6 +20,7 @@ const defaultUpdateSectionTimeout = 3600 * time.Second
 func timeoutForUpdateSection(section model.CharacterSection) time.Duration {
 	m := map[model.CharacterSection]time.Duration{
 		model.CharacterSectionHome:               120 * time.Second,
+		model.CharacterSectionImplants:           120 * time.Second,
 		model.CharacterSectionLocation:           30 * time.Second, // 5 seconds min
 		model.CharacterSectionMailLabels:         30 * time.Second,
 		model.CharacterSectionMailLists:          120 * time.Second,
@@ -94,6 +95,8 @@ func (s *Service) UpdateCharacterSectionIfExpired(characterID int32, section mod
 	switch section {
 	case model.CharacterSectionHome:
 		f = s.updateCharacterHomeESI
+	case model.CharacterSectionImplants:
+		f = s.updateCharacterImplantsESI
 	case model.CharacterSectionLocation:
 		f = s.updateCharacterLocationESI
 	case model.CharacterSectionMails:
@@ -143,8 +146,6 @@ func (s *Service) CharacterSectionIsUpdateExpired(characterID int32, section mod
 	deadline := t.Add(timeout)
 	return time.Now().After(deadline), nil
 }
-
-// TODO: Need to change the API to accept any data
 
 // hasCharacterSectionChanged reports wether a section has changed based on the given data and updates it's content hash.
 func (s *Service) hasCharacterSectionChanged(ctx context.Context, characterID int32, section model.CharacterSection, data any) (bool, error) {

@@ -36,6 +36,7 @@ type ui struct {
 	app                   fyne.App
 	currentCharacter      *model.Character
 	imageManager          *images.Manager
+	implantsArea          *implantsArea
 	mailArea              *mailArea
 	mailTab               *container.TabItem
 	overviewArea          *overviewArea
@@ -64,6 +65,12 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 			// container.NewTabItem("Notifications", widget.NewLabel("PLACEHOLDER")),
 		))
 
+	u.implantsArea = u.NewImplantsArea()
+	clonesTab := container.NewTabItemWithIcon("Clones",
+		theme.NewThemedResource(resourceSchoolSvg), container.NewAppTabs(
+			container.NewTabItem("Implants", u.implantsArea.content),
+		))
+
 	u.overviewArea = u.NewOverviewArea()
 	overviewTab := container.NewTabItemWithIcon("Characters",
 		theme.NewThemedResource(resourceGroupSvg), container.NewAppTabs(
@@ -90,7 +97,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	u.statusArea = u.newStatusArea()
 	u.toolbarArea = u.newToolbarArea()
 
-	u.tabs = container.NewAppTabs(u.mailTab, u.skillqueueTab, walletTab, overviewTab)
+	u.tabs = container.NewAppTabs(clonesTab, u.mailTab, u.skillqueueTab, walletTab, overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	mainContent := container.NewBorder(u.toolbarArea.content, u.statusArea.content, nil, nil, u.tabs)
@@ -172,10 +179,11 @@ func (u *ui) ShowAndRun() {
 			u.window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
 			u.window.Resize(fyne.NewSize(s.Width, s.Height))
 		}
-		u.statusArea.StartUpdateTicker()
+		u.implantsArea.StartUpdateTicker()
 		u.overviewArea.StartUpdateTicker()
 		u.mailArea.StartUpdateTicker()
 		u.skillqueueArea.StartUpdateTicker()
+		u.statusArea.StartUpdateTicker()
 		u.walletJournalArea.StartUpdateTicker()
 		u.walletTransactionArea.StartUpdateTicker()
 		u.StartUpdateTickerEveCharacters()
@@ -215,10 +223,11 @@ func (u *ui) setCurrentCharacter(c *model.Character) {
 }
 
 func (u *ui) refreshCurrentCharacter() {
-	u.toolbarArea.Refresh()
+	u.implantsArea.Refresh()
 	u.mailArea.Redraw()
 	u.skillqueueArea.Refresh()
 	u.skillCatalogueArea.Redraw()
+	u.toolbarArea.Refresh()
 	u.walletJournalArea.Refresh()
 	u.walletTransactionArea.Refresh()
 	c := u.CurrentChar()
@@ -226,6 +235,7 @@ func (u *ui) refreshCurrentCharacter() {
 		u.tabs.EnableIndex(0)
 		u.tabs.EnableIndex(1)
 		u.tabs.EnableIndex(2)
+		go u.implantsArea.MaybeUpdateAndRefresh(c.ID)
 		go u.mailArea.MaybeUpdateAndRefresh(c.ID)
 		go u.overviewArea.MaybeUpdateAndRefresh(c.ID)
 		go u.skillqueueArea.MaybeUpdateAndRefresh(c.ID)
