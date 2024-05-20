@@ -22,7 +22,7 @@ func (q *Queries) DeleteMyCharacter(ctx context.Context, id int64) error {
 
 const getMyCharacter = `-- name: GetMyCharacter :one
 SELECT
-    my_characters.id, my_characters.home_id, my_characters.last_login_at, my_characters.location_id, my_characters.ship_id, my_characters.skill_points, my_characters.wallet_balance,
+    my_characters.id, my_characters.home_id, my_characters.last_login_at, my_characters.location_id, my_characters.ship_id, my_characters.total_sp, my_characters.unallocated_sp, my_characters.wallet_balance,
     eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
     corporations.id, corporations.category, corporations.name,
     eve_races.id, eve_races.description, eve_races.name,
@@ -61,7 +61,8 @@ func (q *Queries) GetMyCharacter(ctx context.Context, id int64) (GetMyCharacterR
 		&i.MyCharacter.LastLoginAt,
 		&i.MyCharacter.LocationID,
 		&i.MyCharacter.ShipID,
-		&i.MyCharacter.SkillPoints,
+		&i.MyCharacter.TotalSp,
+		&i.MyCharacter.UnallocatedSp,
 		&i.MyCharacter.WalletBalance,
 		&i.EveCharacter.AllianceID,
 		&i.EveCharacter.Birthday,
@@ -123,7 +124,7 @@ func (q *Queries) ListMyCharacterIDs(ctx context.Context) ([]int64, error) {
 
 const listMyCharacters = `-- name: ListMyCharacters :many
 SELECT DISTINCT
-    my_characters.id, my_characters.home_id, my_characters.last_login_at, my_characters.location_id, my_characters.ship_id, my_characters.skill_points, my_characters.wallet_balance,
+    my_characters.id, my_characters.home_id, my_characters.last_login_at, my_characters.location_id, my_characters.ship_id, my_characters.total_sp, my_characters.unallocated_sp, my_characters.wallet_balance,
     eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
     corporations.id, corporations.category, corporations.name,
     eve_races.id, eve_races.description, eve_races.name,
@@ -168,7 +169,8 @@ func (q *Queries) ListMyCharacters(ctx context.Context) ([]ListMyCharactersRow, 
 			&i.MyCharacter.LastLoginAt,
 			&i.MyCharacter.LocationID,
 			&i.MyCharacter.ShipID,
-			&i.MyCharacter.SkillPoints,
+			&i.MyCharacter.TotalSp,
+			&i.MyCharacter.UnallocatedSp,
 			&i.MyCharacter.WalletBalance,
 			&i.EveCharacter.AllianceID,
 			&i.EveCharacter.Birthday,
@@ -281,54 +283,56 @@ func (q *Queries) UpdateMyCharacterLastLoginAt(ctx context.Context, arg UpdateMy
 	return err
 }
 
-const updateMyCharacterLocationId = `-- name: UpdateMyCharacterLocationId :exec
+const updateMyCharacterLocationID = `-- name: UpdateMyCharacterLocationID :exec
 UPDATE my_characters
 SET
     location_id = ?
 WHERE id = ?
 `
 
-type UpdateMyCharacterLocationIdParams struct {
+type UpdateMyCharacterLocationIDParams struct {
 	LocationID sql.NullInt64
 	ID         int64
 }
 
-func (q *Queries) UpdateMyCharacterLocationId(ctx context.Context, arg UpdateMyCharacterLocationIdParams) error {
-	_, err := q.db.ExecContext(ctx, updateMyCharacterLocationId, arg.LocationID, arg.ID)
+func (q *Queries) UpdateMyCharacterLocationID(ctx context.Context, arg UpdateMyCharacterLocationIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateMyCharacterLocationID, arg.LocationID, arg.ID)
 	return err
 }
 
-const updateMyCharacterShipId = `-- name: UpdateMyCharacterShipId :exec
+const updateMyCharacterSP = `-- name: UpdateMyCharacterSP :exec
+UPDATE my_characters
+SET
+    total_sp = ?,
+    unallocated_sp = ?
+WHERE id = ?
+`
+
+type UpdateMyCharacterSPParams struct {
+	TotalSp       sql.NullInt64
+	UnallocatedSp sql.NullInt64
+	ID            int64
+}
+
+func (q *Queries) UpdateMyCharacterSP(ctx context.Context, arg UpdateMyCharacterSPParams) error {
+	_, err := q.db.ExecContext(ctx, updateMyCharacterSP, arg.TotalSp, arg.UnallocatedSp, arg.ID)
+	return err
+}
+
+const updateMyCharacterShipID = `-- name: UpdateMyCharacterShipID :exec
 UPDATE my_characters
 SET
     ship_id = ?
 WHERE id = ?
 `
 
-type UpdateMyCharacterShipIdParams struct {
+type UpdateMyCharacterShipIDParams struct {
 	ShipID sql.NullInt64
 	ID     int64
 }
 
-func (q *Queries) UpdateMyCharacterShipId(ctx context.Context, arg UpdateMyCharacterShipIdParams) error {
-	_, err := q.db.ExecContext(ctx, updateMyCharacterShipId, arg.ShipID, arg.ID)
-	return err
-}
-
-const updateMyCharacterSkillPoints = `-- name: UpdateMyCharacterSkillPoints :exec
-UPDATE my_characters
-SET
-    skill_points = ?
-WHERE id = ?
-`
-
-type UpdateMyCharacterSkillPointsParams struct {
-	SkillPoints sql.NullInt64
-	ID          int64
-}
-
-func (q *Queries) UpdateMyCharacterSkillPoints(ctx context.Context, arg UpdateMyCharacterSkillPointsParams) error {
-	_, err := q.db.ExecContext(ctx, updateMyCharacterSkillPoints, arg.SkillPoints, arg.ID)
+func (q *Queries) UpdateMyCharacterShipID(ctx context.Context, arg UpdateMyCharacterShipIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateMyCharacterShipID, arg.ShipID, arg.ID)
 	return err
 }
 
@@ -354,22 +358,24 @@ INSERT INTO my_characters (
     id,
     home_id,
     last_login_at,
-    ship_id,
-    skill_points,
     location_id,
+    ship_id,
+    total_sp,
+    unallocated_sp,
     wallet_balance
 )
 VALUES (
-    ?1, ?2, ?3, ?4, ?5 ,?6, ?7
+    ?1, ?2, ?3, ?4, ?5 ,?6, ?7, ?8
 )
 ON CONFLICT(id) DO
 UPDATE SET
     home_id = ?2,
     last_login_at = ?3,
-    ship_id = ?4,
-    skill_points = ?5,
-    location_id = ?6,
-    wallet_balance = ?7
+    location_id = ?4,
+    ship_id = ?5,
+    total_sp = ?6,
+    unallocated_sp = ?7,
+    wallet_balance = ?8
 WHERE id = ?1
 `
 
@@ -377,9 +383,10 @@ type UpdateOrCreateMyCharacterParams struct {
 	ID            int64
 	HomeID        sql.NullInt64
 	LastLoginAt   sql.NullTime
-	ShipID        sql.NullInt64
-	SkillPoints   sql.NullInt64
 	LocationID    sql.NullInt64
+	ShipID        sql.NullInt64
+	TotalSp       sql.NullInt64
+	UnallocatedSp sql.NullInt64
 	WalletBalance sql.NullFloat64
 }
 
@@ -388,9 +395,10 @@ func (q *Queries) UpdateOrCreateMyCharacter(ctx context.Context, arg UpdateOrCre
 		arg.ID,
 		arg.HomeID,
 		arg.LastLoginAt,
-		arg.ShipID,
-		arg.SkillPoints,
 		arg.LocationID,
+		arg.ShipID,
+		arg.TotalSp,
+		arg.UnallocatedSp,
 		arg.WalletBalance,
 	)
 	return err

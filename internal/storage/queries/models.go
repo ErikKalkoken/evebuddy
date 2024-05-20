@@ -150,7 +150,8 @@ type MyCharacter struct {
 	LastLoginAt   sql.NullTime
 	LocationID    sql.NullInt64
 	ShipID        sql.NullInt64
-	SkillPoints   sql.NullInt64
+	TotalSp       sql.NullInt64
+	UnallocatedSp sql.NullInt64
 	WalletBalance sql.NullFloat64
 }
 

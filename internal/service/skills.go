@@ -8,7 +8,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func (s *Service) updateSkillsESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterSkillsESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -25,8 +25,9 @@ func (s *Service) updateSkillsESI(ctx context.Context, characterID int32) (bool,
 	if !changed {
 		return false, nil
 	}
-	sp := sql.NullInt64{Int64: skills.TotalSp, Valid: true}
-	if err := s.r.UpdateMyCharacterSkillPoints(ctx, characterID, sp); err != nil {
+	totalSP := sql.NullInt64{Int64: skills.TotalSp, Valid: true}
+	unallocatedSP := sql.NullInt64{Int64: int64(skills.UnallocatedSp), Valid: true}
+	if err := s.r.UpdateMyCharacterSkillPoints(ctx, characterID, totalSP, unallocatedSP); err != nil {
 		return false, err
 	}
 	var existingSkills []int32

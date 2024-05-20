@@ -106,16 +106,6 @@ func (r *Storage) ListMyCharacterIDs(ctx context.Context) ([]int32, error) {
 	return ids2, nil
 }
 
-type UpdateOrCreateMyCharacterParams struct {
-	ID            int32
-	HomeID        sql.NullInt64
-	LastLoginAt   sql.NullTime
-	LocationID    sql.NullInt64
-	ShipID        sql.NullInt32
-	SkillPoints   sql.NullInt64
-	WalletBalance sql.NullFloat64
-}
-
 func (r *Storage) UpdateMyCharacterHome(ctx context.Context, characterID int32, homeID sql.NullInt64) error {
 	arg := queries.UpdateMyCharacterHomeIdParams{
 		ID:     int64(characterID),
@@ -139,33 +129,34 @@ func (r *Storage) UpdateMyCharacterLastLoginAt(ctx context.Context, characterID 
 }
 
 func (r *Storage) UpdateMyCharacterLocation(ctx context.Context, characterID int32, locationID sql.NullInt64) error {
-	arg := queries.UpdateMyCharacterLocationIdParams{
+	arg := queries.UpdateMyCharacterLocationIDParams{
 		ID:         int64(characterID),
 		LocationID: locationID,
 	}
-	if err := r.q.UpdateMyCharacterLocationId(ctx, arg); err != nil {
+	if err := r.q.UpdateMyCharacterLocationID(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update last login for character %d: %w", characterID, err)
 	}
 	return nil
 }
 
 func (r *Storage) UpdateMyCharacterShip(ctx context.Context, characterID int32, shipID sql.NullInt32) error {
-	arg := queries.UpdateMyCharacterShipIdParams{
+	arg := queries.UpdateMyCharacterShipIDParams{
 		ID:     int64(characterID),
 		ShipID: sql.NullInt64{Int64: int64(shipID.Int32), Valid: shipID.Valid},
 	}
-	if err := r.q.UpdateMyCharacterShipId(ctx, arg); err != nil {
+	if err := r.q.UpdateMyCharacterShipID(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update ship for character %d: %w", characterID, err)
 	}
 	return nil
 }
 
-func (r *Storage) UpdateMyCharacterSkillPoints(ctx context.Context, characterID int32, v sql.NullInt64) error {
-	arg := queries.UpdateMyCharacterSkillPointsParams{
-		ID:          int64(characterID),
-		SkillPoints: v,
+func (r *Storage) UpdateMyCharacterSkillPoints(ctx context.Context, characterID int32, totalSP, unallocatedSP sql.NullInt64) error {
+	arg := queries.UpdateMyCharacterSPParams{
+		ID:            int64(characterID),
+		TotalSp:       totalSP,
+		UnallocatedSp: unallocatedSP,
 	}
-	if err := r.q.UpdateMyCharacterSkillPoints(ctx, arg); err != nil {
+	if err := r.q.UpdateMyCharacterSP(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update sp for character %d: %w", characterID, err)
 	}
 	return nil
@@ -182,6 +173,17 @@ func (r *Storage) UpdateMyCharacterWalletBalance(ctx context.Context, characterI
 	return nil
 }
 
+type UpdateOrCreateMyCharacterParams struct {
+	ID            int32
+	HomeID        sql.NullInt64
+	LastLoginAt   sql.NullTime
+	LocationID    sql.NullInt64
+	ShipID        sql.NullInt32
+	TotalSP       sql.NullInt64
+	UnallocatedSP sql.NullInt64
+	WalletBalance sql.NullFloat64
+}
+
 func (r *Storage) UpdateOrCreateMyCharacter(ctx context.Context, arg UpdateOrCreateMyCharacterParams) error {
 	arg2 := queries.UpdateOrCreateMyCharacterParams{
 		ID:            int64(arg.ID),
@@ -189,7 +191,8 @@ func (r *Storage) UpdateOrCreateMyCharacter(ctx context.Context, arg UpdateOrCre
 		LastLoginAt:   arg.LastLoginAt,
 		LocationID:    arg.LocationID,
 		ShipID:        sql.NullInt64{Int64: int64(arg.ShipID.Int32), Valid: arg.ShipID.Valid},
-		SkillPoints:   arg.SkillPoints,
+		TotalSp:       arg.TotalSP,
+		UnallocatedSp: arg.UnallocatedSP,
 		WalletBalance: arg.WalletBalance,
 	}
 
@@ -215,7 +218,8 @@ func (r *Storage) myCharacterFromDBModel(
 		Character:     eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
 		ID:            int32(myCharacter.ID),
 		LastLoginAt:   myCharacter.LastLoginAt,
-		SkillPoints:   myCharacter.SkillPoints,
+		TotalSP:       myCharacter.TotalSp,
+		UnallocatedSP: myCharacter.UnallocatedSp,
 		WalletBalance: myCharacter.WalletBalance,
 	}
 	if homeID.Valid {

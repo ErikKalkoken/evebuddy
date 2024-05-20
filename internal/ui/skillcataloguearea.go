@@ -209,7 +209,7 @@ func (a *skillCatalogueArea) Refresh() {
 	}
 	s := "?"
 	if c != nil {
-		s = humanizedNullInt64(c.SkillPoints, "?")
+		s = humanizedNullInt64(c.TotalSP, "?")
 	}
 	a.total.SetText(fmt.Sprintf("%s Total Skill Points", s))
 }

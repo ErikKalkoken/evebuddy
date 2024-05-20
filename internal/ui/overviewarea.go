@@ -33,8 +33,9 @@ type overviewCharacter struct {
 	region         sql.NullString
 	ship           sql.NullString
 	security       float64
-	sp             sql.NullInt64
+	totalSP        sql.NullInt64
 	training       types.NullDuration
+	unallocatedSP  sql.NullInt64
 	unreadCount    sql.NullInt64
 	walletBalance  sql.NullFloat64
 }
@@ -64,7 +65,8 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		{"Alliance", 200},
 		{"Security", 80},
 		{"Unread", 80},
-		{"SP", 80},
+		{"Total SP", 80},
+		{"Unall. SP", 80},
 		{"Training", 80},
 		{"Wallet", 80},
 		{"Location", 150},
@@ -113,33 +115,35 @@ func (u *ui) NewOverviewArea() *overviewArea {
 			case 4:
 				l.Text = humanizedNullInt64(c.unreadCount, "?")
 			case 5:
-				l.Text = humanizedNullInt64(c.sp, "?")
+				l.Text = humanizedNullInt64(c.totalSP, "?")
 			case 6:
+				l.Text = humanizedNullInt64(c.unallocatedSP, "?")
+			case 7:
 				if !c.training.Valid {
 					l.Text = "Inactive"
 					l.Importance = widget.WarningImportance
 				} else {
 					l.Text = ihumanize.Duration(c.training.Duration)
 				}
-			case 7:
-				l.Text = humanizedNullFloat64(c.walletBalance, 1, "?")
 			case 8:
-				l.Text = nullStringOrFallback(c.location, "?")
+				l.Text = humanizedNullFloat64(c.walletBalance, 1, "?")
 			case 9:
+				l.Text = nullStringOrFallback(c.location, "?")
+			case 10:
 				if !c.systemName.Valid || !c.systemSecurity.Valid {
 					l.Text = "?"
 				} else {
 					l.Text = fmt.Sprintf("%s %.1f", c.systemName.String, c.systemSecurity.Float64)
 				}
-			case 10:
-				l.Text = nullStringOrFallback(c.region, "?")
 			case 11:
-				l.Text = nullStringOrFallback(c.ship, "?")
+				l.Text = nullStringOrFallback(c.region, "?")
 			case 12:
-				l.Text = humanizedNullTime(c.lastLoginAt, "?")
+				l.Text = nullStringOrFallback(c.ship, "?")
 			case 13:
-				l.Text = nullStringOrFallback(c.home, "?")
+				l.Text = humanizedNullTime(c.lastLoginAt, "?")
 			case 14:
+				l.Text = nullStringOrFallback(c.home, "?")
+			case 15:
 				l.Text = humanize.RelTime(c.birthday, time.Now(), "", "")
 			}
 			l.Refresh()
@@ -215,16 +219,18 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 	}
 	cc := make([]overviewCharacter, len(mycc))
 	for i, m := range mycc {
-		var c overviewCharacter
-		c.alliance = m.Character.AllianceName()
-		c.birthday = m.Character.Birthday
-		c.corporation = m.Character.Corporation.Name
-		c.lastLoginAt = m.LastLoginAt
-		c.id = m.ID
-		c.name = m.Character.Name
-		c.security = m.Character.SecurityStatus
-		c.sp = m.SkillPoints
-		c.walletBalance = m.WalletBalance
+		c := overviewCharacter{
+			alliance:      m.Character.AllianceName(),
+			birthday:      m.Character.Birthday,
+			corporation:   m.Character.Corporation.Name,
+			lastLoginAt:   m.LastLoginAt,
+			id:            m.ID,
+			name:          m.Character.Name,
+			security:      m.Character.SecurityStatus,
+			totalSP:       m.TotalSP,
+			unallocatedSP: m.UnallocatedSP,
+			walletBalance: m.WalletBalance,
+		}
 		if m.Home != nil {
 			c.home = sql.NullString{String: m.Home.Name, Valid: true}
 		}
@@ -260,9 +266,9 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 		panic(err)
 	}
 	for _, c := range cc {
-		if c.sp.Valid {
+		if c.totalSP.Valid {
 			spTotal.Valid = true
-			spTotal.Int64 += c.sp.Int64
+			spTotal.Int64 += c.totalSP.Int64
 		}
 		if c.unreadCount.Valid {
 			unreadTotal.Valid = true

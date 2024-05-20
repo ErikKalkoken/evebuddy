@@ -11,7 +11,8 @@ type MyCharacter struct {
 	LastLoginAt   sql.NullTime
 	Location      *Location
 	Ship          *EveType
-	SkillPoints   sql.NullInt64
+	TotalSP       sql.NullInt64
+	UnallocatedSP sql.NullInt64
 	WalletBalance sql.NullFloat64
 }
 

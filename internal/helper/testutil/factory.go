@@ -49,8 +49,8 @@ func (f Factory) CreateMyCharacter(args ...storage.UpdateOrCreateMyCharacterPara
 		x := f.CreateEveType()
 		arg.ShipID = sql.NullInt32{Int32: x.ID, Valid: true}
 	}
-	if !arg.SkillPoints.Valid {
-		arg.SkillPoints = sql.NullInt64{Int64: int64(rand.IntN(100_000_000)), Valid: true}
+	if !arg.TotalSP.Valid {
+		arg.TotalSP = sql.NullInt64{Int64: int64(rand.IntN(100_000_000)), Valid: true}
 	}
 	if !arg.WalletBalance.Valid {
 		arg.WalletBalance = sql.NullFloat64{Float64: rand.Float64() * 100_000_000_000, Valid: true}

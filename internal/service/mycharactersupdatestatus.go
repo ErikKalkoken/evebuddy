@@ -109,7 +109,7 @@ func (s *Service) UpdateSectionIfExpired(characterID int32, section model.Update
 	case model.UpdateSectionSkillqueue:
 		f = s.updateSkillqueueESI
 	case model.UpdateSectionSkills:
-		f = s.updateSkillsESI
+		f = s.updateCharacterSkillsESI
 	case model.UpdateSectionWalletBalance:
 		f = s.updateWalletBalanceESI
 	case model.UpdateSectionWalletJournal:

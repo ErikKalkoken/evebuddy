@@ -52,14 +52,14 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateSkillsESI(ctx, c.ID)
+		changed, err := s.updateCharacterSkillsESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
 			c2, err := r.GetMyCharacter(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.True(t, c2.SkillPoints.Valid)
-				assert.Equal(t, int64(90000), c2.SkillPoints.Int64)
+				assert.True(t, c2.TotalSP.Valid)
+				assert.Equal(t, int64(90000), c2.TotalSP.Int64)
 			}
 			o1, err := r.GetCharacterSkill(ctx, c.ID, 41)
 			if assert.NoError(t, err) {
@@ -101,7 +101,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateSkillsESI(ctx, c.ID)
+		changed, err := s.updateCharacterSkillsESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)

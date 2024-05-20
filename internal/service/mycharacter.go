@@ -67,7 +67,7 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 	arg := storage.UpdateOrCreateMyCharacterParams{
 		ID:            myCharacter.ID,
 		LastLoginAt:   myCharacter.LastLoginAt,
-		SkillPoints:   myCharacter.SkillPoints,
+		TotalSP:       myCharacter.TotalSP,
 		WalletBalance: myCharacter.WalletBalance,
 	}
 	if myCharacter.Location != nil {

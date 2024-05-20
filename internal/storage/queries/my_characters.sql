@@ -63,22 +63,23 @@ SET
     last_login_at = ?
 WHERE id = ?;
 
--- name: UpdateMyCharacterLocationId :exec
+-- name: UpdateMyCharacterLocationID :exec
 UPDATE my_characters
 SET
     location_id = ?
 WHERE id = ?;
 
--- name: UpdateMyCharacterShipId :exec
+-- name: UpdateMyCharacterShipID :exec
 UPDATE my_characters
 SET
     ship_id = ?
 WHERE id = ?;
 
--- name: UpdateMyCharacterSkillPoints :exec
+-- name: UpdateMyCharacterSP :exec
 UPDATE my_characters
 SET
-    skill_points = ?
+    total_sp = ?,
+    unallocated_sp = ?
 WHERE id = ?;
 
 -- name: UpdateMyCharacterWalletBalance :exec
@@ -92,20 +93,22 @@ INSERT INTO my_characters (
     id,
     home_id,
     last_login_at,
-    ship_id,
-    skill_points,
     location_id,
+    ship_id,
+    total_sp,
+    unallocated_sp,
     wallet_balance
 )
 VALUES (
-    ?1, ?2, ?3, ?4, ?5 ,?6, ?7
+    ?1, ?2, ?3, ?4, ?5 ,?6, ?7, ?8
 )
 ON CONFLICT(id) DO
 UPDATE SET
     home_id = ?2,
     last_login_at = ?3,
-    ship_id = ?4,
-    skill_points = ?5,
-    location_id = ?6,
-    wallet_balance = ?7
+    location_id = ?4,
+    ship_id = ?5,
+    total_sp = ?6,
+    unallocated_sp = ?7,
+    wallet_balance = ?8
 WHERE id = ?1;

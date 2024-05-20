@@ -33,7 +33,7 @@ func TestMyCharacter(t *testing.T) {
 			assert.Equal(t, c1.LastLoginAt.Time.UTC(), c2.LastLoginAt.Time.UTC())
 			assert.Equal(t, c1.Ship, c2.Ship)
 			assert.Equal(t, c1.Location, c2.Location)
-			assert.Equal(t, c1.SkillPoints, c2.SkillPoints)
+			assert.Equal(t, c1.TotalSP, c2.TotalSP)
 			assert.Equal(t, c1.WalletBalance, c2.WalletBalance)
 			assert.Equal(t, c1.Character.ID, c2.Character.ID)
 			assert.Equal(t, c1.Character.Alliance, c2.Character.Alliance)
@@ -71,7 +71,7 @@ func TestMyCharacter(t *testing.T) {
 			LastLoginAt:   sql.NullTime{Time: login, Valid: true},
 			LocationID:    sql.NullInt64{Int64: location.ID, Valid: true},
 			ShipID:        sql.NullInt32{Int32: ship.ID, Valid: true},
-			SkillPoints:   sql.NullInt64{Int64: 123, Valid: true},
+			TotalSP:       sql.NullInt64{Int64: 123, Valid: true},
 			WalletBalance: sql.NullFloat64{Float64: 1.2, Valid: true},
 		}
 		// when
@@ -84,7 +84,7 @@ func TestMyCharacter(t *testing.T) {
 				assert.Equal(t, login.UTC(), r.LastLoginAt.Time.UTC())
 				assert.Equal(t, location, r.Location)
 				assert.Equal(t, ship, r.Ship)
-				assert.Equal(t, int64(123), r.SkillPoints.Int64)
+				assert.Equal(t, int64(123), r.TotalSP.Int64)
 				assert.Equal(t, 1.2, r.WalletBalance.Float64)
 			}
 		}
@@ -215,7 +215,7 @@ func TestListMyCharacters(t *testing.T) {
 				assert.Equal(t, c1.LastLoginAt.Time.UTC(), c2.LastLoginAt.Time.UTC())
 				assert.Equal(t, c1.Ship, c2.Ship)
 				assert.Equal(t, c1.Location, c2.Location)
-				assert.Equal(t, c1.SkillPoints, c2.SkillPoints)
+				assert.Equal(t, c1.TotalSP, c2.TotalSP)
 				assert.Equal(t, c1.WalletBalance, c2.WalletBalance)
 				assert.Equal(t, c1.Character.ID, c2.Character.ID)
 				assert.Equal(t, c1.Character.Alliance, c2.Character.Alliance)
@@ -294,14 +294,16 @@ func TestUpdateMyCharacterFields(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateMyCharacter()
-		x := int64(rand.IntN(100_000_000))
 		// when
-		err := r.UpdateMyCharacterSkillPoints(ctx, c1.ID, sql.NullInt64{Int64: x, Valid: true})
+		totalSP := sql.NullInt64{Int64: int64(rand.IntN(100_000_000)), Valid: true}
+		unallocatedSP := sql.NullInt64{Int64: int64(rand.IntN(10_000_000)), Valid: true}
+		err := r.UpdateMyCharacterSkillPoints(ctx, c1.ID, totalSP, unallocatedSP)
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetMyCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x, c2.SkillPoints.Int64)
+				assert.Equal(t, totalSP, c2.TotalSP)
+				assert.Equal(t, unallocatedSP, c2.UnallocatedSP)
 			}
 		}
 	})
