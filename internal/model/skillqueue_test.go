@@ -11,7 +11,7 @@ import (
 func TestSkillqueueItemCompletion(t *testing.T) {
 	t.Run("should calculate when started at 0", func(t *testing.T) {
 		now := time.Now()
-		q := model.SkillqueueItem{
+		q := model.CharacterSkillqueueItem{
 			StartDate:       now.Add(time.Hour * -1),
 			FinishDate:      now.Add(time.Hour * +3),
 			LevelStartSP:    0,
@@ -22,7 +22,7 @@ func TestSkillqueueItemCompletion(t *testing.T) {
 	})
 	t.Run("should calculate when with sp offset 1", func(t *testing.T) {
 		now := time.Now()
-		q := model.SkillqueueItem{
+		q := model.CharacterSkillqueueItem{
 			StartDate:       now.Add(time.Hour * -1),
 			FinishDate:      now.Add(time.Hour * +1),
 			LevelStartSP:    0,
@@ -33,7 +33,7 @@ func TestSkillqueueItemCompletion(t *testing.T) {
 	})
 	t.Run("should calculate when with sp offset 2", func(t *testing.T) {
 		now := time.Now()
-		q := model.SkillqueueItem{
+		q := model.CharacterSkillqueueItem{
 			StartDate:       now.Add(time.Hour * -2),
 			FinishDate:      now.Add(time.Hour * +1),
 			LevelStartSP:    0,
@@ -44,7 +44,7 @@ func TestSkillqueueItemCompletion(t *testing.T) {
 	})
 	t.Run("should calculate when with sp offset 3", func(t *testing.T) {
 		now := time.Now()
-		q := model.SkillqueueItem{
+		q := model.CharacterSkillqueueItem{
 			StartDate:       now.Add(time.Hour * -2),
 			FinishDate:      now.Add(time.Hour * +1),
 			LevelStartSP:    100,
@@ -55,7 +55,7 @@ func TestSkillqueueItemCompletion(t *testing.T) {
 	})
 	t.Run("should return 0 when starting in the future", func(t *testing.T) {
 		now := time.Now()
-		q := model.SkillqueueItem{
+		q := model.CharacterSkillqueueItem{
 			StartDate:  now.Add(time.Hour * +1),
 			FinishDate: now.Add(time.Hour * +3),
 		}
@@ -63,7 +63,7 @@ func TestSkillqueueItemCompletion(t *testing.T) {
 	})
 	t.Run("should return 1 when finished in the past", func(t *testing.T) {
 		now := time.Now()
-		q := model.SkillqueueItem{
+		q := model.CharacterSkillqueueItem{
 			StartDate:  now.Add(time.Hour * -3),
 			FinishDate: now.Add(time.Hour * -1),
 		}
@@ -74,7 +74,7 @@ func TestSkillqueueItemCompletion(t *testing.T) {
 func TestSkillqueueItemDuration(t *testing.T) {
 	t.Run("should return duration when possible", func(t *testing.T) {
 		now := time.Now()
-		q := model.SkillqueueItem{
+		q := model.CharacterSkillqueueItem{
 			StartDate:  now.Add(time.Hour * +1),
 			FinishDate: now.Add(time.Hour * +3),
 		}
@@ -84,7 +84,7 @@ func TestSkillqueueItemDuration(t *testing.T) {
 	})
 	t.Run("should return null when duration can not be calculated 1", func(t *testing.T) {
 		now := time.Now()
-		q := model.SkillqueueItem{
+		q := model.CharacterSkillqueueItem{
 			StartDate: now.Add(time.Hour * +1),
 		}
 		d := q.Duration()
@@ -92,21 +92,21 @@ func TestSkillqueueItemDuration(t *testing.T) {
 	})
 	t.Run("should return null when duration can not be calculated 2", func(t *testing.T) {
 		now := time.Now()
-		q := model.SkillqueueItem{
+		q := model.CharacterSkillqueueItem{
 			FinishDate: now.Add(time.Hour * +1),
 		}
 		d := q.Duration()
 		assert.False(t, d.Valid)
 	})
 	t.Run("should return null when duration can not be calculated 3", func(t *testing.T) {
-		q := model.SkillqueueItem{}
+		q := model.CharacterSkillqueueItem{}
 		d := q.Duration()
 		assert.False(t, d.Valid)
 	})
 }
 
-func makeItem(startDate, finishDate time.Time) model.SkillqueueItem {
-	return model.SkillqueueItem{
+func makeItem(startDate, finishDate time.Time) model.CharacterSkillqueueItem {
+	return model.CharacterSkillqueueItem{
 		StartDate:       startDate,
 		FinishDate:      finishDate,
 		LevelStartSP:    0,

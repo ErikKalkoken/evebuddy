@@ -62,7 +62,7 @@ func (a *toolbarArea) Refresh() {
 	} else {
 		a.icon.Resource = a.ui.imageManager.CharacterPortrait(c.ID, defaultIconSize)
 		a.icon.Refresh()
-		s := fmt.Sprintf("%s (%s)", c.Character.Name, c.Character.Corporation.Name)
+		s := fmt.Sprintf("%s (%s)", c.EveCharacter.Name, c.EveCharacter.Corporation.Name)
 		a.name.Text = s
 		a.name.TextStyle = fyne.TextStyle{Bold: true}
 	}
@@ -91,7 +91,7 @@ func (a *toolbarArea) Refresh() {
 
 }
 
-func (a *toolbarArea) makeMenuItems(c *model.MyCharacter) ([]*fyne.MenuItem, error) {
+func (a *toolbarArea) makeMenuItems(c *model.Character) ([]*fyne.MenuItem, error) {
 	menuItems := make([]*fyne.MenuItem, 0)
 	cc, err := a.ui.service.ListMyCharactersShort()
 	if err != nil {

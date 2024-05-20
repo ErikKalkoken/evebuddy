@@ -29,7 +29,7 @@ func TestUpdateMail(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c1 := factory.CreateMyCharacter()
-		factory.CreateToken(model.Token{CharacterID: c1.ID})
+		factory.CreateToken(model.CharacterToken{CharacterID: c1.ID})
 		e1 := factory.CreateEveEntityCharacter()
 		e2 := factory.CreateEveEntityCharacter()
 		m1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
@@ -175,11 +175,11 @@ func TestUpdateMail(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		factory.CreateToken(model.Token{CharacterID: c.ID})
+		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		e1 := factory.CreateEveEntityCharacter()
 		e2 := factory.CreateEveEntityCharacter()
-		factory.CreateMailLabel(model.MailLabel{MyCharacterID: c.ID, LabelID: 16})
-		factory.CreateMailLabel(model.MailLabel{MyCharacterID: c.ID, LabelID: 32}) // obsolete
+		factory.CreateMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: 16})
+		factory.CreateMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: 32}) // obsolete
 		m1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 		timestamp, _ := time.Parse("2006-01-02T15:04:05.999MST", "2015-09-30T16:07:00Z")
 		mailID := int32(7)

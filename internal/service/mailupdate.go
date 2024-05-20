@@ -135,7 +135,7 @@ func (s *Service) updateMailESI(ctx context.Context, characterID int32) (bool, e
 }
 
 // fetchMailHeadersESI fetched mail headers from ESI with paging and returns them.
-func (s *Service) fetchMailHeadersESI(ctx context.Context, token *model.Token) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
+func (s *Service) fetchMailHeadersESI(ctx context.Context, token *model.CharacterToken) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	if err := s.ensureValidToken(ctx, token); err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (s *Service) resolveMailEntities(ctx context.Context, mm []esi.GetCharacter
 	return nil
 }
 
-func (s *Service) addNewMailsESI(ctx context.Context, token *model.Token, headers []esi.GetCharactersCharacterIdMail200Ok) error {
+func (s *Service) addNewMailsESI(ctx context.Context, token *model.CharacterToken, headers []esi.GetCharactersCharacterIdMail200Ok) error {
 	if err := s.ensureValidToken(ctx, token); err != nil {
 		return err
 	}
@@ -301,7 +301,7 @@ func (s *Service) UpdateMailRead(characterID, mailID int32) error {
 		labelIDs[i] = l.LabelID
 	}
 	contents := esi.PutCharactersCharacterIdMailMailIdContents{Read: true, Labels: labelIDs}
-	_, err = s.esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(ctx, m.MyCharacterID, contents, m.MailID, nil)
+	_, err = s.esiClient.ESI.MailApi.PutCharactersCharacterIdMailMailId(ctx, m.CharacterID, contents, m.MailID, nil)
 	if err != nil {
 		return err
 	}

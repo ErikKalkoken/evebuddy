@@ -25,7 +25,7 @@ const (
 	CreateMessageForward
 )
 
-func (u *ui) ShowSendMessageWindow(mode int, mail *model.Mail) {
+func (u *ui) ShowSendMessageWindow(mode int, mail *model.CharacterMail) {
 	w, err := u.makeSendMessageWindow(mode, mail)
 	if err != nil {
 		slog.Error("failed to create send message window", "error", err)
@@ -34,13 +34,13 @@ func (u *ui) ShowSendMessageWindow(mode int, mail *model.Mail) {
 	}
 }
 
-func (u *ui) makeSendMessageWindow(mode int, mail *model.Mail) (fyne.Window, error) {
+func (u *ui) makeSendMessageWindow(mode int, mail *model.CharacterMail) (fyne.Window, error) {
 	currentChar := *u.CurrentChar()
-	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", currentChar.Character.Name))
+	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", currentChar.EveCharacter.Name))
 
 	fromInput := widget.NewEntry()
 	fromInput.Disable()
-	fromInput.SetPlaceHolder(currentChar.Character.Name)
+	fromInput.SetPlaceHolder(currentChar.EveCharacter.Name)
 
 	toInput := widget.NewEntry()
 	toInput.MultiLine = true

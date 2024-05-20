@@ -4,16 +4,16 @@ import (
 	"time"
 )
 
-type WalletJournalEntry struct {
+type CharacterWalletJournalEntry struct {
 	Amount        float64
 	Balance       float64
+	CharacterID   int32
 	ContextID     int64
 	ContextIDType string
 	Date          time.Time
 	Description   string
 	FirstParty    *EveEntity
 	ID            int64
-	MyCharacterID int32
 	Reason        string
 	RefType       string
 	SecondParty   *EveEntity
@@ -21,7 +21,8 @@ type WalletJournalEntry struct {
 	TaxReceiver   *EveEntity
 }
 
-type WalletTransaction struct {
+type CharacterWalletTransaction struct {
+	CharacterID   int32
 	Client        *EveEntity
 	Date          time.Time
 	EveType       *EntityShort[int32]
@@ -29,7 +30,6 @@ type WalletTransaction struct {
 	IsPersonal    bool
 	JournalRefID  int64
 	Location      *EntityShort[int64]
-	MyCharacterID int32
 	Quantity      int32
 	TransactionID int64
 	UnitPrice     float64

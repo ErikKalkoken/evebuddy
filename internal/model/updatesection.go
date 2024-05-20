@@ -20,9 +20,9 @@ const (
 	UpdateSectionWalletTransactions UpdateSection = "wallet_transactions"
 )
 
-type MyCharacterUpdateStatus struct {
-	MyCharacterID int32
-	SectionID     UpdateSection
-	UpdatedAt     time.Time
-	ContentHash   string
+type CharacterUpdateStatus struct {
+	CharacterID int32
+	SectionID   UpdateSection
+	UpdatedAt   time.Time
+	ContentHash string
 }

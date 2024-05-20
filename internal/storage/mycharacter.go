@@ -19,7 +19,7 @@ func (r *Storage) DeleteMyCharacter(ctx context.Context, characterID int32) erro
 	return nil
 }
 
-func (r *Storage) GetMyCharacter(ctx context.Context, characterID int32) (*model.MyCharacter, error) {
+func (r *Storage) GetMyCharacter(ctx context.Context, characterID int32) (*model.Character, error) {
 	row, err := r.q.GetMyCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -45,7 +45,7 @@ func (r *Storage) GetMyCharacter(ctx context.Context, characterID int32) (*model
 	return c, nil
 }
 
-func (r *Storage) GetFirstMyCharacter(ctx context.Context) (*model.MyCharacter, error) {
+func (r *Storage) GetFirstMyCharacter(ctx context.Context) (*model.Character, error) {
 	ids, err := r.ListMyCharacterIDs(ctx)
 	if err != nil {
 		return nil, err
@@ -57,12 +57,12 @@ func (r *Storage) GetFirstMyCharacter(ctx context.Context) (*model.MyCharacter, 
 
 }
 
-func (r *Storage) ListMyCharacters(ctx context.Context) ([]*model.MyCharacter, error) {
+func (r *Storage) ListMyCharacters(ctx context.Context) ([]*model.Character, error) {
 	rows, err := r.q.ListMyCharacters(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list MyCharacters: %w", err)
 	}
-	cc := make([]*model.MyCharacter, len(rows))
+	cc := make([]*model.Character, len(rows))
 	for i, row := range rows {
 		c, err := r.myCharacterFromDBModel(
 			ctx,
@@ -84,15 +84,15 @@ func (r *Storage) ListMyCharacters(ctx context.Context) ([]*model.MyCharacter, e
 	return cc, nil
 }
 
-func (r *Storage) ListMyCharactersShort(ctx context.Context) ([]*model.MyCharacterShort, error) {
+func (r *Storage) ListMyCharactersShort(ctx context.Context) ([]*model.CharacterShort, error) {
 	rows, err := r.q.ListMyCharactersShort(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list MyCharacter objects: %w", err)
 
 	}
-	cc := make([]*model.MyCharacterShort, len(rows))
+	cc := make([]*model.CharacterShort, len(rows))
 	for i, row := range rows {
-		cc[i] = &model.MyCharacterShort{ID: int32(row.ID), Name: row.Name, CorporationName: row.Name_2}
+		cc[i] = &model.CharacterShort{ID: int32(row.ID), Name: row.Name, CorporationName: row.Name_2}
 	}
 	return cc, nil
 }
@@ -213,9 +213,9 @@ func (r *Storage) myCharacterFromDBModel(
 	homeID sql.NullInt64,
 	locationID sql.NullInt64,
 	shipID sql.NullInt64,
-) (*model.MyCharacter, error) {
-	c := model.MyCharacter{
-		Character:     eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
+) (*model.Character, error) {
+	c := model.Character{
+		EveCharacter:  eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
 		ID:            int32(myCharacter.ID),
 		LastLoginAt:   myCharacter.LastLoginAt,
 		TotalSP:       myCharacter.TotalSp,

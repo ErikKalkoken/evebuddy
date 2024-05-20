@@ -57,7 +57,7 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 			duration := row.Objects[2].(*widget.Label)
 			pb := co.(*fyne.Container).Objects[0].(*widget.ProgressBar)
 
-			q, err := convertDataItem[*model.SkillqueueItem](di)
+			q, err := convertDataItem[*model.CharacterSkillqueueItem](di)
 			if err != nil {
 				slog.Error("failed to render row in skillqueue table", "err", err)
 				name.Text = "failed to render"
@@ -94,7 +94,7 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		q, err := getFromBoundUntypedList[*model.SkillqueueItem](a.items, id)
+		q, err := getFromBoundUntypedList[*model.CharacterSkillqueueItem](a.items, id)
 		if err != nil {
 			slog.Error("failed to access skillqueue item in list", "err", err)
 			return

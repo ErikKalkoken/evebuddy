@@ -22,40 +22,40 @@ const (
 )
 
 // A mail label for an Eve mail belonging to a character.
-type MailLabel struct {
-	ID            int64
-	MyCharacterID int32
-	Color         string
-	LabelID       int32
-	Name          string
-	UnreadCount   int
+type CharacterMailLabel struct {
+	ID          int64
+	CharacterID int32
+	Color       string
+	LabelID     int32
+	Name        string
+	UnreadCount int
 }
 
 var bodyPolicy = bluemonday.StrictPolicy()
 
 // An Eve mail belonging to a character.
-type Mail struct {
-	Body          string
-	MyCharacterID int32
-	From          *EveEntity
-	Labels        []*MailLabel
-	IsRead        bool
-	ID            int64
-	MailID        int32
-	Recipients    []*EveEntity
-	Subject       string
-	Timestamp     time.Time
+type CharacterMail struct {
+	Body        string
+	CharacterID int32
+	From        *EveEntity
+	Labels      []*CharacterMailLabel
+	IsRead      bool
+	ID          int64
+	MailID      int32
+	Recipients  []*EveEntity
+	Subject     string
+	Timestamp   time.Time
 }
 
 // BodyPlain returns a mail's body as plain text.
-func (m *Mail) BodyPlain() string {
+func (m *CharacterMail) BodyPlain() string {
 	t := strings.ReplaceAll(m.Body, "<br>", "\n")
 	b := html.UnescapeString(bodyPolicy.Sanitize(t))
 	return b
 }
 
 // BodyForward returns a mail's body for a mail forward or reply.
-func (m *Mail) ToString(format string) string {
+func (m *CharacterMail) ToString(format string) string {
 	s := "\n---\n"
 	s += m.MakeHeaderText(format)
 	s += "\n\n"
@@ -64,7 +64,7 @@ func (m *Mail) ToString(format string) string {
 }
 
 // MakeHeaderText returns the mail's header as formatted text.
-func (m *Mail) MakeHeaderText(format string) string {
+func (m *CharacterMail) MakeHeaderText(format string) string {
 	var names []string
 	for _, n := range m.Recipients {
 		names = append(names, n.Name)
@@ -79,7 +79,7 @@ func (m *Mail) MakeHeaderText(format string) string {
 }
 
 // RecipientNames returns the names of the recipients.
-func (m *Mail) RecipientNames() []string {
+func (m *CharacterMail) RecipientNames() []string {
 	ss := make([]string, len(m.Recipients))
 	for i, r := range m.Recipients {
 		ss[i] = r.Name
@@ -87,6 +87,6 @@ func (m *Mail) RecipientNames() []string {
 	return ss
 }
 
-func (m *Mail) BodyToMarkdown() string {
+func (m *CharacterMail) BodyToMarkdown() string {
 	return converter.XMLtoMarkdown(m.Body)
 }

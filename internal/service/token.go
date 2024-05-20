@@ -46,7 +46,7 @@ func (s *Service) HasTokenWithScopes(characterID int32) (bool, error) {
 }
 
 // getValidToken returns a valid token for a character. Convenience function.
-func (s *Service) getValidToken(ctx context.Context, characterID int32) (*model.Token, error) {
+func (s *Service) getValidToken(ctx context.Context, characterID int32) (*model.CharacterToken, error) {
 	t, err := s.r.GetToken(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (s *Service) getValidToken(ctx context.Context, characterID int32) (*model.
 }
 
 // ensureValidToken will automatically try to refresh a token that is already or about to become invalid.
-func (s *Service) ensureValidToken(ctx context.Context, t *model.Token) error {
+func (s *Service) ensureValidToken(ctx context.Context, t *model.CharacterToken) error {
 	if !t.RemainsValid(time.Second * 60) {
 		slog.Debug("Need to refresh token", "characterID", t.CharacterID)
 		rawToken, err := sso.RefreshToken(s.httpClient, t.RefreshToken)

@@ -45,7 +45,7 @@ func (r *Storage) CreateWalletTransaction(ctx context.Context, arg CreateWalletT
 	return err
 }
 
-func (r *Storage) GetWalletTransaction(ctx context.Context, characterID int32, transactionID int64) (*model.WalletTransaction, error) {
+func (r *Storage) GetWalletTransaction(ctx context.Context, characterID int32, transactionID int64) (*model.CharacterWalletTransaction, error) {
 	arg := queries.GetWalletTransactionParams{
 		MyCharacterID: int64(characterID),
 		TransactionID: transactionID,
@@ -61,12 +61,12 @@ func (r *Storage) ListWalletTransactionIDs(ctx context.Context, characterID int3
 	return r.q.ListWalletTransactionIDs(ctx, int64(characterID))
 }
 
-func (r *Storage) ListWalletTransactions(ctx context.Context, characterID int32) ([]*model.WalletTransaction, error) {
+func (r *Storage) ListWalletTransactions(ctx context.Context, characterID int32) ([]*model.CharacterWalletTransaction, error) {
 	rows, err := r.q.ListWalletTransactions(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}
-	ee := make([]*model.WalletTransaction, len(rows))
+	ee := make([]*model.CharacterWalletTransaction, len(rows))
 	for i, row := range rows {
 		ee[i] = walletTransactionFromDBModel(row.WalletTransaction, row.EveEntity, row.EveTypeName, row.LocationName)
 	}
@@ -78,8 +78,8 @@ func walletTransactionFromDBModel(
 	client queries.EveEntity,
 	eveTypeName string,
 	locationName string,
-) *model.WalletTransaction {
-	x := &model.WalletTransaction{
+) *model.CharacterWalletTransaction {
+	x := &model.CharacterWalletTransaction{
 		Client:        eveEntityFromDBModel(client),
 		Date:          t.Date,
 		EveType:       &model.EntityShort[int32]{ID: int32(t.EveTypeID), Name: eveTypeName},
@@ -87,7 +87,7 @@ func walletTransactionFromDBModel(
 		IsPersonal:    t.IsPersonal,
 		JournalRefID:  t.JournalRefID,
 		Location:      &model.EntityShort[int64]{ID: t.LocationID, Name: locationName},
-		MyCharacterID: int32(t.MyCharacterID),
+		CharacterID:   int32(t.MyCharacterID),
 		Quantity:      int32(t.Quantity),
 		TransactionID: t.TransactionID,
 		UnitPrice:     t.UnitPrice,

@@ -17,7 +17,7 @@ type mailDetailArea struct {
 	body    *widget.RichText
 	content fyne.CanvasObject
 	header  *widget.Label
-	mail    *model.Mail
+	mail    *model.CharacterMail
 	subject *widget.Label
 	toolbar *widget.Toolbar
 	ui      *ui
@@ -45,7 +45,7 @@ func (u *ui) NewMailArea() *mailDetailArea {
 			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Subject)
 			d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
 				if confirmed {
-					err := u.service.DeleteMail(a.mail.MyCharacterID, a.mail.MailID)
+					err := u.service.DeleteMail(a.mail.CharacterID, a.mail.MailID)
 					if err != nil {
 						errorDialog := dialog.NewError(err, u.window)
 						errorDialog.Show()

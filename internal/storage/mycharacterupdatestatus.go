@@ -18,7 +18,7 @@ type MyCharacterUpdateStatusParams struct {
 	ContentHash   string
 }
 
-func (r *Storage) GetMyCharacterUpdateStatus(ctx context.Context, characterID int32, section model.UpdateSection) (*model.MyCharacterUpdateStatus, error) {
+func (r *Storage) GetMyCharacterUpdateStatus(ctx context.Context, characterID int32, section model.UpdateSection) (*model.CharacterUpdateStatus, error) {
 	arg := queries.GetMyCharacterUpdateStatusParams{
 		MyCharacterID: int64(characterID),
 		SectionID:     string(section),
@@ -48,11 +48,11 @@ func (r *Storage) UpdateOrCreateMyCharacterUpdateStatus(ctx context.Context, arg
 	return nil
 }
 
-func myCharacterUpdateStatusFromDBModel(s queries.MyCharacterUpdateStatus) *model.MyCharacterUpdateStatus {
-	return &model.MyCharacterUpdateStatus{
-		MyCharacterID: int32(s.MyCharacterID),
-		SectionID:     model.UpdateSection(s.SectionID),
-		UpdatedAt:     s.UpdatedAt,
-		ContentHash:   s.ContentHash,
+func myCharacterUpdateStatusFromDBModel(s queries.MyCharacterUpdateStatus) *model.CharacterUpdateStatus {
+	return &model.CharacterUpdateStatus{
+		CharacterID: int32(s.MyCharacterID),
+		SectionID:   model.UpdateSection(s.SectionID),
+		UpdatedAt:   s.UpdatedAt,
+		ContentHash: s.ContentHash,
 	}
 }

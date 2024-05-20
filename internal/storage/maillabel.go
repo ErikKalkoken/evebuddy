@@ -21,7 +21,7 @@ func (r *Storage) DeleteObsoleteMailLabels(ctx context.Context, characterID int3
 	return nil
 }
 
-func (r *Storage) GetMailLabel(ctx context.Context, characterID, labelID int32) (*model.MailLabel, error) {
+func (r *Storage) GetMailLabel(ctx context.Context, characterID, labelID int32) (*model.CharacterMailLabel, error) {
 	arg := queries.GetMailLabelParams{
 		MyCharacterID: int64(characterID),
 		LabelID:       int64(labelID),
@@ -45,8 +45,8 @@ type MailLabelParams struct {
 	UnreadCount   int
 }
 
-func (r *Storage) GetOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (*model.MailLabel, error) {
-	label, err := func() (*model.MailLabel, error) {
+func (r *Storage) GetOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (*model.CharacterMailLabel, error) {
+	label, err := func() (*model.CharacterMailLabel, error) {
 		var l queries.MailLabel
 		tx, err := r.db.Begin()
 		if err != nil {
@@ -86,19 +86,19 @@ func (r *Storage) GetOrCreateMailLabel(ctx context.Context, arg MailLabelParams)
 	return label, nil
 }
 
-func (r *Storage) ListMailLabelsOrdered(ctx context.Context, characterID int32) ([]*model.MailLabel, error) {
+func (r *Storage) ListMailLabelsOrdered(ctx context.Context, characterID int32) ([]*model.CharacterMailLabel, error) {
 	ll, err := r.q.ListMailLabelsOrdered(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list mail label IDs for character %d: %w", characterID, err)
 	}
-	ll2 := make([]*model.MailLabel, len(ll))
+	ll2 := make([]*model.CharacterMailLabel, len(ll))
 	for i, l := range ll {
 		ll2[i] = mailLabelFromDBModel(l)
 	}
 	return ll2, nil
 }
 
-func (r *Storage) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (*model.MailLabel, error) {
+func (r *Storage) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelParams) (*model.CharacterMailLabel, error) {
 	arg1 := queries.UpdateOrCreateMailLabelParams{
 		MyCharacterID: int64(arg.MyCharacterID),
 		LabelID:       int64(arg.LabelID),
@@ -114,13 +114,13 @@ func (r *Storage) UpdateOrCreateMailLabel(ctx context.Context, arg MailLabelPara
 	return label, nil
 }
 
-func mailLabelFromDBModel(l queries.MailLabel) *model.MailLabel {
-	return &model.MailLabel{
-		ID:            l.ID,
-		MyCharacterID: int32(l.MyCharacterID),
-		Color:         l.Color,
-		LabelID:       int32(l.LabelID),
-		Name:          l.Name,
-		UnreadCount:   int(l.UnreadCount),
+func mailLabelFromDBModel(l queries.MailLabel) *model.CharacterMailLabel {
+	return &model.CharacterMailLabel{
+		ID:          l.ID,
+		CharacterID: int32(l.MyCharacterID),
+		Color:       l.Color,
+		LabelID:     int32(l.LabelID),
+		Name:        l.Name,
+		UnreadCount: int(l.UnreadCount),
 	}
 }

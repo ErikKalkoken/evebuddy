@@ -38,7 +38,7 @@ func (s *Service) DeleteMail(characterID, mailID int32) error {
 	return nil
 }
 
-func (s *Service) GetMail(characterID int32, mailID int32) (*model.Mail, error) {
+func (s *Service) GetMail(characterID int32, mailID int32) (*model.CharacterMail, error) {
 	ctx := context.Background()
 	return s.r.GetMail(ctx, characterID, mailID)
 }
@@ -165,7 +165,7 @@ func (s *Service) ListMailIDsForListOrdered(characterID int32, listID int32) ([]
 	return s.r.ListMailIDsForListOrdered(ctx, characterID, listID)
 }
 
-func (s *Service) ListMailLabelsOrdered(characterID int32) ([]*model.MailLabel, error) {
+func (s *Service) ListMailLabelsOrdered(characterID int32) ([]*model.CharacterMailLabel, error) {
 	ctx := context.Background()
 	return s.r.ListMailLabelsOrdered(ctx, characterID)
 }

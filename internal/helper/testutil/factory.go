@@ -24,7 +24,7 @@ func NewFactory(r *storage.Storage, db *sql.DB) Factory {
 }
 
 // CreateMyCharacter is a test factory for MyCharacter objects.
-func (f Factory) CreateMyCharacter(args ...storage.UpdateOrCreateMyCharacterParams) *model.MyCharacter {
+func (f Factory) CreateMyCharacter(args ...storage.UpdateOrCreateMyCharacterParams) *model.Character {
 	ctx := context.Background()
 	var arg storage.UpdateOrCreateMyCharacterParams
 	if len(args) > 0 {
@@ -67,7 +67,7 @@ func (f Factory) CreateMyCharacter(args ...storage.UpdateOrCreateMyCharacterPara
 }
 
 // CreateMailLabel is a test factory for MailLabel objects
-func (f Factory) CreateMyCharacterUpdateStatus(args ...storage.MyCharacterUpdateStatusParams) *model.MyCharacterUpdateStatus {
+func (f Factory) CreateMyCharacterUpdateStatus(args ...storage.MyCharacterUpdateStatusParams) *model.CharacterUpdateStatus {
 	ctx := context.Background()
 	var arg storage.MyCharacterUpdateStatusParams
 	if len(args) > 0 {
@@ -228,7 +228,7 @@ func eveEntityWithCategory(args []model.EveEntity, category model.EveEntityCateg
 }
 
 // CreateMail is a test factory for Mail objects
-func (f Factory) CreateMail(args ...storage.CreateMailParams) *model.Mail {
+func (f Factory) CreateMail(args ...storage.CreateMailParams) *model.CharacterMail {
 	var arg storage.CreateMailParams
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -278,13 +278,13 @@ func (f Factory) CreateMail(args ...storage.CreateMailParams) *model.Mail {
 }
 
 // CreateMailLabel is a test factory for MailLabel objects
-func (f Factory) CreateMailLabel(args ...model.MailLabel) *model.MailLabel {
+func (f Factory) CreateMailLabel(args ...model.CharacterMailLabel) *model.CharacterMailLabel {
 	ctx := context.Background()
 	var arg storage.MailLabelParams
 	if len(args) > 0 {
 		l := args[0]
 		arg = storage.MailLabelParams{
-			MyCharacterID: l.MyCharacterID,
+			MyCharacterID: l.CharacterID,
 			Color:         l.Color,
 			LabelID:       l.LabelID,
 			Name:          l.Name,
@@ -518,7 +518,7 @@ func (f Factory) CreateEveRace(args ...model.EveRace) *model.EveRace {
 }
 
 // CreateSkillqueueItem is a test factory for SkillqueueItem objects
-func (f Factory) CreateSkillqueueItem(args ...storage.SkillqueueItemParams) *model.SkillqueueItem {
+func (f Factory) CreateSkillqueueItem(args ...storage.SkillqueueItemParams) *model.CharacterSkillqueueItem {
 	ctx := context.Background()
 	var arg storage.SkillqueueItemParams
 	if len(args) > 0 {
@@ -620,8 +620,8 @@ func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationP
 }
 
 // CreateToken is a test factory for Token objects.
-func (f Factory) CreateToken(args ...model.Token) *model.Token {
-	var t model.Token
+func (f Factory) CreateToken(args ...model.CharacterToken) *model.CharacterToken {
+	var t model.CharacterToken
 	ctx := context.Background()
 	if len(args) > 0 {
 		t = args[0]
@@ -649,7 +649,7 @@ func (f Factory) CreateToken(args ...model.Token) *model.Token {
 	return &t
 }
 
-func (f Factory) CreateWalletJournalEntry(args ...storage.CreateWalletJournalEntryParams) *model.WalletJournalEntry {
+func (f Factory) CreateWalletJournalEntry(args ...storage.CreateWalletJournalEntryParams) *model.CharacterWalletJournalEntry {
 	ctx := context.Background()
 	var arg storage.CreateWalletJournalEntryParams
 	if len(args) > 0 {
@@ -706,7 +706,7 @@ func (f Factory) CreateWalletJournalEntry(args ...storage.CreateWalletJournalEnt
 	return i
 }
 
-func (f Factory) CreateWalletTransaction(args ...storage.CreateWalletTransactionParams) *model.WalletTransaction {
+func (f Factory) CreateWalletTransaction(args ...storage.CreateWalletTransactionParams) *model.CharacterWalletTransaction {
 	ctx := context.Background()
 	var arg storage.CreateWalletTransactionParams
 	if len(args) > 0 {

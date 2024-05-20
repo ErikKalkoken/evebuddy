@@ -214,7 +214,7 @@ func (a *skillCatalogueArea) Refresh() {
 	a.total.SetText(fmt.Sprintf("%s Total Skill Points", s))
 }
 
-func (a *skillCatalogueArea) updateGroups() (*model.MyCharacter, error) {
+func (a *skillCatalogueArea) updateGroups() (*model.Character, error) {
 	c := a.ui.CurrentChar()
 	if c == nil {
 		return nil, nil

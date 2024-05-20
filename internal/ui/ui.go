@@ -34,7 +34,7 @@ const (
 // call methods on other UI areas and access shared variables in the UI.
 type ui struct {
 	app                   fyne.App
-	currentCharacter      *model.MyCharacter
+	currentCharacter      *model.Character
 	folderArea            *folderArea
 	headerArea            *headerArea
 	imageManager          *images.Manager
@@ -105,7 +105,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	w.SetContent(mainContent)
 	w.SetMaster()
 
-	var c *model.MyCharacter
+	var c *model.Character
 	cID, ok, err := service.DictionaryInt(model.SettingLastCharacterID)
 	if err == nil && ok {
 		c, err = service.GetMyCharacter(int32(cID))
@@ -200,7 +200,7 @@ func (u *ui) CurrentCharID() int32 {
 	return u.currentCharacter.ID
 }
 
-func (u *ui) CurrentChar() *model.MyCharacter {
+func (u *ui) CurrentChar() *model.Character {
 	return u.currentCharacter
 }
 
@@ -213,7 +213,7 @@ func (u *ui) LoadCurrentCharacter(characterID int32) error {
 	return nil
 }
 
-func (u *ui) setCurrentCharacter(c *model.MyCharacter) {
+func (u *ui) setCurrentCharacter(c *model.Character) {
 	u.currentCharacter = c
 	err := u.service.DictionarySetInt(model.SettingLastCharacterID, int(c.ID))
 	if err != nil {

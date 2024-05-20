@@ -220,13 +220,13 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 	cc := make([]overviewCharacter, len(mycc))
 	for i, m := range mycc {
 		c := overviewCharacter{
-			alliance:      m.Character.AllianceName(),
-			birthday:      m.Character.Birthday,
-			corporation:   m.Character.Corporation.Name,
+			alliance:      m.EveCharacter.AllianceName(),
+			birthday:      m.EveCharacter.Birthday,
+			corporation:   m.EveCharacter.Corporation.Name,
 			lastLoginAt:   m.LastLoginAt,
 			id:            m.ID,
-			name:          m.Character.Name,
-			security:      m.Character.SecurityStatus,
+			name:          m.EveCharacter.Name,
+			security:      m.EveCharacter.SecurityStatus,
 			totalSP:       m.TotalSP,
 			unallocatedSP: m.UnallocatedSP,
 			walletBalance: m.WalletBalance,

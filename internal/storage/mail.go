@@ -99,8 +99,8 @@ func (r *Storage) updateMailLabels(ctx context.Context, characterID int32, mailP
 	return nil
 }
 
-func (r *Storage) GetMail(ctx context.Context, characterID, mailID int32) (*model.Mail, error) {
-	mail, err := func() (*model.Mail, error) {
+func (r *Storage) GetMail(ctx context.Context, characterID, mailID int32) (*model.CharacterMail, error) {
+	mail, err := func() (*model.CharacterMail, error) {
 		arg := queries.GetMailParams{
 			MyCharacterID: int64(characterID),
 			MailID:        int64(mailID),
@@ -255,11 +255,11 @@ func (r *Storage) UpdateMail(ctx context.Context, characterID int32, mailPK int6
 	return nil
 }
 
-func mailFromDBModel(mail queries.Mail, from queries.EveEntity, labels []queries.MailLabel, recipients []queries.EveEntity) *model.Mail {
+func mailFromDBModel(mail queries.Mail, from queries.EveEntity, labels []queries.MailLabel, recipients []queries.EveEntity) *model.CharacterMail {
 	if mail.MyCharacterID == 0 {
 		panic("missing character ID")
 	}
-	var ll []*model.MailLabel
+	var ll []*model.CharacterMailLabel
 	for _, l := range labels {
 		ll = append(ll, mailLabelFromDBModel(l))
 	}
@@ -267,17 +267,17 @@ func mailFromDBModel(mail queries.Mail, from queries.EveEntity, labels []queries
 	for _, r := range recipients {
 		rr = append(rr, eveEntityFromDBModel(r))
 	}
-	m := model.Mail{
-		Body:          mail.Body,
-		MyCharacterID: int32(mail.MyCharacterID),
-		From:          eveEntityFromDBModel(from),
-		IsRead:        mail.IsRead,
-		ID:            mail.ID,
-		Labels:        ll,
-		MailID:        int32(mail.MailID),
-		Recipients:    rr,
-		Subject:       mail.Subject,
-		Timestamp:     mail.Timestamp,
+	m := model.CharacterMail{
+		Body:        mail.Body,
+		CharacterID: int32(mail.MyCharacterID),
+		From:        eveEntityFromDBModel(from),
+		IsRead:      mail.IsRead,
+		ID:          mail.ID,
+		Labels:      ll,
+		MailID:      int32(mail.MailID),
+		Recipients:  rr,
+		Subject:     mail.Subject,
+		Timestamp:   mail.Timestamp,
 	}
 	return &m
 }

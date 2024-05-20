@@ -115,7 +115,7 @@ func characterSkillFromDBModel(o queries.CharacterSkill, t queries.EveType, g qu
 		ActiveSkillLevel:   int(o.ActiveSkillLevel),
 		EveType:            eveTypeFromDBModel(t, g, c),
 		SkillPointsInSkill: int(o.SkillPointsInSkill),
-		MyCharacterID:      int32(o.MyCharacterID),
+		CharacterID:        int32(o.MyCharacterID),
 		TrainedSkillLevel:  int(o.TrainedSkillLevel),
 	}
 }

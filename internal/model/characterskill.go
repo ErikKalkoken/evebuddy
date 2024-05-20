@@ -2,9 +2,9 @@ package model
 
 type CharacterSkill struct {
 	ActiveSkillLevel   int
+	CharacterID        int32
 	EveType            *EveType
 	SkillPointsInSkill int
-	MyCharacterID      int32
 	TrainedSkillLevel  int
 }
 

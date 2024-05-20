@@ -26,7 +26,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		factory.CreateToken(model.Token{CharacterID: c.ID})
+		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 42})
 		data := `{
@@ -80,7 +80,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		factory.CreateToken(model.Token{CharacterID: c.ID})
+		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		// old := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{MyCharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 42})

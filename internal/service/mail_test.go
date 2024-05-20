@@ -24,7 +24,7 @@ func TestSendMail(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		factory.CreateToken(model.Token{CharacterID: c.ID})
+		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		r := factory.CreateEveEntityCharacter(model.EveEntity{ID: 90000001})
 		httpmock.Reset()
 		httpmock.RegisterResponder(

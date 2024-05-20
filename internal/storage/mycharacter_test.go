@@ -35,9 +35,9 @@ func TestMyCharacter(t *testing.T) {
 			assert.Equal(t, c1.Location, c2.Location)
 			assert.Equal(t, c1.TotalSP, c2.TotalSP)
 			assert.Equal(t, c1.WalletBalance, c2.WalletBalance)
-			assert.Equal(t, c1.Character.ID, c2.Character.ID)
-			assert.Equal(t, c1.Character.Alliance, c2.Character.Alliance)
-			assert.Equal(t, c1.Character.Faction, c2.Character.Faction)
+			assert.Equal(t, c1.EveCharacter.ID, c2.EveCharacter.ID)
+			assert.Equal(t, c1.EveCharacter.Alliance, c2.EveCharacter.Alliance)
+			assert.Equal(t, c1.EveCharacter.Faction, c2.EveCharacter.Faction)
 		}
 	})
 	t.Run("can create new minimal", func(t *testing.T) {
@@ -217,9 +217,9 @@ func TestListMyCharacters(t *testing.T) {
 				assert.Equal(t, c1.Location, c2.Location)
 				assert.Equal(t, c1.TotalSP, c2.TotalSP)
 				assert.Equal(t, c1.WalletBalance, c2.WalletBalance)
-				assert.Equal(t, c1.Character.ID, c2.Character.ID)
-				assert.Equal(t, c1.Character.Alliance, c2.Character.Alliance)
-				assert.Equal(t, c1.Character.Faction, c2.Character.Faction)
+				assert.Equal(t, c1.EveCharacter.ID, c2.EveCharacter.ID)
+				assert.Equal(t, c1.EveCharacter.Alliance, c2.EveCharacter.Alliance)
+				assert.Equal(t, c1.EveCharacter.Faction, c2.EveCharacter.Faction)
 			}
 		}
 	})

@@ -4,8 +4,8 @@ package model
 import "database/sql"
 
 // An Eve Online character owners by the user.
-type MyCharacter struct {
-	Character     *EveCharacter
+type Character struct {
+	EveCharacter  *EveCharacter
 	Home          *Location
 	ID            int32
 	LastLoginAt   sql.NullTime
@@ -16,8 +16,8 @@ type MyCharacter struct {
 	WalletBalance sql.NullFloat64
 }
 
-// A shortened version of MyCharacter.
-type MyCharacterShort struct {
+// A shortened version of Character.
+type CharacterShort struct {
 	ID              int32
 	Name            string
 	CorporationName string

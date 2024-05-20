@@ -53,7 +53,7 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 			return resp, err
 		},
 	)
-	token := model.Token{AccessToken: "abc", CharacterID: 1, ExpiresAt: time.Now().Add(time.Minute * 10)}
+	token := model.CharacterToken{AccessToken: "abc", CharacterID: 1, ExpiresAt: time.Now().Add(time.Minute * 10)}
 
 	// when
 	mails, err := s.fetchMailHeadersESI(ctx, &token)
@@ -84,7 +84,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		factory.CreateToken(model.Token{CharacterID: c.ID})
+		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		dataMailLabel := map[string]any{
 			"labels": []map[string]any{
 				{
@@ -127,13 +127,13 @@ func TestUpdateMailLabel(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		factory.CreateToken(model.Token{CharacterID: c.ID})
-		l1 := factory.CreateMailLabel(model.MailLabel{
-			MyCharacterID: c.ID,
-			LabelID:       16,
-			Name:          "BLACK",
-			Color:         "#000000",
-			UnreadCount:   99,
+		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
+		l1 := factory.CreateMailLabel(model.CharacterMailLabel{
+			CharacterID: c.ID,
+			LabelID:     16,
+			Name:        "BLACK",
+			Color:       "#000000",
+			UnreadCount: 99,
 		})
 		dataMailLabel := map[string]any{
 			"labels": []map[string]any{

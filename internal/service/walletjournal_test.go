@@ -27,7 +27,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		factory.CreateToken(model.Token{CharacterID: c.ID})
+		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		firstParty := factory.CreateEveEntityCharacter(model.EveEntity{ID: 2112625428})
 		secondParty := factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000132})
 		data := `[
@@ -78,7 +78,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
 		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{MyCharacterID: c.ID})
-		factory.CreateToken(model.Token{CharacterID: c.ID})
+		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(model.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000132})
 		data := `[
@@ -125,7 +125,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			ID:            89,
 			Description:   "existing",
 		})
-		factory.CreateToken(model.Token{CharacterID: c.ID})
+		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(model.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000132})
 		data := `[

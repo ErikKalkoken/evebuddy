@@ -52,8 +52,34 @@ type EveSolarSystem struct {
 	SecurityStatus float64
 }
 
+// EveRace is a race in Eve Online.
+type EveRace struct {
+	Description string
+	Name        string
+	ID          int32
+}
+
+// FactionID returns the faction ID of a race.
+func (r *EveRace) FactionID() (int32, bool) {
+	m := map[int32]int32{
+		1: 500001,
+		2: 500002,
+		4: 500003,
+		8: 500004,
+	}
+	factionID, ok := m[r.ID]
+	return factionID, ok
+}
+
+// Position is a position in 3D space.
 type Position struct {
 	X float64
 	Y float64
 	Z float64
+}
+
+// EntityShort is a short representation of an entity.
+type EntityShort[T int | int32 | int64] struct {
+	ID   T
+	Name string
 }

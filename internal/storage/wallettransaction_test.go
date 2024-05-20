@@ -51,7 +51,7 @@ func TestWalletTransaction(t *testing.T) {
 				assert.Equal(t, int64(99), i.JournalRefID)
 				assert.Equal(t, location.ID, i.Location.ID)
 				assert.Equal(t, location.Name, i.Location.Name)
-				assert.Equal(t, c.ID, i.MyCharacterID)
+				assert.Equal(t, c.ID, i.CharacterID)
 				assert.Equal(t, int32(7), i.Quantity)
 				assert.Equal(t, 123.45, i.UnitPrice)
 			}

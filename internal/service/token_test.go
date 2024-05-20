@@ -16,7 +16,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		factory.CreateToken(model.Token{CharacterID: c.ID, Scopes: esiScopes})
+		factory.CreateToken(model.CharacterToken{CharacterID: c.ID, Scopes: esiScopes})
 		// when
 		x, err := s.HasTokenWithScopes(c.ID)
 		// then

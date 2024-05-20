@@ -14,7 +14,7 @@ func (s *Service) GetTotalTrainingTime(characterID int32) (types.NullDuration, e
 	return s.r.GetTotalTrainingTime(ctx, characterID)
 }
 
-func (s *Service) ListSkillqueueItems(characterID int32) ([]*model.SkillqueueItem, error) {
+func (s *Service) ListSkillqueueItems(characterID int32) ([]*model.CharacterSkillqueueItem, error) {
 	ctx := context.Background()
 	return s.r.ListSkillqueueItems(ctx, characterID)
 }

@@ -59,7 +59,7 @@ func (r *Storage) CreateWalletJournalEntry(ctx context.Context, arg CreateWallet
 	return err
 }
 
-func (r *Storage) GetWalletJournalEntry(ctx context.Context, characterID int32, entryID int64) (*model.WalletJournalEntry, error) {
+func (r *Storage) GetWalletJournalEntry(ctx context.Context, characterID int32, entryID int64) (*model.CharacterWalletJournalEntry, error) {
 	arg := queries.GetWalletJournalEntryParams{
 		MyCharacterID: int64(characterID),
 		ID:            entryID,
@@ -75,20 +75,20 @@ func (r *Storage) ListWalletJournalEntryIDs(ctx context.Context, characterID int
 	return r.q.ListWalletJournalEntryIDs(ctx, int64(characterID))
 }
 
-func (r *Storage) ListWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.WalletJournalEntry, error) {
+func (r *Storage) ListWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
 	rows, err := r.q.ListWalletJournalEntries(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}
-	ee := make([]*model.WalletJournalEntry, len(rows))
+	ee := make([]*model.CharacterWalletJournalEntry, len(rows))
 	for i, row := range rows {
 		ee[i] = walletJournalEntryFromDBModel(row.WalletJournalEntry, row.WalletJournalEntryFirstParty, row.WalletJournalEntrySecondParty, row.WalletJournalEntryTaxReceiver)
 	}
 	return ee, nil
 }
 
-func walletJournalEntryFromDBModel(e queries.WalletJournalEntry, firstParty queries.WalletJournalEntryFirstParty, secondParty queries.WalletJournalEntrySecondParty, taxReceiver queries.WalletJournalEntryTaxReceiver) *model.WalletJournalEntry {
-	e2 := &model.WalletJournalEntry{
+func walletJournalEntryFromDBModel(e queries.WalletJournalEntry, firstParty queries.WalletJournalEntryFirstParty, secondParty queries.WalletJournalEntrySecondParty, taxReceiver queries.WalletJournalEntryTaxReceiver) *model.CharacterWalletJournalEntry {
+	e2 := &model.CharacterWalletJournalEntry{
 		Amount:        e.Amount,
 		Balance:       e.Balance,
 		ContextID:     e.ContextID,
@@ -97,7 +97,7 @@ func walletJournalEntryFromDBModel(e queries.WalletJournalEntry, firstParty quer
 		Description:   e.Description,
 		FirstParty:    eveEntityFromNullableDBModel(nullEveEntry(firstParty)),
 		ID:            e.ID,
-		MyCharacterID: int32(e.MyCharacterID),
+		CharacterID:   int32(e.MyCharacterID),
 		Reason:        e.Reason,
 		RefType:       e.RefType,
 		SecondParty:   eveEntityFromNullableDBModel(nullEveEntry(secondParty)),

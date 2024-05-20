@@ -19,19 +19,19 @@ func (s *Service) DeleteMyCharacter(characterID int32) error {
 	return s.r.DeleteMyCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetMyCharacter(characterID int32) (*model.MyCharacter, error) {
+func (s *Service) GetMyCharacter(characterID int32) (*model.Character, error) {
 	return s.r.GetMyCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetAnyMyCharacter() (*model.MyCharacter, error) {
+func (s *Service) GetAnyMyCharacter() (*model.Character, error) {
 	return s.r.GetFirstMyCharacter(context.Background())
 }
 
-func (s *Service) ListMyCharacters() ([]*model.MyCharacter, error) {
+func (s *Service) ListMyCharacters() ([]*model.Character, error) {
 	return s.r.ListMyCharacters(context.Background())
 }
 
-func (s *Service) ListMyCharactersShort() ([]*model.MyCharacterShort, error) {
+func (s *Service) ListMyCharactersShort() ([]*model.CharacterShort, error) {
 	return s.r.ListMyCharactersShort(context.Background())
 }
 
@@ -47,7 +47,7 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 	slog.Info("Created new SSO token", "characterID", ssoToken.CharacterID, "scopes", ssoToken.Scopes)
 	infoText.Set("Fetching character from server. Please wait...")
 	charID := ssoToken.CharacterID
-	token := model.Token{
+	token := model.CharacterToken{
 		AccessToken:  ssoToken.AccessToken,
 		CharacterID:  charID,
 		ExpiresAt:    ssoToken.ExpiresAt,
@@ -60,9 +60,9 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 	if err != nil {
 		return 0, err
 	}
-	myCharacter := &model.MyCharacter{
-		ID:        token.CharacterID,
-		Character: character,
+	myCharacter := &model.Character{
+		ID:           token.CharacterID,
+		EveCharacter: character,
 	}
 	arg := storage.UpdateOrCreateMyCharacterParams{
 		ID:            myCharacter.ID,

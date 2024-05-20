@@ -10,7 +10,7 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *Service) ListWalletTransactions(characterID int32) ([]*model.WalletTransaction, error) {
+func (s *Service) ListWalletTransactions(characterID int32) ([]*model.CharacterWalletTransaction, error) {
 	ctx := context.Background()
 	return s.r.ListWalletTransactions(ctx, characterID)
 }

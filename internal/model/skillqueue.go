@@ -7,13 +7,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
 )
 
-type SkillqueueItem struct {
+type CharacterSkillqueueItem struct {
 	GroupName        string
 	FinishDate       time.Time
 	FinishedLevel    int
 	LevelEndSP       int
 	LevelStartSP     int
-	MyCharacterID    int32
+	CharacterID      int32
 	QueuePosition    int
 	StartDate        time.Time
 	SkillName        string
@@ -22,20 +22,20 @@ type SkillqueueItem struct {
 }
 
 // Name returns the name of a skillqueue item.
-func (q *SkillqueueItem) Name() string {
+func (q *CharacterSkillqueueItem) Name() string {
 	return fmt.Sprintf("%s %s", q.SkillName, romanLetter(q.FinishedLevel))
 }
 
-func (q *SkillqueueItem) IsActive() bool {
+func (q *CharacterSkillqueueItem) IsActive() bool {
 	now := time.Now()
 	return !q.StartDate.IsZero() && q.StartDate.Before(now) && q.FinishDate.After(now)
 }
 
-func (q *SkillqueueItem) IsCompleted() bool {
+func (q *CharacterSkillqueueItem) IsCompleted() bool {
 	return q.CompletionP() == 1
 }
 
-func (q *SkillqueueItem) CompletionP() float64 {
+func (q *CharacterSkillqueueItem) CompletionP() float64 {
 	d := q.Duration()
 	if !d.Valid {
 		return 0
@@ -57,7 +57,7 @@ func (q *SkillqueueItem) CompletionP() float64 {
 	return 1 - (c * base)
 }
 
-func (q *SkillqueueItem) Duration() types.NullDuration {
+func (q *CharacterSkillqueueItem) Duration() types.NullDuration {
 	var d types.NullDuration
 	if q.StartDate.IsZero() || q.FinishDate.IsZero() {
 		return d
@@ -67,7 +67,7 @@ func (q *SkillqueueItem) Duration() types.NullDuration {
 	return d
 }
 
-func (q *SkillqueueItem) Remaining() types.NullDuration {
+func (q *CharacterSkillqueueItem) Remaining() types.NullDuration {
 	var d types.NullDuration
 	if q.StartDate.IsZero() || q.FinishDate.IsZero() {
 		return d

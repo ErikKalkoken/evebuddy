@@ -27,7 +27,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
-		factory.CreateToken(model.Token{CharacterID: c.ID})
+		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(model.EveEntity{ID: 54321})
 		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
@@ -80,7 +80,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateMyCharacter()
 		factory.CreateWalletTransaction(storage.CreateWalletTransactionParams{MyCharacterID: c.ID})
-		factory.CreateToken(model.Token{CharacterID: c.ID})
+		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(model.EveEntity{ID: 54321})
 		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
@@ -136,7 +136,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			MyCharacterID: c.ID,
 			TransactionID: 1234567890,
 		})
-		factory.CreateToken(model.Token{CharacterID: c.ID})
+		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		data := `[
 			{
 			  "client_id": 54321,

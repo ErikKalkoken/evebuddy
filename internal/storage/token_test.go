@@ -21,7 +21,7 @@ func TestToken(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		now := time.Now()
-		o1 := model.Token{
+		o1 := model.CharacterToken{
 			AccessToken:  "access",
 			CharacterID:  c.ID,
 			ExpiresAt:    now,
@@ -66,7 +66,7 @@ func TestToken(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
-		o1 := factory.CreateToken(model.Token{CharacterID: c.ID})
+		o1 := factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
 		o1.AccessToken = "changed"
 		o1.Scopes = []string{"alpha", "bravo"}
 		// when

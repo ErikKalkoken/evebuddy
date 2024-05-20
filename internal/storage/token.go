@@ -10,7 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (r *Storage) GetToken(ctx context.Context, characterID int32) (*model.Token, error) {
+func (r *Storage) GetToken(ctx context.Context, characterID int32) (*model.CharacterToken, error) {
 	t, err := r.q.GetToken(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -30,7 +30,7 @@ func (r *Storage) GetToken(ctx context.Context, characterID int32) (*model.Token
 	return t2, nil
 }
 
-func (r *Storage) UpdateOrCreateToken(ctx context.Context, t *model.Token) error {
+func (r *Storage) UpdateOrCreateToken(ctx context.Context, t *model.CharacterToken) error {
 	arg := queries.UpdateOrCreateTokenParams{
 		AccessToken:   t.AccessToken,
 		MyCharacterID: int64(t.CharacterID),
@@ -100,11 +100,11 @@ func (r *Storage) getOrCreateScope(ctx context.Context, name string) (queries.Sc
 	return s, nil
 }
 
-func tokenFromDBModel(t queries.Token, scopes []string) *model.Token {
+func tokenFromDBModel(t queries.Token, scopes []string) *model.CharacterToken {
 	if t.MyCharacterID == 0 {
 		panic("missing character ID")
 	}
-	return &model.Token{
+	return &model.CharacterToken{
 		AccessToken:  t.AccessToken,
 		CharacterID:  int32(t.MyCharacterID),
 		ExpiresAt:    t.ExpiresAt,
