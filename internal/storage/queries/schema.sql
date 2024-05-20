@@ -45,6 +45,15 @@ CREATE TABLE eve_types (
 );
 CREATE INDEX eve_types_name_idx ON eve_types (name ASC);
 
+CREATE TABLE eve_type_dogma_attributes (
+    id INTEGER PRIMARY KEY NOT NULL,
+    dogma_attribute_id INTEGER NOT NULL,
+    eve_type_id INTEGER NOT NULL,
+    value REAL NOT NULL,
+    FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
+    UNIQUE (dogma_attribute_id, eve_type_id)
+);
+
 CREATE TABLE eve_regions (
     id INTEGER PRIMARY KEY NOT NULL,
     description TEXT NOT NULL,

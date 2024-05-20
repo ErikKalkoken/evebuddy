@@ -41,6 +41,28 @@ func (q *Queries) CreateEveType(ctx context.Context, arg CreateEveTypeParams) er
 	return err
 }
 
+const createEveTypeDogmaAttribute = `-- name: CreateEveTypeDogmaAttribute :exec
+INSERT INTO eve_type_dogma_attributes (
+    dogma_attribute_id,
+    eve_type_id,
+    value
+)
+VALUES (
+    ?, ?, ?
+)
+`
+
+type CreateEveTypeDogmaAttributeParams struct {
+	DogmaAttributeID int64
+	EveTypeID        int64
+	Value            float64
+}
+
+func (q *Queries) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEveTypeDogmaAttributeParams) error {
+	_, err := q.db.ExecContext(ctx, createEveTypeDogmaAttribute, arg.DogmaAttributeID, arg.EveTypeID, arg.Value)
+	return err
+}
+
 const getEveType = `-- name: GetEveType :one
 SELECT eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published, eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published, eve_categories.id, eve_categories.name, eve_categories.is_published
 FROM eve_types
@@ -71,6 +93,30 @@ func (q *Queries) GetEveType(ctx context.Context, id int64) (GetEveTypeRow, erro
 		&i.EveCategory.ID,
 		&i.EveCategory.Name,
 		&i.EveCategory.IsPublished,
+	)
+	return i, err
+}
+
+const getEveTypeDogmaAttribute = `-- name: GetEveTypeDogmaAttribute :one
+SELECT id, dogma_attribute_id, eve_type_id, value
+FROM eve_type_dogma_attributes
+WHERE dogma_attribute_id = ?
+AND eve_type_id = ?
+`
+
+type GetEveTypeDogmaAttributeParams struct {
+	DogmaAttributeID int64
+	EveTypeID        int64
+}
+
+func (q *Queries) GetEveTypeDogmaAttribute(ctx context.Context, arg GetEveTypeDogmaAttributeParams) (EveTypeDogmaAttribute, error) {
+	row := q.db.QueryRowContext(ctx, getEveTypeDogmaAttribute, arg.DogmaAttributeID, arg.EveTypeID)
+	var i EveTypeDogmaAttribute
+	err := row.Scan(
+		&i.ID,
+		&i.DogmaAttributeID,
+		&i.EveTypeID,
+		&i.Value,
 	)
 	return i, err
 }

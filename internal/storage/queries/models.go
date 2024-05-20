@@ -244,6 +244,13 @@ type EveType struct {
 	IsPublished bool
 }
 
+type EveTypeDogmaAttribute struct {
+	ID               int64
+	DogmaAttributeID int64
+	EveTypeID        int64
+	Value            float64
+}
+
 type Location struct {
 	ID               int64
 	EveSolarSystemID sql.NullInt64
