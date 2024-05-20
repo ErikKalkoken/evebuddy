@@ -188,6 +188,7 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 			Width:  0.8 * a.ui.window.Canvas().Size().Width,
 			Height: 0.8 * a.ui.window.Canvas().Size().Height,
 		})
+		a.skillsGrid.UnselectAll()
 	}
 
 	s := container.NewVSplit(a.groupsGrid, a.skillsGrid)

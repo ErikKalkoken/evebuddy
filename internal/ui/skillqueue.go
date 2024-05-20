@@ -138,6 +138,7 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 			Width:  0.8 * a.ui.window.Canvas().Size().Width,
 			Height: 0.8 * a.ui.window.Canvas().Size().Height,
 		})
+		list.UnselectAll()
 	}
 
 	top := container.NewVBox(a.total, widget.NewSeparator())
