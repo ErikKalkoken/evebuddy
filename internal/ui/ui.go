@@ -35,10 +35,8 @@ const (
 type ui struct {
 	app                   fyne.App
 	currentCharacter      *model.Character
-	folderArea            *folderArea
-	headerArea            *headerArea
 	imageManager          *images.Manager
-	mailArea              *mailDetailArea
+	mailArea              *mailArea
 	mailTab               *container.TabItem
 	overviewArea          *overviewArea
 	statusArea            *statusArea
@@ -60,15 +58,9 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	u := &ui{app: app, window: w, service: service, imageManager: images.New(imageCachePath)}
 
 	u.mailArea = u.NewMailArea()
-	u.headerArea = u.NewHeaderArea()
-	u.folderArea = u.NewFolderArea()
-	split1 := container.NewHSplit(u.headerArea.content, u.mailArea.content)
-	split1.SetOffset(0.35)
-	split2 := container.NewHSplit(u.folderArea.content, split1)
-	split2.SetOffset(0.15)
 	u.mailTab = container.NewTabItemWithIcon("Mail",
 		theme.MailComposeIcon(), container.NewAppTabs(
-			container.NewTabItem("Mail", split2),
+			container.NewTabItem("Mail", u.mailArea.content),
 			// container.NewTabItem("Notifications", widget.NewLabel("PLACEHOLDER")),
 		))
 
@@ -182,7 +174,7 @@ func (u *ui) ShowAndRun() {
 		}
 		u.statusArea.StartUpdateTicker()
 		u.overviewArea.StartUpdateTicker()
-		u.folderArea.StartUpdateTicker()
+		u.mailArea.StartUpdateTicker()
 		u.skillqueueArea.StartUpdateTicker()
 		u.walletJournalArea.StartUpdateTicker()
 		u.walletTransactionArea.StartUpdateTicker()
@@ -224,7 +216,7 @@ func (u *ui) setCurrentCharacter(c *model.Character) {
 
 func (u *ui) refreshCurrentCharacter() {
 	u.toolbarArea.Refresh()
-	u.folderArea.Refresh()
+	u.mailArea.Redraw()
 	u.skillqueueArea.Refresh()
 	u.skillCatalogueArea.Redraw()
 	u.walletJournalArea.Refresh()
@@ -234,7 +226,7 @@ func (u *ui) refreshCurrentCharacter() {
 		u.tabs.EnableIndex(0)
 		u.tabs.EnableIndex(1)
 		u.tabs.EnableIndex(2)
-		go u.folderArea.MaybeUpdateAndRefresh(c.ID)
+		go u.mailArea.MaybeUpdateAndRefresh(c.ID)
 		go u.overviewArea.MaybeUpdateAndRefresh(c.ID)
 		go u.skillqueueArea.MaybeUpdateAndRefresh(c.ID)
 		go u.walletJournalArea.MaybeUpdateAndRefresh(c.ID)

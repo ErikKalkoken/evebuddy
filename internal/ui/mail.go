@@ -24,6 +24,78 @@ import (
 
 const folderUpdateTicker = 10 * time.Second
 
+type mailArea struct {
+	content fyne.CanvasObject
+	folder  *folderArea
+	header  *headerArea
+	detail  *mailDetailArea
+	ui      *ui
+}
+
+func (u *ui) NewMailArea() *mailArea {
+	a := &mailArea{
+		ui: u,
+	}
+	a.folder = NewFolderArea(a)
+	a.header = NewHeaderArea(a)
+	a.detail = NewDetailMailArea(a)
+
+	split1 := container.NewHSplit(a.header.content, a.detail.content)
+	split1.SetOffset(0.35)
+	split2 := container.NewHSplit(a.folder.content, split1)
+	split2.SetOffset(0.15)
+	a.content = split2
+	return a
+}
+
+func (a *mailArea) Redraw() {
+	a.folder.Redraw()
+}
+
+func (a *mailArea) Refresh() {
+	a.folder.Refresh()
+}
+
+func (a *mailArea) StartUpdateTicker() {
+	ticker := time.NewTicker(folderUpdateTicker)
+	go func() {
+		for {
+			func() {
+				cc, err := a.ui.service.ListCharactersShort()
+				if err != nil {
+					slog.Error("Failed to fetch list of characters", "err", err)
+					return
+				}
+				for _, c := range cc {
+					a.MaybeUpdateAndRefresh(c.ID)
+				}
+			}()
+			<-ticker.C
+		}
+	}()
+}
+
+func (a *mailArea) MaybeUpdateAndRefresh(characterID int32) {
+	changed1, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionMailLabels)
+	if err != nil {
+		slog.Error("Failed to update mail labels", "character", characterID, "err", err)
+		return
+	}
+	changed2, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionMailLists)
+	if err != nil {
+		slog.Error("Failed to update mail lists", "character", characterID, "err", err)
+		return
+	}
+	changed3, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionMails)
+	if err != nil {
+		slog.Error("Failed to update mail", "character", characterID, "err", err)
+		return
+	}
+	if (changed1 || changed2 || changed3) && characterID == a.ui.CurrentCharID() {
+		a.Refresh()
+	}
+}
+
 // folderArea is the UI area showing the mail folders.
 type folderArea struct {
 	content       fyne.CanvasObject
@@ -32,18 +104,18 @@ type folderArea struct {
 	lastFolderAll node
 	tree          *widget.Tree
 	treeData      binding.StringTree
-	ui            *ui
+	mailArea      *mailArea
 }
 
-func (u *ui) NewFolderArea() *folderArea {
+func NewFolderArea(m *mailArea) *folderArea {
 	a := &folderArea{
 		treeData: binding.NewStringTree(),
-		ui:       u,
+		mailArea: m,
 	}
 
 	a.tree = a.makeFolderTree()
 	a.newButton = widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
-		a.ui.ShowSendMessageWindow(CreateMessageNew, nil)
+		a.mailArea.ui.ShowSendMessageWindow(CreateMessageNew, nil)
 	})
 	a.newButton.Importance = widget.HighImportance
 	top := container.NewHBox(layout.NewSpacer(), a.newButton, layout.NewSpacer())
@@ -98,13 +170,18 @@ func (a *folderArea) makeFolderTree() *widget.Tree {
 			return
 		}
 		a.lastUID = uid
-		a.ui.headerArea.SetFolder(item)
+		a.mailArea.header.SetFolder(item)
 	}
 	return tree
 }
 
+func (a *folderArea) Redraw() {
+	a.lastUID = ""
+	a.Refresh()
+}
+
 func (a *folderArea) Refresh() {
-	characterID := a.ui.CurrentCharID()
+	characterID := a.mailArea.ui.CurrentCharID()
 	ids, values, folderAll, err := a.buildFolderTree(characterID)
 	if err != nil {
 		slog.Error("Failed to build folder tree", "character", characterID, "error", err)
@@ -113,25 +190,25 @@ func (a *folderArea) Refresh() {
 	if a.lastUID == "" {
 		a.tree.Select(nodeAllID)
 		a.tree.ScrollToTop()
-		a.ui.headerArea.SetFolder(folderAll)
+		a.mailArea.header.SetFolder(folderAll)
 	} else {
-		a.ui.headerArea.Refresh()
+		a.mailArea.header.Refresh()
 	}
 	a.lastFolderAll = folderAll
 	s := "Mail"
 	if folderAll.UnreadCount > 0 {
 		s += fmt.Sprintf(" (%s)", humanize.Comma(int64(folderAll.UnreadCount)))
 	}
-	a.ui.mailTab.Text = s
-	a.ui.tabs.Refresh()
+	a.mailArea.ui.mailTab.Text = s
+	a.mailArea.ui.tabs.Refresh()
 }
 
 func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
-	labelUnreadCounts, err := a.ui.service.GetCharacterMailLabelUnreadCounts(characterID)
+	labelUnreadCounts, err := a.mailArea.ui.service.GetCharacterMailLabelUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
-	listUnreadCounts, err := a.ui.service.GetCharacterMailListUnreadCounts(characterID)
+	listUnreadCounts, err := a.mailArea.ui.service.GetCharacterMailListUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -149,7 +226,7 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		UnreadCount: totalUnreadCount,
 	}
 	folders[nodeAllID] = folderAll.toJSON()
-	labels, err := a.ui.service.ListCharacterMailLabelsOrdered(characterID)
+	labels, err := a.mailArea.ui.service.ListCharacterMailLabelsOrdered(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -173,7 +250,7 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 			folders[uid] = n.toJSON()
 		}
 	}
-	lists, err := a.ui.service.ListCharacterMailLists(characterID)
+	lists, err := a.mailArea.ui.service.ListCharacterMailLists(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -244,46 +321,6 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 	return total, labels, lists
 }
 
-func (a *folderArea) StartUpdateTicker() {
-	ticker := time.NewTicker(folderUpdateTicker)
-	go func() {
-		for {
-			func() {
-				cc, err := a.ui.service.ListCharactersShort()
-				if err != nil {
-					slog.Error("Failed to fetch list of characters", "err", err)
-					return
-				}
-				for _, c := range cc {
-					a.MaybeUpdateAndRefresh(c.ID)
-				}
-			}()
-			<-ticker.C
-		}
-	}()
-}
-
-func (a *folderArea) MaybeUpdateAndRefresh(characterID int32) {
-	changed1, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionMailLabels)
-	if err != nil {
-		slog.Error("Failed to update mail labels", "character", characterID, "err", err)
-		return
-	}
-	changed2, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionMailLists)
-	if err != nil {
-		slog.Error("Failed to update mail lists", "character", characterID, "err", err)
-		return
-	}
-	changed3, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionMails)
-	if err != nil {
-		slog.Error("Failed to update mail", "character", characterID, "err", err)
-		return
-	}
-	if (changed1 || changed2 || changed3) && characterID == a.ui.CurrentCharID() {
-		a.Refresh()
-	}
-}
-
 // headerArea is the UI area showing the list of mail headers.
 type headerArea struct {
 	content       fyne.CanvasObject
@@ -292,14 +329,14 @@ type headerArea struct {
 	list          *widget.List
 	lastSelected  widget.ListItemID
 	mailIDs       binding.IntList
-	ui            *ui
+	mailArea      *mailArea
 }
 
-func (u *ui) NewHeaderArea() *headerArea {
+func NewHeaderArea(m *mailArea) *headerArea {
 	a := headerArea{
 		infoText: widget.NewLabel(""),
 		mailIDs:  binding.NewIntList(),
-		ui:       u,
+		mailArea: m,
 	}
 
 	a.list = a.makeHeaderTree()
@@ -324,7 +361,7 @@ func (a *headerArea) makeHeaderTree() *widget.List {
 			)))
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
-			characterID := a.ui.CurrentCharID()
+			characterID := a.mailArea.ui.CurrentCharID()
 			if characterID == 0 {
 				return
 			}
@@ -332,7 +369,7 @@ func (a *headerArea) makeHeaderTree() *widget.List {
 			if err != nil {
 				panic(err)
 			}
-			m, err := a.ui.service.GetCharacterMail(characterID, int32(mailID))
+			m, err := a.mailArea.ui.service.GetCharacterMail(characterID, int32(mailID))
 			if err != nil {
 				if !errors.Is(err, storage.ErrNotFound) {
 					slog.Error("Failed to get mail", "error", err)
@@ -376,7 +413,7 @@ func (a *headerArea) makeHeaderTree() *widget.List {
 		if err != nil {
 			panic(err)
 		}
-		a.ui.mailArea.SetMail(int32(mailID), id)
+		a.mailArea.detail.SetMail(int32(mailID), id)
 		a.lastSelected = id
 	}
 	return list
@@ -387,7 +424,7 @@ func (a *headerArea) SetFolder(folder node) {
 	a.Refresh()
 	a.list.ScrollToTop()
 	a.list.UnselectAll()
-	a.ui.mailArea.Clear()
+	a.mailArea.detail.Clear()
 }
 
 func (a *headerArea) Refresh() {
@@ -404,9 +441,9 @@ func (a *headerArea) updateMails() {
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mailIDs, err = a.ui.service.ListCharacterMailIDsForLabelOrdered(folder.CharacterID, folder.ObjID)
+		mailIDs, err = a.mailArea.ui.service.ListCharacterMailIDsForLabelOrdered(folder.CharacterID, folder.ObjID)
 	case nodeCategoryList:
-		mailIDs, err = a.ui.service.ListCharacterMailIDsForListOrdered(folder.CharacterID, folder.ObjID)
+		mailIDs, err = a.mailArea.ui.service.ListCharacterMailIDsForListOrdered(folder.CharacterID, folder.ObjID)
 	}
 	x := islices.ConvertNumeric[int32, int](mailIDs)
 	if err := a.mailIDs.Set(x); err != nil {
@@ -425,13 +462,13 @@ func (a *headerArea) updateMails() {
 	a.infoText.Refresh()
 
 	if len(mailIDs) == 0 {
-		a.ui.mailArea.Clear()
+		a.mailArea.detail.Clear()
 		return
 	}
 }
 
 func (a *headerArea) makeTopText() (string, widget.Importance) {
-	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.CurrentCharID(), model.CharacterSectionSkillqueue)
+	hasData, err := a.mailArea.ui.service.CharacterSectionWasUpdated(a.mailArea.ui.CurrentCharID(), model.CharacterSectionSkillqueue)
 	if err != nil {
 		return "ERROR", widget.DangerImportance
 	}
@@ -445,21 +482,21 @@ func (a *headerArea) makeTopText() (string, widget.Importance) {
 
 // mailDetailArea is the UI area showing the current mail.
 type mailDetailArea struct {
-	body    *widget.RichText
-	content fyne.CanvasObject
-	header  *widget.Label
-	mail    *model.CharacterMail
-	subject *widget.Label
-	toolbar *widget.Toolbar
-	ui      *ui
+	body     *widget.RichText
+	content  fyne.CanvasObject
+	header   *widget.Label
+	mail     *model.CharacterMail
+	subject  *widget.Label
+	toolbar  *widget.Toolbar
+	mailArea *mailArea
 }
 
-func (u *ui) NewMailArea() *mailDetailArea {
+func NewDetailMailArea(m *mailArea) *mailDetailArea {
 	a := mailDetailArea{
-		body:    widget.NewRichText(),
-		header:  widget.NewLabel(""),
-		subject: widget.NewLabel(""),
-		ui:      u,
+		body:     widget.NewRichText(),
+		header:   widget.NewLabel(""),
+		subject:  widget.NewLabel(""),
+		mailArea: m,
 	}
 
 	a.toolbar = a.makeToolbar()
@@ -479,28 +516,28 @@ func (u *ui) NewMailArea() *mailDetailArea {
 func (a *mailDetailArea) makeToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.MailReplyIcon(), func() {
-			a.ui.ShowSendMessageWindow(CreateMessageReply, a.mail)
+			a.mailArea.ui.ShowSendMessageWindow(CreateMessageReply, a.mail)
 		}),
 		widget.NewToolbarAction(theme.MailReplyAllIcon(), func() {
-			a.ui.ShowSendMessageWindow(CreateMessageReplyAll, a.mail)
+			a.mailArea.ui.ShowSendMessageWindow(CreateMessageReplyAll, a.mail)
 		}),
 		widget.NewToolbarAction(theme.MailForwardIcon(), func() {
-			a.ui.ShowSendMessageWindow(CreateMessageForward, a.mail)
+			a.mailArea.ui.ShowSendMessageWindow(CreateMessageForward, a.mail)
 		}),
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.DeleteIcon(), func() {
 			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Subject)
 			d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
 				if confirmed {
-					err := a.ui.service.DeleteCharacterMail(a.mail.CharacterID, a.mail.MailID)
+					err := a.mailArea.ui.service.DeleteCharacterMail(a.mail.CharacterID, a.mail.MailID)
 					if err != nil {
-						errorDialog := dialog.NewError(err, a.ui.window)
+						errorDialog := dialog.NewError(err, a.mailArea.ui.window)
 						errorDialog.Show()
 					} else {
-						a.ui.headerArea.Refresh()
+						a.mailArea.header.Refresh()
 					}
 				}
-			}, a.ui.window)
+			}, a.mailArea.ui.window)
 			d.Show()
 		}),
 	)
@@ -513,9 +550,9 @@ func (a *mailDetailArea) Clear() {
 }
 
 func (a *mailDetailArea) SetMail(mailID int32, listItemID widget.ListItemID) {
-	characterID := a.ui.CurrentCharID()
+	characterID := a.mailArea.ui.CurrentCharID()
 	var err error
-	a.mail, err = a.ui.service.GetCharacterMail(characterID, mailID)
+	a.mail, err = a.mailArea.ui.service.GetCharacterMail(characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		return
@@ -523,11 +560,11 @@ func (a *mailDetailArea) SetMail(mailID int32, listItemID widget.ListItemID) {
 	if !a.mail.IsRead {
 		go func() {
 			err := func() error {
-				err = a.ui.service.UpdateMailRead(characterID, a.mail.MailID)
+				err = a.mailArea.ui.service.UpdateMailRead(characterID, a.mail.MailID)
 				if err != nil {
 					return err
 				}
-				a.ui.folderArea.Refresh()
+				a.mailArea.folder.Refresh()
 				return nil
 			}()
 			if err != nil {
