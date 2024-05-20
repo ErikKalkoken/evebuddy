@@ -44,9 +44,7 @@ func (u *ui) NewImplantsArea() *implantsArea {
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			row := co.(*fyne.Container)
-			// icon := row.Objects[0].(*widget.Label)
 			name := row.Objects[1].(*widget.Label)
-
 			q, err := convertDataItem[*model.CharacterImplant](di)
 			if err != nil {
 				slog.Error("failed to render row in implants table", "err", err)
@@ -56,6 +54,10 @@ func (u *ui) NewImplantsArea() *implantsArea {
 				return
 			}
 			name.SetText(q.EveType.Name)
+
+			icon := row.Objects[0].(*widget.Icon)
+			r := u.imageManager.InventoryTypeIcon(q.EveType.ID, defaultIconSize)
+			icon.SetResource(r)
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {

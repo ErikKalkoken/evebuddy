@@ -87,3 +87,33 @@ func TestFactionLogoURL(t *testing.T) {
 		})
 	}
 }
+
+func TestInventoryTypeRenderURL(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("inventory type render ID:%d size:%d", tc.id, tc.size), func(t *testing.T) {
+			got, err := images.InventoryTypeRenderURL(tc.id, tc.size)
+			if tc.valid && assert.NoError(t, err) {
+				s := fmt.Sprintf("https://images.evetech.net/types/%d/render?size=%d", tc.id, tc.size)
+				want, _ := storage.ParseURI(s)
+				assert.Equal(t, want, got)
+			} else {
+				assert.Error(t, err)
+			}
+		})
+	}
+}
+
+func TestInventoryTypeIconURL(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("inventory type render ID:%d size:%d", tc.id, tc.size), func(t *testing.T) {
+			got, err := images.InventoryTypeIconURL(tc.id, tc.size)
+			if tc.valid && assert.NoError(t, err) {
+				s := fmt.Sprintf("https://images.evetech.net/types/%d/icon?size=%d", tc.id, tc.size)
+				want, _ := storage.ParseURI(s)
+				assert.Equal(t, want, got)
+			} else {
+				assert.Error(t, err)
+			}
+		})
+	}
+}

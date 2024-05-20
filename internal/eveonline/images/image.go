@@ -64,6 +64,14 @@ func (m *Manager) InventoryTypeRender(id int32, size int) fyne.Resource {
 	return m.image(uri)
 }
 
+func (m *Manager) InventoryTypeIcon(id int32, size int) fyne.Resource {
+	uri, err := InventoryTypeIconURL(id, size)
+	if err != nil {
+		panic(err)
+	}
+	return m.image(uri)
+}
+
 func (m *Manager) image(uri fyne.URI) fyne.Resource {
 	h := GetMD5Hash(uri.String())
 	name := filepath.Join(m.path, h+".tmp")
