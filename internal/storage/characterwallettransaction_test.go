@@ -18,7 +18,7 @@ func TestWalletTransaction(t *testing.T) {
 	t.Run("can create new minimal", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
+		c := factory.CreateCharacter()
 		date := time.Now()
 		client := factory.CreateEveEntityCharacter()
 		eveType := factory.CreateEveType()
@@ -60,10 +60,10 @@ func TestWalletTransaction(t *testing.T) {
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
-		e1 := factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		e2 := factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		e3 := factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		c := factory.CreateCharacter()
+		e1 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		e2 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		e3 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		// when
 		ids, err := r.ListCharacterWalletTransactionIDs(ctx, c.ID)
 		// then
@@ -76,10 +76,10 @@ func TestWalletTransaction(t *testing.T) {
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
-		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		// when
 		ee, err := r.ListCharacterWalletTransactions(ctx, c.ID)
 		// then

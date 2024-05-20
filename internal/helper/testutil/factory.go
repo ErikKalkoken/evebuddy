@@ -23,8 +23,8 @@ func NewFactory(r *storage.Storage, db *sql.DB) Factory {
 	return f
 }
 
-// CreateMyCharacter is a test factory for Character objects.
-func (f Factory) CreateMyCharacter(args ...storage.UpdateOrCreateCharacterParams) *model.Character {
+// CreateCharacter is a test factory for Character objects.
+func (f Factory) CreateCharacter(args ...storage.UpdateOrCreateCharacterParams) *model.Character {
 	ctx := context.Background()
 	var arg storage.UpdateOrCreateCharacterParams
 	if len(args) > 0 {
@@ -66,35 +66,148 @@ func (f Factory) CreateMyCharacter(args ...storage.UpdateOrCreateCharacterParams
 	return c
 }
 
-// CreateMailLabel is a test factory for MailLabel objects
-func (f Factory) CreateMyCharacterUpdateStatus(args ...storage.CharacterUpdateStatusParams) *model.CharacterUpdateStatus {
+func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantParams) *model.CharacterImplant {
 	ctx := context.Background()
-	var arg storage.CharacterUpdateStatusParams
+	var arg storage.CreateCharacterImplantParams
 	if len(args) > 0 {
 		arg = args[0]
 	}
 	if arg.CharacterID == 0 {
-		c := f.CreateMyCharacter()
-		arg.CharacterID = c.ID
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
 	}
-	if arg.Section == "" {
-		panic("missing section")
+	if arg.EveTypeID == 0 {
+		x := f.CreateEveType()
+		arg.EveTypeID = x.ID
 	}
-	if arg.ContentHash == "" {
-		arg.ContentHash = fmt.Sprintf("content-hash-%d-%s-%s", arg.CharacterID, arg.Section, time.Now())
-	}
-	if arg.UpdatedAt.IsZero() {
-		arg.UpdatedAt = time.Now()
-	}
-	err := f.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
+	err := f.r.CreateCharacterImplant(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	o, err := f.r.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
+	o, err := f.r.GetCharacterImplant(ctx, arg.CharacterID, arg.EveTypeID)
 	if err != nil {
 		panic(err)
 	}
 	return o
+}
+
+// CreateCharacterMail is a test factory for Mail objects
+func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) *model.CharacterMail {
+	var arg storage.CreateCharacterMailParams
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		c := f.CreateCharacter()
+		arg.CharacterID = c.ID
+	}
+	if arg.FromID == 0 {
+		from := f.CreateEveEntityCharacter()
+		arg.FromID = from.ID
+	}
+	if arg.MailID == 0 {
+		ids, err := f.r.ListCharacterMailIDs(ctx, arg.CharacterID)
+		if err != nil {
+			panic(err)
+		}
+		if len(ids) > 0 {
+			arg.MailID = slices.Max(ids) + 1
+		} else {
+			arg.MailID = 1
+		}
+	}
+	if arg.Body == "" {
+		arg.Body = fmt.Sprintf("Generated body #%d", arg.MailID)
+	}
+	if arg.Subject == "" {
+		arg.Body = fmt.Sprintf("Generated subject #%d", arg.MailID)
+	}
+	if arg.Timestamp.IsZero() {
+		arg.Timestamp = time.Now()
+	}
+	if len(arg.RecipientIDs) == 0 {
+		e1 := f.CreateEveEntityCharacter()
+		arg.RecipientIDs = []int32{e1.ID}
+	}
+	_, err := f.r.CreateCharacterMail(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	mail, err := f.r.GetCharacterMail(ctx, arg.CharacterID, arg.MailID)
+	if err != nil {
+		panic(err)
+	}
+	return mail
+}
+
+// CreateCharacterMailLabel is a test factory for MailLabel objects
+func (f Factory) CreateCharacterMailLabel(args ...model.CharacterMailLabel) *model.CharacterMailLabel {
+	ctx := context.Background()
+	var arg storage.MailLabelParams
+	if len(args) > 0 {
+		l := args[0]
+		arg = storage.MailLabelParams{
+			CharacterID: l.CharacterID,
+			Color:       l.Color,
+			LabelID:     l.LabelID,
+			Name:        l.Name,
+			UnreadCount: l.UnreadCount,
+		}
+	}
+	if arg.CharacterID == 0 {
+		c := f.CreateCharacter()
+		arg.CharacterID = c.ID
+	}
+	if arg.LabelID == 0 {
+		ll, err := f.r.ListCharacterMailLabelsOrdered(ctx, arg.CharacterID)
+		if err != nil {
+			panic(err)
+		}
+		var ids []int32
+		for _, o := range ll {
+			ids = append(ids, o.LabelID)
+		}
+		if len(ids) > 0 {
+			arg.LabelID = slices.Max(ids) + 1
+		} else {
+			arg.LabelID = 100
+		}
+	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Generated name #%d", arg.LabelID)
+	}
+	if arg.Color == "" {
+		arg.Color = "#FFFFFF"
+	}
+	if arg.UnreadCount == 0 {
+		arg.UnreadCount = int(rand.IntN(1000))
+	}
+	label, err := f.r.UpdateOrCreateCharacterMailLabel(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	return label
+}
+
+// CreateCharacterMailList is a test factory for MailList objects.
+func (f Factory) CreateCharacterMailList(characterID int32, args ...model.EveEntity) *model.EveEntity {
+	var e model.EveEntity
+	ctx := context.Background()
+	if len(args) > 0 {
+		e = args[0]
+	}
+	if characterID == 0 {
+		c := f.CreateCharacter()
+		characterID = c.ID
+	}
+	if e.ID == 0 {
+		e = *f.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+	}
+	if err := f.r.CreateCharacterMailList(ctx, characterID, e.ID); err != nil {
+		panic(err)
+	}
+	return &e
 }
 
 func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSkillParams) *model.CharacterSkill {
@@ -104,7 +217,7 @@ func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSki
 		arg = args[0]
 	}
 	if arg.CharacterID == 0 {
-		x := f.CreateMyCharacter()
+		x := f.CreateCharacter()
 		arg.CharacterID = x.ID
 	}
 	if arg.EveTypeID == 0 {
@@ -129,6 +242,231 @@ func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSki
 		panic(err)
 	}
 	return o
+}
+
+// CreateCharacterSkillqueueItem is a test factory for SkillqueueItem objects
+func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemParams) *model.CharacterSkillqueueItem {
+	ctx := context.Background()
+	var arg storage.SkillqueueItemParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.EveTypeID == 0 {
+		x := f.CreateEveType()
+		arg.EveTypeID = x.ID
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.FinishedLevel == 0 {
+		arg.FinishedLevel = rand.IntN(5) + 1
+	}
+	if arg.LevelEndSP == 0 {
+		arg.LevelEndSP = rand.IntN(1_000_000)
+	}
+	if arg.QueuePosition == 0 {
+		var maxPos sql.NullInt64
+		q := "SELECT MAX(queue_position) FROM character_skillqueue_items WHERE character_id=?;"
+		if err := f.db.QueryRow(q, arg.CharacterID).Scan(&maxPos); err != nil {
+			panic(err)
+		}
+		if maxPos.Valid {
+			arg.QueuePosition = int(maxPos.Int64) + 1
+		} else {
+			arg.QueuePosition = int(maxPos.Int64) + 1
+		}
+	}
+	if arg.StartDate.IsZero() {
+		var v sql.NullString
+		q2 := "SELECT MAX(finish_date) FROM character_skillqueue_items WHERE character_id=?;"
+		if err := f.db.QueryRow(q2, arg.CharacterID).Scan(&v); err != nil {
+			panic(err)
+		}
+		if !v.Valid {
+			arg.StartDate = time.Now()
+		} else {
+			maxFinishDate, err := time.Parse("2006-01-02 15:04:05.999999999-07:00", v.String)
+			if err != nil {
+				panic(err)
+			}
+			arg.StartDate = maxFinishDate
+		}
+	}
+	if arg.FinishDate.IsZero() {
+		hours := rand.IntN(90)*24 + 3
+		arg.FinishDate = arg.StartDate.Add(time.Hour * time.Duration(hours))
+	}
+	err := f.r.CreateSkillqueueItem(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	i, err := f.r.GetSkillqueueItem(ctx, arg.CharacterID, arg.QueuePosition)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
+// CreateCharacterToken is a test factory for Token objects.
+func (f Factory) CreateCharacterToken(args ...model.CharacterToken) *model.CharacterToken {
+	var t model.CharacterToken
+	ctx := context.Background()
+	if len(args) > 0 {
+		t = args[0]
+	}
+	if t.AccessToken == "" {
+		t.AccessToken = fmt.Sprintf("GeneratedAccessToken#%d", rand.IntN(1000000))
+	}
+	if t.RefreshToken == "" {
+		t.RefreshToken = fmt.Sprintf("GeneratedRefreshToken#%d", rand.IntN(1000000))
+	}
+	if t.ExpiresAt.IsZero() {
+		t.ExpiresAt = time.Now().Add(time.Minute * 20)
+	}
+	if t.TokenType == "" {
+		t.TokenType = "Bearer"
+	}
+	if t.CharacterID == 0 {
+		c := f.CreateCharacter()
+		t.CharacterID = c.ID
+	}
+	err := f.r.UpdateOrCreateCharacterToken(ctx, &t)
+	if err != nil {
+		panic(err)
+	}
+	return &t
+}
+
+// CreateMailLabel is a test factory for MailLabel objects
+func (f Factory) CreateCharacterUpdateStatus(args ...storage.CharacterUpdateStatusParams) *model.CharacterUpdateStatus {
+	ctx := context.Background()
+	var arg storage.CharacterUpdateStatusParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		c := f.CreateCharacter()
+		arg.CharacterID = c.ID
+	}
+	if arg.Section == "" {
+		panic("missing section")
+	}
+	if arg.ContentHash == "" {
+		arg.ContentHash = fmt.Sprintf("content-hash-%d-%s-%s", arg.CharacterID, arg.Section, time.Now())
+	}
+	if arg.UpdatedAt.IsZero() {
+		arg.UpdatedAt = time.Now()
+	}
+	err := f.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.r.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharacterWalletJournalEntryParams) *model.CharacterWalletJournalEntry {
+	ctx := context.Background()
+	var arg storage.CreateCharacterWalletJournalEntryParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.RefID == 0 {
+		arg.RefID = int64(f.calcNewIDWithCharacter("character_wallet_journal_entries", "id", arg.CharacterID))
+	}
+	if arg.Amount == 0 {
+		arg.Amount = rand.Float64() * 10_000_000_000
+	}
+	if arg.Balance == 0 {
+		arg.Amount = rand.Float64() * 100_000_000_000
+	}
+	if arg.Date.IsZero() {
+		arg.Date = time.Now()
+	}
+	if arg.Description == "" {
+		arg.Description = fmt.Sprintf("Description #%d", arg.RefID)
+	}
+	if arg.Reason == "" {
+		arg.Reason = fmt.Sprintf("Reason #%d", arg.RefID)
+	}
+	if arg.RefType == "" {
+		arg.RefType = "player_donation"
+	}
+	if arg.Tax == 0 {
+		arg.Tax = rand.Float64()
+	}
+	if arg.FirstPartyID == 0 {
+		e := f.CreateEveCharacter()
+		arg.FirstPartyID = e.ID
+	}
+	if arg.SecondPartyID == 0 {
+		e := f.CreateEveCharacter()
+		arg.SecondPartyID = e.ID
+	}
+	if arg.TaxReceiverID == 0 {
+		e := f.CreateEveCharacter()
+		arg.TaxReceiverID = e.ID
+	}
+	err := f.r.CreateCharacterWalletJournalEntry(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	i, err := f.r.GetCharacterWalletJournalEntry(ctx, arg.CharacterID, arg.RefID)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
+func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacterWalletTransactionParams) *model.CharacterWalletTransaction {
+	ctx := context.Background()
+	var arg storage.CreateCharacterWalletTransactionParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ClientID == 0 {
+		x := f.CreateEveCharacter()
+		arg.ClientID = x.ID
+	}
+	if arg.Date.IsZero() {
+		arg.Date = time.Now()
+	}
+	if arg.EveTypeID == 0 {
+		x := f.CreateEveType()
+		arg.EveTypeID = x.ID
+	}
+	if arg.LocationID == 0 {
+		x := f.CreateLocationStructure()
+		arg.LocationID = x.ID
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.TransactionID == 0 {
+		arg.TransactionID = int64(f.calcNewIDWithCharacter("character_wallet_transactions", "transaction_id", arg.CharacterID))
+	}
+	if arg.UnitPrice == 0 {
+		arg.UnitPrice = rand.Float64() * 100_000_000
+	}
+
+	err := f.r.CreateCharacterWalletTransaction(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	x, err := f.r.GetCharacterWalletTransaction(ctx, arg.CharacterID, arg.TransactionID)
+	if err != nil {
+		panic(err)
+	}
+	return x
 }
 
 // CreateCharacter is a test factory for character objects.
@@ -226,126 +564,6 @@ func eveEntityWithCategory(args []model.EveEntity, category model.EveEntityCateg
 	args2 := []model.EveEntity{e}
 	return args2
 }
-
-// CreateMail is a test factory for Mail objects
-func (f Factory) CreateMail(args ...storage.CreateCharacterMailParams) *model.CharacterMail {
-	var arg storage.CreateCharacterMailParams
-	ctx := context.Background()
-	if len(args) > 0 {
-		arg = args[0]
-	}
-	if arg.CharacterID == 0 {
-		c := f.CreateMyCharacter()
-		arg.CharacterID = c.ID
-	}
-	if arg.FromID == 0 {
-		from := f.CreateEveEntityCharacter()
-		arg.FromID = from.ID
-	}
-	if arg.MailID == 0 {
-		ids, err := f.r.ListCharacterMailIDs(ctx, arg.CharacterID)
-		if err != nil {
-			panic(err)
-		}
-		if len(ids) > 0 {
-			arg.MailID = slices.Max(ids) + 1
-		} else {
-			arg.MailID = 1
-		}
-	}
-	if arg.Body == "" {
-		arg.Body = fmt.Sprintf("Generated body #%d", arg.MailID)
-	}
-	if arg.Subject == "" {
-		arg.Body = fmt.Sprintf("Generated subject #%d", arg.MailID)
-	}
-	if arg.Timestamp.IsZero() {
-		arg.Timestamp = time.Now()
-	}
-	if len(arg.RecipientIDs) == 0 {
-		e1 := f.CreateEveEntityCharacter()
-		arg.RecipientIDs = []int32{e1.ID}
-	}
-	_, err := f.r.CreateCharacterMail(ctx, arg)
-	if err != nil {
-		panic(err)
-	}
-	mail, err := f.r.GetCharacterMail(ctx, arg.CharacterID, arg.MailID)
-	if err != nil {
-		panic(err)
-	}
-	return mail
-}
-
-// CreateMailLabel is a test factory for MailLabel objects
-func (f Factory) CreateMailLabel(args ...model.CharacterMailLabel) *model.CharacterMailLabel {
-	ctx := context.Background()
-	var arg storage.MailLabelParams
-	if len(args) > 0 {
-		l := args[0]
-		arg = storage.MailLabelParams{
-			CharacterID: l.CharacterID,
-			Color:       l.Color,
-			LabelID:     l.LabelID,
-			Name:        l.Name,
-			UnreadCount: l.UnreadCount,
-		}
-	}
-	if arg.CharacterID == 0 {
-		c := f.CreateMyCharacter()
-		arg.CharacterID = c.ID
-	}
-	if arg.LabelID == 0 {
-		ll, err := f.r.ListCharacterMailLabelsOrdered(ctx, arg.CharacterID)
-		if err != nil {
-			panic(err)
-		}
-		var ids []int32
-		for _, o := range ll {
-			ids = append(ids, o.LabelID)
-		}
-		if len(ids) > 0 {
-			arg.LabelID = slices.Max(ids) + 1
-		} else {
-			arg.LabelID = 100
-		}
-	}
-	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Generated name #%d", arg.LabelID)
-	}
-	if arg.Color == "" {
-		arg.Color = "#FFFFFF"
-	}
-	if arg.UnreadCount == 0 {
-		arg.UnreadCount = int(rand.IntN(1000))
-	}
-	label, err := f.r.UpdateOrCreateCharacterMailLabel(ctx, arg)
-	if err != nil {
-		panic(err)
-	}
-	return label
-}
-
-// CreateMailList is a test factory for MailList objects.
-func (f Factory) CreateMailList(characterID int32, args ...model.EveEntity) *model.EveEntity {
-	var e model.EveEntity
-	ctx := context.Background()
-	if len(args) > 0 {
-		e = args[0]
-	}
-	if characterID == 0 {
-		c := f.CreateMyCharacter()
-		characterID = c.ID
-	}
-	if e.ID == 0 {
-		e = *f.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
-	}
-	if err := f.r.CreateCharacterMailList(ctx, characterID, e.ID); err != nil {
-		panic(err)
-	}
-	return &e
-}
-
 func (f Factory) CreateEveCategory(args ...storage.CreateEveCategoryParams) *model.EveCategory {
 	var arg storage.CreateEveCategoryParams
 	ctx := context.Background()
@@ -517,70 +735,6 @@ func (f Factory) CreateEveRace(args ...model.EveRace) *model.EveRace {
 	return r
 }
 
-// CreateSkillqueueItem is a test factory for SkillqueueItem objects
-func (f Factory) CreateSkillqueueItem(args ...storage.SkillqueueItemParams) *model.CharacterSkillqueueItem {
-	ctx := context.Background()
-	var arg storage.SkillqueueItemParams
-	if len(args) > 0 {
-		arg = args[0]
-	}
-	if arg.EveTypeID == 0 {
-		x := f.CreateEveType()
-		arg.EveTypeID = x.ID
-	}
-	if arg.CharacterID == 0 {
-		x := f.CreateMyCharacter()
-		arg.CharacterID = x.ID
-	}
-	if arg.FinishedLevel == 0 {
-		arg.FinishedLevel = rand.IntN(5) + 1
-	}
-	if arg.LevelEndSP == 0 {
-		arg.LevelEndSP = rand.IntN(1_000_000)
-	}
-	if arg.QueuePosition == 0 {
-		var maxPos sql.NullInt64
-		q := "SELECT MAX(queue_position) FROM character_skillqueue_items WHERE character_id=?;"
-		if err := f.db.QueryRow(q, arg.CharacterID).Scan(&maxPos); err != nil {
-			panic(err)
-		}
-		if maxPos.Valid {
-			arg.QueuePosition = int(maxPos.Int64) + 1
-		} else {
-			arg.QueuePosition = int(maxPos.Int64) + 1
-		}
-	}
-	if arg.StartDate.IsZero() {
-		var v sql.NullString
-		q2 := "SELECT MAX(finish_date) FROM character_skillqueue_items WHERE character_id=?;"
-		if err := f.db.QueryRow(q2, arg.CharacterID).Scan(&v); err != nil {
-			panic(err)
-		}
-		if !v.Valid {
-			arg.StartDate = time.Now()
-		} else {
-			maxFinishDate, err := time.Parse("2006-01-02 15:04:05.999999999-07:00", v.String)
-			if err != nil {
-				panic(err)
-			}
-			arg.StartDate = maxFinishDate
-		}
-	}
-	if arg.FinishDate.IsZero() {
-		hours := rand.IntN(90)*24 + 3
-		arg.FinishDate = arg.StartDate.Add(time.Hour * time.Duration(hours))
-	}
-	err := f.r.CreateSkillqueueItem(ctx, arg)
-	if err != nil {
-		panic(err)
-	}
-	i, err := f.r.GetSkillqueueItem(ctx, arg.CharacterID, arg.QueuePosition)
-	if err != nil {
-		panic(err)
-	}
-	return i
-}
-
 func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationParams) *model.Location {
 	var arg storage.UpdateOrCreateLocationParams
 	ctx := context.Background()
@@ -613,136 +767,6 @@ func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationP
 		panic(err)
 	}
 	x, err := f.r.GetLocation(ctx, arg.ID)
-	if err != nil {
-		panic(err)
-	}
-	return x
-}
-
-// CreateToken is a test factory for Token objects.
-func (f Factory) CreateToken(args ...model.CharacterToken) *model.CharacterToken {
-	var t model.CharacterToken
-	ctx := context.Background()
-	if len(args) > 0 {
-		t = args[0]
-	}
-	if t.AccessToken == "" {
-		t.AccessToken = fmt.Sprintf("GeneratedAccessToken#%d", rand.IntN(1000000))
-	}
-	if t.RefreshToken == "" {
-		t.RefreshToken = fmt.Sprintf("GeneratedRefreshToken#%d", rand.IntN(1000000))
-	}
-	if t.ExpiresAt.IsZero() {
-		t.ExpiresAt = time.Now().Add(time.Minute * 20)
-	}
-	if t.TokenType == "" {
-		t.TokenType = "Bearer"
-	}
-	if t.CharacterID == 0 {
-		c := f.CreateMyCharacter()
-		t.CharacterID = c.ID
-	}
-	err := f.r.UpdateOrCreateCharacterToken(ctx, &t)
-	if err != nil {
-		panic(err)
-	}
-	return &t
-}
-
-func (f Factory) CreateWalletJournalEntry(args ...storage.CreateCharacterWalletJournalEntryParams) *model.CharacterWalletJournalEntry {
-	ctx := context.Background()
-	var arg storage.CreateCharacterWalletJournalEntryParams
-	if len(args) > 0 {
-		arg = args[0]
-	}
-	if arg.CharacterID == 0 {
-		x := f.CreateMyCharacter()
-		arg.CharacterID = x.ID
-	}
-	if arg.RefID == 0 {
-		arg.RefID = int64(f.calcNewIDWithCharacter("character_wallet_journal_entries", "id", arg.CharacterID))
-	}
-	if arg.Amount == 0 {
-		arg.Amount = rand.Float64() * 10_000_000_000
-	}
-	if arg.Balance == 0 {
-		arg.Amount = rand.Float64() * 100_000_000_000
-	}
-	if arg.Date.IsZero() {
-		arg.Date = time.Now()
-	}
-	if arg.Description == "" {
-		arg.Description = fmt.Sprintf("Description #%d", arg.RefID)
-	}
-	if arg.Reason == "" {
-		arg.Reason = fmt.Sprintf("Reason #%d", arg.RefID)
-	}
-	if arg.RefType == "" {
-		arg.RefType = "player_donation"
-	}
-	if arg.Tax == 0 {
-		arg.Tax = rand.Float64()
-	}
-	if arg.FirstPartyID == 0 {
-		e := f.CreateEveCharacter()
-		arg.FirstPartyID = e.ID
-	}
-	if arg.SecondPartyID == 0 {
-		e := f.CreateEveCharacter()
-		arg.SecondPartyID = e.ID
-	}
-	if arg.TaxReceiverID == 0 {
-		e := f.CreateEveCharacter()
-		arg.TaxReceiverID = e.ID
-	}
-	err := f.r.CreateCharacterWalletJournalEntry(ctx, arg)
-	if err != nil {
-		panic(err)
-	}
-	i, err := f.r.GetCharacterWalletJournalEntry(ctx, arg.CharacterID, arg.RefID)
-	if err != nil {
-		panic(err)
-	}
-	return i
-}
-
-func (f Factory) CreateWalletTransaction(args ...storage.CreateCharacterWalletTransactionParams) *model.CharacterWalletTransaction {
-	ctx := context.Background()
-	var arg storage.CreateCharacterWalletTransactionParams
-	if len(args) > 0 {
-		arg = args[0]
-	}
-	if arg.ClientID == 0 {
-		x := f.CreateEveCharacter()
-		arg.ClientID = x.ID
-	}
-	if arg.Date.IsZero() {
-		arg.Date = time.Now()
-	}
-	if arg.EveTypeID == 0 {
-		x := f.CreateEveType()
-		arg.EveTypeID = x.ID
-	}
-	if arg.LocationID == 0 {
-		x := f.CreateLocationStructure()
-		arg.LocationID = x.ID
-	}
-	if arg.CharacterID == 0 {
-		x := f.CreateMyCharacter()
-		arg.CharacterID = x.ID
-	}
-	if arg.TransactionID == 0 {
-		arg.TransactionID = int64(f.calcNewIDWithCharacter("character_wallet_transactions", "transaction_id", arg.CharacterID))
-	}
-	if arg.UnitPrice == 0 {
-		arg.UnitPrice = rand.Float64() * 100_000_000
-	}
-
-	err := f.r.CreateCharacterWalletTransaction(ctx, arg)
-	if err != nil {
-		panic(err)
-	}
-	x, err := f.r.GetCharacterWalletTransaction(ctx, arg.CharacterID, arg.TransactionID)
 	if err != nil {
 		panic(err)
 	}

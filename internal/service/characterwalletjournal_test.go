@@ -26,8 +26,8 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateMyCharacter()
-		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		firstParty := factory.CreateEveEntityCharacter(model.EveEntity{ID: 2112625428})
 		secondParty := factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000132})
 		data := `[
@@ -76,9 +76,9 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateMyCharacter()
-		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(model.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000132})
 		data := `[
@@ -119,13 +119,13 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateMyCharacter()
-		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+		c := factory.CreateCharacter()
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
 			CharacterID: c.ID,
 			RefID:       89,
 			Description: "existing",
 		})
-		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(model.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000132})
 		data := `[
@@ -172,10 +172,10 @@ func TestListWalletJournalEntries(t *testing.T) {
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
-		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		// when
 		ee, err := s.ListCharacterWalletJournalEntries(c.ID)
 		// then

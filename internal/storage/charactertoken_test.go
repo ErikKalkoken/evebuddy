@@ -19,7 +19,7 @@ func TestToken(t *testing.T) {
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
+		c := factory.CreateCharacter()
 		now := time.Now()
 		o1 := model.CharacterToken{
 			AccessToken:  "access",
@@ -50,7 +50,7 @@ func TestToken(t *testing.T) {
 	t.Run("can fetch existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateToken()
+		c := factory.CreateCharacterToken()
 		// when
 		r, err := r.GetCharacterToken(ctx, c.CharacterID)
 		// then
@@ -65,8 +65,8 @@ func TestToken(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
-		o1 := factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
+		c := factory.CreateCharacter()
+		o1 := factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		o1.AccessToken = "changed"
 		o1.Scopes = []string{"alpha", "bravo"}
 		// when
@@ -86,7 +86,7 @@ func TestToken(t *testing.T) {
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
+		c := factory.CreateCharacter()
 		// when
 		_, err := r.GetCharacterToken(ctx, c.ID)
 		// then

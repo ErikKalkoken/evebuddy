@@ -26,8 +26,8 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateMyCharacter()
-		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(model.EveEntity{ID: 54321})
 		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
@@ -78,9 +78,9 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateMyCharacter()
-		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(model.EveEntity{ID: 54321})
 		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
@@ -131,12 +131,12 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateMyCharacter()
-		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{
+		c := factory.CreateCharacter()
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{
 			CharacterID:   c.ID,
 			TransactionID: 1234567890,
 		})
-		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		data := `[
 			{
 			  "client_id": 54321,
@@ -176,10 +176,10 @@ func TestListWalletTransactions(t *testing.T) {
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
-		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		factory.CreateWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		// when
 		tt, err := s.ListCharacterWalletTransactions(c.ID)
 		// then

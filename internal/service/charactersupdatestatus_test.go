@@ -23,7 +23,7 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 	t.Run("Can set updated for section", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
+		c := factory.CreateCharacter()
 		// when
 		err := s.CharacterSectionSetUpdated(c.ID, model.CharacterSectionSkillqueue)
 		// then
@@ -37,9 +37,9 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 	t.Run("Can retrieve updated at for section", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
+		c := factory.CreateCharacter()
 		updateAt := time.Now().Add(3 * time.Hour)
-		t1 := factory.CreateMyCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+		t1 := factory.CreateCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     model.CharacterSectionSkillqueue,
 			UpdatedAt:   updateAt,
@@ -54,9 +54,9 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 	t.Run("Can report when updated", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
+		c := factory.CreateCharacter()
 		updateAt := time.Now().Add(3 * time.Hour)
-		factory.CreateMyCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+		factory.CreateCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     model.CharacterSectionSkillqueue,
 			UpdatedAt:   updateAt,
@@ -71,7 +71,7 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 	t.Run("Can report when not yet updated", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
+		c := factory.CreateCharacter()
 		// when
 		x, err := s.CharacterSectionWasUpdated(c.ID, model.CharacterSectionSkillqueue)
 		// then
@@ -82,9 +82,9 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 	t.Run("Can report when section update is expired", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
+		c := factory.CreateCharacter()
 		updateAt := time.Now().Add(-3 * time.Hour)
-		factory.CreateMyCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+		factory.CreateCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     model.CharacterSectionSkillqueue,
 			UpdatedAt:   updateAt,

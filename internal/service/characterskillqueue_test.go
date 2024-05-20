@@ -25,8 +25,8 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		c := factory.CreateMyCharacter()
-		factory.CreateToken(model.CharacterToken{CharacterID: c.ID})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 101})
 		data := `[

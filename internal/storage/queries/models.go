@@ -20,6 +20,12 @@ type Character struct {
 	WalletBalance sql.NullFloat64
 }
 
+type CharacterImplant struct {
+	ID          int64
+	CharacterID int64
+	EveTypeID   int64
+}
+
 type CharacterMail struct {
 	ID          int64
 	Body        string

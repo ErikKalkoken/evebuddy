@@ -24,7 +24,7 @@ func TestMyCharacter(t *testing.T) {
 		a := factory.CreateEveEntityAlliance()
 		f := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityFaction})
 		eveC := factory.CreateEveCharacter(storage.CreateEveCharacterParams{AllianceID: a.ID, FactionID: f.ID})
-		c1 := factory.CreateMyCharacter(storage.UpdateOrCreateCharacterParams{ID: eveC.ID})
+		c1 := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{ID: eveC.ID})
 		// when
 		c2, err := r.GetCharacter(ctx, c1.ID)
 		// then
@@ -92,7 +92,7 @@ func TestMyCharacter(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateMyCharacter()
+		c1 := factory.CreateCharacter()
 		// when
 		newLocation := factory.CreateLocationStructure()
 		newShip := factory.CreateEveType()
@@ -113,7 +113,7 @@ func TestMyCharacter(t *testing.T) {
 	t.Run("can delete", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
+		c := factory.CreateCharacter()
 		// when
 		err := r.DeleteCharacter(ctx, c.ID)
 		// then
@@ -133,8 +133,8 @@ func TestMyCharacter(t *testing.T) {
 	t.Run("should return first character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateMyCharacter()
-		factory.CreateMyCharacter()
+		c1 := factory.CreateCharacter()
+		factory.CreateCharacter()
 		// when
 		c2, err := r.GetFirstCharacter(ctx)
 		// then
@@ -153,7 +153,7 @@ func TestMyCharacter(t *testing.T) {
 	t.Run("can fetch character by ID with minimal fields populated only", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateMyCharacter()
+		c1 := factory.CreateCharacter()
 		// when
 		c2, err := r.GetCharacter(ctx, c1.ID)
 		// then
@@ -171,7 +171,7 @@ func TestListMyCharactersShort(t *testing.T) {
 	t.Run("listed characters have all fields populated", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateMyCharacter()
+		c1 := factory.CreateCharacter()
 		// when
 		cc, err := r.ListCharactersShort(ctx)
 		// then
@@ -184,8 +184,8 @@ func TestListMyCharactersShort(t *testing.T) {
 	t.Run("can list characters", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		factory.CreateMyCharacter()
-		factory.CreateMyCharacter()
+		factory.CreateCharacter()
+		factory.CreateCharacter()
 		// when
 		cc, err := r.ListCharactersShort(ctx)
 		// then
@@ -203,7 +203,7 @@ func TestListMyCharacters(t *testing.T) {
 	t.Run("listed characters have all fields populated", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateMyCharacter()
+		c1 := factory.CreateCharacter()
 		// when
 		cc, err := r.ListCharacters(ctx)
 		// then
@@ -232,7 +232,7 @@ func TestUpdateMyCharacterFields(t *testing.T) {
 	t.Run("can update home", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateMyCharacter()
+		c1 := factory.CreateCharacter()
 		home := factory.CreateLocationStructure()
 		// when
 		err := r.UpdateCharacterHome(ctx, c1.ID, sql.NullInt64{Int64: home.ID, Valid: true})
@@ -248,7 +248,7 @@ func TestUpdateMyCharacterFields(t *testing.T) {
 	t.Run("can update last login", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateMyCharacter()
+		c1 := factory.CreateCharacter()
 		x := time.Now().Add(1 * time.Hour)
 		// when
 		err := r.UpdateCharacterLastLoginAt(ctx, c1.ID, sql.NullTime{Time: x, Valid: true})
@@ -263,7 +263,7 @@ func TestUpdateMyCharacterFields(t *testing.T) {
 	t.Run("can update location", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateMyCharacter()
+		c1 := factory.CreateCharacter()
 		location := factory.CreateLocationStructure()
 		// when
 		err := r.UpdateCharacterLocation(ctx, c1.ID, sql.NullInt64{Int64: location.ID, Valid: true})
@@ -278,7 +278,7 @@ func TestUpdateMyCharacterFields(t *testing.T) {
 	t.Run("can update ship", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateMyCharacter()
+		c1 := factory.CreateCharacter()
 		x := factory.CreateEveType()
 		// when
 		err := r.UpdateCharacterShip(ctx, c1.ID, sql.NullInt32{Int32: x.ID, Valid: true})
@@ -293,7 +293,7 @@ func TestUpdateMyCharacterFields(t *testing.T) {
 	t.Run("can update skill points", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateMyCharacter()
+		c1 := factory.CreateCharacter()
 		// when
 		totalSP := sql.NullInt64{Int64: int64(rand.IntN(100_000_000)), Valid: true}
 		unallocatedSP := sql.NullInt64{Int64: int64(rand.IntN(10_000_000)), Valid: true}
@@ -310,7 +310,7 @@ func TestUpdateMyCharacterFields(t *testing.T) {
 	t.Run("can update wallet balance", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c1 := factory.CreateMyCharacter()
+		c1 := factory.CreateCharacter()
 		x := rand.Float64() * 100_000_000
 		// when
 		err := r.UpdateCharacterWalletBalance(ctx, c1.ID, sql.NullFloat64{Float64: x, Valid: true})

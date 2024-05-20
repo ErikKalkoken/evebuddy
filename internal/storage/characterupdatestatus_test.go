@@ -19,7 +19,7 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 	t.Run("can create new from scratch", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
+		c := factory.CreateCharacter()
 		updatedAt := time.Now()
 		arg := storage.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
@@ -41,8 +41,8 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 	t.Run("can update existing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
-		factory.CreateMyCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+		c := factory.CreateCharacter()
+		factory.CreateCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     model.CharacterSectionSkillqueue,
 		})

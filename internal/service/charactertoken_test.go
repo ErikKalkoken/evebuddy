@@ -15,8 +15,8 @@ func TestHasTokenWithScopes(t *testing.T) {
 	t.Run("should create new queue", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateMyCharacter()
-		factory.CreateToken(model.CharacterToken{CharacterID: c.ID, Scopes: esiScopes})
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID, Scopes: esiScopes})
 		// when
 		x, err := s.CharacterHasTokenWithScopes(c.ID)
 		// then
