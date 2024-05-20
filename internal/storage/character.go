@@ -204,7 +204,7 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreat
 
 func (r *Storage) characterFromDBModel(
 	ctx context.Context,
-	myCharacter queries.Character,
+	character queries.Character,
 	eveCharacter queries.EveCharacter,
 	corporation queries.EveEntity,
 	race queries.EveRace,
@@ -216,11 +216,11 @@ func (r *Storage) characterFromDBModel(
 ) (*model.Character, error) {
 	c := model.Character{
 		EveCharacter:  eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
-		ID:            int32(myCharacter.ID),
-		LastLoginAt:   myCharacter.LastLoginAt,
-		TotalSP:       myCharacter.TotalSp,
-		UnallocatedSP: myCharacter.UnallocatedSp,
-		WalletBalance: myCharacter.WalletBalance,
+		ID:            int32(character.ID),
+		LastLoginAt:   character.LastLoginAt,
+		TotalSP:       character.TotalSp,
+		UnallocatedSP: character.UnallocatedSp,
+		WalletBalance: character.WalletBalance,
 	}
 	if homeID.Valid {
 		x, err := r.GetLocation(ctx, homeID.Int64)

@@ -190,7 +190,7 @@ func (a *walletTransactionArea) StartUpdateTicker() {
 			func() {
 				cc, err := a.ui.service.ListCharactersShort()
 				if err != nil {
-					slog.Error("Failed to fetch list of my characters", "err", err)
+					slog.Error("Failed to fetch list of characters", "err", err)
 					return
 				}
 				for _, c := range cc {
