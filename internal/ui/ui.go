@@ -108,7 +108,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	var c *model.Character
 	cID, ok, err := service.DictionaryInt(model.SettingLastCharacterID)
 	if err == nil && ok {
-		c, err = service.GetMyCharacter(int32(cID))
+		c, err = service.GetCharacter(int32(cID))
 		if err != nil {
 			if !errors.Is(err, storage.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -205,7 +205,7 @@ func (u *ui) CurrentChar() *model.Character {
 }
 
 func (u *ui) LoadCurrentCharacter(characterID int32) error {
-	c, err := u.service.GetMyCharacter(characterID)
+	c, err := u.service.GetCharacter(characterID)
 	if err != nil {
 		return err
 	}
@@ -249,7 +249,7 @@ func (u *ui) refreshCurrentCharacter() {
 }
 
 func (u *ui) SetAnyCharacter() error {
-	c, err := u.service.GetAnyMyCharacter()
+	c, err := u.service.GetAnyCharacter()
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			u.ResetCurrentCharacter()

@@ -60,7 +60,7 @@ func (u *ui) NewHeaderArea() *headerArea {
 			if err != nil {
 				panic(err)
 			}
-			m, err := u.service.GetMail(characterID, int32(mailID))
+			m, err := u.service.GetCharacterMail(characterID, int32(mailID))
 			if err != nil {
 				if !errors.Is(err, storage.ErrNotFound) {
 					slog.Error("Failed to get mail", "error", err)
@@ -135,9 +135,9 @@ func (a *headerArea) updateMails() {
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mailIDs, err = a.ui.service.ListMailIDsForLabelOrdered(folder.CharacterID, folder.ObjID)
+		mailIDs, err = a.ui.service.ListCharacterMailIDsForLabelOrdered(folder.CharacterID, folder.ObjID)
 	case nodeCategoryList:
-		mailIDs, err = a.ui.service.ListMailIDsForListOrdered(folder.CharacterID, folder.ObjID)
+		mailIDs, err = a.ui.service.ListCharacterMailIDsForListOrdered(folder.CharacterID, folder.ObjID)
 	}
 	x := islices.ConvertNumeric[int32, int](mailIDs)
 	if err := a.mailIDs.Set(x); err != nil {
@@ -162,7 +162,7 @@ func (a *headerArea) updateMails() {
 }
 
 func (a *headerArea) makeTopText() (string, widget.Importance) {
-	hasData, err := a.ui.service.SectionWasUpdated(a.ui.CurrentCharID(), model.UpdateSectionSkillqueue)
+	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.CurrentCharID(), model.CharacterSectionSkillqueue)
 	if err != nil {
 		return "ERROR", widget.DangerImportance
 	}

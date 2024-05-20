@@ -166,7 +166,7 @@ func (a *walletJournalArea) makeTopText() (string, widget.Importance) {
 	if c == nil {
 		return "No data yet...", widget.LowImportance
 	}
-	hasData, err := a.ui.service.SectionWasUpdated(c.ID, model.UpdateSectionWalletJournal)
+	hasData, err := a.ui.service.CharacterSectionWasUpdated(c.ID, model.CharacterSectionWalletJournal)
 	if err != nil {
 		return "ERROR", widget.DangerImportance
 	}
@@ -186,7 +186,7 @@ func (a *walletJournalArea) updateEntries() error {
 			return err
 		}
 	}
-	ww, err := a.ui.service.ListWalletJournalEntries(characterID)
+	ww, err := a.ui.service.ListCharacterWalletJournalEntries(characterID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch wallet journal for character %d: %w", characterID, err)
 	}
@@ -212,7 +212,7 @@ func (a *walletJournalArea) StartUpdateTicker() {
 	go func() {
 		for {
 			func() {
-				cc, err := a.ui.service.ListMyCharactersShort()
+				cc, err := a.ui.service.ListCharactersShort()
 				if err != nil {
 					slog.Error("Failed to fetch list of my characters", "err", err)
 					return
@@ -227,7 +227,7 @@ func (a *walletJournalArea) StartUpdateTicker() {
 }
 
 func (a *walletJournalArea) MaybeUpdateAndRefresh(characterID int32) {
-	changed, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionWalletJournal)
+	changed, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionWalletJournal)
 	if err != nil {
 		slog.Error("Failed to update wallet journal", "character", characterID, "err", err)
 		return

@@ -137,14 +137,14 @@ func TestUpdateMail(t *testing.T) {
 				return resp, nil
 			})
 		// when
-		_, err := s.UpdateSectionIfExpired(c1.ID, model.UpdateSectionMailLabels)
+		_, err := s.UpdateCharacterSectionIfExpired(c1.ID, model.CharacterSectionMailLabels)
 		if assert.NoError(t, err) {
-			_, err := s.UpdateSectionIfExpired(c1.ID, model.UpdateSectionMailLists)
+			_, err := s.UpdateCharacterSectionIfExpired(c1.ID, model.CharacterSectionMailLists)
 			if assert.NoError(t, err) {
-				_, err := s.UpdateSectionIfExpired(c1.ID, model.UpdateSectionMails)
+				_, err := s.UpdateCharacterSectionIfExpired(c1.ID, model.CharacterSectionMails)
 				// then
 				if assert.NoError(t, err) {
-					m, err := s.GetMail(c1.ID, int32(mailID))
+					m, err := s.GetCharacterMail(c1.ID, int32(mailID))
 					if assert.NoError(t, err) {
 						assert.Equal(t, "blah blah blah", m.Body)
 					}
@@ -273,10 +273,10 @@ func TestUpdateMail(t *testing.T) {
 			})
 
 		// when
-		_, err := s.UpdateSectionIfExpired(c.ID, model.UpdateSectionMails)
+		_, err := s.UpdateCharacterSectionIfExpired(c.ID, model.CharacterSectionMails)
 		// then
 		if assert.NoError(t, err) {
-			m, err := s.GetMail(c.ID, mailID)
+			m, err := s.GetCharacterMail(c.ID, mailID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "blah blah blah", m.Body)
 				assert.True(t, m.IsRead)

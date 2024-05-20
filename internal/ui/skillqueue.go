@@ -177,7 +177,7 @@ func (a *skillqueueArea) updateItems() (types.NullDuration, sql.NullFloat64, err
 			return remaining, completion, err
 		}
 	}
-	skills, err := a.ui.service.ListSkillqueueItems(characterID)
+	skills, err := a.ui.service.ListCharacterSkillqueueItems(characterID)
 	if err != nil {
 		return remaining, completion, err
 	}
@@ -205,7 +205,7 @@ func (a *skillqueueArea) makeTopText(total types.NullDuration) (string, widget.I
 	if errorText != "" {
 		return errorText, widget.DangerImportance
 	}
-	hasData, err := a.ui.service.SectionWasUpdated(a.ui.CurrentCharID(), model.UpdateSectionSkillqueue)
+	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.CurrentCharID(), model.CharacterSectionSkillqueue)
 	if err != nil {
 		return "ERROR", widget.DangerImportance
 	}
@@ -227,7 +227,7 @@ func (a *skillqueueArea) StartUpdateTicker() {
 	go func() {
 		for {
 			func() {
-				cc, err := a.ui.service.ListMyCharactersShort()
+				cc, err := a.ui.service.ListCharactersShort()
 				if err != nil {
 					slog.Error("Failed to fetch list of my characters", "err", err)
 					return
@@ -242,7 +242,7 @@ func (a *skillqueueArea) StartUpdateTicker() {
 }
 
 func (a *skillqueueArea) MaybeUpdateAndRefresh(characterID int32) {
-	_, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionSkillqueue)
+	_, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionSkillqueue)
 	if err != nil {
 		slog.Error("Failed to update skillqueue", "character", characterID, "err", err)
 		return

@@ -10,15 +10,15 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *Service) ListWalletJournalEntries(characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
+func (s *Service) ListCharacterWalletJournalEntries(characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
 	ctx := context.Background()
 	return s.r.ListCharacterWalletJournalEntries(ctx, characterID)
 }
 
 // TODO: Add ability to fetch more then one page from ESI
 
-// updateWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
-func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID int32) (bool, error) {
+// updateCharacterWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
+func (s *Service) updateCharacterWalletJournalEntryESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -29,7 +29,7 @@ func (s *Service) updateWalletJournalEntryESI(ctx context.Context, characterID i
 		return false, err
 	}
 	slog.Info("Received wallet journal from ESI", "entries", len(entries), "characterID", token.CharacterID)
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionWalletJournal, entries)
+	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionWalletJournal, entries)
 	if err != nil {
 		return false, err
 	}

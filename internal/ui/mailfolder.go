@@ -114,11 +114,11 @@ func (a *folderArea) Refresh() {
 }
 
 func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
-	labelUnreadCounts, err := a.ui.service.GetMailLabelUnreadCounts(characterID)
+	labelUnreadCounts, err := a.ui.service.GetCharacterMailLabelUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
-	listUnreadCounts, err := a.ui.service.GetMailListUnreadCounts(characterID)
+	listUnreadCounts, err := a.ui.service.GetCharacterMailListUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -136,7 +136,7 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		UnreadCount: totalUnreadCount,
 	}
 	folders[nodeAllID] = folderAll.toJSON()
-	labels, err := a.ui.service.ListMailLabelsOrdered(characterID)
+	labels, err := a.ui.service.ListCharacterMailLabelsOrdered(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -160,7 +160,7 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 			folders[uid] = n.toJSON()
 		}
 	}
-	lists, err := a.ui.service.ListMailLists(characterID)
+	lists, err := a.ui.service.ListCharacterMailLists(characterID)
 	if err != nil {
 		return nil, nil, node{}, err
 	}
@@ -236,7 +236,7 @@ func (a *folderArea) StartUpdateTicker() {
 	go func() {
 		for {
 			func() {
-				cc, err := a.ui.service.ListMyCharactersShort()
+				cc, err := a.ui.service.ListCharactersShort()
 				if err != nil {
 					slog.Error("Failed to fetch list of my characters", "err", err)
 					return
@@ -251,17 +251,17 @@ func (a *folderArea) StartUpdateTicker() {
 }
 
 func (a *folderArea) MaybeUpdateAndRefresh(characterID int32) {
-	changed1, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionMailLabels)
+	changed1, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionMailLabels)
 	if err != nil {
 		slog.Error("Failed to update mail labels", "character", characterID, "err", err)
 		return
 	}
-	changed2, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionMailLists)
+	changed2, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionMailLists)
 	if err != nil {
 		slog.Error("Failed to update mail lists", "character", characterID, "err", err)
 		return
 	}
-	changed3, err := a.ui.service.UpdateSectionIfExpired(characterID, model.UpdateSectionMails)
+	changed3, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionMails)
 	if err != nil {
 		slog.Error("Failed to update mail", "character", characterID, "err", err)
 		return

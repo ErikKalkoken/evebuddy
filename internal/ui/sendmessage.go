@@ -105,7 +105,7 @@ func (u *ui) makeSendMessageWindow(mode int, mail *model.CharacterMail) (fyne.Wi
 					if err != nil {
 						return err
 					}
-					_, err = u.service.SendMail(currentChar.ID, subjectInput.Text, ee2, bodyInput.Text)
+					_, err = u.service.SendCharacterMail(currentChar.ID, subjectInput.Text, ee2, bodyInput.Text)
 					if err != nil {
 						return err
 					}

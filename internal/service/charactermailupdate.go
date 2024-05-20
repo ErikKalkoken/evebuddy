@@ -22,9 +22,9 @@ const (
 
 // TODO: Add ability to delete obsolete mail labels
 
-// updateMailLabelsESI updates the skillqueue for a character from ESI
+// updateCharacterMailLabelsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *Service) updateMailLabelsESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterMailLabelsESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -35,7 +35,7 @@ func (s *Service) updateMailLabelsESI(ctx context.Context, characterID int32) (b
 		return false, err
 	}
 	slog.Info("Received mail labels from ESI", "count", len(ll.Labels), "characterID", token.CharacterID)
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionMailLabels, ll)
+	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionMailLabels, ll)
 	if err != nil {
 		return false, err
 	}
@@ -59,9 +59,9 @@ func (s *Service) updateMailLabelsESI(ctx context.Context, characterID int32) (b
 	return true, nil
 }
 
-// updateMailListsESI updates the skillqueue for a character from ESI
+// updateCharacterMailListsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *Service) updateMailListsESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterMailListsESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -71,7 +71,7 @@ func (s *Service) updateMailListsESI(ctx context.Context, characterID int32) (bo
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionMailLists, lists)
+	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionMailLists, lists)
 	if err != nil {
 		return false, err
 	}
@@ -90,9 +90,9 @@ func (s *Service) updateMailListsESI(ctx context.Context, characterID int32) (bo
 	return true, nil
 }
 
-// updateMailESI updates the skillqueue for a character from ESI
+// updateCharacterMailESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *Service) updateMailESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterMailESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -101,7 +101,7 @@ func (s *Service) updateMailESI(ctx context.Context, characterID int32) (bool, e
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionMails, headers)
+	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionMails, headers)
 	if err != nil {
 		return false, err
 	}

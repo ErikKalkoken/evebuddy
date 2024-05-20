@@ -45,7 +45,7 @@ func (u *ui) NewMailArea() *mailDetailArea {
 			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Subject)
 			d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
 				if confirmed {
-					err := u.service.DeleteMail(a.mail.CharacterID, a.mail.MailID)
+					err := u.service.DeleteCharacterMail(a.mail.CharacterID, a.mail.MailID)
 					if err != nil {
 						errorDialog := dialog.NewError(err, u.window)
 						errorDialog.Show()
@@ -78,7 +78,7 @@ func (a *mailDetailArea) Clear() {
 func (a *mailDetailArea) SetMail(mailID int32, listItemID widget.ListItemID) {
 	characterID := a.ui.CurrentCharID()
 	var err error
-	a.mail, err = a.ui.service.GetMail(characterID, mailID)
+	a.mail, err = a.ui.service.GetCharacterMail(characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		return

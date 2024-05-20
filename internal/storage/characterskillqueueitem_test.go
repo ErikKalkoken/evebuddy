@@ -66,7 +66,7 @@ func TestSkillqueueItems(t *testing.T) {
 			FinishDate:    time.Now().Add(3 * time.Hour),
 		}
 		// when
-		err := r.ReplaceSkillqueueItems(ctx, c.ID, []storage.SkillqueueItemParams{arg})
+		err := r.ReplaceCharacterSkillqueueItems(ctx, c.ID, []storage.SkillqueueItemParams{arg})
 		// then
 		if assert.NoError(t, err) {
 			ii, err := r.ListSkillqueueItems(ctx, c.ID)

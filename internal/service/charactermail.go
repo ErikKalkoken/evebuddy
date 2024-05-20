@@ -19,8 +19,8 @@ var eveEntityCategory2MailRecipientType = map[model.EveEntityCategory]string{
 	model.EveEntityMailList:    "mailing_list",
 }
 
-// DeleteMail deletes a mail both on ESI and in the database.
-func (s *Service) DeleteMail(characterID, mailID int32) error {
+// DeleteCharacterMail deletes a mail both on ESI and in the database.
+func (s *Service) DeleteCharacterMail(characterID, mailID int32) error {
 	ctx := context.Background()
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
@@ -38,13 +38,13 @@ func (s *Service) DeleteMail(characterID, mailID int32) error {
 	return nil
 }
 
-func (s *Service) GetMail(characterID int32, mailID int32) (*model.CharacterMail, error) {
+func (s *Service) GetCharacterMail(characterID int32, mailID int32) (*model.CharacterMail, error) {
 	ctx := context.Background()
 	return s.r.GetCharacterMail(ctx, characterID, mailID)
 }
 
 // GetMailUnreadCount returns the number of unread mail for a character.
-func (s *Service) GetMailCounts(characterID int32) (int, int, error) {
+func (s *Service) GetCharacterMailCounts(characterID int32) (int, int, error) {
 	ctx := context.Background()
 	total, err := s.r.GetCharacterMailCount(ctx, characterID)
 	if err != nil {
@@ -57,8 +57,8 @@ func (s *Service) GetMailCounts(characterID int32) (int, int, error) {
 	return total, unread, nil
 }
 
-// SendMail creates a new mail on ESI and stores it locally.
-func (s *Service) SendMail(characterID int32, subject string, recipients []*model.EveEntity, body string) (int32, error) {
+// SendCharacterMail creates a new mail on ESI and stores it locally.
+func (s *Service) SendCharacterMail(characterID int32, subject string, recipients []*model.EveEntity, body string) (int32, error) {
 	if subject == "" {
 		return 0, fmt.Errorf("missing subject")
 	}
@@ -138,34 +138,34 @@ func eveEntitiesToESIMailRecipients(ee []*model.EveEntity) ([]esi.PostCharacters
 	return rr, nil
 }
 
-func (s *Service) GetMailLabelUnreadCounts(characterID int32) (map[int32]int, error) {
+func (s *Service) GetCharacterMailLabelUnreadCounts(characterID int32) (map[int32]int, error) {
 	ctx := context.Background()
 	return s.r.GetCharacterMailLabelUnreadCounts(ctx, characterID)
 }
 
-func (s *Service) GetMailListUnreadCounts(characterID int32) (map[int32]int, error) {
+func (s *Service) GetCharacterMailListUnreadCounts(characterID int32) (map[int32]int, error) {
 	ctx := context.Background()
 	return s.r.GetCharacterMailListUnreadCounts(ctx, characterID)
 }
 
-func (s *Service) ListMailLists(characterID int32) ([]*model.EveEntity, error) {
+func (s *Service) ListCharacterMailLists(characterID int32) ([]*model.EveEntity, error) {
 	ctx := context.Background()
 	return s.r.ListCharacterMailListsOrdered(ctx, characterID)
 }
 
 // ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
 // Return mails for all labels, when labelID = 0
-func (s *Service) ListMailIDsForLabelOrdered(characterID int32, labelID int32) ([]int32, error) {
+func (s *Service) ListCharacterMailIDsForLabelOrdered(characterID int32, labelID int32) ([]int32, error) {
 	ctx := context.Background()
 	return s.r.ListCharacterMailIDsForLabelOrdered(ctx, characterID, labelID)
 }
 
-func (s *Service) ListMailIDsForListOrdered(characterID int32, listID int32) ([]int32, error) {
+func (s *Service) ListCharacterMailIDsForListOrdered(characterID int32, listID int32) ([]int32, error) {
 	ctx := context.Background()
 	return s.r.ListCharacterMailIDsForListOrdered(ctx, characterID, listID)
 }
 
-func (s *Service) ListMailLabelsOrdered(characterID int32) ([]*model.CharacterMailLabel, error) {
+func (s *Service) ListCharacterMailLabelsOrdered(characterID int32) ([]*model.CharacterMailLabel, error) {
 	ctx := context.Background()
 	return s.r.ListCharacterMailLabelsOrdered(ctx, characterID)
 }

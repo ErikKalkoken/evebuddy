@@ -25,10 +25,10 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		// when
-		err := s.SectionSetUpdated(c.ID, model.UpdateSectionSkillqueue)
+		err := s.CharacterSectionSetUpdated(c.ID, model.CharacterSectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.UpdateSectionSkillqueue)
+			x, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.CharacterSectionSkillqueue)
 			if assert.NoError(t, err) {
 				assert.WithinDuration(t, time.Now(), x.UpdatedAt, 30*time.Second)
 			}
@@ -41,11 +41,11 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		updateAt := time.Now().Add(3 * time.Hour)
 		t1 := factory.CreateMyCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
-			Section:     model.UpdateSectionSkillqueue,
+			Section:     model.CharacterSectionSkillqueue,
 			UpdatedAt:   updateAt,
 		})
 		// when
-		t2, err := s.SectionUpdatedAt(c.ID, model.UpdateSectionSkillqueue)
+		t2, err := s.CharacterSectionUpdatedAt(c.ID, model.CharacterSectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, t1.UpdatedAt.Unix(), t2.Unix())
@@ -58,11 +58,11 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		updateAt := time.Now().Add(3 * time.Hour)
 		factory.CreateMyCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
-			Section:     model.UpdateSectionSkillqueue,
+			Section:     model.CharacterSectionSkillqueue,
 			UpdatedAt:   updateAt,
 		})
 		// when
-		x, err := s.SectionWasUpdated(c.ID, model.UpdateSectionSkillqueue)
+		x, err := s.CharacterSectionWasUpdated(c.ID, model.CharacterSectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, x)
@@ -73,7 +73,7 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateMyCharacter()
 		// when
-		x, err := s.SectionWasUpdated(c.ID, model.UpdateSectionSkillqueue)
+		x, err := s.CharacterSectionWasUpdated(c.ID, model.CharacterSectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, x)
@@ -86,11 +86,11 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		updateAt := time.Now().Add(-3 * time.Hour)
 		factory.CreateMyCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
-			Section:     model.UpdateSectionSkillqueue,
+			Section:     model.CharacterSectionSkillqueue,
 			UpdatedAt:   updateAt,
 		})
 		// when
-		x, err := s.SectionIsUpdateExpired(c.ID, model.UpdateSectionSkillqueue)
+		x, err := s.CharacterSectionIsUpdateExpired(c.ID, model.CharacterSectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, x)

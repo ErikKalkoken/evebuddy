@@ -13,12 +13,12 @@ import (
 
 type CharacterUpdateStatusParams struct {
 	CharacterID int32
-	Section     model.UpdateSection
+	Section     model.CharacterSection
 	UpdatedAt   time.Time
 	ContentHash string
 }
 
-func (r *Storage) GetCharacterUpdateStatus(ctx context.Context, characterID int32, section model.UpdateSection) (*model.CharacterUpdateStatus, error) {
+func (r *Storage) GetCharacterUpdateStatus(ctx context.Context, characterID int32, section model.CharacterSection) (*model.CharacterUpdateStatus, error) {
 	arg := queries.GetCharacterUpdateStatusParams{
 		CharacterID: int64(characterID),
 		SectionID:   string(section),
@@ -51,7 +51,7 @@ func (r *Storage) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg C
 func characterUpdateStatusFromDBModel(s queries.CharacterUpdateStatus) *model.CharacterUpdateStatus {
 	return &model.CharacterUpdateStatus{
 		CharacterID: int32(s.CharacterID),
-		SectionID:   model.UpdateSection(s.SectionID),
+		SectionID:   model.CharacterSection(s.SectionID),
 		UpdatedAt:   s.UpdatedAt,
 		ContentHash: s.ContentHash,
 	}

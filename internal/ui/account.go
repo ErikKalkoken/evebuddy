@@ -97,7 +97,7 @@ func (u *ui) NewAccountArea() *accountArea {
 					fmt.Sprintf("Are you sure you want to delete %s?", c.name),
 					func(confirmed bool) {
 						if confirmed {
-							err := a.ui.service.DeleteMyCharacter(c.id)
+							err := a.ui.service.DeleteCharacter(c.id)
 							if err != nil {
 								d2 := dialog.NewError(err, a.ui.window)
 								d2.Show()
@@ -135,7 +135,7 @@ func (u *ui) NewAccountArea() *accountArea {
 }
 
 func (a *accountArea) Refresh() error {
-	cc, err := a.ui.service.ListMyCharactersShort()
+	cc, err := a.ui.service.ListCharactersShort()
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (a *accountArea) showAddCharacterDialog() {
 	)
 	d1.SetOnClosed(cancel)
 	go func() {
-		characterID, err := a.ui.service.UpdateOrCreateMyCharacterFromSSO(ctx, infoText)
+		characterID, err := a.ui.service.UpdateOrCreateCharacterFromSSO(ctx, infoText)
 		if err != nil {
 			if !errors.Is(err, service.ErrAborted) {
 				slog.Error("Failed to add a new character", "error", err)

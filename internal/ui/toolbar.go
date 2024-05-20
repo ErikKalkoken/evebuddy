@@ -93,7 +93,7 @@ func (a *toolbarArea) Refresh() {
 
 func (a *toolbarArea) makeMenuItems(c *model.Character) ([]*fyne.MenuItem, error) {
 	menuItems := make([]*fyne.MenuItem, 0)
-	cc, err := a.ui.service.ListMyCharactersShort()
+	cc, err := a.ui.service.ListCharactersShort()
 	if err != nil {
 		return menuItems, err
 	}

@@ -15,28 +15,28 @@ import (
 
 var ErrAborted = errors.New("process aborted prematurely")
 
-func (s *Service) DeleteMyCharacter(characterID int32) error {
+func (s *Service) DeleteCharacter(characterID int32) error {
 	return s.r.DeleteCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetMyCharacter(characterID int32) (*model.Character, error) {
+func (s *Service) GetCharacter(characterID int32) (*model.Character, error) {
 	return s.r.GetCharacter(context.Background(), characterID)
 }
 
-func (s *Service) GetAnyMyCharacter() (*model.Character, error) {
+func (s *Service) GetAnyCharacter() (*model.Character, error) {
 	return s.r.GetFirstCharacter(context.Background())
 }
 
-func (s *Service) ListMyCharacters() ([]*model.Character, error) {
+func (s *Service) ListCharacters() ([]*model.Character, error) {
 	return s.r.ListCharacters(context.Background())
 }
 
-func (s *Service) ListMyCharactersShort() ([]*model.CharacterShort, error) {
+func (s *Service) ListCharactersShort() ([]*model.CharacterShort, error) {
 	return s.r.ListCharactersShort(context.Background())
 }
 
-// UpdateOrCreateMyCharacterFromSSO creates or updates a character via SSO authentication.
-func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
+// UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
+func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
 	ssoToken, err := sso.Authenticate(ctx, s.httpClient, esiScopes)
 	if err != nil {
 		if errors.Is(err, sso.ErrAborted) {
@@ -87,7 +87,7 @@ func (s *Service) UpdateOrCreateMyCharacterFromSSO(ctx context.Context, infoText
 	return token.CharacterID, nil
 }
 
-func (s *Service) updateHomeESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterHomeESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -97,7 +97,7 @@ func (s *Service) updateHomeESI(ctx context.Context, characterID int32) (bool, e
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionHome, clones)
+	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionHome, clones)
 	if err != nil {
 		return false, err
 	}
@@ -119,7 +119,7 @@ func (s *Service) updateHomeESI(ctx context.Context, characterID int32) (bool, e
 	return true, nil
 }
 
-func (s *Service) updateLocationESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterLocationESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -129,7 +129,7 @@ func (s *Service) updateLocationESI(ctx context.Context, characterID int32) (boo
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionLocation, location)
+	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionLocation, location)
 	if err != nil {
 		return false, err
 	}
@@ -156,7 +156,7 @@ func (s *Service) updateLocationESI(ctx context.Context, characterID int32) (boo
 	return true, nil
 }
 
-func (s *Service) updateOnlineESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterOnlineESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -166,7 +166,7 @@ func (s *Service) updateOnlineESI(ctx context.Context, characterID int32) (bool,
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionOnline, online)
+	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionOnline, online)
 	if err != nil {
 		return false, err
 	}
@@ -184,7 +184,7 @@ func (s *Service) updateOnlineESI(ctx context.Context, characterID int32) (bool,
 	return true, nil
 }
 
-func (s *Service) updateShipESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterShipESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -194,7 +194,7 @@ func (s *Service) updateShipESI(ctx context.Context, characterID int32) (bool, e
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionShip, ship)
+	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionShip, ship)
 	if err != nil {
 		return false, err
 	}
@@ -212,7 +212,7 @@ func (s *Service) updateShipESI(ctx context.Context, characterID int32) (bool, e
 	return true, nil
 }
 
-func (s *Service) updateWalletBalanceESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterWalletBalanceESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -222,7 +222,7 @@ func (s *Service) updateWalletBalanceESI(ctx context.Context, characterID int32)
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionWalletBalance, balance)
+	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionWalletBalance, balance)
 	if err != nil {
 		return false, err
 	}

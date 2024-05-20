@@ -17,20 +17,20 @@ import (
 const defaultUpdateSectionTimeout = 3600 * time.Second
 
 // timeoutForUpdateSection returns the time until the data of an update section becomes stale.
-func timeoutForUpdateSection(section model.UpdateSection) time.Duration {
-	m := map[model.UpdateSection]time.Duration{
-		model.UpdateSectionHome:               120 * time.Second,
-		model.UpdateSectionLocation:           30 * time.Second, // 5 seconds min
-		model.UpdateSectionMailLabels:         30 * time.Second,
-		model.UpdateSectionMailLists:          120 * time.Second,
-		model.UpdateSectionMails:              30 * time.Second,
-		model.UpdateSectionOnline:             60 * time.Second,
-		model.UpdateSectionShip:               30 * time.Second, // 5 seconds min
-		model.UpdateSectionSkillqueue:         120 * time.Second,
-		model.UpdateSectionSkills:             120 * time.Second,
-		model.UpdateSectionWalletBalance:      120 * time.Second,
-		model.UpdateSectionWalletJournal:      3600 * time.Second,
-		model.UpdateSectionWalletTransactions: 3600 * time.Second,
+func timeoutForUpdateSection(section model.CharacterSection) time.Duration {
+	m := map[model.CharacterSection]time.Duration{
+		model.CharacterSectionHome:               120 * time.Second,
+		model.CharacterSectionLocation:           30 * time.Second, // 5 seconds min
+		model.CharacterSectionMailLabels:         30 * time.Second,
+		model.CharacterSectionMailLists:          120 * time.Second,
+		model.CharacterSectionMails:              30 * time.Second,
+		model.CharacterSectionOnline:             60 * time.Second,
+		model.CharacterSectionShip:               30 * time.Second, // 5 seconds min
+		model.CharacterSectionSkillqueue:         120 * time.Second,
+		model.CharacterSectionSkills:             120 * time.Second,
+		model.CharacterSectionWalletBalance:      120 * time.Second,
+		model.CharacterSectionWalletJournal:      3600 * time.Second,
+		model.CharacterSectionWalletTransactions: 3600 * time.Second,
 	}
 	duration, ok := m[section]
 	if !ok {
@@ -40,7 +40,7 @@ func timeoutForUpdateSection(section model.UpdateSection) time.Duration {
 	return duration
 }
 
-func (s *Service) SectionSetUpdated(characterID int32, section model.UpdateSection) error {
+func (s *Service) CharacterSectionSetUpdated(characterID int32, section model.CharacterSection) error {
 	ctx := context.Background()
 	arg := storage.CharacterUpdateStatusParams{
 		CharacterID: characterID,
@@ -52,9 +52,9 @@ func (s *Service) SectionSetUpdated(characterID int32, section model.UpdateSecti
 	return err
 }
 
-// SectionUpdatedAt returns when a section was last updated.
+// CharacterSectionUpdatedAt returns when a section was last updated.
 // It will return a zero time when no update has been completed yet.
-func (s *Service) SectionUpdatedAt(characterID int32, section model.UpdateSection) (time.Time, error) {
+func (s *Service) CharacterSectionUpdatedAt(characterID int32, section model.CharacterSection) (time.Time, error) {
 	ctx := context.Background()
 	var zero time.Time
 	u, err := s.r.GetCharacterUpdateStatus(ctx, characterID, section)
@@ -67,9 +67,9 @@ func (s *Service) SectionUpdatedAt(characterID int32, section model.UpdateSectio
 	return u.UpdatedAt, nil
 }
 
-// SectionWasUpdated reports wether the section has been updated at all.
-func (s *Service) SectionWasUpdated(characterID int32, section model.UpdateSection) (bool, error) {
-	t, err := s.SectionUpdatedAt(characterID, section)
+// CharacterSectionWasUpdated reports wether the section has been updated at all.
+func (s *Service) CharacterSectionWasUpdated(characterID int32, section model.CharacterSection) (bool, error) {
+	t, err := s.CharacterSectionUpdatedAt(characterID, section)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return false, nil
@@ -79,10 +79,10 @@ func (s *Service) SectionWasUpdated(characterID int32, section model.UpdateSecti
 	return !t.IsZero(), nil
 }
 
-// UpdateSectionIfExpired updates a section from ESI if has expired and changed
+// UpdateCharacterSectionIfExpired updates a section from ESI if has expired and changed
 // and reports back if it has changed
-func (s *Service) UpdateSectionIfExpired(characterID int32, section model.UpdateSection) (bool, error) {
-	isExpired, err := s.SectionIsUpdateExpired(characterID, section)
+func (s *Service) UpdateCharacterSectionIfExpired(characterID int32, section model.CharacterSection) (bool, error) {
+	isExpired, err := s.CharacterSectionIsUpdateExpired(characterID, section)
 	if err != nil {
 		return false, err
 	}
@@ -92,30 +92,30 @@ func (s *Service) UpdateSectionIfExpired(characterID int32, section model.Update
 	ctx := context.Background()
 	var f func(context.Context, int32) (bool, error)
 	switch section {
-	case model.UpdateSectionHome:
-		f = s.updateHomeESI
-	case model.UpdateSectionLocation:
-		f = s.updateLocationESI
-	case model.UpdateSectionMails:
-		f = s.updateMailESI
-	case model.UpdateSectionMailLabels:
-		f = s.updateMailLabelsESI
-	case model.UpdateSectionMailLists:
-		f = s.updateMailListsESI
-	case model.UpdateSectionOnline:
-		f = s.updateOnlineESI
-	case model.UpdateSectionShip:
-		f = s.updateShipESI
-	case model.UpdateSectionSkillqueue:
-		f = s.updateSkillqueueESI
-	case model.UpdateSectionSkills:
+	case model.CharacterSectionHome:
+		f = s.updateCharacterHomeESI
+	case model.CharacterSectionLocation:
+		f = s.updateCharacterLocationESI
+	case model.CharacterSectionMails:
+		f = s.updateCharacterMailESI
+	case model.CharacterSectionMailLabels:
+		f = s.updateCharacterMailLabelsESI
+	case model.CharacterSectionMailLists:
+		f = s.updateCharacterMailListsESI
+	case model.CharacterSectionOnline:
+		f = s.updateCharacterOnlineESI
+	case model.CharacterSectionShip:
+		f = s.updateCharacterShipESI
+	case model.CharacterSectionSkillqueue:
+		f = s.updateCharacterSkillqueueESI
+	case model.CharacterSectionSkills:
 		f = s.updateCharacterSkillsESI
-	case model.UpdateSectionWalletBalance:
-		f = s.updateWalletBalanceESI
-	case model.UpdateSectionWalletJournal:
-		f = s.updateWalletJournalEntryESI
-	case model.UpdateSectionWalletTransactions:
-		f = s.updateWalletTransactionESI
+	case model.CharacterSectionWalletBalance:
+		f = s.updateCharacterWalletBalanceESI
+	case model.CharacterSectionWalletJournal:
+		f = s.updateCharacterWalletJournalEntryESI
+	case model.CharacterSectionWalletTransactions:
+		f = s.updateCharacterWalletTransactionESI
 	default:
 		panic(fmt.Sprintf("Undefined section: %s", section))
 	}
@@ -126,7 +126,7 @@ func (s *Service) UpdateSectionIfExpired(characterID int32, section model.Update
 	if err != nil {
 		return false, fmt.Errorf("failed to update section %s from ESI for character %d: %w", section, characterID, err)
 	}
-	if err := s.SectionSetUpdated(characterID, section); err != nil {
+	if err := s.CharacterSectionSetUpdated(characterID, section); err != nil {
 		return false, err
 	}
 	changed := x.(bool)
@@ -134,8 +134,8 @@ func (s *Service) UpdateSectionIfExpired(characterID int32, section model.Update
 }
 
 // SectionWasUpdated reports wether the data for a section has expired.
-func (s *Service) SectionIsUpdateExpired(characterID int32, section model.UpdateSection) (bool, error) {
-	t, err := s.SectionUpdatedAt(characterID, section)
+func (s *Service) CharacterSectionIsUpdateExpired(characterID int32, section model.CharacterSection) (bool, error) {
+	t, err := s.CharacterSectionUpdatedAt(characterID, section)
 	if err != nil {
 		return false, err
 	}
@@ -146,8 +146,8 @@ func (s *Service) SectionIsUpdateExpired(characterID int32, section model.Update
 
 // TODO: Need to change the API to accept any data
 
-// hasSectionChanged reports wether a section has changed based on the given data and updates it's content hash.
-func (s *Service) hasSectionChanged(ctx context.Context, characterID int32, section model.UpdateSection, data any) (bool, error) {
+// hasCharacterSectionChanged reports wether a section has changed based on the given data and updates it's content hash.
+func (s *Service) hasCharacterSectionChanged(ctx context.Context, characterID int32, section model.CharacterSection, data any) (bool, error) {
 	hash, err := calcHash(data)
 	if err != nil {
 		return false, err

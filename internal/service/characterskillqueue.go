@@ -9,19 +9,19 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func (s *Service) GetTotalTrainingTime(characterID int32) (types.NullDuration, error) {
+func (s *Service) GetCharacterTotalTrainingTime(characterID int32) (types.NullDuration, error) {
 	ctx := context.Background()
 	return s.r.GetTotalTrainingTime(ctx, characterID)
 }
 
-func (s *Service) ListSkillqueueItems(characterID int32) ([]*model.CharacterSkillqueueItem, error) {
+func (s *Service) ListCharacterSkillqueueItems(characterID int32) ([]*model.CharacterSkillqueueItem, error) {
 	ctx := context.Background()
 	return s.r.ListSkillqueueItems(ctx, characterID)
 }
 
-// updateSkillqueueESI updates the skillqueue for a character from ESI
+// updateCharacterSkillqueueESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *Service) updateSkillqueueESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterSkillqueueESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidToken(ctx, characterID)
 	if err != nil {
 		return false, err
@@ -32,7 +32,7 @@ func (s *Service) updateSkillqueueESI(ctx context.Context, characterID int32) (b
 		return false, err
 	}
 	slog.Info("Received skillqueue from ESI", "items", len(items), "characterID", characterID)
-	changed, err := s.hasSectionChanged(ctx, characterID, model.UpdateSectionSkillqueue, items)
+	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionSkillqueue, items)
 	if err != nil {
 		return false, err
 	}
@@ -57,7 +57,7 @@ func (s *Service) updateSkillqueueESI(ctx context.Context, characterID int32) (b
 			TrainingStartSP: int(o.TrainingStartSp),
 		}
 	}
-	if err := s.r.ReplaceSkillqueueItems(ctx, characterID, args); err != nil {
+	if err := s.r.ReplaceCharacterSkillqueueItems(ctx, characterID, args); err != nil {
 		return false, err
 	}
 	slog.Info("Updated skillqueue items", "characterID", characterID, "count", len(args))

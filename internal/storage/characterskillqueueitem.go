@@ -94,7 +94,7 @@ func (r *Storage) ListSkillqueueItems(ctx context.Context, characterID int32) ([
 	return ii2, nil
 }
 
-func (r *Storage) ReplaceSkillqueueItems(ctx context.Context, characterID int32, args []SkillqueueItemParams) error {
+func (r *Storage) ReplaceCharacterSkillqueueItems(ctx context.Context, characterID int32, args []SkillqueueItemParams) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err

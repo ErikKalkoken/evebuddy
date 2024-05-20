@@ -213,7 +213,7 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 	var unreadTotal sql.NullInt64
 	var walletTotal sql.NullFloat64
 	var err error
-	mycc, err := a.ui.service.ListMyCharacters()
+	mycc, err := a.ui.service.ListCharacters()
 	if err != nil {
 		return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch characters: %w", err)
 	}
@@ -246,14 +246,14 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 		cc[i] = c
 	}
 	for i, c := range cc {
-		v, err := a.ui.service.GetTotalTrainingTime(c.id)
+		v, err := a.ui.service.GetCharacterTotalTrainingTime(c.id)
 		if err != nil {
 			return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch skill queue count for character %d, %w", c.id, err)
 		}
 		cc[i].training = v
 	}
 	for i, c := range cc {
-		total, unread, err := a.ui.service.GetMailCounts(c.id)
+		total, unread, err := a.ui.service.GetCharacterMailCounts(c.id)
 		if err != nil {
 			return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch mail counts for character %d, %w", c.id, err)
 		}
@@ -287,7 +287,7 @@ func (a *overviewArea) StartUpdateTicker() {
 	go func() {
 		for {
 			func() {
-				cc, err := a.ui.service.ListMyCharactersShort()
+				cc, err := a.ui.service.ListCharactersShort()
 				if err != nil {
 					slog.Error("Failed to fetch list of my characters", "err", err)
 					return
@@ -302,17 +302,17 @@ func (a *overviewArea) StartUpdateTicker() {
 }
 
 func (a *overviewArea) MaybeUpdateAndRefresh(characterID int32) {
-	sections := []model.UpdateSection{
-		model.UpdateSectionHome,
-		model.UpdateSectionLocation,
-		model.UpdateSectionOnline,
-		model.UpdateSectionShip,
-		model.UpdateSectionSkills,
-		model.UpdateSectionWalletBalance,
+	sections := []model.CharacterSection{
+		model.CharacterSectionHome,
+		model.CharacterSectionLocation,
+		model.CharacterSectionOnline,
+		model.CharacterSectionShip,
+		model.CharacterSectionSkills,
+		model.CharacterSectionWalletBalance,
 	}
 	for _, s := range sections {
-		go func(s model.UpdateSection) {
-			changed, err := a.ui.service.UpdateSectionIfExpired(characterID, s)
+		go func(s model.CharacterSection) {
+			changed, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, s)
 			if err != nil {
 				slog.Error("Failed to update character", "character", characterID, "section", s, "err", err)
 				return

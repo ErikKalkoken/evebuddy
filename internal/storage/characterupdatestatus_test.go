@@ -23,7 +23,7 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		updatedAt := time.Now()
 		arg := storage.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
-			Section:     model.UpdateSectionSkillqueue,
+			Section:     model.CharacterSectionSkillqueue,
 			ContentHash: "content-hash",
 			UpdatedAt:   updatedAt,
 		}
@@ -31,7 +31,7 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		err := r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.UpdateSectionSkillqueue)
+			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.CharacterSectionSkillqueue)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "content-hash", l.ContentHash)
 				assert.Equal(t, updatedAt.Unix(), l.UpdatedAt.Unix())
@@ -44,12 +44,12 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		c := factory.CreateMyCharacter()
 		factory.CreateMyCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
-			Section:     model.UpdateSectionSkillqueue,
+			Section:     model.CharacterSectionSkillqueue,
 		})
 		updatedAt := time.Now().Add(1 * time.Hour)
 		arg := storage.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
-			Section:     model.UpdateSectionSkillqueue,
+			Section:     model.CharacterSectionSkillqueue,
 			ContentHash: "content-hash",
 			UpdatedAt:   updatedAt,
 		}
@@ -57,7 +57,7 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		err := r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.UpdateSectionSkillqueue)
+			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.CharacterSectionSkillqueue)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "content-hash", l.ContentHash)
 				assert.Equal(t, updatedAt.Unix(), l.UpdatedAt.Unix())

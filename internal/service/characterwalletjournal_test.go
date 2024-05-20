@@ -50,7 +50,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateWalletJournalEntryESI(ctx, c.ID)
+		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -101,7 +101,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateWalletJournalEntryESI(ctx, c.ID)
+		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -148,7 +148,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateWalletJournalEntryESI(ctx, c.ID)
+		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
@@ -177,7 +177,7 @@ func TestListWalletJournalEntries(t *testing.T) {
 		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		factory.CreateWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		// when
-		ee, err := s.ListWalletJournalEntries(c.ID)
+		ee, err := s.ListCharacterWalletJournalEntries(c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ee, 3)
