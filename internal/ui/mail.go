@@ -118,7 +118,7 @@ func NewFolderArea(m *mailArea) *folderArea {
 		a.mailArea.ui.ShowSendMessageWindow(CreateMessageNew, nil)
 	})
 	a.newButton.Importance = widget.HighImportance
-	top := container.NewHBox(layout.NewSpacer(), a.newButton, layout.NewSpacer())
+	top := container.NewHBox(layout.NewSpacer(), container.NewPadded(a.newButton), layout.NewSpacer())
 
 	a.content = container.NewBorder(top, nil, nil, nil, a.tree)
 	return a

@@ -10,6 +10,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/antihax/goesi/esi"
 )
 
 // CharacterSectionUpdatedAt returns when a section was last updated.
@@ -86,6 +87,18 @@ func (s *Service) UpdateCharacterSectionIfExpired(characterID int32, section mod
 		return f(ctx, characterID)
 	})
 	if err != nil {
+		t := err.Error()
+		e1, ok := err.(esi.GenericSwaggerError)
+		if ok {
+			e2, ok := e1.Model().(esi.InternalServerError)
+			if ok {
+				t += ": " + e2.Error_
+			}
+		}
+		err2 := s.r.SetCharacterUpdateStatusError(ctx, characterID, section, t)
+		if err2 != nil {
+			slog.Error("failed to record error for failed section update: %s", err2)
+		}
 		return false, fmt.Errorf("failed to update section %s from ESI for character %d: %w", section, characterID, err)
 	}
 	changed := x.(bool)
