@@ -140,7 +140,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 			case 12:
 				l.Text = nullStringOrFallback(c.ship, "?")
 			case 13:
-				l.Text = humanizedNullTime(c.lastLoginAt, "?")
+				l.Text = humanizedRelNullTime(c.lastLoginAt, "?")
 			case 14:
 				l.Text = nullStringOrFallback(c.home, "?")
 			case 15:

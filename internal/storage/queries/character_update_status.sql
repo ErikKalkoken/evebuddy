@@ -4,6 +4,11 @@ FROM character_update_status
 WHERE character_id = ?
 AND section_id = ?;
 
+-- name: ListCharacterUpdateStatus :many
+SELECT *
+FROM character_update_status
+WHERE character_id = ?;
+
 -- name: UpdateOrCreateCharacterUpdateStatus :exec
 INSERT INTO character_update_status (
     character_id,

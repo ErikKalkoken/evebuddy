@@ -34,6 +34,18 @@ func (r *Storage) GetCharacterUpdateStatus(ctx context.Context, characterID int3
 	return s2, nil
 }
 
+func (r *Storage) ListCharacterUpdateStatus(ctx context.Context, characterID int32) ([]*model.CharacterUpdateStatus, error) {
+	rows, err := r.q.ListCharacterUpdateStatus(ctx, int64(characterID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to list character update status for ID %c: %w", characterID, err)
+	}
+	oo := make([]*model.CharacterUpdateStatus, len(rows))
+	for i, row := range rows {
+		oo[i] = characterUpdateStatusFromDBModel(row)
+	}
+	return oo, nil
+}
+
 func (r *Storage) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg CharacterUpdateStatusParams) error {
 	arg1 := queries.UpdateOrCreateCharacterUpdateStatusParams{
 		CharacterID: int64(arg.CharacterID),

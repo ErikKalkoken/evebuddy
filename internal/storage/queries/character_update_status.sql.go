@@ -35,6 +35,41 @@ func (q *Queries) GetCharacterUpdateStatus(ctx context.Context, arg GetCharacter
 	return i, err
 }
 
+const listCharacterUpdateStatus = `-- name: ListCharacterUpdateStatus :many
+SELECT id, character_id, content_hash, section_id, updated_at
+FROM character_update_status
+WHERE character_id = ?
+`
+
+func (q *Queries) ListCharacterUpdateStatus(ctx context.Context, characterID int64) ([]CharacterUpdateStatus, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterUpdateStatus, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CharacterUpdateStatus
+	for rows.Next() {
+		var i CharacterUpdateStatus
+		if err := rows.Scan(
+			&i.ID,
+			&i.CharacterID,
+			&i.ContentHash,
+			&i.SectionID,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateOrCreateCharacterUpdateStatus = `-- name: UpdateOrCreateCharacterUpdateStatus :exec
 INSERT INTO character_update_status (
     character_id,

@@ -40,24 +40,26 @@ func (u *ui) NewImplantsArea() *implantsArea {
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
 			icon.FillMode = canvas.ImageFillContain
-			icon.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
-			return container.NewHBox(icon, widget.NewLabel("template"))
+			icon.SetMinSize(fyne.Size{Width: 42, Height: 42})
+			return container.NewHBox(icon, widget.NewLabel("placeholder\nslot"))
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			row := co.(*fyne.Container)
-			name := row.Objects[1].(*widget.Label)
+
+			icon := row.Objects[0].(*canvas.Image)
+			label := row.Objects[1].(*widget.Label)
+
 			q, err := convertDataItem[*model.CharacterImplant](di)
 			if err != nil {
 				slog.Error("failed to render row in implants table", "err", err)
-				name.Text = "failed to render"
-				name.Importance = widget.DangerImportance
-				name.Refresh()
+				label.Text = "failed to render"
+				label.Importance = widget.DangerImportance
+				label.Refresh()
 				return
 			}
-			name.SetText(q.EveType.Name)
+			label.SetText(fmt.Sprintf("%s\nSlot %d", q.EveType.Name, q.SlotNum))
 
-			icon := row.Objects[0].(*canvas.Image)
-			r := u.imageManager.InventoryTypeIcon(q.EveType.ID, defaultIconSize)
+			r := u.imageManager.InventoryTypeIcon(q.EveType.ID, 64)
 			icon.Resource = r
 			icon.Refresh()
 		})

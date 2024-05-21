@@ -40,7 +40,7 @@ type ui struct {
 	mailArea              *mailArea
 	mailTab               *container.TabItem
 	overviewArea          *overviewArea
-	statusArea            *statusArea
+	statusArea            *statusBarArea
 	service               *service.Service
 	skillCatalogueArea    *skillCatalogueArea
 	skillqueueArea        *skillqueueArea
@@ -66,9 +66,9 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 		))
 
 	u.implantsArea = u.NewImplantsArea()
-	clonesTab := container.NewTabItemWithIcon("Clones",
-		theme.NewThemedResource(resourceControlpointduplicateSvg), container.NewAppTabs(
-			container.NewTabItem("Implants", u.implantsArea.content),
+	clonesTab := container.NewTabItemWithIcon("Character",
+		theme.NewThemedResource(resourcePortraitSvg), container.NewAppTabs(
+			container.NewTabItem("Augmentations", u.implantsArea.content),
 		))
 
 	u.overviewArea = u.NewOverviewArea()
@@ -94,7 +94,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 			container.NewTabItem("Market Transactions", u.walletTransactionArea.content),
 		))
 
-	u.statusArea = u.newStatusArea()
+	u.statusArea = u.newBarStatusArea()
 	u.toolbarArea = u.newToolbarArea()
 
 	u.tabs = container.NewAppTabs(clonesTab, u.mailTab, u.skillqueueTab, walletTab, overviewTab)

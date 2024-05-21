@@ -64,4 +64,23 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can list", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionSkillqueue,
+		})
+		factory.CreateCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionImplants,
+		})
+		// when
+		oo, err := r.ListCharacterUpdateStatus(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, oo, 2)
+		}
+	})
 }

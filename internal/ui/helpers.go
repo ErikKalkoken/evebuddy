@@ -39,11 +39,18 @@ func humanizedNullDuration(d types.NullDuration, fallback string) string {
 	return ihumanize.Duration(d.Duration)
 }
 
-func humanizedNullTime(v sql.NullTime, fallback string) string {
+func humanizedRelNullTime(v sql.NullTime, fallback string) string {
 	if !v.Valid {
 		return fallback
 	}
 	return humanize.RelTime(v.Time, time.Now(), "", "")
+}
+
+func humanizedNullTime(v sql.NullTime, fallback string) string {
+	if !v.Valid {
+		return fallback
+	}
+	return humanize.Time(v.Time)
 }
 
 func humanizedNullFloat64(v sql.NullFloat64, decimals int, fallback string) string {

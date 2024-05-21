@@ -35,8 +35,8 @@ type eveStatus struct {
 	level eveStatusLevel
 }
 
-// statusArea is the UI area showing the current status aka status bar.
-type statusArea struct {
+// statusBarArea is the UI area showing the current status aka status bar.
+type statusBarArea struct {
 	content                  *fyne.Container
 	eveClock                 *widget.Label
 	eveStatusTrafficResource fyne.Resource
@@ -48,8 +48,8 @@ type statusArea struct {
 	ui                       *ui
 }
 
-func (u *ui) newStatusArea() *statusArea {
-	a := &statusArea{
+func (u *ui) newBarStatusArea() *statusBarArea {
+	a := &statusBarArea{
 		eveClock:                 widget.NewLabel(""),
 		eveStatus:                binding.NewUntyped(),
 		eveStatusTrafficResource: theme.MediaRecordIcon(),
@@ -132,7 +132,7 @@ func (u *ui) newStatusArea() *statusArea {
 	return a
 }
 
-func (a *statusArea) StartUpdateTicker() {
+func (a *statusBarArea) StartUpdateTicker() {
 	clockTicker := time.NewTicker(clockUpdateTicker)
 	go func() {
 		for {
@@ -171,29 +171,29 @@ func (a *statusArea) StartUpdateTicker() {
 	}()
 }
 
-func (s *statusArea) SetInfo(text string) {
+func (s *statusBarArea) SetInfo(text string) {
 	s.setInfo(text, widget.MediumImportance)
 	s.infoPB.Stop()
 	s.infoPB.Hide()
 }
 
-func (s *statusArea) SetInfoWithProgress(text string) {
+func (s *statusBarArea) SetInfoWithProgress(text string) {
 	s.setInfo(text, widget.MediumImportance)
 	s.infoPB.Start()
 	s.infoPB.Show()
 }
 
-func (s *statusArea) SetError(text string) {
+func (s *statusBarArea) SetError(text string) {
 	s.setInfo(text, widget.DangerImportance)
 	s.infoPB.Stop()
 	s.infoPB.Hide()
 }
 
-func (s *statusArea) ClearInfo() {
+func (s *statusBarArea) ClearInfo() {
 	s.SetInfo("")
 }
 
-func (s *statusArea) setInfo(text string, importance widget.Importance) {
+func (s *statusBarArea) setInfo(text string, importance widget.Importance) {
 	s.infoText.Text = text
 	s.infoText.Importance = importance
 	s.infoText.Refresh()

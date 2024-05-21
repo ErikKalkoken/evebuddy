@@ -3,7 +3,11 @@ package model
 
 import (
 	"database/sql"
+	"strings"
 	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // An Eve Online character owners by the user.
@@ -28,14 +32,21 @@ type CharacterShort struct {
 
 type CharacterSection string
 
+func (s CharacterSection) Name() string {
+	t := strings.ReplaceAll(string(s), "_", " ")
+	c := cases.Title(language.English)
+	t = c.String(t)
+	return t
+}
+
 // Updated character sections
 const (
 	CharacterSectionHome               CharacterSection = "home"
 	CharacterSectionImplants           CharacterSection = "implants"
 	CharacterSectionLocation           CharacterSection = "location"
-	CharacterSectionMails              CharacterSection = "mails"
 	CharacterSectionMailLists          CharacterSection = "mail_lists"
 	CharacterSectionMailLabels         CharacterSection = "mail_labels"
+	CharacterSectionMails              CharacterSection = "mails"
 	CharacterSectionOnline             CharacterSection = "online"
 	CharacterSectionShip               CharacterSection = "ship"
 	CharacterSectionSkills             CharacterSection = "skills"
@@ -44,6 +55,22 @@ const (
 	CharacterSectionWalletJournal      CharacterSection = "wallet_journal"
 	CharacterSectionWalletTransactions CharacterSection = "wallet_transactions"
 )
+
+var CharacterSections = []CharacterSection{
+	CharacterSectionHome,
+	CharacterSectionImplants,
+	CharacterSectionLocation,
+	CharacterSectionMailLabels,
+	CharacterSectionMailLists,
+	CharacterSectionMails,
+	CharacterSectionOnline,
+	CharacterSectionShip,
+	CharacterSectionSkills,
+	CharacterSectionSkillqueue,
+	CharacterSectionWalletBalance,
+	CharacterSectionWalletJournal,
+	CharacterSectionWalletTransactions,
+}
 
 type CharacterUpdateStatus struct {
 	ID          int64
