@@ -35,7 +35,7 @@ func (s *Service) updateCharacterMailLabelsESI(ctx context.Context, characterID 
 		return false, err
 	}
 	slog.Info("Received mail labels from ESI", "characterID", characterID, "count", len(ll.Labels))
-	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionMailLabels, ll)
+	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionMailLabels, ll)
 	if err != nil {
 		return false, err
 	}
@@ -71,7 +71,7 @@ func (s *Service) updateCharacterMailListsESI(ctx context.Context, characterID i
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionMailLists, lists)
+	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionMailLists, lists)
 	if err != nil {
 		return false, err
 	}
@@ -101,7 +101,7 @@ func (s *Service) updateCharacterMailESI(ctx context.Context, characterID int32)
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionMails, headers)
+	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionMails, headers)
 	if err != nil {
 		return false, err
 	}

@@ -18,7 +18,7 @@ func (s *Service) updateCharacterSkillsESI(ctx context.Context, characterID int3
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionSkills, skills)
+	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionSkills, skills)
 	if err != nil {
 		return false, err
 	}

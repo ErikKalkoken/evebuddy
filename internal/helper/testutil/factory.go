@@ -338,10 +338,18 @@ func (f Factory) CreateCharacterToken(args ...model.CharacterToken) *model.Chara
 	return &t
 }
 
+type CharacterUpdateStatusParams struct {
+	CharacterID   int32
+	Section       model.CharacterSection
+	Error         string
+	LastUpdatedAt sql.NullTime
+	Data          string
+}
+
 // CreateMailLabel is a test factory for MailLabel objects
-func (f Factory) CreateCharacterUpdateStatus(args ...storage.CharacterUpdateStatusParams) *model.CharacterUpdateStatus {
+func (f Factory) CreateCharacterUpdateStatus(args ...CharacterUpdateStatusParams) *model.CharacterUpdateStatus {
 	ctx := context.Background()
-	var arg storage.CharacterUpdateStatusParams
+	var arg CharacterUpdateStatusParams
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -352,15 +360,25 @@ func (f Factory) CreateCharacterUpdateStatus(args ...storage.CharacterUpdateStat
 	if arg.Section == "" {
 		panic("must define a section in test factory")
 	}
-	if arg.ContentHash == "" {
-		arg.ContentHash = fmt.Sprintf("content-hash-%d-%s-%s", arg.CharacterID, arg.Section, time.Now())
+	if arg.Data == "" {
+		arg.Data = fmt.Sprintf("content-hash-%d-%s-%s", arg.CharacterID, arg.Section, time.Now())
 	}
 	if !arg.LastUpdatedAt.Valid {
 		arg.LastUpdatedAt.Time = time.Now()
 		arg.LastUpdatedAt.Valid = true
 	}
-	err := f.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
+	hash, err := arg.Section.CalcContentHash(arg.Data)
 	if err != nil {
+		panic(err)
+	}
+	arg2 := storage.CharacterUpdateStatusParams{
+		CharacterID:   arg.CharacterID,
+		Section:       arg.Section,
+		Error:         arg.Error,
+		LastUpdatedAt: arg.LastUpdatedAt,
+		ContentHash:   hash,
+	}
+	if err := f.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg2); err != nil {
 		panic(err)
 	}
 	o, err := f.r.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)

@@ -32,7 +32,7 @@ func (s *Service) updateCharacterSkillqueueESI(ctx context.Context, characterID 
 		return false, err
 	}
 	slog.Info("Received skillqueue from ESI", "items", len(items), "characterID", characterID)
-	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionSkillqueue, items)
+	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionSkillqueue, items)
 	if err != nil {
 		return false, err
 	}

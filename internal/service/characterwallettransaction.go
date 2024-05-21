@@ -29,7 +29,7 @@ func (s *Service) updateCharacterWalletTransactionESI(ctx context.Context, chara
 		return false, err
 	}
 	slog.Info("Received wallet transactions from ESI", "entries", len(entries), "characterID", token.CharacterID)
-	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionWalletTransactions, entries)
+	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionWalletTransactions, entries)
 	if err != nil {
 		return false, err
 	}

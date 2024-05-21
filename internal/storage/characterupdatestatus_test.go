@@ -45,7 +45,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     model.CharacterSectionSkillqueue,
 		})
@@ -73,11 +73,11 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     model.CharacterSectionSkillqueue,
 		})
-		factory.CreateCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     model.CharacterSectionImplants,
 		})
@@ -114,7 +114,7 @@ func TestSetCharacterUpdateStatusError(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		x := factory.CreateCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+		x := factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     model.CharacterSectionImplants,
 		})

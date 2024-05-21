@@ -2,7 +2,10 @@
 package model
 
 import (
+	"crypto/md5"
 	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"log/slog"
 	"strings"
 	"time"
@@ -31,15 +34,6 @@ type CharacterShort struct {
 	ID              int32
 	Name            string
 	CorporationName string
-}
-
-type CharacterSection string
-
-func (s CharacterSection) Name() string {
-	t := strings.ReplaceAll(string(s), "_", " ")
-	c := cases.Title(language.English)
-	t = c.String(t)
-	return t
 }
 
 // Updated character sections
@@ -73,6 +67,25 @@ var CharacterSections = []CharacterSection{
 	CharacterSectionWalletBalance,
 	CharacterSectionWalletJournal,
 	CharacterSectionWalletTransactions,
+}
+
+type CharacterSection string
+
+func (s CharacterSection) Name() string {
+	t := strings.ReplaceAll(string(s), "_", " ")
+	c := cases.Title(language.English)
+	t = c.String(t)
+	return t
+}
+
+func (s CharacterSection) CalcContentHash(data any) (string, error) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	b2 := md5.Sum(b)
+	hash := hex.EncodeToString(b2[:])
+	return hash, nil
 }
 
 // Timeout returns the time until the data of an update section becomes stale.

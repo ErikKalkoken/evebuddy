@@ -97,7 +97,7 @@ func (s *Service) updateCharacterHomeESI(ctx context.Context, characterID int32)
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionHome, clones)
+	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionHome, clones)
 	if err != nil {
 		return false, err
 	}
@@ -129,7 +129,7 @@ func (s *Service) updateCharacterLocationESI(ctx context.Context, characterID in
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionLocation, location)
+	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionLocation, location)
 	if err != nil {
 		return false, err
 	}
@@ -166,7 +166,7 @@ func (s *Service) updateCharacterOnlineESI(ctx context.Context, characterID int3
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionOnline, online)
+	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionOnline, online)
 	if err != nil {
 		return false, err
 	}
@@ -194,7 +194,7 @@ func (s *Service) updateCharacterShipESI(ctx context.Context, characterID int32)
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionShip, ship)
+	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionShip, ship)
 	if err != nil {
 		return false, err
 	}
@@ -222,7 +222,7 @@ func (s *Service) updateCharacterWalletBalanceESI(ctx context.Context, character
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionWalletBalance, balance)
+	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionWalletBalance, balance)
 	if err != nil {
 		return false, err
 	}

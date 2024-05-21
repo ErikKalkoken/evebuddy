@@ -22,7 +22,7 @@ func (s *Service) updateCharacterImplantsESI(ctx context.Context, characterID in
 	if err != nil {
 		return false, err
 	}
-	changed, err := s.hasCharacterSectionChanged(ctx, characterID, model.CharacterSectionImplants, implants)
+	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionImplants, implants)
 	if err != nil {
 		return false, err
 	}

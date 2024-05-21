@@ -2,10 +2,7 @@ package service
 
 import (
 	"context"
-	"crypto/md5"
 	"database/sql"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -109,22 +106,22 @@ func (s *Service) CharacterSectionIsUpdateExpired(characterID int32, section mod
 	return time.Now().After(deadline), nil
 }
 
-// hasCharacterSectionChanged reports wether a section has changed based on the given data and updates it's content hash.
-func (s *Service) hasCharacterSectionChanged(ctx context.Context, characterID int32, section model.CharacterSection, data any) (bool, error) {
-	hash, err := calcHash(data)
+// recordCharacterSectionUpdate records an update to a character section
+// and reports wether the section has changed
+func (s *Service) recordCharacterSectionUpdate(ctx context.Context, characterID int32, section model.CharacterSection, data any) (bool, error) {
+	hash, err := section.CalcContentHash(data)
 	if err != nil {
 		return false, err
 	}
+	var hasChanged bool
 	u, err := s.r.GetCharacterUpdateStatus(ctx, characterID, section)
 	if errors.Is(err, storage.ErrNotFound) {
-		// section is new
+		hasChanged = true
 	} else if err != nil {
 		return false, err
-	} else if u.ContentHash == hash {
-		slog.Debug("Section has not changed", "characterID", characterID, "section", section)
-		return false, nil
+	} else {
+		hasChanged = u.ContentHash != hash
 	}
-	slog.Debug("Section has changed", "characterID", characterID, "section", section)
 	arg := storage.CharacterUpdateStatusParams{
 		CharacterID:   characterID,
 		Section:       section,
@@ -135,17 +132,8 @@ func (s *Service) hasCharacterSectionChanged(ctx context.Context, characterID in
 	if err := s.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg); err != nil {
 		return false, err
 	}
-	return true, nil
-}
-
-func calcHash(data any) (string, error) {
-	b, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	b2 := md5.Sum(b)
-	hash := hex.EncodeToString(b2[:])
-	return hash, nil
+	slog.Debug("Has section changed", "characterID", characterID, "section", section, "changed", hasChanged)
+	return hasChanged, nil
 }
 
 func (s *Service) ListCharacterUpdateStatus(characterID int32) ([]*model.CharacterUpdateStatus, error) {
