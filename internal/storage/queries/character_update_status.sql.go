@@ -7,11 +7,11 @@ package queries
 
 import (
 	"context"
-	"time"
+	"database/sql"
 )
 
 const getCharacterUpdateStatus = `-- name: GetCharacterUpdateStatus :one
-SELECT id, character_id, content_hash, section_id, updated_at
+SELECT id, character_id, content_hash, error, section_id, last_updated_at
 FROM character_update_status
 WHERE character_id = ?
 AND section_id = ?
@@ -29,14 +29,15 @@ func (q *Queries) GetCharacterUpdateStatus(ctx context.Context, arg GetCharacter
 		&i.ID,
 		&i.CharacterID,
 		&i.ContentHash,
+		&i.Error,
 		&i.SectionID,
-		&i.UpdatedAt,
+		&i.LastUpdatedAt,
 	)
 	return i, err
 }
 
 const listCharacterUpdateStatus = `-- name: ListCharacterUpdateStatus :many
-SELECT id, character_id, content_hash, section_id, updated_at
+SELECT id, character_id, content_hash, error, section_id, last_updated_at
 FROM character_update_status
 WHERE character_id = ?
 `
@@ -54,8 +55,9 @@ func (q *Queries) ListCharacterUpdateStatus(ctx context.Context, characterID int
 			&i.ID,
 			&i.CharacterID,
 			&i.ContentHash,
+			&i.Error,
 			&i.SectionID,
-			&i.UpdatedAt,
+			&i.LastUpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -70,37 +72,69 @@ func (q *Queries) ListCharacterUpdateStatus(ctx context.Context, characterID int
 	return items, nil
 }
 
+const setCharacterUpdateStatus = `-- name: SetCharacterUpdateStatus :exec
+INSERT INTO character_update_status (
+    character_id,
+    section_id,
+    content_hash,
+    error
+)
+VALUES (
+    ?1, ?2, "", ?3
+)
+ON CONFLICT(character_id, section_id) DO
+UPDATE SET
+    error = ?3
+WHERE character_id = ?1
+AND section_id = ?2
+`
+
+type SetCharacterUpdateStatusParams struct {
+	CharacterID int64
+	SectionID   string
+	Error       string
+}
+
+func (q *Queries) SetCharacterUpdateStatus(ctx context.Context, arg SetCharacterUpdateStatusParams) error {
+	_, err := q.db.ExecContext(ctx, setCharacterUpdateStatus, arg.CharacterID, arg.SectionID, arg.Error)
+	return err
+}
+
 const updateOrCreateCharacterUpdateStatus = `-- name: UpdateOrCreateCharacterUpdateStatus :exec
 INSERT INTO character_update_status (
     character_id,
     section_id,
-    updated_at,
-    content_hash
+    content_hash,
+    error,
+    last_updated_at
 )
 VALUES (
-    ?1, ?2, ?3, ?4
+    ?1, ?2, ?3, ?4, ?5
 )
 ON CONFLICT(character_id, section_id) DO
 UPDATE SET
-    updated_at = ?3,
-    content_hash = ?4
+    content_hash = ?3,
+    error = ?4,
+    last_updated_at = ?5
 WHERE character_id = ?1
 AND section_id = ?2
 `
 
 type UpdateOrCreateCharacterUpdateStatusParams struct {
-	CharacterID int64
-	SectionID   string
-	UpdatedAt   time.Time
-	ContentHash string
+	CharacterID   int64
+	SectionID     string
+	ContentHash   string
+	Error         string
+	LastUpdatedAt sql.NullTime
 }
 
 func (q *Queries) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg UpdateOrCreateCharacterUpdateStatusParams) error {
 	_, err := q.db.ExecContext(ctx, updateOrCreateCharacterUpdateStatus,
 		arg.CharacterID,
 		arg.SectionID,
-		arg.UpdatedAt,
 		arg.ContentHash,
+		arg.Error,
+		arg.LastUpdatedAt,
 	)
 	return err
 }

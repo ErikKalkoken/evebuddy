@@ -350,13 +350,14 @@ func (f Factory) CreateCharacterUpdateStatus(args ...storage.CharacterUpdateStat
 		arg.CharacterID = c.ID
 	}
 	if arg.Section == "" {
-		panic("missing section")
+		panic("must define a section in test factory")
 	}
 	if arg.ContentHash == "" {
 		arg.ContentHash = fmt.Sprintf("content-hash-%d-%s-%s", arg.CharacterID, arg.Section, time.Now())
 	}
-	if arg.UpdatedAt.IsZero() {
-		arg.UpdatedAt = time.Now()
+	if !arg.LastUpdatedAt.Valid {
+		arg.LastUpdatedAt.Time = time.Now()
+		arg.LastUpdatedAt.Valid = true
 	}
 	err := f.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
 	if err != nil {

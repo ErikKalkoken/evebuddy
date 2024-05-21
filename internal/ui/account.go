@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/dustin/go-humanize"
 )
 
 type accountCharacter struct {
@@ -209,16 +211,21 @@ func (a *accountArea) showAddCharacterDialog() {
 }
 
 type updateStatus struct {
-	section       string
+	errorMessage  string
 	lastUpdatedAt sql.NullTime
+	section       string
+	timeout       time.Duration
+}
+
+func (s *updateStatus) IsOK() bool {
+	return s.errorMessage == ""
 }
 
 func (a *accountArea) showStatusDialog(c accountCharacter) {
 	content := a.makeCharacterStatus(c)
-	d1 := dialog.NewCustom("Character status", "Close", content, a.ui.window)
+	d1 := dialog.NewCustom("Character update status", "Close", content, a.ui.window)
 	d1.Show()
-	d1.Resize(fyne.Size{Width: 600, Height: 600})
-
+	d1.Resize(fyne.Size{Width: 800, Height: 500})
 }
 
 func (a *accountArea) makeCharacterStatus(c accountCharacter) fyne.CanvasObject {
@@ -228,14 +235,14 @@ func (a *accountArea) makeCharacterStatus(c accountCharacter) fyne.CanvasObject 
 	}
 	m := make(map[model.CharacterSection]*model.CharacterUpdateStatus)
 	for _, o := range oo {
-		m[o.SectionID] = o
+		m[o.Section] = o
 	}
 	data := make([]updateStatus, len(model.CharacterSections))
 	for i, s := range model.CharacterSections {
-		x := updateStatus{section: s.Name()}
+		x := updateStatus{section: s.Name(), timeout: s.Timeout()}
 		o, ok := m[s]
 		if ok {
-			x.lastUpdatedAt.Time = o.UpdatedAt
+			x.lastUpdatedAt = o.LastUpdatedAt
 			x.lastUpdatedAt.Valid = true
 		}
 		data[i] = x
@@ -244,8 +251,10 @@ func (a *accountArea) makeCharacterStatus(c accountCharacter) fyne.CanvasObject 
 		text  string
 		width float32
 	}{
-		{"Section", 200},
-		{"Last Update", 200},
+		{"Section", 150},
+		{"Timeout", 150},
+		{"Last Update", 150},
+		{"Status", 150},
 	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
@@ -253,19 +262,35 @@ func (a *accountArea) makeCharacterStatus(c accountCharacter) fyne.CanvasObject 
 
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("Placeholder")
+			l := widget.NewLabel("Placeholder")
+			l.Truncation = fyne.TextTruncateEllipsis
+			return l
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			d := data[tci.Row]
-			cell := co.(*widget.Label)
+			label := co.(*widget.Label)
 			var s string
+			i := widget.MediumImportance
 			switch tci.Col {
 			case 0:
 				s = d.section
 			case 1:
+				now := time.Now()
+				s = humanize.RelTime(now.Add(d.timeout), now, "", "")
+			case 2:
 				s = humanizedNullTime(d.lastUpdatedAt, "?")
+			case 3:
+				if d.IsOK() {
+					s = "OK"
+					i = widget.SuccessImportance
+				} else {
+					s = d.errorMessage
+					i = widget.DangerImportance
+				}
 			}
-			cell.SetText(s)
+			label.Text = s
+			label.Importance = i
+			label.Refresh()
 		},
 	)
 	t.ShowHeaderRow = true

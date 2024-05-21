@@ -5,17 +5,17 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
 type CharacterUpdateStatusParams struct {
-	CharacterID int32
-	Section     model.CharacterSection
-	UpdatedAt   time.Time
-	ContentHash string
+	CharacterID   int32
+	Section       model.CharacterSection
+	Error         string
+	LastUpdatedAt sql.NullTime
+	ContentHash   string
 }
 
 func (r *Storage) GetCharacterUpdateStatus(ctx context.Context, characterID int32, section model.CharacterSection) (*model.CharacterUpdateStatus, error) {
@@ -46,12 +46,22 @@ func (r *Storage) ListCharacterUpdateStatus(ctx context.Context, characterID int
 	return oo, nil
 }
 
+func (r *Storage) SetCharacterUpdateStatusError(ctx context.Context, characterID int32, section model.CharacterSection, errorText string) error {
+	arg := queries.SetCharacterUpdateStatusParams{
+		CharacterID: int64(characterID),
+		SectionID:   string(section),
+		Error:       errorText,
+	}
+	return r.q.SetCharacterUpdateStatus(ctx, arg)
+}
+
 func (r *Storage) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg CharacterUpdateStatusParams) error {
 	arg1 := queries.UpdateOrCreateCharacterUpdateStatusParams{
-		CharacterID: int64(arg.CharacterID),
-		SectionID:   string(arg.Section),
-		UpdatedAt:   arg.UpdatedAt,
-		ContentHash: arg.ContentHash,
+		CharacterID:   int64(arg.CharacterID),
+		SectionID:     string(arg.Section),
+		Error:         arg.Error,
+		LastUpdatedAt: arg.LastUpdatedAt,
+		ContentHash:   arg.ContentHash,
 	}
 	err := r.q.UpdateOrCreateCharacterUpdateStatus(ctx, arg1)
 	if err != nil {
@@ -62,10 +72,11 @@ func (r *Storage) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg C
 
 func characterUpdateStatusFromDBModel(o queries.CharacterUpdateStatus) *model.CharacterUpdateStatus {
 	return &model.CharacterUpdateStatus{
-		ID:          o.ID,
-		CharacterID: int32(o.CharacterID),
-		SectionID:   model.CharacterSection(o.SectionID),
-		UpdatedAt:   o.UpdatedAt,
-		ContentHash: o.ContentHash,
+		ID:            o.ID,
+		CharacterID:   int32(o.CharacterID),
+		ErrorMessage:  o.Error,
+		Section:       model.CharacterSection(o.SectionID),
+		LastUpdatedAt: o.LastUpdatedAt,
+		ContentHash:   o.ContentHash,
 	}
 }

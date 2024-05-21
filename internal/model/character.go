@@ -3,12 +3,15 @@ package model
 
 import (
 	"database/sql"
+	"log/slog"
 	"strings"
 	"time"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
+
+const defaultUpdateSectionTimeout = 3600 * time.Second
 
 // An Eve Online character owners by the user.
 type Character struct {
@@ -72,10 +75,40 @@ var CharacterSections = []CharacterSection{
 	CharacterSectionWalletTransactions,
 }
 
+// Timeout returns the time until the data of an update section becomes stale.
+func (section CharacterSection) Timeout() time.Duration {
+	m := map[CharacterSection]time.Duration{
+		CharacterSectionHome:               120 * time.Second,
+		CharacterSectionImplants:           120 * time.Second,
+		CharacterSectionLocation:           30 * time.Second, // 5 seconds min
+		CharacterSectionMailLabels:         30 * time.Second,
+		CharacterSectionMailLists:          120 * time.Second,
+		CharacterSectionMails:              30 * time.Second,
+		CharacterSectionOnline:             60 * time.Second,
+		CharacterSectionShip:               30 * time.Second, // 5 seconds min
+		CharacterSectionSkillqueue:         120 * time.Second,
+		CharacterSectionSkills:             120 * time.Second,
+		CharacterSectionWalletBalance:      120 * time.Second,
+		CharacterSectionWalletJournal:      3600 * time.Second,
+		CharacterSectionWalletTransactions: 3600 * time.Second,
+	}
+	duration, ok := m[section]
+	if !ok {
+		slog.Warn("Requested duration for unknown section. Using default.", "section", section)
+		duration = defaultUpdateSectionTimeout
+	}
+	return duration
+}
+
 type CharacterUpdateStatus struct {
-	ID          int64
-	CharacterID int32
-	SectionID   CharacterSection
-	UpdatedAt   time.Time
-	ContentHash string
+	ID            int64
+	CharacterID   int32
+	ErrorMessage  string
+	Section       CharacterSection
+	LastUpdatedAt sql.NullTime
+	ContentHash   string
+}
+
+func (s CharacterUpdateStatus) IsOK() bool {
+	return s.ErrorMessage == ""
 }

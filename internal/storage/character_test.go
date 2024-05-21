@@ -14,7 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func TestMyCharacter(t *testing.T) {
+func TestCharacter(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
@@ -164,7 +164,7 @@ func TestMyCharacter(t *testing.T) {
 	})
 }
 
-func TestListMyCharactersShort(t *testing.T) {
+func TestListCharactersShort(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
@@ -196,7 +196,7 @@ func TestListMyCharactersShort(t *testing.T) {
 
 }
 
-func TestListMyCharacters(t *testing.T) {
+func TestListCharacters(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
@@ -225,7 +225,7 @@ func TestListMyCharacters(t *testing.T) {
 	})
 }
 
-func TestUpdateMyCharacterFields(t *testing.T) {
+func TestUpdateCharacterFields(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()

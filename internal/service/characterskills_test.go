@@ -121,7 +121,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 // 	t.Run("can list existing entries", func(t *testing.T) {
 // 		// given
 // 		testutil.TruncateTables(db)
-// 		c := factory.CreateMyCharacter()
+// 		c := factory.CreateCharacter()
 // 		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{CharacterID: c.ID})
 // 		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{CharacterID: c.ID})
 // 		factory.CreateWalletJournalEntry(storage.CreateWalletJournalEntryParams{CharacterID: c.ID})

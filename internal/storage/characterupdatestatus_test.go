@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func TestMyCharacterUpdateStatus(t *testing.T) {
+func TestCharacterUpdateStatus(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
@@ -20,12 +21,13 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		updatedAt := time.Now()
+		updatedAt := sql.NullTime{Time: time.Now(), Valid: true}
 		arg := storage.CharacterUpdateStatusParams{
-			CharacterID: c.ID,
-			Section:     model.CharacterSectionSkillqueue,
-			ContentHash: "content-hash",
-			UpdatedAt:   updatedAt,
+			CharacterID:   c.ID,
+			Error:         "error",
+			Section:       model.CharacterSectionSkillqueue,
+			ContentHash:   "content-hash",
+			LastUpdatedAt: updatedAt,
 		}
 		// when
 		err := r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
@@ -33,8 +35,9 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 		if assert.NoError(t, err) {
 			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.CharacterSectionSkillqueue)
 			if assert.NoError(t, err) {
+				assert.Equal(t, "error", l.ErrorMessage)
 				assert.Equal(t, "content-hash", l.ContentHash)
-				assert.Equal(t, updatedAt.Unix(), l.UpdatedAt.Unix())
+				assert.Equal(t, updatedAt.Time.UTC(), l.LastUpdatedAt.Time.UTC())
 			}
 		}
 	})
@@ -46,12 +49,13 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 			CharacterID: c.ID,
 			Section:     model.CharacterSectionSkillqueue,
 		})
-		updatedAt := time.Now().Add(1 * time.Hour)
+		updatedAt := sql.NullTime{Time: time.Now().Add(1 * time.Hour), Valid: true}
 		arg := storage.CharacterUpdateStatusParams{
-			CharacterID: c.ID,
-			Section:     model.CharacterSectionSkillqueue,
-			ContentHash: "content-hash",
-			UpdatedAt:   updatedAt,
+			CharacterID:   c.ID,
+			Section:       model.CharacterSectionSkillqueue,
+			Error:         "error",
+			ContentHash:   "content-hash",
+			LastUpdatedAt: updatedAt,
 		}
 		// when
 		err := r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
@@ -60,7 +64,8 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.CharacterSectionSkillqueue)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "content-hash", l.ContentHash)
-				assert.Equal(t, updatedAt.Unix(), l.UpdatedAt.Unix())
+				assert.Equal(t, "error", l.ErrorMessage)
+				assert.Equal(t, updatedAt.Time.UTC(), l.LastUpdatedAt.Time.UTC())
 			}
 		}
 	})
@@ -83,4 +88,47 @@ func TestMyCharacterUpdateStatus(t *testing.T) {
 			assert.Len(t, oo, 2)
 		}
 	})
+}
+
+func TestSetCharacterUpdateStatusError(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can set from scratch", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		// when
+		err := r.SetCharacterUpdateStatusError(ctx, c.ID, model.CharacterSectionImplants, "error")
+		// then
+		if assert.NoError(t, err) {
+			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.CharacterSectionImplants)
+			if assert.NoError(t, err) {
+				assert.Equal(t, "", l.ContentHash)
+				assert.Equal(t, "error", l.ErrorMessage)
+				assert.False(t, l.LastUpdatedAt.Valid)
+			}
+		}
+	})
+	t.Run("can set existing", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		x := factory.CreateCharacterUpdateStatus(storage.CharacterUpdateStatusParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionImplants,
+		})
+		// when
+		err := r.SetCharacterUpdateStatusError(ctx, c.ID, x.Section, "error")
+		// then
+		if assert.NoError(t, err) {
+			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, x.Section)
+			if assert.NoError(t, err) {
+				assert.Equal(t, x.ContentHash, l.ContentHash)
+				assert.Equal(t, "error", l.ErrorMessage)
+				assert.Equal(t, x.LastUpdatedAt.Time.UTC(), l.LastUpdatedAt.Time.UTC())
+			}
+		}
+	})
+
 }

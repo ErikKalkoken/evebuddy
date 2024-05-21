@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMyCharacter(t *testing.T) {
+func TestCharacter(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
