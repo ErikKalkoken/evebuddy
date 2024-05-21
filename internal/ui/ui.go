@@ -34,6 +34,7 @@ const (
 // call methods on other UI areas and access shared variables in the UI.
 type ui struct {
 	app                   fyne.App
+	biographyArea         *biographyArea
 	currentCharacter      *model.Character
 	imageManager          *images.Manager
 	implantsArea          *implantsArea
@@ -58,17 +59,19 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	w := app.NewWindow(appName(app))
 	u := &ui{app: app, window: w, service: service, imageManager: images.New(imageCachePath)}
 
+	u.implantsArea = u.NewImplantsArea()
+	u.biographyArea = u.NewBiographyArea()
+	clonesTab := container.NewTabItemWithIcon("Character",
+		theme.NewThemedResource(resourcePortraitSvg), container.NewAppTabs(
+			container.NewTabItem("Augmentations", u.implantsArea.content),
+			container.NewTabItem("Biography", u.biographyArea.content),
+		))
+
 	u.mailArea = u.NewMailArea()
 	u.mailTab = container.NewTabItemWithIcon("Mail",
 		theme.MailComposeIcon(), container.NewAppTabs(
 			container.NewTabItem("Mail", u.mailArea.content),
 			// container.NewTabItem("Notifications", widget.NewLabel("PLACEHOLDER")),
-		))
-
-	u.implantsArea = u.NewImplantsArea()
-	clonesTab := container.NewTabItemWithIcon("Character",
-		theme.NewThemedResource(resourcePortraitSvg), container.NewAppTabs(
-			container.NewTabItem("Augmentations", u.implantsArea.content),
 		))
 
 	u.overviewArea = u.NewOverviewArea()
@@ -223,6 +226,7 @@ func (u *ui) setCurrentCharacter(c *model.Character) {
 }
 
 func (u *ui) refreshCurrentCharacter() {
+	u.biographyArea.Refresh()
 	u.implantsArea.Refresh()
 	u.mailArea.Redraw()
 	u.skillqueueArea.Refresh()
