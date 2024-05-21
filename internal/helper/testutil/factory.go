@@ -66,6 +66,44 @@ func (f Factory) CreateCharacter(args ...storage.UpdateOrCreateCharacterParams) 
 	return c
 }
 
+func (f Factory) CreateCharacterAttributes(args ...storage.UpdateOrCreateCharacterAttributesParams) *model.CharacterAttribute {
+	ctx := context.Background()
+	var arg storage.UpdateOrCreateCharacterAttributesParams
+	randomValue := func() int {
+		return 20 + rand.IntN(5)
+	}
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.Charisma == 0 {
+		arg.Charisma = randomValue()
+	}
+	if arg.Intelligence == 0 {
+		arg.Intelligence = randomValue()
+	}
+	if arg.Memory == 0 {
+		arg.Memory = randomValue()
+	}
+	if arg.Perception == 0 {
+		arg.Perception = randomValue()
+	}
+	if arg.Willpower == 0 {
+		arg.Willpower = randomValue()
+	}
+	if err := f.r.UpdateOrCreateCharacterAttributes(ctx, arg); err != nil {
+		panic(err)
+	}
+	o, err := f.r.GetCharacterAttributes(ctx, arg.CharacterID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantParams) *model.CharacterImplant {
 	ctx := context.Background()
 	var arg storage.CreateCharacterImplantParams

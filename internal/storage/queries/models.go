@@ -20,6 +20,18 @@ type Character struct {
 	WalletBalance sql.NullFloat64
 }
 
+type CharacterAttribute struct {
+	ID            int64
+	BonusRemaps   sql.NullInt64
+	CharacterID   int64
+	Charisma      int64
+	Intelligence  int64
+	LastRemapDate sql.NullTime
+	Memory        int64
+	Perception    int64
+	Willpower     int64
+}
+
 type CharacterImplant struct {
 	ID          int64
 	CharacterID int64

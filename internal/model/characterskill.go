@@ -1,5 +1,19 @@
 package model
 
+import "database/sql"
+
+type CharacterAttribute struct {
+	ID            int64
+	BonusRemaps   sql.NullInt64
+	CharacterID   int32
+	Charisma      int
+	Intelligence  int
+	LastRemapDate sql.NullTime
+	Memory        int
+	Perception    int
+	Willpower     int
+}
+
 type CharacterSkill struct {
 	ActiveSkillLevel   int
 	CharacterID        int32

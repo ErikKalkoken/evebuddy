@@ -133,6 +133,20 @@ CREATE TABLE characters (
     FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE SET NULL
 );
 
+CREATE TABLE character_attributes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bonus_remaps INTEGER,
+    character_id INTEGER NOT NULL,
+    charisma INTEGER NOT NULL,
+    intelligence INTEGER NOT NULL,
+    last_remap_date DATETIME,
+    memory INTEGER NOT NULL,
+    perception INTEGER NOT NULL,
+    willpower INTEGER NOT NULL,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    UNIQUE (character_id)
+);
+
 CREATE TABLE character_implants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     character_id INTEGER NOT NULL,

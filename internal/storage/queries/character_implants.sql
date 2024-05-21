@@ -26,7 +26,6 @@ AND character_implants.eve_type_id = ?;
 DELETE FROM character_implants
 WHERE character_id = ?;
 
-
 -- name: ListCharacterImplants :many
 SELECT
     sqlc.embed(character_implants),
