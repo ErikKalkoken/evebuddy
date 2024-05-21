@@ -3,13 +3,14 @@ package ui
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
@@ -37,10 +38,10 @@ func (u *ui) NewImplantsArea() *implantsArea {
 	list := widget.NewListWithData(
 		a.implants,
 		func() fyne.CanvasObject {
-			return container.NewHBox(
-				widget.NewIcon(theme.AccountIcon()),
-				widget.NewLabel("template"),
-			)
+			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
+			icon.FillMode = canvas.ImageFillContain
+			icon.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
+			return container.NewHBox(icon, widget.NewLabel("template"))
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			row := co.(*fyne.Container)
@@ -55,9 +56,10 @@ func (u *ui) NewImplantsArea() *implantsArea {
 			}
 			name.SetText(q.EveType.Name)
 
-			icon := row.Objects[0].(*widget.Icon)
+			icon := row.Objects[0].(*canvas.Image)
 			r := u.imageManager.InventoryTypeIcon(q.EveType.ID, defaultIconSize)
-			icon.SetResource(r)
+			icon.Resource = r
+			icon.Refresh()
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
@@ -73,6 +75,7 @@ func (u *ui) NewImplantsArea() *implantsArea {
 		}{
 			{"Name", x.EveType.Name, false},
 			{"Description", x.EveType.Description, true},
+			{"Slot", strconv.Itoa(x.SlotNum), true},
 		}
 		form := widget.NewForm()
 		for _, row := range data {

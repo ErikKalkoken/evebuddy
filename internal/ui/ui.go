@@ -67,7 +67,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 
 	u.implantsArea = u.NewImplantsArea()
 	clonesTab := container.NewTabItemWithIcon("Clones",
-		theme.NewThemedResource(resourceSchoolSvg), container.NewAppTabs(
+		theme.NewThemedResource(resourceControlpointduplicateSvg), container.NewAppTabs(
 			container.NewTabItem("Implants", u.implantsArea.content),
 		))
 

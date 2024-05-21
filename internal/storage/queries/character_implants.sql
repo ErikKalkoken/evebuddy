@@ -39,4 +39,5 @@ JOIN eve_types ON eve_types.id = character_implants.eve_type_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
 JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
 LEFT JOIN eve_type_dogma_attributes ON eve_type_dogma_attributes.eve_type_id = character_implants.eve_type_id AND eve_type_dogma_attributes.dogma_attribute_id = ?
-WHERE character_id = ?;
+WHERE character_id = ?
+ORDER BY slot_num;
