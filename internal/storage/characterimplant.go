@@ -21,8 +21,9 @@ func (r *Storage) CreateCharacterImplant(ctx context.Context, arg CreateCharacte
 
 func (r *Storage) GetCharacterImplant(ctx context.Context, characterID int32, eveTypeID int32) (*model.CharacterImplant, error) {
 	arg := queries.GetCharacterImplantParams{
-		CharacterID: int64(characterID),
-		EveTypeID:   int64(eveTypeID),
+		CharacterID:      int64(characterID),
+		DogmaAttributeID: model.EveDogmaAttributeIDImplantSlot,
+		EveTypeID:        int64(eveTypeID),
 	}
 	row, err := r.q.GetCharacterImplant(ctx, arg)
 	if err != nil {
@@ -31,18 +32,31 @@ func (r *Storage) GetCharacterImplant(ctx context.Context, characterID int32, ev
 		}
 		return nil, fmt.Errorf("failed to get CharacterSkill for character %d: %w", characterID, err)
 	}
-	t2 := characterImplantFromDBModel(row.CharacterImplant, row.EveType, row.EveGroup, row.EveCategory)
+	t2 := characterImplantFromDBModel(
+		row.CharacterImplant,
+		row.EveType,
+		row.EveGroup,
+		row.EveCategory, row.SlotNum)
 	return t2, nil
 }
 
 func (r *Storage) ListCharacterImplants(ctx context.Context, characterID int32) ([]*model.CharacterImplant, error) {
-	rows, err := r.q.ListCharacterImplants(ctx, int64(characterID))
+	arg := queries.ListCharacterImplantsParams{
+		DogmaAttributeID: model.EveDogmaAttributeIDImplantSlot,
+		CharacterID:      int64(characterID),
+	}
+	rows, err := r.q.ListCharacterImplants(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
 	ii2 := make([]*model.CharacterImplant, len(rows))
 	for i, row := range rows {
-		ii2[i] = characterImplantFromDBModel(row.CharacterImplant, row.EveType, row.EveGroup, row.EveCategory)
+		ii2[i] = characterImplantFromDBModel(
+			row.CharacterImplant,
+			row.EveType,
+			row.EveGroup,
+			row.EveCategory,
+			row.SlotNum)
 	}
 	return ii2, nil
 }
@@ -84,13 +98,23 @@ func createCharacterImplant(ctx context.Context, q *queries.Queries, arg CreateC
 	return nil
 }
 
-func characterImplantFromDBModel(o queries.CharacterImplant, t queries.EveType, g queries.EveGroup, c queries.EveCategory) *model.CharacterImplant {
+func characterImplantFromDBModel(
+	o queries.CharacterImplant,
+	t queries.EveType,
+	g queries.EveGroup,
+	c queries.EveCategory,
+	s sql.NullFloat64,
+) *model.CharacterImplant {
 	if o.CharacterID == 0 {
 		panic("missing character ID")
 	}
-	return &model.CharacterImplant{
+	o2 := &model.CharacterImplant{
 		CharacterID: int32(o.CharacterID),
 		EveType:     eveTypeFromDBModel(t, g, c),
 		ID:          o.ID,
 	}
+	if s.Valid {
+		o2.SlotNum = int(s.Float64)
+	}
+	return o2
 }

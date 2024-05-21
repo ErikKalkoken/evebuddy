@@ -7,6 +7,7 @@ package queries
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createCharacterImplant = `-- name: CreateCharacterImplant :exec
@@ -44,18 +45,21 @@ SELECT
     character_implants.id, character_implants.character_id, character_implants.eve_type_id,
     eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
-    eve_categories.id, eve_categories.name, eve_categories.is_published
+    eve_categories.id, eve_categories.name, eve_categories.is_published,
+    eve_type_dogma_attributes.value as slot_num
 FROM character_implants
 JOIN eve_types ON eve_types.id = character_implants.eve_type_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
 JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
+LEFT JOIN eve_type_dogma_attributes ON eve_type_dogma_attributes.eve_type_id = character_implants.eve_type_id AND eve_type_dogma_attributes.dogma_attribute_id = ?
 WHERE character_id = ?
-AND eve_type_id = ?
+AND character_implants.eve_type_id = ?
 `
 
 type GetCharacterImplantParams struct {
-	CharacterID int64
-	EveTypeID   int64
+	DogmaAttributeID int64
+	CharacterID      int64
+	EveTypeID        int64
 }
 
 type GetCharacterImplantRow struct {
@@ -63,10 +67,11 @@ type GetCharacterImplantRow struct {
 	EveType          EveType
 	EveGroup         EveGroup
 	EveCategory      EveCategory
+	SlotNum          sql.NullFloat64
 }
 
 func (q *Queries) GetCharacterImplant(ctx context.Context, arg GetCharacterImplantParams) (GetCharacterImplantRow, error) {
-	row := q.db.QueryRowContext(ctx, getCharacterImplant, arg.CharacterID, arg.EveTypeID)
+	row := q.db.QueryRowContext(ctx, getCharacterImplant, arg.DogmaAttributeID, arg.CharacterID, arg.EveTypeID)
 	var i GetCharacterImplantRow
 	err := row.Scan(
 		&i.CharacterImplant.ID,
@@ -84,6 +89,7 @@ func (q *Queries) GetCharacterImplant(ctx context.Context, arg GetCharacterImpla
 		&i.EveCategory.ID,
 		&i.EveCategory.Name,
 		&i.EveCategory.IsPublished,
+		&i.SlotNum,
 	)
 	return i, err
 }
@@ -93,23 +99,31 @@ SELECT
     character_implants.id, character_implants.character_id, character_implants.eve_type_id,
     eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
-    eve_categories.id, eve_categories.name, eve_categories.is_published
+    eve_categories.id, eve_categories.name, eve_categories.is_published,
+    eve_type_dogma_attributes.value as slot_num
 FROM character_implants
 JOIN eve_types ON eve_types.id = character_implants.eve_type_id
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
 JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
+LEFT JOIN eve_type_dogma_attributes ON eve_type_dogma_attributes.eve_type_id = character_implants.eve_type_id AND eve_type_dogma_attributes.dogma_attribute_id = ?
 WHERE character_id = ?
 `
+
+type ListCharacterImplantsParams struct {
+	DogmaAttributeID int64
+	CharacterID      int64
+}
 
 type ListCharacterImplantsRow struct {
 	CharacterImplant CharacterImplant
 	EveType          EveType
 	EveGroup         EveGroup
 	EveCategory      EveCategory
+	SlotNum          sql.NullFloat64
 }
 
-func (q *Queries) ListCharacterImplants(ctx context.Context, characterID int64) ([]ListCharacterImplantsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterImplants, characterID)
+func (q *Queries) ListCharacterImplants(ctx context.Context, arg ListCharacterImplantsParams) ([]ListCharacterImplantsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterImplants, arg.DogmaAttributeID, arg.CharacterID)
 	if err != nil {
 		return nil, err
 	}
@@ -133,6 +147,7 @@ func (q *Queries) ListCharacterImplants(ctx context.Context, characterID int64) 
 			&i.EveCategory.ID,
 			&i.EveCategory.Name,
 			&i.EveCategory.IsPublished,
+			&i.SlotNum,
 		); err != nil {
 			return nil, err
 		}

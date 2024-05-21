@@ -12,7 +12,7 @@ import (
 type CreateEveTypeDogmaAttributeParams struct {
 	DogmaAttributeID int32
 	EveTypeID        int32
-	Value            float64
+	Value            float32
 }
 
 func (r *Storage) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEveTypeDogmaAttributeParams) error {
@@ -22,7 +22,7 @@ func (r *Storage) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEve
 	arg2 := queries.CreateEveTypeDogmaAttributeParams{
 		DogmaAttributeID: int64(arg.DogmaAttributeID),
 		EveTypeID:        int64(arg.EveTypeID),
-		Value:            arg.Value,
+		Value:            float64(arg.Value),
 	}
 	err := r.q.CreateEveTypeDogmaAttribute(ctx, arg2)
 	if err != nil {
@@ -31,7 +31,7 @@ func (r *Storage) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEve
 	return nil
 }
 
-func (r *Storage) GetEveTypeDogmaAttribute(ctx context.Context, dogmaAttributeID, eveTypeID int32) (float64, error) {
+func (r *Storage) GetEveTypeDogmaAttribute(ctx context.Context, dogmaAttributeID, eveTypeID int32) (float32, error) {
 	arg := queries.GetEveTypeDogmaAttributeParams{
 		DogmaAttributeID: int64(dogmaAttributeID),
 		EveTypeID:        int64(eveTypeID),
@@ -43,5 +43,5 @@ func (r *Storage) GetEveTypeDogmaAttribute(ctx context.Context, dogmaAttributeID
 		}
 		return 0, fmt.Errorf("failed to get EveTypeDogmaAttribute for %v: %w", arg, err)
 	}
-	return row.Value, nil
+	return float32(row.Value), nil
 }

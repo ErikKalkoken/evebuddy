@@ -139,23 +139,33 @@ func (s *Service) getOrCreateEveTypeESI(ctx context.Context, id int32) (*model.E
 func (s *Service) createEveTypeFromESI(ctx context.Context, id int32) (*model.EveType, error) {
 	key := fmt.Sprintf("createEveTypeFromESI-%d", id)
 	y, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		r, _, err := s.esiClient.ESI.UniverseApi.GetUniverseTypesTypeId(ctx, id, nil)
+		typ, _, err := s.esiClient.ESI.UniverseApi.GetUniverseTypesTypeId(ctx, id, nil)
 		if err != nil {
 			return nil, err
 		}
-		g, err := s.getOrCreateEveGroupESI(ctx, r.GroupId)
+		g, err := s.getOrCreateEveGroupESI(ctx, typ.GroupId)
 		if err != nil {
 			return nil, err
 		}
 		arg := storage.CreateEveTypeParams{
 			ID:          id,
-			Description: r.Description,
+			Description: typ.Description,
 			GroupID:     g.ID,
-			Name:        r.Name,
-			IsPublished: r.Published,
+			Name:        typ.Name,
+			IsPublished: typ.Published,
 		}
 		if err := s.r.CreateEveType(ctx, arg); err != nil {
 			return nil, err
+		}
+		for _, x := range typ.DogmaAttributes {
+			arg := storage.CreateEveTypeDogmaAttributeParams{
+				DogmaAttributeID: x.AttributeId,
+				EveTypeID:        id,
+				Value:            x.Value,
+			}
+			if err := s.r.CreateEveTypeDogmaAttribute(ctx, arg); err != nil {
+				return nil, err
+			}
 		}
 		return s.r.GetEveType(ctx, id)
 	})

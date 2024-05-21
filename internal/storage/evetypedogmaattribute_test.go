@@ -29,7 +29,7 @@ func TestEveTypeDogmaAttribute(t *testing.T) {
 		if assert.NoError(t, err) {
 			v, err := r.GetEveTypeDogmaAttribute(ctx, 42, x.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, 123.45, v)
+				assert.Equal(t, float32(123.45), v)
 			}
 		}
 	})

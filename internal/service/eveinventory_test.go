@@ -141,13 +141,23 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 			assert.Equal(t, int32(587), x1.ID)
 		}
 	})
-	t.Run("should fetch group from ESI and create it", func(t *testing.T) {
+	t.Run("should fetch type from ESI and create it", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveGroup(storage.CreateEveGroupParams{ID: 25})
 		data := `{
 			"description": "The Rifter is a...",
+			"dogma_attributes": [
+				{
+				"attribute_id": 161,
+				"value": 11
+				},
+				{
+				"attribute_id": 162,
+				"value": 12
+				}
+			],
 			"group_id": 25,
 			"name": "Rifter",
 			"published": true,
@@ -169,6 +179,10 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 			x2, err := r.GetEveType(ctx, 587)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
+			}
+			v, err := r.GetEveTypeDogmaAttribute(ctx, 161, 587)
+			if assert.NoError(t, err) {
+				assert.Equal(t, float32(11), v)
 			}
 		}
 	})

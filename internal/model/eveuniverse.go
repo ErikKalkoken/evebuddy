@@ -1,9 +1,10 @@
 package model
 
 const (
-	EveCategoryIDSkill       = 16
-	EveTypeIDSolarSystem     = 5
-	EveTypeIDAssetSafetyWrap = 60
+	EveCategoryIDSkill             = 16
+	EveTypeIDSolarSystem           = 5
+	EveTypeIDAssetSafetyWrap       = 60
+	EveDogmaAttributeIDImplantSlot = 331
 )
 
 // EveCategory is a category in Eve Online.
