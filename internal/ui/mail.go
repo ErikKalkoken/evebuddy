@@ -482,7 +482,7 @@ func (a *headerArea) makeTopText() (string, widget.Importance) {
 
 // mailDetailArea is the UI area showing the current mail.
 type mailDetailArea struct {
-	body     *widget.RichText
+	body     *widget.Label
 	content  fyne.CanvasObject
 	header   *widget.Label
 	mail     *model.CharacterMail
@@ -493,7 +493,7 @@ type mailDetailArea struct {
 
 func NewDetailMailArea(m *mailArea) *mailDetailArea {
 	a := mailDetailArea{
-		body:     widget.NewRichText(),
+		body:     widget.NewLabel(""),
 		header:   widget.NewLabel(""),
 		subject:  widget.NewLabel(""),
 		mailArea: m,
@@ -574,12 +574,12 @@ func (a *mailDetailArea) SetMail(mailID int32, listItemID widget.ListItemID) {
 	}
 
 	header := a.mail.MakeHeaderText(myDateTime)
-	a.updateContent(a.mail.Subject, header, a.mail.BodyToMarkdown())
+	a.updateContent(a.mail.Subject, header, a.mail.BodyPlain())
 	a.toolbar.Show()
 }
 
 func (a *mailDetailArea) updateContent(s string, h string, b string) {
 	a.subject.SetText(s)
 	a.header.SetText(h)
-	a.body.ParseMarkdown(b)
+	a.body.SetText(b)
 }

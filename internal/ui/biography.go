@@ -10,12 +10,13 @@ import (
 // biographyArea is the UI area that shows the skillqueue
 type biographyArea struct {
 	content fyne.CanvasObject
-	text    *widget.RichText
+	text    *widget.Label
 	ui      *ui
 }
 
 func (u *ui) NewBiographyArea() *biographyArea {
-	a := &biographyArea{ui: u, text: widget.NewRichTextFromMarkdown("")}
+	a := &biographyArea{ui: u, text: widget.NewLabel("")}
+	a.text.Wrapping = fyne.TextWrapBreak
 	a.content = container.NewVScroll(a.text)
 	return a
 }
@@ -26,7 +27,7 @@ func (a *biographyArea) Refresh() {
 	if c == nil {
 		s = ""
 	} else {
-		s = converter.XMLtoMarkdown(c.EveCharacter.Description)
+		s = converter.XMLToPlain(c.EveCharacter.Description)
 	}
-	a.text.ParseMarkdown(s)
+	a.text.SetText(s)
 }

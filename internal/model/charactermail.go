@@ -2,13 +2,10 @@ package model
 
 import (
 	"fmt"
-	"html"
 	"strings"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/converter"
-
-	"github.com/microcosm-cc/bluemonday"
 )
 
 // Special mail label IDs
@@ -31,8 +28,6 @@ type CharacterMailLabel struct {
 	UnreadCount int
 }
 
-var bodyPolicy = bluemonday.StrictPolicy()
-
 // An Eve mail belonging to a character.
 type CharacterMail struct {
 	Body        string
@@ -49,9 +44,7 @@ type CharacterMail struct {
 
 // BodyPlain returns a mail's body as plain text.
 func (m *CharacterMail) BodyPlain() string {
-	t := strings.ReplaceAll(m.Body, "<br>", "\n")
-	b := html.UnescapeString(bodyPolicy.Sanitize(t))
-	return b
+	return converter.XMLToPlain(m.Body)
 }
 
 // BodyForward returns a mail's body for a mail forward or reply.

@@ -2,6 +2,7 @@ package converter
 
 import (
 	"fmt"
+	"html"
 	"log"
 	"log/slog"
 	"net/url"
@@ -10,12 +11,17 @@ import (
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/microcosm-cc/bluemonday"
 )
+
+var bodyPolicy = bluemonday.StrictPolicy()
 
 // XMLtoMarkdown convert Eve Online XML text to markdown and return it.
 func XMLtoMarkdown(xml string) string {
 	t := strings.ReplaceAll(xml, "<loc>", "")
 	t = strings.ReplaceAll(t, "</loc>", "")
+	var re = regexp.MustCompile(`(--+)`)
+	t = re.ReplaceAllString(t, `<br><hr><br>`)
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(t))
 	if err != nil {
 		log.Fatal(err)
@@ -63,4 +69,10 @@ func XMLtoMarkdown(xml string) string {
 func patchLinks(s string) string {
 	r := regexp.MustCompile(`(\[\w*\]\(.*\))(\n\n)`)
 	return string(r.ReplaceAll([]byte(s), []byte("$1 $2")))
+}
+
+func XMLToPlain(xml string) string {
+	t := strings.ReplaceAll(xml, "<br>", "\n")
+	b := html.UnescapeString(bodyPolicy.Sanitize(t))
+	return b
 }
