@@ -19,10 +19,9 @@ func (s *Service) GetOrCreateEveCharacterESI(id int32) (*model.EveCharacter, err
 
 func (s *Service) getOrCreateEveCharacterESI(ctx context.Context, id int32) (*model.EveCharacter, error) {
 	x, err := s.r.GetEveCharacter(ctx, id)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return s.createEveCharacterFromESI(ctx, id)
-		}
+	if errors.Is(err, storage.ErrNotFound) {
+		return s.createEveCharacterFromESI(ctx, id)
+	} else if err != nil {
 		return x, err
 	}
 	return x, nil

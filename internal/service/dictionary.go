@@ -20,10 +20,9 @@ func (s *Service) DictionaryDelete(key string) error {
 func (s *Service) DictionaryExists(key string) (bool, error) {
 	ctx := context.Background()
 	_, err := s.r.GetDictEntry(ctx, key)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, nil
-		}
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 	return true, nil
@@ -34,10 +33,9 @@ func (s *Service) DictionaryExists(key string) (bool, error) {
 func (s *Service) DictionaryInt(key string) (int, bool, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return 0, false, nil
-		}
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, false, nil
+	} else if err != nil {
 		return 0, false, err
 	}
 	return anyFromBytes[int](data)
@@ -48,10 +46,9 @@ func (s *Service) DictionaryInt(key string) (int, bool, error) {
 func (s *Service) DictionaryFloat32(key string) (float32, bool, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return 0, false, nil
-		}
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, false, nil
+	} else if err != nil {
 		return 0, false, err
 	}
 	return anyFromBytes[float32](data)
@@ -62,10 +59,9 @@ func (s *Service) DictionaryFloat32(key string) (float32, bool, error) {
 func (s *Service) DictionaryString(key string) (string, bool, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return "", false, nil
-		}
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, nil
+	} else if err != nil {
 		return "", false, err
 	}
 	return anyFromBytes[string](data)
@@ -76,10 +72,9 @@ func (s *Service) DictionaryString(key string) (string, bool, error) {
 func (s *Service) DictionaryTime(key string) (time.Time, bool, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return time.Time{}, false, nil
-		}
+	if errors.Is(err, sql.ErrNoRows) {
+		return time.Time{}, false, nil
+	} else if err != nil {
 		return time.Time{}, false, err
 	}
 	return anyFromBytes[time.Time](data)

@@ -47,10 +47,9 @@ func (s *Service) UpdateEveCategoryWithChildrenESI(categoryID int32) error {
 
 func (s *Service) getOrCreateEveCategoryESI(ctx context.Context, id int32) (*model.EveCategory, error) {
 	x, err := s.r.GetEveCategory(ctx, id)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return s.createEveCategoryFromESI(ctx, id)
-		}
+	if errors.Is(err, storage.ErrNotFound) {
+		return s.createEveCategoryFromESI(ctx, id)
+	} else if err != nil {
 		return x, err
 	}
 	return x, nil
@@ -83,10 +82,9 @@ func (s *Service) GetOrCreateEveGroupESI(id int32) (*model.EveGroup, error) {
 
 func (s *Service) getOrCreateEveGroupESI(ctx context.Context, id int32) (*model.EveGroup, error) {
 	x, err := s.r.GetEveGroup(ctx, id)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return s.createEveGroupFromESI(ctx, id)
-		}
+	if errors.Is(err, storage.ErrNotFound) {
+		return s.createEveGroupFromESI(ctx, id)
+	} else if err != nil {
 		return x, err
 	}
 	return x, nil
@@ -127,10 +125,9 @@ func (s *Service) GetOrCreateEveTypeESI(id int32) (*model.EveType, error) {
 
 func (s *Service) getOrCreateEveTypeESI(ctx context.Context, id int32) (*model.EveType, error) {
 	x, err := s.r.GetEveType(ctx, id)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return s.createEveTypeFromESI(ctx, id)
-		}
+	if errors.Is(err, storage.ErrNotFound) {
+		return s.createEveTypeFromESI(ctx, id)
+	} else if err != nil {
 		return x, err
 	}
 	return x, nil

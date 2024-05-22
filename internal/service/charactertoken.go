@@ -35,10 +35,9 @@ var esiScopes = []string{
 func (s *Service) CharacterHasTokenWithScopes(characterID int32) (bool, error) {
 	ctx := context.Background()
 	t, err := s.r.GetCharacterToken(ctx, characterID)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return false, nil
-		}
+	if errors.Is(err, storage.ErrNotFound) {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 	got := set.NewFromSlice(t.Scopes)

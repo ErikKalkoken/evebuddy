@@ -11,10 +11,9 @@ import (
 
 func (s *Service) getOrCreateEveRaceESI(ctx context.Context, id int32) (*model.EveRace, error) {
 	x, err := s.r.GetEveRace(ctx, id)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return s.createEveRaceFromESI(ctx, id)
-		}
+	if errors.Is(err, storage.ErrNotFound) {
+		return s.createEveRaceFromESI(ctx, id)
+	} else if err != nil {
 		return x, err
 	}
 	return x, nil

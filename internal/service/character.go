@@ -38,10 +38,9 @@ func (s *Service) ListCharactersShort() ([]*model.CharacterShort, error) {
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
 func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
 	ssoToken, err := sso.Authenticate(ctx, s.httpClient, esiScopes)
-	if err != nil {
-		if errors.Is(err, sso.ErrAborted) {
-			return 0, ErrAborted
-		}
+	if errors.Is(err, sso.ErrAborted) {
+		return 0, ErrAborted
+	} else if err != nil {
 		return 0, err
 	}
 	slog.Info("Created new SSO token", "characterID", ssoToken.CharacterID, "scopes", ssoToken.Scopes)

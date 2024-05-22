@@ -17,10 +17,9 @@ import (
 // Important: A token with the structure scope must be set in the context
 func (s *Service) getOrCreateLocationESI(ctx context.Context, id int64) (*model.Location, error) {
 	x, err := s.r.GetLocation(ctx, id)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return s.updateOrCreateLocationESI(ctx, id)
-		}
+	if errors.Is(err, storage.ErrNotFound) {
+		return s.updateOrCreateLocationESI(ctx, id)
+	} else if err != nil {
 		return x, err
 	}
 	return x, nil

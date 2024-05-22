@@ -19,10 +19,9 @@ func (s *Service) CharacterSectionUpdatedAt(characterID int32, section model.Cha
 	ctx := context.Background()
 	var zero sql.NullTime
 	u, err := s.r.GetCharacterUpdateStatus(ctx, characterID, section)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return zero, nil
-		}
+	if errors.Is(err, storage.ErrNotFound) {
+		return zero, nil
+	} else if err != nil {
 		return zero, err
 	}
 	return u.LastUpdatedAt, nil
@@ -31,10 +30,9 @@ func (s *Service) CharacterSectionUpdatedAt(characterID int32, section model.Cha
 // CharacterSectionWasUpdated reports wether the section has been updated at all.
 func (s *Service) CharacterSectionWasUpdated(characterID int32, section model.CharacterSection) (bool, error) {
 	t, err := s.CharacterSectionUpdatedAt(characterID, section)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return false, nil
-		}
+	if errors.Is(err, storage.ErrNotFound) {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 	return t.Valid, nil

@@ -86,10 +86,9 @@ func (r *Storage) getOrCreateScope(ctx context.Context, name string) (queries.Sc
 	defer tx.Rollback()
 	qtx := r.q.WithTx(tx)
 	s, err = qtx.GetScope(ctx, name)
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return s, err
-		}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return s, err
+	} else if err != nil {
 		s, err = qtx.CreateScope(ctx, name)
 		if err != nil {
 			return s, err

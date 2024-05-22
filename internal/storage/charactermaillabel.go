@@ -59,10 +59,9 @@ func (r *Storage) GetOrCreateCharacterMailLabel(ctx context.Context, arg MailLab
 			LabelID:     int64(arg.LabelID),
 		}
 		l, err = qtx.GetCharacterMailLabel(ctx, arg2)
-		if err != nil {
-			if !errors.Is(err, sql.ErrNoRows) {
-				return nil, err
-			}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		} else if err != nil {
 			arg3 := queries.CreateCharacterMailLabelParams{
 				CharacterID: int64(arg.CharacterID),
 				LabelID:     int64(arg.LabelID),

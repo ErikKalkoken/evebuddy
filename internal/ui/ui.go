@@ -262,15 +262,13 @@ func (u *ui) refreshCurrentCharacter() {
 
 func (u *ui) SetAnyCharacter() error {
 	c, err := u.service.GetAnyCharacter()
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			u.ResetCurrentCharacter()
-		} else {
-			return err
-		}
-	} else {
-		u.setCurrentCharacter(c)
+	if errors.Is(err, storage.ErrNotFound) {
+		u.ResetCurrentCharacter()
+		return nil
+	} else if err != nil {
+		return err
 	}
+	u.setCurrentCharacter(c)
 	return nil
 }
 

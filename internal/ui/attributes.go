@@ -145,14 +145,13 @@ func (a *attributesArea) updateData() error {
 		}
 	}
 	x, err := a.ui.service.GetCharacterAttributes(characterID)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			err := a.attributes.Set(make([]any, 0))
-			if err != nil {
-				return err
-			}
-			return nil
+	if errors.Is(err, storage.ErrNotFound) {
+		err := a.attributes.Set(make([]any, 0))
+		if err != nil {
+			return err
 		}
+		return nil
+	} else if err != nil {
 		return err
 	}
 	items := make([]any, 6)

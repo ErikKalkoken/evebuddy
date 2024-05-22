@@ -16,10 +16,9 @@ func (s *Service) GetOrCreateEveRegionESI(id int32) (*model.EveRegion, error) {
 
 func (s *Service) getOrCreateEveRegionESI(ctx context.Context, id int32) (*model.EveRegion, error) {
 	x, err := s.r.GetEveRegion(ctx, id)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return s.createEveRegionFromESI(ctx, id)
-		}
+	if errors.Is(err, storage.ErrNotFound) {
+		return s.createEveRegionFromESI(ctx, id)
+	} else if err != nil {
 		return x, err
 	}
 	return x, nil
@@ -52,10 +51,9 @@ func (s *Service) GetOrCreateEveConstellationESI(id int32) (*model.EveConstellat
 
 func (s *Service) getOrCreateEveConstellationESI(ctx context.Context, id int32) (*model.EveConstellation, error) {
 	x, err := s.r.GetEveConstellation(ctx, id)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return s.createEveConstellationFromESI(ctx, id)
-		}
+	if errors.Is(err, storage.ErrNotFound) {
+		return s.createEveConstellationFromESI(ctx, id)
+	} else if err != nil {
 		return x, err
 	}
 	return x, nil
@@ -95,10 +93,9 @@ func (s *Service) GetOrCreateEveSolarSystemESI(id int32) (*model.EveSolarSystem,
 
 func (s *Service) getOrCreateEveSolarSystemESI(ctx context.Context, id int32) (*model.EveSolarSystem, error) {
 	x, err := s.r.GetEveSolarSystem(ctx, id)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return s.createEveSolarSystemFromESI(ctx, id)
-		}
+	if errors.Is(err, storage.ErrNotFound) {
+		return s.createEveSolarSystemFromESI(ctx, id)
+	} else if err != nil {
 		return x, err
 	}
 	return x, nil
