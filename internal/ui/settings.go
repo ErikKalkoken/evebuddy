@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"strconv"
 
@@ -11,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/dustin/go-humanize"
 )
 
 // settingsArea is the UI area for settings.
@@ -64,6 +66,8 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 		themeRadio.SetSelected(name)
 	}
 
+	cacheSize := u.imageManager.Size()
+	cacheHintText := fmt.Sprintf("Clear the local image cache (%s)", humanize.Bytes(uint64(cacheSize)))
 	var d *dialog.CustomDialog
 	form := &widget.Form{
 		Items: []*widget.FormItem{
@@ -79,7 +83,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 			}, {
 				Text:     "Image cache",
 				Widget:   clearBtn,
-				HintText: "Clear the local image cache",
+				HintText: cacheHintText,
 			},
 		},
 		OnSubmit: func() {

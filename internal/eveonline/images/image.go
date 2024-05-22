@@ -24,6 +24,7 @@ func New(path string) *Manager {
 	return m
 }
 
+// AllianceLogo returns the logo for an alliance.
 func (m *Manager) AllianceLogo(id int32, size int) fyne.Resource {
 	uri, err := AllianceLogoURL(id, size)
 	if err != nil {
@@ -32,6 +33,7 @@ func (m *Manager) AllianceLogo(id int32, size int) fyne.Resource {
 	return m.image(uri)
 }
 
+// CharacterPortrait returns the portrait for a character.
 func (m *Manager) CharacterPortrait(id int32, size int) fyne.Resource {
 	uri, err := CharacterPortraitURL(id, size)
 	if err != nil {
@@ -40,6 +42,7 @@ func (m *Manager) CharacterPortrait(id int32, size int) fyne.Resource {
 	return m.image(uri)
 }
 
+// CorporationLogo returns the logo for a corporation.
 func (m *Manager) CorporationLogo(id int32, size int) fyne.Resource {
 	uri, err := CorporationLogoURL(id, size)
 	if err != nil {
@@ -48,6 +51,7 @@ func (m *Manager) CorporationLogo(id int32, size int) fyne.Resource {
 	return m.image(uri)
 }
 
+// FactionLogo returns the logo for a faction.
 func (m *Manager) FactionLogo(id int32, size int) fyne.Resource {
 	uri, err := FactionLogoURL(id, size)
 	if err != nil {
@@ -56,6 +60,7 @@ func (m *Manager) FactionLogo(id int32, size int) fyne.Resource {
 	return m.image(uri)
 }
 
+// FactionLogo returns the render for a type. Note that not ever type has a render.
 func (m *Manager) InventoryTypeRender(id int32, size int) fyne.Resource {
 	uri, err := InventoryTypeRenderURL(id, size)
 	if err != nil {
@@ -64,6 +69,7 @@ func (m *Manager) InventoryTypeRender(id int32, size int) fyne.Resource {
 	return m.image(uri)
 }
 
+// FactionLogo returns the logo for a type.
 func (m *Manager) InventoryTypeIcon(id int32, size int) fyne.Resource {
 	uri, err := InventoryTypeIconURL(id, size)
 	if err != nil {
@@ -108,4 +114,21 @@ func (m *Manager) ClearCache() int {
 		os.RemoveAll(path.Join(m.path, f.Name()))
 	}
 	return len(files)
+}
+
+// Size returns the total size of all image files in by bytes.
+func (m *Manager) Size() int {
+	files, err := os.ReadDir(m.path)
+	if err != nil {
+		panic(err)
+	}
+	var s int64
+	for _, f := range files {
+		info, err := f.Info()
+		if err != nil {
+			panic(err)
+		}
+		s += info.Size()
+	}
+	return int(s)
 }
