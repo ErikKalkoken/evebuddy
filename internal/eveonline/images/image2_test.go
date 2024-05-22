@@ -22,10 +22,10 @@ func TestLoadResourceFromURL(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder("GET", url, httpmock.NewBytesResponder(200, dat))
 		//when
-		r, err := loadResourceFromURL(url)
+		x, err := loadDataFromURL(url)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, dat, r.Content())
+			assert.Equal(t, dat, x)
 		}
 
 	})
@@ -35,7 +35,7 @@ func TestLoadResourceFromURL(t *testing.T) {
 		errTest := errors.New("dummy error")
 		httpmock.RegisterResponder("GET", url, httpmock.NewErrorResponder(errTest))
 		//when
-		_, err := loadResourceFromURL(url)
+		_, err := loadDataFromURL(url)
 		// then
 		assert.ErrorIs(t, err, errTest)
 	})
@@ -44,7 +44,7 @@ func TestLoadResourceFromURL(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder("GET", url, httpmock.NewStringResponder(400, ""))
 		//when
-		_, err := loadResourceFromURL(url)
+		_, err := loadDataFromURL(url)
 		// then
 		if assert.Error(t, err) {
 			assert.IsType(t, HTTPError{}, err)

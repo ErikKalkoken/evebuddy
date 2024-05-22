@@ -88,21 +88,18 @@ func (m *Manager) image(url string) (fyne.Resource, error) {
 	h := makeMD5Hash(url)
 	name := filepath.Join(m.path, h+".tmp")
 	dat, err := os.ReadFile(name)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			r, err := loadResourceFromURL(url)
-			if err != nil {
-				return nil, err
-			}
-			dat := r.Content()
-			if err := os.WriteFile(name, dat, 0666); err != nil {
-				return nil, err
-			}
-			return r, nil
+	if errors.Is(err, os.ErrNotExist) {
+		dat, err = loadDataFromURL(url)
+		if err != nil {
+			return nil, err
 		}
+		if err := os.WriteFile(name, dat, 0666); err != nil {
+			return nil, err
+		}
+	} else if err != nil {
 		return nil, err
 	}
-	r := fyne.NewStaticResource(fmt.Sprintf("image-%s", h), dat)
+	r := fyne.NewStaticResource(fmt.Sprintf("eve-image-%s", h), dat)
 	return r, nil
 }
 
@@ -115,7 +112,7 @@ func (r HTTPError) Error() string {
 	return fmt.Sprintf("HTTP error: %s", r.Status)
 }
 
-func loadResourceFromURL(url string) (fyne.Resource, error) {
+func loadDataFromURL(url string) ([]byte, error) {
 	r, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -131,8 +128,7 @@ func loadResourceFromURL(url string) (fyne.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
-	res := fyne.NewStaticResource(url, dat)
-	return res, nil
+	return dat, nil
 }
 
 func makeMD5Hash(text string) string {
