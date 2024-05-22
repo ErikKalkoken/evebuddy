@@ -129,6 +129,38 @@ func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantPa
 	return o
 }
 
+func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpCloneParams) *model.CharacterJumpClone {
+	ctx := context.Background()
+	var arg storage.CreateCharacterJumpCloneParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.JumpCloneID == 0 {
+		arg.JumpCloneID = int64(f.calcNewIDWithCharacter("character_jump_clones", "jump_clone_id", arg.CharacterID))
+	}
+	if arg.LocationID == 0 {
+		x := f.CreateLocationStructure()
+		arg.LocationID = x.ID
+	}
+	if len(arg.Implants) == 0 {
+		x := f.CreateEveType()
+		arg.Implants = append(arg.Implants, x.ID)
+	}
+	err := f.r.CreateCharacterJumpClone(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.r.GetCharacterJumpClone(ctx, arg.CharacterID, int32(arg.JumpCloneID))
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 // CreateCharacterMail is a test factory for Mail objects
 func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) *model.CharacterMail {
 	var arg storage.CreateCharacterMailParams

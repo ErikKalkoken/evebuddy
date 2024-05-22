@@ -38,6 +38,20 @@ type CharacterImplant struct {
 	EveTypeID   int64
 }
 
+type CharacterJumpClone struct {
+	ID          int64
+	CharacterID int64
+	JumpCloneID int64
+	LocationID  int64
+	Name        string
+}
+
+type CharacterJumpCloneImplant struct {
+	ID        int64
+	CloneID   int64
+	EveTypeID int64
+}
+
 type CharacterMail struct {
 	ID          int64
 	Body        string

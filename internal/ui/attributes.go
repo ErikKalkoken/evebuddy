@@ -92,9 +92,7 @@ func (u *ui) NewAttributesArea() *attributesArea {
 }
 
 func (a *attributesArea) Refresh() {
-	if err := a.updateData(); errors.Is(err, storage.ErrNotFound) {
-		return
-	} else if err != nil {
+	if err := a.updateData(); err != nil {
 		slog.Error("failed to render attributes for character", "characterID", a.ui.CurrentCharID(), "err", err)
 		return
 	}

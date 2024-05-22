@@ -147,6 +147,26 @@ CREATE TABLE character_attributes (
     UNIQUE (character_id)
 );
 
+CREATE TABLE character_jump_clones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL,
+    jump_clone_id INTEGER NOT NULL,
+    location_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE,
+    UNIQUE (character_id, jump_clone_id)
+);
+
+CREATE TABLE character_jump_clone_implants (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    clone_id INTEGER NOT NULL,
+    eve_type_id INTEGER NOT NULL,
+    FOREIGN KEY (clone_id) REFERENCES character_jump_clones(id) ON DELETE CASCADE,
+    FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
+    UNIQUE (clone_id, eve_type_id)
+);
+
 CREATE TABLE character_implants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     character_id INTEGER NOT NULL,

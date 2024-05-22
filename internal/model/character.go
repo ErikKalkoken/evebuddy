@@ -41,6 +41,7 @@ const (
 	CharacterSectionAttributes         CharacterSection = "attributes"
 	CharacterSectionHome               CharacterSection = "home"
 	CharacterSectionImplants           CharacterSection = "implants"
+	CharacterSectionJumpClones         CharacterSection = "jump_clones"
 	CharacterSectionLocation           CharacterSection = "location"
 	CharacterSectionMailLists          CharacterSection = "mail_lists"
 	CharacterSectionMailLabels         CharacterSection = "mail_labels"
@@ -58,6 +59,7 @@ var CharacterSections = []CharacterSection{
 	CharacterSectionAttributes,
 	CharacterSectionHome,
 	CharacterSectionImplants,
+	CharacterSectionJumpClones,
 	CharacterSectionLocation,
 	CharacterSectionMailLabels,
 	CharacterSectionMailLists,
@@ -96,6 +98,7 @@ func (section CharacterSection) Timeout() time.Duration {
 		CharacterSectionAttributes:         120 * time.Second,
 		CharacterSectionHome:               120 * time.Second,
 		CharacterSectionImplants:           120 * time.Second,
+		CharacterSectionJumpClones:         120 * time.Second,
 		CharacterSectionLocation:           30 * time.Second, // 5 seconds min
 		CharacterSectionMailLabels:         30 * time.Second,
 		CharacterSectionMailLists:          120 * time.Second,

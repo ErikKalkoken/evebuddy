@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
@@ -23,6 +25,9 @@ type UpdateOrCreateCharacterAttributesParams struct {
 func (r *Storage) GetCharacterAttributes(ctx context.Context, characterID int32) (*model.CharacterAttributes, error) {
 	o, err := r.q.GetCharacterAttributes(ctx, int64(characterID))
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrNotFound
+		}
 		return nil, err
 	}
 	return characterAttributeFromDBModel(o), nil
