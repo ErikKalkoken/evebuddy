@@ -5,11 +5,18 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 
 	"fyne.io/fyne/v2"
+)
+
+var (
+	ErrHttpError = errors.New("http error")
+	ErrNoImage   = errors.New("no image from API")
 )
 
 // Manager provides cached access to images from the Eve Online image server.
@@ -78,12 +85,12 @@ func (m *Manager) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
 }
 
 func (m *Manager) image(url string) (fyne.Resource, error) {
-	h := GetMD5Hash(url)
+	h := makeMD5Hash(url)
 	name := filepath.Join(m.path, h+".tmp")
 	dat, err := os.ReadFile(name)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			r, err := fyne.LoadResourceFromURLString(url)
+			r, err := loadResourceFromURL(url)
 			if err != nil {
 				return nil, err
 			}
@@ -99,7 +106,36 @@ func (m *Manager) image(url string) (fyne.Resource, error) {
 	return r, nil
 }
 
-func GetMD5Hash(text string) string {
+type HTTPError struct {
+	StatusCode int
+	Status     string
+}
+
+func (r HTTPError) Error() string {
+	return fmt.Sprintf("HTTP error: %s", r.Status)
+}
+
+func loadResourceFromURL(url string) (fyne.Resource, error) {
+	r, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	if r.StatusCode >= 400 {
+		err := HTTPError{StatusCode: r.StatusCode, Status: r.Status}
+		return nil, err
+	}
+	if r.Body == nil {
+		return nil, fmt.Errorf("%s: %w", url, ErrNoImage)
+	}
+	dat, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	res := fyne.NewStaticResource(url, dat)
+	return res, nil
+}
+
+func makeMD5Hash(text string) string {
 	hash := md5.Sum([]byte(text))
 	return hex.EncodeToString(hash[:])
 }

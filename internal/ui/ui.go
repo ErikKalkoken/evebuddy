@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
@@ -107,9 +106,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	u.tabs = container.NewAppTabs(characterTab, u.mailTab, u.skillqueueTab, walletTab, overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	r, _ := u.imageManager.InventoryTypeRender(603, 64) // 10216, 603
-	icon := widget.NewIcon(r)
-	mainContent := container.NewBorder(u.toolbarArea.content, u.statusArea.content, nil, icon, u.tabs)
+	mainContent := container.NewBorder(u.toolbarArea.content, u.statusArea.content, nil, nil, u.tabs)
 	w.SetContent(mainContent)
 	w.SetMaster()
 
