@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 )
 
 // Manager provides cached access to images from the Eve Online image server.
@@ -26,69 +25,70 @@ func New(path string) *Manager {
 
 // AllianceLogo returns the logo for an alliance.
 func (m *Manager) AllianceLogo(id int32, size int) fyne.Resource {
-	uri, err := AllianceLogoURL(id, size)
+	url, err := AllianceLogoURL(id, size)
 	if err != nil {
 		panic(err)
 	}
-	return m.image(uri)
+	return m.image(url)
 }
 
 // CharacterPortrait returns the portrait for a character.
 func (m *Manager) CharacterPortrait(id int32, size int) fyne.Resource {
-	uri, err := CharacterPortraitURL(id, size)
+	url, err := CharacterPortraitURL(id, size)
 	if err != nil {
 		panic(err)
 	}
-	return m.image(uri)
+	return m.image(url)
 }
 
 // CorporationLogo returns the logo for a corporation.
 func (m *Manager) CorporationLogo(id int32, size int) fyne.Resource {
-	uri, err := CorporationLogoURL(id, size)
+	url, err := CorporationLogoURL(id, size)
 	if err != nil {
 		panic(err)
 	}
-	return m.image(uri)
+	return m.image(url)
 }
 
 // FactionLogo returns the logo for a faction.
 func (m *Manager) FactionLogo(id int32, size int) fyne.Resource {
-	uri, err := FactionLogoURL(id, size)
+	url, err := FactionLogoURL(id, size)
 	if err != nil {
 		panic(err)
 	}
-	return m.image(uri)
+	return m.image(url)
 }
 
 // FactionLogo returns the render for a type. Note that not ever type has a render.
 func (m *Manager) InventoryTypeRender(id int32, size int) fyne.Resource {
-	uri, err := InventoryTypeRenderURL(id, size)
+	url, err := InventoryTypeRenderURL(id, size)
 	if err != nil {
 		panic(err)
 	}
-	return m.image(uri)
+	return m.image(url)
 }
 
 // FactionLogo returns the logo for a type.
 func (m *Manager) InventoryTypeIcon(id int32, size int) fyne.Resource {
-	uri, err := InventoryTypeIconURL(id, size)
+	url, err := InventoryTypeIconURL(id, size)
 	if err != nil {
 		panic(err)
 	}
-	return m.image(uri)
+	return m.image(url)
 }
 
-func (m *Manager) image(uri fyne.URI) fyne.Resource {
-	h := GetMD5Hash(uri.String())
+func (m *Manager) image(url string) fyne.Resource {
+	h := GetMD5Hash(url)
 	name := filepath.Join(m.path, h+".tmp")
 	dat, err := os.ReadFile(name)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			image := canvas.NewImageFromURI(uri)
-			r := image.Resource
-			dat := r.Content()
-			err := os.WriteFile(name, dat, 0666)
+			r, err := fyne.LoadResourceFromURLString(url)
 			if err != nil {
+				panic(err)
+			}
+			dat := r.Content()
+			if err := os.WriteFile(name, dat, 0666); err != nil {
 				panic(err)
 			}
 			return r
