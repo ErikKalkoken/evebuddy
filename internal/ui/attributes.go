@@ -4,14 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
@@ -86,42 +84,7 @@ func (u *ui) NewAttributesArea() *attributesArea {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		x, err := getFromBoundUntypedList[attribute](a.attributes, id)
-		if err != nil {
-			slog.Error("failed to access implant item in list", "err", err)
-			return
-		}
-		if x.IsText() {
-			list.UnselectAll()
-			return
-		}
-		var data = []struct {
-			label string
-			value string
-			wrap  bool
-		}{
-			{"Name", x.name, false},
-			{"Description", "tbd", true},
-			{"Points", strconv.Itoa(x.points), true},
-		}
-		form := widget.NewForm()
-		for _, row := range data {
-			c := widget.NewLabel(row.value)
-			if row.wrap {
-				c.Wrapping = fyne.TextWrapWord
-			}
-			form.Append(row.label, c)
-		}
-		s := container.NewScroll(form)
-		dlg := dialog.NewCustom("Attribute Detail", "OK", s, u.window)
-		dlg.SetOnClosed(func() {
-			list.UnselectAll()
-		})
-		dlg.Show()
-		dlg.Resize(fyne.Size{
-			Width:  0.8 * a.ui.window.Canvas().Size().Width,
-			Height: 0.8 * a.ui.window.Canvas().Size().Height,
-		})
+		list.UnselectAll()
 	}
 
 	a.content = list
@@ -129,8 +92,9 @@ func (u *ui) NewAttributesArea() *attributesArea {
 }
 
 func (a *attributesArea) Refresh() {
-	err := a.updateData()
-	if err != nil {
+	if err := a.updateData(); errors.Is(err, storage.ErrNotFound) {
+		return
+	} else if err != nil {
 		slog.Error("failed to render attributes for character", "characterID", a.ui.CurrentCharID(), "err", err)
 		return
 	}
