@@ -2,7 +2,6 @@ package storage_test
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 	"time"
 
@@ -20,11 +19,10 @@ func TestCharacterAttributes(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		bonusRemaps := sql.NullInt64{Int64: 7, Valid: true}
-		lastRemapDate := sql.NullTime{Time: time.Now().UTC(), Valid: true}
+		lastRemapDate := time.Now().UTC()
 		arg := storage.UpdateOrCreateCharacterAttributesParams{
 			CharacterID:   c.ID,
-			BonusRemaps:   bonusRemaps,
+			BonusRemaps:   7,
 			Charisma:      20,
 			Intelligence:  21,
 			LastRemapDate: lastRemapDate,
@@ -43,7 +41,7 @@ func TestCharacterAttributes(t *testing.T) {
 				assert.Equal(t, 22, x.Memory)
 				assert.Equal(t, 23, x.Perception)
 				assert.Equal(t, 24, x.Willpower)
-				assert.Equal(t, bonusRemaps, x.BonusRemaps)
+				assert.Equal(t, 7, x.BonusRemaps)
 				assert.Equal(t, lastRemapDate, x.LastRemapDate)
 			}
 		}
@@ -55,11 +53,10 @@ func TestCharacterAttributes(t *testing.T) {
 		factory.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{
 			CharacterID: c.ID,
 		})
-		bonusRemaps := sql.NullInt64{Int64: 7, Valid: true}
-		lastRemapDate := sql.NullTime{Time: time.Now().UTC(), Valid: true}
+		lastRemapDate := time.Now().UTC()
 		arg := storage.UpdateOrCreateCharacterAttributesParams{
 			CharacterID:   c.ID,
-			BonusRemaps:   bonusRemaps,
+			BonusRemaps:   7,
 			Charisma:      20,
 			Intelligence:  21,
 			LastRemapDate: lastRemapDate,
@@ -78,7 +75,7 @@ func TestCharacterAttributes(t *testing.T) {
 				assert.Equal(t, 22, x.Memory)
 				assert.Equal(t, 23, x.Perception)
 				assert.Equal(t, 24, x.Willpower)
-				assert.Equal(t, bonusRemaps, x.BonusRemaps)
+				assert.Equal(t, 7, x.BonusRemaps)
 				assert.Equal(t, lastRemapDate, x.LastRemapDate)
 			}
 		}

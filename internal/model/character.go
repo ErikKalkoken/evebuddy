@@ -38,6 +38,7 @@ type CharacterShort struct {
 
 // Updated character sections
 const (
+	CharacterSectionAttributes         CharacterSection = "attributes"
 	CharacterSectionHome               CharacterSection = "home"
 	CharacterSectionImplants           CharacterSection = "implants"
 	CharacterSectionLocation           CharacterSection = "location"
@@ -54,6 +55,7 @@ const (
 )
 
 var CharacterSections = []CharacterSection{
+	CharacterSectionAttributes,
 	CharacterSectionHome,
 	CharacterSectionImplants,
 	CharacterSectionLocation,

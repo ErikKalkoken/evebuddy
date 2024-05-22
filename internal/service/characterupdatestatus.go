@@ -53,6 +53,8 @@ func (s *Service) UpdateCharacterSectionIfExpired(characterID int32, section mod
 	ctx := context.Background()
 	var f func(context.Context, int32) (bool, error)
 	switch section {
+	case model.CharacterSectionAttributes:
+		f = s.updateCharacterAttributesESI
 	case model.CharacterSectionHome:
 		f = s.updateCharacterHomeESI
 	case model.CharacterSectionImplants:

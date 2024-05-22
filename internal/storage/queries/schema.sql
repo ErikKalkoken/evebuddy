@@ -135,7 +135,7 @@ CREATE TABLE characters (
 
 CREATE TABLE character_attributes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    bonus_remaps INTEGER,
+    bonus_remaps INTEGER NOT NULL,
     character_id INTEGER NOT NULL,
     charisma INTEGER NOT NULL,
     intelligence INTEGER NOT NULL,

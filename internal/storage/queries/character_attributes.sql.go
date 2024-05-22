@@ -61,7 +61,7 @@ WHERE character_id = ?1
 
 type UpdateOrCreateCharacterAttributesParams struct {
 	CharacterID   int64
-	BonusRemaps   sql.NullInt64
+	BonusRemaps   int64
 	Charisma      int64
 	Intelligence  int64
 	LastRemapDate sql.NullTime

@@ -1,14 +1,16 @@
 package model
 
-import "database/sql"
+import (
+	"time"
+)
 
 type CharacterAttribute struct {
 	ID            int64
-	BonusRemaps   sql.NullInt64
+	BonusRemaps   int
 	CharacterID   int32
 	Charisma      int
 	Intelligence  int
-	LastRemapDate sql.NullTime
+	LastRemapDate time.Time
 	Memory        int
 	Perception    int
 	Willpower     int

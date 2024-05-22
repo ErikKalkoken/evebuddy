@@ -22,7 +22,7 @@ type Character struct {
 
 type CharacterAttribute struct {
 	ID            int64
-	BonusRemaps   sql.NullInt64
+	BonusRemaps   int64
 	CharacterID   int64
 	Charisma      int64
 	Intelligence  int64
