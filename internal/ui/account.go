@@ -32,7 +32,7 @@ type accountArea struct {
 	characters binding.UntypedList
 	content    *fyne.Container
 	dialog     *dialog.CustomDialog
-	total      *widget.Label
+	bottom     *widget.Label
 	ui         *ui
 }
 
@@ -52,9 +52,12 @@ func (u *ui) ShowAccountDialog() {
 func (u *ui) NewAccountArea() *accountArea {
 	a := &accountArea{
 		characters: binding.NewUntypedList(),
-		total:      widget.NewLabel(""),
 		ui:         u,
 	}
+
+	a.bottom = widget.NewLabel("Hint: Click any character to enable it")
+	a.bottom.Importance = widget.LowImportance
+	a.bottom.Hide()
 
 	list := widget.NewListWithData(
 		a.characters,
@@ -109,14 +112,23 @@ func (u *ui) NewAccountArea() *accountArea {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		list.UnselectAll()
+		c, err := getFromBoundUntypedList[accountCharacter](a.characters, id)
+		if err != nil {
+			slog.Error("failed to access account character in list", "err", err)
+			return
+		}
+		if err := a.ui.LoadCurrentCharacter(c.id); err != nil {
+			slog.Error("failed to load current character", "char", c, "err", err)
+			return
+		}
+		a.dialog.Hide()
 	}
 
 	b := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.showAddCharacterDialog()
 	})
 	b.Importance = widget.HighImportance
-	a.content = container.NewBorder(b, a.total, nil, nil, container.NewScroll(list))
+	a.content = container.NewBorder(b, a.bottom, nil, nil, container.NewScroll(list))
 	return a
 }
 
@@ -162,7 +174,11 @@ func (a *accountArea) Refresh() error {
 	if err := a.characters.Set(copyToUntypedSlice(cc2)); err != nil {
 		return err
 	}
-	a.total.SetText(fmt.Sprintf("Characters: %d", a.characters.Length()))
+	if a.characters.Length() > 0 {
+		a.bottom.Show()
+	} else {
+		a.bottom.Hide()
+	}
 	return nil
 }
 

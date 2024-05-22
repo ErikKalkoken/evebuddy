@@ -20,7 +20,7 @@ type UpdateOrCreateCharacterAttributesParams struct {
 	Willpower     int
 }
 
-func (r *Storage) GetCharacterAttributes(ctx context.Context, characterID int32) (*model.CharacterAttribute, error) {
+func (r *Storage) GetCharacterAttributes(ctx context.Context, characterID int32) (*model.CharacterAttributes, error) {
 	o, err := r.q.GetCharacterAttributes(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
@@ -45,8 +45,8 @@ func (r *Storage) UpdateOrCreateCharacterAttributes(ctx context.Context, arg Upd
 	return r.q.UpdateOrCreateCharacterAttributes(ctx, arg2)
 }
 
-func characterAttributeFromDBModel(o queries.CharacterAttribute) *model.CharacterAttribute {
-	o2 := &model.CharacterAttribute{
+func characterAttributeFromDBModel(o queries.CharacterAttribute) *model.CharacterAttributes {
+	o2 := &model.CharacterAttributes{
 		ID:           o.ID,
 		BonusRemaps:  int(o.BonusRemaps),
 		CharacterID:  int32(o.CharacterID),

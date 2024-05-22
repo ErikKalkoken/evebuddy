@@ -133,12 +133,14 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 		}
 		s := container.NewScroll(form)
 		dlg := dialog.NewCustom("Skill Details", "OK", s, u.window)
+		dlg.SetOnClosed(func() {
+			list.UnselectAll()
+		})
 		dlg.Show()
 		dlg.Resize(fyne.Size{
 			Width:  0.8 * a.ui.window.Canvas().Size().Width,
 			Height: 0.8 * a.ui.window.Canvas().Size().Height,
 		})
-		list.UnselectAll()
 	}
 
 	top := container.NewVBox(a.total, widget.NewSeparator())

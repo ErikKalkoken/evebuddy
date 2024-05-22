@@ -34,6 +34,7 @@ const (
 // call methods on other UI areas and access shared variables in the UI.
 type ui struct {
 	app                   fyne.App
+	attributesArea        *attributesArea
 	biographyArea         *biographyArea
 	currentCharacter      *model.Character
 	imageManager          *images.Manager
@@ -59,11 +60,13 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	w := app.NewWindow(appName(app))
 	u := &ui{app: app, window: w, service: service, imageManager: images.New(imageCachePath)}
 
-	u.implantsArea = u.NewImplantsArea()
+	u.attributesArea = u.NewAttributesArea()
 	u.biographyArea = u.NewBiographyArea()
-	clonesTab := container.NewTabItemWithIcon("Character",
+	u.implantsArea = u.NewImplantsArea()
+	characterTab := container.NewTabItemWithIcon("Character",
 		theme.NewThemedResource(resourcePortraitSvg), container.NewAppTabs(
 			container.NewTabItem("Augmentations", u.implantsArea.content),
+			container.NewTabItem("Attributes", u.attributesArea.content),
 			container.NewTabItem("Biography", u.biographyArea.content),
 		))
 
@@ -100,7 +103,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	u.statusArea = u.newBarStatusArea()
 	u.toolbarArea = u.newToolbarArea()
 
-	u.tabs = container.NewAppTabs(clonesTab, u.mailTab, u.skillqueueTab, walletTab, overviewTab)
+	u.tabs = container.NewAppTabs(characterTab, u.mailTab, u.skillqueueTab, walletTab, overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	mainContent := container.NewBorder(u.toolbarArea.content, u.statusArea.content, nil, nil, u.tabs)
@@ -182,6 +185,7 @@ func (u *ui) ShowAndRun() {
 			u.window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
 			u.window.Resize(fyne.NewSize(s.Width, s.Height))
 		}
+		u.attributesArea.StartUpdateTicker()
 		u.implantsArea.StartUpdateTicker()
 		u.overviewArea.StartUpdateTicker()
 		u.mailArea.StartUpdateTicker()
@@ -226,6 +230,7 @@ func (u *ui) setCurrentCharacter(c *model.Character) {
 }
 
 func (u *ui) refreshCurrentCharacter() {
+	u.attributesArea.Refresh()
 	u.biographyArea.Refresh()
 	u.implantsArea.Refresh()
 	u.mailArea.Redraw()
@@ -239,6 +244,7 @@ func (u *ui) refreshCurrentCharacter() {
 		u.tabs.EnableIndex(0)
 		u.tabs.EnableIndex(1)
 		u.tabs.EnableIndex(2)
+		go u.attributesArea.MaybeUpdateAndRefresh(c.ID)
 		go u.implantsArea.MaybeUpdateAndRefresh(c.ID)
 		go u.mailArea.MaybeUpdateAndRefresh(c.ID)
 		go u.overviewArea.MaybeUpdateAndRefresh(c.ID)

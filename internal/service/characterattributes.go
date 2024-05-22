@@ -7,6 +7,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
+func (s *Service) GetCharacterAttributes(characterID int32) (*model.CharacterAttributes, error) {
+	ctx := context.Background()
+	return s.r.GetCharacterAttributes(ctx, characterID)
+}
+
 func (s *Service) updateCharacterAttributesESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {

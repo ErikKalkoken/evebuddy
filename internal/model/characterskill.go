@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type CharacterAttribute struct {
+type CharacterAttributes struct {
 	ID            int64
 	BonusRemaps   int
 	CharacterID   int32

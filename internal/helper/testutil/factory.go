@@ -66,7 +66,7 @@ func (f Factory) CreateCharacter(args ...storage.UpdateOrCreateCharacterParams) 
 	return c
 }
 
-func (f Factory) CreateCharacterAttributes(args ...storage.UpdateOrCreateCharacterAttributesParams) *model.CharacterAttribute {
+func (f Factory) CreateCharacterAttributes(args ...storage.UpdateOrCreateCharacterAttributesParams) *model.CharacterAttributes {
 	ctx := context.Background()
 	var arg storage.UpdateOrCreateCharacterAttributesParams
 	randomValue := func() int {

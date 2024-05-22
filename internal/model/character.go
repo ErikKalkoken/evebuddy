@@ -93,6 +93,7 @@ func (s CharacterSection) CalcContentHash(data any) (string, error) {
 // Timeout returns the time until the data of an update section becomes stale.
 func (section CharacterSection) Timeout() time.Duration {
 	m := map[CharacterSection]time.Duration{
+		CharacterSectionAttributes:         120 * time.Second,
 		CharacterSectionHome:               120 * time.Second,
 		CharacterSectionImplants:           120 * time.Second,
 		CharacterSectionLocation:           30 * time.Second, // 5 seconds min

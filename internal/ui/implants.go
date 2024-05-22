@@ -89,12 +89,14 @@ func (u *ui) NewImplantsArea() *implantsArea {
 		}
 		s := container.NewScroll(form)
 		dlg := dialog.NewCustom("Implant Detail", "OK", s, u.window)
+		dlg.SetOnClosed(func() {
+			list.UnselectAll()
+		})
 		dlg.Show()
 		dlg.Resize(fyne.Size{
 			Width:  0.8 * a.ui.window.Canvas().Size().Width,
 			Height: 0.8 * a.ui.window.Canvas().Size().Height,
 		})
-		list.UnselectAll()
 	}
 
 	top := container.NewVBox(a.top, widget.NewSeparator())
@@ -147,7 +149,7 @@ func (a *implantsArea) makeTopText() (string, widget.Importance) {
 	if errorText != "" {
 		return errorText, widget.DangerImportance
 	}
-	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.CurrentCharID(), model.CharacterSectionSkillqueue)
+	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.CurrentCharID(), model.CharacterSectionImplants)
 	if err != nil {
 		return "ERROR", widget.DangerImportance
 	}
