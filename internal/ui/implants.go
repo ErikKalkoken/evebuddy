@@ -59,7 +59,10 @@ func (u *ui) NewImplantsArea() *implantsArea {
 			}
 			label.SetText(fmt.Sprintf("%s\nSlot %d", q.EveType.Name, q.SlotNum))
 
-			r := u.imageManager.InventoryTypeIcon(q.EveType.ID, 64)
+			r, err := u.imageManager.InventoryTypeIcon(q.EveType.ID, 64)
+			if err != nil {
+				panic(err)
+			}
 			icon.Resource = r
 			icon.Refresh()
 		})

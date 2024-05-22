@@ -97,7 +97,10 @@ func (u *ui) NewAccountArea() *accountArea {
 			name.SetText(c.name)
 
 			icon := row.Objects[0].(*canvas.Image)
-			r := u.imageManager.CharacterPortrait(c.id, defaultIconSize)
+			r, err := u.imageManager.CharacterPortrait(c.id, defaultIconSize)
+			if err != nil {
+				panic(err)
+			}
 			image := canvas.NewImageFromResource(r)
 			icon.Resource = image.Resource
 			image.Refresh()

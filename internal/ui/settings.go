@@ -50,8 +50,12 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 				if !confirmed {
 					return
 				}
-				count := u.imageManager.ClearCache()
-				slog.Info("Cleared images cache", "count", count)
+				count, err := u.imageManager.ClearCache()
+				if err != nil {
+					slog.Error(err.Error())
+				} else {
+					slog.Info("Cleared images cache", "count", count)
+				}
 			},
 			u.window,
 		)
@@ -66,8 +70,14 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 		themeRadio.SetSelected(name)
 	}
 
-	cacheSize := u.imageManager.Size()
-	cacheHintText := fmt.Sprintf("Clear the local image cache (%s)", humanize.Bytes(uint64(cacheSize)))
+	var cacheSize string
+	s, err := u.imageManager.Size()
+	if err != nil {
+		cacheSize = "?"
+	} else {
+		cacheSize = humanize.Bytes(uint64(s))
+	}
+	cacheHintText := fmt.Sprintf("Clear the local image cache (%s)", cacheSize)
 	var d *dialog.CustomDialog
 	form := &widget.Form{
 		Items: []*widget.FormItem{

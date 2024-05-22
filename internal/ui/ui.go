@@ -107,7 +107,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	u.tabs = container.NewAppTabs(characterTab, u.mailTab, u.skillqueueTab, walletTab, overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	r := u.imageManager.InventoryTypeRender(603, 64) // 10216, 603
+	r, _ := u.imageManager.InventoryTypeRender(603, 64) // 10216, 603
 	icon := widget.NewIcon(r)
 	mainContent := container.NewBorder(u.toolbarArea.content, u.statusArea.content, nil, icon, u.tabs)
 	w.SetContent(mainContent)

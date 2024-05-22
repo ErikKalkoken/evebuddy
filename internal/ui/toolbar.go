@@ -60,7 +60,11 @@ func (a *toolbarArea) Refresh() {
 		a.name.Text = "No character"
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
 	} else {
-		a.icon.Resource = a.ui.imageManager.CharacterPortrait(c.ID, defaultIconSize)
+		r, err := a.ui.imageManager.CharacterPortrait(c.ID, defaultIconSize)
+		if err != nil {
+			panic(err)
+		}
+		a.icon.Resource = r
 		a.icon.Refresh()
 		s := fmt.Sprintf("%s (%s)", c.EveCharacter.Name, c.EveCharacter.Corporation.Name)
 		a.name.Text = s
@@ -111,7 +115,11 @@ func (a *toolbarArea) makeMenuItems(c *model.Character) ([]*fyne.MenuItem, error
 
 			}
 		})
-		i.Icon = a.ui.imageManager.CharacterPortrait(myC.ID, defaultIconSize)
+		r, err := a.ui.imageManager.CharacterPortrait(myC.ID, defaultIconSize)
+		if err != nil {
+			panic(err)
+		}
+		i.Icon = r
 		menuItems = append(menuItems, i)
 	}
 	return menuItems, nil
