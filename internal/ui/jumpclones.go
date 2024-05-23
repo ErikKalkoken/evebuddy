@@ -79,10 +79,11 @@ func (a *jumpClonesArea) Redraw() {
 			)
 			list.OnSelected = func(id widget.ListItemID) {
 				implant := c.Implants[id]
-				d := showImplantDetailDialog(implant.EveType, a.ui.window)
+				d := makeImplantDetailDialog(implant.EveType, a.ui.window)
 				d.SetOnClosed(func() {
 					list.UnselectAll()
 				})
+				d.Show()
 			}
 			implants := container.NewScroll(list)
 			implants.SetMinSize(fyne.Size{
