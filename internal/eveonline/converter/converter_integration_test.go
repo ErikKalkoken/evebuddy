@@ -60,7 +60,7 @@ func TestXMLtoMarkdown(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("in: %s out: %s", tc.in, tc.want), func(t *testing.T) {
-			got := converter.XMLtoMarkdown(tc.in)
+			got := converter.EveHTMLtoMarkdown(tc.in)
 			assert.Equal(t, tc.want, got)
 		})
 	}

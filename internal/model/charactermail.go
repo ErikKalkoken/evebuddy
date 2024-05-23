@@ -44,7 +44,7 @@ type CharacterMail struct {
 
 // BodyPlain returns a mail's body as plain text.
 func (m *CharacterMail) BodyPlain() string {
-	return converter.XMLToPlain(m.Body)
+	return converter.EveHTMLToPlain(m.Body)
 }
 
 // BodyForward returns a mail's body for a mail forward or reply.
@@ -81,5 +81,5 @@ func (m *CharacterMail) RecipientNames() []string {
 }
 
 func (m *CharacterMail) BodyToMarkdown() string {
-	return converter.XMLtoMarkdown(m.Body)
+	return converter.EveHTMLtoMarkdown(m.Body)
 }

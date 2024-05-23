@@ -106,12 +106,12 @@ func copyToUntypedSlice[T any](s []T) []any {
 	return x
 }
 
-// newImageResourceAsync shows a placeholder resource and refreshes it once the main resource is loaded asynchronously.
-func newImageResourceAsync(placeholder fyne.Resource, loader func() (fyne.Resource, error)) *canvas.Image {
-	image := canvas.NewImageFromResource(placeholder)
-	refreshImageResourceAsync(image, loader)
-	return image
-}
+// // newImageResourceAsync shows a placeholder resource and refreshes it once the main resource is loaded asynchronously.
+// func newImageResourceAsync(placeholder fyne.Resource, loader func() (fyne.Resource, error)) *canvas.Image {
+// 	image := canvas.NewImageFromResource(placeholder)
+// 	refreshImageResourceAsync(image, loader)
+// 	return image
+// }
 
 // refreshImageResourceAsync refreshes the resource of an image asynchronously.
 // This prevents fyne to wait with rendering an image until a resource is fully loaded from a web server.

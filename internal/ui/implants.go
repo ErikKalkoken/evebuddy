@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"log/slog"
-	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -65,38 +64,16 @@ func (u *ui) NewImplantsArea() *implantsArea {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		x, err := getFromBoundUntypedList[*model.CharacterImplant](a.implants, id)
+		implant, err := getFromBoundUntypedList[*model.CharacterImplant](a.implants, id)
 		if err != nil {
 			slog.Error("failed to access implant item in list", "err", err)
 			return
 		}
-		var data = []struct {
-			label string
-			value string
-			wrap  bool
-		}{
-			{"Name", x.EveType.Name, false},
-			{"Description", x.EveType.Description, true},
-			{"Slot", strconv.Itoa(x.SlotNum), true},
-		}
-		form := widget.NewForm()
-		for _, row := range data {
-			c := widget.NewLabel(row.value)
-			if row.wrap {
-				c.Wrapping = fyne.TextWrapWord
-			}
-			form.Append(row.label, c)
-		}
-		s := container.NewScroll(form)
-		dlg := dialog.NewCustom("Implant Detail", "OK", s, u.window)
-		dlg.SetOnClosed(func() {
+		d := showImplantDetailDialog(implant.EveType, a.ui.window)
+		d.SetOnClosed(func() {
 			list.UnselectAll()
 		})
-		dlg.Show()
-		dlg.Resize(fyne.Size{
-			Width:  0.8 * a.ui.window.Canvas().Size().Width,
-			Height: 0.8 * a.ui.window.Canvas().Size().Height,
-		})
+
 	}
 
 	top := container.NewVBox(a.top, widget.NewSeparator())
@@ -187,4 +164,13 @@ func (a *implantsArea) MaybeUpdateAndRefresh(characterID int32) {
 	if changed && characterID == a.ui.CurrentCharID() {
 		a.Refresh()
 	}
+}
+
+func showImplantDetailDialog(eveType *model.EveType, window fyne.Window) *dialog.CustomDialog {
+	label := widget.NewLabel(eveType.DescriptionPlain())
+	label.Wrapping = fyne.TextWrapWord
+	d := dialog.NewCustom(eveType.Name, "OK", label, window)
+	d.Show()
+	d.Resize(fyne.Size{Width: 600, Height: 500})
+	return d
 }

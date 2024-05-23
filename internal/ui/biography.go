@@ -27,7 +27,7 @@ func (a *biographyArea) Refresh() {
 	if c == nil {
 		s = ""
 	} else {
-		s = converter.XMLToPlain(c.EveCharacter.Description)
+		s = converter.EveHTMLToPlain(c.EveCharacter.Description)
 	}
 	a.text.SetText(s)
 }

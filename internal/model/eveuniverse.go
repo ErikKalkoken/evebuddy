@@ -1,5 +1,7 @@
 package model
 
+import "github.com/ErikKalkoken/evebuddy/internal/eveonline/converter"
+
 const (
 	EveCategoryIDSkill             = 16
 	EveTypeIDSolarSystem           = 5
@@ -29,6 +31,11 @@ type EveType struct {
 	Group       *EveGroup
 	IsPublished bool
 	Name        string
+}
+
+// BodyPlain returns a mail's body as plain text.
+func (t *EveType) DescriptionPlain() string {
+	return converter.EveHTMLToPlain(t.Description)
 }
 
 // EveRegion is a region in Eve Online.

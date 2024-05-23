@@ -16,8 +16,8 @@ import (
 
 var bodyPolicy = bluemonday.StrictPolicy()
 
-// XMLtoMarkdown convert Eve Online XML text to markdown and return it.
-func XMLtoMarkdown(xml string) string {
+// EveHTMLtoMarkdown converts custom Eve Online HTML text to markdown and returns it.
+func EveHTMLtoMarkdown(xml string) string {
 	t := strings.ReplaceAll(xml, "<loc>", "")
 	t = strings.ReplaceAll(t, "</loc>", "")
 	var re = regexp.MustCompile(`(--+)`)
@@ -71,7 +71,8 @@ func patchLinks(s string) string {
 	return string(r.ReplaceAll([]byte(s), []byte("$1 $2")))
 }
 
-func XMLToPlain(xml string) string {
+// EveHTMLtoMarkdown converts custom Eve Online HTML text to plain text and returns it.
+func EveHTMLToPlain(xml string) string {
 	t := strings.ReplaceAll(xml, "<br>", "\n")
 	b := html.UnescapeString(bodyPolicy.Sanitize(t))
 	return b

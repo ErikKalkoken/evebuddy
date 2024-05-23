@@ -55,35 +55,52 @@ func (a *jumpClonesArea) Redraw() {
 			x.Importance = widget.LowImportance
 			row.Add(x)
 		} else {
-			// data := make([]string, 0)
-			// for _, i := range c.Implants {
-			// 	data = append(data, i.EveType.Name)
-			// }
-			// implants := widget.NewList(
-			// 	func() int {
-			// 		return len(data)
-			// 	},
-			// 	func() fyne.CanvasObject {
-			// 		return widget.NewLabel("Placeholder")
-			// 	},
-			// 	func(id widget.ListItemID, co fyne.CanvasObject) {
-			// 		co.(*widget.Label).SetText(data[id])
-			// 	},
-			// )
-			implants := container.NewVBox()
-			for _, i := range c.Implants {
-				icon := newImageResourceAsync(theme.AccountIcon(), func() (fyne.Resource, error) {
-					return a.ui.imageManager.InventoryTypeIcon(i.EveType.ID, defaultIconSize)
+			list := widget.NewList(
+				func() int {
+					return len(c.Implants)
+				},
+				func() fyne.CanvasObject {
+					icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
+					icon.FillMode = canvas.ImageFillOriginal
+					name := canvas.NewText("Placeholder", theme.ForegroundColor())
+					return container.NewHBox(icon, name)
+				},
+				func(id widget.ListItemID, co fyne.CanvasObject) {
+					implant := c.Implants[id]
+					row := co.(*fyne.Container)
+					icon := row.Objects[0].(*canvas.Image)
+					refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
+						return a.ui.imageManager.InventoryTypeIcon(implant.EveType.ID, defaultIconSize)
+					})
+					name := row.Objects[1].(*canvas.Text)
+					name.Text = implant.EveType.Name
+					row.Refresh()
+				},
+			)
+			list.OnSelected = func(id widget.ListItemID) {
+				implant := c.Implants[id]
+				d := showImplantDetailDialog(implant.EveType, a.ui.window)
+				d.SetOnClosed(func() {
+					list.UnselectAll()
 				})
-				icon.FillMode = canvas.ImageFillOriginal
-				name := canvas.NewText(i.EveType.Name, theme.ForegroundColor())
-				implants.Add(container.NewHBox(icon, name))
 			}
+			implants := container.NewScroll(list)
+			implants.SetMinSize(fyne.Size{
+				Height: list.MinSize().Height * float32(len(c.Implants)+1),
+				Width:  list.MinSize().Width,
+			})
+			// implants := container.NewVBox()
+			// for _, i := range c.Implants {
+			// 	icon := newImageResourceAsync(theme.AccountIcon(), func() (fyne.Resource, error) {
+			// 		return a.ui.imageManager.InventoryTypeIcon(i.EveType.ID, defaultIconSize)
+			// 	})
+			// 	icon.FillMode = canvas.ImageFillOriginal
+			// 	name := canvas.NewText(i.EveType.Name, theme.ForegroundColor())
+			// 	implants.Add(container.NewHBox(icon, name))
+			// }
+
 			acc := widget.NewAccordion(
-				widget.NewAccordionItem(
-					fmt.Sprintf("%d implants", len(c.Implants)),
-					implants,
-				))
+				widget.NewAccordionItem(fmt.Sprintf("%d implants", len(c.Implants)), implants))
 			row.Add(acc)
 		}
 		a.list.Add(row)
