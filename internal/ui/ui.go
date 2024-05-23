@@ -4,6 +4,7 @@ package ui
 import (
 	"errors"
 	"log/slog"
+	"net/http"
 	"runtime"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
+	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -59,7 +61,15 @@ type ui struct {
 func NewUI(service *service.Service, imageCachePath string) *ui {
 	app := app.New()
 	w := app.NewWindow(appName(app))
-	u := &ui{app: app, window: w, service: service, imageManager: images.New(imageCachePath)}
+	httpClient := &http.Client{
+		Timeout:   time.Second * 30,
+		Transport: ihttp.LoggedTransport{},
+	}
+	u := &ui{app: app,
+		imageManager: images.New(imageCachePath, httpClient),
+		service:      service,
+		window:       w,
+	}
 
 	u.attributesArea = u.NewAttributesArea()
 	u.biographyArea = u.NewBiographyArea()

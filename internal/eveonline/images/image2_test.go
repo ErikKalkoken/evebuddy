@@ -2,6 +2,7 @@ package images
 
 import (
 	"errors"
+	"net/http"
 	"os"
 	"testing"
 
@@ -22,7 +23,7 @@ func TestLoadResourceFromURL(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder("GET", url, httpmock.NewBytesResponder(200, dat))
 		//when
-		x, err := loadDataFromURL(url)
+		x, err := loadDataFromURL(url, http.DefaultClient)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, dat, x)
@@ -35,7 +36,7 @@ func TestLoadResourceFromURL(t *testing.T) {
 		errTest := errors.New("dummy error")
 		httpmock.RegisterResponder("GET", url, httpmock.NewErrorResponder(errTest))
 		//when
-		_, err := loadDataFromURL(url)
+		_, err := loadDataFromURL(url, http.DefaultClient)
 		// then
 		assert.ErrorIs(t, err, errTest)
 	})
@@ -44,7 +45,7 @@ func TestLoadResourceFromURL(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder("GET", url, httpmock.NewStringResponder(400, ""))
 		//when
-		_, err := loadDataFromURL(url)
+		_, err := loadDataFromURL(url, http.DefaultClient)
 		// then
 		if assert.Error(t, err) {
 			assert.IsType(t, HTTPError{}, err)

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 
 	"fyne.io/fyne/v2"
+	"golang.org/x/sync/singleflight"
 )
 
 var (
@@ -21,12 +22,18 @@ var (
 
 // Manager provides cached access to images from the Eve Online image server.
 type Manager struct {
-	path string
+	httpClient *http.Client
+	path       string
+	sfg        *singleflight.Group
 }
 
 // New returns a new Images object. path is the location of the file cache.
-func New(path string) *Manager {
-	m := &Manager{path: path}
+func New(path string, httpClient *http.Client) *Manager {
+	m := &Manager{
+		httpClient: httpClient,
+		path:       path,
+		sfg:        new(singleflight.Group),
+	}
 	return m
 }
 
@@ -85,21 +92,28 @@ func (m *Manager) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
 }
 
 func (m *Manager) image(url string) (fyne.Resource, error) {
-	h := makeMD5Hash(url)
-	name := filepath.Join(m.path, h+".tmp")
+	hash := makeMD5Hash(url)
+	name := filepath.Join(m.path, hash+".tmp")
 	dat, err := os.ReadFile(name)
 	if errors.Is(err, os.ErrNotExist) {
-		dat, err = loadDataFromURL(url)
+		x, err, _ := m.sfg.Do(hash, func() (any, error) {
+			dat, err = loadDataFromURL(url, m.httpClient)
+			if err != nil {
+				return nil, err
+			}
+			if err := os.WriteFile(name, dat, 0666); err != nil {
+				return nil, err
+			}
+			return dat, nil
+		})
 		if err != nil {
 			return nil, err
 		}
-		if err := os.WriteFile(name, dat, 0666); err != nil {
-			return nil, err
-		}
+		dat = x.([]byte)
 	} else if err != nil {
 		return nil, err
 	}
-	r := fyne.NewStaticResource(fmt.Sprintf("eve-image-%s", h), dat)
+	r := fyne.NewStaticResource(fmt.Sprintf("eve-image-%s", hash), dat)
 	return r, nil
 }
 
@@ -112,8 +126,8 @@ func (r HTTPError) Error() string {
 	return fmt.Sprintf("HTTP error: %s", r.Status)
 }
 
-func loadDataFromURL(url string) ([]byte, error) {
-	r, err := http.Get(url)
+func loadDataFromURL(url string, client *http.Client) ([]byte, error) {
+	r, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -136,8 +150,8 @@ func makeMD5Hash(text string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-// ClearCache clears the images cache and returns the number of deleted entries.
-func (m *Manager) ClearCache() (int, error) {
+// Clear clears the images cache and returns the number of deleted entries.
+func (m *Manager) Clear() (int, error) {
 	files, err := os.ReadDir(m.path)
 	if err != nil {
 		return 0, err
@@ -163,4 +177,13 @@ func (m *Manager) Size() (int, error) {
 		s += info.Size()
 	}
 	return int(s), nil
+}
+
+// Count returns the number of all image files.
+func (m *Manager) Count() (int, error) {
+	files, err := os.ReadDir(m.path)
+	if err != nil {
+		return 0, err
+	}
+	return len(files), nil
 }

@@ -50,7 +50,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 				if !confirmed {
 					return
 				}
-				count, err := u.imageManager.ClearCache()
+				count, err := u.imageManager.Clear()
 				if err != nil {
 					slog.Error(err.Error())
 				} else {
