@@ -3,8 +3,11 @@ package ui
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/data/binding"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
@@ -101,4 +104,25 @@ func copyToUntypedSlice[T any](s []T) []any {
 		x[i] = v
 	}
 	return x
+}
+
+// newImageResourceAsync shows a placeholder resource and refreshes it once the main resource is loaded asynchronously.
+func newImageResourceAsync(placeholder fyne.Resource, loader func() (fyne.Resource, error)) *canvas.Image {
+	image := canvas.NewImageFromResource(placeholder)
+	refreshImageResourceAsync(image, loader)
+	return image
+}
+
+// refreshImageResourceAsync refreshes the resource of an image asynchronously.
+// This prevents fyne to wait with rendering an image until a resource is fully loaded from a web server.
+func refreshImageResourceAsync(image *canvas.Image, loader func() (fyne.Resource, error)) {
+	go func(*canvas.Image) {
+		r, err := loader()
+		if err != nil {
+			slog.Warn("Failed to fetch image resource", "err", err)
+		} else {
+			image.Resource = r
+			image.Refresh()
+		}
+	}(image)
 }

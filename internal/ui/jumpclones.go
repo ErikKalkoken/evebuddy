@@ -72,11 +72,9 @@ func (a *jumpClonesArea) Redraw() {
 			// )
 			implants := container.NewVBox()
 			for _, i := range c.Implants {
-				r, err := a.ui.imageManager.InventoryTypeIcon(i.EveType.ID, defaultIconSize)
-				if err != nil {
-					panic(err)
-				}
-				icon := canvas.NewImageFromResource(r)
+				icon := newImageResourceAsync(theme.AccountIcon(), func() (fyne.Resource, error) {
+					return a.ui.imageManager.InventoryTypeIcon(i.EveType.ID, defaultIconSize)
+				})
 				icon.FillMode = canvas.ImageFillOriginal
 				name := canvas.NewText(i.EveType.Name, theme.ForegroundColor())
 				implants.Add(container.NewHBox(icon, name))

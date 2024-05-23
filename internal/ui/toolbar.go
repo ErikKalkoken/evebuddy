@@ -105,7 +105,7 @@ func (a *toolbarArea) makeMenuItems(c *model.Character) ([]*fyne.MenuItem, error
 		if c != nil && myC.ID == c.ID {
 			continue
 		}
-		i := fyne.NewMenuItem(myC.Name, func() {
+		item := fyne.NewMenuItem(myC.Name, func() {
 			err := a.ui.LoadCurrentCharacter(myC.ID)
 			if err != nil {
 				msg := "Failed to switch to new character"
@@ -115,12 +115,16 @@ func (a *toolbarArea) makeMenuItems(c *model.Character) ([]*fyne.MenuItem, error
 
 			}
 		})
-		r, err := a.ui.imageManager.CharacterPortrait(myC.ID, defaultIconSize)
-		if err != nil {
-			panic(err)
-		}
-		i.Icon = r
-		menuItems = append(menuItems, i)
+		item.Icon = resourceCharacterplaceholder32Jpeg
+		go func() {
+			r, err := a.ui.imageManager.CharacterPortrait(myC.ID, defaultIconSize)
+			if err != nil {
+				panic(err)
+			}
+			item.Icon = r
+			a.switchButton.Refresh()
+		}()
+		menuItems = append(menuItems, item)
 	}
 	return menuItems, nil
 }

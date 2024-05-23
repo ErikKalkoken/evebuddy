@@ -59,12 +59,9 @@ func (u *ui) NewImplantsArea() *implantsArea {
 			}
 			label.SetText(fmt.Sprintf("%s\nSlot %d", q.EveType.Name, q.SlotNum))
 
-			r, err := u.imageManager.InventoryTypeIcon(q.EveType.ID, 64)
-			if err != nil {
-				panic(err)
-			}
-			icon.Resource = r
-			icon.Refresh()
+			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
+				return a.ui.imageManager.InventoryTypeIcon(q.EveType.ID, 64)
+			})
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
