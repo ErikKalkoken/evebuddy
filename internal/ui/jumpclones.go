@@ -18,7 +18,8 @@ import (
 const jumpClonesUpdateTicker = 10 * time.Second
 
 type jumpCloneNode struct {
-	CloneLabel             string
+	Name                   string
+	Region                 string
 	ImplantCount           int
 	ImplantTypeID          int32
 	ImplantTypeName        string
@@ -72,9 +73,10 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 		func(branch bool) fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
 			icon.FillMode = canvas.ImageFillOriginal
-			main := widget.NewLabel("Leaf template")
-			suffix := widget.NewLabel("Leaf template")
-			return container.NewHBox(icon, main, suffix)
+			first := widget.NewLabel("Template")
+			second := widget.NewLabel("Template")
+			third := widget.NewLabel("Template")
+			return container.NewHBox(icon, first, second, third)
 		},
 		func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
 			s, err := di.(binding.String).Get()
@@ -84,12 +86,15 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 			n := newJumpCloneNodeFromJSON(s)
 			hbox := co.(*fyne.Container)
 			icon := hbox.Objects[0].(*canvas.Image)
-			main := hbox.Objects[1].(*widget.Label)
-			suffix := hbox.Objects[2].(*widget.Label)
+			first := hbox.Objects[1].(*widget.Label)
+			second := hbox.Objects[2].(*widget.Label)
+			third := hbox.Objects[3].(*widget.Label)
 			if n.isClone() {
 				icon.Resource = resourceClone64Png
 				icon.Refresh()
-				main.SetText(n.CloneLabel)
+				first.SetText(n.Name)
+				second.SetText(n.Region)
+				second.Show()
 				var t string
 				var i widget.Importance
 				if n.ImplantCount > 0 {
@@ -99,16 +104,17 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 					t = "No implants"
 					i = widget.LowImportance
 				}
-				suffix.Text = t
-				suffix.Importance = i
-				suffix.Refresh()
-				suffix.Show()
+				third.Text = t
+				third.Importance = i
+				third.Refresh()
+				third.Show()
 			} else {
 				refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
 					return a.ui.imageManager.InventoryTypeIcon(n.ImplantTypeID, defaultIconSize)
 				})
-				main.SetText(n.ImplantTypeName)
-				suffix.Hide()
+				first.SetText(n.ImplantTypeName)
+				second.Hide()
+				third.Hide()
 			}
 		},
 	)
@@ -171,7 +177,8 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 	for _, c := range clones {
 		id := fmt.Sprint(c.JumpCloneID)
 		n := jumpCloneNode{
-			CloneLabel:   c.Location.Name,
+			Name:         c.Location.Name,
+			Region:       c.Region.Name,
 			ImplantCount: len(c.Implants),
 		}
 		values[id] = n.toJSON()

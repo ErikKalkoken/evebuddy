@@ -6,6 +6,8 @@ type CharacterJumpClone struct {
 	Implants    []*CharacterJumpCloneImplant
 	JumpCloneID int32
 	Location    *EntityShort[int64]
+	Name        string
+	Region      *EntityShort[int32]
 }
 
 type CharacterJumpCloneImplant struct {

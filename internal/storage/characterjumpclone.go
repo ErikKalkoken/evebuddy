@@ -34,7 +34,7 @@ func (r *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32, 
 		}
 		return nil, fmt.Errorf("failed to get jump clone for character %d: %w", characterID, err)
 	}
-	o := characterJumpCloneFromDBModel(row.CharacterJumpClone, row.LocationName)
+	o := characterJumpCloneFromDBModel(row.CharacterJumpClone, row.LocationName, row.RegionID, row.RegionName)
 	x, err := listCharacterJumpCloneImplants(ctx, r.q, o.ID)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (r *Storage) ListCharacterJumpClones(ctx context.Context, characterID int32
 	}
 	oo := make([]*model.CharacterJumpClone, len(rows))
 	for i, row := range rows {
-		oo[i] = characterJumpCloneFromDBModel(row.CharacterJumpClone, row.LocationName)
+		oo[i] = characterJumpCloneFromDBModel(row.CharacterJumpClone, row.LocationName, row.RegionID, row.RegionName)
 		x, err := listCharacterJumpCloneImplants(ctx, r.q, row.CharacterJumpClone.ID)
 		if err != nil {
 			return nil, err
@@ -127,7 +127,7 @@ func createCharacterJumpClone(ctx context.Context, q *queries.Queries, arg Creat
 	return nil
 }
 
-func characterJumpCloneFromDBModel(o queries.CharacterJumpClone, locationName string) *model.CharacterJumpClone {
+func characterJumpCloneFromDBModel(o queries.CharacterJumpClone, locationName string, regionID sql.NullInt64, regionName sql.NullString) *model.CharacterJumpClone {
 	if o.CharacterID == 0 {
 		panic("missing character ID")
 	}
@@ -136,6 +136,10 @@ func characterJumpCloneFromDBModel(o queries.CharacterJumpClone, locationName st
 		ID:          o.ID,
 		JumpCloneID: int32(o.JumpCloneID),
 		Location:    &model.EntityShort[int64]{ID: o.LocationID, Name: locationName},
+		Name:        o.Name,
+	}
+	if regionID.Valid && regionName.Valid {
+		o2.Region = &model.EntityShort[int32]{ID: int32(regionID.Int64), Name: regionName.String}
 	}
 	return o2
 }

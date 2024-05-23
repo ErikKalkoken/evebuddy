@@ -15,9 +15,12 @@ DELETE FROM character_jump_clones
 WHERE character_id = ?;
 
 -- name: GetCharacterJumpClone :one
-SELECT sqlc.embed(character_jump_clones), locations.name as location_name
+SELECT sqlc.embed(character_jump_clones), locations.name as location_name, eve_regions.id as region_id, eve_regions.name as region_name
 FROM character_jump_clones
 JOIN locations ON locations.id = character_jump_clones.location_id
+LEFT JOIN eve_solar_systems ON eve_solar_systems.id = locations.eve_solar_system_id
+LEFT JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
+LEFT JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
 WHERE character_id = ?
 AND jump_clone_id = ?;
 
@@ -25,6 +28,8 @@ AND jump_clone_id = ?;
 SELECT DISTINCT
     sqlc.embed(character_jump_clones),
     locations.name as location_name,
+    eve_regions.id as region_id,
+    eve_regions.name as region_name,
     (
         SELECT COUNT(*)
         FROM character_jump_clone_implants
@@ -33,6 +38,9 @@ SELECT DISTINCT
 FROM character_jump_clones
 JOIN locations ON locations.id = character_jump_clones.location_id
 LEFT JOIN character_jump_clone_implants ON character_jump_clone_implants.clone_id = character_jump_clones.id
+LEFT JOIN eve_solar_systems ON eve_solar_systems.id = locations.eve_solar_system_id
+LEFT JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
+LEFT JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
 WHERE character_id = ?
 ORDER BY location_name, implants_count DESC;
 

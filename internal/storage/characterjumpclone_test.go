@@ -31,7 +31,12 @@ func TestCharacterJumpClone(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := r.GetCharacterJumpClone(ctx, c.ID, 5)
 			if assert.NoError(t, err) {
+				assert.Equal(t, int32(5), x.JumpCloneID)
+				assert.Equal(t, "dummy", x.Name)
 				assert.Equal(t, location.ID, x.Location.ID)
+				assert.Equal(t, location.Name, x.Location.Name)
+				assert.Equal(t, location.SolarSystem.Constellation.Region.ID, x.Region.ID)
+				assert.Equal(t, location.SolarSystem.Constellation.Region.Name, x.Region.Name)
 			}
 		}
 	})
