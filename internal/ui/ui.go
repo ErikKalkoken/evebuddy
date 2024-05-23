@@ -3,6 +3,7 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"runtime"
@@ -150,17 +151,40 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	}
 	w.Resize(fyne.NewSize(width, height))
 
-	keyTabID := "tab-ID"
-	index, ok, err := u.service.DictionaryInt(keyTabID)
+	keyTabsMainID := "tabs-main-id"
+	index, ok, err := u.service.DictionaryInt(keyTabsMainID)
 	if err == nil && ok {
 		u.tabs.SelectIndex(index)
+	}
+	makeSubTabsKey := func(i int) string {
+		return fmt.Sprintf("tabs-sub%d-id", i)
+	}
+	for i, o := range u.tabs.Items {
+		tabs, ok := o.Content.(*container.AppTabs)
+		if !ok {
+			continue
+		}
+		key := makeSubTabsKey(i)
+		index, ok, err := u.service.DictionaryInt(key)
+		if err == nil && ok {
+			tabs.SelectIndex(index)
+		}
 	}
 	w.SetOnClosed(func() {
 		s := w.Canvas().Size()
 		u.service.DictionarySetFloat32(keyW, s.Width)
 		u.service.DictionarySetFloat32(keyH, s.Height)
 		index := u.tabs.SelectedIndex()
-		u.service.DictionarySetInt(keyTabID, index)
+		u.service.DictionarySetInt(keyTabsMainID, index)
+		for i, o := range u.tabs.Items {
+			tabs, ok := o.Content.(*container.AppTabs)
+			if !ok {
+				continue
+			}
+			key := makeSubTabsKey(i)
+			index := tabs.SelectedIndex()
+			u.service.DictionarySetInt(key, index)
+		}
 	})
 
 	name, ok, err := u.service.DictionaryString(model.SettingTheme)
