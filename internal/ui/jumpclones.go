@@ -41,8 +41,13 @@ func (n jumpCloneNode) toJSON() string {
 	}
 	return string(s)
 }
+
 func (n jumpCloneNode) isClone() bool {
 	return n.ImplantTypeID == 0
+}
+
+func (n jumpCloneNode) isBranch() bool {
+	return n.ImplantTypeID == 0 && n.ImplantCount > 0
 }
 
 // jumpClonesArea is the UI area that shows the skillqueue
@@ -119,6 +124,9 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 			return
 		}
 		n := newJumpCloneNodeFromJSON(s)
+		if n.isBranch() {
+			a.tree.ToggleBranch(uid)
+		}
 		if n.isClone() {
 			a.tree.UnselectAll()
 			return
