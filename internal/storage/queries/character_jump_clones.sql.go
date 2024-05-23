@@ -105,7 +105,7 @@ func (q *Queries) GetCharacterJumpClone(ctx context.Context, arg GetCharacterJum
 }
 
 const listCharacterJumpCloneImplant = `-- name: ListCharacterJumpCloneImplant :many
-SELECT
+SELECT DISTINCT
     character_jump_clone_implants.id, character_jump_clone_implants.clone_id, character_jump_clone_implants.eve_type_id,
     eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
@@ -117,6 +117,7 @@ JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
 JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
 LEFT JOIN eve_type_dogma_attributes ON eve_type_dogma_attributes.eve_type_id = character_jump_clone_implants.eve_type_id AND eve_type_dogma_attributes.dogma_attribute_id = ?
 WHERE clone_id = ?
+ORDER BY slot_num
 `
 
 type ListCharacterJumpCloneImplantParams struct {
@@ -173,15 +174,25 @@ func (q *Queries) ListCharacterJumpCloneImplant(ctx context.Context, arg ListCha
 }
 
 const listCharacterJumpClones = `-- name: ListCharacterJumpClones :many
-SELECT character_jump_clones.id, character_jump_clones.character_id, character_jump_clones.jump_clone_id, character_jump_clones.location_id, character_jump_clones.name, locations.name as location_name
+SELECT DISTINCT
+    character_jump_clones.id, character_jump_clones.character_id, character_jump_clones.jump_clone_id, character_jump_clones.location_id, character_jump_clones.name,
+    locations.name as location_name,
+    (
+        SELECT COUNT(*)
+        FROM character_jump_clone_implants
+        WHERE clone_id = character_jump_clones.id
+    ) AS implants_count
 FROM character_jump_clones
 JOIN locations ON locations.id = character_jump_clones.location_id
+LEFT JOIN character_jump_clone_implants ON character_jump_clone_implants.clone_id = character_jump_clones.id
 WHERE character_id = ?
+ORDER BY location_name, implants_count DESC
 `
 
 type ListCharacterJumpClonesRow struct {
 	CharacterJumpClone CharacterJumpClone
 	LocationName       string
+	ImplantsCount      int64
 }
 
 func (q *Queries) ListCharacterJumpClones(ctx context.Context, characterID int64) ([]ListCharacterJumpClonesRow, error) {
@@ -200,6 +211,7 @@ func (q *Queries) ListCharacterJumpClones(ctx context.Context, characterID int64
 			&i.CharacterJumpClone.LocationID,
 			&i.CharacterJumpClone.Name,
 			&i.LocationName,
+			&i.ImplantsCount,
 		); err != nil {
 			return nil, err
 		}

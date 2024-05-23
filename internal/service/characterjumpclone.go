@@ -33,6 +33,10 @@ func (s *Service) updateCharacterJumpClonesESI(ctx context.Context, characterID 
 	}
 	args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))
 	for i, jc := range clones.JumpClones {
+		_, err = s.getOrCreateLocationESI(ctx, jc.LocationId)
+		if err != nil {
+			return false, err
+		}
 		for _, typeID := range jc.Implants {
 			_, err = s.getOrCreateEveTypeESI(ctx, typeID)
 			if err != nil {

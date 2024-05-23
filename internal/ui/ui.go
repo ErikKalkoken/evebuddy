@@ -39,6 +39,7 @@ type ui struct {
 	currentCharacter      *model.Character
 	imageManager          *images.Manager
 	implantsArea          *implantsArea
+	jumpClonesArea        *jumpClonesArea
 	mailArea              *mailArea
 	mailTab               *container.TabItem
 	overviewArea          *overviewArea
@@ -62,10 +63,12 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 
 	u.attributesArea = u.NewAttributesArea()
 	u.biographyArea = u.NewBiographyArea()
+	u.jumpClonesArea = u.NewJumpClonesArea()
 	u.implantsArea = u.NewImplantsArea()
 	characterTab := container.NewTabItemWithIcon("Character",
 		theme.NewThemedResource(resourcePortraitSvg), container.NewAppTabs(
 			container.NewTabItem("Augmentations", u.implantsArea.content),
+			container.NewTabItem("Jump Clones", u.jumpClonesArea.content),
 			container.NewTabItem("Attributes", u.attributesArea.content),
 			container.NewTabItem("Biography", u.biographyArea.content),
 		))
@@ -186,6 +189,7 @@ func (u *ui) ShowAndRun() {
 			u.window.Resize(fyne.NewSize(s.Width, s.Height))
 		}
 		u.attributesArea.StartUpdateTicker()
+		u.jumpClonesArea.StartUpdateTicker()
 		u.implantsArea.StartUpdateTicker()
 		u.overviewArea.StartUpdateTicker()
 		u.mailArea.StartUpdateTicker()
@@ -232,6 +236,7 @@ func (u *ui) setCurrentCharacter(c *model.Character) {
 func (u *ui) refreshCurrentCharacter() {
 	u.attributesArea.Refresh()
 	u.biographyArea.Refresh()
+	u.jumpClonesArea.Redraw()
 	u.implantsArea.Refresh()
 	u.mailArea.Redraw()
 	u.skillqueueArea.Refresh()
@@ -245,6 +250,7 @@ func (u *ui) refreshCurrentCharacter() {
 		u.tabs.EnableIndex(1)
 		u.tabs.EnableIndex(2)
 		go u.attributesArea.MaybeUpdateAndRefresh(c.ID)
+		go u.jumpClonesArea.MaybeUpdateAndRefresh(c.ID)
 		go u.implantsArea.MaybeUpdateAndRefresh(c.ID)
 		go u.mailArea.MaybeUpdateAndRefresh(c.ID)
 		go u.overviewArea.MaybeUpdateAndRefresh(c.ID)

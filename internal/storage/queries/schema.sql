@@ -117,6 +117,7 @@ CREATE TABLE locations (
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE SET NULL,
     FOREIGN KEY (owner_id) REFERENCES eve_entities(id) ON DELETE SET NULL
 );
+CREATE INDEX locations_name_idx ON locations (name ASC);
 
 CREATE TABLE characters (
     id INTEGER PRIMARY KEY NOT NULL,

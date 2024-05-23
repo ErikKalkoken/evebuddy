@@ -57,6 +57,8 @@ func (s *Service) UpdateCharacterSectionIfExpired(characterID int32, section mod
 		f = s.updateCharacterHomeESI
 	case model.CharacterSectionImplants:
 		f = s.updateCharacterImplantsESI
+	case model.CharacterSectionJumpClones:
+		f = s.updateCharacterJumpClonesESI
 	case model.CharacterSectionLocation:
 		f = s.updateCharacterLocationESI
 	case model.CharacterSectionMails:
