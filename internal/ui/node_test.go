@@ -8,9 +8,9 @@ import (
 
 func TestFolderItem(t *testing.T) {
 	t.Run("can serialize to and from JSON", func(t *testing.T) {
-		f1 := node{ObjID: 7, Name: "Crimson Sky", Category: nodeCategoryLabel}
+		f1 := folderNode{ObjID: 7, Name: "Crimson Sky", Category: nodeCategoryLabel}
 		s := f1.toJSON()
-		f2 := newNodeFromJSON(s)
+		f2 := newFolderTreeNodeFromJSON(s)
 		assert.Equal(t, f1, f2)
 
 	})

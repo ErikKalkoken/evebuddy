@@ -69,7 +69,7 @@ func (u *ui) NewImplantsArea() *implantsArea {
 			slog.Error("failed to access implant item in list", "err", err)
 			return
 		}
-		d := makeImplantDetailDialog(implant.EveType, a.ui.window)
+		d := makeImplantDetailDialog(implant.EveType.Name, implant.EveType.DescriptionPlain(), a.ui.window)
 		d.SetOnClosed(func() {
 			list.UnselectAll()
 		})
@@ -166,11 +166,11 @@ func (a *implantsArea) MaybeUpdateAndRefresh(characterID int32) {
 	}
 }
 
-func makeImplantDetailDialog(eveType *model.EveType, window fyne.Window) *dialog.CustomDialog {
-	label := widget.NewLabel(eveType.DescriptionPlain())
+func makeImplantDetailDialog(name, description string, window fyne.Window) *dialog.CustomDialog {
+	label := widget.NewLabel(description)
 	label.Wrapping = fyne.TextWrapWord
 	x := container.NewVScroll(label)
-	x.SetMinSize(fyne.Size{Width: 600, Height: 200})
-	d := dialog.NewCustom(eveType.Name, "OK", x, window)
+	x.SetMinSize(fyne.Size{Width: 600, Height: 250})
+	d := dialog.NewCustom(name, "OK", x, window)
 	return d
 }

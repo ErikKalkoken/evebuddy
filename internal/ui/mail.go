@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -101,7 +102,7 @@ type folderArea struct {
 	content       fyne.CanvasObject
 	newButton     *widget.Button
 	lastUID       string
-	lastFolderAll node
+	lastFolderAll folderNode
 	tree          *widget.Tree
 	treeData      binding.StringTree
 	mailArea      *mailArea
@@ -124,20 +125,86 @@ func NewFolderArea(m *mailArea) *folderArea {
 	return a
 }
 
+type folderNodeCategory int
+
+const (
+	nodeCategoryBranch folderNodeCategory = 0
+	nodeCategoryLabel  folderNodeCategory = 1
+	nodeCategoryList   folderNodeCategory = 2
+)
+
+const (
+	folderNodeAllID      = "all"
+	folderNodeInboxID    = "inbox"
+	folderNodeSentID     = "sent"
+	folderNodeCorpID     = "corp"
+	folderNodeAllianceID = "alliance"
+	folderNodeTrashID    = "trash"
+	folderNodeLabelsID   = "labels"
+	folderNodeListsID    = "lists"
+)
+
+// A folderNode in the folder tree, e.g. the inbox
+type folderNode struct {
+	Category    folderNodeCategory
+	CharacterID int32
+	ID          string
+	Name        string
+	ObjID       int32
+	UnreadCount int
+}
+
+func newFolderTreeNodeFromJSON(s string) folderNode {
+	var f folderNode
+	err := json.Unmarshal([]byte(s), &f)
+	if err != nil {
+		panic(err)
+	}
+	return f
+}
+
+func (f folderNode) toJSON() string {
+	s, err := json.Marshal(f)
+	if err != nil {
+		panic(err)
+	}
+	return string(s)
+}
+
+func (f folderNode) isBranch() bool {
+	return f.Category == nodeCategoryBranch
+}
+
+func (f folderNode) icon() fyne.Resource {
+	switch f.ID {
+	case folderNodeInboxID:
+		return theme.DownloadIcon()
+	case folderNodeSentID:
+		return theme.UploadIcon()
+	case folderNodeTrashID:
+		return theme.DeleteIcon()
+	}
+	return theme.FolderIcon()
+}
+
+func (f folderNode) isSent() bool {
+	return f.ID == folderNodeSentID
+}
+
 func (a *folderArea) makeFolderTree() *widget.Tree {
 	tree := widget.NewTreeWithData(
 		a.treeData,
 		func(isBranch bool) fyne.CanvasObject {
-			return container.NewHBox(widget.NewIcon(&fyne.StaticResource{}), widget.NewLabel("Branch template"))
+			return container.NewHBox(
+				widget.NewIcon(&fyne.StaticResource{}), widget.NewLabel("Branch template"))
 		},
 		func(di binding.DataItem, isBranch bool, co fyne.CanvasObject) {
-			i := di.(binding.String)
-			s, err := i.Get()
+			s, err := di.(binding.String).Get()
 			if err != nil {
 				slog.Error("Failed to fetch data item for tree")
 				return
 			}
-			item := newNodeFromJSON(s)
+			item := newFolderTreeNodeFromJSON(s)
 			icon := co.(*fyne.Container).Objects[0].(*widget.Icon)
 			icon.SetResource(item.icon())
 			var text string
@@ -153,16 +220,15 @@ func (a *folderArea) makeFolderTree() *widget.Tree {
 	tree.OnSelected = func(uid string) {
 		di, err := a.treeData.GetItem(uid)
 		if err != nil {
-			slog.Error("Failed to get char ID item", "error", err)
+			slog.Error("Failed to get tree data item", "error", err)
 			return
 		}
-		i := di.(binding.String)
-		s, err := i.Get()
+		s, err := di.(binding.String).Get()
 		if err != nil {
 			slog.Error("Failed to fetch data item for tree")
 			return
 		}
-		item := newNodeFromJSON(s)
+		item := newFolderTreeNodeFromJSON(s)
 		if item.isBranch() {
 			if a.lastUID != "" {
 				tree.Select(a.lastUID)
@@ -186,9 +252,11 @@ func (a *folderArea) Refresh() {
 	if err != nil {
 		slog.Error("Failed to build folder tree", "character", characterID, "error", err)
 	}
-	a.treeData.Set(ids, values)
+	if err := a.treeData.Set(ids, values); err != nil {
+		panic(err)
+	}
 	if a.lastUID == "" {
-		a.tree.Select(nodeAllID)
+		a.tree.Select(folderNodeAllID)
 		a.tree.ScrollToTop()
 		a.mailArea.header.SetFolder(folderAll)
 	} else {
@@ -203,74 +271,74 @@ func (a *folderArea) Refresh() {
 	a.mailArea.ui.tabs.Refresh()
 }
 
-func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, map[string]string, node, error) {
+func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, map[string]string, folderNode, error) {
 	labelUnreadCounts, err := a.mailArea.ui.service.GetCharacterMailLabelUnreadCounts(characterID)
 	if err != nil {
-		return nil, nil, node{}, err
+		return nil, nil, folderNode{}, err
 	}
 	listUnreadCounts, err := a.mailArea.ui.service.GetCharacterMailListUnreadCounts(characterID)
 	if err != nil {
-		return nil, nil, node{}, err
+		return nil, nil, folderNode{}, err
 	}
 	totalUnreadCount, totalLabelsUnreadCount, totalListUnreadCount := calcUnreadTotals(labelUnreadCounts, listUnreadCounts)
 	ids := map[string][]string{
-		"": {nodeAllID, nodeInboxID, nodeSentID, nodeCorpID, nodeAllianceID},
+		"": {folderNodeAllID, folderNodeInboxID, folderNodeSentID, folderNodeCorpID, folderNodeAllianceID},
 	}
 	folders := makeDefaultFolders(characterID, labelUnreadCounts)
-	folderAll := node{
+	folderAll := folderNode{
 		Category:    nodeCategoryLabel,
 		CharacterID: characterID,
-		ID:          nodeAllID,
+		ID:          folderNodeAllID,
 		Name:        "All Mails",
 		ObjID:       model.MailLabelAll,
 		UnreadCount: totalUnreadCount,
 	}
-	folders[nodeAllID] = folderAll.toJSON()
+	folders[folderNodeAllID] = folderAll.toJSON()
 	labels, err := a.mailArea.ui.service.ListCharacterMailLabelsOrdered(characterID)
 	if err != nil {
-		return nil, nil, node{}, err
+		return nil, nil, folderNode{}, err
 	}
 	if len(labels) > 0 {
-		ids[""] = append(ids[""], nodeLabelsID)
-		ids[nodeLabelsID] = []string{}
-		folders[nodeLabelsID] = node{
+		ids[""] = append(ids[""], folderNodeLabelsID)
+		ids[folderNodeLabelsID] = []string{}
+		folders[folderNodeLabelsID] = folderNode{
 			CharacterID: characterID,
-			ID:          nodeLabelsID,
+			ID:          folderNodeLabelsID,
 			Name:        "Labels",
 			UnreadCount: totalLabelsUnreadCount,
 		}.toJSON()
 		for _, l := range labels {
 			uid := fmt.Sprintf("label%d", l.LabelID)
-			ids[nodeLabelsID] = append(ids[nodeLabelsID], uid)
+			ids[folderNodeLabelsID] = append(ids[folderNodeLabelsID], uid)
 			u, ok := labelUnreadCounts[l.LabelID]
 			if !ok {
 				u = 0
 			}
-			n := node{ObjID: l.LabelID, Name: l.Name, Category: nodeCategoryLabel, UnreadCount: u}
+			n := folderNode{ObjID: l.LabelID, Name: l.Name, Category: nodeCategoryLabel, UnreadCount: u}
 			folders[uid] = n.toJSON()
 		}
 	}
 	lists, err := a.mailArea.ui.service.ListCharacterMailLists(characterID)
 	if err != nil {
-		return nil, nil, node{}, err
+		return nil, nil, folderNode{}, err
 	}
 	if len(lists) > 0 {
-		ids[""] = append(ids[""], nodeListsID)
-		ids[nodeListsID] = []string{}
-		folders[nodeListsID] = node{
+		ids[""] = append(ids[""], folderNodeListsID)
+		ids[folderNodeListsID] = []string{}
+		folders[folderNodeListsID] = folderNode{
 			CharacterID: characterID,
-			ID:          nodeListsID,
+			ID:          folderNodeListsID,
 			Name:        "Mailing Lists",
 			UnreadCount: totalListUnreadCount,
 		}.toJSON()
 		for _, l := range lists {
 			uid := fmt.Sprintf("list%d", l.ID)
-			ids[nodeListsID] = append(ids[nodeListsID], uid)
+			ids[folderNodeListsID] = append(ids[folderNodeListsID], uid)
 			u, ok := listUnreadCounts[l.ID]
 			if !ok {
 				u = 0
 			}
-			n := node{ObjID: l.ID, Name: l.Name, Category: nodeCategoryList, UnreadCount: u}
+			n := folderNode{ObjID: l.ID, Name: l.Name, Category: nodeCategoryList, UnreadCount: u}
 			folders[uid] = n.toJSON()
 		}
 	}
@@ -284,17 +352,17 @@ func makeDefaultFolders(characterID int32, labelUnreadCounts map[int32]int) map[
 		labelID int32
 		name    string
 	}{
-		{nodeInboxID, model.MailLabelInbox, "Inbox"},
-		{nodeSentID, model.MailLabelSent, "Sent"},
-		{nodeCorpID, model.MailLabelCorp, "Corp"},
-		{nodeAllianceID, model.MailLabelAlliance, "Alliance"},
+		{folderNodeInboxID, model.MailLabelInbox, "Inbox"},
+		{folderNodeSentID, model.MailLabelSent, "Sent"},
+		{folderNodeCorpID, model.MailLabelCorp, "Corp"},
+		{folderNodeAllianceID, model.MailLabelAlliance, "Alliance"},
 	}
 	for _, o := range defaultFolders {
 		u, ok := labelUnreadCounts[o.labelID]
 		if !ok {
 			u = 0
 		}
-		folders[o.nodeID] = node{
+		folders[o.nodeID] = folderNode{
 			CharacterID: characterID,
 			Category:    nodeCategoryLabel,
 			ID:          o.nodeID,
@@ -324,7 +392,7 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 // headerArea is the UI area showing the list of mail headers.
 type headerArea struct {
 	content       fyne.CanvasObject
-	currentFolder node
+	currentFolder folderNode
 	infoText      *widget.Label
 	list          *widget.List
 	lastSelected  widget.ListItemID
@@ -419,7 +487,7 @@ func (a *headerArea) makeHeaderTree() *widget.List {
 	return list
 }
 
-func (a *headerArea) SetFolder(folder node) {
+func (a *headerArea) SetFolder(folder folderNode) {
 	a.currentFolder = folder
 	a.Refresh()
 	a.list.ScrollToTop()
