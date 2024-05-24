@@ -177,9 +177,16 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 	for _, c := range clones {
 		id := fmt.Sprint(c.JumpCloneID)
 		n := jumpCloneNode{
-			Name:         c.Location.Name,
-			Region:       c.Region.Name,
 			ImplantCount: len(c.Implants),
+		}
+		// TODO: Refactor to use same location method for all unknown location cases
+		if c.Location.Name != "" {
+			n.Name = c.Location.Name
+		} else {
+			n.Name = fmt.Sprintf("Unknown location #%d", c.Location.ID)
+		}
+		if c.Region != nil {
+			n.Region = c.Region.Name
 		}
 		values[id] = n.toJSON()
 		ids[""] = append(ids[""], id)

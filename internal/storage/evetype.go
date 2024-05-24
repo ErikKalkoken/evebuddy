@@ -11,11 +11,20 @@ import (
 )
 
 type CreateEveTypeParams struct {
-	ID          int32
-	Description string
-	GroupID     int32
-	IsPublished bool
-	Name        string
+	ID             int32
+	GroupID        int32
+	Capacity       float32
+	Description    string
+	GraphicID      int32
+	IconID         int32
+	IsPublished    bool
+	MarketGroupID  int32
+	Mass           float32
+	Name           string
+	PackagedVolume float32
+	PortionSize    int
+	Radius         float32
+	Volume         float32
 }
 
 func (r *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) error {
@@ -23,11 +32,20 @@ func (r *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) er
 		return fmt.Errorf("invalid ID %d", arg.ID)
 	}
 	arg2 := queries.CreateEveTypeParams{
-		ID:          int64(arg.ID),
-		Description: arg.Description,
-		EveGroupID:  int64(arg.GroupID),
-		IsPublished: arg.IsPublished,
-		Name:        arg.Name,
+		ID:             int64(arg.ID),
+		EveGroupID:     int64(arg.GroupID),
+		Capacity:       float64(arg.Capacity),
+		Description:    arg.Description,
+		GraphicID:      int64(arg.GraphicID),
+		IconID:         int64(arg.IconID),
+		IsPublished:    arg.IsPublished,
+		MarketGroupID:  int64(arg.MarketGroupID),
+		Mass:           float64(arg.Mass),
+		Name:           arg.Name,
+		PackagedVolume: float64(arg.PackagedVolume),
+		PortionSize:    int64(arg.PortionSize),
+		Radius:         float64(arg.Radius),
+		Volume:         float64(arg.Volume),
 	}
 	err := r.q.CreateEveType(ctx, arg2)
 	if err != nil {
@@ -50,10 +68,19 @@ func (r *Storage) GetEveType(ctx context.Context, id int32) (*model.EveType, err
 
 func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCategory) *model.EveType {
 	return &model.EveType{
-		ID:          int32(t.ID),
-		Description: t.Description,
-		Group:       eveGroupFromDBModel(g, c),
-		IsPublished: t.IsPublished,
-		Name:        t.Name,
+		ID:             int32(t.ID),
+		Group:          eveGroupFromDBModel(g, c),
+		Capacity:       float32(t.Capacity),
+		Description:    t.Description,
+		GraphicID:      int32(t.GraphicID),
+		IconID:         int32(t.GraphicID),
+		IsPublished:    t.IsPublished,
+		MarketGroupID:  int32(t.MarketGroupID),
+		Mass:           float32(t.Mass),
+		Name:           t.Name,
+		PackagedVolume: float32(t.PackagedVolume),
+		PortionSize:    int(t.PortionSize),
+		Radius:         float32(t.Radius),
+		Volume:         float32(t.Volume),
 	}
 }

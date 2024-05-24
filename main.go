@@ -38,8 +38,8 @@ func (l *logLevelFlag) Set(value string) error {
 // defined flags
 var (
 	levelFlag   logLevelFlag
-	logFileFlag = flag.Bool("logfile", false, "Write a log file")
-	debugFlag   = flag.Bool("debug", false, "Run in debug mode")
+	logFileFlag = flag.Bool("logfile", false, "Write logs to a file instead of the console")
+	localFlag   = flag.Bool("local", false, "Store all files in the current directory instead of the user's home")
 	removeFlag  = flag.Bool("remove-user-files", false, "Remove all user files of this app")
 )
 
@@ -77,7 +77,7 @@ func main() {
 		}
 		return
 	}
-	fn := makeLogFileName(ad, *debugFlag)
+	fn := makeLogFileName(ad, *localFlag)
 	if *logFileFlag {
 		f, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
@@ -86,7 +86,7 @@ func main() {
 		defer f.Close()
 		log.SetOutput(f)
 	}
-	dsn := makeDSN(ad, *debugFlag)
+	dsn := makeDSN(ad, *localFlag)
 	db, err := storage.InitDB(dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect to database %s: %s", dsn, err)
@@ -94,7 +94,7 @@ func main() {
 	defer db.Close()
 	repository := storage.New(db)
 	s := service.NewService(repository)
-	cache := makeImageCachePath(ad, *debugFlag)
+	cache := makeImageCachePath(ad, *localFlag)
 	e := ui.NewUI(s, cache)
 	e.ShowAndRun()
 }

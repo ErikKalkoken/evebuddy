@@ -12,31 +12,58 @@ import (
 const createEveType = `-- name: CreateEveType :exec
 INSERT INTO eve_types (
     id,
-    description,
     eve_group_id,
+    capacity,
+    description,
+    graphic_id,
+    icon_id,
+    is_published,
+    market_group_id,
+    mass,
     name,
-    is_published
+    packaged_volume,
+    portion_size,
+    radius,
+    volume
 )
 VALUES (
-    ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 )
 `
 
 type CreateEveTypeParams struct {
-	ID          int64
-	Description string
-	EveGroupID  int64
-	Name        string
-	IsPublished bool
+	ID             int64
+	EveGroupID     int64
+	Capacity       float64
+	Description    string
+	GraphicID      int64
+	IconID         int64
+	IsPublished    bool
+	MarketGroupID  int64
+	Mass           float64
+	Name           string
+	PackagedVolume float64
+	PortionSize    int64
+	Radius         float64
+	Volume         float64
 }
 
 func (q *Queries) CreateEveType(ctx context.Context, arg CreateEveTypeParams) error {
 	_, err := q.db.ExecContext(ctx, createEveType,
 		arg.ID,
-		arg.Description,
 		arg.EveGroupID,
-		arg.Name,
+		arg.Capacity,
+		arg.Description,
+		arg.GraphicID,
+		arg.IconID,
 		arg.IsPublished,
+		arg.MarketGroupID,
+		arg.Mass,
+		arg.Name,
+		arg.PackagedVolume,
+		arg.PortionSize,
+		arg.Radius,
+		arg.Volume,
 	)
 	return err
 }
@@ -64,7 +91,7 @@ func (q *Queries) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEve
 }
 
 const getEveType = `-- name: GetEveType :one
-SELECT eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published, eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published, eve_categories.id, eve_categories.name, eve_categories.is_published
+SELECT eve_types.id, eve_types.eve_group_id, eve_types.capacity, eve_types.description, eve_types.graphic_id, eve_types.icon_id, eve_types.is_published, eve_types.market_group_id, eve_types.mass, eve_types.name, eve_types.packaged_volume, eve_types.portion_size, eve_types.radius, eve_types.volume, eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published, eve_categories.id, eve_categories.name, eve_categories.is_published
 FROM eve_types
 JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
 JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
@@ -82,10 +109,19 @@ func (q *Queries) GetEveType(ctx context.Context, id int64) (GetEveTypeRow, erro
 	var i GetEveTypeRow
 	err := row.Scan(
 		&i.EveType.ID,
-		&i.EveType.Description,
 		&i.EveType.EveGroupID,
-		&i.EveType.Name,
+		&i.EveType.Capacity,
+		&i.EveType.Description,
+		&i.EveType.GraphicID,
+		&i.EveType.IconID,
 		&i.EveType.IsPublished,
+		&i.EveType.MarketGroupID,
+		&i.EveType.Mass,
+		&i.EveType.Name,
+		&i.EveType.PackagedVolume,
+		&i.EveType.PortionSize,
+		&i.EveType.Radius,
+		&i.EveType.Volume,
 		&i.EveGroup.ID,
 		&i.EveGroup.EveCategoryID,
 		&i.EveGroup.Name,

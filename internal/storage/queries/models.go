@@ -264,11 +264,20 @@ type EveSolarSystem struct {
 }
 
 type EveType struct {
-	ID          int64
-	Description string
-	EveGroupID  int64
-	Name        string
-	IsPublished bool
+	ID             int64
+	EveGroupID     int64
+	Capacity       float64
+	Description    string
+	GraphicID      int64
+	IconID         int64
+	IsPublished    bool
+	MarketGroupID  int64
+	Mass           float64
+	Name           string
+	PackagedVolume float64
+	PortionSize    int64
+	Radius         float64
+	Volume         float64
 }
 
 type EveTypeDogmaAttribute struct {

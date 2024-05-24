@@ -41,7 +41,7 @@ func (q *Queries) DeleteExcludedCharacterSkills(ctx context.Context, arg DeleteE
 const getCharacterSkill = `-- name: GetCharacterSkill :one
 SELECT
     character_skills.id, character_skills.active_skill_level, character_skills.character_id, character_skills.eve_type_id, character_skills.skill_points_in_skill, character_skills.trained_skill_level,
-    eve_types.id, eve_types.description, eve_types.eve_group_id, eve_types.name, eve_types.is_published,
+    eve_types.id, eve_types.eve_group_id, eve_types.capacity, eve_types.description, eve_types.graphic_id, eve_types.icon_id, eve_types.is_published, eve_types.market_group_id, eve_types.mass, eve_types.name, eve_types.packaged_volume, eve_types.portion_size, eve_types.radius, eve_types.volume,
     eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
     eve_categories.id, eve_categories.name, eve_categories.is_published
 FROM character_skills
@@ -75,10 +75,19 @@ func (q *Queries) GetCharacterSkill(ctx context.Context, arg GetCharacterSkillPa
 		&i.CharacterSkill.SkillPointsInSkill,
 		&i.CharacterSkill.TrainedSkillLevel,
 		&i.EveType.ID,
-		&i.EveType.Description,
 		&i.EveType.EveGroupID,
-		&i.EveType.Name,
+		&i.EveType.Capacity,
+		&i.EveType.Description,
+		&i.EveType.GraphicID,
+		&i.EveType.IconID,
 		&i.EveType.IsPublished,
+		&i.EveType.MarketGroupID,
+		&i.EveType.Mass,
+		&i.EveType.Name,
+		&i.EveType.PackagedVolume,
+		&i.EveType.PortionSize,
+		&i.EveType.Radius,
+		&i.EveType.Volume,
 		&i.EveGroup.ID,
 		&i.EveGroup.EveCategoryID,
 		&i.EveGroup.Name,

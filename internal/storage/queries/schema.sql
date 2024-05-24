@@ -37,10 +37,19 @@ CREATE INDEX eve_groups_name_idx ON eve_groups (name ASC);
 
 CREATE TABLE eve_types (
     id INTEGER PRIMARY KEY NOT NULL,
-    description TEXT NOT NULL,
     eve_group_id INTEGER NOT NULL,
-    name TEXT NOT NULL,
+    capacity REAL NOT NULL,
+    description TEXT NOT NULL,
+    graphic_id INTEGER NOT NULL,
+    icon_id INTEGER NOT NULL,
     is_published BOOL NOT NULL,
+    market_group_id INTEGER NOT NULL,
+    mass REAL NOT NULL,
+    name TEXT NOT NULL,
+    packaged_volume REAL NOT NULL,
+    portion_size INTEGER NOT NULL,
+    radius REAL NOT NULL,
+    volume REAL NOT NULL,
     FOREIGN KEY (eve_group_id) REFERENCES eve_groups(id) ON DELETE CASCADE
 );
 CREATE INDEX eve_types_name_idx ON eve_types (name ASC);

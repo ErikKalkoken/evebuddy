@@ -708,12 +708,27 @@ func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *model.EveTy
 	if arg.ID == 0 {
 		arg.ID = int32(f.calcNewID("eve_types", "id", 1))
 	}
-	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Type #%d", arg.ID)
-	}
 	if arg.GroupID == 0 {
 		x := f.CreateEveGroup()
 		arg.GroupID = x.ID
+	}
+	if arg.Capacity == 0 {
+		arg.Capacity = rand.Float32() * 1_000_000
+	}
+	if arg.Mass == 0 {
+		arg.Mass = rand.Float32() * 10_000_000_000
+	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Type #%d", arg.ID)
+	}
+	if arg.PortionSize == 0 {
+		arg.PortionSize = 1
+	}
+	if arg.Radius == 0 {
+		arg.Radius = rand.Float32() * 10_000
+	}
+	if arg.Volume == 0 {
+		arg.Volume = rand.Float32() * 10_000_000
 	}
 	err := f.r.CreateEveType(ctx, arg)
 	if err != nil {

@@ -26,11 +26,20 @@ type EveGroup struct {
 
 // EveType is a type in Eve Online.
 type EveType struct {
-	ID          int32
-	Description string
-	Group       *EveGroup
-	IsPublished bool
-	Name        string
+	ID             int32
+	Group          *EveGroup
+	Capacity       float32
+	Description    string
+	GraphicID      int32
+	IconID         int32
+	IsPublished    bool
+	MarketGroupID  int32
+	Mass           float32
+	Name           string
+	PackagedVolume float32
+	PortionSize    int
+	Radius         float32
+	Volume         float32
 }
 
 // BodyPlain returns a mail's body as plain text.

@@ -1,13 +1,22 @@
 -- name: CreateEveType :exec
 INSERT INTO eve_types (
     id,
-    description,
     eve_group_id,
+    capacity,
+    description,
+    graphic_id,
+    icon_id,
+    is_published,
+    market_group_id,
+    mass,
     name,
-    is_published
+    packaged_volume,
+    portion_size,
+    radius,
+    volume
 )
 VALUES (
-    ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 );
 
 -- name: GetEveType :one
