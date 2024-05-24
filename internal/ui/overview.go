@@ -163,17 +163,23 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		if err != nil {
 			panic(err)
 		}
-		switch tci.Col {
-		case 4:
-			a.ui.LoadCurrentCharacter(c.id)
-			a.ui.tabs.SelectIndex(0)
-		case 6:
-			a.ui.LoadCurrentCharacter(c.id)
-			a.ui.tabs.SelectIndex(1)
-		case 7:
-			a.ui.LoadCurrentCharacter(c.id)
-			a.ui.tabs.SelectIndex(2)
+		m := map[int]struct {
+			parent, child int
+		}{
+			4: {1, 0},
+			5: {2, 1},
+			6: {2, 1},
+			7: {2, 0},
+			8: {3, 0},
 		}
+		idx, ok := m[tci.Col]
+		if ok {
+			a.ui.LoadCurrentCharacter(c.id)
+			a.ui.tabs.SelectIndex(idx.parent)
+			t := a.ui.tabs.Items[idx.parent].Content.(*container.AppTabs)
+			t.SelectIndex(idx.child)
+		}
+		t.UnselectAll()
 	}
 
 	for i, h := range headers {

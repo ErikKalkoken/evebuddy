@@ -208,11 +208,13 @@ func (a *skillCatalogueArea) Refresh() {
 	if err != nil {
 		panic(err)
 	}
-	s := "?"
+	total := "?"
+	unallocated := "?"
 	if c != nil {
-		s = humanizedNullInt64(c.TotalSP, "?")
+		total = humanizedNullInt64(c.TotalSP, "?")
+		unallocated = humanizedNullInt64(c.UnallocatedSP, "?")
 	}
-	a.total.SetText(fmt.Sprintf("%s Total Skill Points", s))
+	a.total.SetText(fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated))
 }
 
 func (a *skillCatalogueArea) updateGroups() (*model.Character, error) {
