@@ -41,3 +41,19 @@ SELECT *
 FROM eve_type_dogma_attributes
 WHERE dogma_attribute_id = ?
 AND eve_type_id = ?;
+
+-- name: CreateEveTypeDogmaEffect :exec
+INSERT INTO eve_type_dogma_effects (
+    dogma_effect_id,
+    eve_type_id,
+    is_default
+)
+VALUES (
+    ?, ?, ?
+);
+
+-- name: GetEveTypeDogmaEffect :one
+SELECT *
+FROM eve_type_dogma_effects
+WHERE dogma_effect_id = ?
+AND eve_type_id = ?;

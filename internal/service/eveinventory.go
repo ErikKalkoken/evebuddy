@@ -173,6 +173,16 @@ func (s *Service) createEveTypeFromESI(ctx context.Context, id int32) (*model.Ev
 				return nil, err
 			}
 		}
+		for _, o := range t.DogmaEffects {
+			arg := storage.CreateEveTypeDogmaEffectParams{
+				DogmaEffectID: o.EffectId,
+				EveTypeID:     id,
+				IsDefault:     o.IsDefault,
+			}
+			if err := s.r.CreateEveTypeDogmaEffect(ctx, arg); err != nil {
+				return nil, err
+			}
+		}
 		return s.r.GetEveType(ctx, id)
 	})
 	if err != nil {

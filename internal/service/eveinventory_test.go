@@ -150,12 +150,22 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 			"description": "The Rifter is a...",
 			"dogma_attributes": [
 				{
-				"attribute_id": 161,
-				"value": 11
-				},
+					"attribute_id": 161,
+					"value": 11
+					},
 				{
-				"attribute_id": 162,
-				"value": 12
+					"attribute_id": 162,
+					"value": 12
+				}
+			],
+			"dogma_effects": [
+				{
+					"effect_id": 111,
+					"is_default": true
+					},
+				{
+					"effect_id": 112,
+					"is_default": false
 				}
 			],
 			"group_id": 25,
@@ -180,10 +190,15 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
-			v, err := r.GetEveTypeDogmaAttribute(ctx, 161, 587)
+			y, err := r.GetEveTypeDogmaAttribute(ctx, 587, 161)
 			if assert.NoError(t, err) {
-				assert.Equal(t, float32(11), v)
+				assert.Equal(t, float32(11), y)
 			}
+			z, err := r.GetEveTypeDogmaEffect(ctx, 587, 111)
+			if assert.NoError(t, err) {
+				assert.True(t, z)
+			}
+
 		}
 	})
 	t.Run("should fetch group from ESI and create it (integration)", func(t *testing.T) {

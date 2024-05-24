@@ -287,6 +287,13 @@ type EveTypeDogmaAttribute struct {
 	Value            float64
 }
 
+type EveTypeDogmaEffect struct {
+	ID            int64
+	DogmaEffectID int64
+	EveTypeID     int64
+	IsDefault     bool
+}
+
 type Location struct {
 	ID               int64
 	EveSolarSystemID sql.NullInt64

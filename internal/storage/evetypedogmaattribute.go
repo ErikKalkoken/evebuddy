@@ -31,7 +31,7 @@ func (r *Storage) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEve
 	return nil
 }
 
-func (r *Storage) GetEveTypeDogmaAttribute(ctx context.Context, dogmaAttributeID, eveTypeID int32) (float32, error) {
+func (r *Storage) GetEveTypeDogmaAttribute(ctx context.Context, eveTypeID, dogmaAttributeID int32) (float32, error) {
 	arg := queries.GetEveTypeDogmaAttributeParams{
 		DogmaAttributeID: int64(dogmaAttributeID),
 		EveTypeID:        int64(eveTypeID),

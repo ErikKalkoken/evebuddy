@@ -90,6 +90,28 @@ func (q *Queries) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEve
 	return err
 }
 
+const createEveTypeDogmaEffect = `-- name: CreateEveTypeDogmaEffect :exec
+INSERT INTO eve_type_dogma_effects (
+    dogma_effect_id,
+    eve_type_id,
+    is_default
+)
+VALUES (
+    ?, ?, ?
+)
+`
+
+type CreateEveTypeDogmaEffectParams struct {
+	DogmaEffectID int64
+	EveTypeID     int64
+	IsDefault     bool
+}
+
+func (q *Queries) CreateEveTypeDogmaEffect(ctx context.Context, arg CreateEveTypeDogmaEffectParams) error {
+	_, err := q.db.ExecContext(ctx, createEveTypeDogmaEffect, arg.DogmaEffectID, arg.EveTypeID, arg.IsDefault)
+	return err
+}
+
 const getEveType = `-- name: GetEveType :one
 SELECT eve_types.id, eve_types.eve_group_id, eve_types.capacity, eve_types.description, eve_types.graphic_id, eve_types.icon_id, eve_types.is_published, eve_types.market_group_id, eve_types.mass, eve_types.name, eve_types.packaged_volume, eve_types.portion_size, eve_types.radius, eve_types.volume, eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published, eve_categories.id, eve_categories.name, eve_categories.is_published
 FROM eve_types
@@ -153,6 +175,30 @@ func (q *Queries) GetEveTypeDogmaAttribute(ctx context.Context, arg GetEveTypeDo
 		&i.DogmaAttributeID,
 		&i.EveTypeID,
 		&i.Value,
+	)
+	return i, err
+}
+
+const getEveTypeDogmaEffect = `-- name: GetEveTypeDogmaEffect :one
+SELECT id, dogma_effect_id, eve_type_id, is_default
+FROM eve_type_dogma_effects
+WHERE dogma_effect_id = ?
+AND eve_type_id = ?
+`
+
+type GetEveTypeDogmaEffectParams struct {
+	DogmaEffectID int64
+	EveTypeID     int64
+}
+
+func (q *Queries) GetEveTypeDogmaEffect(ctx context.Context, arg GetEveTypeDogmaEffectParams) (EveTypeDogmaEffect, error) {
+	row := q.db.QueryRowContext(ctx, getEveTypeDogmaEffect, arg.DogmaEffectID, arg.EveTypeID)
+	var i EveTypeDogmaEffect
+	err := row.Scan(
+		&i.ID,
+		&i.DogmaEffectID,
+		&i.EveTypeID,
+		&i.IsDefault,
 	)
 	return i, err
 }
