@@ -79,11 +79,11 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 			return container.NewHBox(icon, first, second, third)
 		},
 		func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
-			s, err := di.(binding.String).Get()
+			v, err := di.(binding.String).Get()
 			if err != nil {
 				panic(err)
 			}
-			n := newJumpCloneNodeFromJSON(s)
+			n := newJumpCloneNodeFromJSON(v)
 			hbox := co.(*fyne.Container)
 			icon := hbox.Objects[0].(*canvas.Image)
 			first := hbox.Objects[1].(*widget.Label)
@@ -119,17 +119,12 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 		},
 	)
 	a.tree.OnSelected = func(uid widget.TreeNodeID) {
-		di, err := a.treeData.GetItem(uid)
+		v, err := a.treeData.GetValue(uid)
 		if err != nil {
 			slog.Error("Failed to get tree data item", "error", err)
 			return
 		}
-		s, err := di.(binding.String).Get()
-		if err != nil {
-			slog.Error("Failed to fetch data item for tree")
-			return
-		}
-		n := newJumpCloneNodeFromJSON(s)
+		n := newJumpCloneNodeFromJSON(v)
 		if n.isBranch() {
 			a.tree.ToggleBranch(uid)
 		}

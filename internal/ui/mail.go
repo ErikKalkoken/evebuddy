@@ -199,12 +199,12 @@ func (a *folderArea) makeFolderTree() *widget.Tree {
 				widget.NewIcon(&fyne.StaticResource{}), widget.NewLabel("Branch template"))
 		},
 		func(di binding.DataItem, isBranch bool, co fyne.CanvasObject) {
-			s, err := di.(binding.String).Get()
+			v, err := di.(binding.String).Get()
 			if err != nil {
 				slog.Error("Failed to fetch data item for tree")
 				return
 			}
-			item := newFolderTreeNodeFromJSON(s)
+			item := newFolderTreeNodeFromJSON(v)
 			icon := co.(*fyne.Container).Objects[0].(*widget.Icon)
 			icon.SetResource(item.icon())
 			var text string
@@ -218,17 +218,12 @@ func (a *folderArea) makeFolderTree() *widget.Tree {
 		},
 	)
 	tree.OnSelected = func(uid string) {
-		di, err := a.treeData.GetItem(uid)
+		v, err := a.treeData.GetValue(uid)
 		if err != nil {
 			slog.Error("Failed to get tree data item", "error", err)
 			return
 		}
-		s, err := di.(binding.String).Get()
-		if err != nil {
-			slog.Error("Failed to fetch data item for tree")
-			return
-		}
-		item := newFolderTreeNodeFromJSON(s)
+		item := newFolderTreeNodeFromJSON(v)
 		if item.isBranch() {
 			if a.lastUID != "" {
 				tree.Select(a.lastUID)
