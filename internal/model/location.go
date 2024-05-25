@@ -36,6 +36,8 @@ func (l Location) NamePlus() string {
 		return "Unknown"
 	case LocationVariantAssetSafety:
 		return "Asset Safety"
+	case LocationVariantSolarSystem:
+		return l.SolarSystem.Name
 	case LocationVariantStructure:
 		return fmt.Sprintf("Unknown structure #%d", l.ID)
 	}

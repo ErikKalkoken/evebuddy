@@ -51,6 +51,16 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 				ID:        id,
 				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
 			}
+		case model.LocationVariantSolarSystem:
+			x, err := s.getOrCreateEveSolarSystemESI(ctx, int32(id))
+			if err != nil {
+				return nil, err
+			}
+			arg = storage.UpdateOrCreateLocationParams{
+				ID:               id,
+				EveTypeID:        sql.NullInt32{Int32: model.EveTypeIDSolarSystem, Valid: true},
+				EveSolarSystemID: sql.NullInt32{Int32: x.ID, Valid: true},
+			}
 		case model.LocationVariantStation:
 			station, _, err := s.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, int32(id), nil)
 			if err != nil {

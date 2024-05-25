@@ -19,14 +19,14 @@ const (
 	structureID = 1_000_000_000_009
 )
 
-func TestLocationStations(t *testing.T) {
+func TestLocationOther(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := NewService(r)
 	ctx := context.Background()
-	t.Run("should fetch station from ESI and create it", func(t *testing.T) {
+	t.Run("should create location for a station", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
@@ -78,6 +78,27 @@ func TestLocationStations(t *testing.T) {
 			assert.Equal(t, system, x1.SolarSystem)
 			assert.Equal(t, myType, x1.Type)
 			x2, err := r.GetLocation(ctx, stationID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, x1, x2)
+			}
+		}
+	})
+	t.Run("should create location for a solar system", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: model.EveTypeIDSolarSystem})
+		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
+		// when
+		x1, err := s.getOrCreateLocationESI(ctx, int64(system.ID))
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, int64(system.ID), x1.ID)
+			assert.Equal(t, system.Name, x1.NamePlus())
+			assert.Nil(t, x1.Owner)
+			assert.Equal(t, system, x1.SolarSystem)
+			assert.Equal(t, myType, x1.Type)
+			x2, err := r.GetLocation(ctx, int64(system.ID))
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
