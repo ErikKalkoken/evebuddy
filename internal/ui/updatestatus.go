@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -10,49 +9,8 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/dustin/go-humanize"
 )
-
-type updateStatus struct {
-	errorMessage  string
-	lastUpdatedAt sql.NullTime
-	section       string
-	timeout       time.Duration
-}
-
-func (s *updateStatus) IsOK() bool {
-	return s.errorMessage == ""
-}
-
-func (s *updateStatus) IsCurrent() bool {
-	if !s.lastUpdatedAt.Valid {
-		return false
-	}
-	return time.Now().Before(s.lastUpdatedAt.Time.Add(s.timeout * 2))
-}
-
-func newUpdateStatusList(s *service.Service, characterID int32) []updateStatus {
-	oo, err := s.ListCharacterUpdateStatus(characterID)
-	if err != nil {
-		panic(err)
-	}
-	m := make(map[model.CharacterSection]*model.CharacterUpdateStatus)
-	for _, o := range oo {
-		m[o.Section] = o
-	}
-	list := make([]updateStatus, len(model.CharacterSections))
-	for i, s := range model.CharacterSections {
-		x := updateStatus{section: s.Name(), timeout: s.Timeout()}
-		o, ok := m[s]
-		if ok {
-			x.lastUpdatedAt = o.LastUpdatedAt
-			x.lastUpdatedAt.Valid = true
-		}
-		list[i] = x
-	}
-	return list
-}
 
 func (u *ui) showStatusDialog(c model.CharacterShort) {
 	content := makeCharacterStatus(u, c)
@@ -62,7 +20,7 @@ func (u *ui) showStatusDialog(c model.CharacterShort) {
 }
 
 func makeCharacterStatus(u *ui, c model.CharacterShort) fyne.CanvasObject {
-	data := newUpdateStatusList(u.service, c.ID)
+	data := u.service.CharacterListUpdateStatus(c.ID)
 	var headers = []struct {
 		text  string
 		width float32
@@ -89,18 +47,18 @@ func makeCharacterStatus(u *ui, c model.CharacterShort) fyne.CanvasObject {
 			i := widget.MediumImportance
 			switch tci.Col {
 			case 0:
-				s = d.section
+				s = d.Section
 			case 1:
 				now := time.Now()
-				s = humanize.RelTime(now.Add(d.timeout), now, "", "")
+				s = humanize.RelTime(now.Add(d.Timeout), now, "", "")
 			case 2:
-				s = humanizedNullTime(d.lastUpdatedAt, "?")
+				s = humanizedNullTime(d.LastUpdatedAt, "?")
 			case 3:
 				if d.IsOK() {
 					s = "OK"
 					i = widget.SuccessImportance
 				} else {
-					s = d.errorMessage
+					s = d.ErrorMessage
 					i = widget.DangerImportance
 				}
 			}

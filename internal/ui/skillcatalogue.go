@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"log/slog"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -14,6 +15,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/dustin/go-humanize"
 )
+
+const skillsUpdateTicker = 10 * time.Second
 
 type skillGroupProgress struct {
 	id      int32
@@ -237,4 +240,34 @@ func (a *skillCatalogueArea) updateGroups() (*model.Character, error) {
 	}
 	a.groups.Set(copyToUntypedSlice(groups))
 	return c, nil
+}
+
+func (a *skillCatalogueArea) StartUpdateTicker() {
+	ticker := time.NewTicker(skillsUpdateTicker)
+	go func() {
+		for {
+			func() {
+				cc, err := a.ui.service.ListCharactersShort()
+				if err != nil {
+					slog.Error("Failed to fetch list of characters", "err", err)
+					return
+				}
+				for _, c := range cc {
+					a.MaybeUpdateAndRefresh(c.ID)
+				}
+			}()
+			<-ticker.C
+		}
+	}()
+}
+
+func (a *skillCatalogueArea) MaybeUpdateAndRefresh(characterID int32) {
+	changed, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionSkills)
+	if err != nil {
+		slog.Error("Failed to update skillqueue", "character", characterID, "err", err)
+		return
+	}
+	if characterID == a.ui.CurrentCharID() && changed {
+		a.Refresh()
+	}
 }

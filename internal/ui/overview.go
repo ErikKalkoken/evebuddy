@@ -313,7 +313,6 @@ func (a *overviewArea) MaybeUpdateAndRefresh(characterID int32) {
 		model.CharacterSectionLocation,
 		model.CharacterSectionOnline,
 		model.CharacterSectionShip,
-		model.CharacterSectionSkills,
 		model.CharacterSectionWalletBalance,
 	}
 	for _, s := range sections {

@@ -155,3 +155,43 @@ func (s *Service) ListCharacterUpdateStatus(characterID int32) ([]*model.Charact
 	ctx := context.Background()
 	return s.r.ListCharacterUpdateStatus(ctx, characterID)
 }
+
+type CharacterUpdateStatus2 struct {
+	ErrorMessage  string
+	LastUpdatedAt sql.NullTime
+	Section       string
+	Timeout       time.Duration
+}
+
+func (s *CharacterUpdateStatus2) IsOK() bool {
+	return s.ErrorMessage == ""
+}
+
+func (s *CharacterUpdateStatus2) IsCurrent() bool {
+	if !s.LastUpdatedAt.Valid {
+		return false
+	}
+	return time.Now().Before(s.LastUpdatedAt.Time.Add(s.Timeout * 2))
+}
+
+func (s *Service) CharacterListUpdateStatus(characterID int32) []CharacterUpdateStatus2 {
+	oo, err := s.ListCharacterUpdateStatus(characterID)
+	if err != nil {
+		panic(err)
+	}
+	m := make(map[model.CharacterSection]*model.CharacterUpdateStatus)
+	for _, o := range oo {
+		m[o.Section] = o
+	}
+	list := make([]CharacterUpdateStatus2, len(model.CharacterSections))
+	for i, s := range model.CharacterSections {
+		x := CharacterUpdateStatus2{Section: s.Name(), Timeout: s.Timeout()}
+		o, ok := m[s]
+		if ok {
+			x.LastUpdatedAt = o.LastUpdatedAt
+			x.LastUpdatedAt.Valid = true
+		}
+		list[i] = x
+	}
+	return list
+}

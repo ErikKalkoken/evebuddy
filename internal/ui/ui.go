@@ -227,6 +227,7 @@ func (u *ui) ShowAndRun() {
 		u.implantsArea.StartUpdateTicker()
 		u.overviewArea.StartUpdateTicker()
 		u.mailArea.StartUpdateTicker()
+		u.skillCatalogueArea.StartUpdateTicker()
 		u.skillqueueArea.StartUpdateTicker()
 		u.statusBarArea.StartUpdateTicker()
 		u.walletJournalArea.StartUpdateTicker()
@@ -288,6 +289,7 @@ func (u *ui) refreshCurrentCharacter() {
 		go u.implantsArea.MaybeUpdateAndRefresh(c.ID)
 		go u.mailArea.MaybeUpdateAndRefresh(c.ID)
 		go u.overviewArea.MaybeUpdateAndRefresh(c.ID)
+		go u.NewSkillCatalogueArea().MaybeUpdateAndRefresh(c.ID)
 		go u.skillqueueArea.MaybeUpdateAndRefresh(c.ID)
 		go u.walletJournalArea.MaybeUpdateAndRefresh(c.ID)
 		go u.walletTransactionArea.MaybeUpdateAndRefresh(c.ID)
@@ -297,7 +299,7 @@ func (u *ui) refreshCurrentCharacter() {
 		u.tabs.DisableIndex(2)
 		u.tabs.SelectIndex(3)
 	}
-	go u.statusBarArea.RefreshCharacterUpdateStatus()
+	go u.statusBarArea.characterUpdateStatusArea.Refresh()
 	u.window.Content().Refresh()
 }
 
