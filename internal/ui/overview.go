@@ -309,7 +309,6 @@ func (a *overviewArea) StartUpdateTicker() {
 
 func (a *overviewArea) MaybeUpdateAndRefresh(characterID int32) {
 	sections := []model.CharacterSection{
-		model.CharacterSectionHome,
 		model.CharacterSectionLocation,
 		model.CharacterSectionOnline,
 		model.CharacterSectionShip,

@@ -86,38 +86,6 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText b
 	return token.CharacterID, nil
 }
 
-func (s *Service) updateCharacterHomeESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidCharacterToken(ctx, characterID)
-	if err != nil {
-		return false, err
-	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
-	clones, _, err := s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdClones(ctx, characterID, nil)
-	if err != nil {
-		return false, err
-	}
-	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionHome, clones)
-	if err != nil {
-		return false, err
-	}
-	if !changed {
-		return false, nil
-	}
-	var home sql.NullInt64
-	if clones.HomeLocation.LocationId != 0 {
-		_, err = s.getOrCreateLocationESI(ctx, clones.HomeLocation.LocationId)
-		if err != nil {
-			return false, err
-		}
-		home.Int64 = clones.HomeLocation.LocationId
-		home.Valid = true
-	}
-	if err := s.r.UpdateCharacterHome(ctx, characterID, home); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
 func (s *Service) updateCharacterLocationESI(ctx context.Context, characterID int32) (bool, error) {
 	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -30,6 +31,18 @@ func (s *Service) updateCharacterJumpClonesESI(ctx context.Context, characterID 
 	}
 	if !changed {
 		return false, nil
+	}
+	var home sql.NullInt64
+	if clones.HomeLocation.LocationId != 0 {
+		_, err = s.getOrCreateLocationESI(ctx, clones.HomeLocation.LocationId)
+		if err != nil {
+			return false, err
+		}
+		home.Int64 = clones.HomeLocation.LocationId
+		home.Valid = true
+	}
+	if err := s.r.UpdateCharacterHome(ctx, characterID, home); err != nil {
+		return false, err
 	}
 	args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))
 	for i, jc := range clones.JumpClones {
