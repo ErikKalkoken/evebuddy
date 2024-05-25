@@ -52,13 +52,17 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
 			}
 		case model.LocationVariantSolarSystem:
+			t, err := s.getOrCreateEveTypeESI(ctx, model.EveTypeIDSolarSystem)
+			if err != nil {
+				return nil, err
+			}
 			x, err := s.getOrCreateEveSolarSystemESI(ctx, int32(id))
 			if err != nil {
 				return nil, err
 			}
 			arg = storage.UpdateOrCreateLocationParams{
 				ID:               id,
-				EveTypeID:        sql.NullInt32{Int32: model.EveTypeIDSolarSystem, Valid: true},
+				EveTypeID:        sql.NullInt32{Int32: t.ID, Valid: true},
 				EveSolarSystemID: sql.NullInt32{Int32: x.ID, Valid: true},
 			}
 		case model.LocationVariantStation:
