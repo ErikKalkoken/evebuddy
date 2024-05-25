@@ -76,7 +76,7 @@ func (a *toolbarArea) Refresh() {
 	if err != nil {
 		msg := "Failed to create switch menu"
 		slog.Error(msg, "err", err)
-		a.ui.statusArea.SetError(msg)
+		a.ui.statusBarArea.SetError(msg)
 		return
 	}
 	a.switchButton.SetMenuItems(menuItems)
@@ -110,7 +110,7 @@ func (a *toolbarArea) makeMenuItems(c *model.Character) ([]*fyne.MenuItem, error
 			if err != nil {
 				msg := "Failed to switch to new character"
 				slog.Error(msg, "err", err)
-				a.ui.statusArea.SetError(msg)
+				a.ui.statusBarArea.SetError(msg)
 				return
 
 			}

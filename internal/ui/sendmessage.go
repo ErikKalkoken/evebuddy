@@ -115,7 +115,7 @@ func (u *ui) makeSendMessageWindow(mode int, mail *model.CharacterMail) (fyne.Wi
 					}
 					slices.Sort(names)
 					s := strings.Join(names, ", ")
-					u.statusArea.SetInfo(fmt.Sprintf("Message sent to %s", s))
+					u.statusBarArea.SetInfo(fmt.Sprintf("Message sent to %s", s))
 					return nil
 				}()
 			}

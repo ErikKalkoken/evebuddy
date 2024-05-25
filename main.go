@@ -44,7 +44,7 @@ var (
 )
 
 func init() {
-	levelFlag.value = slog.LevelInfo
+	levelFlag.value = slog.LevelWarn
 	flag.Var(&levelFlag, "loglevel", "set log level")
 }
 

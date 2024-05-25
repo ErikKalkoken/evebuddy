@@ -46,7 +46,7 @@ type ui struct {
 	mailArea              *mailArea
 	mailTab               *container.TabItem
 	overviewArea          *overviewArea
-	statusArea            *statusBarArea
+	statusBarArea         *statusBarArea
 	service               *service.Service
 	skillCatalogueArea    *skillCatalogueArea
 	skillqueueArea        *skillqueueArea
@@ -114,13 +114,13 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 			container.NewTabItem("Market Transactions", u.walletTransactionArea.content),
 		))
 
-	u.statusArea = u.newBarStatusArea()
+	u.statusBarArea = u.newStatusBarArea()
 	u.toolbarArea = u.newToolbarArea()
 
 	u.tabs = container.NewAppTabs(characterTab, u.mailTab, u.skillqueueTab, walletTab, overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	mainContent := container.NewBorder(u.toolbarArea.content, u.statusArea.content, nil, nil, u.tabs)
+	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, nil, u.tabs)
 	w.SetContent(mainContent)
 	w.SetMaster()
 
@@ -228,7 +228,7 @@ func (u *ui) ShowAndRun() {
 		u.overviewArea.StartUpdateTicker()
 		u.mailArea.StartUpdateTicker()
 		u.skillqueueArea.StartUpdateTicker()
-		u.statusArea.StartUpdateTicker()
+		u.statusBarArea.StartUpdateTicker()
 		u.walletJournalArea.StartUpdateTicker()
 		u.walletTransactionArea.StartUpdateTicker()
 		u.StartUpdateTickerEveCharacters()
@@ -297,6 +297,7 @@ func (u *ui) refreshCurrentCharacter() {
 		u.tabs.DisableIndex(2)
 		u.tabs.SelectIndex(3)
 	}
+	go u.statusBarArea.RefreshCharacterUpdateStatus()
 	u.window.Content().Refresh()
 }
 
