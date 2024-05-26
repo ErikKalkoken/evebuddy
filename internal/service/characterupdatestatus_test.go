@@ -29,7 +29,7 @@ func TestHasCharacterSectionChanged(t *testing.T) {
 			assert.True(t, changed)
 			x, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
-				assert.WithinDuration(t, time.Now(), x.LastUpdatedAt.Time, 5*time.Second)
+				assert.WithinDuration(t, time.Now(), x.LastUpdatedAt, 5*time.Second)
 				assert.True(t, x.IsOK())
 			}
 		}
@@ -50,7 +50,7 @@ func TestHasCharacterSectionChanged(t *testing.T) {
 			assert.True(t, changed)
 			x2, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
-				assert.Greater(t, x2.LastUpdatedAt.Time, x1.LastUpdatedAt.Time)
+				assert.Greater(t, x2.LastUpdatedAt, x1.LastUpdatedAt)
 				assert.True(t, x2.IsOK())
 			}
 		}
@@ -71,7 +71,7 @@ func TestHasCharacterSectionChanged(t *testing.T) {
 			assert.False(t, changed)
 			x2, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
-				assert.Greater(t, x2.LastUpdatedAt.Time, x1.LastUpdatedAt.Time)
+				assert.Greater(t, x2.LastUpdatedAt, x1.LastUpdatedAt)
 				assert.True(t, x2.IsOK())
 			}
 		}

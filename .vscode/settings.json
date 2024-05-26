@@ -35,6 +35,7 @@
         "goquery",
         "hbox",
         "httpmock",
+        "icache",
         "ihttp",
         "ihumanize",
         "islices",

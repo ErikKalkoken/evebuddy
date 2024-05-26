@@ -17,10 +17,12 @@ import (
 
 func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 	// given
+	db, r, _ := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	ctx := context.Background()
-	s := NewService(nil)
+	s := NewService(r)
 	var objs []esi.GetCharactersCharacterIdMail200Ok
 	var mailIDs []int32
 	for i := range 55 {

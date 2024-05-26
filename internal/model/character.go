@@ -121,7 +121,7 @@ type CharacterUpdateStatus struct {
 	CharacterID   int32
 	ErrorMessage  string
 	Section       CharacterSection
-	LastUpdatedAt sql.NullTime
+	LastUpdatedAt time.Time
 	ContentHash   string
 }
 

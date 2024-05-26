@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
@@ -14,7 +15,7 @@ type CharacterUpdateStatusParams struct {
 	CharacterID   int32
 	Section       model.CharacterSection
 	Error         string
-	LastUpdatedAt sql.NullTime
+	LastUpdatedAt time.Time
 	ContentHash   string
 }
 
@@ -56,14 +57,16 @@ func (r *Storage) SetCharacterUpdateStatusError(ctx context.Context, characterID
 }
 
 func (r *Storage) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg CharacterUpdateStatusParams) error {
-	arg1 := queries.UpdateOrCreateCharacterUpdateStatusParams{
-		CharacterID:   int64(arg.CharacterID),
-		SectionID:     string(arg.Section),
-		Error:         arg.Error,
-		LastUpdatedAt: arg.LastUpdatedAt,
-		ContentHash:   arg.ContentHash,
+	arg2 := queries.UpdateOrCreateCharacterUpdateStatusParams{
+		CharacterID: int64(arg.CharacterID),
+		SectionID:   string(arg.Section),
+		Error:       arg.Error,
+		ContentHash: arg.ContentHash,
 	}
-	err := r.q.UpdateOrCreateCharacterUpdateStatus(ctx, arg1)
+	if !arg.LastUpdatedAt.IsZero() {
+		arg2.LastUpdatedAt = sql.NullTime{Time: arg.LastUpdatedAt, Valid: true}
+	}
+	err := r.q.UpdateOrCreateCharacterUpdateStatus(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("failed to update or create updates status for character %d with section %s: %w", arg.CharacterID, arg.Section, err)
 	}
@@ -71,12 +74,15 @@ func (r *Storage) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg C
 }
 
 func characterUpdateStatusFromDBModel(o queries.CharacterUpdateStatus) *model.CharacterUpdateStatus {
-	return &model.CharacterUpdateStatus{
-		ID:            o.ID,
-		CharacterID:   int32(o.CharacterID),
-		ErrorMessage:  o.Error,
-		Section:       model.CharacterSection(o.SectionID),
-		LastUpdatedAt: o.LastUpdatedAt,
-		ContentHash:   o.ContentHash,
+	x := &model.CharacterUpdateStatus{
+		ID:           o.ID,
+		CharacterID:  int32(o.CharacterID),
+		ErrorMessage: o.Error,
+		Section:      model.CharacterSection(o.SectionID),
+		ContentHash:  o.ContentHash,
 	}
+	if o.LastUpdatedAt.Valid {
+		x.LastUpdatedAt = o.LastUpdatedAt.Time
+	}
+	return x
 }

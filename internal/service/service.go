@@ -17,6 +17,7 @@ type Service struct {
 	esiClient   *goesi.APIClient
 	r           *storage.Storage
 	singleGroup *singleflight.Group
+	statusCache *characterUpdateStatusCache
 }
 
 func NewService(r *storage.Storage) *Service {
@@ -42,6 +43,11 @@ func NewService(r *storage.Storage) *Service {
 		esiClient:   esiClient,
 		r:           r,
 		singleGroup: new(singleflight.Group),
+		statusCache: newCharacterUpdateStatusCache(),
+	}
+	err := s.statusCache.initCache(r)
+	if err != nil {
+		panic(err)
 	}
 	return &s
 }

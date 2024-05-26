@@ -412,7 +412,7 @@ type CharacterUpdateStatusParams struct {
 	CharacterID   int32
 	Section       model.CharacterSection
 	Error         string
-	LastUpdatedAt sql.NullTime
+	LastUpdatedAt time.Time
 	Data          string
 }
 
@@ -433,9 +433,8 @@ func (f Factory) CreateCharacterUpdateStatus(args ...CharacterUpdateStatusParams
 	if arg.Data == "" {
 		arg.Data = fmt.Sprintf("content-hash-%d-%s-%s", arg.CharacterID, arg.Section, time.Now())
 	}
-	if !arg.LastUpdatedAt.Valid {
-		arg.LastUpdatedAt.Time = time.Now()
-		arg.LastUpdatedAt.Valid = true
+	if arg.LastUpdatedAt.IsZero() {
+		arg.LastUpdatedAt = time.Now()
 	}
 	hash, err := arg.Section.CalcContentHash(arg.Data)
 	if err != nil {

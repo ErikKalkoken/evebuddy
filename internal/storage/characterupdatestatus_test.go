@@ -2,7 +2,6 @@ package storage_test
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 	"time"
 
@@ -21,7 +20,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		updatedAt := sql.NullTime{Time: time.Now(), Valid: true}
+		updatedAt := time.Now()
 		arg := storage.CharacterUpdateStatusParams{
 			CharacterID:   c.ID,
 			Error:         "error",
@@ -37,7 +36,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, "error", l.ErrorMessage)
 				assert.Equal(t, "content-hash", l.ContentHash)
-				assert.Equal(t, updatedAt.Time.UTC(), l.LastUpdatedAt.Time.UTC())
+				assert.Equal(t, updatedAt.UTC(), l.LastUpdatedAt.UTC())
 			}
 		}
 	})
@@ -49,7 +48,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 			CharacterID: c.ID,
 			Section:     model.CharacterSectionSkillqueue,
 		})
-		updatedAt := sql.NullTime{Time: time.Now().Add(1 * time.Hour), Valid: true}
+		updatedAt := time.Now().Add(1 * time.Hour)
 		arg := storage.CharacterUpdateStatusParams{
 			CharacterID:   c.ID,
 			Section:       model.CharacterSectionSkillqueue,
@@ -65,7 +64,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, "content-hash", l.ContentHash)
 				assert.Equal(t, "error", l.ErrorMessage)
-				assert.Equal(t, updatedAt.Time.UTC(), l.LastUpdatedAt.Time.UTC())
+				assert.Equal(t, updatedAt.UTC(), l.LastUpdatedAt.UTC())
 			}
 		}
 	})
@@ -106,7 +105,7 @@ func TestSetCharacterUpdateStatusError(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", l.ContentHash)
 				assert.Equal(t, "error", l.ErrorMessage)
-				assert.False(t, l.LastUpdatedAt.Valid)
+				assert.True(t, l.LastUpdatedAt.IsZero())
 			}
 		}
 	})
@@ -126,7 +125,7 @@ func TestSetCharacterUpdateStatusError(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, x.ContentHash, l.ContentHash)
 				assert.Equal(t, "error", l.ErrorMessage)
-				assert.Equal(t, x.LastUpdatedAt.Time.UTC(), l.LastUpdatedAt.Time.UTC())
+				assert.Equal(t, x.LastUpdatedAt.UTC(), l.LastUpdatedAt.UTC())
 			}
 		}
 	})

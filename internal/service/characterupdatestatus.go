@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -15,14 +14,13 @@ import (
 
 // CharacterSectionUpdatedAt returns when a section was last updated.
 // It will return a zero time when no update has been completed yet.
-func (s *Service) CharacterSectionUpdatedAt(characterID int32, section model.CharacterSection) (sql.NullTime, error) {
+func (s *Service) CharacterSectionUpdatedAt(characterID int32, section model.CharacterSection) (time.Time, error) {
 	ctx := context.Background()
-	var zero sql.NullTime
 	u, err := s.r.GetCharacterUpdateStatus(ctx, characterID, section)
 	if errors.Is(err, storage.ErrNotFound) {
-		return zero, nil
+		return time.Time{}, nil
 	} else if err != nil {
-		return zero, err
+		return time.Time{}, err
 	}
 	return u.LastUpdatedAt, nil
 }
@@ -35,7 +33,7 @@ func (s *Service) CharacterSectionWasUpdated(characterID int32, section model.Ch
 	} else if err != nil {
 		return false, err
 	}
-	return t.Valid, nil
+	return !t.IsZero(), nil
 }
 
 // UpdateCharacterSectionIfExpired updates a section from ESI if has expired and changed
@@ -87,18 +85,19 @@ func (s *Service) UpdateCharacterSectionIfExpired(characterID int32, section mod
 		return f(ctx, characterID)
 	})
 	if err != nil {
-		t := err.Error()
+		errorMessage := err.Error()
 		e1, ok := err.(esi.GenericSwaggerError)
 		if ok {
 			e2, ok := e1.Model().(esi.InternalServerError)
 			if ok {
-				t += ": " + e2.Error_
+				errorMessage += ": " + e2.Error_
 			}
 		}
-		err2 := s.r.SetCharacterUpdateStatusError(ctx, characterID, section, t)
+		err2 := s.r.SetCharacterUpdateStatusError(ctx, characterID, section, errorMessage)
 		if err2 != nil {
 			slog.Error("failed to record error for failed section update: %s", err2)
 		}
+		s.statusCache.setError(characterID, section, errorMessage)
 		return false, fmt.Errorf("failed to update section %s from ESI for character %d: %w", section, characterID, err)
 	}
 	changed := x.(bool)
@@ -111,11 +110,11 @@ func (s *Service) CharacterSectionIsUpdateExpired(characterID int32, section mod
 	if err != nil {
 		return false, err
 	}
-	if !t.Valid {
+	if t.IsZero() {
 		return true, nil
 	}
 	timeout := section.Timeout()
-	deadline := t.Time.Add(timeout)
+	deadline := t.Add(timeout)
 	return time.Now().After(deadline), nil
 }
 
@@ -135,28 +134,25 @@ func (s *Service) recordCharacterSectionUpdate(ctx context.Context, characterID 
 	} else {
 		hasChanged = u.ContentHash != hash
 	}
+	lastUpdatedAt := time.Now()
 	arg := storage.CharacterUpdateStatusParams{
 		CharacterID:   characterID,
 		Section:       section,
 		Error:         "",
 		ContentHash:   hash,
-		LastUpdatedAt: sql.NullTime{Time: time.Now(), Valid: true},
+		LastUpdatedAt: lastUpdatedAt,
 	}
 	if err := s.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg); err != nil {
 		return false, err
 	}
+	s.statusCache.set(characterID, section, "", lastUpdatedAt)
 	slog.Debug("Has section changed", "characterID", characterID, "section", section, "changed", hasChanged)
 	return hasChanged, nil
 }
 
-func (s *Service) ListCharacterUpdateStatus(characterID int32) ([]*model.CharacterUpdateStatus, error) {
-	ctx := context.Background()
-	return s.r.ListCharacterUpdateStatus(ctx, characterID)
-}
-
 type CharacterUpdateStatus2 struct {
 	ErrorMessage  string
-	LastUpdatedAt sql.NullTime
+	LastUpdatedAt time.Time
 	Section       string
 	Timeout       time.Duration
 }
@@ -166,30 +162,22 @@ func (s *CharacterUpdateStatus2) IsOK() bool {
 }
 
 func (s *CharacterUpdateStatus2) IsCurrent() bool {
-	if !s.LastUpdatedAt.Valid {
+	if s.LastUpdatedAt.IsZero() {
 		return false
 	}
-	return time.Now().Before(s.LastUpdatedAt.Time.Add(s.Timeout * 2))
+	return time.Now().Before(s.LastUpdatedAt.Add(s.Timeout * 2))
 }
 
 func (s *Service) CharacterListUpdateStatus(characterID int32) []CharacterUpdateStatus2 {
-	oo, err := s.ListCharacterUpdateStatus(characterID)
-	if err != nil {
-		panic(err)
-	}
-	m := make(map[model.CharacterSection]*model.CharacterUpdateStatus)
-	for _, o := range oo {
-		m[o.Section] = o
-	}
 	list := make([]CharacterUpdateStatus2, len(model.CharacterSections))
-	for i, s := range model.CharacterSections {
-		x := CharacterUpdateStatus2{Section: s.Name(), Timeout: s.Timeout()}
-		o, ok := m[s]
-		if ok {
-			x.LastUpdatedAt = o.LastUpdatedAt
-			x.LastUpdatedAt.Valid = true
+	for i, section := range model.CharacterSections {
+		errorMessage, lastUpdatedAt := s.statusCache.get(characterID, section)
+		list[i] = CharacterUpdateStatus2{
+			ErrorMessage:  errorMessage,
+			LastUpdatedAt: lastUpdatedAt,
+			Section:       section.Name(),
+			Timeout:       section.Timeout(),
 		}
-		list[i] = x
 	}
 	return list
 }

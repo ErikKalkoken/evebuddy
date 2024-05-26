@@ -52,7 +52,7 @@ func makeCharacterStatus(u *ui, c model.CharacterShort) fyne.CanvasObject {
 				now := time.Now()
 				s = humanize.RelTime(now.Add(d.Timeout), now, "", "")
 			case 2:
-				s = humanizedNullTime(d.LastUpdatedAt, "?")
+				s = humanizeTime(d.LastUpdatedAt, "?")
 			case 3:
 				if d.IsOK() {
 					s = "OK"
