@@ -97,7 +97,7 @@ func (s *Service) UpdateCharacterSectionIfExpired(characterID int32, section mod
 		if err2 != nil {
 			slog.Error("failed to record error for failed section update: %s", err2)
 		}
-		s.statusCache.setError(characterID, section, errorMessage)
+		s.statusCache.setStatusError(characterID, section, errorMessage)
 		return false, fmt.Errorf("failed to update section %s from ESI for character %d: %w", section, characterID, err)
 	}
 	changed := x.(bool)
@@ -145,7 +145,7 @@ func (s *Service) recordCharacterSectionUpdate(ctx context.Context, characterID 
 	if err := s.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg); err != nil {
 		return false, err
 	}
-	s.statusCache.set(characterID, section, "", lastUpdatedAt)
+	s.statusCache.setStatus(characterID, section, "", lastUpdatedAt)
 	slog.Debug("Has section changed", "characterID", characterID, "section", section, "changed", hasChanged)
 	return hasChanged, nil
 }
@@ -171,7 +171,7 @@ func (s *CharacterUpdateStatus2) IsCurrent() bool {
 func (s *Service) CharacterListUpdateStatus(characterID int32) []CharacterUpdateStatus2 {
 	list := make([]CharacterUpdateStatus2, len(model.CharacterSections))
 	for i, section := range model.CharacterSections {
-		errorMessage, lastUpdatedAt := s.statusCache.get(characterID, section)
+		errorMessage, lastUpdatedAt := s.statusCache.getStatus(characterID, section)
 		list[i] = CharacterUpdateStatus2{
 			ErrorMessage:  errorMessage,
 			LastUpdatedAt: lastUpdatedAt,
@@ -180,4 +180,22 @@ func (s *Service) CharacterListUpdateStatus(characterID int32) []CharacterUpdate
 		}
 	}
 	return list
+}
+
+func (s *Service) CharacterGetUpdateStatusSummary() (float32, bool) {
+	ids := s.statusCache.getCharacterIDs()
+	total := len(model.CharacterSections) * len(ids)
+	currentCount := 0
+	for _, id := range ids {
+		xx := s.CharacterListUpdateStatus(id)
+		for _, x := range xx {
+			if !x.IsOK() {
+				return 0, false
+			}
+			if x.IsCurrent() {
+				currentCount++
+			}
+		}
+	}
+	return float32(currentCount) / float32(total), true
 }

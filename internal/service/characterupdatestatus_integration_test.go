@@ -7,15 +7,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
-	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCharacterUpdateStatus(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
 	s := service.NewService(r)
 	t.Run("Can retrieve updated at for section", func(t *testing.T) {
 		// given

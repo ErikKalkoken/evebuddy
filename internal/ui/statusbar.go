@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	characterUpdateStatusTicker = 1 * time.Second
-	clockUpdateTicker           = 1 * time.Second
+	characterUpdateStatusTicker = 2 * time.Second
+	clockUpdateTicker           = 2 * time.Second
 	esiStatusUpdateTicker       = 60 * time.Second
 )
 
@@ -223,7 +223,7 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 			label := co.(*fyne.Container).Objects[1].(*widget.Label)
 			m := map[characterUpdateStatus]widget.Importance{
 				characterStatusError:   widget.DangerImportance,
-				characterStatusOK:      widget.SuccessImportance,
+				characterStatusOK:      widget.MediumImportance,
 				characterStatusUnknown: widget.LowImportance,
 				characterStatusWorking: widget.MediumImportance,
 			}
@@ -254,28 +254,16 @@ func (a *characterUpdateStatusArea) Refresh() {
 		x.status = characterStatusUnknown
 		x.errorMessage = ""
 	} else {
-		data := a.ui.service.CharacterListUpdateStatus(characterID)
-		completed := 0
-		hasError := false
-		for _, d := range data {
-			if !d.IsOK() {
-				hasError = true
-				break
-			}
-			if d.IsCurrent() {
-				completed++
-			}
-		}
-		if hasError {
+		progress, ok := a.ui.service.CharacterGetUpdateStatusSummary()
+		if !ok {
 			x.title = "ERROR"
 			x.status = characterStatusError
 		} else {
-			p := float32(completed) / float32(len(data)) * 100
-			if p == 100 {
+			if progress == 1 {
 				x.title = "OK"
 				x.status = characterStatusOK
 			} else {
-				x.title = fmt.Sprintf("Updating %.0f%%...", p)
+				x.title = fmt.Sprintf("Updating %.0f%%...", progress*100)
 				x.status = characterStatusWorking
 			}
 		}

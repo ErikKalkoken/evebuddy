@@ -16,7 +16,16 @@ import (
 var ErrAborted = errors.New("process aborted prematurely")
 
 func (s *Service) DeleteCharacter(characterID int32) error {
-	return s.r.DeleteCharacter(context.Background(), characterID)
+	ctx := context.Background()
+	if err := s.r.DeleteCharacter(ctx, characterID); err != nil {
+		return err
+	}
+	ids, err := s.r.ListCharacterIDs(ctx)
+	if err != nil {
+		return err
+	}
+	s.statusCache.setCharacterIDs(ids)
+	return nil
 }
 
 func (s *Service) GetCharacter(characterID int32) (*model.Character, error) {
@@ -83,6 +92,11 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText b
 	if err := s.r.UpdateOrCreateCharacterToken(ctx, &token); err != nil {
 		return 0, err
 	}
+	ids, err := s.r.ListCharacterIDs(ctx)
+	if err != nil {
+		return 0, err
+	}
+	s.statusCache.setCharacterIDs(ids)
 	return token.CharacterID, nil
 }
 

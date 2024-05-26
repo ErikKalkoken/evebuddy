@@ -8,13 +8,15 @@ import (
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
 
+	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 type Service struct {
-	httpClient  *http.Client
+	cache       *cache.Cache
 	esiClient   *goesi.APIClient
+	httpClient  *http.Client
 	r           *storage.Storage
 	singleGroup *singleflight.Group
 	statusCache *characterUpdateStatusCache
@@ -39,14 +41,14 @@ func NewService(r *storage.Storage) *Service {
 	userAgent := "EveBuddy kalkoken87@gmail.com"
 	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
 	s := Service{
-		httpClient:  defaultHttpClient,
+		cache:       cache.New(),
 		esiClient:   esiClient,
+		httpClient:  defaultHttpClient,
 		r:           r,
 		singleGroup: new(singleflight.Group),
-		statusCache: newCharacterUpdateStatusCache(),
 	}
-	err := s.statusCache.initCache(r)
-	if err != nil {
+	s.statusCache = newCharacterUpdateStatusCache(s.cache)
+	if err := s.statusCache.initCache(r); err != nil {
 		panic(err)
 	}
 	return &s
