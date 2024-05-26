@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	characterUpdateStatusTicker = 5 * time.Second
+	characterUpdateStatusTicker = 1 * time.Second
 	clockUpdateTicker           = 1 * time.Second
 	esiStatusUpdateTicker       = 60 * time.Second
 )
@@ -194,11 +194,15 @@ const (
 	characterStatusWorking
 )
 
+type updateStatusOutput struct {
+	errorMessage string
+	status       characterUpdateStatus
+	title        string
+}
+
 type characterUpdateStatusArea struct {
 	content *widget.GridWrap
-	status  characterUpdateStatus
-	title   string
-	error   string
+	data    updateStatusOutput
 	ui      *ui
 }
 
@@ -223,11 +227,11 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 				characterStatusUnknown: widget.LowImportance,
 				characterStatusWorking: widget.MediumImportance,
 			}
-			i, ok := m[a.status]
+			i, ok := m[a.data.status]
 			if !ok {
 				i = widget.MediumImportance
 			}
-			label.Text = a.title
+			label.Text = a.data.title
 			label.Importance = i
 			label.Refresh()
 		},
@@ -243,11 +247,12 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 }
 
 func (a *characterUpdateStatusArea) Refresh() {
+	x := updateStatusOutput{}
 	characterID := a.ui.CurrentCharID()
 	if characterID == 0 {
-		a.title = "No character"
-		a.status = characterStatusUnknown
-		a.error = ""
+		x.title = "No character"
+		x.status = characterStatusUnknown
+		x.errorMessage = ""
 	} else {
 		data := a.ui.service.CharacterListUpdateStatus(characterID)
 		completed := 0
@@ -262,18 +267,21 @@ func (a *characterUpdateStatusArea) Refresh() {
 			}
 		}
 		if hasError {
-			a.title = "ERROR"
-			a.status = characterStatusError
+			x.title = "ERROR"
+			x.status = characterStatusError
 		} else {
 			p := float32(completed) / float32(len(data)) * 100
 			if p == 100 {
-				a.title = "OK"
-				a.status = characterStatusOK
+				x.title = "OK"
+				x.status = characterStatusOK
 			} else {
-				a.title = fmt.Sprintf("Updating %.0f%%...", p)
-				a.status = characterStatusWorking
+				x.title = fmt.Sprintf("Updating %.0f%%...", p)
+				x.status = characterStatusWorking
 			}
 		}
 	}
-	a.content.Refresh()
+	if x != a.data {
+		a.data = x
+		a.content.Refresh()
+	}
 }
