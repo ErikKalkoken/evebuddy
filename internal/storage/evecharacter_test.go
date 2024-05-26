@@ -74,7 +74,7 @@ func TestEveCharacter(t *testing.T) {
 		c2, err := r.GetEveCharacter(ctx, c1.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c1.Birthday.Unix(), c2.Birthday.Unix())
+			assert.Equal(t, c1.Birthday.UTC(), c2.Birthday.UTC())
 			assert.Equal(t, c1.Corporation, c2.Corporation)
 			assert.Equal(t, c1.Description, c2.Description)
 			assert.Equal(t, c1.Gender, c2.Gender)
@@ -100,7 +100,7 @@ func TestEveCharacter(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, alliance, c2.Alliance)
-			assert.Equal(t, c1.Birthday.Unix(), c2.Birthday.Unix())
+			assert.Equal(t, c1.Birthday.UTC(), c2.Birthday.UTC())
 			assert.Equal(t, c1.Corporation, c2.Corporation)
 			assert.Equal(t, c1.Description, c2.Description)
 			assert.Equal(t, faction, c2.Faction)

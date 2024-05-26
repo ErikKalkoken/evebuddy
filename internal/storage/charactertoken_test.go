@@ -35,14 +35,14 @@ func TestToken(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "access", o1.AccessToken)
 		assert.Equal(t, c.ID, o1.CharacterID)
-		assert.Equal(t, now.Unix(), o1.ExpiresAt.Unix())
+		assert.Equal(t, now.UTC(), o1.ExpiresAt.UTC())
 		assert.Equal(t, []string{"alpha", "bravo"}, o1.Scopes)
 		assert.Equal(t, "xxx", o1.TokenType)
 		o2, err := r.GetCharacterToken(ctx, c.ID)
 		if assert.NoError(t, err) {
 			assert.Equal(t, o1.AccessToken, o2.AccessToken)
 			assert.Equal(t, c.ID, o2.CharacterID)
-			assert.Equal(t, o1.ExpiresAt.Unix(), o2.ExpiresAt.Unix())
+			assert.Equal(t, o1.ExpiresAt.UTC(), o2.ExpiresAt.UTC())
 			assert.Equal(t, o1.Scopes, o2.Scopes)
 			assert.Equal(t, o1.TokenType, o2.TokenType)
 		}
@@ -57,7 +57,7 @@ func TestToken(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, c.AccessToken, r.AccessToken)
 			assert.Equal(t, c.CharacterID, r.CharacterID)
-			assert.Equal(t, c.ExpiresAt.Unix(), c.ExpiresAt.Unix())
+			assert.Equal(t, c.ExpiresAt.UTC(), c.ExpiresAt.UTC())
 			assert.Equal(t, c.RefreshToken, r.RefreshToken)
 			assert.Equal(t, c.TokenType, r.TokenType)
 		}
@@ -77,7 +77,7 @@ func TestToken(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, o1.AccessToken, o2.AccessToken)
 			assert.Equal(t, c.ID, o2.CharacterID)
-			assert.Equal(t, o1.ExpiresAt.Unix(), o2.ExpiresAt.Unix())
+			assert.Equal(t, o1.ExpiresAt.UTC(), o2.ExpiresAt.UTC())
 			assert.Equal(t, o1.Scopes, o2.Scopes)
 			assert.Equal(t, o1.TokenType, o2.TokenType)
 		}

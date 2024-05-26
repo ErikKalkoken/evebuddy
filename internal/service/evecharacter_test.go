@@ -74,7 +74,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 			assert.InDelta(t, -9.9, x1.SecurityStatus, 0.01)
 			x2, err := r.GetEveCharacter(ctx, characterID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x1.Birthday.Unix(), x2.Birthday.Unix())
+				assert.Equal(t, x1.Birthday.UTC(), x2.Birthday.UTC())
 				assert.Equal(t, x1.Corporation.ID, x2.Corporation.ID)
 				assert.Equal(t, x1.Description, x2.Description)
 				assert.Equal(t, x1.Gender, x2.Gender)
