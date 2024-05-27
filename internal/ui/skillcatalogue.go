@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
@@ -40,10 +41,9 @@ type skillTrained struct {
 
 // skillCatalogueArea is the UI area that shows the skill catalogue
 type skillCatalogueArea struct {
-	content    *fyne.Container
-	groupsGrid *widget.GridWrap
-	groups     binding.UntypedList
-	// list           *widget.List
+	content        *fyne.Container
+	groupsGrid     *widget.GridWrap
+	groups         binding.UntypedList
 	skillsGrid     *widget.GridWrap
 	skills         binding.UntypedList
 	total          *widget.Label
@@ -131,12 +131,29 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 			return a.skills.Length()
 		},
 		func() fyne.CanvasObject {
+			s := fyne.Size{Width: 14, Height: 14}
+			f := canvas.ImageFillContain
+			x1 := canvas.NewImageFromResource(theme.MediaStopIcon())
+			x1.FillMode = f
+			x1.SetMinSize(s)
+			x2 := canvas.NewImageFromResource(theme.MediaStopIcon())
+			x2.FillMode = f
+			x2.SetMinSize(s)
+			x3 := canvas.NewImageFromResource(theme.MediaStopIcon())
+			x3.FillMode = f
+			x3.SetMinSize(s)
+			x4 := canvas.NewImageFromResource(theme.MediaStopIcon())
+			x4.FillMode = f
+			x4.SetMinSize(s)
+			x5 := canvas.NewImageFromResource(theme.MediaStopIcon())
+			x5.FillMode = f
+			x5.SetMinSize(s)
 			x := container.NewHBox(
-				widget.NewIcon(theme.MediaStopIcon()),
-				widget.NewIcon(theme.MediaStopIcon()),
-				widget.NewIcon(theme.MediaStopIcon()),
-				widget.NewIcon(theme.MediaStopIcon()),
-				widget.NewIcon(theme.MediaStopIcon()),
+				x1,
+				x2,
+				x3,
+				x4,
+				x5,
 				widget.NewLabel("Capital Shipboard Compression Technology"))
 			return x
 		},
@@ -148,14 +165,15 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 			row := co.(*fyne.Container)
 			row.Objects[5].(*widget.Label).SetText(skill.name)
 			for i := range 5 {
-				y := row.Objects[i].(*widget.Icon)
+				y := row.Objects[i].(*canvas.Image)
 				if skill.activeLevel > i {
-					y.SetResource(a.levelTrained)
+					y.Resource = a.levelTrained
 				} else if skill.trainedLevel > i {
-					y.SetResource(a.levelBlocked)
+					y.Resource = a.levelBlocked
 				} else {
-					y.SetResource(a.levelUnTrained)
+					y.Resource = a.levelUnTrained
 				}
+				y.Refresh()
 			}
 		},
 	)

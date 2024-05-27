@@ -23,12 +23,12 @@ import (
 
 // UI constants
 const (
-	myDateTime                    = "2006.01.02 15:04"
-	defaultIconSize               = 32
-	myFloatFormat                 = "#,###.##"
-	eveDataUpdateTicker           = 60 * time.Second
-	eveCharacterUpdateTimeout     = 3600 * time.Second
-	eveCategorySkillUpdateTimeout = 24 * time.Hour
+	myDateTime                = "2006.01.02 15:04"
+	defaultIconSize           = 32
+	myFloatFormat             = "#,###.##"
+	eveDataUpdateTicker       = 60 * time.Second
+	eveCharacterUpdateTimeout = 3600 * time.Second
+	eveCategoryUpdateTimeout  = 24 * time.Hour
 )
 
 // The ui is the root object of the UI and contains all UI areas.
@@ -369,14 +369,17 @@ func (u *ui) StartUpdateTickerEveCategorySkill() {
 				if err != nil {
 					return err
 				}
-				if ok && time.Now().Before(lastUpdated.Add(eveCategorySkillUpdateTimeout)) {
+				if ok && time.Now().Before(lastUpdated.Add(eveCategoryUpdateTimeout)) {
 					return nil
 				}
-				slog.Info("Started updating skill category")
+				slog.Info("Started updating categories")
 				if err := u.service.UpdateEveCategoryWithChildrenESI(model.EveCategoryIDSkill); err != nil {
 					return err
 				}
-				slog.Info("Finished updating skill category")
+				if err := u.service.UpdateEveCategoryWithChildrenESI(model.EveCategoryIDShip); err != nil {
+					return err
+				}
+				slog.Info("Finished updating categories")
 				if err := u.service.DictionarySetTime(key, time.Now()); err != nil {
 					return err
 				}

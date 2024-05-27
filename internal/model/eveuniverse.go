@@ -3,6 +3,7 @@ package model
 import "github.com/ErikKalkoken/evebuddy/internal/eveonline/converter"
 
 const (
+	EveCategoryIDShip              = 6
 	EveCategoryIDSkill             = 16
 	EveTypeIDSolarSystem           = 5
 	EveTypeIDAssetSafetyWrap       = 60
