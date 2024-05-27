@@ -10,25 +10,30 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/dustin/go-humanize"
 )
 
 // shipsArea is the UI area that shows the skillqueue
 type shipsArea struct {
-	content *fyne.Container
-	entries binding.UntypedList
-	table   *widget.Table
-	total   *widget.Label
-	ui      *ui
+	content   *fyne.Container
+	entries   binding.UntypedList
+	searchBox *widget.Entry
+	table     *widget.Table
+	ui        *ui
 }
 
 func (u *ui) NewShipArea() *shipsArea {
 	a := shipsArea{
-		ui:      u,
-		entries: binding.NewUntypedList(),
-		total:   widget.NewLabel(""),
+		ui:        u,
+		entries:   binding.NewUntypedList(),
+		searchBox: widget.NewEntry(),
 	}
-	a.total.TextStyle.Bold = true
+	a.searchBox.SetPlaceHolder("Filter by ship name")
+	a.searchBox.OnChanged = func(s string) {
+		if len(s) == 1 {
+			return
+		}
+		a.Refresh()
+	}
 	var headers = []struct {
 		text  string
 		width float32
@@ -53,7 +58,7 @@ func (u *ui) NewShipArea() *shipsArea {
 			icon := row.Objects[0].(*canvas.Image)
 			label := row.Objects[1].(*widget.Label)
 			label.Importance = widget.MediumImportance
-			o, err := getFromBoundUntypedList[model.CharacterShipAbility](a.entries, tci.Row)
+			o, err := getFromBoundUntypedList[*model.CharacterShipAbility](a.entries, tci.Row)
 			if err != nil {
 				panic(err)
 			}
@@ -94,7 +99,7 @@ func (u *ui) NewShipArea() *shipsArea {
 		t.SetColumnWidth(i, h.width)
 	}
 
-	top := container.NewVBox(a.total, widget.NewSeparator())
+	top := container.NewVBox(a.searchBox)
 	a.content = container.NewBorder(top, nil, nil, nil, t)
 	a.table = t
 	a.entries.AddListener(binding.NewDataListener(func() {
@@ -104,50 +109,22 @@ func (u *ui) NewShipArea() *shipsArea {
 }
 
 func (a *shipsArea) Refresh() {
-	canFly, err := a.updateEntries()
-	if err != nil {
+	if err := a.updateEntries(); err != nil {
 		panic(err)
 	}
-	s, i := a.makeTopText(canFly)
-	a.total.Text = s
-	a.total.Importance = i
-	a.total.Refresh()
 }
 
-func (a *shipsArea) makeTopText(canFly int) (string, widget.Importance) {
-	c := a.ui.CurrentChar()
-	if c == nil {
-		return "No data yet...", widget.LowImportance
-	}
-	hasData, err := a.ui.service.CharacterSectionWasUpdated(c.ID, model.CharacterSectionWalletJournal)
-	if err != nil {
-		return "ERROR", widget.DangerImportance
-	}
-	if !hasData {
-		return "No data yet...", widget.LowImportance
-	}
-	total := a.entries.Length()
-	p := float32(canFly) / float32(total) * 100
-	s := fmt.Sprintf("Count: %s (%s)", humanize.Comma(int64(total)), fmt.Sprintf("%.0f%%", p))
-	return s, widget.MediumImportance
-}
-
-func (a *shipsArea) updateEntries() (int, error) {
+func (a *shipsArea) updateEntries() error {
 	characterID := a.ui.CurrentCharID()
 	if characterID == 0 {
-		oo := make([]model.CharacterShipAbility, 0)
+		oo := make([]*model.CharacterShipAbility, 0)
 		a.entries.Set(copyToUntypedSlice(oo))
 	}
-	oo, err := a.ui.service.ListCharacterShipsAbilities(characterID)
+	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
+	oo, err := a.ui.service.ListCharacterShipsAbilities(characterID, search)
 	if err != nil {
-		return 0, err
-	}
-	c := 0
-	for _, o := range oo {
-		if o.CanFly {
-			c++
-		}
+		return err
 	}
 	a.entries.Set(copyToUntypedSlice(oo))
-	return c, nil
+	return nil
 }

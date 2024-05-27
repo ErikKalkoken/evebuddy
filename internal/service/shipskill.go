@@ -6,9 +6,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
-func (s *Service) ListCharacterShipsAbilities(characterID int32) ([]model.CharacterShipAbility, error) {
+func (s *Service) ListCharacterShipsAbilities(characterID int32, search string) ([]*model.CharacterShipAbility, error) {
 	ctx := context.Background()
-	return s.r.ListCharacterShipsAbilities(ctx, characterID)
+	return s.r.ListCharacterShipsAbilities(ctx, characterID, search)
 }
 
 func (s *Service) UpdateShipSkills() error {

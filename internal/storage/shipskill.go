@@ -25,14 +25,18 @@ func (r *Storage) GetShipSkill(ctx context.Context, shipTypeID int32, rank uint)
 	return shipSkillFromDBModel(row.Rank, row.ShipTypeID, row.SkillLevel, row.SkillTypeID), nil
 }
 
-func (r *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID int32) ([]model.CharacterShipAbility, error) {
-	rows, err := r.q.ListCharacterShipsAbilities(ctx, int64(characterID))
-	if err != nil {
-		return nil, fmt.Errorf("failed to list ship abilities for character %d: %w", characterID, err)
+func (r *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID int32, search string) ([]*model.CharacterShipAbility, error) {
+	arg := queries.ListCharacterShipsAbilitiesParams{
+		CharacterID: int64(characterID),
+		Name:        search,
 	}
-	oo := make([]model.CharacterShipAbility, len(rows))
+	rows, err := r.q.ListCharacterShipsAbilities(ctx, arg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list ship abilities for character %d and search %s: %w", characterID, search, err)
+	}
+	oo := make([]*model.CharacterShipAbility, len(rows))
 	for i, row := range rows {
-		o := model.CharacterShipAbility{
+		o := &model.CharacterShipAbility{
 			Group:  model.EntityShort[int32]{ID: int32(row.GroupID), Name: row.GroupName},
 			Type:   model.EntityShort[int32]{ID: int32(row.TypeID), Name: row.TypeName},
 			CanFly: row.CanFly,

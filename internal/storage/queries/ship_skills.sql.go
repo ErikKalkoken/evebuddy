@@ -85,8 +85,14 @@ SELECT DISTINCT ss2.ship_type_id as type_id, et.name as type_name, eg.id as grou
 FROM ship_skills ss2
 JOIN eve_types et ON et.ID = ss2.ship_type_id
 JOIN eve_groups eg ON eg.ID = et.eve_group_id
-ORDER BY type_name
+WHERE et.name LIKE ?
+ORDER BY et.name
 `
+
+type ListCharacterShipsAbilitiesParams struct {
+	CharacterID int64
+	Name        string
+}
 
 type ListCharacterShipsAbilitiesRow struct {
 	TypeID    int64
@@ -96,8 +102,8 @@ type ListCharacterShipsAbilitiesRow struct {
 	CanFly    bool
 }
 
-func (q *Queries) ListCharacterShipsAbilities(ctx context.Context, characterID int64) ([]ListCharacterShipsAbilitiesRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterShipsAbilities, characterID)
+func (q *Queries) ListCharacterShipsAbilities(ctx context.Context, arg ListCharacterShipsAbilitiesParams) ([]ListCharacterShipsAbilitiesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterShipsAbilities, arg.CharacterID, arg.Name)
 	if err != nil {
 		return nil, err
 	}
