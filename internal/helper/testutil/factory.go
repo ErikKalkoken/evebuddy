@@ -740,6 +740,27 @@ func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *model.EveTy
 	return o
 }
 
+func (f Factory) CreateEveTypeDogmaAttribute(args ...storage.CreateEveTypeDogmaAttributeParams) {
+	var arg storage.CreateEveTypeDogmaAttributeParams
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.EveTypeID == 0 {
+		x := f.CreateEveType()
+		arg.EveTypeID = x.ID
+	}
+	if arg.DogmaAttributeID == 0 {
+		arg.DogmaAttributeID = int32(f.calcNewIDWithParam("eve_types_dogma_attributes", "dogma_attribute_id", "eve_type_id", int64(arg.EveTypeID)))
+	}
+	if arg.Value == 0 {
+		arg.Value = rand.Float32() * 10_000
+	}
+	if err := f.r.CreateEveTypeDogmaAttribute(ctx, arg); err != nil {
+		panic(err)
+	}
+}
+
 func (f Factory) CreateEveRegion(args ...storage.CreateEveRegionParams) *model.EveRegion {
 	var arg storage.CreateEveRegionParams
 	ctx := context.Background()
@@ -891,6 +912,15 @@ func (f *Factory) calcNewIDWithCharacter(table, id_field string, characterID int
 	var max sql.NullInt64
 	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE character_id = ?;", id_field, table)
 	if err := f.db.QueryRow(sql, characterID).Scan(&max); err != nil {
+		panic(err)
+	}
+	return max.Int64 + 1
+}
+
+func (f *Factory) calcNewIDWithParam(table, max_field, where_field string, where_value int64) int64 {
+	var max sql.NullInt64
+	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", max_field, table, where_field)
+	if err := f.db.QueryRow(sql, where_value).Scan(&max); err != nil {
 		panic(err)
 	}
 	return max.Int64 + 1

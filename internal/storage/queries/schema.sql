@@ -96,6 +96,17 @@ CREATE TABLE eve_solar_systems (
 );
 CREATE INDEX eve_solar_systems_name_idx ON eve_solar_systems (name ASC);
 
+CREATE TABLE ship_skills (
+    id INTEGER PRIMARY KEY NOT NULL,
+    rank INTEGER NOT NULL,
+    ship_type_id INTEGER NOT NULL,
+    skill_type_id INTEGER NOT NULL,
+    skill_level INTEGER NOT NULL,
+    FOREIGN KEY (ship_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
+    FOREIGN KEY (skill_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
+    UNIQUE (ship_type_id, rank)
+);
+
 CREATE TABLE eve_characters (
     alliance_id INTEGER,
     birthday DATETIME NOT NULL,

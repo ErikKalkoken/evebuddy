@@ -51,6 +51,7 @@ type ui struct {
 	skillCatalogueArea    *skillCatalogueArea
 	skillqueueArea        *skillqueueArea
 	skillqueueTab         *container.TabItem
+	shipsArea             *shipsArea
 	toolbarArea           *toolbarArea
 	tabs                  *container.AppTabs
 	walletJournalArea     *walletJournalArea
@@ -100,10 +101,12 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 
 	u.skillqueueArea = u.NewSkillqueueArea()
 	u.skillCatalogueArea = u.NewSkillCatalogueArea()
+	u.shipsArea = u.NewShipArea()
 	u.skillqueueTab = container.NewTabItemWithIcon("Skills",
 		theme.NewThemedResource(resourceSchoolSvg), container.NewAppTabs(
 			container.NewTabItem("Training Queue", u.skillqueueArea.content),
 			container.NewTabItem("Skill Catalogue", u.skillCatalogueArea.content),
+			container.NewTabItem("Ships", u.shipsArea.content),
 		))
 
 	u.walletJournalArea = u.NewWalletJournalArea()
@@ -234,6 +237,11 @@ func (u *ui) ShowAndRun() {
 		u.walletTransactionArea.StartUpdateTicker()
 		u.StartUpdateTickerEveCharacters()
 		u.StartUpdateTickerEveCategorySkill()
+		// go func() {
+		// 	if err := u.service.UpdateShipSkills(); err != nil {
+		// 		slog.Error("Updating ship skills failed", "err", err)
+		// 	}
+		// }()
 	}()
 	u.RefreshOverview()
 	u.window.ShowAndRun()
@@ -274,6 +282,7 @@ func (u *ui) refreshCurrentCharacter() {
 	u.jumpClonesArea.Redraw()
 	u.implantsArea.Refresh()
 	u.mailArea.Redraw()
+	u.shipsArea.Refresh()
 	u.skillqueueArea.Refresh()
 	u.skillCatalogueArea.Redraw()
 	u.toolbarArea.Refresh()
@@ -361,11 +370,11 @@ func (u *ui) StartUpdateTickerEveCharacters() {
 
 func (u *ui) StartUpdateTickerEveCategorySkill() {
 	ticker := time.NewTicker(eveDataUpdateTicker)
-	key := "eve-category-skill-last-updated"
+	keyLastUpdated := "eve-category-skill-last-updated"
 	go func() {
 		for {
 			err := func() error {
-				lastUpdated, ok, err := u.service.DictionaryTime(key)
+				lastUpdated, ok, err := u.service.DictionaryTime(keyLastUpdated)
 				if err != nil {
 					return err
 				}
@@ -379,8 +388,11 @@ func (u *ui) StartUpdateTickerEveCategorySkill() {
 				if err := u.service.UpdateEveCategoryWithChildrenESI(model.EveCategoryIDShip); err != nil {
 					return err
 				}
+				if err := u.service.UpdateShipSkills(); err != nil {
+					return err
+				}
 				slog.Info("Finished updating categories")
-				if err := u.service.DictionarySetTime(key, time.Now()); err != nil {
+				if err := u.service.DictionarySetTime(keyLastUpdated, time.Now()); err != nil {
 					return err
 				}
 				return nil
