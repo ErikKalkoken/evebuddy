@@ -32,7 +32,10 @@ func (u *ui) NewShipArea() *shipsArea {
 		if len(s) == 1 {
 			return
 		}
-		a.Refresh()
+		if err := a.updateEntries(); err != nil {
+			panic(err)
+		}
+		a.table.ScrollToTop()
 	}
 	var headers = []struct {
 		text  string
