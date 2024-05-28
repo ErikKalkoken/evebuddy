@@ -303,7 +303,7 @@ func (u *ui) refreshCurrentCharacter() {
 		go u.implantsArea.MaybeUpdateAndRefresh(c.ID)
 		go u.mailArea.MaybeUpdateAndRefresh(c.ID)
 		go u.overviewArea.MaybeUpdateAndRefresh(c.ID)
-		go u.NewSkillCatalogueArea().MaybeUpdateAndRefresh(c.ID)
+		go u.skillCatalogueArea.MaybeUpdateAndRefresh(c.ID)
 		go u.skillqueueArea.MaybeUpdateAndRefresh(c.ID)
 		go u.walletJournalArea.MaybeUpdateAndRefresh(c.ID)
 		go u.walletTransactionArea.MaybeUpdateAndRefresh(c.ID)

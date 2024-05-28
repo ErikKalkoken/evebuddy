@@ -282,7 +282,7 @@ func (a *skillCatalogueArea) StartUpdateTicker() {
 func (a *skillCatalogueArea) MaybeUpdateAndRefresh(characterID int32) {
 	changed, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionSkills)
 	if err != nil {
-		slog.Error("Failed to update skillqueue", "character", characterID, "err", err)
+		slog.Error("Failed to update skills", "character", characterID, "err", err)
 		return
 	}
 	if characterID == a.ui.CurrentCharID() && changed {

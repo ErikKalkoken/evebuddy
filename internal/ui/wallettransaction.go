@@ -120,9 +120,6 @@ func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
 	top := container.NewVBox(a.total, widget.NewSeparator())
 	a.content = container.NewBorder(top, nil, nil, nil, t)
 	a.table = t
-	a.entries.AddListener(binding.NewDataListener(func() {
-		a.table.Refresh()
-	}))
 	return &a
 }
 
@@ -132,6 +129,7 @@ func (a *walletTransactionArea) Refresh() {
 	a.total.Text = s
 	a.total.Importance = i
 	a.total.Refresh()
+	a.table.Refresh()
 }
 
 func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {

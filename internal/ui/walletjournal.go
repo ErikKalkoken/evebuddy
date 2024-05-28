@@ -147,9 +147,6 @@ func (u *ui) NewWalletJournalArea() *walletJournalArea {
 	top := container.NewVBox(a.total, widget.NewSeparator())
 	a.content = container.NewBorder(top, nil, nil, nil, t)
 	a.table = t
-	a.entries.AddListener(binding.NewDataListener(func() {
-		a.table.Refresh()
-	}))
 	return &a
 }
 
@@ -159,6 +156,7 @@ func (a *walletJournalArea) Refresh() {
 	a.total.Text = s
 	a.total.Importance = i
 	a.total.Refresh()
+	a.table.Refresh()
 }
 
 func (a *walletJournalArea) makeTopText() (string, widget.Importance) {

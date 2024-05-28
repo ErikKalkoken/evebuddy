@@ -189,9 +189,6 @@ func (u *ui) NewOverviewArea() *overviewArea {
 	top := container.NewVBox(a.totalLabel, widget.NewSeparator())
 	a.content = container.NewBorder(top, nil, nil, nil, t)
 	a.table = t
-	a.characters.AddListener(binding.NewDataListener(func() {
-		a.table.Refresh()
-	}))
 	return &a
 }
 
@@ -212,6 +209,7 @@ func (a *overviewArea) Refresh() {
 		unreadText,
 	)
 	a.totalLabel.SetText(s)
+	a.table.Refresh()
 }
 
 func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFloat64, error) {
@@ -326,5 +324,4 @@ func (a *overviewArea) MaybeUpdateAndRefresh(characterID int32) {
 			}
 		}(s)
 	}
-
 }
