@@ -120,7 +120,7 @@ func (a *implantsArea) makeTopText() (string, widget.Importance, error) {
 		return "", 0, err
 	}
 	if !hasData {
-		return "No data yet...", widget.LowImportance, nil
+		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}
 	return fmt.Sprintf("%d implants", a.implants.Length()), widget.MediumImportance, nil
 }

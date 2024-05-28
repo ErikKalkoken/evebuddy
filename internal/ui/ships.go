@@ -116,6 +116,13 @@ func (u *ui) newShipArea() *shipsArea {
 
 func (a *shipsArea) refresh() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
+		_, ok, err := a.ui.service.DictionaryTime(eveCategoriesKeyLastUpdated)
+		if err != nil {
+			return "", 0, false, err
+		}
+		if !ok {
+			return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
+		}
 		if err := a.updateEntries(); err != nil {
 			return "", 0, false, err
 		}
@@ -155,15 +162,11 @@ func (a *shipsArea) updateEntries() error {
 }
 
 func (a *shipsArea) makeTopText() (string, widget.Importance, bool, error) {
-	_, ok, err := a.ui.service.DictionaryTime(eveCategoriesKeyLastUpdated)
-	if !ok {
-		return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
-	}
 	if !a.ui.hasCharacter() {
-		return "No character", widget.LowImportance, false, err
+		return "No character", widget.LowImportance, false, nil
 	}
 	characterID := a.ui.currentCharID()
-	ok, err = a.ui.service.CharacterSectionWasUpdated(characterID, model.CharacterSectionSkills)
+	ok, err := a.ui.service.CharacterSectionWasUpdated(characterID, model.CharacterSectionSkills)
 	if err != nil {
 		return "", 0, false, err
 	}

@@ -201,7 +201,7 @@ func (a *skillqueueArea) makeTopText(total types.NullDuration) (string, widget.I
 		return "", 0, err
 	}
 	if !hasData {
-		return "No data yet...", widget.LowImportance, nil
+		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}
 	if a.items.Length() == 0 {
 		return "Training not active", widget.WarningImportance, nil

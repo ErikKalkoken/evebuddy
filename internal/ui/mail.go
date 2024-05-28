@@ -516,7 +516,7 @@ func (a *headerArea) makeTopText() (string, widget.Importance, error) {
 		return "", 0, err
 	}
 	if !hasData {
-		return "No data yet...", widget.LowImportance, nil
+		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}
 	s := fmt.Sprintf("%d mails", a.mailIDs.Length())
 	return s, widget.MediumImportance, nil

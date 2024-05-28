@@ -149,7 +149,7 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance, error)
 		return "", 0, err
 	}
 	if !hasData {
-		return "No data yet...", widget.LowImportance, nil
+		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}
 	return "", widget.MediumImportance, nil
 }

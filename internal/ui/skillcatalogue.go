@@ -222,6 +222,13 @@ func (a *skillCatalogueArea) redraw() {
 
 func (a *skillCatalogueArea) refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
+		_, ok, err := a.ui.service.DictionaryTime(eveCategoriesKeyLastUpdated)
+		if err != nil {
+			return "", 0, err
+		}
+		if !ok {
+			return "Waiting for universe data to be loaded...", widget.WarningImportance, nil
+		}
 		if err := a.updateGroups(); err != nil {
 			return "", 0, err
 		}
