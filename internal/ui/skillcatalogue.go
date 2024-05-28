@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/dustin/go-humanize"
 )
 
@@ -222,27 +221,40 @@ func (a *skillCatalogueArea) redraw() {
 }
 
 func (a *skillCatalogueArea) refresh() {
-	c, err := a.updateGroups()
+	t, i, err := func() (string, widget.Importance, error) {
+		if err := a.updateGroups(); err != nil {
+			return "", 0, err
+		}
+		return a.makeTopText()
+	}()
 	if err != nil {
-		panic(err)
+		slog.Error("Failed to refresh skill catalogue UI", "err", err)
+		t = "ERROR"
+		i = widget.DangerImportance
 	}
-	total := "?"
-	unallocated := "?"
-	if c != nil {
-		total = humanizedNullInt64(c.TotalSP, "?")
-		unallocated = humanizedNullInt64(c.UnallocatedSP, "?")
-	}
-	a.total.SetText(fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated))
+	a.total.Text = t
+	a.total.Importance = i
+	a.total.Refresh()
 }
 
-func (a *skillCatalogueArea) updateGroups() (*model.Character, error) {
-	c := a.ui.currentChar()
-	if c == nil {
-		return nil, nil
+func (a *skillCatalogueArea) makeTopText() (string, widget.Importance, error) {
+	if !a.ui.hasCharacter() {
+		return "No Character", widget.LowImportance, nil
 	}
-	gg, err := a.ui.service.ListCharacterSkillGroupsProgress(c.ID)
+	c := a.ui.currentChar()
+	total := humanizedNullInt64(c.TotalSP, "?")
+	unallocated := humanizedNullInt64(c.UnallocatedSP, "?")
+	t := fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated)
+	return t, widget.MediumImportance, nil
+}
+
+func (a *skillCatalogueArea) updateGroups() error {
+	if !a.ui.hasCharacter() {
+		return nil
+	}
+	gg, err := a.ui.service.ListCharacterSkillGroupsProgress(a.ui.currentCharID())
 	if err != nil {
-		return nil, err
+		return err
 	}
 	groups := make([]skillGroupProgress, len(gg))
 	for i, g := range gg {
@@ -253,6 +265,8 @@ func (a *skillCatalogueArea) updateGroups() (*model.Character, error) {
 			total:   g.Total,
 		}
 	}
-	a.groups.Set(copyToUntypedSlice(groups))
-	return c, nil
+	if err := a.groups.Set(copyToUntypedSlice(groups)); err != nil {
+		return err
+	}
+	return nil
 }

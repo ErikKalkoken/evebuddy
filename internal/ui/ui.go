@@ -439,6 +439,9 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32) {
 				if isCurrent && isChanged {
 					u.jumpClonesArea.redraw()
 				}
+				if isChanged {
+					u.overviewArea.refresh()
+				}
 			case model.CharacterSectionLocation,
 				model.CharacterSectionOnline,
 				model.CharacterSectionShip,
@@ -451,6 +454,9 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32) {
 				model.CharacterSectionMails:
 				if isCurrent && isChanged {
 					u.mailArea.refresh()
+				}
+				if isChanged {
+					u.overviewArea.refresh()
 				}
 			case model.CharacterSectionSkills:
 				if isCurrent && isChanged {

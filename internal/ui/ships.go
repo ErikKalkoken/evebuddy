@@ -115,11 +115,26 @@ func (u *ui) newShipArea() *shipsArea {
 }
 
 func (a *shipsArea) refresh() {
-	if err := a.updateEntries(); err != nil {
-		panic(err)
+	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
+		if err := a.updateEntries(); err != nil {
+			return "", 0, false, err
+		}
+		return a.makeTopText()
+	}()
+	if err != nil {
+		slog.Error("Failed to refresh ships UI", "err", err)
+		t = "ERROR"
+		i = widget.DangerImportance
 	}
-	a.refreshTop()
+	a.top.Text = t
+	a.top.Importance = i
+	a.top.Refresh()
 	a.table.Refresh()
+	if enabled {
+		a.searchBox.Enable()
+	} else {
+		a.searchBox.Disable()
+	}
 }
 
 func (a *shipsArea) updateEntries() error {
@@ -139,23 +154,7 @@ func (a *shipsArea) updateEntries() error {
 	return nil
 }
 
-func (a *shipsArea) refreshTop() {
-	text, importance, enabled, err := a.calcTop()
-	if err != nil {
-		slog.Error("failed to refresh top element for ships", "err", err)
-		text = "Error: Failed to update element"
-	}
-	a.top.Text = text
-	a.top.Importance = importance
-	if enabled {
-		a.searchBox.Enable()
-	} else {
-		a.searchBox.Disable()
-	}
-	a.top.Refresh()
-}
-
-func (a *shipsArea) calcTop() (string, widget.Importance, bool, error) {
+func (a *shipsArea) makeTopText() (string, widget.Importance, bool, error) {
 	_, ok, err := a.ui.service.DictionaryTime(eveCategoriesKeyLastUpdated)
 	if !ok {
 		return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
@@ -166,14 +165,14 @@ func (a *shipsArea) calcTop() (string, widget.Importance, bool, error) {
 	characterID := a.ui.currentCharID()
 	ok, err = a.ui.service.CharacterSectionWasUpdated(characterID, model.CharacterSectionSkills)
 	if err != nil {
-		return "", widget.DangerImportance, false, err
+		return "", 0, false, err
 	}
 	if !ok {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
 	}
 	oo, err := a.ui.service.ListCharacterShipsAbilities(characterID, "%%")
 	if err != nil {
-		return "", widget.DangerImportance, false, err
+		return "", 0, false, err
 	}
 	c := 0
 	for _, o := range oo {

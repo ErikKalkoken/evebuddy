@@ -50,7 +50,7 @@ type walletJournalArea struct {
 	content *fyne.Container
 	entries binding.UntypedList // []walletJournalEntry
 	table   *widget.Table
-	total   *widget.Label
+	top     *widget.Label
 	ui      *ui
 }
 
@@ -58,9 +58,9 @@ func (u *ui) newWalletJournalArea() *walletJournalArea {
 	a := walletJournalArea{
 		ui:      u,
 		entries: binding.NewUntypedList(),
-		total:   widget.NewLabel(""),
+		top:     widget.NewLabel(""),
 	}
-	a.total.TextStyle.Bold = true
+	a.top.TextStyle.Bold = true
 	var headers = []struct {
 		text  string
 		width float32
@@ -142,35 +142,44 @@ func (u *ui) newWalletJournalArea() *walletJournalArea {
 		}
 	}
 
-	top := container.NewVBox(a.total, widget.NewSeparator())
+	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.content = container.NewBorder(top, nil, nil, nil, t)
 	a.table = t
 	return &a
 }
 
 func (a *walletJournalArea) refresh() {
-	a.updateEntries()
-	s, i := a.makeTopText()
-	a.total.Text = s
-	a.total.Importance = i
-	a.total.Refresh()
+	t, i, err := func() (string, widget.Importance, error) {
+		if err := a.updateEntries(); err != nil {
+			return "", 0, err
+		}
+		return a.makeTopText()
+	}()
+	if err != nil {
+		slog.Error("Failed to refresh wallet journal UI", "err", err)
+		t = "ERROR"
+		i = widget.DangerImportance
+	}
+	a.top.Text = t
+	a.top.Importance = i
+	a.top.Refresh()
 	a.table.Refresh()
 }
 
-func (a *walletJournalArea) makeTopText() (string, widget.Importance) {
-	c := a.ui.currentChar()
-	if c == nil {
-		return "No data yet...", widget.LowImportance
+func (a *walletJournalArea) makeTopText() (string, widget.Importance, error) {
+	if !a.ui.hasCharacter() {
+		return "No character", widget.LowImportance, nil
 	}
+	c := a.ui.currentChar()
 	hasData, err := a.ui.service.CharacterSectionWasUpdated(c.ID, model.CharacterSectionWalletJournal)
 	if err != nil {
-		return "ERROR", widget.DangerImportance
+		return "", 0, err
 	}
 	if !hasData {
-		return "No data yet...", widget.LowImportance
+		return "No data yet...", widget.LowImportance, nil
 	}
 	s := fmt.Sprintf("Balance: %s", humanizedNullFloat64(c.WalletBalance, 1, "?"))
-	return s, widget.MediumImportance
+	return s, widget.MediumImportance, nil
 }
 
 func (a *walletJournalArea) updateEntries() error {

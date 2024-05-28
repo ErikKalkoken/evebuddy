@@ -13,26 +13,23 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 // skillqueueArea is the UI area that shows the skillqueue
 type skillqueueArea struct {
-	content   *fyne.Container
-	items     binding.UntypedList
-	errorText binding.String
-	total     *widget.Label
-	ui        *ui
+	content *fyne.Container
+	items   binding.UntypedList
+	total   *widget.Label
+	ui      *ui
 }
 
 func (u *ui) newSkillqueueArea() *skillqueueArea {
 	a := skillqueueArea{
-		items:     binding.NewUntypedList(),
-		errorText: binding.NewString(),
-		total:     widget.NewLabel(""),
-		ui:        u,
+		items: binding.NewUntypedList(),
+		total: widget.NewLabel(""),
+		ui:    u,
 	}
 	a.total.TextStyle.Bold = true
 	list := widget.NewListWithData(
@@ -146,30 +143,32 @@ func (u *ui) newSkillqueueArea() *skillqueueArea {
 }
 
 func (a *skillqueueArea) refresh() {
-	total, completion, err := a.updateItems()
+	t, i, err := func() (string, widget.Importance, error) {
+		total, completion, err := a.updateItems()
+		if err != nil {
+			return "", 0, err
+		}
+		s := "Skills"
+		if completion.Valid && completion.Float64 < 1 {
+			s += fmt.Sprintf(" (%.0f%%)", completion.Float64*100)
+		}
+		a.ui.skillqueueTab.Text = s
+		a.ui.tabs.Refresh()
+		return a.makeTopText(total)
+	}()
 	if err != nil {
-		slog.Error("failed to update skillqueue items for character", "characterID", a.ui.currentCharID(), "err", err)
-		return
+		slog.Error("Failed to refresh skill queue UI", "err", err)
+		t = "ERROR"
+		i = widget.DangerImportance
 	}
-	t, i := a.makeTopText(total)
 	a.total.Text = t
 	a.total.Importance = i
 	a.total.Refresh()
-
-	s := "Skills"
-	if completion.Valid && completion.Float64 < 1 {
-		s += fmt.Sprintf(" (%.0f%%)", completion.Float64*100)
-	}
-	a.ui.skillqueueTab.Text = s
-	a.ui.tabs.Refresh()
 }
 
 func (a *skillqueueArea) updateItems() (types.NullDuration, sql.NullFloat64, error) {
 	var remaining types.NullDuration
 	var completion sql.NullFloat64
-	if err := a.errorText.Set(""); err != nil {
-		return remaining, completion, err
-	}
 	if !a.ui.hasCharacter() {
 		err := a.items.Set(make([]any, 0))
 		if err != nil {
@@ -196,27 +195,17 @@ func (a *skillqueueArea) updateItems() (types.NullDuration, sql.NullFloat64, err
 	return remaining, completion, nil
 }
 
-func (a *skillqueueArea) makeTopText(total types.NullDuration) (string, widget.Importance) {
-	errorText, err := a.errorText.Get()
-	if err != nil {
-		panic(err)
-	}
-	if errorText != "" {
-		return errorText, widget.DangerImportance
-	}
+func (a *skillqueueArea) makeTopText(total types.NullDuration) (string, widget.Importance, error) {
 	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.currentCharID(), model.CharacterSectionSkillqueue)
 	if err != nil {
-		return "ERROR", widget.DangerImportance
+		return "", 0, err
 	}
 	if !hasData {
-		return "No data", widget.LowImportance
+		return "No data yet...", widget.LowImportance, nil
 	}
 	if a.items.Length() == 0 {
-		return "Training not active", widget.WarningImportance
+		return "Training not active", widget.WarningImportance, nil
 	}
-	training := "?"
-	if total.Valid {
-		training = ihumanize.Duration(total.Duration)
-	}
-	return fmt.Sprintf("Total training time: %s", training), widget.MediumImportance
+	t := fmt.Sprintf("Total training time: %s", humanizedNullDuration(total, "?"))
+	return t, widget.MediumImportance, nil
 }

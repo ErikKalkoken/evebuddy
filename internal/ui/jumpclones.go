@@ -142,15 +142,22 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 }
 
 func (a *jumpClonesArea) redraw() {
-	ids, values, total, err := a.updateTreeData()
+	t, i, err := func() (string, widget.Importance, error) {
+		ids, values, total, err := a.updateTreeData()
+		if err != nil {
+			return "", 0, err
+		}
+		if err := a.treeData.Set(ids, values); err != nil {
+			return "", 0, err
+		}
+		return a.makeTopText(total)
+	}()
 	if err != nil {
-		panic(err)
+		slog.Error("Failed to refresh jump clones UI", "err", err)
+		t = "ERROR"
+		i = widget.DangerImportance
 	}
-	if err := a.treeData.Set(ids, values); err != nil {
-		panic(err)
-	}
-	s, i := a.makeTopText(total)
-	a.top.Text = s
+	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
 }
@@ -195,13 +202,16 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 	return ids, values, len(clones), nil
 }
 
-func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance) {
+func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance, error) {
+	if !a.ui.hasCharacter() {
+		return "No character", widget.LowImportance, nil
+	}
 	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.currentCharID(), model.CharacterSectionJumpClones)
 	if err != nil {
-		return "ERROR", widget.DangerImportance
+		return "", 0, err
 	}
 	if !hasData {
-		return "No data", widget.LowImportance
+		return "No data yet...", widget.LowImportance, nil
 	}
-	return fmt.Sprintf("%d clones", total), widget.MediumImportance
+	return fmt.Sprintf("%d clones", total), widget.MediumImportance, nil
 }

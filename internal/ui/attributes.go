@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -29,14 +30,17 @@ func (a attribute) isText() bool {
 type attributesArea struct {
 	content    fyne.CanvasObject
 	attributes binding.UntypedList
+	top        *widget.Label
 	ui         *ui
 }
 
 func (u *ui) newAttributesArena() *attributesArea {
 	a := attributesArea{
 		attributes: binding.NewUntypedList(),
+		top:        widget.NewLabel(""),
 		ui:         u,
 	}
+	a.top.TextStyle.Bold = true
 
 	list := widget.NewListWithData(
 		a.attributes,
@@ -83,33 +87,55 @@ func (u *ui) newAttributesArena() *attributesArea {
 		list.UnselectAll()
 	}
 
-	a.content = list
+	a.content = container.NewBorder(container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil, list)
 	return &a
 }
 
 func (a *attributesArea) refresh() {
-	if err := a.updateData(); err != nil {
-		slog.Error("failed to render attributes for character", "characterID", a.ui.currentCharID(), "err", err)
-		return
+	t, i, err := func() (string, widget.Importance, error) {
+		total, err := a.updateData()
+		if err != nil {
+			return "", 0, err
+		}
+		return a.makeTopText(total)
+	}()
+	if err != nil {
+		slog.Error("Failed to refresh attributes UI", "err", err)
+		t = "ERROR"
+		i = widget.DangerImportance
 	}
+	a.top.Text = t
+	a.top.Importance = i
+	a.top.Refresh()
 }
 
-func (a *attributesArea) updateData() error {
+func (a *attributesArea) makeTopText(total int) (string, widget.Importance, error) {
+	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.currentCharID(), model.CharacterSectionAttributes)
+	if err != nil {
+		return "", 0, err
+	}
+	if !hasData {
+		return "No data yet...", widget.LowImportance, nil
+	}
+	return fmt.Sprintf("Total points: %d", total), widget.MediumImportance, nil
+}
+
+func (a *attributesArea) updateData() (int, error) {
 	if !a.ui.hasCharacter() {
 		err := a.attributes.Set(make([]any, 0))
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 	x, err := a.ui.service.GetCharacterAttributes(a.ui.currentCharID())
 	if errors.Is(err, storage.ErrNotFound) {
 		err := a.attributes.Set(make([]any, 0))
 		if err != nil {
-			return err
+			return 0, err
 		}
-		return nil
+		return 0, nil
 	} else if err != nil {
-		return err
+		return 0, err
 	}
 	items := make([]any, 6)
 	items[0] = attribute{
@@ -141,7 +167,8 @@ func (a *attributesArea) updateData() error {
 		name: fmt.Sprintf("Bonus Remaps Available: %d", x.BonusRemaps),
 	}
 	if err := a.attributes.Set(items); err != nil {
-		panic(err)
+		return 0, err
 	}
-	return nil
+	total := x.Charisma + x.Intelligence + x.Memory + x.Perception + x.Willpower
+	return total, nil
 }

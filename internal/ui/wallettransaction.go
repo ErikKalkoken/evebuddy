@@ -29,7 +29,7 @@ type walletTransactionArea struct {
 	content *fyne.Container
 	entries binding.UntypedList // []walletTransaction
 	table   *widget.Table
-	total   *widget.Label
+	top     *widget.Label
 	ui      *ui
 }
 
@@ -37,9 +37,9 @@ func (u *ui) newWalletTransactionArea() *walletTransactionArea {
 	a := walletTransactionArea{
 		ui:      u,
 		entries: binding.NewUntypedList(),
-		total:   widget.NewLabel(""),
+		top:     widget.NewLabel(""),
 	}
-	a.total.TextStyle.Bold = true
+	a.top.TextStyle.Bold = true
 	var headers = []struct {
 		text  string
 		width float32
@@ -115,34 +115,43 @@ func (u *ui) newWalletTransactionArea() *walletTransactionArea {
 		t.SetColumnWidth(i, h.width)
 	}
 
-	top := container.NewVBox(a.total, widget.NewSeparator())
+	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.content = container.NewBorder(top, nil, nil, nil, t)
 	a.table = t
 	return &a
 }
 
 func (a *walletTransactionArea) refresh() {
-	a.updateEntries()
-	s, i := a.makeTopText()
-	a.total.Text = s
-	a.total.Importance = i
-	a.total.Refresh()
+	t, i, err := func() (string, widget.Importance, error) {
+		if err := a.updateEntries(); err != nil {
+			return "", 0, err
+		}
+		return a.makeTopText()
+	}()
+	if err != nil {
+		slog.Error("Failed to refresh wallet transaction UI", "err", err)
+		t = "ERROR"
+		i = widget.DangerImportance
+	}
+	a.top.Text = t
+	a.top.Importance = i
+	a.top.Refresh()
 	a.table.Refresh()
 }
 
-func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
-	c := a.ui.currentChar()
-	if c == nil {
-		return "No data yet...", widget.LowImportance
+func (a *walletTransactionArea) makeTopText() (string, widget.Importance, error) {
+	if !a.ui.hasCharacter() {
+		return "No character", widget.LowImportance, nil
 	}
-	hasData, err := a.ui.service.CharacterSectionWasUpdated(c.ID, model.CharacterSectionWalletTransactions)
+	characterID := a.ui.currentCharID()
+	hasData, err := a.ui.service.CharacterSectionWasUpdated(characterID, model.CharacterSectionWalletTransactions)
 	if err != nil {
-		return "ERROR", widget.DangerImportance
+		return "", 0, err
 	}
 	if !hasData {
-		return "No data yet...", widget.LowImportance
+		return "No data yet...", widget.LowImportance, nil
 	}
-	return "", widget.MediumImportance
+	return "", widget.MediumImportance, nil
 }
 
 func (a *walletTransactionArea) updateEntries() error {

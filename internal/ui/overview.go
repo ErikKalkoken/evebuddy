@@ -42,17 +42,17 @@ type overviewArea struct {
 	content    *fyne.Container
 	characters binding.UntypedList // []overviewCharacter
 	table      *widget.Table
-	totalLabel *widget.Label
+	top        *widget.Label
 	ui         *ui
 }
 
 func (u *ui) newOverviewArea() *overviewArea {
 	a := overviewArea{
 		characters: binding.NewUntypedList(),
-		totalLabel: widget.NewLabel(""),
+		top:        widget.NewLabel(""),
 		ui:         u,
 	}
-	a.totalLabel.TextStyle.Bold = true
+	a.top.TextStyle.Bold = true
 	var headers = []struct {
 		text  string
 		width float32
@@ -183,29 +183,40 @@ func (u *ui) newOverviewArea() *overviewArea {
 		t.SetColumnWidth(i, h.width)
 	}
 
-	top := container.NewVBox(a.totalLabel, widget.NewSeparator())
+	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.content = container.NewBorder(top, nil, nil, nil, t)
 	a.table = t
 	return &a
 }
 
 func (a *overviewArea) refresh() {
-	sp, unread, wallet, err := a.updateEntries()
+	t, i, err := func() (string, widget.Importance, error) {
+		sp, unread, wallet, err := a.updateEntries()
+		if err != nil {
+			return "", 0, err
+		}
+		if a.characters.Length() == 0 {
+			return "No characters", widget.LowImportance, nil
+		}
+		walletText := humanizedNullFloat64(wallet, 1, "?")
+		spText := humanizedNullInt64(sp, "?")
+		unreadText := humanizedNullInt64(unread, "?")
+		s := fmt.Sprintf(
+			"Total: %d characters • %s ISK • %s SP  • %s unread",
+			a.characters.Length(),
+			walletText,
+			spText,
+			unreadText,
+		)
+		return s, widget.MediumImportance, nil
+	}()
 	if err != nil {
-		slog.Error("Failed to refresh overview", "err", err)
-		return
+		slog.Error("Failed to refresh overview UI", "err", err)
+		t = "ERROR"
+		i = widget.DangerImportance
 	}
-	walletText := humanizedNullFloat64(wallet, 1, "?")
-	spText := humanizedNullInt64(sp, "?")
-	unreadText := humanizedNullInt64(unread, "?")
-	s := fmt.Sprintf(
-		"Total: %d characters • %s ISK • %s SP  • %s unread",
-		a.characters.Length(),
-		walletText,
-		spText,
-		unreadText,
-	)
-	a.totalLabel.SetText(s)
+	a.top.Text = t
+	a.top.Importance = i
 	a.table.Refresh()
 }
 
