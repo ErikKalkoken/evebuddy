@@ -156,25 +156,35 @@ func (u *ui) newOverviewArea() *overviewArea {
 		co.(*widget.Label).SetText(s.text)
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
-		c, err := getItemUntypedList[overviewCharacter](a.characters, tci.Row)
+		err := func() error {
+			c, err := getItemUntypedList[overviewCharacter](a.characters, tci.Row)
+			if err != nil {
+				return err
+			}
+			m := map[int]struct {
+				parent, child int
+			}{
+				4: {1, 0},
+				5: {2, 1},
+				6: {2, 1},
+				7: {2, 0},
+				8: {3, 0},
+			}
+			idx, ok := m[tci.Col]
+			if ok {
+				if err := a.ui.loadCurrentCharacter(c.id); err != nil {
+					return err
+				}
+				a.ui.tabs.SelectIndex(idx.parent)
+				t := a.ui.tabs.Items[idx.parent].Content.(*container.AppTabs)
+				t.SelectIndex(idx.child)
+			}
+			return nil
+		}()
 		if err != nil {
-			panic(err)
-		}
-		m := map[int]struct {
-			parent, child int
-		}{
-			4: {1, 0},
-			5: {2, 1},
-			6: {2, 1},
-			7: {2, 0},
-			8: {3, 0},
-		}
-		idx, ok := m[tci.Col]
-		if ok {
-			a.ui.loadCurrentCharacter(c.id)
-			a.ui.tabs.SelectIndex(idx.parent)
-			t := a.ui.tabs.Items[idx.parent].Content.(*container.AppTabs)
-			t.SelectIndex(idx.child)
+			t := "Failed to select character"
+			slog.Error(t, "err", err)
+			a.ui.statusBarArea.SetError(t)
 		}
 		t.UnselectAll()
 	}
@@ -275,7 +285,7 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 		}
 	}
 	if err := a.characters.Set(copyToUntypedSlice(cc)); err != nil {
-		panic(err)
+		return spTotal, unreadTotal, walletTotal, err
 	}
 	for _, c := range cc {
 		if c.totalSP.Valid {

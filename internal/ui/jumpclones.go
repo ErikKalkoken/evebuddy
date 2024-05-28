@@ -23,21 +23,21 @@ type jumpCloneNode struct {
 	ImplantTypeDescription string
 }
 
-func newJumpCloneNodeFromJSON(s string) jumpCloneNode {
+func newJumpCloneNodeFromJSON(s string) (jumpCloneNode, error) {
 	var n jumpCloneNode
 	err := json.Unmarshal([]byte(s), &n)
 	if err != nil {
-		panic(err)
+		return n, err
 	}
-	return n
+	return n, nil
 }
 
-func (n jumpCloneNode) toJSON() string {
+func (n jumpCloneNode) toJSON() (string, error) {
 	s, err := json.Marshal(n)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return string(s)
+	return string(s), nil
 }
 
 func (n jumpCloneNode) isClone() bool {
@@ -76,16 +76,27 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 			return container.NewHBox(icon, first, second, third)
 		},
 		func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
-			v, err := di.(binding.String).Get()
-			if err != nil {
-				panic(err)
-			}
-			n := newJumpCloneNodeFromJSON(v)
 			hbox := co.(*fyne.Container)
 			icon := hbox.Objects[0].(*canvas.Image)
 			first := hbox.Objects[1].(*widget.Label)
 			second := hbox.Objects[2].(*widget.Label)
 			third := hbox.Objects[3].(*widget.Label)
+			n, err := func() (jumpCloneNode, error) {
+				v, err := di.(binding.String).Get()
+				if err != nil {
+					return jumpCloneNode{}, err
+				}
+				n, err := newJumpCloneNodeFromJSON(v)
+				if err != nil {
+					return jumpCloneNode{}, err
+				}
+				return n, nil
+			}()
+			if err != nil {
+				slog.Error("Failed to render jump clone item in UI", "err", err)
+				first.SetText("ERROR")
+				return
+			}
 			if n.isClone() {
 				icon.Resource = resourceClone64Png
 				icon.Refresh()
@@ -116,12 +127,22 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 		},
 	)
 	a.tree.OnSelected = func(uid widget.TreeNodeID) {
-		v, err := a.treeData.GetValue(uid)
+		n, err := func() (jumpCloneNode, error) {
+			v, err := a.treeData.GetValue(uid)
+			if err != nil {
+				return jumpCloneNode{}, fmt.Errorf("failed to get tree data item: %w", err)
+			}
+			n, err := newJumpCloneNodeFromJSON(v)
+			if err != nil {
+				return jumpCloneNode{}, err
+			}
+			return n, nil
+		}()
 		if err != nil {
-			slog.Error("Failed to get tree data item", "error", err)
-			return
+			t := "Failed to select jump clone"
+			slog.Error(t, "err", err)
+			a.ui.statusBarArea.SetError(t)
 		}
-		n := newJumpCloneNodeFromJSON(v)
 		if n.isBranch() {
 			a.tree.ToggleBranch(uid)
 		}
@@ -186,7 +207,10 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 		if c.Region != nil {
 			n.Region = c.Region.Name
 		}
-		values[id] = n.toJSON()
+		values[id], err = n.toJSON()
+		if err != nil {
+			return nil, nil, 0, err
+		}
 		ids[""] = append(ids[""], id)
 		for _, i := range c.Implants {
 			subID := fmt.Sprintf("%s-%d", id, i.EveType.ID)
@@ -195,7 +219,10 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 				ImplantTypeID:          i.EveType.ID,
 				ImplantTypeDescription: i.EveType.DescriptionPlain(),
 			}
-			values[subID] = n.toJSON()
+			values[subID], err = n.toJSON()
+			if err != nil {
+				return nil, nil, 0, err
+			}
 			ids[id] = append(ids[id], subID)
 		}
 	}

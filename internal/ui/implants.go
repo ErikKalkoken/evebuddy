@@ -109,7 +109,7 @@ func (a *implantsArea) updateData() error {
 		items[i] = o
 	}
 	if err := a.implants.Set(items); err != nil {
-		panic(err)
+		return err
 	}
 	return nil
 }

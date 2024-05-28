@@ -190,7 +190,7 @@ func (a *skillqueueArea) updateItems() (types.NullDuration, sql.NullFloat64, err
 		}
 	}
 	if err := a.items.Set(items); err != nil {
-		panic(err)
+		return remaining, completion, err
 	}
 	return remaining, completion, nil
 }

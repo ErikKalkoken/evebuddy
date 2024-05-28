@@ -2,7 +2,6 @@ package ui
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -19,7 +18,6 @@ import (
 
 	islices "github.com/ErikKalkoken/evebuddy/internal/helper/slices"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 type mailArea struct {
@@ -115,21 +113,21 @@ type folderNode struct {
 	UnreadCount int
 }
 
-func newFolderTreeNodeFromJSON(s string) folderNode {
+func newFolderTreeNodeFromJSON(s string) (folderNode, error) {
 	var f folderNode
 	err := json.Unmarshal([]byte(s), &f)
 	if err != nil {
-		panic(err)
+		return f, err
 	}
-	return f
+	return f, nil
 }
 
-func (f folderNode) toJSON() string {
+func (f folderNode) toJSON() (string, error) {
 	s, err := json.Marshal(f)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return string(s)
+	return string(s), nil
 }
 
 func (f folderNode) isBranch() bool {
@@ -160,12 +158,23 @@ func (a *folderArea) makeFolderTree() *widget.Tree {
 				widget.NewIcon(&fyne.StaticResource{}), widget.NewLabel("Branch template"))
 		},
 		func(di binding.DataItem, isBranch bool, co fyne.CanvasObject) {
-			v, err := di.(binding.String).Get()
+			label := co.(*fyne.Container).Objects[1].(*widget.Label)
+			item, err := func() (folderNode, error) {
+				v, err := di.(binding.String).Get()
+				if err != nil {
+					return folderNode{}, err
+				}
+				item, err := newFolderTreeNodeFromJSON(v)
+				if err != nil {
+					return folderNode{}, err
+				}
+				return item, nil
+			}()
 			if err != nil {
-				slog.Error("Failed to fetch data item for tree")
+				slog.Error("Failed to fetch data item for tree", "err", err)
+				label.SetText("ERROR")
 				return
 			}
-			item := newFolderTreeNodeFromJSON(v)
 			icon := co.(*fyne.Container).Objects[0].(*widget.Icon)
 			icon.SetResource(item.icon())
 			var text string
@@ -174,25 +183,35 @@ func (a *folderArea) makeFolderTree() *widget.Tree {
 			} else {
 				text = fmt.Sprintf("%s (%d)", item.Name, item.UnreadCount)
 			}
-			label := co.(*fyne.Container).Objects[1].(*widget.Label)
 			label.SetText(text)
 		},
 	)
 	tree.OnSelected = func(uid string) {
-		v, err := a.treeData.GetValue(uid)
+		node, err := func() (folderNode, error) {
+			v, err := a.treeData.GetValue(uid)
+			if err != nil {
+				return folderNode{}, err
+			}
+			n, err := newFolderTreeNodeFromJSON(v)
+			if err != nil {
+				return folderNode{}, err
+			}
+			return n, nil
+		}()
 		if err != nil {
-			slog.Error("Failed to get tree data item", "error", err)
+			t := "Failed to select folder"
+			slog.Error(t, "err", err)
+			a.mailArea.ui.statusBarArea.SetError(t)
 			return
 		}
-		item := newFolderTreeNodeFromJSON(v)
-		if item.isBranch() {
+		if node.isBranch() {
 			if a.lastUID != "" {
 				tree.Select(a.lastUID)
 			}
 			return
 		}
 		a.lastUID = uid
-		a.mailArea.header.setFolder(item)
+		a.mailArea.header.setFolder(node)
 	}
 	return tree
 }
@@ -253,7 +272,10 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 	ids := map[string][]string{
 		"": {folderNodeAllID, folderNodeInboxID, folderNodeSentID, folderNodeCorpID, folderNodeAllianceID},
 	}
-	folders := makeDefaultFolders(characterID, labelUnreadCounts)
+	folders, err := makeDefaultFolders(characterID, labelUnreadCounts)
+	if err != nil {
+		return nil, nil, folderNode{}, err
+	}
 	folderAll := folderNode{
 		Category:    nodeCategoryLabel,
 		CharacterID: characterID,
@@ -262,7 +284,10 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		ObjID:       model.MailLabelAll,
 		UnreadCount: totalUnreadCount,
 	}
-	folders[folderNodeAllID] = folderAll.toJSON()
+	folders[folderNodeAllID], err = folderAll.toJSON()
+	if err != nil {
+		return nil, nil, folderNode{}, err
+	}
 	labels, err := a.mailArea.ui.service.ListCharacterMailLabelsOrdered(characterID)
 	if err != nil {
 		return nil, nil, folderNode{}, err
@@ -270,12 +295,17 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 	if len(labels) > 0 {
 		ids[""] = append(ids[""], folderNodeLabelsID)
 		ids[folderNodeLabelsID] = []string{}
-		folders[folderNodeLabelsID] = folderNode{
+		n := folderNode{
 			CharacterID: characterID,
 			ID:          folderNodeLabelsID,
 			Name:        "Labels",
 			UnreadCount: totalLabelsUnreadCount,
-		}.toJSON()
+		}
+		x, err := n.toJSON()
+		if err != nil {
+			return nil, nil, folderNode{}, err
+		}
+		folders[folderNodeLabelsID] = x
 		for _, l := range labels {
 			uid := fmt.Sprintf("label%d", l.LabelID)
 			ids[folderNodeLabelsID] = append(ids[folderNodeLabelsID], uid)
@@ -284,7 +314,11 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 				u = 0
 			}
 			n := folderNode{ObjID: l.LabelID, Name: l.Name, Category: nodeCategoryLabel, UnreadCount: u}
-			folders[uid] = n.toJSON()
+			x, err := n.toJSON()
+			if err != nil {
+				return nil, nil, folderNode{}, err
+			}
+			folders[uid] = x
 		}
 	}
 	lists, err := a.mailArea.ui.service.ListCharacterMailLists(characterID)
@@ -294,12 +328,17 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 	if len(lists) > 0 {
 		ids[""] = append(ids[""], folderNodeListsID)
 		ids[folderNodeListsID] = []string{}
-		folders[folderNodeListsID] = folderNode{
+		n := folderNode{
 			CharacterID: characterID,
 			ID:          folderNodeListsID,
 			Name:        "Mailing Lists",
 			UnreadCount: totalListUnreadCount,
-		}.toJSON()
+		}
+		x, err := n.toJSON()
+		if err != nil {
+			return nil, nil, folderNode{}, err
+		}
+		folders[folderNodeListsID] = x
 		for _, l := range lists {
 			uid := fmt.Sprintf("list%d", l.ID)
 			ids[folderNodeListsID] = append(ids[folderNodeListsID], uid)
@@ -308,13 +347,17 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 				u = 0
 			}
 			n := folderNode{ObjID: l.ID, Name: l.Name, Category: nodeCategoryList, UnreadCount: u}
-			folders[uid] = n.toJSON()
+			x, err := n.toJSON()
+			if err != nil {
+				return nil, nil, folderNode{}, err
+			}
+			folders[uid] = x
 		}
 	}
 	return ids, folders, folderAll, nil
 }
 
-func makeDefaultFolders(characterID int32, labelUnreadCounts map[int32]int) map[string]string {
+func makeDefaultFolders(characterID int32, labelUnreadCounts map[int32]int) (map[string]string, error) {
 	folders := make(map[string]string)
 	defaultFolders := []struct {
 		nodeID  string
@@ -331,16 +374,21 @@ func makeDefaultFolders(characterID int32, labelUnreadCounts map[int32]int) map[
 		if !ok {
 			u = 0
 		}
-		folders[o.nodeID] = folderNode{
+		n := folderNode{
 			CharacterID: characterID,
 			Category:    nodeCategoryLabel,
 			ID:          o.nodeID,
 			Name:        o.name,
 			ObjID:       o.labelID,
 			UnreadCount: u,
-		}.toJSON()
+		}
+		x, err := n.toJSON()
+		if err != nil {
+			return nil, err
+		}
+		folders[o.nodeID] = x
 	}
-	return folders
+	return folders, nil
 }
 
 func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
@@ -398,24 +446,33 @@ func (a *headerArea) makeHeaderTree() *widget.List {
 			)))
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
+			parent := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects[0].(*fyne.Container)
+			subject := parent.Objects[1].(*canvas.Text)
+
 			if !a.mailArea.ui.hasCharacter() {
 				return
 			}
-			mailID, err := di.(binding.Int).Get()
-			if err != nil {
-				panic(err)
-			}
-			m, err := a.mailArea.ui.service.GetCharacterMail(a.mailArea.ui.currentCharID(), int32(mailID))
-			if err != nil {
-				if !errors.Is(err, storage.ErrNotFound) {
-					slog.Error("Failed to get mail", "error", err)
+			m, err := func() (*model.CharacterMail, error) {
+				mailID, err := di.(binding.Int).Get()
+				if err != nil {
+					return nil, err
 				}
+				m, err := a.mailArea.ui.service.GetCharacterMail(a.mailArea.ui.currentCharID(), int32(mailID))
+				if err != nil {
+					return nil, err
+				}
+				return m, nil
+			}()
+			if err != nil {
+				slog.Error("Failed to get mail", "error", err)
+				subject.Text = "ERROR"
+				subject.Color = theme.ErrorColor()
+				subject.Refresh()
 				return
 			}
-			parent := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects[0].(*fyne.Container)
-			top := parent.Objects[0].(*fyne.Container)
-			fg := theme.ForegroundColor()
 
+			fg := theme.ForegroundColor()
+			top := parent.Objects[0].(*fyne.Container)
 			from := top.Objects[0].(*canvas.Text)
 			var t string
 			if a.currentFolder.isSent() {
@@ -434,22 +491,30 @@ func (a *headerArea) makeHeaderTree() *widget.List {
 			timestamp.Color = fg
 			timestamp.Refresh()
 
-			subject := parent.Objects[1].(*canvas.Text)
 			subject.Text = m.Subject
 			subject.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
 			subject.Color = fg
 			subject.Refresh()
 		})
 	list.OnSelected = func(id widget.ListItemID) {
-		di, err := a.mailIDs.GetItem(id)
+		mailID, err := func() (int32, error) {
+			di, err := a.mailIDs.GetItem(id)
+			if err != nil {
+				return 0, err
+			}
+			mailID, err := di.(binding.Int).Get()
+			if err != nil {
+				return 0, err
+			}
+			return int32(mailID), nil
+		}()
 		if err != nil {
-			panic((err))
+			t := "Failed to select mail header"
+			slog.Error(t, "err", err)
+			a.mailArea.ui.statusBarArea.SetError(t)
+			return
 		}
-		mailID, err := di.(binding.Int).Get()
-		if err != nil {
-			panic(err)
-		}
-		a.mailArea.detail.setMail(int32(mailID))
+		a.mailArea.detail.setMail(mailID)
 		a.lastSelected = id
 	}
 	return list

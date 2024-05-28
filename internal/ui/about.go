@@ -14,10 +14,7 @@ func (u *ui) showAboutDialog() {
 	appData := widget.NewRichTextFromMarkdown(
 		"## " + appName(u.app) + "\n**Version:** " + info.Version)
 	c.Add(appData)
-	uri, err := url.Parse("https://github.com/ErikKalkoken/evebuddy")
-	if err != nil {
-		panic(err)
-	}
+	uri, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
 	c.Add(widget.NewHyperlink("Website", uri))
 	c.Add(widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."))
 	c.Add(widget.NewLabel("(c) 2024 Erik Kalkoken"))

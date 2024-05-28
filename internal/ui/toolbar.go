@@ -62,7 +62,8 @@ func (a *toolbarArea) refresh() {
 	} else {
 		r, err := a.ui.imageManager.CharacterPortrait(c.ID, defaultIconSize)
 		if err != nil {
-			panic(err)
+			slog.Error("Failed to fetch character portrait", "characterID", c.ID, "err", err)
+			r = resourceCharacterplaceholder32Jpeg
 		}
 		a.icon.Resource = r
 		a.icon.Refresh()
@@ -119,7 +120,8 @@ func (a *toolbarArea) makeMenuItems(c *model.Character) ([]*fyne.MenuItem, error
 		go func() {
 			r, err := a.ui.imageManager.CharacterPortrait(myC.ID, defaultIconSize)
 			if err != nil {
-				panic(err)
+				slog.Error("Failed to fetch character portrait", "characterID", myC.ID, "err", err)
+				r = resourceCharacterplaceholder32Jpeg
 			}
 			item.Icon = r
 			a.switchButton.Refresh()

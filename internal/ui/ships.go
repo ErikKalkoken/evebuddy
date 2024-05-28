@@ -39,7 +39,9 @@ func (u *ui) newShipArea() *shipsArea {
 			return
 		}
 		if err := a.updateEntries(); err != nil {
-			panic(err)
+			t := "Failed to update ship search"
+			slog.Error(t, "err", err)
+			a.ui.statusBarArea.SetError(t)
 		}
 		a.table.Refresh()
 		a.table.ScrollToTop()
@@ -69,7 +71,11 @@ func (u *ui) newShipArea() *shipsArea {
 			label.Importance = widget.MediumImportance
 			o, err := getItemUntypedList[*model.CharacterShipAbility](a.entries, tci.Row)
 			if err != nil {
-				panic(err)
+				slog.Error("Failed to render ship item in UI", "err", err)
+				label.Importance = widget.DangerImportance
+				label.Text = "ERROR"
+				label.Refresh()
+				return
 			}
 			switch tci.Col {
 			case 0:
