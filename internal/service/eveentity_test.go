@@ -166,7 +166,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 			assert.Equal(t, int32(47), ids[0])
 			e, err := r.GetEveEntity(ctx, 47)
 			if err != nil {
-				panic(err)
+				t.Fatal(err)
 			}
 			assert.Equal(t, e.Name, "Erik")
 			assert.Equal(t, e.Category, model.EveEntityCharacter)
@@ -244,7 +244,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 			assert.Len(t, missing, count)
 			ids2, err := r.ListEveEntityIDs(ctx)
 			if err != nil {
-				panic(err)
+				t.Fatal(err)
 			}
 			assert.Equal(t, ids, ids2)
 		}
@@ -263,7 +263,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 			assert.Equal(t, int32(666), ids[0])
 			e, err := r.GetEveEntity(ctx, 666)
 			if err != nil {
-				panic(err)
+				t.Fatal(err)
 			}
 			assert.Equal(t, e.Name, "?")
 			assert.Equal(t, e.Category, model.EveEntityUnknown)
@@ -297,13 +297,13 @@ func TestAddMissingEveEntities(t *testing.T) {
 		if assert.NoError(t, err) {
 			e1, err := r.GetEveEntity(ctx, 47)
 			if err != nil {
-				panic(err)
+				t.Fatal(err)
 			}
 			assert.Equal(t, e1.Name, "Erik")
 			assert.Equal(t, e1.Category, model.EveEntityCharacter)
 			e2, err := r.GetEveEntity(ctx, 666)
 			if err != nil {
-				panic(err)
+				t.Fatal(err)
 			}
 			assert.Equal(t, e2.Category, model.EveEntityUnknown)
 		}

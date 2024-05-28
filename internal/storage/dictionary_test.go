@@ -32,7 +32,7 @@ func TestDictionary(t *testing.T) {
 		testutil.TruncateTables(db)
 		err := r.SetDictEntry(ctx, "key", []byte("value1"))
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 		// when
 		err = r.SetDictEntry(ctx, "key", []byte("value2"))
@@ -49,7 +49,7 @@ func TestDictionary(t *testing.T) {
 		testutil.TruncateTables(db)
 		err := r.SetDictEntry(ctx, "key", []byte("value1"))
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 		// when
 		err = r.DeleteDictEntry(ctx, "key")

@@ -62,7 +62,7 @@ func TestDictionary(t *testing.T) {
 		testutil.TruncateTables(db)
 		err := s.DictionarySetString("alpha", "john")
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 		// when
 		err = s.DictionarySetString("alpha", "peter")
@@ -109,7 +109,7 @@ func TestDictionary(t *testing.T) {
 		testutil.TruncateTables(db)
 		err := s.DictionarySetString("alpha", "abc")
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 		// when
 		err = s.DictionaryDelete("alpha")
@@ -148,7 +148,7 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		if err := s.DictionarySetString("alpha", "abc"); err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 		// when
 		v, err := s.DictionaryExists("alpha")

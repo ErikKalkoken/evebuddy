@@ -48,13 +48,19 @@ func TestMailList(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
 		e1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
-		mustNotFail(r.CreateCharacterMailList(ctx, c1.ID, e1.ID))
+		if err := r.CreateCharacterMailList(ctx, c1.ID, e1.ID); err != nil {
+			t.Fatal(err)
+		}
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c1.ID, RecipientIDs: []int32{e1.ID}})
 		e2 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
-		mustNotFail(r.CreateCharacterMailList(ctx, c1.ID, e2.ID))
+		if err := r.CreateCharacterMailList(ctx, c1.ID, e2.ID); err != nil {
+			t.Fatal(err)
+		}
 		c2 := factory.CreateCharacter()
 		e3 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
-		mustNotFail(r.CreateCharacterMailList(ctx, c2.ID, e3.ID))
+		if err := r.CreateCharacterMailList(ctx, c2.ID, e3.ID); err != nil {
+			t.Fatal(err)
+		}
 		// when
 		err := r.DeleteObsoleteCharacterMailLists(ctx, c1.ID)
 		// then
@@ -79,10 +85,4 @@ func TestMailList(t *testing.T) {
 			}
 		}
 	})
-}
-
-func mustNotFail(err error) {
-	if err != nil {
-		panic(err)
-	}
 }

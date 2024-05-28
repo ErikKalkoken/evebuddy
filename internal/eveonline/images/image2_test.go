@@ -15,7 +15,7 @@ func TestLoadResourceFromURL(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 	dat, err := os.ReadFile("character_93330670_64.jpeg")
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	url := "https://images.evetech.net/characters/93330670/portrait?size=64"
 	t.Run("can fetch an image from the image server", func(t *testing.T) {

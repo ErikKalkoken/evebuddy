@@ -15,7 +15,7 @@ func TestImageFetching(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 	dat, err := os.ReadFile("character_93330670_64.jpeg")
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	t.Run("can fetch an alliance logo from the image server", func(t *testing.T) {
 		// given

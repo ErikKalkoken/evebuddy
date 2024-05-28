@@ -68,7 +68,7 @@ func main() {
 			}
 			for _, p := range pp {
 				if err := os.RemoveAll(p.path); err != nil {
-					panic(err)
+					log.Fatal(err)
 				}
 				fmt.Printf("Deleted %s: %s\n", p.name, p.path)
 			}
@@ -77,7 +77,10 @@ func main() {
 		}
 		return
 	}
-	fn := makeLogFileName(ad, *localFlag)
+	fn, err := makeLogFileName(ad, *localFlag)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if *logFileFlag {
 		f, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
@@ -86,7 +89,10 @@ func main() {
 		defer f.Close()
 		log.SetOutput(f)
 	}
-	dsn := makeDSN(ad, *localFlag)
+	dsn, err := makeDSN(ad, *localFlag)
+	if err != nil {
+		log.Fatal(err)
+	}
 	db, err := storage.InitDB(dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect to database %s: %s", dsn, err)
@@ -94,37 +100,40 @@ func main() {
 	defer db.Close()
 	repository := storage.New(db)
 	s := service.NewService(repository)
-	cache := makeImageCachePath(ad, *localFlag)
+	cache, err := makeImageCachePath(ad, *localFlag)
+	if err != nil {
+		log.Fatal(err)
+	}
 	e := ui.NewUI(s, cache)
 	e.ShowAndRun()
 }
 
-func makeLogFileName(ad *appdirs.App, isDebug bool) string {
+func makeLogFileName(ad *appdirs.App, isDebug bool) (string, error) {
 	fn := "evebuddy.log"
 	if isDebug {
-		return fn
+		return fn, nil
 	}
 	if err := os.MkdirAll(ad.UserLog(), os.ModePerm); err != nil {
-		panic(err)
+		return "", err
 	}
 	path := fmt.Sprintf("%s/%s", ad.UserLog(), fn)
-	return path
+	return path, nil
 }
 
-func makeDSN(ad *appdirs.App, isDebug bool) string {
+func makeDSN(ad *appdirs.App, isDebug bool) (string, error) {
 	fn := "evebuddy.sqlite"
 	if isDebug {
-		return fmt.Sprintf("file:%s", fn)
+		return fmt.Sprintf("file:%s", fn), nil
 	}
 	path := ad.UserData()
 	if err := os.MkdirAll(path, os.ModePerm); err != nil {
-		panic(err)
+		return "", err
 	}
 	dsn := fmt.Sprintf("file:%s/%s", path, fn)
-	return dsn
+	return dsn, nil
 }
 
-func makeImageCachePath(ad *appdirs.App, isDebug bool) string {
+func makeImageCachePath(ad *appdirs.App, isDebug bool) (string, error) {
 	var p string
 	if isDebug {
 		p = filepath.Join(".temp", "images")
@@ -132,7 +141,7 @@ func makeImageCachePath(ad *appdirs.App, isDebug bool) string {
 		p = filepath.Join(ad.UserCache(), "images")
 	}
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
-		panic(err)
+		return "", err
 	}
-	return p
+	return p, nil
 }

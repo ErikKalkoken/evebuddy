@@ -134,23 +134,30 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 		fmt.Sprintf("Are you sure you want to delete %s?", c.name),
 		func(confirmed bool) {
 			if confirmed {
-				err := a.ui.service.DeleteCharacter(c.id)
+				err := func() error {
+					err := a.ui.service.DeleteCharacter(c.id)
+					if err != nil {
+						return err
+					}
+					if err := a.Refresh(); err != nil {
+						return err
+					}
+					isCurrentChar := c.id == a.ui.currentCharID()
+					if isCurrentChar {
+						err := a.ui.setAnyCharacter()
+						if err != nil {
+							return err
+						}
+					}
+					a.ui.refreshOverview()
+					a.ui.toolbarArea.refresh()
+					return nil
+				}()
 				if err != nil {
+					slog.Error("Failed to delete a character", "character", c, "err", err)
 					d2 := dialog.NewError(err, a.ui.window)
 					d2.Show()
 				}
-				if err := a.Refresh(); err != nil {
-					panic(err)
-				}
-				isCurrentChar := c.id == a.ui.currentCharID()
-				if isCurrentChar {
-					err := a.ui.setAnyCharacter()
-					if err != nil {
-						panic(err)
-					}
-				}
-				a.ui.refreshOverview()
-				a.ui.toolbarArea.refresh()
 			}
 		},
 		a.ui.window,
@@ -191,33 +198,33 @@ func (a *accountArea) showAddCharacterDialog() {
 	)
 	d1.SetOnClosed(cancel)
 	go func() {
-		characterID, err := a.ui.service.UpdateOrCreateCharacterFromSSO(ctx, infoText)
-		if err != nil {
-			if !errors.Is(err, service.ErrAborted) {
-				slog.Error("Failed to add a new character", "error", err)
-				d2 := dialog.NewInformation(
-					"Error",
-					fmt.Sprintf("An error occurred when trying to add a new character:\n%s", err),
-					a.ui.window,
-				)
-				d2.Show()
+		err := func() error {
+			characterID, err := a.ui.service.UpdateOrCreateCharacterFromSSO(ctx, infoText)
+			if errors.Is(err, service.ErrAborted) {
+				return nil
+			} else if err != nil {
+				return err
 			}
-		} else {
 			isFirst := a.characters.Length() == 0
 			if err := a.Refresh(); err != nil {
-				panic(err)
+				return err
 			}
 			a.ui.refreshOverview()
 			a.ui.toolbarArea.refresh()
 			if isFirst {
 				if err := a.ui.setAnyCharacter(); err != nil {
-					panic(err)
+					return err
 				}
 			} else {
 				a.ui.updateCharacterAndRefreshIfNeeded(characterID)
 			}
-		}
+			return nil
+		}()
 		d1.Hide()
+		if err != nil {
+			slog.Error("Failed to add a new character", "error", err)
+			a.ui.showErrorDialog("Failed add a new character")
+		}
 	}()
 	d1.Show()
 }

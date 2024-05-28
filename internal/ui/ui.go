@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
@@ -481,6 +482,11 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32) {
 			}
 		}(s)
 	}
+}
+
+func (u *ui) showErrorDialog(message string) {
+	d := dialog.NewInformation("Error", message, u.window)
+	d.Show()
 }
 
 func appName(a fyne.App) string {
