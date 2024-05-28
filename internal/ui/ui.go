@@ -23,12 +23,13 @@ import (
 
 // UI constants
 const (
-	myDateTime                = "2006.01.02 15:04"
-	defaultIconSize           = 32
-	myFloatFormat             = "#,###.##"
-	eveDataUpdateTicker       = 60 * time.Second
-	eveCharacterUpdateTimeout = 3600 * time.Second
-	eveCategoryUpdateTimeout  = 24 * time.Hour
+	myDateTime                  = "2006.01.02 15:04"
+	defaultIconSize             = 32
+	myFloatFormat               = "#,###.##"
+	eveDataUpdateTicker         = 60 * time.Second
+	eveCharacterUpdateTimeout   = 3600 * time.Second
+	eveCategoriesUpdateTimeout  = 24 * time.Hour
+	eveCategoriesKeyLastUpdated = "eve-categories-last-updated"
 )
 
 // The ui is the root object of the UI and contains all UI areas.
@@ -258,6 +259,10 @@ func (u *ui) CurrentChar() *model.Character {
 	return u.currentCharacter
 }
 
+func (u *ui) HasCharacter() bool {
+	return u.currentCharacter != nil
+}
+
 func (u *ui) LoadCurrentCharacter(characterID int32) error {
 	c, err := u.service.GetCharacter(characterID)
 	if err != nil {
@@ -306,7 +311,7 @@ func (u *ui) refreshCurrentCharacter() {
 		u.tabs.DisableIndex(0)
 		u.tabs.DisableIndex(1)
 		u.tabs.DisableIndex(2)
-		u.tabs.SelectIndex(3)
+		u.tabs.SelectIndex(4)
 	}
 	go u.statusBarArea.characterUpdateStatusArea.Refresh()
 	u.window.Content().Refresh()
@@ -370,15 +375,14 @@ func (u *ui) StartUpdateTickerEveCharacters() {
 
 func (u *ui) StartUpdateTickerEveCategorySkill() {
 	ticker := time.NewTicker(eveDataUpdateTicker)
-	keyLastUpdated := "eve-category-skill-last-updated"
 	go func() {
 		for {
 			err := func() error {
-				lastUpdated, ok, err := u.service.DictionaryTime(keyLastUpdated)
+				lastUpdated, ok, err := u.service.DictionaryTime(eveCategoriesKeyLastUpdated)
 				if err != nil {
 					return err
 				}
-				if ok && time.Now().Before(lastUpdated.Add(eveCategoryUpdateTimeout)) {
+				if ok && time.Now().Before(lastUpdated.Add(eveCategoriesUpdateTimeout)) {
 					return nil
 				}
 				slog.Info("Started updating categories")
@@ -392,9 +396,11 @@ func (u *ui) StartUpdateTickerEveCategorySkill() {
 					return err
 				}
 				slog.Info("Finished updating categories")
-				if err := u.service.DictionarySetTime(keyLastUpdated, time.Now()); err != nil {
+				if err := u.service.DictionarySetTime(eveCategoriesKeyLastUpdated, time.Now()); err != nil {
 					return err
 				}
+				u.shipsArea.Refresh()
+				u.skillCatalogueArea.Redraw()
 				return nil
 			}()
 			if err != nil {

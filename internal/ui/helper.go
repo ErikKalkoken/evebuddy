@@ -74,20 +74,32 @@ func humanizedNullInt64(v sql.NullInt64, fallback string) string {
 	return humanizedNullFloat64(sql.NullFloat64{Float64: float64(v.Int64), Valid: v.Valid}, 0, fallback)
 }
 
-// getFromBoundUntypedList returns the value from an untyped list in the target type.
-func getFromBoundUntypedList[T any](l binding.UntypedList, index int) (T, error) {
-	var z T
+// getItemUntypedList returns the value from an untyped list in the target type.
+func getItemUntypedList[T any](l binding.UntypedList, index int) (T, error) {
+	var v T
 	xx, err := l.GetItem(index)
 	if err != nil {
-		return z, err
+		return v, err
 	}
 	x, err := xx.(binding.Untyped).Get()
 	if err != nil {
-		return z, err
+		return v, err
 	}
-	c := x.(T)
-	return c, nil
+	v = x.(T)
+	return v, nil
 }
+
+// func getUntypedList[T any](l binding.UntypedList) ([]T, error) {
+// 	xx, err := l.Get()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	v := make([]T, len(xx))
+// 	for i, x := range xx {
+// 		v[i] = x.(T)
+// 	}
+// 	return v, nil
+// }
 
 // convertDataItem returns the value of the data item in the target type.
 func convertDataItem[T any](i binding.DataItem) (T, error) {

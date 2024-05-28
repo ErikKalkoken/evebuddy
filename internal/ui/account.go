@@ -108,7 +108,7 @@ func (u *ui) NewAccountArea() *accountArea {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		c, err := getFromBoundUntypedList[accountCharacter](a.characters, id)
+		c, err := getItemUntypedList[accountCharacter](a.characters, id)
 		if err != nil {
 			slog.Error("failed to access account character in list", "err", err)
 			return

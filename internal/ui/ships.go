@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -12,12 +13,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
+// FIXME: Shows wrong ship skills matching for young character
+
 // shipsArea is the UI area that shows the skillqueue
 type shipsArea struct {
 	content   *fyne.Container
 	entries   binding.UntypedList
 	searchBox *widget.Entry
 	table     *widget.Table
+	top       *widget.Label
 	ui        *ui
 }
 
@@ -26,7 +30,9 @@ func (u *ui) NewShipArea() *shipsArea {
 		ui:        u,
 		entries:   binding.NewUntypedList(),
 		searchBox: widget.NewEntry(),
+		top:       widget.NewLabel(""),
 	}
+	a.top.TextStyle.Bold = true
 	a.searchBox.SetPlaceHolder("Filter by ship name")
 	a.searchBox.OnChanged = func(s string) {
 		if len(s) == 1 {
@@ -35,6 +41,7 @@ func (u *ui) NewShipArea() *shipsArea {
 		if err := a.updateEntries(); err != nil {
 			panic(err)
 		}
+		a.table.Refresh()
 		a.table.ScrollToTop()
 	}
 	var headers = []struct {
@@ -60,7 +67,7 @@ func (u *ui) NewShipArea() *shipsArea {
 			icon := row.Objects[0].(*canvas.Image)
 			label := row.Objects[1].(*widget.Label)
 			label.Importance = widget.MediumImportance
-			o, err := getFromBoundUntypedList[*model.CharacterShipAbility](a.entries, tci.Row)
+			o, err := getItemUntypedList[*model.CharacterShipAbility](a.entries, tci.Row)
 			if err != nil {
 				panic(err)
 			}
@@ -102,11 +109,8 @@ func (u *ui) NewShipArea() *shipsArea {
 	}
 	a.table = t
 
-	top := container.NewVBox(a.searchBox)
-	a.content = container.NewBorder(top, nil, nil, nil, a.table)
-	a.entries.AddListener(binding.NewDataListener(func() {
-		a.table.Refresh()
-	}))
+	topBox := container.NewVBox(a.top, widget.NewSeparator(), a.searchBox)
+	a.content = container.NewBorder(topBox, nil, nil, nil, a.table)
 	return &a
 }
 
@@ -114,14 +118,18 @@ func (a *shipsArea) Refresh() {
 	if err := a.updateEntries(); err != nil {
 		panic(err)
 	}
+	a.refreshTop()
+	a.table.Refresh()
 }
 
 func (a *shipsArea) updateEntries() error {
-	characterID := a.ui.CurrentCharID()
-	if characterID == 0 {
+	if !a.ui.HasCharacter() {
 		oo := make([]*model.CharacterShipAbility, 0)
 		a.entries.Set(copyToUntypedSlice(oo))
+		a.searchBox.SetText("")
+		return nil
 	}
+	characterID := a.ui.CurrentCharID()
 	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
 	oo, err := a.ui.service.ListCharacterShipsAbilities(characterID, search)
 	if err != nil {
@@ -129,4 +137,52 @@ func (a *shipsArea) updateEntries() error {
 	}
 	a.entries.Set(copyToUntypedSlice(oo))
 	return nil
+}
+
+func (a *shipsArea) refreshTop() {
+	fmt.Println("Updating top...")
+	text, importance, enabled, err := a.calcTop()
+	if err != nil {
+		slog.Error("failed to refresh top element for ships", "err", err)
+		text = "Error: Failed to update element"
+	}
+	a.top.Text = text
+	a.top.Importance = importance
+	if enabled {
+		a.searchBox.Enable()
+	} else {
+		a.searchBox.Disable()
+	}
+	a.top.Refresh()
+}
+
+func (a *shipsArea) calcTop() (string, widget.Importance, bool, error) {
+	_, ok, err := a.ui.service.DictionaryTime(eveCategoriesKeyLastUpdated)
+	if !ok {
+		return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
+	}
+	if !a.ui.HasCharacter() {
+		return "No character", widget.LowImportance, false, err
+	}
+	characterID := a.ui.CurrentCharID()
+	ok, err = a.ui.service.CharacterSectionWasUpdated(characterID, model.CharacterSectionSkills)
+	if err != nil {
+		return "", widget.DangerImportance, false, err
+	}
+	if !ok {
+		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
+	}
+	oo, err := a.ui.service.ListCharacterShipsAbilities(characterID, "%%")
+	if err != nil {
+		return "", widget.DangerImportance, false, err
+	}
+	c := 0
+	for _, o := range oo {
+		if o.CanFly {
+			c++
+		}
+	}
+	p := float32(c) / float32(len(oo)) * 100
+	text := fmt.Sprintf("Can fly %d / %d ships (%.0f%%)", c, len(oo), p)
+	return text, widget.MediumImportance, true, nil
 }

@@ -64,7 +64,7 @@ func (u *ui) NewImplantsArea() *implantsArea {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		implant, err := getFromBoundUntypedList[*model.CharacterImplant](a.implants, id)
+		implant, err := getItemUntypedList[*model.CharacterImplant](a.implants, id)
 		if err != nil {
 			slog.Error("failed to access implant item in list", "err", err)
 			return
@@ -97,14 +97,13 @@ func (a *implantsArea) updateData() error {
 	if err := a.errorText.Set(""); err != nil {
 		return err
 	}
-	characterID := a.ui.CurrentCharID()
-	if characterID == 0 {
+	if !a.ui.HasCharacter() {
 		err := a.implants.Set(make([]any, 0))
 		if err != nil {
 			return err
 		}
 	}
-	implants, err := a.ui.service.ListCharacterImplants(characterID)
+	implants, err := a.ui.service.ListCharacterImplants(a.ui.CurrentCharID())
 	if err != nil {
 		return err
 	}

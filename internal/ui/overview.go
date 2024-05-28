@@ -89,7 +89,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			l := co.(*widget.Label)
-			c, err := getFromBoundUntypedList[overviewCharacter](a.characters, tci.Row)
+			c, err := getItemUntypedList[overviewCharacter](a.characters, tci.Row)
 			if err != nil {
 				slog.Error("failed to render cell in overview table", "err", err)
 				l.Text = "failed to render"
@@ -159,7 +159,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		co.(*widget.Label).SetText(s.text)
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
-		c, err := getFromBoundUntypedList[overviewCharacter](a.characters, tci.Row)
+		c, err := getItemUntypedList[overviewCharacter](a.characters, tci.Row)
 		if err != nil {
 			panic(err)
 		}

@@ -83,7 +83,7 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 			return row
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
-			group, err := getFromBoundUntypedList[skillGroupProgress](a.groups, id)
+			group, err := getItemUntypedList[skillGroupProgress](a.groups, id)
 			if err != nil {
 				panic(err)
 			}
@@ -98,7 +98,7 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 		},
 	)
 	a.groupsGrid.OnSelected = func(id widget.ListItemID) {
-		group, err := getFromBoundUntypedList[skillGroupProgress](a.groups, id)
+		group, err := getItemUntypedList[skillGroupProgress](a.groups, id)
 		if err != nil {
 			panic(err)
 		}
@@ -158,7 +158,7 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 			return x
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
-			skill, err := getFromBoundUntypedList[skillTrained](a.skills, id)
+			skill, err := getItemUntypedList[skillTrained](a.skills, id)
 			if err != nil {
 				panic(err)
 			}
@@ -178,7 +178,7 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 		},
 	)
 	a.skillsGrid.OnSelected = func(id widget.GridWrapItemID) {
-		o, err := getFromBoundUntypedList[skillTrained](a.skills, id)
+		o, err := getItemUntypedList[skillTrained](a.skills, id)
 		if err != nil {
 			slog.Error("failed to access skill item", "err", err)
 			return

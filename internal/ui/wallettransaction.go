@@ -67,7 +67,7 @@ func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
 			l := co.(*widget.Label)
 			l.Importance = widget.MediumImportance
 			l.Alignment = fyne.TextAlignLeading
-			w, err := getFromBoundUntypedList[walletTransaction](a.entries, tci.Row)
+			w, err := getItemUntypedList[walletTransaction](a.entries, tci.Row)
 			if err != nil {
 				slog.Error("failed to render cell in wallet transaction table", "err", err)
 				l.Text = "failed to render"
@@ -150,14 +150,14 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 }
 
 func (a *walletTransactionArea) updateEntries() error {
-	characterID := a.ui.CurrentCharID()
-	if characterID == 0 {
+	if !a.ui.HasCharacter() {
 		x := make([]any, 0)
 		err := a.entries.Set(x)
 		if err != nil {
 			return err
 		}
 	}
+	characterID := a.ui.CurrentCharID()
 	ww, err := a.ui.service.ListCharacterWalletTransactions(characterID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch wallet journal for character %d: %w", characterID, err)

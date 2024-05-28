@@ -424,15 +424,14 @@ func (a *headerArea) makeHeaderTree() *widget.List {
 			)))
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
-			characterID := a.mailArea.ui.CurrentCharID()
-			if characterID == 0 {
+			if !a.mailArea.ui.HasCharacter() {
 				return
 			}
 			mailID, err := di.(binding.Int).Get()
 			if err != nil {
 				panic(err)
 			}
-			m, err := a.mailArea.ui.service.GetCharacterMail(characterID, int32(mailID))
+			m, err := a.mailArea.ui.service.GetCharacterMail(a.mailArea.ui.CurrentCharID(), int32(mailID))
 			if err != nil {
 				if !errors.Is(err, storage.ErrNotFound) {
 					slog.Error("Failed to get mail", "error", err)

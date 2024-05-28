@@ -248,8 +248,7 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 
 func (a *characterUpdateStatusArea) Refresh() {
 	x := updateStatusOutput{}
-	characterID := a.ui.CurrentCharID()
-	if characterID == 0 {
+	if !a.ui.HasCharacter() {
 		x.title = "No character"
 		x.status = characterStatusUnknown
 		x.errorMessage = ""

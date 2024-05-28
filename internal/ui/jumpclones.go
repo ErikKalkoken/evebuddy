@@ -161,11 +161,10 @@ func (a *jumpClonesArea) Redraw() {
 func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]string, int, error) {
 	values := make(map[string]string)
 	ids := make(map[string][]string)
-	characterID := a.ui.CurrentCharID()
-	if characterID == 0 {
+	if !a.ui.HasCharacter() {
 		return ids, values, 0, nil
 	}
-	clones, err := a.ui.service.ListCharacterJumpClones(characterID)
+	clones, err := a.ui.service.ListCharacterJumpClones(a.ui.CurrentCharID())
 	if err != nil {
 		return nil, nil, 0, err
 	}

@@ -99,14 +99,13 @@ func (a *attributesArea) Refresh() {
 }
 
 func (a *attributesArea) updateData() error {
-	characterID := a.ui.CurrentCharID()
-	if characterID == 0 {
+	if !a.ui.HasCharacter() {
 		err := a.attributes.Set(make([]any, 0))
 		if err != nil {
 			return err
 		}
 	}
-	x, err := a.ui.service.GetCharacterAttributes(characterID)
+	x, err := a.ui.service.GetCharacterAttributes(a.ui.CurrentCharID())
 	if errors.Is(err, storage.ErrNotFound) {
 		err := a.attributes.Set(make([]any, 0))
 		if err != nil {

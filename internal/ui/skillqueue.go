@@ -94,7 +94,7 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		q, err := getFromBoundUntypedList[*model.CharacterSkillqueueItem](a.items, id)
+		q, err := getItemUntypedList[*model.CharacterSkillqueueItem](a.items, id)
 		if err != nil {
 			slog.Error("failed to access skillqueue item in list", "err", err)
 			return
@@ -173,14 +173,13 @@ func (a *skillqueueArea) updateItems() (types.NullDuration, sql.NullFloat64, err
 	if err := a.errorText.Set(""); err != nil {
 		return remaining, completion, err
 	}
-	characterID := a.ui.CurrentCharID()
-	if characterID == 0 {
+	if !a.ui.HasCharacter() {
 		err := a.items.Set(make([]any, 0))
 		if err != nil {
 			return remaining, completion, err
 		}
 	}
-	skills, err := a.ui.service.ListCharacterSkillqueueItems(characterID)
+	skills, err := a.ui.service.ListCharacterSkillqueueItems(a.ui.CurrentCharID())
 	if err != nil {
 		return remaining, completion, err
 	}
