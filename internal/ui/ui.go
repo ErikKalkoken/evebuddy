@@ -23,13 +23,14 @@ import (
 
 // UI constants
 const (
-	myDateTime                  = "2006.01.02 15:04"
-	defaultIconSize             = 32
-	myFloatFormat               = "#,###.##"
-	eveDataUpdateTicker         = 60 * time.Second
-	eveCharacterUpdateTimeout   = 3600 * time.Second
-	eveCategoriesUpdateTimeout  = 24 * time.Hour
-	eveCategoriesKeyLastUpdated = "eve-categories-last-updated"
+	myDateTime                    = "2006.01.02 15:04"
+	defaultIconSize               = 32
+	myFloatFormat                 = "#,###.##"
+	characterSectionsUpdateTicker = 10 * time.Second
+	eveDataUpdateTicker           = 60 * time.Second
+	eveCharacterUpdateTimeout     = 3600 * time.Second
+	eveCategoriesUpdateTimeout    = 24 * time.Hour
+	eveCategoriesKeyLastUpdated   = "eve-categories-last-updated"
 )
 
 // The ui is the root object of the UI and contains all UI areas.
@@ -226,23 +227,11 @@ func (u *ui) ShowAndRun() {
 			u.window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
 			u.window.Resize(fyne.NewSize(s.Width, s.Height))
 		}
-		u.attributesArea.StartUpdateTicker()
-		u.jumpClonesArea.StartUpdateTicker()
-		u.implantsArea.StartUpdateTicker()
-		u.overviewArea.StartUpdateTicker()
-		u.mailArea.StartUpdateTicker()
-		u.skillCatalogueArea.StartUpdateTicker()
-		u.skillqueueArea.StartUpdateTicker()
 		u.statusBarArea.StartUpdateTicker()
-		u.walletJournalArea.StartUpdateTicker()
-		u.walletTransactionArea.StartUpdateTicker()
-		u.StartUpdateTickerEveCharacters()
+
 		u.StartUpdateTickerEveCategorySkill()
-		// go func() {
-		// 	if err := u.service.UpdateShipSkills(); err != nil {
-		// 		slog.Error("Updating ship skills failed", "err", err)
-		// 	}
-		// }()
+		u.StartUpdateTickerCharacterSections()
+		u.StartUpdateTickerEveCharacters()
 	}()
 	u.RefreshOverview()
 	u.window.ShowAndRun()
@@ -298,15 +287,7 @@ func (u *ui) refreshCurrentCharacter() {
 		u.tabs.EnableIndex(0)
 		u.tabs.EnableIndex(1)
 		u.tabs.EnableIndex(2)
-		go u.attributesArea.MaybeUpdateAndRefresh(c.ID)
-		go u.jumpClonesArea.MaybeUpdateAndRefresh(c.ID)
-		go u.implantsArea.MaybeUpdateAndRefresh(c.ID)
-		go u.mailArea.MaybeUpdateAndRefresh(c.ID)
-		go u.overviewArea.MaybeUpdateAndRefresh(c.ID)
-		go u.skillCatalogueArea.MaybeUpdateAndRefresh(c.ID)
-		go u.skillqueueArea.MaybeUpdateAndRefresh(c.ID)
-		go u.walletJournalArea.MaybeUpdateAndRefresh(c.ID)
-		go u.walletTransactionArea.MaybeUpdateAndRefresh(c.ID)
+		u.UpdateCharacterAndRefreshIfNeeded(c.ID)
 	} else {
 		u.tabs.DisableIndex(0)
 		u.tabs.DisableIndex(1)
@@ -410,6 +391,85 @@ func (u *ui) StartUpdateTickerEveCategorySkill() {
 			<-ticker.C
 		}
 	}()
+}
+
+func (u *ui) StartUpdateTickerCharacterSections() {
+	ticker := time.NewTicker(characterSectionsUpdateTicker)
+	go func() {
+		for {
+			func() {
+				cc, err := u.service.ListCharactersShort()
+				if err != nil {
+					slog.Error("Failed to fetch list of characters", "err", err)
+					return
+				}
+				for _, c := range cc {
+					u.UpdateCharacterAndRefreshIfNeeded(c.ID)
+				}
+			}()
+			<-ticker.C
+		}
+	}()
+}
+
+func (u *ui) UpdateCharacterAndRefreshIfNeeded(characterID int32) {
+	for _, s := range model.CharacterSections {
+		go func(s model.CharacterSection) {
+			isChanged, err := u.service.UpdateCharacterSectionIfExpired(characterID, s)
+			if err != nil {
+				slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
+				return
+			}
+			isCurrent := characterID == u.CurrentCharID()
+			switch s {
+			case model.CharacterSectionAttributes:
+				if isCurrent && isChanged {
+					u.attributesArea.Refresh()
+				}
+			case model.CharacterSectionImplants:
+				if isCurrent && isChanged {
+					u.implantsArea.Refresh()
+				}
+			case model.CharacterSectionJumpClones:
+				if isCurrent && isChanged {
+					u.jumpClonesArea.Redraw()
+				}
+			case model.CharacterSectionLocation,
+				model.CharacterSectionOnline,
+				model.CharacterSectionShip,
+				model.CharacterSectionWalletBalance:
+				if isChanged {
+					u.overviewArea.Refresh()
+				}
+			case model.CharacterSectionMailLabels,
+				model.CharacterSectionMailLists,
+				model.CharacterSectionMails:
+				if isCurrent && isChanged {
+					u.mailArea.Refresh()
+				}
+			case model.CharacterSectionSkills:
+				if isCurrent && isChanged {
+					u.skillCatalogueArea.Refresh()
+					u.shipsArea.Refresh()
+					u.overviewArea.Refresh()
+				}
+			case model.CharacterSectionSkillqueue:
+				if isCurrent {
+					u.skillqueueArea.Refresh()
+				}
+			case model.CharacterSectionWalletJournal:
+				if isCurrent && isChanged {
+					u.walletJournalArea.Refresh()
+				}
+			case model.CharacterSectionWalletTransactions:
+				if isCurrent && isChanged {
+					u.walletTransactionArea.Refresh()
+				}
+			default:
+				panic(fmt.Sprintf("section not part of the update ticker: %s", s))
+			}
+		}(s)
+	}
 }
 
 func appName(a fyne.App) string {

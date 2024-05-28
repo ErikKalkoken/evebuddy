@@ -14,10 +14,7 @@ import (
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
-
-const overviewUpdateTicker = 60 * time.Second
 
 type overviewCharacter struct {
 	alliance       string
@@ -284,44 +281,4 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 		}
 	}
 	return spTotal, unreadTotal, walletTotal, nil
-}
-
-func (a *overviewArea) StartUpdateTicker() {
-	ticker := time.NewTicker(overviewUpdateTicker)
-	go func() {
-		for {
-			func() {
-				cc, err := a.ui.service.ListCharactersShort()
-				if err != nil {
-					slog.Error("Failed to fetch list of characters", "err", err)
-					return
-				}
-				for _, c := range cc {
-					a.MaybeUpdateAndRefresh(c.ID)
-				}
-			}()
-			<-ticker.C
-		}
-	}()
-}
-
-func (a *overviewArea) MaybeUpdateAndRefresh(characterID int32) {
-	sections := []model.CharacterSection{
-		model.CharacterSectionLocation,
-		model.CharacterSectionOnline,
-		model.CharacterSectionShip,
-		model.CharacterSectionWalletBalance,
-	}
-	for _, s := range sections {
-		go func(s model.CharacterSection) {
-			changed, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, s)
-			if err != nil {
-				slog.Error("Failed to update character", "character", characterID, "section", s, "err", err)
-				return
-			}
-			if changed {
-				a.Refresh()
-			}
-		}(s)
-	}
 }

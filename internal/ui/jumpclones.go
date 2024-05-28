@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -14,8 +13,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
-
-const jumpClonesUpdateTicker = 10 * time.Second
 
 type jumpCloneNode struct {
 	Name                   string
@@ -207,34 +204,4 @@ func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance) {
 		return "No data", widget.LowImportance
 	}
 	return fmt.Sprintf("%d clones", total), widget.MediumImportance
-}
-
-func (a *jumpClonesArea) StartUpdateTicker() {
-	ticker := time.NewTicker(jumpClonesUpdateTicker)
-	go func() {
-		for {
-			func() {
-				cc, err := a.ui.service.ListCharactersShort()
-				if err != nil {
-					slog.Error("Failed to fetch list of characters", "err", err)
-					return
-				}
-				for _, c := range cc {
-					a.MaybeUpdateAndRefresh(c.ID)
-				}
-			}()
-			<-ticker.C
-		}
-	}()
-}
-
-func (a *jumpClonesArea) MaybeUpdateAndRefresh(characterID int32) {
-	changed, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionJumpClones)
-	if err != nil {
-		slog.Error("Failed to update jump clones", "character", characterID, "err", err)
-		return
-	}
-	if changed && characterID == a.ui.CurrentCharID() {
-		a.Redraw()
-	}
 }

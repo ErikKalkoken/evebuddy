@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -13,11 +12,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
-
-const attributesUpdateTicker = 10 * time.Second
 
 type attribute struct {
 	icon   fyne.Resource
@@ -148,34 +144,4 @@ func (a *attributesArea) updateData() error {
 		panic(err)
 	}
 	return nil
-}
-
-func (a *attributesArea) StartUpdateTicker() {
-	ticker := time.NewTicker(attributesUpdateTicker)
-	go func() {
-		for {
-			func() {
-				cc, err := a.ui.service.ListCharactersShort()
-				if err != nil {
-					slog.Error("Failed to fetch list of characters", "err", err)
-					return
-				}
-				for _, c := range cc {
-					a.MaybeUpdateAndRefresh(c.ID)
-				}
-			}()
-			<-ticker.C
-		}
-	}()
-}
-
-func (a *attributesArea) MaybeUpdateAndRefresh(characterID int32) {
-	changed, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionAttributes)
-	if err != nil {
-		slog.Error("Failed to update attributes", "character", characterID, "err", err)
-		return
-	}
-	if changed && characterID == a.ui.CurrentCharID() {
-		a.Refresh()
-	}
 }

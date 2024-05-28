@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"log/slog"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -14,8 +13,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
-
-const implantsUpdateTicker = 10 * time.Second
 
 // implantsArea is the UI area that shows the skillqueue
 type implantsArea struct {
@@ -133,36 +130,6 @@ func (a *implantsArea) makeTopText() (string, widget.Importance) {
 		return "No data", widget.LowImportance
 	}
 	return fmt.Sprintf("%d implants", a.implants.Length()), widget.MediumImportance
-}
-
-func (a *implantsArea) StartUpdateTicker() {
-	ticker := time.NewTicker(implantsUpdateTicker)
-	go func() {
-		for {
-			func() {
-				cc, err := a.ui.service.ListCharactersShort()
-				if err != nil {
-					slog.Error("Failed to fetch list of characters", "err", err)
-					return
-				}
-				for _, c := range cc {
-					a.MaybeUpdateAndRefresh(c.ID)
-				}
-			}()
-			<-ticker.C
-		}
-	}()
-}
-
-func (a *implantsArea) MaybeUpdateAndRefresh(characterID int32) {
-	changed, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionImplants)
-	if err != nil {
-		slog.Error("Failed to update implants", "character", characterID, "err", err)
-		return
-	}
-	if changed && characterID == a.ui.CurrentCharID() {
-		a.Refresh()
-	}
 }
 
 func makeImplantDetailDialog(name, description string, window fyne.Window) *dialog.CustomDialog {

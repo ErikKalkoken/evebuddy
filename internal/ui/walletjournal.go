@@ -18,8 +18,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
-const walletJournalUpdateTicker = 60 * time.Second
-
 type walletJournalEntry struct {
 	amount      float64
 	balance     float64
@@ -203,34 +201,4 @@ func (a *walletJournalArea) updateEntries() error {
 		return err
 	}
 	return nil
-}
-
-func (a *walletJournalArea) StartUpdateTicker() {
-	ticker := time.NewTicker(walletJournalUpdateTicker)
-	go func() {
-		for {
-			func() {
-				cc, err := a.ui.service.ListCharactersShort()
-				if err != nil {
-					slog.Error("Failed to fetch list of characters", "err", err)
-					return
-				}
-				for _, c := range cc {
-					a.MaybeUpdateAndRefresh(c.ID)
-				}
-			}()
-			<-ticker.C
-		}
-	}()
-}
-
-func (a *walletJournalArea) MaybeUpdateAndRefresh(characterID int32) {
-	changed, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionWalletJournal)
-	if err != nil {
-		slog.Error("Failed to update wallet journal", "character", characterID, "err", err)
-		return
-	}
-	if changed && characterID == a.ui.CurrentCharID() {
-		a.Refresh()
-	}
 }

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -22,8 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
-
-const folderUpdateTicker = 10 * time.Second
 
 type mailArea struct {
 	content fyne.CanvasObject
@@ -55,46 +52,6 @@ func (a *mailArea) Redraw() {
 
 func (a *mailArea) Refresh() {
 	a.folder.Refresh()
-}
-
-func (a *mailArea) StartUpdateTicker() {
-	ticker := time.NewTicker(folderUpdateTicker)
-	go func() {
-		for {
-			func() {
-				cc, err := a.ui.service.ListCharactersShort()
-				if err != nil {
-					slog.Error("Failed to fetch list of characters", "err", err)
-					return
-				}
-				for _, c := range cc {
-					a.MaybeUpdateAndRefresh(c.ID)
-				}
-			}()
-			<-ticker.C
-		}
-	}()
-}
-
-func (a *mailArea) MaybeUpdateAndRefresh(characterID int32) {
-	changed1, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionMailLabels)
-	if err != nil {
-		slog.Error("Failed to update mail labels", "character", characterID, "err", err)
-		return
-	}
-	changed2, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionMailLists)
-	if err != nil {
-		slog.Error("Failed to update mail lists", "character", characterID, "err", err)
-		return
-	}
-	changed3, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionMails)
-	if err != nil {
-		slog.Error("Failed to update mail", "character", characterID, "err", err)
-		return
-	}
-	if (changed1 || changed2 || changed3) && characterID == a.ui.CurrentCharID() {
-		a.Refresh()
-	}
 }
 
 // folderArea is the UI area showing the mail folders.

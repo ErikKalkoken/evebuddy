@@ -214,7 +214,7 @@ func (a *accountArea) showAddCharacterDialog() {
 					panic(err)
 				}
 			} else {
-				a.ui.overviewArea.MaybeUpdateAndRefresh(characterID)
+				a.ui.UpdateCharacterAndRefreshIfNeeded(characterID)
 			}
 		}
 		d1.Hide()

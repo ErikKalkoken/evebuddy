@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -18,8 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
-
-const skillqueueUpdateTicker = 10 * time.Second
 
 // skillqueueArea is the UI area that shows the skillqueue
 type skillqueueArea struct {
@@ -222,34 +219,4 @@ func (a *skillqueueArea) makeTopText(total types.NullDuration) (string, widget.I
 		training = ihumanize.Duration(total.Duration)
 	}
 	return fmt.Sprintf("Total training time: %s", training), widget.MediumImportance
-}
-
-func (a *skillqueueArea) StartUpdateTicker() {
-	ticker := time.NewTicker(skillqueueUpdateTicker)
-	go func() {
-		for {
-			func() {
-				cc, err := a.ui.service.ListCharactersShort()
-				if err != nil {
-					slog.Error("Failed to fetch list of characters", "err", err)
-					return
-				}
-				for _, c := range cc {
-					a.MaybeUpdateAndRefresh(c.ID)
-				}
-			}()
-			<-ticker.C
-		}
-	}()
-}
-
-func (a *skillqueueArea) MaybeUpdateAndRefresh(characterID int32) {
-	_, err := a.ui.service.UpdateCharacterSectionIfExpired(characterID, model.CharacterSectionSkillqueue)
-	if err != nil {
-		slog.Error("Failed to update skillqueue", "character", characterID, "err", err)
-		return
-	}
-	if characterID == a.ui.CurrentCharID() {
-		a.Refresh() // need to update even when not changed to render progress bar
-	}
 }

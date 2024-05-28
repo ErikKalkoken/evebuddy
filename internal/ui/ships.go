@@ -140,7 +140,6 @@ func (a *shipsArea) updateEntries() error {
 }
 
 func (a *shipsArea) refreshTop() {
-	fmt.Println("Updating top...")
 	text, importance, enabled, err := a.calcTop()
 	if err != nil {
 		slog.Error("failed to refresh top element for ships", "err", err)
