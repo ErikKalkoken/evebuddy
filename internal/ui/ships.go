@@ -53,7 +53,6 @@ func (u *ui) NewShipArea() *shipsArea {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
 			icon.FillMode = canvas.ImageFillOriginal
 			label := widget.NewLabel("Template")
-			// label.Truncation = fyne.TextTruncateEllipsis
 			return container.NewHBox(icon, label)
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
@@ -101,10 +100,10 @@ func (u *ui) NewShipArea() *shipsArea {
 	for i, h := range headers {
 		t.SetColumnWidth(i, h.width)
 	}
+	a.table = t
 
 	top := container.NewVBox(a.searchBox)
-	a.content = container.NewBorder(top, nil, nil, nil, t)
-	a.table = t
+	a.content = container.NewBorder(top, nil, nil, nil, a.table)
 	a.entries.AddListener(binding.NewDataListener(func() {
 		a.table.Refresh()
 	}))

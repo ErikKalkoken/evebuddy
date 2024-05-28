@@ -80,7 +80,7 @@ func (r *Storage) UpdateShipSkills(ctx context.Context) error {
 			if err := r.createShipSkillIfExists(ctx, 4, row.ShipTypeID, row.QuaternarySkillID, row.QuaternarySkillLevel); err != nil {
 				return err
 			}
-			if err := r.createShipSkillIfExists(ctx, 5, row.ShipTypeID, row.QuinarySkillID, row.QuaternarySkillLevel); err != nil {
+			if err := r.createShipSkillIfExists(ctx, 5, row.ShipTypeID, row.QuinarySkillID, row.QuinarySkillLevel); err != nil {
 				return err
 			}
 			if err := r.createShipSkillIfExists(ctx, 6, row.ShipTypeID, row.SenarySkillID, row.SenarySkillLevel); err != nil {
@@ -144,78 +144,78 @@ SELECT
 	(
 		SELECT value
 		FROM eve_type_dogma_attributes etda
-		WHERE dogma_attribute_id = 182
+		WHERE dogma_attribute_id = ?
 		AND eve_type_id = et.id
 	) as primary_skill_id,
 	(
 		SELECT value
 		FROM eve_type_dogma_attributes etda
-		WHERE dogma_attribute_id = 277
+		WHERE dogma_attribute_id = ?
 		AND eve_type_id = et.id
 	) as primary_skill_level,
 	(
 		SELECT value
 		FROM eve_type_dogma_attributes etda
-		WHERE dogma_attribute_id = 183
+		WHERE dogma_attribute_id = ?
 		AND eve_type_id = et.id
 	) as secondary_skill_id,
 	(
 		SELECT value
 		FROM eve_type_dogma_attributes etda
-		WHERE dogma_attribute_id = 278
+		WHERE dogma_attribute_id = ?
 		AND eve_type_id = et.id
 	) as secondary_skill_level,
 	(
 		SELECT value
 		FROM eve_type_dogma_attributes etda
-		WHERE dogma_attribute_id = 184
+		WHERE dogma_attribute_id = ?
 		AND eve_type_id = et.id
 	) as tertiary_skill_id,
 	(
 		SELECT value
 		FROM eve_type_dogma_attributes etda
-		WHERE dogma_attribute_id = 279
+		WHERE dogma_attribute_id = ?
 		AND eve_type_id = et.id
 	) as tertiary_skill_level,
 	(
 		SELECT value
 		FROM eve_type_dogma_attributes etda
-		WHERE dogma_attribute_id = 1285
+		WHERE dogma_attribute_id = ?
 		AND eve_type_id = et.id
 	) as quaternary_skill_id,
 	(
 		SELECT value
 		FROM eve_type_dogma_attributes etda
-		WHERE dogma_attribute_id = 1286
+		WHERE dogma_attribute_id = ?
 		AND eve_type_id = et.id
 	) as quaternary_skill_level,
 	(
 		SELECT value
 		FROM eve_type_dogma_attributes etda
-		WHERE dogma_attribute_id = 1289
+		WHERE dogma_attribute_id = ?
 		AND eve_type_id = et.id
 	) as quinary_skill_id,
 	(
 		SELECT value
 		FROM eve_type_dogma_attributes etda
-		WHERE dogma_attribute_id = 1287
+		WHERE dogma_attribute_id = ?
 		AND eve_type_id = et.id
 	) as quinary_skill_level,
 	(
 		SELECT value
 		FROM eve_type_dogma_attributes etda
-		WHERE dogma_attribute_id = 1290
+		WHERE dogma_attribute_id = ?
 		AND eve_type_id = et.id
 	) as senary_skill_id,
     (
 		SELECT value
 		FROM eve_type_dogma_attributes etda
-		WHERE dogma_attribute_id = 1288
+		WHERE dogma_attribute_id = ?
 		AND eve_type_id = et.id
 	) as senary_skill_level
 FROM eve_types et
 JOIN eve_groups eg ON eg.id  = et.eve_group_id
-WHERE eg.eve_category_id = 6
+WHERE eg.eve_category_id = ?
 AND et.is_published IS TRUE
 `
 
@@ -236,7 +236,23 @@ type listShipSkillsMapRow struct {
 }
 
 func (r *Storage) listShipSkillsMap(ctx context.Context) ([]listShipSkillsMapRow, error) {
-	rows, err := r.db.QueryContext(ctx, listShipSkillsMapSQL)
+	rows, err := r.db.QueryContext(
+		ctx,
+		listShipSkillsMapSQL,
+		model.EveDogmaAttributeIDPrimarySkillID,
+		model.EveDogmaAttributeIDPrimarySkillLevel,
+		model.EveDogmaAttributeIDSecondarySkillID,
+		model.EveDogmaAttributeIDSecondarySkillLevel,
+		model.EveDogmaAttributeIDTertiarySkillID,
+		model.EveDogmaAttributeIDTertiarySkillLevel,
+		model.EveDogmaAttributeIDQuaternarySkillID,
+		model.EveDogmaAttributeIDQuaternarySkillLevel,
+		model.EveDogmaAttributeIDQuinarySkillID,
+		model.EveDogmaAttributeIDQuinarySkillLevel,
+		model.EveDogmaAttributeIDSenarySkillID,
+		model.EveDogmaAttributeIDSenarySkillLevel,
+		model.EveCategoryIDShip,
+	)
 	if err != nil {
 		return nil, err
 	}

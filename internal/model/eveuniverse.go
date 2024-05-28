@@ -3,11 +3,25 @@ package model
 import "github.com/ErikKalkoken/evebuddy/internal/eveonline/converter"
 
 const (
-	EveCategoryIDShip              = 6
-	EveCategoryIDSkill             = 16
-	EveTypeIDSolarSystem           = 5
-	EveTypeIDAssetSafetyWrap       = 60
-	EveDogmaAttributeIDImplantSlot = 331
+	EveCategoryIDShip  = 6
+	EveCategoryIDSkill = 16
+
+	EveTypeIDSolarSystem     = 5
+	EveTypeIDAssetSafetyWrap = 60
+
+	EveDogmaAttributeIDImplantSlot          = 331
+	EveDogmaAttributeIDPrimarySkillID       = 182
+	EveDogmaAttributeIDPrimarySkillLevel    = 277
+	EveDogmaAttributeIDSecondarySkillID     = 183
+	EveDogmaAttributeIDSecondarySkillLevel  = 278
+	EveDogmaAttributeIDTertiarySkillID      = 184
+	EveDogmaAttributeIDTertiarySkillLevel   = 279
+	EveDogmaAttributeIDQuaternarySkillID    = 1285
+	EveDogmaAttributeIDQuaternarySkillLevel = 1286
+	EveDogmaAttributeIDQuinarySkillID       = 1289
+	EveDogmaAttributeIDQuinarySkillLevel    = 1287
+	EveDogmaAttributeIDSenarySkillID        = 1290
+	EveDogmaAttributeIDSenarySkillLevel     = 1288
 )
 
 // EveCategory is a category in Eve Online.
