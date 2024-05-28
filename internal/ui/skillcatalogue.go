@@ -50,7 +50,7 @@ type skillCatalogueArea struct {
 	ui             *ui
 }
 
-func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
+func (u *ui) newSkillCatalogueArea() *skillCatalogueArea {
 	a := &skillCatalogueArea{
 		groups:         binding.NewUntypedList(),
 		skills:         binding.NewUntypedList(),
@@ -99,7 +99,7 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 		if err != nil {
 			panic(err)
 		}
-		c := a.ui.CurrentChar()
+		c := a.ui.currentChar()
 		if c == nil {
 			return
 		}
@@ -214,14 +214,14 @@ func (u *ui) NewSkillCatalogueArea() *skillCatalogueArea {
 	return a
 }
 
-func (a *skillCatalogueArea) Redraw() {
+func (a *skillCatalogueArea) redraw() {
 	a.groupsGrid.UnselectAll()
 	x := make([]skillTrained, 0)
 	a.skills.Set(copyToUntypedSlice(x))
-	a.Refresh()
+	a.refresh()
 }
 
-func (a *skillCatalogueArea) Refresh() {
+func (a *skillCatalogueArea) refresh() {
 	c, err := a.updateGroups()
 	if err != nil {
 		panic(err)
@@ -236,7 +236,7 @@ func (a *skillCatalogueArea) Refresh() {
 }
 
 func (a *skillCatalogueArea) updateGroups() (*model.Character, error) {
-	c := a.ui.CurrentChar()
+	c := a.ui.currentChar()
 	if c == nil {
 		return nil, nil
 	}

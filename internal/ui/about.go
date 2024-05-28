@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func (u *ui) ShowAboutDialog() {
+func (u *ui) showAboutDialog() {
 	c := container.NewVBox()
 	info := u.app.Metadata()
 	appData := widget.NewRichTextFromMarkdown(

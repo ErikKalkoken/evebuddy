@@ -27,7 +27,7 @@ type skillqueueArea struct {
 	ui        *ui
 }
 
-func (u *ui) NewSkillqueueArea() *skillqueueArea {
+func (u *ui) newSkillqueueArea() *skillqueueArea {
 	a := skillqueueArea{
 		items:     binding.NewUntypedList(),
 		errorText: binding.NewString(),
@@ -145,10 +145,10 @@ func (u *ui) NewSkillqueueArea() *skillqueueArea {
 	return &a
 }
 
-func (a *skillqueueArea) Refresh() {
+func (a *skillqueueArea) refresh() {
 	total, completion, err := a.updateItems()
 	if err != nil {
-		slog.Error("failed to update skillqueue items for character", "characterID", a.ui.CurrentCharID(), "err", err)
+		slog.Error("failed to update skillqueue items for character", "characterID", a.ui.currentCharID(), "err", err)
 		return
 	}
 	t, i := a.makeTopText(total)
@@ -170,13 +170,13 @@ func (a *skillqueueArea) updateItems() (types.NullDuration, sql.NullFloat64, err
 	if err := a.errorText.Set(""); err != nil {
 		return remaining, completion, err
 	}
-	if !a.ui.HasCharacter() {
+	if !a.ui.hasCharacter() {
 		err := a.items.Set(make([]any, 0))
 		if err != nil {
 			return remaining, completion, err
 		}
 	}
-	skills, err := a.ui.service.ListCharacterSkillqueueItems(a.ui.CurrentCharID())
+	skills, err := a.ui.service.ListCharacterSkillqueueItems(a.ui.currentCharID())
 	if err != nil {
 		return remaining, completion, err
 	}
@@ -204,7 +204,7 @@ func (a *skillqueueArea) makeTopText(total types.NullDuration) (string, widget.I
 	if errorText != "" {
 		return errorText, widget.DangerImportance
 	}
-	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.CurrentCharID(), model.CharacterSectionSkillqueue)
+	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.currentCharID(), model.CharacterSectionSkillqueue)
 	if err != nil {
 		return "ERROR", widget.DangerImportance
 	}

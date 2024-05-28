@@ -33,8 +33,8 @@ type accountArea struct {
 	ui         *ui
 }
 
-func (u *ui) ShowAccountDialog() {
-	a := u.NewAccountArea()
+func (u *ui) showAccountDialog() {
+	a := u.newAccountArea()
 	dialog := dialog.NewCustom("Manage Characters", "Close", a.content, u.window)
 	a.dialog = dialog
 	dialog.Show()
@@ -46,7 +46,7 @@ func (u *ui) ShowAccountDialog() {
 	}
 }
 
-func (u *ui) NewAccountArea() *accountArea {
+func (u *ui) newAccountArea() *accountArea {
 	a := &accountArea{
 		characters: binding.NewUntypedList(),
 		ui:         u,
@@ -113,7 +113,7 @@ func (u *ui) NewAccountArea() *accountArea {
 			slog.Error("failed to access account character in list", "err", err)
 			return
 		}
-		if err := a.ui.LoadCurrentCharacter(c.id); err != nil {
+		if err := a.ui.loadCurrentCharacter(c.id); err != nil {
 			slog.Error("failed to load current character", "char", c, "err", err)
 			return
 		}
@@ -142,15 +142,15 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 				if err := a.Refresh(); err != nil {
 					panic(err)
 				}
-				isCurrentChar := c.id == a.ui.CurrentCharID()
+				isCurrentChar := c.id == a.ui.currentCharID()
 				if isCurrentChar {
-					err := a.ui.SetAnyCharacter()
+					err := a.ui.setAnyCharacter()
 					if err != nil {
 						panic(err)
 					}
 				}
-				a.ui.RefreshOverview()
-				a.ui.toolbarArea.Refresh()
+				a.ui.refreshOverview()
+				a.ui.toolbarArea.refresh()
 			}
 		},
 		a.ui.window,
@@ -207,14 +207,14 @@ func (a *accountArea) showAddCharacterDialog() {
 			if err := a.Refresh(); err != nil {
 				panic(err)
 			}
-			a.ui.RefreshOverview()
-			a.ui.toolbarArea.Refresh()
+			a.ui.refreshOverview()
+			a.ui.toolbarArea.refresh()
 			if isFirst {
-				if err := a.ui.SetAnyCharacter(); err != nil {
+				if err := a.ui.setAnyCharacter(); err != nil {
 					panic(err)
 				}
 			} else {
-				a.ui.UpdateCharacterAndRefreshIfNeeded(characterID)
+				a.ui.updateCharacterAndRefreshIfNeeded(characterID)
 			}
 		}
 		d1.Hide()

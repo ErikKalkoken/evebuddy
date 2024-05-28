@@ -14,16 +14,16 @@ type biographyArea struct {
 	ui      *ui
 }
 
-func (u *ui) NewBiographyArea() *biographyArea {
+func (u *ui) newBiographyArea() *biographyArea {
 	a := &biographyArea{ui: u, text: widget.NewLabel("")}
 	a.text.Wrapping = fyne.TextWrapBreak
 	a.content = container.NewVScroll(a.text)
 	return a
 }
 
-func (a *biographyArea) Refresh() {
+func (a *biographyArea) refresh() {
 	var s string
-	c := a.ui.CurrentChar()
+	c := a.ui.currentChar()
 	if c == nil {
 		s = ""
 	} else {

@@ -60,7 +60,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 	updateTicker := time.NewTicker(characterUpdateStatusTicker)
 	go func() {
 		for {
-			a.characterUpdateStatusArea.Refresh()
+			a.characterUpdateStatusArea.refresh()
 			<-updateTicker.C
 		}
 	}()
@@ -237,7 +237,7 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 		},
 	)
 	a.content.OnSelected = func(_ widget.GridWrapItemID) {
-		c := u.CurrentChar()
+		c := u.currentChar()
 		if c != nil {
 			a.ui.showStatusDialog(model.CharacterShort{ID: c.ID, Name: c.EveCharacter.Name})
 		}
@@ -246,9 +246,9 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 	return a
 }
 
-func (a *characterUpdateStatusArea) Refresh() {
+func (a *characterUpdateStatusArea) refresh() {
 	x := updateStatusOutput{}
-	if !a.ui.HasCharacter() {
+	if !a.ui.hasCharacter() {
 		x.title = "No character"
 		x.status = characterStatusUnknown
 		x.errorMessage = ""

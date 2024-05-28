@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
@@ -15,13 +14,7 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-// settingsArea is the UI area for settings.
-type settingsArea struct {
-	content *fyne.Container
-	ui      *ui
-}
-
-func (u *ui) ShowSettingsDialog() {
+func (u *ui) showSettingsDialog() {
 	d, err := makeSettingsDialog(u)
 	if err != nil {
 		dialog.NewError(err, u.window)
@@ -40,7 +33,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	}
 	maxMailsEntry := widget.NewEntry()
 	maxMailsEntry.SetText(strconv.Itoa(int(maxMails)))
-	maxMailsEntry.Validator = NewPositiveNumberValidator()
+	maxMailsEntry.Validator = newPositiveNumberValidator()
 
 	clearBtn := widget.NewButton("Clear NOW", func() {
 		d := dialog.NewConfirm(
@@ -102,7 +95,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 				return
 			}
 			u.service.DictionarySetInt(model.SettingMaxMails, maxMails)
-			u.SetTheme(themeRadio.Selected)
+			u.setTheme(themeRadio.Selected)
 			u.service.DictionarySetString(model.SettingTheme, themeRadio.Selected)
 			d.Hide()
 		},
@@ -114,16 +107,22 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	return d, nil
 }
 
-func (u *ui) NewSettingsArea() *settingsArea {
-	content := container.NewVBox()
-	m := &settingsArea{
-		ui:      u,
-		content: content,
-	}
-	return m
-}
+// // settingsArea is the UI area for settings.
+// type settingsArea struct {
+// 	content *fyne.Container
+// 	ui      *ui
+// }
 
-func NewPositiveNumberValidator() fyne.StringValidator {
+// func (u *ui) newSettingsArea() *settingsArea {
+// 	content := container.NewVBox()
+// 	m := &settingsArea{
+// 		ui:      u,
+// 		content: content,
+// 	}
+// 	return m
+// }
+
+func newPositiveNumberValidator() fyne.StringValidator {
 	myErr := errors.New("must be positive number")
 	return func(text string) error {
 		val, err := strconv.Atoi(text)

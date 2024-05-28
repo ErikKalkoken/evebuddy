@@ -23,7 +23,7 @@ type implantsArea struct {
 	ui        *ui
 }
 
-func (u *ui) NewImplantsArea() *implantsArea {
+func (u *ui) newImplantsArea() *implantsArea {
 	a := implantsArea{
 		implants:  binding.NewUntypedList(),
 		errorText: binding.NewString(),
@@ -78,10 +78,10 @@ func (u *ui) NewImplantsArea() *implantsArea {
 	return &a
 }
 
-func (a *implantsArea) Refresh() {
+func (a *implantsArea) refresh() {
 	err := a.updateData()
 	if err != nil {
-		slog.Error("failed to update skillqueue items for character", "characterID", a.ui.CurrentCharID(), "err", err)
+		slog.Error("failed to update skillqueue items for character", "characterID", a.ui.currentCharID(), "err", err)
 		return
 	}
 	t, i := a.makeTopText()
@@ -94,13 +94,13 @@ func (a *implantsArea) updateData() error {
 	if err := a.errorText.Set(""); err != nil {
 		return err
 	}
-	if !a.ui.HasCharacter() {
+	if !a.ui.hasCharacter() {
 		err := a.implants.Set(make([]any, 0))
 		if err != nil {
 			return err
 		}
 	}
-	implants, err := a.ui.service.ListCharacterImplants(a.ui.CurrentCharID())
+	implants, err := a.ui.service.ListCharacterImplants(a.ui.currentCharID())
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (a *implantsArea) makeTopText() (string, widget.Importance) {
 	if errorText != "" {
 		return errorText, widget.DangerImportance
 	}
-	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.CurrentCharID(), model.CharacterSectionImplants)
+	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.currentCharID(), model.CharacterSectionImplants)
 	if err != nil {
 		return "ERROR", widget.DangerImportance
 	}

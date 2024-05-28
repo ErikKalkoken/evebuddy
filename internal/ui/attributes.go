@@ -21,7 +21,7 @@ type attribute struct {
 	points int
 }
 
-func (a attribute) IsText() bool {
+func (a attribute) isText() bool {
 	return a.points == 0
 }
 
@@ -32,7 +32,7 @@ type attributesArea struct {
 	ui         *ui
 }
 
-func (u *ui) NewAttributesArea() *attributesArea {
+func (u *ui) newAttributesArena() *attributesArea {
 	a := attributesArea{
 		attributes: binding.NewUntypedList(),
 		ui:         u,
@@ -62,7 +62,7 @@ func (u *ui) NewAttributesArea() *attributesArea {
 			name.SetText(q.name)
 
 			icon := row.Objects[0].(*canvas.Image)
-			if q.IsText() {
+			if q.isText() {
 				icon.Hide()
 			} else {
 				icon.Show()
@@ -71,7 +71,7 @@ func (u *ui) NewAttributesArea() *attributesArea {
 			}
 
 			points := row.Objects[3].(*widget.Label)
-			if q.IsText() {
+			if q.isText() {
 				points.Hide()
 			} else {
 				points.Show()
@@ -87,21 +87,21 @@ func (u *ui) NewAttributesArea() *attributesArea {
 	return &a
 }
 
-func (a *attributesArea) Refresh() {
+func (a *attributesArea) refresh() {
 	if err := a.updateData(); err != nil {
-		slog.Error("failed to render attributes for character", "characterID", a.ui.CurrentCharID(), "err", err)
+		slog.Error("failed to render attributes for character", "characterID", a.ui.currentCharID(), "err", err)
 		return
 	}
 }
 
 func (a *attributesArea) updateData() error {
-	if !a.ui.HasCharacter() {
+	if !a.ui.hasCharacter() {
 		err := a.attributes.Set(make([]any, 0))
 		if err != nil {
 			return err
 		}
 	}
-	x, err := a.ui.service.GetCharacterAttributes(a.ui.CurrentCharID())
+	x, err := a.ui.service.GetCharacterAttributes(a.ui.currentCharID())
 	if errors.Is(err, storage.ErrNotFound) {
 		err := a.attributes.Set(make([]any, 0))
 		if err != nil {

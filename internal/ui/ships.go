@@ -25,7 +25,7 @@ type shipsArea struct {
 	ui        *ui
 }
 
-func (u *ui) NewShipArea() *shipsArea {
+func (u *ui) newShipArea() *shipsArea {
 	a := shipsArea{
 		ui:        u,
 		entries:   binding.NewUntypedList(),
@@ -114,7 +114,7 @@ func (u *ui) NewShipArea() *shipsArea {
 	return &a
 }
 
-func (a *shipsArea) Refresh() {
+func (a *shipsArea) refresh() {
 	if err := a.updateEntries(); err != nil {
 		panic(err)
 	}
@@ -123,13 +123,13 @@ func (a *shipsArea) Refresh() {
 }
 
 func (a *shipsArea) updateEntries() error {
-	if !a.ui.HasCharacter() {
+	if !a.ui.hasCharacter() {
 		oo := make([]*model.CharacterShipAbility, 0)
 		a.entries.Set(copyToUntypedSlice(oo))
 		a.searchBox.SetText("")
 		return nil
 	}
-	characterID := a.ui.CurrentCharID()
+	characterID := a.ui.currentCharID()
 	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
 	oo, err := a.ui.service.ListCharacterShipsAbilities(characterID, search)
 	if err != nil {
@@ -160,10 +160,10 @@ func (a *shipsArea) calcTop() (string, widget.Importance, bool, error) {
 	if !ok {
 		return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
 	}
-	if !a.ui.HasCharacter() {
+	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance, false, err
 	}
-	characterID := a.ui.CurrentCharID()
+	characterID := a.ui.currentCharID()
 	ok, err = a.ui.service.CharacterSectionWasUpdated(characterID, model.CharacterSectionSkills)
 	if err != nil {
 		return "", widget.DangerImportance, false, err

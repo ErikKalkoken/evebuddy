@@ -33,7 +33,7 @@ type walletTransactionArea struct {
 	ui      *ui
 }
 
-func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
+func (u *ui) newWalletTransactionArea() *walletTransactionArea {
 	a := walletTransactionArea{
 		ui:      u,
 		entries: binding.NewUntypedList(),
@@ -121,7 +121,7 @@ func (u *ui) NewWalletTransactionArea() *walletTransactionArea {
 	return &a
 }
 
-func (a *walletTransactionArea) Refresh() {
+func (a *walletTransactionArea) refresh() {
 	a.updateEntries()
 	s, i := a.makeTopText()
 	a.total.Text = s
@@ -131,7 +131,7 @@ func (a *walletTransactionArea) Refresh() {
 }
 
 func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
-	c := a.ui.CurrentChar()
+	c := a.ui.currentChar()
 	if c == nil {
 		return "No data yet...", widget.LowImportance
 	}
@@ -146,14 +146,14 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 }
 
 func (a *walletTransactionArea) updateEntries() error {
-	if !a.ui.HasCharacter() {
+	if !a.ui.hasCharacter() {
 		x := make([]any, 0)
 		err := a.entries.Set(x)
 		if err != nil {
 			return err
 		}
 	}
-	characterID := a.ui.CurrentCharID()
+	characterID := a.ui.currentCharID()
 	ww, err := a.ui.service.ListCharacterWalletTransactions(characterID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch wallet journal for character %d: %w", characterID, err)

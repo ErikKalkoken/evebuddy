@@ -19,13 +19,13 @@ import (
 )
 
 const (
-	CreateMessageNew = iota
-	CreateMessageReply
-	CreateMessageReplyAll
-	CreateMessageForward
+	createMessageNew = iota
+	createMessageReply
+	createMessageReplyAll
+	createMessageForward
 )
 
-func (u *ui) ShowSendMessageWindow(mode int, mail *model.CharacterMail) {
+func (u *ui) showSendMessageWindow(mode int, mail *model.CharacterMail) {
 	w, err := u.makeSendMessageWindow(mode, mail)
 	if err != nil {
 		slog.Error("failed to create send message window", "error", err)
@@ -35,7 +35,7 @@ func (u *ui) ShowSendMessageWindow(mode int, mail *model.CharacterMail) {
 }
 
 func (u *ui) makeSendMessageWindow(mode int, mail *model.CharacterMail) (fyne.Window, error) {
-	currentChar := *u.CurrentChar()
+	currentChar := *u.currentChar()
 	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", currentChar.EveCharacter.Name))
 
 	fromInput := widget.NewEntry()
@@ -45,29 +45,29 @@ func (u *ui) makeSendMessageWindow(mode int, mail *model.CharacterMail) (fyne.Wi
 	toInput := widget.NewEntry()
 	toInput.MultiLine = true
 	toInput.Wrapping = fyne.TextWrapWord
-	toInput.Validator = NewNonEmptyStringValidator()
+	toInput.Validator = newNonEmptyStringValidator()
 
 	subjectInput := widget.NewEntry()
-	subjectInput.Validator = NewNonEmptyStringValidator()
+	subjectInput.Validator = newNonEmptyStringValidator()
 
 	bodyInput := widget.NewEntry()
 	bodyInput.MultiLine = true
 	bodyInput.SetMinRowsVisible(14)
-	bodyInput.Validator = NewNonEmptyStringValidator()
+	bodyInput.Validator = newNonEmptyStringValidator()
 
 	if mail != nil {
 		switch mode {
-		case CreateMessageReply:
+		case createMessageReply:
 			r := NewMailRecipientsFromEntities([]*model.EveEntity{mail.From})
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
-		case CreateMessageReplyAll:
+		case createMessageReplyAll:
 			r := NewMailRecipientsFromEntities(mail.Recipients)
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
-		case CreateMessageForward:
+		case createMessageForward:
 			subjectInput.SetText(fmt.Sprintf("Fw: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
 		default:
@@ -208,7 +208,7 @@ func (u *ui) makeRecipientOptions(search string) ([]string, error) {
 	return oo, nil
 }
 
-func NewNonEmptyStringValidator() fyne.StringValidator {
+func newNonEmptyStringValidator() fyne.StringValidator {
 	myErr := errors.New("can not be empty")
 	return func(text string) error {
 		if len(text) == 0 {

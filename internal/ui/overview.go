@@ -46,7 +46,7 @@ type overviewArea struct {
 	ui         *ui
 }
 
-func (u *ui) NewOverviewArea() *overviewArea {
+func (u *ui) newOverviewArea() *overviewArea {
 	a := overviewArea{
 		characters: binding.NewUntypedList(),
 		totalLabel: widget.NewLabel(""),
@@ -171,7 +171,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 		}
 		idx, ok := m[tci.Col]
 		if ok {
-			a.ui.LoadCurrentCharacter(c.id)
+			a.ui.loadCurrentCharacter(c.id)
 			a.ui.tabs.SelectIndex(idx.parent)
 			t := a.ui.tabs.Items[idx.parent].Content.(*container.AppTabs)
 			t.SelectIndex(idx.child)
@@ -189,7 +189,7 @@ func (u *ui) NewOverviewArea() *overviewArea {
 	return &a
 }
 
-func (a *overviewArea) Refresh() {
+func (a *overviewArea) refresh() {
 	sp, unread, wallet, err := a.updateEntries()
 	if err != nil {
 		slog.Error("Failed to refresh overview", "err", err)

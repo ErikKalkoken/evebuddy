@@ -34,16 +34,16 @@ func (u *ui) newToolbarArea() *toolbarArea {
 	a.switchButton = widgets.NewContextMenuButtonWithIcon(
 		theme.NewThemedResource(resourceSwitchaccountSvg), "", fyne.NewMenu(""))
 	a.manageButton = widget.NewButtonWithIcon("", theme.NewThemedResource(resourceManageaccountsSvg), func() {
-		u.ShowAccountDialog()
+		u.showAccountDialog()
 	})
 	c := container.NewHBox(
 		container.NewHBox(a.icon, a.name, a.switchButton),
 		layout.NewSpacer(),
 		widget.NewButtonWithIcon("", theme.InfoIcon(), func() {
-			u.ShowAboutDialog()
+			u.showAboutDialog()
 		}),
 		widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
-			u.ShowSettingsDialog()
+			u.showSettingsDialog()
 		}),
 		a.manageButton,
 	)
@@ -52,8 +52,8 @@ func (u *ui) newToolbarArea() *toolbarArea {
 	return a
 }
 
-func (a *toolbarArea) Refresh() {
-	c := a.ui.CurrentChar()
+func (a *toolbarArea) refresh() {
+	c := a.ui.currentChar()
 	if c == nil {
 		a.icon.Resource = resourceCharacterplaceholder32Jpeg
 		a.icon.Refresh()
@@ -85,7 +85,7 @@ func (a *toolbarArea) Refresh() {
 	} else {
 		a.switchButton.Enable()
 	}
-	if a.ui.CurrentChar() == nil {
+	if a.ui.currentChar() == nil {
 		a.manageButton.Importance = widget.HighImportance
 		a.manageButton.Refresh()
 	} else {
@@ -106,7 +106,7 @@ func (a *toolbarArea) makeMenuItems(c *model.Character) ([]*fyne.MenuItem, error
 			continue
 		}
 		item := fyne.NewMenuItem(myC.Name, func() {
-			err := a.ui.LoadCurrentCharacter(myC.ID)
+			err := a.ui.loadCurrentCharacter(myC.ID)
 			if err != nil {
 				msg := "Failed to switch to new character"
 				slog.Error(msg, "err", err)

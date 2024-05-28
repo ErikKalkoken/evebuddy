@@ -75,10 +75,10 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 		window:       w,
 	}
 
-	u.attributesArea = u.NewAttributesArea()
-	u.biographyArea = u.NewBiographyArea()
+	u.attributesArea = u.newAttributesArena()
+	u.biographyArea = u.newBiographyArea()
 	u.jumpClonesArea = u.NewJumpClonesArea()
-	u.implantsArea = u.NewImplantsArea()
+	u.implantsArea = u.newImplantsArea()
 	characterTab := container.NewTabItemWithIcon("Character",
 		theme.NewThemedResource(resourcePortraitSvg), container.NewAppTabs(
 			container.NewTabItem("Augmentations", u.implantsArea.content),
@@ -87,23 +87,23 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 			container.NewTabItem("Biography", u.biographyArea.content),
 		))
 
-	u.mailArea = u.NewMailArea()
+	u.mailArea = u.newMailArea()
 	u.mailTab = container.NewTabItemWithIcon("Mail",
 		theme.MailComposeIcon(), container.NewAppTabs(
 			container.NewTabItem("Mail", u.mailArea.content),
 			// container.NewTabItem("Notifications", widget.NewLabel("PLACEHOLDER")),
 		))
 
-	u.overviewArea = u.NewOverviewArea()
+	u.overviewArea = u.newOverviewArea()
 	overviewTab := container.NewTabItemWithIcon("Characters",
 		theme.NewThemedResource(resourceGroupSvg), container.NewAppTabs(
 			container.NewTabItem("Overview", u.overviewArea.content),
 			// container.NewTabItem("Skills", widget.NewLabel("PLACEHOLDER")),
 		))
 
-	u.skillqueueArea = u.NewSkillqueueArea()
-	u.skillCatalogueArea = u.NewSkillCatalogueArea()
-	u.shipsArea = u.NewShipArea()
+	u.skillqueueArea = u.newSkillqueueArea()
+	u.skillCatalogueArea = u.newSkillCatalogueArea()
+	u.shipsArea = u.newShipArea()
 	u.skillqueueTab = container.NewTabItemWithIcon("Skills",
 		theme.NewThemedResource(resourceSchoolSvg), container.NewAppTabs(
 			container.NewTabItem("Training Queue", u.skillqueueArea.content),
@@ -111,8 +111,8 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 			container.NewTabItem("Ships", u.shipsArea.content),
 		))
 
-	u.walletJournalArea = u.NewWalletJournalArea()
-	u.walletTransactionArea = u.NewWalletTransactionArea()
+	u.walletJournalArea = u.newWalletJournalArea()
+	u.walletTransactionArea = u.newWalletTransactionArea()
 	walletTab := container.NewTabItemWithIcon("Wallet",
 		theme.NewThemedResource(resourceAttachmoneySvg), container.NewAppTabs(
 			container.NewTabItem("Transactions", u.walletJournalArea.content),
@@ -142,7 +142,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	if c != nil {
 		u.setCurrentCharacter(c)
 	} else {
-		u.ResetCurrentCharacter()
+		u.resetCurrentCharacter()
 	}
 	keyW := "window-width"
 	width, ok, err := u.service.DictionaryFloat32(keyW)
@@ -196,11 +196,11 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	if err != nil || !ok {
 		name = model.ThemeAuto
 	}
-	u.SetTheme(name)
+	u.setTheme(name)
 	return u
 }
 
-func (u *ui) SetTheme(name string) {
+func (u *ui) setTheme(name string) {
 	switch name {
 	case model.ThemeAuto:
 		switch u.app.Settings().ThemeVariant() {
@@ -229,30 +229,30 @@ func (u *ui) ShowAndRun() {
 		}
 		u.statusBarArea.StartUpdateTicker()
 
-		u.StartUpdateTickerEveCategorySkill()
-		u.StartUpdateTickerCharacterSections()
-		u.StartUpdateTickerEveCharacters()
+		u.startUpdateTickerEveCategorySkill()
+		u.startUpdateTickerCharacterSections()
+		u.startUpdateTickerEveCharacters()
 	}()
-	u.RefreshOverview()
+	u.refreshOverview()
 	u.window.ShowAndRun()
 }
 
-func (u *ui) CurrentCharID() int32 {
+func (u *ui) currentCharID() int32 {
 	if u.currentCharacter == nil {
 		return 0
 	}
 	return u.currentCharacter.ID
 }
 
-func (u *ui) CurrentChar() *model.Character {
+func (u *ui) currentChar() *model.Character {
 	return u.currentCharacter
 }
 
-func (u *ui) HasCharacter() bool {
+func (u *ui) hasCharacter() bool {
 	return u.currentCharacter != nil
 }
 
-func (u *ui) LoadCurrentCharacter(characterID int32) error {
+func (u *ui) loadCurrentCharacter(characterID int32) error {
 	c, err := u.service.GetCharacter(characterID)
 	if err != nil {
 		return err
@@ -271,37 +271,37 @@ func (u *ui) setCurrentCharacter(c *model.Character) {
 }
 
 func (u *ui) refreshCurrentCharacter() {
-	u.attributesArea.Refresh()
-	u.biographyArea.Refresh()
-	u.jumpClonesArea.Redraw()
-	u.implantsArea.Refresh()
-	u.mailArea.Redraw()
-	u.shipsArea.Refresh()
-	u.skillqueueArea.Refresh()
-	u.skillCatalogueArea.Redraw()
-	u.toolbarArea.Refresh()
-	u.walletJournalArea.Refresh()
-	u.walletTransactionArea.Refresh()
-	c := u.CurrentChar()
+	u.attributesArea.refresh()
+	u.biographyArea.refresh()
+	u.jumpClonesArea.redraw()
+	u.implantsArea.refresh()
+	u.mailArea.redraw()
+	u.shipsArea.refresh()
+	u.skillqueueArea.refresh()
+	u.skillCatalogueArea.redraw()
+	u.toolbarArea.refresh()
+	u.walletJournalArea.refresh()
+	u.walletTransactionArea.refresh()
+	c := u.currentChar()
 	if c != nil {
 		u.tabs.EnableIndex(0)
 		u.tabs.EnableIndex(1)
 		u.tabs.EnableIndex(2)
-		u.UpdateCharacterAndRefreshIfNeeded(c.ID)
+		u.updateCharacterAndRefreshIfNeeded(c.ID)
 	} else {
 		u.tabs.DisableIndex(0)
 		u.tabs.DisableIndex(1)
 		u.tabs.DisableIndex(2)
 		u.tabs.SelectIndex(4)
 	}
-	go u.statusBarArea.characterUpdateStatusArea.Refresh()
+	go u.statusBarArea.characterUpdateStatusArea.refresh()
 	u.window.Content().Refresh()
 }
 
-func (u *ui) SetAnyCharacter() error {
+func (u *ui) setAnyCharacter() error {
 	c, err := u.service.GetAnyCharacter()
 	if errors.Is(err, storage.ErrNotFound) {
-		u.ResetCurrentCharacter()
+		u.resetCurrentCharacter()
 		return nil
 	} else if err != nil {
 		return err
@@ -310,11 +310,11 @@ func (u *ui) SetAnyCharacter() error {
 	return nil
 }
 
-func (u *ui) RefreshOverview() {
-	u.overviewArea.Refresh()
+func (u *ui) refreshOverview() {
+	u.overviewArea.refresh()
 }
 
-func (u *ui) ResetCurrentCharacter() {
+func (u *ui) resetCurrentCharacter() {
 	u.currentCharacter = nil
 	err := u.service.DictionaryDelete(model.SettingLastCharacterID)
 	if err != nil {
@@ -323,7 +323,7 @@ func (u *ui) ResetCurrentCharacter() {
 	u.refreshCurrentCharacter()
 }
 
-func (u *ui) StartUpdateTickerEveCharacters() {
+func (u *ui) startUpdateTickerEveCharacters() {
 	ticker := time.NewTicker(eveDataUpdateTicker)
 	key := "eve-characters-last-updated"
 	go func() {
@@ -354,7 +354,7 @@ func (u *ui) StartUpdateTickerEveCharacters() {
 	}()
 }
 
-func (u *ui) StartUpdateTickerEveCategorySkill() {
+func (u *ui) startUpdateTickerEveCategorySkill() {
 	ticker := time.NewTicker(eveDataUpdateTicker)
 	go func() {
 		for {
@@ -380,20 +380,20 @@ func (u *ui) StartUpdateTickerEveCategorySkill() {
 				if err := u.service.DictionarySetTime(eveCategoriesKeyLastUpdated, time.Now()); err != nil {
 					return err
 				}
-				u.shipsArea.Refresh()
-				u.skillCatalogueArea.Redraw()
+				u.shipsArea.refresh()
+				u.skillCatalogueArea.redraw()
 				return nil
 			}()
 			if err != nil {
 				slog.Error("Failed to update skill category: %s", err)
 			}
-			u.skillCatalogueArea.Refresh()
+			u.skillCatalogueArea.refresh()
 			<-ticker.C
 		}
 	}()
 }
 
-func (u *ui) StartUpdateTickerCharacterSections() {
+func (u *ui) startUpdateTickerCharacterSections() {
 	ticker := time.NewTicker(characterSectionsUpdateTicker)
 	go func() {
 		for {
@@ -404,7 +404,7 @@ func (u *ui) StartUpdateTickerCharacterSections() {
 					return
 				}
 				for _, c := range cc {
-					u.UpdateCharacterAndRefreshIfNeeded(c.ID)
+					u.updateCharacterAndRefreshIfNeeded(c.ID)
 				}
 			}()
 			<-ticker.C
@@ -412,7 +412,12 @@ func (u *ui) StartUpdateTickerCharacterSections() {
 	}()
 }
 
-func (u *ui) UpdateCharacterAndRefreshIfNeeded(characterID int32) {
+// updateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
+// and refreshes the UI accordingly.
+//
+// All UI areas showing data based on character sections needs to be included
+// to make sure they are refreshed when data changes.
+func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32) {
 	for _, s := range model.CharacterSections {
 		go func(s model.CharacterSection) {
 			isChanged, err := u.service.UpdateCharacterSectionIfExpired(characterID, s)
@@ -420,50 +425,50 @@ func (u *ui) UpdateCharacterAndRefreshIfNeeded(characterID int32) {
 				slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
 				return
 			}
-			isCurrent := characterID == u.CurrentCharID()
+			isCurrent := characterID == u.currentCharID()
 			switch s {
 			case model.CharacterSectionAttributes:
 				if isCurrent && isChanged {
-					u.attributesArea.Refresh()
+					u.attributesArea.refresh()
 				}
 			case model.CharacterSectionImplants:
 				if isCurrent && isChanged {
-					u.implantsArea.Refresh()
+					u.implantsArea.refresh()
 				}
 			case model.CharacterSectionJumpClones:
 				if isCurrent && isChanged {
-					u.jumpClonesArea.Redraw()
+					u.jumpClonesArea.redraw()
 				}
 			case model.CharacterSectionLocation,
 				model.CharacterSectionOnline,
 				model.CharacterSectionShip,
 				model.CharacterSectionWalletBalance:
 				if isChanged {
-					u.overviewArea.Refresh()
+					u.overviewArea.refresh()
 				}
 			case model.CharacterSectionMailLabels,
 				model.CharacterSectionMailLists,
 				model.CharacterSectionMails:
 				if isCurrent && isChanged {
-					u.mailArea.Refresh()
+					u.mailArea.refresh()
 				}
 			case model.CharacterSectionSkills:
 				if isCurrent && isChanged {
-					u.skillCatalogueArea.Refresh()
-					u.shipsArea.Refresh()
-					u.overviewArea.Refresh()
+					u.skillCatalogueArea.refresh()
+					u.shipsArea.refresh()
+					u.overviewArea.refresh()
 				}
 			case model.CharacterSectionSkillqueue:
 				if isCurrent {
-					u.skillqueueArea.Refresh()
+					u.skillqueueArea.refresh()
 				}
 			case model.CharacterSectionWalletJournal:
 				if isCurrent && isChanged {
-					u.walletJournalArea.Refresh()
+					u.walletJournalArea.refresh()
 				}
 			case model.CharacterSectionWalletTransactions:
 				if isCurrent && isChanged {
-					u.walletTransactionArea.Refresh()
+					u.walletTransactionArea.refresh()
 				}
 			default:
 				panic(fmt.Sprintf("section not part of the update ticker: %s", s))

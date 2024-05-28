@@ -141,7 +141,7 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 	return &a
 }
 
-func (a *jumpClonesArea) Redraw() {
+func (a *jumpClonesArea) redraw() {
 	ids, values, total, err := a.updateTreeData()
 	if err != nil {
 		panic(err)
@@ -158,10 +158,10 @@ func (a *jumpClonesArea) Redraw() {
 func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]string, int, error) {
 	values := make(map[string]string)
 	ids := make(map[string][]string)
-	if !a.ui.HasCharacter() {
+	if !a.ui.hasCharacter() {
 		return ids, values, 0, nil
 	}
-	clones, err := a.ui.service.ListCharacterJumpClones(a.ui.CurrentCharID())
+	clones, err := a.ui.service.ListCharacterJumpClones(a.ui.currentCharID())
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -196,7 +196,7 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 }
 
 func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance) {
-	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.CurrentCharID(), model.CharacterSectionJumpClones)
+	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.currentCharID(), model.CharacterSectionJumpClones)
 	if err != nil {
 		return "ERROR", widget.DangerImportance
 	}
