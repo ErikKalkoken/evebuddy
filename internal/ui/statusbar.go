@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -41,7 +42,7 @@ func (u *ui) newStatusBarArea() *statusBarArea {
 		characterUpdateStatusArea: newCharacterUpdateStatusArea(u),
 		ui:                        u,
 	}
-
+	a.eveClock.Set(" 00:00 ")
 	clock := widget.NewLabelWithData(a.eveClock)
 	a.content = container.NewVBox(widget.NewSeparator(), container.NewHBox(
 		a.infoText,
@@ -76,21 +77,23 @@ func (a *statusBarArea) StartUpdateTicker() {
 	go func() {
 		for {
 			x, err := a.ui.service.FetchESIStatus()
-			var t, error string
+			var t, errorMessage string
 			var s eveStatus
 			if err != nil {
 				slog.Error("Failed to fetch ESI status", "err", err)
-				error = err.Error()
+				errorMessage = humanize.Error(err)
 				s = eveStatusError
+				t = "ERROR"
 			} else if !x.IsOK() {
-				error = x.ErrorMessage
+				errorMessage = x.ErrorMessage
 				s = eveStatusOffline
+				t = "OFFLINE"
 			} else {
 				arg := message.NewPrinter(language.English)
 				t = arg.Sprintf("%d players", x.PlayerCount)
 				s = eveStatusOnline
 			}
-			a.eveStatusArea.setStatus(s, t, error)
+			a.eveStatusArea.setStatus(s, t, errorMessage)
 			<-esiStatusTicker.C
 		}
 	}()
@@ -124,11 +127,11 @@ const (
 )
 
 type eveStatusArea struct {
-	content *widget.GridWrap
-	status  eveStatus
-	title   string
-	error   string
-	ui      *ui
+	content      *widget.GridWrap
+	status       eveStatus
+	title        string
+	errorMessage string
+	ui           *ui
 }
 
 func newEveStatusArea(u *ui) *eveStatusArea {
@@ -164,10 +167,10 @@ func newEveStatusArea(u *ui) *eveStatusArea {
 	)
 	a.content.OnSelected = func(_ widget.GridWrapItemID) {
 		var text string
-		if a.error == "" {
+		if a.errorMessage == "" {
 			text = "No error detected"
 		} else {
-			text = a.error
+			text = a.errorMessage
 		}
 		d := dialog.NewInformation("ESI status", text, a.ui.window)
 		d.SetOnClosed(func() {
@@ -178,10 +181,10 @@ func newEveStatusArea(u *ui) *eveStatusArea {
 	return a
 }
 
-func (a *eveStatusArea) setStatus(status eveStatus, title, error string) {
+func (a *eveStatusArea) setStatus(status eveStatus, title, errorMessage string) {
 	a.status = status
 	a.title = title
-	a.error = error
+	a.errorMessage = errorMessage
 	a.content.Refresh()
 }
 

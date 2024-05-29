@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
-	"github.com/antihax/goesi/esi"
 )
 
 // CharacterSectionUpdatedAt returns when a section was last updated.
@@ -85,14 +85,8 @@ func (s *Service) UpdateCharacterSectionIfExpired(characterID int32, section mod
 		return f(ctx, characterID)
 	})
 	if err != nil {
-		errorMessage := err.Error()
-		e1, ok := err.(esi.GenericSwaggerError)
-		if ok {
-			e2, ok := e1.Model().(esi.InternalServerError)
-			if ok {
-				errorMessage += ": " + e2.Error_
-			}
-		}
+		// TODO: Move this part into updateCharacterSectionIfChanged()
+		errorMessage := humanize.Error(err)
 		err2 := s.r.SetCharacterUpdateStatusError(ctx, characterID, section, errorMessage)
 		if err2 != nil {
 			slog.Error("failed to record error for failed section update: %s", err2)

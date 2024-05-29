@@ -637,10 +637,10 @@ func (a *mailDetailArea) makeToolbar() *widget.Toolbar {
 			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Subject)
 			d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
 				if confirmed {
-					err := a.mailArea.ui.service.DeleteCharacterMail(a.mail.CharacterID, a.mail.MailID)
-					if err != nil {
-						errorDialog := dialog.NewError(err, a.mailArea.ui.window)
-						errorDialog.Show()
+					if err := a.mailArea.ui.service.DeleteCharacterMail(a.mail.CharacterID, a.mail.MailID); err != nil {
+						t := "Failed to delete mail"
+						slog.Error(t, "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
+						a.mailArea.ui.showErrorDialog(t, err)
 					} else {
 						a.mailArea.header.refresh()
 					}

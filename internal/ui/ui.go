@@ -14,9 +14,11 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -126,7 +128,12 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	u.tabs = container.NewAppTabs(characterTab, u.mailTab, u.skillqueueTab, walletTab, overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, nil, u.tabs)
+	btn := widget.NewButton("Show experiment", func() {
+		err := errors.New("dummy")
+		u.showErrorDialog("An error has occurred.", err)
+	})
+
+	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, container.NewVBox(btn), u.tabs)
 	w.SetContent(mainContent)
 	w.SetMaster()
 
@@ -484,8 +491,13 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32) {
 	}
 }
 
-func (u *ui) showErrorDialog(message string) {
-	d := dialog.NewInformation("Error", message, u.window)
+func (u *ui) showErrorDialog(message string, err error) {
+	text := widget.NewLabel(fmt.Sprintf("%s\n\n%s", message, humanize.Error(err)))
+	text.Wrapping = fyne.TextWrapWord
+	text.Importance = widget.DangerImportance
+	x := container.NewVScroll(text)
+	x.SetMinSize(fyne.Size{Width: 400, Height: 100})
+	d := dialog.NewCustom("Error", "OK", x, u.window)
 	d.Show()
 }
 

@@ -155,8 +155,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 				}()
 				if err != nil {
 					slog.Error("Failed to delete a character", "character", c, "err", err)
-					d2 := dialog.NewError(err, a.ui.window)
-					d2.Show()
+					a.ui.showErrorDialog("Failed to delete a character", err)
 				}
 			}
 		},
@@ -223,7 +222,7 @@ func (a *accountArea) showAddCharacterDialog() {
 		d1.Hide()
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
-			a.ui.showErrorDialog("Failed add a new character")
+			a.ui.showErrorDialog("Failed add a new character", err)
 		}
 	}()
 	d1.Show()

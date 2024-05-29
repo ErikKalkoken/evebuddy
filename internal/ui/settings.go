@@ -17,7 +17,9 @@ import (
 func (u *ui) showSettingsDialog() {
 	d, err := makeSettingsDialog(u)
 	if err != nil {
-		dialog.NewError(err, u.window)
+		t := "Failed to open the settings dialog"
+		slog.Error(t, "err", err)
+		u.showErrorDialog(t, err)
 	} else {
 		d.Show()
 	}
@@ -46,6 +48,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 				count, err := u.imageManager.Clear()
 				if err != nil {
 					slog.Error(err.Error())
+					u.showErrorDialog("Failed to clear image cache", err)
 				} else {
 					slog.Info("Cleared images cache", "count", count)
 				}
