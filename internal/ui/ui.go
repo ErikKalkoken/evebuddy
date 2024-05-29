@@ -128,12 +128,13 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	u.tabs = container.NewAppTabs(characterTab, u.mailTab, u.skillqueueTab, walletTab, overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	btn := widget.NewButton("Show experiment", func() {
-		err := errors.New("dummy")
-		u.showErrorDialog("An error has occurred.", err)
-	})
+	// for experiments
+	// btn := widget.NewButton("Show experiment", func() {
+	// 	err := errors.New("dummy")
+	// 	u.showErrorDialog("An error has occurred.", err)
+	// })
 
-	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, container.NewVBox(btn), u.tabs)
+	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, nil, u.tabs)
 	w.SetContent(mainContent)
 	w.SetMaster()
 

@@ -38,7 +38,7 @@ DELETE FROM ship_skills;
 -- name: ListCharacterShipsAbilities :many
 SELECT DISTINCT ss2.ship_type_id as type_id, et.name as type_name, eg.id as group_id, eg.name as group_name,
 (
-	SELECT COUNT(*) - COUNT(NULLIF(0, cs.active_skill_level >= ss.skill_level)) == 0
+	SELECT COUNT(*) - COUNT(cs.active_skill_level >= ss.skill_level) == 0
 	FROM ship_skills ss
 	LEFT JOIN character_skills cs ON cs.eve_type_id = ss.skill_type_id AND cs.character_id = ?
 	WHERE ss.ship_type_id = ss2.ship_type_id
