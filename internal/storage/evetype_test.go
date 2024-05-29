@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
@@ -36,6 +37,19 @@ func TestEveType(t *testing.T) {
 				assert.Equal(t, true, x.IsPublished)
 				assert.Equal(t, g, x.Group)
 			}
+		}
+	})
+	t.Run("can identify missing", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 7})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 8})
+		// when
+		x, err := r.MissingEveTypes(ctx, []int32{7, 9})
+		// then
+		if assert.NoError(t, err) {
+			want := set.NewFromSlice([]int32{9})
+			assert.Equal(t, want, x)
 		}
 	})
 }

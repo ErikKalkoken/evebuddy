@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
+	islices "github.com/ErikKalkoken/evebuddy/internal/helper/slices"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
@@ -64,6 +66,17 @@ func (r *Storage) GetEveType(ctx context.Context, id int32) (*model.EveType, err
 	}
 	t := eveTypeFromDBModel(row.EveType, row.EveGroup, row.EveCategory)
 	return t, nil
+}
+
+func (r *Storage) MissingEveTypes(ctx context.Context, ids []int32) ([]int32, error) {
+	currentIDs, err := r.q.ListEveTypeIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	current := set.NewFromSlice(islices.ConvertNumeric[int64, int32](currentIDs))
+	incoming := set.NewFromSlice(ids)
+	missing := incoming.Difference(current)
+	return missing.ToSlice(), nil
 }
 
 func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCategory) *model.EveType {

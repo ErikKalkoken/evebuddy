@@ -486,7 +486,7 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32) {
 					u.walletTransactionArea.refresh()
 				}
 			default:
-				panic(fmt.Sprintf("section not part of the update ticker: %s", s))
+				slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))
 			}
 		}(s)
 	}

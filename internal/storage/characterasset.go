@@ -11,7 +11,6 @@ import (
 )
 
 type CreateCharacterAssetParams struct {
-	ID              int64
 	CharacterID     int32
 	EveTypeID       int32
 	IsBlueprintCopy bool
@@ -86,7 +85,6 @@ func (r *Storage) ListCharacterAssets(ctx context.Context, characterID int32) ([
 }
 
 type UpdateCharacterAssetParams struct {
-	ID           int64
 	CharacterID  int32
 	ItemID       int64
 	LocationFlag string
@@ -120,6 +118,7 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, eveTypeName string) *m
 		panic("missing character ID")
 	}
 	o := &model.CharacterAsset{
+		ID:              ca.ID,
 		CharacterID:     int32(ca.CharacterID),
 		EveType:         &model.EntityShort[int32]{ID: int32(ca.EveTypeID), Name: eveTypeName},
 		IsBlueprintCopy: ca.IsBlueprintCopy,

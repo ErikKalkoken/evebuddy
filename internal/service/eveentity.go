@@ -131,13 +131,6 @@ func (s *Service) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostUniver
 	return ee, []int32{}, nil
 }
 
-func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
-	for chunkSize < len(items) {
-		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
-	}
-	return append(chunks, items)
-}
-
 func (s *Service) ListEveEntitiesByPartialName(partial string) ([]*model.EveEntity, error) {
 	return s.r.ListEveEntitiesByPartialName(context.Background(), partial)
 }

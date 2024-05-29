@@ -3,6 +3,10 @@ SELECT *
 FROM locations
 WHERE id = ?;
 
+-- name: ListLocationIDs :many
+SELECT id
+FROM locations;
+
 -- name: UpdateOrCreateLocation :exec
 INSERT INTO locations (
     id,

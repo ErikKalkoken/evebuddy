@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
@@ -194,4 +195,23 @@ func (s *Service) createEveTypeFromESI(ctx context.Context, id int32) (*model.Ev
 		return nil, err
 	}
 	return x.(*model.EveType), nil
+}
+
+func (s *Service) addMissingEveTypes(ctx context.Context, ids []int32) error {
+	missingIDs, err := s.r.MissingEveTypes(ctx, ids)
+	if err != nil {
+		return err
+	}
+	if len(missingIDs) == 0 {
+		return nil
+	}
+	slices.Sort(missingIDs)
+	slog.Info("Trying to fetch missing EveTypes from ESI", "count", len(missingIDs))
+	for _, id := range missingIDs {
+		_, err := s.getOrCreateEveTypeESI(ctx, id)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

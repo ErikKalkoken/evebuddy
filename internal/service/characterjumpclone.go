@@ -46,11 +46,8 @@ func (s *Service) updateCharacterJumpClonesESI(ctx context.Context, characterID 
 				if err != nil {
 					return err
 				}
-				for _, typeID := range jc.Implants {
-					_, err := s.getOrCreateEveTypeESI(ctx, typeID)
-					if err != nil {
-						return err
-					}
+				if err := s.addMissingEveTypes(ctx, jc.Implants); err != nil {
+					return err
 				}
 				args[i] = storage.CreateCharacterJumpCloneParams{
 					CharacterID: characterID,

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
@@ -46,14 +47,25 @@ func (r *Storage) GetLocation(ctx context.Context, id int64) (*model.Location, e
 		}
 		return nil, fmt.Errorf("failed to get Structure for id %d: %w", id, err)
 	}
-	x, err := r.structureFromDBModel(ctx, l)
+	x, err := r.locationFromDBModel(ctx, l)
 	if err != nil {
 		return nil, err
 	}
 	return x, nil
 }
 
-func (r *Storage) structureFromDBModel(ctx context.Context, l queries.Location) (*model.Location, error) {
+func (r *Storage) MissingLocations(ctx context.Context, ids []int64) ([]int64, error) {
+	currentIDs, err := r.q.ListLocationIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	current := set.NewFromSlice(currentIDs)
+	incoming := set.NewFromSlice(ids)
+	missing := incoming.Difference(current)
+	return missing.ToSlice(), nil
+}
+
+func (r *Storage) locationFromDBModel(ctx context.Context, l queries.Location) (*model.Location, error) {
 	l2 := &model.Location{
 		ID:        l.ID,
 		Name:      l.Name,

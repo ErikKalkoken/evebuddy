@@ -38,6 +38,7 @@ type CharacterShort struct {
 
 // Updated character sections
 const (
+	CharacterSectionAssets             CharacterSection = "assets"
 	CharacterSectionAttributes         CharacterSection = "attributes"
 	CharacterSectionImplants           CharacterSection = "implants"
 	CharacterSectionJumpClones         CharacterSection = "jump_clones"
@@ -55,6 +56,7 @@ const (
 )
 
 var CharacterSections = []CharacterSection{
+	CharacterSectionAssets,
 	CharacterSectionAttributes,
 	CharacterSectionImplants,
 	CharacterSectionJumpClones,
@@ -93,6 +95,7 @@ func (s CharacterSection) CalcContentHash(data any) (string, error) {
 // Timeout returns the time until the data of an update section becomes stale.
 func (section CharacterSection) Timeout() time.Duration {
 	m := map[CharacterSection]time.Duration{
+		CharacterSectionAssets:             3600 * time.Second,
 		CharacterSectionAttributes:         120 * time.Second,
 		CharacterSectionImplants:           120 * time.Second,
 		CharacterSectionJumpClones:         120 * time.Second,

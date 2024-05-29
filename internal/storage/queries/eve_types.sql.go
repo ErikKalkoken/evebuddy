@@ -202,3 +202,31 @@ func (q *Queries) GetEveTypeDogmaEffect(ctx context.Context, arg GetEveTypeDogma
 	)
 	return i, err
 }
+
+const listEveTypeIDs = `-- name: ListEveTypeIDs :many
+SELECT id
+FROM eve_types
+`
+
+func (q *Queries) ListEveTypeIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listEveTypeIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

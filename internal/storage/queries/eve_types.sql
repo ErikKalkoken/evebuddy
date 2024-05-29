@@ -26,6 +26,10 @@ JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
 JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
 WHERE eve_types.id = ?;
 
+-- name: ListEveTypeIDs :many
+SELECT id
+FROM eve_types;
+
 -- name: CreateEveTypeDogmaAttribute :exec
 INSERT INTO eve_type_dogma_attributes (
     dogma_attribute_id,
