@@ -113,6 +113,29 @@ func (u *ui) newShipArea() *shipsArea {
 	for i, h := range headers {
 		t.SetColumnWidth(i, h.width)
 	}
+	t.OnSelected = func(tci widget.TableCellID) {
+		typ, err := func() (*model.EveType, error) {
+			o, err := getItemUntypedList[*model.CharacterShipAbility](a.entries, tci.Row)
+			if err != nil {
+				return nil, err
+			}
+			typ, err := a.ui.service.GetEveType(o.Type.ID)
+			if err != nil {
+				return nil, err
+			}
+			return typ, nil
+		}()
+		if err != nil {
+			t := "Failed to select ship entry"
+			slog.Error(t, "err", err)
+			a.ui.statusBarArea.SetError(t)
+			return
+		}
+		d := makeTypeDetailDialog(typ.Name, typ.DescriptionPlain(), a.ui.window)
+		d.Show()
+		t.UnselectAll()
+	}
+
 	a.table = t
 
 	topBox := container.NewVBox(a.top, widget.NewSeparator(), a.searchBox)

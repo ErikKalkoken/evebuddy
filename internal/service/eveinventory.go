@@ -10,6 +10,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
+func (s *Service) GetEveType(id int32) (*model.EveType, error) {
+	ctx := context.Background()
+	return s.r.GetEveType(ctx, id)
+}
+
 func (s *Service) GetOrCreateEveCategoryESI(id int32) (*model.EveCategory, error) {
 	ctx := context.Background()
 	return s.getOrCreateEveCategoryESI(ctx, id)

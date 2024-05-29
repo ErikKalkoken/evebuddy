@@ -150,7 +150,7 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 			a.tree.UnselectAll()
 			return
 		}
-		d := makeImplantDetailDialog(n.ImplantTypeName, n.ImplantTypeDescription, a.ui.window)
+		d := makeTypeDetailDialog(n.ImplantTypeName, n.ImplantTypeDescription, a.ui.window)
 		d.SetOnClosed(func() {
 			a.tree.UnselectAll()
 		})

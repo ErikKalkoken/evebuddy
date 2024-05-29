@@ -132,7 +132,9 @@ func (u *ui) newWalletJournalArea() *walletJournalArea {
 	t.OnSelected = func(tci widget.TableCellID) {
 		e, err := getItemUntypedList[walletJournalEntry](a.entries, tci.Row)
 		if err != nil {
-			slog.Error("failed to access entries in list", "err", err)
+			t := "Failed to select wallet journal entry"
+			slog.Error(t, "err", err)
+			a.ui.statusBarArea.SetError(t)
 			return
 		}
 		if e.hasReason() {

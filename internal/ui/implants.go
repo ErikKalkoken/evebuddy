@@ -61,10 +61,12 @@ func (u *ui) newImplantsArea() *implantsArea {
 	list.OnSelected = func(id widget.ListItemID) {
 		implant, err := getItemUntypedList[*model.CharacterImplant](a.implants, id)
 		if err != nil {
-			slog.Error("failed to access implant item in list", "err", err)
+			t := "Failed to select implant"
+			slog.Error(t, "err", err)
+			a.ui.statusBarArea.SetError(t)
 			return
 		}
-		d := makeImplantDetailDialog(implant.EveType.Name, implant.EveType.DescriptionPlain(), a.ui.window)
+		d := makeTypeDetailDialog(implant.EveType.Name, implant.EveType.DescriptionPlain(), a.ui.window)
 		d.SetOnClosed(func() {
 			list.UnselectAll()
 		})
@@ -125,11 +127,11 @@ func (a *implantsArea) makeTopText() (string, widget.Importance, error) {
 	return fmt.Sprintf("%d implants", a.implants.Length()), widget.MediumImportance, nil
 }
 
-func makeImplantDetailDialog(name, description string, window fyne.Window) *dialog.CustomDialog {
+func makeTypeDetailDialog(title, description string, window fyne.Window) *dialog.CustomDialog {
 	label := widget.NewLabel(description)
 	label.Wrapping = fyne.TextWrapWord
 	x := container.NewVScroll(label)
 	x.SetMinSize(fyne.Size{Width: 600, Height: 250})
-	d := dialog.NewCustom(name, "OK", x, window)
+	d := dialog.NewCustom(title, "OK", x, window)
 	return d
 }
