@@ -20,6 +20,20 @@ type Character struct {
 	WalletBalance sql.NullFloat64
 }
 
+type CharacterAsset struct {
+	ID              int64
+	CharacterID     int64
+	EveTypeID       int64
+	IsBlueprintCopy bool
+	IsSingleton     bool
+	ItemID          int64
+	LocationFlag    string
+	LocationID      int64
+	LocationType    string
+	Name            string
+	Quantity        int64
+}
+
 type CharacterAttribute struct {
 	ID            int64
 	BonusRemaps   int64

@@ -104,6 +104,53 @@ func (f Factory) CreateCharacterAttributes(args ...storage.UpdateOrCreateCharact
 	return o
 }
 
+func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams) *model.CharacterAsset {
+	ctx := context.Background()
+	var arg storage.CreateCharacterAssetParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.EveTypeID == 0 {
+		x := f.CreateEveType()
+		arg.EveTypeID = x.ID
+	}
+	if arg.ItemID == 0 {
+		arg.ItemID = f.calcNewIDWithCharacter("character_assets", "item_id", arg.CharacterID)
+	}
+	if arg.LocationFlag == "" {
+		arg.LocationFlag = "Hangar"
+	}
+	if arg.LocationID == 0 {
+		x := f.CreateLocationStructure()
+		arg.LocationID = x.ID
+	}
+	if arg.LocationType == "" {
+		arg.LocationType = "other"
+	}
+	if arg.IsSingleton && arg.Name == "" {
+		arg.Name = fmt.Sprintf("Asset %d", arg.ItemID)
+	}
+	if arg.Quantity == 0 {
+		if arg.IsSingleton {
+			arg.Quantity = 1
+		} else {
+			arg.Quantity = rand.Int32N(10_000)
+		}
+	}
+	if err := f.r.CreateCharacterAsset(ctx, arg); err != nil {
+		panic(err)
+	}
+	o, err := f.r.GetCharacterAsset(ctx, arg.CharacterID, arg.ItemID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantParams) *model.CharacterImplant {
 	ctx := context.Background()
 	var arg storage.CreateCharacterImplantParams
@@ -917,9 +964,9 @@ func (f *Factory) calcNewIDWithCharacter(table, id_field string, characterID int
 	return max.Int64 + 1
 }
 
-func (f *Factory) calcNewIDWithParam(table, max_field, where_field string, where_value int64) int64 {
+func (f *Factory) calcNewIDWithParam(table, id_field, where_field string, where_value int64) int64 {
 	var max sql.NullInt64
-	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", max_field, table, where_field)
+	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", id_field, table, where_field)
 	if err := f.db.QueryRow(sql, where_value).Scan(&max); err != nil {
 		panic(err)
 	}

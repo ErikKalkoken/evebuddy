@@ -163,6 +163,24 @@ CREATE TABLE characters (
     FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE SET NULL
 );
 
+CREATE TABLE character_assets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL,
+    eve_type_id INTEGER NOT NULL,
+    is_blueprint_copy BOOL NOT NULL,
+    is_singleton BOOL NOT NULL,
+    item_id INTEGER NOT NULL,
+    location_flag TEXT NOT NULL,
+    location_id INTEGER NOT NULL,
+    location_type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
+    UNIQUE (character_id, item_id)
+);
+CREATE INDEX character_assets_item_id_idx ON character_assets (item_id ASC);
+
 CREATE TABLE character_attributes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     bonus_remaps INTEGER NOT NULL,
