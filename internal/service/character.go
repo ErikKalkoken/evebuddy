@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/antihax/goesi/esi"
 )
 
 var ErrAborted = errors.New("process aborted prematurely")
@@ -101,118 +102,102 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText b
 }
 
 func (s *Service) updateCharacterLocationESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidCharacterToken(ctx, characterID)
-	if err != nil {
-		return false, err
-	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
-	location, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, characterID, nil)
-	if err != nil {
-		return false, err
-	}
-	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionLocation, location)
-	if err != nil {
-		return false, err
-	}
-	if !changed {
-		return false, nil
-	}
-	var locationID int64
-	switch {
-	case location.StructureId != 0:
-		locationID = location.StructureId
-	case location.StationId != 0:
-		locationID = int64(location.StationId)
-	default:
-		locationID = int64(location.SolarSystemId)
-	}
-	_, err = s.getOrCreateLocationESI(ctx, locationID)
-	if err != nil {
-		return false, err
-	}
-	x := sql.NullInt64{Int64: locationID, Valid: true}
-	if err := s.r.UpdateCharacterLocation(ctx, characterID, x); err != nil {
-		return false, err
-	}
-	return true, nil
+	return s.updateCharacterSectionIfChanged(
+		ctx, characterID, model.CharacterSectionLocation,
+		func(ctx context.Context, characterID int32) (any, error) {
+			location, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, characterID, nil)
+			if err != nil {
+				return false, err
+			}
+			return location, nil
+		},
+		func(ctx context.Context, characterID int32, data any) error {
+			location := data.(esi.GetCharactersCharacterIdLocationOk)
+			var locationID int64
+			switch {
+			case location.StructureId != 0:
+				locationID = location.StructureId
+			case location.StationId != 0:
+				locationID = int64(location.StationId)
+			default:
+				locationID = int64(location.SolarSystemId)
+			}
+			_, err := s.getOrCreateLocationESI(ctx, locationID)
+			if err != nil {
+				return err
+			}
+			x := sql.NullInt64{Int64: locationID, Valid: true}
+			if err := s.r.UpdateCharacterLocation(ctx, characterID, x); err != nil {
+				return err
+			}
+			return nil
+		})
 }
 
 func (s *Service) updateCharacterOnlineESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidCharacterToken(ctx, characterID)
-	if err != nil {
-		return false, err
-	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
-	online, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, characterID, nil)
-	if err != nil {
-		return false, err
-	}
-	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionOnline, online)
-	if err != nil {
-		return false, err
-	}
-	if !changed {
-		return false, nil
-	}
-	var x sql.NullTime
-	if !online.LastLogin.IsZero() {
-		x.Time = online.LastLogin
-		x.Valid = true
-	}
-	if err := s.r.UpdateCharacterLastLoginAt(ctx, characterID, x); err != nil {
-		return false, err
-	}
-	return true, nil
+	return s.updateCharacterSectionIfChanged(
+		ctx, characterID, model.CharacterSectionOnline,
+		func(ctx context.Context, characterID int32) (any, error) {
+			online, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, characterID, nil)
+			if err != nil {
+				return false, err
+			}
+			return online, nil
+		},
+		func(ctx context.Context, characterID int32, data any) error {
+			online := data.(esi.GetCharactersCharacterIdOnlineOk)
+			var x sql.NullTime
+			if !online.LastLogin.IsZero() {
+				x.Time = online.LastLogin
+				x.Valid = true
+			}
+			if err := s.r.UpdateCharacterLastLoginAt(ctx, characterID, x); err != nil {
+				return err
+			}
+			return nil
+		})
 }
 
 func (s *Service) updateCharacterShipESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidCharacterToken(ctx, characterID)
-	if err != nil {
-		return false, err
-	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
-	ship, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, characterID, nil)
-	if err != nil {
-		return false, err
-	}
-	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionShip, ship)
-	if err != nil {
-		return false, err
-	}
-	if !changed {
-		return false, nil
-	}
-	_, err = s.getOrCreateEveTypeESI(ctx, ship.ShipTypeId)
-	if err != nil {
-		return false, err
-	}
-	x := sql.NullInt32{Int32: ship.ShipTypeId, Valid: true}
-	if err := s.r.UpdateCharacterShip(ctx, characterID, x); err != nil {
-		return false, err
-	}
-	return true, nil
+	return s.updateCharacterSectionIfChanged(
+		ctx, characterID, model.CharacterSectionShip,
+		func(ctx context.Context, characterID int32) (any, error) {
+			ship, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, characterID, nil)
+			if err != nil {
+				return false, err
+			}
+			return ship, nil
+		},
+		func(ctx context.Context, characterID int32, data any) error {
+			ship := data.(esi.GetCharactersCharacterIdShipOk)
+			_, err := s.getOrCreateEveTypeESI(ctx, ship.ShipTypeId)
+			if err != nil {
+				return err
+			}
+			x := sql.NullInt32{Int32: ship.ShipTypeId, Valid: true}
+			if err := s.r.UpdateCharacterShip(ctx, characterID, x); err != nil {
+				return err
+			}
+			return nil
+		})
 }
 
 func (s *Service) updateCharacterWalletBalanceESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidCharacterToken(ctx, characterID)
-	if err != nil {
-		return false, err
-	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
-	balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, characterID, nil)
-	if err != nil {
-		return false, err
-	}
-	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionWalletBalance, balance)
-	if err != nil {
-		return false, err
-	}
-	if !changed {
-		return false, nil
-	}
-	x := sql.NullFloat64{Float64: balance, Valid: true}
-	if err := s.r.UpdateCharacterWalletBalance(ctx, characterID, x); err != nil {
-		return false, err
-	}
-	return true, nil
+	return s.updateCharacterSectionIfChanged(
+		ctx, characterID, model.CharacterSectionWalletBalance,
+		func(ctx context.Context, characterID int32) (any, error) {
+			balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, characterID, nil)
+			if err != nil {
+				return false, err
+			}
+			return balance, nil
+		},
+		func(ctx context.Context, characterID int32, data any) error {
+			balance := data.(float64)
+			x := sql.NullFloat64{Float64: balance, Valid: true}
+			if err := s.r.UpdateCharacterWalletBalance(ctx, characterID, x); err != nil {
+				return err
+			}
+			return nil
+		})
 }

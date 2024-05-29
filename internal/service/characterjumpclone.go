@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/antihax/goesi/esi"
 )
 
 func (s *Service) ListCharacterJumpClones(characterID int32) ([]*model.CharacterJumpClone, error) {
@@ -16,55 +17,51 @@ func (s *Service) ListCharacterJumpClones(characterID int32) ([]*model.Character
 // TODO: Consolidate with updating home in separate function
 
 func (s *Service) updateCharacterJumpClonesESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidCharacterToken(ctx, characterID)
-	if err != nil {
-		return false, err
-	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
-	clones, _, err := s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdClones(ctx, characterID, nil)
-	if err != nil {
-		return false, err
-	}
-	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionJumpClones, clones)
-	if err != nil {
-		return false, err
-	}
-	if !changed {
-		return false, nil
-	}
-	var home sql.NullInt64
-	if clones.HomeLocation.LocationId != 0 {
-		_, err = s.getOrCreateLocationESI(ctx, clones.HomeLocation.LocationId)
-		if err != nil {
-			return false, err
-		}
-		home.Int64 = clones.HomeLocation.LocationId
-		home.Valid = true
-	}
-	if err := s.r.UpdateCharacterHome(ctx, characterID, home); err != nil {
-		return false, err
-	}
-	args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))
-	for i, jc := range clones.JumpClones {
-		_, err = s.getOrCreateLocationESI(ctx, jc.LocationId)
-		if err != nil {
-			return false, err
-		}
-		for _, typeID := range jc.Implants {
-			_, err = s.getOrCreateEveTypeESI(ctx, typeID)
+	return s.updateCharacterSectionIfChanged(
+		ctx, characterID, model.CharacterSectionJumpClones,
+		func(ctx context.Context, characterID int32) (any, error) {
+			clones, _, err := s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdClones(ctx, characterID, nil)
 			if err != nil {
 				return false, err
 			}
-		}
-		args[i] = storage.CreateCharacterJumpCloneParams{
-			CharacterID: characterID,
-			LocationID:  jc.LocationId,
-			JumpCloneID: int64(jc.JumpCloneId),
-			Implants:    jc.Implants,
-		}
-	}
-	if err = s.r.ReplaceCharacterJumpClones(ctx, characterID, args); err != nil {
-		return false, err
-	}
-	return true, nil
+			return clones, nil
+		},
+		func(ctx context.Context, characterID int32, data any) error {
+			var home sql.NullInt64
+			clones := data.(esi.GetCharactersCharacterIdClonesOk)
+			if clones.HomeLocation.LocationId != 0 {
+				_, err := s.getOrCreateLocationESI(ctx, clones.HomeLocation.LocationId)
+				if err != nil {
+					return err
+				}
+				home.Int64 = clones.HomeLocation.LocationId
+				home.Valid = true
+			}
+			if err := s.r.UpdateCharacterHome(ctx, characterID, home); err != nil {
+				return err
+			}
+			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))
+			for i, jc := range clones.JumpClones {
+				_, err := s.getOrCreateLocationESI(ctx, jc.LocationId)
+				if err != nil {
+					return err
+				}
+				for _, typeID := range jc.Implants {
+					_, err := s.getOrCreateEveTypeESI(ctx, typeID)
+					if err != nil {
+						return err
+					}
+				}
+				args[i] = storage.CreateCharacterJumpCloneParams{
+					CharacterID: characterID,
+					LocationID:  jc.LocationId,
+					JumpCloneID: int64(jc.JumpCloneId),
+					Implants:    jc.Implants,
+				}
+			}
+			if err := s.r.ReplaceCharacterJumpClones(ctx, characterID, args); err != nil {
+				return err
+			}
+			return nil
+		})
 }

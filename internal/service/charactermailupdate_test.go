@@ -55,10 +55,8 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 			return resp, err
 		},
 	)
-	token := model.CharacterToken{AccessToken: "abc", CharacterID: 1, ExpiresAt: time.Now().Add(time.Minute * 10)}
-
 	// when
-	mails, err := s.fetchMailHeadersESI(ctx, &token)
+	mails, err := s.fetchMailHeadersESI(ctx, 1)
 
 	// then
 	if assert.NoError(t, err) {

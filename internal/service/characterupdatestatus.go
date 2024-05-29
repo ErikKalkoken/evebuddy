@@ -118,9 +118,25 @@ func (s *Service) CharacterSectionIsUpdateExpired(characterID int32, section mod
 	return time.Now().After(deadline), nil
 }
 
-// recordCharacterSectionUpdate records an update to a character section
-// and reports wether the section has changed
-func (s *Service) recordCharacterSectionUpdate(ctx context.Context, characterID int32, section model.CharacterSection, data any) (bool, error) {
+// updateCharacterSectionIfChanged updates a character section if it has changed
+// and reports wether it has changed
+func (s *Service) updateCharacterSectionIfChanged(
+	ctx context.Context,
+	characterID int32,
+	section model.CharacterSection,
+	fetch func(ctx context.Context, characterID int32) (any, error),
+	update func(ctx context.Context, characterID int32, data any) error,
+) (bool, error) {
+	token, err := s.getValidCharacterToken(ctx, characterID)
+	if err != nil {
+		return false, err
+	}
+	ctx = contextWithESIToken(ctx, token.AccessToken)
+	data, err := fetch(ctx, characterID)
+	if err != nil {
+		return false, err
+	}
+	// identify if changed
 	hash, err := section.CalcContentHash(data)
 	if err != nil {
 		return false, err
@@ -134,6 +150,15 @@ func (s *Service) recordCharacterSectionUpdate(ctx context.Context, characterID 
 	} else {
 		hasChanged = u.ContentHash != hash
 	}
+
+	// update if changed
+	if hasChanged {
+		if err := update(ctx, characterID, data); err != nil {
+			return false, err
+		}
+	}
+
+	// record update
 	lastUpdatedAt := time.Now()
 	arg := storage.CharacterUpdateStatusParams{
 		CharacterID:   characterID,
@@ -146,6 +171,7 @@ func (s *Service) recordCharacterSectionUpdate(ctx context.Context, characterID 
 		return false, err
 	}
 	s.statusCache.setStatus(characterID, section, "", lastUpdatedAt)
+
 	slog.Debug("Has section changed", "characterID", characterID, "section", section, "changed", hasChanged)
 	return hasChanged, nil
 }

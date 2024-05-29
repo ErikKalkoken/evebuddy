@@ -5,6 +5,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/antihax/goesi/esi"
 )
 
 func (s *Service) GetCharacterAttributes(characterID int32) (*model.CharacterAttributes, error) {
@@ -13,35 +14,30 @@ func (s *Service) GetCharacterAttributes(characterID int32) (*model.CharacterAtt
 }
 
 func (s *Service) updateCharacterAttributesESI(ctx context.Context, characterID int32) (bool, error) {
-	token, err := s.getValidCharacterToken(ctx, characterID)
-	if err != nil {
-		return false, err
-	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
-	attributes, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdAttributes(ctx, characterID, nil)
-	if err != nil {
-		return false, err
-	}
-	changed, err := s.recordCharacterSectionUpdate(ctx, characterID, model.CharacterSectionAttributes, attributes)
-	if err != nil {
-		return false, err
-	}
-	if !changed {
-		return false, nil
-	}
-	arg := storage.UpdateOrCreateCharacterAttributesParams{
-		CharacterID:   characterID,
-		BonusRemaps:   int(attributes.BonusRemaps),
-		Charisma:      int(attributes.Charisma),
-		Intelligence:  int(attributes.Intelligence),
-		LastRemapDate: attributes.LastRemapDate,
-		Memory:        int(attributes.Memory),
-		Perception:    int(attributes.Perception),
-		Willpower:     int(attributes.Willpower),
-	}
-	err = s.r.UpdateOrCreateCharacterAttributes(ctx, arg)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return s.updateCharacterSectionIfChanged(
+		ctx, characterID, model.CharacterSectionAttributes,
+		func(ctx context.Context, characterID int32) (any, error) {
+			attributes, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdAttributes(ctx, characterID, nil)
+			if err != nil {
+				return false, err
+			}
+			return attributes, nil
+		},
+		func(ctx context.Context, characterID int32, data any) error {
+			attributes := data.(esi.GetCharactersCharacterIdAttributesOk)
+			arg := storage.UpdateOrCreateCharacterAttributesParams{
+				CharacterID:   characterID,
+				BonusRemaps:   int(attributes.BonusRemaps),
+				Charisma:      int(attributes.Charisma),
+				Intelligence:  int(attributes.Intelligence),
+				LastRemapDate: attributes.LastRemapDate,
+				Memory:        int(attributes.Memory),
+				Perception:    int(attributes.Perception),
+				Willpower:     int(attributes.Willpower),
+			}
+			if err := s.r.UpdateOrCreateCharacterAttributes(ctx, arg); err != nil {
+				return err
+			}
+			return nil
+		})
 }

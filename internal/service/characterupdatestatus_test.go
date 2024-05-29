@@ -10,23 +10,38 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHasCharacterSectionChanged(t *testing.T) {
+func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 	db, r, factory := testutil.New()
 	s := NewService(r)
 	ctx := context.Background()
-	t.Run("should report as changed when new", func(t *testing.T) {
+	t.Run("should report as changed and run update when new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
+		token := factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		section := model.CharacterSectionImplants
+		hasUpdated := false
+		accessToken := ""
 		// when
-		changed, err := s.recordCharacterSectionUpdate(ctx, c.ID, section, "new")
+		changed, err := s.updateCharacterSectionIfChanged(ctx, c.ID, section,
+			func(ctx context.Context, characterID int32) (any, error) {
+				accessToken = ctx.Value(goesi.ContextAccessToken).(string)
+				return "any", nil
+			},
+			func(ctx context.Context, characterID int32, data any) error {
+				hasUpdated = true
+				return nil
+			})
+		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
+			assert.Equal(t, accessToken, token.AccessToken)
+			assert.True(t, hasUpdated)
 			x, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.WithinDuration(t, time.Now(), x.LastUpdatedAt, 5*time.Second)
@@ -34,20 +49,31 @@ func TestHasCharacterSectionChanged(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should report as changed when data has changed and store update and reset error", func(t *testing.T) {
+	t.Run("should report as changed and run update when data has changed and store update and reset error", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		section := model.CharacterSectionImplants
 		x1 := factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
 			Error:       "error",
 		})
+		hasUpdated := false
 		// when
-		changed, err := s.recordCharacterSectionUpdate(ctx, c.ID, section, "new")
+		changed, err := s.updateCharacterSectionIfChanged(ctx, c.ID, section,
+			func(ctx context.Context, characterID int32) (any, error) {
+				return "any", nil
+			},
+			func(ctx context.Context, characterID int32, data any) error {
+				hasUpdated = true
+				return nil
+			})
+		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
+			assert.True(t, hasUpdated)
 			x2, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.Greater(t, x2.LastUpdatedAt, x1.LastUpdatedAt)
@@ -55,20 +81,31 @@ func TestHasCharacterSectionChanged(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should report as unchanged when data has not changed and store update", func(t *testing.T) {
+	t.Run("should report as unchanged and not run update when data has not changed", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		section := model.CharacterSectionImplants
 		x1 := factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
 			Data:        "old",
 		})
+		hasUpdated := false
 		// when
-		changed, err := s.recordCharacterSectionUpdate(ctx, c.ID, section, "old")
+		changed, err := s.updateCharacterSectionIfChanged(ctx, c.ID, section,
+			func(ctx context.Context, characterID int32) (any, error) {
+				return "old", nil
+			},
+			func(ctx context.Context, characterID int32, data any) error {
+				hasUpdated = true
+				return nil
+			})
+		// then
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
+			assert.False(t, hasUpdated)
 			x2, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.Greater(t, x2.LastUpdatedAt, x1.LastUpdatedAt)
