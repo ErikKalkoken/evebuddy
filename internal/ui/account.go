@@ -134,15 +134,15 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 		fmt.Sprintf("Are you sure you want to delete %s?", c.name),
 		func(confirmed bool) {
 			if confirmed {
-				err := func() error {
-					err := a.ui.service.DeleteCharacter(c.id)
+				err := func(characterID int32) error {
+					err := a.ui.service.DeleteCharacter(characterID)
 					if err != nil {
 						return err
 					}
 					if err := a.Refresh(); err != nil {
 						return err
 					}
-					isCurrentChar := c.id == a.ui.currentCharID()
+					isCurrentChar := characterID == a.ui.currentCharID()
 					if isCurrentChar {
 						err := a.ui.setAnyCharacter()
 						if err != nil {
@@ -152,7 +152,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 					a.ui.refreshOverview()
 					a.ui.toolbarArea.refresh()
 					return nil
-				}()
+				}(c.id)
 				if err != nil {
 					slog.Error("Failed to delete a character", "character", c, "err", err)
 					a.ui.showErrorDialog("Failed to delete a character", err)

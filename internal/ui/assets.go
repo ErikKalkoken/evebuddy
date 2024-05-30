@@ -75,17 +75,7 @@ func (u *ui) newAssetsArea() *assetsArea {
 		},
 		func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
 			label := co.(*widget.Label)
-			n, err := func() (locationNode, error) {
-				v, err := di.(binding.String).Get()
-				if err != nil {
-					return locationNode{}, err
-				}
-				n, err := newObjectFromJSON[locationNode](v)
-				if err != nil {
-					return locationNode{}, err
-				}
-				return n, nil
-			}()
+			n, err := treeNodeFromDataItem[locationNode](di)
 			if err != nil {
 				slog.Error("Failed to render asset location in UI", "err", err)
 				label.SetText("ERROR")
@@ -96,7 +86,7 @@ func (u *ui) newAssetsArea() *assetsArea {
 	)
 	a.locations.OnSelected = func(uid widget.TreeNodeID) {
 		err := func() error {
-			n, err := fetchTreeNode[locationNode](a.locationsData, uid)
+			n, err := treeNodeFromBoundTree[locationNode](a.locationsData, uid)
 			if err != nil {
 				return err
 			}
@@ -245,7 +235,7 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance, nil
 	}
-	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.currentCharID(), model.CharacterSectionJumpClones)
+	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.currentCharID(), model.CharacterSectionAssets)
 	if err != nil {
 		return "", 0, err
 	}

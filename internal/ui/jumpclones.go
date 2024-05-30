@@ -63,17 +63,7 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 			first := hbox.Objects[1].(*widget.Label)
 			second := hbox.Objects[2].(*widget.Label)
 			third := hbox.Objects[3].(*widget.Label)
-			n, err := func() (jumpCloneNode, error) {
-				v, err := di.(binding.String).Get()
-				if err != nil {
-					return jumpCloneNode{}, err
-				}
-				n, err := newObjectFromJSON[jumpCloneNode](v)
-				if err != nil {
-					return jumpCloneNode{}, err
-				}
-				return n, nil
-			}()
+			n, err := treeNodeFromDataItem[jumpCloneNode](di)
 			if err != nil {
 				slog.Error("Failed to render jump clone item in UI", "err", err)
 				first.SetText("ERROR")
@@ -109,7 +99,7 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 		},
 	)
 	a.tree.OnSelected = func(uid widget.TreeNodeID) {
-		n, err := fetchTreeNode[jumpCloneNode](a.treeData, uid)
+		n, err := treeNodeFromBoundTree[jumpCloneNode](a.treeData, uid)
 		if err != nil {
 			t := "Failed to select jump clone"
 			slog.Error(t, "err", err)

@@ -167,8 +167,8 @@ func refreshImageResourceAsync(image *canvas.Image, loader func() (fyne.Resource
 	}(image)
 }
 
-// fetchTreeNode fetches and returns an unmarshaled tree node.
-func fetchTreeNode[T any](data binding.StringTree, uid widget.TreeNodeID) (T, error) {
+// treeNodeFromBoundTree fetches and returns a tree node from a string tree.
+func treeNodeFromBoundTree[T any](data binding.StringTree, uid widget.TreeNodeID) (T, error) {
 	var zero T
 	v, err := data.GetValue(uid)
 	if err != nil {
@@ -177,6 +177,20 @@ func fetchTreeNode[T any](data binding.StringTree, uid widget.TreeNodeID) (T, er
 	n, err := newObjectFromJSON[T](v)
 	if err != nil {
 		return zero, fmt.Errorf("failed to unmarshal tree node: %w", err)
+	}
+	return n, nil
+}
+
+// treeNodeFromDataItem fetches a tree node from a data item and returns it.
+func treeNodeFromDataItem[T any](di binding.DataItem) (T, error) {
+	var zero T
+	v, err := di.(binding.String).Get()
+	if err != nil {
+		return zero, err
+	}
+	n, err := newObjectFromJSON[T](v)
+	if err != nil {
+		return zero, err
 	}
 	return n, nil
 }

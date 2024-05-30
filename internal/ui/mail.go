@@ -141,17 +141,7 @@ func (a *folderArea) makeFolderTree() *widget.Tree {
 		},
 		func(di binding.DataItem, isBranch bool, co fyne.CanvasObject) {
 			label := co.(*fyne.Container).Objects[1].(*widget.Label)
-			item, err := func() (folderNode, error) {
-				v, err := di.(binding.String).Get()
-				if err != nil {
-					return folderNode{}, err
-				}
-				item, err := newObjectFromJSON[folderNode](v)
-				if err != nil {
-					return folderNode{}, err
-				}
-				return item, nil
-			}()
+			item, err := treeNodeFromDataItem[folderNode](di)
 			if err != nil {
 				slog.Error("Failed to fetch data item for tree", "err", err)
 				label.SetText("ERROR")
@@ -169,7 +159,7 @@ func (a *folderArea) makeFolderTree() *widget.Tree {
 		},
 	)
 	tree.OnSelected = func(uid string) {
-		node, err := fetchTreeNode[folderNode](a.treeData, uid)
+		node, err := treeNodeFromBoundTree[folderNode](a.treeData, uid)
 		if err != nil {
 			t := "Failed to select folder"
 			slog.Error(t, "err", err)
