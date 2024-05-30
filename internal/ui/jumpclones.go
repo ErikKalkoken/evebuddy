@@ -140,7 +140,7 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 	}
 
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, container.NewVScroll(a.tree))
+	a.content = container.NewBorder(top, nil, nil, nil, a.tree)
 	return &a
 }
 

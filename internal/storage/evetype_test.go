@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
@@ -48,8 +47,7 @@ func TestEveType(t *testing.T) {
 		x, err := r.MissingEveTypes(ctx, []int32{7, 9})
 		// then
 		if assert.NoError(t, err) {
-			want := set.NewFromSlice([]int32{9})
-			assert.Equal(t, want, x)
+			assert.Equal(t, []int32{9}, x)
 		}
 	})
 }

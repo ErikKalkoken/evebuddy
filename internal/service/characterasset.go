@@ -14,6 +14,11 @@ func (s *Service) ListCharacterAssets(characterID int32) ([]*model.CharacterAsse
 	return s.r.ListCharacterAssets(ctx, characterID)
 }
 
+func (s *Service) ListCharacterAssetLocations(characterID int32) ([]*model.CharacterAssetLocation, error) {
+	ctx := context.Background()
+	return s.r.ListCharacterAssetLocations(ctx, characterID)
+}
+
 type esiCharacterAssetPlus struct {
 	esi.GetCharactersCharacterIdAssets200Ok
 	Name string

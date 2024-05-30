@@ -164,11 +164,11 @@ func (u *ui) newOverviewArea() *overviewArea {
 			m := map[int]struct {
 				parent, child int
 			}{
-				4: {1, 0},
-				5: {2, 1},
-				6: {2, 1},
-				7: {2, 0},
-				8: {3, 0},
+				4: {2, 0},
+				5: {3, 1},
+				6: {3, 1},
+				7: {3, 0},
+				8: {4, 0},
 			}
 			idx, ok := m[tci.Col]
 			if ok {

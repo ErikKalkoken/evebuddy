@@ -42,6 +42,7 @@ const (
 // call methods on other UI areas and access shared variables in the UI.
 type ui struct {
 	app                   fyne.App
+	assetsArea            *assetsArea
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
 	currentCharacter      *model.Character
@@ -77,6 +78,12 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 		service:      service,
 		window:       w,
 	}
+
+	u.assetsArea = u.newAssetsArea()
+	assetsTab := container.NewTabItemWithIcon("Assets",
+		theme.NewThemedResource(resourceInventory2Svg), container.NewAppTabs(
+			container.NewTabItem("Assets", u.assetsArea.content),
+		))
 
 	u.attributesArea = u.newAttributesArena()
 	u.biographyArea = u.newBiographyArea()
@@ -125,7 +132,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	u.statusBarArea = u.newStatusBarArea()
 	u.toolbarArea = u.newToolbarArea()
 
-	u.tabs = container.NewAppTabs(characterTab, u.mailTab, u.skillqueueTab, walletTab, overviewTab)
+	u.tabs = container.NewAppTabs(assetsTab, characterTab, u.mailTab, u.skillqueueTab, walletTab, overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	// for experiments
@@ -280,6 +287,7 @@ func (u *ui) setCurrentCharacter(c *model.Character) {
 }
 
 func (u *ui) refreshCurrentCharacter() {
+	u.assetsArea.redraw()
 	u.attributesArea.refresh()
 	u.biographyArea.refresh()
 	u.jumpClonesArea.redraw()
@@ -296,11 +304,13 @@ func (u *ui) refreshCurrentCharacter() {
 		u.tabs.EnableIndex(0)
 		u.tabs.EnableIndex(1)
 		u.tabs.EnableIndex(2)
+		u.tabs.EnableIndex(3)
 		u.updateCharacterAndRefreshIfNeeded(c.ID)
 	} else {
 		u.tabs.DisableIndex(0)
 		u.tabs.DisableIndex(1)
 		u.tabs.DisableIndex(2)
+		u.tabs.DisableIndex(3)
 		u.tabs.SelectIndex(4)
 	}
 	go u.statusBarArea.characterUpdateStatusArea.refresh()
@@ -436,6 +446,10 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32) {
 			}
 			isCurrent := characterID == u.currentCharID()
 			switch s {
+			case model.CharacterSectionAssets:
+				if isCurrent && isChanged {
+					u.assetsArea.redraw()
+				}
 			case model.CharacterSectionAttributes:
 				if isCurrent && isChanged {
 					u.attributesArea.refresh()

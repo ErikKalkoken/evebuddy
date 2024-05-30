@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -92,7 +93,6 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 				}
 				arg.OwnerID = sql.NullInt32{Int32: station.Owner, Valid: true}
 			}
-
 		case model.LocationVariantStructure:
 			structure, r, err := s.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
 			if err != nil {
@@ -126,6 +126,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 		default:
 			return nil, fmt.Errorf("can not update or create structure for invalid ID: %d", id)
 		}
+		arg.UpdatedAt = time.Now()
 		if err := s.r.UpdateOrCreateLocation(ctx, arg); err != nil {
 			return nil, err
 		}

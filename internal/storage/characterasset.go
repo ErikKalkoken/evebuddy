@@ -72,6 +72,7 @@ func (r *Storage) DeleteExcludedCharacterAssets(ctx context.Context, characterID
 func (r *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32) ([]int64, error) {
 	return r.q.ListCharacterAssetIDs(ctx, int64(characterID))
 }
+
 func (r *Storage) ListCharacterAssets(ctx context.Context, characterID int32) ([]*model.CharacterAsset, error) {
 	rows, err := r.q.ListCharacterAssets(ctx, int64(characterID))
 	if err != nil {
@@ -80,6 +81,18 @@ func (r *Storage) ListCharacterAssets(ctx context.Context, characterID int32) ([
 	ii2 := make([]*model.CharacterAsset, len(rows))
 	for i, row := range rows {
 		ii2[i] = characterAssetFromDBModel(row.CharacterAsset, row.EveTypeName)
+	}
+	return ii2, nil
+}
+
+func (r *Storage) ListCharacterAssetLocations(ctx context.Context, characterID int32) ([]*model.CharacterAssetLocation, error) {
+	rows, err := r.q.ListCharacterAssetLocations(ctx, int64(characterID))
+	if err != nil {
+		return nil, err
+	}
+	ii2 := make([]*model.CharacterAssetLocation, len(rows))
+	for i, row := range rows {
+		ii2[i] = characterAssetLocationFromDBModel(row)
 	}
 	return ii2, nil
 }
@@ -129,6 +142,21 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, eveTypeName string) *m
 		LocationType:    ca.LocationType,
 		Name:            ca.Name,
 		Quantity:        int32(ca.Quantity),
+	}
+	return o
+}
+
+func characterAssetLocationFromDBModel(x queries.ListCharacterAssetLocationsRow) *model.CharacterAssetLocation {
+	if x.LocationID == 0 || x.CharacterID == 0 {
+		panic(fmt.Sprintf("invalid IDs: %v", x))
+	}
+	o := &model.CharacterAssetLocation{
+		CharacterID: int32(x.CharacterID),
+		ID:          x.LocationID,
+		Location:    &model.EntityShort[int64]{ID: x.LocationID, Name: x.LocationName},
+	}
+	if x.SystemID.Valid && x.SystemName.Valid {
+		o.SolarSystem = &model.EntityShort[int32]{ID: int32(x.SystemID.Int64), Name: x.SystemName.String}
 	}
 	return o
 }

@@ -13,3 +13,11 @@ type CharacterAsset struct {
 	Name            string
 	Quantity        int32
 }
+
+type CharacterAssetLocation struct {
+	ID           int64
+	CharacterID  int32
+	Location     *EntityShort[int64]
+	LocationType string
+	SolarSystem  *EntityShort[int32]
+}

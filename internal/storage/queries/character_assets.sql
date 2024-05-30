@@ -42,6 +42,21 @@ FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 WHERE character_id = ?;
 
+-- name: ListCharacterAssetLocations :many
+SELECT DISTINCT
+    ca.character_id,
+    ca.location_type,
+    ca.location_id,
+    lo.name as location_name,
+    sys.id as system_id,
+    sys.name as system_name
+FROM character_assets ca
+JOIN locations lo ON lo.id = ca.location_id
+LEFT JOIN eve_solar_systems sys ON sys.id = lo.eve_solar_system_id
+WHERE character_id = ?
+AND location_flag = "Hangar"
+ORDER BY location_name;
+
 -- name: UpdateCharacterAsset :exec
 UPDATE character_assets
 SET

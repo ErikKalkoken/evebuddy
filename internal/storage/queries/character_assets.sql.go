@@ -7,6 +7,7 @@ package queries
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 )
 
@@ -143,6 +144,61 @@ func (q *Queries) ListCharacterAssetIDs(ctx context.Context, characterID int64) 
 			return nil, err
 		}
 		items = append(items, item_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterAssetLocations = `-- name: ListCharacterAssetLocations :many
+SELECT DISTINCT
+    ca.character_id,
+    ca.location_type,
+    ca.location_id,
+    lo.name as location_name,
+    sys.id as system_id,
+    sys.name as system_name
+FROM character_assets ca
+JOIN locations lo ON lo.id = ca.location_id
+LEFT JOIN eve_solar_systems sys ON sys.id = lo.eve_solar_system_id
+WHERE character_id = ?
+AND location_flag = "Hangar"
+ORDER BY location_name
+`
+
+type ListCharacterAssetLocationsRow struct {
+	CharacterID  int64
+	LocationType string
+	LocationID   int64
+	LocationName string
+	SystemID     sql.NullInt64
+	SystemName   sql.NullString
+}
+
+func (q *Queries) ListCharacterAssetLocations(ctx context.Context, characterID int64) ([]ListCharacterAssetLocationsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterAssetLocations, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterAssetLocationsRow
+	for rows.Next() {
+		var i ListCharacterAssetLocationsRow
+		if err := rows.Scan(
+			&i.CharacterID,
+			&i.LocationType,
+			&i.LocationID,
+			&i.LocationName,
+			&i.SystemID,
+			&i.SystemName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
