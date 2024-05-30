@@ -22,6 +22,8 @@ const (
 	imageVariantPortrait imageVariant = "portrait"
 	imageVariantRender   imageVariant = "render"
 	imageVariantIcon     imageVariant = "icon"
+	imageVariantBPO      imageVariant = "bp"
+	imageVariantBPC      imageVariant = "bpc"
 )
 
 const (
@@ -60,6 +62,16 @@ func InventoryTypeRenderURL(id int32, size int) (string, error) {
 // InventoryTypeIconURL returns an image URL for inventory type icon
 func InventoryTypeIconURL(id int32, size int) (string, error) {
 	return imageURL(categoryInventoryType, imageVariantIcon, id, size)
+}
+
+// InventoryTypeBPOURL returns an image URL for inventory type bpo
+func InventoryTypeBPOURL(id int32, size int) (string, error) {
+	return imageURL(categoryInventoryType, imageVariantBPO, id, size)
+}
+
+// InventoryTypeBPCURL returns an image URL for inventory type bpc
+func InventoryTypeBPCURL(id int32, size int) (string, error) {
+	return imageURL(categoryInventoryType, imageVariantBPC, id, size)
 }
 
 func imageURL(c category, v imageVariant, id int32, size int) (string, error) {

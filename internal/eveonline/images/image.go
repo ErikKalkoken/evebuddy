@@ -73,7 +73,7 @@ func (m *Manager) FactionLogo(id int32, size int) (fyne.Resource, error) {
 	return m.image(url)
 }
 
-// FactionLogo returns the render for a type. Note that not ever type has a render.
+// InventoryTypeRender returns the render for a type. Note that not ever type has a render.
 func (m *Manager) InventoryTypeRender(id int32, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeRenderURL(id, size)
 	if err != nil {
@@ -82,9 +82,27 @@ func (m *Manager) InventoryTypeRender(id int32, size int) (fyne.Resource, error)
 	return m.image(url)
 }
 
-// FactionLogo returns the logo for a type.
+// InventoryTypeIcon returns the icon for a type.
 func (m *Manager) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
 	url, err := InventoryTypeIconURL(id, size)
+	if err != nil {
+		return nil, err
+	}
+	return m.image(url)
+}
+
+// InventoryTypeBPO returns the icon for a BPO type.
+func (m *Manager) InventoryTypeBPO(id int32, size int) (fyne.Resource, error) {
+	url, err := InventoryTypeBPOURL(id, size)
+	if err != nil {
+		return nil, err
+	}
+	return m.image(url)
+}
+
+// InventoryTypeBPC returns the icon for a BPC type.
+func (m *Manager) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
+	url, err := InventoryTypeBPCURL(id, size)
 	if err != nil {
 		return nil, err
 	}

@@ -99,10 +99,38 @@ func TestInventoryTypeRenderURL(t *testing.T) {
 
 func TestInventoryTypeIconURL(t *testing.T) {
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("inventory type render ID:%d size:%d", tc.id, tc.size), func(t *testing.T) {
+		t.Run(fmt.Sprintf("inventory type icon ID:%d size:%d", tc.id, tc.size), func(t *testing.T) {
 			got, err := images.InventoryTypeIconURL(tc.id, tc.size)
 			if tc.valid && assert.NoError(t, err) {
 				want := fmt.Sprintf("https://images.evetech.net/types/%d/icon?size=%d", tc.id, tc.size)
+				assert.Equal(t, want, got)
+			} else {
+				assert.ErrorIs(t, err, images.ErrInvalidSize)
+			}
+		})
+	}
+}
+
+func TestInventoryTypeBPOURL(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("inventory type BPO ID:%d size:%d", tc.id, tc.size), func(t *testing.T) {
+			got, err := images.InventoryTypeBPOURL(tc.id, tc.size)
+			if tc.valid && assert.NoError(t, err) {
+				want := fmt.Sprintf("https://images.evetech.net/types/%d/bp?size=%d", tc.id, tc.size)
+				assert.Equal(t, want, got)
+			} else {
+				assert.ErrorIs(t, err, images.ErrInvalidSize)
+			}
+		})
+	}
+}
+
+func TestInventoryTypeBPCURL(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("inventory type BPC ID:%d size:%d", tc.id, tc.size), func(t *testing.T) {
+			got, err := images.InventoryTypeBPCURL(tc.id, tc.size)
+			if tc.valid && assert.NoError(t, err) {
+				want := fmt.Sprintf("https://images.evetech.net/types/%d/bpc?size=%d", tc.id, tc.size)
 				assert.Equal(t, want, got)
 			} else {
 				assert.ErrorIs(t, err, images.ErrInvalidSize)

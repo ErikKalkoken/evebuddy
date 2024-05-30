@@ -19,10 +19,6 @@ func (ca *CharacterAsset) IsBPO() bool {
 	return ca.EveCategoryID == EveCategoryIDBlueprint && !ca.IsBlueprintCopy
 }
 
-func (ca *CharacterAsset) IsBPC() bool {
-	return ca.EveCategoryID == EveCategoryIDBlueprint && ca.IsBlueprintCopy
-}
-
 func (ca *CharacterAsset) IsSKIN() bool {
 	return ca.EveCategoryID == EveCategoryIDSKINs
 }

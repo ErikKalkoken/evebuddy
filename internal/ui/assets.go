@@ -138,6 +138,10 @@ func (u *ui) newAssetsArea() *assetsArea {
 			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
 				if o.IsSKIN() {
 					return resourceSkinicon64pxPng, nil
+				} else if o.IsBPO() {
+					return a.ui.imageManager.InventoryTypeBPO(o.EveType.ID, 64)
+				} else if o.IsBlueprintCopy {
+					return a.ui.imageManager.InventoryTypeBPC(o.EveType.ID, 64)
 				} else {
 					return a.ui.imageManager.InventoryTypeIcon(o.EveType.ID, 64)
 				}
