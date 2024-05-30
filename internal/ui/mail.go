@@ -413,17 +413,7 @@ func (a *headerArea) makeHeaderTree() *widget.List {
 			if !a.mailArea.ui.hasCharacter() {
 				return
 			}
-			m, err := func() (*model.CharacterMail, error) {
-				mailID, err := di.(binding.Int).Get()
-				if err != nil {
-					return nil, err
-				}
-				m, err := a.mailArea.ui.service.GetCharacterMail(a.mailArea.ui.currentCharID(), int32(mailID))
-				if err != nil {
-					return nil, err
-				}
-				return m, nil
-			}()
+			m, err := a.fetchMailFromDataItem(di)
 			if err != nil {
 				slog.Error("Failed to get mail", "error", err)
 				subject.Text = "ERROR"
@@ -458,17 +448,7 @@ func (a *headerArea) makeHeaderTree() *widget.List {
 			subject.Refresh()
 		})
 	list.OnSelected = func(id widget.ListItemID) {
-		mailID, err := func() (int32, error) {
-			di, err := a.mailIDs.GetItem(id)
-			if err != nil {
-				return 0, err
-			}
-			mailID, err := di.(binding.Int).Get()
-			if err != nil {
-				return 0, err
-			}
-			return int32(mailID), nil
-		}()
+		mailID, err := fetchMailIDFromData(a.mailIDs, id)
 		if err != nil {
 			t := "Failed to select mail header"
 			slog.Error(t, "err", err)
@@ -479,6 +459,30 @@ func (a *headerArea) makeHeaderTree() *widget.List {
 		a.lastSelected = id
 	}
 	return list
+}
+
+func fetchMailIDFromData(data binding.IntList, id widget.ListItemID) (int32, error) {
+	di, err := data.GetItem(id)
+	if err != nil {
+		return 0, err
+	}
+	mailID, err := di.(binding.Int).Get()
+	if err != nil {
+		return 0, err
+	}
+	return int32(mailID), nil
+}
+
+func (a *headerArea) fetchMailFromDataItem(di binding.DataItem) (*model.CharacterMail, error) {
+	mailID, err := di.(binding.Int).Get()
+	if err != nil {
+		return nil, err
+	}
+	m, err := a.mailArea.ui.service.GetCharacterMail(a.mailArea.ui.currentCharID(), int32(mailID))
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (a *headerArea) setFolder(folder folderNode) {

@@ -122,7 +122,7 @@ func getItemUntypedList[T any](l binding.UntypedList, index int) (T, error) {
 // 	return v, nil
 // }
 
-// convertDataItem returns the value of the data item in the target type.
+// convertDataItem returns the value of an untyped data item in the target type.
 func convertDataItem[T any](i binding.DataItem) (T, error) {
 	var z T
 	x, err := i.(binding.Untyped).Get()
