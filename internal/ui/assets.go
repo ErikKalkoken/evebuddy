@@ -16,16 +16,32 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
+type locationNodeType uint
+
+const (
+	nodeBranch locationNodeType = iota + 1
+	nodeShipHangar
+	nodeItemHangar
+)
+
 type locationNode struct {
 	CharacterID int32
 	LocationID  int64
 	Name        string
 	System      string
+	Type        locationNodeType
 }
 
-// func (n locationNode) isBranch() bool {
-// 	return n.ImplantTypeID == 0 && n.ImplantCount > 0
-// }
+func (n locationNode) UID() widget.TreeNodeID {
+	if n.CharacterID == 0 || n.LocationID == 0 || n.Type == 0 {
+		panic("some IDs are not set")
+	}
+	return fmt.Sprintf("%d-%d-%d", n.CharacterID, n.LocationID, n.Type)
+}
+
+func (n locationNode) isBranch() bool {
+	return n.Type == nodeBranch
+}
 
 // assetsArea is the UI area that shows the skillqueue
 type assetsArea struct {
@@ -33,21 +49,24 @@ type assetsArea struct {
 	defaultAssetIcon fyne.Resource
 	assets           *widget.GridWrap
 	assetsData       binding.UntypedList
+	assetsTop        *widget.Label
 	locations        *widget.Tree
 	locationsData    binding.StringTree
-	top              *widget.Label
+	locationsTop     *widget.Label
 	ui               *ui
 }
 
 func (u *ui) newAssetsArea() *assetsArea {
 	a := assetsArea{
-		top:              widget.NewLabel(""),
-		defaultAssetIcon: theme.NewThemedResource(resourceQuestionmark64dpSvg),
 		assetsData:       binding.NewUntypedList(),
+		assetsTop:        widget.NewLabel(""),
+		defaultAssetIcon: theme.NewThemedResource(resourceQuestionmark64dpSvg),
 		locationsData:    binding.NewStringTree(),
+		locationsTop:     widget.NewLabel(""),
 		ui:               u,
 	}
-	a.top.TextStyle.Bold = true
+	a.assetsTop.TextStyle.Bold = true
+	a.locationsTop.TextStyle.Bold = true
 
 	a.locations = widget.NewTreeWithData(
 		a.locationsData,
@@ -81,20 +100,19 @@ func (u *ui) newAssetsArea() *assetsArea {
 			if err != nil {
 				return err
 			}
-			return a.updateAssetData(n.CharacterID, n.LocationID)
+			if n.isBranch() {
+				a.locations.ToggleBranch(uid)
+				a.locations.UnselectAll()
+			} else {
+				return a.redrawAssets(n)
+			}
+			return nil
 		}()
 		if err != nil {
 			t := "Failed to select location"
 			slog.Error(t, "err", err)
 			a.ui.statusBarArea.SetError(t)
 		}
-		// if n.isBranch() {
-		// 	a.tree.ToggleBranch(uid)
-		// }
-		// if n.isClone() {
-		// 	a.tree.UnselectAll()
-		// 	return
-		// }
 	}
 
 	a.assets = widget.NewGridWrapWithData(
@@ -123,14 +141,21 @@ func (u *ui) newAssetsArea() *assetsArea {
 			name.SetText(o.EveType.Name)
 		},
 	)
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	main := container.NewHSplit(a.locations, a.assets)
-	a.content = container.NewBorder(top, nil, nil, nil, main)
+	locations := container.NewBorder(container.NewVBox(a.locationsTop, widget.NewSeparator()), nil, nil, nil, a.locations)
+	assets := container.NewBorder(container.NewVBox(a.assetsTop, widget.NewSeparator()), nil, nil, nil, a.assets)
+	main := container.NewHSplit(locations, assets)
+	main.SetOffset(0.33)
+	a.content = main
 	return &a
 }
 
 func (a *assetsArea) redraw() {
+	a.locations.CloseAllBranches()
+	a.locations.ScrollToTop()
 	t, i, err := func() (string, widget.Importance, error) {
+		if err := a.clearAssets(); err != nil {
+			return "", 0, err
+		}
 		ids, values, total, err := a.updateLocationData()
 		if err != nil {
 			return "", 0, err
@@ -145,9 +170,9 @@ func (a *assetsArea) redraw() {
 		t = "ERROR"
 		i = widget.DangerImportance
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
+	a.locationsTop.Text = t
+	a.locationsTop.Importance = i
+	a.locationsTop.Refresh()
 }
 
 func (a *assetsArea) updateLocationData() (map[string][]string, map[string]string, int, error) {
@@ -163,7 +188,7 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 	}
 	nodes := make([]locationNode, len(locations))
 	for i, l := range locations {
-		n := locationNode{CharacterID: characterID, LocationID: l.ID}
+		n := locationNode{CharacterID: characterID, LocationID: l.ID, Type: nodeBranch}
 		// TODO: Refactor to use same location method for all unknown location cases
 		if l.Location.Name != "" {
 			n.Name = l.Location.Name
@@ -178,28 +203,33 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 	slices.SortFunc(nodes, func(a, b locationNode) int {
 		return cmp.Compare(a.Name, b.Name)
 	})
-	for _, n := range nodes {
-		id := fmt.Sprint(n.LocationID)
-		values[id], err = objectToJSON(n)
+	for _, ln := range nodes {
+		uid := ln.UID()
+		values[uid], err = objectToJSON(ln)
 		if err != nil {
 			return nil, nil, 0, err
 		}
-		ids[""] = append(ids[""], id)
-		// 	for _, i := range l.Implants {
-		// 		subID := fmt.Sprintf("%s-%d", id, i.EveType.ID)
-		// 		n := locationNode{
-		// 			ImplantTypeName:        i.EveType.Name,
-		// 			ImplantTypeID:          i.EveType.ID,
-		// 			ImplantTypeDescription: i.EveType.DescriptionPlain(),
-		// 		}
-		// 		values[subID], err = objectToJSON(n)
-		// 		if err != nil {
-		// 			return nil, nil, 0, err
-		// 		}
-		// 		ids[id] = append(ids[id], subID)
-		// 	}
+		ids[""] = append(ids[""], uid)
+		for _, t := range []locationNodeType{nodeShipHangar, nodeItemHangar} {
+			hn := locationNode{
+				CharacterID: ln.CharacterID,
+				LocationID:  ln.LocationID,
+				Type:        t,
+			}
+			switch t {
+			case nodeShipHangar:
+				hn.Name = "Ship Hangar"
+			case nodeItemHangar:
+				hn.Name = "Item Hangar"
+			}
+			subUID := hn.UID()
+			values[subUID], err = objectToJSON(hn)
+			if err != nil {
+				return nil, nil, 0, err
+			}
+			ids[uid] = append(ids[uid], subUID)
+		}
 	}
-
 	return ids, values, len(locations), nil
 }
 
@@ -217,14 +247,36 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	return fmt.Sprintf("%d locations", total), widget.MediumImportance, nil
 }
 
-func (a *assetsArea) updateAssetData(characterID int32, locationID int64) error {
+func (a *assetsArea) redrawAssets(n locationNode) error {
 	empty := make([]*model.CharacterAsset, 0)
 	if err := a.assetsData.Set(copyToUntypedSlice(empty)); err != nil {
 		return err
 	}
-	assets, err := a.ui.service.ListCharacterAssetsAtLocation(characterID, locationID)
+	var f func(int32, int64) ([]*model.CharacterAsset, error)
+	switch n.Type {
+	case nodeShipHangar:
+		f = a.ui.service.ListCharacterAssetsInShipHangar
+	case nodeItemHangar:
+		f = a.ui.service.ListCharacterAssetsInItemHangar
+	default:
+		return fmt.Errorf("invalid node type: %v", n.Type)
+	}
+	assets, err := f(n.CharacterID, n.LocationID)
 	if err != nil {
 		return err
 	}
-	return a.assetsData.Set(copyToUntypedSlice(assets))
+	if err := a.assetsData.Set(copyToUntypedSlice(assets)); err != nil {
+		return err
+	}
+	a.assetsTop.SetText(fmt.Sprintf("%d items", len(assets)))
+	return nil
+}
+
+func (a *assetsArea) clearAssets() error {
+	empty := make([]*model.CharacterAsset, 0)
+	if err := a.assetsData.Set(copyToUntypedSlice(empty)); err != nil {
+		return err
+	}
+	a.assetsTop.SetText("")
+	return nil
 }

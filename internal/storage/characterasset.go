@@ -73,12 +73,32 @@ func (r *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32) 
 	return r.q.ListCharacterAssetIDs(ctx, int64(characterID))
 }
 
-func (r *Storage) ListCharacterAssetsAtLocation(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
-	arg := queries.ListCharacterAssetsAtLocationParams{
-		CharacterID: int64(characterID),
-		LocationID:  locationID,
+func (r *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+	arg := queries.ListCharacterAssetsInShipHangarParams{
+		CharacterID:   int64(characterID),
+		LocationID:    locationID,
+		LocationFlag:  "Hangar",
+		EveCategoryID: model.EveCategoryIDShip,
 	}
-	rows, err := r.q.ListCharacterAssetsAtLocation(ctx, arg)
+	rows, err := r.q.ListCharacterAssetsInShipHangar(ctx, arg)
+	if err != nil {
+		return nil, err
+	}
+	ii2 := make([]*model.CharacterAsset, len(rows))
+	for i, row := range rows {
+		ii2[i] = characterAssetFromDBModel(row.CharacterAsset, row.EveTypeName)
+	}
+	return ii2, nil
+}
+
+func (r *Storage) ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+	arg := queries.ListCharacterAssetsInItemHangarParams{
+		CharacterID:   int64(characterID),
+		LocationID:    locationID,
+		LocationFlag:  "Hangar",
+		EveCategoryID: model.EveCategoryIDShip,
+	}
+	rows, err := r.q.ListCharacterAssetsInItemHangar(ctx, arg)
 	if err != nil {
 		return nil, err
 	}

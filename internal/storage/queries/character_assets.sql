@@ -34,14 +34,29 @@ SELECT item_id
 FROM character_assets
 WHERE character_id = ?;
 
--- name: ListCharacterAssetsAtLocation :many
+-- name: ListCharacterAssetsInShipHangar :many
 SELECT
     sqlc.embed(ca),
     et.name as eve_type_name
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
+JOIN eve_groups eg ON eg.id = et.eve_group_id
 WHERE character_id = ?
-AND location_id = ?;
+AND location_id = ?
+AND location_flag = ?
+AND eg.eve_category_id = ?;
+
+-- name: ListCharacterAssetsInItemHangar :many
+SELECT
+    sqlc.embed(ca),
+    et.name as eve_type_name
+FROM character_assets ca
+JOIN eve_types et ON et.id = ca.eve_type_id
+JOIN eve_groups eg ON eg.id = et.eve_group_id
+WHERE character_id = ?
+AND location_id = ?
+AND location_flag = ?
+AND eg.eve_category_id != ?;
 
 -- name: ListCharacterAssetLocations :many
 SELECT DISTINCT

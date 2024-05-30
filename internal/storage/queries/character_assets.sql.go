@@ -214,35 +214,111 @@ func (q *Queries) ListCharacterAssetLocations(ctx context.Context, arg ListChara
 	return items, nil
 }
 
-const listCharacterAssetsAtLocation = `-- name: ListCharacterAssetsAtLocation :many
+const listCharacterAssetsInItemHangar = `-- name: ListCharacterAssetsInItemHangar :many
 SELECT
     ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
     et.name as eve_type_name
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
+JOIN eve_groups eg ON eg.id = et.eve_group_id
 WHERE character_id = ?
 AND location_id = ?
+AND location_flag = ?
+AND eg.eve_category_id != ?
 `
 
-type ListCharacterAssetsAtLocationParams struct {
-	CharacterID int64
-	LocationID  int64
+type ListCharacterAssetsInItemHangarParams struct {
+	CharacterID   int64
+	LocationID    int64
+	LocationFlag  string
+	EveCategoryID int64
 }
 
-type ListCharacterAssetsAtLocationRow struct {
+type ListCharacterAssetsInItemHangarRow struct {
 	CharacterAsset CharacterAsset
 	EveTypeName    string
 }
 
-func (q *Queries) ListCharacterAssetsAtLocation(ctx context.Context, arg ListCharacterAssetsAtLocationParams) ([]ListCharacterAssetsAtLocationRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterAssetsAtLocation, arg.CharacterID, arg.LocationID)
+func (q *Queries) ListCharacterAssetsInItemHangar(ctx context.Context, arg ListCharacterAssetsInItemHangarParams) ([]ListCharacterAssetsInItemHangarRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterAssetsInItemHangar,
+		arg.CharacterID,
+		arg.LocationID,
+		arg.LocationFlag,
+		arg.EveCategoryID,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListCharacterAssetsAtLocationRow
+	var items []ListCharacterAssetsInItemHangarRow
 	for rows.Next() {
-		var i ListCharacterAssetsAtLocationRow
+		var i ListCharacterAssetsInItemHangarRow
+		if err := rows.Scan(
+			&i.CharacterAsset.ID,
+			&i.CharacterAsset.CharacterID,
+			&i.CharacterAsset.EveTypeID,
+			&i.CharacterAsset.IsBlueprintCopy,
+			&i.CharacterAsset.IsSingleton,
+			&i.CharacterAsset.ItemID,
+			&i.CharacterAsset.LocationFlag,
+			&i.CharacterAsset.LocationID,
+			&i.CharacterAsset.LocationType,
+			&i.CharacterAsset.Name,
+			&i.CharacterAsset.Quantity,
+			&i.EveTypeName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterAssetsInShipHangar = `-- name: ListCharacterAssetsInShipHangar :many
+SELECT
+    ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
+    et.name as eve_type_name
+FROM character_assets ca
+JOIN eve_types et ON et.id = ca.eve_type_id
+JOIN eve_groups eg ON eg.id = et.eve_group_id
+WHERE character_id = ?
+AND location_id = ?
+AND location_flag = ?
+AND eg.eve_category_id = ?
+`
+
+type ListCharacterAssetsInShipHangarParams struct {
+	CharacterID   int64
+	LocationID    int64
+	LocationFlag  string
+	EveCategoryID int64
+}
+
+type ListCharacterAssetsInShipHangarRow struct {
+	CharacterAsset CharacterAsset
+	EveTypeName    string
+}
+
+func (q *Queries) ListCharacterAssetsInShipHangar(ctx context.Context, arg ListCharacterAssetsInShipHangarParams) ([]ListCharacterAssetsInShipHangarRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterAssetsInShipHangar,
+		arg.CharacterID,
+		arg.LocationID,
+		arg.LocationFlag,
+		arg.EveCategoryID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterAssetsInShipHangarRow
+	for rows.Next() {
+		var i ListCharacterAssetsInShipHangarRow
 		if err := rows.Scan(
 			&i.CharacterAsset.ID,
 			&i.CharacterAsset.CharacterID,

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -79,16 +80,20 @@ func TestCharacterAsset(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can list assets at location", func(t *testing.T) {
+	t.Run("can list assets in ship hangar", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		location := factory.CreateLocationStructure()
+		shipCategory := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: model.EveCategoryIDShip})
+		shipGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: shipCategory.ID})
+		shipType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: shipGroup.ID})
 		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 			CharacterID: c.ID,
 			LocationID:  location.ID,
+			EveTypeID:   shipType.ID,
 		})
-		x2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 			CharacterID: c.ID,
 			LocationID:  location.ID,
 		})
@@ -96,18 +101,11 @@ func TestCharacterAsset(t *testing.T) {
 			CharacterID: c.ID,
 		})
 		// when
-		oo, err := r.ListCharacterAssetsAtLocation(ctx, c.ID, location.ID)
+		oo, err := r.ListCharacterAssetsInShipHangar(ctx, c.ID, location.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, oo, 2)
-			for _, o := range oo {
-				if o.ItemID == x1.ItemID {
-					assert.Equal(t, x1.EveType, o.EveType)
-				}
-				if o.ItemID == x2.ItemID {
-					assert.Equal(t, x2.EveType, o.EveType)
-				}
-			}
+			assert.Len(t, oo, 1)
+			assert.Equal(t, x1.EveType, oo[0].EveType)
 		}
 	})
 	t.Run("can delete excluded assets", func(t *testing.T) {
