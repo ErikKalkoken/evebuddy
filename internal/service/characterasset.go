@@ -2,11 +2,14 @@ package service
 
 import (
 	"context"
+	"slices"
+	"strconv"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
+	"github.com/antihax/goesi/optional"
 )
 
 func (s *Service) ListCharacterAssetsInShipHangar(characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
@@ -29,13 +32,11 @@ type esiCharacterAssetPlus struct {
 	Name string
 }
 
-// TODO: add paging
-
 func (s *Service) updateCharacterAssetsESI(ctx context.Context, characterID int32) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
 		ctx, characterID, model.CharacterSectionAssets,
 		func(ctx context.Context, characterID int32) (any, error) {
-			assets, _, err := s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, nil)
+			assets, err := s.fetchCharacterAssetsFromESIWithPaging(ctx, characterID)
 			if err != nil {
 				return false, err
 			}
@@ -126,6 +127,37 @@ func (s *Service) updateCharacterAssetsESI(ctx context.Context, characterID int3
 			}
 			return nil
 		})
+}
+
+func (s *Service) fetchCharacterAssetsFromESIWithPaging(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdAssets200Ok, error) {
+	assets, r, err := s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, nil)
+	if err != nil {
+		return nil, err
+	}
+	x := r.Header.Get("X-Pages")
+	if x == "" {
+		return assets, nil
+	}
+	pages, err := strconv.Atoi(x)
+	if err != nil {
+		return nil, err
+	}
+	if pages == 1 {
+		return assets, nil
+	}
+	assetsAll := make([]esi.GetCharactersCharacterIdAssets200Ok, 0)
+	assetsAll = slices.Concat(assetsAll, assets)
+	for i := range pages - 1 {
+		arg := &esi.GetCharactersCharacterIdAssetsOpts{
+			Page: optional.NewInt32(int32(i + 2)),
+		}
+		assets, _, err := s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, arg)
+		if err != nil {
+			return nil, err
+		}
+		assetsAll = slices.Concat(assetsAll, assets)
+	}
+	return assetsAll, nil
 }
 
 func (s *Service) fetchCharacterAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
