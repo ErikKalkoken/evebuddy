@@ -9,9 +9,9 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *Service) ListCharacterAssets(characterID int32) ([]*model.CharacterAsset, error) {
+func (s *Service) ListCharacterAssetsAtLocation(characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
 	ctx := context.Background()
-	return s.r.ListCharacterAssets(ctx, characterID)
+	return s.r.ListCharacterAssetsAtLocation(ctx, characterID, locationID)
 }
 
 func (s *Service) ListCharacterAssetLocations(characterID int32) ([]*model.CharacterAssetLocation, error) {

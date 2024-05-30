@@ -76,26 +76,27 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			xx, err := r.ListCharacterAssets(ctx, c.ID)
+			ids, err := r.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.Len(t, xx, 2)
-				for _, x := range xx {
-					if x.ItemID == 1000000016835 {
-						assert.Equal(t, eveType.ID, x.EveType.ID)
-						assert.Equal(t, eveType.Name, x.EveType.Name)
-						assert.True(t, x.IsBlueprintCopy)
-						assert.True(t, x.IsSingleton)
-						assert.Equal(t, "Hangar", x.LocationFlag)
-						assert.Equal(t, location.ID, x.LocationID)
-						assert.Equal(t, "station", x.LocationType)
-						assert.Equal(t, "Awesome Name", x.Name)
-						assert.Equal(t, int32(1), x.Quantity)
-					}
-					if x.ItemID == 1000000016836 {
-						assert.Equal(t, "", x.Name)
-					}
+				assert.Len(t, ids, 2)
+				x, err := r.GetCharacterAsset(ctx, c.ID, 1000000016835)
+				if assert.NoError(t, err) {
+					assert.Equal(t, eveType.ID, x.EveType.ID)
+					assert.Equal(t, eveType.Name, x.EveType.Name)
+					assert.True(t, x.IsBlueprintCopy)
+					assert.True(t, x.IsSingleton)
+					assert.Equal(t, "Hangar", x.LocationFlag)
+					assert.Equal(t, location.ID, x.LocationID)
+					assert.Equal(t, "station", x.LocationType)
+					assert.Equal(t, "Awesome Name", x.Name)
+					assert.Equal(t, int32(1), x.Quantity)
+				}
+				x, err = r.GetCharacterAsset(ctx, c.ID, 1000000016836)
+				if assert.NoError(t, err) {
+					assert.Equal(t, "", x.Name)
 				}
 			}
 		}
+
 	})
 }

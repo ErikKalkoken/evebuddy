@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
 	"github.com/dustin/go-humanize"
@@ -164,4 +165,18 @@ func refreshImageResourceAsync(image *canvas.Image, loader func() (fyne.Resource
 			image.Refresh()
 		}
 	}(image)
+}
+
+// fetchTreeNode fetches and returns an unmarshaled tree node.
+func fetchTreeNode[T any](data binding.StringTree, uid widget.TreeNodeID) (T, error) {
+	var zero T
+	v, err := data.GetValue(uid)
+	if err != nil {
+		return zero, fmt.Errorf("failed to get tree node: %w", err)
+	}
+	n, err := newObjectFromJSON[T](v)
+	if err != nil {
+		return zero, fmt.Errorf("failed to unmarshal tree node: %w", err)
+	}
+	return n, nil
 }

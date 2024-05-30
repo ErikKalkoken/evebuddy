@@ -73,26 +73,18 @@ func (r *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32) 
 	return r.q.ListCharacterAssetIDs(ctx, int64(characterID))
 }
 
-func (r *Storage) ListCharacterAssets(ctx context.Context, characterID int32) ([]*model.CharacterAsset, error) {
-	rows, err := r.q.ListCharacterAssets(ctx, int64(characterID))
+func (r *Storage) ListCharacterAssetsAtLocation(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+	arg := queries.ListCharacterAssetsAtLocationParams{
+		CharacterID: int64(characterID),
+		LocationID:  locationID,
+	}
+	rows, err := r.q.ListCharacterAssetsAtLocation(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
 	ii2 := make([]*model.CharacterAsset, len(rows))
 	for i, row := range rows {
 		ii2[i] = characterAssetFromDBModel(row.CharacterAsset, row.EveTypeName)
-	}
-	return ii2, nil
-}
-
-func (r *Storage) ListCharacterAssetLocations(ctx context.Context, characterID int32) ([]*model.CharacterAssetLocation, error) {
-	rows, err := r.q.ListCharacterAssetLocations(ctx, int64(characterID))
-	if err != nil {
-		return nil, err
-	}
-	ii2 := make([]*model.CharacterAssetLocation, len(rows))
-	for i, row := range rows {
-		ii2[i] = characterAssetLocationFromDBModel(row)
 	}
 	return ii2, nil
 }
@@ -144,6 +136,22 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, eveTypeName string) *m
 		Quantity:        int32(ca.Quantity),
 	}
 	return o
+}
+
+func (r *Storage) ListCharacterAssetLocations(ctx context.Context, characterID int32) ([]*model.CharacterAssetLocation, error) {
+	arg := queries.ListCharacterAssetLocationsParams{
+		CharacterID:  int64(characterID),
+		LocationFlag: "Hangar",
+	}
+	rows, err := r.q.ListCharacterAssetLocations(ctx, arg)
+	if err != nil {
+		return nil, err
+	}
+	ii2 := make([]*model.CharacterAssetLocation, len(rows))
+	for i, row := range rows {
+		ii2[i] = characterAssetLocationFromDBModel(row)
+	}
+	return ii2, nil
 }
 
 func characterAssetLocationFromDBModel(x queries.ListCharacterAssetLocationsRow) *model.CharacterAssetLocation {

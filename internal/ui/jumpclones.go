@@ -109,17 +109,7 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 		},
 	)
 	a.tree.OnSelected = func(uid widget.TreeNodeID) {
-		n, err := func() (jumpCloneNode, error) {
-			v, err := a.treeData.GetValue(uid)
-			if err != nil {
-				return jumpCloneNode{}, fmt.Errorf("failed to get tree data item: %w", err)
-			}
-			n, err := newObjectFromJSON[jumpCloneNode](v)
-			if err != nil {
-				return jumpCloneNode{}, err
-			}
-			return n, nil
-		}()
+		n, err := fetchTreeNode[jumpCloneNode](a.treeData, uid)
 		if err != nil {
 			t := "Failed to select jump clone"
 			slog.Error(t, "err", err)

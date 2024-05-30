@@ -169,17 +169,7 @@ func (a *folderArea) makeFolderTree() *widget.Tree {
 		},
 	)
 	tree.OnSelected = func(uid string) {
-		node, err := func() (folderNode, error) {
-			v, err := a.treeData.GetValue(uid)
-			if err != nil {
-				return folderNode{}, err
-			}
-			n, err := newObjectFromJSON[folderNode](v)
-			if err != nil {
-				return folderNode{}, err
-			}
-			return n, nil
-		}()
+		node, err := fetchTreeNode[folderNode](a.treeData, uid)
 		if err != nil {
 			t := "Failed to select folder"
 			slog.Error(t, "err", err)

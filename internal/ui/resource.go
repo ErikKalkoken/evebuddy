@@ -70,6 +70,11 @@ var resourcePortraitSvg = &fyne.StaticResource{
 	StaticContent: []byte(
 		"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\"><path d=\"M12 12.25c1.24 0 2.25-1.01 2.25-2.25S13.24 7.75 12 7.75 9.75 8.76 9.75 10s1.01 2.25 2.25 2.25zm4.5 4c0-1.5-3-2.25-4.5-2.25s-4.5.75-4.5 2.25V17h9v-.75zM19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h12c.55 0 1 .45 1 1v12c0 .55-.45 1-1 1z\"/></svg>"),
 }
+var resourceQuestionmark64dpSvg = &fyne.StaticResource{
+	StaticName: "question_mark_64dp.svg",
+	StaticContent: []byte(
+		"<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"64px\" viewBox=\"0 -960 960 960\" width=\"64px\" fill=\"#e8eaed\"><path d=\"M576-653q0-38-27-62.5T480-740q-26 0-47.5 11.5T395-696q-14 19-35.5 24t-40.5-6q-20-12-24-30.5t10-38.5q29-44 75.5-68.5T480-840q89 0 145 51.5T681-656q0 42-18.5 76.5T596-500q-32 29-43 47t-15 41q-4 23-19.5 37.5T482-360q-22 0-37-14.5T430-409q0-37 17.5-69.5T503-543q43-38 58-60t15-50Zm-96 509q-30 0-51-21t-21-51q0-30 21-51t51-21q30 0 51 21t21 51q0 30-21 51t-51 21Z\"/></svg>\n"),
+}
 var resourceSchoolSvg = &fyne.StaticResource{
 	StaticName: "school.svg",
 	StaticContent: []byte(

@@ -166,9 +166,14 @@ FROM character_assets ca
 JOIN locations lo ON lo.id = ca.location_id
 LEFT JOIN eve_solar_systems sys ON sys.id = lo.eve_solar_system_id
 WHERE character_id = ?
-AND location_flag = "Hangar"
+AND location_flag = ?
 ORDER BY location_name
 `
+
+type ListCharacterAssetLocationsParams struct {
+	CharacterID  int64
+	LocationFlag string
+}
 
 type ListCharacterAssetLocationsRow struct {
 	CharacterID  int64
@@ -179,8 +184,8 @@ type ListCharacterAssetLocationsRow struct {
 	SystemName   sql.NullString
 }
 
-func (q *Queries) ListCharacterAssetLocations(ctx context.Context, characterID int64) ([]ListCharacterAssetLocationsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterAssetLocations, characterID)
+func (q *Queries) ListCharacterAssetLocations(ctx context.Context, arg ListCharacterAssetLocationsParams) ([]ListCharacterAssetLocationsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterAssetLocations, arg.CharacterID, arg.LocationFlag)
 	if err != nil {
 		return nil, err
 	}
@@ -209,29 +214,35 @@ func (q *Queries) ListCharacterAssetLocations(ctx context.Context, characterID i
 	return items, nil
 }
 
-const listCharacterAssets = `-- name: ListCharacterAssets :many
+const listCharacterAssetsAtLocation = `-- name: ListCharacterAssetsAtLocation :many
 SELECT
     ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
     et.name as eve_type_name
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 WHERE character_id = ?
+AND location_id = ?
 `
 
-type ListCharacterAssetsRow struct {
+type ListCharacterAssetsAtLocationParams struct {
+	CharacterID int64
+	LocationID  int64
+}
+
+type ListCharacterAssetsAtLocationRow struct {
 	CharacterAsset CharacterAsset
 	EveTypeName    string
 }
 
-func (q *Queries) ListCharacterAssets(ctx context.Context, characterID int64) ([]ListCharacterAssetsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterAssets, characterID)
+func (q *Queries) ListCharacterAssetsAtLocation(ctx context.Context, arg ListCharacterAssetsAtLocationParams) ([]ListCharacterAssetsAtLocationRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterAssetsAtLocation, arg.CharacterID, arg.LocationID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListCharacterAssetsRow
+	var items []ListCharacterAssetsAtLocationRow
 	for rows.Next() {
-		var i ListCharacterAssetsRow
+		var i ListCharacterAssetsAtLocationRow
 		if err := rows.Scan(
 			&i.CharacterAsset.ID,
 			&i.CharacterAsset.CharacterID,

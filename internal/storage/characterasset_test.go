@@ -79,14 +79,24 @@ func TestCharacterAsset(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can list assets", func(t *testing.T) {
+	t.Run("can list assets at location", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
-		x2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		location := factory.CreateLocationStructure()
+		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID: c.ID,
+			LocationID:  location.ID,
+		})
+		x2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID: c.ID,
+			LocationID:  location.ID,
+		})
+		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID: c.ID,
+		})
 		// when
-		oo, err := r.ListCharacterAssets(ctx, c.ID)
+		oo, err := r.ListCharacterAssetsAtLocation(ctx, c.ID, location.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, oo, 2)

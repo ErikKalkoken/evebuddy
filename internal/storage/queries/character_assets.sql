@@ -34,13 +34,14 @@ SELECT item_id
 FROM character_assets
 WHERE character_id = ?;
 
--- name: ListCharacterAssets :many
+-- name: ListCharacterAssetsAtLocation :many
 SELECT
     sqlc.embed(ca),
     et.name as eve_type_name
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
-WHERE character_id = ?;
+WHERE character_id = ?
+AND location_id = ?;
 
 -- name: ListCharacterAssetLocations :many
 SELECT DISTINCT
@@ -54,7 +55,7 @@ FROM character_assets ca
 JOIN locations lo ON lo.id = ca.location_id
 LEFT JOIN eve_solar_systems sys ON sys.id = lo.eve_solar_system_id
 WHERE character_id = ?
-AND location_flag = "Hangar"
+AND location_flag = ?
 ORDER BY location_name;
 
 -- name: UpdateCharacterAsset :exec
