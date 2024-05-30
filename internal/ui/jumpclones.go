@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -21,23 +20,6 @@ type jumpCloneNode struct {
 	ImplantTypeID          int32
 	ImplantTypeName        string
 	ImplantTypeDescription string
-}
-
-func newJumpCloneNodeFromJSON(s string) (jumpCloneNode, error) {
-	var n jumpCloneNode
-	err := json.Unmarshal([]byte(s), &n)
-	if err != nil {
-		return n, err
-	}
-	return n, nil
-}
-
-func (n jumpCloneNode) toJSON() (string, error) {
-	s, err := json.Marshal(n)
-	if err != nil {
-		return "", err
-	}
-	return string(s), nil
 }
 
 func (n jumpCloneNode) isClone() bool {
@@ -86,7 +68,7 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 				if err != nil {
 					return jumpCloneNode{}, err
 				}
-				n, err := newJumpCloneNodeFromJSON(v)
+				n, err := newObjectFromJSON[jumpCloneNode](v)
 				if err != nil {
 					return jumpCloneNode{}, err
 				}
@@ -132,7 +114,7 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 			if err != nil {
 				return jumpCloneNode{}, fmt.Errorf("failed to get tree data item: %w", err)
 			}
-			n, err := newJumpCloneNodeFromJSON(v)
+			n, err := newObjectFromJSON[jumpCloneNode](v)
 			if err != nil {
 				return jumpCloneNode{}, err
 			}
@@ -207,7 +189,7 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 		if c.Region != nil {
 			n.Region = c.Region.Name
 		}
-		values[id], err = n.toJSON()
+		values[id], err = objectToJSON(n)
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -219,7 +201,7 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 				ImplantTypeID:          i.EveType.ID,
 				ImplantTypeDescription: i.EveType.DescriptionPlain(),
 			}
-			values[subID], err = n.toJSON()
+			values[subID], err = objectToJSON(n)
 			if err != nil {
 				return nil, nil, 0, err
 			}

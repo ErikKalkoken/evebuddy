@@ -2,6 +2,7 @@ package ui
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -13,6 +14,25 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
 	"github.com/dustin/go-humanize"
 )
+
+// newObjectFromJSON returns a new object unmarshaled from a JSON string.
+func newObjectFromJSON[T any](s string) (T, error) {
+	var n T
+	err := json.Unmarshal([]byte(s), &n)
+	if err != nil {
+		return n, err
+	}
+	return n, nil
+}
+
+// objectToJSON returns a JSON string marshaled from the given object.
+func objectToJSON[T any](o T) (string, error) {
+	s, err := json.Marshal(o)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
+}
 
 func nullStringOrFallback(s sql.NullString, fallback string) string {
 	if !s.Valid {

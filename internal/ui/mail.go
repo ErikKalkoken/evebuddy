@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -113,23 +112,6 @@ type folderNode struct {
 	UnreadCount int
 }
 
-func newFolderTreeNodeFromJSON(s string) (folderNode, error) {
-	var f folderNode
-	err := json.Unmarshal([]byte(s), &f)
-	if err != nil {
-		return f, err
-	}
-	return f, nil
-}
-
-func (f folderNode) toJSON() (string, error) {
-	s, err := json.Marshal(f)
-	if err != nil {
-		return "", err
-	}
-	return string(s), nil
-}
-
 func (f folderNode) isBranch() bool {
 	return f.Category == nodeCategoryBranch
 }
@@ -164,7 +146,7 @@ func (a *folderArea) makeFolderTree() *widget.Tree {
 				if err != nil {
 					return folderNode{}, err
 				}
-				item, err := newFolderTreeNodeFromJSON(v)
+				item, err := newObjectFromJSON[folderNode](v)
 				if err != nil {
 					return folderNode{}, err
 				}
@@ -192,7 +174,7 @@ func (a *folderArea) makeFolderTree() *widget.Tree {
 			if err != nil {
 				return folderNode{}, err
 			}
-			n, err := newFolderTreeNodeFromJSON(v)
+			n, err := newObjectFromJSON[folderNode](v)
 			if err != nil {
 				return folderNode{}, err
 			}
@@ -205,9 +187,8 @@ func (a *folderArea) makeFolderTree() *widget.Tree {
 			return
 		}
 		if node.isBranch() {
-			if a.lastUID != "" {
-				tree.Select(a.lastUID)
-			}
+			tree.ToggleBranch(uid)
+			tree.UnselectAll()
 			return
 		}
 		a.lastUID = uid
@@ -284,7 +265,7 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 		ObjID:       model.MailLabelAll,
 		UnreadCount: totalUnreadCount,
 	}
-	folders[folderNodeAllID], err = folderAll.toJSON()
+	folders[folderNodeAllID], err = objectToJSON(folderAll)
 	if err != nil {
 		return nil, nil, folderNode{}, err
 	}
@@ -301,7 +282,7 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 			Name:        "Labels",
 			UnreadCount: totalLabelsUnreadCount,
 		}
-		x, err := n.toJSON()
+		x, err := objectToJSON(n)
 		if err != nil {
 			return nil, nil, folderNode{}, err
 		}
@@ -314,7 +295,7 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 				u = 0
 			}
 			n := folderNode{ObjID: l.LabelID, Name: l.Name, Category: nodeCategoryLabel, UnreadCount: u}
-			x, err := n.toJSON()
+			x, err := objectToJSON(n)
 			if err != nil {
 				return nil, nil, folderNode{}, err
 			}
@@ -334,7 +315,7 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 			Name:        "Mailing Lists",
 			UnreadCount: totalListUnreadCount,
 		}
-		x, err := n.toJSON()
+		x, err := objectToJSON(n)
 		if err != nil {
 			return nil, nil, folderNode{}, err
 		}
@@ -347,7 +328,7 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 				u = 0
 			}
 			n := folderNode{ObjID: l.ID, Name: l.Name, Category: nodeCategoryList, UnreadCount: u}
-			x, err := n.toJSON()
+			x, err := objectToJSON(n)
 			if err != nil {
 				return nil, nil, folderNode{}, err
 			}
@@ -382,7 +363,7 @@ func makeDefaultFolders(characterID int32, labelUnreadCounts map[int32]int) (map
 			ObjID:       o.labelID,
 			UnreadCount: u,
 		}
-		x, err := n.toJSON()
+		x, err := objectToJSON(n)
 		if err != nil {
 			return nil, err
 		}
