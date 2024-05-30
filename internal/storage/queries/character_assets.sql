@@ -23,9 +23,11 @@ AND item_id NOT IN (sqlc.slice('item_ids'));
 -- name: GetCharacterAsset :one
 SELECT
     sqlc.embed(ca),
-    et.name as eve_type_name
+    et.name as eve_type_name,
+    eg.eve_category_id as eve_category_id
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
+JOIN eve_groups eg ON eg.id = et.eve_group_id
 WHERE character_id = ?
 AND item_id = ?;
 
@@ -37,7 +39,8 @@ WHERE character_id = ?;
 -- name: ListCharacterAssetsInShipHangar :many
 SELECT
     sqlc.embed(ca),
-    et.name as eve_type_name
+    et.name as eve_type_name,
+    eg.eve_category_id as eve_category_id
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
@@ -49,7 +52,8 @@ AND eg.eve_category_id = ?;
 -- name: ListCharacterAssetsInItemHangar :many
 SELECT
     sqlc.embed(ca),
-    et.name as eve_type_name
+    et.name as eve_type_name,
+    eg.eve_category_id as eve_category_id
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id

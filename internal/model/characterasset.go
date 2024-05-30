@@ -3,6 +3,7 @@ package model
 type CharacterAsset struct {
 	ID              int64
 	CharacterID     int32
+	EveCategoryID   int32
 	EveType         *EntityShort[int32]
 	IsBlueprintCopy bool
 	IsSingleton     bool
@@ -12,6 +13,18 @@ type CharacterAsset struct {
 	LocationType    string
 	Name            string
 	Quantity        int32
+}
+
+func (ca *CharacterAsset) IsBPO() bool {
+	return ca.EveCategoryID == EveCategoryIDBlueprint && !ca.IsBlueprintCopy
+}
+
+func (ca *CharacterAsset) IsBPC() bool {
+	return ca.EveCategoryID == EveCategoryIDBlueprint && ca.IsBlueprintCopy
+}
+
+func (ca *CharacterAsset) IsSKIN() bool {
+	return ca.EveCategoryID == EveCategoryIDSKINs
 }
 
 type CharacterAssetLocation struct {

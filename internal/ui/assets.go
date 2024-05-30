@@ -60,7 +60,7 @@ func (u *ui) newAssetsArea() *assetsArea {
 	a := assetsArea{
 		assetsData:       binding.NewUntypedList(),
 		assetsTop:        widget.NewLabel(""),
-		defaultAssetIcon: theme.NewThemedResource(resourceQuestionmark64dpSvg),
+		defaultAssetIcon: theme.NewDisabledResource(resourceQuestionmarkSvg),
 		locationsData:    binding.NewStringTree(),
 		locationsTop:     widget.NewLabel(""),
 		ui:               u,
@@ -136,7 +136,11 @@ func (u *ui) newAssetsArea() *assetsArea {
 			icon.Resource = a.defaultAssetIcon
 			icon.Refresh()
 			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.ui.imageManager.InventoryTypeIcon(o.EveType.ID, 64)
+				if o.IsSKIN() {
+					return resourceSkinicon64pxPng, nil
+				} else {
+					return a.ui.imageManager.InventoryTypeIcon(o.EveType.ID, 64)
+				}
 			})
 			name.SetText(o.EveType.Name)
 		},

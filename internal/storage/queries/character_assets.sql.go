@@ -88,9 +88,11 @@ func (q *Queries) DeleteExcludedCharacterAssets(ctx context.Context, arg DeleteE
 const getCharacterAsset = `-- name: GetCharacterAsset :one
 SELECT
     ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
-    et.name as eve_type_name
+    et.name as eve_type_name,
+    eg.eve_category_id as eve_category_id
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
+JOIN eve_groups eg ON eg.id = et.eve_group_id
 WHERE character_id = ?
 AND item_id = ?
 `
@@ -103,6 +105,7 @@ type GetCharacterAssetParams struct {
 type GetCharacterAssetRow struct {
 	CharacterAsset CharacterAsset
 	EveTypeName    string
+	EveCategoryID  int64
 }
 
 func (q *Queries) GetCharacterAsset(ctx context.Context, arg GetCharacterAssetParams) (GetCharacterAssetRow, error) {
@@ -121,6 +124,7 @@ func (q *Queries) GetCharacterAsset(ctx context.Context, arg GetCharacterAssetPa
 		&i.CharacterAsset.Name,
 		&i.CharacterAsset.Quantity,
 		&i.EveTypeName,
+		&i.EveCategoryID,
 	)
 	return i, err
 }
@@ -217,7 +221,8 @@ func (q *Queries) ListCharacterAssetLocations(ctx context.Context, arg ListChara
 const listCharacterAssetsInItemHangar = `-- name: ListCharacterAssetsInItemHangar :many
 SELECT
     ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
-    et.name as eve_type_name
+    et.name as eve_type_name,
+    eg.eve_category_id as eve_category_id
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
@@ -237,6 +242,7 @@ type ListCharacterAssetsInItemHangarParams struct {
 type ListCharacterAssetsInItemHangarRow struct {
 	CharacterAsset CharacterAsset
 	EveTypeName    string
+	EveCategoryID  int64
 }
 
 func (q *Queries) ListCharacterAssetsInItemHangar(ctx context.Context, arg ListCharacterAssetsInItemHangarParams) ([]ListCharacterAssetsInItemHangarRow, error) {
@@ -266,6 +272,7 @@ func (q *Queries) ListCharacterAssetsInItemHangar(ctx context.Context, arg ListC
 			&i.CharacterAsset.Name,
 			&i.CharacterAsset.Quantity,
 			&i.EveTypeName,
+			&i.EveCategoryID,
 		); err != nil {
 			return nil, err
 		}
@@ -283,7 +290,8 @@ func (q *Queries) ListCharacterAssetsInItemHangar(ctx context.Context, arg ListC
 const listCharacterAssetsInShipHangar = `-- name: ListCharacterAssetsInShipHangar :many
 SELECT
     ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
-    et.name as eve_type_name
+    et.name as eve_type_name,
+    eg.eve_category_id as eve_category_id
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
@@ -303,6 +311,7 @@ type ListCharacterAssetsInShipHangarParams struct {
 type ListCharacterAssetsInShipHangarRow struct {
 	CharacterAsset CharacterAsset
 	EveTypeName    string
+	EveCategoryID  int64
 }
 
 func (q *Queries) ListCharacterAssetsInShipHangar(ctx context.Context, arg ListCharacterAssetsInShipHangarParams) ([]ListCharacterAssetsInShipHangarRow, error) {
@@ -332,6 +341,7 @@ func (q *Queries) ListCharacterAssetsInShipHangar(ctx context.Context, arg ListC
 			&i.CharacterAsset.Name,
 			&i.CharacterAsset.Quantity,
 			&i.EveTypeName,
+			&i.EveCategoryID,
 		); err != nil {
 			return nil, err
 		}

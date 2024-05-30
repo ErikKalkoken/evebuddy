@@ -57,7 +57,7 @@ func (r *Storage) GetCharacterAsset(ctx context.Context, characterID int32, item
 		}
 		return nil, fmt.Errorf("failed to get character asset for character %d: %w", characterID, err)
 	}
-	o := characterAssetFromDBModel(row.CharacterAsset, row.EveTypeName)
+	o := characterAssetFromDBModel(row.CharacterAsset, row.EveTypeName, row.EveCategoryID)
 	return o, nil
 }
 
@@ -86,7 +86,7 @@ func (r *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, character
 	}
 	ii2 := make([]*model.CharacterAsset, len(rows))
 	for i, row := range rows {
-		ii2[i] = characterAssetFromDBModel(row.CharacterAsset, row.EveTypeName)
+		ii2[i] = characterAssetFromDBModel(row.CharacterAsset, row.EveTypeName, row.EveCategoryID)
 	}
 	return ii2, nil
 }
@@ -104,7 +104,7 @@ func (r *Storage) ListCharacterAssetsInItemHangar(ctx context.Context, character
 	}
 	ii2 := make([]*model.CharacterAsset, len(rows))
 	for i, row := range rows {
-		ii2[i] = characterAssetFromDBModel(row.CharacterAsset, row.EveTypeName)
+		ii2[i] = characterAssetFromDBModel(row.CharacterAsset, row.EveTypeName, row.EveCategoryID)
 	}
 	return ii2, nil
 }
@@ -138,13 +138,14 @@ func (r *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacterA
 	return nil
 }
 
-func characterAssetFromDBModel(ca queries.CharacterAsset, eveTypeName string) *model.CharacterAsset {
+func characterAssetFromDBModel(ca queries.CharacterAsset, eveTypeName string, eveCategoryID int64) *model.CharacterAsset {
 	if ca.CharacterID == 0 {
 		panic("missing character ID")
 	}
 	o := &model.CharacterAsset{
 		ID:              ca.ID,
 		CharacterID:     int32(ca.CharacterID),
+		EveCategoryID:   int32(eveCategoryID),
 		EveType:         &model.EntityShort[int32]{ID: int32(ca.EveTypeID), Name: eveTypeName},
 		IsBlueprintCopy: ca.IsBlueprintCopy,
 		IsSingleton:     ca.IsSingleton,
