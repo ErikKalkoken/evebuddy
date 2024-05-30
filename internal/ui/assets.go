@@ -112,7 +112,7 @@ func (u *ui) newAssetsArea() *assetsArea {
 			icon.FillMode = canvas.ImageFillContain
 			icon.SetMinSize(fyne.Size{Width: 70, Height: 70})
 			name := widget.NewLabel("First Line\nSecond Line")
-			name.Wrapping = fyne.TextWrapBreak
+			name.Wrapping = fyne.TextWrapWord
 			return container.NewBorder(icon, nil, nil, nil, name)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
@@ -136,7 +136,13 @@ func (u *ui) newAssetsArea() *assetsArea {
 					return a.ui.imageManager.InventoryTypeIcon(o.EveType.ID, 64)
 				}
 			})
-			name.SetText(o.EveType.Name)
+			var t string
+			if o.Name != "" {
+				t = o.Name
+			} else {
+				t = o.EveType.Name
+			}
+			name.SetText(t)
 		},
 	)
 	locations := container.NewBorder(container.NewVBox(a.locationsTop, widget.NewSeparator()), nil, nil, nil, a.locations)

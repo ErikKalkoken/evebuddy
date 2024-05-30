@@ -47,7 +47,8 @@ JOIN eve_groups eg ON eg.id = et.eve_group_id
 WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
-AND eg.eve_category_id = ?;
+AND eg.eve_category_id = ?
+ORDER BY et.id;
 
 -- name: ListCharacterAssetsInItemHangar :many
 SELECT
@@ -60,7 +61,8 @@ JOIN eve_groups eg ON eg.id = et.eve_group_id
 WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
-AND eg.eve_category_id != ?;
+AND eg.eve_category_id != ?
+ORDER BY et.id;
 
 -- name: ListCharacterAssetLocations :many
 SELECT DISTINCT
