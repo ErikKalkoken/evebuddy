@@ -2,15 +2,13 @@ package service
 
 import (
 	"context"
-	"slices"
-	"strconv"
+	"net/http"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
 	"github.com/antihax/goesi/optional"
-	"golang.org/x/sync/errgroup"
 )
 
 func (s *Service) ListCharacterAssetsInShipHangar(characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
@@ -37,7 +35,14 @@ func (s *Service) updateCharacterAssetsESI(ctx context.Context, characterID int3
 	return s.updateCharacterSectionIfChanged(
 		ctx, characterID, model.CharacterSectionAssets,
 		func(ctx context.Context, characterID int32) (any, error) {
-			assets, err := s.fetchCharacterAssetsFromESIWithPaging(ctx, characterID)
+			assets, err := fetchFromESIWithPaging(
+				func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
+					arg := &esi.GetCharactersCharacterIdAssetsOpts{
+						Page: optional.NewInt32(int32(pageNum)),
+					}
+					return s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, arg)
+				})
+
 			if err != nil {
 				return false, err
 			}
@@ -128,51 +133,6 @@ func (s *Service) updateCharacterAssetsESI(ctx context.Context, characterID int3
 			}
 			return nil
 		})
-}
-
-func (s *Service) fetchCharacterAssetsFromESIWithPaging(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdAssets200Ok, error) {
-	assets, r, err := s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, nil)
-	if err != nil {
-		return nil, err
-	}
-	x := r.Header.Get("X-Pages")
-	if x == "" {
-		return assets, nil
-	}
-	pagesCount, err := strconv.Atoi(x)
-	if err != nil {
-		return nil, err
-	}
-	if pagesCount == 1 {
-		return assets, nil
-	}
-	assetsAll := make([]esi.GetCharactersCharacterIdAssets200Ok, 0)
-	assetsAll = slices.Concat(assetsAll, assets)
-
-	g, ctx := errgroup.WithContext(ctx)
-
-	pages := make([][]esi.GetCharactersCharacterIdAssets200Ok, pagesCount-1)
-
-	for i := range pagesCount - 1 {
-		i := i
-		g.Go(func() error {
-			arg := &esi.GetCharactersCharacterIdAssetsOpts{
-				Page: optional.NewInt32(int32(i + 2)),
-			}
-			pages[i], _, err = s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, arg)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-	for _, page := range pages {
-		assetsAll = slices.Concat(assetsAll, page)
-	}
-	return assetsAll, nil
 }
 
 func (s *Service) fetchCharacterAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
