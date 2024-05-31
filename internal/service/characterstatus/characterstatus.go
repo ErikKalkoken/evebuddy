@@ -6,13 +6,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
-type CharacterStatusStorage interface {
+type Storage interface {
 	ListCharacterUpdateStatus(context.Context, int32) ([]*model.CharacterUpdateStatus, error)
 	ListCharactersShort(context.Context) ([]*model.CharacterShort, error)
+}
+
+type Cache interface {
+	Get(any) (any, bool)
+	Set(any, any, time.Duration)
 }
 
 const keyCharacters = "characterUpdateStatusCache-characters"
@@ -30,16 +34,16 @@ type cacheValue struct {
 // CharacterStatus caches the current update status of all characters
 // to improve performance of UI refresh tickers.
 type CharacterStatus struct {
-	cache *cache.Cache
+	cache Cache
 	mu    sync.Mutex
 }
 
-func New(cache *cache.Cache) *CharacterStatus {
+func New(cache Cache) *CharacterStatus {
 	sc := &CharacterStatus{cache: cache}
 	return sc
 }
 
-func (sc *CharacterStatus) InitCache(r CharacterStatusStorage) error {
+func (sc *CharacterStatus) InitCache(r Storage) error {
 	ctx := context.Background()
 	cc, err := sc.updateCharacters(ctx, r)
 	if err != nil {
@@ -138,12 +142,12 @@ func (sc *CharacterStatus) SetError(
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *CharacterStatus) UpdateCharacters(ctx context.Context, r CharacterStatusStorage) error {
+func (sc *CharacterStatus) UpdateCharacters(ctx context.Context, r Storage) error {
 	_, err := sc.updateCharacters(ctx, r)
 	return err
 }
 
-func (sc *CharacterStatus) updateCharacters(ctx context.Context, r CharacterStatusStorage) ([]*model.CharacterShort, error) {
+func (sc *CharacterStatus) updateCharacters(ctx context.Context, r Storage) ([]*model.CharacterShort, error) {
 	cc, err := r.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err
