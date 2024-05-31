@@ -36,9 +36,9 @@ func (s *Service) CharacterSectionWasUpdated(characterID int32, section model.Ch
 	return !t.IsZero(), nil
 }
 
-// UpdateCharacterSectionIfExpired updates a section from ESI if has expired and changed
+// UpdateCharacterSection updates a section from ESI if has expired and changed
 // and reports back if it has changed
-func (s *Service) UpdateCharacterSectionIfExpired(characterID int32, section model.CharacterSection) (bool, error) {
+func (s *Service) UpdateCharacterSection(characterID int32, section model.CharacterSection) (bool, error) {
 	isExpired, err := s.CharacterSectionIsUpdateExpired(characterID, section)
 	if err != nil {
 		return false, err

@@ -3,7 +3,6 @@ package service
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
@@ -25,11 +24,9 @@ type Service struct {
 
 func NewService(r *storage.Storage) *Service {
 	defaultHttpClient := &http.Client{
-		Timeout:   time.Second * 30,
 		Transport: ihttp.LoggedTransport{},
 	}
 	esiHttpClient := &http.Client{
-		Timeout: time.Second * 30,
 		Transport: ihttp.LoggedTransportWithRetries{
 			MaxRetries: 3,
 			StatusCodesToRetry: []int{

@@ -135,7 +135,7 @@ func TestUpdateCharacterSectionIfExpired(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 		// when
-		changed, err := s.UpdateCharacterSectionIfExpired(c.ID, section)
+		changed, err := s.UpdateCharacterSection(c.ID, section)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -160,7 +160,7 @@ func TestUpdateCharacterSectionIfExpired(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewStringResponder(500, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 		// when
-		_, err := s.UpdateCharacterSectionIfExpired(c.ID, section)
+		_, err := s.UpdateCharacterSection(c.ID, section)
 		// then
 		if assert.Error(t, err) {
 			x, err := s.r.GetCharacterUpdateStatus(ctx, c.ID, section)

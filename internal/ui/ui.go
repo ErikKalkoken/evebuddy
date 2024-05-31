@@ -440,7 +440,7 @@ func (u *ui) startUpdateTickerCharacterSections() {
 func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32) {
 	for _, s := range model.CharacterSections {
 		go func(s model.CharacterSection) {
-			isChanged, err := u.service.UpdateCharacterSectionIfExpired(characterID, s)
+			hasChanged, err := u.service.UpdateCharacterSection(characterID, s)
 			if err != nil {
 				slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
 				return
@@ -448,42 +448,42 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32) {
 			isCurrent := characterID == u.currentCharID()
 			switch s {
 			case model.CharacterSectionAssets:
-				if isCurrent && isChanged {
+				if isCurrent && hasChanged {
 					u.assetsArea.redraw()
 				}
 			case model.CharacterSectionAttributes:
-				if isCurrent && isChanged {
+				if isCurrent && hasChanged {
 					u.attributesArea.refresh()
 				}
 			case model.CharacterSectionImplants:
-				if isCurrent && isChanged {
+				if isCurrent && hasChanged {
 					u.implantsArea.refresh()
 				}
 			case model.CharacterSectionJumpClones:
-				if isCurrent && isChanged {
+				if isCurrent && hasChanged {
 					u.jumpClonesArea.redraw()
 				}
-				if isChanged {
+				if hasChanged {
 					u.overviewArea.refresh()
 				}
 			case model.CharacterSectionLocation,
 				model.CharacterSectionOnline,
 				model.CharacterSectionShip,
 				model.CharacterSectionWalletBalance:
-				if isChanged {
+				if hasChanged {
 					u.overviewArea.refresh()
 				}
 			case model.CharacterSectionMailLabels,
 				model.CharacterSectionMailLists,
 				model.CharacterSectionMails:
-				if isCurrent && isChanged {
+				if isCurrent && hasChanged {
 					u.mailArea.refresh()
 				}
-				if isChanged {
+				if hasChanged {
 					u.overviewArea.refresh()
 				}
 			case model.CharacterSectionSkills:
-				if isCurrent && isChanged {
+				if isCurrent && hasChanged {
 					u.skillCatalogueArea.refresh()
 					u.shipsArea.refresh()
 					u.overviewArea.refresh()
@@ -493,11 +493,11 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32) {
 					u.skillqueueArea.refresh()
 				}
 			case model.CharacterSectionWalletJournal:
-				if isCurrent && isChanged {
+				if isCurrent && hasChanged {
 					u.walletJournalArea.refresh()
 				}
 			case model.CharacterSectionWalletTransactions:
-				if isCurrent && isChanged {
+				if isCurrent && hasChanged {
 					u.walletTransactionArea.refresh()
 				}
 			default:
