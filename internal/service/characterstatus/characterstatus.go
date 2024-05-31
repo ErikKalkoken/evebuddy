@@ -8,17 +8,14 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-const keyCharacters = "characterUpdateStatusCache-characters"
-
-// CharacterStatus caches the current update status of all characters
-// to improve performance of UI refresh tickers.
-type CharacterStatus struct {
-	cache *cache.Cache
-	mu    sync.Mutex
+type CharacterStatusStorage interface {
+	ListCharacterUpdateStatus(context.Context, int32) ([]*model.CharacterUpdateStatus, error)
+	ListCharactersShort(context.Context) ([]*model.CharacterShort, error)
 }
+
+const keyCharacters = "characterUpdateStatusCache-characters"
 
 type cacheKey struct {
 	characterID int32
@@ -30,12 +27,19 @@ type cacheValue struct {
 	LastUpdatedAt time.Time
 }
 
+// CharacterStatus caches the current update status of all characters
+// to improve performance of UI refresh tickers.
+type CharacterStatus struct {
+	cache *cache.Cache
+	mu    sync.Mutex
+}
+
 func New(cache *cache.Cache) *CharacterStatus {
 	sc := &CharacterStatus{cache: cache}
 	return sc
 }
 
-func (sc *CharacterStatus) InitCache(r *storage.Storage) error {
+func (sc *CharacterStatus) InitCache(r CharacterStatusStorage) error {
 	ctx := context.Background()
 	cc, err := sc.updateCharacters(ctx, r)
 	if err != nil {
@@ -134,12 +138,12 @@ func (sc *CharacterStatus) SetError(
 	sc.cache.Set(k, v, cache.NoTimeout)
 }
 
-func (sc *CharacterStatus) UpdateCharacters(ctx context.Context, r *storage.Storage) error {
+func (sc *CharacterStatus) UpdateCharacters(ctx context.Context, r CharacterStatusStorage) error {
 	_, err := sc.updateCharacters(ctx, r)
 	return err
 }
 
-func (sc *CharacterStatus) updateCharacters(ctx context.Context, r *storage.Storage) ([]*model.CharacterShort, error) {
+func (sc *CharacterStatus) updateCharacters(ctx context.Context, r CharacterStatusStorage) ([]*model.CharacterShort, error) {
 	cc, err := r.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err
