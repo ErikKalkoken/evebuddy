@@ -87,12 +87,12 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]*model.Character, error
 func (r *Storage) ListCharactersShort(ctx context.Context) ([]*model.CharacterShort, error) {
 	rows, err := r.q.ListCharactersShort(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list Character objects: %w", err)
+		return nil, fmt.Errorf("failed to list short characters: %w", err)
 
 	}
 	cc := make([]*model.CharacterShort, len(rows))
 	for i, row := range rows {
-		cc[i] = &model.CharacterShort{ID: int32(row.ID), Name: row.Name, CorporationName: row.Name_2}
+		cc[i] = &model.CharacterShort{ID: int32(row.ID), Name: row.Name}
 	}
 	return cc, nil
 }
@@ -100,7 +100,7 @@ func (r *Storage) ListCharactersShort(ctx context.Context) ([]*model.CharacterSh
 func (r *Storage) ListCharacterIDs(ctx context.Context) ([]int32, error) {
 	ids, err := r.q.ListCharacterIDs(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list Character IDs: %w", err)
+		return nil, fmt.Errorf("failed to list character IDs: %w", err)
 	}
 	ids2 := islices.ConvertNumeric[int64, int32](ids)
 	return ids2, nil

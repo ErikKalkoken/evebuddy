@@ -1,4 +1,4 @@
-package characterstatus_test
+package characterstatus
 
 import (
 	"testing"
@@ -7,7 +7,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service/characterstatus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +14,7 @@ func TestCharacterUpdateStatusCache(t *testing.T) {
 	characterID := int32(42)
 	section := model.CharacterSectionImplants
 	cache := cache.New()
-	statusCache := characterstatus.New(cache)
+	statusCache := New(cache)
 	t.Run("can set full status", func(t *testing.T) {
 		// given
 		myDate := time.Now()
@@ -56,14 +55,14 @@ func TestCharacterUpdateStatusCacheInit(t *testing.T) {
 			LastUpdatedAt: myDate,
 			Error:         "my-error",
 		})
-		statusCache := characterstatus.New(cache)
+		statusCache := New(cache)
 		// when
 		statusCache.InitCache(r)
 		// then
 		x, y := statusCache.GetStatus(c.ID, section)
 		assert.Equal(t, myDate.UTC(), y.UTC())
 		assert.Equal(t, "my-error", x)
-		ids := statusCache.GetCharacterIDs()
+		ids := statusCache.getCharacters()
 		assert.Equal(t, []int32{c.ID}, ids)
 
 	})
@@ -71,22 +70,22 @@ func TestCharacterUpdateStatusCacheInit(t *testing.T) {
 
 func TestCharacterUpdateStatusCacheCharacterIDs(t *testing.T) {
 	cache := cache.New()
-	statusCache := characterstatus.New(cache)
+	statusCache := New(cache)
 	t.Run("can get and set characterIDs", func(t *testing.T) {
 		// given
 		ids := []int32{1, 2, 3}
 		// when
-		statusCache.SetCharacterIDs(ids)
+		statusCache.setCharacters(ids)
 		// then
-		assert.Equal(t, ids, statusCache.GetCharacterIDs())
+		assert.Equal(t, ids, statusCache.getCharacters())
 	})
 }
 
 func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 	cache := cache.New()
-	cs := characterstatus.New(cache)
+	cs := New(cache)
 	characterIDs := []int32{1, 2}
-	cs.SetCharacterIDs(characterIDs)
+	cs.setCharacters(characterIDs)
 	t.Run("should report when all sections are up-to-date", func(t *testing.T) {
 		// given
 		for _, characterID := range characterIDs {

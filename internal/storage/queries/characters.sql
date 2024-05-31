@@ -41,10 +41,9 @@ LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.f
 ORDER BY eve_characters.name;
 
 -- name: ListCharactersShort :many
-SELECT DISTINCT eve_characters.id, eve_characters.name, corporations.name
+SELECT DISTINCT eve_characters.id, eve_characters.name
 FROM characters
 JOIN eve_characters ON eve_characters.id = characters.id
-JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
 ORDER BY eve_characters.name;
 
 -- name: ListCharacterIDs :many

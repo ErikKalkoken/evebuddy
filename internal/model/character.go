@@ -31,9 +31,8 @@ type Character struct {
 
 // A shortened version of Character.
 type CharacterShort struct {
-	ID              int32
-	Name            string
-	CorporationName string
+	ID   int32
+	Name string
 }
 
 // Updated character sections

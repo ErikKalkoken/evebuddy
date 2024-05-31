@@ -1,4 +1,4 @@
-// Package characterstatus caches for the update status of all characters.
+// Package characterstatus provides information about the update status of all characters.
 package characterstatus
 
 import (
@@ -31,15 +31,13 @@ type cacheValue struct {
 }
 
 func New(cache *cache.Cache) *CharacterStatus {
-	sc := &CharacterStatus{
-		cache: cache,
-	}
+	sc := &CharacterStatus{cache: cache}
 	return sc
 }
 
 func (sc *CharacterStatus) InitCache(r *storage.Storage) error {
 	ctx := context.Background()
-	ids, err := sc.updateCharacterIDs(ctx, r)
+	ids, err := sc.updateCharacters(ctx, r)
 	if err != nil {
 		return err
 	}
@@ -66,7 +64,7 @@ func (sc *CharacterStatus) GetStatus(characterID int32, section model.CharacterS
 }
 
 func (sc *CharacterStatus) StatusSummary() (float32, bool) {
-	ids := sc.GetCharacterIDs()
+	ids := sc.getCharacters()
 	total := len(model.CharacterSections) * len(ids)
 	currentCount := 0
 	for _, id := range ids {
@@ -136,29 +134,29 @@ func (sc *CharacterStatus) SetError(
 	sc.cache.Set(k, v, cache.NoTimeout)
 }
 
-func (sc *CharacterStatus) GetCharacterIDs() []int32 {
+func (sc *CharacterStatus) UpdateCharacters(ctx context.Context, r *storage.Storage) error {
+	_, err := sc.updateCharacters(ctx, r)
+	return err
+}
+
+func (sc *CharacterStatus) updateCharacters(ctx context.Context, r *storage.Storage) ([]int32, error) {
+	ids, err := r.ListCharacterIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sc.setCharacters(ids)
+	return ids, nil
+}
+
+func (sc *CharacterStatus) getCharacters() []int32 {
 	x, ok := sc.cache.Get(keyCharacters)
 	if !ok {
-		return []int32{}
+		return nil
 	}
 	ids := x.([]int32)
 	return ids
 }
 
-func (sc *CharacterStatus) SetCharacterIDs(ids []int32) {
+func (sc *CharacterStatus) setCharacters(ids []int32) {
 	sc.cache.Set(keyCharacters, ids, cache.NoTimeout)
-}
-
-func (sc *CharacterStatus) UpdateCharacterIDs(ctx context.Context, r *storage.Storage) error {
-	_, err := sc.updateCharacterIDs(ctx, r)
-	return err
-}
-
-func (sc *CharacterStatus) updateCharacterIDs(ctx context.Context, r *storage.Storage) ([]int32, error) {
-	ids, err := r.ListCharacterIDs(ctx)
-	if err != nil {
-		return nil, err
-	}
-	sc.cache.Set(keyCharacters, ids, cache.NoTimeout)
-	return ids, nil
 }

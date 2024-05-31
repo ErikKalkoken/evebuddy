@@ -213,17 +213,15 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 }
 
 const listCharactersShort = `-- name: ListCharactersShort :many
-SELECT DISTINCT eve_characters.id, eve_characters.name, corporations.name
+SELECT DISTINCT eve_characters.id, eve_characters.name
 FROM characters
 JOIN eve_characters ON eve_characters.id = characters.id
-JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
 ORDER BY eve_characters.name
 `
 
 type ListCharactersShortRow struct {
-	ID     int64
-	Name   string
-	Name_2 string
+	ID   int64
+	Name string
 }
 
 func (q *Queries) ListCharactersShort(ctx context.Context) ([]ListCharactersShortRow, error) {
@@ -235,7 +233,7 @@ func (q *Queries) ListCharactersShort(ctx context.Context) ([]ListCharactersShor
 	var items []ListCharactersShortRow
 	for rows.Next() {
 		var i ListCharactersShortRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.Name_2); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

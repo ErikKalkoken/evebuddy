@@ -230,6 +230,7 @@ WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
 AND eg.eve_category_id != ?
+ORDER BY et.id
 `
 
 type ListCharacterAssetsInItemHangarParams struct {
@@ -299,6 +300,7 @@ WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
 AND eg.eve_category_id = ?
+ORDER BY et.id
 `
 
 type ListCharacterAssetsInShipHangarParams struct {
