@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/dustin/go-humanize"
 )
 
 type locationNodeType uint
@@ -125,15 +126,16 @@ func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(a.defaultAssetIcon)
 			icon.FillMode = canvas.ImageFillContain
-			icon.SetMinSize(fyne.Size{Width: 70, Height: 70})
-			name := widget.NewLabel("First Line\nSecond Line")
-			name.Wrapping = fyne.TextWrapWord
-			return container.NewBorder(icon, nil, nil, nil, name)
+			icon.SetMinSize(fyne.Size{Width: 40, Height: 40})
+			name := widget.NewLabel("Asset Template Name XXX")
+			quantity := widget.NewLabel("")
+			return container.NewBorder(nil, nil, icon, quantity, name)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			box := co.(*fyne.Container)
-			icon := box.Objects[1].(*canvas.Image)
 			name := box.Objects[0].(*widget.Label)
+			icon := box.Objects[1].(*canvas.Image)
+			quantity := box.Objects[2].(*widget.Label)
 			o, err := convertDataItem[*model.CharacterAsset](di)
 			if err != nil {
 				panic(err)
@@ -157,7 +159,15 @@ func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
 			} else {
 				t = o.EveType.Name
 			}
-			name.SetText(t)
+			if !o.IsSingleton {
+				quantity.SetText(humanize.Comma(int64(o.Quantity)))
+				quantity.Show()
+			} else {
+				quantity.Hide()
+			}
+			name.Wrapping = fyne.TextWrapWord
+			name.Text = t
+			name.Refresh()
 		},
 	)
 	return g
