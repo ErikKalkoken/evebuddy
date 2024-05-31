@@ -32,6 +32,8 @@
         "antihax",
         "appdirs",
         "bluemonday",
+        "characterstatus",
+        "characterstatuscache",
         "chasinglogic",
         "datetime",
         "dockable",

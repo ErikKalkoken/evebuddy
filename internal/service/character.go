@@ -21,12 +21,7 @@ func (s *Service) DeleteCharacter(characterID int32) error {
 	if err := s.r.DeleteCharacter(ctx, characterID); err != nil {
 		return err
 	}
-	ids, err := s.r.ListCharacterIDs(ctx)
-	if err != nil {
-		return err
-	}
-	s.statusCache.setCharacterIDs(ids)
-	return nil
+	return s.characterStatus.UpdateCharacterIDs(ctx, s.r)
 }
 
 func (s *Service) GetCharacter(characterID int32) (*model.Character, error) {
@@ -93,11 +88,9 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText b
 	if err := s.r.UpdateOrCreateCharacterToken(ctx, &token); err != nil {
 		return 0, err
 	}
-	ids, err := s.r.ListCharacterIDs(ctx)
-	if err != nil {
+	if err := s.characterStatus.UpdateCharacterIDs(ctx, s.r); err != nil {
 		return 0, err
 	}
-	s.statusCache.setCharacterIDs(ids)
 	return token.CharacterID, nil
 }
 

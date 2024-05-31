@@ -1,4 +1,5 @@
-package service
+// Package characterstatuscache defines a mechanism for caching the update status of characters.
+package characterstatus
 
 import (
 	"context"
@@ -10,7 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-type characterUpdateStatusCache struct {
+type Cache struct {
 	cache *cache.Cache
 	mu    sync.Mutex
 }
@@ -27,8 +28,8 @@ type cacheValue struct {
 
 const keyCharacters = "characterUpdateStatusCache-characters"
 
-func newCharacterUpdateStatusCache(cache *cache.Cache) *characterUpdateStatusCache {
-	sc := &characterUpdateStatusCache{
+func New(cache *cache.Cache) *Cache {
+	sc := &Cache{
 		cache: cache,
 	}
 	return sc
@@ -36,26 +37,25 @@ func newCharacterUpdateStatusCache(cache *cache.Cache) *characterUpdateStatusCac
 
 // TODO: Combine queries for better performance
 
-func (sc *characterUpdateStatusCache) initCache(r *storage.Storage) error {
+func (sc *Cache) InitCache(r *storage.Storage) error {
 	ctx := context.Background()
-	ids, err := r.ListCharacterIDs(ctx)
+	ids, err := sc.updateCharacterIDs(ctx, r)
 	if err != nil {
 		return err
 	}
-	sc.setCharacterIDs(ids)
 	for _, characterID := range ids {
 		oo, err := r.ListCharacterUpdateStatus(ctx, characterID)
 		if err != nil {
 			return err
 		}
 		for _, o := range oo {
-			sc.setStatus(characterID, o.Section, o.ErrorMessage, o.LastUpdatedAt)
+			sc.Set(characterID, o.Section, o.ErrorMessage, o.LastUpdatedAt)
 		}
 	}
 	return nil
 }
 
-func (sc *characterUpdateStatusCache) getStatus(characterID int32, section model.CharacterSection) (string, time.Time) {
+func (sc *Cache) Get(characterID int32, section model.CharacterSection) (string, time.Time) {
 	k := cacheKey{characterID: characterID, section: section}
 	x, ok := sc.cache.Get(k)
 	if !ok {
@@ -65,7 +65,7 @@ func (sc *characterUpdateStatusCache) getStatus(characterID int32, section model
 	return v.ErrorMessage, v.LastUpdatedAt
 }
 
-func (sc *characterUpdateStatusCache) setStatus(
+func (sc *Cache) Set(
 	characterID int32,
 	section model.CharacterSection,
 	errorMessage string,
@@ -76,20 +76,20 @@ func (sc *characterUpdateStatusCache) setStatus(
 	sc.cache.Set(k, v, cache.NoTimeout)
 }
 
-func (sc *characterUpdateStatusCache) setStatusError(
+func (sc *Cache) SetError(
 	characterID int32,
 	section model.CharacterSection,
 	errorMessage string,
 ) {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
-	_, lastUpdatedAt := sc.getStatus(characterID, section)
+	_, lastUpdatedAt := sc.Get(characterID, section)
 	k := cacheKey{characterID: characterID, section: section}
 	v := cacheValue{ErrorMessage: errorMessage, LastUpdatedAt: lastUpdatedAt}
 	sc.cache.Set(k, v, cache.NoTimeout)
 }
 
-func (sc *characterUpdateStatusCache) getCharacterIDs() []int32 {
+func (sc *Cache) GetCharacterIDs() []int32 {
 	x, ok := sc.cache.Get(keyCharacters)
 	if !ok {
 		return []int32{}
@@ -98,6 +98,20 @@ func (sc *characterUpdateStatusCache) getCharacterIDs() []int32 {
 	return ids
 }
 
-func (sc *characterUpdateStatusCache) setCharacterIDs(ids []int32) {
+func (sc *Cache) SetCharacterIDs(ids []int32) {
 	sc.cache.Set(keyCharacters, ids, cache.NoTimeout)
+}
+
+func (sc *Cache) UpdateCharacterIDs(ctx context.Context, r *storage.Storage) error {
+	_, err := sc.updateCharacterIDs(ctx, r)
+	return err
+}
+
+func (sc *Cache) updateCharacterIDs(ctx context.Context, r *storage.Storage) ([]int32, error) {
+	ids, err := r.ListCharacterIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sc.cache.Set(keyCharacters, ids, cache.NoTimeout)
+	return ids, nil
 }

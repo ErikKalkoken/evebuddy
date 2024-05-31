@@ -1,4 +1,4 @@
-package service
+package characterstatus_test
 
 import (
 	"testing"
@@ -7,6 +7,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/service/characterstatus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,26 +15,26 @@ func TestCharacterUpdateStatusCache(t *testing.T) {
 	characterID := int32(42)
 	section := model.CharacterSectionImplants
 	cache := cache.New()
-	statusCache := newCharacterUpdateStatusCache(cache)
+	statusCache := characterstatus.New(cache)
 	t.Run("can set full status", func(t *testing.T) {
 		// given
 		myDate := time.Now()
 		myError := "error"
 		// when
-		statusCache.setStatus(characterID, section, myError, myDate)
+		statusCache.Set(characterID, section, myError, myDate)
 		// then
-		x, y := statusCache.getStatus(characterID, section)
+		x, y := statusCache.Get(characterID, section)
 		assert.Equal(t, myDate, y)
 		assert.Equal(t, myError, x)
 	})
 	t.Run("can set error only", func(t *testing.T) {
 		// given
 		myDate := time.Now().Add(-1 * time.Hour)
-		statusCache.setStatus(characterID, section, "old-error", myDate)
+		statusCache.Set(characterID, section, "old-error", myDate)
 		// when
-		statusCache.setStatusError(characterID, section, "new-error")
+		statusCache.SetError(characterID, section, "new-error")
 		// then
-		x, y := statusCache.getStatus(characterID, section)
+		x, y := statusCache.Get(characterID, section)
 		assert.Equal(t, myDate, y)
 		assert.Equal(t, "new-error", x)
 	})
@@ -55,14 +56,14 @@ func TestCharacterUpdateStatusCacheInit(t *testing.T) {
 			LastUpdatedAt: myDate,
 			Error:         "my-error",
 		})
-		statusCache := newCharacterUpdateStatusCache(cache)
+		statusCache := characterstatus.New(cache)
 		// when
-		statusCache.initCache(r)
+		statusCache.InitCache(r)
 		// then
-		x, y := statusCache.getStatus(c.ID, section)
+		x, y := statusCache.Get(c.ID, section)
 		assert.Equal(t, myDate.UTC(), y.UTC())
 		assert.Equal(t, "my-error", x)
-		ids := statusCache.getCharacterIDs()
+		ids := statusCache.GetCharacterIDs()
 		assert.Equal(t, []int32{c.ID}, ids)
 
 	})
@@ -70,13 +71,13 @@ func TestCharacterUpdateStatusCacheInit(t *testing.T) {
 
 func TestCharacterUpdateStatusCacheCharacterIDs(t *testing.T) {
 	cache := cache.New()
-	statusCache := newCharacterUpdateStatusCache(cache)
+	statusCache := characterstatus.New(cache)
 	t.Run("can get and set characterIDs", func(t *testing.T) {
 		// given
 		ids := []int32{1, 2, 3}
 		// when
-		statusCache.setCharacterIDs(ids)
+		statusCache.SetCharacterIDs(ids)
 		// then
-		assert.Equal(t, ids, statusCache.getCharacterIDs())
+		assert.Equal(t, ids, statusCache.GetCharacterIDs())
 	})
 }

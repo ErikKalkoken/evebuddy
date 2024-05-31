@@ -93,7 +93,7 @@ func (s *Service) UpdateCharacterSectionIfExpired(characterID int32, section mod
 		if err2 != nil {
 			slog.Error("failed to record error for failed section update: %s", err2)
 		}
-		s.statusCache.setStatusError(characterID, section, errorMessage)
+		s.characterStatus.SetError(characterID, section, errorMessage)
 		return false, fmt.Errorf("failed to update section %s from ESI for character %d: %w", section, characterID, err)
 	}
 	changed := x.(bool)
@@ -166,7 +166,7 @@ func (s *Service) updateCharacterSectionIfChanged(
 	if err := s.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg); err != nil {
 		return false, err
 	}
-	s.statusCache.setStatus(characterID, section, "", lastUpdatedAt)
+	s.characterStatus.Set(characterID, section, "", lastUpdatedAt)
 
 	slog.Debug("Has section changed", "characterID", characterID, "section", section, "changed", hasChanged)
 	return hasChanged, nil

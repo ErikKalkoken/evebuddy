@@ -14,12 +14,12 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 	defer db.Close()
 	s := NewService(r)
 	characterIDs := []int32{1, 2}
-	s.statusCache.setCharacterIDs(characterIDs)
+	s.characterStatus.SetCharacterIDs(characterIDs)
 	t.Run("should report when all sections are up-to-date", func(t *testing.T) {
 		// given
 		for _, characterID := range characterIDs {
 			for _, section := range model.CharacterSections {
-				s.statusCache.setStatus(characterID, section, "", time.Now())
+				s.characterStatus.Set(characterID, section, "", time.Now())
 			}
 		}
 		// when
@@ -33,10 +33,10 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 		// given
 		for _, characterID := range characterIDs {
 			for _, section := range model.CharacterSections {
-				s.statusCache.setStatus(characterID, section, "", time.Now())
+				s.characterStatus.Set(characterID, section, "", time.Now())
 			}
 		}
-		s.statusCache.setStatusError(characterIDs[1], model.CharacterSectionLocation, "error")
+		s.characterStatus.SetError(characterIDs[1], model.CharacterSectionLocation, "error")
 		// when
 		_, ok := s.CharacterGetUpdateStatusSummary()
 		// then
@@ -46,10 +46,10 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 		// given
 		for _, characterID := range characterIDs {
 			for _, section := range model.CharacterSections {
-				s.statusCache.setStatus(characterID, section, "", time.Now())
+				s.characterStatus.Set(characterID, section, "", time.Now())
 			}
 		}
-		s.statusCache.setStatus(characterIDs[1], model.CharacterSectionLocation, "", time.Now().Add(-1*time.Hour))
+		s.characterStatus.Set(characterIDs[1], model.CharacterSectionLocation, "", time.Now().Add(-1*time.Hour))
 		// when
 		p, ok := s.CharacterGetUpdateStatusSummary()
 		// then

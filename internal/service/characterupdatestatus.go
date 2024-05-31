@@ -1,34 +1,14 @@
 package service
 
 import (
-	"time"
-
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
-type CharacterUpdateStatus struct {
-	ErrorMessage  string
-	LastUpdatedAt time.Time
-	Section       string
-	Timeout       time.Duration
-}
-
-func (s *CharacterUpdateStatus) IsOK() bool {
-	return s.ErrorMessage == ""
-}
-
-func (s *CharacterUpdateStatus) IsCurrent() bool {
-	if s.LastUpdatedAt.IsZero() {
-		return false
-	}
-	return time.Now().Before(s.LastUpdatedAt.Add(s.Timeout * 2))
-}
-
-func (s *Service) CharacterListUpdateStatus(characterID int32) []CharacterUpdateStatus {
-	list := make([]CharacterUpdateStatus, len(model.CharacterSections))
+func (s *Service) CharacterListUpdateStatus(characterID int32) []model.CharacterStatus {
+	list := make([]model.CharacterStatus, len(model.CharacterSections))
 	for i, section := range model.CharacterSections {
-		errorMessage, lastUpdatedAt := s.statusCache.getStatus(characterID, section)
-		list[i] = CharacterUpdateStatus{
+		errorMessage, lastUpdatedAt := s.characterStatus.Get(characterID, section)
+		list[i] = model.CharacterStatus{
 			ErrorMessage:  errorMessage,
 			LastUpdatedAt: lastUpdatedAt,
 			Section:       section.Name(),
@@ -39,7 +19,7 @@ func (s *Service) CharacterListUpdateStatus(characterID int32) []CharacterUpdate
 }
 
 func (s *Service) CharacterGetUpdateStatusSummary() (float32, bool) {
-	ids := s.statusCache.getCharacterIDs()
+	ids := s.characterStatus.GetCharacterIDs()
 	total := len(model.CharacterSections) * len(ids)
 	currentCount := 0
 	for _, id := range ids {

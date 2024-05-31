@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/dustin/go-humanize"
 )
 
@@ -183,7 +183,7 @@ func (a *statusWindow) makeDetailTable() *widget.Table {
 			return l
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			d, err := getItemUntypedList[service.CharacterUpdateStatus](a.detailData, tci.Row)
+			d, err := getItemUntypedList[model.CharacterStatus](a.detailData, tci.Row)
 			if err != nil {
 				panic(err)
 			}
