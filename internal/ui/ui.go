@@ -58,6 +58,7 @@ type ui struct {
 	skillqueueArea        *skillqueueArea
 	skillqueueTab         *container.TabItem
 	shipsArea             *shipsArea
+	statusWindow          fyne.Window
 	toolbarArea           *toolbarArea
 	tabs                  *container.AppTabs
 	walletJournalArea     *walletJournalArea

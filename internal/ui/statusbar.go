@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -242,7 +241,7 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 	a.content.OnSelected = func(_ widget.GridWrapItemID) {
 		c := u.currentChar()
 		if c != nil {
-			a.ui.showStatusDialog(model.CharacterShort{ID: c.ID, Name: c.EveCharacter.Name})
+			a.ui.showStatusWindow()
 		}
 		a.content.UnselectAll()
 	}

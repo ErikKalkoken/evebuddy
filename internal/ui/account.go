@@ -15,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 )
 
@@ -63,10 +62,9 @@ func (u *ui) newAccountArea() *accountArea {
 			icon.FillMode = canvas.ImageFillContain
 			icon.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
 			name := widget.NewLabel("Template")
-			b1 := widget.NewButtonWithIcon("Status", theme.ComputerIcon(), func() {})
-			b2 := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {})
-			b2.Importance = widget.DangerImportance
-			row := container.NewHBox(icon, name, layout.NewSpacer(), b1, b2)
+			button := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {})
+			button.Importance = widget.DangerImportance
+			row := container.NewHBox(icon, name, layout.NewSpacer(), button)
 			return row
 
 			// hasToken, err := a.ui.service.HasTokenWithScopes(char.ID)
@@ -99,10 +97,6 @@ func (u *ui) newAccountArea() *accountArea {
 			})
 
 			row.Objects[3].(*widget.Button).OnTapped = func() {
-				a.ui.showStatusDialog(model.CharacterShort{ID: c.id, Name: c.name})
-			}
-
-			row.Objects[4].(*widget.Button).OnTapped = func() {
 				a.showDeleteDialog(c)
 			}
 		})
