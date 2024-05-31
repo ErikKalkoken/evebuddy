@@ -194,3 +194,15 @@ func (s *Service) updateCharacterWalletBalanceESI(ctx context.Context, character
 			return nil
 		})
 }
+
+func (s *Service) CharacterListStatus(characterID int32) []model.CharacterStatus {
+	return s.characterStatus.ListStatus(characterID)
+}
+
+func (s *Service) CharacterStatusSummary() (float32, bool) {
+	return s.characterStatus.StatusSummary()
+}
+
+func (s *Service) CharacterStatus(characterID int32) (float32, bool) {
+	return s.characterStatus.StatusCharacterSummary(characterID)
+}

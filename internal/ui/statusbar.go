@@ -255,7 +255,7 @@ func (a *characterUpdateStatusArea) refresh() {
 		x.status = characterStatusUnknown
 		x.errorMessage = ""
 	} else {
-		progress, ok := a.ui.service.CharacterGetUpdateStatusSummary()
+		progress, ok := a.ui.service.CharacterStatusSummary()
 		if !ok {
 			x.title = "ERROR"
 			x.status = characterStatusError

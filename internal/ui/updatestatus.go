@@ -236,7 +236,7 @@ func (a *statusWindow) refresh() error {
 	}
 	cc2 := make([]statusCharacter, len(cc))
 	for i, c := range cc {
-		completed, ok := a.ui.service.CharacterGetUpdateStatusCharacterSummary(c.ID)
+		completed, ok := a.ui.service.CharacterStatus(c.ID)
 		cc2[i] = statusCharacter{id: c.ID, name: c.Name, completion: completed, isOK: ok}
 	}
 	if err := a.charactersData.Set(copyToUntypedSlice(cc2)); err != nil {
@@ -258,7 +258,7 @@ func (a *statusWindow) refreshDetailArea() error {
 	if !ok {
 		return nil
 	}
-	data := a.ui.service.CharacterListUpdateStatus(c.id)
+	data := a.ui.service.CharacterListStatus(c.id)
 	if err := a.detailData.Set(copyToUntypedSlice(data)); err != nil {
 		return err
 	}

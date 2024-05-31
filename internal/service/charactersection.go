@@ -166,7 +166,7 @@ func (s *Service) updateCharacterSectionIfChanged(
 	if err := s.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg); err != nil {
 		return false, err
 	}
-	s.characterStatus.Set(characterID, section, "", lastUpdatedAt)
+	s.characterStatus.SetStatus(characterID, section, "", lastUpdatedAt)
 
 	slog.Debug("Has section changed", "characterID", characterID, "section", section, "changed", hasChanged)
 	return hasChanged, nil
