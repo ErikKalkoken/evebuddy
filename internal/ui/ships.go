@@ -13,8 +13,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
-// FIXME: Shows wrong ship skills matching for young character
-
 // shipsArea is the UI area that shows the skillqueue
 type shipsArea struct {
 	content   *fyne.Container

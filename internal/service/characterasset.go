@@ -42,7 +42,6 @@ func (s *Service) updateCharacterAssetsESI(ctx context.Context, characterID int3
 					}
 					return s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, arg)
 				})
-
 			if err != nil {
 				return false, err
 			}

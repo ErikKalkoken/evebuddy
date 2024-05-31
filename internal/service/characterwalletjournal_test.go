@@ -161,7 +161,69 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			}
 		}
 	})
-
+	t.Run("should fetch multiple pages", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateEveEntityCharacter(model.EveEntity{ID: 2112625428})
+		factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000132})
+		pages := "2"
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v6/characters/%d/wallet/journal/", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+				{
+					"amount":          -100000,
+					"balance":         500000.4316,
+					"context_id":      4,
+					"context_id_type": "contract_id",
+					"date":            "2018-02-23T14:31:32Z",
+					"description":     "First",
+					"first_party_id":  2112625428,
+					"id":              89,
+					"ref_type":        "contract_deposit",
+					"second_party_id": 1000132,
+				},
+			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v6/characters/%d/wallet/journal/?page=2", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+				{
+					"amount":          -110000,
+					"balance":         500000.4316,
+					"context_id":      4,
+					"context_id_type": "contract_id",
+					"date":            "2018-02-23T15:31:32Z",
+					"description":     "Second",
+					"first_party_id":  2112625428,
+					"id":              90,
+					"ref_type":        "contract_deposit",
+					"second_party_id": 1000132,
+				},
+			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
+		// when
+		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, changed)
+			ids, err := r.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
+			if assert.NoError(t, err) {
+				if assert.Len(t, ids, 2) {
+					x1, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
+					if assert.NoError(t, err) {
+						assert.Equal(t, "First", x1.Description)
+					}
+					x2, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 90)
+					if assert.NoError(t, err) {
+						assert.Equal(t, "Second", x2.Description)
+					}
+				}
+			}
+		}
+	})
 }
 
 func TestListWalletJournalEntries(t *testing.T) {

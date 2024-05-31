@@ -13,6 +13,8 @@ func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
 	return append(chunks, items)
 }
 
+// TODO: Fetch pages in parallel
+
 func fetchFromESIWithPaging[T any](fetch func(int) ([]T, *http.Response, error)) ([]T, error) {
 	results := make(map[int][]T)
 	page := 1

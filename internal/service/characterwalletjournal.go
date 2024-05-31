@@ -3,11 +3,13 @@ package service
 import (
 	"context"
 	"log/slog"
+	"net/http"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
+	"github.com/antihax/goesi/optional"
 )
 
 func (s *Service) ListCharacterWalletJournalEntries(characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
@@ -15,14 +17,18 @@ func (s *Service) ListCharacterWalletJournalEntries(characterID int32) ([]*model
 	return s.r.ListCharacterWalletJournalEntries(ctx, characterID)
 }
 
-// TODO: Add ability to fetch more then one page from ESI
-
 // updateCharacterWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
 func (s *Service) updateCharacterWalletJournalEntryESI(ctx context.Context, characterID int32) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
 		ctx, characterID, model.CharacterSectionWalletJournal,
 		func(ctx context.Context, characterID int32) (any, error) {
-			entries, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, characterID, nil)
+			entries, err := fetchFromESIWithPaging(
+				func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
+					arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
+						Page: optional.NewInt32(int32(pageNum)),
+					}
+					return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, characterID, arg)
+				})
 			if err != nil {
 				return false, err
 			}
