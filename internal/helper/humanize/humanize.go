@@ -2,6 +2,7 @@
 package humanize
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"net"
@@ -9,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
 	"github.com/antihax/goesi/esi"
 	"github.com/mattn/go-sqlite3"
 )
@@ -70,6 +72,9 @@ func Duration(duration time.Duration) string {
 func Error(err error) string {
 	if err == nil {
 		return "No error"
+	}
+	if errors.Is(err, sso.ErrTokenError) {
+		return "token error"
 	}
 	switch t := err.(type) {
 	case sqlite3.Error:
