@@ -130,23 +130,22 @@ func (s *Service) fetchMailHeadersESI(ctx context.Context, characterID int32) ([
 	for {
 		var opts *esi.GetCharactersCharacterIdMailOpts
 		if lastMailID > 0 {
-			l := optional.NewInt32(lastMailID)
-			opts = &esi.GetCharactersCharacterIdMailOpts{LastMailId: l}
+			opts = &esi.GetCharactersCharacterIdMailOpts{LastMailId: optional.NewInt32(lastMailID)}
 		} else {
 			opts = nil
 		}
-		objs, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMail(ctx, characterID, opts)
+		oo, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMail(ctx, characterID, opts)
 		if err != nil {
 			return nil, err
 		}
-		mm = append(mm, objs...)
+		mm = slices.Concat(mm, oo)
 		isLimitExceeded := (maxMails != 0 && len(mm)+maxHeadersPerPage > maxMails)
-		if len(objs) < maxHeadersPerPage || isLimitExceeded {
+		if len(oo) < maxHeadersPerPage || isLimitExceeded {
 			break
 		}
-		ids := make([]int32, 0)
-		for _, o := range objs {
-			ids = append(ids, o.MailId)
+		ids := make([]int32, len(oo))
+		for i, o := range oo {
+			ids[i] = o.MailId
 		}
 		lastMailID = slices.Min(ids)
 	}
