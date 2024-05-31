@@ -37,17 +37,17 @@ func New(cache *cache.Cache) *CharacterStatus {
 
 func (sc *CharacterStatus) InitCache(r *storage.Storage) error {
 	ctx := context.Background()
-	ids, err := sc.updateCharacters(ctx, r)
+	cc, err := sc.updateCharacters(ctx, r)
 	if err != nil {
 		return err
 	}
-	for _, characterID := range ids {
-		oo, err := r.ListCharacterUpdateStatus(ctx, characterID)
+	for _, c := range cc {
+		oo, err := r.ListCharacterUpdateStatus(ctx, c.ID)
 		if err != nil {
 			return err
 		}
 		for _, o := range oo {
-			sc.SetStatus(characterID, o.Section, o.ErrorMessage, o.LastUpdatedAt)
+			sc.SetStatus(c.ID, o.Section, o.ErrorMessage, o.LastUpdatedAt)
 		}
 	}
 	return nil
@@ -63,12 +63,12 @@ func (sc *CharacterStatus) GetStatus(characterID int32, section model.CharacterS
 	return v.ErrorMessage, v.LastUpdatedAt
 }
 
-func (sc *CharacterStatus) StatusSummary() (float32, bool) {
-	ids := sc.getCharacters()
-	total := len(model.CharacterSections) * len(ids)
+func (sc *CharacterStatus) Summary() (float32, bool) {
+	cc := sc.ListCharacters()
+	total := len(model.CharacterSections) * len(cc)
 	currentCount := 0
-	for _, id := range ids {
-		xx := sc.ListStatus(id)
+	for _, c := range cc {
+		xx := sc.ListStatus(c.ID)
 		for _, x := range xx {
 			if !x.IsOK() {
 				return 0, false
@@ -81,7 +81,7 @@ func (sc *CharacterStatus) StatusSummary() (float32, bool) {
 	return float32(currentCount) / float32(total), true
 }
 
-func (sc *CharacterStatus) StatusCharacterSummary(characterID int32) (float32, bool) {
+func (sc *CharacterStatus) CharacterSummary(characterID int32) (float32, bool) {
 	total := len(model.CharacterSections)
 	currentCount := 0
 	xx := sc.ListStatus(characterID)
@@ -139,24 +139,23 @@ func (sc *CharacterStatus) UpdateCharacters(ctx context.Context, r *storage.Stor
 	return err
 }
 
-func (sc *CharacterStatus) updateCharacters(ctx context.Context, r *storage.Storage) ([]int32, error) {
-	ids, err := r.ListCharacterIDs(ctx)
+func (sc *CharacterStatus) updateCharacters(ctx context.Context, r *storage.Storage) ([]*model.CharacterShort, error) {
+	cc, err := r.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err
 	}
-	sc.setCharacters(ids)
-	return ids, nil
+	sc.setCharacters(cc)
+	return cc, nil
 }
 
-func (sc *CharacterStatus) getCharacters() []int32 {
+func (sc *CharacterStatus) ListCharacters() []*model.CharacterShort {
 	x, ok := sc.cache.Get(keyCharacters)
 	if !ok {
 		return nil
 	}
-	ids := x.([]int32)
-	return ids
+	return x.([]*model.CharacterShort)
 }
 
-func (sc *CharacterStatus) setCharacters(ids []int32) {
-	sc.cache.Set(keyCharacters, ids, cache.NoTimeout)
+func (sc *CharacterStatus) setCharacters(cc []*model.CharacterShort) {
+	sc.cache.Set(keyCharacters, cc, cache.NoTimeout)
 }

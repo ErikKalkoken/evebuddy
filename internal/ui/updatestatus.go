@@ -230,13 +230,10 @@ func (a *statusWindow) makeDetailTable() *widget.Table {
 }
 
 func (a *statusWindow) refresh() error {
-	cc, err := a.ui.service.ListCharactersShort()
-	if err != nil {
-		return err
-	}
+	cc := a.ui.service.CharacterStatusListCharacters()
 	cc2 := make([]statusCharacter, len(cc))
 	for i, c := range cc {
-		completed, ok := a.ui.service.CharacterStatus(c.ID)
+		completed, ok := a.ui.service.CharacterStatusCharacterSummary(c.ID)
 		cc2[i] = statusCharacter{id: c.ID, name: c.Name, completion: completed, isOK: ok}
 	}
 	if err := a.charactersData.Set(copyToUntypedSlice(cc2)); err != nil {
@@ -258,7 +255,7 @@ func (a *statusWindow) refreshDetailArea() error {
 	if !ok {
 		return nil
 	}
-	data := a.ui.service.CharacterListStatus(c.id)
+	data := a.ui.service.CharacterStatusListStatus(c.id)
 	if err := a.detailData.Set(copyToUntypedSlice(data)); err != nil {
 		return err
 	}
