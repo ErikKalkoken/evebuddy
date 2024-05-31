@@ -65,10 +65,22 @@ func (u *ui) newAssetsArea() *assetsArea {
 		locationsTop:     widget.NewLabel(""),
 		ui:               u,
 	}
-	a.assetsTop.TextStyle.Bold = true
 	a.locationsTop.TextStyle.Bold = true
+	a.locations = a.makeLocationsTree()
+	locations := container.NewBorder(container.NewVBox(a.locationsTop, widget.NewSeparator()), nil, nil, nil, a.locations)
 
-	a.locations = widget.NewTreeWithData(
+	a.assetsTop.TextStyle.Bold = true
+	a.assets = a.makeAssetGrid()
+	assets := container.NewBorder(container.NewVBox(a.assetsTop, widget.NewSeparator()), nil, nil, nil, a.assets)
+
+	main := container.NewHSplit(locations, assets)
+	main.SetOffset(0.33)
+	a.content = main
+	return &a
+}
+
+func (a *assetsArea) makeLocationsTree() *widget.Tree {
+	t := widget.NewTreeWithData(
 		a.locationsData,
 		func(branch bool) fyne.CanvasObject {
 			return widget.NewLabel("Template")
@@ -84,15 +96,15 @@ func (u *ui) newAssetsArea() *assetsArea {
 			label.SetText(n.Name)
 		},
 	)
-	a.locations.OnSelected = func(uid widget.TreeNodeID) {
+	t.OnSelected = func(uid widget.TreeNodeID) {
 		err := func() error {
 			n, err := treeNodeFromBoundTree[locationNode](a.locationsData, uid)
 			if err != nil {
 				return err
 			}
 			if n.isBranch() {
-				a.locations.ToggleBranch(uid)
-				a.locations.UnselectAll()
+				t.ToggleBranch(uid)
+				t.UnselectAll()
 			} else {
 				return a.redrawAssets(n)
 			}
@@ -104,8 +116,11 @@ func (u *ui) newAssetsArea() *assetsArea {
 			a.ui.statusBarArea.SetError(t)
 		}
 	}
+	return t
+}
 
-	a.assets = widget.NewGridWrapWithData(
+func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
+	g := widget.NewGridWrapWithData(
 		a.assetsData,
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(a.defaultAssetIcon)
@@ -145,12 +160,7 @@ func (u *ui) newAssetsArea() *assetsArea {
 			name.SetText(t)
 		},
 	)
-	locations := container.NewBorder(container.NewVBox(a.locationsTop, widget.NewSeparator()), nil, nil, nil, a.locations)
-	assets := container.NewBorder(container.NewVBox(a.assetsTop, widget.NewSeparator()), nil, nil, nil, a.assets)
-	main := container.NewHSplit(locations, assets)
-	main.SetOffset(0.33)
-	a.content = main
-	return &a
+	return g
 }
 
 func (a *assetsArea) redraw() {

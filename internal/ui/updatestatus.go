@@ -78,12 +78,6 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 	a.detailTop.TextStyle.Bold = true
 	detail := container.NewBorder(a.detailTop, nil, nil, nil, a.detail)
 
-	a.detailSelected.AddListener(binding.NewDataListener(func() {
-		if err := a.refreshDetailArea(); err != nil {
-			panic(err)
-		}
-	}))
-
 	split := container.NewHSplit(characters, detail)
 	split.SetOffset(0.33)
 	a.content = split
@@ -199,7 +193,10 @@ func (a *statusWindow) makeDetailTable() *widget.Table {
 			case 2:
 				s = humanizeTime(d.LastUpdatedAt, "?")
 			case 3:
-				if d.IsOK() {
+				if !d.IsCurrent() {
+					s = "Stale"
+					i = widget.HighImportance
+				} else if d.IsOK() {
 					s = "OK"
 					i = widget.SuccessImportance
 				} else {

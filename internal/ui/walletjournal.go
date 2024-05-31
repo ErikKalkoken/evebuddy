@@ -60,7 +60,15 @@ func (u *ui) newWalletJournalArea() *walletJournalArea {
 		entries: binding.NewUntypedList(),
 		top:     widget.NewLabel(""),
 	}
+
 	a.top.TextStyle.Bold = true
+	a.table = a.makeTable()
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+	return &a
+}
+
+func (a *walletJournalArea) makeTable() *widget.Table {
 	var headers = []struct {
 		text  string
 		width float32
@@ -139,15 +147,11 @@ func (u *ui) newWalletJournalArea() *walletJournalArea {
 		}
 		if e.hasReason() {
 			c := widget.NewLabel(e.reason)
-			dlg := dialog.NewCustom("Reason", "OK", c, u.window)
+			dlg := dialog.NewCustom("Reason", "OK", c, a.ui.window)
 			dlg.Show()
 		}
 	}
-
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, t)
-	a.table = t
-	return &a
+	return t
 }
 
 func (a *walletJournalArea) refresh() {
