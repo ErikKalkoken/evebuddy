@@ -101,6 +101,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516})
 		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
+		pages := "2"
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/assets/", c.ID),
@@ -115,7 +116,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 					"quantity":          1,
 					"type_id":           3516,
 				},
-			}).HeaderSet(http.Header{"X-Pages": []string{"2"}}))
+			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/assets/?page=2", c.ID),
@@ -130,7 +131,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 					"quantity":          1,
 					"type_id":           3516,
 				},
-			}).HeaderSet(http.Header{"X-Pages": []string{"2"}}))
+			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		httpmock.RegisterResponder(
 			"POST",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/assets/names/", c.ID),

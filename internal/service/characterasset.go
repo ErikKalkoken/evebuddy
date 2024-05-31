@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
 	"github.com/antihax/goesi/optional"
+	"golang.org/x/sync/errgroup"
 )
 
 func (s *Service) ListCharacterAssetsInShipHangar(characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
@@ -138,24 +139,38 @@ func (s *Service) fetchCharacterAssetsFromESIWithPaging(ctx context.Context, cha
 	if x == "" {
 		return assets, nil
 	}
-	pages, err := strconv.Atoi(x)
+	pagesCount, err := strconv.Atoi(x)
 	if err != nil {
 		return nil, err
 	}
-	if pages == 1 {
+	if pagesCount == 1 {
 		return assets, nil
 	}
 	assetsAll := make([]esi.GetCharactersCharacterIdAssets200Ok, 0)
 	assetsAll = slices.Concat(assetsAll, assets)
-	for i := range pages - 1 {
-		arg := &esi.GetCharactersCharacterIdAssetsOpts{
-			Page: optional.NewInt32(int32(i + 2)),
-		}
-		assets, _, err := s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, arg)
-		if err != nil {
-			return nil, err
-		}
-		assetsAll = slices.Concat(assetsAll, assets)
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	pages := make([][]esi.GetCharactersCharacterIdAssets200Ok, pagesCount-1)
+
+	for i := range pagesCount - 1 {
+		i := i
+		g.Go(func() error {
+			arg := &esi.GetCharactersCharacterIdAssetsOpts{
+				Page: optional.NewInt32(int32(i + 2)),
+			}
+			pages[i], _, err = s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, arg)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	for _, page := range pages {
+		assetsAll = slices.Concat(assetsAll, page)
 	}
 	return assetsAll, nil
 }
