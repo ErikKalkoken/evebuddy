@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-const NoTimeout time.Duration = -1 * time.Second
 const defaultCleanupDuration = time.Minute * 10
 
 type Cache struct {
@@ -18,9 +17,8 @@ type Cache struct {
 }
 
 type item struct {
-	Value        any
-	ExpiresAt    time.Time
-	NeverExpires bool
+	Value     any
+	ExpiresAt time.Time
 }
 
 // New creates a new cache and returns it
@@ -56,7 +54,7 @@ func (c *Cache) Get(key any) (any, bool) {
 		return nil, false
 	}
 	i := value.(item)
-	if !i.NeverExpires && time.Until(i.ExpiresAt) < 0 {
+	if !i.ExpiresAt.IsZero() && time.Until(i.ExpiresAt) < 0 {
 		return nil, false
 	}
 	return i.Value, ok
@@ -65,28 +63,27 @@ func (c *Cache) Get(key any) (any, bool) {
 // Set stores an item in the cache.
 //
 // If an item with the same key already exists it will be overwritten.
-// An item with timeout = cache.NoTimeout never expires
+// An item with timeout = 0 never expires
 func (c *Cache) Set(key any, value any, timeout time.Duration) {
 	// store the item
-	expires := timeout == NoTimeout
-	if timeout < 0 {
-		timeout = 0
+	var at time.Time
+	if timeout > 0 {
+		at = time.Now().Add(timeout)
 	}
-	at := time.Now().Add(timeout)
-	i := item{Value: value, ExpiresAt: at, NeverExpires: expires}
+	i := item{Value: value, ExpiresAt: at}
 	c.items.Store(key, i)
 	// run cleanup when due
 	c.m.Lock()
 	defer c.m.Unlock()
 	if time.Since(c.lastCleanup) > defaultCleanupDuration {
 		c.lastCleanup = time.Now()
-		go c.cleanup()
+		go c.Reorganize()
 	}
 }
 
-// cleanup removes all expires keys
-func (c *Cache) cleanup() {
-	slog.Info("cache: started cleanup")
+// Reorganize removes all expired keys
+func (c *Cache) Reorganize() {
+	slog.Info("cache: started reorganize")
 	c.items.Range(func(key, value any) bool {
 		_, found := c.Get(key)
 		if !found {

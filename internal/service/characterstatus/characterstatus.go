@@ -122,7 +122,7 @@ func (sc *CharacterStatus) SetStatus(
 ) {
 	k := cacheKey{characterID: characterID, section: section}
 	v := cacheValue{ErrorMessage: errorMessage, LastUpdatedAt: lastUpdatedAt}
-	sc.cache.Set(k, v, cache.NoTimeout)
+	sc.cache.Set(k, v, 0)
 }
 
 func (sc *CharacterStatus) SetError(
@@ -135,7 +135,7 @@ func (sc *CharacterStatus) SetError(
 	_, lastUpdatedAt := sc.GetStatus(characterID, section)
 	k := cacheKey{characterID: characterID, section: section}
 	v := cacheValue{ErrorMessage: errorMessage, LastUpdatedAt: lastUpdatedAt}
-	sc.cache.Set(k, v, cache.NoTimeout)
+	sc.cache.Set(k, v, 0)
 }
 
 func (sc *CharacterStatus) UpdateCharacters(ctx context.Context, r CharacterStatusStorage) error {
@@ -161,5 +161,5 @@ func (sc *CharacterStatus) ListCharacters() []*model.CharacterShort {
 }
 
 func (sc *CharacterStatus) setCharacters(cc []*model.CharacterShort) {
-	sc.cache.Set(keyCharacters, cc, cache.NoTimeout)
+	sc.cache.Set(keyCharacters, cc, 0)
 }
