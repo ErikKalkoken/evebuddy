@@ -41,7 +41,7 @@ func (s *Service) createEveCharacterFromESI(ctx context.Context, id int32) (*mod
 		if r.FactionId != 0 {
 			ids = append(ids, r.FactionId)
 		}
-		_, err = s.AddMissingEveEntities(ctx, ids)
+		_, err = s.EveUniverse.AddMissingEveEntities(ctx, ids)
 		if err != nil {
 			return nil, err
 		}
@@ -122,7 +122,7 @@ func (s *Service) updateEveCharacterESI(ctx context.Context, characterID int32) 
 		if r.FactionId != 0 {
 			entityIDs = append(entityIDs, r.FactionId)
 		}
-		_, err = s.AddMissingEveEntities(ctx, entityIDs)
+		_, err = s.EveUniverse.AddMissingEveEntities(ctx, entityIDs)
 		if err != nil {
 			return err
 		}

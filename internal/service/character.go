@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"slices"
 
 	"fyne.io/fyne/v2/data/binding"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
+	igoesi "github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
@@ -59,7 +61,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText b
 		Scopes:       ssoToken.Scopes,
 		TokenType:    ssoToken.TokenType,
 	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
+	ctx = igoesi.ContextWithESIToken(ctx, token.AccessToken)
 	character, err := s.getOrCreateEveCharacterESI(ctx, token.CharacterID)
 	if err != nil {
 		return 0, err
@@ -205,4 +207,30 @@ func (s *Service) updateCharacterWalletBalanceESI(ctx context.Context, arg Updat
 			}
 			return nil
 		})
+}
+
+// AddEveEntitiesFromCharacterSearchESI runs a search on ESI and adds the results as new EveEntity objects to the database.
+// This method performs a character specific search and needs a token.
+func (s *Service) AddEveEntitiesFromCharacterSearchESI(ctx context.Context, characterID int32, search string) ([]int32, error) {
+	token, err := s.getValidCharacterToken(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+	categories := []string{
+		"corporation",
+		"character",
+		"alliance",
+	}
+	ctx = igoesi.ContextWithESIToken(ctx, token.AccessToken)
+	r, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, categories, characterID, search, nil)
+	if err != nil {
+		return nil, err
+	}
+	ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
+	missingIDs, err := s.EveUniverse.AddMissingEveEntities(ctx, ids)
+	if err != nil {
+		slog.Error("Failed to fetch missing IDs", "error", err)
+		return nil, err
+	}
+	return missingIDs, nil
 }

@@ -6,8 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/antihax/goesi"
-
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
@@ -76,11 +74,4 @@ func (s *Service) ensureValidCharacterToken(ctx context.Context, t *model.Charac
 		slog.Info("Token refreshed", "characterID", t.CharacterID)
 	}
 	return nil
-}
-
-// contextWithESIToken returns a new context with the ESI access token included
-// so it can be used to authenticate requests with the goesi library.
-func contextWithESIToken(ctx context.Context, accessToken string) context.Context {
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, accessToken)
-	return ctx
 }

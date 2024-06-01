@@ -10,6 +10,7 @@ import (
 	"github.com/antihax/goesi/optional"
 	"golang.org/x/sync/errgroup"
 
+	igoesi "github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -205,7 +206,7 @@ func (s *Service) resolveMailEntities(ctx context.Context, mm []esi.GetCharacter
 			entityIDs.Add(r.RecipientId)
 		}
 	}
-	_, err := s.AddMissingEveEntities(ctx, entityIDs.ToSlice())
+	_, err := s.EveUniverse.AddMissingEveEntities(ctx, entityIDs.ToSlice())
 	if err != nil {
 		return err
 	}
@@ -284,7 +285,7 @@ func (s *Service) UpdateMailRead(characterID, mailID int32) error {
 	if err != nil {
 		return err
 	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
+	ctx = igoesi.ContextWithESIToken(ctx, token.AccessToken)
 	m, err := s.r.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		return err

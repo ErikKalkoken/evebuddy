@@ -2,10 +2,12 @@
 package goesi
 
 import (
+	"context"
 	"net/http"
 	"slices"
 	"strconv"
 
+	"github.com/antihax/goesi"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -57,4 +59,11 @@ func extractPageCount(r *http.Response) (int, error) {
 		return 0, err
 	}
 	return pages, nil
+}
+
+// ContextWithESIToken returns a new context with the ESI access token included
+// so it can be used to authenticate requests with the goesi library.
+func ContextWithESIToken(ctx context.Context, accessToken string) context.Context {
+	ctx = context.WithValue(ctx, goesi.ContextAccessToken, accessToken)
+	return ctx
 }

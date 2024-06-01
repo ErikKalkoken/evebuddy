@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	igoesi "github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -137,7 +138,7 @@ func (s *Service) updateCharacterSectionIfChanged(
 	if err != nil {
 		return false, err
 	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
+	ctx = igoesi.ContextWithESIToken(ctx, token.AccessToken)
 	data, err := fetch(ctx, arg.CharacterID)
 	if err != nil {
 		return false, err

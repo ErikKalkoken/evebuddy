@@ -87,7 +87,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 				Name:             station.Name,
 			}
 			if station.Owner != 0 {
-				_, err = s.AddMissingEveEntities(ctx, []int32{station.Owner})
+				_, err = s.EveUniverse.AddMissingEveEntities(ctx, []int32{station.Owner})
 				if err != nil {
 					return nil, err
 				}
@@ -106,7 +106,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 			if err != nil {
 				return nil, err
 			}
-			_, err = s.AddMissingEveEntities(ctx, []int32{structure.OwnerId})
+			_, err = s.EveUniverse.AddMissingEveEntities(ctx, []int32{structure.OwnerId})
 			if err != nil {
 				return nil, err
 			}

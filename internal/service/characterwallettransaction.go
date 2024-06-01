@@ -61,7 +61,7 @@ func (s *Service) updateCharacterWalletTransactionESI(ctx context.Context, arg U
 					ids.Add(e.ClientId)
 				}
 			}
-			_, err = s.AddMissingEveEntities(ctx, ids.ToSlice())
+			_, err = s.EveUniverse.AddMissingEveEntities(ctx, ids.ToSlice())
 			if err != nil {
 				return err
 			}

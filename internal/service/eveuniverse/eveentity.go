@@ -1,4 +1,4 @@
-package service
+package eveuniverse
 
 import (
 	"context"
@@ -35,33 +35,8 @@ func eveEntityCategoryFromESICategory(c string) model.EveEntityCategory {
 	return c2
 }
 
-// AddEveEntitiesFromESISearch runs a search on ESI and adds the results as new EveEntity objects to the database.
-func (s *Service) AddEveEntitiesFromESISearch(ctx context.Context, characterID int32, search string) ([]int32, error) {
-	token, err := s.getValidCharacterToken(ctx, characterID)
-	if err != nil {
-		return nil, err
-	}
-	categories := []string{
-		"corporation",
-		"character",
-		"alliance",
-	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
-	r, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, categories, characterID, search, nil)
-	if err != nil {
-		return nil, err
-	}
-	ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
-	missingIDs, err := s.AddMissingEveEntities(ctx, ids)
-	if err != nil {
-		slog.Error("Failed to fetch missing IDs", "error", err)
-		return nil, err
-	}
-	return missingIDs, nil
-}
-
 // AddMissingEveEntities adds EveEntities from ESI for IDs missing in the database.
-func (s *Service) AddMissingEveEntities(ctx context.Context, ids []int32) ([]int32, error) {
+func (s *EveUniverse) AddMissingEveEntities(ctx context.Context, ids []int32) ([]int32, error) {
 	missing, err := s.r.MissingEveEntityIDs(ctx, ids)
 	if err != nil {
 		return nil, err
@@ -104,7 +79,7 @@ func (s *Service) AddMissingEveEntities(ctx context.Context, ids []int32) ([]int
 	return missingIDs, nil
 }
 
-func (s *Service) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostUniverseNames200Ok, []int32, error) {
+func (s *EveUniverse) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostUniverseNames200Ok, []int32, error) {
 	slog.Info("Trying to resolve IDs", "count", len(ids))
 	ee, resp, err := s.esiClient.ESI.UniverseApi.PostUniverseNames(ctx, ids, nil)
 	if err != nil {
@@ -130,13 +105,13 @@ func (s *Service) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostUniver
 	return ee, []int32{}, nil
 }
 
-func (s *Service) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]*model.EveEntity, error) {
+func (s *EveUniverse) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]*model.EveEntity, error) {
 	return s.r.ListEveEntitiesByPartialName(ctx, partial)
 }
 
 // Resolve slice of unclean EveEntity objects and return as new slice with resolved objects.
 // Will return an error if some entities can not be resolved.
-func (s *Service) ResolveUncleanEveEntities(ctx context.Context, ee []*model.EveEntity) ([]*model.EveEntity, error) {
+func (s *EveUniverse) ResolveUncleanEveEntities(ctx context.Context, ee []*model.EveEntity) ([]*model.EveEntity, error) {
 	ee1, names, err := s.resolveEveEntityLocally(ctx, ee)
 	if err != nil {
 		return nil, err
@@ -154,7 +129,7 @@ func (s *Service) ResolveUncleanEveEntities(ctx context.Context, ee []*model.Eve
 
 // resolveEveEntityLocally tries to resolve EveEntities locally.
 // It returns resolved recipients and a list of remaining unresolved names (if any)
-func (s *Service) resolveEveEntityLocally(ctx context.Context, ee []*model.EveEntity) ([]*model.EveEntity, []string, error) {
+func (s *EveUniverse) resolveEveEntityLocally(ctx context.Context, ee []*model.EveEntity) ([]*model.EveEntity, []string, error) {
 	ee2 := make([]*model.EveEntity, 0, len(ee))
 	names := make([]string, 0, len(ee))
 	for _, r := range ee {
@@ -179,7 +154,7 @@ func (s *Service) resolveEveEntityLocally(ctx context.Context, ee []*model.EveEn
 }
 
 // resolveEveEntityNamesRemotely resolves a list of names remotely and stores them as EveEntity objects.
-func (s *Service) resolveEveEntityNamesRemotely(ctx context.Context, names []string) error {
+func (s *EveUniverse) resolveEveEntityNamesRemotely(ctx context.Context, names []string) error {
 	if len(names) == 0 {
 		return nil
 	}
@@ -225,7 +200,7 @@ func (s *Service) resolveEveEntityNamesRemotely(ctx context.Context, names []str
 // findEveEntitiesByName tries to build EveEntity objects from given names
 // by checking against EveEntity objects in the database.
 // Will abort with errors if no match is found or if multiple matches are found for a name.
-func (s *Service) findEveEntitiesByName(ctx context.Context, names []string) ([]*model.EveEntity, error) {
+func (s *EveUniverse) findEveEntitiesByName(ctx context.Context, names []string) ([]*model.EveEntity, error) {
 	ee2 := make([]*model.EveEntity, 0, len(names))
 	for _, n := range names {
 		ee, err := s.r.ListEveEntitiesByName(ctx, n)

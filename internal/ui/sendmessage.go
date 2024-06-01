@@ -102,7 +102,7 @@ func (u *ui) makeSendMessageWindow(mode int, mail *model.CharacterMail) (fyne.Wi
 			if err == nil {
 				err = func() error {
 					eeUnclean := recipients.ToEveEntitiesUnclean()
-					ee2, err := u.service.ResolveUncleanEveEntities(context.Background(), eeUnclean)
+					ee2, err := u.service.EveUniverse.ResolveUncleanEveEntities(context.Background(), eeUnclean)
 					if err != nil {
 						return err
 					}
@@ -168,7 +168,7 @@ func (u *ui) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int
 		entry.SetOptions(names)
 		entry.ShowCompletion()
 		go func() {
-			missingIDs, err := u.service.AddEveEntitiesFromESISearch(context.Background(), characterID, search)
+			missingIDs, err := u.service.AddEveEntitiesFromCharacterSearchESI(context.Background(), characterID, search)
 			if err != nil {
 				slog.Error("Failed to search names", "search", "search", "error", err)
 				return
@@ -200,7 +200,7 @@ func (u *ui) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int
 }
 
 func (u *ui) makeRecipientOptions(search string) ([]string, error) {
-	ee, err := u.service.ListEveEntitiesByPartialName(context.Background(), search)
+	ee, err := u.service.EveUniverse.ListEveEntitiesByPartialName(context.Background(), search)
 	if err != nil {
 		return nil, err
 	}

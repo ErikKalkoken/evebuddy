@@ -8,6 +8,7 @@ import (
 
 	"github.com/antihax/goesi/esi"
 
+	igoesi "github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
@@ -26,7 +27,7 @@ func (s *Service) DeleteCharacterMail(characterID, mailID int32) error {
 	if err != nil {
 		return err
 	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
+	ctx = igoesi.ContextWithESIToken(ctx, token.AccessToken)
 	_, err = s.esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
 	if err != nil {
 		return err
@@ -82,7 +83,7 @@ func (s *Service) SendCharacterMail(characterID int32, subject string, recipient
 		Subject:    subject,
 		Recipients: rr,
 	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
+	ctx = igoesi.ContextWithESIToken(ctx, token.AccessToken)
 	mailID, _, err := s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esiMail, nil)
 	if err != nil {
 		return 0, err
@@ -92,7 +93,7 @@ func (s *Service) SendCharacterMail(characterID int32, subject string, recipient
 		recipientIDs[i] = r.RecipientId
 	}
 	ids := slices.Concat(recipientIDs, []int32{characterID})
-	_, err = s.AddMissingEveEntities(ctx, ids)
+	_, err = s.EveUniverse.AddMissingEveEntities(ctx, ids)
 	if err != nil {
 		return 0, err
 	}

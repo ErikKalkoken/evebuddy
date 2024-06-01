@@ -1,4 +1,4 @@
-package service_test
+package eveuniverse_test
 
 import (
 	"context"
@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 )
 
 func TestResolveUncleanEveEntities(t *testing.T) {
@@ -20,7 +21,8 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := service.NewService(r)
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(r, client)
 	t.Run("Can resolve existing when it has category", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -80,7 +82,7 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 		// when
 		_, err := s.ResolveUncleanEveEntities(ctx, []*model.EveEntity{&e})
 		// then
-		assert.ErrorIs(t, err, service.ErrEveEntityNameNoMatch)
+		assert.ErrorIs(t, err, eveuniverse.ErrEveEntityNameNoMatch)
 	})
 	t.Run("Return error when name matches more then once", func(t *testing.T) {
 		// given
@@ -98,7 +100,7 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 		// when
 		_, err := s.ResolveUncleanEveEntities(ctx, []*model.EveEntity{&e})
 		// then
-		assert.ErrorIs(t, err, service.ErrEveEntityNameMultipleMatches)
+		assert.ErrorIs(t, err, eveuniverse.ErrEveEntityNameMultipleMatches)
 	})
 	t.Run("Return error when name and category matches more then once", func(t *testing.T) {
 		// given
@@ -116,7 +118,7 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 		// when
 		_, err := s.ResolveUncleanEveEntities(ctx, []*model.EveEntity{&e})
 		// then
-		assert.ErrorIs(t, err, service.ErrEveEntityNameMultipleMatches)
+		assert.ErrorIs(t, err, eveuniverse.ErrEveEntityNameMultipleMatches)
 	})
 }
 
@@ -126,7 +128,8 @@ func TestAddMissingEveEntities(t *testing.T) {
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := service.NewService(r)
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(r, client)
 	t.Run("do noting when not entities are missing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
