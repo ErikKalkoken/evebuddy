@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -35,7 +36,7 @@ func (s *Service) updateCharacterAssetsESI(ctx context.Context, characterID int3
 	return s.updateCharacterSectionIfChanged(
 		ctx, characterID, model.CharacterSectionAssets,
 		func(ctx context.Context, characterID int32) (any, error) {
-			assets, err := fetchFromESIWithPaging(
+			assets, err := goesi.FetchFromESIWithPaging(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdAssetsOpts{
 						Page: optional.NewInt32(int32(pageNum)),

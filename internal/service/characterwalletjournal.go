@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -22,7 +23,7 @@ func (s *Service) updateCharacterWalletJournalEntryESI(ctx context.Context, char
 	return s.updateCharacterSectionIfChanged(
 		ctx, characterID, model.CharacterSectionWalletJournal,
 		func(ctx context.Context, characterID int32) (any, error) {
-			entries, err := fetchFromESIWithPaging(
+			entries, err := goesi.FetchFromESIWithPaging(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
 						Page: optional.NewInt32(int32(pageNum)),
