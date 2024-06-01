@@ -217,7 +217,7 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 		func() fyne.CanvasObject {
 			return container.NewHBox(
 				layout.NewSpacer(),
-				widget.NewLabel("Updating 100%..."),
+				widget.NewLabel("Stale 100%..."),
 				layout.NewSpacer(),
 			)
 		},
@@ -264,7 +264,7 @@ func (a *characterUpdateStatusArea) refresh() {
 				x.title = "OK"
 				x.status = characterStatusOK
 			} else {
-				x.title = fmt.Sprintf("Updating %.0f%%...", progress*100)
+				x.title = fmt.Sprintf("Stale %.0f%%...", (1-progress)*100)
 				x.status = characterStatusWorking
 			}
 		}

@@ -157,7 +157,7 @@ func (a *statusWindow) makeCharacterList() *widget.List {
 				t = "ERROR"
 				i = widget.DangerImportance
 			} else if c.completion < 1 {
-				t = fmt.Sprintf("Updating %.0f%%...", c.completion*100)
+				t = fmt.Sprintf("Stale %.0f%%...", (1-c.completion)*100)
 				i = widget.HighImportance
 			} else {
 				t = "OK"
@@ -248,22 +248,6 @@ func (a *statusWindow) makeSectionsTable() *widget.Table {
 	return t
 }
 
-func statusOutput(cs model.CharacterStatus) (string, widget.Importance) {
-	var s string
-	var i widget.Importance
-	if !cs.IsCurrent() {
-		s = "Stale"
-		i = widget.HighImportance
-	} else if cs.IsOK() {
-		s = "OK"
-		i = widget.SuccessImportance
-	} else {
-		s = "ERROR"
-		i = widget.DangerImportance
-	}
-	return s, i
-}
-
 type formItems struct {
 	label      string
 	value      string
@@ -319,8 +303,8 @@ func (a *statusWindow) refresh() error {
 	cc := a.ui.service.CharacterStatus.ListCharacters()
 	cc2 := make([]statusCharacter, len(cc))
 	for i, c := range cc {
-		completed, ok := a.ui.service.CharacterStatus.CharacterSummary(c.ID)
-		cc2[i] = statusCharacter{id: c.ID, name: c.Name, completion: completed, isOK: ok}
+		completion, ok := a.ui.service.CharacterStatus.CharacterSummary(c.ID)
+		cc2[i] = statusCharacter{id: c.ID, name: c.Name, completion: completion, isOK: ok}
 	}
 	if err := a.charactersData.Set(copyToUntypedSlice(cc2)); err != nil {
 		return err
@@ -371,4 +355,20 @@ func lastUpdatedAtOutput(cs model.CharacterStatus) string {
 func timeoutOutput(cs model.CharacterStatus) string {
 	now := time.Now()
 	return humanize.RelTime(now.Add(cs.Section.Timeout()), now, "", "")
+}
+
+func statusOutput(cs model.CharacterStatus) (string, widget.Importance) {
+	var s string
+	var i widget.Importance
+	if !cs.IsOK() {
+		s = "ERROR"
+		i = widget.DangerImportance
+	} else if !cs.IsCurrent() {
+		s = "Stale"
+		i = widget.HighImportance
+	} else {
+		s = "OK"
+		i = widget.SuccessImportance
+	}
+	return s, i
 }
