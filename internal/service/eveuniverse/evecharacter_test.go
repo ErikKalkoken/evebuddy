@@ -1,4 +1,4 @@
-package service_test
+package eveuniverse_test
 
 import (
 	"context"
@@ -7,12 +7,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -21,7 +22,8 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := service.NewService(r)
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing character", func(t *testing.T) {
 		// given
@@ -29,7 +31,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateEveCharacter()
 		// when
-		x1, err := s.GetOrCreateEveCharacterESI(c.ID)
+		x1, err := s.GetOrCreateEveCharacterESI(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c.ID, x1.ID)
@@ -60,7 +62,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveCharacterESI(characterID)
+		x1, err := s.GetOrCreateEveCharacterESI(ctx, characterID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, characterID, x1.ID)
@@ -92,7 +94,8 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := service.NewService(r)
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(r, client)
 	ctx := context.Background()
 	t.Run("should update character from ESI", func(t *testing.T) {
 		// given
@@ -132,7 +135,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 			httpmock.NewStringResponder(200, dataAffiliation).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		err := s.UpdateAllEveCharactersESI()
+		err := s.UpdateAllEveCharactersESI(ctx)
 		// then
 		if assert.NoError(t, err) {
 			x, err := r.GetEveCharacter(ctx, characterID)

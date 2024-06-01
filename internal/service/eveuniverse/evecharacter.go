@@ -1,4 +1,4 @@
-package service
+package eveuniverse
 
 import (
 	"context"
@@ -12,25 +12,20 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func (s *Service) GetOrCreateEveCharacterESI(id int32) (*model.EveCharacter, error) {
-	ctx := context.Background()
-	return s.getOrCreateEveCharacterESI(ctx, id)
-}
-
-func (s *Service) getOrCreateEveCharacterESI(ctx context.Context, id int32) (*model.EveCharacter, error) {
-	x, err := s.r.GetEveCharacter(ctx, id)
+func (eu *EveUniverse) GetOrCreateEveCharacterESI(ctx context.Context, id int32) (*model.EveCharacter, error) {
+	x, err := eu.r.GetEveCharacter(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
-		return s.createEveCharacterFromESI(ctx, id)
+		return eu.createEveCharacterFromESI(ctx, id)
 	} else if err != nil {
 		return x, err
 	}
 	return x, nil
 }
 
-func (s *Service) createEveCharacterFromESI(ctx context.Context, id int32) (*model.EveCharacter, error) {
+func (eu *EveUniverse) createEveCharacterFromESI(ctx context.Context, id int32) (*model.EveCharacter, error) {
 	key := fmt.Sprintf("createEveCharacterFromESI-%d", id)
-	y, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		r, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, id, nil)
+	y, err, _ := eu.singleGroup.Do(key, func() (any, error) {
+		r, _, err := eu.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, id, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -41,11 +36,11 @@ func (s *Service) createEveCharacterFromESI(ctx context.Context, id int32) (*mod
 		if r.FactionId != 0 {
 			ids = append(ids, r.FactionId)
 		}
-		_, err = s.EveUniverse.AddMissingEveEntities(ctx, ids)
+		_, err = eu.AddMissingEveEntities(ctx, ids)
 		if err != nil {
 			return nil, err
 		}
-		_, err = s.EveUniverse.GetOrCreateEveRaceESI(ctx, r.RaceId)
+		_, err = eu.GetOrCreateEveRaceESI(ctx, r.RaceId)
 		if err != nil {
 			return nil, err
 		}
@@ -62,10 +57,10 @@ func (s *Service) createEveCharacterFromESI(ctx context.Context, id int32) (*mod
 			SecurityStatus: float64(r.SecurityStatus),
 			Title:          r.Title,
 		}
-		if err := s.r.CreateEveCharacter(ctx, arg); err != nil {
+		if err := eu.r.CreateEveCharacter(ctx, arg); err != nil {
 			return nil, err
 		}
-		return s.r.GetEveCharacter(ctx, id)
+		return eu.r.GetEveCharacter(ctx, id)
 	})
 	if err != nil {
 		return nil, err
@@ -74,9 +69,8 @@ func (s *Service) createEveCharacterFromESI(ctx context.Context, id int32) (*mod
 }
 
 // UpdateAllEveCharactersESI updates all known Eve characters from ESI.
-func (s *Service) UpdateAllEveCharactersESI() error {
-	ctx := context.Background()
-	ids, err := s.r.ListEveCharacterIDs(ctx)
+func (eu *EveUniverse) UpdateAllEveCharactersESI(ctx context.Context) error {
+	ids, err := eu.r.ListEveCharacterIDs(ctx)
 	if err != nil {
 		return err
 	}
@@ -89,7 +83,7 @@ func (s *Service) UpdateAllEveCharactersESI() error {
 	for _, id := range ids {
 		id := id
 		g.Go(func() error {
-			return s.updateEveCharacterESI(ctx, id)
+			return eu.updateEveCharacterESI(ctx, id)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -99,14 +93,14 @@ func (s *Service) UpdateAllEveCharactersESI() error {
 	return nil
 }
 
-func (s *Service) updateEveCharacterESI(ctx context.Context, characterID int32) error {
-	c, err := s.r.GetEveCharacter(ctx, characterID)
+func (eu *EveUniverse) updateEveCharacterESI(ctx context.Context, characterID int32) error {
+	c, err := eu.r.GetEveCharacter(ctx, characterID)
 	if err != nil {
 		return err
 	}
 	g := new(errgroup.Group)
 	g.Go(func() error {
-		rr, _, err := s.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
+		rr, _, err := eu.esiClient.ESI.CharacterApi.PostCharactersAffiliation(ctx, []int32{c.ID}, nil)
 		if err != nil {
 			return err
 		}
@@ -122,24 +116,24 @@ func (s *Service) updateEveCharacterESI(ctx context.Context, characterID int32) 
 		if r.FactionId != 0 {
 			entityIDs = append(entityIDs, r.FactionId)
 		}
-		_, err = s.EveUniverse.AddMissingEveEntities(ctx, entityIDs)
+		_, err = eu.AddMissingEveEntities(ctx, entityIDs)
 		if err != nil {
 			return err
 		}
-		corporation, err := s.r.GetEveEntity(ctx, r.CorporationId)
+		corporation, err := eu.r.GetEveEntity(ctx, r.CorporationId)
 		if err != nil {
 			return err
 		}
 		c.Corporation = corporation
 		if r.AllianceId != 0 {
-			alliance, err := s.r.GetEveEntity(ctx, r.AllianceId)
+			alliance, err := eu.r.GetEveEntity(ctx, r.AllianceId)
 			if err != nil {
 				return err
 			}
 			c.Alliance = alliance
 		}
 		if r.FactionId != 0 {
-			faction, err := s.r.GetEveEntity(ctx, r.FactionId)
+			faction, err := eu.r.GetEveEntity(ctx, r.FactionId)
 			if err != nil {
 				return err
 			}
@@ -148,7 +142,7 @@ func (s *Service) updateEveCharacterESI(ctx context.Context, characterID int32) 
 		return nil
 	})
 	g.Go(func() error {
-		r2, _, err := s.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, c.ID, nil)
+		r2, _, err := eu.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, c.ID, nil)
 		if err != nil {
 			return err
 		}
@@ -160,7 +154,7 @@ func (s *Service) updateEveCharacterESI(ctx context.Context, characterID int32) 
 	if err := g.Wait(); err != nil {
 		return fmt.Errorf("failed to update EveCharacter %d: %w", c.ID, err)
 	}
-	if err := s.r.UpdateEveCharacter(ctx, c); err != nil {
+	if err := eu.r.UpdateEveCharacter(ctx, c); err != nil {
 		return err
 	}
 	slog.Info("Updated eve character from ESI", "characterID", c.ID)

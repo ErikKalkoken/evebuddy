@@ -62,7 +62,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText b
 		TokenType:    ssoToken.TokenType,
 	}
 	ctx = igoesi.ContextWithESIToken(ctx, token.AccessToken)
-	character, err := s.getOrCreateEveCharacterESI(ctx, token.CharacterID)
+	character, err := s.EveUniverse.GetOrCreateEveCharacterESI(ctx, token.CharacterID)
 	if err != nil {
 		return 0, err
 	}

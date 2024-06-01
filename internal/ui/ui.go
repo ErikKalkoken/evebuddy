@@ -348,6 +348,7 @@ func (u *ui) startUpdateTickerEveCharacters() {
 	ticker := time.NewTicker(eveDataUpdateTicker)
 	key := "eve-characters-last-updated"
 	go func() {
+		ctx := context.Background()
 		for {
 			err := func() error {
 				lastUpdated, ok, err := u.service.Dictionary.GetTime(key)
@@ -358,7 +359,7 @@ func (u *ui) startUpdateTickerEveCharacters() {
 					return nil
 				}
 				slog.Info("Started updating eve characters")
-				if err := u.service.UpdateAllEveCharactersESI(); err != nil {
+				if err := u.service.EveUniverse.UpdateAllEveCharactersESI(ctx); err != nil {
 					return err
 				}
 				slog.Info("Finished updating eve characters")
