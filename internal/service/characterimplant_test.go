@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -30,14 +29,10 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 101})
-		data := `[
-			100,
-			101
-		  ]`
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+			httpmock.NewJsonResponderOrPanic(200, []int32{100, 101}))
 
 		// when
 		changed, err := s.updateCharacterImplantsESI(ctx, UpdateCharacterSectionParams{

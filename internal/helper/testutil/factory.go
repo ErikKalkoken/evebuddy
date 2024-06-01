@@ -460,7 +460,7 @@ type CharacterUpdateStatusParams struct {
 	Section       model.CharacterSection
 	Error         string
 	LastUpdatedAt time.Time
-	Data          string
+	Data          any
 }
 
 // CreateMailLabel is a test factory for MailLabel objects

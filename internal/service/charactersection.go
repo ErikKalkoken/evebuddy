@@ -39,6 +39,7 @@ func (s *Service) CharacterSectionWasUpdated(characterID int32, section model.Ch
 type UpdateCharacterSectionParams struct {
 	CharacterID int32
 	Section     model.CharacterSection
+	ForceUpdate bool
 }
 
 // UpdateCharacterSection updates a section from ESI if has expired and changed
@@ -48,12 +49,14 @@ func (s *Service) UpdateCharacterSection(arg UpdateCharacterSectionParams) (bool
 	if arg.CharacterID == 0 {
 		panic("Invalid character ID")
 	}
-	isExpired, err := s.characterSectionIsUpdateExpired(ctx, arg)
-	if err != nil {
-		return false, err
-	}
-	if !isExpired {
-		return false, nil
+	if !arg.ForceUpdate {
+		isExpired, err := s.characterSectionIsUpdateExpired(ctx, arg)
+		if err != nil {
+			return false, err
+		}
+		if !isExpired {
+			return false, nil
+		}
 	}
 	var f func(context.Context, UpdateCharacterSectionParams) (bool, error)
 	switch arg.Section {
@@ -139,23 +142,24 @@ func (s *Service) updateCharacterSectionIfChanged(
 	if err != nil {
 		return false, err
 	}
-	// identify if changed
 	hash, err := arg.Section.CalcContentHash(data)
 	if err != nil {
 		return false, err
 	}
+	// identify if changed
 	var hasChanged bool
-	u, err := s.r.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
-	if errors.Is(err, storage.ErrNotFound) {
-		hasChanged = true
-	} else if err != nil {
-		return false, err
-	} else {
-		hasChanged = u.ContentHash != hash
+	if !arg.ForceUpdate {
+		u, err := s.r.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
+		if errors.Is(err, storage.ErrNotFound) {
+			hasChanged = true
+		} else if err != nil {
+			return false, err
+		} else {
+			hasChanged = u.ContentHash != hash
+		}
 	}
-
-	// update if changed
-	if hasChanged {
+	// update if needed
+	if arg.ForceUpdate || hasChanged {
 		if err := update(ctx, arg.CharacterID, data); err != nil {
 			return false, err
 		}

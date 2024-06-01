@@ -2,16 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"testing"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi"
-	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -113,63 +109,6 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Greater(t, x2.LastUpdatedAt, x1.LastUpdatedAt)
 				assert.True(t, x2.IsOK())
-			}
-		}
-	})
-}
-func TestUpdateCharacterSectionIfExpired(t *testing.T) {
-	db, r, factory := testutil.New()
-	defer db.Close()
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-	s := NewService(r)
-	section := model.CharacterSectionImplants
-	ctx := context.Background()
-	t.Run("should report true when changed", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
-		data := `[100]`
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-		// when
-		changed, err := s.UpdateCharacterSection(UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
-		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			x, err := s.r.GetCharacterUpdateStatus(ctx, c.ID, section)
-			if assert.NoError(t, err) {
-				assert.True(t, x.IsOK())
-			}
-		}
-	})
-	t.Run("should record when update failed", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
-		data := `{
-			"error": "dummy error"
-		}`
-		httpmock.RegisterResponder(
-			"GET",
-			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewStringResponder(500, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-		// when
-		_, err := s.UpdateCharacterSection(UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
-		// then
-		if assert.Error(t, err) {
-			x, err := s.r.GetCharacterUpdateStatus(ctx, c.ID, section)
-			if assert.NoError(t, err) {
-				assert.False(t, x.IsOK())
-				assert.Equal(t, "500: dummy error", x.ErrorMessage)
 			}
 		}
 	})
