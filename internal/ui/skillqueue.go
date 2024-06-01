@@ -31,7 +31,16 @@ func (u *ui) newSkillqueueArea() *skillqueueArea {
 		total: widget.NewLabel(""),
 		ui:    u,
 	}
+
 	a.total.TextStyle.Bold = true
+	list := a.makeList()
+
+	top := container.NewVBox(a.total, widget.NewSeparator())
+	a.content = container.NewBorder(top, nil, nil, nil, list)
+	return &a
+}
+
+func (a *skillqueueArea) makeList() *widget.List {
 	list := widget.NewListWithData(
 		a.items,
 		func() fyne.CanvasObject {
@@ -126,7 +135,7 @@ func (u *ui) newSkillqueueArea() *skillqueueArea {
 
 		}
 		s := container.NewScroll(form)
-		dlg := dialog.NewCustom("Skill Details", "OK", s, u.window)
+		dlg := dialog.NewCustom("Skill Details", "OK", s, a.ui.window)
 		dlg.SetOnClosed(func() {
 			list.UnselectAll()
 		})
@@ -136,10 +145,7 @@ func (u *ui) newSkillqueueArea() *skillqueueArea {
 			Height: 0.8 * a.ui.window.Canvas().Size().Height,
 		})
 	}
-
-	top := container.NewVBox(a.total, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, list)
-	return &a
+	return list
 }
 
 func (a *skillqueueArea) refresh() {

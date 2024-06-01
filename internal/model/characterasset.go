@@ -15,6 +15,13 @@ type CharacterAsset struct {
 	Quantity        int32
 }
 
+func (ca *CharacterAsset) NamePlus() string {
+	if ca.Name != "" {
+		return ca.Name
+	}
+	return ca.EveType.Name
+}
+
 func (ca *CharacterAsset) IsBPO() bool {
 	return ca.EveCategoryID == EveCategoryIDBlueprint && !ca.IsBlueprintCopy
 }

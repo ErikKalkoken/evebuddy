@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -153,23 +154,55 @@ func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
 					return a.ui.imageManager.InventoryTypeIcon(o.EveType.ID, 64)
 				}
 			})
-			var t string
-			if o.Name != "" {
-				t = o.Name
-			} else {
-				t = o.EveType.Name
-			}
+			name.Wrapping = fyne.TextWrapWord
+			name.Text = o.NamePlus()
+			name.Refresh()
 			if !o.IsSingleton {
 				quantity.SetText(humanize.Comma(int64(o.Quantity)))
 				quantity.Show()
 			} else {
 				quantity.Hide()
 			}
-			name.Wrapping = fyne.TextWrapWord
-			name.Text = t
-			name.Refresh()
 		},
 	)
+	// TODO: Add more details, e.g. description, group, ...
+	g.OnSelected = func(id widget.GridWrapItemID) {
+		q, err := getItemUntypedList[*model.CharacterAsset](a.assetsData, id)
+		if err != nil {
+			slog.Error("failed to access assets in grid", "err", err)
+			return
+		}
+		var data = []struct {
+			label string
+			value string
+			wrap  bool
+		}{
+			{"Name", q.NamePlus(), false},
+			{"Type", q.EveType.Name, false},
+			{"Description", "tbd", true},
+			{"Quantity", humanize.Comma(int64(q.Quantity)), false},
+		}
+		form := widget.NewForm()
+		for _, row := range data {
+			c := widget.NewLabel(row.value)
+			if row.wrap {
+				c.Wrapping = fyne.TextWrapWord
+			}
+			form.Append(row.label, c)
+
+		}
+		s := container.NewScroll(form)
+		dlg := dialog.NewCustom("Item Details", "OK", s, a.ui.window)
+		dlg.SetOnClosed(func() {
+			g.UnselectAll()
+		})
+		dlg.Show()
+		dlg.Resize(fyne.Size{
+			Width:  0.8 * a.ui.window.Canvas().Size().Width,
+			Height: 0.8 * a.ui.window.Canvas().Size().Height,
+		})
+	}
+
 	return g
 }
 
