@@ -1,3 +1,4 @@
+// Package storage contains the logic for storing data into a local SQLite database.
 package storage
 
 import (

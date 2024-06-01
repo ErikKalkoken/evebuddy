@@ -12,11 +12,11 @@ import (
 )
 
 func (eu *EveUniverse) GetEveType(ctx context.Context, id int32) (*model.EveType, error) {
-	return eu.r.GetEveType(ctx, id)
+	return eu.s.GetEveType(ctx, id)
 }
 
 func (eu *EveUniverse) GetOrCreateEveCategoryESI(ctx context.Context, id int32) (*model.EveCategory, error) {
-	x, err := eu.r.GetEveCategory(ctx, id)
+	x, err := eu.s.GetEveCategory(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveCategoryFromESI(ctx, id)
 	} else if err != nil {
@@ -37,7 +37,7 @@ func (eu *EveUniverse) createEveCategoryFromESI(ctx context.Context, id int32) (
 			Name:        r.Name,
 			IsPublished: r.Published,
 		}
-		return eu.r.CreateEveCategory(ctx, arg)
+		return eu.s.CreateEveCategory(ctx, arg)
 	})
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (eu *EveUniverse) createEveCategoryFromESI(ctx context.Context, id int32) (
 }
 
 func (eu *EveUniverse) GetOrCreateEveGroupESI(ctx context.Context, id int32) (*model.EveGroup, error) {
-	x, err := eu.r.GetEveGroup(ctx, id)
+	x, err := eu.s.GetEveGroup(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveGroupFromESI(ctx, id)
 	} else if err != nil {
@@ -72,10 +72,10 @@ func (eu *EveUniverse) createEveGroupFromESI(ctx context.Context, id int32) (*mo
 			CategoryID:  c.ID,
 			IsPublished: r.Published,
 		}
-		if err := eu.r.CreateEveGroup(ctx, arg); err != nil {
+		if err := eu.s.CreateEveGroup(ctx, arg); err != nil {
 			return nil, err
 		}
-		return eu.r.GetEveGroup(ctx, id)
+		return eu.s.GetEveGroup(ctx, id)
 	})
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (eu *EveUniverse) createEveGroupFromESI(ctx context.Context, id int32) (*mo
 }
 
 func (eu *EveUniverse) GetOrCreateEveTypeESI(ctx context.Context, id int32) (*model.EveType, error) {
-	x, err := eu.r.GetEveType(ctx, id)
+	x, err := eu.s.GetEveType(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveTypeFromESI(ctx, id)
 	} else if err != nil {
@@ -120,7 +120,7 @@ func (eu *EveUniverse) createEveTypeFromESI(ctx context.Context, id int32) (*mod
 			Radius:         t.Radius,
 			Volume:         t.Volume,
 		}
-		if err := eu.r.CreateEveType(ctx, arg); err != nil {
+		if err := eu.s.CreateEveType(ctx, arg); err != nil {
 			return nil, err
 		}
 		for _, o := range t.DogmaAttributes {
@@ -129,7 +129,7 @@ func (eu *EveUniverse) createEveTypeFromESI(ctx context.Context, id int32) (*mod
 				EveTypeID:        id,
 				Value:            o.Value,
 			}
-			if err := eu.r.CreateEveTypeDogmaAttribute(ctx, arg); err != nil {
+			if err := eu.s.CreateEveTypeDogmaAttribute(ctx, arg); err != nil {
 				return nil, err
 			}
 		}
@@ -139,11 +139,11 @@ func (eu *EveUniverse) createEveTypeFromESI(ctx context.Context, id int32) (*mod
 				EveTypeID:     id,
 				IsDefault:     o.IsDefault,
 			}
-			if err := eu.r.CreateEveTypeDogmaEffect(ctx, arg); err != nil {
+			if err := eu.s.CreateEveTypeDogmaEffect(ctx, arg); err != nil {
 				return nil, err
 			}
 		}
-		return eu.r.GetEveType(ctx, id)
+		return eu.s.GetEveType(ctx, id)
 	})
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func (eu *EveUniverse) createEveTypeFromESI(ctx context.Context, id int32) (*mod
 }
 
 func (eu *EveUniverse) AddMissingEveTypes(ctx context.Context, ids []int32) error {
-	missingIDs, err := eu.r.MissingEveTypes(ctx, ids)
+	missingIDs, err := eu.s.MissingEveTypes(ctx, ids)
 	if err != nil {
 		return err
 	}

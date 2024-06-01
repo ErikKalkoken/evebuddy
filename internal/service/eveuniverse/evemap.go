@@ -10,7 +10,7 @@ import (
 )
 
 func (eu *EveUniverse) GetOrCreateEveRegionESI(ctx context.Context, id int32) (*model.EveRegion, error) {
-	x, err := eu.r.GetEveRegion(ctx, id)
+	x, err := eu.s.GetEveRegion(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveRegionFromESI(ctx, id)
 	} else if err != nil {
@@ -31,7 +31,7 @@ func (eu *EveUniverse) createEveRegionFromESI(ctx context.Context, id int32) (*m
 			Description: region.Description,
 			Name:        region.Name,
 		}
-		return eu.r.CreateEveRegion(ctx, arg)
+		return eu.s.CreateEveRegion(ctx, arg)
 	})
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (eu *EveUniverse) createEveRegionFromESI(ctx context.Context, id int32) (*m
 }
 
 func (eu *EveUniverse) GetOrCreateEveConstellationESI(ctx context.Context, id int32) (*model.EveConstellation, error) {
-	x, err := eu.r.GetEveConstellation(ctx, id)
+	x, err := eu.s.GetEveConstellation(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveConstellationFromESI(ctx, id)
 	} else if err != nil {
@@ -65,10 +65,10 @@ func (eu *EveUniverse) createEveConstellationFromESI(ctx context.Context, id int
 			RegionID: constellation.RegionId,
 			Name:     constellation.Name,
 		}
-		if err := eu.r.CreateEveConstellation(ctx, arg); err != nil {
+		if err := eu.s.CreateEveConstellation(ctx, arg); err != nil {
 			return nil, err
 		}
-		return eu.r.GetEveConstellation(ctx, id)
+		return eu.s.GetEveConstellation(ctx, id)
 	})
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func (eu *EveUniverse) createEveConstellationFromESI(ctx context.Context, id int
 }
 
 func (eu *EveUniverse) GetOrCreateEveSolarSystemESI(ctx context.Context, id int32) (*model.EveSolarSystem, error) {
-	x, err := eu.r.GetEveSolarSystem(ctx, id)
+	x, err := eu.s.GetEveSolarSystem(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveSolarSystemFromESI(ctx, id)
 	} else if err != nil {
@@ -103,10 +103,10 @@ func (eu *EveUniverse) createEveSolarSystemFromESI(ctx context.Context, id int32
 			Name:            system.Name,
 			SecurityStatus:  float64(system.SecurityStatus),
 		}
-		if err := eu.r.CreateEveSolarSystem(ctx, arg); err != nil {
+		if err := eu.s.CreateEveSolarSystem(ctx, arg); err != nil {
 			return nil, err
 		}
-		return eu.r.GetEveSolarSystem(ctx, id)
+		return eu.s.GetEveSolarSystem(ctx, id)
 	})
 	if err != nil {
 		return nil, err
