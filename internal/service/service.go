@@ -14,12 +14,13 @@ import (
 )
 
 type Service struct {
-	cache           *cache.Cache
-	esiClient       *goesi.APIClient
-	httpClient      *http.Client
-	r               *storage.Storage
-	singleGroup     *singleflight.Group
-	characterStatus *characterstatus.CharacterStatusCache
+	cache       *cache.Cache
+	esiClient   *goesi.APIClient
+	httpClient  *http.Client
+	r           *storage.Storage
+	singleGroup *singleflight.Group
+	// Character status service
+	CharacterStatus *characterstatus.CharacterStatusCache
 }
 
 func NewService(r *storage.Storage) *Service {
@@ -45,8 +46,8 @@ func NewService(r *storage.Storage) *Service {
 		r:           r,
 		singleGroup: new(singleflight.Group),
 	}
-	s.characterStatus = characterstatus.New(s.cache)
-	if err := s.characterStatus.InitCache(r); err != nil {
+	s.CharacterStatus = characterstatus.New(s.cache)
+	if err := s.CharacterStatus.InitCache(r); err != nil {
 		panic(err)
 	}
 	return &s

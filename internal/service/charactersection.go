@@ -104,7 +104,7 @@ func (s *Service) UpdateCharacterSection(arg UpdateCharacterSectionParams) (bool
 		if err2 != nil {
 			slog.Error("failed to record error for failed section update: %s", err2)
 		}
-		s.characterStatus.SetError(arg.CharacterID, arg.Section, errorMessage)
+		s.CharacterStatus.SetError(arg.CharacterID, arg.Section, errorMessage)
 		return false, fmt.Errorf("failed to update character section from ESI for %v: %w", arg, err)
 	}
 	changed := x.(bool)
@@ -177,7 +177,7 @@ func (s *Service) updateCharacterSectionIfChanged(
 	if err := s.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg2); err != nil {
 		return false, err
 	}
-	s.characterStatus.SetStatus(arg.CharacterID, arg.Section, "", lastUpdatedAt)
+	s.CharacterStatus.SetStatus(arg.CharacterID, arg.Section, "", lastUpdatedAt)
 
 	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "changed", hasChanged)
 	return hasChanged, nil

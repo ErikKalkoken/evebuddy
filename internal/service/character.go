@@ -21,7 +21,7 @@ func (s *Service) DeleteCharacter(characterID int32) error {
 	if err := s.r.DeleteCharacter(ctx, characterID); err != nil {
 		return err
 	}
-	return s.characterStatus.UpdateCharacters(ctx, s.r)
+	return s.CharacterStatus.UpdateCharacters(ctx, s.r)
 }
 
 func (s *Service) GetCharacter(characterID int32) (*model.Character, error) {
@@ -88,7 +88,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText b
 	if err := s.r.UpdateOrCreateCharacterToken(ctx, &token); err != nil {
 		return 0, err
 	}
-	if err := s.characterStatus.UpdateCharacters(ctx, s.r); err != nil {
+	if err := s.CharacterStatus.UpdateCharacters(ctx, s.r); err != nil {
 		return 0, err
 	}
 	return token.CharacterID, nil
@@ -205,20 +205,4 @@ func (s *Service) updateCharacterWalletBalanceESI(ctx context.Context, arg Updat
 			}
 			return nil
 		})
-}
-
-func (s *Service) CharacterStatusListStatus(characterID int32) []model.CharacterStatus {
-	return s.characterStatus.ListStatus(characterID)
-}
-
-func (s *Service) CharacterStatusSummary() (float32, bool) {
-	return s.characterStatus.Summary()
-}
-
-func (s *Service) CharacterStatusCharacterSummary(characterID int32) (float32, bool) {
-	return s.characterStatus.CharacterSummary(characterID)
-}
-
-func (s *Service) CharacterStatusListCharacters() []*model.CharacterShort {
-	return s.characterStatus.ListCharacters()
 }
