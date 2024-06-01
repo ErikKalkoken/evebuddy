@@ -306,7 +306,7 @@ func (u *ui) refreshCurrentCharacter() {
 		u.tabs.EnableIndex(1)
 		u.tabs.EnableIndex(2)
 		u.tabs.EnableIndex(3)
-		u.updateCharacterAndRefreshIfNeeded(c.ID)
+		u.updateCharacterAndRefreshIfNeeded(c.ID, false)
 	} else {
 		u.tabs.DisableIndex(0)
 		u.tabs.DisableIndex(1)
@@ -424,7 +424,7 @@ func (u *ui) startUpdateTickerCharacterSections() {
 					return
 				}
 				for _, c := range cc {
-					u.updateCharacterAndRefreshIfNeeded(c.ID)
+					u.updateCharacterAndRefreshIfNeeded(c.ID, false)
 				}
 			}()
 			<-ticker.C
@@ -437,77 +437,82 @@ func (u *ui) startUpdateTickerCharacterSections() {
 //
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32) {
+func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32, forceUpdate bool) {
 	for _, s := range model.CharacterSections {
 		go func(s model.CharacterSection) {
-			hasChanged, err := u.service.UpdateCharacterSection(
-				service.UpdateCharacterSectionParams{
-					CharacterID: characterID,
-					Section:     s,
-				})
-			if err != nil {
-				slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
-				return
-			}
-			isCurrent := characterID == u.currentCharID()
-			switch s {
-			case model.CharacterSectionAssets:
-				if isCurrent && hasChanged {
-					u.assetsArea.redraw()
-				}
-			case model.CharacterSectionAttributes:
-				if isCurrent && hasChanged {
-					u.attributesArea.refresh()
-				}
-			case model.CharacterSectionImplants:
-				if isCurrent && hasChanged {
-					u.implantsArea.refresh()
-				}
-			case model.CharacterSectionJumpClones:
-				if isCurrent && hasChanged {
-					u.jumpClonesArea.redraw()
-				}
-				if hasChanged {
-					u.overviewArea.refresh()
-				}
-			case model.CharacterSectionLocation,
-				model.CharacterSectionOnline,
-				model.CharacterSectionShip,
-				model.CharacterSectionWalletBalance:
-				if hasChanged {
-					u.overviewArea.refresh()
-				}
-			case model.CharacterSectionMailLabels,
-				model.CharacterSectionMailLists,
-				model.CharacterSectionMails:
-				if isCurrent && hasChanged {
-					u.mailArea.refresh()
-				}
-				if hasChanged {
-					u.overviewArea.refresh()
-				}
-			case model.CharacterSectionSkills:
-				if isCurrent && hasChanged {
-					u.skillCatalogueArea.refresh()
-					u.shipsArea.refresh()
-					u.overviewArea.refresh()
-				}
-			case model.CharacterSectionSkillqueue:
-				if isCurrent {
-					u.skillqueueArea.refresh()
-				}
-			case model.CharacterSectionWalletJournal:
-				if isCurrent && hasChanged {
-					u.walletJournalArea.refresh()
-				}
-			case model.CharacterSectionWalletTransactions:
-				if isCurrent && hasChanged {
-					u.walletTransactionArea.refresh()
-				}
-			default:
-				slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))
-			}
+			u.updateCharacterSectionAndRefreshIfNeeded(characterID, s, forceUpdate)
 		}(s)
+	}
+}
+
+func (u *ui) updateCharacterSectionAndRefreshIfNeeded(characterID int32, s model.CharacterSection, forceUpdate bool) {
+	hasChanged, err := u.service.UpdateCharacterSection(
+		service.UpdateCharacterSectionParams{
+			CharacterID: characterID,
+			Section:     s,
+			ForceUpdate: forceUpdate,
+		})
+	if err != nil {
+		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
+		return
+	}
+	isCurrent := characterID == u.currentCharID()
+	switch s {
+	case model.CharacterSectionAssets:
+		if isCurrent && hasChanged {
+			u.assetsArea.redraw()
+		}
+	case model.CharacterSectionAttributes:
+		if isCurrent && hasChanged {
+			u.attributesArea.refresh()
+		}
+	case model.CharacterSectionImplants:
+		if isCurrent && hasChanged {
+			u.implantsArea.refresh()
+		}
+	case model.CharacterSectionJumpClones:
+		if isCurrent && hasChanged {
+			u.jumpClonesArea.redraw()
+		}
+		if hasChanged {
+			u.overviewArea.refresh()
+		}
+	case model.CharacterSectionLocation,
+		model.CharacterSectionOnline,
+		model.CharacterSectionShip,
+		model.CharacterSectionWalletBalance:
+		if hasChanged {
+			u.overviewArea.refresh()
+		}
+	case model.CharacterSectionMailLabels,
+		model.CharacterSectionMailLists,
+		model.CharacterSectionMails:
+		if isCurrent && hasChanged {
+			u.mailArea.refresh()
+		}
+		if hasChanged {
+			u.overviewArea.refresh()
+		}
+	case model.CharacterSectionSkills:
+		if isCurrent && hasChanged {
+			u.skillCatalogueArea.refresh()
+			u.shipsArea.refresh()
+			u.overviewArea.refresh()
+		}
+	case model.CharacterSectionSkillqueue:
+		if isCurrent {
+			u.skillqueueArea.refresh()
+		}
+	case model.CharacterSectionWalletJournal:
+		if isCurrent && hasChanged {
+			u.walletJournalArea.refresh()
+		}
+	case model.CharacterSectionWalletTransactions:
+		if isCurrent && hasChanged {
+			u.walletTransactionArea.refresh()
+		}
+	default:
+		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))
 	}
 }
 

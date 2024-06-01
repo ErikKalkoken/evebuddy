@@ -3,19 +3,20 @@ package model
 import "time"
 
 type CharacterStatus struct {
+	CharacterID   int32
+	CharacterName string
 	ErrorMessage  string
 	LastUpdatedAt time.Time
-	Section       string
-	Timeout       time.Duration
+	Section       CharacterSection
 }
 
-func (s *CharacterStatus) IsOK() bool {
-	return s.ErrorMessage == ""
+func (cs CharacterStatus) IsOK() bool {
+	return cs.ErrorMessage == ""
 }
 
-func (s *CharacterStatus) IsCurrent() bool {
-	if s.LastUpdatedAt.IsZero() {
+func (cs CharacterStatus) IsCurrent() bool {
+	if cs.LastUpdatedAt.IsZero() {
 		return false
 	}
-	return time.Now().Before(s.LastUpdatedAt.Add(s.Timeout * 2))
+	return time.Now().Before(cs.LastUpdatedAt.Add(cs.Section.Timeout() * 2))
 }

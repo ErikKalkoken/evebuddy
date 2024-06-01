@@ -31,19 +31,19 @@ type cacheValue struct {
 	LastUpdatedAt time.Time
 }
 
-// CharacterStatus caches the current update status of all characters
+// CharacterStatusCache caches the current update status of all characters
 // to improve performance of UI refresh tickers.
-type CharacterStatus struct {
+type CharacterStatusCache struct {
 	cache Cache
 	mu    sync.Mutex
 }
 
-func New(cache Cache) *CharacterStatus {
-	sc := &CharacterStatus{cache: cache}
+func New(cache Cache) *CharacterStatusCache {
+	sc := &CharacterStatusCache{cache: cache}
 	return sc
 }
 
-func (sc *CharacterStatus) InitCache(r Storage) error {
+func (sc *CharacterStatusCache) InitCache(r Storage) error {
 	ctx := context.Background()
 	cc, err := sc.updateCharacters(ctx, r)
 	if err != nil {
@@ -61,7 +61,7 @@ func (sc *CharacterStatus) InitCache(r Storage) error {
 	return nil
 }
 
-func (sc *CharacterStatus) GetStatus(characterID int32, section model.CharacterSection) (string, time.Time) {
+func (sc *CharacterStatusCache) GetStatus(characterID int32, section model.CharacterSection) (string, time.Time) {
 	k := cacheKey{characterID: characterID, section: section}
 	x, ok := sc.cache.Get(k)
 	if !ok {
@@ -71,7 +71,7 @@ func (sc *CharacterStatus) GetStatus(characterID int32, section model.CharacterS
 	return v.ErrorMessage, v.LastUpdatedAt
 }
 
-func (sc *CharacterStatus) Summary() (float32, bool) {
+func (sc *CharacterStatusCache) Summary() (float32, bool) {
 	cc := sc.ListCharacters()
 	total := len(model.CharacterSections) * len(cc)
 	currentCount := 0
@@ -89,7 +89,7 @@ func (sc *CharacterStatus) Summary() (float32, bool) {
 	return float32(currentCount) / float32(total), true
 }
 
-func (sc *CharacterStatus) CharacterSummary(characterID int32) (float32, bool) {
+func (sc *CharacterStatusCache) CharacterSummary(characterID int32) (float32, bool) {
 	total := len(model.CharacterSections)
 	currentCount := 0
 	xx := sc.ListStatus(characterID)
@@ -104,21 +104,23 @@ func (sc *CharacterStatus) CharacterSummary(characterID int32) (float32, bool) {
 	return float32(currentCount) / float32(total), true
 }
 
-func (sc *CharacterStatus) ListStatus(characterID int32) []model.CharacterStatus {
+func (sc *CharacterStatusCache) ListStatus(characterID int32) []model.CharacterStatus {
+	characterName := sc.characterName(characterID)
 	list := make([]model.CharacterStatus, len(model.CharacterSections))
 	for i, section := range model.CharacterSections {
 		errorMessage, lastUpdatedAt := sc.GetStatus(characterID, section)
 		list[i] = model.CharacterStatus{
+			CharacterID:   characterID,
+			CharacterName: characterName,
 			ErrorMessage:  errorMessage,
 			LastUpdatedAt: lastUpdatedAt,
-			Section:       section.Name(),
-			Timeout:       section.Timeout(),
+			Section:       section,
 		}
 	}
 	return list
 }
 
-func (sc *CharacterStatus) SetStatus(
+func (sc *CharacterStatusCache) SetStatus(
 	characterID int32,
 	section model.CharacterSection,
 	errorMessage string,
@@ -129,7 +131,7 @@ func (sc *CharacterStatus) SetStatus(
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *CharacterStatus) SetError(
+func (sc *CharacterStatusCache) SetError(
 	characterID int32,
 	section model.CharacterSection,
 	errorMessage string,
@@ -142,12 +144,12 @@ func (sc *CharacterStatus) SetError(
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *CharacterStatus) UpdateCharacters(ctx context.Context, r Storage) error {
+func (sc *CharacterStatusCache) UpdateCharacters(ctx context.Context, r Storage) error {
 	_, err := sc.updateCharacters(ctx, r)
 	return err
 }
 
-func (sc *CharacterStatus) updateCharacters(ctx context.Context, r Storage) ([]*model.CharacterShort, error) {
+func (sc *CharacterStatusCache) updateCharacters(ctx context.Context, r Storage) ([]*model.CharacterShort, error) {
 	cc, err := r.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err
@@ -156,7 +158,7 @@ func (sc *CharacterStatus) updateCharacters(ctx context.Context, r Storage) ([]*
 	return cc, nil
 }
 
-func (sc *CharacterStatus) ListCharacters() []*model.CharacterShort {
+func (sc *CharacterStatusCache) ListCharacters() []*model.CharacterShort {
 	x, ok := sc.cache.Get(keyCharacters)
 	if !ok {
 		return nil
@@ -164,6 +166,19 @@ func (sc *CharacterStatus) ListCharacters() []*model.CharacterShort {
 	return x.([]*model.CharacterShort)
 }
 
-func (sc *CharacterStatus) setCharacters(cc []*model.CharacterShort) {
+func (sc *CharacterStatusCache) setCharacters(cc []*model.CharacterShort) {
 	sc.cache.Set(keyCharacters, cc, 0)
+}
+
+func (sc *CharacterStatusCache) characterName(characterID int32) string {
+	cc := sc.ListCharacters()
+	if len(cc) == 0 {
+		return ""
+	}
+	for _, c := range cc {
+		if c.ID == characterID {
+			return c.Name
+		}
+	}
+	return ""
 }

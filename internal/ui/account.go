@@ -214,7 +214,7 @@ func (a *accountArea) showAddCharacterDialog() {
 					return err
 				}
 			} else {
-				a.ui.updateCharacterAndRefreshIfNeeded(characterID)
+				a.ui.updateCharacterAndRefreshIfNeeded(characterID, false)
 			}
 			return nil
 		}()

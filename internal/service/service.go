@@ -19,7 +19,7 @@ type Service struct {
 	httpClient      *http.Client
 	r               *storage.Storage
 	singleGroup     *singleflight.Group
-	characterStatus *characterstatus.CharacterStatus
+	characterStatus *characterstatus.CharacterStatusCache
 }
 
 func NewService(r *storage.Storage) *Service {

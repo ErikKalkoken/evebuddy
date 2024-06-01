@@ -201,7 +201,9 @@ func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 	g.OnSelected = func(id widget.GridWrapItemID) {
 		o, err := getItemUntypedList[skillTrained](a.skills, id)
 		if err != nil {
-			slog.Error("failed to access skill item", "err", err)
+			t := "Failed to access skill item"
+			slog.Error(t, "err", err)
+			a.ui.statusBarArea.SetError(t)
 			return
 		}
 		var data = []struct {
