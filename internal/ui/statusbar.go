@@ -75,7 +75,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 	esiStatusTicker := time.NewTicker(esiStatusUpdateTicker)
 	go func() {
 		for {
-			x, err := a.ui.service.FetchESIStatus()
+			x, err := a.ui.service.ESIStatus.Fetch()
 			var t, errorMessage string
 			var s eveStatus
 			if err != nil {

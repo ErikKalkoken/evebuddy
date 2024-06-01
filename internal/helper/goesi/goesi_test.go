@@ -26,7 +26,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/v5/characters/99/assets/",
-			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
 					"is_singleton":      true,
@@ -41,7 +41,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/v5/characters/99/assets/?page=2",
-			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
 					"is_singleton":      false,
@@ -56,7 +56,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/v5/characters/99/assets/?page=3",
-			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
 					"is_singleton":      false,
@@ -94,7 +94,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/v5/characters/99/assets/",
-			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
 					"is_singleton":      true,
@@ -125,7 +125,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/v5/characters/99/assets/",
-			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
 					"is_singleton":      true,
@@ -167,7 +167,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			"https://esi.evetech.net/v5/characters/99/assets/",
-			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{}).HeaderSet(http.Header{"X-Pages": []string{"invalid"}}))
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}).HeaderSet(http.Header{"X-Pages": []string{"invalid"}}))
 		// when
 		_, err := igoesi.FetchFromESIWithPaging(
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {

@@ -32,7 +32,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/assets/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
 					"is_singleton":      true,
@@ -57,7 +57,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		httpmock.RegisterResponder(
 			"POST",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/assets/names/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"item_id": 1000000016835,
 					"name":    "Awesome Name",
@@ -108,7 +108,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/assets/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
 					"is_singleton":      true,
@@ -123,7 +123,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/assets/?page=2", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"is_blueprint_copy": true,
 					"is_singleton":      false,
@@ -138,7 +138,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		httpmock.RegisterResponder(
 			"POST",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/assets/names/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"item_id": 1000000016835,
 					"name":    "Awesome Name",

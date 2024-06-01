@@ -26,7 +26,7 @@ func newToken(rawToken *tokenPayload, claims jwt.MapClaims) (*Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	scopes := claims["scp"].([]interface{})
+	scopes := claims["scp"].([]any)
 	t := Token{
 		AccessToken:   rawToken.AccessToken,
 		CharacterID:   int32(characterID),

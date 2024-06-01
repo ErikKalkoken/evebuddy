@@ -182,7 +182,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v6/characters/%d/wallet/journal/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"amount":          -100000,
 					"balance":         500000.4316,
@@ -199,7 +199,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v6/characters/%d/wallet/journal/?page=2", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []map[string]interface{}{
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
 				{
 					"amount":          -110000,
 					"balance":         500000.4316,

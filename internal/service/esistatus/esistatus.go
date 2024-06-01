@@ -1,4 +1,4 @@
-package service
+package esistatus
 
 import (
 	"bytes"
@@ -7,14 +7,25 @@ import (
 	"io"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/antihax/goesi"
 )
 
-type ESIError struct {
+type ESIStatus struct {
+	esiClient *goesi.APIClient
+}
+
+func New(client *goesi.APIClient) *ESIStatus {
+	es := &ESIStatus{esiClient: client}
+	return es
+}
+
+type esiError struct {
 	Error string `json:"error"`
 }
 
-func (s *Service) FetchESIStatus() (*model.ESIStatus, error) {
-	status, resp, err := s.esiClient.ESI.StatusApi.GetStatus(context.Background(), nil)
+func (s *ESIStatus) Fetch() (*model.ESIStatus, error) {
+	ctx := context.Background()
+	status, resp, err := s.esiClient.ESI.StatusApi.GetStatus(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +38,7 @@ func (s *Service) FetchESIStatus() (*model.ESIStatus, error) {
 				resp.Body = io.NopCloser(bytes.NewBuffer(body))
 			}
 		}
-		var ee ESIError
+		var ee esiError
 		if err := json.Unmarshal(body, &ee); err != nil {
 			x.ErrorMessage = "Unknown error"
 		} else {
