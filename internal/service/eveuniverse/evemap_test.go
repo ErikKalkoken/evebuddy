@@ -1,15 +1,16 @@
-package service_test
+package eveuniverse_test
 
 import (
 	"context"
 	"net/http"
 	"testing"
 
+	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -18,7 +19,8 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := service.NewService(r)
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing region", func(t *testing.T) {
 		// given
@@ -26,7 +28,7 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateEveRegion(storage.CreateEveRegionParams{ID: 6})
 		// when
-		x1, err := s.GetOrCreateEveRegionESI(6)
+		x1, err := s.GetOrCreateEveRegionESI(ctx, 6)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(6), x1.ID)
@@ -51,7 +53,7 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveRegionESI(10000042)
+		x1, err := s.GetOrCreateEveRegionESI(ctx, 10000042)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(10000042), x1.ID)
@@ -69,7 +71,8 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := service.NewService(r)
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing constellation", func(t *testing.T) {
 		// given
@@ -77,7 +80,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateEveConstellation(storage.CreateEveConstellationParams{ID: 25})
 		// when
-		x1, err := s.GetOrCreateEveConstellationESI(25)
+		x1, err := s.GetOrCreateEveConstellationESI(ctx, 25)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(25), x1.ID)
@@ -108,7 +111,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveConstellationESI(20000009)
+		x1, err := s.GetOrCreateEveConstellationESI(ctx, 20000009)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(20000009), x1.ID)
@@ -127,7 +130,8 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := service.NewService(r)
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing solar system", func(t *testing.T) {
 		// given
@@ -135,7 +139,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 587})
 		// when
-		x1, err := s.GetOrCreateEveSolarSystemESI(587)
+		x1, err := s.GetOrCreateEveSolarSystemESI(ctx, 587)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(587), x1.ID)
@@ -179,7 +183,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveSolarSystemESI(30000003)
+		x1, err := s.GetOrCreateEveSolarSystemESI(ctx, 30000003)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(30000003), x1.ID)
@@ -282,7 +286,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data3).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveSolarSystemESI(30000003)
+		x1, err := s.GetOrCreateEveSolarSystemESI(ctx, 30000003)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(30000003), x1.ID)

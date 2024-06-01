@@ -57,7 +57,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 			if err != nil {
 				return nil, err
 			}
-			x, err := s.getOrCreateEveSolarSystemESI(ctx, int32(id))
+			x, err := s.EveUniverse.GetOrCreateEveSolarSystemESI(ctx, int32(id))
 			if err != nil {
 				return nil, err
 			}
@@ -71,7 +71,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 			if err != nil {
 				return nil, err
 			}
-			_, err = s.getOrCreateEveSolarSystemESI(ctx, station.SystemId)
+			_, err = s.EveUniverse.GetOrCreateEveSolarSystemESI(ctx, station.SystemId)
 			if err != nil {
 				return nil, err
 			}
@@ -102,7 +102,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 				}
 				return nil, err
 			}
-			_, err = s.getOrCreateEveSolarSystemESI(ctx, structure.SolarSystemId)
+			_, err = s.EveUniverse.GetOrCreateEveSolarSystemESI(ctx, structure.SolarSystemId)
 			if err != nil {
 				return nil, err
 			}
