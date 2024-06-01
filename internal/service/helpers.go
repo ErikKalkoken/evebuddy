@@ -19,29 +19,39 @@ func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
 // This only works for ESI endpoints which support the X-Pages pattern and return a list.
 func fetchFromESIWithPaging[T any](fetch func(int) ([]T, *http.Response, error)) ([]T, error) {
 	results := make(map[int][]T)
-	page := 1
-	for {
-		result, r, err := fetch(page)
-		if err != nil {
-			return nil, err
-		}
-		results[page] = result
-		pages := 1
-		x := r.Header.Get("X-Pages")
-		if x != "" {
-			pages, err = strconv.Atoi(x)
+	result, r, err := fetch(1)
+	if err != nil {
+		return nil, err
+	}
+	results[1] = result
+	pages, err := extractPageCount(r)
+	if err != nil {
+		return nil, err
+	}
+	if pages > 1 {
+		for p := 2; p <= pages; p++ {
+			result, _, err := fetch(p)
 			if err != nil {
 				return nil, err
 			}
+			results[p] = result
 		}
-		if page == pages {
-			break
-		}
-		page++
 	}
 	combined := make([]T, 0)
 	for _, result := range results {
 		combined = slices.Concat(combined, result)
 	}
 	return combined, nil
+}
+
+func extractPageCount(r *http.Response) (int, error) {
+	x := r.Header.Get("X-Pages")
+	if x == "" {
+		return 1, nil
+	}
+	pages, err := strconv.Atoi(x)
+	if err != nil {
+		return 0, err
+	}
+	return pages, nil
 }
