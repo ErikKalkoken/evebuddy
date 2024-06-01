@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	maxMails              = 1000
+	// maxMails              = 1000
 	maxMailHeadersPerPage = 50 // maximum header objects returned per page
 )
 
@@ -127,6 +127,10 @@ func (s *Service) updateCharacterMailESI(ctx context.Context, characterID int32)
 func (s *Service) fetchMailHeadersESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdMail200Ok
 	lastMailID := int32(0)
+	maxMails, err := s.DictionaryIntWithFallback(model.SettingMaxMails, model.SettingMaxMailsDefault)
+	if err != nil {
+		return nil, err
+	}
 	for {
 		var opts *esi.GetCharactersCharacterIdMailOpts
 		if lastMailID > 0 {

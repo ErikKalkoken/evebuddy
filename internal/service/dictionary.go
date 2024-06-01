@@ -41,6 +41,17 @@ func (s *Service) DictionaryInt(key string) (int, bool, error) {
 	return anyFromBytes[int](data)
 }
 
+func (s *Service) DictionaryIntWithFallback(key string, fallback int) (int, error) {
+	v, found, err := s.DictionaryInt(key)
+	if err != nil {
+		return 0, err
+	}
+	if !found {
+		return fallback, nil
+	}
+	return v, nil
+}
+
 // DictionaryFloat32 returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
 func (s *Service) DictionaryFloat32(key string) (float32, bool, error) {

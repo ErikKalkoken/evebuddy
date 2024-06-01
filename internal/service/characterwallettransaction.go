@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	maxTransactions        = 10_000
 	maxTransactionsPerPage = 2_500 // maximum objects returned per page
 )
 
@@ -99,6 +98,10 @@ func (s *Service) updateCharacterWalletTransactionESI(ctx context.Context, chara
 func (s *Service) fetchWalletTransactionsESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdWalletTransactions200Ok
 	lastID := int64(0)
+	maxTransactions, err := s.DictionaryIntWithFallback(model.SettingMaxWalletTransactions, model.SettingMaxWalletTransactionsDefault)
+	if err != nil {
+		return nil, err
+	}
 	for {
 		var opts *esi.GetCharactersCharacterIdWalletTransactionsOpts
 		if lastID > 0 {

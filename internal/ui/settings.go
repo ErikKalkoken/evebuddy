@@ -26,16 +26,21 @@ func (u *ui) showSettingsDialog() {
 }
 
 func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
-	maxMails, ok, err := u.service.DictionaryInt(model.SettingMaxMails)
+	maxMails, err := u.service.DictionaryIntWithFallback(model.SettingMaxMails, model.SettingMaxMailsDefault)
 	if err != nil {
 		return nil, err
 	}
-	if !ok {
-		maxMails = model.SettingMaxMailsDefault
-	}
 	maxMailsEntry := widget.NewEntry()
-	maxMailsEntry.SetText(strconv.Itoa(int(maxMails)))
+	maxMailsEntry.SetText(strconv.Itoa(maxMails))
 	maxMailsEntry.Validator = newPositiveNumberValidator()
+
+	maxTransactions, err := u.service.DictionaryIntWithFallback(model.SettingMaxWalletTransactions, model.SettingMaxWalletTransactionsDefault)
+	if err != nil {
+		return nil, err
+	}
+	maxTransactionsEntry := widget.NewEntry()
+	maxTransactionsEntry.SetText(strconv.Itoa(maxTransactions))
+	maxTransactionsEntry.Validator = newPositiveNumberValidator()
 
 	clearBtn := widget.NewButton("Clear NOW", func() {
 		d := dialog.NewConfirm(
@@ -80,7 +85,12 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 			{
 				Text:     "Maximum mails",
 				Widget:   maxMailsEntry,
-				HintText: "Maximum number of mails downloaded from the server",
+				HintText: "Maximum number of mails downloaded. 0 = unlimited.",
+			},
+			{
+				Text:     "Maximum wallet transaction",
+				Widget:   maxTransactionsEntry,
+				HintText: "Maximum number of wallet transaction downloaded. 0 = unlimited.",
 			},
 			{
 				Text:     "Theme",
@@ -125,6 +135,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 // 	return m
 // }
 
+// newPositiveNumberValidator ensures entry is a positive number (incl. zero).
 func newPositiveNumberValidator() fyne.StringValidator {
 	myErr := errors.New("must be positive number")
 	return func(text string) error {
@@ -132,7 +143,7 @@ func newPositiveNumberValidator() fyne.StringValidator {
 		if err != nil {
 			return myErr
 		}
-		if val <= 0 {
+		if val < 0 {
 			return myErr
 		}
 		return nil
