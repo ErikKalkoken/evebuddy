@@ -246,7 +246,7 @@ func (a *skillCatalogueArea) redraw() {
 
 func (a *skillCatalogueArea) refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
-		_, ok, err := a.ui.service.DictionaryTime(eveCategoriesKeyLastUpdated)
+		_, ok, err := a.ui.service.Dictionary.DictionaryTime(eveCategoriesKeyLastUpdated)
 		if err != nil {
 			return "", 0, err
 		}

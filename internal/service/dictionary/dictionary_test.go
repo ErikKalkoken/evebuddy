@@ -1,4 +1,4 @@
-package service_test
+package dictionary_test
 
 import (
 	"testing"
@@ -7,13 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
 )
 
 func TestDictionary(t *testing.T) {
 	db, r, _ := testutil.New()
 	defer db.Close()
-	s := service.NewService(r)
+	s := dictionary.New(r)
 	t.Run("can use string entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

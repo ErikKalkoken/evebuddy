@@ -1,4 +1,4 @@
-package service
+package dictionary
 
 import (
 	"bytes"
@@ -7,17 +7,28 @@ import (
 	"encoding/gob"
 	"errors"
 	"time"
+
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
+
+type Dictionary struct {
+	r *storage.Storage
+}
+
+func New(r *storage.Storage) *Dictionary {
+	d := &Dictionary{r: r}
+	return d
+}
 
 // DictionaryDelete deletes a key from the dictionary.
 // If the key does not exist no error will be raised.
-func (s *Service) DictionaryDelete(key string) error {
+func (s *Dictionary) DictionaryDelete(key string) error {
 	ctx := context.Background()
 	return s.r.DeleteDictEntry(ctx, key)
 }
 
 // DictionaryExists reports wether a key exists in the dictionary.
-func (s *Service) DictionaryExists(key string) (bool, error) {
+func (s *Dictionary) DictionaryExists(key string) (bool, error) {
 	ctx := context.Background()
 	_, err := s.r.GetDictEntry(ctx, key)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -30,7 +41,7 @@ func (s *Service) DictionaryExists(key string) (bool, error) {
 
 // DictionaryInt returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Service) DictionaryInt(key string) (int, bool, error) {
+func (s *Dictionary) DictionaryInt(key string) (int, bool, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -41,7 +52,7 @@ func (s *Service) DictionaryInt(key string) (int, bool, error) {
 	return anyFromBytes[int](data)
 }
 
-func (s *Service) DictionaryIntWithFallback(key string, fallback int) (int, error) {
+func (s *Dictionary) DictionaryIntWithFallback(key string, fallback int) (int, error) {
 	v, found, err := s.DictionaryInt(key)
 	if err != nil {
 		return 0, err
@@ -54,7 +65,7 @@ func (s *Service) DictionaryIntWithFallback(key string, fallback int) (int, erro
 
 // DictionaryFloat32 returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Service) DictionaryFloat32(key string) (float32, bool, error) {
+func (s *Dictionary) DictionaryFloat32(key string) (float32, bool, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -67,7 +78,7 @@ func (s *Service) DictionaryFloat32(key string) (float32, bool, error) {
 
 // DictionaryString returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Service) DictionaryString(key string) (string, bool, error) {
+func (s *Dictionary) DictionaryString(key string) (string, bool, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -80,7 +91,7 @@ func (s *Service) DictionaryString(key string) (string, bool, error) {
 
 // DictionaryTime returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Service) DictionaryTime(key string) (time.Time, bool, error) {
+func (s *Dictionary) DictionaryTime(key string) (time.Time, bool, error) {
 	ctx := context.Background()
 	data, err := s.r.GetDictEntry(ctx, key)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -102,7 +113,7 @@ func anyFromBytes[T any](bb []byte) (T, bool, error) {
 }
 
 // DictionarySetInt sets the value for a dictionary int entry.
-func (s *Service) DictionarySetInt(key string, value int) error {
+func (s *Dictionary) DictionarySetInt(key string, value int) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
 	if err != nil {
@@ -115,7 +126,7 @@ func (s *Service) DictionarySetInt(key string, value int) error {
 }
 
 // DictionarySetFloat32 sets the value for a dictionary int entry.
-func (s *Service) DictionarySetFloat32(key string, value float32) error {
+func (s *Dictionary) DictionarySetFloat32(key string, value float32) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
 	if err != nil {
@@ -128,7 +139,7 @@ func (s *Service) DictionarySetFloat32(key string, value float32) error {
 }
 
 // DictionarySetString sets the value for a dictionary string entry.
-func (s *Service) DictionarySetString(key string, value string) error {
+func (s *Dictionary) DictionarySetString(key string, value string) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
 	if err != nil {
@@ -141,7 +152,7 @@ func (s *Service) DictionarySetString(key string, value string) error {
 }
 
 // DictionarySetTime sets the value for a dictionary time entry.
-func (s *Service) DictionarySetTime(key string, value time.Time) error {
+func (s *Dictionary) DictionarySetTime(key string, value time.Time) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
 	if err != nil {

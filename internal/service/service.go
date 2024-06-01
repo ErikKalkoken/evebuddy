@@ -10,17 +10,20 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
 	"github.com/ErikKalkoken/evebuddy/internal/service/characterstatus"
+	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 type Service struct {
+	// Character status service
+	CharacterStatus *characterstatus.CharacterStatusCache
+	Dictionary      *dictionary.Dictionary
+
 	cache       *cache.Cache
 	esiClient   *goesi.APIClient
 	httpClient  *http.Client
 	r           *storage.Storage
 	singleGroup *singleflight.Group
-	// Character status service
-	CharacterStatus *characterstatus.CharacterStatusCache
 }
 
 func NewService(r *storage.Storage) *Service {
@@ -45,6 +48,7 @@ func NewService(r *storage.Storage) *Service {
 		httpClient:  defaultHttpClient,
 		r:           r,
 		singleGroup: new(singleflight.Group),
+		Dictionary:  dictionary.New(r),
 	}
 	s.CharacterStatus = characterstatus.New(s.cache)
 	if err := s.CharacterStatus.InitCache(r); err != nil {
