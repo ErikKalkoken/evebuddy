@@ -1,5 +1,5 @@
 main.go.bak
-.vscode/launch.json
+.vscode/
 *.sqlite
 .temp/
 temp/

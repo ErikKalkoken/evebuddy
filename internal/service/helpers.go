@@ -15,6 +15,8 @@ func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
 
 // TODO: Fetch pages in parallel
 
+// fetchFromESIWithPaging returns the combined list of items from all pages of an ESI endpoint.
+// This only works for ESI endpoints which support the X-Pages pattern and return a list.
 func fetchFromESIWithPaging[T any](fetch func(int) ([]T, *http.Response, error)) ([]T, error) {
 	results := make(map[int][]T)
 	page := 1
@@ -37,9 +39,9 @@ func fetchFromESIWithPaging[T any](fetch func(int) ([]T, *http.Response, error))
 		}
 		page++
 	}
-	assetsAll := make([]T, 0)
+	combined := make([]T, 0)
 	for _, result := range results {
-		assetsAll = slices.Concat(assetsAll, result)
+		combined = slices.Concat(combined, result)
 	}
-	return assetsAll, nil
+	return combined, nil
 }
