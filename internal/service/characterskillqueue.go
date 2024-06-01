@@ -23,6 +23,9 @@ func (s *Service) ListCharacterSkillqueueItems(characterID int32) ([]*model.Char
 // updateCharacterSkillqueueESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
 func (s *Service) updateCharacterSkillqueueESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+	if arg.Section != model.CharacterSectionSkillqueue {
+		panic("called with wrong section")
+	}
 	return s.updateCharacterSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {

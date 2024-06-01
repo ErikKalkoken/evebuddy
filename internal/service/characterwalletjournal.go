@@ -20,6 +20,9 @@ func (s *Service) ListCharacterWalletJournalEntries(characterID int32) ([]*model
 
 // updateCharacterWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
 func (s *Service) updateCharacterWalletJournalEntryESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+	if arg.Section != model.CharacterSectionWalletJournal {
+		panic("called with wrong section")
+	}
 	return s.updateCharacterSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {

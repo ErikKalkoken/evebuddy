@@ -13,6 +13,9 @@ func (s *Service) ListCharacterImplants(characterID int32) ([]*model.CharacterIm
 }
 
 func (s *Service) updateCharacterImplantsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+	if arg.Section != model.CharacterSectionImplants {
+		panic("called with wrong section")
+	}
 	return s.updateCharacterSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {

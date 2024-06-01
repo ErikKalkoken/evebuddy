@@ -68,7 +68,7 @@ func (s *Service) UpdateCharacterSection(arg UpdateCharacterSectionParams) (bool
 	case model.CharacterSectionLocation:
 		f = s.updateCharacterLocationESI
 	case model.CharacterSectionMails:
-		f = s.updateCharacterMailESI
+		f = s.updateCharacterMailsESI
 	case model.CharacterSectionMailLabels:
 		f = s.updateCharacterMailLabelsESI
 	case model.CharacterSectionMailLists:

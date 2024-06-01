@@ -23,6 +23,9 @@ func (s *Service) ListCharacterWalletTransactions(characterID int32) ([]*model.C
 
 // updateCharacterWalletTransactionESI updates the wallet journal from ESI and reports wether it has changed.
 func (s *Service) updateCharacterWalletTransactionESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+	if arg.Section != model.CharacterSectionWalletTransactions {
+		panic("called with wrong section")
+	}
 	return s.updateCharacterSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {

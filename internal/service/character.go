@@ -95,6 +95,9 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText b
 }
 
 func (s *Service) updateCharacterLocationESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+	if arg.Section != model.CharacterSectionLocation {
+		panic("called with wrong section")
+	}
 	return s.updateCharacterSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
@@ -128,6 +131,9 @@ func (s *Service) updateCharacterLocationESI(ctx context.Context, arg UpdateChar
 }
 
 func (s *Service) updateCharacterOnlineESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+	if arg.Section != model.CharacterSectionOnline {
+		panic("called with wrong section")
+	}
 	return s.updateCharacterSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
@@ -152,6 +158,9 @@ func (s *Service) updateCharacterOnlineESI(ctx context.Context, arg UpdateCharac
 }
 
 func (s *Service) updateCharacterShipESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+	if arg.Section != model.CharacterSectionShip {
+		panic("called with wrong section")
+	}
 	return s.updateCharacterSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
@@ -176,6 +185,9 @@ func (s *Service) updateCharacterShipESI(ctx context.Context, arg UpdateCharacte
 }
 
 func (s *Service) updateCharacterWalletBalanceESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+	if arg.Section != model.CharacterSectionWalletBalance {
+		panic("called with wrong section")
+	}
 	return s.updateCharacterSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {

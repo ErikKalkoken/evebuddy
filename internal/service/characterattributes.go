@@ -14,6 +14,9 @@ func (s *Service) GetCharacterAttributes(characterID int32) (*model.CharacterAtt
 }
 
 func (s *Service) updateCharacterAttributesESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+	if arg.Section != model.CharacterSectionAttributes {
+		panic("called with wrong section")
+	}
 	return s.updateCharacterSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
