@@ -94,9 +94,9 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText b
 	return token.CharacterID, nil
 }
 
-func (s *Service) updateCharacterLocationESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterLocationESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionLocation,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			location, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdLocation(ctx, characterID, nil)
 			if err != nil {
@@ -127,9 +127,9 @@ func (s *Service) updateCharacterLocationESI(ctx context.Context, characterID in
 		})
 }
 
-func (s *Service) updateCharacterOnlineESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterOnlineESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionOnline,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			online, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdOnline(ctx, characterID, nil)
 			if err != nil {
@@ -151,9 +151,9 @@ func (s *Service) updateCharacterOnlineESI(ctx context.Context, characterID int3
 		})
 }
 
-func (s *Service) updateCharacterShipESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterShipESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionShip,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			ship, _, err := s.esiClient.ESI.LocationApi.GetCharactersCharacterIdShip(ctx, characterID, nil)
 			if err != nil {
@@ -175,9 +175,9 @@ func (s *Service) updateCharacterShipESI(ctx context.Context, characterID int32)
 		})
 }
 
-func (s *Service) updateCharacterWalletBalanceESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterWalletBalanceESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionWalletBalance,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			balance, _, err := s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWallet(ctx, characterID, nil)
 			if err != nil {

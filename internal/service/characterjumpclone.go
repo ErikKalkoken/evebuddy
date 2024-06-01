@@ -16,9 +16,9 @@ func (s *Service) ListCharacterJumpClones(characterID int32) ([]*model.Character
 
 // TODO: Consolidate with updating home in separate function
 
-func (s *Service) updateCharacterJumpClonesESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterJumpClonesESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionJumpClones,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			clones, _, err := s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdClones(ctx, characterID, nil)
 			if err != nil {

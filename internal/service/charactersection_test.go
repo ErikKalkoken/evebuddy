@@ -27,8 +27,9 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		section := model.CharacterSectionImplants
 		hasUpdated := false
 		accessToken := ""
+		arg := UpdateCharacterSectionParams{CharacterID: c.ID, Section: section}
 		// when
-		changed, err := s.updateCharacterSectionIfChanged(ctx, c.ID, section,
+		changed, err := s.updateCharacterSectionIfChanged(ctx, arg,
 			func(ctx context.Context, characterID int32) (any, error) {
 				accessToken = ctx.Value(goesi.ContextAccessToken).(string)
 				return "any", nil
@@ -61,8 +62,9 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			Error:       "error",
 		})
 		hasUpdated := false
+		arg := UpdateCharacterSectionParams{CharacterID: c.ID, Section: section}
 		// when
-		changed, err := s.updateCharacterSectionIfChanged(ctx, c.ID, section,
+		changed, err := s.updateCharacterSectionIfChanged(ctx, arg,
 			func(ctx context.Context, characterID int32) (any, error) {
 				return "any", nil
 			},
@@ -93,8 +95,9 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			Data:        "old",
 		})
 		hasUpdated := false
+		arg := UpdateCharacterSectionParams{CharacterID: c.ID, Section: section}
 		// when
-		changed, err := s.updateCharacterSectionIfChanged(ctx, c.ID, section,
+		changed, err := s.updateCharacterSectionIfChanged(ctx, arg,
 			func(ctx context.Context, characterID int32) (any, error) {
 				return "old", nil
 			},

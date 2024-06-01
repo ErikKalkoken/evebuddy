@@ -32,9 +32,9 @@ type esiCharacterAssetPlus struct {
 	Name string
 }
 
-func (s *Service) updateCharacterAssetsESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterAssetsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionAssets,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			assets, err := goesi.FetchFromESIWithPaging(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {

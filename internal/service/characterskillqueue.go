@@ -22,9 +22,9 @@ func (s *Service) ListCharacterSkillqueueItems(characterID int32) ([]*model.Char
 
 // updateCharacterSkillqueueESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *Service) updateCharacterSkillqueueESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterSkillqueueESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionSkillqueue,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			items, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkillqueue(ctx, characterID, nil)
 			if err != nil {

@@ -13,9 +13,9 @@ func (s *Service) GetCharacterAttributes(characterID int32) (*model.CharacterAtt
 	return s.r.GetCharacterAttributes(ctx, characterID)
 }
 
-func (s *Service) updateCharacterAttributesESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterAttributesESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionAttributes,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			attributes, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdAttributes(ctx, characterID, nil)
 			if err != nil {

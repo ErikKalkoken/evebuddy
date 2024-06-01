@@ -24,9 +24,9 @@ const (
 
 // updateCharacterMailLabelsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *Service) updateCharacterMailLabelsESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterMailLabelsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionMailLabels,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			ll, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(ctx, characterID, nil)
 			if err != nil {
@@ -57,9 +57,9 @@ func (s *Service) updateCharacterMailLabelsESI(ctx context.Context, characterID 
 
 // updateCharacterMailListsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *Service) updateCharacterMailListsESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterMailListsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionMailLists,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			lists, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLists(ctx, characterID, nil)
 			if err != nil {
@@ -84,9 +84,9 @@ func (s *Service) updateCharacterMailListsESI(ctx context.Context, characterID i
 
 // updateCharacterMailESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *Service) updateCharacterMailESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterMailESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionMails,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			headers, err := s.fetchMailHeadersESI(ctx, characterID)
 			if err != nil {

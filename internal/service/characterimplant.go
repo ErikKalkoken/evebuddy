@@ -12,9 +12,9 @@ func (s *Service) ListCharacterImplants(characterID int32) ([]*model.CharacterIm
 	return s.r.ListCharacterImplants(ctx, characterID)
 }
 
-func (s *Service) updateCharacterImplantsESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterImplantsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionImplants,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			implants, _, err := s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdImplants(ctx, characterID, nil)
 			if err != nil {

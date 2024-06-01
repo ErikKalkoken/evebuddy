@@ -19,9 +19,9 @@ func (s *Service) ListCharacterWalletJournalEntries(characterID int32) ([]*model
 }
 
 // updateCharacterWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
-func (s *Service) updateCharacterWalletJournalEntryESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterWalletJournalEntryESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionWalletJournal,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			entries, err := goesi.FetchFromESIWithPaging(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {

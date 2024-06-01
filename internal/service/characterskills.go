@@ -9,9 +9,9 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *Service) updateCharacterSkillsESI(ctx context.Context, characterID int32) (bool, error) {
+func (s *Service) updateCharacterSkillsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	return s.updateCharacterSectionIfChanged(
-		ctx, characterID, model.CharacterSectionSkills,
+		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, characterID, nil)
 			if err != nil {

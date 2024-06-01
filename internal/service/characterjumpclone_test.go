@@ -53,7 +53,10 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 				http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateCharacterJumpClonesESI(ctx, c.ID)
+		changed, err := s.updateCharacterJumpClonesESI(ctx, UpdateCharacterSectionParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionJumpClones,
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)

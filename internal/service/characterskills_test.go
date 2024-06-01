@@ -52,7 +52,10 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateCharacterSkillsESI(ctx, c.ID)
+		changed, err := s.updateCharacterSkillsESI(ctx, UpdateCharacterSectionParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionSkills,
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -101,7 +104,10 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateCharacterSkillsESI(ctx, c.ID)
+		changed, err := s.updateCharacterSkillsESI(ctx, UpdateCharacterSectionParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionSkills,
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)

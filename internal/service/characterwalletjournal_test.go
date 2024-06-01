@@ -50,7 +50,10 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, c.ID)
+		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateCharacterSectionParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionWalletJournal,
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -101,7 +104,10 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, c.ID)
+		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateCharacterSectionParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionWalletJournal,
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -148,7 +154,10 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		_, err := s.updateCharacterWalletJournalEntryESI(ctx, c.ID)
+		_, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateCharacterSectionParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionWalletJournal,
+		})
 		// then
 		if assert.NoError(t, err) {
 			e2, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
@@ -205,7 +214,10 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 				},
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		// when
-		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, c.ID)
+		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateCharacterSectionParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionWalletJournal,
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)

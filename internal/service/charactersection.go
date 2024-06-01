@@ -55,7 +55,7 @@ func (s *Service) UpdateCharacterSection(arg UpdateCharacterSectionParams) (bool
 	if !isExpired {
 		return false, nil
 	}
-	var f func(context.Context, int32) (bool, error)
+	var f func(context.Context, UpdateCharacterSectionParams) (bool, error)
 	switch arg.Section {
 	case model.CharacterSectionAssets:
 		f = s.updateCharacterAssetsESI
@@ -92,7 +92,7 @@ func (s *Service) UpdateCharacterSection(arg UpdateCharacterSectionParams) (bool
 	}
 	key := fmt.Sprintf("UpdateESI-%s-%d", arg.Section, arg.CharacterID)
 	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		return f(ctx, arg.CharacterID)
+		return f(ctx, arg)
 	})
 	if err != nil {
 		// TODO: Move this part into updateCharacterSectionIfChanged()
@@ -126,27 +126,26 @@ func (s *Service) characterSectionIsUpdateExpired(ctx context.Context, arg Updat
 // and reports wether it has changed
 func (s *Service) updateCharacterSectionIfChanged(
 	ctx context.Context,
-	characterID int32,
-	section model.CharacterSection,
+	arg UpdateCharacterSectionParams,
 	fetch func(ctx context.Context, characterID int32) (any, error),
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {
-	token, err := s.getValidCharacterToken(ctx, characterID)
+	token, err := s.getValidCharacterToken(ctx, arg.CharacterID)
 	if err != nil {
 		return false, err
 	}
 	ctx = contextWithESIToken(ctx, token.AccessToken)
-	data, err := fetch(ctx, characterID)
+	data, err := fetch(ctx, arg.CharacterID)
 	if err != nil {
 		return false, err
 	}
 	// identify if changed
-	hash, err := section.CalcContentHash(data)
+	hash, err := arg.Section.CalcContentHash(data)
 	if err != nil {
 		return false, err
 	}
 	var hasChanged bool
-	u, err := s.r.GetCharacterUpdateStatus(ctx, characterID, section)
+	u, err := s.r.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
 	if errors.Is(err, storage.ErrNotFound) {
 		hasChanged = true
 	} else if err != nil {
@@ -157,25 +156,25 @@ func (s *Service) updateCharacterSectionIfChanged(
 
 	// update if changed
 	if hasChanged {
-		if err := update(ctx, characterID, data); err != nil {
+		if err := update(ctx, arg.CharacterID, data); err != nil {
 			return false, err
 		}
 	}
 
 	// record update
 	lastUpdatedAt := time.Now()
-	arg := storage.CharacterUpdateStatusParams{
-		CharacterID:   characterID,
-		Section:       section,
+	arg2 := storage.CharacterUpdateStatusParams{
+		CharacterID:   arg.CharacterID,
+		Section:       arg.Section,
 		Error:         "",
 		ContentHash:   hash,
 		LastUpdatedAt: lastUpdatedAt,
 	}
-	if err := s.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg); err != nil {
+	if err := s.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg2); err != nil {
 		return false, err
 	}
-	s.characterStatus.SetStatus(characterID, section, "", lastUpdatedAt)
+	s.characterStatus.SetStatus(arg.CharacterID, arg.Section, "", lastUpdatedAt)
 
-	slog.Debug("Has section changed", "characterID", characterID, "section", section, "changed", hasChanged)
+	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "changed", hasChanged)
 	return hasChanged, nil
 }

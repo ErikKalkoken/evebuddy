@@ -52,7 +52,10 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateCharacterWalletTransactionESI(ctx, c.ID)
+		changed, err := s.updateCharacterWalletTransactionESI(ctx, UpdateCharacterSectionParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionWalletTransactions,
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -105,7 +108,10 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateCharacterWalletTransactionESI(ctx, c.ID)
+		changed, err := s.updateCharacterWalletTransactionESI(ctx, UpdateCharacterSectionParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionWalletTransactions,
+		})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -158,7 +164,10 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		_, err := s.updateCharacterWalletTransactionESI(ctx, c.ID)
+		_, err := s.updateCharacterWalletTransactionESI(ctx, UpdateCharacterSectionParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionWalletTransactions,
+		})
 		// then
 		if assert.NoError(t, err) {
 			ids, err := r.ListCharacterWalletTransactionIDs(ctx, c.ID)
@@ -214,7 +223,10 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				},
 			}))
 		// when
-		_, err := s.updateCharacterWalletTransactionESI(ctx, c.ID)
+		_, err := s.updateCharacterWalletTransactionESI(ctx, UpdateCharacterSectionParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionWalletTransactions,
+		})
 		// then
 		if assert.NoError(t, err) {
 			ids, err := r.ListCharacterWalletTransactionIDs(ctx, c.ID)
