@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	maxMails          = 1000
-	maxHeadersPerPage = 50 // maximum header objects returned per page
+	maxMails              = 1000
+	maxMailHeadersPerPage = 50 // maximum header objects returned per page
 )
 
 // TODO: Add ability to delete obsolete mail labels
@@ -125,7 +125,7 @@ func (s *Service) updateCharacterMailESI(ctx context.Context, characterID int32)
 
 // fetchMailHeadersESI fetched mail headers from ESI with paging and returns them.
 func (s *Service) fetchMailHeadersESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
-	var mm []esi.GetCharactersCharacterIdMail200Ok
+	var oo2 []esi.GetCharactersCharacterIdMail200Ok
 	lastMailID := int32(0)
 	for {
 		var opts *esi.GetCharactersCharacterIdMailOpts
@@ -138,9 +138,9 @@ func (s *Service) fetchMailHeadersESI(ctx context.Context, characterID int32) ([
 		if err != nil {
 			return nil, err
 		}
-		mm = slices.Concat(mm, oo)
-		isLimitExceeded := (maxMails != 0 && len(mm)+maxHeadersPerPage > maxMails)
-		if len(oo) < maxHeadersPerPage || isLimitExceeded {
+		oo2 = slices.Concat(oo2, oo)
+		isLimitExceeded := (maxMails != 0 && len(oo2)+maxMailHeadersPerPage > maxMails)
+		if len(oo) < maxMailHeadersPerPage || isLimitExceeded {
 			break
 		}
 		ids := make([]int32, len(oo))
@@ -149,8 +149,8 @@ func (s *Service) fetchMailHeadersESI(ctx context.Context, characterID int32) ([
 		}
 		lastMailID = slices.Min(ids)
 	}
-	slog.Info("Received mail headers", "characterID", characterID, "count", len(mm))
-	return mm, nil
+	slog.Info("Received mail headers", "characterID", characterID, "count", len(oo2))
+	return oo2, nil
 }
 
 func (s *Service) determineNewMail(ctx context.Context, characterID int32, mm []esi.GetCharactersCharacterIdMail200Ok) ([]esi.GetCharactersCharacterIdMail200Ok, []esi.GetCharactersCharacterIdMail200Ok, error) {
