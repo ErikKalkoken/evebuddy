@@ -440,7 +440,11 @@ func (u *ui) startUpdateTickerCharacterSections() {
 func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32) {
 	for _, s := range model.CharacterSections {
 		go func(s model.CharacterSection) {
-			hasChanged, err := u.service.UpdateCharacterSection(characterID, s)
+			hasChanged, err := u.service.UpdateCharacterSection(
+				service.UpdateCharacterSectionParams{
+					CharacterID: characterID,
+					Section:     s,
+				})
 			if err != nil {
 				slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
 				return

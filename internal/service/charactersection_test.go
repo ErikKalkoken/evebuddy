@@ -135,7 +135,7 @@ func TestUpdateCharacterSectionIfExpired(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 		// when
-		changed, err := s.UpdateCharacterSection(c.ID, section)
+		changed, err := s.UpdateCharacterSection(UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -160,7 +160,7 @@ func TestUpdateCharacterSectionIfExpired(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewStringResponder(500, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 		// when
-		_, err := s.UpdateCharacterSection(c.ID, section)
+		_, err := s.UpdateCharacterSection(UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.Error(t, err) {
 			x, err := s.r.GetCharacterUpdateStatus(ctx, c.ID, section)
@@ -168,6 +168,52 @@ func TestUpdateCharacterSectionIfExpired(t *testing.T) {
 				assert.False(t, x.IsOK())
 				assert.Equal(t, "500: dummy error", x.ErrorMessage)
 			}
+		}
+	})
+}
+
+func TestCharacterSectionUpdateMethods(t *testing.T) {
+	db, r, factory := testutil.New()
+	s := NewService(r)
+	ctx := context.Background()
+	t.Run("Can report when section update is expired", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		updateAt := time.Now().Add(-3 * time.Hour)
+		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
+			CharacterID:   c.ID,
+			Section:       model.CharacterSectionSkillqueue,
+			LastUpdatedAt: updateAt,
+		})
+		// when
+		x, err := s.characterSectionIsUpdateExpired(ctx, UpdateCharacterSectionParams{
+			CharacterID: c.ID, Section: model.CharacterSectionSkillqueue,
+		})
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, x)
+		}
+	})
+	t.Run("Can retrieve updated at for section", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		updateAt := time.Now().Add(3 * time.Hour)
+		o := factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
+			CharacterID:   c.ID,
+			Section:       model.CharacterSectionSkillqueue,
+			LastUpdatedAt: updateAt,
+		})
+		// when
+		x, err := s.characterSectionUpdatedAt(ctx, UpdateCharacterSectionParams{
+			CharacterID: c.ID,
+			Section:     model.CharacterSectionSkillqueue,
+		})
+		// then
+		if assert.NoError(t, err) {
+
+			assert.Equal(t, o.LastUpdatedAt.UTC(), x.UTC())
 		}
 	})
 }

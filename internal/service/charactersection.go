@@ -12,11 +12,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-// CharacterSectionUpdatedAt returns when a section was last updated.
+// characterSectionUpdatedAt returns when a section was last updated.
 // It will return a zero time when no update has been completed yet.
-func (s *Service) CharacterSectionUpdatedAt(characterID int32, section model.CharacterSection) (time.Time, error) {
-	ctx := context.Background()
-	u, err := s.r.GetCharacterUpdateStatus(ctx, characterID, section)
+func (s *Service) characterSectionUpdatedAt(ctx context.Context, arg UpdateCharacterSectionParams) (time.Time, error) {
+	u, err := s.r.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
 	if errors.Is(err, storage.ErrNotFound) {
 		return time.Time{}, nil
 	} else if err != nil {
@@ -27,7 +26,8 @@ func (s *Service) CharacterSectionUpdatedAt(characterID int32, section model.Cha
 
 // CharacterSectionWasUpdated reports wether the section has been updated at all.
 func (s *Service) CharacterSectionWasUpdated(characterID int32, section model.CharacterSection) (bool, error) {
-	t, err := s.CharacterSectionUpdatedAt(characterID, section)
+	ctx := context.Background()
+	t, err := s.characterSectionUpdatedAt(ctx, UpdateCharacterSectionParams{CharacterID: characterID, Section: section})
 	if errors.Is(err, storage.ErrNotFound) {
 		return false, nil
 	} else if err != nil {
@@ -36,19 +36,27 @@ func (s *Service) CharacterSectionWasUpdated(characterID int32, section model.Ch
 	return !t.IsZero(), nil
 }
 
+type UpdateCharacterSectionParams struct {
+	CharacterID int32
+	Section     model.CharacterSection
+}
+
 // UpdateCharacterSection updates a section from ESI if has expired and changed
 // and reports back if it has changed
-func (s *Service) UpdateCharacterSection(characterID int32, section model.CharacterSection) (bool, error) {
-	isExpired, err := s.CharacterSectionIsUpdateExpired(characterID, section)
+func (s *Service) UpdateCharacterSection(arg UpdateCharacterSectionParams) (bool, error) {
+	ctx := context.Background()
+	if arg.CharacterID == 0 {
+		panic("Invalid character ID")
+	}
+	isExpired, err := s.characterSectionIsUpdateExpired(ctx, arg)
 	if err != nil {
 		return false, err
 	}
 	if !isExpired {
 		return false, nil
 	}
-	ctx := context.Background()
 	var f func(context.Context, int32) (bool, error)
-	switch section {
+	switch arg.Section {
 	case model.CharacterSectionAssets:
 		f = s.updateCharacterAssetsESI
 	case model.CharacterSectionAttributes:
@@ -80,36 +88,36 @@ func (s *Service) UpdateCharacterSection(characterID int32, section model.Charac
 	case model.CharacterSectionWalletTransactions:
 		f = s.updateCharacterWalletTransactionESI
 	default:
-		panic(fmt.Sprintf("Undefined section: %s", section))
+		panic(fmt.Sprintf("Undefined section: %s", arg.Section))
 	}
-	key := fmt.Sprintf("UpdateESI-%s-%d", section, characterID)
+	key := fmt.Sprintf("UpdateESI-%s-%d", arg.Section, arg.CharacterID)
 	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		return f(ctx, characterID)
+		return f(ctx, arg.CharacterID)
 	})
 	if err != nil {
 		// TODO: Move this part into updateCharacterSectionIfChanged()
 		errorMessage := humanize.Error(err)
-		err2 := s.r.SetCharacterUpdateStatusError(ctx, characterID, section, errorMessage)
+		err2 := s.r.SetCharacterUpdateStatusError(ctx, arg.CharacterID, arg.Section, errorMessage)
 		if err2 != nil {
 			slog.Error("failed to record error for failed section update: %s", err2)
 		}
-		s.characterStatus.SetError(characterID, section, errorMessage)
-		return false, fmt.Errorf("failed to update section %s from ESI for character %d: %w", section, characterID, err)
+		s.characterStatus.SetError(arg.CharacterID, arg.Section, errorMessage)
+		return false, fmt.Errorf("failed to update character section from ESI for %v: %w", arg, err)
 	}
 	changed := x.(bool)
 	return changed, err
 }
 
 // SectionWasUpdated reports wether the data for a section has expired.
-func (s *Service) CharacterSectionIsUpdateExpired(characterID int32, section model.CharacterSection) (bool, error) {
-	t, err := s.CharacterSectionUpdatedAt(characterID, section)
+func (s *Service) characterSectionIsUpdateExpired(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+	t, err := s.characterSectionUpdatedAt(ctx, arg)
 	if err != nil {
 		return false, err
 	}
 	if t.IsZero() {
 		return true, nil
 	}
-	timeout := section.Timeout()
+	timeout := arg.Section.Timeout()
 	deadline := t.Add(timeout)
 	return time.Now().After(deadline), nil
 }
