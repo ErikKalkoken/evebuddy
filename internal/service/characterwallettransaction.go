@@ -71,7 +71,7 @@ func (s *Service) updateCharacterWalletTransactionESI(ctx context.Context, arg U
 				if err != nil {
 					return err
 				}
-				_, err = s.getOrCreateLocationESI(ctx, o.LocationId)
+				_, err = s.EveUniverse.GetOrCreateLocationESI(ctx, o.LocationId)
 				if err != nil {
 					return err
 				}

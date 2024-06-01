@@ -120,7 +120,7 @@ func (s *Service) updateCharacterLocationESI(ctx context.Context, arg UpdateChar
 			default:
 				locationID = int64(location.SolarSystemId)
 			}
-			_, err := s.getOrCreateLocationESI(ctx, locationID)
+			_, err := s.EveUniverse.GetOrCreateLocationESI(ctx, locationID)
 			if err != nil {
 				return err
 			}

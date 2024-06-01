@@ -1,4 +1,4 @@
-package service
+package eveuniverse
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
@@ -24,7 +25,8 @@ func TestLocationOther(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewService(r)
+	client := goesi.NewAPIClient(nil, "")
+	eu := New(r, client)
 	ctx := context.Background()
 	t.Run("should create location for a station", func(t *testing.T) {
 		// given
@@ -69,7 +71,7 @@ func TestLocationOther(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v2/universe/stations/%d/", stationID),
 			httpmock.NewStringResponder(http.StatusOK, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 		// when
-		x1, err := s.getOrCreateLocationESI(ctx, stationID)
+		x1, err := eu.GetOrCreateLocationESI(ctx, stationID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(stationID), x1.ID)
@@ -90,7 +92,7 @@ func TestLocationOther(t *testing.T) {
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: model.EveTypeIDSolarSystem})
 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
 		// when
-		x1, err := s.getOrCreateLocationESI(ctx, int64(system.ID))
+		x1, err := eu.GetOrCreateLocationESI(ctx, int64(system.ID))
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(system.ID), x1.ID)
@@ -111,7 +113,8 @@ func TestLocationStructures(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewService(r)
+	client := goesi.NewAPIClient(nil, "")
+	eu := New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing structure", func(t *testing.T) {
 		// given
@@ -119,7 +122,7 @@ func TestLocationStructures(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: structureID, Name: "Alpha"})
 		// when
-		x, err := s.getOrCreateLocationESI(ctx, structureID)
+		x, err := eu.GetOrCreateLocationESI(ctx, structureID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Alpha", x.Name)
@@ -150,7 +153,7 @@ func TestLocationStructures(t *testing.T) {
 				http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.getOrCreateLocationESI(ctx, structureID)
+		x1, err := eu.GetOrCreateLocationESI(ctx, structureID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(structureID), x1.ID)
@@ -178,7 +181,7 @@ func TestLocationStructures(t *testing.T) {
 				http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.getOrCreateLocationESI(ctx, structureID)
+		x1, err := eu.GetOrCreateLocationESI(ctx, structureID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(structureID), x1.ID)
@@ -206,7 +209,7 @@ func TestLocationStructures(t *testing.T) {
 				http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		_, err := s.getOrCreateLocationESI(ctx, structureID)
+		_, err := eu.GetOrCreateLocationESI(ctx, structureID)
 		// then
 		assert.Error(t, err)
 	})

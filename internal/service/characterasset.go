@@ -82,7 +82,7 @@ func (s *Service) updateCharacterAssetsESI(ctx context.Context, arg UpdateCharac
 				return err
 			}
 			for _, id := range missingLocationIDs {
-				_, err := s.getOrCreateLocationESI(ctx, id)
+				_, err := s.EveUniverse.GetOrCreateLocationESI(ctx, id)
 				if err != nil {
 					return err
 				}
