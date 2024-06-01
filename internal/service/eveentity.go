@@ -36,8 +36,7 @@ func eveEntityCategoryFromESICategory(c string) model.EveEntityCategory {
 }
 
 // AddEveEntitiesFromESISearch runs a search on ESI and adds the results as new EveEntity objects to the database.
-func (s *Service) AddEveEntitiesFromESISearch(characterID int32, search string) ([]int32, error) {
-	ctx := context.Background()
+func (s *Service) AddEveEntitiesFromESISearch(ctx context.Context, characterID int32, search string) ([]int32, error) {
 	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -131,14 +130,13 @@ func (s *Service) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostUniver
 	return ee, []int32{}, nil
 }
 
-func (s *Service) ListEveEntitiesByPartialName(partial string) ([]*model.EveEntity, error) {
-	return s.r.ListEveEntitiesByPartialName(context.Background(), partial)
+func (s *Service) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]*model.EveEntity, error) {
+	return s.r.ListEveEntitiesByPartialName(ctx, partial)
 }
 
 // Resolve slice of unclean EveEntity objects and return as new slice with resolved objects.
 // Will return an error if some entities can not be resolved.
-func (s *Service) ResolveUncleanEveEntities(ee []*model.EveEntity) ([]*model.EveEntity, error) {
-	ctx := context.Background()
+func (s *Service) ResolveUncleanEveEntities(ctx context.Context, ee []*model.EveEntity) ([]*model.EveEntity, error) {
 	ee1, names, err := s.resolveEveEntityLocally(ctx, ee)
 	if err != nil {
 		return nil, err

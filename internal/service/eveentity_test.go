@@ -17,7 +17,7 @@ import (
 func TestResolveUncleanEveEntities(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
-	// ctx := context.Background()
+	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := service.NewService(r)
@@ -28,7 +28,7 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 		e1 := factory.CreateEveEntityCharacter(model.EveEntity{Name: "Erik"})
 		e2 := model.EveEntity{Name: "Erik", Category: model.EveEntityCharacter}
 		// when
-		ee, err := s.ResolveUncleanEveEntities([]*model.EveEntity{&e2})
+		ee, err := s.ResolveUncleanEveEntities(ctx, []*model.EveEntity{&e2})
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, e1, ee[0])
@@ -56,7 +56,7 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 		)
 		e := model.EveEntity{Name: "Erik", Category: model.EveEntityUndefined}
 		// when
-		ee, err := s.ResolveUncleanEveEntities([]*model.EveEntity{&e})
+		ee, err := s.ResolveUncleanEveEntities(ctx, []*model.EveEntity{&e})
 		// then
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
@@ -78,7 +78,7 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 		)
 		e := model.EveEntity{Name: "Erik", Category: model.EveEntityUndefined}
 		// when
-		_, err := s.ResolveUncleanEveEntities([]*model.EveEntity{&e})
+		_, err := s.ResolveUncleanEveEntities(ctx, []*model.EveEntity{&e})
 		// then
 		assert.ErrorIs(t, err, service.ErrEveEntityNameNoMatch)
 	})
@@ -96,7 +96,7 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 		factory.CreateEveEntityCorporation(model.EveEntity{Name: "Erik"})
 		e := model.EveEntity{Name: "Erik", Category: model.EveEntityUndefined}
 		// when
-		_, err := s.ResolveUncleanEveEntities([]*model.EveEntity{&e})
+		_, err := s.ResolveUncleanEveEntities(ctx, []*model.EveEntity{&e})
 		// then
 		assert.ErrorIs(t, err, service.ErrEveEntityNameMultipleMatches)
 	})
@@ -114,7 +114,7 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 		factory.CreateEveEntityCharacter(model.EveEntity{Name: "Erik"})
 		e := model.EveEntity{Name: "Erik", Category: model.EveEntityUndefined}
 		// when
-		_, err := s.ResolveUncleanEveEntities([]*model.EveEntity{&e})
+		_, err := s.ResolveUncleanEveEntities(ctx, []*model.EveEntity{&e})
 		// then
 		assert.ErrorIs(t, err, service.ErrEveEntityNameMultipleMatches)
 	})
