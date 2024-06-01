@@ -67,7 +67,7 @@ func (s *Service) updateCharacterWalletTransactionESI(ctx context.Context, arg U
 			}
 
 			for _, o := range newEntries {
-				_, err = s.getOrCreateEveTypeESI(ctx, o.TypeId)
+				_, err = s.GetOrCreateEveTypeESI(ctx, o.TypeId)
 				if err != nil {
 					return err
 				}

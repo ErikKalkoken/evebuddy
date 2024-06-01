@@ -11,47 +11,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func (s *Service) GetEveType(id int32) (*model.EveType, error) {
-	ctx := context.Background()
+func (s *Service) GetEveType(ctx context.Context, id int32) (*model.EveType, error) {
 	return s.r.GetEveType(ctx, id)
 }
 
-func (s *Service) GetOrCreateEveCategoryESI(id int32) (*model.EveCategory, error) {
-	ctx := context.Background()
-	return s.getOrCreateEveCategoryESI(ctx, id)
-}
-
-func (s *Service) UpdateEveCategoryWithChildrenESI(categoryID int32) error {
-	ctx := context.Background()
-	key := fmt.Sprintf("UpdateEveCategoryWithChildrenESI-%d", categoryID)
-	_, err, _ := s.singleGroup.Do(key, func() (any, error) {
-		typeIDs := make([]int32, 0)
-		r1, _, err := s.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, categoryID, nil)
-		if err != nil {
-			return nil, err
-		}
-		for _, id := range r1.Groups {
-			r2, _, err := s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
-			if err != nil {
-				return nil, err
-			}
-			typeIDs = slices.Concat(typeIDs, r2.Types)
-		}
-		for _, id := range typeIDs {
-			_, err := s.getOrCreateEveTypeESI(ctx, id)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return nil, nil
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Service) getOrCreateEveCategoryESI(ctx context.Context, id int32) (*model.EveCategory, error) {
+func (s *Service) GetOrCreateEveCategoryESI(ctx context.Context, id int32) (*model.EveCategory, error) {
 	x, err := s.r.GetEveCategory(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return s.createEveCategoryFromESI(ctx, id)
@@ -81,12 +45,7 @@ func (s *Service) createEveCategoryFromESI(ctx context.Context, id int32) (*mode
 	return y.(*model.EveCategory), nil
 }
 
-func (s *Service) GetOrCreateEveGroupESI(id int32) (*model.EveGroup, error) {
-	ctx := context.Background()
-	return s.getOrCreateEveGroupESI(ctx, id)
-}
-
-func (s *Service) getOrCreateEveGroupESI(ctx context.Context, id int32) (*model.EveGroup, error) {
+func (s *Service) GetOrCreateEveGroupESI(ctx context.Context, id int32) (*model.EveGroup, error) {
 	x, err := s.r.GetEveGroup(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return s.createEveGroupFromESI(ctx, id)
@@ -103,7 +62,7 @@ func (s *Service) createEveGroupFromESI(ctx context.Context, id int32) (*model.E
 		if err != nil {
 			return nil, err
 		}
-		c, err := s.getOrCreateEveCategoryESI(ctx, r.CategoryId)
+		c, err := s.GetOrCreateEveCategoryESI(ctx, r.CategoryId)
 		if err != nil {
 			return nil, err
 		}
@@ -124,12 +83,7 @@ func (s *Service) createEveGroupFromESI(ctx context.Context, id int32) (*model.E
 	return y.(*model.EveGroup), nil
 }
 
-func (s *Service) GetOrCreateEveTypeESI(id int32) (*model.EveType, error) {
-	ctx := context.Background()
-	return s.getOrCreateEveTypeESI(ctx, id)
-}
-
-func (s *Service) getOrCreateEveTypeESI(ctx context.Context, id int32) (*model.EveType, error) {
+func (s *Service) GetOrCreateEveTypeESI(ctx context.Context, id int32) (*model.EveType, error) {
 	x, err := s.r.GetEveType(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return s.createEveTypeFromESI(ctx, id)
@@ -146,7 +100,7 @@ func (s *Service) createEveTypeFromESI(ctx context.Context, id int32) (*model.Ev
 		if err != nil {
 			return nil, err
 		}
-		g, err := s.getOrCreateEveGroupESI(ctx, t.GroupId)
+		g, err := s.GetOrCreateEveGroupESI(ctx, t.GroupId)
 		if err != nil {
 			return nil, err
 		}
@@ -208,10 +162,39 @@ func (s *Service) addMissingEveTypes(ctx context.Context, ids []int32) error {
 	slices.Sort(missingIDs)
 	slog.Info("Trying to fetch missing EveTypes from ESI", "count", len(missingIDs))
 	for _, id := range missingIDs {
-		_, err := s.getOrCreateEveTypeESI(ctx, id)
+		_, err := s.GetOrCreateEveTypeESI(ctx, id)
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (s *Service) UpdateEveCategoryWithChildrenESI(ctx context.Context, categoryID int32) error {
+	key := fmt.Sprintf("UpdateEveCategoryWithChildrenESI-%d", categoryID)
+	_, err, _ := s.singleGroup.Do(key, func() (any, error) {
+		typeIDs := make([]int32, 0)
+		r1, _, err := s.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, categoryID, nil)
+		if err != nil {
+			return nil, err
+		}
+		for _, id := range r1.Groups {
+			r2, _, err := s.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
+			if err != nil {
+				return nil, err
+			}
+			typeIDs = slices.Concat(typeIDs, r2.Types)
+		}
+		for _, id := range typeIDs {
+			_, err := s.GetOrCreateEveTypeESI(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	})
+	if err != nil {
+		return err
 	}
 	return nil
 }

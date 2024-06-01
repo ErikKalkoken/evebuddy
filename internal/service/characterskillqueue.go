@@ -40,7 +40,7 @@ func (s *Service) updateCharacterSkillqueueESI(ctx context.Context, arg UpdateCh
 			items := data.([]esi.GetCharactersCharacterIdSkillqueue200Ok)
 			args := make([]storage.SkillqueueItemParams, len(items))
 			for i, o := range items {
-				_, err := s.getOrCreateEveTypeESI(ctx, o.SkillId)
+				_, err := s.GetOrCreateEveTypeESI(ctx, o.SkillId)
 				if err != nil {
 					return err
 				}

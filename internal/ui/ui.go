@@ -2,6 +2,7 @@
 package ui
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -377,6 +378,7 @@ func (u *ui) startUpdateTickerEveCharacters() {
 func (u *ui) startUpdateTickerEveCategorySkill() {
 	ticker := time.NewTicker(eveDataUpdateTicker)
 	go func() {
+		ctx := context.TODO()
 		for {
 			err := func() error {
 				lastUpdated, ok, err := u.service.Dictionary.GetTime(eveCategoriesKeyLastUpdated)
@@ -387,10 +389,10 @@ func (u *ui) startUpdateTickerEveCategorySkill() {
 					return nil
 				}
 				slog.Info("Started updating categories")
-				if err := u.service.UpdateEveCategoryWithChildrenESI(model.EveCategoryIDSkill); err != nil {
+				if err := u.service.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategoryIDSkill); err != nil {
 					return err
 				}
-				if err := u.service.UpdateEveCategoryWithChildrenESI(model.EveCategoryIDShip); err != nil {
+				if err := u.service.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategoryIDShip); err != nil {
 					return err
 				}
 				if err := u.service.UpdateShipSkills(); err != nil {

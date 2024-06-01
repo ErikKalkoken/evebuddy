@@ -172,7 +172,7 @@ func (s *Service) updateCharacterShipESI(ctx context.Context, arg UpdateCharacte
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			ship := data.(esi.GetCharactersCharacterIdShipOk)
-			_, err := s.getOrCreateEveTypeESI(ctx, ship.ShipTypeId)
+			_, err := s.GetOrCreateEveTypeESI(ctx, ship.ShipTypeId)
 			if err != nil {
 				return err
 			}
