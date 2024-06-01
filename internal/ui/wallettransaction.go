@@ -40,6 +40,14 @@ func (u *ui) newWalletTransactionArea() *walletTransactionArea {
 		top:     widget.NewLabel(""),
 	}
 	a.top.TextStyle.Bold = true
+
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	a.table = a.makeTable()
+	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+	return &a
+}
+
+func (a *walletTransactionArea) makeTable() *widget.Table {
 	var headers = []struct {
 		text  string
 		width float32
@@ -114,11 +122,7 @@ func (u *ui) newWalletTransactionArea() *walletTransactionArea {
 	for i, h := range headers {
 		t.SetColumnWidth(i, h.width)
 	}
-
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, t)
-	a.table = t
-	return &a
+	return t
 }
 
 func (a *walletTransactionArea) refresh() {

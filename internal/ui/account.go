@@ -55,7 +55,18 @@ func (u *ui) newAccountArea() *accountArea {
 	a.bottom.Importance = widget.LowImportance
 	a.bottom.Hide()
 
-	list := widget.NewListWithData(
+	list := a.makeCharacterList()
+
+	b := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
+		a.showAddCharacterDialog()
+	})
+	b.Importance = widget.HighImportance
+	a.content = container.NewBorder(b, a.bottom, nil, nil, list)
+	return a
+}
+
+func (a *accountArea) makeCharacterList() *widget.List {
+	l := widget.NewListWithData(
 		a.characters,
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
@@ -101,7 +112,7 @@ func (u *ui) newAccountArea() *accountArea {
 			}
 		})
 
-	list.OnSelected = func(id widget.ListItemID) {
+	l.OnSelected = func(id widget.ListItemID) {
 		c, err := getItemUntypedList[accountCharacter](a.characters, id)
 		if err != nil {
 			slog.Error("failed to access account character in list", "err", err)
@@ -113,13 +124,7 @@ func (u *ui) newAccountArea() *accountArea {
 		}
 		a.dialog.Hide()
 	}
-
-	b := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-		a.showAddCharacterDialog()
-	})
-	b.Importance = widget.HighImportance
-	a.content = container.NewBorder(b, a.bottom, nil, nil, container.NewScroll(list))
-	return a
+	return l
 }
 
 func (a *accountArea) showDeleteDialog(c accountCharacter) {

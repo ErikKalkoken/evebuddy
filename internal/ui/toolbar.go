@@ -48,7 +48,6 @@ func (u *ui) newToolbarArea() *toolbarArea {
 		a.manageButton,
 	)
 	a.content = container.NewVBox(c, widget.NewSeparator())
-
 	return a
 }
 

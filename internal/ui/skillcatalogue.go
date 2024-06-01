@@ -61,9 +61,15 @@ func (u *ui) newSkillCatalogueArea() *skillCatalogueArea {
 		ui:             u,
 	}
 	a.total.TextStyle.Bold = true
+	a.groupsGrid = a.makeSkillGroups()
+	a.skillsGrid = a.makeSkillsGrid()
+	s := container.NewVSplit(a.groupsGrid, a.skillsGrid)
+	a.content = container.NewBorder(a.total, nil, nil, nil, s)
+	return a
+}
 
-	// skill groups
-	a.groupsGrid = widget.NewGridWrap(
+func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
+	g := widget.NewGridWrap(
 		func() int {
 			return a.groups.Length()
 		},
@@ -96,7 +102,7 @@ func (u *ui) newSkillCatalogueArea() *skillCatalogueArea {
 			total.SetText(humanize.Comma(int64(group.total)))
 		},
 	)
-	a.groupsGrid.OnSelected = func(id widget.ListItemID) {
+	g.OnSelected = func(id widget.ListItemID) {
 		groupName, oo, err := func() (string, []model.ListCharacterSkillProgress, error) {
 			group, err := getItemUntypedList[skillGroupProgress](a.groups, id)
 			if err != nil {
@@ -134,9 +140,11 @@ func (u *ui) newSkillCatalogueArea() *skillCatalogueArea {
 		a.skills.Set(copyToUntypedSlice(skills))
 		a.skillsGrid.Refresh()
 	}
+	return g
+}
 
-	// details
-	a.skillsGrid = widget.NewGridWrap(
+func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
+	g := widget.NewGridWrap(
 		func() int {
 			return a.skills.Length()
 		},
@@ -190,7 +198,7 @@ func (u *ui) newSkillCatalogueArea() *skillCatalogueArea {
 			}
 		},
 	)
-	a.skillsGrid.OnSelected = func(id widget.GridWrapItemID) {
+	g.OnSelected = func(id widget.GridWrapItemID) {
 		o, err := getItemUntypedList[skillTrained](a.skills, id)
 		if err != nil {
 			slog.Error("failed to access skill item", "err", err)
@@ -216,18 +224,15 @@ func (u *ui) newSkillCatalogueArea() *skillCatalogueArea {
 			form.Append(row.label, c)
 		}
 		s := container.NewScroll(form)
-		dlg := dialog.NewCustom("Skill Details", "OK", s, u.window)
+		dlg := dialog.NewCustom("Skill Details", "OK", s, a.ui.window)
 		dlg.Show()
 		dlg.Resize(fyne.Size{
 			Width:  0.8 * a.ui.window.Canvas().Size().Width,
 			Height: 0.8 * a.ui.window.Canvas().Size().Height,
 		})
-		a.skillsGrid.UnselectAll()
+		g.UnselectAll()
 	}
-
-	s := container.NewVSplit(a.groupsGrid, a.skillsGrid)
-	a.content = container.NewBorder(a.total, nil, nil, nil, s)
-	return a
+	return g
 }
 
 func (a *skillCatalogueArea) redraw() {

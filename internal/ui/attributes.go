@@ -41,8 +41,13 @@ func (u *ui) newAttributesArena() *attributesArea {
 		ui:         u,
 	}
 	a.top.TextStyle.Bold = true
+	list := a.makeAttributeList()
+	a.content = container.NewBorder(container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil, list)
+	return &a
+}
 
-	list := widget.NewListWithData(
+func (a *attributesArea) makeAttributeList() *widget.List {
+	l := widget.NewListWithData(
 		a.attributes,
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
@@ -83,12 +88,10 @@ func (u *ui) newAttributesArena() *attributesArea {
 			}
 		})
 
-	list.OnSelected = func(id widget.ListItemID) {
-		list.UnselectAll()
+	l.OnSelected = func(id widget.ListItemID) {
+		l.UnselectAll()
 	}
-
-	a.content = container.NewBorder(container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil, list)
-	return &a
+	return l
 }
 
 func (a *attributesArea) refresh() {

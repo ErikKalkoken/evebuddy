@@ -25,14 +25,22 @@ type shipsArea struct {
 
 func (u *ui) newShipArea() *shipsArea {
 	a := shipsArea{
-		ui:        u,
-		entries:   binding.NewUntypedList(),
-		searchBox: widget.NewEntry(),
-		top:       widget.NewLabel(""),
+		ui:      u,
+		entries: binding.NewUntypedList(),
+		top:     widget.NewLabel(""),
 	}
 	a.top.TextStyle.Bold = true
-	a.searchBox.SetPlaceHolder("Filter by ship name")
-	a.searchBox.OnChanged = func(s string) {
+	a.searchBox = a.makeSearchBox()
+	a.table = a.makeShipsTable()
+	topBox := container.NewVBox(a.top, widget.NewSeparator(), a.searchBox)
+	a.content = container.NewBorder(topBox, nil, nil, nil, a.table)
+	return &a
+}
+
+func (a *shipsArea) makeSearchBox() *widget.Entry {
+	sb := widget.NewEntry()
+	sb.SetPlaceHolder("Filter by ship name")
+	sb.OnChanged = func(s string) {
 		if len(s) == 1 {
 			return
 		}
@@ -44,6 +52,10 @@ func (u *ui) newShipArea() *shipsArea {
 		a.table.Refresh()
 		a.table.ScrollToTop()
 	}
+	return sb
+}
+
+func (a *shipsArea) makeShipsTable() *widget.Table {
 	var headers = []struct {
 		text  string
 		width float32
@@ -133,12 +145,7 @@ func (u *ui) newShipArea() *shipsArea {
 		d.Show()
 		t.UnselectAll()
 	}
-
-	a.table = t
-
-	topBox := container.NewVBox(a.top, widget.NewSeparator(), a.searchBox)
-	a.content = container.NewBorder(topBox, nil, nil, nil, a.table)
-	return &a
+	return t
 }
 
 func (a *shipsArea) refresh() {

@@ -33,14 +33,14 @@ func (u *ui) newSkillqueueArea() *skillqueueArea {
 	}
 
 	a.total.TextStyle.Bold = true
-	list := a.makeList()
+	list := a.makeSkillqueue()
 
 	top := container.NewVBox(a.total, widget.NewSeparator())
 	a.content = container.NewBorder(top, nil, nil, nil, list)
 	return &a
 }
 
-func (a *skillqueueArea) makeList() *widget.List {
+func (a *skillqueueArea) makeSkillqueue() *widget.List {
 	list := widget.NewListWithData(
 		a.items,
 		func() fyne.CanvasObject {

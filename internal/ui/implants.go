@@ -29,7 +29,14 @@ func (u *ui) newImplantsArea() *implantsArea {
 		ui:       u,
 	}
 	a.top.TextStyle.Bold = true
-	list := widget.NewListWithData(
+	list := a.makeImplantList()
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	a.content = container.NewBorder(top, nil, nil, nil, list)
+	return &a
+}
+
+func (a *implantsArea) makeImplantList() *widget.List {
+	l := widget.NewListWithData(
 		a.implants,
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
@@ -58,7 +65,7 @@ func (u *ui) newImplantsArea() *implantsArea {
 			})
 		})
 
-	list.OnSelected = func(id widget.ListItemID) {
+	l.OnSelected = func(id widget.ListItemID) {
 		implant, err := getItemUntypedList[*model.CharacterImplant](a.implants, id)
 		if err != nil {
 			t := "Failed to select implant"
@@ -68,14 +75,11 @@ func (u *ui) newImplantsArea() *implantsArea {
 		}
 		d := makeTypeDetailDialog(implant.EveType.Name, implant.EveType.DescriptionPlain(), a.ui.window)
 		d.SetOnClosed(func() {
-			list.UnselectAll()
+			l.UnselectAll()
 		})
 		d.Show()
 	}
-
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, list)
-	return &a
+	return l
 }
 
 func (a *implantsArea) refresh() {

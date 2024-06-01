@@ -46,8 +46,14 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 		ui:       u,
 	}
 	a.top.TextStyle.Bold = true
+	a.tree = a.makeTree()
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	a.content = container.NewBorder(top, nil, nil, nil, a.tree)
+	return &a
+}
 
-	a.tree = widget.NewTreeWithData(
+func (a *jumpClonesArea) makeTree() *widget.Tree {
+	t := widget.NewTreeWithData(
 		a.treeData,
 		func(branch bool) fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
@@ -98,7 +104,7 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 			}
 		},
 	)
-	a.tree.OnSelected = func(uid widget.TreeNodeID) {
+	t.OnSelected = func(uid widget.TreeNodeID) {
 		n, err := treeNodeFromBoundTree[jumpCloneNode](a.treeData, uid)
 		if err != nil {
 			t := "Failed to select jump clone"
@@ -106,22 +112,19 @@ func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 			a.ui.statusBarArea.SetError(t)
 		}
 		if n.isBranch() {
-			a.tree.ToggleBranch(uid)
+			t.ToggleBranch(uid)
 		}
 		if n.isClone() {
-			a.tree.UnselectAll()
+			t.UnselectAll()
 			return
 		}
 		d := makeTypeDetailDialog(n.ImplantTypeName, n.ImplantTypeDescription, a.ui.window)
 		d.SetOnClosed(func() {
-			a.tree.UnselectAll()
+			t.UnselectAll()
 		})
 		d.Show()
 	}
-
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, a.tree)
-	return &a
+	return t
 }
 
 func (a *jumpClonesArea) redraw() {
