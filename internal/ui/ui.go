@@ -147,7 +147,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	w.SetMaster()
 
 	var c *model.Character
-	cID, ok, err := service.Dictionary.DictionaryInt(model.SettingLastCharacterID)
+	cID, ok, err := service.Dictionary.GetInt(model.SettingLastCharacterID)
 	if err == nil && ok {
 		c, err = service.GetCharacter(int32(cID))
 		if err != nil {
@@ -162,19 +162,19 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 		u.resetCurrentCharacter()
 	}
 	keyW := "window-width"
-	width, ok, err := u.service.Dictionary.DictionaryFloat32(keyW)
+	width, ok, err := u.service.Dictionary.GetFloat32(keyW)
 	if err != nil || !ok {
 		width = 1000
 	}
 	keyH := "window-height"
-	height, ok, err := u.service.Dictionary.DictionaryFloat32(keyH)
+	height, ok, err := u.service.Dictionary.GetFloat32(keyH)
 	if err != nil || !ok {
 		width = 600
 	}
 	w.Resize(fyne.NewSize(width, height))
 
 	keyTabsMainID := "tabs-main-id"
-	index, ok, err := u.service.Dictionary.DictionaryInt(keyTabsMainID)
+	index, ok, err := u.service.Dictionary.GetInt(keyTabsMainID)
 	if err == nil && ok {
 		u.tabs.SelectIndex(index)
 	}
@@ -187,17 +187,17 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 			continue
 		}
 		key := makeSubTabsKey(i)
-		index, ok, err := u.service.Dictionary.DictionaryInt(key)
+		index, ok, err := u.service.Dictionary.GetInt(key)
 		if err == nil && ok {
 			tabs.SelectIndex(index)
 		}
 	}
 	w.SetOnClosed(func() {
 		s := w.Canvas().Size()
-		u.service.Dictionary.DictionarySetFloat32(keyW, s.Width)
-		u.service.Dictionary.DictionarySetFloat32(keyH, s.Height)
+		u.service.Dictionary.SetFloat32(keyW, s.Width)
+		u.service.Dictionary.SetFloat32(keyH, s.Height)
 		index := u.tabs.SelectedIndex()
-		u.service.Dictionary.DictionarySetInt(keyTabsMainID, index)
+		u.service.Dictionary.SetInt(keyTabsMainID, index)
 		for i, o := range u.tabs.Items {
 			tabs, ok := o.Content.(*container.AppTabs)
 			if !ok {
@@ -205,11 +205,11 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 			}
 			key := makeSubTabsKey(i)
 			index := tabs.SelectedIndex()
-			u.service.Dictionary.DictionarySetInt(key, index)
+			u.service.Dictionary.SetInt(key, index)
 		}
 	})
 
-	name, ok, err := u.service.Dictionary.DictionaryString(model.SettingTheme)
+	name, ok, err := u.service.Dictionary.GetString(model.SettingTheme)
 	if err != nil || !ok {
 		name = model.ThemeAuto
 	}
@@ -280,7 +280,7 @@ func (u *ui) loadCurrentCharacter(characterID int32) error {
 
 func (u *ui) setCurrentCharacter(c *model.Character) {
 	u.currentCharacter = c
-	err := u.service.Dictionary.DictionarySetInt(model.SettingLastCharacterID, int(c.ID))
+	err := u.service.Dictionary.SetInt(model.SettingLastCharacterID, int(c.ID))
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
@@ -336,7 +336,7 @@ func (u *ui) refreshOverview() {
 
 func (u *ui) resetCurrentCharacter() {
 	u.currentCharacter = nil
-	err := u.service.Dictionary.DictionaryDelete(model.SettingLastCharacterID)
+	err := u.service.Dictionary.Delete(model.SettingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}
@@ -349,7 +349,7 @@ func (u *ui) startUpdateTickerEveCharacters() {
 	go func() {
 		for {
 			err := func() error {
-				lastUpdated, ok, err := u.service.Dictionary.DictionaryTime(key)
+				lastUpdated, ok, err := u.service.Dictionary.GetTime(key)
 				if err != nil {
 					return err
 				}
@@ -361,7 +361,7 @@ func (u *ui) startUpdateTickerEveCharacters() {
 					return err
 				}
 				slog.Info("Finished updating eve characters")
-				if err := u.service.Dictionary.DictionarySetTime(key, time.Now()); err != nil {
+				if err := u.service.Dictionary.SetTime(key, time.Now()); err != nil {
 					return err
 				}
 				return nil
@@ -379,7 +379,7 @@ func (u *ui) startUpdateTickerEveCategorySkill() {
 	go func() {
 		for {
 			err := func() error {
-				lastUpdated, ok, err := u.service.Dictionary.DictionaryTime(eveCategoriesKeyLastUpdated)
+				lastUpdated, ok, err := u.service.Dictionary.GetTime(eveCategoriesKeyLastUpdated)
 				if err != nil {
 					return err
 				}
@@ -397,7 +397,7 @@ func (u *ui) startUpdateTickerEveCategorySkill() {
 					return err
 				}
 				slog.Info("Finished updating categories")
-				if err := u.service.Dictionary.DictionarySetTime(eveCategoriesKeyLastUpdated, time.Now()); err != nil {
+				if err := u.service.Dictionary.SetTime(eveCategoriesKeyLastUpdated, time.Now()); err != nil {
 					return err
 				}
 				u.shipsArea.refresh()

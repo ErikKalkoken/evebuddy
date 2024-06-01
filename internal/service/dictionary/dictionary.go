@@ -3,57 +3,58 @@ package dictionary
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/gob"
-	"errors"
 	"time"
-
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-type Dictionary struct {
-	r *storage.Storage
+type Storage interface {
+	GetDictEntry(context.Context, string) ([]byte, bool, error)
+	DeleteDictEntry(context.Context, string) error
+	SetDictEntry(context.Context, string, []byte) error
 }
 
-func New(r *storage.Storage) *Dictionary {
-	d := &Dictionary{r: r}
+type Dictionary struct {
+	s Storage
+}
+
+func New(s Storage) *Dictionary {
+	d := &Dictionary{s: s}
 	return d
 }
 
-// DictionaryDelete deletes a key from the dictionary.
+// Delete deletes a key from the dictionary.
 // If the key does not exist no error will be raised.
-func (s *Dictionary) DictionaryDelete(key string) error {
+func (d *Dictionary) Delete(key string) error {
 	ctx := context.Background()
-	return s.r.DeleteDictEntry(ctx, key)
+	return d.s.DeleteDictEntry(ctx, key)
 }
 
-// DictionaryExists reports wether a key exists in the dictionary.
-func (s *Dictionary) DictionaryExists(key string) (bool, error) {
+// Exists reports wether a key exists in the dictionary.
+func (d *Dictionary) Exists(key string) (bool, error) {
 	ctx := context.Background()
-	_, err := s.r.GetDictEntry(ctx, key)
-	if errors.Is(err, sql.ErrNoRows) {
-		return false, nil
-	} else if err != nil {
+	_, ok, err := d.s.GetDictEntry(ctx, key)
+	if err != nil {
 		return false, err
 	}
-	return true, nil
+	return ok, nil
 }
 
-// DictionaryInt returns the value for a dictionary key, when it exists.
+// GetInt returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Dictionary) DictionaryInt(key string) (int, bool, error) {
+func (d *Dictionary) GetInt(key string) (int, bool, error) {
 	ctx := context.Background()
-	data, err := s.r.GetDictEntry(ctx, key)
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, false, nil
-	} else if err != nil {
+	data, ok, err := d.s.GetDictEntry(ctx, key)
+	if err != nil {
 		return 0, false, err
+	}
+	if !ok {
+		return 0, false, nil
 	}
 	return anyFromBytes[int](data)
 }
 
-func (s *Dictionary) DictionaryIntWithFallback(key string, fallback int) (int, error) {
-	v, found, err := s.DictionaryInt(key)
+func (d *Dictionary) GetIntWithFallback(key string, fallback int) (int, error) {
+	v, found, err := d.GetInt(key)
 	if err != nil {
 		return 0, err
 	}
@@ -63,43 +64,98 @@ func (s *Dictionary) DictionaryIntWithFallback(key string, fallback int) (int, e
 	return v, nil
 }
 
-// DictionaryFloat32 returns the value for a dictionary key, when it exists.
+// GetFloat32 returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Dictionary) DictionaryFloat32(key string) (float32, bool, error) {
+func (d *Dictionary) GetFloat32(key string) (float32, bool, error) {
 	ctx := context.Background()
-	data, err := s.r.GetDictEntry(ctx, key)
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, false, nil
-	} else if err != nil {
+	data, ok, err := d.s.GetDictEntry(ctx, key)
+	if err != nil {
 		return 0, false, err
+	}
+	if !ok {
+		return 0, false, nil
 	}
 	return anyFromBytes[float32](data)
 }
 
-// DictionaryString returns the value for a dictionary key, when it exists.
+// GetString returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Dictionary) DictionaryString(key string) (string, bool, error) {
+func (d *Dictionary) GetString(key string) (string, bool, error) {
 	ctx := context.Background()
-	data, err := s.r.GetDictEntry(ctx, key)
-	if errors.Is(err, sql.ErrNoRows) {
-		return "", false, nil
-	} else if err != nil {
+	data, ok, err := d.s.GetDictEntry(ctx, key)
+	if err != nil {
 		return "", false, err
+	}
+	if !ok {
+		return "", false, nil
 	}
 	return anyFromBytes[string](data)
 }
 
-// DictionaryTime returns the value for a dictionary key, when it exists.
+// GetTime returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (s *Dictionary) DictionaryTime(key string) (time.Time, bool, error) {
+func (d *Dictionary) GetTime(key string) (time.Time, bool, error) {
 	ctx := context.Background()
-	data, err := s.r.GetDictEntry(ctx, key)
-	if errors.Is(err, sql.ErrNoRows) {
-		return time.Time{}, false, nil
-	} else if err != nil {
+	data, ok, err := d.s.GetDictEntry(ctx, key)
+	if err != nil {
 		return time.Time{}, false, err
 	}
+	if !ok {
+		return time.Time{}, false, nil
+	}
 	return anyFromBytes[time.Time](data)
+}
+
+// SetInt sets the value for a dictionary int entry.
+func (d *Dictionary) SetInt(key string, value int) error {
+	ctx := context.Background()
+	bb, err := bytesFromAny(value)
+	if err != nil {
+		return err
+	}
+	if err := d.s.SetDictEntry(ctx, key, bb); err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetFloat32 sets the value for a dictionary int entry.
+func (d *Dictionary) SetFloat32(key string, value float32) error {
+	ctx := context.Background()
+	bb, err := bytesFromAny(value)
+	if err != nil {
+		return err
+	}
+	if err := d.s.SetDictEntry(ctx, key, bb); err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetString sets the value for a dictionary string entry.
+func (d *Dictionary) SetString(key string, value string) error {
+	ctx := context.Background()
+	bb, err := bytesFromAny(value)
+	if err != nil {
+		return err
+	}
+	if err := d.s.SetDictEntry(ctx, key, bb); err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetTime sets the value for a dictionary time entry.
+func (d *Dictionary) SetTime(key string, value time.Time) error {
+	ctx := context.Background()
+	bb, err := bytesFromAny(value)
+	if err != nil {
+		return err
+	}
+	if err := d.s.SetDictEntry(ctx, key, bb); err != nil {
+		return err
+	}
+	return nil
 }
 
 func anyFromBytes[T any](bb []byte) (T, bool, error) {
@@ -110,58 +166,6 @@ func anyFromBytes[T any](bb []byte) (T, bool, error) {
 		return t, false, err
 	}
 	return t, true, nil
-}
-
-// DictionarySetInt sets the value for a dictionary int entry.
-func (s *Dictionary) DictionarySetInt(key string, value int) error {
-	ctx := context.Background()
-	bb, err := bytesFromAny(value)
-	if err != nil {
-		return err
-	}
-	if err := s.r.SetDictEntry(ctx, key, bb); err != nil {
-		return err
-	}
-	return nil
-}
-
-// DictionarySetFloat32 sets the value for a dictionary int entry.
-func (s *Dictionary) DictionarySetFloat32(key string, value float32) error {
-	ctx := context.Background()
-	bb, err := bytesFromAny(value)
-	if err != nil {
-		return err
-	}
-	if err := s.r.SetDictEntry(ctx, key, bb); err != nil {
-		return err
-	}
-	return nil
-}
-
-// DictionarySetString sets the value for a dictionary string entry.
-func (s *Dictionary) DictionarySetString(key string, value string) error {
-	ctx := context.Background()
-	bb, err := bytesFromAny(value)
-	if err != nil {
-		return err
-	}
-	if err := s.r.SetDictEntry(ctx, key, bb); err != nil {
-		return err
-	}
-	return nil
-}
-
-// DictionarySetTime sets the value for a dictionary time entry.
-func (s *Dictionary) DictionarySetTime(key string, value time.Time) error {
-	ctx := context.Background()
-	bb, err := bytesFromAny(value)
-	if err != nil {
-		return err
-	}
-	if err := s.r.SetDictEntry(ctx, key, bb); err != nil {
-		return err
-	}
-	return nil
 }
 
 func bytesFromAny[T any](value T) ([]byte, error) {

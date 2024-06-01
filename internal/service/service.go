@@ -17,7 +17,8 @@ import (
 type Service struct {
 	// Character status service
 	CharacterStatus *characterstatus.CharacterStatusCache
-	Dictionary      *dictionary.Dictionary
+	// Dictionary service
+	Dictionary *dictionary.Dictionary
 
 	cache       *cache.Cache
 	esiClient   *goesi.APIClient

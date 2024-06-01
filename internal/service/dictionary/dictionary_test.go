@@ -18,10 +18,10 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		err := s.DictionarySetString("alpha", "john")
+		err := s.SetString("alpha", "john")
 		// then
 		if assert.NoError(t, err) {
-			v, ok, err := s.DictionaryString("alpha")
+			v, ok, err := s.GetString("alpha")
 			if assert.NoError(t, err) {
 				assert.True(t, ok)
 				assert.Equal(t, "john", v)
@@ -32,13 +32,27 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		err := s.DictionarySetInt("alpha", 42)
+		err := s.SetInt("alpha", 42)
 		// then
 		if assert.NoError(t, err) {
-			v, ok, err := s.DictionaryInt("alpha")
+			v, ok, err := s.GetInt("alpha")
 			if assert.NoError(t, err) {
 				assert.True(t, ok)
 				assert.Equal(t, 42, v)
+			}
+		}
+	})
+	t.Run("can use float entries", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		err := s.SetFloat32("alpha", 1.23)
+		// then
+		if assert.NoError(t, err) {
+			v, ok, err := s.GetFloat32("alpha")
+			if assert.NoError(t, err) {
+				assert.True(t, ok)
+				assert.Equal(t, float32(1.23), v)
 			}
 		}
 	})
@@ -47,10 +61,10 @@ func TestDictionary(t *testing.T) {
 		testutil.TruncateTables(db)
 		v := time.Now()
 		// when
-		err := s.DictionarySetTime("alpha", v)
+		err := s.SetTime("alpha", v)
 		// then
 		if assert.NoError(t, err) {
-			v2, ok, err := s.DictionaryTime("alpha")
+			v2, ok, err := s.GetTime("alpha")
 			if assert.NoError(t, err) {
 				assert.True(t, ok)
 				assert.Equal(t, v.UnixMicro(), v2.UnixMicro())
@@ -60,15 +74,15 @@ func TestDictionary(t *testing.T) {
 	t.Run("can update existing entry", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		err := s.DictionarySetString("alpha", "john")
+		err := s.SetString("alpha", "john")
 		if err != nil {
 			t.Fatal(err)
 		}
 		// when
-		err = s.DictionarySetString("alpha", "peter")
+		err = s.SetString("alpha", "peter")
 		// then
 		if assert.NoError(t, err) {
-			v, _, err := s.DictionaryString("alpha")
+			v, _, err := s.GetString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "peter", v)
 			}
@@ -78,7 +92,7 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, ok, err := s.DictionaryString("alpha")
+		_, ok, err := s.GetString("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, ok)
@@ -88,7 +102,7 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, ok, err := s.DictionaryInt("alpha")
+		_, ok, err := s.GetInt("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, ok)
@@ -98,7 +112,7 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, ok, err := s.DictionaryTime("alpha")
+		_, ok, err := s.GetTime("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, ok)
@@ -107,15 +121,15 @@ func TestDictionary(t *testing.T) {
 	t.Run("can delete existing key", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		err := s.DictionarySetString("alpha", "abc")
+		err := s.SetString("alpha", "abc")
 		if err != nil {
 			t.Fatal(err)
 		}
 		// when
-		err = s.DictionaryDelete("alpha")
+		err = s.Delete("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, _, err := s.DictionaryString("alpha")
+			v, _, err := s.GetString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}
@@ -125,10 +139,10 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		err := s.DictionaryDelete("alpha")
+		err := s.Delete("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, _, err := s.DictionaryString("alpha")
+			v, _, err := s.GetString("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}
@@ -138,7 +152,7 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		v, err := s.DictionaryExists("alpha")
+		v, err := s.Exists("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, v)
@@ -147,14 +161,37 @@ func TestDictionary(t *testing.T) {
 	t.Run("should return true when key exists", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		if err := s.DictionarySetString("alpha", "abc"); err != nil {
+		if err := s.SetString("alpha", "abc"); err != nil {
 			t.Fatal(err)
 		}
 		// when
-		v, err := s.DictionaryExists("alpha")
+		v, err := s.Exists("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, v)
+		}
+	})
+	t.Run("should return fallback when key does not exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		v, err := s.GetIntWithFallback("alpha", 7)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, 7, v)
+		}
+	})
+	t.Run("should return value when key does exists", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		if err := s.SetInt("alpha", 42); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		v, err := s.GetIntWithFallback("alpha", 7)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, 42, v)
 		}
 	})
 }

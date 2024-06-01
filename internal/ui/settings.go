@@ -26,7 +26,7 @@ func (u *ui) showSettingsDialog() {
 }
 
 func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
-	maxMails, err := u.service.Dictionary.DictionaryIntWithFallback(model.SettingMaxMails, model.SettingMaxMailsDefault)
+	maxMails, err := u.service.Dictionary.GetIntWithFallback(model.SettingMaxMails, model.SettingMaxMailsDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	maxMailsEntry.SetText(strconv.Itoa(maxMails))
 	maxMailsEntry.Validator = newPositiveNumberValidator()
 
-	maxTransactions, err := u.service.Dictionary.DictionaryIntWithFallback(model.SettingMaxWalletTransactions, model.SettingMaxWalletTransactionsDefault)
+	maxTransactions, err := u.service.Dictionary.GetIntWithFallback(model.SettingMaxWalletTransactions, model.SettingMaxWalletTransactionsDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	themeRadio := widget.NewRadioGroup(
 		[]string{model.ThemeAuto, model.ThemeDark, model.ThemeLight}, func(s string) {},
 	)
-	name, ok, err := u.service.Dictionary.DictionaryString(model.SettingTheme)
+	name, ok, err := u.service.Dictionary.GetString(model.SettingTheme)
 	if err == nil && ok {
 		themeRadio.SetSelected(name)
 	}
@@ -107,9 +107,9 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 			if err != nil {
 				return
 			}
-			u.service.Dictionary.DictionarySetInt(model.SettingMaxMails, maxMails)
+			u.service.Dictionary.SetInt(model.SettingMaxMails, maxMails)
 			u.setTheme(themeRadio.Selected)
-			u.service.Dictionary.DictionarySetString(model.SettingTheme, themeRadio.Selected)
+			u.service.Dictionary.SetString(model.SettingTheme, themeRadio.Selected)
 			d.Hide()
 		},
 		OnCancel: func() {

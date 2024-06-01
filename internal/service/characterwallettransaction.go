@@ -101,7 +101,7 @@ func (s *Service) updateCharacterWalletTransactionESI(ctx context.Context, arg U
 func (s *Service) fetchWalletTransactionsESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdWalletTransactions200Ok
 	lastID := int64(0)
-	maxTransactions, err := s.Dictionary.DictionaryIntWithFallback(model.SettingMaxWalletTransactions, model.SettingMaxWalletTransactionsDefault)
+	maxTransactions, err := s.Dictionary.GetIntWithFallback(model.SettingMaxWalletTransactions, model.SettingMaxWalletTransactionsDefault)
 	if err != nil {
 		return nil, err
 	}

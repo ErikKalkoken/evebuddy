@@ -2,17 +2,21 @@ package storage
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (r *Storage) GetDictEntry(ctx context.Context, key string) ([]byte, error) {
+func (r *Storage) GetDictEntry(ctx context.Context, key string) ([]byte, bool, error) {
 	obj, err := r.q.GetDictEntry(ctx, key)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get dict entry for key %s: %w", key, err)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, fmt.Errorf("failed to get dict entry for key %s: %w", key, err)
 	}
-	return obj.Value, nil
+	return obj.Value, true, nil
 }
 func (r *Storage) DeleteDictEntry(ctx context.Context, key string) error {
 	err := r.q.DeleteDictEntry(ctx, key)

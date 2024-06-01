@@ -150,7 +150,7 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 
 func (a *shipsArea) refresh() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
-		_, ok, err := a.ui.service.Dictionary.DictionaryTime(eveCategoriesKeyLastUpdated)
+		_, ok, err := a.ui.service.Dictionary.GetTime(eveCategoriesKeyLastUpdated)
 		if err != nil {
 			return "", 0, false, err
 		}
