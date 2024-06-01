@@ -45,7 +45,7 @@ func (s *Service) createEveCharacterFromESI(ctx context.Context, id int32) (*mod
 		if err != nil {
 			return nil, err
 		}
-		_, err = s.getOrCreateEveRaceESI(ctx, r.RaceId)
+		_, err = s.EveUniverse.GetOrCreateEveRaceESI(ctx, r.RaceId)
 		if err != nil {
 			return nil, err
 		}

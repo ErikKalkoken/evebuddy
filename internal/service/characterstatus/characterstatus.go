@@ -9,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
-type Storage interface {
+type CharacterStatusStorage interface {
 	ListCharacterUpdateStatus(context.Context, int32) ([]*model.CharacterUpdateStatus, error)
 	ListCharactersShort(context.Context) ([]*model.CharacterShort, error)
 }
@@ -43,7 +43,7 @@ func New(cache Cache) *CharacterStatusCache {
 	return sc
 }
 
-func (sc *CharacterStatusCache) InitCache(r Storage) error {
+func (sc *CharacterStatusCache) InitCache(r CharacterStatusStorage) error {
 	ctx := context.Background()
 	cc, err := sc.updateCharacters(ctx, r)
 	if err != nil {
@@ -144,12 +144,12 @@ func (sc *CharacterStatusCache) SetError(
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *CharacterStatusCache) UpdateCharacters(ctx context.Context, r Storage) error {
+func (sc *CharacterStatusCache) UpdateCharacters(ctx context.Context, r CharacterStatusStorage) error {
 	_, err := sc.updateCharacters(ctx, r)
 	return err
 }
 
-func (sc *CharacterStatusCache) updateCharacters(ctx context.Context, r Storage) ([]*model.CharacterShort, error) {
+func (sc *CharacterStatusCache) updateCharacters(ctx context.Context, r CharacterStatusStorage) ([]*model.CharacterShort, error) {
 	cc, err := r.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err

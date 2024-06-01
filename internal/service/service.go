@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/service/characterstatus"
 	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/service/esistatus"
+	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -22,6 +23,8 @@ type Service struct {
 	Dictionary *dictionary.Dictionary
 	// ESI status service
 	ESIStatus *esistatus.ESIStatus
+	// Eve Universe service
+	EveUniverse *eveuniverse.EveUniverse
 
 	cache       *cache.Cache
 	esiClient   *goesi.APIClient
@@ -53,8 +56,9 @@ func NewService(r *storage.Storage) *Service {
 		r:           r,
 		singleGroup: new(singleflight.Group),
 
-		Dictionary: dictionary.New(r),
-		ESIStatus:  esistatus.New(esiClient),
+		Dictionary:  dictionary.New(r),
+		ESIStatus:   esistatus.New(esiClient),
+		EveUniverse: eveuniverse.New(r, esiClient),
 	}
 	s.CharacterStatus = characterstatus.New(s.cache)
 	if err := s.CharacterStatus.InitCache(r); err != nil {

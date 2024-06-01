@@ -7,17 +7,17 @@ import (
 	"time"
 )
 
-type Storage interface {
+type DictionaryStorage interface {
 	GetDictEntry(context.Context, string) ([]byte, bool, error)
 	DeleteDictEntry(context.Context, string) error
 	SetDictEntry(context.Context, string, []byte) error
 }
 
 type Dictionary struct {
-	s Storage
+	s DictionaryStorage
 }
 
-func New(s Storage) *Dictionary {
+func New(s DictionaryStorage) *Dictionary {
 	d := &Dictionary{s: s}
 	return d
 }
