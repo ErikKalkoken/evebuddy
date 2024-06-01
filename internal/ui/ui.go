@@ -389,10 +389,10 @@ func (u *ui) startUpdateTickerEveCategorySkill() {
 					return nil
 				}
 				slog.Info("Started updating categories")
-				if err := u.service.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategoryIDSkill); err != nil {
+				if err := u.service.EveUniverse.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategoryIDSkill); err != nil {
 					return err
 				}
-				if err := u.service.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategoryIDShip); err != nil {
+				if err := u.service.EveUniverse.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategoryIDShip); err != nil {
 					return err
 				}
 				if err := u.service.UpdateShipSkills(); err != nil {

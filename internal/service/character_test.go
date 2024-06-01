@@ -26,7 +26,7 @@ func TestCharacter(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: 6})
 		// when
-		x1, err := s.GetOrCreateEveCategoryESI(ctx, 6)
+		x1, err := s.EveUniverse.GetOrCreateEveCategoryESI(ctx, 6)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(6), x1.ID)
@@ -52,7 +52,7 @@ func TestCharacter(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := s.GetOrCreateEveCategoryESI(ctx, 6)
+		x1, err := s.EveUniverse.GetOrCreateEveCategoryESI(ctx, 6)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(6), x1.ID)

@@ -35,7 +35,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 		var arg storage.UpdateOrCreateLocationParams
 		switch model.LocationVariantFromID(id) {
 		case model.LocationVariantUnknown:
-			t, err := s.GetOrCreateEveTypeESI(ctx, model.EveTypeIDSolarSystem)
+			t, err := s.EveUniverse.GetOrCreateEveTypeESI(ctx, model.EveTypeIDSolarSystem)
 			if err != nil {
 				return nil, err
 			}
@@ -44,7 +44,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
 			}
 		case model.LocationVariantAssetSafety:
-			t, err := s.GetOrCreateEveTypeESI(ctx, model.EveTypeIDAssetSafetyWrap)
+			t, err := s.EveUniverse.GetOrCreateEveTypeESI(ctx, model.EveTypeIDAssetSafetyWrap)
 			if err != nil {
 				return nil, err
 			}
@@ -53,7 +53,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
 			}
 		case model.LocationVariantSolarSystem:
-			t, err := s.GetOrCreateEveTypeESI(ctx, model.EveTypeIDSolarSystem)
+			t, err := s.EveUniverse.GetOrCreateEveTypeESI(ctx, model.EveTypeIDSolarSystem)
 			if err != nil {
 				return nil, err
 			}
@@ -75,7 +75,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 			if err != nil {
 				return nil, err
 			}
-			_, err = s.GetOrCreateEveTypeESI(ctx, station.TypeId)
+			_, err = s.EveUniverse.GetOrCreateEveTypeESI(ctx, station.TypeId)
 			if err != nil {
 				return nil, err
 			}
@@ -117,7 +117,7 @@ func (s *Service) updateOrCreateLocationESI(ctx context.Context, id int64) (*mod
 				OwnerID:          sql.NullInt32{Int32: structure.OwnerId, Valid: true},
 			}
 			if structure.TypeId != 0 {
-				myType, err := s.GetOrCreateEveTypeESI(ctx, structure.TypeId)
+				myType, err := s.EveUniverse.GetOrCreateEveTypeESI(ctx, structure.TypeId)
 				if err != nil {
 					return nil, err
 				}

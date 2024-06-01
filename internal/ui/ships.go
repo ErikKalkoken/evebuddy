@@ -130,7 +130,7 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 			if err != nil {
 				return nil, err
 			}
-			typ, err := a.ui.service.GetEveType(context.Background(), o.Type.ID)
+			typ, err := a.ui.service.EveUniverse.GetEveType(context.Background(), o.Type.ID)
 			if err != nil {
 				return nil, err
 			}

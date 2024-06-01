@@ -49,7 +49,7 @@ func (s *Service) updateCharacterJumpClonesESI(ctx context.Context, arg UpdateCh
 				if err != nil {
 					return err
 				}
-				if err := s.addMissingEveTypes(ctx, jc.Implants); err != nil {
+				if err := s.EveUniverse.AddMissingEveTypes(ctx, jc.Implants); err != nil {
 					return err
 				}
 				args[i] = storage.CreateCharacterJumpCloneParams{

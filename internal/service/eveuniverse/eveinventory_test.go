@@ -1,15 +1,16 @@
-package service_test
+package eveuniverse_test
 
 import (
 	"context"
 	"net/http"
 	"testing"
 
+	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -18,7 +19,8 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := service.NewService(r)
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing category", func(t *testing.T) {
 		// given
@@ -71,7 +73,8 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := service.NewService(r)
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing group", func(t *testing.T) {
 		// given
@@ -127,7 +130,8 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := service.NewService(r)
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing type", func(t *testing.T) {
 		// given
