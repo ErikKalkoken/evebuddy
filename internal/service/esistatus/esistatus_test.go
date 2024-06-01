@@ -1,6 +1,8 @@
 package esistatus_test
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
@@ -10,12 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestXxx(t *testing.T) {
+func TestFetch(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
 	es := esistatus.New(client)
-	t.Run("should return status when ESI is online", func(t *testing.T) {
+	t.Run("should return full report when ESI is online", func(t *testing.T) {
 		// given
 		httpmock.Reset()
 		httpmock.RegisterResponder(
@@ -31,12 +33,71 @@ func TestXxx(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := &model.ESIStatus{
-				StatusCode:   200,
 				PlayerCount:  12345,
 				ErrorMessage: "",
 			}
 			assert.Equal(t, want, got)
 		}
 	})
+	t.Run("should return general error message when ESI returns unexpected error code", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/v1/status/",
+			httpmock.NewJsonResponderOrPanic(418, map[string]any{
+				"error": "custom error message",
+			}))
+		// when
+		got, err := es.Fetch()
+		// then
+		if assert.NoError(t, err) {
+			want := &model.ESIStatus{
+				ErrorMessage: "418: general swagger error",
+			}
+			assert.Equal(t, want, got)
+		}
+	})
+	t.Run("should return error when a technical error occurred", func(t *testing.T) {
+		// given
+		myErr := errors.New("my error")
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/v1/status/",
+			httpmock.NewErrorResponder(myErr))
+		// when
+		_, err := es.Fetch()
+		// then
+		assert.ErrorIs(t, err, myErr)
+	})
+}
 
+func TestFetchSwaggerErrors(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	client := goesi.NewAPIClient(nil, "")
+	es := esistatus.New(client)
+	statusCodes := []int{400, 420, 500, 503, 504}
+	for _, code := range statusCodes {
+		t.Run(fmt.Sprintf("should return extracted error message when ESI returns status %d", code), func(t *testing.T) {
+			// given
+			httpmock.Reset()
+			httpmock.RegisterResponder(
+				"GET",
+				"https://esi.evetech.net/v1/status/",
+				httpmock.NewJsonResponderOrPanic(code, map[string]any{
+					"error": "custom error message",
+				}))
+			// when
+			got, err := es.Fetch()
+			// then
+			if assert.NoError(t, err) {
+				want := &model.ESIStatus{
+					ErrorMessage: fmt.Sprintf("%d: custom error message", code),
+				}
+				assert.Equal(t, want, got)
+			}
+		})
+	}
 }

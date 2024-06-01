@@ -1,13 +1,12 @@
 package esistatus
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"io"
+	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/antihax/goesi"
+	"github.com/antihax/goesi/esi"
 )
 
 type ESIStatus struct {
@@ -19,31 +18,38 @@ func New(client *goesi.APIClient) *ESIStatus {
 	return es
 }
 
-type esiError struct {
-	Error string `json:"error"`
-}
-
 func (s *ESIStatus) Fetch() (*model.ESIStatus, error) {
 	ctx := context.Background()
-	status, resp, err := s.esiClient.ESI.StatusApi.GetStatus(ctx, nil)
+	status, _, err := s.esiClient.ESI.StatusApi.GetStatus(ctx, nil)
 	if err != nil {
-		return nil, err
-	}
-	x := &model.ESIStatus{PlayerCount: int(status.Players), StatusCode: resp.StatusCode}
-	if resp.StatusCode >= 400 {
-		var body []byte
-		if resp.Body != nil {
-			body, err = io.ReadAll(resp.Body)
-			if err == nil {
-				resp.Body = io.NopCloser(bytes.NewBuffer(body))
-			}
-		}
-		var ee esiError
-		if err := json.Unmarshal(body, &ee); err != nil {
-			x.ErrorMessage = "Unknown error"
+		swaggerErr, ok := err.(esi.GenericSwaggerError)
+		if ok {
+			error := extractErrorMessage(swaggerErr)
+			x := &model.ESIStatus{ErrorMessage: error}
+			return x, nil
 		} else {
-			x.ErrorMessage = ee.Error
+			return nil, err
 		}
 	}
+	x := &model.ESIStatus{PlayerCount: int(status.Players)}
 	return x, nil
+}
+
+func extractErrorMessage(err esi.GenericSwaggerError) string {
+	var detail string
+	switch t2 := err.Model().(type) {
+	case esi.BadRequest:
+		detail = t2.Error_
+	case esi.ErrorLimited:
+		detail = t2.Error_
+	case esi.GatewayTimeout:
+		detail = t2.Error_
+	case esi.InternalServerError:
+		detail = t2.Error_
+	case esi.ServiceUnavailable:
+		detail = t2.Error_
+	default:
+		detail = "general swagger error"
+	}
+	return fmt.Sprintf("%s: %s", err.Error(), detail)
 }
