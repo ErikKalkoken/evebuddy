@@ -82,7 +82,7 @@ func (s *Service) UpdateCharacterSection(arg UpdateCharacterSectionParams) (bool
 	case model.CharacterSectionShip:
 		f = s.updateCharacterShipESI
 	case model.CharacterSectionSkillqueue:
-		f = s.updateCharacterSkillqueueESI
+		f = s.UpdateCharacterSkillqueueESI
 	case model.CharacterSectionSkills:
 		f = s.updateCharacterSkillsESI
 	case model.CharacterSectionWalletBalance:

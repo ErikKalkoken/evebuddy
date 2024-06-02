@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log/slog"
@@ -235,6 +236,7 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 	var unreadTotal sql.NullInt64
 	var walletTotal sql.NullFloat64
 	var err error
+	ctx := context.Background()
 	mycc, err := a.ui.service.ListCharacters()
 	if err != nil {
 		return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch characters: %w", err)
@@ -268,7 +270,7 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 		cc[i] = c
 	}
 	for i, c := range cc {
-		v, err := a.ui.service.GetCharacterTotalTrainingTime(c.id)
+		v, err := a.ui.service.GetCharacterTotalTrainingTime(ctx, c.id)
 		if err != nil {
 			return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch skill queue count for character %d, %w", c.id, err)
 		}

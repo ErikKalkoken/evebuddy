@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log/slog"
@@ -175,13 +176,14 @@ func (a *skillqueueArea) refresh() {
 func (a *skillqueueArea) updateItems() (types.NullDuration, sql.NullFloat64, error) {
 	var remaining types.NullDuration
 	var completion sql.NullFloat64
+	ctx := context.Background()
 	if !a.ui.hasCharacter() {
 		err := a.items.Set(make([]any, 0))
 		if err != nil {
 			return remaining, completion, err
 		}
 	}
-	skills, err := a.ui.service.ListCharacterSkillqueueItems(a.ui.currentCharID())
+	skills, err := a.ui.service.ListCharacterSkillqueueItems(ctx, a.ui.currentCharID())
 	if err != nil {
 		return remaining, completion, err
 	}
