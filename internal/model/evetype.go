@@ -43,3 +43,11 @@ type EveType struct {
 func (et EveType) DescriptionPlain() string {
 	return converter.EveHTMLToPlain(et.Description)
 }
+
+func (et EveType) IsBlueprint() bool {
+	return et.Group.Category.ID == EveCategoryIDBlueprint
+}
+
+func (et EveType) IsSKIN() bool {
+	return et.Group.Category.ID == EveCategoryIDSKINs
+}

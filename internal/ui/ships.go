@@ -125,25 +125,14 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 		t.SetColumnWidth(i, h.width)
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
-		typ, err := func() (*model.EveType, error) {
-			o, err := getItemUntypedList[*model.CharacterShipAbility](a.entries, tci.Row)
-			if err != nil {
-				return nil, err
-			}
-			typ, err := a.ui.sv.EveUniverse.GetEveType(context.Background(), o.Type.ID)
-			if err != nil {
-				return nil, err
-			}
-			return typ, nil
-		}()
+		o, err := getItemUntypedList[*model.CharacterShipAbility](a.entries, tci.Row)
 		if err != nil {
-			t := "Failed to select ship entry"
+			t := "Failed to select ship"
 			slog.Error(t, "err", err)
 			a.ui.statusBarArea.SetError(t)
 			return
 		}
-		d := makeTypeDetailDialog(typ.Name, typ.DescriptionPlain(), a.ui.window)
-		d.Show()
+		a.ui.showTypeWindow(o.Type.ID)
 		t.UnselectAll()
 	}
 	return t

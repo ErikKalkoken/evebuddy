@@ -9,7 +9,6 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
@@ -67,18 +66,15 @@ func (a *implantsArea) makeImplantList() *widget.List {
 		})
 
 	l.OnSelected = func(id widget.ListItemID) {
-		implant, err := getItemUntypedList[*model.CharacterImplant](a.implants, id)
+		o, err := getItemUntypedList[*model.CharacterImplant](a.implants, id)
 		if err != nil {
 			t := "Failed to select implant"
 			slog.Error(t, "err", err)
 			a.ui.statusBarArea.SetError(t)
 			return
 		}
-		d := makeTypeDetailDialog(implant.EveType.Name, implant.EveType.DescriptionPlain(), a.ui.window)
-		d.SetOnClosed(func() {
-			l.UnselectAll()
-		})
-		d.Show()
+		a.ui.showTypeWindow(o.EveType.ID)
+		l.UnselectAll()
 	}
 	return l
 }
@@ -131,13 +127,4 @@ func (a *implantsArea) makeTopText() (string, widget.Importance, error) {
 		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}
 	return fmt.Sprintf("%d implants", a.implants.Length()), widget.MediumImportance, nil
-}
-
-func makeTypeDetailDialog(title, description string, window fyne.Window) *dialog.CustomDialog {
-	label := widget.NewLabel(description)
-	label.Wrapping = fyne.TextWrapWord
-	x := container.NewVScroll(label)
-	x.SetMinSize(fyne.Size{Width: 600, Height: 250})
-	d := dialog.NewCustom(title, "OK", x, window)
-	return d
 }

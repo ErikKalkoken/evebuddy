@@ -9,7 +9,6 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -208,32 +207,7 @@ func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 			a.ui.statusBarArea.SetError(t)
 			return
 		}
-		var data = []struct {
-			label string
-			value string
-			wrap  bool
-		}{
-			{"Name", o.name, false},
-			{"Group", o.groupName, false},
-			{"Description", o.description, true},
-			{"Trained level", fmt.Sprintf("%d", o.trainedLevel), false},
-			{"Active level", fmt.Sprintf("%d", o.activeLevel), false},
-		}
-		form := widget.NewForm()
-		for _, row := range data {
-			c := widget.NewLabel(row.value)
-			if row.wrap {
-				c.Wrapping = fyne.TextWrapWord
-			}
-			form.Append(row.label, c)
-		}
-		s := container.NewScroll(form)
-		dlg := dialog.NewCustom("Skill Details", "OK", s, a.ui.window)
-		dlg.Show()
-		dlg.Resize(fyne.Size{
-			Width:  0.8 * a.ui.window.Canvas().Size().Width,
-			Height: 0.8 * a.ui.window.Canvas().Size().Height,
-		})
+		a.ui.showTypeWindow(o.id)
 		g.UnselectAll()
 	}
 	return g

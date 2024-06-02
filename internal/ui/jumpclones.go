@@ -119,11 +119,8 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			t.UnselectAll()
 			return
 		}
-		d := makeTypeDetailDialog(n.ImplantTypeName, n.ImplantTypeDescription, a.ui.window)
-		d.SetOnClosed(func() {
-			t.UnselectAll()
-		})
-		d.Show()
+		a.ui.showTypeWindow(n.ImplantTypeID)
+		t.UnselectAll()
 	}
 	return t
 }
