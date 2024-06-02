@@ -1,4 +1,4 @@
-// Package characterstatus provides information about the update status of all characters.
+// Package characterstatus contains the character status service.
 package characterstatus
 
 import (
@@ -31,21 +31,23 @@ type cacheValue struct {
 	LastUpdatedAt time.Time
 }
 
-// CharacterStatusCache caches the current update status of all characters
-// to improve performance of UI refresh tickers.
-type CharacterStatusCache struct {
+// CharacterStatusService provides cached access to the current update status
+// of all characters to improve performance of UI refresh tickers.
+type CharacterStatusService struct {
 	cache Cache
 	mu    sync.Mutex
 }
 
-// New creates a new CharacterStatusCache and returns it.
+// New creates and returns a new instance of a character status service.
 // When nil is provided it will create and use it's own cache instance.
-func New(cache Cache) *CharacterStatusCache {
-	sc := &CharacterStatusCache{cache: cache}
+func New(cache Cache) *CharacterStatusService {
+	sc := &CharacterStatusService{cache: cache}
 	return sc
 }
 
-func (sc *CharacterStatusCache) InitCache(r CharacterStatusStorage) error {
+// InitCache initializes the internal state from local storage.
+// It should always be called once for a new instance to ensure the cache is current.
+func (sc *CharacterStatusService) InitCache(r CharacterStatusStorage) error {
 	ctx := context.Background()
 	cc, err := sc.updateCharacters(ctx, r)
 	if err != nil {
@@ -63,7 +65,7 @@ func (sc *CharacterStatusCache) InitCache(r CharacterStatusStorage) error {
 	return nil
 }
 
-func (sc *CharacterStatusCache) GetStatus(characterID int32, section model.CharacterSection) (string, time.Time) {
+func (sc *CharacterStatusService) GetStatus(characterID int32, section model.CharacterSection) (string, time.Time) {
 	k := cacheKey{characterID: characterID, section: section}
 	x, ok := sc.cache.Get(k)
 	if !ok {
@@ -73,7 +75,7 @@ func (sc *CharacterStatusCache) GetStatus(characterID int32, section model.Chara
 	return v.ErrorMessage, v.LastUpdatedAt
 }
 
-func (sc *CharacterStatusCache) Summary() (float32, bool) {
+func (sc *CharacterStatusService) Summary() (float32, bool) {
 	cc := sc.ListCharacters()
 	total := len(model.CharacterSections) * len(cc)
 	currentCount := 0
@@ -91,7 +93,7 @@ func (sc *CharacterStatusCache) Summary() (float32, bool) {
 	return float32(currentCount) / float32(total), true
 }
 
-func (sc *CharacterStatusCache) CharacterSummary(characterID int32) (float32, bool) {
+func (sc *CharacterStatusService) CharacterSummary(characterID int32) (float32, bool) {
 	total := len(model.CharacterSections)
 	currentCount := 0
 	xx := sc.ListStatus(characterID)
@@ -106,7 +108,7 @@ func (sc *CharacterStatusCache) CharacterSummary(characterID int32) (float32, bo
 	return float32(currentCount) / float32(total), true
 }
 
-func (sc *CharacterStatusCache) ListStatus(characterID int32) []model.CharacterStatus {
+func (sc *CharacterStatusService) ListStatus(characterID int32) []model.CharacterStatus {
 	characterName := sc.characterName(characterID)
 	list := make([]model.CharacterStatus, len(model.CharacterSections))
 	for i, section := range model.CharacterSections {
@@ -122,7 +124,7 @@ func (sc *CharacterStatusCache) ListStatus(characterID int32) []model.CharacterS
 	return list
 }
 
-func (sc *CharacterStatusCache) SetStatus(
+func (sc *CharacterStatusService) SetStatus(
 	characterID int32,
 	section model.CharacterSection,
 	errorMessage string,
@@ -133,7 +135,7 @@ func (sc *CharacterStatusCache) SetStatus(
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *CharacterStatusCache) SetError(
+func (sc *CharacterStatusService) SetError(
 	characterID int32,
 	section model.CharacterSection,
 	errorMessage string,
@@ -146,12 +148,12 @@ func (sc *CharacterStatusCache) SetError(
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *CharacterStatusCache) UpdateCharacters(ctx context.Context, r CharacterStatusStorage) error {
+func (sc *CharacterStatusService) UpdateCharacters(ctx context.Context, r CharacterStatusStorage) error {
 	_, err := sc.updateCharacters(ctx, r)
 	return err
 }
 
-func (sc *CharacterStatusCache) updateCharacters(ctx context.Context, r CharacterStatusStorage) ([]*model.CharacterShort, error) {
+func (sc *CharacterStatusService) updateCharacters(ctx context.Context, r CharacterStatusStorage) ([]*model.CharacterShort, error) {
 	cc, err := r.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err
@@ -160,7 +162,7 @@ func (sc *CharacterStatusCache) updateCharacters(ctx context.Context, r Characte
 	return cc, nil
 }
 
-func (sc *CharacterStatusCache) ListCharacters() []*model.CharacterShort {
+func (sc *CharacterStatusService) ListCharacters() []*model.CharacterShort {
 	x, ok := sc.cache.Get(keyCharacters)
 	if !ok {
 		return nil
@@ -168,11 +170,11 @@ func (sc *CharacterStatusCache) ListCharacters() []*model.CharacterShort {
 	return x.([]*model.CharacterShort)
 }
 
-func (sc *CharacterStatusCache) setCharacters(cc []*model.CharacterShort) {
+func (sc *CharacterStatusService) setCharacters(cc []*model.CharacterShort) {
 	sc.cache.Set(keyCharacters, cc, 0)
 }
 
-func (sc *CharacterStatusCache) characterName(characterID int32) string {
+func (sc *CharacterStatusService) characterName(characterID int32) string {
 	cc := sc.ListCharacters()
 	if len(cc) == 0 {
 		return ""

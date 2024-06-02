@@ -1,5 +1,4 @@
-// Package eveuniverse provides access to Eve Online models with on-demand loading from ESI
-// and storage of fetches data to local storage for caching.
+// Package eveuniverse contains the Eve universe service.
 package eveuniverse
 
 import (
@@ -12,14 +11,14 @@ import (
 
 var ErrNotFound = errors.New("object not found")
 
-// EveUniverse services provides access to Eve Online models with on-demand loading from ESI.
+// EveUniverseService provides access to Eve Online models with on-demand loading from ESI and local caching.
 type EveUniverseService struct {
 	esiClient *goesi.APIClient
 	sfg       *singleflight.Group
 	st        *storage.Storage
 }
 
-// New returns a new instance of an EveUniverse service.
+// New returns a new instance of an Eve universe service.
 func New(st *storage.Storage, esiClient *goesi.APIClient) *EveUniverseService {
 	eu := &EveUniverseService{
 		esiClient: esiClient,

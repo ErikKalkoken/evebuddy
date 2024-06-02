@@ -23,9 +23,9 @@ type CharacterService struct {
 	// EveUniverse service
 	eu *eveuniverse.EveUniverseService
 	// CharacterStatus service
-	cs *characterstatus.CharacterStatusCache
+	cs *characterstatus.CharacterStatusService
 	// Dictionary service
-	dt *dictionary.Dictionary
+	dt *dictionary.DictionaryService
 }
 
 // New creates a new Characters service and returns it.
@@ -34,8 +34,8 @@ func New(
 	st *storage.Storage,
 	httpClient *http.Client,
 	esiClient *goesi.APIClient,
-	cs *characterstatus.CharacterStatusCache,
-	dt *dictionary.Dictionary,
+	cs *characterstatus.CharacterStatusService,
+	dt *dictionary.DictionaryService,
 	eu *eveuniverse.EveUniverseService,
 ) *CharacterService {
 	if httpClient == nil {

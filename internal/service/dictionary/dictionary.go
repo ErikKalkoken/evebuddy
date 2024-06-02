@@ -1,3 +1,4 @@
+// Package dictionary contains the dictionary service.
 package dictionary
 
 import (
@@ -13,24 +14,26 @@ type DictionaryStorage interface {
 	SetDictEntry(context.Context, string, []byte) error
 }
 
-type Dictionary struct {
+// DictionaryService is persistent key/value store.
+type DictionaryService struct {
 	s DictionaryStorage
 }
 
-func New(s DictionaryStorage) *Dictionary {
-	d := &Dictionary{s: s}
+// New creates and returns a new instance of a dictionary service.
+func New(s DictionaryStorage) *DictionaryService {
+	d := &DictionaryService{s: s}
 	return d
 }
 
 // Delete deletes a key from the dictionary.
 // If the key does not exist no error will be raised.
-func (d *Dictionary) Delete(key string) error {
+func (d *DictionaryService) Delete(key string) error {
 	ctx := context.Background()
 	return d.s.DeleteDictEntry(ctx, key)
 }
 
 // Exists reports wether a key exists in the dictionary.
-func (d *Dictionary) Exists(key string) (bool, error) {
+func (d *DictionaryService) Exists(key string) (bool, error) {
 	ctx := context.Background()
 	_, ok, err := d.s.GetDictEntry(ctx, key)
 	if err != nil {
@@ -41,7 +44,7 @@ func (d *Dictionary) Exists(key string) (bool, error) {
 
 // GetInt returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (d *Dictionary) GetInt(key string) (int, bool, error) {
+func (d *DictionaryService) GetInt(key string) (int, bool, error) {
 	ctx := context.Background()
 	data, ok, err := d.s.GetDictEntry(ctx, key)
 	if err != nil {
@@ -53,7 +56,7 @@ func (d *Dictionary) GetInt(key string) (int, bool, error) {
 	return anyFromBytes[int](data)
 }
 
-func (d *Dictionary) GetIntWithFallback(key string, fallback int) (int, error) {
+func (d *DictionaryService) GetIntWithFallback(key string, fallback int) (int, error) {
 	v, found, err := d.GetInt(key)
 	if err != nil {
 		return 0, err
@@ -66,7 +69,7 @@ func (d *Dictionary) GetIntWithFallback(key string, fallback int) (int, error) {
 
 // GetFloat32 returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (d *Dictionary) GetFloat32(key string) (float32, bool, error) {
+func (d *DictionaryService) GetFloat32(key string) (float32, bool, error) {
 	ctx := context.Background()
 	data, ok, err := d.s.GetDictEntry(ctx, key)
 	if err != nil {
@@ -80,7 +83,7 @@ func (d *Dictionary) GetFloat32(key string) (float32, bool, error) {
 
 // GetString returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (d *Dictionary) GetString(key string) (string, bool, error) {
+func (d *DictionaryService) GetString(key string) (string, bool, error) {
 	ctx := context.Background()
 	data, ok, err := d.s.GetDictEntry(ctx, key)
 	if err != nil {
@@ -94,7 +97,7 @@ func (d *Dictionary) GetString(key string) (string, bool, error) {
 
 // GetTime returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (d *Dictionary) GetTime(key string) (time.Time, bool, error) {
+func (d *DictionaryService) GetTime(key string) (time.Time, bool, error) {
 	ctx := context.Background()
 	data, ok, err := d.s.GetDictEntry(ctx, key)
 	if err != nil {
@@ -107,7 +110,7 @@ func (d *Dictionary) GetTime(key string) (time.Time, bool, error) {
 }
 
 // SetInt sets the value for a dictionary int entry.
-func (d *Dictionary) SetInt(key string, value int) error {
+func (d *DictionaryService) SetInt(key string, value int) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
 	if err != nil {
@@ -120,7 +123,7 @@ func (d *Dictionary) SetInt(key string, value int) error {
 }
 
 // SetFloat32 sets the value for a dictionary int entry.
-func (d *Dictionary) SetFloat32(key string, value float32) error {
+func (d *DictionaryService) SetFloat32(key string, value float32) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
 	if err != nil {
@@ -133,7 +136,7 @@ func (d *Dictionary) SetFloat32(key string, value float32) error {
 }
 
 // SetString sets the value for a dictionary string entry.
-func (d *Dictionary) SetString(key string, value string) error {
+func (d *DictionaryService) SetString(key string, value string) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
 	if err != nil {
@@ -146,7 +149,7 @@ func (d *Dictionary) SetString(key string, value string) error {
 }
 
 // SetTime sets the value for a dictionary time entry.
-func (d *Dictionary) SetTime(key string, value time.Time) error {
+func (d *DictionaryService) SetTime(key string, value time.Time) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
 	if err != nil {

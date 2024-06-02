@@ -1,3 +1,4 @@
+// Package esistatus contains the ESI status service.
 package esistatus
 
 import (
@@ -9,18 +10,20 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-type ESIStatus struct {
+// ESIStatusService provides information about the current status of the ESI API.
+type ESIStatusService struct {
 	esiClient *goesi.APIClient
 }
 
-func New(client *goesi.APIClient) *ESIStatus {
-	es := &ESIStatus{esiClient: client}
-	return es
+// New creates and returns a new instance of an ESI service.
+func New(client *goesi.APIClient) *ESIStatusService {
+	ess := &ESIStatusService{esiClient: client}
+	return ess
 }
 
-func (s *ESIStatus) Fetch() (*model.ESIStatus, error) {
+func (ess *ESIStatusService) Fetch() (*model.ESIStatus, error) {
 	ctx := context.Background()
-	status, _, err := s.esiClient.ESI.StatusApi.GetStatus(ctx, nil)
+	status, _, err := ess.esiClient.ESI.StatusApi.GetStatus(ctx, nil)
 	if err != nil {
 		swaggerErr, ok := err.(esi.GenericSwaggerError)
 		if ok {
@@ -31,8 +34,8 @@ func (s *ESIStatus) Fetch() (*model.ESIStatus, error) {
 			return nil, err
 		}
 	}
-	x := &model.ESIStatus{PlayerCount: int(status.Players)}
-	return x, nil
+	es := &model.ESIStatus{PlayerCount: int(status.Players)}
+	return es, nil
 }
 
 func extractErrorMessage(err esi.GenericSwaggerError) string {

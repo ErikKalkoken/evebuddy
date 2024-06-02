@@ -1,4 +1,4 @@
-// Package service contains the business logic.
+// Package service contains all services.
 package service
 
 import (
@@ -17,23 +17,26 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-// Service provides access to all services.
+// Service is the main service and provides access to all other services.
+// It ensures all services are properly initialized
+// and allows re-use of shared resources like the http client.
+// Services provide access to the business logic for the UI.
 type Service struct {
 	// Characters service
 	Characters *character.CharacterService
 	// Character status service
-	CharacterStatus *characterstatus.CharacterStatusCache
+	CharacterStatus *characterstatus.CharacterStatusService
 	// Dictionary service
-	Dictionary *dictionary.Dictionary
+	Dictionary *dictionary.DictionaryService
 	// EveImage service
 	EveImage *eveimage.EveImageService
 	// ESI status service
-	ESIStatus *esistatus.ESIStatus
+	ESIStatus *esistatus.ESIStatusService
 	// Eve Universe service
 	EveUniverse *eveuniverse.EveUniverseService
 }
 
-// New creates and returns a new service instance.
+// New creates and returns a new instance of the main service.
 // st must point to a valid storage instance
 // imageCachePath can be empty. Then a temporary directory will be create and used instead.
 func New(st *storage.Storage, imageCacheDir string) *Service {

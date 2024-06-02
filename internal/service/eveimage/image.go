@@ -1,3 +1,4 @@
+// package eveimage contains the Eve image service.
 package eveimage
 
 import (
