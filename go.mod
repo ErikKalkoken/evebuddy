@@ -1,12 +1,10 @@
 module github.com/ErikKalkoken/evebuddy
 
-go 1.22.1
-
-toolchain go1.22.2
+go 1.22.2
 
 require (
 	fyne.io/fyne/v2 v2.4.5
-	github.com/JohannesKaufmann/html-to-markdown v1.5.0
+	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.9.2
 	github.com/antihax/goesi v0.0.0-20240126031043-6c54d0cb7f95
 	github.com/chasinglogic/appdirs v0.0.0-20240404201500-635ea422ee89
