@@ -30,7 +30,7 @@ func (eu *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int
 //
 // Important: A token with the structure scope must be set in the context when trying to fetch a structure.
 func (eu *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id int64) (*model.Location, error) {
-	key := fmt.Sprintf("createStructureFromESI-%d", id)
+	key := fmt.Sprintf("updateOrCreateLocationESI-%d", id)
 	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		var arg storage.UpdateOrCreateLocationParams
 		switch model.LocationVariantFromID(id) {
