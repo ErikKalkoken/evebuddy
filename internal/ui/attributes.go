@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 )
 
 type attribute struct {
@@ -133,7 +133,7 @@ func (a *attributesArea) updateData() (int, error) {
 		}
 	}
 	x, err := a.ui.sv.Characters.GetCharacterAttributes(context.Background(), a.ui.currentCharID())
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, character.ErrNotFound) {
 		err := a.attributes.Set(make([]any, 0))
 		if err != nil {
 			return 0, err

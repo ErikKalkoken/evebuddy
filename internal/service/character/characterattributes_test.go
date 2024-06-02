@@ -57,3 +57,29 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 		}
 	})
 }
+
+func TestGetCharacterAttributes(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	cs := New(st, nil, nil, nil, nil, nil)
+	ctx := context.Background()
+	t.Run("should return own error when object not found", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, err := cs.GetCharacterAttributes(ctx, 42)
+		// then
+		assert.ErrorIs(t, err, ErrNotFound)
+	})
+	t.Run("should return obj when found", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		x1 := factory.CreateCharacterAttributes()
+		// when
+		x2, err := cs.GetCharacterAttributes(ctx, x1.CharacterID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, x1, x2)
+		}
+	})
+}

@@ -20,7 +20,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 // UI constants
@@ -145,7 +144,7 @@ func NewUI(sv *service.Service) *ui {
 	if err == nil && ok {
 		c, err = sv.Characters.GetCharacter(context.Background(), int32(cID))
 		if err != nil {
-			if !errors.Is(err, storage.ErrNotFound) {
+			if !errors.Is(err, character.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
 			}
 		}
@@ -314,7 +313,7 @@ func (u *ui) refreshCurrentCharacter() {
 
 func (u *ui) setAnyCharacter() error {
 	c, err := u.sv.Characters.GetAnyCharacter(context.Background())
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, character.ErrNotFound) {
 		u.resetCurrentCharacter()
 		return nil
 	} else if err != nil {

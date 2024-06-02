@@ -2,6 +2,7 @@ package character
 
 import (
 	"context"
+	"errors"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -9,7 +10,11 @@ import (
 )
 
 func (s *CharacterService) GetCharacterAttributes(ctx context.Context, characterID int32) (*model.CharacterAttributes, error) {
-	return s.st.GetCharacterAttributes(ctx, characterID)
+	o, err := s.st.GetCharacterAttributes(ctx, characterID)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrNotFound
+	}
+	return o, err
 }
 
 func (s *CharacterService) updateCharacterAttributesESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {

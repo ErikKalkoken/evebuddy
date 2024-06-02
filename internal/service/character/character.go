@@ -16,8 +16,6 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-var ErrAborted = errors.New("process aborted prematurely")
-
 func (s *CharacterService) DeleteCharacter(ctx context.Context, characterID int32) error {
 	if err := s.st.DeleteCharacter(ctx, characterID); err != nil {
 		return err
@@ -26,11 +24,21 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, characterID int3
 }
 
 func (s *CharacterService) GetCharacter(ctx context.Context, characterID int32) (*model.Character, error) {
-	return s.st.GetCharacter(ctx, characterID)
+	o, err := s.st.GetCharacter(ctx, characterID)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrNotFound
+	}
+	return o, err
+
 }
 
 func (s *CharacterService) GetAnyCharacter(ctx context.Context) (*model.Character, error) {
-	return s.st.GetFirstCharacter(ctx)
+	o, err := s.st.GetFirstCharacter(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrNotFound
+	}
+	return o, err
+
 }
 
 func (s *CharacterService) ListCharacters() ([]*model.Character, error) {

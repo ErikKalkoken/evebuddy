@@ -2,6 +2,7 @@
 package character
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
@@ -11,6 +12,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
+)
+
+var (
+	ErrAborted  = errors.New("process aborted prematurely")
+	ErrNotFound = errors.New("object not found")
 )
 
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
