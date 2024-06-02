@@ -11,13 +11,13 @@ import (
 func TestLocationVariantFromID(t *testing.T) {
 	cases := []struct {
 		in  int64
-		out model.LocationVariant
+		out model.EveLocationVariant
 	}{
-		{5, model.LocationVariantUnknown},
-		{2004, model.LocationVariantAssetSafety},
-		{30000142, model.LocationVariantSolarSystem},
-		{60003760, model.LocationVariantStation},
-		{1042043617604, model.LocationVariantStructure},
+		{5, model.EveLocationUnknown},
+		{2004, model.EveLocationAssetSafety},
+		{30000142, model.EveLocationSolarSystem},
+		{60003760, model.EveLocationStation},
+		{1042043617604, model.EveLocationStructure},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("id: %d", tc.in), func(t *testing.T) {

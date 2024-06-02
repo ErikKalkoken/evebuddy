@@ -73,10 +73,10 @@ func (q *Queries) DeleteCharacterJumpClones(ctx context.Context, characterID int
 }
 
 const getCharacterJumpClone = `-- name: GetCharacterJumpClone :one
-SELECT character_jump_clones.id, character_jump_clones.character_id, character_jump_clones.jump_clone_id, character_jump_clones.location_id, character_jump_clones.name, locations.name as location_name, eve_regions.id as region_id, eve_regions.name as region_name
+SELECT character_jump_clones.id, character_jump_clones.character_id, character_jump_clones.jump_clone_id, character_jump_clones.location_id, character_jump_clones.name, eve_locations.name as location_name, eve_regions.id as region_id, eve_regions.name as region_name
 FROM character_jump_clones
-JOIN locations ON locations.id = character_jump_clones.location_id
-LEFT JOIN eve_solar_systems ON eve_solar_systems.id = locations.eve_solar_system_id
+JOIN eve_locations ON eve_locations.id = character_jump_clones.location_id
+LEFT JOIN eve_solar_systems ON eve_solar_systems.id = eve_locations.eve_solar_system_id
 LEFT JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
 LEFT JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
 WHERE character_id = ?
@@ -192,7 +192,7 @@ func (q *Queries) ListCharacterJumpCloneImplant(ctx context.Context, arg ListCha
 const listCharacterJumpClones = `-- name: ListCharacterJumpClones :many
 SELECT DISTINCT
     character_jump_clones.id, character_jump_clones.character_id, character_jump_clones.jump_clone_id, character_jump_clones.location_id, character_jump_clones.name,
-    locations.name as location_name,
+    eve_locations.name as location_name,
     eve_regions.id as region_id,
     eve_regions.name as region_name,
     (
@@ -201,9 +201,9 @@ SELECT DISTINCT
         WHERE clone_id = character_jump_clones.id
     ) AS implants_count
 FROM character_jump_clones
-JOIN locations ON locations.id = character_jump_clones.location_id
+JOIN eve_locations ON eve_locations.id = character_jump_clones.location_id
 LEFT JOIN character_jump_clone_implants ON character_jump_clone_implants.clone_id = character_jump_clones.id
-LEFT JOIN eve_solar_systems ON eve_solar_systems.id = locations.eve_solar_system_id
+LEFT JOIN eve_solar_systems ON eve_solar_systems.id = eve_locations.eve_solar_system_id
 LEFT JOIN eve_constellations ON eve_constellations.id = eve_solar_systems.eve_constellation_id
 LEFT JOIN eve_regions ON eve_regions.id = eve_constellations.eve_region_id
 WHERE character_id = ?

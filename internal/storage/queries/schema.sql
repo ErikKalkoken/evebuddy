@@ -135,7 +135,7 @@ SELECT eve_entities.*
 FROM eve_characters
 LEFT JOIN eve_entities ON eve_entities.id = eve_characters.faction_id;
 
-CREATE TABLE locations (
+CREATE TABLE eve_locations (
     id INTEGER PRIMARY KEY NOT NULL,
     eve_solar_system_id INTEGER,
     eve_type_id INTEGER,
@@ -146,7 +146,7 @@ CREATE TABLE locations (
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE SET NULL,
     FOREIGN KEY (owner_id) REFERENCES eve_entities(id) ON DELETE SET NULL
 );
-CREATE INDEX locations_name_idx ON locations (name ASC);
+CREATE INDEX locations_name_idx ON eve_locations (name ASC);
 
 CREATE TABLE characters (
     id INTEGER PRIMARY KEY NOT NULL,
@@ -158,8 +158,8 @@ CREATE TABLE characters (
     unallocated_sp INTEGER,
     wallet_balance REAL,
     FOREIGN KEY (id) REFERENCES eve_characters(id) ON DELETE CASCADE,
-    FOREIGN KEY (home_id) REFERENCES locations(id) ON DELETE SET NULL,
-    FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL,
+    FOREIGN KEY (home_id) REFERENCES eve_locations(id) ON DELETE SET NULL,
+    FOREIGN KEY (location_id) REFERENCES eve_locations(id) ON DELETE SET NULL,
     FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE SET NULL
 );
 
@@ -202,7 +202,7 @@ CREATE TABLE character_jump_clones (
     location_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
-    FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE,
+    FOREIGN KEY (location_id) REFERENCES eve_locations(id) ON DELETE CASCADE,
     UNIQUE (character_id, jump_clone_id)
 );
 
@@ -399,7 +399,7 @@ CREATE TABLE character_wallet_transactions (
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     FOREIGN KEY (client_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
-    FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE,
+    FOREIGN KEY (location_id) REFERENCES eve_locations(id) ON DELETE CASCADE,
     UNIQUE (character_id, transaction_id)
 );
 CREATE INDEX character_wallet_transactions_date_idx ON character_wallet_transactions (date ASC);

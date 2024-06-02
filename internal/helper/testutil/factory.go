@@ -906,14 +906,14 @@ func (f Factory) CreateEveRace(args ...model.EveRace) *model.EveRace {
 	return r
 }
 
-func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationParams) *model.Location {
+func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationParams) *model.EveLocation {
 	var arg storage.UpdateOrCreateLocationParams
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
 	}
 	if arg.ID == 0 {
-		arg.ID = f.calcNewID("locations", "id", 1_900_000_000_000)
+		arg.ID = f.calcNewID("eve_locations", "id", 1_900_000_000_000)
 	}
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("Structure #%d", arg.ID)
@@ -933,11 +933,11 @@ func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationP
 	if arg.UpdatedAt.IsZero() {
 		arg.UpdatedAt = time.Now()
 	}
-	err := f.st.UpdateOrCreateLocation(ctx, arg)
+	err := f.st.UpdateOrCreateEveLocation(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	x, err := f.st.GetLocation(ctx, arg.ID)
+	x, err := f.st.GetEveLocation(ctx, arg.ID)
 	if err != nil {
 		panic(err)
 	}

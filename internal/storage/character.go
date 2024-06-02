@@ -224,14 +224,14 @@ func (st *Storage) characterFromDBModel(
 		WalletBalance: character.WalletBalance,
 	}
 	if homeID.Valid {
-		x, err := st.GetLocation(ctx, homeID.Int64)
+		x, err := st.GetEveLocation(ctx, homeID.Int64)
 		if err != nil {
 			return nil, err
 		}
 		c.Home = x
 	}
 	if locationID.Valid {
-		x, err := st.GetLocation(ctx, locationID.Int64)
+		x, err := st.GetEveLocation(ctx, locationID.Int64)
 		if err != nil {
 			return nil, err
 		}

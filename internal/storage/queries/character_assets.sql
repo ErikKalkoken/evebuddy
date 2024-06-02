@@ -73,7 +73,7 @@ SELECT DISTINCT
     sys.id as system_id,
     sys.name as system_name
 FROM character_assets ca
-JOIN locations lo ON lo.id = ca.location_id
+JOIN eve_locations lo ON lo.id = ca.location_id
 LEFT JOIN eve_solar_systems sys ON sys.id = lo.eve_solar_system_id
 WHERE character_id = ?
 AND location_flag = ?

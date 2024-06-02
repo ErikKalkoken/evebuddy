@@ -17,11 +17,11 @@ VALUES (
 );
 
 -- name: GetCharacterWalletTransaction :one
-SELECT sqlc.embed(character_wallet_transactions), sqlc.embed(eve_entities), eve_types.name as eve_type_name, locations.name as location_name
+SELECT sqlc.embed(character_wallet_transactions), sqlc.embed(eve_entities), eve_types.name as eve_type_name, eve_locations.name as location_name
 FROM character_wallet_transactions
 JOIN eve_entities ON eve_entities.id = character_wallet_transactions.client_id
 JOIN eve_types ON eve_types.id = character_wallet_transactions.eve_type_id
-JOIN locations ON locations.id = character_wallet_transactions.location_id
+JOIN eve_locations ON eve_locations.id = character_wallet_transactions.location_id
 WHERE character_id = ? and transaction_id = ?;
 
 -- name: ListCharacterWalletTransactionIDs :many
@@ -30,10 +30,10 @@ FROM character_wallet_transactions
 WHERE character_id = ?;
 
 -- name: ListCharacterWalletTransactions :many
-SELECT sqlc.embed(character_wallet_transactions), sqlc.embed(eve_entities), eve_types.name as eve_type_name, locations.name as location_name
+SELECT sqlc.embed(character_wallet_transactions), sqlc.embed(eve_entities), eve_types.name as eve_type_name, eve_locations.name as location_name
 FROM character_wallet_transactions
 JOIN eve_entities ON eve_entities.id = character_wallet_transactions.client_id
 JOIN eve_types ON eve_types.id = character_wallet_transactions.eve_type_id
-JOIN locations ON locations.id = character_wallet_transactions.location_id
+JOIN eve_locations ON eve_locations.id = character_wallet_transactions.location_id
 WHERE character_id = ?
 ORDER BY date DESC;

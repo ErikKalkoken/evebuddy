@@ -7,10 +7,10 @@ import (
 // An Eve Online character owners by the user.
 type Character struct {
 	EveCharacter  *EveCharacter
-	Home          *Location
+	Home          *EveLocation
 	ID            int32
 	LastLoginAt   sql.NullTime
-	Location      *Location
+	Location      *EveLocation
 	Ship          *EveType
 	TotalSP       sql.NullInt64
 	UnallocatedSP sql.NullInt64

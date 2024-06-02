@@ -21,9 +21,9 @@ type UpdateOrCreateLocationParams struct {
 	UpdatedAt        time.Time
 }
 
-func (st *Storage) UpdateOrCreateLocation(ctx context.Context, arg UpdateOrCreateLocationParams) error {
+func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCreateLocationParams) error {
 	if arg.ID == 0 {
-		return fmt.Errorf("invalid structure ID %d", arg.ID)
+		return fmt.Errorf("invalid ID for eve location %d", arg.ID)
 	}
 	arg2 := queries.UpdateOrCreateLocationParams{
 		ID:               int64(arg.ID),
@@ -34,27 +34,27 @@ func (st *Storage) UpdateOrCreateLocation(ctx context.Context, arg UpdateOrCreat
 		UpdatedAt:        arg.UpdatedAt,
 	}
 	if err := st.q.UpdateOrCreateLocation(ctx, arg2); err != nil {
-		return fmt.Errorf("failed to update or create Structure %v, %w", arg, err)
+		return fmt.Errorf("failed to update or create eve location %v, %w", arg, err)
 	}
 	return nil
 }
 
-func (st *Storage) GetLocation(ctx context.Context, id int64) (*model.Location, error) {
+func (st *Storage) GetEveLocation(ctx context.Context, id int64) (*model.EveLocation, error) {
 	l, err := st.q.GetLocation(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get Structure for id %d: %w", id, err)
+		return nil, fmt.Errorf("failed to get eve location for id %d: %w", id, err)
 	}
-	x, err := st.locationFromDBModel(ctx, l)
+	x, err := st.eveLocationFromDBModel(ctx, l)
 	if err != nil {
 		return nil, err
 	}
 	return x, nil
 }
 
-func (st *Storage) MissingLocations(ctx context.Context, ids []int64) ([]int64, error) {
+func (st *Storage) MissingEveLocations(ctx context.Context, ids []int64) ([]int64, error) {
 	currentIDs, err := st.q.ListLocationIDs(ctx)
 	if err != nil {
 		return nil, err
@@ -65,8 +65,8 @@ func (st *Storage) MissingLocations(ctx context.Context, ids []int64) ([]int64, 
 	return missing.ToSlice(), nil
 }
 
-func (st *Storage) locationFromDBModel(ctx context.Context, l queries.Location) (*model.Location, error) {
-	l2 := &model.Location{
+func (st *Storage) eveLocationFromDBModel(ctx context.Context, l queries.EveLocation) (*model.EveLocation, error) {
+	l2 := &model.EveLocation{
 		ID:        l.ID,
 		Name:      l.Name,
 		UpdatedAt: l.UpdatedAt,

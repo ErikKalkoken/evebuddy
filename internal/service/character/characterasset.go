@@ -74,12 +74,12 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 					locationIDs = append(locationIDs, a.LocationId)
 				}
 			}
-			missingLocationIDs, err := s.st.MissingLocations(ctx, locationIDs)
+			missingLocationIDs, err := s.st.MissingEveLocations(ctx, locationIDs)
 			if err != nil {
 				return err
 			}
 			for _, id := range missingLocationIDs {
-				_, err := s.eu.GetOrCreateLocationESI(ctx, id)
+				_, err := s.eu.GetOrCreateEveLocationESI(ctx, id)
 				if err != nil {
 					return err
 				}

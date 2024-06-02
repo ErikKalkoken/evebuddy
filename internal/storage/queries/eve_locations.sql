@@ -1,14 +1,14 @@
 -- name: GetLocation :one
 SELECT *
-FROM locations
+FROM eve_locations
 WHERE id = ?;
 
 -- name: ListLocationIDs :many
 SELECT id
-FROM locations;
+FROM eve_locations;
 
 -- name: UpdateOrCreateLocation :exec
-INSERT INTO locations (
+INSERT INTO eve_locations (
     id,
     eve_solar_system_id,
     eve_type_id,

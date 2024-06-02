@@ -258,6 +258,15 @@ type EveGroup struct {
 	IsPublished   bool
 }
 
+type EveLocation struct {
+	ID               int64
+	EveSolarSystemID sql.NullInt64
+	EveTypeID        sql.NullInt64
+	Name             string
+	OwnerID          sql.NullInt64
+	UpdatedAt        time.Time
+}
+
 type EveRace struct {
 	ID          int64
 	Description string
@@ -314,15 +323,6 @@ type EveTypeDogmaEffect struct {
 	DogmaEffectID int64
 	EveTypeID     int64
 	IsDefault     bool
-}
-
-type Location struct {
-	ID               int64
-	EveSolarSystemID sql.NullInt64
-	EveTypeID        sql.NullInt64
-	Name             string
-	OwnerID          sql.NullInt64
-	UpdatedAt        time.Time
 }
 
 type Scope struct {

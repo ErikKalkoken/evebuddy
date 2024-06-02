@@ -61,11 +61,11 @@ func (q *Queries) CreateCharacterWalletTransaction(ctx context.Context, arg Crea
 }
 
 const getCharacterWalletTransaction = `-- name: GetCharacterWalletTransaction :one
-SELECT character_wallet_transactions.id, character_wallet_transactions.character_id, character_wallet_transactions.client_id, character_wallet_transactions.date, character_wallet_transactions.eve_type_id, character_wallet_transactions.is_buy, character_wallet_transactions.is_personal, character_wallet_transactions.journal_ref_id, character_wallet_transactions.location_id, character_wallet_transactions.quantity, character_wallet_transactions.transaction_id, character_wallet_transactions.unit_price, eve_entities.id, eve_entities.category, eve_entities.name, eve_types.name as eve_type_name, locations.name as location_name
+SELECT character_wallet_transactions.id, character_wallet_transactions.character_id, character_wallet_transactions.client_id, character_wallet_transactions.date, character_wallet_transactions.eve_type_id, character_wallet_transactions.is_buy, character_wallet_transactions.is_personal, character_wallet_transactions.journal_ref_id, character_wallet_transactions.location_id, character_wallet_transactions.quantity, character_wallet_transactions.transaction_id, character_wallet_transactions.unit_price, eve_entities.id, eve_entities.category, eve_entities.name, eve_types.name as eve_type_name, eve_locations.name as location_name
 FROM character_wallet_transactions
 JOIN eve_entities ON eve_entities.id = character_wallet_transactions.client_id
 JOIN eve_types ON eve_types.id = character_wallet_transactions.eve_type_id
-JOIN locations ON locations.id = character_wallet_transactions.location_id
+JOIN eve_locations ON eve_locations.id = character_wallet_transactions.location_id
 WHERE character_id = ? and transaction_id = ?
 `
 
@@ -136,11 +136,11 @@ func (q *Queries) ListCharacterWalletTransactionIDs(ctx context.Context, charact
 }
 
 const listCharacterWalletTransactions = `-- name: ListCharacterWalletTransactions :many
-SELECT character_wallet_transactions.id, character_wallet_transactions.character_id, character_wallet_transactions.client_id, character_wallet_transactions.date, character_wallet_transactions.eve_type_id, character_wallet_transactions.is_buy, character_wallet_transactions.is_personal, character_wallet_transactions.journal_ref_id, character_wallet_transactions.location_id, character_wallet_transactions.quantity, character_wallet_transactions.transaction_id, character_wallet_transactions.unit_price, eve_entities.id, eve_entities.category, eve_entities.name, eve_types.name as eve_type_name, locations.name as location_name
+SELECT character_wallet_transactions.id, character_wallet_transactions.character_id, character_wallet_transactions.client_id, character_wallet_transactions.date, character_wallet_transactions.eve_type_id, character_wallet_transactions.is_buy, character_wallet_transactions.is_personal, character_wallet_transactions.journal_ref_id, character_wallet_transactions.location_id, character_wallet_transactions.quantity, character_wallet_transactions.transaction_id, character_wallet_transactions.unit_price, eve_entities.id, eve_entities.category, eve_entities.name, eve_types.name as eve_type_name, eve_locations.name as location_name
 FROM character_wallet_transactions
 JOIN eve_entities ON eve_entities.id = character_wallet_transactions.client_id
 JOIN eve_types ON eve_types.id = character_wallet_transactions.eve_type_id
-JOIN locations ON locations.id = character_wallet_transactions.location_id
+JOIN eve_locations ON eve_locations.id = character_wallet_transactions.location_id
 WHERE character_id = ?
 ORDER BY date DESC
 `

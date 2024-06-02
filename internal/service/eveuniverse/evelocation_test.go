@@ -20,7 +20,7 @@ const (
 	structureID = 1_000_000_000_009
 )
 
-func TestLocationOther(t *testing.T) {
+func TestEveLocationOther(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
@@ -71,7 +71,7 @@ func TestLocationOther(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v2/universe/stations/%d/", stationID),
 			httpmock.NewStringResponder(http.StatusOK, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 		// when
-		x1, err := eu.GetOrCreateLocationESI(ctx, stationID)
+		x1, err := eu.GetOrCreateEveLocationESI(ctx, stationID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(stationID), x1.ID)
@@ -79,7 +79,7 @@ func TestLocationOther(t *testing.T) {
 			assert.Equal(t, owner, x1.Owner)
 			assert.Equal(t, system, x1.SolarSystem)
 			assert.Equal(t, myType, x1.Type)
-			x2, err := r.GetLocation(ctx, stationID)
+			x2, err := r.GetEveLocation(ctx, stationID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -92,7 +92,7 @@ func TestLocationOther(t *testing.T) {
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: model.EveTypeIDSolarSystem})
 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
 		// when
-		x1, err := eu.GetOrCreateLocationESI(ctx, int64(system.ID))
+		x1, err := eu.GetOrCreateEveLocationESI(ctx, int64(system.ID))
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(system.ID), x1.ID)
@@ -100,7 +100,7 @@ func TestLocationOther(t *testing.T) {
 			assert.Nil(t, x1.Owner)
 			assert.Equal(t, system, x1.SolarSystem)
 			assert.Equal(t, myType, x1.Type)
-			x2, err := r.GetLocation(ctx, int64(system.ID))
+			x2, err := r.GetEveLocation(ctx, int64(system.ID))
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -122,7 +122,7 @@ func TestLocationStructures(t *testing.T) {
 		httpmock.Reset()
 		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: structureID, Name: "Alpha"})
 		// when
-		x, err := eu.GetOrCreateLocationESI(ctx, structureID)
+		x, err := eu.GetOrCreateEveLocationESI(ctx, structureID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Alpha", x.Name)
@@ -153,7 +153,7 @@ func TestLocationStructures(t *testing.T) {
 				http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := eu.GetOrCreateLocationESI(ctx, structureID)
+		x1, err := eu.GetOrCreateEveLocationESI(ctx, structureID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(structureID), x1.ID)
@@ -161,7 +161,7 @@ func TestLocationStructures(t *testing.T) {
 			assert.Equal(t, owner, x1.Owner)
 			assert.Equal(t, system, x1.SolarSystem)
 			assert.Equal(t, myType, x1.Type)
-			x2, err := r.GetLocation(ctx, structureID)
+			x2, err := r.GetEveLocation(ctx, structureID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -181,7 +181,7 @@ func TestLocationStructures(t *testing.T) {
 				http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		x1, err := eu.GetOrCreateLocationESI(ctx, structureID)
+		x1, err := eu.GetOrCreateEveLocationESI(ctx, structureID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(structureID), x1.ID)
@@ -189,7 +189,7 @@ func TestLocationStructures(t *testing.T) {
 			assert.Nil(t, x1.Owner)
 			assert.Nil(t, x1.SolarSystem)
 			assert.Nil(t, x1.Type)
-			x2, err := r.GetLocation(ctx, structureID)
+			x2, err := r.GetEveLocation(ctx, structureID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -209,7 +209,7 @@ func TestLocationStructures(t *testing.T) {
 				http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		_, err := eu.GetOrCreateLocationESI(ctx, structureID)
+		_, err := eu.GetOrCreateEveLocationESI(ctx, structureID)
 		// then
 		assert.Error(t, err)
 	})

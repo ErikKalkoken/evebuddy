@@ -12,29 +12,29 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-// GetOrCreateLocationESI return a structure when it already exists
+// GetOrCreateEveLocationESI return a structure when it already exists
 // or else tries to fetch and create a new structure from ESI.
 //
 // Important: A token with the structure scope must be set in the context
-func (eu *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int64) (*model.Location, error) {
-	x, err := eu.st.GetLocation(ctx, id)
+func (eu *EveUniverseService) GetOrCreateEveLocationESI(ctx context.Context, id int64) (*model.EveLocation, error) {
+	x, err := eu.st.GetEveLocation(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
-		return eu.updateOrCreateLocationESI(ctx, id)
+		return eu.updateOrCreateEveLocationESI(ctx, id)
 	} else if err != nil {
 		return x, err
 	}
 	return x, nil
 }
 
-// updateOrCreateLocationESI tries to fetch and create a new structure from ESI.
+// updateOrCreateEveLocationESI tries to fetch and create a new structure from ESI.
 //
 // Important: A token with the structure scope must be set in the context when trying to fetch a structure.
-func (eu *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id int64) (*model.Location, error) {
+func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, id int64) (*model.EveLocation, error) {
 	key := fmt.Sprintf("updateOrCreateLocationESI-%d", id)
 	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		var arg storage.UpdateOrCreateLocationParams
 		switch model.LocationVariantFromID(id) {
-		case model.LocationVariantUnknown:
+		case model.EveLocationUnknown:
 			t, err := eu.GetOrCreateEveTypeESI(ctx, model.EveTypeIDSolarSystem)
 			if err != nil {
 				return nil, err
@@ -43,7 +43,7 @@ func (eu *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id 
 				ID:        id,
 				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
 			}
-		case model.LocationVariantAssetSafety:
+		case model.EveLocationAssetSafety:
 			t, err := eu.GetOrCreateEveTypeESI(ctx, model.EveTypeIDAssetSafetyWrap)
 			if err != nil {
 				return nil, err
@@ -52,7 +52,7 @@ func (eu *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id 
 				ID:        id,
 				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
 			}
-		case model.LocationVariantSolarSystem:
+		case model.EveLocationSolarSystem:
 			t, err := eu.GetOrCreateEveTypeESI(ctx, model.EveTypeIDSolarSystem)
 			if err != nil {
 				return nil, err
@@ -66,7 +66,7 @@ func (eu *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id 
 				EveTypeID:        sql.NullInt32{Int32: t.ID, Valid: true},
 				EveSolarSystemID: sql.NullInt32{Int32: x.ID, Valid: true},
 			}
-		case model.LocationVariantStation:
+		case model.EveLocationStation:
 			station, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, int32(id), nil)
 			if err != nil {
 				return nil, err
@@ -93,7 +93,7 @@ func (eu *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id 
 				}
 				arg.OwnerID = sql.NullInt32{Int32: station.Owner, Valid: true}
 			}
-		case model.LocationVariantStructure:
+		case model.EveLocationStructure:
 			structure, r, err := eu.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
 			if err != nil {
 				if r != nil && r.StatusCode == http.StatusForbidden {
@@ -127,13 +127,13 @@ func (eu *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id 
 			return nil, fmt.Errorf("can not update or create structure for invalid ID: %d", id)
 		}
 		arg.UpdatedAt = time.Now()
-		if err := eu.st.UpdateOrCreateLocation(ctx, arg); err != nil {
+		if err := eu.st.UpdateOrCreateEveLocation(ctx, arg); err != nil {
 			return nil, err
 		}
-		return eu.st.GetLocation(ctx, id)
+		return eu.st.GetEveLocation(ctx, id)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return y.(*model.Location), nil
+	return y.(*model.EveLocation), nil
 }

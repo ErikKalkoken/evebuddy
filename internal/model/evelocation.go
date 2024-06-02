@@ -5,20 +5,20 @@ import (
 	"time"
 )
 
-type LocationVariant int
+type EveLocationVariant int
 
 const (
-	LocationVariantUnknown LocationVariant = iota
-	LocationVariantAssetSafety
-	LocationVariantStation
-	LocationVariantStructure
-	LocationVariantSolarSystem
+	EveLocationUnknown EveLocationVariant = iota
+	EveLocationAssetSafety
+	EveLocationStation
+	EveLocationStructure
+	EveLocationSolarSystem
 )
 
 const LocationUnknownID = 888 // custom ID to signify a location that is not known
 
-// Location is a structure in Eve Online.
-type Location struct {
+// EveLocation is a location in Eve Online.
+type EveLocation struct {
 	ID          int64
 	SolarSystem *EveSolarSystem
 	Type        *EveType
@@ -27,40 +27,40 @@ type Location struct {
 	UpdatedAt   time.Time
 }
 
-func (lc Location) NamePlus() string {
+func (lc EveLocation) NamePlus() string {
 	if lc.Name != "" {
 		return lc.Name
 	}
 	switch lc.Variant() {
-	case LocationVariantUnknown:
+	case EveLocationUnknown:
 		return "Unknown"
-	case LocationVariantAssetSafety:
+	case EveLocationAssetSafety:
 		return "Asset Safety"
-	case LocationVariantSolarSystem:
+	case EveLocationSolarSystem:
 		return lc.SolarSystem.Name
-	case LocationVariantStructure:
+	case EveLocationStructure:
 		return fmt.Sprintf("Unknown structure #%d", lc.ID)
 	}
 	return fmt.Sprintf("Unknown location #%d", lc.ID)
 }
 
-func (lc Location) Variant() LocationVariant {
+func (lc EveLocation) Variant() EveLocationVariant {
 	return LocationVariantFromID(lc.ID)
 }
 
-func LocationVariantFromID(id int64) LocationVariant {
+func LocationVariantFromID(id int64) EveLocationVariant {
 	switch {
 	case id == LocationUnknownID:
-		return LocationVariantUnknown
+		return EveLocationUnknown
 	case id == 2004:
-		return LocationVariantAssetSafety
+		return EveLocationAssetSafety
 	case id >= 30_000_000 && id < 33_000_000:
-		return LocationVariantSolarSystem
+		return EveLocationSolarSystem
 	case id >= 60_000_000 && id < 64_000_000:
-		return LocationVariantStation
+		return EveLocationStation
 	case id > 1_000_000_000_000:
-		return LocationVariantStructure
+		return EveLocationStructure
 	default:
-		return LocationVariantUnknown
+		return EveLocationUnknown
 	}
 }

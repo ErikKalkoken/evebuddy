@@ -32,7 +32,7 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			var home sql.NullInt64
 			clones := data.(esi.GetCharactersCharacterIdClonesOk)
 			if clones.HomeLocation.LocationId != 0 {
-				_, err := s.eu.GetOrCreateLocationESI(ctx, clones.HomeLocation.LocationId)
+				_, err := s.eu.GetOrCreateEveLocationESI(ctx, clones.HomeLocation.LocationId)
 				if err != nil {
 					return err
 				}
@@ -44,7 +44,7 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			}
 			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))
 			for i, jc := range clones.JumpClones {
-				_, err := s.eu.GetOrCreateLocationESI(ctx, jc.LocationId)
+				_, err := s.eu.GetOrCreateEveLocationESI(ctx, jc.LocationId)
 				if err != nil {
 					return err
 				}

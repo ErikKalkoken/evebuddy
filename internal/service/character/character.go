@@ -126,7 +126,7 @@ func (s *CharacterService) updateCharacterLocationESI(ctx context.Context, arg U
 			default:
 				locationID = int64(location.SolarSystemId)
 			}
-			_, err := s.eu.GetOrCreateLocationESI(ctx, locationID)
+			_, err := s.eu.GetOrCreateEveLocationESI(ctx, locationID)
 			if err != nil {
 				return err
 			}
