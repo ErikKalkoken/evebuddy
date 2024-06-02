@@ -270,6 +270,14 @@ type EveRegion struct {
 	Name        string
 }
 
+type EveShipSkill struct {
+	ID          int64
+	Rank        int64
+	ShipTypeID  int64
+	SkillTypeID int64
+	SkillLevel  int64
+}
+
 type EveSolarSystem struct {
 	ID                 int64
 	EveConstellationID int64
@@ -320,12 +328,4 @@ type Location struct {
 type Scope struct {
 	ID   int64
 	Name string
-}
-
-type ShipSkill struct {
-	ID          int64
-	Rank        int64
-	ShipTypeID  int64
-	SkillTypeID int64
-	SkillLevel  int64
 }

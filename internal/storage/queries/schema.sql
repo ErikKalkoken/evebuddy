@@ -96,7 +96,7 @@ CREATE TABLE eve_solar_systems (
 );
 CREATE INDEX eve_solar_systems_name_idx ON eve_solar_systems (name ASC);
 
-CREATE TABLE ship_skills (
+CREATE TABLE eve_ship_skills (
     id INTEGER PRIMARY KEY NOT NULL,
     rank INTEGER NOT NULL,
     ship_type_id INTEGER NOT NULL,

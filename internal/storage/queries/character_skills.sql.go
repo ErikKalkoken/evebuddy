@@ -99,6 +99,63 @@ func (q *Queries) GetCharacterSkill(ctx context.Context, arg GetCharacterSkillPa
 	return i, err
 }
 
+const listCharacterShipsAbilities = `-- name: ListCharacterShipsAbilities :many
+SELECT DISTINCT ss2.ship_type_id as type_id, et.name as type_name, eg.id as group_id, eg.name as group_name,
+(
+	SELECT COUNT(*) - COUNT(cs.active_skill_level >= ss.skill_level) == 0
+	FROM eve_ship_skills ss
+	LEFT JOIN character_skills cs ON cs.eve_type_id = ss.skill_type_id AND cs.character_id = ?
+	WHERE ss.ship_type_id = ss2.ship_type_id
+) as can_fly
+FROM eve_ship_skills ss2
+JOIN eve_types et ON et.ID = ss2.ship_type_id
+JOIN eve_groups eg ON eg.ID = et.eve_group_id
+WHERE et.name LIKE ?
+ORDER BY et.name
+`
+
+type ListCharacterShipsAbilitiesParams struct {
+	CharacterID int64
+	Name        string
+}
+
+type ListCharacterShipsAbilitiesRow struct {
+	TypeID    int64
+	TypeName  string
+	GroupID   int64
+	GroupName string
+	CanFly    bool
+}
+
+func (q *Queries) ListCharacterShipsAbilities(ctx context.Context, arg ListCharacterShipsAbilitiesParams) ([]ListCharacterShipsAbilitiesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterShipsAbilities, arg.CharacterID, arg.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterShipsAbilitiesRow
+	for rows.Next() {
+		var i ListCharacterShipsAbilitiesRow
+		if err := rows.Scan(
+			&i.TypeID,
+			&i.TypeName,
+			&i.GroupID,
+			&i.GroupName,
+			&i.CanFly,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterSkillGroupsProgress = `-- name: ListCharacterSkillGroupsProgress :many
 SELECT
     eve_groups.id as eve_group_id,
