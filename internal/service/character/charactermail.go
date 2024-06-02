@@ -2,6 +2,7 @@ package character
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -38,14 +39,16 @@ func (s *CharacterService) DeleteCharacterMail(ctx context.Context, characterID,
 	return nil
 }
 
-func (s *CharacterService) GetCharacterMail(characterID int32, mailID int32) (*model.CharacterMail, error) {
-	ctx := context.Background()
-	return s.st.GetCharacterMail(ctx, characterID, mailID)
+func (s *CharacterService) GetCharacterMail(ctx context.Context, characterID int32, mailID int32) (*model.CharacterMail, error) {
+	o, err := s.st.GetCharacterMail(ctx, characterID, mailID)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrNotFound
+	}
+	return o, err
 }
 
 // GetMailUnreadCount returns the number of unread mail for a character.
-func (s *CharacterService) GetCharacterMailCounts(characterID int32) (int, int, error) {
-	ctx := context.Background()
+func (s *CharacterService) GetCharacterMailCounts(ctx context.Context, characterID int32) (int, int, error) {
 	total, err := s.st.GetCharacterMailCount(ctx, characterID)
 	if err != nil {
 		return 0, 0, err
@@ -58,7 +61,7 @@ func (s *CharacterService) GetCharacterMailCounts(characterID int32) (int, int, 
 }
 
 // SendCharacterMail creates a new mail on ESI and stores it locally.
-func (s *CharacterService) SendCharacterMail(characterID int32, subject string, recipients []*model.EveEntity, body string) (int32, error) {
+func (s *CharacterService) SendCharacterMail(ctx context.Context, characterID int32, subject string, recipients []*model.EveEntity, body string) (int32, error) {
 	if subject == "" {
 		return 0, fmt.Errorf("missing subject")
 	}
@@ -72,7 +75,6 @@ func (s *CharacterService) SendCharacterMail(characterID int32, subject string, 
 	if err != nil {
 		return 0, err
 	}
-	ctx := context.Background()
 	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return 0, err
@@ -138,34 +140,29 @@ func eveEntitiesToESIMailRecipients(ee []*model.EveEntity) ([]esi.PostCharacters
 	return rr, nil
 }
 
-func (s *CharacterService) GetCharacterMailLabelUnreadCounts(characterID int32) (map[int32]int, error) {
-	ctx := context.Background()
+func (s *CharacterService) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
 	return s.st.GetCharacterMailLabelUnreadCounts(ctx, characterID)
 }
 
-func (s *CharacterService) GetCharacterMailListUnreadCounts(characterID int32) (map[int32]int, error) {
-	ctx := context.Background()
+func (s *CharacterService) GetCharacterMailListUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
 	return s.st.GetCharacterMailListUnreadCounts(ctx, characterID)
 }
 
-func (s *CharacterService) ListCharacterMailLists(characterID int32) ([]*model.EveEntity, error) {
-	ctx := context.Background()
+func (s *CharacterService) ListCharacterMailLists(ctx context.Context, characterID int32) ([]*model.EveEntity, error) {
 	return s.st.ListCharacterMailListsOrdered(ctx, characterID)
 }
 
 // ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
 // Return mails for all labels, when labelID = 0
-func (s *CharacterService) ListCharacterMailIDsForLabelOrdered(characterID int32, labelID int32) ([]int32, error) {
-	ctx := context.Background()
+func (s *CharacterService) ListCharacterMailIDsForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]int32, error) {
 	return s.st.ListCharacterMailIDsForLabelOrdered(ctx, characterID, labelID)
 }
 
-func (s *CharacterService) ListCharacterMailIDsForListOrdered(characterID int32, listID int32) ([]int32, error) {
-	ctx := context.Background()
+func (s *CharacterService) ListCharacterMailIDsForListOrdered(ctx context.Context, characterID int32, listID int32) ([]int32, error) {
 	return s.st.ListCharacterMailIDsForListOrdered(ctx, characterID, listID)
 }
 
-func (s *CharacterService) ListCharacterMailLabelsOrdered(characterID int32) ([]*model.CharacterMailLabel, error) {
-	ctx := context.Background()
+func (s *CharacterService) ListCharacterMailLabelsOrdered(ctx context.Context, characterID int32) ([]*model.CharacterMailLabel, error) {
+
 	return s.st.ListCharacterMailLabelsOrdered(ctx, characterID)
 }

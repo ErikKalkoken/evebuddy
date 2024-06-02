@@ -101,12 +101,13 @@ func (u *ui) makeSendMessageWindow(mode int, mail *model.CharacterMail) (fyne.Wi
 			err := checkInput(subjectInput.Text, recipients, bodyInput.Text)
 			if err == nil {
 				err = func() error {
+					ctx := context.Background()
 					eeUnclean := recipients.ToEveEntitiesUnclean()
-					ee2, err := u.sv.EveUniverse.ResolveUncleanEveEntities(context.Background(), eeUnclean)
+					ee2, err := u.sv.EveUniverse.ResolveUncleanEveEntities(ctx, eeUnclean)
 					if err != nil {
 						return err
 					}
-					_, err = u.sv.Characters.SendCharacterMail(currentChar.ID, subjectInput.Text, ee2, bodyInput.Text)
+					_, err = u.sv.Characters.SendCharacterMail(ctx, currentChar.ID, subjectInput.Text, ee2, bodyInput.Text)
 					if err != nil {
 						return err
 					}

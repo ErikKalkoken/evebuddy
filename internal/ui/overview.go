@@ -237,7 +237,7 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 	var walletTotal sql.NullFloat64
 	var err error
 	ctx := context.Background()
-	mycc, err := a.ui.sv.Characters.ListCharacters()
+	mycc, err := a.ui.sv.Characters.ListCharacters(ctx)
 	if err != nil {
 		return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch characters: %w", err)
 	}
@@ -277,7 +277,7 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 		cc[i].training = v
 	}
 	for i, c := range cc {
-		total, unread, err := a.ui.sv.Characters.GetCharacterMailCounts(c.id)
+		total, unread, err := a.ui.sv.Characters.GetCharacterMailCounts(ctx, c.id)
 		if err != nil {
 			return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch mail counts for character %d, %w", c.id, err)
 		}

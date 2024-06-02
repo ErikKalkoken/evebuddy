@@ -153,7 +153,7 @@ func TestUpdateMail(t *testing.T) {
 				})
 				// then
 				if assert.NoError(t, err) {
-					m, err := s.GetCharacterMail(c1.ID, int32(mailID))
+					m, err := s.GetCharacterMail(ctx, c1.ID, int32(mailID))
 					if assert.NoError(t, err) {
 						assert.Equal(t, "blah blah blah", m.Body)
 					}
@@ -288,7 +288,7 @@ func TestUpdateMail(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			m, err := s.GetCharacterMail(c.ID, mailID)
+			m, err := s.GetCharacterMail(ctx, c.ID, mailID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "blah blah blah", m.Body)
 				assert.True(t, m.IsRead)

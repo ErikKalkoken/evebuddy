@@ -38,11 +38,10 @@ func (s *CharacterService) GetAnyCharacter(ctx context.Context) (*model.Characte
 		return nil, ErrNotFound
 	}
 	return o, err
-
 }
 
-func (s *CharacterService) ListCharacters() ([]*model.Character, error) {
-	return s.st.ListCharacters(context.Background())
+func (s *CharacterService) ListCharacters(ctx context.Context) ([]*model.Character, error) {
+	return s.st.ListCharacters(ctx)
 }
 
 func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*model.CharacterShort, error) {
