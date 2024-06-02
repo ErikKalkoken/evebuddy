@@ -11,7 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func TestShipSkills(t *testing.T) {
+func TestEveShipSkills(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
@@ -34,10 +34,10 @@ func TestShipSkills(t *testing.T) {
 			SkillLevel:  3,
 		}
 		// when
-		err := r.CreateShipSkill(ctx, arg)
+		err := r.CreateEveShipSkill(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetShipSkill(ctx, ship.ID, 2)
+			x, err := r.GetEveShipSkill(ctx, ship.ID, 2)
 			if assert.NoError(t, err) {
 				assert.Equal(t, skill.ID, x.SkillTypeID)
 				assert.Equal(t, uint(3), x.SkillLevel)
@@ -137,10 +137,10 @@ func TestShipSkills(t *testing.T) {
 			Value:            float32(3),
 		})
 		// when
-		err := r.UpdateShipSkills(ctx)
+		err := r.UpdateEveShipSkills(ctx)
 		// then
 		if assert.NoError(t, err) {
-			xx, err := r.ListShipSkills(ctx, ship_1.ID)
+			xx, err := r.ListEveShipSkills(ctx, ship_1.ID)
 			if assert.NoError(t, err) {
 				if assert.Len(t, xx, 1) {
 					x := xx[0]
@@ -149,7 +149,7 @@ func TestShipSkills(t *testing.T) {
 					assert.Equal(t, uint(1), x.SkillLevel)
 				}
 			}
-			xx, err = r.ListShipSkills(ctx, ship_2.ID)
+			xx, err = r.ListEveShipSkills(ctx, ship_2.ID)
 			if assert.NoError(t, err) {
 				if assert.Len(t, xx, 6) {
 					x := xx[0]

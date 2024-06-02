@@ -9,8 +9,3 @@ import (
 func (s *Characters) ListCharacterShipsAbilities(ctx context.Context, characterID int32, search string) ([]*model.CharacterShipAbility, error) {
 	return s.st.ListCharacterShipsAbilities(ctx, characterID, search)
 }
-
-func (s *Characters) UpdateShipSkills(ctx context.Context) error {
-	return s.st.UpdateShipSkills(ctx)
-
-}

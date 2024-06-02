@@ -198,3 +198,8 @@ func (eu *EveUniverse) UpdateEveCategoryWithChildrenESI(ctx context.Context, cat
 	}
 	return nil
 }
+
+func (eu *EveUniverse) UpdateEveShipSkills(ctx context.Context) error {
+	return eu.st.UpdateEveShipSkills(ctx)
+
+}
