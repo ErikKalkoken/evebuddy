@@ -13,15 +13,15 @@ import (
 )
 
 func (s *Characters) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
-	return s.r.ListCharacterAssetsInShipHangar(ctx, characterID, locationID)
+	return s.st.ListCharacterAssetsInShipHangar(ctx, characterID, locationID)
 }
 
 func (s *Characters) ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
-	return s.r.ListCharacterAssetsInItemHangar(ctx, characterID, locationID)
+	return s.st.ListCharacterAssetsInItemHangar(ctx, characterID, locationID)
 }
 
 func (s *Characters) ListCharacterAssetLocations(ctx context.Context, characterID int32) ([]*model.CharacterAssetLocation, error) {
-	return s.r.ListCharacterAssetLocations(ctx, characterID)
+	return s.st.ListCharacterAssetLocations(ctx, characterID)
 }
 
 type esiCharacterAssetPlus struct {
@@ -74,20 +74,20 @@ func (s *Characters) updateCharacterAssetsESI(ctx context.Context, arg UpdateCha
 					locationIDs = append(locationIDs, a.LocationId)
 				}
 			}
-			missingLocationIDs, err := s.r.MissingLocations(ctx, locationIDs)
+			missingLocationIDs, err := s.st.MissingLocations(ctx, locationIDs)
 			if err != nil {
 				return err
 			}
 			for _, id := range missingLocationIDs {
-				_, err := s.EveUniverse.GetOrCreateLocationESI(ctx, id)
+				_, err := s.eu.GetOrCreateLocationESI(ctx, id)
 				if err != nil {
 					return err
 				}
 			}
-			if err := s.EveUniverse.AddMissingEveTypes(ctx, typeIDs); err != nil {
+			if err := s.eu.AddMissingEveTypes(ctx, typeIDs); err != nil {
 				return err
 			}
-			ids, err := s.r.ListCharacterAssetIDs(ctx, characterID)
+			ids, err := s.st.ListCharacterAssetIDs(ctx, characterID)
 			if err != nil {
 				return err
 			}
@@ -103,7 +103,7 @@ func (s *Characters) updateCharacterAssetsESI(ctx context.Context, arg UpdateCha
 						Name:         a.Name,
 						Quantity:     a.Quantity,
 					}
-					if err := s.r.UpdateCharacterAsset(ctx, arg); err != nil {
+					if err := s.st.UpdateCharacterAsset(ctx, arg); err != nil {
 						return err
 					}
 				} else {
@@ -119,7 +119,7 @@ func (s *Characters) updateCharacterAssetsESI(ctx context.Context, arg UpdateCha
 						Name:            a.Name,
 						Quantity:        a.Quantity,
 					}
-					if err := s.r.CreateCharacterAsset(ctx, arg); err != nil {
+					if err := s.st.CreateCharacterAsset(ctx, arg); err != nil {
 						return err
 					}
 				}
@@ -127,7 +127,7 @@ func (s *Characters) updateCharacterAssetsESI(ctx context.Context, arg UpdateCha
 				for i, a := range assets {
 					itemIDs[i] = a.ItemId
 				}
-				if err := s.r.DeleteExcludedCharacterAssets(ctx, characterID, itemIDs); err != nil {
+				if err := s.st.DeleteExcludedCharacterAssets(ctx, characterID, itemIDs); err != nil {
 					return err
 				}
 			}

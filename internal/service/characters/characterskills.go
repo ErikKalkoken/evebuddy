@@ -26,13 +26,13 @@ func (s *Characters) updateCharacterSkillsESI(ctx context.Context, arg UpdateCha
 			skills := data.(esi.GetCharactersCharacterIdSkillsOk)
 			totalSP := sql.NullInt64{Int64: skills.TotalSp, Valid: true}
 			unallocatedSP := sql.NullInt64{Int64: int64(skills.UnallocatedSp), Valid: true}
-			if err := s.r.UpdateCharacterSkillPoints(ctx, characterID, totalSP, unallocatedSP); err != nil {
+			if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, totalSP, unallocatedSP); err != nil {
 				return err
 			}
 			var existingSkills []int32
 			for _, o := range skills.Skills {
 				existingSkills = append(existingSkills, o.SkillId)
-				_, err := s.EveUniverse.GetOrCreateEveTypeESI(ctx, o.SkillId)
+				_, err := s.eu.GetOrCreateEveTypeESI(ctx, o.SkillId)
 				if err != nil {
 					return err
 				}
@@ -43,12 +43,12 @@ func (s *Characters) updateCharacterSkillsESI(ctx context.Context, arg UpdateCha
 					TrainedSkillLevel:  int(o.TrainedSkillLevel),
 					SkillPointsInSkill: int(o.SkillpointsInSkill),
 				}
-				err = s.r.UpdateOrCreateCharacterSkill(ctx, arg)
+				err = s.st.UpdateOrCreateCharacterSkill(ctx, arg)
 				if err != nil {
 					return err
 				}
 			}
-			if err := s.r.DeleteExcludedCharacterSkills(ctx, characterID, existingSkills); err != nil {
+			if err := s.st.DeleteExcludedCharacterSkills(ctx, characterID, existingSkills); err != nil {
 				return err
 			}
 			return nil
@@ -56,9 +56,9 @@ func (s *Characters) updateCharacterSkillsESI(ctx context.Context, arg UpdateCha
 }
 
 func (s *Characters) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]model.ListCharacterSkillProgress, error) {
-	return s.r.ListCharacterSkillProgress(ctx, characterID, eveGroupID)
+	return s.st.ListCharacterSkillProgress(ctx, characterID, eveGroupID)
 }
 
 func (s *Characters) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]model.ListCharacterSkillGroupProgress, error) {
-	return s.r.ListCharacterSkillGroupsProgress(ctx, characterID)
+	return s.st.ListCharacterSkillGroupsProgress(ctx, characterID)
 }

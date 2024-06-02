@@ -8,7 +8,7 @@ import (
 )
 
 func (s *Characters) ListCharacterImplants(ctx context.Context, characterID int32) ([]*model.CharacterImplant, error) {
-	return s.r.ListCharacterImplants(ctx, characterID)
+	return s.st.ListCharacterImplants(ctx, characterID)
 }
 
 func (s *Characters) updateCharacterImplantsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
@@ -28,7 +28,7 @@ func (s *Characters) updateCharacterImplantsESI(ctx context.Context, arg UpdateC
 			implants := data.([]int32)
 			args := make([]storage.CreateCharacterImplantParams, len(implants))
 			for i, typeID := range implants {
-				_, err := s.EveUniverse.GetOrCreateEveTypeESI(ctx, typeID)
+				_, err := s.eu.GetOrCreateEveTypeESI(ctx, typeID)
 				if err != nil {
 					return err
 				}
@@ -37,7 +37,7 @@ func (s *Characters) updateCharacterImplantsESI(ctx context.Context, arg UpdateC
 					EveTypeID:   typeID,
 				}
 			}
-			if err := s.r.ReplaceCharacterImplants(ctx, characterID, args); err != nil {
+			if err := s.st.ReplaceCharacterImplants(ctx, characterID, args); err != nil {
 				return err
 			}
 			return nil

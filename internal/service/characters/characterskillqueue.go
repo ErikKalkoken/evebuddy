@@ -11,11 +11,11 @@ import (
 )
 
 func (s *Characters) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (types.NullDuration, error) {
-	return s.r.GetTotalTrainingTime(ctx, characterID)
+	return s.st.GetTotalTrainingTime(ctx, characterID)
 }
 
 func (s *Characters) ListCharacterSkillqueueItems(ctx context.Context, characterID int32) ([]*model.CharacterSkillqueueItem, error) {
-	return s.r.ListSkillqueueItems(ctx, characterID)
+	return s.st.ListSkillqueueItems(ctx, characterID)
 }
 
 // UpdateCharacterSkillqueueESI updates the skillqueue for a character from ESI
@@ -38,7 +38,7 @@ func (s *Characters) UpdateCharacterSkillqueueESI(ctx context.Context, arg Updat
 			items := data.([]esi.GetCharactersCharacterIdSkillqueue200Ok)
 			args := make([]storage.SkillqueueItemParams, len(items))
 			for i, o := range items {
-				_, err := s.EveUniverse.GetOrCreateEveTypeESI(ctx, o.SkillId)
+				_, err := s.eu.GetOrCreateEveTypeESI(ctx, o.SkillId)
 				if err != nil {
 					return err
 				}
@@ -54,7 +54,7 @@ func (s *Characters) UpdateCharacterSkillqueueESI(ctx context.Context, arg Updat
 					TrainingStartSP: int(o.TrainingStartSp),
 				}
 			}
-			if err := s.r.ReplaceCharacterSkillqueueItems(ctx, characterID, args); err != nil {
+			if err := s.st.ReplaceCharacterSkillqueueItems(ctx, characterID, args); err != nil {
 				return err
 			}
 			slog.Info("Updated skillqueue items", "characterID", characterID, "count", len(args))

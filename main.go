@@ -99,7 +99,7 @@ func main() {
 	}
 	defer db.Close()
 	repository := storage.New(db)
-	s := service.NewService(repository)
+	s := service.New(repository)
 	cache, err := makeImageCachePath(ad, *localFlag)
 	if err != nil {
 		log.Fatal(err)

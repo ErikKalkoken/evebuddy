@@ -7,10 +7,10 @@ import (
 )
 
 func (s *Characters) ListCharacterShipsAbilities(ctx context.Context, characterID int32, search string) ([]*model.CharacterShipAbility, error) {
-	return s.r.ListCharacterShipsAbilities(ctx, characterID, search)
+	return s.st.ListCharacterShipsAbilities(ctx, characterID, search)
 }
 
 func (s *Characters) UpdateShipSkills(ctx context.Context) error {
-	return s.r.UpdateShipSkills(ctx)
+	return s.st.UpdateShipSkills(ctx)
 
 }

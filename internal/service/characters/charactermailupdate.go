@@ -50,7 +50,7 @@ func (s *Characters) updateCharacterMailLabelsESI(ctx context.Context, arg Updat
 					Name:        o.Name,
 					UnreadCount: int(o.UnreadCount),
 				}
-				_, err := s.r.UpdateOrCreateCharacterMailLabel(ctx, arg)
+				_, err := s.st.UpdateOrCreateCharacterMailLabel(ctx, arg)
 				if err != nil {
 					return err
 				}
@@ -77,11 +77,11 @@ func (s *Characters) updateCharacterMailListsESI(ctx context.Context, arg Update
 		func(ctx context.Context, characterID int32, data any) error {
 			lists := data.([]esi.GetCharactersCharacterIdMailLists200Ok)
 			for _, o := range lists {
-				_, err := s.r.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, model.EveEntityMailList)
+				_, err := s.st.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, model.EveEntityMailList)
 				if err != nil {
 					return err
 				}
-				if err := s.r.CreateCharacterMailList(ctx, characterID, o.MailingListId); err != nil {
+				if err := s.st.CreateCharacterMailList(ctx, characterID, o.MailingListId); err != nil {
 					return err
 				}
 			}
@@ -123,10 +123,10 @@ func (s *Characters) updateCharacterMailsESI(ctx context.Context, arg UpdateChar
 					return err
 				}
 			}
-			if err := s.r.DeleteObsoleteCharacterMailLabels(ctx, characterID); err != nil {
+			if err := s.st.DeleteObsoleteCharacterMailLabels(ctx, characterID); err != nil {
 				return err
 			}
-			if err := s.r.DeleteObsoleteCharacterMailLists(ctx, characterID); err != nil {
+			if err := s.st.DeleteObsoleteCharacterMailLists(ctx, characterID); err != nil {
 				return err
 			}
 			return nil
@@ -137,7 +137,7 @@ func (s *Characters) updateCharacterMailsESI(ctx context.Context, arg UpdateChar
 func (s *Characters) fetchMailHeadersESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdMail200Ok
 	lastMailID := int32(0)
-	maxMails, err := s.Dictionary.GetIntWithFallback(model.SettingMaxMails, model.SettingMaxMailsDefault)
+	maxMails, err := s.dt.GetIntWithFallback(model.SettingMaxMails, model.SettingMaxMailsDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (s *Characters) determineNewMail(ctx context.Context, characterID int32, mm
 }
 
 func (s *Characters) determineMailIDs(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) (*set.Set[int32], *set.Set[int32], error) {
-	ids, err := s.r.ListCharacterMailIDs(ctx, characterID)
+	ids, err := s.st.ListCharacterMailIDs(ctx, characterID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -206,7 +206,7 @@ func (s *Characters) resolveMailEntities(ctx context.Context, mm []esi.GetCharac
 			entityIDs.Add(r.RecipientId)
 		}
 	}
-	_, err := s.EveUniverse.AddMissingEveEntities(ctx, entityIDs.ToSlice())
+	_, err := s.eu.AddMissingEveEntities(ctx, entityIDs.ToSlice())
 	if err != nil {
 		return err
 	}
@@ -255,7 +255,7 @@ func (s *Characters) fetchAndStoreMail(ctx context.Context, characterID, mailID 
 		Subject:      m.Subject,
 		Timestamp:    m.Timestamp,
 	}
-	_, err = s.r.CreateCharacterMail(ctx, arg)
+	_, err = s.st.CreateCharacterMail(ctx, arg)
 	if err != nil {
 		return err
 	}
@@ -264,12 +264,12 @@ func (s *Characters) fetchAndStoreMail(ctx context.Context, characterID, mailID 
 
 func (s *Characters) updateExistingMail(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
 	for _, h := range headers {
-		m, err := s.r.GetCharacterMail(ctx, characterID, h.MailId)
+		m, err := s.st.GetCharacterMail(ctx, characterID, h.MailId)
 		if err != nil {
 			return err
 		}
 		if m.IsRead != h.IsRead {
-			err := s.r.UpdateCharacterMail(ctx, characterID, m.ID, h.IsRead, h.Labels)
+			err := s.st.UpdateCharacterMail(ctx, characterID, m.ID, h.IsRead, h.Labels)
 			if err != nil {
 				return err
 			}
@@ -285,7 +285,7 @@ func (s *Characters) UpdateMailRead(ctx context.Context, characterID, mailID int
 		return err
 	}
 	ctx = igoesi.ContextWithESIToken(ctx, token.AccessToken)
-	m, err := s.r.GetCharacterMail(ctx, characterID, mailID)
+	m, err := s.st.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		return err
 	}
@@ -299,7 +299,7 @@ func (s *Characters) UpdateMailRead(ctx context.Context, characterID, mailID int
 		return err
 	}
 	m.IsRead = true
-	if err := s.r.UpdateCharacterMail(ctx, characterID, m.ID, m.IsRead, labelIDs); err != nil {
+	if err := s.st.UpdateCharacterMail(ctx, characterID, m.ID, m.IsRead, labelIDs); err != nil {
 		return err
 	}
 	return nil

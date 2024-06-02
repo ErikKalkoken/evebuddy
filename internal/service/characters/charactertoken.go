@@ -32,7 +32,7 @@ var esiScopes = []string{
 
 // CharacterHasTokenWithScopes reports wether a token with the requested scopes exists for a character.
 func (s *Characters) CharacterHasTokenWithScopes(ctx context.Context, characterID int32) (bool, error) {
-	t, err := s.r.GetCharacterToken(ctx, characterID)
+	t, err := s.st.GetCharacterToken(ctx, characterID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return false, nil
 	} else if err != nil {
@@ -45,7 +45,7 @@ func (s *Characters) CharacterHasTokenWithScopes(ctx context.Context, characterI
 
 // getValidCharacterToken returns a valid token for a character. Convenience function.
 func (s *Characters) getValidCharacterToken(ctx context.Context, characterID int32) (*model.CharacterToken, error) {
-	t, err := s.r.GetCharacterToken(ctx, characterID)
+	t, err := s.st.GetCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (s *Characters) ensureValidCharacterToken(ctx context.Context, t *model.Cha
 		t.AccessToken = rawToken.AccessToken
 		t.RefreshToken = rawToken.RefreshToken
 		t.ExpiresAt = rawToken.ExpiresAt
-		err = s.r.UpdateOrCreateCharacterToken(ctx, t)
+		err = s.st.UpdateOrCreateCharacterToken(ctx, t)
 		if err != nil {
 			return err
 		}

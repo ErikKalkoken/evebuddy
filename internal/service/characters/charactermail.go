@@ -31,7 +31,7 @@ func (s *Characters) DeleteCharacterMail(ctx context.Context, characterID, mailI
 	if err != nil {
 		return err
 	}
-	err = s.r.DeleteCharacterMail(ctx, characterID, mailID)
+	err = s.st.DeleteCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		return err
 	}
@@ -40,17 +40,17 @@ func (s *Characters) DeleteCharacterMail(ctx context.Context, characterID, mailI
 
 func (s *Characters) GetCharacterMail(characterID int32, mailID int32) (*model.CharacterMail, error) {
 	ctx := context.Background()
-	return s.r.GetCharacterMail(ctx, characterID, mailID)
+	return s.st.GetCharacterMail(ctx, characterID, mailID)
 }
 
 // GetMailUnreadCount returns the number of unread mail for a character.
 func (s *Characters) GetCharacterMailCounts(characterID int32) (int, int, error) {
 	ctx := context.Background()
-	total, err := s.r.GetCharacterMailCount(ctx, characterID)
+	total, err := s.st.GetCharacterMailCount(ctx, characterID)
 	if err != nil {
 		return 0, 0, err
 	}
-	unread, err := s.r.GetCharacterMailUnreadCount(ctx, characterID)
+	unread, err := s.st.GetCharacterMailUnreadCount(ctx, characterID)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -92,7 +92,7 @@ func (s *Characters) SendCharacterMail(characterID int32, subject string, recipi
 		recipientIDs[i] = r.RecipientId
 	}
 	ids := slices.Concat(recipientIDs, []int32{characterID})
-	_, err = s.EveUniverse.AddMissingEveEntities(ctx, ids)
+	_, err = s.eu.AddMissingEveEntities(ctx, ids)
 	if err != nil {
 		return 0, err
 	}
@@ -101,7 +101,7 @@ func (s *Characters) SendCharacterMail(characterID int32, subject string, recipi
 		LabelID:     model.MailLabelSent,
 		Name:        "Sent",
 	}
-	_, err = s.r.GetOrCreateCharacterMailLabel(ctx, arg1) // make sure sent label exists
+	_, err = s.st.GetOrCreateCharacterMailLabel(ctx, arg1) // make sure sent label exists
 	if err != nil {
 		return 0, err
 	}
@@ -116,7 +116,7 @@ func (s *Characters) SendCharacterMail(characterID int32, subject string, recipi
 		Subject:      subject,
 		Timestamp:    time.Now(),
 	}
-	_, err = s.r.CreateCharacterMail(ctx, arg2)
+	_, err = s.st.CreateCharacterMail(ctx, arg2)
 	if err != nil {
 		return 0, err
 	}
@@ -140,32 +140,32 @@ func eveEntitiesToESIMailRecipients(ee []*model.EveEntity) ([]esi.PostCharacters
 
 func (s *Characters) GetCharacterMailLabelUnreadCounts(characterID int32) (map[int32]int, error) {
 	ctx := context.Background()
-	return s.r.GetCharacterMailLabelUnreadCounts(ctx, characterID)
+	return s.st.GetCharacterMailLabelUnreadCounts(ctx, characterID)
 }
 
 func (s *Characters) GetCharacterMailListUnreadCounts(characterID int32) (map[int32]int, error) {
 	ctx := context.Background()
-	return s.r.GetCharacterMailListUnreadCounts(ctx, characterID)
+	return s.st.GetCharacterMailListUnreadCounts(ctx, characterID)
 }
 
 func (s *Characters) ListCharacterMailLists(characterID int32) ([]*model.EveEntity, error) {
 	ctx := context.Background()
-	return s.r.ListCharacterMailListsOrdered(ctx, characterID)
+	return s.st.ListCharacterMailListsOrdered(ctx, characterID)
 }
 
 // ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
 // Return mails for all labels, when labelID = 0
 func (s *Characters) ListCharacterMailIDsForLabelOrdered(characterID int32, labelID int32) ([]int32, error) {
 	ctx := context.Background()
-	return s.r.ListCharacterMailIDsForLabelOrdered(ctx, characterID, labelID)
+	return s.st.ListCharacterMailIDsForLabelOrdered(ctx, characterID, labelID)
 }
 
 func (s *Characters) ListCharacterMailIDsForListOrdered(characterID int32, listID int32) ([]int32, error) {
 	ctx := context.Background()
-	return s.r.ListCharacterMailIDsForListOrdered(ctx, characterID, listID)
+	return s.st.ListCharacterMailIDsForListOrdered(ctx, characterID, listID)
 }
 
 func (s *Characters) ListCharacterMailLabelsOrdered(characterID int32) ([]*model.CharacterMailLabel, error) {
 	ctx := context.Background()
-	return s.r.ListCharacterMailLabelsOrdered(ctx, characterID)
+	return s.st.ListCharacterMailLabelsOrdered(ctx, characterID)
 }

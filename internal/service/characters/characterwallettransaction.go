@@ -17,7 +17,7 @@ const (
 )
 
 func (s *Characters) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*model.CharacterWalletTransaction, error) {
-	return s.r.ListCharacterWalletTransactions(ctx, characterID)
+	return s.st.ListCharacterWalletTransactions(ctx, characterID)
 }
 
 // updateCharacterWalletTransactionESI updates the wallet journal from ESI and reports wether it has changed.
@@ -37,7 +37,7 @@ func (s *Characters) updateCharacterWalletTransactionESI(ctx context.Context, ar
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			transactions := data.([]esi.GetCharactersCharacterIdWalletTransactions200Ok)
-			ii, err := s.r.ListCharacterWalletTransactionIDs(ctx, characterID)
+			ii, err := s.st.ListCharacterWalletTransactionIDs(ctx, characterID)
 			if err != nil {
 				return err
 			}
@@ -60,17 +60,17 @@ func (s *Characters) updateCharacterWalletTransactionESI(ctx context.Context, ar
 					ids.Add(e.ClientId)
 				}
 			}
-			_, err = s.EveUniverse.AddMissingEveEntities(ctx, ids.ToSlice())
+			_, err = s.eu.AddMissingEveEntities(ctx, ids.ToSlice())
 			if err != nil {
 				return err
 			}
 
 			for _, o := range newEntries {
-				_, err = s.EveUniverse.GetOrCreateEveTypeESI(ctx, o.TypeId)
+				_, err = s.eu.GetOrCreateEveTypeESI(ctx, o.TypeId)
 				if err != nil {
 					return err
 				}
-				_, err = s.EveUniverse.GetOrCreateLocationESI(ctx, o.LocationId)
+				_, err = s.eu.GetOrCreateLocationESI(ctx, o.LocationId)
 				if err != nil {
 					return err
 				}
@@ -87,7 +87,7 @@ func (s *Characters) updateCharacterWalletTransactionESI(ctx context.Context, ar
 					TransactionID: o.TransactionId,
 					UnitPrice:     o.UnitPrice,
 				}
-				if err := s.r.CreateCharacterWalletTransaction(ctx, arg); err != nil {
+				if err := s.st.CreateCharacterWalletTransaction(ctx, arg); err != nil {
 					return err
 				}
 			}
@@ -100,7 +100,7 @@ func (s *Characters) updateCharacterWalletTransactionESI(ctx context.Context, ar
 func (s *Characters) fetchWalletTransactionsESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdWalletTransactions200Ok
 	lastID := int64(0)
-	maxTransactions, err := s.Dictionary.GetIntWithFallback(model.SettingMaxWalletTransactions, model.SettingMaxWalletTransactionsDefault)
+	maxTransactions, err := s.dt.GetIntWithFallback(model.SettingMaxWalletTransactions, model.SettingMaxWalletTransactionsDefault)
 	if err != nil {
 		return nil, err
 	}

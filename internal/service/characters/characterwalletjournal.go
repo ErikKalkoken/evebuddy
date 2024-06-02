@@ -14,7 +14,7 @@ import (
 )
 
 func (s *Characters) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
-	return s.r.ListCharacterWalletJournalEntries(ctx, characterID)
+	return s.st.ListCharacterWalletJournalEntries(ctx, characterID)
 }
 
 // updateCharacterWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
@@ -40,7 +40,7 @@ func (s *Characters) updateCharacterWalletJournalEntryESI(ctx context.Context, a
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			entries := data.([]esi.GetCharactersCharacterIdWalletJournal200Ok)
-			ii, err := s.r.ListCharacterWalletJournalEntryIDs(ctx, characterID)
+			ii, err := s.st.ListCharacterWalletJournalEntryIDs(ctx, characterID)
 			if err != nil {
 				return err
 			}
@@ -69,7 +69,7 @@ func (s *Characters) updateCharacterWalletJournalEntryESI(ctx context.Context, a
 					ids.Add(e.TaxReceiverId)
 				}
 			}
-			_, err = s.EveUniverse.AddMissingEveEntities(ctx, ids.ToSlice())
+			_, err = s.eu.AddMissingEveEntities(ctx, ids.ToSlice())
 			if err != nil {
 				return err
 			}
@@ -90,7 +90,7 @@ func (s *Characters) updateCharacterWalletJournalEntryESI(ctx context.Context, a
 					Tax:           o.Tax,
 					TaxReceiverID: o.TaxReceiverId,
 				}
-				if err := s.r.CreateCharacterWalletJournalEntry(ctx, arg); err != nil {
+				if err := s.st.CreateCharacterWalletJournalEntry(ctx, arg); err != nil {
 					return err
 				}
 			}

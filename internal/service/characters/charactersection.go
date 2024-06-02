@@ -16,7 +16,7 @@ import (
 // characterSectionUpdatedAt returns when a section was last updated.
 // It will return a zero time when no update has been completed yet.
 func (s *Characters) characterSectionUpdatedAt(ctx context.Context, arg UpdateCharacterSectionParams) (time.Time, error) {
-	u, err := s.r.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
+	u, err := s.st.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
 	if errors.Is(err, storage.ErrNotFound) {
 		return time.Time{}, nil
 	} else if err != nil {
@@ -93,17 +93,17 @@ func (s *Characters) UpdateCharacterSection(ctx context.Context, arg UpdateChara
 		panic(fmt.Sprintf("Undefined section: %s", arg.Section))
 	}
 	key := fmt.Sprintf("UpdateESI-%s-%d", arg.Section, arg.CharacterID)
-	x, err, _ := s.singleGroup.Do(key, func() (any, error) {
+	x, err, _ := s.sf.Do(key, func() (any, error) {
 		return f(ctx, arg)
 	})
 	if err != nil {
 		// TODO: Move this part into updateCharacterSectionIfChanged()
 		errorMessage := humanize.Error(err)
-		err2 := s.r.SetCharacterUpdateStatusError(ctx, arg.CharacterID, arg.Section, errorMessage)
+		err2 := s.st.SetCharacterUpdateStatusError(ctx, arg.CharacterID, arg.Section, errorMessage)
 		if err2 != nil {
 			slog.Error("failed to record error for failed section update: %s", err2)
 		}
-		s.CharacterStatus.SetError(arg.CharacterID, arg.Section, errorMessage)
+		s.cs.SetError(arg.CharacterID, arg.Section, errorMessage)
 		return false, fmt.Errorf("failed to update character section from ESI for %v: %w", arg, err)
 	}
 	changed := x.(bool)
@@ -148,7 +148,7 @@ func (s *Characters) updateCharacterSectionIfChanged(
 	// identify if changed
 	var hasChanged bool
 	if !arg.ForceUpdate {
-		u, err := s.r.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
+		u, err := s.st.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
 		if errors.Is(err, storage.ErrNotFound) {
 			hasChanged = true
 		} else if err != nil {
@@ -173,10 +173,10 @@ func (s *Characters) updateCharacterSectionIfChanged(
 		ContentHash:   hash,
 		LastUpdatedAt: lastUpdatedAt,
 	}
-	if err := s.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg2); err != nil {
+	if err := s.st.UpdateOrCreateCharacterUpdateStatus(ctx, arg2); err != nil {
 		return false, err
 	}
-	s.CharacterStatus.SetStatus(arg.CharacterID, arg.Section, "", lastUpdatedAt)
+	s.cs.SetStatus(arg.CharacterID, arg.Section, "", lastUpdatedAt)
 
 	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "changed", hasChanged)
 	return hasChanged, nil

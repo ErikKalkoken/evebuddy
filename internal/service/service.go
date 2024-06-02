@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
+// Service provides access to all services.
 type Service struct {
 	// Characters service
 	Characters *characters.Characters
@@ -29,7 +30,8 @@ type Service struct {
 	EveUniverse *eveuniverse.EveUniverse
 }
 
-func NewService(r *storage.Storage) *Service {
+// New creates and returns a new service instance.
+func New(r *storage.Storage) *Service {
 	defaultHttpClient := &http.Client{
 		Transport: ihttp.LoggedTransport{},
 	}

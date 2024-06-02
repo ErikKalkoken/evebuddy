@@ -9,7 +9,7 @@ import (
 )
 
 func (s *Characters) GetCharacterAttributes(ctx context.Context, characterID int32) (*model.CharacterAttributes, error) {
-	return s.r.GetCharacterAttributes(ctx, characterID)
+	return s.st.GetCharacterAttributes(ctx, characterID)
 }
 
 func (s *Characters) updateCharacterAttributesESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
@@ -37,7 +37,7 @@ func (s *Characters) updateCharacterAttributesESI(ctx context.Context, arg Updat
 				Perception:    int(attributes.Perception),
 				Willpower:     int(attributes.Willpower),
 			}
-			if err := s.r.UpdateOrCreateCharacterAttributes(ctx, arg); err != nil {
+			if err := s.st.UpdateOrCreateCharacterAttributes(ctx, arg); err != nil {
 				return err
 			}
 			return nil

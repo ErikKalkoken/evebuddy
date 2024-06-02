@@ -10,7 +10,7 @@ import (
 )
 
 func (s *Characters) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*model.CharacterJumpClone, error) {
-	return s.r.ListCharacterJumpClones(ctx, characterID)
+	return s.st.ListCharacterJumpClones(ctx, characterID)
 }
 
 // TODO: Consolidate with updating home in separate function
@@ -32,23 +32,23 @@ func (s *Characters) updateCharacterJumpClonesESI(ctx context.Context, arg Updat
 			var home sql.NullInt64
 			clones := data.(esi.GetCharactersCharacterIdClonesOk)
 			if clones.HomeLocation.LocationId != 0 {
-				_, err := s.EveUniverse.GetOrCreateLocationESI(ctx, clones.HomeLocation.LocationId)
+				_, err := s.eu.GetOrCreateLocationESI(ctx, clones.HomeLocation.LocationId)
 				if err != nil {
 					return err
 				}
 				home.Int64 = clones.HomeLocation.LocationId
 				home.Valid = true
 			}
-			if err := s.r.UpdateCharacterHome(ctx, characterID, home); err != nil {
+			if err := s.st.UpdateCharacterHome(ctx, characterID, home); err != nil {
 				return err
 			}
 			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))
 			for i, jc := range clones.JumpClones {
-				_, err := s.EveUniverse.GetOrCreateLocationESI(ctx, jc.LocationId)
+				_, err := s.eu.GetOrCreateLocationESI(ctx, jc.LocationId)
 				if err != nil {
 					return err
 				}
-				if err := s.EveUniverse.AddMissingEveTypes(ctx, jc.Implants); err != nil {
+				if err := s.eu.AddMissingEveTypes(ctx, jc.Implants); err != nil {
 					return err
 				}
 				args[i] = storage.CreateCharacterJumpCloneParams{
@@ -58,7 +58,7 @@ func (s *Characters) updateCharacterJumpClonesESI(ctx context.Context, arg Updat
 					Implants:    jc.Implants,
 				}
 			}
-			if err := s.r.ReplaceCharacterJumpClones(ctx, characterID, args); err != nil {
+			if err := s.st.ReplaceCharacterJumpClones(ctx, characterID, args); err != nil {
 				return err
 			}
 			return nil
