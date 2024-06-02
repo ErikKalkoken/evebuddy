@@ -13,16 +13,16 @@ import (
 var ErrNotFound = errors.New("object not found")
 
 type EveUniverse struct {
-	esiClient   *goesi.APIClient
-	singleGroup *singleflight.Group
-	st          *storage.Storage
+	esiClient *goesi.APIClient
+	sfg       *singleflight.Group
+	st        *storage.Storage
 }
 
 func New(st *storage.Storage, esiClient *goesi.APIClient) *EveUniverse {
 	eu := &EveUniverse{
-		esiClient:   esiClient,
-		st:          st,
-		singleGroup: new(singleflight.Group),
+		esiClient: esiClient,
+		st:        st,
+		sfg:       new(singleflight.Group),
 	}
 	return eu
 }

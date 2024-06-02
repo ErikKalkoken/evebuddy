@@ -17,12 +17,12 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/service/characters"
+	"github.com/ErikKalkoken/evebuddy/internal/service/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -48,7 +48,7 @@ type ui struct {
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
 	currentCharacter      *model.Character
-	imageManager          *images.Manager
+	imageManager          *eveimage.EveImage
 	implantsArea          *implantsArea
 	jumpClonesArea        *jumpClonesArea
 	mailArea              *mailArea
@@ -77,7 +77,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 		Transport: ihttp.LoggedTransport{},
 	}
 	u := &ui{app: app,
-		imageManager: images.New(imageCachePath, httpClient),
+		imageManager: eveimage.New(imageCachePath, httpClient),
 		sv:           service,
 		window:       w,
 	}

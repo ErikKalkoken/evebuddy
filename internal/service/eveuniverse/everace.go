@@ -21,7 +21,7 @@ func (eu *EveUniverse) GetOrCreateEveRaceESI(ctx context.Context, id int32) (*mo
 
 func (eu *EveUniverse) createEveRaceFromESI(ctx context.Context, id int32) (*model.EveRace, error) {
 	key := fmt.Sprintf("createEveRaceFromESI-%d", id)
-	y, err, _ := eu.singleGroup.Do(key, func() (any, error) {
+	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		races, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseRaces(ctx, nil)
 		if err != nil {
 			return nil, err

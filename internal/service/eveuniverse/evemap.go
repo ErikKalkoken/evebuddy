@@ -21,7 +21,7 @@ func (eu *EveUniverse) GetOrCreateEveRegionESI(ctx context.Context, id int32) (*
 
 func (eu *EveUniverse) createEveRegionFromESI(ctx context.Context, id int32) (*model.EveRegion, error) {
 	key := fmt.Sprintf("createEveRegionFromESI-%d", id)
-	y, err, _ := eu.singleGroup.Do(key, func() (any, error) {
+	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		region, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseRegionsRegionId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -51,7 +51,7 @@ func (eu *EveUniverse) GetOrCreateEveConstellationESI(ctx context.Context, id in
 
 func (eu *EveUniverse) createEveConstellationFromESI(ctx context.Context, id int32) (*model.EveConstellation, error) {
 	key := fmt.Sprintf("createEveConstellationFromESI-%d", id)
-	y, err, _ := eu.singleGroup.Do(key, func() (any, error) {
+	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		constellation, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseConstellationsConstellationId(ctx, id, nil)
 		if err != nil {
 			return nil, err
@@ -88,7 +88,7 @@ func (eu *EveUniverse) GetOrCreateEveSolarSystemESI(ctx context.Context, id int3
 
 func (eu *EveUniverse) createEveSolarSystemFromESI(ctx context.Context, id int32) (*model.EveSolarSystem, error) {
 	key := fmt.Sprintf("createEveSolarSystemFromESI-%d", id)
-	y, err, _ := eu.singleGroup.Do(key, func() (any, error) {
+	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		system, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseSystemsSystemId(ctx, id, nil)
 		if err != nil {
 			return nil, err

@@ -17,7 +17,7 @@ import (
 type Characters struct {
 	esiClient  *goesi.APIClient
 	httpClient *http.Client
-	sf         *singleflight.Group
+	sfg        *singleflight.Group
 	// Storage service
 	st *storage.Storage
 	// EveUniverse service
@@ -58,7 +58,7 @@ func New(
 		st:         st,
 		esiClient:  esiClient,
 		httpClient: httpClient,
-		sf:         new(singleflight.Group),
+		sfg:        new(singleflight.Group),
 		eu:         eu,
 		cs:         cs,
 		dt:         dt,

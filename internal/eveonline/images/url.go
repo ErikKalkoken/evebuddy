@@ -6,6 +6,8 @@ import (
 	"fmt"
 )
 
+var ErrInvalidSize = errors.New("invalid size")
+
 type category string
 
 const (
@@ -31,8 +33,6 @@ const (
 	PlaceholderCorporationID = 1
 	baseURL                  = "https://images.evetech.net"
 )
-
-var ErrInvalidSize = errors.New("invalid size")
 
 // AllianceLogoURL returns an image URL for an alliance logo
 func AllianceLogoURL(id int32, size int) (string, error) {

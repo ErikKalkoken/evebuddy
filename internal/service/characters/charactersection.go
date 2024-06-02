@@ -93,7 +93,7 @@ func (s *Characters) UpdateCharacterSection(ctx context.Context, arg UpdateChara
 		panic(fmt.Sprintf("Undefined section: %s", arg.Section))
 	}
 	key := fmt.Sprintf("UpdateESI-%s-%d", arg.Section, arg.CharacterID)
-	x, err, _ := s.sf.Do(key, func() (any, error) {
+	x, err, _ := s.sfg.Do(key, func() (any, error) {
 		return f(ctx, arg)
 	})
 	if err != nil {

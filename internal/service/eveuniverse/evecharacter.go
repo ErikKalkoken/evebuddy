@@ -24,7 +24,7 @@ func (eu *EveUniverse) GetOrCreateEveCharacterESI(ctx context.Context, id int32)
 
 func (eu *EveUniverse) createEveCharacterFromESI(ctx context.Context, id int32) (*model.EveCharacter, error) {
 	key := fmt.Sprintf("createEveCharacterFromESI-%d", id)
-	y, err, _ := eu.singleGroup.Do(key, func() (any, error) {
+	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		r, _, err := eu.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, id, nil)
 		if err != nil {
 			return nil, err
