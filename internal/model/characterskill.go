@@ -1,19 +1,9 @@
 package model
 
-import (
-	"time"
-)
-
-type CharacterAttributes struct {
-	ID            int64
-	BonusRemaps   int
-	CharacterID   int32
-	Charisma      int
-	Intelligence  int
-	LastRemapDate time.Time
-	Memory        int
-	Perception    int
-	Willpower     int
+type CharacterShipAbility struct {
+	Type   EntityShort[int32]
+	Group  EntityShort[int32]
+	CanFly bool
 }
 
 type CharacterSkill struct {

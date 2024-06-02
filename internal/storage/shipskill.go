@@ -10,7 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (st *Storage) GetShipSkill(ctx context.Context, shipTypeID int32, rank uint) (*model.ShipSkill, error) {
+func (st *Storage) GetShipSkill(ctx context.Context, shipTypeID int32, rank uint) (*model.EveShipSkill, error) {
 	arg := queries.GetShipSkillParams{
 		ShipTypeID: int64(shipTypeID),
 		Rank:       int64(rank),
@@ -46,12 +46,12 @@ func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID 
 	return oo, nil
 }
 
-func (st *Storage) ListShipSkills(ctx context.Context, shipTypeID int32) ([]*model.ShipSkill, error) {
+func (st *Storage) ListShipSkills(ctx context.Context, shipTypeID int32) ([]*model.EveShipSkill, error) {
 	rows, err := st.q.ListShipSkills(ctx, int64(shipTypeID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list ship skills for ID %d: %w", shipTypeID, err)
 	}
-	oo := make([]*model.ShipSkill, len(rows))
+	oo := make([]*model.EveShipSkill, len(rows))
 	for i, row := range rows {
 		oo[i] = shipSkillFromDBModel(row.Rank, row.ShipTypeID, row.SkillLevel, row.SkillTypeID)
 	}
@@ -129,8 +129,8 @@ func (st *Storage) CreateShipSkill(ctx context.Context, arg CreateShipSkillParam
 	return nil
 }
 
-func shipSkillFromDBModel(rank, shipTypeID, skillLevel, skillTypeID int64) *model.ShipSkill {
-	return &model.ShipSkill{
+func shipSkillFromDBModel(rank, shipTypeID, skillLevel, skillTypeID int64) *model.EveShipSkill {
+	return &model.EveShipSkill{
 		Rank:        uint(rank),
 		ShipTypeID:  int32(shipTypeID),
 		SkillTypeID: int32(skillTypeID),
