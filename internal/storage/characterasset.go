@@ -23,7 +23,7 @@ type CreateCharacterAssetParams struct {
 	Quantity        int32
 }
 
-func (r *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacterAssetParams) error {
+func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacterAssetParams) error {
 	if arg.CharacterID == 0 || arg.EveTypeID == 0 || arg.ItemID == 0 {
 		return fmt.Errorf("IDs must not be zero %v", arg)
 	}
@@ -39,18 +39,18 @@ func (r *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacterA
 		Name:            arg.Name,
 		Quantity:        int64(arg.Quantity),
 	}
-	if err := r.q.CreateCharacterAsset(ctx, arg2); err != nil {
+	if err := st.q.CreateCharacterAsset(ctx, arg2); err != nil {
 		return fmt.Errorf("failed to create character asset %v, %w", arg, err)
 	}
 	return nil
 }
 
-func (r *Storage) GetCharacterAsset(ctx context.Context, characterID int32, itemID int64) (*model.CharacterAsset, error) {
+func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, itemID int64) (*model.CharacterAsset, error) {
 	arg := queries.GetCharacterAssetParams{
 		CharacterID: int64(characterID),
 		ItemID:      itemID,
 	}
-	row, err := r.q.GetCharacterAsset(ctx, arg)
+	row, err := st.q.GetCharacterAsset(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -61,26 +61,26 @@ func (r *Storage) GetCharacterAsset(ctx context.Context, characterID int32, item
 	return o, nil
 }
 
-func (r *Storage) DeleteExcludedCharacterAssets(ctx context.Context, characterID int32, itemIDs []int64) error {
+func (st *Storage) DeleteExcludedCharacterAssets(ctx context.Context, characterID int32, itemIDs []int64) error {
 	arg := queries.DeleteExcludedCharacterAssetsParams{
 		CharacterID: int64(characterID),
 		ItemIds:     itemIDs,
 	}
-	return r.q.DeleteExcludedCharacterAssets(ctx, arg)
+	return st.q.DeleteExcludedCharacterAssets(ctx, arg)
 }
 
-func (r *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32) ([]int64, error) {
-	return r.q.ListCharacterAssetIDs(ctx, int64(characterID))
+func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32) ([]int64, error) {
+	return st.q.ListCharacterAssetIDs(ctx, int64(characterID))
 }
 
-func (r *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+func (st *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
 	arg := queries.ListCharacterAssetsInShipHangarParams{
 		CharacterID:   int64(characterID),
 		LocationID:    locationID,
 		LocationFlag:  "Hangar",
 		EveCategoryID: model.EveCategoryIDShip,
 	}
-	rows, err := r.q.ListCharacterAssetsInShipHangar(ctx, arg)
+	rows, err := st.q.ListCharacterAssetsInShipHangar(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -91,14 +91,14 @@ func (r *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, character
 	return ii2, nil
 }
 
-func (r *Storage) ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+func (st *Storage) ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
 	arg := queries.ListCharacterAssetsInItemHangarParams{
 		CharacterID:   int64(characterID),
 		LocationID:    locationID,
 		LocationFlag:  "Hangar",
 		EveCategoryID: model.EveCategoryIDShip,
 	}
-	rows, err := r.q.ListCharacterAssetsInItemHangar(ctx, arg)
+	rows, err := st.q.ListCharacterAssetsInItemHangar(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ type UpdateCharacterAssetParams struct {
 	Quantity     int32
 }
 
-func (r *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacterAssetParams) error {
+func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacterAssetParams) error {
 	if arg.CharacterID == 0 || arg.ItemID == 0 {
 		return fmt.Errorf("IDs must not be zero %v", arg)
 	}
@@ -132,7 +132,7 @@ func (r *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacterA
 		Name:         arg.Name,
 		Quantity:     int64(arg.Quantity),
 	}
-	if err := r.q.UpdateCharacterAsset(ctx, arg2); err != nil {
+	if err := st.q.UpdateCharacterAsset(ctx, arg2); err != nil {
 		return fmt.Errorf("failed to update character asset %v, %w", arg, err)
 	}
 	return nil
@@ -159,12 +159,12 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, eveTypeName string, ev
 	return o
 }
 
-func (r *Storage) ListCharacterAssetLocations(ctx context.Context, characterID int32) ([]*model.CharacterAssetLocation, error) {
+func (st *Storage) ListCharacterAssetLocations(ctx context.Context, characterID int32) ([]*model.CharacterAssetLocation, error) {
 	arg := queries.ListCharacterAssetLocationsParams{
 		CharacterID:  int64(characterID),
 		LocationFlag: "Hangar",
 	}
-	rows, err := r.q.ListCharacterAssetLocations(ctx, arg)
+	rows, err := st.q.ListCharacterAssetLocations(ctx, arg)
 	if err != nil {
 		return nil, err
 	}

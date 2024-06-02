@@ -22,8 +22,8 @@ type UpdateOrCreateCharacterAttributesParams struct {
 	Willpower     int
 }
 
-func (r *Storage) GetCharacterAttributes(ctx context.Context, characterID int32) (*model.CharacterAttributes, error) {
-	o, err := r.q.GetCharacterAttributes(ctx, int64(characterID))
+func (st *Storage) GetCharacterAttributes(ctx context.Context, characterID int32) (*model.CharacterAttributes, error) {
+	o, err := st.q.GetCharacterAttributes(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -33,7 +33,7 @@ func (r *Storage) GetCharacterAttributes(ctx context.Context, characterID int32)
 	return characterAttributeFromDBModel(o), nil
 }
 
-func (r *Storage) UpdateOrCreateCharacterAttributes(ctx context.Context, arg UpdateOrCreateCharacterAttributesParams) error {
+func (st *Storage) UpdateOrCreateCharacterAttributes(ctx context.Context, arg UpdateOrCreateCharacterAttributesParams) error {
 	arg2 := queries.UpdateOrCreateCharacterAttributesParams{
 		CharacterID:  int64(arg.CharacterID),
 		BonusRemaps:  int64(arg.BonusRemaps),
@@ -47,7 +47,7 @@ func (r *Storage) UpdateOrCreateCharacterAttributes(ctx context.Context, arg Upd
 		arg2.LastRemapDate.Time = arg.LastRemapDate
 		arg2.LastRemapDate.Valid = true
 	}
-	return r.q.UpdateOrCreateCharacterAttributes(ctx, arg2)
+	return st.q.UpdateOrCreateCharacterAttributes(ctx, arg2)
 }
 
 func characterAttributeFromDBModel(o queries.CharacterAttribute) *model.CharacterAttributes {

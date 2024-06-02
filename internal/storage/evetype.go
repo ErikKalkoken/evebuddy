@@ -29,7 +29,7 @@ type CreateEveTypeParams struct {
 	Volume         float32
 }
 
-func (r *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) error {
+func (st *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) error {
 	if arg.ID == 0 {
 		return fmt.Errorf("invalid ID %d", arg.ID)
 	}
@@ -49,15 +49,15 @@ func (r *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) er
 		Radius:         float64(arg.Radius),
 		Volume:         float64(arg.Volume),
 	}
-	err := r.q.CreateEveType(ctx, arg2)
+	err := st.q.CreateEveType(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("failed to create EveType %v, %w", arg, err)
 	}
 	return nil
 }
 
-func (r *Storage) GetEveType(ctx context.Context, id int32) (*model.EveType, error) {
-	row, err := r.q.GetEveType(ctx, int64(id))
+func (st *Storage) GetEveType(ctx context.Context, id int32) (*model.EveType, error) {
+	row, err := st.q.GetEveType(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -68,8 +68,8 @@ func (r *Storage) GetEveType(ctx context.Context, id int32) (*model.EveType, err
 	return t, nil
 }
 
-func (r *Storage) MissingEveTypes(ctx context.Context, ids []int32) ([]int32, error) {
-	currentIDs, err := r.q.ListEveTypeIDs(ctx)
+func (st *Storage) MissingEveTypes(ctx context.Context, ids []int32) ([]int32, error) {
+	currentIDs, err := st.q.ListEveTypeIDs(ctx)
 	if err != nil {
 		return nil, err
 	}

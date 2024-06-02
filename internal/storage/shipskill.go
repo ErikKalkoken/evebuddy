@@ -10,12 +10,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (r *Storage) GetShipSkill(ctx context.Context, shipTypeID int32, rank uint) (*model.ShipSkill, error) {
+func (st *Storage) GetShipSkill(ctx context.Context, shipTypeID int32, rank uint) (*model.ShipSkill, error) {
 	arg := queries.GetShipSkillParams{
 		ShipTypeID: int64(shipTypeID),
 		Rank:       int64(rank),
 	}
-	row, err := r.q.GetShipSkill(ctx, arg)
+	row, err := st.q.GetShipSkill(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -25,12 +25,12 @@ func (r *Storage) GetShipSkill(ctx context.Context, shipTypeID int32, rank uint)
 	return shipSkillFromDBModel(row.Rank, row.ShipTypeID, row.SkillLevel, row.SkillTypeID), nil
 }
 
-func (r *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID int32, search string) ([]*model.CharacterShipAbility, error) {
+func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID int32, search string) ([]*model.CharacterShipAbility, error) {
 	arg := queries.ListCharacterShipsAbilitiesParams{
 		CharacterID: int64(characterID),
 		Name:        search,
 	}
-	rows, err := r.q.ListCharacterShipsAbilities(ctx, arg)
+	rows, err := st.q.ListCharacterShipsAbilities(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list ship abilities for character %d and search %s: %w", characterID, search, err)
 	}
@@ -46,8 +46,8 @@ func (r *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID i
 	return oo, nil
 }
 
-func (r *Storage) ListShipSkills(ctx context.Context, shipTypeID int32) ([]*model.ShipSkill, error) {
-	rows, err := r.q.ListShipSkills(ctx, int64(shipTypeID))
+func (st *Storage) ListShipSkills(ctx context.Context, shipTypeID int32) ([]*model.ShipSkill, error) {
+	rows, err := st.q.ListShipSkills(ctx, int64(shipTypeID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list ship skills for ID %d: %w", shipTypeID, err)
 	}
@@ -58,32 +58,32 @@ func (r *Storage) ListShipSkills(ctx context.Context, shipTypeID int32) ([]*mode
 	return oo, nil
 }
 
-func (r *Storage) UpdateShipSkills(ctx context.Context) error {
-	if err := r.q.TruncateShipSkills(ctx); err != nil {
+func (st *Storage) UpdateShipSkills(ctx context.Context) error {
+	if err := st.q.TruncateShipSkills(ctx); err != nil {
 		return err
 	}
-	rows, err := r.listShipSkillsMap(ctx)
+	rows, err := st.listShipSkillsMap(ctx)
 	if err != nil {
 		return err
 	}
 	for _, row := range rows {
 		if row.PrimarySkillID.Valid && row.PrimarySkillLevel.Valid {
-			if err := r.createShipSkillIfExists(ctx, 1, row.ShipTypeID, row.PrimarySkillID, row.PrimarySkillLevel); err != nil {
+			if err := st.createShipSkillIfExists(ctx, 1, row.ShipTypeID, row.PrimarySkillID, row.PrimarySkillLevel); err != nil {
 				return err
 			}
-			if err := r.createShipSkillIfExists(ctx, 2, row.ShipTypeID, row.SecondarySkillID, row.SecondarySkillLevel); err != nil {
+			if err := st.createShipSkillIfExists(ctx, 2, row.ShipTypeID, row.SecondarySkillID, row.SecondarySkillLevel); err != nil {
 				return err
 			}
-			if err := r.createShipSkillIfExists(ctx, 3, row.ShipTypeID, row.TertiarySkillID, row.TertiarySkillLevel); err != nil {
+			if err := st.createShipSkillIfExists(ctx, 3, row.ShipTypeID, row.TertiarySkillID, row.TertiarySkillLevel); err != nil {
 				return err
 			}
-			if err := r.createShipSkillIfExists(ctx, 4, row.ShipTypeID, row.QuaternarySkillID, row.QuaternarySkillLevel); err != nil {
+			if err := st.createShipSkillIfExists(ctx, 4, row.ShipTypeID, row.QuaternarySkillID, row.QuaternarySkillLevel); err != nil {
 				return err
 			}
-			if err := r.createShipSkillIfExists(ctx, 5, row.ShipTypeID, row.QuinarySkillID, row.QuinarySkillLevel); err != nil {
+			if err := st.createShipSkillIfExists(ctx, 5, row.ShipTypeID, row.QuinarySkillID, row.QuinarySkillLevel); err != nil {
 				return err
 			}
-			if err := r.createShipSkillIfExists(ctx, 6, row.ShipTypeID, row.SenarySkillID, row.SenarySkillLevel); err != nil {
+			if err := st.createShipSkillIfExists(ctx, 6, row.ShipTypeID, row.SenarySkillID, row.SenarySkillLevel); err != nil {
 				return err
 			}
 		}
@@ -91,7 +91,7 @@ func (r *Storage) UpdateShipSkills(ctx context.Context) error {
 	return nil
 }
 
-func (r *Storage) createShipSkillIfExists(ctx context.Context, rank, skipTypeID int64, skillTypeID, level sql.NullInt64) error {
+func (st *Storage) createShipSkillIfExists(ctx context.Context, rank, skipTypeID int64, skillTypeID, level sql.NullInt64) error {
 	if skillTypeID.Valid && level.Valid {
 		arg := queries.CreateShipSkillParams{
 			Rank:        rank,
@@ -99,7 +99,7 @@ func (r *Storage) createShipSkillIfExists(ctx context.Context, rank, skipTypeID 
 			SkillTypeID: skillTypeID.Int64,
 			SkillLevel:  level.Int64,
 		}
-		if err := r.q.CreateShipSkill(ctx, arg); err != nil {
+		if err := st.q.CreateShipSkill(ctx, arg); err != nil {
 			return err
 		}
 	}
@@ -113,7 +113,7 @@ type CreateShipSkillParams struct {
 	SkillLevel  uint
 }
 
-func (r *Storage) CreateShipSkill(ctx context.Context, arg CreateShipSkillParams) error {
+func (st *Storage) CreateShipSkill(ctx context.Context, arg CreateShipSkillParams) error {
 	if arg.ShipTypeID == 0 || arg.SkillTypeID == 0 || arg.SkillLevel == 0 {
 		return fmt.Errorf("invalid arg %v", arg)
 	}
@@ -123,7 +123,7 @@ func (r *Storage) CreateShipSkill(ctx context.Context, arg CreateShipSkillParams
 		SkillTypeID: int64(arg.SkillTypeID),
 		SkillLevel:  int64(arg.SkillLevel),
 	}
-	if err := r.q.CreateShipSkill(ctx, arg2); err != nil {
+	if err := st.q.CreateShipSkill(ctx, arg2); err != nil {
 		return fmt.Errorf("failed to create ShipSkill %v, %w", arg2, err)
 	}
 	return nil
@@ -235,8 +235,8 @@ type listShipSkillsMapRow struct {
 	SenarySkillLevel     sql.NullInt64
 }
 
-func (r *Storage) listShipSkillsMap(ctx context.Context) ([]listShipSkillsMapRow, error) {
-	rows, err := r.db.QueryContext(
+func (st *Storage) listShipSkillsMap(ctx context.Context) ([]listShipSkillsMapRow, error) {
+	rows, err := st.db.QueryContext(
 		ctx,
 		listShipSkillsMapSQL,
 		model.EveDogmaAttributeIDPrimarySkillID,

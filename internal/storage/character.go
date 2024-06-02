@@ -12,23 +12,23 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (r *Storage) DeleteCharacter(ctx context.Context, characterID int32) error {
-	err := r.q.DeleteCharacter(ctx, int64(characterID))
+func (st *Storage) DeleteCharacter(ctx context.Context, characterID int32) error {
+	err := st.q.DeleteCharacter(ctx, int64(characterID))
 	if err != nil {
 		return fmt.Errorf("failed to delete Character %d: %w", characterID, err)
 	}
 	return nil
 }
 
-func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (*model.Character, error) {
-	row, err := r.q.GetCharacter(ctx, int64(characterID))
+func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*model.Character, error) {
+	row, err := st.q.GetCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to get Character %d: %w", characterID, err)
 	}
-	c, err := r.characterFromDBModel(
+	c, err := st.characterFromDBModel(
 		ctx,
 		row.Character,
 		row.EveCharacter,
@@ -46,26 +46,26 @@ func (r *Storage) GetCharacter(ctx context.Context, characterID int32) (*model.C
 	return c, nil
 }
 
-func (r *Storage) GetFirstCharacter(ctx context.Context) (*model.Character, error) {
-	ids, err := r.ListCharacterIDs(ctx)
+func (st *Storage) GetFirstCharacter(ctx context.Context) (*model.Character, error) {
+	ids, err := st.ListCharacterIDs(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if len(ids) == 0 {
 		return nil, ErrNotFound
 	}
-	return r.GetCharacter(ctx, ids[0])
+	return st.GetCharacter(ctx, ids[0])
 
 }
 
-func (r *Storage) ListCharacters(ctx context.Context) ([]*model.Character, error) {
-	rows, err := r.q.ListCharacters(ctx)
+func (st *Storage) ListCharacters(ctx context.Context) ([]*model.Character, error) {
+	rows, err := st.q.ListCharacters(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list Characters: %w", err)
 	}
 	cc := make([]*model.Character, len(rows))
 	for i, row := range rows {
-		c, err := r.characterFromDBModel(
+		c, err := st.characterFromDBModel(
 			ctx,
 			row.Character,
 			row.EveCharacter,
@@ -85,8 +85,8 @@ func (r *Storage) ListCharacters(ctx context.Context) ([]*model.Character, error
 	return cc, nil
 }
 
-func (r *Storage) ListCharactersShort(ctx context.Context) ([]*model.CharacterShort, error) {
-	rows, err := r.q.ListCharactersShort(ctx)
+func (st *Storage) ListCharactersShort(ctx context.Context) ([]*model.CharacterShort, error) {
+	rows, err := st.q.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list short characters: %w", err)
 
@@ -98,8 +98,8 @@ func (r *Storage) ListCharactersShort(ctx context.Context) ([]*model.CharacterSh
 	return cc, nil
 }
 
-func (r *Storage) ListCharacterIDs(ctx context.Context) ([]int32, error) {
-	ids, err := r.q.ListCharacterIDs(ctx)
+func (st *Storage) ListCharacterIDs(ctx context.Context) ([]int32, error) {
+	ids, err := st.q.ListCharacterIDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list character IDs: %w", err)
 	}
@@ -107,68 +107,68 @@ func (r *Storage) ListCharacterIDs(ctx context.Context) ([]int32, error) {
 	return ids2, nil
 }
 
-func (r *Storage) UpdateCharacterHome(ctx context.Context, characterID int32, homeID sql.NullInt64) error {
+func (st *Storage) UpdateCharacterHome(ctx context.Context, characterID int32, homeID sql.NullInt64) error {
 	arg := queries.UpdateCharacterHomeIdParams{
 		ID:     int64(characterID),
 		HomeID: homeID,
 	}
-	if err := r.q.UpdateCharacterHomeId(ctx, arg); err != nil {
+	if err := st.q.UpdateCharacterHomeId(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update home for character %d: %w", characterID, err)
 	}
 	return nil
 }
 
-func (r *Storage) UpdateCharacterLastLoginAt(ctx context.Context, characterID int32, v sql.NullTime) error {
+func (st *Storage) UpdateCharacterLastLoginAt(ctx context.Context, characterID int32, v sql.NullTime) error {
 	arg := queries.UpdateCharacterLastLoginAtParams{
 		ID:          int64(characterID),
 		LastLoginAt: v,
 	}
-	if err := r.q.UpdateCharacterLastLoginAt(ctx, arg); err != nil {
+	if err := st.q.UpdateCharacterLastLoginAt(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update last login for character %d: %w", characterID, err)
 	}
 	return nil
 }
 
-func (r *Storage) UpdateCharacterLocation(ctx context.Context, characterID int32, locationID sql.NullInt64) error {
+func (st *Storage) UpdateCharacterLocation(ctx context.Context, characterID int32, locationID sql.NullInt64) error {
 	arg := queries.UpdateCharacterLocationIDParams{
 		ID:         int64(characterID),
 		LocationID: locationID,
 	}
-	if err := r.q.UpdateCharacterLocationID(ctx, arg); err != nil {
+	if err := st.q.UpdateCharacterLocationID(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update last login for character %d: %w", characterID, err)
 	}
 	return nil
 }
 
-func (r *Storage) UpdateCharacterShip(ctx context.Context, characterID int32, shipID sql.NullInt32) error {
+func (st *Storage) UpdateCharacterShip(ctx context.Context, characterID int32, shipID sql.NullInt32) error {
 	arg := queries.UpdateCharacterShipIDParams{
 		ID:     int64(characterID),
 		ShipID: sql.NullInt64{Int64: int64(shipID.Int32), Valid: shipID.Valid},
 	}
-	if err := r.q.UpdateCharacterShipID(ctx, arg); err != nil {
+	if err := st.q.UpdateCharacterShipID(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update ship for character %d: %w", characterID, err)
 	}
 	return nil
 }
 
-func (r *Storage) UpdateCharacterSkillPoints(ctx context.Context, characterID int32, totalSP, unallocatedSP sql.NullInt64) error {
+func (st *Storage) UpdateCharacterSkillPoints(ctx context.Context, characterID int32, totalSP, unallocatedSP sql.NullInt64) error {
 	arg := queries.UpdateCharacterSPParams{
 		ID:            int64(characterID),
 		TotalSp:       totalSP,
 		UnallocatedSp: unallocatedSP,
 	}
-	if err := r.q.UpdateCharacterSP(ctx, arg); err != nil {
+	if err := st.q.UpdateCharacterSP(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update sp for character %d: %w", characterID, err)
 	}
 	return nil
 }
 
-func (r *Storage) UpdateCharacterWalletBalance(ctx context.Context, characterID int32, v sql.NullFloat64) error {
+func (st *Storage) UpdateCharacterWalletBalance(ctx context.Context, characterID int32, v sql.NullFloat64) error {
 	arg := queries.UpdateCharacterWalletBalanceParams{
 		ID:            int64(characterID),
 		WalletBalance: v,
 	}
-	if err := r.q.UpdateCharacterWalletBalance(ctx, arg); err != nil {
+	if err := st.q.UpdateCharacterWalletBalance(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update sp for character %d: %w", characterID, err)
 	}
 	return nil
@@ -185,7 +185,7 @@ type UpdateOrCreateCharacterParams struct {
 	WalletBalance sql.NullFloat64
 }
 
-func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreateCharacterParams) error {
+func (st *Storage) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreateCharacterParams) error {
 	arg2 := queries.UpdateOrCreateCharacterParams{
 		ID:            int64(arg.ID),
 		HomeID:        arg.HomeID,
@@ -197,13 +197,13 @@ func (r *Storage) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreat
 		WalletBalance: arg.WalletBalance,
 	}
 
-	if err := r.q.UpdateOrCreateCharacter(ctx, arg2); err != nil {
+	if err := st.q.UpdateOrCreateCharacter(ctx, arg2); err != nil {
 		return fmt.Errorf("failed to update or create Character %d: %w", arg.ID, err)
 	}
 	return nil
 }
 
-func (r *Storage) characterFromDBModel(
+func (st *Storage) characterFromDBModel(
 	ctx context.Context,
 	character queries.Character,
 	eveCharacter queries.EveCharacter,
@@ -224,21 +224,21 @@ func (r *Storage) characterFromDBModel(
 		WalletBalance: character.WalletBalance,
 	}
 	if homeID.Valid {
-		x, err := r.GetLocation(ctx, homeID.Int64)
+		x, err := st.GetLocation(ctx, homeID.Int64)
 		if err != nil {
 			return nil, err
 		}
 		c.Home = x
 	}
 	if locationID.Valid {
-		x, err := r.GetLocation(ctx, locationID.Int64)
+		x, err := st.GetLocation(ctx, locationID.Int64)
 		if err != nil {
 			return nil, err
 		}
 		c.Location = x
 	}
 	if shipID.Valid {
-		x, err := r.GetEveType(ctx, int32(shipID.Int64))
+		x, err := st.GetEveType(ctx, int32(shipID.Int64))
 		if err != nil {
 			return nil, err
 		}

@@ -17,7 +17,7 @@ type CreateEveGroupParams struct {
 	Name        string
 }
 
-func (r *Storage) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams) error {
+func (st *Storage) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams) error {
 	if arg.ID == 0 {
 		return fmt.Errorf("invalid ID %d", arg.ID)
 	}
@@ -27,15 +27,15 @@ func (r *Storage) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams) 
 		IsPublished:   arg.IsPublished,
 		Name:          arg.Name,
 	}
-	err := r.q.CreateEveGroup(ctx, arg2)
+	err := st.q.CreateEveGroup(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("failed to create EveGroup %v, %w", arg, err)
 	}
 	return nil
 }
 
-func (r *Storage) GetEveGroup(ctx context.Context, id int32) (*model.EveGroup, error) {
-	row, err := r.q.GetEveGroup(ctx, int64(id))
+func (st *Storage) GetEveGroup(ctx context.Context, id int32) (*model.EveGroup, error) {
+	row, err := st.q.GetEveGroup(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

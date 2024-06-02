@@ -15,17 +15,17 @@ type CreateCharacterImplantParams struct {
 	EveTypeID   int32
 }
 
-func (r *Storage) CreateCharacterImplant(ctx context.Context, arg CreateCharacterImplantParams) error {
-	return createCharacterImplant(ctx, r.q, arg)
+func (st *Storage) CreateCharacterImplant(ctx context.Context, arg CreateCharacterImplantParams) error {
+	return createCharacterImplant(ctx, st.q, arg)
 }
 
-func (r *Storage) GetCharacterImplant(ctx context.Context, characterID int32, eveTypeID int32) (*model.CharacterImplant, error) {
+func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, eveTypeID int32) (*model.CharacterImplant, error) {
 	arg := queries.GetCharacterImplantParams{
 		CharacterID:      int64(characterID),
 		DogmaAttributeID: model.EveDogmaAttributeIDImplantSlot,
 		EveTypeID:        int64(eveTypeID),
 	}
-	row, err := r.q.GetCharacterImplant(ctx, arg)
+	row, err := st.q.GetCharacterImplant(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -40,12 +40,12 @@ func (r *Storage) GetCharacterImplant(ctx context.Context, characterID int32, ev
 	return t2, nil
 }
 
-func (r *Storage) ListCharacterImplants(ctx context.Context, characterID int32) ([]*model.CharacterImplant, error) {
+func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int32) ([]*model.CharacterImplant, error) {
 	arg := queries.ListCharacterImplantsParams{
 		DogmaAttributeID: model.EveDogmaAttributeIDImplantSlot,
 		CharacterID:      int64(characterID),
 	}
-	rows, err := r.q.ListCharacterImplants(ctx, arg)
+	rows, err := st.q.ListCharacterImplants(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -61,13 +61,13 @@ func (r *Storage) ListCharacterImplants(ctx context.Context, characterID int32) 
 	return ii2, nil
 }
 
-func (r *Storage) ReplaceCharacterImplants(ctx context.Context, characterID int32, args []CreateCharacterImplantParams) error {
-	tx, err := r.db.Begin()
+func (st *Storage) ReplaceCharacterImplants(ctx context.Context, characterID int32, args []CreateCharacterImplantParams) error {
+	tx, err := st.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	qtx := r.q.WithTx(tx)
+	qtx := st.q.WithTx(tx)
 	if err := qtx.DeleteCharacterImplants(ctx, int64(characterID)); err != nil {
 		return err
 	}

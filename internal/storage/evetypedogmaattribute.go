@@ -15,7 +15,7 @@ type CreateEveTypeDogmaAttributeParams struct {
 	Value            float32
 }
 
-func (r *Storage) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEveTypeDogmaAttributeParams) error {
+func (st *Storage) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEveTypeDogmaAttributeParams) error {
 	if arg.DogmaAttributeID == 0 || arg.EveTypeID == 0 {
 		return fmt.Errorf("invalid IDs for EveTypeDogmaAttribute: %v", arg)
 	}
@@ -24,19 +24,19 @@ func (r *Storage) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEve
 		EveTypeID:        int64(arg.EveTypeID),
 		Value:            float64(arg.Value),
 	}
-	err := r.q.CreateEveTypeDogmaAttribute(ctx, arg2)
+	err := st.q.CreateEveTypeDogmaAttribute(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("failed to create EveTypeDogmaAttribute %v, %w", arg, err)
 	}
 	return nil
 }
 
-func (r *Storage) GetEveTypeDogmaAttribute(ctx context.Context, eveTypeID, dogmaAttributeID int32) (float32, error) {
+func (st *Storage) GetEveTypeDogmaAttribute(ctx context.Context, eveTypeID, dogmaAttributeID int32) (float32, error) {
 	arg := queries.GetEveTypeDogmaAttributeParams{
 		DogmaAttributeID: int64(dogmaAttributeID),
 		EveTypeID:        int64(eveTypeID),
 	}
-	row, err := r.q.GetEveTypeDogmaAttribute(ctx, arg)
+	row, err := st.q.GetEveTypeDogmaAttribute(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

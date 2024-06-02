@@ -17,7 +17,7 @@ type CreateEveSolarSystemParams struct {
 	SecurityStatus  float64
 }
 
-func (r *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarSystemParams) error {
+func (st *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarSystemParams) error {
 	if arg.ID == 0 {
 		return fmt.Errorf("invalid ID %d", arg.ID)
 	}
@@ -27,15 +27,15 @@ func (r *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarSy
 		Name:               arg.Name,
 		SecurityStatus:     arg.SecurityStatus,
 	}
-	err := r.q.CreateEveSolarSystem(ctx, arg2)
+	err := st.q.CreateEveSolarSystem(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("failed to create EveSolarSystem %v, %w", arg, err)
 	}
 	return nil
 }
 
-func (r *Storage) GetEveSolarSystem(ctx context.Context, id int32) (*model.EveSolarSystem, error) {
-	row, err := r.q.GetEveSolarSystem(ctx, int64(id))
+func (st *Storage) GetEveSolarSystem(ctx context.Context, id int32) (*model.EveSolarSystem, error) {
+	row, err := st.q.GetEveSolarSystem(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

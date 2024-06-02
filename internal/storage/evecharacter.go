@@ -26,7 +26,7 @@ type CreateEveCharacterParams struct {
 	Title          string
 }
 
-func (r *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacterParams) error {
+func (st *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacterParams) error {
 	if arg.ID == 0 {
 		return fmt.Errorf("invalid EveCharacter ID %d", arg.ID)
 	}
@@ -49,23 +49,23 @@ func (r *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacter
 		arg2.FactionID.Int64 = int64(arg.FactionID)
 		arg2.FactionID.Valid = true
 	}
-	err := r.q.CreateEveCharacter(ctx, arg2)
+	err := st.q.CreateEveCharacter(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("failed to create EveCharacter %v, %w", arg2, err)
 	}
 	return nil
 }
 
-func (r *Storage) DeleteEveCharacter(ctx context.Context, characterID int32) error {
-	err := r.q.DeleteEveCharacter(ctx, int64(characterID))
+func (st *Storage) DeleteEveCharacter(ctx context.Context, characterID int32) error {
+	err := st.q.DeleteEveCharacter(ctx, int64(characterID))
 	if err != nil {
 		return fmt.Errorf("failed to delete EveCharacter %d: %w", characterID, err)
 	}
 	return nil
 }
 
-func (r *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*model.EveCharacter, error) {
-	row, err := r.q.GetEveCharacter(ctx, int64(characterID))
+func (st *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*model.EveCharacter, error) {
+	row, err := st.q.GetEveCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -82,8 +82,8 @@ func (r *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*mode
 	return c, nil
 }
 
-func (r *Storage) ListEveCharacterIDs(ctx context.Context) ([]int32, error) {
-	ids, err := r.q.ListEveCharacterIDs(ctx)
+func (st *Storage) ListEveCharacterIDs(ctx context.Context) ([]int32, error) {
+	ids, err := st.q.ListEveCharacterIDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list EveCharacterIDs: %w", err)
 	}
@@ -91,7 +91,7 @@ func (r *Storage) ListEveCharacterIDs(ctx context.Context) ([]int32, error) {
 	return ids2, nil
 }
 
-func (r *Storage) UpdateEveCharacter(ctx context.Context, c *model.EveCharacter) error {
+func (st *Storage) UpdateEveCharacter(ctx context.Context, c *model.EveCharacter) error {
 	arg := queries.UpdateEveCharacterParams{
 		ID:             int64(c.ID),
 		CorporationID:  int64(c.Corporation.ID),
@@ -108,7 +108,7 @@ func (r *Storage) UpdateEveCharacter(ctx context.Context, c *model.EveCharacter)
 		arg.FactionID.Int64 = int64(c.Faction.ID)
 		arg.FactionID.Valid = true
 	}
-	if err := r.q.UpdateEveCharacter(ctx, arg); err != nil {
+	if err := st.q.UpdateEveCharacter(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update or create EveCharacter %d: %w", c.ID, err)
 	}
 	return nil

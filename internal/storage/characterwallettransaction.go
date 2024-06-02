@@ -23,7 +23,7 @@ type CreateCharacterWalletTransactionParams struct {
 	UnitPrice     float64
 }
 
-func (r *Storage) CreateCharacterWalletTransaction(ctx context.Context, arg CreateCharacterWalletTransactionParams) error {
+func (st *Storage) CreateCharacterWalletTransaction(ctx context.Context, arg CreateCharacterWalletTransactionParams) error {
 	if arg.TransactionID == 0 {
 		return fmt.Errorf("WalletTransaction ID can not be zero, Character %d", arg.CharacterID)
 	}
@@ -41,28 +41,28 @@ func (r *Storage) CreateCharacterWalletTransaction(ctx context.Context, arg Crea
 		UnitPrice:     arg.UnitPrice,
 	}
 
-	err := r.q.CreateCharacterWalletTransaction(ctx, arg2)
+	err := st.q.CreateCharacterWalletTransaction(ctx, arg2)
 	return err
 }
 
-func (r *Storage) GetCharacterWalletTransaction(ctx context.Context, characterID int32, transactionID int64) (*model.CharacterWalletTransaction, error) {
+func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, characterID int32, transactionID int64) (*model.CharacterWalletTransaction, error) {
 	arg := queries.GetCharacterWalletTransactionParams{
 		CharacterID:   int64(characterID),
 		TransactionID: transactionID,
 	}
-	row, err := r.q.GetCharacterWalletTransaction(ctx, arg)
+	row, err := st.q.GetCharacterWalletTransaction(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
 	return characterWalletTransactionFromDBModel(row.CharacterWalletTransaction, row.EveEntity, row.EveTypeName, row.LocationName), err
 }
 
-func (r *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, characterID int32) ([]int64, error) {
-	return r.q.ListCharacterWalletTransactionIDs(ctx, int64(characterID))
+func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, characterID int32) ([]int64, error) {
+	return st.q.ListCharacterWalletTransactionIDs(ctx, int64(characterID))
 }
 
-func (r *Storage) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*model.CharacterWalletTransaction, error) {
-	rows, err := r.q.ListCharacterWalletTransactions(ctx, int64(characterID))
+func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*model.CharacterWalletTransaction, error) {
+	rows, err := st.q.ListCharacterWalletTransactions(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}

@@ -10,15 +10,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (r *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*model.CharacterToken, error) {
-	t, err := r.q.GetCharacterToken(ctx, int64(characterID))
+func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*model.CharacterToken, error) {
+	t, err := st.q.GetCharacterToken(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to get token for character %d: %w", characterID, err)
 	}
-	ss, err := r.q.ListCharacterTokenScopes(ctx, int64(characterID))
+	ss, err := st.q.ListCharacterTokenScopes(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func (r *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*mo
 	return t2, nil
 }
 
-func (r *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *model.CharacterToken) error {
+func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *model.CharacterToken) error {
 	arg := queries.UpdateOrCreateCharacterTokenParams{
 		AccessToken:  t.AccessToken,
 		CharacterID:  int64(t.CharacterID),
@@ -38,24 +38,24 @@ func (r *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *model.Cha
 		RefreshToken: t.RefreshToken,
 		TokenType:    t.TokenType,
 	}
-	token, err := r.q.UpdateOrCreateCharacterToken(ctx, arg)
+	token, err := st.q.UpdateOrCreateCharacterToken(ctx, arg)
 	if err != nil {
 		return fmt.Errorf("failed to update or create token for character %d: %w", t.CharacterID, err)
 	}
 	ss := make([]queries.Scope, len(t.Scopes))
 	for i, name := range t.Scopes {
-		s, err := r.getOrCreateScope(ctx, name)
+		s, err := st.getOrCreateScope(ctx, name)
 		if err != nil {
 			return err
 		}
 		ss[i] = s
 	}
-	tx, err := r.db.Begin()
+	tx, err := st.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	qtx := r.q.WithTx(tx)
+	qtx := st.q.WithTx(tx)
 	if err := qtx.ClearCharacterTokenScopes(ctx, int64(t.CharacterID)); err != nil {
 		return err
 	}
@@ -74,17 +74,17 @@ func (r *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *model.Cha
 	return nil
 }
 
-func (r *Storage) getOrCreateScope(ctx context.Context, name string) (queries.Scope, error) {
+func (st *Storage) getOrCreateScope(ctx context.Context, name string) (queries.Scope, error) {
 	var s queries.Scope
 	if name == "" {
 		return s, fmt.Errorf("invalid scope name")
 	}
-	tx, err := r.db.Begin()
+	tx, err := st.db.Begin()
 	if err != nil {
 		return s, err
 	}
 	defer tx.Rollback()
-	qtx := r.q.WithTx(tx)
+	qtx := st.q.WithTx(tx)
 	s, err = qtx.GetScope(ctx, name)
 	if !errors.Is(err, sql.ErrNoRows) {
 		return s, err

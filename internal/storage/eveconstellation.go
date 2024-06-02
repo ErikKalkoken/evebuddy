@@ -16,7 +16,7 @@ type CreateEveConstellationParams struct {
 	RegionID int32
 }
 
-func (r *Storage) CreateEveConstellation(ctx context.Context, arg CreateEveConstellationParams) error {
+func (st *Storage) CreateEveConstellation(ctx context.Context, arg CreateEveConstellationParams) error {
 	if arg.ID == 0 {
 		return fmt.Errorf("invalid ID %d", arg.ID)
 	}
@@ -25,15 +25,15 @@ func (r *Storage) CreateEveConstellation(ctx context.Context, arg CreateEveConst
 		EveRegionID: int64(arg.RegionID),
 		Name:        arg.Name,
 	}
-	err := r.q.CreateEveConstellation(ctx, arg2)
+	err := st.q.CreateEveConstellation(ctx, arg2)
 	if err != nil {
 		return fmt.Errorf("failed to create EveConstellation %v, %w", arg, err)
 	}
 	return nil
 }
 
-func (r *Storage) GetEveConstellation(ctx context.Context, id int32) (*model.EveConstellation, error) {
-	row, err := r.q.GetEveConstellation(ctx, int64(id))
+func (st *Storage) GetEveConstellation(ctx context.Context, id int32) (*model.EveConstellation, error) {
+	row, err := st.q.GetEveConstellation(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound

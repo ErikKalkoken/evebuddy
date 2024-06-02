@@ -11,24 +11,24 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (r *Storage) DeleteExcludedCharacterSkills(ctx context.Context, characterID int32, eveTypeIDs []int32) error {
+func (st *Storage) DeleteExcludedCharacterSkills(ctx context.Context, characterID int32, eveTypeIDs []int32) error {
 	arg := queries.DeleteExcludedCharacterSkillsParams{
 		CharacterID: int64(characterID),
 		EveTypeIds:  islices.ConvertNumeric[int32, int64](eveTypeIDs),
 	}
-	err := r.q.DeleteExcludedCharacterSkills(ctx, arg)
+	err := st.q.DeleteExcludedCharacterSkills(ctx, arg)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *Storage) GetCharacterSkill(ctx context.Context, characterID int32, eveTypeID int32) (*model.CharacterSkill, error) {
+func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, eveTypeID int32) (*model.CharacterSkill, error) {
 	arg := queries.GetCharacterSkillParams{
 		CharacterID: int64(characterID),
 		EveTypeID:   int64(eveTypeID),
 	}
-	row, err := r.q.GetCharacterSkill(ctx, arg)
+	row, err := st.q.GetCharacterSkill(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
@@ -39,12 +39,12 @@ func (r *Storage) GetCharacterSkill(ctx context.Context, characterID int32, eveT
 	return t2, nil
 }
 
-func (r *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]model.ListCharacterSkillProgress, error) {
+func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]model.ListCharacterSkillProgress, error) {
 	arg := queries.ListCharacterSkillProgressParams{
 		CharacterID: int64(characterID),
 		EveGroupID:  int64(eveGroupID),
 	}
-	xx, err := r.q.ListCharacterSkillProgress(ctx, arg)
+	xx, err := st.q.ListCharacterSkillProgress(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -61,12 +61,12 @@ func (r *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, e
 	return oo, nil
 }
 
-func (r *Storage) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]model.ListCharacterSkillGroupProgress, error) {
+func (st *Storage) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]model.ListCharacterSkillGroupProgress, error) {
 	arg := queries.ListCharacterSkillGroupsProgressParams{
 		CharacterID:   int64(characterID),
 		EveCategoryID: model.EveCategoryIDSkill,
 	}
-	xx, err := r.q.ListCharacterSkillGroupsProgress(ctx, arg)
+	xx, err := st.q.ListCharacterSkillGroupsProgress(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ type UpdateOrCreateCharacterSkillParams struct {
 	TrainedSkillLevel  int
 }
 
-func (r *Storage) UpdateOrCreateCharacterSkill(ctx context.Context, arg UpdateOrCreateCharacterSkillParams) error {
+func (st *Storage) UpdateOrCreateCharacterSkill(ctx context.Context, arg UpdateOrCreateCharacterSkillParams) error {
 	arg2 := queries.UpdateOrCreateCharacterSkillParams{
 		ActiveSkillLevel:   int64(arg.ActiveSkillLevel),
 		EveTypeID:          int64(arg.EveTypeID),
@@ -101,7 +101,7 @@ func (r *Storage) UpdateOrCreateCharacterSkill(ctx context.Context, arg UpdateOr
 		CharacterID:        int64(arg.CharacterID),
 		TrainedSkillLevel:  int64(arg.TrainedSkillLevel),
 	}
-	if err := r.q.UpdateOrCreateCharacterSkill(ctx, arg2); err != nil {
+	if err := st.q.UpdateOrCreateCharacterSkill(ctx, arg2); err != nil {
 		return fmt.Errorf("failed to update or create character skill for character %d: %w", arg.CharacterID, err)
 	}
 	return nil

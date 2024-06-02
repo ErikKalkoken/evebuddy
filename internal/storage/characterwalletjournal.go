@@ -26,7 +26,7 @@ type CreateCharacterWalletJournalEntryParams struct {
 	TaxReceiverID int32
 }
 
-func (r *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg CreateCharacterWalletJournalEntryParams) error {
+func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg CreateCharacterWalletJournalEntryParams) error {
 	if arg.RefID == 0 {
 		return fmt.Errorf("CharacterWalletJournalEntry ID can not be zero, Character %d", arg.CharacterID)
 	}
@@ -55,16 +55,16 @@ func (r *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg Cre
 		arg2.TaxReceiverID.Int64 = int64(arg.TaxReceiverID)
 		arg2.TaxReceiverID.Valid = true
 	}
-	err := r.q.CreateCharacterWalletJournalEntry(ctx, arg2)
+	err := st.q.CreateCharacterWalletJournalEntry(ctx, arg2)
 	return err
 }
 
-func (r *Storage) GetCharacterWalletJournalEntry(ctx context.Context, characterID int32, refID int64) (*model.CharacterWalletJournalEntry, error) {
+func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, characterID int32, refID int64) (*model.CharacterWalletJournalEntry, error) {
 	arg := queries.GetCharacterWalletJournalEntryParams{
 		CharacterID: int64(characterID),
 		RefID:       refID,
 	}
-	row, err := r.q.GetCharacterWalletJournalEntry(ctx, arg)
+	row, err := st.q.GetCharacterWalletJournalEntry(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -76,12 +76,12 @@ func (r *Storage) GetCharacterWalletJournalEntry(ctx context.Context, characterI
 	), err
 }
 
-func (r *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int32) ([]int64, error) {
-	return r.q.ListCharacterWalletJournalEntryRefIDs(ctx, int64(characterID))
+func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int32) ([]int64, error) {
+	return st.q.ListCharacterWalletJournalEntryRefIDs(ctx, int64(characterID))
 }
 
-func (r *Storage) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
-	rows, err := r.q.ListCharacterWalletJournalEntries(ctx, int64(characterID))
+func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
+	rows, err := st.q.ListCharacterWalletJournalEntries(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}

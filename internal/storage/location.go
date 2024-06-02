@@ -21,7 +21,7 @@ type UpdateOrCreateLocationParams struct {
 	UpdatedAt        time.Time
 }
 
-func (r *Storage) UpdateOrCreateLocation(ctx context.Context, arg UpdateOrCreateLocationParams) error {
+func (st *Storage) UpdateOrCreateLocation(ctx context.Context, arg UpdateOrCreateLocationParams) error {
 	if arg.ID == 0 {
 		return fmt.Errorf("invalid structure ID %d", arg.ID)
 	}
@@ -33,29 +33,29 @@ func (r *Storage) UpdateOrCreateLocation(ctx context.Context, arg UpdateOrCreate
 		OwnerID:          sql.NullInt64{Int64: int64(arg.OwnerID.Int32), Valid: arg.OwnerID.Valid},
 		UpdatedAt:        arg.UpdatedAt,
 	}
-	if err := r.q.UpdateOrCreateLocation(ctx, arg2); err != nil {
+	if err := st.q.UpdateOrCreateLocation(ctx, arg2); err != nil {
 		return fmt.Errorf("failed to update or create Structure %v, %w", arg, err)
 	}
 	return nil
 }
 
-func (r *Storage) GetLocation(ctx context.Context, id int64) (*model.Location, error) {
-	l, err := r.q.GetLocation(ctx, id)
+func (st *Storage) GetLocation(ctx context.Context, id int64) (*model.Location, error) {
+	l, err := st.q.GetLocation(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to get Structure for id %d: %w", id, err)
 	}
-	x, err := r.locationFromDBModel(ctx, l)
+	x, err := st.locationFromDBModel(ctx, l)
 	if err != nil {
 		return nil, err
 	}
 	return x, nil
 }
 
-func (r *Storage) MissingLocations(ctx context.Context, ids []int64) ([]int64, error) {
-	currentIDs, err := r.q.ListLocationIDs(ctx)
+func (st *Storage) MissingLocations(ctx context.Context, ids []int64) ([]int64, error) {
+	currentIDs, err := st.q.ListLocationIDs(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -65,28 +65,28 @@ func (r *Storage) MissingLocations(ctx context.Context, ids []int64) ([]int64, e
 	return missing.ToSlice(), nil
 }
 
-func (r *Storage) locationFromDBModel(ctx context.Context, l queries.Location) (*model.Location, error) {
+func (st *Storage) locationFromDBModel(ctx context.Context, l queries.Location) (*model.Location, error) {
 	l2 := &model.Location{
 		ID:        l.ID,
 		Name:      l.Name,
 		UpdatedAt: l.UpdatedAt,
 	}
 	if l.EveTypeID.Valid {
-		x, err := r.GetEveType(ctx, int32(l.EveTypeID.Int64))
+		x, err := st.GetEveType(ctx, int32(l.EveTypeID.Int64))
 		if err != nil {
 			return nil, err
 		}
 		l2.Type = x
 	}
 	if l.EveSolarSystemID.Valid {
-		x, err := r.GetEveSolarSystem(ctx, int32(l.EveSolarSystemID.Int64))
+		x, err := st.GetEveSolarSystem(ctx, int32(l.EveSolarSystemID.Int64))
 		if err != nil {
 			return nil, err
 		}
 		l2.SolarSystem = x
 	}
 	if l.OwnerID.Valid {
-		x, err := r.GetEveEntity(ctx, int32(l.OwnerID.Int64))
+		x, err := st.GetEveEntity(ctx, int32(l.OwnerID.Int64))
 		if err != nil {
 			return nil, err
 		}

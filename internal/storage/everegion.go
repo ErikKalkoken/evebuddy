@@ -16,7 +16,7 @@ type CreateEveRegionParams struct {
 	Name        string
 }
 
-func (r *Storage) CreateEveRegion(ctx context.Context, arg CreateEveRegionParams) (*model.EveRegion, error) {
+func (st *Storage) CreateEveRegion(ctx context.Context, arg CreateEveRegionParams) (*model.EveRegion, error) {
 	if arg.ID == 0 {
 		return nil, fmt.Errorf("invalid ID %d", arg.ID)
 	}
@@ -25,15 +25,15 @@ func (r *Storage) CreateEveRegion(ctx context.Context, arg CreateEveRegionParams
 		Description: arg.Description,
 		Name:        arg.Name,
 	}
-	e, err := r.q.CreateEveRegion(ctx, arg2)
+	e, err := st.q.CreateEveRegion(ctx, arg2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create EveRegion %v, %w", arg2, err)
 	}
 	return eveRegionFromDBModel(e), nil
 }
 
-func (r *Storage) GetEveRegion(ctx context.Context, id int32) (*model.EveRegion, error) {
-	c, err := r.q.GetEveRegion(ctx, int64(id))
+func (st *Storage) GetEveRegion(ctx context.Context, id int32) (*model.EveRegion, error) {
+	c, err := st.q.GetEveRegion(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
