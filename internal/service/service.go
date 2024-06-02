@@ -12,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/service/characterstatus"
 	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/service/esistatus"
+	"github.com/ErikKalkoken/evebuddy/internal/service/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
@@ -24,6 +25,8 @@ type Service struct {
 	CharacterStatus *characterstatus.CharacterStatusCache
 	// Dictionary service
 	Dictionary *dictionary.Dictionary
+	// EveImage service
+	EveImage *eveimage.EveImage
 	// ESI status service
 	ESIStatus *esistatus.ESIStatus
 	// Eve Universe service
@@ -31,8 +34,10 @@ type Service struct {
 }
 
 // New creates and returns a new service instance.
-func New(st *storage.Storage) *Service {
-	defaultHttpClient := &http.Client{
+// st must point to a valid storage instance
+// imageCachePath can be empty. Then a temporary directory will be create and used instead.
+func New(st *storage.Storage, imageCacheDir string) *Service {
+	httpClient := &http.Client{
 		Transport: ihttp.LoggedTransport{},
 	}
 	esiHttpClient := &http.Client{
@@ -55,9 +60,10 @@ func New(st *storage.Storage) *Service {
 		panic(err)
 	}
 	sv := Service{
-		Characters:      characters.New(st, defaultHttpClient, esiClient, cs, dt, eu),
+		Characters:      characters.New(st, httpClient, esiClient, cs, dt, eu),
 		CharacterStatus: cs,
 		Dictionary:      dt,
+		EveImage:        eveimage.New(imageCacheDir, httpClient),
 		ESIStatus:       esistatus.New(esiClient),
 		EveUniverse:     eu,
 	}

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"runtime"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
@@ -69,16 +67,12 @@ type ui struct {
 }
 
 // NewUI build the UI and returns it.
-func NewUI(service *service.Service, imageCachePath string) *ui {
+func NewUI(sv *service.Service) *ui {
 	app := app.New()
 	w := app.NewWindow(appName(app))
-	httpClient := &http.Client{
-		Timeout:   time.Second * 30,
-		Transport: ihttp.LoggedTransport{},
-	}
 	u := &ui{app: app,
-		imageManager: eveimage.New(imageCachePath, httpClient),
-		sv:           service,
+		imageManager: sv.EveImage,
+		sv:           sv,
 		window:       w,
 	}
 
@@ -149,9 +143,9 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	w.SetMaster()
 
 	var c *model.Character
-	cID, ok, err := service.Dictionary.GetInt(model.SettingLastCharacterID)
+	cID, ok, err := sv.Dictionary.GetInt(model.SettingLastCharacterID)
 	if err == nil && ok {
-		c, err = service.Characters.GetCharacter(context.Background(), int32(cID))
+		c, err = sv.Characters.GetCharacter(context.Background(), int32(cID))
 		if err != nil {
 			if !errors.Is(err, storage.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -26,16 +27,28 @@ var (
 // EveImage provides cached access to images from the Eve Online image server.
 type EveImage struct {
 	httpClient *http.Client
-	// path is where the image files are stored for caching
-	path string
-	sfg  *singleflight.Group
+	// cacheDir is where the image files are stored for caching
+	cacheDir string
+	sfg      *singleflight.Group
 }
 
 // New returns a new Images object. path is the location of the file cache.
-func New(path string, httpClient *http.Client) *EveImage {
+// When no path is given (empty string) it will create a temporary directory instead.
+// When not provides a httpClient (nil) it will use the default client.
+func New(cacheDir string, httpClient *http.Client) *EveImage {
+	if cacheDir == "" {
+		p, err := os.MkdirTemp("", "eveimage")
+		if err != nil {
+			log.Fatal(err)
+		}
+		cacheDir = p
+	}
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
 	m := &EveImage{
 		httpClient: httpClient,
-		path:       path,
+		cacheDir:   cacheDir,
 		sfg:        new(singleflight.Group),
 	}
 	return m
@@ -139,7 +152,7 @@ func (m *EveImage) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
 
 func (m *EveImage) image(url string) (fyne.Resource, error) {
 	hash := makeMD5Hash(url)
-	name := filepath.Join(m.path, hash+".tmp")
+	name := filepath.Join(m.cacheDir, hash+".tmp")
 	dat, err := os.ReadFile(name)
 	if errors.Is(err, os.ErrNotExist) {
 		x, err, _ := m.sfg.Do(hash, func() (any, error) {
@@ -198,19 +211,19 @@ func makeMD5Hash(text string) string {
 
 // Clear clears the images cache and returns the number of deleted entries.
 func (m *EveImage) Clear() (int, error) {
-	files, err := os.ReadDir(m.path)
+	files, err := os.ReadDir(m.cacheDir)
 	if err != nil {
 		return 0, err
 	}
 	for _, f := range files {
-		os.RemoveAll(path.Join(m.path, f.Name()))
+		os.RemoveAll(path.Join(m.cacheDir, f.Name()))
 	}
 	return len(files), nil
 }
 
 // Size returns the total size of all image files in by bytes.
 func (m *EveImage) Size() (int, error) {
-	files, err := os.ReadDir(m.path)
+	files, err := os.ReadDir(m.cacheDir)
 	if err != nil {
 		return 0, err
 	}
@@ -227,7 +240,7 @@ func (m *EveImage) Size() (int, error) {
 
 // Count returns the number of all image files.
 func (m *EveImage) Count() (int, error) {
-	files, err := os.ReadDir(m.path)
+	files, err := os.ReadDir(m.cacheDir)
 	if err != nil {
 		return 0, err
 	}

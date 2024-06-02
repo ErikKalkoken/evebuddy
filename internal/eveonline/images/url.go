@@ -1,4 +1,4 @@
-// Package images provides image URLs for the Eve Online image server.
+// Package images provides valid image URLs for the Eve Online image server.
 package images
 
 import (
