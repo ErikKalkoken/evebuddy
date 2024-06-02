@@ -17,17 +17,18 @@ func TestEveTypeDogmaAttribute(t *testing.T) {
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		x := factory.CreateEveType()
+		et := factory.CreateEveType()
+		eda := factory.CreateEveDogmaAttribute()
 		arg := storage.CreateEveTypeDogmaAttributeParams{
-			DogmaAttributeID: 42,
-			EveTypeID:        x.ID,
+			DogmaAttributeID: eda.ID,
+			EveTypeID:        et.ID,
 			Value:            123.45,
 		}
 		// when
 		err := r.CreateEveTypeDogmaAttribute(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			v, err := r.GetEveTypeDogmaAttribute(ctx, x.ID, 42)
+			v, err := r.GetEveTypeDogmaAttribute(ctx, et.ID, eda.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, float32(123.45), v)
 			}

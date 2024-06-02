@@ -53,7 +53,7 @@ var CharacterSections = []CharacterSection{
 
 type CharacterSection string
 
-func (cs CharacterSection) Name() string {
+func (cs CharacterSection) DisplayName() string {
 	t := strings.ReplaceAll(string(cs), "_", " ")
 	c := cases.Title(language.English)
 	t = c.String(t)

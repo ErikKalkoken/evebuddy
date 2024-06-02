@@ -124,6 +124,10 @@ func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32
 			return nil, err
 		}
 		for _, o := range t.DogmaAttributes {
+			_, err := eu.GetOrCreateEveDogmaAttributeESI(ctx, o.AttributeId)
+			if err != nil {
+				return nil, err
+			}
 			arg := storage.CreateEveTypeDogmaAttributeParams{
 				DogmaAttributeID: o.AttributeId,
 				EveTypeID:        id,
@@ -201,5 +205,4 @@ func (eu *EveUniverseService) UpdateEveCategoryWithChildrenESI(ctx context.Conte
 
 func (eu *EveUniverseService) UpdateEveShipSkills(ctx context.Context) error {
 	return eu.st.UpdateEveShipSkills(ctx)
-
 }

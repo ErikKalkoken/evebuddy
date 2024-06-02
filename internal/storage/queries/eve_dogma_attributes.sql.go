@@ -9,7 +9,7 @@ import (
 	"context"
 )
 
-const createEveDogmaAttribute = `-- name: CreateEveDogmaAttribute :exec
+const createEveDogmaAttribute = `-- name: CreateEveDogmaAttribute :one
 INSERT INTO eve_dogma_attributes (
     id,
     default_value,
@@ -25,6 +25,7 @@ INSERT INTO eve_dogma_attributes (
 VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 )
+RETURNING id, default_value, description, display_name, icon_id, name, is_high_good, is_published, is_stackable, unit_id
 `
 
 type CreateEveDogmaAttributeParams struct {
@@ -40,8 +41,8 @@ type CreateEveDogmaAttributeParams struct {
 	UnitID       int64
 }
 
-func (q *Queries) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDogmaAttributeParams) error {
-	_, err := q.db.ExecContext(ctx, createEveDogmaAttribute,
+func (q *Queries) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDogmaAttributeParams) (EveDogmaAttribute, error) {
+	row := q.db.QueryRowContext(ctx, createEveDogmaAttribute,
 		arg.ID,
 		arg.DefaultValue,
 		arg.Description,
@@ -53,7 +54,20 @@ func (q *Queries) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDogm
 		arg.IsStackable,
 		arg.UnitID,
 	)
-	return err
+	var i EveDogmaAttribute
+	err := row.Scan(
+		&i.ID,
+		&i.DefaultValue,
+		&i.Description,
+		&i.DisplayName,
+		&i.IconID,
+		&i.Name,
+		&i.IsHighGood,
+		&i.IsPublished,
+		&i.IsStackable,
+		&i.UnitID,
+	)
+	return i, err
 }
 
 const getEveDogmaAttribute = `-- name: GetEveDogmaAttribute :one

@@ -798,7 +798,8 @@ func (f Factory) CreateEveTypeDogmaAttribute(args ...storage.CreateEveTypeDogmaA
 		arg.EveTypeID = x.ID
 	}
 	if arg.DogmaAttributeID == 0 {
-		arg.DogmaAttributeID = int32(f.calcNewIDWithParam("eve_types_dogma_attributes", "dogma_attribute_id", "eve_type_id", int64(arg.EveTypeID)))
+		x := f.CreateEveDogmaAttribute()
+		arg.DogmaAttributeID = x.ID
 	}
 	if arg.Value == 0 {
 		arg.Value = rand.Float32() * 10_000
@@ -806,6 +807,40 @@ func (f Factory) CreateEveTypeDogmaAttribute(args ...storage.CreateEveTypeDogmaA
 	if err := f.st.CreateEveTypeDogmaAttribute(ctx, arg); err != nil {
 		panic(err)
 	}
+}
+
+func (f Factory) CreateEveDogmaAttribute(args ...storage.CreateEveDogmaAttributeParams) *model.EveDogmaAttribute {
+	var arg storage.CreateEveDogmaAttributeParams
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_dogma_attributes", "id", 1))
+	}
+	if arg.DefaultValue == 0 {
+		arg.DefaultValue = rand.Float32() * 10_000
+	}
+	if arg.Description == "" {
+		arg.Description = fmt.Sprintf("Description #%d", arg.ID)
+	}
+	if arg.DisplayName == "" {
+		arg.DisplayName = fmt.Sprintf("Display Name #%d", arg.ID)
+	}
+	if arg.IconID == 0 {
+		arg.IconID = rand.Int32N(100_000)
+	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Name #%d", arg.ID)
+	}
+	if arg.UnitID == 0 {
+		arg.UnitID = rand.Int32N(100_000)
+	}
+	o, err := f.st.CreateEveDogmaAttribute(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	return o
 }
 
 func (f Factory) CreateEveRegion(args ...storage.CreateEveRegionParams) *model.EveRegion {
@@ -964,11 +999,11 @@ func (f *Factory) calcNewIDWithCharacter(table, id_field string, characterID int
 	return max.Int64 + 1
 }
 
-func (f *Factory) calcNewIDWithParam(table, id_field, where_field string, where_value int64) int64 {
-	var max sql.NullInt64
-	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", id_field, table, where_field)
-	if err := f.db.QueryRow(sql, where_value).Scan(&max); err != nil {
-		panic(err)
-	}
-	return max.Int64 + 1
-}
+// func (f *Factory) calcNewIDWithParam(table, id_field, where_field string, where_value int64) int64 {
+// 	var max sql.NullInt64
+// 	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", id_field, table, where_field)
+// 	if err := f.db.QueryRow(sql, where_value).Scan(&max); err != nil {
+// 		panic(err)
+// 	}
+// 	return max.Int64 + 1
+// }

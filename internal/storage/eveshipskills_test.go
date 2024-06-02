@@ -56,14 +56,20 @@ func TestEveShipSkills(t *testing.T) {
 			IsPublished: true,
 		})
 		skill_11 := factory.CreateEveType()
+		primarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: model.EveDogmaAttributeIDPrimarySkillID,
+		})
+		primarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: model.EveDogmaAttributeIDPrimarySkillLevel,
+		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_1.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDPrimarySkillID,
+			DogmaAttributeID: primarySkillID.ID,
 			Value:            float32(skill_11.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_1.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDPrimarySkillLevel,
+			DogmaAttributeID: primarySkillLevel.ID,
 			Value:            float32(1),
 		})
 		ship_2 := factory.CreateEveType(storage.CreateEveTypeParams{
@@ -73,67 +79,97 @@ func TestEveShipSkills(t *testing.T) {
 		skill_21 := factory.CreateEveType()
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDPrimarySkillID,
+			DogmaAttributeID: primarySkillID.ID,
 			Value:            float32(skill_21.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDPrimarySkillLevel,
+			DogmaAttributeID: primarySkillLevel.ID,
 			Value:            float32(1),
 		})
 		skill_22 := factory.CreateEveType()
+		secondarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: model.EveDogmaAttributeIDSecondarySkillID,
+		})
+		secondarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: model.EveDogmaAttributeIDSecondarySkillLevel,
+		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDSecondarySkillID,
+			DogmaAttributeID: secondarySkillID.ID,
 			Value:            float32(skill_22.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDSecondarySkillLevel,
+			DogmaAttributeID: secondarySkillLevel.ID,
 			Value:            float32(2),
 		})
 		skill_23 := factory.CreateEveType()
+		tertiarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: model.EveDogmaAttributeIDTertiarySkillID,
+		})
+		tertiarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: model.EveDogmaAttributeIDTertiarySkillLevel,
+		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDTertiarySkillID,
+			DogmaAttributeID: tertiarySkillID.ID,
 			Value:            float32(skill_23.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDTertiarySkillLevel,
+			DogmaAttributeID: tertiarySkillLevel.ID,
 			Value:            float32(3),
 		})
 		skill_24 := factory.CreateEveType()
+		quaternarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: model.EveDogmaAttributeIDQuaternarySkillID,
+		})
+		quaternarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: model.EveDogmaAttributeIDQuaternarySkillLevel,
+		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDQuaternarySkillID,
+			DogmaAttributeID: quaternarySkillID.ID,
 			Value:            float32(skill_24.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDQuaternarySkillLevel,
+			DogmaAttributeID: quaternarySkillLevel.ID,
 			Value:            float32(4),
 		})
 		skill_25 := factory.CreateEveType()
+		quinarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: model.EveDogmaAttributeIDQuinarySkillID,
+		})
+		quinarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: model.EveDogmaAttributeIDQuinarySkillLevel,
+		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDQuinarySkillID,
+			DogmaAttributeID: quinarySkillID.ID,
 			Value:            float32(skill_25.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDQuinarySkillLevel,
+			DogmaAttributeID: quinarySkillLevel.ID,
 			Value:            float32(5),
 		})
 		skill_26 := factory.CreateEveType()
+		senarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: model.EveDogmaAttributeIDSenarySkillID,
+		})
+		senarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
+			ID: model.EveDogmaAttributeIDSenarySkillLevel,
+		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDSenarySkillID,
+			DogmaAttributeID: senarySkillID.ID,
 			Value:            float32(skill_26.ID),
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
-			DogmaAttributeID: model.EveDogmaAttributeIDSenarySkillLevel,
+			DogmaAttributeID: senarySkillLevel.ID,
 			Value:            float32(3),
 		})
 		// when

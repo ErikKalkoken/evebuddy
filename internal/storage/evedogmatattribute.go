@@ -23,9 +23,9 @@ type CreateEveDogmaAttributeParams struct {
 	UnitID       int32
 }
 
-func (st *Storage) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDogmaAttributeParams) error {
+func (st *Storage) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDogmaAttributeParams) (*model.EveDogmaAttribute, error) {
 	if arg.ID == 0 {
-		return fmt.Errorf("invalid ID %d", arg.ID)
+		return nil, fmt.Errorf("invalid ID %d", arg.ID)
 	}
 	arg2 := queries.CreateEveDogmaAttributeParams{
 		ID:           int64(arg.ID),
@@ -39,10 +39,11 @@ func (st *Storage) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDog
 		IsStackable:  arg.IsStackable,
 		UnitID:       int64(arg.UnitID),
 	}
-	if err := st.q.CreateEveDogmaAttribute(ctx, arg2); err != nil {
-		return fmt.Errorf("failed to create EveDogmaAttribute %v, %w", arg2, err)
+	o, err := st.q.CreateEveDogmaAttribute(ctx, arg2)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create EveDogmaAttribute %v, %w", arg2, err)
 	}
-	return nil
+	return eveDogmaAttributeFromDBModel(o), nil
 }
 
 func (st *Storage) GetEveDogmaAttribute(ctx context.Context, id int32) (*model.EveDogmaAttribute, error) {

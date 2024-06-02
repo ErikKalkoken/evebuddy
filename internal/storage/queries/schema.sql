@@ -67,7 +67,8 @@ CREATE TABLE eve_type_dogma_attributes (
     eve_type_id INTEGER NOT NULL,
     value REAL NOT NULL,
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
-    UNIQUE (dogma_attribute_id, eve_type_id)
+    FOREIGN KEY (dogma_attribute_id) REFERENCES eve_dogma_attributes(id) ON DELETE CASCADE,
+    UNIQUE (eve_type_id, dogma_attribute_id)
 );
 
 CREATE TABLE eve_type_dogma_effects (
@@ -76,7 +77,7 @@ CREATE TABLE eve_type_dogma_effects (
     eve_type_id INTEGER NOT NULL,
     is_default BOOL NOT NULL,
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
-    UNIQUE (dogma_effect_id, eve_type_id)
+    UNIQUE (eve_type_id, dogma_effect_id)
 );
 
 CREATE TABLE eve_regions (

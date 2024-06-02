@@ -211,13 +211,13 @@ func (a *statusWindow) makeSectionsTable() *widget.Table {
 			i := widget.MediumImportance
 			switch tci.Col {
 			case 0:
-				s = cs.Section.Name()
+				s = cs.Section.DisplayName()
 			case 1:
-				s = timeoutOutput(cs)
+				s = timeoutDisplay(cs)
 			case 2:
-				s = lastUpdatedAtOutput(cs)
+				s = lastUpdatedAtDisplay(cs)
 			case 3:
-				s, i = statusOutput(cs)
+				s, i = statusDisplay(cs)
 			}
 			label.Text = s
 			label.Importance = i
@@ -256,7 +256,7 @@ type formItems struct {
 }
 
 func (a *statusWindow) setDetails(cs model.CharacterStatus) {
-	sv, si := statusOutput(cs)
+	sv, si := statusDisplay(cs)
 	var errorText string
 	if cs.ErrorMessage == "" {
 		errorText = "-"
@@ -265,14 +265,14 @@ func (a *statusWindow) setDetails(cs model.CharacterStatus) {
 	}
 	leading := []formItems{
 		{label: "Character", value: cs.CharacterName},
-		{label: "Section", value: cs.Section.Name()},
+		{label: "Section", value: cs.Section.DisplayName()},
 		{label: "Status", value: sv, importance: si},
 		{label: "Error", value: errorText, wrap: true},
 	}
 	formLeading := makeForm(leading)
 	trailing := []formItems{
-		{label: "Last Update", value: lastUpdatedAtOutput(cs)},
-		{label: "Timeout", value: timeoutOutput(cs)},
+		{label: "Last Update", value: lastUpdatedAtDisplay(cs)},
+		{label: "Timeout", value: timeoutDisplay(cs)},
 	}
 	formTrailing := makeForm(trailing)
 	a.detailsInner.RemoveAll()
@@ -348,16 +348,16 @@ func (a *statusWindow) startTicker(ctx context.Context) {
 	}()
 }
 
-func lastUpdatedAtOutput(cs model.CharacterStatus) string {
+func lastUpdatedAtDisplay(cs model.CharacterStatus) string {
 	return humanizeTime(cs.LastUpdatedAt, "?")
 }
 
-func timeoutOutput(cs model.CharacterStatus) string {
+func timeoutDisplay(cs model.CharacterStatus) string {
 	now := time.Now()
 	return humanize.RelTime(now.Add(cs.Section.Timeout()), now, "", "")
 }
 
-func statusOutput(cs model.CharacterStatus) (string, widget.Importance) {
+func statusDisplay(cs model.CharacterStatus) (string, widget.Importance) {
 	var s string
 	var i widget.Importance
 	if !cs.IsOK() {

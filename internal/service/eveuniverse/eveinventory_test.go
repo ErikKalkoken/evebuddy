@@ -150,6 +150,8 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		factory.CreateEveGroup(storage.CreateEveGroupParams{ID: 25})
+		factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{ID: 161})
+		factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{ID: 162})
 		data := `{
 			"description": "The Rifter is a...",
 			"dogma_attributes": [

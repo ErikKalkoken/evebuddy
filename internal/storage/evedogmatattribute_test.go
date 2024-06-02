@@ -30,21 +30,22 @@ func TestEveDogmaAttribute(t *testing.T) {
 			UnitID:       99,
 		}
 		// when
-		err := r.CreateEveDogmaAttribute(ctx, arg)
+		x1, err := r.CreateEveDogmaAttribute(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetEveDogmaAttribute(ctx, 42)
+			assert.Equal(t, int32(42), x1.ID)
+			assert.Equal(t, float32(1.2), x1.DefaultValue)
+			assert.Equal(t, "description", x1.Description)
+			assert.Equal(t, "display name", x1.DisplayName)
+			assert.Equal(t, int32(7), x1.IconID)
+			assert.Equal(t, "name", x1.Name)
+			assert.True(t, x1.IsHighGood)
+			assert.True(t, x1.IsPublished)
+			assert.True(t, x1.IsStackable)
+			assert.Equal(t, int32(99), x1.UnitID)
+			x2, err := r.GetEveDogmaAttribute(ctx, 42)
 			if assert.NoError(t, err) {
-				assert.Equal(t, int32(42), x.ID)
-				assert.Equal(t, float32(1.2), x.DefaultValue)
-				assert.Equal(t, "description", x.Description)
-				assert.Equal(t, "display name", x.DisplayName)
-				assert.Equal(t, int32(7), x.IconID)
-				assert.Equal(t, "name", x.Name)
-				assert.True(t, x.IsHighGood)
-				assert.True(t, x.IsPublished)
-				assert.True(t, x.IsStackable)
-				assert.Equal(t, int32(99), x.UnitID)
+				assert.Equal(t, x1, x2)
 			}
 		}
 	})

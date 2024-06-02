@@ -1,4 +1,4 @@
--- name: CreateEveDogmaAttribute :exec
+-- name: CreateEveDogmaAttribute :one
 INSERT INTO eve_dogma_attributes (
     id,
     default_value,
@@ -13,7 +13,8 @@ INSERT INTO eve_dogma_attributes (
 )
 VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-);
+)
+RETURNING *;
 
 -- name: GetEveDogmaAttribute :one
 SELECT *
