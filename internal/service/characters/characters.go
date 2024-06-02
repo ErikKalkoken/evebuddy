@@ -20,7 +20,7 @@ type Characters struct {
 	sf         *singleflight.Group
 	// Storage service
 	st *storage.Storage
-	// eu service
+	// EveUniverse service
 	eu *eveuniverse.EveUniverse
 	// CharacterStatus service
 	cs *characterstatus.CharacterStatusCache
@@ -54,7 +54,7 @@ func New(
 	if eu == nil {
 		eu = eveuniverse.New(st, esiClient)
 	}
-	x := &Characters{
+	ct := &Characters{
 		st:         st,
 		esiClient:  esiClient,
 		httpClient: httpClient,
@@ -63,5 +63,5 @@ func New(
 		cs:         cs,
 		dt:         dt,
 	}
-	return x
+	return ct
 }

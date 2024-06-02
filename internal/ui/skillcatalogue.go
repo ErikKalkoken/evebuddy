@@ -112,7 +112,7 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 			if !a.ui.hasCharacter() {
 				return "", nil, nil
 			}
-			oo, err := a.ui.service.Characters.ListCharacterSkillProgress(
+			oo, err := a.ui.sv.Characters.ListCharacterSkillProgress(
 				context.Background(), a.ui.currentCharID(), group.id)
 			if err != nil {
 				return "", nil, err
@@ -248,7 +248,7 @@ func (a *skillCatalogueArea) redraw() {
 
 func (a *skillCatalogueArea) refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
-		_, ok, err := a.ui.service.Dictionary.GetTime(eveCategoriesKeyLastUpdated)
+		_, ok, err := a.ui.sv.Dictionary.GetTime(eveCategoriesKeyLastUpdated)
 		if err != nil {
 			return "", 0, err
 		}
@@ -285,7 +285,7 @@ func (a *skillCatalogueArea) updateGroups() error {
 	if !a.ui.hasCharacter() {
 		return nil
 	}
-	gg, err := a.ui.service.Characters.ListCharacterSkillGroupsProgress(context.Background(), a.ui.currentCharID())
+	gg, err := a.ui.sv.Characters.ListCharacterSkillGroupsProgress(context.Background(), a.ui.currentCharID())
 	if err != nil {
 		return err
 	}

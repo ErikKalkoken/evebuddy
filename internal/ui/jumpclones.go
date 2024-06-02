@@ -155,7 +155,7 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 	if !a.ui.hasCharacter() {
 		return ids, values, 0, nil
 	}
-	clones, err := a.ui.service.Characters.ListCharacterJumpClones(context.Background(), a.ui.currentCharID())
+	clones, err := a.ui.sv.Characters.ListCharacterJumpClones(context.Background(), a.ui.currentCharID())
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -199,7 +199,7 @@ func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance, erro
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance, nil
 	}
-	hasData, err := a.ui.service.Characters.CharacterSectionWasUpdated(context.Background(), a.ui.currentCharID(), model.CharacterSectionJumpClones)
+	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(context.Background(), a.ui.currentCharID(), model.CharacterSectionJumpClones)
 	if err != nil {
 		return "", 0, err
 	}

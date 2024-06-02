@@ -240,7 +240,7 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 		return ids, values, 0, nil
 	}
 	characterID := a.ui.currentCharID()
-	locations, err := a.ui.service.Characters.ListCharacterAssetLocations(context.Background(), characterID)
+	locations, err := a.ui.sv.Characters.ListCharacterAssetLocations(context.Background(), characterID)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -295,7 +295,7 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance, nil
 	}
-	hasData, err := a.ui.service.Characters.CharacterSectionWasUpdated(
+	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(
 		context.Background(), a.ui.currentCharID(), model.CharacterSectionAssets)
 	if err != nil {
 		return "", 0, err
@@ -315,9 +315,9 @@ func (a *assetsArea) redrawAssets(n locationNode) error {
 	var f func(context.Context, int32, int64) ([]*model.CharacterAsset, error)
 	switch n.Type {
 	case nodeShipHangar:
-		f = a.ui.service.Characters.ListCharacterAssetsInShipHangar
+		f = a.ui.sv.Characters.ListCharacterAssetsInShipHangar
 	case nodeItemHangar:
-		f = a.ui.service.Characters.ListCharacterAssetsInItemHangar
+		f = a.ui.sv.Characters.ListCharacterAssetsInItemHangar
 	default:
 		return fmt.Errorf("invalid node type: %v", n.Type)
 	}

@@ -54,12 +54,12 @@ func New(r *storage.Storage) *Service {
 	if err := cs.InitCache(r); err != nil {
 		panic(err)
 	}
-	s := Service{
+	sv := Service{
 		Characters:      characters.New(r, defaultHttpClient, esiClient, cs, dt, eu),
 		CharacterStatus: cs,
 		Dictionary:      dt,
 		ESIStatus:       esistatus.New(esiClient),
 		EveUniverse:     eu,
 	}
-	return &s
+	return &sv
 }

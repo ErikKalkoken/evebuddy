@@ -55,7 +55,7 @@ type ui struct {
 	mailTab               *container.TabItem
 	overviewArea          *overviewArea
 	statusBarArea         *statusBarArea
-	service               *service.Service
+	sv                    *service.Service
 	skillCatalogueArea    *skillCatalogueArea
 	skillqueueArea        *skillqueueArea
 	skillqueueTab         *container.TabItem
@@ -78,7 +78,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	}
 	u := &ui{app: app,
 		imageManager: images.New(imageCachePath, httpClient),
-		service:      service,
+		sv:           service,
 		window:       w,
 	}
 
@@ -164,19 +164,19 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 		u.resetCurrentCharacter()
 	}
 	keyW := "window-width"
-	width, ok, err := u.service.Dictionary.GetFloat32(keyW)
+	width, ok, err := u.sv.Dictionary.GetFloat32(keyW)
 	if err != nil || !ok {
 		width = 1000
 	}
 	keyH := "window-height"
-	height, ok, err := u.service.Dictionary.GetFloat32(keyH)
+	height, ok, err := u.sv.Dictionary.GetFloat32(keyH)
 	if err != nil || !ok {
 		width = 600
 	}
 	w.Resize(fyne.NewSize(width, height))
 
 	keyTabsMainID := "tabs-main-id"
-	index, ok, err := u.service.Dictionary.GetInt(keyTabsMainID)
+	index, ok, err := u.sv.Dictionary.GetInt(keyTabsMainID)
 	if err == nil && ok {
 		u.tabs.SelectIndex(index)
 	}
@@ -189,17 +189,17 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 			continue
 		}
 		key := makeSubTabsKey(i)
-		index, ok, err := u.service.Dictionary.GetInt(key)
+		index, ok, err := u.sv.Dictionary.GetInt(key)
 		if err == nil && ok {
 			tabs.SelectIndex(index)
 		}
 	}
 	w.SetOnClosed(func() {
 		s := w.Canvas().Size()
-		u.service.Dictionary.SetFloat32(keyW, s.Width)
-		u.service.Dictionary.SetFloat32(keyH, s.Height)
+		u.sv.Dictionary.SetFloat32(keyW, s.Width)
+		u.sv.Dictionary.SetFloat32(keyH, s.Height)
 		index := u.tabs.SelectedIndex()
-		u.service.Dictionary.SetInt(keyTabsMainID, index)
+		u.sv.Dictionary.SetInt(keyTabsMainID, index)
 		for i, o := range u.tabs.Items {
 			tabs, ok := o.Content.(*container.AppTabs)
 			if !ok {
@@ -207,11 +207,11 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 			}
 			key := makeSubTabsKey(i)
 			index := tabs.SelectedIndex()
-			u.service.Dictionary.SetInt(key, index)
+			u.sv.Dictionary.SetInt(key, index)
 		}
 	})
 
-	name, ok, err := u.service.Dictionary.GetString(model.SettingTheme)
+	name, ok, err := u.sv.Dictionary.GetString(model.SettingTheme)
 	if err != nil || !ok {
 		name = model.ThemeAuto
 	}
@@ -272,7 +272,7 @@ func (u *ui) hasCharacter() bool {
 }
 
 func (u *ui) loadCurrentCharacter(ctx context.Context, characterID int32) error {
-	c, err := u.service.Characters.GetCharacter(ctx, characterID)
+	c, err := u.sv.Characters.GetCharacter(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -282,7 +282,7 @@ func (u *ui) loadCurrentCharacter(ctx context.Context, characterID int32) error 
 
 func (u *ui) setCurrentCharacter(c *model.Character) {
 	u.currentCharacter = c
-	err := u.service.Dictionary.SetInt(model.SettingLastCharacterID, int(c.ID))
+	err := u.sv.Dictionary.SetInt(model.SettingLastCharacterID, int(c.ID))
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
@@ -321,7 +321,7 @@ func (u *ui) refreshCurrentCharacter() {
 }
 
 func (u *ui) setAnyCharacter() error {
-	c, err := u.service.Characters.GetAnyCharacter(context.Background())
+	c, err := u.sv.Characters.GetAnyCharacter(context.Background())
 	if errors.Is(err, storage.ErrNotFound) {
 		u.resetCurrentCharacter()
 		return nil
@@ -338,7 +338,7 @@ func (u *ui) refreshOverview() {
 
 func (u *ui) resetCurrentCharacter() {
 	u.currentCharacter = nil
-	err := u.service.Dictionary.Delete(model.SettingLastCharacterID)
+	err := u.sv.Dictionary.Delete(model.SettingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}
@@ -352,7 +352,7 @@ func (u *ui) startUpdateTickerEveCharacters() {
 		ctx := context.Background()
 		for {
 			err := func() error {
-				lastUpdated, ok, err := u.service.Dictionary.GetTime(key)
+				lastUpdated, ok, err := u.sv.Dictionary.GetTime(key)
 				if err != nil {
 					return err
 				}
@@ -360,11 +360,11 @@ func (u *ui) startUpdateTickerEveCharacters() {
 					return nil
 				}
 				slog.Info("Started updating eve characters")
-				if err := u.service.EveUniverse.UpdateAllEveCharactersESI(ctx); err != nil {
+				if err := u.sv.EveUniverse.UpdateAllEveCharactersESI(ctx); err != nil {
 					return err
 				}
 				slog.Info("Finished updating eve characters")
-				if err := u.service.Dictionary.SetTime(key, time.Now()); err != nil {
+				if err := u.sv.Dictionary.SetTime(key, time.Now()); err != nil {
 					return err
 				}
 				return nil
@@ -383,7 +383,7 @@ func (u *ui) startUpdateTickerEveCategorySkill() {
 		ctx := context.TODO()
 		for {
 			err := func() error {
-				lastUpdated, ok, err := u.service.Dictionary.GetTime(eveCategoriesKeyLastUpdated)
+				lastUpdated, ok, err := u.sv.Dictionary.GetTime(eveCategoriesKeyLastUpdated)
 				if err != nil {
 					return err
 				}
@@ -391,17 +391,17 @@ func (u *ui) startUpdateTickerEveCategorySkill() {
 					return nil
 				}
 				slog.Info("Started updating categories")
-				if err := u.service.EveUniverse.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategoryIDSkill); err != nil {
+				if err := u.sv.EveUniverse.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategoryIDSkill); err != nil {
 					return err
 				}
-				if err := u.service.EveUniverse.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategoryIDShip); err != nil {
+				if err := u.sv.EveUniverse.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategoryIDShip); err != nil {
 					return err
 				}
-				if err := u.service.Characters.UpdateShipSkills(ctx); err != nil {
+				if err := u.sv.Characters.UpdateShipSkills(ctx); err != nil {
 					return err
 				}
 				slog.Info("Finished updating categories")
-				if err := u.service.Dictionary.SetTime(eveCategoriesKeyLastUpdated, time.Now()); err != nil {
+				if err := u.sv.Dictionary.SetTime(eveCategoriesKeyLastUpdated, time.Now()); err != nil {
 					return err
 				}
 				u.shipsArea.refresh()
@@ -423,7 +423,7 @@ func (u *ui) startUpdateTickerCharacterSections() {
 		ctx := context.Background()
 		for {
 			func() {
-				cc, err := u.service.Characters.ListCharactersShort(ctx)
+				cc, err := u.sv.Characters.ListCharactersShort(ctx)
 				if err != nil {
 					slog.Error("Failed to fetch list of characters", "err", err)
 					return
@@ -451,7 +451,7 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID 
 }
 
 func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s model.CharacterSection, forceUpdate bool) {
-	hasChanged, err := u.service.Characters.UpdateCharacterSection(
+	hasChanged, err := u.sv.Characters.UpdateCharacterSection(
 		ctx, characters.UpdateCharacterSectionParams{
 			CharacterID: characterID,
 			Section:     s,

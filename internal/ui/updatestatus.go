@@ -300,10 +300,10 @@ func makeForm(data []formItems) *widget.Form {
 }
 
 func (a *statusWindow) refresh() error {
-	cc := a.ui.service.CharacterStatus.ListCharacters()
+	cc := a.ui.sv.CharacterStatus.ListCharacters()
 	cc2 := make([]statusCharacter, len(cc))
 	for i, c := range cc {
-		completion, ok := a.ui.service.CharacterStatus.CharacterSummary(c.ID)
+		completion, ok := a.ui.sv.CharacterStatus.CharacterSummary(c.ID)
 		cc2[i] = statusCharacter{id: c.ID, name: c.Name, completion: completion, isOK: ok}
 	}
 	if err := a.charactersData.Set(copyToUntypedSlice(cc2)); err != nil {
@@ -325,7 +325,7 @@ func (a *statusWindow) refreshDetailArea() error {
 	if !ok {
 		return nil
 	}
-	data := a.ui.service.CharacterStatus.ListStatus(c.id)
+	data := a.ui.sv.CharacterStatus.ListStatus(c.id)
 	if err := a.sectionsData.Set(copyToUntypedSlice(data)); err != nil {
 		return err
 	}

@@ -130,7 +130,7 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 			if err != nil {
 				return nil, err
 			}
-			typ, err := a.ui.service.EveUniverse.GetEveType(context.Background(), o.Type.ID)
+			typ, err := a.ui.sv.EveUniverse.GetEveType(context.Background(), o.Type.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -151,7 +151,7 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 
 func (a *shipsArea) refresh() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
-		_, ok, err := a.ui.service.Dictionary.GetTime(eveCategoriesKeyLastUpdated)
+		_, ok, err := a.ui.sv.Dictionary.GetTime(eveCategoriesKeyLastUpdated)
 		if err != nil {
 			return "", 0, false, err
 		}
@@ -188,7 +188,7 @@ func (a *shipsArea) updateEntries() error {
 	}
 	characterID := a.ui.currentCharID()
 	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
-	oo, err := a.ui.service.Characters.ListCharacterShipsAbilities(context.Background(), characterID, search)
+	oo, err := a.ui.sv.Characters.ListCharacterShipsAbilities(context.Background(), characterID, search)
 	if err != nil {
 		return err
 	}
@@ -202,14 +202,14 @@ func (a *shipsArea) makeTopText() (string, widget.Importance, bool, error) {
 		return "No character", widget.LowImportance, false, nil
 	}
 	characterID := a.ui.currentCharID()
-	ok, err := a.ui.service.Characters.CharacterSectionWasUpdated(ctx, characterID, model.CharacterSectionSkills)
+	ok, err := a.ui.sv.Characters.CharacterSectionWasUpdated(ctx, characterID, model.CharacterSectionSkills)
 	if err != nil {
 		return "", 0, false, err
 	}
 	if !ok {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
 	}
-	oo, err := a.ui.service.Characters.ListCharacterShipsAbilities(ctx, characterID, "%%")
+	oo, err := a.ui.sv.Characters.ListCharacterShipsAbilities(ctx, characterID, "%%")
 	if err != nil {
 		return "", 0, false, err
 	}

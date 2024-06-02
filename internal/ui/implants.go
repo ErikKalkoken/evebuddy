@@ -107,7 +107,7 @@ func (a *implantsArea) updateData() error {
 			return err
 		}
 	}
-	implants, err := a.ui.service.Characters.ListCharacterImplants(context.Background(), a.ui.currentCharID())
+	implants, err := a.ui.sv.Characters.ListCharacterImplants(context.Background(), a.ui.currentCharID())
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (a *implantsArea) updateData() error {
 }
 
 func (a *implantsArea) makeTopText() (string, widget.Importance, error) {
-	hasData, err := a.ui.service.Characters.CharacterSectionWasUpdated(
+	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(
 		context.Background(), a.ui.currentCharID(), model.CharacterSectionImplants)
 	if err != nil {
 		return "", 0, err
