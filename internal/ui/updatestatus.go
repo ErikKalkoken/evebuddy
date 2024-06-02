@@ -157,7 +157,7 @@ func (a *statusWindow) makeCharacterList() *widget.List {
 				t = "ERROR"
 				i = widget.DangerImportance
 			} else if c.completion < 1 {
-				t = fmt.Sprintf("Stale %.0f%%...", (1-c.completion)*100)
+				t = fmt.Sprintf("%.0f%% Fresh", c.completion*100)
 				i = widget.HighImportance
 			} else {
 				t = "OK"
