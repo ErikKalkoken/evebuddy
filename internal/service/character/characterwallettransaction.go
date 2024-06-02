@@ -1,4 +1,4 @@
-package characters
+package character
 
 import (
 	"context"
@@ -16,12 +16,12 @@ const (
 	maxTransactionsPerPage = 2_500 // maximum objects returned per page
 )
 
-func (s *Characters) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*model.CharacterWalletTransaction, error) {
+func (s *CharacterService) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*model.CharacterWalletTransaction, error) {
 	return s.st.ListCharacterWalletTransactions(ctx, characterID)
 }
 
 // updateCharacterWalletTransactionESI updates the wallet journal from ESI and reports wether it has changed.
-func (s *Characters) updateCharacterWalletTransactionESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionWalletTransactions {
 		panic("called with wrong section")
 	}
@@ -97,7 +97,7 @@ func (s *Characters) updateCharacterWalletTransactionESI(ctx context.Context, ar
 }
 
 // fetchWalletTransactionsESI fetches wallet transactions from ESI with paging and returns them.
-func (s *Characters) fetchWalletTransactionsESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
+func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdWalletTransactions200Ok
 	lastID := int64(0)
 	maxTransactions, err := s.dt.GetIntWithFallback(model.SettingMaxWalletTransactions, model.SettingMaxWalletTransactionsDefault)

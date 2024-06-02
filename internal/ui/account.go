@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/service/characters"
+	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 )
 
 type accountCharacter struct {
@@ -197,7 +197,7 @@ func (a *accountArea) showAddCharacterDialog() {
 	go func() {
 		err := func() error {
 			characterID, err := a.ui.sv.Characters.UpdateOrCreateCharacterFromSSO(ctx, infoText)
-			if errors.Is(err, characters.ErrAborted) {
+			if errors.Is(err, character.ErrAborted) {
 				return nil
 			} else if err != nil {
 				return err

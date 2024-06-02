@@ -19,7 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
-	"github.com/ErikKalkoken/evebuddy/internal/service/characters"
+	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -444,7 +444,7 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID 
 
 func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s model.CharacterSection, forceUpdate bool) {
 	hasChanged, err := u.sv.Characters.UpdateCharacterSection(
-		ctx, characters.UpdateCharacterSectionParams{
+		ctx, character.UpdateCharacterSectionParams{
 			CharacterID: characterID,
 			Section:     s,
 			ForceUpdate: forceUpdate,

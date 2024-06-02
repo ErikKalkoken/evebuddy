@@ -1,4 +1,4 @@
-package characters_test
+package character_test
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service/characters"
+	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +17,7 @@ import (
 func TestCharacterUpdateStatus(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
-	s := characters.New(r, nil, nil, nil, nil, nil)
+	s := character.New(r, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 	t.Run("Can report when updated", func(t *testing.T) {
 		// given
@@ -54,7 +54,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := characters.New(r, nil, nil, nil, nil, nil)
+	s := character.New(r, nil, nil, nil, nil, nil)
 	section := model.CharacterSectionImplants
 	ctx := context.Background()
 	t.Run("should report true when changed", func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
 		// when
 		changed, err := s.UpdateCharacterSection(
-			ctx, characters.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
+			ctx, character.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -100,7 +100,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		changed, err := s.UpdateCharacterSection(
-			ctx, characters.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
+			ctx, character.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
@@ -132,7 +132,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
 		// when
 		changed, err := s.UpdateCharacterSection(
-			ctx, characters.UpdateCharacterSectionParams{
+			ctx, character.UpdateCharacterSectionParams{
 				CharacterID: c.ID,
 				Section:     section,
 			})
@@ -159,7 +159,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(500, map[string]string{"error": "dummy error"}))
 		// when
 		_, err := s.UpdateCharacterSection(
-			ctx, characters.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
+			ctx, character.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.Error(t, err) {
 			x, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
@@ -186,7 +186,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
 		// when
 		_, err := s.UpdateCharacterSection(
-			ctx, characters.UpdateCharacterSectionParams{
+			ctx, character.UpdateCharacterSectionParams{
 				CharacterID: c.ID,
 				Section:     section,
 				ForceUpdate: true,
@@ -220,7 +220,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		_, err := s.UpdateCharacterSection(
-			ctx, characters.UpdateCharacterSectionParams{
+			ctx, character.UpdateCharacterSectionParams{
 				CharacterID: c.ID,
 				Section:     section,
 				ForceUpdate: true,

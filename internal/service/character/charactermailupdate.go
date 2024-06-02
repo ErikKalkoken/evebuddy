@@ -1,4 +1,4 @@
-package characters
+package character
 
 import (
 	"context"
@@ -25,7 +25,7 @@ const (
 
 // updateCharacterMailLabelsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *Characters) updateCharacterMailLabelsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterMailLabelsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionMailLabels {
 		panic("called with wrong section")
 	}
@@ -61,7 +61,7 @@ func (s *Characters) updateCharacterMailLabelsESI(ctx context.Context, arg Updat
 
 // updateCharacterMailListsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *Characters) updateCharacterMailListsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterMailListsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionMailLists {
 		panic("called with wrong section")
 	}
@@ -91,7 +91,7 @@ func (s *Characters) updateCharacterMailListsESI(ctx context.Context, arg Update
 
 // updateCharacterMailsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *Characters) updateCharacterMailsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionMails {
 		panic("called with wrong section")
 	}
@@ -134,7 +134,7 @@ func (s *Characters) updateCharacterMailsESI(ctx context.Context, arg UpdateChar
 }
 
 // fetchMailHeadersESI fetched mail headers from ESI with paging and returns them.
-func (s *Characters) fetchMailHeadersESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
+func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdMail200Ok
 	lastMailID := int32(0)
 	maxMails, err := s.dt.GetIntWithFallback(model.SettingMaxMails, model.SettingMaxMailsDefault)
@@ -167,7 +167,7 @@ func (s *Characters) fetchMailHeadersESI(ctx context.Context, characterID int32)
 	return oo2, nil
 }
 
-func (s *Characters) determineNewMail(ctx context.Context, characterID int32, mm []esi.GetCharactersCharacterIdMail200Ok) ([]esi.GetCharactersCharacterIdMail200Ok, []esi.GetCharactersCharacterIdMail200Ok, error) {
+func (s *CharacterService) determineNewMail(ctx context.Context, characterID int32, mm []esi.GetCharactersCharacterIdMail200Ok) ([]esi.GetCharactersCharacterIdMail200Ok, []esi.GetCharactersCharacterIdMail200Ok, error) {
 	newMail := make([]esi.GetCharactersCharacterIdMail200Ok, 0, len(mm))
 	existingMail := make([]esi.GetCharactersCharacterIdMail200Ok, 0, len(mm))
 	existingIDs, _, err := s.determineMailIDs(ctx, characterID, mm)
@@ -184,7 +184,7 @@ func (s *Characters) determineNewMail(ctx context.Context, characterID int32, mm
 	return newMail, existingMail, nil
 }
 
-func (s *Characters) determineMailIDs(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) (*set.Set[int32], *set.Set[int32], error) {
+func (s *CharacterService) determineMailIDs(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) (*set.Set[int32], *set.Set[int32], error) {
 	ids, err := s.st.ListCharacterMailIDs(ctx, characterID)
 	if err != nil {
 		return nil, nil, err
@@ -198,7 +198,7 @@ func (s *Characters) determineMailIDs(ctx context.Context, characterID int32, he
 	return existingIDs, missingIDs, nil
 }
 
-func (s *Characters) resolveMailEntities(ctx context.Context, mm []esi.GetCharactersCharacterIdMail200Ok) error {
+func (s *CharacterService) resolveMailEntities(ctx context.Context, mm []esi.GetCharactersCharacterIdMail200Ok) error {
 	entityIDs := set.New[int32]()
 	for _, m := range mm {
 		entityIDs.Add(m.From)
@@ -213,7 +213,7 @@ func (s *Characters) resolveMailEntities(ctx context.Context, mm []esi.GetCharac
 	return nil
 }
 
-func (s *Characters) addNewMailsESI(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
+func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
 	count := 0
 	g := new(errgroup.Group)
 	g.SetLimit(20)
@@ -235,7 +235,7 @@ func (s *Characters) addNewMailsESI(ctx context.Context, characterID int32, head
 	return nil
 }
 
-func (s *Characters) fetchAndStoreMail(ctx context.Context, characterID, mailID int32) error {
+func (s *CharacterService) fetchAndStoreMail(ctx context.Context, characterID, mailID int32) error {
 	m, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
 	if err != nil {
 		return err
@@ -262,7 +262,7 @@ func (s *Characters) fetchAndStoreMail(ctx context.Context, characterID, mailID 
 	return nil
 }
 
-func (s *Characters) updateExistingMail(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
+func (s *CharacterService) updateExistingMail(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
 	for _, h := range headers {
 		m, err := s.st.GetCharacterMail(ctx, characterID, h.MailId)
 		if err != nil {
@@ -279,7 +279,7 @@ func (s *Characters) updateExistingMail(ctx context.Context, characterID int32, 
 }
 
 // UpdateMailRead updates an existing mail as read
-func (s *Characters) UpdateMailRead(ctx context.Context, characterID, mailID int32) error {
+func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mailID int32) error {
 	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return err

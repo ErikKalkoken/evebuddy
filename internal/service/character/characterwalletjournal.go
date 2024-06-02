@@ -1,4 +1,4 @@
-package characters
+package character
 
 import (
 	"context"
@@ -13,12 +13,12 @@ import (
 	"github.com/antihax/goesi/optional"
 )
 
-func (s *Characters) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
+func (s *CharacterService) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
 	return s.st.ListCharacterWalletJournalEntries(ctx, characterID)
 }
 
 // updateCharacterWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
-func (s *Characters) updateCharacterWalletJournalEntryESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterWalletJournalEntryESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionWalletJournal {
 		panic("called with wrong section")
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func (eu *EveUniverse) GetOrCreateEveRaceESI(ctx context.Context, id int32) (*model.EveRace, error) {
+func (eu *EveUniverseService) GetOrCreateEveRaceESI(ctx context.Context, id int32) (*model.EveRace, error) {
 	x, err := eu.st.GetEveRace(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveRaceFromESI(ctx, id)
@@ -19,7 +19,7 @@ func (eu *EveUniverse) GetOrCreateEveRaceESI(ctx context.Context, id int32) (*mo
 	return x, nil
 }
 
-func (eu *EveUniverse) createEveRaceFromESI(ctx context.Context, id int32) (*model.EveRace, error) {
+func (eu *EveUniverseService) createEveRaceFromESI(ctx context.Context, id int32) (*model.EveRace, error) {
 	key := fmt.Sprintf("createEveRaceFromESI-%d", id)
 	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		races, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseRaces(ctx, nil)

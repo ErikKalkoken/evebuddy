@@ -1,4 +1,4 @@
-package characters
+package character
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 
 // characterSectionUpdatedAt returns when a section was last updated.
 // It will return a zero time when no update has been completed yet.
-func (s *Characters) characterSectionUpdatedAt(ctx context.Context, arg UpdateCharacterSectionParams) (time.Time, error) {
+func (s *CharacterService) characterSectionUpdatedAt(ctx context.Context, arg UpdateCharacterSectionParams) (time.Time, error) {
 	u, err := s.st.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
 	if errors.Is(err, storage.ErrNotFound) {
 		return time.Time{}, nil
@@ -26,7 +26,7 @@ func (s *Characters) characterSectionUpdatedAt(ctx context.Context, arg UpdateCh
 }
 
 // CharacterSectionWasUpdated reports wether the section has been updated at all.
-func (s *Characters) CharacterSectionWasUpdated(ctx context.Context, characterID int32, section model.CharacterSection) (bool, error) {
+func (s *CharacterService) CharacterSectionWasUpdated(ctx context.Context, characterID int32, section model.CharacterSection) (bool, error) {
 	t, err := s.characterSectionUpdatedAt(ctx, UpdateCharacterSectionParams{CharacterID: characterID, Section: section})
 	if errors.Is(err, storage.ErrNotFound) {
 		return false, nil
@@ -44,7 +44,7 @@ type UpdateCharacterSectionParams struct {
 
 // UpdateCharacterSection updates a section from ESI if has expired and changed
 // and reports back if it has changed
-func (s *Characters) UpdateCharacterSection(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) UpdateCharacterSection(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.CharacterID == 0 {
 		panic("Invalid character ID")
 	}
@@ -111,7 +111,7 @@ func (s *Characters) UpdateCharacterSection(ctx context.Context, arg UpdateChara
 }
 
 // SectionWasUpdated reports wether the data for a section has expired.
-func (s *Characters) characterSectionIsUpdateExpired(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) characterSectionIsUpdateExpired(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	t, err := s.characterSectionUpdatedAt(ctx, arg)
 	if err != nil {
 		return false, err
@@ -126,7 +126,7 @@ func (s *Characters) characterSectionIsUpdateExpired(ctx context.Context, arg Up
 
 // updateCharacterSectionIfChanged updates a character section if it has changed
 // and reports wether it has changed
-func (s *Characters) updateCharacterSectionIfChanged(
+func (s *CharacterService) updateCharacterSectionIfChanged(
 	ctx context.Context,
 	arg UpdateCharacterSectionParams,
 	fetch func(ctx context.Context, characterID int32) (any, error),

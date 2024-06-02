@@ -16,7 +16,7 @@ import (
 // or else tries to fetch and create a new structure from ESI.
 //
 // Important: A token with the structure scope must be set in the context
-func (eu *EveUniverse) GetOrCreateLocationESI(ctx context.Context, id int64) (*model.Location, error) {
+func (eu *EveUniverseService) GetOrCreateLocationESI(ctx context.Context, id int64) (*model.Location, error) {
 	x, err := eu.st.GetLocation(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.updateOrCreateLocationESI(ctx, id)
@@ -29,7 +29,7 @@ func (eu *EveUniverse) GetOrCreateLocationESI(ctx context.Context, id int64) (*m
 // updateOrCreateLocationESI tries to fetch and create a new structure from ESI.
 //
 // Important: A token with the structure scope must be set in the context when trying to fetch a structure.
-func (eu *EveUniverse) updateOrCreateLocationESI(ctx context.Context, id int64) (*model.Location, error) {
+func (eu *EveUniverseService) updateOrCreateLocationESI(ctx context.Context, id int64) (*model.Location, error) {
 	key := fmt.Sprintf("createStructureFromESI-%d", id)
 	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		var arg storage.UpdateOrCreateLocationParams

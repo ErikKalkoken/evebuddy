@@ -1,4 +1,4 @@
-package characters
+package character
 
 import (
 	"context"
@@ -9,13 +9,13 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *Characters) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*model.CharacterJumpClone, error) {
+func (s *CharacterService) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*model.CharacterJumpClone, error) {
 	return s.st.ListCharacterJumpClones(ctx, characterID)
 }
 
 // TODO: Consolidate with updating home in separate function
 
-func (s *Characters) updateCharacterJumpClonesESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionJumpClones {
 		panic("called with wrong section")
 	}

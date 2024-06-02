@@ -9,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func (eu *EveUniverse) GetOrCreateEveRegionESI(ctx context.Context, id int32) (*model.EveRegion, error) {
+func (eu *EveUniverseService) GetOrCreateEveRegionESI(ctx context.Context, id int32) (*model.EveRegion, error) {
 	x, err := eu.st.GetEveRegion(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveRegionFromESI(ctx, id)
@@ -19,7 +19,7 @@ func (eu *EveUniverse) GetOrCreateEveRegionESI(ctx context.Context, id int32) (*
 	return x, nil
 }
 
-func (eu *EveUniverse) createEveRegionFromESI(ctx context.Context, id int32) (*model.EveRegion, error) {
+func (eu *EveUniverseService) createEveRegionFromESI(ctx context.Context, id int32) (*model.EveRegion, error) {
 	key := fmt.Sprintf("createEveRegionFromESI-%d", id)
 	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		region, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseRegionsRegionId(ctx, id, nil)
@@ -39,7 +39,7 @@ func (eu *EveUniverse) createEveRegionFromESI(ctx context.Context, id int32) (*m
 	return y.(*model.EveRegion), nil
 }
 
-func (eu *EveUniverse) GetOrCreateEveConstellationESI(ctx context.Context, id int32) (*model.EveConstellation, error) {
+func (eu *EveUniverseService) GetOrCreateEveConstellationESI(ctx context.Context, id int32) (*model.EveConstellation, error) {
 	x, err := eu.st.GetEveConstellation(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveConstellationFromESI(ctx, id)
@@ -49,7 +49,7 @@ func (eu *EveUniverse) GetOrCreateEveConstellationESI(ctx context.Context, id in
 	return x, nil
 }
 
-func (eu *EveUniverse) createEveConstellationFromESI(ctx context.Context, id int32) (*model.EveConstellation, error) {
+func (eu *EveUniverseService) createEveConstellationFromESI(ctx context.Context, id int32) (*model.EveConstellation, error) {
 	key := fmt.Sprintf("createEveConstellationFromESI-%d", id)
 	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		constellation, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseConstellationsConstellationId(ctx, id, nil)
@@ -76,7 +76,7 @@ func (eu *EveUniverse) createEveConstellationFromESI(ctx context.Context, id int
 	return y.(*model.EveConstellation), nil
 }
 
-func (eu *EveUniverse) GetOrCreateEveSolarSystemESI(ctx context.Context, id int32) (*model.EveSolarSystem, error) {
+func (eu *EveUniverseService) GetOrCreateEveSolarSystemESI(ctx context.Context, id int32) (*model.EveSolarSystem, error) {
 	x, err := eu.st.GetEveSolarSystem(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveSolarSystemFromESI(ctx, id)
@@ -86,7 +86,7 @@ func (eu *EveUniverse) GetOrCreateEveSolarSystemESI(ctx context.Context, id int3
 	return x, nil
 }
 
-func (eu *EveUniverse) createEveSolarSystemFromESI(ctx context.Context, id int32) (*model.EveSolarSystem, error) {
+func (eu *EveUniverseService) createEveSolarSystemFromESI(ctx context.Context, id int32) (*model.EveSolarSystem, error) {
 	key := fmt.Sprintf("createEveSolarSystemFromESI-%d", id)
 	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		system, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseSystemsSystemId(ctx, id, nil)

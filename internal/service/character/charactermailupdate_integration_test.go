@@ -1,4 +1,4 @@
-package characters_test
+package character_test
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service/characters"
+	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -22,7 +22,7 @@ func TestUpdateMail(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := characters.New(r, nil, nil, nil, nil, nil)
+	s := character.New(r, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 	t.Run("Can fetch new mail", func(t *testing.T) {
 		// given
@@ -137,17 +137,17 @@ func TestUpdateMail(t *testing.T) {
 				return resp, nil
 			})
 		// when
-		_, err := s.UpdateCharacterSection(ctx, characters.UpdateCharacterSectionParams{
+		_, err := s.UpdateCharacterSection(ctx, character.UpdateCharacterSectionParams{
 			CharacterID: c1.ID,
 			Section:     model.CharacterSectionMailLabels,
 		})
 		if assert.NoError(t, err) {
-			_, err := s.UpdateCharacterSection(ctx, characters.UpdateCharacterSectionParams{
+			_, err := s.UpdateCharacterSection(ctx, character.UpdateCharacterSectionParams{
 				CharacterID: c1.ID,
 				Section:     model.CharacterSectionMailLists,
 			})
 			if assert.NoError(t, err) {
-				_, err := s.UpdateCharacterSection(ctx, characters.UpdateCharacterSectionParams{
+				_, err := s.UpdateCharacterSection(ctx, character.UpdateCharacterSectionParams{
 					CharacterID: c1.ID,
 					Section:     model.CharacterSectionMails,
 				})
@@ -282,7 +282,7 @@ func TestUpdateMail(t *testing.T) {
 			})
 
 		// when
-		_, err := s.UpdateCharacterSection(ctx, characters.UpdateCharacterSectionParams{
+		_, err := s.UpdateCharacterSection(ctx, character.UpdateCharacterSectionParams{
 			CharacterID: c.ID,
 			Section:     model.CharacterSectionMails,
 		})

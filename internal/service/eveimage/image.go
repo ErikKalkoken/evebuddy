@@ -24,8 +24,8 @@ var (
 	ErrInvalidSize = errors.New("invalid size")
 )
 
-// EveImage provides cached access to images from the Eve Online image server.
-type EveImage struct {
+// EveImageService provides cached access to images from the Eve Online image server.
+type EveImageService struct {
 	httpClient *http.Client
 	// cacheDir is where the image files are stored for caching
 	cacheDir string
@@ -35,7 +35,7 @@ type EveImage struct {
 // New returns a new Images object. path is the location of the file cache.
 // When no path is given (empty string) it will create a temporary directory instead.
 // When not provides a httpClient (nil) it will use the default client.
-func New(cacheDir string, httpClient *http.Client) *EveImage {
+func New(cacheDir string, httpClient *http.Client) *EveImageService {
 	if cacheDir == "" {
 		p, err := os.MkdirTemp("", "eveimage")
 		if err != nil {
@@ -46,7 +46,7 @@ func New(cacheDir string, httpClient *http.Client) *EveImage {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
-	m := &EveImage{
+	m := &EveImageService{
 		httpClient: httpClient,
 		cacheDir:   cacheDir,
 		sfg:        new(singleflight.Group),
@@ -55,7 +55,7 @@ func New(cacheDir string, httpClient *http.Client) *EveImage {
 }
 
 // AllianceLogo returns the logo for an alliance.
-func (m *EveImage) AllianceLogo(id int32, size int) (fyne.Resource, error) {
+func (m *EveImageService) AllianceLogo(id int32, size int) (fyne.Resource, error) {
 	url, err := images.AllianceLogoURL(id, size)
 	if err != nil {
 		if errors.Is(err, images.ErrInvalidSize) {
@@ -67,7 +67,7 @@ func (m *EveImage) AllianceLogo(id int32, size int) (fyne.Resource, error) {
 }
 
 // CharacterPortrait returns the portrait for a character.
-func (m *EveImage) CharacterPortrait(id int32, size int) (fyne.Resource, error) {
+func (m *EveImageService) CharacterPortrait(id int32, size int) (fyne.Resource, error) {
 	url, err := images.CharacterPortraitURL(id, size)
 	if err != nil {
 		if errors.Is(err, images.ErrInvalidSize) {
@@ -79,7 +79,7 @@ func (m *EveImage) CharacterPortrait(id int32, size int) (fyne.Resource, error) 
 }
 
 // CorporationLogo returns the logo for a corporation.
-func (m *EveImage) CorporationLogo(id int32, size int) (fyne.Resource, error) {
+func (m *EveImageService) CorporationLogo(id int32, size int) (fyne.Resource, error) {
 	url, err := images.CorporationLogoURL(id, size)
 	if err != nil {
 		if errors.Is(err, images.ErrInvalidSize) {
@@ -91,7 +91,7 @@ func (m *EveImage) CorporationLogo(id int32, size int) (fyne.Resource, error) {
 }
 
 // FactionLogo returns the logo for a faction.
-func (m *EveImage) FactionLogo(id int32, size int) (fyne.Resource, error) {
+func (m *EveImageService) FactionLogo(id int32, size int) (fyne.Resource, error) {
 	url, err := images.FactionLogoURL(id, size)
 	if err != nil {
 		if errors.Is(err, images.ErrInvalidSize) {
@@ -103,7 +103,7 @@ func (m *EveImage) FactionLogo(id int32, size int) (fyne.Resource, error) {
 }
 
 // InventoryTypeRender returns the render for a type. Note that not ever type has a render.
-func (m *EveImage) InventoryTypeRender(id int32, size int) (fyne.Resource, error) {
+func (m *EveImageService) InventoryTypeRender(id int32, size int) (fyne.Resource, error) {
 	url, err := images.InventoryTypeRenderURL(id, size)
 	if err != nil {
 		if errors.Is(err, images.ErrInvalidSize) {
@@ -115,7 +115,7 @@ func (m *EveImage) InventoryTypeRender(id int32, size int) (fyne.Resource, error
 }
 
 // InventoryTypeIcon returns the icon for a type.
-func (m *EveImage) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
+func (m *EveImageService) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
 	url, err := images.InventoryTypeIconURL(id, size)
 	if err != nil {
 		if errors.Is(err, images.ErrInvalidSize) {
@@ -127,7 +127,7 @@ func (m *EveImage) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) 
 }
 
 // InventoryTypeBPO returns the icon for a BPO type.
-func (m *EveImage) InventoryTypeBPO(id int32, size int) (fyne.Resource, error) {
+func (m *EveImageService) InventoryTypeBPO(id int32, size int) (fyne.Resource, error) {
 	url, err := images.InventoryTypeBPOURL(id, size)
 	if err != nil {
 		if errors.Is(err, images.ErrInvalidSize) {
@@ -139,7 +139,7 @@ func (m *EveImage) InventoryTypeBPO(id int32, size int) (fyne.Resource, error) {
 }
 
 // InventoryTypeBPC returns the icon for a BPC type.
-func (m *EveImage) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
+func (m *EveImageService) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
 	url, err := images.InventoryTypeBPCURL(id, size)
 	if err != nil {
 		if errors.Is(err, images.ErrInvalidSize) {
@@ -150,7 +150,7 @@ func (m *EveImage) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
 	return m.image(url)
 }
 
-func (m *EveImage) image(url string) (fyne.Resource, error) {
+func (m *EveImageService) image(url string) (fyne.Resource, error) {
 	hash := makeMD5Hash(url)
 	name := filepath.Join(m.cacheDir, hash+".tmp")
 	dat, err := os.ReadFile(name)
@@ -210,7 +210,7 @@ func makeMD5Hash(text string) string {
 }
 
 // ClearCache clears the images cache and returns the number of deleted entries.
-func (m *EveImage) ClearCache() (int, error) {
+func (m *EveImageService) ClearCache() (int, error) {
 	files, err := os.ReadDir(m.cacheDir)
 	if err != nil {
 		return 0, err
@@ -222,7 +222,7 @@ func (m *EveImage) ClearCache() (int, error) {
 }
 
 // Size returns the total size of all image files in by bytes.
-func (m *EveImage) Size() (int, error) {
+func (m *EveImageService) Size() (int, error) {
 	files, err := os.ReadDir(m.cacheDir)
 	if err != nil {
 		return 0, err
@@ -239,7 +239,7 @@ func (m *EveImage) Size() (int, error) {
 }
 
 // Count returns the number of all image files.
-func (m *EveImage) Count() (int, error) {
+func (m *EveImageService) Count() (int, error) {
 	files, err := os.ReadDir(m.cacheDir)
 	if err != nil {
 		return 0, err

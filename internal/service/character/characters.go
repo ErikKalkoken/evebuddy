@@ -1,5 +1,5 @@
-// Package characters contains the characters service.
-package characters
+// Package character contains the character service.
+package character
 
 import (
 	"net/http"
@@ -13,15 +13,15 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-// The Characters service implements the characters related business logic.
-type Characters struct {
+// CharacterService provides access to all managed Eve Online characters both online and from local storage.
+type CharacterService struct {
 	esiClient  *goesi.APIClient
 	httpClient *http.Client
 	sfg        *singleflight.Group
 	// Storage service
 	st *storage.Storage
 	// EveUniverse service
-	eu *eveuniverse.EveUniverse
+	eu *eveuniverse.EveUniverseService
 	// CharacterStatus service
 	cs *characterstatus.CharacterStatusCache
 	// Dictionary service
@@ -36,8 +36,8 @@ func New(
 	esiClient *goesi.APIClient,
 	cs *characterstatus.CharacterStatusCache,
 	dt *dictionary.Dictionary,
-	eu *eveuniverse.EveUniverse,
-) *Characters {
+	eu *eveuniverse.EveUniverseService,
+) *CharacterService {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
@@ -54,7 +54,7 @@ func New(
 	if eu == nil {
 		eu = eveuniverse.New(st, esiClient)
 	}
-	ct := &Characters{
+	ct := &CharacterService{
 		st:         st,
 		esiClient:  esiClient,
 		httpClient: httpClient,

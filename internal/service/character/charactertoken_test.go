@@ -1,4 +1,4 @@
-package characters
+package character
 
 import (
 	"context"

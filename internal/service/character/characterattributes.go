@@ -1,4 +1,4 @@
-package characters
+package character
 
 import (
 	"context"
@@ -8,11 +8,11 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *Characters) GetCharacterAttributes(ctx context.Context, characterID int32) (*model.CharacterAttributes, error) {
+func (s *CharacterService) GetCharacterAttributes(ctx context.Context, characterID int32) (*model.CharacterAttributes, error) {
 	return s.st.GetCharacterAttributes(ctx, characterID)
 }
 
-func (s *Characters) updateCharacterAttributesESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterAttributesESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionAttributes {
 		panic("called with wrong section")
 	}

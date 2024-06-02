@@ -1,4 +1,4 @@
-package characters_test
+package character_test
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service/characters"
+	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 )
 
 func TestSendMail(t *testing.T) {
@@ -18,7 +18,7 @@ func TestSendMail(t *testing.T) {
 	// ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := characters.New(r, nil, nil, nil, nil, nil)
+	s := character.New(r, nil, nil, nil, nil, nil)
 	t.Run("Can send mail", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

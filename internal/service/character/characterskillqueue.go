@@ -1,4 +1,4 @@
-package characters
+package character
 
 import (
 	"context"
@@ -10,17 +10,17 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *Characters) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (types.NullDuration, error) {
+func (s *CharacterService) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (types.NullDuration, error) {
 	return s.st.GetTotalTrainingTime(ctx, characterID)
 }
 
-func (s *Characters) ListCharacterSkillqueueItems(ctx context.Context, characterID int32) ([]*model.CharacterSkillqueueItem, error) {
+func (s *CharacterService) ListCharacterSkillqueueItems(ctx context.Context, characterID int32) ([]*model.CharacterSkillqueueItem, error) {
 	return s.st.ListSkillqueueItems(ctx, characterID)
 }
 
 // UpdateCharacterSkillqueueESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *Characters) UpdateCharacterSkillqueueESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) UpdateCharacterSkillqueueESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionSkillqueue {
 		panic("called with wrong section")
 	}

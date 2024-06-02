@@ -11,11 +11,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func (eu *EveUniverse) GetEveType(ctx context.Context, id int32) (*model.EveType, error) {
+func (eu *EveUniverseService) GetEveType(ctx context.Context, id int32) (*model.EveType, error) {
 	return eu.st.GetEveType(ctx, id)
 }
 
-func (eu *EveUniverse) GetOrCreateEveCategoryESI(ctx context.Context, id int32) (*model.EveCategory, error) {
+func (eu *EveUniverseService) GetOrCreateEveCategoryESI(ctx context.Context, id int32) (*model.EveCategory, error) {
 	x, err := eu.st.GetEveCategory(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveCategoryFromESI(ctx, id)
@@ -25,7 +25,7 @@ func (eu *EveUniverse) GetOrCreateEveCategoryESI(ctx context.Context, id int32) 
 	return x, nil
 }
 
-func (eu *EveUniverse) createEveCategoryFromESI(ctx context.Context, id int32) (*model.EveCategory, error) {
+func (eu *EveUniverseService) createEveCategoryFromESI(ctx context.Context, id int32) (*model.EveCategory, error) {
 	key := fmt.Sprintf("createEveCategoryFromESI-%d", id)
 	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		r, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseCategoriesCategoryId(ctx, id, nil)
@@ -45,7 +45,7 @@ func (eu *EveUniverse) createEveCategoryFromESI(ctx context.Context, id int32) (
 	return y.(*model.EveCategory), nil
 }
 
-func (eu *EveUniverse) GetOrCreateEveGroupESI(ctx context.Context, id int32) (*model.EveGroup, error) {
+func (eu *EveUniverseService) GetOrCreateEveGroupESI(ctx context.Context, id int32) (*model.EveGroup, error) {
 	x, err := eu.st.GetEveGroup(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveGroupFromESI(ctx, id)
@@ -55,7 +55,7 @@ func (eu *EveUniverse) GetOrCreateEveGroupESI(ctx context.Context, id int32) (*m
 	return x, nil
 }
 
-func (eu *EveUniverse) createEveGroupFromESI(ctx context.Context, id int32) (*model.EveGroup, error) {
+func (eu *EveUniverseService) createEveGroupFromESI(ctx context.Context, id int32) (*model.EveGroup, error) {
 	key := fmt.Sprintf("createEveGroupFromESI-%d", id)
 	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		r, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseGroupsGroupId(ctx, id, nil)
@@ -83,7 +83,7 @@ func (eu *EveUniverse) createEveGroupFromESI(ctx context.Context, id int32) (*mo
 	return y.(*model.EveGroup), nil
 }
 
-func (eu *EveUniverse) GetOrCreateEveTypeESI(ctx context.Context, id int32) (*model.EveType, error) {
+func (eu *EveUniverseService) GetOrCreateEveTypeESI(ctx context.Context, id int32) (*model.EveType, error) {
 	x, err := eu.st.GetEveType(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveTypeFromESI(ctx, id)
@@ -93,7 +93,7 @@ func (eu *EveUniverse) GetOrCreateEveTypeESI(ctx context.Context, id int32) (*mo
 	return x, nil
 }
 
-func (eu *EveUniverse) createEveTypeFromESI(ctx context.Context, id int32) (*model.EveType, error) {
+func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32) (*model.EveType, error) {
 	key := fmt.Sprintf("createEveTypeFromESI-%d", id)
 	x, err, _ := eu.sfg.Do(key, func() (any, error) {
 		t, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseTypesTypeId(ctx, id, nil)
@@ -151,7 +151,7 @@ func (eu *EveUniverse) createEveTypeFromESI(ctx context.Context, id int32) (*mod
 	return x.(*model.EveType), nil
 }
 
-func (eu *EveUniverse) AddMissingEveTypes(ctx context.Context, ids []int32) error {
+func (eu *EveUniverseService) AddMissingEveTypes(ctx context.Context, ids []int32) error {
 	missingIDs, err := eu.st.MissingEveTypes(ctx, ids)
 	if err != nil {
 		return err
@@ -170,7 +170,7 @@ func (eu *EveUniverse) AddMissingEveTypes(ctx context.Context, ids []int32) erro
 	return nil
 }
 
-func (eu *EveUniverse) UpdateEveCategoryWithChildrenESI(ctx context.Context, categoryID int32) error {
+func (eu *EveUniverseService) UpdateEveCategoryWithChildrenESI(ctx context.Context, categoryID int32) error {
 	key := fmt.Sprintf("UpdateEveCategoryWithChildrenESI-%d", categoryID)
 	_, err, _ := eu.sfg.Do(key, func() (any, error) {
 		typeIDs := make([]int32, 0)
@@ -199,7 +199,7 @@ func (eu *EveUniverse) UpdateEveCategoryWithChildrenESI(ctx context.Context, cat
 	return nil
 }
 
-func (eu *EveUniverse) UpdateEveShipSkills(ctx context.Context) error {
+func (eu *EveUniverseService) UpdateEveShipSkills(ctx context.Context) error {
 	return eu.st.UpdateEveShipSkills(ctx)
 
 }
