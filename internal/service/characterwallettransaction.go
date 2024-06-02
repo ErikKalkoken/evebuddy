@@ -16,8 +16,7 @@ const (
 	maxTransactionsPerPage = 2_500 // maximum objects returned per page
 )
 
-func (s *Service) ListCharacterWalletTransactions(characterID int32) ([]*model.CharacterWalletTransaction, error) {
-	ctx := context.Background()
+func (s *Service) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*model.CharacterWalletTransaction, error) {
 	return s.r.ListCharacterWalletTransactions(ctx, characterID)
 }
 

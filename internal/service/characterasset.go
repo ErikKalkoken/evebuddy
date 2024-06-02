@@ -12,18 +12,15 @@ import (
 	"github.com/antihax/goesi/optional"
 )
 
-func (s *Service) ListCharacterAssetsInShipHangar(characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
-	ctx := context.Background()
+func (s *Service) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
 	return s.r.ListCharacterAssetsInShipHangar(ctx, characterID, locationID)
 }
 
-func (s *Service) ListCharacterAssetsInItemHangar(characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
-	ctx := context.Background()
+func (s *Service) ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
 	return s.r.ListCharacterAssetsInItemHangar(ctx, characterID, locationID)
 }
 
-func (s *Service) ListCharacterAssetLocations(characterID int32) ([]*model.CharacterAssetLocation, error) {
-	ctx := context.Background()
+func (s *Service) ListCharacterAssetLocations(ctx context.Context, characterID int32) ([]*model.CharacterAssetLocation, error) {
 	return s.r.ListCharacterAssetLocations(ctx, characterID)
 }
 

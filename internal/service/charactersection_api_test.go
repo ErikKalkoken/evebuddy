@@ -18,7 +18,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	s := service.NewService(r)
-
+	ctx := context.Background()
 	t.Run("Can report when updated", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -30,7 +30,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 			LastUpdatedAt: updateAt,
 		})
 		// when
-		x, err := s.CharacterSectionWasUpdated(c.ID, model.CharacterSectionSkillqueue)
+		x, err := s.CharacterSectionWasUpdated(ctx, c.ID, model.CharacterSectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, x)
@@ -41,7 +41,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
-		x, err := s.CharacterSectionWasUpdated(c.ID, model.CharacterSectionSkillqueue)
+		x, err := s.CharacterSectionWasUpdated(ctx, c.ID, model.CharacterSectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, x)
@@ -69,7 +69,8 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
 		// when
-		changed, err := s.UpdateCharacterSection(service.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
+		changed, err := s.UpdateCharacterSection(
+			ctx, service.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -98,7 +99,8 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.UpdateCharacterSection(service.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
+		changed, err := s.UpdateCharacterSection(
+			ctx, service.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
@@ -129,10 +131,11 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
 		// when
-		changed, err := s.UpdateCharacterSection(service.UpdateCharacterSectionParams{
-			CharacterID: c.ID,
-			Section:     section,
-		})
+		changed, err := s.UpdateCharacterSection(
+			ctx, service.UpdateCharacterSectionParams{
+				CharacterID: c.ID,
+				Section:     section,
+			})
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
@@ -155,7 +158,8 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(500, map[string]string{"error": "dummy error"}))
 		// when
-		_, err := s.UpdateCharacterSection(service.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
+		_, err := s.UpdateCharacterSection(
+			ctx, service.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.Error(t, err) {
 			x, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
@@ -181,11 +185,12 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
 		// when
-		_, err := s.UpdateCharacterSection(service.UpdateCharacterSectionParams{
-			CharacterID: c.ID,
-			Section:     section,
-			ForceUpdate: true,
-		})
+		_, err := s.UpdateCharacterSection(
+			ctx, service.UpdateCharacterSectionParams{
+				CharacterID: c.ID,
+				Section:     section,
+				ForceUpdate: true,
+			})
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, 1, httpmock.GetTotalCallCount())
@@ -214,11 +219,12 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		_, err := s.UpdateCharacterSection(service.UpdateCharacterSectionParams{
-			CharacterID: c.ID,
-			Section:     section,
-			ForceUpdate: true,
-		})
+		_, err := s.UpdateCharacterSection(
+			ctx, service.UpdateCharacterSectionParams{
+				CharacterID: c.ID,
+				Section:     section,
+				ForceUpdate: true,
+			})
 		// then
 		if assert.NoError(t, err) {
 			x, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)

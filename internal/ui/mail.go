@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -541,7 +542,7 @@ func (a *headerArea) makeTopText() (string, widget.Importance, error) {
 		return "No Character", widget.LowImportance, nil
 	}
 	hasData, err := a.mailArea.ui.service.CharacterSectionWasUpdated(
-		a.mailArea.ui.currentCharID(), model.CharacterSectionSkillqueue)
+		context.Background(), a.mailArea.ui.currentCharID(), model.CharacterSectionSkillqueue)
 	if err != nil {
 		return "", 0, err
 	}
@@ -602,7 +603,8 @@ func (a *mailDetailArea) makeToolbar() *widget.Toolbar {
 			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Subject)
 			d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
 				if confirmed {
-					if err := a.mailArea.ui.service.DeleteCharacterMail(a.mail.CharacterID, a.mail.MailID); err != nil {
+					ctx := context.Background()
+					if err := a.mailArea.ui.service.DeleteCharacterMail(ctx, a.mail.CharacterID, a.mail.MailID); err != nil {
 						t := "Failed to delete mail"
 						slog.Error(t, "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
 						a.mailArea.ui.showErrorDialog(t, err)
@@ -633,7 +635,7 @@ func (a *mailDetailArea) setMail(mailID int32) {
 	}
 	if !a.mail.IsRead {
 		go func() {
-			err = a.mailArea.ui.service.UpdateMailRead(characterID, a.mail.MailID)
+			err = a.mailArea.ui.service.UpdateMailRead(context.Background(), characterID, a.mail.MailID)
 			if err != nil {
 				slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
 				a.setErrorText()

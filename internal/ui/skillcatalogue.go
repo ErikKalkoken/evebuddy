@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -111,7 +112,8 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 			if !a.ui.hasCharacter() {
 				return "", nil, nil
 			}
-			oo, err := a.ui.service.ListCharacterSkillProgress(a.ui.currentCharID(), group.id)
+			oo, err := a.ui.service.ListCharacterSkillProgress(
+				context.Background(), a.ui.currentCharID(), group.id)
 			if err != nil {
 				return "", nil, err
 			}
@@ -283,7 +285,7 @@ func (a *skillCatalogueArea) updateGroups() error {
 	if !a.ui.hasCharacter() {
 		return nil
 	}
-	gg, err := a.ui.service.ListCharacterSkillGroupsProgress(a.ui.currentCharID())
+	gg, err := a.ui.service.ListCharacterSkillGroupsProgress(context.Background(), a.ui.currentCharID())
 	if err != nil {
 		return err
 	}

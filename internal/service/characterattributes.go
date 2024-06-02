@@ -8,8 +8,7 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *Service) GetCharacterAttributes(characterID int32) (*model.CharacterAttributes, error) {
-	ctx := context.Background()
+func (s *Service) GetCharacterAttributes(ctx context.Context, characterID int32) (*model.CharacterAttributes, error) {
 	return s.r.GetCharacterAttributes(ctx, characterID)
 }
 

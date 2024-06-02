@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -96,8 +97,9 @@ func (a *toolbarArea) refresh() {
 }
 
 func (a *toolbarArea) makeMenuItems(c *model.Character) ([]*fyne.MenuItem, error) {
+	ctx := context.Background()
 	menuItems := make([]*fyne.MenuItem, 0)
-	cc, err := a.ui.service.ListCharactersShort()
+	cc, err := a.ui.service.ListCharactersShort(ctx)
 	if err != nil {
 		return menuItems, err
 	}
@@ -106,7 +108,7 @@ func (a *toolbarArea) makeMenuItems(c *model.Character) ([]*fyne.MenuItem, error
 			continue
 		}
 		item := fyne.NewMenuItem(myC.Name, func() {
-			err := a.ui.loadCurrentCharacter(myC.ID)
+			err := a.ui.loadCurrentCharacter(ctx, myC.ID)
 			if err != nil {
 				msg := "Failed to switch to new character"
 				slog.Error(msg, "err", err)

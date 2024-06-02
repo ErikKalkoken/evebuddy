@@ -9,8 +9,7 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *Service) ListCharacterJumpClones(characterID int32) ([]*model.CharacterJumpClone, error) {
-	ctx := context.Background()
+func (s *Service) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*model.CharacterJumpClone, error) {
 	return s.r.ListCharacterJumpClones(ctx, characterID)
 }
 

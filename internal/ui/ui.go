@@ -150,7 +150,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	var c *model.Character
 	cID, ok, err := service.Dictionary.GetInt(model.SettingLastCharacterID)
 	if err == nil && ok {
-		c, err = service.GetCharacter(int32(cID))
+		c, err = service.GetCharacter(context.Background(), int32(cID))
 		if err != nil {
 			if !errors.Is(err, storage.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -270,8 +270,8 @@ func (u *ui) hasCharacter() bool {
 	return u.currentCharacter != nil
 }
 
-func (u *ui) loadCurrentCharacter(characterID int32) error {
-	c, err := u.service.GetCharacter(characterID)
+func (u *ui) loadCurrentCharacter(ctx context.Context, characterID int32) error {
+	c, err := u.service.GetCharacter(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -307,7 +307,7 @@ func (u *ui) refreshCurrentCharacter() {
 		u.tabs.EnableIndex(1)
 		u.tabs.EnableIndex(2)
 		u.tabs.EnableIndex(3)
-		u.updateCharacterAndRefreshIfNeeded(c.ID, false)
+		u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
 	} else {
 		u.tabs.DisableIndex(0)
 		u.tabs.DisableIndex(1)
@@ -320,7 +320,7 @@ func (u *ui) refreshCurrentCharacter() {
 }
 
 func (u *ui) setAnyCharacter() error {
-	c, err := u.service.GetAnyCharacter()
+	c, err := u.service.GetAnyCharacter(context.Background())
 	if errors.Is(err, storage.ErrNotFound) {
 		u.resetCurrentCharacter()
 		return nil
@@ -396,7 +396,7 @@ func (u *ui) startUpdateTickerEveCategorySkill() {
 				if err := u.service.EveUniverse.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategoryIDShip); err != nil {
 					return err
 				}
-				if err := u.service.UpdateShipSkills(); err != nil {
+				if err := u.service.UpdateShipSkills(ctx); err != nil {
 					return err
 				}
 				slog.Info("Finished updating categories")
@@ -419,15 +419,16 @@ func (u *ui) startUpdateTickerEveCategorySkill() {
 func (u *ui) startUpdateTickerCharacterSections() {
 	ticker := time.NewTicker(characterSectionsUpdateTicker)
 	go func() {
+		ctx := context.Background()
 		for {
 			func() {
-				cc, err := u.service.ListCharactersShort()
+				cc, err := u.service.ListCharactersShort(ctx)
 				if err != nil {
 					slog.Error("Failed to fetch list of characters", "err", err)
 					return
 				}
 				for _, c := range cc {
-					u.updateCharacterAndRefreshIfNeeded(c.ID, false)
+					u.updateCharacterAndRefreshIfNeeded(ctx, c.ID, false)
 				}
 			}()
 			<-ticker.C
@@ -440,17 +441,17 @@ func (u *ui) startUpdateTickerCharacterSections() {
 //
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *ui) updateCharacterAndRefreshIfNeeded(characterID int32, forceUpdate bool) {
+func (u *ui) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
 	for _, s := range model.CharacterSections {
 		go func(s model.CharacterSection) {
-			u.updateCharacterSectionAndRefreshIfNeeded(characterID, s, forceUpdate)
+			u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 		}(s)
 	}
 }
 
-func (u *ui) updateCharacterSectionAndRefreshIfNeeded(characterID int32, s model.CharacterSection, forceUpdate bool) {
+func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s model.CharacterSection, forceUpdate bool) {
 	hasChanged, err := u.service.UpdateCharacterSection(
-		service.UpdateCharacterSectionParams{
+		ctx, service.UpdateCharacterSectionParams{
 			CharacterID: characterID,
 			Section:     s,
 			ForceUpdate: forceUpdate,

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -177,7 +178,8 @@ func (a *walletJournalArea) makeTopText() (string, widget.Importance, error) {
 		return "No character", widget.LowImportance, nil
 	}
 	c := a.ui.currentChar()
-	hasData, err := a.ui.service.CharacterSectionWasUpdated(c.ID, model.CharacterSectionWalletJournal)
+	hasData, err := a.ui.service.CharacterSectionWasUpdated(
+		context.Background(), c.ID, model.CharacterSectionWalletJournal)
 	if err != nil {
 		return "", 0, err
 	}
@@ -197,7 +199,7 @@ func (a *walletJournalArea) updateEntries() error {
 		}
 	}
 	characterID := a.ui.currentCharID()
-	ww, err := a.ui.service.ListCharacterWalletJournalEntries(characterID)
+	ww, err := a.ui.service.ListCharacterWalletJournalEntries(context.Background(), characterID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch wallet journal for character %d: %w", characterID, err)
 	}

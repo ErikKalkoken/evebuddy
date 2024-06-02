@@ -241,6 +241,7 @@ func TestListWalletTransactions(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	s := NewService(r)
+	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -249,7 +250,7 @@ func TestListWalletTransactions(t *testing.T) {
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		// when
-		tt, err := s.ListCharacterWalletTransactions(c.ID)
+		tt, err := s.ListCharacterWalletTransactions(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, tt, 3)

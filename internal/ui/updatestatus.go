@@ -90,7 +90,7 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 		if !ok {
 			return
 		}
-		a.ui.updateCharacterAndRefreshIfNeeded(c.id, false)
+		a.ui.updateCharacterAndRefreshIfNeeded(context.Background(), c.id, false)
 	})
 	top2 := container.NewVBox(container.NewHBox(a.sectionsTop, layout.NewSpacer(), b), widget.NewSeparator())
 	sections := container.NewBorder(top2, nil, nil, nil, a.sections)
@@ -278,7 +278,7 @@ func (a *statusWindow) setDetails(cs model.CharacterStatus) {
 	a.detailsInner.RemoveAll()
 	a.detailsInner.Add(container.NewGridWithColumns(2, formLeading, formTrailing))
 	bUpdate := widget.NewButton("Force update", func() {
-		go a.ui.updateCharacterSectionAndRefreshIfNeeded(cs.CharacterID, cs.Section, true)
+		go a.ui.updateCharacterSectionAndRefreshIfNeeded(context.Background(), cs.CharacterID, cs.Section, true)
 	})
 	a.detailsInner.Add(bUpdate)
 	a.details.Show()

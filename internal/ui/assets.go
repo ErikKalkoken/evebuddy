@@ -2,6 +2,7 @@ package ui
 
 import (
 	"cmp"
+	"context"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -239,7 +240,7 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 		return ids, values, 0, nil
 	}
 	characterID := a.ui.currentCharID()
-	locations, err := a.ui.service.ListCharacterAssetLocations(characterID)
+	locations, err := a.ui.service.ListCharacterAssetLocations(context.Background(), characterID)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -294,7 +295,8 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance, nil
 	}
-	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.currentCharID(), model.CharacterSectionAssets)
+	hasData, err := a.ui.service.CharacterSectionWasUpdated(
+		context.Background(), a.ui.currentCharID(), model.CharacterSectionAssets)
 	if err != nil {
 		return "", 0, err
 	}
@@ -305,11 +307,12 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 }
 
 func (a *assetsArea) redrawAssets(n locationNode) error {
+	ctx := context.Background()
 	empty := make([]*model.CharacterAsset, 0)
 	if err := a.assetsData.Set(copyToUntypedSlice(empty)); err != nil {
 		return err
 	}
-	var f func(int32, int64) ([]*model.CharacterAsset, error)
+	var f func(context.Context, int32, int64) ([]*model.CharacterAsset, error)
 	switch n.Type {
 	case nodeShipHangar:
 		f = a.ui.service.ListCharacterAssetsInShipHangar
@@ -318,7 +321,7 @@ func (a *assetsArea) redrawAssets(n locationNode) error {
 	default:
 		return fmt.Errorf("invalid node type: %v", n.Type)
 	}
-	assets, err := f(n.CharacterID, n.LocationID)
+	assets, err := f(ctx, n.CharacterID, n.LocationID)
 	if err != nil {
 		return err
 	}

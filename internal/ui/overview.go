@@ -173,7 +173,7 @@ func (u *ui) newOverviewArea() *overviewArea {
 			}
 			idx, ok := m[tci.Col]
 			if ok {
-				if err := a.ui.loadCurrentCharacter(c.id); err != nil {
+				if err := a.ui.loadCurrentCharacter(context.Background(), c.id); err != nil {
 					return err
 				}
 				a.ui.tabs.SelectIndex(idx.parent)

@@ -242,6 +242,7 @@ func TestListWalletJournalEntries(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	s := NewService(r)
+	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -250,7 +251,7 @@ func TestListWalletJournalEntries(t *testing.T) {
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		// when
-		ee, err := s.ListCharacterWalletJournalEntries(c.ID)
+		ee, err := s.ListCharacterWalletJournalEntries(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ee, 3)

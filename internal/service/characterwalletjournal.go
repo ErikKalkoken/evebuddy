@@ -13,8 +13,7 @@ import (
 	"github.com/antihax/goesi/optional"
 )
 
-func (s *Service) ListCharacterWalletJournalEntries(characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
-	ctx := context.Background()
+func (s *Service) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
 	return s.r.ListCharacterWalletJournalEntries(ctx, characterID)
 }
 

@@ -26,8 +26,7 @@ func (s *Service) characterSectionUpdatedAt(ctx context.Context, arg UpdateChara
 }
 
 // CharacterSectionWasUpdated reports wether the section has been updated at all.
-func (s *Service) CharacterSectionWasUpdated(characterID int32, section model.CharacterSection) (bool, error) {
-	ctx := context.Background()
+func (s *Service) CharacterSectionWasUpdated(ctx context.Context, characterID int32, section model.CharacterSection) (bool, error) {
 	t, err := s.characterSectionUpdatedAt(ctx, UpdateCharacterSectionParams{CharacterID: characterID, Section: section})
 	if errors.Is(err, storage.ErrNotFound) {
 		return false, nil
@@ -45,8 +44,7 @@ type UpdateCharacterSectionParams struct {
 
 // UpdateCharacterSection updates a section from ESI if has expired and changed
 // and reports back if it has changed
-func (s *Service) UpdateCharacterSection(arg UpdateCharacterSectionParams) (bool, error) {
-	ctx := context.Background()
+func (s *Service) UpdateCharacterSection(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.CharacterID == 0 {
 		panic("Invalid character ID")
 	}

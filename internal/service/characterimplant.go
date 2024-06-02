@@ -7,8 +7,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func (s *Service) ListCharacterImplants(characterID int32) ([]*model.CharacterImplant, error) {
-	ctx := context.Background()
+func (s *Service) ListCharacterImplants(ctx context.Context, characterID int32) ([]*model.CharacterImplant, error) {
 	return s.r.ListCharacterImplants(ctx, characterID)
 }
 

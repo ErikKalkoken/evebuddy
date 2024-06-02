@@ -31,8 +31,7 @@ var esiScopes = []string{
 }
 
 // CharacterHasTokenWithScopes reports wether a token with the requested scopes exists for a character.
-func (s *Service) CharacterHasTokenWithScopes(characterID int32) (bool, error) {
-	ctx := context.Background()
+func (s *Service) CharacterHasTokenWithScopes(ctx context.Context, characterID int32) (bool, error) {
 	t, err := s.r.GetCharacterToken(ctx, characterID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return false, nil

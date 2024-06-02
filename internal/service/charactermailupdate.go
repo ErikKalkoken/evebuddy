@@ -279,8 +279,7 @@ func (s *Service) updateExistingMail(ctx context.Context, characterID int32, hea
 }
 
 // UpdateMailRead updates an existing mail as read
-func (s *Service) UpdateMailRead(characterID, mailID int32) error {
-	ctx := context.Background()
+func (s *Service) UpdateMailRead(ctx context.Context, characterID, mailID int32) error {
 	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return err

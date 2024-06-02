@@ -55,12 +55,10 @@ func (s *Service) updateCharacterSkillsESI(ctx context.Context, arg UpdateCharac
 		})
 }
 
-func (s *Service) ListCharacterSkillProgress(characterID, eveGroupID int32) ([]model.ListCharacterSkillProgress, error) {
-	ctx := context.Background()
+func (s *Service) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]model.ListCharacterSkillProgress, error) {
 	return s.r.ListCharacterSkillProgress(ctx, characterID, eveGroupID)
 }
 
-func (s *Service) ListCharacterSkillGroupsProgress(characterID int32) ([]model.ListCharacterSkillGroupProgress, error) {
-	ctx := context.Background()
+func (s *Service) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]model.ListCharacterSkillGroupProgress, error) {
 	return s.r.ListCharacterSkillGroupsProgress(ctx, characterID)
 }

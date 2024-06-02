@@ -18,28 +18,27 @@ import (
 
 var ErrAborted = errors.New("process aborted prematurely")
 
-func (s *Service) DeleteCharacter(characterID int32) error {
-	ctx := context.Background()
+func (s *Service) DeleteCharacter(ctx context.Context, characterID int32) error {
 	if err := s.r.DeleteCharacter(ctx, characterID); err != nil {
 		return err
 	}
 	return s.CharacterStatus.UpdateCharacters(ctx, s.r)
 }
 
-func (s *Service) GetCharacter(characterID int32) (*model.Character, error) {
-	return s.r.GetCharacter(context.Background(), characterID)
+func (s *Service) GetCharacter(ctx context.Context, characterID int32) (*model.Character, error) {
+	return s.r.GetCharacter(ctx, characterID)
 }
 
-func (s *Service) GetAnyCharacter() (*model.Character, error) {
-	return s.r.GetFirstCharacter(context.Background())
+func (s *Service) GetAnyCharacter(ctx context.Context) (*model.Character, error) {
+	return s.r.GetFirstCharacter(ctx)
 }
 
 func (s *Service) ListCharacters() ([]*model.Character, error) {
 	return s.r.ListCharacters(context.Background())
 }
 
-func (s *Service) ListCharactersShort() ([]*model.CharacterShort, error) {
-	return s.r.ListCharactersShort(context.Background())
+func (s *Service) ListCharactersShort(ctx context.Context) ([]*model.CharacterShort, error) {
+	return s.r.ListCharactersShort(ctx)
 }
 
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.

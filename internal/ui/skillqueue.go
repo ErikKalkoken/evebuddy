@@ -204,7 +204,8 @@ func (a *skillqueueArea) updateItems() (types.NullDuration, sql.NullFloat64, err
 }
 
 func (a *skillqueueArea) makeTopText(total types.NullDuration) (string, widget.Importance, error) {
-	hasData, err := a.ui.service.CharacterSectionWasUpdated(a.ui.currentCharID(), model.CharacterSectionSkillqueue)
+	hasData, err := a.ui.service.CharacterSectionWasUpdated(
+		context.Background(), a.ui.currentCharID(), model.CharacterSectionSkillqueue)
 	if err != nil {
 		return "", 0, err
 	}

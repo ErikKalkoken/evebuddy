@@ -21,8 +21,7 @@ var eveEntityCategory2MailRecipientType = map[model.EveEntityCategory]string{
 }
 
 // DeleteCharacterMail deletes a mail both on ESI and in the database.
-func (s *Service) DeleteCharacterMail(characterID, mailID int32) error {
-	ctx := context.Background()
+func (s *Service) DeleteCharacterMail(ctx context.Context, characterID, mailID int32) error {
 	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return err
