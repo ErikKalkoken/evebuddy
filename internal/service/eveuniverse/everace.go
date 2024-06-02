@@ -10,7 +10,7 @@ import (
 )
 
 func (eu *EveUniverse) GetOrCreateEveRaceESI(ctx context.Context, id int32) (*model.EveRace, error) {
-	x, err := eu.s.GetEveRace(ctx, id)
+	x, err := eu.st.GetEveRace(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveRaceFromESI(ctx, id)
 	} else if err != nil {
@@ -28,7 +28,7 @@ func (eu *EveUniverse) createEveRaceFromESI(ctx context.Context, id int32) (*mod
 		}
 		for _, race := range races {
 			if race.RaceId == id {
-				return eu.s.CreateEveRace(ctx, race.RaceId, race.Description, race.Name)
+				return eu.st.CreateEveRace(ctx, race.RaceId, race.Description, race.Name)
 			}
 		}
 		return nil, fmt.Errorf("race with ID %d not found: %w", id, ErrNotFound)

@@ -1,4 +1,4 @@
-package service
+package characters
 
 import (
 	"context"
@@ -19,7 +19,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewService(r)
+	s := New(r, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 	t.Run("should update skills from scratch", func(t *testing.T) {
 		// given
@@ -123,7 +123,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 // func TestListWalletJournalEntries(t *testing.T) {
 // 	db, r, factory := testutil.New()
 // 	defer db.Close()
-// 	s := NewService(r)
+// 	s := New(r, nil, nil, nil, nil, nil)
 // 	t.Run("can list existing entries", func(t *testing.T) {
 // 		// given
 // 		testutil.TruncateTables(db)

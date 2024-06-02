@@ -1,4 +1,4 @@
-package service
+package characters
 
 import (
 	"context"
@@ -31,7 +31,7 @@ var esiScopes = []string{
 }
 
 // CharacterHasTokenWithScopes reports wether a token with the requested scopes exists for a character.
-func (s *Service) CharacterHasTokenWithScopes(ctx context.Context, characterID int32) (bool, error) {
+func (s *Characters) CharacterHasTokenWithScopes(ctx context.Context, characterID int32) (bool, error) {
 	t, err := s.r.GetCharacterToken(ctx, characterID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return false, nil
@@ -44,7 +44,7 @@ func (s *Service) CharacterHasTokenWithScopes(ctx context.Context, characterID i
 }
 
 // getValidCharacterToken returns a valid token for a character. Convenience function.
-func (s *Service) getValidCharacterToken(ctx context.Context, characterID int32) (*model.CharacterToken, error) {
+func (s *Characters) getValidCharacterToken(ctx context.Context, characterID int32) (*model.CharacterToken, error) {
 	t, err := s.r.GetCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (s *Service) getValidCharacterToken(ctx context.Context, characterID int32)
 }
 
 // ensureValidCharacterToken will automatically try to refresh a token that is already or about to become invalid.
-func (s *Service) ensureValidCharacterToken(ctx context.Context, t *model.CharacterToken) error {
+func (s *Characters) ensureValidCharacterToken(ctx context.Context, t *model.CharacterToken) error {
 	if !t.RemainsValid(time.Second * 60) {
 		slog.Debug("Need to refresh token", "characterID", t.CharacterID)
 		rawToken, err := sso.RefreshToken(s.httpClient, t.RefreshToken)

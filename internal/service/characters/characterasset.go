@@ -1,4 +1,4 @@
-package service
+package characters
 
 import (
 	"context"
@@ -12,15 +12,15 @@ import (
 	"github.com/antihax/goesi/optional"
 )
 
-func (s *Service) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+func (s *Characters) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
 	return s.r.ListCharacterAssetsInShipHangar(ctx, characterID, locationID)
 }
 
-func (s *Service) ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+func (s *Characters) ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
 	return s.r.ListCharacterAssetsInItemHangar(ctx, characterID, locationID)
 }
 
-func (s *Service) ListCharacterAssetLocations(ctx context.Context, characterID int32) ([]*model.CharacterAssetLocation, error) {
+func (s *Characters) ListCharacterAssetLocations(ctx context.Context, characterID int32) ([]*model.CharacterAssetLocation, error) {
 	return s.r.ListCharacterAssetLocations(ctx, characterID)
 }
 
@@ -29,7 +29,7 @@ type esiCharacterAssetPlus struct {
 	Name string
 }
 
-func (s *Service) updateCharacterAssetsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *Characters) updateCharacterAssetsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionAssets {
 		panic("called with wrong section")
 	}
@@ -135,7 +135,7 @@ func (s *Service) updateCharacterAssetsESI(ctx context.Context, arg UpdateCharac
 		})
 }
 
-func (s *Service) fetchCharacterAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
+func (s *Characters) fetchCharacterAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
 	m := make(map[int64]string)
 	for _, chunk := range chunkBy(ids, 1000) { // API allows 1000 IDs max
 		names, _, err := s.esiClient.ESI.AssetsApi.PostCharactersCharacterIdAssetsNames(ctx, characterID, chunk, nil)

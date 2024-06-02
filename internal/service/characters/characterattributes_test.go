@@ -1,4 +1,4 @@
-package service
+package characters
 
 import (
 	"context"
@@ -18,7 +18,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewService(r)
+	s := New(r, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 	t.Run("should create attributes from ESI response", func(t *testing.T) {
 		// given

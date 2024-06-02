@@ -17,7 +17,7 @@ import (
 //
 // Important: A token with the structure scope must be set in the context
 func (eu *EveUniverse) GetOrCreateLocationESI(ctx context.Context, id int64) (*model.Location, error) {
-	x, err := eu.s.GetLocation(ctx, id)
+	x, err := eu.st.GetLocation(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.updateOrCreateLocationESI(ctx, id)
 	} else if err != nil {
@@ -127,10 +127,10 @@ func (eu *EveUniverse) updateOrCreateLocationESI(ctx context.Context, id int64) 
 			return nil, fmt.Errorf("can not update or create structure for invalid ID: %d", id)
 		}
 		arg.UpdatedAt = time.Now()
-		if err := eu.s.UpdateOrCreateLocation(ctx, arg); err != nil {
+		if err := eu.st.UpdateOrCreateLocation(ctx, arg); err != nil {
 			return nil, err
 		}
-		return eu.s.GetLocation(ctx, id)
+		return eu.st.GetLocation(ctx, id)
 	})
 	if err != nil {
 		return nil, err

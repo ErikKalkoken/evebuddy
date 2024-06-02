@@ -14,8 +14,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/service/characters"
 )
 
 type accountCharacter struct {
@@ -134,7 +133,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 		func(confirmed bool) {
 			if confirmed {
 				err := func(characterID int32) error {
-					err := a.ui.service.DeleteCharacter(context.Background(), characterID)
+					err := a.ui.service.Characters.DeleteCharacter(context.Background(), characterID)
 					if err != nil {
 						return err
 					}
@@ -164,7 +163,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 }
 
 func (a *accountArea) Refresh() error {
-	cc, err := a.ui.service.ListCharactersShort(context.Background())
+	cc, err := a.ui.service.Characters.ListCharactersShort(context.Background())
 	if err != nil {
 		return err
 	}
@@ -197,8 +196,8 @@ func (a *accountArea) showAddCharacterDialog() {
 	d1.SetOnClosed(cancel)
 	go func() {
 		err := func() error {
-			characterID, err := a.ui.service.UpdateOrCreateCharacterFromSSO(ctx, infoText)
-			if errors.Is(err, service.ErrAborted) {
+			characterID, err := a.ui.service.Characters.UpdateOrCreateCharacterFromSSO(ctx, infoText)
+			if errors.Is(err, characters.ErrAborted) {
 				return nil
 			} else if err != nil {
 				return err

@@ -1,4 +1,4 @@
-package service_test
+package characters_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/service/characters"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 
 	"github.com/jarcoal/httpmock"
@@ -18,7 +18,7 @@ func TestCharacter(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := service.NewService(r)
+	s := characters.New(r, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 	t.Run("should return existing category", func(t *testing.T) {
 		// given

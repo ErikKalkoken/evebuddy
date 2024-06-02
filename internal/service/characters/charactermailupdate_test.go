@@ -1,4 +1,4 @@
-package service
+package characters
 
 import (
 	"context"
@@ -22,7 +22,7 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewService(r)
+	s := New(r, nil, nil, nil, nil, nil)
 	var objs []esi.GetCharactersCharacterIdMail200Ok
 	var mailIDs []int32
 	for i := range 55 {
@@ -78,7 +78,7 @@ func TestUpdateMailLabel(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	ctx := context.Background()
-	s := NewService(r)
+	s := New(r, nil, nil, nil, nil, nil)
 	t.Run("should create new mail labels", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

@@ -22,6 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/service/characters"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -150,7 +151,7 @@ func NewUI(service *service.Service, imageCachePath string) *ui {
 	var c *model.Character
 	cID, ok, err := service.Dictionary.GetInt(model.SettingLastCharacterID)
 	if err == nil && ok {
-		c, err = service.GetCharacter(context.Background(), int32(cID))
+		c, err = service.Characters.GetCharacter(context.Background(), int32(cID))
 		if err != nil {
 			if !errors.Is(err, storage.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -271,7 +272,7 @@ func (u *ui) hasCharacter() bool {
 }
 
 func (u *ui) loadCurrentCharacter(ctx context.Context, characterID int32) error {
-	c, err := u.service.GetCharacter(ctx, characterID)
+	c, err := u.service.Characters.GetCharacter(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -320,7 +321,7 @@ func (u *ui) refreshCurrentCharacter() {
 }
 
 func (u *ui) setAnyCharacter() error {
-	c, err := u.service.GetAnyCharacter(context.Background())
+	c, err := u.service.Characters.GetAnyCharacter(context.Background())
 	if errors.Is(err, storage.ErrNotFound) {
 		u.resetCurrentCharacter()
 		return nil
@@ -396,7 +397,7 @@ func (u *ui) startUpdateTickerEveCategorySkill() {
 				if err := u.service.EveUniverse.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategoryIDShip); err != nil {
 					return err
 				}
-				if err := u.service.UpdateShipSkills(ctx); err != nil {
+				if err := u.service.Characters.UpdateShipSkills(ctx); err != nil {
 					return err
 				}
 				slog.Info("Finished updating categories")
@@ -422,7 +423,7 @@ func (u *ui) startUpdateTickerCharacterSections() {
 		ctx := context.Background()
 		for {
 			func() {
-				cc, err := u.service.ListCharactersShort(ctx)
+				cc, err := u.service.Characters.ListCharactersShort(ctx)
 				if err != nil {
 					slog.Error("Failed to fetch list of characters", "err", err)
 					return
@@ -450,8 +451,8 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID 
 }
 
 func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s model.CharacterSection, forceUpdate bool) {
-	hasChanged, err := u.service.UpdateCharacterSection(
-		ctx, service.UpdateCharacterSectionParams{
+	hasChanged, err := u.service.Characters.UpdateCharacterSection(
+		ctx, characters.UpdateCharacterSectionParams{
 			CharacterID: characterID,
 			Section:     s,
 			ForceUpdate: forceUpdate,

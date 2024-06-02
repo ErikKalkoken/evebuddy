@@ -1,4 +1,4 @@
-package service
+package characters
 
 import (
 	"context"
@@ -7,11 +7,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func (s *Service) ListCharacterImplants(ctx context.Context, characterID int32) ([]*model.CharacterImplant, error) {
+func (s *Characters) ListCharacterImplants(ctx context.Context, characterID int32) ([]*model.CharacterImplant, error) {
 	return s.r.ListCharacterImplants(ctx, characterID)
 }
 
-func (s *Service) updateCharacterImplantsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *Characters) updateCharacterImplantsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionImplants {
 		panic("called with wrong section")
 	}

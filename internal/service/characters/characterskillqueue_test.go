@@ -1,4 +1,4 @@
-package service
+package characters
 
 import (
 	"context"
@@ -19,7 +19,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewService(r)
+	s := New(r, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 	t.Run("should create new queue", func(t *testing.T) {
 		// given

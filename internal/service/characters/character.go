@@ -1,48 +1,103 @@
-package service
+package characters
 
 import (
 	"context"
 	"database/sql"
 	"errors"
 	"log/slog"
+	"net/http"
 	"slices"
 
 	"fyne.io/fyne/v2/data/binding"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 	igoesi "github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/service/characterstatus"
+	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
+	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
 )
 
 var ErrAborted = errors.New("process aborted prematurely")
 
-func (s *Service) DeleteCharacter(ctx context.Context, characterID int32) error {
+type Characters struct {
+	esiClient       *goesi.APIClient
+	httpClient      *http.Client
+	r               *storage.Storage
+	singleGroup     *singleflight.Group
+	EveUniverse     *eveuniverse.EveUniverse
+	Dictionary      *dictionary.Dictionary
+	CharacterStatus *characterstatus.CharacterStatusCache
+}
+
+// New creates a new Characters service and returns it.
+// When nil is passed for any parameter a new default instance will be created for it (except for storage).
+func New(
+	r *storage.Storage,
+	httpClient *http.Client,
+	esiClient *goesi.APIClient,
+	cs *characterstatus.CharacterStatusCache,
+	dt *dictionary.Dictionary,
+	eu *eveuniverse.EveUniverse,
+) *Characters {
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
+	if esiClient == nil {
+		esiClient = goesi.NewAPIClient(httpClient, "")
+	}
+	if cs == nil {
+		cache := cache.New()
+		cs = characterstatus.New(cache)
+	}
+	if dt == nil {
+		dt = dictionary.New(r)
+	}
+	if eu == nil {
+		eu = eveuniverse.New(r, esiClient)
+	}
+	x := &Characters{
+		r:               r,
+		esiClient:       esiClient,
+		httpClient:      httpClient,
+		singleGroup:     new(singleflight.Group),
+		EveUniverse:     eu,
+		CharacterStatus: cs,
+		Dictionary:      dt,
+	}
+	return x
+}
+
+func (s *Characters) DeleteCharacter(ctx context.Context, characterID int32) error {
 	if err := s.r.DeleteCharacter(ctx, characterID); err != nil {
 		return err
 	}
 	return s.CharacterStatus.UpdateCharacters(ctx, s.r)
 }
 
-func (s *Service) GetCharacter(ctx context.Context, characterID int32) (*model.Character, error) {
+func (s *Characters) GetCharacter(ctx context.Context, characterID int32) (*model.Character, error) {
 	return s.r.GetCharacter(ctx, characterID)
 }
 
-func (s *Service) GetAnyCharacter(ctx context.Context) (*model.Character, error) {
+func (s *Characters) GetAnyCharacter(ctx context.Context) (*model.Character, error) {
 	return s.r.GetFirstCharacter(ctx)
 }
 
-func (s *Service) ListCharacters() ([]*model.Character, error) {
+func (s *Characters) ListCharacters() ([]*model.Character, error) {
 	return s.r.ListCharacters(context.Background())
 }
 
-func (s *Service) ListCharactersShort(ctx context.Context) ([]*model.CharacterShort, error) {
+func (s *Characters) ListCharactersShort(ctx context.Context) ([]*model.CharacterShort, error) {
 	return s.r.ListCharactersShort(ctx)
 }
 
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
-func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
+func (s *Characters) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
 	ssoToken, err := sso.Authenticate(ctx, s.httpClient, esiScopes)
 	if errors.Is(err, sso.ErrAborted) {
 		return 0, ErrAborted
@@ -95,7 +150,7 @@ func (s *Service) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText b
 	return token.CharacterID, nil
 }
 
-func (s *Service) updateCharacterLocationESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *Characters) updateCharacterLocationESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionLocation {
 		panic("called with wrong section")
 	}
@@ -131,7 +186,7 @@ func (s *Service) updateCharacterLocationESI(ctx context.Context, arg UpdateChar
 		})
 }
 
-func (s *Service) updateCharacterOnlineESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *Characters) updateCharacterOnlineESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionOnline {
 		panic("called with wrong section")
 	}
@@ -158,7 +213,7 @@ func (s *Service) updateCharacterOnlineESI(ctx context.Context, arg UpdateCharac
 		})
 }
 
-func (s *Service) updateCharacterShipESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *Characters) updateCharacterShipESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionShip {
 		panic("called with wrong section")
 	}
@@ -185,7 +240,7 @@ func (s *Service) updateCharacterShipESI(ctx context.Context, arg UpdateCharacte
 		})
 }
 
-func (s *Service) updateCharacterWalletBalanceESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *Characters) updateCharacterWalletBalanceESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionWalletBalance {
 		panic("called with wrong section")
 	}
@@ -210,7 +265,7 @@ func (s *Service) updateCharacterWalletBalanceESI(ctx context.Context, arg Updat
 
 // AddEveEntitiesFromCharacterSearchESI runs a search on ESI and adds the results as new EveEntity objects to the database.
 // This method performs a character specific search and needs a token.
-func (s *Service) AddEveEntitiesFromCharacterSearchESI(ctx context.Context, characterID int32, search string) ([]int32, error) {
+func (s *Characters) AddEveEntitiesFromCharacterSearchESI(ctx context.Context, characterID int32, search string) ([]int32, error) {
 	token, err := s.getValidCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err

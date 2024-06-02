@@ -15,13 +15,13 @@ var ErrNotFound = errors.New("object not found")
 type EveUniverse struct {
 	esiClient   *goesi.APIClient
 	singleGroup *singleflight.Group
-	s           *storage.Storage
+	st          *storage.Storage
 }
 
-func New(s *storage.Storage, esiClient *goesi.APIClient) *EveUniverse {
+func New(st *storage.Storage, esiClient *goesi.APIClient) *EveUniverse {
 	eu := &EveUniverse{
 		esiClient:   esiClient,
-		s:           s,
+		st:          st,
 		singleGroup: new(singleflight.Group),
 	}
 	return eu

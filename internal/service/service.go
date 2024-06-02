@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/antihax/goesi"
-	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
+	"github.com/ErikKalkoken/evebuddy/internal/service/characters"
 	"github.com/ErikKalkoken/evebuddy/internal/service/characterstatus"
 	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/service/esistatus"
@@ -17,6 +17,8 @@ import (
 )
 
 type Service struct {
+	// Characters service
+	Characters *characters.Characters
 	// Character status service
 	CharacterStatus *characterstatus.CharacterStatusCache
 	// Dictionary service
@@ -25,12 +27,6 @@ type Service struct {
 	ESIStatus *esistatus.ESIStatus
 	// Eve Universe service
 	EveUniverse *eveuniverse.EveUniverse
-
-	cache       *cache.Cache
-	esiClient   *goesi.APIClient
-	httpClient  *http.Client
-	r           *storage.Storage
-	singleGroup *singleflight.Group
 }
 
 func NewService(r *storage.Storage) *Service {
@@ -49,20 +45,19 @@ func NewService(r *storage.Storage) *Service {
 	}
 	userAgent := "EveBuddy kalkoken87@gmail.com"
 	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
-	s := Service{
-		cache:       cache.New(),
-		esiClient:   esiClient,
-		httpClient:  defaultHttpClient,
-		r:           r,
-		singleGroup: new(singleflight.Group),
-
-		Dictionary:  dictionary.New(r),
-		ESIStatus:   esistatus.New(esiClient),
-		EveUniverse: eveuniverse.New(r, esiClient),
-	}
-	s.CharacterStatus = characterstatus.New(s.cache)
-	if err := s.CharacterStatus.InitCache(r); err != nil {
+	dt := dictionary.New(r)
+	eu := eveuniverse.New(r, esiClient)
+	cache := cache.New()
+	cs := characterstatus.New(cache)
+	if err := cs.InitCache(r); err != nil {
 		panic(err)
+	}
+	s := Service{
+		Characters:      characters.New(r, defaultHttpClient, esiClient, cs, dt, eu),
+		CharacterStatus: cs,
+		Dictionary:      dt,
+		ESIStatus:       esistatus.New(esiClient),
+		EveUniverse:     eu,
 	}
 	return &s
 }

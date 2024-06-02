@@ -37,7 +37,7 @@ func eveEntityCategoryFromESICategory(c string) model.EveEntityCategory {
 
 // AddMissingEveEntities adds EveEntities from ESI for IDs missing in the database.
 func (eu *EveUniverse) AddMissingEveEntities(ctx context.Context, ids []int32) ([]int32, error) {
-	missing, err := eu.s.MissingEveEntityIDs(ctx, ids)
+	missing, err := eu.st.MissingEveEntityIDs(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (eu *EveUniverse) AddMissingEveEntities(ctx context.Context, ids []int32) (
 		badIDs = append(badIDs, badChunk...)
 	}
 	for _, entity := range ee {
-		_, err := eu.s.GetOrCreateEveEntity(
+		_, err := eu.st.GetOrCreateEveEntity(
 			ctx,
 			entity.Id,
 			entity.Name,
@@ -72,7 +72,7 @@ func (eu *EveUniverse) AddMissingEveEntities(ctx context.Context, ids []int32) (
 	}
 	if len(badIDs) > 0 {
 		for _, id := range badIDs {
-			eu.s.GetOrCreateEveEntity(ctx, id, "?", model.EveEntityUnknown)
+			eu.st.GetOrCreateEveEntity(ctx, id, "?", model.EveEntityUnknown)
 		}
 		slog.Warn("Marking unresolvable EveEntity IDs as unknown", "ids", badIDs)
 	}
@@ -106,7 +106,7 @@ func (eu *EveUniverse) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostU
 }
 
 func (eu *EveUniverse) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]*model.EveEntity, error) {
-	return eu.s.ListEveEntitiesByPartialName(ctx, partial)
+	return eu.st.ListEveEntitiesByPartialName(ctx, partial)
 }
 
 // Resolve slice of unclean EveEntity objects and return as new slice with resolved objects.
@@ -137,7 +137,7 @@ func (eu *EveUniverse) resolveEveEntityLocally(ctx context.Context, ee []*model.
 			names = append(names, r.Name)
 			continue
 		}
-		ee3, err := eu.s.ListEveEntityByNameAndCategory(ctx, r.Name, r.Category)
+		ee3, err := eu.st.ListEveEntityByNameAndCategory(ctx, r.Name, r.Category)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -179,7 +179,7 @@ func (eu *EveUniverse) resolveEveEntityNamesRemotely(ctx context.Context, names 
 	for i, e := range ee {
 		ids[i] = e.ID
 	}
-	missing, err := eu.s.MissingEveEntityIDs(ctx, ids)
+	missing, err := eu.st.MissingEveEntityIDs(ctx, ids)
 	if err != nil {
 		return err
 	}
@@ -188,7 +188,7 @@ func (eu *EveUniverse) resolveEveEntityNamesRemotely(ctx context.Context, names 
 	}
 	for _, e := range ee {
 		if missing.Has(int32(e.ID)) {
-			_, err := eu.s.GetOrCreateEveEntity(ctx, e.ID, e.Name, e.Category)
+			_, err := eu.st.GetOrCreateEveEntity(ctx, e.ID, e.Name, e.Category)
 			if err != nil {
 				return err
 			}
@@ -203,7 +203,7 @@ func (eu *EveUniverse) resolveEveEntityNamesRemotely(ctx context.Context, names 
 func (eu *EveUniverse) findEveEntitiesByName(ctx context.Context, names []string) ([]*model.EveEntity, error) {
 	ee2 := make([]*model.EveEntity, 0, len(names))
 	for _, n := range names {
-		ee, err := eu.s.ListEveEntitiesByName(ctx, n)
+		ee, err := eu.st.ListEveEntitiesByName(ctx, n)
 		if err != nil {
 			return nil, err
 		}

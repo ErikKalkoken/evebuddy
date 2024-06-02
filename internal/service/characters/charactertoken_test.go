@@ -1,4 +1,4 @@
-package service
+package characters
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 func TestHasTokenWithScopes(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
-	s := NewService(r)
+	s := New(r, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 	t.Run("should create new queue", func(t *testing.T) {
 		// given

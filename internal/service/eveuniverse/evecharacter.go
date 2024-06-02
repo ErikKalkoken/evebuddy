@@ -13,7 +13,7 @@ import (
 )
 
 func (eu *EveUniverse) GetOrCreateEveCharacterESI(ctx context.Context, id int32) (*model.EveCharacter, error) {
-	x, err := eu.s.GetEveCharacter(ctx, id)
+	x, err := eu.st.GetEveCharacter(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveCharacterFromESI(ctx, id)
 	} else if err != nil {
@@ -57,10 +57,10 @@ func (eu *EveUniverse) createEveCharacterFromESI(ctx context.Context, id int32) 
 			SecurityStatus: float64(r.SecurityStatus),
 			Title:          r.Title,
 		}
-		if err := eu.s.CreateEveCharacter(ctx, arg); err != nil {
+		if err := eu.st.CreateEveCharacter(ctx, arg); err != nil {
 			return nil, err
 		}
-		return eu.s.GetEveCharacter(ctx, id)
+		return eu.st.GetEveCharacter(ctx, id)
 	})
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (eu *EveUniverse) createEveCharacterFromESI(ctx context.Context, id int32) 
 
 // UpdateAllEveCharactersESI updates all known Eve characters from ESI.
 func (eu *EveUniverse) UpdateAllEveCharactersESI(ctx context.Context) error {
-	ids, err := eu.s.ListEveCharacterIDs(ctx)
+	ids, err := eu.st.ListEveCharacterIDs(ctx)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (eu *EveUniverse) UpdateAllEveCharactersESI(ctx context.Context) error {
 }
 
 func (eu *EveUniverse) updateEveCharacterESI(ctx context.Context, characterID int32) error {
-	c, err := eu.s.GetEveCharacter(ctx, characterID)
+	c, err := eu.st.GetEveCharacter(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -120,20 +120,20 @@ func (eu *EveUniverse) updateEveCharacterESI(ctx context.Context, characterID in
 		if err != nil {
 			return err
 		}
-		corporation, err := eu.s.GetEveEntity(ctx, r.CorporationId)
+		corporation, err := eu.st.GetEveEntity(ctx, r.CorporationId)
 		if err != nil {
 			return err
 		}
 		c.Corporation = corporation
 		if r.AllianceId != 0 {
-			alliance, err := eu.s.GetEveEntity(ctx, r.AllianceId)
+			alliance, err := eu.st.GetEveEntity(ctx, r.AllianceId)
 			if err != nil {
 				return err
 			}
 			c.Alliance = alliance
 		}
 		if r.FactionId != 0 {
-			faction, err := eu.s.GetEveEntity(ctx, r.FactionId)
+			faction, err := eu.st.GetEveEntity(ctx, r.FactionId)
 			if err != nil {
 				return err
 			}
@@ -154,7 +154,7 @@ func (eu *EveUniverse) updateEveCharacterESI(ctx context.Context, characterID in
 	if err := g.Wait(); err != nil {
 		return fmt.Errorf("failed to update EveCharacter %d: %w", c.ID, err)
 	}
-	if err := eu.s.UpdateEveCharacter(ctx, c); err != nil {
+	if err := eu.st.UpdateEveCharacter(ctx, c); err != nil {
 		return err
 	}
 	slog.Info("Updated eve character from ESI", "characterID", c.ID)

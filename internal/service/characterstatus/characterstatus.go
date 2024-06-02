@@ -38,6 +38,8 @@ type CharacterStatusCache struct {
 	mu    sync.Mutex
 }
 
+// New creates a new CharacterStatusCache and returns it.
+// When nil is provided it will create and use it's own cache instance.
 func New(cache Cache) *CharacterStatusCache {
 	sc := &CharacterStatusCache{cache: cache}
 	return sc

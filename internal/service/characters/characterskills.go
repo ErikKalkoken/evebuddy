@@ -1,4 +1,4 @@
-package service
+package characters
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *Service) updateCharacterSkillsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *Characters) updateCharacterSkillsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionSkills {
 		panic("called with wrong section")
 	}
@@ -55,10 +55,10 @@ func (s *Service) updateCharacterSkillsESI(ctx context.Context, arg UpdateCharac
 		})
 }
 
-func (s *Service) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]model.ListCharacterSkillProgress, error) {
+func (s *Characters) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]model.ListCharacterSkillProgress, error) {
 	return s.r.ListCharacterSkillProgress(ctx, characterID, eveGroupID)
 }
 
-func (s *Service) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]model.ListCharacterSkillGroupProgress, error) {
+func (s *Characters) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]model.ListCharacterSkillGroupProgress, error) {
 	return s.r.ListCharacterSkillGroupsProgress(ctx, characterID)
 }

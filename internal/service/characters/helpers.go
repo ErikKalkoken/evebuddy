@@ -1,4 +1,4 @@
-package service
+package characters
 
 func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
 	for chunkSize < len(items) {

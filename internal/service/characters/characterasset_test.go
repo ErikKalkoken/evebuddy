@@ -1,4 +1,4 @@
-package service
+package characters
 
 import (
 	"context"
@@ -19,7 +19,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := NewService(r)
+	s := New(r, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 	t.Run("should create new assets from scratch", func(t *testing.T) {
 		// given
@@ -66,7 +66,8 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 					"item_id": 1000000016836,
 					"name":    "None",
 				},
-			})) // when
+			}))
+		// when
 		changed, err := s.updateCharacterAssetsESI(ctx, UpdateCharacterSectionParams{
 			CharacterID: c.ID,
 			Section:     model.CharacterSectionAssets,

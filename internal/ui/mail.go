@@ -222,11 +222,11 @@ func (a *folderArea) updateMailTab(unreadCount int) {
 }
 
 func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, map[string]string, folderNode, error) {
-	labelUnreadCounts, err := a.mailArea.ui.service.GetCharacterMailLabelUnreadCounts(characterID)
+	labelUnreadCounts, err := a.mailArea.ui.service.Characters.GetCharacterMailLabelUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, folderNode{}, err
 	}
-	listUnreadCounts, err := a.mailArea.ui.service.GetCharacterMailListUnreadCounts(characterID)
+	listUnreadCounts, err := a.mailArea.ui.service.Characters.GetCharacterMailListUnreadCounts(characterID)
 	if err != nil {
 		return nil, nil, folderNode{}, err
 	}
@@ -250,7 +250,7 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 	if err != nil {
 		return nil, nil, folderNode{}, err
 	}
-	labels, err := a.mailArea.ui.service.ListCharacterMailLabelsOrdered(characterID)
+	labels, err := a.mailArea.ui.service.Characters.ListCharacterMailLabelsOrdered(characterID)
 	if err != nil {
 		return nil, nil, folderNode{}, err
 	}
@@ -283,7 +283,7 @@ func (a *folderArea) buildFolderTree(characterID int32) (map[string][]string, ma
 			folders[uid] = x
 		}
 	}
-	lists, err := a.mailArea.ui.service.ListCharacterMailLists(characterID)
+	lists, err := a.mailArea.ui.service.Characters.ListCharacterMailLists(characterID)
 	if err != nil {
 		return nil, nil, folderNode{}, err
 	}
@@ -479,7 +479,7 @@ func (a *headerArea) fetchMailFromDataItem(di binding.DataItem) (*model.Characte
 	if err != nil {
 		return nil, err
 	}
-	m, err := a.mailArea.ui.service.GetCharacterMail(a.mailArea.ui.currentCharID(), int32(mailID))
+	m, err := a.mailArea.ui.service.Characters.GetCharacterMail(a.mailArea.ui.currentCharID(), int32(mailID))
 	if err != nil {
 		return nil, err
 	}
@@ -520,9 +520,9 @@ func (a *headerArea) updateMails() error {
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mailIDs, err = a.mailArea.ui.service.ListCharacterMailIDsForLabelOrdered(folder.CharacterID, folder.ObjID)
+		mailIDs, err = a.mailArea.ui.service.Characters.ListCharacterMailIDsForLabelOrdered(folder.CharacterID, folder.ObjID)
 	case nodeCategoryList:
-		mailIDs, err = a.mailArea.ui.service.ListCharacterMailIDsForListOrdered(folder.CharacterID, folder.ObjID)
+		mailIDs, err = a.mailArea.ui.service.Characters.ListCharacterMailIDsForListOrdered(folder.CharacterID, folder.ObjID)
 	}
 	if err != nil {
 		return err
@@ -541,7 +541,7 @@ func (a *headerArea) makeTopText() (string, widget.Importance, error) {
 	if !a.mailArea.ui.hasCharacter() {
 		return "No Character", widget.LowImportance, nil
 	}
-	hasData, err := a.mailArea.ui.service.CharacterSectionWasUpdated(
+	hasData, err := a.mailArea.ui.service.Characters.CharacterSectionWasUpdated(
 		context.Background(), a.mailArea.ui.currentCharID(), model.CharacterSectionSkillqueue)
 	if err != nil {
 		return "", 0, err
@@ -604,7 +604,7 @@ func (a *mailDetailArea) makeToolbar() *widget.Toolbar {
 			d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
 				if confirmed {
 					ctx := context.Background()
-					if err := a.mailArea.ui.service.DeleteCharacterMail(ctx, a.mail.CharacterID, a.mail.MailID); err != nil {
+					if err := a.mailArea.ui.service.Characters.DeleteCharacterMail(ctx, a.mail.CharacterID, a.mail.MailID); err != nil {
 						t := "Failed to delete mail"
 						slog.Error(t, "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
 						a.mailArea.ui.showErrorDialog(t, err)
@@ -627,7 +627,7 @@ func (a *mailDetailArea) clear() {
 func (a *mailDetailArea) setMail(mailID int32) {
 	characterID := a.mailArea.ui.currentCharID()
 	var err error
-	a.mail, err = a.mailArea.ui.service.GetCharacterMail(characterID, mailID)
+	a.mail, err = a.mailArea.ui.service.Characters.GetCharacterMail(characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		a.setErrorText()
@@ -635,7 +635,7 @@ func (a *mailDetailArea) setMail(mailID int32) {
 	}
 	if !a.mail.IsRead {
 		go func() {
-			err = a.mailArea.ui.service.UpdateMailRead(context.Background(), characterID, a.mail.MailID)
+			err = a.mailArea.ui.service.Characters.UpdateMailRead(context.Background(), characterID, a.mail.MailID)
 			if err != nil {
 				slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
 				a.setErrorText()

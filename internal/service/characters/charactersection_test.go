@@ -1,4 +1,4 @@
-package service
+package characters
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 
 func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 	db, r, factory := testutil.New()
-	s := NewService(r)
+	s := New(r, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 	t.Run("should report as changed and run update when new", func(t *testing.T) {
 		// given
@@ -116,7 +116,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 
 func TestCharacterSectionUpdateMethods(t *testing.T) {
 	db, r, factory := testutil.New()
-	s := NewService(r)
+	s := New(r, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 	t.Run("Can report when section update is expired", func(t *testing.T) {
 		// given

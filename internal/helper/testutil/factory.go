@@ -14,12 +14,12 @@ import (
 )
 
 type Factory struct {
-	r  *storage.Storage
+	st *storage.Storage
 	db *sql.DB
 }
 
-func NewFactory(r *storage.Storage, db *sql.DB) Factory {
-	f := Factory{r: r, db: db}
+func NewFactory(st *storage.Storage, db *sql.DB) Factory {
+	f := Factory{st: st, db: db}
 	return f
 }
 
@@ -55,11 +55,11 @@ func (f Factory) CreateCharacter(args ...storage.UpdateOrCreateCharacterParams) 
 	if !arg.WalletBalance.Valid {
 		arg.WalletBalance = sql.NullFloat64{Float64: rand.Float64() * 100_000_000_000, Valid: true}
 	}
-	err := f.r.UpdateOrCreateCharacter(ctx, arg)
+	err := f.st.UpdateOrCreateCharacter(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	c, err := f.r.GetCharacter(ctx, arg.ID)
+	c, err := f.st.GetCharacter(ctx, arg.ID)
 	if err != nil {
 		panic(err)
 	}
@@ -94,10 +94,10 @@ func (f Factory) CreateCharacterAttributes(args ...storage.UpdateOrCreateCharact
 	if arg.Willpower == 0 {
 		arg.Willpower = randomValue()
 	}
-	if err := f.r.UpdateOrCreateCharacterAttributes(ctx, arg); err != nil {
+	if err := f.st.UpdateOrCreateCharacterAttributes(ctx, arg); err != nil {
 		panic(err)
 	}
-	o, err := f.r.GetCharacterAttributes(ctx, arg.CharacterID)
+	o, err := f.st.GetCharacterAttributes(ctx, arg.CharacterID)
 	if err != nil {
 		panic(err)
 	}
@@ -141,10 +141,10 @@ func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams
 			arg.Quantity = rand.Int32N(10_000)
 		}
 	}
-	if err := f.r.CreateCharacterAsset(ctx, arg); err != nil {
+	if err := f.st.CreateCharacterAsset(ctx, arg); err != nil {
 		panic(err)
 	}
-	o, err := f.r.GetCharacterAsset(ctx, arg.CharacterID, arg.ItemID)
+	o, err := f.st.GetCharacterAsset(ctx, arg.CharacterID, arg.ItemID)
 	if err != nil {
 		panic(err)
 	}
@@ -165,11 +165,11 @@ func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantPa
 		x := f.CreateEveType()
 		arg.EveTypeID = x.ID
 	}
-	err := f.r.CreateCharacterImplant(ctx, arg)
+	err := f.st.CreateCharacterImplant(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	o, err := f.r.GetCharacterImplant(ctx, arg.CharacterID, arg.EveTypeID)
+	o, err := f.st.GetCharacterImplant(ctx, arg.CharacterID, arg.EveTypeID)
 	if err != nil {
 		panic(err)
 	}
@@ -197,11 +197,11 @@ func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpClo
 		x := f.CreateEveType()
 		arg.Implants = append(arg.Implants, x.ID)
 	}
-	err := f.r.CreateCharacterJumpClone(ctx, arg)
+	err := f.st.CreateCharacterJumpClone(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	o, err := f.r.GetCharacterJumpClone(ctx, arg.CharacterID, int32(arg.JumpCloneID))
+	o, err := f.st.GetCharacterJumpClone(ctx, arg.CharacterID, int32(arg.JumpCloneID))
 	if err != nil {
 		panic(err)
 	}
@@ -224,7 +224,7 @@ func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) 
 		arg.FromID = from.ID
 	}
 	if arg.MailID == 0 {
-		ids, err := f.r.ListCharacterMailIDs(ctx, arg.CharacterID)
+		ids, err := f.st.ListCharacterMailIDs(ctx, arg.CharacterID)
 		if err != nil {
 			panic(err)
 		}
@@ -247,11 +247,11 @@ func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) 
 		e1 := f.CreateEveEntityCharacter()
 		arg.RecipientIDs = []int32{e1.ID}
 	}
-	_, err := f.r.CreateCharacterMail(ctx, arg)
+	_, err := f.st.CreateCharacterMail(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	mail, err := f.r.GetCharacterMail(ctx, arg.CharacterID, arg.MailID)
+	mail, err := f.st.GetCharacterMail(ctx, arg.CharacterID, arg.MailID)
 	if err != nil {
 		panic(err)
 	}
@@ -277,7 +277,7 @@ func (f Factory) CreateCharacterMailLabel(args ...model.CharacterMailLabel) *mod
 		arg.CharacterID = c.ID
 	}
 	if arg.LabelID == 0 {
-		ll, err := f.r.ListCharacterMailLabelsOrdered(ctx, arg.CharacterID)
+		ll, err := f.st.ListCharacterMailLabelsOrdered(ctx, arg.CharacterID)
 		if err != nil {
 			panic(err)
 		}
@@ -300,7 +300,7 @@ func (f Factory) CreateCharacterMailLabel(args ...model.CharacterMailLabel) *mod
 	if arg.UnreadCount == 0 {
 		arg.UnreadCount = int(rand.IntN(1000))
 	}
-	label, err := f.r.UpdateOrCreateCharacterMailLabel(ctx, arg)
+	label, err := f.st.UpdateOrCreateCharacterMailLabel(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
@@ -321,7 +321,7 @@ func (f Factory) CreateCharacterMailList(characterID int32, args ...model.EveEnt
 	if e.ID == 0 {
 		e = *f.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
 	}
-	if err := f.r.CreateCharacterMailList(ctx, characterID, e.ID); err != nil {
+	if err := f.st.CreateCharacterMailList(ctx, characterID, e.ID); err != nil {
 		panic(err)
 	}
 	return &e
@@ -350,11 +350,11 @@ func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSki
 	if arg.SkillPointsInSkill == 0 {
 		arg.SkillPointsInSkill = rand.IntN(1_000_000)
 	}
-	err := f.r.UpdateOrCreateCharacterSkill(ctx, arg)
+	err := f.st.UpdateOrCreateCharacterSkill(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	o, err := f.r.GetCharacterSkill(ctx, arg.CharacterID, arg.EveTypeID)
+	o, err := f.st.GetCharacterSkill(ctx, arg.CharacterID, arg.EveTypeID)
 	if err != nil {
 		panic(err)
 	}
@@ -414,11 +414,11 @@ func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemPar
 		hours := rand.IntN(90)*24 + 3
 		arg.FinishDate = arg.StartDate.Add(time.Hour * time.Duration(hours))
 	}
-	err := f.r.CreateSkillqueueItem(ctx, arg)
+	err := f.st.CreateSkillqueueItem(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	i, err := f.r.GetSkillqueueItem(ctx, arg.CharacterID, arg.QueuePosition)
+	i, err := f.st.GetSkillqueueItem(ctx, arg.CharacterID, arg.QueuePosition)
 	if err != nil {
 		panic(err)
 	}
@@ -448,7 +448,7 @@ func (f Factory) CreateCharacterToken(args ...model.CharacterToken) *model.Chara
 		c := f.CreateCharacter()
 		t.CharacterID = c.ID
 	}
-	err := f.r.UpdateOrCreateCharacterToken(ctx, &t)
+	err := f.st.UpdateOrCreateCharacterToken(ctx, &t)
 	if err != nil {
 		panic(err)
 	}
@@ -494,10 +494,10 @@ func (f Factory) CreateCharacterUpdateStatus(args ...CharacterUpdateStatusParams
 		LastUpdatedAt: arg.LastUpdatedAt,
 		ContentHash:   hash,
 	}
-	if err := f.r.UpdateOrCreateCharacterUpdateStatus(ctx, arg2); err != nil {
+	if err := f.st.UpdateOrCreateCharacterUpdateStatus(ctx, arg2); err != nil {
 		panic(err)
 	}
-	o, err := f.r.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
+	o, err := f.st.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
 	if err != nil {
 		panic(err)
 	}
@@ -550,11 +550,11 @@ func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharact
 		e := f.CreateEveCharacter()
 		arg.TaxReceiverID = e.ID
 	}
-	err := f.r.CreateCharacterWalletJournalEntry(ctx, arg)
+	err := f.st.CreateCharacterWalletJournalEntry(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	i, err := f.r.GetCharacterWalletJournalEntry(ctx, arg.CharacterID, arg.RefID)
+	i, err := f.st.GetCharacterWalletJournalEntry(ctx, arg.CharacterID, arg.RefID)
 	if err != nil {
 		panic(err)
 	}
@@ -593,11 +593,11 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 		arg.UnitPrice = rand.Float64() * 100_000_000
 	}
 
-	err := f.r.CreateCharacterWalletTransaction(ctx, arg)
+	err := f.st.CreateCharacterWalletTransaction(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	x, err := f.r.GetCharacterWalletTransaction(ctx, arg.CharacterID, arg.TransactionID)
+	x, err := f.st.GetCharacterWalletTransaction(ctx, arg.CharacterID, arg.TransactionID)
 	if err != nil {
 		panic(err)
 	}
@@ -631,11 +631,11 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *m
 		r := f.CreateEveRace()
 		arg.RaceID = r.ID
 	}
-	err := f.r.CreateEveCharacter(ctx, arg)
+	err := f.st.CreateEveCharacter(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	c, err := f.r.GetEveCharacter(ctx, arg.ID)
+	c, err := f.st.GetEveCharacter(ctx, arg.ID)
 	if err != nil {
 		panic(err)
 	}
@@ -658,7 +658,7 @@ func (f Factory) CreateEveEntity(args ...model.EveEntity) *model.EveEntity {
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("%s #%d", arg.Category, arg.ID)
 	}
-	e, err := f.r.CreateEveEntity(ctx, arg.ID, arg.Name, arg.Category)
+	e, err := f.st.CreateEveEntity(ctx, arg.ID, arg.Name, arg.Category)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create EveEntity %v: %s", arg, err))
 	}
@@ -711,7 +711,7 @@ func (f Factory) CreateEveCategory(args ...storage.CreateEveCategoryParams) *mod
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("Category #%d", arg.ID)
 	}
-	r, err := f.r.CreateEveCategory(ctx, arg)
+	r, err := f.st.CreateEveCategory(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
@@ -734,11 +734,11 @@ func (f Factory) CreateEveGroup(args ...storage.CreateEveGroupParams) *model.Eve
 		x := f.CreateEveCategory()
 		arg.CategoryID = x.ID
 	}
-	err := f.r.CreateEveGroup(ctx, arg)
+	err := f.st.CreateEveGroup(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	o, err := f.r.GetEveGroup(ctx, arg.ID)
+	o, err := f.st.GetEveGroup(ctx, arg.ID)
 	if err != nil {
 		panic(err)
 	}
@@ -776,11 +776,11 @@ func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *model.EveTy
 	if arg.Volume == 0 {
 		arg.Volume = rand.Float32() * 10_000_000
 	}
-	err := f.r.CreateEveType(ctx, arg)
+	err := f.st.CreateEveType(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	o, err := f.r.GetEveType(ctx, arg.ID)
+	o, err := f.st.GetEveType(ctx, arg.ID)
 	if err != nil {
 		panic(err)
 	}
@@ -803,7 +803,7 @@ func (f Factory) CreateEveTypeDogmaAttribute(args ...storage.CreateEveTypeDogmaA
 	if arg.Value == 0 {
 		arg.Value = rand.Float32() * 10_000
 	}
-	if err := f.r.CreateEveTypeDogmaAttribute(ctx, arg); err != nil {
+	if err := f.st.CreateEveTypeDogmaAttribute(ctx, arg); err != nil {
 		panic(err)
 	}
 }
@@ -820,7 +820,7 @@ func (f Factory) CreateEveRegion(args ...storage.CreateEveRegionParams) *model.E
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("Region #%d", arg.ID)
 	}
-	o, err := f.r.CreateEveRegion(ctx, arg)
+	o, err := f.st.CreateEveRegion(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
@@ -843,11 +843,11 @@ func (f Factory) CreateEveConstellation(args ...storage.CreateEveConstellationPa
 		x := f.CreateEveRegion()
 		arg.RegionID = x.ID
 	}
-	err := f.r.CreateEveConstellation(ctx, arg)
+	err := f.st.CreateEveConstellation(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	o, err := f.r.GetEveConstellation(ctx, arg.ID)
+	o, err := f.st.GetEveConstellation(ctx, arg.ID)
 	if err != nil {
 		panic(err)
 	}
@@ -873,11 +873,11 @@ func (f Factory) CreateEveSolarSystem(args ...storage.CreateEveSolarSystemParams
 	if arg.SecurityStatus == 0 {
 		arg.SecurityStatus = rand.Float64()*10 - 5
 	}
-	err := f.r.CreateEveSolarSystem(ctx, arg)
+	err := f.st.CreateEveSolarSystem(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	o, err := f.r.GetEveSolarSystem(ctx, arg.ID)
+	o, err := f.st.GetEveSolarSystem(ctx, arg.ID)
 	if err != nil {
 		panic(err)
 	}
@@ -899,7 +899,7 @@ func (f Factory) CreateEveRace(args ...model.EveRace) *model.EveRace {
 	if arg.Description == "" {
 		arg.Description = fmt.Sprintf("Description #%d", arg.ID)
 	}
-	r, err := f.r.CreateEveRace(ctx, arg.ID, arg.Description, arg.Name)
+	r, err := f.st.CreateEveRace(ctx, arg.ID, arg.Description, arg.Name)
 	if err != nil {
 		panic(err)
 	}
@@ -933,11 +933,11 @@ func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationP
 	if arg.UpdatedAt.IsZero() {
 		arg.UpdatedAt = time.Now()
 	}
-	err := f.r.UpdateOrCreateLocation(ctx, arg)
+	err := f.st.UpdateOrCreateLocation(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	x, err := f.r.GetLocation(ctx, arg.ID)
+	x, err := f.st.GetLocation(ctx, arg.ID)
 	if err != nil {
 		panic(err)
 	}
