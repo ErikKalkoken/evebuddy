@@ -43,43 +43,43 @@ type CharacterMail struct {
 }
 
 // BodyPlain returns a mail's body as plain text.
-func (m *CharacterMail) BodyPlain() string {
-	return converter.EveHTMLToPlain(m.Body)
+func (cm CharacterMail) BodyPlain() string {
+	return converter.EveHTMLToPlain(cm.Body)
 }
 
 // BodyForward returns a mail's body for a mail forward or reply.
-func (m *CharacterMail) ToString(format string) string {
+func (cm CharacterMail) ToString(format string) string {
 	s := "\n---\n"
-	s += m.MakeHeaderText(format)
+	s += cm.MakeHeaderText(format)
 	s += "\n\n"
-	s += m.BodyPlain()
+	s += cm.BodyPlain()
 	return s
 }
 
 // MakeHeaderText returns the mail's header as formatted text.
-func (m *CharacterMail) MakeHeaderText(format string) string {
+func (cm CharacterMail) MakeHeaderText(format string) string {
 	var names []string
-	for _, n := range m.Recipients {
+	for _, n := range cm.Recipients {
 		names = append(names, n.Name)
 	}
 	header := fmt.Sprintf(
 		"From: %s\nSent: %s\nTo: %s",
-		m.From.Name,
-		m.Timestamp.Format(format),
+		cm.From.Name,
+		cm.Timestamp.Format(format),
 		strings.Join(names, ", "),
 	)
 	return header
 }
 
 // RecipientNames returns the names of the recipients.
-func (m *CharacterMail) RecipientNames() []string {
-	ss := make([]string, len(m.Recipients))
-	for i, r := range m.Recipients {
+func (cm CharacterMail) RecipientNames() []string {
+	ss := make([]string, len(cm.Recipients))
+	for i, r := range cm.Recipients {
 		ss[i] = r.Name
 	}
 	return ss
 }
 
-func (m *CharacterMail) BodyToMarkdown() string {
-	return converter.EveHTMLtoMarkdown(m.Body)
+func (cm CharacterMail) BodyToMarkdown() string {
+	return converter.EveHTMLtoMarkdown(cm.Body)
 }

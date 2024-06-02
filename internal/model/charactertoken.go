@@ -14,6 +14,6 @@ type CharacterToken struct {
 }
 
 // RemainsValid reports wether a token remains valid within a duration.
-func (t *CharacterToken) RemainsValid(d time.Duration) bool {
-	return t.ExpiresAt.After(time.Now().Add(d))
+func (ct CharacterToken) RemainsValid(d time.Duration) bool {
+	return ct.ExpiresAt.After(time.Now().Add(d))
 }

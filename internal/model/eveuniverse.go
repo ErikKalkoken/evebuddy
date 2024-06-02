@@ -60,8 +60,8 @@ type EveType struct {
 }
 
 // BodyPlain returns a mail's body as plain text.
-func (t *EveType) DescriptionPlain() string {
-	return converter.EveHTMLToPlain(t.Description)
+func (et EveType) DescriptionPlain() string {
+	return converter.EveHTMLToPlain(et.Description)
 }
 
 // EveRegion is a region in Eve Online.
@@ -94,14 +94,14 @@ type EveRace struct {
 }
 
 // FactionID returns the faction ID of a race.
-func (r *EveRace) FactionID() (int32, bool) {
+func (er EveRace) FactionID() (int32, bool) {
 	m := map[int32]int32{
 		1: 500001,
 		2: 500002,
 		4: 500003,
 		8: 500004,
 	}
-	factionID, ok := m[r.ID]
+	factionID, ok := m[er.ID]
 	return factionID, ok
 }
 

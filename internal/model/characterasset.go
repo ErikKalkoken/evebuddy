@@ -15,18 +15,18 @@ type CharacterAsset struct {
 	Quantity        int32
 }
 
-func (ca *CharacterAsset) NamePlus() string {
+func (ca CharacterAsset) NamePlus() string {
 	if ca.Name != "" {
 		return ca.Name
 	}
 	return ca.EveType.Name
 }
 
-func (ca *CharacterAsset) IsBPO() bool {
+func (ca CharacterAsset) IsBPO() bool {
 	return ca.EveCategoryID == EveCategoryIDBlueprint && !ca.IsBlueprintCopy
 }
 
-func (ca *CharacterAsset) IsSKIN() bool {
+func (ca CharacterAsset) IsSKIN() bool {
 	return ca.EveCategoryID == EveCategoryIDSKINs
 }
 

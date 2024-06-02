@@ -74,14 +74,14 @@ var CharacterSections = []CharacterSection{
 
 type CharacterSection string
 
-func (s CharacterSection) Name() string {
-	t := strings.ReplaceAll(string(s), "_", " ")
+func (cs CharacterSection) Name() string {
+	t := strings.ReplaceAll(string(cs), "_", " ")
 	c := cases.Title(language.English)
 	t = c.String(t)
 	return t
 }
 
-func (s CharacterSection) CalcContentHash(data any) (string, error) {
+func (cs CharacterSection) CalcContentHash(data any) (string, error) {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return "", err
@@ -92,7 +92,7 @@ func (s CharacterSection) CalcContentHash(data any) (string, error) {
 }
 
 // Timeout returns the time until the data of an update section becomes stale.
-func (section CharacterSection) Timeout() time.Duration {
+func (cs CharacterSection) Timeout() time.Duration {
 	m := map[CharacterSection]time.Duration{
 		CharacterSectionAssets:             3600 * time.Second,
 		CharacterSectionAttributes:         120 * time.Second,
@@ -110,9 +110,9 @@ func (section CharacterSection) Timeout() time.Duration {
 		CharacterSectionWalletJournal:      3600 * time.Second,
 		CharacterSectionWalletTransactions: 3600 * time.Second,
 	}
-	duration, ok := m[section]
+	duration, ok := m[cs]
 	if !ok {
-		slog.Warn("Requested duration for unknown section. Using default.", "section", section)
+		slog.Warn("Requested duration for unknown section. Using default.", "section", cs)
 		duration = defaultUpdateSectionTimeout
 	}
 	return duration
@@ -127,6 +127,6 @@ type CharacterUpdateStatus struct {
 	ContentHash   string
 }
 
-func (s CharacterUpdateStatus) IsOK() bool {
-	return s.ErrorMessage == ""
+func (cus CharacterUpdateStatus) IsOK() bool {
+	return cus.ErrorMessage == ""
 }

@@ -18,8 +18,8 @@ const (
 	EveEntityUnknown
 )
 
-func (e EveEntityCategory) String() string {
-	switch e {
+func (eec EveEntityCategory) String() string {
+	switch eec {
 	case EveEntityUndefined:
 		return "undefined"
 	case EveEntityAlliance:

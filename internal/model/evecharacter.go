@@ -20,26 +20,26 @@ type EveCharacter struct {
 	Title          string
 }
 
-func (c *EveCharacter) AllianceName() string {
-	if !c.HasAlliance() {
+func (ec EveCharacter) AllianceName() string {
+	if !ec.HasAlliance() {
 		return ""
 	}
-	return c.Alliance.Name
+	return ec.Alliance.Name
 }
 
-func (c *EveCharacter) FactionName() string {
-	if !c.HasFaction() {
+func (ec EveCharacter) FactionName() string {
+	if !ec.HasFaction() {
 		return ""
 	}
-	return c.Faction.Name
+	return ec.Faction.Name
 }
 
 // HasAlliance reports wether the character is member of an alliance.
-func (c *EveCharacter) HasAlliance() bool {
-	return c.Alliance != nil
+func (ec EveCharacter) HasAlliance() bool {
+	return ec.Alliance != nil
 }
 
 // HasFaction reports wether the character is member of a faction.
-func (c *EveCharacter) HasFaction() bool {
-	return c.Faction != nil
+func (ec EveCharacter) HasFaction() bool {
+	return ec.Faction != nil
 }

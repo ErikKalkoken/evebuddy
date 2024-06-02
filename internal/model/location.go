@@ -27,25 +27,25 @@ type Location struct {
 	UpdatedAt   time.Time
 }
 
-func (l Location) NamePlus() string {
-	if l.Name != "" {
-		return l.Name
+func (lc Location) NamePlus() string {
+	if lc.Name != "" {
+		return lc.Name
 	}
-	switch l.Variant() {
+	switch lc.Variant() {
 	case LocationVariantUnknown:
 		return "Unknown"
 	case LocationVariantAssetSafety:
 		return "Asset Safety"
 	case LocationVariantSolarSystem:
-		return l.SolarSystem.Name
+		return lc.SolarSystem.Name
 	case LocationVariantStructure:
-		return fmt.Sprintf("Unknown structure #%d", l.ID)
+		return fmt.Sprintf("Unknown structure #%d", lc.ID)
 	}
-	return fmt.Sprintf("Unknown location #%d", l.ID)
+	return fmt.Sprintf("Unknown location #%d", lc.ID)
 }
 
-func (l Location) Variant() LocationVariant {
-	return LocationVariantFromID(l.ID)
+func (lc Location) Variant() LocationVariant {
+	return LocationVariantFromID(lc.ID)
 }
 
 func LocationVariantFromID(id int64) LocationVariant {
