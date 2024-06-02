@@ -31,7 +31,7 @@ type Service struct {
 }
 
 // New creates and returns a new service instance.
-func New(r *storage.Storage) *Service {
+func New(st *storage.Storage) *Service {
 	defaultHttpClient := &http.Client{
 		Transport: ihttp.LoggedTransport{},
 	}
@@ -47,15 +47,15 @@ func New(r *storage.Storage) *Service {
 	}
 	userAgent := "EveBuddy kalkoken87@gmail.com"
 	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
-	dt := dictionary.New(r)
-	eu := eveuniverse.New(r, esiClient)
+	dt := dictionary.New(st)
+	eu := eveuniverse.New(st, esiClient)
 	cache := cache.New()
 	cs := characterstatus.New(cache)
-	if err := cs.InitCache(r); err != nil {
+	if err := cs.InitCache(st); err != nil {
 		panic(err)
 	}
 	sv := Service{
-		Characters:      characters.New(r, defaultHttpClient, esiClient, cs, dt, eu),
+		Characters:      characters.New(st, defaultHttpClient, esiClient, cs, dt, eu),
 		CharacterStatus: cs,
 		Dictionary:      dt,
 		ESIStatus:       esistatus.New(esiClient),
