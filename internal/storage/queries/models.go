@@ -245,6 +245,19 @@ type EveConstellation struct {
 	Name        string
 }
 
+type EveDogmaAttribute struct {
+	ID           int64
+	DefaultValue float64
+	Description  string
+	DisplayName  string
+	IconID       int64
+	Name         string
+	IsHighGood   bool
+	IsPublished  bool
+	IsStackable  bool
+	UnitID       int64
+}
+
 type EveEntity struct {
 	ID       int64
 	Category string

@@ -1,0 +1,72 @@
+package storage
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+
+	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
+)
+
+type CreateEveDogmaAttributeParams struct {
+	ID           int32
+	DefaultValue float32
+	Description  string
+	DisplayName  string
+	IconID       int32
+	Name         string
+	IsHighGood   bool
+	IsPublished  bool
+	IsStackable  bool
+	UnitID       int32
+}
+
+func (st *Storage) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDogmaAttributeParams) error {
+	if arg.ID == 0 {
+		return fmt.Errorf("invalid ID %d", arg.ID)
+	}
+	arg2 := queries.CreateEveDogmaAttributeParams{
+		ID:           int64(arg.ID),
+		DefaultValue: float64(arg.DefaultValue),
+		Description:  arg.Description,
+		DisplayName:  arg.DisplayName,
+		IconID:       int64(arg.IconID),
+		Name:         arg.Name,
+		IsHighGood:   arg.IsHighGood,
+		IsPublished:  arg.IsPublished,
+		IsStackable:  arg.IsStackable,
+		UnitID:       int64(arg.UnitID),
+	}
+	if err := st.q.CreateEveDogmaAttribute(ctx, arg2); err != nil {
+		return fmt.Errorf("failed to create EveDogmaAttribute %v, %w", arg2, err)
+	}
+	return nil
+}
+
+func (st *Storage) GetEveDogmaAttribute(ctx context.Context, id int32) (*model.EveDogmaAttribute, error) {
+	c, err := st.q.GetEveDogmaAttribute(ctx, int64(id))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to get EveDogmaAttribute for id %d: %w", id, err)
+	}
+	return eveDogmaAttributeFromDBModel(c), nil
+}
+
+func eveDogmaAttributeFromDBModel(eda queries.EveDogmaAttribute) *model.EveDogmaAttribute {
+	return &model.EveDogmaAttribute{
+		ID:           int32(eda.ID),
+		DefaultValue: float32(eda.DefaultValue),
+		Description:  eda.Description,
+		DisplayName:  eda.DisplayName,
+		IconID:       int32(eda.IconID),
+		Name:         eda.Name,
+		IsHighGood:   eda.IsHighGood,
+		IsPublished:  eda.IsPublished,
+		IsStackable:  eda.IsStackable,
+		UnitID:       int32(eda.UnitID),
+	}
+}

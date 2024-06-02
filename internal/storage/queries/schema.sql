@@ -13,10 +13,17 @@ CREATE TABLE eve_entities (
 CREATE INDEX eve_entities_name_idx ON eve_entities (name);
 CREATE INDEX eve_entities_category_idx ON eve_entities (category);
 
-CREATE TABLE eve_races (
+CREATE TABLE eve_dogma_attributes (
     id INTEGER PRIMARY KEY NOT NULL,
+    default_value REAL NOT NULL,
     description TEXT NOT NULL,
-    name TEXT NOT NULL
+    display_name TEXT NOT NULL,
+    icon_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    is_high_good BOOL NOT NULL,
+    is_published BOOL NOT NULL,
+    is_stackable BOOL NOT NULL,
+    unit_id INTEGER NOT NULL
 );
 
 CREATE TABLE eve_categories (
@@ -95,6 +102,12 @@ CREATE TABLE eve_solar_systems (
     FOREIGN KEY (eve_constellation_id) REFERENCES eve_constellations(id) ON DELETE CASCADE
 );
 CREATE INDEX eve_solar_systems_name_idx ON eve_solar_systems (name ASC);
+
+CREATE TABLE eve_races (
+    id INTEGER PRIMARY KEY NOT NULL,
+    description TEXT NOT NULL,
+    name TEXT NOT NULL
+);
 
 CREATE TABLE eve_ship_skills (
     id INTEGER PRIMARY KEY NOT NULL,
