@@ -147,7 +147,7 @@ func (a *statusWindow) makeCharacterList() *widget.List {
 
 			icon := row.Objects[0].(*canvas.Image)
 			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.ui.imageManager.CharacterPortrait(c.id, defaultIconSize)
+				return a.ui.sv.EveImage.CharacterPortrait(c.id, defaultIconSize)
 			})
 
 			status := row.Objects[3].(*widget.Label)

@@ -62,7 +62,7 @@ func (a *implantsArea) makeImplantList() *widget.List {
 			label.SetText(fmt.Sprintf("%s\nSlot %d", q.EveType.Name, q.SlotNum))
 
 			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.ui.imageManager.InventoryTypeIcon(q.EveType.ID, 64)
+				return a.ui.sv.EveImage.InventoryTypeIcon(q.EveType.ID, 64)
 			})
 		})
 

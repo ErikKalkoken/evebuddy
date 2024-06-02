@@ -91,7 +91,7 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 			switch tci.Col {
 			case 0:
 				refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-					return a.ui.imageManager.InventoryTypeIcon(o.Type.ID, defaultIconSize)
+					return a.ui.sv.EveImage.InventoryTypeIcon(o.Type.ID, defaultIconSize)
 				})
 				icon.Show()
 				label.Text = o.Type.Name

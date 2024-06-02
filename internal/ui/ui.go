@@ -20,7 +20,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/service/characters"
-	"github.com/ErikKalkoken/evebuddy/internal/service/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -46,7 +45,6 @@ type ui struct {
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
 	currentCharacter      *model.Character
-	imageManager          *eveimage.EveImage
 	implantsArea          *implantsArea
 	jumpClonesArea        *jumpClonesArea
 	mailArea              *mailArea
@@ -70,10 +68,10 @@ type ui struct {
 func NewUI(sv *service.Service) *ui {
 	app := app.New()
 	w := app.NewWindow(appName(app))
-	u := &ui{app: app,
-		imageManager: sv.EveImage,
-		sv:           sv,
-		window:       w,
+	u := &ui{
+		app:    app,
+		sv:     sv,
+		window: w,
 	}
 
 	u.assetsArea = u.newAssetsArea()

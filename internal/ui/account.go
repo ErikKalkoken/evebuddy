@@ -103,7 +103,7 @@ func (a *accountArea) makeCharacterList() *widget.List {
 
 			icon := row.Objects[0].(*canvas.Image)
 			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.ui.imageManager.CharacterPortrait(c.id, defaultIconSize)
+				return a.ui.sv.EveImage.CharacterPortrait(c.id, defaultIconSize)
 			})
 
 			row.Objects[3].(*widget.Button).OnTapped = func() {

@@ -148,11 +148,11 @@ func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
 				if o.IsSKIN() {
 					return resourceSkinicon64pxPng, nil
 				} else if o.IsBPO() {
-					return a.ui.imageManager.InventoryTypeBPO(o.EveType.ID, 64)
+					return a.ui.sv.EveImage.InventoryTypeBPO(o.EveType.ID, 64)
 				} else if o.IsBlueprintCopy {
-					return a.ui.imageManager.InventoryTypeBPC(o.EveType.ID, 64)
+					return a.ui.sv.EveImage.InventoryTypeBPC(o.EveType.ID, 64)
 				} else {
-					return a.ui.imageManager.InventoryTypeIcon(o.EveType.ID, 64)
+					return a.ui.sv.EveImage.InventoryTypeIcon(o.EveType.ID, 64)
 				}
 			})
 			name.Wrapping = fyne.TextWrapWord

@@ -97,7 +97,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 				third.Show()
 			} else {
 				refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-					return a.ui.imageManager.InventoryTypeIcon(n.ImplantTypeID, defaultIconSize)
+					return a.ui.sv.EveImage.InventoryTypeIcon(n.ImplantTypeID, defaultIconSize)
 				})
 				first.SetText(n.ImplantTypeName)
 				second.Hide()

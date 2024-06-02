@@ -140,7 +140,7 @@ func TestImageFetching(t *testing.T) {
 			t.Fatal("unexpected count")
 		}
 		//when
-		c, err = m.Clear()
+		c, err = m.ClearCache()
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, 1, c)

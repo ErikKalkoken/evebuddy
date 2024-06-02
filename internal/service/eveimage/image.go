@@ -209,8 +209,8 @@ func makeMD5Hash(text string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-// Clear clears the images cache and returns the number of deleted entries.
-func (m *EveImage) Clear() (int, error) {
+// ClearCache clears the images cache and returns the number of deleted entries.
+func (m *EveImage) ClearCache() (int, error) {
 	files, err := os.ReadDir(m.cacheDir)
 	if err != nil {
 		return 0, err

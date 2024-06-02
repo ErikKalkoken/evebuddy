@@ -60,7 +60,7 @@ func (a *toolbarArea) refresh() {
 		a.name.Text = "No character"
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
 	} else {
-		r, err := a.ui.imageManager.CharacterPortrait(c.ID, defaultIconSize)
+		r, err := a.ui.sv.EveImage.CharacterPortrait(c.ID, defaultIconSize)
 		if err != nil {
 			slog.Error("Failed to fetch character portrait", "characterID", c.ID, "err", err)
 			r = resourceCharacterplaceholder32Jpeg
@@ -119,7 +119,7 @@ func (a *toolbarArea) makeMenuItems(c *model.Character) ([]*fyne.MenuItem, error
 		})
 		item.Icon = resourceCharacterplaceholder32Jpeg
 		go func() {
-			r, err := a.ui.imageManager.CharacterPortrait(myC.ID, defaultIconSize)
+			r, err := a.ui.sv.EveImage.CharacterPortrait(myC.ID, defaultIconSize)
 			if err != nil {
 				slog.Error("Failed to fetch character portrait", "characterID", myC.ID, "err", err)
 				r = resourceCharacterplaceholder32Jpeg

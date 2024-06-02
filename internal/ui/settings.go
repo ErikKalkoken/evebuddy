@@ -50,7 +50,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 				if !confirmed {
 					return
 				}
-				count, err := u.imageManager.Clear()
+				count, err := u.sv.EveImage.ClearCache()
 				if err != nil {
 					slog.Error(err.Error())
 					u.showErrorDialog("Failed to clear image cache", err)
@@ -72,7 +72,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	}
 
 	var cacheSize string
-	s, err := u.imageManager.Size()
+	s, err := u.sv.EveImage.Size()
 	if err != nil {
 		cacheSize = "?"
 	} else {
