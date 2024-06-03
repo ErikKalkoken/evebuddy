@@ -46,7 +46,7 @@ func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32,
 func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, cloneID int64) ([]*model.CharacterJumpCloneImplant, error) {
 	arg2 := queries.ListCharacterJumpCloneImplantParams{
 		CloneID:          cloneID,
-		DogmaAttributeID: model.EveDogmaAttributeIDImplantSlot,
+		DogmaAttributeID: model.EveDogmaAttributeImplantSlot,
 	}
 	row2, err := q.ListCharacterJumpCloneImplant(ctx, arg2)
 	if err != nil {

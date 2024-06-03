@@ -95,7 +95,7 @@ func TestCharacterSkillList(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: model.EveCategoryIDSkill})
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: model.EveCategorySkill})
 		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
 		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{

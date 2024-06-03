@@ -18,7 +18,7 @@ func TestEveShipSkills(t *testing.T) {
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: model.EveCategoryIDShip})
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: model.EveCategoryShip})
 		group := factory.CreateEveGroup(storage.CreateEveGroupParams{
 			CategoryID: category.ID,
 		})
@@ -47,7 +47,7 @@ func TestEveShipSkills(t *testing.T) {
 	t.Run("can replace and create complete skill ship table", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: model.EveCategoryIDShip})
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: model.EveCategoryShip})
 		group := factory.CreateEveGroup(storage.CreateEveGroupParams{
 			CategoryID: category.ID,
 		})
@@ -57,10 +57,10 @@ func TestEveShipSkills(t *testing.T) {
 		})
 		skill_11 := factory.CreateEveType()
 		primarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
-			ID: model.EveDogmaAttributeIDPrimarySkillID,
+			ID: model.EveDogmaAttributePrimarySkillID,
 		})
 		primarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
-			ID: model.EveDogmaAttributeIDPrimarySkillLevel,
+			ID: model.EveDogmaAttributePrimarySkillLevel,
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_1.ID,
@@ -89,10 +89,10 @@ func TestEveShipSkills(t *testing.T) {
 		})
 		skill_22 := factory.CreateEveType()
 		secondarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
-			ID: model.EveDogmaAttributeIDSecondarySkillID,
+			ID: model.EveDogmaAttributeSecondarySkillID,
 		})
 		secondarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
-			ID: model.EveDogmaAttributeIDSecondarySkillLevel,
+			ID: model.EveDogmaAttributeSecondarySkillLevel,
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
@@ -106,10 +106,10 @@ func TestEveShipSkills(t *testing.T) {
 		})
 		skill_23 := factory.CreateEveType()
 		tertiarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
-			ID: model.EveDogmaAttributeIDTertiarySkillID,
+			ID: model.EveDogmaAttributeTertiarySkillID,
 		})
 		tertiarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
-			ID: model.EveDogmaAttributeIDTertiarySkillLevel,
+			ID: model.EveDogmaAttributeTertiarySkillLevel,
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
@@ -123,10 +123,10 @@ func TestEveShipSkills(t *testing.T) {
 		})
 		skill_24 := factory.CreateEveType()
 		quaternarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
-			ID: model.EveDogmaAttributeIDQuaternarySkillID,
+			ID: model.EveDogmaAttributeQuaternarySkillID,
 		})
 		quaternarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
-			ID: model.EveDogmaAttributeIDQuaternarySkillLevel,
+			ID: model.EveDogmaAttributeQuaternarySkillLevel,
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
@@ -140,10 +140,10 @@ func TestEveShipSkills(t *testing.T) {
 		})
 		skill_25 := factory.CreateEveType()
 		quinarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
-			ID: model.EveDogmaAttributeIDQuinarySkillID,
+			ID: model.EveDogmaAttributeQuinarySkillID,
 		})
 		quinarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
-			ID: model.EveDogmaAttributeIDQuinarySkillLevel,
+			ID: model.EveDogmaAttributeQuinarySkillLevel,
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,
@@ -157,10 +157,10 @@ func TestEveShipSkills(t *testing.T) {
 		})
 		skill_26 := factory.CreateEveType()
 		senarySkillID := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
-			ID: model.EveDogmaAttributeIDSenarySkillID,
+			ID: model.EveDogmaAttributeSenarySkillID,
 		})
 		senarySkillLevel := factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{
-			ID: model.EveDogmaAttributeIDSenarySkillLevel,
+			ID: model.EveDogmaAttributeSenarySkillLevel,
 		})
 		factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
 			EveTypeID:        ship_2.ID,

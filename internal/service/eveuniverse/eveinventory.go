@@ -206,3 +206,10 @@ func (eu *EveUniverseService) UpdateEveCategoryWithChildrenESI(ctx context.Conte
 func (eu *EveUniverseService) UpdateEveShipSkills(ctx context.Context) error {
 	return eu.st.UpdateEveShipSkills(ctx)
 }
+
+func (eu *EveUniverseService) ListEveTypeDogmaAttributesForType(
+	ctx context.Context,
+	typeID int32,
+) ([]*model.EveDogmaAttributeForType, error) {
+	return eu.st.ListEveTypeDogmaAttributesForType(ctx, typeID)
+}

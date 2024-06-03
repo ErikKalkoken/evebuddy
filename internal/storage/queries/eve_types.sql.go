@@ -203,6 +203,56 @@ func (q *Queries) GetEveTypeDogmaEffect(ctx context.Context, arg GetEveTypeDogma
 	return i, err
 }
 
+const listEveTypeDogmaAttributesForType = `-- name: ListEveTypeDogmaAttributesForType :many
+SELECT eda.id, eda.default_value, eda.description, eda.display_name, eda.icon_id, eda.name, eda.is_high_good, eda.is_published, eda.is_stackable, eda.unit_id, etda.eve_type_id, etda.value
+FROM eve_dogma_attributes eda
+JOIN eve_type_dogma_attributes etda ON etda.dogma_attribute_id = eda.id
+WHERE etda.eve_type_id = ?
+AND is_published IS TRUE
+`
+
+type ListEveTypeDogmaAttributesForTypeRow struct {
+	EveDogmaAttribute EveDogmaAttribute
+	EveTypeID         int64
+	Value             float64
+}
+
+func (q *Queries) ListEveTypeDogmaAttributesForType(ctx context.Context, eveTypeID int64) ([]ListEveTypeDogmaAttributesForTypeRow, error) {
+	rows, err := q.db.QueryContext(ctx, listEveTypeDogmaAttributesForType, eveTypeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListEveTypeDogmaAttributesForTypeRow
+	for rows.Next() {
+		var i ListEveTypeDogmaAttributesForTypeRow
+		if err := rows.Scan(
+			&i.EveDogmaAttribute.ID,
+			&i.EveDogmaAttribute.DefaultValue,
+			&i.EveDogmaAttribute.Description,
+			&i.EveDogmaAttribute.DisplayName,
+			&i.EveDogmaAttribute.IconID,
+			&i.EveDogmaAttribute.Name,
+			&i.EveDogmaAttribute.IsHighGood,
+			&i.EveDogmaAttribute.IsPublished,
+			&i.EveDogmaAttribute.IsStackable,
+			&i.EveDogmaAttribute.UnitID,
+			&i.EveTypeID,
+			&i.Value,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEveTypeIDs = `-- name: ListEveTypeIDs :many
 SELECT id
 FROM eve_types

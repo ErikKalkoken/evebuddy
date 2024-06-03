@@ -22,7 +22,7 @@ func (st *Storage) CreateCharacterImplant(ctx context.Context, arg CreateCharact
 func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, eveTypeID int32) (*model.CharacterImplant, error) {
 	arg := queries.GetCharacterImplantParams{
 		CharacterID:      int64(characterID),
-		DogmaAttributeID: model.EveDogmaAttributeIDImplantSlot,
+		DogmaAttributeID: model.EveDogmaAttributeImplantSlot,
 		EveTypeID:        int64(eveTypeID),
 	}
 	row, err := st.q.GetCharacterImplant(ctx, arg)
@@ -42,7 +42,7 @@ func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, e
 
 func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int32) ([]*model.CharacterImplant, error) {
 	arg := queries.ListCharacterImplantsParams{
-		DogmaAttributeID: model.EveDogmaAttributeIDImplantSlot,
+		DogmaAttributeID: model.EveDogmaAttributeImplantSlot,
 		CharacterID:      int64(characterID),
 	}
 	rows, err := st.q.ListCharacterImplants(ctx, arg)

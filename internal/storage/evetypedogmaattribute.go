@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -44,4 +45,21 @@ func (st *Storage) GetEveTypeDogmaAttribute(ctx context.Context, eveTypeID, dogm
 		return 0, fmt.Errorf("failed to get EveTypeDogmaAttribute for %v: %w", arg, err)
 	}
 	return float32(row.Value), nil
+}
+
+func (st *Storage) ListEveTypeDogmaAttributesForType(ctx context.Context, typeID int32) ([]*model.EveDogmaAttributeForType, error) {
+	rows, err := st.q.ListEveTypeDogmaAttributesForType(ctx, int64(typeID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to list dogma attributes for type %d: %w", typeID, err)
+	}
+	oo := make([]*model.EveDogmaAttributeForType, len(rows))
+	for i, r := range rows {
+		o := &model.EveDogmaAttributeForType{
+			DogmaAttribute: eveDogmaAttributeFromDBModel(r.EveDogmaAttribute),
+			EveTypeID:      int32(r.EveTypeID),
+			Value:          float32(r.Value),
+		}
+		oo[i] = o
+	}
+	return oo, nil
 }

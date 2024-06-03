@@ -89,7 +89,7 @@ func TestEveLocationOther(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: model.EveTypeIDSolarSystem})
+		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: model.EveTypeSolarSystem})
 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
 		// when
 		x1, err := eu.GetOrCreateEveLocationESI(ctx, int64(system.ID))

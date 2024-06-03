@@ -35,7 +35,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 		var arg storage.UpdateOrCreateLocationParams
 		switch model.LocationVariantFromID(id) {
 		case model.EveLocationUnknown:
-			t, err := eu.GetOrCreateEveTypeESI(ctx, model.EveTypeIDSolarSystem)
+			t, err := eu.GetOrCreateEveTypeESI(ctx, model.EveTypeSolarSystem)
 			if err != nil {
 				return nil, err
 			}
@@ -44,7 +44,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
 			}
 		case model.EveLocationAssetSafety:
-			t, err := eu.GetOrCreateEveTypeESI(ctx, model.EveTypeIDAssetSafetyWrap)
+			t, err := eu.GetOrCreateEveTypeESI(ctx, model.EveTypeAssetSafetyWrap)
 			if err != nil {
 				return nil, err
 			}
@@ -53,7 +53,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
 			}
 		case model.EveLocationSolarSystem:
-			t, err := eu.GetOrCreateEveTypeESI(ctx, model.EveTypeIDSolarSystem)
+			t, err := eu.GetOrCreateEveTypeESI(ctx, model.EveTypeSolarSystem)
 			if err != nil {
 				return nil, err
 			}

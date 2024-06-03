@@ -3,22 +3,8 @@ package model
 import "github.com/ErikKalkoken/evebuddy/internal/eveonline/converter"
 
 const (
-	EveDogmaAttributeIDImplantSlot          = 331
-	EveDogmaAttributeIDPrimarySkillID       = 182
-	EveDogmaAttributeIDPrimarySkillLevel    = 277
-	EveDogmaAttributeIDSecondarySkillID     = 183
-	EveDogmaAttributeIDSecondarySkillLevel  = 278
-	EveDogmaAttributeIDTertiarySkillID      = 184
-	EveDogmaAttributeIDTertiarySkillLevel   = 279
-	EveDogmaAttributeIDQuaternarySkillID    = 1285
-	EveDogmaAttributeIDQuaternarySkillLevel = 1286
-	EveDogmaAttributeIDQuinarySkillID       = 1289
-	EveDogmaAttributeIDQuinarySkillLevel    = 1287
-	EveDogmaAttributeIDSenarySkillID        = 1290
-	EveDogmaAttributeIDSenarySkillLevel     = 1288
-
-	EveTypeIDAssetSafetyWrap = 60
-	EveTypeIDSolarSystem     = 5
+	EveTypeAssetSafetyWrap = 60
+	EveTypeSolarSystem     = 5
 )
 
 // EveType is a type in Eve Online.
@@ -45,9 +31,23 @@ func (et EveType) DescriptionPlain() string {
 }
 
 func (et EveType) IsBlueprint() bool {
-	return et.Group.Category.ID == EveCategoryIDBlueprint
+	return et.Group.Category.ID == EveCategoryBlueprint
 }
 
 func (et EveType) IsSKIN() bool {
-	return et.Group.Category.ID == EveCategoryIDSKINs
+	return et.Group.Category.ID == EveCategorySKINs
+}
+
+func (et EveType) HasRender() bool {
+	switch et.Group.Category.ID {
+	case
+		EveCategoryDrone,
+		EveCategoryDeployable,
+		EveCategoryFighter,
+		EveCategoryShip,
+		EveCategoryStructure,
+		EveCategoryStarbase:
+		return true
+	}
+	return false
 }

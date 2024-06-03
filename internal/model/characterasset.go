@@ -23,11 +23,11 @@ func (ca CharacterAsset) NamePlus() string {
 }
 
 func (ca CharacterAsset) IsBPO() bool {
-	return ca.EveCategoryID == EveCategoryIDBlueprint && !ca.IsBlueprintCopy
+	return ca.EveCategoryID == EveCategoryBlueprint && !ca.IsBlueprintCopy
 }
 
 func (ca CharacterAsset) IsSKIN() bool {
-	return ca.EveCategoryID == EveCategoryIDSKINs
+	return ca.EveCategoryID == EveCategorySKINs
 }
 
 type CharacterAssetLocation struct {

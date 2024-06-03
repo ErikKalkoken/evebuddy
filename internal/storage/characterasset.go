@@ -78,7 +78,7 @@ func (st *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, characte
 		CharacterID:   int64(characterID),
 		LocationID:    locationID,
 		LocationFlag:  "Hangar",
-		EveCategoryID: model.EveCategoryIDShip,
+		EveCategoryID: model.EveCategoryShip,
 	}
 	rows, err := st.q.ListCharacterAssetsInShipHangar(ctx, arg)
 	if err != nil {
@@ -96,7 +96,7 @@ func (st *Storage) ListCharacterAssetsInItemHangar(ctx context.Context, characte
 		CharacterID:   int64(characterID),
 		LocationID:    locationID,
 		LocationFlag:  "Hangar",
-		EveCategoryID: model.EveCategoryIDShip,
+		EveCategoryID: model.EveCategoryShip,
 	}
 	rows, err := st.q.ListCharacterAssetsInItemHangar(ctx, arg)
 	if err != nil {

@@ -64,7 +64,7 @@ func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, 
 func (st *Storage) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]model.ListCharacterSkillGroupProgress, error) {
 	arg := queries.ListCharacterSkillGroupsProgressParams{
 		CharacterID:   int64(characterID),
-		EveCategoryID: model.EveCategoryIDSkill,
+		EveCategoryID: model.EveCategorySkill,
 	}
 	xx, err := st.q.ListCharacterSkillGroupsProgress(ctx, arg)
 	if err != nil {
