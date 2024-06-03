@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -11,7 +12,95 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/dustin/go-humanize"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
+
+type attributeCategory string
+
+func (ac attributeCategory) DisplayName() string {
+	c := cases.Title(language.English)
+	return c.String(string(ac))
+}
+
+// categories of attributes to display on the attributes tab
+const (
+	attributeCategoryArmor                 attributeCategory = "armor"
+	attributeCategoryCapacitor             attributeCategory = "capacitor"
+	attributeCategoryElectronicResistances attributeCategory = "electronic resistances"
+	attributeCategoryFitting               attributeCategory = "fitting"
+	attributeCategoryMiscellaneous         attributeCategory = "miscellaneous"
+	attributeCategoryPropulsion            attributeCategory = "propulsion"
+	attributeCategoryShield                attributeCategory = "shield"
+	attributeCategoryStructure             attributeCategory = "structure"
+	attributeCategoryTargeting             attributeCategory = "targeting"
+)
+
+// attribute categories in order for display
+var attributeCategories = []attributeCategory{
+	attributeCategoryStructure,
+	attributeCategoryArmor,
+	attributeCategoryShield,
+	attributeCategoryElectronicResistances,
+	attributeCategoryCapacitor,
+	attributeCategoryTargeting,
+	attributeCategoryPropulsion,
+}
+
+// assignment of attributes to categories
+var attributeCategoriesMap = map[attributeCategory][]int32{
+	attributeCategoryStructure: {
+		model.EveDogmaAttributeStructureHitpoints,
+		model.EveDogmaAttributeDroneCapacity,
+		model.EveDogmaAttributeDroneBandwidth,
+		model.EveDogmaAttributeMass,
+		model.EveDogmaAttributeInertiaModifier,
+		model.EveDogmaAttributeStructureEMDamageResistance,
+		model.EveDogmaAttributeStructureThermalDamageResistance,
+		model.EveDogmaAttributeStructureKineticDamageResistance,
+		model.EveDogmaAttributeStructureExplosiveDamageResistance,
+	},
+	attributeCategoryArmor: {
+		model.EveDogmaAttributeArmorHitpoints,
+		model.EveDogmaAttributeArmorEMDamageResistance,
+		model.EveDogmaAttributeArmorThermalDamageResistance,
+		model.EveDogmaAttributeArmorKineticDamageResistance,
+		model.EveDogmaAttributeArmorExplosiveDamageResistance,
+	},
+	attributeCategoryShield: {
+		model.EveDogmaAttributeShieldCapacity,
+		model.EveDogmaAttributeShieldRechargeTime,
+		model.EveDogmaAttributeShieldEMDamageResistance,
+		model.EveDogmaAttributeShieldThermalDamageResistance,
+		model.EveDogmaAttributeShieldKineticDamageResistance,
+		model.EveDogmaAttributeShieldExplosiveDamageResistance,
+	},
+	attributeCategoryElectronicResistances: {
+		model.EveDogmaAttributeCapacitorWarfareResistance,
+		model.EveDogmaAttributeStasisWebifierResistance,
+		model.EveDogmaAttributeWeaponDisruptionResistance,
+	},
+	attributeCategoryCapacitor: {
+		model.EveDogmaAttributeCapacitorCapacity,
+		model.EveDogmaAttributeCapacitorRechargeTime,
+	},
+	attributeCategoryTargeting: {
+		model.EveDogmaAttributeMaximumTargetingRange,
+		model.EveDogmaAttributeMaximumLockedTargets,
+		model.EveDogmaAttributeSignatureRadius,
+		model.EveDogmaAttributeScanResolution,
+		model.EveDogmaAttributeRADARSensorStrength,
+		model.EveDogmaAttributeLadarSensorStrength,
+		model.EveDogmaAttributeMagnetometricSensorStrength,
+		model.EveDogmaAttributeGravimetricSensorStrength,
+	},
+	attributeCategoryPropulsion: {
+		model.EveDogmaAttributeMaxVelocity,
+		model.EveDogmaAttributeWarpSpeedMultiplier,
+	},
+}
+
+// 76, 552, 564, 208, 214
 
 type infoWindow struct {
 	content fyne.CanvasObject
@@ -47,6 +136,8 @@ func (a *infoWindow) makeTitle(suffix string) string {
 }
 
 func (a *infoWindow) makeContent() fyne.CanvasObject {
+	top := a.makeTop()
+
 	description := widget.NewLabel(a.et.DescriptionPlain())
 	description.Wrapping = fyne.TextWrapWord
 	tabs := container.NewAppTabs(
@@ -54,7 +145,13 @@ func (a *infoWindow) makeContent() fyne.CanvasObject {
 		container.NewTabItem("Description", container.NewVScroll(description)),
 		container.NewTabItem("Attributes", a.makeAttributesTab()),
 	)
-	tabs.SelectIndex(1)
+	tabs.SelectIndex(2)
+
+	c := container.NewBorder(top, nil, nil, nil, tabs)
+	return c
+}
+
+func (a *infoWindow) makeTop() fyne.CanvasObject {
 	image := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
 		if a.et.IsSKIN() {
 			return resourceSkinicon64pxPng, nil
@@ -81,8 +178,7 @@ func (a *infoWindow) makeContent() fyne.CanvasObject {
 	} else {
 		b.Disable()
 	}
-	c := container.NewBorder(container.NewHBox(image, b), nil, nil, nil, tabs)
-	return c
+	return container.NewHBox(image, b)
 }
 
 type row struct {
@@ -97,9 +193,31 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 	if err != nil {
 		panic(err)
 	}
+	m := make(map[int32]*model.EveDogmaAttributeForType)
 	for _, o := range oo {
-		data = append(data, row{label: o.DogmaAttribute.DisplayName, value: humanize.Commaf(float64(o.Value))})
+		m[o.DogmaAttribute.ID] = o
 	}
+
+	droneCapacity, ok := m[model.EveDogmaAttributeDroneCapacity]
+	hasDrones := ok && droneCapacity.Value > 0
+
+	for _, ac := range attributeCategories {
+		data = append(data, row{label: ac.DisplayName(), isTitle: true})
+		for _, a := range attributeCategoriesMap[ac] {
+			o, ok := m[a]
+			if !ok {
+				continue
+			}
+			switch a {
+			case model.EveDogmaAttributeDroneCapacity, model.EveDogmaAttributeDroneBandwidth:
+				if !hasDrones {
+					continue
+				}
+			}
+			data = append(data, row{label: o.DogmaAttribute.DisplayName, value: formatAttributeValue(o.Value, o.DogmaAttribute.UnitID)})
+		}
+	}
+
 	box := container.NewVBox()
 	for _, r := range data {
 		if r.isTitle {
@@ -112,4 +230,42 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 		}
 	}
 	return container.NewVScroll(box)
+}
+
+func formatAttributeValue(value float32, unit int32) string {
+	defaultFormatter := func(v float32) string {
+		return humanize.Commaf(float64(v))
+	}
+	now := time.Now()
+	switch unit {
+	case model.EveUnitAcceleration:
+		return fmt.Sprintf("%s m/sec", defaultFormatter(value))
+	case model.EveUnitAttributePoints:
+		return fmt.Sprintf("%s points", defaultFormatter(value))
+	case model.EveUnitCapacitorUnits:
+		return fmt.Sprintf("%.1f GJ", value)
+	case model.EveUnitDroneBandwidth:
+		return fmt.Sprintf("%s Mbit/s", defaultFormatter(value))
+	case model.EveUnitHitpoints:
+		return fmt.Sprintf("%s HP", defaultFormatter(value))
+	case model.EveUnitLength:
+		return fmt.Sprintf("%s m", defaultFormatter(value))
+	case model.EveUnitMass:
+		return fmt.Sprintf("%s kg", defaultFormatter(value))
+	case model.EveUnitMillimeters:
+		return fmt.Sprintf("%s mm", defaultFormatter(value))
+	case model.EveUnitMilliseconds:
+		return humanize.RelTime(now, now.Add(time.Duration(value)*time.Millisecond), "", "")
+	case model.EveUnitMultiplier:
+		return fmt.Sprintf("%.3f x", value)
+	case model.EveUnitPercentage:
+		return fmt.Sprintf("%.0f%%", value*100)
+	case model.EveUnitInverseAbsolutePercent:
+		return fmt.Sprintf("%.0f%%", (1-value)*100)
+	case model.EveUnitVolume:
+		return fmt.Sprintf("%s m3", defaultFormatter(value))
+	case model.EveUnitNone:
+		return defaultFormatter(value)
+	}
+	return fmt.Sprintf("%s ???", defaultFormatter(value))
 }
