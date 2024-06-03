@@ -37,17 +37,6 @@ const (
 	attributeCategoryTargeting             attributeCategory = "targeting"
 )
 
-// attribute categories in order for display
-var attributeCategories = []attributeCategory{
-	attributeCategoryStructure,
-	attributeCategoryArmor,
-	attributeCategoryShield,
-	attributeCategoryElectronicResistances,
-	attributeCategoryCapacitor,
-	attributeCategoryTargeting,
-	attributeCategoryPropulsion,
-}
-
 // assignment of attributes to categories
 var attributeCategoriesMap = map[attributeCategory][]int32{
 	attributeCategoryStructure: {
@@ -104,6 +93,19 @@ var attributeCategoriesMap = map[attributeCategory][]int32{
 // Substituting icon ID for missing icons
 var iconPatches = map[int32]int32{
 	model.EveDogmaAttributeWarpSpeedMultiplier: 97,
+}
+
+// attribute categories to show for item category
+var attributeCategoriesForItemCategory = map[int32][]attributeCategory{
+	model.EveCategoryShip: {
+		attributeCategoryStructure,
+		attributeCategoryArmor,
+		attributeCategoryShield,
+		attributeCategoryElectronicResistances,
+		attributeCategoryCapacitor,
+		attributeCategoryTargeting,
+		attributeCategoryPropulsion,
+	},
 }
 
 type infoWindow struct {
@@ -193,47 +195,10 @@ type row struct {
 }
 
 func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
-	data := make([]row, 0)
-	oo, err := a.ui.sv.EveUniverse.ListEveTypeDogmaAttributesForType(context.Background(), a.et.ID)
+	data, err := a.prepareData()
 	if err != nil {
 		panic(err)
 	}
-	m := make(map[int32]*model.EveDogmaAttributeForType)
-	for _, o := range oo {
-		m[o.DogmaAttribute.ID] = o
-	}
-
-	droneCapacity, ok := m[model.EveDogmaAttributeDroneCapacity]
-	hasDrones := ok && droneCapacity.Value > 0
-
-	for _, ac := range attributeCategories {
-		data = append(data, row{label: ac.DisplayName(), isTitle: true})
-		for _, a := range attributeCategoriesMap[ac] {
-			o, ok := m[a]
-			if !ok {
-				continue
-			}
-			switch a {
-			case model.EveDogmaAttributeDroneCapacity, model.EveDogmaAttributeDroneBandwidth:
-				if !hasDrones {
-					continue
-				}
-			}
-			iconID := o.DogmaAttribute.IconID
-			newIconID, ok := iconPatches[o.DogmaAttribute.ID]
-			if ok {
-				iconID = newIconID
-				fmt.Println(iconID)
-			}
-			r, _ := icons.GetResource(iconID)
-			data = append(data, row{
-				icon:  r,
-				label: o.DogmaAttribute.DisplayName,
-				value: formatAttributeValue(o.Value, o.DogmaAttribute.UnitID),
-			})
-		}
-	}
-
 	list := widget.NewList(
 		func() int {
 			return len(data)
@@ -274,6 +239,53 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 		list.UnselectAll()
 	}
 	return list
+}
+
+func (a *infoWindow) prepareData() ([]row, error) {
+	data := make([]row, 0)
+	oo, err := a.ui.sv.EveUniverse.ListEveTypeDogmaAttributesForType(context.Background(), a.et.ID)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[int32]*model.EveDogmaAttributeForType)
+	for _, o := range oo {
+		m[o.DogmaAttribute.ID] = o
+	}
+
+	droneCapacity, ok := m[model.EveDogmaAttributeDroneCapacity]
+	hasDrones := ok && droneCapacity.Value > 0
+
+	acs, ok := attributeCategoriesForItemCategory[a.et.Group.Category.ID]
+	if ok {
+		for _, ac := range acs {
+			data = append(data, row{label: ac.DisplayName(), isTitle: true})
+			for _, a := range attributeCategoriesMap[ac] {
+				o, ok := m[a]
+				if !ok {
+					continue
+				}
+				switch a {
+				case model.EveDogmaAttributeDroneCapacity, model.EveDogmaAttributeDroneBandwidth:
+					if !hasDrones {
+						continue
+					}
+				}
+				iconID := o.DogmaAttribute.IconID
+				newIconID, ok := iconPatches[o.DogmaAttribute.ID]
+				if ok {
+					iconID = newIconID
+					fmt.Println(iconID)
+				}
+				r, _ := icons.GetResource(iconID)
+				data = append(data, row{
+					icon:  r,
+					label: o.DogmaAttribute.DisplayName,
+					value: formatAttributeValue(o.Value, o.DogmaAttribute.UnitID),
+				})
+			}
+		}
+	}
+	return data, nil
 }
 
 // formatAttributeValue returns the formatted value of a dogma attribute.

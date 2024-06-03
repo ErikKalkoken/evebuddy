@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 )
@@ -132,7 +133,8 @@ func (a *attributesArea) updateData() (int, error) {
 			return 0, err
 		}
 	}
-	x, err := a.ui.sv.Characters.GetCharacterAttributes(context.Background(), a.ui.currentCharID())
+	ctx := context.Background()
+	ca, err := a.ui.sv.Characters.GetCharacterAttributes(ctx, a.ui.currentCharID())
 	if errors.Is(err, character.ErrNotFound) {
 		err := a.attributes.Set(make([]any, 0))
 		if err != nil {
@@ -142,38 +144,43 @@ func (a *attributesArea) updateData() (int, error) {
 	} else if err != nil {
 		return 0, err
 	}
+	resPerception, _ := icons.GetResource(icons.Perception)
+	resMemory, _ := icons.GetResource(icons.Memory)
+	resWillpower, _ := icons.GetResource(icons.Willpower)
+	resIntelligence, _ := icons.GetResource(icons.Intelligence)
+	resCharisma, _ := icons.GetResource(icons.Charisma)
 	items := make([]any, 6)
 	items[0] = attribute{
-		icon:   resourcePerceptionPng,
+		icon:   resPerception,
 		name:   "Perception",
-		points: x.Perception,
+		points: ca.Perception,
 	}
 	items[1] = attribute{
-		icon:   resourceMemoryPng,
+		icon:   resMemory,
 		name:   "Memory",
-		points: x.Memory,
+		points: ca.Memory,
 	}
 	items[2] = attribute{
-		icon:   resourceWillpowerPng,
+		icon:   resWillpower,
 		name:   "Willpower",
-		points: x.Willpower,
+		points: ca.Willpower,
 	}
 	items[3] = attribute{
-		icon:   resourceIntelligencePng,
+		icon:   resIntelligence,
 		name:   "Intelligence",
-		points: x.Intelligence,
+		points: ca.Intelligence,
 	}
 	items[4] = attribute{
-		icon:   resourceCharismaPng,
+		icon:   resCharisma,
 		name:   "Charisma",
-		points: x.Charisma,
+		points: ca.Charisma,
 	}
 	items[5] = attribute{
-		name: fmt.Sprintf("Bonus Remaps Available: %d", x.BonusRemaps),
+		name: fmt.Sprintf("Bonus Remaps Available: %d", ca.BonusRemaps),
 	}
 	if err := a.attributes.Set(items); err != nil {
 		return 0, err
 	}
-	total := x.Charisma + x.Intelligence + x.Memory + x.Perception + x.Willpower
+	total := ca.Charisma + ca.Intelligence + ca.Memory + ca.Perception + ca.Willpower
 	return total, nil
 }
