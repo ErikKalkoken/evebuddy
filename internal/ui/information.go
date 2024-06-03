@@ -216,8 +216,9 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 					continue
 				}
 			}
+			r, _ := icons.GetResource(o.DogmaAttribute.IconID)
 			data = append(data, row{
-				icon:  icons.Get(o.DogmaAttribute.IconID),
+				icon:  r,
 				label: o.DogmaAttribute.DisplayName,
 				value: formatAttributeValue(o.Value, o.DogmaAttribute.UnitID),
 			})

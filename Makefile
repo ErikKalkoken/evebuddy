@@ -9,3 +9,4 @@ images:
 
 icons:
 	fyne bundle --package icons resources/icons > internal/eveonline/icons/resource.go
+	python3 tools/icons_map/generate.py > internal/eveonline/icons/mapping.go
