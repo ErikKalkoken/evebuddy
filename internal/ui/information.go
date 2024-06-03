@@ -101,7 +101,10 @@ var attributeCategoriesMap = map[attributeCategory][]int32{
 	},
 }
 
-// 76, 552, 564, 208, 214
+// Substituting icon ID for missing icons
+var iconPatches = map[int32]int32{
+	model.EveDogmaAttributeWarpSpeedMultiplier: 97,
+}
 
 type infoWindow struct {
 	content fyne.CanvasObject
@@ -216,7 +219,13 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 					continue
 				}
 			}
-			r, _ := icons.GetResource(o.DogmaAttribute.IconID)
+			iconID := o.DogmaAttribute.IconID
+			newIconID, ok := iconPatches[o.DogmaAttribute.ID]
+			if ok {
+				iconID = newIconID
+				fmt.Println(iconID)
+			}
+			r, _ := icons.GetResource(iconID)
 			data = append(data, row{
 				icon:  r,
 				label: o.DogmaAttribute.DisplayName,
@@ -225,24 +234,49 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 		}
 	}
 
-	box := container.NewVBox()
-	for _, r := range data {
-		if r.isTitle {
-			label := widget.NewLabel(r.label)
-			label.TextStyle.Bold = true
-			label.Importance = widget.HighImportance
-			box.Add(container.NewHBox(label))
-		} else {
-			box.Add(container.NewHBox(
-				widget.NewIcon(r.icon),
-				widget.NewLabel(r.label),
+	list := widget.NewList(
+		func() int {
+			return len(data)
+		},
+		func() fyne.CanvasObject {
+			return container.NewHBox(
+				widget.NewIcon(resourceCharacterplaceholder32Jpeg),
+				widget.NewLabel("Placeholder"),
 				layout.NewSpacer(),
-				widget.NewLabel(r.value)))
-		}
+				widget.NewLabel("999.999 m3"))
+		},
+		func(lii widget.ListItemID, co fyne.CanvasObject) {
+			r := data[lii]
+			row := co.(*fyne.Container)
+			icon := row.Objects[0].(*widget.Icon)
+			label := row.Objects[1].(*widget.Label)
+			value := row.Objects[3].(*widget.Label)
+			if r.isTitle {
+				label.TextStyle.Bold = true
+				label.Importance = widget.HighImportance
+				label.Text = r.label
+				label.Refresh()
+				icon.Hide()
+				value.Hide()
+			} else {
+				label.TextStyle.Bold = false
+				label.Importance = widget.MediumImportance
+				label.Text = r.label
+				label.Refresh()
+				icon.SetResource(r.icon)
+				icon.Show()
+				value.SetText(r.value)
+				value.Show()
+			}
+		},
+	)
+	list.OnSelected = func(id widget.ListItemID) {
+		list.UnselectAll()
 	}
-	return container.NewVScroll(box)
+	return list
 }
 
+// formatAttributeValue returns the formatted value of a dogma attribute.
 func formatAttributeValue(value float32, unit int32) string {
 	defaultFormatter := func(v float32) string {
 		return humanize.Commaf(float64(v))
