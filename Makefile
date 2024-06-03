@@ -4,5 +4,5 @@ help:
 sqlgen:
 	sqlc generate
 
-static:
-	fyne bundle --package ui images > internal/ui/resource.go
+images:
+	fyne bundle --package ui resources/images > internal/ui/resource.go
