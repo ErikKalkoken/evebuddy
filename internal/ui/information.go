@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/dustin/go-humanize"
 	"golang.org/x/text/cases"
@@ -182,6 +183,7 @@ func (a *infoWindow) makeTop() fyne.CanvasObject {
 }
 
 type row struct {
+	icon    fyne.Resource
 	label   string
 	value   string
 	isTitle bool
@@ -214,7 +216,11 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 					continue
 				}
 			}
-			data = append(data, row{label: o.DogmaAttribute.DisplayName, value: formatAttributeValue(o.Value, o.DogmaAttribute.UnitID)})
+			data = append(data, row{
+				icon:  icons.Get(o.DogmaAttribute.IconID),
+				label: o.DogmaAttribute.DisplayName,
+				value: formatAttributeValue(o.Value, o.DogmaAttribute.UnitID),
+			})
 		}
 	}
 
@@ -226,7 +232,11 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 			label.Importance = widget.HighImportance
 			box.Add(container.NewHBox(label))
 		} else {
-			box.Add(container.NewHBox(widget.NewLabel(r.label), layout.NewSpacer(), widget.NewLabel(r.value)))
+			box.Add(container.NewHBox(
+				widget.NewIcon(r.icon),
+				widget.NewLabel(r.label),
+				layout.NewSpacer(),
+				widget.NewLabel(r.value)))
 		}
 	}
 	return container.NewVScroll(box)

@@ -95,11 +95,10 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 			}
 		}
 		// when
-		p, ok := cs.Summary()
+		p, count := cs.Summary()
 		// then
-		if assert.True(t, ok) {
-			assert.Equal(t, float32(1.0), p)
-		}
+		assert.Equal(t, float32(1.0), p)
+		assert.Equal(t, 0, count)
 	})
 	t.Run("should report when there is an error", func(t *testing.T) {
 		// given
@@ -110,9 +109,9 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 		}
 		cs.SetError(cc[1].ID, model.CharacterSectionLocation, "error")
 		// when
-		_, ok := cs.Summary()
+		_, c := cs.Summary()
 		// then
-		assert.False(t, ok)
+		assert.Equal(t, 1, c)
 	})
 	t.Run("should report current progress", func(t *testing.T) {
 		// given
@@ -123,10 +122,9 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 		}
 		cs.SetStatus(cc[1].ID, model.CharacterSectionLocation, "", time.Now().Add(-1*time.Hour))
 		// when
-		p, ok := cs.Summary()
+		p, c := cs.Summary()
 		// then
-		if assert.True(t, ok) {
-			assert.Less(t, p, float32(1.0))
-		}
+		assert.Less(t, p, float32(1.0))
+		assert.Equal(t, 0, c)
 	})
 }

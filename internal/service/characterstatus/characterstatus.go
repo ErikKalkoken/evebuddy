@@ -75,22 +75,24 @@ func (sc *CharacterStatusService) GetStatus(characterID int32, section model.Cha
 	return v.ErrorMessage, v.LastUpdatedAt
 }
 
-func (sc *CharacterStatusService) Summary() (float32, bool) {
+func (sc *CharacterStatusService) Summary() (float32, int) {
 	cc := sc.ListCharacters()
-	total := len(model.CharacterSections) * len(cc)
-	currentCount := 0
+	sectionsTotal := len(model.CharacterSections) * len(cc)
+	sectionsCurrent := 0
+	errorCount := 0
 	for _, c := range cc {
 		xx := sc.ListStatus(c.ID)
 		for _, x := range xx {
 			if !x.IsOK() {
-				return 0, false
+				errorCount++
+				continue
 			}
 			if x.IsCurrent() {
-				currentCount++
+				sectionsCurrent++
 			}
 		}
 	}
-	return float32(currentCount) / float32(total), true
+	return float32(sectionsCurrent) / float32(sectionsTotal), errorCount
 }
 
 func (sc *CharacterStatusService) CharacterSummary(characterID int32) (float32, bool) {
