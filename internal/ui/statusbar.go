@@ -165,17 +165,24 @@ func newEveStatusArea(u *ui) *eveStatusArea {
 		},
 	)
 	a.content.OnSelected = func(_ widget.GridWrapItemID) {
+		var i widget.Importance
 		var text string
 		if a.errorMessage == "" {
 			text = "No error detected"
+			i = widget.MediumImportance
 		} else {
 			text = a.errorMessage
+			i = widget.DangerImportance
 		}
-		d := dialog.NewInformation("ESI status", text, a.ui.window)
+		lb := widget.NewLabel(text)
+		lb.Wrapping = fyne.TextWrapWord
+		lb.Importance = i
+		d := dialog.NewCustom("ESI status", "OK", container.NewVScroll(lb), a.ui.window)
 		d.SetOnClosed(func() {
 			a.content.UnselectAll()
 		})
 		d.Show()
+		d.Resize(fyne.Size{Width: 400, Height: 200})
 	}
 	return a
 }
