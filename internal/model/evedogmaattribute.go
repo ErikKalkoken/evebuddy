@@ -73,6 +73,7 @@ const (
 	EveDogmaAttributeTertiarySkillID                    = 184
 	EveDogmaAttributeTertiarySkillLevel                 = 279
 	EveDogmaAttributeWarpSpeedMultiplier                = 600
+	EveDogmaAttributeShipWarpSpeed                      = 1281
 	EveDogmaAttributeWillpower                          = 168
 )
 
@@ -136,6 +137,7 @@ const (
 	EveUnitHardpoints                     = 141
 	EveUnitSex                            = 142
 	EveUnitDatetime                       = 143
+	EveUnitWarpSpeed                      = 144 // inferred
 )
 
 type EveDogmaAttribute struct {

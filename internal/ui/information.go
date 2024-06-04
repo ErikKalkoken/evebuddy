@@ -101,7 +101,7 @@ var attributeCategoriesMap = map[attributeCategory][]int32{
 	},
 	attributeCategoryPropulsion: {
 		model.EveDogmaAttributeMaxVelocity,
-		model.EveDogmaAttributeWarpSpeedMultiplier,
+		model.EveDogmaAttributeShipWarpSpeed,
 	},
 	attributeCategoryMiscellaneous: {
 		model.EveDogmaAttributeMaximumJumpRange,
@@ -118,8 +118,7 @@ var attributeCategoriesMap = map[attributeCategory][]int32{
 
 // Substituting icon ID for missing icons
 var iconPatches = map[int32]int32{
-	model.EveDogmaAttributeWarpSpeedMultiplier: icons.ModuleJumpEnhancer,
-	model.EveDogmaAttributeJumpDriveFuelNeed:   icons.HeliumIsotopes,
+	model.EveDogmaAttributeJumpDriveFuelNeed: icons.HeliumIsotopes,
 }
 
 type infoWindow struct {
@@ -164,6 +163,8 @@ func (a *infoWindow) makeContent() fyne.CanvasObject {
 		container.NewTabItem("Traits", widget.NewLabel("PLACEHOLDER")),
 		container.NewTabItem("Description", container.NewVScroll(description)),
 		container.NewTabItem("Attributes", a.makeAttributesTab()),
+		container.NewTabItem("Fittings", widget.NewLabel("PLACEHOLDER")),
+		container.NewTabItem("Requirements", widget.NewLabel("PLACEHOLDER")),
 	)
 	tabs.SelectIndex(2)
 
@@ -291,6 +292,7 @@ func (a *infoWindow) prepareData() ([]row, error) {
 			if !ok {
 				continue
 			}
+			value := o.Value
 			switch da {
 			case model.EveDogmaAttributeDroneCapacity,
 				model.EveDogmaAttributeDroneBandwidth:
@@ -302,6 +304,9 @@ func (a *infoWindow) prepareData() ([]row, error) {
 				if !hasJumpDrive {
 					continue
 				}
+			case model.EveDogmaAttributeShipWarpSpeed:
+				x := m[model.EveDogmaAttributeWarpSpeedMultiplier]
+				value = value * x.Value
 			}
 			iconID := o.DogmaAttribute.IconID
 			newIconID, ok := iconPatches[o.DogmaAttribute.ID]
@@ -312,7 +317,7 @@ func (a *infoWindow) prepareData() ([]row, error) {
 			data = append(data, row{
 				icon:  r,
 				label: o.DogmaAttribute.DisplayName,
-				value: a.formatAttributeValue(ctx, o.Value, o.DogmaAttribute.UnitID),
+				value: a.formatAttributeValue(ctx, value, o.DogmaAttribute.UnitID),
 			})
 		}
 	}
@@ -355,6 +360,8 @@ func (a *infoWindow) formatAttributeValue(ctx context.Context, value float32, un
 		return fmt.Sprintf("%.0f%%", (1-value)*100)
 	case model.EveUnitVolume:
 		return fmt.Sprintf("%s m3", defaultFormatter(value))
+	case model.EveUnitWarpSpeed:
+		return fmt.Sprintf("%s AU/s", defaultFormatter(value))
 	case model.EveUnitTypeID:
 		et, err := a.ui.sv.EveUniverse.GetEveType(ctx, int32(value))
 		if err != nil {
