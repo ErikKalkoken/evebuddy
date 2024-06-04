@@ -7,13 +7,21 @@ import (
 
 // Popular icon IDs
 const (
-	Charisma      = 1378
-	CloningCenter = 21596
-	Intelligence  = 1380
-	Memory        = 1381
-	Perception    = 1382
-	Undefined     = 0
-	Willpower     = 1379
+	Undefined = 0
+
+	Charisma     = 1378
+	Intelligence = 1380
+	Memory       = 1381
+	Perception   = 1382
+	Willpower    = 1379
+
+	HeliumIsotopes   = 2699
+	HydrogenIsotopes = 2700
+	NitrogenIsotopes = 2702
+	OxygenIsotopes   = 2701
+
+	CloningCenter      = 21596
+	ModuleJumpEnhancer = 97
 )
 
 // GetResource returns an icon resource for an icon ID and reports if it was found.

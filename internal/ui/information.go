@@ -31,12 +31,26 @@ const (
 	attributeCategoryCapacitor             attributeCategory = "capacitor"
 	attributeCategoryElectronicResistances attributeCategory = "electronic resistances"
 	attributeCategoryFitting               attributeCategory = "fitting"
+	attributeCategoryFighter               attributeCategory = "fighter"
 	attributeCategoryMiscellaneous         attributeCategory = "miscellaneous"
 	attributeCategoryPropulsion            attributeCategory = "propulsion"
 	attributeCategoryShield                attributeCategory = "shield"
 	attributeCategoryStructure             attributeCategory = "structure"
 	attributeCategoryTargeting             attributeCategory = "targeting"
 )
+
+// attribute categories to show in order
+var attributeCategories = []attributeCategory{
+	attributeCategoryStructure,
+	attributeCategoryArmor,
+	attributeCategoryShield,
+	attributeCategoryElectronicResistances,
+	attributeCategoryCapacitor,
+	attributeCategoryTargeting,
+	attributeCategoryPropulsion,
+	attributeCategoryMiscellaneous,
+	attributeCategoryFighter,
+}
 
 // assignment of attributes to categories
 var attributeCategoriesMap = map[attributeCategory][]int32{
@@ -92,24 +106,20 @@ var attributeCategoriesMap = map[attributeCategory][]int32{
 	attributeCategoryMiscellaneous: {
 		model.EveDogmaAttributeMaximumJumpRange,
 		model.EveDogmaAttributeJumpDriveFuelNeed,
+		model.EveDogmaAttributeJumpDriveConsumptionAmount,
+	},
+	attributeCategoryFighter: {
+		model.EveDogmaAttributeFighterHangarCapacity,
+		model.EveDogmaAttributeFighterSquadronLaunchTubes,
+		model.EveDogmaAttributeLightFighterSquadronLimit,
+		model.EveDogmaAttributeSupportFighterSquadronLimit,
 	},
 }
 
 // Substituting icon ID for missing icons
 var iconPatches = map[int32]int32{
-	model.EveDogmaAttributeWarpSpeedMultiplier: 97,
-}
-
-// attribute categories to show in order
-var attributeCategories = []attributeCategory{
-	attributeCategoryStructure,
-	attributeCategoryArmor,
-	attributeCategoryShield,
-	attributeCategoryElectronicResistances,
-	attributeCategoryCapacitor,
-	attributeCategoryTargeting,
-	attributeCategoryPropulsion,
-	attributeCategoryMiscellaneous,
+	model.EveDogmaAttributeWarpSpeedMultiplier: icons.ModuleJumpEnhancer,
+	model.EveDogmaAttributeJumpDriveFuelNeed:   icons.HeliumIsotopes,
 }
 
 type infoWindow struct {
@@ -357,6 +367,8 @@ func (a *infoWindow) formatAttributeValue(ctx context.Context, value float32, un
 			return "?"
 		}
 		return et.Name
+	case model.EveUnitUnits:
+		return fmt.Sprintf("%s units", defaultFormatter(value))
 	case model.EveUnitNone:
 		return defaultFormatter(value)
 	}

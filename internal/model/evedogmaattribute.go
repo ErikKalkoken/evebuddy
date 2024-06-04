@@ -1,9 +1,15 @@
 package model
 
 const (
-	EveDogmaAttributeOnboardJumpDrive  = 861
-	EveDogmaAttributeMaximumJumpRange  = 867
-	EveDogmaAttributeJumpDriveFuelNeed = 866
+	EveDogmaAttributeOnboardJumpDrive           = 861
+	EveDogmaAttributeMaximumJumpRange           = 867
+	EveDogmaAttributeJumpDriveFuelNeed          = 866
+	EveDogmaAttributeJumpDriveConsumptionAmount = 868
+
+	EveDogmaAttributeFighterHangarCapacity       = 2055
+	EveDogmaAttributeFighterSquadronLaunchTubes  = 2216
+	EveDogmaAttributeLightFighterSquadronLimit   = 2217
+	EveDogmaAttributeSupportFighterSquadronLimit = 2218
 
 	EveDogmaAttributeCapacitorWarfareResistance         = 2045
 	EveDogmaAttributeStasisWebifierResistance           = 2115
