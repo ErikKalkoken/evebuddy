@@ -1,6 +1,10 @@
 package model
 
 const (
+	EveDogmaAttributeOnboardJumpDrive  = 861
+	EveDogmaAttributeMaximumJumpRange  = 867
+	EveDogmaAttributeJumpDriveFuelNeed = 866
+
 	EveDogmaAttributeCapacitorWarfareResistance         = 2045
 	EveDogmaAttributeStasisWebifierResistance           = 2115
 	EveDogmaAttributeWeaponDisruptionResistance         = 2113

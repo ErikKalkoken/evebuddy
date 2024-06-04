@@ -66,5 +66,4 @@ AND eve_type_id = ?;
 SELECT sqlc.embed(eda), etda.eve_type_id, etda.value
 FROM eve_dogma_attributes eda
 JOIN eve_type_dogma_attributes etda ON etda.dogma_attribute_id = eda.id
-WHERE etda.eve_type_id = ?
-AND is_published IS TRUE;
+WHERE etda.eve_type_id = ?;

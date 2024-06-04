@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -88,6 +89,10 @@ var attributeCategoriesMap = map[attributeCategory][]int32{
 		model.EveDogmaAttributeMaxVelocity,
 		model.EveDogmaAttributeWarpSpeedMultiplier,
 	},
+	attributeCategoryMiscellaneous: {
+		model.EveDogmaAttributeMaximumJumpRange,
+		model.EveDogmaAttributeJumpDriveFuelNeed,
+	},
 }
 
 // Substituting icon ID for missing icons
@@ -95,17 +100,16 @@ var iconPatches = map[int32]int32{
 	model.EveDogmaAttributeWarpSpeedMultiplier: 97,
 }
 
-// attribute categories to show for item category
-var attributeCategoriesForItemCategory = map[int32][]attributeCategory{
-	model.EveCategoryShip: {
-		attributeCategoryStructure,
-		attributeCategoryArmor,
-		attributeCategoryShield,
-		attributeCategoryElectronicResistances,
-		attributeCategoryCapacitor,
-		attributeCategoryTargeting,
-		attributeCategoryPropulsion,
-	},
+// attribute categories to show in order
+var attributeCategories = []attributeCategory{
+	attributeCategoryStructure,
+	attributeCategoryArmor,
+	attributeCategoryShield,
+	attributeCategoryElectronicResistances,
+	attributeCategoryCapacitor,
+	attributeCategoryTargeting,
+	attributeCategoryPropulsion,
+	attributeCategoryMiscellaneous,
 }
 
 type infoWindow struct {
@@ -242,8 +246,9 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 }
 
 func (a *infoWindow) prepareData() ([]row, error) {
+	ctx := context.Background()
 	data := make([]row, 0)
-	oo, err := a.ui.sv.EveUniverse.ListEveTypeDogmaAttributesForType(context.Background(), a.et.ID)
+	oo, err := a.ui.sv.EveUniverse.ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -255,41 +260,58 @@ func (a *infoWindow) prepareData() ([]row, error) {
 	droneCapacity, ok := m[model.EveDogmaAttributeDroneCapacity]
 	hasDrones := ok && droneCapacity.Value > 0
 
-	acs, ok := attributeCategoriesForItemCategory[a.et.Group.Category.ID]
-	if ok {
-		for _, ac := range acs {
-			data = append(data, row{label: ac.DisplayName(), isTitle: true})
-			for _, a := range attributeCategoriesMap[ac] {
-				o, ok := m[a]
-				if !ok {
-					continue
-				}
-				switch a {
-				case model.EveDogmaAttributeDroneCapacity, model.EveDogmaAttributeDroneBandwidth:
-					if !hasDrones {
-						continue
-					}
-				}
-				iconID := o.DogmaAttribute.IconID
-				newIconID, ok := iconPatches[o.DogmaAttribute.ID]
-				if ok {
-					iconID = newIconID
-					fmt.Println(iconID)
-				}
-				r, _ := icons.GetResource(iconID)
-				data = append(data, row{
-					icon:  r,
-					label: o.DogmaAttribute.DisplayName,
-					value: formatAttributeValue(o.Value, o.DogmaAttribute.UnitID),
-				})
+	jumpDrive, ok := m[model.EveDogmaAttributeOnboardJumpDrive]
+	hasJumpDrive := ok && jumpDrive.Value == 1.0
+
+	for _, ac := range attributeCategories {
+		hasData := false
+		for _, da := range attributeCategoriesMap[ac] {
+			_, ok := m[da]
+			if ok {
+				hasData = true
+				break
 			}
 		}
+		if !hasData {
+			continue
+		}
+		data = append(data, row{label: ac.DisplayName(), isTitle: true})
+		for _, da := range attributeCategoriesMap[ac] {
+			o, ok := m[da]
+			if !ok {
+				continue
+			}
+			switch da {
+			case model.EveDogmaAttributeDroneCapacity,
+				model.EveDogmaAttributeDroneBandwidth:
+				if !hasDrones {
+					continue
+				}
+			case model.EveDogmaAttributeMaximumJumpRange,
+				model.EveDogmaAttributeJumpDriveFuelNeed:
+				if !hasJumpDrive {
+					continue
+				}
+			}
+			iconID := o.DogmaAttribute.IconID
+			newIconID, ok := iconPatches[o.DogmaAttribute.ID]
+			if ok {
+				iconID = newIconID
+			}
+			r, _ := icons.GetResource(iconID)
+			data = append(data, row{
+				icon:  r,
+				label: o.DogmaAttribute.DisplayName,
+				value: a.formatAttributeValue(ctx, o.Value, o.DogmaAttribute.UnitID),
+			})
+		}
 	}
+
 	return data, nil
 }
 
 // formatAttributeValue returns the formatted value of a dogma attribute.
-func formatAttributeValue(value float32, unit int32) string {
+func (a *infoWindow) formatAttributeValue(ctx context.Context, value float32, unit int32) string {
 	defaultFormatter := func(v float32) string {
 		return humanize.Commaf(float64(v))
 	}
@@ -307,6 +329,8 @@ func formatAttributeValue(value float32, unit int32) string {
 		return fmt.Sprintf("%s HP", defaultFormatter(value))
 	case model.EveUnitLength:
 		return fmt.Sprintf("%s m", defaultFormatter(value))
+	case model.EveUnitLightYear:
+		return fmt.Sprintf("%.1f LY", value)
 	case model.EveUnitMass:
 		return fmt.Sprintf("%s kg", defaultFormatter(value))
 	case model.EveUnitMillimeters:
@@ -321,6 +345,18 @@ func formatAttributeValue(value float32, unit int32) string {
 		return fmt.Sprintf("%.0f%%", (1-value)*100)
 	case model.EveUnitVolume:
 		return fmt.Sprintf("%s m3", defaultFormatter(value))
+	case model.EveUnitTypeID:
+		et, err := a.ui.sv.EveUniverse.GetEveType(ctx, int32(value))
+		if err != nil {
+			go func() {
+				_, err := a.ui.sv.EveUniverse.GetOrCreateEveTypeESI(ctx, int32(value))
+				if err != nil {
+					slog.Error("Failed to fetch type from ESI", "typeID", value, "err", err)
+				}
+			}()
+			return "?"
+		}
+		return et.Name
 	case model.EveUnitNone:
 		return defaultFormatter(value)
 	}
