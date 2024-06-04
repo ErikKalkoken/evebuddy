@@ -31,8 +31,8 @@ const (
 	attributeCategoryCapacitor             attributeCategory = "capacitor"
 	attributeCategoryElectronicResistances attributeCategory = "electronic resistances"
 	attributeCategoryFitting               attributeCategory = "fitting"
-	attributeCategoryFighter               attributeCategory = "fighter"
-	attributeCategoryMiscellaneous         attributeCategory = "miscellaneous"
+	attributeCategoryFighter               attributeCategory = "fighter squadron facilities"
+	attributeCategoryJumpDrive             attributeCategory = "jump drive systems"
 	attributeCategoryPropulsion            attributeCategory = "propulsion"
 	attributeCategoryShield                attributeCategory = "shield"
 	attributeCategoryStructure             attributeCategory = "structure"
@@ -47,15 +47,16 @@ var attributeCategories = []attributeCategory{
 	attributeCategoryElectronicResistances,
 	attributeCategoryCapacitor,
 	attributeCategoryTargeting,
-	attributeCategoryPropulsion,
-	attributeCategoryMiscellaneous,
 	attributeCategoryFighter,
+	attributeCategoryJumpDrive,
+	attributeCategoryPropulsion,
 }
 
 // assignment of attributes to categories
 var attributeCategoriesMap = map[attributeCategory][]int32{
 	attributeCategoryStructure: {
 		model.EveDogmaAttributeStructureHitpoints,
+		model.EveDogmaAttributeCapacity,
 		model.EveDogmaAttributeDroneCapacity,
 		model.EveDogmaAttributeDroneBandwidth,
 		model.EveDogmaAttributeMass,
@@ -81,9 +82,17 @@ var attributeCategoriesMap = map[attributeCategory][]int32{
 		model.EveDogmaAttributeShieldExplosiveDamageResistance,
 	},
 	attributeCategoryElectronicResistances: {
+		model.EveDogmaAttributeCargoScanResistance,
 		model.EveDogmaAttributeCapacitorWarfareResistance,
-		model.EveDogmaAttributeStasisWebifierResistance,
+		model.EveDogmaAttributeSensorWarfareResistance,
 		model.EveDogmaAttributeWeaponDisruptionResistance,
+		model.EveDogmaAttributeTargetPainterResistance,
+		model.EveDogmaAttributeStasisWebifierResistance,
+		model.EveDogmaAttributeRemoteLogisticsImpedance,
+		model.EveDogmaAttributeRemoteElectronicAssistanceImpedance,
+		model.EveDogmaAttributeECMResistance,
+		model.EveDogmaAttributeCapacitorWarfareResistanceBonus,
+		model.EveDogmaAttributeStasisWebifierResistanceBonus,
 	},
 	attributeCategoryCapacitor: {
 		model.EveDogmaAttributeCapacitorCapacity,
@@ -103,16 +112,19 @@ var attributeCategoriesMap = map[attributeCategory][]int32{
 		model.EveDogmaAttributeMaxVelocity,
 		model.EveDogmaAttributeShipWarpSpeed,
 	},
-	attributeCategoryMiscellaneous: {
+	attributeCategoryJumpDrive: {
+		model.EveDogmaAttributeJumpDriveCapacitorNeed,
 		model.EveDogmaAttributeMaximumJumpRange,
 		model.EveDogmaAttributeJumpDriveFuelNeed,
 		model.EveDogmaAttributeJumpDriveConsumptionAmount,
+		model.EveDogmaAttributeFuelBayCapacity,
 	},
 	attributeCategoryFighter: {
 		model.EveDogmaAttributeFighterHangarCapacity,
 		model.EveDogmaAttributeFighterSquadronLaunchTubes,
 		model.EveDogmaAttributeLightFighterSquadronLimit,
 		model.EveDogmaAttributeSupportFighterSquadronLimit,
+		model.EveDogmaAttributeHeavyFighterSquadronLimit,
 	},
 }
 
@@ -157,18 +169,14 @@ func (a *infoWindow) makeTitle(suffix string) string {
 
 func (a *infoWindow) makeContent() fyne.CanvasObject {
 	top := a.makeTop()
-
 	description := widget.NewLabel(a.et.DescriptionPlain())
 	description.Wrapping = fyne.TextWrapWord
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Traits", widget.NewLabel("PLACEHOLDER")),
 		container.NewTabItem("Description", container.NewVScroll(description)),
 		container.NewTabItem("Attributes", a.makeAttributesTab()),
 		container.NewTabItem("Fittings", widget.NewLabel("PLACEHOLDER")),
 		container.NewTabItem("Requirements", a.makeRequirementsTab()),
 	)
-	tabs.SelectIndex(2)
-
 	c := container.NewBorder(top, nil, nil, nil, tabs)
 	return c
 }
@@ -294,6 +302,9 @@ func (a *infoWindow) prepareData() ([]attributesRow, error) {
 				continue
 			}
 			value := o.Value
+			if ac == attributeCategoryElectronicResistances && value == 0 {
+				continue
+			}
 			switch da {
 			case model.EveDogmaAttributeDroneCapacity,
 				model.EveDogmaAttributeDroneBandwidth:
@@ -308,6 +319,10 @@ func (a *infoWindow) prepareData() ([]attributesRow, error) {
 			case model.EveDogmaAttributeShipWarpSpeed:
 				x := m[model.EveDogmaAttributeWarpSpeedMultiplier]
 				value = value * x.Value
+			case model.EveDogmaAttributeSupportFighterSquadronLimit:
+				if value == 0 {
+					continue
+				}
 			}
 			iconID := o.DogmaAttribute.IconID
 			newIconID, ok := iconPatches[o.DogmaAttribute.ID]
@@ -333,6 +348,8 @@ func (a *infoWindow) formatAttributeValue(ctx context.Context, value float32, un
 	}
 	now := time.Now()
 	switch unit {
+	case model.EveUnitAbsolutePercent:
+		return fmt.Sprintf("%.0f%%", value*100)
 	case model.EveUnitAcceleration:
 		return fmt.Sprintf("%s m/sec", defaultFormatter(value))
 	case model.EveUnitAttributePoints:
@@ -343,6 +360,8 @@ func (a *infoWindow) formatAttributeValue(ctx context.Context, value float32, un
 		return fmt.Sprintf("%s Mbit/s", defaultFormatter(value))
 	case model.EveUnitHitpoints:
 		return fmt.Sprintf("%s HP", defaultFormatter(value))
+	case model.EveUnitInverseAbsolutePercent:
+		return fmt.Sprintf("%.0f%%", (1-value)*100)
 	case model.EveUnitLength:
 		return fmt.Sprintf("%s m", defaultFormatter(value))
 	case model.EveUnitLightYear:
@@ -357,8 +376,6 @@ func (a *infoWindow) formatAttributeValue(ctx context.Context, value float32, un
 		return fmt.Sprintf("%.3f x", value)
 	case model.EveUnitPercentage:
 		return fmt.Sprintf("%.0f%%", value*100)
-	case model.EveUnitInverseAbsolutePercent:
-		return fmt.Sprintf("%.0f%%", (1-value)*100)
 	case model.EveUnitVolume:
 		return fmt.Sprintf("%s m3", defaultFormatter(value))
 	case model.EveUnitWarpSpeed:
