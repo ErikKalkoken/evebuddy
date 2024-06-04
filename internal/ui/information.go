@@ -148,13 +148,14 @@ var iconPatches = map[int32]int32{
 }
 
 type infoWindow struct {
-	attributes  map[int32]*model.EveDogmaAttributeForType
-	content     fyne.CanvasObject
-	characterID int32
-	et          *model.EveType
-	skills      []*model.CharacterShipSkill
-	ui          *ui
-	window      fyne.Window
+	attributes   map[int32]*model.EveDogmaAttributeForType
+	content      fyne.CanvasObject
+	characterID  int32
+	et           *model.EveType
+	fittingItems []int32
+	skills       []*model.CharacterShipSkill
+	ui           *ui
+	window       fyne.Window
 }
 
 func (u *ui) showTypeWindow(typeID int32) {
@@ -183,17 +184,26 @@ func (u *ui) newInfoWindow(typeID int32) (*infoWindow, error) {
 	for _, o := range oo {
 		m[o.DogmaAttribute.ID] = o
 	}
+	fittingItems := make([]int32, 0)
+	for _, da := range attributeGroupsMap[attributeGroupFitting] {
+		o, ok := m[da]
+		if !ok {
+			continue
+		}
+		fittingItems = append(fittingItems, o.DogmaAttribute.ID)
+	}
 	characterID := u.currentCharID()
 	skills, err := u.sv.Characters.ListCharacterShipSkills(ctx, characterID, et.ID)
 	if err != nil {
 		return nil, err
 	}
 	a := &infoWindow{
-		attributes:  m,
-		characterID: characterID,
-		et:          et,
-		skills:      skills,
-		ui:          u,
+		attributes:   m,
+		characterID:  characterID,
+		et:           et,
+		fittingItems: fittingItems,
+		skills:       skills,
+		ui:           u,
 	}
 	a.content = a.makeContent()
 	return a, nil
@@ -207,10 +217,14 @@ func (a *infoWindow) makeContent() fyne.CanvasObject {
 	top := a.makeTop()
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Description", a.makeDescriptionTab()),
-		container.NewTabItem("Attributes", a.makeAttributesTab()),
-		container.NewTabItem("Fittings", a.makeFittingsTab()),
-		container.NewTabItem("Requirements", a.makeRequirementsTab()),
 	)
+	tabs.Append(container.NewTabItem("Attributes", a.makeAttributesTab()))
+	if len(a.fittingItems) > 0 {
+		tabs.Append(container.NewTabItem("Fittings", a.makeFittingsTab()))
+	}
+	if len(a.skills) > 0 {
+		tabs.Append(container.NewTabItem("Requirements", a.makeRequirementsTab()))
+	}
 	c := container.NewBorder(top, nil, nil, nil, tabs)
 	return c
 }
@@ -392,11 +406,8 @@ func (a *infoWindow) prepareData() ([]attributesRow, error) {
 func (a *infoWindow) makeFittingsTab() fyne.CanvasObject {
 	ctx := context.Background()
 	data := make([]attributesRow, 0)
-	for _, da := range attributeGroupsMap[attributeGroupFitting] {
-		o, ok := a.attributes[da]
-		if !ok {
-			continue
-		}
+	for _, id := range a.fittingItems {
+		o := a.attributes[id]
 		iconID := o.DogmaAttribute.IconID
 		r, _ := icons.GetResource(iconID)
 		data = append(data, attributesRow{
