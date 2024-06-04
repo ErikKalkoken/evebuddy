@@ -18,43 +18,43 @@ import (
 	"golang.org/x/text/language"
 )
 
-type attributeCategory string
+type attributeGroup string
 
-func (ac attributeCategory) DisplayName() string {
+func (ag attributeGroup) DisplayName() string {
 	c := cases.Title(language.English)
-	return c.String(string(ac))
+	return c.String(string(ag))
 }
 
-// categories of attributes to display on the attributes tab
+// groups of attributes to display on the attributes and fitting tab
 const (
-	attributeCategoryArmor                 attributeCategory = "armor"
-	attributeCategoryCapacitor             attributeCategory = "capacitor"
-	attributeCategoryElectronicResistances attributeCategory = "electronic resistances"
-	attributeCategoryFitting               attributeCategory = "fitting"
-	attributeCategoryFighter               attributeCategory = "fighter squadron facilities"
-	attributeCategoryJumpDrive             attributeCategory = "jump drive systems"
-	attributeCategoryPropulsion            attributeCategory = "propulsion"
-	attributeCategoryShield                attributeCategory = "shield"
-	attributeCategoryStructure             attributeCategory = "structure"
-	attributeCategoryTargeting             attributeCategory = "targeting"
+	attributeGroupArmor                 attributeGroup = "armor"
+	attributeGroupCapacitor             attributeGroup = "capacitor"
+	attributeGroupElectronicResistances attributeGroup = "electronic resistances"
+	attributeGroupFitting               attributeGroup = "fitting"
+	attributeGroupFighter               attributeGroup = "fighter squadron facilities"
+	attributeGroupJumpDrive             attributeGroup = "jump drive systems"
+	attributeGroupPropulsion            attributeGroup = "propulsion"
+	attributeGroupShield                attributeGroup = "shield"
+	attributeGroupStructure             attributeGroup = "structure"
+	attributeGroupTargeting             attributeGroup = "targeting"
 )
 
-// attribute categories to show in order
-var attributeCategories = []attributeCategory{
-	attributeCategoryStructure,
-	attributeCategoryArmor,
-	attributeCategoryShield,
-	attributeCategoryElectronicResistances,
-	attributeCategoryCapacitor,
-	attributeCategoryTargeting,
-	attributeCategoryFighter,
-	attributeCategoryJumpDrive,
-	attributeCategoryPropulsion,
+// attribute groups to show in order on attributes tab
+var attributeGroups = []attributeGroup{
+	attributeGroupStructure,
+	attributeGroupArmor,
+	attributeGroupShield,
+	attributeGroupElectronicResistances,
+	attributeGroupCapacitor,
+	attributeGroupTargeting,
+	attributeGroupFighter,
+	attributeGroupJumpDrive,
+	attributeGroupPropulsion,
 }
 
-// assignment of attributes to categories
-var attributeCategoriesMap = map[attributeCategory][]int32{
-	attributeCategoryStructure: {
+// assignment of attributes to groups
+var attributeGroupsMap = map[attributeGroup][]int32{
+	attributeGroupStructure: {
 		model.EveDogmaAttributeStructureHitpoints,
 		model.EveDogmaAttributeCapacity,
 		model.EveDogmaAttributeDroneCapacity,
@@ -66,14 +66,14 @@ var attributeCategoriesMap = map[attributeCategory][]int32{
 		model.EveDogmaAttributeStructureKineticDamageResistance,
 		model.EveDogmaAttributeStructureExplosiveDamageResistance,
 	},
-	attributeCategoryArmor: {
+	attributeGroupArmor: {
 		model.EveDogmaAttributeArmorHitpoints,
 		model.EveDogmaAttributeArmorEMDamageResistance,
 		model.EveDogmaAttributeArmorThermalDamageResistance,
 		model.EveDogmaAttributeArmorKineticDamageResistance,
 		model.EveDogmaAttributeArmorExplosiveDamageResistance,
 	},
-	attributeCategoryShield: {
+	attributeGroupShield: {
 		model.EveDogmaAttributeShieldCapacity,
 		model.EveDogmaAttributeShieldRechargeTime,
 		model.EveDogmaAttributeShieldEMDamageResistance,
@@ -81,7 +81,7 @@ var attributeCategoriesMap = map[attributeCategory][]int32{
 		model.EveDogmaAttributeShieldKineticDamageResistance,
 		model.EveDogmaAttributeShieldExplosiveDamageResistance,
 	},
-	attributeCategoryElectronicResistances: {
+	attributeGroupElectronicResistances: {
 		model.EveDogmaAttributeCargoScanResistance,
 		model.EveDogmaAttributeCapacitorWarfareResistance,
 		model.EveDogmaAttributeSensorWarfareResistance,
@@ -94,11 +94,11 @@ var attributeCategoriesMap = map[attributeCategory][]int32{
 		model.EveDogmaAttributeCapacitorWarfareResistanceBonus,
 		model.EveDogmaAttributeStasisWebifierResistanceBonus,
 	},
-	attributeCategoryCapacitor: {
+	attributeGroupCapacitor: {
 		model.EveDogmaAttributeCapacitorCapacity,
 		model.EveDogmaAttributeCapacitorRechargeTime,
 	},
-	attributeCategoryTargeting: {
+	attributeGroupTargeting: {
 		model.EveDogmaAttributeMaximumTargetingRange,
 		model.EveDogmaAttributeMaximumLockedTargets,
 		model.EveDogmaAttributeSignatureRadius,
@@ -108,23 +108,36 @@ var attributeCategoriesMap = map[attributeCategory][]int32{
 		model.EveDogmaAttributeMagnetometricSensorStrength,
 		model.EveDogmaAttributeGravimetricSensorStrength,
 	},
-	attributeCategoryPropulsion: {
+	attributeGroupPropulsion: {
 		model.EveDogmaAttributeMaxVelocity,
 		model.EveDogmaAttributeShipWarpSpeed,
 	},
-	attributeCategoryJumpDrive: {
+	attributeGroupJumpDrive: {
 		model.EveDogmaAttributeJumpDriveCapacitorNeed,
 		model.EveDogmaAttributeMaximumJumpRange,
 		model.EveDogmaAttributeJumpDriveFuelNeed,
 		model.EveDogmaAttributeJumpDriveConsumptionAmount,
 		model.EveDogmaAttributeFuelBayCapacity,
 	},
-	attributeCategoryFighter: {
+	attributeGroupFighter: {
 		model.EveDogmaAttributeFighterHangarCapacity,
 		model.EveDogmaAttributeFighterSquadronLaunchTubes,
 		model.EveDogmaAttributeLightFighterSquadronLimit,
 		model.EveDogmaAttributeSupportFighterSquadronLimit,
 		model.EveDogmaAttributeHeavyFighterSquadronLimit,
+	},
+	attributeGroupFitting: {
+		model.EveDogmaAttributeCPUOutput,
+		model.EveDogmaAttributeCPUusage,
+		model.EveDogmaAttributePowergridOutput,
+		model.EveDogmaAttributeCalibration,
+		model.EveDogmaAttributeRigSlots,
+		model.EveDogmaAttributeLauncherHardpoints,
+		model.EveDogmaAttributeTurretHardpoints,
+		model.EveDogmaAttributeHighSlots,
+		model.EveDogmaAttributeMediumSlots,
+		model.EveDogmaAttributeLowSlots,
+		model.EveDogmaAttributeRigSlots,
 	},
 }
 
@@ -134,10 +147,11 @@ var iconPatches = map[int32]int32{
 }
 
 type infoWindow struct {
+	attributes  map[int32]*model.EveDogmaAttributeForType
 	content     fyne.CanvasObject
 	characterID int32
-	ui          *ui
 	et          *model.EveType
+	ui          *ui
 	window      fyne.Window
 }
 
@@ -154,11 +168,25 @@ func (u *ui) showTypeWindow(typeID int32) {
 }
 
 func (u *ui) newInfoWindow(typeID int32) (*infoWindow, error) {
-	et, err := u.sv.EveUniverse.GetEveType(context.Background(), typeID)
+	ctx := context.Background()
+	et, err := u.sv.EveUniverse.GetEveType(ctx, typeID)
 	if err != nil {
 		return nil, err
 	}
-	a := &infoWindow{ui: u, et: et, characterID: u.currentCharID()}
+	oo, err := u.sv.EveUniverse.ListEveTypeDogmaAttributesForType(ctx, typeID)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[int32]*model.EveDogmaAttributeForType)
+	for _, o := range oo {
+		m[o.DogmaAttribute.ID] = o
+	}
+	a := &infoWindow{
+		attributes:  m,
+		characterID: u.currentCharID(),
+		et:          et,
+		ui:          u,
+	}
 	a.content = a.makeContent()
 	return a, nil
 }
@@ -169,16 +197,20 @@ func (a *infoWindow) makeTitle(suffix string) string {
 
 func (a *infoWindow) makeContent() fyne.CanvasObject {
 	top := a.makeTop()
-	description := widget.NewLabel(a.et.DescriptionPlain())
-	description.Wrapping = fyne.TextWrapWord
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Description", container.NewVScroll(description)),
+		container.NewTabItem("Description", a.makeDescriptionTab()),
 		container.NewTabItem("Attributes", a.makeAttributesTab()),
-		container.NewTabItem("Fittings", widget.NewLabel("PLACEHOLDER")),
+		container.NewTabItem("Fittings", a.makeFittingsTab()),
 		container.NewTabItem("Requirements", a.makeRequirementsTab()),
 	)
 	c := container.NewBorder(top, nil, nil, nil, tabs)
 	return c
+}
+
+func (a *infoWindow) makeDescriptionTab() fyne.CanvasObject {
+	description := widget.NewLabel(a.et.DescriptionPlain())
+	description.Wrapping = fyne.TextWrapWord
+	return container.NewVScroll(description)
 }
 
 func (a *infoWindow) makeTop() fyne.CanvasObject {
@@ -268,25 +300,17 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 func (a *infoWindow) prepareData() ([]attributesRow, error) {
 	ctx := context.Background()
 	data := make([]attributesRow, 0)
-	oo, err := a.ui.sv.EveUniverse.ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
-	if err != nil {
-		return nil, err
-	}
-	m := make(map[int32]*model.EveDogmaAttributeForType)
-	for _, o := range oo {
-		m[o.DogmaAttribute.ID] = o
-	}
 
-	droneCapacity, ok := m[model.EveDogmaAttributeDroneCapacity]
+	droneCapacity, ok := a.attributes[model.EveDogmaAttributeDroneCapacity]
 	hasDrones := ok && droneCapacity.Value > 0
 
-	jumpDrive, ok := m[model.EveDogmaAttributeOnboardJumpDrive]
+	jumpDrive, ok := a.attributes[model.EveDogmaAttributeOnboardJumpDrive]
 	hasJumpDrive := ok && jumpDrive.Value == 1.0
 
-	for _, ac := range attributeCategories {
+	for _, ag := range attributeGroups {
 		hasData := false
-		for _, da := range attributeCategoriesMap[ac] {
-			_, ok := m[da]
+		for _, da := range attributeGroupsMap[ag] {
+			_, ok := a.attributes[da]
 			if ok {
 				hasData = true
 				break
@@ -295,14 +319,14 @@ func (a *infoWindow) prepareData() ([]attributesRow, error) {
 		if !hasData {
 			continue
 		}
-		data = append(data, attributesRow{label: ac.DisplayName(), isTitle: true})
-		for _, da := range attributeCategoriesMap[ac] {
-			o, ok := m[da]
+		data = append(data, attributesRow{label: ag.DisplayName(), isTitle: true})
+		for _, da := range attributeGroupsMap[ag] {
+			o, ok := a.attributes[da]
 			if !ok {
 				continue
 			}
 			value := o.Value
-			if ac == attributeCategoryElectronicResistances && value == 0 {
+			if ag == attributeGroupElectronicResistances && value == 0 {
 				continue
 			}
 			switch da {
@@ -317,7 +341,7 @@ func (a *infoWindow) prepareData() ([]attributesRow, error) {
 					continue
 				}
 			case model.EveDogmaAttributeShipWarpSpeed:
-				x := m[model.EveDogmaAttributeWarpSpeedMultiplier]
+				x := a.attributes[model.EveDogmaAttributeWarpSpeedMultiplier]
 				value = value * x.Value
 			case model.EveDogmaAttributeSupportFighterSquadronLimit:
 				if value == 0 {
@@ -341,63 +365,52 @@ func (a *infoWindow) prepareData() ([]attributesRow, error) {
 	return data, nil
 }
 
-// formatAttributeValue returns the formatted value of a dogma attribute.
-func (a *infoWindow) formatAttributeValue(ctx context.Context, value float32, unit int32) string {
-	defaultFormatter := func(v float32) string {
-		return humanize.Commaf(float64(v))
-	}
-	now := time.Now()
-	switch unit {
-	case model.EveUnitAbsolutePercent:
-		return fmt.Sprintf("%.0f%%", value*100)
-	case model.EveUnitAcceleration:
-		return fmt.Sprintf("%s m/sec", defaultFormatter(value))
-	case model.EveUnitAttributePoints:
-		return fmt.Sprintf("%s points", defaultFormatter(value))
-	case model.EveUnitCapacitorUnits:
-		return fmt.Sprintf("%.1f GJ", value)
-	case model.EveUnitDroneBandwidth:
-		return fmt.Sprintf("%s Mbit/s", defaultFormatter(value))
-	case model.EveUnitHitpoints:
-		return fmt.Sprintf("%s HP", defaultFormatter(value))
-	case model.EveUnitInverseAbsolutePercent:
-		return fmt.Sprintf("%.0f%%", (1-value)*100)
-	case model.EveUnitLength:
-		return fmt.Sprintf("%s m", defaultFormatter(value))
-	case model.EveUnitLightYear:
-		return fmt.Sprintf("%.1f LY", value)
-	case model.EveUnitMass:
-		return fmt.Sprintf("%s kg", defaultFormatter(value))
-	case model.EveUnitMillimeters:
-		return fmt.Sprintf("%s mm", defaultFormatter(value))
-	case model.EveUnitMilliseconds:
-		return humanize.RelTime(now, now.Add(time.Duration(value)*time.Millisecond), "", "")
-	case model.EveUnitMultiplier:
-		return fmt.Sprintf("%.3f x", value)
-	case model.EveUnitPercentage:
-		return fmt.Sprintf("%.0f%%", value*100)
-	case model.EveUnitVolume:
-		return fmt.Sprintf("%s m3", defaultFormatter(value))
-	case model.EveUnitWarpSpeed:
-		return fmt.Sprintf("%s AU/s", defaultFormatter(value))
-	case model.EveUnitTypeID:
-		et, err := a.ui.sv.EveUniverse.GetEveType(ctx, int32(value))
-		if err != nil {
-			go func() {
-				_, err := a.ui.sv.EveUniverse.GetOrCreateEveTypeESI(ctx, int32(value))
-				if err != nil {
-					slog.Error("Failed to fetch type from ESI", "typeID", value, "err", err)
-				}
-			}()
-			return "?"
+func (a *infoWindow) makeFittingsTab() fyne.CanvasObject {
+	ctx := context.Background()
+	data := make([]attributesRow, 0)
+	for _, da := range attributeGroupsMap[attributeGroupFitting] {
+		o, ok := a.attributes[da]
+		if !ok {
+			continue
 		}
-		return et.Name
-	case model.EveUnitUnits:
-		return fmt.Sprintf("%s units", defaultFormatter(value))
-	case model.EveUnitNone:
-		return defaultFormatter(value)
+		iconID := o.DogmaAttribute.IconID
+		r, _ := icons.GetResource(iconID)
+		data = append(data, attributesRow{
+			icon:  r,
+			label: o.DogmaAttribute.DisplayName,
+			value: a.formatAttributeValue(ctx, o.Value, o.DogmaAttribute.UnitID),
+		})
 	}
-	return fmt.Sprintf("%s ???", defaultFormatter(value))
+
+	list := widget.NewList(
+		func() int {
+			return len(data)
+		},
+		func() fyne.CanvasObject {
+			return container.NewHBox(
+				widget.NewIcon(resourceCharacterplaceholder32Jpeg),
+				widget.NewLabel("Placeholder"),
+				layout.NewSpacer(),
+				widget.NewLabel("999.999 m3"))
+		},
+		func(lii widget.ListItemID, co fyne.CanvasObject) {
+			r := data[lii]
+			row := co.(*fyne.Container)
+			icon := row.Objects[0].(*widget.Icon)
+			label := row.Objects[1].(*widget.Label)
+			value := row.Objects[3].(*widget.Label)
+			label.TextStyle.Bold = false
+			label.Importance = widget.MediumImportance
+			label.Text = r.label
+			label.Refresh()
+			icon.SetResource(r.icon)
+			value.SetText(r.value)
+		},
+	)
+	list.OnSelected = func(id widget.ListItemID) {
+		list.UnselectAll()
+	}
+	return list
 }
 
 func (a *infoWindow) makeRequirementsTab() fyne.CanvasObject {
@@ -445,4 +458,67 @@ func (a *infoWindow) makeRequirementsTab() fyne.CanvasObject {
 		l.UnselectAll()
 	}
 	return l
+}
+
+// formatAttributeValue returns the formatted value of a dogma attribute.
+func (a *infoWindow) formatAttributeValue(ctx context.Context, value float32, unit int32) string {
+	defaultFormatter := func(v float32) string {
+		return humanize.Commaf(float64(v))
+	}
+	now := time.Now()
+	switch unit {
+	case model.EveUnitAbsolutePercent:
+		return fmt.Sprintf("%.0f%%", value*100)
+	case model.EveUnitAcceleration:
+		return fmt.Sprintf("%s m/sec", defaultFormatter(value))
+	case model.EveUnitAttributePoints:
+		return fmt.Sprintf("%s points", defaultFormatter(value))
+	case model.EveUnitCapacitorUnits:
+		return fmt.Sprintf("%.1f GJ", value)
+	case model.EveUnitDroneBandwidth:
+		return fmt.Sprintf("%s Mbit/s", defaultFormatter(value))
+	case model.EveUnitHitpoints:
+		return fmt.Sprintf("%s HP", defaultFormatter(value))
+	case model.EveUnitInverseAbsolutePercent:
+		return fmt.Sprintf("%.0f%%", (1-value)*100)
+	case model.EveUnitLength:
+		return fmt.Sprintf("%s m", defaultFormatter(value))
+	case model.EveUnitLightYear:
+		return fmt.Sprintf("%.1f LY", value)
+	case model.EveUnitMass:
+		return fmt.Sprintf("%s kg", defaultFormatter(value))
+	case model.EveUnitMegaWatts:
+		return fmt.Sprintf("%s MW", defaultFormatter(value))
+	case model.EveUnitMillimeters:
+		return fmt.Sprintf("%s mm", defaultFormatter(value))
+	case model.EveUnitMilliseconds:
+		return humanize.RelTime(now, now.Add(time.Duration(value)*time.Millisecond), "", "")
+	case model.EveUnitMultiplier:
+		return fmt.Sprintf("%.3f x", value)
+	case model.EveUnitPercentage:
+		return fmt.Sprintf("%.0f%%", value*100)
+	case model.EveUnitTeraflops:
+		return fmt.Sprintf("%s tf", defaultFormatter(value))
+	case model.EveUnitVolume:
+		return fmt.Sprintf("%s m3", defaultFormatter(value))
+	case model.EveUnitWarpSpeed:
+		return fmt.Sprintf("%s AU/s", defaultFormatter(value))
+	case model.EveUnitTypeID:
+		et, err := a.ui.sv.EveUniverse.GetEveType(ctx, int32(value))
+		if err != nil {
+			go func() {
+				_, err := a.ui.sv.EveUniverse.GetOrCreateEveTypeESI(ctx, int32(value))
+				if err != nil {
+					slog.Error("Failed to fetch type from ESI", "typeID", value, "err", err)
+				}
+			}()
+			return "?"
+		}
+		return et.Name
+	case model.EveUnitUnits:
+		return fmt.Sprintf("%s units", defaultFormatter(value))
+	case model.EveUnitNone, model.EveUnitHardpoints, model.EveUnitFittingSlots:
+		return defaultFormatter(value)
+	}
+	return fmt.Sprintf("%s ???", defaultFormatter(value))
 }

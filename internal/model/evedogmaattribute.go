@@ -1,6 +1,17 @@
 package model
 
 const (
+	EveDogmaAttributeCalibration                         = 1132
+	EveDogmaAttributeRigSlots                            = 1154
+	EveDogmaAttributePowergridOutput                     = 11
+	EveDogmaAttributeLowSlots                            = 12
+	EveDogmaAttributeMediumSlots                         = 13
+	EveDogmaAttributeHighSlots                           = 14
+	EveDogmaAttributePowergridUsage                      = 30
+	EveDogmaAttributeCPUOutput                           = 48
+	EveDogmaAttributeCPUusage                            = 50
+	EveDogmaAttributeLauncherHardpoints                  = 101
+	EveDogmaAttributeTurretHardpoints                    = 102
 	EveDogmaAttributeCargoScanResistance                 = 188
 	EveDogmaAttributeSensorWarfareResistance             = 2112
 	EveDogmaAttributeTargetPainterResistance             = 2114
