@@ -1,5 +1,7 @@
 package model
 
+import "github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
+
 type CharacterShipAbility struct {
 	Type   EntityShort[int32]
 	Group  EntityShort[int32]
@@ -28,4 +30,16 @@ type ListCharacterSkillProgress struct {
 	TypeID            int32
 	TypeDescription   string
 	TypeName          string
+}
+
+type CharacterShipSkill struct {
+	ActiveSkillLevel  mytypes.OptionalInt
+	ID                int64
+	CharacterID       int32
+	Rank              uint
+	ShipTypeID        int32
+	SkillTypeID       int32
+	SkillName         string
+	SkillLevel        uint
+	TrainedSkillLevel mytypes.OptionalInt
 }

@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
@@ -84,7 +84,7 @@ func (a *skillqueueArea) makeSkillqueue() *widget.List {
 				d = humanizedNullDuration(q.Duration(), "?")
 			}
 			name.Importance = i
-			name.Text = q.Name()
+			name.Text = skillDisplayName(q.SkillName, q.FinishedLevel)
 			name.Refresh()
 			duration.Text = d
 			duration.Importance = i
@@ -114,7 +114,7 @@ func (a *skillqueueArea) makeSkillqueue() *widget.List {
 			value string
 			wrap  bool
 		}{
-			{"Name", q.Name(), false},
+			{"Name", skillDisplayName(q.SkillName, q.FinishedLevel), false},
 			{"Group", q.GroupName, false},
 			{"Description", q.SkillDescription, true},
 			{"Start date", timeFormattedOrFallback(q.StartDate, myDateTime, "?"), false},
@@ -173,8 +173,8 @@ func (a *skillqueueArea) refresh() {
 	a.total.Refresh()
 }
 
-func (a *skillqueueArea) updateItems() (types.NullDuration, sql.NullFloat64, error) {
-	var remaining types.NullDuration
+func (a *skillqueueArea) updateItems() (mytypes.OptionalDuration, sql.NullFloat64, error) {
+	var remaining mytypes.OptionalDuration
 	var completion sql.NullFloat64
 	ctx := context.Background()
 	if !a.ui.hasCharacter() {
@@ -203,7 +203,7 @@ func (a *skillqueueArea) updateItems() (types.NullDuration, sql.NullFloat64, err
 	return remaining, completion, nil
 }
 
-func (a *skillqueueArea) makeTopText(total types.NullDuration) (string, widget.Importance, error) {
+func (a *skillqueueArea) makeTopText(total mytypes.OptionalDuration) (string, widget.Importance, error) {
 	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(
 		context.Background(), a.ui.currentCharID(), model.CharacterSectionSkillqueue)
 	if err != nil {

@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
 	"github.com/dustin/go-humanize"
 )
 
@@ -56,7 +56,7 @@ func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
 // 	return ihumanize.Number(float64(v), 1)
 // }
 
-func humanizedNullDuration(d types.NullDuration, fallback string) string {
+func humanizedNullDuration(d mytypes.OptionalDuration, fallback string) string {
 	if !d.Valid {
 		return fallback
 	}
@@ -193,4 +193,24 @@ func treeNodeFromDataItem[T any](di binding.DataItem) (T, error) {
 		return zero, err
 	}
 	return n, nil
+}
+
+func skillDisplayName[N int | int32 | int64 | uint | uint32 | uint64](name string, level N) string {
+	return fmt.Sprintf("%s %s", name, toRomanLetter(level))
+}
+
+// Returns a number as roman letters.
+func toRomanLetter[N int | int32 | int64 | uint | uint32 | uint64](v N) string {
+	m := map[int]string{
+		1: "I",
+		2: "II",
+		3: "III",
+		4: "IV",
+		5: "V",
+	}
+	r, ok := m[int(v)]
+	if !ok {
+		panic(fmt.Sprintf("invalid value: %d", v))
+	}
+	return r
 }

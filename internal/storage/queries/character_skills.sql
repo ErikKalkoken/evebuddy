@@ -30,6 +30,22 @@ JOIN eve_groups eg ON eg.ID = et.eve_group_id
 WHERE et.name LIKE ?
 ORDER BY et.name;
 
+-- name: ListCharacterShipSkills :many
+SELECT
+    rank,
+    ship_type_id,
+    skill_type_id,
+    skt.name as skill_name,
+    skill_level,
+    cs.active_skill_level,
+    cs.trained_skill_level
+FROM eve_ship_skills ess
+JOIN eve_types as sht ON sht.id = ess.ship_type_id
+JOIN eve_types as skt ON skt.id = ess.skill_type_id
+LEFT JOIN character_skills cs ON cs.eve_type_id = skill_type_id AND cs.character_id = ?
+WHERE ship_type_id = ?
+ORDER BY RANK;
+
 -- name: ListCharacterSkillGroupsProgress :many
 SELECT
     eve_groups.id as eve_group_id,

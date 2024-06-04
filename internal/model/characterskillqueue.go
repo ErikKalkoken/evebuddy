@@ -1,10 +1,9 @@
 package model
 
 import (
-	"fmt"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
 )
 
 type CharacterSkillqueueItem struct {
@@ -20,11 +19,6 @@ type CharacterSkillqueueItem struct {
 	SkillName        string
 	SkillDescription string
 	TrainingStartSP  int
-}
-
-// Name returns the name of a skillqueue item.
-func (qi CharacterSkillqueueItem) Name() string {
-	return fmt.Sprintf("%s %s", qi.SkillName, romanLetter(qi.FinishedLevel))
 }
 
 func (qi CharacterSkillqueueItem) IsActive() bool {
@@ -58,8 +52,8 @@ func (qi CharacterSkillqueueItem) CompletionP() float64 {
 	return 1 - (c * base)
 }
 
-func (qi CharacterSkillqueueItem) Duration() types.NullDuration {
-	var d types.NullDuration
+func (qi CharacterSkillqueueItem) Duration() mytypes.OptionalDuration {
+	var d mytypes.OptionalDuration
 	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
 		return d
 	}
@@ -68,8 +62,8 @@ func (qi CharacterSkillqueueItem) Duration() types.NullDuration {
 	return d
 }
 
-func (qi CharacterSkillqueueItem) Remaining() types.NullDuration {
-	var d types.NullDuration
+func (qi CharacterSkillqueueItem) Remaining() mytypes.OptionalDuration {
+	var d mytypes.OptionalDuration
 	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
 		return d
 	}
@@ -77,19 +71,4 @@ func (qi CharacterSkillqueueItem) Remaining() types.NullDuration {
 	remainingP := 1 - qi.CompletionP()
 	d.Duration = time.Duration(float64(qi.Duration().Duration) * remainingP)
 	return d
-}
-
-func romanLetter(v int) string {
-	m := map[int]string{
-		1: "I",
-		2: "II",
-		3: "III",
-		4: "IV",
-		5: "V",
-	}
-	r, ok := m[v]
-	if !ok {
-		panic(fmt.Sprintf("invalid value: %d", v))
-	}
-	return r
 }

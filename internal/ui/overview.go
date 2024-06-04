@@ -14,7 +14,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/helper/types"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
 )
 
 type overviewCharacter struct {
@@ -32,7 +32,7 @@ type overviewCharacter struct {
 	ship           sql.NullString
 	security       float64
 	totalSP        sql.NullInt64
-	training       types.NullDuration
+	training       mytypes.OptionalDuration
 	unallocatedSP  sql.NullInt64
 	unreadCount    sql.NullInt64
 	walletBalance  sql.NullFloat64

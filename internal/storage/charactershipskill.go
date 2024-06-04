@@ -28,3 +28,38 @@ func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID 
 	}
 	return oo, nil
 }
+
+func (st *Storage) ListCharacterShipSkills(ctx context.Context, characterID, shipTypeID int32) ([]*model.CharacterShipSkill, error) {
+	arg := queries.ListCharacterShipSkillsParams{
+		CharacterID: int64(characterID),
+		ShipTypeID:  int64(shipTypeID),
+	}
+	rows, err := st.q.ListCharacterShipSkills(ctx, arg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list character ship skills for character %d and type %d: %w", characterID, shipTypeID, err)
+	}
+	oo := make([]*model.CharacterShipSkill, len(rows))
+	for i, r := range rows {
+		oo[i] = characterShiSkillFromDBModel(r)
+	}
+	return oo, nil
+}
+
+func characterShiSkillFromDBModel(r queries.ListCharacterShipSkillsRow) *model.CharacterShipSkill {
+	css := &model.CharacterShipSkill{
+		Rank:        uint(r.Rank),
+		ShipTypeID:  int32(r.ShipTypeID),
+		SkillTypeID: int32(r.SkillTypeID),
+		SkillName:   r.SkillName,
+		SkillLevel:  uint(r.SkillLevel),
+	}
+	if r.ActiveSkillLevel.Valid {
+		css.ActiveSkillLevel.Int = int(r.ActiveSkillLevel.Int64)
+		css.ActiveSkillLevel.Valid = true
+	}
+	if r.TrainedSkillLevel.Valid {
+		css.TrainedSkillLevel.Int = int(r.TrainedSkillLevel.Int64)
+		css.TrainedSkillLevel.Valid = true
+	}
+	return css
+}

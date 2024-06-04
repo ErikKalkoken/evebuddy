@@ -5,5 +5,6 @@ type EveShipSkill struct {
 	Rank        uint
 	ShipTypeID  int32
 	SkillTypeID int32
+	SkillName   string
 	SkillLevel  uint
 }

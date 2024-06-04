@@ -22,7 +22,7 @@ func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int32, rank u
 		}
 		return nil, fmt.Errorf("failed to get ShipSkill for %v: %w", arg, err)
 	}
-	return eveShipSkillFromDBModel(row.Rank, row.ShipTypeID, row.SkillLevel, row.SkillTypeID), nil
+	return eveShipSkillFromDBModel(row.Rank, row.ShipTypeID, row.SkillTypeID, row.SkillName, row.SkillLevel), nil
 }
 
 func (st *Storage) ListEveShipSkills(ctx context.Context, shipTypeID int32) ([]*model.EveShipSkill, error) {
@@ -32,7 +32,7 @@ func (st *Storage) ListEveShipSkills(ctx context.Context, shipTypeID int32) ([]*
 	}
 	oo := make([]*model.EveShipSkill, len(rows))
 	for i, row := range rows {
-		oo[i] = eveShipSkillFromDBModel(row.Rank, row.ShipTypeID, row.SkillLevel, row.SkillTypeID)
+		oo[i] = eveShipSkillFromDBModel(row.Rank, row.ShipTypeID, row.SkillTypeID, row.SkillName, row.SkillLevel)
 	}
 	return oo, nil
 }
@@ -108,11 +108,12 @@ func (st *Storage) CreateEveShipSkill(ctx context.Context, arg CreateShipSkillPa
 	return nil
 }
 
-func eveShipSkillFromDBModel(rank, shipTypeID, skillLevel, skillTypeID int64) *model.EveShipSkill {
+func eveShipSkillFromDBModel(rank, shipTypeID, skillTypeID int64, skillName string, skillLevel int64) *model.EveShipSkill {
 	return &model.EveShipSkill{
 		Rank:        uint(rank),
 		ShipTypeID:  int32(shipTypeID),
 		SkillTypeID: int32(skillTypeID),
+		SkillName:   skillName,
 		SkillLevel:  uint(skillLevel),
 	}
 }

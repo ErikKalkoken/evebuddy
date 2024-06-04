@@ -122,10 +122,11 @@ var iconPatches = map[int32]int32{
 }
 
 type infoWindow struct {
-	content fyne.CanvasObject
-	ui      *ui
-	et      *model.EveType
-	window  fyne.Window
+	content     fyne.CanvasObject
+	characterID int32
+	ui          *ui
+	et          *model.EveType
+	window      fyne.Window
 }
 
 func (u *ui) showTypeWindow(typeID int32) {
@@ -145,7 +146,7 @@ func (u *ui) newInfoWindow(typeID int32) (*infoWindow, error) {
 	if err != nil {
 		return nil, err
 	}
-	a := &infoWindow{ui: u, et: et}
+	a := &infoWindow{ui: u, et: et, characterID: u.currentCharID()}
 	a.content = a.makeContent()
 	return a, nil
 }
@@ -164,7 +165,7 @@ func (a *infoWindow) makeContent() fyne.CanvasObject {
 		container.NewTabItem("Description", container.NewVScroll(description)),
 		container.NewTabItem("Attributes", a.makeAttributesTab()),
 		container.NewTabItem("Fittings", widget.NewLabel("PLACEHOLDER")),
-		container.NewTabItem("Requirements", widget.NewLabel("PLACEHOLDER")),
+		container.NewTabItem("Requirements", a.makeRequirementsTab()),
 	)
 	tabs.SelectIndex(2)
 
@@ -202,7 +203,7 @@ func (a *infoWindow) makeTop() fyne.CanvasObject {
 	return container.NewHBox(image, b)
 }
 
-type row struct {
+type attributesRow struct {
 	icon    fyne.Resource
 	label   string
 	value   string
@@ -256,9 +257,9 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 	return list
 }
 
-func (a *infoWindow) prepareData() ([]row, error) {
+func (a *infoWindow) prepareData() ([]attributesRow, error) {
 	ctx := context.Background()
-	data := make([]row, 0)
+	data := make([]attributesRow, 0)
 	oo, err := a.ui.sv.EveUniverse.ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
 	if err != nil {
 		return nil, err
@@ -286,7 +287,7 @@ func (a *infoWindow) prepareData() ([]row, error) {
 		if !hasData {
 			continue
 		}
-		data = append(data, row{label: ac.DisplayName(), isTitle: true})
+		data = append(data, attributesRow{label: ac.DisplayName(), isTitle: true})
 		for _, da := range attributeCategoriesMap[ac] {
 			o, ok := m[da]
 			if !ok {
@@ -314,7 +315,7 @@ func (a *infoWindow) prepareData() ([]row, error) {
 				iconID = newIconID
 			}
 			r, _ := icons.GetResource(iconID)
-			data = append(data, row{
+			data = append(data, attributesRow{
 				icon:  r,
 				label: o.DogmaAttribute.DisplayName,
 				value: a.formatAttributeValue(ctx, value, o.DogmaAttribute.UnitID),
@@ -380,4 +381,51 @@ func (a *infoWindow) formatAttributeValue(ctx context.Context, value float32, un
 		return defaultFormatter(value)
 	}
 	return fmt.Sprintf("%s ???", defaultFormatter(value))
+}
+
+func (a *infoWindow) makeRequirementsTab() fyne.CanvasObject {
+	ctx := context.Background()
+	skills, err := a.ui.sv.Characters.ListCharacterShipSkills(ctx, a.characterID, a.et.ID)
+	if err != nil {
+		panic(err)
+	}
+	l := widget.NewList(
+		func() int {
+			return len(skills)
+		},
+		func() fyne.CanvasObject {
+			return container.NewHBox(
+				widget.NewLabel("Placeholder"),
+				layout.NewSpacer(),
+				widget.NewLabel("Check"))
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			r := skills[id]
+			row := co.(*fyne.Container)
+			skill := row.Objects[0].(*widget.Label)
+			check := row.Objects[2].(*widget.Label)
+			skill.SetText(skillDisplayName(r.SkillName, r.SkillLevel))
+			var t string
+			var i widget.Importance
+			if r.ActiveSkillLevel.Valid && uint(r.ActiveSkillLevel.Int) >= r.SkillLevel {
+				t = "OK"
+				i = widget.SuccessImportance
+			} else if !r.ActiveSkillLevel.Valid {
+				t = "Skill not injected"
+				i = widget.DangerImportance
+			} else {
+				t = fmt.Sprintf("Current level %s", toRomanLetter(r.ActiveSkillLevel.Int))
+				i = widget.WarningImportance
+			}
+			check.Text = t
+			check.Importance = i
+			check.Refresh()
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		r := skills[id]
+		a.ui.showTypeWindow(r.SkillTypeID)
+		l.UnselectAll()
+	}
+	return l
 }
