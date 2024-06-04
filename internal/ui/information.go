@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
@@ -151,6 +152,7 @@ type infoWindow struct {
 	content     fyne.CanvasObject
 	characterID int32
 	et          *model.EveType
+	skills      []*model.CharacterShipSkill
 	ui          *ui
 	window      fyne.Window
 }
@@ -181,10 +183,16 @@ func (u *ui) newInfoWindow(typeID int32) (*infoWindow, error) {
 	for _, o := range oo {
 		m[o.DogmaAttribute.ID] = o
 	}
+	characterID := u.currentCharID()
+	skills, err := u.sv.Characters.ListCharacterShipSkills(ctx, characterID, et.ID)
+	if err != nil {
+		return nil, err
+	}
 	a := &infoWindow{
 		attributes:  m,
-		characterID: u.currentCharID(),
+		characterID: characterID,
 		et:          et,
+		skills:      skills,
 		ui:          u,
 	}
 	a.content = a.makeContent()
@@ -205,12 +213,6 @@ func (a *infoWindow) makeContent() fyne.CanvasObject {
 	)
 	c := container.NewBorder(top, nil, nil, nil, tabs)
 	return c
-}
-
-func (a *infoWindow) makeDescriptionTab() fyne.CanvasObject {
-	description := widget.NewLabel(a.et.DescriptionPlain())
-	description.Wrapping = fyne.TextWrapWord
-	return container.NewVScroll(description)
 }
 
 func (a *infoWindow) makeTop() fyne.CanvasObject {
@@ -240,7 +242,29 @@ func (a *infoWindow) makeTop() fyne.CanvasObject {
 	} else {
 		b.Disable()
 	}
-	return container.NewHBox(image, b)
+	canFly := true
+	for _, o := range a.skills {
+		if !o.ActiveSkillLevel.Valid || o.SkillLevel > uint(o.ActiveSkillLevel.Int) {
+			canFly = false
+			break
+		}
+	}
+	var icon *widget.Icon
+	if canFly {
+		icon = widget.NewIcon(theme.NewSuccessThemedResource(theme.ConfirmIcon()))
+	} else {
+		icon = widget.NewIcon(theme.NewErrorThemedResource(theme.CancelIcon()))
+	}
+	if len(a.skills) == 0 {
+		icon.Hide()
+	}
+	return container.NewHBox(image, b, icon)
+}
+
+func (a *infoWindow) makeDescriptionTab() fyne.CanvasObject {
+	description := widget.NewLabel(a.et.DescriptionPlain())
+	description.Wrapping = fyne.TextWrapWord
+	return container.NewVScroll(description)
 }
 
 type attributesRow struct {
@@ -414,14 +438,9 @@ func (a *infoWindow) makeFittingsTab() fyne.CanvasObject {
 }
 
 func (a *infoWindow) makeRequirementsTab() fyne.CanvasObject {
-	ctx := context.Background()
-	skills, err := a.ui.sv.Characters.ListCharacterShipSkills(ctx, a.characterID, a.et.ID)
-	if err != nil {
-		panic(err)
-	}
 	l := widget.NewList(
 		func() int {
-			return len(skills)
+			return len(a.skills)
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(
@@ -430,7 +449,7 @@ func (a *infoWindow) makeRequirementsTab() fyne.CanvasObject {
 				widget.NewLabel("Check"))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			r := skills[id]
+			r := a.skills[id]
 			row := co.(*fyne.Container)
 			skill := row.Objects[0].(*widget.Label)
 			check := row.Objects[2].(*widget.Label)
@@ -453,7 +472,7 @@ func (a *infoWindow) makeRequirementsTab() fyne.CanvasObject {
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
-		r := skills[id]
+		r := a.skills[id]
 		a.ui.showTypeWindow(r.SkillTypeID)
 		l.UnselectAll()
 	}
