@@ -3,11 +3,20 @@ package character
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
 )
+
+func (s *CharacterService) GetCharacterSkill(ctx context.Context, characterID, typeID int32) (*model.CharacterSkill, error) {
+	o, err := s.st.GetCharacterSkill(ctx, characterID, typeID)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrNotFound
+	}
+	return o, err
+}
 
 func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
 	if arg.Section != model.CharacterSectionSkills {

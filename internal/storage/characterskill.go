@@ -23,17 +23,17 @@ func (st *Storage) DeleteExcludedCharacterSkills(ctx context.Context, characterI
 	return nil
 }
 
-func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, eveTypeID int32) (*model.CharacterSkill, error) {
+func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typeID int32) (*model.CharacterSkill, error) {
 	arg := queries.GetCharacterSkillParams{
 		CharacterID: int64(characterID),
-		EveTypeID:   int64(eveTypeID),
+		EveTypeID:   int64(typeID),
 	}
 	row, err := st.q.GetCharacterSkill(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get CharacterSkill for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("failed to get skill %d for character %d: %w", typeID, characterID, err)
 	}
 	t2 := characterSkillFromDBModel(row.CharacterSkill, row.EveType, row.EveGroup, row.EveCategory)
 	return t2, nil

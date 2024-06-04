@@ -19,18 +19,18 @@ func (st *Storage) CreateCharacterImplant(ctx context.Context, arg CreateCharact
 	return createCharacterImplant(ctx, st.q, arg)
 }
 
-func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, eveTypeID int32) (*model.CharacterImplant, error) {
+func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, typeID int32) (*model.CharacterImplant, error) {
 	arg := queries.GetCharacterImplantParams{
 		CharacterID:      int64(characterID),
 		DogmaAttributeID: model.EveDogmaAttributeImplantSlot,
-		EveTypeID:        int64(eveTypeID),
+		EveTypeID:        int64(typeID),
 	}
 	row, err := st.q.GetCharacterImplant(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get CharacterSkill for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("failed to get implant %d for character %d: %w", typeID, characterID, err)
 	}
 	t2 := characterImplantFromDBModel(
 		row.CharacterImplant,

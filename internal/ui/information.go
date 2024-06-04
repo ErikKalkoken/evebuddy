@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
+	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/dustin/go-humanize"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -154,13 +156,29 @@ var iconPatches = map[int32]int32{
 	model.EveDogmaAttributeJumpDriveFuelNeed: icons.HeliumIsotopes,
 }
 
+type requiredSkill struct {
+	rank          int
+	name          string
+	typeID        int32
+	activeLevel   int
+	requiredLevel int
+	trainedLevel  int
+}
+
+type attributesRow struct {
+	icon    fyne.Resource
+	label   string
+	value   string
+	isTitle bool
+}
+
 type infoWindow struct {
 	attributesData []attributesRow
 	content        fyne.CanvasObject
 	characterID    int32
 	et             *model.EveType
 	fittingData    []attributesRow
-	skills         []*model.CharacterShipSkill
+	requiredSkills []requiredSkill
 	ui             *ui
 	window         fyne.Window
 }
@@ -168,7 +186,9 @@ type infoWindow struct {
 func (u *ui) showTypeWindow(typeID int32) {
 	iw, err := u.newInfoWindow(typeID)
 	if err != nil {
-		u.showErrorDialog("Failed to open info window", err)
+		t := "Failed to open info window"
+		slog.Error(t, "err", err)
+		u.showErrorDialog(t, err)
 		return
 	}
 	w := u.app.NewWindow(iw.makeTitle("Information"))
@@ -188,15 +208,15 @@ func (u *ui) newInfoWindow(typeID int32) (*infoWindow, error) {
 	if err != nil {
 		return nil, err
 	}
-	m := make(map[int32]*model.EveDogmaAttributeForType)
+	attributes := make(map[int32]*model.EveDogmaAttributeForType)
 	for _, o := range oo {
-		m[o.DogmaAttribute.ID] = o
+		attributes[o.DogmaAttribute.ID] = o
 	}
-	attributesData := calcAttributesData(ctx, u.sv, m)
-	fittingData := calcFittingData(ctx, u.sv, m)
+	attributesData := calcAttributesData(ctx, u.sv, attributes)
+	fittingData := calcFittingData(ctx, u.sv, attributes)
 
 	characterID := u.currentCharID()
-	skills, err := u.sv.Characters.ListCharacterShipSkills(ctx, characterID, et.ID)
+	skills, err := calcRequiredSkills(ctx, u.sv, characterID, attributes)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +225,7 @@ func (u *ui) newInfoWindow(typeID int32) (*infoWindow, error) {
 		characterID:    characterID,
 		et:             et,
 		fittingData:    fittingData,
-		skills:         skills,
+		requiredSkills: skills,
 		ui:             u,
 	}
 	a.content = a.makeContent()
@@ -296,6 +316,54 @@ func calcFittingData(ctx context.Context, sv *service.Service, attributes map[in
 	return data
 }
 
+func calcRequiredSkills(ctx context.Context, sv *service.Service, characterID int32, attributes map[int32]*model.EveDogmaAttributeForType) ([]requiredSkill, error) {
+	skills := make([]requiredSkill, 0)
+	skillAttributes := []struct {
+		id    int32
+		level int32
+	}{
+		{model.EveDogmaAttributePrimarySkillID, model.EveDogmaAttributePrimarySkillLevel},
+		{model.EveDogmaAttributeSecondarySkillID, model.EveDogmaAttributeSecondarySkillLevel},
+		{model.EveDogmaAttributeTertiarySkillID, model.EveDogmaAttributeTertiarySkillLevel},
+		{model.EveDogmaAttributeQuaternarySkillID, model.EveDogmaAttributeQuaternarySkillLevel},
+		{model.EveDogmaAttributeQuinarySkillID, model.EveDogmaAttributeQuinarySkillLevel},
+		{model.EveDogmaAttributeSenarySkillID, model.EveDogmaAttributeSenarySkillLevel},
+	}
+	for i, x := range skillAttributes {
+		daID, ok := attributes[x.id]
+		if !ok {
+			continue
+		}
+		typeID := int32(daID.Value)
+		daLevel, ok := attributes[x.level]
+		if !ok {
+			continue
+		}
+		requiredLevel := int(daLevel.Value)
+		et, err := sv.EveUniverse.GetEveType(ctx, typeID)
+		if err != nil {
+			return nil, err
+		}
+		skill := requiredSkill{
+			rank:          i + 1,
+			requiredLevel: requiredLevel,
+			name:          et.Name,
+			typeID:        typeID,
+		}
+		cs, err := sv.Characters.GetCharacterSkill(ctx, characterID, typeID)
+		if errors.Is(err, character.ErrNotFound) {
+			// do nothing
+		} else if err != nil {
+			return nil, err
+		} else {
+			skill.activeLevel = cs.ActiveSkillLevel
+			skill.trainedLevel = cs.TrainedSkillLevel
+		}
+		skills = append(skills, skill)
+	}
+	return skills, nil
+}
+
 func (a *infoWindow) makeTitle(suffix string) string {
 	return fmt.Sprintf("%s (%s): %s", a.et.Name, a.et.Group.Name, suffix)
 }
@@ -311,7 +379,7 @@ func (a *infoWindow) makeContent() fyne.CanvasObject {
 	if len(a.fittingData) > 0 {
 		tabs.Append(container.NewTabItem("Fittings", a.makeFittingsTab()))
 	}
-	if len(a.skills) > 0 {
+	if len(a.requiredSkills) > 0 {
 		tabs.Append(container.NewTabItem("Requirements", a.makeRequirementsTab()))
 	}
 	c := container.NewBorder(top, nil, nil, nil, tabs)
@@ -345,20 +413,20 @@ func (a *infoWindow) makeTop() fyne.CanvasObject {
 	} else {
 		b.Disable()
 	}
-	canFly := true
-	for _, o := range a.skills {
-		if !o.ActiveSkillLevel.Valid || o.SkillLevel > uint(o.ActiveSkillLevel.Int) {
-			canFly = false
+	hasRequiredSkills := true
+	for _, o := range a.requiredSkills {
+		if o.requiredLevel > o.activeLevel {
+			hasRequiredSkills = false
 			break
 		}
 	}
 	var icon *widget.Icon
-	if canFly {
+	if hasRequiredSkills {
 		icon = widget.NewIcon(theme.NewSuccessThemedResource(theme.ConfirmIcon()))
 	} else {
 		icon = widget.NewIcon(theme.NewErrorThemedResource(theme.CancelIcon()))
 	}
-	if len(a.skills) == 0 {
+	if len(a.requiredSkills) == 0 {
 		icon.Hide()
 	}
 	return container.NewHBox(image, b, icon)
@@ -368,13 +436,6 @@ func (a *infoWindow) makeDescriptionTab() fyne.CanvasObject {
 	description := widget.NewLabel(a.et.DescriptionPlain())
 	description.Wrapping = fyne.TextWrapWord
 	return container.NewVScroll(description)
-}
-
-type attributesRow struct {
-	icon    fyne.Resource
-	label   string
-	value   string
-	isTitle bool
 }
 
 func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
@@ -455,7 +516,7 @@ func (a *infoWindow) makeFittingsTab() fyne.CanvasObject {
 func (a *infoWindow) makeRequirementsTab() fyne.CanvasObject {
 	l := widget.NewList(
 		func() int {
-			return len(a.skills)
+			return len(a.requiredSkills)
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(
@@ -464,21 +525,22 @@ func (a *infoWindow) makeRequirementsTab() fyne.CanvasObject {
 				widget.NewLabel("Check"))
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			r := a.skills[id]
+			o := a.requiredSkills[id]
 			row := co.(*fyne.Container)
 			skill := row.Objects[0].(*widget.Label)
 			check := row.Objects[2].(*widget.Label)
-			skill.SetText(skillDisplayName(r.SkillName, r.SkillLevel))
+			skill.SetText(skillDisplayName(o.name, o.requiredLevel))
 			var t string
 			var i widget.Importance
-			if r.ActiveSkillLevel.Valid && uint(r.ActiveSkillLevel.Int) >= r.SkillLevel {
-				t = "OK"
-				i = widget.SuccessImportance
-			} else if !r.ActiveSkillLevel.Valid {
+			if o.activeLevel == 0 {
 				t = "Skill not injected"
 				i = widget.DangerImportance
+
+			} else if o.activeLevel >= o.requiredLevel {
+				t = "OK"
+				i = widget.SuccessImportance
 			} else {
-				t = fmt.Sprintf("Current level %s", toRomanLetter(r.ActiveSkillLevel.Int))
+				t = fmt.Sprintf("Current level %s", toRomanLetter(o.activeLevel))
 				i = widget.WarningImportance
 			}
 			check.Text = t
@@ -487,8 +549,8 @@ func (a *infoWindow) makeRequirementsTab() fyne.CanvasObject {
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
-		r := a.skills[id]
-		a.ui.showTypeWindow(r.SkillTypeID)
+		r := a.requiredSkills[id]
+		a.ui.showTypeWindow(r.typeID)
 		l.UnselectAll()
 	}
 	return l

@@ -29,7 +29,6 @@ func (s *CharacterService) GetCharacter(ctx context.Context, characterID int32) 
 		return nil, ErrNotFound
 	}
 	return o, err
-
 }
 
 func (s *CharacterService) GetAnyCharacter(ctx context.Context) (*model.Character, error) {
