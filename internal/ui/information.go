@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/dustin/go-humanize"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -148,20 +149,21 @@ var iconPatches = map[int32]int32{
 }
 
 type infoWindow struct {
-	attributes   map[int32]*model.EveDogmaAttributeForType
-	content      fyne.CanvasObject
-	characterID  int32
-	et           *model.EveType
-	fittingItems []int32
-	skills       []*model.CharacterShipSkill
-	ui           *ui
-	window       fyne.Window
+	attributesData []attributesRow
+	content        fyne.CanvasObject
+	characterID    int32
+	et             *model.EveType
+	fittingData    []attributesRow
+	skills         []*model.CharacterShipSkill
+	ui             *ui
+	window         fyne.Window
 }
 
 func (u *ui) showTypeWindow(typeID int32) {
 	iw, err := u.newInfoWindow(typeID)
 	if err != nil {
-		panic(err)
+		u.showErrorDialog("Failed to open info window", err)
+		return
 	}
 	w := u.app.NewWindow(iw.makeTitle("Information"))
 	w.SetContent(iw.content)
@@ -184,29 +186,108 @@ func (u *ui) newInfoWindow(typeID int32) (*infoWindow, error) {
 	for _, o := range oo {
 		m[o.DogmaAttribute.ID] = o
 	}
-	fittingItems := make([]int32, 0)
-	for _, da := range attributeGroupsMap[attributeGroupFitting] {
-		o, ok := m[da]
-		if !ok {
-			continue
-		}
-		fittingItems = append(fittingItems, o.DogmaAttribute.ID)
-	}
+	attributesData := calcAttributesData(ctx, u.sv, m)
+	fittingData := calcFittingData(ctx, u.sv, m)
+
 	characterID := u.currentCharID()
 	skills, err := u.sv.Characters.ListCharacterShipSkills(ctx, characterID, et.ID)
 	if err != nil {
 		return nil, err
 	}
 	a := &infoWindow{
-		attributes:   m,
-		characterID:  characterID,
-		et:           et,
-		fittingItems: fittingItems,
-		skills:       skills,
-		ui:           u,
+		attributesData: attributesData,
+		characterID:    characterID,
+		et:             et,
+		fittingData:    fittingData,
+		skills:         skills,
+		ui:             u,
 	}
 	a.content = a.makeContent()
 	return a, nil
+}
+
+func calcAttributesData(ctx context.Context, sv *service.Service, attributes map[int32]*model.EveDogmaAttributeForType) []attributesRow {
+	data := make([]attributesRow, 0)
+
+	droneCapacity, ok := attributes[model.EveDogmaAttributeDroneCapacity]
+	hasDrones := ok && droneCapacity.Value > 0
+
+	jumpDrive, ok := attributes[model.EveDogmaAttributeOnboardJumpDrive]
+	hasJumpDrive := ok && jumpDrive.Value == 1.0
+
+	for _, ag := range attributeGroups {
+		hasData := false
+		for _, da := range attributeGroupsMap[ag] {
+			_, ok := attributes[da]
+			if ok {
+				hasData = true
+				break
+			}
+		}
+		if !hasData {
+			continue
+		}
+		data = append(data, attributesRow{label: ag.DisplayName(), isTitle: true})
+		for _, da := range attributeGroupsMap[ag] {
+			o, ok := attributes[da]
+			if !ok {
+				continue
+			}
+			value := o.Value
+			if ag == attributeGroupElectronicResistances && value == 0 {
+				continue
+			}
+			switch da {
+			case model.EveDogmaAttributeDroneCapacity,
+				model.EveDogmaAttributeDroneBandwidth:
+				if !hasDrones {
+					continue
+				}
+			case model.EveDogmaAttributeMaximumJumpRange,
+				model.EveDogmaAttributeJumpDriveFuelNeed:
+				if !hasJumpDrive {
+					continue
+				}
+			case model.EveDogmaAttributeShipWarpSpeed:
+				x := attributes[model.EveDogmaAttributeWarpSpeedMultiplier]
+				value = value * x.Value
+			case model.EveDogmaAttributeSupportFighterSquadronLimit:
+				if value == 0 {
+					continue
+				}
+			}
+			iconID := o.DogmaAttribute.IconID
+			newIconID, ok := iconPatches[o.DogmaAttribute.ID]
+			if ok {
+				iconID = newIconID
+			}
+			r, _ := icons.GetResource(iconID)
+			data = append(data, attributesRow{
+				icon:  r,
+				label: o.DogmaAttribute.DisplayName,
+				value: formatAttributeValue(ctx, sv, value, o.DogmaAttribute.UnitID),
+			})
+		}
+	}
+	return data
+}
+
+func calcFittingData(ctx context.Context, sv *service.Service, attributes map[int32]*model.EveDogmaAttributeForType) []attributesRow {
+	data := make([]attributesRow, 0)
+	for _, da := range attributeGroupsMap[attributeGroupFitting] {
+		o, ok := attributes[da]
+		if !ok {
+			continue
+		}
+		iconID := o.DogmaAttribute.IconID
+		r, _ := icons.GetResource(iconID)
+		data = append(data, attributesRow{
+			icon:  r,
+			label: o.DogmaAttribute.DisplayName,
+			value: formatAttributeValue(ctx, sv, o.Value, o.DogmaAttribute.UnitID),
+		})
+	}
+	return data
 }
 
 func (a *infoWindow) makeTitle(suffix string) string {
@@ -218,8 +299,10 @@ func (a *infoWindow) makeContent() fyne.CanvasObject {
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Description", a.makeDescriptionTab()),
 	)
-	tabs.Append(container.NewTabItem("Attributes", a.makeAttributesTab()))
-	if len(a.fittingItems) > 0 {
+	if len(a.attributesData) > 0 {
+		tabs.Append(container.NewTabItem("Attributes", a.makeAttributesTab()))
+	}
+	if len(a.fittingData) > 0 {
 		tabs.Append(container.NewTabItem("Fittings", a.makeFittingsTab()))
 	}
 	if len(a.skills) > 0 {
@@ -289,13 +372,9 @@ type attributesRow struct {
 }
 
 func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
-	data, err := a.prepareData()
-	if err != nil {
-		panic(err)
-	}
 	list := widget.NewList(
 		func() int {
-			return len(data)
+			return len(a.attributesData)
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(
@@ -305,7 +384,7 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 				widget.NewLabel("999.999 m3"))
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
-			r := data[lii]
+			r := a.attributesData[lii]
 			row := co.(*fyne.Container)
 			icon := row.Objects[0].(*widget.Icon)
 			label := row.Objects[1].(*widget.Label)
@@ -335,91 +414,10 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 	return list
 }
 
-func (a *infoWindow) prepareData() ([]attributesRow, error) {
-	ctx := context.Background()
-	data := make([]attributesRow, 0)
-
-	droneCapacity, ok := a.attributes[model.EveDogmaAttributeDroneCapacity]
-	hasDrones := ok && droneCapacity.Value > 0
-
-	jumpDrive, ok := a.attributes[model.EveDogmaAttributeOnboardJumpDrive]
-	hasJumpDrive := ok && jumpDrive.Value == 1.0
-
-	for _, ag := range attributeGroups {
-		hasData := false
-		for _, da := range attributeGroupsMap[ag] {
-			_, ok := a.attributes[da]
-			if ok {
-				hasData = true
-				break
-			}
-		}
-		if !hasData {
-			continue
-		}
-		data = append(data, attributesRow{label: ag.DisplayName(), isTitle: true})
-		for _, da := range attributeGroupsMap[ag] {
-			o, ok := a.attributes[da]
-			if !ok {
-				continue
-			}
-			value := o.Value
-			if ag == attributeGroupElectronicResistances && value == 0 {
-				continue
-			}
-			switch da {
-			case model.EveDogmaAttributeDroneCapacity,
-				model.EveDogmaAttributeDroneBandwidth:
-				if !hasDrones {
-					continue
-				}
-			case model.EveDogmaAttributeMaximumJumpRange,
-				model.EveDogmaAttributeJumpDriveFuelNeed:
-				if !hasJumpDrive {
-					continue
-				}
-			case model.EveDogmaAttributeShipWarpSpeed:
-				x := a.attributes[model.EveDogmaAttributeWarpSpeedMultiplier]
-				value = value * x.Value
-			case model.EveDogmaAttributeSupportFighterSquadronLimit:
-				if value == 0 {
-					continue
-				}
-			}
-			iconID := o.DogmaAttribute.IconID
-			newIconID, ok := iconPatches[o.DogmaAttribute.ID]
-			if ok {
-				iconID = newIconID
-			}
-			r, _ := icons.GetResource(iconID)
-			data = append(data, attributesRow{
-				icon:  r,
-				label: o.DogmaAttribute.DisplayName,
-				value: a.formatAttributeValue(ctx, value, o.DogmaAttribute.UnitID),
-			})
-		}
-	}
-
-	return data, nil
-}
-
 func (a *infoWindow) makeFittingsTab() fyne.CanvasObject {
-	ctx := context.Background()
-	data := make([]attributesRow, 0)
-	for _, id := range a.fittingItems {
-		o := a.attributes[id]
-		iconID := o.DogmaAttribute.IconID
-		r, _ := icons.GetResource(iconID)
-		data = append(data, attributesRow{
-			icon:  r,
-			label: o.DogmaAttribute.DisplayName,
-			value: a.formatAttributeValue(ctx, o.Value, o.DogmaAttribute.UnitID),
-		})
-	}
-
-	list := widget.NewList(
+	l := widget.NewList(
 		func() int {
-			return len(data)
+			return len(a.fittingData)
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(
@@ -429,7 +427,7 @@ func (a *infoWindow) makeFittingsTab() fyne.CanvasObject {
 				widget.NewLabel("999.999 m3"))
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
-			r := data[lii]
+			r := a.fittingData[lii]
 			row := co.(*fyne.Container)
 			icon := row.Objects[0].(*widget.Icon)
 			label := row.Objects[1].(*widget.Label)
@@ -442,10 +440,10 @@ func (a *infoWindow) makeFittingsTab() fyne.CanvasObject {
 			value.SetText(r.value)
 		},
 	)
-	list.OnSelected = func(id widget.ListItemID) {
-		list.UnselectAll()
+	l.OnSelected = func(id widget.ListItemID) {
+		l.UnselectAll()
 	}
-	return list
+	return l
 }
 
 func (a *infoWindow) makeRequirementsTab() fyne.CanvasObject {
@@ -491,7 +489,7 @@ func (a *infoWindow) makeRequirementsTab() fyne.CanvasObject {
 }
 
 // formatAttributeValue returns the formatted value of a dogma attribute.
-func (a *infoWindow) formatAttributeValue(ctx context.Context, value float32, unit int32) string {
+func formatAttributeValue(ctx context.Context, sv *service.Service, value float32, unit int32) string {
 	defaultFormatter := func(v float32) string {
 		return humanize.Commaf(float64(v))
 	}
@@ -534,10 +532,10 @@ func (a *infoWindow) formatAttributeValue(ctx context.Context, value float32, un
 	case model.EveUnitWarpSpeed:
 		return fmt.Sprintf("%s AU/s", defaultFormatter(value))
 	case model.EveUnitTypeID:
-		et, err := a.ui.sv.EveUniverse.GetEveType(ctx, int32(value))
+		et, err := sv.EveUniverse.GetEveType(ctx, int32(value))
 		if err != nil {
 			go func() {
-				_, err := a.ui.sv.EveUniverse.GetOrCreateEveTypeESI(ctx, int32(value))
+				_, err := sv.EveUniverse.GetOrCreateEveTypeESI(ctx, int32(value))
 				if err != nil {
 					slog.Error("Failed to fetch type from ESI", "typeID", value, "err", err)
 				}
