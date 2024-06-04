@@ -35,6 +35,7 @@ const (
 	attributeGroupFitting               attributeGroup = "fitting"
 	attributeGroupFighter               attributeGroup = "fighter squadron facilities"
 	attributeGroupJumpDrive             attributeGroup = "jump drive systems"
+	attributeGroupMiscellaneous         attributeGroup = "miscellaneous"
 	attributeGroupPropulsion            attributeGroup = "propulsion"
 	attributeGroupShield                attributeGroup = "shield"
 	attributeGroupStructure             attributeGroup = "structure"
@@ -52,6 +53,7 @@ var attributeGroups = []attributeGroup{
 	attributeGroupFighter,
 	attributeGroupJumpDrive,
 	attributeGroupPropulsion,
+	attributeGroupMiscellaneous,
 }
 
 // assignment of attributes to groups
@@ -140,6 +142,10 @@ var attributeGroupsMap = map[attributeGroup][]int32{
 		model.EveDogmaAttributeMediumSlots,
 		model.EveDogmaAttributeLowSlots,
 		model.EveDogmaAttributeRigSlots,
+	},
+	attributeGroupMiscellaneous: {
+		model.EveDogmaAttributeTechLevel,
+		model.EveDogmaAttributeMetaLevel,
 	},
 }
 
@@ -511,6 +517,8 @@ func formatAttributeValue(ctx context.Context, sv *service.Service, value float3
 		return fmt.Sprintf("%.0f%%", (1-value)*100)
 	case model.EveUnitLength:
 		return fmt.Sprintf("%s m", defaultFormatter(value))
+	case model.EveUnitLevel:
+		return fmt.Sprintf("Level %s", defaultFormatter(value))
 	case model.EveUnitLightYear:
 		return fmt.Sprintf("%.1f LY", value)
 	case model.EveUnitMass:
