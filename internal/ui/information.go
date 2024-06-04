@@ -578,7 +578,11 @@ func formatAttributeValue(ctx context.Context, sv *service.Service, value float3
 	case model.EveUnitInverseAbsolutePercent:
 		return fmt.Sprintf("%.0f%%", (1-value)*100)
 	case model.EveUnitLength:
-		return fmt.Sprintf("%s m", defaultFormatter(value))
+		if value > 1000 {
+			return fmt.Sprintf("%s km", defaultFormatter(value/float32(1000)))
+		} else {
+			return fmt.Sprintf("%s m", defaultFormatter(value))
+		}
 	case model.EveUnitLevel:
 		return fmt.Sprintf("Level %s", defaultFormatter(value))
 	case model.EveUnitLightYear:

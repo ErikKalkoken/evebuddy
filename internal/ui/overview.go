@@ -24,7 +24,8 @@ type overviewCharacter struct {
 	id             int32
 	home           sql.NullString
 	lastLoginAt    sql.NullTime
-	location       sql.NullString
+	locationID     sql.NullInt64
+	locationName   sql.NullString
 	name           string
 	systemName     sql.NullString
 	systemSecurity sql.NullFloat64
@@ -54,6 +55,14 @@ func (u *ui) newOverviewArea() *overviewArea {
 		ui:         u,
 	}
 	a.top.TextStyle.Bold = true
+
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	a.table = a.makeTable()
+	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+	return &a
+}
+
+func (a *overviewArea) makeTable() *widget.Table {
 	var headers = []struct {
 		text  string
 		width float32
@@ -126,7 +135,7 @@ func (u *ui) newOverviewArea() *overviewArea {
 			case 8:
 				l.Text = humanizedNullFloat64(c.walletBalance, 1, "?")
 			case 9:
-				l.Text = nullStringOrFallback(c.location, "?")
+				l.Text = nullStringOrFallback(c.locationName, "?")
 			case 10:
 				if !c.systemName.Valid || !c.systemSecurity.Valid {
 					l.Text = "?"
@@ -157,35 +166,41 @@ func (u *ui) newOverviewArea() *overviewArea {
 		co.(*widget.Label).SetText(s.text)
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
-		err := func() error {
-			c, err := getItemUntypedList[overviewCharacter](a.characters, tci.Row)
-			if err != nil {
-				return err
-			}
-			m := map[int]struct {
-				parent, child int
-			}{
-				4: {2, 0},
-				5: {3, 1},
-				6: {3, 1},
-				7: {3, 0},
-				8: {4, 0},
-			}
-			idx, ok := m[tci.Col]
-			if ok {
-				if err := a.ui.loadCurrentCharacter(context.Background(), c.id); err != nil {
-					return err
-				}
-				a.ui.tabs.SelectIndex(idx.parent)
-				t := a.ui.tabs.Items[idx.parent].Content.(*container.AppTabs)
-				t.SelectIndex(idx.child)
-			}
-			return nil
-		}()
+		ctx := context.Background()
+		c, err := getItemUntypedList[overviewCharacter](a.characters, tci.Row)
 		if err != nil {
-			t := "Failed to select character"
-			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
+			text := "Failed to select character"
+			slog.Error(text, "err", err)
+			a.ui.statusBarArea.SetError(text)
+			t.UnselectAll()
+			return
+		}
+		m := map[int]struct {
+			parent, child int
+		}{
+			4: {2, 0},
+			5: {3, 1},
+			6: {3, 1},
+			7: {3, 0},
+			8: {4, 0},
+		}
+		idx, ok := m[tci.Col]
+		if ok {
+			if err := a.ui.loadCurrentCharacter(ctx, c.id); err != nil {
+				panic(err)
+			}
+			a.ui.tabs.SelectIndex(idx.parent)
+			t := a.ui.tabs.Items[idx.parent].Content.(*container.AppTabs)
+			t.SelectIndex(idx.child)
+		}
+		if tci.Col == 9 {
+			if c.locationID.Valid {
+				location, err := a.ui.sv.EveUniverse.GetEveLocation(ctx, c.locationID.Int64)
+				if err != nil {
+					panic(err)
+				}
+				a.ui.showTypeWindow(location.Type.ID)
+			}
 		}
 		t.UnselectAll()
 	}
@@ -193,11 +208,7 @@ func (u *ui) newOverviewArea() *overviewArea {
 	for i, h := range headers {
 		t.SetColumnWidth(i, h.width)
 	}
-
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, t)
-	a.table = t
-	return &a
+	return t
 }
 
 func (a *overviewArea) refresh() {
@@ -260,7 +271,8 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 		}
 		if m.Location != nil {
 			c.region = sql.NullString{String: m.Location.SolarSystem.Constellation.Region.Name, Valid: true}
-			c.location = sql.NullString{String: m.Location.Name, Valid: true}
+			c.locationID = sql.NullInt64{Int64: m.Location.ID, Valid: true}
+			c.locationName = sql.NullString{String: m.Location.Name, Valid: true}
 			c.systemName = sql.NullString{String: m.Location.SolarSystem.Name, Valid: true}
 			c.systemSecurity = sql.NullFloat64{Float64: m.Location.SolarSystem.SecurityStatus, Valid: true}
 		}

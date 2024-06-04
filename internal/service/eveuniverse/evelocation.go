@@ -12,6 +12,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
+func (eu *EveUniverseService) GetEveLocation(ctx context.Context, id int64) (*model.EveLocation, error) {
+	return eu.st.GetEveLocation(ctx, id)
+}
+
 // GetOrCreateEveLocationESI return a structure when it already exists
 // or else tries to fetch and create a new structure from ESI.
 //
