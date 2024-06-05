@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/theme"
@@ -270,7 +269,7 @@ func (u *ui) showNewAssetWindow(ca *model.CharacterAsset) {
 	content := container.NewBorder(container.NewVBox(top, widget.NewSeparator()), nil, nil, nil, assets)
 
 	w.SetContent(content)
-	w.Resize(fyne.Size{Width: 600, Height: 500})
+	w.Resize(fyne.Size{Width: 650, Height: 500})
 	w.Show()
 }
 
@@ -278,44 +277,15 @@ func (u *ui) makeAssetGrid(assetsData binding.UntypedList) *widget.GridWrap {
 	g := widget.NewGridWrapWithData(
 		assetsData,
 		func() fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(defaultAssetIcon)
-			icon.FillMode = canvas.ImageFillContain
-			icon.SetMinSize(fyne.Size{Width: 40, Height: 40})
-			name := widget.NewLabel("Asset Template Name XXX")
-			quantity := widget.NewLabel("")
-			return container.NewBorder(nil, nil, icon, quantity, name)
+			return NewAssetListWidget(u.sv.EveImage, defaultAssetIcon)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
-			box := co.(*fyne.Container)
-			name := box.Objects[0].(*widget.Label)
-			icon := box.Objects[1].(*canvas.Image)
-			quantity := box.Objects[2].(*widget.Label)
 			o, err := convertDataItem[*model.CharacterAsset](di)
 			if err != nil {
 				panic(err)
 			}
-			icon.Resource = defaultAssetIcon
-			icon.Refresh()
-			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				if o.IsSKIN() {
-					return resourceSkinicon64pxPng, nil
-				} else if o.IsBPO() {
-					return u.sv.EveImage.InventoryTypeBPO(o.EveType.ID, 64)
-				} else if o.IsBlueprintCopy {
-					return u.sv.EveImage.InventoryTypeBPC(o.EveType.ID, 64)
-				} else {
-					return u.sv.EveImage.InventoryTypeIcon(o.EveType.ID, 64)
-				}
-			})
-			name.Wrapping = fyne.TextWrapWord
-			name.Text = o.DisplayName()
-			name.Refresh()
-			if !o.IsSingleton {
-				quantity.SetText(humanize.Comma(int64(o.Quantity)))
-				quantity.Show()
-			} else {
-				quantity.Hide()
-			}
+			item := co.(*assetListWidget)
+			item.SetAsset(o)
 		},
 	)
 	g.OnSelected = func(id widget.GridWrapItemID) {
