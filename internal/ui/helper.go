@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
@@ -213,4 +214,11 @@ func toRomanLetter[N int | int32 | int64 | uint | uint32 | uint64](v N) string {
 		panic(fmt.Sprintf("invalid value: %d", v))
 	}
 	return r
+}
+
+func boolIconResource(ok bool) fyne.Resource {
+	if ok {
+		return theme.NewSuccessThemedResource(theme.ConfirmIcon())
+	}
+	return theme.NewErrorThemedResource(theme.CancelIcon())
 }

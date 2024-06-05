@@ -9,7 +9,6 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
@@ -101,11 +100,7 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 				icon.Hide()
 				label.Show()
 			case 2:
-				if o.CanFly {
-					icon.Resource = theme.NewSuccessThemedResource(theme.ConfirmIcon())
-				} else {
-					icon.Resource = theme.NewErrorThemedResource(theme.CancelIcon())
-				}
+				icon.Resource = boolIconResource(o.CanFly)
 				icon.Refresh()
 				icon.Show()
 				label.Hide()

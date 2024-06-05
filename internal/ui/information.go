@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
@@ -450,12 +449,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			break
 		}
 	}
-	var checkIcon *widget.Icon
-	if hasRequiredSkills {
-		checkIcon = widget.NewIcon(theme.NewSuccessThemedResource(theme.ConfirmIcon()))
-	} else {
-		checkIcon = widget.NewIcon(theme.NewErrorThemedResource(theme.CancelIcon()))
-	}
+	checkIcon := widget.NewIcon(boolIconResource(hasRequiredSkills))
 	if a.characterID == 0 || len(a.requiredSkills) == 0 {
 		checkIcon.Hide()
 	}
@@ -552,30 +546,40 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 			return container.NewHBox(
 				widget.NewLabel("Placeholder"),
 				layout.NewSpacer(),
-				widget.NewLabel("Check"))
+				widget.NewLabel("Check"),
+				widget.NewIcon(resourceCharacterplaceholder32Jpeg),
+			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			o := a.requiredSkills[id]
 			row := co.(*fyne.Container)
 			skill := row.Objects[0].(*widget.Label)
 			check := row.Objects[2].(*widget.Label)
+			icon := row.Objects[3].(*widget.Icon)
 			skill.SetText(skillDisplayName(o.name, o.requiredLevel))
-			var t string
-			var i widget.Importance
-			if o.activeLevel == 0 {
-				t = "Skill not injected"
-				i = widget.DangerImportance
-
+			if o.activeLevel == 0 && o.trainedLevel == 0 {
+				check.Text = "Skill not injected"
+				check.Importance = widget.DangerImportance
+				check.Refresh()
+				check.Show()
+				icon.Hide()
+			} else if o.activeLevel == 0 && o.trainedLevel > 0 {
+				check.Text = "Omega skill disabled"
+				check.Importance = widget.WarningImportance
+				check.Refresh()
+				check.Show()
+				icon.Hide()
 			} else if o.activeLevel >= o.requiredLevel {
-				t = "OK"
-				i = widget.SuccessImportance
+				icon.SetResource(boolIconResource(true))
+				icon.Show()
+				check.Hide()
 			} else {
-				t = fmt.Sprintf("Current level %s", toRomanLetter(o.activeLevel))
-				i = widget.WarningImportance
+				check.Text = fmt.Sprintf("Current level %s", toRomanLetter(o.activeLevel))
+				check.Importance = widget.WarningImportance
+				check.Refresh()
+				check.Show()
+				icon.Hide()
 			}
-			check.Text = t
-			check.Importance = i
-			check.Refresh()
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
