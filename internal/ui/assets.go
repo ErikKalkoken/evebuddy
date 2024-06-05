@@ -171,7 +171,7 @@ func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
 			slog.Error("failed to access assets in grid", "err", err)
 			return
 		}
-		a.ui.showTypeWindow(o.EveType.ID)
+		a.ui.showTypeInfoWindow(o.EveType.ID, a.ui.currentCharID())
 		g.UnselectAll()
 	}
 	return g

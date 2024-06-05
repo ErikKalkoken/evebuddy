@@ -207,7 +207,7 @@ func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 			a.ui.statusBarArea.SetError(t)
 			return
 		}
-		a.ui.showTypeWindow(o.id)
+		a.ui.showTypeInfoWindow(o.id, a.ui.currentCharID())
 		g.UnselectAll()
 	}
 	return g

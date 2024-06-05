@@ -38,6 +38,7 @@ func (l *logLevelFlag) Set(value string) error {
 // defined flags
 var (
 	levelFlag   logLevelFlag
+	debugFlag   = flag.Bool("debug", false, "Show additional debug information")
 	logFileFlag = flag.Bool("logfile", false, "Write logs to a file instead of the console")
 	localFlag   = flag.Bool("local", false, "Store all files in the current directory instead of the user's home")
 	removeFlag  = flag.Bool("remove-user-files", false, "Remove all user files of this app")
@@ -104,7 +105,7 @@ func main() {
 		log.Fatal(err)
 	}
 	s := service.New(repository, cacheDir)
-	e := ui.NewUI(s)
+	e := ui.NewUI(s, *debugFlag)
 	e.ShowAndRun()
 }
 

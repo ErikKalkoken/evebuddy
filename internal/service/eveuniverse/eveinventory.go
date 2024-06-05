@@ -124,9 +124,25 @@ func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32
 			return nil, err
 		}
 		for _, o := range t.DogmaAttributes {
-			_, err := eu.GetOrCreateEveDogmaAttributeESI(ctx, o.AttributeId)
+			x, err := eu.GetOrCreateEveDogmaAttributeESI(ctx, o.AttributeId)
 			if err != nil {
 				return nil, err
+			}
+			switch x.UnitID {
+			case model.EveUnitGroupID:
+				go func(ctx context.Context, groupID int32) {
+					_, err := eu.GetOrCreateEveGroupESI(ctx, groupID)
+					if err != nil {
+						slog.Error("Failed to fetch eve group %d", "ID", groupID, "err", err)
+					}
+				}(ctx, int32(o.Value))
+			case model.EveUnitTypeID:
+				go func(ctx context.Context, typeID int32) {
+					_, err := eu.GetOrCreateEveTypeESI(ctx, typeID)
+					if err != nil {
+						slog.Error("Failed to fetch eve type %d", "ID", typeID, "err", err)
+					}
+				}(ctx, int32(o.Value))
 			}
 			arg := storage.CreateEveTypeDogmaAttributeParams{
 				DogmaAttributeID: o.AttributeId,

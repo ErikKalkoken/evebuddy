@@ -120,7 +120,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			t.UnselectAll()
 			return
 		}
-		a.ui.showTypeWindow(n.ImplantTypeID)
+		a.ui.showTypeInfoWindow(n.ImplantTypeID, a.ui.currentCharID())
 		t.UnselectAll()
 	}
 	return t

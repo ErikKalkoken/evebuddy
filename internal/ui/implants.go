@@ -73,7 +73,7 @@ func (a *implantsArea) makeImplantList() *widget.List {
 			a.ui.statusBarArea.SetError(t)
 			return
 		}
-		a.ui.showTypeWindow(o.EveType.ID)
+		a.ui.showTypeInfoWindow(o.EveType.ID, a.ui.currentCharID())
 		l.UnselectAll()
 	}
 	return l

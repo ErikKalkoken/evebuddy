@@ -132,7 +132,7 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 			a.ui.statusBarArea.SetError(t)
 			return
 		}
-		a.ui.showTypeWindow(o.Type.ID)
+		a.ui.showTypeInfoWindow(o.Type.ID, a.ui.currentCharID())
 		t.UnselectAll()
 	}
 	return t

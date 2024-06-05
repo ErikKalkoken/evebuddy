@@ -44,6 +44,7 @@ type ui struct {
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
 	currentCharacter      *model.Character
+	isDebug               bool
 	implantsArea          *implantsArea
 	jumpClonesArea        *jumpClonesArea
 	mailArea              *mailArea
@@ -64,13 +65,14 @@ type ui struct {
 }
 
 // NewUI build the UI and returns it.
-func NewUI(sv *service.Service) *ui {
+func NewUI(sv *service.Service, isDebug bool) *ui {
 	app := app.New()
 	w := app.NewWindow(appName(app))
 	u := &ui{
-		app:    app,
-		sv:     sv,
-		window: w,
+		app:     app,
+		isDebug: isDebug,
+		sv:      sv,
+		window:  w,
 	}
 
 	u.assetsArea = u.newAssetsArea()

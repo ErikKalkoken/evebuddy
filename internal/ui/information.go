@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -15,7 +16,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/dustin/go-humanize"
 	"golang.org/x/text/cases"
@@ -147,7 +147,6 @@ var attributeGroupsMap = map[attributeGroup][]int32{
 	},
 	attributeGroupMiscellaneous: {
 		model.EveDogmaAttributeTechLevel,
-		model.EveDogmaAttributeMetaLevel,
 	},
 }
 
@@ -172,7 +171,7 @@ type attributesRow struct {
 	isTitle bool
 }
 
-type infoWindow struct {
+type typeInfoWindow struct {
 	attributesData []attributesRow
 	content        fyne.CanvasObject
 	characterID    int32
@@ -183,22 +182,22 @@ type infoWindow struct {
 	window         fyne.Window
 }
 
-func (u *ui) showTypeWindow(typeID int32) {
-	iw, err := u.newInfoWindow(typeID)
+func (u *ui) showTypeInfoWindow(typeID, characterID int32) {
+	iw, err := u.newTypeInfoWindow(typeID, characterID)
 	if err != nil {
-		t := "Failed to open info window"
+		t := "Failed to open type info window"
 		slog.Error(t, "err", err)
 		u.showErrorDialog(t, err)
 		return
 	}
 	w := u.app.NewWindow(iw.makeTitle("Information"))
+	iw.window = w
 	w.SetContent(iw.content)
 	w.Resize(fyne.Size{Width: 500, Height: 500})
 	w.Show()
-	iw.window = w
 }
 
-func (u *ui) newInfoWindow(typeID int32) (*infoWindow, error) {
+func (u *ui) newTypeInfoWindow(typeID, characterID int32) (*typeInfoWindow, error) {
 	ctx := context.Background()
 	et, err := u.sv.EveUniverse.GetEveType(ctx, typeID)
 	if err != nil {
@@ -208,32 +207,34 @@ func (u *ui) newInfoWindow(typeID int32) (*infoWindow, error) {
 	if err != nil {
 		return nil, err
 	}
+	a := &typeInfoWindow{
+		characterID: characterID,
+		et:          et,
+		ui:          u,
+	}
 	attributes := make(map[int32]*model.EveDogmaAttributeForType)
 	for _, o := range oo {
 		attributes[o.DogmaAttribute.ID] = o
 	}
-	attributesData := calcAttributesData(ctx, u.sv, attributes)
-	fittingData := calcFittingData(ctx, u.sv, attributes)
-
-	characterID := u.currentCharID()
-	skills, err := calcRequiredSkills(ctx, u.sv, characterID, attributes)
+	a.attributesData = a.calcAttributesData(ctx, attributes)
+	a.fittingData = a.calcFittingData(ctx, attributes)
+	skills, err := a.calcRequiredSkills(ctx, characterID, attributes)
 	if err != nil {
 		return nil, err
 	}
-	a := &infoWindow{
-		attributesData: attributesData,
-		characterID:    characterID,
-		et:             et,
-		fittingData:    fittingData,
-		requiredSkills: skills,
-		ui:             u,
-	}
+	a.requiredSkills = skills
 	a.content = a.makeContent()
 	return a, nil
 }
 
-func calcAttributesData(ctx context.Context, sv *service.Service, attributes map[int32]*model.EveDogmaAttributeForType) []attributesRow {
+func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[int32]*model.EveDogmaAttributeForType) []attributesRow {
 	data := make([]attributesRow, 0)
+
+	if a.ui.isDebug {
+		data = append(data, attributesRow{label: "DEBUG", isTitle: true})
+		data = append(data, attributesRow{label: "Character ID", value: fmt.Sprint(a.characterID)})
+		data = append(data, attributesRow{label: "Type ID", value: fmt.Sprint(a.et.ID)})
+	}
 
 	droneCapacity, ok := attributes[model.EveDogmaAttributeDroneCapacity]
 	hasDrones := ok && droneCapacity.Value > 0
@@ -264,6 +265,10 @@ func calcAttributesData(ctx context.Context, sv *service.Service, attributes map
 				continue
 			}
 			switch da {
+			case model.EveDogmaAttributeCapacity:
+				if value == 0 {
+					continue
+				}
 			case model.EveDogmaAttributeDroneCapacity,
 				model.EveDogmaAttributeDroneBandwidth:
 				if !hasDrones {
@@ -291,14 +296,23 @@ func calcAttributesData(ctx context.Context, sv *service.Service, attributes map
 			data = append(data, attributesRow{
 				icon:  r,
 				label: o.DogmaAttribute.DisplayName,
-				value: formatAttributeValue(ctx, sv, value, o.DogmaAttribute.UnitID),
+				value: a.formatAttributeValue(ctx, value, o.DogmaAttribute.UnitID),
 			})
 		}
+	}
+	headers := make([]int, 0)
+	for i, r := range data {
+		if r.isTitle {
+			headers = append(headers, i)
+		}
+	}
+	if len(headers) == 1 {
+		data = slices.Delete(data, headers[0], headers[0]+1)
 	}
 	return data
 }
 
-func calcFittingData(ctx context.Context, sv *service.Service, attributes map[int32]*model.EveDogmaAttributeForType) []attributesRow {
+func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int32]*model.EveDogmaAttributeForType) []attributesRow {
 	data := make([]attributesRow, 0)
 	for _, da := range attributeGroupsMap[attributeGroupFitting] {
 		o, ok := attributes[da]
@@ -310,13 +324,13 @@ func calcFittingData(ctx context.Context, sv *service.Service, attributes map[in
 		data = append(data, attributesRow{
 			icon:  r,
 			label: o.DogmaAttribute.DisplayName,
-			value: formatAttributeValue(ctx, sv, o.Value, o.DogmaAttribute.UnitID),
+			value: a.formatAttributeValue(ctx, o.Value, o.DogmaAttribute.UnitID),
 		})
 	}
 	return data
 }
 
-func calcRequiredSkills(ctx context.Context, sv *service.Service, characterID int32, attributes map[int32]*model.EveDogmaAttributeForType) ([]requiredSkill, error) {
+func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*model.EveDogmaAttributeForType) ([]requiredSkill, error) {
 	skills := make([]requiredSkill, 0)
 	skillAttributes := []struct {
 		id    int32
@@ -340,7 +354,7 @@ func calcRequiredSkills(ctx context.Context, sv *service.Service, characterID in
 			continue
 		}
 		requiredLevel := int(daLevel.Value)
-		et, err := sv.EveUniverse.GetEveType(ctx, typeID)
+		et, err := a.ui.sv.EveUniverse.GetEveType(ctx, typeID)
 		if err != nil {
 			return nil, err
 		}
@@ -350,7 +364,7 @@ func calcRequiredSkills(ctx context.Context, sv *service.Service, characterID in
 			name:          et.Name,
 			typeID:        typeID,
 		}
-		cs, err := sv.Characters.GetCharacterSkill(ctx, characterID, typeID)
+		cs, err := a.ui.sv.Characters.GetCharacterSkill(ctx, characterID, typeID)
 		if errors.Is(err, character.ErrNotFound) {
 			// do nothing
 		} else if err != nil {
@@ -364,11 +378,15 @@ func calcRequiredSkills(ctx context.Context, sv *service.Service, characterID in
 	return skills, nil
 }
 
-func (a *infoWindow) makeTitle(suffix string) string {
-	return fmt.Sprintf("%s (%s): %s", a.et.Name, a.et.Group.Name, suffix)
+func (a *typeInfoWindow) makeTitle(suffix string) string {
+	s := fmt.Sprintf("%s (%s): %s", a.et.Name, a.et.Group.Name, suffix)
+	if a.ui.isDebug {
+		s += " DEBUG"
+	}
+	return s
 }
 
-func (a *infoWindow) makeContent() fyne.CanvasObject {
+func (a *typeInfoWindow) makeContent() fyne.CanvasObject {
 	top := a.makeTop()
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Description", a.makeDescriptionTab()),
@@ -386,7 +404,7 @@ func (a *infoWindow) makeContent() fyne.CanvasObject {
 	return c
 }
 
-func (a *infoWindow) makeTop() fyne.CanvasObject {
+func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 	image := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
 		if a.et.IsSKIN() {
 			return resourceSkinicon64pxPng, nil
@@ -432,13 +450,13 @@ func (a *infoWindow) makeTop() fyne.CanvasObject {
 	return container.NewHBox(image, b, icon)
 }
 
-func (a *infoWindow) makeDescriptionTab() fyne.CanvasObject {
+func (a *typeInfoWindow) makeDescriptionTab() fyne.CanvasObject {
 	description := widget.NewLabel(a.et.DescriptionPlain())
 	description.Wrapping = fyne.TextWrapWord
 	return container.NewVScroll(description)
 }
 
-func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
+func (a *typeInfoWindow) makeAttributesTab() fyne.CanvasObject {
 	list := widget.NewList(
 		func() int {
 			return len(a.attributesData)
@@ -481,7 +499,7 @@ func (a *infoWindow) makeAttributesTab() fyne.CanvasObject {
 	return list
 }
 
-func (a *infoWindow) makeFittingsTab() fyne.CanvasObject {
+func (a *typeInfoWindow) makeFittingsTab() fyne.CanvasObject {
 	l := widget.NewList(
 		func() int {
 			return len(a.fittingData)
@@ -513,7 +531,7 @@ func (a *infoWindow) makeFittingsTab() fyne.CanvasObject {
 	return l
 }
 
-func (a *infoWindow) makeRequirementsTab() fyne.CanvasObject {
+func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 	l := widget.NewList(
 		func() int {
 			return len(a.requiredSkills)
@@ -550,14 +568,17 @@ func (a *infoWindow) makeRequirementsTab() fyne.CanvasObject {
 	)
 	l.OnSelected = func(id widget.ListItemID) {
 		r := a.requiredSkills[id]
-		a.ui.showTypeWindow(r.typeID)
+		a.ui.showTypeInfoWindow(r.typeID, a.ui.currentCharID())
 		l.UnselectAll()
 	}
 	return l
 }
 
 // formatAttributeValue returns the formatted value of a dogma attribute.
-func formatAttributeValue(ctx context.Context, sv *service.Service, value float32, unit int32) string {
+func (a *typeInfoWindow) formatAttributeValue(ctx context.Context, value float32, unit int32) string {
+	if a.ui.isDebug {
+		return fmt.Sprintf("%v", value)
+	}
 	defaultFormatter := func(v float32) string {
 		return humanize.Commaf(float64(v))
 	}
@@ -606,10 +627,10 @@ func formatAttributeValue(ctx context.Context, sv *service.Service, value float3
 	case model.EveUnitWarpSpeed:
 		return fmt.Sprintf("%s AU/s", defaultFormatter(value))
 	case model.EveUnitTypeID:
-		et, err := sv.EveUniverse.GetEveType(ctx, int32(value))
+		et, err := a.ui.sv.EveUniverse.GetEveType(ctx, int32(value))
 		if err != nil {
 			go func() {
-				_, err := sv.EveUniverse.GetOrCreateEveTypeESI(ctx, int32(value))
+				_, err := a.ui.sv.EveUniverse.GetOrCreateEveTypeESI(ctx, int32(value))
 				if err != nil {
 					slog.Error("Failed to fetch type from ESI", "typeID", value, "err", err)
 				}
