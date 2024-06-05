@@ -144,11 +144,11 @@ func (a *attributesArea) updateData() (int, error) {
 	} else if err != nil {
 		return 0, err
 	}
-	resPerception, _ := icons.GetResource(icons.Perception)
-	resMemory, _ := icons.GetResource(icons.Memory)
-	resWillpower, _ := icons.GetResource(icons.Willpower)
-	resIntelligence, _ := icons.GetResource(icons.Intelligence)
-	resCharisma, _ := icons.GetResource(icons.Charisma)
+	resPerception, _ := icons.GetResourceByIconID(icons.IDPerception)
+	resMemory, _ := icons.GetResourceByIconID(icons.IDMemory)
+	resWillpower, _ := icons.GetResourceByIconID(icons.IDWillpower)
+	resIntelligence, _ := icons.GetResourceByIconID(icons.IDIntelligence)
+	resCharisma, _ := icons.GetResourceByIconID(icons.IDCharisma)
 	items := make([]any, 6)
 	items[0] = attribute{
 		icon:   resPerception,

@@ -152,7 +152,7 @@ var attributeGroupsMap = map[attributeGroup][]int32{
 
 // Substituting icon ID for missing icons
 var iconPatches = map[int32]int32{
-	model.EveDogmaAttributeJumpDriveFuelNeed: icons.HeliumIsotopes,
+	model.EveDogmaAttributeJumpDriveFuelNeed: icons.IDHeliumIsotopes,
 }
 
 type requiredSkill struct {
@@ -292,7 +292,7 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 			if ok {
 				iconID = newIconID
 			}
-			r, _ := icons.GetResource(iconID)
+			r, _ := icons.GetResourceByIconID(iconID)
 			data = append(data, attributesRow{
 				icon:  r,
 				label: o.DogmaAttribute.DisplayName,
@@ -320,7 +320,7 @@ func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int
 			continue
 		}
 		iconID := o.DogmaAttribute.IconID
-		r, _ := icons.GetResource(iconID)
+		r, _ := icons.GetResourceByIconID(iconID)
 		data = append(data, attributesRow{
 			icon:  r,
 			label: o.DogmaAttribute.DisplayName,
@@ -405,31 +405,43 @@ func (a *typeInfoWindow) makeContent() fyne.CanvasObject {
 }
 
 func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
-	image := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
+	size := 64
+	typeIcon := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
 		if a.et.IsSKIN() {
 			return resourceSkinicon64pxPng, nil
 		} else if a.et.IsBlueprint() {
-			return a.ui.sv.EveImage.InventoryTypeBPO(a.et.ID, 64)
+			return a.ui.sv.EveImage.InventoryTypeBPO(a.et.ID, size)
 		} else {
-			return a.ui.sv.EveImage.InventoryTypeIcon(a.et.ID, 64)
+			return a.ui.sv.EveImage.InventoryTypeIcon(a.et.ID, size)
 		}
 	})
-	image.FillMode = canvas.ImageFillOriginal
-	b := widget.NewButton("Show", func() {
+	typeIcon.FillMode = canvas.ImageFillOriginal
+
+	renderButton := widget.NewButton("Show", func() {
 		w := a.ui.app.NewWindow(a.makeTitle("Render"))
+		size := 512
 		i := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
-			return a.ui.sv.EveImage.InventoryTypeRender(a.et.ID, 512)
+			return a.ui.sv.EveImage.InventoryTypeRender(a.et.ID, size)
 		})
 		i.FillMode = canvas.ImageFillContain
-		s := float32(512) / w.Canvas().Scale()
+		s := float32(size) / w.Canvas().Scale()
 		w.Resize(fyne.Size{Width: s, Height: s})
 		w.SetContent(i)
 		w.Show()
 	})
 	if a.et.HasRender() {
-		b.Enable()
+		renderButton.Enable()
 	} else {
-		b.Disable()
+		renderButton.Disable()
+	}
+	characterIcon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
+	characterIcon.FillMode = canvas.ImageFillOriginal
+	if a.characterID != 0 {
+		refreshImageResourceAsync(characterIcon, func() (fyne.Resource, error) {
+			return a.ui.sv.EveImage.CharacterPortrait(a.characterID, 32)
+		})
+	} else {
+		characterIcon.Hide()
 	}
 	hasRequiredSkills := true
 	for _, o := range a.requiredSkills {
@@ -438,16 +450,16 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			break
 		}
 	}
-	var icon *widget.Icon
+	var checkIcon *widget.Icon
 	if hasRequiredSkills {
-		icon = widget.NewIcon(theme.NewSuccessThemedResource(theme.ConfirmIcon()))
+		checkIcon = widget.NewIcon(theme.NewSuccessThemedResource(theme.ConfirmIcon()))
 	} else {
-		icon = widget.NewIcon(theme.NewErrorThemedResource(theme.CancelIcon()))
+		checkIcon = widget.NewIcon(theme.NewErrorThemedResource(theme.CancelIcon()))
 	}
-	if len(a.requiredSkills) == 0 {
-		icon.Hide()
+	if a.characterID == 0 || len(a.requiredSkills) == 0 {
+		checkIcon.Hide()
 	}
-	return container.NewHBox(image, b, icon)
+	return container.NewHBox(typeIcon, renderButton, characterIcon, checkIcon)
 }
 
 func (a *typeInfoWindow) makeDescriptionTab() fyne.CanvasObject {
