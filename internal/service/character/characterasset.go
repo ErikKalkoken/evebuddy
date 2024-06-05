@@ -20,6 +20,10 @@ func (s *CharacterService) ListCharacterAssetsInItemHangar(ctx context.Context, 
 	return s.st.ListCharacterAssetsInItemHangar(ctx, characterID, locationID)
 }
 
+func (s *CharacterService) ListCharacterAssetsInLocation(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+	return s.st.ListCharacterAssetsInLocation(ctx, characterID, locationID)
+}
+
 func (s *CharacterService) ListCharacterAssetLocations(ctx context.Context, characterID int32) ([]*model.CharacterAssetLocation, error) {
 	return s.st.ListCharacterAssetLocations(ctx, characterID)
 }

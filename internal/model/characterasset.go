@@ -3,8 +3,7 @@ package model
 type CharacterAsset struct {
 	ID              int64
 	CharacterID     int32
-	EveCategoryID   int32
-	EveType         *EntityShort[int32]
+	EveType         *EveType
 	IsBlueprintCopy bool
 	IsSingleton     bool
 	ItemID          int64
@@ -15,7 +14,7 @@ type CharacterAsset struct {
 	Quantity        int32
 }
 
-func (ca CharacterAsset) NamePlus() string {
+func (ca CharacterAsset) DisplayName() string {
 	if ca.Name != "" {
 		return ca.Name
 	}
@@ -23,11 +22,28 @@ func (ca CharacterAsset) NamePlus() string {
 }
 
 func (ca CharacterAsset) IsBPO() bool {
-	return ca.EveCategoryID == EveCategoryBlueprint && !ca.IsBlueprintCopy
+	return ca.EveType.Group.Category.ID == EveCategoryBlueprint && !ca.IsBlueprintCopy
 }
 
 func (ca CharacterAsset) IsSKIN() bool {
-	return ca.EveCategoryID == EveCategorySKINs
+	return ca.EveType.Group.Category.ID == EveCategorySKINs
+}
+
+func (ca CharacterAsset) IsContainer() bool {
+	if !ca.IsSingleton {
+		return false
+	}
+	if ca.EveType.Group.Category.ID == EveCategoryShip {
+		return true
+	}
+	switch ca.EveType.Group.ID {
+	case EveGroupAuditLogFreightContainer,
+		EveGroupAuditLogSecureCargoContainer,
+		EveGroupCargoContainer,
+		EveGroupSecureCargoContainer:
+		return true
+	}
+	return false
 }
 
 type CharacterAssetLocation struct {

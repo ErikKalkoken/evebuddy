@@ -23,11 +23,13 @@ AND item_id NOT IN (sqlc.slice('item_ids'));
 -- name: GetCharacterAsset :one
 SELECT
     sqlc.embed(ca),
-    et.name as eve_type_name,
-    eg.eve_category_id as eve_category_id
+    sqlc.embed(et),
+    sqlc.embed(eg),
+    sqlc.embed(ec)
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
+JOIN eve_categories ec ON ec.id = eg.eve_category_id
 WHERE character_id = ?
 AND item_id = ?;
 
@@ -36,14 +38,30 @@ SELECT item_id
 FROM character_assets
 WHERE character_id = ?;
 
--- name: ListCharacterAssetsInShipHangar :many
+-- name: ListCharacterAssetsInLocation :many
 SELECT
     sqlc.embed(ca),
-    et.name as eve_type_name,
-    eg.eve_category_id as eve_category_id
+    sqlc.embed(et),
+    sqlc.embed(eg),
+    sqlc.embed(ec)
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
+JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE character_id = ?
+AND location_id = ?
+ORDER BY et.id;
+
+-- name: ListCharacterAssetsInShipHangar :many
+SELECT
+    sqlc.embed(ca),
+    sqlc.embed(et),
+    sqlc.embed(eg),
+    sqlc.embed(ec)
+FROM character_assets ca
+JOIN eve_types et ON et.id = ca.eve_type_id
+JOIN eve_groups eg ON eg.id = et.eve_group_id
+JOIN eve_categories ec ON ec.id = eg.eve_category_id
 WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
@@ -53,11 +71,13 @@ ORDER BY et.id;
 -- name: ListCharacterAssetsInItemHangar :many
 SELECT
     sqlc.embed(ca),
-    et.name as eve_type_name,
-    eg.eve_category_id as eve_category_id
+    sqlc.embed(et),
+    sqlc.embed(eg),
+    sqlc.embed(ec)
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
+JOIN eve_categories ec ON ec.id = eg.eve_category_id
 WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
