@@ -198,47 +198,59 @@ func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterI
 
 // ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
 // Return mails for all labels, when labelID = 0
-func (st *Storage) ListCharacterMailIDsForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]int32, error) {
+func (st *Storage) ListCharacterMailsForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]*model.CharacterMailHeader, error) {
 	switch labelID {
 	case model.MailLabelAll:
-		ids, err := st.q.ListMailIDsOrdered(ctx, int64(characterID))
+		rows, err := st.q.ListMailsOrdered(ctx, int64(characterID))
 		if err != nil {
-			return nil, fmt.Errorf("failed to list mail IDs for character %d and label %d: %w", characterID, labelID, err)
+			return nil, fmt.Errorf("failed to list mails for character %d: %w", characterID, err)
 		}
-		ids2 := islices.ConvertNumeric[int64, int32](ids)
-		return ids2, nil
+		mm := make([]*model.CharacterMailHeader, len(rows))
+		for i, r := range rows {
+			mm[i] = characterMailHeaderFromDBModel(r.CharacterMail, r.EveEntity)
+		}
+		return mm, nil
 	case model.MailLabelNone:
-		ids, err := st.q.ListMailIDsNoLabelOrdered(ctx, int64(characterID))
+		rows, err := st.q.ListMailsNoLabelOrdered(ctx, int64(characterID))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to list mails for character %d: %w", characterID, err)
 		}
-		ids2 := islices.ConvertNumeric[int64, int32](ids)
-		return ids2, nil
+		mm := make([]*model.CharacterMailHeader, len(rows))
+		for i, r := range rows {
+			mm[i] = characterMailHeaderFromDBModel(r.CharacterMail, r.EveEntity)
+		}
+		return mm, nil
 	default:
-		arg := queries.ListMailIDsForLabelOrderedParams{
+		arg := queries.ListMailsForLabelOrderedParams{
 			CharacterID: int64(characterID),
 			LabelID:     int64(labelID),
 		}
-		ids, err := st.q.ListMailIDsForLabelOrdered(ctx, arg)
+		rows, err := st.q.ListMailsForLabelOrdered(ctx, arg)
 		if err != nil {
 			return nil, err
 		}
-		ids2 := islices.ConvertNumeric[int64, int32](ids)
-		return ids2, nil
+		mm := make([]*model.CharacterMailHeader, len(rows))
+		for i, r := range rows {
+			mm[i] = characterMailHeaderFromDBModel(r.CharacterMail, r.EveEntity)
+		}
+		return mm, nil
 	}
 }
 
-func (st *Storage) ListCharacterMailIDsForListOrdered(ctx context.Context, characterID int32, listID int32) ([]int32, error) {
-	arg := queries.ListMailIDsForListOrderedParams{
+func (st *Storage) ListCharacterMailsForListOrdered(ctx context.Context, characterID int32, listID int32) ([]*model.CharacterMailHeader, error) {
+	arg := queries.ListMailsForListOrderedParams{
 		CharacterID: int64(characterID),
 		EveEntityID: int64(listID),
 	}
-	ids, err := st.q.ListMailIDsForListOrdered(ctx, arg)
+	rows, err := st.q.ListMailsForListOrdered(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list mail IDs for character %d and list %d: %w", characterID, listID, err)
 	}
-	ids2 := islices.ConvertNumeric[int64, int32](ids)
-	return ids2, nil
+	mm := make([]*model.CharacterMailHeader, len(rows))
+	for i, r := range rows {
+		mm[i] = characterMailHeaderFromDBModel(r.CharacterMail, r.EveEntity)
+	}
+	return mm, nil
 }
 
 func (st *Storage) UpdateCharacterMail(ctx context.Context, characterID int32, mailPK int64, isRead bool, labelIDs []int32) error {
@@ -253,6 +265,19 @@ func (st *Storage) UpdateCharacterMail(ctx context.Context, characterID int32, m
 		return fmt.Errorf("failed to update labels for mail PK %d and character %d: %w", mailPK, characterID, err)
 	}
 	return nil
+}
+
+func characterMailHeaderFromDBModel(mail queries.CharacterMail, from queries.EveEntity) *model.CharacterMailHeader {
+	m := &model.CharacterMailHeader{
+		CharacterID: int32(mail.CharacterID),
+		From:        eveEntityFromDBModel(from),
+		IsRead:      mail.IsRead,
+		MailID:      int32(mail.MailID),
+		Subject:     mail.Subject,
+		Timestamp:   mail.Timestamp,
+	}
+	return m
+
 }
 
 func characterMailFromDBModel(

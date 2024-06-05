@@ -90,32 +90,36 @@ SELECT mail_id
 FROM character_mails
 WHERE character_id = ?;
 
--- name: ListMailIDsOrdered :many
-SELECT mail_id
+-- name: ListMailsOrdered :many
+SELECT sqlc.embed(character_mails), sqlc.embed(eve_entities)
 FROM character_mails
+JOIN eve_entities ON eve_entities.id = character_mails.from_id
 WHERE character_id = ?
 ORDER BY timestamp DESC;
 
--- name: ListMailIDsNoLabelOrdered :many
-SELECT character_mails.mail_id
+-- name: ListMailsNoLabelOrdered :many
+SELECT sqlc.embed(character_mails), sqlc.embed(eve_entities)
 FROM character_mails
+JOIN eve_entities ON eve_entities.id = character_mails.from_id
 LEFT JOIN character_mail_mail_labels ON character_mail_mail_labels.character_mail_id = character_mails.id
 WHERE character_id = ?
 AND character_mail_mail_labels.character_mail_id IS NULL
 ORDER BY timestamp DESC;
 
--- name: ListMailIDsForLabelOrdered :many
-SELECT character_mails.mail_id
+-- name: ListMailsForLabelOrdered :many
+SELECT sqlc.embed(character_mails), sqlc.embed(eve_entities)
 FROM character_mails
+JOIN eve_entities ON eve_entities.id = character_mails.from_id
 JOIN character_mail_mail_labels ON character_mail_mail_labels.character_mail_id = character_mails.id
 JOIN character_mail_labels ON character_mail_labels.id = character_mail_mail_labels.character_mail_label_id
 WHERE character_mails.character_id = ?
 AND label_id = ?
 ORDER BY timestamp DESC;
 
--- name: ListMailIDsForListOrdered :many
-SELECT character_mails.mail_id
+-- name: ListMailsForListOrdered :many
+SELECT sqlc.embed(character_mails), sqlc.embed(eve_entities)
 FROM character_mails
+JOIN eve_entities ON eve_entities.id = character_mails.from_id
 JOIN character_mails_recipients ON character_mails_recipients.mail_id = character_mails.id
 WHERE character_id = ?
 AND character_mails_recipients.eve_entity_id = ?

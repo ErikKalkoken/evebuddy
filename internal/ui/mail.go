@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -16,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
-	islices "github.com/ErikKalkoken/evebuddy/internal/helper/slices"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
@@ -36,7 +34,7 @@ type mailArea struct {
 	headerTop     *widget.Label
 	headers       *widget.List
 	lastSelected  widget.ListItemID
-	mailIDs       binding.IntList
+	headerData    binding.UntypedList
 
 	body        *widget.Label
 	mailSection fyne.CanvasObject
@@ -48,13 +46,13 @@ type mailArea struct {
 
 func (u *ui) newMailArea() *mailArea {
 	a := &mailArea{
-		treeData:  binding.NewStringTree(),
-		ui:        u,
-		headerTop: widget.NewLabel(""),
-		mailIDs:   binding.NewIntList(),
-		body:      widget.NewLabel(""),
-		header:    widget.NewLabel(""),
-		subject:   widget.NewLabel(""),
+		treeData:   binding.NewStringTree(),
+		ui:         u,
+		headerTop:  widget.NewLabel(""),
+		headerData: binding.NewUntypedList(),
+		body:       widget.NewLabel(""),
+		header:     widget.NewLabel(""),
+		subject:    widget.NewLabel(""),
 	}
 
 	// Mail
@@ -375,28 +373,11 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 	return total, labels, lists
 }
 
-// // headerArea is the UI area showing the list of mail headers.
-// type headerArea struct {
-// 	currentFolder folderNode
-// 	headerContent fyne.CanvasObject
-// 	headerTop     *widget.Label
-// 	headers       *widget.List
-// 	lastSelected  widget.ListItemID
-// 	mailIDs       binding.IntList
-// 	mailArea      *mailArea
-// 	body          *widget.Label
-// 	mailContent   fyne.CanvasObject
-// 	header        *widget.Label
-// 	mail          *model.CharacterMail
-// 	subject       *widget.Label
-// 	toolbar       *widget.Toolbar
-// }
-
 func (a *mailArea) makeHeaderList() *widget.List {
 	foregroundColor := theme.ForegroundColor()
 	subjectSize := theme.TextSize() * 1.15
 	list := widget.NewListWithData(
-		a.mailIDs,
+		a.headerData,
 		func() fyne.CanvasObject {
 			from := canvas.NewText("xxxxxxxxxxxxxxx", foregroundColor)
 			timestamp := canvas.NewText("xxxxxxxxxxxxxxx", foregroundColor)
@@ -414,7 +395,7 @@ func (a *mailArea) makeHeaderList() *widget.List {
 			if !a.ui.hasCharacter() {
 				return
 			}
-			m, err := a.fetchMailFromDataItem(di)
+			m, err := convertDataItem[*model.CharacterMailHeader](di)
 			if err != nil {
 				slog.Error("Failed to get mail", "error", err)
 				subject.Text = "ERROR"
@@ -426,13 +407,13 @@ func (a *mailArea) makeHeaderList() *widget.List {
 			fg := theme.ForegroundColor()
 			top := parent.Objects[0].(*fyne.Container)
 			from := top.Objects[0].(*canvas.Text)
-			var t string
-			if a.currentFolder.isSent() {
-				t = strings.Join(m.RecipientNames(), ", ")
-			} else {
-				t = m.From.Name
-			}
-			from.Text = t
+			// var t string
+			// if a.currentFolder.isSent() {
+			// 	t = strings.Join(m.RecipientNames(), ", ")
+			// } else {
+			// 	t = m.From.Name
+			// }
+			from.Text = m.From.Name
 			from.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
 			from.Color = fg
 			from.Refresh()
@@ -449,42 +430,42 @@ func (a *mailArea) makeHeaderList() *widget.List {
 			subject.Refresh()
 		})
 	list.OnSelected = func(id widget.ListItemID) {
-		mailID, err := fetchMailIDFromData(a.mailIDs, id)
+		r, err := getItemUntypedList[*model.CharacterMailHeader](a.headerData, id)
 		if err != nil {
 			t := "Failed to select mail header"
 			slog.Error(t, "err", err)
 			a.ui.statusBarArea.SetError(t)
 			return
 		}
-		a.setMail(mailID)
+		a.setMail(r.MailID)
 		a.lastSelected = id
 	}
 	return list
 }
 
-func fetchMailIDFromData(data binding.IntList, id widget.ListItemID) (int32, error) {
-	di, err := data.GetItem(id)
-	if err != nil {
-		return 0, err
-	}
-	mailID, err := di.(binding.Int).Get()
-	if err != nil {
-		return 0, err
-	}
-	return int32(mailID), nil
-}
+// func fetchMailIDFromData(data binding.IntList, id widget.ListItemID) (int32, error) {
+// 	di, err := data.GetItem(id)
+// 	if err != nil {
+// 		return 0, err
+// 	}
+// 	mailID, err := di.(binding.Int).Get()
+// 	if err != nil {
+// 		return 0, err
+// 	}
+// 	return int32(mailID), nil
+// }
 
-func (a *mailArea) fetchMailFromDataItem(di binding.DataItem) (*model.CharacterMail, error) {
-	mailID, err := di.(binding.Int).Get()
-	if err != nil {
-		return nil, err
-	}
-	m, err := a.ui.sv.Characters.GetCharacterMail(context.Background(), a.ui.currentCharID(), int32(mailID))
-	if err != nil {
-		return nil, err
-	}
-	return m, nil
-}
+// func (a *mailArea) fetchMailFromDataItem(di binding.DataItem) (*model.CharacterMail, error) {
+// 	mailID, err := di.(binding.Int).Get()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	m, err := a.ui.sv.Characters.GetCharacterMail(context.Background(), a.ui.currentCharID(), int32(mailID))
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return m, nil
+// }
 
 func (a *mailArea) setFolder(folder folderNode) {
 	a.currentFolder = folder
@@ -496,7 +477,7 @@ func (a *mailArea) setFolder(folder folderNode) {
 
 func (a *mailArea) headerRefresh() {
 	t, i, err := func() (string, widget.Importance, error) {
-		if err := a.updateMails(); err != nil {
+		if err := a.updateHeaderData(); err != nil {
 			return "", 0, err
 		}
 		return a.makeFolderTopText()
@@ -511,30 +492,29 @@ func (a *mailArea) headerRefresh() {
 	a.headerTop.Refresh()
 }
 
-func (a *mailArea) updateMails() error {
+func (a *mailArea) updateHeaderData() error {
 	ctx := context.Background()
 	folder := a.currentFolder
 	if folder.CharacterID == 0 {
 		return nil
 	}
-	var mailIDs []int32
+	var oo []*model.CharacterMailHeader
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		mailIDs, err = a.ui.sv.Characters.ListCharacterMailIDsForLabelOrdered(
+		oo, err = a.ui.sv.Characters.ListCharacterMailsForLabelOrdered(
 			ctx, folder.CharacterID, folder.ObjID)
 	case nodeCategoryList:
-		mailIDs, err = a.ui.sv.Characters.ListCharacterMailIDsForListOrdered(
+		oo, err = a.ui.sv.Characters.ListCharacterMailsForListOrdered(
 			ctx, folder.CharacterID, folder.ObjID)
 	}
 	if err != nil {
 		return err
 	}
-	x := islices.ConvertNumeric[int32, int](mailIDs)
-	if err := a.mailIDs.Set(x); err != nil {
+	if err := a.headerData.Set(copyToUntypedSlice(oo)); err != nil {
 		return err
 	}
-	if len(mailIDs) == 0 {
+	if len(oo) == 0 {
 		a.clearMail()
 	}
 	return nil
@@ -552,7 +532,7 @@ func (a *mailArea) makeFolderTopText() (string, widget.Importance, error) {
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}
-	s := fmt.Sprintf("%d mails", a.mailIDs.Length())
+	s := fmt.Sprintf("%d mails", a.headerData.Length())
 	return s, widget.MediumImportance, nil
 }
 

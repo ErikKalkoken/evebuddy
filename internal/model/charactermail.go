@@ -42,6 +42,16 @@ type CharacterMail struct {
 	Timestamp   time.Time
 }
 
+// An Eve mail header belonging to a character.
+type CharacterMailHeader struct {
+	CharacterID int32
+	From        *EveEntity
+	IsRead      bool
+	MailID      int32
+	Subject     string
+	Timestamp   time.Time
+}
+
 // BodyPlain returns a mail's body as plain text.
 func (cm CharacterMail) BodyPlain() string {
 	return converter.EveHTMLToPlain(cm.Body)

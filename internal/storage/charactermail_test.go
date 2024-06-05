@@ -113,7 +113,7 @@ func TestListMailID(t *testing.T) {
 		m2 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -60)})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}})
 		// when
-		got, err := r.ListCharacterMailIDsForLabelOrdered(ctx, c.ID, l1.LabelID)
+		got, err := r.ListCharacterMailsForLabelOrdered(ctx, c.ID, l1.LabelID)
 		// then
 		if assert.NoError(t, err) {
 			want := []int32{m2.MailID, m1.MailID}
@@ -131,7 +131,7 @@ func TestListMailID(t *testing.T) {
 		m3 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}, Timestamp: time.Now().Add(time.Second * -240)})
 		m4 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, Timestamp: time.Now().Add(time.Second * -360)})
 		// when
-		got, err := r.ListCharacterMailIDsForLabelOrdered(ctx, c.ID, model.MailLabelAll)
+		got, err := r.ListCharacterMailsForLabelOrdered(ctx, c.ID, model.MailLabelAll)
 		// then
 		if assert.NoError(t, err) {
 			want := []int32{m2.MailID, m1.MailID, m3.MailID, m4.MailID}
@@ -150,7 +150,7 @@ func TestListMailID(t *testing.T) {
 		})
 		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		// when
-		got, err := r.ListCharacterMailIDsForLabelOrdered(ctx, c.ID, model.MailLabelNone)
+		got, err := r.ListCharacterMailsForLabelOrdered(ctx, c.ID, model.MailLabelNone)
 		// then
 		if assert.NoError(t, err) {
 			want := []int32{m.MailID}
@@ -162,7 +162,7 @@ func TestListMailID(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
-		mm, err := r.ListCharacterMailIDsForLabelOrdered(ctx, c.ID, 99)
+		mm, err := r.ListCharacterMailsForLabelOrdered(ctx, c.ID, 99)
 		// then
 		if assert.NoError(t, err) {
 			assert.Empty(t, mm)
@@ -186,7 +186,7 @@ func TestListMailID(t *testing.T) {
 			LabelIDs:    []int32{l2.LabelID},
 		})
 		// when
-		mm, err := r.ListCharacterMailIDsForLabelOrdered(ctx, c2.ID, l2.LabelID)
+		mm, err := r.ListCharacterMailsForLabelOrdered(ctx, c2.ID, l2.LabelID)
 		if assert.NoError(t, err) {
 			assert.Len(t, mm, 1)
 		}
@@ -207,7 +207,7 @@ func TestListMailID(t *testing.T) {
 		})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		// when
-		got, err := r.ListCharacterMailIDsForListOrdered(ctx, c.ID, l1.ID)
+		got, err := r.ListCharacterMailsForListOrdered(ctx, c.ID, l1.ID)
 		// then
 		if assert.NoError(t, err) {
 			want := []int32{m1.MailID}
