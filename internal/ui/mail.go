@@ -413,7 +413,7 @@ func (a *mailArea) makeHeaderList() *widget.List {
 			// } else {
 			// 	t = m.From.Name
 			// }
-			from.Text = m.From.Name
+			from.Text = m.From
 			from.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
 			from.Color = fg
 			from.Refresh()

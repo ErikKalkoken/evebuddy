@@ -91,38 +91,38 @@ FROM character_mails
 WHERE character_id = ?;
 
 -- name: ListMailsOrdered :many
-SELECT sqlc.embed(character_mails), sqlc.embed(eve_entities)
-FROM character_mails
-JOIN eve_entities ON eve_entities.id = character_mails.from_id
+SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+FROM character_mails cm
+JOIN eve_entities ee ON ee.id = cm.from_id
 WHERE character_id = ?
 ORDER BY timestamp DESC;
 
 -- name: ListMailsNoLabelOrdered :many
-SELECT sqlc.embed(character_mails), sqlc.embed(eve_entities)
-FROM character_mails
-JOIN eve_entities ON eve_entities.id = character_mails.from_id
-LEFT JOIN character_mail_mail_labels ON character_mail_mail_labels.character_mail_id = character_mails.id
+SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+FROM character_mails cm
+JOIN eve_entities ee ON ee.id = cm.from_id
+LEFT JOIN character_mail_mail_labels cml ON cml.character_mail_id = cm.id
 WHERE character_id = ?
-AND character_mail_mail_labels.character_mail_id IS NULL
+AND cml.character_mail_id IS NULL
 ORDER BY timestamp DESC;
 
 -- name: ListMailsForLabelOrdered :many
-SELECT sqlc.embed(character_mails), sqlc.embed(eve_entities)
-FROM character_mails
-JOIN eve_entities ON eve_entities.id = character_mails.from_id
-JOIN character_mail_mail_labels ON character_mail_mail_labels.character_mail_id = character_mails.id
-JOIN character_mail_labels ON character_mail_labels.id = character_mail_mail_labels.character_mail_label_id
-WHERE character_mails.character_id = ?
+SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+FROM character_mails cm
+JOIN eve_entities ee ON ee.id = cm.from_id
+JOIN character_mail_mail_labels cml ON cml.character_mail_id = cm.id
+JOIN character_mail_labels ON character_mail_labels.id = cml.character_mail_label_id
+WHERE cm.character_id = ?
 AND label_id = ?
 ORDER BY timestamp DESC;
 
 -- name: ListMailsForListOrdered :many
-SELECT sqlc.embed(character_mails), sqlc.embed(eve_entities)
-FROM character_mails
-JOIN eve_entities ON eve_entities.id = character_mails.from_id
-JOIN character_mails_recipients ON character_mails_recipients.mail_id = character_mails.id
+SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+FROM character_mails cm
+JOIN eve_entities ee ON ee.id = cm.from_id
+JOIN character_mails_recipients cmr ON cmr.mail_id = character_mails.id
 WHERE character_id = ?
-AND character_mails_recipients.eve_entity_id = ?
+AND cmr.eve_entity_id = ?
 ORDER BY timestamp DESC;
 
 -- name: UpdateMail :exec

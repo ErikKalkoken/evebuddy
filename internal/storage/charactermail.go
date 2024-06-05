@@ -207,7 +207,7 @@ func (st *Storage) ListCharacterMailsForLabelOrdered(ctx context.Context, charac
 		}
 		mm := make([]*model.CharacterMailHeader, len(rows))
 		for i, r := range rows {
-			mm[i] = characterMailHeaderFromDBModel(r.CharacterMail, r.EveEntity)
+			mm[i] = characterMailHeaderFromDBModel(characterID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
 		}
 		return mm, nil
 	case model.MailLabelNone:
@@ -217,7 +217,7 @@ func (st *Storage) ListCharacterMailsForLabelOrdered(ctx context.Context, charac
 		}
 		mm := make([]*model.CharacterMailHeader, len(rows))
 		for i, r := range rows {
-			mm[i] = characterMailHeaderFromDBModel(r.CharacterMail, r.EveEntity)
+			mm[i] = characterMailHeaderFromDBModel(characterID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
 		}
 		return mm, nil
 	default:
@@ -231,7 +231,7 @@ func (st *Storage) ListCharacterMailsForLabelOrdered(ctx context.Context, charac
 		}
 		mm := make([]*model.CharacterMailHeader, len(rows))
 		for i, r := range rows {
-			mm[i] = characterMailHeaderFromDBModel(r.CharacterMail, r.EveEntity)
+			mm[i] = characterMailHeaderFromDBModel(characterID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
 		}
 		return mm, nil
 	}
@@ -248,7 +248,7 @@ func (st *Storage) ListCharacterMailsForListOrdered(ctx context.Context, charact
 	}
 	mm := make([]*model.CharacterMailHeader, len(rows))
 	for i, r := range rows {
-		mm[i] = characterMailHeaderFromDBModel(r.CharacterMail, r.EveEntity)
+		mm[i] = characterMailHeaderFromDBModel(characterID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
 	}
 	return mm, nil
 }
@@ -267,14 +267,14 @@ func (st *Storage) UpdateCharacterMail(ctx context.Context, characterID int32, m
 	return nil
 }
 
-func characterMailHeaderFromDBModel(mail queries.CharacterMail, from queries.EveEntity) *model.CharacterMailHeader {
+func characterMailHeaderFromDBModel(characterID int32, from string, isRead bool, mailID int64, subject string, timestamp time.Time) *model.CharacterMailHeader {
 	m := &model.CharacterMailHeader{
-		CharacterID: int32(mail.CharacterID),
-		From:        eveEntityFromDBModel(from),
-		IsRead:      mail.IsRead,
-		MailID:      int32(mail.MailID),
-		Subject:     mail.Subject,
-		Timestamp:   mail.Timestamp,
+		CharacterID: characterID,
+		From:        from,
+		IsRead:      isRead,
+		MailID:      int32(mailID),
+		Subject:     subject,
+		Timestamp:   timestamp,
 	}
 	return m
 

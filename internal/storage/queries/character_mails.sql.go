@@ -360,12 +360,12 @@ func (q *Queries) ListMailIDs(ctx context.Context, characterID int64) ([]int64, 
 }
 
 const listMailsForLabelOrdered = `-- name: ListMailsForLabelOrdered :many
-SELECT character_mails.id, character_mails.body, character_mails.character_id, character_mails.from_id, character_mails.is_read, character_mails.mail_id, character_mails.subject, character_mails.timestamp, eve_entities.id, eve_entities.category, eve_entities.name
-FROM character_mails
-JOIN eve_entities ON eve_entities.id = character_mails.from_id
-JOIN character_mail_mail_labels ON character_mail_mail_labels.character_mail_id = character_mails.id
-JOIN character_mail_labels ON character_mail_labels.id = character_mail_mail_labels.character_mail_label_id
-WHERE character_mails.character_id = ?
+SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+FROM character_mails cm
+JOIN eve_entities ee ON ee.id = cm.from_id
+JOIN character_mail_mail_labels cml ON cml.character_mail_id = cm.id
+JOIN character_mail_labels ON character_mail_labels.id = cml.character_mail_label_id
+WHERE cm.character_id = ?
 AND label_id = ?
 ORDER BY timestamp DESC
 `
@@ -376,8 +376,11 @@ type ListMailsForLabelOrderedParams struct {
 }
 
 type ListMailsForLabelOrderedRow struct {
-	CharacterMail CharacterMail
-	EveEntity     EveEntity
+	Subject   string
+	MailID    int64
+	Timestamp time.Time
+	IsRead    bool
+	FromName  string
 }
 
 func (q *Queries) ListMailsForLabelOrdered(ctx context.Context, arg ListMailsForLabelOrderedParams) ([]ListMailsForLabelOrderedRow, error) {
@@ -390,17 +393,11 @@ func (q *Queries) ListMailsForLabelOrdered(ctx context.Context, arg ListMailsFor
 	for rows.Next() {
 		var i ListMailsForLabelOrderedRow
 		if err := rows.Scan(
-			&i.CharacterMail.ID,
-			&i.CharacterMail.Body,
-			&i.CharacterMail.CharacterID,
-			&i.CharacterMail.FromID,
-			&i.CharacterMail.IsRead,
-			&i.CharacterMail.MailID,
-			&i.CharacterMail.Subject,
-			&i.CharacterMail.Timestamp,
-			&i.EveEntity.ID,
-			&i.EveEntity.Category,
-			&i.EveEntity.Name,
+			&i.Subject,
+			&i.MailID,
+			&i.Timestamp,
+			&i.IsRead,
+			&i.FromName,
 		); err != nil {
 			return nil, err
 		}
@@ -416,12 +413,12 @@ func (q *Queries) ListMailsForLabelOrdered(ctx context.Context, arg ListMailsFor
 }
 
 const listMailsForListOrdered = `-- name: ListMailsForListOrdered :many
-SELECT character_mails.id, character_mails.body, character_mails.character_id, character_mails.from_id, character_mails.is_read, character_mails.mail_id, character_mails.subject, character_mails.timestamp, eve_entities.id, eve_entities.category, eve_entities.name
-FROM character_mails
-JOIN eve_entities ON eve_entities.id = character_mails.from_id
-JOIN character_mails_recipients ON character_mails_recipients.mail_id = character_mails.id
+SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+FROM character_mails cm
+JOIN eve_entities ee ON ee.id = cm.from_id
+JOIN character_mails_recipients cmr ON cmr.mail_id = character_mails.id
 WHERE character_id = ?
-AND character_mails_recipients.eve_entity_id = ?
+AND cmr.eve_entity_id = ?
 ORDER BY timestamp DESC
 `
 
@@ -431,8 +428,11 @@ type ListMailsForListOrderedParams struct {
 }
 
 type ListMailsForListOrderedRow struct {
-	CharacterMail CharacterMail
-	EveEntity     EveEntity
+	Subject   string
+	MailID    int64
+	Timestamp time.Time
+	IsRead    bool
+	FromName  string
 }
 
 func (q *Queries) ListMailsForListOrdered(ctx context.Context, arg ListMailsForListOrderedParams) ([]ListMailsForListOrderedRow, error) {
@@ -445,17 +445,11 @@ func (q *Queries) ListMailsForListOrdered(ctx context.Context, arg ListMailsForL
 	for rows.Next() {
 		var i ListMailsForListOrderedRow
 		if err := rows.Scan(
-			&i.CharacterMail.ID,
-			&i.CharacterMail.Body,
-			&i.CharacterMail.CharacterID,
-			&i.CharacterMail.FromID,
-			&i.CharacterMail.IsRead,
-			&i.CharacterMail.MailID,
-			&i.CharacterMail.Subject,
-			&i.CharacterMail.Timestamp,
-			&i.EveEntity.ID,
-			&i.EveEntity.Category,
-			&i.EveEntity.Name,
+			&i.Subject,
+			&i.MailID,
+			&i.Timestamp,
+			&i.IsRead,
+			&i.FromName,
 		); err != nil {
 			return nil, err
 		}
@@ -471,18 +465,21 @@ func (q *Queries) ListMailsForListOrdered(ctx context.Context, arg ListMailsForL
 }
 
 const listMailsNoLabelOrdered = `-- name: ListMailsNoLabelOrdered :many
-SELECT character_mails.id, character_mails.body, character_mails.character_id, character_mails.from_id, character_mails.is_read, character_mails.mail_id, character_mails.subject, character_mails.timestamp, eve_entities.id, eve_entities.category, eve_entities.name
-FROM character_mails
-JOIN eve_entities ON eve_entities.id = character_mails.from_id
-LEFT JOIN character_mail_mail_labels ON character_mail_mail_labels.character_mail_id = character_mails.id
+SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+FROM character_mails cm
+JOIN eve_entities ee ON ee.id = cm.from_id
+LEFT JOIN character_mail_mail_labels cml ON cml.character_mail_id = cm.id
 WHERE character_id = ?
-AND character_mail_mail_labels.character_mail_id IS NULL
+AND cml.character_mail_id IS NULL
 ORDER BY timestamp DESC
 `
 
 type ListMailsNoLabelOrderedRow struct {
-	CharacterMail CharacterMail
-	EveEntity     EveEntity
+	Subject   string
+	MailID    int64
+	Timestamp time.Time
+	IsRead    bool
+	FromName  string
 }
 
 func (q *Queries) ListMailsNoLabelOrdered(ctx context.Context, characterID int64) ([]ListMailsNoLabelOrderedRow, error) {
@@ -495,17 +492,11 @@ func (q *Queries) ListMailsNoLabelOrdered(ctx context.Context, characterID int64
 	for rows.Next() {
 		var i ListMailsNoLabelOrderedRow
 		if err := rows.Scan(
-			&i.CharacterMail.ID,
-			&i.CharacterMail.Body,
-			&i.CharacterMail.CharacterID,
-			&i.CharacterMail.FromID,
-			&i.CharacterMail.IsRead,
-			&i.CharacterMail.MailID,
-			&i.CharacterMail.Subject,
-			&i.CharacterMail.Timestamp,
-			&i.EveEntity.ID,
-			&i.EveEntity.Category,
-			&i.EveEntity.Name,
+			&i.Subject,
+			&i.MailID,
+			&i.Timestamp,
+			&i.IsRead,
+			&i.FromName,
 		); err != nil {
 			return nil, err
 		}
@@ -521,16 +512,19 @@ func (q *Queries) ListMailsNoLabelOrdered(ctx context.Context, characterID int64
 }
 
 const listMailsOrdered = `-- name: ListMailsOrdered :many
-SELECT character_mails.id, character_mails.body, character_mails.character_id, character_mails.from_id, character_mails.is_read, character_mails.mail_id, character_mails.subject, character_mails.timestamp, eve_entities.id, eve_entities.category, eve_entities.name
-FROM character_mails
-JOIN eve_entities ON eve_entities.id = character_mails.from_id
+SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+FROM character_mails cm
+JOIN eve_entities ee ON ee.id = cm.from_id
 WHERE character_id = ?
 ORDER BY timestamp DESC
 `
 
 type ListMailsOrderedRow struct {
-	CharacterMail CharacterMail
-	EveEntity     EveEntity
+	Subject   string
+	MailID    int64
+	Timestamp time.Time
+	IsRead    bool
+	FromName  string
 }
 
 func (q *Queries) ListMailsOrdered(ctx context.Context, characterID int64) ([]ListMailsOrderedRow, error) {
@@ -543,17 +537,11 @@ func (q *Queries) ListMailsOrdered(ctx context.Context, characterID int64) ([]Li
 	for rows.Next() {
 		var i ListMailsOrderedRow
 		if err := rows.Scan(
-			&i.CharacterMail.ID,
-			&i.CharacterMail.Body,
-			&i.CharacterMail.CharacterID,
-			&i.CharacterMail.FromID,
-			&i.CharacterMail.IsRead,
-			&i.CharacterMail.MailID,
-			&i.CharacterMail.Subject,
-			&i.CharacterMail.Timestamp,
-			&i.EveEntity.ID,
-			&i.EveEntity.Category,
-			&i.EveEntity.Name,
+			&i.Subject,
+			&i.MailID,
+			&i.Timestamp,
+			&i.IsRead,
+			&i.FromName,
 		); err != nil {
 			return nil, err
 		}

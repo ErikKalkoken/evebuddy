@@ -45,7 +45,7 @@ type CharacterMail struct {
 // An Eve mail header belonging to a character.
 type CharacterMailHeader struct {
 	CharacterID int32
-	From        *EveEntity
+	From        string
 	IsRead      bool
 	MailID      int32
 	Subject     string
