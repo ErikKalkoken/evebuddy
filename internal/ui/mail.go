@@ -6,7 +6,6 @@ import (
 	"log/slog"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
@@ -16,6 +15,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 // mailArea is the UI area showing the mail folders.
@@ -370,54 +370,23 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 }
 
 func (a *mailArea) makeHeaderList() *widget.List {
-	foregroundColor := theme.ForegroundColor()
-	subjectSize := theme.TextSize() * 1.15
 	list := widget.NewListWithData(
 		a.headerData,
 		func() fyne.CanvasObject {
-			from := canvas.NewText("xxxxxxxxxxxxxxx", foregroundColor)
-			timestamp := canvas.NewText("xxxxxxxxxxxxxxx", foregroundColor)
-			subject := canvas.NewText("subject", foregroundColor)
-			subject.TextSize = subjectSize
-			return container.NewPadded(container.NewPadded(container.NewVBox(
-				container.NewHBox(from, layout.NewSpacer(), timestamp),
-				subject,
-			)))
+			return widgets.NewMailHeaderItem(myDateTime)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
-			parent := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects[0].(*fyne.Container)
-			subject := parent.Objects[1].(*canvas.Text)
-
 			if !a.ui.hasCharacter() {
 				return
 			}
+			item := co.(*widgets.MailHeaderItem)
 			m, err := convertDataItem[*model.CharacterMailHeader](di)
 			if err != nil {
 				slog.Error("Failed to get mail", "error", err)
-				subject.Text = "ERROR"
-				subject.Color = theme.ErrorColor()
-				subject.Refresh()
+				item.SetError("Failed to get mail")
 				return
 			}
-
-			fg := theme.ForegroundColor()
-			top := parent.Objects[0].(*fyne.Container)
-			from := top.Objects[0].(*canvas.Text)
-			from.Text = m.From
-			from.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
-			from.Color = fg
-			from.Refresh()
-
-			timestamp := top.Objects[2].(*canvas.Text)
-			timestamp.Text = m.Timestamp.Format(myDateTime)
-			timestamp.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
-			timestamp.Color = fg
-			timestamp.Refresh()
-
-			subject.Text = m.Subject
-			subject.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
-			subject.Color = fg
-			subject.Refresh()
+			item.Set(m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	list.OnSelected = func(id widget.ListItemID) {
 		r, err := getItemUntypedList[*model.CharacterMailHeader](a.headerData, id)
