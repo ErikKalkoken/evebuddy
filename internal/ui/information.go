@@ -151,7 +151,7 @@ var attributeGroupsMap = map[attributeGroup][]int32{
 
 // Substituting icon ID for missing icons
 var iconPatches = map[int32]int32{
-	model.EveDogmaAttributeJumpDriveFuelNeed: icons.IDHeliumIsotopes,
+	model.EveDogmaAttributeJumpDriveFuelNeed: icons.HeliumIsotopesID,
 }
 
 type requiredSkill struct {

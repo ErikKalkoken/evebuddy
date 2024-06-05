@@ -7,46 +7,58 @@ import (
 
 // Popular icon IDs
 const (
-	IDUndefined          int32 = 0
-	IDCharisma           int32 = 1378
-	IDIntelligence       int32 = 1380
-	IDMemory             int32 = 1381
-	IDPerception         int32 = 1382
-	IDWillpower          int32 = 1379
-	IDHeliumIsotopes     int32 = 2699
-	IDHydrogenIsotopes   int32 = 2700
-	IDNitrogenIsotopes   int32 = 2702
-	IDOxygenIsotopes     int32 = 2701
-	IDCloningCenter      int32 = 21596
-	IDModuleJumpEnhancer int32 = 97
+	HeliumIsotopesID int32 = 2699
 )
 
+// Enum for defining named icons
 type iconName uint
 
 const (
-	NameTech1 iconName = iota
-	NameTech2
-	NameTech3
+	Undefined iconName = iota
+	CloningCenter
+	Charisma
+	Intelligence
+	Memory
+	Perception
+	Willpower
+	HeliumIsotopes
+	HydrogenIsotopes
+	NitrogenIsotopes
+	OxygenIsotopes
+	Tech1
+	Tech2
+	Tech3
 )
 
-// GetResourceByIconID returns an icon resource for an icon ID and reports if it was found.
-// When the icon was not found it will the icon for ID 0 as substitute.
+var namedIcons = map[iconName]*fyne.StaticResource{
+	Undefined:        resource76415Png,
+	CloningCenter:    resource127641Png,
+	Charisma:         resource22321Png,
+	Intelligence:     resource22323Png,
+	Memory:           resource22324Png,
+	Perception:       resource22325Png,
+	Willpower:        resource22322Png,
+	HeliumIsotopes:   resource516413Png,
+	HydrogenIsotopes: resource516414Png,
+	NitrogenIsotopes: resource516416Png,
+	OxygenIsotopes:   resource516415Png,
+	Tech1:            resource7316241Png,
+	Tech2:            resource7316242Png,
+	Tech3:            resource7316242Png,
+}
+
+// GetResourceByIconID returns an Eve Online icon by icon ID and reports if it was found.
+// When the icon was not found it will return the undefined icon as substitute.
 func GetResourceByIconID(id int32) (*fyne.StaticResource, bool) {
 	r, ok := id2fileMap[id]
 	if !ok {
-		return id2fileMap[IDUndefined], false
+		return namedIcons[Undefined], false
 	}
 	return r, true
 }
 
-func GetResourceByName(name iconName) (*fyne.StaticResource, bool) {
-	switch name {
-	case NameTech1:
-		return resource7316241Png, true
-	case NameTech2:
-		return resource7316242Png, true
-	case NameTech3:
-		return resource7316242Png, true
-	}
-	return id2fileMap[IDUndefined], false
+// GetResourceByName returns an Eve Online icon by name and reports if it was found.
+// When the icon was not found it will return the undefined icon as substitute.
+func GetResourceByName(name iconName) *fyne.StaticResource {
+	return namedIcons[name]
 }

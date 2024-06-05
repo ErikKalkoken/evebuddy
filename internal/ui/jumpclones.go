@@ -78,7 +78,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 				return
 			}
 			if n.isClone() {
-				icon.Resource, _ = icons.GetResourceByIconID(icons.IDCloningCenter)
+				icon.Resource = icons.GetResourceByName(icons.CloningCenter)
 				icon.Refresh()
 				first.SetText(n.Name)
 				second.SetText(n.Region)
