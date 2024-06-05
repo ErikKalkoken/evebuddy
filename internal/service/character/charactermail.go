@@ -154,12 +154,12 @@ func (s *CharacterService) ListCharacterMailLists(ctx context.Context, character
 
 // ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
 // Return mails for all labels, when labelID = 0
-func (s *CharacterService) ListCharacterMailsForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]*model.CharacterMailHeader, error) {
-	return s.st.ListCharacterMailsForLabelOrdered(ctx, characterID, labelID)
+func (s *CharacterService) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]*model.CharacterMailHeader, error) {
+	return s.st.ListCharacterMailHeadersForLabelOrdered(ctx, characterID, labelID)
 }
 
-func (s *CharacterService) ListCharacterMailsForListOrdered(ctx context.Context, characterID int32, listID int32) ([]*model.CharacterMailHeader, error) {
-	return s.st.ListCharacterMailsForListOrdered(ctx, characterID, listID)
+func (s *CharacterService) ListCharacterMailHeadersForListOrdered(ctx context.Context, characterID int32, listID int32) ([]*model.CharacterMailHeader, error) {
+	return s.st.ListCharacterMailHeadersForListOrdered(ctx, characterID, listID)
 }
 
 func (s *CharacterService) ListCharacterMailLabelsOrdered(ctx context.Context, characterID int32) ([]*model.CharacterMailLabel, error) {

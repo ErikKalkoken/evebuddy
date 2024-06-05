@@ -123,11 +123,11 @@ func (q *Queries) DeleteMailCharacterMailLabels(ctx context.Context, characterMa
 }
 
 const getCharacterMailLabelUnreadCounts = `-- name: GetCharacterMailLabelUnreadCounts :many
-SELECT label_id, COUNT(character_mails.id) AS unread_count_2
-FROM character_mail_labels
-JOIN character_mail_mail_labels ON character_mail_mail_labels.character_mail_label_id = character_mail_labels.id
-JOIN character_mails ON character_mails.id = character_mail_mail_labels.character_mail_id
-WHERE character_mail_labels.character_id = ?
+SELECT label_id, COUNT(cm.id) AS unread_count_2
+FROM character_mail_labels cml
+JOIN character_mail_mail_labels cmml ON cmml.character_mail_label_id = cml.id
+JOIN character_mails cm ON cm.id = cmml.character_mail_id
+WHERE cml.character_id = ?
 AND is_read IS FALSE
 GROUP BY label_id
 `
@@ -198,13 +198,13 @@ func (q *Queries) GetCharacterMailLabels(ctx context.Context, characterMailID in
 }
 
 const getCharacterMailListUnreadCounts = `-- name: GetCharacterMailListUnreadCounts :many
-SELECT eve_entities.id AS list_id, COUNT(character_mails.id) as unread_count_2
-FROM character_mails
-JOIN character_mails_recipients ON character_mails_recipients.mail_id = character_mails.id
+SELECT eve_entities.id AS list_id, COUNT(cm.id) as unread_count_2
+FROM character_mails cm
+JOIN character_mails_recipients ON character_mails_recipients.mail_id = cm.id
 JOIN eve_entities ON eve_entities.id = character_mails_recipients.eve_entity_id
 WHERE character_id = ?
 AND eve_entities.category = "mail_list"
-AND character_mails.is_read IS FALSE
+AND cm.is_read IS FALSE
 GROUP BY eve_entities.id
 `
 
@@ -416,7 +416,7 @@ const listMailsForListOrdered = `-- name: ListMailsForListOrdered :many
 SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
 FROM character_mails cm
 JOIN eve_entities ee ON ee.id = cm.from_id
-JOIN character_mails_recipients cmr ON cmr.mail_id = character_mails.id
+JOIN character_mails_recipients cmr ON cmr.mail_id = cm.id
 WHERE character_id = ?
 AND cmr.eve_entity_id = ?
 ORDER BY timestamp DESC
@@ -444,6 +444,61 @@ func (q *Queries) ListMailsForListOrdered(ctx context.Context, arg ListMailsForL
 	var items []ListMailsForListOrderedRow
 	for rows.Next() {
 		var i ListMailsForListOrderedRow
+		if err := rows.Scan(
+			&i.Subject,
+			&i.MailID,
+			&i.Timestamp,
+			&i.IsRead,
+			&i.FromName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMailsForSentOrdered = `-- name: ListMailsForSentOrdered :many
+SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, group_concat(ee.name, ", ") as from_name
+FROM character_mails cm
+JOIN character_mails_recipients cmr ON cmr.mail_id = cm.id
+JOIN eve_entities ee ON ee.id = cmr.eve_entity_id
+JOIN character_mail_mail_labels cml ON cml.character_mail_id = cm.id
+JOIN character_mail_labels ON character_mail_labels.id = cml.character_mail_label_id
+WHERE cm.character_id = ?
+AND label_id = ?
+GROUP BY cm.mail_id
+ORDER BY timestamp DESC
+`
+
+type ListMailsForSentOrderedParams struct {
+	CharacterID int64
+	LabelID     int64
+}
+
+type ListMailsForSentOrderedRow struct {
+	Subject   string
+	MailID    int64
+	Timestamp time.Time
+	IsRead    bool
+	FromName  string
+}
+
+func (q *Queries) ListMailsForSentOrdered(ctx context.Context, arg ListMailsForSentOrderedParams) ([]ListMailsForSentOrderedRow, error) {
+	rows, err := q.db.QueryContext(ctx, listMailsForSentOrdered, arg.CharacterID, arg.LabelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListMailsForSentOrderedRow
+	for rows.Next() {
+		var i ListMailsForSentOrderedRow
 		if err := rows.Scan(
 			&i.Subject,
 			&i.MailID,

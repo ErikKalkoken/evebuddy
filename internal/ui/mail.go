@@ -133,10 +133,6 @@ func (f folderNode) icon() fyne.Resource {
 	return theme.FolderIcon()
 }
 
-func (f folderNode) isSent() bool {
-	return f.ID == folderNodeSentID
-}
-
 func (a *mailArea) makeFolderTree() *widget.Tree {
 	tree := widget.NewTreeWithData(
 		a.treeData,
@@ -407,12 +403,6 @@ func (a *mailArea) makeHeaderList() *widget.List {
 			fg := theme.ForegroundColor()
 			top := parent.Objects[0].(*fyne.Container)
 			from := top.Objects[0].(*canvas.Text)
-			// var t string
-			// if a.currentFolder.isSent() {
-			// 	t = strings.Join(m.RecipientNames(), ", ")
-			// } else {
-			// 	t = m.From.Name
-			// }
 			from.Text = m.From
 			from.TextStyle = fyne.TextStyle{Bold: !m.IsRead}
 			from.Color = fg
@@ -442,30 +432,6 @@ func (a *mailArea) makeHeaderList() *widget.List {
 	}
 	return list
 }
-
-// func fetchMailIDFromData(data binding.IntList, id widget.ListItemID) (int32, error) {
-// 	di, err := data.GetItem(id)
-// 	if err != nil {
-// 		return 0, err
-// 	}
-// 	mailID, err := di.(binding.Int).Get()
-// 	if err != nil {
-// 		return 0, err
-// 	}
-// 	return int32(mailID), nil
-// }
-
-// func (a *mailArea) fetchMailFromDataItem(di binding.DataItem) (*model.CharacterMail, error) {
-// 	mailID, err := di.(binding.Int).Get()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	m, err := a.ui.sv.Characters.GetCharacterMail(context.Background(), a.ui.currentCharID(), int32(mailID))
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return m, nil
-// }
 
 func (a *mailArea) setFolder(folder folderNode) {
 	a.currentFolder = folder
@@ -502,10 +468,10 @@ func (a *mailArea) updateHeaderData() error {
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		oo, err = a.ui.sv.Characters.ListCharacterMailsForLabelOrdered(
+		oo, err = a.ui.sv.Characters.ListCharacterMailHeadersForLabelOrdered(
 			ctx, folder.CharacterID, folder.ObjID)
 	case nodeCategoryList:
-		oo, err = a.ui.sv.Characters.ListCharacterMailsForListOrdered(
+		oo, err = a.ui.sv.Characters.ListCharacterMailHeadersForListOrdered(
 			ctx, folder.CharacterID, folder.ObjID)
 	}
 	if err != nil {
