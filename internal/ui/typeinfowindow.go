@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -17,7 +16,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
-	"github.com/dustin/go-humanize"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -286,10 +284,10 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 				x := attributes[model.EveDogmaAttributeWarpSpeedMultiplier]
 				value = value * x.Value
 			}
-			v, substituteID := a.formatAttributeValue(ctx, value, o.DogmaAttribute.UnitID)
+			v, substituteIcon := a.ui.sv.EveUniverse.FormatValue(ctx, value, o.DogmaAttribute.UnitID)
 			var iconID int32
-			if substituteID != 0 {
-				iconID = substituteID
+			if substituteIcon != 0 {
+				iconID = substituteIcon
 			} else {
 				iconID = o.DogmaAttribute.IconID
 			}
@@ -303,7 +301,7 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 	}
 	data := make([]attributesRow, 0)
 	if a.et.Volume > 0 {
-		v, _ := a.formatAttributeValue(ctx, a.et.Volume, model.EveUnitVolume)
+		v, _ := a.ui.sv.EveUniverse.FormatValue(ctx, a.et.Volume, model.EveUnitVolume)
 		r := attributesRow{
 			icon:  icons.GetResourceByName(icons.Structure),
 			label: "Volume",
@@ -348,7 +346,7 @@ func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int
 		}
 		iconID := o.DogmaAttribute.IconID
 		r, _ := icons.GetResourceByIconID(iconID)
-		v, _ := a.formatAttributeValue(ctx, o.Value, o.DogmaAttribute.UnitID)
+		v, _ := a.ui.sv.EveUniverse.FormatValue(ctx, o.Value, o.DogmaAttribute.UnitID)
 		data = append(data, attributesRow{
 			icon:  r,
 			label: o.DogmaAttribute.DisplayName,
@@ -615,88 +613,4 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 		l.UnselectAll()
 	}
 	return l
-}
-
-// formatAttributeValue returns the formatted value of a dogma attribute.
-func (a *typeInfoWindow) formatAttributeValue(ctx context.Context, value float32, unit int32) (string, int32) {
-	if a.ui.isDebug {
-		return fmt.Sprintf("%v", value), 0
-	}
-	defaultFormatter := func(v float32) string {
-		return humanize.CommafWithDigits(float64(v), 2)
-	}
-	now := time.Now()
-	switch unit {
-	case model.EveUnitAbsolutePercent:
-		return fmt.Sprintf("%.0f%%", value*100), 0
-	case model.EveUnitAcceleration:
-		return fmt.Sprintf("%s m/sec", defaultFormatter(value)), 0
-	case model.EveUnitAttributeID:
-		da, err := a.ui.sv.EveUniverse.GetEveDogmaAttribute(ctx, int32(value))
-		if err != nil {
-			go func() {
-				_, err := a.ui.sv.EveUniverse.GetOrCreateEveDogmaAttributeESI(ctx, int32(value))
-				if err != nil {
-					slog.Error("Failed to fetch dogma attribute from ESI", "ID", value, "err", err)
-				}
-			}()
-			return "?", 0
-		}
-		return da.DisplayName, da.IconID
-	case model.EveUnitAttributePoints:
-		return fmt.Sprintf("%s points", defaultFormatter(value)), 0
-	case model.EveUnitCapacitorUnits:
-		return fmt.Sprintf("%.1f GJ", value), 0
-	case model.EveUnitDroneBandwidth:
-		return fmt.Sprintf("%s Mbit/s", defaultFormatter(value)), 0
-	case model.EveUnitHitpoints:
-		return fmt.Sprintf("%s HP", defaultFormatter(value)), 0
-	case model.EveUnitInverseAbsolutePercent:
-		return fmt.Sprintf("%.0f%%", (1-value)*100), 0
-	case model.EveUnitLength:
-		if value > 1000 {
-			return fmt.Sprintf("%s km", defaultFormatter(value/float32(1000))), 0
-		} else {
-			return fmt.Sprintf("%s m", defaultFormatter(value)), 0
-		}
-	case model.EveUnitLevel:
-		return fmt.Sprintf("Level %s", defaultFormatter(value)), 0
-	case model.EveUnitLightYear:
-		return fmt.Sprintf("%.1f LY", value), 0
-	case model.EveUnitMass:
-		return fmt.Sprintf("%s kg", defaultFormatter(value)), 0
-	case model.EveUnitMegaWatts:
-		return fmt.Sprintf("%s MW", defaultFormatter(value)), 0
-	case model.EveUnitMillimeters:
-		return fmt.Sprintf("%s mm", defaultFormatter(value)), 0
-	case model.EveUnitMilliseconds:
-		return humanize.RelTime(now, now.Add(time.Duration(value)*time.Millisecond), "", ""), 0
-	case model.EveUnitMultiplier:
-		return fmt.Sprintf("%.3f x", value), 0
-	case model.EveUnitPercentage:
-		return fmt.Sprintf("%.0f%%", value*100), 0
-	case model.EveUnitTeraflops:
-		return fmt.Sprintf("%s tf", defaultFormatter(value)), 0
-	case model.EveUnitVolume:
-		return fmt.Sprintf("%s m3", defaultFormatter(value)), 0
-	case model.EveUnitWarpSpeed:
-		return fmt.Sprintf("%s AU/s", defaultFormatter(value)), 0
-	case model.EveUnitTypeID:
-		et, err := a.ui.sv.EveUniverse.GetEveType(ctx, int32(value))
-		if err != nil {
-			go func() {
-				_, err := a.ui.sv.EveUniverse.GetOrCreateEveTypeESI(ctx, int32(value))
-				if err != nil {
-					slog.Error("Failed to fetch type from ESI", "typeID", value, "err", err)
-				}
-			}()
-			return "?", 0
-		}
-		return et.Name, et.IconID
-	case model.EveUnitUnits:
-		return fmt.Sprintf("%s units", defaultFormatter(value)), 0
-	case model.EveUnitNone, model.EveUnitHardpoints, model.EveUnitFittingSlots, model.EveUnitSlot:
-		return defaultFormatter(value), 0
-	}
-	return fmt.Sprintf("%s ???", defaultFormatter(value)), 0
 }
