@@ -302,6 +302,10 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 	data := make([]attributesRow, 0)
 	if a.et.Volume > 0 {
 		v, _ := a.ui.sv.EveUniverse.FormatValue(ctx, a.et.Volume, model.EveUnitVolume)
+		if a.et.Volume != a.et.PackagedVolume {
+			v2, _ := a.ui.sv.EveUniverse.FormatValue(ctx, a.et.PackagedVolume, model.EveUnitVolume)
+			v += fmt.Sprintf(" (%s Packaged)", v2)
+		}
 		r := attributesRow{
 			icon:  icons.GetResourceByName(icons.Structure),
 			label: "Volume",
