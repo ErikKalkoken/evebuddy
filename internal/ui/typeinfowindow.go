@@ -448,7 +448,7 @@ func (a *typeInfoWindow) makeContent() fyne.CanvasObject {
 	top := a.makeTop()
 	description := container.NewTabItem("Description", a.makeDescriptionTab())
 	tabs := container.NewAppTabs(description)
-	if len(a.attributesData) > 0 {
+	if len(a.attributesData) > 0 && a.et.Group.Category.ID != model.EveCategoryStation {
 		tabs.Append(container.NewTabItem("Attributes", a.makeAttributesTab()))
 	}
 	if len(a.fittingData) > 0 {

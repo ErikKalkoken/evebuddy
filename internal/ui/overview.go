@@ -15,6 +15,7 @@ import (
 
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 type overviewCharacter struct {
@@ -22,15 +23,14 @@ type overviewCharacter struct {
 	birthday       time.Time
 	corporation    string
 	id             int32
-	home           sql.NullString
+	home           *model.EntityShort[int64]
 	lastLoginAt    sql.NullTime
-	locationID     sql.NullInt64
-	locationName   sql.NullString
+	location       *model.EntityShort[int64]
 	name           string
-	systemName     sql.NullString
+	solarSystem    *model.EntityShort[int32]
 	systemSecurity sql.NullFloat64
-	region         sql.NullString
-	ship           sql.NullString
+	region         *model.EntityShort[int32]
+	ship           *model.EntityShort[int32]
 	security       float64
 	totalSP        sql.NullInt64
 	training       mytypes.OptionalDuration
@@ -135,21 +135,21 @@ func (a *overviewArea) makeTable() *widget.Table {
 			case 8:
 				l.Text = humanizedNullFloat64(c.walletBalance, 1, "?")
 			case 9:
-				l.Text = nullStringOrFallback(c.locationName, "?")
+				l.Text = entityNameOrFallback(c.location, "?")
 			case 10:
-				if !c.systemName.Valid || !c.systemSecurity.Valid {
+				if c.solarSystem == nil || !c.systemSecurity.Valid {
 					l.Text = "?"
 				} else {
-					l.Text = fmt.Sprintf("%s %.1f", c.systemName.String, c.systemSecurity.Float64)
+					l.Text = fmt.Sprintf("%s %.1f", c.solarSystem.Name, c.systemSecurity.Float64)
 				}
 			case 11:
-				l.Text = nullStringOrFallback(c.region, "?")
+				l.Text = entityNameOrFallback(c.region, "?")
 			case 12:
-				l.Text = nullStringOrFallback(c.ship, "?")
+				l.Text = entityNameOrFallback(c.ship, "?")
 			case 13:
 				l.Text = humanizedRelNullTime(c.lastLoginAt, "?")
 			case 14:
-				l.Text = nullStringOrFallback(c.home, "?")
+				l.Text = entityNameOrFallback(c.home, "?")
 			case 15:
 				l.Text = humanize.RelTime(c.birthday, time.Now(), "", "")
 			}
@@ -194,12 +194,18 @@ func (a *overviewArea) makeTable() *widget.Table {
 			t.SelectIndex(idx.child)
 		}
 		if tci.Col == 9 {
-			if c.locationID.Valid {
-				location, err := a.ui.sv.EveUniverse.GetEveLocation(ctx, c.locationID.Int64)
-				if err != nil {
-					panic(err)
-				}
-				a.ui.showLocationInfoWindow(location.ID)
+			if c.location != nil {
+				a.ui.showLocationInfoWindow(c.location.ID)
+			}
+		}
+		if tci.Col == 12 {
+			if c.ship != nil {
+				a.ui.showTypeInfoWindow(c.ship.ID, a.ui.currentCharID())
+			}
+		}
+		if tci.Col == 15 {
+			if c.home != nil {
+				a.ui.showLocationInfoWindow(c.home.ID)
 			}
 		}
 		t.UnselectAll()
@@ -267,17 +273,34 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 			walletBalance: m.WalletBalance,
 		}
 		if m.Home != nil {
-			c.home = sql.NullString{String: m.Home.Name, Valid: true}
+			c.home = &model.EntityShort[int64]{
+				ID:   m.Home.ID,
+				Name: m.Home.NamePlus(),
+			}
 		}
 		if m.Location != nil {
-			c.region = sql.NullString{String: m.Location.SolarSystem.Constellation.Region.Name, Valid: true}
-			c.locationID = sql.NullInt64{Int64: m.Location.ID, Valid: true}
-			c.locationName = sql.NullString{String: m.Location.Name, Valid: true}
-			c.systemName = sql.NullString{String: m.Location.SolarSystem.Name, Valid: true}
-			c.systemSecurity = sql.NullFloat64{Float64: m.Location.SolarSystem.SecurityStatus, Valid: true}
+			c.region = &model.EntityShort[int32]{
+				ID:   m.Location.SolarSystem.Constellation.Region.ID,
+				Name: m.Location.SolarSystem.Constellation.Region.Name,
+			}
+			c.location = &model.EntityShort[int64]{
+				ID:   m.Location.ID,
+				Name: m.Location.NamePlus(),
+			}
+			c.solarSystem = &model.EntityShort[int32]{
+				ID:   m.Location.SolarSystem.ID,
+				Name: m.Location.SolarSystem.Name,
+			}
+			c.systemSecurity = sql.NullFloat64{
+				Float64: m.Location.SolarSystem.SecurityStatus,
+				Valid:   true,
+			}
 		}
 		if m.Ship != nil {
-			c.ship = sql.NullString{String: m.Ship.Name, Valid: true}
+			c.ship = &model.EntityShort[int32]{
+				ID:   m.Ship.ID,
+				Name: m.Ship.Name,
+			}
 		}
 		cc[i] = c
 	}

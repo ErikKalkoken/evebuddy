@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/dustin/go-humanize"
 )
 
@@ -36,12 +37,19 @@ func objectToJSON[T any](o T) (string, error) {
 	return string(s), nil
 }
 
-func nullStringOrFallback(s sql.NullString, fallback string) string {
-	if !s.Valid {
+func entityNameOrFallback[T int | int32 | int64](e *model.EntityShort[T], fallback string) string {
+	if e == nil {
 		return fallback
 	}
-	return s.String
+	return e.Name
 }
+
+// func nullStringOrFallback(s sql.NullString, fallback string) string {
+// 	if !s.Valid {
+// 		return fallback
+// 	}
+// 	return s.String
+// }
 
 func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
 	if t.IsZero() {
