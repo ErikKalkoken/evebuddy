@@ -14,26 +14,31 @@ import (
 
 type SkillQueueItem struct {
 	widget.BaseWidget
-	duration *widget.Label
-	progress *widget.ProgressBar
-	name     *widget.Label
+	duration   *widget.Label
+	progress   *widget.ProgressBar
+	name       *widget.Label
+	skillLevel *SkillLevel
 }
 
 func NewSkillQueueItem() *SkillQueueItem {
 	w := &SkillQueueItem{
-		duration: widget.NewLabel("duration"),
-		name:     widget.NewLabel("skill"),
-		progress: widget.NewProgressBar(),
+		duration:   widget.NewLabel("duration"),
+		name:       widget.NewLabel("skill"),
+		progress:   widget.NewProgressBar(),
+		skillLevel: NewSkillLevel(),
 	}
 	w.progress.Hide()
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (w *SkillQueueItem) Set(name string, level int, isActive bool, remaining, duration mytypes.OptionalDuration, completionP float64) {
-	var i widget.Importance
-	var d string
-	if completionP == 1 {
+func (w *SkillQueueItem) Set(name string, targetLevel int, isActive bool, remaining, duration mytypes.OptionalDuration, completionP float64) {
+	var (
+		i widget.Importance
+		d string
+	)
+	isCompleted := completionP == 1
+	if isCompleted {
 		i = widget.LowImportance
 		d = "Completed"
 	} else if isActive {
@@ -44,7 +49,7 @@ func (w *SkillQueueItem) Set(name string, level int, isActive bool, remaining, d
 		d = ihumanize.OptionalDuration(duration, "?")
 	}
 	w.name.Importance = i
-	w.name.Text = fmt.Sprintf("%s %s", name, ihumanize.ToRomanLetter(level))
+	w.name.Text = fmt.Sprintf("%s %s", name, ihumanize.ToRomanLetter(targetLevel))
 	w.name.Refresh()
 	w.duration.Text = d
 	w.duration.Importance = i
@@ -55,6 +60,21 @@ func (w *SkillQueueItem) Set(name string, level int, isActive bool, remaining, d
 	} else {
 		w.progress.Hide()
 	}
+	var active, trained, required int
+	if isCompleted {
+		active = targetLevel
+		trained = targetLevel
+		required = targetLevel
+	} else if isActive {
+		active = targetLevel - 1
+		trained = targetLevel - 1
+		required = 0
+	} else {
+		active = targetLevel - 1
+		trained = targetLevel - 1
+		required = targetLevel
+	}
+	w.skillLevel.Set(active, trained, required)
 }
 
 func (w *SkillQueueItem) SetError(message string, err error) {
@@ -66,7 +86,8 @@ func (w *SkillQueueItem) SetError(message string, err error) {
 }
 
 func (w *SkillQueueItem) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewStack(
-		w.progress, container.NewHBox(w.name, layout.NewSpacer(), w.duration))
+	c := container.NewBorder(
+		nil, nil, w.skillLevel, nil,
+		container.NewStack(w.progress, container.NewHBox(w.name, layout.NewSpacer(), w.duration)))
 	return widget.NewSimpleRenderer(c)
 }
