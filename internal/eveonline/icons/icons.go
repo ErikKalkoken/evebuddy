@@ -28,21 +28,17 @@ const (
 )
 
 var namedIcons = map[Name]*fyne.StaticResource{
-	Undefined:        resource76415Png,
-	CloningCenter:    resource127641Png,
-	Charisma:         resource22321Png,
-	Intelligence:     resource22323Png,
-	Memory:           resource22324Png,
-	Perception:       resource22325Png,
-	Willpower:        resource22322Png,
-	HeliumIsotopes:   resource516413Png,
-	HydrogenIsotopes: resource516414Png,
-	NitrogenIsotopes: resource516416Png,
-	OxygenIsotopes:   resource516415Png,
-	Structure:        resource2649Png,
-	Tech1:            resource7316241Png,
-	Tech2:            resource7316242Png,
-	Tech3:            resource7316242Png,
+	Undefined:     resource76415Png,
+	CloningCenter: resource127641Png,
+	Charisma:      resource22321Png,
+	Intelligence:  resource22323Png,
+	Memory:        resource22324Png,
+	Perception:    resource22325Png,
+	Willpower:     resource22322Png,
+	Structure:     resource2649Png,
+	Tech1:         resource7316241Png,
+	Tech2:         resource7316242Png,
+	Tech3:         resource7316242Png,
 }
 
 // GetResourceByIconID returns an Eve Online icon by icon ID and reports if it was found.

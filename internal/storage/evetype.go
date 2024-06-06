@@ -14,10 +14,10 @@ import (
 
 type CreateEveTypeParams struct {
 	ID             int32
-	GroupID        int32
 	Capacity       float32
 	Description    string
 	GraphicID      int32
+	GroupID        int32
 	IconID         int32
 	IsPublished    bool
 	MarketGroupID  int32
@@ -86,7 +86,7 @@ func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCate
 		Capacity:       float32(t.Capacity),
 		Description:    t.Description,
 		GraphicID:      int32(t.GraphicID),
-		IconID:         int32(t.GraphicID),
+		IconID:         int32(t.IconID),
 		IsPublished:    t.IsPublished,
 		MarketGroupID:  int32(t.MarketGroupID),
 		Mass:           float32(t.Mass),

@@ -19,11 +19,19 @@ func TestEveType(t *testing.T) {
 		testutil.TruncateTables(db)
 		g := factory.CreateEveGroup()
 		arg := storage.CreateEveTypeParams{
-			ID:          42,
-			Description: "description",
-			GroupID:     g.ID,
-			Name:        "name",
-			IsPublished: true,
+			ID:             42,
+			Capacity:       3,
+			Description:    "description",
+			GraphicID:      4,
+			GroupID:        g.ID,
+			IconID:         5,
+			IsPublished:    true,
+			MarketGroupID:  6,
+			Mass:           7,
+			Name:           "name",
+			PackagedVolume: 8,
+			Radius:         9,
+			Volume:         10,
 		}
 		// when
 		err := r.CreateEveType(ctx, arg)
@@ -32,8 +40,17 @@ func TestEveType(t *testing.T) {
 			x, err := r.GetEveType(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, int32(42), x.ID)
-				assert.Equal(t, "name", x.Name)
+				assert.Equal(t, float32(3), x.Capacity)
+				assert.Equal(t, "description", x.Description)
+				assert.Equal(t, int32(4), x.GraphicID)
+				assert.Equal(t, int32(5), x.IconID)
 				assert.Equal(t, true, x.IsPublished)
+				assert.Equal(t, int32(6), x.MarketGroupID)
+				assert.Equal(t, float32(7), x.Mass)
+				assert.Equal(t, "name", x.Name)
+				assert.Equal(t, float32(8), x.PackagedVolume)
+				assert.Equal(t, float32(9), x.Radius)
+				assert.Equal(t, float32(10), x.Volume)
 				assert.Equal(t, g, x.Group)
 			}
 		}

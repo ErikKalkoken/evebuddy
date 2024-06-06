@@ -159,11 +159,6 @@ var attributeGroupsMap = map[attributeGroup][]int32{
 	},
 }
 
-// Substituting for missing icons
-var iconPatches = map[int32]icons.Name{
-	model.EveDogmaAttributeJumpDriveFuelNeed: icons.HeliumIsotopes,
-}
-
 type requiredSkill struct {
 	rank          int
 	name          string
@@ -298,14 +293,7 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 			} else {
 				iconID = o.DogmaAttribute.IconID
 			}
-			var r fyne.Resource
-			substitute, found := iconPatches[o.DogmaAttribute.ID]
-			if found {
-				r = icons.GetResourceByName(substitute)
-			} else {
-				x, _ := icons.GetResourceByIconID(iconID)
-				r = x
-			}
+			r, _ := icons.GetResourceByIconID(iconID)
 			groupedRows[ag] = append(groupedRows[ag], attributesRow{
 				icon:  r,
 				label: o.DogmaAttribute.DisplayName,
@@ -635,7 +623,7 @@ func (a *typeInfoWindow) formatAttributeValue(ctx context.Context, value float32
 		return fmt.Sprintf("%v", value), 0
 	}
 	defaultFormatter := func(v float32) string {
-		return humanize.Commaf(float64(v))
+		return humanize.CommafWithDigits(float64(v), 2)
 	}
 	now := time.Now()
 	switch unit {
@@ -704,7 +692,7 @@ func (a *typeInfoWindow) formatAttributeValue(ctx context.Context, value float32
 			}()
 			return "?", 0
 		}
-		return et.Name, 0
+		return et.Name, et.IconID
 	case model.EveUnitUnits:
 		return fmt.Sprintf("%s units", defaultFormatter(value)), 0
 	case model.EveUnitNone, model.EveUnitHardpoints, model.EveUnitFittingSlots, model.EveUnitSlot:
