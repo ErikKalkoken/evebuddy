@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 	"github.com/dustin/go-humanize"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -547,6 +548,7 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 				widget.NewLabel("Placeholder"),
 				layout.NewSpacer(),
 				widget.NewLabel("Check"),
+				widgets.NewSkillLevel(),
 				widget.NewIcon(resourceCharacterplaceholder32Jpeg),
 			)
 		},
@@ -554,31 +556,28 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 			o := a.requiredSkills[id]
 			row := co.(*fyne.Container)
 			skill := row.Objects[0].(*widget.Label)
-			check := row.Objects[2].(*widget.Label)
-			icon := row.Objects[3].(*widget.Icon)
+			text := row.Objects[2].(*widget.Label)
+			level := row.Objects[3].(*widgets.SkillLevel)
+			icon := row.Objects[4].(*widget.Icon)
 			skill.SetText(skillDisplayName(o.name, o.requiredLevel))
 			if o.activeLevel == 0 && o.trainedLevel == 0 {
-				check.Text = "Skill not injected"
-				check.Importance = widget.DangerImportance
-				check.Refresh()
-				check.Show()
-				icon.Hide()
-			} else if o.activeLevel == 0 && o.trainedLevel > 0 {
-				check.Text = "Omega skill disabled"
-				check.Importance = widget.WarningImportance
-				check.Refresh()
-				check.Show()
+				text.Text = "Skill not injected"
+				text.Importance = widget.DangerImportance
+				text.Refresh()
+				text.Show()
+				level.Hide()
 				icon.Hide()
 			} else if o.activeLevel >= o.requiredLevel {
 				icon.SetResource(boolIconResource(true))
 				icon.Show()
-				check.Hide()
+				text.Hide()
+				level.Hide()
 			} else {
-				check.Text = fmt.Sprintf("Current level %s", toRomanLetter(o.activeLevel))
-				check.Importance = widget.WarningImportance
-				check.Refresh()
-				check.Show()
+				level.Set(o.activeLevel, o.trainedLevel, o.requiredLevel)
+				text.Refresh()
+				text.Hide()
 				icon.Hide()
+				level.Show()
 			}
 		},
 	)

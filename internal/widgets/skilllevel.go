@@ -8,12 +8,16 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// SkillLevel shows the skill level status for a character.
+// Which level is currently active, which level is trained, but disabled.
+// It can also show which level is required.
 type SkillLevel struct {
 	widget.BaseWidget
-	dots           []*canvas.Image
-	levelBlocked   *theme.ErrorThemedResource
-	levelTrained   *theme.PrimaryThemedResource
-	levelUnTrained *theme.DisabledResource
+	dots          []*canvas.Image
+	levelBlocked  *theme.ErrorThemedResource
+	levelRequired *theme.PrimaryThemedResource
+	levelTrained  *theme.ThemedResource
+	levelDisabled *theme.DisabledResource
 }
 
 func NewSkillLevel() *SkillLevel {
@@ -29,24 +33,29 @@ func NewSkillLevel() *SkillLevel {
 		dots[i] = dot
 	}
 	w := &SkillLevel{
-		dots:           dots,
-		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
-		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
-		levelUnTrained: untrainedIcon,
+		dots:          dots,
+		levelBlocked:  theme.NewErrorThemedResource(theme.MediaStopIcon()),
+		levelRequired: theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
+		levelTrained:  theme.NewThemedResource(theme.MediaStopIcon()),
+		levelDisabled: untrainedIcon,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (w *SkillLevel) Set(activeLevel, trainedLevel int) {
+// Set updates the widget to show a skill level.
+// requiredLevel is optional and will be ignored when zero valued
+func (w *SkillLevel) Set(activeLevel, trainedLevel, requiredLevel int) {
 	for i := range 5 {
 		y := w.dots[i]
 		if activeLevel > i {
 			y.Resource = w.levelTrained
 		} else if trainedLevel > i {
 			y.Resource = w.levelBlocked
+		} else if requiredLevel > i {
+			y.Resource = w.levelRequired
 		} else {
-			y.Resource = w.levelUnTrained
+			y.Resource = w.levelDisabled
 		}
 		y.Refresh()
 	}

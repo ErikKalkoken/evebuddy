@@ -166,7 +166,7 @@ func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 				return
 			}
 			label.SetText(skill.name)
-			level.Set(skill.activeLevel, skill.trainedLevel)
+			level.Set(skill.activeLevel, skill.trainedLevel, 0)
 		},
 	)
 	g.OnSelected = func(id widget.GridWrapItemID) {
