@@ -243,30 +243,15 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 	hasJumpDrive := ok && jumpDrive.Value == 1.0
 
 	for _, ag := range attributeGroups {
-		hasData := false
-		for _, da := range attributeGroupsMap[ag] {
-			_, ok := attributes[da]
-			if ok {
-				hasData = true
-				break
-			}
-		}
-		if !hasData {
-			continue
-		}
-		data = append(data, attributesRow{label: ag.DisplayName(), isTitle: true})
+		attributeSelection := make([]*model.EveDogmaAttributeForType, 0)
 		for _, da := range attributeGroupsMap[ag] {
 			o, ok := attributes[da]
 			if !ok {
 				continue
 			}
-			value := o.Value
-			if ag == attributeGroupElectronicResistances && value == 0 {
-				continue
-			}
-			switch da {
-			case model.EveDogmaAttributeCapacity:
-				if value == 0 {
+			switch o.DogmaAttribute.ID {
+			case model.EveDogmaAttributeCapacity, model.EveDogmaAttributeMass:
+				if o.Value == 0 {
 					continue
 				}
 			case model.EveDogmaAttributeDroneCapacity,
@@ -279,17 +264,30 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 				if !hasJumpDrive {
 					continue
 				}
-			case model.EveDogmaAttributeShipWarpSpeed:
-				x := attributes[model.EveDogmaAttributeWarpSpeedMultiplier]
-				value = value * x.Value
 			case model.EveDogmaAttributeSupportFighterSquadronLimit:
-				if value == 0 {
+				if o.Value == 0 {
 					continue
 				}
 			}
+			attributeSelection = append(attributeSelection, o)
+		}
+		if len(attributeSelection) == 0 {
+			continue
+		}
+		data = append(data, attributesRow{label: ag.DisplayName(), isTitle: true})
+		for _, o := range attributeSelection {
+			value := o.Value
+			if ag == attributeGroupElectronicResistances && value == 0 {
+				continue
+			}
+			switch o.DogmaAttribute.ID {
+			case model.EveDogmaAttributeShipWarpSpeed:
+				x := attributes[model.EveDogmaAttributeWarpSpeedMultiplier]
+				value = value * x.Value
+			}
 			iconID := o.DogmaAttribute.IconID
-			newIconID, ok := iconPatches[o.DogmaAttribute.ID]
-			if ok {
+			newIconID, found := iconPatches[o.DogmaAttribute.ID]
+			if found {
 				iconID = newIconID
 			}
 			r, _ := icons.GetResourceByIconID(iconID)
