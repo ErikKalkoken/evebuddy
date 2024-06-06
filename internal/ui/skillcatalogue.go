@@ -6,13 +6,13 @@ import (
 	"log/slog"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 	"github.com/dustin/go-humanize"
 )
 
@@ -150,35 +150,15 @@ func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 			return a.skills.Length()
 		},
 		func() fyne.CanvasObject {
-			s := fyne.Size{Width: 14, Height: 14}
-			f := canvas.ImageFillContain
-			x1 := canvas.NewImageFromResource(theme.MediaStopIcon())
-			x1.FillMode = f
-			x1.SetMinSize(s)
-			x2 := canvas.NewImageFromResource(theme.MediaStopIcon())
-			x2.FillMode = f
-			x2.SetMinSize(s)
-			x3 := canvas.NewImageFromResource(theme.MediaStopIcon())
-			x3.FillMode = f
-			x3.SetMinSize(s)
-			x4 := canvas.NewImageFromResource(theme.MediaStopIcon())
-			x4.FillMode = f
-			x4.SetMinSize(s)
-			x5 := canvas.NewImageFromResource(theme.MediaStopIcon())
-			x5.FillMode = f
-			x5.SetMinSize(s)
-			x := container.NewHBox(
-				x1,
-				x2,
-				x3,
-				x4,
-				x5,
+			c := container.NewHBox(
+				widgets.NewSkillLevel(),
 				widget.NewLabel("Capital Shipboard Compression Technology"))
-			return x
+			return c
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			row := co.(*fyne.Container)
-			label := row.Objects[5].(*widget.Label)
+			level := row.Objects[0].(*widgets.SkillLevel)
+			label := row.Objects[1].(*widget.Label)
 			skill, err := getItemUntypedList[skillTrained](a.skills, id)
 			if err != nil {
 				slog.Error("Failed to render skill item in skill catalogue UI", "err", err)
@@ -186,17 +166,7 @@ func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 				return
 			}
 			label.SetText(skill.name)
-			for i := range 5 {
-				y := row.Objects[i].(*canvas.Image)
-				if skill.activeLevel > i {
-					y.Resource = a.levelTrained
-				} else if skill.trainedLevel > i {
-					y.Resource = a.levelBlocked
-				} else {
-					y.Resource = a.levelUnTrained
-				}
-				y.Refresh()
-			}
+			level.Set(skill.activeLevel, skill.trainedLevel)
 		},
 	)
 	g.OnSelected = func(id widget.GridWrapItemID) {
