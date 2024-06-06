@@ -9,6 +9,7 @@ const (
 	EveCategorySkill      = 16
 	EveCategorySKINs      = 91
 	EveCategoryStarbase   = 23
+	EveCategoryStation    = 3
 	EveCategoryStructure  = 65
 )
 

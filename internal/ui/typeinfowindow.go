@@ -166,7 +166,7 @@ type requiredSkill struct {
 	trainedLevel  int
 }
 
-type attributesRow struct {
+type attributeRow struct {
 	icon    fyne.Resource
 	label   string
 	value   string
@@ -174,20 +174,28 @@ type attributesRow struct {
 }
 
 type typeInfoWindow struct {
-	attributesData []attributesRow
+	attributesData []attributeRow
 	content        fyne.CanvasObject
-	characterID    int32
+	location       *model.EveLocation
+	owner          *model.EveEntity
 	et             *model.EveType
-	fittingData    []attributesRow
+	fittingData    []attributeRow
 	requiredSkills []requiredSkill
 	ui             *ui
 	window         fyne.Window
 }
 
 func (u *ui) showTypeInfoWindow(typeID, characterID int32) {
-	iw, err := u.newTypeInfoWindow(typeID, characterID)
+	u.showInfoWindow(u.newTypeInfoWindow(typeID, characterID, 0))
+}
+
+func (u *ui) showLocationInfoWindow(locationID int64) {
+	u.showInfoWindow(u.newTypeInfoWindow(0, 0, locationID))
+}
+
+func (u *ui) showInfoWindow(iw *typeInfoWindow, err error) {
 	if err != nil {
-		t := "Failed to open type info window"
+		t := "Failed to open info window"
 		slog.Error(t, "err", err)
 		u.showErrorDialog(t, err)
 		return
@@ -199,20 +207,34 @@ func (u *ui) showTypeInfoWindow(typeID, characterID int32) {
 	w.Show()
 }
 
-func (u *ui) newTypeInfoWindow(typeID, characterID int32) (*typeInfoWindow, error) {
+func (u *ui) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*typeInfoWindow, error) {
 	ctx := context.Background()
-	et, err := u.sv.EveUniverse.GetEveType(ctx, typeID)
-	if err != nil {
-		return nil, err
-	}
-	oo, err := u.sv.EveUniverse.ListEveTypeDogmaAttributesForType(ctx, typeID)
-	if err != nil {
-		return nil, err
-	}
 	a := &typeInfoWindow{
-		characterID: characterID,
-		et:          et,
-		ui:          u,
+		ui: u,
+	}
+	if locationID != 0 {
+		location, err := u.sv.EveUniverse.GetEveLocation(ctx, locationID)
+		if err != nil {
+			return nil, err
+		}
+		a.location = location
+		a.et = location.Type
+		a.owner = a.location.Owner
+	} else {
+		et, err := u.sv.EveUniverse.GetEveType(ctx, typeID)
+		if err != nil {
+			return nil, err
+		}
+		a.et = et
+		owner, err := u.sv.EveUniverse.GetOrCreateEveEntityESI(ctx, characterID)
+		if err != nil {
+			return nil, err
+		}
+		a.owner = owner
+	}
+	oo, err := u.sv.EveUniverse.ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
+	if err != nil {
+		return nil, err
 	}
 	attributes := make(map[int32]*model.EveDogmaAttributeForType)
 	for _, o := range oo {
@@ -220,23 +242,29 @@ func (u *ui) newTypeInfoWindow(typeID, characterID int32) (*typeInfoWindow, erro
 	}
 	a.attributesData = a.calcAttributesData(ctx, attributes)
 	a.fittingData = a.calcFittingData(ctx, attributes)
-	skills, err := a.calcRequiredSkills(ctx, characterID, attributes)
-	if err != nil {
-		return nil, err
+	if !a.isLocation() {
+		skills, err := a.calcRequiredSkills(ctx, characterID, attributes)
+		if err != nil {
+			return nil, err
+		}
+		a.requiredSkills = skills
 	}
-	a.requiredSkills = skills
 	a.content = a.makeContent()
 	return a, nil
 }
 
-func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[int32]*model.EveDogmaAttributeForType) []attributesRow {
+func (a *typeInfoWindow) isLocation() bool {
+	return a.location != nil
+}
+
+func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[int32]*model.EveDogmaAttributeForType) []attributeRow {
 	droneCapacity, ok := attributes[model.EveDogmaAttributeDroneCapacity]
 	hasDrones := ok && droneCapacity.Value > 0
 
 	jumpDrive, ok := attributes[model.EveDogmaAttributeOnboardJumpDrive]
 	hasJumpDrive := ok && jumpDrive.Value == 1.0
 
-	groupedRows := make(map[attributeGroup][]attributesRow)
+	groupedRows := make(map[attributeGroup][]attributeRow)
 
 	for _, ag := range attributeGroups {
 		attributeSelection := make([]*model.EveDogmaAttributeForType, 0)
@@ -292,21 +320,21 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 				iconID = o.DogmaAttribute.IconID
 			}
 			r, _ := icons.GetResourceByIconID(iconID)
-			groupedRows[ag] = append(groupedRows[ag], attributesRow{
+			groupedRows[ag] = append(groupedRows[ag], attributeRow{
 				icon:  r,
 				label: o.DogmaAttribute.DisplayName,
 				value: v,
 			})
 		}
 	}
-	data := make([]attributesRow, 0)
+	data := make([]attributeRow, 0)
 	if a.et.Volume > 0 {
 		v, _ := a.ui.sv.EveUniverse.FormatValue(ctx, a.et.Volume, model.EveUnitVolume)
 		if a.et.Volume != a.et.PackagedVolume {
 			v2, _ := a.ui.sv.EveUniverse.FormatValue(ctx, a.et.PackagedVolume, model.EveUnitVolume)
 			v += fmt.Sprintf(" (%s Packaged)", v2)
 		}
-		r := attributesRow{
+		r := attributeRow{
 			icon:  icons.GetResourceByName(icons.Structure),
 			label: "Volume",
 			value: v,
@@ -317,7 +345,7 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 		} else {
 			ag = attributeGroupMiscellaneous
 		}
-		groupedRows[ag] = append([]attributesRow{r}, groupedRows[ag]...)
+		groupedRows[ag] = append([]attributeRow{r}, groupedRows[ag]...)
 	}
 	usedGroupsCount := 0
 	for _, ag := range attributeGroups {
@@ -328,21 +356,21 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 	for _, ag := range attributeGroups {
 		if len(groupedRows[ag]) > 0 {
 			if usedGroupsCount > 1 {
-				data = append(data, attributesRow{label: ag.DisplayName(), isTitle: true})
+				data = append(data, attributeRow{label: ag.DisplayName(), isTitle: true})
 			}
 			data = append(data, groupedRows[ag]...)
 		}
 	}
 	if a.ui.isDebug {
-		data = append(data, attributesRow{label: "DEBUG", isTitle: true})
-		data = append(data, attributesRow{label: "Character ID", value: fmt.Sprint(a.characterID)})
-		data = append(data, attributesRow{label: "Type ID", value: fmt.Sprint(a.et.ID)})
+		data = append(data, attributeRow{label: "DEBUG", isTitle: true})
+		data = append(data, attributeRow{label: "Owner", value: fmt.Sprint(a.owner)})
+		data = append(data, attributeRow{label: "Type ID", value: fmt.Sprint(a.et.ID)})
 	}
 	return data
 }
 
-func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int32]*model.EveDogmaAttributeForType) []attributesRow {
-	data := make([]attributesRow, 0)
+func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int32]*model.EveDogmaAttributeForType) []attributeRow {
+	data := make([]attributeRow, 0)
 	for _, da := range attributeGroupsMap[attributeGroupFitting] {
 		o, ok := attributes[da]
 		if !ok {
@@ -351,7 +379,7 @@ func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int
 		iconID := o.DogmaAttribute.IconID
 		r, _ := icons.GetResourceByIconID(iconID)
 		v, _ := a.ui.sv.EveUniverse.FormatValue(ctx, o.Value, o.DogmaAttribute.Unit)
-		data = append(data, attributesRow{
+		data = append(data, attributeRow{
 			icon:  r,
 			label: o.DogmaAttribute.DisplayName,
 			value: v,
@@ -418,9 +446,8 @@ func (a *typeInfoWindow) makeTitle(suffix string) string {
 
 func (a *typeInfoWindow) makeContent() fyne.CanvasObject {
 	top := a.makeTop()
-	tabs := container.NewAppTabs(
-		container.NewTabItem("Description", a.makeDescriptionTab()),
-	)
+	description := container.NewTabItem("Description", a.makeDescriptionTab())
+	tabs := container.NewAppTabs(description)
 	if len(a.attributesData) > 0 {
 		tabs.Append(container.NewTabItem("Attributes", a.makeAttributesTab()))
 	}
@@ -429,6 +456,11 @@ func (a *typeInfoWindow) makeContent() fyne.CanvasObject {
 	}
 	if len(a.requiredSkills) > 0 {
 		tabs.Append(container.NewTabItem("Requirements", a.makeRequirementsTab()))
+	}
+	if a.isLocation() {
+		location := container.NewTabItem("Location", a.makeLocationTab())
+		tabs.Append(location)
+		tabs.Select(location)
 	}
 	c := container.NewBorder(top, nil, nil, nil, tabs)
 	return c
@@ -445,7 +477,9 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			return a.ui.sv.EveImage.InventoryTypeIcon(a.et.ID, size)
 		}
 	})
-	typeIcon.FillMode = canvas.ImageFillOriginal
+	typeIcon.FillMode = canvas.ImageFillContain
+	s := float32(size) * 1.3 / a.ui.window.Canvas().Scale()
+	typeIcon.SetMinSize(fyne.Size{Width: s, Height: s})
 
 	renderButton := widget.NewButton("Show", func() {
 		w := a.ui.app.NewWindow(a.makeTitle("Render"))
@@ -464,14 +498,24 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 	} else {
 		renderButton.Disable()
 	}
-	characterIcon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
-	characterIcon.FillMode = canvas.ImageFillOriginal
-	if a.characterID != 0 {
-		refreshImageResourceAsync(characterIcon, func() (fyne.Resource, error) {
-			return a.ui.sv.EveImage.CharacterPortrait(a.characterID, 32)
+	ownerIcon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
+	ownerIcon.FillMode = canvas.ImageFillOriginal
+	ownerName := widget.NewLabel("")
+	if a.owner != nil {
+		refreshImageResourceAsync(ownerIcon, func() (fyne.Resource, error) {
+			switch a.owner.Category {
+			case model.EveEntityCharacter:
+				return a.ui.sv.EveImage.CharacterPortrait(a.owner.ID, 32)
+			case model.EveEntityCorporation:
+				return a.ui.sv.EveImage.CorporationLogo(a.owner.ID, 32)
+			default:
+				panic("Unexpected owner type")
+			}
 		})
+		ownerName.SetText(a.owner.Name)
 	} else {
-		characterIcon.Hide()
+		ownerIcon.Hide()
+		ownerName.Hide()
 	}
 	hasRequiredSkills := true
 	for _, o := range a.requiredSkills {
@@ -481,10 +525,20 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		}
 	}
 	checkIcon := widget.NewIcon(boolIconResource(hasRequiredSkills))
-	if a.characterID == 0 || len(a.requiredSkills) == 0 {
+	if a.owner != nil && !a.owner.IsCharacter() || len(a.requiredSkills) == 0 {
 		checkIcon.Hide()
 	}
-	return container.NewHBox(typeIcon, renderButton, characterIcon, checkIcon)
+	var title string
+	if a.isLocation() {
+		title = a.location.Name
+	} else {
+		title = a.et.Name
+	}
+	return container.NewHBox(
+		typeIcon, renderButton,
+		container.NewVBox(
+			widget.NewLabel(title),
+			container.NewHBox(ownerIcon, ownerName, checkIcon)))
 }
 
 func (a *typeInfoWindow) makeDescriptionTab() fyne.CanvasObject {
@@ -614,6 +668,69 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 	l.OnSelected = func(id widget.ListItemID) {
 		r := a.requiredSkills[id]
 		a.ui.showTypeInfoWindow(r.typeID, a.ui.currentCharID())
+		l.UnselectAll()
+	}
+	return l
+}
+
+type infoRow struct {
+	label      string
+	importance widget.Importance
+	value      string
+}
+
+func (a *typeInfoWindow) makeLocationTab() fyne.CanvasObject {
+	var i widget.Importance
+	switch s := a.location.SolarSystem.SecurityStatus; {
+	case s > 0.5:
+		i = widget.SuccessImportance
+	case s > 0.0:
+		i = widget.WarningImportance
+	default:
+		i = widget.DangerImportance
+	}
+	data := []infoRow{
+		{
+			label: "Region",
+			value: a.location.SolarSystem.Constellation.Region.Name,
+		},
+		{
+			label: "Constellation",
+			value: a.location.SolarSystem.Constellation.Name},
+		{
+			label: "Solar System",
+			value: a.location.SolarSystem.Name,
+		},
+		{
+			label:      "Security",
+			value:      fmt.Sprintf("%.1f", a.location.SolarSystem.SecurityStatus),
+			importance: i,
+		},
+	}
+
+	l := widget.NewList(
+		func() int {
+			return len(data)
+		},
+		func() fyne.CanvasObject {
+			return container.NewHBox(
+				widget.NewLabel("Label"),
+				layout.NewSpacer(),
+				widget.NewLabel("Value"),
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			o := data[id]
+			row := co.(*fyne.Container)
+			label := row.Objects[0].(*widget.Label)
+			value := row.Objects[2].(*widget.Label)
+			label.SetText(o.label)
+			value.Importance = o.importance
+			value.Text = o.value
+			value.Refresh()
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
 		l.UnselectAll()
 	}
 	return l

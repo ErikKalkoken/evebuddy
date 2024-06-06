@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage"
 
 	"github.com/antihax/goesi/esi"
 )
@@ -15,24 +16,18 @@ import (
 var ErrEveEntityNameNoMatch = errors.New("no matching EveEntity name")
 var ErrEveEntityNameMultipleMatches = errors.New("multiple matching EveEntity names")
 
-func eveEntityCategoryFromESICategory(c string) model.EveEntityCategory {
-	categoryMap := map[string]model.EveEntityCategory{
-		"alliance":       model.EveEntityAlliance,
-		"character":      model.EveEntityCharacter,
-		"corporation":    model.EveEntityCorporation,
-		"constellation":  model.EveEntityConstellation,
-		"faction":        model.EveEntityFaction,
-		"inventory_type": model.EveEntityInventoryType,
-		"mailing_list":   model.EveEntityMailList,
-		"region":         model.EveEntityRegion,
-		"solar_system":   model.EveEntitySolarSystem,
-		"station":        model.EveEntityStation,
+func (eu *EveUniverseService) GetOrCreateEveEntityESI(ctx context.Context, id int32) (*model.EveEntity, error) {
+	o, err := eu.st.GetEveEntity(ctx, id)
+	if err == nil {
+		return o, nil
+	} else if !errors.Is(err, storage.ErrNotFound) {
+		return nil, err
 	}
-	c2, ok := categoryMap[c]
-	if !ok {
-		panic(fmt.Sprintf("Can not map invalid category: %v", c))
+	_, err = eu.AddMissingEveEntities(ctx, []int32{id})
+	if err != nil {
+		return nil, err
 	}
-	return c2
+	return eu.st.GetEveEntity(ctx, id)
 }
 
 // AddMissingEveEntities adds EveEntities from ESI for IDs missing in the database.
@@ -217,4 +212,24 @@ func (eu *EveUniverseService) findEveEntitiesByName(ctx context.Context, names [
 		ee2 = append(ee2, e)
 	}
 	return ee2, nil
+}
+
+func eveEntityCategoryFromESICategory(c string) model.EveEntityCategory {
+	categoryMap := map[string]model.EveEntityCategory{
+		"alliance":       model.EveEntityAlliance,
+		"character":      model.EveEntityCharacter,
+		"corporation":    model.EveEntityCorporation,
+		"constellation":  model.EveEntityConstellation,
+		"faction":        model.EveEntityFaction,
+		"inventory_type": model.EveEntityInventoryType,
+		"mailing_list":   model.EveEntityMailList,
+		"region":         model.EveEntityRegion,
+		"solar_system":   model.EveEntitySolarSystem,
+		"station":        model.EveEntityStation,
+	}
+	c2, ok := categoryMap[c]
+	if !ok {
+		panic(fmt.Sprintf("Can not map invalid category: %v", c))
+	}
+	return c2
 }

@@ -55,3 +55,7 @@ type EveEntity struct {
 	ID       int32
 	Name     string
 }
+
+func (ee EveEntity) IsCharacter() bool {
+	return ee.Category == EveEntityCharacter
+}

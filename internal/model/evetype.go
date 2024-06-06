@@ -45,6 +45,7 @@ func (et EveType) HasRender() bool {
 		EveCategoryDeployable,
 		EveCategoryFighter,
 		EveCategoryShip,
+		EveCategoryStation,
 		EveCategoryStructure,
 		EveCategoryStarbase:
 		return true

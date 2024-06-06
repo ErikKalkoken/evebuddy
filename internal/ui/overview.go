@@ -199,7 +199,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 				if err != nil {
 					panic(err)
 				}
-				a.ui.showTypeInfoWindow(location.Type.ID, c.id)
+				a.ui.showLocationInfoWindow(location.ID)
 			}
 		}
 		t.UnselectAll()
