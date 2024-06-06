@@ -237,19 +237,13 @@ func (u *ui) newTypeInfoWindow(typeID, characterID int32) (*typeInfoWindow, erro
 }
 
 func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[int32]*model.EveDogmaAttributeForType) []attributesRow {
-	data := make([]attributesRow, 0)
-
-	if a.ui.isDebug {
-		data = append(data, attributesRow{label: "DEBUG", isTitle: true})
-		data = append(data, attributesRow{label: "Character ID", value: fmt.Sprint(a.characterID)})
-		data = append(data, attributesRow{label: "Type ID", value: fmt.Sprint(a.et.ID)})
-	}
-
 	droneCapacity, ok := attributes[model.EveDogmaAttributeDroneCapacity]
 	hasDrones := ok && droneCapacity.Value > 0
 
 	jumpDrive, ok := attributes[model.EveDogmaAttributeOnboardJumpDrive]
 	hasJumpDrive := ok && jumpDrive.Value == 1.0
+
+	groupedRows := make(map[attributeGroup][]attributesRow)
 
 	for _, ag := range attributeGroups {
 		attributeSelection := make([]*model.EveDogmaAttributeForType, 0)
@@ -290,15 +284,8 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 		if len(attributeSelection) == 0 {
 			continue
 		}
-		data = append(data, attributesRow{label: ag.DisplayName(), isTitle: true})
 		for _, o := range attributeSelection {
 			value := o.Value
-			// switch ag {
-			// case attributeGroupStructure:
-			// 	if o.EveTypeID == 0 {
-			// 		continue
-			// 	}
-			// }
 			switch o.DogmaAttribute.ID {
 			case model.EveDogmaAttributeShipWarpSpeed:
 				x := attributes[model.EveDogmaAttributeWarpSpeedMultiplier]
@@ -319,21 +306,47 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 				x, _ := icons.GetResourceByIconID(iconID)
 				r = x
 			}
-			data = append(data, attributesRow{
+			groupedRows[ag] = append(groupedRows[ag], attributesRow{
 				icon:  r,
 				label: o.DogmaAttribute.DisplayName,
 				value: v,
 			})
 		}
 	}
-	headers := make([]int, 0)
-	for i, r := range data {
-		if r.isTitle {
-			headers = append(headers, i)
+	data := make([]attributesRow, 0)
+	if a.et.Volume > 0 {
+		v, _ := a.formatAttributeValue(ctx, a.et.Volume, model.EveUnitVolume)
+		r := attributesRow{
+			icon:  icons.GetResourceByName(icons.Structure),
+			label: "Volume",
+			value: v,
+		}
+		var ag attributeGroup
+		if len(groupedRows[attributeGroupStructure]) > 0 {
+			ag = attributeGroupStructure
+		} else {
+			ag = attributeGroupMiscellaneous
+		}
+		groupedRows[ag] = append([]attributesRow{r}, groupedRows[ag]...)
+	}
+	usedGroupsCount := 0
+	for _, ag := range attributeGroups {
+		if len(groupedRows[ag]) > 0 {
+			usedGroupsCount++
 		}
 	}
-	if len(headers) == 1 {
-		data = slices.Delete(data, headers[0], headers[0]+1)
+	for _, ag := range attributeGroups {
+		if len(groupedRows[ag]) > 0 {
+			if usedGroupsCount > 1 {
+				data = append(data, attributesRow{label: ag.DisplayName(), isTitle: true})
+			}
+			data = append(data, groupedRows[ag]...)
+		}
+	}
+	if a.ui.isDebug {
+		data = append(data, attributesRow{label: "DEBUG", isTitle: true})
+		data = append(data, attributesRow{label: "Character ID", value: fmt.Sprint(a.characterID)})
+		data = append(data, attributesRow{label: "Type ID", value: fmt.Sprint(a.et.ID)})
 	}
 	return data
 }

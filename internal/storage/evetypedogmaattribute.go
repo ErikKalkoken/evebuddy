@@ -56,7 +56,7 @@ func (st *Storage) ListEveTypeDogmaAttributesForType(ctx context.Context, typeID
 	for i, r := range rows {
 		o := &model.EveDogmaAttributeForType{
 			DogmaAttribute: eveDogmaAttributeFromDBModel(r.EveDogmaAttribute),
-			EveTypeID:      int32(r.EveTypeID),
+			EveType:        eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory),
 			Value:          float32(r.Value),
 		}
 		oo[i] = o

@@ -21,6 +21,7 @@ const (
 	HydrogenIsotopes
 	NitrogenIsotopes
 	OxygenIsotopes
+	Structure
 	Tech1
 	Tech2
 	Tech3
@@ -38,6 +39,7 @@ var namedIcons = map[Name]*fyne.StaticResource{
 	HydrogenIsotopes: resource516414Png,
 	NitrogenIsotopes: resource516416Png,
 	OxygenIsotopes:   resource516415Png,
+	Structure:        resource2649Png,
 	Tech1:            resource7316241Png,
 	Tech2:            resource7316242Png,
 	Tech3:            resource7316242Png,

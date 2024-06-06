@@ -113,11 +113,11 @@ func (q *Queries) CreateEveTypeDogmaEffect(ctx context.Context, arg CreateEveTyp
 }
 
 const getEveType = `-- name: GetEveType :one
-SELECT eve_types.id, eve_types.eve_group_id, eve_types.capacity, eve_types.description, eve_types.graphic_id, eve_types.icon_id, eve_types.is_published, eve_types.market_group_id, eve_types.mass, eve_types.name, eve_types.packaged_volume, eve_types.portion_size, eve_types.radius, eve_types.volume, eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published, eve_categories.id, eve_categories.name, eve_categories.is_published
-FROM eve_types
-JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
-JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
-WHERE eve_types.id = ?
+SELECT et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume, eg.id, eg.eve_category_id, eg.name, eg.is_published, ec.id, ec.name, ec.is_published
+FROM eve_types et
+JOIN eve_groups eg ON eg.id = et.eve_group_id
+JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE et.id = ?
 `
 
 type GetEveTypeRow struct {
@@ -204,15 +204,20 @@ func (q *Queries) GetEveTypeDogmaEffect(ctx context.Context, arg GetEveTypeDogma
 }
 
 const listEveTypeDogmaAttributesForType = `-- name: ListEveTypeDogmaAttributesForType :many
-SELECT eda.id, eda.default_value, eda.description, eda.display_name, eda.icon_id, eda.name, eda.is_high_good, eda.is_published, eda.is_stackable, eda.unit_id, etda.eve_type_id, etda.value
+SELECT eda.id, eda.default_value, eda.description, eda.display_name, eda.icon_id, eda.name, eda.is_high_good, eda.is_published, eda.is_stackable, eda.unit_id, et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume, eg.id, eg.eve_category_id, eg.name, eg.is_published, ec.id, ec.name, ec.is_published, etda.value
 FROM eve_dogma_attributes eda
 JOIN eve_type_dogma_attributes etda ON etda.dogma_attribute_id = eda.id
+join eve_types et ON et.id = etda.eve_type_id
+JOIN eve_groups eg ON eg.id = et.eve_group_id
+JOIN eve_categories ec ON ec.id = eg.eve_category_id
 WHERE etda.eve_type_id = ?
 `
 
 type ListEveTypeDogmaAttributesForTypeRow struct {
 	EveDogmaAttribute EveDogmaAttribute
-	EveTypeID         int64
+	EveType           EveType
+	EveGroup          EveGroup
+	EveCategory       EveCategory
 	Value             float64
 }
 
@@ -236,7 +241,27 @@ func (q *Queries) ListEveTypeDogmaAttributesForType(ctx context.Context, eveType
 			&i.EveDogmaAttribute.IsPublished,
 			&i.EveDogmaAttribute.IsStackable,
 			&i.EveDogmaAttribute.UnitID,
-			&i.EveTypeID,
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
 			&i.Value,
 		); err != nil {
 			return nil, err

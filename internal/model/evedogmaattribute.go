@@ -184,7 +184,7 @@ type EveDogmaAttribute struct {
 }
 
 type EveDogmaAttributeForType struct {
-	EveTypeID      int32
+	EveType        *EveType
 	DogmaAttribute *EveDogmaAttribute
 	Value          float32
 }
