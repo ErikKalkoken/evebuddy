@@ -25,6 +25,7 @@ const (
 	Tech1
 	Tech2
 	Tech3
+	Faction
 )
 
 var namedIcons = map[Name]*fyne.StaticResource{
@@ -39,6 +40,7 @@ var namedIcons = map[Name]*fyne.StaticResource{
 	Tech1:         resource7316241Png,
 	Tech2:         resource7316242Png,
 	Tech3:         resource7316242Png,
+	Faction:       resource7316246Png,
 }
 
 // GetResourceByIconID returns an Eve Online icon by icon ID and reports if it was found.

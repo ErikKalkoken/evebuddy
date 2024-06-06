@@ -181,6 +181,8 @@ type typeInfoWindow struct {
 	et             *model.EveType
 	fittingData    []attributeRow
 	requiredSkills []requiredSkill
+	techLevel      int
+	metaLevel      int
 	ui             *ui
 	window         fyne.Window
 }
@@ -249,12 +251,26 @@ func (u *ui) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*ty
 		}
 		a.requiredSkills = skills
 	}
+	a.techLevel, a.metaLevel = calcLevels(attributes)
 	a.content = a.makeContent()
 	return a, nil
 }
 
 func (a *typeInfoWindow) isLocation() bool {
 	return a.location != nil
+}
+
+func calcLevels(attributes map[int32]*model.EveDogmaAttributeForType) (int, int) {
+	var tech, meta int
+	x, ok := attributes[model.EveDogmaAttributeTechLevel]
+	if ok {
+		tech = int(x.Value)
+	}
+	x, ok = attributes[model.EveDogmaAttributeMetaLevel]
+	if ok {
+		meta = int(x.Value)
+	}
+	return tech, meta
 }
 
 func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[int32]*model.EveDogmaAttributeForType) []attributeRow {
@@ -467,18 +483,32 @@ func (a *typeInfoWindow) makeContent() fyne.CanvasObject {
 }
 
 func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
-	var typeIcon *canvas.Image
+	typeIcon := container.New(&topLeftLayout{})
 	if a.et.HasRender() {
 		size := 128
-		typeIcon = newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
+		render := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
 			return a.ui.sv.EveImage.InventoryTypeRender(a.et.ID, size)
 		})
-		typeIcon.FillMode = canvas.ImageFillContain
+		render.FillMode = canvas.ImageFillContain
 		s := float32(size) * 1.3 / a.ui.window.Canvas().Scale()
-		typeIcon.SetMinSize(fyne.Size{Width: s, Height: s})
+		render.SetMinSize(fyne.Size{Width: s, Height: s})
+		typeIcon.Add(render)
+		if a.metaLevel > 4 {
+			var n icons.Name
+			if a.techLevel == 2 {
+				n = icons.Tech2
+			} else if a.techLevel == 3 {
+				n = icons.Tech3
+			} else {
+				n = icons.Faction
+			}
+			marker := canvas.NewImageFromResource(icons.GetResourceByName(n))
+			marker.FillMode = canvas.ImageFillOriginal
+			typeIcon.Add(marker)
+		}
 	} else {
 		size := 64
-		typeIcon = newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
+		icon := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
 				return resourceSkinicon64pxPng, nil
 			} else if a.et.IsBlueprint() {
@@ -487,9 +517,10 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 				return a.ui.sv.EveImage.InventoryTypeIcon(a.et.ID, size)
 			}
 		})
-		typeIcon.FillMode = canvas.ImageFillContain
+		icon.FillMode = canvas.ImageFillContain
 		s := float32(size) * 1.3 / a.ui.window.Canvas().Scale()
-		typeIcon.SetMinSize(fyne.Size{Width: s, Height: s})
+		icon.SetMinSize(fyne.Size{Width: s, Height: s})
+		typeIcon.Add(icon)
 	}
 	renderButton := widget.NewButton("Show", func() {
 		w := a.ui.app.NewWindow(a.makeTitle("Render"))
