@@ -10,12 +10,12 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 // skillqueueArea is the UI area that shows the skillqueue
@@ -45,56 +45,17 @@ func (a *skillqueueArea) makeSkillqueue() *widget.List {
 	list := widget.NewListWithData(
 		a.items,
 		func() fyne.CanvasObject {
-			pb := widget.NewProgressBar()
-			pb.Hide()
-			return container.NewStack(
-				pb,
-				container.NewHBox(
-					widget.NewLabel("skill"),
-					layout.NewSpacer(),
-					widget.NewLabel("duration"),
-				))
+			return widgets.NewSkillQueueItem()
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
-			row := co.(*fyne.Container).Objects[1].(*fyne.Container)
-			name := row.Objects[0].(*widget.Label)
-			duration := row.Objects[2].(*widget.Label)
-			pb := co.(*fyne.Container).Objects[0].(*widget.ProgressBar)
-
+			item := co.(*widgets.SkillQueueItem)
 			q, err := convertDataItem[*model.CharacterSkillqueueItem](di)
 			if err != nil {
 				slog.Error("failed to render row in skillqueue table", "err", err)
-				name.Text = "failed to render"
-				name.Importance = widget.DangerImportance
-				name.Refresh()
-				duration.SetText("")
-				pb.Hide()
+				item.SetError("failed to render", err)
 				return
 			}
-			var i widget.Importance
-			var d string
-			if q.IsCompleted() {
-				i = widget.LowImportance
-				d = "Completed"
-			} else if q.IsActive() {
-				i = widget.MediumImportance
-				d = humanizedNullDuration(q.Remaining(), "?")
-			} else {
-				i = widget.MediumImportance
-				d = humanizedNullDuration(q.Duration(), "?")
-			}
-			name.Importance = i
-			name.Text = skillDisplayName(q.SkillName, q.FinishedLevel)
-			name.Refresh()
-			duration.Text = d
-			duration.Importance = i
-			duration.Refresh()
-			if q.IsActive() {
-				pb.SetValue(q.CompletionP())
-				pb.Show()
-			} else {
-				pb.Hide()
-			}
+			item.Set(q.SkillName, q.FinishedLevel, q.IsActive(), q.Remaining(), q.Duration(), q.CompletionP())
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {

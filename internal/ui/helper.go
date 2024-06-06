@@ -197,23 +197,7 @@ func treeNodeFromDataItem[T any](di binding.DataItem) (T, error) {
 }
 
 func skillDisplayName[N int | int32 | int64 | uint | uint32 | uint64](name string, level N) string {
-	return fmt.Sprintf("%s %s", name, toRomanLetter(level))
-}
-
-// Returns a number as roman letters.
-func toRomanLetter[N int | int32 | int64 | uint | uint32 | uint64](v N) string {
-	m := map[int]string{
-		1: "I",
-		2: "II",
-		3: "III",
-		4: "IV",
-		5: "V",
-	}
-	r, ok := m[int(v)]
-	if !ok {
-		panic(fmt.Sprintf("invalid value: %d", v))
-	}
-	return r
+	return fmt.Sprintf("%s %s", name, ihumanize.ToRomanLetter(level))
 }
 
 func boolIconResource(ok bool) fyne.Resource {

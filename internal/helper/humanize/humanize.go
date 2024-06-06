@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
 	"github.com/antihax/goesi/esi"
 	"github.com/mattn/go-sqlite3"
 )
@@ -68,6 +69,13 @@ func Duration(duration time.Duration) string {
 	return fmt.Sprintf("%dh %dm", h, m)
 }
 
+func OptionalDuration(d mytypes.OptionalDuration, fallback string) string {
+	if !d.Valid {
+		return fallback
+	}
+	return Duration(d.Duration)
+}
+
 // Error returns a user friendly error message for an error.
 func Error(err error) string {
 	if err == nil {
@@ -120,4 +128,20 @@ func Error(err error) string {
 		return "network error"
 	}
 	return "general error"
+}
+
+// ToRomanLetter returns a number as roman letters.
+func ToRomanLetter[N int | int32 | int64 | uint | uint32 | uint64](v N) string {
+	m := map[int]string{
+		1: "I",
+		2: "II",
+		3: "III",
+		4: "IV",
+		5: "V",
+	}
+	r, ok := m[int(v)]
+	if !ok {
+		panic(fmt.Sprintf("invalid value: %d", v))
+	}
+	return r
 }
