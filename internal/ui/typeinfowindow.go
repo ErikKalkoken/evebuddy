@@ -467,20 +467,30 @@ func (a *typeInfoWindow) makeContent() fyne.CanvasObject {
 }
 
 func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
-	size := 64
-	typeIcon := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
-		if a.et.IsSKIN() {
-			return resourceSkinicon64pxPng, nil
-		} else if a.et.IsBlueprint() {
-			return a.ui.sv.EveImage.InventoryTypeBPO(a.et.ID, size)
-		} else {
-			return a.ui.sv.EveImage.InventoryTypeIcon(a.et.ID, size)
-		}
-	})
-	typeIcon.FillMode = canvas.ImageFillContain
-	s := float32(size) * 1.3 / a.ui.window.Canvas().Scale()
-	typeIcon.SetMinSize(fyne.Size{Width: s, Height: s})
-
+	var typeIcon *canvas.Image
+	if a.et.HasRender() {
+		size := 128
+		typeIcon = newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
+			return a.ui.sv.EveImage.InventoryTypeRender(a.et.ID, size)
+		})
+		typeIcon.FillMode = canvas.ImageFillContain
+		s := float32(size) * 1.3 / a.ui.window.Canvas().Scale()
+		typeIcon.SetMinSize(fyne.Size{Width: s, Height: s})
+	} else {
+		size := 64
+		typeIcon = newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
+			if a.et.IsSKIN() {
+				return resourceSkinicon64pxPng, nil
+			} else if a.et.IsBlueprint() {
+				return a.ui.sv.EveImage.InventoryTypeBPO(a.et.ID, size)
+			} else {
+				return a.ui.sv.EveImage.InventoryTypeIcon(a.et.ID, size)
+			}
+		})
+		typeIcon.FillMode = canvas.ImageFillContain
+		s := float32(size) * 1.3 / a.ui.window.Canvas().Scale()
+		typeIcon.SetMinSize(fyne.Size{Width: s, Height: s})
+	}
 	renderButton := widget.NewButton("Show", func() {
 		w := a.ui.app.NewWindow(a.makeTitle("Render"))
 		size := 512
