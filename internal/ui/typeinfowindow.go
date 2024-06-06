@@ -553,34 +553,15 @@ func (a *typeInfoWindow) makeAttributesTab() fyne.CanvasObject {
 			return len(a.attributesData)
 		},
 		func() fyne.CanvasObject {
-			return container.NewHBox(
-				widget.NewIcon(resourceCharacterplaceholder32Jpeg),
-				widget.NewLabel("Placeholder"),
-				layout.NewSpacer(),
-				widget.NewLabel("999.999 m3"))
+			return widgets.NewTypeAttributeItem()
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
 			r := a.attributesData[lii]
-			row := co.(*fyne.Container)
-			icon := row.Objects[0].(*widget.Icon)
-			label := row.Objects[1].(*widget.Label)
-			value := row.Objects[3].(*widget.Label)
+			item := co.(*widgets.TypeAttributeItem)
 			if r.isTitle {
-				label.TextStyle.Bold = true
-				label.Importance = widget.HighImportance
-				label.Text = r.label
-				label.Refresh()
-				icon.Hide()
-				value.Hide()
+				item.SetTitle(r.label)
 			} else {
-				label.TextStyle.Bold = false
-				label.Importance = widget.MediumImportance
-				label.Text = r.label
-				label.Refresh()
-				icon.SetResource(r.icon)
-				icon.Show()
-				value.SetText(r.value)
-				value.Show()
+				item.SetRegular(r.icon, r.label, r.value)
 			}
 		},
 	)
@@ -596,24 +577,12 @@ func (a *typeInfoWindow) makeFittingsTab() fyne.CanvasObject {
 			return len(a.fittingData)
 		},
 		func() fyne.CanvasObject {
-			return container.NewHBox(
-				widget.NewIcon(resourceCharacterplaceholder32Jpeg),
-				widget.NewLabel("Placeholder"),
-				layout.NewSpacer(),
-				widget.NewLabel("999.999 m3"))
+			return widgets.NewTypeAttributeItem()
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
 			r := a.fittingData[lii]
-			row := co.(*fyne.Container)
-			icon := row.Objects[0].(*widget.Icon)
-			label := row.Objects[1].(*widget.Label)
-			value := row.Objects[3].(*widget.Label)
-			label.TextStyle.Bold = false
-			label.Importance = widget.MediumImportance
-			label.Text = r.label
-			label.Refresh()
-			icon.SetResource(r.icon)
-			value.SetText(r.value)
+			item := co.(*widgets.TypeAttributeItem)
+			item.SetRegular(r.icon, r.label, r.value)
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
