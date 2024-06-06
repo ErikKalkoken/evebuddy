@@ -486,10 +486,22 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 	typeIcon := container.New(&topLeftLayout{})
 	if a.et.HasRender() {
 		size := 128
-		render := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
-			return a.ui.sv.EveImage.InventoryTypeRender(a.et.ID, size)
+		r, err := a.ui.sv.EveImage.InventoryTypeRender(a.et.ID, size)
+		if err != nil {
+			panic(err)
+		}
+		render := widgets.NewTappableImage(r, canvas.ImageFillContain, func() {
+			w := a.ui.app.NewWindow(a.makeTitle("Render"))
+			size := 512
+			i := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
+				return a.ui.sv.EveImage.InventoryTypeRender(a.et.ID, size)
+			})
+			i.FillMode = canvas.ImageFillContain
+			s := float32(size) / w.Canvas().Scale()
+			w.Resize(fyne.Size{Width: s, Height: s})
+			w.SetContent(i)
+			w.Show()
 		})
-		render.FillMode = canvas.ImageFillContain
 		s := float32(size) * 1.3 / a.ui.window.Canvas().Scale()
 		render.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(render)
@@ -522,23 +534,6 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		icon.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(icon)
 	}
-	renderButton := widget.NewButton("Show", func() {
-		w := a.ui.app.NewWindow(a.makeTitle("Render"))
-		size := 512
-		i := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
-			return a.ui.sv.EveImage.InventoryTypeRender(a.et.ID, size)
-		})
-		i.FillMode = canvas.ImageFillContain
-		s := float32(size) / w.Canvas().Scale()
-		w.Resize(fyne.Size{Width: s, Height: s})
-		w.SetContent(i)
-		w.Show()
-	})
-	if a.et.HasRender() {
-		renderButton.Enable()
-	} else {
-		renderButton.Disable()
-	}
 	ownerIcon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
 	ownerIcon.FillMode = canvas.ImageFillOriginal
 	ownerName := widget.NewLabel("")
@@ -569,16 +564,16 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 	if a.owner != nil && !a.owner.IsCharacter() || len(a.requiredSkills) == 0 {
 		checkIcon.Hide()
 	}
-	var title string
+	title := widget.NewLabel("")
 	if a.isLocation() {
-		title = a.location.Name
+		title.SetText(a.location.Name)
 	} else {
-		title = a.et.Name
+		title.Hide()
 	}
 	return container.NewHBox(
-		typeIcon, renderButton,
+		typeIcon,
 		container.NewVBox(
-			widget.NewLabel(title),
+			title,
 			container.NewHBox(ownerIcon, ownerName, checkIcon)))
 }
 

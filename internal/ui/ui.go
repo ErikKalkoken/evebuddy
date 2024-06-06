@@ -136,6 +136,9 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 	// 	err := errors.New("dummy")
 	// 	u.showErrorDialog("An error has occurred.", err)
 	// })
+	// x := widgets.NewTappableImage(resourceSkinicon64pxPng, func() {
+	// 	fmt.Println("Tapped")
+	// })
 
 	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, nil, u.tabs)
 	w.SetContent(mainContent)
