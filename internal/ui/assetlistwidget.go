@@ -15,7 +15,7 @@ type InventoryTypeImageProvider interface {
 	InventoryTypeIcon(int32, int) (fyne.Resource, error)
 }
 
-type assetListWidget struct {
+type AssetListWidget struct {
 	widget.BaseWidget
 	icon         *canvas.Image
 	name         *widget.Label
@@ -24,11 +24,11 @@ type assetListWidget struct {
 	sv           InventoryTypeImageProvider
 }
 
-func NewAssetListWidget(sv InventoryTypeImageProvider, fallbackIcon fyne.Resource) *assetListWidget {
+func NewAssetListWidget(sv InventoryTypeImageProvider, fallbackIcon fyne.Resource) *AssetListWidget {
 	icon := canvas.NewImageFromResource(fallbackIcon)
 	icon.FillMode = canvas.ImageFillContain
 	icon.SetMinSize(fyne.Size{Width: 40, Height: 40})
-	item := &assetListWidget{
+	item := &AssetListWidget{
 		icon:         icon,
 		name:         widget.NewLabel("Asset Template Name XXX\nAsset Template Name XXX"),
 		quantity:     widget.NewLabel("99.999"),
@@ -39,13 +39,13 @@ func NewAssetListWidget(sv InventoryTypeImageProvider, fallbackIcon fyne.Resourc
 	return item
 }
 
-func (o *assetListWidget) SetAsset(ca *model.CharacterAsset) {
-	o.name.Text = ca.DisplayName()
+func (o *AssetListWidget) SetAsset(name string, quantity int32, isSingleton bool, typeID int32, variant model.EveTypeVariant) {
+	o.name.Text = name
 	o.name.Wrapping = fyne.TextWrapWord
 	o.name.Refresh()
 
-	if !ca.IsSingleton {
-		o.quantity.SetText(humanize.Comma(int64(ca.Quantity)))
+	if !isSingleton {
+		o.quantity.SetText(humanize.Comma(int64(quantity)))
 		o.quantity.Show()
 	} else {
 		o.quantity.Hide()
@@ -55,19 +55,20 @@ func (o *assetListWidget) SetAsset(ca *model.CharacterAsset) {
 	o.icon.Refresh()
 
 	refreshImageResourceAsync(o.icon, func() (fyne.Resource, error) {
-		if ca.IsSKIN() {
+		switch variant {
+		case model.VariantSKIN:
 			return resourceSkinicon64pxPng, nil
-		} else if ca.IsBPO() {
-			return o.sv.InventoryTypeBPO(ca.EveType.ID, 64)
-		} else if ca.IsBlueprintCopy {
-			return o.sv.InventoryTypeBPC(ca.EveType.ID, 64)
-		} else {
-			return o.sv.InventoryTypeIcon(ca.EveType.ID, 64)
+		case model.VariantBPO:
+			return o.sv.InventoryTypeBPO(typeID, 64)
+		case model.VariantBPC:
+			return o.sv.InventoryTypeBPC(typeID, 64)
+		default:
+			return o.sv.InventoryTypeIcon(typeID, 64)
 		}
 	})
 }
 
-func (o *assetListWidget) CreateRenderer() fyne.WidgetRenderer {
+func (o *AssetListWidget) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(nil, nil, o.icon, o.quantity, o.name)
 	return widget.NewSimpleRenderer(c)
 }

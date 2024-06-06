@@ -280,12 +280,12 @@ func (u *ui) makeAssetGrid(assetsData binding.UntypedList) *widget.GridWrap {
 			return NewAssetListWidget(u.sv.EveImage, defaultAssetIcon)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
-			o, err := convertDataItem[*model.CharacterAsset](di)
+			ca, err := convertDataItem[*model.CharacterAsset](di)
 			if err != nil {
 				panic(err)
 			}
-			item := co.(*assetListWidget)
-			item.SetAsset(o)
+			item := co.(*AssetListWidget)
+			item.SetAsset(ca.DisplayName(), ca.Quantity, ca.IsSingleton, ca.EveType.ID, ca.Variant())
 		},
 	)
 	g.OnSelected = func(id widget.GridWrapItemID) {

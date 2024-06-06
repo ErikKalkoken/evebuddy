@@ -1,5 +1,14 @@
 package model
 
+type EveTypeVariant uint
+
+const (
+	VariantRegular EveTypeVariant = iota
+	VariantBPO
+	VariantBPC
+	VariantSKIN
+)
+
 type CharacterAsset struct {
 	ID              int64
 	CharacterID     int32
@@ -44,6 +53,17 @@ func (ca CharacterAsset) IsContainer() bool {
 		return true
 	}
 	return false
+}
+
+func (ca CharacterAsset) Variant() EveTypeVariant {
+	if ca.IsSKIN() {
+		return VariantSKIN
+	} else if ca.IsBPO() {
+		return VariantBPO
+	} else if ca.IsBlueprintCopy {
+		return VariantBPO
+	}
+	return VariantRegular
 }
 
 type CharacterAssetLocation struct {
