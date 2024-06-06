@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -17,6 +18,7 @@ func TestEveDogmaAttribute(t *testing.T) {
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		unit := model.EveUnitID(99)
 		arg := storage.CreateEveDogmaAttributeParams{
 			ID:           42,
 			DefaultValue: 1.2,
@@ -27,7 +29,7 @@ func TestEveDogmaAttribute(t *testing.T) {
 			IsHighGood:   true,
 			IsPublished:  true,
 			IsStackable:  true,
-			UnitID:       99,
+			UnitID:       unit,
 		}
 		// when
 		x1, err := r.CreateEveDogmaAttribute(ctx, arg)
@@ -42,7 +44,7 @@ func TestEveDogmaAttribute(t *testing.T) {
 			assert.True(t, x1.IsHighGood)
 			assert.True(t, x1.IsPublished)
 			assert.True(t, x1.IsStackable)
-			assert.Equal(t, int32(99), x1.UnitID)
+			assert.Equal(t, unit, x1.Unit)
 			x2, err := r.GetEveDogmaAttribute(ctx, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)

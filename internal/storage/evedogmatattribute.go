@@ -20,7 +20,7 @@ type CreateEveDogmaAttributeParams struct {
 	IsHighGood   bool
 	IsPublished  bool
 	IsStackable  bool
-	UnitID       int32
+	UnitID       model.EveUnitID
 }
 
 func (st *Storage) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDogmaAttributeParams) (*model.EveDogmaAttribute, error) {
@@ -68,6 +68,6 @@ func eveDogmaAttributeFromDBModel(eda queries.EveDogmaAttribute) *model.EveDogma
 		IsHighGood:   eda.IsHighGood,
 		IsPublished:  eda.IsPublished,
 		IsStackable:  eda.IsStackable,
-		UnitID:       int32(eda.UnitID),
+		Unit:         model.EveUnitID(eda.UnitID),
 	}
 }

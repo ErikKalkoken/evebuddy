@@ -128,7 +128,7 @@ func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32
 			if err != nil {
 				return nil, err
 			}
-			switch x.UnitID {
+			switch x.Unit {
 			case model.EveUnitGroupID:
 				go func(ctx context.Context, groupID int32) {
 					_, err := eu.GetOrCreateEveGroupESI(ctx, groupID)

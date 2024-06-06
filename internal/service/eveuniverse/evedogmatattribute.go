@@ -49,7 +49,7 @@ func (eu *EveUniverseService) createEveDogmaAttributeFromESI(ctx context.Context
 			IsHighGood:   o.HighIsGood,
 			IsPublished:  o.Published,
 			IsStackable:  o.Stackable,
-			UnitID:       o.UnitId,
+			UnitID:       model.EveUnitID(o.UnitId),
 		}
 		return eu.st.CreateEveDogmaAttribute(ctx, arg)
 	})
@@ -60,7 +60,7 @@ func (eu *EveUniverseService) createEveDogmaAttributeFromESI(ctx context.Context
 }
 
 // FormatValue returns a formatted value.
-func (eu *EveUniverseService) FormatValue(ctx context.Context, value float32, unitID int32) (string, int32) {
+func (eu *EveUniverseService) FormatValue(ctx context.Context, value float32, unitID model.EveUnitID) (string, int32) {
 	defaultFormatter := func(v float32) string {
 		return humanize.CommafWithDigits(float64(v), 2)
 	}

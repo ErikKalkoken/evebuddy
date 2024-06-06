@@ -284,7 +284,7 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 				x := attributes[model.EveDogmaAttributeWarpSpeedMultiplier]
 				value = value * x.Value
 			}
-			v, substituteIcon := a.ui.sv.EveUniverse.FormatValue(ctx, value, o.DogmaAttribute.UnitID)
+			v, substituteIcon := a.ui.sv.EveUniverse.FormatValue(ctx, value, o.DogmaAttribute.Unit)
 			var iconID int32
 			if substituteIcon != 0 {
 				iconID = substituteIcon
@@ -346,7 +346,7 @@ func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int
 		}
 		iconID := o.DogmaAttribute.IconID
 		r, _ := icons.GetResourceByIconID(iconID)
-		v, _ := a.ui.sv.EveUniverse.FormatValue(ctx, o.Value, o.DogmaAttribute.UnitID)
+		v, _ := a.ui.sv.EveUniverse.FormatValue(ctx, o.Value, o.DogmaAttribute.Unit)
 		data = append(data, attributesRow{
 			icon:  r,
 			label: o.DogmaAttribute.DisplayName,

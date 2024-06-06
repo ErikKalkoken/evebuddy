@@ -834,7 +834,7 @@ func (f Factory) CreateEveDogmaAttribute(args ...storage.CreateEveDogmaAttribute
 		arg.Name = fmt.Sprintf("Name #%d", arg.ID)
 	}
 	if arg.UnitID == 0 {
-		arg.UnitID = rand.Int32N(100_000)
+		arg.UnitID = model.EveUnitID(rand.IntN(120))
 	}
 	o, err := f.st.CreateEveDogmaAttribute(ctx, arg)
 	if err != nil {

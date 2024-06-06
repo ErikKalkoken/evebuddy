@@ -107,67 +107,69 @@ const (
 	EveDogmaAttributeTrainingTimeMultiplier              = 275
 )
 
+type EveUnitID uint
+
 const (
-	EveUnitNone                           = 0
-	EveUnitLength                         = 1
-	EveUnitMass                           = 2
-	EveUnitTime                           = 3
-	EveUnitElectricCurrent                = 4
-	EveUnitTemperature                    = 5
-	EveUnitAmountOfSubstance              = 6
-	EveUnitLuminousIntensity              = 7
-	EveUnitArea                           = 8
-	EveUnitVolume                         = 9
-	EveUnitSpeed                          = 10
-	EveUnitAcceleration                   = 11
-	EveUnitWaveNumber                     = 12
-	EveUnitMassDensity                    = 13
-	EveUnitSpecificVolume                 = 14
-	EveUnitCurrentDensity                 = 15
-	EveUnitMagneticFieldStrength          = 16
-	EveUnitAmountOfSubstanceConcentration = 17
-	EveUnitLuminance                      = 18
-	EveUnitMassFraction                   = 19
-	EveUnitMilliseconds                   = 101
-	EveUnitMillimeters                    = 102
-	EveUnitMegaPascals                    = 103
-	EveUnitMultiplier                     = 104
-	EveUnitPercentage                     = 105
-	EveUnitTeraflops                      = 106
-	EveUnitMegaWatts                      = 107
-	EveUnitInverseAbsolutePercent         = 108
-	EveUnitModifierPercent                = 109
-	EveUnitInverseModifierPercent         = 111
-	EveUnitRadiansPerSecond               = 112
-	EveUnitHitpoints                      = 113
-	EveUnitCapacitorUnits                 = 114
-	EveUnitGroupID                        = 115
-	EveUnitTypeID                         = 116
-	EveUnitSizeClass                      = 117
-	EveUnitOreUnits                       = 118
-	EveUnitAttributeID                    = 119
-	EveUnitAttributePoints                = 120
-	EveUnitRealPercent                    = 121
-	EveUnitFittingSlots                   = 122
-	EveUnitTrueTime                       = 123
-	EveUnitModifierRelativePercent        = 124
-	EveUnitNewton                         = 125
-	EveUnitLightYear                      = 126
-	EveUnitAbsolutePercent                = 127
-	EveUnitDroneBandwidth                 = 128
-	EveUnitHours                          = 129
-	EveUnitMoney                          = 133
-	EveUnitLogisticalCapacity             = 134
-	EveUnitAstronomicalUnit               = 135
-	EveUnitSlot                           = 136
-	EveUnitBoolean                        = 137
-	EveUnitUnits                          = 138
-	EveUnitBonus                          = 139
-	EveUnitLevel                          = 140
-	EveUnitHardpoints                     = 141
-	EveUnitSex                            = 142
-	EveUnitDatetime                       = 143
-	EveUnitWarpSpeed                      = 144 // inferred
+	EveUnitNone                           EveUnitID = 0
+	EveUnitLength                         EveUnitID = 1
+	EveUnitMass                           EveUnitID = 2
+	EveUnitTime                           EveUnitID = 3
+	EveUnitElectricCurrent                EveUnitID = 4
+	EveUnitTemperature                    EveUnitID = 5
+	EveUnitAmountOfSubstance              EveUnitID = 6
+	EveUnitLuminousIntensity              EveUnitID = 7
+	EveUnitArea                           EveUnitID = 8
+	EveUnitVolume                         EveUnitID = 9
+	EveUnitSpeed                          EveUnitID = 10
+	EveUnitAcceleration                   EveUnitID = 11
+	EveUnitWaveNumber                     EveUnitID = 12
+	EveUnitMassDensity                    EveUnitID = 13
+	EveUnitSpecificVolume                 EveUnitID = 14
+	EveUnitCurrentDensity                 EveUnitID = 15
+	EveUnitMagneticFieldStrength          EveUnitID = 16
+	EveUnitAmountOfSubstanceConcentration EveUnitID = 17
+	EveUnitLuminance                      EveUnitID = 18
+	EveUnitMassFraction                   EveUnitID = 19
+	EveUnitMilliseconds                   EveUnitID = 101
+	EveUnitMillimeters                    EveUnitID = 102
+	EveUnitMegaPascals                    EveUnitID = 103
+	EveUnitMultiplier                     EveUnitID = 104
+	EveUnitPercentage                     EveUnitID = 105
+	EveUnitTeraflops                      EveUnitID = 106
+	EveUnitMegaWatts                      EveUnitID = 107
+	EveUnitInverseAbsolutePercent         EveUnitID = 108
+	EveUnitModifierPercent                EveUnitID = 109
+	EveUnitInverseModifierPercent         EveUnitID = 111
+	EveUnitRadiansPerSecond               EveUnitID = 112
+	EveUnitHitpoints                      EveUnitID = 113
+	EveUnitCapacitorUnits                 EveUnitID = 114
+	EveUnitGroupID                        EveUnitID = 115
+	EveUnitTypeID                         EveUnitID = 116
+	EveUnitSizeClass                      EveUnitID = 117
+	EveUnitOreUnits                       EveUnitID = 118
+	EveUnitAttributeID                    EveUnitID = 119
+	EveUnitAttributePoints                EveUnitID = 120
+	EveUnitRealPercent                    EveUnitID = 121
+	EveUnitFittingSlots                   EveUnitID = 122
+	EveUnitTrueTime                       EveUnitID = 123
+	EveUnitModifierRelativePercent        EveUnitID = 124
+	EveUnitNewton                         EveUnitID = 125
+	EveUnitLightYear                      EveUnitID = 126
+	EveUnitAbsolutePercent                EveUnitID = 127
+	EveUnitDroneBandwidth                 EveUnitID = 128
+	EveUnitHours                          EveUnitID = 129
+	EveUnitMoney                          EveUnitID = 133
+	EveUnitLogisticalCapacity             EveUnitID = 134
+	EveUnitAstronomicalUnit               EveUnitID = 135
+	EveUnitSlot                           EveUnitID = 136
+	EveUnitBoolean                        EveUnitID = 137
+	EveUnitUnits                          EveUnitID = 138
+	EveUnitBonus                          EveUnitID = 139
+	EveUnitLevel                          EveUnitID = 140
+	EveUnitHardpoints                     EveUnitID = 141
+	EveUnitSex                            EveUnitID = 142
+	EveUnitDatetime                       EveUnitID = 143
+	EveUnitWarpSpeed                      EveUnitID = 144 // inferred
 )
 
 type EveDogmaAttribute struct {
@@ -180,7 +182,7 @@ type EveDogmaAttribute struct {
 	IsHighGood   bool
 	IsPublished  bool
 	IsStackable  bool
-	UnitID       int32
+	Unit         EveUnitID
 }
 
 type EveDogmaAttributeForType struct {
