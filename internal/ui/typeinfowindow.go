@@ -258,6 +258,13 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 			if !ok {
 				continue
 			}
+			if ag == attributeGroupElectronicResistances {
+				s := attributeGroupsMap[ag]
+				found := slices.Index(s, o.DogmaAttribute.ID) == -1
+				if found && o.Value == 0 {
+					continue
+				}
+			}
 			switch o.DogmaAttribute.ID {
 			case model.EveDogmaAttributeCapacity, model.EveDogmaAttributeMass:
 				if o.Value == 0 {
@@ -286,9 +293,12 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 		data = append(data, attributesRow{label: ag.DisplayName(), isTitle: true})
 		for _, o := range attributeSelection {
 			value := o.Value
-			if ag == attributeGroupElectronicResistances && value == 0 {
-				continue
-			}
+			// switch ag {
+			// case attributeGroupStructure:
+			// 	if o.EveTypeID == 0 {
+			// 		continue
+			// 	}
+			// }
 			switch o.DogmaAttribute.ID {
 			case model.EveDogmaAttributeShipWarpSpeed:
 				x := attributes[model.EveDogmaAttributeWarpSpeedMultiplier]
