@@ -5,16 +5,12 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-// Popular icon IDs
-const (
-	HeliumIsotopesID int32 = 2699
-)
+// An icon name
+type Name uint
 
-// Enum for defining named icons
-type iconName uint
-
+// Named icons
 const (
-	Undefined iconName = iota
+	Undefined Name = iota
 	CloningCenter
 	Charisma
 	Intelligence
@@ -30,7 +26,7 @@ const (
 	Tech3
 )
 
-var namedIcons = map[iconName]*fyne.StaticResource{
+var namedIcons = map[Name]*fyne.StaticResource{
 	Undefined:        resource76415Png,
 	CloningCenter:    resource127641Png,
 	Charisma:         resource22321Png,
@@ -59,6 +55,6 @@ func GetResourceByIconID(id int32) (*fyne.StaticResource, bool) {
 
 // GetResourceByName returns an Eve Online icon by name and reports if it was found.
 // When the icon was not found it will return the undefined icon as substitute.
-func GetResourceByName(name iconName) *fyne.StaticResource {
+func GetResourceByName(name Name) *fyne.StaticResource {
 	return namedIcons[name]
 }

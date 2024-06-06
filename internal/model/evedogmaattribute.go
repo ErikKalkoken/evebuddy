@@ -99,6 +99,12 @@ const (
 	EveDogmaAttributeWarpSpeedMultiplier                 = 600
 	EveDogmaAttributeWeaponDisruptionResistance          = 2113
 	EveDogmaAttributeWillpower                           = 168
+	EveDogmaAttributeCharismaModifier                    = 175
+	EveDogmaAttributeIntelligenceModifier                = 176
+	EveDogmaAttributeMemoryModifier                      = 177
+	EveDogmaAttributePerceptionModifier                  = 178
+	EveDogmaAttributeWillpowerModifier                   = 179
+	EveDogmaAttributeTrainingTimeMultiplier              = 275
 )
 
 const (

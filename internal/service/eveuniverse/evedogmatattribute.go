@@ -9,6 +9,16 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
+func (eu *EveUniverseService) GetEveDogmaAttribute(ctx context.Context, id int32) (*model.EveDogmaAttribute, error) {
+	o, err := eu.st.GetEveDogmaAttribute(ctx, id)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, err
+	}
+	return o, nil
+}
+
 func (eu *EveUniverseService) GetOrCreateEveDogmaAttributeESI(ctx context.Context, id int32) (*model.EveDogmaAttribute, error) {
 	o, err := eu.st.GetEveDogmaAttribute(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
