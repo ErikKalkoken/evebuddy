@@ -40,18 +40,34 @@ func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCr
 }
 
 func (st *Storage) GetEveLocation(ctx context.Context, id int64) (*model.EveLocation, error) {
-	l, err := st.q.GetLocation(ctx, id)
+	o, err := st.q.GetLocation(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to get eve location for id %d: %w", id, err)
 	}
-	x, err := st.eveLocationFromDBModel(ctx, l)
+	x, err := st.eveLocationFromDBModel(ctx, o)
 	if err != nil {
 		return nil, err
 	}
 	return x, nil
+}
+
+func (st *Storage) ListEveLocation(ctx context.Context) ([]*model.EveLocation, error) {
+	rows, err := st.q.ListEveLocations(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list eve locations: %w", err)
+	}
+	oo := make([]*model.EveLocation, len(rows))
+	for i, r := range rows {
+		o, err := st.eveLocationFromDBModel(ctx, r)
+		if err != nil {
+			return nil, err
+		}
+		oo[i] = o
+	}
+	return oo, nil
 }
 
 func (st *Storage) MissingEveLocations(ctx context.Context, ids []int64) ([]int64, error) {

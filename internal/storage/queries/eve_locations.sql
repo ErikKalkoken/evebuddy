@@ -7,6 +7,10 @@ WHERE id = ?;
 SELECT id
 FROM eve_locations;
 
+-- name: ListEveLocations :many
+SELECT *
+FROM eve_locations;
+
 -- name: UpdateOrCreateLocation :exec
 INSERT INTO eve_locations (
     id,

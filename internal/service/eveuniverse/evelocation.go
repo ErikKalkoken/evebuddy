@@ -16,6 +16,10 @@ func (eu *EveUniverseService) GetEveLocation(ctx context.Context, id int64) (*mo
 	return eu.st.GetEveLocation(ctx, id)
 }
 
+func (eu *EveUniverseService) ListEveLocations(ctx context.Context) ([]*model.EveLocation, error) {
+	return eu.st.ListEveLocation(ctx)
+}
+
 // GetOrCreateEveLocationESI return a structure when it already exists
 // or else tries to fetch and create a new structure from ESI.
 //

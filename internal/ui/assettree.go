@@ -16,18 +16,18 @@ func newAssetTree(assets []*model.CharacterAsset) map[int64]assetNode {
 	// assets will be removed from this map as they are added to the tree
 	m := make(map[int64]*model.CharacterAsset)
 	for _, ca := range assets {
-		m[ca.ID] = ca
+		m[ca.ItemID] = ca
 	}
 	// create parent nodes
 	nodes := make(map[int64]assetNode)
 	for _, ca := range m {
 		_, found := m[ca.LocationID]
 		if !found {
-			nodes[ca.ID] = newAssetNode(ca)
+			nodes[ca.ItemID] = newAssetNode(ca)
 		}
 	}
 	for _, n := range nodes {
-		delete(m, n.ca.ID)
+		delete(m, n.ca.ItemID)
 	}
 	// add child nodes
 	addChildNodes(m, nodes)
@@ -39,8 +39,8 @@ func addChildNodes(m map[int64]*model.CharacterAsset, nodes map[int64]assetNode)
 	for _, ca := range m {
 		_, found := nodes[ca.LocationID]
 		if found {
-			nodes[ca.LocationID].children[ca.ID] = newAssetNode(ca)
-			delete(m, ca.ID)
+			nodes[ca.LocationID].children[ca.ItemID] = newAssetNode(ca)
+			delete(m, ca.ItemID)
 		}
 	}
 	for _, n := range nodes {
@@ -55,7 +55,7 @@ func compileAssetParentLocations(nodes map[int64]assetNode) map[int64]int64 {
 	assets := make(map[int64]int64)
 	// add parents
 	for _, n := range nodes {
-		assets[n.ca.ID] = n.ca.LocationID
+		assets[n.ca.ItemID] = n.ca.LocationID
 	}
 	// add children
 	addAssetChildrenLocations(assets, nodes, 0)
@@ -72,7 +72,7 @@ func addAssetChildrenLocations(assets map[int64]int64, nodes map[int64]assetNode
 		}
 		if len(parent.children) > 0 {
 			for _, child := range parent.children {
-				assets[child.ca.ID] = parentLocationID
+				assets[child.ca.ItemID] = parentLocationID
 			}
 			addAssetChildrenLocations(assets, parent.children, parentLocationID)
 		}

@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -104,6 +105,18 @@ func TestLocation(t *testing.T) {
 				assert.Equal(t, myType, x.Type)
 				assert.Equal(t, updatedAt.UTC(), x.UpdatedAt.UTC())
 			}
+		}
+	})
+	t.Run("can update existing", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		l1 := factory.CreateLocationStructure()
+		l2 := factory.CreateLocationStructure()
+		// when
+		got, err := r.ListEveLocation(ctx)
+		if assert.NoError(t, err) {
+			want := []*model.EveLocation{l1, l2}
+			assert.Equal(t, want, got)
 		}
 	})
 }

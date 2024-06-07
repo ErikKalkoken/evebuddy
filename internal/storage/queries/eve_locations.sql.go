@@ -31,6 +31,41 @@ func (q *Queries) GetLocation(ctx context.Context, id int64) (EveLocation, error
 	return i, err
 }
 
+const listEveLocations = `-- name: ListEveLocations :many
+SELECT id, eve_solar_system_id, eve_type_id, name, owner_id, updated_at
+FROM eve_locations
+`
+
+func (q *Queries) ListEveLocations(ctx context.Context) ([]EveLocation, error) {
+	rows, err := q.db.QueryContext(ctx, listEveLocations)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EveLocation
+	for rows.Next() {
+		var i EveLocation
+		if err := rows.Scan(
+			&i.ID,
+			&i.EveSolarSystemID,
+			&i.EveTypeID,
+			&i.Name,
+			&i.OwnerID,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLocationIDs = `-- name: ListLocationIDs :many
 SELECT id
 FROM eve_locations
