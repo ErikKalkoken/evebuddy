@@ -17,7 +17,7 @@ func TestAssetTree(t *testing.T) {
 	a31 := &model.CharacterAsset{ItemID: 31, LocationID: 3}
 	assets := []*model.CharacterAsset{a1, a2, a11, a111, a3, a31, a1111}
 	t.Run("can create tree from character assets", func(t *testing.T) {
-		nodes := newAssetTree(assets)
+		nodes := NewAssetTree(assets)
 		assert.Len(t, nodes, 3)
 		assert.Len(t, nodes[a1.ItemID].children, 1)
 		assert.Len(t, nodes[a1.ItemID].children[a11.ItemID].children, 1)
@@ -26,8 +26,8 @@ func TestAssetTree(t *testing.T) {
 		assert.Len(t, nodes[a3.ItemID].children[a31.ItemID].children, 0)
 	})
 	t.Run("can create location list from tree", func(t *testing.T) {
-		nodes := newAssetTree(assets)
-		got := compileAssetParentLocations(nodes)
+		nodes := NewAssetTree(assets)
+		got := CompileAssetParentLocations(nodes)
 		want := map[int64]int64{
 			1:    100000,
 			2:    100000,

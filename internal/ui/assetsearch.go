@@ -19,7 +19,7 @@ import (
 type assetSearchArea struct {
 	content        *fyne.Container
 	assets         []*model.CharacterAsset
-	assetTree      map[int64]assetNode
+	assetTree      map[int64]AssetNode
 	assetLocations map[int64]int64
 	assetTable     *widget.Table
 	assetData      binding.UntypedList
@@ -182,8 +182,8 @@ func (a *assetSearchArea) updateData() error {
 		return err
 	}
 	a.assets = ca
-	a.assetTree = newAssetTree(ca)
-	a.assetLocations = compileAssetParentLocations(a.assetTree)
+	a.assetTree = NewAssetTree(ca)
+	a.assetLocations = CompileAssetParentLocations(a.assetTree)
 	a.assetData.Set(copyToUntypedSlice(ca))
 
 	el, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)

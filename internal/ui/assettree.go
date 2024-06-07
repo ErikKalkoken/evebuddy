@@ -2,16 +2,17 @@ package ui
 
 import "github.com/ErikKalkoken/evebuddy/internal/model"
 
-type assetNode struct {
+type AssetNode struct {
 	ca       *model.CharacterAsset
-	children map[int64]assetNode
+	children map[int64]AssetNode
 }
 
-func newAssetNode(ca *model.CharacterAsset) assetNode {
-	return assetNode{ca: ca, children: make(map[int64]assetNode)}
+func newAssetNode(ca *model.CharacterAsset) AssetNode {
+	return AssetNode{ca: ca, children: make(map[int64]AssetNode)}
 }
 
-func newAssetTree(assets []*model.CharacterAsset) map[int64]assetNode {
+// NewAssetTree returns the provided assets as tree structure.
+func NewAssetTree(assets []*model.CharacterAsset) map[int64]AssetNode {
 	// initial map of all assets
 	// assets will be removed from this map as they are added to the tree
 	m := make(map[int64]*model.CharacterAsset)
@@ -19,7 +20,7 @@ func newAssetTree(assets []*model.CharacterAsset) map[int64]assetNode {
 		m[ca.ItemID] = ca
 	}
 	// create parent nodes
-	nodes := make(map[int64]assetNode)
+	nodes := make(map[int64]AssetNode)
 	for _, ca := range m {
 		_, found := m[ca.LocationID]
 		if !found {
@@ -35,7 +36,7 @@ func newAssetTree(assets []*model.CharacterAsset) map[int64]assetNode {
 	return nodes
 }
 
-func addChildNodes(m map[int64]*model.CharacterAsset, nodes map[int64]assetNode) {
+func addChildNodes(m map[int64]*model.CharacterAsset, nodes map[int64]AssetNode) {
 	for _, ca := range m {
 		_, found := nodes[ca.LocationID]
 		if found {
@@ -50,8 +51,8 @@ func addChildNodes(m map[int64]*model.CharacterAsset, nodes map[int64]assetNode)
 	}
 }
 
-// compileAssetParentLocations returns a map of asset ID to parent location ID
-func compileAssetParentLocations(nodes map[int64]assetNode) map[int64]int64 {
+// CompileAssetParentLocations returns a map of asset ID to parent location ID
+func CompileAssetParentLocations(nodes map[int64]AssetNode) map[int64]int64 {
 	assets := make(map[int64]int64)
 	// add parents
 	for _, n := range nodes {
@@ -62,7 +63,7 @@ func compileAssetParentLocations(nodes map[int64]assetNode) map[int64]int64 {
 	return assets
 }
 
-func addAssetChildrenLocations(assets map[int64]int64, nodes map[int64]assetNode, realParentLocationID int64) {
+func addAssetChildrenLocations(assets map[int64]int64, nodes map[int64]AssetNode, realParentLocationID int64) {
 	for _, parent := range nodes {
 		var parentLocationID int64
 		if realParentLocationID == 0 {
