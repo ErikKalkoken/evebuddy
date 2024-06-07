@@ -74,10 +74,10 @@ func (a *walletJournalArea) makeTable() *widget.Table {
 		text  string
 		width float32
 	}{
-		{"Date", 130},
-		{"Type", 130},
-		{"Amount", 130},
-		{"Balance", 130},
+		{"Date", 150},
+		{"Type", 150},
+		{"Amount", 200},
+		{"Balance", 200},
 		{"Description", 450},
 	}
 	t := widget.NewTable(

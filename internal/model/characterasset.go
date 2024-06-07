@@ -1,6 +1,9 @@
 package model
 
-import "database/sql"
+import (
+	"database/sql"
+	"fmt"
+)
 
 type EveTypeVariant uint
 
@@ -28,6 +31,13 @@ type CharacterAsset struct {
 func (ca CharacterAsset) DisplayName() string {
 	if ca.Name != "" {
 		return ca.Name
+	}
+	return ca.EveType.Name
+}
+
+func (ca CharacterAsset) DisplayName2() string {
+	if ca.Name != "" {
+		return fmt.Sprintf("%s \"%s\"", ca.EveType.Name, ca.Name)
 	}
 	return ca.EveType.Name
 }

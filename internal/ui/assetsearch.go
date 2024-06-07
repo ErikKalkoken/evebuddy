@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
@@ -27,7 +26,8 @@ type assetSearchArea struct {
 	searchBox      *widget.Entry
 	locations      map[int64]*model.EveLocation
 	characterNames map[int32]string
-	top            *widget.Label
+	total          *widget.Label
+	found          *widget.Label
 	ui             *ui
 }
 
@@ -35,12 +35,23 @@ func (u *ui) newAssetSearchArea() *assetSearchArea {
 	a := &assetSearchArea{
 		ui:        u,
 		assetData: binding.NewUntypedList(),
-		top:       widget.NewLabel(""),
+		total:     widget.NewLabel(""),
+		found:     widget.NewLabel(""),
 	}
-	a.top.TextStyle.Bold = true
+	a.assetData.AddListener(binding.NewDataListener(func() {
+		t := a.assetData.Length()
+		if t != len(a.assets) {
+			a.found.SetText(fmt.Sprintf("%d found", t))
+			a.found.Show()
+		} else {
+			a.found.Hide()
+		}
+	}))
+	a.total.TextStyle.Bold = true
+	a.found.Hide()
 	a.searchBox = a.makeSearchBox()
 	a.assetTable = a.makeAssetsTable()
-	topBox := container.NewVBox(a.top, widget.NewSeparator(), a.searchBox)
+	topBox := container.NewVBox(container.NewHBox(a.total, a.found), widget.NewSeparator(), a.searchBox)
 	a.content = container.NewBorder(topBox, nil, nil, nil, a.assetTable)
 	return a
 }
@@ -71,28 +82,23 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 		text  string
 		width float32
 	}{
-		{"Name", 250},
-		{"Quantity", 100},
+		{"Name", 350},
+		{"Quantity", 75},
 		{"Group", 250},
 		{"Location", 350},
-		{"ID", 250},
-		{"Character", 250},
+		{"Character", 200},
 	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
 			return a.assetData.Length(), len(headers)
 		},
 		func() fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
-			icon.FillMode = canvas.ImageFillOriginal
-			icon.Hide()
 			label := widget.NewLabel("Template")
-			return container.NewHBox(icon, label)
+			label.Truncation = fyne.TextTruncateEllipsis
+			return label
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			row := co.(*fyne.Container)
-			// icon := row.Objects[0].(*canvas.Image)
-			label := row.Objects[1].(*widget.Label)
+			label := co.(*widget.Label)
 			ca, err := getItemUntypedList[*model.CharacterAsset](a.assetData, tci.Row)
 			if err != nil {
 				slog.Error("Failed to render asset item in UI", "err", err)
@@ -107,7 +113,7 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 				// 	return a.ui.sv.EveImage.InventoryTypeIcon(o.Type.ID, defaultIconSize)
 				// })
 				// icon.Show()
-				t = ca.DisplayName()
+				t = ca.DisplayName2()
 			case 1:
 				if ca.IsSingleton {
 					t = ""
@@ -130,8 +136,6 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 					}
 				}
 			case 4:
-				t = fmt.Sprint(ca.ItemID)
-			case 5:
 				t = a.characterNames[ca.CharacterID]
 			}
 			label.Text = t
@@ -157,7 +161,10 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 			slog.Error("Failed to select asset", "err", err)
 			return
 		}
-		a.ui.showTypeInfoWindow(o.EveType.ID, a.ui.characterID())
+		switch tci.Col {
+		case 0:
+			a.ui.showTypeInfoWindow(o.EveType.ID, a.ui.characterID())
+		}
 	}
 	return t
 }
@@ -172,9 +179,9 @@ func (a *assetSearchArea) refresh() {
 	} else {
 		t, i = a.makeTopText()
 	}
-	a.top.Text = t
-	a.top.Importance = i
-	a.top.Refresh()
+	a.total.Text = t
+	a.total.Importance = i
+	a.total.Refresh()
 	a.assetTable.Refresh()
 	// if enabled {
 	// 	a.searchBox.Enable()
@@ -223,6 +230,6 @@ func (a *assetSearchArea) updateData() error {
 }
 
 func (a *assetSearchArea) makeTopText() (string, widget.Importance) {
-	text := fmt.Sprintf("%s total assets", humanize.Comma(int64(len(a.assets))))
+	text := fmt.Sprintf("%s total items", humanize.Comma(int64(len(a.assets))))
 	return text, widget.MediumImportance
 }
