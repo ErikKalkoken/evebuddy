@@ -63,18 +63,65 @@ func (a *assetSearchArea) makeSearchBox() *widget.Entry {
 		if len(search) == 1 {
 			return
 		}
-		xx := make([]*model.CharacterAsset, 0)
+		rows := make([]*assetSearchRow, 0)
 		search2 := strings.ToLower(search)
-		for _, o := range a.assets {
-			if strings.Contains(strings.ToLower(o.EveType.Name), search2) {
-				xx = append(xx, o)
+		for _, ca := range a.assets {
+			if strings.Contains(strings.ToLower(ca.EveType.Name), search2) {
+				rows = append(rows, a.newAssetSearchRow(ca))
 			}
 		}
-		a.assetData.Set(copyToUntypedSlice(xx))
+		a.assetData.Set(copyToUntypedSlice(rows))
 		a.assetTable.Refresh()
 		a.assetTable.ScrollToTop()
 	}
 	return sb
+}
+
+type assetSearchRow struct {
+	characterID   int32
+	characterName string
+	groupID       int32
+	groupName     string
+	itemID        int64
+	locationID    int64
+	locationName  string
+	name          string
+	quantity      string
+	typeID        int32
+	typeName      string
+}
+
+func (a *assetSearchArea) newAssetSearchRow(ca *model.CharacterAsset) *assetSearchRow {
+	r := &assetSearchRow{
+		characterID:   ca.CharacterID,
+		characterName: a.characterNames[ca.CharacterID],
+		groupID:       ca.EveType.Group.ID,
+		groupName:     ca.EveType.Group.Name,
+		itemID:        ca.ItemID,
+		name:          ca.DisplayName2(),
+		typeID:        ca.EveType.ID,
+		typeName:      ca.EveType.Name,
+	}
+	if ca.IsSingleton {
+		r.quantity = ""
+	} else {
+		r.quantity = humanize.Comma(int64(ca.Quantity))
+	}
+	locationID, ok := a.assetLocations[ca.ItemID]
+	var t string
+	if !ok {
+		t = "?"
+	} else {
+		x2, ok := a.locations[locationID]
+		if !ok {
+			t = "?"
+		} else {
+			t = x2.NamePlus()
+		}
+	}
+	r.locationID = locationID
+	r.locationName = t
+	return r
 }
 
 func (a *assetSearchArea) makeAssetsTable() *widget.Table {
@@ -99,7 +146,7 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			label := co.(*widget.Label)
-			ca, err := getItemUntypedList[*model.CharacterAsset](a.assetData, tci.Row)
+			r, err := getItemUntypedList[*assetSearchRow](a.assetData, tci.Row)
 			if err != nil {
 				slog.Error("Failed to render asset item in UI", "err", err)
 				label.SetText("ERROR")
@@ -109,34 +156,16 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 			var ta fyne.TextAlign
 			switch tci.Col {
 			case 0:
-				// refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				// 	return a.ui.sv.EveImage.InventoryTypeIcon(o.Type.ID, defaultIconSize)
-				// })
-				// icon.Show()
-				t = ca.DisplayName2()
+				t = r.name
 			case 1:
-				if ca.IsSingleton {
-					t = ""
-				} else {
-					t = humanize.Comma(int64(ca.Quantity))
-				}
+				t = r.quantity
 				ta = fyne.TextAlignTrailing
 			case 2:
-				t = ca.EveType.Group.Name
+				t = r.groupName
 			case 3:
-				locationID, ok := a.assetLocations[ca.ItemID]
-				if !ok {
-					t = fmt.Sprintf("asset location not found for: %d", ca.ItemID)
-				} else {
-					x2, ok := a.locations[locationID]
-					if !ok {
-						t = fmt.Sprintf("location not found: %d", locationID)
-					} else {
-						t = x2.NamePlus()
-					}
-				}
+				t = r.locationName
 			case 4:
-				t = a.characterNames[ca.CharacterID]
+				t = r.characterName
 			}
 			label.Text = t
 			label.Alignment = ta
@@ -156,14 +185,16 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
-		o, err := getItemUntypedList[*model.CharacterAsset](a.assetData, tci.Row)
+		o, err := getItemUntypedList[*assetSearchRow](a.assetData, tci.Row)
 		if err != nil {
 			slog.Error("Failed to select asset", "err", err)
 			return
 		}
 		switch tci.Col {
 		case 0:
-			a.ui.showTypeInfoWindow(o.EveType.ID, a.ui.characterID())
+			a.ui.showTypeInfoWindow(o.typeID, a.ui.characterID())
+		case 3:
+			a.ui.showLocationInfoWindow(o.locationID)
 		}
 	}
 	return t
@@ -198,15 +229,6 @@ func (a *assetSearchArea) updateData() error {
 		return nil
 	}
 	ctx := context.Background()
-	ca, err := a.ui.sv.Characters.ListAllCharacterAssets(ctx)
-	if err != nil {
-		return err
-	}
-	a.assets = ca
-	a.assetTree = character.NewAssetTree(ca)
-	a.assetLocations = character.CompileAssetParentLocations(a.assetTree)
-	a.assetData.Set(copyToUntypedSlice(ca))
-
 	el, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)
 	if err != nil {
 		return err
@@ -226,6 +248,18 @@ func (a *assetSearchArea) updateData() error {
 		m2[o.ID] = o.Name
 	}
 	a.characterNames = m2
+	assets, err := a.ui.sv.Characters.ListAllCharacterAssets(ctx)
+	if err != nil {
+		return err
+	}
+	a.assets = assets
+	a.assetTree = character.NewAssetTree(assets)
+	a.assetLocations = character.CompileAssetParentLocations(a.assetTree)
+	rows := make([]*assetSearchRow, len(assets))
+	for i, ca := range assets {
+		rows[i] = a.newAssetSearchRow(ca)
+	}
+	a.assetData.Set(copyToUntypedSlice(rows))
 	return nil
 }
 
