@@ -186,7 +186,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 		}
 		idx, ok := m[tci.Col]
 		if ok {
-			if err := a.ui.loadCurrentCharacter(ctx, c.id); err != nil {
+			if err := a.ui.loadCharacter(ctx, c.id); err != nil {
 				panic(err)
 			}
 			a.ui.tabs.SelectIndex(idx.parent)
@@ -200,7 +200,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 		}
 		if tci.Col == 12 {
 			if c.ship != nil {
-				a.ui.showTypeInfoWindow(c.ship.ID, a.ui.currentCharID())
+				a.ui.showTypeInfoWindow(c.ship.ID, a.ui.characterID())
 			}
 		}
 		if tci.Col == 15 {

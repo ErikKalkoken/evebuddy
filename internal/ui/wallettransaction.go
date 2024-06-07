@@ -148,7 +148,7 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance, error)
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance, nil
 	}
-	characterID := a.ui.currentCharID()
+	characterID := a.ui.characterID()
 	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(
 		context.Background(), characterID, model.CharacterSectionWalletTransactions)
 	if err != nil {
@@ -168,7 +168,7 @@ func (a *walletTransactionArea) updateEntries() error {
 			return err
 		}
 	}
-	characterID := a.ui.currentCharID()
+	characterID := a.ui.characterID()
 	ww, err := a.ui.sv.Characters.ListCharacterWalletTransactions(context.Background(), characterID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch wallet journal for character %d: %w", characterID, err)

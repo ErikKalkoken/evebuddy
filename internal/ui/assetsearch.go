@@ -13,49 +13,49 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
-// shipsArea is the UI area that shows the skillqueue
-type shipsArea struct {
-	content   *fyne.Container
-	entries   binding.UntypedList
-	searchBox *widget.Entry
-	table     *widget.Table
-	top       *widget.Label
-	ui        *ui
+// assetSearchArea is the UI area that shows the skillqueue
+type assetSearchArea struct {
+	content    *fyne.Container
+	assets     *widget.Table
+	assetsData binding.UntypedList
+	searchBox  *widget.Entry
+	top        *widget.Label
+	ui         *ui
 }
 
-func (u *ui) newShipArea() *shipsArea {
-	a := shipsArea{
-		ui:      u,
-		entries: binding.NewUntypedList(),
-		top:     widget.NewLabel(""),
+func (u *ui) newAssetSearchArea() *assetSearchArea {
+	a := &assetSearchArea{
+		ui:         u,
+		assetsData: binding.NewUntypedList(),
+		top:        widget.NewLabel(""),
 	}
 	a.top.TextStyle.Bold = true
 	a.searchBox = a.makeSearchBox()
-	a.table = a.makeShipsTable()
+	a.assets = a.makeAssetsTable()
 	topBox := container.NewVBox(a.top, widget.NewSeparator(), a.searchBox)
-	a.content = container.NewBorder(topBox, nil, nil, nil, a.table)
-	return &a
+	a.content = container.NewBorder(topBox, nil, nil, nil, a.assets)
+	return a
 }
 
-func (a *shipsArea) makeSearchBox() *widget.Entry {
+func (a *assetSearchArea) makeSearchBox() *widget.Entry {
 	sb := widget.NewEntry()
-	sb.SetPlaceHolder("Filter by ship name")
+	sb.SetPlaceHolder("Filter by item type")
 	sb.OnChanged = func(s string) {
 		if len(s) == 1 {
 			return
 		}
 		if err := a.updateEntries(); err != nil {
-			t := "Failed to update ship search"
+			t := "Failed to update asset search box"
 			slog.Error(t, "err", err)
 			a.ui.statusBarArea.SetError(t)
 		}
-		a.table.Refresh()
-		a.table.ScrollToTop()
+		a.assets.Refresh()
+		a.assets.ScrollToTop()
 	}
 	return sb
 }
 
-func (a *shipsArea) makeShipsTable() *widget.Table {
+func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 	var headers = []struct {
 		text  string
 		width float32
@@ -66,7 +66,7 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
-			return a.entries.Length(), len(headers)
+			return a.assetsData.Length(), len(headers)
 		},
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
@@ -79,7 +79,7 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 			icon := row.Objects[0].(*canvas.Image)
 			label := row.Objects[1].(*widget.Label)
 			label.Importance = widget.MediumImportance
-			o, err := getItemUntypedList[*model.CharacterShipAbility](a.entries, tci.Row)
+			o, err := getItemUntypedList[*model.CharacterShipAbility](a.assetsData, tci.Row)
 			if err != nil {
 				slog.Error("Failed to render ship item in UI", "err", err)
 				label.Importance = widget.DangerImportance
@@ -120,9 +120,9 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 		t.SetColumnWidth(i, h.width)
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
-		o, err := getItemUntypedList[*model.CharacterShipAbility](a.entries, tci.Row)
+		o, err := getItemUntypedList[*model.CharacterShipAbility](a.assetsData, tci.Row)
 		if err != nil {
-			t := "Failed to select ship"
+			t := "Failed to select asset"
 			slog.Error(t, "err", err)
 			a.ui.statusBarArea.SetError(t)
 			return
@@ -133,7 +133,7 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 	return t
 }
 
-func (a *shipsArea) refresh() {
+func (a *assetSearchArea) refresh() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
 		_, ok, err := a.ui.sv.Dictionary.GetTime(eveCategoriesKeyLastUpdated)
 		if err != nil {
@@ -155,7 +155,7 @@ func (a *shipsArea) refresh() {
 	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
-	a.table.Refresh()
+	a.assets.Refresh()
 	if enabled {
 		a.searchBox.Enable()
 	} else {
@@ -163,10 +163,10 @@ func (a *shipsArea) refresh() {
 	}
 }
 
-func (a *shipsArea) updateEntries() error {
+func (a *assetSearchArea) updateEntries() error {
 	if !a.ui.hasCharacter() {
 		oo := make([]*model.CharacterShipAbility, 0)
-		a.entries.Set(copyToUntypedSlice(oo))
+		a.assetsData.Set(copyToUntypedSlice(oo))
 		a.searchBox.SetText("")
 		return nil
 	}
@@ -176,11 +176,11 @@ func (a *shipsArea) updateEntries() error {
 	if err != nil {
 		return err
 	}
-	a.entries.Set(copyToUntypedSlice(oo))
+	a.assetsData.Set(copyToUntypedSlice(oo))
 	return nil
 }
 
-func (a *shipsArea) makeTopText() (string, widget.Importance, bool, error) {
+func (a *assetSearchArea) makeTopText() (string, widget.Importance, bool, error) {
 	ctx := context.Background()
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance, false, nil

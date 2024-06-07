@@ -672,7 +672,7 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 	)
 	l.OnSelected = func(id widget.ListItemID) {
 		r := a.requiredSkills[id]
-		a.ui.showTypeInfoWindow(r.typeID, a.ui.currentCharID())
+		a.ui.showTypeInfoWindow(r.typeID, a.ui.characterID())
 		l.UnselectAll()
 	}
 	return l

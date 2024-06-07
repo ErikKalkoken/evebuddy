@@ -112,7 +112,7 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 				return "", nil, nil
 			}
 			oo, err := a.ui.sv.Characters.ListCharacterSkillProgress(
-				context.Background(), a.ui.currentCharID(), group.id)
+				context.Background(), a.ui.characterID(), group.id)
 			if err != nil {
 				return "", nil, err
 			}
@@ -177,7 +177,7 @@ func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 			a.ui.statusBarArea.SetError(t)
 			return
 		}
-		a.ui.showTypeInfoWindow(o.id, a.ui.currentCharID())
+		a.ui.showTypeInfoWindow(o.id, a.ui.characterID())
 		g.UnselectAll()
 	}
 	return g
@@ -218,7 +218,7 @@ func (a *skillCatalogueArea) makeTopText() (string, widget.Importance, error) {
 	if !a.ui.hasCharacter() {
 		return "No Character", widget.LowImportance, nil
 	}
-	c := a.ui.currentChar()
+	c := a.ui.currentCharacter()
 	total := humanizedNullInt64(c.TotalSP, "?")
 	unallocated := humanizedNullInt64(c.UnallocatedSP, "?")
 	t := fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated)
@@ -229,7 +229,7 @@ func (a *skillCatalogueArea) updateGroups() error {
 	if !a.ui.hasCharacter() {
 		return nil
 	}
-	gg, err := a.ui.sv.Characters.ListCharacterSkillGroupsProgress(context.Background(), a.ui.currentCharID())
+	gg, err := a.ui.sv.Characters.ListCharacterSkillGroupsProgress(context.Background(), a.ui.characterID())
 	if err != nil {
 		return err
 	}

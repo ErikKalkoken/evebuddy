@@ -246,7 +246,7 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 		},
 	)
 	a.content.OnSelected = func(_ widget.GridWrapItemID) {
-		c := u.currentChar()
+		c := u.currentCharacter()
 		if c != nil {
 			a.ui.showStatusWindow()
 		}

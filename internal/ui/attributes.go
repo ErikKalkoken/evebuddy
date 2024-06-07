@@ -116,7 +116,7 @@ func (a *attributesArea) refresh() {
 
 func (a *attributesArea) makeTopText(total int) (string, widget.Importance, error) {
 	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(
-		context.Background(), a.ui.currentCharID(), model.CharacterSectionAttributes)
+		context.Background(), a.ui.characterID(), model.CharacterSectionAttributes)
 	if err != nil {
 		return "", 0, err
 	}
@@ -134,7 +134,7 @@ func (a *attributesArea) updateData() (int, error) {
 		}
 	}
 	ctx := context.Background()
-	ca, err := a.ui.sv.Characters.GetCharacterAttributes(ctx, a.ui.currentCharID())
+	ca, err := a.ui.sv.Characters.GetCharacterAttributes(ctx, a.ui.characterID())
 	if errors.Is(err, character.ErrNotFound) {
 		err := a.attributes.Set(make([]any, 0))
 		if err != nil {

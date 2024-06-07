@@ -41,9 +41,10 @@ const (
 type ui struct {
 	app                   fyne.App
 	assetsArea            *assetsArea
+	assetSearchArea       *assetSearchArea
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
-	currentCharacter      *model.Character
+	character             *model.Character
 	isDebug               bool
 	implantsArea          *implantsArea
 	jumpClonesArea        *jumpClonesArea
@@ -101,10 +102,11 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 		))
 
 	u.overviewArea = u.newOverviewArea()
+	u.assetSearchArea = u.newAssetSearchArea()
 	overviewTab := container.NewTabItemWithIcon("Characters",
 		theme.NewThemedResource(resourceGroupSvg), container.NewAppTabs(
 			container.NewTabItem("Overview", u.overviewArea.content),
-			// container.NewTabItem("Skills", widget.NewLabel("PLACEHOLDER")),
+			container.NewTabItem("Assets", u.assetSearchArea.content),
 		))
 
 	u.skillqueueArea = u.newSkillqueueArea()
@@ -155,9 +157,9 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 		}
 	}
 	if c != nil {
-		u.setCurrentCharacter(c)
+		u.setCharacter(c)
 	} else {
-		u.resetCurrentCharacter()
+		u.resetCharacter()
 	}
 	keyW := "window-width"
 	width, ok, err := u.sv.Dictionary.GetFloat32(keyW)
@@ -252,41 +254,43 @@ func (u *ui) ShowAndRun() {
 	u.window.ShowAndRun()
 }
 
-func (u *ui) currentCharID() int32 {
-	if u.currentCharacter == nil {
+// characterID returns the ID of the current character or 0 if non it set.
+func (u *ui) characterID() int32 {
+	if u.character == nil {
 		return 0
 	}
-	return u.currentCharacter.ID
+	return u.character.ID
 }
 
-func (u *ui) currentChar() *model.Character {
-	return u.currentCharacter
+func (u *ui) currentCharacter() *model.Character {
+	return u.character
 }
 
 func (u *ui) hasCharacter() bool {
-	return u.currentCharacter != nil
+	return u.character != nil
 }
 
-func (u *ui) loadCurrentCharacter(ctx context.Context, characterID int32) error {
+func (u *ui) loadCharacter(ctx context.Context, characterID int32) error {
 	c, err := u.sv.Characters.GetCharacter(ctx, characterID)
 	if err != nil {
 		return err
 	}
-	u.setCurrentCharacter(c)
+	u.setCharacter(c)
 	return nil
 }
 
-func (u *ui) setCurrentCharacter(c *model.Character) {
-	u.currentCharacter = c
+func (u *ui) setCharacter(c *model.Character) {
+	u.character = c
 	err := u.sv.Dictionary.SetInt(model.SettingLastCharacterID, int(c.ID))
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
-	u.refreshCurrentCharacter()
+	u.refreshCharacter()
 }
 
-func (u *ui) refreshCurrentCharacter() {
+func (u *ui) refreshCharacter() {
 	u.assetsArea.redraw()
+	u.assetSearchArea.refresh()
 	u.attributesArea.refresh()
 	u.biographyArea.refresh()
 	u.jumpClonesArea.redraw()
@@ -298,7 +302,7 @@ func (u *ui) refreshCurrentCharacter() {
 	u.toolbarArea.refresh()
 	u.walletJournalArea.refresh()
 	u.walletTransactionArea.refresh()
-	c := u.currentChar()
+	c := u.currentCharacter()
 	if c != nil {
 		u.tabs.EnableIndex(0)
 		u.tabs.EnableIndex(1)
@@ -319,12 +323,12 @@ func (u *ui) refreshCurrentCharacter() {
 func (u *ui) setAnyCharacter() error {
 	c, err := u.sv.Characters.GetAnyCharacter(context.Background())
 	if errors.Is(err, character.ErrNotFound) {
-		u.resetCurrentCharacter()
+		u.resetCharacter()
 		return nil
 	} else if err != nil {
 		return err
 	}
-	u.setCurrentCharacter(c)
+	u.setCharacter(c)
 	return nil
 }
 
@@ -332,13 +336,13 @@ func (u *ui) refreshOverview() {
 	u.overviewArea.refresh()
 }
 
-func (u *ui) resetCurrentCharacter() {
-	u.currentCharacter = nil
+func (u *ui) resetCharacter() {
+	u.character = nil
 	err := u.sv.Dictionary.Delete(model.SettingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}
-	u.refreshCurrentCharacter()
+	u.refreshCharacter()
 }
 
 func (u *ui) startUpdateTickerEveCharacters() {
@@ -457,11 +461,12 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
 		return
 	}
-	isCurrent := characterID == u.currentCharID()
+	isCurrent := characterID == u.characterID()
 	switch s {
 	case model.CharacterSectionAssets:
 		if isCurrent && hasChanged {
 			u.assetsArea.redraw()
+			u.assetSearchArea.refresh()
 		}
 	case model.CharacterSectionAttributes:
 		if isCurrent && hasChanged {

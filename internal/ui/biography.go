@@ -23,7 +23,7 @@ func (u *ui) newBiographyArea() *biographyArea {
 
 func (a *biographyArea) refresh() {
 	var s string
-	c := a.ui.currentChar()
+	c := a.ui.currentCharacter()
 	if c == nil {
 		s = ""
 	} else {

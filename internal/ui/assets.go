@@ -165,7 +165,7 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 	if !a.ui.hasCharacter() {
 		return ids, values, 0, nil
 	}
-	characterID := a.ui.currentCharID()
+	characterID := a.ui.characterID()
 	locations, err := a.ui.sv.Characters.ListCharacterAssetLocations(context.Background(), characterID)
 	if err != nil {
 		return nil, nil, 0, err
@@ -222,7 +222,7 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 		return "No character", widget.LowImportance, nil
 	}
 	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(
-		context.Background(), a.ui.currentCharID(), model.CharacterSectionAssets)
+		context.Background(), a.ui.characterID(), model.CharacterSectionAssets)
 	if err != nil {
 		return "", 0, err
 	}
@@ -310,7 +310,7 @@ func (u *ui) makeAssetGrid(assetsData binding.UntypedList) *widget.GridWrap {
 		if ca.IsContainer() {
 			u.showNewAssetWindow(ca)
 		} else {
-			u.showTypeInfoWindow(ca.EveType.ID, u.currentCharID())
+			u.showTypeInfoWindow(ca.EveType.ID, u.characterID())
 		}
 		g.UnselectAll()
 	}

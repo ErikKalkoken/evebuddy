@@ -184,7 +184,7 @@ func (a *mailArea) redraw() {
 }
 
 func (a *mailArea) refresh() {
-	characterID := a.ui.currentCharID()
+	characterID := a.ui.characterID()
 	folderAll, err := func() (folderNode, error) {
 		ids, values, folderAll, err := a.buildFolderTree(characterID)
 		if err != nil {
@@ -460,7 +460,7 @@ func (a *mailArea) makeFolderTopText() (string, widget.Importance, error) {
 		return "No Character", widget.LowImportance, nil
 	}
 	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(
-		context.Background(), a.ui.currentCharID(), model.CharacterSectionSkillqueue)
+		context.Background(), a.ui.characterID(), model.CharacterSectionSkillqueue)
 	if err != nil {
 		return "", 0, err
 	}
@@ -510,7 +510,7 @@ func (a *mailArea) clearMail() {
 
 func (a *mailArea) setMail(mailID int32) {
 	ctx := context.Background()
-	characterID := a.ui.currentCharID()
+	characterID := a.ui.characterID()
 	var err error
 	a.mail, err = a.ui.sv.Characters.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {

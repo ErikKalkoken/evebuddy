@@ -117,7 +117,7 @@ func (a *accountArea) makeCharacterList() *widget.List {
 			slog.Error("failed to access account character in list", "err", err)
 			return
 		}
-		if err := a.ui.loadCurrentCharacter(context.Background(), c.id); err != nil {
+		if err := a.ui.loadCharacter(context.Background(), c.id); err != nil {
 			slog.Error("failed to load current character", "char", c, "err", err)
 			return
 		}
@@ -140,7 +140,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 					if err := a.Refresh(); err != nil {
 						return err
 					}
-					isCurrentChar := characterID == a.ui.currentCharID()
+					isCurrentChar := characterID == a.ui.characterID()
 					if isCurrentChar {
 						err := a.ui.setAnyCharacter()
 						if err != nil {
