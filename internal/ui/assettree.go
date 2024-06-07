@@ -50,36 +50,31 @@ func addChildNodes(m map[int64]*model.CharacterAsset, nodes map[int64]assetNode)
 	}
 }
 
-type assetParentLocation struct {
-	assetID    int64
-	locationID int64
-}
-
-func collectAssetParentLocations(nodes map[int64]assetNode) []assetParentLocation {
-	assets := make([]assetParentLocation, 0)
+// compileAssetParentLocations returns a map of asset ID to parent location ID
+func compileAssetParentLocations(nodes map[int64]assetNode) map[int64]int64 {
+	assets := make(map[int64]int64)
 	// add parents
 	for _, n := range nodes {
-		assets = append(assets, assetParentLocation{assetID: n.ca.ID, locationID: n.ca.LocationID})
+		assets[n.ca.ID] = n.ca.LocationID
 	}
 	// add children
-	assets = collectAssetChildrenLocations(assets, nodes, 0)
+	addAssetChildrenLocations(assets, nodes, 0)
 	return assets
 }
 
-func collectAssetChildrenLocations(assets []assetParentLocation, nodes map[int64]assetNode, parentLocationID int64) []assetParentLocation {
+func addAssetChildrenLocations(assets map[int64]int64, nodes map[int64]assetNode, realParentLocationID int64) {
 	for _, parent := range nodes {
-		var parentLocationID2 int64
-		if parentLocationID == 0 {
-			parentLocationID2 = parent.ca.LocationID
+		var parentLocationID int64
+		if realParentLocationID == 0 {
+			parentLocationID = parent.ca.LocationID
 		} else {
-			parentLocationID2 = parentLocationID
+			parentLocationID = realParentLocationID
 		}
 		if len(parent.children) > 0 {
 			for _, child := range parent.children {
-				assets = append(assets, assetParentLocation{assetID: child.ca.ID, locationID: parentLocationID2})
+				assets[child.ca.ID] = parentLocationID
 			}
-			assets = collectAssetChildrenLocations(assets, parent.children, parentLocationID2)
+			addAssetChildrenLocations(assets, parent.children, parentLocationID)
 		}
 	}
-	return assets
 }

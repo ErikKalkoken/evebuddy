@@ -26,12 +26,7 @@ func TestAssetTree(t *testing.T) {
 	})
 	t.Run("can create location list from tree", func(t *testing.T) {
 		nodes := newAssetTree(assets)
-		xx := collectAssetParentLocations(nodes)
-		assert.Len(t, xx, 6)
-		got := make(map[int64]int64)
-		for _, x := range xx {
-			got[x.assetID] = x.locationID
-		}
+		got := compileAssetParentLocations(nodes)
 		want := map[int64]int64{
 			1: 100,
 			2: 100,
