@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -46,17 +47,20 @@ func (u *ui) newAssetSearchArea() *assetSearchArea {
 func (a *assetSearchArea) makeSearchBox() *widget.Entry {
 	sb := widget.NewEntry()
 	sb.SetPlaceHolder("Filter by item type")
-	sb.OnChanged = func(s string) {
-		// if len(s) == 1 {
-		// 	return
-		// }
-		// if err := a.updateAssets(); err != nil {
-		// 	t := "Failed to update asset search box"
-		// 	slog.Error(t, "err", err)
-		// 	a.ui.statusBarArea.SetError(t)
-		// }
-		// a.assetTable.Refresh()
-		// a.assetTable.ScrollToTop()
+	sb.OnChanged = func(search string) {
+		if len(search) == 1 {
+			return
+		}
+		xx := make([]*model.CharacterAsset, 0)
+		search2 := strings.ToLower(search)
+		for _, o := range a.assets {
+			if strings.Contains(strings.ToLower(o.EveType.Name), search2) {
+				xx = append(xx, o)
+			}
+		}
+		a.assetData.Set(copyToUntypedSlice(xx))
+		a.assetTable.Refresh()
+		a.assetTable.ScrollToTop()
 	}
 	return sb
 }
