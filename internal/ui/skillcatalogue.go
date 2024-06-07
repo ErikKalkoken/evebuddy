@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 	"github.com/dustin/go-humanize"
 )
@@ -103,28 +102,21 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 		},
 	)
 	g.OnSelected = func(id widget.ListItemID) {
-		groupName, oo, err := func() (string, []model.ListCharacterSkillProgress, error) {
-			group, err := getItemUntypedList[skillGroupProgress](a.groups, id)
-			if err != nil {
-				return "", nil, err
-			}
-			if !a.ui.hasCharacter() {
-				return "", nil, nil
-			}
-			oo, err := a.ui.sv.Characters.ListCharacterSkillProgress(
-				context.Background(), a.ui.characterID(), group.id)
-			if err != nil {
-				return "", nil, err
-			}
-			return group.name, oo, nil
-		}()
+		group, err := getItemUntypedList[skillGroupProgress](a.groups, id)
 		if err != nil {
-			t := "Failed to select skill group"
-			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
+			slog.Error("Failed to select skill group", "err", err)
+			g.UnselectAll()
 			return
 		}
-		if oo == nil {
+		if !a.ui.hasCharacter() {
+			g.UnselectAll()
+			return
+		}
+		oo, err := a.ui.sv.Characters.ListCharacterSkillProgress(
+			context.Background(), a.ui.characterID(), group.id)
+		if err != nil {
+			slog.Error("Failed to fetch skill group data", "err", err)
+			g.UnselectAll()
 			return
 		}
 		skills := make([]skillTrained, len(oo))
@@ -132,7 +124,7 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 			skills[i] = skillTrained{
 				activeLevel:  o.ActiveSkillLevel,
 				description:  o.TypeDescription,
-				groupName:    groupName,
+				groupName:    group.name,
 				id:           o.TypeID,
 				name:         o.TypeName,
 				trainedLevel: o.TrainedSkillLevel,
@@ -170,15 +162,13 @@ func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 		},
 	)
 	g.OnSelected = func(id widget.GridWrapItemID) {
+		defer g.UnselectAll()
 		o, err := getItemUntypedList[skillTrained](a.skills, id)
 		if err != nil {
-			t := "Failed to access skill item"
-			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
+			slog.Error("Failed to access skill item", "err", err)
 			return
 		}
 		a.ui.showTypeInfoWindow(o.id, a.ui.characterID())
-		g.UnselectAll()
 	}
 	return g
 }

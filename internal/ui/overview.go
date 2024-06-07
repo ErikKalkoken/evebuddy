@@ -166,13 +166,11 @@ func (a *overviewArea) makeTable() *widget.Table {
 		co.(*widget.Label).SetText(s.text)
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
+		defer t.UnselectAll()
 		ctx := context.Background()
 		c, err := getItemUntypedList[overviewCharacter](a.characters, tci.Row)
 		if err != nil {
-			text := "Failed to select character"
-			slog.Error(text, "err", err)
-			a.ui.statusBarArea.SetError(text)
-			t.UnselectAll()
+			slog.Error("Failed to select character", "err", err)
 			return
 		}
 		m := map[int]struct {
@@ -208,7 +206,6 @@ func (a *overviewArea) makeTable() *widget.Table {
 				a.ui.showLocationInfoWindow(c.home.ID)
 			}
 		}
-		t.UnselectAll()
 	}
 
 	for i, h := range headers {

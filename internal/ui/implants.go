@@ -66,15 +66,13 @@ func (a *implantsArea) makeImplantList() *widget.List {
 		})
 
 	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
 		o, err := getItemUntypedList[*model.CharacterImplant](a.implants, id)
 		if err != nil {
-			t := "Failed to select implant"
-			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
+			slog.Error("Failed to select implant", "err", err)
 			return
 		}
 		a.ui.showTypeInfoWindow(o.EveType.ID, a.ui.characterID())
-		l.UnselectAll()
 	}
 	return l
 }

@@ -120,15 +120,13 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 		t.SetColumnWidth(i, h.width)
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
+		defer t.UnselectAll()
 		o, err := getItemUntypedList[*model.CharacterShipAbility](a.entries, tci.Row)
 		if err != nil {
-			t := "Failed to select ship"
-			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
+			slog.Error("Failed to select ship", "err", err)
 			return
 		}
 		a.ui.showTypeInfoWindow(o.Type.ID, a.ui.characterID())
-		t.UnselectAll()
 	}
 	return t
 }

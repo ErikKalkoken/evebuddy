@@ -111,23 +111,18 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 		},
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
-		err := func() error {
-			n, err := treeNodeFromBoundTree[locationNode](a.locationsData, uid)
-			if err != nil {
-				return err
-			}
-			if n.isBranch() {
-				t.ToggleBranch(uid)
-				t.UnselectAll()
-			} else {
-				return a.redrawAssets(n)
-			}
-			return nil
-		}()
+		defer t.UnselectAll()
+		n, err := treeNodeFromBoundTree[locationNode](a.locationsData, uid)
 		if err != nil {
-			t := "Failed to select location"
-			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
+			slog.Error("Failed to select location", "err", err)
+			return
+		}
+		if n.isBranch() {
+			t.ToggleBranch(uid)
+			return
+		}
+		if err := a.redrawAssets(n); err != nil {
+			slog.Warn("Failed to redraw assets", "err", err)
 		}
 	}
 	return t

@@ -37,10 +37,11 @@ func (u *ui) showAccountDialog() {
 	a.dialog = dialog
 	dialog.Show()
 	dialog.Resize(fyne.Size{Width: 500, Height: 500})
-	err := a.Refresh()
-	if err != nil {
-		u.statusBarArea.SetError("Failed to open dialog to manage characters")
+	if err := a.Refresh(); err != nil {
 		dialog.Hide()
+		t := "Failed to open dialog to manage characters"
+		slog.Error(t, "err", err)
+		u.showErrorDialog(t, err)
 	}
 }
 

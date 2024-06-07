@@ -238,9 +238,8 @@ func (a *statusWindow) makeSectionsTable() *widget.Table {
 	t.OnSelected = func(tci widget.TableCellID) {
 		cs, err := getItemUntypedList[model.CharacterStatus](a.sectionsData, tci.Row)
 		if err != nil {
-			t := "Failed to select status entry"
-			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
+			slog.Error("Failed to select status entry", "err", err)
+			t.UnselectAll()
 			return
 		}
 		a.setDetails(cs)

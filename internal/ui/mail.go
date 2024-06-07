@@ -162,9 +162,8 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 	tree.OnSelected = func(uid string) {
 		node, err := treeNodeFromBoundTree[folderNode](a.treeData, uid)
 		if err != nil {
-			t := "Failed to select folder"
-			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
+			slog.Error("Failed to select folder", "err", err)
+			tree.UnselectAll()
 			return
 		}
 		if node.isBranch() {
@@ -370,7 +369,7 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 }
 
 func (a *mailArea) makeHeaderList() *widget.List {
-	list := widget.NewListWithData(
+	l := widget.NewListWithData(
 		a.headerData,
 		func() fyne.CanvasObject {
 			return widgets.NewMailHeaderItem(myDateTime)
@@ -388,18 +387,17 @@ func (a *mailArea) makeHeaderList() *widget.List {
 			}
 			item.Set(m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
-	list.OnSelected = func(id widget.ListItemID) {
+	l.OnSelected = func(id widget.ListItemID) {
 		r, err := getItemUntypedList[*model.CharacterMailHeader](a.headerData, id)
 		if err != nil {
-			t := "Failed to select mail header"
-			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
+			slog.Error("Failed to select mail header", "err", err)
+			l.UnselectAll()
 			return
 		}
 		a.setMail(r.MailID)
 		a.lastSelected = id
 	}
-	return list
+	return l
 }
 
 func (a *mailArea) setFolder(folder folderNode) {

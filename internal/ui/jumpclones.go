@@ -109,9 +109,9 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 	t.OnSelected = func(uid widget.TreeNodeID) {
 		n, err := treeNodeFromBoundTree[jumpCloneNode](a.treeData, uid)
 		if err != nil {
-			t := "Failed to select jump clone"
-			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
+			slog.Error("Failed to select jump clone", "err", err)
+			t.UnselectAll()
+			return
 		}
 		if n.isBranch() {
 			t.ToggleBranch(uid)

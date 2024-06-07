@@ -112,7 +112,7 @@ func (a *toolbarArea) makeMenuItems(c *model.Character) ([]*fyne.MenuItem, error
 			if err != nil {
 				msg := "Failed to switch to new character"
 				slog.Error(msg, "err", err)
-				a.ui.statusBarArea.SetError(msg)
+				a.ui.showErrorDialog(msg, err)
 				return
 
 			}

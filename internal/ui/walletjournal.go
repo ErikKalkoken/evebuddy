@@ -139,11 +139,10 @@ func (a *walletJournalArea) makeTable() *widget.Table {
 		t.SetColumnWidth(i, h.width)
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
+		defer t.UnselectAll()
 		e, err := getItemUntypedList[walletJournalEntry](a.entries, tci.Row)
 		if err != nil {
-			t := "Failed to select wallet journal entry"
-			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
+			slog.Error("Failed to select wallet journal entry", "err", err)
 			return
 		}
 		if e.hasReason() {
