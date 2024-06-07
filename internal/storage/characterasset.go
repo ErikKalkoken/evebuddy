@@ -204,3 +204,33 @@ func characterAssetLocationFromDBModel(x queries.ListCharacterAssetLocationsRow)
 	}
 	return o
 }
+
+func (st *Storage) SearchCharacterAssetsByType(ctx context.Context, search string) ([]*model.CharacterSearchAsset, error) {
+	name := fmt.Sprintf("%%%s%%", search)
+	rows, err := st.q.SearchCharacterAssetsByType(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	oo := make([]*model.CharacterSearchAsset, len(rows))
+	for i, r := range rows {
+		oo[i] = characterSearchAssetFromDBModel(r)
+	}
+	return oo, nil
+}
+
+func characterSearchAssetFromDBModel(r queries.SearchCharacterAssetsByTypeRow) *model.CharacterSearchAsset {
+	if r.LocationID == 0 {
+		panic(fmt.Sprintf("invalid IDs: %v", r))
+	}
+	o := &model.CharacterSearchAsset{
+		Asset:     characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory),
+		Character: &model.EntityShort[int32]{ID: int32(r.CharacterAsset.CharacterID), Name: r.CharacterName},
+	}
+	if r.LocationName.Valid {
+		o.Location = &model.EntityShort[int64]{ID: r.LocationID, Name: r.LocationName.String}
+	}
+	if r.SolarSystemID.Valid && r.SolarSystemName.Valid {
+		o.SolarSystem = &model.EntityShort[int32]{ID: int32(r.SolarSystemID.Int64), Name: r.SolarSystemName.String}
+	}
+	return o
+}

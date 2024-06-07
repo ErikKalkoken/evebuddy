@@ -73,3 +73,11 @@ type CharacterAssetLocation struct {
 	LocationType string
 	SolarSystem  *EntityShort[int32]
 }
+
+// CharacterSearchAsset is a result in asset search.
+type CharacterSearchAsset struct {
+	Asset       *CharacterAsset
+	Character   *EntityShort[int32]
+	Location    *EntityShort[int64]
+	SolarSystem *EntityShort[int32]
+}

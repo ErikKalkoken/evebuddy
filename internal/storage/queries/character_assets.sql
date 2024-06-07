@@ -38,6 +38,27 @@ SELECT item_id
 FROM character_assets
 WHERE character_id = ?;
 
+-- name: SearchCharacterAssetsByType :many
+SELECT
+    sqlc.embed(ca),
+    sqlc.embed(et),
+    sqlc.embed(eg),
+    sqlc.embed(ec),
+    ech.name as character_name,
+    location_id,
+    el.name as location_name,
+    el.eve_solar_system_id as solar_system_id,
+    ess.name as solar_system_name
+FROM character_assets ca
+JOIN eve_types et ON et.id = ca.eve_type_id
+JOIN eve_groups eg ON eg.id = et.eve_group_id
+JOIN eve_categories ec ON ec.id = eg.eve_category_id
+JOIN eve_characters ech ON ech.id = ca.character_id
+LEFT JOIN eve_locations el ON el.ID = ca.location_id
+LEFT JOIN eve_solar_systems ess ON ess.ID = el.eve_solar_system_id
+WHERE et.name LIKE ?
+ORDER BY et.name;
+
 -- name: ListCharacterAssetsInLocation :many
 SELECT
     sqlc.embed(ca),
