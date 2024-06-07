@@ -271,7 +271,7 @@ func (u *ui) showNewAssetWindow(ca *model.CharacterAsset) {
 	if err := data.Set(copyToUntypedSlice(oo)); err != nil {
 		panic(err)
 	}
-	top := widget.NewLabel(fmt.Sprintf("%s items", humanize.Commaf(float64(len(oo)))))
+	top := widget.NewLabel(fmt.Sprintf("%s items", humanize.Comma(int64(len(oo)))))
 	top.TextStyle.Bold = true
 	assets := u.makeAssetGrid(data)
 	content := container.NewBorder(container.NewVBox(top, widget.NewSeparator()), nil, nil, nil, assets)

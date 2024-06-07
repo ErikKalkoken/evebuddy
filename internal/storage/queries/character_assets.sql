@@ -47,7 +47,8 @@ SELECT
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
-JOIN eve_categories ec ON ec.id = eg.eve_category_id;
+JOIN eve_categories ec ON ec.id = eg.eve_category_id
+ORDER BY et.name;
 
 -- name: ListCharacterAssetsInLocation :many
 SELECT

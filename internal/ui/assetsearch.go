@@ -72,6 +72,8 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 		width float32
 	}{
 		{"Name", 250},
+		{"Quantity", 100},
+		{"Group", 250},
 		{"Location", 350},
 		{"ID", 250},
 		{"Character", 250},
@@ -97,15 +99,25 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 				label.SetText("ERROR")
 				return
 			}
+			var t string
+			var ta fyne.TextAlign
 			switch tci.Col {
 			case 0:
 				// refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
 				// 	return a.ui.sv.EveImage.InventoryTypeIcon(o.Type.ID, defaultIconSize)
 				// })
 				// icon.Show()
-				label.Text = ca.EveType.Name
+				t = ca.DisplayName()
 			case 1:
-				var t string
+				if ca.IsSingleton {
+					t = ""
+				} else {
+					t = humanize.Comma(int64(ca.Quantity))
+				}
+				ta = fyne.TextAlignTrailing
+			case 2:
+				t = ca.EveType.Group.Name
+			case 3:
 				locationID, ok := a.assetLocations[ca.ItemID]
 				if !ok {
 					t = fmt.Sprintf("asset location not found for: %d", ca.ItemID)
@@ -117,12 +129,13 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 						t = x2.NamePlus()
 					}
 				}
-				label.Text = t
-			case 2:
-				label.Text = fmt.Sprint(ca.ItemID)
-			case 3:
-				label.Text = a.characterNames[ca.CharacterID]
+			case 4:
+				t = fmt.Sprint(ca.ItemID)
+			case 5:
+				t = a.characterNames[ca.CharacterID]
 			}
+			label.Text = t
+			label.Alignment = ta
 			label.Refresh()
 		},
 	)
@@ -139,12 +152,12 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
-		// o, err := getItemUntypedList[*model.CharacterAsset](a.assetsData, tci.Row)
-		// if err != nil {
-		// 	slog.Error("Failed to select asset", "err", err)
-		// 	return
-		// }
-		// a.ui.showTypeInfoWindow(o.Type.ID, a.ui.characterID())
+		o, err := getItemUntypedList[*model.CharacterAsset](a.assetData, tci.Row)
+		if err != nil {
+			slog.Error("Failed to select asset", "err", err)
+			return
+		}
+		a.ui.showTypeInfoWindow(o.EveType.ID, a.ui.characterID())
 	}
 	return t
 }
@@ -153,7 +166,7 @@ func (a *assetSearchArea) refresh() {
 	var t string
 	var i widget.Importance
 	if err := a.updateData(); err != nil {
-		slog.Error("Failed to refresh ships UI", "err", err)
+		slog.Error("Failed to refresh asset search data", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
 	} else {
@@ -210,6 +223,6 @@ func (a *assetSearchArea) updateData() error {
 }
 
 func (a *assetSearchArea) makeTopText() (string, widget.Importance) {
-	text := fmt.Sprintf("%s total assets", humanize.Commaf(float64(len(a.assets))))
+	text := fmt.Sprintf("%s total assets", humanize.Comma(int64(len(a.assets))))
 	return text, widget.MediumImportance
 }
