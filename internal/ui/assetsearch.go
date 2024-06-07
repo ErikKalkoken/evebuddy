@@ -17,18 +17,21 @@ import (
 
 // assetSearchArea is the UI area that shows the skillqueue
 type assetSearchArea struct {
-	content        *fyne.Container
-	assets         []*assetSearchRow
-	assetTree      map[int64]character.AssetNode
-	assetLocations map[int64]int64
-	assetTable     *widget.Table
-	assetData      binding.UntypedList
-	// searchBox      *widget.Entry
-	locations      map[int64]*model.EveLocation
-	characterNames map[int32]string
-	total          *widget.Label
-	found          *widget.Label
-	ui             *ui
+	assets          []*assetSearchRow
+	assetTree       map[int64]character.AssetNode
+	assetLocations  map[int64]int64
+	assetTable      *widget.Table
+	assetData       binding.UntypedList
+	characterNames  map[int32]string
+	content         *fyne.Container
+	locations       map[int64]*model.EveLocation
+	found           *widget.Label
+	searchCharacter string
+	searchGroup     string
+	searchLocation  string
+	searchType      string
+	total           *widget.Label
+	ui              *ui
 }
 
 func (u *ui) newAssetSearchArea() *assetSearchArea {
@@ -167,16 +170,19 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 				if len(search) == 1 {
 					return
 				}
-				rows := make([]*assetSearchRow, 0)
-				search2 := strings.ToLower(search)
-				for _, r := range a.assets {
-					if strings.Contains(strings.ToLower(r.typeName), search2) {
-						rows = append(rows, r)
-					}
+				a.searchType = strings.ToLower(search)
+				a.filterData()
+			}
+			sb.Show()
+		case 2:
+			label.Hide()
+			sb.SetPlaceHolder(s.text)
+			sb.OnChanged = func(search string) {
+				if len(search) == 1 {
+					return
 				}
-				a.assetData.Set(copyToUntypedSlice(rows))
-				a.assetTable.Refresh()
-				a.assetTable.ScrollToTop()
+				a.searchGroup = strings.ToLower(search)
+				a.filterData()
 			}
 			sb.Show()
 		case 3:
@@ -186,16 +192,19 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 				if len(search) == 1 {
 					return
 				}
-				rows := make([]*assetSearchRow, 0)
-				search2 := strings.ToLower(search)
-				for _, r := range a.assets {
-					if strings.Contains(strings.ToLower(r.locationName), search2) {
-						rows = append(rows, r)
-					}
+				a.searchLocation = strings.ToLower(search)
+				a.filterData()
+			}
+			sb.Show()
+		case 4:
+			label.Hide()
+			sb.SetPlaceHolder(s.text)
+			sb.OnChanged = func(search string) {
+				if len(search) == 1 {
+					return
 				}
-				a.assetData.Set(copyToUntypedSlice(rows))
-				a.assetTable.Refresh()
-				a.assetTable.ScrollToTop()
+				a.searchCharacter = strings.ToLower(search)
+				a.filterData()
 			}
 			sb.Show()
 		default:
@@ -222,6 +231,31 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 		}
 	}
 	return t
+}
+
+func (a *assetSearchArea) filterData() {
+	rows := make([]*assetSearchRow, 0)
+	for _, r := range a.assets {
+		matches := true
+		if a.searchType != "" {
+			matches = matches && strings.Contains(strings.ToLower(r.typeName), a.searchType)
+		}
+		if a.searchGroup != "" {
+			matches = matches && strings.Contains(strings.ToLower(r.groupName), a.searchGroup)
+		}
+		if a.searchLocation != "" {
+			matches = matches && strings.Contains(strings.ToLower(r.locationName), a.searchLocation)
+		}
+		if a.searchCharacter != "" {
+			matches = matches && strings.Contains(strings.ToLower(r.characterName), a.searchCharacter)
+		}
+		if matches {
+			rows = append(rows, r)
+		}
+	}
+	a.assetData.Set(copyToUntypedSlice(rows))
+	a.assetTable.Refresh()
+	a.assetTable.ScrollToTop()
 }
 
 func (a *assetSearchArea) refresh() {
