@@ -74,15 +74,19 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			assets := data.([]esiCharacterAssetPlus)
-			typeIDs := make([]int32, 0)
-			locationIDs := make([]int64, 0)
-			for _, a := range assets {
-				typeIDs = append(typeIDs, a.TypeId)
-				if a.LocationFlag == "Hangar" {
-					locationIDs = append(locationIDs, a.LocationId)
+			itemIDs := set.New[int64]()
+			for _, ca := range assets {
+				itemIDs.Add(ca.ItemId)
+			}
+			typeIDs := set.New[int32]()
+			locationIDs := set.New[int64]()
+			for _, ca := range assets {
+				typeIDs.Add(ca.TypeId)
+				if !itemIDs.Has(ca.LocationId) {
+					locationIDs.Add(ca.LocationId) // location IDs that are not referencing other itemIDs are locations
 				}
 			}
-			missingLocationIDs, err := s.st.MissingEveLocations(ctx, locationIDs)
+			missingLocationIDs, err := s.st.MissingEveLocations(ctx, locationIDs.ToSlice())
 			if err != nil {
 				return err
 			}
@@ -92,7 +96,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 					return err
 				}
 			}
-			if err := s.eu.AddMissingEveTypes(ctx, typeIDs); err != nil {
+			if err := s.eu.AddMissingEveTypes(ctx, typeIDs.ToSlice()); err != nil {
 				return err
 			}
 			ids, err := s.st.ListCharacterAssetIDs(ctx, characterID)
@@ -131,11 +135,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 						return err
 					}
 				}
-				itemIDs := make([]int64, len(assets))
-				for i, a := range assets {
-					itemIDs[i] = a.ItemId
-				}
-				if err := s.st.DeleteExcludedCharacterAssets(ctx, characterID, itemIDs); err != nil {
+				if err := s.st.DeleteExcludedCharacterAssets(ctx, characterID, itemIDs.ToSlice()); err != nil {
 					return err
 				}
 			}
