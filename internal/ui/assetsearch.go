@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
@@ -30,6 +31,7 @@ type assetSearchArea struct {
 	searchGroup     string
 	searchLocation  string
 	searchType      string
+	searchBoxes     []*widget.Entry
 	total           *widget.Label
 	ui              *ui
 }
@@ -53,7 +55,10 @@ func (u *ui) newAssetSearchArea() *assetSearchArea {
 	a.total.TextStyle.Bold = true
 	a.found.Hide()
 	a.assetTable = a.makeAssetsTable()
-	topBox := container.NewVBox(container.NewHBox(a.total, a.found), widget.NewSeparator())
+	b := widget.NewButton("Reset Search", func() {
+		a.resetSearch()
+	})
+	topBox := container.NewVBox(container.NewHBox(a.total, a.found, layout.NewSpacer(), b), widget.NewSeparator())
 	a.content = container.NewBorder(topBox, nil, nil, nil, a.assetTable)
 	return a
 }
@@ -155,7 +160,9 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 	)
 	t.ShowHeaderRow = true
 	t.CreateHeader = func() fyne.CanvasObject {
-		return container.NewBorder(nil, nil, widget.NewLabel("Template"), nil, widget.NewEntry())
+		sb := widget.NewEntry()
+		a.searchBoxes = append(a.searchBoxes, sb)
+		return container.NewBorder(nil, nil, widget.NewLabel("Template"), nil, sb)
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		s := headers[tci.Col]
@@ -256,6 +263,12 @@ func (a *assetSearchArea) filterData() {
 	a.assetData.Set(copyToUntypedSlice(rows))
 	a.assetTable.Refresh()
 	a.assetTable.ScrollToTop()
+}
+
+func (a *assetSearchArea) resetSearch() {
+	for _, w := range a.searchBoxes {
+		w.SetText("")
+	}
 }
 
 func (a *assetSearchArea) refresh() {

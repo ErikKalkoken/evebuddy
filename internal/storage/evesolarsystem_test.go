@@ -33,7 +33,7 @@ func TestEveSolarSystem(t *testing.T) {
 				assert.Equal(t, int32(42), g.ID)
 				assert.Equal(t, "name", g.Name)
 				assert.Equal(t, c, g.Constellation)
-				assert.Equal(t, -8.5, g.SecurityStatus)
+				assert.Equal(t, float32(-8.5), g.SecurityStatus)
 			}
 		}
 	})
