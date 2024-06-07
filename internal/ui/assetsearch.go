@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/dustin/go-humanize"
 )
 
@@ -19,7 +20,7 @@ import (
 type assetSearchArea struct {
 	content        *fyne.Container
 	assets         []*model.CharacterAsset
-	assetTree      map[int64]AssetNode
+	assetTree      map[int64]character.AssetNode
 	assetLocations map[int64]int64
 	assetTable     *widget.Table
 	assetData      binding.UntypedList
@@ -182,8 +183,8 @@ func (a *assetSearchArea) updateData() error {
 		return err
 	}
 	a.assets = ca
-	a.assetTree = NewAssetTree(ca)
-	a.assetLocations = CompileAssetParentLocations(a.assetTree)
+	a.assetTree = character.NewAssetTree(ca)
+	a.assetLocations = character.CompileAssetParentLocations(a.assetTree)
 	a.assetData.Set(copyToUntypedSlice(ca))
 
 	el, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)

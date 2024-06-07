@@ -1,7 +1,8 @@
-package ui
+package character
 
 import "github.com/ErikKalkoken/evebuddy/internal/model"
 
+// AssetNode is a node in a tree of character assets.
 type AssetNode struct {
 	ca       *model.CharacterAsset
 	children map[int64]AssetNode
