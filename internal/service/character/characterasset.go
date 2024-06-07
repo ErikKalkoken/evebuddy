@@ -28,8 +28,8 @@ func (s *CharacterService) ListCharacterAssetLocations(ctx context.Context, char
 	return s.st.ListCharacterAssetLocations(ctx, characterID)
 }
 
-func (s *CharacterService) SearchCharacterAssetsByType(ctx context.Context, search string) ([]*model.CharacterSearchAsset, error) {
-	return s.st.SearchCharacterAssetsByType(ctx, search)
+func (s *CharacterService) ListAllCharacterAssets(ctx context.Context) ([]*model.CharacterAsset, error) {
+	return s.st.ListAllCharacterAssets(ctx)
 }
 
 type esiCharacterAssetPlus struct {

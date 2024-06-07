@@ -155,44 +155,16 @@ func TestCharacterAsset(t *testing.T) {
 			}
 		}
 	})
-}
-
-func TestSearchCharacterAssets(t *testing.T) {
-	db, r, factory := testutil.New()
-	defer db.Close()
-	ctx := context.Background()
 	t.Run("can list all assets", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		ca1 := factory.CreateCharacterAsset()
 		ca2 := factory.CreateCharacterAsset()
 		// when
-		oo, err := r.SearchCharacterAssetsByType(ctx, "")
+		got, err := r.ListAllCharacterAssets(ctx)
 		// then
 		if assert.NoError(t, err) {
-			got := make([]int64, 0)
-			for _, o := range oo {
-				got = append(got, o.Asset.ID)
-			}
-			want := []int64{ca1.ID, ca2.ID}
-			assert.Equal(t, want, got)
-		}
-	})
-	t.Run("can filter by type name", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		et := factory.CreateEveType(storage.CreateEveTypeParams{Name: "A special type"})
-		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{EveTypeID: et.ID})
-		factory.CreateCharacterAsset()
-		// when
-		oo, err := r.SearchCharacterAssetsByType(ctx, "special")
-		// then
-		if assert.NoError(t, err) {
-			got := make([]int64, 0)
-			for _, o := range oo {
-				got = append(got, o.Asset.ID)
-			}
-			want := []int64{ca1.ID}
+			want := []*model.CharacterAsset{ca1, ca2}
 			assert.Equal(t, want, got)
 		}
 	})

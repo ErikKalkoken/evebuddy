@@ -16,8 +16,9 @@ import (
 // assetSearchArea is the UI area that shows the skillqueue
 type assetSearchArea struct {
 	content    *fyne.Container
-	assets     *widget.Table
-	assetsData binding.UntypedList
+	assets     []*model.CharacterAsset
+	assetTable *widget.Table
+	assetData  binding.UntypedList
 	searchBox  *widget.Entry
 	top        *widget.Label
 	ui         *ui
@@ -25,15 +26,15 @@ type assetSearchArea struct {
 
 func (u *ui) newAssetSearchArea() *assetSearchArea {
 	a := &assetSearchArea{
-		ui:         u,
-		assetsData: binding.NewUntypedList(),
-		top:        widget.NewLabel(""),
+		ui:        u,
+		assetData: binding.NewUntypedList(),
+		top:       widget.NewLabel(""),
 	}
 	a.top.TextStyle.Bold = true
 	a.searchBox = a.makeSearchBox()
-	a.assets = a.makeAssetsTable()
+	a.assetTable = a.makeAssetsTable()
 	topBox := container.NewVBox(a.top, widget.NewSeparator(), a.searchBox)
-	a.content = container.NewBorder(topBox, nil, nil, nil, a.assets)
+	a.content = container.NewBorder(topBox, nil, nil, nil, a.assetTable)
 	return a
 }
 
@@ -41,16 +42,16 @@ func (a *assetSearchArea) makeSearchBox() *widget.Entry {
 	sb := widget.NewEntry()
 	sb.SetPlaceHolder("Filter by item type")
 	sb.OnChanged = func(s string) {
-		if len(s) == 1 {
-			return
-		}
-		if err := a.updateEntries(); err != nil {
-			t := "Failed to update asset search box"
-			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
-		}
-		a.assets.Refresh()
-		a.assets.ScrollToTop()
+		// if len(s) == 1 {
+		// 	return
+		// }
+		// if err := a.updateAssets(); err != nil {
+		// 	t := "Failed to update asset search box"
+		// 	slog.Error(t, "err", err)
+		// 	a.ui.statusBarArea.SetError(t)
+		// }
+		// a.assetTable.Refresh()
+		// a.assetTable.ScrollToTop()
 	}
 	return sb
 }
@@ -66,7 +67,7 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
-			return a.assetsData.Length(), len(headers)
+			return a.assetData.Length(), len(headers)
 		},
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
@@ -79,7 +80,7 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 			row := co.(*fyne.Container)
 			// icon := row.Objects[0].(*canvas.Image)
 			label := row.Objects[1].(*widget.Label)
-			ca, err := getItemUntypedList[*model.CharacterSearchAsset](a.assetsData, tci.Row)
+			ca, err := getItemUntypedList[*model.CharacterSearchAsset](a.assetData, tci.Row)
 			if err != nil {
 				slog.Error("Failed to render asset item in UI", "err", err)
 				label.SetText("ERROR")
@@ -124,56 +125,42 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 }
 
 func (a *assetSearchArea) refresh() {
-	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
-		_, ok, err := a.ui.sv.Dictionary.GetTime(eveCategoriesKeyLastUpdated)
-		if err != nil {
-			return "", 0, false, err
-		}
-		if !ok {
-			return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
-		}
-		if err := a.updateEntries(); err != nil {
-			return "", 0, false, err
-		}
-		return a.makeTopText()
-	}()
-	if err != nil {
+	var t string
+	var i widget.Importance
+	if err := a.updateAssets(); err != nil {
 		slog.Error("Failed to refresh ships UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
+	} else {
+		t, i = a.makeTopText()
 	}
 	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
-	a.assets.Refresh()
-	if enabled {
-		a.searchBox.Enable()
-	} else {
-		a.searchBox.Disable()
-	}
+	a.assetTable.Refresh()
+	// if enabled {
+	// 	a.searchBox.Enable()
+	// } else {
+	// 	a.searchBox.Disable()
+	// }
 }
 
-func (a *assetSearchArea) updateEntries() error {
+func (a *assetSearchArea) updateAssets() error {
 	if !a.ui.hasCharacter() {
 		oo := make([]*model.CharacterSearchAsset, 0)
-		a.assetsData.Set(copyToUntypedSlice(oo))
+		a.assetData.Set(copyToUntypedSlice(oo))
 		a.searchBox.SetText("")
 		return nil
 	}
-	oo, err := a.ui.sv.Characters.SearchCharacterAssetsByType(context.Background(), a.searchBox.Text)
+	oo, err := a.ui.sv.Characters.ListAllCharacterAssets(context.Background())
 	if err != nil {
 		return err
 	}
-	a.assetsData.Set(copyToUntypedSlice(oo))
+	a.assets = oo
 	return nil
 }
 
-func (a *assetSearchArea) makeTopText() (string, widget.Importance, bool, error) {
-	ctx := context.Background()
-	oo, err := a.ui.sv.Characters.SearchCharacterAssetsByType(ctx, "")
-	if err != nil {
-		return "", 0, false, err
-	}
-	text := fmt.Sprintf("%d total assets", len(oo))
-	return text, widget.MediumImportance, true, nil
+func (a *assetSearchArea) makeTopText() (string, widget.Importance) {
+	text := fmt.Sprintf("%d total assets", len(a.assets))
+	return text, widget.MediumImportance
 }
