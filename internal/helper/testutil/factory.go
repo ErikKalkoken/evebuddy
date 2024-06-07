@@ -906,7 +906,7 @@ func (f Factory) CreateEveSolarSystem(args ...storage.CreateEveSolarSystemParams
 		arg.ConstellationID = x.ID
 	}
 	if arg.SecurityStatus == 0 {
-		arg.SecurityStatus = rand.Float64()*10 - 5
+		arg.SecurityStatus = rand.Float32()*10 - 5
 	}
 	err := f.st.CreateEveSolarSystem(ctx, arg)
 	if err != nil {

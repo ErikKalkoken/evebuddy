@@ -101,7 +101,7 @@ func (eu *EveUniverseService) createEveSolarSystemFromESI(ctx context.Context, i
 			ID:              system.SystemId,
 			ConstellationID: constellation.ID,
 			Name:            system.Name,
-			SecurityStatus:  float64(system.SecurityStatus),
+			SecurityStatus:  system.SecurityStatus,
 		}
 		if err := eu.st.CreateEveSolarSystem(ctx, arg); err != nil {
 			return nil, err

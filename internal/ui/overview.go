@@ -289,7 +289,7 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 				Name: m.Location.SolarSystem.Name,
 			}
 			c.systemSecurity = sql.NullFloat64{
-				Float64: m.Location.SolarSystem.SecurityStatus,
+				Float64: float64(m.Location.SolarSystem.SecurityStatus),
 				Valid:   true,
 			}
 		}

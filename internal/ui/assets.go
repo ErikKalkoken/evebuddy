@@ -14,7 +14,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 	"github.com/dustin/go-humanize"
 )
 
@@ -27,11 +26,12 @@ const (
 )
 
 type locationNode struct {
-	CharacterID int32
-	LocationID  int64
-	Name        string
-	System      string
-	Type        locationNodeType
+	CharacterID    int32
+	LocationID     int64
+	Name           string
+	SystemName     string
+	SystemSecurity float32
+	Type           locationNodeType
 }
 
 var defaultAssetIcon = theme.NewDisabledResource(resourceQuestionmarkSvg)
@@ -85,14 +85,14 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 	t := widget.NewTreeWithData(
 		a.locationsData,
 		func(branch bool) fyne.CanvasObject {
-			return container.NewHBox(
-				widget.NewLabel("Template"),
-				widgets.NewTappableIcon(theme.InfoIcon(), func() {}))
+			prefix := widget.NewLabel("1.0")
+			prefix.Importance = widget.HighImportance
+			return container.NewHBox(prefix, widget.NewLabel("Location"))
 		},
 		func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
 			row := co.(*fyne.Container)
-			label := row.Objects[0].(*widget.Label)
-			icon := row.Objects[1].(*widgets.TappableIcon)
+			prefix := row.Objects[0].(*widget.Label)
+			label := row.Objects[1].(*widget.Label)
 			n, err := treeNodeFromDataItem[locationNode](di)
 			if err != nil {
 				slog.Error("Failed to render asset location in UI", "err", err)
@@ -101,12 +101,12 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 			}
 			label.SetText(n.Name)
 			if n.isBranch() {
-				icon.OnTapped = func() {
-					a.ui.showLocationInfoWindow(n.LocationID)
-				}
-				icon.Show()
+				prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurity)
+				prefix.Importance = systemSecurity2Importance(n.SystemSecurity)
+				prefix.Refresh()
+				prefix.Show()
 			} else {
-				icon.Hide()
+				prefix.Hide()
 			}
 		},
 	)
@@ -118,7 +118,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 			return
 		}
 		if n.isBranch() {
-			t.ToggleBranch(uid)
+			a.ui.showLocationInfoWindow(n.LocationID)
 			return
 		}
 		if err := a.redrawAssets(n); err != nil {
@@ -175,7 +175,10 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 			n.Name = fmt.Sprintf("Unknown location #%d", l.Location.ID)
 		}
 		if l.SolarSystem != nil {
-			n.System = l.SolarSystem.Name
+			n.SystemName = l.SolarSystem.Name
+		}
+		if l.SecurityStatus.Valid {
+			n.SystemSecurity = float32(l.SecurityStatus.Float64)
 		}
 		nodes[i] = n
 	}

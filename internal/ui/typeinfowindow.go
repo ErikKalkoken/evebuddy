@@ -685,15 +685,7 @@ type infoRow struct {
 }
 
 func (a *typeInfoWindow) makeLocationTab() fyne.CanvasObject {
-	var i widget.Importance
-	switch s := a.location.SolarSystem.SecurityStatus; {
-	case s > 0.5:
-		i = widget.SuccessImportance
-	case s > 0.0:
-		i = widget.WarningImportance
-	default:
-		i = widget.DangerImportance
-	}
+	i := systemSecurity2Importance(a.location.SolarSystem.SecurityStatus)
 	data := []infoRow{
 		{
 			label: "Region",

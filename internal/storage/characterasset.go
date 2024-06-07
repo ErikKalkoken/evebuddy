@@ -183,11 +183,11 @@ func (st *Storage) ListCharacterAssetLocations(ctx context.Context, characterID 
 	if err != nil {
 		return nil, err
 	}
-	ii2 := make([]*model.CharacterAssetLocation, len(rows))
-	for i, row := range rows {
-		ii2[i] = characterAssetLocationFromDBModel(row)
+	oo := make([]*model.CharacterAssetLocation, len(rows))
+	for i, r := range rows {
+		oo[i] = characterAssetLocationFromDBModel(r)
 	}
-	return ii2, nil
+	return oo, nil
 }
 
 func characterAssetLocationFromDBModel(x queries.ListCharacterAssetLocationsRow) *model.CharacterAssetLocation {
@@ -195,9 +195,10 @@ func characterAssetLocationFromDBModel(x queries.ListCharacterAssetLocationsRow)
 		panic(fmt.Sprintf("invalid IDs: %v", x))
 	}
 	o := &model.CharacterAssetLocation{
-		CharacterID: int32(x.CharacterID),
-		ID:          x.LocationID,
-		Location:    &model.EntityShort[int64]{ID: x.LocationID, Name: x.LocationName},
+		CharacterID:    int32(x.CharacterID),
+		ID:             x.LocationID,
+		Location:       &model.EntityShort[int64]{ID: x.LocationID, Name: x.LocationName},
+		SecurityStatus: x.SecurityStatus,
 	}
 	if x.SystemID.Valid && x.SystemName.Valid {
 		o.SolarSystem = &model.EntityShort[int32]{ID: int32(x.SystemID.Int64), Name: x.SystemName.String}

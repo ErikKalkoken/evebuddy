@@ -1,5 +1,7 @@
 package model
 
+import "database/sql"
+
 type EveTypeVariant uint
 
 const (
@@ -67,17 +69,10 @@ func (ca CharacterAsset) Variant() EveTypeVariant {
 }
 
 type CharacterAssetLocation struct {
-	ID           int64
-	CharacterID  int32
-	Location     *EntityShort[int64]
-	LocationType string
-	SolarSystem  *EntityShort[int32]
-}
-
-// CharacterSearchAsset is a result in asset search.
-type CharacterSearchAsset struct {
-	Asset       *CharacterAsset
-	Character   *EntityShort[int32]
-	Location    *EntityShort[int64]
-	SolarSystem *EntityShort[int32]
+	ID             int64
+	CharacterID    int32
+	Location       *EntityShort[int64]
+	LocationType   string
+	SolarSystem    *EntityShort[int32]
+	SecurityStatus sql.NullFloat64
 }

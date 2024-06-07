@@ -14,7 +14,7 @@ type CreateEveSolarSystemParams struct {
 	ConstellationID int32
 	ID              int32
 	Name            string
-	SecurityStatus  float64
+	SecurityStatus  float32
 }
 
 func (st *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarSystemParams) error {
@@ -25,7 +25,7 @@ func (st *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarS
 		ID:                 int64(arg.ID),
 		EveConstellationID: int64(arg.ConstellationID),
 		Name:               arg.Name,
-		SecurityStatus:     arg.SecurityStatus,
+		SecurityStatus:     float64(arg.SecurityStatus),
 	}
 	err := st.q.CreateEveSolarSystem(ctx, arg2)
 	if err != nil {
@@ -51,6 +51,6 @@ func eveSolarSystemFromDBModel(s queries.EveSolarSystem, c queries.EveConstellat
 		Constellation:  eveConstellationFromDBModel(c, r),
 		ID:             int32(s.ID),
 		Name:           s.Name,
-		SecurityStatus: s.SecurityStatus,
+		SecurityStatus: float32(s.SecurityStatus),
 	}
 }

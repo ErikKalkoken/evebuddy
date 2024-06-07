@@ -214,3 +214,18 @@ func boolIconResource(ok bool) fyne.Resource {
 	}
 	return theme.NewErrorThemedResource(theme.CancelIcon())
 }
+
+func systemSecurity2Importance(v float32) widget.Importance {
+	var i widget.Importance
+	switch {
+	case v >= 0.9:
+		i = widget.HighImportance
+	case v >= 0.5:
+		i = widget.SuccessImportance
+	case v > 0:
+		i = widget.WarningImportance
+	default:
+		i = widget.DangerImportance
+	}
+	return i
+}

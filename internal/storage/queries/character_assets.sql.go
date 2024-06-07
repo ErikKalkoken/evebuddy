@@ -263,7 +263,8 @@ SELECT DISTINCT
     ca.location_id,
     lo.name as location_name,
     sys.id as system_id,
-    sys.name as system_name
+    sys.name as system_name,
+    sys.security_status
 FROM character_assets ca
 JOIN eve_locations lo ON lo.id = ca.location_id
 LEFT JOIN eve_solar_systems sys ON sys.id = lo.eve_solar_system_id
@@ -278,12 +279,13 @@ type ListCharacterAssetLocationsParams struct {
 }
 
 type ListCharacterAssetLocationsRow struct {
-	CharacterID  int64
-	LocationType string
-	LocationID   int64
-	LocationName string
-	SystemID     sql.NullInt64
-	SystemName   sql.NullString
+	CharacterID    int64
+	LocationType   string
+	LocationID     int64
+	LocationName   string
+	SystemID       sql.NullInt64
+	SystemName     sql.NullString
+	SecurityStatus sql.NullFloat64
 }
 
 func (q *Queries) ListCharacterAssetLocations(ctx context.Context, arg ListCharacterAssetLocationsParams) ([]ListCharacterAssetLocationsRow, error) {
@@ -302,6 +304,7 @@ func (q *Queries) ListCharacterAssetLocations(ctx context.Context, arg ListChara
 			&i.LocationName,
 			&i.SystemID,
 			&i.SystemName,
+			&i.SecurityStatus,
 		); err != nil {
 			return nil, err
 		}
