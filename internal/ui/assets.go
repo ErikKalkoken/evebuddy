@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 	"github.com/dustin/go-humanize"
 )
 
@@ -84,10 +85,14 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 	t := widget.NewTreeWithData(
 		a.locationsData,
 		func(branch bool) fyne.CanvasObject {
-			return widget.NewLabel("Template")
+			return container.NewHBox(
+				widget.NewLabel("Template"),
+				widgets.NewTappableIcon(theme.InfoIcon(), func() {}))
 		},
 		func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
-			label := co.(*widget.Label)
+			row := co.(*fyne.Container)
+			label := row.Objects[0].(*widget.Label)
+			icon := row.Objects[1].(*widgets.TappableIcon)
 			n, err := treeNodeFromDataItem[locationNode](di)
 			if err != nil {
 				slog.Error("Failed to render asset location in UI", "err", err)
@@ -95,6 +100,14 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 				return
 			}
 			label.SetText(n.Name)
+			if n.isBranch() {
+				icon.OnTapped = func() {
+					a.ui.showLocationInfoWindow(n.LocationID)
+				}
+				icon.Show()
+			} else {
+				icon.Hide()
+			}
 		},
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {

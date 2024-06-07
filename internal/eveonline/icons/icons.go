@@ -25,7 +25,15 @@ const (
 	Tech1
 	Tech2
 	Tech3
+	Tech4
+	Storyline
 	Faction
+	Deadspace
+	Officer
+	Caldari
+	Minmatar
+	Gallente
+	Amarr
 )
 
 var namedIcons = map[Name]*fyne.StaticResource{
@@ -39,8 +47,16 @@ var namedIcons = map[Name]*fyne.StaticResource{
 	Structure:     resource2649Png,
 	Tech1:         resource7316241Png,
 	Tech2:         resource7316242Png,
-	Tech3:         resource7316242Png,
+	Tech3:         resource7316243Png,
+	Tech4:         resource7316244Png,
+	Storyline:     resource7316245Png,
 	Faction:       resource7316246Png,
+	Deadspace:     resource7316247Png,
+	Officer:       resource7316248Png,
+	Caldari:       resource881281Png,
+	Minmatar:      resource881282Png,
+	Gallente:      resource881283Png,
+	Amarr:         resource881284Png,
 }
 
 // GetResourceByIconID returns an Eve Online icon by icon ID and reports if it was found.
