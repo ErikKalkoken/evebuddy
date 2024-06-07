@@ -18,12 +18,12 @@ import (
 // assetSearchArea is the UI area that shows the skillqueue
 type assetSearchArea struct {
 	content        *fyne.Container
-	assets         []*model.CharacterAsset
+	assets         []*assetSearchRow
 	assetTree      map[int64]character.AssetNode
 	assetLocations map[int64]int64
 	assetTable     *widget.Table
 	assetData      binding.UntypedList
-	searchBox      *widget.Entry
+	// searchBox      *widget.Entry
 	locations      map[int64]*model.EveLocation
 	characterNames map[int32]string
 	total          *widget.Label
@@ -49,32 +49,10 @@ func (u *ui) newAssetSearchArea() *assetSearchArea {
 	}))
 	a.total.TextStyle.Bold = true
 	a.found.Hide()
-	a.searchBox = a.makeSearchBox()
 	a.assetTable = a.makeAssetsTable()
-	topBox := container.NewVBox(container.NewHBox(a.total, a.found), widget.NewSeparator(), a.searchBox)
+	topBox := container.NewVBox(container.NewHBox(a.total, a.found), widget.NewSeparator())
 	a.content = container.NewBorder(topBox, nil, nil, nil, a.assetTable)
 	return a
-}
-
-func (a *assetSearchArea) makeSearchBox() *widget.Entry {
-	sb := widget.NewEntry()
-	sb.SetPlaceHolder("Filter by item type")
-	sb.OnChanged = func(search string) {
-		if len(search) == 1 {
-			return
-		}
-		rows := make([]*assetSearchRow, 0)
-		search2 := strings.ToLower(search)
-		for _, ca := range a.assets {
-			if strings.Contains(strings.ToLower(ca.EveType.Name), search2) {
-				rows = append(rows, a.newAssetSearchRow(ca))
-			}
-		}
-		a.assetData.Set(copyToUntypedSlice(rows))
-		a.assetTable.Refresh()
-		a.assetTable.ScrollToTop()
-	}
-	return sb
 }
 
 type assetSearchRow struct {
@@ -174,11 +152,57 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 	)
 	t.ShowHeaderRow = true
 	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
+		return container.NewBorder(nil, nil, widget.NewLabel("Template"), nil, widget.NewEntry())
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		s := headers[tci.Col]
-		co.(*widget.Label).SetText(s.text)
+		row := co.(*fyne.Container)
+		label := row.Objects[1].(*widget.Label)
+		sb := row.Objects[0].(*widget.Entry)
+		switch tci.Col {
+		case 0:
+			label.Hide()
+			sb.SetPlaceHolder(s.text)
+			sb.OnChanged = func(search string) {
+				if len(search) == 1 {
+					return
+				}
+				rows := make([]*assetSearchRow, 0)
+				search2 := strings.ToLower(search)
+				for _, r := range a.assets {
+					if strings.Contains(strings.ToLower(r.typeName), search2) {
+						rows = append(rows, r)
+					}
+				}
+				a.assetData.Set(copyToUntypedSlice(rows))
+				a.assetTable.Refresh()
+				a.assetTable.ScrollToTop()
+			}
+			sb.Show()
+		case 3:
+			label.Hide()
+			sb.SetPlaceHolder(s.text)
+			sb.OnChanged = func(search string) {
+				if len(search) == 1 {
+					return
+				}
+				rows := make([]*assetSearchRow, 0)
+				search2 := strings.ToLower(search)
+				for _, r := range a.assets {
+					if strings.Contains(strings.ToLower(r.locationName), search2) {
+						rows = append(rows, r)
+					}
+				}
+				a.assetData.Set(copyToUntypedSlice(rows))
+				a.assetTable.Refresh()
+				a.assetTable.ScrollToTop()
+			}
+			sb.Show()
+		default:
+			label.SetText(s.text)
+			label.Show()
+			sb.Hide()
+		}
 	}
 	for i, h := range headers {
 		t.SetColumnWidth(i, h.width)
@@ -214,18 +238,13 @@ func (a *assetSearchArea) refresh() {
 	a.total.Importance = i
 	a.total.Refresh()
 	a.assetTable.Refresh()
-	// if enabled {
-	// 	a.searchBox.Enable()
-	// } else {
-	// 	a.searchBox.Disable()
-	// }
 }
 
 func (a *assetSearchArea) updateData() error {
 	if !a.ui.hasCharacter() {
 		oo := make([]*model.CharacterAsset, 0)
 		a.assetData.Set(copyToUntypedSlice(oo))
-		a.searchBox.SetText("")
+		// a.searchBox.SetText("")
 		return nil
 	}
 	ctx := context.Background()
@@ -252,7 +271,6 @@ func (a *assetSearchArea) updateData() error {
 	if err != nil {
 		return err
 	}
-	a.assets = assets
 	a.assetTree = character.NewAssetTree(assets)
 	a.assetLocations = character.CompileAssetParentLocations(a.assetTree)
 	rows := make([]*assetSearchRow, len(assets))
@@ -260,6 +278,7 @@ func (a *assetSearchArea) updateData() error {
 		rows[i] = a.newAssetSearchRow(ca)
 	}
 	a.assetData.Set(copyToUntypedSlice(rows))
+	a.assets = rows
 	return nil
 }
 
