@@ -38,39 +38,56 @@ func (st *Storage) ListEveShipSkills(ctx context.Context, shipTypeID int32) ([]*
 }
 
 func (st *Storage) UpdateEveShipSkills(ctx context.Context) error {
-	if err := st.q.TruncateShipSkills(ctx); err != nil {
-		return err
-	}
 	rows, err := st.listShipSkillsMap(ctx)
 	if err != nil {
 		return err
 	}
+	tx, err := st.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	qtx := st.q.WithTx(tx)
+	if err := qtx.TruncateShipSkills(ctx); err != nil {
+		return err
+	}
 	for _, row := range rows {
 		if row.PrimarySkillID.Valid && row.PrimarySkillLevel.Valid {
-			if err := st.createShipSkillIfExists(ctx, 1, row.ShipTypeID, row.PrimarySkillID, row.PrimarySkillLevel); err != nil {
-				return err
-			}
-			if err := st.createShipSkillIfExists(ctx, 2, row.ShipTypeID, row.SecondarySkillID, row.SecondarySkillLevel); err != nil {
-				return err
-			}
-			if err := st.createShipSkillIfExists(ctx, 3, row.ShipTypeID, row.TertiarySkillID, row.TertiarySkillLevel); err != nil {
-				return err
-			}
-			if err := st.createShipSkillIfExists(ctx, 4, row.ShipTypeID, row.QuaternarySkillID, row.QuaternarySkillLevel); err != nil {
-				return err
-			}
-			if err := st.createShipSkillIfExists(ctx, 5, row.ShipTypeID, row.QuinarySkillID, row.QuinarySkillLevel); err != nil {
-				return err
-			}
-			if err := st.createShipSkillIfExists(ctx, 6, row.ShipTypeID, row.SenarySkillID, row.SenarySkillLevel); err != nil {
-				return err
+			for rank := int64(1); rank <= 6; rank++ {
+				var skillID, skillLevel sql.NullInt64
+				switch rank {
+				case 1:
+					skillID = row.PrimarySkillID
+					skillLevel = row.PrimarySkillLevel
+				case 2:
+					skillID = row.SecondarySkillID
+					skillLevel = row.SecondarySkillLevel
+				case 3:
+					skillID = row.TertiarySkillID
+					skillLevel = row.TertiarySkillLevel
+				case 4:
+					skillID = row.QuaternarySkillID
+					skillLevel = row.QuaternarySkillLevel
+				case 5:
+					skillID = row.QuinarySkillID
+					skillLevel = row.QuinarySkillLevel
+				case 6:
+					skillID = row.SenarySkillID
+					skillLevel = row.SenarySkillLevel
+				}
+				if err := st.createShipSkillIfExists(ctx, qtx, rank, row.ShipTypeID, skillID, skillLevel); err != nil {
+					return err
+				}
 			}
 		}
+	}
+	if err := tx.Commit(); err != nil {
+		return err
 	}
 	return nil
 }
 
-func (st *Storage) createShipSkillIfExists(ctx context.Context, rank, skipTypeID int64, skillTypeID, level sql.NullInt64) error {
+func (st *Storage) createShipSkillIfExists(ctx context.Context, q *queries.Queries, rank, skipTypeID int64, skillTypeID, level sql.NullInt64) error {
 	if skillTypeID.Valid && level.Valid {
 		arg := queries.CreateShipSkillParams{
 			Rank:        rank,
@@ -78,8 +95,8 @@ func (st *Storage) createShipSkillIfExists(ctx context.Context, rank, skipTypeID
 			SkillTypeID: skillTypeID.Int64,
 			SkillLevel:  level.Int64,
 		}
-		if err := st.q.CreateShipSkill(ctx, arg); err != nil {
-			return err
+		if err := q.CreateShipSkill(ctx, arg); err != nil {
+			return fmt.Errorf("failed to create ship skill: %v, %w", arg, err)
 		}
 	}
 	return nil

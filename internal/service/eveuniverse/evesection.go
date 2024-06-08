@@ -2,6 +2,7 @@ package eveuniverse
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -20,8 +21,7 @@ func (eu *EveUniverseService) SectionExists(s model.EveUniverseSection) (bool, e
 }
 
 func (eu *EveUniverseService) UpdateSection(ctx context.Context, section model.EveUniverseSection, forceUpdate bool) (bool, error) {
-	key := section.Key()
-	lastUpdated, ok, err := eu.dt.GetTime(key)
+	lastUpdated, ok, err := eu.dt.GetTime(section.Key())
 	if err != nil {
 		return false, err
 	}
@@ -37,12 +37,17 @@ func (eu *EveUniverseService) UpdateSection(ctx context.Context, section model.E
 	case model.SectionEveCharacters:
 		f = eu.UpdateAllEveCharactersESI
 	}
-	slog.Info("Started updating eve universe section", "section", section)
-	if err := f(ctx); err != nil {
+	key := fmt.Sprintf("Update-section-%s", section)
+	_, err, _ = eu.sfg.Do(key, func() (any, error) {
+		slog.Warn("Started updating eve universe section", "section", section)
+		err := f(ctx)
+		slog.Warn("Finished updating eve universe section", "section", section)
+		return nil, err
+	})
+	if err != nil {
 		return false, err
 	}
-	slog.Info("Finished updating eve universe section", "section", section)
-	if err := eu.dt.SetTime(key, time.Now()); err != nil {
+	if err := eu.dt.SetTime(section.Key(), time.Now()); err != nil {
 		return false, err
 	}
 	return true, nil

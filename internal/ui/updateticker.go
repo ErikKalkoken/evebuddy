@@ -18,15 +18,15 @@ const (
 func (u *ui) startUpdateTickerEveUniverse() {
 	ticker := time.NewTicker(eveUniverseUpdateTicker)
 	go func() {
-		ctx := context.Background()
 		for {
-			u.updateEveUniverseAndRefreshIfNeeded(ctx, false)
+			u.updateEveUniverseAndRefreshIfNeeded(false)
 			<-ticker.C
 		}
 	}()
 }
 
-func (u *ui) updateEveUniverseAndRefreshIfNeeded(ctx context.Context, forceUpdate bool) {
+func (u *ui) updateEveUniverseAndRefreshIfNeeded(forceUpdate bool) {
+	ctx := context.Background()
 	for _, s := range model.EveUniverseSections {
 		go func(s model.EveUniverseSection) {
 			u.updateEveUniverseSectionAndRefreshIfNeeded(ctx, s, forceUpdate)
@@ -34,13 +34,13 @@ func (u *ui) updateEveUniverseAndRefreshIfNeeded(ctx context.Context, forceUpdat
 	}
 }
 
-func (u *ui) updateEveUniverseSectionAndRefreshIfNeeded(ctx context.Context, s model.EveUniverseSection, forceUpdate bool) {
-	hasChanged, err := u.sv.EveUniverse.UpdateSection(ctx, s, forceUpdate)
+func (u *ui) updateEveUniverseSectionAndRefreshIfNeeded(ctx context.Context, section model.EveUniverseSection, forceUpdate bool) {
+	hasChanged, err := u.sv.EveUniverse.UpdateSection(ctx, section, forceUpdate)
 	if err != nil {
-		slog.Error("Failed to update eve universe section", "section", s, "err", err)
+		slog.Error("Failed to update eve universe section", "section", section, "err", err)
 		return
 	}
-	switch s {
+	switch section {
 	case model.SectionEveCategories:
 		if hasChanged {
 			u.shipsArea.refresh()
@@ -49,7 +49,7 @@ func (u *ui) updateEveUniverseSectionAndRefreshIfNeeded(ctx context.Context, s m
 	case model.SectionEveCharacters:
 		// nothing to refresh
 	default:
-		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))
+		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", section))
 	}
 }
 
