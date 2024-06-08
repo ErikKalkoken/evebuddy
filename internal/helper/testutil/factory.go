@@ -979,6 +979,32 @@ func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationP
 	return x
 }
 
+func (f Factory) CreateEveMarketPrice(args ...storage.UpdateOrCreateEveMarketPriceParams) *model.EveMarketPrice {
+	var arg storage.UpdateOrCreateEveMarketPriceParams
+	ctx := context.Background()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.TypeID == 0 {
+		arg.TypeID = int32(f.calcNewID("eve_market_price", "type_id", 1))
+	}
+	if arg.AdjustedPrice == 0 {
+		arg.AdjustedPrice = rand.Float64() * 100_000
+	}
+	if arg.AveragePrice == 0 {
+		arg.AveragePrice = rand.Float64() * 100_000
+	}
+	err := f.st.UpdateOrCreateEveMarketPrice(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetEveMarketPrice(ctx, arg.TypeID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f *Factory) calcNewID(table, id_field string, start int64) int64 {
 	if start < 1 {
 		panic("start must be a positive number")

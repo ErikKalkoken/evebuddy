@@ -280,6 +280,12 @@ type EveLocation struct {
 	UpdatedAt        time.Time
 }
 
+type EveMarketPrice struct {
+	TypeID        int64
+	AdjustedPrice float64
+	AveragePrice  float64
+}
+
 type EveRace struct {
 	ID          int64
 	Description string

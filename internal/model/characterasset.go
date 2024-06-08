@@ -32,14 +32,22 @@ func (ca CharacterAsset) DisplayName() string {
 	if ca.Name != "" {
 		return ca.Name
 	}
-	return ca.EveType.Name
+	s := ca.EveType.Name
+	if ca.IsBlueprintCopy {
+		s += " (Copy)"
+	}
+	return s
 }
 
 func (ca CharacterAsset) DisplayName2() string {
 	if ca.Name != "" {
 		return fmt.Sprintf("%s \"%s\"", ca.EveType.Name, ca.Name)
 	}
-	return ca.EveType.Name
+	s := ca.EveType.Name
+	if ca.IsBlueprintCopy {
+		s += " (Copy)"
+	}
+	return s
 }
 
 func (ca CharacterAsset) IsBPO() bool {

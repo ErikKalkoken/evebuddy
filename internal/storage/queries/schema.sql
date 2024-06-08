@@ -121,6 +121,12 @@ CREATE TABLE eve_ship_skills (
     UNIQUE (ship_type_id, rank)
 );
 
+CREATE TABLE eve_market_prices(
+    type_id INTEGER PRIMARY KEY NOT NULL,
+    adjusted_price REAL NOT NULL,
+    average_price REAL NOT NULL
+);
+
 CREATE TABLE eve_characters (
     alliance_id INTEGER,
     birthday DATETIME NOT NULL,
