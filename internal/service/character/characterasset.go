@@ -145,7 +145,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 
 func (s *CharacterService) fetchCharacterAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
 	m := make(map[int64]string)
-	for _, chunk := range chunkBy(ids, 1000) { // API allows 1000 IDs max
+	for _, chunk := range chunkBy(ids, 999) { // API allows 1000 IDs max
 		names, _, err := s.esiClient.ESI.AssetsApi.PostCharactersCharacterIdAssetsNames(ctx, characterID, chunk, nil)
 		if err != nil {
 			return nil, err

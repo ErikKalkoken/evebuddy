@@ -14,6 +14,10 @@ func (cs CharacterStatus) IsOK() bool {
 	return cs.ErrorMessage == ""
 }
 
+func (cs CharacterStatus) HasData() bool {
+	return cs.CharacterID != 0
+}
+
 func (cs CharacterStatus) IsCurrent() bool {
 	if cs.LastUpdatedAt.IsZero() {
 		return false

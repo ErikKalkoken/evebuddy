@@ -28,10 +28,10 @@ type statusWindow struct {
 	charactersData    binding.UntypedList
 	charactersTop     *widget.Label
 	content           fyne.CanvasObject
-	detailsInner      *fyne.Container
 	details           *fyne.Container
-	sections          *widget.Table
+	sections          *widget.GridWrap
 	characterSelected binding.Untyped
+	sectionSelected   binding.Int
 	sectionsData      binding.UntypedList
 	sectionsTop       *widget.Label
 	window            fyne.Window
@@ -52,7 +52,7 @@ func (u *ui) showStatusWindow() {
 	}
 	w := u.app.NewWindow("Status")
 	w.SetContent(sw.content)
-	w.Resize(fyne.Size{Width: 1000, Height: 500})
+	w.Resize(fyne.Size{Width: 1100, Height: 500})
 	w.Show()
 	ctx, cancel := context.WithCancel(context.TODO())
 	sw.startTicker(ctx)
@@ -71,9 +71,13 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 		characterSelected: binding.NewUntyped(),
 		sectionsData:      binding.NewUntypedList(),
 		sectionsTop:       widget.NewLabel(""),
+		sectionSelected:   binding.NewInt(),
 		ui:                u,
 	}
 
+	if err := a.sectionSelected.Set(-1); err != nil {
+		return nil, err
+	}
 	a.characters = a.makeCharacterList()
 	a.charactersTop.TextStyle.Bold = true
 	top1 := container.NewVBox(a.charactersTop, widget.NewSeparator())
@@ -95,14 +99,12 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 	top2 := container.NewVBox(container.NewHBox(a.sectionsTop, layout.NewSpacer(), b), widget.NewSeparator())
 	sections := container.NewBorder(top2, nil, nil, nil, a.sections)
 
-	a.detailsInner = container.NewVBox()
+	var vs *fyne.Container
 	headline := widget.NewLabel("Section details")
 	headline.TextStyle.Bold = true
-	top3 := container.NewVBox(headline, widget.NewSeparator())
-	a.details = container.NewBorder(top3, nil, nil, nil, a.detailsInner)
-	a.details.Hide()
+	a.details = container.NewVBox()
 
-	vs := container.NewBorder(nil, a.details, nil, nil, sections)
+	vs = container.NewBorder(nil, container.NewVBox(widget.NewSeparator(), a.details), nil, nil, sections)
 	hs := container.NewHSplit(characters, vs)
 	hs.SetOffset(0.33)
 	a.content = hs
@@ -133,7 +135,6 @@ func (a *statusWindow) makeCharacterList() *widget.List {
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			row := co.(*fyne.Container)
-
 			name := row.Objects[1].(*widget.Label)
 			c, err := convertDataItem[statusCharacter](di)
 			if err != nil {
@@ -172,79 +173,54 @@ func (a *statusWindow) makeCharacterList() *widget.List {
 		c, err := getItemUntypedList[statusCharacter](a.charactersData, id)
 		if err != nil {
 			slog.Error("failed to access account character in list", "err", err)
+			list.UnselectAll()
 			return
 		}
 		if err := a.characterSelected.Set(c); err != nil {
 			panic(err)
 		}
+		if err := a.sectionSelected.Set(-1); err != nil {
+			panic(err)
+		}
+		a.refreshDetailArea()
 	}
 	return list
 }
 
-func (a *statusWindow) makeSectionsTable() *widget.Table {
-	var headers = []struct {
-		text  string
-		width float32
-	}{
-		{"Section", 150},
-		{"Timeout", 150},
-		{"Last Update", 150},
-		{"Status", 150},
-	}
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return a.sectionsData.Length(), len(headers)
-
-		},
+func (a *statusWindow) makeSectionsTable() *widget.GridWrap {
+	l := widget.NewGridWrapWithData(
+		a.sectionsData,
 		func() fyne.CanvasObject {
-			l := widget.NewLabel("Placeholder")
-			l.Truncation = fyne.TextTruncateEllipsis
-			return l
+			return container.NewHBox(
+				widget.NewLabel("Section name long"),
+				layout.NewSpacer(),
+				widget.NewLabel("Status XXXX"),
+			)
 		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			cs, err := getItemUntypedList[model.CharacterStatus](a.sectionsData, tci.Row)
+		func(di binding.DataItem, co fyne.CanvasObject) {
+			cs, err := convertDataItem[model.CharacterStatus](di)
 			if err != nil {
 				panic(err)
 			}
-			label := co.(*widget.Label)
-			var s string
-			i := widget.MediumImportance
-			switch tci.Col {
-			case 0:
-				s = cs.Section.DisplayName()
-			case 1:
-				s = timeoutDisplay(cs)
-			case 2:
-				s = lastUpdatedAtDisplay(cs)
-			case 3:
-				s, i = statusDisplay(cs)
-			}
-			label.Text = s
-			label.Importance = i
-			label.Refresh()
+			row := co.(*fyne.Container)
+			name := row.Objects[0].(*widget.Label)
+			status := row.Objects[2].(*widget.Label)
+			name.SetText(cs.Section.DisplayName())
+			s, i := statusDisplay(cs)
+			status.Text = s
+			status.Importance = i
+			status.Refresh()
 		},
 	)
-	t.ShowHeaderRow = true
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
-	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
-		co.(*widget.Label).SetText(s.text)
-	}
-	for i, h := range headers {
-		t.SetColumnWidth(i, h.width)
-	}
-	t.OnSelected = func(tci widget.TableCellID) {
-		cs, err := getItemUntypedList[model.CharacterStatus](a.sectionsData, tci.Row)
-		if err != nil {
+	l.OnSelected = func(id widget.ListItemID) {
+		if err := a.sectionSelected.Set(id); err != nil {
 			slog.Error("Failed to select status entry", "err", err)
-			t.UnselectAll()
+			l.UnselectAll()
 			return
 		}
-		a.setDetails(cs)
+		a.setDetails()
 	}
-	return t
+	return l
 }
 
 type formItems struct {
@@ -254,33 +230,79 @@ type formItems struct {
 	importance widget.Importance
 }
 
-func (a *statusWindow) setDetails(cs model.CharacterStatus) {
-	sv, si := statusDisplay(cs)
-	var errorText string
-	if cs.ErrorMessage == "" {
-		errorText = "-"
-	} else {
-		errorText = cs.ErrorMessage
+type sectionStatusData struct {
+	characterID   int32
+	characterName string
+	errorText     string
+	sectionName   string
+	lastUpdate    string
+	section       model.CharacterSection
+	sv            string
+	si            widget.Importance
+	timeout       string
+}
+
+func (a *statusWindow) setDetails() {
+	var d sectionStatusData
+	cs, found, err := a.fetchSelectedCharacterStatus()
+	if err != nil {
+		slog.Error("Failed to fetch selected character status")
+	} else if found {
+		d.characterID = cs.CharacterID
+		d.section = cs.Section
+		d.sv, d.si = statusDisplay(cs)
+		if cs.ErrorMessage == "" {
+			d.errorText = "-"
+		} else {
+			d.errorText = cs.ErrorMessage
+		}
+		d.characterName = cs.CharacterName
+		d.sectionName = cs.Section.DisplayName()
+		d.lastUpdate = lastUpdatedAtDisplay(cs)
+		d.timeout = timeoutDisplay(cs)
 	}
-	leading := []formItems{
-		{label: "Character", value: cs.CharacterName},
-		{label: "Section", value: cs.Section.DisplayName()},
-		{label: "Status", value: sv, importance: si},
-		{label: "Error", value: errorText, wrap: true},
+	oo := a.makeDetailsContent(d)
+	a.details.RemoveAll()
+	for _, o := range oo {
+		a.details.Add(o)
 	}
-	formLeading := makeForm(leading)
-	trailing := []formItems{
-		{label: "Last Update", value: lastUpdatedAtDisplay(cs)},
-		{label: "Timeout", value: timeoutDisplay(cs)},
+}
+
+func (a *statusWindow) fetchSelectedCharacterStatus() (model.CharacterStatus, bool, error) {
+	var z model.CharacterStatus
+	id, err := a.sectionSelected.Get()
+	if err != nil {
+		return z, false, err
 	}
-	formTrailing := makeForm(trailing)
-	a.detailsInner.RemoveAll()
-	a.detailsInner.Add(container.NewGridWithColumns(2, formLeading, formTrailing))
-	bUpdate := widget.NewButton("Force update", func() {
-		go a.ui.updateCharacterSectionAndRefreshIfNeeded(context.Background(), cs.CharacterID, cs.Section, true)
-	})
-	a.detailsInner.Add(bUpdate)
-	a.details.Show()
+	if id == -1 {
+		return z, false, nil
+	}
+	cs, err := getItemUntypedList[model.CharacterStatus](a.sectionsData, id)
+	if err != nil {
+		return z, false, err
+	}
+	return cs, true, nil
+}
+
+func (a *statusWindow) makeDetailsContent(d sectionStatusData) []fyne.CanvasObject {
+	items := []formItems{
+		{label: "Section", value: d.sectionName},
+		{label: "Status", value: d.sv, importance: d.si},
+		{label: "Error", value: d.errorText, wrap: true},
+		{label: "Last Update", value: d.lastUpdate},
+		{label: "Timeout", value: d.timeout},
+	}
+	oo := make([]fyne.CanvasObject, 0)
+	formLeading := makeForm(items[0:3])
+	formTrailing := makeForm(items[3:])
+	oo = append(oo, container.NewGridWithColumns(2, formLeading, formTrailing))
+	oo = append(oo, widget.NewButton(fmt.Sprintf("Force update %s", d.sectionName), func() {
+		if d.characterID != 0 {
+			go a.ui.updateCharacterSectionAndRefreshIfNeeded(context.Background(), d.characterID, d.section, true)
+		}
+
+	}))
+	return oo
 }
 
 func makeForm(data []formItems) *widget.Form {
@@ -311,7 +333,6 @@ func (a *statusWindow) refresh() error {
 	a.charactersTop.SetText(fmt.Sprintf("Characters: %d", a.charactersData.Length()))
 	a.characters.Refresh()
 	a.refreshDetailArea()
-	a.sections.Refresh()
 	return nil
 }
 
@@ -328,7 +349,9 @@ func (a *statusWindow) refreshDetailArea() error {
 	if err := a.sectionsData.Set(copyToUntypedSlice(data)); err != nil {
 		return err
 	}
+	a.sections.Refresh()
 	a.sectionsTop.SetText(fmt.Sprintf("Update status for %s", c.name))
+	a.setDetails()
 	return nil
 }
 
