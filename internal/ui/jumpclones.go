@@ -16,8 +16,8 @@ import (
 )
 
 type jumpCloneNode struct {
-	Name                   string
-	Region                 string
+	LocationID             int64
+	LocationName           string
 	ImplantCount           int
 	ImplantTypeID          int32
 	ImplantTypeName        string
@@ -26,10 +26,6 @@ type jumpCloneNode struct {
 
 func (n jumpCloneNode) isClone() bool {
 	return n.ImplantTypeID == 0
-}
-
-func (n jumpCloneNode) isBranch() bool {
-	return n.ImplantTypeID == 0 && n.ImplantCount > 0
 }
 
 // jumpClonesArea is the UI area that shows the skillqueue
@@ -62,15 +58,13 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			icon.FillMode = canvas.ImageFillOriginal
 			first := widget.NewLabel("Template")
 			second := widget.NewLabel("Template")
-			third := widget.NewLabel("Template")
-			return container.NewHBox(icon, first, second, third)
+			return container.NewHBox(icon, first, second)
 		},
 		func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
 			hbox := co.(*fyne.Container)
 			icon := hbox.Objects[0].(*canvas.Image)
 			first := hbox.Objects[1].(*widget.Label)
 			second := hbox.Objects[2].(*widget.Label)
-			third := hbox.Objects[3].(*widget.Label)
 			n, err := treeNodeFromDataItem[jumpCloneNode](di)
 			if err != nil {
 				slog.Error("Failed to render jump clone item in UI", "err", err)
@@ -80,9 +74,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			if n.isClone() {
 				icon.Resource = icons.GetResourceByName(icons.CloningCenter)
 				icon.Refresh()
-				first.SetText(n.Name)
-				second.SetText(n.Region)
-				second.Show()
+				first.SetText(n.LocationName)
 				var t string
 				var i widget.Importance
 				if n.ImplantCount > 0 {
@@ -92,36 +84,33 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 					t = "No implants"
 					i = widget.LowImportance
 				}
-				third.Text = t
-				third.Importance = i
-				third.Refresh()
-				third.Show()
+				second.Text = t
+				second.Importance = i
+				second.Refresh()
+				second.Show()
 			} else {
 				refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
 					return a.ui.sv.EveImage.InventoryTypeIcon(n.ImplantTypeID, defaultIconSize)
 				})
 				first.SetText(n.ImplantTypeName)
 				second.Hide()
-				third.Hide()
+				second.Hide()
 			}
 		},
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
+		defer t.UnselectAll()
 		n, err := treeNodeFromBoundTree[jumpCloneNode](a.treeData, uid)
 		if err != nil {
 			slog.Error("Failed to select jump clone", "err", err)
 			t.UnselectAll()
 			return
 		}
-		if n.isBranch() {
-			t.ToggleBranch(uid)
-		}
 		if n.isClone() {
-			t.UnselectAll()
-			return
+			a.ui.showLocationInfoWindow(n.LocationID)
+		} else {
+			a.ui.showTypeInfoWindow(n.ImplantTypeID, a.ui.characterID())
 		}
-		a.ui.showTypeInfoWindow(n.ImplantTypeID, a.ui.characterID())
-		t.UnselectAll()
 	}
 	return t
 }
@@ -161,15 +150,13 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 		id := fmt.Sprint(c.JumpCloneID)
 		n := jumpCloneNode{
 			ImplantCount: len(c.Implants),
+			LocationID:   c.Location.ID,
 		}
 		// TODO: Refactor to use same location method for all unknown location cases
 		if c.Location.Name != "" {
-			n.Name = c.Location.Name
+			n.LocationName = c.Location.Name
 		} else {
-			n.Name = fmt.Sprintf("Unknown location #%d", c.Location.ID)
-		}
-		if c.Region != nil {
-			n.Region = c.Region.Name
+			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 		}
 		values[id], err = objectToJSON(n)
 		if err != nil {
