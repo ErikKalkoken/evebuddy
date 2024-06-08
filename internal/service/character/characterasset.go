@@ -38,7 +38,7 @@ type esiCharacterAssetPlus struct {
 }
 
 func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
-	if arg.Section != model.CharacterSectionAssets {
+	if arg.Section != model.SectionAssets {
 		panic("called with wrong section")
 	}
 	return s.updateCharacterSectionIfChanged(

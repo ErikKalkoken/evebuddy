@@ -20,7 +20,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		token := factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		section := model.CharacterSectionImplants
+		section := model.SectionImplants
 		hasUpdated := false
 		accessToken := ""
 		arg := UpdateCharacterSectionParams{CharacterID: c.ID, Section: section}
@@ -51,7 +51,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		section := model.CharacterSectionImplants
+		section := model.SectionImplants
 		x1 := factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -84,7 +84,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		section := model.CharacterSectionImplants
+		section := model.SectionImplants
 		x1 := factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -125,12 +125,12 @@ func TestCharacterSectionUpdateMethods(t *testing.T) {
 		updateAt := time.Now().Add(-3 * time.Hour)
 		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID:   c.ID,
-			Section:       model.CharacterSectionSkillqueue,
+			Section:       model.SectionSkillqueue,
 			LastUpdatedAt: updateAt,
 		})
 		// when
 		x, err := s.characterSectionIsUpdateExpired(ctx, UpdateCharacterSectionParams{
-			CharacterID: c.ID, Section: model.CharacterSectionSkillqueue,
+			CharacterID: c.ID, Section: model.SectionSkillqueue,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -144,13 +144,13 @@ func TestCharacterSectionUpdateMethods(t *testing.T) {
 		updateAt := time.Now().Add(3 * time.Hour)
 		o := factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID:   c.ID,
-			Section:       model.CharacterSectionSkillqueue,
+			Section:       model.SectionSkillqueue,
 			LastUpdatedAt: updateAt,
 		})
 		// when
 		x, err := s.characterSectionUpdatedAt(ctx, UpdateCharacterSectionParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionSkillqueue,
+			Section:     model.SectionSkillqueue,
 		})
 		// then
 		if assert.NoError(t, err) {

@@ -116,7 +116,7 @@ func (a *attributesArea) refresh() {
 
 func (a *attributesArea) makeTopText(total int) (string, widget.Importance, error) {
 	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(
-		context.Background(), a.ui.characterID(), model.CharacterSectionAttributes)
+		context.Background(), a.ui.characterID(), model.SectionAttributes)
 	if err != nil {
 		return "", 0, err
 	}

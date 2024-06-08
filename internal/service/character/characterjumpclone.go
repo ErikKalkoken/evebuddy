@@ -16,7 +16,7 @@ func (s *CharacterService) ListCharacterJumpClones(ctx context.Context, characte
 // TODO: Consolidate with updating home in separate function
 
 func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
-	if arg.Section != model.CharacterSectionJumpClones {
+	if arg.Section != model.SectionJumpClones {
 		panic("called with wrong section")
 	}
 	return s.updateCharacterSectionIfChanged(

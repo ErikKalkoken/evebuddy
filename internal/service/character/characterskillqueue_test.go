@@ -60,7 +60,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 		// when
 		changed, err := s.UpdateCharacterSkillqueueESI(ctx, UpdateCharacterSectionParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionSkillqueue,
+			Section:     model.SectionSkillqueue,
 		})
 		// then
 		if assert.NoError(t, err) {

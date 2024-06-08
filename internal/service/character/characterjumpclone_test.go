@@ -55,7 +55,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterJumpClonesESI(ctx, UpdateCharacterSectionParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionJumpClones,
+			Section:     model.SectionJumpClones,
 		})
 		// then
 		if assert.NoError(t, err) {

@@ -37,7 +37,7 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterImplantsESI(ctx, UpdateCharacterSectionParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionImplants,
+			Section:     model.SectionImplants,
 		})
 		// then
 		if assert.NoError(t, err) {

@@ -18,7 +18,7 @@ func (s *CharacterService) GetCharacterAttributes(ctx context.Context, character
 }
 
 func (s *CharacterService) updateCharacterAttributesESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
-	if arg.Section != model.CharacterSectionAttributes {
+	if arg.Section != model.SectionAttributes {
 		panic("called with wrong section")
 	}
 	return s.updateCharacterSectionIfChanged(

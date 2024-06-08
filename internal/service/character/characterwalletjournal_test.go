@@ -52,7 +52,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateCharacterSectionParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionWalletJournal,
+			Section:     model.SectionWalletJournal,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -106,7 +106,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateCharacterSectionParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionWalletJournal,
+			Section:     model.SectionWalletJournal,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -156,7 +156,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// when
 		_, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateCharacterSectionParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionWalletJournal,
+			Section:     model.SectionWalletJournal,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -216,7 +216,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateCharacterSectionParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionWalletJournal,
+			Section:     model.SectionWalletJournal,
 		})
 		// then
 		if assert.NoError(t, err) {

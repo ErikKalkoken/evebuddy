@@ -227,7 +227,7 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 		return "No character", widget.LowImportance, nil
 	}
 	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(
-		context.Background(), a.ui.characterID(), model.CharacterSectionAssets)
+		context.Background(), a.ui.characterID(), model.SectionAssets)
 	if err != nil {
 		return "", 0, err
 	}

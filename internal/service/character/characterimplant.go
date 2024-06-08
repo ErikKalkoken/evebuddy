@@ -12,7 +12,7 @@ func (s *CharacterService) ListCharacterImplants(ctx context.Context, characterI
 }
 
 func (s *CharacterService) updateCharacterImplantsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
-	if arg.Section != model.CharacterSectionImplants {
+	if arg.Section != model.SectionImplants {
 		panic("called with wrong section")
 	}
 	return s.updateCharacterSectionIfChanged(

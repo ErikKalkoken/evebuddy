@@ -150,7 +150,7 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance, error)
 	}
 	characterID := a.ui.characterID()
 	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(
-		context.Background(), characterID, model.CharacterSectionWalletTransactions)
+		context.Background(), characterID, model.SectionWalletTransactions)
 	if err != nil {
 		return "", 0, err
 	}

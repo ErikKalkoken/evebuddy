@@ -458,7 +458,7 @@ func (a *mailArea) makeFolderTopText() (string, widget.Importance, error) {
 		return "No Character", widget.LowImportance, nil
 	}
 	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(
-		context.Background(), a.ui.characterID(), model.CharacterSectionSkillqueue)
+		context.Background(), a.ui.characterID(), model.SectionSkillqueue)
 	if err != nil {
 		return "", 0, err
 	}

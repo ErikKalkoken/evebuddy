@@ -12,7 +12,7 @@ import (
 
 func TestCharacterUpdateStatusCache(t *testing.T) {
 	characterID := int32(42)
-	section := model.CharacterSectionImplants
+	section := model.SectionImplants
 	cache := cache.New()
 	statusCache := New(cache)
 	t.Run("can set full status", func(t *testing.T) {
@@ -44,7 +44,7 @@ func TestCharacterUpdateStatusCacheInit(t *testing.T) {
 	defer db.Close()
 	cache := cache.New()
 	// ctx := context.Background()
-	section := model.CharacterSectionImplants
+	section := model.SectionImplants
 	t.Run("should init", func(t *testing.T) {
 		// given
 		c := factory.CreateCharacter()
@@ -107,7 +107,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 				cs.SetStatus(c.ID, section, "", time.Now())
 			}
 		}
-		cs.SetError(cc[1].ID, model.CharacterSectionLocation, "error")
+		cs.SetError(cc[1].ID, model.SectionLocation, "error")
 		// when
 		_, c := cs.Summary()
 		// then
@@ -120,7 +120,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 				cs.SetStatus(c.ID, section, "", time.Now())
 			}
 		}
-		cs.SetStatus(cc[1].ID, model.CharacterSectionLocation, "", time.Now().Add(-1*time.Hour))
+		cs.SetStatus(cc[1].ID, model.SectionLocation, "", time.Now().Add(-1*time.Hour))
 		// when
 		p, c := cs.Summary()
 		// then

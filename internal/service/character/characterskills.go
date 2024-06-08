@@ -19,7 +19,7 @@ func (s *CharacterService) GetCharacterSkill(ctx context.Context, characterID, t
 }
 
 func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
-	if arg.Section != model.CharacterSectionSkills {
+	if arg.Section != model.SectionSkills {
 		panic("called with wrong section")
 	}
 	return s.updateCharacterSectionIfChanged(

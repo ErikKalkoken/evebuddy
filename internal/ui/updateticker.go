@@ -19,6 +19,20 @@ const (
 	eveCharactersKeyLastUpdated = "eve-characters-last-updated"
 )
 
+type EveUniverseSection string
+
+const (
+	SectionCategories EveUniverseSection = "categories"
+	SectionCharacters EveUniverseSection = "characters"
+)
+
+type EveUniverseUpdateStatus struct {
+	ContentHash   string
+	ErrorMessage  string
+	LastUpdatedAt time.Time
+	Section       EveUniverseSection
+}
+
 func (u *ui) startUpdateTickerEveCharacters() {
 	ticker := time.NewTicker(eveDataUpdateTicker)
 	go func() {
@@ -136,57 +150,57 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 	}
 	isCurrent := characterID == u.characterID()
 	switch s {
-	case model.CharacterSectionAssets:
+	case model.SectionAssets:
 		if isCurrent && hasChanged {
 			u.assetsArea.redraw()
 			u.assetSearchArea.refresh()
 		}
-	case model.CharacterSectionAttributes:
+	case model.SectionAttributes:
 		if isCurrent && hasChanged {
 			u.attributesArea.refresh()
 		}
-	case model.CharacterSectionImplants:
+	case model.SectionImplants:
 		if isCurrent && hasChanged {
 			u.implantsArea.refresh()
 		}
-	case model.CharacterSectionJumpClones:
+	case model.SectionJumpClones:
 		if isCurrent && hasChanged {
 			u.jumpClonesArea.redraw()
 		}
 		if hasChanged {
 			u.overviewArea.refresh()
 		}
-	case model.CharacterSectionLocation,
-		model.CharacterSectionOnline,
-		model.CharacterSectionShip,
-		model.CharacterSectionWalletBalance:
+	case model.SectionLocation,
+		model.SectionOnline,
+		model.SectionShip,
+		model.SectionWalletBalance:
 		if hasChanged {
 			u.overviewArea.refresh()
 		}
-	case model.CharacterSectionMailLabels,
-		model.CharacterSectionMailLists,
-		model.CharacterSectionMails:
+	case model.SectionMailLabels,
+		model.SectionMailLists,
+		model.SectionMails:
 		if isCurrent && hasChanged {
 			u.mailArea.refresh()
 		}
 		if hasChanged {
 			u.overviewArea.refresh()
 		}
-	case model.CharacterSectionSkills:
+	case model.SectionSkills:
 		if isCurrent && hasChanged {
 			u.skillCatalogueArea.refresh()
 			u.shipsArea.refresh()
 			u.overviewArea.refresh()
 		}
-	case model.CharacterSectionSkillqueue:
+	case model.SectionSkillqueue:
 		if isCurrent {
 			u.skillqueueArea.refresh()
 		}
-	case model.CharacterSectionWalletJournal:
+	case model.SectionWalletJournal:
 		if isCurrent && hasChanged {
 			u.walletJournalArea.refresh()
 		}
-	case model.CharacterSectionWalletTransactions:
+	case model.SectionWalletTransactions:
 		if isCurrent && hasChanged {
 			u.walletTransactionArea.refresh()
 		}

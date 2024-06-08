@@ -117,7 +117,7 @@ func (a *implantsArea) updateData() error {
 
 func (a *implantsArea) makeTopText() (string, widget.Importance, error) {
 	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(
-		context.Background(), a.ui.characterID(), model.CharacterSectionImplants)
+		context.Background(), a.ui.characterID(), model.SectionImplants)
 	if err != nil {
 		return "", 0, err
 	}

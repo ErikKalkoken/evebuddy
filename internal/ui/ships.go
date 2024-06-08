@@ -184,7 +184,7 @@ func (a *shipsArea) makeTopText() (string, widget.Importance, bool, error) {
 		return "No character", widget.LowImportance, false, nil
 	}
 	characterID := a.ui.characterID()
-	ok, err := a.ui.sv.Characters.CharacterSectionWasUpdated(ctx, characterID, model.CharacterSectionSkills)
+	ok, err := a.ui.sv.Characters.CharacterSectionWasUpdated(ctx, characterID, model.SectionSkills)
 	if err != nil {
 		return "", 0, false, err
 	}

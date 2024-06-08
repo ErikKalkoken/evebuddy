@@ -26,11 +26,11 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		updateAt := time.Now().Add(3 * time.Hour)
 		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID:   c.ID,
-			Section:       model.CharacterSectionSkillqueue,
+			Section:       model.SectionSkillqueue,
 			LastUpdatedAt: updateAt,
 		})
 		// when
-		x, err := s.CharacterSectionWasUpdated(ctx, c.ID, model.CharacterSectionSkillqueue)
+		x, err := s.CharacterSectionWasUpdated(ctx, c.ID, model.SectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, x)
@@ -41,7 +41,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
-		x, err := s.CharacterSectionWasUpdated(ctx, c.ID, model.CharacterSectionSkillqueue)
+		x, err := s.CharacterSectionWasUpdated(ctx, c.ID, model.SectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, x)
@@ -55,7 +55,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := character.New(r, nil, nil, nil, nil, nil)
-	section := model.CharacterSectionImplants
+	section := model.SectionImplants
 	ctx := context.Background()
 	t.Run("should report true when changed", func(t *testing.T) {
 		// given

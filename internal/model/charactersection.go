@@ -16,39 +16,39 @@ const defaultUpdateSectionTimeout = 3600 * time.Second
 
 // Updated character sections
 const (
-	CharacterSectionAssets             CharacterSection = "assets"
-	CharacterSectionAttributes         CharacterSection = "attributes"
-	CharacterSectionImplants           CharacterSection = "implants"
-	CharacterSectionJumpClones         CharacterSection = "jump_clones"
-	CharacterSectionLocation           CharacterSection = "location"
-	CharacterSectionMailLists          CharacterSection = "mail_lists"
-	CharacterSectionMailLabels         CharacterSection = "mail_labels"
-	CharacterSectionMails              CharacterSection = "mails"
-	CharacterSectionOnline             CharacterSection = "online"
-	CharacterSectionShip               CharacterSection = "ship"
-	CharacterSectionSkills             CharacterSection = "skills"
-	CharacterSectionSkillqueue         CharacterSection = "skillqueue"
-	CharacterSectionWalletBalance      CharacterSection = "wallet_balance"
-	CharacterSectionWalletJournal      CharacterSection = "wallet_journal"
-	CharacterSectionWalletTransactions CharacterSection = "wallet_transactions"
+	SectionAssets             CharacterSection = "assets"
+	SectionAttributes         CharacterSection = "attributes"
+	SectionImplants           CharacterSection = "implants"
+	SectionJumpClones         CharacterSection = "jump_clones"
+	SectionLocation           CharacterSection = "location"
+	SectionMailLists          CharacterSection = "mail_lists"
+	SectionMailLabels         CharacterSection = "mail_labels"
+	SectionMails              CharacterSection = "mails"
+	SectionOnline             CharacterSection = "online"
+	SectionShip               CharacterSection = "ship"
+	SectionSkills             CharacterSection = "skills"
+	SectionSkillqueue         CharacterSection = "skillqueue"
+	SectionWalletBalance      CharacterSection = "wallet_balance"
+	SectionWalletJournal      CharacterSection = "wallet_journal"
+	SectionWalletTransactions CharacterSection = "wallet_transactions"
 )
 
 var CharacterSections = []CharacterSection{
-	CharacterSectionAssets,
-	CharacterSectionAttributes,
-	CharacterSectionImplants,
-	CharacterSectionJumpClones,
-	CharacterSectionLocation,
-	CharacterSectionMailLabels,
-	CharacterSectionMailLists,
-	CharacterSectionMails,
-	CharacterSectionOnline,
-	CharacterSectionShip,
-	CharacterSectionSkills,
-	CharacterSectionSkillqueue,
-	CharacterSectionWalletBalance,
-	CharacterSectionWalletJournal,
-	CharacterSectionWalletTransactions,
+	SectionAssets,
+	SectionAttributes,
+	SectionImplants,
+	SectionJumpClones,
+	SectionLocation,
+	SectionMailLabels,
+	SectionMailLists,
+	SectionMails,
+	SectionOnline,
+	SectionShip,
+	SectionSkills,
+	SectionSkillqueue,
+	SectionWalletBalance,
+	SectionWalletJournal,
+	SectionWalletTransactions,
 }
 
 type CharacterSection string
@@ -73,21 +73,21 @@ func (cs CharacterSection) CalcContentHash(data any) (string, error) {
 // Timeout returns the time until the data of an update section becomes stale.
 func (cs CharacterSection) Timeout() time.Duration {
 	m := map[CharacterSection]time.Duration{
-		CharacterSectionAssets:             3600 * time.Second,
-		CharacterSectionAttributes:         120 * time.Second,
-		CharacterSectionImplants:           120 * time.Second,
-		CharacterSectionJumpClones:         120 * time.Second,
-		CharacterSectionLocation:           30 * time.Second, // 5 seconds min
-		CharacterSectionMailLabels:         30 * time.Second,
-		CharacterSectionMailLists:          120 * time.Second,
-		CharacterSectionMails:              30 * time.Second,
-		CharacterSectionOnline:             60 * time.Second,
-		CharacterSectionShip:               30 * time.Second, // 5 seconds min
-		CharacterSectionSkillqueue:         120 * time.Second,
-		CharacterSectionSkills:             120 * time.Second,
-		CharacterSectionWalletBalance:      120 * time.Second,
-		CharacterSectionWalletJournal:      3600 * time.Second,
-		CharacterSectionWalletTransactions: 3600 * time.Second,
+		SectionAssets:             3600 * time.Second,
+		SectionAttributes:         120 * time.Second,
+		SectionImplants:           120 * time.Second,
+		SectionJumpClones:         120 * time.Second,
+		SectionLocation:           30 * time.Second, // 5 seconds min
+		SectionMailLabels:         30 * time.Second,
+		SectionMailLists:          120 * time.Second,
+		SectionMails:              30 * time.Second,
+		SectionOnline:             60 * time.Second,
+		SectionShip:               30 * time.Second, // 5 seconds min
+		SectionSkillqueue:         120 * time.Second,
+		SectionSkills:             120 * time.Second,
+		SectionWalletBalance:      120 * time.Second,
+		SectionWalletJournal:      3600 * time.Second,
+		SectionWalletTransactions: 3600 * time.Second,
 	}
 	duration, ok := m[cs]
 	if !ok {

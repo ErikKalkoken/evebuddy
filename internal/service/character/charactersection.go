@@ -59,35 +59,35 @@ func (s *CharacterService) UpdateCharacterSection(ctx context.Context, arg Updat
 	}
 	var f func(context.Context, UpdateCharacterSectionParams) (bool, error)
 	switch arg.Section {
-	case model.CharacterSectionAssets:
+	case model.SectionAssets:
 		f = s.updateCharacterAssetsESI
-	case model.CharacterSectionAttributes:
+	case model.SectionAttributes:
 		f = s.updateCharacterAttributesESI
-	case model.CharacterSectionImplants:
+	case model.SectionImplants:
 		f = s.updateCharacterImplantsESI
-	case model.CharacterSectionJumpClones:
+	case model.SectionJumpClones:
 		f = s.updateCharacterJumpClonesESI
-	case model.CharacterSectionLocation:
+	case model.SectionLocation:
 		f = s.updateCharacterLocationESI
-	case model.CharacterSectionMails:
+	case model.SectionMails:
 		f = s.updateCharacterMailsESI
-	case model.CharacterSectionMailLabels:
+	case model.SectionMailLabels:
 		f = s.updateCharacterMailLabelsESI
-	case model.CharacterSectionMailLists:
+	case model.SectionMailLists:
 		f = s.updateCharacterMailListsESI
-	case model.CharacterSectionOnline:
+	case model.SectionOnline:
 		f = s.updateCharacterOnlineESI
-	case model.CharacterSectionShip:
+	case model.SectionShip:
 		f = s.updateCharacterShipESI
-	case model.CharacterSectionSkillqueue:
+	case model.SectionSkillqueue:
 		f = s.UpdateCharacterSkillqueueESI
-	case model.CharacterSectionSkills:
+	case model.SectionSkills:
 		f = s.updateCharacterSkillsESI
-	case model.CharacterSectionWalletBalance:
+	case model.SectionWalletBalance:
 		f = s.updateCharacterWalletBalanceESI
-	case model.CharacterSectionWalletJournal:
+	case model.SectionWalletJournal:
 		f = s.updateCharacterWalletJournalEntryESI
-	case model.CharacterSectionWalletTransactions:
+	case model.SectionWalletTransactions:
 		f = s.updateCharacterWalletTransactionESI
 	default:
 		panic(fmt.Sprintf("Undefined section: %s", arg.Section))

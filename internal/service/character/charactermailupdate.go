@@ -26,7 +26,7 @@ const (
 // updateCharacterMailLabelsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
 func (s *CharacterService) updateCharacterMailLabelsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
-	if arg.Section != model.CharacterSectionMailLabels {
+	if arg.Section != model.SectionMailLabels {
 		panic("called with wrong section")
 	}
 	return s.updateCharacterSectionIfChanged(
@@ -62,7 +62,7 @@ func (s *CharacterService) updateCharacterMailLabelsESI(ctx context.Context, arg
 // updateCharacterMailListsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
 func (s *CharacterService) updateCharacterMailListsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
-	if arg.Section != model.CharacterSectionMailLists {
+	if arg.Section != model.SectionMailLists {
 		panic("called with wrong section")
 	}
 	return s.updateCharacterSectionIfChanged(
@@ -92,7 +92,7 @@ func (s *CharacterService) updateCharacterMailListsESI(ctx context.Context, arg 
 // updateCharacterMailsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
 func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
-	if arg.Section != model.CharacterSectionMails {
+	if arg.Section != model.SectionMails {
 		panic("called with wrong section")
 	}
 	return s.updateCharacterSectionIfChanged(

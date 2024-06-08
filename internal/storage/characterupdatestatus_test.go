@@ -24,7 +24,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		arg := storage.CharacterUpdateStatusParams{
 			CharacterID:   c.ID,
 			Error:         "error",
-			Section:       model.CharacterSectionSkillqueue,
+			Section:       model.SectionSkillqueue,
 			ContentHash:   "content-hash",
 			LastUpdatedAt: updatedAt,
 		}
@@ -32,7 +32,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		err := r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.CharacterSectionSkillqueue)
+			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.SectionSkillqueue)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "error", l.ErrorMessage)
 				assert.Equal(t, "content-hash", l.ContentHash)
@@ -46,12 +46,12 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionSkillqueue,
+			Section:     model.SectionSkillqueue,
 		})
 		updatedAt := time.Now().Add(1 * time.Hour)
 		arg := storage.CharacterUpdateStatusParams{
 			CharacterID:   c.ID,
-			Section:       model.CharacterSectionSkillqueue,
+			Section:       model.SectionSkillqueue,
 			Error:         "error",
 			ContentHash:   "content-hash",
 			LastUpdatedAt: updatedAt,
@@ -60,7 +60,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		err := r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.CharacterSectionSkillqueue)
+			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.SectionSkillqueue)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "content-hash", l.ContentHash)
 				assert.Equal(t, "error", l.ErrorMessage)
@@ -74,11 +74,11 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionSkillqueue,
+			Section:     model.SectionSkillqueue,
 		})
 		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionImplants,
+			Section:     model.SectionImplants,
 		})
 		// when
 		oo, err := r.ListCharacterUpdateStatus(ctx, c.ID)
@@ -98,10 +98,10 @@ func TestSetCharacterUpdateStatusError(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
-		err := r.SetCharacterUpdateStatusError(ctx, c.ID, model.CharacterSectionImplants, "error")
+		err := r.SetCharacterUpdateStatusError(ctx, c.ID, model.SectionImplants, "error")
 		// then
 		if assert.NoError(t, err) {
-			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.CharacterSectionImplants)
+			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.SectionImplants)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", l.ContentHash)
 				assert.Equal(t, "error", l.ErrorMessage)
@@ -115,7 +115,7 @@ func TestSetCharacterUpdateStatusError(t *testing.T) {
 		c := factory.CreateCharacter()
 		x := factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionImplants,
+			Section:     model.SectionImplants,
 		})
 		// when
 		err := r.SetCharacterUpdateStatusError(ctx, c.ID, x.Section, "error")

@@ -115,7 +115,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		// when
 		_, err := s.updateCharacterMailLabelsESI(ctx, UpdateCharacterSectionParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionMailLabels,
+			Section:     model.SectionMailLabels,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -168,7 +168,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		// when
 		_, err := s.updateCharacterMailLabelsESI(ctx, UpdateCharacterSectionParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionMailLabels,
+			Section:     model.SectionMailLabels,
 		})
 		// then
 		if assert.NoError(t, err) {

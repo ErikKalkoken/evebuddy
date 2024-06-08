@@ -54,7 +54,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterSkillsESI(ctx, UpdateCharacterSectionParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionSkills,
+			Section:     model.SectionSkills,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -106,7 +106,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterSkillsESI(ctx, UpdateCharacterSectionParams{
 			CharacterID: c.ID,
-			Section:     model.CharacterSectionSkills,
+			Section:     model.SectionSkills,
 		})
 		// then
 		if assert.NoError(t, err) {
