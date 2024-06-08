@@ -42,6 +42,10 @@ func (es EveUniverseSection) Timeout() time.Duration {
 	return duration
 }
 
-func (es EveUniverseSection) Key() string {
-	return fmt.Sprintf("eveuniverse-section-%s", es)
+func (es EveUniverseSection) KeyLastUpdated() string {
+	return fmt.Sprintf("eveuniverse-section-%s-last-updated", es)
+}
+
+func (es EveUniverseSection) KeyError() string {
+	return fmt.Sprintf("eveuniverse-section-%s-error", es)
 }
