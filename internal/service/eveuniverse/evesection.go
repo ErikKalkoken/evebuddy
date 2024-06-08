@@ -36,6 +36,8 @@ func (eu *EveUniverseService) UpdateSection(ctx context.Context, section model.E
 		f = eu.updateEveCategories
 	case model.SectionEveCharacters:
 		f = eu.UpdateAllEveCharactersESI
+	case model.SectionEveMarketPrices:
+		f = eu.updateEveMarketPricesESI
 	}
 	key := fmt.Sprintf("Update-section-%s", section)
 	_, err, _ = eu.sfg.Do(key, func() (any, error) {

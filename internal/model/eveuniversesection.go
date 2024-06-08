@@ -11,8 +11,9 @@ const eveUniverseSectionDefaultTimeout = 24 * time.Hour
 type EveUniverseSection string
 
 const (
-	SectionEveCategories EveUniverseSection = "EveCategories"
-	SectionEveCharacters EveUniverseSection = "EveCharacters"
+	SectionEveCategories   EveUniverseSection = "EveCategories"
+	SectionEveCharacters   EveUniverseSection = "EveCharacters"
+	SectionEveMarketPrices EveUniverseSection = "EveMarketPrices"
 )
 
 type EveUniverseUpdateStatus struct {
@@ -25,11 +26,13 @@ type EveUniverseUpdateStatus struct {
 var EveUniverseSections = []EveUniverseSection{
 	SectionEveCategories,
 	SectionEveCharacters,
+	SectionEveMarketPrices,
 }
 
 var eveUniverseSectionTimeouts = map[EveUniverseSection]time.Duration{
-	SectionEveCategories: 24 * time.Hour,
-	SectionEveCharacters: 1 * time.Hour,
+	SectionEveCategories:   24 * time.Hour,
+	SectionEveCharacters:   1 * time.Hour,
+	SectionEveMarketPrices: 6 * time.Hour,
 }
 
 // Timeout returns the time until the data of an update section becomes stale.
