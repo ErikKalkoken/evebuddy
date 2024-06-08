@@ -177,7 +177,7 @@ func (a *walletJournalArea) makeTopText() (string, widget.Importance, error) {
 		return "No character", widget.LowImportance, nil
 	}
 	c := a.ui.currentCharacter()
-	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(
+	hasData, err := a.ui.sv.Characters.SectionWasUpdated(
 		context.Background(), c.ID, model.SectionWalletJournal)
 	if err != nil {
 		return "", 0, err

@@ -56,7 +56,7 @@ func New(st *storage.Storage, imageCacheDir string) *Service {
 	userAgent := "EveBuddy kalkoken87@gmail.com"
 	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
 	dt := dictionary.New(st)
-	eu := eveuniverse.New(st, esiClient)
+	eu := eveuniverse.New(st, esiClient, dt)
 	cache := cache.New()
 	cs := characterstatus.New(cache)
 	if err := cs.InitCache(st); err != nil {

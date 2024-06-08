@@ -58,7 +58,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.UpdateCharacterSkillqueueESI(ctx, UpdateCharacterSectionParams{
+		changed, err := s.UpdateCharacterSkillqueueESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     model.SectionSkillqueue,
 		})

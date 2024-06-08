@@ -52,7 +52,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateCharacterWalletTransactionESI(ctx, UpdateCharacterSectionParams{
+		changed, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     model.SectionWalletTransactions,
 		})
@@ -108,7 +108,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateCharacterWalletTransactionESI(ctx, UpdateCharacterSectionParams{
+		changed, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     model.SectionWalletTransactions,
 		})
@@ -164,7 +164,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		_, err := s.updateCharacterWalletTransactionESI(ctx, UpdateCharacterSectionParams{
+		_, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     model.SectionWalletTransactions,
 		})
@@ -223,7 +223,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 				},
 			}))
 		// when
-		_, err := s.updateCharacterWalletTransactionESI(ctx, UpdateCharacterSectionParams{
+		_, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     model.SectionWalletTransactions,
 		})

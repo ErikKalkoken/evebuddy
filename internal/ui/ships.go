@@ -133,7 +133,7 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 
 func (a *shipsArea) refresh() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
-		_, ok, err := a.ui.sv.Dictionary.GetTime(eveCategoriesKeyLastUpdated)
+		ok, err := a.ui.sv.EveUniverse.SectionExists(model.SectionEveCategories)
 		if err != nil {
 			return "", 0, false, err
 		}
@@ -184,7 +184,7 @@ func (a *shipsArea) makeTopText() (string, widget.Importance, bool, error) {
 		return "No character", widget.LowImportance, false, nil
 	}
 	characterID := a.ui.characterID()
-	ok, err := a.ui.sv.Characters.CharacterSectionWasUpdated(ctx, characterID, model.SectionSkills)
+	ok, err := a.ui.sv.Characters.SectionWasUpdated(ctx, characterID, model.SectionSkills)
 	if err != nil {
 		return "", 0, false, err
 	}

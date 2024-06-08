@@ -39,7 +39,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
 
 		// when
-		changed, err := s.updateCharacterAttributesESI(ctx, UpdateCharacterSectionParams{
+		changed, err := s.updateCharacterAttributesESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     model.SectionAttributes,
 		})

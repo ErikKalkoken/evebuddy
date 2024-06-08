@@ -18,7 +18,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	eu := eveuniverse.New(r, client)
+	eu := eveuniverse.New(r, client, nil)
 	ctx := context.Background()
 	t.Run("should return existing race", func(t *testing.T) {
 		// given

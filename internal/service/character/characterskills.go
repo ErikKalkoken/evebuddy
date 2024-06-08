@@ -18,11 +18,11 @@ func (s *CharacterService) GetCharacterSkill(ctx context.Context, characterID, t
 	return o, err
 }
 
-func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
 	if arg.Section != model.SectionSkills {
 		panic("called with wrong section")
 	}
-	return s.updateCharacterSectionIfChanged(
+	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			skills, _, err := s.esiClient.ESI.SkillsApi.GetCharactersCharacterIdSkills(ctx, characterID, nil)

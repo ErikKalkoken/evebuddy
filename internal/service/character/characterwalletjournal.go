@@ -18,11 +18,11 @@ func (s *CharacterService) ListCharacterWalletJournalEntries(ctx context.Context
 }
 
 // updateCharacterWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
-func (s *CharacterService) updateCharacterWalletJournalEntryESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterWalletJournalEntryESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
 	if arg.Section != model.SectionWalletJournal {
 		panic("called with wrong section")
 	}
-	return s.updateCharacterSectionIfChanged(
+	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			entries, err := goesi.FetchFromESIWithPaging(

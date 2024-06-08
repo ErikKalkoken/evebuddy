@@ -15,11 +15,11 @@ func (s *CharacterService) ListCharacterJumpClones(ctx context.Context, characte
 
 // TODO: Consolidate with updating home in separate function
 
-func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
 	if arg.Section != model.SectionJumpClones {
 		panic("called with wrong section")
 	}
-	return s.updateCharacterSectionIfChanged(
+	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			clones, _, err := s.esiClient.ESI.ClonesApi.GetCharactersCharacterIdClones(ctx, characterID, nil)

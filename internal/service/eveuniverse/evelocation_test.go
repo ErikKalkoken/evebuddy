@@ -26,7 +26,7 @@ func TestEveLocationOther(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	eu := New(r, client)
+	eu := New(r, client, nil)
 	ctx := context.Background()
 	t.Run("should create location for a station", func(t *testing.T) {
 		// given
@@ -114,7 +114,7 @@ func TestLocationStructures(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	eu := New(r, client)
+	eu := New(r, client, nil)
 	ctx := context.Background()
 	t.Run("should return existing structure", func(t *testing.T) {
 		// given

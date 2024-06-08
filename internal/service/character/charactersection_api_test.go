@@ -30,7 +30,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 			LastUpdatedAt: updateAt,
 		})
 		// when
-		x, err := s.CharacterSectionWasUpdated(ctx, c.ID, model.SectionSkillqueue)
+		x, err := s.SectionWasUpdated(ctx, c.ID, model.SectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, x)
@@ -41,7 +41,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
-		x, err := s.CharacterSectionWasUpdated(ctx, c.ID, model.SectionSkillqueue)
+		x, err := s.SectionWasUpdated(ctx, c.ID, model.SectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, x)
@@ -69,8 +69,8 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
 		// when
-		changed, err := s.UpdateCharacterSection(
-			ctx, character.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
+		changed, err := s.UpdateSection(
+			ctx, character.UpdateSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
@@ -99,8 +99,8 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.UpdateCharacterSection(
-			ctx, character.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
+		changed, err := s.UpdateSection(
+			ctx, character.UpdateSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
@@ -131,8 +131,8 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
 		// when
-		changed, err := s.UpdateCharacterSection(
-			ctx, character.UpdateCharacterSectionParams{
+		changed, err := s.UpdateSection(
+			ctx, character.UpdateSectionParams{
 				CharacterID: c.ID,
 				Section:     section,
 			})
@@ -158,8 +158,8 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(500, map[string]string{"error": "dummy error"}))
 		// when
-		_, err := s.UpdateCharacterSection(
-			ctx, character.UpdateCharacterSectionParams{CharacterID: c.ID, Section: section})
+		_, err := s.UpdateSection(
+			ctx, character.UpdateSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.Error(t, err) {
 			x, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
@@ -185,8 +185,8 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
 		// when
-		_, err := s.UpdateCharacterSection(
-			ctx, character.UpdateCharacterSectionParams{
+		_, err := s.UpdateSection(
+			ctx, character.UpdateSectionParams{
 				CharacterID: c.ID,
 				Section:     section,
 				ForceUpdate: true,
@@ -219,8 +219,8 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		_, err := s.UpdateCharacterSection(
-			ctx, character.UpdateCharacterSectionParams{
+		_, err := s.UpdateSection(
+			ctx, character.UpdateSectionParams{
 				CharacterID: c.ID,
 				Section:     section,
 				ForceUpdate: true,

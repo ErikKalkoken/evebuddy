@@ -13,9 +13,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-// characterSectionUpdatedAt returns when a section was last updated.
+// sectionUpdatedAt returns when a section was last updated.
 // It will return a zero time when no update has been completed yet.
-func (s *CharacterService) characterSectionUpdatedAt(ctx context.Context, arg UpdateCharacterSectionParams) (time.Time, error) {
+func (s *CharacterService) sectionUpdatedAt(ctx context.Context, arg UpdateSectionParams) (time.Time, error) {
 	u, err := s.st.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
 	if errors.Is(err, storage.ErrNotFound) {
 		return time.Time{}, nil
@@ -25,9 +25,9 @@ func (s *CharacterService) characterSectionUpdatedAt(ctx context.Context, arg Up
 	return u.LastUpdatedAt, nil
 }
 
-// CharacterSectionWasUpdated reports wether the section has been updated at all.
-func (s *CharacterService) CharacterSectionWasUpdated(ctx context.Context, characterID int32, section model.CharacterSection) (bool, error) {
-	t, err := s.characterSectionUpdatedAt(ctx, UpdateCharacterSectionParams{CharacterID: characterID, Section: section})
+// SectionWasUpdated reports wether the section has been updated at all.
+func (s *CharacterService) SectionWasUpdated(ctx context.Context, characterID int32, section model.CharacterSection) (bool, error) {
+	t, err := s.sectionUpdatedAt(ctx, UpdateSectionParams{CharacterID: characterID, Section: section})
 	if errors.Is(err, storage.ErrNotFound) {
 		return false, nil
 	} else if err != nil {
@@ -36,20 +36,20 @@ func (s *CharacterService) CharacterSectionWasUpdated(ctx context.Context, chara
 	return !t.IsZero(), nil
 }
 
-type UpdateCharacterSectionParams struct {
+type UpdateSectionParams struct {
 	CharacterID int32
 	Section     model.CharacterSection
 	ForceUpdate bool
 }
 
-// UpdateCharacterSection updates a section from ESI if has expired and changed
+// UpdateSection updates a section from ESI if has expired and changed
 // and reports back if it has changed
-func (s *CharacterService) UpdateCharacterSection(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) UpdateSection(ctx context.Context, arg UpdateSectionParams) (bool, error) {
 	if arg.CharacterID == 0 {
 		panic("Invalid character ID")
 	}
 	if !arg.ForceUpdate {
-		isExpired, err := s.characterSectionIsUpdateExpired(ctx, arg)
+		isExpired, err := s.sectionIsUpdateExpired(ctx, arg)
 		if err != nil {
 			return false, err
 		}
@@ -57,7 +57,7 @@ func (s *CharacterService) UpdateCharacterSection(ctx context.Context, arg Updat
 			return false, nil
 		}
 	}
-	var f func(context.Context, UpdateCharacterSectionParams) (bool, error)
+	var f func(context.Context, UpdateSectionParams) (bool, error)
 	switch arg.Section {
 	case model.SectionAssets:
 		f = s.updateCharacterAssetsESI
@@ -111,8 +111,8 @@ func (s *CharacterService) UpdateCharacterSection(ctx context.Context, arg Updat
 }
 
 // SectionWasUpdated reports wether the data for a section has expired.
-func (s *CharacterService) characterSectionIsUpdateExpired(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
-	t, err := s.characterSectionUpdatedAt(ctx, arg)
+func (s *CharacterService) sectionIsUpdateExpired(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+	t, err := s.sectionUpdatedAt(ctx, arg)
 	if err != nil {
 		return false, err
 	}
@@ -124,11 +124,11 @@ func (s *CharacterService) characterSectionIsUpdateExpired(ctx context.Context, 
 	return time.Now().After(deadline), nil
 }
 
-// updateCharacterSectionIfChanged updates a character section if it has changed
+// updateSectionIfChanged updates a character section if it has changed
 // and reports wether it has changed
-func (s *CharacterService) updateCharacterSectionIfChanged(
+func (s *CharacterService) updateSectionIfChanged(
 	ctx context.Context,
-	arg UpdateCharacterSectionParams,
+	arg UpdateSectionParams,
 	fetch func(ctx context.Context, characterID int32) (any, error),
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {

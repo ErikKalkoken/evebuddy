@@ -68,7 +68,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 				},
 			}))
 		// when
-		changed, err := s.updateCharacterAssetsESI(ctx, UpdateCharacterSectionParams{
+		changed, err := s.updateCharacterAssetsESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     model.SectionAssets,
 		})
@@ -150,7 +150,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 				},
 			}))
 		// when
-		changed, err := s.updateCharacterAssetsESI(ctx, UpdateCharacterSectionParams{
+		changed, err := s.updateCharacterAssetsESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     model.SectionAssets,
 		})

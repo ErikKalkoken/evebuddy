@@ -23,9 +23,9 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		section := model.SectionImplants
 		hasUpdated := false
 		accessToken := ""
-		arg := UpdateCharacterSectionParams{CharacterID: c.ID, Section: section}
+		arg := UpdateSectionParams{CharacterID: c.ID, Section: section}
 		// when
-		changed, err := s.updateCharacterSectionIfChanged(ctx, arg,
+		changed, err := s.updateSectionIfChanged(ctx, arg,
 			func(ctx context.Context, characterID int32) (any, error) {
 				accessToken = ctx.Value(goesi.ContextAccessToken).(string)
 				return "any", nil
@@ -58,9 +58,9 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			Error:       "error",
 		})
 		hasUpdated := false
-		arg := UpdateCharacterSectionParams{CharacterID: c.ID, Section: section}
+		arg := UpdateSectionParams{CharacterID: c.ID, Section: section}
 		// when
-		changed, err := s.updateCharacterSectionIfChanged(ctx, arg,
+		changed, err := s.updateSectionIfChanged(ctx, arg,
 			func(ctx context.Context, characterID int32) (any, error) {
 				return "any", nil
 			},
@@ -91,9 +91,9 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			Data:        "old",
 		})
 		hasUpdated := false
-		arg := UpdateCharacterSectionParams{CharacterID: c.ID, Section: section}
+		arg := UpdateSectionParams{CharacterID: c.ID, Section: section}
 		// when
-		changed, err := s.updateCharacterSectionIfChanged(ctx, arg,
+		changed, err := s.updateSectionIfChanged(ctx, arg,
 			func(ctx context.Context, characterID int32) (any, error) {
 				return "old", nil
 			},
@@ -129,7 +129,7 @@ func TestCharacterSectionUpdateMethods(t *testing.T) {
 			LastUpdatedAt: updateAt,
 		})
 		// when
-		x, err := s.characterSectionIsUpdateExpired(ctx, UpdateCharacterSectionParams{
+		x, err := s.sectionIsUpdateExpired(ctx, UpdateSectionParams{
 			CharacterID: c.ID, Section: model.SectionSkillqueue,
 		})
 		// then
@@ -148,7 +148,7 @@ func TestCharacterSectionUpdateMethods(t *testing.T) {
 			LastUpdatedAt: updateAt,
 		})
 		// when
-		x, err := s.characterSectionUpdatedAt(ctx, UpdateCharacterSectionParams{
+		x, err := s.sectionUpdatedAt(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     model.SectionSkillqueue,
 		})

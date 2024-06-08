@@ -184,7 +184,7 @@ func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance, erro
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance, nil
 	}
-	hasData, err := a.ui.sv.Characters.CharacterSectionWasUpdated(context.Background(), a.ui.characterID(), model.SectionJumpClones)
+	hasData, err := a.ui.sv.Characters.SectionWasUpdated(context.Background(), a.ui.characterID(), model.SectionJumpClones)
 	if err != nil {
 		return "", 0, err
 	}

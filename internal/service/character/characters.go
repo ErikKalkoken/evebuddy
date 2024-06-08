@@ -58,7 +58,7 @@ func New(
 		dt = dictionary.New(st)
 	}
 	if eu == nil {
-		eu = eveuniverse.New(st, esiClient)
+		eu = eveuniverse.New(st, esiClient, dt)
 	}
 	ct := &CharacterService{
 		st:         st,

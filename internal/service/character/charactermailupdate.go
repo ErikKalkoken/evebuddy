@@ -25,11 +25,11 @@ const (
 
 // updateCharacterMailLabelsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *CharacterService) updateCharacterMailLabelsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterMailLabelsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
 	if arg.Section != model.SectionMailLabels {
 		panic("called with wrong section")
 	}
-	return s.updateCharacterSectionIfChanged(
+	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			ll, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLabels(ctx, characterID, nil)
@@ -61,11 +61,11 @@ func (s *CharacterService) updateCharacterMailLabelsESI(ctx context.Context, arg
 
 // updateCharacterMailListsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *CharacterService) updateCharacterMailListsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterMailListsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
 	if arg.Section != model.SectionMailLists {
 		panic("called with wrong section")
 	}
-	return s.updateCharacterSectionIfChanged(
+	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			lists, _, err := s.esiClient.ESI.MailApi.GetCharactersCharacterIdMailLists(ctx, characterID, nil)
@@ -91,11 +91,11 @@ func (s *CharacterService) updateCharacterMailListsESI(ctx context.Context, arg 
 
 // updateCharacterMailsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
-func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg UpdateCharacterSectionParams) (bool, error) {
+func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
 	if arg.Section != model.SectionMails {
 		panic("called with wrong section")
 	}
-	return s.updateCharacterSectionIfChanged(
+	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			headers, err := s.fetchMailHeadersESI(ctx, characterID)

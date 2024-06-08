@@ -130,8 +130,10 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 
 	// for experiments
 	// btn := widget.NewButton("Show experiment", func() {
-	// 	err := errors.New("dummy")
-	// 	u.showErrorDialog("An error has occurred.", err)
+	// 	err := u.sv.EveUniverse.UpdateEveShipSkills(context.TODO())
+	// 	if err != nil {
+	// 		slog.Error("UpdUpdateEveShipSkills failed", "err", err)
+	// 	}
 	// })
 	// x := widgets.NewTappableImage(resourceSkinicon64pxPng, func() {
 	// 	fmt.Println("Tapped")
@@ -240,10 +242,8 @@ func (u *ui) ShowAndRun() {
 			u.window.Resize(fyne.NewSize(s.Width, s.Height))
 		}
 		u.statusBarArea.StartUpdateTicker()
-
-		u.startUpdateTickerEveCategorySkill()
+		u.startUpdateTickerEveUniverse()
 		u.startUpdateTickerCharacters()
-		u.startUpdateTickerEveCharacters()
 	}()
 	u.refreshOverview()
 	u.window.ShowAndRun()

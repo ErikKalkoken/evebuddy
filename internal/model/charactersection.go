@@ -12,7 +12,9 @@ import (
 	"golang.org/x/text/language"
 )
 
-const defaultUpdateSectionTimeout = 3600 * time.Second
+const characterSectionDefaultTimeout = 3600 * time.Second
+
+type CharacterSection string
 
 // Updated character sections
 const (
@@ -51,7 +53,23 @@ var CharacterSections = []CharacterSection{
 	SectionWalletTransactions,
 }
 
-type CharacterSection string
+var characterSectionTimeouts = map[CharacterSection]time.Duration{
+	SectionAssets:             3600 * time.Second,
+	SectionAttributes:         120 * time.Second,
+	SectionImplants:           120 * time.Second,
+	SectionJumpClones:         120 * time.Second,
+	SectionLocation:           30 * time.Second, // 5 seconds min
+	SectionMailLabels:         30 * time.Second,
+	SectionMailLists:          120 * time.Second,
+	SectionMails:              30 * time.Second,
+	SectionOnline:             60 * time.Second,
+	SectionShip:               30 * time.Second, // 5 seconds min
+	SectionSkillqueue:         120 * time.Second,
+	SectionSkills:             120 * time.Second,
+	SectionWalletBalance:      120 * time.Second,
+	SectionWalletJournal:      3600 * time.Second,
+	SectionWalletTransactions: 3600 * time.Second,
+}
 
 func (cs CharacterSection) DisplayName() string {
 	t := strings.ReplaceAll(string(cs), "_", " ")
@@ -72,27 +90,10 @@ func (cs CharacterSection) CalcContentHash(data any) (string, error) {
 
 // Timeout returns the time until the data of an update section becomes stale.
 func (cs CharacterSection) Timeout() time.Duration {
-	m := map[CharacterSection]time.Duration{
-		SectionAssets:             3600 * time.Second,
-		SectionAttributes:         120 * time.Second,
-		SectionImplants:           120 * time.Second,
-		SectionJumpClones:         120 * time.Second,
-		SectionLocation:           30 * time.Second, // 5 seconds min
-		SectionMailLabels:         30 * time.Second,
-		SectionMailLists:          120 * time.Second,
-		SectionMails:              30 * time.Second,
-		SectionOnline:             60 * time.Second,
-		SectionShip:               30 * time.Second, // 5 seconds min
-		SectionSkillqueue:         120 * time.Second,
-		SectionSkills:             120 * time.Second,
-		SectionWalletBalance:      120 * time.Second,
-		SectionWalletJournal:      3600 * time.Second,
-		SectionWalletTransactions: 3600 * time.Second,
-	}
-	duration, ok := m[cs]
+	duration, ok := characterSectionTimeouts[cs]
 	if !ok {
 		slog.Warn("Requested duration for unknown section. Using default.", "section", cs)
-		duration = defaultUpdateSectionTimeout
+		return characterSectionDefaultTimeout
 	}
 	return duration
 }
