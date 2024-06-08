@@ -28,7 +28,8 @@ const (
 type locationNode struct {
 	CharacterID    int32
 	LocationID     int64
-	Name           string
+	LocationName   string
+	IsUnknown      bool
 	SystemName     string
 	SystemSecurity float32
 	Type           locationNodeType
@@ -99,10 +100,15 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 				label.SetText("ERROR")
 				return
 			}
-			label.SetText(n.Name)
+			label.SetText(n.LocationName)
 			if n.isBranch() {
-				prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurity)
-				prefix.Importance = systemSecurity2Importance(n.SystemSecurity)
+				if !n.IsUnknown {
+					prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurity)
+					prefix.Importance = systemSecurity2Importance(n.SystemSecurity)
+				} else {
+					prefix.Text = "?"
+					prefix.Importance = widget.LowImportance
+				}
 				prefix.Refresh()
 				prefix.Show()
 			} else {
@@ -170,9 +176,10 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 		n := locationNode{CharacterID: characterID, LocationID: l.ID, Type: nodeBranch}
 		// TODO: Refactor to use same location method for all unknown location cases
 		if l.Location.Name != "" {
-			n.Name = l.Location.Name
+			n.LocationName = l.Location.Name
 		} else {
-			n.Name = fmt.Sprintf("Unknown location #%d", l.Location.ID)
+			n.LocationName = fmt.Sprintf("Unknown location #%d", l.Location.ID)
+			n.IsUnknown = true
 		}
 		if l.SolarSystem != nil {
 			n.SystemName = l.SolarSystem.Name
@@ -183,7 +190,7 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 		nodes[i] = n
 	}
 	slices.SortFunc(nodes, func(a, b locationNode) int {
-		return cmp.Compare(a.Name, b.Name)
+		return cmp.Compare(a.LocationName, b.LocationName)
 	})
 	for _, ln := range nodes {
 		uid := ln.UID()
@@ -200,9 +207,9 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 			}
 			switch t {
 			case nodeShipHangar:
-				hn.Name = "Ship Hangar"
+				hn.LocationName = "Ship Hangar"
 			case nodeItemHangar:
-				hn.Name = "Item Hangar"
+				hn.LocationName = "Item Hangar"
 			}
 			subUID := hn.UID()
 			values[subUID], err = objectToJSON(hn)

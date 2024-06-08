@@ -14,10 +14,10 @@ import (
 type SkillLevel struct {
 	widget.BaseWidget
 	dots          []*canvas.Image
-	levelBlocked  *theme.ErrorThemedResource
-	levelRequired *theme.PrimaryThemedResource
-	levelTrained  *theme.ThemedResource
-	levelDisabled *theme.DisabledResource
+	levelBlocked  fyne.Resource
+	levelRequired fyne.Resource
+	levelTrained  fyne.Resource
+	levelDisabled fyne.Resource
 }
 
 func NewSkillLevel() *SkillLevel {
@@ -34,7 +34,7 @@ func NewSkillLevel() *SkillLevel {
 	}
 	w := &SkillLevel{
 		dots:          dots,
-		levelBlocked:  theme.NewErrorThemedResource(theme.MediaStopIcon()),
+		levelBlocked:  theme.NewWarningThemedResource(theme.MediaStopIcon()),
 		levelRequired: theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelTrained:  theme.NewThemedResource(theme.MediaStopIcon()),
 		levelDisabled: untrainedIcon,

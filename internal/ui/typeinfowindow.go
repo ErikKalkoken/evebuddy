@@ -202,6 +202,9 @@ func (u *ui) showInfoWindow(iw *typeInfoWindow, err error) {
 		u.showErrorDialog(t, err)
 		return
 	}
+	if iw == nil {
+		return
+	}
 	w := u.app.NewWindow(iw.makeTitle("Information"))
 	iw.window = w
 	w.SetContent(iw.content)
@@ -233,6 +236,9 @@ func (u *ui) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*ty
 			return nil, err
 		}
 		a.owner = owner
+	}
+	if a.et == nil {
+		return nil, nil
 	}
 	oo, err := u.sv.EveUniverse.ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
 	if err != nil {
