@@ -27,3 +27,7 @@ func (cs CharacterStatus) IsCurrent() bool {
 	}
 	return time.Now().Before(cs.CompletedAt.Add(cs.Section.Timeout() * 2))
 }
+
+func (cs CharacterStatus) IsMissing() bool {
+	return cs.CompletedAt.IsZero()
+}

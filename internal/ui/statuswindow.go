@@ -380,6 +380,9 @@ func statusDisplay(cs model.CharacterStatus) (string, widget.Importance) {
 	if !cs.IsOK() {
 		s = "ERROR"
 		i = widget.DangerImportance
+	} else if cs.IsMissing() {
+		s = "Missing"
+		i = widget.WarningImportance
 	} else if !cs.IsCurrent() {
 		s = "Stale"
 		i = widget.HighImportance
