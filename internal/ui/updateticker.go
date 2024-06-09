@@ -46,10 +46,10 @@ func (u *ui) updateEveUniverseSectionAndRefreshIfNeeded(ctx context.Context, sec
 			u.shipsArea.refresh()
 			u.skillCatalogueArea.refresh()
 		}
-	case model.SectionEveCharacters:
+	case model.SectionEveCharacters, model.SectionEveMarketPrices:
 		// nothing to refresh
 	default:
-		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", section))
+		slog.Warn(fmt.Sprintf("section not part of the update ticker refresh: %s", section))
 	}
 }
 

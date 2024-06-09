@@ -13,7 +13,13 @@ import (
 )
 
 func (eu *EveUniverseService) GetEveLocation(ctx context.Context, id int64) (*model.EveLocation, error) {
-	return eu.st.GetEveLocation(ctx, id)
+	o, err := eu.st.GetEveLocation(ctx, id)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, err
+	}
+	return o, nil
 }
 
 func (eu *EveUniverseService) ListEveLocations(ctx context.Context) ([]*model.EveLocation, error) {

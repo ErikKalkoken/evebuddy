@@ -13,8 +13,10 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
+	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -179,6 +181,7 @@ type typeInfoWindow struct {
 	location       *model.EveLocation
 	owner          *model.EveEntity
 	et             *model.EveType
+	price          *model.EveMarketPrice
 	fittingData    []attributeRow
 	requiredSkills []requiredSkill
 	techLevel      int
@@ -239,6 +242,17 @@ func (u *ui) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*ty
 	}
 	if a.et == nil {
 		return nil, nil
+	}
+	p, err := u.sv.EveUniverse.GetEveMarketPrice(ctx, a.et.ID)
+	if errors.Is(err, eveuniverse.ErrNotFound) {
+		p = nil
+	} else if err != nil {
+		return nil, err
+	}
+	if p.AveragePrice != 0 {
+		a.price = p
+	} else {
+		a.price = nil
 	}
 	oo, err := u.sv.EveUniverse.ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
 	if err != nil {
@@ -484,6 +498,9 @@ func (a *typeInfoWindow) makeContent() fyne.CanvasObject {
 		tabs.Append(location)
 		tabs.Select(location)
 	}
+	if a.price != nil {
+		tabs.Append(container.NewTabItem("Market", a.makeMarketTab()))
+	}
 	c := container.NewBorder(top, nil, nil, nil, tabs)
 	return c
 }
@@ -587,6 +604,15 @@ func (a *typeInfoWindow) makeDescriptionTab() fyne.CanvasObject {
 	description := widget.NewLabel(a.et.DescriptionPlain())
 	description.Wrapping = fyne.TextWrapWord
 	return container.NewVScroll(description)
+}
+
+func (a *typeInfoWindow) makeMarketTab() fyne.CanvasObject {
+	c := container.NewHBox(
+		widget.NewLabel("Average price"),
+		layout.NewSpacer(),
+		widget.NewLabel(humanize.Number(a.price.AveragePrice, 1)),
+	)
+	return container.NewVScroll(c)
 }
 
 func (a *typeInfoWindow) makeAttributesTab() fyne.CanvasObject {
