@@ -50,6 +50,19 @@ JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
 ORDER BY et.name, ca.location_id;
 
+-- name: ListCharacterAssets :many
+SELECT
+    sqlc.embed(ca),
+    sqlc.embed(et),
+    sqlc.embed(eg),
+    sqlc.embed(ec)
+FROM character_assets ca
+JOIN eve_types et ON et.id = ca.eve_type_id
+JOIN eve_groups eg ON eg.id = et.eve_group_id
+JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE character_id = ?
+ORDER BY et.name, ca.location_id;
+
 -- name: ListCharacterAssetsInLocation :many
 SELECT
     sqlc.embed(ca),
@@ -111,6 +124,12 @@ LEFT JOIN eve_solar_systems sys ON sys.id = lo.eve_solar_system_id
 WHERE character_id = ?
 AND location_flag = ?
 ORDER BY location_name;
+
+-- name: GetCharacterAssetTotalValue :one
+SELECT SUM(IFNULL(emp.average_price, 0) * quantity * IIF(ca.is_blueprint_copy IS TRUE, 0, 1)) as total
+FROM character_assets ca
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
+WHERE character_id = ?;
 
 -- name: UpdateCharacterAsset :exec
 UPDATE character_assets

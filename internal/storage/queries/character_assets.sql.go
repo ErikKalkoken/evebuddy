@@ -151,6 +151,20 @@ func (q *Queries) GetCharacterAsset(ctx context.Context, arg GetCharacterAssetPa
 	return i, err
 }
 
+const getCharacterAssetTotalValue = `-- name: GetCharacterAssetTotalValue :one
+SELECT SUM(IFNULL(emp.average_price, 0) * quantity * IIF(ca.is_blueprint_copy IS TRUE, 0, 1)) as total
+FROM character_assets ca
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
+WHERE character_id = ?
+`
+
+func (q *Queries) GetCharacterAssetTotalValue(ctx context.Context, characterID int64) (sql.NullFloat64, error) {
+	row := q.db.QueryRowContext(ctx, getCharacterAssetTotalValue, characterID)
+	var total sql.NullFloat64
+	err := row.Scan(&total)
+	return total, err
+}
+
 const listAllCharacterAssets = `-- name: ListAllCharacterAssets :many
 SELECT
     ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
@@ -305,6 +319,83 @@ func (q *Queries) ListCharacterAssetLocations(ctx context.Context, arg ListChara
 			&i.SystemID,
 			&i.SystemName,
 			&i.SecurityStatus,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterAssets = `-- name: ListCharacterAssets :many
+SELECT
+    ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published
+FROM character_assets ca
+JOIN eve_types et ON et.id = ca.eve_type_id
+JOIN eve_groups eg ON eg.id = et.eve_group_id
+JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE character_id = ?
+ORDER BY et.name, ca.location_id
+`
+
+type ListCharacterAssetsRow struct {
+	CharacterAsset CharacterAsset
+	EveType        EveType
+	EveGroup       EveGroup
+	EveCategory    EveCategory
+}
+
+func (q *Queries) ListCharacterAssets(ctx context.Context, characterID int64) ([]ListCharacterAssetsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterAssets, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterAssetsRow
+	for rows.Next() {
+		var i ListCharacterAssetsRow
+		if err := rows.Scan(
+			&i.CharacterAsset.ID,
+			&i.CharacterAsset.CharacterID,
+			&i.CharacterAsset.EveTypeID,
+			&i.CharacterAsset.IsBlueprintCopy,
+			&i.CharacterAsset.IsSingleton,
+			&i.CharacterAsset.ItemID,
+			&i.CharacterAsset.LocationFlag,
+			&i.CharacterAsset.LocationID,
+			&i.CharacterAsset.LocationType,
+			&i.CharacterAsset.Name,
+			&i.CharacterAsset.Quantity,
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
 		); err != nil {
 			return nil, err
 		}

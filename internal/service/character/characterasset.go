@@ -2,6 +2,9 @@ package character
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
@@ -28,6 +31,10 @@ func (s *CharacterService) ListCharacterAssetLocations(ctx context.Context, char
 	return s.st.ListCharacterAssetLocations(ctx, characterID)
 }
 
+func (s *CharacterService) ListCharacterAssets(ctx context.Context, characterID int32) ([]*model.CharacterAsset, error) {
+	return s.st.ListCharacterAssets(ctx, characterID)
+}
+
 func (s *CharacterService) ListAllCharacterAssets(ctx context.Context) ([]*model.CharacterAsset, error) {
 	return s.st.ListAllCharacterAssets(ctx)
 }
@@ -41,7 +48,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 	if arg.Section != model.SectionAssets {
 		panic("called with wrong section")
 	}
-	return s.updateSectionIfChanged(
+	hasChanged, err := s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
 			assets, err := goesi.FetchFromESIWithPaging(
@@ -141,6 +148,13 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 			}
 			return nil
 		})
+	if err != nil {
+		return false, err
+	}
+	if err := s.updateCharacterAssetTotalValue(ctx, arg); err != nil {
+		slog.Error("Failed to update asset total value", "characterID", arg.CharacterID, "err", err)
+	}
+	return hasChanged, err
 }
 
 func (s *CharacterService) fetchCharacterAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
@@ -157,4 +171,33 @@ func (s *CharacterService) fetchCharacterAssetNamesESI(ctx context.Context, char
 		}
 	}
 	return m, nil
+}
+
+func (s *CharacterService) CharacterAssetTotalValue(characterID int32) (sql.NullFloat64, error) {
+	key := makeCharacterAssetTotalValueKey(characterID)
+	v, found, err := s.dt.GetFloat64(key)
+	if err != nil {
+		return sql.NullFloat64{}, err
+	}
+	if !found {
+		return sql.NullFloat64{}, nil
+	}
+	return storage.NewNullFloat64(v), nil
+}
+
+func (s *CharacterService) updateCharacterAssetTotalValue(ctx context.Context, arg UpdateSectionParams) error {
+	v, err := s.st.GetCharacterAssetTotalValue(ctx, arg.CharacterID)
+	if err != nil {
+		return err
+	}
+	key := makeCharacterAssetTotalValueKey(arg.CharacterID)
+	if err := s.dt.SetFloat64(key, v); err != nil {
+		return err
+	}
+	return nil
+}
+
+func makeCharacterAssetTotalValueKey(characterID int32) string {
+	key := fmt.Sprintf("character-asset-total-value-%d", characterID)
+	return key
 }

@@ -81,6 +81,20 @@ func (d *DictionaryService) GetFloat32(key string) (float32, bool, error) {
 	return anyFromBytes[float32](data)
 }
 
+// GetFloat64 returns the value for a dictionary key, when it exists.
+// Otherwise it returns it's zero value.
+func (d *DictionaryService) GetFloat64(key string) (float64, bool, error) {
+	ctx := context.Background()
+	data, ok, err := d.s.GetDictEntry(ctx, key)
+	if err != nil {
+		return 0, false, err
+	}
+	if !ok {
+		return 0, false, nil
+	}
+	return anyFromBytes[float64](data)
+}
+
 // GetString returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
 func (d *DictionaryService) GetString(key string) (string, bool, error) {
@@ -124,6 +138,19 @@ func (d *DictionaryService) SetInt(key string, value int) error {
 
 // SetFloat32 sets the value for a dictionary int entry.
 func (d *DictionaryService) SetFloat32(key string, value float32) error {
+	ctx := context.Background()
+	bb, err := bytesFromAny(value)
+	if err != nil {
+		return err
+	}
+	if err := d.s.SetDictEntry(ctx, key, bb); err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetFloat64 sets the value for a dictionary int entry.
+func (d *DictionaryService) SetFloat64(key string, value float64) error {
 	ctx := context.Background()
 	bb, err := bytesFromAny(value)
 	if err != nil {

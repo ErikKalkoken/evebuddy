@@ -45,6 +45,14 @@ func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacter
 	return nil
 }
 
+func (st *Storage) DeleteExcludedCharacterAssets(ctx context.Context, characterID int32, itemIDs []int64) error {
+	arg := queries.DeleteExcludedCharacterAssetsParams{
+		CharacterID: int64(characterID),
+		ItemIds:     itemIDs,
+	}
+	return st.q.DeleteExcludedCharacterAssets(ctx, arg)
+}
+
 func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, itemID int64) (*model.CharacterAsset, error) {
 	arg := queries.GetCharacterAssetParams{
 		CharacterID: int64(characterID),
@@ -61,12 +69,12 @@ func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, ite
 	return o, nil
 }
 
-func (st *Storage) DeleteExcludedCharacterAssets(ctx context.Context, characterID int32, itemIDs []int64) error {
-	arg := queries.DeleteExcludedCharacterAssetsParams{
-		CharacterID: int64(characterID),
-		ItemIds:     itemIDs,
+func (st *Storage) GetCharacterAssetTotalValue(ctx context.Context, characterID int32) (float64, error) {
+	v, err := st.q.GetCharacterAssetTotalValue(ctx, int64(characterID))
+	if err != nil {
+		return 0, err
 	}
-	return st.q.DeleteExcludedCharacterAssets(ctx, arg)
+	return v.Float64, nil
 }
 
 func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32) ([]int64, error) {
@@ -154,26 +162,6 @@ func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacter
 	return nil
 }
 
-func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g queries.EveGroup, c queries.EveCategory) *model.CharacterAsset {
-	if ca.CharacterID == 0 {
-		panic("missing character ID")
-	}
-	o := &model.CharacterAsset{
-		ID:              ca.ID,
-		CharacterID:     int32(ca.CharacterID),
-		EveType:         eveTypeFromDBModel(t, g, c),
-		IsBlueprintCopy: ca.IsBlueprintCopy,
-		IsSingleton:     ca.IsSingleton,
-		ItemID:          ca.ItemID,
-		LocationFlag:    ca.LocationFlag,
-		LocationID:      ca.LocationID,
-		LocationType:    ca.LocationType,
-		Name:            ca.Name,
-		Quantity:        int32(ca.Quantity),
-	}
-	return o
-}
-
 func (st *Storage) ListCharacterAssetLocations(ctx context.Context, characterID int32) ([]*model.CharacterAssetLocation, error) {
 	arg := queries.ListCharacterAssetLocationsParams{
 		CharacterID:  int64(characterID),
@@ -216,4 +204,36 @@ func (st *Storage) ListAllCharacterAssets(ctx context.Context) ([]*model.Charact
 		oo[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory)
 	}
 	return oo, nil
+}
+
+func (st *Storage) ListCharacterAssets(ctx context.Context, characterID int32) ([]*model.CharacterAsset, error) {
+	rows, err := st.q.ListCharacterAssets(ctx, int64(characterID))
+	if err != nil {
+		return nil, err
+	}
+	oo := make([]*model.CharacterAsset, len(rows))
+	for i, r := range rows {
+		oo[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory)
+	}
+	return oo, nil
+}
+
+func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g queries.EveGroup, c queries.EveCategory) *model.CharacterAsset {
+	if ca.CharacterID == 0 {
+		panic("missing character ID")
+	}
+	o := &model.CharacterAsset{
+		ID:              ca.ID,
+		CharacterID:     int32(ca.CharacterID),
+		EveType:         eveTypeFromDBModel(t, g, c),
+		IsBlueprintCopy: ca.IsBlueprintCopy,
+		IsSingleton:     ca.IsSingleton,
+		ItemID:          ca.ItemID,
+		LocationFlag:    ca.LocationFlag,
+		LocationID:      ca.LocationID,
+		LocationType:    ca.LocationType,
+		Name:            ca.Name,
+		Quantity:        int32(ca.Quantity),
+	}
+	return o
 }

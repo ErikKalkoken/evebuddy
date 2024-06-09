@@ -20,6 +20,7 @@ import (
 
 type overviewCharacter struct {
 	alliance       string
+	assetValue     sql.NullFloat64
 	birthday       time.Time
 	corporation    string
 	id             int32
@@ -76,6 +77,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 		{"Unall. SP", 80},
 		{"Training", 80},
 		{"Wallet", 80},
+		{"Assets", 80},
 		{"Location", 150},
 		{"System", 150},
 		{"Region", 150},
@@ -135,22 +137,24 @@ func (a *overviewArea) makeTable() *widget.Table {
 			case 8:
 				l.Text = humanizedNullFloat64(c.walletBalance, 1, "?")
 			case 9:
-				l.Text = entityNameOrFallback(c.location, "?")
+				l.Text = humanizedNullFloat64(c.assetValue, 1, "?")
 			case 10:
+				l.Text = entityNameOrFallback(c.location, "?")
+			case 11:
 				if c.solarSystem == nil || !c.systemSecurity.Valid {
 					l.Text = "?"
 				} else {
 					l.Text = fmt.Sprintf("%s %.1f", c.solarSystem.Name, c.systemSecurity.Float64)
 				}
-			case 11:
-				l.Text = entityNameOrFallback(c.region, "?")
 			case 12:
-				l.Text = entityNameOrFallback(c.ship, "?")
+				l.Text = entityNameOrFallback(c.region, "?")
 			case 13:
-				l.Text = humanizedRelNullTime(c.lastLoginAt, "?")
+				l.Text = entityNameOrFallback(c.ship, "?")
 			case 14:
-				l.Text = entityNameOrFallback(c.home, "?")
+				l.Text = humanizedRelNullTime(c.lastLoginAt, "?")
 			case 15:
+				l.Text = entityNameOrFallback(c.home, "?")
+			case 16:
 				l.Text = humanize.RelTime(c.birthday, time.Now(), "", "")
 			}
 			l.Refresh()
@@ -196,12 +200,12 @@ func (a *overviewArea) makeTable() *widget.Table {
 				a.ui.showLocationInfoWindow(c.location.ID)
 			}
 		}
-		if tci.Col == 12 {
+		if tci.Col == 13 {
 			if c.ship != nil {
 				a.ui.showTypeInfoWindow(c.ship.ID, a.ui.characterID())
 			}
 		}
-		if tci.Col == 15 {
+		if tci.Col == 16 {
 			if c.home != nil {
 				a.ui.showLocationInfoWindow(c.home.ID)
 			}
@@ -317,6 +321,13 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 			cc[i].unreadCount.Int64 = int64(unread)
 			cc[i].unreadCount.Valid = true
 		}
+	}
+	for i, c := range cc {
+		v, err := a.ui.sv.Characters.CharacterAssetTotalValue(c.id)
+		if err != nil {
+			return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch asset total value for character %d, %w", c.id, err)
+		}
+		cc[i].assetValue = v
 	}
 	if err := a.characters.Set(copyToUntypedSlice(cc)); err != nil {
 		return spTotal, unreadTotal, walletTotal, err

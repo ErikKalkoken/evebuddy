@@ -42,7 +42,7 @@ func TestDictionary(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can use float entries", func(t *testing.T) {
+	t.Run("can use float32 entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
@@ -53,6 +53,20 @@ func TestDictionary(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.True(t, ok)
 				assert.Equal(t, float32(1.23), v)
+			}
+		}
+	})
+	t.Run("can use float64 entries", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		err := s.SetFloat64("alpha", 1.23)
+		// then
+		if assert.NoError(t, err) {
+			v, ok, err := s.GetFloat64("alpha")
+			if assert.NoError(t, err) {
+				assert.True(t, ok)
+				assert.Equal(t, float64(1.23), v)
 			}
 		}
 	})
