@@ -29,9 +29,7 @@ func (s *CharacterService) sectionUpdatedAt(ctx context.Context, arg UpdateSecti
 // SectionWasUpdated reports wether the section has been updated at all.
 func (s *CharacterService) SectionWasUpdated(ctx context.Context, characterID int32, section model.CharacterSection) (bool, error) {
 	t, err := s.sectionUpdatedAt(ctx, UpdateSectionParams{CharacterID: characterID, Section: section})
-	if errors.Is(err, storage.ErrNotFound) {
-		return false, nil
-	} else if err != nil {
+	if err != nil {
 		return false, err
 	}
 	return !t.IsZero(), nil
@@ -43,9 +41,9 @@ type UpdateSectionParams struct {
 	ForceUpdate bool
 }
 
-// UpdateSection updates a section from ESI if has expired and changed
+// UpdateSectionIfNeeded updates a section from ESI if has expired and changed
 // and reports back if it has changed
-func (s *CharacterService) UpdateSection(ctx context.Context, arg UpdateSectionParams) (bool, error) {
+func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg UpdateSectionParams) (bool, error) {
 	if arg.CharacterID == 0 {
 		panic("Invalid character ID")
 	}

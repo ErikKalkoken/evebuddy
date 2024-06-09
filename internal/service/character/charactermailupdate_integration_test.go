@@ -137,17 +137,17 @@ func TestUpdateMail(t *testing.T) {
 				return resp, nil
 			})
 		// when
-		_, err := s.UpdateSection(ctx, character.UpdateSectionParams{
+		_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
 			CharacterID: c1.ID,
 			Section:     model.SectionMailLabels,
 		})
 		if assert.NoError(t, err) {
-			_, err := s.UpdateSection(ctx, character.UpdateSectionParams{
+			_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
 				CharacterID: c1.ID,
 				Section:     model.SectionMailLists,
 			})
 			if assert.NoError(t, err) {
-				_, err := s.UpdateSection(ctx, character.UpdateSectionParams{
+				_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
 					CharacterID: c1.ID,
 					Section:     model.SectionMails,
 				})
@@ -282,7 +282,7 @@ func TestUpdateMail(t *testing.T) {
 			})
 
 		// when
-		_, err := s.UpdateSection(ctx, character.UpdateSectionParams{
+		_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
 			CharacterID: c.ID,
 			Section:     model.SectionMails,
 		})

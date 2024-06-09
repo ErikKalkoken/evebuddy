@@ -89,7 +89,7 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID 
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
 func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s model.CharacterSection, forceUpdate bool) {
-	hasChanged, err := u.sv.Characters.UpdateSection(
+	hasChanged, err := u.sv.Characters.UpdateSectionIfNeeded(
 		ctx, character.UpdateSectionParams{
 			CharacterID: characterID,
 			Section:     s,

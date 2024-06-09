@@ -69,7 +69,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
 		// when
-		changed, err := s.UpdateSection(
+		changed, err := s.UpdateSectionIfNeeded(
 			ctx, character.UpdateSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.NoError(t, err) {
@@ -99,7 +99,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		changed, err := s.UpdateSection(
+		changed, err := s.UpdateSectionIfNeeded(
 			ctx, character.UpdateSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.NoError(t, err) {
@@ -131,7 +131,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
 		// when
-		changed, err := s.UpdateSection(
+		changed, err := s.UpdateSectionIfNeeded(
 			ctx, character.UpdateSectionParams{
 				CharacterID: c.ID,
 				Section:     section,
@@ -158,7 +158,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(500, map[string]string{"error": "dummy error"}))
 		// when
-		_, err := s.UpdateSection(
+		_, err := s.UpdateSectionIfNeeded(
 			ctx, character.UpdateSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.Error(t, err) {
@@ -185,7 +185,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
 		// when
-		_, err := s.UpdateSection(
+		_, err := s.UpdateSectionIfNeeded(
 			ctx, character.UpdateSectionParams{
 				CharacterID: c.ID,
 				Section:     section,
@@ -219,7 +219,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
 			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
-		_, err := s.UpdateSection(
+		_, err := s.UpdateSectionIfNeeded(
 			ctx, character.UpdateSectionParams{
 				CharacterID: c.ID,
 				Section:     section,
