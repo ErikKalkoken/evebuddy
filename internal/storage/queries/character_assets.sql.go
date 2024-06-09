@@ -96,7 +96,7 @@ FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
-LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id AND ca.is_blueprint_copy IS FALSE
 WHERE character_id = ?
 AND item_id = ?
 `
@@ -180,8 +180,7 @@ FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
-LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
-ORDER BY et.name, ca.location_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id AND ca.is_blueprint_copy IS FALSE
 `
 
 type ListAllCharacterAssetsRow struct {
@@ -352,7 +351,7 @@ FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
-LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id AND ca.is_blueprint_copy IS FALSE
 WHERE character_id = ?
 ORDER BY et.name, ca.location_id
 `
@@ -433,7 +432,7 @@ FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
-LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id AND ca.is_blueprint_copy IS FALSE
 WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
@@ -529,7 +528,7 @@ FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
-LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id AND ca.is_blueprint_copy IS FALSE
 WHERE character_id = ?
 AND location_id = ?
 ORDER BY et.id
@@ -616,7 +615,7 @@ FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
-LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id AND ca.is_blueprint_copy IS FALSE
 WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?

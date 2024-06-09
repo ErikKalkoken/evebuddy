@@ -1,15 +1,18 @@
 package ui
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
@@ -17,32 +20,61 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
+type assetSortDir uint
+
+const (
+	sortOff assetSortDir = iota
+	sortAsc
+	sortDesc
+)
+
 // assetSearchArea is the UI area that shows the skillqueue
 type assetSearchArea struct {
-	assets          []*assetSearchRow
-	assetTree       map[int64]character.AssetNode
-	assetLocations  map[int64]int64
-	assetTable      *widget.Table
-	assetData       binding.UntypedList
-	characterNames  map[int32]string
-	content         *fyne.Container
-	locations       map[int64]*model.EveLocation
-	found           *widget.Label
-	searchCharacter string
-	searchGroup     string
-	searchLocation  string
-	searchType      string
-	searchBoxes     []*widget.Entry
-	total           *widget.Label
-	ui              *ui
+	assets         []*assetSearchRow
+	assetTree      map[int64]character.AssetNode
+	assetLocations map[int64]int64
+	assetTable     *widget.Table
+	assetData      binding.UntypedList
+	colSort        []assetSortDir
+	characterNames map[int32]string
+	content        *fyne.Container
+	iconSortAsc    fyne.Resource
+	iconSortDesc   fyne.Resource
+	iconSortOff    fyne.Resource
+	locations      map[int64]*model.EveLocation
+	found          *widget.Label
+	colSearch      []string
+	searchBoxes    []*widget.Entry
+	total          *widget.Label
+	ui             *ui
+}
+
+type assetSearchRow struct {
+	characterID     int32
+	characterName   string
+	groupID         int32
+	groupName       string
+	itemID          int64
+	locationID      int64
+	locationName    string
+	name            string
+	quantity        int
+	quantityDisplay string
+	price           float64
+	priceDisplay    string
+	typeID          int32
+	typeName        string
 }
 
 func (u *ui) newAssetSearchArea() *assetSearchArea {
 	a := &assetSearchArea{
-		ui:        u,
-		assetData: binding.NewUntypedList(),
-		total:     widget.NewLabel(""),
-		found:     widget.NewLabel(""),
+		ui:           u,
+		assetData:    binding.NewUntypedList(),
+		iconSortAsc:  theme.MoveUpIcon(),
+		iconSortDesc: theme.MoveDownIcon(),
+		iconSortOff:  theme.NewThemedResource(resourceBlankSvg),
+		total:        widget.NewLabel(""),
+		found:        widget.NewLabel(""),
 	}
 	a.assetData.AddListener(binding.NewDataListener(func() {
 		t := a.assetData.Length()
@@ -56,27 +88,12 @@ func (u *ui) newAssetSearchArea() *assetSearchArea {
 	a.total.TextStyle.Bold = true
 	a.found.Hide()
 	a.assetTable = a.makeAssetsTable()
-	b := widget.NewButton("Reset Search", func() {
+	b := widget.NewButton("Reset", func() {
 		a.resetSearch()
 	})
 	topBox := container.NewVBox(container.NewHBox(a.total, a.found, layout.NewSpacer(), b), widget.NewSeparator())
 	a.content = container.NewBorder(topBox, nil, nil, nil, a.assetTable)
 	return a
-}
-
-type assetSearchRow struct {
-	characterID   int32
-	characterName string
-	groupID       int32
-	groupName     string
-	itemID        int64
-	locationID    int64
-	locationName  string
-	name          string
-	quantity      string
-	price         string
-	typeID        int32
-	typeName      string
 }
 
 func (a *assetSearchArea) newAssetSearchRow(ca *model.CharacterAsset) *assetSearchRow {
@@ -87,13 +104,16 @@ func (a *assetSearchArea) newAssetSearchRow(ca *model.CharacterAsset) *assetSear
 		groupName:     ca.EveType.Group.Name,
 		itemID:        ca.ItemID,
 		name:          ca.DisplayName2(),
+		price:         ca.Price.Float64,
 		typeID:        ca.EveType.ID,
 		typeName:      ca.EveType.Name,
 	}
 	if ca.IsSingleton {
-		r.quantity = ""
+		r.quantityDisplay = ""
+		r.quantity = 1
 	} else {
-		r.quantity = humanize.Comma(int64(ca.Quantity))
+		r.quantityDisplay = humanize.Comma(int64(ca.Quantity))
+		r.quantity = int(ca.Quantity)
 	}
 	locationID, ok := a.assetLocations[ca.ItemID]
 	var t string
@@ -116,7 +136,7 @@ func (a *assetSearchArea) newAssetSearchRow(ca *model.CharacterAsset) *assetSear
 		t := ca.Price.Float64 * float64(ca.Quantity)
 		price = ihumanize.Number(t, 1)
 	}
-	r.price = price
+	r.priceDisplay = price
 	return r
 }
 
@@ -131,6 +151,11 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 		{"Location", 350},
 		{"Character", 200},
 		{"Price", 100},
+	}
+	a.colSearch = make([]string, len(headers))
+	a.colSort = make([]assetSortDir, len(headers))
+	for i := range headers {
+		a.colSort[i] = sortOff
 	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
@@ -155,7 +180,7 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 			case 0:
 				t = r.name
 			case 1:
-				t = r.quantity
+				t = r.quantityDisplay
 				ta = fyne.TextAlignTrailing
 			case 2:
 				t = r.groupName
@@ -164,7 +189,7 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 			case 4:
 				t = r.characterName
 			case 5:
-				t = r.price
+				t = r.priceDisplay
 			}
 			label.Text = t
 			label.Alignment = ta
@@ -175,62 +200,42 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 	t.CreateHeader = func() fyne.CanvasObject {
 		sb := widget.NewEntry()
 		a.searchBoxes = append(a.searchBoxes, sb)
-		return container.NewBorder(nil, nil, widget.NewLabel("Template"), nil, sb)
+		b := widget.NewButtonWithIcon("", a.iconSortOff, func() {})
+		return container.NewBorder(nil, nil, widget.NewLabel("Template"), b, sb)
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		s := headers[tci.Col]
 		row := co.(*fyne.Container)
-		label := row.Objects[1].(*widget.Label)
 		sb := row.Objects[0].(*widget.Entry)
+		label := row.Objects[1].(*widget.Label)
 		switch tci.Col {
-		case 0:
+		case 0, 2, 3, 4:
 			label.Hide()
 			sb.SetPlaceHolder(s.text)
 			sb.OnChanged = func(search string) {
 				if len(search) == 1 {
 					return
 				}
-				a.searchType = strings.ToLower(search)
-				a.filterData()
-			}
-			sb.Show()
-		case 2:
-			label.Hide()
-			sb.SetPlaceHolder(s.text)
-			sb.OnChanged = func(search string) {
-				if len(search) == 1 {
-					return
-				}
-				a.searchGroup = strings.ToLower(search)
-				a.filterData()
-			}
-			sb.Show()
-		case 3:
-			label.Hide()
-			sb.SetPlaceHolder(s.text)
-			sb.OnChanged = func(search string) {
-				if len(search) == 1 {
-					return
-				}
-				a.searchLocation = strings.ToLower(search)
-				a.filterData()
-			}
-			sb.Show()
-		case 4:
-			label.Hide()
-			sb.SetPlaceHolder(s.text)
-			sb.OnChanged = func(search string) {
-				if len(search) == 1 {
-					return
-				}
-				a.searchCharacter = strings.ToLower(search)
-				a.filterData()
+				a.colSearch[tci.Col] = strings.ToLower(search)
+				a.processData(-1)
 			}
 			sb.Show()
 		default:
 			label.SetText(s.text)
 			label.Show()
 			sb.Hide()
+		}
+		button := row.Objects[2].(*widget.Button)
+		switch a.colSort[tci.Col] {
+		case sortOff:
+			button.SetIcon(a.iconSortOff)
+		case sortAsc:
+			button.SetIcon(a.iconSortAsc)
+		case sortDesc:
+			button.SetIcon(a.iconSortDesc)
+		}
+		button.OnTapped = func() {
+			a.processData(tci.Col)
 		}
 	}
 	for i, h := range headers {
@@ -253,25 +258,73 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 	return t
 }
 
-func (a *assetSearchArea) filterData() {
+func (a *assetSearchArea) processData(sortCol int) {
+	var order assetSortDir
+	if sortCol >= 0 {
+		order = a.colSort[sortCol]
+		order++
+		if order > sortDesc {
+			order = sortOff
+		}
+		for i := range a.colSort {
+			a.colSort[i] = sortOff
+		}
+		a.colSort[sortCol] = order
+	} else {
+		for i := range a.colSort {
+			if a.colSort[i] != sortOff {
+				order = a.colSort[i]
+				sortCol = i
+				break
+			}
+		}
+	}
 	rows := make([]*assetSearchRow, 0)
 	for _, r := range a.assets {
 		matches := true
-		if a.searchType != "" {
-			matches = matches && strings.Contains(strings.ToLower(r.typeName), a.searchType)
-		}
-		if a.searchGroup != "" {
-			matches = matches && strings.Contains(strings.ToLower(r.groupName), a.searchGroup)
-		}
-		if a.searchLocation != "" {
-			matches = matches && strings.Contains(strings.ToLower(r.locationName), a.searchLocation)
-		}
-		if a.searchCharacter != "" {
-			matches = matches && strings.Contains(strings.ToLower(r.characterName), a.searchCharacter)
+		for i, search := range a.colSearch {
+			var cell string
+			switch i {
+			case 0:
+				cell = r.typeName
+			case 2:
+				cell = r.groupName
+			case 3:
+				cell = r.locationName
+			case 4:
+				cell = r.characterName
+			}
+			if search != "" {
+				matches = matches && strings.Contains(strings.ToLower(cell), search)
+			}
 		}
 		if matches {
 			rows = append(rows, r)
 		}
+	}
+	if sortCol >= 0 && order != sortOff {
+		slices.SortFunc(rows, func(a, b *assetSearchRow) int {
+			var x int
+			switch sortCol {
+			case 0:
+				x = cmp.Compare(a.name, b.name)
+			case 1:
+				x = cmp.Compare(a.quantity, b.quantity)
+			case 2:
+				x = cmp.Compare(a.groupName, b.groupName)
+			case 3:
+				x = cmp.Compare(a.locationName, b.locationName)
+			case 4:
+				x = cmp.Compare(a.characterName, b.characterName)
+			case 5:
+				x = cmp.Compare(a.price, b.price)
+			}
+			if order == sortAsc {
+				return x
+			} else {
+				return -1 * x
+			}
+		})
 	}
 	a.assetData.Set(copyToUntypedSlice(rows))
 	a.assetTable.Refresh()
@@ -279,15 +332,19 @@ func (a *assetSearchArea) filterData() {
 }
 
 func (a *assetSearchArea) resetSearch() {
+	for i := range a.colSort {
+		a.colSort[i] = sortOff
+	}
 	for _, w := range a.searchBoxes {
 		w.SetText("")
 	}
+	a.processData(-1)
 }
 
 func (a *assetSearchArea) refresh() {
 	var t string
 	var i widget.Importance
-	if err := a.updateData(); err != nil {
+	if err := a.loadData(); err != nil {
 		slog.Error("Failed to refresh asset search data", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
@@ -300,11 +357,10 @@ func (a *assetSearchArea) refresh() {
 	a.assetTable.Refresh()
 }
 
-func (a *assetSearchArea) updateData() error {
+func (a *assetSearchArea) loadData() error {
 	if !a.ui.hasCharacter() {
 		oo := make([]*model.CharacterAsset, 0)
 		a.assetData.Set(copyToUntypedSlice(oo))
-		// a.searchBox.SetText("")
 		return nil
 	}
 	ctx := context.Background()

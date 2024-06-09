@@ -27,7 +27,7 @@ func TestCharacterAsset(t *testing.T) {
 		arg := storage.CreateCharacterAssetParams{
 			CharacterID:     c.ID,
 			EveTypeID:       eveType.ID,
-			IsBlueprintCopy: true,
+			IsBlueprintCopy: false,
 			IsSingleton:     true,
 			ItemID:          42,
 			LocationFlag:    "Hangar",
@@ -44,7 +44,7 @@ func TestCharacterAsset(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, eveType.ID, x.EveType.ID)
 				assert.Equal(t, eveType.Name, x.EveType.Name)
-				assert.True(t, x.IsBlueprintCopy)
+				assert.False(t, x.IsBlueprintCopy)
 				assert.True(t, x.IsSingleton)
 				assert.Equal(t, int64(42), x.ItemID)
 				assert.Equal(t, "Hangar", x.LocationFlag)

@@ -26,10 +26,9 @@ func (u *ui) startUpdateTickerEveUniverse() {
 }
 
 func (u *ui) updateEveUniverseAndRefreshIfNeeded(forceUpdate bool) {
-	ctx := context.Background()
 	for _, s := range model.EveUniverseSections {
 		go func(s model.EveUniverseSection) {
-			u.updateEveUniverseSectionAndRefreshIfNeeded(ctx, s, forceUpdate)
+			u.updateEveUniverseSectionAndRefreshIfNeeded(context.TODO(), s, forceUpdate)
 		}(s)
 	}
 }
@@ -56,16 +55,15 @@ func (u *ui) updateEveUniverseSectionAndRefreshIfNeeded(ctx context.Context, sec
 func (u *ui) startUpdateTickerCharacters() {
 	ticker := time.NewTicker(charactersUpdateTicker)
 	go func() {
-		ctx := context.Background()
 		for {
 			func() {
-				cc, err := u.sv.Characters.ListCharactersShort(ctx)
+				cc, err := u.sv.Characters.ListCharactersShort(context.TODO())
 				if err != nil {
 					slog.Error("Failed to fetch list of characters", "err", err)
 					return
 				}
 				for _, c := range cc {
-					u.updateCharacterAndRefreshIfNeeded(ctx, c.ID, false)
+					u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 				}
 			}()
 			<-ticker.C
@@ -104,6 +102,8 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 	case model.SectionAssets:
 		if isCurrent && hasChanged {
 			u.assetsArea.redraw()
+		}
+		if hasChanged {
 			u.assetSearchArea.refresh()
 		}
 	case model.SectionAttributes:
