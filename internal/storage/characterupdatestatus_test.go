@@ -101,7 +101,10 @@ func TestSetCharacterUpdateStatusError(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
-		err := r.SetCharacterUpdateStatusError(ctx, c.ID, model.SectionImplants, "error")
+		arg := storage.CharacterUpdateStatusOptionals{
+			Error: storage.NewNullString("error"),
+		}
+		err := r.UpdateOrCreateCharacterUpdateStatus2(ctx, c.ID, model.SectionImplants, arg)
 		// then
 		if assert.NoError(t, err) {
 			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, model.SectionImplants)
@@ -121,7 +124,10 @@ func TestSetCharacterUpdateStatusError(t *testing.T) {
 			Section:     model.SectionImplants,
 		})
 		// when
-		err := r.SetCharacterUpdateStatusError(ctx, c.ID, x.Section, "error")
+		arg := storage.CharacterUpdateStatusOptionals{
+			Error: storage.NewNullString("error"),
+		}
+		err := r.UpdateOrCreateCharacterUpdateStatus2(ctx, c.ID, x.Section, arg)
 		// then
 		if assert.NoError(t, err) {
 			l, err := r.GetCharacterUpdateStatus(ctx, c.ID, x.Section)
@@ -129,6 +135,7 @@ func TestSetCharacterUpdateStatusError(t *testing.T) {
 				assert.Equal(t, x.ContentHash, l.ContentHash)
 				assert.Equal(t, "error", l.ErrorMessage)
 				assert.Equal(t, x.CompletedAt.UTC(), l.CompletedAt.UTC())
+				assert.Equal(t, x.StartedAt.UTC(), l.StartedAt.UTC())
 			}
 		}
 	})

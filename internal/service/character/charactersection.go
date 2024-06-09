@@ -99,7 +99,10 @@ func (s *CharacterService) UpdateSection(ctx context.Context, arg UpdateSectionP
 	if err != nil {
 		// TODO: Move this part into updateCharacterSectionIfChanged()
 		errorMessage := humanize.Error(err)
-		err2 := s.st.SetCharacterUpdateStatusError(ctx, arg.CharacterID, arg.Section, errorMessage)
+		opt := storage.CharacterUpdateStatusOptionals{
+			Error: storage.NewNullString(errorMessage),
+		}
+		err2 := s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt)
 		if err2 != nil {
 			slog.Error("failed to record error for failed section update: %s", err2)
 		}
