@@ -67,12 +67,12 @@ func TestCharacter(t *testing.T) {
 		login := time.Now()
 		arg := storage.UpdateOrCreateCharacterParams{
 			ID:            character.ID,
-			HomeID:        sql.NullInt64{Int64: home.ID, Valid: true},
-			LastLoginAt:   sql.NullTime{Time: login, Valid: true},
-			LocationID:    sql.NullInt64{Int64: location.ID, Valid: true},
-			ShipID:        sql.NullInt32{Int32: ship.ID, Valid: true},
-			TotalSP:       sql.NullInt64{Int64: 123, Valid: true},
-			WalletBalance: sql.NullFloat64{Float64: 1.2, Valid: true},
+			HomeID:        storage.NewNullInt64(home.ID),
+			LastLoginAt:   storage.NewNullTime(login),
+			LocationID:    storage.NewNullInt64(location.ID),
+			ShipID:        storage.NewNullInt32(ship.ID),
+			TotalSP:       storage.NewNullInt64(123),
+			WalletBalance: storage.NewNullFloat64(1.2),
 		}
 		// when
 		err := r.UpdateOrCreateCharacter(ctx, arg)

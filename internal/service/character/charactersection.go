@@ -99,9 +99,7 @@ func (s *CharacterService) UpdateSection(ctx context.Context, arg UpdateSectionP
 	if err != nil {
 		// TODO: Move this part into updateCharacterSectionIfChanged()
 		errorMessage := humanize.Error(err)
-		opt := storage.CharacterUpdateStatusOptionals{
-			Error: storage.NewNullString(errorMessage),
-		}
+		opt := storage.CharacterUpdateStatusOptionals{Error: storage.NewNullString(errorMessage)}
 		err2 := s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt)
 		if err2 != nil {
 			slog.Error("failed to record error for failed section update: %s", err2)
@@ -135,6 +133,13 @@ func (s *CharacterService) updateSectionIfChanged(
 	fetch func(ctx context.Context, characterID int32) (any, error),
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {
+	startedAt := time.Now()
+	opt := storage.CharacterUpdateStatusOptionals{
+		StartedAt: storage.NewNullTime(startedAt),
+	}
+	if err := s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt); err != nil {
+		return false, err
+	}
 	token, err := s.getValidCharacterToken(ctx, arg.CharacterID)
 	if err != nil {
 		return false, err
@@ -167,16 +172,14 @@ func (s *CharacterService) updateSectionIfChanged(
 		}
 	}
 
-	// record update
+	// record completion
 	completedAt := time.Now()
-	arg2 := storage.CharacterUpdateStatusParams{
-		CharacterID: arg.CharacterID,
-		Section:     arg.Section,
-		Error:       "",
-		ContentHash: hash,
-		CompletedAt: completedAt,
+	opt = storage.CharacterUpdateStatusOptionals{
+		Error:       storage.NewNullString(""),
+		ContentHash: storage.NewNullString(hash),
+		CompletedAt: storage.NewNullTime(completedAt),
 	}
-	if err := s.st.UpdateOrCreateCharacterUpdateStatus(ctx, arg2); err != nil {
+	if err := s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt); err != nil {
 		return false, err
 	}
 	s.cs.SetStatus(arg.CharacterID, arg.Section, "", completedAt)
