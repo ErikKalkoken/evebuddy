@@ -356,10 +356,12 @@ CREATE TABLE character_token_scopes (
 CREATE TABLE character_update_status (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     character_id INTEGER NOT NULL,
+    section_id TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL,
     content_hash TEXT NOT NULL,
     completed_at DATETIME,
     error TEXT NOT NULL,
-    section_id TEXT NOT NULL,
     started_at DATETIME,
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     UNIQUE (character_id, section_id)

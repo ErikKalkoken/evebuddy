@@ -191,18 +191,33 @@ func (a *statusWindow) makeSectionsTable() *widget.GridWrap {
 	l := widget.NewGridWrapWithData(
 		a.sectionsData,
 		func() fyne.CanvasObject {
-			return container.NewHBox(
-				widget.NewLabel("Section name long"),
-				layout.NewSpacer(),
-				widget.NewLabel("Status XXXX"),
-			)
+			pb := widget.NewProgressBarInfinite()
+			pb.Stop()
+			return container.NewStack(
+				pb,
+				container.NewHBox(
+					widget.NewLabel("Section name long"),
+					layout.NewSpacer(),
+					widget.NewLabel("Status XXXX"),
+				))
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			cs, err := convertDataItem[model.CharacterStatus](di)
 			if err != nil {
 				panic(err)
 			}
-			row := co.(*fyne.Container)
+			c := co.(*fyne.Container)
+
+			pb := c.Objects[0].(*widget.ProgressBarInfinite)
+			if cs.IsRunning() {
+				pb.Start()
+				pb.Show()
+			} else {
+				pb.Stop()
+				pb.Hide()
+			}
+
+			row := c.Objects[1].(*fyne.Container)
 			name := row.Objects[0].(*widget.Label)
 			status := row.Objects[2].(*widget.Label)
 			name.SetText(cs.Section.DisplayName())
@@ -260,7 +275,7 @@ func (a *statusWindow) setDetails() {
 		d.characterName = cs.CharacterName
 		d.sectionName = cs.Section.DisplayName()
 		d.completedAt = humanizeTime(cs.CompletedAt, "?")
-		d.startedAt = humanizeTime(cs.StartedAt, "?")
+		d.startedAt = humanizeTime(cs.StartedAt, "-")
 		now := time.Now()
 		d.timeout = humanize.RelTime(now.Add(cs.Section.Timeout()), now, "", "")
 	}

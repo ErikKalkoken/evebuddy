@@ -144,10 +144,12 @@ type CharacterTokenScope struct {
 type CharacterUpdateStatus struct {
 	ID          int64
 	CharacterID int64
+	SectionID   string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 	ContentHash string
 	CompletedAt sql.NullTime
 	Error       string
-	SectionID   string
 	StartedAt   sql.NullTime
 }
 

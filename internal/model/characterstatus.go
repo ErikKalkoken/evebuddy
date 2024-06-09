@@ -11,6 +11,7 @@ type CharacterStatus struct {
 	CompletedAt   time.Time
 	Section       CharacterSection
 	StartedAt     time.Time
+	UpdateAt      time.Time
 }
 
 func (cs CharacterStatus) IsOK() bool {
@@ -30,4 +31,8 @@ func (cs CharacterStatus) IsCurrent() bool {
 
 func (cs CharacterStatus) IsMissing() bool {
 	return cs.CompletedAt.IsZero()
+}
+
+func (cs CharacterStatus) IsRunning() bool {
+	return !cs.StartedAt.IsZero()
 }

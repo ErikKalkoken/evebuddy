@@ -8,10 +8,11 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const getCharacterUpdateStatus = `-- name: GetCharacterUpdateStatus :one
-SELECT id, character_id, content_hash, completed_at, error, section_id, started_at
+SELECT id, character_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
 FROM character_update_status
 WHERE character_id = ?
 AND section_id = ?
@@ -28,17 +29,19 @@ func (q *Queries) GetCharacterUpdateStatus(ctx context.Context, arg GetCharacter
 	err := row.Scan(
 		&i.ID,
 		&i.CharacterID,
+		&i.SectionID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 		&i.ContentHash,
 		&i.CompletedAt,
 		&i.Error,
-		&i.SectionID,
 		&i.StartedAt,
 	)
 	return i, err
 }
 
 const listCharacterUpdateStatus = `-- name: ListCharacterUpdateStatus :many
-SELECT id, character_id, content_hash, completed_at, error, section_id, started_at
+SELECT id, character_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
 FROM character_update_status
 WHERE character_id = ?
 `
@@ -55,10 +58,12 @@ func (q *Queries) ListCharacterUpdateStatus(ctx context.Context, characterID int
 		if err := rows.Scan(
 			&i.ID,
 			&i.CharacterID,
+			&i.SectionID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 			&i.ContentHash,
 			&i.CompletedAt,
 			&i.Error,
-			&i.SectionID,
 			&i.StartedAt,
 		); err != nil {
 			return nil, err
@@ -81,20 +86,22 @@ INSERT INTO character_update_status (
     completed_at,
     content_hash,
     error,
-    started_at
+    started_at,
+    updated_at
 )
 VALUES (
-    ?1, ?2, ?3, ?4, ?5, ?6
+    ?1, ?2, ?3, ?4, ?5, ?6, ?7
 )
 ON CONFLICT(character_id, section_id) DO
 UPDATE SET
     completed_at = ?3,
     content_hash = ?4,
     error = ?5,
-    started_at = ?6
+    started_at = ?6,
+    updated_at = ?7
 WHERE character_id = ?1
 AND section_id = ?2
-RETURNING id, character_id, content_hash, completed_at, error, section_id, started_at
+RETURNING id, character_id, section_id, created_at, updated_at, content_hash, completed_at, error, started_at
 `
 
 type UpdateOrCreateCharacterUpdateStatusParams struct {
@@ -104,6 +111,7 @@ type UpdateOrCreateCharacterUpdateStatusParams struct {
 	ContentHash string
 	Error       string
 	StartedAt   sql.NullTime
+	UpdatedAt   time.Time
 }
 
 func (q *Queries) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg UpdateOrCreateCharacterUpdateStatusParams) (CharacterUpdateStatus, error) {
@@ -114,15 +122,18 @@ func (q *Queries) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg U
 		arg.ContentHash,
 		arg.Error,
 		arg.StartedAt,
+		arg.UpdatedAt,
 	)
 	var i CharacterUpdateStatus
 	err := row.Scan(
 		&i.ID,
 		&i.CharacterID,
+		&i.SectionID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 		&i.ContentHash,
 		&i.CompletedAt,
 		&i.Error,
-		&i.SectionID,
 		&i.StartedAt,
 	)
 	return i, err

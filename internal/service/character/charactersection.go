@@ -2,6 +2,7 @@ package character
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -99,7 +100,8 @@ func (s *CharacterService) UpdateSection(ctx context.Context, arg UpdateSectionP
 	if err != nil {
 		// TODO: Move this part into updateCharacterSectionIfChanged()
 		errorMessage := humanize.Error(err)
-		opt := storage.CharacterUpdateStatusOptionals{Error: storage.NewNullString(errorMessage)}
+		startedAt := sql.NullTime{}
+		opt := storage.CharacterUpdateStatusOptionals{Error: &errorMessage, StartedAt: &startedAt}
 		o, err2 := s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt)
 		if err2 != nil {
 			slog.Error("failed to record error for failed section update: %s", err2)
@@ -133,9 +135,9 @@ func (s *CharacterService) updateSectionIfChanged(
 	fetch func(ctx context.Context, characterID int32) (any, error),
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {
-	startedAt := time.Now()
+	startedAt := storage.NewNullTime(time.Now())
 	opt := storage.CharacterUpdateStatusOptionals{
-		StartedAt: storage.NewNullTime(startedAt),
+		StartedAt: &startedAt,
 	}
 	o, err := s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt)
 	if err != nil {
@@ -174,12 +176,15 @@ func (s *CharacterService) updateSectionIfChanged(
 		}
 	}
 
-	// record completion
-	completedAt := time.Now()
+	// record successful completion
+	completedAt := storage.NewNullTime(time.Now())
+	errorMessage := ""
+	startedAt2 := sql.NullTime{}
 	opt = storage.CharacterUpdateStatusOptionals{
-		Error:       storage.NewNullString(""),
-		ContentHash: storage.NewNullString(hash),
-		CompletedAt: storage.NewNullTime(completedAt),
+		Error:       &errorMessage,
+		ContentHash: &hash,
+		CompletedAt: &completedAt,
+		StartedAt:   &startedAt2,
 	}
 	o, err = s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt)
 	if err != nil {

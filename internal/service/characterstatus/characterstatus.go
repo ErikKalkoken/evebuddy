@@ -26,9 +26,10 @@ type cacheKey struct {
 }
 
 type cacheValue struct {
-	ErrorMessage string
 	CompletedAt  time.Time
+	ErrorMessage string
 	StartedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // CharacterStatusService provides cached access to the current update status
@@ -78,6 +79,7 @@ func (sc *CharacterStatusService) Get(characterID int32, section model.Character
 		CompletedAt:   v.CompletedAt,
 		ErrorMessage:  v.ErrorMessage,
 		StartedAt:     v.StartedAt,
+		UpdateAt:      v.UpdatedAt,
 	}
 }
 
@@ -126,8 +128,16 @@ func (sc *CharacterStatusService) ListStatus(characterID int32) []model.Characte
 }
 
 func (sc *CharacterStatusService) Set(o *model.CharacterUpdateStatus) {
-	k := cacheKey{characterID: o.CharacterID, section: o.Section}
-	v := cacheValue{ErrorMessage: o.ErrorMessage, CompletedAt: o.CompletedAt, StartedAt: o.StartedAt}
+	k := cacheKey{
+		characterID: o.CharacterID,
+		section:     o.Section,
+	}
+	v := cacheValue{
+		ErrorMessage: o.ErrorMessage,
+		CompletedAt:  o.CompletedAt,
+		StartedAt:    o.StartedAt,
+		UpdatedAt:    o.UpdatedAt,
+	}
 	sc.cache.Set(k, v, 0)
 }
 

@@ -50,13 +50,13 @@ func (st *Storage) ListCharacterUpdateStatus(ctx context.Context, characterID in
 }
 
 type CharacterUpdateStatusOptionals struct {
-	CompletedAt sql.NullTime
-	ContentHash sql.NullString
-	Error       sql.NullString
-	StartedAt   sql.NullTime
+	CompletedAt *sql.NullTime
+	ContentHash *string
+	Error       *string
+	StartedAt   *sql.NullTime
 }
 
-func (st *Storage) UpdateOrCreateCharacterUpdateStatus2(ctx context.Context, characterID int32, section model.CharacterSection, arg CharacterUpdateStatusOptionals) (*model.CharacterUpdateStatus, error) {
+func (st *Storage) UpdateOrCreateCharacterUpdateStatus2(ctx context.Context, characterID int32, section model.CharacterSection, optionals CharacterUpdateStatusOptionals) (*model.CharacterUpdateStatus, error) {
 	if characterID == 0 || section == "" {
 		panic("Invalid params")
 	}
@@ -88,17 +88,17 @@ func (st *Storage) UpdateOrCreateCharacterUpdateStatus2(ctx context.Context, cha
 			StartedAt:   old.StartedAt,
 		}
 	}
-	if arg.CompletedAt.Valid {
-		arg2.CompletedAt = arg.CompletedAt
+	if optionals.CompletedAt != nil {
+		arg2.CompletedAt = *optionals.CompletedAt
 	}
-	if arg.ContentHash.Valid {
-		arg2.ContentHash = arg.ContentHash.String
+	if optionals.ContentHash != nil {
+		arg2.ContentHash = *optionals.ContentHash
 	}
-	if arg.Error.Valid {
-		arg2.Error = arg.Error.String
+	if optionals.Error != nil {
+		arg2.Error = *optionals.Error
 	}
-	if arg.StartedAt.Valid {
-		arg2.StartedAt = arg.StartedAt
+	if optionals.StartedAt != nil {
+		arg2.StartedAt = *optionals.StartedAt
 	}
 	o, err := qtx.UpdateOrCreateCharacterUpdateStatus(ctx, arg2)
 	if err != nil {
@@ -125,6 +125,7 @@ func characterUpdateStatusDBModelFromParams(arg CharacterUpdateStatusParams) que
 		ContentHash: arg.ContentHash,
 		Error:       arg.Error,
 		SectionID:   string(arg.Section),
+		UpdatedAt:   time.Now(),
 	}
 	if !arg.CompletedAt.IsZero() {
 		arg2.CompletedAt = sql.NullTime{Time: arg.CompletedAt, Valid: true}
@@ -142,6 +143,7 @@ func characterUpdateStatusFromDBModel(o queries.CharacterUpdateStatus) *model.Ch
 		ErrorMessage: o.Error,
 		Section:      model.CharacterSection(o.SectionID),
 		ContentHash:  o.ContentHash,
+		UpdatedAt:    o.UpdatedAt,
 	}
 	if o.CompletedAt.Valid {
 		x.CompletedAt = o.CompletedAt.Time

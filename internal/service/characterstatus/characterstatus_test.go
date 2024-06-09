@@ -21,8 +21,9 @@ func TestCharacterUpdateStatusCache(t *testing.T) {
 			CharacterID:  characterID,
 			Section:      section,
 			CompletedAt:  time.Now(),
-			StartedAt:    time.Now(),
+			StartedAt:    time.Now().Add(-30 * time.Second),
 			ErrorMessage: "error",
+			UpdatedAt:    time.Now().Add(-5 * time.Second),
 		}
 		cc := []*model.CharacterShort{{ID: 42, Name: "Alpha"}}
 		statusCache.setCharacters(cc)
@@ -31,11 +32,12 @@ func TestCharacterUpdateStatusCache(t *testing.T) {
 		// then
 		v := statusCache.Get(characterID, section)
 		assert.Equal(t, v.CharacterID, o.CharacterID)
-		assert.Equal(t, v.Section, o.Section)
 		assert.Equal(t, v.CharacterName, "Alpha")
 		assert.Equal(t, v.CompletedAt.UTC(), o.CompletedAt.UTC())
-		assert.Equal(t, v.StartedAt.UTC(), o.StartedAt.UTC())
 		assert.Equal(t, v.ErrorMessage, o.ErrorMessage)
+		assert.Equal(t, v.Section, o.Section)
+		assert.Equal(t, v.StartedAt.UTC(), o.StartedAt.UTC())
+		assert.Equal(t, v.UpdateAt.UTC(), o.UpdatedAt.UTC())
 	})
 }
 
@@ -97,6 +99,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 					ErrorMessage: "",
 					StartedAt:    time.Now(),
 					CompletedAt:  time.Now(),
+					UpdatedAt:    time.Now(),
 				}
 				cs.Set(o)
 			}
@@ -117,6 +120,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 					ErrorMessage: "",
 					StartedAt:    time.Now(),
 					CompletedAt:  time.Now(),
+					UpdatedAt:    time.Now(),
 				}
 				cs.Set(o)
 			}
@@ -142,6 +146,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 					ErrorMessage: "",
 					StartedAt:    time.Now(),
 					CompletedAt:  time.Now(),
+					UpdatedAt:    time.Now(),
 				}
 				cs.Set(o)
 			}

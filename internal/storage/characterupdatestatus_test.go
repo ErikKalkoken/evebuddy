@@ -103,8 +103,9 @@ func TestUpdateOrCreateCharacterUpdateStatus2(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
+		error := "error"
 		arg := storage.CharacterUpdateStatusOptionals{
-			Error: storage.NewNullString("error"),
+			Error: &error,
 		}
 		x1, err := r.UpdateOrCreateCharacterUpdateStatus2(ctx, c.ID, model.SectionImplants, arg)
 		// then
@@ -129,8 +130,9 @@ func TestUpdateOrCreateCharacterUpdateStatus2(t *testing.T) {
 			Section:     model.SectionImplants,
 		})
 		// when
+		s := "error"
 		arg := storage.CharacterUpdateStatusOptionals{
-			Error: storage.NewNullString("error"),
+			Error: &s,
 		}
 		x1, err := r.UpdateOrCreateCharacterUpdateStatus2(ctx, c.ID, x.Section, arg)
 		// then
