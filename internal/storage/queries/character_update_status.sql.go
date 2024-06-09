@@ -74,35 +74,7 @@ func (q *Queries) ListCharacterUpdateStatus(ctx context.Context, characterID int
 	return items, nil
 }
 
-const setCharacterUpdateStatus = `-- name: SetCharacterUpdateStatus :exec
-INSERT INTO character_update_status (
-    character_id,
-    section_id,
-    content_hash,
-    error
-)
-VALUES (
-    ?1, ?2, "", ?3
-)
-ON CONFLICT(character_id, section_id) DO
-UPDATE SET
-    error = ?3
-WHERE character_id = ?1
-AND section_id = ?2
-`
-
-type SetCharacterUpdateStatusParams struct {
-	CharacterID int64
-	SectionID   string
-	Error       string
-}
-
-func (q *Queries) SetCharacterUpdateStatus(ctx context.Context, arg SetCharacterUpdateStatusParams) error {
-	_, err := q.db.ExecContext(ctx, setCharacterUpdateStatus, arg.CharacterID, arg.SectionID, arg.Error)
-	return err
-}
-
-const updateOrCreateCharacterUpdateStatus = `-- name: UpdateOrCreateCharacterUpdateStatus :exec
+const updateOrCreateCharacterUpdateStatus = `-- name: UpdateOrCreateCharacterUpdateStatus :one
 INSERT INTO character_update_status (
     character_id,
     section_id,
@@ -122,6 +94,7 @@ UPDATE SET
     started_at = ?6
 WHERE character_id = ?1
 AND section_id = ?2
+RETURNING id, character_id, content_hash, completed_at, error, section_id, started_at
 `
 
 type UpdateOrCreateCharacterUpdateStatusParams struct {
@@ -133,8 +106,8 @@ type UpdateOrCreateCharacterUpdateStatusParams struct {
 	StartedAt   sql.NullTime
 }
 
-func (q *Queries) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg UpdateOrCreateCharacterUpdateStatusParams) error {
-	_, err := q.db.ExecContext(ctx, updateOrCreateCharacterUpdateStatus,
+func (q *Queries) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg UpdateOrCreateCharacterUpdateStatusParams) (CharacterUpdateStatus, error) {
+	row := q.db.QueryRowContext(ctx, updateOrCreateCharacterUpdateStatus,
 		arg.CharacterID,
 		arg.SectionID,
 		arg.CompletedAt,
@@ -142,5 +115,15 @@ func (q *Queries) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg U
 		arg.Error,
 		arg.StartedAt,
 	)
-	return err
+	var i CharacterUpdateStatus
+	err := row.Scan(
+		&i.ID,
+		&i.CharacterID,
+		&i.ContentHash,
+		&i.CompletedAt,
+		&i.Error,
+		&i.SectionID,
+		&i.StartedAt,
+	)
+	return i, err
 }

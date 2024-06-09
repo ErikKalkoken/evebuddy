@@ -236,6 +236,7 @@ type sectionStatusData struct {
 	errorText     string
 	sectionName   string
 	completedAt   string
+	startedAt     string
 	section       model.CharacterSection
 	sv            string
 	si            widget.Importance
@@ -258,8 +259,10 @@ func (a *statusWindow) setDetails() {
 		}
 		d.characterName = cs.CharacterName
 		d.sectionName = cs.Section.DisplayName()
-		d.completedAt = completeAtDisplay(cs)
-		d.timeout = timeoutDisplay(cs)
+		d.completedAt = humanizeTime(cs.CompletedAt, "?")
+		d.startedAt = humanizeTime(cs.StartedAt, "?")
+		now := time.Now()
+		d.timeout = humanize.RelTime(now.Add(cs.Section.Timeout()), now, "", "")
 	}
 	oo := a.makeDetailsContent(d)
 	a.details.RemoveAll()
@@ -289,7 +292,8 @@ func (a *statusWindow) makeDetailsContent(d sectionStatusData) []fyne.CanvasObje
 		{label: "Section", value: d.sectionName},
 		{label: "Status", value: d.sv, importance: d.si},
 		{label: "Error", value: d.errorText, wrap: true},
-		{label: "Last Update", value: d.completedAt},
+		{label: "Started", value: d.startedAt},
+		{label: "Completed", value: d.completedAt},
 		{label: "Timeout", value: d.timeout},
 	}
 	oo := make([]fyne.CanvasObject, 0)
@@ -368,15 +372,6 @@ func (a *statusWindow) startTicker(ctx context.Context) {
 			}
 		}
 	}()
-}
-
-func completeAtDisplay(cs model.CharacterStatus) string {
-	return humanizeTime(cs.CompletedAt, "?")
-}
-
-func timeoutDisplay(cs model.CharacterStatus) string {
-	now := time.Now()
-	return humanize.RelTime(now.Add(cs.Section.Timeout()), now, "", "")
 }
 
 func statusDisplay(cs model.CharacterStatus) (string, widget.Importance) {

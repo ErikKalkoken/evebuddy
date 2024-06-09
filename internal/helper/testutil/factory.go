@@ -498,10 +498,7 @@ func (f Factory) CreateCharacterUpdateStatus(args ...CharacterUpdateStatusParams
 		CompletedAt: arg.CompletedAt,
 		ContentHash: hash,
 	}
-	if err := f.st.UpdateOrCreateCharacterUpdateStatus(ctx, arg2); err != nil {
-		panic(err)
-	}
-	o, err := f.st.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
+	o, err := f.st.UpdateOrCreateCharacterUpdateStatus(ctx, arg2)
 	if err != nil {
 		panic(err)
 	}

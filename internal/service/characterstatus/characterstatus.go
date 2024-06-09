@@ -3,7 +3,6 @@ package characterstatus
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/model"
@@ -29,13 +28,13 @@ type cacheKey struct {
 type cacheValue struct {
 	ErrorMessage string
 	CompletedAt  time.Time
+	StartedAt    time.Time
 }
 
 // CharacterStatusService provides cached access to the current update status
 // of all characters to improve performance of UI refresh tickers.
 type CharacterStatusService struct {
 	cache Cache
-	mu    sync.Mutex
 }
 
 // New creates and returns a new instance of a character status service.
@@ -59,20 +58,27 @@ func (sc *CharacterStatusService) InitCache(r CharacterStatusStorage) error {
 			return err
 		}
 		for _, o := range oo {
-			sc.SetStatus(c.ID, o.Section, o.ErrorMessage, o.CompletedAt)
+			sc.Set(o)
 		}
 	}
 	return nil
 }
 
-func (sc *CharacterStatusService) GetStatus(characterID int32, section model.CharacterSection) (string, time.Time) {
+func (sc *CharacterStatusService) Get(characterID int32, section model.CharacterSection) model.CharacterStatus {
 	k := cacheKey{characterID: characterID, section: section}
 	x, ok := sc.cache.Get(k)
 	if !ok {
-		return "", time.Time{}
+		return model.CharacterStatus{}
 	}
 	v := x.(cacheValue)
-	return v.ErrorMessage, v.CompletedAt
+	return model.CharacterStatus{
+		CharacterID:   characterID,
+		CharacterName: sc.characterName(characterID),
+		Section:       section,
+		CompletedAt:   v.CompletedAt,
+		ErrorMessage:  v.ErrorMessage,
+		StartedAt:     v.StartedAt,
+	}
 }
 
 func (sc *CharacterStatusService) Summary() (float32, int) {
@@ -111,42 +117,17 @@ func (sc *CharacterStatusService) CharacterSummary(characterID int32) (float32, 
 }
 
 func (sc *CharacterStatusService) ListStatus(characterID int32) []model.CharacterStatus {
-	characterName := sc.characterName(characterID)
 	list := make([]model.CharacterStatus, len(model.CharacterSections))
 	for i, section := range model.CharacterSections {
-		errorMessage, completedAt := sc.GetStatus(characterID, section)
-		list[i] = model.CharacterStatus{
-			CharacterID:   characterID,
-			CharacterName: characterName,
-			ErrorMessage:  errorMessage,
-			CompletedAt:   completedAt,
-			Section:       section,
-		}
+		v := sc.Get(characterID, section)
+		list[i] = v
 	}
 	return list
 }
 
-func (sc *CharacterStatusService) SetStatus(
-	characterID int32,
-	section model.CharacterSection,
-	errorMessage string,
-	completedAt time.Time,
-) {
-	k := cacheKey{characterID: characterID, section: section}
-	v := cacheValue{ErrorMessage: errorMessage, CompletedAt: completedAt}
-	sc.cache.Set(k, v, 0)
-}
-
-func (sc *CharacterStatusService) SetError(
-	characterID int32,
-	section model.CharacterSection,
-	errorMessage string,
-) {
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-	_, completedAt := sc.GetStatus(characterID, section)
-	k := cacheKey{characterID: characterID, section: section}
-	v := cacheValue{ErrorMessage: errorMessage, CompletedAt: completedAt}
+func (sc *CharacterStatusService) Set(o *model.CharacterUpdateStatus) {
+	k := cacheKey{characterID: o.CharacterID, section: o.Section}
+	v := cacheValue{ErrorMessage: o.ErrorMessage, CompletedAt: o.CompletedAt, StartedAt: o.StartedAt}
 	sc.cache.Set(k, v, 0)
 }
 

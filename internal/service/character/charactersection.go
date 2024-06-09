@@ -100,11 +100,11 @@ func (s *CharacterService) UpdateSection(ctx context.Context, arg UpdateSectionP
 		// TODO: Move this part into updateCharacterSectionIfChanged()
 		errorMessage := humanize.Error(err)
 		opt := storage.CharacterUpdateStatusOptionals{Error: storage.NewNullString(errorMessage)}
-		err2 := s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt)
+		o, err2 := s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt)
 		if err2 != nil {
 			slog.Error("failed to record error for failed section update: %s", err2)
 		}
-		s.cs.SetError(arg.CharacterID, arg.Section, errorMessage)
+		s.cs.Set(o)
 		return false, fmt.Errorf("failed to update character section from ESI for %v: %w", arg, err)
 	}
 	changed := x.(bool)
@@ -137,9 +137,11 @@ func (s *CharacterService) updateSectionIfChanged(
 	opt := storage.CharacterUpdateStatusOptionals{
 		StartedAt: storage.NewNullTime(startedAt),
 	}
-	if err := s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt); err != nil {
+	o, err := s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt)
+	if err != nil {
 		return false, err
 	}
+	s.cs.Set(o)
 	token, err := s.getValidCharacterToken(ctx, arg.CharacterID)
 	if err != nil {
 		return false, err
@@ -179,10 +181,11 @@ func (s *CharacterService) updateSectionIfChanged(
 		ContentHash: storage.NewNullString(hash),
 		CompletedAt: storage.NewNullTime(completedAt),
 	}
-	if err := s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt); err != nil {
+	o, err = s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt)
+	if err != nil {
 		return false, err
 	}
-	s.cs.SetStatus(arg.CharacterID, arg.Section, "", completedAt)
+	s.cs.Set(o)
 
 	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "changed", hasChanged)
 	return hasChanged, nil

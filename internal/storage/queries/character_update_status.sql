@@ -9,23 +9,7 @@ SELECT *
 FROM character_update_status
 WHERE character_id = ?;
 
--- name: SetCharacterUpdateStatus :exec
-INSERT INTO character_update_status (
-    character_id,
-    section_id,
-    content_hash,
-    error
-)
-VALUES (
-    ?1, ?2, "", ?3
-)
-ON CONFLICT(character_id, section_id) DO
-UPDATE SET
-    error = ?3
-WHERE character_id = ?1
-AND section_id = ?2;
-
--- name: UpdateOrCreateCharacterUpdateStatus :exec
+-- name: UpdateOrCreateCharacterUpdateStatus :one
 INSERT INTO character_update_status (
     character_id,
     section_id,
@@ -44,4 +28,5 @@ UPDATE SET
     error = ?5,
     started_at = ?6
 WHERE character_id = ?1
-AND section_id = ?2;
+AND section_id = ?2
+RETURNING *;

@@ -15,27 +15,27 @@ func TestCharacterUpdateStatusCache(t *testing.T) {
 	section := model.SectionImplants
 	cache := cache.New()
 	statusCache := New(cache)
-	t.Run("can set full status", func(t *testing.T) {
+	t.Run("can get and set a character status", func(t *testing.T) {
 		// given
-		myDate := time.Now()
-		myError := "error"
+		o := &model.CharacterUpdateStatus{
+			CharacterID:  characterID,
+			Section:      section,
+			CompletedAt:  time.Now(),
+			StartedAt:    time.Now(),
+			ErrorMessage: "error",
+		}
+		cc := []*model.CharacterShort{{ID: 42, Name: "Alpha"}}
+		statusCache.setCharacters(cc)
 		// when
-		statusCache.SetStatus(characterID, section, myError, myDate)
+		statusCache.Set(o)
 		// then
-		x, y := statusCache.GetStatus(characterID, section)
-		assert.Equal(t, myDate, y)
-		assert.Equal(t, myError, x)
-	})
-	t.Run("can set error only", func(t *testing.T) {
-		// given
-		myDate := time.Now().Add(-1 * time.Hour)
-		statusCache.SetStatus(characterID, section, "old-error", myDate)
-		// when
-		statusCache.SetError(characterID, section, "new-error")
-		// then
-		x, y := statusCache.GetStatus(characterID, section)
-		assert.Equal(t, myDate, y)
-		assert.Equal(t, "new-error", x)
+		v := statusCache.Get(characterID, section)
+		assert.Equal(t, v.CharacterID, o.CharacterID)
+		assert.Equal(t, v.Section, o.Section)
+		assert.Equal(t, v.CharacterName, "Alpha")
+		assert.Equal(t, v.CompletedAt.UTC(), o.CompletedAt.UTC())
+		assert.Equal(t, v.StartedAt.UTC(), o.StartedAt.UTC())
+		assert.Equal(t, v.ErrorMessage, o.ErrorMessage)
 	})
 }
 
@@ -48,20 +48,20 @@ func TestCharacterUpdateStatusCacheInit(t *testing.T) {
 	t.Run("should init", func(t *testing.T) {
 		// given
 		c := factory.CreateCharacter()
-		myDate := time.Now().Add(-1 * time.Hour)
+		completedAt := time.Now().Add(-1 * time.Hour)
 		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
-			CompletedAt: myDate,
+			CompletedAt: completedAt,
 			Error:       "my-error",
 		})
 		statusCache := New(cache)
 		// when
 		statusCache.InitCache(r)
 		// then
-		x, y := statusCache.GetStatus(c.ID, section)
-		assert.Equal(t, myDate.UTC(), y.UTC())
-		assert.Equal(t, "my-error", x)
+		v := statusCache.Get(c.ID, section)
+		assert.Equal(t, completedAt.UTC(), v.CompletedAt.UTC())
+		assert.Equal(t, "my-error", v.ErrorMessage)
 		cc := statusCache.ListCharacters()
 		assert.Len(t, cc, 1)
 		assert.Equal(t, cc[0].ID, c.ID)
@@ -91,7 +91,14 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 		// given
 		for _, c := range cc {
 			for _, section := range model.CharacterSections {
-				cs.SetStatus(c.ID, section, "", time.Now())
+				o := &model.CharacterUpdateStatus{
+					CharacterID:  c.ID,
+					Section:      section,
+					ErrorMessage: "",
+					StartedAt:    time.Now(),
+					CompletedAt:  time.Now(),
+				}
+				cs.Set(o)
 			}
 		}
 		// when
@@ -104,10 +111,22 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 		// given
 		for _, c := range cc {
 			for _, section := range model.CharacterSections {
-				cs.SetStatus(c.ID, section, "", time.Now())
+				o := &model.CharacterUpdateStatus{
+					CharacterID:  c.ID,
+					Section:      section,
+					ErrorMessage: "",
+					StartedAt:    time.Now(),
+					CompletedAt:  time.Now(),
+				}
+				cs.Set(o)
 			}
 		}
-		cs.SetError(cc[1].ID, model.SectionLocation, "error")
+		o := &model.CharacterUpdateStatus{
+			CharacterID:  cc[0].ID,
+			Section:      model.SectionLocation,
+			ErrorMessage: "error",
+		}
+		cs.Set(o)
 		// when
 		_, c := cs.Summary()
 		// then
@@ -117,10 +136,22 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 		// given
 		for _, c := range cc {
 			for _, section := range model.CharacterSections {
-				cs.SetStatus(c.ID, section, "", time.Now())
+				o := &model.CharacterUpdateStatus{
+					CharacterID:  c.ID,
+					Section:      section,
+					ErrorMessage: "",
+					StartedAt:    time.Now(),
+					CompletedAt:  time.Now(),
+				}
+				cs.Set(o)
 			}
 		}
-		cs.SetStatus(cc[1].ID, model.SectionLocation, "", time.Now().Add(-1*time.Hour))
+		o := &model.CharacterUpdateStatus{
+			CharacterID: cc[0].ID,
+			Section:     model.SectionLocation,
+			CompletedAt: time.Now().Add(-1 * time.Hour),
+		}
+		cs.Set(o)
 		// when
 		p, c := cs.Summary()
 		// then

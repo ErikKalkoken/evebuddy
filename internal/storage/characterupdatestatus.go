@@ -56,13 +56,13 @@ type CharacterUpdateStatusOptionals struct {
 	StartedAt   sql.NullTime
 }
 
-func (st *Storage) UpdateOrCreateCharacterUpdateStatus2(ctx context.Context, characterID int32, section model.CharacterSection, arg CharacterUpdateStatusOptionals) error {
+func (st *Storage) UpdateOrCreateCharacterUpdateStatus2(ctx context.Context, characterID int32, section model.CharacterSection, arg CharacterUpdateStatusOptionals) (*model.CharacterUpdateStatus, error) {
 	if characterID == 0 || section == "" {
 		panic("Invalid params")
 	}
 	tx, err := st.db.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 	qtx := st.q.WithTx(tx)
@@ -77,7 +77,7 @@ func (st *Storage) UpdateOrCreateCharacterUpdateStatus2(ctx context.Context, cha
 			SectionID:   string(section),
 		}
 	} else if err != nil {
-		return err
+		return nil, err
 	} else {
 		arg2 = queries.UpdateOrCreateCharacterUpdateStatusParams{
 			CharacterID: int64(characterID),
@@ -100,22 +100,23 @@ func (st *Storage) UpdateOrCreateCharacterUpdateStatus2(ctx context.Context, cha
 	if arg.StartedAt.Valid {
 		arg2.StartedAt = arg.StartedAt
 	}
-	if err := qtx.UpdateOrCreateCharacterUpdateStatus(ctx, arg2); err != nil {
-		return err
+	o, err := qtx.UpdateOrCreateCharacterUpdateStatus(ctx, arg2)
+	if err != nil {
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return characterUpdateStatusFromDBModel(o), nil
 }
 
-func (st *Storage) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg CharacterUpdateStatusParams) error {
+func (st *Storage) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg CharacterUpdateStatusParams) (*model.CharacterUpdateStatus, error) {
 	arg2 := characterUpdateStatusDBModelFromParams(arg)
-	err := st.q.UpdateOrCreateCharacterUpdateStatus(ctx, arg2)
+	o, err := st.q.UpdateOrCreateCharacterUpdateStatus(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("failed to update or create updates status for character %d with section %s: %w", arg.CharacterID, arg.Section, err)
+		return nil, fmt.Errorf("failed to update or create updates status for character %d with section %s: %w", arg.CharacterID, arg.Section, err)
 	}
-	return nil
+	return characterUpdateStatusFromDBModel(o), nil
 }
 
 func characterUpdateStatusDBModelFromParams(arg CharacterUpdateStatusParams) queries.UpdateOrCreateCharacterUpdateStatusParams {

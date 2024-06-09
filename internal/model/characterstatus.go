@@ -2,12 +2,15 @@ package model
 
 import "time"
 
+// TODO: Maybe combine with CharacterUpdateStatus ??
+
 type CharacterStatus struct {
 	CharacterID   int32
 	CharacterName string
 	ErrorMessage  string
 	CompletedAt   time.Time
 	Section       CharacterSection
+	StartedAt     time.Time
 }
 
 func (cs CharacterStatus) IsOK() bool {
