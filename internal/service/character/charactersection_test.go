@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO: Add tests for UpdateSectionIfNeeded()
+
 func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 	db, r, factory := testutil.New()
 	s := New(r, nil, nil, nil, nil, nil)
@@ -118,44 +120,31 @@ func TestCharacterSectionUpdateMethods(t *testing.T) {
 	db, r, factory := testutil.New()
 	s := New(r, nil, nil, nil, nil, nil)
 	ctx := context.Background()
-	t.Run("Can report when section update is expired", func(t *testing.T) {
+	t.Run("Can report wether a section was updated", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		updateAt := time.Now().Add(-3 * time.Hour)
 		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
 			CharacterID: c.ID,
 			Section:     model.SectionSkillqueue,
-			CompletedAt: updateAt,
+			CompletedAt: time.Now(),
 		})
 		// when
-		x, err := s.sectionIsUpdateExpired(ctx, UpdateSectionParams{
-			CharacterID: c.ID, Section: model.SectionSkillqueue,
-		})
+		x, err := s.SectionWasUpdated(ctx, c.ID, model.SectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
-			assert.True(t, x)
+			assert.Equal(t, true, x)
 		}
 	})
-	t.Run("Can retrieve updated at for section", func(t *testing.T) {
+	t.Run("Can report wether a section was updated 2", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		updateAt := time.Now().Add(3 * time.Hour)
-		o := factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
-			CharacterID: c.ID,
-			Section:     model.SectionSkillqueue,
-			CompletedAt: updateAt,
-		})
 		// when
-		x, err := s.sectionUpdatedAt(ctx, UpdateSectionParams{
-			CharacterID: c.ID,
-			Section:     model.SectionSkillqueue,
-		})
+		x, err := s.SectionWasUpdated(ctx, c.ID, model.SectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
-
-			assert.Equal(t, o.CompletedAt.UTC(), x.UTC())
+			assert.Equal(t, false, x)
 		}
 	})
 }

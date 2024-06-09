@@ -14,25 +14,16 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-// sectionUpdatedAt returns when a section was last updated.
-// It will return a zero time when no update has been completed yet.
-func (s *CharacterService) sectionUpdatedAt(ctx context.Context, arg UpdateSectionParams) (time.Time, error) {
-	u, err := s.st.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
-	if errors.Is(err, storage.ErrNotFound) {
-		return time.Time{}, nil
-	} else if err != nil {
-		return time.Time{}, err
-	}
-	return u.CompletedAt, nil
-}
-
 // SectionWasUpdated reports wether the section has been updated at all.
 func (s *CharacterService) SectionWasUpdated(ctx context.Context, characterID int32, section model.CharacterSection) (bool, error) {
-	t, err := s.sectionUpdatedAt(ctx, UpdateSectionParams{CharacterID: characterID, Section: section})
+	status, err := s.getCharacterUpdateStatus(ctx, characterID, section)
 	if err != nil {
 		return false, err
 	}
-	return !t.IsZero(), nil
+	if status == nil {
+		return false, nil
+	}
+	return !status.CompletedAt.IsZero(), nil
 }
 
 type UpdateSectionParams struct {
@@ -48,12 +39,14 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 		panic("Invalid character ID")
 	}
 	if !arg.ForceUpdate {
-		isExpired, err := s.sectionIsUpdateExpired(ctx, arg)
+		status, err := s.getCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
 		if err != nil {
 			return false, err
 		}
-		if !isExpired {
-			return false, nil
+		if status != nil {
+			if status.IsOK() && !status.IsExpired() {
+				return false, nil
+			}
 		}
 	}
 	var f func(context.Context, UpdateSectionParams) (bool, error)
@@ -111,20 +104,6 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 	return changed, err
 }
 
-// SectionWasUpdated reports wether the data for a section has expired.
-func (s *CharacterService) sectionIsUpdateExpired(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	t, err := s.sectionUpdatedAt(ctx, arg)
-	if err != nil {
-		return false, err
-	}
-	if t.IsZero() {
-		return true, nil
-	}
-	timeout := arg.Section.Timeout()
-	deadline := t.Add(timeout)
-	return time.Now().After(deadline), nil
-}
-
 // updateSectionIfChanged updates a character section if it has changed
 // and reports wether it has changed
 func (s *CharacterService) updateSectionIfChanged(
@@ -158,11 +137,12 @@ func (s *CharacterService) updateSectionIfChanged(
 	// identify if changed
 	var hasChanged bool
 	if !arg.ForceUpdate {
-		u, err := s.st.GetCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
-		if errors.Is(err, storage.ErrNotFound) {
-			hasChanged = true
-		} else if err != nil {
+		u, err := s.getCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
+		if err != nil {
 			return false, err
+		}
+		if u == nil {
+			hasChanged = true
 		} else {
 			hasChanged = u.ContentHash != hash
 		}
@@ -192,4 +172,14 @@ func (s *CharacterService) updateSectionIfChanged(
 
 	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "changed", hasChanged)
 	return hasChanged, nil
+}
+
+func (s *CharacterService) getCharacterUpdateStatus(ctx context.Context, characterID int32, section model.CharacterSection) (*model.CharacterUpdateStatus, error) {
+	o, err := s.st.GetCharacterUpdateStatus(ctx, characterID, section)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+	return o, nil
 }

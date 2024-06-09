@@ -13,6 +13,15 @@ type CharacterUpdateStatus struct {
 	UpdatedAt    time.Time
 }
 
-func (cus CharacterUpdateStatus) IsOK() bool {
-	return cus.ErrorMessage == ""
+func (s CharacterUpdateStatus) IsOK() bool {
+	return s.ErrorMessage == ""
+}
+
+func (s CharacterUpdateStatus) IsExpired() bool {
+	if s.CompletedAt.IsZero() {
+		return true
+	}
+	timeout := s.Section.Timeout()
+	deadline := s.CompletedAt.Add(timeout)
+	return time.Now().After(deadline)
 }
