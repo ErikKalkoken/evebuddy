@@ -20,13 +20,15 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		updatedAt := time.Now()
+		completedAt := time.Now()
+		startedAt := time.Now()
 		arg := storage.CharacterUpdateStatusParams{
-			CharacterID:   c.ID,
-			Error:         "error",
-			Section:       model.SectionSkillqueue,
-			ContentHash:   "content-hash",
-			LastUpdatedAt: updatedAt,
+			CharacterID: c.ID,
+			Error:       "error",
+			Section:     model.SectionSkillqueue,
+			ContentHash: "content-hash",
+			CompletedAt: completedAt,
+			StartedAt:   startedAt,
 		}
 		// when
 		err := r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
@@ -36,7 +38,8 @@ func TestCharacterUpdateStatus(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, "error", l.ErrorMessage)
 				assert.Equal(t, "content-hash", l.ContentHash)
-				assert.Equal(t, updatedAt.UTC(), l.LastUpdatedAt.UTC())
+				assert.Equal(t, completedAt.UTC(), l.CompletedAt.UTC())
+				assert.Equal(t, startedAt.UTC(), l.StartedAt.UTC())
 			}
 		}
 	})
@@ -50,11 +53,11 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		})
 		updatedAt := time.Now().Add(1 * time.Hour)
 		arg := storage.CharacterUpdateStatusParams{
-			CharacterID:   c.ID,
-			Section:       model.SectionSkillqueue,
-			Error:         "error",
-			ContentHash:   "content-hash",
-			LastUpdatedAt: updatedAt,
+			CharacterID: c.ID,
+			Section:     model.SectionSkillqueue,
+			Error:       "error",
+			ContentHash: "content-hash",
+			CompletedAt: updatedAt,
 		}
 		// when
 		err := r.UpdateOrCreateCharacterUpdateStatus(ctx, arg)
@@ -64,7 +67,7 @@ func TestCharacterUpdateStatus(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, "content-hash", l.ContentHash)
 				assert.Equal(t, "error", l.ErrorMessage)
-				assert.Equal(t, updatedAt.UTC(), l.LastUpdatedAt.UTC())
+				assert.Equal(t, updatedAt.UTC(), l.CompletedAt.UTC())
 			}
 		}
 	})
@@ -105,7 +108,7 @@ func TestSetCharacterUpdateStatusError(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", l.ContentHash)
 				assert.Equal(t, "error", l.ErrorMessage)
-				assert.True(t, l.LastUpdatedAt.IsZero())
+				assert.True(t, l.CompletedAt.IsZero())
 			}
 		}
 	})
@@ -125,7 +128,7 @@ func TestSetCharacterUpdateStatusError(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, x.ContentHash, l.ContentHash)
 				assert.Equal(t, "error", l.ErrorMessage)
-				assert.Equal(t, x.LastUpdatedAt.UTC(), l.LastUpdatedAt.UTC())
+				assert.Equal(t, x.CompletedAt.UTC(), l.CompletedAt.UTC())
 			}
 		}
 	})

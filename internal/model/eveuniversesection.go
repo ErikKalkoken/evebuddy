@@ -17,10 +17,10 @@ const (
 )
 
 type EveUniverseUpdateStatus struct {
-	ContentHash   string
-	ErrorMessage  string
-	LastUpdatedAt time.Time
-	Section       EveUniverseSection
+	ContentHash  string
+	ErrorMessage string
+	CompletedAt  time.Time
+	Section      EveUniverseSection
 }
 
 var EveUniverseSections = []EveUniverseSection{

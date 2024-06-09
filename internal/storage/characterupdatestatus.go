@@ -12,11 +12,12 @@ import (
 )
 
 type CharacterUpdateStatusParams struct {
-	CharacterID   int32
-	Section       model.CharacterSection
-	Error         string
-	LastUpdatedAt time.Time
-	ContentHash   string
+	CharacterID int32
+	CompletedAt time.Time
+	ContentHash string
+	Error       string
+	Section     model.CharacterSection
+	StartedAt   time.Time
 }
 
 func (st *Storage) GetCharacterUpdateStatus(ctx context.Context, characterID int32, section model.CharacterSection) (*model.CharacterUpdateStatus, error) {
@@ -59,12 +60,15 @@ func (st *Storage) SetCharacterUpdateStatusError(ctx context.Context, characterI
 func (st *Storage) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg CharacterUpdateStatusParams) error {
 	arg2 := queries.UpdateOrCreateCharacterUpdateStatusParams{
 		CharacterID: int64(arg.CharacterID),
-		SectionID:   string(arg.Section),
-		Error:       arg.Error,
 		ContentHash: arg.ContentHash,
+		Error:       arg.Error,
+		SectionID:   string(arg.Section),
 	}
-	if !arg.LastUpdatedAt.IsZero() {
-		arg2.LastUpdatedAt = sql.NullTime{Time: arg.LastUpdatedAt, Valid: true}
+	if !arg.CompletedAt.IsZero() {
+		arg2.CompletedAt = sql.NullTime{Time: arg.CompletedAt, Valid: true}
+	}
+	if !arg.StartedAt.IsZero() {
+		arg2.StartedAt = sql.NullTime{Time: arg.StartedAt, Valid: true}
 	}
 	err := st.q.UpdateOrCreateCharacterUpdateStatus(ctx, arg2)
 	if err != nil {
@@ -81,8 +85,11 @@ func characterUpdateStatusFromDBModel(o queries.CharacterUpdateStatus) *model.Ch
 		Section:      model.CharacterSection(o.SectionID),
 		ContentHash:  o.ContentHash,
 	}
-	if o.LastUpdatedAt.Valid {
-		x.LastUpdatedAt = o.LastUpdatedAt.Time
+	if o.CompletedAt.Valid {
+		x.CompletedAt = o.CompletedAt.Time
+	}
+	if o.StartedAt.Valid {
+		x.StartedAt = o.StartedAt.Time
 	}
 	return x
 }

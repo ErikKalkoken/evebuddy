@@ -6,7 +6,7 @@ type CharacterStatus struct {
 	CharacterID   int32
 	CharacterName string
 	ErrorMessage  string
-	LastUpdatedAt time.Time
+	CompletedAt   time.Time
 	Section       CharacterSection
 }
 
@@ -19,8 +19,8 @@ func (cs CharacterStatus) HasData() bool {
 }
 
 func (cs CharacterStatus) IsCurrent() bool {
-	if cs.LastUpdatedAt.IsZero() {
+	if cs.CompletedAt.IsZero() {
 		return false
 	}
-	return time.Now().Before(cs.LastUpdatedAt.Add(cs.Section.Timeout() * 2))
+	return time.Now().Before(cs.CompletedAt.Add(cs.Section.Timeout() * 2))
 }

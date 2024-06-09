@@ -50,10 +50,10 @@ func TestCharacterUpdateStatusCacheInit(t *testing.T) {
 		c := factory.CreateCharacter()
 		myDate := time.Now().Add(-1 * time.Hour)
 		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
-			CharacterID:   c.ID,
-			Section:       section,
-			LastUpdatedAt: myDate,
-			Error:         "my-error",
+			CharacterID: c.ID,
+			Section:     section,
+			CompletedAt: myDate,
+			Error:       "my-error",
 		})
 		statusCache := New(cache)
 		// when

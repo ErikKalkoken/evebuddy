@@ -29,17 +29,19 @@ AND section_id = ?2;
 INSERT INTO character_update_status (
     character_id,
     section_id,
+    completed_at,
     content_hash,
     error,
-    last_updated_at
+    started_at
 )
 VALUES (
-    ?1, ?2, ?3, ?4, ?5
+    ?1, ?2, ?3, ?4, ?5, ?6
 )
 ON CONFLICT(character_id, section_id) DO
 UPDATE SET
-    content_hash = ?3,
-    error = ?4,
-    last_updated_at = ?5
+    completed_at = ?3,
+    content_hash = ?4,
+    error = ?5,
+    started_at = ?6
 WHERE character_id = ?1
 AND section_id = ?2;

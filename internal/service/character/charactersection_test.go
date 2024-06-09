@@ -41,7 +41,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			assert.True(t, hasUpdated)
 			x, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
-				assert.WithinDuration(t, time.Now(), x.LastUpdatedAt, 5*time.Second)
+				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
 				assert.True(t, x.IsOK())
 			}
 		}
@@ -74,7 +74,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			assert.True(t, hasUpdated)
 			x2, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
-				assert.Greater(t, x2.LastUpdatedAt, x1.LastUpdatedAt)
+				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
 				assert.True(t, x2.IsOK())
 			}
 		}
@@ -107,7 +107,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			assert.False(t, hasUpdated)
 			x2, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
-				assert.Greater(t, x2.LastUpdatedAt, x1.LastUpdatedAt)
+				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
 				assert.True(t, x2.IsOK())
 			}
 		}
@@ -124,9 +124,9 @@ func TestCharacterSectionUpdateMethods(t *testing.T) {
 		c := factory.CreateCharacter()
 		updateAt := time.Now().Add(-3 * time.Hour)
 		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
-			CharacterID:   c.ID,
-			Section:       model.SectionSkillqueue,
-			LastUpdatedAt: updateAt,
+			CharacterID: c.ID,
+			Section:     model.SectionSkillqueue,
+			CompletedAt: updateAt,
 		})
 		// when
 		x, err := s.sectionIsUpdateExpired(ctx, UpdateSectionParams{
@@ -143,9 +143,9 @@ func TestCharacterSectionUpdateMethods(t *testing.T) {
 		c := factory.CreateCharacter()
 		updateAt := time.Now().Add(3 * time.Hour)
 		o := factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
-			CharacterID:   c.ID,
-			Section:       model.SectionSkillqueue,
-			LastUpdatedAt: updateAt,
+			CharacterID: c.ID,
+			Section:     model.SectionSkillqueue,
+			CompletedAt: updateAt,
 		})
 		// when
 		x, err := s.sectionUpdatedAt(ctx, UpdateSectionParams{
@@ -155,7 +155,7 @@ func TestCharacterSectionUpdateMethods(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 
-			assert.Equal(t, o.LastUpdatedAt.UTC(), x.UTC())
+			assert.Equal(t, o.CompletedAt.UTC(), x.UTC())
 		}
 	})
 }

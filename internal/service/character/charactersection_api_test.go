@@ -25,9 +25,9 @@ func TestCharacterUpdateStatus(t *testing.T) {
 		c := factory.CreateCharacter()
 		updateAt := time.Now().Add(3 * time.Hour)
 		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
-			CharacterID:   c.ID,
-			Section:       model.SectionSkillqueue,
-			LastUpdatedAt: updateAt,
+			CharacterID: c.ID,
+			Section:     model.SectionSkillqueue,
+			CompletedAt: updateAt,
 		})
 		// when
 		x, err := s.SectionWasUpdated(ctx, c.ID, model.SectionSkillqueue)
@@ -87,10 +87,10 @@ func TestUpdateCharacterSection(t *testing.T) {
 		c := factory.CreateCharacter()
 		data := []int32{100}
 		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
-			CharacterID:   c.ID,
-			Section:       section,
-			LastUpdatedAt: time.Now().Add(-6 * time.Hour),
-			Data:          data,
+			CharacterID: c.ID,
+			Section:     section,
+			CompletedAt: time.Now().Add(-6 * time.Hour),
+			Data:        data,
 		})
 		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
@@ -106,7 +106,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			assert.False(t, changed)
 			x, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
-				assert.WithinDuration(t, time.Now(), x.LastUpdatedAt, 5*time.Second)
+				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
 			}
 			assert.Equal(t, 1, httpmock.GetTotalCallCount())
 			xx, err := r.ListCharacterImplants(ctx, c.ID)
@@ -207,10 +207,10 @@ func TestUpdateCharacterSection(t *testing.T) {
 		c := factory.CreateCharacter()
 		data := []int32{100}
 		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
-			CharacterID:   c.ID,
-			Section:       section,
-			LastUpdatedAt: time.Now().Add(-6 * time.Hour),
-			Data:          data,
+			CharacterID: c.ID,
+			Section:     section,
+			CompletedAt: time.Now().Add(-6 * time.Hour),
+			Data:        data,
 		})
 		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
@@ -229,7 +229,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		if assert.NoError(t, err) {
 			x, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
-				assert.WithinDuration(t, time.Now(), x.LastUpdatedAt, 5*time.Second)
+				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
 			}
 			assert.Equal(t, 1, httpmock.GetTotalCallCount())
 			xx, err := r.ListCharacterImplants(ctx, c.ID)

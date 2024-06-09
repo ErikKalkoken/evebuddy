@@ -357,9 +357,10 @@ CREATE TABLE character_update_status (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     character_id INTEGER NOT NULL,
     content_hash TEXT NOT NULL,
+    completed_at DATETIME,
     error TEXT NOT NULL,
     section_id TEXT NOT NULL,
-    last_updated_at DATETIME,
+    started_at DATETIME,
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     UNIQUE (character_id, section_id)
 );

@@ -11,7 +11,7 @@ import (
 )
 
 const getCharacterUpdateStatus = `-- name: GetCharacterUpdateStatus :one
-SELECT id, character_id, content_hash, error, section_id, last_updated_at
+SELECT id, character_id, content_hash, completed_at, error, section_id, started_at
 FROM character_update_status
 WHERE character_id = ?
 AND section_id = ?
@@ -29,15 +29,16 @@ func (q *Queries) GetCharacterUpdateStatus(ctx context.Context, arg GetCharacter
 		&i.ID,
 		&i.CharacterID,
 		&i.ContentHash,
+		&i.CompletedAt,
 		&i.Error,
 		&i.SectionID,
-		&i.LastUpdatedAt,
+		&i.StartedAt,
 	)
 	return i, err
 }
 
 const listCharacterUpdateStatus = `-- name: ListCharacterUpdateStatus :many
-SELECT id, character_id, content_hash, error, section_id, last_updated_at
+SELECT id, character_id, content_hash, completed_at, error, section_id, started_at
 FROM character_update_status
 WHERE character_id = ?
 `
@@ -55,9 +56,10 @@ func (q *Queries) ListCharacterUpdateStatus(ctx context.Context, characterID int
 			&i.ID,
 			&i.CharacterID,
 			&i.ContentHash,
+			&i.CompletedAt,
 			&i.Error,
 			&i.SectionID,
-			&i.LastUpdatedAt,
+			&i.StartedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -104,37 +106,41 @@ const updateOrCreateCharacterUpdateStatus = `-- name: UpdateOrCreateCharacterUpd
 INSERT INTO character_update_status (
     character_id,
     section_id,
+    completed_at,
     content_hash,
     error,
-    last_updated_at
+    started_at
 )
 VALUES (
-    ?1, ?2, ?3, ?4, ?5
+    ?1, ?2, ?3, ?4, ?5, ?6
 )
 ON CONFLICT(character_id, section_id) DO
 UPDATE SET
-    content_hash = ?3,
-    error = ?4,
-    last_updated_at = ?5
+    completed_at = ?3,
+    content_hash = ?4,
+    error = ?5,
+    started_at = ?6
 WHERE character_id = ?1
 AND section_id = ?2
 `
 
 type UpdateOrCreateCharacterUpdateStatusParams struct {
-	CharacterID   int64
-	SectionID     string
-	ContentHash   string
-	Error         string
-	LastUpdatedAt sql.NullTime
+	CharacterID int64
+	SectionID   string
+	CompletedAt sql.NullTime
+	ContentHash string
+	Error       string
+	StartedAt   sql.NullTime
 }
 
 func (q *Queries) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg UpdateOrCreateCharacterUpdateStatusParams) error {
 	_, err := q.db.ExecContext(ctx, updateOrCreateCharacterUpdateStatus,
 		arg.CharacterID,
 		arg.SectionID,
+		arg.CompletedAt,
 		arg.ContentHash,
 		arg.Error,
-		arg.LastUpdatedAt,
+		arg.StartedAt,
 	)
 	return err
 }

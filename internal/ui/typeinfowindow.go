@@ -248,8 +248,7 @@ func (u *ui) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*ty
 		p = nil
 	} else if err != nil {
 		return nil, err
-	}
-	if p.AveragePrice != 0 {
+	} else if p.AveragePrice != 0 {
 		a.price = p
 	} else {
 		a.price = nil

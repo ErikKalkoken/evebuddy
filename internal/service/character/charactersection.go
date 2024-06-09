@@ -22,7 +22,7 @@ func (s *CharacterService) sectionUpdatedAt(ctx context.Context, arg UpdateSecti
 	} else if err != nil {
 		return time.Time{}, err
 	}
-	return u.LastUpdatedAt, nil
+	return u.CompletedAt, nil
 }
 
 // SectionWasUpdated reports wether the section has been updated at all.
@@ -165,18 +165,18 @@ func (s *CharacterService) updateSectionIfChanged(
 	}
 
 	// record update
-	lastUpdatedAt := time.Now()
+	completedAt := time.Now()
 	arg2 := storage.CharacterUpdateStatusParams{
-		CharacterID:   arg.CharacterID,
-		Section:       arg.Section,
-		Error:         "",
-		ContentHash:   hash,
-		LastUpdatedAt: lastUpdatedAt,
+		CharacterID: arg.CharacterID,
+		Section:     arg.Section,
+		Error:       "",
+		ContentHash: hash,
+		CompletedAt: completedAt,
 	}
 	if err := s.st.UpdateOrCreateCharacterUpdateStatus(ctx, arg2); err != nil {
 		return false, err
 	}
-	s.cs.SetStatus(arg.CharacterID, arg.Section, "", lastUpdatedAt)
+	s.cs.SetStatus(arg.CharacterID, arg.Section, "", completedAt)
 
 	slog.Debug("Has section changed", "characterID", arg.CharacterID, "section", arg.Section, "changed", hasChanged)
 	return hasChanged, nil

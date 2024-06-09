@@ -142,12 +142,13 @@ type CharacterTokenScope struct {
 }
 
 type CharacterUpdateStatus struct {
-	ID            int64
-	CharacterID   int64
-	ContentHash   string
-	Error         string
-	SectionID     string
-	LastUpdatedAt sql.NullTime
+	ID          int64
+	CharacterID int64
+	ContentHash string
+	CompletedAt sql.NullTime
+	Error       string
+	SectionID   string
+	StartedAt   sql.NullTime
 }
 
 type CharacterWalletJournalEntry struct {

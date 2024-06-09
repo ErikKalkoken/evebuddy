@@ -27,8 +27,8 @@ type cacheKey struct {
 }
 
 type cacheValue struct {
-	ErrorMessage  string
-	LastUpdatedAt time.Time
+	ErrorMessage string
+	CompletedAt  time.Time
 }
 
 // CharacterStatusService provides cached access to the current update status
@@ -59,7 +59,7 @@ func (sc *CharacterStatusService) InitCache(r CharacterStatusStorage) error {
 			return err
 		}
 		for _, o := range oo {
-			sc.SetStatus(c.ID, o.Section, o.ErrorMessage, o.LastUpdatedAt)
+			sc.SetStatus(c.ID, o.Section, o.ErrorMessage, o.CompletedAt)
 		}
 	}
 	return nil
@@ -72,7 +72,7 @@ func (sc *CharacterStatusService) GetStatus(characterID int32, section model.Cha
 		return "", time.Time{}
 	}
 	v := x.(cacheValue)
-	return v.ErrorMessage, v.LastUpdatedAt
+	return v.ErrorMessage, v.CompletedAt
 }
 
 func (sc *CharacterStatusService) Summary() (float32, int) {
@@ -114,12 +114,12 @@ func (sc *CharacterStatusService) ListStatus(characterID int32) []model.Characte
 	characterName := sc.characterName(characterID)
 	list := make([]model.CharacterStatus, len(model.CharacterSections))
 	for i, section := range model.CharacterSections {
-		errorMessage, lastUpdatedAt := sc.GetStatus(characterID, section)
+		errorMessage, completedAt := sc.GetStatus(characterID, section)
 		list[i] = model.CharacterStatus{
 			CharacterID:   characterID,
 			CharacterName: characterName,
 			ErrorMessage:  errorMessage,
-			LastUpdatedAt: lastUpdatedAt,
+			CompletedAt:   completedAt,
 			Section:       section,
 		}
 	}
@@ -130,10 +130,10 @@ func (sc *CharacterStatusService) SetStatus(
 	characterID int32,
 	section model.CharacterSection,
 	errorMessage string,
-	lastUpdatedAt time.Time,
+	completedAt time.Time,
 ) {
 	k := cacheKey{characterID: characterID, section: section}
-	v := cacheValue{ErrorMessage: errorMessage, LastUpdatedAt: lastUpdatedAt}
+	v := cacheValue{ErrorMessage: errorMessage, CompletedAt: completedAt}
 	sc.cache.Set(k, v, 0)
 }
 
@@ -144,9 +144,9 @@ func (sc *CharacterStatusService) SetError(
 ) {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
-	_, lastUpdatedAt := sc.GetStatus(characterID, section)
+	_, completedAt := sc.GetStatus(characterID, section)
 	k := cacheKey{characterID: characterID, section: section}
-	v := cacheValue{ErrorMessage: errorMessage, LastUpdatedAt: lastUpdatedAt}
+	v := cacheValue{ErrorMessage: errorMessage, CompletedAt: completedAt}
 	sc.cache.Set(k, v, 0)
 }
 
