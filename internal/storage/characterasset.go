@@ -58,14 +58,14 @@ func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, ite
 		CharacterID: int64(characterID),
 		ItemID:      itemID,
 	}
-	row, err := st.q.GetCharacterAsset(ctx, arg)
+	r, err := st.q.GetCharacterAsset(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to get character asset for character %d: %w", characterID, err)
 	}
-	o := characterAssetFromDBModel(row.CharacterAsset, row.EveType, row.EveGroup, row.EveCategory)
+	o := characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	return o, nil
 }
 
@@ -93,8 +93,8 @@ func (st *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, characte
 		return nil, err
 	}
 	ii2 := make([]*model.CharacterAsset, len(rows))
-	for i, row := range rows {
-		ii2[i] = characterAssetFromDBModel(row.CharacterAsset, row.EveType, row.EveGroup, row.EveCategory)
+	for i, r := range rows {
+		ii2[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	}
 	return ii2, nil
 }
@@ -111,8 +111,8 @@ func (st *Storage) ListCharacterAssetsInItemHangar(ctx context.Context, characte
 		return nil, err
 	}
 	ii2 := make([]*model.CharacterAsset, len(rows))
-	for i, row := range rows {
-		ii2[i] = characterAssetFromDBModel(row.CharacterAsset, row.EveType, row.EveGroup, row.EveCategory)
+	for i, r := range rows {
+		ii2[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	}
 	return ii2, nil
 }
@@ -127,8 +127,8 @@ func (st *Storage) ListCharacterAssetsInLocation(ctx context.Context, characterI
 		return nil, err
 	}
 	ii2 := make([]*model.CharacterAsset, len(rows))
-	for i, row := range rows {
-		ii2[i] = characterAssetFromDBModel(row.CharacterAsset, row.EveType, row.EveGroup, row.EveCategory)
+	for i, r := range rows {
+		ii2[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	}
 	return ii2, nil
 }
@@ -201,7 +201,7 @@ func (st *Storage) ListAllCharacterAssets(ctx context.Context) ([]*model.Charact
 	}
 	oo := make([]*model.CharacterAsset, len(rows))
 	for i, r := range rows {
-		oo[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory)
+		oo[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	}
 	return oo, nil
 }
@@ -213,12 +213,12 @@ func (st *Storage) ListCharacterAssets(ctx context.Context, characterID int32) (
 	}
 	oo := make([]*model.CharacterAsset, len(rows))
 	for i, r := range rows {
-		oo[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory)
+		oo[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	}
 	return oo, nil
 }
 
-func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g queries.EveGroup, c queries.EveCategory) *model.CharacterAsset {
+func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g queries.EveGroup, c queries.EveCategory, p sql.NullFloat64) *model.CharacterAsset {
 	if ca.CharacterID == 0 {
 		panic("missing character ID")
 	}
@@ -234,6 +234,7 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g q
 		LocationType:    ca.LocationType,
 		Name:            ca.Name,
 		Quantity:        int32(ca.Quantity),
+		Price:           p,
 	}
 	return o
 }

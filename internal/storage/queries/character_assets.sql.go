@@ -90,11 +90,13 @@ SELECT
     ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
     eg.id, eg.eve_category_id, eg.name, eg.is_published,
-    ec.id, ec.name, ec.is_published
+    ec.id, ec.name, ec.is_published,
+    average_price as price
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
 WHERE character_id = ?
 AND item_id = ?
 `
@@ -109,6 +111,7 @@ type GetCharacterAssetRow struct {
 	EveType        EveType
 	EveGroup       EveGroup
 	EveCategory    EveCategory
+	Price          sql.NullFloat64
 }
 
 func (q *Queries) GetCharacterAsset(ctx context.Context, arg GetCharacterAssetParams) (GetCharacterAssetRow, error) {
@@ -147,6 +150,7 @@ func (q *Queries) GetCharacterAsset(ctx context.Context, arg GetCharacterAssetPa
 		&i.EveCategory.ID,
 		&i.EveCategory.Name,
 		&i.EveCategory.IsPublished,
+		&i.Price,
 	)
 	return i, err
 }
@@ -170,11 +174,13 @@ SELECT
     ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
     eg.id, eg.eve_category_id, eg.name, eg.is_published,
-    ec.id, ec.name, ec.is_published
+    ec.id, ec.name, ec.is_published,
+    average_price as price
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
 ORDER BY et.name, ca.location_id
 `
 
@@ -183,6 +189,7 @@ type ListAllCharacterAssetsRow struct {
 	EveType        EveType
 	EveGroup       EveGroup
 	EveCategory    EveCategory
+	Price          sql.NullFloat64
 }
 
 func (q *Queries) ListAllCharacterAssets(ctx context.Context) ([]ListAllCharacterAssetsRow, error) {
@@ -227,6 +234,7 @@ func (q *Queries) ListAllCharacterAssets(ctx context.Context) ([]ListAllCharacte
 			&i.EveCategory.ID,
 			&i.EveCategory.Name,
 			&i.EveCategory.IsPublished,
+			&i.Price,
 		); err != nil {
 			return nil, err
 		}
@@ -338,11 +346,13 @@ SELECT
     ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
     eg.id, eg.eve_category_id, eg.name, eg.is_published,
-    ec.id, ec.name, ec.is_published
+    ec.id, ec.name, ec.is_published,
+    average_price as price
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
 WHERE character_id = ?
 ORDER BY et.name, ca.location_id
 `
@@ -352,6 +362,7 @@ type ListCharacterAssetsRow struct {
 	EveType        EveType
 	EveGroup       EveGroup
 	EveCategory    EveCategory
+	Price          sql.NullFloat64
 }
 
 func (q *Queries) ListCharacterAssets(ctx context.Context, characterID int64) ([]ListCharacterAssetsRow, error) {
@@ -396,6 +407,7 @@ func (q *Queries) ListCharacterAssets(ctx context.Context, characterID int64) ([
 			&i.EveCategory.ID,
 			&i.EveCategory.Name,
 			&i.EveCategory.IsPublished,
+			&i.Price,
 		); err != nil {
 			return nil, err
 		}
@@ -415,11 +427,13 @@ SELECT
     ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
     eg.id, eg.eve_category_id, eg.name, eg.is_published,
-    ec.id, ec.name, ec.is_published
+    ec.id, ec.name, ec.is_published,
+    average_price as price
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
 WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
@@ -439,6 +453,7 @@ type ListCharacterAssetsInItemHangarRow struct {
 	EveType        EveType
 	EveGroup       EveGroup
 	EveCategory    EveCategory
+	Price          sql.NullFloat64
 }
 
 func (q *Queries) ListCharacterAssetsInItemHangar(ctx context.Context, arg ListCharacterAssetsInItemHangarParams) ([]ListCharacterAssetsInItemHangarRow, error) {
@@ -488,6 +503,7 @@ func (q *Queries) ListCharacterAssetsInItemHangar(ctx context.Context, arg ListC
 			&i.EveCategory.ID,
 			&i.EveCategory.Name,
 			&i.EveCategory.IsPublished,
+			&i.Price,
 		); err != nil {
 			return nil, err
 		}
@@ -507,11 +523,13 @@ SELECT
     ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
     eg.id, eg.eve_category_id, eg.name, eg.is_published,
-    ec.id, ec.name, ec.is_published
+    ec.id, ec.name, ec.is_published,
+    average_price as price
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
 WHERE character_id = ?
 AND location_id = ?
 ORDER BY et.id
@@ -527,6 +545,7 @@ type ListCharacterAssetsInLocationRow struct {
 	EveType        EveType
 	EveGroup       EveGroup
 	EveCategory    EveCategory
+	Price          sql.NullFloat64
 }
 
 func (q *Queries) ListCharacterAssetsInLocation(ctx context.Context, arg ListCharacterAssetsInLocationParams) ([]ListCharacterAssetsInLocationRow, error) {
@@ -571,6 +590,7 @@ func (q *Queries) ListCharacterAssetsInLocation(ctx context.Context, arg ListCha
 			&i.EveCategory.ID,
 			&i.EveCategory.Name,
 			&i.EveCategory.IsPublished,
+			&i.Price,
 		); err != nil {
 			return nil, err
 		}
@@ -590,11 +610,13 @@ SELECT
     ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
     eg.id, eg.eve_category_id, eg.name, eg.is_published,
-    ec.id, ec.name, ec.is_published
+    ec.id, ec.name, ec.is_published,
+    average_price as price
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
 WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
@@ -614,6 +636,7 @@ type ListCharacterAssetsInShipHangarRow struct {
 	EveType        EveType
 	EveGroup       EveGroup
 	EveCategory    EveCategory
+	Price          sql.NullFloat64
 }
 
 func (q *Queries) ListCharacterAssetsInShipHangar(ctx context.Context, arg ListCharacterAssetsInShipHangarParams) ([]ListCharacterAssetsInShipHangarRow, error) {
@@ -663,6 +686,7 @@ func (q *Queries) ListCharacterAssetsInShipHangar(ctx context.Context, arg ListC
 			&i.EveCategory.ID,
 			&i.EveCategory.Name,
 			&i.EveCategory.IsPublished,
+			&i.Price,
 		); err != nil {
 			return nil, err
 		}

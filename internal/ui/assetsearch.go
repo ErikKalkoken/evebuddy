@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/dustin/go-humanize"
@@ -73,6 +74,7 @@ type assetSearchRow struct {
 	locationName  string
 	name          string
 	quantity      string
+	price         string
 	typeID        int32
 	typeName      string
 }
@@ -107,6 +109,14 @@ func (a *assetSearchArea) newAssetSearchRow(ca *model.CharacterAsset) *assetSear
 	}
 	r.locationID = locationID
 	r.locationName = t
+	var price string
+	if !ca.Price.Valid || ca.IsBlueprintCopy {
+		price = "?"
+	} else {
+		t := ca.Price.Float64 * float64(ca.Quantity)
+		price = ihumanize.Number(t, 1)
+	}
+	r.price = price
 	return r
 }
 
@@ -115,11 +125,12 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 		text  string
 		width float32
 	}{
-		{"Name", 350},
+		{"Name", 300},
 		{"Quantity", 75},
-		{"Group", 250},
+		{"Group", 200},
 		{"Location", 350},
 		{"Character", 200},
+		{"Price", 100},
 	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
@@ -152,6 +163,8 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 				t = r.locationName
 			case 4:
 				t = r.characterName
+			case 5:
+				t = r.price
 			}
 			label.Text = t
 			label.Alignment = ta

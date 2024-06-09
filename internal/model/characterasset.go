@@ -26,6 +26,7 @@ type CharacterAsset struct {
 	LocationType    string
 	Name            string
 	Quantity        int32
+	Price           sql.NullFloat64
 }
 
 func (ca CharacterAsset) DisplayName() string {

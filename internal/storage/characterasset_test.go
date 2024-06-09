@@ -21,6 +21,9 @@ func TestCharacterAsset(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		eveType := factory.CreateEveType()
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID: eveType.ID, AveragePrice: 1.24,
+		})
 		arg := storage.CreateCharacterAssetParams{
 			CharacterID:     c.ID,
 			EveTypeID:       eveType.ID,
@@ -49,6 +52,7 @@ func TestCharacterAsset(t *testing.T) {
 				assert.Equal(t, "other", x.LocationType)
 				assert.Equal(t, "Alpha", x.Name)
 				assert.Equal(t, int32(7), x.Quantity)
+				assert.Equal(t, storage.NewNullFloat64(1.24), x.Price)
 			}
 		}
 	})

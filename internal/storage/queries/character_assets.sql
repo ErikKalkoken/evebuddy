@@ -25,11 +25,13 @@ SELECT
     sqlc.embed(ca),
     sqlc.embed(et),
     sqlc.embed(eg),
-    sqlc.embed(ec)
+    sqlc.embed(ec),
+    average_price as price
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
 WHERE character_id = ?
 AND item_id = ?;
 
@@ -43,11 +45,13 @@ SELECT
     sqlc.embed(ca),
     sqlc.embed(et),
     sqlc.embed(eg),
-    sqlc.embed(ec)
+    sqlc.embed(ec),
+    average_price as price
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
 ORDER BY et.name, ca.location_id;
 
 -- name: ListCharacterAssets :many
@@ -55,11 +59,13 @@ SELECT
     sqlc.embed(ca),
     sqlc.embed(et),
     sqlc.embed(eg),
-    sqlc.embed(ec)
+    sqlc.embed(ec),
+    average_price as price
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
 WHERE character_id = ?
 ORDER BY et.name, ca.location_id;
 
@@ -68,11 +74,13 @@ SELECT
     sqlc.embed(ca),
     sqlc.embed(et),
     sqlc.embed(eg),
-    sqlc.embed(ec)
+    sqlc.embed(ec),
+    average_price as price
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
 WHERE character_id = ?
 AND location_id = ?
 ORDER BY et.id;
@@ -82,11 +90,13 @@ SELECT
     sqlc.embed(ca),
     sqlc.embed(et),
     sqlc.embed(eg),
-    sqlc.embed(ec)
+    sqlc.embed(ec),
+    average_price as price
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
 WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
@@ -98,11 +108,13 @@ SELECT
     sqlc.embed(ca),
     sqlc.embed(et),
     sqlc.embed(eg),
-    sqlc.embed(ec)
+    sqlc.embed(ec),
+    average_price as price
 FROM character_assets ca
 JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
 WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
