@@ -124,7 +124,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 			return
 		}
 		if n.isBranch() {
-			a.ui.showLocationInfoWindow(n.LocationID)
+			t.ToggleBranch(uid)
 			return
 		}
 		if err := a.redrawAssets(n); err != nil {

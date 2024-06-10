@@ -185,7 +185,7 @@ func (a *mailArea) redraw() {
 func (a *mailArea) refresh() {
 	characterID := a.ui.characterID()
 	folderAll, err := func() (folderNode, error) {
-		ids, values, folderAll, err := a.buildFolderTree(characterID)
+		ids, values, folderAll, err := a.makeFolderTreeData(characterID)
 		if err != nil {
 			return folderNode{}, err
 		}
@@ -220,7 +220,7 @@ func (a *mailArea) updateMailTab(unreadCount int) {
 	a.ui.tabs.Refresh()
 }
 
-func (a *mailArea) buildFolderTree(characterID int32) (map[string][]string, map[string]string, folderNode, error) {
+func (a *mailArea) makeFolderTreeData(characterID int32) (map[string][]string, map[string]string, folderNode, error) {
 	ctx := context.Background()
 	labelUnreadCounts, err := a.ui.sv.Characters.GetCharacterMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {

@@ -24,6 +24,10 @@ type jumpCloneNode struct {
 	ImplantTypeDescription string
 }
 
+func (n jumpCloneNode) isBranch() bool {
+	return n.ImplantTypeID == 0 && n.ImplantCount > 0
+}
+
 func (n jumpCloneNode) isClone() bool {
 	return n.ImplantTypeID == 0
 }
@@ -106,9 +110,11 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			t.UnselectAll()
 			return
 		}
-		if n.isClone() {
-			a.ui.showLocationInfoWindow(n.LocationID)
-		} else {
+		if n.isBranch() {
+			t.ToggleBranch(uid)
+			return
+		}
+		if !n.isClone() {
 			a.ui.showTypeInfoWindow(n.ImplantTypeID, a.ui.characterID())
 		}
 	}
