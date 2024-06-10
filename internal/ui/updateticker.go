@@ -105,6 +105,7 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 		if hasChanged {
 			u.assetSearchArea.refresh()
+			u.wealthArea.refresh()
 		}
 	case model.SectionAttributes:
 		if isCurrent && hasChanged {
@@ -127,6 +128,7 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		model.SectionWalletBalance:
 		if hasChanged {
 			u.overviewArea.refresh()
+			u.wealthArea.refresh()
 		}
 	case model.SectionMailLabels,
 		model.SectionMailLists,

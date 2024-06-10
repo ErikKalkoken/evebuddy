@@ -128,6 +128,9 @@ func (sc *CharacterStatusService) ListStatus(characterID int32) []model.Characte
 }
 
 func (sc *CharacterStatusService) Set(o *model.CharacterUpdateStatus) {
+	if o == nil {
+		return
+	}
 	k := cacheKey{
 		characterID: o.CharacterID,
 		section:     o.Section,

@@ -57,6 +57,7 @@ type ui struct {
 	tabs                  *container.AppTabs
 	walletJournalArea     *walletJournalArea
 	walletTransactionArea *walletTransactionArea
+	wealthArea            *wealthArea
 	window                fyne.Window
 }
 
@@ -98,10 +99,12 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 
 	u.overviewArea = u.newOverviewArea()
 	u.assetSearchArea = u.newAssetSearchArea()
+	u.wealthArea = u.newWealthArea()
 	overviewTab := container.NewTabItemWithIcon("Characters",
 		theme.NewThemedResource(resourceGroupSvg), container.NewAppTabs(
 			container.NewTabItem("Overview", u.overviewArea.content),
 			container.NewTabItem("Assets", u.assetSearchArea.content),
+			container.NewTabItem("Wealth", u.wealthArea.content),
 		))
 
 	u.skillqueueArea = u.newSkillqueueArea()
@@ -297,6 +300,7 @@ func (u *ui) refreshCharacter() {
 	u.toolbarArea.refresh()
 	u.walletJournalArea.refresh()
 	u.walletTransactionArea.refresh()
+	u.wealthArea.refresh()
 	c := u.currentCharacter()
 	if c != nil {
 		u.tabs.EnableIndex(0)
@@ -309,7 +313,8 @@ func (u *ui) refreshCharacter() {
 		u.tabs.DisableIndex(1)
 		u.tabs.DisableIndex(2)
 		u.tabs.DisableIndex(3)
-		u.tabs.SelectIndex(4)
+		u.tabs.DisableIndex(4)
+		u.tabs.SelectIndex(5)
 	}
 	go u.statusBarArea.characterUpdateStatusArea.refresh()
 	u.window.Content().Refresh()
