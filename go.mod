@@ -16,7 +16,7 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.26
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/stretchr/testify v1.9.0
-	github.com/wcharczuk/go-chart v2.0.1+incompatible
+	github.com/wcharczuk/go-chart/v2 v2.1.1
 	golang.org/x/text v0.16.0
 )
 
@@ -25,15 +25,7 @@ require (
 	github.com/blend/go-sdk v1.20220411.3 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/neelance/astrewrite v0.0.0-20160511093645-99348263ae86 // indirect
-	github.com/neelance/sourcemap v0.0.0-20200213170602-2833bce08e4c // indirect
-	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
-	github.com/sirupsen/logrus v1.8.1 // indirect
-	github.com/spf13/cobra v1.3.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/term v0.21.0 // indirect
-	golang.org/x/tools v0.22.0 // indirect
+	github.com/kr/pretty v0.2.0 // indirect
 )
 
 require (
