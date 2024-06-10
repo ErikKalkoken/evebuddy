@@ -14,6 +14,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
+	"github.com/golang/freetype/truetype"
+
 	"github.com/wcharczuk/go-chart/v2"
 	"github.com/wcharczuk/go-chart/v2/drawing"
 )
@@ -54,6 +56,13 @@ type myValue struct {
 	value float64
 }
 
+// Fyne theme resources shared used in all charts
+type myStyle struct {
+	foregroundColor drawing.Color
+	backgroundColor drawing.Color
+	font            *truetype.Font
+}
+
 func (a *wealthArea) refresh() {
 	data, err := a.compileData()
 	if err != nil {
@@ -63,7 +72,17 @@ func (a *wealthArea) refresh() {
 	for i, r := range data {
 		totalData[i] = myValue{label: r.label, value: r.assets + r.wallet}
 	}
-	content, err := makePieChart(totalData)
+	f := theme.DefaultTextFont().Content()
+	font, err := truetype.Parse(f)
+	if err != nil {
+		panic(err)
+	}
+	style := myStyle{
+		font:            font,
+		foregroundColor: chartColor(theme.ForegroundColor()),
+		backgroundColor: chartColor(theme.BackgroundColor()),
+	}
+	content, err := makePieChart(totalData, style)
 	if err != nil {
 		panic(err)
 	}
@@ -73,7 +92,7 @@ func (a *wealthArea) refresh() {
 	for i, r := range data {
 		assetsData[i] = myValue{label: r.label, value: r.assets}
 	}
-	content, err = makeBarChart(assetsData)
+	content, err = makeBarChart(assetsData, style)
 	if err != nil {
 		panic(err)
 	}
@@ -83,7 +102,7 @@ func (a *wealthArea) refresh() {
 	for i, r := range data {
 		walletData[i] = myValue{label: r.label, value: r.wallet}
 	}
-	content, err = makeBarChart(walletData)
+	content, err = makeBarChart(walletData, style)
 	if err != nil {
 		panic(err)
 	}
@@ -141,7 +160,7 @@ func makeChartContainer(content []byte, title string) *fyne.Container {
 	return c
 }
 
-func makePieChart(data []myValue) ([]byte, error) {
+func makePieChart(data []myValue, style myStyle) ([]byte, error) {
 	var total, other float64
 	for _, r := range data {
 		total += r.value
@@ -165,6 +184,7 @@ func makePieChart(data []myValue) ([]byte, error) {
 		}
 		values = append(values, o)
 	}
+
 	pie := chart.PieChart{
 		Width:  512,
 		Height: 512,
@@ -179,9 +199,10 @@ func makePieChart(data []myValue) ([]byte, error) {
 			FillColor: chart.ColorTransparent,
 		},
 		SliceStyle: chart.Style{
-			FontColor:   chartColor(theme.ForegroundColor()),
-			StrokeColor: chartColor(theme.ForegroundColor()),
+			FontColor:   style.foregroundColor,
+			StrokeColor: style.backgroundColor,
 		},
+		Font:   style.font,
 		Values: values,
 	}
 	var buf bytes.Buffer
@@ -196,7 +217,7 @@ func chartColor(c color.Color) drawing.Color {
 	return drawing.Color{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a)}
 }
 
-func makeBarChart(data []myValue) ([]byte, error) {
+func makeBarChart(data []myValue, style myStyle) ([]byte, error) {
 	bars := make([]chart.Value, len(data))
 	for i, r := range data {
 		bars[i] = chart.Value{
@@ -211,16 +232,17 @@ func makeBarChart(data []myValue) ([]byte, error) {
 		Canvas: chart.Style{
 			FillColor: chart.ColorTransparent,
 		},
+		Font:   style.font,
 		Width:  1024,
 		Height: 512,
 		XAxis: chart.Style{
 			Hidden:    false,
-			FontColor: chartColor(theme.ForegroundColor()),
+			FontColor: style.foregroundColor,
 		},
 		YAxis: chart.YAxis{
 			Style: chart.Style{
 				Hidden:    false,
-				FontColor: chartColor(theme.ForegroundColor()),
+				FontColor: style.foregroundColor,
 			},
 			ValueFormatter: numericValueFormatter,
 		},
