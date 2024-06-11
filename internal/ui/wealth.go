@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 
 	"fyne.io/fyne/v2"
@@ -43,7 +44,11 @@ type dataRow struct {
 func (a *wealthArea) refresh() {
 	data, err := a.compileData()
 	if err != nil {
-		panic(err)
+		slog.Error("Failed to fetch data for charts", "err", err)
+		a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", humanize.Error(err))
+		a.top.Importance = widget.DangerImportance
+		a.top.Refresh()
+		return
 	}
 	cb := charts.NewChartBuilder()
 
