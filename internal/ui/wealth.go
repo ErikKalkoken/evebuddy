@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"image/color"
+	"log/slog"
 	"slices"
 	"strings"
 
@@ -25,6 +26,13 @@ import (
 
 const (
 	chartOtherThreshold = 0.05
+)
+
+type chartType uint
+
+const (
+	pieChart chartType = iota
+	barChart
 )
 
 type wealthArea struct {
@@ -77,11 +85,7 @@ func (a *wealthArea) refresh() {
 	for i, r := range data {
 		charactersData[i] = myValue{label: r.label, value: r.assets + r.wallet}
 	}
-	content, err := makePieChart(charactersData, style)
-	if err != nil {
-		panic(err)
-	}
-	charactersChart := makeChartContainer(content, "Total Wealth By Character")
+	charactersChart := makeChart(pieChart, "Total Wealth By Character", charactersData, style)
 
 	var totalWallet, totalAssets float64
 	for _, r := range data {
@@ -91,31 +95,19 @@ func (a *wealthArea) refresh() {
 	typesData := make([]myValue, 2)
 	typesData[0] = myValue{label: "Assets", value: totalAssets}
 	typesData[1] = myValue{label: "Wallet", value: totalWallet}
-	content, err = makePieChart(typesData, style)
-	if err != nil {
-		panic(err)
-	}
-	typesChart := makeChartContainer(content, "Total Wealth By Type")
+	typesChart := makeChart(pieChart, "Total Wealth By Type", typesData, style)
 
 	assetsData := make([]myValue, len(data))
 	for i, r := range data {
 		assetsData[i] = myValue{label: r.label, value: r.assets}
 	}
-	content, err = makeBarChart(assetsData, style)
-	if err != nil {
-		panic(err)
-	}
-	assetsChart := makeChartContainer(content, "Assets Value By Character")
+	assetsChart := makeChart(barChart, "Assets Value By Character", assetsData, style)
 
 	walletData := make([]myValue, len(data))
 	for i, r := range data {
 		walletData[i] = myValue{label: r.label, value: r.wallet}
 	}
-	content, err = makeBarChart(walletData, style)
-	if err != nil {
-		panic(err)
-	}
-	walletChart := makeChartContainer(content, "Wallet Balance By Character")
+	walletChart := makeChart(barChart, "Wallet Balance By Character", walletData, style)
 
 	a.charts.RemoveAll()
 	a.charts.Add(container.NewHBox(charactersChart, typesChart))
@@ -127,20 +119,6 @@ func (a *wealthArea) refresh() {
 		total += r.assets + r.wallet
 	}
 	a.top.SetText(fmt.Sprintf("Total: %s", humanize.Number(total, 1)))
-}
-
-func compileThemeStyle() myStyle {
-	f := theme.DefaultTextFont().Content()
-	font, err := truetype.Parse(f)
-	if err != nil {
-		panic(err)
-	}
-	style := myStyle{
-		font:            font,
-		foregroundColor: chartColor(theme.ForegroundColor()),
-		backgroundColor: chartColor(theme.BackgroundColor()),
-	}
-	return style
 }
 
 func (a *wealthArea) compileData() ([]dataRow, error) {
@@ -171,7 +149,35 @@ func (a *wealthArea) compileData() ([]dataRow, error) {
 	return data, nil
 }
 
-func makeChartContainer(content []byte, title string) *fyne.Container {
+func compileThemeStyle() myStyle {
+	f := theme.DefaultTextFont().Content()
+	font, err := truetype.Parse(f)
+	if err != nil {
+		panic(err)
+	}
+	style := myStyle{
+		font:            font,
+		foregroundColor: chartColor(theme.ForegroundColor()),
+		backgroundColor: chartColor(theme.BackgroundColor()),
+	}
+	return style
+}
+
+func makeChart(ct chartType, title string, values []myValue, style myStyle) *fyne.Container {
+	var content []byte
+	var err error
+	switch ct {
+	case barChart:
+		content, err = makeBarChart(values, style)
+	case pieChart:
+		content, err = makePieChart(values, style)
+	}
+	if err != nil {
+		slog.Error("Failed to generate chart", "title", title, "err", err)
+		l := widget.NewLabel(fmt.Sprintf("Failed to generate chart: %s", humanize.Error(err)))
+		l.Importance = widget.DangerImportance
+		return container.NewCenter(l)
+	}
 	fn := makeFileName(title)
 	r := fyne.NewStaticResource(fn, content)
 	chart := canvas.NewImageFromResource(r)
@@ -192,13 +198,13 @@ func makeFileName(title string) string {
 	return fn
 }
 
-func makePieChart(data []myValue, style myStyle) ([]byte, error) {
+func makePieChart(values []myValue, style myStyle) ([]byte, error) {
 	var total, other float64
-	for _, r := range data {
+	for _, r := range values {
 		total += r.value
 	}
 	data2 := make([]myValue, 0)
-	for _, r := range data {
+	for _, r := range values {
 		if r.value/total < chartOtherThreshold {
 			other += r.value
 			continue
@@ -208,13 +214,13 @@ func makePieChart(data []myValue, style myStyle) ([]byte, error) {
 	if other > 0 {
 		data2 = append(data2, myValue{label: "Other", value: other})
 	}
-	values := make([]chart.Value, 0)
+	chartValues := make([]chart.Value, 0)
 	for _, r := range data2 {
 		o := chart.Value{
 			Label: fmt.Sprintf("%s %s", r.label, humanize.Number(r.value, 1)),
 			Value: r.value,
 		}
-		values = append(values, o)
+		chartValues = append(chartValues, o)
 	}
 
 	pie := chart.PieChart{
@@ -235,7 +241,7 @@ func makePieChart(data []myValue, style myStyle) ([]byte, error) {
 			StrokeColor: style.backgroundColor,
 		},
 		Font:   style.font,
-		Values: values,
+		Values: chartValues,
 	}
 	var buf bytes.Buffer
 	if err := pie.Render(chart.PNG, &buf); err != nil {
