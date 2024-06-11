@@ -10,6 +10,7 @@ require (
 	github.com/chasinglogic/appdirs v0.0.0-20240404201500-635ea422ee89
 	github.com/dustin/go-humanize v1.0.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/lestrrat-go/jwx/v2 v2.0.21
 	github.com/mattn/go-sqlite3 v1.14.22
@@ -23,7 +24,6 @@ require (
 require (
 	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/blend/go-sdk v1.20220411.3 // indirect
-	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 )

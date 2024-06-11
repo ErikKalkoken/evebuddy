@@ -1,4 +1,4 @@
-package ui
+package mailrecipients
 
 import (
 	"fmt"
@@ -81,7 +81,7 @@ func (r *recipient) hasCategory() bool {
 	return r.category != mailRecipientCategoryUnknown
 }
 
-func (r *recipient) EveEntityCategory() (model.EveEntityCategory, bool) {
+func (r *recipient) eveEntityCategory() (model.EveEntityCategory, bool) {
 	for ec, rc := range mailRecipientMapCategories {
 		if rc == r.category {
 			return ec, true
@@ -99,13 +99,13 @@ type MailRecipients struct {
 	list []recipient
 }
 
-func NewMailRecipients() *MailRecipients {
+func New() *MailRecipients {
 	var rr MailRecipients
 	return &rr
 }
 
-func NewMailRecipientsFromEntities(ee []*model.EveEntity) *MailRecipients {
-	rr := NewMailRecipients()
+func NewFromEntities(ee []*model.EveEntity) *MailRecipients {
+	rr := New()
 	for _, e := range ee {
 		o := newRecipientFromEntity(e)
 		rr.list = append(rr.list, o)
@@ -113,8 +113,8 @@ func NewMailRecipientsFromEntities(ee []*model.EveEntity) *MailRecipients {
 	return rr
 }
 
-func NewMailRecipientsFromText(t string) *MailRecipients {
-	rr := NewMailRecipients()
+func NewFromText(t string) *MailRecipients {
+	rr := New()
 	if t == "" {
 		return rr
 	}
@@ -173,7 +173,7 @@ func (rr *MailRecipients) ToEveEntitiesUnclean() []*model.EveEntity {
 	ee := make([]*model.EveEntity, len(rr.list))
 	for i, r := range rr.list {
 		e := model.EveEntity{Name: r.name}
-		c, ok := r.EveEntityCategory()
+		c, ok := r.eveEntityCategory()
 		if ok {
 			e.Category = c
 		}

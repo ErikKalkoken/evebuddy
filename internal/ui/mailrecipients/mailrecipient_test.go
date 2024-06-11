@@ -1,4 +1,4 @@
-package ui
+package mailrecipients
 
 import (
 	"testing"
@@ -82,14 +82,14 @@ func TestNewRecipientsFromText(t *testing.T) {
 		}
 		for _, tt := range cases {
 			t.Run(tt.name, func(t *testing.T) {
-				r := NewMailRecipientsFromText(tt.in)
+				r := NewFromText(tt.in)
 				s := r.String()
 				assert.Equal(t, tt.out, s)
 			})
 		}
 	})
 	t.Run("can create from empty text", func(t *testing.T) {
-		r := NewMailRecipientsFromText("")
+		r := NewFromText("")
 		assert.Equal(t, r.Size(), 0)
 	})
 }
