@@ -42,9 +42,9 @@ func (d *DictionaryService) Exists(key string) (bool, error) {
 	return ok, nil
 }
 
-// GetInt returns the value for a dictionary key, when it exists.
+// Int returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (d *DictionaryService) GetInt(key string) (int, bool, error) {
+func (d *DictionaryService) Int(key string) (int, bool, error) {
 	ctx := context.Background()
 	data, ok, err := d.s.GetDictEntry(ctx, key)
 	if err != nil {
@@ -56,8 +56,8 @@ func (d *DictionaryService) GetInt(key string) (int, bool, error) {
 	return anyFromBytes[int](data)
 }
 
-func (d *DictionaryService) GetIntWithFallback(key string, fallback int) (int, error) {
-	v, found, err := d.GetInt(key)
+func (d *DictionaryService) IntWithFallback(key string, fallback int) (int, error) {
+	v, found, err := d.Int(key)
 	if err != nil {
 		return 0, err
 	}
@@ -67,9 +67,9 @@ func (d *DictionaryService) GetIntWithFallback(key string, fallback int) (int, e
 	return v, nil
 }
 
-// GetFloat32 returns the value for a dictionary key, when it exists.
+// Float32 returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (d *DictionaryService) GetFloat32(key string) (float32, bool, error) {
+func (d *DictionaryService) Float32(key string) (float32, bool, error) {
 	ctx := context.Background()
 	data, ok, err := d.s.GetDictEntry(ctx, key)
 	if err != nil {
@@ -81,9 +81,9 @@ func (d *DictionaryService) GetFloat32(key string) (float32, bool, error) {
 	return anyFromBytes[float32](data)
 }
 
-// GetFloat64 returns the value for a dictionary key, when it exists.
+// Float64 returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (d *DictionaryService) GetFloat64(key string) (float64, bool, error) {
+func (d *DictionaryService) Float64(key string) (float64, bool, error) {
 	ctx := context.Background()
 	data, ok, err := d.s.GetDictEntry(ctx, key)
 	if err != nil {
@@ -95,9 +95,9 @@ func (d *DictionaryService) GetFloat64(key string) (float64, bool, error) {
 	return anyFromBytes[float64](data)
 }
 
-// GetString returns the value for a dictionary key, when it exists.
+// String returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (d *DictionaryService) GetString(key string) (string, bool, error) {
+func (d *DictionaryService) String(key string) (string, bool, error) {
 	ctx := context.Background()
 	data, ok, err := d.s.GetDictEntry(ctx, key)
 	if err != nil {
@@ -109,9 +109,9 @@ func (d *DictionaryService) GetString(key string) (string, bool, error) {
 	return anyFromBytes[string](data)
 }
 
-// GetTime returns the value for a dictionary key, when it exists.
+// Time returns the value for a dictionary key, when it exists.
 // Otherwise it returns it's zero value.
-func (d *DictionaryService) GetTime(key string) (time.Time, bool, error) {
+func (d *DictionaryService) Time(key string) (time.Time, bool, error) {
 	ctx := context.Background()
 	data, ok, err := d.s.GetDictEntry(ctx, key)
 	if err != nil {

@@ -3,7 +3,10 @@ package testutil
 
 import (
 	"context"
+	"crypto/md5"
 	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math/rand/v2"
 	"slices"
@@ -487,7 +490,7 @@ func (f Factory) CreateCharacterUpdateStatus(args ...CharacterUpdateStatusParams
 	if arg.StartedAt.IsZero() {
 		arg.StartedAt = time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second)
 	}
-	hash, err := arg.Section.CalcContentHash(arg.Data)
+	hash, err := calcContentHash(arg.Data)
 	if err != nil {
 		panic(err)
 	}
@@ -1034,3 +1037,13 @@ func (f *Factory) calcNewIDWithCharacter(table, id_field string, characterID int
 // 	}
 // 	return max.Int64 + 1
 // }
+
+func calcContentHash(data any) (string, error) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	b2 := md5.Sum(b)
+	hash := hex.EncodeToString(b2[:])
+	return hash, nil
+}

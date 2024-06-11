@@ -14,7 +14,7 @@ import (
 // SectionExists reports whether this section exists at all.
 // This allows the app to wait with showing related data to the user until this section is full downloaded for the first time.
 func (eu *EveUniverseService) SectionExists(section model.EveUniverseSection) (bool, error) {
-	_, ok, err := eu.dt.GetTime(section.KeyLastUpdated())
+	_, ok, err := eu.dt.Time(section.KeyLastUpdated())
 	if err != nil {
 		return false, err
 	}
@@ -22,7 +22,7 @@ func (eu *EveUniverseService) SectionExists(section model.EveUniverseSection) (b
 }
 
 func (eu *EveUniverseService) UpdateSection(ctx context.Context, section model.EveUniverseSection, forceUpdate bool) (bool, error) {
-	lastUpdated, ok, err := eu.dt.GetTime(section.KeyLastUpdated())
+	lastUpdated, ok, err := eu.dt.Time(section.KeyLastUpdated())
 	if err != nil {
 		return false, err
 	}

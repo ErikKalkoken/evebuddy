@@ -1,9 +1,6 @@
 package model
 
 import (
-	"crypto/md5"
-	"encoding/hex"
-	"encoding/json"
 	"log/slog"
 	"strings"
 	"time"
@@ -76,16 +73,6 @@ func (cs CharacterSection) DisplayName() string {
 	c := cases.Title(language.English)
 	t = c.String(t)
 	return t
-}
-
-func (cs CharacterSection) CalcContentHash(data any) (string, error) {
-	b, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	b2 := md5.Sum(b)
-	hash := hex.EncodeToString(b2[:])
-	return hash, nil
 }
 
 // Timeout returns the time until the data of an update section becomes stale.

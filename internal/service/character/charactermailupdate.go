@@ -137,7 +137,7 @@ func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg Upda
 func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdMail200Ok
 	lastMailID := int32(0)
-	maxMails, err := s.dt.GetIntWithFallback(model.SettingMaxMails, model.SettingMaxMailsDefault)
+	maxMails, err := s.dt.IntWithFallback(model.SettingMaxMails, model.SettingMaxMailsDefault)
 	if err != nil {
 		return nil, err
 	}

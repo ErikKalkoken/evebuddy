@@ -2,7 +2,10 @@ package character
 
 import (
 	"context"
+	"crypto/md5"
 	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -130,7 +133,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	if err != nil {
 		return false, err
 	}
-	hash, err := arg.Section.CalcContentHash(data)
+	hash, err := calcContentHash(data)
 	if err != nil {
 		return false, err
 	}
@@ -182,4 +185,14 @@ func (s *CharacterService) getCharacterUpdateStatus(ctx context.Context, charact
 		return nil, err
 	}
 	return o, nil
+}
+
+func calcContentHash(data any) (string, error) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	b2 := md5.Sum(b)
+	hash := hex.EncodeToString(b2[:])
+	return hash, nil
 }

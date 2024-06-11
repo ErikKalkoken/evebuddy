@@ -21,7 +21,7 @@ func TestDictionary(t *testing.T) {
 		err := s.SetString("alpha", "john")
 		// then
 		if assert.NoError(t, err) {
-			v, ok, err := s.GetString("alpha")
+			v, ok, err := s.String("alpha")
 			if assert.NoError(t, err) {
 				assert.True(t, ok)
 				assert.Equal(t, "john", v)
@@ -35,7 +35,7 @@ func TestDictionary(t *testing.T) {
 		err := s.SetInt("alpha", 42)
 		// then
 		if assert.NoError(t, err) {
-			v, ok, err := s.GetInt("alpha")
+			v, ok, err := s.Int("alpha")
 			if assert.NoError(t, err) {
 				assert.True(t, ok)
 				assert.Equal(t, 42, v)
@@ -49,7 +49,7 @@ func TestDictionary(t *testing.T) {
 		err := s.SetFloat32("alpha", 1.23)
 		// then
 		if assert.NoError(t, err) {
-			v, ok, err := s.GetFloat32("alpha")
+			v, ok, err := s.Float32("alpha")
 			if assert.NoError(t, err) {
 				assert.True(t, ok)
 				assert.Equal(t, float32(1.23), v)
@@ -63,7 +63,7 @@ func TestDictionary(t *testing.T) {
 		err := s.SetFloat64("alpha", 1.23)
 		// then
 		if assert.NoError(t, err) {
-			v, ok, err := s.GetFloat64("alpha")
+			v, ok, err := s.Float64("alpha")
 			if assert.NoError(t, err) {
 				assert.True(t, ok)
 				assert.Equal(t, float64(1.23), v)
@@ -78,7 +78,7 @@ func TestDictionary(t *testing.T) {
 		err := s.SetTime("alpha", v)
 		// then
 		if assert.NoError(t, err) {
-			v2, ok, err := s.GetTime("alpha")
+			v2, ok, err := s.Time("alpha")
 			if assert.NoError(t, err) {
 				assert.True(t, ok)
 				assert.Equal(t, v.UnixMicro(), v2.UnixMicro())
@@ -96,7 +96,7 @@ func TestDictionary(t *testing.T) {
 		err = s.SetString("alpha", "peter")
 		// then
 		if assert.NoError(t, err) {
-			v, _, err := s.GetString("alpha")
+			v, _, err := s.String("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "peter", v)
 			}
@@ -106,7 +106,7 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, ok, err := s.GetString("alpha")
+		_, ok, err := s.String("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, ok)
@@ -116,7 +116,7 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, ok, err := s.GetInt("alpha")
+		_, ok, err := s.Int("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, ok)
@@ -126,7 +126,7 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, ok, err := s.GetTime("alpha")
+		_, ok, err := s.Time("alpha")
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, ok)
@@ -143,7 +143,7 @@ func TestDictionary(t *testing.T) {
 		err = s.Delete("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, _, err := s.GetString("alpha")
+			v, _, err := s.String("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}
@@ -156,7 +156,7 @@ func TestDictionary(t *testing.T) {
 		err := s.Delete("alpha")
 		// then
 		if assert.NoError(t, err) {
-			v, _, err := s.GetString("alpha")
+			v, _, err := s.String("alpha")
 			if assert.NoError(t, err) {
 				assert.Equal(t, "", v)
 			}
@@ -189,7 +189,7 @@ func TestDictionary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		v, err := s.GetIntWithFallback("alpha", 7)
+		v, err := s.IntWithFallback("alpha", 7)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, 7, v)
@@ -202,7 +202,7 @@ func TestDictionary(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when
-		v, err := s.GetIntWithFallback("alpha", 7)
+		v, err := s.IntWithFallback("alpha", 7)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, 42, v)

@@ -147,7 +147,7 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 	w.SetMaster()
 
 	var c *model.Character
-	cID, ok, err := sv.Dictionary.GetInt(model.SettingLastCharacterID)
+	cID, ok, err := sv.Dictionary.Int(model.SettingLastCharacterID)
 	if err == nil && ok {
 		c, err = sv.Characters.GetCharacter(context.Background(), int32(cID))
 		if err != nil {
@@ -162,19 +162,19 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 		u.resetCharacter()
 	}
 	keyW := "window-width"
-	width, ok, err := u.sv.Dictionary.GetFloat32(keyW)
+	width, ok, err := u.sv.Dictionary.Float32(keyW)
 	if err != nil || !ok {
 		width = 1000
 	}
 	keyH := "window-height"
-	height, ok, err := u.sv.Dictionary.GetFloat32(keyH)
+	height, ok, err := u.sv.Dictionary.Float32(keyH)
 	if err != nil || !ok {
 		width = 600
 	}
 	w.Resize(fyne.NewSize(width, height))
 
 	keyTabsMainID := "tabs-main-id"
-	index, ok, err := u.sv.Dictionary.GetInt(keyTabsMainID)
+	index, ok, err := u.sv.Dictionary.Int(keyTabsMainID)
 	if err == nil && ok {
 		u.tabs.SelectIndex(index)
 	}
@@ -187,7 +187,7 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 			continue
 		}
 		key := makeSubTabsKey(i)
-		index, ok, err := u.sv.Dictionary.GetInt(key)
+		index, ok, err := u.sv.Dictionary.Int(key)
 		if err == nil && ok {
 			tabs.SelectIndex(index)
 		}
@@ -209,7 +209,7 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 		}
 	})
 
-	name, ok, err := u.sv.Dictionary.GetString(model.SettingTheme)
+	name, ok, err := u.sv.Dictionary.String(model.SettingTheme)
 	if err != nil || !ok {
 		name = model.ThemeAuto
 	}

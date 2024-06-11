@@ -175,7 +175,7 @@ func (s *CharacterService) fetchCharacterAssetNamesESI(ctx context.Context, char
 
 func (s *CharacterService) CharacterAssetTotalValue(characterID int32) (sql.NullFloat64, error) {
 	key := makeCharacterAssetTotalValueKey(characterID)
-	v, found, err := s.dt.GetFloat64(key)
+	v, found, err := s.dt.Float64(key)
 	if err != nil {
 		return sql.NullFloat64{}, err
 	}
