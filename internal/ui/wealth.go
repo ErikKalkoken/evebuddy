@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image/color"
 	"slices"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -15,6 +16,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/golang/freetype/truetype"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/wcharczuk/go-chart/v2"
 	"github.com/wcharczuk/go-chart/v2/drawing"
@@ -68,25 +71,31 @@ func (a *wealthArea) refresh() {
 	if err != nil {
 		panic(err)
 	}
-	totalData := make([]myValue, len(data))
+	style := compileThemeStyle()
+
+	charactersData := make([]myValue, len(data))
 	for i, r := range data {
-		totalData[i] = myValue{label: r.label, value: r.assets + r.wallet}
+		charactersData[i] = myValue{label: r.label, value: r.assets + r.wallet}
 	}
-	f := theme.DefaultTextFont().Content()
-	font, err := truetype.Parse(f)
+	content, err := makePieChart(charactersData, style)
 	if err != nil {
 		panic(err)
 	}
-	style := myStyle{
-		font:            font,
-		foregroundColor: chartColor(theme.ForegroundColor()),
-		backgroundColor: chartColor(theme.BackgroundColor()),
+	charactersChart := makeChartContainer(content, "Total Wealth By Character")
+
+	var totalWallet, totalAssets float64
+	for _, r := range data {
+		totalAssets += r.assets
+		totalWallet += r.wallet
 	}
-	content, err := makePieChart(totalData, style)
+	typesData := make([]myValue, 2)
+	typesData[0] = myValue{label: "Assets", value: totalAssets}
+	typesData[1] = myValue{label: "Wallet", value: totalWallet}
+	content, err = makePieChart(typesData, style)
 	if err != nil {
 		panic(err)
 	}
-	totalChart := makeChartContainer(content, "Total Wealth By Character")
+	typesChart := makeChartContainer(content, "Total Wealth By Type")
 
 	assetsData := make([]myValue, len(data))
 	for i, r := range data {
@@ -109,7 +118,7 @@ func (a *wealthArea) refresh() {
 	walletChart := makeChartContainer(content, "Wallet Balance By Character")
 
 	a.charts.RemoveAll()
-	a.charts.Add(totalChart)
+	a.charts.Add(container.NewHBox(charactersChart, typesChart))
 	a.charts.Add(assetsChart)
 	a.charts.Add(walletChart)
 
@@ -118,6 +127,20 @@ func (a *wealthArea) refresh() {
 		total += r.assets + r.wallet
 	}
 	a.top.SetText(fmt.Sprintf("Total: %s", humanize.Number(total, 1)))
+}
+
+func compileThemeStyle() myStyle {
+	f := theme.DefaultTextFont().Content()
+	font, err := truetype.Parse(f)
+	if err != nil {
+		panic(err)
+	}
+	style := myStyle{
+		font:            font,
+		foregroundColor: chartColor(theme.ForegroundColor()),
+		backgroundColor: chartColor(theme.BackgroundColor()),
+	}
+	return style
 }
 
 func (a *wealthArea) compileData() ([]dataRow, error) {
@@ -149,7 +172,8 @@ func (a *wealthArea) compileData() ([]dataRow, error) {
 }
 
 func makeChartContainer(content []byte, title string) *fyne.Container {
-	r := fyne.NewStaticResource("chart.png", content)
+	fn := makeFileName(title)
+	r := fyne.NewStaticResource(fn, content)
 	chart := canvas.NewImageFromResource(r)
 	chart.FillMode = canvas.ImageFillOriginal
 	t := widget.NewLabel(title)
@@ -158,6 +182,14 @@ func makeChartContainer(content []byte, title string) *fyne.Container {
 		container.NewHBox(t), nil, nil, nil,
 		container.NewHBox(chart)))
 	return c
+}
+
+func makeFileName(title string) string {
+	c := cases.Title(language.English)
+	fn := c.String(title)
+	fn = strings.ReplaceAll(fn, " ", "")
+	fn = fmt.Sprintf("%s.png", fn)
+	return fn
 }
 
 func makePieChart(data []myValue, style myStyle) ([]byte, error) {
