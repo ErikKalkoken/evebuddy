@@ -182,6 +182,7 @@ func (a *statusWindow) makeCharacterList() *widget.List {
 		if err := a.sectionSelected.Set(-1); err != nil {
 			panic(err)
 		}
+		a.sections.UnselectAll()
 		a.refreshDetailArea()
 	}
 	return list

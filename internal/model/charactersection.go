@@ -55,12 +55,12 @@ var characterSectionTimeouts = map[CharacterSection]time.Duration{
 	SectionAttributes:         120 * time.Second,
 	SectionImplants:           120 * time.Second,
 	SectionJumpClones:         120 * time.Second,
-	SectionLocation:           30 * time.Second, // 5 seconds min
-	SectionMailLabels:         30 * time.Second,
+	SectionLocation:           300 * time.Second, // 5 seconds min
+	SectionMailLabels:         60 * time.Second,  // 30 seconds min
 	SectionMailLists:          120 * time.Second,
-	SectionMails:              30 * time.Second,
-	SectionOnline:             60 * time.Second,
-	SectionShip:               30 * time.Second, // 5 seconds min
+	SectionMails:              60 * time.Second,  // 30 seconds min
+	SectionOnline:             300 * time.Second, // 30 seconds min
+	SectionShip:               300 * time.Second, // 5 seconds min
 	SectionSkillqueue:         120 * time.Second,
 	SectionSkills:             120 * time.Second,
 	SectionWalletBalance:      120 * time.Second,

@@ -3,9 +3,6 @@ package ui
 import (
 	"cmp"
 	"context"
-	"crypto/md5"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -13,7 +10,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/ui/charts"
 )
@@ -52,12 +48,6 @@ func (a *wealthArea) refresh() {
 		a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", humanize.Error(err))
 		a.top.Importance = widget.DangerImportance
 		a.top.Refresh()
-		return
-	}
-	hasChanged, err := hasDataChanged(a.ui.sv.Cache, data)
-	if err != nil {
-		slog.Error("Failed to check if wealth data has changed", "err", err)
-	} else if !hasChanged {
 		return
 	}
 
@@ -128,28 +118,4 @@ func (a *wealthArea) compileData() ([]dataRow, error) {
 		return cmp.Compare(a.total, b.total) * -1
 	})
 	return data, nil
-}
-
-func hasDataChanged(c *cache.Cache, data any) (bool, error) {
-	hash, err := calcContentHash(data)
-	if err != nil {
-		return false, err
-	}
-	key := "wealth-data-hash"
-	oldHash, ok := c.Get(key)
-	if ok && oldHash == hash {
-		return false, nil
-	}
-	c.Set(key, hash, 0)
-	return true, nil
-}
-
-func calcContentHash(data any) (string, error) {
-	b, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	b2 := md5.Sum(b)
-	hash := hex.EncodeToString(b2[:])
-	return hash, nil
 }
