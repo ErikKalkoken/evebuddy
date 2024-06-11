@@ -22,6 +22,8 @@ import (
 // and allows re-use of shared resources like the http client.
 // Services provide access to the business logic for the UI.
 type Service struct {
+	// Cache service
+	Cache *cache.Cache
 	// Characters service
 	Characters *character.CharacterService
 	// Character status service
@@ -63,6 +65,7 @@ func New(st *storage.Storage, imageCacheDir string) *Service {
 		panic(err)
 	}
 	sv := Service{
+		Cache:           cache,
 		Characters:      character.New(st, httpClient, esiClient, cs, dt, eu),
 		CharacterStatus: cs,
 		Dictionary:      dt,

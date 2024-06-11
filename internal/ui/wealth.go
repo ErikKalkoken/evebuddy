@@ -13,8 +13,8 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/ui/charts"
 )
 
@@ -54,15 +54,14 @@ func (a *wealthArea) refresh() {
 		a.top.Refresh()
 		return
 	}
-	hasChanged, err := hasDataChanged(a.ui.sv.Dictionary, data)
+	hasChanged, err := hasDataChanged(a.ui.sv.Cache, data)
 	if err != nil {
-		panic(err)
-	}
-	if !hasChanged {
+		slog.Error("Failed to check if wealth data has changed", "err", err)
+	} else if !hasChanged {
 		return
 	}
-	cb := charts.NewChartBuilder()
 
+	cb := charts.NewChartBuilder()
 	charactersData := make([]charts.Value, len(data))
 	for i, r := range data {
 		charactersData[i] = charts.Value{Label: r.label, Value: r.assets + r.wallet}
@@ -131,22 +130,17 @@ func (a *wealthArea) compileData() ([]dataRow, error) {
 	return data, nil
 }
 
-func hasDataChanged(dt *dictionary.DictionaryService, data any) (bool, error) {
+func hasDataChanged(c *cache.Cache, data any) (bool, error) {
 	hash, err := calcContentHash(data)
 	if err != nil {
 		return false, err
 	}
 	key := "wealth-data-hash"
-	oldHash, ok, err := dt.String(key)
-	if err != nil {
-		return false, err
-	}
+	oldHash, ok := c.Get(key)
 	if ok && oldHash == hash {
 		return false, nil
 	}
-	if err := dt.SetString(key, hash); err != nil {
-		return false, err
-	}
+	c.Set(key, hash, 0)
 	return true, nil
 }
 
