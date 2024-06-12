@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/assettree"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/dustin/go-humanize"
 )
@@ -358,7 +359,11 @@ func (a *assetsArea) redrawAssets(n locationNode) error {
 	if err := a.assetsData.Set(copyToUntypedSlice(assets)); err != nil {
 		return err
 	}
-	a.assetsTop.SetText(fmt.Sprintf("%d items - %s", len(assets), n.Name))
+	var total float64
+	for _, ca := range assets {
+		total += ca.Price.Float64
+	}
+	a.assetsTop.SetText(fmt.Sprintf("%d Items - %s ISK Est. Price", len(assets), ihumanize.Number(total, 1)))
 	return nil
 }
 
