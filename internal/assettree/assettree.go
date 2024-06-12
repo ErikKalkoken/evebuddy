@@ -1,4 +1,5 @@
-package character
+// Package assettree allows building and working with assets in a tree structure.
+package assettree
 
 import "github.com/ErikKalkoken/evebuddy/internal/model"
 
@@ -12,8 +13,8 @@ func newAssetNode(ca *model.CharacterAsset) AssetNode {
 	return AssetNode{ca: ca, children: make(map[int64]AssetNode)}
 }
 
-// NewAssetTree returns the provided assets as tree structure.
-func NewAssetTree(assets []*model.CharacterAsset) map[int64]AssetNode {
+// New returns a new asset tree from a slice of character assets.
+func New(assets []*model.CharacterAsset) map[int64]AssetNode {
 	// initial map of all assets
 	// assets will be removed from this map as they are added to the tree
 	m := make(map[int64]*model.CharacterAsset)
@@ -52,8 +53,8 @@ func addChildNodes(m map[int64]*model.CharacterAsset, nodes map[int64]AssetNode)
 	}
 }
 
-// CompileAssetParentLocations returns a map of asset ID to parent location ID
-func CompileAssetParentLocations(nodes map[int64]AssetNode) map[int64]int64 {
+// CompileParentLocations returns a map of asset ID to parent location ID
+func CompileParentLocations(nodes map[int64]AssetNode) map[int64]int64 {
 	assets := make(map[int64]int64)
 	// add parents
 	for _, n := range nodes {

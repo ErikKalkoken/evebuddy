@@ -14,9 +14,9 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/assettree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/dustin/go-humanize"
 )
 
@@ -31,7 +31,7 @@ const (
 // assetSearchArea is the UI area that shows the skillqueue
 type assetSearchArea struct {
 	assets         []*assetSearchRow
-	assetTree      map[int64]character.AssetNode
+	assetTree      map[int64]assettree.AssetNode
 	assetLocations map[int64]int64
 	assetTable     *widget.Table
 	assetData      binding.UntypedList
@@ -387,8 +387,8 @@ func (a *assetSearchArea) loadData() error {
 	if err != nil {
 		return err
 	}
-	a.assetTree = character.NewAssetTree(assets)
-	a.assetLocations = character.CompileAssetParentLocations(a.assetTree)
+	a.assetTree = assettree.New(assets)
+	a.assetLocations = assettree.CompileParentLocations(a.assetTree)
 	rows := make([]*assetSearchRow, len(assets))
 	for i, ca := range assets {
 		rows[i] = a.newAssetSearchRow(ca)
