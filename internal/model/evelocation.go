@@ -27,7 +27,8 @@ type EveLocation struct {
 	UpdatedAt   time.Time
 }
 
-func (lc EveLocation) NamePlus() string {
+// DisplayName returns a user friendly name.
+func (lc EveLocation) DisplayName() string {
 	if lc.Name != "" {
 		return lc.Name
 	}

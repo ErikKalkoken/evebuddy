@@ -96,7 +96,7 @@ func TestEveLocationOther(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, int64(system.ID), x1.ID)
-			assert.Equal(t, system.Name, x1.NamePlus())
+			assert.Equal(t, system.Name, x1.DisplayName())
 			assert.Nil(t, x1.Owner)
 			assert.Equal(t, system, x1.SolarSystem)
 			assert.Equal(t, myType, x1.Type)

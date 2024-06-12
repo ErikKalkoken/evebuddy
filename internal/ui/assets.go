@@ -14,7 +14,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/assettree"
-	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/dustin/go-humanize"
 )
@@ -22,9 +21,10 @@ import (
 type locationNodeType uint
 
 const (
-	nodeBranch locationNodeType = iota + 1
+	nodeLocation locationNodeType = iota + 1
 	nodeShipHangar
 	nodeItemHangar
+	nodeContainer
 )
 
 type locationNode struct {
@@ -47,7 +47,7 @@ func (n locationNode) UID() widget.TreeNodeID {
 }
 
 func (n locationNode) isBranch() bool {
-	return n.Type == nodeBranch
+	return n.Type == nodeLocation
 }
 
 // assetsArea is the UI area that shows the skillqueue
@@ -60,9 +60,7 @@ type assetsArea struct {
 	locationsData binding.StringTree
 	locationsTop  *widget.Label
 
-	assetTree            map[int64]assettree.AssetNode
-	assetParentLocations map[int64]int64
-	locationMap          map[int64]*model.EveLocation
+	assetTree assettree.AssetTree
 
 	ui *ui
 }
@@ -177,41 +175,27 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 	}
 	characterID := a.ui.characterID()
 	ctx := context.Background()
-	xx, err := a.ui.sv.Character.ListCharacterAssets(ctx, characterID)
+	assets, err := a.ui.sv.Character.ListCharacterAssets(ctx, characterID)
 	if err != nil {
 		return nil, nil, 0, err
 	}
-	a.assetTree = assettree.New(xx)
-	a.assetParentLocations = assettree.CompileParentLocations(a.assetTree)
 	el, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)
 	if err != nil {
 		return nil, nil, 0, err
 	}
-	m := make(map[int64]*model.EveLocation)
-	for _, o := range el {
-		m[o.ID] = o
-	}
-	a.locationMap = m
-
-	// TODO: Refactor to use same location method for all unknown location cases
-	locations := set.New[int64]()
-	for _, n := range a.assetTree {
-		locations.Add(n.Asset.LocationID)
-	}
-	nodes := make([]locationNode, locations.Size())
-	for i, id := range locations.ToSlice() {
-		location, ok := a.locationMap[id]
-		if !ok {
-			continue
+	a.assetTree = assettree.New(assets, el)
+	nodes := make([]locationNode, 0)
+	for _, atl := range a.assetTree.Locations {
+		loc := atl.Location
+		ln := locationNode{CharacterID: characterID, LocationID: loc.ID, Type: nodeLocation, LocationName: loc.DisplayName()}
+		if loc.SolarSystem != nil {
+			ln.SystemName = loc.SolarSystem.Name
+			ln.SystemSecurity = float32(loc.SolarSystem.SecurityStatus)
+		} else {
+			ln.IsUnknown = true
 		}
-		ln := locationNode{CharacterID: characterID, LocationID: id, Type: nodeBranch, LocationName: location.NamePlus()}
-		if location.SolarSystem != nil {
-			ln.SystemName = location.SolarSystem.Name
-			ln.SystemSecurity = float32(location.SolarSystem.SecurityStatus)
-		}
-		nodes[i] = ln
+		nodes = append(nodes, ln)
 	}
-
 	slices.SortFunc(nodes, func(a, b locationNode) int {
 		return cmp.Compare(a.LocationName, b.LocationName)
 	})
@@ -242,7 +226,7 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 			ids[uid] = append(ids[uid], subUID)
 		}
 	}
-	return ids, values, locations.Size(), nil
+	return ids, values, len(a.assetTree.Locations), nil
 }
 
 func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {

@@ -276,7 +276,7 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 		if m.Home != nil {
 			c.home = &model.EntityShort[int64]{
 				ID:   m.Home.ID,
-				Name: m.Home.NamePlus(),
+				Name: m.Home.DisplayName(),
 			}
 		}
 		if m.Location != nil {
@@ -286,7 +286,7 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 			}
 			c.location = &model.EntityShort[int64]{
 				ID:   m.Location.ID,
-				Name: m.Location.NamePlus(),
+				Name: m.Location.DisplayName(),
 			}
 			c.solarSystem = &model.EntityShort[int32]{
 				ID:   m.Location.SolarSystem.ID,

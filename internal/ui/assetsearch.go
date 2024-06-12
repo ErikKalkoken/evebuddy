@@ -30,23 +30,21 @@ const (
 
 // assetSearchArea is the UI area that shows the skillqueue
 type assetSearchArea struct {
-	assets               []*assetSearchRow
-	assetTree            map[int64]assettree.AssetNode
-	assetParentLocations map[int64]int64
-	assetTable           *widget.Table
-	assetData            binding.UntypedList
-	colSort              []assetSortDir
-	characterNames       map[int32]string
-	content              *fyne.Container
-	iconSortAsc          fyne.Resource
-	iconSortDesc         fyne.Resource
-	iconSortOff          fyne.Resource
-	locations            map[int64]*model.EveLocation
-	found                *widget.Label
-	colSearch            []string
-	searchBoxes          []*widget.Entry
-	total                *widget.Label
-	ui                   *ui
+	assets         []*assetSearchRow
+	assetTree      assettree.AssetTree
+	assetTable     *widget.Table
+	assetData      binding.UntypedList
+	colSort        []assetSortDir
+	characterNames map[int32]string
+	content        *fyne.Container
+	iconSortAsc    fyne.Resource
+	iconSortDesc   fyne.Resource
+	iconSortOff    fyne.Resource
+	found          *widget.Label
+	colSearch      []string
+	searchBoxes    []*widget.Entry
+	total          *widget.Label
+	ui             *ui
 }
 
 type assetSearchRow struct {
@@ -115,19 +113,14 @@ func (a *assetSearchArea) newAssetSearchRow(ca *model.CharacterAsset) *assetSear
 		r.quantityDisplay = humanize.Comma(int64(ca.Quantity))
 		r.quantity = int(ca.Quantity)
 	}
-	locationID, ok := a.assetParentLocations[ca.ItemID]
+	location, ok := a.assetTree.AssetParentLocation(ca.ItemID)
 	var t string
 	if !ok {
 		t = "?"
 	} else {
-		x2, ok := a.locations[locationID]
-		if !ok {
-			t = "?"
-		} else {
-			t = x2.NamePlus()
-		}
+		t = location.DisplayName()
 	}
-	r.locationID = locationID
+	r.locationID = location.ID
 	r.locationName = t
 	var price string
 	if !ca.Price.Valid || ca.IsBlueprintCopy {
@@ -364,16 +357,6 @@ func (a *assetSearchArea) loadData() error {
 		return nil
 	}
 	ctx := context.Background()
-	el, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)
-	if err != nil {
-		return err
-	}
-	m := make(map[int64]*model.EveLocation)
-	for _, o := range el {
-		m[o.ID] = o
-	}
-	a.locations = m
-
 	cc, err := a.ui.sv.Character.ListCharactersShort(ctx)
 	if err != nil {
 		return err
@@ -387,8 +370,11 @@ func (a *assetSearchArea) loadData() error {
 	if err != nil {
 		return err
 	}
-	a.assetTree = assettree.New(assets)
-	a.assetParentLocations = assettree.CompileParentLocations(a.assetTree)
+	locations, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)
+	if err != nil {
+		return err
+	}
+	a.assetTree = assettree.New(assets, locations)
 	rows := make([]*assetSearchRow, len(assets))
 	for i, ca := range assets {
 		rows[i] = a.newAssetSearchRow(ca)
