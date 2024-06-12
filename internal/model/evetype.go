@@ -38,6 +38,24 @@ func (et EveType) IsSKIN() bool {
 	return et.Group.Category.ID == EveCategorySKINs
 }
 
+func (et EveType) HasFuelBay() bool {
+	if et.Group.Category.ID != EveCategoryShip {
+		return false
+	}
+	switch et.Group.ID {
+	case EveGroupBlackOps,
+		EveGroupCapitalIndustrialShip,
+		EveGroupCarrier,
+		EveGroupDreadnought,
+		EveGroupForceAuxiliary,
+		EveGroupJumpFreighter,
+		EveGroupSuperCarrier,
+		EveGroupTitan:
+		return true
+	}
+	return false
+}
+
 func (et EveType) HasRender() bool {
 	switch et.Group.Category.ID {
 	case

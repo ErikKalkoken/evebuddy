@@ -25,8 +25,12 @@ const (
 	nodeShipHangar
 	nodeItemHangar
 	nodeContainer
+	nodeShip
+	nodeCargoBay
+	nodeFuelBay
 )
 
+// locationNode is a node for the asset tree widget.
 type locationNode struct {
 	CharacterID    int32
 	ContainerID    int64
@@ -36,8 +40,6 @@ type locationNode struct {
 	SystemSecurity float32
 	Type           locationNodeType
 }
-
-var defaultAssetIcon = theme.NewDisabledResource(resourceQuestionmarkSvg)
 
 func (n locationNode) UID() widget.TreeNodeID {
 	if n.CharacterID == 0 || n.ContainerID == 0 || n.Type == 0 {
@@ -49,6 +51,15 @@ func (n locationNode) UID() widget.TreeNodeID {
 func (n locationNode) isBranch() bool {
 	return n.Type == nodeLocation
 }
+
+func (n locationNode) addToTree(parentUID string, ids map[string][]string, values map[string]string) string {
+	uid := n.UID()
+	ids[parentUID] = append(ids[parentUID], uid)
+	values[uid] = objectToJSONOrPanic(n)
+	return uid
+}
+
+var defaultAssetIcon = theme.NewDisabledResource(resourceQuestionmarkSvg)
 
 // assetsArea is the UI area that shows the skillqueue
 type assetsArea struct {
@@ -202,12 +213,7 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 		} else {
 			ln.IsUnknown = true
 		}
-		uid := ln.UID()
-		values[uid], err = objectToJSON(ln)
-		if err != nil {
-			return nil, nil, 0, err
-		}
-		ids[""] = append(ids[""], uid)
+		locationUID := ln.addToTree("", ids, values)
 
 		topAssets := atl.Nodes()
 		slices.SortFunc(topAssets, func(a assettree.AssetNode, b assettree.AssetNode) int {
@@ -226,33 +232,54 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 		}
 
 		nsh := makeHangarNode(nodeShipHangar, ln.ContainerID, len(ships), characterID)
-		shipsUID := nsh.UID()
-		ids[uid] = append(ids[uid], shipsUID)
-		values[shipsUID], err = objectToJSON(nsh)
-		if err != nil {
-			return nil, nil, 0, err
+		shipsUID := nsh.addToTree(locationUID, ids, values)
+		for _, an := range ships {
+			ship := an.Asset
+			ln := locationNode{
+				CharacterID: characterID,
+				ContainerID: an.Asset.ItemID,
+				Name:        fmt.Sprintf("%s (%s)", ship.Name, ship.EveType.Name),
+				Type:        nodeShip,
+			}
+			shipUID := ln.addToTree(shipsUID, ids, values)
+			cargo := make([]assettree.AssetNode, 0)
+			fuel := make([]assettree.AssetNode, 0)
+			for _, an2 := range an.Nodes() {
+				if an2.Asset.IsInCargoBay() {
+					cargo = append(cargo, an2)
+				} else if an2.Asset.IsInFuelBay() {
+					fuel = append(fuel, an2)
+				}
+			}
+			cln := locationNode{
+				CharacterID: characterID,
+				ContainerID: ship.ItemID,
+				Name:        makeNameWithCount("Cargo Bay", len(cargo)),
+				Type:        nodeCargoBay,
+			}
+			cln.addToTree(shipUID, ids, values)
+			if ship.EveType.HasFuelBay() {
+				fln := locationNode{
+					CharacterID: characterID,
+					ContainerID: an.Asset.ItemID,
+					Name:        makeNameWithCount("Fuel Bay", len(fuel)),
+					Type:        nodeFuelBay,
+				}
+				fln.addToTree(shipUID, ids, values)
+			}
 		}
+
 		itemsCount := len(topAssets) - len(ships)
 		nih := makeHangarNode(nodeItemHangar, ln.ContainerID, itemsCount, characterID)
-		itemsUID := nih.UID()
-		ids[uid] = append(ids[uid], itemsUID)
-		values[itemsUID], err = objectToJSON(nih)
-		if err != nil {
-			return nil, nil, 0, err
-		}
+		itemsUID := nih.addToTree(locationUID, ids, values)
 		for _, an := range itemContainers {
-			cln := locationNode{
+			ln := locationNode{
 				CharacterID: characterID,
 				ContainerID: an.Asset.ItemID,
 				Name:        makeNameWithCount(an.Asset.Name, len(an.Nodes())),
 				Type:        nodeContainer,
 			}
-			cUID := cln.UID()
-			ids[itemsUID] = append(ids[itemsUID], cUID)
-			values[cUID], err = objectToJSON(cln)
-			if err != nil {
-				return nil, nil, 0, err
-			}
+			ln.addToTree(itemsUID, ids, values)
 		}
 	}
 	return ids, values, len(a.assetTree.Locations()), nil
@@ -273,10 +300,6 @@ func makeHangarNode(t locationNodeType, locationID int64, n int, characterID int
 		Type:        t,
 	}
 	return hn
-}
-
-func makeNameWithCount(name string, count int) string {
-	return fmt.Sprintf("%s (%d)", name, count)
 }
 
 func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
@@ -305,14 +328,32 @@ func (a *assetsArea) redrawAssets(n locationNode) error {
 		f = a.ui.sv.Character.ListCharacterAssetsInShipHangar
 	case nodeItemHangar:
 		f = a.ui.sv.Character.ListCharacterAssetsInItemHangar
-	case nodeContainer:
-		f = a.ui.sv.Character.ListCharacterAssetsInLocation
 	default:
-		return fmt.Errorf("invalid node type: %v", n.Type)
+		f = a.ui.sv.Character.ListCharacterAssetsInLocation
 	}
 	assets, err := f(context.Background(), n.CharacterID, n.ContainerID)
 	if err != nil {
 		return err
+	}
+	switch n.Type {
+	case nodeCargoBay:
+		cargo := make([]*model.CharacterAsset, 0)
+		for _, ca := range assets {
+			if !ca.IsInCargoBay() {
+				continue
+			}
+			cargo = append(cargo, ca)
+		}
+		assets = cargo
+	case nodeFuelBay:
+		fuel := make([]*model.CharacterAsset, 0)
+		for _, ca := range assets {
+			if !ca.IsInFuelBay() {
+				continue
+			}
+			fuel = append(fuel, ca)
+		}
+		assets = fuel
 	}
 	if err := a.assetsData.Set(copyToUntypedSlice(assets)); err != nil {
 		return err
@@ -379,4 +420,11 @@ func (u *ui) makeAssetGrid(assetsData binding.UntypedList) *widget.GridWrap {
 		g.UnselectAll()
 	}
 	return g
+}
+
+func makeNameWithCount(name string, count int) string {
+	if count == 0 {
+		return name
+	}
+	return fmt.Sprintf("%s (%s)", name, humanize.Comma(int64(count)))
 }

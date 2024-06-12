@@ -80,6 +80,14 @@ func (ca CharacterAsset) IsShip() bool {
 	return ca.EveType.Group.Category.ID == EveCategoryShip
 }
 
+func (ca CharacterAsset) IsInCargoBay() bool {
+	return ca.LocationFlag == "Cargo"
+}
+
+func (ca CharacterAsset) IsInFuelBay() bool {
+	return ca.LocationFlag == "SpecializedFuelBay"
+}
+
 func (ca CharacterAsset) Variant() EveTypeVariant {
 	if ca.IsSKIN() {
 		return VariantSKIN
