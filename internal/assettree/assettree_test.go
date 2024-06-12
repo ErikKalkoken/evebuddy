@@ -19,11 +19,11 @@ func TestAssetTree(t *testing.T) {
 	t.Run("can create tree from character assets", func(t *testing.T) {
 		nodes := New(assets)
 		assert.Len(t, nodes, 3)
-		assert.Len(t, nodes[a1.ItemID].children, 1)
-		assert.Len(t, nodes[a1.ItemID].children[a11.ItemID].children, 1)
-		assert.Len(t, nodes[a2.ItemID].children, 0)
-		assert.Len(t, nodes[a3.ItemID].children, 1)
-		assert.Len(t, nodes[a3.ItemID].children[a31.ItemID].children, 0)
+		assert.Len(t, nodes[a1.ItemID].Children, 1)
+		assert.Len(t, nodes[a1.ItemID].Children[a11.ItemID].Children, 1)
+		assert.Len(t, nodes[a2.ItemID].Children, 0)
+		assert.Len(t, nodes[a3.ItemID].Children, 1)
+		assert.Len(t, nodes[a3.ItemID].Children[a31.ItemID].Children, 0)
 	})
 	t.Run("can create location list from tree", func(t *testing.T) {
 		nodes := New(assets)

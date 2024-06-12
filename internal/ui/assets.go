@@ -13,6 +13,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/assettree"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/dustin/go-humanize"
 )
@@ -57,7 +59,12 @@ type assetsArea struct {
 	locations     *widget.Tree
 	locationsData binding.StringTree
 	locationsTop  *widget.Label
-	ui            *ui
+
+	assetTree            map[int64]assettree.AssetNode
+	assetParentLocations map[int64]int64
+	locationMap          map[int64]*model.EveLocation
+
+	ui *ui
 }
 
 func (u *ui) newAssetsArea() *assetsArea {
@@ -169,28 +176,42 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 		return ids, values, 0, nil
 	}
 	characterID := a.ui.characterID()
-	locations, err := a.ui.sv.Character.ListCharacterAssetLocations(context.Background(), characterID)
+	ctx := context.Background()
+	xx, err := a.ui.sv.Character.ListCharacterAssets(ctx, characterID)
 	if err != nil {
 		return nil, nil, 0, err
 	}
-	nodes := make([]locationNode, len(locations))
-	for i, l := range locations {
-		n := locationNode{CharacterID: characterID, LocationID: l.ID, Type: nodeBranch}
-		// TODO: Refactor to use same location method for all unknown location cases
-		if l.Location.Name != "" {
-			n.LocationName = l.Location.Name
-		} else {
-			n.LocationName = fmt.Sprintf("Unknown location #%d", l.Location.ID)
-			n.IsUnknown = true
-		}
-		if l.SolarSystem != nil {
-			n.SystemName = l.SolarSystem.Name
-		}
-		if l.SecurityStatus.Valid {
-			n.SystemSecurity = float32(l.SecurityStatus.Float64)
-		}
-		nodes[i] = n
+	a.assetTree = assettree.New(xx)
+	a.assetParentLocations = assettree.CompileParentLocations(a.assetTree)
+	el, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)
+	if err != nil {
+		return nil, nil, 0, err
 	}
+	m := make(map[int64]*model.EveLocation)
+	for _, o := range el {
+		m[o.ID] = o
+	}
+	a.locationMap = m
+
+	// TODO: Refactor to use same location method for all unknown location cases
+	locations := set.New[int64]()
+	for _, n := range a.assetTree {
+		locations.Add(n.Asset.LocationID)
+	}
+	nodes := make([]locationNode, locations.Size())
+	for i, id := range locations.ToSlice() {
+		location, ok := a.locationMap[id]
+		if !ok {
+			continue
+		}
+		ln := locationNode{CharacterID: characterID, LocationID: id, Type: nodeBranch, LocationName: location.NamePlus()}
+		if location.SolarSystem != nil {
+			ln.SystemName = location.SolarSystem.Name
+			ln.SystemSecurity = float32(location.SolarSystem.SecurityStatus)
+		}
+		nodes[i] = ln
+	}
+
 	slices.SortFunc(nodes, func(a, b locationNode) int {
 		return cmp.Compare(a.LocationName, b.LocationName)
 	})
@@ -221,7 +242,7 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 			ids[uid] = append(ids[uid], subUID)
 		}
 	}
-	return ids, values, len(locations), nil
+	return ids, values, locations.Size(), nil
 }
 
 func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
