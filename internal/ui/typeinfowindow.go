@@ -716,7 +716,7 @@ type infoRow struct {
 }
 
 func (a *typeInfoWindow) makeLocationTab() fyne.CanvasObject {
-	i := systemSecurity2Importance(a.location.SolarSystem.SecurityStatus)
+	i := systemSecurity2Importance(a.location.SolarSystem.SecurityType())
 	data := []infoRow{
 		{
 			label: "Region",

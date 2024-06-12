@@ -33,13 +33,14 @@ const (
 
 // locationNode is a node for the asset tree widget.
 type locationNode struct {
-	CharacterID    int32
-	ContainerID    int64
-	Name           string
-	IsUnknown      bool
-	SystemName     string
-	SystemSecurity float32
-	Type           locationNodeType
+	CharacterID         int32
+	ContainerID         int64
+	Name                string
+	IsUnknown           bool
+	SystemName          string
+	SystemSecurityValue float32
+	SystemSecurityType  model.SolarSystemSecurityType
+	Type                locationNodeType
 }
 
 func (n locationNode) UID() widget.TreeNodeID {
@@ -120,8 +121,8 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 			label.SetText(n.Name)
 			if n.isBranch() {
 				if !n.IsUnknown {
-					prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurity)
-					prefix.Importance = systemSecurity2Importance(n.SystemSecurity)
+					prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurityValue)
+					prefix.Importance = systemSecurity2Importance(n.SystemSecurityType)
 				} else {
 					prefix.Text = "?"
 					prefix.Importance = widget.LowImportance
@@ -210,7 +211,8 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 		}
 		if loc.SolarSystem != nil {
 			ln.SystemName = loc.SolarSystem.Name
-			ln.SystemSecurity = float32(loc.SolarSystem.SecurityStatus)
+			ln.SystemSecurityValue = float32(loc.SolarSystem.SecurityStatus)
+			ln.SystemSecurityType = loc.SolarSystem.SecurityType()
 		} else {
 			ln.IsUnknown = true
 		}
