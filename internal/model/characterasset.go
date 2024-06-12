@@ -63,7 +63,7 @@ func (ca CharacterAsset) IsContainer() bool {
 	if !ca.IsSingleton {
 		return false
 	}
-	if ca.EveType.Group.Category.ID == EveCategoryShip {
+	if ca.IsShip() {
 		return true
 	}
 	switch ca.EveType.Group.ID {
@@ -74,6 +74,10 @@ func (ca CharacterAsset) IsContainer() bool {
 		return true
 	}
 	return false
+}
+
+func (ca CharacterAsset) IsShip() bool {
+	return ca.EveType.Group.Category.ID == EveCategoryShip
 }
 
 func (ca CharacterAsset) Variant() EveTypeVariant {

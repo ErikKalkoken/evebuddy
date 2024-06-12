@@ -27,10 +27,6 @@ func (s *CharacterService) ListCharacterAssetsInLocation(ctx context.Context, ch
 	return s.st.ListCharacterAssetsInLocation(ctx, characterID, locationID)
 }
 
-func (s *CharacterService) ListCharacterAssetLocations(ctx context.Context, characterID int32) ([]*model.CharacterAssetLocation, error) {
-	return s.st.ListCharacterAssetLocations(ctx, characterID)
-}
-
 func (s *CharacterService) ListCharacterAssets(ctx context.Context, characterID int32) ([]*model.CharacterAsset, error) {
 	return s.st.ListCharacterAssets(ctx, characterID)
 }

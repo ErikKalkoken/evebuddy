@@ -277,69 +277,6 @@ func (q *Queries) ListCharacterAssetIDs(ctx context.Context, characterID int64) 
 	return items, nil
 }
 
-const listCharacterAssetLocations = `-- name: ListCharacterAssetLocations :many
-SELECT DISTINCT
-    ca.character_id,
-    ca.location_type,
-    ca.location_id,
-    lo.name as location_name,
-    sys.id as system_id,
-    sys.name as system_name,
-    sys.security_status
-FROM character_assets ca
-JOIN eve_locations lo ON lo.id = ca.location_id
-LEFT JOIN eve_solar_systems sys ON sys.id = lo.eve_solar_system_id
-WHERE character_id = ?
-AND location_flag = ?
-ORDER BY location_name
-`
-
-type ListCharacterAssetLocationsParams struct {
-	CharacterID  int64
-	LocationFlag string
-}
-
-type ListCharacterAssetLocationsRow struct {
-	CharacterID    int64
-	LocationType   string
-	LocationID     int64
-	LocationName   string
-	SystemID       sql.NullInt64
-	SystemName     sql.NullString
-	SecurityStatus sql.NullFloat64
-}
-
-func (q *Queries) ListCharacterAssetLocations(ctx context.Context, arg ListCharacterAssetLocationsParams) ([]ListCharacterAssetLocationsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterAssetLocations, arg.CharacterID, arg.LocationFlag)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListCharacterAssetLocationsRow
-	for rows.Next() {
-		var i ListCharacterAssetLocationsRow
-		if err := rows.Scan(
-			&i.CharacterID,
-			&i.LocationType,
-			&i.LocationID,
-			&i.LocationName,
-			&i.SystemID,
-			&i.SystemName,
-			&i.SecurityStatus,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listCharacterAssets = `-- name: ListCharacterAssets :many
 SELECT
     ca.id, ca.character_id, ca.eve_type_id, ca.is_blueprint_copy, ca.is_singleton, ca.item_id, ca.location_flag, ca.location_id, ca.location_type, ca.name, ca.quantity,

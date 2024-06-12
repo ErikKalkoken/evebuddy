@@ -130,35 +130,6 @@ func TestCharacterAsset(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can list parent assets", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		location := factory.CreateLocationStructure()
-		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
-			CharacterID:  c.ID,
-			LocationID:   location.ID,
-			LocationFlag: "Hangar",
-		})
-		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
-			CharacterID:  c.ID,
-			LocationFlag: "Hangar",
-		})
-		// when
-		oo, err := r.ListCharacterAssetLocations(ctx, c.ID)
-		// then
-		if assert.NoError(t, err) {
-			assert.Len(t, oo, 2)
-			for _, o := range oo {
-				if o.ID == x1.ID {
-					assert.Equal(t, location.ID, o.Location.ID)
-					assert.Equal(t, location.Name, o.Location.Name)
-					assert.Equal(t, location.SolarSystem.ID, o.SolarSystem.ID)
-					assert.Equal(t, location.SolarSystem.Name, o.SolarSystem.Name)
-				}
-			}
-		}
-	})
 	t.Run("can list all assets", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

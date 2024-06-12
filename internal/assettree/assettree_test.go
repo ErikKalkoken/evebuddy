@@ -1,9 +1,8 @@
-package assettree_test
+package assettree
 
 import (
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/assettree"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,16 +19,16 @@ func TestAssetTree(t *testing.T) {
 	loc1 := &model.EveLocation{ID: 100000, Name: "Alpha"}
 	loc2 := &model.EveLocation{ID: 101000, Name: "Bravo"}
 	locations := []*model.EveLocation{loc1, loc2}
-	at := assettree.New(assets, locations)
+	at := New(assets, locations)
 	t.Run("can create tree from character assets", func(t *testing.T) {
-		assert.Len(t, at.Locations, 2)
-		assert.Len(t, at.Locations[100000].Children, 2)
-		assert.Len(t, at.Locations[100000].Children[a1.ItemID].Children, 1)
-		assert.Len(t, at.Locations[100000].Children[a1.ItemID].Children[a11.ItemID].Children, 1)
-		assert.Len(t, at.Locations[100000].Children[a2.ItemID].Children, 0)
-		assert.Len(t, at.Locations[101000].Children, 1)
-		assert.Len(t, at.Locations[101000].Children[a3.ItemID].Children, 1)
-		assert.Len(t, at.Locations[101000].Children[a31.ItemID].Children, 0)
+		assert.Len(t, at.lns, 2)
+		assert.Len(t, at.lns[100000].nodes, 2)
+		assert.Len(t, at.lns[100000].nodes[a1.ItemID].nodes, 1)
+		assert.Len(t, at.lns[100000].nodes[a1.ItemID].nodes[a11.ItemID].nodes, 1)
+		assert.Len(t, at.lns[100000].nodes[a2.ItemID].nodes, 0)
+		assert.Len(t, at.lns[101000].nodes, 1)
+		assert.Len(t, at.lns[101000].nodes[a3.ItemID].nodes, 1)
+		assert.Len(t, at.lns[101000].nodes[a31.ItemID].nodes, 0)
 	})
 	t.Run("can return parent location for assets", func(t *testing.T) {
 		cases := []struct {

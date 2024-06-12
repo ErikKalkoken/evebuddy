@@ -29,8 +29,8 @@ const (
 
 type locationNode struct {
 	CharacterID    int32
-	LocationID     int64
-	LocationName   string
+	ContainerID    int64
+	Name           string
 	IsUnknown      bool
 	SystemName     string
 	SystemSecurity float32
@@ -40,10 +40,10 @@ type locationNode struct {
 var defaultAssetIcon = theme.NewDisabledResource(resourceQuestionmarkSvg)
 
 func (n locationNode) UID() widget.TreeNodeID {
-	if n.CharacterID == 0 || n.LocationID == 0 || n.Type == 0 {
+	if n.CharacterID == 0 || n.ContainerID == 0 || n.Type == 0 {
 		panic("some IDs are not set")
 	}
-	return fmt.Sprintf("%d-%d-%d", n.CharacterID, n.LocationID, n.Type)
+	return fmt.Sprintf("%d-%d-%d", n.CharacterID, n.ContainerID, n.Type)
 }
 
 func (n locationNode) isBranch() bool {
@@ -105,7 +105,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 				label.SetText("ERROR")
 				return
 			}
-			label.SetText(n.LocationName)
+			label.SetText(n.Name)
 			if n.isBranch() {
 				if !n.IsUnknown {
 					prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurity)
@@ -179,54 +179,104 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 	if err != nil {
 		return nil, nil, 0, err
 	}
-	el, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)
+	locations, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)
 	if err != nil {
 		return nil, nil, 0, err
 	}
-	a.assetTree = assettree.New(assets, el)
-	nodes := make([]locationNode, 0)
-	for _, atl := range a.assetTree.Locations {
+	a.assetTree = assettree.New(assets, locations)
+	ll := a.assetTree.Locations()
+	slices.SortFunc(ll, func(a assettree.LocationNode, b assettree.LocationNode) int {
+		return cmp.Compare(a.Location.DisplayName(), b.Location.DisplayName())
+	})
+	for _, atl := range ll {
 		loc := atl.Location
-		ln := locationNode{CharacterID: characterID, LocationID: loc.ID, Type: nodeLocation, LocationName: loc.DisplayName()}
+		ln := locationNode{
+			CharacterID: characterID,
+			ContainerID: loc.ID,
+			Type:        nodeLocation,
+			Name:        makeNameWithCount(loc.DisplayName(), len(atl.Nodes())),
+		}
 		if loc.SolarSystem != nil {
 			ln.SystemName = loc.SolarSystem.Name
 			ln.SystemSecurity = float32(loc.SolarSystem.SecurityStatus)
 		} else {
 			ln.IsUnknown = true
 		}
-		nodes = append(nodes, ln)
-	}
-	slices.SortFunc(nodes, func(a, b locationNode) int {
-		return cmp.Compare(a.LocationName, b.LocationName)
-	})
-	for _, ln := range nodes {
 		uid := ln.UID()
 		values[uid], err = objectToJSON(ln)
 		if err != nil {
 			return nil, nil, 0, err
 		}
 		ids[""] = append(ids[""], uid)
-		for _, t := range []locationNodeType{nodeShipHangar, nodeItemHangar} {
-			hn := locationNode{
-				CharacterID: ln.CharacterID,
-				LocationID:  ln.LocationID,
-				Type:        t,
+
+		topAssets := atl.Nodes()
+		slices.SortFunc(topAssets, func(a assettree.AssetNode, b assettree.AssetNode) int {
+			return cmp.Compare(a.Asset.DisplayName(), b.Asset.DisplayName())
+		})
+		ships := make([]assettree.AssetNode, 0)
+		itemContainers := make([]assettree.AssetNode, 0)
+		for _, an := range topAssets {
+			if an.Asset.IsContainer() {
+				if an.Asset.IsShip() {
+					ships = append(ships, an)
+				} else {
+					itemContainers = append(itemContainers, an)
+				}
 			}
-			switch t {
-			case nodeShipHangar:
-				hn.LocationName = "Ship Hangar"
-			case nodeItemHangar:
-				hn.LocationName = "Item Hangar"
+		}
+
+		nsh := makeHangarNode(nodeShipHangar, ln.ContainerID, len(ships), characterID)
+		shipsUID := nsh.UID()
+		ids[uid] = append(ids[uid], shipsUID)
+		values[shipsUID], err = objectToJSON(nsh)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		itemsCount := len(topAssets) - len(ships)
+		nih := makeHangarNode(nodeItemHangar, ln.ContainerID, itemsCount, characterID)
+		itemsUID := nih.UID()
+		ids[uid] = append(ids[uid], itemsUID)
+		values[itemsUID], err = objectToJSON(nih)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		for _, an := range itemContainers {
+			cln := locationNode{
+				CharacterID: characterID,
+				ContainerID: an.Asset.ItemID,
+				Name:        makeNameWithCount(an.Asset.Name, len(an.Nodes())),
+				Type:        nodeContainer,
 			}
-			subUID := hn.UID()
-			values[subUID], err = objectToJSON(hn)
+			cUID := cln.UID()
+			ids[itemsUID] = append(ids[itemsUID], cUID)
+			values[cUID], err = objectToJSON(cln)
 			if err != nil {
 				return nil, nil, 0, err
 			}
-			ids[uid] = append(ids[uid], subUID)
 		}
 	}
-	return ids, values, len(a.assetTree.Locations), nil
+	return ids, values, len(a.assetTree.Locations()), nil
+}
+
+func makeHangarNode(t locationNodeType, locationID int64, n int, characterID int32) locationNode {
+	var name string
+	switch t {
+	case nodeShipHangar:
+		name = "Ship Hangar"
+	case nodeItemHangar:
+		name = "Item Hangar"
+	}
+	hn := locationNode{
+		CharacterID: characterID,
+		ContainerID: locationID,
+		Name:        makeNameWithCount(name, n),
+		Type:        t,
+	}
+	return hn
+}
+
+func makeNameWithCount(name string, count int) string {
+	return fmt.Sprintf("%s (%d)", name, count)
 }
 
 func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
@@ -255,17 +305,19 @@ func (a *assetsArea) redrawAssets(n locationNode) error {
 		f = a.ui.sv.Character.ListCharacterAssetsInShipHangar
 	case nodeItemHangar:
 		f = a.ui.sv.Character.ListCharacterAssetsInItemHangar
+	case nodeContainer:
+		f = a.ui.sv.Character.ListCharacterAssetsInLocation
 	default:
 		return fmt.Errorf("invalid node type: %v", n.Type)
 	}
-	assets, err := f(context.Background(), n.CharacterID, n.LocationID)
+	assets, err := f(context.Background(), n.CharacterID, n.ContainerID)
 	if err != nil {
 		return err
 	}
 	if err := a.assetsData.Set(copyToUntypedSlice(assets)); err != nil {
 		return err
 	}
-	a.assetsTop.SetText(fmt.Sprintf("%d items - %s", len(assets), n.LocationName))
+	a.assetsTop.SetText(fmt.Sprintf("%d items - %s", len(assets), n.Name))
 	return nil
 }
 
