@@ -57,7 +57,7 @@ func (u *ui) startUpdateTickerCharacters() {
 	go func() {
 		for {
 			func() {
-				cc, err := u.sv.Characters.ListCharactersShort(context.TODO())
+				cc, err := u.sv.Character.ListCharactersShort(context.TODO())
 				if err != nil {
 					slog.Error("Failed to fetch list of characters", "err", err)
 					return
@@ -87,7 +87,7 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID 
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
 func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s model.CharacterSection, forceUpdate bool) {
-	hasChanged, err := u.sv.Characters.UpdateSectionIfNeeded(
+	hasChanged, err := u.sv.Character.UpdateSectionIfNeeded(
 		ctx, character.UpdateSectionParams{
 			CharacterID: characterID,
 			Section:     s,

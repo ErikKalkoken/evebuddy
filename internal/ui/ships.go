@@ -170,7 +170,7 @@ func (a *shipsArea) updateEntries() error {
 	}
 	characterID := a.ui.characterID()
 	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
-	oo, err := a.ui.sv.Characters.ListCharacterShipsAbilities(context.Background(), characterID, search)
+	oo, err := a.ui.sv.Character.ListCharacterShipsAbilities(context.Background(), characterID, search)
 	if err != nil {
 		return err
 	}
@@ -184,14 +184,14 @@ func (a *shipsArea) makeTopText() (string, widget.Importance, bool, error) {
 		return "No character", widget.LowImportance, false, nil
 	}
 	characterID := a.ui.characterID()
-	ok, err := a.ui.sv.Characters.SectionWasUpdated(ctx, characterID, model.SectionSkills)
+	ok, err := a.ui.sv.Character.SectionWasUpdated(ctx, characterID, model.SectionSkills)
 	if err != nil {
 		return "", 0, false, err
 	}
 	if !ok {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
 	}
-	oo, err := a.ui.sv.Characters.ListCharacterShipsAbilities(ctx, characterID, "%%")
+	oo, err := a.ui.sv.Character.ListCharacterShipsAbilities(ctx, characterID, "%%")
 	if err != nil {
 		return "", 0, false, err
 	}

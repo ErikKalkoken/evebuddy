@@ -149,7 +149,7 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 	var c *model.Character
 	cID, ok, err := sv.Dictionary.Int(model.SettingLastCharacterID)
 	if err == nil && ok {
-		c, err = sv.Characters.GetCharacter(context.Background(), int32(cID))
+		c, err = sv.Character.GetCharacter(context.Background(), int32(cID))
 		if err != nil {
 			if !errors.Is(err, character.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -269,7 +269,7 @@ func (u *ui) hasCharacter() bool {
 }
 
 func (u *ui) loadCharacter(ctx context.Context, characterID int32) error {
-	c, err := u.sv.Characters.GetCharacter(ctx, characterID)
+	c, err := u.sv.Character.GetCharacter(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -321,7 +321,7 @@ func (u *ui) refreshCharacter() {
 }
 
 func (u *ui) setAnyCharacter() error {
-	c, err := u.sv.Characters.GetAnyCharacter(context.Background())
+	c, err := u.sv.Character.GetAnyCharacter(context.Background())
 	if errors.Is(err, character.ErrNotFound) {
 		u.resetCharacter()
 		return nil

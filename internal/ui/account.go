@@ -134,7 +134,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 		func(confirmed bool) {
 			if confirmed {
 				err := func(characterID int32) error {
-					err := a.ui.sv.Characters.DeleteCharacter(context.Background(), characterID)
+					err := a.ui.sv.Character.DeleteCharacter(context.Background(), characterID)
 					if err != nil {
 						return err
 					}
@@ -164,7 +164,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 }
 
 func (a *accountArea) Refresh() error {
-	cc, err := a.ui.sv.Characters.ListCharactersShort(context.Background())
+	cc, err := a.ui.sv.Character.ListCharactersShort(context.Background())
 	if err != nil {
 		return err
 	}
@@ -197,7 +197,7 @@ func (a *accountArea) showAddCharacterDialog() {
 	d1.SetOnClosed(cancel)
 	go func() {
 		err := func() error {
-			characterID, err := a.ui.sv.Characters.UpdateOrCreateCharacterFromSSO(ctx, infoText)
+			characterID, err := a.ui.sv.Character.UpdateOrCreateCharacterFromSSO(ctx, infoText)
 			if errors.Is(err, character.ErrAborted) {
 				return nil
 			} else if err != nil {

@@ -144,7 +144,7 @@ func (a *skillqueueArea) updateItems() (mytypes.OptionalDuration, sql.NullFloat6
 			return remaining, completion, err
 		}
 	}
-	skills, err := a.ui.sv.Characters.ListCharacterSkillqueueItems(ctx, a.ui.characterID())
+	skills, err := a.ui.sv.Character.ListCharacterSkillqueueItems(ctx, a.ui.characterID())
 	if err != nil {
 		return remaining, completion, err
 	}
@@ -165,7 +165,7 @@ func (a *skillqueueArea) updateItems() (mytypes.OptionalDuration, sql.NullFloat6
 }
 
 func (a *skillqueueArea) makeTopText(total mytypes.OptionalDuration) (string, widget.Importance, error) {
-	hasData, err := a.ui.sv.Characters.SectionWasUpdated(
+	hasData, err := a.ui.sv.Character.SectionWasUpdated(
 		context.Background(), a.ui.characterID(), model.SectionSkillqueue)
 	if err != nil {
 		return "", 0, err

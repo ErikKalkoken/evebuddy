@@ -374,7 +374,7 @@ func (a *assetSearchArea) loadData() error {
 	}
 	a.locations = m
 
-	cc, err := a.ui.sv.Characters.ListCharactersShort(ctx)
+	cc, err := a.ui.sv.Character.ListCharactersShort(ctx)
 	if err != nil {
 		return err
 	}
@@ -383,7 +383,7 @@ func (a *assetSearchArea) loadData() error {
 		m2[o.ID] = o.Name
 	}
 	a.characterNames = m2
-	assets, err := a.ui.sv.Characters.ListAllCharacterAssets(ctx)
+	assets, err := a.ui.sv.Character.ListAllCharacterAssets(ctx)
 	if err != nil {
 		return err
 	}

@@ -169,7 +169,7 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 		return ids, values, 0, nil
 	}
 	characterID := a.ui.characterID()
-	locations, err := a.ui.sv.Characters.ListCharacterAssetLocations(context.Background(), characterID)
+	locations, err := a.ui.sv.Character.ListCharacterAssetLocations(context.Background(), characterID)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -228,7 +228,7 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance, nil
 	}
-	hasData, err := a.ui.sv.Characters.SectionWasUpdated(
+	hasData, err := a.ui.sv.Character.SectionWasUpdated(
 		context.Background(), a.ui.characterID(), model.SectionAssets)
 	if err != nil {
 		return "", 0, err
@@ -247,9 +247,9 @@ func (a *assetsArea) redrawAssets(n locationNode) error {
 	var f func(context.Context, int32, int64) ([]*model.CharacterAsset, error)
 	switch n.Type {
 	case nodeShipHangar:
-		f = a.ui.sv.Characters.ListCharacterAssetsInShipHangar
+		f = a.ui.sv.Character.ListCharacterAssetsInShipHangar
 	case nodeItemHangar:
-		f = a.ui.sv.Characters.ListCharacterAssetsInItemHangar
+		f = a.ui.sv.Character.ListCharacterAssetsInItemHangar
 	default:
 		return fmt.Errorf("invalid node type: %v", n.Type)
 	}
@@ -275,7 +275,7 @@ func (a *assetsArea) clearAssets() error {
 
 func (u *ui) showNewAssetWindow(ca *model.CharacterAsset) {
 	w := u.app.NewWindow(fmt.Sprintf("%s \"%s\" (%s): Contents", ca.EveType.Name, ca.Name, ca.EveType.Group.Name))
-	oo, err := u.sv.Characters.ListCharacterAssetsInLocation(context.Background(), ca.CharacterID, ca.ItemID)
+	oo, err := u.sv.Character.ListCharacterAssetsInLocation(context.Background(), ca.CharacterID, ca.ItemID)
 	if err != nil {
 		panic(err)
 	}

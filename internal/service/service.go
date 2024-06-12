@@ -24,8 +24,8 @@ import (
 type Service struct {
 	// Cache service
 	Cache *cache.Cache
-	// Characters service
-	Characters *character.CharacterService
+	// Character service
+	Character *character.CharacterService
 	// Character status service
 	CharacterStatus *characterstatus.CharacterStatusService
 	// Dictionary service
@@ -66,7 +66,7 @@ func New(st *storage.Storage, imageCacheDir string) *Service {
 	}
 	sv := Service{
 		Cache:           cache,
-		Characters:      character.New(st, httpClient, esiClient, cs, dt, eu),
+		Character:       character.New(st, httpClient, esiClient, cs, dt, eu),
 		CharacterStatus: cs,
 		Dictionary:      dt,
 		EveImage:        eveimage.New(imageCacheDir, httpClient),

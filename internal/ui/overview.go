@@ -255,7 +255,7 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 	var walletTotal sql.NullFloat64
 	var err error
 	ctx := context.Background()
-	mycc, err := a.ui.sv.Characters.ListCharacters(ctx)
+	mycc, err := a.ui.sv.Character.ListCharacters(ctx)
 	if err != nil {
 		return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch characters: %w", err)
 	}
@@ -306,14 +306,14 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 		cc[i] = c
 	}
 	for i, c := range cc {
-		v, err := a.ui.sv.Characters.GetCharacterTotalTrainingTime(ctx, c.id)
+		v, err := a.ui.sv.Character.GetCharacterTotalTrainingTime(ctx, c.id)
 		if err != nil {
 			return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch skill queue count for character %d, %w", c.id, err)
 		}
 		cc[i].training = v
 	}
 	for i, c := range cc {
-		total, unread, err := a.ui.sv.Characters.GetCharacterMailCounts(ctx, c.id)
+		total, unread, err := a.ui.sv.Character.GetCharacterMailCounts(ctx, c.id)
 		if err != nil {
 			return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch mail counts for character %d, %w", c.id, err)
 		}
@@ -323,7 +323,7 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 		}
 	}
 	for i, c := range cc {
-		v, err := a.ui.sv.Characters.CharacterAssetTotalValue(c.id)
+		v, err := a.ui.sv.Character.CharacterAssetTotalValue(c.id)
 		if err != nil {
 			return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch asset total value for character %d, %w", c.id, err)
 		}

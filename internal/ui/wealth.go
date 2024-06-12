@@ -93,14 +93,14 @@ func (a *wealthArea) refresh() {
 }
 
 func (a *wealthArea) compileData() ([]dataRow, error) {
-	cc, err := a.ui.sv.Characters.ListCharacters(context.TODO())
+	cc, err := a.ui.sv.Character.ListCharacters(context.TODO())
 	if err != nil {
 		return nil, err
 	}
 	data := make([]dataRow, 0)
 	for _, c := range cc {
 		wallet := c.WalletBalance.Float64
-		x, err := a.ui.sv.Characters.CharacterAssetTotalValue(c.ID)
+		x, err := a.ui.sv.Character.CharacterAssetTotalValue(c.ID)
 		if err != nil {
 			return nil, err
 		}

@@ -457,7 +457,7 @@ func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int
 			name:          et.Name,
 			typeID:        typeID,
 		}
-		cs, err := a.ui.sv.Characters.GetCharacterSkill(ctx, characterID, typeID)
+		cs, err := a.ui.sv.Character.GetCharacterSkill(ctx, characterID, typeID)
 		if errors.Is(err, character.ErrNotFound) {
 			// do nothing
 		} else if err != nil {
