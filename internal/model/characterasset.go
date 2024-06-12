@@ -66,6 +66,9 @@ func (ca CharacterAsset) IsContainer() bool {
 	if ca.IsShip() {
 		return true
 	}
+	if ca.EveType.ID == EveTypeAssetSafetyWrap {
+		return true
+	}
 	switch ca.EveType.Group.ID {
 	case EveGroupAuditLogFreightContainer,
 		EveGroupAuditLogSecureCargoContainer,
@@ -82,6 +85,10 @@ func (ca CharacterAsset) IsShip() bool {
 
 func (ca CharacterAsset) IsInCargoBay() bool {
 	return ca.LocationFlag == "Cargo"
+}
+
+func (ca CharacterAsset) IsInAssetSafety() bool {
+	return ca.LocationFlag == "AssetSafety"
 }
 
 func (ca CharacterAsset) IsInFuelBay() bool {

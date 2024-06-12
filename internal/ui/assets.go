@@ -29,6 +29,7 @@ const (
 	nodeShip
 	nodeCargoBay
 	nodeFuelBay
+	nodeAssetSafety
 )
 
 // locationNode is a node for the asset tree widget.
@@ -161,7 +162,7 @@ func (a *assetsArea) redraw() {
 		if err := a.clearAssets(); err != nil {
 			return "", 0, err
 		}
-		ids, values, total, err := a.updateLocationData()
+		ids, values, total, err := a.updateTreeData()
 		if err != nil {
 			return "", 0, err
 		}
@@ -180,7 +181,7 @@ func (a *assetsArea) redraw() {
 	a.locationsTop.Refresh()
 }
 
-func (a *assetsArea) updateLocationData() (map[string][]string, map[string]string, int, error) {
+func (a *assetsArea) updateTreeData() (map[string][]string, map[string]string, int, error) {
 	values := make(map[string]string)
 	ids := make(map[string][]string)
 	if !a.ui.hasCharacter() {
@@ -224,8 +225,11 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 		})
 		ships := make([]assettree.AssetNode, 0)
 		itemContainers := make([]assettree.AssetNode, 0)
+		assetSafety := make([]assettree.AssetNode, 0)
 		for _, an := range topAssets {
-			if an.Asset.IsContainer() {
+			if an.Asset.IsInAssetSafety() {
+				assetSafety = append(assetSafety, an)
+			} else if an.Asset.IsContainer() {
 				if an.Asset.IsShip() {
 					ships = append(ships, an)
 				} else {
@@ -272,7 +276,7 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 			}
 		}
 
-		itemsCount := len(topAssets) - len(ships)
+		itemsCount := len(topAssets) - len(ships) - len(assetSafety)
 		nih := makeHangarNode(nodeItemHangar, ln.ContainerID, itemsCount, characterID)
 		itemsUID := nih.addToTree(locationUID, ids, values)
 		for _, an := range itemContainers {
@@ -283,6 +287,17 @@ func (a *assetsArea) updateLocationData() (map[string][]string, map[string]strin
 				Type:        nodeContainer,
 			}
 			ln.addToTree(itemsUID, ids, values)
+		}
+
+		if len(assetSafety) > 0 {
+			ln := locationNode{
+				CharacterID: characterID,
+				ContainerID: ln.ContainerID,
+				Name:        makeNameWithCount("Asset Safety", len(assetSafety)),
+				Type:        nodeAssetSafety,
+			}
+			ln.addToTree(locationUID, ids, values)
+
 		}
 	}
 	return ids, values, len(a.assetTree.Locations()), nil
@@ -357,6 +372,15 @@ func (a *assetsArea) redrawAssets(n locationNode) error {
 			fuel = append(fuel, ca)
 		}
 		assets = fuel
+	case nodeAssetSafety:
+		xx := make([]*model.CharacterAsset, 0)
+		for _, ca := range assets {
+			if !ca.IsInAssetSafety() {
+				continue
+			}
+			xx = append(xx, ca)
+		}
+		assets = xx
 	}
 	if err := a.assetsData.Set(copyToUntypedSlice(assets)); err != nil {
 		return err
