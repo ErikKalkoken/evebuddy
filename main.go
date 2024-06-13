@@ -96,7 +96,7 @@ func main() {
 	}
 	db, err := storage.InitDB(dsn)
 	if err != nil {
-		log.Fatalf("Failed to connect to database %s: %s", dsn, err)
+		log.Fatalf("Failed to initialize database %s: %s", dsn, err)
 	}
 	defer db.Close()
 	repository := storage.New(db)

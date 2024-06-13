@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"embed"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -9,10 +10,14 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
+	"github.com/ErikKalkoken/evebuddy/internal/storage/migrate"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
 var ErrNotFound = errors.New("object not found")
+
+//go:embed migrations/*.sql
+var embedMigrations embed.FS
 
 type Storage struct {
 	q  *queries.Queries
@@ -38,26 +43,9 @@ func InitDB(dsn string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	slog.Info(fmt.Sprintf("Connected to database: %s", dsn))
-	hasSchema, err := schemaExists(db)
-	if err != nil {
+	slog.Info("Connected to database", "DSN", dsn)
+	if err := migrate.Run(db, embedMigrations); err != nil {
 		return nil, err
 	}
-	if !hasSchema {
-		if err := runMigrations(db); err != nil {
-			return nil, err
-		}
-	}
 	return db, nil
-}
-
-func schemaExists(db *sql.DB) (bool, error) {
-	rows, err := db.Query("SELECT NAME from sqlite_master;")
-	if err != nil {
-		return false, err
-	}
-	for rows.Next() {
-		return true, nil
-	}
-	return false, nil
 }
