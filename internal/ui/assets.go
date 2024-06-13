@@ -32,6 +32,41 @@ const (
 	nodeAssetSafety
 )
 
+// locationDataTree represents a tree of location nodes for rendering with the tree widget.
+type locationDataTree struct {
+	ids    map[string][]string
+	values map[string]string
+}
+
+func newLocationDataTree() locationDataTree {
+	ltd := locationDataTree{
+		values: make(map[string]string),
+		ids:    make(map[string][]string),
+	}
+	return ltd
+}
+
+func (ltd locationDataTree) add(parentUID string, node locationDataNode) string {
+	if parentUID != "" {
+		_, found := ltd.values[parentUID]
+		if !found {
+			panic(fmt.Sprintf("parent UID does not exist: %s", parentUID))
+		}
+	}
+	uid := node.UID()
+	_, found := ltd.values[uid]
+	if found {
+		panic(fmt.Sprintf("UID for this node already exists: %v", node))
+	}
+	ltd.ids[parentUID] = append(ltd.ids[parentUID], uid)
+	ltd.values[uid] = objectToJSONOrPanic(node)
+	return uid
+}
+
+func (ltd locationDataTree) stringTree() (map[string][]string, map[string]string) {
+	return ltd.ids, ltd.values
+}
+
 // locationDataNode is a node for the asset tree widget.
 type locationDataNode struct {
 	CharacterID         int32
@@ -53,13 +88,6 @@ func (n locationDataNode) UID() widget.TreeNodeID {
 
 func (n locationDataNode) isBranch() bool {
 	return n.Type == nodeLocation
-}
-
-func (n locationDataNode) addToTree(parentUID string, ids map[string][]string, values map[string]string) string {
-	uid := n.UID()
-	ids[parentUID] = append(ids[parentUID], uid)
-	values[uid] = objectToJSONOrPanic(n)
-	return uid
 }
 
 var defaultAssetIcon = theme.NewDisabledResource(resourceQuestionmarkSvg)
@@ -162,10 +190,11 @@ func (a *assetsArea) redraw() {
 		if err := a.clearAssets(); err != nil {
 			return "", 0, err
 		}
-		ids, values, total, err := a.createTreeData()
+		tree, total, err := a.createTreeData()
 		if err != nil {
 			return "", 0, err
 		}
+		ids, values := tree.stringTree()
 		if err := a.locationsData.Set(ids, values); err != nil {
 			return "", 0, err
 		}
@@ -181,43 +210,42 @@ func (a *assetsArea) redraw() {
 	a.locationsTop.Refresh()
 }
 
-func (a *assetsArea) createTreeData() (map[string][]string, map[string]string, int, error) {
-	values := make(map[string]string)
-	ids := make(map[string][]string)
+func (a *assetsArea) createTreeData() (locationDataTree, int, error) {
+	tree := newLocationDataTree()
 	if !a.ui.hasCharacter() {
-		return ids, values, 0, nil
+		return tree, 0, nil
 	}
 	characterID := a.ui.characterID()
 	ctx := context.Background()
 	assets, err := a.ui.sv.Character.ListCharacterAssets(ctx, characterID)
 	if err != nil {
-		return nil, nil, 0, err
+		return tree, 0, err
 	}
-	el, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)
+	oo, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)
 	if err != nil {
-		return nil, nil, 0, err
+		return tree, 0, err
 	}
-	a.assetTree = assettree.New(assets, el)
+	a.assetTree = assettree.New(assets, oo)
 	locationNodes := a.assetTree.Locations()
 	slices.SortFunc(locationNodes, func(a assettree.LocationNode, b assettree.LocationNode) int {
 		return cmp.Compare(a.Location.DisplayName(), b.Location.DisplayName())
 	})
 	for _, ln := range locationNodes {
-		loc := ln.Location
-		ldn := locationDataNode{
+		el := ln.Location
+		location := locationDataNode{
 			CharacterID: characterID,
-			ContainerID: loc.ID,
+			ContainerID: el.ID,
 			Type:        nodeLocation,
-			Name:        makeNameWithCount(loc.DisplayName(), len(ln.Nodes())),
+			Name:        makeNameWithCount(el.DisplayName(), len(ln.Nodes())),
 		}
-		if loc.SolarSystem != nil {
-			ldn.SystemName = loc.SolarSystem.Name
-			ldn.SystemSecurityValue = float32(loc.SolarSystem.SecurityStatus)
-			ldn.SystemSecurityType = loc.SolarSystem.SecurityType()
+		if el.SolarSystem != nil {
+			location.SystemName = el.SolarSystem.Name
+			location.SystemSecurityValue = float32(el.SolarSystem.SecurityStatus)
+			location.SystemSecurityType = el.SolarSystem.SecurityType()
 		} else {
-			ldn.IsUnknown = true
+			location.IsUnknown = true
 		}
-		locationUID := ldn.addToTree("", ids, values)
+		locationUID := tree.add("", location)
 
 		topAssets := ln.Nodes()
 		slices.SortFunc(topAssets, func(a assettree.AssetNode, b assettree.AssetNode) int {
@@ -238,22 +266,23 @@ func (a *assetsArea) createTreeData() (map[string][]string, map[string]string, i
 			}
 		}
 
-		nsh := locationDataNode{
+		shipHangar := locationDataNode{
 			CharacterID: characterID,
-			ContainerID: loc.ID,
+			ContainerID: el.ID,
 			Name:        makeNameWithCount("Ship Hangar", len(ships)),
 			Type:        nodeShipHangar,
 		}
-		shipsUID := nsh.addToTree(locationUID, ids, values)
+		shipsUID := tree.add(locationUID, shipHangar)
+
 		for _, an := range ships {
 			ship := an.Asset
-			x := locationDataNode{
+			ldn := locationDataNode{
 				CharacterID: characterID,
 				ContainerID: an.Asset.ItemID,
 				Name:        fmt.Sprintf("%s (%s)", ship.Name, ship.EveType.Name),
 				Type:        nodeShip,
 			}
-			shipUID := x.addToTree(shipsUID, ids, values)
+			shipUID := tree.add(shipsUID, ldn)
 			cargo := make([]assettree.AssetNode, 0)
 			fuel := make([]assettree.AssetNode, 0)
 			for _, an2 := range an.Nodes() {
@@ -269,7 +298,7 @@ func (a *assetsArea) createTreeData() (map[string][]string, map[string]string, i
 				Name:        makeNameWithCount("Cargo Bay", len(cargo)),
 				Type:        nodeCargoBay,
 			}
-			cln.addToTree(shipUID, ids, values)
+			tree.add(shipUID, cln)
 			if ship.EveType.HasFuelBay() {
 				ldn := locationDataNode{
 					CharacterID: characterID,
@@ -277,18 +306,18 @@ func (a *assetsArea) createTreeData() (map[string][]string, map[string]string, i
 					Name:        makeNameWithCount("Fuel Bay", len(fuel)),
 					Type:        nodeFuelBay,
 				}
-				ldn.addToTree(shipUID, ids, values)
+				tree.add(shipUID, ldn)
 			}
 		}
 
 		itemsCount := len(topAssets) - len(ships) - len(assetSafety)
-		nih := locationDataNode{
+		itemHangar := locationDataNode{
 			CharacterID: characterID,
-			ContainerID: loc.ID,
+			ContainerID: el.ID,
 			Name:        makeNameWithCount("Item Hangar", itemsCount),
 			Type:        nodeItemHangar,
 		}
-		itemsUID := nih.addToTree(locationUID, ids, values)
+		itemsUID := tree.add(locationUID, itemHangar)
 		for _, an := range itemContainers {
 			ldn := locationDataNode{
 				CharacterID: characterID,
@@ -296,21 +325,20 @@ func (a *assetsArea) createTreeData() (map[string][]string, map[string]string, i
 				Name:        makeNameWithCount(an.Asset.Name, len(an.Nodes())),
 				Type:        nodeContainer,
 			}
-			ldn.addToTree(itemsUID, ids, values)
+			tree.add(itemsUID, ldn)
 		}
 
 		if len(assetSafety) > 0 {
 			ldn := locationDataNode{
 				CharacterID: characterID,
-				ContainerID: ldn.ContainerID,
+				ContainerID: location.ContainerID,
 				Name:        makeNameWithCount("Asset Safety", len(assetSafety)),
 				Type:        nodeAssetSafety,
 			}
-			ldn.addToTree(locationUID, ids, values)
-
+			tree.add(locationUID, ldn)
 		}
 	}
-	return ids, values, len(a.assetTree.Locations()), nil
+	return tree, len(a.assetTree.Locations()), nil
 }
 
 func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
