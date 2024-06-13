@@ -46,6 +46,7 @@ type ui struct {
 	mailArea              *mailArea
 	mailTab               *container.TabItem
 	overviewArea          *overviewArea
+	overviewTab           *container.TabItem
 	statusBarArea         *statusBarArea
 	sv                    *service.Service
 	skillCatalogueArea    *skillCatalogueArea
@@ -100,7 +101,7 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 	u.overviewArea = u.newOverviewArea()
 	u.assetSearchArea = u.newAssetSearchArea()
 	u.wealthArea = u.newWealthArea()
-	overviewTab := container.NewTabItemWithIcon("Characters",
+	u.overviewTab = container.NewTabItemWithIcon("Characters",
 		theme.NewThemedResource(resourceGroupSvg), container.NewAppTabs(
 			container.NewTabItem("Overview", u.overviewArea.content),
 			container.NewTabItem("Assets", u.assetSearchArea.content),
@@ -128,7 +129,7 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 	u.statusBarArea = u.newStatusBarArea()
 	u.toolbarArea = u.newToolbarArea()
 
-	u.tabs = container.NewAppTabs(assetsTab, characterTab, u.mailTab, u.skillqueueTab, walletTab, overviewTab)
+	u.tabs = container.NewAppTabs(assetsTab, characterTab, u.mailTab, u.skillqueueTab, walletTab, u.overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	// for experiments
@@ -303,18 +304,23 @@ func (u *ui) refreshCharacter() {
 	u.wealthArea.refresh()
 	c := u.currentCharacter()
 	if c != nil {
-		u.tabs.EnableIndex(0)
-		u.tabs.EnableIndex(1)
-		u.tabs.EnableIndex(2)
-		u.tabs.EnableIndex(3)
+		for i := range u.tabs.Items {
+			u.tabs.EnableIndex(i)
+		}
+		subTabs := u.overviewTab.Content.(*container.AppTabs)
+		for i := range subTabs.Items {
+			subTabs.EnableIndex(i)
+		}
 		u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
 	} else {
-		u.tabs.DisableIndex(0)
-		u.tabs.DisableIndex(1)
-		u.tabs.DisableIndex(2)
-		u.tabs.DisableIndex(3)
-		u.tabs.DisableIndex(4)
-		u.tabs.SelectIndex(5)
+		for i := range u.tabs.Items {
+			u.tabs.DisableIndex(i)
+		}
+		u.tabs.Select(u.overviewTab)
+		subTabs := u.overviewTab.Content.(*container.AppTabs)
+		for i := range subTabs.Items {
+			subTabs.DisableIndex(i)
+		}
 	}
 	go u.statusBarArea.characterUpdateStatusArea.refresh()
 	u.window.Content().Refresh()

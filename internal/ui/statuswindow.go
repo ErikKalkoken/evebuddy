@@ -194,22 +194,28 @@ func (a *statusWindow) makeSectionsTable() *widget.GridWrap {
 		func() fyne.CanvasObject {
 			pb := widget.NewProgressBarInfinite()
 			pb.Stop()
-			return container.NewStack(
-				pb,
-				container.NewHBox(
-					widget.NewLabel("Section name long"),
-					layout.NewSpacer(),
-					widget.NewLabel("Status XXXX"),
-				))
+			return container.NewHBox(
+				container.NewStack(pb, widget.NewLabel("Section name long")),
+				layout.NewSpacer(),
+				widget.NewLabel("Status XXXX"),
+			)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			cs, err := convertDataItem[model.CharacterStatus](di)
 			if err != nil {
 				panic(err)
 			}
-			c := co.(*fyne.Container)
+			hbox := co.(*fyne.Container)
+			stack := hbox.Objects[0].(*fyne.Container)
+			name := stack.Objects[1].(*widget.Label)
+			status := hbox.Objects[2].(*widget.Label)
+			name.SetText(cs.Section.DisplayName())
+			s, i := statusDisplay(cs)
+			status.Text = s
+			status.Importance = i
+			status.Refresh()
 
-			pb := c.Objects[0].(*widget.ProgressBarInfinite)
+			pb := stack.Objects[0].(*widget.ProgressBarInfinite)
 			if cs.IsRunning() {
 				pb.Start()
 				pb.Show()
@@ -217,15 +223,6 @@ func (a *statusWindow) makeSectionsTable() *widget.GridWrap {
 				pb.Stop()
 				pb.Hide()
 			}
-
-			row := c.Objects[1].(*fyne.Container)
-			name := row.Objects[0].(*widget.Label)
-			status := row.Objects[2].(*widget.Label)
-			name.SetText(cs.Section.DisplayName())
-			s, i := statusDisplay(cs)
-			status.Text = s
-			status.Importance = i
-			status.Refresh()
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {

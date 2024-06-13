@@ -422,7 +422,7 @@ func (a *assetsArea) redrawAssets(n locationDataNode) error {
 	}
 	var total float64
 	for _, ca := range assets {
-		total += ca.Price.Float64
+		total += ca.Price.Float64 * float64(ca.Quantity)
 	}
 	a.assetsTop.SetText(fmt.Sprintf("%d Items - %s ISK Est. Price", len(assets), ihumanize.Number(total, 1)))
 	return nil
