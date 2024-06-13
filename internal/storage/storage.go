@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"net/url"
 
+	_ "github.com/mattn/go-sqlite3"
+
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -42,11 +44,9 @@ func InitDB(dsn string) (*sql.DB, error) {
 		return nil, err
 	}
 	if !hasSchema {
-		_, err = db.Exec(queries.Schema())
-		if err != nil {
+		if err := runMigrations(db); err != nil {
 			return nil, err
 		}
-		slog.Info("Database created")
 	}
 	return db, nil
 }

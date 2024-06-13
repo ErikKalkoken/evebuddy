@@ -1,0 +1,6 @@
+CREATE TABLE dictionary (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key TEXT NOT NULL,
+    value BLOB NOT NULL,
+    UNIQUE (key)
+);
