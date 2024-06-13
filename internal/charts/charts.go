@@ -60,6 +60,21 @@ func NewChartBuilder() ChartBuilder {
 
 // Render returns a rendered chart in a Fyne container.
 func (cb ChartBuilder) Render(ct ChartType, title string, values []Value) *fyne.Container {
+	chart := cb.render(ct, title, values)
+	label := widget.NewLabel(title)
+	label.TextStyle.Bold = true
+	c := container.NewPadded(container.NewBorder(
+		container.NewHBox(label), nil, nil, nil,
+		container.NewHBox(chart)))
+	return c
+}
+
+func (cb ChartBuilder) render(ct ChartType, title string, values []Value) fyne.CanvasObject {
+	if len(values) < 2 {
+		l := widget.NewLabel("Not enough data")
+		l.Importance = widget.LowImportance
+		return container.NewCenter(l)
+	}
 	var content []byte
 	var err error
 	switch ct {
@@ -78,12 +93,7 @@ func (cb ChartBuilder) Render(ct ChartType, title string, values []Value) *fyne.
 	r := fyne.NewStaticResource(fn, content)
 	chart := canvas.NewImageFromResource(r)
 	chart.FillMode = canvas.ImageFillOriginal
-	t := widget.NewLabel(title)
-	t.TextStyle.Bold = true
-	c := container.NewPadded(container.NewBorder(
-		container.NewHBox(t), nil, nil, nil,
-		container.NewHBox(chart)))
-	return c
+	return chart
 }
 
 func makeFileName(title string) string {

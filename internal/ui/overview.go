@@ -220,20 +220,22 @@ func (a *overviewArea) makeTable() *widget.Table {
 
 func (a *overviewArea) refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
-		sp, unread, wallet, err := a.updateEntries()
+		totals, err := a.updateEntries()
 		if err != nil {
 			return "", 0, err
 		}
 		if a.characters.Length() == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
-		walletText := humanizedNullFloat64(wallet, 1, "?")
-		spText := humanizedNullInt64(sp, "?")
-		unreadText := humanizedNullInt64(unread, "?")
+		walletText := humanizedNullFloat64(totals.wallet, 1, "?")
+		assetsText := humanizedNullFloat64(totals.assets, 1, "?")
+		spText := humanizedNullInt64(totals.sp, "?")
+		unreadText := humanizedNullInt64(totals.unread, "?")
 		s := fmt.Sprintf(
-			"Total: %d characters • %s ISK • %s SP  • %s unread",
+			"Total: %d characters • %s ISK wallet • %s ISK assets • %s SP  • %s unread",
 			a.characters.Length(),
 			walletText,
+			assetsText,
 			spText,
 			unreadText,
 		)
@@ -249,15 +251,20 @@ func (a *overviewArea) refresh() {
 	a.table.Refresh()
 }
 
-func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFloat64, error) {
-	var spTotal sql.NullInt64
-	var unreadTotal sql.NullInt64
-	var walletTotal sql.NullFloat64
+type overviewTotals struct {
+	sp     sql.NullInt64
+	unread sql.NullInt64
+	wallet sql.NullFloat64
+	assets sql.NullFloat64
+}
+
+func (a *overviewArea) updateEntries() (overviewTotals, error) {
+	var totals overviewTotals
 	var err error
 	ctx := context.Background()
 	mycc, err := a.ui.sv.Character.ListCharacters(ctx)
 	if err != nil {
-		return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch characters: %w", err)
+		return totals, fmt.Errorf("failed to fetch characters: %w", err)
 	}
 	cc := make([]overviewCharacter, len(mycc))
 	for i, m := range mycc {
@@ -308,14 +315,14 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 	for i, c := range cc {
 		v, err := a.ui.sv.Character.GetCharacterTotalTrainingTime(ctx, c.id)
 		if err != nil {
-			return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch skill queue count for character %d, %w", c.id, err)
+			return totals, fmt.Errorf("failed to fetch skill queue count for character %d, %w", c.id, err)
 		}
 		cc[i].training = v
 	}
 	for i, c := range cc {
 		total, unread, err := a.ui.sv.Character.GetCharacterMailCounts(ctx, c.id)
 		if err != nil {
-			return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch mail counts for character %d, %w", c.id, err)
+			return totals, fmt.Errorf("failed to fetch mail counts for character %d, %w", c.id, err)
 		}
 		if total > 0 {
 			cc[i].unreadCount.Int64 = int64(unread)
@@ -325,26 +332,30 @@ func (a *overviewArea) updateEntries() (sql.NullInt64, sql.NullInt64, sql.NullFl
 	for i, c := range cc {
 		v, err := a.ui.sv.Character.CharacterAssetTotalValue(c.id)
 		if err != nil {
-			return spTotal, unreadTotal, walletTotal, fmt.Errorf("failed to fetch asset total value for character %d, %w", c.id, err)
+			return totals, fmt.Errorf("failed to fetch asset total value for character %d, %w", c.id, err)
 		}
 		cc[i].assetValue = v
 	}
 	if err := a.characters.Set(copyToUntypedSlice(cc)); err != nil {
-		return spTotal, unreadTotal, walletTotal, err
+		return totals, err
 	}
 	for _, c := range cc {
 		if c.totalSP.Valid {
-			spTotal.Valid = true
-			spTotal.Int64 += c.totalSP.Int64
+			totals.sp.Valid = true
+			totals.sp.Int64 += c.totalSP.Int64
 		}
 		if c.unreadCount.Valid {
-			unreadTotal.Valid = true
-			unreadTotal.Int64 += c.unreadCount.Int64
+			totals.unread.Valid = true
+			totals.unread.Int64 += c.unreadCount.Int64
 		}
 		if c.walletBalance.Valid {
-			walletTotal.Valid = true
-			walletTotal.Float64 += c.walletBalance.Float64
+			totals.wallet.Valid = true
+			totals.wallet.Float64 += c.walletBalance.Float64
+		}
+		if c.assetValue.Valid {
+			totals.assets.Valid = true
+			totals.assets.Float64 += c.assetValue.Float64
 		}
 	}
-	return spTotal, unreadTotal, walletTotal, nil
+	return totals, nil
 }

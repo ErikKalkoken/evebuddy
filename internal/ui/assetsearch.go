@@ -337,10 +337,14 @@ func (a *assetSearchArea) resetSearch() {
 func (a *assetSearchArea) refresh() {
 	var t string
 	var i widget.Importance
-	if err := a.loadData(); err != nil {
+	hasData, err := a.loadData()
+	if err != nil {
 		slog.Error("Failed to refresh asset search data", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
+	} else if !hasData {
+		t = "No characters"
+		i = widget.LowImportance
 	} else {
 		t, i = a.makeTopText()
 	}
@@ -350,16 +354,14 @@ func (a *assetSearchArea) refresh() {
 	a.assetTable.Refresh()
 }
 
-func (a *assetSearchArea) loadData() error {
-	if !a.ui.hasCharacter() {
-		oo := make([]*model.CharacterAsset, 0)
-		a.assetData.Set(copyToUntypedSlice(oo))
-		return nil
-	}
+func (a *assetSearchArea) loadData() (bool, error) {
 	ctx := context.Background()
 	cc, err := a.ui.sv.Character.ListCharactersShort(ctx)
 	if err != nil {
-		return err
+		return false, err
+	}
+	if len(cc) == 0 {
+		return false, nil
 	}
 	m2 := make(map[int32]string)
 	for _, o := range cc {
@@ -368,11 +370,11 @@ func (a *assetSearchArea) loadData() error {
 	a.characterNames = m2
 	assets, err := a.ui.sv.Character.ListAllCharacterAssets(ctx)
 	if err != nil {
-		return err
+		return false, err
 	}
 	locations, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)
 	if err != nil {
-		return err
+		return false, err
 	}
 	a.assetTree = assettree.New(assets, locations)
 	rows := make([]*assetSearchRow, len(assets))
@@ -381,7 +383,7 @@ func (a *assetSearchArea) loadData() error {
 	}
 	a.assetData.Set(copyToUntypedSlice(rows))
 	a.assets = rows
-	return nil
+	return true, nil
 }
 
 func (a *assetSearchArea) makeTopText() (string, widget.Importance) {

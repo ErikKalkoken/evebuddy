@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/charts"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 type wealthArea struct {
@@ -19,6 +21,8 @@ type wealthArea struct {
 	charts  *fyne.Container
 	top     *widget.Label
 	ui      *ui
+
+	mu sync.Mutex
 }
 
 func (u *ui) newWealthArea() *wealthArea {
@@ -42,7 +46,7 @@ type dataRow struct {
 }
 
 func (a *wealthArea) refresh() {
-	data, err := a.compileData()
+	data, characters, err := a.compileData()
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
 		a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", humanize.Error(err))
@@ -50,7 +54,12 @@ func (a *wealthArea) refresh() {
 		a.top.Refresh()
 		return
 	}
-
+	if characters == 0 {
+		a.top.Text = "No characters"
+		a.top.Importance = widget.LowImportance
+		a.top.Refresh()
+		return
+	}
 	cb := charts.NewChartBuilder()
 	charactersData := make([]charts.Value, len(data))
 	for i, r := range data {
@@ -80,29 +89,50 @@ func (a *wealthArea) refresh() {
 	}
 	walletChart := cb.Render(charts.Bar, "Wallet Balance By Character", walletData)
 
-	a.charts.RemoveAll()
-	a.charts.Add(container.NewHBox(charactersChart, typesChart))
-	a.charts.Add(assetsChart)
-	a.charts.Add(walletChart)
-
 	var total float64
 	for _, r := range data {
 		total += r.assets + r.wallet
 	}
-	a.top.SetText(fmt.Sprintf("Total: %s", humanize.Number(total, 1)))
+
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.charts.RemoveAll()
+	a.charts.Add(typesChart)
+	a.charts.Add(charactersChart)
+	a.charts.Add(assetsChart)
+	a.charts.Add(walletChart)
+
+	a.top.Text = fmt.Sprintf("%s ISK total wealth • %d characters", humanize.Number(total, 1), characters)
+	a.top.Importance = widget.MediumImportance
+	a.top.Refresh()
 }
 
-func (a *wealthArea) compileData() ([]dataRow, error) {
-	cc, err := a.ui.sv.Character.ListCharacters(context.TODO())
+func (a *wealthArea) compileData() ([]dataRow, int, error) {
+	ctx := context.TODO()
+	cc, err := a.ui.sv.Character.ListCharacters(ctx)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+	selected := make([]*model.Character, 0)
+	for _, c := range cc {
+		hasAssets, err := a.ui.sv.Character.SectionWasUpdated(ctx, c.ID, model.SectionAssets)
+		if err != nil {
+			return nil, 0, err
+		}
+		hasWallet, err := a.ui.sv.Character.SectionWasUpdated(ctx, c.ID, model.SectionWalletBalance)
+		if err != nil {
+			return nil, 0, err
+		}
+		if hasAssets && hasWallet {
+			selected = append(selected, c)
+		}
 	}
 	data := make([]dataRow, 0)
-	for _, c := range cc {
+	for _, c := range selected {
 		wallet := c.WalletBalance.Float64
 		x, err := a.ui.sv.Character.CharacterAssetTotalValue(c.ID)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		assets := x.Float64
 		label := c.EveCharacter.Name
@@ -117,5 +147,5 @@ func (a *wealthArea) compileData() ([]dataRow, error) {
 	slices.SortFunc(data, func(a, b dataRow) int {
 		return cmp.Compare(a.total, b.total) * -1
 	})
-	return data, nil
+	return data, len(selected), nil
 }
