@@ -19,10 +19,10 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-type locationNodeType uint
+type locationDataNodeType uint
 
 const (
-	nodeLocation locationNodeType = iota + 1
+	nodeLocation locationDataNodeType = iota + 1
 	nodeShipHangar
 	nodeItemHangar
 	nodeContainer
@@ -32,8 +32,8 @@ const (
 	nodeAssetSafety
 )
 
-// locationNode is a node for the asset tree widget.
-type locationNode struct {
+// locationDataNode is a node for the asset tree widget.
+type locationDataNode struct {
 	CharacterID         int32
 	ContainerID         int64
 	Name                string
@@ -41,21 +41,21 @@ type locationNode struct {
 	SystemName          string
 	SystemSecurityValue float32
 	SystemSecurityType  model.SolarSystemSecurityType
-	Type                locationNodeType
+	Type                locationDataNodeType
 }
 
-func (n locationNode) UID() widget.TreeNodeID {
+func (n locationDataNode) UID() widget.TreeNodeID {
 	if n.CharacterID == 0 || n.ContainerID == 0 || n.Type == 0 {
 		panic("some IDs are not set")
 	}
 	return fmt.Sprintf("%d-%d-%d", n.CharacterID, n.ContainerID, n.Type)
 }
 
-func (n locationNode) isBranch() bool {
+func (n locationDataNode) isBranch() bool {
 	return n.Type == nodeLocation
 }
 
-func (n locationNode) addToTree(parentUID string, ids map[string][]string, values map[string]string) string {
+func (n locationDataNode) addToTree(parentUID string, ids map[string][]string, values map[string]string) string {
 	uid := n.UID()
 	ids[parentUID] = append(ids[parentUID], uid)
 	values[uid] = objectToJSONOrPanic(n)
@@ -113,7 +113,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 			row := co.(*fyne.Container)
 			prefix := row.Objects[0].(*widget.Label)
 			label := row.Objects[1].(*widget.Label)
-			n, err := treeNodeFromDataItem[locationNode](di)
+			n, err := treeNodeFromDataItem[locationDataNode](di)
 			if err != nil {
 				slog.Error("Failed to render asset location in UI", "err", err)
 				label.SetText("ERROR")
@@ -136,7 +136,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 		},
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
-		n, err := treeNodeFromBoundTree[locationNode](a.locationsData, uid)
+		n, err := treeNodeFromBoundTree[locationDataNode](a.locationsData, uid)
 		if err != nil {
 			slog.Error("Failed to select location", "err", err)
 			t.UnselectAll()
@@ -162,7 +162,7 @@ func (a *assetsArea) redraw() {
 		if err := a.clearAssets(); err != nil {
 			return "", 0, err
 		}
-		ids, values, total, err := a.updateTreeData()
+		ids, values, total, err := a.createTreeData()
 		if err != nil {
 			return "", 0, err
 		}
@@ -181,7 +181,7 @@ func (a *assetsArea) redraw() {
 	a.locationsTop.Refresh()
 }
 
-func (a *assetsArea) updateTreeData() (map[string][]string, map[string]string, int, error) {
+func (a *assetsArea) createTreeData() (map[string][]string, map[string]string, int, error) {
 	values := make(map[string]string)
 	ids := make(map[string][]string)
 	if !a.ui.hasCharacter() {
@@ -193,33 +193,33 @@ func (a *assetsArea) updateTreeData() (map[string][]string, map[string]string, i
 	if err != nil {
 		return nil, nil, 0, err
 	}
-	locations, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)
+	el, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)
 	if err != nil {
 		return nil, nil, 0, err
 	}
-	a.assetTree = assettree.New(assets, locations)
-	ll := a.assetTree.Locations()
-	slices.SortFunc(ll, func(a assettree.LocationNode, b assettree.LocationNode) int {
+	a.assetTree = assettree.New(assets, el)
+	locationNodes := a.assetTree.Locations()
+	slices.SortFunc(locationNodes, func(a assettree.LocationNode, b assettree.LocationNode) int {
 		return cmp.Compare(a.Location.DisplayName(), b.Location.DisplayName())
 	})
-	for _, atl := range ll {
-		loc := atl.Location
-		ln := locationNode{
+	for _, ln := range locationNodes {
+		loc := ln.Location
+		ldn := locationDataNode{
 			CharacterID: characterID,
 			ContainerID: loc.ID,
 			Type:        nodeLocation,
-			Name:        makeNameWithCount(loc.DisplayName(), len(atl.Nodes())),
+			Name:        makeNameWithCount(loc.DisplayName(), len(ln.Nodes())),
 		}
 		if loc.SolarSystem != nil {
-			ln.SystemName = loc.SolarSystem.Name
-			ln.SystemSecurityValue = float32(loc.SolarSystem.SecurityStatus)
-			ln.SystemSecurityType = loc.SolarSystem.SecurityType()
+			ldn.SystemName = loc.SolarSystem.Name
+			ldn.SystemSecurityValue = float32(loc.SolarSystem.SecurityStatus)
+			ldn.SystemSecurityType = loc.SolarSystem.SecurityType()
 		} else {
-			ln.IsUnknown = true
+			ldn.IsUnknown = true
 		}
-		locationUID := ln.addToTree("", ids, values)
+		locationUID := ldn.addToTree("", ids, values)
 
-		topAssets := atl.Nodes()
+		topAssets := ln.Nodes()
 		slices.SortFunc(topAssets, func(a assettree.AssetNode, b assettree.AssetNode) int {
 			return cmp.Compare(a.Asset.DisplayName(), b.Asset.DisplayName())
 		})
@@ -238,17 +238,22 @@ func (a *assetsArea) updateTreeData() (map[string][]string, map[string]string, i
 			}
 		}
 
-		nsh := makeHangarNode(nodeShipHangar, ln.ContainerID, len(ships), characterID)
+		nsh := locationDataNode{
+			CharacterID: characterID,
+			ContainerID: loc.ID,
+			Name:        makeNameWithCount("Ship Hangar", len(ships)),
+			Type:        nodeShipHangar,
+		}
 		shipsUID := nsh.addToTree(locationUID, ids, values)
 		for _, an := range ships {
 			ship := an.Asset
-			ln := locationNode{
+			x := locationDataNode{
 				CharacterID: characterID,
 				ContainerID: an.Asset.ItemID,
 				Name:        fmt.Sprintf("%s (%s)", ship.Name, ship.EveType.Name),
 				Type:        nodeShip,
 			}
-			shipUID := ln.addToTree(shipsUID, ids, values)
+			shipUID := x.addToTree(shipsUID, ids, values)
 			cargo := make([]assettree.AssetNode, 0)
 			fuel := make([]assettree.AssetNode, 0)
 			for _, an2 := range an.Nodes() {
@@ -258,7 +263,7 @@ func (a *assetsArea) updateTreeData() (map[string][]string, map[string]string, i
 					fuel = append(fuel, an2)
 				}
 			}
-			cln := locationNode{
+			cln := locationDataNode{
 				CharacterID: characterID,
 				ContainerID: ship.ItemID,
 				Name:        makeNameWithCount("Cargo Bay", len(cargo)),
@@ -266,58 +271,46 @@ func (a *assetsArea) updateTreeData() (map[string][]string, map[string]string, i
 			}
 			cln.addToTree(shipUID, ids, values)
 			if ship.EveType.HasFuelBay() {
-				fln := locationNode{
+				ldn := locationDataNode{
 					CharacterID: characterID,
 					ContainerID: an.Asset.ItemID,
 					Name:        makeNameWithCount("Fuel Bay", len(fuel)),
 					Type:        nodeFuelBay,
 				}
-				fln.addToTree(shipUID, ids, values)
+				ldn.addToTree(shipUID, ids, values)
 			}
 		}
 
 		itemsCount := len(topAssets) - len(ships) - len(assetSafety)
-		nih := makeHangarNode(nodeItemHangar, ln.ContainerID, itemsCount, characterID)
+		nih := locationDataNode{
+			CharacterID: characterID,
+			ContainerID: loc.ID,
+			Name:        makeNameWithCount("Item Hangar", itemsCount),
+			Type:        nodeItemHangar,
+		}
 		itemsUID := nih.addToTree(locationUID, ids, values)
 		for _, an := range itemContainers {
-			ln := locationNode{
+			ldn := locationDataNode{
 				CharacterID: characterID,
 				ContainerID: an.Asset.ItemID,
 				Name:        makeNameWithCount(an.Asset.Name, len(an.Nodes())),
 				Type:        nodeContainer,
 			}
-			ln.addToTree(itemsUID, ids, values)
+			ldn.addToTree(itemsUID, ids, values)
 		}
 
 		if len(assetSafety) > 0 {
-			ln := locationNode{
+			ldn := locationDataNode{
 				CharacterID: characterID,
-				ContainerID: ln.ContainerID,
+				ContainerID: ldn.ContainerID,
 				Name:        makeNameWithCount("Asset Safety", len(assetSafety)),
 				Type:        nodeAssetSafety,
 			}
-			ln.addToTree(locationUID, ids, values)
+			ldn.addToTree(locationUID, ids, values)
 
 		}
 	}
 	return ids, values, len(a.assetTree.Locations()), nil
-}
-
-func makeHangarNode(t locationNodeType, locationID int64, n int, characterID int32) locationNode {
-	var name string
-	switch t {
-	case nodeShipHangar:
-		name = "Ship Hangar"
-	case nodeItemHangar:
-		name = "Item Hangar"
-	}
-	hn := locationNode{
-		CharacterID: characterID,
-		ContainerID: locationID,
-		Name:        makeNameWithCount(name, n),
-		Type:        t,
-	}
-	return hn
 }
 
 func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
@@ -335,7 +328,7 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	return fmt.Sprintf("%d locations", total), widget.MediumImportance, nil
 }
 
-func (a *assetsArea) redrawAssets(n locationNode) error {
+func (a *assetsArea) redrawAssets(n locationDataNode) error {
 	empty := make([]*model.CharacterAsset, 0)
 	if err := a.assetsData.Set(copyToUntypedSlice(empty)); err != nil {
 		return err
