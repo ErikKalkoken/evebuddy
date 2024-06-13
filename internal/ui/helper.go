@@ -37,13 +37,13 @@ func objectToJSON[T any](o T) (string, error) {
 	return string(s), nil
 }
 
-func objectToJSONOrPanic[T any](o T) string {
-	s, err := objectToJSON(o)
-	if err != nil {
-		panic(err)
-	}
-	return s
-}
+// func objectToJSONOrPanic[T any](o T) string {
+// 	s, err := objectToJSON(o)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	return s
+// }
 
 func entityNameOrFallback[T int | int32 | int64](e *model.EntityShort[T], fallback string) string {
 	if e == nil {

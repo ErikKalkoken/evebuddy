@@ -65,8 +65,7 @@ JOIN eve_types et ON et.id = ca.eve_type_id
 JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
 LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id AND ca.is_blueprint_copy IS FALSE
-WHERE character_id = ?
-ORDER BY et.name, ca.location_id;
+WHERE character_id = ?;
 
 -- name: ListCharacterAssetsInLocation :many
 SELECT
@@ -82,7 +81,7 @@ JOIN eve_categories ec ON ec.id = eg.eve_category_id
 LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id AND ca.is_blueprint_copy IS FALSE
 WHERE character_id = ?
 AND location_id = ?
-ORDER BY et.id;
+ORDER BY et.id, ca.name;
 
 -- name: ListCharacterAssetsInShipHangar :many
 SELECT
@@ -100,7 +99,7 @@ WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
 AND eg.eve_category_id = ?
-ORDER BY et.id;
+ORDER BY et.id, ca.name;
 
 -- name: ListCharacterAssetsInItemHangar :many
 SELECT
@@ -118,7 +117,7 @@ WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
 AND eg.eve_category_id != ?
-ORDER BY et.id;
+ORDER BY et.id, ca.name;
 
 -- name: GetCharacterAssetTotalValue :one
 SELECT SUM(IFNULL(emp.average_price, 0) * quantity * IIF(ca.is_blueprint_copy IS TRUE, 0, 1)) as total

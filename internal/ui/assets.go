@@ -340,10 +340,11 @@ func (a *assetsArea) createTreeData() (locationDataTree, int, error) {
 		}
 
 		if len(assetSafety) > 0 {
+			an := assetSafety[0]
 			ldn := locationDataNode{
 				CharacterID: characterID,
-				ContainerID: location.ContainerID,
-				Name:        makeNameWithCount("Asset Safety", len(assetSafety)),
+				ContainerID: an.Asset.ItemID,
+				Name:        makeNameWithCount("Asset Safety", len(an.Nodes())),
 				Type:        nodeAssetSafety,
 			}
 			tree.add(locationUID, ldn)
@@ -386,6 +387,17 @@ func (a *assetsArea) redrawAssets(n locationDataNode) error {
 		return err
 	}
 	switch n.Type {
+	case nodeItemHangar:
+		containers := make([]*model.CharacterAsset, 0)
+		items := make([]*model.CharacterAsset, 0)
+		for _, ca := range assets {
+			if ca.IsContainer() {
+				containers = append(containers, ca)
+			} else {
+				items = append(items, ca)
+			}
+		}
+		assets = slices.Concat(containers, items)
 	case nodeCargoBay:
 		cargo := make([]*model.CharacterAsset, 0)
 		for _, ca := range assets {
@@ -404,15 +416,6 @@ func (a *assetsArea) redrawAssets(n locationDataNode) error {
 			fuel = append(fuel, ca)
 		}
 		assets = fuel
-	case nodeAssetSafety:
-		xx := make([]*model.CharacterAsset, 0)
-		for _, ca := range assets {
-			if !ca.IsInAssetSafety() {
-				continue
-			}
-			xx = append(xx, ca)
-		}
-		assets = xx
 	}
 	if err := a.assetsData.Set(copyToUntypedSlice(assets)); err != nil {
 		return err
@@ -435,7 +438,12 @@ func (a *assetsArea) clearAssets() error {
 }
 
 func (u *ui) showNewAssetWindow(ca *model.CharacterAsset) {
-	w := u.app.NewWindow(fmt.Sprintf("%s \"%s\" (%s): Contents", ca.EveType.Name, ca.Name, ca.EveType.Group.Name))
+	var name string
+	if ca.Name != "" {
+		name = fmt.Sprintf(" \"%s\" ", ca.Name)
+	}
+	title := fmt.Sprintf("%s%s(%s): Contents", ca.EveType.Name, name, ca.EveType.Group.Name)
+	w := u.app.NewWindow(title)
 	oo, err := u.sv.Character.ListCharacterAssetsInLocation(context.Background(), ca.CharacterID, ca.ItemID)
 	if err != nil {
 		panic(err)

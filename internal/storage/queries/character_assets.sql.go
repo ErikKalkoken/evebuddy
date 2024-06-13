@@ -290,7 +290,6 @@ JOIN eve_groups eg ON eg.id = et.eve_group_id
 JOIN eve_categories ec ON ec.id = eg.eve_category_id
 LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id AND ca.is_blueprint_copy IS FALSE
 WHERE character_id = ?
-ORDER BY et.name, ca.location_id
 `
 
 type ListCharacterAssetsRow struct {
@@ -374,7 +373,7 @@ WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
 AND eg.eve_category_id != ?
-ORDER BY et.id
+ORDER BY et.id, ca.name
 `
 
 type ListCharacterAssetsInItemHangarParams struct {
@@ -468,7 +467,7 @@ JOIN eve_categories ec ON ec.id = eg.eve_category_id
 LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id AND ca.is_blueprint_copy IS FALSE
 WHERE character_id = ?
 AND location_id = ?
-ORDER BY et.id
+ORDER BY et.id, ca.name
 `
 
 type ListCharacterAssetsInLocationParams struct {
@@ -557,7 +556,7 @@ WHERE character_id = ?
 AND location_id = ?
 AND location_flag = ?
 AND eg.eve_category_id = ?
-ORDER BY et.id
+ORDER BY et.id, ca.name
 `
 
 type ListCharacterAssetsInShipHangarParams struct {
