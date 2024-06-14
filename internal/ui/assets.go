@@ -262,17 +262,26 @@ func (a *assetsArea) createTreeData() (locationDataTree, int, error) {
 		slices.SortFunc(topAssets, func(a assettree.AssetNode, b assettree.AssetNode) int {
 			return cmp.Compare(a.Asset.DisplayName(), b.Asset.DisplayName())
 		})
+		itemCount := 0
+		shipCount := 0
 		ships := make([]assettree.AssetNode, 0)
 		itemContainers := make([]assettree.AssetNode, 0)
 		assetSafety := make([]assettree.AssetNode, 0)
 		for _, an := range topAssets {
 			if an.Asset.IsInAssetSafety() {
 				assetSafety = append(assetSafety, an)
-			} else if an.Asset.IsContainer() {
-				if an.Asset.IsShip() {
-					ships = append(ships, an)
+			} else if an.Asset.IsInHangar() {
+				if an.Asset.EveType.IsShip() {
+					shipCount++
 				} else {
-					itemContainers = append(itemContainers, an)
+					itemCount++
+				}
+				if an.Asset.IsContainer() {
+					if an.Asset.EveType.IsShip() {
+						ships = append(ships, an)
+					} else {
+						itemContainers = append(itemContainers, an)
+					}
 				}
 			}
 		}
@@ -280,11 +289,10 @@ func (a *assetsArea) createTreeData() (locationDataTree, int, error) {
 		shipHangar := locationDataNode{
 			CharacterID: characterID,
 			ContainerID: el.ID,
-			Name:        makeNameWithCount("Ship Hangar", len(ships)),
+			Name:        makeNameWithCount("Ship Hangar", shipCount),
 			Type:        nodeShipHangar,
 		}
 		shipsUID := tree.add(locationUID, shipHangar)
-
 		for _, an := range ships {
 			ship := an.Asset
 			ldn := locationDataNode{
@@ -321,11 +329,10 @@ func (a *assetsArea) createTreeData() (locationDataTree, int, error) {
 			}
 		}
 
-		itemsCount := len(topAssets) - len(ships) - len(assetSafety)
 		itemHangar := locationDataNode{
 			CharacterID: characterID,
 			ContainerID: el.ID,
-			Name:        makeNameWithCount("Item Hangar", itemsCount),
+			Name:        makeNameWithCount("Item Hangar", itemCount),
 			Type:        nodeItemHangar,
 		}
 		itemsUID := tree.add(locationUID, itemHangar)

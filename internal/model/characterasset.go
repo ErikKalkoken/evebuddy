@@ -63,7 +63,7 @@ func (ca CharacterAsset) IsContainer() bool {
 	if !ca.IsSingleton {
 		return false
 	}
-	if ca.IsShip() {
+	if ca.EveType.IsShip() {
 		return true
 	}
 	if ca.EveType.ID == EveTypeAssetSafetyWrap {
@@ -79,16 +79,16 @@ func (ca CharacterAsset) IsContainer() bool {
 	return false
 }
 
-func (ca CharacterAsset) IsShip() bool {
-	return ca.EveType.Group.Category.ID == EveCategoryShip
+func (ca CharacterAsset) IsInAssetSafety() bool {
+	return ca.LocationFlag == "AssetSafety"
 }
 
 func (ca CharacterAsset) IsInCargoBay() bool {
 	return ca.LocationFlag == "Cargo"
 }
 
-func (ca CharacterAsset) IsInAssetSafety() bool {
-	return ca.LocationFlag == "AssetSafety"
+func (ca CharacterAsset) IsInHangar() bool {
+	return ca.LocationFlag == "Hangar"
 }
 
 func (ca CharacterAsset) IsInFuelBay() bool {

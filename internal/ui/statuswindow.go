@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -36,6 +37,8 @@ type statusWindow struct {
 	sectionsTop       *widget.Label
 	window            fyne.Window
 	ui                *ui
+
+	mu sync.Mutex
 }
 
 func (u *ui) showStatusWindow() {
@@ -278,6 +281,8 @@ func (a *statusWindow) setDetails() {
 		d.timeout = humanize.RelTime(now.Add(cs.Section.Timeout()), now, "", "")
 	}
 	oo := a.makeDetailsContent(d)
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	a.details.RemoveAll()
 	for _, o := range oo {
 		a.details.Add(o)

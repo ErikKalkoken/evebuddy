@@ -34,6 +34,10 @@ func (et EveType) IsBlueprint() bool {
 	return et.Group.Category.ID == EveCategoryBlueprint
 }
 
+func (et EveType) IsShip() bool {
+	return et.Group.Category.ID == EveCategoryShip
+}
+
 func (et EveType) IsSKIN() bool {
 	return et.Group.Category.ID == EveCategorySKINs
 }
