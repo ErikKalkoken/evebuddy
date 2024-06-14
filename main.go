@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"gopkg.in/natefinch/lumberjack.v2"
+
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/ui"
@@ -83,12 +85,11 @@ func main() {
 		log.Fatal(err)
 	}
 	if *logFileFlag {
-		f, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			log.Fatalf("error opening file %s: %v", fn, err)
-		}
-		defer f.Close()
-		log.SetOutput(f)
+		log.SetOutput(&lumberjack.Logger{
+			Filename:   fn,
+			MaxSize:    50, // megabytes
+			MaxBackups: 3,
+		})
 	}
 	dsn, err := makeDSN(ad, *localFlag)
 	if err != nil {

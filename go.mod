@@ -19,6 +19,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/wcharczuk/go-chart/v2 v2.1.1
 	golang.org/x/text v0.16.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require (
