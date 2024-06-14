@@ -28,9 +28,9 @@ func TestCharacterUpdateStatusCache(t *testing.T) {
 		cc := []*model.CharacterShort{{ID: 42, Name: "Alpha"}}
 		statusCache.setCharacters(cc)
 		// when
-		statusCache.Set(o)
+		statusCache.CharacterSet(o)
 		// then
-		v := statusCache.Get(characterID, section)
+		v := statusCache.CharacterGet(characterID, section)
 		assert.Equal(t, v.CharacterID, o.CharacterID)
 		assert.Equal(t, v.CharacterName, "Alpha")
 		assert.Equal(t, v.CompletedAt.UTC(), o.CompletedAt.UTC())
@@ -61,7 +61,7 @@ func TestCharacterUpdateStatusCacheInit(t *testing.T) {
 		// when
 		statusCache.InitCache(r)
 		// then
-		v := statusCache.Get(c.ID, section)
+		v := statusCache.CharacterGet(c.ID, section)
 		assert.Equal(t, completedAt.UTC(), v.CompletedAt.UTC())
 		assert.Equal(t, "my-error", v.ErrorMessage)
 		cc := statusCache.ListCharacters()
@@ -101,7 +101,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 					CompletedAt:  time.Now(),
 					UpdatedAt:    time.Now(),
 				}
-				cs.Set(o)
+				cs.CharacterSet(o)
 			}
 		}
 		// when
@@ -122,7 +122,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 					CompletedAt:  time.Now(),
 					UpdatedAt:    time.Now(),
 				}
-				cs.Set(o)
+				cs.CharacterSet(o)
 			}
 		}
 		o := &model.CharacterUpdateStatus{
@@ -130,7 +130,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 			Section:      model.SectionLocation,
 			ErrorMessage: "error",
 		}
-		cs.Set(o)
+		cs.CharacterSet(o)
 		// when
 		_, c := cs.Summary()
 		// then
@@ -148,7 +148,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 					CompletedAt:  time.Now(),
 					UpdatedAt:    time.Now(),
 				}
-				cs.Set(o)
+				cs.CharacterSet(o)
 			}
 		}
 		o := &model.CharacterUpdateStatus{
@@ -156,7 +156,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 			Section:     model.SectionLocation,
 			CompletedAt: time.Now().Add(-1 * time.Hour),
 		}
-		cs.Set(o)
+		cs.CharacterSet(o)
 		// when
 		p, c := cs.Summary()
 		// then

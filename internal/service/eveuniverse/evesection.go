@@ -14,7 +14,7 @@ import (
 // SectionExists reports whether this section exists at all.
 // This allows the app to wait with showing related data to the user until this section is full downloaded for the first time.
 func (eu *EveUniverseService) SectionExists(section model.EveUniverseSection) (bool, error) {
-	_, ok, err := eu.dt.Time(section.KeyLastUpdated())
+	_, ok, err := eu.dt.Time(section.KeyCompletedAt())
 	if err != nil {
 		return false, err
 	}
@@ -22,7 +22,7 @@ func (eu *EveUniverseService) SectionExists(section model.EveUniverseSection) (b
 }
 
 func (eu *EveUniverseService) UpdateSection(ctx context.Context, section model.EveUniverseSection, forceUpdate bool) (bool, error) {
-	lastUpdated, ok, err := eu.dt.Time(section.KeyLastUpdated())
+	lastUpdated, ok, err := eu.dt.Time(section.KeyCompletedAt())
 	if err != nil {
 		return false, err
 	}
@@ -42,7 +42,13 @@ func (eu *EveUniverseService) UpdateSection(ctx context.Context, section model.E
 	key := fmt.Sprintf("Update-section-%s", section)
 	_, err, _ = eu.sfg.Do(key, func() (any, error) {
 		slog.Info("Started updating eveuniverse section", "section", section)
+		if err := eu.dt.SetTime(section.KeyStartedAt(), time.Now()); err != nil {
+			return nil, err
+		}
 		err := f(ctx)
+		if err := eu.dt.Delete(section.KeyStartedAt()); err != nil {
+			return nil, err
+		}
 		slog.Info("Finished updating eveuniverse section", "section", section)
 		return nil, err
 	})
@@ -53,7 +59,7 @@ func (eu *EveUniverseService) UpdateSection(ctx context.Context, section model.E
 		}
 		return false, err
 	}
-	if err := eu.dt.SetTime(section.KeyLastUpdated(), time.Now()); err != nil {
+	if err := eu.dt.SetTime(section.KeyCompletedAt(), time.Now()); err != nil {
 		return false, err
 	}
 	if err := eu.dt.Delete(section.KeyError()); err != nil {

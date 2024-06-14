@@ -21,15 +21,14 @@ type Cache interface {
 const keyCharacters = "characterUpdateStatusCache-characters"
 
 type cacheKey struct {
-	characterID int32
-	section     model.CharacterSection
+	id      int32
+	section string
 }
 
 type cacheValue struct {
 	CompletedAt  time.Time
 	ErrorMessage string
 	StartedAt    time.Time
-	UpdatedAt    time.Time
 }
 
 // StatusCacheService provides cached access to the current update status
@@ -59,14 +58,14 @@ func (sc *StatusCacheService) InitCache(r StatusCacheStorage) error {
 			return err
 		}
 		for _, o := range oo {
-			sc.Set(o)
+			sc.CharacterSet(o)
 		}
 	}
 	return nil
 }
 
-func (sc *StatusCacheService) Get(characterID int32, section model.CharacterSection) model.CharacterStatus {
-	k := cacheKey{characterID: characterID, section: section}
+func (sc *StatusCacheService) CharacterGet(characterID int32, section model.CharacterSection) model.CharacterStatus {
+	k := cacheKey{id: characterID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
 		return model.CharacterStatus{}
@@ -79,7 +78,6 @@ func (sc *StatusCacheService) Get(characterID int32, section model.CharacterSect
 		CompletedAt:   v.CompletedAt,
 		ErrorMessage:  v.ErrorMessage,
 		StartedAt:     v.StartedAt,
-		UpdateAt:      v.UpdatedAt,
 	}
 }
 
@@ -121,25 +119,24 @@ func (sc *StatusCacheService) CharacterSummary(characterID int32) (float32, bool
 func (sc *StatusCacheService) ListStatus(characterID int32) []model.CharacterStatus {
 	list := make([]model.CharacterStatus, len(model.CharacterSections))
 	for i, section := range model.CharacterSections {
-		v := sc.Get(characterID, section)
+		v := sc.CharacterGet(characterID, section)
 		list[i] = v
 	}
 	return list
 }
 
-func (sc *StatusCacheService) Set(o *model.CharacterUpdateStatus) {
+func (sc *StatusCacheService) CharacterSet(o *model.CharacterUpdateStatus) {
 	if o == nil {
 		return
 	}
 	k := cacheKey{
-		characterID: o.CharacterID,
-		section:     o.Section,
+		id:      o.CharacterID,
+		section: string(o.Section),
 	}
 	v := cacheValue{
 		ErrorMessage: o.ErrorMessage,
 		CompletedAt:  o.CompletedAt,
 		StartedAt:    o.StartedAt,
-		UpdatedAt:    o.UpdatedAt,
 	}
 	sc.cache.Set(k, v, 0)
 }
