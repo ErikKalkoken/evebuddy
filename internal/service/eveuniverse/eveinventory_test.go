@@ -20,7 +20,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client, nil)
+	s := eveuniverse.New(r, client, nil, nil)
 	ctx := context.Background()
 	t.Run("should return existing category", func(t *testing.T) {
 		// given
@@ -74,7 +74,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client, nil)
+	s := eveuniverse.New(r, client, nil, nil)
 	ctx := context.Background()
 	t.Run("should return existing group", func(t *testing.T) {
 		// given
@@ -131,7 +131,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client, nil)
+	s := eveuniverse.New(r, client, nil, nil)
 	ctx := context.Background()
 	t.Run("should return existing type", func(t *testing.T) {
 		// given

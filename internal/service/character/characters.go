@@ -40,7 +40,7 @@ func New(
 	st *storage.Storage,
 	httpClient *http.Client,
 	esiClient *goesi.APIClient,
-	cs *statuscache.StatusCacheService,
+	sc *statuscache.StatusCacheService,
 	dt *dictionary.DictionaryService,
 	eu *eveuniverse.EveUniverseService,
 ) *CharacterService {
@@ -50,15 +50,15 @@ func New(
 	if esiClient == nil {
 		esiClient = goesi.NewAPIClient(httpClient, "")
 	}
-	if cs == nil {
+	if sc == nil {
 		cache := cache.New()
-		cs = statuscache.New(cache)
+		sc = statuscache.New(cache)
 	}
 	if dt == nil {
 		dt = dictionary.New(st)
 	}
 	if eu == nil {
-		eu = eveuniverse.New(st, esiClient, dt)
+		eu = eveuniverse.New(st, esiClient, dt, sc)
 	}
 	ct := &CharacterService{
 		st:         st,
@@ -66,7 +66,7 @@ func New(
 		httpClient: httpClient,
 		sfg:        new(singleflight.Group),
 		eu:         eu,
-		cs:         cs,
+		cs:         sc,
 		dt:         dt,
 	}
 	return ct

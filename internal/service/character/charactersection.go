@@ -171,6 +171,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	arg2 = storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID: arg.CharacterID,
 		Section:     arg.Section,
+
 		Error:       &errorMessage,
 		ContentHash: &hash,
 		CompletedAt: &completedAt,

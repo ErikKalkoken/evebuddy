@@ -26,8 +26,6 @@ type Service struct {
 	Cache *cache.Cache
 	// Character service
 	Character *character.CharacterService
-	// Character status service
-	CharacterStatus *statuscache.StatusCacheService
 	// Dictionary service
 	Dictionary *dictionary.DictionaryService
 	// EveImage service
@@ -36,6 +34,8 @@ type Service struct {
 	ESIStatus *esistatus.ESIStatusService
 	// Eve Universe service
 	EveUniverse *eveuniverse.EveUniverseService
+	// Status cache service
+	StatusCache *statuscache.StatusCacheService
 }
 
 // New creates and returns a new instance of the main service.
@@ -58,20 +58,20 @@ func New(st *storage.Storage, imageCacheDir string) *Service {
 	userAgent := "EveBuddy kalkoken87@gmail.com"
 	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
 	dt := dictionary.New(st)
-	eu := eveuniverse.New(st, esiClient, dt)
 	cache := cache.New()
-	cs := statuscache.New(cache)
-	if err := cs.InitCache(st); err != nil {
+	sc := statuscache.New(cache)
+	if err := sc.InitCache(st); err != nil {
 		panic(err)
 	}
+	eu := eveuniverse.New(st, esiClient, dt, sc)
 	sv := Service{
-		Cache:           cache,
-		Character:       character.New(st, httpClient, esiClient, cs, dt, eu),
-		CharacterStatus: cs,
-		Dictionary:      dt,
-		EveImage:        eveimage.New(imageCacheDir, httpClient),
-		ESIStatus:       esistatus.New(esiClient),
-		EveUniverse:     eu,
+		Cache:       cache,
+		Character:   character.New(st, httpClient, esiClient, sc, dt, eu),
+		Dictionary:  dt,
+		EveImage:    eveimage.New(imageCacheDir, httpClient),
+		ESIStatus:   esistatus.New(esiClient),
+		EveUniverse: eu,
+		StatusCache: sc,
 	}
 	return &sv
 }

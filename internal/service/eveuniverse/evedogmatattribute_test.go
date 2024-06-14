@@ -18,7 +18,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client, nil)
+	s := eveuniverse.New(r, client, nil, nil)
 	ctx := context.Background()
 	t.Run("should return existing object", func(t *testing.T) {
 		// given

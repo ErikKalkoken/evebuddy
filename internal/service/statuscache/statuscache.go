@@ -11,6 +11,7 @@ import (
 
 type StatusCacheStorage interface {
 	ListCharacterSectionStatus(context.Context, int32) ([]*model.CharacterSectionStatus, error)
+	ListGeneralSectionStatus(context.Context) ([]*model.GeneralSectionStatus, error)
 	ListCharactersShort(context.Context) ([]*model.CharacterShort, error)
 }
 
@@ -65,6 +66,13 @@ func (sc *StatusCacheService) InitCache(r StatusCacheStorage) error {
 			sc.CharacterSectionSet(o)
 		}
 	}
+	oo, err := r.ListGeneralSectionStatus(ctx)
+	if err != nil {
+		return err
+	}
+	for _, o := range oo {
+		sc.GeneralSectionSet(o)
+	}
 	return nil
 }
 
@@ -101,6 +109,31 @@ func (sc *StatusCacheService) CharacterSectionSet(o *model.CharacterSectionStatu
 	sc.cache.Set(k, v, 0)
 }
 
+func (sc *StatusCacheService) CharacterSectionList(characterID int32) []*model.CharacterSectionStatus {
+	list := make([]*model.CharacterSectionStatus, 0)
+	for _, section := range model.CharacterSections {
+		v := sc.CharacterSectionGet(characterID, section)
+		if v != nil {
+			list = append(list, v)
+		}
+	}
+	return list
+}
+func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) (float32, bool) {
+	total := len(model.CharacterSections)
+	currentCount := 0
+	xx := sc.CharacterSectionList(characterID)
+	for _, x := range xx {
+		if !x.IsOK() {
+			return 0, false
+		}
+		if x.IsCurrent() {
+			currentCount++
+		}
+	}
+	return float32(currentCount) / float32(total), true
+}
+
 func (sc *StatusCacheService) GeneralSectionSet(o *model.GeneralSectionStatus) {
 	if o == nil {
 		return
@@ -132,9 +165,21 @@ func (sc *StatusCacheService) GeneralSectionGet(section model.GeneralSection) *m
 	}
 }
 
+func (sc *StatusCacheService) GeneralSectionList() []*model.GeneralSectionStatus {
+	list := make([]*model.GeneralSectionStatus, 0)
+	for _, section := range model.GeneralSections {
+		v := sc.GeneralSectionGet(section)
+		if v != nil {
+			list = append(list, v)
+		}
+	}
+	return list
+}
+
+// Summary returns the current summary status in percent of fresh sections.
 func (sc *StatusCacheService) Summary() (float32, int) {
 	cc := sc.ListCharacters()
-	sectionsTotal := len(model.CharacterSections) * len(cc)
+	sectionsTotal := len(model.CharacterSections)*len(cc) + len(model.GeneralSections)
 	sectionsCurrent := 0
 	errorCount := 0
 	for _, c := range cc {
@@ -149,31 +194,17 @@ func (sc *StatusCacheService) Summary() (float32, int) {
 			}
 		}
 	}
-	return float32(sectionsCurrent) / float32(sectionsTotal), errorCount
-}
-
-func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) (float32, bool) {
-	total := len(model.CharacterSections)
-	currentCount := 0
-	xx := sc.CharacterSectionList(characterID)
+	xx := sc.GeneralSectionList()
 	for _, x := range xx {
 		if !x.IsOK() {
-			return 0, false
+			errorCount++
+			continue
 		}
 		if x.IsCurrent() {
-			currentCount++
+			sectionsCurrent++
 		}
 	}
-	return float32(currentCount) / float32(total), true
-}
-
-func (sc *StatusCacheService) CharacterSectionList(characterID int32) []*model.CharacterSectionStatus {
-	list := make([]*model.CharacterSectionStatus, len(model.CharacterSections))
-	for i, section := range model.CharacterSections {
-		v := sc.CharacterSectionGet(characterID, section)
-		list[i] = v
-	}
-	return list
+	return float32(sectionsCurrent) / float32(sectionsTotal), errorCount
 }
 
 func (sc *StatusCacheService) UpdateCharacters(ctx context.Context, r StatusCacheStorage) error {

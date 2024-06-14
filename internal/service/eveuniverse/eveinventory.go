@@ -12,7 +12,13 @@ import (
 )
 
 func (eu *EveUniverseService) GetEveType(ctx context.Context, id int32) (*model.EveType, error) {
-	return eu.st.GetEveType(ctx, id)
+	x, err := eu.st.GetEveType(ctx, id)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return x, err
+	}
+	return x, nil
 }
 
 func (eu *EveUniverseService) GetOrCreateEveCategoryESI(ctx context.Context, id int32) (*model.EveCategory, error) {

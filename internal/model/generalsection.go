@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"log/slog"
 	"time"
 )
@@ -16,17 +15,6 @@ const (
 	SectionEveMarketPrices GeneralSection = "EveMarketPrices"
 )
 
-// Updates status of a general section
-type GeneralSectionStatus struct {
-	ID           int64
-	ContentHash  string
-	ErrorMessage string
-	CompletedAt  time.Time
-	Section      GeneralSection
-	StartedAt    time.Time
-	UpdatedAt    time.Time
-}
-
 var GeneralSections = []GeneralSection{
 	SectionEveCategories,
 	SectionEveCharacters,
@@ -40,23 +28,11 @@ var generalSectionTimeouts = map[GeneralSection]time.Duration{
 }
 
 // Timeout returns the time until the data of an update section becomes stale.
-func (es GeneralSection) Timeout() time.Duration {
-	duration, ok := generalSectionTimeouts[es]
+func (gs GeneralSection) Timeout() time.Duration {
+	duration, ok := generalSectionTimeouts[gs]
 	if !ok {
-		slog.Warn("Requested duration for unknown section. Using default.", "section", es)
+		slog.Warn("Requested duration for unknown section. Using default.", "section", gs)
 		return generalSectionDefaultTimeout
 	}
 	return duration
-}
-
-func (es GeneralSection) KeyCompletedAt() string {
-	return fmt.Sprintf("general-section-%s-completed-at", es)
-}
-
-func (es GeneralSection) KeyError() string {
-	return fmt.Sprintf("general-section-%s-error", es)
-}
-
-func (es GeneralSection) KeyStartedAt() string {
-	return fmt.Sprintf("eveuniverse-section-%s-started-at", es)
 }

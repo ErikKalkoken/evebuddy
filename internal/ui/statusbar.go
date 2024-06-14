@@ -262,7 +262,7 @@ func (a *characterUpdateStatusArea) refresh() {
 		x.status = characterStatusUnknown
 		x.errorMessage = ""
 	} else {
-		progress, errorCount := a.ui.sv.CharacterStatus.Summary()
+		progress, errorCount := a.ui.sv.StatusCache.Summary()
 		if errorCount > 0 {
 			x.title = fmt.Sprintf("%d ERRORS", errorCount)
 			x.status = characterStatusError

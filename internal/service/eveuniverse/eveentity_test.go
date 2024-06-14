@@ -22,7 +22,7 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client, nil)
+	s := eveuniverse.New(r, client, nil, nil)
 	t.Run("Can resolve existing when it has category", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -129,7 +129,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client, nil)
+	s := eveuniverse.New(r, client, nil, nil)
 	t.Run("do noting when not entities are missing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
