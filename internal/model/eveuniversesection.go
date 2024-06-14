@@ -21,6 +21,7 @@ type EveUniverseUpdateStatus struct {
 	ErrorMessage string
 	CompletedAt  time.Time
 	Section      EveUniverseSection
+	StartedAt    time.Time
 }
 
 var EveUniverseSections = []EveUniverseSection{

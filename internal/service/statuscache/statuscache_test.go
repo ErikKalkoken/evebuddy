@@ -37,7 +37,6 @@ func TestCharacterUpdateStatusCache(t *testing.T) {
 		assert.Equal(t, v.ErrorMessage, o.ErrorMessage)
 		assert.Equal(t, v.Section, o.Section)
 		assert.Equal(t, v.StartedAt.UTC(), o.StartedAt.UTC())
-		assert.Equal(t, v.UpdateAt.UTC(), o.UpdatedAt.UTC())
 	})
 }
 

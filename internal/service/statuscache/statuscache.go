@@ -18,7 +18,10 @@ type Cache interface {
 	Set(any, any, time.Duration)
 }
 
-const keyCharacters = "characterUpdateStatusCache-characters"
+const (
+	keyCharacters = "characterUpdateStatusCache-characters"
+	eveUniverseID = 0
+)
 
 type cacheKey struct {
 	id      int32
@@ -64,20 +67,67 @@ func (sc *StatusCacheService) InitCache(r StatusCacheStorage) error {
 	return nil
 }
 
-func (sc *StatusCacheService) CharacterGet(characterID int32, section model.CharacterSection) model.CharacterStatus {
+func (sc *StatusCacheService) CharacterGet(characterID int32, section model.CharacterSection) *model.CharacterStatus {
 	k := cacheKey{id: characterID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
-		return model.CharacterStatus{}
+		return nil
 	}
 	v := x.(cacheValue)
-	return model.CharacterStatus{
+	return &model.CharacterStatus{
 		CharacterID:   characterID,
 		CharacterName: sc.characterName(characterID),
 		Section:       section,
 		CompletedAt:   v.CompletedAt,
 		ErrorMessage:  v.ErrorMessage,
 		StartedAt:     v.StartedAt,
+	}
+}
+
+func (sc *StatusCacheService) CharacterSet(o *model.CharacterUpdateStatus) {
+	if o == nil {
+		return
+	}
+	k := cacheKey{
+		id:      o.CharacterID,
+		section: string(o.Section),
+	}
+	v := cacheValue{
+		ErrorMessage: o.ErrorMessage,
+		CompletedAt:  o.CompletedAt,
+		StartedAt:    o.StartedAt,
+	}
+	sc.cache.Set(k, v, 0)
+}
+
+func (sc *StatusCacheService) EveUniverseSet(o *model.EveUniverseUpdateStatus) {
+	if o == nil {
+		return
+	}
+	k := cacheKey{
+		id:      eveUniverseID,
+		section: string(o.Section),
+	}
+	v := cacheValue{
+		ErrorMessage: o.ErrorMessage,
+		CompletedAt:  o.CompletedAt,
+		StartedAt:    o.StartedAt,
+	}
+	sc.cache.Set(k, v, 0)
+}
+
+func (sc *StatusCacheService) EveUniverseGet(section model.EveUniverseSection) *model.EveUniverseUpdateStatus {
+	k := cacheKey{id: eveUniverseID, section: string(section)}
+	x, ok := sc.cache.Get(k)
+	if !ok {
+		return nil
+	}
+	v := x.(cacheValue)
+	return &model.EveUniverseUpdateStatus{
+		Section:      section,
+		CompletedAt:  v.CompletedAt,
+		ErrorMessage: v.ErrorMessage,
+		StartedAt:    v.StartedAt,
 	}
 }
 
@@ -116,29 +166,13 @@ func (sc *StatusCacheService) CharacterSummary(characterID int32) (float32, bool
 	return float32(currentCount) / float32(total), true
 }
 
-func (sc *StatusCacheService) ListStatus(characterID int32) []model.CharacterStatus {
-	list := make([]model.CharacterStatus, len(model.CharacterSections))
+func (sc *StatusCacheService) ListStatus(characterID int32) []*model.CharacterStatus {
+	list := make([]*model.CharacterStatus, len(model.CharacterSections))
 	for i, section := range model.CharacterSections {
 		v := sc.CharacterGet(characterID, section)
 		list[i] = v
 	}
 	return list
-}
-
-func (sc *StatusCacheService) CharacterSet(o *model.CharacterUpdateStatus) {
-	if o == nil {
-		return
-	}
-	k := cacheKey{
-		id:      o.CharacterID,
-		section: string(o.Section),
-	}
-	v := cacheValue{
-		ErrorMessage: o.ErrorMessage,
-		CompletedAt:  o.CompletedAt,
-		StartedAt:    o.StartedAt,
-	}
-	sc.cache.Set(k, v, 0)
 }
 
 func (sc *StatusCacheService) UpdateCharacters(ctx context.Context, r StatusCacheStorage) error {
