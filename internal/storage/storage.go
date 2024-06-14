@@ -10,7 +10,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	"github.com/ErikKalkoken/evebuddy/internal/storage/migrate"
+	"github.com/ErikKalkoken/evebuddy/internal/migrate"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
