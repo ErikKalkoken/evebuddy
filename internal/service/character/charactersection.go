@@ -95,8 +95,13 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 		// TODO: Move this part into updateCharacterSectionIfChanged()
 		errorMessage := humanize.Error(err)
 		startedAt := sql.NullTime{}
-		opt := storage.CharacterSectionStatusOptionals{Error: &errorMessage, StartedAt: &startedAt}
-		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus2(ctx, arg.CharacterID, arg.Section, opt)
+		arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
+			CharacterID: arg.CharacterID,
+			Section:     arg.Section,
+			Error:       &errorMessage,
+			StartedAt:   &startedAt,
+		}
+		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 		if err2 != nil {
 			slog.Error("failed to record error for failed section update: %s", err2)
 		}
@@ -116,10 +121,12 @@ func (s *CharacterService) updateSectionIfChanged(
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {
 	startedAt := storage.NewNullTime(time.Now())
-	opt := storage.CharacterSectionStatusOptionals{
-		StartedAt: &startedAt,
+	arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
+		CharacterID: arg.CharacterID,
+		Section:     arg.Section,
+		StartedAt:   &startedAt,
 	}
-	o, err := s.st.UpdateOrCreateCharacterSectionStatus2(ctx, arg.CharacterID, arg.Section, opt)
+	o, err := s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 	if err != nil {
 		return false, err
 	}
@@ -161,13 +168,15 @@ func (s *CharacterService) updateSectionIfChanged(
 	completedAt := storage.NewNullTime(time.Now())
 	errorMessage := ""
 	startedAt2 := sql.NullTime{}
-	opt = storage.CharacterSectionStatusOptionals{
+	arg2 = storage.UpdateOrCreateCharacterSectionStatusParams{
+		CharacterID: arg.CharacterID,
+		Section:     arg.Section,
 		Error:       &errorMessage,
 		ContentHash: &hash,
 		CompletedAt: &completedAt,
 		StartedAt:   &startedAt2,
 	}
-	o, err = s.st.UpdateOrCreateCharacterSectionStatus2(ctx, arg.CharacterID, arg.Section, opt)
+	o, err = s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 	if err != nil {
 		return false, err
 	}

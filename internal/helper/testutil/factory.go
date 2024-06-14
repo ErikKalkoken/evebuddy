@@ -487,12 +487,13 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 	if err != nil {
 		panic(err)
 	}
-	arg2 := storage.CharacterSectionStatusParams{
+	t := storage.NewNullTime(arg.CompletedAt)
+	arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID: arg.CharacterID,
 		Section:     arg.Section,
-		Error:       arg.Error,
-		CompletedAt: arg.CompletedAt,
-		ContentHash: hash,
+		Error:       &arg.Error,
+		CompletedAt: &t,
+		ContentHash: &hash,
 	}
 	o, err := f.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 	if err != nil {
@@ -636,6 +637,50 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *m
 		panic(err)
 	}
 	return c
+}
+
+type GeneralSectionStatusParams struct {
+	Section     model.GeneralSection
+	Error       string
+	CompletedAt time.Time
+	StartedAt   time.Time
+	Data        any
+}
+
+func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) *model.GeneralSectionStatus {
+	ctx := context.Background()
+	var arg GeneralSectionStatusParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.Section == "" {
+		panic("must define a section in test factory")
+	}
+	if arg.Data == "" {
+		arg.Data = fmt.Sprintf("content-hash-%s-%s", arg.Section, time.Now())
+	}
+	if arg.CompletedAt.IsZero() {
+		arg.CompletedAt = time.Now()
+	}
+	if arg.StartedAt.IsZero() {
+		arg.StartedAt = time.Now().Add(-1 * time.Duration(rand.IntN(60)) * time.Second)
+	}
+	hash, err := calcContentHash(arg.Data)
+	if err != nil {
+		panic(err)
+	}
+	t := storage.NewNullTime(arg.CompletedAt)
+	arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
+		Section:     arg.Section,
+		Error:       &arg.Error,
+		CompletedAt: &t,
+		ContentHash: &hash,
+	}
+	o, err := f.st.UpdateOrCreateGeneralSectionStatus(ctx, arg2)
+	if err != nil {
+		panic(err)
+	}
+	return o
 }
 
 func (f Factory) CreateEveEntity(args ...model.EveEntity) *model.EveEntity {

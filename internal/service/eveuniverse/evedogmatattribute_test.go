@@ -42,7 +42,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
 				"attribute_id":  20,
 				"default_value": 1,
-				"description":   "Factor by which topspeed increases.",
+				"description":   "Factor by which top speed increases.",
 				"display_name":  "Maximum Velocity Bonus",
 				"high_is_good":  true,
 				"icon_id":       1389,
@@ -56,7 +56,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(20), x1.ID)
 			assert.Equal(t, float32(1), x1.DefaultValue)
-			assert.Equal(t, "Factor by which topspeed increases.", x1.Description)
+			assert.Equal(t, "Factor by which top speed increases.", x1.Description)
 			assert.Equal(t, "Maximum Velocity Bonus", x1.DisplayName)
 			assert.Equal(t, int32(1389), x1.IconID)
 			assert.Equal(t, "speedFactor", x1.Name)

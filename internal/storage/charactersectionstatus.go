@@ -49,15 +49,19 @@ func (st *Storage) ListCharacterSectionStatus(ctx context.Context, characterID i
 	return oo, nil
 }
 
-type CharacterSectionStatusOptionals struct {
+type UpdateOrCreateCharacterSectionStatusParams struct {
+	// mandatory
+	CharacterID int32
+	Section     model.CharacterSection
+	// optional
 	CompletedAt *sql.NullTime
 	ContentHash *string
 	Error       *string
 	StartedAt   *sql.NullTime
 }
 
-func (st *Storage) UpdateOrCreateCharacterSectionStatus2(ctx context.Context, characterID int32, section model.CharacterSection, optionals CharacterSectionStatusOptionals) (*model.CharacterSectionStatus, error) {
-	if characterID == 0 || section == "" {
+func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg UpdateOrCreateCharacterSectionStatusParams) (*model.CharacterSectionStatus, error) {
+	if arg.CharacterID == 0 || arg.Section == "" {
 		panic("Invalid params")
 	}
 	tx, err := st.db.Begin()
@@ -68,37 +72,37 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus2(ctx context.Context, ch
 	qtx := st.q.WithTx(tx)
 	var arg2 queries.UpdateOrCreateCharacterSectionStatusParams
 	old, err := qtx.GetCharacterSectionStatus(ctx, queries.GetCharacterSectionStatusParams{
-		CharacterID: int64(characterID),
-		SectionID:   string(section),
+		CharacterID: int64(arg.CharacterID),
+		SectionID:   string(arg.Section),
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
-			CharacterID: int64(characterID),
-			SectionID:   string(section),
+			CharacterID: int64(arg.CharacterID),
+			SectionID:   string(arg.Section),
 		}
 	} else if err != nil {
 		return nil, err
 	} else {
 		arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
-			CharacterID: int64(characterID),
-			SectionID:   string(section),
+			CharacterID: int64(arg.CharacterID),
+			SectionID:   string(arg.Section),
 			CompletedAt: old.CompletedAt,
 			ContentHash: old.ContentHash,
 			Error:       old.Error,
 			StartedAt:   old.StartedAt,
 		}
 	}
-	if optionals.CompletedAt != nil {
-		arg2.CompletedAt = *optionals.CompletedAt
+	if arg.CompletedAt != nil {
+		arg2.CompletedAt = *arg.CompletedAt
 	}
-	if optionals.ContentHash != nil {
-		arg2.ContentHash = *optionals.ContentHash
+	if arg.ContentHash != nil {
+		arg2.ContentHash = *arg.ContentHash
 	}
-	if optionals.Error != nil {
-		arg2.Error = *optionals.Error
+	if arg.Error != nil {
+		arg2.Error = *arg.Error
 	}
-	if optionals.StartedAt != nil {
-		arg2.StartedAt = *optionals.StartedAt
+	if arg.StartedAt != nil {
+		arg2.StartedAt = *arg.StartedAt
 	}
 	o, err := qtx.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 	if err != nil {
@@ -108,32 +112,6 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus2(ctx context.Context, ch
 		return nil, err
 	}
 	return characterSectionStatusFromDBModel(o), nil
-}
-
-func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg CharacterSectionStatusParams) (*model.CharacterSectionStatus, error) {
-	arg2 := characterSectionStatusDBModelFromParams(arg)
-	o, err := st.q.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update or create updates status for character %d with section %s: %w", arg.CharacterID, arg.Section, err)
-	}
-	return characterSectionStatusFromDBModel(o), nil
-}
-
-func characterSectionStatusDBModelFromParams(arg CharacterSectionStatusParams) queries.UpdateOrCreateCharacterSectionStatusParams {
-	arg2 := queries.UpdateOrCreateCharacterSectionStatusParams{
-		CharacterID: int64(arg.CharacterID),
-		ContentHash: arg.ContentHash,
-		Error:       arg.Error,
-		SectionID:   string(arg.Section),
-		UpdatedAt:   time.Now(),
-	}
-	if !arg.CompletedAt.IsZero() {
-		arg2.CompletedAt = sql.NullTime{Time: arg.CompletedAt, Valid: true}
-	}
-	if !arg.StartedAt.IsZero() {
-		arg2.StartedAt = sql.NullTime{Time: arg.StartedAt, Valid: true}
-	}
-	return arg2
 }
 
 func characterSectionStatusFromDBModel(o queries.CharacterSectionStatus) *model.CharacterSectionStatus {

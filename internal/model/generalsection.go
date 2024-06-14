@@ -18,11 +18,13 @@ const (
 
 // Updates status of a general section
 type GeneralSectionStatus struct {
+	ID           int64
 	ContentHash  string
 	ErrorMessage string
 	CompletedAt  time.Time
 	Section      GeneralSection
 	StartedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 var GeneralSections = []GeneralSection{

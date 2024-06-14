@@ -347,6 +347,17 @@ type EveTypeDogmaEffect struct {
 	IsDefault     bool
 }
 
+type GeneralSectionStatus struct {
+	ID          int64
+	SectionID   string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	ContentHash string
+	CompletedAt sql.NullTime
+	Error       string
+	StartedAt   sql.NullTime
+}
+
 type Scope struct {
 	ID   int64
 	Name string
