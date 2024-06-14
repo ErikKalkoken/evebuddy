@@ -1,4 +1,5 @@
-// Package characterstatus contains the character status service.
+// Package characterstatus is a service which provides cached access
+// to the current update status of general and character sections.
 package statuscache
 
 import (
@@ -9,7 +10,7 @@ import (
 )
 
 type StatusCacheStorage interface {
-	ListCharacterUpdateStatus(context.Context, int32) ([]*model.CharacterUpdateStatus, error)
+	ListCharacterSectionStatus(context.Context, int32) ([]*model.CharacterSectionStatus, error)
 	ListCharactersShort(context.Context) ([]*model.CharacterShort, error)
 }
 
@@ -56,7 +57,7 @@ func (sc *StatusCacheService) InitCache(r StatusCacheStorage) error {
 		return err
 	}
 	for _, c := range cc {
-		oo, err := r.ListCharacterUpdateStatus(ctx, c.ID)
+		oo, err := r.ListCharacterSectionStatus(ctx, c.ID)
 		if err != nil {
 			return err
 		}
@@ -67,14 +68,14 @@ func (sc *StatusCacheService) InitCache(r StatusCacheStorage) error {
 	return nil
 }
 
-func (sc *StatusCacheService) CharacterGet(characterID int32, section model.CharacterSection) *model.CharacterUpdateStatus {
+func (sc *StatusCacheService) CharacterGet(characterID int32, section model.CharacterSection) *model.CharacterSectionStatus {
 	k := cacheKey{id: characterID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
 		return nil
 	}
 	v := x.(cacheValue)
-	return &model.CharacterUpdateStatus{
+	return &model.CharacterSectionStatus{
 		CharacterID:   characterID,
 		CharacterName: sc.characterName(characterID),
 		Section:       section,
@@ -84,7 +85,7 @@ func (sc *StatusCacheService) CharacterGet(characterID int32, section model.Char
 	}
 }
 
-func (sc *StatusCacheService) CharacterSet(o *model.CharacterUpdateStatus) {
+func (sc *StatusCacheService) CharacterSet(o *model.CharacterSectionStatus) {
 	if o == nil {
 		return
 	}
@@ -166,8 +167,8 @@ func (sc *StatusCacheService) CharacterSummary(characterID int32) (float32, bool
 	return float32(currentCount) / float32(total), true
 }
 
-func (sc *StatusCacheService) ListStatus(characterID int32) []*model.CharacterUpdateStatus {
-	list := make([]*model.CharacterUpdateStatus, len(model.CharacterSections))
+func (sc *StatusCacheService) ListStatus(characterID int32) []*model.CharacterSectionStatus {
+	list := make([]*model.CharacterSectionStatus, len(model.CharacterSections))
 	for i, section := range model.CharacterSections {
 		v := sc.CharacterGet(characterID, section)
 		list[i] = v

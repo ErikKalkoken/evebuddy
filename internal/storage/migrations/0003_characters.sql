@@ -16,6 +16,21 @@ CREATE INDEX characters_idx1 ON characters (home_id);
 CREATE INDEX characters_idx2 ON characters (location_id);
 CREATE INDEX characters_idx3 ON characters (ship_id);
 
+CREATE TABLE character_section_status (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL,
+    section_id TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL,
+    content_hash TEXT NOT NULL,
+    completed_at DATETIME,
+    error TEXT NOT NULL,
+    started_at DATETIME,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    UNIQUE (character_id, section_id)
+);
+CREATE INDEX character_section_status_idx1 ON character_section_status (character_id);
+
 CREATE TABLE character_assets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     character_id INTEGER NOT NULL,
@@ -209,21 +224,6 @@ CREATE TABLE character_token_scopes (
 );
 CREATE INDEX character_token_scopes_idx1 ON character_token_scopes (character_token_id);
 CREATE INDEX character_token_scopes_idx2 ON character_token_scopes (scope_id);
-
-CREATE TABLE character_update_status (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    character_id INTEGER NOT NULL,
-    section_id TEXT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL,
-    content_hash TEXT NOT NULL,
-    completed_at DATETIME,
-    error TEXT NOT NULL,
-    started_at DATETIME,
-    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
-    UNIQUE (character_id, section_id)
-);
-CREATE INDEX character_update_status_idx1 ON character_update_status (character_id);
 
 CREATE TABLE character_wallet_journal_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

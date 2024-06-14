@@ -26,7 +26,6 @@ func NewFactory(st *storage.Storage, db *sql.DB) Factory {
 	return f
 }
 
-// CreateCharacter is a test factory for Character objects.
 func (f Factory) CreateCharacter(args ...storage.UpdateOrCreateCharacterParams) *model.Character {
 	ctx := context.Background()
 	var arg storage.UpdateOrCreateCharacterParams
@@ -211,7 +210,6 @@ func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpClo
 	return o
 }
 
-// CreateCharacterMail is a test factory for Mail objects
 func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) *model.CharacterMail {
 	var arg storage.CreateCharacterMailParams
 	ctx := context.Background()
@@ -261,7 +259,6 @@ func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) 
 	return mail
 }
 
-// CreateCharacterMailLabel is a test factory for MailLabel objects
 func (f Factory) CreateCharacterMailLabel(args ...model.CharacterMailLabel) *model.CharacterMailLabel {
 	ctx := context.Background()
 	var arg storage.MailLabelParams
@@ -310,7 +307,6 @@ func (f Factory) CreateCharacterMailLabel(args ...model.CharacterMailLabel) *mod
 	return label
 }
 
-// CreateCharacterMailList is a test factory for MailList objects.
 func (f Factory) CreateCharacterMailList(characterID int32, args ...model.EveEntity) *model.EveEntity {
 	var e model.EveEntity
 	ctx := context.Background()
@@ -364,7 +360,6 @@ func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSki
 	return o
 }
 
-// CreateCharacterSkillqueueItem is a test factory for SkillqueueItem objects
 func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemParams) *model.CharacterSkillqueueItem {
 	ctx := context.Background()
 	var arg storage.SkillqueueItemParams
@@ -428,7 +423,6 @@ func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemPar
 	return i
 }
 
-// CreateCharacterToken is a test factory for Token objects.
 func (f Factory) CreateCharacterToken(args ...model.CharacterToken) *model.CharacterToken {
 	var t model.CharacterToken
 	ctx := context.Background()
@@ -458,7 +452,7 @@ func (f Factory) CreateCharacterToken(args ...model.CharacterToken) *model.Chara
 	return &t
 }
 
-type CharacterUpdateStatusParams struct {
+type CharacterSectionStatusParams struct {
 	CharacterID int32
 	Section     model.CharacterSection
 	Error       string
@@ -467,10 +461,9 @@ type CharacterUpdateStatusParams struct {
 	Data        any
 }
 
-// CreateMailLabel is a test factory for MailLabel objects
-func (f Factory) CreateCharacterUpdateStatus(args ...CharacterUpdateStatusParams) *model.CharacterUpdateStatus {
+func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusParams) *model.CharacterSectionStatus {
 	ctx := context.Background()
-	var arg CharacterUpdateStatusParams
+	var arg CharacterSectionStatusParams
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -494,14 +487,14 @@ func (f Factory) CreateCharacterUpdateStatus(args ...CharacterUpdateStatusParams
 	if err != nil {
 		panic(err)
 	}
-	arg2 := storage.CharacterUpdateStatusParams{
+	arg2 := storage.CharacterSectionStatusParams{
 		CharacterID: arg.CharacterID,
 		Section:     arg.Section,
 		Error:       arg.Error,
 		CompletedAt: arg.CompletedAt,
 		ContentHash: hash,
 	}
-	o, err := f.st.UpdateOrCreateCharacterUpdateStatus(ctx, arg2)
+	o, err := f.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 	if err != nil {
 		panic(err)
 	}
@@ -608,7 +601,6 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 	return x
 }
 
-// CreateCharacter is a test factory for character objects.
 func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *model.EveCharacter {
 	ctx := context.Background()
 	var arg storage.CreateEveCharacterParams
@@ -646,7 +638,6 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *m
 	return c
 }
 
-// CreateEveEntity is a test factory for EveEntity objects.
 func (f Factory) CreateEveEntity(args ...model.EveEntity) *model.EveEntity {
 	var arg model.EveEntity
 	ctx := context.Background()

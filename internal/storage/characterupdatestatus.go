@@ -11,7 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-type CharacterUpdateStatusParams struct {
+type CharacterSectionStatusParams struct {
 	CharacterID int32
 	Section     model.CharacterSection
 
@@ -21,42 +21,42 @@ type CharacterUpdateStatusParams struct {
 	StartedAt   time.Time
 }
 
-func (st *Storage) GetCharacterUpdateStatus(ctx context.Context, characterID int32, section model.CharacterSection) (*model.CharacterUpdateStatus, error) {
-	arg := queries.GetCharacterUpdateStatusParams{
+func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID int32, section model.CharacterSection) (*model.CharacterSectionStatus, error) {
+	arg := queries.GetCharacterSectionStatusParams{
 		CharacterID: int64(characterID),
 		SectionID:   string(section),
 	}
-	s, err := st.q.GetCharacterUpdateStatus(ctx, arg)
+	s, err := st.q.GetCharacterSectionStatus(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to get update status for character %d with section %s: %w", characterID, section, err)
 	}
-	s2 := characterUpdateStatusFromDBModel(s)
+	s2 := characterSectionStatusFromDBModel(s)
 	return s2, nil
 }
 
-func (st *Storage) ListCharacterUpdateStatus(ctx context.Context, characterID int32) ([]*model.CharacterUpdateStatus, error) {
-	rows, err := st.q.ListCharacterUpdateStatus(ctx, int64(characterID))
+func (st *Storage) ListCharacterSectionStatus(ctx context.Context, characterID int32) ([]*model.CharacterSectionStatus, error) {
+	rows, err := st.q.ListCharacterSectionStatus(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list character update status for ID %d: %w", characterID, err)
 	}
-	oo := make([]*model.CharacterUpdateStatus, len(rows))
+	oo := make([]*model.CharacterSectionStatus, len(rows))
 	for i, row := range rows {
-		oo[i] = characterUpdateStatusFromDBModel(row)
+		oo[i] = characterSectionStatusFromDBModel(row)
 	}
 	return oo, nil
 }
 
-type CharacterUpdateStatusOptionals struct {
+type CharacterSectionStatusOptionals struct {
 	CompletedAt *sql.NullTime
 	ContentHash *string
 	Error       *string
 	StartedAt   *sql.NullTime
 }
 
-func (st *Storage) UpdateOrCreateCharacterUpdateStatus2(ctx context.Context, characterID int32, section model.CharacterSection, optionals CharacterUpdateStatusOptionals) (*model.CharacterUpdateStatus, error) {
+func (st *Storage) UpdateOrCreateCharacterSectionStatus2(ctx context.Context, characterID int32, section model.CharacterSection, optionals CharacterSectionStatusOptionals) (*model.CharacterSectionStatus, error) {
 	if characterID == 0 || section == "" {
 		panic("Invalid params")
 	}
@@ -66,20 +66,20 @@ func (st *Storage) UpdateOrCreateCharacterUpdateStatus2(ctx context.Context, cha
 	}
 	defer tx.Rollback()
 	qtx := st.q.WithTx(tx)
-	var arg2 queries.UpdateOrCreateCharacterUpdateStatusParams
-	old, err := qtx.GetCharacterUpdateStatus(ctx, queries.GetCharacterUpdateStatusParams{
+	var arg2 queries.UpdateOrCreateCharacterSectionStatusParams
+	old, err := qtx.GetCharacterSectionStatus(ctx, queries.GetCharacterSectionStatusParams{
 		CharacterID: int64(characterID),
 		SectionID:   string(section),
 	})
 	if errors.Is(err, sql.ErrNoRows) {
-		arg2 = queries.UpdateOrCreateCharacterUpdateStatusParams{
+		arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
 			CharacterID: int64(characterID),
 			SectionID:   string(section),
 		}
 	} else if err != nil {
 		return nil, err
 	} else {
-		arg2 = queries.UpdateOrCreateCharacterUpdateStatusParams{
+		arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
 			CharacterID: int64(characterID),
 			SectionID:   string(section),
 			CompletedAt: old.CompletedAt,
@@ -100,27 +100,27 @@ func (st *Storage) UpdateOrCreateCharacterUpdateStatus2(ctx context.Context, cha
 	if optionals.StartedAt != nil {
 		arg2.StartedAt = *optionals.StartedAt
 	}
-	o, err := qtx.UpdateOrCreateCharacterUpdateStatus(ctx, arg2)
+	o, err := qtx.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 	if err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return characterUpdateStatusFromDBModel(o), nil
+	return characterSectionStatusFromDBModel(o), nil
 }
 
-func (st *Storage) UpdateOrCreateCharacterUpdateStatus(ctx context.Context, arg CharacterUpdateStatusParams) (*model.CharacterUpdateStatus, error) {
-	arg2 := characterUpdateStatusDBModelFromParams(arg)
-	o, err := st.q.UpdateOrCreateCharacterUpdateStatus(ctx, arg2)
+func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg CharacterSectionStatusParams) (*model.CharacterSectionStatus, error) {
+	arg2 := characterSectionStatusDBModelFromParams(arg)
+	o, err := st.q.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update or create updates status for character %d with section %s: %w", arg.CharacterID, arg.Section, err)
 	}
-	return characterUpdateStatusFromDBModel(o), nil
+	return characterSectionStatusFromDBModel(o), nil
 }
 
-func characterUpdateStatusDBModelFromParams(arg CharacterUpdateStatusParams) queries.UpdateOrCreateCharacterUpdateStatusParams {
-	arg2 := queries.UpdateOrCreateCharacterUpdateStatusParams{
+func characterSectionStatusDBModelFromParams(arg CharacterSectionStatusParams) queries.UpdateOrCreateCharacterSectionStatusParams {
+	arg2 := queries.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID: int64(arg.CharacterID),
 		ContentHash: arg.ContentHash,
 		Error:       arg.Error,
@@ -136,8 +136,8 @@ func characterUpdateStatusDBModelFromParams(arg CharacterUpdateStatusParams) que
 	return arg2
 }
 
-func characterUpdateStatusFromDBModel(o queries.CharacterUpdateStatus) *model.CharacterUpdateStatus {
-	x := &model.CharacterUpdateStatus{
+func characterSectionStatusFromDBModel(o queries.CharacterSectionStatus) *model.CharacterSectionStatus {
+	x := &model.CharacterSectionStatus{
 		ID:           o.ID,
 		CharacterID:  int32(o.CharacterID),
 		ErrorMessage: o.Error,

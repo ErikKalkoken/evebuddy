@@ -104,6 +104,18 @@ type CharacterMailsRecipient struct {
 	EveEntityID int64
 }
 
+type CharacterSectionStatus struct {
+	ID          int64
+	CharacterID int64
+	SectionID   string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	ContentHash string
+	CompletedAt sql.NullTime
+	Error       string
+	StartedAt   sql.NullTime
+}
+
 type CharacterSkill struct {
 	ID                 int64
 	ActiveSkillLevel   int64
@@ -139,18 +151,6 @@ type CharacterTokenScope struct {
 	ID               int64
 	CharacterTokenID int64
 	ScopeID          int64
-}
-
-type CharacterUpdateStatus struct {
-	ID          int64
-	CharacterID int64
-	SectionID   string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	ContentHash string
-	CompletedAt sql.NullTime
-	Error       string
-	StartedAt   sql.NullTime
 }
 
 type CharacterWalletJournalEntry struct {

@@ -10,14 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCharacterUpdateStatusCache(t *testing.T) {
+func TestCharacterSectionStatusCache(t *testing.T) {
 	characterID := int32(42)
 	section := model.SectionImplants
 	cache := cache.New()
 	statusCache := New(cache)
 	t.Run("can get and set a character status", func(t *testing.T) {
 		// given
-		o := &model.CharacterUpdateStatus{
+		o := &model.CharacterSectionStatus{
 			CharacterID:  characterID,
 			Section:      section,
 			CompletedAt:  time.Now(),
@@ -40,7 +40,7 @@ func TestCharacterUpdateStatusCache(t *testing.T) {
 	})
 }
 
-func TestCharacterUpdateStatusCacheInit(t *testing.T) {
+func TestCharacterSectionStatusCacheInit(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	cache := cache.New()
@@ -50,7 +50,7 @@ func TestCharacterUpdateStatusCacheInit(t *testing.T) {
 		// given
 		c := factory.CreateCharacter()
 		completedAt := time.Now().Add(-1 * time.Hour)
-		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
 			CompletedAt: completedAt,
@@ -70,7 +70,7 @@ func TestCharacterUpdateStatusCacheInit(t *testing.T) {
 	})
 }
 
-func TestCharacterUpdateStatusCacheCharacterIDs(t *testing.T) {
+func TestCharacterSectionStatusCacheCharacterIDs(t *testing.T) {
 	cache := cache.New()
 	statusCache := New(cache)
 	t.Run("can get and set characterIDs", func(t *testing.T) {
@@ -92,7 +92,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 		// given
 		for _, c := range cc {
 			for _, section := range model.CharacterSections {
-				o := &model.CharacterUpdateStatus{
+				o := &model.CharacterSectionStatus{
 					CharacterID:  c.ID,
 					Section:      section,
 					ErrorMessage: "",
@@ -113,7 +113,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 		// given
 		for _, c := range cc {
 			for _, section := range model.CharacterSections {
-				o := &model.CharacterUpdateStatus{
+				o := &model.CharacterSectionStatus{
 					CharacterID:  c.ID,
 					Section:      section,
 					ErrorMessage: "",
@@ -124,7 +124,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 				cs.CharacterSet(o)
 			}
 		}
-		o := &model.CharacterUpdateStatus{
+		o := &model.CharacterSectionStatus{
 			CharacterID:  cc[0].ID,
 			Section:      model.SectionLocation,
 			ErrorMessage: "error",
@@ -139,7 +139,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 		// given
 		for _, c := range cc {
 			for _, section := range model.CharacterSections {
-				o := &model.CharacterUpdateStatus{
+				o := &model.CharacterSectionStatus{
 					CharacterID:  c.ID,
 					Section:      section,
 					ErrorMessage: "",
@@ -150,7 +150,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 				cs.CharacterSet(o)
 			}
 		}
-		o := &model.CharacterUpdateStatus{
+		o := &model.CharacterSectionStatus{
 			CharacterID: cc[0].ID,
 			Section:     model.SectionLocation,
 			CompletedAt: time.Now().Add(-1 * time.Hour),

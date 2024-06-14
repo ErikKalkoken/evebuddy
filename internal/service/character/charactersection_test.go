@@ -41,7 +41,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			assert.True(t, changed)
 			assert.Equal(t, accessToken, token.AccessToken)
 			assert.True(t, hasUpdated)
-			x, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
+			x, err := r.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
 				assert.True(t, x.IsOK())
@@ -54,7 +54,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		section := model.SectionImplants
-		x1 := factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
+		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
 			Error:       "error",
@@ -74,7 +74,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
 			assert.True(t, hasUpdated)
-			x2, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
+			x2, err := r.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
 				assert.True(t, x2.IsOK())
@@ -87,7 +87,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		section := model.SectionImplants
-		x1 := factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
+		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
 			Data:        "old",
@@ -107,7 +107,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
 			assert.False(t, hasUpdated)
-			x2, err := r.GetCharacterUpdateStatus(ctx, c.ID, section)
+			x2, err := r.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
 				assert.True(t, x2.IsOK())
@@ -124,7 +124,7 @@ func TestCharacterSectionUpdateMethods(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterUpdateStatus(testutil.CharacterUpdateStatusParams{
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     model.SectionSkillqueue,
 			CompletedAt: time.Now(),

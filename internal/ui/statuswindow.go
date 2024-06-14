@@ -205,7 +205,7 @@ func (a *statusWindow) makeSectionsTable() *widget.GridWrap {
 			)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
-			cs, err := convertDataItem[*model.CharacterUpdateStatus](di)
+			cs, err := convertDataItem[*model.CharacterSectionStatus](di)
 			if err != nil {
 				panic(err)
 			}
@@ -289,7 +289,7 @@ func (a *statusWindow) setDetails() {
 	}
 }
 
-func (a *statusWindow) fetchSelectedCharacterStatus() (*model.CharacterUpdateStatus, bool, error) {
+func (a *statusWindow) fetchSelectedCharacterStatus() (*model.CharacterSectionStatus, bool, error) {
 	id, err := a.sectionSelected.Get()
 	if err != nil {
 		return nil, false, err
@@ -297,7 +297,7 @@ func (a *statusWindow) fetchSelectedCharacterStatus() (*model.CharacterUpdateSta
 	if id == -1 {
 		return nil, false, nil
 	}
-	cs, err := getItemUntypedList[*model.CharacterUpdateStatus](a.sectionsData, id)
+	cs, err := getItemUntypedList[*model.CharacterSectionStatus](a.sectionsData, id)
 	if err != nil {
 		return nil, false, err
 	}
@@ -391,7 +391,7 @@ func (a *statusWindow) startTicker(ctx context.Context) {
 	}()
 }
 
-func statusDisplay(cs *model.CharacterUpdateStatus) (string, widget.Importance) {
+func statusDisplay(cs *model.CharacterSectionStatus) (string, widget.Importance) {
 	var s string
 	var i widget.Importance
 	if !cs.IsOK() {

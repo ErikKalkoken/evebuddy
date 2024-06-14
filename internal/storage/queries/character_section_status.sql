@@ -1,16 +1,16 @@
--- name: GetCharacterUpdateStatus :one
+-- name: GetCharacterSectionStatus :one
 SELECT *
-FROM character_update_status
+FROM character_section_status
 WHERE character_id = ?
 AND section_id = ?;
 
--- name: ListCharacterUpdateStatus :many
+-- name: ListCharacterSectionStatus :many
 SELECT *
-FROM character_update_status
+FROM character_section_status
 WHERE character_id = ?;
 
--- name: UpdateOrCreateCharacterUpdateStatus :one
-INSERT INTO character_update_status (
+-- name: UpdateOrCreateCharacterSectionStatus :one
+INSERT INTO character_section_status (
     character_id,
     section_id,
     completed_at,

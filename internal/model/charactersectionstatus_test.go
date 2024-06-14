@@ -21,7 +21,7 @@ func TestCharacterUpdateStatusIsExpired(t *testing.T) {
 	for _, tc := range cases {
 		t.Run("Can report when section update is expired", func(t *testing.T) {
 			// given
-			o := model.CharacterUpdateStatus{
+			o := model.CharacterSectionStatus{
 				Section:     model.SectionSkillqueue,
 				CompletedAt: tc.completedAt,
 			}
@@ -42,7 +42,7 @@ func TestCharacterUpdateStatusIsOK(t *testing.T) {
 	for _, tc := range cases {
 		t.Run("Can report when update is ok", func(t *testing.T) {
 			// given
-			o := model.CharacterUpdateStatus{
+			o := model.CharacterSectionStatus{
 				Section:      model.SectionSkillqueue,
 				ErrorMessage: tc.errorMessage,
 			}

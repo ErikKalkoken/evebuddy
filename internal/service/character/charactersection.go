@@ -19,7 +19,7 @@ import (
 
 // SectionWasUpdated reports wether the section has been updated at all.
 func (s *CharacterService) SectionWasUpdated(ctx context.Context, characterID int32, section model.CharacterSection) (bool, error) {
-	status, err := s.getCharacterUpdateStatus(ctx, characterID, section)
+	status, err := s.getCharacterSectionStatus(ctx, characterID, section)
 	if err != nil {
 		return false, err
 	}
@@ -42,7 +42,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 		panic("Invalid character ID")
 	}
 	if !arg.ForceUpdate {
-		status, err := s.getCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
+		status, err := s.getCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
 		if err != nil {
 			return false, err
 		}
@@ -95,8 +95,8 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 		// TODO: Move this part into updateCharacterSectionIfChanged()
 		errorMessage := humanize.Error(err)
 		startedAt := sql.NullTime{}
-		opt := storage.CharacterUpdateStatusOptionals{Error: &errorMessage, StartedAt: &startedAt}
-		o, err2 := s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt)
+		opt := storage.CharacterSectionStatusOptionals{Error: &errorMessage, StartedAt: &startedAt}
+		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus2(ctx, arg.CharacterID, arg.Section, opt)
 		if err2 != nil {
 			slog.Error("failed to record error for failed section update: %s", err2)
 		}
@@ -116,10 +116,10 @@ func (s *CharacterService) updateSectionIfChanged(
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {
 	startedAt := storage.NewNullTime(time.Now())
-	opt := storage.CharacterUpdateStatusOptionals{
+	opt := storage.CharacterSectionStatusOptionals{
 		StartedAt: &startedAt,
 	}
-	o, err := s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt)
+	o, err := s.st.UpdateOrCreateCharacterSectionStatus2(ctx, arg.CharacterID, arg.Section, opt)
 	if err != nil {
 		return false, err
 	}
@@ -140,7 +140,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	// identify if changed
 	var hasChanged bool
 	if !arg.ForceUpdate {
-		u, err := s.getCharacterUpdateStatus(ctx, arg.CharacterID, arg.Section)
+		u, err := s.getCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
 		if err != nil {
 			return false, err
 		}
@@ -161,13 +161,13 @@ func (s *CharacterService) updateSectionIfChanged(
 	completedAt := storage.NewNullTime(time.Now())
 	errorMessage := ""
 	startedAt2 := sql.NullTime{}
-	opt = storage.CharacterUpdateStatusOptionals{
+	opt = storage.CharacterSectionStatusOptionals{
 		Error:       &errorMessage,
 		ContentHash: &hash,
 		CompletedAt: &completedAt,
 		StartedAt:   &startedAt2,
 	}
-	o, err = s.st.UpdateOrCreateCharacterUpdateStatus2(ctx, arg.CharacterID, arg.Section, opt)
+	o, err = s.st.UpdateOrCreateCharacterSectionStatus2(ctx, arg.CharacterID, arg.Section, opt)
 	if err != nil {
 		return false, err
 	}
@@ -177,8 +177,8 @@ func (s *CharacterService) updateSectionIfChanged(
 	return hasChanged, nil
 }
 
-func (s *CharacterService) getCharacterUpdateStatus(ctx context.Context, characterID int32, section model.CharacterSection) (*model.CharacterUpdateStatus, error) {
-	o, err := s.st.GetCharacterUpdateStatus(ctx, characterID, section)
+func (s *CharacterService) getCharacterSectionStatus(ctx context.Context, characterID int32, section model.CharacterSection) (*model.CharacterSectionStatus, error) {
+	o, err := s.st.GetCharacterSectionStatus(ctx, characterID, section)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, nil
 	} else if err != nil {
