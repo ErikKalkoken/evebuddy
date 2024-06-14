@@ -9,11 +9,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
-	"github.com/ErikKalkoken/evebuddy/internal/service/characterstatus"
 	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/service/esistatus"
 	"github.com/ErikKalkoken/evebuddy/internal/service/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -27,7 +27,7 @@ type Service struct {
 	// Character service
 	Character *character.CharacterService
 	// Character status service
-	CharacterStatus *characterstatus.CharacterStatusService
+	CharacterStatus *statuscache.StatusCacheService
 	// Dictionary service
 	Dictionary *dictionary.DictionaryService
 	// EveImage service
@@ -60,7 +60,7 @@ func New(st *storage.Storage, imageCacheDir string) *Service {
 	dt := dictionary.New(st)
 	eu := eveuniverse.New(st, esiClient, dt)
 	cache := cache.New()
-	cs := characterstatus.New(cache)
+	cs := statuscache.New(cache)
 	if err := cs.InitCache(st); err != nil {
 		panic(err)
 	}

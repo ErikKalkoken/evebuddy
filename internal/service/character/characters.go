@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
-	"github.com/ErikKalkoken/evebuddy/internal/service/characterstatus"
 	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
@@ -29,7 +29,7 @@ type CharacterService struct {
 	// EveUniverse service
 	eu *eveuniverse.EveUniverseService
 	// CharacterStatus service
-	cs *characterstatus.CharacterStatusService
+	cs *statuscache.StatusCacheService
 	// Dictionary service
 	dt *dictionary.DictionaryService
 }
@@ -40,7 +40,7 @@ func New(
 	st *storage.Storage,
 	httpClient *http.Client,
 	esiClient *goesi.APIClient,
-	cs *characterstatus.CharacterStatusService,
+	cs *statuscache.StatusCacheService,
 	dt *dictionary.DictionaryService,
 	eu *eveuniverse.EveUniverseService,
 ) *CharacterService {
@@ -52,7 +52,7 @@ func New(
 	}
 	if cs == nil {
 		cache := cache.New()
-		cs = characterstatus.New(cache)
+		cs = statuscache.New(cache)
 	}
 	if dt == nil {
 		dt = dictionary.New(st)

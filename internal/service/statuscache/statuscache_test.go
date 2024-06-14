@@ -1,4 +1,4 @@
-package characterstatus
+package statuscache
 
 import (
 	"testing"
