@@ -121,7 +121,7 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 	})
 	var count int
 	for _, m := range unapplied {
-		p := filepath.Join("migrations", m.filename)
+		p := fmt.Sprintf("migrations/%s", m.filename)
 		data, err := migrations.ReadFile(p)
 		if err != nil {
 			return err
