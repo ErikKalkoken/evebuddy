@@ -11,32 +11,32 @@ import (
 )
 
 const (
-	charactersUpdateTicker  = 10 * time.Second
-	eveUniverseUpdateTicker = 60 * time.Second
+	characterSectionsUpdateTicker = 10 * time.Second
+	generalSectionsUpdateTicker   = 60 * time.Second
 )
 
-func (u *ui) startUpdateTickerEveUniverse() {
-	ticker := time.NewTicker(eveUniverseUpdateTicker)
+func (u *ui) startUpdateTickerGeneralSections() {
+	ticker := time.NewTicker(generalSectionsUpdateTicker)
 	go func() {
 		for {
-			u.updateEveUniverseAndRefreshIfNeeded(false)
+			u.updateGeneralSectionsAndRefreshIfNeeded(false)
 			<-ticker.C
 		}
 	}()
 }
 
-func (u *ui) updateEveUniverseAndRefreshIfNeeded(forceUpdate bool) {
-	for _, s := range model.EveUniverseSections {
-		go func(s model.EveUniverseSection) {
-			u.updateEveUniverseSectionAndRefreshIfNeeded(context.TODO(), s, forceUpdate)
+func (u *ui) updateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
+	for _, s := range model.GeneralSections {
+		go func(s model.GeneralSection) {
+			u.updateGeneralSectionAndRefreshIfNeeded(context.TODO(), s, forceUpdate)
 		}(s)
 	}
 }
 
-func (u *ui) updateEveUniverseSectionAndRefreshIfNeeded(ctx context.Context, section model.EveUniverseSection, forceUpdate bool) {
+func (u *ui) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section model.GeneralSection, forceUpdate bool) {
 	hasChanged, err := u.sv.EveUniverse.UpdateSection(ctx, section, forceUpdate)
 	if err != nil {
-		slog.Error("Failed to update eve universe section", "section", section, "err", err)
+		slog.Error("Failed to update general section", "section", section, "err", err)
 		return
 	}
 	switch section {
@@ -53,7 +53,7 @@ func (u *ui) updateEveUniverseSectionAndRefreshIfNeeded(ctx context.Context, sec
 }
 
 func (u *ui) startUpdateTickerCharacters() {
-	ticker := time.NewTicker(charactersUpdateTicker)
+	ticker := time.NewTicker(characterSectionsUpdateTicker)
 	go func() {
 		for {
 			func() {

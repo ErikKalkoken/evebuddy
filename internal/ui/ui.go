@@ -246,7 +246,7 @@ func (u *ui) ShowAndRun() {
 			u.window.Resize(fyne.NewSize(s.Width, s.Height))
 		}
 		u.statusBarArea.StartUpdateTicker()
-		u.startUpdateTickerEveUniverse()
+		u.startUpdateTickerGeneralSections()
 		u.startUpdateTickerCharacters()
 	}()
 	u.refreshOverview()

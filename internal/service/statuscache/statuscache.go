@@ -67,14 +67,14 @@ func (sc *StatusCacheService) InitCache(r StatusCacheStorage) error {
 	return nil
 }
 
-func (sc *StatusCacheService) CharacterGet(characterID int32, section model.CharacterSection) *model.CharacterStatus {
+func (sc *StatusCacheService) CharacterGet(characterID int32, section model.CharacterSection) *model.CharacterUpdateStatus {
 	k := cacheKey{id: characterID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
 		return nil
 	}
 	v := x.(cacheValue)
-	return &model.CharacterStatus{
+	return &model.CharacterUpdateStatus{
 		CharacterID:   characterID,
 		CharacterName: sc.characterName(characterID),
 		Section:       section,
@@ -100,7 +100,7 @@ func (sc *StatusCacheService) CharacterSet(o *model.CharacterUpdateStatus) {
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *StatusCacheService) EveUniverseSet(o *model.EveUniverseUpdateStatus) {
+func (sc *StatusCacheService) EveUniverseSet(o *model.GeneralSectionStatus) {
 	if o == nil {
 		return
 	}
@@ -116,14 +116,14 @@ func (sc *StatusCacheService) EveUniverseSet(o *model.EveUniverseUpdateStatus) {
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *StatusCacheService) EveUniverseGet(section model.EveUniverseSection) *model.EveUniverseUpdateStatus {
+func (sc *StatusCacheService) EveUniverseGet(section model.GeneralSection) *model.GeneralSectionStatus {
 	k := cacheKey{id: eveUniverseID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
 		return nil
 	}
 	v := x.(cacheValue)
-	return &model.EveUniverseUpdateStatus{
+	return &model.GeneralSectionStatus{
 		Section:      section,
 		CompletedAt:  v.CompletedAt,
 		ErrorMessage: v.ErrorMessage,
@@ -166,8 +166,8 @@ func (sc *StatusCacheService) CharacterSummary(characterID int32) (float32, bool
 	return float32(currentCount) / float32(total), true
 }
 
-func (sc *StatusCacheService) ListStatus(characterID int32) []*model.CharacterStatus {
-	list := make([]*model.CharacterStatus, len(model.CharacterSections))
+func (sc *StatusCacheService) ListStatus(characterID int32) []*model.CharacterUpdateStatus {
+	list := make([]*model.CharacterUpdateStatus, len(model.CharacterSections))
 	for i, section := range model.CharacterSections {
 		v := sc.CharacterGet(characterID, section)
 		list[i] = v
