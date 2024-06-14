@@ -1,4 +1,4 @@
-// Package migrate contains the logic for database migrations.
+// Package migrate is a simple implementation for migrating a SQLite database.
 package migrate
 
 import (
@@ -56,7 +56,7 @@ func recordMigration(db *sql.DB, name string) error {
 	return err
 }
 
-func listMigrations(db *sql.DB) ([]string, error) {
+func listMigrationNames(db *sql.DB) ([]string, error) {
 	rows, err := db.Query(`SELECT name FROM migrations;`)
 	if err != nil {
 		return nil, err
@@ -84,12 +84,15 @@ type migration struct {
 	filename string
 }
 
+// applyNewMigrations applies any new migrations in alphabetical order.
+//
+// migrations is a filesystem containing the SQL files in a folder called "migrations".
 func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
-	xx, err := listMigrations(db)
+	names, err := listMigrationNames(db)
 	if err != nil {
 		return err
 	}
-	appliedMigrations := set.NewFromSlice(xx)
+	appliedMigrations := set.NewFromSlice(names)
 	c, err := migrations.ReadDir("migrations")
 	if err != nil {
 		return err
@@ -112,7 +115,7 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 		return nil
 	}
 	slog.Info("Applying new migrations", "count", len(unapplied))
-	fmt.Printf("Applying %d new migrations:\n", len(unapplied))
+	fmt.Print("Updating database. This may take a moment...")
 	slices.SortFunc(unapplied, func(a migration, b migration) int {
 		return cmp.Compare(a.name, b.name)
 	})
@@ -123,18 +126,16 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Applying %s...", m.name)
 		_, err = db.Exec(string(data))
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)
 			return err
 		}
 		count++
-		fmt.Println("OK")
 		recordMigration(db, m.name)
+		slog.Info("Successfully applied new migration", "name", m.name)
 	}
 	fmt.Println("DONE")
-	slog.Info("Finished applying %d migrations", "count", count)
 	return nil
 }
 

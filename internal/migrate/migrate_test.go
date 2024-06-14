@@ -26,7 +26,7 @@ func TestApplyMigrations(t *testing.T) {
 		err := applyNewMigrations(db, migrations)
 		// then
 		if assert.NoError(t, err) {
-			applied, err := listMigrations(db)
+			applied, err := listMigrationNames(db)
 			if assert.NoError(t, err) {
 				assert.Equal(t, []string{"0001_alpha", "0002_bravo"}, applied)
 			}
@@ -47,7 +47,7 @@ func TestApplyMigrations(t *testing.T) {
 		err := applyNewMigrations(db, migrations)
 		// then
 		if assert.NoError(t, err) {
-			applied, err := listMigrations(db)
+			applied, err := listMigrationNames(db)
 			if assert.NoError(t, err) {
 				assert.Equal(t, []string{"0001_alpha", "0002_bravo"}, applied)
 			}
@@ -69,7 +69,7 @@ func TestApplyMigrations(t *testing.T) {
 		err := applyNewMigrations(db, migrations)
 		// then
 		if assert.NoError(t, err) {
-			applied, err := listMigrations(db)
+			applied, err := listMigrationNames(db)
 			if assert.NoError(t, err) {
 				assert.Equal(t, []string{"0001_alpha", "0002_bravo"}, applied)
 			}
@@ -89,7 +89,7 @@ func TestMigrate(t *testing.T) {
 		createMigrationTracking(db)
 		recordMigration(db, "test1")
 		recordMigration(db, "test2")
-		names, err := listMigrations(db)
+		names, err := listMigrationNames(db)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []string{"test1", "test2"}, names)
 		}
