@@ -198,7 +198,8 @@ func (a *statusWindow) makeSectionsTable() *widget.GridWrap {
 			pb := widget.NewProgressBarInfinite()
 			pb.Stop()
 			return container.NewHBox(
-				container.NewStack(pb, widget.NewLabel("Section name long")),
+				widget.NewLabel("Section name long"),
+				pb,
 				layout.NewSpacer(),
 				widget.NewLabel("Status XXXX"),
 			)
@@ -209,16 +210,15 @@ func (a *statusWindow) makeSectionsTable() *widget.GridWrap {
 				panic(err)
 			}
 			hbox := co.(*fyne.Container)
-			stack := hbox.Objects[0].(*fyne.Container)
-			name := stack.Objects[1].(*widget.Label)
-			status := hbox.Objects[2].(*widget.Label)
+			name := hbox.Objects[0].(*widget.Label)
+			status := hbox.Objects[3].(*widget.Label)
 			name.SetText(cs.Section.DisplayName())
 			s, i := statusDisplay(cs)
 			status.Text = s
 			status.Importance = i
 			status.Refresh()
 
-			pb := stack.Objects[0].(*widget.ProgressBarInfinite)
+			pb := hbox.Objects[1].(*widget.ProgressBarInfinite)
 			if cs.IsRunning() {
 				pb.Start()
 				pb.Show()
