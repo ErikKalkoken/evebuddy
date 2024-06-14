@@ -28,9 +28,9 @@ func TestCharacterSectionStatusCache(t *testing.T) {
 		cc := []*model.CharacterShort{{ID: 42, Name: "Alpha"}}
 		statusCache.setCharacters(cc)
 		// when
-		statusCache.CharacterSet(o)
+		statusCache.CharacterSectionSet(o)
 		// then
-		v := statusCache.CharacterGet(characterID, section)
+		v := statusCache.CharacterSectionGet(characterID, section)
 		assert.Equal(t, v.CharacterID, o.CharacterID)
 		assert.Equal(t, v.CharacterName, "Alpha")
 		assert.Equal(t, v.CompletedAt.UTC(), o.CompletedAt.UTC())
@@ -60,7 +60,7 @@ func TestCharacterSectionStatusCacheInit(t *testing.T) {
 		// when
 		statusCache.InitCache(r)
 		// then
-		v := statusCache.CharacterGet(c.ID, section)
+		v := statusCache.CharacterSectionGet(c.ID, section)
 		assert.Equal(t, completedAt.UTC(), v.CompletedAt.UTC())
 		assert.Equal(t, "my-error", v.ErrorMessage)
 		cc := statusCache.ListCharacters()
@@ -100,7 +100,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 					CompletedAt:  time.Now(),
 					UpdatedAt:    time.Now(),
 				}
-				cs.CharacterSet(o)
+				cs.CharacterSectionSet(o)
 			}
 		}
 		// when
@@ -121,7 +121,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 					CompletedAt:  time.Now(),
 					UpdatedAt:    time.Now(),
 				}
-				cs.CharacterSet(o)
+				cs.CharacterSectionSet(o)
 			}
 		}
 		o := &model.CharacterSectionStatus{
@@ -129,7 +129,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 			Section:      model.SectionLocation,
 			ErrorMessage: "error",
 		}
-		cs.CharacterSet(o)
+		cs.CharacterSectionSet(o)
 		// when
 		_, c := cs.Summary()
 		// then
@@ -147,7 +147,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 					CompletedAt:  time.Now(),
 					UpdatedAt:    time.Now(),
 				}
-				cs.CharacterSet(o)
+				cs.CharacterSectionSet(o)
 			}
 		}
 		o := &model.CharacterSectionStatus{
@@ -155,7 +155,7 @@ func TestCharacterGetUpdateStatusSummary(t *testing.T) {
 			Section:     model.SectionLocation,
 			CompletedAt: time.Now().Add(-1 * time.Hour),
 		}
-		cs.CharacterSet(o)
+		cs.CharacterSectionSet(o)
 		// when
 		p, c := cs.Summary()
 		// then
