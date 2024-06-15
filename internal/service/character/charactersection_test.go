@@ -55,9 +55,9 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
 		section := model.SectionImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c.ID,
-			Section:     section,
-			Error:       "error",
+			CharacterID:  c.ID,
+			Section:      section,
+			ErrorMessage: "error",
 		})
 		hasUpdated := false
 		arg := UpdateSectionParams{CharacterID: c.ID, Section: section}

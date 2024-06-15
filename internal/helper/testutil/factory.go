@@ -453,12 +453,12 @@ func (f Factory) CreateCharacterToken(args ...model.CharacterToken) *model.Chara
 }
 
 type CharacterSectionStatusParams struct {
-	CharacterID int32
-	Section     model.CharacterSection
-	Error       string
-	CompletedAt time.Time
-	StartedAt   time.Time
-	Data        any
+	CharacterID  int32
+	Section      model.CharacterSection
+	ErrorMessage string
+	CompletedAt  time.Time
+	StartedAt    time.Time
+	Data         any
 }
 
 func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusParams) *model.CharacterSectionStatus {
@@ -489,11 +489,11 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 	}
 	t := storage.NewNullTime(arg.CompletedAt)
 	arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
-		CharacterID: arg.CharacterID,
-		Section:     arg.Section,
-		Error:       &arg.Error,
-		CompletedAt: &t,
-		ContentHash: &hash,
+		CharacterID:  arg.CharacterID,
+		Section:      arg.Section,
+		ErrorMessage: &arg.ErrorMessage,
+		CompletedAt:  &t,
+		ContentHash:  &hash,
 	}
 	o, err := f.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 	if err != nil {
@@ -640,11 +640,11 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *m
 }
 
 type GeneralSectionStatusParams struct {
-	Section     model.GeneralSection
-	Error       string
-	CompletedAt time.Time
-	StartedAt   time.Time
-	Data        any
+	Section      model.GeneralSection
+	ErrorMessage string
+	CompletedAt  time.Time
+	StartedAt    time.Time
+	Data         any
 }
 
 func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) *model.GeneralSectionStatus {
@@ -672,7 +672,7 @@ func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) 
 	t := storage.NewNullTime(arg.CompletedAt)
 	arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 		Section:     arg.Section,
-		Error:       &arg.Error,
+		Error:       &arg.ErrorMessage,
 		CompletedAt: &t,
 		ContentHash: &hash,
 	}

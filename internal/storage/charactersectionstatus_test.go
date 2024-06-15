@@ -41,9 +41,9 @@ func TestCharacterSectionStatus(t *testing.T) {
 		// when
 		error := "error"
 		arg := storage.UpdateOrCreateCharacterSectionStatusParams{
-			CharacterID: c.ID,
-			Section:     model.SectionImplants,
-			Error:       &error,
+			CharacterID:  c.ID,
+			Section:      model.SectionImplants,
+			ErrorMessage: &error,
 		}
 		x1, err := r.UpdateOrCreateCharacterSectionStatus(ctx, arg)
 		// then
@@ -70,9 +70,9 @@ func TestCharacterSectionStatus(t *testing.T) {
 		// when
 		s := "error"
 		arg := storage.UpdateOrCreateCharacterSectionStatusParams{
-			CharacterID: c.ID,
-			Section:     x.Section,
-			Error:       &s,
+			CharacterID:  c.ID,
+			Section:      x.Section,
+			ErrorMessage: &s,
 		}
 		x1, err := r.UpdateOrCreateCharacterSectionStatus(ctx, arg)
 		// then

@@ -54,10 +54,10 @@ type UpdateOrCreateCharacterSectionStatusParams struct {
 	CharacterID int32
 	Section     model.CharacterSection
 	// optional
-	CompletedAt *sql.NullTime
-	ContentHash *string
-	Error       *string
-	StartedAt   *sql.NullTime
+	CompletedAt  *sql.NullTime
+	ContentHash  *string
+	ErrorMessage *string
+	StartedAt    *sql.NullTime
 }
 
 func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg UpdateOrCreateCharacterSectionStatusParams) (*model.CharacterSectionStatus, error) {
@@ -98,8 +98,8 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 	if arg.ContentHash != nil {
 		arg2.ContentHash = *arg.ContentHash
 	}
-	if arg.Error != nil {
-		arg2.Error = *arg.Error
+	if arg.ErrorMessage != nil {
+		arg2.Error = *arg.ErrorMessage
 	}
 	if arg.StartedAt != nil {
 		arg2.StartedAt = *arg.StartedAt

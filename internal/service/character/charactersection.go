@@ -96,10 +96,10 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 		errorMessage := humanize.Error(err)
 		startedAt := sql.NullTime{}
 		arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
-			CharacterID: arg.CharacterID,
-			Section:     arg.Section,
-			Error:       &errorMessage,
-			StartedAt:   &startedAt,
+			CharacterID:  arg.CharacterID,
+			Section:      arg.Section,
+			ErrorMessage: &errorMessage,
+			StartedAt:    &startedAt,
 		}
 		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 		if err2 != nil {
@@ -172,10 +172,10 @@ func (s *CharacterService) updateSectionIfChanged(
 		CharacterID: arg.CharacterID,
 		Section:     arg.Section,
 
-		Error:       &errorMessage,
-		ContentHash: &hash,
-		CompletedAt: &completedAt,
-		StartedAt:   &startedAt2,
+		ErrorMessage: &errorMessage,
+		ContentHash:  &hash,
+		CompletedAt:  &completedAt,
+		StartedAt:    &startedAt2,
 	}
 	o, err = s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 	if err != nil {

@@ -51,14 +51,14 @@ func New(cache Cache) *StatusCacheService {
 
 // InitCache initializes the internal state from local storage.
 // It should always be called once for a new instance to ensure the cache is current.
-func (sc *StatusCacheService) InitCache(r StatusCacheStorage) error {
+func (sc *StatusCacheService) InitCache(st StatusCacheStorage) error {
 	ctx := context.Background()
-	cc, err := sc.updateCharacters(ctx, r)
+	cc, err := sc.updateCharacters(ctx, st)
 	if err != nil {
 		return err
 	}
 	for _, c := range cc {
-		oo, err := r.ListCharacterSectionStatus(ctx, c.ID)
+		oo, err := st.ListCharacterSectionStatus(ctx, c.ID)
 		if err != nil {
 			return err
 		}
@@ -66,7 +66,7 @@ func (sc *StatusCacheService) InitCache(r StatusCacheStorage) error {
 			sc.CharacterSectionSet(o)
 		}
 	}
-	oo, err := r.ListGeneralSectionStatus(ctx)
+	oo, err := st.ListGeneralSectionStatus(ctx)
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,8 @@ func (sc *StatusCacheService) GeneralSectionList() []*model.GeneralSectionStatus
 	return list
 }
 
-// Summary returns the current summary status in percent of fresh sections.
+// Summary returns the current summary status in percent of fresh sections
+// and the number of errors.
 func (sc *StatusCacheService) Summary() (float32, int) {
 	cc := sc.ListCharacters()
 	sectionsTotal := len(model.CharacterSections)*len(cc) + len(model.GeneralSections)
