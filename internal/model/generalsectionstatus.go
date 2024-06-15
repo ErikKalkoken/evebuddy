@@ -25,18 +25,3 @@ func (s GeneralSectionStatus) IsExpired() bool {
 	deadline := s.CompletedAt.Add(timeout)
 	return time.Now().After(deadline)
 }
-
-func (s GeneralSectionStatus) IsCurrent() bool {
-	if s.CompletedAt.IsZero() {
-		return false
-	}
-	return time.Now().Before(s.CompletedAt.Add(s.Section.Timeout() * 2))
-}
-
-func (s GeneralSectionStatus) IsMissing() bool {
-	return s.CompletedAt.IsZero()
-}
-
-func (s GeneralSectionStatus) IsRunning() bool {
-	return !s.StartedAt.IsZero()
-}

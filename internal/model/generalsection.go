@@ -2,7 +2,11 @@ package model
 
 import (
 	"log/slog"
+	"strings"
 	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const generalSectionDefaultTimeout = 24 * time.Hour
@@ -25,6 +29,13 @@ var generalSectionTimeouts = map[GeneralSection]time.Duration{
 	SectionEveCategories:   24 * time.Hour,
 	SectionEveCharacters:   1 * time.Hour,
 	SectionEveMarketPrices: 6 * time.Hour,
+}
+
+func (gs GeneralSection) DisplayName() string {
+	t := strings.ReplaceAll(string(gs), "_", " ")
+	c := cases.Title(language.English)
+	t = c.String(t)
+	return t
 }
 
 // Timeout returns the time until the data of an update section becomes stale.

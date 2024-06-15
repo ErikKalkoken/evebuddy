@@ -37,19 +37,24 @@ func TestStatusCache(t *testing.T) {
 		err := sc.InitCache(st)
 		// then
 		if assert.NoError(t, err) {
-			x2 := sc.CharacterSectionGet(c.ID, section1)
-			assert.Equal(t, x1.CharacterID, x2.CharacterID)
-			assert.Equal(t, x1.Section, x2.Section)
+			x2, ok := sc.CharacterSectionGet(c.ID, section1)
+			assert.True(t, ok)
+			assert.Equal(t, x1.CharacterID, x2.EntityID)
+			assert.Equal(t, string(x1.Section), x2.SectionID)
 			assert.Equal(t, x1.CompletedAt, x2.CompletedAt)
 			assert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 			assert.Equal(t, x1.StartedAt, x2.StartedAt)
-			assert.Equal(t, "Bruce", x2.CharacterName)
+			assert.Equal(t, "Bruce", x2.EntityName)
+			assert.Equal(t, section1.Timeout(), x2.Timeout)
 
-			y2 := sc.GeneralSectionGet(section2)
-			assert.Equal(t, y1.Section, y2.Section)
+			y2, ok := sc.GeneralSectionGet(section2)
+			assert.True(t, ok)
+			assert.Equal(t, int32(0), y2.EntityID)
+			assert.Equal(t, string(y1.Section), y2.SectionID)
 			assert.Equal(t, y1.CompletedAt, y2.CompletedAt)
 			assert.Equal(t, y1.ErrorMessage, y2.ErrorMessage)
 			assert.Equal(t, y1.StartedAt, y2.StartedAt)
+			assert.Equal(t, section2.Timeout(), y2.Timeout)
 		}
 	})
 	t.Run("Can get and set a character section status", func(t *testing.T) {
@@ -63,13 +68,16 @@ func TestStatusCache(t *testing.T) {
 		})
 		// when
 		sc.CharacterSectionSet(x1)
-		x2 := sc.CharacterSectionGet(c.ID, section)
+		x2, ok := sc.CharacterSectionGet(c.ID, section)
 		// then
-		assert.Equal(t, x1.CharacterID, x2.CharacterID)
-		assert.Equal(t, x1.Section, x2.Section)
+		assert.True(t, ok)
+		assert.Equal(t, x1.CharacterID, x2.EntityID)
+		assert.Equal(t, string(x1.Section), x2.SectionID)
 		assert.Equal(t, x1.CompletedAt, x2.CompletedAt)
 		assert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 		assert.Equal(t, x1.StartedAt, x2.StartedAt)
+		assert.Equal(t, "Bruce", x2.EntityName)
+		assert.Equal(t, section.Timeout(), x2.Timeout)
 	})
 	t.Run("Can get and set a general section status", func(t *testing.T) {
 		testutil.TruncateTables(db)
@@ -78,10 +86,13 @@ func TestStatusCache(t *testing.T) {
 			Section: section,
 		})
 		sc.GeneralSectionSet(x1)
-		x2 := sc.GeneralSectionGet(section)
+		x2, ok := sc.GeneralSectionGet(section)
+		assert.True(t, ok)
+		assert.Equal(t, int32(0), x2.EntityID)
 		assert.Equal(t, x1.CompletedAt, x2.CompletedAt)
 		assert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 		assert.Equal(t, x1.StartedAt, x2.StartedAt)
+		assert.Equal(t, section.Timeout(), x2.Timeout)
 	})
 	t.Run("Can update and list characters", func(t *testing.T) {
 		// given

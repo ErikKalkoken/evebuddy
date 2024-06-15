@@ -17,7 +17,8 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-type statusCharacter struct {
+// An entity which has update sections, e.g. a character
+type sectionEntity struct {
 	id         int32
 	name       string
 	completion float32
@@ -25,18 +26,18 @@ type statusCharacter struct {
 }
 
 type statusWindow struct {
-	characters        *widget.List
-	charactersData    binding.UntypedList
-	charactersTop     *widget.Label
-	content           fyne.CanvasObject
-	details           *fyne.Container
-	sections          *widget.GridWrap
-	characterSelected binding.Untyped
-	sectionSelected   binding.Int
-	sectionsData      binding.UntypedList
-	sectionsTop       *widget.Label
-	window            fyne.Window
-	ui                *ui
+	characters      *widget.List
+	charactersData  binding.UntypedList
+	charactersTop   *widget.Label
+	content         fyne.CanvasObject
+	details         *fyne.Container
+	sections        *widget.GridWrap
+	entitySelected  binding.Untyped
+	sectionSelected binding.Int
+	sectionsData    binding.UntypedList
+	sectionsTop     *widget.Label
+	window          fyne.Window
+	ui              *ui
 
 	mu sync.Mutex
 }
@@ -69,31 +70,31 @@ func (u *ui) showStatusWindow() {
 
 func (u *ui) newStatusWindow() (*statusWindow, error) {
 	a := &statusWindow{
-		charactersData:    binding.NewUntypedList(),
-		charactersTop:     widget.NewLabel(""),
-		characterSelected: binding.NewUntyped(),
-		sectionsData:      binding.NewUntypedList(),
-		sectionsTop:       widget.NewLabel(""),
-		sectionSelected:   binding.NewInt(),
-		ui:                u,
+		charactersData:  binding.NewUntypedList(),
+		charactersTop:   widget.NewLabel(""),
+		entitySelected:  binding.NewUntyped(),
+		sectionsData:    binding.NewUntypedList(),
+		sectionsTop:     widget.NewLabel(""),
+		sectionSelected: binding.NewInt(),
+		ui:              u,
 	}
 
 	if err := a.sectionSelected.Set(-1); err != nil {
 		return nil, err
 	}
-	a.characters = a.makeCharacterList()
+	a.characters = a.makeEntityList()
 	a.charactersTop.TextStyle.Bold = true
 	top1 := container.NewVBox(a.charactersTop, widget.NewSeparator())
 	characters := container.NewBorder(top1, nil, nil, nil, a.characters)
 
-	a.sections = a.makeSectionsTable()
+	a.sections = a.makeSectionTable()
 	a.sectionsTop.TextStyle.Bold = true
 	b := widget.NewButton("Force update all sections", func() {
-		x, err := a.characterSelected.Get()
+		x, err := a.entitySelected.Get()
 		if err != nil {
 			panic(err)
 		}
-		c, ok := x.(statusCharacter)
+		c, ok := x.(sectionEntity)
 		if !ok {
 			return
 		}
@@ -114,7 +115,7 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 	return a, nil
 }
 
-func (a *statusWindow) makeCharacterList() *widget.List {
+func (a *statusWindow) makeEntityList() *widget.List {
 	list := widget.NewListWithData(
 		a.charactersData,
 		func() fyne.CanvasObject {
@@ -139,7 +140,7 @@ func (a *statusWindow) makeCharacterList() *widget.List {
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			row := co.(*fyne.Container)
 			name := row.Objects[1].(*widget.Label)
-			c, err := convertDataItem[statusCharacter](di)
+			c, err := convertDataItem[sectionEntity](di)
 			if err != nil {
 				slog.Error("failed to render row account table", "err", err)
 				name.Text = "failed to render"
@@ -173,13 +174,13 @@ func (a *statusWindow) makeCharacterList() *widget.List {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		c, err := getItemUntypedList[statusCharacter](a.charactersData, id)
+		c, err := getItemUntypedList[sectionEntity](a.charactersData, id)
 		if err != nil {
-			slog.Error("failed to access account character in list", "err", err)
+			slog.Error("failed to access section entity in list", "err", err)
 			list.UnselectAll()
 			return
 		}
-		if err := a.characterSelected.Set(c); err != nil {
+		if err := a.entitySelected.Set(c); err != nil {
 			panic(err)
 		}
 		if err := a.sectionSelected.Set(-1); err != nil {
@@ -191,7 +192,7 @@ func (a *statusWindow) makeCharacterList() *widget.List {
 	return list
 }
 
-func (a *statusWindow) makeSectionsTable() *widget.GridWrap {
+func (a *statusWindow) makeSectionTable() *widget.GridWrap {
 	l := widget.NewGridWrapWithData(
 		a.sectionsData,
 		func() fyne.CanvasObject {
@@ -205,14 +206,14 @@ func (a *statusWindow) makeSectionsTable() *widget.GridWrap {
 			)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
-			cs, err := convertDataItem[*model.CharacterSectionStatus](di)
+			cs, err := convertDataItem[model.SectionStatus](di)
 			if err != nil {
 				panic(err)
 			}
 			hbox := co.(*fyne.Container)
 			name := hbox.Objects[0].(*widget.Label)
 			status := hbox.Objects[3].(*widget.Label)
-			name.SetText(cs.Section.DisplayName())
+			name.SetText(cs.SectionName)
 			s, i := statusDisplay(cs)
 			status.Text = s
 			status.Importance = i
@@ -247,38 +248,38 @@ type formItems struct {
 }
 
 type sectionStatusData struct {
-	characterID   int32
-	characterName string
-	errorText     string
-	sectionName   string
-	completedAt   string
-	startedAt     string
-	section       model.CharacterSection
-	sv            string
-	si            widget.Importance
-	timeout       string
+	entityID    int32
+	entityName  string
+	errorText   string
+	sectionName string
+	completedAt string
+	startedAt   string
+	sectionID   string
+	sv          string
+	si          widget.Importance
+	timeout     string
 }
 
 func (a *statusWindow) setDetails() {
 	var d sectionStatusData
-	cs, found, err := a.fetchSelectedCharacterStatus()
+	ss, found, err := a.fetchSelectedEntityStatus()
 	if err != nil {
-		slog.Error("Failed to fetch selected character status")
+		slog.Error("Failed to fetch selected entity status")
 	} else if found {
-		d.characterID = cs.CharacterID
-		d.section = cs.Section
-		d.sv, d.si = statusDisplay(cs)
-		if cs.ErrorMessage == "" {
+		d.entityID = ss.EntityID
+		d.sectionID = ss.SectionID
+		d.sv, d.si = statusDisplay(ss)
+		if ss.ErrorMessage == "" {
 			d.errorText = "-"
 		} else {
-			d.errorText = cs.ErrorMessage
+			d.errorText = ss.ErrorMessage
 		}
-		d.characterName = cs.CharacterName
-		d.sectionName = cs.Section.DisplayName()
-		d.completedAt = humanizeTime(cs.CompletedAt, "?")
-		d.startedAt = humanizeTime(cs.StartedAt, "-")
+		d.entityName = ss.EntityName
+		d.sectionName = ss.SectionName
+		d.completedAt = humanizeTime(ss.CompletedAt, "?")
+		d.startedAt = humanizeTime(ss.StartedAt, "-")
 		now := time.Now()
-		d.timeout = humanize.RelTime(now.Add(cs.Section.Timeout()), now, "", "")
+		d.timeout = humanize.RelTime(now.Add(ss.Timeout), now, "", "")
 	}
 	oo := a.makeDetailsContent(d)
 	a.mu.Lock()
@@ -289,17 +290,17 @@ func (a *statusWindow) setDetails() {
 	}
 }
 
-func (a *statusWindow) fetchSelectedCharacterStatus() (*model.CharacterSectionStatus, bool, error) {
+func (a *statusWindow) fetchSelectedEntityStatus() (model.SectionStatus, bool, error) {
 	id, err := a.sectionSelected.Get()
 	if err != nil {
-		return nil, false, err
+		return model.SectionStatus{}, false, err
 	}
 	if id == -1 {
-		return nil, false, nil
+		return model.SectionStatus{}, false, nil
 	}
-	cs, err := getItemUntypedList[*model.CharacterSectionStatus](a.sectionsData, id)
+	cs, err := getItemUntypedList[model.SectionStatus](a.sectionsData, id)
 	if err != nil {
-		return nil, false, err
+		return model.SectionStatus{}, false, err
 	}
 	return cs, true, nil
 }
@@ -318,8 +319,9 @@ func (a *statusWindow) makeDetailsContent(d sectionStatusData) []fyne.CanvasObje
 	formTrailing := makeForm(items[3:])
 	oo = append(oo, container.NewGridWithColumns(2, formLeading, formTrailing))
 	oo = append(oo, widget.NewButton(fmt.Sprintf("Force update %s", d.sectionName), func() {
-		if d.characterID != 0 {
-			go a.ui.updateCharacterSectionAndRefreshIfNeeded(context.Background(), d.characterID, d.section, true)
+		if d.entityID != 0 {
+			go a.ui.updateCharacterSectionAndRefreshIfNeeded(
+				context.Background(), d.entityID, model.CharacterSection(d.sectionID), true)
 		}
 
 	}))
@@ -343,10 +345,10 @@ func makeForm(data []formItems) *widget.Form {
 
 func (a *statusWindow) refresh() error {
 	cc := a.ui.sv.StatusCache.ListCharacters()
-	cc2 := make([]statusCharacter, len(cc))
+	cc2 := make([]sectionEntity, len(cc))
 	for i, c := range cc {
 		completion, ok := a.ui.sv.StatusCache.CharacterSectionSummary(c.ID)
-		cc2[i] = statusCharacter{id: c.ID, name: c.Name, completion: completion, isOK: ok}
+		cc2[i] = sectionEntity{id: c.ID, name: c.Name, completion: completion, isOK: ok}
 	}
 	if err := a.charactersData.Set(copyToUntypedSlice(cc2)); err != nil {
 		return err
@@ -358,11 +360,11 @@ func (a *statusWindow) refresh() error {
 }
 
 func (a *statusWindow) refreshDetailArea() error {
-	x, err := a.characterSelected.Get()
+	x, err := a.entitySelected.Get()
 	if err != nil {
 		return err
 	}
-	c, ok := x.(statusCharacter)
+	c, ok := x.(sectionEntity)
 	if !ok {
 		return nil
 	}
@@ -391,7 +393,7 @@ func (a *statusWindow) startTicker(ctx context.Context) {
 	}()
 }
 
-func statusDisplay(cs *model.CharacterSectionStatus) (string, widget.Importance) {
+func statusDisplay(cs model.SectionStatus) (string, widget.Importance) {
 	var s string
 	var i widget.Importance
 	if !cs.IsOK() {

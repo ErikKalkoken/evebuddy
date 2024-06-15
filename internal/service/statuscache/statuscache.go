@@ -21,8 +21,8 @@ type Cache interface {
 }
 
 const (
-	keyCharacters = "characterUpdateStatusCache-characters"
-	eveUniverseID = 0
+	keyCharacters    = "characterUpdateStatusCache-characters"
+	generalSectionID = 0
 )
 
 type cacheKey struct {
@@ -76,21 +76,51 @@ func (sc *StatusCacheService) InitCache(st StatusCacheStorage) error {
 	return nil
 }
 
-func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section model.CharacterSection) *model.CharacterSectionStatus {
+func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section model.CharacterSection) (model.SectionStatus, bool) {
 	k := cacheKey{id: characterID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
-		return nil
+		return model.SectionStatus{}, false
 	}
 	v := x.(cacheValue)
-	return &model.CharacterSectionStatus{
-		CharacterID:   characterID,
-		CharacterName: sc.characterName(characterID),
-		Section:       section,
-		CompletedAt:   v.CompletedAt,
-		ErrorMessage:  v.ErrorMessage,
-		StartedAt:     v.StartedAt,
+	o := model.SectionStatus{
+		EntityID:     characterID,
+		EntityName:   sc.characterName(characterID),
+		SectionID:    string(section),
+		SectionName:  section.DisplayName(),
+		CompletedAt:  v.CompletedAt,
+		ErrorMessage: v.ErrorMessage,
+		StartedAt:    v.StartedAt,
+		Timeout:      section.Timeout(),
 	}
+	return o, true
+}
+
+func (sc *StatusCacheService) CharacterSectionList(characterID int32) []model.SectionStatus {
+	list := make([]model.SectionStatus, 0)
+	for _, section := range model.CharacterSections {
+		v, ok := sc.CharacterSectionGet(characterID, section)
+		if !ok {
+			continue
+		}
+		list = append(list, v)
+	}
+	return list
+}
+
+func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) (float32, bool) {
+	total := len(model.CharacterSections)
+	currentCount := 0
+	xx := sc.CharacterSectionList(characterID)
+	for _, x := range xx {
+		if !x.IsOK() {
+			return 0, false
+		}
+		if x.IsCurrent() {
+			currentCount++
+		}
+	}
+	return float32(currentCount) / float32(total), true
 }
 
 func (sc *StatusCacheService) CharacterSectionSet(o *model.CharacterSectionStatus) {
@@ -109,29 +139,35 @@ func (sc *StatusCacheService) CharacterSectionSet(o *model.CharacterSectionStatu
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *StatusCacheService) CharacterSectionList(characterID int32) []*model.CharacterSectionStatus {
-	list := make([]*model.CharacterSectionStatus, 0)
-	for _, section := range model.CharacterSections {
-		v := sc.CharacterSectionGet(characterID, section)
-		if v != nil {
+func (sc *StatusCacheService) GeneralSectionGet(section model.GeneralSection) (model.SectionStatus, bool) {
+	k := cacheKey{id: generalSectionID, section: string(section)}
+	x, ok := sc.cache.Get(k)
+	if !ok {
+		return model.SectionStatus{}, false
+	}
+	v := x.(cacheValue)
+	o := model.SectionStatus{
+		EntityID:     generalSectionID,
+		EntityName:   "Eve Universe",
+		SectionID:    string(section),
+		SectionName:  section.DisplayName(),
+		CompletedAt:  v.CompletedAt,
+		ErrorMessage: v.ErrorMessage,
+		StartedAt:    v.StartedAt,
+		Timeout:      section.Timeout(),
+	}
+	return o, true
+}
+
+func (sc *StatusCacheService) GeneralSectionList() []model.SectionStatus {
+	list := make([]model.SectionStatus, 0)
+	for _, section := range model.GeneralSections {
+		v, ok := sc.GeneralSectionGet(section)
+		if ok {
 			list = append(list, v)
 		}
 	}
 	return list
-}
-func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) (float32, bool) {
-	total := len(model.CharacterSections)
-	currentCount := 0
-	xx := sc.CharacterSectionList(characterID)
-	for _, x := range xx {
-		if !x.IsOK() {
-			return 0, false
-		}
-		if x.IsCurrent() {
-			currentCount++
-		}
-	}
-	return float32(currentCount) / float32(total), true
 }
 
 func (sc *StatusCacheService) GeneralSectionSet(o *model.GeneralSectionStatus) {
@@ -139,7 +175,7 @@ func (sc *StatusCacheService) GeneralSectionSet(o *model.GeneralSectionStatus) {
 		return
 	}
 	k := cacheKey{
-		id:      eveUniverseID,
+		id:      generalSectionID,
 		section: string(o.Section),
 	}
 	v := cacheValue{
@@ -148,32 +184,6 @@ func (sc *StatusCacheService) GeneralSectionSet(o *model.GeneralSectionStatus) {
 		StartedAt:    o.StartedAt,
 	}
 	sc.cache.Set(k, v, 0)
-}
-
-func (sc *StatusCacheService) GeneralSectionGet(section model.GeneralSection) *model.GeneralSectionStatus {
-	k := cacheKey{id: eveUniverseID, section: string(section)}
-	x, ok := sc.cache.Get(k)
-	if !ok {
-		return nil
-	}
-	v := x.(cacheValue)
-	return &model.GeneralSectionStatus{
-		Section:      section,
-		CompletedAt:  v.CompletedAt,
-		ErrorMessage: v.ErrorMessage,
-		StartedAt:    v.StartedAt,
-	}
-}
-
-func (sc *StatusCacheService) GeneralSectionList() []*model.GeneralSectionStatus {
-	list := make([]*model.GeneralSectionStatus, 0)
-	for _, section := range model.GeneralSections {
-		v := sc.GeneralSectionGet(section)
-		if v != nil {
-			list = append(list, v)
-		}
-	}
-	return list
 }
 
 // Summary returns the current summary status in percent of fresh sections
