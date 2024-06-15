@@ -4,23 +4,28 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 // shipsArea is the UI area that shows the skillqueue
 type shipsArea struct {
-	content   *fyne.Container
-	entries   binding.UntypedList
-	searchBox *widget.Entry
-	grid      *widget.GridWrap
-	top       *widget.Label
-	ui        *ui
+	content       *fyne.Container
+	entries       binding.UntypedList
+	searchBox     *widget.Entry
+	groupSelect   *widget.Select
+	selectedGroup string
+	grid          *widget.GridWrap
+	top           *widget.Label
+	ui            *ui
 }
 
 func (u *ui) newShipArea() *shipsArea {
@@ -31,10 +36,31 @@ func (u *ui) newShipArea() *shipsArea {
 	}
 	a.top.TextStyle.Bold = true
 	a.searchBox = a.makeSearchBox()
+	a.groupSelect = a.makeGroupSelect()
 	a.grid = a.makeShipsTable()
-	topBox := container.NewVBox(a.top, widget.NewSeparator(), a.searchBox)
+	b := widget.NewButton("Reset", func() {
+		a.searchBox.SetText("")
+		a.groupSelect.ClearSelected()
+	})
+	top := container.NewHBox(a.top, layout.NewSpacer(), b)
+	entries := container.NewBorder(nil, nil, nil, a.groupSelect, a.searchBox)
+	topBox := container.NewVBox(top, widget.NewSeparator(), entries)
 	a.content = container.NewBorder(topBox, nil, nil, nil, a.grid)
 	return &a
+}
+
+func (a *shipsArea) makeGroupSelect() *widget.Select {
+	groupSelect := widget.NewSelect([]string{}, func(s string) {
+		a.selectedGroup = s
+		if err := a.updateEntries(); err != nil {
+			t := "Failed to update ship search"
+			slog.Error(t, "err", err)
+			a.ui.statusBarArea.SetError(t)
+		}
+		a.grid.Refresh()
+		a.grid.ScrollToTop()
+	})
+	return groupSelect
 }
 
 func (a *shipsArea) makeSearchBox() *widget.Entry {
@@ -56,7 +82,7 @@ func (a *shipsArea) makeSearchBox() *widget.Entry {
 }
 
 func (a *shipsArea) makeShipsTable() *widget.GridWrap {
-	t := widget.NewGridWrapWithData(
+	g := widget.NewGridWrapWithData(
 		a.entries,
 		func() fyne.CanvasObject {
 			image := canvas.NewImageFromResource(resourceQuestionmarkSvg)
@@ -90,25 +116,9 @@ func (a *shipsArea) makeShipsTable() *widget.GridWrap {
 			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
 				return a.ui.sv.EveImage.InventoryTypeRender(o.Type.ID, 256)
 			})
-			//
-			// 	switch tci.Col {
-			// 	case 0:
-			// 	case 1:
-			// 		label.Text = o.Group.Name
-			// 		icon.Hide()
-			// 		label.Show()
-			// 	case 2:
-			// 		icon.Resource = boolIconResource(o.CanFly)
-			// 		icon.Refresh()
-			// 		icon.Show()
-			// 		label.Hide()
-			// 	}
-			// 	label.Refresh()
-			// },
 		})
-
-	t.OnSelected = func(id widget.GridWrapItemID) {
-		defer t.UnselectAll()
+	g.OnSelected = func(id widget.GridWrapItemID) {
+		defer g.UnselectAll()
 		o, err := getItemUntypedList[*model.CharacterShipAbility](a.entries, id)
 		if err != nil {
 			slog.Error("Failed to select ship", "err", err)
@@ -116,7 +126,7 @@ func (a *shipsArea) makeShipsTable() *widget.GridWrap {
 		}
 		a.ui.showTypeInfoWindow(o.Type.ID, a.ui.characterID())
 	}
-	return t
+	return g
 }
 
 func (a *shipsArea) refresh() {
@@ -151,6 +161,7 @@ func (a *shipsArea) updateEntries() error {
 		oo := make([]*model.CharacterShipAbility, 0)
 		a.entries.Set(copyToUntypedSlice(oo))
 		a.searchBox.SetText("")
+		a.groupSelect.SetOptions([]string{})
 		return nil
 	}
 	characterID := a.ui.characterID()
@@ -159,7 +170,20 @@ func (a *shipsArea) updateEntries() error {
 	if err != nil {
 		return err
 	}
-	a.entries.Set(copyToUntypedSlice(oo))
+	oo2 := make([]*model.CharacterShipAbility, 0)
+	for _, o := range oo {
+		if a.selectedGroup == "" || o.Group.Name == a.selectedGroup {
+			oo2 = append(oo2, o)
+		}
+	}
+	a.entries.Set(copyToUntypedSlice(oo2))
+	groups := set.New[string]()
+	for _, o := range oo {
+		groups.Add(o.Group.Name)
+	}
+	g := groups.ToSlice()
+	slices.Sort(g)
+	a.groupSelect.SetOptions(g)
 	return nil
 }
 
