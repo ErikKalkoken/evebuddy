@@ -524,7 +524,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			w.SetContent(i)
 			w.Show()
 		})
-		s := float32(size) * 1.3 / a.ui.window.Canvas().Scale()
+		s := float32(size) / a.ui.window.Canvas().Scale()
 		render.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(render)
 		if a.metaLevel > 4 {
