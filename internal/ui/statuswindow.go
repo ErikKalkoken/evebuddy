@@ -128,7 +128,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 	list := widget.NewListWithData(
 		a.entitiesData,
 		func() fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
+			icon := canvas.NewImageFromResource(resourceQuestionmarkSvg)
 			icon.FillMode = canvas.ImageFillContain
 			icon.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
 			name := widget.NewLabel("Template")

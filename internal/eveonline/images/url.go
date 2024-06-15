@@ -8,6 +8,17 @@ import (
 
 var ErrInvalidSize = errors.New("invalid size")
 
+const (
+	PlaceholderCharacterID   = 1
+	PlaceholderCorporationID = 1
+	baseURL                  = "https://images.evetech.net"
+)
+
+const (
+	typeIDCaldariShuttle = 672
+	typeIDBoobook        = 64034
+)
+
 type category string
 
 const (
@@ -28,11 +39,9 @@ const (
 	imageVariantBPC      imageVariant = "bpc"
 )
 
-const (
-	PlaceholderCharacterID   = 1
-	PlaceholderCorporationID = 1
-	baseURL                  = "https://images.evetech.net"
-)
+var typeIDSubstitution = map[int32]int32{
+	typeIDBoobook: typeIDCaldariShuttle,
+}
 
 // AllianceLogoURL returns an image URL for an alliance logo
 func AllianceLogoURL(id int32, size int) (string, error) {
@@ -56,6 +65,10 @@ func FactionLogoURL(id int32, size int) (string, error) {
 
 // InventoryTypeRenderURL returns an image URL for inventory type render
 func InventoryTypeRenderURL(id int32, size int) (string, error) {
+	newID, ok := typeIDSubstitution[id]
+	if ok {
+		id = newID
+	}
 	return imageURL(categoryInventoryType, imageVariantRender, id, size)
 }
 

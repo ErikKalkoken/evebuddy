@@ -556,7 +556,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		icon.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(icon)
 	}
-	ownerIcon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
+	ownerIcon := canvas.NewImageFromResource(resourceQuestionmarkSvg)
 	ownerIcon.FillMode = canvas.ImageFillOriginal
 	ownerName := widget.NewLabel("")
 	if a.owner != nil {
@@ -669,7 +669,7 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 				layout.NewSpacer(),
 				widget.NewLabel("Check"),
 				widgets.NewSkillLevel(),
-				widget.NewIcon(resourceCharacterplaceholder32Jpeg),
+				widget.NewIcon(resourceQuestionmarkSvg),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {

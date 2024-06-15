@@ -52,7 +52,7 @@ func (a *attributesArea) makeAttributeList() *widget.List {
 	l := widget.NewListWithData(
 		a.attributes,
 		func() fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
+			icon := canvas.NewImageFromResource(resourceQuestionmarkSvg)
 			icon.FillMode = canvas.ImageFillContain
 			icon.SetMinSize(fyne.Size{Width: 32, Height: 32})
 			return container.NewHBox(

@@ -18,7 +18,7 @@ type shipsArea struct {
 	content   *fyne.Container
 	entries   binding.UntypedList
 	searchBox *widget.Entry
-	table     *widget.Table
+	grid      *widget.GridWrap
 	top       *widget.Label
 	ui        *ui
 }
@@ -31,9 +31,9 @@ func (u *ui) newShipArea() *shipsArea {
 	}
 	a.top.TextStyle.Bold = true
 	a.searchBox = a.makeSearchBox()
-	a.table = a.makeShipsTable()
+	a.grid = a.makeShipsTable()
 	topBox := container.NewVBox(a.top, widget.NewSeparator(), a.searchBox)
-	a.content = container.NewBorder(topBox, nil, nil, nil, a.table)
+	a.content = container.NewBorder(topBox, nil, nil, nil, a.grid)
 	return &a
 }
 
@@ -49,37 +49,27 @@ func (a *shipsArea) makeSearchBox() *widget.Entry {
 			slog.Error(t, "err", err)
 			a.ui.statusBarArea.SetError(t)
 		}
-		a.table.Refresh()
-		a.table.ScrollToTop()
+		a.grid.Refresh()
+		a.grid.ScrollToTop()
 	}
 	return sb
 }
 
-func (a *shipsArea) makeShipsTable() *widget.Table {
-	var headers = []struct {
-		text  string
-		width float32
-	}{
-		{"Name", 250},
-		{"Group", 250},
-		{"Can Fly", 50},
-	}
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return a.entries.Length(), len(headers)
-		},
+func (a *shipsArea) makeShipsTable() *widget.GridWrap {
+	t := widget.NewGridWrapWithData(
+		a.entries,
 		func() fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
-			icon.FillMode = canvas.ImageFillOriginal
-			label := widget.NewLabel("Template")
-			return container.NewHBox(icon, label)
+			image := canvas.NewImageFromResource(resourceQuestionmarkSvg)
+			image.FillMode = canvas.ImageFillContain
+			image.SetMinSize(fyne.Size{Width: 128, Height: 128})
+			label := widget.NewLabel("First line\nSecond Line\nThird Line")
+			return container.NewVBox(image, label)
 		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
+		func(di binding.DataItem, co fyne.CanvasObject) {
 			row := co.(*fyne.Container)
 			icon := row.Objects[0].(*canvas.Image)
 			label := row.Objects[1].(*widget.Label)
-			label.Importance = widget.MediumImportance
-			o, err := getItemUntypedList[*model.CharacterShipAbility](a.entries, tci.Row)
+			o, err := convertDataItem[*model.CharacterShipAbility](di)
 			if err != nil {
 				slog.Error("Failed to render ship item in UI", "err", err)
 				label.Importance = widget.DangerImportance
@@ -87,41 +77,39 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 				label.Refresh()
 				return
 			}
-			switch tci.Col {
-			case 0:
-				refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-					return a.ui.sv.EveImage.InventoryTypeIcon(o.Type.ID, defaultIconSize)
-				})
-				icon.Show()
-				label.Text = o.Type.Name
-				label.Show()
-			case 1:
-				label.Text = o.Group.Name
-				icon.Hide()
-				label.Show()
-			case 2:
-				icon.Resource = boolIconResource(o.CanFly)
-				icon.Refresh()
-				icon.Show()
-				label.Hide()
+			label.Text = o.Type.Name
+			label.Wrapping = fyne.TextWrapWord
+			var i widget.Importance
+			if o.CanFly {
+				i = widget.MediumImportance
+			} else {
+				i = widget.LowImportance
 			}
+			label.Importance = i
 			label.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
-	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
-		co.(*widget.Label).SetText(s.text)
-	}
-	for i, h := range headers {
-		t.SetColumnWidth(i, h.width)
-	}
-	t.OnSelected = func(tci widget.TableCellID) {
+			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
+				return a.ui.sv.EveImage.InventoryTypeRender(o.Type.ID, 256)
+			})
+			//
+			// 	switch tci.Col {
+			// 	case 0:
+			// 	case 1:
+			// 		label.Text = o.Group.Name
+			// 		icon.Hide()
+			// 		label.Show()
+			// 	case 2:
+			// 		icon.Resource = boolIconResource(o.CanFly)
+			// 		icon.Refresh()
+			// 		icon.Show()
+			// 		label.Hide()
+			// 	}
+			// 	label.Refresh()
+			// },
+		})
+
+	t.OnSelected = func(id widget.GridWrapItemID) {
 		defer t.UnselectAll()
-		o, err := getItemUntypedList[*model.CharacterShipAbility](a.entries, tci.Row)
+		o, err := getItemUntypedList[*model.CharacterShipAbility](a.entries, id)
 		if err != nil {
 			slog.Error("Failed to select ship", "err", err)
 			return
@@ -150,7 +138,7 @@ func (a *shipsArea) refresh() {
 	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
-	a.table.Refresh()
+	a.grid.Refresh()
 	if enabled {
 		a.searchBox.Enable()
 	} else {
