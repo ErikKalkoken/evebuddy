@@ -121,7 +121,7 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 	})
 	var count int
 	for _, m := range unapplied {
-		p := fmt.Sprintf("migrations/%s", m.filename)
+		p := fmt.Sprintf("migrations/%s", m.filename) // FS uses slashes on all platforms incl. Windows
 		data, err := migrations.ReadFile(p)
 		if err != nil {
 			return err

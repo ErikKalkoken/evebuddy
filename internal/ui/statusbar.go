@@ -194,19 +194,18 @@ func (a *eveStatusArea) setStatus(status eveStatus, title, errorMessage string) 
 	a.content.Refresh()
 }
 
-type characterUpdateStatus uint
+type sectionUpdateStatus uint
 
 const (
-	characterStatusUnknown characterUpdateStatus = iota
-	characterStatusOK
-	characterStatusError
-	characterStatusWorking
+	sectionStatusUnknown sectionUpdateStatus = iota
+	sectionStatusOK
+	sectionStatusError
+	sectionStatusWorking
 )
 
 type updateStatusOutput struct {
-	errorMessage string
-	status       characterUpdateStatus
-	title        string
+	status sectionUpdateStatus
+	title  string
 }
 
 type characterUpdateStatusArea struct {
@@ -230,11 +229,11 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 		},
 		func(_ widget.GridWrapItemID, co fyne.CanvasObject) {
 			label := co.(*fyne.Container).Objects[1].(*widget.Label)
-			m := map[characterUpdateStatus]widget.Importance{
-				characterStatusError:   widget.DangerImportance,
-				characterStatusOK:      widget.MediumImportance,
-				characterStatusUnknown: widget.LowImportance,
-				characterStatusWorking: widget.MediumImportance,
+			m := map[sectionUpdateStatus]widget.Importance{
+				sectionStatusError:   widget.DangerImportance,
+				sectionStatusOK:      widget.MediumImportance,
+				sectionStatusUnknown: widget.LowImportance,
+				sectionStatusWorking: widget.MediumImportance,
 			}
 			i, ok := m[a.data.status]
 			if !ok {
@@ -246,10 +245,7 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 		},
 	)
 	a.content.OnSelected = func(_ widget.GridWrapItemID) {
-		c := u.currentCharacter()
-		if c != nil {
-			a.ui.showStatusWindow()
-		}
+		a.ui.showStatusWindow()
 		a.content.UnselectAll()
 	}
 	return a
@@ -257,23 +253,17 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 
 func (a *characterUpdateStatusArea) refresh() {
 	x := updateStatusOutput{}
-	if !a.ui.hasCharacter() {
-		x.title = "No character"
-		x.status = characterStatusUnknown
-		x.errorMessage = ""
+	progress, errorCount := a.ui.sv.StatusCache.Summary()
+	if errorCount > 0 {
+		x.title = fmt.Sprintf("%d ERRORS", errorCount)
+		x.status = sectionStatusError
 	} else {
-		progress, errorCount := a.ui.sv.StatusCache.Summary()
-		if errorCount > 0 {
-			x.title = fmt.Sprintf("%d ERRORS", errorCount)
-			x.status = characterStatusError
+		if progress == 1 {
+			x.title = "OK"
+			x.status = sectionStatusOK
 		} else {
-			if progress == 1 {
-				x.title = "OK"
-				x.status = characterStatusOK
-			} else {
-				x.title = fmt.Sprintf("%.0f%% Fresh", progress*100)
-				x.status = characterStatusWorking
-			}
+			x.title = fmt.Sprintf("%.0f%% Fresh", progress*100)
+			x.status = sectionStatusWorking
 		}
 	}
 	if x != a.data {

@@ -15,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/dustin/go-humanize"
 )
 
@@ -25,6 +24,10 @@ type sectionEntity struct {
 	name       string
 	completion float32
 	isOK       bool
+}
+
+func (se sectionEntity) IsGeneralSection() bool {
+	return se.id == model.GeneralSectionEntityID
 }
 
 type statusWindow struct {
@@ -153,8 +156,8 @@ func (a *statusWindow) makeEntityList() *widget.List {
 			name.SetText(c.name)
 
 			icon := row.Objects[0].(*canvas.Image)
-			if c.id == statuscache.GeneralSectionID {
-				icon.Resource = icons.GetResourceByName(icons.DataSheets)
+			if c.IsGeneralSection() {
+				icon.Resource = icons.GetResourceByName(icons.StarMap)
 				icon.Refresh()
 			} else {
 				refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
@@ -266,6 +269,10 @@ type sectionStatusData struct {
 	timeout     string
 }
 
+func (x sectionStatusData) IsGeneralSection() bool {
+	return x.entityID == model.GeneralSectionEntityID
+}
+
 func (a *statusWindow) setDetails() {
 	var d sectionStatusData
 	ss, found, err := a.fetchSelectedEntityStatus()
@@ -325,7 +332,10 @@ func (a *statusWindow) makeDetailsContent(d sectionStatusData) []fyne.CanvasObje
 	formTrailing := makeForm(items[3:])
 	oo = append(oo, container.NewGridWithColumns(2, formLeading, formTrailing))
 	oo = append(oo, widget.NewButton(fmt.Sprintf("Force update %s", d.sectionName), func() {
-		if d.entityID != 0 {
+		if d.IsGeneralSection() {
+			go a.ui.updateGeneralSectionAndRefreshIfNeeded(
+				context.Background(), model.GeneralSection(d.sectionID), true)
+		} else {
 			go a.ui.updateCharacterSectionAndRefreshIfNeeded(
 				context.Background(), d.entityID, model.CharacterSection(d.sectionID), true)
 		}
@@ -366,8 +376,8 @@ func (a *statusWindow) refreshEntityList() error {
 	}
 	completion, ok := a.ui.sv.StatusCache.GeneralSectionSummary()
 	o := sectionEntity{
-		id:         statuscache.GeneralSectionID,
-		name:       statuscache.GeneralSectionName,
+		id:         model.GeneralSectionEntityID,
+		name:       model.GeneralSectionEntityName,
 		completion: completion,
 		isOK:       ok,
 	}
@@ -384,16 +394,16 @@ func (a *statusWindow) refreshDetailArea() error {
 	if err != nil {
 		return err
 	}
-	c, ok := x.(sectionEntity)
+	se, ok := x.(sectionEntity)
 	if !ok {
 		return nil
 	}
-	data := a.ui.sv.StatusCache.SectionList(c.id)
+	data := a.ui.sv.StatusCache.SectionList(se.id)
 	if err := a.sectionsData.Set(copyToUntypedSlice(data)); err != nil {
 		return err
 	}
 	a.sections.Refresh()
-	a.sectionsTop.SetText(fmt.Sprintf("Update status for %s", c.name))
+	a.sectionsTop.SetText(fmt.Sprintf("Update status for %s", se.name))
 	a.setDetails()
 	return nil
 }

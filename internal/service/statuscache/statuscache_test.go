@@ -49,7 +49,7 @@ func TestStatusCache(t *testing.T) {
 
 			y2, ok := sc.GeneralSectionGet(section2)
 			assert.True(t, ok)
-			assert.Equal(t, int32(0), y2.EntityID)
+			assert.Equal(t, int32(model.GeneralSectionEntityID), y2.EntityID)
 			assert.Equal(t, string(y1.Section), y2.SectionID)
 			assert.Equal(t, y1.CompletedAt, y2.CompletedAt)
 			assert.Equal(t, y1.ErrorMessage, y2.ErrorMessage)
@@ -88,7 +88,7 @@ func TestStatusCache(t *testing.T) {
 		sc.GeneralSectionSet(x1)
 		x2, ok := sc.GeneralSectionGet(section)
 		assert.True(t, ok)
-		assert.Equal(t, int32(0), x2.EntityID)
+		assert.Equal(t, int32(model.GeneralSectionEntityID), x2.EntityID)
 		assert.Equal(t, x1.CompletedAt, x2.CompletedAt)
 		assert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 		assert.Equal(t, x1.StartedAt, x2.StartedAt)

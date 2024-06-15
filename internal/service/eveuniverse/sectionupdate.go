@@ -42,7 +42,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section model.Ge
 	if err != nil {
 		return false, err
 	}
-	if status != nil {
+	if !forceUpdate && status != nil {
 		if status.IsOK() && !status.IsExpired() {
 			return false, nil
 		}

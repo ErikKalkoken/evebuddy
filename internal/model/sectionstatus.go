@@ -2,6 +2,12 @@ package model
 
 import "time"
 
+// Entity ID for general sections
+const (
+	GeneralSectionEntityID   = 1
+	GeneralSectionEntityName = "Eve Universe"
+)
+
 type SectionStatus struct {
 	EntityID     int32
 	EntityName   string
@@ -12,6 +18,10 @@ type SectionStatus struct {
 	SectionName  string
 	StartedAt    time.Time
 	Timeout      time.Duration
+}
+
+func (s SectionStatus) IsGeneralSection() bool {
+	return s.EntityID == GeneralSectionEntityID
 }
 
 func (s SectionStatus) IsOK() bool {

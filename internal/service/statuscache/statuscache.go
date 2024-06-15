@@ -20,12 +20,6 @@ type Cache interface {
 	Set(any, any, time.Duration)
 }
 
-// Entity ID for general sections
-const (
-	GeneralSectionID   = 1
-	GeneralSectionName = "Eve Universe"
-)
-
 const keyCharacters = "characterUpdateStatusCache-characters"
 
 type cacheKey struct {
@@ -143,15 +137,15 @@ func (sc *StatusCacheService) CharacterSectionSet(o *model.CharacterSectionStatu
 }
 
 func (sc *StatusCacheService) GeneralSectionGet(section model.GeneralSection) (model.SectionStatus, bool) {
-	k := cacheKey{id: GeneralSectionID, section: string(section)}
+	k := cacheKey{id: model.GeneralSectionEntityID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
 		return model.SectionStatus{}, false
 	}
 	v := x.(cacheValue)
 	o := model.SectionStatus{
-		EntityID:     GeneralSectionID,
-		EntityName:   GeneralSectionName,
+		EntityID:     model.GeneralSectionEntityID,
+		EntityName:   model.GeneralSectionEntityName,
 		SectionID:    string(section),
 		SectionName:  section.DisplayName(),
 		CompletedAt:  v.CompletedAt,
@@ -178,7 +172,7 @@ func (sc *StatusCacheService) GeneralSectionSet(o *model.GeneralSectionStatus) {
 		return
 	}
 	k := cacheKey{
-		id:      GeneralSectionID,
+		id:      model.GeneralSectionEntityID,
 		section: string(o.Section),
 	}
 	v := cacheValue{
@@ -205,7 +199,7 @@ func (sc *StatusCacheService) GeneralSectionSummary() (float32, bool) {
 }
 
 func (sc *StatusCacheService) SectionList(entityID int32) []model.SectionStatus {
-	if entityID == GeneralSectionID {
+	if entityID == model.GeneralSectionEntityID {
 		return sc.GeneralSectionList()
 	}
 	return sc.CharacterSectionList(entityID)

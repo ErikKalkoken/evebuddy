@@ -11,12 +11,13 @@ import (
 
 const generalSectionDefaultTimeout = 24 * time.Hour
 
+// A general section represents a topic that can be updated, e.g. market prices
 type GeneralSection string
 
 const (
-	SectionEveCategories   GeneralSection = "EveCategories"
-	SectionEveCharacters   GeneralSection = "EveCharacters"
-	SectionEveMarketPrices GeneralSection = "EveMarketPrices"
+	SectionEveCategories   GeneralSection = "Eve_Categories"
+	SectionEveCharacters   GeneralSection = "Eve_Characters"
+	SectionEveMarketPrices GeneralSection = "Eve_MarketPrices"
 )
 
 var GeneralSections = []GeneralSection{
