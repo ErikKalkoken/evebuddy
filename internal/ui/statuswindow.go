@@ -21,10 +21,9 @@ import (
 
 // An entity which has update sections, e.g. a character
 type sectionEntity struct {
-	id         int32
-	name       string
-	completion float32
-	isOK       bool
+	id   int32
+	name string
+	ss   statuscache.StatusSummary
 }
 
 func (se sectionEntity) IsGeneralSection() bool {
@@ -104,7 +103,11 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 		if !ok {
 			return
 		}
-		a.ui.updateCharacterAndRefreshIfNeeded(context.Background(), c.id, false)
+		if c.IsGeneralSection() {
+			a.ui.updateGeneralSectionsAndRefreshIfNeeded(true)
+		} else {
+			a.ui.updateCharacterAndRefreshIfNeeded(context.Background(), c.id, true)
+		}
 	})
 	top2 := container.NewVBox(container.NewHBox(a.sectionsTop, layout.NewSpacer(), b), widget.NewSeparator())
 	sections := container.NewBorder(top2, nil, nil, nil, a.sections)
@@ -166,18 +169,8 @@ func (a *statusWindow) makeEntityList() *widget.List {
 				})
 			}
 			status := row.Objects[3].(*widget.Label)
-			var t string
-			var i widget.Importance
-			if !c.isOK {
-				t = "ERROR"
-				i = widget.DangerImportance
-			} else if c.completion < 1 {
-				t = fmt.Sprintf("%.0f%% Fresh", c.completion*100)
-				i = widget.HighImportance
-			} else {
-				t = "OK"
-				i = widget.SuccessImportance
-			}
+			t := c.ss.Display()
+			i := status2widgetImportance(c.ss.Status())
 			status.Text = t
 			status.Importance = i
 			status.Refresh()
@@ -371,16 +364,15 @@ func (a *statusWindow) refreshEntityList() error {
 	entities := make([]sectionEntity, 0)
 	cc := a.ui.sv.StatusCache.ListCharacters()
 	for _, c := range cc {
-		completion, _, errorCount := a.ui.sv.StatusCache.CharacterSectionSummary(c.ID)
-		o := sectionEntity{id: c.ID, name: c.Name, completion: completion, isOK: errorCount == 0}
+		ss := a.ui.sv.StatusCache.CharacterSectionSummary(c.ID)
+		o := sectionEntity{id: c.ID, name: c.Name, ss: ss}
 		entities = append(entities, o)
 	}
-	completion, _, errorCount := a.ui.sv.StatusCache.GeneralSectionSummary()
+	ss := a.ui.sv.StatusCache.GeneralSectionSummary()
 	o := sectionEntity{
-		id:         statuscache.GeneralSectionEntityID,
-		name:       statuscache.GeneralSectionEntityName,
-		completion: completion,
-		isOK:       errorCount == 0,
+		id:   statuscache.GeneralSectionEntityID,
+		name: statuscache.GeneralSectionEntityName,
+		ss:   ss,
 	}
 	entities = append(entities, o)
 	if err := a.entitiesData.Set(copyToUntypedSlice(entities)); err != nil {

@@ -15,6 +15,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/dustin/go-humanize"
 )
 
@@ -235,4 +236,19 @@ func systemSecurity2Importance(t model.SolarSystemSecurityType) widget.Importanc
 		return widget.DangerImportance
 	}
 	panic("Invalid security")
+}
+
+func status2widgetImportance(s statuscache.Status) widget.Importance {
+	m := map[statuscache.Status]widget.Importance{
+		statuscache.StatusError:   widget.DangerImportance,
+		statuscache.StatusMissing: widget.WarningImportance,
+		statuscache.StatusOK:      widget.MediumImportance,
+		statuscache.StatusUnknown: widget.LowImportance,
+		statuscache.StatusWorking: widget.MediumImportance,
+	}
+	i, ok := m[s]
+	if !ok {
+		i = widget.MediumImportance
+	}
+	return i
 }

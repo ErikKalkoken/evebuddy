@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -194,18 +194,8 @@ func (a *eveStatusArea) setStatus(status eveStatus, title, errorMessage string) 
 	a.content.Refresh()
 }
 
-type sectionUpdateStatus uint
-
-const (
-	sectionStatusUnknown sectionUpdateStatus = iota
-	sectionStatusOK
-	sectionStatusError
-	sectionStatusMissing
-	sectionStatusWorking
-)
-
 type updateStatusOutput struct {
-	status sectionUpdateStatus
+	status statuscache.Status
 	title  string
 }
 
@@ -230,19 +220,8 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 		},
 		func(_ widget.GridWrapItemID, co fyne.CanvasObject) {
 			label := co.(*fyne.Container).Objects[1].(*widget.Label)
-			m := map[sectionUpdateStatus]widget.Importance{
-				sectionStatusError:   widget.DangerImportance,
-				sectionStatusMissing: widget.WarningImportance,
-				sectionStatusOK:      widget.MediumImportance,
-				sectionStatusUnknown: widget.LowImportance,
-				sectionStatusWorking: widget.MediumImportance,
-			}
-			i, ok := m[a.data.status]
-			if !ok {
-				i = widget.MediumImportance
-			}
 			label.Text = a.data.title
-			label.Importance = i
+			label.Importance = status2widgetImportance(a.data.status)
 			label.Refresh()
 		},
 	)
@@ -254,25 +233,7 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 }
 
 func (a *characterUpdateStatusArea) refresh() {
-	x := updateStatusOutput{}
-	progress, missingCount, errorCount := a.ui.sv.StatusCache.Summary()
-	if errorCount > 0 {
-		x.title = fmt.Sprintf("%d ERRORS", errorCount)
-		x.status = sectionStatusError
-	} else if missingCount > 0 {
-		x.title = fmt.Sprintf("%d Missing", missingCount)
-		x.status = sectionStatusMissing
-	} else {
-		if progress == 1 {
-			x.title = "OK"
-			x.status = sectionStatusOK
-		} else {
-			x.title = fmt.Sprintf("%.0f%% Fresh", progress*100)
-			x.status = sectionStatusWorking
-		}
-	}
-	if x != a.data {
-		a.data = x
-		a.content.Refresh()
-	}
+	ss := a.ui.sv.StatusCache.Summary()
+	a.data = updateStatusOutput{status: ss.Status(), title: ss.Display()}
+	a.content.Refresh()
 }

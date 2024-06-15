@@ -22,6 +22,7 @@ func TestStatusCache(t *testing.T) {
 	t.Run("Can init a status cache with character and general sections", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		cache.Clear()
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
 		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{ID: ec.ID})
 		section1 := model.SectionImplants
@@ -60,6 +61,7 @@ func TestStatusCache(t *testing.T) {
 	t.Run("Can get and set a character section status", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		cache.Clear()
 		c := factory.CreateCharacter()
 		section := model.SectionImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
@@ -76,11 +78,11 @@ func TestStatusCache(t *testing.T) {
 		assert.Equal(t, x1.CompletedAt, x2.CompletedAt)
 		assert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 		assert.Equal(t, x1.StartedAt, x2.StartedAt)
-		assert.Equal(t, "Bruce", x2.EntityName)
 		assert.Equal(t, section.Timeout(), x2.Timeout)
 	})
 	t.Run("Can get and set a general section status", func(t *testing.T) {
 		testutil.TruncateTables(db)
+		cache.Clear()
 		section := model.SectionEveCategories
 		x1 := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: section,
@@ -97,6 +99,7 @@ func TestStatusCache(t *testing.T) {
 	t.Run("Can update and list characters", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		cache.Clear()
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
 		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{ID: ec.ID})
 		// when
@@ -116,10 +119,10 @@ func TestStatusCacheSummary(t *testing.T) {
 	defer db.Close()
 	cache := cache.New()
 	sc := statuscache.New(cache)
-	// ctx := context.Background()
 	t.Run("should report when all sections are up-to-date", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		cache.Clear()
 		for range 2 {
 			c := factory.CreateCharacter()
 			for _, section := range model.CharacterSections {
@@ -144,15 +147,14 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		sc.InitCache(st)
 		// when
-		p, missCount, errCount := sc.Summary()
+		ss := sc.Summary()
 		// then
-		assert.Equal(t, float32(1.0), p)
-		assert.Equal(t, 0, missCount)
-		assert.Equal(t, 0, errCount)
+		assert.Equal(t, statuscache.StatusOK, ss.Status())
 	})
 	t.Run("should report when a character section has an error", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		cache.Clear()
 		characters := make([]int32, 0)
 		for range 2 {
 			c := factory.CreateCharacter()
@@ -185,15 +187,17 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		sc.CharacterSectionSet(o)
 		// when
-		p, missCount, errCount := sc.Summary()
+		ss := sc.Summary()
 		// then
-		assert.Less(t, p, float32(1.0))
-		assert.Equal(t, 0, missCount)
-		assert.Equal(t, 1, errCount)
+		assert.Equal(t, statuscache.StatusError, ss.Status())
+		assert.Less(t, ss.ProgressP(), float32(1.0))
+		assert.Equal(t, 0, ss.Missing)
+		assert.Equal(t, 1, ss.Errors)
 	})
 	t.Run("should report when a general section has an error", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		cache.Clear()
 		for range 2 {
 			c := factory.CreateCharacter()
 			for _, section := range model.CharacterSections {
@@ -222,15 +226,18 @@ func TestStatusCacheSummary(t *testing.T) {
 			ErrorMessage: "error",
 		}
 		sc.GeneralSectionSet(o)
-		// when
-		p, _, errCount := sc.Summary()
+		ss := sc.Summary()
 		// then
-		assert.Less(t, p, float32(1.0))
-		assert.Equal(t, 1, errCount)
+		assert.Equal(t, statuscache.StatusError, ss.Status())
+		assert.Less(t, ss.ProgressP(), float32(1.0))
+		assert.Equal(t, 0, ss.Missing)
+		assert.Equal(t, 1, ss.Errors)
+
 	})
 	t.Run("should report when a character section is missing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		cache.Clear()
 		characterSections := model.CharacterSections[:len(model.CharacterSections)-1]
 		for range 2 {
 			c := factory.CreateCharacter()
@@ -256,15 +263,18 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		sc.InitCache(st)
 		// when
-		p, missCount, errCount := sc.Summary()
+		ss := sc.Summary()
 		// then
-		assert.Less(t, p, float32(1.0))
-		assert.Equal(t, 2, missCount)
-		assert.Equal(t, 0, errCount)
+		assert.Equal(t, statuscache.StatusMissing, ss.Status())
+		assert.Less(t, ss.ProgressP(), float32(1.0))
+		assert.Equal(t, 2, ss.Missing)
+		assert.Equal(t, 0, ss.Errors)
+
 	})
 	t.Run("should report when a general section is missing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		cache.Clear()
 		for range 2 {
 			c := factory.CreateCharacter()
 			for _, section := range model.CharacterSections {
@@ -290,15 +300,17 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		sc.InitCache(st)
 		// when
-		p, missCount, errCount := sc.Summary()
+		ss := sc.Summary()
 		// then
-		assert.Less(t, p, float32(1.0))
-		assert.Equal(t, 1, missCount)
-		assert.Equal(t, 0, errCount)
+		assert.Equal(t, statuscache.StatusMissing, ss.Status())
+		assert.Less(t, ss.ProgressP(), float32(1.0))
+		assert.Equal(t, 1, ss.Missing)
+		assert.Equal(t, 0, ss.Errors)
 	})
 	t.Run("should report current progress when a character section is stale", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		cache.Clear()
 		characters := make([]int32, 0)
 		for range 2 {
 			c := factory.CreateCharacter()
@@ -331,15 +343,17 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		sc.CharacterSectionSet(o)
 		// when
-		p, missCount, errCount := sc.Summary()
+		ss := sc.Summary()
 		// then
-		assert.Less(t, p, float32(1.0))
-		assert.Equal(t, 0, missCount)
-		assert.Equal(t, 0, errCount)
+		assert.Equal(t, statuscache.StatusWorking, ss.Status())
+		assert.Less(t, ss.ProgressP(), float32(1.0))
+		assert.Equal(t, 0, ss.Missing)
+		assert.Equal(t, 0, ss.Errors)
 	})
 	t.Run("should report current progress when a general section is stale", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		cache.Clear()
 		for range 2 {
 			c := factory.CreateCharacter()
 			for _, section := range model.CharacterSections {
@@ -369,10 +383,11 @@ func TestStatusCacheSummary(t *testing.T) {
 		}
 		sc.GeneralSectionSet(o)
 		// when
-		p, missCount, errCount := sc.Summary()
+		ss := sc.Summary()
 		// then
-		assert.Less(t, p, float32(1.0))
-		assert.Equal(t, 0, missCount)
-		assert.Equal(t, 0, errCount)
+		assert.Equal(t, statuscache.StatusWorking, ss.Status())
+		assert.Less(t, ss.ProgressP(), float32(1.0))
+		assert.Equal(t, 0, ss.Missing)
+		assert.Equal(t, 0, ss.Errors)
 	})
 }

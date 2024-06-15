@@ -105,10 +105,16 @@ func (sc *StatusCacheService) CharacterSectionList(characterID int32) []SectionS
 	return list
 }
 
-func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) (float32, int, int) {
+func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) StatusSummary {
 	total := len(model.CharacterSections)
 	currentCount, missingCount, errorCount := sc.characterSectionSummary(characterID)
-	return float32(currentCount) / float32(total), missingCount, errorCount
+	s := StatusSummary{
+		Current: currentCount,
+		Errors:  errorCount,
+		Missing: missingCount,
+		Total:   total,
+	}
+	return s
 }
 
 func (sc *StatusCacheService) characterSectionSummary(characterID int32) (int, int, int) {
@@ -194,10 +200,16 @@ func (sc *StatusCacheService) GeneralSectionSet(o *model.GeneralSectionStatus) {
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *StatusCacheService) GeneralSectionSummary() (float32, int, int) {
+func (sc *StatusCacheService) GeneralSectionSummary() StatusSummary {
 	total := len(model.GeneralSections)
 	currentCount, missingCount, errorCount := sc.generalSectionSummary()
-	return float32(currentCount) / float32(total), missingCount, errorCount
+	s := StatusSummary{
+		Current: currentCount,
+		Errors:  errorCount,
+		Missing: missingCount,
+		Total:   total,
+	}
+	return s
 }
 
 func (sc *StatusCacheService) generalSectionSummary() (int, int, int) {
@@ -229,7 +241,7 @@ func (sc *StatusCacheService) SectionList(entityID int32) []SectionStatus {
 
 // Summary returns the current summary status in percent of fresh sections
 // and the number of missing and errors.
-func (sc *StatusCacheService) Summary() (float32, int, int) {
+func (sc *StatusCacheService) Summary() StatusSummary {
 	cc := sc.ListCharacters()
 	currentCount := 0
 	errorCount := 0
@@ -245,7 +257,13 @@ func (sc *StatusCacheService) Summary() (float32, int, int) {
 	missingCount += m
 	errorCount += e
 	total := len(model.CharacterSections)*len(cc) + len(model.GeneralSections)
-	return float32(currentCount) / float32(total), missingCount, errorCount
+	s := StatusSummary{
+		Current: currentCount,
+		Errors:  errorCount,
+		Missing: missingCount,
+		Total:   total,
+	}
+	return s
 }
 
 func (sc *StatusCacheService) UpdateCharacters(ctx context.Context, r StatusCacheStorage) error {
