@@ -130,7 +130,8 @@ func (a *jumpClonesArea) redraw() {
 		if err := a.treeData.Set(ids, values); err != nil {
 			return "", 0, err
 		}
-		return a.makeTopText(total)
+		t, i := a.makeTopText(total)
+		return t, i, nil
 	}()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
@@ -186,16 +187,13 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 	return ids, values, len(clones), nil
 }
 
-func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance, error) {
+func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance) {
 	if !a.ui.hasCharacter() {
-		return "No character", widget.LowImportance, nil
+		return "No character", widget.LowImportance
 	}
-	hasData, err := a.ui.sv.Character.SectionWasUpdated(context.Background(), a.ui.characterID(), model.SectionJumpClones)
-	if err != nil {
-		return "", 0, err
-	}
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), model.SectionJumpClones)
 	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
+		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	return fmt.Sprintf("%d clones", total), widget.MediumImportance, nil
+	return fmt.Sprintf("%d clones", total), widget.MediumImportance
 }

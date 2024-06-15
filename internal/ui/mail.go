@@ -409,16 +409,14 @@ func (a *mailArea) setFolder(folder folderNode) {
 }
 
 func (a *mailArea) headerRefresh() {
-	t, i, err := func() (string, widget.Importance, error) {
-		if err := a.updateHeaderData(); err != nil {
-			return "", 0, err
-		}
-		return a.makeFolderTopText()
-	}()
-	if err != nil {
+	var t string
+	var i widget.Importance
+	if err := a.updateHeaderData(); err != nil {
 		slog.Error("Failed to refresh mail headers UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
+	} else {
+		t, i = a.makeFolderTopText()
 	}
 	a.headerTop.Text = t
 	a.headerTop.Importance = i
@@ -453,20 +451,16 @@ func (a *mailArea) updateHeaderData() error {
 	return nil
 }
 
-func (a *mailArea) makeFolderTopText() (string, widget.Importance, error) {
+func (a *mailArea) makeFolderTopText() (string, widget.Importance) {
 	if !a.ui.hasCharacter() {
-		return "No Character", widget.LowImportance, nil
+		return "No Character", widget.LowImportance
 	}
-	hasData, err := a.ui.sv.Character.SectionWasUpdated(
-		context.Background(), a.ui.characterID(), model.SectionSkillqueue)
-	if err != nil {
-		return "", 0, err
-	}
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), model.SectionSkillqueue)
 	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
+		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
 	s := fmt.Sprintf("%d mails", a.headerData.Length())
-	return s, widget.MediumImportance, nil
+	return s, widget.MediumImportance
 }
 
 func (a *mailArea) makeToolbar() *widget.Toolbar {

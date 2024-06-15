@@ -337,16 +337,20 @@ func (a *assetSearchArea) resetSearch() {
 func (a *assetSearchArea) refresh() {
 	var t string
 	var i widget.Importance
+	characterCount := a.characterCount()
 	hasData, err := a.loadData()
 	if err != nil {
 		slog.Error("Failed to refresh asset search data", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
 	} else if !hasData {
+		t = "No data"
+		i = widget.LowImportance
+	} else if characterCount == 0 {
 		t = "No characters"
 		i = widget.LowImportance
 	} else {
-		t, i = a.makeTopText()
+		t, i = a.makeTopText(characterCount)
 	}
 	a.total.Text = t
 	a.total.Importance = i
@@ -386,7 +390,20 @@ func (a *assetSearchArea) loadData() (bool, error) {
 	return true, nil
 }
 
-func (a *assetSearchArea) makeTopText() (string, widget.Importance) {
-	text := fmt.Sprintf("%s total items", humanize.Comma(int64(len(a.assets))))
+func (a *assetSearchArea) characterCount() int {
+	cc := a.ui.sv.StatusCache.ListCharacters()
+	validCount := 0
+	for _, c := range cc {
+		if a.ui.sv.StatusCache.CharacterSectionExists(c.ID, model.SectionAssets) {
+			validCount++
+		}
+	}
+	return validCount
+}
+
+func (a *assetSearchArea) makeTopText(c int) (string, widget.Importance) {
+	it := humanize.Comma(int64(len(a.assets)))
+	ch := humanize.Comma(int64(c))
+	text := fmt.Sprintf("%s total items - %s characters", it, ch)
 	return text, widget.MediumImportance
 }

@@ -127,16 +127,14 @@ func (a *walletTransactionArea) makeTable() *widget.Table {
 }
 
 func (a *walletTransactionArea) refresh() {
-	t, i, err := func() (string, widget.Importance, error) {
-		if err := a.updateEntries(); err != nil {
-			return "", 0, err
-		}
-		return a.makeTopText()
-	}()
-	if err != nil {
+	var t string
+	var i widget.Importance
+	if err := a.updateEntries(); err != nil {
 		slog.Error("Failed to refresh wallet transaction UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
+	} else {
+		t, i = a.makeTopText()
 	}
 	a.top.Text = t
 	a.top.Importance = i
@@ -144,20 +142,16 @@ func (a *walletTransactionArea) refresh() {
 	a.table.Refresh()
 }
 
-func (a *walletTransactionArea) makeTopText() (string, widget.Importance, error) {
+func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 	if !a.ui.hasCharacter() {
-		return "No character", widget.LowImportance, nil
+		return "No character", widget.LowImportance
 	}
 	characterID := a.ui.characterID()
-	hasData, err := a.ui.sv.Character.SectionWasUpdated(
-		context.Background(), characterID, model.SectionWalletTransactions)
-	if err != nil {
-		return "", 0, err
-	}
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(characterID, model.SectionWalletTransactions)
 	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
+		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	return "", widget.MediumImportance, nil
+	return "", widget.MediumImportance
 }
 
 func (a *walletTransactionArea) updateEntries() error {

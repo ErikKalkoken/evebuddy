@@ -364,11 +364,7 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance, nil
 	}
-	hasData, err := a.ui.sv.Character.SectionWasUpdated(
-		context.Background(), a.ui.characterID(), model.SectionAssets)
-	if err != nil {
-		return "", 0, err
-	}
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), model.SectionAssets)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}

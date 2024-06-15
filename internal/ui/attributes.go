@@ -97,33 +97,27 @@ func (a *attributesArea) makeAttributeList() *widget.List {
 }
 
 func (a *attributesArea) refresh() {
-	t, i, err := func() (string, widget.Importance, error) {
-		total, err := a.updateData()
-		if err != nil {
-			return "", 0, err
-		}
-		return a.makeTopText(total)
-	}()
+	var t string
+	var i widget.Importance
+	total, err := a.updateData()
 	if err != nil {
 		slog.Error("Failed to refresh attributes UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
+	} else {
+		t, i = a.makeTopText(total)
 	}
 	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
 }
 
-func (a *attributesArea) makeTopText(total int) (string, widget.Importance, error) {
-	hasData, err := a.ui.sv.Character.SectionWasUpdated(
-		context.Background(), a.ui.characterID(), model.SectionAttributes)
-	if err != nil {
-		return "", 0, err
-	}
+func (a *attributesArea) makeTopText(total int) (string, widget.Importance) {
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), model.SectionAttributes)
 	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
+		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	return fmt.Sprintf("Total points: %d", total), widget.MediumImportance, nil
+	return fmt.Sprintf("Total points: %d", total), widget.MediumImportance
 }
 
 func (a *attributesArea) updateData() (int, error) {

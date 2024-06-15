@@ -155,16 +155,14 @@ func (a *walletJournalArea) makeTable() *widget.Table {
 }
 
 func (a *walletJournalArea) refresh() {
-	t, i, err := func() (string, widget.Importance, error) {
-		if err := a.updateEntries(); err != nil {
-			return "", 0, err
-		}
-		return a.makeTopText()
-	}()
-	if err != nil {
+	var t string
+	var i widget.Importance
+	if err := a.updateEntries(); err != nil {
 		slog.Error("Failed to refresh wallet journal UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
+	} else {
+		t, i = a.makeTopText()
 	}
 	a.top.Text = t
 	a.top.Importance = i
@@ -172,21 +170,17 @@ func (a *walletJournalArea) refresh() {
 	a.table.Refresh()
 }
 
-func (a *walletJournalArea) makeTopText() (string, widget.Importance, error) {
+func (a *walletJournalArea) makeTopText() (string, widget.Importance) {
 	if !a.ui.hasCharacter() {
-		return "No character", widget.LowImportance, nil
+		return "No character", widget.LowImportance
 	}
 	c := a.ui.currentCharacter()
-	hasData, err := a.ui.sv.Character.SectionWasUpdated(
-		context.Background(), c.ID, model.SectionWalletJournal)
-	if err != nil {
-		return "", 0, err
-	}
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(c.ID, model.SectionWalletJournal)
 	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
+		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
 	s := fmt.Sprintf("Balance: %s", humanizedNullFloat64(c.WalletBalance, 1, "?"))
-	return s, widget.MediumImportance, nil
+	return s, widget.MediumImportance
 }
 
 func (a *walletJournalArea) updateEntries() error {

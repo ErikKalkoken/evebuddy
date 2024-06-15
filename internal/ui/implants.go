@@ -78,16 +78,14 @@ func (a *implantsArea) makeImplantList() *widget.List {
 }
 
 func (a *implantsArea) refresh() {
-	t, i, err := func() (string, widget.Importance, error) {
-		if err := a.updateData(); err != nil {
-			return "", 0, err
-		}
-		return a.makeTopText()
-	}()
-	if err != nil {
+	var t string
+	var i widget.Importance
+	if err := a.updateData(); err != nil {
 		slog.Error("Failed to refresh implants UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
+	} else {
+		t, i = a.makeTopText()
 	}
 	a.top.Text = t
 	a.top.Importance = i
@@ -115,14 +113,10 @@ func (a *implantsArea) updateData() error {
 	return nil
 }
 
-func (a *implantsArea) makeTopText() (string, widget.Importance, error) {
-	hasData, err := a.ui.sv.Character.SectionWasUpdated(
-		context.Background(), a.ui.characterID(), model.SectionImplants)
-	if err != nil {
-		return "", 0, err
-	}
+func (a *implantsArea) makeTopText() (string, widget.Importance) {
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), model.SectionImplants)
 	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
+		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	return fmt.Sprintf("%d implants", a.implants.Length()), widget.MediumImportance, nil
+	return fmt.Sprintf("%d implants", a.implants.Length()), widget.MediumImportance
 }

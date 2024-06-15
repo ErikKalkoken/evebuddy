@@ -183,11 +183,8 @@ func (a *skillCatalogueArea) redraw() {
 
 func (a *skillCatalogueArea) refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
-		ok, err := a.ui.sv.EveUniverse.SectionExists(model.SectionEveCategories)
-		if err != nil {
-			return "", 0, err
-		}
-		if !ok {
+		exists := a.ui.sv.StatusCache.GeneralSectionExists(model.SectionEveCategories)
+		if !exists {
 			return "Waiting for universe data to be loaded...", widget.WarningImportance, nil
 		}
 		if err := a.updateGroups(); err != nil {

@@ -73,6 +73,14 @@ func (sc *StatusCacheService) InitCache(st StatusCacheStorage) error {
 	return nil
 }
 
+func (sc *StatusCacheService) CharacterSectionExists(characterID int32, section model.CharacterSection) bool {
+	x, ok := sc.CharacterSectionGet(characterID, section)
+	if !ok {
+		return false
+	}
+	return !x.IsMissing()
+}
+
 func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section model.CharacterSection) (SectionStatus, bool) {
 	k := cacheKey{id: characterID, section: string(section)}
 	x, ok := sc.cache.Get(k)
@@ -151,6 +159,14 @@ func (sc *StatusCacheService) CharacterSectionSet(o *model.CharacterSectionStatu
 		StartedAt:    o.StartedAt,
 	}
 	sc.cache.Set(k, v, 0)
+}
+
+func (sc *StatusCacheService) GeneralSectionExists(section model.GeneralSection) bool {
+	x, ok := sc.GeneralSectionGet(section)
+	if !ok {
+		return false
+	}
+	return !x.IsMissing()
 }
 
 func (sc *StatusCacheService) GeneralSectionGet(section model.GeneralSection) (SectionStatus, bool) {

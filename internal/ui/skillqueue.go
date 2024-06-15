@@ -111,23 +111,21 @@ func (a *skillqueueArea) makeSkillqueue() *widget.List {
 }
 
 func (a *skillqueueArea) refresh() {
-	t, i, err := func() (string, widget.Importance, error) {
-		total, completion, err := a.updateItems()
-		if err != nil {
-			return "", 0, err
-		}
+	var t string
+	var i widget.Importance
+	total, completion, err := a.updateItems()
+	if err != nil {
+		slog.Error("Failed to refresh skill queue UI", "err", err)
+		t = "ERROR"
+		i = widget.DangerImportance
+	} else {
 		s := "Skills"
 		if completion.Valid && completion.Float64 < 1 {
 			s += fmt.Sprintf(" (%.0f%%)", completion.Float64*100)
 		}
 		a.ui.skillqueueTab.Text = s
 		a.ui.tabs.Refresh()
-		return a.makeTopText(total)
-	}()
-	if err != nil {
-		slog.Error("Failed to refresh skill queue UI", "err", err)
-		t = "ERROR"
-		i = widget.DangerImportance
+		t, i = a.makeTopText(total)
 	}
 	a.total.Text = t
 	a.total.Importance = i
@@ -164,18 +162,14 @@ func (a *skillqueueArea) updateItems() (mytypes.OptionalDuration, sql.NullFloat6
 	return remaining, completion, nil
 }
 
-func (a *skillqueueArea) makeTopText(total mytypes.OptionalDuration) (string, widget.Importance, error) {
-	hasData, err := a.ui.sv.Character.SectionWasUpdated(
-		context.Background(), a.ui.characterID(), model.SectionSkillqueue)
-	if err != nil {
-		return "", 0, err
-	}
+func (a *skillqueueArea) makeTopText(total mytypes.OptionalDuration) (string, widget.Importance) {
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), model.SectionSkillqueue)
 	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
+		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
 	if a.items.Length() == 0 {
-		return "Training not active", widget.WarningImportance, nil
+		return "Training not active", widget.WarningImportance
 	}
 	t := fmt.Sprintf("Total training time: %s", humanizedNullDuration(total, "?"))
-	return t, widget.MediumImportance, nil
+	return t, widget.MediumImportance
 }

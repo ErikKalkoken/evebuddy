@@ -133,11 +133,8 @@ func (a *shipsArea) makeShipsTable() *widget.Table {
 
 func (a *shipsArea) refresh() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
-		ok, err := a.ui.sv.EveUniverse.SectionExists(model.SectionEveCategories)
-		if err != nil {
-			return "", 0, false, err
-		}
-		if !ok {
+		exists := a.ui.sv.StatusCache.GeneralSectionExists(model.SectionEveCategories)
+		if !exists {
 			return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
 		}
 		if err := a.updateEntries(); err != nil {
@@ -184,11 +181,8 @@ func (a *shipsArea) makeTopText() (string, widget.Importance, bool, error) {
 		return "No character", widget.LowImportance, false, nil
 	}
 	characterID := a.ui.characterID()
-	ok, err := a.ui.sv.Character.SectionWasUpdated(ctx, characterID, model.SectionSkills)
-	if err != nil {
-		return "", 0, false, err
-	}
-	if !ok {
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(characterID, model.SectionSkills)
+	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
 	}
 	oo, err := a.ui.sv.Character.ListCharacterShipsAbilities(ctx, characterID, "%%")

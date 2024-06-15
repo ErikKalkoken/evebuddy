@@ -115,14 +115,8 @@ func (a *wealthArea) compileData() ([]dataRow, int, error) {
 	}
 	selected := make([]*model.Character, 0)
 	for _, c := range cc {
-		hasAssets, err := a.ui.sv.Character.SectionWasUpdated(ctx, c.ID, model.SectionAssets)
-		if err != nil {
-			return nil, 0, err
-		}
-		hasWallet, err := a.ui.sv.Character.SectionWasUpdated(ctx, c.ID, model.SectionWalletBalance)
-		if err != nil {
-			return nil, 0, err
-		}
+		hasAssets := a.ui.sv.StatusCache.CharacterSectionExists(c.ID, model.SectionAssets)
+		hasWallet := a.ui.sv.StatusCache.CharacterSectionExists(c.ID, model.SectionWalletBalance)
 		if hasAssets && hasWallet {
 			selected = append(selected, c)
 		}
