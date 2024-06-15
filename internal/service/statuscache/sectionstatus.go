@@ -1,4 +1,4 @@
-package model
+package statuscache
 
 import "time"
 

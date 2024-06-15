@@ -73,14 +73,14 @@ func (sc *StatusCacheService) InitCache(st StatusCacheStorage) error {
 	return nil
 }
 
-func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section model.CharacterSection) (model.SectionStatus, bool) {
+func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section model.CharacterSection) (SectionStatus, bool) {
 	k := cacheKey{id: characterID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
-		return model.SectionStatus{}, false
+		return SectionStatus{}, false
 	}
 	v := x.(cacheValue)
-	o := model.SectionStatus{
+	o := SectionStatus{
 		EntityID:     characterID,
 		EntityName:   sc.characterName(characterID),
 		SectionID:    string(section),
@@ -93,8 +93,8 @@ func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section mod
 	return o, true
 }
 
-func (sc *StatusCacheService) CharacterSectionList(characterID int32) []model.SectionStatus {
-	list := make([]model.SectionStatus, 0)
+func (sc *StatusCacheService) CharacterSectionList(characterID int32) []SectionStatus {
+	list := make([]SectionStatus, 0)
 	for _, section := range model.CharacterSections {
 		v, ok := sc.CharacterSectionGet(characterID, section)
 		if !ok {
@@ -105,19 +105,30 @@ func (sc *StatusCacheService) CharacterSectionList(characterID int32) []model.Se
 	return list
 }
 
-func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) (float32, bool) {
+func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) (float32, int, int) {
 	total := len(model.CharacterSections)
+	currentCount, missingCount, errorCount := sc.characterSectionSummary(characterID)
+	return float32(currentCount) / float32(total), missingCount, errorCount
+}
+
+func (sc *StatusCacheService) characterSectionSummary(characterID int32) (int, int, int) {
 	currentCount := 0
+	errorCount := 0
+	missingCount := 0
 	xx := sc.CharacterSectionList(characterID)
 	for _, x := range xx {
 		if !x.IsOK() {
-			return 0, false
-		}
-		if x.IsCurrent() {
+			errorCount++
+		} else if x.IsMissing() {
+			missingCount++
+		} else if x.IsCurrent() {
 			currentCount++
 		}
 	}
-	return float32(currentCount) / float32(total), true
+	if diff := len(model.CharacterSections) - len(xx); diff > 0 {
+		missingCount += diff
+	}
+	return currentCount, missingCount, errorCount
 }
 
 func (sc *StatusCacheService) CharacterSectionSet(o *model.CharacterSectionStatus) {
@@ -136,16 +147,16 @@ func (sc *StatusCacheService) CharacterSectionSet(o *model.CharacterSectionStatu
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *StatusCacheService) GeneralSectionGet(section model.GeneralSection) (model.SectionStatus, bool) {
-	k := cacheKey{id: model.GeneralSectionEntityID, section: string(section)}
+func (sc *StatusCacheService) GeneralSectionGet(section model.GeneralSection) (SectionStatus, bool) {
+	k := cacheKey{id: GeneralSectionEntityID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
-		return model.SectionStatus{}, false
+		return SectionStatus{}, false
 	}
 	v := x.(cacheValue)
-	o := model.SectionStatus{
-		EntityID:     model.GeneralSectionEntityID,
-		EntityName:   model.GeneralSectionEntityName,
+	o := SectionStatus{
+		EntityID:     GeneralSectionEntityID,
+		EntityName:   GeneralSectionEntityName,
 		SectionID:    string(section),
 		SectionName:  section.DisplayName(),
 		CompletedAt:  v.CompletedAt,
@@ -156,8 +167,8 @@ func (sc *StatusCacheService) GeneralSectionGet(section model.GeneralSection) (m
 	return o, true
 }
 
-func (sc *StatusCacheService) GeneralSectionList() []model.SectionStatus {
-	list := make([]model.SectionStatus, 0)
+func (sc *StatusCacheService) GeneralSectionList() []SectionStatus {
+	list := make([]SectionStatus, 0)
 	for _, section := range model.GeneralSections {
 		v, ok := sc.GeneralSectionGet(section)
 		if ok {
@@ -172,7 +183,7 @@ func (sc *StatusCacheService) GeneralSectionSet(o *model.GeneralSectionStatus) {
 		return
 	}
 	k := cacheKey{
-		id:      model.GeneralSectionEntityID,
+		id:      GeneralSectionEntityID,
 		section: string(o.Section),
 	}
 	v := cacheValue{
@@ -183,58 +194,58 @@ func (sc *StatusCacheService) GeneralSectionSet(o *model.GeneralSectionStatus) {
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *StatusCacheService) GeneralSectionSummary() (float32, bool) {
+func (sc *StatusCacheService) GeneralSectionSummary() (float32, int, int) {
 	total := len(model.GeneralSections)
+	currentCount, missingCount, errorCount := sc.generalSectionSummary()
+	return float32(currentCount) / float32(total), missingCount, errorCount
+}
+
+func (sc *StatusCacheService) generalSectionSummary() (int, int, int) {
 	currentCount := 0
+	errorCount := 0
+	missingCount := 0
 	xx := sc.GeneralSectionList()
 	for _, x := range xx {
 		if !x.IsOK() {
-			return 0, false
-		}
-		if x.IsCurrent() {
+			errorCount++
+		} else if x.IsMissing() {
+			missingCount++
+		} else if x.IsCurrent() {
 			currentCount++
 		}
 	}
-	return float32(currentCount) / float32(total), true
+	if diff := len(model.GeneralSections) - len(xx); diff > 0 {
+		missingCount += diff
+	}
+	return currentCount, missingCount, errorCount
 }
 
-func (sc *StatusCacheService) SectionList(entityID int32) []model.SectionStatus {
-	if entityID == model.GeneralSectionEntityID {
+func (sc *StatusCacheService) SectionList(entityID int32) []SectionStatus {
+	if entityID == GeneralSectionEntityID {
 		return sc.GeneralSectionList()
 	}
 	return sc.CharacterSectionList(entityID)
 }
 
 // Summary returns the current summary status in percent of fresh sections
-// and the number of errors.
-func (sc *StatusCacheService) Summary() (float32, int) {
+// and the number of missing and errors.
+func (sc *StatusCacheService) Summary() (float32, int, int) {
 	cc := sc.ListCharacters()
-	sectionsTotal := len(model.CharacterSections)*len(cc) + len(model.GeneralSections)
-	sectionsCurrent := 0
+	currentCount := 0
 	errorCount := 0
-	for _, c := range cc {
-		xx := sc.CharacterSectionList(c.ID)
-		for _, x := range xx {
-			if !x.IsOK() {
-				errorCount++
-				continue
-			}
-			if x.IsCurrent() {
-				sectionsCurrent++
-			}
-		}
+	missingCount := 0
+	for _, character := range cc {
+		c, m, e := sc.characterSectionSummary(character.ID)
+		currentCount += c
+		missingCount += m
+		errorCount += e
 	}
-	xx := sc.GeneralSectionList()
-	for _, x := range xx {
-		if !x.IsOK() {
-			errorCount++
-			continue
-		}
-		if x.IsCurrent() {
-			sectionsCurrent++
-		}
-	}
-	return float32(sectionsCurrent) / float32(sectionsTotal), errorCount
+	c, m, e := sc.generalSectionSummary()
+	currentCount += c
+	missingCount += m
+	errorCount += e
+	total := len(model.CharacterSections)*len(cc) + len(model.GeneralSections)
+	return float32(currentCount) / float32(total), missingCount, errorCount
 }
 
 func (sc *StatusCacheService) UpdateCharacters(ctx context.Context, r StatusCacheStorage) error {

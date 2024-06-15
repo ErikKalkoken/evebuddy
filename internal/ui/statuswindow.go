@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/dustin/go-humanize"
 )
 
@@ -27,7 +28,7 @@ type sectionEntity struct {
 }
 
 func (se sectionEntity) IsGeneralSection() bool {
-	return se.id == model.GeneralSectionEntityID
+	return se.id == statuscache.GeneralSectionEntityID
 }
 
 type statusWindow struct {
@@ -215,7 +216,7 @@ func (a *statusWindow) makeSectionTable() *widget.GridWrap {
 			)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
-			cs, err := convertDataItem[model.SectionStatus](di)
+			cs, err := convertDataItem[statuscache.SectionStatus](di)
 			if err != nil {
 				panic(err)
 			}
@@ -270,7 +271,7 @@ type sectionStatusData struct {
 }
 
 func (x sectionStatusData) IsGeneralSection() bool {
-	return x.entityID == model.GeneralSectionEntityID
+	return x.entityID == statuscache.GeneralSectionEntityID
 }
 
 func (a *statusWindow) setDetails() {
@@ -303,17 +304,17 @@ func (a *statusWindow) setDetails() {
 	}
 }
 
-func (a *statusWindow) fetchSelectedEntityStatus() (model.SectionStatus, bool, error) {
+func (a *statusWindow) fetchSelectedEntityStatus() (statuscache.SectionStatus, bool, error) {
 	id, err := a.sectionSelected.Get()
 	if err != nil {
-		return model.SectionStatus{}, false, err
+		return statuscache.SectionStatus{}, false, err
 	}
 	if id == -1 {
-		return model.SectionStatus{}, false, nil
+		return statuscache.SectionStatus{}, false, nil
 	}
-	cs, err := getItemUntypedList[model.SectionStatus](a.sectionsData, id)
+	cs, err := getItemUntypedList[statuscache.SectionStatus](a.sectionsData, id)
 	if err != nil {
-		return model.SectionStatus{}, false, err
+		return statuscache.SectionStatus{}, false, err
 	}
 	return cs, true, nil
 }
@@ -370,16 +371,16 @@ func (a *statusWindow) refreshEntityList() error {
 	entities := make([]sectionEntity, 0)
 	cc := a.ui.sv.StatusCache.ListCharacters()
 	for _, c := range cc {
-		completion, ok := a.ui.sv.StatusCache.CharacterSectionSummary(c.ID)
-		o := sectionEntity{id: c.ID, name: c.Name, completion: completion, isOK: ok}
+		completion, _, errorCount := a.ui.sv.StatusCache.CharacterSectionSummary(c.ID)
+		o := sectionEntity{id: c.ID, name: c.Name, completion: completion, isOK: errorCount == 0}
 		entities = append(entities, o)
 	}
-	completion, ok := a.ui.sv.StatusCache.GeneralSectionSummary()
+	completion, _, errorCount := a.ui.sv.StatusCache.GeneralSectionSummary()
 	o := sectionEntity{
-		id:         model.GeneralSectionEntityID,
-		name:       model.GeneralSectionEntityName,
+		id:         statuscache.GeneralSectionEntityID,
+		name:       statuscache.GeneralSectionEntityName,
 		completion: completion,
-		isOK:       ok,
+		isOK:       errorCount == 0,
 	}
 	entities = append(entities, o)
 	if err := a.entitiesData.Set(copyToUntypedSlice(entities)); err != nil {
@@ -423,7 +424,7 @@ func (a *statusWindow) startTicker(ctx context.Context) {
 	}()
 }
 
-func statusDisplay(cs model.SectionStatus) (string, widget.Importance) {
+func statusDisplay(cs statuscache.SectionStatus) (string, widget.Importance) {
 	var s string
 	var i widget.Importance
 	if !cs.IsOK() {

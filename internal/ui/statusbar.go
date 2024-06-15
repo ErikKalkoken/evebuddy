@@ -200,6 +200,7 @@ const (
 	sectionStatusUnknown sectionUpdateStatus = iota
 	sectionStatusOK
 	sectionStatusError
+	sectionStatusMissing
 	sectionStatusWorking
 )
 
@@ -231,6 +232,7 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 			label := co.(*fyne.Container).Objects[1].(*widget.Label)
 			m := map[sectionUpdateStatus]widget.Importance{
 				sectionStatusError:   widget.DangerImportance,
+				sectionStatusMissing: widget.WarningImportance,
 				sectionStatusOK:      widget.MediumImportance,
 				sectionStatusUnknown: widget.LowImportance,
 				sectionStatusWorking: widget.MediumImportance,
@@ -253,10 +255,13 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 
 func (a *characterUpdateStatusArea) refresh() {
 	x := updateStatusOutput{}
-	progress, errorCount := a.ui.sv.StatusCache.Summary()
+	progress, missingCount, errorCount := a.ui.sv.StatusCache.Summary()
 	if errorCount > 0 {
 		x.title = fmt.Sprintf("%d ERRORS", errorCount)
 		x.status = sectionStatusError
+	} else if missingCount > 0 {
+		x.title = fmt.Sprintf("%d Missing", missingCount)
+		x.status = sectionStatusMissing
 	} else {
 		if progress == 1 {
 			x.title = "OK"
