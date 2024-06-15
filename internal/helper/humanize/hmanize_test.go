@@ -1,10 +1,14 @@
 package humanize_test
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/antihax/goesi"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
@@ -52,4 +56,30 @@ func TestDuration(t *testing.T) {
 			assert.Equal(t, tc.out, got)
 		})
 	}
+}
+
+func TestError(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	client := goesi.NewAPIClient(nil, "")
+	ctx := context.Background()
+	t.Run("should return general error", func(t *testing.T) {
+		err := errors.New("new error")
+		got := humanize.Error(err)
+		assert.Equal(t, "general error", got)
+	})
+	t.Run("should resolve goesi errors", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/v1/markets/prices/",
+			httpmock.NewJsonResponderOrPanic(400, map[string]any{
+				"error": "my error",
+			}))
+		_, _, err := client.ESI.MarketApi.GetMarketsPrices(ctx, nil)
+		// when
+		got := humanize.Error(err)
+		assert.Equal(t, "400: my error", got)
+	})
 }
