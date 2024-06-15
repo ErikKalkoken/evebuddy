@@ -13,6 +13,7 @@ const (
 	Undefined Name = iota
 	CloningCenter
 	Charisma
+	DataSheets
 	Intelligence
 	Memory
 	Perception
@@ -40,6 +41,7 @@ var namedIcons = map[Name]*fyne.StaticResource{
 	Undefined:     resource76415Png,
 	CloningCenter: resource127641Png,
 	Charisma:      resource22321Png,
+	DataSheets:    resource946412Png,
 	Intelligence:  resource22323Png,
 	Memory:        resource22324Png,
 	Perception:    resource22325Png,

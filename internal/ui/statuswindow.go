@@ -13,7 +13,9 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/dustin/go-humanize"
 )
 
@@ -27,7 +29,7 @@ type sectionEntity struct {
 
 type statusWindow struct {
 	characters      *widget.List
-	charactersData  binding.UntypedList
+	entitiesData    binding.UntypedList
 	charactersTop   *widget.Label
 	content         fyne.CanvasObject
 	details         *fyne.Container
@@ -70,7 +72,7 @@ func (u *ui) showStatusWindow() {
 
 func (u *ui) newStatusWindow() (*statusWindow, error) {
 	a := &statusWindow{
-		charactersData:  binding.NewUntypedList(),
+		entitiesData:    binding.NewUntypedList(),
 		charactersTop:   widget.NewLabel(""),
 		entitySelected:  binding.NewUntyped(),
 		sectionsData:    binding.NewUntypedList(),
@@ -117,7 +119,7 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 
 func (a *statusWindow) makeEntityList() *widget.List {
 	list := widget.NewListWithData(
-		a.charactersData,
+		a.entitiesData,
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
 			icon.FillMode = canvas.ImageFillContain
@@ -151,10 +153,14 @@ func (a *statusWindow) makeEntityList() *widget.List {
 			name.SetText(c.name)
 
 			icon := row.Objects[0].(*canvas.Image)
-			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.ui.sv.EveImage.CharacterPortrait(c.id, defaultIconSize)
-			})
-
+			if c.id == statuscache.GeneralSectionID {
+				icon.Resource = icons.GetResourceByName(icons.DataSheets)
+				icon.Refresh()
+			} else {
+				refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
+					return a.ui.sv.EveImage.CharacterPortrait(c.id, defaultIconSize)
+				})
+			}
 			status := row.Objects[3].(*widget.Label)
 			var t string
 			var i widget.Importance
@@ -174,7 +180,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		c, err := getItemUntypedList[sectionEntity](a.charactersData, id)
+		c, err := getItemUntypedList[sectionEntity](a.entitiesData, id)
 		if err != nil {
 			slog.Error("failed to access section entity in list", "err", err)
 			list.UnselectAll()
@@ -344,18 +350,32 @@ func makeForm(data []formItems) *widget.Form {
 }
 
 func (a *statusWindow) refresh() error {
+	a.refreshEntityList()
+	a.refreshDetailArea()
+	a.charactersTop.SetText(fmt.Sprintf("Entities: %d", a.entitiesData.Length()))
+	return nil
+}
+
+func (a *statusWindow) refreshEntityList() error {
+	entities := make([]sectionEntity, 0)
 	cc := a.ui.sv.StatusCache.ListCharacters()
-	cc2 := make([]sectionEntity, len(cc))
-	for i, c := range cc {
+	for _, c := range cc {
 		completion, ok := a.ui.sv.StatusCache.CharacterSectionSummary(c.ID)
-		cc2[i] = sectionEntity{id: c.ID, name: c.Name, completion: completion, isOK: ok}
+		o := sectionEntity{id: c.ID, name: c.Name, completion: completion, isOK: ok}
+		entities = append(entities, o)
 	}
-	if err := a.charactersData.Set(copyToUntypedSlice(cc2)); err != nil {
+	completion, ok := a.ui.sv.StatusCache.GeneralSectionSummary()
+	o := sectionEntity{
+		id:         statuscache.GeneralSectionID,
+		name:       statuscache.GeneralSectionName,
+		completion: completion,
+		isOK:       ok,
+	}
+	entities = append(entities, o)
+	if err := a.entitiesData.Set(copyToUntypedSlice(entities)); err != nil {
 		return err
 	}
-	a.charactersTop.SetText(fmt.Sprintf("Characters: %d", a.charactersData.Length()))
 	a.characters.Refresh()
-	a.refreshDetailArea()
 	return nil
 }
 
@@ -368,7 +388,7 @@ func (a *statusWindow) refreshDetailArea() error {
 	if !ok {
 		return nil
 	}
-	data := a.ui.sv.StatusCache.CharacterSectionList(c.id)
+	data := a.ui.sv.StatusCache.SectionList(c.id)
 	if err := a.sectionsData.Set(copyToUntypedSlice(data)); err != nil {
 		return err
 	}

@@ -20,10 +20,13 @@ type Cache interface {
 	Set(any, any, time.Duration)
 }
 
+// Entity ID for general sections
 const (
-	keyCharacters    = "characterUpdateStatusCache-characters"
-	generalSectionID = 0
+	GeneralSectionID   = 1
+	GeneralSectionName = "Eve Universe"
 )
+
+const keyCharacters = "characterUpdateStatusCache-characters"
 
 type cacheKey struct {
 	id      int32
@@ -140,15 +143,15 @@ func (sc *StatusCacheService) CharacterSectionSet(o *model.CharacterSectionStatu
 }
 
 func (sc *StatusCacheService) GeneralSectionGet(section model.GeneralSection) (model.SectionStatus, bool) {
-	k := cacheKey{id: generalSectionID, section: string(section)}
+	k := cacheKey{id: GeneralSectionID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
 		return model.SectionStatus{}, false
 	}
 	v := x.(cacheValue)
 	o := model.SectionStatus{
-		EntityID:     generalSectionID,
-		EntityName:   "Eve Universe",
+		EntityID:     GeneralSectionID,
+		EntityName:   GeneralSectionName,
 		SectionID:    string(section),
 		SectionName:  section.DisplayName(),
 		CompletedAt:  v.CompletedAt,
@@ -175,7 +178,7 @@ func (sc *StatusCacheService) GeneralSectionSet(o *model.GeneralSectionStatus) {
 		return
 	}
 	k := cacheKey{
-		id:      generalSectionID,
+		id:      GeneralSectionID,
 		section: string(o.Section),
 	}
 	v := cacheValue{
@@ -184,6 +187,28 @@ func (sc *StatusCacheService) GeneralSectionSet(o *model.GeneralSectionStatus) {
 		StartedAt:    o.StartedAt,
 	}
 	sc.cache.Set(k, v, 0)
+}
+
+func (sc *StatusCacheService) GeneralSectionSummary() (float32, bool) {
+	total := len(model.GeneralSections)
+	currentCount := 0
+	xx := sc.GeneralSectionList()
+	for _, x := range xx {
+		if !x.IsOK() {
+			return 0, false
+		}
+		if x.IsCurrent() {
+			currentCount++
+		}
+	}
+	return float32(currentCount) / float32(total), true
+}
+
+func (sc *StatusCacheService) SectionList(entityID int32) []model.SectionStatus {
+	if entityID == GeneralSectionID {
+		return sc.GeneralSectionList()
+	}
+	return sc.CharacterSectionList(entityID)
 }
 
 // Summary returns the current summary status in percent of fresh sections
