@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/service/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 )
 

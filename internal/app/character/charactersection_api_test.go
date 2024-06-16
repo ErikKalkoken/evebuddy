@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/service/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/jarcoal/httpmock"
