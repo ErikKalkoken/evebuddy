@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 	"github.com/stretchr/testify/assert"

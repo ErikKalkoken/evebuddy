@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 
-	islices "github.com/ErikKalkoken/evebuddy/internal/helper/slices"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
@@ -103,7 +102,7 @@ func (st *Storage) ListCharacterIDs(ctx context.Context) ([]int32, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list character IDs: %w", err)
 	}
-	ids2 := islices.ConvertNumeric[int64, int32](ids)
+	ids2 := convertNumericSlice[int64, int32](ids)
 	return ids2, nil
 }
 

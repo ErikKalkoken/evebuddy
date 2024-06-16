@@ -6,9 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
-	islices "github.com/ErikKalkoken/evebuddy/internal/helper/slices"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -73,7 +72,7 @@ func (st *Storage) MissingEveTypes(ctx context.Context, ids []int32) ([]int32, e
 	if err != nil {
 		return nil, err
 	}
-	current := set.NewFromSlice(islices.ConvertNumeric[int64, int32](currentIDs))
+	current := set.NewFromSlice(convertNumericSlice[int64, int32](currentIDs))
 	incoming := set.NewFromSlice(ids)
 	missing := incoming.Difference(current)
 	return missing.ToSlice(), nil

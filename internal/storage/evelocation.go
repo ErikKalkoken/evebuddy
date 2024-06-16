@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 

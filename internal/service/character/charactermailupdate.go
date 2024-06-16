@@ -11,8 +11,8 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	igoesi "github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
-	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 

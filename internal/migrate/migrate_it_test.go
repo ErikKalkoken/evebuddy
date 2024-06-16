@@ -4,8 +4,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/migrate"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/stretchr/testify/assert"
 )
 
