@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 

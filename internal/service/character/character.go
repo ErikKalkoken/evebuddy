@@ -9,9 +9,9 @@ import (
 
 	"fyne.io/fyne/v2/data/binding"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
 	igoesi "github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
 )

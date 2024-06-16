@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
+	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/antihax/goesi/esi"
 	"github.com/mattn/go-sqlite3"
 )
