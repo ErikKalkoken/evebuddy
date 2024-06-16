@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/dictionary"
-	"github.com/ErikKalkoken/evebuddy/internal/app/service/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"

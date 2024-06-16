@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/service/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
