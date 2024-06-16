@@ -6,8 +6,8 @@ import (
 
 	"github.com/antihax/goesi"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/app/service/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/service/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/app/service/esistatus"
 	"github.com/ErikKalkoken/evebuddy/internal/app/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/service/statuscache"
