@@ -13,7 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/service"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/chasinglogic/appdirs"
 )
 
