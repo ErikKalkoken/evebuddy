@@ -1,4 +1,5 @@
-package converter
+// Package evehtml deals with Eve Online HTML
+package evehtml
 
 import (
 	"fmt"
@@ -16,8 +17,15 @@ import (
 
 var bodyPolicy = bluemonday.StrictPolicy()
 
-// EveHTMLtoMarkdown converts custom Eve Online HTML text to markdown and returns it.
-func EveHTMLtoMarkdown(xml string) string {
+// ToPlain converts custom Eve Online HTML text to plain text and returns it.
+func ToPlain(xml string) string {
+	t := strings.ReplaceAll(xml, "<br>", "\n")
+	b := html.UnescapeString(bodyPolicy.Sanitize(t))
+	return b
+}
+
+// ToMarkdown converts custom Eve Online HTML text to markdown and returns it.
+func ToMarkdown(xml string) string {
 	t := strings.ReplaceAll(xml, "<loc>", "")
 	t = strings.ReplaceAll(t, "</loc>", "")
 	var re = regexp.MustCompile(`(--+)`)
@@ -69,11 +77,4 @@ func EveHTMLtoMarkdown(xml string) string {
 func patchLinks(s string) string {
 	r := regexp.MustCompile(`(\[\w*\]\(.*\))(\n\n)`)
 	return string(r.ReplaceAll([]byte(s), []byte("$1 $2")))
-}
-
-// EveHTMLtoMarkdown converts custom Eve Online HTML text to plain text and returns it.
-func EveHTMLToPlain(xml string) string {
-	t := strings.ReplaceAll(xml, "<br>", "\n")
-	b := html.UnescapeString(bodyPolicy.Sanitize(t))
-	return b
 }

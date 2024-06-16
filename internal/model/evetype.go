@@ -1,6 +1,6 @@
 package model
 
-import "github.com/ErikKalkoken/evebuddy/internal/eveonline/converter"
+import "github.com/ErikKalkoken/evebuddy/internal/evehtml"
 
 const (
 	EveTypeAssetSafetyWrap = 60
@@ -27,7 +27,7 @@ type EveType struct {
 
 // BodyPlain returns a mail's body as plain text.
 func (et EveType) DescriptionPlain() string {
-	return converter.EveHTMLToPlain(et.Description)
+	return evehtml.ToPlain(et.Description)
 }
 
 func (et EveType) IsBlueprint() bool {

@@ -1,10 +1,10 @@
-package converter_test
+package evehtml_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/converter"
+	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,7 +60,7 @@ func TestXMLtoMarkdown(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("in: %s out: %s", tc.in, tc.want), func(t *testing.T) {
-			got := converter.EveHTMLtoMarkdown(tc.in)
+			got := evehtml.ToMarkdown(tc.in)
 			assert.Equal(t, tc.want, got)
 		})
 	}

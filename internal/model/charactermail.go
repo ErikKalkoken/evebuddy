@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/converter"
+	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 )
 
 // Special mail label IDs
@@ -54,7 +54,7 @@ type CharacterMailHeader struct {
 
 // BodyPlain returns a mail's body as plain text.
 func (cm CharacterMail) BodyPlain() string {
-	return converter.EveHTMLToPlain(cm.Body)
+	return evehtml.ToPlain(cm.Body)
 }
 
 // BodyForward returns a mail's body for a mail forward or reply.
@@ -91,5 +91,5 @@ func (cm CharacterMail) RecipientNames() []string {
 }
 
 func (cm CharacterMail) BodyToMarkdown() string {
-	return converter.EveHTMLtoMarkdown(cm.Body)
+	return evehtml.ToMarkdown(cm.Body)
 }
