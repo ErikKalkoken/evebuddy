@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"

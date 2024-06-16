@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
+	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 	"github.com/stretchr/testify/assert"
 )
 

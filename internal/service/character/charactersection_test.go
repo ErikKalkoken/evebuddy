@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 	"github.com/antihax/goesi"
 	"github.com/stretchr/testify/assert"
 )
