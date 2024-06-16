@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) GetCharacterAttributes(ctx context.Context, characterID int32) (*model.CharacterAttributes, error) {
+func (s *CharacterService) GetCharacterAttributes(ctx context.Context, characterID int32) (*app.CharacterAttributes, error) {
 	o, err := s.st.GetCharacterAttributes(ctx, characterID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
@@ -18,7 +18,7 @@ func (s *CharacterService) GetCharacterAttributes(ctx context.Context, character
 }
 
 func (s *CharacterService) updateCharacterAttributesESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionAttributes {
+	if arg.Section != app.SectionAttributes {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(

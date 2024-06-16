@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
@@ -20,7 +20,7 @@ func TestMailList(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		l := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+		l := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		// when
 		err := r.CreateCharacterMailList(ctx, c.ID, l.ID)
 		// then
@@ -30,9 +30,9 @@ func TestMailList(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		e1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList, Name: "alpha"})
+		e1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList, Name: "alpha"})
 		assert.NoError(t, r.CreateCharacterMailList(ctx, c.ID, e1.ID))
-		e2 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList, Name: "bravo"})
+		e2 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList, Name: "bravo"})
 		assert.NoError(t, r.CreateCharacterMailList(ctx, c.ID, e2.ID))
 		// when
 		ll, err := r.ListCharacterMailListsOrdered(ctx, c.ID)
@@ -47,17 +47,17 @@ func TestMailList(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
-		e1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+		e1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		if err := r.CreateCharacterMailList(ctx, c1.ID, e1.ID); err != nil {
 			t.Fatal(err)
 		}
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c1.ID, RecipientIDs: []int32{e1.ID}})
-		e2 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+		e2 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		if err := r.CreateCharacterMailList(ctx, c1.ID, e2.ID); err != nil {
 			t.Fatal(err)
 		}
 		c2 := factory.CreateCharacter()
-		e3 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+		e3 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		if err := r.CreateCharacterMailList(ctx, c2.ID, e3.ID); err != nil {
 			t.Fatal(err)
 		}

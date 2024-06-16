@@ -4,19 +4,19 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*model.CharacterJumpClone, error) {
+func (s *CharacterService) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*app.CharacterJumpClone, error) {
 	return s.st.ListCharacterJumpClones(ctx, characterID)
 }
 
 // TODO: Consolidate with updating home in separate function
 
 func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionJumpClones {
+	if arg.Section != app.SectionJumpClones {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(

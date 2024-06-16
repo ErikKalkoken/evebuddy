@@ -12,9 +12,9 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
@@ -61,101 +61,101 @@ var attributeGroups = []attributeGroup{
 // assignment of attributes to groups
 var attributeGroupsMap = map[attributeGroup][]int32{
 	attributeGroupStructure: {
-		model.EveDogmaAttributeStructureHitpoints,
-		model.EveDogmaAttributeCapacity,
-		model.EveDogmaAttributeDroneCapacity,
-		model.EveDogmaAttributeDroneBandwidth,
-		model.EveDogmaAttributeMass,
-		model.EveDogmaAttributeInertiaModifier,
-		model.EveDogmaAttributeStructureEMDamageResistance,
-		model.EveDogmaAttributeStructureThermalDamageResistance,
-		model.EveDogmaAttributeStructureKineticDamageResistance,
-		model.EveDogmaAttributeStructureExplosiveDamageResistance,
+		app.EveDogmaAttributeStructureHitpoints,
+		app.EveDogmaAttributeCapacity,
+		app.EveDogmaAttributeDroneCapacity,
+		app.EveDogmaAttributeDroneBandwidth,
+		app.EveDogmaAttributeMass,
+		app.EveDogmaAttributeInertiaModifier,
+		app.EveDogmaAttributeStructureEMDamageResistance,
+		app.EveDogmaAttributeStructureThermalDamageResistance,
+		app.EveDogmaAttributeStructureKineticDamageResistance,
+		app.EveDogmaAttributeStructureExplosiveDamageResistance,
 	},
 	attributeGroupArmor: {
-		model.EveDogmaAttributeArmorHitpoints,
-		model.EveDogmaAttributeArmorEMDamageResistance,
-		model.EveDogmaAttributeArmorThermalDamageResistance,
-		model.EveDogmaAttributeArmorKineticDamageResistance,
-		model.EveDogmaAttributeArmorExplosiveDamageResistance,
+		app.EveDogmaAttributeArmorHitpoints,
+		app.EveDogmaAttributeArmorEMDamageResistance,
+		app.EveDogmaAttributeArmorThermalDamageResistance,
+		app.EveDogmaAttributeArmorKineticDamageResistance,
+		app.EveDogmaAttributeArmorExplosiveDamageResistance,
 	},
 	attributeGroupShield: {
-		model.EveDogmaAttributeShieldCapacity,
-		model.EveDogmaAttributeShieldRechargeTime,
-		model.EveDogmaAttributeShieldEMDamageResistance,
-		model.EveDogmaAttributeShieldThermalDamageResistance,
-		model.EveDogmaAttributeShieldKineticDamageResistance,
-		model.EveDogmaAttributeShieldExplosiveDamageResistance,
+		app.EveDogmaAttributeShieldCapacity,
+		app.EveDogmaAttributeShieldRechargeTime,
+		app.EveDogmaAttributeShieldEMDamageResistance,
+		app.EveDogmaAttributeShieldThermalDamageResistance,
+		app.EveDogmaAttributeShieldKineticDamageResistance,
+		app.EveDogmaAttributeShieldExplosiveDamageResistance,
 	},
 	attributeGroupElectronicResistances: {
-		model.EveDogmaAttributeCargoScanResistance,
-		model.EveDogmaAttributeCapacitorWarfareResistance,
-		model.EveDogmaAttributeSensorWarfareResistance,
-		model.EveDogmaAttributeWeaponDisruptionResistance,
-		model.EveDogmaAttributeTargetPainterResistance,
-		model.EveDogmaAttributeStasisWebifierResistance,
-		model.EveDogmaAttributeRemoteLogisticsImpedance,
-		model.EveDogmaAttributeRemoteElectronicAssistanceImpedance,
-		model.EveDogmaAttributeECMResistance,
-		model.EveDogmaAttributeCapacitorWarfareResistanceBonus,
-		model.EveDogmaAttributeStasisWebifierResistanceBonus,
+		app.EveDogmaAttributeCargoScanResistance,
+		app.EveDogmaAttributeCapacitorWarfareResistance,
+		app.EveDogmaAttributeSensorWarfareResistance,
+		app.EveDogmaAttributeWeaponDisruptionResistance,
+		app.EveDogmaAttributeTargetPainterResistance,
+		app.EveDogmaAttributeStasisWebifierResistance,
+		app.EveDogmaAttributeRemoteLogisticsImpedance,
+		app.EveDogmaAttributeRemoteElectronicAssistanceImpedance,
+		app.EveDogmaAttributeECMResistance,
+		app.EveDogmaAttributeCapacitorWarfareResistanceBonus,
+		app.EveDogmaAttributeStasisWebifierResistanceBonus,
 	},
 	attributeGroupCapacitor: {
-		model.EveDogmaAttributeCapacitorCapacity,
-		model.EveDogmaAttributeCapacitorRechargeTime,
+		app.EveDogmaAttributeCapacitorCapacity,
+		app.EveDogmaAttributeCapacitorRechargeTime,
 	},
 	attributeGroupTargeting: {
-		model.EveDogmaAttributeMaximumTargetingRange,
-		model.EveDogmaAttributeMaximumLockedTargets,
-		model.EveDogmaAttributeSignatureRadius,
-		model.EveDogmaAttributeScanResolution,
-		model.EveDogmaAttributeRADARSensorStrength,
-		model.EveDogmaAttributeLadarSensorStrength,
-		model.EveDogmaAttributeMagnetometricSensorStrength,
-		model.EveDogmaAttributeGravimetricSensorStrength,
+		app.EveDogmaAttributeMaximumTargetingRange,
+		app.EveDogmaAttributeMaximumLockedTargets,
+		app.EveDogmaAttributeSignatureRadius,
+		app.EveDogmaAttributeScanResolution,
+		app.EveDogmaAttributeRADARSensorStrength,
+		app.EveDogmaAttributeLadarSensorStrength,
+		app.EveDogmaAttributeMagnetometricSensorStrength,
+		app.EveDogmaAttributeGravimetricSensorStrength,
 	},
 	attributeGroupPropulsion: {
-		model.EveDogmaAttributeMaxVelocity,
-		model.EveDogmaAttributeShipWarpSpeed,
+		app.EveDogmaAttributeMaxVelocity,
+		app.EveDogmaAttributeShipWarpSpeed,
 	},
 	attributeGroupJumpDrive: {
-		model.EveDogmaAttributeJumpDriveCapacitorNeed,
-		model.EveDogmaAttributeMaximumJumpRange,
-		model.EveDogmaAttributeJumpDriveFuelNeed,
-		model.EveDogmaAttributeJumpDriveConsumptionAmount,
-		model.EveDogmaAttributeFuelBayCapacity,
+		app.EveDogmaAttributeJumpDriveCapacitorNeed,
+		app.EveDogmaAttributeMaximumJumpRange,
+		app.EveDogmaAttributeJumpDriveFuelNeed,
+		app.EveDogmaAttributeJumpDriveConsumptionAmount,
+		app.EveDogmaAttributeFuelBayCapacity,
 	},
 	attributeGroupFighter: {
-		model.EveDogmaAttributeFighterHangarCapacity,
-		model.EveDogmaAttributeFighterSquadronLaunchTubes,
-		model.EveDogmaAttributeLightFighterSquadronLimit,
-		model.EveDogmaAttributeSupportFighterSquadronLimit,
-		model.EveDogmaAttributeHeavyFighterSquadronLimit,
+		app.EveDogmaAttributeFighterHangarCapacity,
+		app.EveDogmaAttributeFighterSquadronLaunchTubes,
+		app.EveDogmaAttributeLightFighterSquadronLimit,
+		app.EveDogmaAttributeSupportFighterSquadronLimit,
+		app.EveDogmaAttributeHeavyFighterSquadronLimit,
 	},
 	attributeGroupFitting: {
-		model.EveDogmaAttributeCPUOutput,
-		model.EveDogmaAttributeCPUusage,
-		model.EveDogmaAttributePowergridOutput,
-		model.EveDogmaAttributeCalibration,
-		model.EveDogmaAttributeRigSlots,
-		model.EveDogmaAttributeLauncherHardpoints,
-		model.EveDogmaAttributeTurretHardpoints,
-		model.EveDogmaAttributeHighSlots,
-		model.EveDogmaAttributeMediumSlots,
-		model.EveDogmaAttributeLowSlots,
-		model.EveDogmaAttributeRigSlots,
+		app.EveDogmaAttributeCPUOutput,
+		app.EveDogmaAttributeCPUusage,
+		app.EveDogmaAttributePowergridOutput,
+		app.EveDogmaAttributeCalibration,
+		app.EveDogmaAttributeRigSlots,
+		app.EveDogmaAttributeLauncherHardpoints,
+		app.EveDogmaAttributeTurretHardpoints,
+		app.EveDogmaAttributeHighSlots,
+		app.EveDogmaAttributeMediumSlots,
+		app.EveDogmaAttributeLowSlots,
+		app.EveDogmaAttributeRigSlots,
 	},
 	attributeGroupMiscellaneous: {
-		model.EveDogmaAttributeImplantSlot,
-		model.EveDogmaAttributeCharismaModifier,
-		model.EveDogmaAttributeIntelligenceModifier,
-		model.EveDogmaAttributeMemoryModifier,
-		model.EveDogmaAttributePerceptionModifier,
-		model.EveDogmaAttributeWillpowerModifier,
-		model.EveDogmaAttributePrimaryAttribute,
-		model.EveDogmaAttributeSecondaryAttribute,
-		model.EveDogmaAttributeTrainingTimeMultiplier,
-		model.EveDogmaAttributeTechLevel,
+		app.EveDogmaAttributeImplantSlot,
+		app.EveDogmaAttributeCharismaModifier,
+		app.EveDogmaAttributeIntelligenceModifier,
+		app.EveDogmaAttributeMemoryModifier,
+		app.EveDogmaAttributePerceptionModifier,
+		app.EveDogmaAttributeWillpowerModifier,
+		app.EveDogmaAttributePrimaryAttribute,
+		app.EveDogmaAttributeSecondaryAttribute,
+		app.EveDogmaAttributeTrainingTimeMultiplier,
+		app.EveDogmaAttributeTechLevel,
 	},
 }
 
@@ -178,10 +178,10 @@ type attributeRow struct {
 type typeInfoWindow struct {
 	attributesData []attributeRow
 	content        fyne.CanvasObject
-	location       *model.EveLocation
-	owner          *model.EveEntity
-	et             *model.EveType
-	price          *model.EveMarketPrice
+	location       *app.EveLocation
+	owner          *app.EveEntity
+	et             *app.EveType
+	price          *app.EveMarketPrice
 	fittingData    []attributeRow
 	requiredSkills []requiredSkill
 	techLevel      int
@@ -257,7 +257,7 @@ func (u *ui) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*ty
 	if err != nil {
 		return nil, err
 	}
-	attributes := make(map[int32]*model.EveDogmaAttributeForType)
+	attributes := make(map[int32]*app.EveDogmaAttributeForType)
 	for _, o := range oo {
 		attributes[o.DogmaAttribute.ID] = o
 	}
@@ -279,30 +279,30 @@ func (a *typeInfoWindow) isLocation() bool {
 	return a.location != nil
 }
 
-func calcLevels(attributes map[int32]*model.EveDogmaAttributeForType) (int, int) {
+func calcLevels(attributes map[int32]*app.EveDogmaAttributeForType) (int, int) {
 	var tech, meta int
-	x, ok := attributes[model.EveDogmaAttributeTechLevel]
+	x, ok := attributes[app.EveDogmaAttributeTechLevel]
 	if ok {
 		tech = int(x.Value)
 	}
-	x, ok = attributes[model.EveDogmaAttributeMetaLevel]
+	x, ok = attributes[app.EveDogmaAttributeMetaLevel]
 	if ok {
 		meta = int(x.Value)
 	}
 	return tech, meta
 }
 
-func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[int32]*model.EveDogmaAttributeForType) []attributeRow {
-	droneCapacity, ok := attributes[model.EveDogmaAttributeDroneCapacity]
+func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[int32]*app.EveDogmaAttributeForType) []attributeRow {
+	droneCapacity, ok := attributes[app.EveDogmaAttributeDroneCapacity]
 	hasDrones := ok && droneCapacity.Value > 0
 
-	jumpDrive, ok := attributes[model.EveDogmaAttributeOnboardJumpDrive]
+	jumpDrive, ok := attributes[app.EveDogmaAttributeOnboardJumpDrive]
 	hasJumpDrive := ok && jumpDrive.Value == 1.0
 
 	groupedRows := make(map[attributeGroup][]attributeRow)
 
 	for _, ag := range attributeGroups {
-		attributeSelection := make([]*model.EveDogmaAttributeForType, 0)
+		attributeSelection := make([]*app.EveDogmaAttributeForType, 0)
 		for _, da := range attributeGroupsMap[ag] {
 			o, ok := attributes[da]
 			if !ok {
@@ -316,21 +316,21 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 				}
 			}
 			switch o.DogmaAttribute.ID {
-			case model.EveDogmaAttributeCapacity, model.EveDogmaAttributeMass:
+			case app.EveDogmaAttributeCapacity, app.EveDogmaAttributeMass:
 				if o.Value == 0 {
 					continue
 				}
-			case model.EveDogmaAttributeDroneCapacity,
-				model.EveDogmaAttributeDroneBandwidth:
+			case app.EveDogmaAttributeDroneCapacity,
+				app.EveDogmaAttributeDroneBandwidth:
 				if !hasDrones {
 					continue
 				}
-			case model.EveDogmaAttributeMaximumJumpRange,
-				model.EveDogmaAttributeJumpDriveFuelNeed:
+			case app.EveDogmaAttributeMaximumJumpRange,
+				app.EveDogmaAttributeJumpDriveFuelNeed:
 				if !hasJumpDrive {
 					continue
 				}
-			case model.EveDogmaAttributeSupportFighterSquadronLimit:
+			case app.EveDogmaAttributeSupportFighterSquadronLimit:
 				if o.Value == 0 {
 					continue
 				}
@@ -343,8 +343,8 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 		for _, o := range attributeSelection {
 			value := o.Value
 			switch o.DogmaAttribute.ID {
-			case model.EveDogmaAttributeShipWarpSpeed:
-				x := attributes[model.EveDogmaAttributeWarpSpeedMultiplier]
+			case app.EveDogmaAttributeShipWarpSpeed:
+				x := attributes[app.EveDogmaAttributeWarpSpeedMultiplier]
 				value = value * x.Value
 			}
 			v, substituteIcon := a.ui.sv.EveUniverse.FormatValue(ctx, value, o.DogmaAttribute.Unit)
@@ -364,9 +364,9 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 	}
 	data := make([]attributeRow, 0)
 	if a.et.Volume > 0 {
-		v, _ := a.ui.sv.EveUniverse.FormatValue(ctx, a.et.Volume, model.EveUnitVolume)
+		v, _ := a.ui.sv.EveUniverse.FormatValue(ctx, a.et.Volume, app.EveUnitVolume)
 		if a.et.Volume != a.et.PackagedVolume {
-			v2, _ := a.ui.sv.EveUniverse.FormatValue(ctx, a.et.PackagedVolume, model.EveUnitVolume)
+			v2, _ := a.ui.sv.EveUniverse.FormatValue(ctx, a.et.PackagedVolume, app.EveUnitVolume)
 			v += fmt.Sprintf(" (%s Packaged)", v2)
 		}
 		r := attributeRow{
@@ -404,7 +404,7 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 	return data
 }
 
-func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int32]*model.EveDogmaAttributeForType) []attributeRow {
+func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int32]*app.EveDogmaAttributeForType) []attributeRow {
 	data := make([]attributeRow, 0)
 	for _, da := range attributeGroupsMap[attributeGroupFitting] {
 		o, ok := attributes[da]
@@ -423,18 +423,18 @@ func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int
 	return data
 }
 
-func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*model.EveDogmaAttributeForType) ([]requiredSkill, error) {
+func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveDogmaAttributeForType) ([]requiredSkill, error) {
 	skills := make([]requiredSkill, 0)
 	skillAttributes := []struct {
 		id    int32
 		level int32
 	}{
-		{model.EveDogmaAttributePrimarySkillID, model.EveDogmaAttributePrimarySkillLevel},
-		{model.EveDogmaAttributeSecondarySkillID, model.EveDogmaAttributeSecondarySkillLevel},
-		{model.EveDogmaAttributeTertiarySkillID, model.EveDogmaAttributeTertiarySkillLevel},
-		{model.EveDogmaAttributeQuaternarySkillID, model.EveDogmaAttributeQuaternarySkillLevel},
-		{model.EveDogmaAttributeQuinarySkillID, model.EveDogmaAttributeQuinarySkillLevel},
-		{model.EveDogmaAttributeSenarySkillID, model.EveDogmaAttributeSenarySkillLevel},
+		{app.EveDogmaAttributePrimarySkillID, app.EveDogmaAttributePrimarySkillLevel},
+		{app.EveDogmaAttributeSecondarySkillID, app.EveDogmaAttributeSecondarySkillLevel},
+		{app.EveDogmaAttributeTertiarySkillID, app.EveDogmaAttributeTertiarySkillLevel},
+		{app.EveDogmaAttributeQuaternarySkillID, app.EveDogmaAttributeQuaternarySkillLevel},
+		{app.EveDogmaAttributeQuinarySkillID, app.EveDogmaAttributeQuinarySkillLevel},
+		{app.EveDogmaAttributeSenarySkillID, app.EveDogmaAttributeSenarySkillLevel},
 	}
 	for i, x := range skillAttributes {
 		daID, ok := attributes[x.id]
@@ -483,7 +483,7 @@ func (a *typeInfoWindow) makeContent() fyne.CanvasObject {
 	top := a.makeTop()
 	description := container.NewTabItem("Description", a.makeDescriptionTab())
 	tabs := container.NewAppTabs(description)
-	if len(a.attributesData) > 0 && a.et.Group.Category.ID != model.EveCategoryStation {
+	if len(a.attributesData) > 0 && a.et.Group.Category.ID != app.EveCategoryStation {
 		tabs.Append(container.NewTabItem("Attributes", a.makeAttributesTab()))
 	}
 	if len(a.fittingData) > 0 {
@@ -562,9 +562,9 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 	if a.owner != nil {
 		refreshImageResourceAsync(ownerIcon, func() (fyne.Resource, error) {
 			switch a.owner.Category {
-			case model.EveEntityCharacter:
+			case app.EveEntityCharacter:
 				return a.ui.sv.EveImage.CharacterPortrait(a.owner.ID, 32)
-			case model.EveEntityCorporation:
+			case app.EveEntityCorporation:
 				return a.ui.sv.EveImage.CorporationLogo(a.owner.ID, 32)
 			default:
 				panic("Unexpected owner type")

@@ -15,8 +15,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/model/mailrecipients"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/mailrecipients"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
@@ -27,7 +27,7 @@ const (
 	createMessageForward
 )
 
-func (u *ui) showSendMessageWindow(mode int, mail *model.CharacterMail) {
+func (u *ui) showSendMessageWindow(mode int, mail *app.CharacterMail) {
 	w, err := u.makeSendMessageWindow(mode, mail)
 	if err != nil {
 		slog.Error("failed to create send message window", "error", err)
@@ -36,7 +36,7 @@ func (u *ui) showSendMessageWindow(mode int, mail *model.CharacterMail) {
 	}
 }
 
-func (u *ui) makeSendMessageWindow(mode int, mail *model.CharacterMail) (fyne.Window, error) {
+func (u *ui) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fyne.Window, error) {
 	currentChar := *u.currentCharacter()
 	w := u.app.NewWindow(fmt.Sprintf("New message [%s]", currentChar.EveCharacter.Name))
 
@@ -60,7 +60,7 @@ func (u *ui) makeSendMessageWindow(mode int, mail *model.CharacterMail) (fyne.Wi
 	if mail != nil {
 		switch mode {
 		case createMessageReply:
-			r := mailrecipients.NewFromEntities([]*model.EveEntity{mail.From})
+			r := mailrecipients.NewFromEntities([]*app.EveEntity{mail.From})
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))

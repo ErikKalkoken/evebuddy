@@ -11,7 +11,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
 // implantsArea is the UI area that shows the skillqueue
@@ -50,7 +50,7 @@ func (a *implantsArea) makeImplantList() *widget.List {
 			icon := row.Objects[0].(*canvas.Image)
 			label := row.Objects[1].(*widget.Label)
 
-			q, err := convertDataItem[*model.CharacterImplant](di)
+			q, err := convertDataItem[*app.CharacterImplant](di)
 			if err != nil {
 				slog.Error("failed to render row in implants table", "err", err)
 				label.Text = "failed to render"
@@ -67,7 +67,7 @@ func (a *implantsArea) makeImplantList() *widget.List {
 
 	l.OnSelected = func(id widget.ListItemID) {
 		defer l.UnselectAll()
-		o, err := getItemUntypedList[*model.CharacterImplant](a.implants, id)
+		o, err := getItemUntypedList[*app.CharacterImplant](a.implants, id)
 		if err != nil {
 			slog.Error("Failed to select implant", "err", err)
 			return
@@ -114,7 +114,7 @@ func (a *implantsArea) updateData() error {
 }
 
 func (a *implantsArea) makeTopText() (string, widget.Importance) {
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), model.SectionImplants)
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

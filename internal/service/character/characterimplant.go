@@ -3,16 +3,16 @@ package character
 import (
 	"context"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func (s *CharacterService) ListCharacterImplants(ctx context.Context, characterID int32) ([]*model.CharacterImplant, error) {
+func (s *CharacterService) ListCharacterImplants(ctx context.Context, characterID int32) ([]*app.CharacterImplant, error) {
 	return s.st.ListCharacterImplants(ctx, characterID)
 }
 
 func (s *CharacterService) updateCharacterImplantsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionImplants {
+	if arg.Section != app.SectionImplants {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(

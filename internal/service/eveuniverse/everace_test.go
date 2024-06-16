@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 	"github.com/antihax/goesi"
@@ -24,7 +24,7 @@ func TestGetOrCreateEveRaceESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		x1 := factory.CreateEveRace(model.EveRace{ID: 7})
+		x1 := factory.CreateEveRace(app.EveRace{ID: 7})
 		// when
 		x2, err := eu.GetOrCreateEveRaceESI(ctx, 7)
 		// then

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -59,7 +59,7 @@ func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg Cr
 	return err
 }
 
-func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, characterID int32, refID int64) (*model.CharacterWalletJournalEntry, error) {
+func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, characterID int32, refID int64) (*app.CharacterWalletJournalEntry, error) {
 	arg := queries.GetCharacterWalletJournalEntryParams{
 		CharacterID: int64(characterID),
 		RefID:       refID,
@@ -80,12 +80,12 @@ func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, chara
 	return st.q.ListCharacterWalletJournalEntryRefIDs(ctx, int64(characterID))
 }
 
-func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
+func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*app.CharacterWalletJournalEntry, error) {
 	rows, err := st.q.ListCharacterWalletJournalEntries(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}
-	ee := make([]*model.CharacterWalletJournalEntry, len(rows))
+	ee := make([]*app.CharacterWalletJournalEntry, len(rows))
 	for i, row := range rows {
 		ee[i] = characterWalletJournalEntryFromDBModel(
 			row.CharacterWalletJournalEntry,
@@ -101,8 +101,8 @@ func characterWalletJournalEntryFromDBModel(
 	firstParty queries.CharacterWalletJournalEntryFirstParty,
 	secondParty queries.CharacterWalletJournalEntrySecondParty,
 	taxReceiver queries.CharacterWalletJournalEntryTaxReceiver,
-) *model.CharacterWalletJournalEntry {
-	o2 := &model.CharacterWalletJournalEntry{
+) *app.CharacterWalletJournalEntry {
+	o2 := &app.CharacterWalletJournalEntry{
 		Amount:        o.Amount,
 		Balance:       o.Balance,
 		ContextID:     o.ContextID,

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -20,10 +20,10 @@ type CreateEveDogmaAttributeParams struct {
 	IsHighGood   bool
 	IsPublished  bool
 	IsStackable  bool
-	UnitID       model.EveUnitID
+	UnitID       app.EveUnitID
 }
 
-func (st *Storage) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDogmaAttributeParams) (*model.EveDogmaAttribute, error) {
+func (st *Storage) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDogmaAttributeParams) (*app.EveDogmaAttribute, error) {
 	if arg.ID == 0 {
 		return nil, fmt.Errorf("invalid ID %d", arg.ID)
 	}
@@ -46,7 +46,7 @@ func (st *Storage) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDog
 	return eveDogmaAttributeFromDBModel(o), nil
 }
 
-func (st *Storage) GetEveDogmaAttribute(ctx context.Context, id int32) (*model.EveDogmaAttribute, error) {
+func (st *Storage) GetEveDogmaAttribute(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
 	c, err := st.q.GetEveDogmaAttribute(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -57,8 +57,8 @@ func (st *Storage) GetEveDogmaAttribute(ctx context.Context, id int32) (*model.E
 	return eveDogmaAttributeFromDBModel(c), nil
 }
 
-func eveDogmaAttributeFromDBModel(eda queries.EveDogmaAttribute) *model.EveDogmaAttribute {
-	return &model.EveDogmaAttribute{
+func eveDogmaAttributeFromDBModel(eda queries.EveDogmaAttribute) *app.EveDogmaAttribute {
+	return &app.EveDogmaAttribute{
 		ID:           int32(eda.ID),
 		DefaultValue: float32(eda.DefaultValue),
 		Description:  eda.Description,
@@ -68,6 +68,6 @@ func eveDogmaAttributeFromDBModel(eda queries.EveDogmaAttribute) *model.EveDogma
 		IsHighGood:   eda.IsHighGood,
 		IsPublished:  eda.IsPublished,
 		IsStackable:  eda.IsStackable,
-		Unit:         model.EveUnitID(eda.UnitID),
+		Unit:         app.EveUnitID(eda.UnitID),
 	}
 }

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
@@ -25,12 +25,12 @@ func TestStatusCache(t *testing.T) {
 		cache.Clear()
 		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
 		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{ID: ec.ID})
-		section1 := model.SectionImplants
+		section1 := app.SectionImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section1,
 		})
-		section2 := model.SectionEveCategories
+		section2 := app.SectionEveCategories
 		y1 := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: section2,
 		})
@@ -63,7 +63,7 @@ func TestStatusCache(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
 		c := factory.CreateCharacter()
-		section := model.SectionImplants
+		section := app.SectionImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -83,7 +83,7 @@ func TestStatusCache(t *testing.T) {
 	t.Run("Can get and set a general section status", func(t *testing.T) {
 		testutil.TruncateTables(db)
 		cache.Clear()
-		section := model.SectionEveCategories
+		section := app.SectionEveCategories
 		x1 := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 			Section: section,
 		})
@@ -125,7 +125,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		cache.Clear()
 		for range 2 {
 			c := factory.CreateCharacter()
-			for _, section := range model.CharacterSections {
+			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 					CharacterID:  c.ID,
 					Section:      section,
@@ -136,7 +136,7 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.CharacterSectionSet(o)
 			}
 		}
-		for _, section := range model.GeneralSections {
+		for _, section := range app.GeneralSections {
 			o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 				Section:      section,
 				ErrorMessage: "",
@@ -159,7 +159,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		for range 2 {
 			c := factory.CreateCharacter()
 			characters = append(characters, c.ID)
-			for _, section := range model.CharacterSections {
+			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 					CharacterID:  c.ID,
 					Section:      section,
@@ -170,7 +170,7 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.CharacterSectionSet(o)
 			}
 		}
-		for _, section := range model.GeneralSections {
+		for _, section := range app.GeneralSections {
 			o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 				Section:      section,
 				ErrorMessage: "",
@@ -180,9 +180,9 @@ func TestStatusCacheSummary(t *testing.T) {
 			sc.GeneralSectionSet(o)
 		}
 		sc.InitCache(st)
-		o := &model.CharacterSectionStatus{
+		o := &app.CharacterSectionStatus{
 			CharacterID:  characters[0],
-			Section:      model.SectionLocation,
+			Section:      app.SectionLocation,
 			ErrorMessage: "error",
 		}
 		sc.CharacterSectionSet(o)
@@ -200,7 +200,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		cache.Clear()
 		for range 2 {
 			c := factory.CreateCharacter()
-			for _, section := range model.CharacterSections {
+			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 					CharacterID:  c.ID,
 					Section:      section,
@@ -211,7 +211,7 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.CharacterSectionSet(o)
 			}
 		}
-		for _, section := range model.GeneralSections {
+		for _, section := range app.GeneralSections {
 			o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 				Section:      section,
 				ErrorMessage: "",
@@ -221,8 +221,8 @@ func TestStatusCacheSummary(t *testing.T) {
 			sc.GeneralSectionSet(o)
 		}
 		sc.InitCache(st)
-		o := &model.GeneralSectionStatus{
-			Section:      model.SectionEveCharacters,
+		o := &app.GeneralSectionStatus{
+			Section:      app.SectionEveCharacters,
 			ErrorMessage: "error",
 		}
 		sc.GeneralSectionSet(o)
@@ -238,7 +238,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
-		characterSections := model.CharacterSections[:len(model.CharacterSections)-1]
+		characterSections := app.CharacterSections[:len(app.CharacterSections)-1]
 		for range 2 {
 			c := factory.CreateCharacter()
 			for _, section := range characterSections {
@@ -252,7 +252,7 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.CharacterSectionSet(o)
 			}
 		}
-		for _, section := range model.GeneralSections {
+		for _, section := range app.GeneralSections {
 			o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 				Section:      section,
 				ErrorMessage: "",
@@ -277,7 +277,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		cache.Clear()
 		for range 2 {
 			c := factory.CreateCharacter()
-			for _, section := range model.CharacterSections {
+			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 					CharacterID:  c.ID,
 					Section:      section,
@@ -288,7 +288,7 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.CharacterSectionSet(o)
 			}
 		}
-		generalSections := model.GeneralSections[:len(model.GeneralSections)-1]
+		generalSections := app.GeneralSections[:len(app.GeneralSections)-1]
 		for _, section := range generalSections {
 			o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 				Section:      section,
@@ -315,7 +315,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		for range 2 {
 			c := factory.CreateCharacter()
 			characters = append(characters, c.ID)
-			for _, section := range model.CharacterSections {
+			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 					CharacterID:  c.ID,
 					Section:      section,
@@ -325,7 +325,7 @@ func TestStatusCacheSummary(t *testing.T) {
 				})
 				sc.CharacterSectionSet(o)
 			}
-			for _, section := range model.GeneralSections {
+			for _, section := range app.GeneralSections {
 				o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 					Section:      section,
 					ErrorMessage: "",
@@ -336,9 +336,9 @@ func TestStatusCacheSummary(t *testing.T) {
 			}
 		}
 		sc.InitCache(st)
-		o := &model.CharacterSectionStatus{
+		o := &app.CharacterSectionStatus{
 			CharacterID: characters[0],
-			Section:     model.SectionLocation,
+			Section:     app.SectionLocation,
 			CompletedAt: time.Now().Add(-1 * time.Hour),
 		}
 		sc.CharacterSectionSet(o)
@@ -356,7 +356,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		cache.Clear()
 		for range 2 {
 			c := factory.CreateCharacter()
-			for _, section := range model.CharacterSections {
+			for _, section := range app.CharacterSections {
 				o := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 					CharacterID:  c.ID,
 					Section:      section,
@@ -366,7 +366,7 @@ func TestStatusCacheSummary(t *testing.T) {
 				})
 				sc.CharacterSectionSet(o)
 			}
-			for _, section := range model.GeneralSections {
+			for _, section := range app.GeneralSections {
 				o := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
 					Section:      section,
 					ErrorMessage: "",
@@ -377,8 +377,8 @@ func TestStatusCacheSummary(t *testing.T) {
 			}
 		}
 		sc.InitCache(st)
-		o := &model.GeneralSectionStatus{
-			Section:     model.SectionEveCharacters,
+		o := &app.GeneralSectionStatus{
+			Section:     app.SectionEveCharacters,
 			CompletedAt: time.Now().Add(-30 * time.Hour),
 		}
 		sc.GeneralSectionSet(o)

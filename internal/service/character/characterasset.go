@@ -7,30 +7,30 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
 	"github.com/antihax/goesi/optional"
 )
 
-func (s *CharacterService) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+func (s *CharacterService) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
 	return s.st.ListCharacterAssetsInShipHangar(ctx, characterID, locationID)
 }
 
-func (s *CharacterService) ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+func (s *CharacterService) ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
 	return s.st.ListCharacterAssetsInItemHangar(ctx, characterID, locationID)
 }
 
-func (s *CharacterService) ListCharacterAssetsInLocation(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+func (s *CharacterService) ListCharacterAssetsInLocation(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
 	return s.st.ListCharacterAssetsInLocation(ctx, characterID, locationID)
 }
 
-func (s *CharacterService) ListCharacterAssets(ctx context.Context, characterID int32) ([]*model.CharacterAsset, error) {
+func (s *CharacterService) ListCharacterAssets(ctx context.Context, characterID int32) ([]*app.CharacterAsset, error) {
 	return s.st.ListCharacterAssets(ctx, characterID)
 }
 
-func (s *CharacterService) ListAllCharacterAssets(ctx context.Context) ([]*model.CharacterAsset, error) {
+func (s *CharacterService) ListAllCharacterAssets(ctx context.Context) ([]*app.CharacterAsset, error) {
 	return s.st.ListAllCharacterAssets(ctx)
 }
 
@@ -40,7 +40,7 @@ type esiCharacterAssetPlus struct {
 }
 
 func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionAssets {
+	if arg.Section != app.SectionAssets {
 		panic("called with wrong section")
 	}
 	hasChanged, err := s.updateSectionIfChanged(

@@ -8,11 +8,11 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
-func (eu *EveUniverseService) GetOrCreateEveCharacterESI(ctx context.Context, id int32) (*model.EveCharacter, error) {
+func (eu *EveUniverseService) GetOrCreateEveCharacterESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
 	x, err := eu.st.GetEveCharacter(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveCharacterFromESI(ctx, id)
@@ -22,7 +22,7 @@ func (eu *EveUniverseService) GetOrCreateEveCharacterESI(ctx context.Context, id
 	return x, nil
 }
 
-func (eu *EveUniverseService) createEveCharacterFromESI(ctx context.Context, id int32) (*model.EveCharacter, error) {
+func (eu *EveUniverseService) createEveCharacterFromESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
 	key := fmt.Sprintf("createEveCharacterFromESI-%d", id)
 	y, err, _ := eu.sfg.Do(key, func() (any, error) {
 		r, _, err := eu.esiClient.ESI.CharacterApi.GetCharactersCharacterId(ctx, id, nil)
@@ -65,7 +65,7 @@ func (eu *EveUniverseService) createEveCharacterFromESI(ctx context.Context, id 
 	if err != nil {
 		return nil, err
 	}
-	return y.(*model.EveCharacter), nil
+	return y.(*app.EveCharacter), nil
 }
 
 // UpdateAllEveCharactersESI updates all known Eve characters from ESI.

@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
@@ -39,7 +39,7 @@ type mailArea struct {
 	body        *widget.Label
 	mailSection fyne.CanvasObject
 	header      *widget.Label
-	mail        *model.CharacterMail
+	mail        *app.CharacterMail
 	subject     *widget.Label
 	toolbar     *widget.Toolbar
 }
@@ -243,7 +243,7 @@ func (a *mailArea) makeFolderTreeData(characterID int32) (map[string][]string, m
 		CharacterID: characterID,
 		ID:          folderNodeAllID,
 		Name:        "All Mails",
-		ObjID:       model.MailLabelAll,
+		ObjID:       app.MailLabelAll,
 		UnreadCount: totalUnreadCount,
 	}
 	folders[folderNodeAllID], err = objectToJSON(folderAll)
@@ -326,10 +326,10 @@ func makeDefaultFolders(characterID int32, labelUnreadCounts map[int32]int) (map
 		labelID int32
 		name    string
 	}{
-		{folderNodeInboxID, model.MailLabelInbox, "Inbox"},
-		{folderNodeSentID, model.MailLabelSent, "Sent"},
-		{folderNodeCorpID, model.MailLabelCorp, "Corp"},
-		{folderNodeAllianceID, model.MailLabelAlliance, "Alliance"},
+		{folderNodeInboxID, app.MailLabelInbox, "Inbox"},
+		{folderNodeSentID, app.MailLabelSent, "Sent"},
+		{folderNodeCorpID, app.MailLabelCorp, "Corp"},
+		{folderNodeAllianceID, app.MailLabelAlliance, "Alliance"},
 	}
 	for _, o := range defaultFolders {
 		u, ok := labelUnreadCounts[o.labelID]
@@ -357,7 +357,7 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 	var total, labels, lists int
 	for id, c := range labelCounts {
 		total += c
-		if id > model.MailLabelAlliance {
+		if id > app.MailLabelAlliance {
 			labels += c
 		}
 	}
@@ -379,7 +379,7 @@ func (a *mailArea) makeHeaderList() *widget.List {
 				return
 			}
 			item := co.(*widgets.MailHeaderItem)
-			m, err := convertDataItem[*model.CharacterMailHeader](di)
+			m, err := convertDataItem[*app.CharacterMailHeader](di)
 			if err != nil {
 				slog.Error("Failed to get mail", "error", err)
 				item.SetError("Failed to get mail")
@@ -388,7 +388,7 @@ func (a *mailArea) makeHeaderList() *widget.List {
 			item.Set(m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
-		r, err := getItemUntypedList[*model.CharacterMailHeader](a.headerData, id)
+		r, err := getItemUntypedList[*app.CharacterMailHeader](a.headerData, id)
 		if err != nil {
 			slog.Error("Failed to select mail header", "err", err)
 			l.UnselectAll()
@@ -429,7 +429,7 @@ func (a *mailArea) updateHeaderData() error {
 	if folder.CharacterID == 0 {
 		return nil
 	}
-	var oo []*model.CharacterMailHeader
+	var oo []*app.CharacterMailHeader
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
@@ -455,7 +455,7 @@ func (a *mailArea) makeFolderTopText() (string, widget.Importance) {
 	if !a.ui.hasCharacter() {
 		return "No Character", widget.LowImportance
 	}
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), model.SectionSkillqueue)
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

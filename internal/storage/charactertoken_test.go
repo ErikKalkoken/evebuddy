@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -21,7 +21,7 @@ func TestToken(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		now := time.Now()
-		o1 := model.CharacterToken{
+		o1 := app.CharacterToken{
 			AccessToken:  "access",
 			CharacterID:  c.ID,
 			ExpiresAt:    now,
@@ -66,7 +66,7 @@ func TestToken(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		o1 := factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		o1 := factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		o1.AccessToken = "changed"
 		o1.Scopes = []string{"alpha", "bravo"}
 		// when

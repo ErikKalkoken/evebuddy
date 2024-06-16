@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
@@ -96,7 +96,7 @@ func (a *toolbarArea) refresh() {
 
 }
 
-func (a *toolbarArea) makeMenuItems(c *model.Character) ([]*fyne.MenuItem, error) {
+func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) {
 	ctx := context.Background()
 	menuItems := make([]*fyne.MenuItem, 0)
 	cc, err := a.ui.sv.Character.ListCharactersShort(ctx)

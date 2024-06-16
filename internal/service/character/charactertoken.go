@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -44,7 +44,7 @@ func (s *CharacterService) CharacterHasTokenWithScopes(ctx context.Context, char
 }
 
 // getValidCharacterToken returns a valid token for a character. Convenience function.
-func (s *CharacterService) getValidCharacterToken(ctx context.Context, characterID int32) (*model.CharacterToken, error) {
+func (s *CharacterService) getValidCharacterToken(ctx context.Context, characterID int32) (*app.CharacterToken, error) {
 	t, err := s.st.GetCharacterToken(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (s *CharacterService) getValidCharacterToken(ctx context.Context, character
 }
 
 // ensureValidCharacterToken will automatically try to refresh a token that is already or about to become invalid.
-func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, t *model.CharacterToken) error {
+func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, t *app.CharacterToken) error {
 	if !t.RemainsValid(time.Second * 60) {
 		slog.Debug("Need to refresh token", "characterID", t.CharacterID)
 		rawToken, err := sso.RefreshToken(s.httpClient, t.RefreshToken)

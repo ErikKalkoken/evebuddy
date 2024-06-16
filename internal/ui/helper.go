@@ -12,8 +12,8 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/dustin/go-humanize"
@@ -46,7 +46,7 @@ func objectToJSON[T any](o T) (string, error) {
 // 	return s
 // }
 
-func entityNameOrFallback[T int | int32 | int64](e *model.EntityShort[T], fallback string) string {
+func entityNameOrFallback[T int | int32 | int64](e *app.EntityShort[T], fallback string) string {
 	if e == nil {
 		return fallback
 	}
@@ -224,15 +224,15 @@ func boolIconResource(ok bool) fyne.Resource {
 	return theme.NewErrorThemedResource(theme.CancelIcon())
 }
 
-func systemSecurity2Importance(t model.SolarSystemSecurityType) widget.Importance {
+func systemSecurity2Importance(t app.SolarSystemSecurityType) widget.Importance {
 	switch t {
-	case model.SuperHighSec:
+	case app.SuperHighSec:
 		return widget.HighImportance
-	case model.HighSec:
+	case app.HighSec:
 		return widget.SuccessImportance
-	case model.LowSec:
+	case app.LowSec:
 		return widget.WarningImportance
-	case model.NullSec:
+	case app.NullSec:
 		return widget.DangerImportance
 	}
 	panic("Invalid security")

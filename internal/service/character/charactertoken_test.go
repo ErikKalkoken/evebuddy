@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +18,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID, Scopes: esiScopes})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID, Scopes: esiScopes})
 		// when
 		x, err := s.CharacterHasTokenWithScopes(ctx, c.ID)
 		// then

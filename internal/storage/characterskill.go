@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -22,7 +22,7 @@ func (st *Storage) DeleteExcludedCharacterSkills(ctx context.Context, characterI
 	return nil
 }
 
-func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typeID int32) (*model.CharacterSkill, error) {
+func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typeID int32) (*app.CharacterSkill, error) {
 	arg := queries.GetCharacterSkillParams{
 		CharacterID: int64(characterID),
 		EveTypeID:   int64(typeID),
@@ -38,7 +38,7 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typ
 	return t2, nil
 }
 
-func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]model.ListCharacterSkillProgress, error) {
+func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]app.ListCharacterSkillProgress, error) {
 	arg := queries.ListCharacterSkillProgressParams{
 		CharacterID: int64(characterID),
 		EveGroupID:  int64(eveGroupID),
@@ -47,9 +47,9 @@ func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, 
 	if err != nil {
 		return nil, err
 	}
-	oo := make([]model.ListCharacterSkillProgress, len(xx))
+	oo := make([]app.ListCharacterSkillProgress, len(xx))
 	for i, x := range xx {
-		oo[i] = model.ListCharacterSkillProgress{
+		oo[i] = app.ListCharacterSkillProgress{
 			ActiveSkillLevel:  int(x.ActiveSkillLevel.Int64),
 			TypeDescription:   x.Description,
 			TypeID:            int32(x.ID),
@@ -60,18 +60,18 @@ func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, 
 	return oo, nil
 }
 
-func (st *Storage) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]model.ListCharacterSkillGroupProgress, error) {
+func (st *Storage) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]app.ListCharacterSkillGroupProgress, error) {
 	arg := queries.ListCharacterSkillGroupsProgressParams{
 		CharacterID:   int64(characterID),
-		EveCategoryID: model.EveCategorySkill,
+		EveCategoryID: app.EveCategorySkill,
 	}
 	xx, err := st.q.ListCharacterSkillGroupsProgress(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
-	oo := make([]model.ListCharacterSkillGroupProgress, len(xx))
+	oo := make([]app.ListCharacterSkillGroupProgress, len(xx))
 	for i, x := range xx {
-		o := model.ListCharacterSkillGroupProgress{
+		o := app.ListCharacterSkillGroupProgress{
 			GroupID:   int32(x.EveGroupID),
 			GroupName: x.EveGroupName,
 			Total:     float64(x.Total),
@@ -106,11 +106,11 @@ func (st *Storage) UpdateOrCreateCharacterSkill(ctx context.Context, arg UpdateO
 	return nil
 }
 
-func characterSkillFromDBModel(o queries.CharacterSkill, t queries.EveType, g queries.EveGroup, c queries.EveCategory) *model.CharacterSkill {
+func characterSkillFromDBModel(o queries.CharacterSkill, t queries.EveType, g queries.EveGroup, c queries.EveCategory) *app.CharacterSkill {
 	if o.CharacterID == 0 {
 		panic("missing character ID")
 	}
-	return &model.CharacterSkill{
+	return &app.CharacterSkill{
 		ActiveSkillLevel:   int(o.ActiveSkillLevel),
 		CharacterID:        int32(o.CharacterID),
 		EveType:            eveTypeFromDBModel(t, g, c),

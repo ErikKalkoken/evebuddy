@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
@@ -14,14 +14,14 @@ func (s *CharacterService) GetCharacterTotalTrainingTime(ctx context.Context, ch
 	return s.st.GetTotalTrainingTime(ctx, characterID)
 }
 
-func (s *CharacterService) ListCharacterSkillqueueItems(ctx context.Context, characterID int32) ([]*model.CharacterSkillqueueItem, error) {
+func (s *CharacterService) ListCharacterSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
 	return s.st.ListSkillqueueItems(ctx, characterID)
 }
 
 // UpdateCharacterSkillqueueESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
 func (s *CharacterService) UpdateCharacterSkillqueueESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionSkillqueue {
+	if arg.Section != app.SectionSkillqueue {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(

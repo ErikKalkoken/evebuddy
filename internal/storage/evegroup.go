@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -34,7 +34,7 @@ func (st *Storage) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams)
 	return nil
 }
 
-func (st *Storage) GetEveGroup(ctx context.Context, id int32) (*model.EveGroup, error) {
+func (st *Storage) GetEveGroup(ctx context.Context, id int32) (*app.EveGroup, error) {
 	row, err := st.q.GetEveGroup(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -46,8 +46,8 @@ func (st *Storage) GetEveGroup(ctx context.Context, id int32) (*model.EveGroup, 
 	return g, nil
 }
 
-func eveGroupFromDBModel(g queries.EveGroup, c queries.EveCategory) *model.EveGroup {
-	return &model.EveGroup{
+func eveGroupFromDBModel(g queries.EveGroup, c queries.EveCategory) *app.EveGroup {
+	return &app.EveGroup{
 		Category:    eveCategoryFromDBModel(c),
 		ID:          int32(g.ID),
 		IsPublished: g.IsPublished,

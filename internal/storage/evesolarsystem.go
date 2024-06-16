@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -34,7 +34,7 @@ func (st *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarS
 	return nil
 }
 
-func (st *Storage) GetEveSolarSystem(ctx context.Context, id int32) (*model.EveSolarSystem, error) {
+func (st *Storage) GetEveSolarSystem(ctx context.Context, id int32) (*app.EveSolarSystem, error) {
 	row, err := st.q.GetEveSolarSystem(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -46,8 +46,8 @@ func (st *Storage) GetEveSolarSystem(ctx context.Context, id int32) (*model.EveS
 	return t, nil
 }
 
-func eveSolarSystemFromDBModel(s queries.EveSolarSystem, c queries.EveConstellation, r queries.EveRegion) *model.EveSolarSystem {
-	return &model.EveSolarSystem{
+func eveSolarSystemFromDBModel(s queries.EveSolarSystem, c queries.EveConstellation, r queries.EveRegion) *app.EveSolarSystem {
+	return &app.EveSolarSystem{
 		Constellation:  eveConstellationFromDBModel(c, r),
 		ID:             int32(s.ID),
 		Name:           s.Name,

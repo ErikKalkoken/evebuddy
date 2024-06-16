@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -32,7 +32,7 @@ func (st *Storage) CreateEveConstellation(ctx context.Context, arg CreateEveCons
 	return nil
 }
 
-func (st *Storage) GetEveConstellation(ctx context.Context, id int32) (*model.EveConstellation, error) {
+func (st *Storage) GetEveConstellation(ctx context.Context, id int32) (*app.EveConstellation, error) {
 	row, err := st.q.GetEveConstellation(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -44,8 +44,8 @@ func (st *Storage) GetEveConstellation(ctx context.Context, id int32) (*model.Ev
 	return g, nil
 }
 
-func eveConstellationFromDBModel(c queries.EveConstellation, r queries.EveRegion) *model.EveConstellation {
-	return &model.EveConstellation{
+func eveConstellationFromDBModel(c queries.EveConstellation, r queries.EveRegion) *app.EveConstellation {
+	return &app.EveConstellation{
 		ID:     int32(c.ID),
 		Name:   c.Name,
 		Region: eveRegionFromDBModel(r),

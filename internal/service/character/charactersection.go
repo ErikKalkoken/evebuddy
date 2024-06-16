@@ -11,13 +11,13 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
 // SectionWasUpdated reports wether the section has been updated at all.
-func (s *CharacterService) SectionWasUpdated(ctx context.Context, characterID int32, section model.CharacterSection) (bool, error) {
+func (s *CharacterService) SectionWasUpdated(ctx context.Context, characterID int32, section app.CharacterSection) (bool, error) {
 	status, err := s.getCharacterSectionStatus(ctx, characterID, section)
 	if err != nil {
 		return false, err
@@ -30,7 +30,7 @@ func (s *CharacterService) SectionWasUpdated(ctx context.Context, characterID in
 
 type UpdateSectionParams struct {
 	CharacterID int32
-	Section     model.CharacterSection
+	Section     app.CharacterSection
 	ForceUpdate bool
 }
 
@@ -53,35 +53,35 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 	}
 	var f func(context.Context, UpdateSectionParams) (bool, error)
 	switch arg.Section {
-	case model.SectionAssets:
+	case app.SectionAssets:
 		f = s.updateCharacterAssetsESI
-	case model.SectionAttributes:
+	case app.SectionAttributes:
 		f = s.updateCharacterAttributesESI
-	case model.SectionImplants:
+	case app.SectionImplants:
 		f = s.updateCharacterImplantsESI
-	case model.SectionJumpClones:
+	case app.SectionJumpClones:
 		f = s.updateCharacterJumpClonesESI
-	case model.SectionLocation:
+	case app.SectionLocation:
 		f = s.updateCharacterLocationESI
-	case model.SectionMails:
+	case app.SectionMails:
 		f = s.updateCharacterMailsESI
-	case model.SectionMailLabels:
+	case app.SectionMailLabels:
 		f = s.updateCharacterMailLabelsESI
-	case model.SectionMailLists:
+	case app.SectionMailLists:
 		f = s.updateCharacterMailListsESI
-	case model.SectionOnline:
+	case app.SectionOnline:
 		f = s.updateCharacterOnlineESI
-	case model.SectionShip:
+	case app.SectionShip:
 		f = s.updateCharacterShipESI
-	case model.SectionSkillqueue:
+	case app.SectionSkillqueue:
 		f = s.UpdateCharacterSkillqueueESI
-	case model.SectionSkills:
+	case app.SectionSkills:
 		f = s.updateCharacterSkillsESI
-	case model.SectionWalletBalance:
+	case app.SectionWalletBalance:
 		f = s.updateCharacterWalletBalanceESI
-	case model.SectionWalletJournal:
+	case app.SectionWalletJournal:
 		f = s.updateCharacterWalletJournalEntryESI
-	case model.SectionWalletTransactions:
+	case app.SectionWalletTransactions:
 		f = s.updateCharacterWalletTransactionESI
 	default:
 		panic(fmt.Sprintf("Undefined section: %s", arg.Section))
@@ -186,7 +186,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	return hasChanged, nil
 }
 
-func (s *CharacterService) getCharacterSectionStatus(ctx context.Context, characterID int32, section model.CharacterSection) (*model.CharacterSectionStatus, error) {
+func (s *CharacterService) getCharacterSectionStatus(ctx context.Context, characterID int32, section app.CharacterSection) (*app.CharacterSectionStatus, error) {
 	o, err := s.st.GetCharacterSectionStatus(ctx, characterID, section)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, nil

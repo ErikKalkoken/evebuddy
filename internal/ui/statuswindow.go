@@ -13,8 +13,8 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/dustin/go-humanize"
 )
@@ -328,10 +328,10 @@ func (a *statusWindow) makeDetailsContent(d sectionStatusData) []fyne.CanvasObje
 	oo = append(oo, widget.NewButton(fmt.Sprintf("Force update %s", d.sectionName), func() {
 		if d.IsGeneralSection() {
 			go a.ui.updateGeneralSectionAndRefreshIfNeeded(
-				context.Background(), model.GeneralSection(d.sectionID), true)
+				context.Background(), app.GeneralSection(d.sectionID), true)
 		} else {
 			go a.ui.updateCharacterSectionAndRefreshIfNeeded(
-				context.Background(), d.entityID, model.CharacterSection(d.sectionID), true)
+				context.Background(), d.entityID, app.CharacterSection(d.sectionID), true)
 		}
 
 	}))

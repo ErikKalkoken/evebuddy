@@ -9,7 +9,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -26,7 +26,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 42})
 		data := `{
@@ -54,7 +54,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterSkillsESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionSkills,
+			Section:     app.SectionSkills,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -83,7 +83,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		// old := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 42})
@@ -106,7 +106,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterSkillsESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionSkills,
+			Section:     app.SectionSkills,
 		})
 		// then
 		if assert.NoError(t, err) {

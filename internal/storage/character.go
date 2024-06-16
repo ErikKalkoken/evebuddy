@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -19,7 +19,7 @@ func (st *Storage) DeleteCharacter(ctx context.Context, characterID int32) error
 	return nil
 }
 
-func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*model.Character, error) {
+func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Character, error) {
 	row, err := st.q.GetCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -45,7 +45,7 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*model.
 	return c, nil
 }
 
-func (st *Storage) GetFirstCharacter(ctx context.Context) (*model.Character, error) {
+func (st *Storage) GetFirstCharacter(ctx context.Context) (*app.Character, error) {
 	ids, err := st.ListCharacterIDs(ctx)
 	if err != nil {
 		return nil, err
@@ -57,12 +57,12 @@ func (st *Storage) GetFirstCharacter(ctx context.Context) (*model.Character, err
 
 }
 
-func (st *Storage) ListCharacters(ctx context.Context) ([]*model.Character, error) {
+func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error) {
 	rows, err := st.q.ListCharacters(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list Characters: %w", err)
 	}
-	cc := make([]*model.Character, len(rows))
+	cc := make([]*app.Character, len(rows))
 	for i, row := range rows {
 		c, err := st.characterFromDBModel(
 			ctx,
@@ -84,15 +84,15 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*model.Character, erro
 	return cc, nil
 }
 
-func (st *Storage) ListCharactersShort(ctx context.Context) ([]*model.CharacterShort, error) {
+func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.CharacterShort, error) {
 	rows, err := st.q.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list short characters: %w", err)
 
 	}
-	cc := make([]*model.CharacterShort, len(rows))
+	cc := make([]*app.CharacterShort, len(rows))
 	for i, row := range rows {
-		cc[i] = &model.CharacterShort{ID: int32(row.ID), Name: row.Name}
+		cc[i] = &app.CharacterShort{ID: int32(row.ID), Name: row.Name}
 	}
 	return cc, nil
 }
@@ -213,8 +213,8 @@ func (st *Storage) characterFromDBModel(
 	homeID sql.NullInt64,
 	locationID sql.NullInt64,
 	shipID sql.NullInt64,
-) (*model.Character, error) {
-	c := model.Character{
+) (*app.Character, error) {
+	c := app.Character{
 		EveCharacter:  eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
 		ID:            int32(character.ID),
 		LastLoginAt:   character.LastLoginAt,

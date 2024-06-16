@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 )
 
@@ -26,26 +26,26 @@ func (u *ui) startUpdateTickerGeneralSections() {
 }
 
 func (u *ui) updateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
-	for _, s := range model.GeneralSections {
-		go func(s model.GeneralSection) {
+	for _, s := range app.GeneralSections {
+		go func(s app.GeneralSection) {
 			u.updateGeneralSectionAndRefreshIfNeeded(context.TODO(), s, forceUpdate)
 		}(s)
 	}
 }
 
-func (u *ui) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section model.GeneralSection, forceUpdate bool) {
+func (u *ui) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
 	hasChanged, err := u.sv.EveUniverse.UpdateSection(ctx, section, forceUpdate)
 	if err != nil {
 		slog.Error("Failed to update general section", "section", section, "err", err)
 		return
 	}
 	switch section {
-	case model.SectionEveCategories:
+	case app.SectionEveCategories:
 		if hasChanged {
 			u.shipsArea.refresh()
 			u.skillCatalogueArea.refresh()
 		}
-	case model.SectionEveCharacters, model.SectionEveMarketPrices:
+	case app.SectionEveCharacters, app.SectionEveMarketPrices:
 		// nothing to refresh
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker refresh: %s", section))
@@ -74,8 +74,8 @@ func (u *ui) startUpdateTickerCharacters() {
 // updateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
 func (u *ui) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
-	for _, s := range model.CharacterSections {
-		go func(s model.CharacterSection) {
+	for _, s := range app.CharacterSections {
+		go func(s app.CharacterSection) {
 			u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 		}(s)
 	}
@@ -86,7 +86,7 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID 
 //
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s model.CharacterSection, forceUpdate bool) {
+func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
 	hasChanged, err := u.sv.Character.UpdateSectionIfNeeded(
 		ctx, character.UpdateSectionParams{
 			CharacterID: characterID,
@@ -99,7 +99,7 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 	}
 	isCurrent := characterID == u.characterID()
 	switch s {
-	case model.SectionAssets:
+	case app.SectionAssets:
 		if isCurrent && hasChanged {
 			u.assetsArea.redraw()
 		}
@@ -107,53 +107,53 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 			u.assetSearchArea.refresh()
 			u.wealthArea.refresh()
 		}
-	case model.SectionAttributes:
+	case app.SectionAttributes:
 		if isCurrent && hasChanged {
 			u.attributesArea.refresh()
 		}
-	case model.SectionImplants:
+	case app.SectionImplants:
 		if isCurrent && hasChanged {
 			u.implantsArea.refresh()
 		}
-	case model.SectionJumpClones:
+	case app.SectionJumpClones:
 		if isCurrent && hasChanged {
 			u.jumpClonesArea.redraw()
 		}
 		if hasChanged {
 			u.overviewArea.refresh()
 		}
-	case model.SectionLocation,
-		model.SectionOnline,
-		model.SectionShip,
-		model.SectionWalletBalance:
+	case app.SectionLocation,
+		app.SectionOnline,
+		app.SectionShip,
+		app.SectionWalletBalance:
 		if hasChanged {
 			u.overviewArea.refresh()
 			u.wealthArea.refresh()
 		}
-	case model.SectionMailLabels,
-		model.SectionMailLists,
-		model.SectionMails:
+	case app.SectionMailLabels,
+		app.SectionMailLists,
+		app.SectionMails:
 		if isCurrent && hasChanged {
 			u.mailArea.refresh()
 		}
 		if hasChanged {
 			u.overviewArea.refresh()
 		}
-	case model.SectionSkills:
+	case app.SectionSkills:
 		if isCurrent && hasChanged {
 			u.skillCatalogueArea.refresh()
 			u.shipsArea.refresh()
 			u.overviewArea.refresh()
 		}
-	case model.SectionSkillqueue:
+	case app.SectionSkillqueue:
 		if isCurrent {
 			u.skillqueueArea.refresh()
 		}
-	case model.SectionWalletJournal:
+	case app.SectionWalletJournal:
 		if isCurrent && hasChanged {
 			u.walletJournalArea.refresh()
 		}
-	case model.SectionWalletTransactions:
+	case app.SectionWalletTransactions:
 		if isCurrent && hasChanged {
 			u.walletTransactionArea.refresh()
 		}

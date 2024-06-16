@@ -13,8 +13,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -24,14 +24,14 @@ type overviewCharacter struct {
 	birthday       time.Time
 	corporation    string
 	id             int32
-	home           *model.EntityShort[int64]
+	home           *app.EntityShort[int64]
 	lastLoginAt    sql.NullTime
-	location       *model.EntityShort[int64]
+	location       *app.EntityShort[int64]
 	name           string
-	solarSystem    *model.EntityShort[int32]
+	solarSystem    *app.EntityShort[int32]
 	systemSecurity sql.NullFloat64
-	region         *model.EntityShort[int32]
-	ship           *model.EntityShort[int32]
+	region         *app.EntityShort[int32]
+	ship           *app.EntityShort[int32]
 	security       float64
 	totalSP        sql.NullInt64
 	training       optional.Duration
@@ -281,21 +281,21 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 			walletBalance: m.WalletBalance,
 		}
 		if m.Home != nil {
-			c.home = &model.EntityShort[int64]{
+			c.home = &app.EntityShort[int64]{
 				ID:   m.Home.ID,
 				Name: m.Home.DisplayName(),
 			}
 		}
 		if m.Location != nil {
-			c.region = &model.EntityShort[int32]{
+			c.region = &app.EntityShort[int32]{
 				ID:   m.Location.SolarSystem.Constellation.Region.ID,
 				Name: m.Location.SolarSystem.Constellation.Region.Name,
 			}
-			c.location = &model.EntityShort[int64]{
+			c.location = &app.EntityShort[int64]{
 				ID:   m.Location.ID,
 				Name: m.Location.DisplayName(),
 			}
-			c.solarSystem = &model.EntityShort[int32]{
+			c.solarSystem = &app.EntityShort[int32]{
 				ID:   m.Location.SolarSystem.ID,
 				Name: m.Location.SolarSystem.Name,
 			}
@@ -305,7 +305,7 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 			}
 		}
 		if m.Ship != nil {
-			c.ship = &model.EntityShort[int32]{
+			c.ship = &app.EntityShort[int32]{
 				ID:   m.Ship.ID,
 				Name: m.Ship.Name,
 			}

@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
 type CharacterSectionStatusParams struct {
 	CharacterID int32
-	Section     model.CharacterSection
+	Section     app.CharacterSection
 
 	CompletedAt time.Time
 	ContentHash string
@@ -21,7 +21,7 @@ type CharacterSectionStatusParams struct {
 	StartedAt   time.Time
 }
 
-func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID int32, section model.CharacterSection) (*model.CharacterSectionStatus, error) {
+func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID int32, section app.CharacterSection) (*app.CharacterSectionStatus, error) {
 	arg := queries.GetCharacterSectionStatusParams{
 		CharacterID: int64(characterID),
 		SectionID:   string(section),
@@ -37,12 +37,12 @@ func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID in
 	return s2, nil
 }
 
-func (st *Storage) ListCharacterSectionStatus(ctx context.Context, characterID int32) ([]*model.CharacterSectionStatus, error) {
+func (st *Storage) ListCharacterSectionStatus(ctx context.Context, characterID int32) ([]*app.CharacterSectionStatus, error) {
 	rows, err := st.q.ListCharacterSectionStatus(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list character update status for ID %d: %w", characterID, err)
 	}
-	oo := make([]*model.CharacterSectionStatus, len(rows))
+	oo := make([]*app.CharacterSectionStatus, len(rows))
 	for i, row := range rows {
 		oo[i] = characterSectionStatusFromDBModel(row)
 	}
@@ -52,7 +52,7 @@ func (st *Storage) ListCharacterSectionStatus(ctx context.Context, characterID i
 type UpdateOrCreateCharacterSectionStatusParams struct {
 	// mandatory
 	CharacterID int32
-	Section     model.CharacterSection
+	Section     app.CharacterSection
 	// optional
 	CompletedAt  *sql.NullTime
 	ContentHash  *string
@@ -60,7 +60,7 @@ type UpdateOrCreateCharacterSectionStatusParams struct {
 	StartedAt    *sql.NullTime
 }
 
-func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg UpdateOrCreateCharacterSectionStatusParams) (*model.CharacterSectionStatus, error) {
+func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg UpdateOrCreateCharacterSectionStatusParams) (*app.CharacterSectionStatus, error) {
 	if arg.CharacterID == 0 || arg.Section == "" {
 		panic("Invalid params")
 	}
@@ -114,12 +114,12 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 	return characterSectionStatusFromDBModel(o), nil
 }
 
-func characterSectionStatusFromDBModel(o queries.CharacterSectionStatus) *model.CharacterSectionStatus {
-	x := &model.CharacterSectionStatus{
+func characterSectionStatusFromDBModel(o queries.CharacterSectionStatus) *app.CharacterSectionStatus {
+	x := &app.CharacterSectionStatus{
 		ID:           o.ID,
 		CharacterID:  int32(o.CharacterID),
 		ErrorMessage: o.Error,
-		Section:      model.CharacterSection(o.SectionID),
+		Section:      app.CharacterSection(o.SectionID),
 		ContentHash:  o.ContentHash,
 		UpdatedAt:    o.UpdatedAt,
 	}

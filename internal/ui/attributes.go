@@ -13,8 +13,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 )
 
@@ -113,7 +113,7 @@ func (a *attributesArea) refresh() {
 }
 
 func (a *attributesArea) makeTopText(total int) (string, widget.Importance) {
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), model.SectionAttributes)
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), app.SectionAttributes)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

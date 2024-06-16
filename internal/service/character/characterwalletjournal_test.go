@@ -10,7 +10,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -27,9 +27,9 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		firstParty := factory.CreateEveEntityCharacter(model.EveEntity{ID: 2112625428})
-		secondParty := factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000132})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		firstParty := factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
+		secondParty := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		data := `[
 			{
 			  "amount": -100000,
@@ -52,7 +52,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionWalletJournal,
+			Section:     app.SectionWalletJournal,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -81,9 +81,9 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveEntityCharacter(model.EveEntity{ID: 2112625428})
-		factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000132})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		data := `[
 			{
 			  "amount": -100000,
@@ -106,7 +106,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionWalletJournal,
+			Section:     app.SectionWalletJournal,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -131,9 +131,9 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 			RefID:       89,
 			Description: "existing",
 		})
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveEntityCharacter(model.EveEntity{ID: 2112625428})
-		factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000132})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		data := `[
 			{
 			  "amount": -100000,
@@ -156,7 +156,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// when
 		_, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionWalletJournal,
+			Section:     app.SectionWalletJournal,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -175,9 +175,9 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveEntityCharacter(model.EveEntity{ID: 2112625428})
-		factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000132})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
 		pages := "2"
 		httpmock.RegisterResponder(
 			"GET",
@@ -216,7 +216,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionWalletJournal,
+			Section:     app.SectionWalletJournal,
 		})
 		// then
 		if assert.NoError(t, err) {

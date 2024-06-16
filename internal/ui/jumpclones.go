@@ -11,8 +11,8 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 type jumpCloneNode struct {
@@ -191,7 +191,7 @@ func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance) {
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), model.SectionJumpClones)
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), app.SectionJumpClones)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

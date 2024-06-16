@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -18,7 +18,7 @@ func TestEveDogmaAttribute(t *testing.T) {
 	t.Run("can create new", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		unit := model.EveUnitID(99)
+		unit := app.EveUnitID(99)
 		arg := storage.CreateEveDogmaAttributeParams{
 			ID:           42,
 			DefaultValue: 1.2,

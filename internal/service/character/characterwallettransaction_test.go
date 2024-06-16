@@ -10,7 +10,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -27,8 +27,8 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		client := factory.CreateEveEntityCharacter(model.EveEntity{ID: 54321})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		client := factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
 		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 		data := `[
@@ -54,7 +54,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionWalletTransactions,
+			Section:     app.SectionWalletTransactions,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -83,8 +83,8 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		client := factory.CreateEveEntityCharacter(model.EveEntity{ID: 54321})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		client := factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
 		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
 		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 		data := `[
@@ -110,7 +110,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionWalletTransactions,
+			Section:     app.SectionWalletTransactions,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -142,7 +142,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			CharacterID:   c.ID,
 			TransactionID: 1234567890,
 		})
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		data := `[
 			{
 			  "client_id": 54321,
@@ -166,7 +166,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// when
 		_, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionWalletTransactions,
+			Section:     app.SectionWalletTransactions,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -181,8 +181,8 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveEntityCharacter(model.EveEntity{ID: 54321})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
 		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 
@@ -225,7 +225,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		// when
 		_, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionWalletTransactions,
+			Section:     app.SectionWalletTransactions,
 		})
 		// then
 		if assert.NoError(t, err) {

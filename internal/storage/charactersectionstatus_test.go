@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -21,11 +21,11 @@ func TestCharacterSectionStatus(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     model.SectionSkillqueue,
+			Section:     app.SectionSkillqueue,
 		})
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     model.SectionImplants,
+			Section:     app.SectionImplants,
 		})
 		// when
 		oo, err := r.ListCharacterSectionStatus(ctx, c.ID)
@@ -42,7 +42,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 		error := "error"
 		arg := storage.UpdateOrCreateCharacterSectionStatusParams{
 			CharacterID:  c.ID,
-			Section:      model.SectionImplants,
+			Section:      app.SectionImplants,
 			ErrorMessage: &error,
 		}
 		x1, err := r.UpdateOrCreateCharacterSectionStatus(ctx, arg)
@@ -53,7 +53,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 				assert.Equal(t, "error", x1.ErrorMessage)
 				assert.True(t, x1.CompletedAt.IsZero())
 			}
-			x2, err := r.GetCharacterSectionStatus(ctx, c.ID, model.SectionImplants)
+			x2, err := r.GetCharacterSectionStatus(ctx, c.ID, app.SectionImplants)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -65,7 +65,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 		c := factory.CreateCharacter()
 		x := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     model.SectionImplants,
+			Section:     app.SectionImplants,
 		})
 		// when
 		s := "error"

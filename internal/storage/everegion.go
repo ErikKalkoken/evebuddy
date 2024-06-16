@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -16,7 +16,7 @@ type CreateEveRegionParams struct {
 	Name        string
 }
 
-func (st *Storage) CreateEveRegion(ctx context.Context, arg CreateEveRegionParams) (*model.EveRegion, error) {
+func (st *Storage) CreateEveRegion(ctx context.Context, arg CreateEveRegionParams) (*app.EveRegion, error) {
 	if arg.ID == 0 {
 		return nil, fmt.Errorf("invalid ID %d", arg.ID)
 	}
@@ -32,7 +32,7 @@ func (st *Storage) CreateEveRegion(ctx context.Context, arg CreateEveRegionParam
 	return eveRegionFromDBModel(e), nil
 }
 
-func (st *Storage) GetEveRegion(ctx context.Context, id int32) (*model.EveRegion, error) {
+func (st *Storage) GetEveRegion(ctx context.Context, id int32) (*app.EveRegion, error) {
 	c, err := st.q.GetEveRegion(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -43,8 +43,8 @@ func (st *Storage) GetEveRegion(ctx context.Context, id int32) (*model.EveRegion
 	return eveRegionFromDBModel(c), nil
 }
 
-func eveRegionFromDBModel(c queries.EveRegion) *model.EveRegion {
-	return &model.EveRegion{
+func eveRegionFromDBModel(c queries.EveRegion) *app.EveRegion {
+	return &app.EveRegion{
 		ID:          int32(c.ID),
 		Description: c.Description,
 		Name:        c.Name,

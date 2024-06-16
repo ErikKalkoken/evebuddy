@@ -11,7 +11,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
 
@@ -84,7 +84,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		dataMailLabel := map[string]any{
 			"labels": []map[string]any{
 				{
@@ -115,7 +115,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		// when
 		_, err := s.updateCharacterMailLabelsESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionMailLabels,
+			Section:     app.SectionMailLabels,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -130,8 +130,8 @@ func TestUpdateMailLabel(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		l1 := factory.CreateCharacterMailLabel(model.CharacterMailLabel{
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{
 			CharacterID: c.ID,
 			LabelID:     16,
 			Name:        "BLACK",
@@ -168,7 +168,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		// when
 		_, err := s.updateCharacterMailLabelsESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionMailLabels,
+			Section:     app.SectionMailLabels,
 		})
 		// then
 		if assert.NoError(t, err) {

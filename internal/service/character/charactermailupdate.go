@@ -10,7 +10,7 @@ import (
 	"github.com/antihax/goesi/optional"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
@@ -25,7 +25,7 @@ const (
 // updateCharacterMailLabelsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
 func (s *CharacterService) updateCharacterMailLabelsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionMailLabels {
+	if arg.Section != app.SectionMailLabels {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(
@@ -61,7 +61,7 @@ func (s *CharacterService) updateCharacterMailLabelsESI(ctx context.Context, arg
 // updateCharacterMailListsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
 func (s *CharacterService) updateCharacterMailListsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionMailLists {
+	if arg.Section != app.SectionMailLists {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(
@@ -76,7 +76,7 @@ func (s *CharacterService) updateCharacterMailListsESI(ctx context.Context, arg 
 		func(ctx context.Context, characterID int32, data any) error {
 			lists := data.([]esi.GetCharactersCharacterIdMailLists200Ok)
 			for _, o := range lists {
-				_, err := s.st.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, model.EveEntityMailList)
+				_, err := s.st.UpdateOrCreateEveEntity(ctx, o.MailingListId, o.Name, app.EveEntityMailList)
 				if err != nil {
 					return err
 				}
@@ -91,7 +91,7 @@ func (s *CharacterService) updateCharacterMailListsESI(ctx context.Context, arg 
 // updateCharacterMailsESI updates the skillqueue for a character from ESI
 // and reports wether it has changed.
 func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionMails {
+	if arg.Section != app.SectionMails {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(
@@ -136,7 +136,7 @@ func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg Upda
 func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdMail200Ok
 	lastMailID := int32(0)
-	maxMails, err := s.dt.IntWithFallback(model.SettingMaxMails, model.SettingMaxMailsDefault)
+	maxMails, err := s.dt.IntWithFallback(app.SettingMaxMails, app.SettingMaxMailsDefault)
 	if err != nil {
 		return nil, err
 	}

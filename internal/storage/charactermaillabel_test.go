@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -42,7 +42,7 @@ func TestMailLabel(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: 42})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 42})
 		arg := storage.MailLabelParams{
 			CharacterID: c.ID,
 			Color:       "xyz",
@@ -66,7 +66,7 @@ func TestMailLabel(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: 42, Name: "Dummy"})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 42, Name: "Dummy"})
 		arg := storage.MailLabelParams{
 			CharacterID: c.ID,
 			Color:       "xyz",
@@ -109,13 +109,13 @@ func TestMailLabel(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		l1 := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, Name: "bravo"})
-		l2 := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, Name: "alpha"})
+		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, Name: "bravo"})
+		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, Name: "alpha"})
 		factory.CreateCharacterMailLabel()
 		// when
 		got, err := r.ListCharacterMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
-			want := []*model.CharacterMailLabel{l2, l1}
+			want := []*app.CharacterMailLabel{l2, l1}
 			assert.Equal(t, want, got)
 		}
 	})
@@ -123,13 +123,13 @@ func TestMailLabel(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		l1 := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, Name: "bravo"})
-		l2 := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, Name: "alpha"})
+		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, Name: "bravo"})
+		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, Name: "alpha"})
 		factory.CreateCharacterMailLabel()
 		// when
 		got, err := r.ListCharacterMailLabelsOrdered(ctx, c.ID)
 		if assert.NoError(t, err) {
-			want := []*model.CharacterMailLabel{l2, l1}
+			want := []*app.CharacterMailLabel{l2, l1}
 			assert.Equal(t, want, got)
 		}
 	})
@@ -154,11 +154,11 @@ func TestDeleteObsoleteMailLabels(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
-		l1 := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c1.ID})
-		factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c1.ID}) // to delete
+		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c1.ID})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c1.ID}) // to delete
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c1.ID, LabelIDs: []int32{l1.LabelID}})
 		c2 := factory.CreateCharacter()
-		l2 := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c2.ID})
+		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c2.ID})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c2.ID, LabelIDs: []int32{l2.LabelID}})
 		// when
 		err := r.DeleteObsoleteCharacterMailLabels(ctx, c1.ID)

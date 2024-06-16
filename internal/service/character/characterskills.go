@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) GetCharacterSkill(ctx context.Context, characterID, typeID int32) (*model.CharacterSkill, error) {
+func (s *CharacterService) GetCharacterSkill(ctx context.Context, characterID, typeID int32) (*app.CharacterSkill, error) {
 	o, err := s.st.GetCharacterSkill(ctx, characterID, typeID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
@@ -19,7 +19,7 @@ func (s *CharacterService) GetCharacterSkill(ctx context.Context, characterID, t
 }
 
 func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionSkills {
+	if arg.Section != app.SectionSkills {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(
@@ -64,10 +64,10 @@ func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg Upd
 		})
 }
 
-func (s *CharacterService) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]model.ListCharacterSkillProgress, error) {
+func (s *CharacterService) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]app.ListCharacterSkillProgress, error) {
 	return s.st.ListCharacterSkillProgress(ctx, characterID, eveGroupID)
 }
 
-func (s *CharacterService) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]model.ListCharacterSkillGroupProgress, error) {
+func (s *CharacterService) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]app.ListCharacterSkillGroupProgress, error) {
 	return s.st.ListCharacterSkillGroupsProgress(ctx, characterID)
 }

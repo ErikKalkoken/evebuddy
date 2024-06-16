@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int32, rank uint) (*model.EveShipSkill, error) {
+func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int32, rank uint) (*app.EveShipSkill, error) {
 	arg := queries.GetShipSkillParams{
 		ShipTypeID: int64(shipTypeID),
 		Rank:       int64(rank),
@@ -25,12 +25,12 @@ func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int32, rank u
 	return eveShipSkillFromDBModel(row.Rank, row.ShipTypeID, row.SkillTypeID, row.SkillName, row.SkillLevel), nil
 }
 
-func (st *Storage) ListEveShipSkills(ctx context.Context, shipTypeID int32) ([]*model.EveShipSkill, error) {
+func (st *Storage) ListEveShipSkills(ctx context.Context, shipTypeID int32) ([]*app.EveShipSkill, error) {
 	rows, err := st.q.ListShipSkills(ctx, int64(shipTypeID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list ship skills for ID %d: %w", shipTypeID, err)
 	}
-	oo := make([]*model.EveShipSkill, len(rows))
+	oo := make([]*app.EveShipSkill, len(rows))
 	for i, row := range rows {
 		oo[i] = eveShipSkillFromDBModel(row.Rank, row.ShipTypeID, row.SkillTypeID, row.SkillName, row.SkillLevel)
 	}
@@ -125,8 +125,8 @@ func (st *Storage) CreateEveShipSkill(ctx context.Context, arg CreateShipSkillPa
 	return nil
 }
 
-func eveShipSkillFromDBModel(rank, shipTypeID, skillTypeID int64, skillName string, skillLevel int64) *model.EveShipSkill {
-	return &model.EveShipSkill{
+func eveShipSkillFromDBModel(rank, shipTypeID, skillTypeID int64, skillName string, skillLevel int64) *app.EveShipSkill {
+	return &app.EveShipSkill{
 		Rank:        uint(rank),
 		ShipTypeID:  int32(shipTypeID),
 		SkillTypeID: int32(skillTypeID),
@@ -236,19 +236,19 @@ func (st *Storage) listShipSkillsMap(ctx context.Context) ([]listShipSkillsMapRo
 	rows, err := st.db.QueryContext(
 		ctx,
 		listShipSkillsMapSQL,
-		model.EveDogmaAttributePrimarySkillID,
-		model.EveDogmaAttributePrimarySkillLevel,
-		model.EveDogmaAttributeSecondarySkillID,
-		model.EveDogmaAttributeSecondarySkillLevel,
-		model.EveDogmaAttributeTertiarySkillID,
-		model.EveDogmaAttributeTertiarySkillLevel,
-		model.EveDogmaAttributeQuaternarySkillID,
-		model.EveDogmaAttributeQuaternarySkillLevel,
-		model.EveDogmaAttributeQuinarySkillID,
-		model.EveDogmaAttributeQuinarySkillLevel,
-		model.EveDogmaAttributeSenarySkillID,
-		model.EveDogmaAttributeSenarySkillLevel,
-		model.EveCategoryShip,
+		app.EveDogmaAttributePrimarySkillID,
+		app.EveDogmaAttributePrimarySkillLevel,
+		app.EveDogmaAttributeSecondarySkillID,
+		app.EveDogmaAttributeSecondarySkillLevel,
+		app.EveDogmaAttributeTertiarySkillID,
+		app.EveDogmaAttributeTertiarySkillLevel,
+		app.EveDogmaAttributeQuaternarySkillID,
+		app.EveDogmaAttributeQuaternarySkillLevel,
+		app.EveDogmaAttributeQuinarySkillID,
+		app.EveDogmaAttributeQuinarySkillLevel,
+		app.EveDogmaAttributeSenarySkillID,
+		app.EveDogmaAttributeSenarySkillLevel,
+		app.EveCategoryShip,
 	)
 	if err != nil {
 		return nil, err

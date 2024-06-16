@@ -10,7 +10,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -29,10 +29,10 @@ func TestUpdateMail(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c1 := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c1.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c1.ID})
 		e1 := factory.CreateEveEntityCharacter()
 		e2 := factory.CreateEveEntityCharacter()
-		m1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+		m1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		factory.CreateCharacterMailList(c1.ID) // obsolete
 		c2 := factory.CreateCharacter()
 		m2 := factory.CreateCharacterMailList(c2.ID) // not obsolete
@@ -139,17 +139,17 @@ func TestUpdateMail(t *testing.T) {
 		// when
 		_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
 			CharacterID: c1.ID,
-			Section:     model.SectionMailLabels,
+			Section:     app.SectionMailLabels,
 		})
 		if assert.NoError(t, err) {
 			_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
 				CharacterID: c1.ID,
-				Section:     model.SectionMailLists,
+				Section:     app.SectionMailLists,
 			})
 			if assert.NoError(t, err) {
 				_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
 					CharacterID: c1.ID,
-					Section:     model.SectionMails,
+					Section:     app.SectionMails,
 				})
 				// then
 				if assert.NoError(t, err) {
@@ -184,12 +184,12 @@ func TestUpdateMail(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		e1 := factory.CreateEveEntityCharacter()
 		e2 := factory.CreateEveEntityCharacter()
-		factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: 16})
-		factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: 32}) // obsolete
-		m1 := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 16})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: 32}) // obsolete
+		m1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		timestamp, _ := time.Parse("2006-01-02T15:04:05.999MST", "2015-09-30T16:07:00Z")
 		mailID := int32(7)
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
@@ -284,7 +284,7 @@ func TestUpdateMail(t *testing.T) {
 		// when
 		_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionMails,
+			Section:     app.SectionMails,
 		})
 		// then
 		if assert.NoError(t, err) {

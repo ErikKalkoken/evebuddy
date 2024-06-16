@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
@@ -39,7 +39,7 @@ func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCr
 	return nil
 }
 
-func (st *Storage) GetEveLocation(ctx context.Context, id int64) (*model.EveLocation, error) {
+func (st *Storage) GetEveLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
 	o, err := st.q.GetLocation(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -54,12 +54,12 @@ func (st *Storage) GetEveLocation(ctx context.Context, id int64) (*model.EveLoca
 	return x, nil
 }
 
-func (st *Storage) ListEveLocation(ctx context.Context) ([]*model.EveLocation, error) {
+func (st *Storage) ListEveLocation(ctx context.Context) ([]*app.EveLocation, error) {
 	rows, err := st.q.ListEveLocations(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list eve locations: %w", err)
 	}
-	oo := make([]*model.EveLocation, len(rows))
+	oo := make([]*app.EveLocation, len(rows))
 	for i, r := range rows {
 		o, err := st.eveLocationFromDBModel(ctx, r)
 		if err != nil {
@@ -81,8 +81,8 @@ func (st *Storage) MissingEveLocations(ctx context.Context, ids []int64) ([]int6
 	return missing.ToSlice(), nil
 }
 
-func (st *Storage) eveLocationFromDBModel(ctx context.Context, l queries.EveLocation) (*model.EveLocation, error) {
-	l2 := &model.EveLocation{
+func (st *Storage) eveLocationFromDBModel(ctx context.Context, l queries.EveLocation) (*app.EveLocation, error) {
+	l2 := &app.EveLocation{
 		ID:        l.ID,
 		Name:      l.Name,
 		UpdatedAt: l.UpdatedAt,

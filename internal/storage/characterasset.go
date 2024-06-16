@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -53,7 +53,7 @@ func (st *Storage) DeleteExcludedCharacterAssets(ctx context.Context, characterI
 	return st.q.DeleteExcludedCharacterAssets(ctx, arg)
 }
 
-func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, itemID int64) (*model.CharacterAsset, error) {
+func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, itemID int64) (*app.CharacterAsset, error) {
 	arg := queries.GetCharacterAssetParams{
 		CharacterID: int64(characterID),
 		ItemID:      itemID,
@@ -81,43 +81,43 @@ func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32)
 	return st.q.ListCharacterAssetIDs(ctx, int64(characterID))
 }
 
-func (st *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+func (st *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
 	arg := queries.ListCharacterAssetsInShipHangarParams{
 		CharacterID:   int64(characterID),
 		LocationID:    locationID,
 		LocationFlag:  "Hangar",
-		EveCategoryID: model.EveCategoryShip,
+		EveCategoryID: app.EveCategoryShip,
 	}
 	rows, err := st.q.ListCharacterAssetsInShipHangar(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
-	ii2 := make([]*model.CharacterAsset, len(rows))
+	ii2 := make([]*app.CharacterAsset, len(rows))
 	for i, r := range rows {
 		ii2[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	}
 	return ii2, nil
 }
 
-func (st *Storage) ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+func (st *Storage) ListCharacterAssetsInItemHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
 	arg := queries.ListCharacterAssetsInItemHangarParams{
 		CharacterID:   int64(characterID),
 		LocationID:    locationID,
 		LocationFlag:  "Hangar",
-		EveCategoryID: model.EveCategoryShip,
+		EveCategoryID: app.EveCategoryShip,
 	}
 	rows, err := st.q.ListCharacterAssetsInItemHangar(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
-	ii2 := make([]*model.CharacterAsset, len(rows))
+	ii2 := make([]*app.CharacterAsset, len(rows))
 	for i, r := range rows {
 		ii2[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	}
 	return ii2, nil
 }
 
-func (st *Storage) ListCharacterAssetsInLocation(ctx context.Context, characterID int32, locationID int64) ([]*model.CharacterAsset, error) {
+func (st *Storage) ListCharacterAssetsInLocation(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
 	arg := queries.ListCharacterAssetsInLocationParams{
 		CharacterID: int64(characterID),
 		LocationID:  locationID,
@@ -126,7 +126,7 @@ func (st *Storage) ListCharacterAssetsInLocation(ctx context.Context, characterI
 	if err != nil {
 		return nil, err
 	}
-	ii2 := make([]*model.CharacterAsset, len(rows))
+	ii2 := make([]*app.CharacterAsset, len(rows))
 	for i, r := range rows {
 		ii2[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	}
@@ -162,35 +162,35 @@ func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacter
 	return nil
 }
 
-func (st *Storage) ListAllCharacterAssets(ctx context.Context) ([]*model.CharacterAsset, error) {
+func (st *Storage) ListAllCharacterAssets(ctx context.Context) ([]*app.CharacterAsset, error) {
 	rows, err := st.q.ListAllCharacterAssets(ctx)
 	if err != nil {
 		return nil, err
 	}
-	oo := make([]*model.CharacterAsset, len(rows))
+	oo := make([]*app.CharacterAsset, len(rows))
 	for i, r := range rows {
 		oo[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	}
 	return oo, nil
 }
 
-func (st *Storage) ListCharacterAssets(ctx context.Context, characterID int32) ([]*model.CharacterAsset, error) {
+func (st *Storage) ListCharacterAssets(ctx context.Context, characterID int32) ([]*app.CharacterAsset, error) {
 	rows, err := st.q.ListCharacterAssets(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}
-	oo := make([]*model.CharacterAsset, len(rows))
+	oo := make([]*app.CharacterAsset, len(rows))
 	for i, r := range rows {
 		oo[i] = characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	}
 	return oo, nil
 }
 
-func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g queries.EveGroup, c queries.EveCategory, p sql.NullFloat64) *model.CharacterAsset {
+func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g queries.EveGroup, c queries.EveCategory, p sql.NullFloat64) *app.CharacterAsset {
 	if ca.CharacterID == 0 {
 		panic("missing character ID")
 	}
-	o := &model.CharacterAsset{
+	o := &app.CharacterAsset{
 		ID:              ca.ID,
 		CharacterID:     int32(ca.CharacterID),
 		EveType:         eveTypeFromDBModel(t, g, c),

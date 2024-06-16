@@ -8,13 +8,13 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"golang.org/x/sync/errgroup"
 )
 
-func (eu *EveUniverseService) getSectionStatus(ctx context.Context, section model.GeneralSection) (*model.GeneralSectionStatus, error) {
+func (eu *EveUniverseService) getSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
 	x, err := eu.st.GetGeneralSectionStatus(ctx, section)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, nil
@@ -26,7 +26,7 @@ func (eu *EveUniverseService) getSectionStatus(ctx context.Context, section mode
 
 // SectionExists reports whether this section exists at all.
 // This allows the app to wait with showing related data to the user until this section is full downloaded for the first time.
-func (s *EveUniverseService) SectionExists(section model.GeneralSection) (bool, error) {
+func (s *EveUniverseService) SectionExists(section app.GeneralSection) (bool, error) {
 	o, err := s.getSectionStatus(context.Background(), section)
 	if err != nil {
 		return false, err
@@ -37,7 +37,7 @@ func (s *EveUniverseService) SectionExists(section model.GeneralSection) (bool, 
 	return !o.CompletedAt.IsZero(), nil
 }
 
-func (s *EveUniverseService) UpdateSection(ctx context.Context, section model.GeneralSection, forceUpdate bool) (bool, error) {
+func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.GeneralSection, forceUpdate bool) (bool, error) {
 	status, err := s.getSectionStatus(ctx, section)
 	if err != nil {
 		return false, err
@@ -50,11 +50,11 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section model.Ge
 
 	var f func(context.Context) error
 	switch section {
-	case model.SectionEveCategories:
+	case app.SectionEveCategories:
 		f = s.updateEveCategories
-	case model.SectionEveCharacters:
+	case app.SectionEveCharacters:
 		f = s.UpdateAllEveCharactersESI
-	case model.SectionEveMarketPrices:
+	case app.SectionEveMarketPrices:
 		f = s.updateEveMarketPricesESI
 	}
 	key := fmt.Sprintf("Update-section-%s", section)
@@ -110,10 +110,10 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section model.Ge
 func (eu *EveUniverseService) updateEveCategories(ctx context.Context) error {
 	g := new(errgroup.Group)
 	g.Go(func() error {
-		return eu.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategorySkill)
+		return eu.UpdateEveCategoryWithChildrenESI(ctx, app.EveCategorySkill)
 	})
 	g.Go(func() error {
-		return eu.UpdateEveCategoryWithChildrenESI(ctx, model.EveCategoryShip)
+		return eu.UpdateEveCategoryWithChildrenESI(ctx, app.EveCategoryShip)
 	})
 	if err := g.Wait(); err != nil {
 		return err

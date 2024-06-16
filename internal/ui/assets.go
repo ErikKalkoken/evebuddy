@@ -13,9 +13,9 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/assettree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/model/assettree"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 	"github.com/dustin/go-humanize"
 )
@@ -84,7 +84,7 @@ type locationDataNode struct {
 	IsUnknown           bool
 	SystemName          string
 	SystemSecurityValue float32
-	SystemSecurityType  model.SolarSystemSecurityType
+	SystemSecurityType  app.SolarSystemSecurityType
 	Type                locationDataNodeType
 }
 
@@ -365,7 +365,7 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance, nil
 	}
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), model.SectionAssets)
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), app.SectionAssets)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}
@@ -373,11 +373,11 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 }
 
 func (a *assetsArea) redrawAssets(n locationDataNode) error {
-	empty := make([]*model.CharacterAsset, 0)
+	empty := make([]*app.CharacterAsset, 0)
 	if err := a.assetsData.Set(copyToUntypedSlice(empty)); err != nil {
 		return err
 	}
-	var f func(context.Context, int32, int64) ([]*model.CharacterAsset, error)
+	var f func(context.Context, int32, int64) ([]*app.CharacterAsset, error)
 	switch n.Type {
 	case nodeShipHangar:
 		f = a.ui.sv.Character.ListCharacterAssetsInShipHangar
@@ -392,8 +392,8 @@ func (a *assetsArea) redrawAssets(n locationDataNode) error {
 	}
 	switch n.Type {
 	case nodeItemHangar:
-		containers := make([]*model.CharacterAsset, 0)
-		items := make([]*model.CharacterAsset, 0)
+		containers := make([]*app.CharacterAsset, 0)
+		items := make([]*app.CharacterAsset, 0)
 		for _, ca := range assets {
 			if ca.IsContainer() {
 				containers = append(containers, ca)
@@ -403,7 +403,7 @@ func (a *assetsArea) redrawAssets(n locationDataNode) error {
 		}
 		assets = slices.Concat(containers, items)
 	case nodeCargoBay:
-		cargo := make([]*model.CharacterAsset, 0)
+		cargo := make([]*app.CharacterAsset, 0)
 		for _, ca := range assets {
 			if !ca.IsInCargoBay() {
 				continue
@@ -412,7 +412,7 @@ func (a *assetsArea) redrawAssets(n locationDataNode) error {
 		}
 		assets = cargo
 	case nodeFuelBay:
-		fuel := make([]*model.CharacterAsset, 0)
+		fuel := make([]*app.CharacterAsset, 0)
 		for _, ca := range assets {
 			if !ca.IsInFuelBay() {
 				continue
@@ -433,7 +433,7 @@ func (a *assetsArea) redrawAssets(n locationDataNode) error {
 }
 
 func (a *assetsArea) clearAssets() error {
-	empty := make([]*model.CharacterAsset, 0)
+	empty := make([]*app.CharacterAsset, 0)
 	if err := a.assetsData.Set(copyToUntypedSlice(empty)); err != nil {
 		return err
 	}
@@ -441,7 +441,7 @@ func (a *assetsArea) clearAssets() error {
 	return nil
 }
 
-func (u *ui) showNewAssetWindow(ca *model.CharacterAsset) {
+func (u *ui) showNewAssetWindow(ca *app.CharacterAsset) {
 	var name string
 	if ca.Name != "" {
 		name = fmt.Sprintf(" \"%s\" ", ca.Name)
@@ -473,7 +473,7 @@ func (u *ui) makeAssetGrid(assetsData binding.UntypedList) *widget.GridWrap {
 			return widgets.NewAssetListWidget(u.sv.EveImage, defaultAssetIcon)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
-			ca, err := convertDataItem[*model.CharacterAsset](di)
+			ca, err := convertDataItem[*app.CharacterAsset](di)
 			if err != nil {
 				panic(err)
 			}
@@ -483,7 +483,7 @@ func (u *ui) makeAssetGrid(assetsData binding.UntypedList) *widget.GridWrap {
 		},
 	)
 	g.OnSelected = func(id widget.GridWrapItemID) {
-		ca, err := getItemUntypedList[*model.CharacterAsset](assetsData, id)
+		ca, err := getItemUntypedList[*app.CharacterAsset](assetsData, id)
 		if err != nil {
 			slog.Error("failed to access assets in grid", "err", err)
 			return
@@ -505,12 +505,12 @@ func makeNameWithCount(name string, count int) string {
 	return fmt.Sprintf("%s (%s)", name, humanize.Comma(int64(count)))
 }
 
-func widgetTypeVariantFromModel(v model.EveTypeVariant) widgets.EveTypeVariant {
-	m := map[model.EveTypeVariant]widgets.EveTypeVariant{
-		model.VariantBPC:     widgets.VariantBPC,
-		model.VariantBPO:     widgets.VariantBPO,
-		model.VariantRegular: widgets.VariantRegular,
-		model.VariantSKIN:    widgets.VariantSKIN,
+func widgetTypeVariantFromModel(v app.EveTypeVariant) widgets.EveTypeVariant {
+	m := map[app.EveTypeVariant]widgets.EveTypeVariant{
+		app.VariantBPC:     widgets.VariantBPC,
+		app.VariantBPO:     widgets.VariantBPO,
+		app.VariantRegular: widgets.VariantRegular,
+		app.VariantSKIN:    widgets.VariantSKIN,
 	}
 	return m[v]
 }

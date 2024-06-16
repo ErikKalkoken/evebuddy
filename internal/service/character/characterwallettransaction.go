@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"slices"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
@@ -16,13 +16,13 @@ const (
 	maxTransactionsPerPage = 2_500 // maximum objects returned per page
 )
 
-func (s *CharacterService) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*model.CharacterWalletTransaction, error) {
+func (s *CharacterService) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*app.CharacterWalletTransaction, error) {
 	return s.st.ListCharacterWalletTransactions(ctx, characterID)
 }
 
 // updateCharacterWalletTransactionESI updates the wallet journal from ESI and reports wether it has changed.
 func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionWalletTransactions {
+	if arg.Section != app.SectionWalletTransactions {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(
@@ -100,7 +100,7 @@ func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Conte
 func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdWalletTransactions200Ok
 	lastID := int64(0)
-	maxTransactions, err := s.dt.IntWithFallback(model.SettingMaxWalletTransactions, model.SettingMaxWalletTransactionsDefault)
+	maxTransactions, err := s.dt.IntWithFallback(app.SettingMaxWalletTransactions, app.SettingMaxWalletTransactionsDefault)
 	if err != nil {
 		return nil, err
 	}

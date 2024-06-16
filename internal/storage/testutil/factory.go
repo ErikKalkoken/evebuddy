@@ -12,7 +12,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
 
@@ -26,7 +26,7 @@ func NewFactory(st *storage.Storage, db *sql.DB) Factory {
 	return f
 }
 
-func (f Factory) CreateCharacter(args ...storage.UpdateOrCreateCharacterParams) *model.Character {
+func (f Factory) CreateCharacter(args ...storage.UpdateOrCreateCharacterParams) *app.Character {
 	ctx := context.Background()
 	var arg storage.UpdateOrCreateCharacterParams
 	if len(args) > 0 {
@@ -68,7 +68,7 @@ func (f Factory) CreateCharacter(args ...storage.UpdateOrCreateCharacterParams) 
 	return c
 }
 
-func (f Factory) CreateCharacterAttributes(args ...storage.UpdateOrCreateCharacterAttributesParams) *model.CharacterAttributes {
+func (f Factory) CreateCharacterAttributes(args ...storage.UpdateOrCreateCharacterAttributesParams) *app.CharacterAttributes {
 	ctx := context.Background()
 	var arg storage.UpdateOrCreateCharacterAttributesParams
 	randomValue := func() int {
@@ -106,7 +106,7 @@ func (f Factory) CreateCharacterAttributes(args ...storage.UpdateOrCreateCharact
 	return o
 }
 
-func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams) *model.CharacterAsset {
+func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams) *app.CharacterAsset {
 	ctx := context.Background()
 	var arg storage.CreateCharacterAssetParams
 	if len(args) > 0 {
@@ -153,7 +153,7 @@ func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams
 	return o
 }
 
-func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantParams) *model.CharacterImplant {
+func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantParams) *app.CharacterImplant {
 	ctx := context.Background()
 	var arg storage.CreateCharacterImplantParams
 	if len(args) > 0 {
@@ -178,7 +178,7 @@ func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantPa
 	return o
 }
 
-func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpCloneParams) *model.CharacterJumpClone {
+func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpCloneParams) *app.CharacterJumpClone {
 	ctx := context.Background()
 	var arg storage.CreateCharacterJumpCloneParams
 	if len(args) > 0 {
@@ -210,7 +210,7 @@ func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpClo
 	return o
 }
 
-func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) *model.CharacterMail {
+func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) *app.CharacterMail {
 	var arg storage.CreateCharacterMailParams
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -259,7 +259,7 @@ func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) 
 	return mail
 }
 
-func (f Factory) CreateCharacterMailLabel(args ...model.CharacterMailLabel) *model.CharacterMailLabel {
+func (f Factory) CreateCharacterMailLabel(args ...app.CharacterMailLabel) *app.CharacterMailLabel {
 	ctx := context.Background()
 	var arg storage.MailLabelParams
 	if len(args) > 0 {
@@ -307,8 +307,8 @@ func (f Factory) CreateCharacterMailLabel(args ...model.CharacterMailLabel) *mod
 	return label
 }
 
-func (f Factory) CreateCharacterMailList(characterID int32, args ...model.EveEntity) *model.EveEntity {
-	var e model.EveEntity
+func (f Factory) CreateCharacterMailList(characterID int32, args ...app.EveEntity) *app.EveEntity {
+	var e app.EveEntity
 	ctx := context.Background()
 	if len(args) > 0 {
 		e = args[0]
@@ -318,7 +318,7 @@ func (f Factory) CreateCharacterMailList(characterID int32, args ...model.EveEnt
 		characterID = c.ID
 	}
 	if e.ID == 0 {
-		e = *f.CreateEveEntity(model.EveEntity{Category: model.EveEntityMailList})
+		e = *f.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 	}
 	if err := f.st.CreateCharacterMailList(ctx, characterID, e.ID); err != nil {
 		panic(err)
@@ -326,7 +326,7 @@ func (f Factory) CreateCharacterMailList(characterID int32, args ...model.EveEnt
 	return &e
 }
 
-func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSkillParams) *model.CharacterSkill {
+func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSkillParams) *app.CharacterSkill {
 	ctx := context.Background()
 	var arg storage.UpdateOrCreateCharacterSkillParams
 	if len(args) > 0 {
@@ -360,7 +360,7 @@ func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSki
 	return o
 }
 
-func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemParams) *model.CharacterSkillqueueItem {
+func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemParams) *app.CharacterSkillqueueItem {
 	ctx := context.Background()
 	var arg storage.SkillqueueItemParams
 	if len(args) > 0 {
@@ -423,8 +423,8 @@ func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemPar
 	return i
 }
 
-func (f Factory) CreateCharacterToken(args ...model.CharacterToken) *model.CharacterToken {
-	var t model.CharacterToken
+func (f Factory) CreateCharacterToken(args ...app.CharacterToken) *app.CharacterToken {
+	var t app.CharacterToken
 	ctx := context.Background()
 	if len(args) > 0 {
 		t = args[0]
@@ -454,14 +454,14 @@ func (f Factory) CreateCharacterToken(args ...model.CharacterToken) *model.Chara
 
 type CharacterSectionStatusParams struct {
 	CharacterID  int32
-	Section      model.CharacterSection
+	Section      app.CharacterSection
 	ErrorMessage string
 	CompletedAt  time.Time
 	StartedAt    time.Time
 	Data         any
 }
 
-func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusParams) *model.CharacterSectionStatus {
+func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusParams) *app.CharacterSectionStatus {
 	ctx := context.Background()
 	var arg CharacterSectionStatusParams
 	if len(args) > 0 {
@@ -502,7 +502,7 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 	return o
 }
 
-func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharacterWalletJournalEntryParams) *model.CharacterWalletJournalEntry {
+func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharacterWalletJournalEntryParams) *app.CharacterWalletJournalEntry {
 	ctx := context.Background()
 	var arg storage.CreateCharacterWalletJournalEntryParams
 	if len(args) > 0 {
@@ -559,7 +559,7 @@ func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharact
 	return i
 }
 
-func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacterWalletTransactionParams) *model.CharacterWalletTransaction {
+func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacterWalletTransactionParams) *app.CharacterWalletTransaction {
 	ctx := context.Background()
 	var arg storage.CreateCharacterWalletTransactionParams
 	if len(args) > 0 {
@@ -602,7 +602,7 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 	return x
 }
 
-func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *model.EveCharacter {
+func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *app.EveCharacter {
 	ctx := context.Background()
 	var arg storage.CreateEveCharacterParams
 	if len(args) > 0 {
@@ -640,14 +640,14 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *m
 }
 
 type GeneralSectionStatusParams struct {
-	Section      model.GeneralSection
+	Section      app.GeneralSection
 	ErrorMessage string
 	CompletedAt  time.Time
 	StartedAt    time.Time
 	Data         any
 }
 
-func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) *model.GeneralSectionStatus {
+func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) *app.GeneralSectionStatus {
 	ctx := context.Background()
 	var arg GeneralSectionStatusParams
 	if len(args) > 0 {
@@ -683,8 +683,8 @@ func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) 
 	return o
 }
 
-func (f Factory) CreateEveEntity(args ...model.EveEntity) *model.EveEntity {
-	var arg model.EveEntity
+func (f Factory) CreateEveEntity(args ...app.EveEntity) *app.EveEntity {
+	var arg app.EveEntity
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
@@ -692,8 +692,8 @@ func (f Factory) CreateEveEntity(args ...model.EveEntity) *model.EveEntity {
 	if arg.ID == 0 {
 		arg.ID = int32(f.calcNewID("eve_entities", "id", 1))
 	}
-	if arg.Category == model.EveEntityUndefined {
-		arg.Category = model.EveEntityCharacter
+	if arg.Category == app.EveEntityUndefined {
+		arg.Category = app.EveEntityCharacter
 	}
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("%s #%d", arg.Category, arg.ID)
@@ -705,41 +705,41 @@ func (f Factory) CreateEveEntity(args ...model.EveEntity) *model.EveEntity {
 	return e
 }
 
-func (f Factory) CreateEveEntityAlliance(args ...model.EveEntity) *model.EveEntity {
-	args2 := eveEntityWithCategory(args, model.EveEntityAlliance)
+func (f Factory) CreateEveEntityAlliance(args ...app.EveEntity) *app.EveEntity {
+	args2 := eveEntityWithCategory(args, app.EveEntityAlliance)
 	return f.CreateEveEntity(args2...)
 }
 
-func (f Factory) CreateEveEntityCharacter(args ...model.EveEntity) *model.EveEntity {
-	args2 := eveEntityWithCategory(args, model.EveEntityCharacter)
+func (f Factory) CreateEveEntityCharacter(args ...app.EveEntity) *app.EveEntity {
+	args2 := eveEntityWithCategory(args, app.EveEntityCharacter)
 	return f.CreateEveEntity(args2...)
 }
 
-func (f Factory) CreateEveEntityCorporation(args ...model.EveEntity) *model.EveEntity {
-	args2 := eveEntityWithCategory(args, model.EveEntityCorporation)
+func (f Factory) CreateEveEntityCorporation(args ...app.EveEntity) *app.EveEntity {
+	args2 := eveEntityWithCategory(args, app.EveEntityCorporation)
 	return f.CreateEveEntity(args2...)
 }
 
-func (f Factory) CreateEveEntitySolarSystem(args ...model.EveEntity) *model.EveEntity {
-	args2 := eveEntityWithCategory(args, model.EveEntitySolarSystem)
+func (f Factory) CreateEveEntitySolarSystem(args ...app.EveEntity) *app.EveEntity {
+	args2 := eveEntityWithCategory(args, app.EveEntitySolarSystem)
 	return f.CreateEveEntity(args2...)
 }
 
-func (f Factory) CreateEveEntityInventoryType(args ...model.EveEntity) *model.EveEntity {
-	args2 := eveEntityWithCategory(args, model.EveEntityInventoryType)
+func (f Factory) CreateEveEntityInventoryType(args ...app.EveEntity) *app.EveEntity {
+	args2 := eveEntityWithCategory(args, app.EveEntityInventoryType)
 	return f.CreateEveEntity(args2...)
 }
 
-func eveEntityWithCategory(args []model.EveEntity, category model.EveEntityCategory) []model.EveEntity {
-	var e model.EveEntity
+func eveEntityWithCategory(args []app.EveEntity, category app.EveEntityCategory) []app.EveEntity {
+	var e app.EveEntity
 	if len(args) > 0 {
 		e = args[0]
 	}
 	e.Category = category
-	args2 := []model.EveEntity{e}
+	args2 := []app.EveEntity{e}
 	return args2
 }
-func (f Factory) CreateEveCategory(args ...storage.CreateEveCategoryParams) *model.EveCategory {
+func (f Factory) CreateEveCategory(args ...storage.CreateEveCategoryParams) *app.EveCategory {
 	var arg storage.CreateEveCategoryParams
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -758,7 +758,7 @@ func (f Factory) CreateEveCategory(args ...storage.CreateEveCategoryParams) *mod
 	return r
 }
 
-func (f Factory) CreateEveGroup(args ...storage.CreateEveGroupParams) *model.EveGroup {
+func (f Factory) CreateEveGroup(args ...storage.CreateEveGroupParams) *app.EveGroup {
 	var arg storage.CreateEveGroupParams
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -785,7 +785,7 @@ func (f Factory) CreateEveGroup(args ...storage.CreateEveGroupParams) *model.Eve
 	return o
 }
 
-func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *model.EveType {
+func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *app.EveType {
 	var arg storage.CreateEveTypeParams
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -849,7 +849,7 @@ func (f Factory) CreateEveTypeDogmaAttribute(args ...storage.CreateEveTypeDogmaA
 	}
 }
 
-func (f Factory) CreateEveDogmaAttribute(args ...storage.CreateEveDogmaAttributeParams) *model.EveDogmaAttribute {
+func (f Factory) CreateEveDogmaAttribute(args ...storage.CreateEveDogmaAttributeParams) *app.EveDogmaAttribute {
 	var arg storage.CreateEveDogmaAttributeParams
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -874,7 +874,7 @@ func (f Factory) CreateEveDogmaAttribute(args ...storage.CreateEveDogmaAttribute
 		arg.Name = fmt.Sprintf("Name #%d", arg.ID)
 	}
 	if arg.UnitID == 0 {
-		arg.UnitID = model.EveUnitID(rand.IntN(120))
+		arg.UnitID = app.EveUnitID(rand.IntN(120))
 	}
 	o, err := f.st.CreateEveDogmaAttribute(ctx, arg)
 	if err != nil {
@@ -883,7 +883,7 @@ func (f Factory) CreateEveDogmaAttribute(args ...storage.CreateEveDogmaAttribute
 	return o
 }
 
-func (f Factory) CreateEveRegion(args ...storage.CreateEveRegionParams) *model.EveRegion {
+func (f Factory) CreateEveRegion(args ...storage.CreateEveRegionParams) *app.EveRegion {
 	var arg storage.CreateEveRegionParams
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -902,7 +902,7 @@ func (f Factory) CreateEveRegion(args ...storage.CreateEveRegionParams) *model.E
 	return o
 }
 
-func (f Factory) CreateEveConstellation(args ...storage.CreateEveConstellationParams) *model.EveConstellation {
+func (f Factory) CreateEveConstellation(args ...storage.CreateEveConstellationParams) *app.EveConstellation {
 	var arg storage.CreateEveConstellationParams
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -929,7 +929,7 @@ func (f Factory) CreateEveConstellation(args ...storage.CreateEveConstellationPa
 	return o
 }
 
-func (f Factory) CreateEveSolarSystem(args ...storage.CreateEveSolarSystemParams) *model.EveSolarSystem {
+func (f Factory) CreateEveSolarSystem(args ...storage.CreateEveSolarSystemParams) *app.EveSolarSystem {
 	var arg storage.CreateEveSolarSystemParams
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -959,8 +959,8 @@ func (f Factory) CreateEveSolarSystem(args ...storage.CreateEveSolarSystemParams
 	return o
 }
 
-func (f Factory) CreateEveRace(args ...model.EveRace) *model.EveRace {
-	var arg model.EveRace
+func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
+	var arg app.EveRace
 	ctx := context.Background()
 	if len(args) > 0 {
 		arg = args[0]
@@ -981,7 +981,7 @@ func (f Factory) CreateEveRace(args ...model.EveRace) *model.EveRace {
 	return r
 }
 
-func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationParams) *model.EveLocation {
+func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationParams) *app.EveLocation {
 	var arg storage.UpdateOrCreateLocationParams
 	ctx := context.Background()
 	if len(args) > 0 {
@@ -1019,7 +1019,7 @@ func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationP
 	return x
 }
 
-func (f Factory) CreateEveMarketPrice(args ...storage.UpdateOrCreateEveMarketPriceParams) *model.EveMarketPrice {
+func (f Factory) CreateEveMarketPrice(args ...storage.UpdateOrCreateEveMarketPriceParams) *app.EveMarketPrice {
 	var arg storage.UpdateOrCreateEveMarketPriceParams
 	ctx := context.Background()
 	if len(args) > 0 {

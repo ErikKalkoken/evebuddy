@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -115,7 +115,7 @@ func TestLocation(t *testing.T) {
 		// when
 		got, err := r.ListEveLocation(ctx)
 		if assert.NoError(t, err) {
-			want := []*model.EveLocation{l1, l2}
+			want := []*app.EveLocation{l1, l2}
 			assert.Equal(t, want, got)
 		}
 	})

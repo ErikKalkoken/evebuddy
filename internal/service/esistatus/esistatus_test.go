@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/service/esistatus"
 	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
@@ -32,7 +32,7 @@ func TestFetch(t *testing.T) {
 		got, err := es.Fetch()
 		// then
 		if assert.NoError(t, err) {
-			want := &model.ESIStatus{
+			want := &app.ESIStatus{
 				PlayerCount:  12345,
 				ErrorMessage: "",
 			}
@@ -52,7 +52,7 @@ func TestFetch(t *testing.T) {
 		got, err := es.Fetch()
 		// then
 		if assert.NoError(t, err) {
-			want := &model.ESIStatus{
+			want := &app.ESIStatus{
 				ErrorMessage: "418: general swagger error",
 			}
 			assert.Equal(t, want, got)
@@ -93,7 +93,7 @@ func TestFetchSwaggerErrors(t *testing.T) {
 			got, err := es.Fetch()
 			// then
 			if assert.NoError(t, err) {
-				want := &model.ESIStatus{
+				want := &app.ESIStatus{
 					ErrorMessage: fmt.Sprintf("%d: custom error message", code),
 				}
 				assert.Equal(t, want, got)

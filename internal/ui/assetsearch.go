@@ -14,9 +14,9 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/assettree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
-	"github.com/ErikKalkoken/evebuddy/internal/model/assettree"
 	"github.com/dustin/go-humanize"
 )
 
@@ -94,7 +94,7 @@ func (u *ui) newAssetSearchArea() *assetSearchArea {
 	return a
 }
 
-func (a *assetSearchArea) newAssetSearchRow(ca *model.CharacterAsset) *assetSearchRow {
+func (a *assetSearchArea) newAssetSearchRow(ca *app.CharacterAsset) *assetSearchRow {
 	r := &assetSearchRow{
 		characterID:   ca.CharacterID,
 		characterName: a.characterNames[ca.CharacterID],
@@ -394,7 +394,7 @@ func (a *assetSearchArea) characterCount() int {
 	cc := a.ui.sv.StatusCache.ListCharacters()
 	validCount := 0
 	for _, c := range cc {
-		if a.ui.sv.StatusCache.CharacterSectionExists(c.ID, model.SectionAssets) {
+		if a.ui.sv.StatusCache.CharacterSectionExists(c.ID, app.SectionAssets) {
 			validCount++
 		}
 	}

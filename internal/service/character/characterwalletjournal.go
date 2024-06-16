@@ -5,20 +5,20 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
 	"github.com/antihax/goesi/optional"
 )
 
-func (s *CharacterService) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*model.CharacterWalletJournalEntry, error) {
+func (s *CharacterService) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*app.CharacterWalletJournalEntry, error) {
 	return s.st.ListCharacterWalletJournalEntries(ctx, characterID)
 }
 
 // updateCharacterWalletJournalEntryESI updates the wallet journal from ESI and reports wether it has changed.
 func (s *CharacterService) updateCharacterWalletJournalEntryESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionWalletJournal {
+	if arg.Section != app.SectionWalletJournal {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(

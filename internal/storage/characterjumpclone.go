@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -22,7 +22,7 @@ func (st *Storage) CreateCharacterJumpClone(ctx context.Context, arg CreateChara
 	return createCharacterJumpClone(ctx, st.q, arg)
 }
 
-func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32, jumpCloneID int32) (*model.CharacterJumpClone, error) {
+func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32, jumpCloneID int32) (*app.CharacterJumpClone, error) {
 	arg := queries.GetCharacterJumpCloneParams{
 		CharacterID: int64(characterID),
 		JumpCloneID: int64(jumpCloneID),
@@ -43,16 +43,16 @@ func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32,
 	return o, nil
 }
 
-func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, cloneID int64) ([]*model.CharacterJumpCloneImplant, error) {
+func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, cloneID int64) ([]*app.CharacterJumpCloneImplant, error) {
 	arg2 := queries.ListCharacterJumpCloneImplantParams{
 		CloneID:          cloneID,
-		DogmaAttributeID: model.EveDogmaAttributeImplantSlot,
+		DogmaAttributeID: app.EveDogmaAttributeImplantSlot,
 	}
 	row2, err := q.ListCharacterJumpCloneImplant(ctx, arg2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get character jump clone implants for clone ID %d: %w", cloneID, err)
 	}
-	x := make([]*model.CharacterJumpCloneImplant, len(row2))
+	x := make([]*app.CharacterJumpCloneImplant, len(row2))
 	for i, row := range row2 {
 		x[i] = characterJumpCloneImplantFromDBModel(
 			row.CharacterJumpCloneImplant,
@@ -63,12 +63,12 @@ func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, clo
 	return x, nil
 }
 
-func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*model.CharacterJumpClone, error) {
+func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*app.CharacterJumpClone, error) {
 	rows, err := st.q.ListCharacterJumpClones(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}
-	oo := make([]*model.CharacterJumpClone, len(rows))
+	oo := make([]*app.CharacterJumpClone, len(rows))
 	for i, row := range rows {
 		oo[i] = characterJumpCloneFromDBModel(row.CharacterJumpClone, row.LocationName, row.RegionID, row.RegionName)
 		x, err := listCharacterJumpCloneImplants(ctx, st.q, row.CharacterJumpClone.ID)
@@ -127,19 +127,19 @@ func createCharacterJumpClone(ctx context.Context, q *queries.Queries, arg Creat
 	return nil
 }
 
-func characterJumpCloneFromDBModel(o queries.CharacterJumpClone, locationName string, regionID sql.NullInt64, regionName sql.NullString) *model.CharacterJumpClone {
+func characterJumpCloneFromDBModel(o queries.CharacterJumpClone, locationName string, regionID sql.NullInt64, regionName sql.NullString) *app.CharacterJumpClone {
 	if o.CharacterID == 0 {
 		panic("missing character ID")
 	}
-	o2 := &model.CharacterJumpClone{
+	o2 := &app.CharacterJumpClone{
 		CharacterID: int32(o.CharacterID),
 		ID:          o.ID,
 		JumpCloneID: int32(o.JumpCloneID),
-		Location:    &model.EntityShort[int64]{ID: o.LocationID, Name: locationName},
+		Location:    &app.EntityShort[int64]{ID: o.LocationID, Name: locationName},
 		Name:        o.Name,
 	}
 	if regionID.Valid && regionName.Valid {
-		o2.Region = &model.EntityShort[int32]{ID: int32(regionID.Int64), Name: regionName.String}
+		o2.Region = &app.EntityShort[int32]{ID: int32(regionID.Int64), Name: regionName.String}
 	}
 	return o2
 }
@@ -150,11 +150,11 @@ func characterJumpCloneImplantFromDBModel(
 	g queries.EveGroup,
 	c queries.EveCategory,
 	s sql.NullFloat64,
-) *model.CharacterJumpCloneImplant {
+) *app.CharacterJumpCloneImplant {
 	if o.CloneID == 0 {
 		panic("missing clone ID")
 	}
-	o2 := &model.CharacterJumpCloneImplant{
+	o2 := &app.CharacterJumpCloneImplant{
 		EveType: eveTypeFromDBModel(t, g, c),
 		ID:      o.ID,
 	}

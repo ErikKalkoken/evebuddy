@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
@@ -26,11 +26,11 @@ func TestCharacterSectionStatus(t *testing.T) {
 		updateAt := time.Now().Add(3 * time.Hour)
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     model.SectionSkillqueue,
+			Section:     app.SectionSkillqueue,
 			CompletedAt: updateAt,
 		})
 		// when
-		x, err := s.SectionWasUpdated(ctx, c.ID, model.SectionSkillqueue)
+		x, err := s.SectionWasUpdated(ctx, c.ID, app.SectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, x)
@@ -41,7 +41,7 @@ func TestCharacterSectionStatus(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
-		x, err := s.SectionWasUpdated(ctx, c.ID, model.SectionSkillqueue)
+		x, err := s.SectionWasUpdated(ctx, c.ID, app.SectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, x)
@@ -55,14 +55,14 @@ func TestUpdateCharacterSection(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	s := character.New(r, nil, nil, nil, nil, nil)
-	section := model.SectionImplants
+	section := app.SectionImplants
 	ctx := context.Background()
 	t.Run("should report true when changed", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		httpmock.RegisterResponder(
 			"GET",
@@ -92,7 +92,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			CompletedAt: time.Now().Add(-6 * time.Hour),
 			Data:        data,
 		})
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		httpmock.RegisterResponder(
 			"GET",
@@ -124,7 +124,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			CharacterID: c.ID,
 			Section:     section,
 		})
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		httpmock.RegisterResponder(
 			"GET",
@@ -151,7 +151,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		httpmock.RegisterResponder(
 			"GET",
@@ -178,7 +178,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			CharacterID: c.ID,
 			Section:     section,
 		})
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		httpmock.RegisterResponder(
 			"GET",
@@ -212,7 +212,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			CompletedAt: time.Now().Add(-6 * time.Hour),
 			Data:        data,
 		})
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		httpmock.RegisterResponder(
 			"GET",

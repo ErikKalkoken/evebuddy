@@ -8,7 +8,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -25,8 +25,8 @@ func TestSendMail(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		r := factory.CreateEveEntityCharacter(model.EveEntity{ID: 90000001})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		r := factory.CreateEveEntityCharacter(app.EveEntity{ID: 90000001})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
@@ -34,7 +34,7 @@ func TestSendMail(t *testing.T) {
 			httpmock.NewStringResponder(201, "123"))
 
 		// when
-		mailID, err := s.SendCharacterMail(ctx, c.ID, "subject", []*model.EveEntity{r}, "body")
+		mailID, err := s.SendCharacterMail(ctx, c.ID, "subject", []*app.EveEntity{r}, "body")
 		// then
 		if assert.NoError(t, err) {
 			m, err := s.GetCharacterMail(ctx, c.ID, mailID)

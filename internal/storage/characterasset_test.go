@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
@@ -89,7 +89,7 @@ func TestCharacterAsset(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		location := factory.CreateLocationStructure()
-		shipCategory := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: model.EveCategoryShip})
+		shipCategory := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategoryShip})
 		shipGroup := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: shipCategory.ID})
 		shipType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: shipGroup.ID})
 		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
@@ -139,7 +139,7 @@ func TestCharacterAsset(t *testing.T) {
 		got, err := r.ListAllCharacterAssets(ctx)
 		// then
 		if assert.NoError(t, err) {
-			want := []*model.CharacterAsset{ca1, ca2}
+			want := []*app.CharacterAsset{ca1, ca2}
 			assert.Equal(t, want, got)
 		}
 	})

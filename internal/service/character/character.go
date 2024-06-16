@@ -9,7 +9,7 @@ import (
 
 	"fyne.io/fyne/v2/data/binding"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
@@ -22,7 +22,7 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, characterID int3
 	return s.cs.UpdateCharacters(ctx, s.st)
 }
 
-func (s *CharacterService) GetCharacter(ctx context.Context, characterID int32) (*model.Character, error) {
+func (s *CharacterService) GetCharacter(ctx context.Context, characterID int32) (*app.Character, error) {
 	o, err := s.st.GetCharacter(ctx, characterID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
@@ -30,7 +30,7 @@ func (s *CharacterService) GetCharacter(ctx context.Context, characterID int32) 
 	return o, err
 }
 
-func (s *CharacterService) GetAnyCharacter(ctx context.Context) (*model.Character, error) {
+func (s *CharacterService) GetAnyCharacter(ctx context.Context) (*app.Character, error) {
 	o, err := s.st.GetFirstCharacter(ctx)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
@@ -38,11 +38,11 @@ func (s *CharacterService) GetAnyCharacter(ctx context.Context) (*model.Characte
 	return o, err
 }
 
-func (s *CharacterService) ListCharacters(ctx context.Context) ([]*model.Character, error) {
+func (s *CharacterService) ListCharacters(ctx context.Context) ([]*app.Character, error) {
 	return s.st.ListCharacters(ctx)
 }
 
-func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*model.CharacterShort, error) {
+func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.CharacterShort, error) {
 	return s.st.ListCharactersShort(ctx)
 }
 
@@ -57,7 +57,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 	slog.Info("Created new SSO token", "characterID", ssoToken.CharacterID, "scopes", ssoToken.Scopes)
 	infoText.Set("Fetching character from server. Please wait...")
 	charID := ssoToken.CharacterID
-	token := model.CharacterToken{
+	token := app.CharacterToken{
 		AccessToken:  ssoToken.AccessToken,
 		CharacterID:  charID,
 		ExpiresAt:    ssoToken.ExpiresAt,
@@ -70,7 +70,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 	if err != nil {
 		return 0, err
 	}
-	myCharacter := &model.Character{
+	myCharacter := &app.Character{
 		ID:           token.CharacterID,
 		EveCharacter: character,
 	}
@@ -101,7 +101,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 }
 
 func (s *CharacterService) updateCharacterLocationESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionLocation {
+	if arg.Section != app.SectionLocation {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(
@@ -137,7 +137,7 @@ func (s *CharacterService) updateCharacterLocationESI(ctx context.Context, arg U
 }
 
 func (s *CharacterService) updateCharacterOnlineESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionOnline {
+	if arg.Section != app.SectionOnline {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(
@@ -164,7 +164,7 @@ func (s *CharacterService) updateCharacterOnlineESI(ctx context.Context, arg Upd
 }
 
 func (s *CharacterService) updateCharacterShipESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionShip {
+	if arg.Section != app.SectionShip {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(
@@ -191,7 +191,7 @@ func (s *CharacterService) updateCharacterShipESI(ctx context.Context, arg Updat
 }
 
 func (s *CharacterService) updateCharacterWalletBalanceESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
-	if arg.Section != model.SectionWalletBalance {
+	if arg.Section != app.SectionWalletBalance {
 		panic("called with wrong section")
 	}
 	return s.updateSectionIfChanged(

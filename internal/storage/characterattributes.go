@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -22,7 +22,7 @@ type UpdateOrCreateCharacterAttributesParams struct {
 	Willpower     int
 }
 
-func (st *Storage) GetCharacterAttributes(ctx context.Context, characterID int32) (*model.CharacterAttributes, error) {
+func (st *Storage) GetCharacterAttributes(ctx context.Context, characterID int32) (*app.CharacterAttributes, error) {
 	o, err := st.q.GetCharacterAttributes(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -50,8 +50,8 @@ func (st *Storage) UpdateOrCreateCharacterAttributes(ctx context.Context, arg Up
 	return st.q.UpdateOrCreateCharacterAttributes(ctx, arg2)
 }
 
-func characterAttributeFromDBModel(o queries.CharacterAttribute) *model.CharacterAttributes {
-	o2 := &model.CharacterAttributes{
+func characterAttributeFromDBModel(o queries.CharacterAttribute) *app.CharacterAttributes {
+	o2 := &app.CharacterAttributes{
 		ID:           o.ID,
 		BonusRemaps:  int(o.BonusRemaps),
 		CharacterID:  int32(o.CharacterID),

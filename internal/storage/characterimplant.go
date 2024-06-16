@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -19,10 +19,10 @@ func (st *Storage) CreateCharacterImplant(ctx context.Context, arg CreateCharact
 	return createCharacterImplant(ctx, st.q, arg)
 }
 
-func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, typeID int32) (*model.CharacterImplant, error) {
+func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, typeID int32) (*app.CharacterImplant, error) {
 	arg := queries.GetCharacterImplantParams{
 		CharacterID:      int64(characterID),
-		DogmaAttributeID: model.EveDogmaAttributeImplantSlot,
+		DogmaAttributeID: app.EveDogmaAttributeImplantSlot,
 		EveTypeID:        int64(typeID),
 	}
 	row, err := st.q.GetCharacterImplant(ctx, arg)
@@ -40,16 +40,16 @@ func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, t
 	return t2, nil
 }
 
-func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int32) ([]*model.CharacterImplant, error) {
+func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int32) ([]*app.CharacterImplant, error) {
 	arg := queries.ListCharacterImplantsParams{
-		DogmaAttributeID: model.EveDogmaAttributeImplantSlot,
+		DogmaAttributeID: app.EveDogmaAttributeImplantSlot,
 		CharacterID:      int64(characterID),
 	}
 	rows, err := st.q.ListCharacterImplants(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
-	ii2 := make([]*model.CharacterImplant, len(rows))
+	ii2 := make([]*app.CharacterImplant, len(rows))
 	for i, row := range rows {
 		ii2[i] = characterImplantFromDBModel(
 			row.CharacterImplant,
@@ -104,11 +104,11 @@ func characterImplantFromDBModel(
 	g queries.EveGroup,
 	c queries.EveCategory,
 	s sql.NullFloat64,
-) *model.CharacterImplant {
+) *app.CharacterImplant {
 	if o.CharacterID == 0 {
 		panic("missing character ID")
 	}
-	o2 := &model.CharacterImplant{
+	o2 := &app.CharacterImplant{
 		CharacterID: int32(o.CharacterID),
 		EveType:     eveTypeFromDBModel(t, g, c),
 		ID:          o.ID,

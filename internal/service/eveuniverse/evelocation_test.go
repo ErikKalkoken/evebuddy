@@ -10,7 +10,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -32,7 +32,7 @@ func TestEveLocationOther(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		owner := factory.CreateEveEntityCorporation(model.EveEntity{ID: 1000003})
+		owner := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000003})
 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 1531})
 		data := `{
@@ -89,7 +89,7 @@ func TestEveLocationOther(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: model.EveTypeSolarSystem})
+		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeSolarSystem})
 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
 		// when
 		x1, err := eu.GetOrCreateEveLocationESI(ctx, int64(system.ID))
@@ -132,7 +132,7 @@ func TestLocationStructures(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		owner := factory.CreateEveEntityCorporation(model.EveEntity{ID: 109299958})
+		owner := factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000142})
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 99})
 		data := `{

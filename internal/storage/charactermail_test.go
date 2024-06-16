@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
@@ -23,7 +23,7 @@ func TestMailCreate(t *testing.T) {
 		c := factory.CreateCharacter()
 		f := factory.CreateEveEntity()
 		recipient := factory.CreateEveEntity()
-		label := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID})
+		label := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		// when
 		arg := storage.CreateCharacterMailParams{
 			Body:         "body",
@@ -47,7 +47,7 @@ func TestMailCreate(t *testing.T) {
 			assert.Equal(t, c.ID, m.CharacterID)
 			assert.Equal(t, "subject", m.Subject)
 			assert.False(t, m.Timestamp.IsZero())
-			assert.Equal(t, []*model.EveEntity{recipient}, m.Recipients)
+			assert.Equal(t, []*app.EveEntity{recipient}, m.Recipients)
 			assert.Equal(t, label.Name, m.Labels[0].Name)
 			assert.Equal(t, label.LabelID, m.Labels[0].LabelID)
 		}
@@ -107,9 +107,9 @@ func TestFetchUnreadCounts(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		corp := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: model.MailLabelCorp})
-		inbox := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: model.MailLabelInbox})
-		factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: model.MailLabelAlliance})
+		corp := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelCorp})
+		inbox := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelInbox})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelAlliance})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{inbox.LabelID}, IsRead: false})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{corp.LabelID}, IsRead: true})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{corp.LabelID}, IsRead: false})
@@ -118,7 +118,7 @@ func TestFetchUnreadCounts(t *testing.T) {
 		// when
 		r, err := r.GetCharacterMailLabelUnreadCounts(ctx, c.ID)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[int32]int{model.MailLabelCorp: 2, model.MailLabelInbox: 1}, r)
+			assert.Equal(t, map[int32]int{app.MailLabelCorp: 2, app.MailLabelInbox: 1}, r)
 		}
 	})
 	t.Run("can get mail list unread counts", func(t *testing.T) {
@@ -155,9 +155,9 @@ func TestGetMailUnreadCount(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		corp := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: model.MailLabelCorp})
-		inbox := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: model.MailLabelInbox})
-		factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID, LabelID: model.MailLabelAlliance})
+		corp := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelCorp})
+		inbox := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelInbox})
+		factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelAlliance})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{inbox.LabelID}, IsRead: false})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{corp.LabelID}, IsRead: true})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{corp.LabelID}, IsRead: false})

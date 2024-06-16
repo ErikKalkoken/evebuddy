@@ -10,7 +10,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -27,10 +27,10 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		e1 := factory.CreateEveEntityCharacter(model.EveEntity{Name: "Erik"})
-		e2 := model.EveEntity{Name: "Erik", Category: model.EveEntityCharacter}
+		e1 := factory.CreateEveEntityCharacter(app.EveEntity{Name: "Erik"})
+		e2 := app.EveEntity{Name: "Erik", Category: app.EveEntityCharacter}
 		// when
-		ee, err := s.ResolveUncleanEveEntities(ctx, []*model.EveEntity{&e2})
+		ee, err := s.ResolveUncleanEveEntities(ctx, []*app.EveEntity{&e2})
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, e1, ee[0])
@@ -56,15 +56,15 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 				return resp, nil
 			},
 		)
-		e := model.EveEntity{Name: "Erik", Category: model.EveEntityUndefined}
+		e := app.EveEntity{Name: "Erik", Category: app.EveEntityUndefined}
 		// when
-		ee, err := s.ResolveUncleanEveEntities(ctx, []*model.EveEntity{&e})
+		ee, err := s.ResolveUncleanEveEntities(ctx, []*app.EveEntity{&e})
 		// then
 		assert.Equal(t, 1, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
 			assert.Equal(t, int32(47), ee[0].ID)
 			assert.Equal(t, "Erik", ee[0].Name)
-			assert.Equal(t, model.EveEntityCharacter, ee[0].Category)
+			assert.Equal(t, app.EveEntityCharacter, ee[0].Category)
 			assert.Len(t, ee, 1)
 		}
 	})
@@ -78,9 +78,9 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 			"https://esi.evetech.net/v1/universe/ids/",
 			httpmock.NewStringResponder(200, data),
 		)
-		e := model.EveEntity{Name: "Erik", Category: model.EveEntityUndefined}
+		e := app.EveEntity{Name: "Erik", Category: app.EveEntityUndefined}
 		// when
-		_, err := s.ResolveUncleanEveEntities(ctx, []*model.EveEntity{&e})
+		_, err := s.ResolveUncleanEveEntities(ctx, []*app.EveEntity{&e})
 		// then
 		assert.ErrorIs(t, err, eveuniverse.ErrEveEntityNameNoMatch)
 	})
@@ -94,11 +94,11 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 			"https://esi.evetech.net/v1/universe/ids/",
 			httpmock.NewStringResponder(200, data),
 		)
-		factory.CreateEveEntityCharacter(model.EveEntity{Name: "Erik"})
-		factory.CreateEveEntityCorporation(model.EveEntity{Name: "Erik"})
-		e := model.EveEntity{Name: "Erik", Category: model.EveEntityUndefined}
+		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Erik"})
+		factory.CreateEveEntityCorporation(app.EveEntity{Name: "Erik"})
+		e := app.EveEntity{Name: "Erik", Category: app.EveEntityUndefined}
 		// when
-		_, err := s.ResolveUncleanEveEntities(ctx, []*model.EveEntity{&e})
+		_, err := s.ResolveUncleanEveEntities(ctx, []*app.EveEntity{&e})
 		// then
 		assert.ErrorIs(t, err, eveuniverse.ErrEveEntityNameMultipleMatches)
 	})
@@ -112,11 +112,11 @@ func TestResolveUncleanEveEntities(t *testing.T) {
 			"https://esi.evetech.net/v1/universe/ids/",
 			httpmock.NewStringResponder(200, data),
 		)
-		factory.CreateEveEntityCharacter(model.EveEntity{Name: "Erik"})
-		factory.CreateEveEntityCharacter(model.EveEntity{Name: "Erik"})
-		e := model.EveEntity{Name: "Erik", Category: model.EveEntityUndefined}
+		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Erik"})
+		factory.CreateEveEntityCharacter(app.EveEntity{Name: "Erik"})
+		e := app.EveEntity{Name: "Erik", Category: app.EveEntityUndefined}
 		// when
-		_, err := s.ResolveUncleanEveEntities(ctx, []*model.EveEntity{&e})
+		_, err := s.ResolveUncleanEveEntities(ctx, []*app.EveEntity{&e})
 		// then
 		assert.ErrorIs(t, err, eveuniverse.ErrEveEntityNameMultipleMatches)
 	})
@@ -172,7 +172,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 				t.Fatal(err)
 			}
 			assert.Equal(t, e.Name, "Erik")
-			assert.Equal(t, e.Category, model.EveEntityCharacter)
+			assert.Equal(t, e.Category, app.EveEntityCharacter)
 		}
 	})
 	t.Run("can report normal error correctly", func(t *testing.T) {
@@ -269,7 +269,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 				t.Fatal(err)
 			}
 			assert.Equal(t, e.Name, "?")
-			assert.Equal(t, e.Category, model.EveEntityUnknown)
+			assert.Equal(t, e.Category, app.EveEntityUnknown)
 		}
 	})
 	t.Run("can deal with a mix of valid and invalid IDs", func(t *testing.T) {
@@ -303,12 +303,12 @@ func TestAddMissingEveEntities(t *testing.T) {
 				t.Fatal(err)
 			}
 			assert.Equal(t, e1.Name, "Erik")
-			assert.Equal(t, e1.Category, model.EveEntityCharacter)
+			assert.Equal(t, e1.Category, app.EveEntityCharacter)
 			e2, err := r.GetEveEntity(ctx, 666)
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, e2.Category, model.EveEntityUnknown)
+			assert.Equal(t, e2.Category, app.EveEntityUnknown)
 		}
 	})
 }

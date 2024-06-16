@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 	"github.com/antihax/goesi"
 	"github.com/stretchr/testify/assert"
@@ -21,8 +21,8 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		token := factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		section := model.SectionImplants
+		token := factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		section := app.SectionImplants
 		hasUpdated := false
 		accessToken := ""
 		arg := UpdateSectionParams{CharacterID: c.ID, Section: section}
@@ -52,8 +52,8 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		section := model.SectionImplants
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		section := app.SectionImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID:  c.ID,
 			Section:      section,
@@ -85,8 +85,8 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
-		section := model.SectionImplants
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		section := app.SectionImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
 			Section:     section,
@@ -126,11 +126,11 @@ func TestCharacterSectionUpdateMethods(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     model.SectionSkillqueue,
+			Section:     app.SectionSkillqueue,
 			CompletedAt: time.Now(),
 		})
 		// when
-		x, err := s.SectionWasUpdated(ctx, c.ID, model.SectionSkillqueue)
+		x, err := s.SectionWasUpdated(ctx, c.ID, app.SectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, true, x)
@@ -141,7 +141,7 @@ func TestCharacterSectionUpdateMethods(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		// when
-		x, err := s.SectionWasUpdated(ctx, c.ID, model.SectionSkillqueue)
+		x, err := s.SectionWasUpdated(ctx, c.ID, app.SectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, false, x)

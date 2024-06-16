@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -22,7 +22,7 @@ func TestCharacter(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		a := factory.CreateEveEntityAlliance()
-		f := factory.CreateEveEntity(model.EveEntity{Category: model.EveEntityFaction})
+		f := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityFaction})
 		eveC := factory.CreateEveCharacter(storage.CreateEveCharacterParams{AllianceID: a.ID, FactionID: f.ID})
 		c1 := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{ID: eveC.ID})
 		// when

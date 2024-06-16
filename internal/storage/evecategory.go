@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -16,7 +16,7 @@ type CreateEveCategoryParams struct {
 	Name        string
 }
 
-func (st *Storage) CreateEveCategory(ctx context.Context, arg CreateEveCategoryParams) (*model.EveCategory, error) {
+func (st *Storage) CreateEveCategory(ctx context.Context, arg CreateEveCategoryParams) (*app.EveCategory, error) {
 	if arg.ID == 0 {
 		return nil, fmt.Errorf("invalid EveCategory ID %d", arg.ID)
 	}
@@ -32,7 +32,7 @@ func (st *Storage) CreateEveCategory(ctx context.Context, arg CreateEveCategoryP
 	return eveCategoryFromDBModel(e), nil
 }
 
-func (st *Storage) GetEveCategory(ctx context.Context, id int32) (*model.EveCategory, error) {
+func (st *Storage) GetEveCategory(ctx context.Context, id int32) (*app.EveCategory, error) {
 	c, err := st.q.GetEveCategory(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -43,8 +43,8 @@ func (st *Storage) GetEveCategory(ctx context.Context, id int32) (*model.EveCate
 	return eveCategoryFromDBModel(c), nil
 }
 
-func eveCategoryFromDBModel(c queries.EveCategory) *model.EveCategory {
-	return &model.EveCategory{
+func eveCategoryFromDBModel(c queries.EveCategory) *app.EveCategory {
+	return &app.EveCategory{
 		ID:          int32(c.ID),
 		IsPublished: c.IsPublished,
 		Name:        c.Name,

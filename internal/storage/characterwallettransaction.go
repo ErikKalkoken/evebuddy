@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -45,7 +45,7 @@ func (st *Storage) CreateCharacterWalletTransaction(ctx context.Context, arg Cre
 	return err
 }
 
-func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, characterID int32, transactionID int64) (*model.CharacterWalletTransaction, error) {
+func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, characterID int32, transactionID int64) (*app.CharacterWalletTransaction, error) {
 	arg := queries.GetCharacterWalletTransactionParams{
 		CharacterID:   int64(characterID),
 		TransactionID: transactionID,
@@ -61,12 +61,12 @@ func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, charac
 	return st.q.ListCharacterWalletTransactionIDs(ctx, int64(characterID))
 }
 
-func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*model.CharacterWalletTransaction, error) {
+func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*app.CharacterWalletTransaction, error) {
 	rows, err := st.q.ListCharacterWalletTransactions(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}
-	ee := make([]*model.CharacterWalletTransaction, len(rows))
+	ee := make([]*app.CharacterWalletTransaction, len(rows))
 	for i, row := range rows {
 		ee[i] = characterWalletTransactionFromDBModel(row.CharacterWalletTransaction, row.EveEntity, row.EveTypeName, row.LocationName)
 	}
@@ -78,16 +78,16 @@ func characterWalletTransactionFromDBModel(
 	client queries.EveEntity,
 	eveTypeName string,
 	locationName string,
-) *model.CharacterWalletTransaction {
-	o2 := &model.CharacterWalletTransaction{
+) *app.CharacterWalletTransaction {
+	o2 := &app.CharacterWalletTransaction{
 		Client:        eveEntityFromDBModel(client),
 		Date:          o.Date,
-		EveType:       &model.EntityShort[int32]{ID: int32(o.EveTypeID), Name: eveTypeName},
+		EveType:       &app.EntityShort[int32]{ID: int32(o.EveTypeID), Name: eveTypeName},
 		ID:            o.ID,
 		IsBuy:         o.IsBuy,
 		IsPersonal:    o.IsPersonal,
 		JournalRefID:  o.JournalRefID,
-		Location:      &model.EntityShort[int64]{ID: o.LocationID, Name: locationName},
+		Location:      &app.EntityShort[int64]{ID: o.LocationID, Name: locationName},
 		CharacterID:   int32(o.CharacterID),
 		Quantity:      int32(o.Quantity),
 		TransactionID: o.TransactionID,

@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/dustin/go-humanize"
 )
 
@@ -26,7 +26,7 @@ func (u *ui) showSettingsDialog() {
 }
 
 func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
-	maxMails, err := u.sv.Dictionary.IntWithFallback(model.SettingMaxMails, model.SettingMaxMailsDefault)
+	maxMails, err := u.sv.Dictionary.IntWithFallback(app.SettingMaxMails, app.SettingMaxMailsDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	maxMailsEntry.SetText(strconv.Itoa(maxMails))
 	maxMailsEntry.Validator = newPositiveNumberValidator()
 
-	maxTransactions, err := u.sv.Dictionary.IntWithFallback(model.SettingMaxWalletTransactions, model.SettingMaxWalletTransactionsDefault)
+	maxTransactions, err := u.sv.Dictionary.IntWithFallback(app.SettingMaxWalletTransactions, app.SettingMaxWalletTransactionsDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -64,9 +64,9 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	})
 
 	themeRadio := widget.NewRadioGroup(
-		[]string{model.ThemeAuto, model.ThemeDark, model.ThemeLight}, func(s string) {},
+		[]string{app.ThemeAuto, app.ThemeDark, app.ThemeLight}, func(s string) {},
 	)
-	name, ok, err := u.sv.Dictionary.String(model.SettingTheme)
+	name, ok, err := u.sv.Dictionary.String(app.SettingTheme)
 	if err == nil && ok {
 		themeRadio.SetSelected(name)
 	}
@@ -107,9 +107,9 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 			if err != nil {
 				return
 			}
-			u.sv.Dictionary.SetInt(model.SettingMaxMails, maxMails)
+			u.sv.Dictionary.SetInt(app.SettingMaxMails, maxMails)
 			u.setTheme(themeRadio.Selected)
-			u.sv.Dictionary.SetString(model.SettingTheme, themeRadio.Selected)
+			u.sv.Dictionary.SetString(app.SettingTheme, themeRadio.Selected)
 			d.Hide()
 		},
 		OnCancel: func() {

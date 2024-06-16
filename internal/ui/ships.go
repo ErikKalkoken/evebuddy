@@ -11,7 +11,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
@@ -89,7 +89,7 @@ func (a *shipsArea) makeShipsGrid() *widget.GridWrap {
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			item := co.(*widgets.ShipItem)
-			o, err := convertDataItem[*model.CharacterShipAbility](di)
+			o, err := convertDataItem[*app.CharacterShipAbility](di)
 			if err != nil {
 				slog.Error("Failed to render ship item in UI", "err", err)
 				// label.Importance = widget.DangerImportance
@@ -101,7 +101,7 @@ func (a *shipsArea) makeShipsGrid() *widget.GridWrap {
 		})
 	g.OnSelected = func(id widget.GridWrapItemID) {
 		defer g.UnselectAll()
-		o, err := getItemUntypedList[*model.CharacterShipAbility](a.entries, id)
+		o, err := getItemUntypedList[*app.CharacterShipAbility](a.entries, id)
 		if err != nil {
 			slog.Error("Failed to select ship", "err", err)
 			return
@@ -113,7 +113,7 @@ func (a *shipsArea) makeShipsGrid() *widget.GridWrap {
 
 func (a *shipsArea) refresh() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
-		exists := a.ui.sv.StatusCache.GeneralSectionExists(model.SectionEveCategories)
+		exists := a.ui.sv.StatusCache.GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
 			return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
 		}
@@ -140,7 +140,7 @@ func (a *shipsArea) refresh() {
 
 func (a *shipsArea) updateEntries() error {
 	if !a.ui.hasCharacter() {
-		oo := make([]*model.CharacterShipAbility, 0)
+		oo := make([]*app.CharacterShipAbility, 0)
 		a.entries.Set(copyToUntypedSlice(oo))
 		a.searchBox.SetText("")
 		a.groupSelect.SetOptions([]string{})
@@ -152,7 +152,7 @@ func (a *shipsArea) updateEntries() error {
 	if err != nil {
 		return err
 	}
-	oo2 := make([]*model.CharacterShipAbility, 0)
+	oo2 := make([]*app.CharacterShipAbility, 0)
 	for _, o := range oo {
 		if a.selectedGroup == "" || o.Group.Name == a.selectedGroup {
 			oo2 = append(oo2, o)
@@ -175,7 +175,7 @@ func (a *shipsArea) makeTopText() (string, widget.Importance, bool, error) {
 		return "No character", widget.LowImportance, false, nil
 	}
 	characterID := a.ui.characterID()
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(characterID, model.SectionSkills)
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(characterID, app.SectionSkills)
 	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
 	}

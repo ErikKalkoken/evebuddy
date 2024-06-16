@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 	"github.com/stretchr/testify/assert"
@@ -19,8 +19,8 @@ func TestListMailHeaders(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		l1 := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID})
-		l2 := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID})
+		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
+		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		m1 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
 		m2 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -60)})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}})
@@ -38,14 +38,14 @@ func TestListMailHeaders(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		l1 := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID})
-		l2 := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID})
+		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
+		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		m1 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -120)})
 		m2 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l1.LabelID}, Timestamp: time.Now().Add(time.Second * -60)})
 		m3 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, LabelIDs: []int32{l2.LabelID}, Timestamp: time.Now().Add(time.Second * -240)})
 		m4 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID, Timestamp: time.Now().Add(time.Second * -360)})
 		// when
-		xx, err := r.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, model.MailLabelAll)
+		xx, err := r.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, app.MailLabelAll)
 		// then
 		if assert.NoError(t, err) {
 			want := []int32{m2.MailID, m1.MailID, m3.MailID, m4.MailID}
@@ -57,7 +57,7 @@ func TestListMailHeaders(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		l := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c.ID})
+		l := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
 			LabelIDs:    []int32{l.LabelID},
@@ -65,7 +65,7 @@ func TestListMailHeaders(t *testing.T) {
 		})
 		m := factory.CreateCharacterMail(storage.CreateCharacterMailParams{CharacterID: c.ID})
 		// when
-		xx, err := r.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, model.MailLabelNone)
+		xx, err := r.ListCharacterMailHeadersForLabelOrdered(ctx, c.ID, app.MailLabelNone)
 		// then
 		if assert.NoError(t, err) {
 			want := []int32{m.MailID}
@@ -88,13 +88,13 @@ func TestListMailHeaders(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
-		l1 := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c1.ID, LabelID: 1})
+		l1 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c1.ID, LabelID: 1})
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 			CharacterID: c1.ID,
 			LabelIDs:    []int32{l1.LabelID},
 		})
 		c2 := factory.CreateCharacter()
-		l2 := factory.CreateCharacterMailLabel(model.CharacterMailLabel{CharacterID: c2.ID, LabelID: 1})
+		l2 := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c2.ID, LabelID: 1})
 		from := factory.CreateEveEntity()
 		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 			FromID:      from.ID,
@@ -133,7 +133,7 @@ func TestListMailHeaders(t *testing.T) {
 	})
 }
 
-func mailIDsFromHeaders(hh []*model.CharacterMailHeader) []int32 {
+func mailIDsFromHeaders(hh []*app.CharacterMailHeader) []int32 {
 	ids := make([]int32, len(hh))
 	for i, h := range hh {
 		ids[i] = h.MailID

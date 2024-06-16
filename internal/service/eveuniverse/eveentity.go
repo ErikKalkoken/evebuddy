@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"slices"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 
 	"github.com/antihax/goesi/esi"
@@ -16,7 +16,7 @@ import (
 var ErrEveEntityNameNoMatch = errors.New("no matching EveEntity name")
 var ErrEveEntityNameMultipleMatches = errors.New("multiple matching EveEntity names")
 
-func (eu *EveUniverseService) GetOrCreateEveEntityESI(ctx context.Context, id int32) (*model.EveEntity, error) {
+func (eu *EveUniverseService) GetOrCreateEveEntityESI(ctx context.Context, id int32) (*app.EveEntity, error) {
 	o, err := eu.st.GetEveEntity(ctx, id)
 	if err == nil {
 		return o, nil
@@ -67,7 +67,7 @@ func (eu *EveUniverseService) AddMissingEveEntities(ctx context.Context, ids []i
 	}
 	if len(badIDs) > 0 {
 		for _, id := range badIDs {
-			eu.st.GetOrCreateEveEntity(ctx, id, "?", model.EveEntityUnknown)
+			eu.st.GetOrCreateEveEntity(ctx, id, "?", app.EveEntityUnknown)
 		}
 		slog.Warn("Marking unresolvable EveEntity IDs as unknown", "ids", badIDs)
 	}
@@ -100,13 +100,13 @@ func (eu *EveUniverseService) resolveIDs(ctx context.Context, ids []int32) ([]es
 	return ee, []int32{}, nil
 }
 
-func (eu *EveUniverseService) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]*model.EveEntity, error) {
+func (eu *EveUniverseService) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
 	return eu.st.ListEveEntitiesByPartialName(ctx, partial)
 }
 
 // Resolve slice of unclean EveEntity objects and return as new slice with resolved objects.
 // Will return an error if some entities can not be resolved.
-func (eu *EveUniverseService) ResolveUncleanEveEntities(ctx context.Context, ee []*model.EveEntity) ([]*model.EveEntity, error) {
+func (eu *EveUniverseService) ResolveUncleanEveEntities(ctx context.Context, ee []*app.EveEntity) ([]*app.EveEntity, error) {
 	ee1, names, err := eu.resolveEveEntityLocally(ctx, ee)
 	if err != nil {
 		return nil, err
@@ -124,11 +124,11 @@ func (eu *EveUniverseService) ResolveUncleanEveEntities(ctx context.Context, ee 
 
 // resolveEveEntityLocally tries to resolve EveEntities locally.
 // It returns resolved recipients and a list of remaining unresolved names (if any)
-func (eu *EveUniverseService) resolveEveEntityLocally(ctx context.Context, ee []*model.EveEntity) ([]*model.EveEntity, []string, error) {
-	ee2 := make([]*model.EveEntity, 0, len(ee))
+func (eu *EveUniverseService) resolveEveEntityLocally(ctx context.Context, ee []*app.EveEntity) ([]*app.EveEntity, []string, error) {
+	ee2 := make([]*app.EveEntity, 0, len(ee))
 	names := make([]string, 0, len(ee))
 	for _, r := range ee {
-		if r.Category == model.EveEntityUndefined {
+		if r.Category == app.EveEntityUndefined {
 			names = append(names, r.Name)
 			continue
 		}
@@ -157,17 +157,17 @@ func (eu *EveUniverseService) resolveEveEntityNamesRemotely(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	ee := make([]model.EveEntity, 0, len(names))
+	ee := make([]app.EveEntity, 0, len(names))
 	for _, o := range r.Alliances {
-		e := model.EveEntity{ID: o.Id, Name: o.Name, Category: model.EveEntityAlliance}
+		e := app.EveEntity{ID: o.Id, Name: o.Name, Category: app.EveEntityAlliance}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Characters {
-		e := model.EveEntity{ID: o.Id, Name: o.Name, Category: model.EveEntityCharacter}
+		e := app.EveEntity{ID: o.Id, Name: o.Name, Category: app.EveEntityCharacter}
 		ee = append(ee, e)
 	}
 	for _, o := range r.Corporations {
-		e := model.EveEntity{ID: o.Id, Name: o.Name, Category: model.EveEntityCorporation}
+		e := app.EveEntity{ID: o.Id, Name: o.Name, Category: app.EveEntityCorporation}
 		ee = append(ee, e)
 	}
 	ids := make([]int32, len(ee))
@@ -195,8 +195,8 @@ func (eu *EveUniverseService) resolveEveEntityNamesRemotely(ctx context.Context,
 // findEveEntitiesByName tries to build EveEntity objects from given names
 // by checking against EveEntity objects in the database.
 // Will abort with errors if no match is found or if multiple matches are found for a name.
-func (eu *EveUniverseService) findEveEntitiesByName(ctx context.Context, names []string) ([]*model.EveEntity, error) {
-	ee2 := make([]*model.EveEntity, 0, len(names))
+func (eu *EveUniverseService) findEveEntitiesByName(ctx context.Context, names []string) ([]*app.EveEntity, error) {
+	ee2 := make([]*app.EveEntity, 0, len(names))
 	for _, n := range names {
 		ee, err := eu.st.ListEveEntitiesByName(ctx, n)
 		if err != nil {
@@ -214,18 +214,18 @@ func (eu *EveUniverseService) findEveEntitiesByName(ctx context.Context, names [
 	return ee2, nil
 }
 
-func eveEntityCategoryFromESICategory(c string) model.EveEntityCategory {
-	categoryMap := map[string]model.EveEntityCategory{
-		"alliance":       model.EveEntityAlliance,
-		"character":      model.EveEntityCharacter,
-		"corporation":    model.EveEntityCorporation,
-		"constellation":  model.EveEntityConstellation,
-		"faction":        model.EveEntityFaction,
-		"inventory_type": model.EveEntityInventoryType,
-		"mailing_list":   model.EveEntityMailList,
-		"region":         model.EveEntityRegion,
-		"solar_system":   model.EveEntitySolarSystem,
-		"station":        model.EveEntityStation,
+func eveEntityCategoryFromESICategory(c string) app.EveEntityCategory {
+	categoryMap := map[string]app.EveEntityCategory{
+		"alliance":       app.EveEntityAlliance,
+		"character":      app.EveEntityCharacter,
+		"corporation":    app.EveEntityCorporation,
+		"constellation":  app.EveEntityConstellation,
+		"faction":        app.EveEntityFaction,
+		"inventory_type": app.EveEntityInventoryType,
+		"mailing_list":   app.EveEntityMailList,
+		"region":         app.EveEntityRegion,
+		"solar_system":   app.EveEntitySolarSystem,
+		"station":        app.EveEntityStation,
 	}
 	c2, ok := categoryMap[c]
 	if !ok {

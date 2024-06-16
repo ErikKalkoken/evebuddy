@@ -9,7 +9,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -26,7 +26,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 22118})
 		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60003463})
 		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 1021348135816})
@@ -55,7 +55,7 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterJumpClonesESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionJumpClones,
+			Section:     app.SectionJumpClones,
 		})
 		// then
 		if assert.NoError(t, err) {

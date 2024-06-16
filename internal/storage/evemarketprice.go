@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (st *Storage) GetEveMarketPrice(ctx context.Context, typeID int32) (*model.EveMarketPrice, error) {
+func (st *Storage) GetEveMarketPrice(ctx context.Context, typeID int32) (*app.EveMarketPrice, error) {
 	row, err := st.q.GetEveMarketPrice(ctx, int64(typeID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -40,11 +40,11 @@ func (st *Storage) UpdateOrCreateEveMarketPrice(ctx context.Context, arg UpdateO
 	return nil
 }
 
-func eveMarketPriceFromDBModel(o queries.EveMarketPrice) *model.EveMarketPrice {
+func eveMarketPriceFromDBModel(o queries.EveMarketPrice) *app.EveMarketPrice {
 	if o.TypeID == 0 {
 		panic("missing type ID")
 	}
-	return &model.EveMarketPrice{
+	return &app.EveMarketPrice{
 		TypeID:        int32(o.TypeID),
 		AdjustedPrice: o.AdjustedPrice,
 		AveragePrice:  o.AveragePrice,

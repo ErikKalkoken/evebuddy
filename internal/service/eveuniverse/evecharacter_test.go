@@ -11,7 +11,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
@@ -41,9 +41,9 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		characterID := int32(95465499)
-		factory.CreateEveEntityCharacter(model.EveEntity{ID: characterID})
-		factory.CreateEveEntityCorporation(model.EveEntity{ID: 109299958})
-		factory.CreateEveRace(model.EveRace{ID: 2})
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
+		factory.CreateEveRace(app.EveRace{ID: 2})
 		httpmock.Reset()
 		data := `{
 			"birthday": "2015-03-24T11:37:00Z",
@@ -101,9 +101,9 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		characterID := int32(95465499)
-		factory.CreateEveEntityCharacter(model.EveEntity{ID: characterID})
-		factory.CreateEveEntityCorporation(model.EveEntity{ID: 109299958})
-		factory.CreateEveEntityAlliance(model.EveEntity{ID: 434243723})
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
+		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
+		factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
 		factory.CreateEveCharacter(storage.CreateEveCharacterParams{ID: characterID})
 		httpmock.Reset()
 		dataCharacter := `{

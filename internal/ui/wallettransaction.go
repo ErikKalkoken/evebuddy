@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
 type walletTransaction struct {
@@ -147,7 +147,7 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 		return "No character", widget.LowImportance
 	}
 	characterID := a.ui.characterID()
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(characterID, model.SectionWalletTransactions)
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(characterID, app.SectionWalletTransactions)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

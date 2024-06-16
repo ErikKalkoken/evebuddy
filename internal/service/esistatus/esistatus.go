@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
 )
@@ -21,20 +21,20 @@ func New(client *goesi.APIClient) *ESIStatusService {
 	return ess
 }
 
-func (ess *ESIStatusService) Fetch() (*model.ESIStatus, error) {
+func (ess *ESIStatusService) Fetch() (*app.ESIStatus, error) {
 	ctx := context.Background()
 	status, _, err := ess.esiClient.ESI.StatusApi.GetStatus(ctx, nil)
 	if err != nil {
 		swaggerErr, ok := err.(esi.GenericSwaggerError)
 		if ok {
 			error := extractErrorMessage(swaggerErr)
-			x := &model.ESIStatus{ErrorMessage: error}
+			x := &app.ESIStatus{ErrorMessage: error}
 			return x, nil
 		} else {
 			return nil, err
 		}
 	}
-	es := &model.ESIStatus{PlayerCount: int(status.Players)}
+	es := &app.ESIStatus{PlayerCount: int(status.Players)}
 	return es, nil
 }
 

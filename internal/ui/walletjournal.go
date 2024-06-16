@@ -16,7 +16,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
 type walletJournalEntry struct {
@@ -175,7 +175,7 @@ func (a *walletJournalArea) makeTopText() (string, widget.Importance) {
 		return "No character", widget.LowImportance
 	}
 	c := a.ui.currentCharacter()
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(c.ID, model.SectionWalletJournal)
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(c.ID, app.SectionWalletJournal)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

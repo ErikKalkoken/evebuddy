@@ -6,13 +6,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
 type StatusCacheStorage interface {
-	ListCharacterSectionStatus(context.Context, int32) ([]*model.CharacterSectionStatus, error)
-	ListGeneralSectionStatus(context.Context) ([]*model.GeneralSectionStatus, error)
-	ListCharactersShort(context.Context) ([]*model.CharacterShort, error)
+	ListCharacterSectionStatus(context.Context, int32) ([]*app.CharacterSectionStatus, error)
+	ListGeneralSectionStatus(context.Context) ([]*app.GeneralSectionStatus, error)
+	ListCharactersShort(context.Context) ([]*app.CharacterShort, error)
 }
 
 type Cache interface {
@@ -73,7 +73,7 @@ func (sc *StatusCacheService) InitCache(st StatusCacheStorage) error {
 	return nil
 }
 
-func (sc *StatusCacheService) CharacterSectionExists(characterID int32, section model.CharacterSection) bool {
+func (sc *StatusCacheService) CharacterSectionExists(characterID int32, section app.CharacterSection) bool {
 	x, ok := sc.CharacterSectionGet(characterID, section)
 	if !ok {
 		return false
@@ -81,7 +81,7 @@ func (sc *StatusCacheService) CharacterSectionExists(characterID int32, section 
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section model.CharacterSection) (SectionStatus, bool) {
+func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section app.CharacterSection) (SectionStatus, bool) {
 	k := cacheKey{id: characterID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
@@ -103,7 +103,7 @@ func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section mod
 
 func (sc *StatusCacheService) CharacterSectionList(characterID int32) []SectionStatus {
 	list := make([]SectionStatus, 0)
-	for _, section := range model.CharacterSections {
+	for _, section := range app.CharacterSections {
 		v, ok := sc.CharacterSectionGet(characterID, section)
 		if !ok {
 			continue
@@ -114,7 +114,7 @@ func (sc *StatusCacheService) CharacterSectionList(characterID int32) []SectionS
 }
 
 func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) StatusSummary {
-	total := len(model.CharacterSections)
+	total := len(app.CharacterSections)
 	currentCount, missingCount, errorCount := sc.characterSectionSummary(characterID)
 	s := StatusSummary{
 		Current: currentCount,
@@ -139,13 +139,13 @@ func (sc *StatusCacheService) characterSectionSummary(characterID int32) (int, i
 			currentCount++
 		}
 	}
-	if diff := len(model.CharacterSections) - len(xx); diff > 0 {
+	if diff := len(app.CharacterSections) - len(xx); diff > 0 {
 		missingCount += diff
 	}
 	return currentCount, missingCount, errorCount
 }
 
-func (sc *StatusCacheService) CharacterSectionSet(o *model.CharacterSectionStatus) {
+func (sc *StatusCacheService) CharacterSectionSet(o *app.CharacterSectionStatus) {
 	if o == nil {
 		return
 	}
@@ -161,7 +161,7 @@ func (sc *StatusCacheService) CharacterSectionSet(o *model.CharacterSectionStatu
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *StatusCacheService) GeneralSectionExists(section model.GeneralSection) bool {
+func (sc *StatusCacheService) GeneralSectionExists(section app.GeneralSection) bool {
 	x, ok := sc.GeneralSectionGet(section)
 	if !ok {
 		return false
@@ -169,7 +169,7 @@ func (sc *StatusCacheService) GeneralSectionExists(section model.GeneralSection)
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) GeneralSectionGet(section model.GeneralSection) (SectionStatus, bool) {
+func (sc *StatusCacheService) GeneralSectionGet(section app.GeneralSection) (SectionStatus, bool) {
 	k := cacheKey{id: GeneralSectionEntityID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
@@ -191,7 +191,7 @@ func (sc *StatusCacheService) GeneralSectionGet(section model.GeneralSection) (S
 
 func (sc *StatusCacheService) GeneralSectionList() []SectionStatus {
 	list := make([]SectionStatus, 0)
-	for _, section := range model.GeneralSections {
+	for _, section := range app.GeneralSections {
 		v, ok := sc.GeneralSectionGet(section)
 		if ok {
 			list = append(list, v)
@@ -200,7 +200,7 @@ func (sc *StatusCacheService) GeneralSectionList() []SectionStatus {
 	return list
 }
 
-func (sc *StatusCacheService) GeneralSectionSet(o *model.GeneralSectionStatus) {
+func (sc *StatusCacheService) GeneralSectionSet(o *app.GeneralSectionStatus) {
 	if o == nil {
 		return
 	}
@@ -217,7 +217,7 @@ func (sc *StatusCacheService) GeneralSectionSet(o *model.GeneralSectionStatus) {
 }
 
 func (sc *StatusCacheService) GeneralSectionSummary() StatusSummary {
-	total := len(model.GeneralSections)
+	total := len(app.GeneralSections)
 	currentCount, missingCount, errorCount := sc.generalSectionSummary()
 	s := StatusSummary{
 		Current: currentCount,
@@ -242,7 +242,7 @@ func (sc *StatusCacheService) generalSectionSummary() (int, int, int) {
 			currentCount++
 		}
 	}
-	if diff := len(model.GeneralSections) - len(xx); diff > 0 {
+	if diff := len(app.GeneralSections) - len(xx); diff > 0 {
 		missingCount += diff
 	}
 	return currentCount, missingCount, errorCount
@@ -272,7 +272,7 @@ func (sc *StatusCacheService) Summary() StatusSummary {
 	currentCount += c
 	missingCount += m
 	errorCount += e
-	total := len(model.CharacterSections)*len(cc) + len(model.GeneralSections)
+	total := len(app.CharacterSections)*len(cc) + len(app.GeneralSections)
 	s := StatusSummary{
 		Current: currentCount,
 		Errors:  errorCount,
@@ -287,7 +287,7 @@ func (sc *StatusCacheService) UpdateCharacters(ctx context.Context, r StatusCach
 	return err
 }
 
-func (sc *StatusCacheService) updateCharacters(ctx context.Context, r StatusCacheStorage) ([]*model.CharacterShort, error) {
+func (sc *StatusCacheService) updateCharacters(ctx context.Context, r StatusCacheStorage) ([]*app.CharacterShort, error) {
 	cc, err := r.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err
@@ -296,15 +296,15 @@ func (sc *StatusCacheService) updateCharacters(ctx context.Context, r StatusCach
 	return cc, nil
 }
 
-func (sc *StatusCacheService) ListCharacters() []*model.CharacterShort {
+func (sc *StatusCacheService) ListCharacters() []*app.CharacterShort {
 	x, ok := sc.cache.Get(keyCharacters)
 	if !ok {
 		return nil
 	}
-	return x.([]*model.CharacterShort)
+	return x.([]*app.CharacterShort)
 }
 
-func (sc *StatusCacheService) setCharacters(cc []*model.CharacterShort) {
+func (sc *StatusCacheService) setCharacters(cc []*app.CharacterShort) {
 	sc.cache.Set(keyCharacters, cc, 0)
 }
 

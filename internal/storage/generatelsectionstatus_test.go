@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
@@ -21,11 +21,11 @@ func TestGeneralSectionStatus(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     model.SectionSkillqueue,
+			Section:     app.SectionSkillqueue,
 		})
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     model.SectionImplants,
+			Section:     app.SectionImplants,
 		})
 		// when
 		oo, err := r.ListCharacterSectionStatus(ctx, c.ID)
@@ -40,7 +40,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 		// when
 		error := "error"
 		arg := storage.UpdateOrCreateGeneralSectionStatusParams{
-			Section: model.SectionEveCategories,
+			Section: app.SectionEveCategories,
 			Error:   &error,
 		}
 		x1, err := r.UpdateOrCreateGeneralSectionStatus(ctx, arg)
@@ -51,7 +51,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 				assert.Equal(t, "error", x1.ErrorMessage)
 				assert.True(t, x1.CompletedAt.IsZero())
 			}
-			x2, err := r.GetGeneralSectionStatus(ctx, model.SectionEveCategories)
+			x2, err := r.GetGeneralSectionStatus(ctx, app.SectionEveCategories)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}
@@ -61,12 +61,12 @@ func TestGeneralSectionStatus(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		x := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
-			Section: model.SectionEveCategories,
+			Section: app.SectionEveCategories,
 		})
 		// when
 		error := "error"
 		arg := storage.UpdateOrCreateGeneralSectionStatusParams{
-			Section: model.SectionEveCategories,
+			Section: app.SectionEveCategories,
 			Error:   &error,
 		}
 		x1, err := r.UpdateOrCreateGeneralSectionStatus(ctx, arg)
@@ -76,7 +76,7 @@ func TestGeneralSectionStatus(t *testing.T) {
 			assert.Equal(t, "error", x1.ErrorMessage)
 			assert.Equal(t, x.CompletedAt, x1.CompletedAt)
 			assert.Equal(t, x.StartedAt, x1.StartedAt)
-			x2, err := r.GetGeneralSectionStatus(ctx, model.SectionEveCategories)
+			x2, err := r.GetGeneralSectionStatus(ctx, app.SectionEveCategories)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)
 			}

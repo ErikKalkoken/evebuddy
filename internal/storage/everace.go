@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (st *Storage) CreateEveRace(ctx context.Context, id int32, description, name string) (*model.EveRace, error) {
+func (st *Storage) CreateEveRace(ctx context.Context, id int32, description, name string) (*app.EveRace, error) {
 	arg := queries.CreateEveRaceParams{
 		ID:          int64(id),
 		Description: description,
@@ -23,7 +23,7 @@ func (st *Storage) CreateEveRace(ctx context.Context, id int32, description, nam
 	return eveRaceFromDBModel(o), nil
 }
 
-func (st *Storage) GetEveRace(ctx context.Context, id int32) (*model.EveRace, error) {
+func (st *Storage) GetEveRace(ctx context.Context, id int32) (*app.EveRace, error) {
 	o, err := st.q.GetEveRace(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -34,11 +34,11 @@ func (st *Storage) GetEveRace(ctx context.Context, id int32) (*model.EveRace, er
 	return eveRaceFromDBModel(o), nil
 }
 
-func eveRaceFromDBModel(er queries.EveRace) *model.EveRace {
+func eveRaceFromDBModel(er queries.EveRace) *app.EveRace {
 	if er.ID == 0 {
 		return nil
 	}
-	return &model.EveRace{
+	return &app.EveRace{
 		Description: er.Description,
 		ID:          int32(er.ID),
 		Name:        er.Name,

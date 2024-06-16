@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
@@ -70,7 +70,7 @@ func createCharacterSkillqueueItem(ctx context.Context, q *queries.Queries, arg 
 	return err
 }
 
-func (st *Storage) GetSkillqueueItem(ctx context.Context, characterID int32, pos int) (*model.CharacterSkillqueueItem, error) {
+func (st *Storage) GetSkillqueueItem(ctx context.Context, characterID int32, pos int) (*app.CharacterSkillqueueItem, error) {
 	arg := queries.GetCharacterSkillqueueItemParams{
 		CharacterID:   int64(characterID),
 		QueuePosition: int64(pos),
@@ -82,12 +82,12 @@ func (st *Storage) GetSkillqueueItem(ctx context.Context, characterID int32, pos
 	return skillqueueItemFromDBModel(row.CharacterSkillqueueItem, row.SkillName, row.GroupName, row.SkillDescription), err
 }
 
-func (st *Storage) ListSkillqueueItems(ctx context.Context, characterID int32) ([]*model.CharacterSkillqueueItem, error) {
+func (st *Storage) ListSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
 	rows, err := st.q.ListCharacterSkillqueueItems(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}
-	ii2 := make([]*model.CharacterSkillqueueItem, len(rows))
+	ii2 := make([]*app.CharacterSkillqueueItem, len(rows))
 	for i, row := range rows {
 		ii2[i] = skillqueueItemFromDBModel(row.CharacterSkillqueueItem, row.SkillName, row.GroupName, row.SkillDescription)
 	}
@@ -116,8 +116,8 @@ func (st *Storage) ReplaceCharacterSkillqueueItems(ctx context.Context, characte
 	return nil
 }
 
-func skillqueueItemFromDBModel(o queries.CharacterSkillqueueItem, skillName, groupName, description string) *model.CharacterSkillqueueItem {
-	i2 := &model.CharacterSkillqueueItem{
+func skillqueueItemFromDBModel(o queries.CharacterSkillqueueItem, skillName, groupName, description string) *app.CharacterSkillqueueItem {
+	i2 := &app.CharacterSkillqueueItem{
 		CharacterID:      int32(o.CharacterID),
 		GroupName:        groupName,
 		FinishedLevel:    int(o.FinishedLevel),

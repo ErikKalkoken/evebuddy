@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 	"github.com/antihax/goesi"
@@ -63,7 +63,7 @@ func TestGetOrCreateEveDogmaAttributeESI(t *testing.T) {
 			assert.True(t, x1.IsHighGood)
 			assert.True(t, x1.IsPublished)
 			assert.False(t, x1.IsStackable)
-			assert.Equal(t, model.EveUnitID(124), x1.Unit)
+			assert.Equal(t, app.EveUnitID(124), x1.Unit)
 			x2, err := r.GetEveDogmaAttribute(ctx, 20)
 			if assert.NoError(t, err) {
 				assert.Equal(t, x1, x2)

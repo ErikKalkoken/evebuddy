@@ -9,7 +9,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
 )
 
@@ -25,7 +25,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(model.CharacterToken{CharacterID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		data := `{
 			"charisma": 20,
 			"intelligence": 21,
@@ -41,7 +41,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 		// when
 		changed, err := s.updateCharacterAttributesESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
-			Section:     model.SectionAttributes,
+			Section:     app.SectionAttributes,
 		})
 		// then
 		if assert.NoError(t, err) {

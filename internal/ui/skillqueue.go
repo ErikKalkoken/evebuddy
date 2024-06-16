@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
@@ -49,7 +49,7 @@ func (a *skillqueueArea) makeSkillqueue() *widget.List {
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			item := co.(*widgets.SkillQueueItem)
-			q, err := convertDataItem[*model.CharacterSkillqueueItem](di)
+			q, err := convertDataItem[*app.CharacterSkillqueueItem](di)
 			if err != nil {
 				slog.Error("failed to render row in skillqueue table", "err", err)
 				item.SetError("failed to render", err)
@@ -59,7 +59,7 @@ func (a *skillqueueArea) makeSkillqueue() *widget.List {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		q, err := getItemUntypedList[*model.CharacterSkillqueueItem](a.items, id)
+		q, err := getItemUntypedList[*app.CharacterSkillqueueItem](a.items, id)
 		if err != nil {
 			slog.Error("failed to access skillqueue item in list", "err", err)
 			return
@@ -163,7 +163,7 @@ func (a *skillqueueArea) updateItems() (optional.Duration, sql.NullFloat64, erro
 }
 
 func (a *skillqueueArea) makeTopText(total optional.Duration) (string, widget.Importance) {
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), model.SectionSkillqueue)
+	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

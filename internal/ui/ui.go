@@ -16,8 +16,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	app1 "github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 )
@@ -39,7 +39,7 @@ type ui struct {
 	assetSearchArea       *assetSearchArea
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
-	character             *model.Character
+	character             *app1.Character
 	isDebug               bool
 	implantsArea          *implantsArea
 	jumpClonesArea        *jumpClonesArea
@@ -147,8 +147,8 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 	w.SetContent(mainContent)
 	w.SetMaster()
 
-	var c *model.Character
-	cID, ok, err := sv.Dictionary.Int(model.SettingLastCharacterID)
+	var c *app1.Character
+	cID, ok, err := sv.Dictionary.Int(app1.SettingLastCharacterID)
 	if err == nil && ok {
 		c, err = sv.Character.GetCharacter(context.Background(), int32(cID))
 		if err != nil {
@@ -210,9 +210,9 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 		}
 	})
 
-	name, ok, err := u.sv.Dictionary.String(model.SettingTheme)
+	name, ok, err := u.sv.Dictionary.String(app1.SettingTheme)
 	if err != nil || !ok {
-		name = model.ThemeAuto
+		name = app1.ThemeAuto
 	}
 	u.setTheme(name)
 	return u
@@ -220,16 +220,16 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 
 func (u *ui) setTheme(name string) {
 	switch name {
-	case model.ThemeAuto:
+	case app1.ThemeAuto:
 		switch u.app.Settings().ThemeVariant() {
 		case 0:
 			u.app.Settings().SetTheme(theme.DarkTheme())
 		default:
 			u.app.Settings().SetTheme(theme.LightTheme())
 		}
-	case model.ThemeLight:
+	case app1.ThemeLight:
 		u.app.Settings().SetTheme(theme.LightTheme())
-	case model.ThemeDark:
+	case app1.ThemeDark:
 		u.app.Settings().SetTheme(theme.DarkTheme())
 	}
 }
@@ -261,7 +261,7 @@ func (u *ui) characterID() int32 {
 	return u.character.ID
 }
 
-func (u *ui) currentCharacter() *model.Character {
+func (u *ui) currentCharacter() *app1.Character {
 	return u.character
 }
 
@@ -278,9 +278,9 @@ func (u *ui) loadCharacter(ctx context.Context, characterID int32) error {
 	return nil
 }
 
-func (u *ui) setCharacter(c *model.Character) {
+func (u *ui) setCharacter(c *app1.Character) {
 	u.character = c
-	err := u.sv.Dictionary.SetInt(model.SettingLastCharacterID, int(c.ID))
+	err := u.sv.Dictionary.SetInt(app1.SettingLastCharacterID, int(c.ID))
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
@@ -344,7 +344,7 @@ func (u *ui) refreshOverview() {
 
 func (u *ui) resetCharacter() {
 	u.character = nil
-	err := u.sv.Dictionary.Delete(model.SettingLastCharacterID)
+	err := u.sv.Dictionary.Delete(app1.SettingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}

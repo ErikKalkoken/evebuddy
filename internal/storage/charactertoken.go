@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*model.CharacterToken, error) {
+func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*app.CharacterToken, error) {
 	t, err := st.q.GetCharacterToken(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -30,7 +30,7 @@ func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*m
 	return t2, nil
 }
 
-func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *model.CharacterToken) error {
+func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *app.CharacterToken) error {
 	arg := queries.UpdateOrCreateCharacterTokenParams{
 		AccessToken:  t.AccessToken,
 		CharacterID:  int64(t.CharacterID),
@@ -100,11 +100,11 @@ func (st *Storage) getOrCreateScope(ctx context.Context, name string) (queries.S
 	return s, nil
 }
 
-func characterTokenFromDBModel(o queries.CharacterToken, scopes []string) *model.CharacterToken {
+func characterTokenFromDBModel(o queries.CharacterToken, scopes []string) *app.CharacterToken {
 	if o.CharacterID == 0 {
 		panic("missing character ID")
 	}
-	return &model.CharacterToken{
+	return &app.CharacterToken{
 		AccessToken:  o.AccessToken,
 		CharacterID:  int32(o.CharacterID),
 		ExpiresAt:    o.ExpiresAt,

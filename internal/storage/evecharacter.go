@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -63,7 +63,7 @@ func (st *Storage) DeleteEveCharacter(ctx context.Context, characterID int32) er
 	return nil
 }
 
-func (st *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*model.EveCharacter, error) {
+func (st *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
 	row, err := st.q.GetEveCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -90,7 +90,7 @@ func (st *Storage) ListEveCharacterIDs(ctx context.Context) ([]int32, error) {
 	return ids2, nil
 }
 
-func (st *Storage) UpdateEveCharacter(ctx context.Context, c *model.EveCharacter) error {
+func (st *Storage) UpdateEveCharacter(ctx context.Context, c *app.EveCharacter) error {
 	arg := queries.UpdateEveCharacterParams{
 		ID:             int64(c.ID),
 		CorporationID:  int64(c.Corporation.ID),
@@ -119,8 +119,8 @@ func eveCharacterFromDBModel(
 	race queries.EveRace,
 	alliance queries.EveCharacterAlliance,
 	faction queries.EveCharacterFaction,
-) *model.EveCharacter {
-	x := model.EveCharacter{
+) *app.EveCharacter {
+	x := app.EveCharacter{
 		Alliance:       eveEntityFromNullableDBModel(nullEveEntry(alliance)),
 		Birthday:       character.Birthday,
 		Corporation:    eveEntityFromDBModel(corporation),

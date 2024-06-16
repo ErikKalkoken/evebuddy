@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
@@ -55,7 +55,7 @@ func (st *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) e
 	return nil
 }
 
-func (st *Storage) GetEveType(ctx context.Context, id int32) (*model.EveType, error) {
+func (st *Storage) GetEveType(ctx context.Context, id int32) (*app.EveType, error) {
 	row, err := st.q.GetEveType(ctx, int64(id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -78,8 +78,8 @@ func (st *Storage) MissingEveTypes(ctx context.Context, ids []int32) ([]int32, e
 	return missing.ToSlice(), nil
 }
 
-func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCategory) *model.EveType {
-	return &model.EveType{
+func eveTypeFromDBModel(t queries.EveType, g queries.EveGroup, c queries.EveCategory) *app.EveType {
+	return &app.EveType{
 		ID:             int32(t.ID),
 		Group:          eveGroupFromDBModel(g, c),
 		Capacity:       float32(t.Capacity),

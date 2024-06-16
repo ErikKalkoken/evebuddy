@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -98,8 +98,8 @@ func (st *Storage) updateCharacterMailLabels(ctx context.Context, characterID in
 	return nil
 }
 
-func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int32) (*model.CharacterMail, error) {
-	mail, err := func() (*model.CharacterMail, error) {
+func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int32) (*app.CharacterMail, error) {
+	mail, err := func() (*app.CharacterMail, error) {
 		arg := queries.GetMailParams{
 			CharacterID: int64(characterID),
 			MailID:      int64(mailID),
@@ -183,12 +183,12 @@ func (st *Storage) GetCharacterMailListUnreadCounts(ctx context.Context, charact
 	return result, nil
 }
 
-func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterID int32) ([]*model.EveEntity, error) {
+func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterID int32) ([]*app.EveEntity, error) {
 	ll, err := st.q.ListCharacterMailListsOrdered(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list mail lists for character %d: %w", characterID, err)
 	}
-	ee := make([]*model.EveEntity, len(ll))
+	ee := make([]*app.EveEntity, len(ll))
 	for i, l := range ll {
 		ee[i] = eveEntityFromDBModel(l)
 	}
@@ -214,19 +214,19 @@ func characterMailFromDBModel(
 	from queries.EveEntity,
 	labels []queries.CharacterMailLabel,
 	recipients []queries.EveEntity,
-) *model.CharacterMail {
+) *app.CharacterMail {
 	if mail.CharacterID == 0 {
 		panic("missing character ID")
 	}
-	var ll []*model.CharacterMailLabel
+	var ll []*app.CharacterMailLabel
 	for _, l := range labels {
 		ll = append(ll, characterMailLabelFromDBModel(l))
 	}
-	var rr []*model.EveEntity
+	var rr []*app.EveEntity
 	for _, r := range recipients {
 		rr = append(rr, eveEntityFromDBModel(r))
 	}
-	m := model.CharacterMail{
+	m := app.CharacterMail{
 		Body:        mail.Body,
 		CharacterID: int32(mail.CharacterID),
 		From:        eveEntityFromDBModel(from),

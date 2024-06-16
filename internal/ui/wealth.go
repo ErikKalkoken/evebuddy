@@ -11,9 +11,9 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/charts"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
 type wealthArea struct {
@@ -113,10 +113,10 @@ func (a *wealthArea) compileData() ([]dataRow, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	selected := make([]*model.Character, 0)
+	selected := make([]*app.Character, 0)
 	for _, c := range cc {
-		hasAssets := a.ui.sv.StatusCache.CharacterSectionExists(c.ID, model.SectionAssets)
-		hasWallet := a.ui.sv.StatusCache.CharacterSectionExists(c.ID, model.SectionWalletBalance)
+		hasAssets := a.ui.sv.StatusCache.CharacterSectionExists(c.ID, app.SectionAssets)
+		hasWallet := a.ui.sv.StatusCache.CharacterSectionExists(c.ID, app.SectionWalletBalance)
 		if hasAssets && hasWallet {
 			selected = append(selected, c)
 		}

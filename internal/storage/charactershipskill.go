@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
-func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID int32, search string) ([]*model.CharacterShipAbility, error) {
+func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID int32, search string) ([]*app.CharacterShipAbility, error) {
 	arg := queries.ListCharacterShipsAbilitiesParams{
 		CharacterID: int64(characterID),
 		Name:        search,
@@ -17,11 +17,11 @@ func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID 
 	if err != nil {
 		return nil, fmt.Errorf("failed to list ship abilities for character %d and search %s: %w", characterID, search, err)
 	}
-	oo := make([]*model.CharacterShipAbility, len(rows))
+	oo := make([]*app.CharacterShipAbility, len(rows))
 	for i, row := range rows {
-		o := &model.CharacterShipAbility{
-			Group:  model.EntityShort[int32]{ID: int32(row.GroupID), Name: row.GroupName},
-			Type:   model.EntityShort[int32]{ID: int32(row.TypeID), Name: row.TypeName},
+		o := &app.CharacterShipAbility{
+			Group:  app.EntityShort[int32]{ID: int32(row.GroupID), Name: row.GroupName},
+			Type:   app.EntityShort[int32]{ID: int32(row.TypeID), Name: row.TypeName},
 			CanFly: row.CanFly,
 		}
 		oo[i] = o
@@ -29,7 +29,7 @@ func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID 
 	return oo, nil
 }
 
-func (st *Storage) ListCharacterShipSkills(ctx context.Context, characterID, shipTypeID int32) ([]*model.CharacterShipSkill, error) {
+func (st *Storage) ListCharacterShipSkills(ctx context.Context, characterID, shipTypeID int32) ([]*app.CharacterShipSkill, error) {
 	arg := queries.ListCharacterShipSkillsParams{
 		CharacterID: int64(characterID),
 		ShipTypeID:  int64(shipTypeID),
@@ -38,15 +38,15 @@ func (st *Storage) ListCharacterShipSkills(ctx context.Context, characterID, shi
 	if err != nil {
 		return nil, fmt.Errorf("failed to list character ship skills for character %d and type %d: %w", characterID, shipTypeID, err)
 	}
-	oo := make([]*model.CharacterShipSkill, len(rows))
+	oo := make([]*app.CharacterShipSkill, len(rows))
 	for i, r := range rows {
 		oo[i] = characterShiSkillFromDBModel(r)
 	}
 	return oo, nil
 }
 
-func characterShiSkillFromDBModel(r queries.ListCharacterShipSkillsRow) *model.CharacterShipSkill {
-	css := &model.CharacterShipSkill{
+func characterShiSkillFromDBModel(r queries.ListCharacterShipSkillsRow) *app.CharacterShipSkill {
+	css := &app.CharacterShipSkill{
 		Rank:        uint(r.Rank),
 		ShipTypeID:  int32(r.ShipTypeID),
 		SkillTypeID: int32(r.SkillTypeID),
