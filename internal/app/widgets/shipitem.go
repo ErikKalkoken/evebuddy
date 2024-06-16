@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
 // The ShipItem widget is used to render items on the type info window.
@@ -14,10 +15,10 @@ type ShipItem struct {
 	image        *canvas.Image
 	label        *widget.Label
 	fallbackIcon fyne.Resource
-	sv           InventoryTypeImageProvider
+	sv           app.EveImageService
 }
 
-func NewShipItem(sv InventoryTypeImageProvider, fallbackIcon fyne.Resource) *ShipItem {
+func NewShipItem(sv app.EveImageService, fallbackIcon fyne.Resource) *ShipItem {
 	image := canvas.NewImageFromResource(theme.BrokenImageIcon())
 	image.FillMode = canvas.ImageFillContain
 	image.SetMinSize(fyne.Size{Width: 128, Height: 128})

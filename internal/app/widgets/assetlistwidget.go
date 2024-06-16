@@ -5,6 +5,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/dustin/go-humanize"
 )
 
@@ -25,10 +26,10 @@ type AssetListWidget struct {
 	name         *widget.Label
 	quantity     *widget.Label
 	fallbackIcon fyne.Resource
-	sv           InventoryTypeImageProvider
+	sv           app.EveImageService
 }
 
-func NewAssetListWidget(sv InventoryTypeImageProvider, fallbackIcon fyne.Resource) *AssetListWidget {
+func NewAssetListWidget(sv app.EveImageService, fallbackIcon fyne.Resource) *AssetListWidget {
 	icon := canvas.NewImageFromResource(fallbackIcon)
 	icon.FillMode = canvas.ImageFillContain
 	icon.SetMinSize(fyne.Size{Width: 40, Height: 40})

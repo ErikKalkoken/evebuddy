@@ -19,7 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -39,7 +38,7 @@ type ui struct {
 	CharacterService   *character.CharacterService
 	DictionaryService  app.DictionaryService
 	ESIStatusService   app.ESIStatusService
-	EveImageService    *eveimage.EveImageService
+	EveImageService    app.EveImageService
 	EveUniverseService *eveuniverse.EveUniverseService
 	StatusCacheService app.StatusCacheService
 
