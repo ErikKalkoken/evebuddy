@@ -17,7 +17,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := New(r, client, nil, nil)
+	s := New(r, client)
 	ctx := context.Background()
 	t.Run("should create new objects from ESI", func(t *testing.T) {
 		// given

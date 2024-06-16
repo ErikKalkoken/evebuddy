@@ -18,11 +18,11 @@ import (
 )
 
 func TestUpdateMail(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := character.New(r, nil, nil, nil, nil, nil)
+	s := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("Can fetch new mail", func(t *testing.T) {
 		// given
@@ -157,7 +157,7 @@ func TestUpdateMail(t *testing.T) {
 					if assert.NoError(t, err) {
 						assert.Equal(t, "blah blah blah", m.Body)
 					}
-					labels, err := r.ListCharacterMailLabelsOrdered(ctx, c1.ID)
+					labels, err := st.ListCharacterMailLabelsOrdered(ctx, c1.ID)
 					if assert.NoError(t, err) {
 						got := set.New[int32]()
 						for _, l := range labels {
@@ -166,7 +166,7 @@ func TestUpdateMail(t *testing.T) {
 						want := set.NewFromSlice(labelIDs)
 						assert.Equal(t, want, got)
 					}
-					lists, err := r.ListCharacterMailListsOrdered(ctx, c2.ID)
+					lists, err := st.ListCharacterMailListsOrdered(ctx, c2.ID)
 					if assert.NoError(t, err) {
 						got := set.New[int32]()
 						for _, l := range lists {
@@ -296,7 +296,7 @@ func TestUpdateMail(t *testing.T) {
 				assert.Equal(t, int32(32), m.Labels[0].LabelID)
 				assert.Len(t, m.Recipients, 2)
 			}
-			labels, err := r.ListCharacterMailLabelsOrdered(ctx, c.ID)
+			labels, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
 			if assert.NoError(t, err) {
 				got := set.New[int32]()
 				for _, l := range labels {

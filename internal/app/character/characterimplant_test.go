@@ -15,11 +15,11 @@ import (
 )
 
 func TestUpdateCharacterImplantsESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := New(r, nil, nil, nil, nil, nil)
+	s := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("should create new implants from scratch", func(t *testing.T) {
 		// given
@@ -42,7 +42,7 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			oo, err := r.ListCharacterImplants(ctx, c.ID)
+			oo, err := st.ListCharacterImplants(ctx, c.ID)
 			if assert.NoError(t, err) {
 				got := set.New[int32]()
 				for _, o := range oo {

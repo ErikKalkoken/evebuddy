@@ -6,8 +6,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
-	"github.com/ErikKalkoken/evebuddy/internal/cache"
-	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
 )
@@ -16,29 +14,17 @@ var ErrNotFound = errors.New("object not found")
 
 // EveUniverseService provides access to Eve Online models with on-demand loading from ESI and local caching.
 type EveUniverseService struct {
+	StatusCacheService *statuscache.StatusCacheService
+
 	esiClient *goesi.APIClient
 	sfg       *singleflight.Group
 	st        *sqlite.Storage
-
-	// Dictionary service
-	dt *dictionary.DictionaryService
-	// Status cache service
-	sc *statuscache.StatusCacheService
 }
 
 // New returns a new instance of an Eve universe service.
-func New(st *sqlite.Storage, esiClient *goesi.APIClient, dt *dictionary.DictionaryService, sc *statuscache.StatusCacheService) *EveUniverseService {
-	if dt == nil {
-		dt = dictionary.New(st)
-	}
-	if sc == nil {
-		cache := cache.New()
-		sc = statuscache.New(cache)
-	}
+func New(st *sqlite.Storage, esiClient *goesi.APIClient) *EveUniverseService {
 	eu := &EveUniverseService{
 		esiClient: esiClient,
-		dt:        dt,
-		sc:        sc,
 		st:        st,
 		sfg:       new(singleflight.Group),
 	}

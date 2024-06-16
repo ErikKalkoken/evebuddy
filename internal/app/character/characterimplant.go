@@ -28,7 +28,7 @@ func (s *CharacterService) updateCharacterImplantsESI(ctx context.Context, arg U
 			implants := data.([]int32)
 			args := make([]sqlite.CreateCharacterImplantParams, len(implants))
 			for i, typeID := range implants {
-				_, err := s.eu.GetOrCreateEveTypeESI(ctx, typeID)
+				_, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, typeID)
 				if err != nil {
 					return err
 				}

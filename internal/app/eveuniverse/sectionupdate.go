@@ -69,7 +69,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		if err != nil {
 			return false, err
 		}
-		s.sc.GeneralSectionSet(o)
+		s.StatusCacheService.GeneralSectionSet(o)
 		err = f(ctx)
 		slog.Info("Finished updating eveuniverse section", "section", section)
 		return nil, err
@@ -86,7 +86,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		if err != nil {
 			return false, err
 		}
-		s.sc.GeneralSectionSet(o)
+		s.StatusCacheService.GeneralSectionSet(o)
 		return false, err
 	}
 	completedAt := sqlite.NewNullTime(time.Now())
@@ -103,7 +103,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	if err != nil {
 		return false, err
 	}
-	s.sc.GeneralSectionSet(o)
+	s.StatusCacheService.GeneralSectionSet(o)
 	return true, nil
 }
 

@@ -16,11 +16,11 @@ import (
 )
 
 func TestUpdateWalletJournalEntryESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := New(r, nil, nil, nil, nil, nil)
+	s := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("should create new entry from scratch", func(t *testing.T) {
 		// given
@@ -57,7 +57,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			e, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
+			e, err := st.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
 			if assert.NoError(t, err) {
 				assert.Equal(t, -100000.0, e.Amount)
 				assert.Equal(t, 500000.4316, e.Balance)
@@ -69,7 +69,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 				assert.Equal(t, "contract_deposit", e.RefType)
 				assert.Equal(t, secondParty.ID, e.SecondParty.ID)
 			}
-			ids, err := r.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
+			ids, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids, 1)
 			}
@@ -111,11 +111,11 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			e2, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
+			e2, err := st.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "Contract Deposit", e2.Description)
 			}
-			ids, err := r.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
+			ids, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids, 2)
 			}
@@ -160,11 +160,11 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			e2, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
+			e2, err := st.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "existing", e2.Description)
 			}
-			ids, err := r.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
+			ids, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids, 1)
 			}
@@ -221,14 +221,14 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			ids, err := r.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
+			ids, err := st.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				if assert.Len(t, ids, 2) {
-					x1, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
+					x1, err := st.GetCharacterWalletJournalEntry(ctx, c.ID, 89)
 					if assert.NoError(t, err) {
 						assert.Equal(t, "First", x1.Description)
 					}
-					x2, err := r.GetCharacterWalletJournalEntry(ctx, c.ID, 90)
+					x2, err := st.GetCharacterWalletJournalEntry(ctx, c.ID, 90)
 					if assert.NoError(t, err) {
 						assert.Equal(t, "Second", x2.Description)
 					}
@@ -239,9 +239,9 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 }
 
 func TestListWalletJournalEntries(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
-	s := New(r, nil, nil, nil, nil, nil)
+	s := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("can list existing entries", func(t *testing.T) {
 		// given

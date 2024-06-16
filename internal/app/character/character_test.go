@@ -5,14 +5,19 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/cache"
+	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetCharacter(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := character.New(st, nil, nil, nil, nil, nil)
+	cs := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
@@ -38,7 +43,7 @@ func TestGetCharacter(t *testing.T) {
 func TestGetAnyCharacter(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := character.New(st, nil, nil, nil, nil, nil)
+	cs := character.New(st, nil, nil)
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given
@@ -59,4 +64,15 @@ func TestGetAnyCharacter(t *testing.T) {
 			assert.Equal(t, x1, x2)
 		}
 	})
+}
+
+func newCharacterService(st *sqlite.Storage) *character.CharacterService {
+	sc := statuscache.New(cache.New())
+	eu := eveuniverse.New(st, nil)
+	eu.StatusCacheService = sc
+	s := character.New(st, nil, nil)
+	s.DictionaryService = dictionary.New(st)
+	s.EveUniverseService = eu
+	s.StatusCacheService = sc
+	return s
 }

@@ -15,11 +15,11 @@ import (
 )
 
 func TestUpdateSkillqueueESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := New(r, nil, nil, nil, nil, nil)
+	s := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("should create new queue", func(t *testing.T) {
 		// given
@@ -65,7 +65,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			ii, err := r.ListSkillqueueItems(ctx, c.ID)
+			ii, err := st.ListSkillqueueItems(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ii, 3)
 			}

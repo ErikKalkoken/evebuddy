@@ -15,11 +15,11 @@ import (
 )
 
 func TestUpdateCharacterSkillsESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := New(r, nil, nil, nil, nil, nil)
+	s := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("should update skills from scratch", func(t *testing.T) {
 		// given
@@ -59,18 +59,18 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			c2, err := r.GetCharacter(ctx, c.ID)
+			c2, err := st.GetCharacter(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.True(t, c2.TotalSP.Valid)
 				assert.Equal(t, int64(90000), c2.TotalSP.Int64)
 			}
-			o1, err := r.GetCharacterSkill(ctx, c.ID, 41)
+			o1, err := st.GetCharacterSkill(ctx, c.ID, 41)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 3, o1.ActiveSkillLevel)
 				assert.Equal(t, 10000, o1.SkillPointsInSkill)
 				assert.Equal(t, 4, o1.TrainedSkillLevel)
 			}
-			o2, err := r.GetCharacterSkill(ctx, c.ID, 42)
+			o2, err := st.GetCharacterSkill(ctx, c.ID, 42)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 1, o2.ActiveSkillLevel)
 				assert.Equal(t, 20000, o2.SkillPointsInSkill)
@@ -111,9 +111,9 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			_, err := r.GetCharacterSkill(ctx, c.ID, 42)
+			_, err := st.GetCharacterSkill(ctx, c.ID, 42)
 			assert.Error(t, err, sqlite.ErrNotFound)
-			_, err = r.GetCharacterSkill(ctx, c.ID, 41)
+			_, err = st.GetCharacterSkill(ctx, c.ID, 41)
 			assert.NoError(t, err)
 		}
 	})
@@ -123,7 +123,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 // func TestListWalletJournalEntries(t *testing.T) {
 // 	db, r, factory := testutil.New()
 // 	defer db.Close()
-// 	s := New(r, nil, nil, nil, nil, nil)
+// 	s := newCharacterService(st)
 // 	t.Run("can list existing entries", func(t *testing.T) {
 // 		// given
 // 		testutil.TruncateTables(db)

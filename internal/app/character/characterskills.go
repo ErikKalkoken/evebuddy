@@ -41,7 +41,7 @@ func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg Upd
 			var existingSkills []int32
 			for _, o := range skills.Skills {
 				existingSkills = append(existingSkills, o.SkillId)
-				_, err := s.eu.GetOrCreateEveTypeESI(ctx, o.SkillId)
+				_, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, o.SkillId)
 				if err != nil {
 					return err
 				}

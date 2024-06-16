@@ -8,7 +8,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
-	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
@@ -21,17 +20,14 @@ var (
 
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
 type CharacterService struct {
+	DictionaryService  *dictionary.DictionaryService
+	EveUniverseService *eveuniverse.EveUniverseService
+	StatusCacheService *statuscache.StatusCacheService
+
 	esiClient  *goesi.APIClient
 	httpClient *http.Client
 	sfg        *singleflight.Group
-	// Storage service
-	st *sqlite.Storage
-	// EveUniverse service
-	eu *eveuniverse.EveUniverseService
-	// CharacterStatus service
-	cs *statuscache.StatusCacheService
-	// Dictionary service
-	dt *dictionary.DictionaryService
+	st         *sqlite.Storage
 }
 
 // New creates a new Characters service and returns it.
@@ -40,9 +36,7 @@ func New(
 	st *sqlite.Storage,
 	httpClient *http.Client,
 	esiClient *goesi.APIClient,
-	sc *statuscache.StatusCacheService,
-	dt *dictionary.DictionaryService,
-	eu *eveuniverse.EveUniverseService,
+
 ) *CharacterService {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
@@ -50,24 +44,11 @@ func New(
 	if esiClient == nil {
 		esiClient = goesi.NewAPIClient(httpClient, "")
 	}
-	if sc == nil {
-		cache := cache.New()
-		sc = statuscache.New(cache)
-	}
-	if dt == nil {
-		dt = dictionary.New(st)
-	}
-	if eu == nil {
-		eu = eveuniverse.New(st, esiClient, dt, sc)
-	}
 	ct := &CharacterService{
 		st:         st,
 		esiClient:  esiClient,
 		httpClient: httpClient,
 		sfg:        new(singleflight.Group),
-		eu:         eu,
-		cs:         sc,
-		dt:         dt,
 	}
 	return ct
 }

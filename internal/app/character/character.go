@@ -19,7 +19,7 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, characterID int3
 	if err := s.st.DeleteCharacter(ctx, characterID); err != nil {
 		return err
 	}
-	return s.cs.UpdateCharacters(ctx, s.st)
+	return s.StatusCacheService.UpdateCharacters(ctx, s.st)
 }
 
 func (s *CharacterService) GetCharacter(ctx context.Context, characterID int32) (*app.Character, error) {
@@ -66,7 +66,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		TokenType:    ssoToken.TokenType,
 	}
 	ctx = contextWithESIToken(ctx, token.AccessToken)
-	character, err := s.eu.GetOrCreateEveCharacterESI(ctx, token.CharacterID)
+	character, err := s.EveUniverseService.GetOrCreateEveCharacterESI(ctx, token.CharacterID)
 	if err != nil {
 		return 0, err
 	}
@@ -94,7 +94,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 	if err := s.st.UpdateOrCreateCharacterToken(ctx, &token); err != nil {
 		return 0, err
 	}
-	if err := s.cs.UpdateCharacters(ctx, s.st); err != nil {
+	if err := s.StatusCacheService.UpdateCharacters(ctx, s.st); err != nil {
 		return 0, err
 	}
 	return token.CharacterID, nil
@@ -124,7 +124,7 @@ func (s *CharacterService) updateCharacterLocationESI(ctx context.Context, arg U
 			default:
 				locationID = int64(location.SolarSystemId)
 			}
-			_, err := s.eu.GetOrCreateEveLocationESI(ctx, locationID)
+			_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, locationID)
 			if err != nil {
 				return err
 			}
@@ -178,7 +178,7 @@ func (s *CharacterService) updateCharacterShipESI(ctx context.Context, arg Updat
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			ship := data.(esi.GetCharactersCharacterIdShipOk)
-			_, err := s.eu.GetOrCreateEveTypeESI(ctx, ship.ShipTypeId)
+			_, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, ship.ShipTypeId)
 			if err != nil {
 				return err
 			}
@@ -231,7 +231,7 @@ func (s *CharacterService) AddEveEntitiesFromCharacterSearchESI(ctx context.Cont
 		return nil, err
 	}
 	ids := slices.Concat(r.Alliance, r.Character, r.Corporation)
-	missingIDs, err := s.eu.AddMissingEveEntities(ctx, ids)
+	missingIDs, err := s.EveUniverseService.AddMissingEveEntities(ctx, ids)
 	if err != nil {
 		slog.Error("Failed to fetch missing IDs", "error", err)
 		return nil, err

@@ -135,10 +135,18 @@ func main() {
 	if err := sc.InitCache(st); err != nil {
 		panic(err)
 	}
-	eu := eveuniverse.New(st, esiClient, dt, sc)
+
+	eu := eveuniverse.New(st, esiClient)
+	eu.StatusCacheService = sc
+
+	cs := character.New(st, httpClient, esiClient)
+	cs.DictionaryService = dt
+	cs.EveUniverseService = eu
+	cs.StatusCacheService = sc
+
 	u := ui.NewUI(*debugFlag)
 	u.CacheService = cache
-	u.CharacterService = character.New(st, httpClient, esiClient, sc, dt, eu)
+	u.CharacterService = cs
 	u.DictionaryService = dt
 	u.ESIStatusService = esistatus.New(esiClient)
 	u.EveImageService = eveimage.New(imageCacheDir, httpClient)

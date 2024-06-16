@@ -32,7 +32,7 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			var home sql.NullInt64
 			clones := data.(esi.GetCharactersCharacterIdClonesOk)
 			if clones.HomeLocation.LocationId != 0 {
-				_, err := s.eu.GetOrCreateEveLocationESI(ctx, clones.HomeLocation.LocationId)
+				_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, clones.HomeLocation.LocationId)
 				if err != nil {
 					return err
 				}
@@ -44,11 +44,11 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			}
 			args := make([]sqlite.CreateCharacterJumpCloneParams, len(clones.JumpClones))
 			for i, jc := range clones.JumpClones {
-				_, err := s.eu.GetOrCreateEveLocationESI(ctx, jc.LocationId)
+				_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, jc.LocationId)
 				if err != nil {
 					return err
 				}
-				if err := s.eu.AddMissingEveTypes(ctx, jc.Implants); err != nil {
+				if err := s.EveUniverseService.AddMissingEveTypes(ctx, jc.Implants); err != nil {
 					return err
 				}
 				args[i] = sqlite.CreateCharacterJumpCloneParams{

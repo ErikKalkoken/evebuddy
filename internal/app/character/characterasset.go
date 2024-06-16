@@ -93,12 +93,12 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 				return err
 			}
 			for _, id := range missingLocationIDs {
-				_, err := s.eu.GetOrCreateEveLocationESI(ctx, id)
+				_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, id)
 				if err != nil {
 					return err
 				}
 			}
-			if err := s.eu.AddMissingEveTypes(ctx, typeIDs.ToSlice()); err != nil {
+			if err := s.EveUniverseService.AddMissingEveTypes(ctx, typeIDs.ToSlice()); err != nil {
 				return err
 			}
 			ids, err := s.st.ListCharacterAssetIDs(ctx, characterID)
@@ -170,7 +170,7 @@ func (s *CharacterService) fetchCharacterAssetNamesESI(ctx context.Context, char
 
 func (s *CharacterService) CharacterAssetTotalValue(characterID int32) (sql.NullFloat64, error) {
 	key := makeCharacterAssetTotalValueKey(characterID)
-	v, found, err := s.dt.Float64(key)
+	v, found, err := s.DictionaryService.Float64(key)
 	if err != nil {
 		return sql.NullFloat64{}, err
 	}
@@ -186,7 +186,7 @@ func (s *CharacterService) updateCharacterAssetTotalValue(ctx context.Context, a
 		return err
 	}
 	key := makeCharacterAssetTotalValueKey(arg.CharacterID)
-	if err := s.dt.SetFloat64(key, v); err != nil {
+	if err := s.DictionaryService.SetFloat64(key, v); err != nil {
 		return err
 	}
 	return nil

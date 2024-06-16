@@ -14,11 +14,11 @@ import (
 )
 
 func TestUpdateCharacterAttributesESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := New(r, nil, nil, nil, nil, nil)
+	s := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("should create attributes from ESI response", func(t *testing.T) {
 		// given
@@ -46,7 +46,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			x, err := r.GetCharacterAttributes(ctx, c.ID)
+			x, err := st.GetCharacterAttributes(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 20, x.Charisma)
 				assert.Equal(t, 21, x.Intelligence)
@@ -61,7 +61,7 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 func TestGetCharacterAttributes(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	cs := New(st, nil, nil, nil, nil, nil)
+	cs := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("should return own error when object not found", func(t *testing.T) {
 		// given

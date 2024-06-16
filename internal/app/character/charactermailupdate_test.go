@@ -17,12 +17,12 @@ import (
 
 func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 	// given
-	db, r, _ := testutil.New()
+	db, st, _ := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := New(r, nil, nil, nil, nil, nil)
+	s := newCharacterService(st)
 	var objs []esi.GetCharactersCharacterIdMail200Ok
 	var mailIDs []int32
 	for i := range 55 {
@@ -73,12 +73,12 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 
 func TestUpdateMailLabel(t *testing.T) {
 	// given
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	ctx := context.Background()
-	s := New(r, nil, nil, nil, nil, nil)
+	s := newCharacterService(st)
 	t.Run("should create new mail labels", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -119,7 +119,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			labels, err := r.ListCharacterMailLabelsOrdered(ctx, c.ID)
+			labels, err := st.ListCharacterMailLabelsOrdered(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, labels, 2)
 			}
@@ -172,7 +172,7 @@ func TestUpdateMailLabel(t *testing.T) {
 		})
 		// then
 		if assert.NoError(t, err) {
-			l2, err := r.GetCharacterMailLabel(ctx, c.ID, l1.LabelID)
+			l2, err := st.GetCharacterMailLabel(ctx, c.ID, l1.LabelID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "PINK", l2.Name)
 				assert.Equal(t, "#660066", l2.Color)

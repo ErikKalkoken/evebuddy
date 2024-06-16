@@ -14,8 +14,8 @@ import (
 // TODO: Add tests for UpdateSectionIfNeeded()
 
 func TestUpdateCharacterSectionIfChanged(t *testing.T) {
-	db, r, factory := testutil.New()
-	s := New(r, nil, nil, nil, nil, nil)
+	db, st, factory := testutil.New()
+	s := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("should report as changed and run update when new", func(t *testing.T) {
 		// given
@@ -41,7 +41,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			assert.True(t, changed)
 			assert.Equal(t, accessToken, token.AccessToken)
 			assert.True(t, hasUpdated)
-			x, err := r.GetCharacterSectionStatus(ctx, c.ID, section)
+			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
 				assert.True(t, x.IsOK())
@@ -74,7 +74,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
 			assert.True(t, hasUpdated)
-			x2, err := r.GetCharacterSectionStatus(ctx, c.ID, section)
+			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
 				assert.True(t, x2.IsOK())
@@ -107,7 +107,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
 			assert.False(t, hasUpdated)
-			x2, err := r.GetCharacterSectionStatus(ctx, c.ID, section)
+			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
 				assert.True(t, x2.IsOK())
@@ -117,8 +117,8 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 }
 
 func TestCharacterSectionUpdateMethods(t *testing.T) {
-	db, r, factory := testutil.New()
-	s := New(r, nil, nil, nil, nil, nil)
+	db, st, factory := testutil.New()
+	s := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("Can report wether a section was updated", func(t *testing.T) {
 		// given

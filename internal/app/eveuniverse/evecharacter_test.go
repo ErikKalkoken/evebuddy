@@ -23,7 +23,7 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client, nil, nil)
+	s := eveuniverse.New(r, client)
 	ctx := context.Background()
 	t.Run("should return existing character", func(t *testing.T) {
 		// given
@@ -95,7 +95,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
-	s := eveuniverse.New(r, client, nil, nil)
+	s := eveuniverse.New(r, client)
 	ctx := context.Background()
 	t.Run("should update character from ESI", func(t *testing.T) {
 		// given

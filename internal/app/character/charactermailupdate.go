@@ -136,7 +136,7 @@ func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg Upda
 func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdMail200Ok
 	lastMailID := int32(0)
-	maxMails, err := s.dt.IntWithFallback(app.SettingMaxMails, app.SettingMaxMailsDefault)
+	maxMails, err := s.DictionaryService.IntWithFallback(app.SettingMaxMails, app.SettingMaxMailsDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (s *CharacterService) resolveMailEntities(ctx context.Context, mm []esi.Get
 			entityIDs.Add(r.RecipientId)
 		}
 	}
-	_, err := s.eu.AddMissingEveEntities(ctx, entityIDs.ToSlice())
+	_, err := s.EveUniverseService.AddMissingEveEntities(ctx, entityIDs.ToSlice())
 	if err != nil {
 		return err
 	}

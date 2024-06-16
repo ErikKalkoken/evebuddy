@@ -10,16 +10,20 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/cache"
+	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 )
 
 func TestUpdateCharacterAssetsESI(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := New(r, nil, nil, nil, nil, nil)
+	s := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("should create new assets from scratch", func(t *testing.T) {
 		// given
@@ -75,10 +79,10 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			ids, err := r.ListCharacterAssetIDs(ctx, c.ID)
+			ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids, 2)
-				x, err := r.GetCharacterAsset(ctx, c.ID, 1000000016835)
+				x, err := st.GetCharacterAsset(ctx, c.ID, 1000000016835)
 				if assert.NoError(t, err) {
 					assert.Equal(t, eveType.ID, x.EveType.ID)
 					assert.Equal(t, eveType.Name, x.EveType.Name)
@@ -90,7 +94,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 					assert.Equal(t, "Awesome Name", x.Name)
 					assert.Equal(t, int32(1), x.Quantity)
 				}
-				x, err = r.GetCharacterAsset(ctx, c.ID, 1000000016836)
+				x, err = st.GetCharacterAsset(ctx, c.ID, 1000000016836)
 				if assert.NoError(t, err) {
 					assert.Equal(t, "", x.Name)
 				}
@@ -157,10 +161,10 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			ids, err := r.ListCharacterAssetIDs(ctx, c.ID)
+			ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ids, 2)
-				x, err := r.GetCharacterAsset(ctx, c.ID, 1000000016835)
+				x, err := st.GetCharacterAsset(ctx, c.ID, 1000000016835)
 				if assert.NoError(t, err) {
 					assert.Equal(t, eveType.ID, x.EveType.ID)
 					assert.Equal(t, eveType.Name, x.EveType.Name)
@@ -172,11 +176,22 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 					assert.Equal(t, "Awesome Name", x.Name)
 					assert.Equal(t, int32(1), x.Quantity)
 				}
-				x, err = r.GetCharacterAsset(ctx, c.ID, 1000000016836)
+				x, err = st.GetCharacterAsset(ctx, c.ID, 1000000016836)
 				if assert.NoError(t, err) {
 					assert.Equal(t, "", x.Name)
 				}
 			}
 		}
 	})
+}
+
+func newCharacterService(st *sqlite.Storage) *CharacterService {
+	sc := statuscache.New(cache.New())
+	eu := eveuniverse.New(st, nil)
+	eu.StatusCacheService = sc
+	s := New(st, nil, nil)
+	s.DictionaryService = dictionary.New(st)
+	s.EveUniverseService = eu
+	s.StatusCacheService = sc
+	return s
 }

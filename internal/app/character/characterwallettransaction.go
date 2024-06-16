@@ -60,17 +60,17 @@ func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Conte
 					ids.Add(e.ClientId)
 				}
 			}
-			_, err = s.eu.AddMissingEveEntities(ctx, ids.ToSlice())
+			_, err = s.EveUniverseService.AddMissingEveEntities(ctx, ids.ToSlice())
 			if err != nil {
 				return err
 			}
 
 			for _, o := range newEntries {
-				_, err = s.eu.GetOrCreateEveTypeESI(ctx, o.TypeId)
+				_, err = s.EveUniverseService.GetOrCreateEveTypeESI(ctx, o.TypeId)
 				if err != nil {
 					return err
 				}
-				_, err = s.eu.GetOrCreateEveLocationESI(ctx, o.LocationId)
+				_, err = s.EveUniverseService.GetOrCreateEveLocationESI(ctx, o.LocationId)
 				if err != nil {
 					return err
 				}
@@ -100,7 +100,7 @@ func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Conte
 func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdWalletTransactions200Ok
 	lastID := int64(0)
-	maxTransactions, err := s.dt.IntWithFallback(app.SettingMaxWalletTransactions, app.SettingMaxWalletTransactionsDefault)
+	maxTransactions, err := s.DictionaryService.IntWithFallback(app.SettingMaxWalletTransactions, app.SettingMaxWalletTransactionsDefault)
 	if err != nil {
 		return nil, err
 	}

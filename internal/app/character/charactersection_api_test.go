@@ -15,9 +15,9 @@ import (
 )
 
 func TestCharacterSectionStatus(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
-	s := character.New(r, nil, nil, nil, nil, nil)
+	s := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("Can report when updated", func(t *testing.T) {
 		// given
@@ -50,11 +50,11 @@ func TestCharacterSectionStatus(t *testing.T) {
 }
 
 func TestUpdateCharacterSection(t *testing.T) {
-	db, r, factory := testutil.New()
+	db, st, factory := testutil.New()
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	s := character.New(r, nil, nil, nil, nil, nil)
+	s := newCharacterService(st)
 	section := app.SectionImplants
 	ctx := context.Background()
 	t.Run("should report true when changed", func(t *testing.T) {
@@ -74,7 +74,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			x, err := r.GetCharacterSectionStatus(ctx, c.ID, section)
+			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.True(t, x.IsOK())
 			}
@@ -104,12 +104,12 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
-			x, err := r.GetCharacterSectionStatus(ctx, c.ID, section)
+			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
 			}
 			assert.Equal(t, 1, httpmock.GetTotalCallCount())
-			xx, err := r.ListCharacterImplants(ctx, c.ID)
+			xx, err := st.ListCharacterImplants(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, xx, 0)
 			}
@@ -140,7 +140,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.False(t, changed)
 			assert.Equal(t, 0, httpmock.GetTotalCallCount())
-			xx, err := r.ListCharacterImplants(ctx, c.ID)
+			xx, err := st.ListCharacterImplants(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, xx, 0)
 			}
@@ -162,7 +162,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			ctx, character.UpdateSectionParams{CharacterID: c.ID, Section: section})
 		// then
 		if assert.Error(t, err) {
-			x, err := r.GetCharacterSectionStatus(ctx, c.ID, section)
+			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.False(t, x.IsOK())
 				assert.Equal(t, "500: dummy error", x.ErrorMessage)
@@ -194,7 +194,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, 1, httpmock.GetTotalCallCount())
-			xx, err := r.ListCharacterImplants(ctx, c.ID)
+			xx, err := st.ListCharacterImplants(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, xx, 1)
 			}
@@ -227,12 +227,12 @@ func TestUpdateCharacterSection(t *testing.T) {
 			})
 		// then
 		if assert.NoError(t, err) {
-			x, err := r.GetCharacterSectionStatus(ctx, c.ID, section)
+			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
 			if assert.NoError(t, err) {
 				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
 			}
 			assert.Equal(t, 1, httpmock.GetTotalCallCount())
-			xx, err := r.ListCharacterImplants(ctx, c.ID)
+			xx, err := st.ListCharacterImplants(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, xx, 1)
 			}
