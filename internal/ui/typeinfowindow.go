@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"

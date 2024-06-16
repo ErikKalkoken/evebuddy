@@ -11,7 +11,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 func TestNumber(t *testing.T) {

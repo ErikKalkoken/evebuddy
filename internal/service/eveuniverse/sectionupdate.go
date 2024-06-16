@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"golang.org/x/sync/errgroup"

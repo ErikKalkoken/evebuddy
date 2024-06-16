@@ -12,7 +12,7 @@ import (
 	"time"
 
 	igoesi "github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
-	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )

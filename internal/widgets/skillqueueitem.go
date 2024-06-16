@@ -8,8 +8,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 type SkillQueueItem struct {
