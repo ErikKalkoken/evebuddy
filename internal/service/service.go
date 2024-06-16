@@ -8,7 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
-	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
+	"github.com/ErikKalkoken/evebuddy/internal/httptransport"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/service/esistatus"
@@ -43,10 +43,10 @@ type Service struct {
 // imageCachePath can be empty. Then a temporary directory will be create and used instead.
 func New(st *storage.Storage, imageCacheDir string) *Service {
 	httpClient := &http.Client{
-		Transport: ihttp.LoggedTransport{},
+		Transport: httptransport.LoggedTransport{},
 	}
 	esiHttpClient := &http.Client{
-		Transport: ihttp.LoggedTransportWithRetries{
+		Transport: httptransport.LoggedTransportWithRetries{
 			MaxRetries: 3,
 			StatusCodesToRetry: []int{
 				http.StatusBadGateway,

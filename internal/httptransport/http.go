@@ -1,5 +1,5 @@
-// Package http contains HTTP related helpers
-package http
+// Package http provides custom http transport implementations.
+package httptransport
 
 import (
 	"bytes"

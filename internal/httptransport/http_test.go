@@ -1,4 +1,4 @@
-package http_test
+package httptransport_test
 
 import (
 	"bytes"
@@ -11,12 +11,12 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 
-	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
+	"github.com/ErikKalkoken/evebuddy/internal/httptransport"
 )
 
 func TestLoggedTransport(t *testing.T) {
 	httpClient := &http.Client{
-		Transport: ihttp.LoggedTransport{},
+		Transport: httptransport.LoggedTransport{},
 	}
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -76,7 +76,7 @@ func TestLoggedTransport(t *testing.T) {
 
 func TestLoggedTransportWithRetries(t *testing.T) {
 	httpClient := &http.Client{
-		Transport: ihttp.LoggedTransportWithRetries{
+		Transport: httptransport.LoggedTransportWithRetries{
 			MaxRetries:         3,
 			StatusCodesToRetry: []int{http.StatusBadGateway},
 			DelayMilliseconds:  10,
