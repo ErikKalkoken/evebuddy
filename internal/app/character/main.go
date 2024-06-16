@@ -5,11 +5,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
+	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
 )

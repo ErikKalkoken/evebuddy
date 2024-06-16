@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 )
 
 func TestDictionary(t *testing.T) {
