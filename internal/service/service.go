@@ -6,8 +6,8 @@ import (
 
 	"github.com/antihax/goesi"
 
+	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
-	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"

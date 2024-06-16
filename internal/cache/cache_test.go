@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
+	"github.com/ErikKalkoken/evebuddy/internal/cache"
 )
 
 func TestCacheExported(t *testing.T) {

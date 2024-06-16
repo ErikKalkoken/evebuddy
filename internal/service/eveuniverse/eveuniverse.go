@@ -4,7 +4,7 @@ package eveuniverse
 import (
 	"errors"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
+	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"

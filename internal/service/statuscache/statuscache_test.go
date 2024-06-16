@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
+	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
