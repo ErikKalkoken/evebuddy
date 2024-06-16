@@ -20,7 +20,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
-	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -65,7 +64,7 @@ type ui struct {
 	wealthArea            *wealthArea
 	window                fyne.Window
 
-	CacheService       *cache.Cache
+	CacheService       app.CacheService
 	CharacterService   *character.CharacterService
 	DictionaryService  *dictionary.DictionaryService
 	EveImageService    *eveimage.EveImageService
