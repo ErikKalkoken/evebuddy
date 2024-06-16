@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
 func (s *CharacterService) ListCharacterImplants(ctx context.Context, characterID int32) ([]*app.CharacterImplant, error) {

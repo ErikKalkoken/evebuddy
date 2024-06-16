@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
 func (eu *EveUniverseService) GetEveLocation(ctx context.Context, id int64) (*app.EveLocation, error) {

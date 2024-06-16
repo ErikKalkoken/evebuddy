@@ -10,8 +10,8 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
 )
 

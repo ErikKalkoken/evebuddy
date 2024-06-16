@@ -5,8 +5,8 @@ import (
 	"log/slog"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
 )
 

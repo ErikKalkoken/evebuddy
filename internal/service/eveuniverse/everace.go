@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
 func (eu *EveUniverseService) GetOrCreateEveRaceESI(ctx context.Context, id int32) (*app.EveRace, error) {

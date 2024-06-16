@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
 
 func TestUpdateWalletTransactionESI(t *testing.T) {

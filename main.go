@@ -11,8 +11,8 @@ import (
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/service"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/ui"
 	"github.com/chasinglogic/appdirs"
 )

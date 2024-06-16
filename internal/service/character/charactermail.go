@@ -10,7 +10,7 @@ import (
 	"github.com/antihax/goesi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
 var eveEntityCategory2MailRecipientType = map[app.EveEntityCategory]string{

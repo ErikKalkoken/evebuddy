@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
 func (eu *EveUniverseService) GetOrCreateEveCharacterESI(ctx context.Context, id int32) (*app.EveCharacter, error) {

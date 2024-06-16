@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"golang.org/x/sync/errgroup"
 )
 

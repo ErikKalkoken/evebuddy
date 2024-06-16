@@ -8,7 +8,7 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
 func (eu *EveUniverseService) GetEveType(ctx context.Context, id int32) (*app.EveType, error) {
