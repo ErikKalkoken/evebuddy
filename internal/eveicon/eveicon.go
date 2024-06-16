@@ -1,4 +1,4 @@
-// Package icons contains Eve online icons as fyne resources.
+// Package eveicon provides access to Eve online icons as Fyne resource.
 package eveicon
 
 import (

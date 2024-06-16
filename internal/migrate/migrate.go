@@ -1,4 +1,4 @@
-// Package migrate is a simple implementation for migrating a SQLite database.
+// Package migrate provides a simple mechanism for dealing with migrations of a SQLite database.
 package migrate
 
 import (

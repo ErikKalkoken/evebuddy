@@ -1,4 +1,4 @@
-// Package humanize provides helper functions to humanize values.
+// Package humanize transforms values into more user friendly representations.
 package humanize
 
 import (

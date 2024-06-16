@@ -9,6 +9,7 @@ import (
 
 const defaultCleanupDuration = time.Minute * 10
 
+// An in-memory cache.
 type Cache struct {
 	items sync.Map
 
@@ -21,7 +22,7 @@ type item struct {
 	ExpiresAt time.Time
 }
 
-// New creates a new cache and returns it
+// New creates a new cache and returns it.
 func New() *Cache {
 	c := Cache{}
 	c.lastCleanup = time.Now()

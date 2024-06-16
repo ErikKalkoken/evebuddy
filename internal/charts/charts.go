@@ -1,4 +1,4 @@
-// Package charts provides a chart builder to to render themed Fyne charts.
+// Package charts provides a chart builder for rending themed Fyne charts.
 package charts
 
 import (

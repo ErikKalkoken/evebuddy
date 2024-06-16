@@ -1,4 +1,4 @@
-// Package evehtml deals with Eve Online HTML
+// Package evehtml provides converters to deal with Eve Online HTML.
 package evehtml
 
 import (

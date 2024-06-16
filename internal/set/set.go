@@ -1,11 +1,11 @@
-// Package set defines a generic set type
+// Package set implements a set type.
 package set
 
 import "fmt"
 
-// Set is a generic set.
+// A set of values.
 type Set[T comparable] struct {
-	items map[T]struct{}
+	values map[T]struct{}
 }
 
 func (s *Set[T]) String() string {
@@ -14,28 +14,28 @@ func (s *Set[T]) String() string {
 
 // Add adds an element to the set
 func (s *Set[T]) Add(v T) {
-	s.items[v] = struct{}{}
+	s.values[v] = struct{}{}
 }
 
 // Remove removes an element from a set.
 // It does nothing when the element doesn't exist.
 func (s *Set[T]) Remove(v T) {
-	delete(s.items, v)
+	delete(s.values, v)
 }
 
 // Clear removes all elements from a set.
 func (s *Set[T]) Clear() {
-	s.items = make(map[T]struct{})
+	s.values = make(map[T]struct{})
 }
 
 // Size returns the number of elements in a set.
 func (s *Set[T]) Size() int {
-	return len(s.items)
+	return len(s.values)
 }
 
 // Has reports wether an item is in this set.
 func (s *Set[T]) Has(item T) bool {
-	_, ok := s.items[item]
+	_, ok := s.values[item]
 	return ok
 }
 
@@ -43,7 +43,7 @@ func (s *Set[T]) Has(item T) bool {
 // Note that the elements in the slice have no defined order.
 func (s *Set[T]) ToSlice() []T {
 	slice := make([]T, 0, s.Size())
-	for v := range s.items {
+	for v := range s.values {
 		slice = append(slice, v)
 	}
 	return slice
@@ -52,11 +52,11 @@ func (s *Set[T]) ToSlice() []T {
 // Union returns a new set containing the combined elements from both sets.
 func (s *Set[T]) Union(other *Set[T]) *Set[T] {
 	n := NewFromSlice([]T{})
-	for v := range s.items {
+	for v := range s.values {
 		n.Add(v)
 	}
 
-	for v := range other.items {
+	for v := range other.values {
 		n.Add(v)
 	}
 	return n
@@ -65,7 +65,7 @@ func (s *Set[T]) Union(other *Set[T]) *Set[T] {
 // Intersect returns a new set which contains elements found in both sets only.
 func (s *Set[T]) Intersect(other *Set[T]) *Set[T] {
 	n := NewFromSlice([]T{})
-	for v := range s.items {
+	for v := range s.values {
 		if !other.Has(v) {
 			continue
 		}
@@ -78,7 +78,7 @@ func (s *Set[T]) Intersect(other *Set[T]) *Set[T] {
 // that does not exist in other set.
 func (s *Set[T]) Difference(other *Set[T]) *Set[T] {
 	n := NewFromSlice([]T{})
-	for v := range s.items {
+	for v := range s.values {
 		if other.Has(v) {
 			continue
 		}
@@ -105,9 +105,9 @@ func New[T comparable]() *Set[T] {
 // NewFromSlice returns a new set from a slice.
 func NewFromSlice[T comparable](slice []T) *Set[T] {
 	var s Set[T]
-	s.items = make(map[T]struct{}, len(slice))
+	s.values = make(map[T]struct{}, len(slice))
 	for _, el := range slice {
-		s.items[el] = struct{}{}
+		s.values[el] = struct{}{}
 	}
 	return &s
 }

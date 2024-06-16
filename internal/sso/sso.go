@@ -1,5 +1,5 @@
-// Package sso contains all logic for character authentication with the Eve Online SSO API.
-// This package should not access any other internal packages, except helpers.
+// Package sso provides the ability to authenticate characters with the Eve Online SSO API.
+// It implements the OAuth 2.0 for desktop app with the PKCE protocol.
 package sso
 
 import memcache "github.com/ErikKalkoken/evebuddy/internal/cache"
