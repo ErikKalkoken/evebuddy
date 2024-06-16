@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 )
@@ -138,11 +138,11 @@ func (a *attributesArea) updateData() (int, error) {
 	} else if err != nil {
 		return 0, err
 	}
-	resPerception := icons.GetResourceByName(icons.Perception)
-	resMemory := icons.GetResourceByName(icons.Memory)
-	resWillpower := icons.GetResourceByName(icons.Willpower)
-	resIntelligence := icons.GetResourceByName(icons.Intelligence)
-	resCharisma := icons.GetResourceByName(icons.Charisma)
+	resPerception := eveicon.GetResourceByName(eveicon.Perception)
+	resMemory := eveicon.GetResourceByName(eveicon.Memory)
+	resWillpower := eveicon.GetResourceByName(eveicon.Willpower)
+	resIntelligence := eveicon.GetResourceByName(eveicon.Intelligence)
+	resCharisma := eveicon.GetResourceByName(eveicon.Charisma)
 	items := make([]any, 6)
 	items[0] = attribute{
 		icon:   resPerception,

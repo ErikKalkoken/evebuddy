@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/dustin/go-humanize"
@@ -161,7 +161,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 
 			icon := row.Objects[0].(*canvas.Image)
 			if c.IsGeneralSection() {
-				icon.Resource = icons.GetResourceByName(icons.StarMap)
+				icon.Resource = eveicon.GetResourceByName(eveicon.StarMap)
 				icon.Refresh()
 			} else {
 				refreshImageResourceAsync(icon, func() (fyne.Resource, error) {

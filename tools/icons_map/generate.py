@@ -16,7 +16,7 @@ with data_file.open("r") as f:
 
 out = """
 // auto-generated
-package icons
+package eveicon
 
 import "fyne.io/fyne/v2"
 

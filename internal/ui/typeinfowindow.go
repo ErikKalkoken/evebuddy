@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
@@ -354,7 +354,7 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 			} else {
 				iconID = o.DogmaAttribute.IconID
 			}
-			r, _ := icons.GetResourceByIconID(iconID)
+			r, _ := eveicon.GetResourceByIconID(iconID)
 			groupedRows[ag] = append(groupedRows[ag], attributeRow{
 				icon:  r,
 				label: o.DogmaAttribute.DisplayName,
@@ -370,7 +370,7 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 			v += fmt.Sprintf(" (%s Packaged)", v2)
 		}
 		r := attributeRow{
-			icon:  icons.GetResourceByName(icons.Structure),
+			icon:  eveicon.GetResourceByName(eveicon.Structure),
 			label: "Volume",
 			value: v,
 		}
@@ -412,7 +412,7 @@ func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int
 			continue
 		}
 		iconID := o.DogmaAttribute.IconID
-		r, _ := icons.GetResourceByIconID(iconID)
+		r, _ := eveicon.GetResourceByIconID(iconID)
 		v, _ := a.ui.sv.EveUniverse.FormatValue(ctx, o.Value, o.DogmaAttribute.Unit)
 		data = append(data, attributeRow{
 			icon:  r,
@@ -528,15 +528,15 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		render.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(render)
 		if a.metaLevel > 4 {
-			var n icons.Name
+			var n eveicon.Name
 			if a.techLevel == 2 {
-				n = icons.Tech2
+				n = eveicon.Tech2
 			} else if a.techLevel == 3 {
-				n = icons.Tech3
+				n = eveicon.Tech3
 			} else {
-				n = icons.Faction
+				n = eveicon.Faction
 			}
-			marker := canvas.NewImageFromResource(icons.GetResourceByName(n))
+			marker := canvas.NewImageFromResource(eveicon.GetResourceByName(n))
 			marker.FillMode = canvas.ImageFillOriginal
 			typeIcon.Add(marker)
 		}

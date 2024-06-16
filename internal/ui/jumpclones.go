@@ -11,7 +11,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/icons"
+	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 )
 
@@ -76,7 +76,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 				return
 			}
 			if n.isClone() {
-				icon.Resource = icons.GetResourceByName(icons.CloningCenter)
+				icon.Resource = eveicon.GetResourceByName(eveicon.CloningCenter)
 				icon.Refresh()
 				first.SetText(n.LocationName)
 				var t string
