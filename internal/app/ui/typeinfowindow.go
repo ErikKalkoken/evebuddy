@@ -208,7 +208,7 @@ func (u *ui) showInfoWindow(iw *typeInfoWindow, err error) {
 	if iw == nil {
 		return
 	}
-	w := u.app.NewWindow(iw.makeTitle("Information"))
+	w := u.fyneApp.NewWindow(iw.makeTitle("Information"))
 	iw.window = w
 	w.SetContent(iw.content)
 	w.Resize(fyne.Size{Width: 500, Height: 500})
@@ -513,7 +513,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			panic(err)
 		}
 		render := widgets.NewTappableImage(r, canvas.ImageFillContain, func() {
-			w := a.ui.app.NewWindow(a.makeTitle("Render"))
+			w := a.ui.fyneApp.NewWindow(a.makeTitle("Render"))
 			size := 512
 			i := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
 				return a.ui.sv.EveImage.InventoryTypeRender(a.et.ID, size)

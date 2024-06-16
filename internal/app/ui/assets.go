@@ -447,7 +447,7 @@ func (u *ui) showNewAssetWindow(ca *app.CharacterAsset) {
 		name = fmt.Sprintf(" \"%s\" ", ca.Name)
 	}
 	title := fmt.Sprintf("%s%s(%s): Contents", ca.EveType.Name, name, ca.EveType.Group.Name)
-	w := u.app.NewWindow(title)
+	w := u.fyneApp.NewWindow(title)
 	oo, err := u.sv.Character.ListCharacterAssetsInLocation(context.Background(), ca.CharacterID, ca.ItemID)
 	if err != nil {
 		panic(err)

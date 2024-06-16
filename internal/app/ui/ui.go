@@ -10,13 +10,13 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
+	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	app1 "github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/service"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -34,12 +34,12 @@ const (
 // Each UI area holds a pointer of the ui instance, so that areas can
 // call methods on other UI areas and access shared variables in the UI.
 type ui struct {
-	app                   fyne.App
+	fyneApp               fyne.App
 	assetsArea            *assetsArea
 	assetSearchArea       *assetSearchArea
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
-	character             *app1.Character
+	character             *app.Character
 	isDebug               bool
 	implantsArea          *implantsArea
 	jumpClonesArea        *jumpClonesArea
@@ -64,10 +64,10 @@ type ui struct {
 
 // NewUI build the UI and returns it.
 func NewUI(sv *service.Service, isDebug bool) *ui {
-	app := app.New()
-	w := app.NewWindow(appName(app))
+	fyneApp := fyneapp.New()
+	w := fyneApp.NewWindow(appName(fyneApp))
 	u := &ui{
-		app:     app,
+		fyneApp: fyneApp,
 		isDebug: isDebug,
 		sv:      sv,
 		window:  w,
@@ -147,8 +147,8 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 	w.SetContent(mainContent)
 	w.SetMaster()
 
-	var c *app1.Character
-	cID, ok, err := sv.Dictionary.Int(app1.SettingLastCharacterID)
+	var c *app.Character
+	cID, ok, err := sv.Dictionary.Int(app.SettingLastCharacterID)
 	if err == nil && ok {
 		c, err = sv.Character.GetCharacter(context.Background(), int32(cID))
 		if err != nil {
@@ -210,9 +210,9 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 		}
 	})
 
-	name, ok, err := u.sv.Dictionary.String(app1.SettingTheme)
+	name, ok, err := u.sv.Dictionary.String(app.SettingTheme)
 	if err != nil || !ok {
-		name = app1.ThemeAuto
+		name = app.ThemeAuto
 	}
 	u.setTheme(name)
 	return u
@@ -220,17 +220,17 @@ func NewUI(sv *service.Service, isDebug bool) *ui {
 
 func (u *ui) setTheme(name string) {
 	switch name {
-	case app1.ThemeAuto:
-		switch u.app.Settings().ThemeVariant() {
+	case app.ThemeAuto:
+		switch u.fyneApp.Settings().ThemeVariant() {
 		case 0:
-			u.app.Settings().SetTheme(theme.DarkTheme())
+			u.fyneApp.Settings().SetTheme(theme.DarkTheme())
 		default:
-			u.app.Settings().SetTheme(theme.LightTheme())
+			u.fyneApp.Settings().SetTheme(theme.LightTheme())
 		}
-	case app1.ThemeLight:
-		u.app.Settings().SetTheme(theme.LightTheme())
-	case app1.ThemeDark:
-		u.app.Settings().SetTheme(theme.DarkTheme())
+	case app.ThemeLight:
+		u.fyneApp.Settings().SetTheme(theme.LightTheme())
+	case app.ThemeDark:
+		u.fyneApp.Settings().SetTheme(theme.DarkTheme())
 	}
 }
 
@@ -261,7 +261,7 @@ func (u *ui) characterID() int32 {
 	return u.character.ID
 }
 
-func (u *ui) currentCharacter() *app1.Character {
+func (u *ui) currentCharacter() *app.Character {
 	return u.character
 }
 
@@ -278,9 +278,9 @@ func (u *ui) loadCharacter(ctx context.Context, characterID int32) error {
 	return nil
 }
 
-func (u *ui) setCharacter(c *app1.Character) {
+func (u *ui) setCharacter(c *app.Character) {
 	u.character = c
-	err := u.sv.Dictionary.SetInt(app1.SettingLastCharacterID, int(c.ID))
+	err := u.sv.Dictionary.SetInt(app.SettingLastCharacterID, int(c.ID))
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
@@ -344,7 +344,7 @@ func (u *ui) refreshOverview() {
 
 func (u *ui) resetCharacter() {
 	u.character = nil
-	err := u.sv.Dictionary.Delete(app1.SettingLastCharacterID)
+	err := u.sv.Dictionary.Delete(app.SettingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}
