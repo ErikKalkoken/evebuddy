@@ -6,12 +6,12 @@ import (
 
 	"github.com/antihax/goesi"
 
+	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/cache"
 	ihttp "github.com/ErikKalkoken/evebuddy/internal/helper/http"
 	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/service/esistatus"
-	"github.com/ErikKalkoken/evebuddy/internal/service/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"

@@ -1,4 +1,3 @@
-// package eveimage contains the Eve image service.
 package eveimage
 
 import (
@@ -15,17 +14,9 @@ import (
 
 	"fyne.io/fyne/v2"
 	"golang.org/x/sync/singleflight"
-
-	"github.com/ErikKalkoken/evebuddy/internal/eveonline/images"
 )
 
-var (
-	ErrHttpError   = errors.New("http error")
-	ErrNoImage     = errors.New("no image from API")
-	ErrInvalidSize = errors.New("invalid size")
-)
-
-// EveImageService provides cached access to images from the Eve Online image server.
+// EveImageService provides cached access to images on the Eve Online image server.
 type EveImageService struct {
 	httpClient *http.Client
 	// cacheDir is where the image files are stored for caching
@@ -57,9 +48,9 @@ func New(cacheDir string, httpClient *http.Client) *EveImageService {
 
 // AllianceLogo returns the logo for an alliance.
 func (m *EveImageService) AllianceLogo(id int32, size int) (fyne.Resource, error) {
-	url, err := images.AllianceLogoURL(id, size)
+	url, err := AllianceLogoURL(id, size)
 	if err != nil {
-		if errors.Is(err, images.ErrInvalidSize) {
+		if errors.Is(err, ErrInvalidSize) {
 			err = ErrInvalidSize
 		}
 		return nil, err
@@ -69,9 +60,9 @@ func (m *EveImageService) AllianceLogo(id int32, size int) (fyne.Resource, error
 
 // CharacterPortrait returns the portrait for a character.
 func (m *EveImageService) CharacterPortrait(id int32, size int) (fyne.Resource, error) {
-	url, err := images.CharacterPortraitURL(id, size)
+	url, err := CharacterPortraitURL(id, size)
 	if err != nil {
-		if errors.Is(err, images.ErrInvalidSize) {
+		if errors.Is(err, ErrInvalidSize) {
 			err = ErrInvalidSize
 		}
 		return nil, err
@@ -81,9 +72,9 @@ func (m *EveImageService) CharacterPortrait(id int32, size int) (fyne.Resource, 
 
 // CorporationLogo returns the logo for a corporation.
 func (m *EveImageService) CorporationLogo(id int32, size int) (fyne.Resource, error) {
-	url, err := images.CorporationLogoURL(id, size)
+	url, err := CorporationLogoURL(id, size)
 	if err != nil {
-		if errors.Is(err, images.ErrInvalidSize) {
+		if errors.Is(err, ErrInvalidSize) {
 			err = ErrInvalidSize
 		}
 		return nil, err
@@ -93,9 +84,9 @@ func (m *EveImageService) CorporationLogo(id int32, size int) (fyne.Resource, er
 
 // FactionLogo returns the logo for a faction.
 func (m *EveImageService) FactionLogo(id int32, size int) (fyne.Resource, error) {
-	url, err := images.FactionLogoURL(id, size)
+	url, err := FactionLogoURL(id, size)
 	if err != nil {
-		if errors.Is(err, images.ErrInvalidSize) {
+		if errors.Is(err, ErrInvalidSize) {
 			err = ErrInvalidSize
 		}
 		return nil, err
@@ -105,9 +96,9 @@ func (m *EveImageService) FactionLogo(id int32, size int) (fyne.Resource, error)
 
 // InventoryTypeRender returns the render for a type. Note that not ever type has a render.
 func (m *EveImageService) InventoryTypeRender(id int32, size int) (fyne.Resource, error) {
-	url, err := images.InventoryTypeRenderURL(id, size)
+	url, err := InventoryTypeRenderURL(id, size)
 	if err != nil {
-		if errors.Is(err, images.ErrInvalidSize) {
+		if errors.Is(err, ErrInvalidSize) {
 			err = ErrInvalidSize
 		}
 		return nil, err
@@ -117,9 +108,9 @@ func (m *EveImageService) InventoryTypeRender(id int32, size int) (fyne.Resource
 
 // InventoryTypeIcon returns the icon for a type.
 func (m *EveImageService) InventoryTypeIcon(id int32, size int) (fyne.Resource, error) {
-	url, err := images.InventoryTypeIconURL(id, size)
+	url, err := InventoryTypeIconURL(id, size)
 	if err != nil {
-		if errors.Is(err, images.ErrInvalidSize) {
+		if errors.Is(err, ErrInvalidSize) {
 			err = ErrInvalidSize
 		}
 		return nil, err
@@ -129,9 +120,9 @@ func (m *EveImageService) InventoryTypeIcon(id int32, size int) (fyne.Resource, 
 
 // InventoryTypeBPO returns the icon for a BPO type.
 func (m *EveImageService) InventoryTypeBPO(id int32, size int) (fyne.Resource, error) {
-	url, err := images.InventoryTypeBPOURL(id, size)
+	url, err := InventoryTypeBPOURL(id, size)
 	if err != nil {
-		if errors.Is(err, images.ErrInvalidSize) {
+		if errors.Is(err, ErrInvalidSize) {
 			err = ErrInvalidSize
 		}
 		return nil, err
@@ -141,9 +132,9 @@ func (m *EveImageService) InventoryTypeBPO(id int32, size int) (fyne.Resource, e
 
 // InventoryTypeBPC returns the icon for a BPC type.
 func (m *EveImageService) InventoryTypeBPC(id int32, size int) (fyne.Resource, error) {
-	url, err := images.InventoryTypeBPCURL(id, size)
+	url, err := InventoryTypeBPCURL(id, size)
 	if err != nil {
-		if errors.Is(err, images.ErrInvalidSize) {
+		if errors.Is(err, ErrInvalidSize) {
 			err = ErrInvalidSize
 		}
 		return nil, err

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/service/eveimage"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )

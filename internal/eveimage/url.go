@@ -1,12 +1,8 @@
-// Package images provides valid image URLs for the Eve Online image server.
-package images
+package eveimage
 
 import (
-	"errors"
 	"fmt"
 )
-
-var ErrInvalidSize = errors.New("invalid size")
 
 const (
 	PlaceholderCharacterID   = 1
