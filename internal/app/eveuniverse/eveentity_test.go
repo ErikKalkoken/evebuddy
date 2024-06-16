@@ -12,7 +12,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
 )
 
 func TestResolveUncleanEveEntities(t *testing.T) {

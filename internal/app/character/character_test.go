@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
 	"github.com/stretchr/testify/assert"
 )
 

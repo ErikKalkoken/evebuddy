@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 )
 
 func (eu *EveUniverseService) GetEveLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
 	o, err := eu.st.GetEveLocation(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, sqlite.ErrNotFound) {
 		return nil, ErrNotFound
 	} else if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (eu *EveUniverseService) ListEveLocations(ctx context.Context) ([]*app.EveL
 // Important: A token with the structure scope must be set in the context
 func (eu *EveUniverseService) GetOrCreateEveLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
 	x, err := eu.st.GetEveLocation(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, sqlite.ErrNotFound) {
 		return eu.updateOrCreateEveLocationESI(ctx, id)
 	} else if err != nil {
 		return x, err
@@ -46,14 +46,14 @@ func (eu *EveUniverseService) GetOrCreateEveLocationESI(ctx context.Context, id 
 func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, id int64) (*app.EveLocation, error) {
 	key := fmt.Sprintf("updateOrCreateLocationESI-%d", id)
 	y, err, _ := eu.sfg.Do(key, func() (any, error) {
-		var arg storage.UpdateOrCreateLocationParams
+		var arg sqlite.UpdateOrCreateLocationParams
 		switch app.LocationVariantFromID(id) {
 		case app.EveLocationUnknown:
 			t, err := eu.GetOrCreateEveTypeESI(ctx, app.EveTypeSolarSystem)
 			if err != nil {
 				return nil, err
 			}
-			arg = storage.UpdateOrCreateLocationParams{
+			arg = sqlite.UpdateOrCreateLocationParams{
 				ID:        id,
 				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
 			}
@@ -62,7 +62,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 			if err != nil {
 				return nil, err
 			}
-			arg = storage.UpdateOrCreateLocationParams{
+			arg = sqlite.UpdateOrCreateLocationParams{
 				ID:        id,
 				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
 			}
@@ -75,7 +75,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 			if err != nil {
 				return nil, err
 			}
-			arg = storage.UpdateOrCreateLocationParams{
+			arg = sqlite.UpdateOrCreateLocationParams{
 				ID:               id,
 				EveTypeID:        sql.NullInt32{Int32: t.ID, Valid: true},
 				EveSolarSystemID: sql.NullInt32{Int32: x.ID, Valid: true},
@@ -94,7 +94,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 				return nil, err
 			}
 			arg.EveTypeID = sql.NullInt32{Int32: station.TypeId, Valid: true}
-			arg = storage.UpdateOrCreateLocationParams{
+			arg = sqlite.UpdateOrCreateLocationParams{
 				ID:               id,
 				EveSolarSystemID: sql.NullInt32{Int32: station.SystemId, Valid: true},
 				EveTypeID:        sql.NullInt32{Int32: station.TypeId, Valid: true},
@@ -111,7 +111,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 			structure, r, err := eu.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
 			if err != nil {
 				if r != nil && r.StatusCode == http.StatusForbidden {
-					arg = storage.UpdateOrCreateLocationParams{ID: id}
+					arg = sqlite.UpdateOrCreateLocationParams{ID: id}
 					break
 				}
 				return nil, err
@@ -124,7 +124,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 			if err != nil {
 				return nil, err
 			}
-			arg = storage.UpdateOrCreateLocationParams{
+			arg = sqlite.UpdateOrCreateLocationParams{
 				ID:               id,
 				EveSolarSystemID: sql.NullInt32{Int32: structure.SolarSystemId, Valid: true},
 				Name:             structure.Name,

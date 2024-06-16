@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/dictionary"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
@@ -18,7 +18,7 @@ var ErrNotFound = errors.New("object not found")
 type EveUniverseService struct {
 	esiClient *goesi.APIClient
 	sfg       *singleflight.Group
-	st        *storage.Storage
+	st        *sqlite.Storage
 
 	// Dictionary service
 	dt *dictionary.DictionaryService
@@ -27,7 +27,7 @@ type EveUniverseService struct {
 }
 
 // New returns a new instance of an Eve universe service.
-func New(st *storage.Storage, esiClient *goesi.APIClient, dt *dictionary.DictionaryService, sc *statuscache.StatusCacheService) *EveUniverseService {
+func New(st *sqlite.Storage, esiClient *goesi.APIClient, dt *dictionary.DictionaryService, sc *statuscache.StatusCacheService) *EveUniverseService {
 	if dt == nil {
 		dt = dictionary.New(st)
 	}

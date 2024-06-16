@@ -8,12 +8,12 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 )
 
 func (eu *EveUniverseService) GetEveType(ctx context.Context, id int32) (*app.EveType, error) {
 	x, err := eu.st.GetEveType(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, sqlite.ErrNotFound) {
 		return nil, ErrNotFound
 	} else if err != nil {
 		return x, err
@@ -23,7 +23,7 @@ func (eu *EveUniverseService) GetEveType(ctx context.Context, id int32) (*app.Ev
 
 func (eu *EveUniverseService) GetOrCreateEveCategoryESI(ctx context.Context, id int32) (*app.EveCategory, error) {
 	x, err := eu.st.GetEveCategory(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, sqlite.ErrNotFound) {
 		return eu.createEveCategoryFromESI(ctx, id)
 	} else if err != nil {
 		return x, err
@@ -38,7 +38,7 @@ func (eu *EveUniverseService) createEveCategoryFromESI(ctx context.Context, id i
 		if err != nil {
 			return nil, err
 		}
-		arg := storage.CreateEveCategoryParams{
+		arg := sqlite.CreateEveCategoryParams{
 			ID:          id,
 			Name:        r.Name,
 			IsPublished: r.Published,
@@ -53,7 +53,7 @@ func (eu *EveUniverseService) createEveCategoryFromESI(ctx context.Context, id i
 
 func (eu *EveUniverseService) GetOrCreateEveGroupESI(ctx context.Context, id int32) (*app.EveGroup, error) {
 	x, err := eu.st.GetEveGroup(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, sqlite.ErrNotFound) {
 		return eu.createEveGroupFromESI(ctx, id)
 	} else if err != nil {
 		return x, err
@@ -72,7 +72,7 @@ func (eu *EveUniverseService) createEveGroupFromESI(ctx context.Context, id int3
 		if err != nil {
 			return nil, err
 		}
-		arg := storage.CreateEveGroupParams{
+		arg := sqlite.CreateEveGroupParams{
 			ID:          id,
 			Name:        r.Name,
 			CategoryID:  c.ID,
@@ -91,7 +91,7 @@ func (eu *EveUniverseService) createEveGroupFromESI(ctx context.Context, id int3
 
 func (eu *EveUniverseService) GetOrCreateEveTypeESI(ctx context.Context, id int32) (*app.EveType, error) {
 	x, err := eu.st.GetEveType(ctx, id)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, sqlite.ErrNotFound) {
 		return eu.createEveTypeFromESI(ctx, id)
 	} else if err != nil {
 		return x, err
@@ -110,7 +110,7 @@ func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32
 		if err != nil {
 			return nil, err
 		}
-		arg := storage.CreateEveTypeParams{
+		arg := sqlite.CreateEveTypeParams{
 			ID:             id,
 			GroupID:        g.ID,
 			Capacity:       t.Capacity,
@@ -150,7 +150,7 @@ func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32
 					}
 				}(ctx, int32(o.Value))
 			}
-			arg := storage.CreateEveTypeDogmaAttributeParams{
+			arg := sqlite.CreateEveTypeDogmaAttributeParams{
 				DogmaAttributeID: o.AttributeId,
 				EveTypeID:        id,
 				Value:            o.Value,
@@ -160,7 +160,7 @@ func (eu *EveUniverseService) createEveTypeFromESI(ctx context.Context, id int32
 			}
 		}
 		for _, o := range t.DogmaEffects {
-			arg := storage.CreateEveTypeDogmaEffectParams{
+			arg := sqlite.CreateEveTypeDogmaEffectParams{
 				DogmaEffectID: o.EffectId,
 				EveTypeID:     id,
 				IsDefault:     o.IsDefault,

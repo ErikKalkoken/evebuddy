@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
 )
 
 const (
@@ -33,8 +33,8 @@ func TestEveLocationOther(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		owner := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000003})
-		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
-		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 1531})
+		system := factory.CreateEveSolarSystem(sqlite.CreateEveSolarSystemParams{ID: 30000148})
+		myType := factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 1531})
 		data := `{
 			"max_dockable_ship_volume": 50000000,
 			"name": "Jakanerva III - Moon 15 - Prompt Delivery Storage",
@@ -89,8 +89,8 @@ func TestEveLocationOther(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: app.EveTypeSolarSystem})
-		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
+		myType := factory.CreateEveType(sqlite.CreateEveTypeParams{ID: app.EveTypeSolarSystem})
+		system := factory.CreateEveSolarSystem(sqlite.CreateEveSolarSystemParams{ID: 30000148})
 		// when
 		x1, err := eu.GetOrCreateEveLocationESI(ctx, int64(system.ID))
 		// then
@@ -120,7 +120,7 @@ func TestLocationStructures(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: structureID, Name: "Alpha"})
+		factory.CreateLocationStructure(sqlite.UpdateOrCreateLocationParams{ID: structureID, Name: "Alpha"})
 		// when
 		x, err := eu.GetOrCreateEveLocationESI(ctx, structureID)
 		// then
@@ -133,8 +133,8 @@ func TestLocationStructures(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		owner := factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
-		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000142})
-		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 99})
+		system := factory.CreateEveSolarSystem(sqlite.CreateEveSolarSystemParams{ID: 30000142})
+		myType := factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 99})
 		data := `{
 			"name": "V-3YG7 VI - The Capital",
 			"owner_id": 109299958,

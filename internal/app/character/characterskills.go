@@ -6,13 +6,13 @@ import (
 	"errors"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/antihax/goesi/esi"
 )
 
 func (s *CharacterService) GetCharacterSkill(ctx context.Context, characterID, typeID int32) (*app.CharacterSkill, error) {
 	o, err := s.st.GetCharacterSkill(ctx, characterID, typeID)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, sqlite.ErrNotFound) {
 		return nil, ErrNotFound
 	}
 	return o, err
@@ -45,7 +45,7 @@ func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg Upd
 				if err != nil {
 					return err
 				}
-				arg := storage.UpdateOrCreateCharacterSkillParams{
+				arg := sqlite.UpdateOrCreateCharacterSkillParams{
 					CharacterID:        characterID,
 					EveTypeID:          o.SkillId,
 					ActiveSkillLevel:   int(o.ActiveSkillLevel),

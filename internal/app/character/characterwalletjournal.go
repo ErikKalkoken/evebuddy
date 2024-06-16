@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
 	"github.com/antihax/goesi/optional"
@@ -73,7 +73,7 @@ func (s *CharacterService) updateCharacterWalletJournalEntryESI(ctx context.Cont
 				return err
 			}
 			for _, o := range newEntries {
-				arg := storage.CreateCharacterWalletJournalEntryParams{
+				arg := sqlite.CreateCharacterWalletJournalEntryParams{
 					Amount:        o.Amount,
 					Balance:       o.Balance,
 					ContextID:     o.ContextId,

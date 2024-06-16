@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 )
 
 func (s *CharacterService) ListCharacterImplants(ctx context.Context, characterID int32) ([]*app.CharacterImplant, error) {
@@ -26,13 +26,13 @@ func (s *CharacterService) updateCharacterImplantsESI(ctx context.Context, arg U
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			implants := data.([]int32)
-			args := make([]storage.CreateCharacterImplantParams, len(implants))
+			args := make([]sqlite.CreateCharacterImplantParams, len(implants))
 			for i, typeID := range implants {
 				_, err := s.eu.GetOrCreateEveTypeESI(ctx, typeID)
 				if err != nil {
 					return err
 				}
-				args[i] = storage.CreateCharacterImplantParams{
+				args[i] = sqlite.CreateCharacterImplantParams{
 					CharacterID: characterID,
 					EveTypeID:   typeID,
 				}

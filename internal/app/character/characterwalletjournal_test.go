@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
 )
 
 func TestUpdateWalletJournalEntryESI(t *testing.T) {
@@ -80,7 +80,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletJournalEntry(sqlite.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
@@ -126,7 +126,7 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+		factory.CreateCharacterWalletJournalEntry(sqlite.CreateCharacterWalletJournalEntryParams{
 			CharacterID: c.ID,
 			RefID:       89,
 			Description: "existing",
@@ -247,9 +247,9 @@ func TestListWalletJournalEntries(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
-		factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletJournalEntry(sqlite.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletJournalEntry(sqlite.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletJournalEntry(sqlite.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		// when
 		ee, err := s.ListCharacterWalletJournalEntries(ctx, c.ID)
 		// then

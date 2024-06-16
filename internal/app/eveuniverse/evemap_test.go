@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
 )
 
 func TestGetOrCreateEveRegionESI(t *testing.T) {
@@ -26,7 +26,7 @@ func TestGetOrCreateEveRegionESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveRegion(storage.CreateEveRegionParams{ID: 6})
+		factory.CreateEveRegion(sqlite.CreateEveRegionParams{ID: 6})
 		// when
 		x1, err := s.GetOrCreateEveRegionESI(ctx, 6)
 		// then
@@ -78,7 +78,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveConstellation(storage.CreateEveConstellationParams{ID: 25})
+		factory.CreateEveConstellation(sqlite.CreateEveConstellationParams{ID: 25})
 		// when
 		x1, err := s.GetOrCreateEveConstellationESI(ctx, 25)
 		// then
@@ -90,7 +90,7 @@ func TestGetOrCreateEveConstellationESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveRegion(storage.CreateEveRegionParams{ID: 10000001})
+		factory.CreateEveRegion(sqlite.CreateEveRegionParams{ID: 10000001})
 		data := `{
 			"constellation_id": 20000009,
 			"name": "Mekashtad",
@@ -137,7 +137,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 587})
+		factory.CreateEveSolarSystem(sqlite.CreateEveSolarSystemParams{ID: 587})
 		// when
 		x1, err := s.GetOrCreateEveSolarSystemESI(ctx, 587)
 		// then
@@ -149,7 +149,7 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveConstellation(storage.CreateEveConstellationParams{ID: 20000001})
+		factory.CreateEveConstellation(sqlite.CreateEveConstellationParams{ID: 20000001})
 		data := `{
 			"constellation_id": 20000001,
 			"name": "Akpivem",

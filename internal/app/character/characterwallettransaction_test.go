@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
 )
 
 func TestUpdateWalletTransactionESI(t *testing.T) {
@@ -29,8 +29,8 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
-		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
-		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
+		location := factory.CreateLocationStructure(sqlite.UpdateOrCreateLocationParams{ID: 60014719})
+		eveType := factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 587})
 		data := `[
 			{
 			  "client_id": 54321,
@@ -82,11 +82,11 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletTransaction(sqlite.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		client := factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
-		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
-		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
+		location := factory.CreateLocationStructure(sqlite.UpdateOrCreateLocationParams{ID: 60014719})
+		eveType := factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 587})
 		data := `[
 			{
 			  "client_id": 54321,
@@ -138,7 +138,7 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c := factory.CreateCharacter()
-		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{
+		factory.CreateCharacterWalletTransaction(sqlite.CreateCharacterWalletTransactionParams{
 			CharacterID:   c.ID,
 			TransactionID: 1234567890,
 		})
@@ -183,8 +183,8 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
-		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
+		factory.CreateLocationStructure(sqlite.UpdateOrCreateLocationParams{ID: 60014719})
+		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 587})
 
 		data := make([]map[string]any, 0)
 		for i := range 2500 {
@@ -246,9 +246,9 @@ func TestListWalletTransactions(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
-		factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletTransaction(sqlite.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletTransaction(sqlite.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
+		factory.CreateCharacterWalletTransaction(sqlite.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		// when
 		tt, err := s.ListCharacterWalletTransactions(ctx, c.ID)
 		// then

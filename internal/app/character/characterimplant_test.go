@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -27,8 +27,8 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 101})
+		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
+		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 101})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),

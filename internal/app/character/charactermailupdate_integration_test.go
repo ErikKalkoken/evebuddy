@@ -12,8 +12,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -192,7 +192,7 @@ func TestUpdateMail(t *testing.T) {
 		m1 := factory.CreateEveEntity(app.EveEntity{Category: app.EveEntityMailList})
 		timestamp, _ := time.Parse("2006-01-02T15:04:05.999MST", "2015-09-30T16:07:00Z")
 		mailID := int32(7)
-		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+		factory.CreateCharacterMail(sqlite.CreateCharacterMailParams{
 			Body:         "blah blah blah",
 			CharacterID:  c.ID,
 			FromID:       e1.ID,

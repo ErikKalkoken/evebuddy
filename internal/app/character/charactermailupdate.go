@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -42,7 +42,7 @@ func (s *CharacterService) updateCharacterMailLabelsESI(ctx context.Context, arg
 			ll := data.(esi.GetCharactersCharacterIdMailLabelsOk)
 			labels := ll.Labels
 			for _, o := range labels {
-				arg := storage.MailLabelParams{
+				arg := sqlite.MailLabelParams{
 					CharacterID: characterID,
 					Color:       o.Color,
 					LabelID:     o.LabelId,
@@ -243,7 +243,7 @@ func (s *CharacterService) fetchAndStoreMail(ctx context.Context, characterID, m
 	for i, r := range m.Recipients {
 		recipientIDs[i] = r.RecipientId
 	}
-	arg := storage.CreateCharacterMailParams{
+	arg := sqlite.CreateCharacterMailParams{
 		Body:         m.Body,
 		CharacterID:  characterID,
 		FromID:       m.From,

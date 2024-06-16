@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
 	"github.com/antihax/goesi/optional"
@@ -108,7 +108,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 			existingIDs := set.NewFromSlice(ids)
 			for _, a := range assets {
 				if existingIDs.Has(a.ItemId) {
-					arg := storage.UpdateCharacterAssetParams{
+					arg := sqlite.UpdateCharacterAssetParams{
 						CharacterID:  characterID,
 						ItemID:       a.ItemId,
 						LocationFlag: a.LocationFlag,
@@ -121,7 +121,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 						return err
 					}
 				} else {
-					arg := storage.CreateCharacterAssetParams{
+					arg := sqlite.CreateCharacterAssetParams{
 						CharacterID:     characterID,
 						EveTypeID:       a.TypeId,
 						IsBlueprintCopy: a.IsBlueprintCopy,
@@ -177,7 +177,7 @@ func (s *CharacterService) CharacterAssetTotalValue(characterID int32) (sql.Null
 	if !found {
 		return sql.NullFloat64{}, nil
 	}
-	return storage.NewNullFloat64(v), nil
+	return sqlite.NewNullFloat64(v), nil
 }
 
 func (s *CharacterService) updateCharacterAssetTotalValue(ctx context.Context, arg UpdateSectionParams) error {

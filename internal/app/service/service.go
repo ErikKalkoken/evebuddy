@@ -10,8 +10,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/httptransport"
@@ -41,7 +41,7 @@ type Service struct {
 // New creates and returns a new instance of the main service.
 // st must point to a valid storage instance
 // imageCachePath can be empty. Then a temporary directory will be create and used instead.
-func New(st *storage.Storage, imageCacheDir string) *Service {
+func New(st *sqlite.Storage, imageCacheDir string) *Service {
 	httpClient := &http.Client{
 		Transport: httptransport.LoggedTransport{},
 	}

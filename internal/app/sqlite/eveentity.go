@@ -1,0 +1,247 @@
+package sqlite
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
+)
+
+// Eve Entity categories in DB models
+const (
+	eveEntityAlliance      = "alliance"
+	eveEntityCharacter     = "character"
+	eveEntityCorporation   = "corporation"
+	eveEntityConstellation = "constellation"
+	eveEntityFaction       = "faction"
+	eveEntityInventoryType = "inventory_type"
+	eveEntityMailList      = "mail_list"
+	eveEntityRegion        = "region"
+	eveEntitySolarSystem   = "solar_system"
+	eveEntityStation       = "station"
+	eveEntityUnknown       = "unknown"
+)
+
+func (st *Storage) CreateEveEntity(ctx context.Context, id int32, name string, category app.EveEntityCategory) (*app.EveEntity, error) {
+	e, err := func() (*app.EveEntity, error) {
+		if id == 0 {
+			return nil, fmt.Errorf("invalid ID %d", id)
+		}
+		arg := queries.CreateEveEntityParams{
+			ID:       int64(id),
+			Category: eveEntityDBModelCategoryFromCategory(category),
+			Name:     name,
+		}
+		e, err := st.q.CreateEveEntity(ctx, arg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create eve entity %v, %w", arg, err)
+		}
+		return eveEntityFromDBModel(e), nil
+	}()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create EveEntity %d: %w", id, err)
+	}
+	return e, nil
+}
+
+func (st *Storage) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, error) {
+	e, err := st.q.GetEveEntity(ctx, int64(id))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to get EveEntity for id %d: %w", id, err)
+	}
+	return eveEntityFromDBModel(e), nil
+}
+
+func (st *Storage) ListEveEntityByNameAndCategory(ctx context.Context, name string, category app.EveEntityCategory) ([]*app.EveEntity, error) {
+	var ee2 []*app.EveEntity
+	arg := queries.ListEveEntityByNameAndCategoryParams{
+		Name:     name,
+		Category: eveEntityDBModelCategoryFromCategory(category),
+	}
+	ee, err := st.q.ListEveEntityByNameAndCategory(ctx, arg)
+	if err != nil {
+		return ee2, fmt.Errorf("failed to get EveEntity by name %s and category %s: %w", name, category, err)
+	}
+	for _, e := range ee {
+		ee2 = append(ee2, eveEntityFromDBModel(e))
+	}
+	return ee2, nil
+}
+
+func (st *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name string, category app.EveEntityCategory) (*app.EveEntity, error) {
+	label, err := func() (*app.EveEntity, error) {
+		var e queries.EveEntity
+		if id == 0 {
+			return nil, fmt.Errorf("invalid ID %d", id)
+		}
+		tx, err := st.db.Begin()
+		if err != nil {
+			return nil, err
+		}
+		defer tx.Rollback()
+		qtx := st.q.WithTx(tx)
+		e, err = qtx.GetEveEntity(ctx, int64(id))
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
+			arg := queries.CreateEveEntityParams{
+				ID:       int64(id),
+				Name:     name,
+				Category: eveEntityDBModelCategoryFromCategory(category),
+			}
+			e, err = qtx.CreateEveEntity(ctx, arg)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return eveEntityFromDBModel(e), nil
+	}()
+	if err != nil {
+		return label, fmt.Errorf("failed to get or create eve entity %d: %w", id, err)
+	}
+	return label, nil
+}
+
+func (st *Storage) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
+	ee, err := st.q.ListEveEntitiesByPartialName(ctx, fmt.Sprintf("%%%s%%", partial))
+	if err != nil {
+		return nil, fmt.Errorf("failed to list EveEntity by partial name %s: %w", partial, err)
+	}
+	ee2 := make([]*app.EveEntity, len(ee))
+	for i, e := range ee {
+		ee2[i] = eveEntityFromDBModel(e)
+	}
+	return ee2, nil
+}
+
+func (st *Storage) ListEveEntityIDs(ctx context.Context) ([]int32, error) {
+	ids, err := st.q.ListEveEntityIDs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list EveEntity IDs: %w", err)
+	}
+	ids2 := convertNumericSlice[int64, int32](ids)
+	return ids2, nil
+}
+
+func (st *Storage) ListEveEntitiesByName(ctx context.Context, name string) ([]*app.EveEntity, error) {
+	ee, err := st.q.ListEveEntitiesByName(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list EveEntities by name %s: %w", name, err)
+	}
+	ee2 := make([]*app.EveEntity, len(ee))
+	for i, e := range ee {
+		ee2[i] = eveEntityFromDBModel(e)
+	}
+	return ee2, nil
+}
+
+func (st *Storage) MissingEveEntityIDs(ctx context.Context, ids []int32) (*set.Set[int32], error) {
+	currentIDs, err := st.ListEveEntityIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	current := set.NewFromSlice(currentIDs)
+	incoming := set.NewFromSlice(ids)
+	missing := incoming.Difference(current)
+	return missing, nil
+}
+
+func (st *Storage) UpdateOrCreateEveEntity(ctx context.Context, id int32, name string, category app.EveEntityCategory) (*app.EveEntity, error) {
+	if id == 0 {
+		return nil, fmt.Errorf("can't update or create EveEntity with ID %d", id)
+	}
+	categoryDB := eveEntityDBModelCategoryFromCategory(category)
+	arg := queries.UpdateOrCreateEveEntityParams{
+		ID:       int64(id),
+		Name:     name,
+		Category: categoryDB,
+	}
+	e, err := st.q.UpdateOrCreateEveEntity(ctx, arg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update or create EveEntity %d: %w", id, err)
+	}
+	return eveEntityFromDBModel(e), nil
+}
+
+func eveEntityCategoryFromDBModel(c string) app.EveEntityCategory {
+	categoryMap := map[string]app.EveEntityCategory{
+		eveEntityAlliance:      app.EveEntityAlliance,
+		eveEntityCharacter:     app.EveEntityCharacter,
+		eveEntityConstellation: app.EveEntityConstellation,
+		eveEntityCorporation:   app.EveEntityCorporation,
+		eveEntityFaction:       app.EveEntityFaction,
+		eveEntityMailList:      app.EveEntityMailList,
+		eveEntityInventoryType: app.EveEntityInventoryType,
+		eveEntityRegion:        app.EveEntityRegion,
+		eveEntitySolarSystem:   app.EveEntitySolarSystem,
+		eveEntityStation:       app.EveEntityStation,
+		eveEntityUnknown:       app.EveEntityUnknown,
+	}
+	c2, ok := categoryMap[c]
+	if !ok {
+		panic(fmt.Sprintf("Can not map invalid category: %s", c))
+	}
+	return c2
+}
+
+func eveEntityDBModelCategoryFromCategory(c app.EveEntityCategory) string {
+	categoryMap := map[app.EveEntityCategory]string{
+		app.EveEntityAlliance:      eveEntityAlliance,
+		app.EveEntityCharacter:     eveEntityCharacter,
+		app.EveEntityConstellation: eveEntityConstellation,
+		app.EveEntityCorporation:   eveEntityCorporation,
+		app.EveEntityFaction:       eveEntityFaction,
+		app.EveEntityMailList:      eveEntityMailList,
+		app.EveEntityInventoryType: eveEntityInventoryType,
+		app.EveEntityRegion:        eveEntityRegion,
+		app.EveEntitySolarSystem:   eveEntitySolarSystem,
+		app.EveEntityStation:       eveEntityStation,
+		app.EveEntityUnknown:       eveEntityUnknown,
+	}
+	c2, ok := categoryMap[c]
+	if !ok {
+		panic(fmt.Sprintf("Can not map invalid category: %v", c))
+	}
+	return c2
+}
+
+func eveEntityFromDBModel(e queries.EveEntity) *app.EveEntity {
+	if e.ID == 0 {
+		return nil
+	}
+	category := eveEntityCategoryFromDBModel(e.Category)
+	return &app.EveEntity{
+		Category: category,
+		ID:       int32(e.ID),
+		Name:     e.Name,
+	}
+}
+
+type nullEveEntry struct {
+	ID       sql.NullInt64
+	Category sql.NullString
+	Name     sql.NullString
+}
+
+func eveEntityFromNullableDBModel(e nullEveEntry) *app.EveEntity {
+	if !e.ID.Valid {
+		return nil
+	}
+	category := eveEntityCategoryFromDBModel(e.Category.String)
+	return &app.EveEntity{
+		Category: category,
+		ID:       int32(e.ID.Int64),
+		Name:     e.Name.String,
+	}
+}

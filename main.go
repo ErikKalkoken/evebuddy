@@ -12,7 +12,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/service"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/chasinglogic/appdirs"
 )
@@ -95,12 +95,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	db, err := storage.InitDB(dsn)
+	db, err := sqlite.InitDB(dsn)
 	if err != nil {
 		log.Fatalf("Failed to initialize database %s: %s", dsn, err)
 	}
 	defer db.Close()
-	repository := storage.New(db)
+	repository := sqlite.New(db)
 	cacheDir, err := makeImageCachePath(ad, *localFlag)
 	if err != nil {
 		log.Fatal(err)

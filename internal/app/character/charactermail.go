@@ -10,7 +10,7 @@ import (
 	"github.com/antihax/goesi/esi"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 )
 
 var eveEntityCategory2MailRecipientType = map[app.EveEntityCategory]string{
@@ -40,7 +40,7 @@ func (s *CharacterService) DeleteCharacterMail(ctx context.Context, characterID,
 
 func (s *CharacterService) GetCharacterMail(ctx context.Context, characterID int32, mailID int32) (*app.CharacterMail, error) {
 	o, err := s.st.GetCharacterMail(ctx, characterID, mailID)
-	if errors.Is(err, storage.ErrNotFound) {
+	if errors.Is(err, sqlite.ErrNotFound) {
 		return nil, ErrNotFound
 	}
 	return o, err
@@ -97,7 +97,7 @@ func (s *CharacterService) SendCharacterMail(ctx context.Context, characterID in
 	if err != nil {
 		return 0, err
 	}
-	arg1 := storage.MailLabelParams{
+	arg1 := sqlite.MailLabelParams{
 		CharacterID: characterID,
 		LabelID:     app.MailLabelSent,
 		Name:        "Sent",
@@ -106,7 +106,7 @@ func (s *CharacterService) SendCharacterMail(ctx context.Context, characterID in
 	if err != nil {
 		return 0, err
 	}
-	arg2 := storage.CreateCharacterMailParams{
+	arg2 := sqlite.CreateCharacterMailParams{
 		Body:         body,
 		CharacterID:  characterID,
 		FromID:       characterID,
