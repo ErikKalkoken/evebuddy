@@ -7,13 +7,13 @@ import (
 	"slices"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/helper/set"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 // shipsArea is the UI area that shows the skillqueue
@@ -37,7 +37,7 @@ func (u *ui) newShipArea() *shipsArea {
 	a.top.TextStyle.Bold = true
 	a.searchBox = a.makeSearchBox()
 	a.groupSelect = a.makeGroupSelect()
-	a.grid = a.makeShipsTable()
+	a.grid = a.makeShipsGrid()
 	b := widget.NewButton("Reset", func() {
 		a.searchBox.SetText("")
 		a.groupSelect.ClearSelected()
@@ -81,41 +81,23 @@ func (a *shipsArea) makeSearchBox() *widget.Entry {
 	return sb
 }
 
-func (a *shipsArea) makeShipsTable() *widget.GridWrap {
+func (a *shipsArea) makeShipsGrid() *widget.GridWrap {
 	g := widget.NewGridWrapWithData(
 		a.entries,
 		func() fyne.CanvasObject {
-			image := canvas.NewImageFromResource(resourceQuestionmarkSvg)
-			image.FillMode = canvas.ImageFillContain
-			image.SetMinSize(fyne.Size{Width: 128, Height: 128})
-			label := widget.NewLabel("First line\nSecond Line\nThird Line")
-			return container.NewVBox(image, label)
+			return widgets.NewShipItem(a.ui.sv.EveImage, resourceQuestionmarkSvg)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
-			row := co.(*fyne.Container)
-			icon := row.Objects[0].(*canvas.Image)
-			label := row.Objects[1].(*widget.Label)
+			item := co.(*widgets.ShipItem)
 			o, err := convertDataItem[*model.CharacterShipAbility](di)
 			if err != nil {
 				slog.Error("Failed to render ship item in UI", "err", err)
-				label.Importance = widget.DangerImportance
-				label.Text = "ERROR"
-				label.Refresh()
+				// label.Importance = widget.DangerImportance
+				// label.Text = "ERROR"
+				// label.Refresh()
 				return
 			}
-			label.Text = o.Type.Name
-			label.Wrapping = fyne.TextWrapWord
-			var i widget.Importance
-			if o.CanFly {
-				i = widget.MediumImportance
-			} else {
-				i = widget.LowImportance
-			}
-			label.Importance = i
-			label.Refresh()
-			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.ui.sv.EveImage.InventoryTypeRender(o.Type.ID, 256)
-			})
+			item.Set(o.Type.ID, o.Type.Name, o.CanFly)
 		})
 	g.OnSelected = func(id widget.GridWrapItemID) {
 		defer g.UnselectAll()
