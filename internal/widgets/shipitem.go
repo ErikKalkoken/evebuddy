@@ -8,20 +8,16 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type InventoryRenderImageProvider interface {
-	InventoryTypeRender(int32, int) (fyne.Resource, error)
-}
-
 // The ShipItem widget is used to render items on the type info window.
 type ShipItem struct {
 	widget.BaseWidget
 	image        *canvas.Image
 	label        *widget.Label
 	fallbackIcon fyne.Resource
-	sv           InventoryRenderImageProvider
+	sv           InventoryTypeImageProvider
 }
 
-func NewShipItem(sv InventoryRenderImageProvider, fallbackIcon fyne.Resource) *ShipItem {
+func NewShipItem(sv InventoryTypeImageProvider, fallbackIcon fyne.Resource) *ShipItem {
 	image := canvas.NewImageFromResource(theme.BrokenImageIcon())
 	image.FillMode = canvas.ImageFillContain
 	image.SetMinSize(fyne.Size{Width: 128, Height: 128})

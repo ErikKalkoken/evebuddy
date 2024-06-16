@@ -5,7 +5,8 @@ sqlgen:
 	sqlc generate
 
 images:
-	fyne bundle --package ui resources/images > internal/ui/resource.go
+	fyne bundle --package ui resources/images/ui > internal/ui/resource.go
+	fyne bundle --package eveimage resources/images/eveimage > internal/service/eveimage/resource.go
 
 icons:
 	fyne bundle --package icons resources/icons > internal/eveonline/icons/resource.go

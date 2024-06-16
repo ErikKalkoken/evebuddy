@@ -17,11 +17,7 @@ const (
 	VariantSKIN
 )
 
-type InventoryTypeImageProvider interface {
-	InventoryTypeBPO(int32, int) (fyne.Resource, error)
-	InventoryTypeBPC(int32, int) (fyne.Resource, error)
-	InventoryTypeIcon(int32, int) (fyne.Resource, error)
-}
+const iconSize = 64
 
 type AssetListWidget struct {
 	widget.BaseWidget
@@ -64,14 +60,14 @@ func (o *AssetListWidget) SetAsset(name string, quantity int32, isSingleton bool
 
 	refreshImageResourceAsync(o.icon, func() (fyne.Resource, error) {
 		switch variant {
-		// case VariantSKIN:
-		// 	return resourceSkinicon64pxPng, nil
+		case VariantSKIN:
+			return o.sv.InventoryTypeSKIN(typeID, iconSize)
 		case VariantBPO:
-			return o.sv.InventoryTypeBPO(typeID, 64)
+			return o.sv.InventoryTypeBPO(typeID, iconSize)
 		case VariantBPC:
-			return o.sv.InventoryTypeBPC(typeID, 64)
+			return o.sv.InventoryTypeBPC(typeID, iconSize)
 		default:
-			return o.sv.InventoryTypeIcon(typeID, 64)
+			return o.sv.InventoryTypeIcon(typeID, iconSize)
 		}
 	})
 }

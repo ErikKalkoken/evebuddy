@@ -544,7 +544,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		size := 64
 		icon := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
-				return resourceSkinicon64pxPng, nil
+				return a.ui.sv.EveImage.InventoryTypeSKIN(a.et.ID, size)
 			} else if a.et.IsBlueprint() {
 				return a.ui.sv.EveImage.InventoryTypeBPO(a.et.ID, size)
 			} else {

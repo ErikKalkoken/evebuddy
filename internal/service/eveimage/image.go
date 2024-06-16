@@ -151,6 +151,14 @@ func (m *EveImageService) InventoryTypeBPC(id int32, size int) (fyne.Resource, e
 	return m.image(url)
 }
 
+// InventoryTypeBPC returns the icon for a SKIN type.
+func (m *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, error) {
+	if size != 64 {
+		return nil, ErrInvalidSize
+	}
+	return resourceSkinicon64pxPng, nil
+}
+
 func (m *EveImageService) image(url string) (fyne.Resource, error) {
 	hash := makeMD5Hash(url)
 	name := filepath.Join(m.cacheDir, hash+".tmp")
