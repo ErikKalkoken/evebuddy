@@ -17,7 +17,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/mailrecipients"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 )
 
 const (

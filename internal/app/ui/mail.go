@@ -15,7 +15,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 )
 
 // mailArea is the UI area showing the mail folders.
