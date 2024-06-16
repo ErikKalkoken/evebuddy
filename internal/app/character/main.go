@@ -2,7 +2,6 @@
 package character
 
 import (
-	"context"
 	"errors"
 	"net/http"
 
@@ -18,22 +17,11 @@ var (
 	ErrNotFound = errors.New("object not found")
 )
 
-type DictionaryService interface {
-	IntWithFallback(string, int) (int, error)
-	Float64(key string) (float64, bool, error)
-	SetFloat64(key string, value float64) error
-}
-
-type StatusCacheService interface {
-	UpdateCharacters(ctx context.Context, r app.StatusCacheStorage) error
-	CharacterSectionSet(*app.CharacterSectionStatus)
-}
-
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
 type CharacterService struct {
-	DictionaryService  DictionaryService
+	DictionaryService  app.DictionaryService
 	EveUniverseService *eveuniverse.EveUniverseService
-	StatusCacheService StatusCacheService
+	StatusCacheService app.StatusCacheService
 
 	esiClient  *goesi.APIClient
 	httpClient *http.Client

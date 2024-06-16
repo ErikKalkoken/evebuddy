@@ -30,27 +30,6 @@ const (
 	myFloatFormat   = "#,###.##"
 )
 
-type DictionaryService interface {
-	Delete(string) error
-	Float32(string) (float32, bool, error)
-	Int(string) (int, bool, error)
-	IntWithFallback(string, int) (int, error)
-	SetFloat32(string, float32) error
-	SetInt(string, int) error
-	SetString(string, string) error
-	String(string) (string, bool, error)
-}
-
-type StatusCacheService interface {
-	CharacterSectionExists(int32, app.CharacterSection) bool
-	CharacterSectionSummary(int32) app.StatusSummary
-	GeneralSectionExists(app.GeneralSection) bool
-	GeneralSectionSummary() app.StatusSummary
-	ListCharacters() []*app.CharacterShort
-	SectionList(int32) []app.SectionStatus
-	Summary() app.StatusSummary
-}
-
 // The ui is the root object of the UI and contains all UI areas.
 //
 // Each UI area holds a pointer of the ui instance, so that areas can
@@ -58,11 +37,11 @@ type StatusCacheService interface {
 type ui struct {
 	CacheService       app.CacheService
 	CharacterService   *character.CharacterService
-	DictionaryService  DictionaryService
+	DictionaryService  app.DictionaryService
 	ESIStatusService   app.ESIStatusService
 	EveImageService    *eveimage.EveImageService
 	EveUniverseService *eveuniverse.EveUniverseService
-	StatusCacheService StatusCacheService
+	StatusCacheService app.StatusCacheService
 
 	fyneApp               fyne.App
 	assetsArea            *assetsArea

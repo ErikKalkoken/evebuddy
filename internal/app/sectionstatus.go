@@ -59,3 +59,16 @@ type StatusCacheStorage interface {
 	ListGeneralSectionStatus(context.Context) ([]*GeneralSectionStatus, error)
 	ListCharactersShort(context.Context) ([]*CharacterShort, error)
 }
+
+type StatusCacheService interface {
+	CharacterSectionExists(int32, CharacterSection) bool
+	CharacterSectionSet(*CharacterSectionStatus)
+	CharacterSectionSummary(int32) StatusSummary
+	GeneralSectionExists(GeneralSection) bool
+	GeneralSectionSet(*GeneralSectionStatus)
+	GeneralSectionSummary() StatusSummary
+	ListCharacters() []*CharacterShort
+	SectionList(int32) []SectionStatus
+	Summary() StatusSummary
+	UpdateCharacters(ctx context.Context, r StatusCacheStorage) error
+}

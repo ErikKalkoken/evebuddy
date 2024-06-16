@@ -9,11 +9,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-type CacheService interface {
-	Get(any) (any, bool)
-	Set(any, any, time.Duration)
-}
-
 const keyCharacters = "characterUpdateStatusCache-characters"
 
 type cacheKey struct {
@@ -30,12 +25,12 @@ type cacheValue struct {
 // StatusCacheService provides cached access to the current update status
 // of all characters to improve performance of UI refresh tickers.
 type StatusCacheService struct {
-	cache CacheService
+	cache app.CacheService
 }
 
 // New creates and returns a new instance of a character status service.
 // When nil is provided it will create and use it's own cache instance.
-func New(cache CacheService) *StatusCacheService {
+func New(cache app.CacheService) *StatusCacheService {
 	sc := &StatusCacheService{cache: cache}
 	return sc
 }

@@ -12,13 +12,9 @@ import (
 
 var ErrNotFound = errors.New("object not found")
 
-type StatusCacheService interface {
-	GeneralSectionSet(*app.GeneralSectionStatus)
-}
-
 // EveUniverseService provides access to Eve Online models with on-demand loading from ESI and local caching.
 type EveUniverseService struct {
-	StatusCacheService StatusCacheService
+	StatusCacheService app.StatusCacheService
 
 	esiClient *goesi.APIClient
 	sfg       *singleflight.Group
