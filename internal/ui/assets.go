@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/assettree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/helper/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 	"github.com/dustin/go-humanize"
 )
 
@@ -469,15 +470,16 @@ func (u *ui) makeAssetGrid(assetsData binding.UntypedList) *widget.GridWrap {
 	g := widget.NewGridWrapWithData(
 		assetsData,
 		func() fyne.CanvasObject {
-			return NewAssetListWidget(u.sv.EveImage, defaultAssetIcon)
+			return widgets.NewAssetListWidget(u.sv.EveImage, defaultAssetIcon)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			ca, err := convertDataItem[*model.CharacterAsset](di)
 			if err != nil {
 				panic(err)
 			}
-			item := co.(*AssetListWidget)
-			item.SetAsset(ca.DisplayName(), ca.Quantity, ca.IsSingleton, ca.EveType.ID, ca.Variant())
+			item := co.(*widgets.AssetListWidget)
+			item.SetAsset(ca.DisplayName(), ca.Quantity, ca.IsSingleton, ca.EveType.ID,
+				widgetTypeVariantFromModel(ca.Variant()))
 		},
 	)
 	g.OnSelected = func(id widget.GridWrapItemID) {
@@ -501,4 +503,14 @@ func makeNameWithCount(name string, count int) string {
 		return name
 	}
 	return fmt.Sprintf("%s (%s)", name, humanize.Comma(int64(count)))
+}
+
+func widgetTypeVariantFromModel(v model.EveTypeVariant) widgets.EveTypeVariant {
+	m := map[model.EveTypeVariant]widgets.EveTypeVariant{
+		model.VariantBPC:     widgets.VariantBPC,
+		model.VariantBPO:     widgets.VariantBPO,
+		model.VariantRegular: widgets.VariantRegular,
+		model.VariantSKIN:    widgets.VariantSKIN,
+	}
+	return m[v]
 }

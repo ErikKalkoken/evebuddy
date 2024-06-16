@@ -1,12 +1,20 @@
-package ui
+package widgets
 
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/dustin/go-humanize"
+)
+
+type EveTypeVariant uint
+
+const (
+	VariantRegular EveTypeVariant = iota
+	VariantBPO
+	VariantBPC
+	VariantSKIN
 )
 
 type InventoryTypeImageProvider interface {
@@ -39,7 +47,7 @@ func NewAssetListWidget(sv InventoryTypeImageProvider, fallbackIcon fyne.Resourc
 	return item
 }
 
-func (o *AssetListWidget) SetAsset(name string, quantity int32, isSingleton bool, typeID int32, variant model.EveTypeVariant) {
+func (o *AssetListWidget) SetAsset(name string, quantity int32, isSingleton bool, typeID int32, variant EveTypeVariant) {
 	o.name.Text = name
 	o.name.Wrapping = fyne.TextWrapWord
 	o.name.Refresh()
@@ -56,11 +64,11 @@ func (o *AssetListWidget) SetAsset(name string, quantity int32, isSingleton bool
 
 	refreshImageResourceAsync(o.icon, func() (fyne.Resource, error) {
 		switch variant {
-		case model.VariantSKIN:
-			return resourceSkinicon64pxPng, nil
-		case model.VariantBPO:
+		// case VariantSKIN:
+		// 	return resourceSkinicon64pxPng, nil
+		case VariantBPO:
 			return o.sv.InventoryTypeBPO(typeID, 64)
-		case model.VariantBPC:
+		case VariantBPC:
 			return o.sv.InventoryTypeBPC(typeID, 64)
 		default:
 			return o.sv.InventoryTypeIcon(typeID, 64)
