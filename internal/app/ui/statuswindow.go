@@ -13,10 +13,12 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	xwidget "fyne.io/x/fyne/widget"
+	"github.com/dustin/go-humanize"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"github.com/dustin/go-humanize"
 )
 
 // An entity which has update sections, e.g. a character
@@ -199,11 +201,19 @@ func (a *statusWindow) makeSectionTable() *widget.GridWrap {
 	l := widget.NewGridWrapWithData(
 		a.sectionsData,
 		func() fyne.CanvasObject {
-			pb := widget.NewProgressBarInfinite()
-			pb.Stop()
+			var r fyne.Resource
+			switch a.ui.themeGet() {
+			case app.ThemeDark:
+				r = resourceSpinner1s64pxDarkGif
+			default:
+				r = resourceSpinner1s64pxLightGif
+			}
+			gif, _ := xwidget.NewAnimatedGifFromResource(r)
+			gif.Stop()
+			gif.SetMinSize(fyne.Size{Width: 40, Height: 40})
 			return container.NewHBox(
 				widget.NewLabel("Section name long"),
-				pb,
+				gif,
 				layout.NewSpacer(),
 				widget.NewLabel("Status XXXX"),
 			)
@@ -222,13 +232,13 @@ func (a *statusWindow) makeSectionTable() *widget.GridWrap {
 			status.Importance = i
 			status.Refresh()
 
-			pb := hbox.Objects[1].(*widget.ProgressBarInfinite)
+			gif := hbox.Objects[1].(*xwidget.AnimatedGif)
 			if cs.IsRunning() {
-				pb.Start()
-				pb.Show()
+				gif.Start()
+				gif.Show()
 			} else {
-				pb.Stop()
-				pb.Hide()
+				gif.Stop()
+				gif.Hide()
 			}
 		},
 	)

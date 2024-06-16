@@ -4,6 +4,7 @@ go 1.22.2
 
 require (
 	fyne.io/fyne/v2 v2.4.5
+	fyne.io/x/fyne v0.0.0-20240421102438-d5a080914907
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.9.2
 	github.com/antihax/goesi v0.0.0-20240126031043-6c54d0cb7f95
@@ -27,6 +28,7 @@ require (
 	github.com/blend/go-sdk v1.20220411.3 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 )
 
 require (

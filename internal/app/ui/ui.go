@@ -55,6 +55,7 @@ type ui struct {
 	statusWindow          fyne.Window
 	toolbarArea           *toolbarArea
 	tabs                  *container.AppTabs
+	themeName             string
 	walletJournalArea     *walletJournalArea
 	walletTransactionArea *walletTransactionArea
 	wealthArea            *wealthArea
@@ -213,24 +214,34 @@ func NewUI(sv *Service, isDebug bool) *ui {
 	if err != nil || !ok {
 		name = app.ThemeAuto
 	}
-	u.setTheme(name)
+	u.themeSet(name)
 	return u
 }
 
-func (u *ui) setTheme(name string) {
+func (u *ui) themeSet(name string) {
 	switch name {
 	case app.ThemeAuto:
 		switch u.fyneApp.Settings().ThemeVariant() {
 		case 0:
-			u.fyneApp.Settings().SetTheme(theme.DarkTheme())
+			u.themeName = app.ThemeDark
 		default:
-			u.fyneApp.Settings().SetTheme(theme.LightTheme())
+			u.themeName = app.ThemeLight
 		}
 	case app.ThemeLight:
-		u.fyneApp.Settings().SetTheme(theme.LightTheme())
+		u.themeName = app.ThemeLight
+	case app.ThemeDark:
+		u.themeName = app.ThemeDark
+	}
+	switch u.themeName {
 	case app.ThemeDark:
 		u.fyneApp.Settings().SetTheme(theme.DarkTheme())
+	case app.ThemeLight:
+		u.fyneApp.Settings().SetTheme(theme.LightTheme())
 	}
+}
+
+func (u *ui) themeGet() string {
+	return u.themeName
 }
 
 // ShowAndRun shows the UI and runs it (blocking).

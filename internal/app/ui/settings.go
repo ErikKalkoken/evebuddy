@@ -108,7 +108,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 				return
 			}
 			u.sv.Dictionary.SetInt(app.SettingMaxMails, maxMails)
-			u.setTheme(themeRadio.Selected)
+			u.themeSet(themeRadio.Selected)
 			u.sv.Dictionary.SetString(app.SettingTheme, themeRadio.Selected)
 			d.Hide()
 		},
