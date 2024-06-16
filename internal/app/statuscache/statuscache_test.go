@@ -50,7 +50,7 @@ func TestStatusCache(t *testing.T) {
 
 			y2, ok := sc.GeneralSectionGet(section2)
 			assert.True(t, ok)
-			assert.Equal(t, int32(statuscache.GeneralSectionEntityID), y2.EntityID)
+			assert.Equal(t, int32(app.GeneralSectionEntityID), y2.EntityID)
 			assert.Equal(t, string(y1.Section), y2.SectionID)
 			assert.Equal(t, y1.CompletedAt, y2.CompletedAt)
 			assert.Equal(t, y1.ErrorMessage, y2.ErrorMessage)
@@ -90,7 +90,7 @@ func TestStatusCache(t *testing.T) {
 		sc.GeneralSectionSet(x1)
 		x2, ok := sc.GeneralSectionGet(section)
 		assert.True(t, ok)
-		assert.Equal(t, int32(statuscache.GeneralSectionEntityID), x2.EntityID)
+		assert.Equal(t, int32(app.GeneralSectionEntityID), x2.EntityID)
 		assert.Equal(t, x1.CompletedAt, x2.CompletedAt)
 		assert.Equal(t, x1.ErrorMessage, x2.ErrorMessage)
 		assert.Equal(t, x1.StartedAt, x2.StartedAt)
@@ -149,7 +149,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-		assert.Equal(t, statuscache.StatusOK, ss.Status())
+		assert.Equal(t, app.StatusOK, ss.Status())
 	})
 	t.Run("should report when a character section has an error", func(t *testing.T) {
 		// given
@@ -189,7 +189,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-		assert.Equal(t, statuscache.StatusError, ss.Status())
+		assert.Equal(t, app.StatusError, ss.Status())
 		assert.Less(t, ss.ProgressP(), float32(1.0))
 		assert.Equal(t, 0, ss.Missing)
 		assert.Equal(t, 1, ss.Errors)
@@ -228,7 +228,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		sc.GeneralSectionSet(o)
 		ss := sc.Summary()
 		// then
-		assert.Equal(t, statuscache.StatusError, ss.Status())
+		assert.Equal(t, app.StatusError, ss.Status())
 		assert.Less(t, ss.ProgressP(), float32(1.0))
 		assert.Equal(t, 0, ss.Missing)
 		assert.Equal(t, 1, ss.Errors)
@@ -265,7 +265,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-		assert.Equal(t, statuscache.StatusMissing, ss.Status())
+		assert.Equal(t, app.StatusMissing, ss.Status())
 		assert.Less(t, ss.ProgressP(), float32(1.0))
 		assert.Equal(t, 2, ss.Missing)
 		assert.Equal(t, 0, ss.Errors)
@@ -302,7 +302,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-		assert.Equal(t, statuscache.StatusMissing, ss.Status())
+		assert.Equal(t, app.StatusMissing, ss.Status())
 		assert.Less(t, ss.ProgressP(), float32(1.0))
 		assert.Equal(t, 1, ss.Missing)
 		assert.Equal(t, 0, ss.Errors)
@@ -345,7 +345,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-		assert.Equal(t, statuscache.StatusWorking, ss.Status())
+		assert.Equal(t, app.StatusWorking, ss.Status())
 		assert.Less(t, ss.ProgressP(), float32(1.0))
 		assert.Equal(t, 0, ss.Missing)
 		assert.Equal(t, 0, ss.Errors)
@@ -385,7 +385,7 @@ func TestStatusCacheSummary(t *testing.T) {
 		// when
 		ss := sc.Summary()
 		// then
-		assert.Equal(t, statuscache.StatusWorking, ss.Status())
+		assert.Equal(t, app.StatusWorking, ss.Status())
 		assert.Less(t, ss.ProgressP(), float32(1.0))
 		assert.Equal(t, 0, ss.Missing)
 		assert.Equal(t, 0, ss.Errors)

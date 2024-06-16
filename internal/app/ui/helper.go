@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/dustin/go-humanize"
@@ -238,13 +237,13 @@ func systemSecurity2Importance(t app.SolarSystemSecurityType) widget.Importance 
 	panic("Invalid security")
 }
 
-func status2widgetImportance(s statuscache.Status) widget.Importance {
-	m := map[statuscache.Status]widget.Importance{
-		statuscache.StatusError:   widget.DangerImportance,
-		statuscache.StatusMissing: widget.WarningImportance,
-		statuscache.StatusOK:      widget.MediumImportance,
-		statuscache.StatusUnknown: widget.LowImportance,
-		statuscache.StatusWorking: widget.MediumImportance,
+func status2widgetImportance(s app.Status) widget.Importance {
+	m := map[app.Status]widget.Importance{
+		app.StatusError:   widget.DangerImportance,
+		app.StatusMissing: widget.WarningImportance,
+		app.StatusOK:      widget.MediumImportance,
+		app.StatusUnknown: widget.LowImportance,
+		app.StatusWorking: widget.MediumImportance,
 	}
 	i, ok := m[s]
 	if !ok {

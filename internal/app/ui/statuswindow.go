@@ -17,7 +17,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 )
 
@@ -25,11 +24,11 @@ import (
 type sectionEntity struct {
 	id   int32
 	name string
-	ss   statuscache.StatusSummary
+	ss   app.StatusSummary
 }
 
 func (se sectionEntity) IsGeneralSection() bool {
-	return se.id == statuscache.GeneralSectionEntityID
+	return se.id == app.GeneralSectionEntityID
 }
 
 type statusWindow struct {
@@ -219,7 +218,7 @@ func (a *statusWindow) makeSectionTable() *widget.GridWrap {
 			)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
-			cs, err := convertDataItem[statuscache.SectionStatus](di)
+			cs, err := convertDataItem[app.SectionStatus](di)
 			if err != nil {
 				panic(err)
 			}
@@ -274,7 +273,7 @@ type sectionStatusData struct {
 }
 
 func (x sectionStatusData) IsGeneralSection() bool {
-	return x.entityID == statuscache.GeneralSectionEntityID
+	return x.entityID == app.GeneralSectionEntityID
 }
 
 func (a *statusWindow) setDetails() {
@@ -307,17 +306,17 @@ func (a *statusWindow) setDetails() {
 	}
 }
 
-func (a *statusWindow) fetchSelectedEntityStatus() (statuscache.SectionStatus, bool, error) {
+func (a *statusWindow) fetchSelectedEntityStatus() (app.SectionStatus, bool, error) {
 	id, err := a.sectionSelected.Get()
 	if err != nil {
-		return statuscache.SectionStatus{}, false, err
+		return app.SectionStatus{}, false, err
 	}
 	if id == -1 {
-		return statuscache.SectionStatus{}, false, nil
+		return app.SectionStatus{}, false, nil
 	}
-	cs, err := getItemUntypedList[statuscache.SectionStatus](a.sectionsData, id)
+	cs, err := getItemUntypedList[app.SectionStatus](a.sectionsData, id)
 	if err != nil {
-		return statuscache.SectionStatus{}, false, err
+		return app.SectionStatus{}, false, err
 	}
 	return cs, true, nil
 }
@@ -380,8 +379,8 @@ func (a *statusWindow) refreshEntityList() error {
 	}
 	ss := a.ui.StatusCacheService.GeneralSectionSummary()
 	o := sectionEntity{
-		id:   statuscache.GeneralSectionEntityID,
-		name: statuscache.GeneralSectionEntityName,
+		id:   app.GeneralSectionEntityID,
+		name: app.GeneralSectionEntityName,
 		ss:   ss,
 	}
 	entities = append(entities, o)
@@ -426,7 +425,7 @@ func (a *statusWindow) startTicker(ctx context.Context) {
 	}()
 }
 
-func statusDisplay(cs statuscache.SectionStatus) (string, widget.Importance) {
+func statusDisplay(cs app.SectionStatus) (string, widget.Importance) {
 	var s string
 	var i widget.Importance
 	if !cs.IsOK() {

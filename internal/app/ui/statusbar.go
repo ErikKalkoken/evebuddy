@@ -11,7 +11,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -195,7 +195,7 @@ func (a *eveStatusArea) setStatus(status eveStatus, title, errorMessage string) 
 }
 
 type updateStatusOutput struct {
-	status statuscache.Status
+	status app.Status
 	title  string
 }
 

@@ -81,14 +81,14 @@ func (sc *StatusCacheService) CharacterSectionExists(characterID int32, section 
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section app.CharacterSection) (SectionStatus, bool) {
+func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section app.CharacterSection) (app.SectionStatus, bool) {
 	k := cacheKey{id: characterID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
-		return SectionStatus{}, false
+		return app.SectionStatus{}, false
 	}
 	v := x.(cacheValue)
-	o := SectionStatus{
+	o := app.SectionStatus{
 		EntityID:     characterID,
 		EntityName:   sc.characterName(characterID),
 		SectionID:    string(section),
@@ -101,8 +101,8 @@ func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section app
 	return o, true
 }
 
-func (sc *StatusCacheService) CharacterSectionList(characterID int32) []SectionStatus {
-	list := make([]SectionStatus, 0)
+func (sc *StatusCacheService) CharacterSectionList(characterID int32) []app.SectionStatus {
+	list := make([]app.SectionStatus, 0)
 	for _, section := range app.CharacterSections {
 		v, ok := sc.CharacterSectionGet(characterID, section)
 		if !ok {
@@ -113,10 +113,10 @@ func (sc *StatusCacheService) CharacterSectionList(characterID int32) []SectionS
 	return list
 }
 
-func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) StatusSummary {
+func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) app.StatusSummary {
 	total := len(app.CharacterSections)
 	currentCount, missingCount, errorCount := sc.characterSectionSummary(characterID)
-	s := StatusSummary{
+	s := app.StatusSummary{
 		Current: currentCount,
 		Errors:  errorCount,
 		Missing: missingCount,
@@ -169,16 +169,16 @@ func (sc *StatusCacheService) GeneralSectionExists(section app.GeneralSection) b
 	return !x.IsMissing()
 }
 
-func (sc *StatusCacheService) GeneralSectionGet(section app.GeneralSection) (SectionStatus, bool) {
-	k := cacheKey{id: GeneralSectionEntityID, section: string(section)}
+func (sc *StatusCacheService) GeneralSectionGet(section app.GeneralSection) (app.SectionStatus, bool) {
+	k := cacheKey{id: app.GeneralSectionEntityID, section: string(section)}
 	x, ok := sc.cache.Get(k)
 	if !ok {
-		return SectionStatus{}, false
+		return app.SectionStatus{}, false
 	}
 	v := x.(cacheValue)
-	o := SectionStatus{
-		EntityID:     GeneralSectionEntityID,
-		EntityName:   GeneralSectionEntityName,
+	o := app.SectionStatus{
+		EntityID:     app.GeneralSectionEntityID,
+		EntityName:   app.GeneralSectionEntityName,
 		SectionID:    string(section),
 		SectionName:  section.DisplayName(),
 		CompletedAt:  v.CompletedAt,
@@ -189,8 +189,8 @@ func (sc *StatusCacheService) GeneralSectionGet(section app.GeneralSection) (Sec
 	return o, true
 }
 
-func (sc *StatusCacheService) GeneralSectionList() []SectionStatus {
-	list := make([]SectionStatus, 0)
+func (sc *StatusCacheService) GeneralSectionList() []app.SectionStatus {
+	list := make([]app.SectionStatus, 0)
 	for _, section := range app.GeneralSections {
 		v, ok := sc.GeneralSectionGet(section)
 		if ok {
@@ -205,7 +205,7 @@ func (sc *StatusCacheService) GeneralSectionSet(o *app.GeneralSectionStatus) {
 		return
 	}
 	k := cacheKey{
-		id:      GeneralSectionEntityID,
+		id:      app.GeneralSectionEntityID,
 		section: string(o.Section),
 	}
 	v := cacheValue{
@@ -216,10 +216,10 @@ func (sc *StatusCacheService) GeneralSectionSet(o *app.GeneralSectionStatus) {
 	sc.cache.Set(k, v, 0)
 }
 
-func (sc *StatusCacheService) GeneralSectionSummary() StatusSummary {
+func (sc *StatusCacheService) GeneralSectionSummary() app.StatusSummary {
 	total := len(app.GeneralSections)
 	currentCount, missingCount, errorCount := sc.generalSectionSummary()
-	s := StatusSummary{
+	s := app.StatusSummary{
 		Current: currentCount,
 		Errors:  errorCount,
 		Missing: missingCount,
@@ -248,8 +248,8 @@ func (sc *StatusCacheService) generalSectionSummary() (int, int, int) {
 	return currentCount, missingCount, errorCount
 }
 
-func (sc *StatusCacheService) SectionList(entityID int32) []SectionStatus {
-	if entityID == GeneralSectionEntityID {
+func (sc *StatusCacheService) SectionList(entityID int32) []app.SectionStatus {
+	if entityID == app.GeneralSectionEntityID {
 		return sc.GeneralSectionList()
 	}
 	return sc.CharacterSectionList(entityID)
@@ -257,7 +257,7 @@ func (sc *StatusCacheService) SectionList(entityID int32) []SectionStatus {
 
 // Summary returns the current summary status in percent of fresh sections
 // and the number of missing and errors.
-func (sc *StatusCacheService) Summary() StatusSummary {
+func (sc *StatusCacheService) Summary() app.StatusSummary {
 	cc := sc.ListCharacters()
 	currentCount := 0
 	errorCount := 0
@@ -273,7 +273,7 @@ func (sc *StatusCacheService) Summary() StatusSummary {
 	missingCount += m
 	errorCount += e
 	total := len(app.CharacterSections)*len(cc) + len(app.GeneralSections)
-	s := StatusSummary{
+	s := app.StatusSummary{
 		Current: currentCount,
 		Errors:  errorCount,
 		Missing: missingCount,
