@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -43,13 +43,13 @@ func (w *SkillQueueItem) Set(name string, targetLevel int, isActive bool, remain
 		d = "Completed"
 	} else if isActive {
 		i = widget.MediumImportance
-		d = ihumanize.OptionalDuration(remaining, "?")
+		d = humanize.OptionalDuration(remaining, "?")
 	} else {
 		i = widget.MediumImportance
-		d = ihumanize.OptionalDuration(duration, "?")
+		d = humanize.OptionalDuration(duration, "?")
 	}
 	w.name.Importance = i
-	w.name.Text = fmt.Sprintf("%s %s", name, ihumanize.ToRomanLetter(targetLevel))
+	w.name.Text = fmt.Sprintf("%s %s", name, humanize.ToRomanLetter(targetLevel))
 	w.name.Refresh()
 	w.duration.Text = d
 	w.duration.Importance = i
@@ -78,7 +78,7 @@ func (w *SkillQueueItem) Set(name string, targetLevel int, isActive bool, remain
 }
 
 func (w *SkillQueueItem) SetError(message string, err error) {
-	w.name.Text = fmt.Sprintf("%s: %s", message, ihumanize.Error(err))
+	w.name.Text = fmt.Sprintf("%s: %s", message, humanize.Error(err))
 	w.name.Importance = widget.DangerImportance
 	w.name.Refresh()
 	w.duration.SetText("")
