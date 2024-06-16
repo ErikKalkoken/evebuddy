@@ -11,7 +11,6 @@ import (
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/service"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/chasinglogic/appdirs"
@@ -105,7 +104,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	s := service.New(repository, cacheDir)
+	s := ui.NewService(repository, cacheDir)
 	e := ui.NewUI(s, *debugFlag)
 	e.ShowAndRun()
 }

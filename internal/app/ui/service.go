@@ -1,5 +1,4 @@
-// Package service contains all services.
-package service
+package ui
 
 import (
 	"net/http"
@@ -17,7 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/httptransport"
 )
 
-// Service is the main service and provides access to all other services.
+// Service is a wrapper around all services used by the UI.
 // It ensures all services are properly initialized
 // and allows re-use of shared resources like the http client.
 // Services provide access to the business logic for the UI.
@@ -38,10 +37,10 @@ type Service struct {
 	StatusCache *statuscache.StatusCacheService
 }
 
-// New creates and returns a new instance of the main service.
+// NewService creates and returns a new instance of Service.
 // st must point to a valid storage instance
 // imageCachePath can be empty. Then a temporary directory will be create and used instead.
-func New(st *sqlite.Storage, imageCacheDir string) *Service {
+func NewService(st *sqlite.Storage, imageCacheDir string) *Service {
 	httpClient := &http.Client{
 		Transport: httptransport.LoggedTransport{},
 	}

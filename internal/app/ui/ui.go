@@ -18,7 +18,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/service"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -48,7 +47,7 @@ type ui struct {
 	overviewArea          *overviewArea
 	overviewTab           *container.TabItem
 	statusBarArea         *statusBarArea
-	sv                    *service.Service
+	sv                    *Service
 	skillCatalogueArea    *skillCatalogueArea
 	skillqueueArea        *skillqueueArea
 	skillqueueTab         *container.TabItem
@@ -63,7 +62,7 @@ type ui struct {
 }
 
 // NewUI build the UI and returns it.
-func NewUI(sv *service.Service, isDebug bool) *ui {
+func NewUI(sv *Service, isDebug bool) *ui {
 	fyneApp := fyneapp.New()
 	w := fyneApp.NewWindow(appName(fyneApp))
 	u := &ui{
