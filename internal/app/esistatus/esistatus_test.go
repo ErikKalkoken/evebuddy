@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/service/esistatus"
+	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
 	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
