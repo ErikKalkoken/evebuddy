@@ -13,8 +13,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
@@ -132,8 +132,8 @@ func (a *skillqueueArea) refresh() {
 	a.total.Refresh()
 }
 
-func (a *skillqueueArea) updateItems() (mytypes.OptionalDuration, sql.NullFloat64, error) {
-	var remaining mytypes.OptionalDuration
+func (a *skillqueueArea) updateItems() (optional.Duration, sql.NullFloat64, error) {
+	var remaining optional.Duration
 	var completion sql.NullFloat64
 	ctx := context.Background()
 	if !a.ui.hasCharacter() {
@@ -162,7 +162,7 @@ func (a *skillqueueArea) updateItems() (mytypes.OptionalDuration, sql.NullFloat6
 	return remaining, completion, nil
 }
 
-func (a *skillqueueArea) makeTopText(total mytypes.OptionalDuration) (string, widget.Importance) {
+func (a *skillqueueArea) makeTopText(total optional.Duration) (string, widget.Importance) {
 	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), model.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance

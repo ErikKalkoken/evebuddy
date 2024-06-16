@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type CharacterSkillqueueItem struct {
@@ -52,8 +52,8 @@ func (qi CharacterSkillqueueItem) CompletionP() float64 {
 	return 1 - (c * base)
 }
 
-func (qi CharacterSkillqueueItem) Duration() mytypes.OptionalDuration {
-	var d mytypes.OptionalDuration
+func (qi CharacterSkillqueueItem) Duration() optional.Duration {
+	var d optional.Duration
 	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
 		return d
 	}
@@ -62,8 +62,8 @@ func (qi CharacterSkillqueueItem) Duration() mytypes.OptionalDuration {
 	return d
 }
 
-func (qi CharacterSkillqueueItem) Remaining() mytypes.OptionalDuration {
-	var d mytypes.OptionalDuration
+func (qi CharacterSkillqueueItem) Remaining() optional.Duration {
+	var d optional.Duration
 	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
 		return d
 	}

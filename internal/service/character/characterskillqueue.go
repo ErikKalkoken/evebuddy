@@ -4,13 +4,13 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (mytypes.OptionalDuration, error) {
+func (s *CharacterService) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (optional.Duration, error) {
 	return s.st.GetTotalTrainingTime(ctx, characterID)
 }
 

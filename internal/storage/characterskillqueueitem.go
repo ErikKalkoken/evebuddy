@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/storage/queries"
 )
 
@@ -21,8 +21,8 @@ type SkillqueueItemParams struct {
 	TrainingStartSP int
 }
 
-func (st *Storage) GetTotalTrainingTime(ctx context.Context, characterID int32) (mytypes.OptionalDuration, error) {
-	var d mytypes.OptionalDuration
+func (st *Storage) GetTotalTrainingTime(ctx context.Context, characterID int32) (optional.Duration, error) {
+	var d optional.Duration
 	x, err := st.q.GetTotalTrainingTime(ctx, int64(characterID))
 	if err != nil {
 		return d, err

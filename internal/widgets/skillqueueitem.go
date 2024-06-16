@@ -8,8 +8,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type SkillQueueItem struct {
@@ -32,7 +32,7 @@ func NewSkillQueueItem() *SkillQueueItem {
 	return w
 }
 
-func (w *SkillQueueItem) Set(name string, targetLevel int, isActive bool, remaining, duration mytypes.OptionalDuration, completionP float64) {
+func (w *SkillQueueItem) Set(name string, targetLevel int, isActive bool, remaining, duration optional.Duration, completionP float64) {
 	var (
 		i widget.Importance
 		d string

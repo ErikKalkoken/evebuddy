@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/antihax/goesi/esi"
 	"github.com/mattn/go-sqlite3"
@@ -69,7 +69,7 @@ func Duration(duration time.Duration) string {
 	return fmt.Sprintf("%dh %dm", h, m)
 }
 
-func OptionalDuration(d mytypes.OptionalDuration, fallback string) string {
+func OptionalDuration(d optional.Duration, fallback string) string {
 	if !d.Valid {
 		return fallback
 	}

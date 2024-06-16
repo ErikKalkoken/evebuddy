@@ -12,9 +12,9 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/dustin/go-humanize"
 )
@@ -74,7 +74,7 @@ func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
 // 	return ihumanize.Number(float64(v), 1)
 // }
 
-func humanizedNullDuration(d mytypes.OptionalDuration, fallback string) string {
+func humanizedNullDuration(d optional.Duration, fallback string) string {
 	if !d.Valid {
 		return fallback
 	}

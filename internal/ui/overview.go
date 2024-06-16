@@ -13,9 +13,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
-	"github.com/ErikKalkoken/evebuddy/internal/helper/mytypes"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type overviewCharacter struct {
@@ -34,7 +34,7 @@ type overviewCharacter struct {
 	ship           *model.EntityShort[int32]
 	security       float64
 	totalSP        sql.NullInt64
-	training       mytypes.OptionalDuration
+	training       optional.Duration
 	unallocatedSP  sql.NullInt64
 	unreadCount    sql.NullInt64
 	walletBalance  sql.NullFloat64
