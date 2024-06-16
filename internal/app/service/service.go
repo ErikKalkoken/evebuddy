@@ -6,15 +6,15 @@ import (
 
 	"github.com/antihax/goesi"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/service/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/service/dictionary"
+	"github.com/ErikKalkoken/evebuddy/internal/app/service/esistatus"
+	"github.com/ErikKalkoken/evebuddy/internal/app/service/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/service/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/httptransport"
-	"github.com/ErikKalkoken/evebuddy/internal/service/character"
-	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
-	"github.com/ErikKalkoken/evebuddy/internal/service/esistatus"
-	"github.com/ErikKalkoken/evebuddy/internal/service/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 )
 
 // Service is the main service and provides access to all other services.

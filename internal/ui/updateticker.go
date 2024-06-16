@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/service/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/service/character"
 )
 
 const (

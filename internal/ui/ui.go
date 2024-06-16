@@ -17,9 +17,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	app1 "github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/service"
+	"github.com/ErikKalkoken/evebuddy/internal/app/service/character"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/service"
-	"github.com/ErikKalkoken/evebuddy/internal/service/character"
 )
 
 // UI constants

@@ -4,10 +4,10 @@ package eveuniverse
 import (
 	"errors"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/service/dictionary"
+	"github.com/ErikKalkoken/evebuddy/internal/app/service/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
-	"github.com/ErikKalkoken/evebuddy/internal/service/dictionary"
-	"github.com/ErikKalkoken/evebuddy/internal/service/statuscache"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
 )
