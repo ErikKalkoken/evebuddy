@@ -1,5 +1,5 @@
 // package goesi contains helpers used in conjunction with the goesi package
-package goesi
+package character
 
 import (
 	"context"
@@ -11,9 +11,16 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// FetchFromESIWithPaging returns the combined list of items from all pages of an ESI endpoint.
+// contextWithESIToken returns a new context with the ESI access token included
+// so it can be used to authenticate requests with the goesi library.
+func contextWithESIToken(ctx context.Context, accessToken string) context.Context {
+	ctx = context.WithValue(ctx, goesi.ContextAccessToken, accessToken)
+	return ctx
+}
+
+// fetchFromESIWithPaging returns the combined list of items from all pages of an ESI endpoint.
 // This only works for ESI endpoints which support the X-Pages pattern and return a list.
-func FetchFromESIWithPaging[T any](fetch func(int) ([]T, *http.Response, error)) ([]T, error) {
+func fetchFromESIWithPaging[T any](fetch func(int) ([]T, *http.Response, error)) ([]T, error) {
 	result, r, err := fetch(1)
 	if err != nil {
 		return nil, err
@@ -59,11 +66,4 @@ func extractPageCount(r *http.Response) (int, error) {
 		return 0, err
 	}
 	return pages, nil
-}
-
-// ContextWithESIToken returns a new context with the ESI access token included
-// so it can be used to authenticate requests with the goesi library.
-func ContextWithESIToken(ctx context.Context, accessToken string) context.Context {
-	ctx = context.WithValue(ctx, goesi.ContextAccessToken, accessToken)
-	return ctx
 }

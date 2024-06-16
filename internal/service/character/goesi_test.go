@@ -1,4 +1,4 @@
-package goesi_test
+package character
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"testing"
 
-	igoesi "github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
 	"github.com/antihax/goesi/optional"
@@ -69,7 +68,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 				},
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		// when
-		xx, err := igoesi.FetchFromESIWithPaging(
+		xx, err := fetchFromESIWithPaging(
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
 					Page: optional.NewInt32(int32(pageNum)),
@@ -107,7 +106,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 				},
 			}).HeaderSet(http.Header{"X-Pages": []string{pages}}))
 		// when
-		xx, err := igoesi.FetchFromESIWithPaging(
+		xx, err := fetchFromESIWithPaging(
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
 					Page: optional.NewInt32(int32(pageNum)),
@@ -138,7 +137,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 				},
 			}))
 		// when
-		xx, err := igoesi.FetchFromESIWithPaging(
+		xx, err := fetchFromESIWithPaging(
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
 					Page: optional.NewInt32(int32(pageNum)),
@@ -154,7 +153,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		// given
 		myErr := errors.New("error")
 		// when
-		_, err := igoesi.FetchFromESIWithPaging(
+		_, err := fetchFromESIWithPaging(
 			func(pageNum int) ([]int, *http.Response, error) {
 				return nil, nil, myErr
 			})
@@ -169,7 +168,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 			"https://esi.evetech.net/v5/characters/99/assets/",
 			httpmock.NewJsonResponderOrPanic(200, []map[string]any{}).HeaderSet(http.Header{"X-Pages": []string{"invalid"}}))
 		// when
-		_, err := igoesi.FetchFromESIWithPaging(
+		_, err := fetchFromESIWithPaging(
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
 					Page: optional.NewInt32(int32(pageNum)),

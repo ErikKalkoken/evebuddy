@@ -9,7 +9,6 @@ import (
 
 	"github.com/antihax/goesi/esi"
 
-	igoesi "github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
 )
@@ -27,7 +26,7 @@ func (s *CharacterService) DeleteCharacterMail(ctx context.Context, characterID,
 	if err != nil {
 		return err
 	}
-	ctx = igoesi.ContextWithESIToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	_, err = s.esiClient.ESI.MailApi.DeleteCharactersCharacterIdMailMailId(ctx, characterID, mailID, nil)
 	if err != nil {
 		return err
@@ -84,7 +83,7 @@ func (s *CharacterService) SendCharacterMail(ctx context.Context, characterID in
 		Subject:    subject,
 		Recipients: rr,
 	}
-	ctx = igoesi.ContextWithESIToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	mailID, _, err := s.esiClient.ESI.MailApi.PostCharactersCharacterIdMail(ctx, characterID, esiMail, nil)
 	if err != nil {
 		return 0, err

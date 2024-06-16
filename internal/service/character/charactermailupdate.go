@@ -10,7 +10,6 @@ import (
 	"github.com/antihax/goesi/optional"
 	"golang.org/x/sync/errgroup"
 
-	igoesi "github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -284,7 +283,7 @@ func (s *CharacterService) UpdateMailRead(ctx context.Context, characterID, mail
 	if err != nil {
 		return err
 	}
-	ctx = igoesi.ContextWithESIToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	m, err := s.st.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		return err

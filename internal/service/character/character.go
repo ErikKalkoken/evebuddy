@@ -9,7 +9,6 @@ import (
 
 	"fyne.io/fyne/v2/data/binding"
 
-	igoesi "github.com/ErikKalkoken/evebuddy/internal/helper/goesi"
 	"github.com/ErikKalkoken/evebuddy/internal/model"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/storage"
@@ -66,7 +65,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		Scopes:       ssoToken.Scopes,
 		TokenType:    ssoToken.TokenType,
 	}
-	ctx = igoesi.ContextWithESIToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	character, err := s.eu.GetOrCreateEveCharacterESI(ctx, token.CharacterID)
 	if err != nil {
 		return 0, err
@@ -226,7 +225,7 @@ func (s *CharacterService) AddEveEntitiesFromCharacterSearchESI(ctx context.Cont
 		"character",
 		"alliance",
 	}
-	ctx = igoesi.ContextWithESIToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(ctx, token.AccessToken)
 	r, _, err := s.esiClient.ESI.SearchApi.GetCharactersCharacterIdSearch(ctx, categories, characterID, search, nil)
 	if err != nil {
 		return nil, err
