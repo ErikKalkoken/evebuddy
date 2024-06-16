@@ -16,12 +16,12 @@ type DictionaryStorage interface {
 
 // DictionaryService is persistent key/value store.
 type DictionaryService struct {
-	s DictionaryStorage
+	st DictionaryStorage
 }
 
 // New creates and returns a new instance of a dictionary service.
-func New(s DictionaryStorage) *DictionaryService {
-	d := &DictionaryService{s: s}
+func New(st DictionaryStorage) *DictionaryService {
+	d := &DictionaryService{st: st}
 	return d
 }
 
@@ -29,13 +29,13 @@ func New(s DictionaryStorage) *DictionaryService {
 // If the key does not exist no error will be raised.
 func (d *DictionaryService) Delete(key string) error {
 	ctx := context.Background()
-	return d.s.DeleteDictEntry(ctx, key)
+	return d.st.DeleteDictEntry(ctx, key)
 }
 
 // Exists reports wether a key exists in the dictionary.
 func (d *DictionaryService) Exists(key string) (bool, error) {
 	ctx := context.Background()
-	_, ok, err := d.s.GetDictEntry(ctx, key)
+	_, ok, err := d.st.GetDictEntry(ctx, key)
 	if err != nil {
 		return false, err
 	}
@@ -46,7 +46,7 @@ func (d *DictionaryService) Exists(key string) (bool, error) {
 // Otherwise it returns it's zero value.
 func (d *DictionaryService) Int(key string) (int, bool, error) {
 	ctx := context.Background()
-	data, ok, err := d.s.GetDictEntry(ctx, key)
+	data, ok, err := d.st.GetDictEntry(ctx, key)
 	if err != nil {
 		return 0, false, err
 	}
@@ -71,7 +71,7 @@ func (d *DictionaryService) IntWithFallback(key string, fallback int) (int, erro
 // Otherwise it returns it's zero value.
 func (d *DictionaryService) Float32(key string) (float32, bool, error) {
 	ctx := context.Background()
-	data, ok, err := d.s.GetDictEntry(ctx, key)
+	data, ok, err := d.st.GetDictEntry(ctx, key)
 	if err != nil {
 		return 0, false, err
 	}
@@ -85,7 +85,7 @@ func (d *DictionaryService) Float32(key string) (float32, bool, error) {
 // Otherwise it returns it's zero value.
 func (d *DictionaryService) Float64(key string) (float64, bool, error) {
 	ctx := context.Background()
-	data, ok, err := d.s.GetDictEntry(ctx, key)
+	data, ok, err := d.st.GetDictEntry(ctx, key)
 	if err != nil {
 		return 0, false, err
 	}
@@ -99,7 +99,7 @@ func (d *DictionaryService) Float64(key string) (float64, bool, error) {
 // Otherwise it returns it's zero value.
 func (d *DictionaryService) String(key string) (string, bool, error) {
 	ctx := context.Background()
-	data, ok, err := d.s.GetDictEntry(ctx, key)
+	data, ok, err := d.st.GetDictEntry(ctx, key)
 	if err != nil {
 		return "", false, err
 	}
@@ -113,7 +113,7 @@ func (d *DictionaryService) String(key string) (string, bool, error) {
 // Otherwise it returns it's zero value.
 func (d *DictionaryService) Time(key string) (time.Time, bool, error) {
 	ctx := context.Background()
-	data, ok, err := d.s.GetDictEntry(ctx, key)
+	data, ok, err := d.st.GetDictEntry(ctx, key)
 	if err != nil {
 		return time.Time{}, false, err
 	}
@@ -130,7 +130,7 @@ func (d *DictionaryService) SetInt(key string, value int) error {
 	if err != nil {
 		return err
 	}
-	if err := d.s.SetDictEntry(ctx, key, bb); err != nil {
+	if err := d.st.SetDictEntry(ctx, key, bb); err != nil {
 		return err
 	}
 	return nil
@@ -143,7 +143,7 @@ func (d *DictionaryService) SetFloat32(key string, value float32) error {
 	if err != nil {
 		return err
 	}
-	if err := d.s.SetDictEntry(ctx, key, bb); err != nil {
+	if err := d.st.SetDictEntry(ctx, key, bb); err != nil {
 		return err
 	}
 	return nil
@@ -156,7 +156,7 @@ func (d *DictionaryService) SetFloat64(key string, value float64) error {
 	if err != nil {
 		return err
 	}
-	if err := d.s.SetDictEntry(ctx, key, bb); err != nil {
+	if err := d.st.SetDictEntry(ctx, key, bb); err != nil {
 		return err
 	}
 	return nil
@@ -169,7 +169,7 @@ func (d *DictionaryService) SetString(key string, value string) error {
 	if err != nil {
 		return err
 	}
-	if err := d.s.SetDictEntry(ctx, key, bb); err != nil {
+	if err := d.st.SetDictEntry(ctx, key, bb); err != nil {
 		return err
 	}
 	return nil
@@ -182,7 +182,7 @@ func (d *DictionaryService) SetTime(key string, value time.Time) error {
 	if err != nil {
 		return err
 	}
-	if err := d.s.SetDictEntry(ctx, key, bb); err != nil {
+	if err := d.st.SetDictEntry(ctx, key, bb); err != nil {
 		return err
 	}
 	return nil
