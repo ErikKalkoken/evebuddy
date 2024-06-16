@@ -4,17 +4,21 @@ package eveuniverse
 import (
 	"errors"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
 )
 
 var ErrNotFound = errors.New("object not found")
 
+type StatusCacheService interface {
+	GeneralSectionSet(*app.GeneralSectionStatus)
+}
+
 // EveUniverseService provides access to Eve Online models with on-demand loading from ESI and local caching.
 type EveUniverseService struct {
-	StatusCacheService *statuscache.StatusCacheService
+	StatusCacheService StatusCacheService
 
 	esiClient *goesi.APIClient
 	sfg       *singleflight.Group

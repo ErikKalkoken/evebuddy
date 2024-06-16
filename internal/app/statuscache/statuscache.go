@@ -9,13 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-type StatusCacheStorage interface {
-	ListCharacterSectionStatus(context.Context, int32) ([]*app.CharacterSectionStatus, error)
-	ListGeneralSectionStatus(context.Context) ([]*app.GeneralSectionStatus, error)
-	ListCharactersShort(context.Context) ([]*app.CharacterShort, error)
-}
-
-type Cache interface {
+type CacheService interface {
 	Get(any) (any, bool)
 	Set(any, any, time.Duration)
 }
@@ -36,19 +30,19 @@ type cacheValue struct {
 // StatusCacheService provides cached access to the current update status
 // of all characters to improve performance of UI refresh tickers.
 type StatusCacheService struct {
-	cache Cache
+	cache CacheService
 }
 
 // New creates and returns a new instance of a character status service.
 // When nil is provided it will create and use it's own cache instance.
-func New(cache Cache) *StatusCacheService {
+func New(cache CacheService) *StatusCacheService {
 	sc := &StatusCacheService{cache: cache}
 	return sc
 }
 
 // InitCache initializes the internal state from local storage.
 // It should always be called once for a new instance to ensure the cache is current.
-func (sc *StatusCacheService) InitCache(st StatusCacheStorage) error {
+func (sc *StatusCacheService) InitCache(st app.StatusCacheStorage) error {
 	ctx := context.Background()
 	cc, err := sc.updateCharacters(ctx, st)
 	if err != nil {
@@ -282,12 +276,12 @@ func (sc *StatusCacheService) Summary() app.StatusSummary {
 	return s
 }
 
-func (sc *StatusCacheService) UpdateCharacters(ctx context.Context, r StatusCacheStorage) error {
+func (sc *StatusCacheService) UpdateCharacters(ctx context.Context, r app.StatusCacheStorage) error {
 	_, err := sc.updateCharacters(ctx, r)
 	return err
 }
 
-func (sc *StatusCacheService) updateCharacters(ctx context.Context, r StatusCacheStorage) ([]*app.CharacterShort, error) {
+func (sc *StatusCacheService) updateCharacters(ctx context.Context, r app.StatusCacheStorage) ([]*app.CharacterShort, error) {
 	cc, err := r.ListCharactersShort(ctx)
 	if err != nil {
 		return nil, err

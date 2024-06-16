@@ -19,8 +19,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
-	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
@@ -32,11 +30,40 @@ const (
 	myFloatFormat   = "#,###.##"
 )
 
+type DictionaryService interface {
+	Delete(string) error
+	Float32(string) (float32, bool, error)
+	Int(string) (int, bool, error)
+	IntWithFallback(string, int) (int, error)
+	SetFloat32(string, float32) error
+	SetInt(string, int) error
+	SetString(string, string) error
+	String(string) (string, bool, error)
+}
+
+type StatusCacheService interface {
+	CharacterSectionExists(int32, app.CharacterSection) bool
+	CharacterSectionSummary(int32) app.StatusSummary
+	GeneralSectionExists(app.GeneralSection) bool
+	GeneralSectionSummary() app.StatusSummary
+	ListCharacters() []*app.CharacterShort
+	SectionList(int32) []app.SectionStatus
+	Summary() app.StatusSummary
+}
+
 // The ui is the root object of the UI and contains all UI areas.
 //
 // Each UI area holds a pointer of the ui instance, so that areas can
 // call methods on other UI areas and access shared variables in the UI.
 type ui struct {
+	CacheService       app.CacheService
+	CharacterService   *character.CharacterService
+	DictionaryService  DictionaryService
+	ESIStatusService   app.ESIStatusService
+	EveImageService    *eveimage.EveImageService
+	EveUniverseService *eveuniverse.EveUniverseService
+	StatusCacheService StatusCacheService
+
 	fyneApp               fyne.App
 	assetsArea            *assetsArea
 	assetSearchArea       *assetSearchArea
@@ -63,14 +90,6 @@ type ui struct {
 	walletTransactionArea *walletTransactionArea
 	wealthArea            *wealthArea
 	window                fyne.Window
-
-	CacheService       app.CacheService
-	CharacterService   *character.CharacterService
-	DictionaryService  *dictionary.DictionaryService
-	EveImageService    *eveimage.EveImageService
-	ESIStatusService   app.ESIStatusService
-	EveUniverseService *eveuniverse.EveUniverseService
-	StatusCacheService *statuscache.StatusCacheService
 }
 
 // NewUI build the UI and returns it.
