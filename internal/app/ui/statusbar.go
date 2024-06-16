@@ -75,7 +75,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 	esiStatusTicker := time.NewTicker(esiStatusUpdateTicker)
 	go func() {
 		for {
-			x, err := a.ui.sv.ESIStatus.Fetch()
+			x, err := a.ui.ESIStatusService.Fetch()
 			var t, errorMessage string
 			var s eveStatus
 			if err != nil {
@@ -233,7 +233,7 @@ func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
 }
 
 func (a *characterUpdateStatusArea) refresh() {
-	ss := a.ui.sv.StatusCache.Summary()
+	ss := a.ui.StatusCacheService.Summary()
 	a.data = updateStatusOutput{status: ss.Status(), title: ss.Display()}
 	a.content.Refresh()
 }

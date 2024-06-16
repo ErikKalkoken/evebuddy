@@ -147,7 +147,7 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 		return "No character", widget.LowImportance
 	}
 	characterID := a.ui.characterID()
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(characterID, app.SectionWalletTransactions)
+	hasData := a.ui.StatusCacheService.CharacterSectionExists(characterID, app.SectionWalletTransactions)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
@@ -163,7 +163,7 @@ func (a *walletTransactionArea) updateEntries() error {
 		}
 	}
 	characterID := a.ui.characterID()
-	ww, err := a.ui.sv.Character.ListCharacterWalletTransactions(context.Background(), characterID)
+	ww, err := a.ui.CharacterService.ListCharacterWalletTransactions(context.Background(), characterID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch wallet journal for character %d: %w", characterID, err)
 	}

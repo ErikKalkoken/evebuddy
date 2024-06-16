@@ -142,7 +142,7 @@ func (a *skillqueueArea) updateItems() (optional.Duration, sql.NullFloat64, erro
 			return remaining, completion, err
 		}
 	}
-	skills, err := a.ui.sv.Character.ListCharacterSkillqueueItems(ctx, a.ui.characterID())
+	skills, err := a.ui.CharacterService.ListCharacterSkillqueueItems(ctx, a.ui.characterID())
 	if err != nil {
 		return remaining, completion, err
 	}
@@ -163,7 +163,7 @@ func (a *skillqueueArea) updateItems() (optional.Duration, sql.NullFloat64, erro
 }
 
 func (a *skillqueueArea) makeTopText(total optional.Duration) (string, widget.Importance) {
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), app.SectionSkillqueue)
+	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

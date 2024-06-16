@@ -9,3 +9,8 @@ type ESIStatus struct {
 func (s ESIStatus) IsOK() bool {
 	return s.ErrorMessage == ""
 }
+
+// A service for fetching the current ESI Status.
+type ESIStatusService interface {
+	Fetch() (*ESIStatus, error)
+}

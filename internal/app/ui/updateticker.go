@@ -34,7 +34,7 @@ func (u *ui) updateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
 }
 
 func (u *ui) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
-	hasChanged, err := u.sv.EveUniverse.UpdateSection(ctx, section, forceUpdate)
+	hasChanged, err := u.EveUniverseService.UpdateSection(ctx, section, forceUpdate)
 	if err != nil {
 		slog.Error("Failed to update general section", "section", section, "err", err)
 		return
@@ -57,7 +57,7 @@ func (u *ui) startUpdateTickerCharacters() {
 	go func() {
 		for {
 			func() {
-				cc, err := u.sv.Character.ListCharactersShort(context.TODO())
+				cc, err := u.CharacterService.ListCharactersShort(context.TODO())
 				if err != nil {
 					slog.Error("Failed to fetch list of characters", "err", err)
 					return
@@ -87,7 +87,7 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID 
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
 func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
-	hasChanged, err := u.sv.Character.UpdateSectionIfNeeded(
+	hasChanged, err := u.CharacterService.UpdateSectionIfNeeded(
 		ctx, character.UpdateSectionParams{
 			CharacterID: characterID,
 			Section:     s,

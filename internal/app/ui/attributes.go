@@ -113,7 +113,7 @@ func (a *attributesArea) refresh() {
 }
 
 func (a *attributesArea) makeTopText(total int) (string, widget.Importance) {
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), app.SectionAttributes)
+	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionAttributes)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
@@ -128,7 +128,7 @@ func (a *attributesArea) updateData() (int, error) {
 		}
 	}
 	ctx := context.Background()
-	ca, err := a.ui.sv.Character.GetCharacterAttributes(ctx, a.ui.characterID())
+	ca, err := a.ui.CharacterService.GetCharacterAttributes(ctx, a.ui.characterID())
 	if errors.Is(err, character.ErrNotFound) {
 		err := a.attributes.Set(make([]any, 0))
 		if err != nil {

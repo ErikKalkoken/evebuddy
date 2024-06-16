@@ -61,7 +61,7 @@ func (a *implantsArea) makeImplantList() *widget.List {
 			label.SetText(fmt.Sprintf("%s\nSlot %d", q.EveType.Name, q.SlotNum))
 
 			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.ui.sv.EveImage.InventoryTypeIcon(q.EveType.ID, 64)
+				return a.ui.EveImageService.InventoryTypeIcon(q.EveType.ID, 64)
 			})
 		})
 
@@ -99,7 +99,7 @@ func (a *implantsArea) updateData() error {
 			return err
 		}
 	}
-	implants, err := a.ui.sv.Character.ListCharacterImplants(context.Background(), a.ui.characterID())
+	implants, err := a.ui.CharacterService.ListCharacterImplants(context.Background(), a.ui.characterID())
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (a *implantsArea) updateData() error {
 }
 
 func (a *implantsArea) makeTopText() (string, widget.Importance) {
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), app.SectionImplants)
+	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

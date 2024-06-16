@@ -113,7 +113,7 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 			g.UnselectAll()
 			return
 		}
-		oo, err := a.ui.sv.Character.ListCharacterSkillProgress(
+		oo, err := a.ui.CharacterService.ListCharacterSkillProgress(
 			context.Background(), a.ui.characterID(), group.id)
 		if err != nil {
 			slog.Error("Failed to fetch skill group data", "err", err)
@@ -183,7 +183,7 @@ func (a *skillCatalogueArea) redraw() {
 
 func (a *skillCatalogueArea) refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
-		exists := a.ui.sv.StatusCache.GeneralSectionExists(app.SectionEveCategories)
+		exists := a.ui.StatusCacheService.GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
 			return "Waiting for universe data to be loaded...", widget.WarningImportance, nil
 		}
@@ -217,7 +217,7 @@ func (a *skillCatalogueArea) updateGroups() error {
 	if !a.ui.hasCharacter() {
 		return nil
 	}
-	gg, err := a.ui.sv.Character.ListCharacterSkillGroupsProgress(context.Background(), a.ui.characterID())
+	gg, err := a.ui.CharacterService.ListCharacterSkillGroupsProgress(context.Background(), a.ui.characterID())
 	if err != nil {
 		return err
 	}

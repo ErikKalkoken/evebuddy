@@ -262,7 +262,7 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 	var totals overviewTotals
 	var err error
 	ctx := context.Background()
-	mycc, err := a.ui.sv.Character.ListCharacters(ctx)
+	mycc, err := a.ui.CharacterService.ListCharacters(ctx)
 	if err != nil {
 		return totals, fmt.Errorf("failed to fetch characters: %w", err)
 	}
@@ -313,14 +313,14 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 		cc[i] = c
 	}
 	for i, c := range cc {
-		v, err := a.ui.sv.Character.GetCharacterTotalTrainingTime(ctx, c.id)
+		v, err := a.ui.CharacterService.GetCharacterTotalTrainingTime(ctx, c.id)
 		if err != nil {
 			return totals, fmt.Errorf("failed to fetch skill queue count for character %d, %w", c.id, err)
 		}
 		cc[i].training = v
 	}
 	for i, c := range cc {
-		total, unread, err := a.ui.sv.Character.GetCharacterMailCounts(ctx, c.id)
+		total, unread, err := a.ui.CharacterService.GetCharacterMailCounts(ctx, c.id)
 		if err != nil {
 			return totals, fmt.Errorf("failed to fetch mail counts for character %d, %w", c.id, err)
 		}
@@ -330,7 +330,7 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 		}
 	}
 	for i, c := range cc {
-		v, err := a.ui.sv.Character.CharacterAssetTotalValue(c.id)
+		v, err := a.ui.CharacterService.CharacterAssetTotalValue(c.id)
 		if err != nil {
 			return totals, fmt.Errorf("failed to fetch asset total value for character %d, %w", c.id, err)
 		}

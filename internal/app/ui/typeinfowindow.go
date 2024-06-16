@@ -221,7 +221,7 @@ func (u *ui) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*ty
 		ui: u,
 	}
 	if locationID != 0 {
-		location, err := u.sv.EveUniverse.GetEveLocation(ctx, locationID)
+		location, err := u.EveUniverseService.GetEveLocation(ctx, locationID)
 		if err != nil {
 			return nil, err
 		}
@@ -229,12 +229,12 @@ func (u *ui) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*ty
 		a.et = location.Type
 		a.owner = a.location.Owner
 	} else {
-		et, err := u.sv.EveUniverse.GetEveType(ctx, typeID)
+		et, err := u.EveUniverseService.GetEveType(ctx, typeID)
 		if err != nil {
 			return nil, err
 		}
 		a.et = et
-		owner, err := u.sv.EveUniverse.GetOrCreateEveEntityESI(ctx, characterID)
+		owner, err := u.EveUniverseService.GetOrCreateEveEntityESI(ctx, characterID)
 		if err != nil {
 			return nil, err
 		}
@@ -243,7 +243,7 @@ func (u *ui) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*ty
 	if a.et == nil {
 		return nil, nil
 	}
-	p, err := u.sv.EveUniverse.GetEveMarketPrice(ctx, a.et.ID)
+	p, err := u.EveUniverseService.GetEveMarketPrice(ctx, a.et.ID)
 	if errors.Is(err, eveuniverse.ErrNotFound) {
 		p = nil
 	} else if err != nil {
@@ -253,7 +253,7 @@ func (u *ui) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*ty
 	} else {
 		a.price = nil
 	}
-	oo, err := u.sv.EveUniverse.ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
+	oo, err := u.EveUniverseService.ListEveTypeDogmaAttributesForType(ctx, a.et.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +347,7 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 				x := attributes[app.EveDogmaAttributeWarpSpeedMultiplier]
 				value = value * x.Value
 			}
-			v, substituteIcon := a.ui.sv.EveUniverse.FormatValue(ctx, value, o.DogmaAttribute.Unit)
+			v, substituteIcon := a.ui.EveUniverseService.FormatValue(ctx, value, o.DogmaAttribute.Unit)
 			var iconID int32
 			if substituteIcon != 0 {
 				iconID = substituteIcon
@@ -364,9 +364,9 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 	}
 	data := make([]attributeRow, 0)
 	if a.et.Volume > 0 {
-		v, _ := a.ui.sv.EveUniverse.FormatValue(ctx, a.et.Volume, app.EveUnitVolume)
+		v, _ := a.ui.EveUniverseService.FormatValue(ctx, a.et.Volume, app.EveUnitVolume)
 		if a.et.Volume != a.et.PackagedVolume {
-			v2, _ := a.ui.sv.EveUniverse.FormatValue(ctx, a.et.PackagedVolume, app.EveUnitVolume)
+			v2, _ := a.ui.EveUniverseService.FormatValue(ctx, a.et.PackagedVolume, app.EveUnitVolume)
 			v += fmt.Sprintf(" (%s Packaged)", v2)
 		}
 		r := attributeRow{
@@ -413,7 +413,7 @@ func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int
 		}
 		iconID := o.DogmaAttribute.IconID
 		r, _ := eveicon.GetResourceByIconID(iconID)
-		v, _ := a.ui.sv.EveUniverse.FormatValue(ctx, o.Value, o.DogmaAttribute.Unit)
+		v, _ := a.ui.EveUniverseService.FormatValue(ctx, o.Value, o.DogmaAttribute.Unit)
 		data = append(data, attributeRow{
 			icon:  r,
 			label: o.DogmaAttribute.DisplayName,
@@ -447,7 +447,7 @@ func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int
 			continue
 		}
 		requiredLevel := int(daLevel.Value)
-		et, err := a.ui.sv.EveUniverse.GetEveType(ctx, typeID)
+		et, err := a.ui.EveUniverseService.GetEveType(ctx, typeID)
 		if err != nil {
 			return nil, err
 		}
@@ -457,7 +457,7 @@ func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int
 			name:          et.Name,
 			typeID:        typeID,
 		}
-		cs, err := a.ui.sv.Character.GetCharacterSkill(ctx, characterID, typeID)
+		cs, err := a.ui.CharacterService.GetCharacterSkill(ctx, characterID, typeID)
 		if errors.Is(err, character.ErrNotFound) {
 			// do nothing
 		} else if err != nil {
@@ -508,7 +508,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 	typeIcon := container.New(&topLeftLayout{})
 	if a.et.HasRender() {
 		size := 128
-		r, err := a.ui.sv.EveImage.InventoryTypeRender(a.et.ID, size)
+		r, err := a.ui.EveImageService.InventoryTypeRender(a.et.ID, size)
 		if err != nil {
 			panic(err)
 		}
@@ -516,7 +516,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			w := a.ui.fyneApp.NewWindow(a.makeTitle("Render"))
 			size := 512
 			i := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
-				return a.ui.sv.EveImage.InventoryTypeRender(a.et.ID, size)
+				return a.ui.EveImageService.InventoryTypeRender(a.et.ID, size)
 			})
 			i.FillMode = canvas.ImageFillContain
 			s := float32(size) / w.Canvas().Scale()
@@ -544,11 +544,11 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		size := 64
 		icon := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
-				return a.ui.sv.EveImage.InventoryTypeSKIN(a.et.ID, size)
+				return a.ui.EveImageService.InventoryTypeSKIN(a.et.ID, size)
 			} else if a.et.IsBlueprint() {
-				return a.ui.sv.EveImage.InventoryTypeBPO(a.et.ID, size)
+				return a.ui.EveImageService.InventoryTypeBPO(a.et.ID, size)
 			} else {
-				return a.ui.sv.EveImage.InventoryTypeIcon(a.et.ID, size)
+				return a.ui.EveImageService.InventoryTypeIcon(a.et.ID, size)
 			}
 		})
 		icon.FillMode = canvas.ImageFillContain
@@ -563,9 +563,9 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		refreshImageResourceAsync(ownerIcon, func() (fyne.Resource, error) {
 			switch a.owner.Category {
 			case app.EveEntityCharacter:
-				return a.ui.sv.EveImage.CharacterPortrait(a.owner.ID, 32)
+				return a.ui.EveImageService.CharacterPortrait(a.owner.ID, 32)
 			case app.EveEntityCorporation:
-				return a.ui.sv.EveImage.CorporationLogo(a.owner.ID, 32)
+				return a.ui.EveImageService.CorporationLogo(a.owner.ID, 32)
 			default:
 				panic("Unexpected owner type")
 			}

@@ -104,7 +104,7 @@ func (a *accountArea) makeCharacterList() *widget.List {
 
 			icon := row.Objects[0].(*canvas.Image)
 			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.ui.sv.EveImage.CharacterPortrait(c.id, defaultIconSize)
+				return a.ui.EveImageService.CharacterPortrait(c.id, defaultIconSize)
 			})
 
 			row.Objects[3].(*widget.Button).OnTapped = func() {
@@ -134,7 +134,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 		func(confirmed bool) {
 			if confirmed {
 				err := func(characterID int32) error {
-					err := a.ui.sv.Character.DeleteCharacter(context.Background(), characterID)
+					err := a.ui.CharacterService.DeleteCharacter(context.Background(), characterID)
 					if err != nil {
 						return err
 					}
@@ -164,7 +164,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 }
 
 func (a *accountArea) Refresh() error {
-	cc, err := a.ui.sv.Character.ListCharactersShort(context.Background())
+	cc, err := a.ui.CharacterService.ListCharactersShort(context.Background())
 	if err != nil {
 		return err
 	}
@@ -197,7 +197,7 @@ func (a *accountArea) showAddCharacterDialog() {
 	d1.SetOnClosed(cancel)
 	go func() {
 		err := func() error {
-			characterID, err := a.ui.sv.Character.UpdateOrCreateCharacterFromSSO(ctx, infoText)
+			characterID, err := a.ui.CharacterService.UpdateOrCreateCharacterFromSSO(ctx, infoText)
 			if errors.Is(err, character.ErrAborted) {
 				return nil
 			} else if err != nil {

@@ -167,7 +167,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 				icon.Refresh()
 			} else {
 				refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-					return a.ui.sv.EveImage.CharacterPortrait(c.id, defaultIconSize)
+					return a.ui.EveImageService.CharacterPortrait(c.id, defaultIconSize)
 				})
 			}
 			status := row.Objects[3].(*widget.Label)
@@ -372,13 +372,13 @@ func (a *statusWindow) refresh() error {
 
 func (a *statusWindow) refreshEntityList() error {
 	entities := make([]sectionEntity, 0)
-	cc := a.ui.sv.StatusCache.ListCharacters()
+	cc := a.ui.StatusCacheService.ListCharacters()
 	for _, c := range cc {
-		ss := a.ui.sv.StatusCache.CharacterSectionSummary(c.ID)
+		ss := a.ui.StatusCacheService.CharacterSectionSummary(c.ID)
 		o := sectionEntity{id: c.ID, name: c.Name, ss: ss}
 		entities = append(entities, o)
 	}
-	ss := a.ui.sv.StatusCache.GeneralSectionSummary()
+	ss := a.ui.StatusCacheService.GeneralSectionSummary()
 	o := sectionEntity{
 		id:   statuscache.GeneralSectionEntityID,
 		name: statuscache.GeneralSectionEntityName,
@@ -401,7 +401,7 @@ func (a *statusWindow) refreshDetailArea() error {
 	if !ok {
 		return nil
 	}
-	data := a.ui.sv.StatusCache.SectionList(se.id)
+	data := a.ui.StatusCacheService.SectionList(se.id)
 	if err := a.sectionsData.Set(copyToUntypedSlice(data)); err != nil {
 		return err
 	}

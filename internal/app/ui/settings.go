@@ -26,7 +26,7 @@ func (u *ui) showSettingsDialog() {
 }
 
 func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
-	maxMails, err := u.sv.Dictionary.IntWithFallback(app.SettingMaxMails, app.SettingMaxMailsDefault)
+	maxMails, err := u.DictionaryService.IntWithFallback(app.SettingMaxMails, app.SettingMaxMailsDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	maxMailsEntry.SetText(strconv.Itoa(maxMails))
 	maxMailsEntry.Validator = newPositiveNumberValidator()
 
-	maxTransactions, err := u.sv.Dictionary.IntWithFallback(app.SettingMaxWalletTransactions, app.SettingMaxWalletTransactionsDefault)
+	maxTransactions, err := u.DictionaryService.IntWithFallback(app.SettingMaxWalletTransactions, app.SettingMaxWalletTransactionsDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 				if !confirmed {
 					return
 				}
-				count, err := u.sv.EveImage.ClearCache()
+				count, err := u.EveImageService.ClearCache()
 				if err != nil {
 					slog.Error(err.Error())
 					u.showErrorDialog("Failed to clear image cache", err)
@@ -66,13 +66,13 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	themeRadio := widget.NewRadioGroup(
 		[]string{app.ThemeAuto, app.ThemeDark, app.ThemeLight}, func(s string) {},
 	)
-	name, ok, err := u.sv.Dictionary.String(app.SettingTheme)
+	name, ok, err := u.DictionaryService.String(app.SettingTheme)
 	if err == nil && ok {
 		themeRadio.SetSelected(name)
 	}
 
 	var cacheSize string
-	s, err := u.sv.EveImage.Size()
+	s, err := u.EveImageService.Size()
 	if err != nil {
 		cacheSize = "?"
 	} else {
@@ -107,9 +107,9 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 			if err != nil {
 				return
 			}
-			u.sv.Dictionary.SetInt(app.SettingMaxMails, maxMails)
+			u.DictionaryService.SetInt(app.SettingMaxMails, maxMails)
 			u.themeSet(themeRadio.Selected)
-			u.sv.Dictionary.SetString(app.SettingTheme, themeRadio.Selected)
+			u.DictionaryService.SetString(app.SettingTheme, themeRadio.Selected)
 			d.Hide()
 		},
 		OnCancel: func() {

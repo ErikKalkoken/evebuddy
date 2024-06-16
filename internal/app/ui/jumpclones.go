@@ -94,7 +94,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 				second.Show()
 			} else {
 				refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-					return a.ui.sv.EveImage.InventoryTypeIcon(n.ImplantTypeID, defaultIconSize)
+					return a.ui.EveImageService.InventoryTypeIcon(n.ImplantTypeID, defaultIconSize)
 				})
 				first.SetText(n.ImplantTypeName)
 				second.Hide()
@@ -149,7 +149,7 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 	if !a.ui.hasCharacter() {
 		return ids, values, 0, nil
 	}
-	clones, err := a.ui.sv.Character.ListCharacterJumpClones(context.Background(), a.ui.characterID())
+	clones, err := a.ui.CharacterService.ListCharacterJumpClones(context.Background(), a.ui.characterID())
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -191,7 +191,7 @@ func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance) {
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), app.SectionJumpClones)
+	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionJumpClones)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

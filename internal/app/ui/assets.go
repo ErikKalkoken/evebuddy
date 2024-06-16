@@ -229,11 +229,11 @@ func (a *assetsArea) createTreeData() (locationDataTree, int, error) {
 	}
 	characterID := a.ui.characterID()
 	ctx := context.Background()
-	assets, err := a.ui.sv.Character.ListCharacterAssets(ctx, characterID)
+	assets, err := a.ui.CharacterService.ListCharacterAssets(ctx, characterID)
 	if err != nil {
 		return tree, 0, err
 	}
-	oo, err := a.ui.sv.EveUniverse.ListEveLocations(ctx)
+	oo, err := a.ui.EveUniverseService.ListEveLocations(ctx)
 	if err != nil {
 		return tree, 0, err
 	}
@@ -365,7 +365,7 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance, nil
 	}
-	hasData := a.ui.sv.StatusCache.CharacterSectionExists(a.ui.characterID(), app.SectionAssets)
+	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionAssets)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}
@@ -380,11 +380,11 @@ func (a *assetsArea) redrawAssets(n locationDataNode) error {
 	var f func(context.Context, int32, int64) ([]*app.CharacterAsset, error)
 	switch n.Type {
 	case nodeShipHangar:
-		f = a.ui.sv.Character.ListCharacterAssetsInShipHangar
+		f = a.ui.CharacterService.ListCharacterAssetsInShipHangar
 	case nodeItemHangar:
-		f = a.ui.sv.Character.ListCharacterAssetsInItemHangar
+		f = a.ui.CharacterService.ListCharacterAssetsInItemHangar
 	default:
-		f = a.ui.sv.Character.ListCharacterAssetsInLocation
+		f = a.ui.CharacterService.ListCharacterAssetsInLocation
 	}
 	assets, err := f(context.Background(), n.CharacterID, n.ContainerID)
 	if err != nil {
@@ -448,7 +448,7 @@ func (u *ui) showNewAssetWindow(ca *app.CharacterAsset) {
 	}
 	title := fmt.Sprintf("%s%s(%s): Contents", ca.EveType.Name, name, ca.EveType.Group.Name)
 	w := u.fyneApp.NewWindow(title)
-	oo, err := u.sv.Character.ListCharacterAssetsInLocation(context.Background(), ca.CharacterID, ca.ItemID)
+	oo, err := u.CharacterService.ListCharacterAssetsInLocation(context.Background(), ca.CharacterID, ca.ItemID)
 	if err != nil {
 		panic(err)
 	}
@@ -470,7 +470,7 @@ func (u *ui) makeAssetGrid(assetsData binding.UntypedList) *widget.GridWrap {
 	g := widget.NewGridWrapWithData(
 		assetsData,
 		func() fyne.CanvasObject {
-			return widgets.NewAssetListWidget(u.sv.EveImage, defaultAssetIcon)
+			return widgets.NewAssetListWidget(u.EveImageService, defaultAssetIcon)
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			ca, err := convertDataItem[*app.CharacterAsset](di)

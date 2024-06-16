@@ -18,6 +18,12 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/dictionary"
+	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/cache"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -47,7 +53,6 @@ type ui struct {
 	overviewArea          *overviewArea
 	overviewTab           *container.TabItem
 	statusBarArea         *statusBarArea
-	sv                    *Service
 	skillCatalogueArea    *skillCatalogueArea
 	skillqueueArea        *skillqueueArea
 	skillqueueTab         *container.TabItem
@@ -60,16 +65,23 @@ type ui struct {
 	walletTransactionArea *walletTransactionArea
 	wealthArea            *wealthArea
 	window                fyne.Window
+
+	CacheService       *cache.Cache
+	CharacterService   *character.CharacterService
+	DictionaryService  *dictionary.DictionaryService
+	EveImageService    *eveimage.EveImageService
+	ESIStatusService   *esistatus.ESIStatusService
+	EveUniverseService *eveuniverse.EveUniverseService
+	StatusCacheService *statuscache.StatusCacheService
 }
 
 // NewUI build the UI and returns it.
-func NewUI(sv *Service, isDebug bool) *ui {
+func NewUI(isDebug bool) *ui {
 	fyneApp := fyneapp.New()
 	w := fyneApp.NewWindow(appName(fyneApp))
 	u := &ui{
 		fyneApp: fyneApp,
 		isDebug: isDebug,
-		sv:      sv,
 		window:  w,
 	}
 
@@ -132,25 +144,17 @@ func NewUI(sv *Service, isDebug bool) *ui {
 	u.tabs = container.NewAppTabs(assetsTab, characterTab, u.mailTab, u.skillqueueTab, walletTab, u.overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	// for experiments
-	// btn := widget.NewButton("Show experiment", func() {
-	// 	err := u.sv.EveUniverse.UpdateEveShipSkills(context.TODO())
-	// 	if err != nil {
-	// 		slog.Error("UpdUpdateEveShipSkills failed", "err", err)
-	// 	}
-	// })
-	// x := widgets.NewTappableImage(resourceSkinicon64pxPng, func() {
-	// 	fmt.Println("Tapped")
-	// })
-
 	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, nil, u.tabs)
 	w.SetContent(mainContent)
 	w.SetMaster()
+	return u
+}
 
+func (u *ui) Init() {
 	var c *app.Character
-	cID, ok, err := sv.Dictionary.Int(app.SettingLastCharacterID)
+	cID, ok, err := u.DictionaryService.Int(app.SettingLastCharacterID)
 	if err == nil && ok {
-		c, err = sv.Character.GetCharacter(context.Background(), int32(cID))
+		c, err = u.CharacterService.GetCharacter(context.Background(), int32(cID))
 		if err != nil {
 			if !errors.Is(err, character.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -163,19 +167,19 @@ func NewUI(sv *Service, isDebug bool) *ui {
 		u.resetCharacter()
 	}
 	keyW := "window-width"
-	width, ok, err := u.sv.Dictionary.Float32(keyW)
+	width, ok, err := u.DictionaryService.Float32(keyW)
 	if err != nil || !ok {
 		width = 1000
 	}
 	keyH := "window-height"
-	height, ok, err := u.sv.Dictionary.Float32(keyH)
+	height, ok, err := u.DictionaryService.Float32(keyH)
 	if err != nil || !ok {
 		width = 600
 	}
-	w.Resize(fyne.NewSize(width, height))
+	u.window.Resize(fyne.NewSize(width, height))
 
 	keyTabsMainID := "tabs-main-id"
-	index, ok, err := u.sv.Dictionary.Int(keyTabsMainID)
+	index, ok, err := u.DictionaryService.Int(keyTabsMainID)
 	if err == nil && ok {
 		u.tabs.SelectIndex(index)
 	}
@@ -188,17 +192,17 @@ func NewUI(sv *Service, isDebug bool) *ui {
 			continue
 		}
 		key := makeSubTabsKey(i)
-		index, ok, err := u.sv.Dictionary.Int(key)
+		index, ok, err := u.DictionaryService.Int(key)
 		if err == nil && ok {
 			tabs.SelectIndex(index)
 		}
 	}
-	w.SetOnClosed(func() {
-		s := w.Canvas().Size()
-		u.sv.Dictionary.SetFloat32(keyW, s.Width)
-		u.sv.Dictionary.SetFloat32(keyH, s.Height)
+	u.window.SetOnClosed(func() {
+		s := u.window.Canvas().Size()
+		u.DictionaryService.SetFloat32(keyW, s.Width)
+		u.DictionaryService.SetFloat32(keyH, s.Height)
 		index := u.tabs.SelectedIndex()
-		u.sv.Dictionary.SetInt(keyTabsMainID, index)
+		u.DictionaryService.SetInt(keyTabsMainID, index)
 		for i, o := range u.tabs.Items {
 			tabs, ok := o.Content.(*container.AppTabs)
 			if !ok {
@@ -206,16 +210,15 @@ func NewUI(sv *Service, isDebug bool) *ui {
 			}
 			key := makeSubTabsKey(i)
 			index := tabs.SelectedIndex()
-			u.sv.Dictionary.SetInt(key, index)
+			u.DictionaryService.SetInt(key, index)
 		}
 	})
 
-	name, ok, err := u.sv.Dictionary.String(app.SettingTheme)
+	name, ok, err := u.DictionaryService.String(app.SettingTheme)
 	if err != nil || !ok {
 		name = app.ThemeAuto
 	}
 	u.themeSet(name)
-	return u
 }
 
 func (u *ui) themeSet(name string) {
@@ -280,7 +283,7 @@ func (u *ui) hasCharacter() bool {
 }
 
 func (u *ui) loadCharacter(ctx context.Context, characterID int32) error {
-	c, err := u.sv.Character.GetCharacter(ctx, characterID)
+	c, err := u.CharacterService.GetCharacter(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -290,7 +293,7 @@ func (u *ui) loadCharacter(ctx context.Context, characterID int32) error {
 
 func (u *ui) setCharacter(c *app.Character) {
 	u.character = c
-	err := u.sv.Dictionary.SetInt(app.SettingLastCharacterID, int(c.ID))
+	err := u.DictionaryService.SetInt(app.SettingLastCharacterID, int(c.ID))
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
@@ -337,7 +340,7 @@ func (u *ui) refreshCharacter() {
 }
 
 func (u *ui) setAnyCharacter() error {
-	c, err := u.sv.Character.GetAnyCharacter(context.Background())
+	c, err := u.CharacterService.GetAnyCharacter(context.Background())
 	if errors.Is(err, character.ErrNotFound) {
 		u.resetCharacter()
 		return nil
@@ -354,7 +357,7 @@ func (u *ui) refreshOverview() {
 
 func (u *ui) resetCharacter() {
 	u.character = nil
-	err := u.sv.Dictionary.Delete(app.SettingLastCharacterID)
+	err := u.DictionaryService.Delete(app.SettingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}

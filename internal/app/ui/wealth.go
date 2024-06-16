@@ -109,14 +109,14 @@ func (a *wealthArea) refresh() {
 
 func (a *wealthArea) compileData() ([]dataRow, int, error) {
 	ctx := context.TODO()
-	cc, err := a.ui.sv.Character.ListCharacters(ctx)
+	cc, err := a.ui.CharacterService.ListCharacters(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
 	selected := make([]*app.Character, 0)
 	for _, c := range cc {
-		hasAssets := a.ui.sv.StatusCache.CharacterSectionExists(c.ID, app.SectionAssets)
-		hasWallet := a.ui.sv.StatusCache.CharacterSectionExists(c.ID, app.SectionWalletBalance)
+		hasAssets := a.ui.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets)
+		hasWallet := a.ui.StatusCacheService.CharacterSectionExists(c.ID, app.SectionWalletBalance)
 		if hasAssets && hasWallet {
 			selected = append(selected, c)
 		}
@@ -124,7 +124,7 @@ func (a *wealthArea) compileData() ([]dataRow, int, error) {
 	data := make([]dataRow, 0)
 	for _, c := range selected {
 		wallet := c.WalletBalance.Float64
-		x, err := a.ui.sv.Character.CharacterAssetTotalValue(c.ID)
+		x, err := a.ui.CharacterService.CharacterAssetTotalValue(c.ID)
 		if err != nil {
 			return nil, 0, err
 		}

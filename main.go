@@ -5,14 +5,24 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/dictionary"
+	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/cache"
+	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
+	"github.com/ErikKalkoken/evebuddy/internal/httptransport"
+	"github.com/antihax/goesi"
 	"github.com/chasinglogic/appdirs"
 )
 
@@ -99,14 +109,43 @@ func main() {
 		log.Fatalf("Failed to initialize database %s: %s", dsn, err)
 	}
 	defer db.Close()
-	repository := sqlite.New(db)
-	cacheDir, err := makeImageCachePath(ad, *localFlag)
+	st := sqlite.New(db)
+	imageCacheDir, err := makeImageCachePath(ad, *localFlag)
 	if err != nil {
 		log.Fatal(err)
 	}
-	s := ui.NewService(repository, cacheDir)
-	e := ui.NewUI(s, *debugFlag)
-	e.ShowAndRun()
+	httpClient := &http.Client{
+		Transport: httptransport.LoggedTransport{},
+	}
+	esiHttpClient := &http.Client{
+		Transport: httptransport.LoggedTransportWithRetries{
+			MaxRetries: 3,
+			StatusCodesToRetry: []int{
+				http.StatusBadGateway,
+				http.StatusGatewayTimeout,
+				http.StatusServiceUnavailable,
+			},
+		},
+	}
+	userAgent := "EveBuddy kalkoken87@gmail.com"
+	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
+	dt := dictionary.New(st)
+	cache := cache.New()
+	sc := statuscache.New(cache)
+	if err := sc.InitCache(st); err != nil {
+		panic(err)
+	}
+	eu := eveuniverse.New(st, esiClient, dt, sc)
+	u := ui.NewUI(*debugFlag)
+	u.CacheService = cache
+	u.CharacterService = character.New(st, httpClient, esiClient, sc, dt, eu)
+	u.DictionaryService = dt
+	u.ESIStatusService = esistatus.New(esiClient)
+	u.EveImageService = eveimage.New(imageCacheDir, httpClient)
+	u.EveUniverseService = eu
+	u.StatusCacheService = sc
+	u.Init()
+	u.ShowAndRun()
 }
 
 func makeLogFileName(ad *appdirs.App, isDebug bool) (string, error) {
