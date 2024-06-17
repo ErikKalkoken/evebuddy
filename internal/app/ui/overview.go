@@ -13,6 +13,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
+	opt "github.com/BooleanCat/option"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -20,24 +22,24 @@ import (
 
 type overviewCharacter struct {
 	alliance       string
-	assetValue     sql.NullFloat64
+	assetValue     opt.Option[float64]
 	birthday       time.Time
 	corporation    string
 	id             int32
 	home           *app.EntityShort[int64]
-	lastLoginAt    sql.NullTime
+	lastLoginAt    opt.Option[time.Time]
 	location       *app.EntityShort[int64]
 	name           string
 	solarSystem    *app.EntityShort[int32]
-	systemSecurity sql.NullFloat64
+	systemSecurity opt.Option[float32]
 	region         *app.EntityShort[int32]
 	ship           *app.EntityShort[int32]
 	security       float64
-	totalSP        sql.NullInt64
+	totalSP        opt.Option[int64]
 	training       optional.Duration
-	unallocatedSP  sql.NullInt64
-	unreadCount    sql.NullInt64
-	walletBalance  sql.NullFloat64
+	unallocatedSP  opt.Option[int64]
+	unreadCount    opt.Option[int64]
+	walletBalance  opt.Option[float64]
 }
 
 // overviewArea is the UI area that shows an overview of all the user's characters.
@@ -122,11 +124,11 @@ func (a *overviewArea) makeTable() *widget.Table {
 					l.Importance = widget.DangerImportance
 				}
 			case 4:
-				l.Text = humanizedNullInt64(c.unreadCount, "?")
+				l.Text = humanizedNumericOption(c.unreadCount, 0, "?")
 			case 5:
-				l.Text = humanizedNullInt64(c.totalSP, "?")
+				l.Text = humanizedNumericOption(c.totalSP, 0, "?")
 			case 6:
-				l.Text = humanizedNullInt64(c.unallocatedSP, "?")
+				l.Text = humanizedNumericOption(c.unallocatedSP, 0, "?")
 			case 7:
 				if !c.training.Valid {
 					l.Text = "Inactive"
@@ -135,23 +137,23 @@ func (a *overviewArea) makeTable() *widget.Table {
 					l.Text = ihumanize.Duration(c.training.Duration)
 				}
 			case 8:
-				l.Text = humanizedNullFloat64(c.walletBalance, 1, "?")
+				l.Text = humanizedNumericOption(c.walletBalance, 1, "?")
 			case 9:
-				l.Text = humanizedNullFloat64(c.assetValue, 1, "?")
+				l.Text = humanizedNumericOption(c.assetValue, 1, "?")
 			case 10:
 				l.Text = entityNameOrFallback(c.location, "?")
 			case 11:
-				if c.solarSystem == nil || !c.systemSecurity.Valid {
+				if c.solarSystem == nil || c.systemSecurity.IsNone() {
 					l.Text = "?"
 				} else {
-					l.Text = fmt.Sprintf("%s %.1f", c.solarSystem.Name, c.systemSecurity.Float64)
+					l.Text = fmt.Sprintf("%s %.1f", c.solarSystem.Name, c.systemSecurity.Unwrap())
 				}
 			case 12:
 				l.Text = entityNameOrFallback(c.region, "?")
 			case 13:
 				l.Text = entityNameOrFallback(c.ship, "?")
 			case 14:
-				l.Text = humanizedRelNullTime(c.lastLoginAt, "?")
+				l.Text = humanizedRelOptionTime(c.lastLoginAt, "?")
 			case 15:
 				l.Text = entityNameOrFallback(c.home, "?")
 			case 16:
@@ -227,10 +229,10 @@ func (a *overviewArea) refresh() {
 		if a.characters.Length() == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
-		walletText := humanizedNullFloat64(totals.wallet, 1, "?")
-		assetsText := humanizedNullFloat64(totals.assets, 1, "?")
-		spText := humanizedNullInt64(totals.sp, "?")
-		unreadText := humanizedNullInt64(totals.unread, "?")
+		walletText := humanizedNumericOption(totals.wallet, 1, "?")
+		assetsText := humanizedNumericOption(totals.assets, 1, "?")
+		spText := humanizedNumericOption(totals.sp, 0, "?")
+		unreadText := humanizedNumericOption(totals.unread, 0, "?")
 		s := fmt.Sprintf(
 			"Total: %d characters • %s ISK wallet • %s ISK assets • %s SP  • %s unread",
 			a.characters.Length(),
@@ -252,10 +254,10 @@ func (a *overviewArea) refresh() {
 }
 
 type overviewTotals struct {
-	sp     sql.NullInt64
-	unread sql.NullInt64
-	wallet sql.NullFloat64
-	assets sql.NullFloat64
+	sp     opt.Option[int64]
+	unread opt.Option[int64]
+	wallet opt.Option[float64]
+	assets opt.Option[float64]
 }
 
 func (a *overviewArea) updateEntries() (overviewTotals, error) {
@@ -272,13 +274,13 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 			alliance:      m.EveCharacter.AllianceName(),
 			birthday:      m.EveCharacter.Birthday,
 			corporation:   m.EveCharacter.Corporation.Name,
-			lastLoginAt:   m.LastLoginAt,
+			lastLoginAt:   optionFromNullTime(m.LastLoginAt),
 			id:            m.ID,
 			name:          m.EveCharacter.Name,
 			security:      m.EveCharacter.SecurityStatus,
-			totalSP:       m.TotalSP,
-			unallocatedSP: m.UnallocatedSP,
-			walletBalance: m.WalletBalance,
+			totalSP:       optionFromNullInt64(m.TotalSP),
+			unallocatedSP: optionFromNullInt64(m.UnallocatedSP),
+			walletBalance: optionFromNullFloat64(m.WalletBalance),
 		}
 		if m.Home != nil {
 			c.home = &app.EntityShort[int64]{
@@ -299,10 +301,7 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 				ID:   m.Location.SolarSystem.ID,
 				Name: m.Location.SolarSystem.Name,
 			}
-			c.systemSecurity = sql.NullFloat64{
-				Float64: float64(m.Location.SolarSystem.SecurityStatus),
-				Valid:   true,
-			}
+			c.systemSecurity = opt.Some(m.Location.SolarSystem.SecurityStatus)
 		}
 		if m.Ship != nil {
 			c.ship = &app.EntityShort[int32]{
@@ -325,8 +324,7 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 			return totals, fmt.Errorf("failed to fetch mail counts for character %d, %w", c.id, err)
 		}
 		if total > 0 {
-			cc[i].unreadCount.Int64 = int64(unread)
-			cc[i].unreadCount.Valid = true
+			cc[i].unreadCount = opt.Some(int64(unread))
 		}
 	}
 	for i, c := range cc {
@@ -334,28 +332,45 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 		if err != nil {
 			return totals, fmt.Errorf("failed to fetch asset total value for character %d, %w", c.id, err)
 		}
-		cc[i].assetValue = v
+		cc[i].assetValue = optionFromNullFloat64(v)
 	}
 	if err := a.characters.Set(copyToUntypedSlice(cc)); err != nil {
 		return totals, err
 	}
 	for _, c := range cc {
-		if c.totalSP.Valid {
-			totals.sp.Valid = true
-			totals.sp.Int64 += c.totalSP.Int64
+		if c.totalSP.IsSome() {
+			totals.sp = opt.Some(totals.sp.UnwrapOr(0) + c.totalSP.Unwrap())
 		}
-		if c.unreadCount.Valid {
-			totals.unread.Valid = true
-			totals.unread.Int64 += c.unreadCount.Int64
+		if c.unreadCount.IsSome() {
+			totals.unread = opt.Some(totals.unread.UnwrapOr(0) + c.unreadCount.Unwrap())
 		}
-		if c.walletBalance.Valid {
-			totals.wallet.Valid = true
-			totals.wallet.Float64 += c.walletBalance.Float64
+		if c.walletBalance.IsSome() {
+			totals.wallet = opt.Some(totals.wallet.UnwrapOr(0) + c.walletBalance.Unwrap())
 		}
-		if c.assetValue.Valid {
-			totals.assets.Valid = true
-			totals.assets.Float64 += c.assetValue.Float64
+		if c.assetValue.IsSome() {
+			totals.assets = opt.Some(totals.assets.UnwrapOr(0) + c.assetValue.Unwrap())
 		}
 	}
 	return totals, nil
+}
+
+func optionFromNullFloat64(v sql.NullFloat64) opt.Option[float64] {
+	if !v.Valid {
+		return opt.None[float64]()
+	}
+	return opt.Some(v.Float64)
+}
+
+func optionFromNullInt64(v sql.NullInt64) opt.Option[int64] {
+	if !v.Valid {
+		return opt.None[int64]()
+	}
+	return opt.Some(v.Int64)
+}
+
+func optionFromNullTime(v sql.NullTime) opt.Option[time.Time] {
+	if !v.Valid {
+		return opt.None[time.Time]()
+	}
+	return opt.Some(v.Time)
 }

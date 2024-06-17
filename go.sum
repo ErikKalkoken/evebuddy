@@ -43,6 +43,8 @@ fyne.io/systray v1.10.1-0.20231115130155-104f5ef7839e h1:Hvs+kW2VwCzNToF3FmnIAzm
 fyne.io/systray v1.10.1-0.20231115130155-104f5ef7839e/go.mod h1:oM2AQqGJ1AMo4nNqZFYU8xYygSBZkW2hmdJ7n4yjedE=
 fyne.io/x/fyne v0.0.0-20240421102438-d5a080914907 h1:Ajr8gCMkVv6f7H2IPviMjfZCq40/+HrgWhAh/ZUOm/k=
 fyne.io/x/fyne v0.0.0-20240421102438-d5a080914907/go.mod h1:1pa3ZVIopRWNvfSG4ZrSkcZ3mJ8qoHPZv4PT8/zpn1o=
+github.com/BooleanCat/option v0.1.0 h1:wLwWbWnxUEAhpH+Gixy9OjFRnxmwm+nHcZQ8a2JozgA=
+github.com/BooleanCat/option v0.1.0/go.mod h1:vzGAJoquxEsprjj3qidyQTSQzqWDztoj9mO84BoY+YU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/JohannesKaufmann/html-to-markdown v1.6.0 h1:04VXMiE50YYfCfLboJCLcgqF5x+rHJnb1ssNmqpLH/k=

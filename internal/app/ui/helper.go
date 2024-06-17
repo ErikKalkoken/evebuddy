@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/BooleanCat/option"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -80,11 +81,18 @@ func humanizedNullDuration(d optional.Duration, fallback string) string {
 	return ihumanize.Duration(d.Duration)
 }
 
-func humanizedRelNullTime(v sql.NullTime, fallback string) string {
-	if !v.Valid {
+// func humanizedRelNullTime(v sql.NullTime, fallback string) string {
+// 	if !v.Valid {
+// 		return fallback
+// 	}
+// 	return humanize.RelTime(v.Time, time.Now(), "", "")
+// }
+
+func humanizedRelOptionTime(v option.Option[time.Time], fallback string) string {
+	if v.IsNone() {
 		return fallback
 	}
-	return humanize.RelTime(v.Time, time.Now(), "", "")
+	return humanize.RelTime(v.Unwrap(), time.Now(), "", "")
 }
 
 // func humanizedNullTime(v sql.NullTime, fallback string) string {
@@ -110,6 +118,17 @@ func humanizedNullFloat64(v sql.NullFloat64, decimals int, fallback string) stri
 
 func humanizedNullInt64(v sql.NullInt64, fallback string) string {
 	return humanizedNullFloat64(sql.NullFloat64{Float64: float64(v.Int64), Valid: v.Valid}, 0, fallback)
+}
+
+type numeric interface {
+	int | int32 | int64 | float32 | float64
+}
+
+func humanizedNumericOption[T numeric](v option.Option[T], decimals int, fallback string) string {
+	if v.IsNone() {
+		return fallback
+	}
+	return ihumanize.Number(float64(v.Unwrap()), decimals)
 }
 
 // getItemUntypedList returns the value from an untyped list in the target type.
