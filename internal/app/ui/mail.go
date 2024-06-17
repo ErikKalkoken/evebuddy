@@ -167,7 +167,6 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 			return
 		}
 		if node.isBranch() {
-			tree.ToggleBranch(uid)
 			tree.UnselectAll()
 			return
 		}

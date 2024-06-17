@@ -22,10 +22,7 @@ type jumpCloneNode struct {
 	ImplantTypeID          int32
 	ImplantTypeName        string
 	ImplantTypeDescription string
-}
-
-func (n jumpCloneNode) isBranch() bool {
-	return n.ImplantTypeID == 0 && n.ImplantCount > 0
+	IsUnknown              bool
 }
 
 func (n jumpCloneNode) isClone() bool {
@@ -107,11 +104,10 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 		n, err := treeNodeFromBoundTree[jumpCloneNode](a.treeData, uid)
 		if err != nil {
 			slog.Error("Failed to select jump clone", "err", err)
-			t.UnselectAll()
 			return
 		}
-		if n.isBranch() {
-			t.ToggleBranch(uid)
+		if n.isClone() && !n.IsUnknown {
+			a.ui.showLocationInfoWindow(n.LocationID)
 			return
 		}
 		if !n.isClone() {
@@ -164,6 +160,7 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 			n.LocationName = c.Location.Name
 		} else {
 			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
+			n.IsUnknown = true
 		}
 		values[id], err = objectToJSON(n)
 		if err != nil {

@@ -95,7 +95,7 @@ func (n locationDataNode) UID() widget.TreeNodeID {
 	return fmt.Sprintf("%d-%d-%d", n.CharacterID, n.ContainerID, n.Type)
 }
 
-func (n locationDataNode) isBranch() bool {
+func (n locationDataNode) isRoot() bool {
 	return n.Type == nodeLocation
 }
 
@@ -157,7 +157,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 				return
 			}
 			label.SetText(n.Name)
-			if n.isBranch() {
+			if n.isRoot() {
 				if !n.IsUnknown {
 					prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurityValue)
 					prefix.Importance = systemSecurity2Importance(n.SystemSecurityType)
@@ -179,14 +179,15 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 			t.UnselectAll()
 			return
 		}
-		if n.isBranch() {
-			t.ToggleBranch(uid)
+		if n.isRoot() {
+			if !n.IsUnknown {
+				a.ui.showLocationInfoWindow(n.ContainerID)
+			}
 			t.UnselectAll()
 			return
 		}
 		if err := a.redrawAssets(n); err != nil {
 			slog.Warn("Failed to redraw assets", "err", err)
-			t.UnselectAll()
 		}
 	}
 	return t
