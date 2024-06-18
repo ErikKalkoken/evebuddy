@@ -12,8 +12,8 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/charts"
 	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/charts"
 )
 
 type wealthArea struct {
