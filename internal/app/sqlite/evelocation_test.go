@@ -2,7 +2,6 @@ package sqlite_test
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestLocation(t *testing.T) {
@@ -46,10 +46,10 @@ func TestLocation(t *testing.T) {
 		updatedAt := time.Now()
 		arg := sqlite.UpdateOrCreateLocationParams{
 			ID:               42,
-			EveSolarSystemID: sql.NullInt32{Int32: system.ID, Valid: true},
-			EveTypeID:        sql.NullInt32{Int32: myType.ID, Valid: true},
+			EveSolarSystemID: optional.New(system.ID),
+			EveTypeID:        optional.New(myType.ID),
 			Name:             "Alpha",
-			OwnerID:          sql.NullInt32{Int32: owner.ID, Valid: true},
+			OwnerID:          optional.New(owner.ID),
 			UpdatedAt:        updatedAt,
 		}
 		// when
@@ -87,10 +87,10 @@ func TestLocation(t *testing.T) {
 		updatedAt := time.Now()
 		arg := sqlite.UpdateOrCreateLocationParams{
 			ID:               42,
-			EveSolarSystemID: sql.NullInt32{Int32: system.ID, Valid: true},
-			EveTypeID:        sql.NullInt32{Int32: myType.ID, Valid: true},
+			EveSolarSystemID: optional.New(system.ID),
+			EveTypeID:        optional.New(myType.ID),
 			Name:             "Alpha",
-			OwnerID:          sql.NullInt32{Int32: owner.ID, Valid: true},
+			OwnerID:          optional.New(owner.ID),
 			UpdatedAt:        updatedAt,
 		}
 		// when

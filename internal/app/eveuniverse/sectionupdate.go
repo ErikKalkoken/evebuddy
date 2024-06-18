@@ -2,7 +2,6 @@ package eveuniverse
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -60,7 +60,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	key := fmt.Sprintf("Update-section-%s", section)
 	_, err, _ = s.sfg.Do(key, func() (any, error) {
 		slog.Info("Started updating eveuniverse section", "section", section)
-		startedAt := sqlite.NewNullTime(time.Now())
+		startedAt := optional.New(time.Now())
 		arg2 := sqlite.UpdateOrCreateGeneralSectionStatusParams{
 			Section:   section,
 			StartedAt: &startedAt,
@@ -76,7 +76,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	})
 	if err != nil {
 		errorMessage := humanize.Error(err)
-		startedAt := sql.NullTime{}
+		startedAt := optional.NewNone[time.Time]()
 		arg2 := sqlite.UpdateOrCreateGeneralSectionStatusParams{
 			Section:   section,
 			Error:     &errorMessage,
@@ -91,7 +91,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	}
 	completedAt := sqlite.NewNullTime(time.Now())
 	errorMessage := ""
-	startedAt2 := sql.NullTime{}
+	startedAt2 := optional.NewNone[time.Time]()
 	arg2 := sqlite.UpdateOrCreateGeneralSectionStatusParams{
 		Section: section,
 

@@ -994,17 +994,17 @@ func (f Factory) CreateLocationStructure(args ...sqlite.UpdateOrCreateLocationPa
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("Structure #%d", arg.ID)
 	}
-	if !arg.EveSolarSystemID.Valid {
+	if arg.EveSolarSystemID.IsNone() {
 		x := f.CreateEveSolarSystem()
-		arg.EveSolarSystemID = sql.NullInt32{Int32: x.ID, Valid: true}
+		arg.EveSolarSystemID = optional.New(x.ID)
 	}
-	if !arg.OwnerID.Valid {
+	if arg.OwnerID.IsNone() {
 		x := f.CreateEveEntityCorporation()
-		arg.OwnerID = sql.NullInt32{Int32: x.ID, Valid: true}
+		arg.OwnerID = optional.New(x.ID)
 	}
-	if !arg.EveTypeID.Valid {
+	if arg.EveTypeID.IsNone() {
 		x := f.CreateEveType()
-		arg.EveTypeID = sql.NullInt32{Int32: x.ID, Valid: true}
+		arg.EveTypeID = optional.New(x.ID)
 	}
 	if arg.UpdatedAt.IsZero() {
 		arg.UpdatedAt = time.Now()

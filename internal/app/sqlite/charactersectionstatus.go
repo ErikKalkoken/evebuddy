@@ -9,6 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type CharacterSectionStatusParams struct {
@@ -57,7 +58,7 @@ type UpdateOrCreateCharacterSectionStatusParams struct {
 	CompletedAt  *sql.NullTime
 	ContentHash  *string
 	ErrorMessage *string
-	StartedAt    *sql.NullTime
+	StartedAt    *optional.Optional[time.Time]
 }
 
 func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg UpdateOrCreateCharacterSectionStatusParams) (*app.CharacterSectionStatus, error) {
@@ -102,7 +103,7 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 		arg2.Error = *arg.ErrorMessage
 	}
 	if arg.StartedAt != nil {
-		arg2.StartedAt = *arg.StartedAt
+		arg2.StartedAt = optional.ToNullTime(*arg.StartedAt)
 	}
 	o, err := qtx.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 	if err != nil {

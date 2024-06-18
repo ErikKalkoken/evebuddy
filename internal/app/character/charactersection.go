@@ -3,7 +3,6 @@ package character
 import (
 	"context"
 	"crypto/md5"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -14,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 // SectionWasUpdated reports wether the section has been updated at all.
@@ -93,7 +93,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 	if err != nil {
 		// TODO: Move this part into updateCharacterSectionIfChanged()
 		errorMessage := humanize.Error(err)
-		startedAt := sql.NullTime{}
+		startedAt := optional.NewNone[time.Time]()
 		arg2 := sqlite.UpdateOrCreateCharacterSectionStatusParams{
 			CharacterID:  arg.CharacterID,
 			Section:      arg.Section,
@@ -119,7 +119,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	fetch func(ctx context.Context, characterID int32) (any, error),
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {
-	startedAt := sqlite.NewNullTime(time.Now())
+	startedAt := optional.New(time.Now())
 	arg2 := sqlite.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID: arg.CharacterID,
 		Section:     arg.Section,
@@ -166,7 +166,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	// record successful completion
 	completedAt := sqlite.NewNullTime(time.Now())
 	errorMessage := ""
-	startedAt2 := sql.NullTime{}
+	startedAt2 := optional.NewNone[time.Time]()
 	arg2 = sqlite.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID: arg.CharacterID,
 		Section:     arg.Section,

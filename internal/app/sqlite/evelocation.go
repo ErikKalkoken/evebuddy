@@ -9,15 +9,16 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type UpdateOrCreateLocationParams struct {
 	ID               int64
-	EveSolarSystemID sql.NullInt32
-	EveTypeID        sql.NullInt32
+	EveSolarSystemID optional.Optional[int32]
+	EveTypeID        optional.Optional[int32]
 	Name             string
-	OwnerID          sql.NullInt32
+	OwnerID          optional.Optional[int32]
 	UpdatedAt        time.Time
 }
 
@@ -27,10 +28,10 @@ func (st *Storage) UpdateOrCreateEveLocation(ctx context.Context, arg UpdateOrCr
 	}
 	arg2 := queries.UpdateOrCreateLocationParams{
 		ID:               int64(arg.ID),
-		EveSolarSystemID: sql.NullInt64{Int64: int64(arg.EveSolarSystemID.Int32), Valid: arg.EveSolarSystemID.Valid},
-		EveTypeID:        sql.NullInt64{Int64: int64(arg.EveTypeID.Int32), Valid: arg.EveTypeID.Valid},
+		EveSolarSystemID: optional.ToNullInt64(arg.EveSolarSystemID),
+		EveTypeID:        optional.ToNullInt64(arg.EveTypeID),
 		Name:             arg.Name,
-		OwnerID:          sql.NullInt64{Int64: int64(arg.OwnerID.Int32), Valid: arg.OwnerID.Valid},
+		OwnerID:          optional.ToNullInt64(arg.OwnerID),
 		UpdatedAt:        arg.UpdatedAt,
 	}
 	if err := st.q.UpdateOrCreateLocation(ctx, arg2); err != nil {

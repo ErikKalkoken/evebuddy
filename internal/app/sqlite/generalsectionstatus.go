@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func (st *Storage) GetGeneralSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
@@ -41,7 +43,7 @@ type UpdateOrCreateGeneralSectionStatusParams struct {
 	CompletedAt *sql.NullTime
 	ContentHash *string
 	Error       *string
-	StartedAt   *sql.NullTime
+	StartedAt   *optional.Optional[time.Time]
 }
 
 func (st *Storage) UpdateOrCreateGeneralSectionStatus(ctx context.Context, arg UpdateOrCreateGeneralSectionStatusParams) (*app.GeneralSectionStatus, error) {
@@ -81,7 +83,7 @@ func (st *Storage) UpdateOrCreateGeneralSectionStatus(ctx context.Context, arg U
 		arg2.Error = *arg.Error
 	}
 	if arg.StartedAt != nil {
-		arg2.StartedAt = *arg.StartedAt
+		arg2.StartedAt = optional.ToNullTime(*arg.StartedAt)
 	}
 	o, err := qtx.UpdateOrCreateGeneralSectionStatus(ctx, arg2)
 	if err != nil {

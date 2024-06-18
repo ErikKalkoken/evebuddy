@@ -2,7 +2,6 @@ package eveuniverse
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func (eu *EveUniverseService) GetEveLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
@@ -55,7 +55,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 			}
 			arg = sqlite.UpdateOrCreateLocationParams{
 				ID:        id,
-				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
+				EveTypeID: optional.New(t.ID),
 			}
 		case app.EveLocationAssetSafety:
 			t, err := eu.GetOrCreateEveTypeESI(ctx, app.EveTypeAssetSafetyWrap)
@@ -64,21 +64,21 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 			}
 			arg = sqlite.UpdateOrCreateLocationParams{
 				ID:        id,
-				EveTypeID: sql.NullInt32{Int32: t.ID, Valid: true},
+				EveTypeID: optional.New(t.ID),
 			}
 		case app.EveLocationSolarSystem:
-			t, err := eu.GetOrCreateEveTypeESI(ctx, app.EveTypeSolarSystem)
+			et, err := eu.GetOrCreateEveTypeESI(ctx, app.EveTypeSolarSystem)
 			if err != nil {
 				return nil, err
 			}
-			x, err := eu.GetOrCreateEveSolarSystemESI(ctx, int32(id))
+			es, err := eu.GetOrCreateEveSolarSystemESI(ctx, int32(id))
 			if err != nil {
 				return nil, err
 			}
 			arg = sqlite.UpdateOrCreateLocationParams{
 				ID:               id,
-				EveTypeID:        sql.NullInt32{Int32: t.ID, Valid: true},
-				EveSolarSystemID: sql.NullInt32{Int32: x.ID, Valid: true},
+				EveTypeID:        optional.New(et.ID),
+				EveSolarSystemID: optional.New(es.ID),
 			}
 		case app.EveLocationStation:
 			station, _, err := eu.esiClient.ESI.UniverseApi.GetUniverseStationsStationId(ctx, int32(id), nil)
@@ -93,11 +93,11 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 			if err != nil {
 				return nil, err
 			}
-			arg.EveTypeID = sql.NullInt32{Int32: station.TypeId, Valid: true}
+			arg.EveTypeID = optional.New(station.TypeId)
 			arg = sqlite.UpdateOrCreateLocationParams{
 				ID:               id,
-				EveSolarSystemID: sql.NullInt32{Int32: station.SystemId, Valid: true},
-				EveTypeID:        sql.NullInt32{Int32: station.TypeId, Valid: true},
+				EveSolarSystemID: optional.New(station.SystemId),
+				EveTypeID:        optional.New(station.TypeId),
 				Name:             station.Name,
 			}
 			if station.Owner != 0 {
@@ -105,7 +105,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 				if err != nil {
 					return nil, err
 				}
-				arg.OwnerID = sql.NullInt32{Int32: station.Owner, Valid: true}
+				arg.OwnerID = optional.New(station.Owner)
 			}
 		case app.EveLocationStructure:
 			structure, r, err := eu.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
@@ -126,16 +126,16 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 			}
 			arg = sqlite.UpdateOrCreateLocationParams{
 				ID:               id,
-				EveSolarSystemID: sql.NullInt32{Int32: structure.SolarSystemId, Valid: true},
+				EveSolarSystemID: optional.New(structure.SolarSystemId),
 				Name:             structure.Name,
-				OwnerID:          sql.NullInt32{Int32: structure.OwnerId, Valid: true},
+				OwnerID:          optional.New(structure.OwnerId),
 			}
 			if structure.TypeId != 0 {
 				myType, err := eu.GetOrCreateEveTypeESI(ctx, structure.TypeId)
 				if err != nil {
 					return nil, err
 				}
-				arg.EveTypeID = sql.NullInt32{Int32: myType.ID, Valid: true}
+				arg.EveTypeID = optional.New(myType.ID)
 			}
 		default:
 			return nil, fmt.Errorf("can not update or create structure for invalid ID: %d", id)
