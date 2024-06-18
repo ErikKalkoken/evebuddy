@@ -32,10 +32,10 @@ func (qi CharacterSkillqueueItem) IsCompleted() bool {
 
 func (qi CharacterSkillqueueItem) CompletionP() float64 {
 	d := qi.Duration()
-	if !d.Valid {
+	if d.IsNone() {
 		return 0
 	}
-	duration := d.Duration
+	duration := d.MustValue()
 	now := time.Now()
 	if qi.FinishDate.Before(now) {
 		return 1
@@ -52,23 +52,18 @@ func (qi CharacterSkillqueueItem) CompletionP() float64 {
 	return 1 - (c * base)
 }
 
-func (qi CharacterSkillqueueItem) Duration() optional.Duration {
-	var d optional.Duration
+func (qi CharacterSkillqueueItem) Duration() optional.Optional[time.Duration] {
 	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
-		return d
+		return optional.Optional[time.Duration]{}
 	}
-	d.Valid = true
-	d.Duration = qi.FinishDate.Sub(qi.StartDate)
-	return d
+	return optional.New(qi.FinishDate.Sub(qi.StartDate))
 }
 
-func (qi CharacterSkillqueueItem) Remaining() optional.Duration {
-	var d optional.Duration
+func (qi CharacterSkillqueueItem) Remaining() optional.Optional[time.Duration] {
 	if qi.StartDate.IsZero() || qi.FinishDate.IsZero() {
-		return d
+		return optional.Optional[time.Duration]{}
 	}
-	d.Valid = true
 	remainingP := 1 - qi.CompletionP()
-	d.Duration = time.Duration(float64(qi.Duration().Duration) * remainingP)
-	return d
+	d := qi.Duration()
+	return optional.New(time.Duration(float64(d.ValueOrZero()) * remainingP))
 }

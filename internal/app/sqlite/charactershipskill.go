@@ -6,6 +6,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID int32, search string) ([]*app.CharacterShipAbility, error) {
@@ -54,12 +55,10 @@ func characterShiSkillFromDBModel(r queries.ListCharacterShipSkillsRow) *app.Cha
 		SkillLevel:  uint(r.SkillLevel),
 	}
 	if r.ActiveSkillLevel.Valid {
-		css.ActiveSkillLevel.Int = int(r.ActiveSkillLevel.Int64)
-		css.ActiveSkillLevel.Valid = true
+		css.ActiveSkillLevel = optional.New(int(r.ActiveSkillLevel.Int64))
 	}
 	if r.TrainedSkillLevel.Valid {
-		css.TrainedSkillLevel.Int = int(r.TrainedSkillLevel.Int64)
-		css.TrainedSkillLevel.Valid = true
+		css.TrainedSkillLevel = optional.New(int(r.TrainedSkillLevel.Int64))
 	}
 	return css
 }

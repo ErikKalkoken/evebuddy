@@ -33,7 +33,7 @@ type ListCharacterSkillProgress struct {
 }
 
 type CharacterShipSkill struct {
-	ActiveSkillLevel  optional.Int
+	ActiveSkillLevel  optional.Optional[int]
 	ID                int64
 	CharacterID       int32
 	Rank              uint
@@ -41,5 +41,5 @@ type CharacterShipSkill struct {
 	SkillTypeID       int32
 	SkillName         string
 	SkillLevel        uint
-	TrainedSkillLevel optional.Int
+	TrainedSkillLevel optional.Optional[int]
 }

@@ -4,20 +4,7 @@ package optional
 import (
 	"errors"
 	"fmt"
-	"time"
 )
-
-// TODO: Implement other types to substitute sql.NullX types
-
-type Duration struct {
-	Duration time.Duration
-	Valid    bool
-}
-
-type Int struct {
-	Int   int
-	Valid bool
-}
 
 type Optional[T any] struct {
 	value T
@@ -34,19 +21,12 @@ func NewNone[T any]() Optional[T] {
 	return o
 }
 
-func (o *Optional[T]) IsNone() bool {
+func (o Optional[T]) IsNone() bool {
 	return !o.isSet
 }
 
-func (o *Optional[T]) IsValue() bool {
+func (o Optional[T]) IsValue() bool {
 	return o.isSet
-}
-
-func (o *Optional[T]) ValueOrFallback(fallback T) T {
-	if o.IsNone() {
-		return fallback
-	}
-	return o.value
 }
 
 func (o *Optional[T]) Set(v T) {
@@ -67,17 +47,32 @@ func (o Optional[T]) String() string {
 	return fmt.Sprint(o.value)
 }
 
-func (o *Optional[T]) MustValue() T {
+func (o Optional[T]) MustValue() T {
 	if o.IsNone() {
 		panic("None has no value")
 	}
 	return o.value
 }
 
-func (o *Optional[T]) Value() (T, error) {
+func (o Optional[T]) Value() (T, error) {
 	var z T
 	if o.IsNone() {
 		return z, errors.New("can not retrieve value from None")
 	}
 	return o.value, nil
+}
+
+func (o Optional[T]) ValueOrFallback(fallback T) T {
+	if o.IsNone() {
+		return fallback
+	}
+	return o.value
+}
+
+func (o Optional[T]) ValueOrZero() T {
+	var z T
+	if o.IsNone() {
+		return z
+	}
+	return o.value
 }

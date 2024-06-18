@@ -74,19 +74,12 @@ func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
 // 	return ihumanize.Number(float64(v), 1)
 // }
 
-func humanizedNullDuration(d optional.Duration, fallback string) string {
-	if !d.Valid {
-		return fallback
-	}
-	return ihumanize.Duration(d.Duration)
-}
-
-func humanizedNullOption(d optional.Optional[time.Duration], fallback string) string {
-	if d.IsNone() {
-		return fallback
-	}
-	return ihumanize.Duration(d.MustValue())
-}
+// func humanizedNullDuration(d optional.Duration, fallback string) string {
+// 	if !d.Valid {
+// 		return fallback
+// 	}
+// 	return ihumanize.Duration(d.Duration)
+// }
 
 // func humanizedRelNullTime(v sql.NullTime, fallback string) string {
 // 	if !v.Valid {

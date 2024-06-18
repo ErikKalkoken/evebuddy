@@ -15,6 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -80,8 +81,8 @@ func (a *skillqueueArea) makeSkillqueue() *widget.List {
 			{"Description", q.SkillDescription, true},
 			{"Start date", timeFormattedOrFallback(q.StartDate, myDateTime, "?"), false},
 			{"Finish date", timeFormattedOrFallback(q.FinishDate, myDateTime, "?"), false},
-			{"Duration", humanizedNullDuration(q.Duration(), "?"), false},
-			{"Remaining", humanizedNullDuration(q.Remaining(), "?"), false},
+			{"Duration", ihumanize.Optional(q.Duration(), "?"), false},
+			{"Remaining", ihumanize.Optional(q.Remaining(), "?"), false},
 			{"Completed", fmt.Sprintf("%.0f%%", q.CompletionP()*100), false},
 			{"SP at start", humanize.Comma(int64(q.TrainingStartSP - q.LevelStartSP)), false},
 			{"Total SP", humanize.Comma(int64(q.LevelEndSP - q.LevelStartSP)), false},
@@ -149,7 +150,7 @@ func (a *skillqueueArea) updateItems() (optional.Optional[time.Duration], option
 	items := make([]any, len(skills))
 	for i, skill := range skills {
 		items[i] = skill
-		remaining = optional.New(remaining.ValueOrFallback(0) + skill.Remaining().Duration)
+		remaining = optional.New(remaining.ValueOrZero() + skill.Remaining().ValueOrZero())
 		if skill.IsActive() {
 			completion = optional.New(skill.CompletionP())
 		}
@@ -168,6 +169,6 @@ func (a *skillqueueArea) makeTopText(total optional.Optional[time.Duration]) (st
 	if a.items.Length() == 0 {
 		return "Training not active", widget.WarningImportance
 	}
-	t := fmt.Sprintf("Total training time: %s", humanizedNullOption(total, "?"))
+	t := fmt.Sprintf("Total training time: %s", ihumanize.Optional(total, "?"))
 	return t, widget.MediumImportance
 }

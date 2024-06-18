@@ -79,8 +79,7 @@ func TestSkillqueueItemDuration(t *testing.T) {
 			FinishDate: now.Add(time.Hour * +3),
 		}
 		d := q.Duration()
-		assert.True(t, d.Valid)
-		assert.Equal(t, 2*time.Hour, d.Duration)
+		assert.Equal(t, 2*time.Hour, d.MustValue())
 	})
 	t.Run("should return null when duration can not be calculated 1", func(t *testing.T) {
 		now := time.Now()
@@ -88,7 +87,7 @@ func TestSkillqueueItemDuration(t *testing.T) {
 			StartDate: now.Add(time.Hour * +1),
 		}
 		d := q.Duration()
-		assert.False(t, d.Valid)
+		assert.True(t, d.IsNone())
 	})
 	t.Run("should return null when duration can not be calculated 2", func(t *testing.T) {
 		now := time.Now()
@@ -96,12 +95,12 @@ func TestSkillqueueItemDuration(t *testing.T) {
 			FinishDate: now.Add(time.Hour * +1),
 		}
 		d := q.Duration()
-		assert.False(t, d.Valid)
+		assert.True(t, d.IsNone())
 	})
 	t.Run("should return null when duration can not be calculated 3", func(t *testing.T) {
 		q := app.CharacterSkillqueueItem{}
 		d := q.Duration()
-		assert.False(t, d.Valid)
+		assert.True(t, d.IsNone())
 	})
 }
 
@@ -120,33 +119,30 @@ func TestSkillqueueItemRemaining(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now, now.Add(time.Hour*+3))
 		d := q.Remaining()
-		assert.True(t, d.Valid)
-		assert.InDelta(t, 3*time.Hour, d.Duration, 10000)
+		assert.InDelta(t, 3*time.Hour, d.MustValue(), 10000)
 	})
 	t.Run("should return correct value when start and finish in the future", func(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now.Add(time.Hour*+1), now.Add(time.Hour*+3))
 		d := q.Remaining()
-		assert.True(t, d.Valid)
-		assert.InDelta(t, 2*time.Hour, d.Duration, 10000)
+		assert.InDelta(t, 2*time.Hour, d.MustValue(), 10000)
 	})
 	t.Run("should return 0 remaining when completed", func(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now.Add(time.Hour*-3), now.Add(time.Hour*-2))
 		d := q.Remaining()
-		assert.True(t, d.Valid)
-		assert.Equal(t, time.Duration(0), d.Duration)
+		assert.Equal(t, time.Duration(0), d.MustValue())
 	})
 	t.Run("should return null when no finish date", func(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now, time.Time{})
 		d := q.Remaining()
-		assert.False(t, d.Valid)
+		assert.True(t, d.IsNone())
 	})
 	t.Run("should return null when no start date", func(t *testing.T) {
 		now := time.Now()
 		q := makeItem(time.Time{}, now.Add(time.Hour*+2))
 		d := q.Remaining()
-		assert.False(t, d.Valid)
+		assert.True(t, d.IsNone())
 	})
 }

@@ -79,4 +79,23 @@ func TestXxx(t *testing.T) {
 		got := x.MustValue()
 		assert.Equal(t, 12, got)
 	})
+
+}
+
+func TestValueOrZero(t *testing.T) {
+	t.Run("should return value when set", func(t *testing.T) {
+		x := optional.New(12)
+		got := x.ValueOrZero()
+		assert.Equal(t, 12, got)
+	})
+	t.Run("should return zero value when none", func(t *testing.T) {
+		x := optional.NewNone[int]()
+		got := x.ValueOrZero()
+		assert.Equal(t, 0, got)
+	})
+	t.Run("should return zero value when none", func(t *testing.T) {
+		x := optional.NewNone[string]()
+		got := x.ValueOrZero()
+		assert.Equal(t, "", got)
+	})
 }

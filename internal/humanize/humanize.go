@@ -69,11 +69,24 @@ func Duration(duration time.Duration) string {
 	return fmt.Sprintf("%dh %dm", h, m)
 }
 
-func OptionalDuration(d optional.Duration, fallback string) string {
-	if !d.Valid {
+func Optional[T time.Duration | string | int | int32 | int64](o optional.Optional[T], fallback string) string {
+	if o.IsNone() {
 		return fallback
 	}
-	return Duration(d.Duration)
+	v := o.ValueOrZero()
+	switch x := any(v).(type) {
+	case time.Duration:
+		return Duration(x)
+	case string:
+		return x
+	case int:
+		return Number(float64(x), 0)
+	case int32:
+		return Number(float64(x), 0)
+	case int64:
+		return Number(float64(x), 0)
+	}
+	panic("not implemented")
 }
 
 // Error returns a user friendly error message for an error.

@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"fmt"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -32,7 +33,7 @@ func NewSkillQueueItem() *SkillQueueItem {
 	return w
 }
 
-func (w *SkillQueueItem) Set(name string, targetLevel int, isActive bool, remaining, duration optional.Duration, completionP float64) {
+func (w *SkillQueueItem) Set(name string, targetLevel int, isActive bool, remaining, duration optional.Optional[time.Duration], completionP float64) {
 	var (
 		i widget.Importance
 		d string
@@ -43,10 +44,10 @@ func (w *SkillQueueItem) Set(name string, targetLevel int, isActive bool, remain
 		d = "Completed"
 	} else if isActive {
 		i = widget.MediumImportance
-		d = humanize.OptionalDuration(remaining, "?")
+		d = humanize.Optional(remaining, "?")
 	} else {
 		i = widget.MediumImportance
-		d = humanize.OptionalDuration(duration, "?")
+		d = humanize.Optional(duration, "?")
 	}
 	w.name.Importance = i
 	w.name.Text = fmt.Sprintf("%s %s", name, humanize.ToRomanLetter(targetLevel))
