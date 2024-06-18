@@ -33,8 +33,8 @@ func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg Upd
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			skills := data.(esi.GetCharactersCharacterIdSkillsOk)
-			total := optional.ConvertNumeric[int64, int](optional.New(skills.TotalSp))
-			unallocated := optional.ConvertNumeric[int32, int](optional.New(skills.UnallocatedSp))
+			total := optional.New(int(skills.TotalSp))
+			unallocated := optional.New(int(skills.UnallocatedSp))
 			if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, total, unallocated); err != nil {
 				return err
 			}

@@ -8,6 +8,18 @@ import (
 	"time"
 )
 
+type IntType interface {
+	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64
+}
+
+type FloatType interface {
+	float32 | float64
+}
+
+type Numeric interface {
+	IntType | FloatType
+}
+
 type Optional[T any] struct {
 	value T
 	isSet bool
@@ -20,6 +32,12 @@ func New[T any](v T) Optional[T] {
 
 func NewNone[T any]() Optional[T] {
 	o := Optional[T]{isSet: false}
+	return o
+}
+
+// NewNumeric returns a new numeric optional with type conversion.
+func NewNumeric[X Numeric, Y Numeric](v X) Optional[Y] {
+	o := Optional[Y]{value: Y(v), isSet: true}
 	return o
 }
 
@@ -79,6 +97,14 @@ func (o Optional[T]) ValueOrZero() T {
 	return o.value
 }
 
+// ConvertNumeric converts between numeric optionals.
+func ConvertNumeric[X Numeric, Y Numeric](o Optional[X]) Optional[Y] {
+	if o.IsNone() {
+		return Optional[Y]{}
+	}
+	return New(Y(o.ValueOrZero()))
+}
+
 func FromNullFloat64(v sql.NullFloat64) Optional[float64] {
 	if !v.Valid {
 		return Optional[float64]{}
@@ -93,6 +119,13 @@ func FromNullInt64(v sql.NullInt64) Optional[int64] {
 	return New(v.Int64)
 }
 
+func FromNullInt64ToInteger[T IntType](v sql.NullInt64) Optional[T] {
+	if !v.Valid {
+		return Optional[T]{}
+	}
+	return New(T(v.Int64))
+}
+
 func FromNullTime(v sql.NullTime) Optional[time.Time] {
 	if !v.Valid {
 		return Optional[time.Time]{}
@@ -100,25 +133,18 @@ func FromNullTime(v sql.NullTime) Optional[time.Time] {
 	return New(v.Time)
 }
 
-func ToNullFloat64(o Optional[float64]) sql.NullFloat64 {
+func ToNullFloat64[T FloatType](o Optional[T]) sql.NullFloat64 {
 	if o.IsNone() {
 		return sql.NullFloat64{}
 	}
-	return sql.NullFloat64{Float64: o.ValueOrZero(), Valid: true}
+	return sql.NullFloat64{Float64: float64(o.ValueOrZero()), Valid: true}
 }
 
-func ToNullInt32(o Optional[int32]) sql.NullInt32 {
-	if o.IsNone() {
-		return sql.NullInt32{}
-	}
-	return sql.NullInt32{Int32: o.ValueOrZero(), Valid: true}
-}
-
-func ToNullInt64(o Optional[int64]) sql.NullInt64 {
+func ToNullInt64[T IntType](o Optional[T]) sql.NullInt64 {
 	if o.IsNone() {
 		return sql.NullInt64{}
 	}
-	return sql.NullInt64{Int64: o.ValueOrZero(), Valid: true}
+	return sql.NullInt64{Int64: int64(o.ValueOrZero()), Valid: true}
 }
 
 func ToNullTime(o Optional[time.Time]) sql.NullTime {
@@ -126,15 +152,4 @@ func ToNullTime(o Optional[time.Time]) sql.NullTime {
 		return sql.NullTime{}
 	}
 	return sql.NullTime{Time: o.ValueOrZero(), Valid: true}
-}
-
-type Numeric interface {
-	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64
-}
-
-func ConvertNumeric[X Numeric, Y Numeric](o Optional[X]) Optional[Y] {
-	if o.IsNone() {
-		return Optional[Y]{}
-	}
-	return New(Y(o.ValueOrZero()))
 }

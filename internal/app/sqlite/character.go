@@ -142,10 +142,9 @@ func (st *Storage) UpdateCharacterLocation(ctx context.Context, characterID int3
 }
 
 func (st *Storage) UpdateCharacterShip(ctx context.Context, characterID int32, shipID optional.Optional[int32]) error {
-	x := optional.ToNullInt32(shipID)
 	arg := queries.UpdateCharacterShipIDParams{
 		ID:     int64(characterID),
-		ShipID: sql.NullInt64{Int64: int64(x.Int32), Valid: x.Valid},
+		ShipID: optional.ToNullInt64(shipID),
 	}
 	if err := st.q.UpdateCharacterShipID(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update ship for character %d: %w", characterID, err)
@@ -156,8 +155,8 @@ func (st *Storage) UpdateCharacterShip(ctx context.Context, characterID int32, s
 func (st *Storage) UpdateCharacterSkillPoints(ctx context.Context, characterID int32, totalSP, unallocatedSP optional.Optional[int]) error {
 	arg := queries.UpdateCharacterSPParams{
 		ID:            int64(characterID),
-		TotalSp:       optional.ToNullInt64(optional.ConvertNumeric[int, int64](totalSP)),
-		UnallocatedSp: optional.ToNullInt64(optional.ConvertNumeric[int, int64](unallocatedSP)),
+		TotalSp:       optional.ToNullInt64(totalSP),
+		UnallocatedSp: optional.ToNullInt64(unallocatedSP),
 	}
 	if err := st.q.UpdateCharacterSP(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update sp for character %d: %w", characterID, err)
@@ -193,9 +192,9 @@ func (st *Storage) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCrea
 		HomeID:        optional.ToNullInt64(arg.HomeID),
 		LastLoginAt:   optional.ToNullTime(arg.LastLoginAt),
 		LocationID:    optional.ToNullInt64(arg.LocationID),
-		ShipID:        optional.ToNullInt64(optional.ConvertNumeric[int32, int64](arg.ShipID)),
-		TotalSp:       optional.ToNullInt64(optional.ConvertNumeric[int, int64](arg.TotalSP)),
-		UnallocatedSp: optional.ToNullInt64(optional.ConvertNumeric[int, int64](arg.UnallocatedSP)),
+		ShipID:        optional.ToNullInt64(arg.ShipID),
+		TotalSp:       optional.ToNullInt64(arg.TotalSP),
+		UnallocatedSp: optional.ToNullInt64(arg.UnallocatedSP),
 		WalletBalance: optional.ToNullFloat64(arg.WalletBalance),
 	}
 
@@ -221,8 +220,8 @@ func (st *Storage) characterFromDBModel(
 		EveCharacter:  eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
 		ID:            int32(character.ID),
 		LastLoginAt:   optional.FromNullTime(character.LastLoginAt),
-		TotalSP:       optional.ConvertNumeric[int64, int](optional.FromNullInt64(character.TotalSp)),
-		UnallocatedSP: optional.ConvertNumeric[int64, int](optional.FromNullInt64(character.UnallocatedSp)),
+		TotalSP:       optional.FromNullInt64ToInteger[int](character.TotalSp),
+		UnallocatedSP: optional.FromNullInt64ToInteger[int](character.UnallocatedSp),
 		WalletBalance: optional.FromNullFloat64(character.WalletBalance),
 	}
 	if homeID.Valid {
