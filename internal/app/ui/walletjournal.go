@@ -17,7 +17,7 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 )
 
 type walletJournalEntry struct {

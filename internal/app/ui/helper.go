@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 )
 
 // newObjectFromJSON returns a new object unmarshaled from a JSON string.

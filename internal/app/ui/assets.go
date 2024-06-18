@@ -15,8 +15,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assettree"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/dustin/go-humanize"
 )
 

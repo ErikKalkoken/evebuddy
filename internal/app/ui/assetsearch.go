@@ -16,7 +16,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assettree"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 	"github.com/dustin/go-humanize"
 )
 
