@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	xwidget "fyne.io/x/fyne/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -201,19 +200,11 @@ func (a *statusWindow) makeSectionTable() *widget.GridWrap {
 	l := widget.NewGridWrapWithData(
 		a.sectionsData,
 		func() fyne.CanvasObject {
-			var r fyne.Resource
-			switch a.ui.themeGet() {
-			case app.ThemeDark:
-				r = resourceSpinner1s64pxDarkGif
-			default:
-				r = resourceSpinner1s64pxLightGif
-			}
-			gif, _ := xwidget.NewAnimatedGifFromResource(r)
-			gif.Stop()
-			gif.SetMinSize(fyne.Size{Width: 40, Height: 40})
+			pb := widget.NewProgressBarInfinite()
+			pb.Stop()
 			return container.NewHBox(
 				widget.NewLabel("Section name long"),
-				gif,
+				pb,
 				layout.NewSpacer(),
 				widget.NewLabel("Status XXXX"),
 			)
@@ -232,13 +223,13 @@ func (a *statusWindow) makeSectionTable() *widget.GridWrap {
 			status.Importance = i
 			status.Refresh()
 
-			gif := hbox.Objects[1].(*xwidget.AnimatedGif)
+			pb := hbox.Objects[1].(*widget.ProgressBarInfinite)
 			if cs.IsRunning() {
-				gif.Start()
-				gif.Show()
+				pb.Start()
+				pb.Show()
 			} else {
-				gif.Stop()
-				gif.Hide()
+				pb.Stop()
+				pb.Hide()
 			}
 		},
 	)

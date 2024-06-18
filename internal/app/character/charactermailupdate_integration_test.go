@@ -3,7 +3,6 @@ package character_test
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 	"time"
 
@@ -47,7 +46,7 @@ func TestUpdateMail(t *testing.T) {
 			},
 		}
 		mailID := 7
-		labelIDs := []int32{16}
+		labelIDs := []int32{16, 32}
 		timestamp := "2015-09-30T16:07:00Z"
 		subject := "test"
 		dataHeader := []map[string]any{
@@ -64,14 +63,8 @@ func TestUpdateMail(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/", c1.ID),
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, dataHeader)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			})
-
+			httpmock.NewJsonResponderOrPanic(200, dataHeader),
+		)
 		dataMail := map[string]any{
 			"body":       "blah blah blah",
 			"from":       e1.ID,
@@ -84,14 +77,8 @@ func TestUpdateMail(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/%d/", c1.ID, mailID),
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, dataMail)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			})
-
+			httpmock.NewJsonResponderOrPanic(200, dataMail),
+		)
 		dataMailList := []map[string]any{
 			{
 				"mailing_list_id": m1.ID,
@@ -101,14 +88,8 @@ func TestUpdateMail(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/lists/", c1.ID),
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, dataMailList)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			})
-
+			httpmock.NewJsonResponderOrPanic(200, dataMailList),
+		)
 		dataMailLabel := map[string]any{
 			"labels": []map[string]any{
 				{
@@ -129,13 +110,8 @@ func TestUpdateMail(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c1.ID),
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, dataMailLabel)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			})
+			httpmock.NewJsonResponderOrPanic(200, dataMailLabel),
+		)
 		// when
 		_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
 			CharacterID: c1.ID,
@@ -213,14 +189,8 @@ func TestUpdateMail(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/lists/", c.ID),
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, dataMailList)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			})
-
+			httpmock.NewJsonResponderOrPanic(200, dataMailList),
+		)
 		dataMailLabel := map[string]any{
 			"labels": []map[string]any{
 				{
@@ -241,14 +211,8 @@ func TestUpdateMail(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/mail/labels/", c.ID),
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, dataMailLabel)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			})
-
+			httpmock.NewJsonResponderOrPanic(200, dataMailLabel),
+		)
 		recipients := []map[string]any{
 			{
 				"recipient_id":   e2.ID,
@@ -273,14 +237,8 @@ func TestUpdateMail(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/mail/", c.ID),
-			func(req *http.Request) (*http.Response, error) {
-				resp, err := httpmock.NewJsonResponse(200, dataHeader)
-				if err != nil {
-					return httpmock.NewStringResponse(500, ""), nil
-				}
-				return resp, nil
-			})
-
+			httpmock.NewJsonResponderOrPanic(200, dataHeader),
+		)
 		// when
 		_, err := s.UpdateSectionIfNeeded(ctx, character.UpdateSectionParams{
 			CharacterID: c.ID,
@@ -302,7 +260,7 @@ func TestUpdateMail(t *testing.T) {
 				for _, l := range labels {
 					got.Add(l.LabelID)
 				}
-				want := set.NewFromSlice([]int32{32})
+				want := set.NewFromSlice([]int32{16, 32})
 				assert.Equal(t, want, got)
 			}
 		}
