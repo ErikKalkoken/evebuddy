@@ -121,11 +121,11 @@ func (a *overviewArea) makeTable() *widget.Table {
 					l.Importance = widget.DangerImportance
 				}
 			case 4:
-				l.Text = humanizedNumericOption(c.unreadCount, 0, "?")
+				l.Text = ihumanize.Optional(c.unreadCount, "?")
 			case 5:
-				l.Text = humanizedNumericOption(c.totalSP, 0, "?")
+				l.Text = ihumanize.Optional(c.totalSP, "?")
 			case 6:
-				l.Text = humanizedNumericOption(c.unallocatedSP, 0, "?")
+				l.Text = ihumanize.Optional(c.unallocatedSP, "?")
 			case 7:
 				if c.training.IsNone() {
 					l.Text = "Inactive"
@@ -134,9 +134,9 @@ func (a *overviewArea) makeTable() *widget.Table {
 					l.Text = ihumanize.Duration(c.training.MustValue())
 				}
 			case 8:
-				l.Text = humanizedNumericOption(c.walletBalance, 1, "?")
+				l.Text = ihumanize.OptionalFloat(c.walletBalance, 1, "?")
 			case 9:
-				l.Text = humanizedNumericOption(c.assetValue, 1, "?")
+				l.Text = ihumanize.OptionalFloat(c.assetValue, 1, "?")
 			case 10:
 				l.Text = entityNameOrFallback(c.location, "?")
 			case 11:
@@ -150,7 +150,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 			case 13:
 				l.Text = entityNameOrFallback(c.ship, "?")
 			case 14:
-				l.Text = humanizedRelOptionTime(c.lastLoginAt, "?")
+				l.Text = ihumanize.Optional(c.lastLoginAt, "?")
 			case 15:
 				l.Text = entityNameOrFallback(c.home, "?")
 			case 16:
@@ -226,10 +226,10 @@ func (a *overviewArea) refresh() {
 		if a.characters.Length() == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
-		walletText := humanizedNumericOption(totals.wallet, 1, "?")
-		assetsText := humanizedNumericOption(totals.assets, 1, "?")
-		spText := humanizedNumericOption(totals.sp, 0, "?")
-		unreadText := humanizedNumericOption(totals.unread, 0, "?")
+		walletText := ihumanize.OptionalFloat(totals.wallet, 1, "?")
+		assetsText := ihumanize.OptionalFloat(totals.assets, 1, "?")
+		spText := ihumanize.Optional(totals.sp, "?")
+		unreadText := ihumanize.Optional(totals.unread, "?")
 		s := fmt.Sprintf(
 			"Total: %d characters • %s ISK wallet • %s ISK assets • %s SP  • %s unread",
 			a.characters.Length(),

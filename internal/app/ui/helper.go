@@ -1,11 +1,9 @@
 package ui
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -15,8 +13,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/dustin/go-humanize"
 )
 
 // newObjectFromJSON returns a new object unmarshaled from a JSON string.
@@ -38,97 +34,11 @@ func objectToJSON[T any](o T) (string, error) {
 	return string(s), nil
 }
 
-// func objectToJSONOrPanic[T any](o T) string {
-// 	s, err := objectToJSON(o)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	return s
-// }
-
 func entityNameOrFallback[T int | int32 | int64](e *app.EntityShort[T], fallback string) string {
 	if e == nil {
 		return fallback
 	}
 	return e.Name
-}
-
-// func nullStringOrFallback(s sql.NullString, fallback string) string {
-// 	if !s.Valid {
-// 		return fallback
-// 	}
-// 	return s.String
-// }
-
-func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
-	if t.IsZero() {
-		return fallback
-	}
-	return t.Format(layout)
-}
-
-// func numberOrDefault[T int | float64](v T, d string) string {
-// 	if v == 0 {
-// 		return d
-// 	}
-// 	return ihumanize.Number(float64(v), 1)
-// }
-
-// func humanizedNullDuration(d optional.Duration, fallback string) string {
-// 	if !d.Valid {
-// 		return fallback
-// 	}
-// 	return ihumanize.Duration(d.Duration)
-// }
-
-// func humanizedRelNullTime(v sql.NullTime, fallback string) string {
-// 	if !v.Valid {
-// 		return fallback
-// 	}
-// 	return humanize.RelTime(v.Time, time.Now(), "", "")
-// }
-
-func humanizedRelOptionTime(v optional.Optional[time.Time], fallback string) string {
-	if v.IsNone() {
-		return fallback
-	}
-	return humanize.RelTime(v.MustValue(), time.Now(), "", "")
-}
-
-// func humanizedNullTime(v sql.NullTime, fallback string) string {
-// 	if !v.Valid {
-// 		return fallback
-// 	}
-// 	return humanize.Time(v.Time)
-// }
-
-func humanizeTime(v time.Time, fallback string) string {
-	if v.IsZero() {
-		return fallback
-	}
-	return humanize.Time(v)
-}
-
-func humanizedNullFloat64(v sql.NullFloat64, decimals int, fallback string) string {
-	if !v.Valid {
-		return fallback
-	}
-	return ihumanize.Number(v.Float64, decimals)
-}
-
-func humanizedNullInt64(v sql.NullInt64, fallback string) string {
-	return humanizedNullFloat64(sql.NullFloat64{Float64: float64(v.Int64), Valid: v.Valid}, 0, fallback)
-}
-
-type numeric interface {
-	int | int32 | int64 | float32 | float64
-}
-
-func humanizedNumericOption[T numeric](v optional.Optional[T], decimals int, fallback string) string {
-	if v.IsNone() {
-		return fallback
-	}
-	return ihumanize.Number(float64(v.MustValue()), decimals)
 }
 
 // getItemUntypedList returns the value from an untyped list in the target type.

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type CreateCharacterAssetParams struct {
@@ -202,7 +203,7 @@ func characterAssetFromDBModel(ca queries.CharacterAsset, t queries.EveType, g q
 		LocationType:    ca.LocationType,
 		Name:            ca.Name,
 		Quantity:        int32(ca.Quantity),
-		Price:           p,
+		Price:           optional.FromNullFloat64(p),
 	}
 	return o
 }

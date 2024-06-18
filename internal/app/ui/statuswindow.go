@@ -18,6 +18,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 // An entity which has update sections, e.g. a character
@@ -292,8 +293,8 @@ func (a *statusWindow) setDetails() {
 		}
 		d.entityName = ss.EntityName
 		d.sectionName = ss.SectionName
-		d.completedAt = humanizeTime(ss.CompletedAt, "?")
-		d.startedAt = humanizeTime(ss.StartedAt, "-")
+		d.completedAt = ihumanize.Time(ss.CompletedAt, "?")
+		d.startedAt = ihumanize.Time(ss.StartedAt, "-")
 		now := time.Now()
 		d.timeout = humanize.RelTime(now.Add(ss.Timeout), now, "", "")
 	}

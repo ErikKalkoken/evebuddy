@@ -1,8 +1,9 @@
 package app
 
 import (
-	"database/sql"
 	"fmt"
+
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type EveTypeVariant uint
@@ -26,7 +27,7 @@ type CharacterAsset struct {
 	LocationType    string
 	Name            string
 	Quantity        int32
-	Price           sql.NullFloat64
+	Price           optional.Optional[float64]
 }
 
 func (ca CharacterAsset) DisplayName() string {
@@ -112,5 +113,5 @@ type CharacterAssetLocation struct {
 	Location       *EntityShort[int64]
 	LocationType   string
 	SolarSystem    *EntityShort[int32]
-	SecurityStatus sql.NullFloat64
+	SecurityStatus optional.Optional[float64]
 }

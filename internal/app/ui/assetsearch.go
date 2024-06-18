@@ -102,7 +102,7 @@ func (a *assetSearchArea) newAssetSearchRow(ca *app.CharacterAsset) *assetSearch
 		groupName:     ca.EveType.Group.Name,
 		itemID:        ca.ItemID,
 		name:          ca.DisplayName2(),
-		price:         ca.Price.Float64,
+		price:         ca.Price.ValueOrZero(),
 		typeID:        ca.EveType.ID,
 		typeName:      ca.EveType.Name,
 	}
@@ -123,10 +123,10 @@ func (a *assetSearchArea) newAssetSearchRow(ca *app.CharacterAsset) *assetSearch
 	r.locationID = location.ID
 	r.locationName = t
 	var price string
-	if !ca.Price.Valid || ca.IsBlueprintCopy {
+	if ca.Price.IsNone() || ca.IsBlueprintCopy {
 		price = "?"
 	} else {
-		t := ca.Price.Float64 * float64(ca.Quantity)
+		t := ca.Price.ValueOrZero() * float64(ca.Quantity)
 		price = ihumanize.Number(t, 1)
 	}
 	r.priceDisplay = price

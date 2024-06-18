@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/antihax/goesi/esi"
+	"github.com/dustin/go-humanize"
 	"github.com/mattn/go-sqlite3"
 )
 
@@ -69,7 +70,7 @@ func Duration(duration time.Duration) string {
 	return fmt.Sprintf("%dh %dm", h, m)
 }
 
-func Optional[T time.Duration | string | int | int32 | int64](o optional.Optional[T], fallback string) string {
+func Optional[T time.Duration | time.Time | string | int | int32 | int64](o optional.Optional[T], fallback string) string {
 	if o.IsNone() {
 		return fallback
 	}
@@ -77,6 +78,8 @@ func Optional[T time.Duration | string | int | int32 | int64](o optional.Optiona
 	switch x := any(v).(type) {
 	case time.Duration:
 		return Duration(x)
+	case time.Time:
+		return humanize.RelTime(x, time.Now(), "", "")
 	case string:
 		return x
 	case int:
@@ -172,4 +175,11 @@ func ToRomanLetter[N int | int32 | int64 | uint | uint32 | uint64](v N) string {
 		panic(fmt.Sprintf("invalid value: %d", v))
 	}
 	return r
+}
+
+func Time(v time.Time, fallback string) string {
+	if v.IsZero() {
+		return fallback
+	}
+	return humanize.Time(v)
 }

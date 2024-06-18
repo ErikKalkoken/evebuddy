@@ -52,7 +52,7 @@ func TestCharacterAsset(t *testing.T) {
 				assert.Equal(t, "other", x.LocationType)
 				assert.Equal(t, "Alpha", x.Name)
 				assert.Equal(t, int32(7), x.Quantity)
-				assert.Equal(t, sqlite.NewNullFloat64(1.24), x.Price)
+				assert.Equal(t, 1.24, x.Price.ValueOrZero())
 			}
 		}
 	})

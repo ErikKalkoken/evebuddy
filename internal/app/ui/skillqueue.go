@@ -172,3 +172,10 @@ func (a *skillqueueArea) makeTopText(total optional.Optional[time.Duration]) (st
 	t := fmt.Sprintf("Total training time: %s", ihumanize.Optional(total, "?"))
 	return t, widget.MediumImportance
 }
+
+func timeFormattedOrFallback(t time.Time, layout, fallback string) string {
+	if t.IsZero() {
+		return fallback
+	}
+	return t.Format(layout)
+}
