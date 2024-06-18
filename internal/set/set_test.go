@@ -72,7 +72,7 @@ func TestSetSize(t *testing.T) {
 
 func TestSetOther(t *testing.T) {
 	t.Run("can convert to string", func(t *testing.T) {
-		x := []int{1, 2}
+		x := []int{42}
 		s := NewFromSlice(x)
 		assert.Equal(t, fmt.Sprint(x), fmt.Sprint(s))
 	})
