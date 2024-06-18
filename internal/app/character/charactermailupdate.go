@@ -122,12 +122,12 @@ func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg Upda
 					return err
 				}
 			}
-			if err := s.st.DeleteObsoleteCharacterMailLabels(ctx, characterID); err != nil {
-				return err
-			}
-			if err := s.st.DeleteObsoleteCharacterMailLists(ctx, characterID); err != nil {
-				return err
-			}
+			// if err := s.st.DeleteObsoleteCharacterMailLabels(ctx, characterID); err != nil {
+			// 	return err
+			// }
+			// if err := s.st.DeleteObsoleteCharacterMailLists(ctx, characterID); err != nil {
+			// 	return err
+			// }
 			return nil
 		})
 }

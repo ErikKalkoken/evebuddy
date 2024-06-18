@@ -245,10 +245,7 @@ func (a *mailArea) makeFolderTreeData(characterID int32) (map[string][]string, m
 		ObjID:       app.MailLabelAll,
 		UnreadCount: totalUnreadCount,
 	}
-	folders[folderNodeAllID], err = objectToJSON(folderAll)
-	if err != nil {
-		return nil, nil, folderNode{}, err
-	}
+	folders[folderNodeAllID] = mustObjectToJSON(folderAll)
 	labels, err := a.ui.CharacterService.ListCharacterMailLabelsOrdered(ctx, characterID)
 	if err != nil {
 		return nil, nil, folderNode{}, err
@@ -262,11 +259,7 @@ func (a *mailArea) makeFolderTreeData(characterID int32) (map[string][]string, m
 			Name:        "Labels",
 			UnreadCount: totalLabelsUnreadCount,
 		}
-		x, err := objectToJSON(n)
-		if err != nil {
-			return nil, nil, folderNode{}, err
-		}
-		folders[folderNodeLabelsID] = x
+		folders[folderNodeLabelsID] = mustObjectToJSON(n)
 		for _, l := range labels {
 			uid := fmt.Sprintf("label%d", l.LabelID)
 			ids[folderNodeLabelsID] = append(ids[folderNodeLabelsID], uid)
@@ -274,12 +267,14 @@ func (a *mailArea) makeFolderTreeData(characterID int32) (map[string][]string, m
 			if !ok {
 				u = 0
 			}
-			n := folderNode{ObjID: l.LabelID, Name: l.Name, Category: nodeCategoryLabel, UnreadCount: u}
-			x, err := objectToJSON(n)
-			if err != nil {
-				return nil, nil, folderNode{}, err
+			n := folderNode{
+				CharacterID: characterID,
+				ObjID:       l.LabelID,
+				Name:        l.Name,
+				Category:    nodeCategoryLabel,
+				UnreadCount: u,
 			}
-			folders[uid] = x
+			folders[uid] = mustObjectToJSON(n)
 		}
 	}
 	lists, err := a.ui.CharacterService.ListCharacterMailLists(ctx, characterID)
@@ -295,11 +290,7 @@ func (a *mailArea) makeFolderTreeData(characterID int32) (map[string][]string, m
 			Name:        "Mailing Lists",
 			UnreadCount: totalListUnreadCount,
 		}
-		x, err := objectToJSON(n)
-		if err != nil {
-			return nil, nil, folderNode{}, err
-		}
-		folders[folderNodeListsID] = x
+		folders[folderNodeListsID] = mustObjectToJSON(n)
 		for _, l := range lists {
 			uid := fmt.Sprintf("list%d", l.ID)
 			ids[folderNodeListsID] = append(ids[folderNodeListsID], uid)
@@ -307,12 +298,14 @@ func (a *mailArea) makeFolderTreeData(characterID int32) (map[string][]string, m
 			if !ok {
 				u = 0
 			}
-			n := folderNode{ObjID: l.ID, Name: l.Name, Category: nodeCategoryList, UnreadCount: u}
-			x, err := objectToJSON(n)
-			if err != nil {
-				return nil, nil, folderNode{}, err
+			n := folderNode{
+				CharacterID: characterID,
+				ObjID:       l.ID,
+				Name:        l.Name,
+				Category:    nodeCategoryList,
+				UnreadCount: u,
 			}
-			folders[uid] = x
+			folders[uid] = mustObjectToJSON(n)
 		}
 	}
 	return ids, folders, folderAll, nil
@@ -343,11 +336,7 @@ func makeDefaultFolders(characterID int32, labelUnreadCounts map[int32]int) (map
 			ObjID:       o.labelID,
 			UnreadCount: u,
 		}
-		x, err := objectToJSON(n)
-		if err != nil {
-			return nil, err
-		}
-		folders[o.nodeID] = x
+		folders[o.nodeID] = mustObjectToJSON(n)
 	}
 	return folders, nil
 }
