@@ -1,14 +1,45 @@
 package set
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+func TestSetAdd(t *testing.T) {
+	t.Run("can add to empty", func(t *testing.T) {
+		got := New[int]()
+		got.Add(3)
+		want := NewFromSlice([]int{3})
+		assert.Equal(t, want, got)
+	})
+	t.Run("can add to full", func(t *testing.T) {
+		got := NewFromSlice([]int{1, 2})
+		got.Add(3)
+		want := NewFromSlice([]int{1, 2, 3})
+		assert.Equal(t, want, got)
+
+	})
+}
+
+func TestSetRemove(t *testing.T) {
+	t.Run("can remove item when it exists", func(t *testing.T) {
+		got := NewFromSlice([]int{1, 2})
+		got.Remove(2)
+		want := NewFromSlice([]int{1})
+		assert.Equal(t, want, got)
+	})
+	t.Run("can remove item when it doesn't exist", func(t *testing.T) {
+		got := NewFromSlice([]int{1, 2})
+		got.Remove(3)
+		want := NewFromSlice([]int{1, 2})
+		assert.Equal(t, want, got)
+	})
+}
+
 func TestSetHas(t *testing.T) {
 	s := NewFromSlice([]int{3, 7, 9})
-
 	cases := []struct {
 		in   int
 		want bool
@@ -20,86 +51,66 @@ func TestSetHas(t *testing.T) {
 		{0, false},
 		{-1, false},
 	}
-
 	for _, c := range cases {
-		result := s.Has(c.in)
-		assert.Equalf(t, c.want, result, "case: %v", c.in)
+		t.Run(fmt.Sprintf("case: %v", c.in), func(t *testing.T) {
+			result := s.Has(c.in)
+			assert.Equal(t, c.want, result)
+		})
 	}
 }
 
-func TestSetCanAddToEmpty(t *testing.T) {
-	got := New[int]()
-	got.Add(3)
-	want := NewFromSlice([]int{3})
-	assert.Equal(t, want, got)
-}
-
-func TestSetCanAddToFull(t *testing.T) {
-	got := NewFromSlice([]int{1, 2})
-	got.Add(3)
-	want := NewFromSlice([]int{1, 2, 3})
-	assert.Equal(t, want, got)
-}
-
 func TestSetSize(t *testing.T) {
-	s1 := NewFromSlice([]int{1, 2, 3})
-	assert.Equal(t, 3, s1.Size())
-
-	s2 := NewFromSlice([]int{})
-	assert.Equal(t, 0, s2.Size())
+	t.Run("can determine size of filled set", func(t *testing.T) {
+		s1 := NewFromSlice([]int{1, 2, 3})
+		assert.Equal(t, 3, s1.Size())
+	})
+	t.Run("can determine size of empty set", func(t *testing.T) {
+		s2 := NewFromSlice([]int{})
+		assert.Equal(t, 0, s2.Size())
+	})
 }
 
-func TestSetCanRemoveWhenExists(t *testing.T) {
-	got := NewFromSlice([]int{1, 2})
-	got.Remove(2)
-	want := NewFromSlice([]int{1})
-	assert.Equal(t, want, got)
-}
-
-func TestSetCanRemoveWhenNotExists(t *testing.T) {
-	got := NewFromSlice([]int{1, 2})
-	got.Remove(3)
-	want := NewFromSlice([]int{1, 2})
-	assert.Equal(t, want, got)
-}
-
-func TestSetCanClear(t *testing.T) {
-	got := NewFromSlice([]int{1, 2})
-	got.Clear()
-	want := NewFromSlice([]int{})
-	assert.Equal(t, want, got)
-}
-
-func TestSetCanConvertToSlice(t *testing.T) {
-	s := NewFromSlice([]int{1, 2})
-	got := s.ToSlice()
-	assert.Len(t, got, 2)
-	assert.Contains(t, got, 1)
-	assert.Contains(t, got, 2)
-}
-
-func TestSetCanUnion(t *testing.T) {
-	s1 := NewFromSlice([]int{1, 2})
-	s2 := NewFromSlice([]int{2, 3})
-	want := NewFromSlice([]int{1, 2, 3})
-	got := s1.Union(s2)
-	assert.Equal(t, want, got)
-}
-
-func TestSetCanIntersect(t *testing.T) {
-	s1 := NewFromSlice([]int{1, 2})
-	s2 := NewFromSlice([]int{2, 3})
-	want := NewFromSlice([]int{2})
-	got := s1.Intersect(s2)
-	assert.Equal(t, want, got)
-}
-
-func TestSetCanDifference(t *testing.T) {
-	s1 := NewFromSlice([]int{1, 2})
-	s2 := NewFromSlice([]int{2, 3})
-	want := NewFromSlice([]int{1})
-	got := s1.Difference(s2)
-	assert.Equal(t, want, got)
+func TestSetOther(t *testing.T) {
+	t.Run("can convert to string", func(t *testing.T) {
+		x := []int{1, 2}
+		s := NewFromSlice(x)
+		assert.Equal(t, fmt.Sprint(x), fmt.Sprint(s))
+	})
+	t.Run("can clear", func(t *testing.T) {
+		x := []int{1, 2}
+		got := NewFromSlice(x)
+		got.Clear()
+		want := NewFromSlice([]int{})
+		assert.Equal(t, want, got)
+	})
+	t.Run("can convert to slice", func(t *testing.T) {
+		s := NewFromSlice([]int{1, 2})
+		got := s.ToSlice()
+		assert.Len(t, got, 2)
+		assert.Contains(t, got, 1)
+		assert.Contains(t, got, 2)
+	})
+	t.Run("can union", func(t *testing.T) {
+		s1 := NewFromSlice([]int{1, 2})
+		s2 := NewFromSlice([]int{2, 3})
+		want := NewFromSlice([]int{1, 2, 3})
+		got := s1.Union(s2)
+		assert.Equal(t, want, got)
+	})
+	t.Run("can intersect", func(t *testing.T) {
+		s1 := NewFromSlice([]int{1, 2})
+		s2 := NewFromSlice([]int{2, 3})
+		want := NewFromSlice([]int{2})
+		got := s1.Intersect(s2)
+		assert.Equal(t, want, got)
+	})
+	t.Run("can calculate difference", func(t *testing.T) {
+		s1 := NewFromSlice([]int{1, 2})
+		s2 := NewFromSlice([]int{2, 3})
+		want := NewFromSlice([]int{1})
+		got := s1.Difference(s2)
+		assert.Equal(t, want, got)
+	})
 }
 
 func TestSetEqual(t *testing.T) {

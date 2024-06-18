@@ -1,4 +1,4 @@
-// Package set implements a set type.
+// Package set implements a generic set type.
 package set
 
 import "fmt"
@@ -6,6 +6,21 @@ import "fmt"
 // A set of values.
 type Set[T comparable] struct {
 	values map[T]struct{}
+}
+
+// New returns a new set.
+func New[T comparable]() *Set[T] {
+	return NewFromSlice([]T{})
+}
+
+// NewFromSlice returns a new set from a slice.
+func NewFromSlice[T comparable](slice []T) *Set[T] {
+	var s Set[T]
+	s.values = make(map[T]struct{}, len(slice))
+	for _, el := range slice {
+		s.values[el] = struct{}{}
+	}
+	return &s
 }
 
 func (s *Set[T]) String() string {
@@ -55,7 +70,6 @@ func (s *Set[T]) Union(other *Set[T]) *Set[T] {
 	for v := range s.values {
 		n.Add(v)
 	}
-
 	for v := range other.values {
 		n.Add(v)
 	}
@@ -95,19 +109,4 @@ func (s *Set[T]) Equal(other *Set[T]) bool {
 	d := s.Difference(other)
 	x := d.Size()
 	return x == 0
-}
-
-// New returns a new set.
-func New[T comparable]() *Set[T] {
-	return NewFromSlice([]T{})
-}
-
-// NewFromSlice returns a new set from a slice.
-func NewFromSlice[T comparable](slice []T) *Set[T] {
-	var s Set[T]
-	s.values = make(map[T]struct{}, len(slice))
-	for _, el := range slice {
-		s.values[el] = struct{}{}
-	}
-	return &s
 }
