@@ -13,8 +13,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
-	. "github.com/BooleanCat/option"
-
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -22,23 +20,23 @@ import (
 
 type overviewCharacter struct {
 	alliance       string
-	assetValue     Option[float64]
+	assetValue     optional.Optional[float64]
 	birthday       time.Time
 	corporation    string
 	id             int32
 	home           *app.EntityShort[int64]
-	lastLoginAt    Option[time.Time]
+	lastLoginAt    optional.Optional[time.Time]
 	location       *app.EntityShort[int64]
 	name           string
 	solarSystem    *app.EntityShort[int32]
-	systemSecurity Option[float32]
+	systemSecurity optional.Optional[float32]
 	region         *app.EntityShort[int32]
 	ship           *app.EntityShort[int32]
 	security       float64
-	totalSP        Option[int64]
-	training       Option[time.Duration]
-	unallocatedSP  Option[int64]
-	unreadCount    Option[int64]
+	totalSP        optional.Optional[int64]
+	training       optional.Optional[time.Duration]
+	unallocatedSP  optional.Optional[int64]
+	unreadCount    optional.Optional[int64]
 	walletBalance  optional.Optional[float64]
 }
 
@@ -134,7 +132,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 					l.Text = "Inactive"
 					l.Importance = widget.WarningImportance
 				} else {
-					l.Text = ihumanize.Duration(c.training.Unwrap())
+					l.Text = ihumanize.Duration(c.training.MustValue())
 				}
 			case 8:
 				l.Text = humanizedNumericMaybe(c.walletBalance, 1, "?")
@@ -146,7 +144,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 				if c.solarSystem == nil || c.systemSecurity.IsNone() {
 					l.Text = "?"
 				} else {
-					l.Text = fmt.Sprintf("%s %.1f", c.solarSystem.Name, c.systemSecurity.Unwrap())
+					l.Text = fmt.Sprintf("%s %.1f", c.solarSystem.Name, c.systemSecurity.MustValue())
 				}
 			case 12:
 				l.Text = entityNameOrFallback(c.region, "?")
@@ -254,10 +252,10 @@ func (a *overviewArea) refresh() {
 }
 
 type overviewTotals struct {
-	sp     Option[int64]
-	unread Option[int64]
-	wallet Option[float64]
-	assets Option[float64]
+	sp     optional.Optional[int64]
+	unread optional.Optional[int64]
+	wallet optional.Optional[float64]
+	assets optional.Optional[float64]
 }
 
 func (a *overviewArea) updateEntries() (overviewTotals, error) {
@@ -301,7 +299,7 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 				ID:   m.Location.SolarSystem.ID,
 				Name: m.Location.SolarSystem.Name,
 			}
-			c.systemSecurity = Some(m.Location.SolarSystem.SecurityStatus)
+			c.systemSecurity = optional.New(m.Location.SolarSystem.SecurityStatus)
 		}
 		if m.Ship != nil {
 			c.ship = &app.EntityShort[int32]{
@@ -324,7 +322,7 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 			return totals, fmt.Errorf("failed to fetch mail counts for character %d, %w", c.id, err)
 		}
 		if total > 0 {
-			cc[i].unreadCount = Some(int64(unread))
+			cc[i].unreadCount = optional.New(int64(unread))
 		}
 	}
 	for i, c := range cc {
@@ -338,17 +336,17 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 		return totals, err
 	}
 	for _, c := range cc {
-		if c.totalSP.IsSome() {
-			totals.sp = Some(totals.sp.UnwrapOr(0) + c.totalSP.Unwrap())
+		if c.totalSP.IsValue() {
+			totals.sp.Set(totals.sp.ValueOrFallback(0) + c.totalSP.MustValue())
 		}
-		if c.unreadCount.IsSome() {
-			totals.unread = Some(totals.unread.UnwrapOr(0) + c.unreadCount.Unwrap())
+		if c.unreadCount.IsValue() {
+			totals.unread.Set(totals.unread.ValueOrFallback(0) + c.unreadCount.MustValue())
 		}
 		if c.walletBalance.IsValue() {
-			totals.wallet = Some(totals.wallet.UnwrapOr(0) + c.walletBalance.MustValue())
+			totals.wallet.Set(totals.wallet.ValueOrFallback(0) + c.walletBalance.MustValue())
 		}
-		if c.assetValue.IsSome() {
-			totals.assets = Some(totals.assets.UnwrapOr(0) + c.assetValue.Unwrap())
+		if c.assetValue.IsValue() {
+			totals.assets.Set(totals.assets.ValueOrFallback(0) + c.assetValue.MustValue())
 		}
 	}
 	return totals, nil
@@ -361,23 +359,23 @@ func maybeFromNullFloat64(v sql.NullFloat64) optional.Optional[float64] {
 	return optional.New(v.Float64)
 }
 
-func optionFromNullFloat64(v sql.NullFloat64) Option[float64] {
+func optionFromNullFloat64(v sql.NullFloat64) optional.Optional[float64] {
 	if !v.Valid {
-		return None[float64]()
+		return optional.NewNone[float64]()
 	}
-	return Some(v.Float64)
+	return optional.New(v.Float64)
 }
 
-func optionFromNullInt64(v sql.NullInt64) Option[int64] {
+func optionFromNullInt64(v sql.NullInt64) optional.Optional[int64] {
 	if !v.Valid {
-		return None[int64]()
+		return optional.NewNone[int64]()
 	}
-	return Some(v.Int64)
+	return optional.New(v.Int64)
 }
 
-func optionFromNullTime(v sql.NullTime) Option[time.Time] {
+func optionFromNullTime(v sql.NullTime) optional.Optional[time.Time] {
 	if !v.Valid {
-		return None[time.Time]()
+		return optional.NewNone[time.Time]()
 	}
-	return Some(v.Time)
+	return optional.New(v.Time)
 }
