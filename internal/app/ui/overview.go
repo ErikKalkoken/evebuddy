@@ -17,6 +17,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type overviewCharacter struct {
@@ -38,7 +39,7 @@ type overviewCharacter struct {
 	training       Option[time.Duration]
 	unallocatedSP  Option[int64]
 	unreadCount    Option[int64]
-	walletBalance  Option[float64]
+	walletBalance  optional.Optional[float64]
 }
 
 // overviewArea is the UI area that shows an overview of all the user's characters.
@@ -136,7 +137,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 					l.Text = ihumanize.Duration(c.training.Unwrap())
 				}
 			case 8:
-				l.Text = humanizedNumericOption(c.walletBalance, 1, "?")
+				l.Text = humanizedNumericMaybe(c.walletBalance, 1, "?")
 			case 9:
 				l.Text = humanizedNumericOption(c.assetValue, 1, "?")
 			case 10:
@@ -279,7 +280,7 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 			security:      m.EveCharacter.SecurityStatus,
 			totalSP:       optionFromNullInt64(m.TotalSP),
 			unallocatedSP: optionFromNullInt64(m.UnallocatedSP),
-			walletBalance: optionFromNullFloat64(m.WalletBalance),
+			walletBalance: maybeFromNullFloat64(m.WalletBalance),
 		}
 		if m.Home != nil {
 			c.home = &app.EntityShort[int64]{
@@ -343,14 +344,21 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 		if c.unreadCount.IsSome() {
 			totals.unread = Some(totals.unread.UnwrapOr(0) + c.unreadCount.Unwrap())
 		}
-		if c.walletBalance.IsSome() {
-			totals.wallet = Some(totals.wallet.UnwrapOr(0) + c.walletBalance.Unwrap())
+		if c.walletBalance.IsValue() {
+			totals.wallet = Some(totals.wallet.UnwrapOr(0) + c.walletBalance.MustValue())
 		}
 		if c.assetValue.IsSome() {
 			totals.assets = Some(totals.assets.UnwrapOr(0) + c.assetValue.Unwrap())
 		}
 	}
 	return totals, nil
+}
+
+func maybeFromNullFloat64(v sql.NullFloat64) optional.Optional[float64] {
+	if !v.Valid {
+		return optional.NewNone[float64]()
+	}
+	return optional.New(v.Float64)
 }
 
 func optionFromNullFloat64(v sql.NullFloat64) Option[float64] {

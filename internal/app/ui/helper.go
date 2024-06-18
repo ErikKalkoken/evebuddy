@@ -139,6 +139,13 @@ func humanizedNumericOption[T numeric](v Option[T], decimals int, fallback strin
 	return ihumanize.Number(float64(v.Unwrap()), decimals)
 }
 
+func humanizedNumericMaybe[T numeric](v optional.Optional[T], decimals int, fallback string) string {
+	if v.IsNone() {
+		return fallback
+	}
+	return ihumanize.Number(float64(v.MustValue()), decimals)
+}
+
 // getItemUntypedList returns the value from an untyped list in the target type.
 func getItemUntypedList[T any](l binding.UntypedList, index int) (T, error) {
 	var v T
