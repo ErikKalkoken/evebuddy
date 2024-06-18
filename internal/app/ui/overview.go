@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"time"
@@ -135,7 +134,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 					l.Text = ihumanize.Duration(c.training.MustValue())
 				}
 			case 8:
-				l.Text = humanizedNumericMaybe(c.walletBalance, 1, "?")
+				l.Text = humanizedNumericOption(c.walletBalance, 1, "?")
 			case 9:
 				l.Text = humanizedNumericOption(c.assetValue, 1, "?")
 			case 10:
@@ -272,13 +271,13 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 			alliance:      m.EveCharacter.AllianceName(),
 			birthday:      m.EveCharacter.Birthday,
 			corporation:   m.EveCharacter.Corporation.Name,
-			lastLoginAt:   optionFromNullTime(m.LastLoginAt),
+			lastLoginAt:   optional.FromNullTime(m.LastLoginAt),
 			id:            m.ID,
 			name:          m.EveCharacter.Name,
 			security:      m.EveCharacter.SecurityStatus,
-			totalSP:       optionFromNullInt64(m.TotalSP),
-			unallocatedSP: optionFromNullInt64(m.UnallocatedSP),
-			walletBalance: maybeFromNullFloat64(m.WalletBalance),
+			totalSP:       optional.FromNullInt64(m.TotalSP),
+			unallocatedSP: optional.FromNullInt64(m.UnallocatedSP),
+			walletBalance: optional.FromNullFloat64(m.WalletBalance),
 		}
 		if m.Home != nil {
 			c.home = &app.EntityShort[int64]{
@@ -330,7 +329,7 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 		if err != nil {
 			return totals, fmt.Errorf("failed to fetch asset total value for character %d, %w", c.id, err)
 		}
-		cc[i].assetValue = optionFromNullFloat64(v)
+		cc[i].assetValue = optional.FromNullFloat64(v)
 	}
 	if err := a.characters.Set(copyToUntypedSlice(cc)); err != nil {
 		return totals, err
@@ -350,32 +349,4 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 		}
 	}
 	return totals, nil
-}
-
-func maybeFromNullFloat64(v sql.NullFloat64) optional.Optional[float64] {
-	if !v.Valid {
-		return optional.NewNone[float64]()
-	}
-	return optional.New(v.Float64)
-}
-
-func optionFromNullFloat64(v sql.NullFloat64) optional.Optional[float64] {
-	if !v.Valid {
-		return optional.NewNone[float64]()
-	}
-	return optional.New(v.Float64)
-}
-
-func optionFromNullInt64(v sql.NullInt64) optional.Optional[int64] {
-	if !v.Valid {
-		return optional.NewNone[int64]()
-	}
-	return optional.New(v.Int64)
-}
-
-func optionFromNullTime(v sql.NullTime) optional.Optional[time.Time] {
-	if !v.Valid {
-		return optional.NewNone[time.Time]()
-	}
-	return optional.New(v.Time)
 }

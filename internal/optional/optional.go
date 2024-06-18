@@ -2,8 +2,10 @@
 package optional
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 )
 
 type Optional[T any] struct {
@@ -75,4 +77,25 @@ func (o Optional[T]) ValueOrZero() T {
 		return z
 	}
 	return o.value
+}
+
+func FromNullFloat64(v sql.NullFloat64) Optional[float64] {
+	if !v.Valid {
+		return Optional[float64]{}
+	}
+	return New(v.Float64)
+}
+
+func FromNullInt64(v sql.NullInt64) Optional[int64] {
+	if !v.Valid {
+		return Optional[int64]{}
+	}
+	return New(v.Int64)
+}
+
+func FromNullTime(v sql.NullTime) Optional[time.Time] {
+	if !v.Valid {
+		return Optional[time.Time]{}
+	}
+	return New(v.Time)
 }
