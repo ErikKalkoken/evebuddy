@@ -9,15 +9,6 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-type EveTypeVariant uint
-
-const (
-	VariantRegular EveTypeVariant = iota
-	VariantBPO
-	VariantBPC
-	VariantSKIN
-)
-
 const iconSize = 64
 
 type AssetListWidget struct {
@@ -44,13 +35,13 @@ func NewAssetListWidget(sv app.EveImageService, fallbackIcon fyne.Resource) *Ass
 	return item
 }
 
-func (o *AssetListWidget) SetAsset(name string, quantity int32, isSingleton bool, typeID int32, variant EveTypeVariant) {
-	o.name.Text = name
+func (o *AssetListWidget) SetAsset(ca *app.CharacterAsset) {
+	o.name.Text = ca.DisplayName()
 	o.name.Wrapping = fyne.TextWrapWord
 	o.name.Refresh()
 
-	if !isSingleton {
-		o.quantity.SetText(humanize.Comma(int64(quantity)))
+	if !ca.IsSingleton {
+		o.quantity.SetText(humanize.Comma(int64(ca.Quantity)))
 		o.quantity.Show()
 	} else {
 		o.quantity.Hide()
@@ -60,15 +51,15 @@ func (o *AssetListWidget) SetAsset(name string, quantity int32, isSingleton bool
 	o.icon.Refresh()
 
 	refreshImageResourceAsync(o.icon, func() (fyne.Resource, error) {
-		switch variant {
-		case VariantSKIN:
-			return o.sv.InventoryTypeSKIN(typeID, iconSize)
-		case VariantBPO:
-			return o.sv.InventoryTypeBPO(typeID, iconSize)
-		case VariantBPC:
-			return o.sv.InventoryTypeBPC(typeID, iconSize)
+		switch ca.Variant() {
+		case app.VariantSKIN:
+			return o.sv.InventoryTypeSKIN(ca.EveType.ID, iconSize)
+		case app.VariantBPO:
+			return o.sv.InventoryTypeBPO(ca.EveType.ID, iconSize)
+		case app.VariantBPC:
+			return o.sv.InventoryTypeBPC(ca.EveType.ID, iconSize)
 		default:
-			return o.sv.InventoryTypeIcon(typeID, iconSize)
+			return o.sv.InventoryTypeIcon(ca.EveType.ID, iconSize)
 		}
 	})
 }

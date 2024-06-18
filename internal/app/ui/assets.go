@@ -479,8 +479,7 @@ func (u *ui) makeAssetGrid(assetsData binding.UntypedList) *widget.GridWrap {
 				panic(err)
 			}
 			item := co.(*widgets.AssetListWidget)
-			item.SetAsset(ca.DisplayName(), ca.Quantity, ca.IsSingleton, ca.EveType.ID,
-				widgetTypeVariantFromModel(ca.Variant()))
+			item.SetAsset(ca)
 		},
 	)
 	g.OnSelected = func(id widget.GridWrapItemID) {
@@ -504,14 +503,4 @@ func makeNameWithCount(name string, count int) string {
 		return name
 	}
 	return fmt.Sprintf("%s (%s)", name, humanize.Comma(int64(count)))
-}
-
-func widgetTypeVariantFromModel(v app.EveTypeVariant) widgets.EveTypeVariant {
-	m := map[app.EveTypeVariant]widgets.EveTypeVariant{
-		app.VariantBPC:     widgets.VariantBPC,
-		app.VariantBPO:     widgets.VariantBPO,
-		app.VariantRegular: widgets.VariantRegular,
-		app.VariantSKIN:    widgets.VariantSKIN,
-	}
-	return m[v]
 }
