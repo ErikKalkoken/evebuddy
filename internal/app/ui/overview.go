@@ -32,10 +32,10 @@ type overviewCharacter struct {
 	region         *app.EntityShort[int32]
 	ship           *app.EntityShort[int32]
 	security       float64
-	totalSP        optional.Optional[int64]
+	totalSP        optional.Optional[int]
 	training       optional.Optional[time.Duration]
-	unallocatedSP  optional.Optional[int64]
-	unreadCount    optional.Optional[int64]
+	unallocatedSP  optional.Optional[int]
+	unreadCount    optional.Optional[int]
 	walletBalance  optional.Optional[float64]
 }
 
@@ -251,8 +251,8 @@ func (a *overviewArea) refresh() {
 }
 
 type overviewTotals struct {
-	sp     optional.Optional[int64]
-	unread optional.Optional[int64]
+	sp     optional.Optional[int]
+	unread optional.Optional[int]
 	wallet optional.Optional[float64]
 	assets optional.Optional[float64]
 }
@@ -271,13 +271,13 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 			alliance:      m.EveCharacter.AllianceName(),
 			birthday:      m.EveCharacter.Birthday,
 			corporation:   m.EveCharacter.Corporation.Name,
-			lastLoginAt:   optional.FromNullTime(m.LastLoginAt),
+			lastLoginAt:   m.LastLoginAt,
 			id:            m.ID,
 			name:          m.EveCharacter.Name,
 			security:      m.EveCharacter.SecurityStatus,
-			totalSP:       optional.FromNullInt64(m.TotalSP),
-			unallocatedSP: optional.FromNullInt64(m.UnallocatedSP),
-			walletBalance: optional.FromNullFloat64(m.WalletBalance),
+			totalSP:       m.TotalSP,
+			unallocatedSP: m.UnallocatedSP,
+			walletBalance: m.WalletBalance,
 		}
 		if m.Home != nil {
 			c.home = &app.EntityShort[int64]{
@@ -321,7 +321,7 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 			return totals, fmt.Errorf("failed to fetch mail counts for character %d, %w", c.id, err)
 		}
 		if total > 0 {
-			cc[i].unreadCount = optional.New(int64(unread))
+			cc[i].unreadCount = optional.New(unread)
 		}
 	}
 	for i, c := range cc {

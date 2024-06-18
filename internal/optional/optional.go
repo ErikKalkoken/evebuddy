@@ -99,3 +99,42 @@ func FromNullTime(v sql.NullTime) Optional[time.Time] {
 	}
 	return New(v.Time)
 }
+
+func ToNullFloat64(o Optional[float64]) sql.NullFloat64 {
+	if o.IsNone() {
+		return sql.NullFloat64{}
+	}
+	return sql.NullFloat64{Float64: o.ValueOrZero(), Valid: true}
+}
+
+func ToNullInt32(o Optional[int32]) sql.NullInt32 {
+	if o.IsNone() {
+		return sql.NullInt32{}
+	}
+	return sql.NullInt32{Int32: o.ValueOrZero(), Valid: true}
+}
+
+func ToNullInt64(o Optional[int64]) sql.NullInt64 {
+	if o.IsNone() {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: o.ValueOrZero(), Valid: true}
+}
+
+func ToNullTime(o Optional[time.Time]) sql.NullTime {
+	if o.IsNone() {
+		return sql.NullTime{}
+	}
+	return sql.NullTime{Time: o.ValueOrZero(), Valid: true}
+}
+
+type Numeric interface {
+	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64
+}
+
+func ConvertNumeric[X Numeric, Y Numeric](o Optional[X]) Optional[Y] {
+	if o.IsNone() {
+		return Optional[Y]{}
+	}
+	return New(Y(o.ValueOrZero()))
+}

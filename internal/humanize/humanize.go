@@ -89,6 +89,20 @@ func Optional[T time.Duration | string | int | int32 | int64](o optional.Optiona
 	panic("not implemented")
 }
 
+func OptionalFloat[T float32 | float64](o optional.Optional[T], decimals int, fallback string) string {
+	if o.IsNone() {
+		return fallback
+	}
+	v := o.ValueOrZero()
+	switch x := any(v).(type) {
+	case float32:
+		return Number(float64(x), decimals)
+	case float64:
+		return Number(float64(x), decimals)
+	}
+	panic("not implemented")
+}
+
 // Error returns a user friendly error message for an error.
 func Error(err error) string {
 	if err == nil {
@@ -122,9 +136,10 @@ func Error(err error) string {
 		}
 		return fmt.Sprintf("%s: %s", err.Error(), detail)
 	case *net.OpError:
-		if t.Op == "dial" {
+		switch t.Op {
+		case "dial":
 			return "unknown host"
-		} else if t.Op == "read" {
+		case "read":
 			return "connection refused"
 		}
 		return "network error"

@@ -2,15 +2,16 @@ package character
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 	"slices"
+	"time"
 
 	"fyne.io/fyne/v2/data/binding"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/antihax/goesi/esi"
 )
@@ -81,12 +82,10 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		WalletBalance: myCharacter.WalletBalance,
 	}
 	if myCharacter.Location != nil {
-		arg.LocationID.Int64 = myCharacter.Location.ID
-		arg.LocationID.Valid = true
+		arg.LocationID = optional.New(myCharacter.Location.ID)
 	}
 	if myCharacter.Ship != nil {
-		arg.ShipID.Int32 = myCharacter.Ship.ID
-		arg.ShipID.Valid = true
+		arg.ShipID = optional.New(myCharacter.Ship.ID)
 	}
 	if err := s.st.UpdateOrCreateCharacter(ctx, arg); err != nil {
 		return 0, err
@@ -128,8 +127,7 @@ func (s *CharacterService) updateCharacterLocationESI(ctx context.Context, arg U
 			if err != nil {
 				return err
 			}
-			x := sql.NullInt64{Int64: locationID, Valid: true}
-			if err := s.st.UpdateCharacterLocation(ctx, characterID, x); err != nil {
+			if err := s.st.UpdateCharacterLocation(ctx, characterID, optional.New(locationID)); err != nil {
 				return err
 			}
 			return nil
@@ -151,10 +149,9 @@ func (s *CharacterService) updateCharacterOnlineESI(ctx context.Context, arg Upd
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			online := data.(esi.GetCharactersCharacterIdOnlineOk)
-			var x sql.NullTime
+			var x optional.Optional[time.Time]
 			if !online.LastLogin.IsZero() {
-				x.Time = online.LastLogin
-				x.Valid = true
+				x.Set(online.LastLogin)
 			}
 			if err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, x); err != nil {
 				return err
@@ -182,8 +179,7 @@ func (s *CharacterService) updateCharacterShipESI(ctx context.Context, arg Updat
 			if err != nil {
 				return err
 			}
-			x := sql.NullInt32{Int32: ship.ShipTypeId, Valid: true}
-			if err := s.st.UpdateCharacterShip(ctx, characterID, x); err != nil {
+			if err := s.st.UpdateCharacterShip(ctx, characterID, optional.New(ship.ShipTypeId)); err != nil {
 				return err
 			}
 			return nil
@@ -205,8 +201,7 @@ func (s *CharacterService) updateCharacterWalletBalanceESI(ctx context.Context, 
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			balance := data.(float64)
-			x := sql.NullFloat64{Float64: balance, Valid: true}
-			if err := s.st.UpdateCharacterWalletBalance(ctx, characterID, x); err != nil {
+			if err := s.st.UpdateCharacterWalletBalance(ctx, characterID, optional.New(balance)); err != nil {
 				return err
 			}
 			return nil

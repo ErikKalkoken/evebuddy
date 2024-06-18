@@ -14,6 +14,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type Factory struct {
@@ -36,26 +37,26 @@ func (f Factory) CreateCharacter(args ...sqlite.UpdateOrCreateCharacterParams) *
 		c := f.CreateEveCharacter()
 		arg.ID = c.ID
 	}
-	if !arg.HomeID.Valid {
+	if arg.HomeID.IsNone() {
 		x := f.CreateLocationStructure()
-		arg.HomeID = sql.NullInt64{Int64: x.ID, Valid: true}
+		arg.HomeID = optional.New(x.ID)
 	}
-	if !arg.LastLoginAt.Valid {
-		arg.LastLoginAt = sql.NullTime{Time: time.Now(), Valid: true}
+	if arg.LastLoginAt.IsNone() {
+		arg.LastLoginAt = optional.New(time.Now())
 	}
-	if !arg.LocationID.Valid {
+	if arg.LocationID.IsNone() {
 		x := f.CreateLocationStructure()
-		arg.LocationID = sql.NullInt64{Int64: x.ID, Valid: true}
+		arg.LocationID = optional.New(x.ID)
 	}
-	if !arg.ShipID.Valid {
+	if arg.ShipID.IsNone() {
 		x := f.CreateEveType()
-		arg.ShipID = sql.NullInt32{Int32: x.ID, Valid: true}
+		arg.ShipID = optional.New(x.ID)
 	}
-	if !arg.TotalSP.Valid {
-		arg.TotalSP = sql.NullInt64{Int64: int64(rand.IntN(100_000_000)), Valid: true}
+	if arg.TotalSP.IsNone() {
+		arg.TotalSP = optional.New(rand.IntN(100_000_000))
 	}
-	if !arg.WalletBalance.Valid {
-		arg.WalletBalance = sql.NullFloat64{Float64: rand.Float64() * 100_000_000_000, Valid: true}
+	if arg.WalletBalance.IsNone() {
+		arg.WalletBalance = optional.New(rand.Float64() * 100_000_000_000)
 	}
 	err := f.st.UpdateOrCreateCharacter(ctx, arg)
 	if err != nil {

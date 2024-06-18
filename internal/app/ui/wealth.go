@@ -123,7 +123,7 @@ func (a *wealthArea) compileData() ([]dataRow, int, error) {
 	}
 	data := make([]dataRow, 0)
 	for _, c := range selected {
-		wallet := c.WalletBalance.Float64
+		wallet := c.WalletBalance.ValueOrZero()
 		x, err := a.ui.CharacterService.CharacterAssetTotalValue(c.ID)
 		if err != nil {
 			return nil, 0, err

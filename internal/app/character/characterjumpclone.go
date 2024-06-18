@@ -2,10 +2,10 @@ package character
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/antihax/goesi/esi"
 )
 
@@ -29,15 +29,14 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			return clones, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
-			var home sql.NullInt64
+			var home optional.Optional[int64]
 			clones := data.(esi.GetCharactersCharacterIdClonesOk)
 			if clones.HomeLocation.LocationId != 0 {
 				_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, clones.HomeLocation.LocationId)
 				if err != nil {
 					return err
 				}
-				home.Int64 = clones.HomeLocation.LocationId
-				home.Valid = true
+				home.Set(clones.HomeLocation.LocationId)
 			}
 			if err := s.st.UpdateCharacterHome(ctx, characterID, home); err != nil {
 				return err

@@ -2,11 +2,11 @@ package character
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/antihax/goesi/esi"
 )
 
@@ -33,9 +33,9 @@ func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg Upd
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			skills := data.(esi.GetCharactersCharacterIdSkillsOk)
-			totalSP := sql.NullInt64{Int64: skills.TotalSp, Valid: true}
-			unallocatedSP := sql.NullInt64{Int64: int64(skills.UnallocatedSp), Valid: true}
-			if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, totalSP, unallocatedSP); err != nil {
+			total := optional.ConvertNumeric[int64, int](optional.New(skills.TotalSp))
+			unallocated := optional.ConvertNumeric[int32, int](optional.New(skills.UnallocatedSp))
+			if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, total, unallocated); err != nil {
 				return err
 			}
 			var existingSkills []int32

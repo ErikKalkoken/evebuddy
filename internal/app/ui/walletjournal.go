@@ -17,6 +17,7 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 type walletJournalEntry struct {
@@ -179,7 +180,7 @@ func (a *walletJournalArea) makeTopText() (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	s := fmt.Sprintf("Balance: %s", humanizedNullFloat64(c.WalletBalance, 1, "?"))
+	s := fmt.Sprintf("Balance: %s", ihumanize.OptionalFloat(c.WalletBalance, 1, "?"))
 	return s, widget.MediumImportance
 }
 

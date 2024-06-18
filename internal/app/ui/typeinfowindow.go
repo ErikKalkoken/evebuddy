@@ -529,11 +529,12 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		typeIcon.Add(render)
 		if a.metaLevel > 4 {
 			var n eveicon.Name
-			if a.techLevel == 2 {
+			switch a.techLevel {
+			case 2:
 				n = eveicon.Tech2
-			} else if a.techLevel == 3 {
+			case 3:
 				n = eveicon.Tech3
-			} else {
+			default:
 				n = eveicon.Faction
 			}
 			marker := canvas.NewImageFromResource(eveicon.GetResourceByName(n))

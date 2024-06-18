@@ -1,7 +1,9 @@
 package app
 
 import (
-	"database/sql"
+	"time"
+
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 // An Eve Online character owners by the user.
@@ -9,12 +11,12 @@ type Character struct {
 	EveCharacter  *EveCharacter
 	Home          *EveLocation
 	ID            int32
-	LastLoginAt   sql.NullTime
+	LastLoginAt   optional.Optional[time.Time]
 	Location      *EveLocation
 	Ship          *EveType
-	TotalSP       sql.NullInt64
-	UnallocatedSP sql.NullInt64
-	WalletBalance sql.NullFloat64
+	TotalSP       optional.Optional[int]
+	UnallocatedSP optional.Optional[int]
+	WalletBalance optional.Optional[float64]
 }
 
 // A shortened version of Character.

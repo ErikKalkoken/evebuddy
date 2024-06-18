@@ -2,7 +2,6 @@ package sqlite_test
 
 import (
 	"context"
-	"database/sql"
 	"math/rand/v2"
 	"testing"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 func TestCharacter(t *testing.T) {
@@ -30,7 +30,7 @@ func TestCharacter(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, c1.ID, c2.ID)
-			assert.Equal(t, c1.LastLoginAt.Time.UTC(), c2.LastLoginAt.Time.UTC())
+			assert.Equal(t, c1.LastLoginAt.ValueOrZero().UTC(), c2.LastLoginAt.ValueOrZero().UTC())
 			assert.Equal(t, c1.Ship, c2.Ship)
 			assert.Equal(t, c1.Location, c2.Location)
 			assert.Equal(t, c1.TotalSP, c2.TotalSP)
@@ -67,12 +67,12 @@ func TestCharacter(t *testing.T) {
 		login := time.Now()
 		arg := sqlite.UpdateOrCreateCharacterParams{
 			ID:            character.ID,
-			HomeID:        sqlite.NewNullInt64(home.ID),
-			LastLoginAt:   sqlite.NewNullTime(login),
-			LocationID:    sqlite.NewNullInt64(location.ID),
-			ShipID:        sqlite.NewNullInt32(ship.ID),
-			TotalSP:       sqlite.NewNullInt64(123),
-			WalletBalance: sqlite.NewNullFloat64(1.2),
+			HomeID:        optional.New(home.ID),
+			LastLoginAt:   optional.New(login),
+			LocationID:    optional.New(location.ID),
+			ShipID:        optional.New(ship.ID),
+			TotalSP:       optional.New(123),
+			WalletBalance: optional.New(1.2),
 		}
 		// when
 		err := r.UpdateOrCreateCharacter(ctx, arg)
@@ -81,11 +81,11 @@ func TestCharacter(t *testing.T) {
 			r, err := r.GetCharacter(ctx, arg.ID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, home, r.Home)
-				assert.Equal(t, login.UTC(), r.LastLoginAt.Time.UTC())
+				assert.Equal(t, login.UTC(), r.LastLoginAt.ValueOrZero().UTC())
 				assert.Equal(t, location, r.Location)
 				assert.Equal(t, ship, r.Ship)
-				assert.Equal(t, int64(123), r.TotalSP.Int64)
-				assert.Equal(t, 1.2, r.WalletBalance.Float64)
+				assert.Equal(t, 123, r.TotalSP.ValueOrZero())
+				assert.Equal(t, 1.2, r.WalletBalance.ValueOrZero())
 			}
 		}
 	})
@@ -98,8 +98,8 @@ func TestCharacter(t *testing.T) {
 		newShip := factory.CreateEveType()
 		err := r.UpdateOrCreateCharacter(ctx, sqlite.UpdateOrCreateCharacterParams{
 			ID:         c1.ID,
-			LocationID: sql.NullInt64{Int64: newLocation.ID, Valid: true},
-			ShipID:     sql.NullInt32{Int32: newShip.ID, Valid: true},
+			LocationID: optional.New(newLocation.ID),
+			ShipID:     optional.New(newShip.ID),
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -212,7 +212,7 @@ func TestListCharacters(t *testing.T) {
 			if assert.NotNil(t, c2) {
 				assert.Len(t, cc, 1)
 				assert.Equal(t, c1.ID, c2.ID)
-				assert.Equal(t, c1.LastLoginAt.Time.UTC(), c2.LastLoginAt.Time.UTC())
+				assert.Equal(t, c1.LastLoginAt.ValueOrZero().UTC(), c2.LastLoginAt.ValueOrZero().UTC())
 				assert.Equal(t, c1.Ship, c2.Ship)
 				assert.Equal(t, c1.Location, c2.Location)
 				assert.Equal(t, c1.TotalSP, c2.TotalSP)
@@ -235,7 +235,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		home := factory.CreateLocationStructure()
 		// when
-		err := r.UpdateCharacterHome(ctx, c1.ID, sql.NullInt64{Int64: home.ID, Valid: true})
+		err := r.UpdateCharacterHome(ctx, c1.ID, optional.New(home.ID))
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetCharacter(ctx, c1.ID)
@@ -251,12 +251,12 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		x := time.Now().Add(1 * time.Hour)
 		// when
-		err := r.UpdateCharacterLastLoginAt(ctx, c1.ID, sql.NullTime{Time: x, Valid: true})
+		err := r.UpdateCharacterLastLoginAt(ctx, c1.ID, optional.New(x))
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x.UTC(), c2.LastLoginAt.Time.UTC())
+				assert.Equal(t, x.UTC(), c2.LastLoginAt.ValueOrZero().UTC())
 			}
 		}
 	})
@@ -266,7 +266,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		location := factory.CreateLocationStructure()
 		// when
-		err := r.UpdateCharacterLocation(ctx, c1.ID, sql.NullInt64{Int64: location.ID, Valid: true})
+		err := r.UpdateCharacterLocation(ctx, c1.ID, optional.New(location.ID))
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetCharacter(ctx, c1.ID)
@@ -281,7 +281,7 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		x := factory.CreateEveType()
 		// when
-		err := r.UpdateCharacterShip(ctx, c1.ID, sql.NullInt32{Int32: x.ID, Valid: true})
+		err := r.UpdateCharacterShip(ctx, c1.ID, optional.New(x.ID))
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetCharacter(ctx, c1.ID)
@@ -295,8 +295,8 @@ func TestUpdateCharacterFields(t *testing.T) {
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
 		// when
-		totalSP := sql.NullInt64{Int64: int64(rand.IntN(100_000_000)), Valid: true}
-		unallocatedSP := sql.NullInt64{Int64: int64(rand.IntN(10_000_000)), Valid: true}
+		totalSP := optional.New(rand.IntN(100_000_000))
+		unallocatedSP := optional.New(rand.IntN(10_000_000))
 		err := r.UpdateCharacterSkillPoints(ctx, c1.ID, totalSP, unallocatedSP)
 		// then
 		if assert.NoError(t, err) {
@@ -313,12 +313,12 @@ func TestUpdateCharacterFields(t *testing.T) {
 		c1 := factory.CreateCharacter()
 		x := rand.Float64() * 100_000_000
 		// when
-		err := r.UpdateCharacterWalletBalance(ctx, c1.ID, sql.NullFloat64{Float64: x, Valid: true})
+		err := r.UpdateCharacterWalletBalance(ctx, c1.ID, optional.New(x))
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetCharacter(ctx, c1.ID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, x, c2.WalletBalance.Float64)
+				assert.Equal(t, x, c2.WalletBalance.ValueOrZero())
 			}
 		}
 	})

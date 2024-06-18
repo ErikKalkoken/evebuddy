@@ -14,6 +14,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/dustin/go-humanize"
+
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 type skillGroupProgress struct {
@@ -207,8 +209,8 @@ func (a *skillCatalogueArea) makeTopText() (string, widget.Importance, error) {
 		return "No Character", widget.LowImportance, nil
 	}
 	c := a.ui.currentCharacter()
-	total := humanizedNullInt64(c.TotalSP, "?")
-	unallocated := humanizedNullInt64(c.UnallocatedSP, "?")
+	total := ihumanize.Optional(c.TotalSP, "?")
+	unallocated := ihumanize.Optional(c.UnallocatedSP, "?")
 	t := fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated)
 	return t, widget.MediumImportance, nil
 }
