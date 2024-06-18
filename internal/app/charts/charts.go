@@ -3,9 +3,11 @@ package charts
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"image/color"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -70,8 +72,11 @@ func (cb ChartBuilder) Render(ct ChartType, title string, values []Value) *fyne.
 }
 
 func (cb ChartBuilder) render(ct ChartType, title string, values []Value) fyne.CanvasObject {
-	if len(values) < 2 {
-		l := widget.NewLabel("Not enough data")
+	max := slices.MaxFunc(values, func(a, b Value) int {
+		return cmp.Compare(a.Value, b.Value)
+	})
+	if len(values) < 2 || max.Value == 0 {
+		l := widget.NewLabel("Insufficient data")
 		l.Importance = widget.LowImportance
 		return container.NewCenter(l)
 	}

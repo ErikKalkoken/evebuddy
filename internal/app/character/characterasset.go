@@ -146,7 +146,8 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 	if err != nil {
 		return false, err
 	}
-	if err := s.updateCharacterAssetTotalValue(ctx, arg); err != nil {
+	_, err = s.UpdateCharacterAssetTotalValue(ctx, arg.CharacterID)
+	if err != nil {
 		slog.Error("Failed to update asset total value", "characterID", arg.CharacterID, "err", err)
 	}
 	return hasChanged, err
@@ -174,22 +175,22 @@ func (s *CharacterService) CharacterAssetTotalValue(characterID int32) (optional
 	if err != nil {
 		return optional.Optional[float64]{}, err
 	}
-	if !found {
-		return optional.Optional[float64]{}, nil
+	if found {
+		return optional.New(v), nil
 	}
-	return optional.New(v), nil
+	return optional.Optional[float64]{}, nil
 }
 
-func (s *CharacterService) updateCharacterAssetTotalValue(ctx context.Context, arg UpdateSectionParams) error {
-	v, err := s.st.GetCharacterAssetTotalValue(ctx, arg.CharacterID)
+func (s *CharacterService) UpdateCharacterAssetTotalValue(ctx context.Context, characterID int32) (float64, error) {
+	v, err := s.st.GetCharacterAssetTotalValue(ctx, characterID)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	key := makeCharacterAssetTotalValueKey(arg.CharacterID)
+	key := makeCharacterAssetTotalValueKey(characterID)
 	if err := s.DictionaryService.SetFloat64(key, v); err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return v, nil
 }
 
 func makeCharacterAssetTotalValueKey(characterID int32) string {

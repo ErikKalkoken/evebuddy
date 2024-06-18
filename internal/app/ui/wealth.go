@@ -123,12 +123,26 @@ func (a *wealthArea) compileData() ([]dataRow, int, error) {
 	}
 	data := make([]dataRow, 0)
 	for _, c := range selected {
-		wallet := c.WalletBalance.ValueOrZero()
-		x, err := a.ui.CharacterService.CharacterAssetTotalValue(c.ID)
+		assetTotal, err := a.ui.CharacterService.CharacterAssetTotalValue(c.ID)
 		if err != nil {
 			return nil, 0, err
 		}
-		assets := x.ValueOrZero()
+		if assetTotal.IsNone() && a.ui.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets) {
+			go func(characterID int32) {
+				_, err := a.ui.CharacterService.UpdateCharacterAssetTotalValue(ctx, characterID)
+				if err != nil {
+					slog.Error("failed to update asset totals", "characterID", characterID, "err", err)
+					return
+				}
+				a.ui.wealthArea.refresh()
+				a.ui.overviewArea.refresh()
+			}(c.ID)
+		}
+		if c.WalletBalance.IsNone() && assetTotal.IsNone() {
+			continue
+		}
+		wallet := c.WalletBalance.ValueOrZero()
+		assets := assetTotal.ValueOrZero()
 		label := c.EveCharacter.Name
 		r := dataRow{
 			label:  label,
