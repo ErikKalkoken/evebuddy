@@ -53,8 +53,3 @@ func ToNullTime(o Optional[time.Time]) sql.NullTime {
 	}
 	return sql.NullTime{Time: o.ValueOrZero(), Valid: true}
 }
-
-type SQLNullTypes interface {
-	sql.NullFloat64
-	sql.NullInt64
-}

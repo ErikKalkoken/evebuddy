@@ -1,4 +1,5 @@
-// Package optional provides optional types.
+// Package optional provides type safe optional types
+// and the ability to convert them to and from sql Null types.
 package optional
 
 import (

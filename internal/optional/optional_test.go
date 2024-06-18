@@ -103,4 +103,5 @@ func TestValueOrZero(t *testing.T) {
 func TestConvertNumeric(t *testing.T) {
 	assert.Equal(t, optional.New(int(99)), optional.ConvertNumeric[int64, int](optional.New(int64(99))))
 	assert.Equal(t, optional.New(float64(99)), optional.ConvertNumeric[int32, float64](optional.New(int32(99))))
+	assert.Equal(t, optional.NewNone[float64](), optional.ConvertNumeric[int32, float64](optional.NewNone[int32]()))
 }
