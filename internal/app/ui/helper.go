@@ -12,7 +12,8 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/BooleanCat/option"
+	. "github.com/BooleanCat/option"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -81,6 +82,13 @@ func humanizedNullDuration(d optional.Duration, fallback string) string {
 	return ihumanize.Duration(d.Duration)
 }
 
+func humanizedNullOption(d Option[time.Duration], fallback string) string {
+	if d.IsNone() {
+		return fallback
+	}
+	return ihumanize.Duration(d.Unwrap())
+}
+
 // func humanizedRelNullTime(v sql.NullTime, fallback string) string {
 // 	if !v.Valid {
 // 		return fallback
@@ -88,7 +96,7 @@ func humanizedNullDuration(d optional.Duration, fallback string) string {
 // 	return humanize.RelTime(v.Time, time.Now(), "", "")
 // }
 
-func humanizedRelOptionTime(v option.Option[time.Time], fallback string) string {
+func humanizedRelOptionTime(v Option[time.Time], fallback string) string {
 	if v.IsNone() {
 		return fallback
 	}
@@ -124,7 +132,7 @@ type numeric interface {
 	int | int32 | int64 | float32 | float64
 }
 
-func humanizedNumericOption[T numeric](v option.Option[T], decimals int, fallback string) string {
+func humanizedNumericOption[T numeric](v Option[T], decimals int, fallback string) string {
 	if v.IsNone() {
 		return fallback
 	}

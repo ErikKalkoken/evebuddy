@@ -13,33 +13,32 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
-	opt "github.com/BooleanCat/option"
+	. "github.com/BooleanCat/option"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type overviewCharacter struct {
 	alliance       string
-	assetValue     opt.Option[float64]
+	assetValue     Option[float64]
 	birthday       time.Time
 	corporation    string
 	id             int32
 	home           *app.EntityShort[int64]
-	lastLoginAt    opt.Option[time.Time]
+	lastLoginAt    Option[time.Time]
 	location       *app.EntityShort[int64]
 	name           string
 	solarSystem    *app.EntityShort[int32]
-	systemSecurity opt.Option[float32]
+	systemSecurity Option[float32]
 	region         *app.EntityShort[int32]
 	ship           *app.EntityShort[int32]
 	security       float64
-	totalSP        opt.Option[int64]
-	training       optional.Duration
-	unallocatedSP  opt.Option[int64]
-	unreadCount    opt.Option[int64]
-	walletBalance  opt.Option[float64]
+	totalSP        Option[int64]
+	training       Option[time.Duration]
+	unallocatedSP  Option[int64]
+	unreadCount    Option[int64]
+	walletBalance  Option[float64]
 }
 
 // overviewArea is the UI area that shows an overview of all the user's characters.
@@ -130,11 +129,11 @@ func (a *overviewArea) makeTable() *widget.Table {
 			case 6:
 				l.Text = humanizedNumericOption(c.unallocatedSP, 0, "?")
 			case 7:
-				if !c.training.Valid {
+				if c.training.IsNone() {
 					l.Text = "Inactive"
 					l.Importance = widget.WarningImportance
 				} else {
-					l.Text = ihumanize.Duration(c.training.Duration)
+					l.Text = ihumanize.Duration(c.training.Unwrap())
 				}
 			case 8:
 				l.Text = humanizedNumericOption(c.walletBalance, 1, "?")
@@ -254,10 +253,10 @@ func (a *overviewArea) refresh() {
 }
 
 type overviewTotals struct {
-	sp     opt.Option[int64]
-	unread opt.Option[int64]
-	wallet opt.Option[float64]
-	assets opt.Option[float64]
+	sp     Option[int64]
+	unread Option[int64]
+	wallet Option[float64]
+	assets Option[float64]
 }
 
 func (a *overviewArea) updateEntries() (overviewTotals, error) {
@@ -301,7 +300,7 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 				ID:   m.Location.SolarSystem.ID,
 				Name: m.Location.SolarSystem.Name,
 			}
-			c.systemSecurity = opt.Some(m.Location.SolarSystem.SecurityStatus)
+			c.systemSecurity = Some(m.Location.SolarSystem.SecurityStatus)
 		}
 		if m.Ship != nil {
 			c.ship = &app.EntityShort[int32]{
@@ -324,7 +323,7 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 			return totals, fmt.Errorf("failed to fetch mail counts for character %d, %w", c.id, err)
 		}
 		if total > 0 {
-			cc[i].unreadCount = opt.Some(int64(unread))
+			cc[i].unreadCount = Some(int64(unread))
 		}
 	}
 	for i, c := range cc {
@@ -339,38 +338,38 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 	}
 	for _, c := range cc {
 		if c.totalSP.IsSome() {
-			totals.sp = opt.Some(totals.sp.UnwrapOr(0) + c.totalSP.Unwrap())
+			totals.sp = Some(totals.sp.UnwrapOr(0) + c.totalSP.Unwrap())
 		}
 		if c.unreadCount.IsSome() {
-			totals.unread = opt.Some(totals.unread.UnwrapOr(0) + c.unreadCount.Unwrap())
+			totals.unread = Some(totals.unread.UnwrapOr(0) + c.unreadCount.Unwrap())
 		}
 		if c.walletBalance.IsSome() {
-			totals.wallet = opt.Some(totals.wallet.UnwrapOr(0) + c.walletBalance.Unwrap())
+			totals.wallet = Some(totals.wallet.UnwrapOr(0) + c.walletBalance.Unwrap())
 		}
 		if c.assetValue.IsSome() {
-			totals.assets = opt.Some(totals.assets.UnwrapOr(0) + c.assetValue.Unwrap())
+			totals.assets = Some(totals.assets.UnwrapOr(0) + c.assetValue.Unwrap())
 		}
 	}
 	return totals, nil
 }
 
-func optionFromNullFloat64(v sql.NullFloat64) opt.Option[float64] {
+func optionFromNullFloat64(v sql.NullFloat64) Option[float64] {
 	if !v.Valid {
-		return opt.None[float64]()
+		return None[float64]()
 	}
-	return opt.Some(v.Float64)
+	return Some(v.Float64)
 }
 
-func optionFromNullInt64(v sql.NullInt64) opt.Option[int64] {
+func optionFromNullInt64(v sql.NullInt64) Option[int64] {
 	if !v.Valid {
-		return opt.None[int64]()
+		return None[int64]()
 	}
-	return opt.Some(v.Int64)
+	return Some(v.Int64)
 }
 
-func optionFromNullTime(v sql.NullTime) opt.Option[time.Time] {
+func optionFromNullTime(v sql.NullTime) Option[time.Time] {
 	if !v.Valid {
-		return opt.None[time.Time]()
+		return None[time.Time]()
 	}
-	return opt.Some(v.Time)
+	return Some(v.Time)
 }

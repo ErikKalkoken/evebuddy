@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
+	. "github.com/BooleanCat/option"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/queries"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type SkillqueueItemParams struct {
@@ -21,8 +22,8 @@ type SkillqueueItemParams struct {
 	TrainingStartSP int
 }
 
-func (st *Storage) GetTotalTrainingTime(ctx context.Context, characterID int32) (optional.Duration, error) {
-	var d optional.Duration
+func (st *Storage) GetTotalTrainingTime(ctx context.Context, characterID int32) (Option[time.Duration], error) {
+	var d Option[time.Duration]
 	x, err := st.q.GetTotalTrainingTime(ctx, int64(characterID))
 	if err != nil {
 		return d, err
@@ -30,8 +31,7 @@ func (st *Storage) GetTotalTrainingTime(ctx context.Context, characterID int32) 
 	if !x.Valid {
 		return d, nil
 	}
-	d.Duration = time.Duration(float64(time.Hour) * 24 * x.Float64)
-	d.Valid = true
+	d = Some(time.Duration(float64(time.Hour) * 24 * x.Float64))
 	return d, nil
 }
 

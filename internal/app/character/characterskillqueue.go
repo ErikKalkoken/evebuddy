@@ -3,14 +3,16 @@ package character
 import (
 	"context"
 	"log/slog"
+	"time"
+
+	. "github.com/BooleanCat/option"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (optional.Duration, error) {
+func (s *CharacterService) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (Option[time.Duration], error) {
 	return s.st.GetTotalTrainingTime(ctx, characterID)
 }
 

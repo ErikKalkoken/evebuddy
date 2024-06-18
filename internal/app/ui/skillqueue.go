@@ -2,9 +2,9 @@ package ui
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -13,9 +13,10 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
+	. "github.com/BooleanCat/option"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 // skillqueueArea is the UI area that shows the skillqueue
@@ -120,8 +121,8 @@ func (a *skillqueueArea) refresh() {
 		i = widget.DangerImportance
 	} else {
 		s := "Skills"
-		if completion.Valid && completion.Float64 < 1 {
-			s += fmt.Sprintf(" (%.0f%%)", completion.Float64*100)
+		if completion.IsSome() && completion.Unwrap() < 1 {
+			s += fmt.Sprintf(" (%.0f%%)", completion.Unwrap()*100)
 		}
 		a.ui.skillqueueTab.Text = s
 		a.ui.tabs.Refresh()
@@ -132,9 +133,9 @@ func (a *skillqueueArea) refresh() {
 	a.total.Refresh()
 }
 
-func (a *skillqueueArea) updateItems() (optional.Duration, sql.NullFloat64, error) {
-	var remaining optional.Duration
-	var completion sql.NullFloat64
+func (a *skillqueueArea) updateItems() (Option[time.Duration], Option[float64], error) {
+	var remaining Option[time.Duration]
+	var completion Option[float64]
 	ctx := context.Background()
 	if !a.ui.hasCharacter() {
 		err := a.items.Set(make([]any, 0))
@@ -149,11 +150,9 @@ func (a *skillqueueArea) updateItems() (optional.Duration, sql.NullFloat64, erro
 	items := make([]any, len(skills))
 	for i, skill := range skills {
 		items[i] = skill
-		remaining.Duration += skill.Remaining().Duration
-		remaining.Valid = true
+		remaining = Some(remaining.UnwrapOr(0) + skill.Remaining().Duration)
 		if skill.IsActive() {
-			completion.Valid = true
-			completion.Float64 = skill.CompletionP()
+			completion = Some(skill.CompletionP())
 		}
 	}
 	if err := a.items.Set(items); err != nil {
@@ -162,7 +161,7 @@ func (a *skillqueueArea) updateItems() (optional.Duration, sql.NullFloat64, erro
 	return remaining, completion, nil
 }
 
-func (a *skillqueueArea) makeTopText(total optional.Duration) (string, widget.Importance) {
+func (a *skillqueueArea) makeTopText(total Option[time.Duration]) (string, widget.Importance) {
 	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
@@ -170,6 +169,6 @@ func (a *skillqueueArea) makeTopText(total optional.Duration) (string, widget.Im
 	if a.items.Length() == 0 {
 		return "Training not active", widget.WarningImportance
 	}
-	t := fmt.Sprintf("Total training time: %s", humanizedNullDuration(total, "?"))
+	t := fmt.Sprintf("Total training time: %s", humanizedNullOption(total, "?"))
 	return t, widget.MediumImportance
 }
