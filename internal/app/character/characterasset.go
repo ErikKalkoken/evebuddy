@@ -2,13 +2,13 @@ package character
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/http"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
@@ -168,16 +168,16 @@ func (s *CharacterService) fetchCharacterAssetNamesESI(ctx context.Context, char
 	return m, nil
 }
 
-func (s *CharacterService) CharacterAssetTotalValue(characterID int32) (sql.NullFloat64, error) {
+func (s *CharacterService) CharacterAssetTotalValue(characterID int32) (optional.Optional[float64], error) {
 	key := makeCharacterAssetTotalValueKey(characterID)
 	v, found, err := s.DictionaryService.Float64(key)
 	if err != nil {
-		return sql.NullFloat64{}, err
+		return optional.Optional[float64]{}, err
 	}
 	if !found {
-		return sql.NullFloat64{}, nil
+		return optional.Optional[float64]{}, nil
 	}
-	return sqlite.NewNullFloat64(v), nil
+	return optional.New(v), nil
 }
 
 func (s *CharacterService) updateCharacterAssetTotalValue(ctx context.Context, arg UpdateSectionParams) error {

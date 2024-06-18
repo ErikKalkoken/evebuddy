@@ -128,7 +128,7 @@ func (a *wealthArea) compileData() ([]dataRow, int, error) {
 		if err != nil {
 			return nil, 0, err
 		}
-		assets := x.Float64
+		assets := x.ValueOrZero()
 		label := c.EveCharacter.Name
 		r := dataRow{
 			label:  label,

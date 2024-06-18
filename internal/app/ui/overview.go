@@ -329,7 +329,7 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 		if err != nil {
 			return totals, fmt.Errorf("failed to fetch asset total value for character %d, %w", c.id, err)
 		}
-		cc[i].assetValue = optional.FromNullFloat64(v)
+		cc[i].assetValue = v
 	}
 	if err := a.characters.Set(copyToUntypedSlice(cc)); err != nil {
 		return totals, err
