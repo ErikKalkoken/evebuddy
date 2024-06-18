@@ -9,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
-	"github.com/antihax/goesi/optional"
+	esioptional "github.com/antihax/goesi/optional"
 )
 
 func (s *CharacterService) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*app.CharacterWalletJournalEntry, error) {
@@ -27,7 +27,7 @@ func (s *CharacterService) updateCharacterWalletJournalEntryESI(ctx context.Cont
 			entries, err := fetchFromESIWithPaging(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdWalletJournal200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdWalletJournalOpts{
-						Page: optional.NewInt32(int32(pageNum)),
+						Page: esioptional.NewInt32(int32(pageNum)),
 					}
 					return s.esiClient.ESI.WalletApi.GetCharactersCharacterIdWalletJournal(ctx, characterID, arg)
 				})

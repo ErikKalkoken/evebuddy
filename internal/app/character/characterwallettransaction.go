@@ -9,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
-	"github.com/antihax/goesi/optional"
+	esioptional "github.com/antihax/goesi/optional"
 )
 
 const (
@@ -107,7 +107,7 @@ func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, chara
 	for {
 		var opts *esi.GetCharactersCharacterIdWalletTransactionsOpts
 		if lastID > 0 {
-			opts = &esi.GetCharactersCharacterIdWalletTransactionsOpts{FromId: optional.NewInt64(lastID)}
+			opts = &esi.GetCharactersCharacterIdWalletTransactionsOpts{FromId: esioptional.NewInt64(lastID)}
 		} else {
 			opts = nil
 		}

@@ -7,7 +7,7 @@ import (
 	"slices"
 
 	"github.com/antihax/goesi/esi"
-	"github.com/antihax/goesi/optional"
+	esioptional "github.com/antihax/goesi/optional"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -143,7 +143,7 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 	for {
 		var opts *esi.GetCharactersCharacterIdMailOpts
 		if lastMailID > 0 {
-			opts = &esi.GetCharactersCharacterIdMailOpts{LastMailId: optional.NewInt32(lastMailID)}
+			opts = &esi.GetCharactersCharacterIdMailOpts{LastMailId: esioptional.NewInt32(lastMailID)}
 		} else {
 			opts = nil
 		}

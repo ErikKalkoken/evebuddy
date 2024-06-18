@@ -8,7 +8,7 @@ import (
 
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
-	"github.com/antihax/goesi/optional"
+	esioptional "github.com/antihax/goesi/optional"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -71,7 +71,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		xx, err := fetchFromESIWithPaging(
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
-					Page: optional.NewInt32(int32(pageNum)),
+					Page: esioptional.NewInt32(int32(pageNum)),
 				}
 				return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
 			})
@@ -109,7 +109,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		xx, err := fetchFromESIWithPaging(
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
-					Page: optional.NewInt32(int32(pageNum)),
+					Page: esioptional.NewInt32(int32(pageNum)),
 				}
 				return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
 			})
@@ -140,7 +140,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		xx, err := fetchFromESIWithPaging(
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
-					Page: optional.NewInt32(int32(pageNum)),
+					Page: esioptional.NewInt32(int32(pageNum)),
 				}
 				return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
 			})
@@ -171,7 +171,7 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 		_, err := fetchFromESIWithPaging(
 			func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 				arg := &esi.GetCharactersCharacterIdAssetsOpts{
-					Page: optional.NewInt32(int32(pageNum)),
+					Page: esioptional.NewInt32(int32(pageNum)),
 				}
 				return client.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, 99, arg)
 			})

@@ -11,7 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
-	"github.com/antihax/goesi/optional"
+	esioptional "github.com/antihax/goesi/optional"
 )
 
 func (s *CharacterService) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
@@ -49,7 +49,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 			assets, err := fetchFromESIWithPaging(
 				func(pageNum int) ([]esi.GetCharactersCharacterIdAssets200Ok, *http.Response, error) {
 					arg := &esi.GetCharactersCharacterIdAssetsOpts{
-						Page: optional.NewInt32(int32(pageNum)),
+						Page: esioptional.NewInt32(int32(pageNum)),
 					}
 					return s.esiClient.ESI.AssetsApi.GetCharactersCharacterIdAssets(ctx, characterID, arg)
 				})
