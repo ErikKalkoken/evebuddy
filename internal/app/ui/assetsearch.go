@@ -15,7 +15,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/assettree"
+	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 	"github.com/dustin/go-humanize"
 )
@@ -30,21 +30,21 @@ const (
 
 // assetSearchArea is the UI area that shows the skillqueue
 type assetSearchArea struct {
-	assets         []*assetSearchRow
-	assetTree      assettree.AssetTree
-	assetTable     *widget.Table
-	assetData      binding.UntypedList
-	colSort        []assetSortDir
-	characterNames map[int32]string
-	content        *fyne.Container
-	iconSortAsc    fyne.Resource
-	iconSortDesc   fyne.Resource
-	iconSortOff    fyne.Resource
-	found          *widget.Label
-	colSearch      []string
-	searchBoxes    []*widget.Entry
-	total          *widget.Label
-	ui             *ui
+	assets          []*assetSearchRow
+	assetCollection assetcollection.AssetCollection
+	assetTable      *widget.Table
+	assetData       binding.UntypedList
+	colSort         []assetSortDir
+	characterNames  map[int32]string
+	content         *fyne.Container
+	iconSortAsc     fyne.Resource
+	iconSortDesc    fyne.Resource
+	iconSortOff     fyne.Resource
+	found           *widget.Label
+	colSearch       []string
+	searchBoxes     []*widget.Entry
+	total           *widget.Label
+	ui              *ui
 }
 
 type assetSearchRow struct {
@@ -113,7 +113,7 @@ func (a *assetSearchArea) newAssetSearchRow(ca *app.CharacterAsset) *assetSearch
 		r.quantityDisplay = humanize.Comma(int64(ca.Quantity))
 		r.quantity = int(ca.Quantity)
 	}
-	location, ok := a.assetTree.AssetParentLocation(ca.ItemID)
+	location, ok := a.assetCollection.AssetParentLocation(ca.ItemID)
 	if !ok {
 		r.locationName = "?"
 	} else {
@@ -378,7 +378,7 @@ func (a *assetSearchArea) loadData() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	a.assetTree = assettree.New(assets, locations)
+	a.assetCollection = assetcollection.New(assets, locations)
 	rows := make([]*assetSearchRow, len(assets))
 	for i, ca := range assets {
 		rows[i] = a.newAssetSearchRow(ca)

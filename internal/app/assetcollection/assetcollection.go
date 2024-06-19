@@ -1,5 +1,5 @@
-// Package assettree allows working with character assets in a tree structure.
-package assettree
+// Package assetcollection provides data structures to analyze and process asset data.
+package assetcollection
 
 import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -23,7 +23,7 @@ func newAssetNode(ca *app.CharacterAsset) AssetNode {
 	return AssetNode{Asset: ca, nodes: make(map[int64]AssetNode)}
 }
 
-// LocationNode is the root node of an asset tree for a location, e.g. a station.
+// LocationNode is the root node in an asset tree representing a location, e.g. a station.
 type LocationNode struct {
 	Location *app.EveLocation
 	nodes    map[int64]AssetNode
@@ -41,13 +41,16 @@ func (ln LocationNode) Nodes() []AssetNode {
 	return nn
 }
 
-type AssetTree struct {
+// AssetCollection is a collection of assets.
+// The assets are structured as one asset tree per location
+// and may contain assets belonging to one or multiple characters.
+type AssetCollection struct {
 	lns                  map[int64]LocationNode
 	assetParentLocations map[int64]int64
 }
 
-// New returns a new asset tree from a slice of character assets.
-func New(assets []*app.CharacterAsset, locations []*app.EveLocation) AssetTree {
+// New returns a new AssetCollection from a slice of character assets.
+func New(assets []*app.CharacterAsset, locations []*app.EveLocation) AssetCollection {
 	// initial map of all assets
 	// assets will be removed from this map as they are added to the tree
 	lm := make(map[int64]*app.EveLocation)
@@ -85,7 +88,7 @@ func New(assets []*app.CharacterAsset, locations []*app.EveLocation) AssetTree {
 	}
 	// return parent nodes
 	parentLocations := gatherParentLocations(lns)
-	return AssetTree{lns: lns, assetParentLocations: parentLocations}
+	return AssetCollection{lns: lns, assetParentLocations: parentLocations}
 }
 
 func addChildNodes(m map[int64]*app.CharacterAsset, nodes map[int64]AssetNode) {
@@ -134,7 +137,7 @@ func addAssetChildrenLocations(assets map[int64]int64, nodes map[int64]AssetNode
 	}
 }
 
-func (at AssetTree) AssetParentLocation(id int64) (*app.EveLocation, bool) {
+func (at AssetCollection) AssetParentLocation(id int64) (*app.EveLocation, bool) {
 	id, found := at.assetParentLocations[id]
 	if !found {
 		return nil, false
@@ -146,7 +149,7 @@ func (at AssetTree) AssetParentLocation(id int64) (*app.EveLocation, bool) {
 	return ln.Location, true
 }
 
-func (at AssetTree) Locations() []LocationNode {
+func (at AssetCollection) Locations() []LocationNode {
 	nn := make([]LocationNode, 0)
 	for _, ln := range at.lns {
 		nn = append(nn, ln)

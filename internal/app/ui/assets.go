@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/assettree"
+	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/dustin/go-humanize"
@@ -111,7 +111,7 @@ type assetsArea struct {
 	locationsData binding.StringTree
 	locationsTop  *widget.Label
 
-	assetTree assettree.AssetTree
+	assetCollection assetcollection.AssetCollection
 
 	ui *ui
 }
@@ -238,9 +238,9 @@ func (a *assetsArea) createTreeData() (locationDataTree, int, error) {
 	if err != nil {
 		return tree, 0, err
 	}
-	a.assetTree = assettree.New(assets, oo)
-	locationNodes := a.assetTree.Locations()
-	slices.SortFunc(locationNodes, func(a assettree.LocationNode, b assettree.LocationNode) int {
+	a.assetCollection = assetcollection.New(assets, oo)
+	locationNodes := a.assetCollection.Locations()
+	slices.SortFunc(locationNodes, func(a assetcollection.LocationNode, b assetcollection.LocationNode) int {
 		return cmp.Compare(a.Location.DisplayName(), b.Location.DisplayName())
 	})
 	for _, ln := range locationNodes {
@@ -261,14 +261,14 @@ func (a *assetsArea) createTreeData() (locationDataTree, int, error) {
 		locationUID := tree.add("", location)
 
 		topAssets := ln.Nodes()
-		slices.SortFunc(topAssets, func(a assettree.AssetNode, b assettree.AssetNode) int {
+		slices.SortFunc(topAssets, func(a assetcollection.AssetNode, b assetcollection.AssetNode) int {
 			return cmp.Compare(a.Asset.DisplayName(), b.Asset.DisplayName())
 		})
 		itemCount := 0
 		shipCount := 0
-		ships := make([]assettree.AssetNode, 0)
-		itemContainers := make([]assettree.AssetNode, 0)
-		assetSafety := make([]assettree.AssetNode, 0)
+		ships := make([]assetcollection.AssetNode, 0)
+		itemContainers := make([]assetcollection.AssetNode, 0)
+		assetSafety := make([]assetcollection.AssetNode, 0)
 		for _, an := range topAssets {
 			if an.Asset.IsInAssetSafety() {
 				assetSafety = append(assetSafety, an)
@@ -304,8 +304,8 @@ func (a *assetsArea) createTreeData() (locationDataTree, int, error) {
 				Type:        nodeShip,
 			}
 			shipUID := tree.add(shipsUID, ldn)
-			cargo := make([]assettree.AssetNode, 0)
-			fuel := make([]assettree.AssetNode, 0)
+			cargo := make([]assetcollection.AssetNode, 0)
+			fuel := make([]assetcollection.AssetNode, 0)
 			for _, an2 := range an.Nodes() {
 				if an2.Asset.IsInCargoBay() {
 					cargo = append(cargo, an2)
@@ -359,7 +359,7 @@ func (a *assetsArea) createTreeData() (locationDataTree, int, error) {
 			tree.add(locationUID, ldn)
 		}
 	}
-	return tree, len(a.assetTree.Locations()), nil
+	return tree, len(a.assetCollection.Locations()), nil
 }
 
 func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
