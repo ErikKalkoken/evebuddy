@@ -32,16 +32,15 @@ const (
 )
 
 const (
-	host               = "localhost"
-	port               = ":30123"
-	address            = host + port
-	oauthURL           = "https://login.eveonline.com/.well-known/oauth-authorization-server"
-	ssoCallbackPath    = "/callback"
-	ssoHost            = "login.eveonline.com"
-	ssoIssuer1         = "login.eveonline.com"
-	ssoIssuer2         = "https://login.eveonline.com"
-	ssoTokenUrl        = "https://login.eveonline.com/v2/oauth/token"
-	cacheTimeoutJWKSet = 6 * 3600
+	defaultPort            = 30123
+	defaultSsoCallbackPath = "/callback"
+	host                   = "localhost"
+	oauthURL               = "https://login.eveonline.com/.well-known/oauth-authorization-server"
+	ssoHost                = "login.eveonline.com"
+	ssoIssuer1             = "login.eveonline.com"
+	ssoIssuer2             = "https://login.eveonline.com"
+	ssoTokenUrl            = "https://login.eveonline.com/v2/oauth/token"
+	cacheTimeoutJWKSet     = 6 * 3600
 )
 
 var (
@@ -58,6 +57,10 @@ type CacheService interface {
 
 // SSOService is a service for authentication Eve Online characters.
 type SSOService struct {
+	// SSO configuration can be modified before calling any method.
+	CallbackPath string
+	Port         int
+
 	cache      CacheService
 	clientID   string
 	httpClient *http.Client
@@ -66,9 +69,11 @@ type SSOService struct {
 // Returns a new SSO service.
 func New(clientID string, client *http.Client, cache CacheService) *SSOService {
 	s := &SSOService{
-		cache:      cache,
-		httpClient: client,
-		clientID:   clientID,
+		Port:         defaultPort,
+		CallbackPath: defaultSsoCallbackPath,
+		cache:        cache,
+		httpClient:   client,
+		clientID:     clientID,
 	}
 	return s
 }
@@ -89,7 +94,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	serverCtx, cancel := context.WithCancel(serverCtx)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc(ssoCallbackPath, func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc(s.CallbackPath, func(w http.ResponseWriter, req *http.Request) {
 		slog.Info("Received SSO callback request")
 		v := req.URL.Query()
 		newState := v.Get("state")
@@ -139,11 +144,11 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		return nil, err
 	}
 	server := &http.Server{
-		Addr:    address,
+		Addr:    s.address(),
 		Handler: mux,
 	}
 	go func() {
-		slog.Info("Web server started", "address", address)
+		slog.Info("Web server started", "address", s.address())
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			slog.Error("Web server terminated prematurely", "error", err)
 		}
@@ -168,6 +173,14 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	return token, nil
 }
 
+func (s *SSOService) address() string {
+	return fmt.Sprintf("%s:%d", host, s.Port)
+}
+
+func (s *SSOService) redirectURI() string {
+	return fmt.Sprintf("http://%s%s", s.address(), s.CallbackPath)
+}
+
 // Open browser and show character selection for SSO.
 func (s *SSOService) startSSO(state string, codeVerifier string, scopes []string) error {
 	challenge, err := calcCodeChallenge(codeVerifier)
@@ -176,7 +189,7 @@ func (s *SSOService) startSSO(state string, codeVerifier string, scopes []string
 	}
 	v := url.Values{}
 	v.Set("response_type", "code")
-	v.Set("redirect_uri", "http://"+address+ssoCallbackPath)
+	v.Set("redirect_uri", s.redirectURI())
 	v.Set("client_id", s.clientID)
 	v.Set("scope", strings.Join(scopes, " "))
 	v.Set("state", state)
