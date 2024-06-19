@@ -1,6 +1,7 @@
 package sso
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -21,8 +22,13 @@ type Token struct {
 
 // newToken creates e new token and returns it.
 func newToken(rawToken *tokenPayload, claims jwt.MapClaims) (*Token, error) {
+	fmt.Println(claims)
 	// calc character ID
-	characterID, err := strconv.Atoi(strings.Split(claims["sub"].(string), ":")[2])
+	sub, err := claims.GetSubject()
+	if err != nil {
+		return nil, err
+	}
+	characterID, err := strconv.Atoi(strings.Split(sub, ":")[2])
 	if err != nil {
 		return nil, err
 	}

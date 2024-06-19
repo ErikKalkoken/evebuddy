@@ -22,13 +22,13 @@ import (
 	"github.com/pkg/browser"
 )
 
-type key int
+type contextKey int
 
 const (
-	keyCodeVerifier           key = iota
-	keyError                  key = iota
-	keyState                  key = iota
-	keyAuthenticatedCharacter key = iota
+	keyCodeVerifier           contextKey = iota
+	keyError                  contextKey = iota
+	keyState                  contextKey = iota
+	keyAuthenticatedCharacter contextKey = iota
 )
 
 const (
@@ -72,15 +72,13 @@ func New(client *http.Client, cache CacheService) *SSOService {
 	return s
 }
 
-// Authenticate an Eve Online character via SSO and return the new SSO token.
-// Will open a new browser tab on the desktop for the user.
+// Authenticate an Eve Online character via OAuth 2.0 PKCE and return the new SSO token.
+// Will open a new browser tab on the desktop and run a web server for the OAuth process.
 func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token, error) {
 	codeVerifier := generateRandomString(32)
 	serverCtx := context.WithValue(ctx, keyCodeVerifier, codeVerifier)
-
 	state := generateRandomString(16)
 	serverCtx = context.WithValue(serverCtx, keyState, state)
-
 	serverCtx, cancel := context.WithCancel(serverCtx)
 
 	mux := http.NewServeMux()
@@ -164,7 +162,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	return token, nil
 }
 
-// Open browser and show character selection for SSO
+// Open browser and show character selection for SSO.
 func (s *SSOService) startSSO(state string, codeVerifier string, scopes []string) error {
 	v := url.Values{}
 	v.Set("response_type", "code")
@@ -294,23 +292,10 @@ func (s *SSOService) validateToken(tokenString string) (jwt.MapClaims, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// validate issuer claim
 	claims := token.Claims.(jwt.MapClaims)
-	iss := claims["iss"].(string)
-	if iss != ssoIssuer1 && iss != ssoIssuer2 {
-		return nil, fmt.Errorf("invalid issuer claim")
+	if err := validateClaims(claims); err != nil {
+		return nil, err
 	}
-
-	// validate audience claim
-	aud := claims["aud"].([]any)
-	if aud[0].(string) != ssoClientId {
-		return nil, fmt.Errorf("invalid first audience claim")
-	}
-	if aud[1].(string) != "EVE Online" {
-		return nil, fmt.Errorf("invalid 2nd audience claim")
-	}
-
 	return claims, nil
 }
 
@@ -375,6 +360,29 @@ func (s *SSOService) determineJwksURL() (string, error) {
 	}
 	jwksURL := data["jwks_uri"].(string)
 	return jwksURL, nil
+}
+
+func validateClaims(claims jwt.MapClaims) error {
+	// validate issuer claim
+	iss, err := claims.GetIssuer()
+	if err != nil {
+		return err
+	}
+	if iss != ssoIssuer1 && iss != ssoIssuer2 {
+		return fmt.Errorf("invalid issuer claim")
+	}
+	// validate audience claim
+	aud, err := claims.GetAudience()
+	if err != nil {
+		return err
+	}
+	if aud[0] != ssoClientId {
+		return fmt.Errorf("invalid first audience claim")
+	}
+	if aud[1] != "EVE Online" {
+		return fmt.Errorf("invalid 2nd audience claim")
+	}
+	return nil
 }
 
 func calcCodeChallenge(codeVerifier string) string {
