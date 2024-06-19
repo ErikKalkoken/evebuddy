@@ -27,6 +27,10 @@ import (
 	"github.com/chasinglogic/appdirs"
 )
 
+const (
+	ssoClientId = "11ae857fe4d149b2be60d875649c05f1"
+)
+
 type logLevelFlag struct {
 	value slog.Level
 }
@@ -145,7 +149,7 @@ func main() {
 	cs.DictionaryService = dt
 	cs.EveUniverseService = eu
 	cs.StatusCacheService = sc
-	cs.SSOService = sso.New(httpClient, cache)
+	cs.SSOService = sso.New(ssoClientId, httpClient, cache)
 
 	u := ui.NewUI(*debugFlag)
 	u.CacheService = cache

@@ -36,7 +36,6 @@ const (
 	port               = ":30123"
 	address            = host + port
 	oauthURL           = "https://login.eveonline.com/.well-known/oauth-authorization-server"
-	ssoClientId        = "11ae857fe4d149b2be60d875649c05f1"
 	ssoCallbackPath    = "/callback"
 	ssoHost            = "login.eveonline.com"
 	ssoIssuer1         = "login.eveonline.com"
@@ -59,15 +58,17 @@ type CacheService interface {
 
 // SSOService is a service for authentication Eve Online characters.
 type SSOService struct {
-	cache  CacheService
-	client *http.Client
+	cache      CacheService
+	clientID   string
+	httpClient *http.Client
 }
 
 // Returns a new SSO service.
-func New(client *http.Client, cache CacheService) *SSOService {
+func New(clientID string, client *http.Client, cache CacheService) *SSOService {
 	s := &SSOService{
-		cache:  cache,
-		client: client,
+		cache:      cache,
+		httpClient: client,
+		clientID:   clientID,
 	}
 	return s
 }
@@ -75,9 +76,15 @@ func New(client *http.Client, cache CacheService) *SSOService {
 // Authenticate an Eve Online character via OAuth 2.0 PKCE and return the new SSO token.
 // Will open a new browser tab on the desktop and run a web server for the OAuth process.
 func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token, error) {
-	codeVerifier := generateRandomString(32)
+	codeVerifier, err := generateRandomString(32)
+	if err != nil {
+		return nil, err
+	}
 	serverCtx := context.WithValue(ctx, keyCodeVerifier, codeVerifier)
-	state := generateRandomString(16)
+	state, err := generateRandomString(16)
+	if err != nil {
+		return nil, err
+	}
 	serverCtx = context.WithValue(serverCtx, keyState, state)
 	serverCtx, cancel := context.WithCancel(serverCtx)
 
@@ -144,8 +151,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 
 	<-serverCtx.Done() // wait for the signal to gracefully shutdown the server
 
-	err := server.Shutdown(context.Background())
-	if err != nil {
+	if err := server.Shutdown(context.Background()); err != nil {
 		return nil, err
 	}
 	slog.Info("Web server stopped")
@@ -167,7 +173,7 @@ func (s *SSOService) startSSO(state string, codeVerifier string, scopes []string
 	v := url.Values{}
 	v.Set("response_type", "code")
 	v.Set("redirect_uri", "http://"+address+ssoCallbackPath)
-	v.Set("client_id", ssoClientId)
+	v.Set("client_id", s.clientID)
 	v.Set("scope", strings.Join(scopes, " "))
 	v.Set("state", state)
 	v.Set("code_challenge", calcCodeChallenge(codeVerifier))
@@ -183,7 +189,7 @@ func (s *SSOService) retrieveTokenPayload(code, codeVerifier string) (*tokenPayl
 	form := url.Values{
 		"grant_type":    {"authorization_code"},
 		"code":          {code},
-		"client_id":     {ssoClientId},
+		"client_id":     {s.clientID},
 		"code_verifier": {codeVerifier},
 	}
 	req, err := http.NewRequest(
@@ -198,7 +204,7 @@ func (s *SSOService) retrieveTokenPayload(code, codeVerifier string) (*tokenPayl
 	req.Header.Add("Host", ssoHost)
 
 	slog.Info("Sending auth request to SSO API")
-	resp, err := s.client.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +238,7 @@ func (s *SSOService) RefreshToken(refreshToken string) (*Token, error) {
 	form := url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {refreshToken},
-		"client_id":     {ssoClientId},
+		"client_id":     {s.clientID},
 	}
 	rawToken, err := s.fetchOauthToken(form)
 	if err != nil {
@@ -259,7 +265,7 @@ func (s *SSOService) fetchOauthToken(form url.Values) (*tokenPayload, error) {
 	slog.Info("Requesting token from SSO API", "grant_type", form.Get("grant_type"), "url", ssoTokenUrl)
 	slog.Debug("Request", "form", form)
 
-	resp, err := s.client.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +299,7 @@ func (s *SSOService) validateToken(tokenString string) (jwt.MapClaims, error) {
 		return nil, err
 	}
 	claims := token.Claims.(jwt.MapClaims)
-	if err := validateClaims(claims); err != nil {
+	if err := validateClaims(s.clientID, claims); err != nil {
 		return nil, err
 	}
 	return claims, nil
@@ -343,7 +349,7 @@ func (s *SSOService) fetchJWKSet() (jwk.Set, error) {
 
 // Determine URL for JWK sets dynamically from web site and return it
 func (s *SSOService) determineJwksURL() (string, error) {
-	resp, err := s.client.Get(oauthURL)
+	resp, err := s.httpClient.Get(oauthURL)
 	if err != nil {
 		return "", err
 	}
@@ -362,7 +368,7 @@ func (s *SSOService) determineJwksURL() (string, error) {
 	return jwksURL, nil
 }
 
-func validateClaims(claims jwt.MapClaims) error {
+func validateClaims(ssoClientId string, claims jwt.MapClaims) error {
 	// validate issuer claim
 	iss, err := claims.GetIssuer()
 	if err != nil {
@@ -394,9 +400,12 @@ func calcCodeChallenge(codeVerifier string) string {
 }
 
 // Generate a random string of given length
-func generateRandomString(length int) string {
+func generateRandomString(length int) (string, error) {
 	data := make([]byte, length)
-	rand.Read(data)
-	v := base64.URLEncoding.EncodeToString(data)
-	return v
+	_, err := rand.Read(data)
+	if err != nil {
+		return "", err
+	}
+	s := base64.URLEncoding.EncodeToString(data)
+	return s, nil
 }

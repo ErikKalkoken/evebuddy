@@ -17,12 +17,12 @@ func TestToken(t *testing.T) {
 		"jti":    "998e12c7-3241-43c5-8355-2c48822e0a1b",
 		"kid":    "JWT-Signature-Key",
 		"sub":    "CHARACTER:EVE:123123",
-		"azp":    ssoClientId,
+		"azp":    "valid-id",
 		"tenant": "tranquility",
 		"tier":   "live",
 		"region": "world",
 		"aud": []any{
-			ssoClientId,
+			"valid-id",
 			"EVE Online",
 		},
 		"name":  "Some Bloke",
@@ -68,12 +68,12 @@ func TestValidateClaims(t *testing.T) {
 			"jti":    "998e12c7-3241-43c5-8355-2c48822e0a1b",
 			"kid":    "JWT-Signature-Key",
 			"sub":    "CHARACTER:EVE:123123",
-			"azp":    ssoClientId,
+			"azp":    "valid-id",
 			"tenant": "tranquility",
 			"tier":   "live",
 			"region": "world",
 			"aud": []any{
-				ssoClientId,
+				"valid-id",
 				"EVE Online",
 			},
 			"name":  "Some Bloke",
@@ -82,7 +82,7 @@ func TestValidateClaims(t *testing.T) {
 			"iat":   1648562018,
 			"iss":   "login.eveonline.com",
 		}
-		assert.NoError(t, validateClaims(claims))
+		assert.NoError(t, validateClaims("valid-id", claims))
 	})
 	t.Run("should not report error when token is valid 2", func(t *testing.T) {
 		var claims jwt.MapClaims = map[string]any{
@@ -93,12 +93,12 @@ func TestValidateClaims(t *testing.T) {
 			"jti":    "998e12c7-3241-43c5-8355-2c48822e0a1b",
 			"kid":    "JWT-Signature-Key",
 			"sub":    "CHARACTER:EVE:123123",
-			"azp":    ssoClientId,
+			"azp":    "valid-id",
 			"tenant": "tranquility",
 			"tier":   "live",
 			"region": "world",
 			"aud": []any{
-				ssoClientId,
+				"valid-id",
 				"EVE Online",
 			},
 			"name":  "Some Bloke",
@@ -107,9 +107,9 @@ func TestValidateClaims(t *testing.T) {
 			"iat":   1648562018,
 			"iss":   "https://login.eveonline.com",
 		}
-		assert.NoError(t, validateClaims(claims))
+		assert.NoError(t, validateClaims("valid-id", claims))
 	})
-	t.Run("should abort when audience is wrong", func(t *testing.T) {
+	t.Run("should report error when audience is wrong", func(t *testing.T) {
 		var claims jwt.MapClaims = map[string]any{
 			"scp": []any{
 				"esi-skills.read_skills.v1",
@@ -132,9 +132,9 @@ func TestValidateClaims(t *testing.T) {
 			"iat":   1648562018,
 			"iss":   "login.eveonline.com",
 		}
-		assert.Error(t, validateClaims(claims))
+		assert.Error(t, validateClaims("valid-id", claims))
 	})
-	t.Run("should abort when audience is wrong 2", func(t *testing.T) {
+	t.Run("should report error when audience is wrong 2", func(t *testing.T) {
 		var claims jwt.MapClaims = map[string]any{
 			"scp": []any{
 				"esi-skills.read_skills.v1",
@@ -143,12 +143,12 @@ func TestValidateClaims(t *testing.T) {
 			"jti":    "998e12c7-3241-43c5-8355-2c48822e0a1b",
 			"kid":    "JWT-Signature-Key",
 			"sub":    "CHARACTER:EVE:123123",
-			"azp":    ssoClientId,
+			"azp":    "valid-id",
 			"tenant": "tranquility",
 			"tier":   "live",
 			"region": "world",
 			"aud": []any{
-				ssoClientId,
+				"valid-id",
 				"wrong issuer",
 			},
 			"name":  "Some Bloke",
@@ -157,7 +157,7 @@ func TestValidateClaims(t *testing.T) {
 			"iat":   1648562018,
 			"iss":   "login.eveonline.com",
 		}
-		assert.Error(t, validateClaims(claims))
+		assert.Error(t, validateClaims("valid-id", claims))
 	})
 	t.Run("should not report error when issuer is wrong", func(t *testing.T) {
 		var claims jwt.MapClaims = map[string]any{
@@ -168,12 +168,12 @@ func TestValidateClaims(t *testing.T) {
 			"jti":    "998e12c7-3241-43c5-8355-2c48822e0a1b",
 			"kid":    "JWT-Signature-Key",
 			"sub":    "CHARACTER:EVE:123123",
-			"azp":    ssoClientId,
+			"azp":    "valid-id",
 			"tenant": "tranquility",
 			"tier":   "live",
 			"region": "world",
 			"aud": []any{
-				ssoClientId,
+				"valid-id",
 				"EVE Online",
 			},
 			"name":  "Some Bloke",
@@ -182,6 +182,6 @@ func TestValidateClaims(t *testing.T) {
 			"iat":   1648562018,
 			"iss":   "login.eve2online.com",
 		}
-		assert.Error(t, validateClaims(claims))
+		assert.Error(t, validateClaims("valid-id", claims))
 	})
 }
