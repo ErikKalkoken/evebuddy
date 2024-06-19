@@ -1,4 +1,4 @@
-package mailrecipients
+package mailrecipient
 
 import (
 	"testing"

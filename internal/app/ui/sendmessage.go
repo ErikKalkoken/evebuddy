@@ -16,7 +16,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/mailrecipients"
+	"github.com/ErikKalkoken/evebuddy/internal/app/mailrecipient"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 )
 
@@ -60,12 +60,12 @@ func (u *ui) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fyne.Wind
 	if mail != nil {
 		switch mode {
 		case createMessageReply:
-			r := mailrecipients.NewFromEntities([]*app.EveEntity{mail.From})
+			r := mailrecipient.NewFromEntities([]*app.EveEntity{mail.From})
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
 		case createMessageReplyAll:
-			r := mailrecipients.NewFromEntities(mail.Recipients)
+			r := mailrecipient.NewFromEntities(mail.Recipients)
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(mail.ToString(myDateTime))
@@ -98,7 +98,7 @@ func (u *ui) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fyne.Wind
 			},
 		},
 		OnSubmit: func() {
-			recipients := mailrecipients.NewFromText(toInput.Text)
+			recipients := mailrecipient.NewFromText(toInput.Text)
 			err := checkInput(subjectInput.Text, recipients, bodyInput.Text)
 			if err == nil {
 				err = func() error {
@@ -140,7 +140,7 @@ func (u *ui) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fyne.Wind
 	return w, nil
 }
 
-func checkInput(subject string, r *mailrecipients.MailRecipients, body string) error {
+func checkInput(subject string, r *mailrecipient.MailRecipients, body string) error {
 	if len(subject) == 0 {
 		return errors.New("missing subject")
 	}
@@ -190,7 +190,7 @@ func (u *ui) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int
 	d := dialog.NewCustomConfirm(
 		"Add recipient", "Add", "Cancel", content, func(confirmed bool) {
 			if confirmed {
-				r := mailrecipients.NewFromText(toInput.Text)
+				r := mailrecipient.NewFromText(toInput.Text)
 				r.AddFromText(entry.Text)
 				toInput.SetText(r.String())
 			}
@@ -206,7 +206,7 @@ func (u *ui) makeRecipientOptions(search string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	rr := mailrecipients.NewFromEntities(ee)
+	rr := mailrecipient.NewFromEntities(ee)
 	oo := rr.ToOptions()
 	return oo, nil
 }
