@@ -342,7 +342,7 @@ func (a *assetsArea) createTreeData() (locationDataTree, int, error) {
 			ldn := locationDataNode{
 				CharacterID: characterID,
 				ContainerID: an.Asset.ItemID,
-				Name:        makeNameWithCount(an.Asset.Name, len(an.Nodes())),
+				Name:        makeNameWithCount(an.Asset.DisplayName(), len(an.Nodes())),
 				Type:        nodeContainer,
 			}
 			tree.add(itemsUID, ldn)

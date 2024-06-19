@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/http"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -12,6 +13,11 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
+	"golang.org/x/sync/errgroup"
+)
+
+const (
+	assetNamesMaxIDs = 999
 )
 
 func (s *CharacterService) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
@@ -154,12 +160,27 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 }
 
 func (s *CharacterService) fetchCharacterAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
+	numResults := int(math.Ceil(float64(len(ids)) / assetNamesMaxIDs))
+	results := make([][]esi.PostCharactersCharacterIdAssetsNames200Ok, numResults)
+	g := new(errgroup.Group)
+	for num, chunk := range chunkBy(ids, assetNamesMaxIDs) {
+		num := num
+		chunk := chunk
+		g.Go(func() error {
+			names, _, err := s.esiClient.ESI.AssetsApi.PostCharactersCharacterIdAssetsNames(ctx, characterID, chunk, nil)
+			if err != nil {
+				slog.Error("Failed to fetch names for assets", "characterID", characterID, "err", err)
+				return nil
+			}
+			results[num] = names
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
 	m := make(map[int64]string)
-	for _, chunk := range chunkBy(ids, 999) { // API allows 1000 IDs max
-		names, _, err := s.esiClient.ESI.AssetsApi.PostCharactersCharacterIdAssetsNames(ctx, characterID, chunk, nil)
-		if err != nil {
-			return nil, err
-		}
+	for _, names := range results {
 		for _, n := range names {
 			if n.Name != "None" {
 				m[n.ItemId] = n.Name
