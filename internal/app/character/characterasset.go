@@ -177,7 +177,9 @@ func (s *CharacterService) fetchCharacterAssetNamesESI(ctx context.Context, char
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return nil, err
+		// We can live temporarily without asset names and will try again to fetch them next time
+		// If some of the requests have succeeded we will use those names
+		slog.Warn("Failed to fetch asset names", "characterID", characterID, "err", err)
 	}
 	m := make(map[int64]string)
 	for _, names := range results {

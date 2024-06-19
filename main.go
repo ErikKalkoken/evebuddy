@@ -129,7 +129,6 @@ func main() {
 				http.StatusBadGateway,
 				http.StatusGatewayTimeout,
 				http.StatusServiceUnavailable,
-				http.StatusBadRequest, // workaround for ESI issue #1377
 			},
 		},
 	}
