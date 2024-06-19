@@ -3,6 +3,8 @@ package optional
 import (
 	"database/sql"
 	"time"
+
+	"golang.org/x/exp/constraints"
 )
 
 func FromNullFloat64(v sql.NullFloat64) Optional[float64] {
@@ -19,7 +21,7 @@ func FromNullInt64(v sql.NullInt64) Optional[int64] {
 	return New(v.Int64)
 }
 
-func FromNullInt64ToInteger[T IntType](v sql.NullInt64) Optional[T] {
+func FromNullInt64ToInteger[T constraints.Integer](v sql.NullInt64) Optional[T] {
 	if !v.Valid {
 		return Optional[T]{}
 	}
@@ -33,14 +35,14 @@ func FromNullTime(v sql.NullTime) Optional[time.Time] {
 	return New(v.Time)
 }
 
-func ToNullFloat64[T FloatType](o Optional[T]) sql.NullFloat64 {
+func ToNullFloat64[T constraints.Float](o Optional[T]) sql.NullFloat64 {
 	if o.IsNone() {
 		return sql.NullFloat64{}
 	}
 	return sql.NullFloat64{Float64: float64(o.ValueOrZero()), Valid: true}
 }
 
-func ToNullInt64[T IntType](o Optional[T]) sql.NullInt64 {
+func ToNullInt64[T constraints.Integer](o Optional[T]) sql.NullInt64 {
 	if o.IsNone() {
 		return sql.NullInt64{}
 	}

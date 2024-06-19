@@ -5,18 +5,12 @@ package optional
 import (
 	"errors"
 	"fmt"
+
+	"golang.org/x/exp/constraints"
 )
 
-type IntType interface {
-	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64
-}
-
-type FloatType interface {
-	float32 | float64
-}
-
 type Numeric interface {
-	IntType | FloatType
+	constraints.Integer | constraints.Float
 }
 
 type Optional[T any] struct {

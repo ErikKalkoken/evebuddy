@@ -18,6 +18,7 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/stretchr/testify v1.9.0
 	github.com/wcharczuk/go-chart/v2 v2.1.1
+	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
 	golang.org/x/text v0.16.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
@@ -25,7 +26,6 @@ require (
 require (
 	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/blend/go-sdk v1.20220411.3 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 )
 

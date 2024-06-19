@@ -1,7 +1,7 @@
 package app
 
 // EntityShort is a short representation of an entity.
-type EntityShort[T int | int32 | int64] struct {
+type EntityShort[T comparable] struct {
 	ID   T
 	Name string
 }
