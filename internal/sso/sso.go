@@ -170,18 +170,21 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 
 // Open browser and show character selection for SSO.
 func (s *SSOService) startSSO(state string, codeVerifier string, scopes []string) error {
+	challenge, err := calcCodeChallenge(codeVerifier)
+	if err != nil {
+		return err
+	}
 	v := url.Values{}
 	v.Set("response_type", "code")
 	v.Set("redirect_uri", "http://"+address+ssoCallbackPath)
 	v.Set("client_id", s.clientID)
 	v.Set("scope", strings.Join(scopes, " "))
 	v.Set("state", state)
-	v.Set("code_challenge", calcCodeChallenge(codeVerifier))
+	v.Set("code_challenge", challenge)
 	v.Set("code_challenge_method", "S256")
 
 	url := fmt.Sprintf("https://login.eveonline.com/v2/oauth/authorize/?%v", v.Encode())
-	err := browser.OpenURL(url)
-	return err
+	return browser.OpenURL(url)
 }
 
 // Retrieve SSO token from API in exchange for code
@@ -391,12 +394,15 @@ func validateClaims(ssoClientId string, claims jwt.MapClaims) error {
 	return nil
 }
 
-func calcCodeChallenge(codeVerifier string) string {
+func calcCodeChallenge(codeVerifier string) (string, error) {
 	h := sha256.New()
-	h.Write([]byte(codeVerifier))
+	_, err := h.Write([]byte(codeVerifier))
+	if err != nil {
+		return "", err
+	}
 	bs := h.Sum(nil)
 	challenge := base64.RawURLEncoding.EncodeToString(bs)
-	return challenge
+	return challenge, nil
 }
 
 // Generate a random string of given length
