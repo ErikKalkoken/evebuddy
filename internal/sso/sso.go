@@ -1,5 +1,5 @@
-// Package sso provides the ability to authenticate characters with the Eve Online SSO API.
-// It implements the OAuth 2.0 for desktop app with the PKCE protocol.
+// Package sso provides the ability to authenticate characters with the Eve Online SSO API for desktop apps.
+// It implements OAuth 2.0 with the PKCE protocol.
 package sso
 
 import (
@@ -15,12 +15,11 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/pkg/browser"
-
-	memcache "github.com/ErikKalkoken/evebuddy/internal/cache"
 )
 
 type key int
@@ -30,12 +29,6 @@ const (
 	keyError                  key = iota
 	keyState                  key = iota
 	keyAuthenticatedCharacter key = iota
-)
-
-var (
-	ErrAborted             = errors.New("auth process canceled prematurely")
-	ErrTokenError          = errors.New("token error")
-	ErrMissingRefreshToken = errors.New("missing refresh token")
 )
 
 const (
@@ -52,21 +45,36 @@ const (
 	cacheTimeoutJWKSet = 6 * 3600
 )
 
-// token payload as returned from SSO API
-type tokenPayload struct {
-	AccessToken      string `json:"access_token"`
-	ExpiresIn        int32  `json:"expires_in"`
-	TokenType        string `json:"token_type"`
-	RefreshToken     string `json:"refresh_token"`
-	Error            string `json:"error"`
-	ErrorDescription string `json:"error_description"`
+var (
+	ErrAborted             = errors.New("auth process canceled prematurely")
+	ErrTokenError          = errors.New("token error")
+	ErrMissingRefreshToken = errors.New("missing refresh token")
+)
+
+// Defines a cache service
+type CacheService interface {
+	Get(any) (any, bool)
+	Set(any, any, time.Duration)
 }
 
-var cache = memcache.New()
+// SSOService is a service for authentication Eve Online characters.
+type SSOService struct {
+	cache  CacheService
+	client *http.Client
+}
 
-// Authenticate an Eve Online character via SSO and return SSO token.
-// The process runs in a newly opened browser tab
-func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*Token, error) {
+// Returns a new SSO service.
+func New(client *http.Client, cache CacheService) *SSOService {
+	s := &SSOService{
+		cache:  cache,
+		client: client,
+	}
+	return s
+}
+
+// Authenticate an Eve Online character via SSO and return the new SSO token.
+// Will open a new browser tab on the desktop for the user.
+func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token, error) {
 	codeVerifier := generateRandomString(32)
 	serverCtx := context.WithValue(ctx, keyCodeVerifier, codeVerifier)
 
@@ -86,7 +94,7 @@ func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*T
 		}
 		code := v.Get("code")
 		codeVerifier := serverCtx.Value(keyCodeVerifier).(string)
-		rawToken, err := retrieveTokenPayload(client, code, codeVerifier)
+		rawToken, err := s.retrieveTokenPayload(code, codeVerifier)
 		if err != nil {
 			msg := "Failed to retrieve token payload"
 			slog.Error(msg, "error", err)
@@ -95,7 +103,7 @@ func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*T
 			cancel()
 			return
 		}
-		claims, err := validateToken(rawToken.AccessToken)
+		claims, err := s.validateToken(rawToken.AccessToken)
 		if err != nil {
 			msg := "Failed to validate token"
 			slog.Error(msg, "token", rawToken.AccessToken, "error", err)
@@ -122,7 +130,7 @@ func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*T
 		cancel() // shutdown http server
 	})
 
-	if err := startSSO(state, codeVerifier, scopes); err != nil {
+	if err := s.startSSO(state, codeVerifier, scopes); err != nil {
 		return nil, err
 	}
 	server := &http.Server{
@@ -156,16 +164,8 @@ func Authenticate(ctx context.Context, client *http.Client, scopes []string) (*T
 	return token, nil
 }
 
-// Generate a random string of given length
-func generateRandomString(length int) string {
-	data := make([]byte, length)
-	rand.Read(data)
-	v := base64.URLEncoding.EncodeToString(data)
-	return v
-}
-
 // Open browser and show character selection for SSO
-func startSSO(state string, codeVerifier string, scopes []string) error {
+func (s *SSOService) startSSO(state string, codeVerifier string, scopes []string) error {
 	v := url.Values{}
 	v.Set("response_type", "code")
 	v.Set("redirect_uri", "http://"+address+ssoCallbackPath)
@@ -180,16 +180,8 @@ func startSSO(state string, codeVerifier string, scopes []string) error {
 	return err
 }
 
-func calcCodeChallenge(codeVerifier string) string {
-	h := sha256.New()
-	h.Write([]byte(codeVerifier))
-	bs := h.Sum(nil)
-	challenge := base64.RawURLEncoding.EncodeToString(bs)
-	return challenge
-}
-
 // Retrieve SSO token from API in exchange for code
-func retrieveTokenPayload(client *http.Client, code, codeVerifier string) (*tokenPayload, error) {
+func (s *SSOService) retrieveTokenPayload(code, codeVerifier string) (*tokenPayload, error) {
 	form := url.Values{
 		"grant_type":    {"authorization_code"},
 		"code":          {code},
@@ -208,7 +200,7 @@ func retrieveTokenPayload(client *http.Client, code, codeVerifier string) (*toke
 	req.Header.Add("Host", ssoHost)
 
 	slog.Info("Sending auth request to SSO API")
-	resp, err := client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +227,7 @@ func retrieveTokenPayload(client *http.Client, code, codeVerifier string) (*toke
 }
 
 // Update given token with new instance from SSO API
-func RefreshToken(client *http.Client, refreshToken string) (*Token, error) {
+func (s *SSOService) RefreshToken(refreshToken string) (*Token, error) {
 	if refreshToken == "" {
 		return nil, ErrMissingRefreshToken
 	}
@@ -244,19 +236,19 @@ func RefreshToken(client *http.Client, refreshToken string) (*Token, error) {
 		"refresh_token": {refreshToken},
 		"client_id":     {ssoClientId},
 	}
-	rawToken, err := fetchOauthToken(client, form)
+	rawToken, err := s.fetchOauthToken(form)
 	if err != nil {
 		return nil, err
 	}
 	token := Token{
 		AccessToken:  rawToken.AccessToken,
 		RefreshToken: rawToken.RefreshToken,
-		ExpiresAt:    calcExpiresAt(rawToken),
+		ExpiresAt:    rawToken.expiresAt(),
 	}
 	return &token, nil
 }
 
-func fetchOauthToken(client *http.Client, form url.Values) (*tokenPayload, error) {
+func (s *SSOService) fetchOauthToken(form url.Values) (*tokenPayload, error) {
 	req, err := http.NewRequest(
 		"POST", ssoTokenUrl, strings.NewReader(form.Encode()),
 	)
@@ -269,7 +261,7 @@ func fetchOauthToken(client *http.Client, form url.Values) (*tokenPayload, error
 	slog.Info("Requesting token from SSO API", "grant_type", form.Get("grant_type"), "url", ssoTokenUrl)
 	slog.Debug("Request", "form", form)
 
-	resp, err := client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -296,9 +288,9 @@ func fetchOauthToken(client *http.Client, form url.Values) (*tokenPayload, error
 }
 
 // Validate JWT token and return claims
-func validateToken(tokenString string) (jwt.MapClaims, error) {
+func (s *SSOService) validateToken(tokenString string) (jwt.MapClaims, error) {
 	// parse token and validate signature
-	token, err := jwt.Parse(tokenString, getKey)
+	token, err := jwt.Parse(tokenString, s.getKey)
 	if err != nil {
 		return nil, err
 	}
@@ -323,8 +315,8 @@ func validateToken(tokenString string) (jwt.MapClaims, error) {
 }
 
 // getKey returns the public key for a JWT token.
-func getKey(token *jwt.Token) (any, error) {
-	set, err := fetchJWKSet()
+func (s *SSOService) getKey(token *jwt.Token) (any, error) {
+	set, err := s.fetchJWKSet()
 	if err != nil {
 		return nil, err
 	}
@@ -346,13 +338,13 @@ func getKey(token *jwt.Token) (any, error) {
 }
 
 // fetchJWKSet returns the current JWK set from the web. It is cached.
-func fetchJWKSet() (jwk.Set, error) {
+func (s *SSOService) fetchJWKSet() (jwk.Set, error) {
 	key := "jwk-set"
-	v, found := cache.Get(key)
+	v, found := s.cache.Get(key)
 	if found {
 		return v.(jwk.Set), nil
 	}
-	jwksURL, err := determineJwksURL()
+	jwksURL, err := s.determineJwksURL()
 	if err != nil {
 		return nil, err
 	}
@@ -360,13 +352,13 @@ func fetchJWKSet() (jwk.Set, error) {
 	if err != nil {
 		return nil, err
 	}
-	cache.Set(key, set, cacheTimeoutJWKSet)
+	s.cache.Set(key, set, cacheTimeoutJWKSet)
 	return set, nil
 }
 
 // Determine URL for JWK sets dynamically from web site and return it
-func determineJwksURL() (string, error) {
-	resp, err := http.Get(oauthURL)
+func (s *SSOService) determineJwksURL() (string, error) {
+	resp, err := s.client.Get(oauthURL)
 	if err != nil {
 		return "", err
 	}
@@ -383,4 +375,20 @@ func determineJwksURL() (string, error) {
 	}
 	jwksURL := data["jwks_uri"].(string)
 	return jwksURL, nil
+}
+
+func calcCodeChallenge(codeVerifier string) string {
+	h := sha256.New()
+	h.Write([]byte(codeVerifier))
+	bs := h.Sum(nil)
+	challenge := base64.RawURLEncoding.EncodeToString(bs)
+	return challenge
+}
+
+// Generate a random string of given length
+func generateRandomString(length int) string {
+	data := make([]byte, length)
+	rand.Read(data)
+	v := base64.URLEncoding.EncodeToString(data)
+	return v
 }

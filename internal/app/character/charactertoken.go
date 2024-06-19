@@ -9,7 +9,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/sso"
 )
 
 var esiScopes = []string{
@@ -59,7 +58,7 @@ func (s *CharacterService) getValidCharacterToken(ctx context.Context, character
 func (s *CharacterService) ensureValidCharacterToken(ctx context.Context, t *app.CharacterToken) error {
 	if !t.RemainsValid(time.Second * 60) {
 		slog.Debug("Need to refresh token", "characterID", t.CharacterID)
-		rawToken, err := sso.RefreshToken(s.httpClient, t.RefreshToken)
+		rawToken, err := s.SSOService.RefreshToken(t.RefreshToken)
 		if err != nil {
 			return err
 		}

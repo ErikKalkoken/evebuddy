@@ -8,6 +8,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
 )
@@ -22,6 +23,7 @@ type CharacterService struct {
 	DictionaryService  app.DictionaryService
 	EveUniverseService *eveuniverse.EveUniverseService
 	StatusCacheService app.StatusCacheService
+	SSOService         *sso.SSOService
 
 	esiClient  *goesi.APIClient
 	httpClient *http.Client

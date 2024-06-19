@@ -22,6 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/httptransport"
+	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/antihax/goesi"
 	"github.com/chasinglogic/appdirs"
 )
@@ -144,6 +145,7 @@ func main() {
 	cs.DictionaryService = dt
 	cs.EveUniverseService = eu
 	cs.StatusCacheService = sc
+	cs.SSOService = sso.New(httpClient, cache)
 
 	u := ui.NewUI(*debugFlag)
 	u.CacheService = cache

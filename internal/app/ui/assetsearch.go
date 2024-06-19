@@ -114,14 +114,12 @@ func (a *assetSearchArea) newAssetSearchRow(ca *app.CharacterAsset) *assetSearch
 		r.quantity = int(ca.Quantity)
 	}
 	location, ok := a.assetTree.AssetParentLocation(ca.ItemID)
-	var t string
 	if !ok {
-		t = "?"
+		r.locationName = "?"
 	} else {
-		t = location.DisplayName()
+		r.locationID = location.ID
+		r.locationName = location.DisplayName()
 	}
-	r.locationID = location.ID
-	r.locationName = t
 	var price string
 	if ca.Price.IsNone() || ca.IsBlueprintCopy {
 		price = "?"

@@ -49,7 +49,7 @@ func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.Char
 
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
 func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
-	ssoToken, err := sso.Authenticate(ctx, s.httpClient, esiScopes)
+	ssoToken, err := s.SSOService.Authenticate(ctx, esiScopes)
 	if errors.Is(err, sso.ErrAborted) {
 		return 0, ErrAborted
 	} else if err != nil {
