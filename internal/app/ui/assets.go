@@ -15,8 +15,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
+	"github.com/ErikKalkoken/evebuddy/internal/app/datanodetree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/app/stringdatatree"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/dustin/go-humanize"
 )
@@ -108,7 +108,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 			row := co.(*fyne.Container)
 			prefix := row.Objects[0].(*widget.Label)
 			label := row.Objects[1].(*widget.Label)
-			n, err := stringdatatree.NodeFromDataItem[locationDataNode](di)
+			n, err := datanodetree.NodeFromDataItem[locationDataNode](di)
 			if err != nil {
 				slog.Error("Failed to render asset location in UI", "err", err)
 				label.SetText("ERROR")
@@ -131,7 +131,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 		},
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
-		n, err := stringdatatree.NodeFromBoundTree[locationDataNode](a.locationsData, uid)
+		n, err := datanodetree.NodeFromBoundTree[locationDataNode](a.locationsData, uid)
 		if err != nil {
 			slog.Error("Failed to select location", "err", err)
 			t.UnselectAll()
@@ -181,8 +181,8 @@ func (a *assetsArea) redraw() {
 	a.locationsTop.Refresh()
 }
 
-func (a *assetsArea) createTreeData() (stringdatatree.StringDataTree[locationDataNode], int, error) {
-	tree := stringdatatree.New[locationDataNode]()
+func (a *assetsArea) createTreeData() (datanodetree.DataNodeTree[locationDataNode], int, error) {
+	tree := datanodetree.New[locationDataNode]()
 	if !a.ui.hasCharacter() {
 		return tree, 0, nil
 	}

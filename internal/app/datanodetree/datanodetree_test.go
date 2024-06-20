@@ -1,4 +1,4 @@
-package stringdatatree_test
+package datanodetree_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/stringdatatree"
+	"github.com/ErikKalkoken/evebuddy/internal/app/datanodetree"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +33,7 @@ func (n treeNode) ToJSON() string {
 
 func TestStringDataTree(t *testing.T) {
 	t.Run("can render empty tree", func(t *testing.T) {
-		tree := stringdatatree.New[treeNode]()
+		tree := datanodetree.New[treeNode]()
 		ids, values, err := tree.StringTree()
 		if assert.NoError(t, err) {
 			assert.Len(t, ids, 0)
@@ -42,7 +42,7 @@ func TestStringDataTree(t *testing.T) {
 	})
 	t.Run("can render full tree", func(t *testing.T) {
 		// given
-		tree := stringdatatree.New[treeNode]()
+		tree := datanodetree.New[treeNode]()
 		alpha := treeNode{Name: "Alpha"}
 		uid := tree.Add("", alpha)
 		alpha1 := treeNode{Name: "Sub-Alpha-1"}
@@ -70,13 +70,13 @@ func TestStringDataTree(t *testing.T) {
 		}
 	})
 	t.Run("should panic when trying to add with unknown parent UID", func(t *testing.T) {
-		tree := stringdatatree.New[treeNode]()
+		tree := datanodetree.New[treeNode]()
 		assert.Panics(t, func() {
 			tree.Add("unknown", treeNode{Name: "Dummy"})
 		})
 	})
 	t.Run("should panic when trying to add another node with same UID", func(t *testing.T) {
-		tree := stringdatatree.New[treeNode]()
+		tree := datanodetree.New[treeNode]()
 		tree.Add("", treeNode{Name: "Dummy"})
 		assert.Panics(t, func() {
 			tree.Add("", treeNode{Name: "Dummy"})
@@ -84,7 +84,7 @@ func TestStringDataTree(t *testing.T) {
 	})
 	t.Run("can retrieve node from data tree", func(t *testing.T) {
 		// given
-		tree := stringdatatree.New[treeNode]()
+		tree := datanodetree.New[treeNode]()
 		node := treeNode{Name: "Dummy"}
 		tree.Add("", node)
 		ids, values, err := tree.StringTree()
@@ -96,7 +96,7 @@ func TestStringDataTree(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when
-		node2, err := stringdatatree.NodeFromBoundTree[treeNode](st, node.UID())
+		node2, err := datanodetree.NodeFromBoundTree[treeNode](st, node.UID())
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, node, node2)
@@ -104,7 +104,7 @@ func TestStringDataTree(t *testing.T) {
 	})
 	t.Run("can retrieve node from data item", func(t *testing.T) {
 		// given
-		tree := stringdatatree.New[treeNode]()
+		tree := datanodetree.New[treeNode]()
 		node := treeNode{Name: "Dummy"}
 		tree.Add("", node)
 		ids, values, err := tree.StringTree()
@@ -120,7 +120,7 @@ func TestStringDataTree(t *testing.T) {
 			t.Fatal(err)
 		}
 		// when
-		node2, err := stringdatatree.NodeFromDataItem[treeNode](di)
+		node2, err := datanodetree.NodeFromDataItem[treeNode](di)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, node, node2)

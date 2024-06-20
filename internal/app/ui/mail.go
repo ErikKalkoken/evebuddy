@@ -15,7 +15,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/stringdatatree"
+	"github.com/ErikKalkoken/evebuddy/internal/app/datanodetree"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 )
 
@@ -121,10 +121,6 @@ type folderNode struct {
 	UnreadCount int
 }
 
-func (f folderNode) IsRoot() bool {
-	return f.ObjID == 0
-}
-
 func (f folderNode) UID() widget.TreeNodeID {
 	if f.CharacterID == 0 || f.Type == "" {
 		panic("some IDs are not set")
@@ -157,7 +153,7 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 		},
 		func(di binding.DataItem, isBranch bool, co fyne.CanvasObject) {
 			label := co.(*fyne.Container).Objects[1].(*widget.Label)
-			node, err := stringdatatree.NodeFromDataItem[folderNode](di)
+			node, err := datanodetree.NodeFromDataItem[folderNode](di)
 			if err != nil {
 				slog.Error("Failed to fetch data item for tree", "err", err)
 				label.SetText("ERROR")
@@ -175,7 +171,7 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 		},
 	)
 	tree.OnSelected = func(uid string) {
-		node, err := stringdatatree.NodeFromBoundTree[folderNode](a.treeData, uid)
+		node, err := datanodetree.NodeFromBoundTree[folderNode](a.treeData, uid)
 		if err != nil {
 			slog.Error("Failed to select folder", "err", err)
 			tree.UnselectAll()
@@ -239,9 +235,9 @@ func (a *mailArea) updateMailTab(unreadCount int) {
 	a.ui.tabs.Refresh()
 }
 
-func (a *mailArea) makeFolderTreeData(characterID int32) (stringdatatree.StringDataTree[folderNode], folderNode, error) {
+func (a *mailArea) makeFolderTreeData(characterID int32) (datanodetree.DataNodeTree[folderNode], folderNode, error) {
 	ctx := context.Background()
-	tree := stringdatatree.New[folderNode]()
+	tree := datanodetree.New[folderNode]()
 	labelUnreadCounts, err := a.ui.CharacterService.GetCharacterMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
 		return tree, folderNode{}, err

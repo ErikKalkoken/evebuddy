@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/stringdatatree"
+	"github.com/ErikKalkoken/evebuddy/internal/app/datanodetree"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 )
 
@@ -75,7 +75,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			icon := hbox.Objects[0].(*canvas.Image)
 			first := hbox.Objects[1].(*widget.Label)
 			second := hbox.Objects[2].(*widget.Label)
-			n, err := stringdatatree.NodeFromDataItem[jumpCloneNode](di)
+			n, err := datanodetree.NodeFromDataItem[jumpCloneNode](di)
 			if err != nil {
 				slog.Error("Failed to render jump clone item in UI", "err", err)
 				first.SetText("ERROR")
@@ -110,7 +110,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
 		defer t.UnselectAll()
-		n, err := stringdatatree.NodeFromBoundTree[jumpCloneNode](a.treeData, uid)
+		n, err := datanodetree.NodeFromBoundTree[jumpCloneNode](a.treeData, uid)
 		if err != nil {
 			slog.Error("Failed to select jump clone", "err", err)
 			return
@@ -152,8 +152,8 @@ func (a *jumpClonesArea) redraw() {
 	a.top.Refresh()
 }
 
-func (a *jumpClonesArea) updateTreeData() (stringdatatree.StringDataTree[jumpCloneNode], int, error) {
-	tree := stringdatatree.New[jumpCloneNode]()
+func (a *jumpClonesArea) updateTreeData() (datanodetree.DataNodeTree[jumpCloneNode], int, error) {
+	tree := datanodetree.New[jumpCloneNode]()
 	if !a.ui.hasCharacter() {
 		return tree, 0, nil
 	}
