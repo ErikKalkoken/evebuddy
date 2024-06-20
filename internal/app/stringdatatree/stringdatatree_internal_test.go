@@ -1,4 +1,4 @@
-package ui
+package stringdatatree
 
 import (
 	"testing"
@@ -6,12 +6,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type treeNode struct {
+	Name string
+}
+
 func TestJSONMarshaler(t *testing.T) {
 	t.Run("can serialize to and from JSON", func(t *testing.T) {
-		f1 := folderNode{ObjID: 7, Name: "Crimson Sky", Category: nodeCategoryLabel}
+		f1 := treeNode{Name: "Crimson Sky"}
 		s, err := objectToJSON(f1)
 		if assert.NoError(t, err) {
-			f2, err := newObjectFromJSON[folderNode](s)
+			f2, err := newObjectFromJSON[treeNode](s)
 			if assert.NoError(t, err) {
 				assert.Equal(t, f1, f2)
 			}

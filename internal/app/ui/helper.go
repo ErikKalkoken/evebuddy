@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -14,33 +13,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 )
-
-// newObjectFromJSON returns a new object unmarshaled from a JSON string.
-func newObjectFromJSON[T any](s string) (T, error) {
-	var n T
-	err := json.Unmarshal([]byte(s), &n)
-	if err != nil {
-		return n, err
-	}
-	return n, nil
-}
-
-// objectToJSON returns a JSON string marshaled from the given object.
-func objectToJSON[T any](o T) (string, error) {
-	s, err := json.Marshal(o)
-	if err != nil {
-		return "", err
-	}
-	return string(s), nil
-}
-
-func mustObjectToJSON[T any](o T) string {
-	s, err := objectToJSON(o)
-	if err != nil {
-		panic(err)
-	}
-	return s
-}
 
 func entityNameOrFallback[T int | int32 | int64](e *app.EntityShort[T], fallback string) string {
 	if e == nil {
@@ -119,34 +91,6 @@ func refreshImageResourceAsync(image *canvas.Image, loader func() (fyne.Resource
 			image.Refresh()
 		}
 	}(image)
-}
-
-// treeNodeFromBoundTree fetches and returns a tree node from a string tree.
-func treeNodeFromBoundTree[T any](data binding.StringTree, uid widget.TreeNodeID) (T, error) {
-	var zero T
-	v, err := data.GetValue(uid)
-	if err != nil {
-		return zero, fmt.Errorf("failed to get tree node: %w", err)
-	}
-	n, err := newObjectFromJSON[T](v)
-	if err != nil {
-		return zero, fmt.Errorf("failed to unmarshal tree node: %w", err)
-	}
-	return n, nil
-}
-
-// treeNodeFromDataItem fetches a tree node from a data item and returns it.
-func treeNodeFromDataItem[T any](di binding.DataItem) (T, error) {
-	var zero T
-	v, err := di.(binding.String).Get()
-	if err != nil {
-		return zero, err
-	}
-	n, err := newObjectFromJSON[T](v)
-	if err != nil {
-		return zero, err
-	}
-	return n, nil
 }
 
 func skillDisplayName[N int | int32 | int64 | uint | uint32 | uint64](name string, level N) string {

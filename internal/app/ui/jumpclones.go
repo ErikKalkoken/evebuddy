@@ -75,7 +75,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			icon := hbox.Objects[0].(*canvas.Image)
 			first := hbox.Objects[1].(*widget.Label)
 			second := hbox.Objects[2].(*widget.Label)
-			n, err := treeNodeFromDataItem[jumpCloneNode](di)
+			n, err := stringdatatree.NodeFromDataItem[jumpCloneNode](di)
 			if err != nil {
 				slog.Error("Failed to render jump clone item in UI", "err", err)
 				first.SetText("ERROR")
@@ -110,7 +110,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
 		defer t.UnselectAll()
-		n, err := treeNodeFromBoundTree[jumpCloneNode](a.treeData, uid)
+		n, err := stringdatatree.NodeFromBoundTree[jumpCloneNode](a.treeData, uid)
 		if err != nil {
 			slog.Error("Failed to select jump clone", "err", err)
 			return

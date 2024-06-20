@@ -157,7 +157,7 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 		},
 		func(di binding.DataItem, isBranch bool, co fyne.CanvasObject) {
 			label := co.(*fyne.Container).Objects[1].(*widget.Label)
-			node, err := treeNodeFromDataItem[folderNode](di)
+			node, err := stringdatatree.NodeFromDataItem[folderNode](di)
 			if err != nil {
 				slog.Error("Failed to fetch data item for tree", "err", err)
 				label.SetText("ERROR")
@@ -175,7 +175,7 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 		},
 	)
 	tree.OnSelected = func(uid string) {
-		node, err := treeNodeFromBoundTree[folderNode](a.treeData, uid)
+		node, err := stringdatatree.NodeFromBoundTree[folderNode](a.treeData, uid)
 		if err != nil {
 			slog.Error("Failed to select folder", "err", err)
 			tree.UnselectAll()

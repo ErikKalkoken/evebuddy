@@ -108,7 +108,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 			row := co.(*fyne.Container)
 			prefix := row.Objects[0].(*widget.Label)
 			label := row.Objects[1].(*widget.Label)
-			n, err := treeNodeFromDataItem[locationDataNode](di)
+			n, err := stringdatatree.NodeFromDataItem[locationDataNode](di)
 			if err != nil {
 				slog.Error("Failed to render asset location in UI", "err", err)
 				label.SetText("ERROR")
@@ -131,7 +131,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 		},
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
-		n, err := treeNodeFromBoundTree[locationDataNode](a.locationsData, uid)
+		n, err := stringdatatree.NodeFromBoundTree[locationDataNode](a.locationsData, uid)
 		if err != nil {
 			slog.Error("Failed to select location", "err", err)
 			t.UnselectAll()
