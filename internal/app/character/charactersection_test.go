@@ -1,150 +1,241 @@
-package character
+package character_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
-	"github.com/antihax/goesi"
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: Add tests for UpdateSectionIfNeeded()
-
-func TestUpdateCharacterSectionIfChanged(t *testing.T) {
+func TestCharacterSectionStatus(t *testing.T) {
 	db, st, factory := testutil.New()
+	defer db.Close()
 	s := newCharacterService(st)
 	ctx := context.Background()
-	t.Run("should report as changed and run update when new", func(t *testing.T) {
+	t.Run("Can report when updated", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		token := factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		section := app.SectionImplants
-		hasUpdated := false
-		accessToken := ""
-		arg := UpdateSectionParams{CharacterID: c.ID, Section: section}
-		// when
-		changed, err := s.updateSectionIfChanged(ctx, arg,
-			func(ctx context.Context, characterID int32) (any, error) {
-				accessToken = ctx.Value(goesi.ContextAccessToken).(string)
-				return "any", nil
-			},
-			func(ctx context.Context, characterID int32, data any) error {
-				hasUpdated = true
-				return nil
-			})
-		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			assert.Equal(t, accessToken, token.AccessToken)
-			assert.True(t, hasUpdated)
-			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
-			if assert.NoError(t, err) {
-				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
-				assert.True(t, x.IsOK())
-			}
-		}
-	})
-	t.Run("should report as changed and run update when data has changed and store update and reset error", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		section := app.SectionImplants
-		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID:  c.ID,
-			Section:      section,
-			ErrorMessage: "error",
-		})
-		hasUpdated := false
-		arg := UpdateSectionParams{CharacterID: c.ID, Section: section}
-		// when
-		changed, err := s.updateSectionIfChanged(ctx, arg,
-			func(ctx context.Context, characterID int32) (any, error) {
-				return "any", nil
-			},
-			func(ctx context.Context, characterID int32, data any) error {
-				hasUpdated = true
-				return nil
-			})
-		// then
-		if assert.NoError(t, err) {
-			assert.True(t, changed)
-			assert.True(t, hasUpdated)
-			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
-			if assert.NoError(t, err) {
-				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
-				assert.True(t, x2.IsOK())
-			}
-		}
-	})
-	t.Run("should report as unchanged and not run update when data has not changed", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		section := app.SectionImplants
-		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+		updateAt := time.Now().Add(3 * time.Hour)
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     section,
-			Data:        "old",
+			Section:     app.SectionSkillqueue,
+			CompletedAt: updateAt,
 		})
-		hasUpdated := false
-		arg := UpdateSectionParams{CharacterID: c.ID, Section: section}
 		// when
-		changed, err := s.updateSectionIfChanged(ctx, arg,
-			func(ctx context.Context, characterID int32) (any, error) {
-				return "old", nil
-			},
-			func(ctx context.Context, characterID int32, data any) error {
-				hasUpdated = true
-				return nil
-			})
+		x, err := s.SectionWasUpdated(ctx, c.ID, app.SectionSkillqueue)
 		// then
 		if assert.NoError(t, err) {
-			assert.False(t, changed)
-			assert.False(t, hasUpdated)
-			x2, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
-			if assert.NoError(t, err) {
-				assert.Greater(t, x2.CompletedAt, x1.CompletedAt)
-				assert.True(t, x2.IsOK())
-			}
+			assert.True(t, x)
+		}
+	})
+	t.Run("Can report when not yet updated", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		// when
+		x, err := s.SectionWasUpdated(ctx, c.ID, app.SectionSkillqueue)
+		// then
+		if assert.NoError(t, err) {
+			assert.False(t, x)
 		}
 	})
 }
 
-func TestCharacterSectionUpdateMethods(t *testing.T) {
+func TestUpdateCharacterSection(t *testing.T) {
 	db, st, factory := testutil.New()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
 	s := newCharacterService(st)
+	section := app.SectionImplants
 	ctx := context.Background()
-	t.Run("Can report wether a section was updated", func(t *testing.T) {
+	t.Run("should report true when changed", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
+		// when
+		changed, err := s.UpdateSectionIfNeeded(
+			ctx, character.UpdateSectionParams{CharacterID: c.ID, Section: section})
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, changed)
+			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
+			if assert.NoError(t, err) {
+				assert.True(t, x.IsOK())
+			}
+		}
+	})
+	t.Run("should not update and report false when not changed", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		data := []int32{100}
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     section,
+			CompletedAt: time.Now().Add(-6 * time.Hour),
+			Data:        data,
+		})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, data))
+		// when
+		changed, err := s.UpdateSectionIfNeeded(
+			ctx, character.UpdateSectionParams{CharacterID: c.ID, Section: section})
+		// then
+		if assert.NoError(t, err) {
+			assert.False(t, changed)
+			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
+			if assert.NoError(t, err) {
+				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
+			}
+			assert.Equal(t, 1, httpmock.GetTotalCallCount())
+			xx, err := st.ListCharacterImplants(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.Len(t, xx, 0)
+			}
+		}
+	})
+	t.Run("should not fetch or update when not expired and report false", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
-			Section:     app.SectionSkillqueue,
-			CompletedAt: time.Now(),
+			Section:     section,
 		})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
 		// when
-		x, err := s.SectionWasUpdated(ctx, c.ID, app.SectionSkillqueue)
+		changed, err := s.UpdateSectionIfNeeded(
+			ctx, character.UpdateSectionParams{
+				CharacterID: c.ID,
+				Section:     section,
+			})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, true, x)
+			assert.False(t, changed)
+			assert.Equal(t, 0, httpmock.GetTotalCallCount())
+			xx, err := st.ListCharacterImplants(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.Len(t, xx, 0)
+			}
 		}
 	})
-	t.Run("Can report wether a section was updated 2", func(t *testing.T) {
+	t.Run("should record when update failed", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		httpmock.Reset()
 		c := factory.CreateCharacter()
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
+			httpmock.NewJsonResponderOrPanic(500, map[string]string{"error": "dummy error"}))
 		// when
-		x, err := s.SectionWasUpdated(ctx, c.ID, app.SectionSkillqueue)
+		_, err := s.UpdateSectionIfNeeded(
+			ctx, character.UpdateSectionParams{CharacterID: c.ID, Section: section})
+		// then
+		if assert.Error(t, err) {
+			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
+			if assert.NoError(t, err) {
+				assert.False(t, x.IsOK())
+				assert.Equal(t, "500: dummy error", x.ErrorMessage)
+			}
+		}
+	})
+	t.Run("should fetch and update when not expired and force update requested", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     section,
+		})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, []int32{100}))
+		// when
+		_, err := s.UpdateSectionIfNeeded(
+			ctx, character.UpdateSectionParams{
+				CharacterID: c.ID,
+				Section:     section,
+				ForceUpdate: true,
+			})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, false, x)
+			assert.Equal(t, 1, httpmock.GetTotalCallCount())
+			xx, err := st.ListCharacterImplants(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.Len(t, xx, 1)
+			}
+		}
+	})
+	t.Run("should update when not changed and force update requested", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		data := []int32{100}
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     section,
+			CompletedAt: time.Now().Add(-6 * time.Hour),
+			Data:        data,
+		})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, data))
+		// when
+		_, err := s.UpdateSectionIfNeeded(
+			ctx, character.UpdateSectionParams{
+				CharacterID: c.ID,
+				Section:     section,
+				ForceUpdate: true,
+			})
+		// then
+		if assert.NoError(t, err) {
+			x, err := st.GetCharacterSectionStatus(ctx, c.ID, section)
+			if assert.NoError(t, err) {
+				assert.WithinDuration(t, time.Now(), x.CompletedAt, 5*time.Second)
+			}
+			assert.Equal(t, 1, httpmock.GetTotalCallCount())
+			xx, err := st.ListCharacterImplants(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.Len(t, xx, 1)
+			}
 		}
 	})
 }
