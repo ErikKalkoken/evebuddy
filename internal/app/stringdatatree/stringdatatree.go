@@ -1,6 +1,7 @@
-package ui
+package stringdatatree
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"fyne.io/fyne/v2/widget"
@@ -8,24 +9,26 @@ import (
 
 type dataNode interface {
 	UID() widget.TreeNodeID
-	isRoot() bool
+	IsRoot() bool
 }
 
-// stringDataTree represents a tree of data nodes for rendering with the tree widget.
-type stringDataTree[T dataNode] struct {
+// StringDataTree represents a tree of data nodes for rendering with the tree widget.
+type StringDataTree[T dataNode] struct {
 	ids    map[string][]string
 	values map[string]T
 }
 
-func newStringDataTree[T dataNode]() stringDataTree[T] {
-	ltd := stringDataTree[T]{
+// Returns a new StringDataTree object.
+func New[T dataNode]() StringDataTree[T] {
+	ltd := StringDataTree[T]{
 		values: make(map[string]T),
 		ids:    make(map[string][]string),
 	}
 	return ltd
 }
 
-func (ltd stringDataTree[T]) add(parentUID string, node T) string {
+// Add adds a node to the tree and returns the UID.
+func (ltd StringDataTree[T]) Add(parentUID string, node T) widget.TreeNodeID {
 	if parentUID != "" {
 		_, found := ltd.values[parentUID]
 		if !found {
@@ -42,7 +45,8 @@ func (ltd stringDataTree[T]) add(parentUID string, node T) string {
 	return uid
 }
 
-func (ltd stringDataTree[T]) stringTree() (map[string][]string, map[string]string, error) {
+// StringTree returns the tree as input for a Fyne StringTree.
+func (ltd StringDataTree[T]) StringTree() (map[string][]string, map[string]string, error) {
 	values := make(map[string]string)
 	for id, node := range ltd.values {
 		v, err := objectToJSON(node)
@@ -52,4 +56,13 @@ func (ltd stringDataTree[T]) stringTree() (map[string][]string, map[string]strin
 		values[id] = v
 	}
 	return ltd.ids, values, nil
+}
+
+// objectToJSON returns a JSON string marshaled from the given object.
+func objectToJSON[T any](o T) (string, error) {
+	s, err := json.Marshal(o)
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
 }

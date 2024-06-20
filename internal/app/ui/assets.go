@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/app/stringdatatree"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/dustin/go-humanize"
 )
@@ -52,7 +53,7 @@ func (n locationDataNode) UID() widget.TreeNodeID {
 	return fmt.Sprintf("%d-%d-%d", n.CharacterID, n.ContainerID, n.Type)
 }
 
-func (n locationDataNode) isRoot() bool {
+func (n locationDataNode) IsRoot() bool {
 	return n.Type == nodeLocation
 }
 
@@ -114,7 +115,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 				return
 			}
 			label.SetText(n.Name)
-			if n.isRoot() {
+			if n.IsRoot() {
 				if !n.IsUnknown {
 					prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurityValue)
 					prefix.Importance = systemSecurity2Importance(n.SystemSecurityType)
@@ -136,7 +137,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 			t.UnselectAll()
 			return
 		}
-		if n.isRoot() {
+		if n.IsRoot() {
 			if !n.IsUnknown {
 				a.ui.showLocationInfoWindow(n.ContainerID)
 			}
@@ -161,7 +162,7 @@ func (a *assetsArea) redraw() {
 		if err != nil {
 			return "", 0, err
 		}
-		ids, values, err := tree.stringTree()
+		ids, values, err := tree.StringTree()
 		if err != nil {
 			return "", 0, err
 		}
@@ -180,8 +181,8 @@ func (a *assetsArea) redraw() {
 	a.locationsTop.Refresh()
 }
 
-func (a *assetsArea) createTreeData() (stringDataTree[locationDataNode], int, error) {
-	tree := newStringDataTree[locationDataNode]()
+func (a *assetsArea) createTreeData() (stringdatatree.StringDataTree[locationDataNode], int, error) {
+	tree := stringdatatree.New[locationDataNode]()
 	if !a.ui.hasCharacter() {
 		return tree, 0, nil
 	}
@@ -215,7 +216,7 @@ func (a *assetsArea) createTreeData() (stringDataTree[locationDataNode], int, er
 		} else {
 			location.IsUnknown = true
 		}
-		locationUID := tree.add("", location)
+		locationUID := tree.Add("", location)
 
 		topAssets := ln.Nodes()
 		slices.SortFunc(topAssets, func(a assetcollection.AssetNode, b assetcollection.AssetNode) int {
@@ -251,7 +252,7 @@ func (a *assetsArea) createTreeData() (stringDataTree[locationDataNode], int, er
 			Name:        makeNameWithCount("Ship Hangar", shipCount),
 			Type:        nodeShipHangar,
 		}
-		shipsUID := tree.add(locationUID, shipHangar)
+		shipsUID := tree.Add(locationUID, shipHangar)
 		for _, an := range ships {
 			ship := an.Asset
 			ldn := locationDataNode{
@@ -260,7 +261,7 @@ func (a *assetsArea) createTreeData() (stringDataTree[locationDataNode], int, er
 				Name:        fmt.Sprintf("%s (%s)", ship.Name, ship.EveType.Name),
 				Type:        nodeShip,
 			}
-			shipUID := tree.add(shipsUID, ldn)
+			shipUID := tree.Add(shipsUID, ldn)
 			cargo := make([]assetcollection.AssetNode, 0)
 			fuel := make([]assetcollection.AssetNode, 0)
 			for _, an2 := range an.Nodes() {
@@ -276,7 +277,7 @@ func (a *assetsArea) createTreeData() (stringDataTree[locationDataNode], int, er
 				Name:        makeNameWithCount("Cargo Bay", len(cargo)),
 				Type:        nodeCargoBay,
 			}
-			tree.add(shipUID, cln)
+			tree.Add(shipUID, cln)
 			if ship.EveType.HasFuelBay() {
 				ldn := locationDataNode{
 					CharacterID: characterID,
@@ -284,7 +285,7 @@ func (a *assetsArea) createTreeData() (stringDataTree[locationDataNode], int, er
 					Name:        makeNameWithCount("Fuel Bay", len(fuel)),
 					Type:        nodeFuelBay,
 				}
-				tree.add(shipUID, ldn)
+				tree.Add(shipUID, ldn)
 			}
 		}
 
@@ -294,7 +295,7 @@ func (a *assetsArea) createTreeData() (stringDataTree[locationDataNode], int, er
 			Name:        makeNameWithCount("Item Hangar", itemCount),
 			Type:        nodeItemHangar,
 		}
-		itemsUID := tree.add(locationUID, itemHangar)
+		itemsUID := tree.Add(locationUID, itemHangar)
 		for _, an := range itemContainers {
 			ldn := locationDataNode{
 				CharacterID: characterID,
@@ -302,7 +303,7 @@ func (a *assetsArea) createTreeData() (stringDataTree[locationDataNode], int, er
 				Name:        makeNameWithCount(an.Asset.DisplayName(), len(an.Nodes())),
 				Type:        nodeContainer,
 			}
-			tree.add(itemsUID, ldn)
+			tree.Add(itemsUID, ldn)
 		}
 
 		if len(assetSafety) > 0 {
@@ -313,7 +314,7 @@ func (a *assetsArea) createTreeData() (stringDataTree[locationDataNode], int, er
 				Name:        makeNameWithCount("Asset Safety", len(an.Nodes())),
 				Type:        nodeAssetSafety,
 			}
-			tree.add(locationUID, ldn)
+			tree.Add(locationUID, ldn)
 		}
 	}
 	return tree, len(a.assetCollection.Locations()), nil

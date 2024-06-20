@@ -12,21 +12,30 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/stringdatatree"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 )
 
 type jumpCloneNode struct {
-	LocationID             int64
-	LocationName           string
 	ImplantCount           int
 	ImplantTypeID          int32
 	ImplantTypeName        string
 	ImplantTypeDescription string
 	IsUnknown              bool
+	JumpCloneID            int32
+	LocationID             int64
+	LocationName           string
 }
 
-func (n jumpCloneNode) isClone() bool {
+func (n jumpCloneNode) IsRoot() bool {
 	return n.ImplantTypeID == 0
+}
+
+func (n jumpCloneNode) UID() widget.TreeNodeID {
+	if n.JumpCloneID == 0 {
+		panic("some IDs are not set")
+	}
+	return fmt.Sprintf("%d-%d", n.JumpCloneID, n.ImplantTypeID)
 }
 
 // jumpClonesArea is the UI area that shows the skillqueue
@@ -72,7 +81,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 				first.SetText("ERROR")
 				return
 			}
-			if n.isClone() {
+			if n.IsRoot() {
 				icon.Resource = eveicon.GetResourceByName(eveicon.CloningCenter)
 				icon.Refresh()
 				first.SetText(n.LocationName)
@@ -106,11 +115,11 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			slog.Error("Failed to select jump clone", "err", err)
 			return
 		}
-		if n.isClone() && !n.IsUnknown {
+		if n.IsRoot() && !n.IsUnknown {
 			a.ui.showLocationInfoWindow(n.LocationID)
 			return
 		}
-		if !n.isClone() {
+		if !n.IsRoot() {
 			a.ui.showTypeInfoWindow(n.ImplantTypeID, a.ui.characterID())
 		}
 	}
@@ -119,7 +128,11 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 
 func (a *jumpClonesArea) redraw() {
 	t, i, err := func() (string, widget.Importance, error) {
-		ids, values, total, err := a.updateTreeData()
+		tree, total, err := a.updateTreeData()
+		if err != nil {
+			return "", 0, err
+		}
+		ids, values, err := tree.StringTree()
 		if err != nil {
 			return "", 0, err
 		}
@@ -139,19 +152,18 @@ func (a *jumpClonesArea) redraw() {
 	a.top.Refresh()
 }
 
-func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]string, int, error) {
-	values := make(map[string]string)
-	ids := make(map[string][]string)
+func (a *jumpClonesArea) updateTreeData() (stringdatatree.StringDataTree[jumpCloneNode], int, error) {
+	tree := stringdatatree.New[jumpCloneNode]()
 	if !a.ui.hasCharacter() {
-		return ids, values, 0, nil
+		return tree, 0, nil
 	}
 	clones, err := a.ui.CharacterService.ListCharacterJumpClones(context.Background(), a.ui.characterID())
 	if err != nil {
-		return nil, nil, 0, err
+		return tree, 0, err
 	}
 	for _, c := range clones {
-		id := fmt.Sprint(c.JumpCloneID)
 		n := jumpCloneNode{
+			JumpCloneID:  c.JumpCloneID,
 			ImplantCount: len(c.Implants),
 			LocationID:   c.Location.ID,
 		}
@@ -162,26 +174,18 @@ func (a *jumpClonesArea) updateTreeData() (map[string][]string, map[string]strin
 			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 			n.IsUnknown = true
 		}
-		values[id], err = objectToJSON(n)
-		if err != nil {
-			return nil, nil, 0, err
-		}
-		ids[""] = append(ids[""], id)
+		id := tree.Add("", n)
 		for _, i := range c.Implants {
-			subID := fmt.Sprintf("%s-%d", id, i.EveType.ID)
 			n := jumpCloneNode{
+				JumpCloneID:            c.JumpCloneID,
 				ImplantTypeName:        i.EveType.Name,
 				ImplantTypeID:          i.EveType.ID,
 				ImplantTypeDescription: i.EveType.DescriptionPlain(),
 			}
-			values[subID], err = objectToJSON(n)
-			if err != nil {
-				return nil, nil, 0, err
-			}
-			ids[id] = append(ids[id], subID)
+			tree.Add(id, n)
 		}
 	}
-	return ids, values, len(clones), nil
+	return tree, len(clones), nil
 }
 
 func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance) {
