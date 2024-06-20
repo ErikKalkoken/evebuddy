@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/datanodetree"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 // mailArea is the UI area showing the mail folders.
@@ -29,7 +30,7 @@ type mailArea struct {
 	lastFolderAll folderNode
 	folders       *widget.Tree
 	treeData      binding.StringTree
-	currentFolder folderNode
+	currentFolder optional.Optional[folderNode]
 
 	headerSection fyne.CanvasObject
 	headerTop     *widget.Label
@@ -119,6 +120,10 @@ type folderNode struct {
 	Name        string
 	ObjID       int32
 	UnreadCount int
+}
+
+func (f folderNode) IsEmpty() bool {
+	return f.CharacterID == 0
 }
 
 func (f folderNode) UID() widget.TreeNodeID {
@@ -214,6 +219,12 @@ func (a *mailArea) refresh() {
 		a.ui.showErrorDialog(t, err)
 		return
 	}
+	if folderAll.IsEmpty() {
+		a.treeData.Set(nil, nil)
+		a.updateMailTab(0)
+		a.clearFolder()
+		return
+	}
 	if a.lastUID == "" {
 		a.folders.UnselectAll()
 		a.folders.ScrollToTop()
@@ -236,8 +247,11 @@ func (a *mailArea) updateMailTab(unreadCount int) {
 }
 
 func (a *mailArea) makeFolderTreeData(characterID int32) (datanodetree.DataNodeTree[folderNode], folderNode, error) {
-	ctx := context.Background()
 	tree := datanodetree.New[folderNode]()
+	if characterID == 0 {
+		return tree, folderNode{}, nil
+	}
+	ctx := context.Background()
 	labelUnreadCounts, err := a.ui.CharacterService.GetCharacterMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
 		return tree, folderNode{}, err
@@ -397,10 +411,16 @@ func (a *mailArea) makeHeaderList() *widget.List {
 }
 
 func (a *mailArea) setFolder(folder folderNode) {
-	a.currentFolder = folder
+	a.currentFolder = optional.New(folder)
 	a.headerRefresh()
 	a.headers.ScrollToTop()
 	a.headers.UnselectAll()
+	a.clearMail()
+}
+func (a *mailArea) clearFolder() {
+	a.currentFolder = optional.Optional[folderNode]{}
+	a.headerData.Set(nil)
+	a.headerTop.SetText("")
 	a.clearMail()
 }
 
@@ -421,10 +441,11 @@ func (a *mailArea) headerRefresh() {
 
 func (a *mailArea) updateHeaderData() error {
 	ctx := context.Background()
-	folder := a.currentFolder
-	if folder.CharacterID == 0 {
+	folderOption := a.currentFolder
+	if folderOption.IsNone() {
 		return nil
 	}
+	folder := folderOption.MustValue()
 	var oo []*app.CharacterMailHeader
 	var err error
 	switch folder.Category {
