@@ -28,6 +28,16 @@ func TestDictionary(t *testing.T) {
 			}
 		}
 	})
+	t.Run("should return false when string entry does not exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, ok, err := s.String("alpha")
+		// then
+		if assert.NoError(t, err) {
+			assert.False(t, ok)
+		}
+	})
 	t.Run("can use int entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -40,6 +50,16 @@ func TestDictionary(t *testing.T) {
 				assert.True(t, ok)
 				assert.Equal(t, 42, v)
 			}
+		}
+	})
+	t.Run("should return false when int entry does not exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, ok, err := s.Int("alpha")
+		// then
+		if assert.NoError(t, err) {
+			assert.False(t, ok)
 		}
 	})
 	t.Run("can use float32 entries", func(t *testing.T) {
@@ -56,6 +76,16 @@ func TestDictionary(t *testing.T) {
 			}
 		}
 	})
+	t.Run("should return false when float32 entry does not exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, ok, err := s.Float32("alpha")
+		// then
+		if assert.NoError(t, err) {
+			assert.False(t, ok)
+		}
+	})
 	t.Run("can use float64 entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -68,6 +98,16 @@ func TestDictionary(t *testing.T) {
 				assert.True(t, ok)
 				assert.Equal(t, float64(1.23), v)
 			}
+		}
+	})
+	t.Run("should return false when float64 entry does not exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, ok, err := s.Float64("alpha")
+		// then
+		if assert.NoError(t, err) {
+			assert.False(t, ok)
 		}
 	})
 	t.Run("can use time entries", func(t *testing.T) {
@@ -85,6 +125,17 @@ func TestDictionary(t *testing.T) {
 			}
 		}
 	})
+	t.Run("should return false when time entry does not exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		_, ok, err := s.Time("alpha")
+		// then
+		if assert.NoError(t, err) {
+			assert.False(t, ok)
+		}
+	})
+
 	t.Run("can update existing entry", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -100,36 +151,6 @@ func TestDictionary(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, "peter", v)
 			}
-		}
-	})
-	t.Run("should return nok when not found", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		// when
-		_, ok, err := s.String("alpha")
-		// then
-		if assert.NoError(t, err) {
-			assert.False(t, ok)
-		}
-	})
-	t.Run("should return nok when not found", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		// when
-		_, ok, err := s.Int("alpha")
-		// then
-		if assert.NoError(t, err) {
-			assert.False(t, ok)
-		}
-	})
-	t.Run("should return nok when not found", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		// when
-		_, ok, err := s.Time("alpha")
-		// then
-		if assert.NoError(t, err) {
-			assert.False(t, ok)
 		}
 	})
 	t.Run("can delete existing key", func(t *testing.T) {
