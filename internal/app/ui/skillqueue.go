@@ -136,7 +136,7 @@ func (a *skillqueueArea) refresh() {
 func (a *skillqueueArea) updateItems() (optional.Optional[time.Duration], optional.Optional[float64], error) {
 	var remaining optional.Optional[time.Duration]
 	var completion optional.Optional[float64]
-	ctx := context.Background()
+	ctx := context.TODO()
 	if !a.ui.hasCharacter() {
 		err := a.items.Set(make([]any, 0))
 		if err != nil {

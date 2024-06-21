@@ -157,7 +157,7 @@ func (a *jumpClonesArea) updateTreeData() (datanodetree.DataNodeTree[jumpCloneNo
 	if !a.ui.hasCharacter() {
 		return tree, 0, nil
 	}
-	clones, err := a.ui.CharacterService.ListCharacterJumpClones(context.Background(), a.ui.characterID())
+	clones, err := a.ui.CharacterService.ListCharacterJumpClones(context.TODO(), a.ui.characterID())
 	if err != nil {
 		return tree, 0, err
 	}

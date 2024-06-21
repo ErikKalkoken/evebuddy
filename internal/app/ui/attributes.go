@@ -127,7 +127,7 @@ func (a *attributesArea) updateData() (int, error) {
 			return 0, err
 		}
 	}
-	ctx := context.Background()
+	ctx := context.TODO()
 	ca, err := a.ui.CharacterService.GetCharacterAttributes(ctx, a.ui.characterID())
 	if errors.Is(err, character.ErrNotFound) {
 		err := a.attributes.Set(make([]any, 0))

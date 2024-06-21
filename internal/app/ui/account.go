@@ -118,7 +118,7 @@ func (a *accountArea) makeCharacterList() *widget.List {
 			slog.Error("failed to access account character in list", "err", err)
 			return
 		}
-		if err := a.ui.loadCharacter(context.Background(), c.id); err != nil {
+		if err := a.ui.loadCharacter(context.TODO(), c.id); err != nil {
 			slog.Error("failed to load current character", "char", c, "err", err)
 			return
 		}
@@ -134,7 +134,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 		func(confirmed bool) {
 			if confirmed {
 				err := func(characterID int32) error {
-					err := a.ui.CharacterService.DeleteCharacter(context.Background(), characterID)
+					err := a.ui.CharacterService.DeleteCharacter(context.TODO(), characterID)
 					if err != nil {
 						return err
 					}
@@ -164,7 +164,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 }
 
 func (a *accountArea) Refresh() error {
-	cc, err := a.ui.CharacterService.ListCharactersShort(context.Background())
+	cc, err := a.ui.CharacterService.ListCharactersShort(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -184,7 +184,7 @@ func (a *accountArea) Refresh() error {
 }
 
 func (a *accountArea) showAddCharacterDialog() {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	s := "Please follow instructions in your browser to add a new character."
 	infoText := binding.BindString(&s)
 	content := widget.NewLabelWithData(infoText)

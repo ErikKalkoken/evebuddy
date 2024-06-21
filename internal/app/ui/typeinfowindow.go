@@ -216,7 +216,7 @@ func (u *ui) showInfoWindow(iw *typeInfoWindow, err error) {
 }
 
 func (u *ui) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*typeInfoWindow, error) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	a := &typeInfoWindow{
 		ui: u,
 	}

@@ -116,7 +116,8 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 			return
 		}
 		oo, err := a.ui.CharacterService.ListCharacterSkillProgress(
-			context.Background(), a.ui.characterID(), group.id)
+			context.TODO(), a.ui.characterID(), group.id,
+		)
 		if err != nil {
 			slog.Error("Failed to fetch skill group data", "err", err)
 			g.UnselectAll()
@@ -219,7 +220,7 @@ func (a *skillCatalogueArea) updateGroups() error {
 	if !a.ui.hasCharacter() {
 		return nil
 	}
-	gg, err := a.ui.CharacterService.ListCharacterSkillGroupsProgress(context.Background(), a.ui.characterID())
+	gg, err := a.ui.CharacterService.ListCharacterSkillGroupsProgress(context.TODO(), a.ui.characterID())
 	if err != nil {
 		return err
 	}

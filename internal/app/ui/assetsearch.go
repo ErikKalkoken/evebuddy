@@ -357,7 +357,7 @@ func (a *assetSearchArea) refresh() {
 }
 
 func (a *assetSearchArea) loadData() (bool, error) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	cc, err := a.ui.CharacterService.ListCharactersShort(ctx)
 	if err != nil {
 		return false, err

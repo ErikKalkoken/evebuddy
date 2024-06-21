@@ -149,7 +149,7 @@ func (u *ui) Init() {
 	var c *app.Character
 	cID, ok, err := u.DictionaryService.Int(app.SettingLastCharacterID)
 	if err == nil && ok {
-		c, err = u.CharacterService.GetCharacter(context.Background(), int32(cID))
+		c, err = u.CharacterService.GetCharacter(context.TODO(), int32(cID))
 		if err != nil {
 			if !errors.Is(err, character.ErrNotFound) {
 				slog.Error("Failed to load character", "error", err)
@@ -319,7 +319,7 @@ func (u *ui) refreshCharacter() {
 		for i := range subTabs.Items {
 			subTabs.EnableIndex(i)
 		}
-		u.updateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
+		u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 	} else {
 		for i := range u.tabs.Items {
 			u.tabs.DisableIndex(i)
@@ -335,7 +335,7 @@ func (u *ui) refreshCharacter() {
 }
 
 func (u *ui) setAnyCharacter() error {
-	c, err := u.CharacterService.GetAnyCharacter(context.Background())
+	c, err := u.CharacterService.GetAnyCharacter(context.TODO())
 	if errors.Is(err, character.ErrNotFound) {
 		u.resetCharacter()
 		return nil

@@ -97,7 +97,7 @@ func (a *toolbarArea) refresh() {
 }
 
 func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	menuItems := make([]*fyne.MenuItem, 0)
 	cc, err := a.ui.CharacterService.ListCharactersShort(ctx)
 	if err != nil {

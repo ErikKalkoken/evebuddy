@@ -52,7 +52,7 @@ func (u *ui) newShipArea() *shipsArea {
 func (a *shipsArea) makeGroupSelect() *widget.Select {
 	groupSelect := widget.NewSelect([]string{}, func(s string) {
 		a.selectedGroup = s
-		if err := a.updateEntries(); err != nil {
+		if err := a.updateEntries(context.TODO()); err != nil {
 			t := "Failed to update ship search"
 			slog.Error(t, "err", err)
 			a.ui.statusBarArea.SetError(t)
@@ -70,7 +70,7 @@ func (a *shipsArea) makeSearchBox() *widget.Entry {
 		if len(s) == 1 {
 			return
 		}
-		if err := a.updateEntries(); err != nil {
+		if err := a.updateEntries(context.TODO()); err != nil {
 			t := "Failed to update ship search"
 			slog.Error(t, "err", err)
 			a.ui.statusBarArea.SetError(t)
@@ -117,10 +117,11 @@ func (a *shipsArea) refresh() {
 		if !exists {
 			return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
 		}
-		if err := a.updateEntries(); err != nil {
+		ctx := context.TODO()
+		if err := a.updateEntries(ctx); err != nil {
 			return "", 0, false, err
 		}
-		return a.makeTopText()
+		return a.makeTopText(ctx)
 	}()
 	if err != nil {
 		slog.Error("Failed to refresh ships UI", "err", err)
@@ -138,7 +139,7 @@ func (a *shipsArea) refresh() {
 	}
 }
 
-func (a *shipsArea) updateEntries() error {
+func (a *shipsArea) updateEntries(ctx context.Context) error {
 	if !a.ui.hasCharacter() {
 		oo := make([]*app.CharacterShipAbility, 0)
 		a.entries.Set(copyToUntypedSlice(oo))
@@ -148,7 +149,7 @@ func (a *shipsArea) updateEntries() error {
 	}
 	characterID := a.ui.characterID()
 	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
-	oo, err := a.ui.CharacterService.ListCharacterShipsAbilities(context.Background(), characterID, search)
+	oo, err := a.ui.CharacterService.ListCharacterShipsAbilities(ctx, characterID, search)
 	if err != nil {
 		return err
 	}
@@ -169,8 +170,7 @@ func (a *shipsArea) updateEntries() error {
 	return nil
 }
 
-func (a *shipsArea) makeTopText() (string, widget.Importance, bool, error) {
-	ctx := context.Background()
+func (a *shipsArea) makeTopText(ctx context.Context) (string, widget.Importance, bool, error) {
 	if !a.ui.hasCharacter() {
 		return "No character", widget.LowImportance, false, nil
 	}

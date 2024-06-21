@@ -107,7 +107,7 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 		if c.IsGeneralSection() {
 			a.ui.updateGeneralSectionsAndRefreshIfNeeded(true)
 		} else {
-			a.ui.updateCharacterAndRefreshIfNeeded(context.Background(), c.id, true)
+			a.ui.updateCharacterAndRefreshIfNeeded(context.TODO(), c.id, true)
 		}
 	})
 	top2 := container.NewVBox(container.NewHBox(a.sectionsTop, layout.NewSpacer(), b), widget.NewSeparator())
@@ -329,10 +329,10 @@ func (a *statusWindow) makeDetailsContent(d sectionStatusData) []fyne.CanvasObje
 	oo = append(oo, widget.NewButton(fmt.Sprintf("Force update %s", d.sectionName), func() {
 		if d.IsGeneralSection() {
 			go a.ui.updateGeneralSectionAndRefreshIfNeeded(
-				context.Background(), app.GeneralSection(d.sectionID), true)
+				context.TODO(), app.GeneralSection(d.sectionID), true)
 		} else {
 			go a.ui.updateCharacterSectionAndRefreshIfNeeded(
-				context.Background(), d.entityID, app.CharacterSection(d.sectionID), true)
+				context.TODO(), d.entityID, app.CharacterSection(d.sectionID), true)
 		}
 
 	}))

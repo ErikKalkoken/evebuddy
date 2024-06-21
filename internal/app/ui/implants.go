@@ -99,7 +99,7 @@ func (a *implantsArea) updateData() error {
 			return err
 		}
 	}
-	implants, err := a.ui.CharacterService.ListCharacterImplants(context.Background(), a.ui.characterID())
+	implants, err := a.ui.CharacterService.ListCharacterImplants(context.TODO(), a.ui.characterID())
 	if err != nil {
 		return err
 	}
