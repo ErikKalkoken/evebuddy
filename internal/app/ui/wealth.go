@@ -10,10 +10,12 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/charts"
+	"github.com/ErikKalkoken/evebuddy/internal/app/chartbuilder"
 	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
+	"github.com/golang/freetype/truetype"
 )
 
 type wealthArea struct {
@@ -60,34 +62,42 @@ func (a *wealthArea) refresh() {
 		a.top.Refresh()
 		return
 	}
-	cb := charts.NewChartBuilder()
-	charactersData := make([]charts.Value, len(data))
-	for i, r := range data {
-		charactersData[i] = charts.Value{Label: r.label, Value: r.assets + r.wallet}
+	cb := chartbuilder.New()
+	cb.ForegroundColor = theme.ForegroundColor()
+	cb.BackgroundColor = theme.BackgroundColor()
+	f := theme.DefaultTextFont().Content()
+	font, err := truetype.Parse(f)
+	if err != nil {
+		panic(err)
 	}
-	charactersChart := cb.Render(charts.Pie, "Total Wealth By Character", charactersData)
+	cb.Font = font
+	charactersData := make([]chartbuilder.Value, len(data))
+	for i, r := range data {
+		charactersData[i] = chartbuilder.Value{Label: r.label, Value: r.assets + r.wallet}
+	}
+	charactersChart := cb.Render(chartbuilder.Pie, "Total Wealth By Character", charactersData)
 
 	var totalWallet, totalAssets float64
 	for _, r := range data {
 		totalAssets += r.assets
 		totalWallet += r.wallet
 	}
-	typesData := make([]charts.Value, 2)
-	typesData[0] = charts.Value{Label: "Assets", Value: totalAssets}
-	typesData[1] = charts.Value{Label: "Wallet", Value: totalWallet}
-	typesChart := cb.Render(charts.Pie, "Total Wealth By Type", typesData)
+	typesData := make([]chartbuilder.Value, 2)
+	typesData[0] = chartbuilder.Value{Label: "Assets", Value: totalAssets}
+	typesData[1] = chartbuilder.Value{Label: "Wallet", Value: totalWallet}
+	typesChart := cb.Render(chartbuilder.Pie, "Total Wealth By Type", typesData)
 
-	assetsData := make([]charts.Value, len(data))
+	assetsData := make([]chartbuilder.Value, len(data))
 	for i, r := range data {
-		assetsData[i] = charts.Value{Label: r.label, Value: r.assets}
+		assetsData[i] = chartbuilder.Value{Label: r.label, Value: r.assets}
 	}
-	assetsChart := cb.Render(charts.Bar, "Assets Value By Character", assetsData)
+	assetsChart := cb.Render(chartbuilder.Bar, "Assets Value By Character", assetsData)
 
-	walletData := make([]charts.Value, len(data))
+	walletData := make([]chartbuilder.Value, len(data))
 	for i, r := range data {
-		walletData[i] = charts.Value{Label: r.label, Value: r.wallet}
+		walletData[i] = chartbuilder.Value{Label: r.label, Value: r.wallet}
 	}
-	walletChart := cb.Render(charts.Bar, "Wallet Balance By Character", walletData)
+	walletChart := cb.Render(chartbuilder.Bar, "Wallet Balance By Character", walletData)
 
 	var total float64
 	for _, r := range data {

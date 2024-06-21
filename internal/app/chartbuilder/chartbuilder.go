@@ -1,9 +1,10 @@
-// Package charts provides a chart builder for rending themed Fyne charts.
-package charts
+// Package chartbuilder provides a chart builder for rending themed Fyne charts.
+package chartbuilder
 
 import (
 	"bytes"
 	"cmp"
+	"errors"
 	"fmt"
 	"image/color"
 	"log/slog"
@@ -13,7 +14,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 	"github.com/golang/freetype/truetype"
@@ -39,30 +39,45 @@ type Value struct {
 	Value float64
 }
 
+var errInsufficientData = errors.New("insufficient data")
+
 // CharBuilder renders themed Fyne charts.
 type ChartBuilder struct {
-	foregroundColor drawing.Color
-	backgroundColor drawing.Color
-	font            *truetype.Font
+	// Parameters must be set before calling Render to customize.
+	ForegroundColor color.Color
+	BackgroundColor color.Color
+	Font            *truetype.Font
 }
 
-func NewChartBuilder() ChartBuilder {
-	f := theme.DefaultTextFont().Content()
-	font, err := truetype.Parse(f)
-	if err != nil {
-		panic(err)
-	}
+// New returns a new ChartBuilder object.
+//
+// The builder can be customized by setting it's exported fields.
+func New() ChartBuilder {
 	cb := ChartBuilder{
-		font:            font,
-		foregroundColor: chartColor(theme.ForegroundColor()),
-		backgroundColor: chartColor(theme.BackgroundColor()),
+		ForegroundColor: color.Black,
+		BackgroundColor: color.White,
 	}
 	return cb
 }
 
 // Render returns a rendered chart in a Fyne container.
 func (cb ChartBuilder) Render(ct ChartType, title string, values []Value) *fyne.Container {
-	chart := cb.render(ct, title, values)
+	chart, err := cb.render(ct, title, values)
+	if err != nil {
+		var t string
+		var i widget.Importance
+		if err == errInsufficientData {
+			t = "Insufficient data"
+			i = widget.LowImportance
+		} else {
+			slog.Error("Failed to generate chart", "title", title, "err", err)
+			t = fmt.Sprintf("Failed to generate chart: %s", humanize.Error(err))
+			i = widget.DangerImportance
+		}
+		l := widget.NewLabel(t)
+		l.Importance = i
+		chart = container.NewCenter(l)
+	}
 	label := widget.NewLabel(title)
 	label.TextStyle.Bold = true
 	c := container.NewPadded(container.NewBorder(
@@ -71,14 +86,23 @@ func (cb ChartBuilder) Render(ct ChartType, title string, values []Value) *fyne.
 	return c
 }
 
-func (cb ChartBuilder) render(ct ChartType, title string, values []Value) fyne.CanvasObject {
+func (cb ChartBuilder) foregroundColor() drawing.Color {
+	return chartColor(cb.ForegroundColor)
+}
+
+func (cb ChartBuilder) backgroundColor() drawing.Color {
+	return chartColor(cb.BackgroundColor)
+}
+
+func (cb ChartBuilder) render(ct ChartType, title string, values []Value) (fyne.CanvasObject, error) {
+	if len(values) < 2 {
+		return nil, errInsufficientData
+	}
 	max := slices.MaxFunc(values, func(a, b Value) int {
 		return cmp.Compare(a.Value, b.Value)
 	})
-	if len(values) < 2 || max.Value == 0 {
-		l := widget.NewLabel("Insufficient data")
-		l.Importance = widget.LowImportance
-		return container.NewCenter(l)
+	if max.Value == 0 {
+		return nil, errInsufficientData
 	}
 	var content []byte
 	var err error
@@ -89,16 +113,13 @@ func (cb ChartBuilder) render(ct ChartType, title string, values []Value) fyne.C
 		content, err = cb.makePieChart(values)
 	}
 	if err != nil {
-		slog.Error("Failed to generate chart", "title", title, "err", err)
-		l := widget.NewLabel(fmt.Sprintf("Failed to generate chart: %s", humanize.Error(err)))
-		l.Importance = widget.DangerImportance
-		return container.NewCenter(l)
+		return nil, err
 	}
 	fn := makeFileName(title)
 	r := fyne.NewStaticResource(fn, content)
 	chart := canvas.NewImageFromResource(r)
 	chart.FillMode = canvas.ImageFillOriginal
-	return chart
+	return chart, nil
 }
 
 func makeFileName(title string) string {
@@ -148,10 +169,10 @@ func (cb ChartBuilder) makePieChart(values []Value) ([]byte, error) {
 			FillColor: chart.ColorTransparent,
 		},
 		SliceStyle: chart.Style{
-			FontColor:   cb.foregroundColor,
-			StrokeColor: cb.backgroundColor,
+			FontColor:   cb.foregroundColor(),
+			StrokeColor: cb.backgroundColor(),
 		},
-		Font:   cb.font,
+		Font:   cb.Font,
 		Values: chartValues,
 	}
 	var buf bytes.Buffer
@@ -176,17 +197,17 @@ func (cb ChartBuilder) makeBarChart(data []Value) ([]byte, error) {
 		Canvas: chart.Style{
 			FillColor: chart.ColorTransparent,
 		},
-		Font:   cb.font,
+		Font:   cb.Font,
 		Width:  1024,
 		Height: 512,
 		XAxis: chart.Style{
 			Hidden:    false,
-			FontColor: cb.foregroundColor,
+			FontColor: cb.foregroundColor(),
 		},
 		YAxis: chart.YAxis{
 			Style: chart.Style{
 				Hidden:    false,
-				FontColor: cb.foregroundColor,
+				FontColor: cb.foregroundColor(),
 			},
 			ValueFormatter: numericValueFormatter,
 		},
