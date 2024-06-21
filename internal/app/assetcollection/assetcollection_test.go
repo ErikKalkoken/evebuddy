@@ -1,9 +1,10 @@
-package assetcollection
+package assetcollection_test
 
 import (
 	"testing"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,16 +20,39 @@ func TestAssetCollection(t *testing.T) {
 	loc1 := &app.EveLocation{ID: 100000, Name: "Alpha"}
 	loc2 := &app.EveLocation{ID: 101000, Name: "Bravo"}
 	locations := []*app.EveLocation{loc1, loc2}
-	ac := New(assets, locations)
+	ac := assetcollection.New(assets, locations)
 	t.Run("can create tree from character assets", func(t *testing.T) {
-		assert.Len(t, ac.lns, 2)
-		assert.Len(t, ac.lns[100000].nodes, 2)
-		assert.Len(t, ac.lns[100000].nodes[a1.ItemID].nodes, 1)
-		assert.Len(t, ac.lns[100000].nodes[a1.ItemID].nodes[a11.ItemID].nodes, 1)
-		assert.Len(t, ac.lns[100000].nodes[a2.ItemID].nodes, 0)
-		assert.Len(t, ac.lns[101000].nodes, 1)
-		assert.Len(t, ac.lns[101000].nodes[a3.ItemID].nodes, 1)
-		assert.Len(t, ac.lns[101000].nodes[a31.ItemID].nodes, 0)
+		locations := ac.Locations()
+		assert.Len(t, locations, 2)
+		for _, l := range locations {
+			if l.Location.ID == 100000 {
+				nodes := l.Nodes()
+				assert.Len(t, nodes, 2)
+				for _, n := range nodes {
+					if n.Asset.ItemID == a1.ItemID {
+						assert.Len(t, n.Nodes(), 1)
+						if n.Asset.ItemID == a1.ItemID {
+							assert.Len(t, n.Nodes(), 1)
+							sub := n.Nodes()[0]
+							assert.Equal(t, a11.ItemID, sub.Asset.ItemID)
+							assert.Len(t, sub.Nodes(), 1)
+						}
+					}
+					if n.Asset.ItemID == a2.ItemID {
+						assert.Len(t, n.Nodes(), 0)
+					}
+				}
+			}
+			if l.Location.ID == 101000 {
+				nodes := l.Nodes()
+				assert.Len(t, nodes, 1)
+				sub := nodes[0]
+				assert.Equal(t, a3.ItemID, sub.Asset.ItemID)
+				sub2 := sub.Nodes()
+				assert.Len(t, sub2, 1)
+				assert.Equal(t, a31.ItemID, sub2[0].Asset.ItemID)
+			}
+		}
 	})
 	t.Run("can return parent location for assets", func(t *testing.T) {
 		cases := []struct {
