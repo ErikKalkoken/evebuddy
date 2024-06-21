@@ -36,21 +36,21 @@ func FromNullTime(v sql.NullTime) Optional[time.Time] {
 }
 
 func ToNullFloat64[T constraints.Float](o Optional[T]) sql.NullFloat64 {
-	if o.IsNil() {
+	if o.IsEmpty() {
 		return sql.NullFloat64{}
 	}
 	return sql.NullFloat64{Float64: float64(o.ValueOrZero()), Valid: true}
 }
 
 func ToNullInt64[T constraints.Integer](o Optional[T]) sql.NullInt64 {
-	if o.IsNil() {
+	if o.IsEmpty() {
 		return sql.NullInt64{}
 	}
 	return sql.NullInt64{Int64: int64(o.ValueOrZero()), Valid: true}
 }
 
 func ToNullTime(o Optional[time.Time]) sql.NullTime {
-	if o.IsNil() {
+	if o.IsEmpty() {
 		return sql.NullTime{}
 	}
 	return sql.NullTime{Time: o.ValueOrZero(), Valid: true}

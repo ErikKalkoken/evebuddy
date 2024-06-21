@@ -12,6 +12,11 @@ func TestOptional(t *testing.T) {
 	t.Run("can create new optional with value", func(t *testing.T) {
 		x := optional.New(55)
 		assert.Equal(t, 55, x.MustValue())
+		assert.False(t, x.IsEmpty())
+	})
+	t.Run("can create an empty optional", func(t *testing.T) {
+		x := optional.Optional[int]{}
+		assert.True(t, x.IsEmpty())
 	})
 	t.Run("can update an empty optional", func(t *testing.T) {
 		x := optional.Optional[int]{}
@@ -25,8 +30,8 @@ func TestOptional(t *testing.T) {
 	})
 	t.Run("can make a value to none", func(t *testing.T) {
 		x := optional.New(12)
-		x.SetNil()
-		assert.True(t, x.IsNil())
+		x.Clear()
+		assert.True(t, x.IsEmpty())
 	})
 	t.Run("can print a value", func(t *testing.T) {
 		x := optional.New(12)
@@ -58,7 +63,7 @@ func TestOptional(t *testing.T) {
 	t.Run("should return error when empty", func(t *testing.T) {
 		x := optional.Optional[int]{}
 		_, err := x.Value()
-		assert.Error(t, err)
+		assert.ErrorIs(t, err, optional.ErrIsEmpty)
 	})
 	t.Run("should panic when empty", func(t *testing.T) {
 		x := optional.Optional[int]{}

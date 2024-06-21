@@ -127,7 +127,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 			case 6:
 				l.Text = ihumanize.Optional(c.unallocatedSP, "?")
 			case 7:
-				if c.training.IsNil() {
+				if c.training.IsEmpty() {
 					l.Text = "Inactive"
 					l.Importance = widget.WarningImportance
 				} else {
@@ -140,7 +140,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 			case 10:
 				l.Text = entityNameOrFallback(c.location, "?")
 			case 11:
-				if c.solarSystem == nil || c.systemSecurity.IsNil() {
+				if c.solarSystem == nil || c.systemSecurity.IsEmpty() {
 					l.Text = "?"
 				} else {
 					l.Text = fmt.Sprintf("%s %.1f", c.solarSystem.Name, c.systemSecurity.MustValue())
@@ -335,16 +335,16 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 		return totals, err
 	}
 	for _, c := range cc {
-		if !c.totalSP.IsNil() {
+		if !c.totalSP.IsEmpty() {
 			totals.sp.Set(totals.sp.ValueOrZero() + c.totalSP.MustValue())
 		}
-		if !c.unreadCount.IsNil() {
+		if !c.unreadCount.IsEmpty() {
 			totals.unread.Set(totals.unread.ValueOrZero() + c.unreadCount.MustValue())
 		}
-		if !c.walletBalance.IsNil() {
+		if !c.walletBalance.IsEmpty() {
 			totals.wallet.Set(totals.wallet.ValueOrZero() + c.walletBalance.MustValue())
 		}
-		if !c.assetValue.IsNil() {
+		if !c.assetValue.IsEmpty() {
 			totals.assets.Set(totals.assets.ValueOrZero() + c.assetValue.MustValue())
 		}
 	}
