@@ -121,7 +121,7 @@ func (a *assetSearchArea) newAssetSearchRow(ca *app.CharacterAsset) *assetSearch
 		r.locationName = location.DisplayName()
 	}
 	var price string
-	if ca.Price.IsNone() || ca.IsBlueprintCopy {
+	if ca.Price.IsNil() || ca.IsBlueprintCopy {
 		price = "?"
 	} else {
 		t := ca.Price.ValueOrZero() * float64(ca.Quantity)

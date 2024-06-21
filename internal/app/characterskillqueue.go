@@ -32,7 +32,7 @@ func (qi CharacterSkillqueueItem) IsCompleted() bool {
 
 func (qi CharacterSkillqueueItem) CompletionP() float64 {
 	d := qi.Duration()
-	if d.IsNone() {
+	if d.IsNil() {
 		return 0
 	}
 	duration := d.MustValue()

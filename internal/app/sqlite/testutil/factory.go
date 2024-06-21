@@ -37,25 +37,25 @@ func (f Factory) CreateCharacter(args ...sqlite.UpdateOrCreateCharacterParams) *
 		c := f.CreateEveCharacter()
 		arg.ID = c.ID
 	}
-	if arg.HomeID.IsNone() {
+	if arg.HomeID.IsNil() {
 		x := f.CreateLocationStructure()
 		arg.HomeID = optional.New(x.ID)
 	}
-	if arg.LastLoginAt.IsNone() {
+	if arg.LastLoginAt.IsNil() {
 		arg.LastLoginAt = optional.New(time.Now())
 	}
-	if arg.LocationID.IsNone() {
+	if arg.LocationID.IsNil() {
 		x := f.CreateLocationStructure()
 		arg.LocationID = optional.New(x.ID)
 	}
-	if arg.ShipID.IsNone() {
+	if arg.ShipID.IsNil() {
 		x := f.CreateEveType()
 		arg.ShipID = optional.New(x.ID)
 	}
-	if arg.TotalSP.IsNone() {
+	if arg.TotalSP.IsNil() {
 		arg.TotalSP = optional.New(rand.IntN(100_000_000))
 	}
-	if arg.WalletBalance.IsNone() {
+	if arg.WalletBalance.IsNil() {
 		arg.WalletBalance = optional.New(rand.Float64() * 100_000_000_000)
 	}
 	err := f.st.UpdateOrCreateCharacter(ctx, arg)
@@ -994,15 +994,15 @@ func (f Factory) CreateLocationStructure(args ...sqlite.UpdateOrCreateLocationPa
 	if arg.Name == "" {
 		arg.Name = fmt.Sprintf("Structure #%d", arg.ID)
 	}
-	if arg.EveSolarSystemID.IsNone() {
+	if arg.EveSolarSystemID.IsNil() {
 		x := f.CreateEveSolarSystem()
 		arg.EveSolarSystemID = optional.New(x.ID)
 	}
-	if arg.OwnerID.IsNone() {
+	if arg.OwnerID.IsNil() {
 		x := f.CreateEveEntityCorporation()
 		arg.OwnerID = optional.New(x.ID)
 	}
-	if arg.EveTypeID.IsNone() {
+	if arg.EveTypeID.IsNil() {
 		x := f.CreateEveType()
 		arg.EveTypeID = optional.New(x.ID)
 	}

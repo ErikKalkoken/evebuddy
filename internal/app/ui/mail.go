@@ -442,7 +442,7 @@ func (a *mailArea) headerRefresh() {
 func (a *mailArea) updateHeaderData() error {
 	ctx := context.TODO()
 	folderOption := a.currentFolder
-	if folderOption.IsNone() {
+	if folderOption.IsNil() {
 		return nil
 	}
 	folder := folderOption.MustValue()

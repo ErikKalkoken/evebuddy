@@ -127,7 +127,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 			case 6:
 				l.Text = ihumanize.Optional(c.unallocatedSP, "?")
 			case 7:
-				if c.training.IsNone() {
+				if c.training.IsNil() {
 					l.Text = "Inactive"
 					l.Importance = widget.WarningImportance
 				} else {
@@ -140,7 +140,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 			case 10:
 				l.Text = entityNameOrFallback(c.location, "?")
 			case 11:
-				if c.solarSystem == nil || c.systemSecurity.IsNone() {
+				if c.solarSystem == nil || c.systemSecurity.IsNil() {
 					l.Text = "?"
 				} else {
 					l.Text = fmt.Sprintf("%s %.1f", c.solarSystem.Name, c.systemSecurity.MustValue())

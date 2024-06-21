@@ -87,7 +87,7 @@ func TestSkillqueueItemDuration(t *testing.T) {
 			StartDate: now.Add(time.Hour * +1),
 		}
 		d := q.Duration()
-		assert.True(t, d.IsNone())
+		assert.True(t, d.IsNil())
 	})
 	t.Run("should return null when duration can not be calculated 2", func(t *testing.T) {
 		now := time.Now()
@@ -95,12 +95,12 @@ func TestSkillqueueItemDuration(t *testing.T) {
 			FinishDate: now.Add(time.Hour * +1),
 		}
 		d := q.Duration()
-		assert.True(t, d.IsNone())
+		assert.True(t, d.IsNil())
 	})
 	t.Run("should return null when duration can not be calculated 3", func(t *testing.T) {
 		q := app.CharacterSkillqueueItem{}
 		d := q.Duration()
-		assert.True(t, d.IsNone())
+		assert.True(t, d.IsNil())
 	})
 }
 
@@ -137,12 +137,12 @@ func TestSkillqueueItemRemaining(t *testing.T) {
 		now := time.Now()
 		q := makeItem(now, time.Time{})
 		d := q.Remaining()
-		assert.True(t, d.IsNone())
+		assert.True(t, d.IsNil())
 	})
 	t.Run("should return null when no start date", func(t *testing.T) {
 		now := time.Now()
 		q := makeItem(time.Time{}, now.Add(time.Hour*+2))
 		d := q.Remaining()
-		assert.True(t, d.IsNone())
+		assert.True(t, d.IsNil())
 	})
 }

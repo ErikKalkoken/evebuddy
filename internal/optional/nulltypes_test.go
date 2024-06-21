@@ -59,6 +59,6 @@ func TestNullTypeConversion(t *testing.T) {
 	t.Run("can convert NullInt64 to int 2", func(t *testing.T) {
 		x1 := sql.NullInt64{}
 		o := optional.FromNullInt64ToInteger[int](x1)
-		assert.True(t, o.IsNone())
+		assert.True(t, o.IsNil())
 	})
 }

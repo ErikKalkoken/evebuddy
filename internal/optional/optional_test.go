@@ -29,8 +29,8 @@ func TestOptional(t *testing.T) {
 	})
 	t.Run("can make a value to none", func(t *testing.T) {
 		x := optional.New(12)
-		x.SetNone()
-		assert.True(t, x.IsNone())
+		x.SetNil()
+		assert.True(t, x.IsNil())
 	})
 	t.Run("can print a value", func(t *testing.T) {
 		x := optional.New(12)
@@ -40,7 +40,7 @@ func TestOptional(t *testing.T) {
 	t.Run("can print an empty optional", func(t *testing.T) {
 		x := optional.Optional[int]{}
 		s := fmt.Sprint(x)
-		assert.Equal(t, "None", s)
+		assert.Equal(t, "Nil", s)
 	})
 	t.Run("should return value when set", func(t *testing.T) {
 		x := optional.New(12)

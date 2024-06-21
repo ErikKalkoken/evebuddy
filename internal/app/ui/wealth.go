@@ -137,7 +137,7 @@ func (a *wealthArea) compileData() ([]dataRow, int, error) {
 		if err != nil {
 			return nil, 0, err
 		}
-		if assetTotal.IsNone() && a.ui.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets) {
+		if assetTotal.IsNil() && a.ui.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets) {
 			go func(characterID int32) {
 				_, err := a.ui.CharacterService.UpdateCharacterAssetTotalValue(ctx, characterID)
 				if err != nil {
@@ -148,7 +148,7 @@ func (a *wealthArea) compileData() ([]dataRow, int, error) {
 				a.ui.overviewArea.refresh()
 			}(c.ID)
 		}
-		if c.WalletBalance.IsNone() && assetTotal.IsNone() {
+		if c.WalletBalance.IsNil() && assetTotal.IsNil() {
 			continue
 		}
 		wallet := c.WalletBalance.ValueOrZero()

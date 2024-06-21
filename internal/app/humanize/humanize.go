@@ -72,7 +72,7 @@ func Duration(duration time.Duration) string {
 }
 
 func Optional[T time.Duration | time.Time | string | int | int32 | int64](o optional.Optional[T], fallback string) string {
-	if o.IsNone() {
+	if o.IsNil() {
 		return fallback
 	}
 	v := o.ValueOrZero()
@@ -94,7 +94,7 @@ func Optional[T time.Duration | time.Time | string | int | int32 | int64](o opti
 }
 
 func OptionalFloat[T float32 | float64](o optional.Optional[T], decimals int, fallback string) string {
-	if o.IsNone() {
+	if o.IsNil() {
 		return fallback
 	}
 	v := o.ValueOrZero()
