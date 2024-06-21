@@ -12,9 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-func TestNumber(t *testing.T) {
+func TestNumber1(t *testing.T) {
 	var cases = []struct {
 		value    float64
 		decimals int
@@ -40,6 +41,12 @@ func TestNumber(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
+
+	t.Run("should panic when called with undefined decimals", func(t *testing.T) {
+		assert.Panics(t, func() {
+			humanize.Number(99, 7)
+		})
+	})
 }
 
 func TestDuration(t *testing.T) {
@@ -81,5 +88,38 @@ func TestError(t *testing.T) {
 		// when
 		got := humanize.Error(err)
 		assert.Equal(t, "400: my error", got)
+	})
+}
+
+func TestRomanLetters(t *testing.T) {
+	var cases = []struct {
+		value int
+		want  string
+	}{
+		{1, "I"},
+		{2, "II"},
+		{3, "III"},
+		{4, "IV"},
+		{5, "V"},
+		{5, "V"},
+	}
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("Can return correct roman letter: %d", tc.value), func(t *testing.T) {
+			got := humanize.RomanLetter(tc.value)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+
+	t.Run("should panic when called for undefined numbers", func(t *testing.T) {
+		assert.Panics(t, func() {
+			humanize.RomanLetter(99)
+		})
+	})
+}
+
+func TestOptional(t *testing.T) {
+	t.Run("can format optional number", func(t *testing.T) {
+		assert.Equal(t, "42", humanize.Optional(optional.New(42), ""))
+		assert.Equal(t, "XX", humanize.Optional(optional.Optional[int]{}, "XX"))
 	})
 }

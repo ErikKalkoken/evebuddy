@@ -10,17 +10,17 @@ type Set[T comparable] struct {
 
 // New returns a new set.
 func New[T comparable]() *Set[T] {
-	return NewFromSlice([]T{})
+	s := &Set[T]{values: make(map[T]struct{})}
+	return s
 }
 
 // NewFromSlice returns a new set from a slice.
 func NewFromSlice[T comparable](slice []T) *Set[T] {
-	var s Set[T]
-	s.values = make(map[T]struct{}, len(slice))
+	s := New[T]()
 	for _, el := range slice {
 		s.values[el] = struct{}{}
 	}
-	return &s
+	return s
 }
 
 func (s *Set[T]) String() string {

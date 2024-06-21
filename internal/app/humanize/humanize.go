@@ -15,6 +15,7 @@ import (
 	"github.com/antihax/goesi/esi"
 	"github.com/dustin/go-humanize"
 	"github.com/mattn/go-sqlite3"
+	"golang.org/x/exp/constraints"
 )
 
 // Number returns a humanized number, e.g. 1234 becomes 1.23K
@@ -161,8 +162,8 @@ func Error(err error) string {
 	return "general error"
 }
 
-// ToRomanLetter returns a number as roman letters.
-func ToRomanLetter[N int | int32 | int64 | uint | uint32 | uint64](v N) string {
+// RomanLetter returns a number as roman letters.
+func RomanLetter[T constraints.Integer](v T) string {
 	m := map[int]string{
 		1: "I",
 		2: "II",

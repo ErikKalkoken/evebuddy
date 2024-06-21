@@ -50,7 +50,7 @@ func (w *SkillQueueItem) Set(name string, targetLevel int, isActive bool, remain
 		d = humanize.Optional(duration, "?")
 	}
 	w.name.Importance = i
-	w.name.Text = fmt.Sprintf("%s %s", name, humanize.ToRomanLetter(targetLevel))
+	w.name.Text = fmt.Sprintf("%s %s", name, humanize.RomanLetter(targetLevel))
 	w.name.Refresh()
 	w.duration.Text = d
 	w.duration.Importance = i
