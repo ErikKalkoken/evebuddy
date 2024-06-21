@@ -63,7 +63,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	})
 	if err != nil {
 		errorMessage := humanize.Error(err)
-		startedAt := optional.NewNone[time.Time]()
+		startedAt := optional.Optional[time.Time]{}
 		arg2 := sqlite.UpdateOrCreateGeneralSectionStatusParams{
 			Section:   section,
 			Error:     &errorMessage,
@@ -78,7 +78,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	}
 	completedAt := sqlite.NewNullTime(time.Now())
 	errorMessage := ""
-	startedAt2 := optional.NewNone[time.Time]()
+	startedAt2 := optional.Optional[time.Time]{}
 	arg2 := sqlite.UpdateOrCreateGeneralSectionStatusParams{
 		Section: section,
 

@@ -23,11 +23,6 @@ func New[T any](v T) Optional[T] {
 	return o
 }
 
-func NewNone[T any]() Optional[T] {
-	o := Optional[T]{isSet: false}
-	return o
-}
-
 func (o Optional[T]) IsNone() bool {
 	return !o.isSet
 }

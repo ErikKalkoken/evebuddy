@@ -8,11 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestXxx(t *testing.T) {
-	t.Run("can create new empty optional", func(t *testing.T) {
-		x := optional.NewNone[int]()
-		assert.True(t, x.IsNone())
-	})
+func TestOptional(t *testing.T) {
 	t.Run("can create new optional with value", func(t *testing.T) {
 		x := optional.New(55)
 		assert.True(t, x.IsValue())
@@ -21,8 +17,8 @@ func TestXxx(t *testing.T) {
 		x := optional.New(55)
 		assert.True(t, x.IsValue())
 	})
-	t.Run("can update a none", func(t *testing.T) {
-		x := optional.NewNone[int]()
+	t.Run("can update an empty optional", func(t *testing.T) {
+		x := optional.Optional[int]{}
 		x.Set(45)
 		assert.Equal(t, 45, x.MustValue())
 	})
@@ -41,8 +37,8 @@ func TestXxx(t *testing.T) {
 		s := fmt.Sprint(x)
 		assert.Equal(t, "12", s)
 	})
-	t.Run("can print a none", func(t *testing.T) {
-		x := optional.NewNone[int]()
+	t.Run("can print an empty optional", func(t *testing.T) {
+		x := optional.Optional[int]{}
 		s := fmt.Sprint(x)
 		assert.Equal(t, "None", s)
 	})
@@ -51,8 +47,8 @@ func TestXxx(t *testing.T) {
 		got := x.ValueOrFallback(4)
 		assert.Equal(t, 12, got)
 	})
-	t.Run("should return fallback when none", func(t *testing.T) {
-		x := optional.NewNone[int]()
+	t.Run("should return fallback when empty", func(t *testing.T) {
+		x := optional.Optional[int]{}
 		got := x.ValueOrFallback(4)
 		assert.Equal(t, 4, got)
 	})
@@ -63,13 +59,13 @@ func TestXxx(t *testing.T) {
 			assert.Equal(t, 12, got)
 		}
 	})
-	t.Run("should return error when none", func(t *testing.T) {
-		x := optional.NewNone[int]()
+	t.Run("should return error when empty", func(t *testing.T) {
+		x := optional.Optional[int]{}
 		_, err := x.Value()
 		assert.Error(t, err)
 	})
-	t.Run("should panic when none", func(t *testing.T) {
-		x := optional.NewNone[int]()
+	t.Run("should panic when empty", func(t *testing.T) {
+		x := optional.Optional[int]{}
 		assert.Panics(t, func() {
 			x.MustValue()
 		})
@@ -88,20 +84,32 @@ func TestValueOrZero(t *testing.T) {
 		got := x.ValueOrZero()
 		assert.Equal(t, 12, got)
 	})
-	t.Run("should return zero value when none", func(t *testing.T) {
-		x := optional.NewNone[int]()
+	t.Run("should return zero value integer optional is empty", func(t *testing.T) {
+		x := optional.Optional[int]{}
 		got := x.ValueOrZero()
 		assert.Equal(t, 0, got)
 	})
-	t.Run("should return zero value when none", func(t *testing.T) {
-		x := optional.NewNone[string]()
+	t.Run("should return zero string value is empty", func(t *testing.T) {
+		x := optional.Optional[string]{}
 		got := x.ValueOrZero()
 		assert.Equal(t, "", got)
 	})
 }
 
 func TestConvertNumeric(t *testing.T) {
-	assert.Equal(t, optional.New(int(99)), optional.ConvertNumeric[int64, int](optional.New(int64(99))))
-	assert.Equal(t, optional.New(float64(99)), optional.ConvertNumeric[int32, float64](optional.New(int32(99))))
-	assert.Equal(t, optional.NewNone[float64](), optional.ConvertNumeric[int32, float64](optional.NewNone[int32]()))
+	assert.Equal(
+		t,
+		optional.New(int(99)),
+		optional.ConvertNumeric[int64, int](optional.New(int64(99))),
+	)
+	assert.Equal(
+		t,
+		optional.New(float64(99)),
+		optional.ConvertNumeric[int32, float64](optional.New(int32(99))),
+	)
+	assert.Equal(
+		t,
+		optional.Optional[float64]{},
+		optional.ConvertNumeric[int32, float64](optional.Optional[int32]{}),
+	)
 }

@@ -93,7 +93,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 	if err != nil {
 		// TODO: Move this part into updateCharacterSectionIfChanged()
 		errorMessage := humanize.Error(err)
-		startedAt := optional.NewNone[time.Time]()
+		startedAt := optional.Optional[time.Time]{}
 		arg2 := sqlite.UpdateOrCreateCharacterSectionStatusParams{
 			CharacterID:  arg.CharacterID,
 			Section:      arg.Section,
@@ -166,7 +166,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	// record successful completion
 	completedAt := sqlite.NewNullTime(time.Now())
 	errorMessage := ""
-	startedAt2 := optional.NewNone[time.Time]()
+	startedAt2 := optional.Optional[time.Time]{}
 	arg2 = sqlite.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID: arg.CharacterID,
 		Section:     arg.Section,
