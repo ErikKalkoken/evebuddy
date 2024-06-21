@@ -41,7 +41,7 @@ func TestOptional(t *testing.T) {
 	t.Run("can print an empty optional", func(t *testing.T) {
 		x := optional.Optional[int]{}
 		s := fmt.Sprint(x)
-		assert.Equal(t, "Nil", s)
+		assert.Equal(t, "<empty>", s)
 	})
 	t.Run("should return value when set", func(t *testing.T) {
 		x := optional.New(12)
