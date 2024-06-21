@@ -30,24 +30,23 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		firstParty := factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
 		secondParty := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
-		data := `[
+		data := []map[string]any{
 			{
-			  "amount": -100000,
-			  "balance": 500000.4316,
-			  "context_id": 4,
-			  "context_id_type": "contract_id",
-			  "date": "2018-02-23T14:31:32Z",
-			  "description": "Contract Deposit",
-			  "first_party_id": 2112625428,
-			  "id": 89,
-			  "ref_type": "contract_deposit",
-			  "second_party_id": 1000132
-			}
-		  ]`
+				"amount":          -100000,
+				"balance":         500000.4316,
+				"context_id":      4,
+				"context_id_type": "contract_id",
+				"date":            "2018-02-23T14:31:32Z",
+				"description":     "Contract Deposit",
+				"first_party_id":  2112625428,
+				"id":              89,
+				"ref_type":        "contract_deposit",
+				"second_party_id": 1000132,
+			}}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v6/characters/%d/wallet/journal/", c.ID),
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
 		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateSectionParams{
@@ -84,24 +83,23 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
-		data := `[
+		data := []map[string]any{
 			{
-			  "amount": -100000,
-			  "balance": 500000.4316,
-			  "context_id": 4,
-			  "context_id_type": "contract_id",
-			  "date": "2018-02-23T14:31:32Z",
-			  "description": "Contract Deposit",
-			  "first_party_id": 2112625428,
-			  "id": 89,
-			  "ref_type": "contract_deposit",
-			  "second_party_id": 1000132
-			}
-		  ]`
+				"amount":          -100000,
+				"balance":         500000.4316,
+				"context_id":      4,
+				"context_id_type": "contract_id",
+				"date":            "2018-02-23T14:31:32Z",
+				"description":     "Contract Deposit",
+				"first_party_id":  2112625428,
+				"id":              89,
+				"ref_type":        "contract_deposit",
+				"second_party_id": 1000132,
+			}}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v6/characters/%d/wallet/journal/", c.ID),
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
 		changed, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateSectionParams{
@@ -134,24 +132,23 @@ func TestUpdateWalletJournalEntryESI(t *testing.T) {
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: 2112625428})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000132})
-		data := `[
+		data := []map[string]any{
 			{
-			  "amount": -100000,
-			  "balance": 500000.4316,
-			  "context_id": 4,
-			  "context_id_type": "contract_id",
-			  "date": "2018-02-23T14:31:32Z",
-			  "description": "Contract Deposit",
-			  "first_party_id": 2112625428,
-			  "id": 89,
-			  "ref_type": "contract_deposit",
-			  "second_party_id": 1000132
-			}
-		  ]`
+				"amount":          -100000,
+				"balance":         500000.4316,
+				"context_id":      4,
+				"context_id_type": "contract_id",
+				"date":            "2018-02-23T14:31:32Z",
+				"description":     "Contract Deposit",
+				"first_party_id":  2112625428,
+				"id":              89,
+				"ref_type":        "contract_deposit",
+				"second_party_id": 1000132,
+			}}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v6/characters/%d/wallet/journal/", c.ID),
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
 		_, err := s.updateCharacterWalletJournalEntryESI(ctx, UpdateSectionParams{

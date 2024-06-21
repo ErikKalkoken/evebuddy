@@ -3,7 +3,6 @@ package character
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -29,33 +28,32 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
 		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 101})
-		data := `[
+		data := []map[string]any{
 			{
-			  "finish_date": "2016-06-29T10:47:00Z",
-			  "finished_level": 3,
-			  "queue_position": 0,
-			  "skill_id": 100,
-			  "start_date": "2016-06-29T10:46:00Z"
+				"finish_date":    "2016-06-29T10:47:00Z",
+				"finished_level": 3,
+				"queue_position": 0,
+				"skill_id":       100,
+				"start_date":     "2016-06-29T10:46:00Z",
 			},
 			{
-			  "finish_date": "2016-07-15T10:47:00Z",
-			  "finished_level": 4,
-			  "queue_position": 1,
-			  "skill_id": 100,
-			  "start_date": "2016-06-29T10:47:00Z"
+				"finish_date":    "2016-07-15T10:47:00Z",
+				"finished_level": 4,
+				"queue_position": 1,
+				"skill_id":       100,
+				"start_date":     "2016-06-29T10:47:00Z",
 			},
 			{
-			  "finish_date": "2016-08-30T10:47:00Z",
-			  "finished_level": 2,
-			  "queue_position": 2,
-			  "skill_id": 101,
-			  "start_date": "2016-07-15T10:47:00Z"
-			}
-		  ]`
+				"finish_date":    "2016-08-30T10:47:00Z",
+				"finished_level": 2,
+				"queue_position": 2,
+				"skill_id":       101,
+				"start_date":     "2016-07-15T10:47:00Z",
+			}}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v2/characters/%d/skillqueue/", c.ID),
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
 		changed, err := s.UpdateCharacterSkillqueueESI(ctx, UpdateSectionParams{

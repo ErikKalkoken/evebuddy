@@ -3,7 +3,6 @@ package character
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -29,27 +28,27 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 41})
 		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 42})
-		data := `{
-			"skills": [
-			  {
-				"active_skill_level": 3,
-				"skill_id": 41,
-				"skillpoints_in_skill": 10000,
-				"trained_skill_level": 4
-			  },
-			  {
-				"active_skill_level": 1,
-				"skill_id": 42,
-				"skillpoints_in_skill": 20000,
-				"trained_skill_level": 2
-			  }
-			],
-			"total_sp": 90000
-		  }`
+		data := map[string]any{
+			"skills": []map[string]any{
+				{
+					"active_skill_level":   3,
+					"skill_id":             41,
+					"skillpoints_in_skill": 10000,
+					"trained_skill_level":  4,
+				},
+				{
+					"active_skill_level":   1,
+					"skill_id":             42,
+					"skillpoints_in_skill": 20000,
+					"trained_skill_level":  2,
+				},
+			},
+			"total_sp": 90000,
+		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/skills/", c.ID),
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
 		changed, err := s.updateCharacterSkillsESI(ctx, UpdateSectionParams{
@@ -86,21 +85,21 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		// old := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
 		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 41})
 		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 42})
-		data := `{
-			"skills": [
-			  {
-				"active_skill_level": 3,
-				"skill_id": 41,
-				"skillpoints_in_skill": 10000,
-				"trained_skill_level": 4
-			  }
-			],
-			"total_sp": 90000
-		  }`
+		data := map[string]any{
+			"skills": []map[string]any{
+				{
+					"active_skill_level":   3,
+					"skill_id":             41,
+					"skillpoints_in_skill": 10000,
+					"trained_skill_level":  4,
+				},
+			},
+			"total_sp": 90000,
+		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v4/characters/%d/skills/", c.ID),
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
 		changed, err := s.updateCharacterSkillsESI(ctx, UpdateSectionParams{

@@ -3,7 +3,6 @@ package character
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -26,17 +25,17 @@ func TestUpdateCharacterAttributesESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		data := `{
-			"charisma": 20,
+		data := map[string]int{
+			"charisma":     20,
 			"intelligence": 21,
-			"memory": 22,
-			"perception": 23,
-			"willpower": 24
-		  }`
+			"memory":       22,
+			"perception":   23,
+			"willpower":    24,
+		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/attributes/", c.ID),
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
 		changed, err := s.updateCharacterAttributesESI(ctx, UpdateSectionParams{

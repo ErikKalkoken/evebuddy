@@ -3,7 +3,6 @@ package character
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 	"time"
 
@@ -31,26 +30,23 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		client := factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
 		location := factory.CreateLocationStructure(sqlite.UpdateOrCreateLocationParams{ID: 60014719})
 		eveType := factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 587})
-		data := `[
+		data := []map[string]any{
 			{
-			  "client_id": 54321,
-			  "date": "2016-10-24T09:00:00Z",
-			  "is_buy": true,
-			  "is_personal": true,
-			  "journal_ref_id": 67890,
-			  "location_id": 60014719,
-			  "quantity": 1,
-			  "transaction_id": 1234567890,
-			  "type_id": 587,
-			  "unit_price": 1.23
-			}
-		  ]`
+				"client_id":      54321,
+				"date":           "2016-10-24T09:00:00Z",
+				"is_buy":         true,
+				"is_personal":    true,
+				"journal_ref_id": 67890,
+				"location_id":    60014719,
+				"quantity":       1,
+				"transaction_id": 1234567890,
+				"type_id":        587,
+				"unit_price":     1.23,
+			}}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/wallet/transactions/", c.ID),
-			httpmock.NewStringResponder(200, data).HeaderSet(
-				http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		changed, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
@@ -87,26 +83,23 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 		client := factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
 		location := factory.CreateLocationStructure(sqlite.UpdateOrCreateLocationParams{ID: 60014719})
 		eveType := factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 587})
-		data := `[
+		data := []map[string]any{
 			{
-			  "client_id": 54321,
-			  "date": "2016-10-24T09:00:00Z",
-			  "is_buy": true,
-			  "is_personal": true,
-			  "journal_ref_id": 67890,
-			  "location_id": 60014719,
-			  "quantity": 1,
-			  "transaction_id": 1234567890,
-			  "type_id": 587,
-			  "unit_price": 1.23
-			}
-		  ]`
+				"client_id":      54321,
+				"date":           "2016-10-24T09:00:00Z",
+				"is_buy":         true,
+				"is_personal":    true,
+				"journal_ref_id": 67890,
+				"location_id":    60014719,
+				"quantity":       1,
+				"transaction_id": 1234567890,
+				"type_id":        587,
+				"unit_price":     1.23,
+			}}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/wallet/transactions/", c.ID),
-			httpmock.NewStringResponder(200, data).HeaderSet(
-				http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		changed, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,
@@ -143,26 +136,23 @@ func TestUpdateWalletTransactionESI(t *testing.T) {
 			TransactionID: 1234567890,
 		})
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		data := `[
+		data := []map[string]any{
 			{
-			  "client_id": 54321,
-			  "date": "2016-10-24T09:00:00Z",
-			  "is_buy": true,
-			  "is_personal": true,
-			  "journal_ref_id": 67890,
-			  "location_id": 60014719,
-			  "quantity": 1,
-			  "transaction_id": 1234567890,
-			  "type_id": 587,
-			  "unit_price": 1.23
-			}
-		  ]`
+				"client_id":      54321,
+				"date":           "2016-10-24T09:00:00Z",
+				"is_buy":         true,
+				"is_personal":    true,
+				"journal_ref_id": 67890,
+				"location_id":    60014719,
+				"quantity":       1,
+				"transaction_id": 1234567890,
+				"type_id":        587,
+				"unit_price":     1.23,
+			}}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/wallet/transactions/", c.ID),
-			httpmock.NewStringResponder(200, data).HeaderSet(
-				http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		_, err := s.updateCharacterWalletTransactionESI(ctx, UpdateSectionParams{
 			CharacterID: c.ID,

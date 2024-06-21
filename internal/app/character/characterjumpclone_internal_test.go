@@ -3,7 +3,6 @@ package character
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -30,27 +29,24 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 22118})
 		factory.CreateLocationStructure(sqlite.UpdateOrCreateLocationParams{ID: 60003463})
 		factory.CreateLocationStructure(sqlite.UpdateOrCreateLocationParams{ID: 1021348135816})
-		data := `{
-			"home_location": {
-			  "location_id": 1021348135816,
-			  "location_type": "structure"
+		data := map[string]any{
+			"home_location": map[string]any{
+				"location_id":   1021348135816,
+				"location_type": "structure",
 			},
-			"jump_clones": [
-			  {
-				"implants": [
-				  22118
-				],
-				"jump_clone_id": 12345,
-				"location_id": 60003463,
-				"location_type": "station"
-			  }
-			]
-		  }`
+			"jump_clones": []map[string]any{
+				{
+					"implants":      []int{22118},
+					"jump_clone_id": 12345,
+					"location_id":   60003463,
+					"location_type": "station",
+				},
+			},
+		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v3/characters/%d/clones/", c.ID),
-			httpmock.NewStringResponder(200, data).HeaderSet(
-				http.Header{"Content-Type": []string{"application/json"}}))
+			httpmock.NewJsonResponderOrPanic(200, data))
 
 		// when
 		changed, err := s.updateCharacterJumpClonesESI(ctx, UpdateSectionParams{

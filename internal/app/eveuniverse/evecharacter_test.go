@@ -3,7 +3,6 @@ package eveuniverse_test
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 	"time"
 
@@ -45,22 +44,21 @@ func TestGetOrCreateEveCharacterESI(t *testing.T) {
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
 		factory.CreateEveRace(app.EveRace{ID: 2})
 		httpmock.Reset()
-		data := `{
-			"birthday": "2015-03-24T11:37:00Z",
-			"bloodline_id": 3,
-			"corporation_id": 109299958,
-			"description": "bla bla",
-			"gender": "male",
-			"name": "CCP Bartender",
-			"race_id": 2,
+		data := map[string]any{
+			"birthday":        "2015-03-24T11:37:00Z",
+			"bloodline_id":    3,
+			"corporation_id":  109299958,
+			"description":     "bla bla",
+			"gender":          "male",
+			"name":            "CCP Bartender",
+			"race_id":         2,
 			"security_status": -9.9,
-			"title": "All round pretty awesome guy"
-		  }`
+			"title":           "All round pretty awesome guy",
+		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/", characterID),
-			httpmock.NewStringResponder(200, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(200, data))
 		// when
 		x1, err := s.GetOrCreateEveCharacterESI(ctx, characterID)
 		// then
@@ -106,34 +104,31 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 		factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
 		factory.CreateEveCharacter(sqlite.CreateEveCharacterParams{ID: characterID})
 		httpmock.Reset()
-		dataCharacter := `{
-			"birthday": "2015-03-24T11:37:00Z",
-			"bloodline_id": 3,
-			"corporation_id": 109299958,
-			"description": "bla bla",
-			"gender": "male",
-			"name": "CCP Bartender",
-			"race_id": 2,
+		dataCharacter := map[string]any{
+			"birthday":        "2015-03-24T11:37:00Z",
+			"bloodline_id":    3,
+			"corporation_id":  109299958,
+			"description":     "bla bla",
+			"gender":          "male",
+			"name":            "CCP Bartender",
+			"race_id":         2,
 			"security_status": -9.9,
-			"title": "All round pretty awesome guy"
-		  }`
+			"title":           "All round pretty awesome guy",
+		}
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/", characterID),
-			httpmock.NewStringResponder(200, dataCharacter).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-
-		dataAffiliation := `[
+			httpmock.NewJsonResponderOrPanic(200, dataCharacter))
+		dataAffiliation := []map[string]any{
 			{
-			  "alliance_id": 434243723,
-			  "character_id": 95465499,
-			  "corporation_id": 109299958
-			}
-		  ]`
+				"alliance_id":    434243723,
+				"character_id":   95465499,
+				"corporation_id": 109299958,
+			}}
 		httpmock.RegisterResponder(
 			"POST",
 			"https://esi.evetech.net/v2/characters/affiliation/",
-			httpmock.NewStringResponder(200, dataAffiliation).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(200, dataAffiliation))
 		// when
 		err := s.UpdateAllEveCharactersESI(ctx)
 		// then
