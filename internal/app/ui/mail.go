@@ -251,7 +251,7 @@ func (a *mailArea) makeFolderTreeData(characterID int32) (datanodetree.DataNodeT
 	if characterID == 0 {
 		return tree, folderNode{}, nil
 	}
-	ctx := context.Background()
+	ctx := context.TODO()
 	labelUnreadCounts, err := a.ui.CharacterService.GetCharacterMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
 		return tree, folderNode{}, err
@@ -440,7 +440,7 @@ func (a *mailArea) headerRefresh() {
 }
 
 func (a *mailArea) updateHeaderData() error {
-	ctx := context.Background()
+	ctx := context.TODO()
 	folderOption := a.currentFolder
 	if folderOption.IsNone() {
 		return nil
@@ -496,8 +496,7 @@ func (a *mailArea) makeToolbar() *widget.Toolbar {
 			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Subject)
 			d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
 				if confirmed {
-					ctx := context.Background()
-					if err := a.ui.CharacterService.DeleteCharacterMail(ctx, a.mail.CharacterID, a.mail.MailID); err != nil {
+					if err := a.ui.CharacterService.DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID); err != nil {
 						t := "Failed to delete mail"
 						slog.Error(t, "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
 						a.ui.showErrorDialog(t, err)
@@ -518,7 +517,7 @@ func (a *mailArea) clearMail() {
 }
 
 func (a *mailArea) setMail(mailID int32) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	characterID := a.ui.characterID()
 	var err error
 	a.mail, err = a.ui.CharacterService.GetCharacterMail(ctx, characterID, mailID)

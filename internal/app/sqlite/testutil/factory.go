@@ -28,7 +28,7 @@ func NewFactory(st *sqlite.Storage, db *sql.DB) Factory {
 }
 
 func (f Factory) CreateCharacter(args ...sqlite.UpdateOrCreateCharacterParams) *app.Character {
-	ctx := context.Background()
+	ctx := context.TODO()
 	var arg sqlite.UpdateOrCreateCharacterParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -70,7 +70,7 @@ func (f Factory) CreateCharacter(args ...sqlite.UpdateOrCreateCharacterParams) *
 }
 
 func (f Factory) CreateCharacterAttributes(args ...sqlite.UpdateOrCreateCharacterAttributesParams) *app.CharacterAttributes {
-	ctx := context.Background()
+	ctx := context.TODO()
 	var arg sqlite.UpdateOrCreateCharacterAttributesParams
 	randomValue := func() int {
 		return 20 + rand.IntN(5)
@@ -108,7 +108,7 @@ func (f Factory) CreateCharacterAttributes(args ...sqlite.UpdateOrCreateCharacte
 }
 
 func (f Factory) CreateCharacterAsset(args ...sqlite.CreateCharacterAssetParams) *app.CharacterAsset {
-	ctx := context.Background()
+	ctx := context.TODO()
 	var arg sqlite.CreateCharacterAssetParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -155,7 +155,7 @@ func (f Factory) CreateCharacterAsset(args ...sqlite.CreateCharacterAssetParams)
 }
 
 func (f Factory) CreateCharacterImplant(args ...sqlite.CreateCharacterImplantParams) *app.CharacterImplant {
-	ctx := context.Background()
+	ctx := context.TODO()
 	var arg sqlite.CreateCharacterImplantParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -180,7 +180,7 @@ func (f Factory) CreateCharacterImplant(args ...sqlite.CreateCharacterImplantPar
 }
 
 func (f Factory) CreateCharacterJumpClone(args ...sqlite.CreateCharacterJumpCloneParams) *app.CharacterJumpClone {
-	ctx := context.Background()
+	ctx := context.TODO()
 	var arg sqlite.CreateCharacterJumpCloneParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -213,7 +213,7 @@ func (f Factory) CreateCharacterJumpClone(args ...sqlite.CreateCharacterJumpClon
 
 func (f Factory) CreateCharacterMail(args ...sqlite.CreateCharacterMailParams) *app.CharacterMail {
 	var arg sqlite.CreateCharacterMailParams
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -261,7 +261,7 @@ func (f Factory) CreateCharacterMail(args ...sqlite.CreateCharacterMailParams) *
 }
 
 func (f Factory) CreateCharacterMailLabel(args ...app.CharacterMailLabel) *app.CharacterMailLabel {
-	ctx := context.Background()
+	ctx := context.TODO()
 	var arg sqlite.MailLabelParams
 	if len(args) > 0 {
 		l := args[0]
@@ -310,7 +310,7 @@ func (f Factory) CreateCharacterMailLabel(args ...app.CharacterMailLabel) *app.C
 
 func (f Factory) CreateCharacterMailList(characterID int32, args ...app.EveEntity) *app.EveEntity {
 	var e app.EveEntity
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		e = args[0]
 	}
@@ -328,7 +328,7 @@ func (f Factory) CreateCharacterMailList(characterID int32, args ...app.EveEntit
 }
 
 func (f Factory) CreateCharacterSkill(args ...sqlite.UpdateOrCreateCharacterSkillParams) *app.CharacterSkill {
-	ctx := context.Background()
+	ctx := context.TODO()
 	var arg sqlite.UpdateOrCreateCharacterSkillParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -362,7 +362,7 @@ func (f Factory) CreateCharacterSkill(args ...sqlite.UpdateOrCreateCharacterSkil
 }
 
 func (f Factory) CreateCharacterSkillqueueItem(args ...sqlite.SkillqueueItemParams) *app.CharacterSkillqueueItem {
-	ctx := context.Background()
+	ctx := context.TODO()
 	var arg sqlite.SkillqueueItemParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -426,7 +426,7 @@ func (f Factory) CreateCharacterSkillqueueItem(args ...sqlite.SkillqueueItemPara
 
 func (f Factory) CreateCharacterToken(args ...app.CharacterToken) *app.CharacterToken {
 	var t app.CharacterToken
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		t = args[0]
 	}
@@ -463,7 +463,7 @@ type CharacterSectionStatusParams struct {
 }
 
 func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusParams) *app.CharacterSectionStatus {
-	ctx := context.Background()
+	ctx := context.TODO()
 	var arg CharacterSectionStatusParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -504,7 +504,7 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 }
 
 func (f Factory) CreateCharacterWalletJournalEntry(args ...sqlite.CreateCharacterWalletJournalEntryParams) *app.CharacterWalletJournalEntry {
-	ctx := context.Background()
+	ctx := context.TODO()
 	var arg sqlite.CreateCharacterWalletJournalEntryParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -561,7 +561,7 @@ func (f Factory) CreateCharacterWalletJournalEntry(args ...sqlite.CreateCharacte
 }
 
 func (f Factory) CreateCharacterWalletTransaction(args ...sqlite.CreateCharacterWalletTransactionParams) *app.CharacterWalletTransaction {
-	ctx := context.Background()
+	ctx := context.TODO()
 	var arg sqlite.CreateCharacterWalletTransactionParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -604,7 +604,7 @@ func (f Factory) CreateCharacterWalletTransaction(args ...sqlite.CreateCharacter
 }
 
 func (f Factory) CreateEveCharacter(args ...sqlite.CreateEveCharacterParams) *app.EveCharacter {
-	ctx := context.Background()
+	ctx := context.TODO()
 	var arg sqlite.CreateEveCharacterParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -649,7 +649,7 @@ type GeneralSectionStatusParams struct {
 }
 
 func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) *app.GeneralSectionStatus {
-	ctx := context.Background()
+	ctx := context.TODO()
 	var arg GeneralSectionStatusParams
 	if len(args) > 0 {
 		arg = args[0]
@@ -686,7 +686,7 @@ func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) 
 
 func (f Factory) CreateEveEntity(args ...app.EveEntity) *app.EveEntity {
 	var arg app.EveEntity
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -742,7 +742,7 @@ func eveEntityWithCategory(args []app.EveEntity, category app.EveEntityCategory)
 }
 func (f Factory) CreateEveCategory(args ...sqlite.CreateEveCategoryParams) *app.EveCategory {
 	var arg sqlite.CreateEveCategoryParams
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -761,7 +761,7 @@ func (f Factory) CreateEveCategory(args ...sqlite.CreateEveCategoryParams) *app.
 
 func (f Factory) CreateEveGroup(args ...sqlite.CreateEveGroupParams) *app.EveGroup {
 	var arg sqlite.CreateEveGroupParams
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -788,7 +788,7 @@ func (f Factory) CreateEveGroup(args ...sqlite.CreateEveGroupParams) *app.EveGro
 
 func (f Factory) CreateEveType(args ...sqlite.CreateEveTypeParams) *app.EveType {
 	var arg sqlite.CreateEveTypeParams
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -830,7 +830,7 @@ func (f Factory) CreateEveType(args ...sqlite.CreateEveTypeParams) *app.EveType 
 
 func (f Factory) CreateEveTypeDogmaAttribute(args ...sqlite.CreateEveTypeDogmaAttributeParams) {
 	var arg sqlite.CreateEveTypeDogmaAttributeParams
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -852,7 +852,7 @@ func (f Factory) CreateEveTypeDogmaAttribute(args ...sqlite.CreateEveTypeDogmaAt
 
 func (f Factory) CreateEveDogmaAttribute(args ...sqlite.CreateEveDogmaAttributeParams) *app.EveDogmaAttribute {
 	var arg sqlite.CreateEveDogmaAttributeParams
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -886,7 +886,7 @@ func (f Factory) CreateEveDogmaAttribute(args ...sqlite.CreateEveDogmaAttributeP
 
 func (f Factory) CreateEveRegion(args ...sqlite.CreateEveRegionParams) *app.EveRegion {
 	var arg sqlite.CreateEveRegionParams
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -905,7 +905,7 @@ func (f Factory) CreateEveRegion(args ...sqlite.CreateEveRegionParams) *app.EveR
 
 func (f Factory) CreateEveConstellation(args ...sqlite.CreateEveConstellationParams) *app.EveConstellation {
 	var arg sqlite.CreateEveConstellationParams
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -932,7 +932,7 @@ func (f Factory) CreateEveConstellation(args ...sqlite.CreateEveConstellationPar
 
 func (f Factory) CreateEveSolarSystem(args ...sqlite.CreateEveSolarSystemParams) *app.EveSolarSystem {
 	var arg sqlite.CreateEveSolarSystemParams
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -962,7 +962,7 @@ func (f Factory) CreateEveSolarSystem(args ...sqlite.CreateEveSolarSystemParams)
 
 func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 	var arg app.EveRace
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -984,7 +984,7 @@ func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 
 func (f Factory) CreateLocationStructure(args ...sqlite.UpdateOrCreateLocationParams) *app.EveLocation {
 	var arg sqlite.UpdateOrCreateLocationParams
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}
@@ -1022,7 +1022,7 @@ func (f Factory) CreateLocationStructure(args ...sqlite.UpdateOrCreateLocationPa
 
 func (f Factory) CreateEveMarketPrice(args ...sqlite.UpdateOrCreateEveMarketPriceParams) *app.EveMarketPrice {
 	var arg sqlite.UpdateOrCreateEveMarketPriceParams
-	ctx := context.Background()
+	ctx := context.TODO()
 	if len(args) > 0 {
 		arg = args[0]
 	}

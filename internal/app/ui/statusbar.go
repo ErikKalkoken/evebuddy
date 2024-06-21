@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"log/slog"
 	"time"
 
@@ -75,7 +76,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 	esiStatusTicker := time.NewTicker(esiStatusUpdateTicker)
 	go func() {
 		for {
-			x, err := a.ui.ESIStatusService.Fetch()
+			x, err := a.ui.ESIStatusService.Fetch(context.TODO())
 			var t, errorMessage string
 			var s eveStatus
 			if err != nil {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -137,7 +138,7 @@ func main() {
 	dt := dictionary.New(st)
 	cache := cache.New()
 	sc := statuscache.New(cache)
-	if err := sc.InitCache(st); err != nil {
+	if err := sc.InitCache(context.TODO(), st); err != nil {
 		panic(err)
 	}
 

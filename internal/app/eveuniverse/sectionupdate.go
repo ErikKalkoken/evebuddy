@@ -24,19 +24,6 @@ func (eu *EveUniverseService) getSectionStatus(ctx context.Context, section app.
 	return x, nil
 }
 
-// SectionExists reports whether this section exists at all.
-// This allows the app to wait with showing related data to the user until this section is full downloaded for the first time.
-func (s *EveUniverseService) SectionExists(section app.GeneralSection) (bool, error) {
-	o, err := s.getSectionStatus(context.Background(), section)
-	if err != nil {
-		return false, err
-	}
-	if o == nil {
-		return false, nil
-	}
-	return !o.CompletedAt.IsZero(), nil
-}
-
 func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.GeneralSection, forceUpdate bool) (bool, error) {
 	status, err := s.getSectionStatus(ctx, section)
 	if err != nil {

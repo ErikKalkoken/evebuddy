@@ -187,7 +187,7 @@ func (a *assetsArea) createTreeData() (datanodetree.DataNodeTree[locationDataNod
 		return tree, 0, nil
 	}
 	characterID := a.ui.characterID()
-	ctx := context.Background()
+	ctx := context.TODO()
 	assets, err := a.ui.CharacterService.ListCharacterAssets(ctx, characterID)
 	if err != nil {
 		return tree, 0, err
@@ -345,7 +345,7 @@ func (a *assetsArea) redrawAssets(n locationDataNode) error {
 	default:
 		f = a.ui.CharacterService.ListCharacterAssetsInLocation
 	}
-	assets, err := f(context.Background(), n.CharacterID, n.ContainerID)
+	assets, err := f(context.TODO(), n.CharacterID, n.ContainerID)
 	if err != nil {
 		return err
 	}
@@ -407,7 +407,7 @@ func (u *ui) showNewAssetWindow(ca *app.CharacterAsset) {
 	}
 	title := fmt.Sprintf("%s%s(%s): Contents", ca.EveType.Name, name, ca.EveType.Group.Name)
 	w := u.fyneApp.NewWindow(title)
-	oo, err := u.CharacterService.ListCharacterAssetsInLocation(context.Background(), ca.CharacterID, ca.ItemID)
+	oo, err := u.CharacterService.ListCharacterAssetsInLocation(context.TODO(), ca.CharacterID, ca.ItemID)
 	if err != nil {
 		panic(err)
 	}

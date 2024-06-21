@@ -24,8 +24,7 @@ func New(client *goesi.APIClient) *ESIStatusService {
 	return ess
 }
 
-func (ess *ESIStatusService) Fetch() (*app.ESIStatus, error) {
-	ctx := context.Background()
+func (ess *ESIStatusService) Fetch(ctx context.Context) (*app.ESIStatus, error) {
 	status, _, err := ess.esiClient.ESI.StatusApi.GetStatus(ctx, nil)
 	if err != nil {
 		swaggerErr, ok := err.(esi.GenericSwaggerError)

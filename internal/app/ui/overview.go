@@ -170,7 +170,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
-		ctx := context.Background()
+		ctx := context.TODO()
 		c, err := getItemUntypedList[overviewCharacter](a.characters, tci.Row)
 		if err != nil {
 			slog.Error("Failed to select character", "err", err)
@@ -260,7 +260,7 @@ type overviewTotals struct {
 func (a *overviewArea) updateEntries() (overviewTotals, error) {
 	var totals overviewTotals
 	var err error
-	ctx := context.Background()
+	ctx := context.TODO()
 	mycc, err := a.ui.CharacterService.ListCharacters(ctx)
 	if err != nil {
 		return totals, fmt.Errorf("failed to fetch characters: %w", err)

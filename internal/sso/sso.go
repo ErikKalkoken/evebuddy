@@ -156,7 +156,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 
 	<-serverCtx.Done() // wait for the signal to gracefully shutdown the server
 
-	if err := server.Shutdown(context.Background()); err != nil {
+	if err := server.Shutdown(context.TODO()); err != nil {
 		return nil, err
 	}
 	slog.Info("Web server stopped")

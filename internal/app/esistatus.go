@@ -1,5 +1,7 @@
 package app
 
+import "context"
+
 // ESIStatus represents the current game server status.
 type ESIStatus struct {
 	PlayerCount  int
@@ -12,5 +14,5 @@ func (s ESIStatus) IsOK() bool {
 
 // A service for fetching the current ESI Status.
 type ESIStatusService interface {
-	Fetch() (*ESIStatus, error)
+	Fetch(context.Context) (*ESIStatus, error)
 }

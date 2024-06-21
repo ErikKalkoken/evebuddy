@@ -37,8 +37,7 @@ func New(cache app.CacheService) *StatusCacheService {
 
 // InitCache initializes the internal state from local storage.
 // It should always be called once for a new instance to ensure the cache is current.
-func (sc *StatusCacheService) InitCache(st app.StatusCacheStorage) error {
-	ctx := context.Background()
+func (sc *StatusCacheService) InitCache(ctx context.Context, st app.StatusCacheStorage) error {
 	cc, err := sc.updateCharacters(ctx, st)
 	if err != nil {
 		return err

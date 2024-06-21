@@ -18,7 +18,7 @@ func TestStatusCache(t *testing.T) {
 	defer db.Close()
 	cache := cache.New()
 	sc := statuscache.New(cache)
-	ctx := context.Background()
+	ctx := context.TODO()
 	t.Run("Can init a status cache with character and general sections", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -35,7 +35,7 @@ func TestStatusCache(t *testing.T) {
 			Section: section2,
 		})
 		// when
-		err := sc.InitCache(st)
+		err := sc.InitCache(ctx, st)
 		// then
 		if assert.NoError(t, err) {
 			x2, ok := sc.CharacterSectionGet(c.ID, section1)
@@ -119,6 +119,7 @@ func TestStatusCacheSummary(t *testing.T) {
 	defer db.Close()
 	cache := cache.New()
 	sc := statuscache.New(cache)
+	ctx := context.TODO()
 	t.Run("should report when all sections are up-to-date", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -145,7 +146,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		sc.InitCache(st)
+		sc.InitCache(ctx, st)
 		// when
 		ss := sc.Summary()
 		// then
@@ -179,7 +180,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		sc.InitCache(st)
+		sc.InitCache(ctx, st)
 		o := &app.CharacterSectionStatus{
 			CharacterID:  characters[0],
 			Section:      app.SectionLocation,
@@ -220,7 +221,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		sc.InitCache(st)
+		sc.InitCache(ctx, st)
 		o := &app.GeneralSectionStatus{
 			Section:      app.SectionEveCharacters,
 			ErrorMessage: "error",
@@ -261,7 +262,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		sc.InitCache(st)
+		sc.InitCache(ctx, st)
 		// when
 		ss := sc.Summary()
 		// then
@@ -298,7 +299,7 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		sc.InitCache(st)
+		sc.InitCache(ctx, st)
 		// when
 		ss := sc.Summary()
 		// then
@@ -335,7 +336,7 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.GeneralSectionSet(o)
 			}
 		}
-		sc.InitCache(st)
+		sc.InitCache(ctx, st)
 		o := &app.CharacterSectionStatus{
 			CharacterID: characters[0],
 			Section:     app.SectionLocation,
@@ -376,7 +377,7 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.GeneralSectionSet(o)
 			}
 		}
-		sc.InitCache(st)
+		sc.InitCache(ctx, st)
 		o := &app.GeneralSectionStatus{
 			Section:     app.SectionEveCharacters,
 			CompletedAt: time.Now().Add(-30 * time.Hour),
