@@ -113,7 +113,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 			cancel()
 			return
 		}
-		claims, err := s.validateToken(rawToken.AccessToken)
+		claims, err := s.validateToken(ctx, rawToken.AccessToken)
 		if err != nil {
 			msg := "Failed to validate token"
 			slog.Error(msg, "token", rawToken.AccessToken, "error", err)
@@ -247,7 +247,7 @@ func (s *SSOService) retrieveTokenPayload(code, codeVerifier string) (*tokenPayl
 }
 
 // Update given token with new instance from SSO API
-func (s *SSOService) RefreshToken(refreshToken string) (*Token, error) {
+func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*Token, error) {
 	if refreshToken == "" {
 		return nil, ErrMissingRefreshToken
 	}
@@ -257,6 +257,10 @@ func (s *SSOService) RefreshToken(refreshToken string) (*Token, error) {
 		"client_id":     {s.clientID},
 	}
 	rawToken, err := s.fetchOauthToken(form)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.validateToken(ctx, rawToken.AccessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -307,10 +311,13 @@ func (s *SSOService) fetchOauthToken(form url.Values) (*tokenPayload, error) {
 	return &token, nil
 }
 
-// Validate JWT token and return claims
-func (s *SSOService) validateToken(tokenString string) (jwt.MapClaims, error) {
+// validateToken validated a JWT token and returns the claims.
+// Returns an error when the token is not valid.
+func (s *SSOService) validateToken(ctx context.Context, tokenString string) (jwt.MapClaims, error) {
 	// parse token and validate signature
-	token, err := jwt.Parse(tokenString, s.getKey)
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (any, error) {
+		return s.getKey(ctx, t)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -322,8 +329,8 @@ func (s *SSOService) validateToken(tokenString string) (jwt.MapClaims, error) {
 }
 
 // getKey returns the public key for a JWT token.
-func (s *SSOService) getKey(token *jwt.Token) (any, error) {
-	set, err := s.fetchJWKSet()
+func (s *SSOService) getKey(ctx context.Context, token *jwt.Token) (any, error) {
+	set, err := s.fetchJWKSet(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +352,7 @@ func (s *SSOService) getKey(token *jwt.Token) (any, error) {
 }
 
 // fetchJWKSet returns the current JWK set from the web. It is cached.
-func (s *SSOService) fetchJWKSet() (jwk.Set, error) {
+func (s *SSOService) fetchJWKSet(ctx context.Context) (jwk.Set, error) {
 	key := "jwk-set"
 	v, found := s.cache.Get(key)
 	if found {
@@ -355,7 +362,7 @@ func (s *SSOService) fetchJWKSet() (jwk.Set, error) {
 	if err != nil {
 		return nil, err
 	}
-	set, err := jwk.Fetch(context.Background(), jwksURL)
+	set, err := jwk.Fetch(ctx, jwksURL)
 	if err != nil {
 		return nil, err
 	}
