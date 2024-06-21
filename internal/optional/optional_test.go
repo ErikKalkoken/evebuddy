@@ -11,11 +11,7 @@ import (
 func TestOptional(t *testing.T) {
 	t.Run("can create new optional with value", func(t *testing.T) {
 		x := optional.New(55)
-		assert.True(t, x.IsValue())
-	})
-	t.Run("should return value", func(t *testing.T) {
-		x := optional.New(55)
-		assert.True(t, x.IsValue())
+		assert.Equal(t, 55, x.MustValue())
 	})
 	t.Run("can update an empty optional", func(t *testing.T) {
 		x := optional.Optional[int]{}

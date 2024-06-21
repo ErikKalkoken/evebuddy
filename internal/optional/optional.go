@@ -30,10 +30,6 @@ func (o Optional[T]) IsNil() bool {
 	return !o.isNil
 }
 
-func (o Optional[T]) IsValue() bool {
-	return o.isNil
-}
-
 // Set sets a new value.
 func (o *Optional[T]) Set(v T) {
 	o.value = v

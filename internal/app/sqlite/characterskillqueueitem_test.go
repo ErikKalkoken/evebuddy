@@ -101,7 +101,6 @@ func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
 		v, err := r.GetTotalTrainingTime(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.True(t, v.IsValue())
 			assert.InDelta(t, 3*time.Hour, v.MustValue(), float64(time.Second*1))
 		}
 	})

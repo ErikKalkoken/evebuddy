@@ -335,16 +335,16 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 		return totals, err
 	}
 	for _, c := range cc {
-		if c.totalSP.IsValue() {
+		if !c.totalSP.IsNil() {
 			totals.sp.Set(totals.sp.ValueOrZero() + c.totalSP.MustValue())
 		}
-		if c.unreadCount.IsValue() {
+		if !c.unreadCount.IsNil() {
 			totals.unread.Set(totals.unread.ValueOrZero() + c.unreadCount.MustValue())
 		}
-		if c.walletBalance.IsValue() {
+		if !c.walletBalance.IsNil() {
 			totals.wallet.Set(totals.wallet.ValueOrZero() + c.walletBalance.MustValue())
 		}
-		if c.assetValue.IsValue() {
+		if !c.assetValue.IsNil() {
 			totals.assets.Set(totals.assets.ValueOrZero() + c.assetValue.MustValue())
 		}
 	}

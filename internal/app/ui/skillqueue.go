@@ -121,7 +121,7 @@ func (a *skillqueueArea) refresh() {
 		i = widget.DangerImportance
 	} else {
 		s := "Skills"
-		if completion.IsValue() && completion.MustValue() < 1 {
+		if !completion.IsNil() && completion.ValueOrZero() < 1 {
 			s += fmt.Sprintf(" (%.0f%%)", completion.MustValue()*100)
 		}
 		a.ui.skillqueueTab.Text = s
