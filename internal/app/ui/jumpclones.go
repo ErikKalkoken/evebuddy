@@ -8,11 +8,10 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/datanodetree"
+	"github.com/ErikKalkoken/evebuddy/internal/app/treebuilder"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 )
 
@@ -40,29 +39,34 @@ func (n jumpCloneNode) UID() widget.TreeNodeID {
 
 // jumpClonesArea is the UI area that shows the skillqueue
 type jumpClonesArea struct {
-	content  *fyne.Container
-	tree     *widget.Tree
-	treeData binding.StringTree
-	top      *widget.Label
-	ui       *ui
+	content    *fyne.Container
+	treeWidget *widget.Tree
+	treeData   *treebuilder.FyneTree[jumpCloneNode]
+	top        *widget.Label
+	ui         *ui
 }
 
 func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 	a := jumpClonesArea{
 		top:      widget.NewLabel(""),
-		treeData: binding.NewStringTree(),
+		treeData: treebuilder.NewFyneTree[jumpCloneNode](),
 		ui:       u,
 	}
 	a.top.TextStyle.Bold = true
-	a.tree = a.makeTree()
+	a.treeWidget = a.makeTree()
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, a.tree)
+	a.content = container.NewBorder(top, nil, nil, nil, a.treeWidget)
 	return &a
 }
 
 func (a *jumpClonesArea) makeTree() *widget.Tree {
-	t := widget.NewTreeWithData(
-		a.treeData,
+	t := widget.NewTree(
+		func(uid widget.TreeNodeID) []widget.TreeNodeID {
+			return a.treeData.ChildUIDs(uid)
+		},
+		func(uid widget.TreeNodeID) bool {
+			return a.treeData.IsBranch(uid)
+		},
 		func(branch bool) fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
 			icon.FillMode = canvas.ImageFillOriginal
@@ -70,17 +74,12 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			second := widget.NewLabel("Template")
 			return container.NewHBox(icon, first, second)
 		},
-		func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
+		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
 			hbox := co.(*fyne.Container)
 			icon := hbox.Objects[0].(*canvas.Image)
 			first := hbox.Objects[1].(*widget.Label)
 			second := hbox.Objects[2].(*widget.Label)
-			n, err := datanodetree.NodeFromDataItem[jumpCloneNode](di)
-			if err != nil {
-				slog.Error("Failed to render jump clone item in UI", "err", err)
-				first.SetText("ERROR")
-				return
-			}
+			n := a.treeData.Value(uid)
 			if n.IsRoot() {
 				icon.Resource = eveicon.GetResourceByName(eveicon.CloningCenter)
 				icon.Refresh()
@@ -110,11 +109,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
 		defer t.UnselectAll()
-		n, err := datanodetree.NodeFromBoundTree[jumpCloneNode](a.treeData, uid)
-		if err != nil {
-			slog.Error("Failed to select jump clone", "err", err)
-			return
-		}
+		n := a.treeData.Value(uid)
 		if n.IsRoot() && !n.IsUnknown {
 			a.ui.showLocationInfoWindow(n.LocationID)
 			return
@@ -127,39 +122,29 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 }
 
 func (a *jumpClonesArea) redraw() {
-	t, i, err := func() (string, widget.Importance, error) {
-		tree, total, err := a.updateTreeData()
-		if err != nil {
-			return "", 0, err
-		}
-		ids, values, err := tree.StringTree()
-		if err != nil {
-			return "", 0, err
-		}
-		if err := a.treeData.Set(ids, values); err != nil {
-			return "", 0, err
-		}
-		t, i := a.makeTopText(total)
-		return t, i, nil
-	}()
+	var t string
+	var i widget.Importance
+	total, err := a.updateTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
+	} else {
+		t, i = a.makeTopText(total)
 	}
 	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
 }
 
-func (a *jumpClonesArea) updateTreeData() (datanodetree.DataNodeTree[jumpCloneNode], int, error) {
-	tree := datanodetree.New[jumpCloneNode]()
+func (a *jumpClonesArea) updateTreeData() (int, error) {
+	a.treeData.Clear()
 	if !a.ui.hasCharacter() {
-		return tree, 0, nil
+		return 0, nil
 	}
 	clones, err := a.ui.CharacterService.ListCharacterJumpClones(context.TODO(), a.ui.characterID())
 	if err != nil {
-		return tree, 0, err
+		return 0, err
 	}
 	for _, c := range clones {
 		n := jumpCloneNode{
@@ -174,7 +159,8 @@ func (a *jumpClonesArea) updateTreeData() (datanodetree.DataNodeTree[jumpCloneNo
 			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 			n.IsUnknown = true
 		}
-		id := tree.Add("", n)
+		uid := n.UID()
+		a.treeData.MustAdd("", uid, n)
 		for _, i := range c.Implants {
 			n := jumpCloneNode{
 				JumpCloneID:            c.JumpCloneID,
@@ -182,10 +168,10 @@ func (a *jumpClonesArea) updateTreeData() (datanodetree.DataNodeTree[jumpCloneNo
 				ImplantTypeID:          i.EveType.ID,
 				ImplantTypeDescription: i.EveType.DescriptionPlain(),
 			}
-			tree.Add(id, n)
+			a.treeData.Add(uid, n.UID(), n)
 		}
 	}
-	return tree, len(clones), nil
+	return len(clones), nil
 }
 
 func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance) {
