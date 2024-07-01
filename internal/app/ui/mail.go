@@ -15,8 +15,8 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/treebuilder"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -29,7 +29,7 @@ type mailArea struct {
 	lastUID       string
 	lastFolderAll folderNode
 	foldersWidget *widget.Tree
-	foldersData   *treebuilder.FyneTree[folderNode]
+	foldersData   *fynetree.FyneTree[folderNode]
 	currentFolder optional.Optional[folderNode]
 
 	headerSection fyne.CanvasObject
@@ -48,7 +48,7 @@ type mailArea struct {
 
 func (u *ui) newMailArea() *mailArea {
 	a := &mailArea{
-		foldersData: treebuilder.NewFyneTree[folderNode](),
+		foldersData: fynetree.New[folderNode](),
 		ui:          u,
 		headerTop:   widget.NewLabel(""),
 		headerData:  binding.NewUntypedList(),

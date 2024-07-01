@@ -16,8 +16,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/app/treebuilder"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	"github.com/dustin/go-humanize"
 )
 
@@ -66,7 +66,7 @@ type assetsArea struct {
 	assetsData      binding.UntypedList
 	assetsTop       *widget.Label
 	locationsWidget *widget.Tree
-	locationsData   *treebuilder.FyneTree[locationDataNode]
+	locationsData   *fynetree.FyneTree[locationDataNode]
 	locationsTop    *widget.Label
 	assetCollection assetcollection.AssetCollection
 	ui              *ui
@@ -76,7 +76,7 @@ func (u *ui) newAssetsArea() *assetsArea {
 	a := assetsArea{
 		assetsData:    binding.NewUntypedList(),
 		assetsTop:     widget.NewLabel(""),
-		locationsData: treebuilder.NewFyneTree[locationDataNode](),
+		locationsData: fynetree.New[locationDataNode](),
 		locationsTop:  widget.NewLabel(""),
 		ui:            u,
 	}

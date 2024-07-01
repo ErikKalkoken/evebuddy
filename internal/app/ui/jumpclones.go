@@ -11,8 +11,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/treebuilder"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
+	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 )
 
 type jumpCloneNode struct {
@@ -41,7 +41,7 @@ func (n jumpCloneNode) UID() widget.TreeNodeID {
 type jumpClonesArea struct {
 	content    *fyne.Container
 	treeWidget *widget.Tree
-	treeData   *treebuilder.FyneTree[jumpCloneNode]
+	treeData   *fynetree.FyneTree[jumpCloneNode]
 	top        *widget.Label
 	ui         *ui
 }
@@ -49,7 +49,7 @@ type jumpClonesArea struct {
 func (u *ui) NewJumpClonesArea() *jumpClonesArea {
 	a := jumpClonesArea{
 		top:      widget.NewLabel(""),
-		treeData: treebuilder.NewFyneTree[jumpCloneNode](),
+		treeData: fynetree.New[jumpCloneNode](),
 		ui:       u,
 	}
 	a.top.TextStyle.Bold = true

@@ -1,4 +1,4 @@
-package treebuilder
+package fynetree
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ type FyneTree[T any] struct {
 	values map[widget.TreeNodeID]T
 }
 
-func NewFyneTree[T any]() *FyneTree[T] {
+func New[T any]() *FyneTree[T] {
 	t := &FyneTree[T]{}
 	t.initialize()
 	return t
