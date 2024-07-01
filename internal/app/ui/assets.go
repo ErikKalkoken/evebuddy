@@ -165,6 +165,7 @@ func (a *assetsArea) redraw() {
 	a.locationsTop.Text = t
 	a.locationsTop.Importance = i
 	a.locationsTop.Refresh()
+	a.locationsWidget.Refresh()
 }
 
 func (a *assetsArea) updateLocationData() (int, error) {

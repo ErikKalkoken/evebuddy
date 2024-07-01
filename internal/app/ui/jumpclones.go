@@ -135,6 +135,7 @@ func (a *jumpClonesArea) redraw() {
 	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
+	a.treeWidget.Refresh()
 }
 
 func (a *jumpClonesArea) updateTreeData() (int, error) {

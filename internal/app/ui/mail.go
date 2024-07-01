@@ -15,7 +15,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/datanodetree"
+	"github.com/ErikKalkoken/evebuddy/internal/app/treebuilder"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -28,8 +28,8 @@ type mailArea struct {
 	folderSection fyne.CanvasObject
 	lastUID       string
 	lastFolderAll folderNode
-	folders       *widget.Tree
-	treeData      binding.StringTree
+	foldersWidget *widget.Tree
+	foldersData   *treebuilder.FyneTree[folderNode]
 	currentFolder optional.Optional[folderNode]
 
 	headerSection fyne.CanvasObject
@@ -48,13 +48,13 @@ type mailArea struct {
 
 func (u *ui) newMailArea() *mailArea {
 	a := &mailArea{
-		treeData:   binding.NewStringTree(),
-		ui:         u,
-		headerTop:  widget.NewLabel(""),
-		headerData: binding.NewUntypedList(),
-		body:       widget.NewLabel(""),
-		header:     widget.NewLabel(""),
-		subject:    widget.NewLabel(""),
+		foldersData: treebuilder.NewFyneTree[folderNode](),
+		ui:          u,
+		headerTop:   widget.NewLabel(""),
+		headerData:  binding.NewUntypedList(),
+		body:        widget.NewLabel(""),
+		header:      widget.NewLabel(""),
+		subject:     widget.NewLabel(""),
 	}
 
 	// Mail
@@ -72,14 +72,14 @@ func (u *ui) newMailArea() *mailArea {
 	a.headerSection = container.NewBorder(a.headerTop, nil, nil, nil, a.headers)
 
 	// Folders
-	a.folders = a.makeFolderTree()
+	a.foldersWidget = a.makeFolderTree()
 	newButton := widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
 		u.showSendMessageWindow(createMessageNew, nil)
 	})
 	newButton.Importance = widget.HighImportance
 	top := container.NewHBox(layout.NewSpacer(), container.NewPadded(newButton), layout.NewSpacer())
 
-	a.folderSection = container.NewBorder(top, nil, nil, nil, a.folders)
+	a.folderSection = container.NewBorder(top, nil, nil, nil, a.foldersWidget)
 
 	// Combine sections
 	split1 := container.NewHSplit(a.headerSection, a.mailSection)
@@ -150,20 +150,20 @@ func (f folderNode) icon() fyne.Resource {
 }
 
 func (a *mailArea) makeFolderTree() *widget.Tree {
-	tree := widget.NewTreeWithData(
-		a.treeData,
+	tree := widget.NewTree(
+		func(uid widget.TreeNodeID) []widget.TreeNodeID {
+			return a.foldersData.ChildUIDs(uid)
+		},
+		func(uid widget.TreeNodeID) bool {
+			return a.foldersData.IsBranch(uid)
+		},
 		func(isBranch bool) fyne.CanvasObject {
 			return container.NewHBox(
 				widget.NewIcon(&fyne.StaticResource{}), widget.NewLabel("Branch template"))
 		},
-		func(di binding.DataItem, isBranch bool, co fyne.CanvasObject) {
+		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
 			label := co.(*fyne.Container).Objects[1].(*widget.Label)
-			node, err := datanodetree.NodeFromDataItem[folderNode](di)
-			if err != nil {
-				slog.Error("Failed to fetch data item for tree", "err", err)
-				label.SetText("ERROR")
-				return
-			}
+			node := a.foldersData.Value((uid))
 			icon := co.(*fyne.Container).Objects[0].(*widget.Icon)
 			icon.SetResource(node.icon())
 			var text string
@@ -176,12 +176,7 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 		},
 	)
 	tree.OnSelected = func(uid string) {
-		node, err := datanodetree.NodeFromBoundTree[folderNode](a.treeData, uid)
-		if err != nil {
-			slog.Error("Failed to select folder", "err", err)
-			tree.UnselectAll()
-			return
-		}
+		node := a.foldersData.Value((uid))
 		if node.isBranch() {
 			tree.UnselectAll()
 			return
@@ -199,36 +194,23 @@ func (a *mailArea) redraw() {
 
 func (a *mailArea) refresh() {
 	characterID := a.ui.characterID()
-	folderAll, err := func() (folderNode, error) {
-		tree, folderAll, err := a.makeFolderTreeData(characterID)
-		if err != nil {
-			return folderNode{}, err
-		}
-		ids, values, err := tree.StringTree()
-		if err != nil {
-			return folderNode{}, err
-		}
-		if err := a.treeData.Set(ids, values); err != nil {
-			return folderNode{}, err
-		}
-		return folderAll, nil
-	}()
+	folderAll, err := a.updateFolderData(characterID)
 	if err != nil {
 		t := "Failed to build folder tree"
 		slog.Error(t, "character", characterID, "error", err)
 		a.ui.showErrorDialog(t, err)
 		return
 	}
+	a.foldersWidget.Refresh()
 	if folderAll.IsEmpty() {
-		a.treeData.Set(nil, nil)
 		a.updateMailTab(0)
 		a.clearFolder()
 		return
 	}
 	if a.lastUID == "" {
-		a.folders.UnselectAll()
-		a.folders.ScrollToTop()
-		a.folders.Select(folderAll.UID())
+		a.foldersWidget.UnselectAll()
+		a.foldersWidget.ScrollToTop()
+		a.foldersWidget.Select(folderAll.UID())
 		a.setFolder(folderAll)
 	} else {
 		a.headerRefresh()
@@ -246,19 +228,19 @@ func (a *mailArea) updateMailTab(unreadCount int) {
 	a.ui.tabs.Refresh()
 }
 
-func (a *mailArea) makeFolderTreeData(characterID int32) (datanodetree.DataNodeTree[folderNode], folderNode, error) {
-	tree := datanodetree.New[folderNode]()
+func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
+	a.foldersData.Clear()
 	if characterID == 0 {
-		return tree, folderNode{}, nil
+		return folderNode{}, nil
 	}
 	ctx := context.TODO()
 	labelUnreadCounts, err := a.ui.CharacterService.GetCharacterMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
-		return tree, folderNode{}, err
+		return folderNode{}, err
 	}
 	listUnreadCounts, err := a.ui.CharacterService.GetCharacterMailListUnreadCounts(ctx, characterID)
 	if err != nil {
-		return tree, folderNode{}, err
+		return folderNode{}, err
 	}
 	totalUnreadCount, totalLabelsUnreadCount, totalListUnreadCount := calcUnreadTotals(labelUnreadCounts, listUnreadCounts)
 
@@ -271,7 +253,7 @@ func (a *mailArea) makeFolderTreeData(characterID int32) (datanodetree.DataNodeT
 		ObjID:       app.MailLabelAll,
 		UnreadCount: totalUnreadCount,
 	}
-	tree.Add("", folderAll)
+	a.foldersData.MustAdd("", folderAll.UID(), folderAll)
 
 	// Add default folders
 	defaultFolders := []struct {
@@ -297,13 +279,13 @@ func (a *mailArea) makeFolderTreeData(characterID int32) (datanodetree.DataNodeT
 			ObjID:       o.labelID,
 			UnreadCount: u,
 		}
-		tree.Add("", n)
+		a.foldersData.MustAdd("", n.UID(), n)
 	}
 
 	// Add custom labels
 	labels, err := a.ui.CharacterService.ListCharacterMailLabelsOrdered(ctx, characterID)
 	if err != nil {
-		return tree, folderNode{}, err
+		return folderNode{}, err
 	}
 	if len(labels) > 0 {
 		n := folderNode{
@@ -312,7 +294,7 @@ func (a *mailArea) makeFolderTreeData(characterID int32) (datanodetree.DataNodeT
 			Name:        "Labels",
 			UnreadCount: totalLabelsUnreadCount,
 		}
-		uid := tree.Add("", n)
+		uid := a.foldersData.MustAdd("", n.UID(), n)
 		for _, l := range labels {
 			u, ok := labelUnreadCounts[l.LabelID]
 			if !ok {
@@ -326,14 +308,14 @@ func (a *mailArea) makeFolderTreeData(characterID int32) (datanodetree.DataNodeT
 				UnreadCount: u,
 				Type:        folderNodeLabel,
 			}
-			tree.Add(uid, n)
+			a.foldersData.MustAdd(uid, n.UID(), n)
 		}
 	}
 
 	// Add mailing lists
 	lists, err := a.ui.CharacterService.ListCharacterMailLists(ctx, characterID)
 	if err != nil {
-		return tree, folderNode{}, err
+		return folderNode{}, err
 	}
 	if len(lists) > 0 {
 		n := folderNode{
@@ -342,7 +324,7 @@ func (a *mailArea) makeFolderTreeData(characterID int32) (datanodetree.DataNodeT
 			Name:        "Mailing Lists",
 			UnreadCount: totalListUnreadCount,
 		}
-		uid := tree.Add("", n)
+		uid := a.foldersData.MustAdd("", n.UID(), n)
 		for _, l := range lists {
 			u, ok := listUnreadCounts[l.ID]
 			if !ok {
@@ -356,11 +338,10 @@ func (a *mailArea) makeFolderTreeData(characterID int32) (datanodetree.DataNodeT
 				UnreadCount: u,
 				Type:        folderNodeList,
 			}
-			tree.Add(uid, n)
+			a.foldersData.MustAdd(uid, n.UID(), n)
 		}
 	}
-
-	return tree, folderAll, nil
+	return folderAll, nil
 }
 
 func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
