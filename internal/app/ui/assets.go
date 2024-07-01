@@ -203,8 +203,7 @@ func (a *assetsArea) updateLocationData() (int, error) {
 		} else {
 			location.IsUnknown = true
 		}
-		locationUID := location.UID()
-		a.locationsData.MustAdd("", locationUID, location)
+		locationUID := a.locationsData.MustAdd("", location)
 
 		topAssets := ln.Nodes()
 		slices.SortFunc(topAssets, func(a assetcollection.AssetNode, b assetcollection.AssetNode) int {
@@ -240,7 +239,7 @@ func (a *assetsArea) updateLocationData() (int, error) {
 			Name:        makeNameWithCount("Ship Hangar", shipCount),
 			Type:        nodeShipHangar,
 		}
-		shipsUID := a.locationsData.MustAdd(locationUID, shipHangar.UID(), shipHangar)
+		shipsUID := a.locationsData.MustAdd(locationUID, shipHangar)
 		for _, an := range ships {
 			ship := an.Asset
 			ldn := locationDataNode{
@@ -249,7 +248,7 @@ func (a *assetsArea) updateLocationData() (int, error) {
 				Name:        fmt.Sprintf("%s (%s)", ship.Name, ship.EveType.Name),
 				Type:        nodeShip,
 			}
-			shipUID := a.locationsData.MustAdd(shipsUID, ldn.UID(), ldn)
+			shipUID := a.locationsData.MustAdd(shipsUID, ldn)
 			cargo := make([]assetcollection.AssetNode, 0)
 			fuel := make([]assetcollection.AssetNode, 0)
 			for _, an2 := range an.Nodes() {
@@ -265,7 +264,7 @@ func (a *assetsArea) updateLocationData() (int, error) {
 				Name:        makeNameWithCount("Cargo Bay", len(cargo)),
 				Type:        nodeCargoBay,
 			}
-			a.locationsData.MustAdd(shipUID, cln.UID(), cln)
+			a.locationsData.MustAdd(shipUID, cln)
 			if ship.EveType.HasFuelBay() {
 				ldn := locationDataNode{
 					CharacterID: characterID,
@@ -273,7 +272,7 @@ func (a *assetsArea) updateLocationData() (int, error) {
 					Name:        makeNameWithCount("Fuel Bay", len(fuel)),
 					Type:        nodeFuelBay,
 				}
-				a.locationsData.MustAdd(shipUID, ldn.UID(), ldn)
+				a.locationsData.MustAdd(shipUID, ldn)
 			}
 		}
 
@@ -283,7 +282,7 @@ func (a *assetsArea) updateLocationData() (int, error) {
 			Name:        makeNameWithCount("Item Hangar", itemCount),
 			Type:        nodeItemHangar,
 		}
-		itemsUID := a.locationsData.MustAdd(locationUID, itemHangar.UID(), itemHangar)
+		itemsUID := a.locationsData.MustAdd(locationUID, itemHangar)
 		for _, an := range itemContainers {
 			ldn := locationDataNode{
 				CharacterID: characterID,
@@ -291,7 +290,7 @@ func (a *assetsArea) updateLocationData() (int, error) {
 				Name:        makeNameWithCount(an.Asset.DisplayName(), len(an.Nodes())),
 				Type:        nodeContainer,
 			}
-			a.locationsData.MustAdd(itemsUID, ldn.UID(), ldn)
+			a.locationsData.MustAdd(itemsUID, ldn)
 		}
 
 		if len(assetSafety) > 0 {
@@ -302,7 +301,7 @@ func (a *assetsArea) updateLocationData() (int, error) {
 				Name:        makeNameWithCount("Asset Safety", len(an.Nodes())),
 				Type:        nodeAssetSafety,
 			}
-			a.locationsData.MustAdd(locationUID, ldn.UID(), ldn)
+			a.locationsData.MustAdd(locationUID, ldn)
 		}
 	}
 	return len(a.assetCollection.Locations()), nil

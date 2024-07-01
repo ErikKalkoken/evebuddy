@@ -10,7 +10,7 @@ import (
 func TestFyneTree(t *testing.T) {
 	t.Run("can create a new tree", func(t *testing.T) {
 		tree := fynetree.New[string]()
-		tree.MustAdd("", "1", "Alpha")
-		assert.Equal(t, "Alpha", tree.Value("1"))
+		uid := tree.MustAdd("", "Alpha")
+		assert.Equal(t, "Alpha", tree.Value(uid))
 	})
 }
