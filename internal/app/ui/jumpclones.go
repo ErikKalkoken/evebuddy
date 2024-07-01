@@ -159,8 +159,7 @@ func (a *jumpClonesArea) updateTreeData() (int, error) {
 			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 			n.IsUnknown = true
 		}
-		uid := n.UID()
-		a.treeData.MustAdd("", uid, n)
+		uid := a.treeData.MustAdd("", n.UID(), n)
 		for _, i := range c.Implants {
 			n := jumpCloneNode{
 				JumpCloneID:            c.JumpCloneID,
@@ -168,7 +167,7 @@ func (a *jumpClonesArea) updateTreeData() (int, error) {
 				ImplantTypeID:          i.EveType.ID,
 				ImplantTypeDescription: i.EveType.DescriptionPlain(),
 			}
-			a.treeData.Add(uid, n.UID(), n)
+			a.treeData.MustAdd(uid, n.UID(), n)
 		}
 	}
 	return len(clones), nil

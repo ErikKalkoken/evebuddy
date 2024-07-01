@@ -15,8 +15,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
-	"github.com/ErikKalkoken/evebuddy/internal/app/datanodetree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/app/treebuilder"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/dustin/go-humanize"
 )
@@ -61,30 +61,28 @@ var defaultAssetIcon = theme.NewDisabledResource(resourceQuestionmarkSvg)
 
 // assetsArea is the UI area that shows the skillqueue
 type assetsArea struct {
-	content       fyne.CanvasObject
-	assets        *widget.GridWrap
-	assetsData    binding.UntypedList
-	assetsTop     *widget.Label
-	locations     *widget.Tree
-	locationsData binding.StringTree
-	locationsTop  *widget.Label
-
+	content         fyne.CanvasObject
+	assets          *widget.GridWrap
+	assetsData      binding.UntypedList
+	assetsTop       *widget.Label
+	locationsWidget *widget.Tree
+	locationsData   *treebuilder.FyneTree[locationDataNode]
+	locationsTop    *widget.Label
 	assetCollection assetcollection.AssetCollection
-
-	ui *ui
+	ui              *ui
 }
 
 func (u *ui) newAssetsArea() *assetsArea {
 	a := assetsArea{
 		assetsData:    binding.NewUntypedList(),
 		assetsTop:     widget.NewLabel(""),
-		locationsData: binding.NewStringTree(),
+		locationsData: treebuilder.NewFyneTree[locationDataNode](),
 		locationsTop:  widget.NewLabel(""),
 		ui:            u,
 	}
 	a.locationsTop.TextStyle.Bold = true
-	a.locations = a.makeLocationsTree()
-	locations := container.NewBorder(container.NewVBox(a.locationsTop, widget.NewSeparator()), nil, nil, nil, a.locations)
+	a.locationsWidget = a.makeLocationsTree()
+	locations := container.NewBorder(container.NewVBox(a.locationsTop, widget.NewSeparator()), nil, nil, nil, a.locationsWidget)
 
 	a.assetsTop.TextStyle.Bold = true
 	a.assets = u.makeAssetGrid(a.assetsData)
@@ -97,23 +95,23 @@ func (u *ui) newAssetsArea() *assetsArea {
 }
 
 func (a *assetsArea) makeLocationsTree() *widget.Tree {
-	t := widget.NewTreeWithData(
-		a.locationsData,
+	t := widget.NewTree(
+		func(uid widget.TreeNodeID) []widget.TreeNodeID {
+			return a.locationsData.ChildUIDs(uid)
+		},
+		func(uid widget.TreeNodeID) bool {
+			return a.locationsData.IsBranch(uid)
+		},
 		func(branch bool) fyne.CanvasObject {
 			prefix := widget.NewLabel("1.0")
 			prefix.Importance = widget.HighImportance
 			return container.NewHBox(prefix, widget.NewLabel("Location"))
 		},
-		func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
+		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
 			row := co.(*fyne.Container)
 			prefix := row.Objects[0].(*widget.Label)
 			label := row.Objects[1].(*widget.Label)
-			n, err := datanodetree.NodeFromDataItem[locationDataNode](di)
-			if err != nil {
-				slog.Error("Failed to render asset location in UI", "err", err)
-				label.SetText("ERROR")
-				return
-			}
+			n := a.locationsData.Value(uid)
 			label.SetText(n.Name)
 			if n.IsRoot() {
 				if !n.IsUnknown {
@@ -131,12 +129,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 		},
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
-		n, err := datanodetree.NodeFromBoundTree[locationDataNode](a.locationsData, uid)
-		if err != nil {
-			slog.Error("Failed to select location", "err", err)
-			t.UnselectAll()
-			return
-		}
+		n := a.locationsData.Value(uid)
 		if n.IsRoot() {
 			if !n.IsUnknown {
 				a.ui.showLocationInfoWindow(n.ContainerID)
@@ -152,21 +145,14 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 }
 
 func (a *assetsArea) redraw() {
-	a.locations.CloseAllBranches()
-	a.locations.ScrollToTop()
+	a.locationsWidget.CloseAllBranches()
+	a.locationsWidget.ScrollToTop()
 	t, i, err := func() (string, widget.Importance, error) {
 		if err := a.clearAssets(); err != nil {
 			return "", 0, err
 		}
-		tree, total, err := a.createTreeData()
+		total, err := a.updateLocationData()
 		if err != nil {
-			return "", 0, err
-		}
-		ids, values, err := tree.StringTree()
-		if err != nil {
-			return "", 0, err
-		}
-		if err := a.locationsData.Set(ids, values); err != nil {
 			return "", 0, err
 		}
 		return a.makeTopText(total)
@@ -181,20 +167,20 @@ func (a *assetsArea) redraw() {
 	a.locationsTop.Refresh()
 }
 
-func (a *assetsArea) createTreeData() (datanodetree.DataNodeTree[locationDataNode], int, error) {
-	tree := datanodetree.New[locationDataNode]()
+func (a *assetsArea) updateLocationData() (int, error) {
+	a.locationsData.Clear()
 	if !a.ui.hasCharacter() {
-		return tree, 0, nil
+		return 0, nil
 	}
 	characterID := a.ui.characterID()
 	ctx := context.TODO()
 	assets, err := a.ui.CharacterService.ListCharacterAssets(ctx, characterID)
 	if err != nil {
-		return tree, 0, err
+		return 0, err
 	}
 	oo, err := a.ui.EveUniverseService.ListEveLocations(ctx)
 	if err != nil {
-		return tree, 0, err
+		return 0, err
 	}
 	a.assetCollection = assetcollection.New(assets, oo)
 	locationNodes := a.assetCollection.Locations()
@@ -216,7 +202,8 @@ func (a *assetsArea) createTreeData() (datanodetree.DataNodeTree[locationDataNod
 		} else {
 			location.IsUnknown = true
 		}
-		locationUID := tree.Add("", location)
+		locationUID := location.UID()
+		a.locationsData.MustAdd("", locationUID, location)
 
 		topAssets := ln.Nodes()
 		slices.SortFunc(topAssets, func(a assetcollection.AssetNode, b assetcollection.AssetNode) int {
@@ -252,7 +239,7 @@ func (a *assetsArea) createTreeData() (datanodetree.DataNodeTree[locationDataNod
 			Name:        makeNameWithCount("Ship Hangar", shipCount),
 			Type:        nodeShipHangar,
 		}
-		shipsUID := tree.Add(locationUID, shipHangar)
+		shipsUID := a.locationsData.MustAdd(locationUID, shipHangar.UID(), shipHangar)
 		for _, an := range ships {
 			ship := an.Asset
 			ldn := locationDataNode{
@@ -261,7 +248,7 @@ func (a *assetsArea) createTreeData() (datanodetree.DataNodeTree[locationDataNod
 				Name:        fmt.Sprintf("%s (%s)", ship.Name, ship.EveType.Name),
 				Type:        nodeShip,
 			}
-			shipUID := tree.Add(shipsUID, ldn)
+			shipUID := a.locationsData.MustAdd(shipsUID, ldn.UID(), ldn)
 			cargo := make([]assetcollection.AssetNode, 0)
 			fuel := make([]assetcollection.AssetNode, 0)
 			for _, an2 := range an.Nodes() {
@@ -277,7 +264,7 @@ func (a *assetsArea) createTreeData() (datanodetree.DataNodeTree[locationDataNod
 				Name:        makeNameWithCount("Cargo Bay", len(cargo)),
 				Type:        nodeCargoBay,
 			}
-			tree.Add(shipUID, cln)
+			a.locationsData.MustAdd(shipUID, cln.UID(), cln)
 			if ship.EveType.HasFuelBay() {
 				ldn := locationDataNode{
 					CharacterID: characterID,
@@ -285,7 +272,7 @@ func (a *assetsArea) createTreeData() (datanodetree.DataNodeTree[locationDataNod
 					Name:        makeNameWithCount("Fuel Bay", len(fuel)),
 					Type:        nodeFuelBay,
 				}
-				tree.Add(shipUID, ldn)
+				a.locationsData.MustAdd(shipUID, ldn.UID(), ldn)
 			}
 		}
 
@@ -295,7 +282,7 @@ func (a *assetsArea) createTreeData() (datanodetree.DataNodeTree[locationDataNod
 			Name:        makeNameWithCount("Item Hangar", itemCount),
 			Type:        nodeItemHangar,
 		}
-		itemsUID := tree.Add(locationUID, itemHangar)
+		itemsUID := a.locationsData.MustAdd(locationUID, itemHangar.UID(), itemHangar)
 		for _, an := range itemContainers {
 			ldn := locationDataNode{
 				CharacterID: characterID,
@@ -303,7 +290,7 @@ func (a *assetsArea) createTreeData() (datanodetree.DataNodeTree[locationDataNod
 				Name:        makeNameWithCount(an.Asset.DisplayName(), len(an.Nodes())),
 				Type:        nodeContainer,
 			}
-			tree.Add(itemsUID, ldn)
+			a.locationsData.MustAdd(itemsUID, ldn.UID(), ldn)
 		}
 
 		if len(assetSafety) > 0 {
@@ -314,10 +301,10 @@ func (a *assetsArea) createTreeData() (datanodetree.DataNodeTree[locationDataNod
 				Name:        makeNameWithCount("Asset Safety", len(an.Nodes())),
 				Type:        nodeAssetSafety,
 			}
-			tree.Add(locationUID, ldn)
+			a.locationsData.MustAdd(locationUID, ldn.UID(), ldn)
 		}
 	}
-	return tree, len(a.assetCollection.Locations()), nil
+	return len(a.assetCollection.Locations()), nil
 }
 
 func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
