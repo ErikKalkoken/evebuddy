@@ -79,7 +79,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			icon := hbox.Objects[0].(*canvas.Image)
 			first := hbox.Objects[1].(*widget.Label)
 			second := hbox.Objects[2].(*widget.Label)
-			n := a.treeData.Value(uid)
+			n := a.treeData.MustValue(uid)
 			if n.IsRoot() {
 				icon.Resource = eveicon.GetResourceByName(eveicon.CloningCenter)
 				icon.Refresh()
@@ -109,7 +109,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
 		defer t.UnselectAll()
-		n := a.treeData.Value(uid)
+		n := a.treeData.MustValue(uid)
 		if n.IsRoot() && !n.IsUnknown {
 			a.ui.showLocationInfoWindow(n.LocationID)
 			return

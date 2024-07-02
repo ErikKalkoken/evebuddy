@@ -111,7 +111,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 			row := co.(*fyne.Container)
 			prefix := row.Objects[0].(*widget.Label)
 			label := row.Objects[1].(*widget.Label)
-			n := a.locationsData.Value(uid)
+			n := a.locationsData.MustValue(uid)
 			label.SetText(n.Name)
 			if n.IsRoot() {
 				if !n.IsUnknown {
@@ -129,7 +129,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 		},
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
-		n := a.locationsData.Value(uid)
+		n := a.locationsData.MustValue(uid)
 		if n.IsRoot() {
 			if !n.IsUnknown {
 				a.ui.showLocationInfoWindow(n.ContainerID)

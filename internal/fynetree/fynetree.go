@@ -29,9 +29,10 @@ func New[T any]() *FyneTree[T] {
 	return t
 }
 
-// Add adds a node safely and returns it's UID.
+// Add adds a node safely and returns it's UID or an error if the parent node does not exist.
+//
 // Use "" as parentUID for adding nodes at the top level.
-// Nodes will be rendered in the same order they are added.
+// Nodes will be rendered in the same order as they are added.
 func (t *FyneTree[T]) Add(parentUID widget.TreeNodeID, value T) (widget.TreeNodeID, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -50,6 +51,15 @@ func (t *FyneTree[T]) Add(parentUID widget.TreeNodeID, value T) (widget.TreeNode
 	t.ids[parentUID] = append(t.ids[parentUID], uid)
 	t.values[uid] = value
 	return uid, nil
+}
+
+// MustAdd is like Add, but panics if it can not be added.
+func (t *FyneTree[T]) MustAdd(parentUID widget.TreeNodeID, value T) widget.TreeNodeID {
+	uid, err := t.Add(parentUID, value)
+	if err != nil {
+		panic(err)
+	}
+	return uid
 }
 
 // Clear clears all nodes from the tree.
@@ -72,29 +82,33 @@ func (t *FyneTree[T]) IsBranch(uid widget.TreeNodeID) bool {
 	return found
 }
 
-// MustAdd is like Add, but panics if a semantic check fails.
-func (t *FyneTree[T]) MustAdd(parentUID widget.TreeNodeID, value T) widget.TreeNodeID {
-	uid, err := t.Add(parentUID, value)
-	if err != nil {
-		panic(err)
-	}
-	return uid
-}
-
 // Size returns the number of nodes in the tree
 func (t *FyneTree[T]) Size() int {
 	return t.id
 }
 
-// Value returns the value of a node or a zero value.
-func (t *FyneTree[T]) Value(uid widget.TreeNodeID) T {
-	v, _ := t.ValueWithTest(uid)
+// Value returns the value of a node or an error if it does not exist.
+func (t *FyneTree[T]) Value(uid widget.TreeNodeID) (T, error) {
+	var zero T
+	v, ok := t.valueWithTest(uid)
+	if !ok {
+		return zero, fmt.Errorf("node does not exist: %s", uid)
+	}
+	return v, nil
+}
+
+// MustValue returns the value of a node or panics if the node does not exist.
+func (t *FyneTree[T]) MustValue(uid widget.TreeNodeID) T {
+	v, err := t.Value(uid)
+	if err != nil {
+		panic(err)
+	}
 	return v
 }
 
 // Value returns the value of a node or a fallback value.
 func (t *FyneTree[T]) ValueWithFallback(uid widget.TreeNodeID, fallback T) T {
-	v, ok := t.ValueWithTest(uid)
+	v, ok := t.valueWithTest(uid)
 	if !ok {
 		return fallback
 	}
@@ -102,7 +116,7 @@ func (t *FyneTree[T]) ValueWithFallback(uid widget.TreeNodeID, fallback T) T {
 }
 
 // Value returns the value of a node and a test flag reporting wether the node exists.
-func (t *FyneTree[T]) ValueWithTest(uid widget.TreeNodeID) (T, bool) {
+func (t *FyneTree[T]) valueWithTest(uid widget.TreeNodeID) (T, bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	v, ok := t.values[uid]

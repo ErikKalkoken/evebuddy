@@ -29,8 +29,7 @@ func TestFyneTree(t *testing.T) {
 			{n2, "Bravo", false},
 		}
 		for _, n := range nodes {
-			v, ok := tree.ValueWithTest(n.uid)
-			assert.True(t, ok)
+			v := tree.MustValue(n.uid)
 			assert.Equal(t, n.value, v)
 			assert.Equal(t, n.isBranch, tree.IsBranch(n.uid))
 		}
@@ -45,12 +44,39 @@ func TestFyneTree(t *testing.T) {
 	})
 }
 
+func TestFyneTreeAdd(t *testing.T) {
+	t.Parallel()
+	t.Run("can add a node 1", func(t *testing.T) {
+		tree := fynetree.New[string]()
+		uid, err := tree.Add("", "Alpha")
+		if assert.NoError(t, err) {
+			assert.Equal(t, "Alpha", tree.MustValue(uid))
+		}
+	})
+	t.Run("can add a node 2", func(t *testing.T) {
+		tree := fynetree.New[string]()
+		uid := tree.MustAdd("", "Alpha")
+		assert.Equal(t, "Alpha", tree.MustValue(uid))
+	})
+	t.Run("should return error when node node can not be added", func(t *testing.T) {
+		tree := fynetree.New[string]()
+		_, err := tree.Add("invalid", "Alpha")
+		assert.Error(t, err)
+	})
+	t.Run("should panic when node node can not be added", func(t *testing.T) {
+		tree := fynetree.New[string]()
+		assert.Panics(t, func() {
+			tree.MustAdd("invalid", "Alpha")
+		})
+	})
+}
+
 func TestFyneTreeValue(t *testing.T) {
 	t.Parallel()
 	t.Run("can return value of a node", func(t *testing.T) {
 		tree := fynetree.New[string]()
 		uid := tree.MustAdd("", "Alpha")
-		v := tree.Value(uid)
+		v := tree.MustValue(uid)
 		assert.Equal(t, "Alpha", v)
 	})
 	t.Run("should return value when node exists", func(t *testing.T) {
@@ -64,43 +90,24 @@ func TestFyneTreeValue(t *testing.T) {
 		v := tree.ValueWithFallback("invalid", "Fallback")
 		assert.Equal(t, "Fallback", v)
 	})
-	t.Run("should return value and report true when a node exists", func(t *testing.T) {
+	t.Run("should return value when a node exists", func(t *testing.T) {
 		tree := fynetree.New[string]()
 		uid := tree.MustAdd("", "Alpha")
-		v, ok := tree.ValueWithTest(uid)
-		assert.True(t, ok)
-		assert.Equal(t, "Alpha", v)
-	})
-	t.Run("should report false when a node does not exist", func(t *testing.T) {
-		tree := fynetree.New[string]()
-		_, ok := tree.ValueWithTest("invalid")
-		assert.False(t, ok)
-	})
-}
-
-func TestFyneTreeAdd(t *testing.T) {
-	t.Parallel()
-	t.Run("can add a node 1", func(t *testing.T) {
-		tree := fynetree.New[string]()
-		uid, err := tree.Add("", "Alpha")
+		v, err := tree.Value(uid)
 		if assert.NoError(t, err) {
-			assert.Equal(t, "Alpha", tree.Value(uid))
+			assert.Equal(t, "Alpha", v)
 		}
 	})
-	t.Run("can add a node 2", func(t *testing.T) {
+	t.Run("should return error when node does not exist", func(t *testing.T) {
 		tree := fynetree.New[string]()
-		uid := tree.MustAdd("", "Alpha")
-		assert.Equal(t, "Alpha", tree.Value(uid))
-	})
-	t.Run("should return error when node node can not be added", func(t *testing.T) {
-		tree := fynetree.New[string]()
-		_, err := tree.Add("invalid", "Alpha")
+		_, err := tree.Value("invalid")
 		assert.Error(t, err)
 	})
-	t.Run("should panic when node node can not be added", func(t *testing.T) {
+	t.Run("should panic when node does not exist", func(t *testing.T) {
 		tree := fynetree.New[string]()
 		assert.Panics(t, func() {
-			tree.MustAdd("invalid", "Alpha")
+			tree.MustValue("invalid")
+
 		})
 	})
 }

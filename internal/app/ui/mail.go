@@ -163,7 +163,7 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
 			label := co.(*fyne.Container).Objects[1].(*widget.Label)
-			node := a.foldersData.Value((uid))
+			node := a.foldersData.MustValue((uid))
 			icon := co.(*fyne.Container).Objects[0].(*widget.Icon)
 			icon.SetResource(node.icon())
 			var text string
@@ -176,7 +176,7 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 		},
 	)
 	tree.OnSelected = func(uid string) {
-		node := a.foldersData.Value((uid))
+		node := a.foldersData.MustValue((uid))
 		if node.isBranch() {
 			tree.UnselectAll()
 			return
