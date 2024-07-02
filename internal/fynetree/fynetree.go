@@ -79,11 +79,22 @@ func (t *FyneTree[T]) MustAdd(parentUID widget.TreeNodeID, value T) widget.TreeN
 	return uid
 }
 
+// Size returns the number of nodes in the tree
+func (t *FyneTree[T]) Size() int {
+	return t.id
+}
+
 // Value returns the value of a node.
-func (t *FyneTree[T]) Value(uid widget.TreeNodeID) T {
+func (t *FyneTree[T]) ValueWithTest(uid widget.TreeNodeID) (T, bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	return t.values[uid]
+	v, ok := t.values[uid]
+	return v, ok
+}
+
+func (t *FyneTree[T]) Value(uid widget.TreeNodeID) T {
+	v, _ := t.ValueWithTest(uid)
+	return v
 }
 
 func (t *FyneTree[T]) initialize() {
