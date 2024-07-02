@@ -7,12 +7,14 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// FyneTree represents the data for rendering a tree with a Fyne widget.
+// FyneTree is a type that holds all data needed to render a Fyne tree widget.
 //
-// FyneTree allows constructing and updating trees safely by performing semantic checks and being thread safe.
-// It can be plugged-in directly into the functions of a regular Fyne tree widget.
-// Nodes can be of any type.
-// Node IDs are generated automatically.
+// It is designed to make it easier and safer to construct and update tree widgets
+// and is safe to use with go routines.
+//
+// Nodes can be of any type. Node IDs are generated and nodes which contain other nodes are reported as branch.
+//
+// It's method are designed to be used directly inside the functions for creating and updating a fyne tree.
 type FyneTree[T any] struct {
 	mu     sync.RWMutex
 	ids    map[widget.TreeNodeID][]widget.TreeNodeID
@@ -84,17 +86,27 @@ func (t *FyneTree[T]) Size() int {
 	return t.id
 }
 
-// Value returns the value of a node.
+// Value returns the value of a node or a zero value.
+func (t *FyneTree[T]) Value(uid widget.TreeNodeID) T {
+	v, _ := t.ValueWithTest(uid)
+	return v
+}
+
+// Value returns the value of a node or a fallback value.
+func (t *FyneTree[T]) ValueWithFallback(uid widget.TreeNodeID, fallback T) T {
+	v, ok := t.ValueWithTest(uid)
+	if !ok {
+		return fallback
+	}
+	return v
+}
+
+// Value returns the value of a node and a test flag reporting wether the node exists.
 func (t *FyneTree[T]) ValueWithTest(uid widget.TreeNodeID) (T, bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	v, ok := t.values[uid]
 	return v, ok
-}
-
-func (t *FyneTree[T]) Value(uid widget.TreeNodeID) T {
-	v, _ := t.ValueWithTest(uid)
-	return v
 }
 
 func (t *FyneTree[T]) initialize() {
