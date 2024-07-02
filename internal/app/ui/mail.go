@@ -163,7 +163,10 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
 			label := co.(*fyne.Container).Objects[1].(*widget.Label)
-			node := a.foldersData.MustValue((uid))
+			node, err := a.foldersData.Value(uid)
+			if err != nil {
+				return
+			}
 			icon := co.(*fyne.Container).Objects[0].(*widget.Icon)
 			icon.SetResource(node.icon())
 			var text string
@@ -176,7 +179,11 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 		},
 	)
 	tree.OnSelected = func(uid string) {
-		node := a.foldersData.MustValue((uid))
+		node, err := a.foldersData.Value((uid))
+		if err != nil {
+			tree.UnselectAll()
+			return
+		}
 		if node.isBranch() {
 			tree.UnselectAll()
 			return
@@ -253,7 +260,7 @@ func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
 		ObjID:       app.MailLabelAll,
 		UnreadCount: totalUnreadCount,
 	}
-	a.foldersData.MustAdd("", folderAll)
+	a.foldersData.MustAdd("", folderAll.UID(), folderAll)
 
 	// Add default folders
 	defaultFolders := []struct {
@@ -279,7 +286,7 @@ func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
 			ObjID:       o.labelID,
 			UnreadCount: u,
 		}
-		a.foldersData.MustAdd("", n)
+		a.foldersData.MustAdd("", n.UID(), n)
 	}
 
 	// Add custom labels
@@ -294,7 +301,7 @@ func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
 			Name:        "Labels",
 			UnreadCount: totalLabelsUnreadCount,
 		}
-		uid := a.foldersData.MustAdd("", n)
+		uid := a.foldersData.MustAdd("", n.UID(), n)
 		for _, l := range labels {
 			u, ok := labelUnreadCounts[l.LabelID]
 			if !ok {
@@ -308,7 +315,7 @@ func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
 				UnreadCount: u,
 				Type:        folderNodeLabel,
 			}
-			a.foldersData.MustAdd(uid, n)
+			a.foldersData.MustAdd(uid, n.UID(), n)
 		}
 	}
 
@@ -324,7 +331,7 @@ func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
 			Name:        "Mailing Lists",
 			UnreadCount: totalListUnreadCount,
 		}
-		uid := a.foldersData.MustAdd("", n)
+		uid := a.foldersData.MustAdd("", n.UID(), n)
 		for _, l := range lists {
 			u, ok := listUnreadCounts[l.ID]
 			if !ok {
@@ -338,7 +345,7 @@ func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
 				UnreadCount: u,
 				Type:        folderNodeList,
 			}
-			a.foldersData.MustAdd(uid, n)
+			a.foldersData.MustAdd(uid, n.UID(), n)
 		}
 	}
 	return folderAll, nil
@@ -426,7 +433,7 @@ func (a *mailArea) updateHeaderData() error {
 	if folderOption.IsEmpty() {
 		return nil
 	}
-	folder := folderOption.MustValue()
+	folder := folderOption.ValueOrZero()
 	var oo []*app.CharacterMailHeader
 	var err error
 	switch folder.Category {

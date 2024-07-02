@@ -35,7 +35,7 @@ func (qi CharacterSkillqueueItem) CompletionP() float64 {
 	if d.IsEmpty() {
 		return 0
 	}
-	duration := d.MustValue()
+	duration := d.ValueOrZero()
 	now := time.Now()
 	if qi.FinishDate.Before(now) {
 		return 1

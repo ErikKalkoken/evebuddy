@@ -79,7 +79,10 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			icon := hbox.Objects[0].(*canvas.Image)
 			first := hbox.Objects[1].(*widget.Label)
 			second := hbox.Objects[2].(*widget.Label)
-			n := a.treeData.MustValue(uid)
+			n, err := a.treeData.Value(uid)
+			if err != nil {
+				return
+			}
 			if n.IsRoot() {
 				icon.Resource = eveicon.GetResourceByName(eveicon.CloningCenter)
 				icon.Refresh()
@@ -109,7 +112,10 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
 		defer t.UnselectAll()
-		n := a.treeData.MustValue(uid)
+		n, err := a.treeData.Value(uid)
+		if err != nil {
+			return
+		}
 		if n.IsRoot() && !n.IsUnknown {
 			a.ui.showLocationInfoWindow(n.LocationID)
 			return
@@ -160,7 +166,7 @@ func (a *jumpClonesArea) updateTreeData() (int, error) {
 			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 			n.IsUnknown = true
 		}
-		uid := a.treeData.MustAdd("", n)
+		uid := a.treeData.MustAdd("", n.UID(), n)
 		for _, i := range c.Implants {
 			n := jumpCloneNode{
 				JumpCloneID:            c.JumpCloneID,
@@ -168,7 +174,7 @@ func (a *jumpClonesArea) updateTreeData() (int, error) {
 				ImplantTypeID:          i.EveType.ID,
 				ImplantTypeDescription: i.EveType.DescriptionPlain(),
 			}
-			a.treeData.MustAdd(uid, n)
+			a.treeData.MustAdd(uid, n.UID(), n)
 		}
 	}
 	return len(clones), nil

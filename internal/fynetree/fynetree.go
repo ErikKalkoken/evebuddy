@@ -1,3 +1,4 @@
+// Package fynetree contains a type that makes using Fyne tree widgets easier.
 package fynetree
 
 import (
@@ -12,14 +13,14 @@ import (
 // It is designed to make it easier and safer to construct and update tree widgets
 // and is safe to use with go routines.
 //
-// Nodes can be of any type. Node IDs are generated and nodes which contain other nodes are reported as branch.
-//
 // It's method are designed to be used directly inside the functions for creating and updating a fyne tree.
+//
+// Nodes can be of any type.
+// Nodes that have child nodes are reported as branches. Note that this means there can not be any empty branch nodes.
 type FyneTree[T any] struct {
 	mu     sync.RWMutex
 	ids    map[widget.TreeNodeID][]widget.TreeNodeID
 	values map[widget.TreeNodeID]T
-	id     int
 }
 
 // New returns a new FyneTree object.
@@ -29,11 +30,11 @@ func New[T any]() *FyneTree[T] {
 	return t
 }
 
-// Add adds a node safely and returns it's UID or an error if the parent node does not exist.
+// Add adds a node safely. It returns it's UID or an error if the node can not be added.
 //
 // Use "" as parentUID for adding nodes at the top level.
 // Nodes will be rendered in the same order as they are added.
-func (t *FyneTree[T]) Add(parentUID widget.TreeNodeID, value T) (widget.TreeNodeID, error) {
+func (t *FyneTree[T]) Add(parentUID widget.TreeNodeID, uid widget.TreeNodeID, value T) (widget.TreeNodeID, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if parentUID != "" {
@@ -42,20 +43,18 @@ func (t *FyneTree[T]) Add(parentUID widget.TreeNodeID, value T) (widget.TreeNode
 			return "", fmt.Errorf("parent node does not exist: %s", parentUID)
 		}
 	}
-	t.id++
-	uid := fmt.Sprintf("%s-%d", parentUID, t.id)
 	_, found := t.values[uid]
 	if found {
-		panic(fmt.Sprintf("this node already exists: %v", uid))
+		return "", fmt.Errorf("this node already exists: %v", uid)
 	}
 	t.ids[parentUID] = append(t.ids[parentUID], uid)
 	t.values[uid] = value
 	return uid, nil
 }
 
-// MustAdd is like Add, but panics if it can not be added.
-func (t *FyneTree[T]) MustAdd(parentUID widget.TreeNodeID, value T) widget.TreeNodeID {
-	uid, err := t.Add(parentUID, value)
+// MustAdd is like Add, but panics if adding fails.
+func (t *FyneTree[T]) MustAdd(parentUID widget.TreeNodeID, uid widget.TreeNodeID, value T) widget.TreeNodeID {
+	uid, err := t.Add(parentUID, uid, value)
 	if err != nil {
 		panic(err)
 	}
@@ -84,13 +83,17 @@ func (t *FyneTree[T]) IsBranch(uid widget.TreeNodeID) bool {
 
 // Size returns the number of nodes in the tree
 func (t *FyneTree[T]) Size() int {
-	return t.id
+	return len(t.values)
 }
 
 // Value returns the value of a node or an error if it does not exist.
+//
+// Note that when using this method inside a Fyne widget function it is possible,
+// that a UID forwarded by the widget no longer exists.
+// This error case should be handled gracefully.
 func (t *FyneTree[T]) Value(uid widget.TreeNodeID) (T, error) {
 	var zero T
-	v, ok := t.valueWithTest(uid)
+	v, ok := t.value(uid)
 	if !ok {
 		return zero, fmt.Errorf("node does not exist: %s", uid)
 	}
@@ -108,7 +111,7 @@ func (t *FyneTree[T]) MustValue(uid widget.TreeNodeID) T {
 
 // Value returns the value of a node or a fallback value.
 func (t *FyneTree[T]) ValueWithFallback(uid widget.TreeNodeID, fallback T) T {
-	v, ok := t.valueWithTest(uid)
+	v, ok := t.value(uid)
 	if !ok {
 		return fallback
 	}
@@ -116,7 +119,7 @@ func (t *FyneTree[T]) ValueWithFallback(uid widget.TreeNodeID, fallback T) T {
 }
 
 // Value returns the value of a node and a test flag reporting wether the node exists.
-func (t *FyneTree[T]) valueWithTest(uid widget.TreeNodeID) (T, bool) {
+func (t *FyneTree[T]) value(uid widget.TreeNodeID) (T, bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	v, ok := t.values[uid]
@@ -128,5 +131,4 @@ func (t *FyneTree[T]) initialize() {
 	defer t.mu.Unlock()
 	t.ids = make(map[widget.TreeNodeID][]widget.TreeNodeID)
 	t.values = make(map[widget.TreeNodeID]T)
-	t.id = 0
 }
