@@ -149,7 +149,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 						}
 					}
 					a.ui.refreshOverview()
-					a.ui.toolbarArea.refresh()
+					a.ui.refreshCharacterMenu()
 					return nil
 				}(c.id)
 				if err != nil {
@@ -208,7 +208,7 @@ func (a *accountArea) showAddCharacterDialog() {
 				return err
 			}
 			a.ui.refreshOverview()
-			a.ui.toolbarArea.refresh()
+			a.ui.refreshCharacterMenu()
 			if isFirst {
 				if err := a.ui.setAnyCharacter(); err != nil {
 					return err

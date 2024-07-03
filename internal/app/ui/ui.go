@@ -54,6 +54,7 @@ type ui struct {
 	jumpClonesArea        *jumpClonesArea
 	mailArea              *mailArea
 	mailTab               *container.TabItem
+	characterMenu         *fyne.Menu
 	overviewArea          *overviewArea
 	overviewTab           *container.TabItem
 	sfg                   *singleflight.Group
@@ -63,7 +64,6 @@ type ui struct {
 	skillqueueTab         *container.TabItem
 	shipsArea             *shipsArea
 	statusWindow          fyne.Window
-	toolbarArea           *toolbarArea
 	tabs                  *container.AppTabs
 	themeName             string
 	walletJournalArea     *walletJournalArea
@@ -137,13 +137,15 @@ func NewUI(isDebug bool) *ui {
 		))
 
 	u.statusBarArea = u.newStatusBarArea()
-	u.toolbarArea = u.newToolbarArea()
 
 	u.tabs = container.NewAppTabs(assetsTab, characterTab, u.mailTab, u.skillqueueTab, walletTab, u.overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, nil, u.tabs)
+	mainContent := container.NewBorder(nil, u.statusBarArea.content, nil, nil, u.tabs)
 	w.SetContent(mainContent)
+	menu, characterMenu := makeMenu(u)
+	u.characterMenu = characterMenu
+	w.SetMainMenu(menu)
 	w.SetMaster()
 	return u
 }
@@ -164,6 +166,7 @@ func (u *ui) Init() {
 	} else {
 		u.resetCharacter()
 	}
+
 	keyW := "window-width"
 	width, ok, err := u.DictionaryService.Float32(keyW)
 	if err != nil || !ok {
@@ -295,10 +298,18 @@ func (u *ui) setCharacter(c *app.Character) {
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
+	var s string
+	if c != nil {
+		s = c.EveCharacter.Name
+	} else {
+		s = "[No character]"
+	}
+	u.window.SetTitle(fmt.Sprintf("%s - EVE Buddy", s))
 	u.refreshCharacter()
 }
 
 func (u *ui) refreshCharacter() {
+	u.refreshCharacterMenu()
 	u.assetsArea.redraw()
 	u.assetSearchArea.refresh()
 	u.attributesArea.refresh()
@@ -309,7 +320,6 @@ func (u *ui) refreshCharacter() {
 	u.shipsArea.refresh()
 	u.skillqueueArea.refresh()
 	u.skillCatalogueArea.redraw()
-	u.toolbarArea.refresh()
 	u.walletJournalArea.refresh()
 	u.walletTransactionArea.refresh()
 	u.wealthArea.refresh()
