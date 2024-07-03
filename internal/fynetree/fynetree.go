@@ -83,6 +83,8 @@ func (t *FyneTree[T]) IsBranch(uid widget.TreeNodeID) bool {
 
 // Size returns the number of nodes in the tree
 func (t *FyneTree[T]) Size() int {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
 	return len(t.values)
 }
 

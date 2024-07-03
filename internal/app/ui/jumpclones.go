@@ -145,39 +145,42 @@ func (a *jumpClonesArea) redraw() {
 }
 
 func (a *jumpClonesArea) updateTreeData() (int, error) {
-	a.treeData.Clear()
-	if !a.ui.hasCharacter() {
-		return 0, nil
-	}
-	clones, err := a.ui.CharacterService.ListCharacterJumpClones(context.TODO(), a.ui.characterID())
-	if err != nil {
-		return 0, err
-	}
-	for _, c := range clones {
-		n := jumpCloneNode{
-			JumpCloneID:  c.JumpCloneID,
-			ImplantCount: len(c.Implants),
-			LocationID:   c.Location.ID,
+	x, err, _ := a.ui.sfg.Do(fmt.Sprintf("updateTreeData-%d", a.ui.characterID()), func() (any, error) {
+		a.treeData.Clear()
+		if !a.ui.hasCharacter() {
+			return 0, nil
 		}
-		// TODO: Refactor to use same location method for all unknown location cases
-		if c.Location.Name != "" {
-			n.LocationName = c.Location.Name
-		} else {
-			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
-			n.IsUnknown = true
+		clones, err := a.ui.CharacterService.ListCharacterJumpClones(context.TODO(), a.ui.characterID())
+		if err != nil {
+			return 0, err
 		}
-		uid := a.treeData.MustAdd("", n.UID(), n)
-		for _, i := range c.Implants {
+		for _, c := range clones {
 			n := jumpCloneNode{
-				JumpCloneID:            c.JumpCloneID,
-				ImplantTypeName:        i.EveType.Name,
-				ImplantTypeID:          i.EveType.ID,
-				ImplantTypeDescription: i.EveType.DescriptionPlain(),
+				JumpCloneID:  c.JumpCloneID,
+				ImplantCount: len(c.Implants),
+				LocationID:   c.Location.ID,
 			}
-			a.treeData.MustAdd(uid, n.UID(), n)
+			// TODO: Refactor to use same location method for all unknown location cases
+			if c.Location.Name != "" {
+				n.LocationName = c.Location.Name
+			} else {
+				n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
+				n.IsUnknown = true
+			}
+			uid := a.treeData.MustAdd("", n.UID(), n)
+			for _, i := range c.Implants {
+				n := jumpCloneNode{
+					JumpCloneID:            c.JumpCloneID,
+					ImplantTypeName:        i.EveType.Name,
+					ImplantTypeID:          i.EveType.ID,
+					ImplantTypeDescription: i.EveType.DescriptionPlain(),
+				}
+				a.treeData.MustAdd(uid, n.UID(), n)
+			}
 		}
-	}
-	return len(clones), nil
+		return len(clones), nil
+	})
+	return x.(int), err
 }
 
 func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance) {

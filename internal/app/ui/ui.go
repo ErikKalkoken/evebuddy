@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
@@ -55,6 +56,7 @@ type ui struct {
 	mailTab               *container.TabItem
 	overviewArea          *overviewArea
 	overviewTab           *container.TabItem
+	sfg                   *singleflight.Group
 	statusBarArea         *statusBarArea
 	skillCatalogueArea    *skillCatalogueArea
 	skillqueueArea        *skillqueueArea
@@ -77,6 +79,7 @@ func NewUI(isDebug bool) *ui {
 	u := &ui{
 		fyneApp: fyneApp,
 		isDebug: isDebug,
+		sfg:     new(singleflight.Group),
 		window:  w,
 	}
 
