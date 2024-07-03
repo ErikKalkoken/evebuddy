@@ -185,6 +185,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 			6: {a.ui.skillTab, 1},
 			7: {a.ui.skillTab, 0},
 			8: {a.ui.walletTab, 0},
+			9: {a.ui.assetTab, 0},
 		}
 		selected, ok := m[tci.Col]
 		if ok {
@@ -194,8 +195,9 @@ func (a *overviewArea) makeTable() *widget.Table {
 			a.ui.tabs.Select(selected.tab)
 			t := selected.tab.Content.(*container.AppTabs)
 			t.SelectIndex(selected.childIndex)
+			return
 		}
-		if tci.Col == 9 {
+		if tci.Col == 10 {
 			if c.location != nil {
 				a.ui.showLocationInfoWindow(c.location.ID)
 			}
@@ -205,7 +207,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 				a.ui.showTypeInfoWindow(c.ship.ID, a.ui.characterID())
 			}
 		}
-		if tci.Col == 16 {
+		if tci.Col == 15 {
 			if c.home != nil {
 				a.ui.showLocationInfoWindow(c.home.ID)
 			}

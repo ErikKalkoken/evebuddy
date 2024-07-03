@@ -12,7 +12,7 @@ func (u *ui) showAboutDialog() {
 	c := container.NewVBox()
 	info := u.fyneApp.Metadata()
 	appData := widget.NewRichTextFromMarkdown(
-		"## " + appName(u.fyneApp) + "\n**Version:** " + info.Version)
+		"## " + u.appName() + "\n**Version:** " + info.Version)
 	c.Add(appData)
 	uri, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
 	c.Add(widget.NewHyperlink("Website", uri))

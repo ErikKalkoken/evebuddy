@@ -60,7 +60,7 @@ func (u *ui) showStatusWindow() {
 	if err := sw.refresh(); err != nil {
 		panic(err)
 	}
-	w := u.fyneApp.NewWindow("Status")
+	w := u.fyneApp.NewWindow(u.makeWindowTitle("Status"))
 	w.SetContent(sw.content)
 	w.Resize(fyne.Size{Width: 1100, Height: 500})
 	w.Show()

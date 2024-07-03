@@ -68,6 +68,7 @@ type ui struct {
 	wealthArea            *wealthArea
 	window                fyne.Window
 
+	assetTab     *container.TabItem
 	characterTab *container.TabItem
 	mailTab      *container.TabItem
 	overviewTab  *container.TabItem
@@ -79,20 +80,12 @@ type ui struct {
 // NewUI build the UI and returns it.
 func NewUI(isDebug bool) *ui {
 	fyneApp := fyneapp.New()
-	w := fyneApp.NewWindow(appName(fyneApp))
 	u := &ui{
 		fyneApp: fyneApp,
 		isDebug: isDebug,
 		sfg:     new(singleflight.Group),
-		window:  w,
+		window:  fyneApp.NewWindow(""),
 	}
-
-	u.assetsArea = u.newAssetsArea()
-	assetsTab := container.NewTabItemWithIcon("Assets",
-		theme.NewThemedResource(resourceInventory2Svg), container.NewAppTabs(
-			container.NewTabItem("Assets", u.assetsArea.content),
-		))
-
 	u.attributesArea = u.newAttributesArena()
 	u.biographyArea = u.newBiographyArea()
 	u.jumpClonesArea = u.NewJumpClonesArea()
@@ -103,6 +96,12 @@ func NewUI(isDebug bool) *ui {
 			container.NewTabItem("Jump Clones", u.jumpClonesArea.content),
 			container.NewTabItem("Attributes", u.attributesArea.content),
 			container.NewTabItem("Biography", u.biographyArea.content),
+		))
+
+	u.assetsArea = u.newAssetsArea()
+	u.assetTab = container.NewTabItemWithIcon("Assets",
+		theme.NewThemedResource(resourceInventory2Svg), container.NewAppTabs(
+			container.NewTabItem("Assets", u.assetsArea.content),
 		))
 
 	u.mailArea = u.newMailArea()
@@ -142,15 +141,15 @@ func NewUI(isDebug bool) *ui {
 
 	u.statusBarArea = u.newStatusBarArea()
 
-	u.tabs = container.NewAppTabs(u.characterTab, assetsTab, u.mailTab, u.skillTab, u.walletTab, u.overviewTab)
+	u.tabs = container.NewAppTabs(u.characterTab, u.assetTab, u.mailTab, u.skillTab, u.walletTab, u.overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	mainContent := container.NewBorder(nil, u.statusBarArea.content, nil, nil, u.tabs)
-	w.SetContent(mainContent)
+	u.window.SetContent(mainContent)
 	menu, characterMenu := makeMenu(u)
 	u.characterMenu = characterMenu
-	w.SetMainMenu(menu)
-	w.SetMaster()
+	u.window.SetMainMenu(menu)
+	u.window.SetMaster()
 	return u
 }
 
@@ -298,25 +297,25 @@ func (u *ui) loadCharacter(ctx context.Context, characterID int32) error {
 
 func (u *ui) setCharacter(c *app.Character) {
 	u.character = c
-	err := u.DictionaryService.SetInt(app.SettingLastCharacterID, int(c.ID))
-	if err != nil {
-		slog.Error("Failed to update last character setting", "characterID", c.ID)
-	}
 	var s string
 	if c != nil {
 		s = c.EveCharacter.Name
 	} else {
 		s = "[No character]"
 	}
-	u.window.SetTitle(fmt.Sprintf("%s - EVE Buddy", s))
+	u.window.SetTitle(fmt.Sprintf("%s - %s", s, u.appName()))
 	if c != nil {
 		r, _ := u.EveImageService.CharacterPortrait(c.ID, 128)
 		u.characterTab.Icon = r
 	} else {
 		u.characterTab.Icon = resourceCharacterplaceholder32Jpeg
 	}
-	u.tabs.Refresh()
 	u.refreshCharacter()
+	u.tabs.Refresh()
+	err := u.DictionaryService.SetInt(app.SettingLastCharacterID, int(c.ID))
+	if err != nil {
+		slog.Error("Failed to update last character setting", "characterID", c.ID)
+	}
 }
 
 func (u *ui) refreshCharacter() {
@@ -395,11 +394,15 @@ func (u *ui) showErrorDialog(message string, err error) {
 	d.Show()
 }
 
-func appName(a fyne.App) string {
-	info := a.Metadata()
+func (u *ui) appName() string {
+	info := u.fyneApp.Metadata()
 	name := info.Name
 	if name == "" {
 		return "EVE Buddy"
 	}
 	return name
+}
+
+func (u *ui) makeWindowTitle(subTitle string) string {
+	return fmt.Sprintf("%s - %s", subTitle, u.appName())
 }
