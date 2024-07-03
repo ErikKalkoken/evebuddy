@@ -64,26 +64,51 @@ func (u *ui) newOverviewArea() *overviewArea {
 
 func (a *overviewArea) makeTable() *widget.Table {
 	var headers = []struct {
-		text  string
-		width float32
+		text   string
+		width  float32
+		action func(overviewCharacter)
 	}{
-		{"Name", 200},
-		{"Corporation", 200},
-		{"Alliance", 200},
-		{"Security", 80},
-		{"Unread", 80},
-		{"Total SP", 80},
-		{"Unall. SP", 80},
-		{"Training", 80},
-		{"Wallet", 80},
-		{"Assets", 80},
-		{"Location", 150},
-		{"System", 150},
-		{"Region", 150},
-		{"Ship", 150},
-		{"Last Login", 100},
-		{"Home", 150},
-		{"Age", 100},
+		{"Name", 200, nil},
+		{"Corporation", 200, nil},
+		{"Alliance", 200, nil},
+		{"Security", 80, nil},
+		{"Unread", 80, func(oc overviewCharacter) {
+			a.ui.selectCharacterAndTab(oc.id, a.ui.mailTab, 0)
+		}},
+		{"Total SP", 80, func(oc overviewCharacter) {
+			a.ui.selectCharacterAndTab(oc.id, a.ui.skillTab, 1)
+		}},
+		{"Unall. SP", 80, func(oc overviewCharacter) {
+			a.ui.selectCharacterAndTab(oc.id, a.ui.skillTab, 1)
+		}},
+		{"Training", 80, func(oc overviewCharacter) {
+			a.ui.selectCharacterAndTab(oc.id, a.ui.skillTab, 0)
+		}},
+		{"Wallet", 80, func(oc overviewCharacter) {
+			a.ui.selectCharacterAndTab(oc.id, a.ui.walletTab, 0)
+		}},
+		{"Assets", 80, func(oc overviewCharacter) {
+			a.ui.selectCharacterAndTab(oc.id, a.ui.assetTab, 0)
+		}},
+		{"Location", 150, func(oc overviewCharacter) {
+			if oc.location != nil {
+				a.ui.showLocationInfoWindow(oc.location.ID)
+			}
+		}},
+		{"System", 150, nil},
+		{"Region", 150, nil},
+		{"Ship", 150, func(oc overviewCharacter) {
+			if oc.ship != nil {
+				a.ui.showTypeInfoWindow(oc.ship.ID, a.ui.characterID())
+			}
+		}},
+		{"Last Login", 100, nil},
+		{"Home", 150, func(oc overviewCharacter) {
+			if oc.home != nil {
+				a.ui.showLocationInfoWindow(oc.home.ID)
+			}
+		}},
+		{"Age", 100, nil},
 	}
 
 	t := widget.NewTable(
@@ -166,51 +191,24 @@ func (a *overviewArea) makeTable() *widget.Table {
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		s := headers[tci.Col]
-		co.(*widget.Label).SetText(s.text)
+		label := co.(*widget.Label)
+		label.Text = s.text
+		if headers[tci.Col].action != nil {
+			label.Importance = widget.HighImportance
+		} else {
+			label.Importance = widget.MediumImportance
+		}
+		label.Refresh()
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
-		ctx := context.TODO()
 		c, err := getItemUntypedList[overviewCharacter](a.characters, tci.Row)
 		if err != nil {
-			slog.Error("Failed to select character", "err", err)
+			slog.Error("Failed to retrieve overview character", "err", err)
 			return
 		}
-		m := map[int]struct {
-			tab        *container.TabItem
-			childIndex int
-		}{
-			4: {a.ui.mailTab, 0},
-			5: {a.ui.skillTab, 1},
-			6: {a.ui.skillTab, 1},
-			7: {a.ui.skillTab, 0},
-			8: {a.ui.walletTab, 0},
-			9: {a.ui.assetTab, 0},
-		}
-		selected, ok := m[tci.Col]
-		if ok {
-			if err := a.ui.loadCharacter(ctx, c.id); err != nil {
-				panic(err)
-			}
-			a.ui.tabs.Select(selected.tab)
-			t := selected.tab.Content.(*container.AppTabs)
-			t.SelectIndex(selected.childIndex)
-			return
-		}
-		if tci.Col == 10 {
-			if c.location != nil {
-				a.ui.showLocationInfoWindow(c.location.ID)
-			}
-		}
-		if tci.Col == 13 {
-			if c.ship != nil {
-				a.ui.showTypeInfoWindow(c.ship.ID, a.ui.characterID())
-			}
-		}
-		if tci.Col == 15 {
-			if c.home != nil {
-				a.ui.showLocationInfoWindow(c.home.ID)
-			}
+		if action := headers[tci.Col].action; action != nil {
+			action(c)
 		}
 	}
 
@@ -218,6 +216,15 @@ func (a *overviewArea) makeTable() *widget.Table {
 		t.SetColumnWidth(i, h.width)
 	}
 	return t
+}
+
+func (u *ui) selectCharacterAndTab(characterID int32, tab *container.TabItem, subIndex int) {
+	if err := u.loadCharacter(context.TODO(), characterID); err != nil {
+		panic(err)
+	}
+	u.tabs.Select(tab)
+	t := tab.Content.(*container.AppTabs)
+	t.SelectIndex(subIndex)
 }
 
 func (a *overviewArea) refresh() {
