@@ -177,22 +177,23 @@ func (a *overviewArea) makeTable() *widget.Table {
 			return
 		}
 		m := map[int]struct {
-			parent, child int
+			tab        *container.TabItem
+			childIndex int
 		}{
-			4: {2, 0},
-			5: {3, 1},
-			6: {3, 1},
-			7: {3, 0},
-			8: {4, 0},
+			4: {a.ui.mailTab, 0},
+			5: {a.ui.skillTab, 1},
+			6: {a.ui.skillTab, 1},
+			7: {a.ui.skillTab, 0},
+			8: {a.ui.walletTab, 0},
 		}
-		idx, ok := m[tci.Col]
+		selected, ok := m[tci.Col]
 		if ok {
 			if err := a.ui.loadCharacter(ctx, c.id); err != nil {
 				panic(err)
 			}
-			a.ui.tabs.SelectIndex(idx.parent)
-			t := a.ui.tabs.Items[idx.parent].Content.(*container.AppTabs)
-			t.SelectIndex(idx.child)
+			a.ui.tabs.Select(selected.tab)
+			t := selected.tab.Content.(*container.AppTabs)
+			t.SelectIndex(selected.childIndex)
 		}
 		if tci.Col == 9 {
 			if c.location != nil {

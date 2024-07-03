@@ -124,7 +124,7 @@ func (a *skillqueueArea) refresh() {
 		if !completion.IsEmpty() && completion.ValueOrZero() < 1 {
 			s += fmt.Sprintf(" (%.0f%%)", completion.MustValue()*100)
 		}
-		a.ui.skillqueueTab.Text = s
+		a.ui.skillTab.Text = s
 		a.ui.tabs.Refresh()
 		t, i = a.makeTopText(total)
 	}

@@ -18,6 +18,7 @@ func makeMenu(u *ui) (*fyne.MainMenu, *fyne.Menu) {
 		fyne.NewMenuItem("Manage...", func() {
 			u.showAccountDialog()
 		}),
+		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("Switch", nil),
 	)
 	helpMenu := fyne.NewMenu("Help",
@@ -25,6 +26,11 @@ func makeMenu(u *ui) (*fyne.MainMenu, *fyne.Menu) {
 			url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
 			_ = u.fyneApp.OpenURL(url)
 		}),
+		fyne.NewMenuItem("Report a bug", func() {
+			url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy/issues")
+			_ = u.fyneApp.OpenURL(url)
+		}),
+		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("About...", func() {
 			u.showAboutDialog()
 		}),
@@ -34,7 +40,7 @@ func makeMenu(u *ui) (*fyne.MainMenu, *fyne.Menu) {
 }
 
 func (u *ui) refreshCharacterMenu() error {
-	switchItem := u.characterMenu.Items[1]
+	switchItem := u.characterMenu.Items[2]
 	switchItem.ChildMenu = fyne.NewMenu("")
 	currentCharacterID := u.characterID()
 	ctx := context.TODO()

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"log/slog"
 	"runtime"
 	"time"
@@ -53,23 +54,26 @@ type ui struct {
 	implantsArea          *implantsArea
 	jumpClonesArea        *jumpClonesArea
 	mailArea              *mailArea
-	mailTab               *container.TabItem
 	characterMenu         *fyne.Menu
 	overviewArea          *overviewArea
-	overviewTab           *container.TabItem
 	sfg                   *singleflight.Group
 	statusBarArea         *statusBarArea
 	skillCatalogueArea    *skillCatalogueArea
 	skillqueueArea        *skillqueueArea
-	skillqueueTab         *container.TabItem
 	shipsArea             *shipsArea
 	statusWindow          fyne.Window
-	tabs                  *container.AppTabs
 	themeName             string
 	walletJournalArea     *walletJournalArea
 	walletTransactionArea *walletTransactionArea
 	wealthArea            *wealthArea
 	window                fyne.Window
+
+	characterTab *container.TabItem
+	mailTab      *container.TabItem
+	overviewTab  *container.TabItem
+	skillTab     *container.TabItem
+	walletTab    *container.TabItem
+	tabs         *container.AppTabs
 }
 
 // NewUI build the UI and returns it.
@@ -93,8 +97,8 @@ func NewUI(isDebug bool) *ui {
 	u.biographyArea = u.newBiographyArea()
 	u.jumpClonesArea = u.NewJumpClonesArea()
 	u.implantsArea = u.newImplantsArea()
-	characterTab := container.NewTabItemWithIcon("Character",
-		theme.NewThemedResource(resourcePortraitSvg), container.NewAppTabs(
+	u.characterTab = container.NewTabItemWithIcon("Character",
+		resourceCharacterplaceholder32Jpeg, container.NewAppTabs(
 			container.NewTabItem("Augmentations", u.implantsArea.content),
 			container.NewTabItem("Jump Clones", u.jumpClonesArea.content),
 			container.NewTabItem("Attributes", u.attributesArea.content),
@@ -121,7 +125,7 @@ func NewUI(isDebug bool) *ui {
 	u.skillqueueArea = u.newSkillqueueArea()
 	u.skillCatalogueArea = u.newSkillCatalogueArea()
 	u.shipsArea = u.newShipArea()
-	u.skillqueueTab = container.NewTabItemWithIcon("Skills",
+	u.skillTab = container.NewTabItemWithIcon("Skills",
 		theme.NewThemedResource(resourceSchoolSvg), container.NewAppTabs(
 			container.NewTabItem("Training Queue", u.skillqueueArea.content),
 			container.NewTabItem("Skill Catalogue", u.skillCatalogueArea.content),
@@ -130,7 +134,7 @@ func NewUI(isDebug bool) *ui {
 
 	u.walletJournalArea = u.newWalletJournalArea()
 	u.walletTransactionArea = u.newWalletTransactionArea()
-	walletTab := container.NewTabItemWithIcon("Wallet",
+	u.walletTab = container.NewTabItemWithIcon("Wallet",
 		theme.NewThemedResource(resourceAttachmoneySvg), container.NewAppTabs(
 			container.NewTabItem("Transactions", u.walletJournalArea.content),
 			container.NewTabItem("Market Transactions", u.walletTransactionArea.content),
@@ -138,7 +142,7 @@ func NewUI(isDebug bool) *ui {
 
 	u.statusBarArea = u.newStatusBarArea()
 
-	u.tabs = container.NewAppTabs(assetsTab, characterTab, u.mailTab, u.skillqueueTab, walletTab, u.overviewTab)
+	u.tabs = container.NewAppTabs(u.characterTab, assetsTab, u.mailTab, u.skillTab, u.walletTab, u.overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	mainContent := container.NewBorder(nil, u.statusBarArea.content, nil, nil, u.tabs)
@@ -305,11 +309,20 @@ func (u *ui) setCharacter(c *app.Character) {
 		s = "[No character]"
 	}
 	u.window.SetTitle(fmt.Sprintf("%s - EVE Buddy", s))
+	if c != nil {
+		r, _ := u.EveImageService.CharacterPortrait(c.ID, 128)
+		u.characterTab.Icon = r
+	} else {
+		u.characterTab.Icon = resourceCharacterplaceholder32Jpeg
+	}
+	u.tabs.Refresh()
 	u.refreshCharacter()
 }
 
 func (u *ui) refreshCharacter() {
-	u.refreshCharacterMenu()
+	if err := u.refreshCharacterMenu(); err != nil {
+		log.Fatalf("failed to refresh character menu: %s", err)
+	}
 	u.assetsArea.redraw()
 	u.assetSearchArea.refresh()
 	u.attributesArea.refresh()
