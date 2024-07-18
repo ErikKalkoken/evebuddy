@@ -20,7 +20,7 @@ type MailHeaderItem struct {
 }
 
 func NewMailHeaderItem(timeFormat string) *MailHeaderItem {
-	foregroundColor := theme.ForegroundColor()
+	foregroundColor := theme.Color(theme.ColorNameForeground)
 	w := &MailHeaderItem{
 		from:       canvas.NewText("xxxxxxxxxxxxxxx", foregroundColor),
 		subject:    canvas.NewText("xxxxxxxxxxxxxxx", foregroundColor),
@@ -33,7 +33,7 @@ func NewMailHeaderItem(timeFormat string) *MailHeaderItem {
 }
 
 func (w *MailHeaderItem) Set(from, subject string, timestamp time.Time, isRead bool) {
-	fg := theme.ForegroundColor()
+	fg := theme.Color(theme.ColorNameForeground)
 	w.from.Text = from
 	w.from.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.from.Color = fg
@@ -52,9 +52,9 @@ func (w *MailHeaderItem) Set(from, subject string, timestamp time.Time, isRead b
 
 func (w *MailHeaderItem) SetError(s string) {
 	w.from.Text = "ERROR"
-	w.subject.Color = theme.ErrorColor()
+	w.subject.Color = theme.Color(theme.ColorNameError)
 	w.subject.Text = s
-	w.subject.Color = theme.ErrorColor()
+	w.subject.Color = theme.Color(theme.ColorNameError)
 	w.subject.Refresh()
 }
 

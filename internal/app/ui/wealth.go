@@ -63,8 +63,8 @@ func (a *wealthArea) refresh() {
 		return
 	}
 	cb := chartbuilder.New()
-	cb.ForegroundColor = theme.ForegroundColor()
-	cb.BackgroundColor = theme.BackgroundColor()
+	cb.ForegroundColor = theme.Color(theme.ColorNameForeground)
+	cb.BackgroundColor = theme.Color(theme.ColorNameBackground)
 	f := theme.DefaultTextFont().Content()
 	font, err := truetype.Parse(f)
 	if err != nil {

@@ -200,7 +200,7 @@ func (a *statusWindow) makeSectionTable() *widget.GridWrap {
 	l := widget.NewGridWrapWithData(
 		a.sectionsData,
 		func() fyne.CanvasObject {
-			pb := widget.NewProgressBarInfinite()
+			pb := widget.NewActivity()
 			pb.Stop()
 			return container.NewHBox(
 				widget.NewLabel("Section name long"),
@@ -223,7 +223,7 @@ func (a *statusWindow) makeSectionTable() *widget.GridWrap {
 			status.Importance = i
 			status.Refresh()
 
-			pb := hbox.Objects[1].(*widget.ProgressBarInfinite)
+			pb := hbox.Objects[1].(*widget.Activity)
 			if cs.IsRunning() {
 				pb.Start()
 				pb.Show()
