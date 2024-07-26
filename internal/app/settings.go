@@ -2,17 +2,18 @@ package app
 
 // Setting keys
 const (
-	SettingLastCharacterID       = "settings-lastCharacterID"
-	SettingMaxMails              = "settings-maxMails"
-	SettingMaxWalletTransactions = "settings-maxWalletTransactions"
-	SettingTheme                 = "settings-theme"
-	ThemeAuto                    = "Auto"
-	ThemeDark                    = "Dark"
-	ThemeLight                   = "Light"
+	SettingLastCharacterID              = "settings-lastCharacterID"
+	SettingMaxMails                     = "settings-maxMails"
+	SettingMaxMailsDefault              = 1_000
+	SettingMaxWalletTransactions        = "settings-maxWalletTransactions"
+	SettingMaxWalletTransactionsDefault = 10_000
+	SettingTheme                        = "settings-theme"
+	SettingThemeDefault                 = ThemeAuto
 )
 
-// Default settings
+// Themes
 const (
-	SettingMaxMailsDefault              = 1_000
-	SettingMaxWalletTransactionsDefault = 10_000
+	ThemeAuto  = "Auto"
+	ThemeDark  = "Dark"
+	ThemeLight = "Light"
 )

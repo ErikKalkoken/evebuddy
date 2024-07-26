@@ -25,7 +25,7 @@ type DictionaryService interface {
 	SetFloat64(key string, value float64) error
 	SetInt(string, int) error
 	SetString(string, string) error
-	String(string) (string, bool, error)
+	StringWithFallback(string, string) (string, error)
 }
 
 type EveImageService interface {

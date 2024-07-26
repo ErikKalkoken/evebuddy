@@ -206,7 +206,7 @@ func TestDictionary(t *testing.T) {
 			assert.True(t, v)
 		}
 	})
-	t.Run("should return fallback when key does not exist", func(t *testing.T) {
+	t.Run("should return int fallback when key does not exist", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
@@ -216,7 +216,7 @@ func TestDictionary(t *testing.T) {
 			assert.Equal(t, 7, v)
 		}
 	})
-	t.Run("should return value when key does exists", func(t *testing.T) {
+	t.Run("should return int value when key does exists", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		if err := s.SetInt("alpha", 42); err != nil {
@@ -227,6 +227,30 @@ func TestDictionary(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, 42, v)
+		}
+	})
+
+	t.Run("should return string fallback when key does not exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		// when
+		v, err := s.StringWithFallback("alpha", "nope")
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, "nope", v)
+		}
+	})
+	t.Run("should return string value when key does exists", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		if err := s.SetString("alpha", "yup"); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		v, err := s.StringWithFallback("alpha", "nope")
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, "yup", v)
 		}
 	})
 }

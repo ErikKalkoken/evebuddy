@@ -218,9 +218,9 @@ func (u *ui) Init() {
 		}
 	})
 
-	name, ok, err := u.DictionaryService.String(app.SettingTheme)
-	if err != nil || !ok {
-		name = app.ThemeAuto
+	name, err := u.DictionaryService.StringWithFallback(app.SettingTheme, app.SettingThemeDefault)
+	if err != nil {
+		name = app.SettingThemeDefault
 	}
 	u.themeSet(name)
 }

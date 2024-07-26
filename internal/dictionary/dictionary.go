@@ -96,7 +96,6 @@ func (d *DictionaryService) Float64(key string) (float64, bool, error) {
 }
 
 // String returns the value for a dictionary key, when it exists.
-// Otherwise it returns it's zero value.
 func (d *DictionaryService) String(key string) (string, bool, error) {
 	ctx := context.TODO()
 	data, ok, err := d.st.GetDictEntry(ctx, key)
@@ -107,6 +106,18 @@ func (d *DictionaryService) String(key string) (string, bool, error) {
 		return "", false, nil
 	}
 	return anyFromBytes[string](data)
+}
+
+// String returns the value for a dictionary key or the fallback.
+func (d *DictionaryService) StringWithFallback(key string, fallback string) (string, error) {
+	v, ok, err := d.String(key)
+	if err != nil {
+		return "", err
+	}
+	if !ok {
+		return fallback, nil
+	}
+	return v, nil
 }
 
 // Time returns the value for a dictionary key, when it exists.

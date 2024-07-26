@@ -66,10 +66,11 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	themeRadio := widget.NewRadioGroup(
 		[]string{app.ThemeAuto, app.ThemeDark, app.ThemeLight}, func(s string) {},
 	)
-	name, ok, err := u.DictionaryService.String(app.SettingTheme)
-	if err == nil && ok {
-		themeRadio.SetSelected(name)
+	name, err := u.DictionaryService.StringWithFallback(app.SettingTheme, app.SettingThemeDefault)
+	if err != nil {
+		return nil, err
 	}
+	themeRadio.SetSelected(name)
 
 	var cacheSize string
 	s, err := u.EveImageService.Size()
