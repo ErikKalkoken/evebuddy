@@ -79,8 +79,8 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			icon := hbox.Objects[0].(*canvas.Image)
 			first := hbox.Objects[1].(*widget.Label)
 			second := hbox.Objects[2].(*widget.Label)
-			n, err := a.treeData.Value(uid)
-			if err != nil {
+			n, ok := a.treeData.Value(uid)
+			if !ok {
 				return
 			}
 			if n.IsRoot() {
@@ -112,8 +112,8 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
 		defer t.UnselectAll()
-		n, err := a.treeData.Value(uid)
-		if err != nil {
+		n, ok := a.treeData.Value(uid)
+		if !ok {
 			return
 		}
 		if n.IsRoot() && !n.IsUnknown {

@@ -9,10 +9,12 @@ import (
 
 // FyneTree is a type that holds all data needed to render a Fyne tree widget.
 //
-// It is designed to make it easier and safer to construct and update tree widgets
-// and is safe to use with go routines.
+// It is designed to make it easier to construct the data for tree widgets
+// and it's method are supposed to be used directly inside the functions
+// for creating and updating a fyne tree.
 //
-// It's method are designed to be used directly inside the functions for creating and updating a fyne tree.
+// When updating an existing tree, please always create a new object
+// and then replace the old object which is used by the tree widget.
 //
 // Nodes can be of any type.
 // Nodes that have child nodes are reported as branches. Note that this means there can not be any empty branch nodes.
@@ -73,26 +75,22 @@ func (t *FyneTree[T]) Size() int {
 	return len(t.values)
 }
 
-// Value returns the value of a node or an error if it does not exist.
+// Value returns the value of a node and reports wether the node exists
 //
-// Note that when using this method inside a Fyne widget function it is possible,
-// that a UID forwarded by the widget no longer exists.
-// This error case should be handled gracefully.
-func (t *FyneTree[T]) Value(uid widget.TreeNodeID) (T, error) {
-	var zero T
-	v, ok := t.value(uid)
-	if !ok {
-		return zero, fmt.Errorf("node does not exist: %s", uid)
-	}
-	return v, nil
+// Note that when using this method with a Fyne widget it is possible,
+// that a UID forwarded by the widget no longer exists due to race conditions.
+// It is therefore recommended to always check the ok value.
+func (t *FyneTree[T]) Value(uid widget.TreeNodeID) (value T, ok bool) {
+	value, ok = t.value(uid)
+	return
 }
 
 // MustValue returns the value of a node or panics if the node does not exist.
 // This method mainly exists to simplify test code and should not be used in production code.
 func (t *FyneTree[T]) MustValue(uid widget.TreeNodeID) T {
-	v, err := t.Value(uid)
-	if err != nil {
-		panic(err)
+	v, ok := t.Value(uid)
+	if !ok {
+		panic("node does not exist")
 	}
 	return v
 }

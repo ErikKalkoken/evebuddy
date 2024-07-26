@@ -91,15 +91,15 @@ func TestFyneTreeValue(t *testing.T) {
 	t.Run("should return value when a node exists", func(t *testing.T) {
 		tree := fynetree.New[string]()
 		uid := tree.MustAdd("", "1", "Alpha")
-		v, err := tree.Value(uid)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "Alpha", v)
-		}
+		v, ok := tree.Value(uid)
+		assert.True(t, ok)
+		assert.Equal(t, "Alpha", v)
+
 	})
-	t.Run("should return error when node does not exist", func(t *testing.T) {
+	t.Run("should report when node does not exist", func(t *testing.T) {
 		tree := fynetree.New[string]()
-		_, err := tree.Value("invalid")
-		assert.Error(t, err)
+		_, ok := tree.Value("invalid")
+		assert.False(t, ok)
 	})
 	t.Run("should panic when node does not exist", func(t *testing.T) {
 		tree := fynetree.New[string]()
