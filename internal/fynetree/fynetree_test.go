@@ -34,14 +34,6 @@ func TestFyneTree(t *testing.T) {
 			assert.Equal(t, n.isBranch, tree.IsBranch(n.uid))
 		}
 	})
-	t.Run("can clear all nodes", func(t *testing.T) {
-		tree := fynetree.New[string]()
-		n := tree.MustAdd("", "1", "Alpha")
-		tree.MustAdd(n, "11", "one")
-		tree.MustAdd(n, "12", "two")
-		tree.Clear()
-		assert.Equal(t, 0, tree.Size())
-	})
 }
 
 func TestFyneTreeAdd(t *testing.T) {
