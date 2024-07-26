@@ -3,6 +3,7 @@ package widgets
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -11,27 +12,55 @@ type TappableImage struct {
 	widget.BaseWidget
 	image *canvas.Image
 
+	// The function that is called when the label is tapped.
 	OnTapped func()
+
+	hovered bool
 }
+
+var _ fyne.Tappable = (*TappableImage)(nil)
+var _ desktop.Hoverable = (*TappableImage)(nil)
 
 func NewTappableImage(res fyne.Resource, fillMode canvas.ImageFill, tapped func()) *TappableImage {
-	w := &TappableImage{OnTapped: tapped, image: canvas.NewImageFromResource(res)}
-	w.image.FillMode = fillMode
-	w.ExtendBaseWidget(w)
-	return w
+	ti := &TappableImage{OnTapped: tapped, image: canvas.NewImageFromResource(res)}
+	ti.image.FillMode = fillMode
+	ti.ExtendBaseWidget(ti)
+	return ti
 }
 
-func (w *TappableImage) SetMinSize(size fyne.Size) {
-	w.image.SetMinSize(size)
+func (ti *TappableImage) SetMinSize(size fyne.Size) {
+	ti.image.SetMinSize(size)
 }
 
-func (w *TappableImage) Tapped(_ *fyne.PointEvent) {
-	w.OnTapped()
+func (ti *TappableImage) Tapped(_ *fyne.PointEvent) {
+	ti.OnTapped()
 }
 
-func (w *TappableImage) TappedSecondary(_ *fyne.PointEvent) {
+func (ti *TappableImage) TappedSecondary(_ *fyne.PointEvent) {
 }
 
-func (w *TappableImage) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(w.image)
+// Cursor returns the cursor type of this widget
+func (ti *TappableImage) Cursor() desktop.Cursor {
+	if ti.hovered {
+		return desktop.PointerCursor
+	}
+	return desktop.DefaultCursor
+}
+
+// MouseIn is a hook that is called if the mouse pointer enters the element.
+func (ti *TappableImage) MouseIn(e *desktop.MouseEvent) {
+	ti.hovered = true
+}
+
+func (ti *TappableImage) MouseMoved(*desktop.MouseEvent) {
+	// needed to satisfy the interface only
+}
+
+// MouseOut is a hook that is called if the mouse pointer leaves the element.
+func (ti *TappableImage) MouseOut() {
+	ti.hovered = false
+}
+
+func (ti *TappableImage) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(ti.image)
 }

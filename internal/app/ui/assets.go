@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -19,6 +19,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/dustin/go-humanize"
 )
 
@@ -63,22 +64,24 @@ var defaultAssetIcon = theme.NewDisabledResource(resourceQuestionmarkSvg)
 
 // assetsArea is the UI area that shows the skillqueue
 type assetsArea struct {
-	content         fyne.CanvasObject
-	assets          *widget.GridWrap
-	assetsData      binding.UntypedList
-	assetsTop       *widget.Label
-	assetsBottom    *widget.Label
-	locationsWidget *widget.Tree
-	locationsData   *fynetree.FyneTree[locationDataNode]
-	locationsTop    *widget.Label
-	assetCollection assetcollection.AssetCollection
-	ui              *ui
+	content          fyne.CanvasObject
+	assets           *widget.GridWrap
+	assetsData       binding.UntypedList
+	locationPath     *fyne.Container
+	assetsBottom     *widget.Label
+	locationsWidget  *widget.Tree
+	locationsData    *fynetree.FyneTree[locationDataNode]
+	locationsTop     *widget.Label
+	selectedLocation optional.Optional[locationDataNode]
+	assetCollection  assetcollection.AssetCollection
+	ui               *ui
 }
 
 func (u *ui) newAssetsArea() *assetsArea {
+	myHBox := layout.NewCustomPaddedHBoxLayout(-5)
 	a := assetsArea{
 		assetsData:    binding.NewUntypedList(),
-		assetsTop:     widget.NewLabel(""),
+		locationPath:  container.New(myHBox),
 		assetsBottom:  widget.NewLabel(""),
 		locationsData: fynetree.New[locationDataNode](),
 		locationsTop:  widget.NewLabel(""),
@@ -86,12 +89,17 @@ func (u *ui) newAssetsArea() *assetsArea {
 	}
 	a.locationsTop.TextStyle.Bold = true
 	a.locationsWidget = a.makeLocationsTree()
-	locations := container.NewBorder(container.NewVBox(a.locationsTop, widget.NewSeparator()), nil, nil, nil, a.locationsWidget)
+	locations := container.NewBorder(
+		container.NewVBox(a.locationsTop, widget.NewSeparator()),
+		nil,
+		nil,
+		nil,
+		a.locationsWidget,
+	)
 
-	a.assetsTop.TextStyle.Bold = true
-	a.assets = u.makeAssetGrid(a.assetsData)
+	a.assets = a.makeAssetGrid()
 	assets := container.NewBorder(
-		container.NewVBox(a.assetsTop, widget.NewSeparator()),
+		container.NewVBox(a.locationPath, widget.NewSeparator()),
 		container.NewVBox(widget.NewSeparator(), a.assetsBottom),
 		nil,
 		nil,
@@ -145,11 +153,64 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 		if !ok {
 			return
 		}
-		if err := a.redrawAssets(n); err != nil {
+		if err := a.selectLocation(n); err != nil {
 			slog.Warn("Failed to redraw assets", "err", err)
 		}
 	}
 	return t
+}
+
+func (a *assetsArea) clearAssets() error {
+	empty := make([]*app.CharacterAsset, 0)
+	if err := a.assetsData.Set(copyToUntypedSlice(empty)); err != nil {
+		return err
+	}
+	a.locationPath.RemoveAll()
+	a.selectedLocation.Clear()
+	return nil
+}
+
+func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
+	g := widget.NewGridWrapWithData(
+		a.assetsData,
+		func() fyne.CanvasObject {
+			return widgets.NewAssetListWidget(a.ui.EveImageService, defaultAssetIcon)
+		},
+		func(di binding.DataItem, co fyne.CanvasObject) {
+			ca, err := convertDataItem[*app.CharacterAsset](di)
+			if err != nil {
+				panic(err)
+			}
+			item := co.(*widgets.AssetListWidget)
+			item.SetAsset(ca)
+		},
+	)
+	g.OnSelected = func(id widget.GridWrapItemID) {
+		defer g.UnselectAll()
+		ca, err := getItemUntypedList[*app.CharacterAsset](a.assetsData, id)
+		if err != nil {
+			slog.Error("failed to access assets in grid", "err", err)
+			return
+		}
+		if ca.IsContainer() {
+			if a.selectedLocation.IsEmpty() {
+				return
+			}
+			location := a.selectedLocation.ValueOrZero()
+			for _, uid := range a.locationsData.ChildUIDs(location.UID()) {
+				n, ok := a.locationsData.Value(uid)
+				if !ok {
+					continue
+				}
+				if n.ContainerID == ca.ItemID {
+					a.selectLocation(n)
+				}
+			}
+		} else {
+			a.ui.showTypeInfoWindow(ca.EveType.ID, a.ui.characterID())
+		}
+	}
+	return g
 }
 
 func (a *assetsArea) redraw() {
@@ -257,7 +318,7 @@ func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 			ldn := locationDataNode{
 				CharacterID: characterID,
 				ContainerID: an.Asset.ItemID,
-				Name:        fmt.Sprintf("%s (%s)", ship.Name, ship.EveType.Name),
+				Name:        ship.DisplayName2(),
 				Type:        nodeShip,
 			}
 			shipUID := tree.MustAdd(shipsUID, ldn.UID(), ldn)
@@ -335,11 +396,18 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	return fmt.Sprintf("%d locations", total), widget.MediumImportance, nil
 }
 
-func (a *assetsArea) redrawAssets(location locationDataNode) error {
+func (a *assetsArea) selectLocation(location locationDataNode) error {
 	empty := make([]*app.CharacterAsset, 0)
 	if err := a.assetsData.Set(copyToUntypedSlice(empty)); err != nil {
 		return err
 	}
+	a.selectedLocation.Set(location)
+	selectedUID := location.UID()
+	for _, uid := range a.locationsData.Path(selectedUID) {
+		a.locationsWidget.OpenBranch(uid)
+	}
+	a.locationsWidget.ScrollTo(selectedUID)
+	a.locationsWidget.Select(selectedUID)
 	var f func(context.Context, int32, int64) ([]*app.CharacterAsset, error)
 	switch location.Type {
 	case nodeShipHangar:
@@ -391,83 +459,50 @@ func (a *assetsArea) redrawAssets(location locationDataNode) error {
 	for _, ca := range assets {
 		total += ca.Price.ValueOrZero() * float64(ca.Quantity)
 	}
-	names := make([]string, 0)
+	a.updateLocationPath(location)
+	a.assetsBottom.SetText(fmt.Sprintf("%d Items - %s ISK Est. Price", len(assets), ihumanize.Number(total, 1)))
+	return nil
+}
+
+func (a *assetsArea) updateLocationPath(location locationDataNode) {
+	path := make([]locationDataNode, 0)
 	for _, uid := range a.locationsData.Path(location.UID()) {
 		n, ok := a.locationsData.Value(uid)
 		if !ok {
 			continue
 		}
-		names = append(names, n.Name)
+		path = append(path, n)
 	}
-	names = append(names, location.Name)
-	a.assetsTop.SetText(strings.Join(names, " ＞ "))
-	a.assetsBottom.SetText(fmt.Sprintf("%d Items - %s ISK Est. Price", len(assets), ihumanize.Number(total, 1)))
-	return nil
-}
-
-func (a *assetsArea) clearAssets() error {
-	empty := make([]*app.CharacterAsset, 0)
-	if err := a.assetsData.Set(copyToUntypedSlice(empty)); err != nil {
-		return err
-	}
-	a.assetsTop.SetText("")
-	return nil
-}
-
-func (u *ui) showNewAssetWindow(ca *app.CharacterAsset) {
-	var name string
-	if ca.Name != "" {
-		name = fmt.Sprintf(" \"%s\" ", ca.Name)
-	}
-	title := fmt.Sprintf("%s%s(%s): Contents", ca.EveType.Name, name, ca.EveType.Group.Name)
-	w := u.fyneApp.NewWindow(u.makeWindowTitle(title))
-	oo, err := u.CharacterService.ListCharacterAssetsInLocation(context.TODO(), ca.CharacterID, ca.ItemID)
-	if err != nil {
-		panic(err)
-	}
-	data := binding.NewUntypedList()
-	if err := data.Set(copyToUntypedSlice(oo)); err != nil {
-		panic(err)
-	}
-	top := widget.NewLabel(fmt.Sprintf("%s items", humanize.Comma(int64(len(oo)))))
-	top.TextStyle.Bold = true
-	assets := u.makeAssetGrid(data)
-	content := container.NewBorder(container.NewVBox(top, widget.NewSeparator()), nil, nil, nil, assets)
-
-	w.SetContent(content)
-	w.Resize(fyne.Size{Width: 650, Height: 500})
-	w.Show()
-}
-
-func (u *ui) makeAssetGrid(assetsData binding.UntypedList) *widget.GridWrap {
-	g := widget.NewGridWrapWithData(
-		assetsData,
-		func() fyne.CanvasObject {
-			return widgets.NewAssetListWidget(u.EveImageService, defaultAssetIcon)
-		},
-		func(di binding.DataItem, co fyne.CanvasObject) {
-			ca, err := convertDataItem[*app.CharacterAsset](di)
-			if err != nil {
-				panic(err)
-			}
-			item := co.(*widgets.AssetListWidget)
-			item.SetAsset(ca)
-		},
-	)
-	g.OnSelected = func(id widget.GridWrapItemID) {
-		ca, err := getItemUntypedList[*app.CharacterAsset](assetsData, id)
-		if err != nil {
-			slog.Error("failed to access assets in grid", "err", err)
-			return
-		}
-		if ca.IsContainer() {
-			u.showNewAssetWindow(ca)
+	path = append(path, location)
+	a.locationPath.RemoveAll()
+	for i, n := range path {
+		isLast := i == len(path)-1
+		if !isLast {
+			l := widgets.NewTappableLabel(n.Name, func() {
+				if err := a.selectLocation(n); err != nil {
+					slog.Warn("Failed to redraw assets", "err", err)
+				}
+			})
+			a.locationPath.Add(l)
 		} else {
-			u.showTypeInfoWindow(ca.EveType.ID, u.characterID())
+			l := widget.NewLabel(n.Name)
+			l.TextStyle.Bold = true
+			a.locationPath.Add(l)
 		}
-		g.UnselectAll()
+		if n.IsRoot() {
+			if !n.IsUnknown {
+				a.locationPath.Add(widgets.NewTappableIcon(theme.InfoIcon(), func() {
+					a.ui.showLocationInfoWindow(n.ContainerID)
+				}))
+				a.locationPath.Add(container.NewPadded())
+			}
+		}
+		if !isLast {
+			l := widget.NewLabel("＞")
+			l.Importance = widget.LowImportance
+			a.locationPath.Add(l)
+		}
 	}
-	return g
 }
 
 func makeNameWithCount(name string, count int) string {
@@ -476,3 +511,28 @@ func makeNameWithCount(name string, count int) string {
 	}
 	return fmt.Sprintf("%s (%s)", name, humanize.Comma(int64(count)))
 }
+
+// func (u *ui) showNewAssetWindow(ca *app.CharacterAsset) {
+// 	var name string
+// 	if ca.Name != "" {
+// 		name = fmt.Sprintf(" \"%s\" ", ca.Name)
+// 	}
+// 	title := fmt.Sprintf("%s%s(%s): Contents", ca.EveType.Name, name, ca.EveType.Group.Name)
+// 	w := u.fyneApp.NewWindow(u.makeWindowTitle(title))
+// 	oo, err := u.CharacterService.ListCharacterAssetsInLocation(context.TODO(), ca.CharacterID, ca.ItemID)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	data := binding.NewUntypedList()
+// 	if err := data.Set(copyToUntypedSlice(oo)); err != nil {
+// 		panic(err)
+// 	}
+// 	top := widget.NewLabel(fmt.Sprintf("%s items", humanize.Comma(int64(len(oo)))))
+// 	top.TextStyle.Bold = true
+// 	assets := u.makeAssetGrid(data)
+// 	content := container.NewBorder(container.NewVBox(top, widget.NewSeparator()), nil, nil, nil, assets)
+
+// 	w.SetContent(content)
+// 	w.Resize(fyne.Size{Width: 650, Height: 500})
+// 	w.Show()
+// }
