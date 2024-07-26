@@ -1,6 +1,3 @@
-help:
-	@echo "Make file for EVE Buddy"
-
 bundle:
 	fyne bundle --package ui resources/ui > internal/app/ui/resource.go
 	fyne bundle --package eveimage resources/eveimage > internal/eveimage/resource.go
@@ -9,3 +6,9 @@ bundle:
 
 queries:
 	sqlc generate
+
+appimage:
+	./build_appimage.sh
+
+release:
+	fyne package -os linux

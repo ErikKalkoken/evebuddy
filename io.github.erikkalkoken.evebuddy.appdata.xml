@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.erikkalkoken.evebuddy</id>
+
+  <name>Janice</name>
+  <summary>A companion app for Eve Online players</summary>
+
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+
+  <description>
+    <p>
+      EVE Buddy is a companion app for Eve Online players. Please see website for details.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">io.github.erikkalkoken.evebuddy.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://cdn.imgpile.com/f/aD27GDt_xl.png</image>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/ErikKalkoken/evebuddy</url>
+
+   <content_rating type="oars-1.1" />
+</component>

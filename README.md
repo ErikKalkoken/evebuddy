@@ -30,7 +30,7 @@ More features planned...
 
 ## Screenshot
 
-![example](https://cdn.imgpile.com/f/dsxYy1a_xl.png)
+![example](https://cdn.imgpile.com/f/aD27GDt_xl.png)
 
 ## Installation
 
