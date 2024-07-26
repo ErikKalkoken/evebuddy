@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"log/slog"
+	"net/url"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -14,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -22,6 +24,9 @@ const (
 	characterUpdateStatusTicker = 2 * time.Second
 	clockUpdateTicker           = 2 * time.Second
 	esiStatusUpdateTicker       = 60 * time.Second
+	githubOwner                 = "ErikKalkoken"
+	githubRepo                  = "evebuddy"
+	websiteURL                  = "https://github.com/ErikKalkoken/evebuddy"
 )
 
 // statusBarArea is the UI area showing the current status aka status bar.
@@ -31,6 +36,7 @@ type statusBarArea struct {
 	eveClock                  binding.String
 	eveStatusArea             *eveStatusArea
 	infoText                  *widget.Label
+	updateNotification        *fyne.Container
 	ui                        *ui
 }
 
@@ -40,6 +46,7 @@ func (u *ui) newStatusBarArea() *statusBarArea {
 		eveClock:                  binding.NewString(),
 		eveStatusArea:             newEveStatusArea(u),
 		characterUpdateStatusArea: newCharacterUpdateStatusArea(u),
+		updateNotification:        container.NewHBox(),
 		ui:                        u,
 	}
 	a.eveClock.Set(" 00:00 ")
@@ -47,6 +54,7 @@ func (u *ui) newStatusBarArea() *statusBarArea {
 	a.content = container.NewVBox(widget.NewSeparator(), container.NewHBox(
 		a.infoText,
 		layout.NewSpacer(),
+		a.updateNotification,
 		widget.NewSeparator(),
 		a.characterUpdateStatusArea.content,
 		widget.NewSeparator(),
@@ -96,6 +104,21 @@ func (a *statusBarArea) StartUpdateTicker() {
 			a.eveStatusArea.setStatus(s, t, errorMessage)
 			<-esiStatusTicker.C
 		}
+	}()
+	go func() {
+		current := a.ui.fyneApp.Metadata().Version
+		_, isNewer, err := github.AvailableUpdate(githubOwner, githubRepo, current)
+		if err != nil {
+			slog.Error("Failed to fetch latest version from github", "err", err)
+			return
+		}
+		if !isNewer {
+			return
+		}
+		x, _ := url.Parse(websiteURL + "/releases")
+		l := widget.NewHyperlink("Update available", x)
+		a.updateNotification.Add(widget.NewSeparator())
+		a.updateNotification.Add(l)
 	}()
 }
 
