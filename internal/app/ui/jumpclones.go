@@ -130,57 +130,56 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 func (a *jumpClonesArea) redraw() {
 	var t string
 	var i widget.Importance
-	total, err := a.updateTreeData()
+	tree, err := a.newTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
 	} else {
-		t, i = a.makeTopText(total)
+		clonesCount := len(tree.ChildUIDs(""))
+		t, i = a.makeTopText(clonesCount)
 	}
+	a.treeData = tree
 	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
 	a.treeWidget.Refresh()
 }
 
-func (a *jumpClonesArea) updateTreeData() (int, error) {
-	x, err, _ := a.ui.sfg.Do(fmt.Sprintf("updateTreeData-%d", a.ui.characterID()), func() (any, error) {
-		a.treeData.Clear()
-		if !a.ui.hasCharacter() {
-			return 0, nil
+func (a *jumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error) {
+	tree := fynetree.New[jumpCloneNode]()
+	if !a.ui.hasCharacter() {
+		return tree, nil
+	}
+	clones, err := a.ui.CharacterService.ListCharacterJumpClones(context.TODO(), a.ui.characterID())
+	if err != nil {
+		return tree, err
+	}
+	for _, c := range clones {
+		n := jumpCloneNode{
+			JumpCloneID:  c.JumpCloneID,
+			ImplantCount: len(c.Implants),
+			LocationID:   c.Location.ID,
 		}
-		clones, err := a.ui.CharacterService.ListCharacterJumpClones(context.TODO(), a.ui.characterID())
-		if err != nil {
-			return 0, err
+		// TODO: Refactor to use same location method for all unknown location cases
+		if c.Location.Name != "" {
+			n.LocationName = c.Location.Name
+		} else {
+			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
+			n.IsUnknown = true
 		}
-		for _, c := range clones {
+		uid := tree.MustAdd("", n.UID(), n)
+		for _, i := range c.Implants {
 			n := jumpCloneNode{
-				JumpCloneID:  c.JumpCloneID,
-				ImplantCount: len(c.Implants),
-				LocationID:   c.Location.ID,
+				JumpCloneID:            c.JumpCloneID,
+				ImplantTypeName:        i.EveType.Name,
+				ImplantTypeID:          i.EveType.ID,
+				ImplantTypeDescription: i.EveType.DescriptionPlain(),
 			}
-			// TODO: Refactor to use same location method for all unknown location cases
-			if c.Location.Name != "" {
-				n.LocationName = c.Location.Name
-			} else {
-				n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
-				n.IsUnknown = true
-			}
-			uid := a.treeData.MustAdd("", n.UID(), n)
-			for _, i := range c.Implants {
-				n := jumpCloneNode{
-					JumpCloneID:            c.JumpCloneID,
-					ImplantTypeName:        i.EveType.Name,
-					ImplantTypeID:          i.EveType.ID,
-					ImplantTypeDescription: i.EveType.DescriptionPlain(),
-				}
-				a.treeData.MustAdd(uid, n.UID(), n)
-			}
+			tree.MustAdd(uid, n.UID(), n)
 		}
-		return len(clones), nil
-	})
-	return x.(int), err
+	}
+	return tree, err
 }
 
 func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance) {

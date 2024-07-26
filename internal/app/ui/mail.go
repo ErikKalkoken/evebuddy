@@ -236,122 +236,123 @@ func (a *mailArea) updateMailTab(unreadCount int) {
 }
 
 func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
-	x, err, _ := a.ui.sfg.Do(fmt.Sprintf("updateFolderData-%d", a.ui.characterID()), func() (any, error) {
-		a.foldersData.Clear()
-		if characterID == 0 {
-			return folderNode{}, nil
-		}
-		ctx := context.TODO()
-		labelUnreadCounts, err := a.ui.CharacterService.GetCharacterMailLabelUnreadCounts(ctx, characterID)
-		if err != nil {
-			return folderNode{}, err
-		}
-		listUnreadCounts, err := a.ui.CharacterService.GetCharacterMailListUnreadCounts(ctx, characterID)
-		if err != nil {
-			return folderNode{}, err
-		}
-		totalUnreadCount, totalLabelsUnreadCount, totalListUnreadCount := calcUnreadTotals(labelUnreadCounts, listUnreadCounts)
+	tree := fynetree.New[folderNode]()
+	if characterID == 0 {
+		a.foldersData = tree
+		return folderNode{}, nil
+	}
+	ctx := context.TODO()
+	labelUnreadCounts, err := a.ui.CharacterService.GetCharacterMailLabelUnreadCounts(ctx, characterID)
+	if err != nil {
+		a.foldersData = tree
+		return folderNode{}, err
+	}
+	listUnreadCounts, err := a.ui.CharacterService.GetCharacterMailListUnreadCounts(ctx, characterID)
+	if err != nil {
+		a.foldersData = tree
+		return folderNode{}, err
+	}
+	totalUnreadCount, totalLabelsUnreadCount, totalListUnreadCount := calcUnreadTotals(labelUnreadCounts, listUnreadCounts)
 
-		// Add all folder
-		folderAll := folderNode{
-			Category:    nodeCategoryLabel,
+	// Add all folder
+	folderAll := folderNode{
+		Category:    nodeCategoryLabel,
+		CharacterID: characterID,
+		Type:        folderNodeAll,
+		Name:        "All Mails",
+		ObjID:       app.MailLabelAll,
+		UnreadCount: totalUnreadCount,
+	}
+	tree.MustAdd("", folderAll.UID(), folderAll)
+
+	// Add default folders
+	defaultFolders := []struct {
+		nodeType folderNodeType
+		labelID  int32
+		name     string
+	}{
+		{folderNodeInbox, app.MailLabelInbox, "Inbox"},
+		{folderNodeSent, app.MailLabelSent, "Sent"},
+		{folderNodeCorp, app.MailLabelCorp, "Corp"},
+		{folderNodeAlliance, app.MailLabelAlliance, "Alliance"},
+	}
+	for _, o := range defaultFolders {
+		u, ok := labelUnreadCounts[o.labelID]
+		if !ok {
+			u = 0
+		}
+		n := folderNode{
 			CharacterID: characterID,
-			Type:        folderNodeAll,
-			Name:        "All Mails",
-			ObjID:       app.MailLabelAll,
-			UnreadCount: totalUnreadCount,
+			Category:    nodeCategoryLabel,
+			Type:        o.nodeType,
+			Name:        o.name,
+			ObjID:       o.labelID,
+			UnreadCount: u,
 		}
-		a.foldersData.MustAdd("", folderAll.UID(), folderAll)
+		tree.MustAdd("", n.UID(), n)
+	}
 
-		// Add default folders
-		defaultFolders := []struct {
-			nodeType folderNodeType
-			labelID  int32
-			name     string
-		}{
-			{folderNodeInbox, app.MailLabelInbox, "Inbox"},
-			{folderNodeSent, app.MailLabelSent, "Sent"},
-			{folderNodeCorp, app.MailLabelCorp, "Corp"},
-			{folderNodeAlliance, app.MailLabelAlliance, "Alliance"},
+	// Add custom labels
+	labels, err := a.ui.CharacterService.ListCharacterMailLabelsOrdered(ctx, characterID)
+	if err != nil {
+		return folderNode{}, err
+	}
+	if len(labels) > 0 {
+		n := folderNode{
+			CharacterID: characterID,
+			Type:        folderNodeLabel,
+			Name:        "Labels",
+			UnreadCount: totalLabelsUnreadCount,
 		}
-		for _, o := range defaultFolders {
-			u, ok := labelUnreadCounts[o.labelID]
+		uid := tree.MustAdd("", n.UID(), n)
+		for _, l := range labels {
+			u, ok := labelUnreadCounts[l.LabelID]
 			if !ok {
 				u = 0
 			}
 			n := folderNode{
-				CharacterID: characterID,
 				Category:    nodeCategoryLabel,
-				Type:        o.nodeType,
-				Name:        o.name,
-				ObjID:       o.labelID,
+				CharacterID: characterID,
+				Name:        l.Name,
+				ObjID:       l.LabelID,
 				UnreadCount: u,
-			}
-			a.foldersData.MustAdd("", n.UID(), n)
-		}
-
-		// Add custom labels
-		labels, err := a.ui.CharacterService.ListCharacterMailLabelsOrdered(ctx, characterID)
-		if err != nil {
-			return folderNode{}, err
-		}
-		if len(labels) > 0 {
-			n := folderNode{
-				CharacterID: characterID,
 				Type:        folderNodeLabel,
-				Name:        "Labels",
-				UnreadCount: totalLabelsUnreadCount,
 			}
-			uid := a.foldersData.MustAdd("", n.UID(), n)
-			for _, l := range labels {
-				u, ok := labelUnreadCounts[l.LabelID]
-				if !ok {
-					u = 0
-				}
-				n := folderNode{
-					Category:    nodeCategoryLabel,
-					CharacterID: characterID,
-					Name:        l.Name,
-					ObjID:       l.LabelID,
-					UnreadCount: u,
-					Type:        folderNodeLabel,
-				}
-				a.foldersData.MustAdd(uid, n.UID(), n)
-			}
+			tree.MustAdd(uid, n.UID(), n)
 		}
+	}
 
-		// Add mailing lists
-		lists, err := a.ui.CharacterService.ListCharacterMailLists(ctx, characterID)
-		if err != nil {
-			return folderNode{}, err
+	// Add mailing lists
+	lists, err := a.ui.CharacterService.ListCharacterMailLists(ctx, characterID)
+	if err != nil {
+		return folderNode{}, err
+	}
+	if len(lists) > 0 {
+		n := folderNode{
+			CharacterID: characterID,
+			Type:        folderNodeList,
+			Name:        "Mailing Lists",
+			UnreadCount: totalListUnreadCount,
 		}
-		if len(lists) > 0 {
+		uid := tree.MustAdd("", n.UID(), n)
+		for _, l := range lists {
+			u, ok := listUnreadCounts[l.ID]
+			if !ok {
+				u = 0
+			}
 			n := folderNode{
+				Category:    nodeCategoryList,
 				CharacterID: characterID,
+				ObjID:       l.ID,
+				Name:        l.Name,
+				UnreadCount: u,
 				Type:        folderNodeList,
-				Name:        "Mailing Lists",
-				UnreadCount: totalListUnreadCount,
 			}
-			uid := a.foldersData.MustAdd("", n.UID(), n)
-			for _, l := range lists {
-				u, ok := listUnreadCounts[l.ID]
-				if !ok {
-					u = 0
-				}
-				n := folderNode{
-					Category:    nodeCategoryList,
-					CharacterID: characterID,
-					ObjID:       l.ID,
-					Name:        l.Name,
-					UnreadCount: u,
-					Type:        folderNodeList,
-				}
-				a.foldersData.MustAdd(uid, n.UID(), n)
-			}
+			tree.MustAdd(uid, n.UID(), n)
 		}
-		return folderAll, nil
-	})
-	return x.(folderNode), err
+	}
+	a.foldersData = tree
+	return folderAll, nil
 }
 
 func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
