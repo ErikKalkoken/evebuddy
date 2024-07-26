@@ -3,6 +3,7 @@ package fynetree_test
 import (
 	"testing"
 
+	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	"github.com/stretchr/testify/assert"
 )
@@ -107,5 +108,48 @@ func TestFyneTreeValue(t *testing.T) {
 			tree.MustValue("invalid")
 
 		})
+	})
+	t.Run("can return parent of a top node", func(t *testing.T) {
+		tree := fynetree.New[string]()
+		uid := tree.MustAdd("", "1", "Alpha")
+		p, ok := tree.Parent(uid)
+		assert.True(t, ok)
+		assert.Equal(t, "", p)
+	})
+	t.Run("can return parent of a random node", func(t *testing.T) {
+		tree := fynetree.New[string]()
+		uid1 := tree.MustAdd("", "1", "Alpha")
+		uid2 := tree.MustAdd(uid1, "2", "Bravo")
+		p, ok := tree.Parent(uid2)
+		assert.True(t, ok)
+		assert.Equal(t, uid1, p)
+	})
+	t.Run("can report when a parent does not exist", func(t *testing.T) {
+		tree := fynetree.New[string]()
+		_, ok := tree.Parent("1")
+		assert.False(t, ok)
+	})
+}
+
+func TestFyneTreePath(t *testing.T) {
+	t.Parallel()
+	t.Run("should return path for an existing node", func(t *testing.T) {
+		tree := fynetree.New[string]()
+		uid1 := tree.MustAdd("", "1", "Alpha")
+		uid2 := tree.MustAdd(uid1, "2", "Bravo")
+		uid3 := tree.MustAdd(uid2, "3", "Charlie")
+		p := tree.Path(uid3)
+		assert.Equal(t, []widget.TreeNodeID{uid1, uid2}, p)
+	})
+	t.Run("should return empty array for root node", func(t *testing.T) {
+		tree := fynetree.New[string]()
+		p := tree.Path("")
+		assert.Equal(t, []widget.TreeNodeID{}, p)
+	})
+	t.Run("should return empty array for a top node", func(t *testing.T) {
+		tree := fynetree.New[string]()
+		uid := tree.MustAdd("", "1", "Alpha")
+		p := tree.Path(uid)
+		assert.Equal(t, []widget.TreeNodeID{}, p)
 	})
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -39,6 +40,7 @@ type locationDataNode struct {
 	CharacterID         int32
 	ContainerID         int64
 	Name                string
+	Count               int
 	IsUnknown           bool
 	SystemName          string
 	SystemSecurityValue float32
@@ -65,6 +67,7 @@ type assetsArea struct {
 	assets          *widget.GridWrap
 	assetsData      binding.UntypedList
 	assetsTop       *widget.Label
+	assetsBottom    *widget.Label
 	locationsWidget *widget.Tree
 	locationsData   *fynetree.FyneTree[locationDataNode]
 	locationsTop    *widget.Label
@@ -76,6 +79,7 @@ func (u *ui) newAssetsArea() *assetsArea {
 	a := assetsArea{
 		assetsData:    binding.NewUntypedList(),
 		assetsTop:     widget.NewLabel(""),
+		assetsBottom:  widget.NewLabel(""),
 		locationsData: fynetree.New[locationDataNode](),
 		locationsTop:  widget.NewLabel(""),
 		ui:            u,
@@ -86,8 +90,13 @@ func (u *ui) newAssetsArea() *assetsArea {
 
 	a.assetsTop.TextStyle.Bold = true
 	a.assets = u.makeAssetGrid(a.assetsData)
-	assets := container.NewBorder(container.NewVBox(a.assetsTop, widget.NewSeparator()), nil, nil, nil, a.assets)
-
+	assets := container.NewBorder(
+		container.NewVBox(a.assetsTop, widget.NewSeparator()),
+		container.NewVBox(widget.NewSeparator(), a.assetsBottom),
+		nil,
+		nil,
+		a.assets,
+	)
 	main := container.NewHSplit(locations, assets)
 	main.SetOffset(0.33)
 	a.content = main
@@ -115,7 +124,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 			if !ok {
 				return
 			}
-			label.SetText(n.Name)
+			label.SetText(makeNameWithCount(n.Name, n.Count))
 			if n.IsRoot() {
 				if !n.IsUnknown {
 					prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurityValue)
@@ -134,13 +143,6 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 	t.OnSelected = func(uid widget.TreeNodeID) {
 		n, ok := a.locationsData.Value(uid)
 		if !ok {
-			return
-		}
-		if n.IsRoot() {
-			if !n.IsUnknown {
-				a.ui.showLocationInfoWindow(n.ContainerID)
-			}
-			t.UnselectAll()
 			return
 		}
 		if err := a.redrawAssets(n); err != nil {
@@ -202,7 +204,8 @@ func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 			CharacterID: characterID,
 			ContainerID: el.ID,
 			Type:        nodeLocation,
-			Name:        makeNameWithCount(el.DisplayName(), len(ln.Nodes())),
+			Name:        el.DisplayName(),
+			Count:       len(ln.Nodes()),
 		}
 		if el.SolarSystem != nil {
 			location.SystemName = el.SolarSystem.Name
@@ -244,7 +247,8 @@ func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 		shipHangar := locationDataNode{
 			CharacterID: characterID,
 			ContainerID: el.ID,
-			Name:        makeNameWithCount("Ship Hangar", shipCount),
+			Name:        "Ship Hangar",
+			Count:       shipCount,
 			Type:        nodeShipHangar,
 		}
 		shipsUID := tree.MustAdd(locationUID, shipHangar.UID(), shipHangar)
@@ -269,7 +273,8 @@ func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 			cln := locationDataNode{
 				CharacterID: characterID,
 				ContainerID: ship.ItemID,
-				Name:        makeNameWithCount("Cargo Bay", len(cargo)),
+				Name:        "Cargo Bay",
+				Count:       len(cargo),
 				Type:        nodeCargoBay,
 			}
 			tree.MustAdd(shipUID, cln.UID(), cln)
@@ -277,7 +282,8 @@ func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 				ldn := locationDataNode{
 					CharacterID: characterID,
 					ContainerID: an.Asset.ItemID,
-					Name:        makeNameWithCount("Fuel Bay", len(fuel)),
+					Name:        "Fuel Bay",
+					Count:       len(fuel),
 					Type:        nodeFuelBay,
 				}
 				tree.MustAdd(shipUID, ldn.UID(), ldn)
@@ -287,7 +293,8 @@ func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 		itemHangar := locationDataNode{
 			CharacterID: characterID,
 			ContainerID: el.ID,
-			Name:        makeNameWithCount("Item Hangar", itemCount),
+			Name:        "Item Hangar",
+			Count:       itemCount,
 			Type:        nodeItemHangar,
 		}
 		itemsUID := tree.MustAdd(locationUID, itemHangar.UID(), itemHangar)
@@ -295,7 +302,8 @@ func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 			ldn := locationDataNode{
 				CharacterID: characterID,
 				ContainerID: an.Asset.ItemID,
-				Name:        makeNameWithCount(an.Asset.DisplayName(), len(an.Nodes())),
+				Name:        an.Asset.DisplayName(),
+				Count:       len(an.Nodes()),
 				Type:        nodeContainer,
 			}
 			tree.MustAdd(itemsUID, ldn.UID(), ldn)
@@ -306,7 +314,8 @@ func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 			ldn := locationDataNode{
 				CharacterID: characterID,
 				ContainerID: an.Asset.ItemID,
-				Name:        makeNameWithCount("Asset Safety", len(an.Nodes())),
+				Name:        "Asset Safety",
+				Count:       len(an.Nodes()),
 				Type:        nodeAssetSafety,
 			}
 			tree.MustAdd(locationUID, ldn.UID(), ldn)
@@ -326,13 +335,13 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	return fmt.Sprintf("%d locations", total), widget.MediumImportance, nil
 }
 
-func (a *assetsArea) redrawAssets(n locationDataNode) error {
+func (a *assetsArea) redrawAssets(location locationDataNode) error {
 	empty := make([]*app.CharacterAsset, 0)
 	if err := a.assetsData.Set(copyToUntypedSlice(empty)); err != nil {
 		return err
 	}
 	var f func(context.Context, int32, int64) ([]*app.CharacterAsset, error)
-	switch n.Type {
+	switch location.Type {
 	case nodeShipHangar:
 		f = a.ui.CharacterService.ListCharacterAssetsInShipHangar
 	case nodeItemHangar:
@@ -340,11 +349,11 @@ func (a *assetsArea) redrawAssets(n locationDataNode) error {
 	default:
 		f = a.ui.CharacterService.ListCharacterAssetsInLocation
 	}
-	assets, err := f(context.TODO(), n.CharacterID, n.ContainerID)
+	assets, err := f(context.TODO(), location.CharacterID, location.ContainerID)
 	if err != nil {
 		return err
 	}
-	switch n.Type {
+	switch location.Type {
 	case nodeItemHangar:
 		containers := make([]*app.CharacterAsset, 0)
 		items := make([]*app.CharacterAsset, 0)
@@ -382,7 +391,17 @@ func (a *assetsArea) redrawAssets(n locationDataNode) error {
 	for _, ca := range assets {
 		total += ca.Price.ValueOrZero() * float64(ca.Quantity)
 	}
-	a.assetsTop.SetText(fmt.Sprintf("%d Items - %s ISK Est. Price", len(assets), ihumanize.Number(total, 1)))
+	names := make([]string, 0)
+	for _, uid := range a.locationsData.Path(location.UID()) {
+		n, ok := a.locationsData.Value(uid)
+		if !ok {
+			continue
+		}
+		names = append(names, n.Name)
+	}
+	names = append(names, location.Name)
+	a.assetsTop.SetText(strings.Join(names, " ＞ "))
+	a.assetsBottom.SetText(fmt.Sprintf("%d Items - %s ISK Est. Price", len(assets), ihumanize.Number(total, 1)))
 	return nil
 }
 
