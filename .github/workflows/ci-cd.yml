@@ -3,11 +3,11 @@
 name: CI/CD
 
 env:
-  GOVERSION: "1.22.1"
+  GOVERSION: "1.22.4"
   NAME: "evebuddy"
   FULLNAME: "EVE Buddy"
-  APPIMAGENAME: "EVE_Buddy-x86_64"
-  PREFIX: "evebuddy-${{  github.ref_name }}"
+  FULLNAME2: "EVE_Buddy"  # for AppImage file, e.g. with spaces replaced by underscores
+  VERSION: "0.0.0"
 
 on: push
 
@@ -57,13 +57,18 @@ jobs:
     - name: Package Fyne app
       run: fyne package -os linux
 
+    - name: Set version
+      run: |
+        VERSION=${{ github.ref_name }}
+        echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+
     - name: Build AppImage
       run: ./build_appimage.sh
 
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ env.NAME }}-linux
-        path: ${{ env.APPIMAGENAME }}.AppImage
+        path: ${{ env.FULLNAME2 }}-${{ env.VERSION }}-x86_64.AppImage
         if-no-files-found: error
         overwrite: true
 
@@ -98,14 +103,19 @@ jobs:
     - name: Package
       run: fyne package -os windows
 
+    - name: Set version
+      run: |
+        VERSION=${{ github.ref_name }}
+        echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+
     - name: ZIP package
-      run: zip ${{ env.PREFIX }}-windows-x64.zip "${{ env.FULLNAME }}.exe"
+      run: zip ${{ env.NAME }}-${{ env.VERSION }}-windows-x64.zip "${{ env.FULLNAME }}.exe"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.NAME }}-windows
-        path: ${{ env.PREFIX }}-windows-x64.zip
+        path: ${{ env.NAME }}-${{ env.VERSION }}-windows-x64.zip
         if-no-files-found: error
         overwrite: true
 
@@ -132,17 +142,19 @@ jobs:
     - name: Package app bundles
       run: fyne package -os darwin
 
-    - name: ZIP app bundle
-      run: zip --symlinks -r ${{ env.PREFIX }}-darwin-x64.zip "${{ env.FULLNAME }}.app/"
+    - name: Set version
+      run: |
+        VERSION=${{ github.ref_name }}
+        echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
-    - name: Display structure of downloaded files
-      run: ls -R
+    - name: ZIP app bundle
+      run: zip --symlinks -r ${{ env.NAME }}-${{ env.VERSION }}-darwin-x64.zip "${{ env.FULLNAME }}.app/"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.NAME }}-macos
-        path: ${{ env.PREFIX }}-darwin-x64.zip
+        path: ${{ env.NAME }}-${{ env.VERSION }}-darwin-x64.zip
         if-no-files-found: error
         overwrite: true
 
@@ -158,14 +170,16 @@ jobs:
       with:
         merge-multiple: true
 
-    - name: Display structure of downloaded files
-      run: ls -R
+    - name: Make version string
+      run: |
+        VERSION=${{ github.ref_name }}
+        echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
     - name: Create release
       uses: softprops/action-gh-release@v2
       with:
         fail_on_unmatched_files: true
         files: |
-          ${{ env.PREFIX }}-windows-x64.zip
-          ${{ env.APPIMAGENAME }}.AppImage
-          ${{ env.PREFIX }}-darwin-x64.zip
+          ${{ env.NAME }}-${{ env.VERSION }}-windows-x64.zip
+          ${{ env.FULLNAME2 }}-${{ env.VERSION }}-x86_64.AppImage
+          ${{ env.NAME }}-${{ env.VERSION }}-darwin-x64.zip
