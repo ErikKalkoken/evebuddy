@@ -1,68 +1,69 @@
 # EVE Buddy
 
-EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players. It runs on Windows, MacOS and LINUX desktops.
+EVE Buddy is a companion app for Eve Online players. It runs on Windows, MacOS and LINUX desktops.
 
 ![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)
 ![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml/badge.svg)
 ![GitHub License](https://img.shields.io/github/license/ErikKalkoken/evebuddy)
 
-**!! This app is currently in development and not ready yet for production use !!**
-
 ## Contents
 
-- [Features](#features)
+- [Description](#description)
 - [Screenshot](#screenshot)
-- [Installation](#installation)
-  - [Linux](#linux)
-  - [Mac OS](#mac-os)
-  - [Windows](#windows)
-  - [Build from source](#build-from-source)
-- [Data Privacy](#data-privacy)
+- [How to Run](#how-to-run)
+  [Data Privacy](#data-privacy)
 - [Credits](#credits)
 
-## Features
+## Description
 
-- Mails: Full client for Eve Mails
-- Skillqueue: Shows current skills in the training queue
-- Character stats: Display of current information about a character (e.g. location)
+EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players. Key features are:
 
-More features planned...
+- Import information for each characters:
+  - Assets: Full asset browser
+  - Character: Curren clone, jump clones, and more...
+  - Mails: Full mail client for receiving and sending Eve mails
+  - Skills: Training queue, catalogue of all trained skills and what ships can be flown
+  - Wallet: Wallet and Wallet Transactions
+- Overview of all your characters (e.g. wallet, skill points, location)
+- Wealth: Charts showing wealth distribution across all characters
+- Assets search: Full asset search across all your characters
 
 ## Screenshot
 
 ![example](https://cdn.imgpile.com/f/aD27GDt_xl.png)
 
-## Installation
+## How to run
 
-For installing this app on your desktop, please see the specific instructions for your platform. Alternatively you can also build the app directly from source.
+To run EVE buddy just download and unzip the latest release to your computer. The app ships as a single executable file that can be run directly. You find the latest packages for download on the [releases page](https://github.com/ErikKalkoken/evebuddy/releases).
 
 ### Linux
 
-First download the linux tar file from the latest release on Github.
+> [!NOTE]
+> The app is shipped in the [AppImage](https://appimage.org/) format, so it can be used without requiring installation and run on many different Linux distributions.
 
-Then install the release on your desktop with:
+1. Download the latest AppImage file from the releases page and make it executable.
+1. Execute it to start the app.
 
-```sh
-sudo tar xvfJ evebuddy-v1.0.0-linux-amd64.tar.xz -C /
-```
-
-This will install the app for all users on your system. User specific data will be stored in the home directories of each user.
-
-### Mac OS
-
-First download the darwin zip file from the latest release on Github.
-
-Then unzip the file into a directory of your choice and run the .app file to start the app.
+> [!TIP]
+> Should you get the following error: `AppImages require FUSE to run.`, you need to first install FUSE on your system. Thi s is a library required by all AppImages to function. Please see [this page](https://docs.appimage.org/user-guide/troubleshooting/fuse.html#the-appimage-tells-me-it-needs-fuse-to-run) for details.
 
 ### Windows
 
-First download the windows zip file from the latest release on Github.
+1. Download the windows zip file from the latest release on Github.
+1. Unzip the file into a directory of your choice and run the .exe file to start the app.
 
-Then unzip the file into a directory of your choice and run the .exe file to start the app.
+### Mac OS
 
-### Build from source
+> [!NOTE]
+> The MAC version is currently experimental only, since we have not been able to verify that the release process actually works. We would very much appreciate any feedback on wether the package works or what needs to be improved.
 
-You can also build the app from source. For that your system needs to be able to build Fyne apps, which requires you to have installed the Go tools, a C compiler and a systems graphics driver. For details please see [Fyne - Getting started](https://docs.fyne.io/started/).
+1. Download the darwin zip file from the latest release on Github.
+1. Unzip the file into a directory of your choice
+1. Run the .app file to start the app.
+
+### Build and run from repository
+
+You can also build and run the app directly from the repository. For that your system needs to be able to build Fyne apps, which requires you to have installed the Go tools, a C compiler and a systems graphics driver. For details please see [Fyne - Getting started](https://docs.fyne.io/started/).
 
 When you have all necessary tools installed, you can build and run this app direct from the repository with:
 
