@@ -67,13 +67,8 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		TokenType:    ssoToken.TokenType,
 	}
 	ctx = contextWithESIToken(ctx, token.AccessToken)
-	character, err := s.EveUniverseService.GetOrCreateEveCharacterESI(ctx, token.CharacterID)
-	if err != nil {
-		return 0, err
-	}
 	myCharacter := &app.Character{
-		ID:           token.CharacterID,
-		EveCharacter: character,
+		ID: token.CharacterID,
 	}
 	arg := sqlite.UpdateOrCreateCharacterParams{
 		ID:            myCharacter.ID,
@@ -86,6 +81,9 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 	}
 	if myCharacter.Ship != nil {
 		arg.ShipID = optional.New(myCharacter.Ship.ID)
+	}
+	if _, err := s.EveUniverseService.GetOrCreateEveCharacterESI(ctx, token.CharacterID); err != nil {
+		return 0, err
 	}
 	if err := s.st.UpdateOrCreateCharacter(ctx, arg); err != nil {
 		return 0, err

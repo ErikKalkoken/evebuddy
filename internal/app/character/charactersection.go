@@ -102,7 +102,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 		}
 		o, err2 := s.st.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
 		if err2 != nil {
-			slog.Error("failed to record error for failed section update: %s", err2)
+			slog.Error("failed to record error for failed section update: %s", "error", err2)
 		}
 		s.StatusCacheService.CharacterSectionSet(o)
 		return false, fmt.Errorf("failed to update character section from ESI for %v: %w", arg, err)
