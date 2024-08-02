@@ -355,7 +355,7 @@ func (u *ui) refreshCharacter() {
 			subTabs.DisableIndex(i)
 		}
 	}
-	go u.statusBarArea.characterUpdateStatusArea.refresh()
+	go u.statusBarArea.refreshUpdateStatus()
 	u.window.Content().Refresh()
 }
 

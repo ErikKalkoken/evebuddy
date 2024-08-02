@@ -13,11 +13,12 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	"github.com/ErikKalkoken/evebuddy/internal/github"
 )
 
 const (
@@ -29,26 +30,39 @@ const (
 	websiteURL                  = "https://github.com/ErikKalkoken/evebuddy"
 )
 
+type eveStatus uint
+
+const (
+	eveStatusUnknown eveStatus = iota
+	eveStatusOnline
+	eveStatusOffline
+	eveStatusError
+)
+
 // statusBarArea is the UI area showing the current status aka status bar.
 type statusBarArea struct {
-	content                   *fyne.Container
-	characterUpdateStatusArea *characterUpdateStatusArea
-	eveClock                  binding.String
-	eveStatusArea             *eveStatusArea
-	infoText                  *widget.Label
-	updateNotification        *fyne.Container
-	ui                        *ui
+	content            *fyne.Container
+	eveClock           binding.String
+	eveStatus          *widgets.StatusBarItem
+	eveStatusError     string
+	infoText           *widget.Label
+	updateNotification *fyne.Container
+	updateStatus       *widgets.StatusBarItem
+	ui                 *ui
 }
 
 func (u *ui) newStatusBarArea() *statusBarArea {
 	a := &statusBarArea{
-		infoText:                  widget.NewLabel(""),
-		eveClock:                  binding.NewString(),
-		eveStatusArea:             newEveStatusArea(u),
-		characterUpdateStatusArea: newCharacterUpdateStatusArea(u),
-		updateNotification:        container.NewHBox(),
-		ui:                        u,
+		infoText:           widget.NewLabel(""),
+		eveClock:           binding.NewString(),
+		updateNotification: container.NewHBox(),
+		ui:                 u,
 	}
+	a.updateStatus = widgets.NewStatusBarItem(nil, "100% Fresh", func() {
+		u.showStatusWindow()
+	})
+	a.eveStatus = widgets.NewStatusBarItem(theme.MediaRecordIcon(), "999.999 players", a.showDetail)
+
 	a.eveClock.Set(" 00:00 ")
 	clock := widget.NewLabelWithData(a.eveClock)
 	a.content = container.NewVBox(widget.NewSeparator(), container.NewHBox(
@@ -56,20 +70,38 @@ func (u *ui) newStatusBarArea() *statusBarArea {
 		layout.NewSpacer(),
 		a.updateNotification,
 		widget.NewSeparator(),
-		a.characterUpdateStatusArea.content,
+		a.updateStatus,
 		widget.NewSeparator(),
 		clock,
 		widget.NewSeparator(),
-		a.eveStatusArea.content,
+		a.eveStatus,
 	))
 	return a
+}
+
+func (a *statusBarArea) showDetail() {
+	var i widget.Importance
+	var text string
+	if a.eveStatusError == "" {
+		text = "No error detected"
+		i = widget.MediumImportance
+	} else {
+		text = a.eveStatusError
+		i = widget.DangerImportance
+	}
+	lb := widget.NewLabel(text)
+	lb.Wrapping = fyne.TextWrapWord
+	lb.Importance = i
+	d := dialog.NewCustom("ESI status", "OK", container.NewVScroll(lb), a.ui.window)
+	d.Show()
+	d.Resize(fyne.Size{Width: 400, Height: 200})
 }
 
 func (a *statusBarArea) StartUpdateTicker() {
 	updateTicker := time.NewTicker(characterUpdateStatusTicker)
 	go func() {
 		for {
-			a.characterUpdateStatusArea.refresh()
+			a.refreshUpdateStatus()
 			<-updateTicker.C
 		}
 	}()
@@ -101,7 +133,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 				t = arg.Sprintf("%d players", x.PlayerCount)
 				s = eveStatusOnline
 			}
-			a.eveStatusArea.setStatus(s, t, errorMessage)
+			a.setEveStatus(s, t, errorMessage)
 			<-esiStatusTicker.C
 		}
 	}()
@@ -122,6 +154,29 @@ func (a *statusBarArea) StartUpdateTicker() {
 	}()
 }
 
+func (a *statusBarArea) refreshUpdateStatus() {
+	x := a.ui.StatusCacheService.Summary()
+	a.updateStatus.SetTextAndImportance(x.Display(), status2widgetImportance(x.Status()))
+}
+
+func (a *statusBarArea) setEveStatus(status eveStatus, title, errorMessage string) {
+	a.eveStatusError = errorMessage
+	r1 := theme.MediaRecordIcon()
+	var r2 fyne.Resource
+	switch status {
+	case eveStatusOnline:
+		r2 = theme.NewSuccessThemedResource(r1)
+	case eveStatusError:
+		r2 = theme.NewErrorThemedResource(r1)
+	case eveStatusOffline:
+		r2 = theme.NewWarningThemedResource(r1)
+	case eveStatusUnknown:
+		r2 = theme.NewDisabledResource(r1)
+	}
+	a.eveStatus.SetResource(r2)
+	a.eveStatus.SetText(title)
+}
+
 func (s *statusBarArea) SetInfo(text string) {
 	s.setInfo(text, widget.MediumImportance)
 }
@@ -138,126 +193,4 @@ func (s *statusBarArea) setInfo(text string, importance widget.Importance) {
 	s.infoText.Text = text
 	s.infoText.Importance = importance
 	s.infoText.Refresh()
-}
-
-type eveStatus uint
-
-const (
-	eveStatusUnknown eveStatus = iota
-	eveStatusOnline
-	eveStatusOffline
-	eveStatusError
-)
-
-type eveStatusArea struct {
-	content      *widget.GridWrap
-	status       eveStatus
-	title        string
-	errorMessage string
-	ui           *ui
-}
-
-func newEveStatusArea(u *ui) *eveStatusArea {
-	a := &eveStatusArea{ui: u}
-	a.content = widget.NewGridWrap(
-		func() int {
-			return 1
-		},
-		func() fyne.CanvasObject {
-			return container.NewHBox(
-				widget.NewIcon(theme.MediaRecordIcon()),
-				widget.NewLabel("999.999 players"))
-		},
-		func(_ widget.GridWrapItemID, co fyne.CanvasObject) {
-			row := co.(*fyne.Container)
-			icon := row.Objects[0].(*widget.Icon)
-			label := row.Objects[1].(*widget.Label)
-			r1 := theme.MediaRecordIcon()
-			var r2 fyne.Resource
-			switch a.status {
-			case eveStatusOnline:
-				r2 = theme.NewSuccessThemedResource(r1)
-			case eveStatusError:
-				r2 = theme.NewErrorThemedResource(r1)
-			case eveStatusOffline:
-				r2 = theme.NewWarningThemedResource(r1)
-			case eveStatusUnknown:
-				r2 = theme.NewDisabledResource(r1)
-			}
-			icon.SetResource(r2)
-			label.SetText(a.title)
-		},
-	)
-	a.content.OnSelected = func(_ widget.GridWrapItemID) {
-		var i widget.Importance
-		var text string
-		if a.errorMessage == "" {
-			text = "No error detected"
-			i = widget.MediumImportance
-		} else {
-			text = a.errorMessage
-			i = widget.DangerImportance
-		}
-		lb := widget.NewLabel(text)
-		lb.Wrapping = fyne.TextWrapWord
-		lb.Importance = i
-		d := dialog.NewCustom("ESI status", "OK", container.NewVScroll(lb), a.ui.window)
-		d.SetOnClosed(func() {
-			a.content.UnselectAll()
-		})
-		d.Show()
-		d.Resize(fyne.Size{Width: 400, Height: 200})
-	}
-	return a
-}
-
-func (a *eveStatusArea) setStatus(status eveStatus, title, errorMessage string) {
-	a.status = status
-	a.title = title
-	a.errorMessage = errorMessage
-	a.content.Refresh()
-}
-
-type updateStatusOutput struct {
-	status app.Status
-	title  string
-}
-
-type characterUpdateStatusArea struct {
-	content *widget.GridWrap
-	data    updateStatusOutput
-	ui      *ui
-}
-
-func newCharacterUpdateStatusArea(u *ui) *characterUpdateStatusArea {
-	a := &characterUpdateStatusArea{ui: u}
-	a.content = widget.NewGridWrap(
-		func() int {
-			return 1
-		},
-		func() fyne.CanvasObject {
-			return container.NewHBox(
-				layout.NewSpacer(),
-				widget.NewLabel("100% Fresh"),
-				layout.NewSpacer(),
-			)
-		},
-		func(_ widget.GridWrapItemID, co fyne.CanvasObject) {
-			label := co.(*fyne.Container).Objects[1].(*widget.Label)
-			label.Text = a.data.title
-			label.Importance = status2widgetImportance(a.data.status)
-			label.Refresh()
-		},
-	)
-	a.content.OnSelected = func(_ widget.GridWrapItemID) {
-		a.ui.showStatusWindow()
-		a.content.UnselectAll()
-	}
-	return a
-}
-
-func (a *characterUpdateStatusArea) refresh() {
-	ss := a.ui.StatusCacheService.Summary()
-	a.data = updateStatusOutput{status: ss.Status(), title: ss.Display()}
-	a.content.Refresh()
 }

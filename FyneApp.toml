@@ -13,10 +13,9 @@ Website = "https://github.com/ErikKalkoken/evebuddy"
   Description = "<p>A companion app for Eve Online players. Please see website for details.</p>"
   License = "MIT"
   Screenshots = "https://cdn.imgpile.com/f/aD27GDt_xl.png"
-  Summary = "A companion app for Eve Online players"
 
 [LinuxAndBSD]
   GenericName = "Eve Online Tool"
   Categories = ["Game"]
-  Comment = "Show Eve Online Characters"
+  Comment = "A companion app for Eve Online players"
   Keywords = ["Eve Online", "characters"]
