@@ -14,6 +14,7 @@ import (
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/sync/singleflight"
@@ -143,6 +144,18 @@ func NewUI(isDebug bool) *ui {
 
 	u.tabs = container.NewAppTabs(u.characterTab, u.assetTab, u.mailTab, u.skillTab, u.walletTab, u.overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
+
+	// Enable system tray menu
+	if desk, ok := u.fyneApp.(desktop.App); ok {
+		m := fyne.NewMenu("MyApp",
+			fyne.NewMenuItem("Show", func() {
+				u.window.Show()
+			}))
+		desk.SetSystemTrayMenu(m)
+	}
+	u.window.SetCloseIntercept(func() {
+		u.window.Hide()
+	})
 
 	mainContent := container.NewBorder(nil, u.statusBarArea.content, nil, nil, u.tabs)
 	u.window.SetContent(mainContent)

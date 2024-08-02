@@ -27,6 +27,7 @@ EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) player
 - Overview of all your characters (e.g. wallet, skill points, location)
 - Wealth: Charts showing wealth distribution across all characters
 - Assets search: Full asset search across all your characters
+- App can minimizes to a system tray icon
 
 ## Screenshot
 
