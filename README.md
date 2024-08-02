@@ -1,6 +1,6 @@
 # EVE Buddy
 
-EVE Buddy is a companion app for Eve Online players. It runs on Windows, MacOS and LINUX desktops.
+A companion app for Eve Online players
 
 ![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)
 ![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml/badge.svg)
@@ -59,7 +59,7 @@ To run EVE buddy just download and unzip the latest release to your computer. Th
 
 1. Download the darwin zip file from the latest release on Github.
 1. Unzip the file into a directory of your choice
-1. Run the .app file to start the app.
+1. Remove the quarantine flag by running this command in a terminal window: `sudo xattr -r -d com.apple.quarantine "EVE Buddy.app"` (For more details please see [here](https://docs.fyne.io/faq/troubleshoot#distribution))
 
 ### Build and run from repository
 
