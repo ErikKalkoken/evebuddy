@@ -145,12 +145,19 @@ func NewUI(isDebug bool) *ui {
 	u.tabs = container.NewAppTabs(u.characterTab, u.assetTab, u.mailTab, u.skillTab, u.walletTab, u.overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	// Enable system tray menu
+	// Define system tray menu
 	if desk, ok := u.fyneApp.(desktop.App); ok {
-		m := fyne.NewMenu("MyApp",
-			fyne.NewMenuItem("Show", func() {
+		name := fyneApp.Metadata().Name
+		item := fyne.NewMenuItem(name, nil)
+		item.Disabled = true
+		m := fyne.NewMenu(
+			"MyApp",
+			item,
+			fyne.NewMenuItemSeparator(),
+			fyne.NewMenuItem(fmt.Sprintf("Open %s", name), func() {
 				u.window.Show()
-			}))
+			}),
+		)
 		desk.SetSystemTrayMenu(m)
 	}
 	u.window.SetCloseIntercept(func() {

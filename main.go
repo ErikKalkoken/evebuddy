@@ -72,7 +72,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	ad := appdirs.New("evebuddy")
 	if *removeFlag {
-		fmt.Print("Are you sure you want to remove all local data of this app (y/N)?")
+		fmt.Print("Are you sure you want to remove all locally stored data of this app (y/N)?")
 		var input string
 		fmt.Scanln(&input)
 		if strings.ToLower(input) == "y" {
@@ -95,11 +95,11 @@ func main() {
 		}
 		return
 	}
-	fn, err := makeLogFileName(ad, *localFlag)
-	if err != nil {
-		log.Fatal(err)
-	}
 	if *logFileFlag {
+		fn, err := makeLogFileName(ad, *localFlag)
+		if err != nil {
+			log.Fatal(err)
+		}
 		log.SetOutput(&lumberjack.Logger{
 			Filename:   fn,
 			MaxSize:    50, // megabytes

@@ -11,7 +11,7 @@ A companion app for Eve Online players
 - [Description](#description)
 - [Screenshot](#screenshot)
 - [How to Run](#how-to-run)
-  [Data Privacy](#data-privacy)
+  [FAQ](#faq)
 - [Credits](#credits)
 
 ## Description
@@ -27,7 +27,6 @@ EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) player
 - Overview of all your characters (e.g. wallet, skill points, location)
 - Wealth: Charts showing wealth distribution across all characters
 - Assets search: Full asset search across all your characters
-- App can minimizes to a system tray icon
 
 ## Screenshot
 
@@ -72,9 +71,21 @@ When you have all necessary tools installed, you can build and run this app dire
 go run github.com/ErikKalkoken/evebuddy@latest
 ```
 
-## Data privacy
+## Troubleshooting
 
-We understand and respect the privacy concerns of our fellow Eve Online players. Therefore all data of this app is stored and kept locally (e.g. character tokens and data). Internet requests by this app are made to CCPs game servers only.
+The app can be started with optional command line arguments, which offers some additional features and can help with trouble shooting. For example you can enable logging to a file and/or increase the log level.
+
+For a description of all features please run the app with the help flag:
+
+```sh
+evebuddy.exe -h
+```
+
+## FAQ
+
+### Where is my data stored? I am concerned about potentially leaking sensitive data
+
+All data downloaded from CCP's servers is stored on your computer only. There is no data transferred to any servers and the maintainers of this software have no access to your data. Therefore there is very little risk of sensitive data being leaked.
 
 ## Credits
 
