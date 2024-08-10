@@ -7,7 +7,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -34,9 +33,9 @@ type mailArea struct {
 
 	headerSection fyne.CanvasObject
 	headerTop     *widget.Label
-	headers       *widget.List
+	headerList    *widget.List
 	lastSelected  widget.ListItemID
-	headerData    binding.UntypedList
+	headers       []*app.CharacterMailHeader
 
 	body        *widget.Label
 	mailSection fyne.CanvasObject
@@ -51,7 +50,7 @@ func (u *ui) newMailArea() *mailArea {
 		foldersData: fynetree.New[folderNode](),
 		ui:          u,
 		headerTop:   widget.NewLabel(""),
-		headerData:  binding.NewUntypedList(),
+		headers:     make([]*app.CharacterMailHeader, 0),
 		body:        widget.NewLabel(""),
 		header:      widget.NewLabel(""),
 		subject:     widget.NewLabel(""),
@@ -68,8 +67,8 @@ func (u *ui) newMailArea() *mailArea {
 	a.mailSection = container.NewBorder(wrapper, nil, nil, nil, container.NewVScroll(a.body))
 
 	// Headers
-	a.headers = a.makeHeaderList()
-	a.headerSection = container.NewBorder(a.headerTop, nil, nil, nil, a.headers)
+	a.headerList = a.makeHeaderList()
+	a.headerSection = container.NewBorder(a.headerTop, nil, nil, nil, a.headerList)
 
 	// Folders
 	a.foldersWidget = a.makeFolderTree()
@@ -371,31 +370,29 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 }
 
 func (a *mailArea) makeHeaderList() *widget.List {
-	l := widget.NewListWithData(
-		a.headerData,
+	l := widget.NewList(
+		func() int {
+			return len(a.headers)
+		},
 		func() fyne.CanvasObject {
 			return widgets.NewMailHeaderItem(myDateTime)
 		},
-		func(di binding.DataItem, co fyne.CanvasObject) {
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(a.headers) {
+				return
+			}
+			m := a.headers[id]
 			if !a.ui.hasCharacter() {
 				return
 			}
 			item := co.(*widgets.MailHeaderItem)
-			m, err := convertDataItem[*app.CharacterMailHeader](di)
-			if err != nil {
-				slog.Error("Failed to get mail", "error", err)
-				item.SetError("Failed to get mail")
-				return
-			}
 			item.Set(m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
-		r, err := getItemUntypedList[*app.CharacterMailHeader](a.headerData, id)
-		if err != nil {
-			slog.Error("Failed to select mail header", "err", err)
-			l.UnselectAll()
+		if id >= len(a.headers) {
 			return
 		}
+		r := a.headers[id]
 		a.setMail(r.MailID)
 		a.lastSelected = id
 	}
@@ -405,13 +402,14 @@ func (a *mailArea) makeHeaderList() *widget.List {
 func (a *mailArea) setFolder(folder folderNode) {
 	a.currentFolder = optional.New(folder)
 	a.headerRefresh()
-	a.headers.ScrollToTop()
-	a.headers.UnselectAll()
+	a.headerList.ScrollToTop()
+	a.headerList.UnselectAll()
 	a.clearMail()
 }
 func (a *mailArea) clearFolder() {
 	a.currentFolder = optional.Optional[folderNode]{}
-	a.headerData.Set(nil)
+	a.headers = make([]*app.CharacterMailHeader, 0)
+	a.headerList.Refresh()
 	a.headerTop.SetText("")
 	a.clearMail()
 }
@@ -419,7 +417,7 @@ func (a *mailArea) clearFolder() {
 func (a *mailArea) headerRefresh() {
 	var t string
 	var i widget.Importance
-	if err := a.updateHeaderData(); err != nil {
+	if err := a.updateHeaders(); err != nil {
 		slog.Error("Failed to refresh mail headers UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
@@ -431,30 +429,29 @@ func (a *mailArea) headerRefresh() {
 	a.headerTop.Refresh()
 }
 
-func (a *mailArea) updateHeaderData() error {
+func (a *mailArea) updateHeaders() error {
 	ctx := context.TODO()
 	folderOption := a.currentFolder
 	if folderOption.IsEmpty() {
 		return nil
 	}
 	folder := folderOption.ValueOrZero()
-	var oo []*app.CharacterMailHeader
+	var headers []*app.CharacterMailHeader
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		oo, err = a.ui.CharacterService.ListCharacterMailHeadersForLabelOrdered(
+		headers, err = a.ui.CharacterService.ListCharacterMailHeadersForLabelOrdered(
 			ctx, folder.CharacterID, folder.ObjID)
 	case nodeCategoryList:
-		oo, err = a.ui.CharacterService.ListCharacterMailHeadersForListOrdered(
+		headers, err = a.ui.CharacterService.ListCharacterMailHeadersForListOrdered(
 			ctx, folder.CharacterID, folder.ObjID)
 	}
 	if err != nil {
 		return err
 	}
-	if err := a.headerData.Set(copyToUntypedSlice(oo)); err != nil {
-		return err
-	}
-	if len(oo) == 0 {
+	a.headers = headers
+	a.headerList.Refresh()
+	if len(headers) == 0 {
 		a.clearMail()
 	}
 	return nil
@@ -468,7 +465,7 @@ func (a *mailArea) makeFolderTopText() (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	s := fmt.Sprintf("%d mails", a.headerData.Length())
+	s := fmt.Sprintf("%d mails", len(a.headers))
 	return s, widget.MediumImportance
 }
 

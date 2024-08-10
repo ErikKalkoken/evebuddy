@@ -24,11 +24,12 @@ type accountCharacter struct {
 
 // accountArea is the UI area for managing of characters.
 type accountArea struct {
-	characters binding.UntypedList
+	characters []accountCharacter
 	content    *fyne.Container
 	dialog     *dialog.CustomDialog
 	bottom     *widget.Label
 	ui         *ui
+	list       *widget.List
 }
 
 func (u *ui) showAccountDialog() {
@@ -47,7 +48,7 @@ func (u *ui) showAccountDialog() {
 
 func (u *ui) newAccountArea() *accountArea {
 	a := &accountArea{
-		characters: binding.NewUntypedList(),
+		characters: make([]accountCharacter, 0),
 		ui:         u,
 	}
 
@@ -55,19 +56,21 @@ func (u *ui) newAccountArea() *accountArea {
 	a.bottom.Importance = widget.LowImportance
 	a.bottom.Hide()
 
-	list := a.makeCharacterList()
+	a.list = a.makeCharacterList()
 
 	b := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.showAddCharacterDialog()
 	})
 	b.Importance = widget.HighImportance
-	a.content = container.NewBorder(b, a.bottom, nil, nil, list)
+	a.content = container.NewBorder(b, a.bottom, nil, nil, a.list)
 	return a
 }
 
 func (a *accountArea) makeCharacterList() *widget.List {
-	l := widget.NewListWithData(
-		a.characters,
+	l := widget.NewList(
+		func() int {
+			return len(a.characters)
+		},
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
 			icon.FillMode = canvas.ImageFillContain
@@ -88,18 +91,13 @@ func (a *accountArea) makeCharacterList() *widget.List {
 			// }
 
 		},
-		func(di binding.DataItem, co fyne.CanvasObject) {
-			row := co.(*fyne.Container)
-
-			name := row.Objects[1].(*widget.Label)
-			c, err := convertDataItem[accountCharacter](di)
-			if err != nil {
-				slog.Error("failed to render row account table", "err", err)
-				name.Text = "failed to render"
-				name.Importance = widget.DangerImportance
-				name.Refresh()
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(a.characters) {
 				return
 			}
+			c := a.characters[id]
+			row := co.(*fyne.Container)
+			name := row.Objects[1].(*widget.Label)
 			name.SetText(c.name)
 
 			icon := row.Objects[0].(*canvas.Image)
@@ -113,11 +111,10 @@ func (a *accountArea) makeCharacterList() *widget.List {
 		})
 
 	l.OnSelected = func(id widget.ListItemID) {
-		c, err := getItemUntypedList[accountCharacter](a.characters, id)
-		if err != nil {
-			slog.Error("failed to access account character in list", "err", err)
+		if id >= len(a.characters) {
 			return
 		}
+		c := a.characters[id]
 		if err := a.ui.loadCharacter(context.TODO(), c.id); err != nil {
 			slog.Error("failed to load current character", "char", c, "err", err)
 			return
@@ -171,10 +168,9 @@ func (a *accountArea) Refresh() error {
 	for i, c := range cc {
 		cc2[i] = accountCharacter{id: c.ID, name: c.Name}
 	}
-	if err := a.characters.Set(copyToUntypedSlice(cc2)); err != nil {
-		return err
-	}
-	if a.characters.Length() > 0 {
+	a.characters = cc2
+	a.list.Refresh()
+	if len(cc2) > 0 {
 		a.bottom.Show()
 	} else {
 		a.bottom.Hide()
@@ -202,7 +198,7 @@ func (a *accountArea) showAddCharacterDialog() {
 			} else if err != nil {
 				return err
 			}
-			isFirst := a.characters.Length() == 0
+			isFirst := len(a.characters) == 0
 			if err := a.Refresh(); err != nil {
 				return err
 			}

@@ -8,7 +8,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
@@ -27,18 +26,18 @@ type walletTransaction struct {
 
 // walletTransactionArea is the UI area that shows the skillqueue
 type walletTransactionArea struct {
-	content *fyne.Container
-	entries binding.UntypedList // []walletTransaction
-	table   *widget.Table
-	top     *widget.Label
-	ui      *ui
+	content      *fyne.Container
+	transactions []walletTransaction
+	table        *widget.Table
+	top          *widget.Label
+	ui           *ui
 }
 
 func (u *ui) newWalletTransactionArea() *walletTransactionArea {
 	a := walletTransactionArea{
-		ui:      u,
-		entries: binding.NewUntypedList(),
-		top:     widget.NewLabel(""),
+		ui:           u,
+		transactions: make([]walletTransaction, 0),
+		top:          widget.NewLabel(""),
 	}
 	a.top.TextStyle.Bold = true
 
@@ -63,7 +62,7 @@ func (a *walletTransactionArea) makeTable() *widget.Table {
 	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
-			return a.entries.Length(), len(headers)
+			return len(a.transactions), len(headers)
 		},
 		func() fyne.CanvasObject {
 			x := widget.NewLabel("Template")
@@ -74,14 +73,10 @@ func (a *walletTransactionArea) makeTable() *widget.Table {
 			l := co.(*widget.Label)
 			l.Importance = widget.MediumImportance
 			l.Alignment = fyne.TextAlignLeading
-			w, err := getItemUntypedList[walletTransaction](a.entries, tci.Row)
-			if err != nil {
-				slog.Error("failed to render cell in wallet transaction table", "err", err)
-				l.Text = "failed to render"
-				l.Importance = widget.DangerImportance
-				l.Refresh()
+			if tci.Row >= len(a.transactions) {
 				return
 			}
+			w := a.transactions[tci.Row]
 			switch tci.Col {
 			case 0:
 				l.Text = w.date.Format(myDateTime)
@@ -156,34 +151,29 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 
 func (a *walletTransactionArea) updateEntries() error {
 	if !a.ui.hasCharacter() {
-		x := make([]any, 0)
-		err := a.entries.Set(x)
-		if err != nil {
-			return err
-		}
+		a.transactions = make([]walletTransaction, 0)
+		return nil
 	}
 	characterID := a.ui.characterID()
 	ww, err := a.ui.CharacterService.ListCharacterWalletTransactions(context.TODO(), characterID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch wallet journal for character %d: %w", characterID, err)
 	}
-	entries := make([]walletTransaction, len(ww))
+	transactions := make([]walletTransaction, len(ww))
 	for i, w := range ww {
-		var w2 walletTransaction
-		w2.client = w.Client.Name
-		w2.date = w.Date
-		w2.eveType = w.EveType.Name
-		w2.location = w.Location.Name
-		w2.quantity = w.Quantity
-		w2.unitPrice = w.UnitPrice
-		w2.total = w.UnitPrice * float64(w.Quantity)
+		var tx walletTransaction
+		tx.client = w.Client.Name
+		tx.date = w.Date
+		tx.eveType = w.EveType.Name
+		tx.location = w.Location.Name
+		tx.quantity = w.Quantity
+		tx.unitPrice = w.UnitPrice
+		tx.total = w.UnitPrice * float64(w.Quantity)
 		if w.IsBuy {
-			w2.total *= -1
+			tx.total *= -1
 		}
-		entries[i] = w2
+		transactions[i] = tx
 	}
-	if err := a.entries.Set(copyToUntypedSlice(entries)); err != nil {
-		return err
-	}
+	a.transactions = transactions
 	return nil
 }

@@ -33,7 +33,7 @@ func (se sectionEntity) IsGeneralSection() bool {
 
 type statusWindow struct {
 	characters      *widget.List
-	entitiesData    binding.UntypedList
+	entitiesData    []sectionEntity
 	charactersTop   *widget.Label
 	content         fyne.CanvasObject
 	details         *fyne.Container
@@ -76,7 +76,7 @@ func (u *ui) showStatusWindow() {
 
 func (u *ui) newStatusWindow() (*statusWindow, error) {
 	a := &statusWindow{
-		entitiesData:    binding.NewUntypedList(),
+		entitiesData:    make([]sectionEntity, 0),
 		charactersTop:   widget.NewLabel(""),
 		entitySelected:  binding.NewUntyped(),
 		sectionsData:    binding.NewUntypedList(),
@@ -126,8 +126,10 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 }
 
 func (a *statusWindow) makeEntityList() *widget.List {
-	list := widget.NewListWithData(
-		a.entitiesData,
+	list := widget.NewList(
+		func() int {
+			return len(a.entitiesData)
+		},
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(resourceQuestionmarkSvg)
 			icon.FillMode = canvas.ImageFillContain
@@ -147,17 +149,13 @@ func (a *statusWindow) makeEntityList() *widget.List {
 			// }
 
 		},
-		func(di binding.DataItem, co fyne.CanvasObject) {
-			row := co.(*fyne.Container)
-			name := row.Objects[1].(*widget.Label)
-			c, err := convertDataItem[sectionEntity](di)
-			if err != nil {
-				slog.Error("failed to render row account table", "err", err)
-				name.Text = "failed to render"
-				name.Importance = widget.DangerImportance
-				name.Refresh()
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(a.entitiesData) {
 				return
 			}
+			c := a.entitiesData[id]
+			row := co.(*fyne.Container)
+			name := row.Objects[1].(*widget.Label)
 			name.SetText(c.name)
 
 			icon := row.Objects[0].(*canvas.Image)
@@ -178,12 +176,12 @@ func (a *statusWindow) makeEntityList() *widget.List {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		c, err := getItemUntypedList[sectionEntity](a.entitiesData, id)
-		if err != nil {
-			slog.Error("failed to access section entity in list", "err", err)
+		if id >= len(a.entitiesData) {
 			list.UnselectAll()
+
 			return
 		}
+		c := a.entitiesData[id]
 		if err := a.entitySelected.Set(c); err != nil {
 			panic(err)
 		}
@@ -357,7 +355,7 @@ func makeForm(data []formItems) *widget.Form {
 func (a *statusWindow) refresh() error {
 	a.refreshEntityList()
 	a.refreshDetailArea()
-	a.charactersTop.SetText(fmt.Sprintf("Entities: %d", a.entitiesData.Length()))
+	a.charactersTop.SetText(fmt.Sprintf("Entities: %d", len(a.entitiesData)))
 	return nil
 }
 
@@ -376,9 +374,7 @@ func (a *statusWindow) refreshEntityList() error {
 		ss:   ss,
 	}
 	entities = append(entities, o)
-	if err := a.entitiesData.Set(copyToUntypedSlice(entities)); err != nil {
-		return err
-	}
+	a.entitiesData = entities
 	a.characters.Refresh()
 	return nil
 }

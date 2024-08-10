@@ -8,7 +8,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -19,7 +18,7 @@ import (
 // shipsArea is the UI area that shows the skillqueue
 type shipsArea struct {
 	content       *fyne.Container
-	entries       binding.UntypedList
+	ships         []*app.CharacterShipAbility
 	searchBox     *widget.Entry
 	groupSelect   *widget.Select
 	selectedGroup string
@@ -30,9 +29,9 @@ type shipsArea struct {
 
 func (u *ui) newShipArea() *shipsArea {
 	a := shipsArea{
-		ui:      u,
-		entries: binding.NewUntypedList(),
-		top:     widget.NewLabel(""),
+		ui:    u,
+		ships: make([]*app.CharacterShipAbility, 0),
+		top:   widget.NewLabel(""),
 	}
 	a.top.TextStyle.Bold = true
 	a.searchBox = a.makeSearchBox()
@@ -82,30 +81,27 @@ func (a *shipsArea) makeSearchBox() *widget.Entry {
 }
 
 func (a *shipsArea) makeShipsGrid() *widget.GridWrap {
-	g := widget.NewGridWrapWithData(
-		a.entries,
+	g := widget.NewGridWrap(
+		func() int {
+			return len(a.ships)
+		},
 		func() fyne.CanvasObject {
 			return widgets.NewShipItem(a.ui.EveImageService, resourceQuestionmarkSvg)
 		},
-		func(di binding.DataItem, co fyne.CanvasObject) {
-			item := co.(*widgets.ShipItem)
-			o, err := convertDataItem[*app.CharacterShipAbility](di)
-			if err != nil {
-				slog.Error("Failed to render ship item in UI", "err", err)
-				// label.Importance = widget.DangerImportance
-				// label.Text = "ERROR"
-				// label.Refresh()
+		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
+			if id >= len(a.ships) {
 				return
 			}
+			o := a.ships[id]
+			item := co.(*widgets.ShipItem)
 			item.Set(o.Type.ID, o.Type.Name, o.CanFly)
 		})
 	g.OnSelected = func(id widget.GridWrapItemID) {
 		defer g.UnselectAll()
-		o, err := getItemUntypedList[*app.CharacterShipAbility](a.entries, id)
-		if err != nil {
-			slog.Error("Failed to select ship", "err", err)
+		if id >= len(a.ships) {
 			return
 		}
+		o := a.ships[id]
 		a.ui.showTypeInfoWindow(o.Type.ID, a.ui.characterID())
 	}
 	return g
@@ -141,8 +137,8 @@ func (a *shipsArea) refresh() {
 
 func (a *shipsArea) updateEntries(ctx context.Context) error {
 	if !a.ui.hasCharacter() {
-		oo := make([]*app.CharacterShipAbility, 0)
-		a.entries.Set(copyToUntypedSlice(oo))
+		a.ships = make([]*app.CharacterShipAbility, 0)
+		a.grid.Refresh()
 		a.searchBox.SetText("")
 		a.groupSelect.SetOptions([]string{})
 		return nil
@@ -153,13 +149,14 @@ func (a *shipsArea) updateEntries(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	oo2 := make([]*app.CharacterShipAbility, 0)
+	ships := make([]*app.CharacterShipAbility, 0)
 	for _, o := range oo {
 		if a.selectedGroup == "" || o.Group.Name == a.selectedGroup {
-			oo2 = append(oo2, o)
+			ships = append(ships, o)
 		}
 	}
-	a.entries.Set(copyToUntypedSlice(oo2))
+	a.ships = ships
+	a.grid.Refresh()
 	groups := set.New[string]()
 	for _, o := range oo {
 		groups.Add(o.Group.Name)

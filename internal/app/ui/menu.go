@@ -17,11 +17,11 @@ func makeMenu(u *ui) (*fyne.MainMenu, *fyne.Menu) {
 	switchItem := fyne.NewMenuItem("Switch", nil)
 	switchItem.ChildMenu = fyne.NewMenu("")
 	characterMenu := fyne.NewMenu("Characters",
+		switchItem,
+		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("Manage...", func() {
 			u.showAccountDialog()
 		}),
-		fyne.NewMenuItemSeparator(),
-		switchItem,
 	)
 	helpMenu := fyne.NewMenu("Help",
 		fyne.NewMenuItem("Website", func() {
@@ -42,7 +42,7 @@ func makeMenu(u *ui) (*fyne.MainMenu, *fyne.Menu) {
 }
 
 func (u *ui) refreshCharacterMenu() error {
-	switchItem := u.characterMenu.Items[2]
+	switchItem := u.characterMenu.Items[0]
 	currentCharacterID := u.characterID()
 	ctx := context.TODO()
 	menuItems := make([]*fyne.MenuItem, 0)

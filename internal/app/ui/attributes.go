@@ -9,7 +9,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
@@ -31,14 +30,15 @@ func (a attribute) isText() bool {
 // attributesArea is the UI area that shows the skillqueue
 type attributesArea struct {
 	content    fyne.CanvasObject
-	attributes binding.UntypedList
+	attributes []attribute
 	top        *widget.Label
 	ui         *ui
+	list       *widget.List
 }
 
 func (u *ui) newAttributesArena() *attributesArea {
 	a := attributesArea{
-		attributes: binding.NewUntypedList(),
+		attributes: make([]attribute, 0),
 		top:        widget.NewLabel(""),
 		ui:         u,
 	}
@@ -49,8 +49,10 @@ func (u *ui) newAttributesArena() *attributesArea {
 }
 
 func (a *attributesArea) makeAttributeList() *widget.List {
-	l := widget.NewListWithData(
-		a.attributes,
+	l := widget.NewList(
+		func() int {
+			return len(a.attributes)
+		},
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(resourceQuestionmarkSvg)
 			icon.FillMode = canvas.ImageFillContain
@@ -58,18 +60,13 @@ func (a *attributesArea) makeAttributeList() *widget.List {
 			return container.NewHBox(
 				icon, widget.NewLabel("placeholder"), layout.NewSpacer(), widget.NewLabel("points"))
 		},
-		func(di binding.DataItem, co fyne.CanvasObject) {
-			row := co.(*fyne.Container)
-
-			name := row.Objects[1].(*widget.Label)
-			q, err := convertDataItem[attribute](di)
-			if err != nil {
-				slog.Error("failed to render row in attributes table", "err", err)
-				name.Text = "failed to render"
-				name.Importance = widget.DangerImportance
-				name.Refresh()
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(a.attributes) {
 				return
 			}
+			q := a.attributes[id]
+			row := co.(*fyne.Container)
+			name := row.Objects[1].(*widget.Label)
 			name.SetText(q.name)
 
 			icon := row.Objects[0].(*canvas.Image)
@@ -122,18 +119,13 @@ func (a *attributesArea) makeTopText(total int) (string, widget.Importance) {
 
 func (a *attributesArea) updateData() (int, error) {
 	if !a.ui.hasCharacter() {
-		err := a.attributes.Set(make([]any, 0))
-		if err != nil {
-			return 0, err
-		}
+		a.attributes = make([]attribute, 0)
+		return 0, nil
 	}
 	ctx := context.TODO()
 	ca, err := a.ui.CharacterService.GetCharacterAttributes(ctx, a.ui.characterID())
 	if errors.Is(err, character.ErrNotFound) {
-		err := a.attributes.Set(make([]any, 0))
-		if err != nil {
-			return 0, err
-		}
+		a.attributes = make([]attribute, 0)
 		return 0, nil
 	} else if err != nil {
 		return 0, err
@@ -143,7 +135,7 @@ func (a *attributesArea) updateData() (int, error) {
 	resWillpower := eveicon.GetResourceByName(eveicon.Willpower)
 	resIntelligence := eveicon.GetResourceByName(eveicon.Intelligence)
 	resCharisma := eveicon.GetResourceByName(eveicon.Charisma)
-	items := make([]any, 6)
+	items := make([]attribute, 6)
 	items[0] = attribute{
 		icon:   resPerception,
 		name:   "Perception",
@@ -172,9 +164,7 @@ func (a *attributesArea) updateData() (int, error) {
 	items[5] = attribute{
 		name: fmt.Sprintf("Bonus Remaps Available: %d", ca.BonusRemaps),
 	}
-	if err := a.attributes.Set(items); err != nil {
-		return 0, err
-	}
+	a.attributes = items
 	total := ca.Charisma + ca.Intelligence + ca.Memory + ca.Perception + ca.Willpower
 	return total, nil
 }

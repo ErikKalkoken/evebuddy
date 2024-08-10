@@ -9,7 +9,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
@@ -50,7 +49,7 @@ func (e walletJournalEntry) descriptionWithReason() string {
 // walletJournalArea is the UI area that shows the skillqueue
 type walletJournalArea struct {
 	content *fyne.Container
-	entries binding.UntypedList // []walletJournalEntry
+	entries []walletJournalEntry
 	table   *widget.Table
 	top     *widget.Label
 	ui      *ui
@@ -59,7 +58,7 @@ type walletJournalArea struct {
 func (u *ui) newWalletJournalArea() *walletJournalArea {
 	a := walletJournalArea{
 		ui:      u,
-		entries: binding.NewUntypedList(),
+		entries: make([]walletJournalEntry, 0),
 		top:     widget.NewLabel(""),
 	}
 
@@ -83,7 +82,7 @@ func (a *walletJournalArea) makeTable() *widget.Table {
 	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
-			return a.entries.Length(), len(headers)
+			return len(a.entries), len(headers)
 		},
 		func() fyne.CanvasObject {
 			x := widget.NewLabel("Template")
@@ -94,14 +93,10 @@ func (a *walletJournalArea) makeTable() *widget.Table {
 			l := co.(*widget.Label)
 			l.Importance = widget.MediumImportance
 			l.Alignment = fyne.TextAlignLeading
-			w, err := getItemUntypedList[walletJournalEntry](a.entries, tci.Row)
-			if err != nil {
-				slog.Error("failed to render cell in wallet journal table", "err", err)
-				l.Text = "failed to render"
-				l.Importance = widget.DangerImportance
-				l.Refresh()
+			if tci.Row >= len(a.entries) {
 				return
 			}
+			w := a.entries[tci.Row]
 			switch tci.Col {
 			case 0:
 				l.Text = w.date.Format(myDateTime)
@@ -141,11 +136,10 @@ func (a *walletJournalArea) makeTable() *widget.Table {
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
-		e, err := getItemUntypedList[walletJournalEntry](a.entries, tci.Row)
-		if err != nil {
-			slog.Error("Failed to select wallet journal entry", "err", err)
+		if tci.Row >= len(a.entries) {
 			return
 		}
+		e := a.entries[tci.Row]
 		if e.hasReason() {
 			c := widget.NewLabel(e.reason)
 			dlg := dialog.NewCustom("Reason", "OK", c, a.ui.window)
@@ -186,11 +180,8 @@ func (a *walletJournalArea) makeTopText() (string, widget.Importance) {
 
 func (a *walletJournalArea) updateEntries() error {
 	if !a.ui.hasCharacter() {
-		x := make([]any, 0)
-		err := a.entries.Set(x)
-		if err != nil {
-			return err
-		}
+		a.entries = make([]walletJournalEntry, 0)
+		return nil
 	}
 	characterID := a.ui.characterID()
 	ww, err := a.ui.CharacterService.ListCharacterWalletJournalEntries(context.TODO(), characterID)
@@ -208,8 +199,6 @@ func (a *walletJournalArea) updateEntries() error {
 		w2.refType = w.RefType
 		entries[i] = w2
 	}
-	if err := a.entries.Set(copyToUntypedSlice(entries)); err != nil {
-		return err
-	}
+	a.entries = entries
 	return nil
 }

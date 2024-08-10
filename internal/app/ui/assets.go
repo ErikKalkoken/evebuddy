@@ -9,7 +9,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -65,8 +64,8 @@ var defaultAssetIcon = theme.NewDisabledResource(resourceQuestionmarkSvg)
 // assetsArea is the UI area that shows the skillqueue
 type assetsArea struct {
 	content          fyne.CanvasObject
-	assets           *widget.GridWrap
-	assetsData       binding.UntypedList
+	assetGrid        *widget.GridWrap
+	assets           []*app.CharacterAsset
 	locationPath     *fyne.Container
 	assetsBottom     *widget.Label
 	locationsWidget  *widget.Tree
@@ -80,7 +79,7 @@ type assetsArea struct {
 func (u *ui) newAssetsArea() *assetsArea {
 	myHBox := layout.NewCustomPaddedHBoxLayout(-5)
 	a := assetsArea{
-		assetsData:    binding.NewUntypedList(),
+		assets:        make([]*app.CharacterAsset, 0),
 		locationPath:  container.New(myHBox),
 		assetsBottom:  widget.NewLabel(""),
 		locationsData: fynetree.New[locationDataNode](),
@@ -97,13 +96,13 @@ func (u *ui) newAssetsArea() *assetsArea {
 		a.locationsWidget,
 	)
 
-	a.assets = a.makeAssetGrid()
+	a.assetGrid = a.makeAssetGrid()
 	assets := container.NewBorder(
 		container.NewVBox(a.locationPath, widget.NewSeparator()),
 		container.NewVBox(widget.NewSeparator(), a.assetsBottom),
 		nil,
 		nil,
-		a.assets,
+		a.assetGrid,
 	)
 	main := container.NewHSplit(locations, assets)
 	main.SetOffset(0.33)
@@ -161,37 +160,36 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 }
 
 func (a *assetsArea) clearAssets() error {
-	empty := make([]*app.CharacterAsset, 0)
-	if err := a.assetsData.Set(copyToUntypedSlice(empty)); err != nil {
-		return err
-	}
+	a.assets = make([]*app.CharacterAsset, 0)
+	a.assetGrid.Refresh()
 	a.locationPath.RemoveAll()
 	a.selectedLocation.Clear()
 	return nil
 }
 
 func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
-	g := widget.NewGridWrapWithData(
-		a.assetsData,
+	g := widget.NewGridWrap(
+		func() int {
+			return len(a.assets)
+		},
 		func() fyne.CanvasObject {
 			return widgets.NewAssetListWidget(a.ui.EveImageService, defaultAssetIcon)
 		},
-		func(di binding.DataItem, co fyne.CanvasObject) {
-			ca, err := convertDataItem[*app.CharacterAsset](di)
-			if err != nil {
-				panic(err)
+		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
+			if id >= len(a.assets) {
+				return
 			}
+			ca := a.assets[id]
 			item := co.(*widgets.AssetListWidget)
 			item.SetAsset(ca)
 		},
 	)
 	g.OnSelected = func(id widget.GridWrapItemID) {
 		defer g.UnselectAll()
-		ca, err := getItemUntypedList[*app.CharacterAsset](a.assetsData, id)
-		if err != nil {
-			slog.Error("failed to access assets in grid", "err", err)
+		if id >= len(a.assets) {
 			return
 		}
+		ca := a.assets[id]
 		if ca.IsContainer() {
 			if a.selectedLocation.IsEmpty() {
 				return
@@ -397,10 +395,8 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 }
 
 func (a *assetsArea) selectLocation(location locationDataNode) error {
-	empty := make([]*app.CharacterAsset, 0)
-	if err := a.assetsData.Set(copyToUntypedSlice(empty)); err != nil {
-		return err
-	}
+	a.assets = make([]*app.CharacterAsset, 0)
+	a.assetGrid.Refresh()
 	a.selectedLocation.Set(location)
 	selectedUID := location.UID()
 	for _, uid := range a.locationsData.Path(selectedUID) {
@@ -452,9 +448,8 @@ func (a *assetsArea) selectLocation(location locationDataNode) error {
 		}
 		assets = fuel
 	}
-	if err := a.assetsData.Set(copyToUntypedSlice(assets)); err != nil {
-		return err
-	}
+	a.assets = assets
+	a.assetGrid.Refresh()
 	var total float64
 	for _, ca := range assets {
 		total += ca.Price.ValueOrZero() * float64(ca.Quantity)

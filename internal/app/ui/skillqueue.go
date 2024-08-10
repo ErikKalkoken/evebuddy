@@ -8,7 +8,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
@@ -22,14 +21,15 @@ import (
 // skillqueueArea is the UI area that shows the skillqueue
 type skillqueueArea struct {
 	content *fyne.Container
-	items   binding.UntypedList
+	items   []*app.CharacterSkillqueueItem
 	total   *widget.Label
 	ui      *ui
+	list    *widget.List
 }
 
 func (u *ui) newSkillqueueArea() *skillqueueArea {
 	a := skillqueueArea{
-		items: binding.NewUntypedList(),
+		items: make([]*app.CharacterSkillqueueItem, 0),
 		total: widget.NewLabel(""),
 		ui:    u,
 	}
@@ -43,28 +43,28 @@ func (u *ui) newSkillqueueArea() *skillqueueArea {
 }
 
 func (a *skillqueueArea) makeSkillqueue() *widget.List {
-	list := widget.NewListWithData(
-		a.items,
+	list := widget.NewList(
+		func() int {
+			return len(a.items)
+		},
 		func() fyne.CanvasObject {
 			return widgets.NewSkillQueueItem()
 		},
-		func(di binding.DataItem, co fyne.CanvasObject) {
-			item := co.(*widgets.SkillQueueItem)
-			q, err := convertDataItem[*app.CharacterSkillqueueItem](di)
-			if err != nil {
-				slog.Error("failed to render row in skillqueue table", "err", err)
-				item.SetError("failed to render", err)
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(a.items) {
 				return
 			}
+			q := a.items[id]
+			item := co.(*widgets.SkillQueueItem)
 			item.Set(q.SkillName, q.FinishedLevel, q.IsActive(), q.Remaining(), q.Duration(), q.CompletionP())
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		q, err := getItemUntypedList[*app.CharacterSkillqueueItem](a.items, id)
-		if err != nil {
-			slog.Error("failed to access skillqueue item in list", "err", err)
+		if id >= len(a.items) {
+			list.UnselectAll()
 			return
 		}
+		q := a.items[id]
 		var isActive string
 		if q.IsActive() {
 			isActive = "yes"
@@ -138,26 +138,20 @@ func (a *skillqueueArea) updateItems() (optional.Optional[time.Duration], option
 	var completion optional.Optional[float64]
 	ctx := context.TODO()
 	if !a.ui.hasCharacter() {
-		err := a.items.Set(make([]any, 0))
-		if err != nil {
-			return remaining, completion, err
-		}
+		a.items = make([]*app.CharacterSkillqueueItem, 0)
+		return remaining, completion, nil
 	}
-	skills, err := a.ui.CharacterService.ListCharacterSkillqueueItems(ctx, a.ui.characterID())
+	items, err := a.ui.CharacterService.ListCharacterSkillqueueItems(ctx, a.ui.characterID())
 	if err != nil {
 		return remaining, completion, err
 	}
-	items := make([]any, len(skills))
-	for i, skill := range skills {
-		items[i] = skill
-		remaining = optional.New(remaining.ValueOrZero() + skill.Remaining().ValueOrZero())
-		if skill.IsActive() {
-			completion = optional.New(skill.CompletionP())
+	for _, item := range items {
+		remaining = optional.New(remaining.ValueOrZero() + item.Remaining().ValueOrZero())
+		if item.IsActive() {
+			completion = optional.New(item.CompletionP())
 		}
 	}
-	if err := a.items.Set(items); err != nil {
-		return remaining, completion, err
-	}
+	a.items = items
 	return remaining, completion, nil
 }
 
@@ -166,7 +160,7 @@ func (a *skillqueueArea) makeTopText(total optional.Optional[time.Duration]) (st
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	if a.items.Length() == 0 {
+	if len(a.items) == 0 {
 		return "Training not active", widget.WarningImportance
 	}
 	t := fmt.Sprintf("Total training time: %s", ihumanize.Optional(total, "?"))
