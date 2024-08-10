@@ -5,13 +5,13 @@ import (
 	"errors"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/antihax/goesi/esi"
 )
 
 func (s *CharacterService) GetCharacterAttributes(ctx context.Context, characterID int32) (*app.CharacterAttributes, error) {
 	o, err := s.st.GetCharacterAttributes(ctx, characterID)
-	if errors.Is(err, sqlite.ErrNotFound) {
+	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
 	return o, err
@@ -32,7 +32,7 @@ func (s *CharacterService) updateCharacterAttributesESI(ctx context.Context, arg
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			attributes := data.(esi.GetCharactersCharacterIdAttributesOk)
-			arg := sqlite.UpdateOrCreateCharacterAttributesParams{
+			arg := storage.UpdateOrCreateCharacterAttributesParams{
 				CharacterID:   characterID,
 				BonusRemaps:   int(attributes.BonusRemaps),
 				Charisma:      int(attributes.Charisma),

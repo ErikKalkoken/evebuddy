@@ -11,9 +11,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 )
@@ -31,8 +31,8 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		eveType := factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 3516})
-		location := factory.CreateLocationStructure(sqlite.UpdateOrCreateLocationParams{ID: 60002959})
+		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516})
+		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v5/characters/%d/assets/", c.ID),
@@ -107,8 +107,8 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		eveType := factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 3516})
-		location := factory.CreateLocationStructure(sqlite.UpdateOrCreateLocationParams{ID: 60002959})
+		eveType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 3516})
+		location := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60002959})
 		pages := "2"
 		httpmock.RegisterResponder(
 			"GET",
@@ -185,7 +185,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 	})
 }
 
-func newCharacterService(st *sqlite.Storage) *CharacterService {
+func newCharacterService(st *storage.Storage) *CharacterService {
 	sc := statuscache.New(cache.New())
 	eu := eveuniverse.New(st, nil)
 	eu.StatusCacheService = sc

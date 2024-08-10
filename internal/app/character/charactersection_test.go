@@ -8,8 +8,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -63,7 +63,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
@@ -93,7 +93,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			Data:        data,
 		})
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
@@ -125,7 +125,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			Section:     section,
 		})
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
@@ -152,7 +152,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
@@ -179,7 +179,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			Section:     section,
 		})
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
@@ -213,7 +213,7 @@ func TestUpdateCharacterSection(t *testing.T) {
 			Data:        data,
 		})
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),

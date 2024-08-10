@@ -7,7 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
@@ -28,13 +28,13 @@ type CharacterService struct {
 	esiClient  *goesi.APIClient
 	httpClient *http.Client
 	sfg        *singleflight.Group
-	st         *sqlite.Storage
+	st         *storage.Storage
 }
 
 // New creates a new Characters service and returns it.
 // When nil is passed for any parameter a new default instance will be created for it (except for storage).
 func New(
-	st *sqlite.Storage,
+	st *storage.Storage,
 	httpClient *http.Client,
 	esiClient *goesi.APIClient,
 

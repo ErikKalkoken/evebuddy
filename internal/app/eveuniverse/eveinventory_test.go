@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
 
 func TestGetOrCreateEveCategoryESI(t *testing.T) {
@@ -26,7 +26,7 @@ func TestGetOrCreateEveCategoryESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveCategory(sqlite.CreateEveCategoryParams{ID: 6})
+		factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: 6})
 		// when
 		x1, err := s.GetOrCreateEveCategoryESI(ctx, 6)
 		// then
@@ -80,7 +80,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveGroup(sqlite.CreateEveGroupParams{ID: 25})
+		factory.CreateEveGroup(storage.CreateEveGroupParams{ID: 25})
 		// when
 		x1, err := s.GetOrCreateEveGroupESI(ctx, 25)
 		// then
@@ -92,7 +92,7 @@ func TestGetOrCreateEveGroupESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveCategory(sqlite.CreateEveCategoryParams{ID: 6})
+		factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: 6})
 		data := `{
 			"category_id": 6,
 			"group_id": 25,
@@ -137,7 +137,7 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 587})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
 		// when
 		x1, err := s.GetOrCreateEveTypeESI(ctx, 587)
 		// then
@@ -149,9 +149,9 @@ func TestGetOrCreateEveTypeESI(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		factory.CreateEveGroup(sqlite.CreateEveGroupParams{ID: 25})
-		factory.CreateEveDogmaAttribute(sqlite.CreateEveDogmaAttributeParams{ID: 161})
-		factory.CreateEveDogmaAttribute(sqlite.CreateEveDogmaAttributeParams{ID: 162})
+		factory.CreateEveGroup(storage.CreateEveGroupParams{ID: 25})
+		factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{ID: 161})
+		factory.CreateEveDogmaAttribute(storage.CreateEveDogmaAttributeParams{ID: 162})
 		data := `{
 			"description": "The Rifter is a...",
 			"dogma_attributes": [

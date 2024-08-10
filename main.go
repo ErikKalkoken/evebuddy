@@ -16,8 +16,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
@@ -108,12 +108,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	db, err := sqlite.InitDB(dsn)
+	db, err := storage.InitDB(dsn)
 	if err != nil {
 		log.Fatalf("Failed to initialize database %s: %s", dsn, err)
 	}
 	defer db.Close()
-	st := sqlite.New(db)
+	st := storage.New(db)
 	imageCacheDir, err := makeImageCachePath(ad, *localFlag)
 	if err != nil {
 		log.Fatal(err)

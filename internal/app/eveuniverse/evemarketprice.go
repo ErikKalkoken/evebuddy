@@ -5,12 +5,12 @@ import (
 	"errors"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
 func (eu *EveUniverseService) GetEveMarketPrice(ctx context.Context, typeID int32) (*app.EveMarketPrice, error) {
 	o, err := eu.st.GetEveMarketPrice(ctx, typeID)
-	if errors.Is(err, sqlite.ErrNotFound) {
+	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	} else if err != nil {
 		return nil, err
@@ -26,7 +26,7 @@ func (eu *EveUniverseService) updateEveMarketPricesESI(ctx context.Context) erro
 		return err
 	}
 	for _, p := range prices {
-		arg := sqlite.UpdateOrCreateEveMarketPriceParams{
+		arg := storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:        p.TypeId,
 			AdjustedPrice: p.AdjustedPrice,
 			AveragePrice:  p.AveragePrice,

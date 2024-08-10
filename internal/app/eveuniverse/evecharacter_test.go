@@ -12,8 +12,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
 
 func TestGetOrCreateEveCharacterESI(t *testing.T) {
@@ -102,7 +102,7 @@ func TestUpdateAllEveCharactersESI(t *testing.T) {
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: characterID})
 		factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
 		factory.CreateEveEntityAlliance(app.EveEntity{ID: 434243723})
-		factory.CreateEveCharacter(sqlite.CreateEveCharacterParams{ID: characterID})
+		factory.CreateEveCharacter(storage.CreateEveCharacterParams{ID: characterID})
 		httpmock.Reset()
 		dataCharacter := map[string]any{
 			"birthday":        "2015-03-24T11:37:00Z",

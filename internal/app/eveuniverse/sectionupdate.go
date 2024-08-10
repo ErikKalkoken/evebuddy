@@ -9,14 +9,14 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"golang.org/x/sync/errgroup"
 )
 
 func (eu *EveUniverseService) getSectionStatus(ctx context.Context, section app.GeneralSection) (*app.GeneralSectionStatus, error) {
 	x, err := eu.st.GetGeneralSectionStatus(ctx, section)
-	if errors.Is(err, sqlite.ErrNotFound) {
+	if errors.Is(err, storage.ErrNotFound) {
 		return nil, nil
 	} else if err != nil {
 		return x, err
@@ -48,7 +48,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	_, err, _ = s.sfg.Do(key, func() (any, error) {
 		slog.Info("Started updating eveuniverse section", "section", section)
 		startedAt := optional.New(time.Now())
-		arg2 := sqlite.UpdateOrCreateGeneralSectionStatusParams{
+		arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 			Section:   section,
 			StartedAt: &startedAt,
 		}
@@ -64,7 +64,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	if err != nil {
 		errorMessage := humanize.Error(err)
 		startedAt := optional.Optional[time.Time]{}
-		arg2 := sqlite.UpdateOrCreateGeneralSectionStatusParams{
+		arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 			Section:   section,
 			Error:     &errorMessage,
 			StartedAt: &startedAt,
@@ -76,10 +76,10 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		s.StatusCacheService.GeneralSectionSet(o)
 		return false, err
 	}
-	completedAt := sqlite.NewNullTime(time.Now())
+	completedAt := storage.NewNullTime(time.Now())
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}
-	arg2 := sqlite.UpdateOrCreateGeneralSectionStatusParams{
+	arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 		Section: section,
 
 		Error:       &errorMessage,

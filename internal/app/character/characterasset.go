@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
@@ -113,7 +113,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 			existingIDs := set.NewFromSlice(ids)
 			for _, a := range assets {
 				if existingIDs.Has(a.ItemId) {
-					arg := sqlite.UpdateCharacterAssetParams{
+					arg := storage.UpdateCharacterAssetParams{
 						CharacterID:  characterID,
 						ItemID:       a.ItemId,
 						LocationFlag: a.LocationFlag,
@@ -126,7 +126,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 						return err
 					}
 				} else {
-					arg := sqlite.CreateCharacterAssetParams{
+					arg := storage.CreateCharacterAssetParams{
 						CharacterID:     characterID,
 						EveTypeID:       a.TypeId,
 						IsBlueprintCopy: a.IsBlueprintCopy,

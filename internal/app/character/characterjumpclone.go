@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/antihax/goesi/esi"
 )
@@ -41,7 +41,7 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			if err := s.st.UpdateCharacterHome(ctx, characterID, home); err != nil {
 				return err
 			}
-			args := make([]sqlite.CreateCharacterJumpCloneParams, len(clones.JumpClones))
+			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))
 			for i, jc := range clones.JumpClones {
 				_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, jc.LocationId)
 				if err != nil {
@@ -50,7 +50,7 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 				if err := s.EveUniverseService.AddMissingEveTypes(ctx, jc.Implants); err != nil {
 					return err
 				}
-				args[i] = sqlite.CreateCharacterJumpCloneParams{
+				args[i] = storage.CreateCharacterJumpCloneParams{
 					CharacterID: characterID,
 					LocationID:  jc.LocationId,
 					JumpCloneID: int64(jc.JumpCloneId),

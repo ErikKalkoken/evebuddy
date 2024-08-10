@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/singleflight"
 )
@@ -18,11 +18,11 @@ type EveUniverseService struct {
 
 	esiClient *goesi.APIClient
 	sfg       *singleflight.Group
-	st        *sqlite.Storage
+	st        *storage.Storage
 }
 
 // New returns a new instance of an Eve universe service.
-func New(st *sqlite.Storage, esiClient *goesi.APIClient) *EveUniverseService {
+func New(st *storage.Storage, esiClient *goesi.APIClient) *EveUniverseService {
 	eu := &EveUniverseService{
 		esiClient: esiClient,
 		st:        st,

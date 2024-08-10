@@ -8,7 +8,7 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 
 	"github.com/antihax/goesi/esi"
 )
@@ -20,7 +20,7 @@ func (eu *EveUniverseService) GetOrCreateEveEntityESI(ctx context.Context, id in
 	o, err := eu.st.GetEveEntity(ctx, id)
 	if err == nil {
 		return o, nil
-	} else if !errors.Is(err, sqlite.ErrNotFound) {
+	} else if !errors.Is(err, storage.ErrNotFound) {
 		return nil, err
 	}
 	_, err = eu.AddMissingEveEntities(ctx, []int32{id})

@@ -6,9 +6,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 	"github.com/stretchr/testify/assert"
@@ -66,7 +66,7 @@ func TestGetAnyCharacter(t *testing.T) {
 	})
 }
 
-func newCharacterService(st *sqlite.Storage) *character.CharacterService {
+func newCharacterService(st *storage.Storage) *character.CharacterService {
 	sc := statuscache.New(cache.New())
 	eu := eveuniverse.New(st, nil)
 	eu.StatusCacheService = sc

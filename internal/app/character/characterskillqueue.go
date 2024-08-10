@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/antihax/goesi/esi"
 )
@@ -37,13 +37,13 @@ func (s *CharacterService) UpdateCharacterSkillqueueESI(ctx context.Context, arg
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			items := data.([]esi.GetCharactersCharacterIdSkillqueue200Ok)
-			args := make([]sqlite.SkillqueueItemParams, len(items))
+			args := make([]storage.SkillqueueItemParams, len(items))
 			for i, o := range items {
 				_, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, o.SkillId)
 				if err != nil {
 					return err
 				}
-				args[i] = sqlite.SkillqueueItemParams{
+				args[i] = storage.SkillqueueItemParams{
 					EveTypeID:       o.SkillId,
 					FinishDate:      o.FinishDate,
 					FinishedLevel:   int(o.FinishedLevel),

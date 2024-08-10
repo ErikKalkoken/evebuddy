@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
 
 func TestUpdateCharacterSkillsESI(t *testing.T) {
@@ -26,8 +26,8 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 41})
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 42})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 42})
 		data := map[string]any{
 			"skills": []map[string]any{
 				{
@@ -83,8 +83,8 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		// old := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 41})
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 42})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 42})
 		data := map[string]any{
 			"skills": []map[string]any{
 				{
@@ -110,7 +110,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
 			_, err := st.GetCharacterSkill(ctx, c.ID, 42)
-			assert.Error(t, err, sqlite.ErrNotFound)
+			assert.Error(t, err, storage.ErrNotFound)
 			_, err = st.GetCharacterSkill(ctx, c.ID, 41)
 			assert.NoError(t, err)
 		}

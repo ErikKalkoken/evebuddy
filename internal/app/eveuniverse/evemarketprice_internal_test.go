@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +47,7 @@ func TestUpdateEveMarketPricesESI(t *testing.T) {
 	t.Run("should update existing objects from ESI", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		factory.CreateEveMarketPrice(sqlite.UpdateOrCreateEveMarketPriceParams{
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
 			TypeID:        32772,
 			AdjustedPrice: 2,
 			AveragePrice:  3,

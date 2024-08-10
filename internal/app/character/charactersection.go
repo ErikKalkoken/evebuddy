@@ -12,7 +12,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -94,7 +94,7 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 		// TODO: Move this part into updateCharacterSectionIfChanged()
 		errorMessage := humanize.Error(err)
 		startedAt := optional.Optional[time.Time]{}
-		arg2 := sqlite.UpdateOrCreateCharacterSectionStatusParams{
+		arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
 			CharacterID:  arg.CharacterID,
 			Section:      arg.Section,
 			ErrorMessage: &errorMessage,
@@ -120,7 +120,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	update func(ctx context.Context, characterID int32, data any) error,
 ) (bool, error) {
 	startedAt := optional.New(time.Now())
-	arg2 := sqlite.UpdateOrCreateCharacterSectionStatusParams{
+	arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID: arg.CharacterID,
 		Section:     arg.Section,
 		StartedAt:   &startedAt,
@@ -164,10 +164,10 @@ func (s *CharacterService) updateSectionIfChanged(
 	}
 
 	// record successful completion
-	completedAt := sqlite.NewNullTime(time.Now())
+	completedAt := storage.NewNullTime(time.Now())
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}
-	arg2 = sqlite.UpdateOrCreateCharacterSectionStatusParams{
+	arg2 = storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID: arg.CharacterID,
 		Section:     arg.Section,
 
@@ -188,7 +188,7 @@ func (s *CharacterService) updateSectionIfChanged(
 
 func (s *CharacterService) getCharacterSectionStatus(ctx context.Context, characterID int32, section app.CharacterSection) (*app.CharacterSectionStatus, error) {
 	o, err := s.st.GetCharacterSectionStatus(ctx, characterID, section)
-	if errors.Is(err, sqlite.ErrNotFound) {
+	if errors.Is(err, storage.ErrNotFound) {
 		return nil, nil
 	} else if err != nil {
 		return nil, err

@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/dustin/go-humanize"
 )
 
 func (eu *EveUniverseService) GetEveDogmaAttribute(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
 	o, err := eu.st.GetEveDogmaAttribute(ctx, id)
-	if errors.Is(err, sqlite.ErrNotFound) {
+	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	} else if err != nil {
 		return nil, err
@@ -24,7 +24,7 @@ func (eu *EveUniverseService) GetEveDogmaAttribute(ctx context.Context, id int32
 
 func (eu *EveUniverseService) GetOrCreateEveDogmaAttributeESI(ctx context.Context, id int32) (*app.EveDogmaAttribute, error) {
 	o, err := eu.st.GetEveDogmaAttribute(ctx, id)
-	if errors.Is(err, sqlite.ErrNotFound) {
+	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveDogmaAttributeFromESI(ctx, id)
 	} else if err != nil {
 		return o, err
@@ -39,7 +39,7 @@ func (eu *EveUniverseService) createEveDogmaAttributeFromESI(ctx context.Context
 		if err != nil {
 			return nil, err
 		}
-		arg := sqlite.CreateEveDogmaAttributeParams{
+		arg := storage.CreateEveDogmaAttributeParams{
 			ID:           o.AttributeId,
 			DefaultValue: o.DefaultValue,
 			Description:  o.Description,

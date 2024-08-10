@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,8 +23,8 @@ func TestStatusCache(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
-		ec := factory.CreateEveCharacter(sqlite.CreateEveCharacterParams{Name: "Bruce"})
-		c := factory.CreateCharacter(sqlite.UpdateOrCreateCharacterParams{ID: ec.ID})
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
+		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{ID: ec.ID})
 		section1 := app.SectionImplants
 		x1 := factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
 			CharacterID: c.ID,
@@ -100,8 +100,8 @@ func TestStatusCache(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		cache.Clear()
-		ec := factory.CreateEveCharacter(sqlite.CreateEveCharacterParams{Name: "Bruce"})
-		c := factory.CreateCharacter(sqlite.UpdateOrCreateCharacterParams{ID: ec.ID})
+		ec := factory.CreateEveCharacter(storage.CreateEveCharacterParams{Name: "Bruce"})
+		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{ID: ec.ID})
 		// when
 		if err := sc.UpdateCharacters(ctx, st); err != nil {
 			t.Fatal(err)

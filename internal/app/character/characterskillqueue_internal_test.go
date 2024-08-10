@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
 
 func TestUpdateSkillqueueESI(t *testing.T) {
@@ -26,8 +26,8 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 100})
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 101})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 101})
 		data := []map[string]any{
 			{
 				"finish_date":    "2016-06-29T10:47:00Z",

@@ -9,12 +9,12 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
 func (eu *EveUniverseService) GetOrCreateEveCharacterESI(ctx context.Context, id int32) (*app.EveCharacter, error) {
 	x, err := eu.st.GetEveCharacter(ctx, id)
-	if errors.Is(err, sqlite.ErrNotFound) {
+	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveCharacterFromESI(ctx, id)
 	} else if err != nil {
 		return x, err
@@ -44,7 +44,7 @@ func (eu *EveUniverseService) createEveCharacterFromESI(ctx context.Context, id 
 		if err != nil {
 			return nil, err
 		}
-		arg := sqlite.CreateEveCharacterParams{
+		arg := storage.CreateEveCharacterParams{
 			AllianceID:     r.AllianceId,
 			ID:             id,
 			Birthday:       r.Birthday,

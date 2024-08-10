@@ -6,7 +6,7 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
@@ -74,7 +74,7 @@ func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Conte
 				if err != nil {
 					return err
 				}
-				arg := sqlite.CreateCharacterWalletTransactionParams{
+				arg := storage.CreateCharacterWalletTransactionParams{
 					ClientID:      o.ClientId,
 					Date:          o.Date,
 					EveTypeID:     o.TypeId,

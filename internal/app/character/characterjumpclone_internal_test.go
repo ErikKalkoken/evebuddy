@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
 
 func TestUpdateCharacterJumpClonesESI(t *testing.T) {
@@ -26,9 +26,9 @@ func TestUpdateCharacterJumpClonesESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(sqlite.CreateEveTypeParams{ID: 22118})
-		factory.CreateLocationStructure(sqlite.UpdateOrCreateLocationParams{ID: 60003463})
-		factory.CreateLocationStructure(sqlite.UpdateOrCreateLocationParams{ID: 1021348135816})
+		factory.CreateEveType(storage.CreateEveTypeParams{ID: 22118})
+		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60003463})
+		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 1021348135816})
 		data := map[string]any{
 			"home_location": map[string]any{
 				"location_id":   1021348135816,

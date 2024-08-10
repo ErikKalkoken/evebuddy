@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/antihax/goesi/esi"
@@ -25,7 +25,7 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, characterID int3
 
 func (s *CharacterService) GetCharacter(ctx context.Context, characterID int32) (*app.Character, error) {
 	o, err := s.st.GetCharacter(ctx, characterID)
-	if errors.Is(err, sqlite.ErrNotFound) {
+	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
 	return o, err
@@ -33,7 +33,7 @@ func (s *CharacterService) GetCharacter(ctx context.Context, characterID int32) 
 
 func (s *CharacterService) GetAnyCharacter(ctx context.Context) (*app.Character, error) {
 	o, err := s.st.GetFirstCharacter(ctx)
-	if errors.Is(err, sqlite.ErrNotFound) {
+	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
 	return o, err
@@ -70,7 +70,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 	myCharacter := &app.Character{
 		ID: token.CharacterID,
 	}
-	arg := sqlite.UpdateOrCreateCharacterParams{
+	arg := storage.UpdateOrCreateCharacterParams{
 		ID:            myCharacter.ID,
 		LastLoginAt:   myCharacter.LastLoginAt,
 		TotalSP:       myCharacter.TotalSP,

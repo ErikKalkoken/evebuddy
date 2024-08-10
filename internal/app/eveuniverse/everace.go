@@ -6,12 +6,12 @@ import (
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/sqlite"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
 func (eu *EveUniverseService) GetOrCreateEveRaceESI(ctx context.Context, id int32) (*app.EveRace, error) {
 	x, err := eu.st.GetEveRace(ctx, id)
-	if errors.Is(err, sqlite.ErrNotFound) {
+	if errors.Is(err, storage.ErrNotFound) {
 		return eu.createEveRaceFromESI(ctx, id)
 	} else if err != nil {
 		return x, err
