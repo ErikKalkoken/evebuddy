@@ -8,6 +8,7 @@ import (
 
 // An Eve Online character owners by the user.
 type Character struct {
+	AssetValue    optional.Optional[float64]
 	EveCharacter  *EveCharacter
 	Home          *EveLocation
 	ID            int32

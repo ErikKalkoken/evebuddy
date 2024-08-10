@@ -119,7 +119,7 @@ AND location_flag = ?
 AND eg.eve_category_id != ?
 ORDER BY et.id, ca.name;
 
--- name: GetCharacterAssetTotalValue :one
+-- name: CalculateCharacterAssetTotalValue :one
 SELECT SUM(IFNULL(emp.average_price, 0) * quantity * IIF(ca.is_blueprint_copy IS TRUE, 0, 1)) as total
 FROM character_assets ca
 LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id

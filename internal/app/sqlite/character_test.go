@@ -67,6 +67,7 @@ func TestCharacter(t *testing.T) {
 		login := time.Now()
 		arg := sqlite.UpdateOrCreateCharacterParams{
 			ID:            character.ID,
+			AssetValue:    optional.New(3.4),
 			HomeID:        optional.New(home.ID),
 			LastLoginAt:   optional.New(login),
 			LocationID:    optional.New(location.ID),
@@ -86,6 +87,7 @@ func TestCharacter(t *testing.T) {
 				assert.Equal(t, ship, r.Ship)
 				assert.Equal(t, 123, r.TotalSP.ValueOrZero())
 				assert.Equal(t, 1.2, r.WalletBalance.ValueOrZero())
+				assert.Equal(t, 3.4, r.AssetValue.ValueOrZero())
 			}
 		}
 	})
@@ -96,10 +98,14 @@ func TestCharacter(t *testing.T) {
 		// when
 		newLocation := factory.CreateLocationStructure()
 		newShip := factory.CreateEveType()
+		assetValue := optional.New(1.2)
+		walletBalance := optional.New(3.4)
 		err := r.UpdateOrCreateCharacter(ctx, sqlite.UpdateOrCreateCharacterParams{
-			ID:         c1.ID,
-			LocationID: optional.New(newLocation.ID),
-			ShipID:     optional.New(newShip.ID),
+			ID:            c1.ID,
+			LocationID:    optional.New(newLocation.ID),
+			ShipID:        optional.New(newShip.ID),
+			AssetValue:    assetValue,
+			WalletBalance: walletBalance,
 		})
 		// then
 		if assert.NoError(t, err) {
@@ -107,6 +113,8 @@ func TestCharacter(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, newLocation, c2.Location)
 				assert.Equal(t, newShip, c2.Ship)
+				assert.Equal(t, assetValue, c2.AssetValue)
+				assert.Equal(t, walletBalance, c2.WalletBalance)
 			}
 		}
 	})

@@ -70,8 +70,8 @@ func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, ite
 	return o, nil
 }
 
-func (st *Storage) GetCharacterAssetTotalValue(ctx context.Context, characterID int32) (float64, error) {
-	v, err := st.q.GetCharacterAssetTotalValue(ctx, int64(characterID))
+func (st *Storage) CalculateCharacterAssetTotalValue(ctx context.Context, characterID int32) (float64, error) {
+	v, err := st.q.CalculateCharacterAssetTotalValue(ctx, int64(characterID))
 	if err != nil {
 		return 0, err
 	}

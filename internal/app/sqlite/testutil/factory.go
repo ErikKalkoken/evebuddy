@@ -58,6 +58,9 @@ func (f Factory) CreateCharacter(args ...sqlite.UpdateOrCreateCharacterParams) *
 	if arg.WalletBalance.IsEmpty() {
 		arg.WalletBalance = optional.New(rand.Float64() * 100_000_000_000)
 	}
+	if arg.AssetValue.IsEmpty() {
+		arg.AssetValue = optional.New(rand.Float64() * 100_000_000_000)
+	}
 	err := f.st.UpdateOrCreateCharacter(ctx, arg)
 	if err != nil {
 		panic(err)

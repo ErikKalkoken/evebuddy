@@ -329,7 +329,7 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 		}
 	}
 	for i, c := range cc {
-		v, err := a.ui.CharacterService.CharacterAssetTotalValue(c.id)
+		v, err := a.ui.CharacterService.CharacterAssetTotalValue(ctx, c.id)
 		if err != nil {
 			return totals, fmt.Errorf("failed to fetch asset total value for character %d, %w", c.id, err)
 		}

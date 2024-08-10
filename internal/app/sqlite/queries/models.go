@@ -18,6 +18,7 @@ type Character struct {
 	TotalSp       sql.NullInt64
 	UnallocatedSp sql.NullInt64
 	WalletBalance sql.NullFloat64
+	AssetValue    sql.NullFloat64
 }
 
 type CharacterAsset struct {

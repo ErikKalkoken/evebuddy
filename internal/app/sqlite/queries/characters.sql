@@ -21,6 +21,11 @@ LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters
 LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.faction_id
 WHERE characters.id = ?;
 
+-- name: GetCharacterAssetValue :one
+SELECT asset_value
+FROM characters
+WHERE id = ?;
+
 -- name: ListCharacters :many
 SELECT DISTINCT
     sqlc.embed(characters),
@@ -87,6 +92,12 @@ SET
     wallet_balance = ?
 WHERE id = ?;
 
+-- name: UpdateCharacterAssetValue :exec
+UPDATE characters
+SET
+    asset_value = ?
+WHERE id = ?;
+
 -- name: UpdateOrCreateCharacter :exec
 INSERT INTO characters (
     id,
@@ -96,10 +107,11 @@ INSERT INTO characters (
     ship_id,
     total_sp,
     unallocated_sp,
-    wallet_balance
+    wallet_balance,
+    asset_value
 )
 VALUES (
-    ?1, ?2, ?3, ?4, ?5 ,?6, ?7, ?8
+    ?1, ?2, ?3, ?4, ?5 ,?6, ?7, ?8, ?9
 )
 ON CONFLICT(id) DO
 UPDATE SET
@@ -109,5 +121,6 @@ UPDATE SET
     ship_id = ?5,
     total_sp = ?6,
     unallocated_sp = ?7,
-    wallet_balance = ?8
+    wallet_balance = ?8,
+    asset_value = ?9
 WHERE id = ?1;

@@ -50,8 +50,6 @@ func (l *logLevelFlag) Set(value string) error {
 	return nil
 }
 
-// TODO: Reset flag defaults for production
-
 // defined flags
 var (
 	levelFlag   logLevelFlag

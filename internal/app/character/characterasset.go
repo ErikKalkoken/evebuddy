@@ -2,7 +2,6 @@ package character
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"math"
 	"net/http"
@@ -192,31 +191,17 @@ func (s *CharacterService) fetchCharacterAssetNamesESI(ctx context.Context, char
 	return m, nil
 }
 
-func (s *CharacterService) CharacterAssetTotalValue(characterID int32) (optional.Optional[float64], error) {
-	key := makeCharacterAssetTotalValueKey(characterID)
-	v, found, err := s.DictionaryService.Float64(key)
-	if err != nil {
-		return optional.Optional[float64]{}, err
-	}
-	if found {
-		return optional.New(v), nil
-	}
-	return optional.Optional[float64]{}, nil
+func (s *CharacterService) CharacterAssetTotalValue(ctx context.Context, characterID int32) (optional.Optional[float64], error) {
+	return s.st.GetCharacterAssetValue(ctx, characterID)
 }
 
 func (s *CharacterService) UpdateCharacterAssetTotalValue(ctx context.Context, characterID int32) (float64, error) {
-	v, err := s.st.GetCharacterAssetTotalValue(ctx, characterID)
+	v, err := s.st.CalculateCharacterAssetTotalValue(ctx, characterID)
 	if err != nil {
 		return 0, err
 	}
-	key := makeCharacterAssetTotalValueKey(characterID)
-	if err := s.DictionaryService.SetFloat64(key, v); err != nil {
+	if err := s.st.UpdateCharacterAssetValue(ctx, characterID, optional.New(v)); err != nil {
 		return 0, err
 	}
 	return v, nil
-}
-
-func makeCharacterAssetTotalValueKey(characterID int32) string {
-	key := fmt.Sprintf("character-asset-total-value-%d", characterID)
-	return key
 }

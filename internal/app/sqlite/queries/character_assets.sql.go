@@ -11,6 +11,20 @@ import (
 	"strings"
 )
 
+const calculateCharacterAssetTotalValue = `-- name: CalculateCharacterAssetTotalValue :one
+SELECT SUM(IFNULL(emp.average_price, 0) * quantity * IIF(ca.is_blueprint_copy IS TRUE, 0, 1)) as total
+FROM character_assets ca
+LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
+WHERE character_id = ?
+`
+
+func (q *Queries) CalculateCharacterAssetTotalValue(ctx context.Context, characterID int64) (sql.NullFloat64, error) {
+	row := q.db.QueryRowContext(ctx, calculateCharacterAssetTotalValue, characterID)
+	var total sql.NullFloat64
+	err := row.Scan(&total)
+	return total, err
+}
+
 const createCharacterAsset = `-- name: CreateCharacterAsset :exec
 INSERT INTO character_assets (
     character_id,
@@ -153,20 +167,6 @@ func (q *Queries) GetCharacterAsset(ctx context.Context, arg GetCharacterAssetPa
 		&i.Price,
 	)
 	return i, err
-}
-
-const getCharacterAssetTotalValue = `-- name: GetCharacterAssetTotalValue :one
-SELECT SUM(IFNULL(emp.average_price, 0) * quantity * IIF(ca.is_blueprint_copy IS TRUE, 0, 1)) as total
-FROM character_assets ca
-LEFT JOIN eve_market_prices emp ON emp.type_id = ca.eve_type_id
-WHERE character_id = ?
-`
-
-func (q *Queries) GetCharacterAssetTotalValue(ctx context.Context, characterID int64) (sql.NullFloat64, error) {
-	row := q.db.QueryRowContext(ctx, getCharacterAssetTotalValue, characterID)
-	var total sql.NullFloat64
-	err := row.Scan(&total)
-	return total, err
 }
 
 const listAllCharacterAssets = `-- name: ListAllCharacterAssets :many

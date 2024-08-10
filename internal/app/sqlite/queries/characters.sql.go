@@ -22,7 +22,7 @@ func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
 
 const getCharacter = `-- name: GetCharacter :one
 SELECT
-    characters.id, characters.home_id, characters.last_login_at, characters.location_id, characters.ship_id, characters.total_sp, characters.unallocated_sp, characters.wallet_balance,
+    characters.id, characters.home_id, characters.last_login_at, characters.location_id, characters.ship_id, characters.total_sp, characters.unallocated_sp, characters.wallet_balance, characters.asset_value,
     eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
     corporations.id, corporations.category, corporations.name,
     eve_races.id, eve_races.description, eve_races.name,
@@ -64,6 +64,7 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.Character.TotalSp,
 		&i.Character.UnallocatedSp,
 		&i.Character.WalletBalance,
+		&i.Character.AssetValue,
 		&i.EveCharacter.AllianceID,
 		&i.EveCharacter.Birthday,
 		&i.EveCharacter.CorporationID,
@@ -92,6 +93,19 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.ShipID,
 	)
 	return i, err
+}
+
+const getCharacterAssetValue = `-- name: GetCharacterAssetValue :one
+SELECT asset_value
+FROM characters
+WHERE id = ?
+`
+
+func (q *Queries) GetCharacterAssetValue(ctx context.Context, id int64) (sql.NullFloat64, error) {
+	row := q.db.QueryRowContext(ctx, getCharacterAssetValue, id)
+	var asset_value sql.NullFloat64
+	err := row.Scan(&asset_value)
+	return asset_value, err
 }
 
 const listCharacterIDs = `-- name: ListCharacterIDs :many
@@ -124,7 +138,7 @@ func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
 
 const listCharacters = `-- name: ListCharacters :many
 SELECT DISTINCT
-    characters.id, characters.home_id, characters.last_login_at, characters.location_id, characters.ship_id, characters.total_sp, characters.unallocated_sp, characters.wallet_balance,
+    characters.id, characters.home_id, characters.last_login_at, characters.location_id, characters.ship_id, characters.total_sp, characters.unallocated_sp, characters.wallet_balance, characters.asset_value,
     eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
     corporations.id, corporations.category, corporations.name,
     eve_races.id, eve_races.description, eve_races.name,
@@ -172,6 +186,7 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.Character.TotalSp,
 			&i.Character.UnallocatedSp,
 			&i.Character.WalletBalance,
+			&i.Character.AssetValue,
 			&i.EveCharacter.AllianceID,
 			&i.EveCharacter.Birthday,
 			&i.EveCharacter.CorporationID,
@@ -245,6 +260,23 @@ func (q *Queries) ListCharactersShort(ctx context.Context) ([]ListCharactersShor
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateCharacterAssetValue = `-- name: UpdateCharacterAssetValue :exec
+UPDATE characters
+SET
+    asset_value = ?
+WHERE id = ?
+`
+
+type UpdateCharacterAssetValueParams struct {
+	AssetValue sql.NullFloat64
+	ID         int64
+}
+
+func (q *Queries) UpdateCharacterAssetValue(ctx context.Context, arg UpdateCharacterAssetValueParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterAssetValue, arg.AssetValue, arg.ID)
+	return err
 }
 
 const updateCharacterHomeId = `-- name: UpdateCharacterHomeId :exec
@@ -360,10 +392,11 @@ INSERT INTO characters (
     ship_id,
     total_sp,
     unallocated_sp,
-    wallet_balance
+    wallet_balance,
+    asset_value
 )
 VALUES (
-    ?1, ?2, ?3, ?4, ?5 ,?6, ?7, ?8
+    ?1, ?2, ?3, ?4, ?5 ,?6, ?7, ?8, ?9
 )
 ON CONFLICT(id) DO
 UPDATE SET
@@ -373,7 +406,8 @@ UPDATE SET
     ship_id = ?5,
     total_sp = ?6,
     unallocated_sp = ?7,
-    wallet_balance = ?8
+    wallet_balance = ?8,
+    asset_value = ?9
 WHERE id = ?1
 `
 
@@ -386,6 +420,7 @@ type UpdateOrCreateCharacterParams struct {
 	TotalSp       sql.NullInt64
 	UnallocatedSp sql.NullInt64
 	WalletBalance sql.NullFloat64
+	AssetValue    sql.NullFloat64
 }
 
 func (q *Queries) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreateCharacterParams) error {
@@ -398,6 +433,7 @@ func (q *Queries) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreat
 		arg.TotalSp,
 		arg.UnallocatedSp,
 		arg.WalletBalance,
+		arg.AssetValue,
 	)
 	return err
 }

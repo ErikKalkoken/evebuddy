@@ -170,12 +170,24 @@ func (st *Storage) UpdateCharacterWalletBalance(ctx context.Context, characterID
 		WalletBalance: optional.ToNullFloat64(v),
 	}
 	if err := st.q.UpdateCharacterWalletBalance(ctx, arg); err != nil {
-		return fmt.Errorf("failed to update sp for character %d: %w", characterID, err)
+		return fmt.Errorf("failed to update wallet balance for character %d: %w", characterID, err)
+	}
+	return nil
+}
+
+func (st *Storage) UpdateCharacterAssetValue(ctx context.Context, characterID int32, v optional.Optional[float64]) error {
+	arg := queries.UpdateCharacterAssetValueParams{
+		ID:         int64(characterID),
+		AssetValue: optional.ToNullFloat64(v),
+	}
+	if err := st.q.UpdateCharacterAssetValue(ctx, arg); err != nil {
+		return fmt.Errorf("failed to update asset value for character %d: %w", characterID, err)
 	}
 	return nil
 }
 
 type UpdateOrCreateCharacterParams struct {
+	AssetValue    optional.Optional[float64]
 	ID            int32
 	HomeID        optional.Optional[int64]
 	LastLoginAt   optional.Optional[time.Time]
@@ -189,6 +201,7 @@ type UpdateOrCreateCharacterParams struct {
 func (st *Storage) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreateCharacterParams) error {
 	arg2 := queries.UpdateOrCreateCharacterParams{
 		ID:            int64(arg.ID),
+		AssetValue:    optional.ToNullFloat64(arg.AssetValue),
 		HomeID:        optional.ToNullInt64(arg.HomeID),
 		LastLoginAt:   optional.ToNullTime(arg.LastLoginAt),
 		LocationID:    optional.ToNullInt64(arg.LocationID),
@@ -197,7 +210,6 @@ func (st *Storage) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCrea
 		UnallocatedSp: optional.ToNullInt64(arg.UnallocatedSP),
 		WalletBalance: optional.ToNullFloat64(arg.WalletBalance),
 	}
-
 	if err := st.q.UpdateOrCreateCharacter(ctx, arg2); err != nil {
 		return fmt.Errorf("failed to update or create Character %d: %w", arg.ID, err)
 	}
@@ -217,6 +229,7 @@ func (st *Storage) characterFromDBModel(
 	shipID sql.NullInt64,
 ) (*app.Character, error) {
 	c := app.Character{
+		AssetValue:    optional.FromNullFloat64(character.AssetValue),
 		EveCharacter:  eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
 		ID:            int32(character.ID),
 		LastLoginAt:   optional.FromNullTime(character.LastLoginAt),
@@ -246,4 +259,12 @@ func (st *Storage) characterFromDBModel(
 		c.Ship = x
 	}
 	return &c, nil
+}
+
+func (st *Storage) GetCharacterAssetValue(ctx context.Context, characterID int32) (optional.Optional[float64], error) {
+	v, err := st.q.GetCharacterAssetValue(ctx, int64(characterID))
+	if err != nil {
+		return optional.Optional[float64]{}, err
+	}
+	return optional.FromNullFloat64(v), nil
 }
