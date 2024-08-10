@@ -27,7 +27,7 @@ EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) player
 - Overview of all your characters (e.g. wallet, skill points, location)
 - Wealth: Charts showing wealth distribution across all characters
 - Assets search: Full asset search across all your characters
-- Shows indicator for unread mail in sys tray
+- Can minimize to system tray and show indicator for new mail
 
 ## Screenshot
 

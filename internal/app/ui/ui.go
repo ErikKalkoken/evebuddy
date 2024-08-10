@@ -151,22 +151,23 @@ func NewUI(isDebug bool) *ui {
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	// Define system tray menu
-	name := fyneApp.Metadata().Name
-	item := fyne.NewMenuItem(name, nil)
-	item.Disabled = true
-	m := fyne.NewMenu(
-		"MyApp",
-		item,
-		fyne.NewMenuItemSeparator(),
-		fyne.NewMenuItem(fmt.Sprintf("Open %s", name), func() {
-			u.window.Show()
-		}),
-	)
-	u.deskApp.SetSystemTrayMenu(m)
-	u.window.SetCloseIntercept(func() {
-		u.window.Hide()
-	})
-
+	if fyneApp.Preferences().Bool(settingSysTrayEnabled) {
+		name := fyneApp.Metadata().Name
+		item := fyne.NewMenuItem(name, nil)
+		item.Disabled = true
+		m := fyne.NewMenu(
+			"MyApp",
+			item,
+			fyne.NewMenuItemSeparator(),
+			fyne.NewMenuItem(fmt.Sprintf("Open %s", name), func() {
+				u.window.Show()
+			}),
+		)
+		u.deskApp.SetSystemTrayMenu(m)
+		u.window.SetCloseIntercept(func() {
+			u.window.Hide()
+		})
+	}
 	mainContent := container.NewBorder(nil, u.statusBarArea.content, nil, nil, u.tabs)
 	u.window.SetContent(mainContent)
 	menu, characterMenu := makeMenu(u)

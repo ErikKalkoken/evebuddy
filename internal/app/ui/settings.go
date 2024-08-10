@@ -22,6 +22,7 @@ const (
 	settingMaxWalletTransactionsDefault = 10_000
 	settingTheme                        = "settings-theme"
 	settingThemeDefault                 = themeAuto
+	settingSysTrayEnabled               = "settings-sysTrayEnabled"
 )
 
 // Themes
@@ -88,6 +89,11 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 		cacheSize = humanize.Bytes(uint64(s))
 	}
 	cacheHintText := fmt.Sprintf("Clear the local image cache (%s)", cacheSize)
+
+	sysTrayEnabled := u.fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, true)
+	sysTrayCheck := widget.NewCheck("Show in system tray", nil)
+	sysTrayCheck.SetChecked(sysTrayEnabled)
+
 	var d *dialog.CustomDialog
 	form := &widget.Form{
 		Items: []*widget.FormItem{
@@ -105,7 +111,13 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 				Text:     "Theme",
 				Widget:   themeRadio,
 				HintText: "Chose the preferred theme",
-			}, {
+			},
+			{
+				Text:     "System Tray",
+				Widget:   sysTrayCheck,
+				HintText: "Show icon in system tray (requires restart)",
+			},
+			{
 				Text:     "Image cache",
 				Widget:   clearBtn,
 				HintText: cacheHintText,
@@ -119,6 +131,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 			u.fyneApp.Preferences().SetInt(settingMaxMails, maxMails)
 			u.themeSet(themeRadio.Selected)
 			u.fyneApp.Preferences().SetString(settingTheme, themeRadio.Selected)
+			u.fyneApp.Preferences().SetBool(settingSysTrayEnabled, sysTrayCheck.Checked)
 			d.Hide()
 		},
 		OnCancel: func() {
