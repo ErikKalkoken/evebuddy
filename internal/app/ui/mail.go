@@ -527,6 +527,7 @@ func (a *mailArea) setMail(mailID int32) {
 				return
 			}
 			a.refresh()
+			a.ui.overviewArea.refresh()
 		}()
 	}
 

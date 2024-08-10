@@ -44,8 +44,10 @@ type ui struct {
 	EveImageService    app.EveImageService
 	EveUniverseService *eveuniverse.EveUniverseService
 	StatusCacheService app.StatusCacheService
+	fyneApp            fyne.App
+	deskApp            desktop.App
+	window             fyne.Window
 
-	fyneApp               fyne.App
 	assetsArea            *assetsArea
 	assetSearchArea       *assetSearchArea
 	attributesArea        *attributesArea
@@ -67,7 +69,6 @@ type ui struct {
 	walletJournalArea     *walletJournalArea
 	walletTransactionArea *walletTransactionArea
 	wealthArea            *wealthArea
-	window                fyne.Window
 
 	assetTab     *container.TabItem
 	characterTab *container.TabItem
@@ -81,11 +82,16 @@ type ui struct {
 // NewUI build the UI and returns it.
 func NewUI(isDebug bool) *ui {
 	fyneApp := fyneapp.New()
+	desk, ok := fyneApp.(desktop.App)
+	if !ok {
+		log.Fatal("Failed to initialize as desktop app")
+	}
 	u := &ui{
 		fyneApp: fyneApp,
 		isDebug: isDebug,
 		sfg:     new(singleflight.Group),
 		window:  fyneApp.NewWindow(""),
+		deskApp: desk,
 	}
 	u.attributesArea = u.newAttributesArena()
 	u.biographyArea = u.newBiographyArea()
@@ -146,20 +152,18 @@ func NewUI(isDebug bool) *ui {
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	// Define system tray menu
-	if desk, ok := u.fyneApp.(desktop.App); ok {
-		name := fyneApp.Metadata().Name
-		item := fyne.NewMenuItem(name, nil)
-		item.Disabled = true
-		m := fyne.NewMenu(
-			"MyApp",
-			item,
-			fyne.NewMenuItemSeparator(),
-			fyne.NewMenuItem(fmt.Sprintf("Open %s", name), func() {
-				u.window.Show()
-			}),
-		)
-		desk.SetSystemTrayMenu(m)
-	}
+	name := fyneApp.Metadata().Name
+	item := fyne.NewMenuItem(name, nil)
+	item.Disabled = true
+	m := fyne.NewMenu(
+		"MyApp",
+		item,
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem(fmt.Sprintf("Open %s", name), func() {
+			u.window.Show()
+		}),
+	)
+	u.deskApp.SetSystemTrayMenu(m)
 	u.window.SetCloseIntercept(func() {
 		u.window.Hide()
 	})
@@ -402,6 +406,14 @@ func (u *ui) resetCharacter() {
 		slog.Error("Failed to delete last character setting")
 	}
 	u.refreshCharacter()
+}
+
+func (u *ui) showMailIndicator() {
+	u.deskApp.SetSystemTrayIcon(resourceIconmarkedPng)
+}
+
+func (u *ui) hideMailIndicator() {
+	u.deskApp.SetSystemTrayIcon(resourceIconPng)
 }
 
 func (u *ui) showErrorDialog(message string, err error) {

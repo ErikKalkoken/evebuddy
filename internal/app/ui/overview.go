@@ -8,7 +8,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
@@ -42,7 +41,7 @@ type overviewCharacter struct {
 // overviewArea is the UI area that shows an overview of all the user's characters.
 type overviewArea struct {
 	content    *fyne.Container
-	characters binding.UntypedList // []overviewCharacter
+	characters []overviewCharacter
 	table      *widget.Table
 	top        *widget.Label
 	ui         *ui
@@ -50,7 +49,7 @@ type overviewArea struct {
 
 func (u *ui) newOverviewArea() *overviewArea {
 	a := overviewArea{
-		characters: binding.NewUntypedList(),
+		characters: make([]overviewCharacter, 0),
 		top:        widget.NewLabel(""),
 		ui:         u,
 	}
@@ -113,7 +112,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 
 	t := widget.NewTable(
 		func() (rows int, cols int) {
-			return a.characters.Length(), len(headers)
+			return len(a.characters), len(headers)
 		},
 		func() fyne.CanvasObject {
 			x := widget.NewLabel("Template")
@@ -122,14 +121,10 @@ func (a *overviewArea) makeTable() *widget.Table {
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			l := co.(*widget.Label)
-			c, err := getItemUntypedList[overviewCharacter](a.characters, tci.Row)
-			if err != nil {
-				slog.Error("failed to render cell in overview table", "err", err)
-				l.Text = "failed to render"
-				l.Importance = widget.DangerImportance
-				l.Refresh()
+			if tci.Row >= len(a.characters) {
 				return
 			}
+			c := a.characters[tci.Row]
 			l.Importance = widget.MediumImportance
 			switch tci.Col {
 			case 0:
@@ -202,11 +197,10 @@ func (a *overviewArea) makeTable() *widget.Table {
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
-		c, err := getItemUntypedList[overviewCharacter](a.characters, tci.Row)
-		if err != nil {
-			slog.Error("Failed to retrieve overview character", "err", err)
+		if tci.Row <= len(a.characters) {
 			return
 		}
+		c := a.characters[tci.Row]
 		if action := headers[tci.Col].action; action != nil {
 			action(c)
 		}
@@ -229,11 +223,11 @@ func (u *ui) selectCharacterAndTab(characterID int32, tab *container.TabItem, su
 
 func (a *overviewArea) refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
-		totals, err := a.updateEntries()
+		totals, err := a.updateCharacters()
 		if err != nil {
 			return "", 0, err
 		}
-		if a.characters.Length() == 0 {
+		if len(a.characters) == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
 		walletText := ihumanize.OptionalFloat(totals.wallet, 1, "?")
@@ -242,7 +236,7 @@ func (a *overviewArea) refresh() {
 		unreadText := ihumanize.Optional(totals.unread, "?")
 		s := fmt.Sprintf(
 			"Total: %d characters • %s ISK wallet • %s ISK assets • %s SP  • %s unread",
-			a.characters.Length(),
+			len(a.characters),
 			walletText,
 			assetsText,
 			spText,
@@ -267,7 +261,7 @@ type overviewTotals struct {
 	assets optional.Optional[float64]
 }
 
-func (a *overviewArea) updateEntries() (overviewTotals, error) {
+func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 	var totals overviewTotals
 	var err error
 	ctx := context.TODO()
@@ -341,9 +335,6 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 		}
 		cc[i].assetValue = v
 	}
-	if err := a.characters.Set(copyToUntypedSlice(cc)); err != nil {
-		return totals, err
-	}
 	for _, c := range cc {
 		if !c.totalSP.IsEmpty() {
 			totals.sp.Set(totals.sp.ValueOrZero() + c.totalSP.MustValue())
@@ -357,6 +348,17 @@ func (a *overviewArea) updateEntries() (overviewTotals, error) {
 		if !c.assetValue.IsEmpty() {
 			totals.assets.Set(totals.assets.ValueOrZero() + c.assetValue.MustValue())
 		}
+	}
+	a.characters = cc
+	var hasUnread bool
+	for _, c := range a.characters {
+		if c.unreadCount.ValueOrZero() > 0 {
+			hasUnread = true
+			break
+		}
+	}
+	if hasUnread {
+		a.ui.showMailIndicator()
 	}
 	return totals, nil
 }
