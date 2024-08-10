@@ -51,11 +51,11 @@ func (l *logLevelFlag) Set(value string) error {
 
 // defined flags
 var (
-	levelFlag   logLevelFlag
-	debugFlag   = flag.Bool("debug", false, "Show additional debug information")
-	logFileFlag = flag.Bool("logfile", false, "Write logs to a file instead of the console")
-	localFlag   = flag.Bool("local", false, "Store all files in the current directory instead of the user's home")
-	removeFlag  = flag.Bool("remove-user-files", false, "Remove all user files of this app")
+	levelFlag    logLevelFlag
+	debugFlag    = flag.Bool("debug", false, "Show additional debug information")
+	logFileFlag  = flag.Bool("logfile", false, "Write logs to a file instead of the console")
+	removeFlag   = flag.Bool("remove-user-files", false, "Remove all user files of this app")
+	showDirsFlag = flag.Bool("show-dirs", false, "Show directories where data is stored")
 )
 
 func init() {
@@ -68,6 +68,12 @@ func main() {
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	ad := appdirs.New("evebuddy")
+	if *showDirsFlag {
+		fmt.Printf("Database: %s\n", ad.UserData())
+		fmt.Printf("Cache: %s\n", ad.UserCache())
+		fmt.Printf("Logs: %s\n", ad.UserLog())
+		return
+	}
 	if *removeFlag {
 		fmt.Print("Are you sure you want to remove all locally stored data of this app (y/N)?")
 		var input string
@@ -93,7 +99,7 @@ func main() {
 		return
 	}
 	if *logFileFlag {
-		fn, err := makeLogFileName(ad, *localFlag)
+		fn, err := makeLogFileName(ad)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -103,7 +109,7 @@ func main() {
 			MaxBackups: 3,
 		})
 	}
-	dsn, err := makeDSN(ad, *localFlag)
+	dsn, err := makeDSN(ad)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -113,10 +119,6 @@ func main() {
 	}
 	defer db.Close()
 	st := storage.New(db)
-	imageCacheDir, err := makeImageCachePath(ad, *localFlag)
-	if err != nil {
-		log.Fatal(err)
-	}
 	httpClient := &http.Client{
 		Transport: httptransport.LoggedTransport{},
 	}
@@ -146,6 +148,10 @@ func main() {
 	cs.StatusCacheService = sc
 	cs.SSOService = sso.New(ssoClientId, httpClient, cache)
 
+	imageCacheDir, err := makeImageCachePath(ad)
+	if err != nil {
+		log.Fatal(err)
+	}
 	u := ui.NewUI(*debugFlag)
 	u.CacheService = cache
 	u.CharacterService = cs
@@ -157,11 +163,8 @@ func main() {
 	u.ShowAndRun()
 }
 
-func makeLogFileName(ad *appdirs.App, isDebug bool) (string, error) {
+func makeLogFileName(ad *appdirs.App) (string, error) {
 	fn := "evebuddy.log"
-	if isDebug {
-		return fn, nil
-	}
 	if err := os.MkdirAll(ad.UserLog(), os.ModePerm); err != nil {
 		return "", err
 	}
@@ -169,11 +172,8 @@ func makeLogFileName(ad *appdirs.App, isDebug bool) (string, error) {
 	return path, nil
 }
 
-func makeDSN(ad *appdirs.App, isDebug bool) (string, error) {
+func makeDSN(ad *appdirs.App) (string, error) {
 	fn := "evebuddy.sqlite"
-	if isDebug {
-		return fmt.Sprintf("file:%s", fn), nil
-	}
 	path := ad.UserData()
 	if err := os.MkdirAll(path, os.ModePerm); err != nil {
 		return "", err
@@ -182,13 +182,8 @@ func makeDSN(ad *appdirs.App, isDebug bool) (string, error) {
 	return dsn, nil
 }
 
-func makeImageCachePath(ad *appdirs.App, isDebug bool) (string, error) {
-	var p string
-	if isDebug {
-		p = filepath.Join(".temp", "images")
-	} else {
-		p = filepath.Join(ad.UserCache(), "images")
-	}
+func makeImageCachePath(ad *appdirs.App) (string, error) {
+	p := filepath.Join(ad.UserCache(), "images")
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
 		return "", err
 	}
