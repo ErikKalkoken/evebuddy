@@ -20,7 +20,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
-	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/httptransport"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
@@ -133,7 +132,6 @@ func main() {
 	}
 	userAgent := "EveBuddy kalkoken87@gmail.com"
 	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
-	dt := dictionary.New(st)
 	cache := cache.New()
 	sc := statuscache.New(cache)
 	if err := sc.InitCache(context.TODO(), st); err != nil {
@@ -151,7 +149,6 @@ func main() {
 	u := ui.NewUI(*debugFlag)
 	u.CacheService = cache
 	u.CharacterService = cs
-	u.DictionaryService = dt
 	u.ESIStatusService = esistatus.New(esiClient)
 	u.EveImageService = eveimage.New(imageCacheDir, httpClient)
 	u.EveUniverseService = eu

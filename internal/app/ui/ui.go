@@ -39,7 +39,6 @@ const (
 type ui struct {
 	CacheService       app.CacheService
 	CharacterService   *character.CharacterService
-	DictionaryService  app.DictionaryService
 	ESIStatusService   app.ESIStatusService
 	EveImageService    app.EveImageService
 	EveUniverseService *eveuniverse.EveUniverseService
@@ -81,7 +80,7 @@ type ui struct {
 
 // NewUI build the UI and returns it.
 func NewUI(isDebug bool) *ui {
-	fyneApp := fyneapp.New()
+	fyneApp := fyneapp.NewWithID("io.github.erikkalkoken.evebuddy")
 	desk, ok := fyneApp.(desktop.App)
 	if !ok {
 		log.Fatal("Failed to initialize as desktop app")
@@ -179,8 +178,9 @@ func NewUI(isDebug bool) *ui {
 
 func (u *ui) Init() {
 	var c *app.Character
-	cID, ok, err := u.DictionaryService.Int(settingLastCharacterID)
-	if err == nil && ok {
+	var err error
+	cID := u.fyneApp.Preferences().Int(settingLastCharacterID)
+	if cID != 0 {
 		c, err = u.CharacterService.GetCharacter(context.TODO(), int32(cID))
 		if err != nil {
 			if !errors.Is(err, character.ErrNotFound) {
@@ -195,20 +195,14 @@ func (u *ui) Init() {
 	}
 
 	keyW := "window-width"
-	width, ok, err := u.DictionaryService.Float32(keyW)
-	if err != nil || !ok {
-		width = 1000
-	}
+	width := u.fyneApp.Preferences().FloatWithFallback(keyW, 1000)
 	keyH := "window-height"
-	height, ok, err := u.DictionaryService.Float32(keyH)
-	if err != nil || !ok {
-		width = 600
-	}
-	u.window.Resize(fyne.NewSize(width, height))
+	height := u.fyneApp.Preferences().FloatWithFallback(keyH, 600)
+	u.window.Resize(fyne.NewSize(float32(width), float32(height)))
 
 	keyTabsMainID := "tabs-main-id"
-	index, ok, err := u.DictionaryService.Int(keyTabsMainID)
-	if err == nil && ok {
+	index := u.fyneApp.Preferences().IntWithFallback(keyTabsMainID, -1)
+	if index != -1 {
 		u.tabs.SelectIndex(index)
 	}
 	makeSubTabsKey := func(i int) string {
@@ -220,17 +214,17 @@ func (u *ui) Init() {
 			continue
 		}
 		key := makeSubTabsKey(i)
-		index, ok, err := u.DictionaryService.Int(key)
-		if err == nil && ok {
+		index := u.fyneApp.Preferences().IntWithFallback(key, -1)
+		if index != -1 {
 			tabs.SelectIndex(index)
 		}
 	}
 	u.window.SetOnClosed(func() {
 		s := u.window.Canvas().Size()
-		u.DictionaryService.SetFloat32(keyW, s.Width)
-		u.DictionaryService.SetFloat32(keyH, s.Height)
+		u.fyneApp.Preferences().SetFloat(keyW, float64(s.Width))
+		u.fyneApp.Preferences().SetFloat(keyH, float64(s.Height))
 		index := u.tabs.SelectedIndex()
-		u.DictionaryService.SetInt(keyTabsMainID, index)
+		u.fyneApp.Preferences().SetInt(keyTabsMainID, index)
 		for i, o := range u.tabs.Items {
 			tabs, ok := o.Content.(*container.AppTabs)
 			if !ok {
@@ -238,15 +232,11 @@ func (u *ui) Init() {
 			}
 			key := makeSubTabsKey(i)
 			index := tabs.SelectedIndex()
-			u.DictionaryService.SetInt(key, index)
+			u.fyneApp.Preferences().SetInt(key, index)
 		}
 	})
 
-	name, err := u.DictionaryService.StringWithFallback(settingTheme, settingThemeDefault)
-	if err != nil {
-		name = settingThemeDefault
-	}
-	u.themeSet(name)
+	u.themeSet(u.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault))
 }
 
 func (u *ui) themeSet(name string) {
@@ -336,10 +326,7 @@ func (u *ui) setCharacter(c *app.Character) {
 	}
 	u.refreshCharacter()
 	u.tabs.Refresh()
-	err := u.DictionaryService.SetInt(settingLastCharacterID, int(c.ID))
-	if err != nil {
-		slog.Error("Failed to update last character setting", "characterID", c.ID)
-	}
+	u.fyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
 }
 
 func (u *ui) refreshCharacter() {
@@ -401,10 +388,7 @@ func (u *ui) refreshOverview() {
 
 func (u *ui) resetCharacter() {
 	u.character = nil
-	err := u.DictionaryService.Delete(settingLastCharacterID)
-	if err != nil {
-		slog.Error("Failed to delete last character setting")
-	}
+	u.fyneApp.Preferences().SetInt(settingLastCharacterID, 0)
 	u.refreshCharacter()
 }
 

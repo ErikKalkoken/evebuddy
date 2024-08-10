@@ -15,19 +15,6 @@ type CacheService interface {
 	Set(any, any, time.Duration)
 }
 
-type DictionaryService interface {
-	Delete(string) error
-	Float32(string) (float32, bool, error)
-	Int(string) (int, bool, error)
-	IntWithFallback(string, int) (int, error)
-	SetFloat32(string, float32) error
-	Float64(key string) (float64, bool, error)
-	SetFloat64(key string, value float64) error
-	SetInt(string, int) error
-	SetString(string, string) error
-	StringWithFallback(string, string) (string, error)
-}
-
 type EveImageService interface {
 	CharacterPortrait(int32, int) (fyne.Resource, error)
 	CorporationLogo(int32, int) (fyne.Resource, error)

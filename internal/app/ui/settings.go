@@ -43,18 +43,12 @@ func (u *ui) showSettingsDialog() {
 }
 
 func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
-	maxMails, err := u.DictionaryService.IntWithFallback(settingMaxMails, settingMaxMailsDefault)
-	if err != nil {
-		return nil, err
-	}
+	maxMails := u.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault)
 	maxMailsEntry := widget.NewEntry()
 	maxMailsEntry.SetText(strconv.Itoa(maxMails))
 	maxMailsEntry.Validator = newPositiveNumberValidator()
 
-	maxTransactions, err := u.DictionaryService.IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
-	if err != nil {
-		return nil, err
-	}
+	maxTransactions := u.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
 	maxTransactionsEntry := widget.NewEntry()
 	maxTransactionsEntry.SetText(strconv.Itoa(maxTransactions))
 	maxTransactionsEntry.Validator = newPositiveNumberValidator()
@@ -83,10 +77,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	themeRadio := widget.NewRadioGroup(
 		[]string{themeAuto, themeDark, themeLight}, func(s string) {},
 	)
-	name, err := u.DictionaryService.StringWithFallback(settingTheme, settingThemeDefault)
-	if err != nil {
-		return nil, err
-	}
+	name := u.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault)
 	themeRadio.SetSelected(name)
 
 	var cacheSize string
@@ -125,9 +116,9 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 			if err != nil {
 				return
 			}
-			u.DictionaryService.SetInt(settingMaxMails, maxMails)
+			u.fyneApp.Preferences().SetInt(settingMaxMails, maxMails)
 			u.themeSet(themeRadio.Selected)
-			u.DictionaryService.SetString(settingTheme, themeRadio.Selected)
+			u.fyneApp.Preferences().SetString(settingTheme, themeRadio.Selected)
 			d.Hide()
 		},
 		OnCancel: func() {
