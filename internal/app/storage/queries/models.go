@@ -11,6 +11,7 @@ import (
 
 type Character struct {
 	ID            int64
+	AssetValue    sql.NullFloat64
 	HomeID        sql.NullInt64
 	LastLoginAt   sql.NullTime
 	LocationID    sql.NullInt64
@@ -18,7 +19,6 @@ type Character struct {
 	TotalSp       sql.NullInt64
 	UnallocatedSp sql.NullInt64
 	WalletBalance sql.NullFloat64
-	AssetValue    sql.NullFloat64
 }
 
 type CharacterAsset struct {
@@ -203,12 +203,6 @@ type CharacterWalletTransaction struct {
 	Quantity      int64
 	TransactionID int64
 	UnitPrice     float64
-}
-
-type Dictionary struct {
-	ID    int64
-	Key   string
-	Value []byte
 }
 
 type EveCategory struct {

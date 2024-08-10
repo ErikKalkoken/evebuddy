@@ -1,11 +1,4 @@
 -- common
-CREATE TABLE dictionary (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    key TEXT NOT NULL,
-    value BLOB NOT NULL,
-    UNIQUE (key)
-);
-
 CREATE TABLE general_section_status (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     section_id TEXT NOT NULL,
@@ -203,6 +196,7 @@ CREATE INDEX eve_locations_idx4 ON eve_locations (name);
 -- characters
 CREATE TABLE characters (
     id INTEGER PRIMARY KEY NOT NULL,
+    asset_value REAL,
     home_id INTEGER,
     last_login_at DATETIME,
     location_id INTEGER,

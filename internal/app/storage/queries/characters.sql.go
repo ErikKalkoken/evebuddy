@@ -22,7 +22,7 @@ func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
 
 const getCharacter = `-- name: GetCharacter :one
 SELECT
-    characters.id, characters.home_id, characters.last_login_at, characters.location_id, characters.ship_id, characters.total_sp, characters.unallocated_sp, characters.wallet_balance, characters.asset_value,
+    characters.id, characters.asset_value, characters.home_id, characters.last_login_at, characters.location_id, characters.ship_id, characters.total_sp, characters.unallocated_sp, characters.wallet_balance,
     eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
     corporations.id, corporations.category, corporations.name,
     eve_races.id, eve_races.description, eve_races.name,
@@ -57,6 +57,7 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 	var i GetCharacterRow
 	err := row.Scan(
 		&i.Character.ID,
+		&i.Character.AssetValue,
 		&i.Character.HomeID,
 		&i.Character.LastLoginAt,
 		&i.Character.LocationID,
@@ -64,7 +65,6 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.Character.TotalSp,
 		&i.Character.UnallocatedSp,
 		&i.Character.WalletBalance,
-		&i.Character.AssetValue,
 		&i.EveCharacter.AllianceID,
 		&i.EveCharacter.Birthday,
 		&i.EveCharacter.CorporationID,
@@ -138,7 +138,7 @@ func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
 
 const listCharacters = `-- name: ListCharacters :many
 SELECT DISTINCT
-    characters.id, characters.home_id, characters.last_login_at, characters.location_id, characters.ship_id, characters.total_sp, characters.unallocated_sp, characters.wallet_balance, characters.asset_value,
+    characters.id, characters.asset_value, characters.home_id, characters.last_login_at, characters.location_id, characters.ship_id, characters.total_sp, characters.unallocated_sp, characters.wallet_balance,
     eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
     corporations.id, corporations.category, corporations.name,
     eve_races.id, eve_races.description, eve_races.name,
@@ -179,6 +179,7 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 		var i ListCharactersRow
 		if err := rows.Scan(
 			&i.Character.ID,
+			&i.Character.AssetValue,
 			&i.Character.HomeID,
 			&i.Character.LastLoginAt,
 			&i.Character.LocationID,
@@ -186,7 +187,6 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.Character.TotalSp,
 			&i.Character.UnallocatedSp,
 			&i.Character.WalletBalance,
-			&i.Character.AssetValue,
 			&i.EveCharacter.AllianceID,
 			&i.EveCharacter.Birthday,
 			&i.EveCharacter.CorporationID,
