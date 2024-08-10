@@ -179,7 +179,7 @@ func NewUI(isDebug bool) *ui {
 
 func (u *ui) Init() {
 	var c *app.Character
-	cID, ok, err := u.DictionaryService.Int(app.SettingLastCharacterID)
+	cID, ok, err := u.DictionaryService.Int(settingLastCharacterID)
 	if err == nil && ok {
 		c, err = u.CharacterService.GetCharacter(context.TODO(), int32(cID))
 		if err != nil {
@@ -242,31 +242,31 @@ func (u *ui) Init() {
 		}
 	})
 
-	name, err := u.DictionaryService.StringWithFallback(app.SettingTheme, app.SettingThemeDefault)
+	name, err := u.DictionaryService.StringWithFallback(settingTheme, settingThemeDefault)
 	if err != nil {
-		name = app.SettingThemeDefault
+		name = settingThemeDefault
 	}
 	u.themeSet(name)
 }
 
 func (u *ui) themeSet(name string) {
 	switch name {
-	case app.ThemeAuto:
+	case themeAuto:
 		switch u.fyneApp.Settings().ThemeVariant() {
 		case 0:
-			u.themeName = app.ThemeDark
+			u.themeName = themeDark
 		default:
-			u.themeName = app.ThemeLight
+			u.themeName = themeLight
 		}
-	case app.ThemeLight:
-		u.themeName = app.ThemeLight
-	case app.ThemeDark:
-		u.themeName = app.ThemeDark
+	case themeLight:
+		u.themeName = themeLight
+	case themeDark:
+		u.themeName = themeDark
 	}
 	switch u.themeName {
-	case app.ThemeDark:
+	case themeDark:
 		u.fyneApp.Settings().SetTheme(theme.DarkTheme())
-	case app.ThemeLight:
+	case themeLight:
 		u.fyneApp.Settings().SetTheme(theme.LightTheme())
 	}
 }
@@ -336,7 +336,7 @@ func (u *ui) setCharacter(c *app.Character) {
 	}
 	u.refreshCharacter()
 	u.tabs.Refresh()
-	err := u.DictionaryService.SetInt(app.SettingLastCharacterID, int(c.ID))
+	err := u.DictionaryService.SetInt(settingLastCharacterID, int(c.ID))
 	if err != nil {
 		slog.Error("Failed to update last character setting", "characterID", c.ID)
 	}
@@ -401,7 +401,7 @@ func (u *ui) refreshOverview() {
 
 func (u *ui) resetCharacter() {
 	u.character = nil
-	err := u.DictionaryService.Delete(app.SettingLastCharacterID)
+	err := u.DictionaryService.Delete(settingLastCharacterID)
 	if err != nil {
 		slog.Error("Failed to delete last character setting")
 	}

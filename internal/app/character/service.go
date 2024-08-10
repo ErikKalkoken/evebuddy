@@ -20,7 +20,6 @@ var (
 
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
 type CharacterService struct {
-	DictionaryService  app.DictionaryService
 	EveUniverseService *eveuniverse.EveUniverseService
 	StatusCacheService app.StatusCacheService
 	SSOService         *sso.SSOService

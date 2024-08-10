@@ -10,7 +10,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
-	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -71,7 +70,6 @@ func newCharacterService(st *storage.Storage) *character.CharacterService {
 	eu := eveuniverse.New(st, nil)
 	eu.StatusCacheService = sc
 	s := character.New(st, nil, nil)
-	s.DictionaryService = dictionary.New(st)
 	s.EveUniverseService = eu
 	s.StatusCacheService = sc
 	return s

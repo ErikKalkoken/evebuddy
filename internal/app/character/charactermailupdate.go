@@ -97,7 +97,7 @@ func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg Upda
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			headers, err := s.fetchMailHeadersESI(ctx, characterID)
+			headers, err := s.fetchMailHeadersESI(ctx, characterID, arg.MaxMails)
 			if err != nil {
 				return false, err
 			}
@@ -133,13 +133,9 @@ func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg Upda
 }
 
 // fetchMailHeadersESI fetched mail headers from ESI with paging and returns them.
-func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
+func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID int32, maxMails int) ([]esi.GetCharactersCharacterIdMail200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdMail200Ok
 	lastMailID := int32(0)
-	maxMails, err := s.DictionaryService.IntWithFallback(app.SettingMaxMails, app.SettingMaxMailsDefault)
-	if err != nil {
-		return nil, err
-	}
 	for {
 		var opts *esi.GetCharactersCharacterIdMailOpts
 		if lastMailID > 0 {

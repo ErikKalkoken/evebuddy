@@ -10,8 +10,25 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/dustin/go-humanize"
+)
+
+// Setting keys
+const (
+	settingLastCharacterID              = "settings-lastCharacterID"
+	settingMaxMails                     = "settings-maxMails"
+	settingMaxMailsDefault              = 1_000
+	settingMaxWalletTransactions        = "settings-maxWalletTransactions"
+	settingMaxWalletTransactionsDefault = 10_000
+	settingTheme                        = "settings-theme"
+	settingThemeDefault                 = themeAuto
+)
+
+// Themes
+const (
+	themeAuto  = "Auto"
+	themeDark  = "Dark"
+	themeLight = "Light"
 )
 
 func (u *ui) showSettingsDialog() {
@@ -26,7 +43,7 @@ func (u *ui) showSettingsDialog() {
 }
 
 func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
-	maxMails, err := u.DictionaryService.IntWithFallback(app.SettingMaxMails, app.SettingMaxMailsDefault)
+	maxMails, err := u.DictionaryService.IntWithFallback(settingMaxMails, settingMaxMailsDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +51,7 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	maxMailsEntry.SetText(strconv.Itoa(maxMails))
 	maxMailsEntry.Validator = newPositiveNumberValidator()
 
-	maxTransactions, err := u.DictionaryService.IntWithFallback(app.SettingMaxWalletTransactions, app.SettingMaxWalletTransactionsDefault)
+	maxTransactions, err := u.DictionaryService.IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -64,9 +81,9 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	})
 
 	themeRadio := widget.NewRadioGroup(
-		[]string{app.ThemeAuto, app.ThemeDark, app.ThemeLight}, func(s string) {},
+		[]string{themeAuto, themeDark, themeLight}, func(s string) {},
 	)
-	name, err := u.DictionaryService.StringWithFallback(app.SettingTheme, app.SettingThemeDefault)
+	name, err := u.DictionaryService.StringWithFallback(settingTheme, settingThemeDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -108,9 +125,9 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 			if err != nil {
 				return
 			}
-			u.DictionaryService.SetInt(app.SettingMaxMails, maxMails)
+			u.DictionaryService.SetInt(settingMaxMails, maxMails)
 			u.themeSet(themeRadio.Selected)
-			u.DictionaryService.SetString(app.SettingTheme, themeRadio.Selected)
+			u.DictionaryService.SetString(settingTheme, themeRadio.Selected)
 			d.Hide()
 		},
 		OnCancel: func() {

@@ -28,7 +28,7 @@ func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Conte
 	return s.updateSectionIfChanged(
 		ctx, arg,
 		func(ctx context.Context, characterID int32) (any, error) {
-			transactions, err := s.fetchWalletTransactionsESI(ctx, characterID)
+			transactions, err := s.fetchWalletTransactionsESI(ctx, characterID, arg.MaxWalletTransactions)
 			if err != nil {
 				return false, err
 			}
@@ -97,13 +97,9 @@ func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Conte
 }
 
 // fetchWalletTransactionsESI fetches wallet transactions from ESI with paging and returns them.
-func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
+func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, characterID int32, maxTransactions int) ([]esi.GetCharactersCharacterIdWalletTransactions200Ok, error) {
 	var oo2 []esi.GetCharactersCharacterIdWalletTransactions200Ok
 	lastID := int64(0)
-	maxTransactions, err := s.DictionaryService.IntWithFallback(app.SettingMaxWalletTransactions, app.SettingMaxWalletTransactionsDefault)
-	if err != nil {
-		return nil, err
-	}
 	for {
 		var opts *esi.GetCharactersCharacterIdWalletTransactionsOpts
 		if lastID > 0 {

@@ -29,9 +29,11 @@ func (s *CharacterService) SectionWasUpdated(ctx context.Context, characterID in
 }
 
 type UpdateSectionParams struct {
-	CharacterID int32
-	Section     app.CharacterSection
-	ForceUpdate bool
+	CharacterID           int32
+	Section               app.CharacterSection
+	ForceUpdate           bool
+	MaxMails              int
+	MaxWalletTransactions int
 }
 
 // UpdateSectionIfNeeded updates a section from ESI if has expired and changed

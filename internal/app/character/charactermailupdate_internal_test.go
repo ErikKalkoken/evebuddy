@@ -56,7 +56,7 @@ func TestCanFetchMailHeadersWithPaging(t *testing.T) {
 		},
 	)
 	// when
-	mails, err := s.fetchMailHeadersESI(ctx, 1)
+	mails, err := s.fetchMailHeadersESI(ctx, 1, 1000)
 
 	// then
 	if assert.NoError(t, err) {

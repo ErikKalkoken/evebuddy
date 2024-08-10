@@ -144,7 +144,6 @@ func main() {
 	eu.StatusCacheService = sc
 
 	cs := character.New(st, httpClient, esiClient)
-	cs.DictionaryService = dt
 	cs.EveUniverseService = eu
 	cs.StatusCacheService = sc
 	cs.SSOService = sso.New(ssoClientId, httpClient, cache)

@@ -15,7 +15,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
-	"github.com/ErikKalkoken/evebuddy/internal/dictionary"
 )
 
 func TestUpdateCharacterAssetsESI(t *testing.T) {
@@ -190,7 +189,6 @@ func newCharacterService(st *storage.Storage) *CharacterService {
 	eu := eveuniverse.New(st, nil)
 	eu.StatusCacheService = sc
 	s := New(st, nil, nil)
-	s.DictionaryService = dictionary.New(st)
 	s.EveUniverseService = eu
 	s.StatusCacheService = sc
 	return s

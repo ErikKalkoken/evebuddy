@@ -87,11 +87,23 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID 
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
 func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
+	maxMails, err := u.DictionaryService.IntWithFallback(settingMaxMails, settingMaxMailsDefault)
+	if err != nil {
+		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
+		return
+	}
+	maxWalletTransactions, err := u.DictionaryService.IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
+	if err != nil {
+		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
+		return
+	}
 	hasChanged, err := u.CharacterService.UpdateSectionIfNeeded(
 		ctx, character.UpdateSectionParams{
-			CharacterID: characterID,
-			Section:     s,
-			ForceUpdate: forceUpdate,
+			CharacterID:           characterID,
+			Section:               s,
+			ForceUpdate:           forceUpdate,
+			MaxMails:              maxMails,
+			MaxWalletTransactions: maxWalletTransactions,
 		})
 	if err != nil {
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
