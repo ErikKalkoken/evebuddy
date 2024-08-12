@@ -24,13 +24,22 @@ SELECT notification_id
 FROM character_notifications
 WHERE character_id = ?;
 
--- name: ListCharacterNotifications :many
+-- name: ListCharacterNotificationsTypes :many
 SELECT sqlc.embed(cn), sqlc.embed(ee), sqlc.embed(nt)
 FROM character_notifications cn
 JOIN eve_entities ee ON ee.id = cn.sender_id
 JOIN notification_types nt ON nt.id = cn.type_id
 WHERE character_id = ?
 AND nt.name IN (sqlc.slice('names'))
+ORDER BY timestamp DESC;
+
+-- name: ListCharacterNotificationsUnread :many
+SELECT sqlc.embed(cn), sqlc.embed(ee), sqlc.embed(nt)
+FROM character_notifications cn
+JOIN eve_entities ee ON ee.id = cn.sender_id
+JOIN notification_types nt ON nt.id = cn.type_id
+WHERE character_id = ?
+AND cn.is_read IS FALSE
 ORDER BY timestamp DESC;
 
 -- name: CalcCharacterNotificationUnreadCounts :many

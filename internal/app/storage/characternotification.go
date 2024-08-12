@@ -57,12 +57,24 @@ func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID
 	return st.q.ListCharacterNotificationIDs(ctx, int64(characterID))
 }
 
-func (st *Storage) ListCharacterNotifications(ctx context.Context, characterID int32, types []string) ([]*app.CharacterNotification, error) {
-	arg := queries.ListCharacterNotificationsParams{
+func (st *Storage) ListCharacterNotificationsTypes(ctx context.Context, characterID int32, types []string) ([]*app.CharacterNotification, error) {
+	arg := queries.ListCharacterNotificationsTypesParams{
 		CharacterID: int64(characterID),
 		Names:       types,
 	}
-	rows, err := st.q.ListCharacterNotifications(ctx, arg)
+	rows, err := st.q.ListCharacterNotificationsTypes(ctx, arg)
+	if err != nil {
+		return nil, err
+	}
+	ee := make([]*app.CharacterNotification, len(rows))
+	for i, row := range rows {
+		ee[i] = characterNotificationFromDBModel(row.CharacterNotification, row.EveEntity, row.NotificationType)
+	}
+	return ee, nil
+}
+
+func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
+	rows, err := st.q.ListCharacterNotificationsUnread(ctx, int64(characterID))
 	if err != nil {
 		return nil, err
 	}

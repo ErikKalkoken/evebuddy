@@ -23,8 +23,12 @@ func (s *CharacterService) CalcCharacterNotificationUnreadCounts(ctx context.Con
 	return categories, nil
 }
 
-func (s *CharacterService) ListCharacterNotifications(ctx context.Context, characterID int32, types []string) ([]*app.CharacterNotification, error) {
-	return s.st.ListCharacterNotifications(ctx, characterID, types)
+func (s *CharacterService) ListCharacterNotificationsTypes(ctx context.Context, characterID int32, types []string) ([]*app.CharacterNotification, error) {
+	return s.st.ListCharacterNotificationsTypes(ctx, characterID, types)
+}
+
+func (s *CharacterService) ListCharacterNotificationsUnread(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
+	return s.st.ListCharacterNotificationsUnread(ctx, characterID)
 }
 
 func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {

@@ -132,6 +132,7 @@ func (a *notificationsArea) refresh() {
 		}
 	}
 	categories := make([]notificationCategory, 0)
+	var unreadTotal int
 	for id, name := range app.NotificationCategoryNames {
 		nc := notificationCategory{
 			id:     id,
@@ -139,17 +140,28 @@ func (a *notificationsArea) refresh() {
 			unread: counts[id],
 		}
 		categories = append(categories, nc)
+		unreadTotal += counts[id]
 	}
 	slices.SortFunc(categories, func(a, b notificationCategory) int {
 		return cmp.Compare(a.name, b.name)
 	})
+	unread := notificationCategory{name: "Unread", unread: unreadTotal}
+	categories = slices.Insert(categories, 0, unread)
 	a.categories = categories
 	a.categoryList.Refresh()
 }
 
 func (a *notificationsArea) loadNotifications(nc app.NotificationCategory) error {
-	types := app.NotificationCategoryTypes[nc]
-	notifications, err := a.ui.CharacterService.ListCharacterNotifications(context.TODO(), a.ui.characterID(), types)
+	ctx := context.TODO()
+	characterID := a.ui.characterID()
+	var notifications []*app.CharacterNotification
+	var err error
+	if nc == 0 {
+		notifications, err = a.ui.CharacterService.ListCharacterNotificationsUnread(ctx, characterID)
+	} else {
+		types := app.NotificationCategoryTypes[nc]
+		notifications, err = a.ui.CharacterService.ListCharacterNotificationsTypes(ctx, characterID, types)
+	}
 	if err != nil {
 		return err
 	}

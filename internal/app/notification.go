@@ -3,8 +3,7 @@ package app
 type NotificationCategory int
 
 const (
-	categoryUnknown NotificationCategory = iota
-	CategoryBills
+	CategoryBills NotificationCategory = iota + 1
 	CategoryFactionWarfare
 	CategoryContacts
 	CategoryCorporate
@@ -15,6 +14,7 @@ const (
 	CategorySovereignty
 	CategoryStructure
 	CategoryWar
+	categoryUnknown
 )
 
 var NotificationCategoryNames = map[NotificationCategory]string{

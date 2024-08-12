@@ -221,7 +221,7 @@ func TestListCharacterNotifications(t *testing.T) {
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "bravo"})
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
 		// when
-		tt, err := s.ListCharacterNotifications(ctx, c.ID, []string{"alpha"})
+		tt, err := s.ListCharacterNotificationsTypes(ctx, c.ID, []string{"alpha"})
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, tt, 2)
