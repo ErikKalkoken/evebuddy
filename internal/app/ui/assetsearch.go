@@ -10,7 +10,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -33,7 +32,7 @@ type assetSearchArea struct {
 	assets          []*assetSearchRow
 	assetCollection assetcollection.AssetCollection
 	assetTable      *widget.Table
-	assetData       binding.UntypedList
+	assetsFiltered  []*assetSearchRow
 	colSort         []assetSortDir
 	characterNames  map[int32]string
 	content         *fyne.Container
@@ -66,23 +65,14 @@ type assetSearchRow struct {
 
 func (u *ui) newAssetSearchArea() *assetSearchArea {
 	a := &assetSearchArea{
-		ui:           u,
-		assetData:    binding.NewUntypedList(),
-		iconSortAsc:  theme.MoveUpIcon(),
-		iconSortDesc: theme.MoveDownIcon(),
-		iconSortOff:  theme.NewThemedResource(resourceBlankSvg),
-		total:        widget.NewLabel(""),
-		found:        widget.NewLabel(""),
+		ui:             u,
+		assetsFiltered: make([]*assetSearchRow, 0),
+		iconSortAsc:    theme.MoveUpIcon(),
+		iconSortDesc:   theme.MoveDownIcon(),
+		iconSortOff:    theme.NewThemedResource(resourceBlankSvg),
+		total:          widget.NewLabel(""),
+		found:          widget.NewLabel(""),
 	}
-	a.assetData.AddListener(binding.NewDataListener(func() {
-		t := a.assetData.Length()
-		if t != len(a.assets) {
-			a.found.SetText(fmt.Sprintf("%d found", t))
-			a.found.Show()
-		} else {
-			a.found.Hide()
-		}
-	}))
 	a.total.TextStyle.Bold = true
 	a.found.Hide()
 	a.assetTable = a.makeAssetsTable()
@@ -150,7 +140,7 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
-			return a.assetData.Length(), len(headers)
+			return len(a.assetsFiltered), len(headers)
 		},
 		func() fyne.CanvasObject {
 			label := widget.NewLabel("Template")
@@ -158,13 +148,11 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 			return label
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			label := co.(*widget.Label)
-			r, err := getItemUntypedList[*assetSearchRow](a.assetData, tci.Row)
-			if err != nil {
-				slog.Error("Failed to render asset item in UI", "err", err)
-				label.SetText("ERROR")
+			if tci.Row >= len(a.assetsFiltered) {
 				return
 			}
+			r := a.assetsFiltered[tci.Row]
+			label := co.(*widget.Label)
 			var t string
 			var ta fyne.TextAlign
 			switch tci.Col {
@@ -234,16 +222,15 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
-		o, err := getItemUntypedList[*assetSearchRow](a.assetData, tci.Row)
-		if err != nil {
-			slog.Error("Failed to select asset", "err", err)
+		if tci.Row >= len(a.assetsFiltered) {
 			return
 		}
+		r := a.assetsFiltered[tci.Row]
 		switch tci.Col {
 		case 0:
-			a.ui.showTypeInfoWindow(o.typeID, a.ui.characterID())
+			a.ui.showTypeInfoWindow(r.typeID, a.ui.characterID())
 		case 3:
-			a.ui.showLocationInfoWindow(o.locationID)
+			a.ui.showLocationInfoWindow(r.locationID)
 		}
 	}
 	return t
@@ -317,7 +304,8 @@ func (a *assetSearchArea) processData(sortCol int) {
 			}
 		})
 	}
-	a.assetData.Set(copyToUntypedSlice(rows))
+	a.assetsFiltered = rows
+	a.updateFoundInfo()
 	a.assetTable.Refresh()
 	a.assetTable.ScrollToTop()
 }
@@ -383,9 +371,19 @@ func (a *assetSearchArea) loadData() (bool, error) {
 	for i, ca := range assets {
 		rows[i] = a.newAssetSearchRow(ca)
 	}
-	a.assetData.Set(copyToUntypedSlice(rows))
+	a.assetsFiltered = rows
 	a.assets = rows
+	a.updateFoundInfo()
 	return true, nil
+}
+
+func (a *assetSearchArea) updateFoundInfo() {
+	if c := len(a.assetsFiltered); c < len(a.assets) {
+		a.found.SetText(fmt.Sprintf("%d found", c))
+		a.found.Show()
+	} else {
+		a.found.Hide()
+	}
 }
 
 func (a *assetSearchArea) characterCount() int {

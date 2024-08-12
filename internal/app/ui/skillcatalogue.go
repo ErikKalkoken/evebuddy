@@ -7,7 +7,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -42,9 +41,9 @@ type skillTrained struct {
 type skillCatalogueArea struct {
 	content        *fyne.Container
 	groupsGrid     *widget.GridWrap
-	groups         binding.UntypedList
+	groups         []skillGroupProgress
 	skillsGrid     *widget.GridWrap
-	skills         binding.UntypedList
+	skills         []skillTrained
 	total          *widget.Label
 	levelBlocked   *theme.ErrorThemedResource
 	levelTrained   *theme.PrimaryThemedResource
@@ -54,8 +53,8 @@ type skillCatalogueArea struct {
 
 func (u *ui) newSkillCatalogueArea() *skillCatalogueArea {
 	a := &skillCatalogueArea{
-		groups:         binding.NewUntypedList(),
-		skills:         binding.NewUntypedList(),
+		groups:         make([]skillGroupProgress, 0),
+		skills:         make([]skillTrained, 0),
 		total:          widget.NewLabel(""),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
@@ -73,7 +72,7 @@ func (u *ui) newSkillCatalogueArea() *skillCatalogueArea {
 func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
-			return a.groups.Length()
+			return len(a.groups)
 		},
 		func() fyne.CanvasObject {
 			pb := widget.NewProgressBar()
@@ -88,16 +87,14 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 			return row
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
+			if id >= len(a.groups) {
+				return
+			}
+			group := a.groups[id]
 			row := co.(*fyne.Container)
 			c := row.Objects[0].(*fyne.Container).Objects[1].(*fyne.Container)
 			name := c.Objects[0].(*widget.Label)
 			total := c.Objects[2].(*widget.Label)
-			group, err := getItemUntypedList[skillGroupProgress](a.groups, id)
-			if err != nil {
-				slog.Error("Failed to render group item in skill catalogue UI", "err", err)
-				name.SetText("ERROR")
-				return
-			}
 			pb := row.Objects[0].(*fyne.Container).Objects[0].(*widget.ProgressBar)
 			pb.SetValue(group.completionP())
 			name.SetText(group.name)
@@ -105,12 +102,11 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 		},
 	)
 	g.OnSelected = func(id widget.ListItemID) {
-		group, err := getItemUntypedList[skillGroupProgress](a.groups, id)
-		if err != nil {
-			slog.Error("Failed to select skill group", "err", err)
+		if id >= len(a.groups) {
 			g.UnselectAll()
 			return
 		}
+		group := a.groups[id]
 		if !a.ui.hasCharacter() {
 			g.UnselectAll()
 			return
@@ -134,7 +130,7 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 				trainedLevel: o.TrainedSkillLevel,
 			}
 		}
-		a.skills.Set(copyToUntypedSlice(skills))
+		a.skills = skills
 		a.skillsGrid.Refresh()
 	}
 	return g
@@ -143,7 +139,7 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
-			return a.skills.Length()
+			return len(a.skills)
 		},
 		func() fyne.CanvasObject {
 			c := container.NewHBox(
@@ -152,35 +148,31 @@ func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 			return c
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
+			if id >= len(a.skills) {
+				return
+			}
+			skill := a.skills[id]
 			row := co.(*fyne.Container)
 			level := row.Objects[0].(*widgets.SkillLevel)
 			label := row.Objects[1].(*widget.Label)
-			skill, err := getItemUntypedList[skillTrained](a.skills, id)
-			if err != nil {
-				slog.Error("Failed to render skill item in skill catalogue UI", "err", err)
-				label.SetText("ERROR")
-				return
-			}
 			label.SetText(skill.name)
 			level.Set(skill.activeLevel, skill.trainedLevel, 0)
 		},
 	)
 	g.OnSelected = func(id widget.GridWrapItemID) {
 		defer g.UnselectAll()
-		o, err := getItemUntypedList[skillTrained](a.skills, id)
-		if err != nil {
-			slog.Error("Failed to access skill item", "err", err)
+		if id >= len(a.skills) {
 			return
 		}
-		a.ui.showTypeInfoWindow(o.id, a.ui.characterID())
+		skill := a.skills[id]
+		a.ui.showTypeInfoWindow(skill.id, a.ui.characterID())
 	}
 	return g
 }
 
 func (a *skillCatalogueArea) redraw() {
 	a.groupsGrid.UnselectAll()
-	x := make([]skillTrained, 0)
-	a.skills.Set(copyToUntypedSlice(x))
+	a.skills = make([]skillTrained, 0)
 	a.refresh()
 }
 
@@ -233,8 +225,7 @@ func (a *skillCatalogueArea) updateGroups() error {
 			total:   g.Total,
 		}
 	}
-	if err := a.groups.Set(copyToUntypedSlice(groups)); err != nil {
-		return err
-	}
+	a.groups = groups
+	a.groupsGrid.Refresh()
 	return nil
 }
