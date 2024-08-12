@@ -57,8 +57,12 @@ func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID
 	return st.q.ListCharacterNotificationIDs(ctx, int64(characterID))
 }
 
-func (st *Storage) ListCharacterNotifications(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
-	rows, err := st.q.ListCharacterNotifications(ctx, int64(characterID))
+func (st *Storage) ListCharacterNotifications(ctx context.Context, characterID int32, types []string) ([]*app.CharacterNotification, error) {
+	arg := queries.ListCharacterNotificationsParams{
+		CharacterID: int64(characterID),
+		Names:       types,
+	}
+	rows, err := st.q.ListCharacterNotifications(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -112,4 +116,16 @@ func (st *Storage) GetOrCreateNotificationType(ctx context.Context, name string)
 		return 0, err
 	}
 	return id, nil
+}
+
+func (st *Storage) CalcCharacterNotificationUnreadCounts(ctx context.Context, characterID int32) (map[string]int, error) {
+	rows, err := st.q.CalcCharacterNotificationUnreadCounts(ctx, int64(characterID))
+	if err != nil {
+		return nil, err
+	}
+	x := make(map[string]int)
+	for _, r := range rows {
+		x[r.Name] = int(r.Sum.Float64)
+	}
+	return x, nil
 }

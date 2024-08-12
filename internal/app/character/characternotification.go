@@ -10,8 +10,21 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) ListCharacterNotifications(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
-	return s.st.ListCharacterNotifications(ctx, characterID)
+func (s *CharacterService) CalcCharacterNotificationUnreadCounts(ctx context.Context, characterID int32) (map[app.NotificationCategory]int, error) {
+	types, err := s.st.CalcCharacterNotificationUnreadCounts(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+	categories := make(map[app.NotificationCategory]int)
+	for name, count := range types {
+		c := app.Notification2category[name]
+		categories[c] += count
+	}
+	return categories, nil
+}
+
+func (s *CharacterService) ListCharacterNotifications(ctx context.Context, characterID int32, types []string) ([]*app.CharacterNotification, error) {
+	return s.st.ListCharacterNotifications(ctx, characterID, types)
 }
 
 func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {

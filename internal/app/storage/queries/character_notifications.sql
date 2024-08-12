@@ -30,7 +30,15 @@ FROM character_notifications cn
 JOIN eve_entities ee ON ee.id = cn.sender_id
 JOIN notification_types nt ON nt.id = cn.type_id
 WHERE character_id = ?
+AND nt.name IN (sqlc.slice('names'))
 ORDER BY timestamp DESC;
+
+-- name: CalcCharacterNotificationUnreadCounts :many
+SELECT cn.type_id, nt.name, SUM(NOT cn.is_read)
+FROM character_notifications cn
+JOIN notification_types nt ON nt.id = cn.type_id
+WHERE character_id = ?
+GROUP BY cn.type_id, nt.name;
 
 -- name: UpdateCharacterNotificationsIsRead :exec
 UPDATE character_notifications

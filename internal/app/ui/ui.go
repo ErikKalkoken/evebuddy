@@ -113,10 +113,10 @@ func NewUI(isDebug bool) *ui {
 
 	u.mailArea = u.newMailArea()
 	u.notificationsArea = u.newNotificationsArea()
-	u.mailTab = container.NewTabItemWithIcon("Communication",
+	u.mailTab = container.NewTabItemWithIcon("",
 		theme.MailComposeIcon(), container.NewAppTabs(
 			container.NewTabItem("Mail", u.mailArea.content),
-			container.NewTabItem("Notifications", u.notificationsArea.content),
+			container.NewTabItem("Communications", u.notificationsArea.content),
 		))
 
 	u.overviewArea = u.newOverviewArea()

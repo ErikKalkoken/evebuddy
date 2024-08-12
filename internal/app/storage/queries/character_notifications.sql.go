@@ -7,8 +7,47 @@ package queries
 
 import (
 	"context"
+	"database/sql"
+	"strings"
 	"time"
 )
+
+const calcCharacterNotificationUnreadCounts = `-- name: CalcCharacterNotificationUnreadCounts :many
+SELECT cn.type_id, nt.name, SUM(NOT cn.is_read)
+FROM character_notifications cn
+JOIN notification_types nt ON nt.id = cn.type_id
+WHERE character_id = ?
+GROUP BY cn.type_id, nt.name
+`
+
+type CalcCharacterNotificationUnreadCountsRow struct {
+	TypeID int64
+	Name   string
+	Sum    sql.NullFloat64
+}
+
+func (q *Queries) CalcCharacterNotificationUnreadCounts(ctx context.Context, characterID int64) ([]CalcCharacterNotificationUnreadCountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, calcCharacterNotificationUnreadCounts, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CalcCharacterNotificationUnreadCountsRow
+	for rows.Next() {
+		var i CalcCharacterNotificationUnreadCountsRow
+		if err := rows.Scan(&i.TypeID, &i.Name, &i.Sum); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
 
 const createCharacterNotification = `-- name: CreateCharacterNotification :exec
 INSERT INTO character_notifications (
@@ -153,8 +192,14 @@ FROM character_notifications cn
 JOIN eve_entities ee ON ee.id = cn.sender_id
 JOIN notification_types nt ON nt.id = cn.type_id
 WHERE character_id = ?
+AND nt.name IN (/*SLICE:names*/?)
 ORDER BY timestamp DESC
 `
+
+type ListCharacterNotificationsParams struct {
+	CharacterID int64
+	Names       []string
+}
 
 type ListCharacterNotificationsRow struct {
 	CharacterNotification CharacterNotification
@@ -162,8 +207,19 @@ type ListCharacterNotificationsRow struct {
 	NotificationType      NotificationType
 }
 
-func (q *Queries) ListCharacterNotifications(ctx context.Context, characterID int64) ([]ListCharacterNotificationsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterNotifications, characterID)
+func (q *Queries) ListCharacterNotifications(ctx context.Context, arg ListCharacterNotificationsParams) ([]ListCharacterNotificationsRow, error) {
+	query := listCharacterNotifications
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.Names) > 0 {
+		for _, v := range arg.Names {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:names*/?", strings.Repeat(",?", len(arg.Names))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:names*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}

@@ -217,14 +217,14 @@ func TestListCharacterNotifications(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "bravo"})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
 		// when
-		tt, err := s.ListCharacterNotifications(ctx, c.ID)
+		tt, err := s.ListCharacterNotifications(ctx, c.ID, []string{"alpha"})
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, tt, 3)
+			assert.Len(t, tt, 2)
 		}
 	})
 }

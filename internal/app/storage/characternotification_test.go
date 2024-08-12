@@ -66,14 +66,14 @@ func TestCharacterNotification(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "bravo"})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
 		// when
-		ee, err := r.ListCharacterNotifications(ctx, c.ID)
+		ee, err := r.ListCharacterNotifications(ctx, c.ID, []string{"alpha"})
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, ee, 3)
+			assert.Len(t, ee, 2)
 		}
 	})
 	t.Run("can updates IsRead 1", func(t *testing.T) {
@@ -102,6 +102,25 @@ func TestCharacterNotification(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.False(t, o.IsRead)
 			}
+		}
+	})
+	t.Run("can calculate unread counts", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "bravo"})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha", IsRead: true})
+		factory.CreateCharacterNotification()
+		// when
+		x, err := r.CalcCharacterNotificationUnreadCounts(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			want := map[string]int{
+				"alpha": 1,
+				"bravo": 1,
+			}
+			assert.Equal(t, want, x)
 		}
 	})
 }
