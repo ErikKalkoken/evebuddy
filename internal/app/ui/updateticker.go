@@ -99,10 +99,10 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
 		return
 	}
-	isCurrent := characterID == u.characterID()
+	isShown := characterID == u.characterID()
 	switch s {
 	case app.SectionAssets:
-		if isCurrent && hasChanged {
+		if isShown && hasChanged {
 			u.assetsArea.redraw()
 		}
 		if hasChanged {
@@ -110,15 +110,15 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 			u.wealthArea.refresh()
 		}
 	case app.SectionAttributes:
-		if isCurrent && hasChanged {
+		if isShown && hasChanged {
 			u.attributesArea.refresh()
 		}
 	case app.SectionImplants:
-		if isCurrent && hasChanged {
+		if isShown && hasChanged {
 			u.implantsArea.refresh()
 		}
 	case app.SectionJumpClones:
-		if isCurrent && hasChanged {
+		if isShown && hasChanged {
 			u.jumpClonesArea.redraw()
 		}
 		if hasChanged {
@@ -135,28 +135,32 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 	case app.SectionMailLabels,
 		app.SectionMailLists,
 		app.SectionMails:
-		if isCurrent && hasChanged {
+		if isShown && hasChanged {
 			u.mailArea.refresh()
 		}
 		if hasChanged {
 			u.overviewArea.refresh()
 		}
+	case app.SectionNotifications:
+		if isShown && hasChanged {
+			u.notificationsArea.refresh()
+		}
 	case app.SectionSkills:
-		if isCurrent && hasChanged {
+		if isShown && hasChanged {
 			u.skillCatalogueArea.refresh()
 			u.shipsArea.refresh()
 			u.overviewArea.refresh()
 		}
 	case app.SectionSkillqueue:
-		if isCurrent {
+		if isShown {
 			u.skillqueueArea.refresh()
 		}
 	case app.SectionWalletJournal:
-		if isCurrent && hasChanged {
+		if isShown && hasChanged {
 			u.walletJournalArea.refresh()
 		}
 	case app.SectionWalletTransactions:
-		if isCurrent && hasChanged {
+		if isShown && hasChanged {
 			u.walletTransactionArea.refresh()
 		}
 	default:

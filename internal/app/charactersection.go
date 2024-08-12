@@ -23,6 +23,7 @@ const (
 	SectionMailLists          CharacterSection = "mail_lists"
 	SectionMailLabels         CharacterSection = "mail_labels"
 	SectionMails              CharacterSection = "mails"
+	SectionNotifications      CharacterSection = "notifications"
 	SectionOnline             CharacterSection = "online"
 	SectionShip               CharacterSection = "ship"
 	SectionSkills             CharacterSection = "skills"
@@ -41,6 +42,7 @@ var CharacterSections = []CharacterSection{
 	SectionMailLabels,
 	SectionMailLists,
 	SectionMails,
+	SectionNotifications,
 	SectionOnline,
 	SectionShip,
 	SectionSkills,
@@ -58,7 +60,8 @@ var characterSectionTimeouts = map[CharacterSection]time.Duration{
 	SectionLocation:           300 * time.Second, // 5 seconds min
 	SectionMailLabels:         60 * time.Second,  // 30 seconds min
 	SectionMailLists:          120 * time.Second,
-	SectionMails:              60 * time.Second,  // 30 seconds min
+	SectionMails:              60 * time.Second, // 30 seconds min
+	SectionNotifications:      600 * time.Second,
 	SectionOnline:             300 * time.Second, // 30 seconds min
 	SectionShip:               300 * time.Second, // 5 seconds min
 	SectionSkillqueue:         120 * time.Second,

@@ -105,6 +105,17 @@ type CharacterMailsRecipient struct {
 	EveEntityID int64
 }
 
+type CharacterNotification struct {
+	ID             int64
+	CharacterID    int64
+	IsRead         bool
+	NotificationID int64
+	SenderID       int64
+	Text           string
+	Timestamp      time.Time
+	TypeID         int64
+}
+
 type CharacterSectionStatus struct {
 	ID          int64
 	CharacterID int64
@@ -351,6 +362,11 @@ type GeneralSectionStatus struct {
 	CompletedAt sql.NullTime
 	Error       string
 	StartedAt   sql.NullTime
+}
+
+type NotificationType struct {
+	ID   int64
+	Name string
 }
 
 type Scope struct {

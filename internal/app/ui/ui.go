@@ -52,11 +52,12 @@ type ui struct {
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
 	character             *app.Character
+	characterMenu         *fyne.Menu
 	isDebug               bool
 	implantsArea          *implantsArea
 	jumpClonesArea        *jumpClonesArea
 	mailArea              *mailArea
-	characterMenu         *fyne.Menu
+	notificationsArea     *notificationsArea
 	overviewArea          *overviewArea
 	sfg                   *singleflight.Group
 	statusBarArea         *statusBarArea
@@ -111,10 +112,11 @@ func NewUI(isDebug bool) *ui {
 		))
 
 	u.mailArea = u.newMailArea()
-	u.mailTab = container.NewTabItemWithIcon("Mail",
+	u.notificationsArea = u.newNotificationsArea()
+	u.mailTab = container.NewTabItemWithIcon("Communication",
 		theme.MailComposeIcon(), container.NewAppTabs(
 			container.NewTabItem("Mail", u.mailArea.content),
-			// container.NewTabItem("Notifications", widget.NewLabel("PLACEHOLDER")),
+			container.NewTabItem("Notifications", u.notificationsArea.content),
 		))
 
 	u.overviewArea = u.newOverviewArea()
@@ -341,6 +343,7 @@ func (u *ui) refreshCharacter() {
 	u.jumpClonesArea.redraw()
 	u.implantsArea.refresh()
 	u.mailArea.redraw()
+	u.notificationsArea.refresh()
 	u.shipsArea.refresh()
 	u.skillqueueArea.refresh()
 	u.skillCatalogueArea.redraw()

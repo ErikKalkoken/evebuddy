@@ -606,6 +606,40 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 	return x
 }
 
+func (f Factory) CreateCharacterNotification(args ...storage.CreateCharacterNotificationParams) *app.CharacterNotification {
+	ctx := context.TODO()
+	var arg storage.CreateCharacterNotificationParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.NotificationID == 0 {
+		arg.NotificationID = f.calcNewIDWithCharacter("character_notifications", "notification_id", arg.CharacterID)
+	}
+	if arg.SenderID == 0 {
+		x := f.CreateEveEntityCorporation()
+		arg.SenderID = x.ID
+	}
+	if arg.Type == "" {
+		arg.Type = "CorpBecameWarEligible" // Type without text
+	}
+	if arg.Timestamp.IsZero() {
+		arg.Timestamp = time.Now().UTC()
+	}
+	err := f.st.CreateCharacterNotification(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	x, err := f.st.GetCharacterNotification(ctx, arg.CharacterID, arg.NotificationID)
+	if err != nil {
+		panic(err)
+	}
+	return x
+}
+
 func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *app.EveCharacter {
 	ctx := context.TODO()
 	var arg storage.CreateEveCharacterParams

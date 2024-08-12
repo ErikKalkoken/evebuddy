@@ -226,7 +226,7 @@ func (a *mailArea) refresh() {
 }
 
 func (a *mailArea) updateMailTab(unreadCount int) {
-	s := "Mail"
+	s := "Comm."
 	if unreadCount > 0 {
 		s += fmt.Sprintf(" (%s)", humanize.Comma(int64(unreadCount)))
 	}

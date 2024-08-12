@@ -14,6 +14,7 @@ import (
 var esiScopes = []string{
 	"esi-assets.read_assets.v1",
 	"esi-characters.read_contacts.v1",
+	"esi-characters.read_notifications.v1",
 	"esi-clones.read_clones.v1",
 	"esi-clones.read_implants.v1",
 	"esi-location.read_location.v1",

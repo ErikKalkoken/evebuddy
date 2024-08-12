@@ -71,6 +71,8 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 		f = s.updateCharacterMailLabelsESI
 	case app.SectionMailLists:
 		f = s.updateCharacterMailListsESI
+	case app.SectionNotifications:
+		f = s.updateCharacterNotificationsESI
 	case app.SectionOnline:
 		f = s.updateCharacterOnlineESI
 	case app.SectionShip:
