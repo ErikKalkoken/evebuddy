@@ -24,29 +24,31 @@ type notificationCategory struct {
 
 // notificationsArea is the UI area that shows the skillqueue
 type notificationsArea struct {
-	content          *fyne.Container
+	content *container.Split
+	ui      *ui
+
+	categories   []notificationCategory
+	categoryList *widget.List
+
 	notifications    []*app.CharacterNotification
-	top              *widget.Label
-	ui               *ui
 	notificationList *widget.List
-	categoryList     *widget.List
-	categories       []notificationCategory
+
+	detail *fyne.Container
 }
 
 func (u *ui) newNotificationsArea() *notificationsArea {
 	a := notificationsArea{
 		notifications: make([]*app.CharacterNotification, 0),
-		top:           widget.NewLabel(""),
 		ui:            u,
 		categories:    make([]notificationCategory, 0),
 	}
-	a.top.TextStyle.Bold = true
-	a.categoryList = a.makeCategoryList()
+	a.detail = container.NewVBox()
 	a.notificationList = a.makeNotificationList()
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	split := container.NewHSplit(a.categoryList, a.notificationList)
-	split.Offset = 0.2
-	a.content = container.NewBorder(top, nil, nil, nil, split)
+	split1 := container.NewHSplit(a.notificationList, a.detail)
+	split1.Offset = 0.35
+	a.categoryList = a.makeCategoryList()
+	a.content = container.NewHSplit(a.categoryList, split1)
+	a.content.Offset = 0.15
 	return &a
 }
 
@@ -75,11 +77,13 @@ func (a *notificationsArea) makeCategoryList() *widget.List {
 			label.Refresh()
 		})
 	l.OnSelected = func(id widget.ListItemID) {
+		a.notificationList.UnselectAll()
 		if id >= len(a.categories) {
 			l.UnselectAll()
 			return
 		}
 		o := a.categories[id]
+		a.detail.RemoveAll()
 		if err := a.loadNotifications(o.id); err != nil {
 			slog.Error("Failed to load notifications", "err", err)
 			l.UnselectAll()
@@ -102,20 +106,21 @@ func (a *notificationsArea) makeNotificationList() *widget.List {
 			}
 			n := a.notifications[id]
 			item := co.(*widgets.MailHeaderItem)
-			item.Set(n.Sender.Name, n.Title(), n.Timestamp, n.IsRead)
+			item.Set(n.Sender.Name, n.FakeTitle(), n.Timestamp, n.IsRead)
 		})
-	// l.OnSelected = func(id widget.ListItemID) {
-	// 	defer l.UnselectAll()
-	// 	if id >= len(a.notifications) {
-	// 		return
-	// 	}
-	// 	o := a.notifications[id]
-	// 	a.ui.showTypeInfoWindow(o.EveType.ID, a.ui.characterID())
-	// }
+	l.OnSelected = func(id widget.ListItemID) {
+		a.detail.RemoveAll()
+		if id >= len(a.notifications) {
+			defer l.UnselectAll()
+			return
+		}
+		a.setDetails(a.notifications[id])
+	}
 	return l
 }
 
 func (a *notificationsArea) refresh() {
+	a.detail.RemoveAll()
 	a.notifications = make([]*app.CharacterNotification, 0)
 	a.notificationList.Refresh()
 	var counts map[app.NotificationCategory]int
@@ -165,4 +170,14 @@ func (a *notificationsArea) makeTopText() (string, widget.Importance) {
 		}
 	}
 	return fmt.Sprintf("%d notifications (%d unread)", len(a.notifications), unread), widget.MediumImportance
+}
+
+func (a *notificationsArea) setDetails(n *app.CharacterNotification) {
+	a.detail.RemoveAll()
+	subject := widget.NewLabel(n.FakeTitle())
+	subject.TextStyle.Bold = true
+	a.detail.Add(subject)
+	header := fmt.Sprintf("From: %s\nSent: %s", n.Sender.Name, n.Timestamp.Format(myDateTime))
+	a.detail.Add(widget.NewLabel(header))
+	a.detail.Add(widget.NewLabel(n.Text))
 }

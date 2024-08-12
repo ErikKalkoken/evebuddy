@@ -12,14 +12,14 @@ func TestCharacterNotification(t *testing.T) {
 		x := &app.CharacterNotification{
 			Type: "AlphaBravoCharlie",
 		}
-		y := x.Title()
+		y := x.FakeTitle()
 		assert.Equal(t, "Alpha Bravo Charlie", y)
 	})
 	t.Run("can deal with short name", func(t *testing.T) {
 		x := &app.CharacterNotification{
 			Type: "Alpha",
 		}
-		y := x.Title()
+		y := x.FakeTitle()
 		assert.Equal(t, "Alpha", y)
 	})
 }

@@ -17,7 +17,7 @@ type CharacterNotification struct {
 	Type           string
 }
 
-func (cn *CharacterNotification) Title() string {
+func (cn *CharacterNotification) FakeTitle() string {
 	var b strings.Builder
 	var last rune
 	for _, r := range cn.Type {
