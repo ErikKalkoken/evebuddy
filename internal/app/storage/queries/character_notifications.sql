@@ -1,15 +1,17 @@
 -- name: CreateCharacterNotification :exec
 INSERT INTO character_notifications (
+    body,
     character_id,
     is_read,
     notification_id,
     sender_id,
     text,
     timestamp,
+    title,
     type_id
 )
 VALUES (
-    ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?
 );
 
 -- name: GetCharacterNotification :one
@@ -49,9 +51,12 @@ JOIN notification_types nt ON nt.id = cn.type_id
 WHERE character_id = ?
 GROUP BY cn.type_id, nt.name;
 
--- name: UpdateCharacterNotificationsIsRead :exec
+-- name: UpdateCharacterNotification :exec
 UPDATE character_notifications
-SET is_read = ?2
+SET
+    body = ?2,
+    is_read = ?3,
+    title = ?4
 WHERE id = ?1;
 
 -- name: CreateNotificationType :one

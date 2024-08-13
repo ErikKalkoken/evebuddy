@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/stretchr/testify/assert"
 )
@@ -81,7 +82,7 @@ func TestCharacterNotification(t *testing.T) {
 		testutil.TruncateTables(db)
 		n := factory.CreateCharacterNotification()
 		// when
-		err := r.UpdateCharacterNotificationIsRead(ctx, n.CharacterID, n.ID, true)
+		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{ID: n.ID, IsRead: true})
 		// then
 		if assert.NoError(t, err) {
 			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)
@@ -95,12 +96,40 @@ func TestCharacterNotification(t *testing.T) {
 		testutil.TruncateTables(db)
 		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{IsRead: true})
 		// when
-		err := r.UpdateCharacterNotificationIsRead(ctx, n.CharacterID, n.ID, false)
+		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{ID: n.ID, IsRead: false})
 		// then
 		if assert.NoError(t, err) {
 			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)
 			if assert.NoError(t, err) {
 				assert.False(t, o.IsRead)
+			}
+		}
+	})
+	t.Run("can update title", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{})
+		// when
+		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{ID: n.ID, Title: optional.New("title")})
+		// then
+		if assert.NoError(t, err) {
+			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, "title", o.Title.ValueOrZero())
+			}
+		}
+	})
+	t.Run("can update body", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{})
+		// when
+		err := r.UpdateCharacterNotification(ctx, storage.UpdateCharacterNotificationParams{ID: n.ID, Body: optional.New("body")})
+		// then
+		if assert.NoError(t, err) {
+			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, "body", o.Body.ValueOrZero())
 			}
 		}
 	})
@@ -121,6 +150,20 @@ func TestCharacterNotification(t *testing.T) {
 				"bravo": 1,
 			}
 			assert.Equal(t, want, x)
+		}
+	})
+	t.Run("can list unread notifs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "bravo"})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha", IsRead: true})
+		// when
+		ee, err := r.ListCharacterNotificationsUnread(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, ee, 2)
 		}
 	})
 }

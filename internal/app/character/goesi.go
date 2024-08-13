@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"time"
 
 	"github.com/antihax/goesi"
 	"golang.org/x/sync/errgroup"
@@ -66,4 +67,14 @@ func extractPageCount(r *http.Response) (int, error) {
 		return 0, err
 	}
 	return pages, nil
+}
+
+// FromLDAPTime converts an ldap time to golang time
+func FromLDAPTime(ldap_dt int64) time.Time {
+	return time.Unix((ldap_dt/10000000)-11644473600, 0).UTC()
+}
+
+// FromLDAPDuration converts an ldap duration to golang duration
+func FromLDAPDuration(ldap_td int64) time.Duration {
+	return time.Duration(ldap_td/10) * time.Microsecond
 }

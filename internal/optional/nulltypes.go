@@ -28,6 +28,20 @@ func FromNullInt64ToInteger[T constraints.Integer](v sql.NullInt64) Optional[T] 
 	return New(T(v.Int64))
 }
 
+func FromNullString(v sql.NullString) Optional[string] {
+	if !v.Valid {
+		return Optional[string]{}
+	}
+	return New(v.String)
+}
+
+func ToNullString(o Optional[string]) sql.NullString {
+	if o.IsEmpty() {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: o.ValueOrZero(), Valid: true}
+}
+
 func FromNullTime(v sql.NullTime) Optional[time.Time] {
 	if !v.Valid {
 		return Optional[time.Time]{}

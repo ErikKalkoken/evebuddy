@@ -107,12 +107,14 @@ type CharacterMailsRecipient struct {
 
 type CharacterNotification struct {
 	ID             int64
+	Body           sql.NullString
 	CharacterID    int64
 	IsRead         bool
 	NotificationID int64
 	SenderID       int64
 	Text           string
 	Timestamp      time.Time
+	Title          sql.NullString
 	TypeID         int64
 }
 

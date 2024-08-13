@@ -9,36 +9,19 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type CreateCharacterNotificationParams struct {
+	Body           optional.Optional[string]
 	CharacterID    int32
 	IsRead         bool
 	NotificationID int64
 	SenderID       int32
 	Text           string
 	Timestamp      time.Time
+	Title          optional.Optional[string]
 	Type           string
-}
-
-func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCharacterNotificationParams) error {
-	if arg.NotificationID == 0 {
-		return fmt.Errorf("notification ID can not be zero, Character %d", arg.CharacterID)
-	}
-	typeID, err := st.GetOrCreateNotificationType(ctx, arg.Type)
-	if err != nil {
-		return err
-	}
-	arg2 := queries.CreateCharacterNotificationParams{
-		CharacterID:    int64(arg.CharacterID),
-		IsRead:         arg.IsRead,
-		NotificationID: arg.NotificationID,
-		SenderID:       int64(arg.SenderID),
-		Text:           arg.Text,
-		Timestamp:      arg.Timestamp,
-		TypeID:         typeID,
-	}
-	return st.q.CreateCharacterNotification(ctx, arg2)
 }
 
 func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int32, notificationID int64) (*app.CharacterNotification, error) {
@@ -85,29 +68,61 @@ func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, charact
 	return ee, nil
 }
 
-func (st *Storage) UpdateCharacterNotificationIsRead(ctx context.Context, characterID int32, mailPK int64, isRead bool) error {
-	arg := queries.UpdateCharacterNotificationsIsReadParams{
-		ID:     mailPK,
-		IsRead: isRead,
-	}
-	if err := st.q.UpdateCharacterNotificationsIsRead(ctx, arg); err != nil {
-		return fmt.Errorf("failed to update notification PK %d for character %d: %w", mailPK, characterID, err)
-	}
-	return nil
-}
-
 func characterNotificationFromDBModel(o queries.CharacterNotification, sender queries.EveEntity, type_ queries.NotificationType) *app.CharacterNotification {
 	o2 := &app.CharacterNotification{
 		ID:             o.ID,
+		Body:           optional.FromNullString(o.Body),
 		CharacterID:    int32(o.CharacterID),
 		IsRead:         o.IsRead,
 		NotificationID: o.NotificationID,
 		Sender:         eveEntityFromDBModel(sender),
 		Text:           o.Text,
 		Timestamp:      o.Timestamp,
+		Title:          optional.FromNullString(o.Title),
 		Type:           type_.Name,
 	}
 	return o2
+}
+
+func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCharacterNotificationParams) error {
+	if arg.NotificationID == 0 {
+		return fmt.Errorf("notification ID can not be zero, Character %d", arg.CharacterID)
+	}
+	typeID, err := st.GetOrCreateNotificationType(ctx, arg.Type)
+	if err != nil {
+		return err
+	}
+	arg2 := queries.CreateCharacterNotificationParams{
+		CharacterID:    int64(arg.CharacterID),
+		IsRead:         arg.IsRead,
+		NotificationID: arg.NotificationID,
+		SenderID:       int64(arg.SenderID),
+		Text:           arg.Text,
+		Timestamp:      arg.Timestamp,
+		TypeID:         typeID,
+	}
+	return st.q.CreateCharacterNotification(ctx, arg2)
+}
+
+type UpdateCharacterNotificationParams struct {
+	ID          int64
+	Body        optional.Optional[string]
+	CharacterID int32
+	IsRead      bool
+	Title       optional.Optional[string]
+}
+
+func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCharacterNotificationParams) error {
+	arg2 := queries.UpdateCharacterNotificationParams{
+		ID:     arg.ID,
+		Body:   optional.ToNullString(arg.Body),
+		IsRead: arg.IsRead,
+		Title:  optional.ToNullString(arg.Title),
+	}
+	if err := st.q.UpdateCharacterNotification(ctx, arg2); err != nil {
+		return fmt.Errorf("failed to update notification PK %d for character %d: %w", arg.ID, arg.CharacterID, err)
+	}
+	return nil
 }
 
 func (st *Storage) GetOrCreateNotificationType(ctx context.Context, name string) (int64, error) {

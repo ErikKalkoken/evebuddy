@@ -312,3 +312,25 @@ func TestAddMissingEveEntities(t *testing.T) {
 		}
 	})
 }
+
+func TestResolveEveEntities(t *testing.T) {
+	ctx := context.Background()
+	db, st, factory := testutil.New()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(st, client)
+	t.Run("should resolve EveEntity", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		e1 := factory.CreateEveEntity()
+		// when
+		r, err := s.ToEveEntities(ctx, []int32{e1.ID})
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, *e1, *r[e1.ID])
+		}
+	})
+}

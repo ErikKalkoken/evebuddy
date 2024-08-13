@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/antihax/goesi"
 	"github.com/antihax/goesi/esi"
@@ -177,5 +178,16 @@ func TestFetchFromESIWithPaging(t *testing.T) {
 			})
 		// then
 		assert.Error(t, err)
+	})
+}
+
+func TestLDAPTimeConversion(t *testing.T) {
+	t.Run("should convert LDAP time", func(t *testing.T) {
+		x := FromLDAPTime(131924601300000000)
+		assert.Equal(t, time.Date(2019, 1, 20, 12, 15, 30, 0, time.UTC), x)
+	})
+	t.Run("should convert LDAP duration", func(t *testing.T) {
+		x := FromLDAPDuration(9000000000)
+		assert.Equal(t, time.Duration(15*time.Minute), x)
 	})
 }

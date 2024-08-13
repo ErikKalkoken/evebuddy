@@ -361,6 +361,29 @@ CREATE TABLE character_mail_mail_labels (
 CREATE INDEX character_mail_mail_labels_idx1 ON character_mail_mail_labels (character_mail_label_id);
 CREATE INDEX character_mail_mail_labels_idx2 ON character_mail_mail_labels (character_mail_id);
 
+CREATE TABLE character_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    body TEXT,
+    character_id INTEGER NOT NULL,
+    is_read BOOL NOT NULL,
+    notification_id INTEGER NOT NULL,
+    sender_id INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    timestamp DATETIME NOT NULL,
+    title TEXT,
+    type_id INTEGER NOT NULL,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
+    FOREIGN KEY (type_id) REFERENCES notification_types(id) ON DELETE CASCADE,
+    UNIQUE (character_id, notification_id)
+);
+
+CREATE TABLE notification_types (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    UNIQUE (name)
+);
+
 CREATE TABLE character_skills (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     active_skill_level INTEGER NOT NULL,

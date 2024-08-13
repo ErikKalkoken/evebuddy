@@ -147,65 +147,6 @@ func TestUpdateCharacterNotificationsESI(t *testing.T) {
 			}
 		}
 	})
-	// t.Run("should fetch multiple pages", func(t *testing.T) {
-	// 	// given
-	// 	testutil.TruncateTables(db)
-	// 	httpmock.Reset()
-	// 	c := factory.CreateCharacter()
-	// 	factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-	// 	factory.CreateEveEntityCharacter(app.EveEntity{ID: 54321})
-	// 	factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: 60014719})
-	// 	factory.CreateEveType(storage.CreateEveTypeParams{ID: 587})
-
-	// 	data := make([]map[string]any, 0)
-	// 	for i := range 2500 {
-	// 		data = append(data, map[string]any{
-	// 			"client_id":      54321,
-	// 			"date":           "2016-10-24T09:00:00Z",
-	// 			"is_buy":         true,
-	// 			"is_personal":    true,
-	// 			"journal_ref_id": 67890,
-	// 			"location_id":    60014719,
-	// 			"quantity":       1,
-	// 			"transaction_id": 1000002500 - i,
-	// 			"type_id":        587,
-	// 			"unit_price":     1.23,
-	// 		})
-	// 	}
-	// 	httpmock.RegisterResponder(
-	// 		"GET",
-	// 		fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/wallet/transactions/", c.ID),
-	// 		httpmock.NewJsonResponderOrPanic(200, data))
-	// 	httpmock.RegisterResponder(
-	// 		"GET",
-	// 		fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/wallet/transactions/?from_id=1000000001", c.ID),
-	// 		httpmock.NewJsonResponderOrPanic(200, []map[string]any{
-	// 			{
-	// 				"client_id":      54321,
-	// 				"date":           "2016-10-24T08:00:00Z",
-	// 				"is_buy":         true,
-	// 				"is_personal":    true,
-	// 				"journal_ref_id": 67891,
-	// 				"location_id":    60014719,
-	// 				"quantity":       1,
-	// 				"transaction_id": 1000000000,
-	// 				"type_id":        587,
-	// 				"unit_price":     9.23,
-	// 			},
-	// 		}))
-	// 	// when
-	// 	_, err := s.updateCharacterNotificationsESI(ctx, UpdateSectionParams{
-	// 		CharacterID: c.ID,
-	// 		Section:     app.SectionWalletTransactions,
-	// 	})
-	// 	// then
-	// 	if assert.NoError(t, err) {
-	// 		ids, err := st.ListCharacterNotificationIDs(ctx, c.ID)
-	// 		if assert.NoError(t, err) {
-	// 			assert.Len(t, ids, 2501)
-	// 		}
-	// 	}
-	// })
 }
 
 func TestListCharacterNotifications(t *testing.T) {
@@ -225,6 +166,37 @@ func TestListCharacterNotifications(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, tt, 2)
+		}
+	})
+}
+
+func TestRenderCharacterNotification(t *testing.T) {
+	db, st, factory := testutil.New()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	s := newCharacterService(st)
+	ctx := context.Background()
+	t.Run("should render notification", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		creditor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000023})
+		debtor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 98267621})
+		text := `
+amount: 10000
+billTypeID: 2
+creditorID: 1000023
+currentDate: 133678830021821155
+debtorID: 98267621
+dueDate: 133704743590000000
+externalID: 27
+externalID2: 60002599`
+		title, body, err := s.renderCharacterNotification(ctx, 0, "CorpAllBillMsg", text)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "Bill issued", title.ValueOrZero())
+			assert.Contains(t, body.ValueOrZero(), creditor.Name)
+			assert.Contains(t, body.ValueOrZero(), debtor.Name)
 		}
 	})
 }

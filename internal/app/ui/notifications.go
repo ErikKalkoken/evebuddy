@@ -29,25 +29,35 @@ type notificationsArea struct {
 
 	categories   []notificationCategory
 	categoryList *widget.List
+	categoryTop  *widget.Label
 
 	notifications    []*app.CharacterNotification
 	notificationList *widget.List
+	notificationsTop *widget.Label
 
 	detail *fyne.Container
 }
 
 func (u *ui) newNotificationsArea() *notificationsArea {
 	a := notificationsArea{
-		notifications: make([]*app.CharacterNotification, 0),
-		ui:            u,
-		categories:    make([]notificationCategory, 0),
+		ui:               u,
+		categories:       make([]notificationCategory, 0),
+		categoryTop:      widget.NewLabel(""),
+		notifications:    make([]*app.CharacterNotification, 0),
+		notificationsTop: widget.NewLabel(""),
 	}
 	a.detail = container.NewVBox()
 	a.notificationList = a.makeNotificationList()
-	split1 := container.NewHSplit(a.notificationList, a.detail)
+	split1 := container.NewHSplit(
+		container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList),
+		a.detail,
+	)
 	split1.Offset = 0.35
 	a.categoryList = a.makeCategoryList()
-	a.content = container.NewHSplit(a.categoryList, split1)
+	a.content = container.NewHSplit(
+		container.NewBorder(a.categoryTop, nil, nil, nil, a.categoryList),
+		split1,
+	)
 	a.content.Offset = 0.15
 	return &a
 }
@@ -84,7 +94,7 @@ func (a *notificationsArea) makeCategoryList() *widget.List {
 		}
 		o := a.categories[id]
 		a.detail.RemoveAll()
-		if err := a.loadNotifications(o.id); err != nil {
+		if err := a.setNotifications(o.id); err != nil {
 			slog.Error("Failed to load notifications", "err", err)
 			l.UnselectAll()
 		}
@@ -98,7 +108,7 @@ func (a *notificationsArea) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewMailHeaderItem(myDateTime)
+			return widgets.NewMailHeaderItem(app.TimeDefaultFormat)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
@@ -106,7 +116,7 @@ func (a *notificationsArea) makeNotificationList() *widget.List {
 			}
 			n := a.notifications[id]
 			item := co.(*widgets.MailHeaderItem)
-			item.Set(n.Sender.Name, n.FakeTitle(), n.Timestamp, n.IsRead)
+			item.Set(n.Sender.Name, n.TitleOutput(), n.Timestamp, n.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.detail.RemoveAll()
@@ -149,9 +159,10 @@ func (a *notificationsArea) refresh() {
 	categories = slices.Insert(categories, 0, unread)
 	a.categories = categories
 	a.categoryList.Refresh()
+	a.categoryTop.SetText(fmt.Sprintf("%s total", humanize.Comma(int64(999))))
 }
 
-func (a *notificationsArea) loadNotifications(nc app.NotificationCategory) error {
+func (a *notificationsArea) setNotifications(nc app.NotificationCategory) error {
 	ctx := context.TODO()
 	characterID := a.ui.characterID()
 	var notifications []*app.CharacterNotification
@@ -167,6 +178,7 @@ func (a *notificationsArea) loadNotifications(nc app.NotificationCategory) error
 	}
 	a.notifications = notifications
 	a.notificationList.Refresh()
+	a.notificationsTop.SetText(fmt.Sprintf("%s notifications", humanize.Comma(int64(len(notifications)))))
 	return nil
 }
 
@@ -186,10 +198,15 @@ func (a *notificationsArea) makeTopText() (string, widget.Importance) {
 
 func (a *notificationsArea) setDetails(n *app.CharacterNotification) {
 	a.detail.RemoveAll()
-	subject := widget.NewLabel(n.FakeTitle())
+	subject := widget.NewLabel(n.TitleFake())
 	subject.TextStyle.Bold = true
 	a.detail.Add(subject)
-	header := fmt.Sprintf("From: %s\nSent: %s", n.Sender.Name, n.Timestamp.Format(myDateTime))
+	header := fmt.Sprintf("From: %s\nSent: %s", n.Sender.Name, n.Timestamp.Format(app.TimeDefaultFormat))
 	a.detail.Add(widget.NewLabel(header))
-	a.detail.Add(widget.NewLabel(n.Text))
+	body := widget.NewRichTextFromMarkdown(n.Body.ValueOrZero())
+	body.Wrapping = fyne.TextWrapWord
+	if n.Body.IsEmpty() {
+		body.ParseMarkdown("*Unknown type*")
+	}
+	a.detail.Add(body)
 }

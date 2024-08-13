@@ -375,7 +375,7 @@ func (a *mailArea) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewMailHeaderItem(myDateTime)
+			return widgets.NewMailHeaderItem(app.TimeDefaultFormat)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -528,7 +528,7 @@ func (a *mailArea) setMail(mailID int32) {
 		}()
 	}
 
-	header := a.mail.MakeHeaderText(myDateTime)
+	header := a.mail.MakeHeaderText(app.TimeDefaultFormat)
 	a.updateContent(a.mail.Subject, header, a.mail.BodyPlain())
 	a.toolbar.Show()
 }

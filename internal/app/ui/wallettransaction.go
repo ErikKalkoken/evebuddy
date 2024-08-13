@@ -79,7 +79,7 @@ func (a *walletTransactionArea) makeTable() *widget.Table {
 			w := a.transactions[tci.Row]
 			switch tci.Col {
 			case 0:
-				l.Text = w.date.Format(myDateTime)
+				l.Text = w.date.Format(app.TimeDefaultFormat)
 			case 1:
 				l.Alignment = fyne.TextAlignTrailing
 				l.Text = humanize.Comma(int64(w.quantity))

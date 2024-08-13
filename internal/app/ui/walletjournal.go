@@ -99,7 +99,7 @@ func (a *walletJournalArea) makeTable() *widget.Table {
 			w := a.entries[tci.Row]
 			switch tci.Col {
 			case 0:
-				l.Text = w.date.Format(myDateTime)
+				l.Text = w.date.Format(app.TimeDefaultFormat)
 			case 1:
 				l.Text = w.refTypeOutput()
 			case 2:

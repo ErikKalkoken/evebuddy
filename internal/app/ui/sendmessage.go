@@ -63,15 +63,15 @@ func (u *ui) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fyne.Wind
 			r := mailrecipient.NewFromEntities([]*app.EveEntity{mail.From})
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
-			bodyInput.SetText(mail.ToString(myDateTime))
+			bodyInput.SetText(mail.ToString(app.TimeDefaultFormat))
 		case createMessageReplyAll:
 			r := mailrecipient.NewFromEntities(mail.Recipients)
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
-			bodyInput.SetText(mail.ToString(myDateTime))
+			bodyInput.SetText(mail.ToString(app.TimeDefaultFormat))
 		case createMessageForward:
 			subjectInput.SetText(fmt.Sprintf("Fw: %s", mail.Subject))
-			bodyInput.SetText(mail.ToString(myDateTime))
+			bodyInput.SetText(mail.ToString(app.TimeDefaultFormat))
 		default:
 			return nil, fmt.Errorf("undefined mode for create message: %v", mode)
 		}
