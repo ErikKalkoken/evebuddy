@@ -9,6 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 
 	"github.com/antihax/goesi/esi"
 )
@@ -33,13 +34,16 @@ func (eu *EveUniverseService) GetOrCreateEveEntityESI(ctx context.Context, id in
 // TODO: Reduce DB calls with AddMissingEveEntities
 
 // ToEveEntities returns the resolved EveEntities for a list of valid entity IDs.
+// IDs with the value 0 are ignored.
 // Will return an error an ID can not be resolved.
 func (eu *EveUniverseService) ToEveEntities(ctx context.Context, ids []int32) (map[int32]*app.EveEntity, error) {
-	if _, err := eu.AddMissingEveEntities(ctx, ids); err != nil {
+	ids2 := set.NewFromSlice(ids)
+	ids2.Remove(0)
+	if _, err := eu.AddMissingEveEntities(ctx, ids2.ToSlice()); err != nil {
 		return nil, err
 	}
 	r := make(map[int32]*app.EveEntity)
-	for _, id := range ids {
+	for _, id := range ids2.ToSlice() {
 		x, err := eu.GetOrCreateEveEntityESI(ctx, id)
 		if err != nil {
 			return nil, err

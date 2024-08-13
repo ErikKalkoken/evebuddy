@@ -185,12 +185,12 @@ func TestEveEntityIDs(t *testing.T) {
 			assert.Equal(t, want, got)
 		}
 	})
-	t.Run("should return missing IDs", func(t *testing.T) {
+	t.Run("should return missing IDs and ignore IDs with zero value", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		factory.CreateEveEntity(app.EveEntity{ID: 42})
 		// when
-		got, err := r.MissingEveEntityIDs(ctx, []int32{42, 5})
+		got, err := r.MissingEveEntityIDs(ctx, []int32{42, 5, 0})
 		// then
 		if assert.NoError(t, err) {
 			want := set.NewFromSlice([]int32{5})

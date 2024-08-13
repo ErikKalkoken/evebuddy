@@ -130,7 +130,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
 	s := eveuniverse.New(r, client)
-	t.Run("do noting when not entities are missing", func(t *testing.T) {
+	t.Run("do nothing when all entities already exist", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
@@ -327,9 +327,10 @@ func TestResolveEveEntities(t *testing.T) {
 		httpmock.Reset()
 		e1 := factory.CreateEveEntity()
 		// when
-		r, err := s.ToEveEntities(ctx, []int32{e1.ID})
+		r, err := s.ToEveEntities(ctx, []int32{e1.ID, 0})
 		// then
 		if assert.NoError(t, err) {
+			assert.Len(t, r, 1)
 			assert.Equal(t, *e1, *r[e1.ID])
 		}
 	})

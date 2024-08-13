@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -32,6 +33,25 @@ func (lc EveLocation) DisplayName() string {
 	if lc.Name != "" {
 		return lc.Name
 	}
+	return lc.alternativeName()
+}
+
+// DisplayName2 returns a user friendly name not including the location name.
+func (lc EveLocation) DisplayName2() string {
+	if lc.Name != "" {
+		if lc.Variant() != EveLocationStructure {
+			return lc.Name
+		}
+		p := strings.Split(lc.Name, " - ")
+		if len(p) < 2 {
+			return lc.Name
+		}
+		return p[1]
+	}
+	return lc.alternativeName()
+}
+
+func (lc EveLocation) alternativeName() string {
 	switch lc.Variant() {
 	case EveLocationUnknown:
 		return "Unknown"

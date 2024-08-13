@@ -25,3 +25,23 @@ func TestLocationVariantFromID(t *testing.T) {
 		})
 	}
 }
+
+func TestEveLocation(t *testing.T) {
+	cases := []struct {
+		in  string
+		out string
+	}{
+		{"Alpha - Bravo", "Bravo"},
+		{"Alpha - Bravo - Charlie", "Bravo"},
+		{"Bravo", "Bravo"},
+	}
+	for _, tc := range cases {
+		t.Run("can return structure name without location", func(t *testing.T) {
+			x := app.EveLocation{
+				ID:   1_000_000_000_001,
+				Name: tc.in,
+			}
+			assert.Equal(t, tc.out, x.DisplayName2())
+		})
+	}
+}

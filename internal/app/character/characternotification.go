@@ -3,9 +3,9 @@ package character
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"log/slog"
 	"strings"
+	"text/template"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character/notificationtype"
@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
+	"github.com/antihax/goesi/notification"
 	"github.com/dustin/go-humanize"
 	"gopkg.in/yaml.v3"
 )
@@ -158,17 +159,62 @@ func (s *CharacterService) renderCharacterNotification(ctx context.Context, char
 		}
 		var out strings.Builder
 		t := template.Must(template.New(type_).Parse(
-			"A bill of **{{.Amount}}** ISK, due **{{.DueDate}}** owed by {{.Debtor}} to {{.Creditor}} " +
-				"was issued on {{.CurrentDate}}. This bill is for {{.BillType}}.",
+			"A bill of **{{.amount}}** ISK, due **{{.dueDate}}** owed by {{.debtor}} to {{.creditor}} " +
+				"was issued on {{.currentDate}}. This bill is for {{.billType}}.",
 		))
 
-		if err = t.Execute(&out, map[string]string{
-			"Amount":      humanize.Commaf(data.Amount),
-			"DueDate":     FromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
-			"Debtor":      makeEveEntityProfileURL(entities[data.DebtorID]),
-			"Creditor":    makeEveEntityProfileURL(entities[data.CreditorID]),
-			"CurrentDate": FromLDAPTime(data.CurrentDate).Format(app.TimeDefaultFormat),
-			"BillType":    billTypeName(data.BillTypeID),
+		if err := t.Execute(&out, map[string]string{
+			"amount":      humanize.Commaf(data.Amount),
+			"dueDate":     FromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
+			"debtor":      makeEveEntityProfileURL(entities[data.DebtorID]),
+			"creditor":    makeEveEntityProfileURL(entities[data.CreditorID]),
+			"currentDate": FromLDAPTime(data.CurrentDate).Format(app.TimeDefaultFormat),
+			"billType":    billTypeName(data.BillTypeID),
+		}); err != nil {
+			return title, body, err
+		}
+		body.Set(out.String())
+	case "StructureUnderAttack":
+		title.Set("Structure under attack")
+		var data notification.StructureUnderAttack
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		attackChar, err := s.EveUniverseService.GetOrCreateEveCharacterESI(ctx, data.CharID)
+		if err != nil {
+			return title, body, err
+		}
+		structureType, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, data.StructureTypeID)
+		if err != nil {
+			return title, body, err
+		}
+		solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarsystemID)
+		if err != nil {
+			return title, body, err
+		}
+		structure, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, data.StructureID)
+		if err != nil {
+			return title, body, err
+		}
+		structureName := structure.DisplayName2()
+		if structureName == "" {
+			structureName = "?"
+		}
+		var out strings.Builder
+		t := template.Must(template.New(type_).Parse(
+			"The {{.structureType}} **{{.structureName}}**{{.location}} in {{.solarSystem}} is under attack.\n\n" +
+				"Attacking Character: {{.character}}\n\n" +
+				"Attacking Corporation: {{.corporation}}\n\n" +
+				"Attacking Alliance: {{.alliance}}",
+		))
+		if err := t.Execute(&out, map[string]string{
+			"structureType": structureType.Name,
+			"structureName": structureName,
+			"location":      "",
+			"solarSystem":   makeLocationLink(solarSystem),
+			"character":     attackChar.Name,
+			"corporation":   makeCorporationLink(data.CorpName),
+			"alliance":      makeAllianceLink(data.AllianceName),
 		}); err != nil {
 			return title, body, err
 		}
@@ -185,18 +231,40 @@ func billTypeName(id int32) string {
 	return "?"
 }
 
+func makeLocationLink(ess *app.EveSolarSystem) string {
+	x := fmt.Sprintf(
+		"%s (%s)",
+		makeMarkDownLink(ess.Name, makeDotLanProfileURL(ess.Name, dotlanSolarSystem)),
+		ess.Constellation.Region.Name,
+	)
+	return x
+}
+
+func makeCorporationLink(name string) string {
+	if name == "" {
+		return ""
+	}
+	return makeMarkDownLink(name, makeDotLanProfileURL(name, dotlanCorporation))
+}
+
+func makeAllianceLink(name string) string {
+	if name == "" {
+		return ""
+	}
+	return makeMarkDownLink(name, makeDotLanProfileURL(name, dotlanAlliance))
+}
+
 func makeEveEntityProfileURL(e *app.EveEntity) string {
-	const baseURL = "https://evemaps.dotlan.net"
-	var path string
+	var url string
 	switch e.Category {
 	case app.EveEntityAlliance:
-		path = "alliance"
+		url = makeDotLanProfileURL(e.Name, dotlanAlliance)
 	case app.EveEntityCorporation:
-		path = "corp"
-	default:
-		return e.Name
+		url = makeDotLanProfileURL(e.Name, dotlanCorporation)
 	}
-	name := strings.ReplaceAll(e.Name, " ", "_")
-	url := fmt.Sprintf("%s/%s/%s", baseURL, path, name)
-	return fmt.Sprintf("[%s](%s)", e.Name, url)
+	return makeMarkDownLink(e.Name, url)
+}
+
+func makeMarkDownLink(label, url string) string {
+	return fmt.Sprintf("[%s](%s)", label, url)
 }
