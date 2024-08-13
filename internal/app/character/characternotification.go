@@ -2,20 +2,12 @@ package character
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
-	"strings"
-	"text/template"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character/notificationtype"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
-	"github.com/antihax/goesi/notification"
-	"github.com/dustin/go-humanize"
-	"gopkg.in/yaml.v3"
 )
 
 func (s *CharacterService) CalcCharacterNotificationUnreadCounts(ctx context.Context, characterID int32) (map[app.NotificationCategory]int, error) {
@@ -82,7 +74,7 @@ func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, 
 					Title:       o.Title,
 					Body:        o.Body,
 				}
-				title, body, err := s.renderCharacterNotification(ctx, characterID, n.Type_, n.Text)
+				title, body, err := s.EveUniverseService.RenderEveNotificationESI(ctx, n.Type_, n.Text, n.Timestamp)
 				if err != nil {
 					slog.Error("Failed to render character notification", "characterID", characterID, "NotificationID", n.NotificationId, "error", err)
 					continue
@@ -119,7 +111,7 @@ func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, 
 				return err
 			}
 			for _, n := range newNotifs {
-				title, body, err := s.renderCharacterNotification(ctx, characterID, n.Type_, n.Text)
+				title, body, err := s.EveUniverseService.RenderEveNotificationESI(ctx, n.Type_, n.Text, n.Timestamp)
 				if err != nil {
 					slog.Error("Failed to render character notification", "characterID", characterID, "NotificationID", n.NotificationId, "error", err)
 					continue
@@ -142,129 +134,4 @@ func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, 
 			slog.Info("Stored new notifications", "characterID", characterID, "entries", len(newNotifs))
 			return nil
 		})
-}
-
-func (s *CharacterService) renderCharacterNotification(ctx context.Context, characterID int32, type_, text string) (optional.Optional[string], optional.Optional[string], error) {
-	var title, body optional.Optional[string]
-	switch type_ {
-	case "CorpAllBillMsg":
-		title.Set("Bill issued")
-		var data notificationtype.CorpAllBillMsg
-		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-			return title, body, err
-		}
-		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CreditorID, data.DebtorID})
-		if err != nil {
-			return title, body, err
-		}
-		var out strings.Builder
-		t := template.Must(template.New(type_).Parse(
-			"A bill of **{{.amount}}** ISK, due **{{.dueDate}}** owed by {{.debtor}} to {{.creditor}} " +
-				"was issued on {{.currentDate}}. This bill is for {{.billType}}.",
-		))
-
-		if err := t.Execute(&out, map[string]string{
-			"amount":      humanize.Commaf(data.Amount),
-			"dueDate":     FromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
-			"debtor":      makeEveEntityProfileURL(entities[data.DebtorID]),
-			"creditor":    makeEveEntityProfileURL(entities[data.CreditorID]),
-			"currentDate": FromLDAPTime(data.CurrentDate).Format(app.TimeDefaultFormat),
-			"billType":    billTypeName(data.BillTypeID),
-		}); err != nil {
-			return title, body, err
-		}
-		body.Set(out.String())
-	case "StructureUnderAttack":
-		title.Set("Structure under attack")
-		var data notification.StructureUnderAttack
-		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-			return title, body, err
-		}
-		attackChar, err := s.EveUniverseService.GetOrCreateEveCharacterESI(ctx, data.CharID)
-		if err != nil {
-			return title, body, err
-		}
-		structureType, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, data.StructureTypeID)
-		if err != nil {
-			return title, body, err
-		}
-		solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarsystemID)
-		if err != nil {
-			return title, body, err
-		}
-		structure, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, data.StructureID)
-		if err != nil {
-			return title, body, err
-		}
-		structureName := structure.DisplayName2()
-		if structureName == "" {
-			structureName = "?"
-		}
-		var out strings.Builder
-		t := template.Must(template.New(type_).Parse(
-			"The {{.structureType}} **{{.structureName}}**{{.location}} in {{.solarSystem}} is under attack.\n\n" +
-				"Attacking Character: {{.character}}\n\n" +
-				"Attacking Corporation: {{.corporation}}\n\n" +
-				"Attacking Alliance: {{.alliance}}",
-		))
-		if err := t.Execute(&out, map[string]string{
-			"structureType": structureType.Name,
-			"structureName": structureName,
-			"location":      "",
-			"solarSystem":   makeLocationLink(solarSystem),
-			"character":     attackChar.Name,
-			"corporation":   makeCorporationLink(data.CorpName),
-			"alliance":      makeAllianceLink(data.AllianceName),
-		}); err != nil {
-			return title, body, err
-		}
-		body.Set(out.String())
-	}
-	return title, body, nil
-}
-
-func billTypeName(id int32) string {
-	switch id {
-	case 7:
-		return "Infrastructure Hub"
-	}
-	return "?"
-}
-
-func makeLocationLink(ess *app.EveSolarSystem) string {
-	x := fmt.Sprintf(
-		"%s (%s)",
-		makeMarkDownLink(ess.Name, makeDotLanProfileURL(ess.Name, dotlanSolarSystem)),
-		ess.Constellation.Region.Name,
-	)
-	return x
-}
-
-func makeCorporationLink(name string) string {
-	if name == "" {
-		return ""
-	}
-	return makeMarkDownLink(name, makeDotLanProfileURL(name, dotlanCorporation))
-}
-
-func makeAllianceLink(name string) string {
-	if name == "" {
-		return ""
-	}
-	return makeMarkDownLink(name, makeDotLanProfileURL(name, dotlanAlliance))
-}
-
-func makeEveEntityProfileURL(e *app.EveEntity) string {
-	var url string
-	switch e.Category {
-	case app.EveEntityAlliance:
-		url = makeDotLanProfileURL(e.Name, dotlanAlliance)
-	case app.EveEntityCorporation:
-		url = makeDotLanProfileURL(e.Name, dotlanCorporation)
-	}
-	return makeMarkDownLink(e.Name, url)
-}
-
-func makeMarkDownLink(label, url string) string {
-	return fmt.Sprintf("[%s](%s)", label, url)
 }

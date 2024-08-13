@@ -1,0 +1,671 @@
+[
+    {
+        "notification_id": 1000000203,
+        "type": "CorpAppNewMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-08-16T15:08:00Z",
+        "text": "applicationText: example\ncharID: 1011\ncorpID: 2001\n"
+    },
+    {
+        "notification_id": 1000000202,
+        "type": "CharAppAcceptMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-08-16T15:08:00Z",
+        "text": "applicationText: example\ncharID: 1011\ncorpID: 2001\n"
+    },
+    {
+        "notification_id": 1000000204,
+        "type": "CorpAppRejectCustomMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T15:08:00Z",
+        "text": "applicationText: example1\ncharID: 1011\ncorpID: 2001\ncustomMessage: example2\n"
+    },
+    {
+        "notification_id": 1000000205,
+        "type": "CorpAppInvitedMsg",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T15:08:00Z",
+        "text": "applicationText: example\ncharID: 1011\ncorpID: 2001\ninvokingCharID: 1001\n"
+    },
+    {
+        "notification_id": 1000000206,
+        "type": "CharAppWithdrawMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-08-16T15:08:00Z",
+        "text": "applicationText: example\ncharID: 1011\ncorpID: 2001\n"
+    },
+    {
+        "notification_id": 1000000201,
+        "type": "CharLeftCorpMsg",
+        "sender_id": 1011,
+        "sender_type": "character",
+        "timestamp": "2019-08-16T12:08:00Z",
+        "text": "charID: 1011\ncorpID: 2001\n"
+    },
+    {
+        "notification_id": 1000000405,
+        "type": "MoonminingLaserFired",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-20T21:29:00Z",
+        "text": "firedBy: 1001\nfiredByLink: <a href=\"showinfo:1383\/\/1001\">Bruce Wayne<\/a>\nmoonID: 40161465\noreVolumeByType:\n  46300: 6022254.470615254\n  46301: 1920395.2662618621\n  46302: 5420930.859831968\n  46303: 4866796.773587994\nsolarSystemID: 30002537\nstructureID: 1000000000002\nstructureLink: <a href=\"showinfo:35835\/\/1000000000002\">Dummy<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000404,
+        "type": "MoonminingExtractionStarted",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-13T23:33:00Z",
+        "text": "autoTime: 132186924601059151\nmoonID: 40161465\noreVolumeByType:\n  46300: 1288475.124715103\n  46301: 544691.7637724016\n  46302: 526825.4047522942\n  46303: 528996.6386983792\nreadyTime: 132186816601059151\nsolarSystemID: 30002537\nstartedBy: 1001\nstartedByLink: <a href=\"showinfo:1383\/\/1001\">Bruce Wayne<\/a>\nstructureID: 1000000000002\nstructureLink: <a href=\"showinfo:35835\/\/1000000000002\">Dummy<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
+        "is_read": false
+    },
+    {
+        "notification_id": 1000000402,
+        "type": "MoonminingExtractionCancelled",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-13T23:36:00Z",
+        "text": "cancelledBy: 1001\ncancelledByLink: <a href=\"showinfo:1383\/\/1001\">Bruce Wayne<\/a>\nmoonID: 40161465\nsolarSystemID: 30002537\nstructureID: 1000000000002\nstructureLink: <a href=\"showinfo:35835\/\/1000000000002\">Dummy<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
+        "is_read": false
+    },
+    {
+        "notification_id": 1000000401,
+        "type": "MoonminingAutomaticFracture",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-07-07T01:37:00Z",
+        "text": "moonID: 40161465\noreVolumeByType:\n  46300: 1928443.0826145012\n  46301: 3308839.521195312\n  46302: 1780056.9386565287\nsolarSystemID: 30002537\nstructureID: 1000000000002\nstructureLink: <a href=\"showinfo:35835\/\/1000000000002\">2-X0PF - Tasmin<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
+        "is_read": false
+    },
+    {
+        "notification_id": 1000000403,
+        "type": "MoonminingExtractionFinished",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-20T19:01:00Z",
+        "text": "autoTime: 132187608610000000\nmoonID: 40161465\noreVolumeByType:\n  46300: 6022254.470615254\n  46301: 1920395.2662618621\n  46302: 5420930.859831968\n  46303: 4866796.773587994\nsolarSystemID: 30002537\nstructureID: 1000000000002\nstructureLink: <a href=\"showinfo:35835\/\/1000000000002\">Dummy<\/a>\nstructureName: Dummy\nstructureTypeID: 35835\n",
+        "is_read": false
+    },
+    {
+        "notification_id": 1000000501,
+        "type": "StructureAnchoring",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-10-16T20:36:00Z",
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Technologies\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\ntimeLeft: 8993554150\nvulnerableTime: 9000000000\n",
+        "is_read": false
+    },
+    {
+        "notification_id": 1000010501,
+        "type": "StructureAnchoring",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-16T20:37:00Z",
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Technologies\nsolarsystemID: 30000474\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\ntimeLeft: 8993554150\nvulnerableTime: 9000000000\n",
+        "is_read": false
+    },
+    {
+        "notification_id": 1000000506,
+        "type": "StructureOnline",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-10-17T20:51:00Z",
+        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000510,
+        "type": "StructureWentHighPower",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-12T18:41:00Z",
+        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000503,
+        "type": "StructureFuelAlert",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T16:08:00Z",
+        "text": "listOfTypesAndQty:\n- - 154\n  - 4312\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000509,
+        "type": "StructureUnderAttack",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T13:08:00Z",
+        "text": "allianceID: 3011\nallianceLinkData:\n- showinfo\n- 16159\n- 3011\nallianceName: Big Bad Alliance\narmorPercentage: 98.65129050962584\ncharID: 1011\ncorpLinkData:\n- showinfo\n- 2\n- 2011\ncorpName: Bad Company\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\n"
+    },
+    {
+        "notification_id": 1000010509,
+        "type": "StructureUnderAttack",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T13:08:00Z",
+        "text": "allianceID: 500012\nallianceLinkData:\n- showinfo\n- 30\n- 500012\nallianceName: Blood Raider Covenant\narmorPercentage: 98.65129050962584\ncharID: 1000134\ncorpLinkData:\n- showinfo\n- 2\n- 1000134\ncorpName: Blood Raiders\nhullPercentage: 100.0\nshieldPercentage: 4.704536686417284e-14\nsolarsystemID: 30002537\nstructureID: &notification_id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *notification_id001\nstructureTypeID: 35835\n"
+    },
+    {
+        "notification_id": 1000000505,
+        "type": "StructureLostShields",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-10-04T14:52:00Z",
+        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\ntimeLeft: 1727805401093\ntimestamp: 132148470780000000\nvulnerableTime: 9000000000\n"
+    },
+    {
+        "notification_id": 1000000504,
+        "type": "StructureLostArmor",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T14:08:00Z",
+        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\ntimeLeft: 7333797161804\ntimestamp: 131988727900000000\nvulnerableTime: 18000000000\n"
+    },
+    {
+        "notification_id": 1000000511,
+        "type": "StructureWentLowPower",
+        "sender_id": 2901,
+        "sender_type": "other",
+        "timestamp": "2019-11-20T22:02:00Z",
+        "text": "solarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\n",
+        "is_read": false
+    },
+    {
+        "notification_id": 1000000507,
+        "type": "StructureServicesOffline",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T11:08:00Z",
+        "text": "listOfServiceModuleIDs:\n- 35894\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\n"
+    },
+    {
+        "notification_id": 1000000502,
+        "type": "StructureDestroyed",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-07T19:30:00Z",
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Technologies\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\n"
+    },
+    {
+        "notification_id": 1000000512,
+        "type": "StructuresReinforcementChanged",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-09-21T18:53:00Z",
+        "text": "allStructureInfo:\n- - 1000000000001\n  - Hadozeko - 56 LARGE SHIPS CAP COMPONENTS T2\n  - 35825\nhour: 19\nnumStructures: 1\ntimestamp: 132141703753688216\nweekday: 255\n",
+        "is_read": false
+    },
+    {
+        "notification_id": 1000000508,
+        "type": "StructureUnanchoring",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-07-06T16:12:00Z",
+        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Technologies\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\ntimeLeft: 6047994755245\n"
+    },
+    {
+        "notification_id": 1000000513,
+        "type": "OwnershipTransferred",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T10:08:00Z",
+        "text": "charID: 1001\nnewOwnerCorpID: 2002\noldOwnerCorpID: 2001\nsolarSystemID: 30002537\nstructureID: 1000000000001\nstructureName: Test Structure Alpha\nstructureTypeID: 35835\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000601,
+        "type": "OrbitalAttacked",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-10-11T21:01:00Z",
+        "text": "aggressorCorpID: 2011\naggressorID: 1011\nplanetID: 40161469\nplanetTypeID: 2016\nshieldLevel: 0.9821850015653375\nsolarSystemID: 30002537\ntypeID: 2233\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000010601,
+        "type": "OrbitalAttacked",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-10-11T21:01:00Z",
+        "text": "aggressorAllianceID: 500012\naggressorCorpID: 1000134\naggressorID: 1000134\nplanetID: 40161469\nplanetTypeID: 2016\nshieldLevel: 0.9821850015653375\nsolarSystemID: 30002537\ntypeID: 2233\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000020601,
+        "type": "OrbitalAttacked",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-10-11T21:01:00Z",
+        "text": "aggressorAllianceID: null\naggressorCorpID: 1000134\naggressorID: 1000134\nplanetID: 40161469\nplanetTypeID: 2016\nshieldLevel: 0.9821850015653375\nsolarSystemID: 30002537\ntypeID: 2233\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000602,
+        "type": "OrbitalReinforced",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-10-11T21:05:00Z",
+        "text": "aggressorAllianceID: 3011\naggressorCorpID: 2011\naggressorID: 1011\nplanetID: 40161469\nplanetTypeID: 2016\nreinforceExitTime: 132154723470000000\nsolarSystemID: 30002537\ntypeID: 2233\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000701,
+        "type": "TowerAlertMsg",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-03-28T03:50:00Z",
+        "text": "aggressorAllianceID: 3011\naggressorCorpID: 2011\naggressorID: 1011\narmorValue: 0.6950949076033535\nhullValue: 1.0\nmoonID: 40161465\nshieldValue: 0.3950949076033535\nsolarSystemID: 30002537\ntypeID: 16213\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000702,
+        "type": "TowerResourceAlertMsg",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-03-20T22:26:00Z",
+        "text": "allianceID: 3001\ncorpID: 2001\nmoonID: 40161465\nsolarSystemID: 30002537\ntypeID: 16213\nwants:\n- quantity: 119\n  typeID: 4051\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000801,
+        "type": "EntosisCaptureStarted",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-01-31T17:10:00Z",
+        "text": "solarSystemID: 30000474\nstructureTypeID: 32226\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000802,
+        "type": "SovCommandNodeEventStarted",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-02-02T19:12:00Z",
+        "text": "campaignEventType: 1\nconstellationID: 20000345\nsolarSystemID: 30000474\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000803,
+        "type": "SovAllClaimAquiredMsg",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2018-09-11T23:37:00Z",
+        "text": "allianceID: 3001\ncorpID: 2001\nsolarSystemID: 30000474\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000811,
+        "type": "SovAllClaimLostMsg",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2018-09-11T23:37:00Z",
+        "text": "allianceID: 3001\ncorpID: 2001\nsolarSystemID: 30000474\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000804,
+        "type": "SovStructureReinforced",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2018-12-18T19:28:00Z",
+        "text": "campaignEventType: 1\ndecloakTime: 131897990021334067\nsolarSystemID: 30000474\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000805,
+        "type": "SovStructureDestroyed",
+        "sender_id": 3001,
+        "sender_type": "alliance",
+        "timestamp": "2019-02-02T22:47:00Z",
+        "text": "solarSystemID: 30000474\nstructureTypeID: 32226\n",
+        "is_read": true
+    },
+    {
+        "notification_id": 1000000901,
+        "type": "AllyJoinedWarAggressorMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-26T16:42:00Z",
+        "text": "aggressorID: 3011\nallyID: 2001\ndefenderID: 3001\nstartTime: 132192745070000000\n",
+        "is_read": true,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000921,
+        "type": "AllyJoinedWarAllyMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-26T16:42:00Z",
+        "text": "aggressorID: 3011\nallyID: 2001\ndefenderID: 3001\nstartTime: 132192745070000000\n",
+        "is_read": true,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000922,
+        "type": "AllyJoinedWarDefenderMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-26T16:42:00Z",
+        "text": "aggressorID: 3011\nallyID: 2001\ndefenderID: 3001\nstartTime: 132192745070000000\n",
+        "is_read": true,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000902,
+        "type": "CorpWarSurrenderMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-28T17:24:00Z",
+        "text": "againstID: 3001\ncost: null\ndeclaredByID: 3011\ndelayHours: null\nhostileState: null\n",
+        "is_read": true,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000903,
+        "type": "WarAdopted",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-09-11T17:17:00Z",
+        "text": "againstID: 2001\nallianceID: 3001\ndeclaredByID: 3011\n",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000904,
+        "type": "WarDeclared",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-25T19:16:00Z",
+        "text": "againstID: 3001\ncost: 100000000\ndeclaredByID: 3011\ndelayHours: 24\nhostileState: false\ntimeStarted: 132192693000000000\nwarHQ: <b>Amamake - Test Structure Alpha<\/b>\nwarHQ_IdType:\n- 1000000000001\n- 35835\n",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000905,
+        "type": "WarInherited",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-09-08T16:07:00Z",
+        "text": "againstID: 3001\nallianceID: 3002\ndeclaredByID: 3011\nopponentID: 3011\nquitterID: 2021\n",
+        "is_read": true,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000906,
+        "type": "WarRetractedByConcord",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-24T22:21:00Z",
+        "text": "againstID: 3001\ndeclaredByID: 3011\nendDate: 132191940600000000\n",
+        "is_read": true,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000911,
+        "type": "CorpBecameWarEligible",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-21T21:17:00Z",
+        "text": "{}\n",
+        "is_read": true,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000912,
+        "type": "CorpNoLongerWarEligible",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-07-20T03:51:00Z",
+        "text": "{}\n",
+        "is_read": true,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000913,
+        "type": "DeclareWar",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-25T19:16:00Z",
+        "text": "charID: 1011\ndefenderID: 2001\nentityID: 3011\n",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000914,
+        "type": "MutualWarInviteSent",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-07T20:18:00Z",
+        "text": "againstID: 3011\ndeclaredByID: 1011\nexpireTimeStamp: 132202234630922771\n",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000915,
+        "type": "WarSurrenderOfferMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "iskValue: 10000000.0\nownerID1: 3001\nownerID2: 3011\nwarNegotiationID: 1234567\n",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000916,
+        "type": "CorpBecameWarEligible",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000917,
+        "type": "CorpNoLongerWarEligible",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000000919,
+        "type": "AllAnchoringMsg",
+        "sender_id": 3001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "allianceID: 3001\ncorpID: 2001\ncorpsPresent:\n- allianceID: 3001\n  corpID: 2002\nmoonID: 40161466\nsolarSystemID: 30002537\ntowers:\n- moonID: 40161465\n  typeID: 16213\ntypeID: 16213\n",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001001,
+        "type": "BillOutOfMoneyMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "billTypeID: 7\ndueDate: 132936019800000000\n",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001002,
+        "type": "InfrastructureHubBillAboutToExpire",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "billID: 24803231\ncorpID: 2001\ndueDate: 132936111600000000\nsolarSystemID: 30000474",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001003,
+        "type": "IHubDestroyedByBillFailure",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "solarSystemID: 30000474\nstructureTypeID: 32458\n",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001121,
+        "type": "AcceptedAlly",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "allyID: 2001\ncharID: 1011\nenemyID: 3011\niskValue: 0.0\ntime: 132476139000000000",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001122,
+        "type": "MercOfferedNegotiationMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorID: 3011\ndefenderID: 3001\niskValue: 0.0\nmercID: 2001",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001123,
+        "type": "MercOfferRetractedMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorID: 3011\ndefenderID: 3001\nmercID: 2001",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001124,
+        "type": "WarHQRemovedFromSpace",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 3011\ndeclaredByID: 2001\ntimeDeclared: 133330953000000000\nwarHQ: Ikuchi - Hisec Loves You",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001125,
+        "type": "WarInvalid",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 2001\ndeclaredByID: 3011\nendDate: 133441135200000000",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001126,
+        "type": "DeclareWar",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1011\ndefenderID: 3001\nentityID: 3011",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001127,
+        "type": "OfferedSurrender",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "charID: 1001\nentityID: 3001\niskValue: 100000000.0\nofferedID: 2001",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001128,
+        "type": "OfferedToAlly",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "aggressorID: 3011\ncharID: 1001\ndefenderID: 3001\nenemyID: 3011\niskValue: 0.0\nmercID: 2001",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001129,
+        "type": "AllWarCorpJoinedAllianceMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "allianceID: 3001\ncorpID: 2001",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001130,
+        "type": "AllWarSurrenderMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "againstID: 3011\ncost: null\ndeclaredByID: 2001\ndelayHours: null\nhostileState: null",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001102,
+        "type": "CorpAllBillMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "amount: 6000000\nbillTypeID: 5\ncreditorID: 2011\ncurrentDate: 133462502887835953\ndebtorID: 2001\ndueDate: 133488422887817240\nexternalID: 3001\nexternalID2: -1",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001103,
+        "type": "CharAppRejectMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "applicationText: ''\ncharID: 1011\ncorpID: 2001",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001110,
+        "type": "CorporationGoalCreated",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corporation_id: 2001\ncreator_id: 1001\ngoal_id: 24595525861100907652819857792401564217\ngoal_name: Stratios For the Grandmaster",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001111,
+        "type": "CorporationGoalCompleted",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "corporation_id: 2001\ncreator_id: 1001\ngoal_id: 24595525861100907652819857792401564217\ngoal_name: Stratios For the Grandmaster",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1999999999,
+        "type": "UnknownNotificationType",
+        "sender_id": 2001,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "",
+        "is_read": false,
+        "is_sent": false
+    }
+]

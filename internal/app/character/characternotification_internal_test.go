@@ -169,34 +169,3 @@ func TestListCharacterNotifications(t *testing.T) {
 		}
 	})
 }
-
-func TestRenderCharacterNotification(t *testing.T) {
-	db, st, factory := testutil.New()
-	defer db.Close()
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-	s := newCharacterService(st)
-	ctx := context.Background()
-	t.Run("should render notification", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		httpmock.Reset()
-		creditor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000023})
-		debtor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 98267621})
-		text := `
-amount: 10000
-billTypeID: 2
-creditorID: 1000023
-currentDate: 133678830021821155
-debtorID: 98267621
-dueDate: 133704743590000000
-externalID: 27
-externalID2: 60002599`
-		title, body, err := s.renderCharacterNotification(ctx, 0, "CorpAllBillMsg", text)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "Bill issued", title.ValueOrZero())
-			assert.Contains(t, body.ValueOrZero(), creditor.Name)
-			assert.Contains(t, body.ValueOrZero(), debtor.Name)
-		}
-	})
-}
