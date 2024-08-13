@@ -102,15 +102,6 @@
         "is_read": false
     },
     {
-        "notification_id": 1000010501,
-        "type": "StructureAnchoring",
-        "sender_id": 2901,
-        "sender_type": "corporation",
-        "timestamp": "2019-11-16T20:37:00Z",
-        "text": "ownerCorpLinkData:\n- showinfo\n- 2\n- 2001\nownerCorpName: Wayne Technologies\nsolarsystemID: 30000474\nstructureID: &id001 1000000000001\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835\ntimeLeft: 8993554150\nvulnerableTime: 9000000000\n",
-        "is_read": false
-    },
-    {
         "notification_id": 1000000506,
         "type": "StructureOnline",
         "sender_id": 2901,

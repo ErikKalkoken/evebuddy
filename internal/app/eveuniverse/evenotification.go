@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character/notificationtype"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse/notificationtype"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/antihax/goesi/notification"
 	"github.com/dustin/go-humanize"
@@ -38,14 +38,27 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		if err := t.Execute(&out, map[string]string{
 			"amount":      humanize.Commaf(data.Amount),
 			"dueDate":     FromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
-			"debtor":      makeEveEntityProfileURL(entities[data.DebtorID]),
-			"creditor":    makeEveEntityProfileURL(entities[data.CreditorID]),
+			"debtor":      makeEveEntityProfileLink(entities[data.DebtorID]),
+			"creditor":    makeEveEntityProfileLink(entities[data.CreditorID]),
 			"currentDate": FromLDAPTime(data.CurrentDate).Format(app.TimeDefaultFormat),
 			"billType":    billTypeName(data.BillTypeID),
 		}); err != nil {
 			return title, body, err
 		}
 		body.Set(out.String())
+
+	case "StructureAnchoring":
+		title.Set("Structure anchoring")
+		var data notification.StructureAnchoring
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID)
+		if err != nil {
+			return title, body, err
+		}
+		out += "has started anchoring."
+		body.Set(out)
 
 	case "StructureUnderAttack":
 		title.Set("Structure under attack")
@@ -65,7 +78,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 			"Attacking Character: %s\n\n"+
 			"Attacking Corporation: %s\n\n"+
 			"Attacking Alliance: %s",
-			attackChar.Name,
+			makeEveEntityProfileLink(attackChar),
 			makeCorporationLink(data.CorpName),
 			makeAllianceLink(data.AllianceName),
 		)
@@ -168,7 +181,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		out += "is running out of fuel in 24hrs."
 		body.Set(out)
 
-	case "Structure Unanchoring":
+	case "StructureUnanchoring":
 		title.Set("Structure unanchoring")
 		var data notification.StructureUnanchoring
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -179,8 +192,34 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 			return title, body, err
 		}
 		due := timestamp.Add(FromLDAPDuration(data.TimeLeft))
-		out += fmt.Sprintf("has started un-anchoring. It will be fully un-anchored at: %s", due.Format(app.TimeDefaultFormat))
+		out += fmt.Sprintf(
+			"has started un-anchoring. It will be fully un-anchored at: %s",
+			due.Format(app.TimeDefaultFormat),
+		)
 		body.Set(out)
+
+	case "OwnershipTransferred":
+		title.Set("Ownership transferred")
+		var data notificationtype.OwnershipTransferred
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarSystemID, data.StructureID)
+		if err != nil {
+			return title, body, err
+		}
+		entities, err := eus.ToEveEntities(ctx, []int32{data.OldOwnerCorpID, data.NewOwnerCorpID, data.CharID})
+		if err != nil {
+			return title, body, err
+		}
+		out += fmt.Sprintf(
+			"has been transferred from %s to %s by %s.",
+			makeEveEntityProfileLink(entities[data.OldOwnerCorpID]),
+			makeEveEntityProfileLink(entities[data.NewOwnerCorpID]),
+			makeEveEntityProfileLink(entities[data.CharID]),
+		)
+		body.Set(out)
+
 	}
 	return title, body, nil
 }
@@ -223,6 +262,10 @@ func makeLocationLink(ess *app.EveSolarSystem) string {
 	return x
 }
 
+// func makeCharacterLink(id int32, name string) string {
+// 	return makeMarkDownLink(name, makeEveWhoCharacterURL(id))
+// }
+
 func makeCorporationLink(name string) string {
 	if name == "" {
 		return ""
@@ -237,11 +280,17 @@ func makeAllianceLink(name string) string {
 	return makeMarkDownLink(name, makeDotLanProfileURL(name, dotlanAlliance))
 }
 
-func makeEveEntityProfileURL(e *app.EveEntity) string {
+func makeEveWhoCharacterURL(id int32) string {
+	return fmt.Sprintf("https://evewho.com/character/%d", id)
+}
+
+func makeEveEntityProfileLink(e *app.EveEntity) string {
 	var url string
 	switch e.Category {
 	case app.EveEntityAlliance:
 		url = makeDotLanProfileURL(e.Name, dotlanAlliance)
+	case app.EveEntityCharacter:
+		url = makeEveWhoCharacterURL(e.ID)
 	case app.EveEntityCorporation:
 		url = makeDotLanProfileURL(e.Name, dotlanCorporation)
 	}

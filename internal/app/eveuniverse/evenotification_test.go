@@ -91,19 +91,24 @@ func TestRenderCharacterNotification2(t *testing.T) {
 		EveTypeID:        optional.New(structureType.ID),
 	})
 	factory.CreateEveEntityCharacter(app.EveEntity{ID: 1000134})
+	factory.CreateEveEntityCharacter(app.EveEntity{ID: 1001})
 	factory.CreateEveEntityCharacter(app.EveEntity{ID: 1011})
 	factory.CreateEveEntityCorporation(app.EveEntity{ID: 2001})
+	factory.CreateEveEntityCorporation(app.EveEntity{ID: 2002})
 	factory.CreateEveEntityCorporation(app.EveEntity{ID: 2011})
 	notifTypes := set.NewFromSlice([]string{
 		"CorpAllBillMsg",
-		"StructureUnderAttack",
+		"OwnershipTransferred",
+		"StructureAnchoring",
+		"StructureDestroyed",
+		"StructureFuelAlert",
 		"StructureLostShields",
 		"StructureLostArmor",
-		"StructureDestroyed",
+		"StructureOnline",
 		"StructureWentLowPower",
 		"StructureWentHighPower",
-		"StructureOnline",
-		"StructureFuelAlert",
+		"StructureUnanchoring",
+		"StructureUnderAttack",
 	})
 	for _, n := range notifications {
 		t.Run("should render notification type "+n.Type, func(t *testing.T) {
