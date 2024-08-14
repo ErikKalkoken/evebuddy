@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
@@ -20,9 +21,10 @@ var (
 
 // CharacterService provides access to all managed Eve Online characters both online and from local storage.
 type CharacterService struct {
-	EveUniverseService *eveuniverse.EveUniverseService
-	StatusCacheService app.StatusCacheService
-	SSOService         *sso.SSOService
+	EveNotificationService *evenotification.EveNotificationService
+	EveUniverseService     *eveuniverse.EveUniverseService
+	StatusCacheService     app.StatusCacheService
+	SSOService             *sso.SSOService
 
 	esiClient  *goesi.APIClient
 	httpClient *http.Client

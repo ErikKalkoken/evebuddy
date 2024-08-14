@@ -1,4 +1,4 @@
-package eveuniverse_test
+package evenotification_test
 
 import (
 	"context"
@@ -8,23 +8,23 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/antihax/goesi"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestLDAPTimeConversion(t *testing.T) {
 	t.Run("should convert LDAP time", func(t *testing.T) {
-		x := eveuniverse.FromLDAPTime(131924601300000000)
+		x := evenotification.FromLDAPTime(131924601300000000)
 		assert.Equal(t, time.Date(2019, 1, 20, 12, 15, 30, 0, time.UTC), x)
 	})
 	t.Run("should convert LDAP duration", func(t *testing.T) {
-		x := eveuniverse.FromLDAPDuration(9000000000)
+		x := evenotification.FromLDAPDuration(9000000000)
 		assert.Equal(t, time.Duration(15*time.Minute), x)
 	})
 }
@@ -34,8 +34,9 @@ func TestRenderCharacterNotification(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	eu := eveuniverse.New(st, client)
+	eu := eveuniverse.New(st, nil)
+	en := evenotification.New()
+	en.EveUniverseService = eu
 	ctx := context.Background()
 	t.Run("should render notification", func(t *testing.T) {
 		// given
@@ -52,7 +53,7 @@ debtorID: 98267621
 dueDate: 133704743590000000
 externalID: 27
 externalID2: 60002599`
-		title, body, err := eu.RenderEveNotificationESI(ctx, "CorpAllBillMsg", text, time.Now())
+		title, body, err := en.RenderEveNotificationESI(ctx, "CorpAllBillMsg", text, time.Now())
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Bill issued", title.ValueOrZero())
 			assert.Contains(t, body.ValueOrZero(), creditor.Name)
@@ -81,8 +82,9 @@ func TestRenderCharacterNotification2(t *testing.T) {
 	defer db.Close()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	client := goesi.NewAPIClient(nil, "")
-	eu := eveuniverse.New(st, client)
+	eu := eveuniverse.New(st, nil)
+	en := evenotification.New()
+	en.EveUniverseService = eu
 	ctx := context.Background()
 	solarSystem := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30002537})
 	structureType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 35835})
@@ -100,13 +102,13 @@ func TestRenderCharacterNotification2(t *testing.T) {
 	factory.CreateEveType(storage.CreateEveTypeParams{ID: 2233})
 	factory.CreateEveEntityCorporation(app.EveEntity{ID: 3011})
 	factory.CreateEveType(storage.CreateEveTypeParams{ID: 32458})
-	notifTypes := set.NewFromSlice(eveuniverse.NotificationTypesSupported())
+	notifTypes := set.NewFromSlice(evenotification.NotificationTypesSupported())
 	typeTested := make(map[string]bool)
 	for _, n := range notifications {
 		t.Run("should render notification type "+n.Type, func(t *testing.T) {
 			if notifTypes.Has(n.Type) {
 				typeTested[n.Type] = true
-				title, body, err := eu.RenderEveNotificationESI(ctx, n.Type, n.Text, n.Timestamp)
+				title, body, err := en.RenderEveNotificationESI(ctx, n.Type, n.Text, n.Timestamp)
 				if assert.NoError(t, err) {
 					assert.False(t, title.IsEmpty())
 					assert.False(t, body.IsEmpty())

@@ -1,4 +1,4 @@
-package notificationtype
+package notification2
 
 type CorpAllBillMsgV2 struct {
 	Amount      float64 `yaml:"amount"`

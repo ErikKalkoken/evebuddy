@@ -15,6 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -143,7 +144,11 @@ func main() {
 	eu := eveuniverse.New(st, esiClient)
 	eu.StatusCacheService = sc
 
+	en := evenotification.New()
+	en.EveUniverseService = eu
+
 	cs := character.New(st, httpClient, esiClient)
+	cs.EveNotificationService = en
 	cs.EveUniverseService = eu
 	cs.StatusCacheService = sc
 	cs.SSOService = sso.New(ssoClientId, httpClient, cache)

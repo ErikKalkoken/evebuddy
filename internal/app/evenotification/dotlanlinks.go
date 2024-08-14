@@ -1,4 +1,4 @@
-package eveuniverse
+package evenotification
 
 import (
 	"fmt"
