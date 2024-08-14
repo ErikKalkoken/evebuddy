@@ -38,7 +38,8 @@ func (s *EveNotificationService) RenderESI(ctx context.Context, type_, text stri
 		CorpAppRejectCustomMsg:
 		return s.renderCorporate(ctx, type_, text)
 
-	case OrbitalAttacked, OrbitalReinforced:
+	case OrbitalAttacked,
+		OrbitalReinforced:
 		return s.renderOrbitals(ctx, type_, text)
 
 	case OwnershipTransferred,
@@ -53,6 +54,10 @@ func (s *EveNotificationService) RenderESI(ctx context.Context, type_, text stri
 		StructureWentHighPower,
 		StructureWentLowPower:
 		return s.renderStructures(ctx, type_, text, timestamp)
+
+	case TowerAlertMsg,
+		TowerResourceAlertMsg:
+		return s.renderTower(ctx, type_, text, timestamp)
 	}
 	return optional.Optional[string]{}, optional.Optional[string]{}, nil
 }

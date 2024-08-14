@@ -26,6 +26,8 @@ const (
 	StructureUnderAttack               = "StructureUnderAttack"
 	StructureWentHighPower             = "StructureWentHighPower"
 	StructureWentLowPower              = "StructureWentLowPower"
+	TowerAlertMsg                      = "TowerAlertMsg"
+	TowerResourceAlertMsg              = "TowerResourceAlertMsg"
 )
 
 var notificationTypes = []string{
@@ -54,6 +56,8 @@ var notificationTypes = []string{
 	StructureUnderAttack,
 	StructureWentHighPower,
 	StructureWentLowPower,
+	TowerAlertMsg,
+	TowerResourceAlertMsg,
 }
 
 // NotificationTypesSupported returns a list of all supported notification types.
