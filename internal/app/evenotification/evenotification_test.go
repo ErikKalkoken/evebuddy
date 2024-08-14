@@ -18,17 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLDAPTimeConversion(t *testing.T) {
-	t.Run("should convert LDAP time", func(t *testing.T) {
-		x := evenotification.FromLDAPTime(131924601300000000)
-		assert.Equal(t, time.Date(2019, 1, 20, 12, 15, 30, 0, time.UTC), x)
-	})
-	t.Run("should convert LDAP duration", func(t *testing.T) {
-		x := evenotification.FromLDAPDuration(9000000000)
-		assert.Equal(t, time.Duration(15*time.Minute), x)
-	})
-}
-
 func TestRenderCharacterNotification(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
@@ -53,7 +42,7 @@ debtorID: 98267621
 dueDate: 133704743590000000
 externalID: 27
 externalID2: 60002599`
-		title, body, err := en.RenderEveNotificationESI(ctx, "CorpAllBillMsg", text, time.Now())
+		title, body, err := en.RenderESI(ctx, "CorpAllBillMsg", text, time.Now())
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Bill issued", title.ValueOrZero())
 			assert.Contains(t, body.ValueOrZero(), creditor.Name)
@@ -108,7 +97,7 @@ func TestRenderCharacterNotification2(t *testing.T) {
 		t.Run("should render notification type "+n.Type, func(t *testing.T) {
 			if notifTypes.Has(n.Type) {
 				typeTested[n.Type] = true
-				title, body, err := en.RenderEveNotificationESI(ctx, n.Type, n.Text, n.Timestamp)
+				title, body, err := en.RenderESI(ctx, n.Type, n.Text, n.Timestamp)
 				if assert.NoError(t, err) {
 					assert.False(t, title.IsEmpty())
 					assert.False(t, body.IsEmpty())

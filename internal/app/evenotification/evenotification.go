@@ -25,8 +25,9 @@ func New() *EveNotificationService {
 	return s
 }
 
-// RenderEveNotificationESI renders title and body for a notification and return them.
-func (s *EveNotificationService) RenderEveNotificationESI(ctx context.Context, type_, text string, timestamp time.Time) (optional.Optional[string], optional.Optional[string], error) {
+// RenderESI renders title and body for all supported notification types and returns them.
+// Returns empty title and body for unsupported notification types.
+func (s *EveNotificationService) RenderESI(ctx context.Context, type_, text string, timestamp time.Time) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
 	switch type_ {
 	// Billing
@@ -39,7 +40,7 @@ func (s *EveNotificationService) RenderEveNotificationESI(ctx context.Context, t
 		out := fmt.Sprintf(
 			"A bill of **%s** ISK, due **%s** was payed.",
 			humanize.Commaf(float64(data.Amount)),
-			FromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
 		)
 		body.Set(out)
 
@@ -55,7 +56,7 @@ func (s *EveNotificationService) RenderEveNotificationESI(ctx context.Context, t
 				"Transfer additional funds to the selected wallet "+
 				"division in order to meet your pending automatic bills.",
 			billTypeName(data.BillTypeID),
-			FromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
 		)
 		body.Set(out)
 
@@ -72,10 +73,10 @@ func (s *EveNotificationService) RenderEveNotificationESI(ctx context.Context, t
 		out := fmt.Sprintf(
 			"A bill of **%s** ISK, due **%s** owed by %s to %s was issued on %s. This bill is for %s.",
 			humanize.Commaf(data.Amount),
-			FromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
 			makeEveEntityProfileLink(entities[data.DebtorID]),
 			makeEveEntityProfileLink(entities[data.CreditorID]),
-			FromLDAPTime(data.CurrentDate).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.CurrentDate).Format(app.TimeDefaultFormat),
 			billTypeName(data.BillTypeID),
 		)
 		body.Set(out)
@@ -93,7 +94,7 @@ func (s *EveNotificationService) RenderEveNotificationESI(ctx context.Context, t
 		out := fmt.Sprintf("Maintenance bill for Infrastructure Hub in %s expires at %s, "+
 			"if not paid in time this Infrastructure Hub will self-destruct.",
 			makeLocationLink(solarSystem),
-			FromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
 		)
 		body.Set(out)
 
@@ -120,7 +121,84 @@ func (s *EveNotificationService) RenderEveNotificationESI(ctx context.Context, t
 		)
 		body.Set(out)
 
-	// Orbitals (aka POCOs)
+	// Corporate
+	case CorpAppNewMsg:
+		var data notification.CorpAppNewMsg
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CharID, data.CorpID})
+		if err != nil {
+			return title, body, err
+		}
+		title.Set(fmt.Sprintf("New application from %s", entities[data.CharID].Name))
+		out := fmt.Sprintf(
+			"New application from %s to join %s:\n\n> %s",
+			makeEveEntityProfileLink(entities[data.CharID]),
+			makeEveEntityProfileLink(entities[data.CorpID]),
+			data.ApplicationText,
+		)
+		body.Set(out)
+
+	case CorpAppInvitedMsg:
+		var data notification.CorpAppInvitedMsg
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CharID, data.CorpID, data.InvokingCharID})
+		if err != nil {
+			return title, body, err
+		}
+		title.Set(fmt.Sprintf("%s has been invited", entities[data.CharID].Name))
+		out := fmt.Sprintf(
+			"%s has been invited to join %s by %s:\n\n> %s",
+			makeEveEntityProfileLink(entities[data.CharID]),
+			makeEveEntityProfileLink(entities[data.CorpID]),
+			makeEveEntityProfileLink(entities[data.InvokingCharID]),
+			data.ApplicationText,
+		)
+		body.Set(out)
+
+	case CharAppRejectMsg:
+		var data notification.CorpAppInvitedMsg
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CharID, data.CorpID, data.InvokingCharID})
+		if err != nil {
+			return title, body, err
+		}
+		title.Set(fmt.Sprintf("%s rejected invitation", entities[data.CharID].Name))
+		out := fmt.Sprintf(
+			"Application from %s to join %s has been rejected:\n\n> %s",
+			makeEveEntityProfileLink(entities[data.CharID]),
+			makeEveEntityProfileLink(entities[data.CorpID]),
+			data.ApplicationText,
+		)
+		body.Set(out)
+
+	case CorpAppRejectCustomMsg:
+		var data notification.CorpAppRejectCustomMsg
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CharID, data.CorpID})
+		if err != nil {
+			return title, body, err
+		}
+		title.Set(fmt.Sprintf("Application from %s rejected", entities[data.CharID].Name))
+		out := fmt.Sprintf(
+			"%s has rejected application from %s:\n\n>%s",
+			makeEveEntityProfileLink(entities[data.CorpID]),
+			makeEveEntityProfileLink(entities[data.CharID]),
+			data.ApplicationText,
+		)
+		if data.CustomMessage != "" {
+			out += fmt.Sprintf("\n\nReply:\n\n>%s", data.CustomMessage)
+		}
+		body.Set(out)
+
+		// Orbitals (aka POCOs)
 	case OrbitalAttacked:
 		title.Set("Orbital under attack")
 		var data notification.OrbitalAttacked
@@ -166,7 +244,7 @@ func (s *EveNotificationService) RenderEveNotificationESI(ctx context.Context, t
 		out += fmt.Sprintf("has been reinforced and will come out at %s.\n\n"+
 			"Attacking Character: %s\n\n"+
 			"Attacking Corporation: %s",
-			FromLDAPTime(data.ReinforceExitTime).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.ReinforceExitTime).Format(app.TimeDefaultFormat),
 			makeEveEntityProfileLink(entities[data.AggressorID]),
 			makeEveEntityProfileLink(entities[data.AggressorCorpID]),
 		)
@@ -284,7 +362,7 @@ func (s *EveNotificationService) RenderEveNotificationESI(ctx context.Context, t
 		}
 		out += fmt.Sprintf(
 			"has lost it's shields. Armor timer ends at **%s**.",
-			FromLDAPTime(data.Timestamp).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.Timestamp).Format(app.TimeDefaultFormat),
 		)
 		body.Set(out)
 
@@ -300,7 +378,7 @@ func (s *EveNotificationService) RenderEveNotificationESI(ctx context.Context, t
 		}
 		out += fmt.Sprintf(
 			"has lost it's armor. Hull timer ends at **%s**.",
-			FromLDAPTime(data.Timestamp).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.Timestamp).Format(app.TimeDefaultFormat),
 		)
 		body.Set(out)
 
@@ -379,7 +457,7 @@ func (s *EveNotificationService) RenderEveNotificationESI(ctx context.Context, t
 		if err != nil {
 			return title, body, err
 		}
-		due := timestamp.Add(FromLDAPDuration(data.TimeLeft))
+		due := timestamp.Add(fromLDAPDuration(data.TimeLeft))
 		out += fmt.Sprintf(
 			"has started un-anchoring. It will be fully un-anchored at: %s",
 			due.Format(app.TimeDefaultFormat),
@@ -459,10 +537,6 @@ func makeLocationLink(ess *app.EveSolarSystem) string {
 	return x
 }
 
-// func makeCharacterLink(id int32, name string) string {
-// 	return makeMarkDownLink(name, makeEveWhoCharacterURL(id))
-// }
-
 func makeCorporationLink(name string) string {
 	if name == "" {
 		return ""
@@ -496,14 +570,4 @@ func makeEveEntityProfileLink(e *app.EveEntity) string {
 
 func makeMarkDownLink(label, url string) string {
 	return fmt.Sprintf("[%s](%s)", label, url)
-}
-
-// FromLDAPTime converts an ldap time to golang time
-func FromLDAPTime(ldap_dt int64) time.Time {
-	return time.Unix((ldap_dt/10000000)-11644473600, 0).UTC()
-}
-
-// FromLDAPDuration converts an ldap duration to golang duration
-func FromLDAPDuration(ldap_td int64) time.Duration {
-	return time.Duration(ldap_td/10) * time.Microsecond
 }

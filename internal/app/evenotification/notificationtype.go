@@ -1,7 +1,11 @@
 package evenotification
 
 const (
+	CorpAppNewMsg                      = "CorpAppNewMsg"
+	CharAppRejectMsg                   = "CharAppRejectMsg"
+	CorpAppInvitedMsg                  = "CorpAppInvitedMsg"
 	BillOutOfMoneyMsg                  = "BillOutOfMoneyMsg"
+	CorpAppRejectCustomMsg             = "CorpAppRejectCustomMsg"
 	BillPaidCorpAllMsg                 = "BillPaidCorpAllMsg"
 	CorpAllBillMsg                     = "CorpAllBillMsg"
 	InfrastructureHubBillAboutToExpire = "InfrastructureHubBillAboutToExpire"
@@ -22,6 +26,10 @@ const (
 )
 
 var notificationTypes = []string{
+	CorpAppNewMsg,
+	CharAppRejectMsg,
+	CorpAppRejectCustomMsg,
+	CorpAppInvitedMsg,
 	BillOutOfMoneyMsg,
 	BillPaidCorpAllMsg,
 	CorpAllBillMsg,
