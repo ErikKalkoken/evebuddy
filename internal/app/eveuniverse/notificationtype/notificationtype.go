@@ -11,6 +11,18 @@ type CorpAllBillMsgV2 struct {
 	ExternalID2 int64   `yaml:"externalID2"`
 }
 
+type InfrastructureHubBillAboutToExpire struct {
+	BillID        int32 `yaml:"billID"`
+	CorpID        int32 `yaml:"corpID"`
+	DueDate       int64 `yaml:"dueDate"`
+	SolarSystemID int32 `yaml:"solarSystemID"`
+}
+
+type IHubDestroyedByBillFailure struct {
+	SolarSystemID   int32 `yaml:"solarSystemID"`
+	StructureTypeID int64 `yaml:"structureTypeID"`
+}
+
 type OwnershipTransferredV2 struct {
 	CharID          int32  `yaml:"charID"`
 	NewOwnerCorpID  int32  `yaml:"newOwnerCorpID"`

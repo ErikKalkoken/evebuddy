@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -16,37 +15,45 @@ import (
 )
 
 const (
-	CorpAllBillMsg         = "CorpAllBillMsg"
-	OrbitalAttacked        = "OrbitalAttacked"
-	OrbitalReinforced      = "OrbitalReinforced"
-	OwnershipTransferred   = "OwnershipTransferred"
-	StructureAnchoring     = "StructureAnchoring"
-	StructureDestroyed     = "StructureDestroyed"
-	StructureFuelAlert     = "StructureFuelAlert"
-	StructureLostShields   = "StructureLostShields"
-	StructureLostArmor     = "StructureLostArmor"
-	StructureOnline        = "StructureOnline"
-	StructureWentLowPower  = "StructureWentLowPower"
-	StructureWentHighPower = "StructureWentHighPower"
-	StructureUnanchoring   = "StructureUnanchoring"
-	StructureUnderAttack   = "StructureUnderAttack"
+	BillOutOfMoneyMsg                  = "BillOutOfMoneyMsg"
+	BillPaidCorpAllMsg                 = "BillPaidCorpAllMsg"
+	CorpAllBillMsg                     = "CorpAllBillMsg"
+	InfrastructureHubBillAboutToExpire = "InfrastructureHubBillAboutToExpire"
+	OrbitalAttacked                    = "OrbitalAttacked"
+	OrbitalReinforced                  = "OrbitalReinforced"
+	OwnershipTransferred               = "OwnershipTransferred"
+	StructureAnchoring                 = "StructureAnchoring"
+	StructureDestroyed                 = "StructureDestroyed"
+	StructureFuelAlert                 = "StructureFuelAlert"
+	StructureLostArmor                 = "StructureLostArmor"
+	StructureLostShields               = "StructureLostShields"
+	StructureOnline                    = "StructureOnline"
+	StructureUnanchoring               = "StructureUnanchoring"
+	StructureUnderAttack               = "StructureUnderAttack"
+	StructureWentHighPower             = "StructureWentHighPower"
+	StructureWentLowPower              = "StructureWentLowPower"
+	IHubDestroyedByBillFailure         = "IHubDestroyedByBillFailure"
 )
 
 var notificationTypes = []string{
+	BillOutOfMoneyMsg,
+	BillPaidCorpAllMsg,
 	CorpAllBillMsg,
+	IHubDestroyedByBillFailure,
+	InfrastructureHubBillAboutToExpire,
 	OrbitalAttacked,
 	OrbitalReinforced,
 	OwnershipTransferred,
 	StructureAnchoring,
 	StructureDestroyed,
 	StructureFuelAlert,
-	StructureLostShields,
 	StructureLostArmor,
+	StructureLostShields,
 	StructureOnline,
-	StructureWentLowPower,
-	StructureWentHighPower,
 	StructureUnanchoring,
 	StructureUnderAttack,
+	StructureWentHighPower,
+	StructureWentLowPower,
 }
 
 // NotificationTypesSupported returns a list of all supported notification types.
@@ -58,6 +65,36 @@ func NotificationTypesSupported() []string {
 func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, type_, text string, timestamp time.Time) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
 	switch type_ {
+	// Billing
+	case BillPaidCorpAllMsg:
+		title.Set("Bill payed")
+		var data notification.BillPaidCorpAllMsg
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		out := fmt.Sprintf(
+			"A bill of **%s** ISK, due **%s** was payed.",
+			humanize.Commaf(float64(data.Amount)),
+			FromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
+		)
+		body.Set(out)
+
+	case BillOutOfMoneyMsg:
+		title.Set("Insufficient Funds for Bill")
+		var data notificationtype.CorpAllBillMsgV2
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		out := fmt.Sprintf(
+			"The selected corporation wallet division for automatic payments "+
+				"does not have enough current funds available to pay the %s due to be paid by %s. "+
+				"Transfer additional funds to the selected wallet "+
+				"division in order to meet your pending automatic bills.",
+			billTypeName(data.BillTypeID),
+			FromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
+		)
+		body.Set(out)
+
 	case CorpAllBillMsg:
 		title.Set("Bill issued")
 		var data notificationtype.CorpAllBillMsgV2
@@ -68,23 +105,56 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		if err != nil {
 			return title, body, err
 		}
-		var out strings.Builder
-		t := template.Must(template.New(type_).Parse(
-			"A bill of **{{.amount}}** ISK, due **{{.dueDate}}** owed by {{.debtor}} to {{.creditor}} " +
-				"was issued on {{.currentDate}}. This bill is for {{.billType}}.",
-		))
+		out := fmt.Sprintf(
+			"A bill of **%s** ISK, due **%s** owed by %s to %s was issued on %s. This bill is for %s.",
+			humanize.Commaf(data.Amount),
+			FromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
+			makeEveEntityProfileLink(entities[data.DebtorID]),
+			makeEveEntityProfileLink(entities[data.CreditorID]),
+			FromLDAPTime(data.CurrentDate).Format(app.TimeDefaultFormat),
+			billTypeName(data.BillTypeID),
+		)
+		body.Set(out)
 
-		if err := t.Execute(&out, map[string]string{
-			"amount":      humanize.Commaf(data.Amount),
-			"dueDate":     FromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
-			"debtor":      makeEveEntityProfileLink(entities[data.DebtorID]),
-			"creditor":    makeEveEntityProfileLink(entities[data.CreditorID]),
-			"currentDate": FromLDAPTime(data.CurrentDate).Format(app.TimeDefaultFormat),
-			"billType":    billTypeName(data.BillTypeID),
-		}); err != nil {
+	case InfrastructureHubBillAboutToExpire:
+		title.Set("IHub Bill About to Expire")
+		var data notificationtype.InfrastructureHubBillAboutToExpire
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		body.Set(out.String())
+		solarSystem, err := eus.GetOrCreateEveSolarSystemESI(ctx, data.SolarSystemID)
+		if err != nil {
+			return title, body, err
+		}
+		out := fmt.Sprintf("Maintenance bill for Infrastructure Hub in %s expires at %s, "+
+			"if not paid in time this Infrastructure Hub will self-destruct.",
+			makeLocationLink(solarSystem),
+			FromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
+		)
+		body.Set(out)
+
+	case IHubDestroyedByBillFailure:
+		var data notificationtype.IHubDestroyedByBillFailure
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		solarSystem, err := eus.GetOrCreateEveSolarSystemESI(ctx, data.SolarSystemID)
+		if err != nil {
+			return title, body, err
+		}
+		structureType, err := eus.GetOrCreateEveTypeESI(ctx, int32(data.StructureTypeID))
+		if err != nil {
+			return title, body, err
+		}
+		title.Set(fmt.Sprintf(
+			"%s has self-destructed due to unpaid maintenance bills",
+			structureType.Name,
+		))
+		out := fmt.Sprintf("%s in %s has self-destructed, as the standard maintenance bills where not paid.",
+			structureType.Name,
+			makeLocationLink(solarSystem),
+		)
+		body.Set(out)
 
 	// Orbitals (aka POCOs)
 	case OrbitalAttacked:

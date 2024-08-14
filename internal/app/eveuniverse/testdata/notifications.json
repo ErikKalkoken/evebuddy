@@ -281,7 +281,7 @@
         "sender_id": 2901,
         "sender_type": "corporation",
         "timestamp": "2019-01-31T17:10:00Z",
-        "text": "solarSystemID: 30000474\nstructureTypeID: 32226\n",
+        "text": "solarSystemID: 30002537\nstructureTypeID: 32226\n",
         "is_read": true
     },
     {
@@ -290,7 +290,7 @@
         "sender_id": 3001,
         "sender_type": "alliance",
         "timestamp": "2019-02-02T19:12:00Z",
-        "text": "campaignEventType: 1\nconstellationID: 20000345\nsolarSystemID: 30000474\n",
+        "text": "campaignEventType: 1\nconstellationID: 20000345\nsolarSystemID: 30002537\n",
         "is_read": true
     },
     {
@@ -299,7 +299,7 @@
         "sender_id": 2901,
         "sender_type": "corporation",
         "timestamp": "2018-09-11T23:37:00Z",
-        "text": "allianceID: 3001\ncorpID: 2001\nsolarSystemID: 30000474\n",
+        "text": "allianceID: 3001\ncorpID: 2001\nsolarSystemID: 30002537\n",
         "is_read": true
     },
     {
@@ -308,7 +308,7 @@
         "sender_id": 2901,
         "sender_type": "corporation",
         "timestamp": "2018-09-11T23:37:00Z",
-        "text": "allianceID: 3001\ncorpID: 2001\nsolarSystemID: 30000474\n",
+        "text": "allianceID: 3001\ncorpID: 2001\nsolarSystemID: 30002537\n",
         "is_read": true
     },
     {
@@ -317,7 +317,7 @@
         "sender_id": 3001,
         "sender_type": "alliance",
         "timestamp": "2018-12-18T19:28:00Z",
-        "text": "campaignEventType: 1\ndecloakTime: 131897990021334067\nsolarSystemID: 30000474\n",
+        "text": "campaignEventType: 1\ndecloakTime: 131897990021334067\nsolarSystemID: 30002537\n",
         "is_read": true
     },
     {
@@ -326,7 +326,7 @@
         "sender_id": 3001,
         "sender_type": "alliance",
         "timestamp": "2019-02-02T22:47:00Z",
-        "text": "solarSystemID: 30000474\nstructureTypeID: 32226\n",
+        "text": "solarSystemID: 30002537\nstructureTypeID: 32226\n",
         "is_read": true
     },
     {
@@ -505,7 +505,7 @@
         "sender_id": 2902,
         "sender_type": "corporation",
         "timestamp": "2019-11-18T20:00:00Z",
-        "text": "billID: 24803231\ncorpID: 2001\ndueDate: 132936111600000000\nsolarSystemID: 30000474",
+        "text": "billID: 24803231\ncorpID: 2001\ndueDate: 132936111600000000\nsolarSystemID: 30002537",
         "is_read": false,
         "is_sent": false
     },
@@ -515,7 +515,7 @@
         "sender_id": 2902,
         "sender_type": "corporation",
         "timestamp": "2019-11-18T20:00:00Z",
-        "text": "solarSystemID: 30000474\nstructureTypeID: 32458\n",
+        "text": "solarSystemID: 30002537\nstructureTypeID: 32458\n",
         "is_read": false,
         "is_sent": false
     },
@@ -656,6 +656,16 @@
         "sender_type": "corporation",
         "timestamp": "2019-11-18T20:00:00Z",
         "text": "corporation_id: 2001\ncreator_id: 1001\ngoal_id: 24595525861100907652819857792401564217\ngoal_name: Stratios For the Grandmaster",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001112,
+        "type": "BillPaidCorpAllMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "amount: 1\ndueDate: 132936019800000000\n",
         "is_read": false,
         "is_sent": false
     },

@@ -99,6 +99,7 @@ func TestRenderCharacterNotification2(t *testing.T) {
 	factory.CreateEveEntityCorporation(app.EveEntity{ID: 2011})
 	factory.CreateEveType(storage.CreateEveTypeParams{ID: 2233})
 	factory.CreateEveEntityCorporation(app.EveEntity{ID: 3011})
+	factory.CreateEveType(storage.CreateEveTypeParams{ID: 32458})
 	notifTypes := set.NewFromSlice(eveuniverse.NotificationTypesSupported())
 	typeTested := make(map[string]bool)
 	for _, n := range notifications {
