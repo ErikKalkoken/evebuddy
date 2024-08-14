@@ -88,7 +88,7 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 	top1 := container.NewVBox(a.charactersTop, widget.NewSeparator())
 	characters := container.NewBorder(top1, nil, nil, nil, a.entityList)
 
-	a.sectionGrid = a.makeSectionTable()
+	a.sectionGrid = a.makeSectionGrid()
 	a.sectionsTop.TextStyle.Bold = true
 	b := widget.NewButton("Force update all sections", func() {
 		if a.selectedEntityID == -1 || a.selectedEntityID >= len(a.entities) {
@@ -127,18 +127,10 @@ func (a *statusWindow) makeEntityList() *widget.List {
 			icon.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
 			name := widget.NewLabel("Template")
 			status := widget.NewLabel("Template")
-			row := container.NewHBox(icon, name, layout.NewSpacer(), status)
+			pb := widget.NewActivity()
+			pb.Stop()
+			row := container.NewHBox(icon, name, pb, layout.NewSpacer(), status)
 			return row
-
-			// hasToken, err := a.ui.service.HasTokenWithScopes(char.ID)
-			// if err != nil {
-			// 	slog.Error("Can not check if character has token", "err", err)
-			// 	continue
-			// }
-			// if !hasToken {
-			// 	row.Add(widget.NewIcon(theme.WarningIcon()))
-			// }
-
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.entities) {
@@ -158,7 +150,17 @@ func (a *statusWindow) makeEntityList() *widget.List {
 					return a.ui.EveImageService.CharacterPortrait(c.id, defaultIconSize)
 				})
 			}
-			status := row.Objects[3].(*widget.Label)
+
+			pb := row.Objects[2].(*widget.Activity)
+			if c.ss.IsRunning {
+				pb.Start()
+				pb.Show()
+			} else {
+				pb.Stop()
+				pb.Hide()
+			}
+
+			status := row.Objects[4].(*widget.Label)
 			t := c.ss.Display()
 			i := status2widgetImportance(c.ss.Status())
 			status.Text = t
@@ -179,7 +181,34 @@ func (a *statusWindow) makeEntityList() *widget.List {
 	return list
 }
 
-func (a *statusWindow) makeSectionTable() *widget.GridWrap {
+func (a *statusWindow) refresh() error {
+	a.refreshEntityList()
+	a.refreshDetailArea()
+	a.charactersTop.SetText(fmt.Sprintf("Entities: %d", len(a.entities)))
+	return nil
+}
+
+func (a *statusWindow) refreshEntityList() error {
+	entities := make([]sectionEntity, 0)
+	cc := a.ui.StatusCacheService.ListCharacters()
+	for _, c := range cc {
+		ss := a.ui.StatusCacheService.CharacterSectionSummary(c.ID)
+		o := sectionEntity{id: c.ID, name: c.Name, ss: ss}
+		entities = append(entities, o)
+	}
+	ss := a.ui.StatusCacheService.GeneralSectionSummary()
+	o := sectionEntity{
+		id:   app.GeneralSectionEntityID,
+		name: app.GeneralSectionEntityName,
+		ss:   ss,
+	}
+	entities = append(entities, o)
+	a.entities = entities
+	a.entityList.Refresh()
+	return nil
+}
+
+func (a *statusWindow) makeSectionGrid() *widget.GridWrap {
 	l := widget.NewGridWrap(
 		func() int {
 			return len(a.sections)
@@ -330,33 +359,6 @@ func makeForm(data []formItems) *widget.Form {
 		form.Append(row.label, c)
 	}
 	return form
-}
-
-func (a *statusWindow) refresh() error {
-	a.refreshEntityList()
-	a.refreshDetailArea()
-	a.charactersTop.SetText(fmt.Sprintf("Entities: %d", len(a.entities)))
-	return nil
-}
-
-func (a *statusWindow) refreshEntityList() error {
-	entities := make([]sectionEntity, 0)
-	cc := a.ui.StatusCacheService.ListCharacters()
-	for _, c := range cc {
-		ss := a.ui.StatusCacheService.CharacterSectionSummary(c.ID)
-		o := sectionEntity{id: c.ID, name: c.Name, ss: ss}
-		entities = append(entities, o)
-	}
-	ss := a.ui.StatusCacheService.GeneralSectionSummary()
-	o := sectionEntity{
-		id:   app.GeneralSectionEntityID,
-		name: app.GeneralSectionEntityName,
-		ss:   ss,
-	}
-	entities = append(entities, o)
-	a.entities = entities
-	a.entityList.Refresh()
-	return nil
 }
 
 func (a *statusWindow) refreshDetailArea() {

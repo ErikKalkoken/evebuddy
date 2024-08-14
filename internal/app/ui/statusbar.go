@@ -58,12 +58,12 @@ func (u *ui) newStatusBarArea() *statusBarArea {
 		updateNotification: container.NewHBox(),
 		ui:                 u,
 	}
-	a.updateStatus = widgets.NewStatusBarItem(nil, "100% Fresh", func() {
+	a.updateStatus = widgets.NewStatusBarItem(nil, "?", func() {
 		u.showStatusWindow()
 	})
-	a.eveStatus = widgets.NewStatusBarItem(theme.MediaRecordIcon(), "999.999 players", a.showDetail)
+	a.eveStatus = widgets.NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showDetail)
 
-	a.eveClock.Set(" 00:00 ")
+	a.eveClock.Set("?")
 	clock := widget.NewLabelWithData(a.eveClock)
 	a.content = container.NewVBox(widget.NewSeparator(), container.NewHBox(
 		a.infoText,

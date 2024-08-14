@@ -13,10 +13,11 @@ const (
 )
 
 type StatusSummary struct {
-	Current int
-	Missing int
-	Errors  int
-	Total   int
+	Current   int
+	Errors    int
+	Missing   int
+	IsRunning bool
+	Total     int
 }
 
 func (ss StatusSummary) ProgressP() float32 {

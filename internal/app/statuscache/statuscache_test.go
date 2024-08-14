@@ -112,6 +112,48 @@ func TestStatusCache(t *testing.T) {
 		assert.Equal(t, c.ID, xx[0].ID)
 		assert.Equal(t, "Bruce", xx[0].Name)
 	})
+	t.Run("can report wether a character section exists", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		cache.Clear()
+		c := factory.CreateCharacter()
+		section := app.SectionImplants
+		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
+			CharacterID: c.ID,
+			Section:     section,
+		})
+		if err := sc.InitCache(ctx, st); err != nil {
+			t.Fatal(err)
+		}
+		// when/then
+		assert.True(t, sc.CharacterSectionExists(c.ID, app.SectionImplants))
+		assert.False(t, sc.CharacterSectionExists(99, app.SectionImplants))
+		assert.False(t, sc.CharacterSectionExists(c.ID, app.SectionAssets))
+	})
+	t.Run("can report wether a general section exists 1", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		cache.Clear()
+		section := app.SectionEveCategories
+		factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
+			Section: section,
+		})
+		if err := sc.InitCache(ctx, st); err != nil {
+			t.Fatal(err)
+		}
+		// when/then
+		assert.True(t, sc.GeneralSectionExists(app.SectionEveCategories))
+	})
+	t.Run("can report wether a general section exists 2", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		cache.Clear()
+		if err := sc.InitCache(ctx, st); err != nil {
+			t.Fatal(err)
+		}
+		// when/then
+		assert.False(t, sc.GeneralSectionExists(app.SectionEveCategories))
+	})
 }
 
 func TestStatusCacheSummary(t *testing.T) {
