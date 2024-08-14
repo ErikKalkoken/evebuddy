@@ -1,13 +1,17 @@
 package evenotification
 
 const (
-	CorpAppNewMsg                      = "CorpAppNewMsg"
-	CharAppRejectMsg                   = "CharAppRejectMsg"
-	CorpAppInvitedMsg                  = "CorpAppInvitedMsg"
 	BillOutOfMoneyMsg                  = "BillOutOfMoneyMsg"
-	CorpAppRejectCustomMsg             = "CorpAppRejectCustomMsg"
 	BillPaidCorpAllMsg                 = "BillPaidCorpAllMsg"
+	CharAppAcceptMsg                   = "CharAppAcceptMsg"
+	CharAppRejectMsg                   = "CharAppRejectMsg"
+	CharAppWithdrawMsg                 = "CharAppWithdrawMsg"
+	CharLeftCorpMsg                    = "CharLeftCorpMsg"
 	CorpAllBillMsg                     = "CorpAllBillMsg"
+	CorpAppInvitedMsg                  = "CorpAppInvitedMsg"
+	CorpAppNewMsg                      = "CorpAppNewMsg"
+	CorpAppRejectCustomMsg             = "CorpAppRejectCustomMsg"
+	IHubDestroyedByBillFailure         = "IHubDestroyedByBillFailure"
 	InfrastructureHubBillAboutToExpire = "InfrastructureHubBillAboutToExpire"
 	OrbitalAttacked                    = "OrbitalAttacked"
 	OrbitalReinforced                  = "OrbitalReinforced"
@@ -22,17 +26,19 @@ const (
 	StructureUnderAttack               = "StructureUnderAttack"
 	StructureWentHighPower             = "StructureWentHighPower"
 	StructureWentLowPower              = "StructureWentLowPower"
-	IHubDestroyedByBillFailure         = "IHubDestroyedByBillFailure"
 )
 
 var notificationTypes = []string{
-	CorpAppNewMsg,
-	CharAppRejectMsg,
-	CorpAppRejectCustomMsg,
-	CorpAppInvitedMsg,
 	BillOutOfMoneyMsg,
 	BillPaidCorpAllMsg,
+	CharAppAcceptMsg,
+	CharAppRejectMsg,
+	CharAppWithdrawMsg,
+	CharLeftCorpMsg,
 	CorpAllBillMsg,
+	CorpAppInvitedMsg,
+	CorpAppNewMsg,
+	CorpAppRejectCustomMsg,
 	IHubDestroyedByBillFailure,
 	InfrastructureHubBillAboutToExpire,
 	OrbitalAttacked,
