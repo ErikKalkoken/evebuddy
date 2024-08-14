@@ -212,6 +212,15 @@
         "is_read": true
     },
     {
+        "notification_id": 1000000513,
+        "type": "OwnershipTransferred",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T10:08:00Z",
+        "text": "characterLinkData:\n- showinfo\n- 1380\n- 1001\ncharacterName: John Doe\nfromCorporationLinkData:\n- showinfo\n- 2\n- 2001\nfromCorporationName: Old Corporation\nsolarSystemLinkData:\n- showinfo\n- 5\n- 30002537\nsolarSystemName: Amamake\nstructureLinkData:\n- showinfo\n- 35835\n- 1000000000001\nstructureName: Amamake - Alpha\ntoCorporationLinkData:\n- showinfo\n- 2\n- 2002\ntoCorporationName: New Corporation",
+        "is_read": true
+    },
+    {
         "notification_id": 1000000601,
         "type": "OrbitalAttacked",
         "sender_id": 2901,

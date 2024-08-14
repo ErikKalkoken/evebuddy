@@ -21,7 +21,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 	switch type_ {
 	case "CorpAllBillMsg":
 		title.Set("Bill issued")
-		var data notificationtype.CorpAllBillMsg
+		var data notificationtype.CorpAllBillMsgV2
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
@@ -46,6 +46,56 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 			return title, body, err
 		}
 		body.Set(out.String())
+
+	// Structure notifications
+	case "OwnershipTransferred":
+		title.Set("Ownership transferred")
+		var d struct {
+			characterID     int32
+			newCorpID       int32
+			oldCorpID       int32
+			solarSystemID   int32
+			structureID     int64
+			structureTypeID int32
+		}
+		if strings.Contains(text, "newOwnerCorpID") {
+			var data notificationtype.OwnershipTransferredV2
+			if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+				return title, body, err
+			}
+			d.characterID = data.CharID
+			d.newCorpID = data.NewOwnerCorpID
+			d.oldCorpID = data.OldOwnerCorpID
+			d.solarSystemID = data.SolarSystemID
+			d.structureID = data.StructureID
+			d.structureTypeID = data.StructureTypeID
+		} else {
+			var data notification.OwnershipTransferred
+			if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+				return title, body, err
+			}
+			d.characterID = int32(data.CharacterLinkData[2].(int))
+			d.newCorpID = int32(data.ToCorporationLinkData[2].(int))
+			d.oldCorpID = int32(data.FromCorporationLinkData[2].(int))
+			d.solarSystemID = int32(data.SolarSystemLinkData[2].(int))
+			d.structureID = int64(data.StructureLinkData[2].(int))
+			d.structureTypeID = int32(data.StructureLinkData[1].(int))
+		}
+		out, err := makeStructureBaseText(ctx, eus, d.structureTypeID, d.solarSystemID, d.structureID)
+		if err != nil {
+			return title, body, err
+		}
+		entities, err := eus.ToEveEntities(ctx, []int32{d.oldCorpID, d.newCorpID, d.characterID})
+		if err != nil {
+			return title, body, err
+		}
+		out += fmt.Sprintf(
+			"has been transferred from %s to %s by %s.",
+			makeEveEntityProfileLink(entities[d.oldCorpID]),
+			makeEveEntityProfileLink(entities[d.newCorpID]),
+			makeEveEntityProfileLink(entities[d.characterID]),
+		)
+		body.Set(out)
 
 	case "StructureAnchoring":
 		title.Set("Structure anchoring")
@@ -195,28 +245,6 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		out += fmt.Sprintf(
 			"has started un-anchoring. It will be fully un-anchored at: %s",
 			due.Format(app.TimeDefaultFormat),
-		)
-		body.Set(out)
-
-	case "OwnershipTransferred":
-		title.Set("Ownership transferred")
-		var data notificationtype.OwnershipTransferred
-		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-			return title, body, err
-		}
-		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarSystemID, data.StructureID)
-		if err != nil {
-			return title, body, err
-		}
-		entities, err := eus.ToEveEntities(ctx, []int32{data.OldOwnerCorpID, data.NewOwnerCorpID, data.CharID})
-		if err != nil {
-			return title, body, err
-		}
-		out += fmt.Sprintf(
-			"has been transferred from %s to %s by %s.",
-			makeEveEntityProfileLink(entities[data.OldOwnerCorpID]),
-			makeEveEntityProfileLink(entities[data.NewOwnerCorpID]),
-			makeEveEntityProfileLink(entities[data.CharID]),
 		)
 		body.Set(out)
 

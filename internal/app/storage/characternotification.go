@@ -12,18 +12,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-type CreateCharacterNotificationParams struct {
-	Body           optional.Optional[string]
-	CharacterID    int32
-	IsRead         bool
-	NotificationID int64
-	SenderID       int32
-	Text           string
-	Timestamp      time.Time
-	Title          optional.Optional[string]
-	Type           string
-}
-
 func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int32, notificationID int64) (*app.CharacterNotification, error) {
 	arg := queries.GetCharacterNotificationParams{
 		CharacterID:    int64(characterID),
@@ -84,6 +72,18 @@ func characterNotificationFromDBModel(o queries.CharacterNotification, sender qu
 	return o2
 }
 
+type CreateCharacterNotificationParams struct {
+	Body           optional.Optional[string]
+	CharacterID    int32
+	IsRead         bool
+	NotificationID int64
+	SenderID       int32
+	Text           string
+	Timestamp      time.Time
+	Title          optional.Optional[string]
+	Type           string
+}
+
 func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCharacterNotificationParams) error {
 	if arg.NotificationID == 0 {
 		return fmt.Errorf("notification ID can not be zero, Character %d", arg.CharacterID)
@@ -93,12 +93,14 @@ func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCh
 		return err
 	}
 	arg2 := queries.CreateCharacterNotificationParams{
+		Body:           optional.ToNullString(arg.Body),
 		CharacterID:    int64(arg.CharacterID),
 		IsRead:         arg.IsRead,
 		NotificationID: arg.NotificationID,
 		SenderID:       int64(arg.SenderID),
 		Text:           arg.Text,
 		Timestamp:      arg.Timestamp,
+		Title:          optional.ToNullString(arg.Title),
 		TypeID:         typeID,
 	}
 	return st.q.CreateCharacterNotification(ctx, arg2)

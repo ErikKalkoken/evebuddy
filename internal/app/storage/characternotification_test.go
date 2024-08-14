@@ -47,6 +47,41 @@ func TestCharacterNotification(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can create new full", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		timestamp := time.Now().UTC()
+		sender := factory.CreateEveEntityCharacter()
+		arg := storage.CreateCharacterNotificationParams{
+			Body:           optional.New("body"),
+			CharacterID:    c.ID,
+			IsRead:         true,
+			NotificationID: 42,
+			SenderID:       sender.ID,
+			Text:           "text",
+			Timestamp:      timestamp,
+			Title:          optional.New("title"),
+			Type:           "type",
+		}
+		// when
+		err := r.CreateCharacterNotification(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			o, err := r.GetCharacterNotification(ctx, c.ID, 42)
+			if assert.NoError(t, err) {
+				assert.Equal(t, c.ID, o.CharacterID)
+				assert.True(t, o.IsRead)
+				assert.Equal(t, int64(42), o.NotificationID)
+				assert.Equal(t, sender, o.Sender)
+				assert.Equal(t, "text", o.Text)
+				assert.Equal(t, timestamp.UTC(), o.Timestamp.UTC())
+				assert.Equal(t, "type", o.Type)
+				assert.Equal(t, "body", o.Body.ValueOrZero())
+				assert.Equal(t, "title", o.Title.ValueOrZero())
+			}
+		}
+	})
 	t.Run("can list IDs of existing entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

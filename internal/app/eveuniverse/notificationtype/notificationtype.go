@@ -1,6 +1,6 @@
 package notificationtype
 
-type CorpAllBillMsg struct {
+type CorpAllBillMsgV2 struct {
 	Amount      float64 `yaml:"amount"`
 	BillTypeID  int32   `yaml:"billTypeID"`
 	CreditorID  int32   `yaml:"creditorID"`
@@ -11,7 +11,7 @@ type CorpAllBillMsg struct {
 	ExternalID2 int64   `yaml:"externalID2"`
 }
 
-type OwnershipTransferred struct {
+type OwnershipTransferredV2 struct {
 	CharID          int32  `yaml:"charID"`
 	NewOwnerCorpID  int32  `yaml:"newOwnerCorpID"`
 	OldOwnerCorpID  int32  `yaml:"oldOwnerCorpID"`
