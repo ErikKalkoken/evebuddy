@@ -5,6 +5,7 @@ const (
 	EveCategoryDrone      = 18
 	EveCategoryDeployable = 22
 	EveCategoryFighter    = 87
+	EveCategoryOrbitals   = 46
 	EveCategoryShip       = 6
 	EveCategorySkill      = 16
 	EveCategorySKINs      = 91

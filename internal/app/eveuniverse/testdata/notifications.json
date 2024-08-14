@@ -212,7 +212,7 @@
         "is_read": true
     },
     {
-        "notification_id": 1000000513,
+        "notification_id": 1000000514,
         "type": "OwnershipTransferred",
         "sender_id": 2901,
         "sender_type": "corporation",
@@ -221,21 +221,22 @@
         "is_read": true
     },
     {
+        "notification_id": 1000000515,
+        "type": "OwnershipTransferred",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T10:08:00Z",
+        "text": "charID: 1001\nnewOwnerCorpID: 2002\noldOwnerCorpID: 2001\nsolarSystemID: 30002537\nstructureID: 1111000000001\nstructureName: POCO\nstructureTypeID: 2233\n",
+        "is_read": true
+    },
+
+    {
         "notification_id": 1000000601,
         "type": "OrbitalAttacked",
         "sender_id": 2901,
         "sender_type": "corporation",
         "timestamp": "2019-10-11T21:01:00Z",
         "text": "aggressorCorpID: 2011\naggressorID: 1011\nplanetID: 40161469\nplanetTypeID: 2016\nshieldLevel: 0.9821850015653375\nsolarSystemID: 30002537\ntypeID: 2233\n",
-        "is_read": true
-    },
-    {
-        "notification_id": 1000010601,
-        "type": "OrbitalAttacked",
-        "sender_id": 2901,
-        "sender_type": "corporation",
-        "timestamp": "2019-10-11T21:01:00Z",
-        "text": "aggressorAllianceID: 500012\naggressorCorpID: 1000134\naggressorID: 1000134\nplanetID: 40161469\nplanetTypeID: 2016\nshieldLevel: 0.9821850015653375\nsolarSystemID: 30002537\ntypeID: 2233\n",
         "is_read": true
     },
     {

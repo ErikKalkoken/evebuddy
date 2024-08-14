@@ -47,6 +47,64 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		}
 		body.Set(out.String())
 
+	// Orbitals (aka POCOs)
+	case "OrbitalAttacked":
+		title.Set("Orbital under attack")
+		var data notification.OrbitalAttacked
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		out, err := makeOrbitalBaseText(ctx, eus, data.PlanetID, data.TypeID, data.SolarSystemID)
+		if err != nil {
+			return title, body, err
+		}
+		entities, err := eus.ToEveEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
+		if err != nil {
+			return title, body, err
+		}
+		out += fmt.Sprintf("is under attack.\n\n"+
+			"Attacking Character: %s\n\n"+
+			"Attacking Corporation: %s",
+			makeEveEntityProfileLink(entities[data.AggressorID]),
+			makeEveEntityProfileLink(entities[data.AggressorCorpID]),
+		)
+		if data.AggressorAllianceID != 0 {
+			out += fmt.Sprintf(
+				"\n\nAttacking Alliance: %s",
+				makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
+			)
+		}
+		body.Set(out)
+
+	case "OrbitalReinforced":
+		title.Set("Orbital reinforced")
+		var data notification.OrbitalReinforced
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		out, err := makeOrbitalBaseText(ctx, eus, data.PlanetID, data.TypeID, data.SolarSystemID)
+		if err != nil {
+			return title, body, err
+		}
+		entities, err := eus.ToEveEntities(ctx, []int32{data.AggressorAllianceID, data.AggressorCorpID, data.AggressorID})
+		if err != nil {
+			return title, body, err
+		}
+		out += fmt.Sprintf("has been reinforced and will come out at %s.\n\n"+
+			"Attacking Character: %s\n\n"+
+			"Attacking Corporation: %s",
+			FromLDAPTime(data.ReinforceExitTime).Format(app.TimeDefaultFormat),
+			makeEveEntityProfileLink(entities[data.AggressorID]),
+			makeEveEntityProfileLink(entities[data.AggressorCorpID]),
+		)
+		if data.AggressorAllianceID != 0 {
+			out += fmt.Sprintf(
+				"\n\nAttacking Alliance: %s",
+				makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
+			)
+		}
+		body.Set(out)
+
 	// Structure notifications
 	case "OwnershipTransferred":
 		title.Set("Ownership transferred")
@@ -56,6 +114,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 			oldCorpID       int32
 			solarSystemID   int32
 			structureID     int64
+			structureName   string
 			structureTypeID int32
 		}
 		if strings.Contains(text, "newOwnerCorpID") {
@@ -69,6 +128,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 			d.solarSystemID = data.SolarSystemID
 			d.structureID = data.StructureID
 			d.structureTypeID = data.StructureTypeID
+			d.structureName = data.StructureName
 		} else {
 			var data notification.OwnershipTransferred
 			if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -80,8 +140,9 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 			d.solarSystemID = int32(data.SolarSystemLinkData[2].(int))
 			d.structureID = int64(data.StructureLinkData[2].(int))
 			d.structureTypeID = int32(data.StructureLinkData[1].(int))
+			d.structureName = data.StructureName
 		}
-		out, err := makeStructureBaseText(ctx, eus, d.structureTypeID, d.solarSystemID, d.structureID)
+		out, err := makeStructureBaseText(ctx, eus, d.structureTypeID, d.solarSystemID, d.structureID, d.structureName)
 		if err != nil {
 			return title, body, err
 		}
@@ -103,7 +164,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID)
+		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
 		if err != nil {
 			return title, body, err
 		}
@@ -116,7 +177,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID)
+		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
 		if err != nil {
 			return title, body, err
 		}
@@ -126,12 +187,16 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		}
 		out += fmt.Sprintf("is under attack.\n\n"+
 			"Attacking Character: %s\n\n"+
-			"Attacking Corporation: %s\n\n"+
-			"Attacking Alliance: %s",
+			"Attacking Corporation: %s",
 			makeEveEntityProfileLink(attackChar),
 			makeCorporationLink(data.CorpName),
-			makeAllianceLink(data.AllianceName),
 		)
+		if data.AllianceName != "" {
+			out += fmt.Sprintf(
+				"\n\nAttacking Alliance: %s",
+				makeAllianceLink(data.AllianceName),
+			)
+		}
 		body.Set(out)
 
 	case "StructureLostShields":
@@ -140,7 +205,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID)
+		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
 		if err != nil {
 			return title, body, err
 		}
@@ -156,7 +221,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID)
+		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
 		if err != nil {
 			return title, body, err
 		}
@@ -172,7 +237,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID)
+		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
 		if err != nil {
 			return title, body, err
 		}
@@ -185,7 +250,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID)
+		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
 		if err != nil {
 			return title, body, err
 		}
@@ -198,7 +263,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID)
+		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
 		if err != nil {
 			return title, body, err
 		}
@@ -211,7 +276,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID)
+		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
 		if err != nil {
 			return title, body, err
 		}
@@ -224,7 +289,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID)
+		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
 		if err != nil {
 			return title, body, err
 		}
@@ -237,7 +302,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID)
+		out, err := makeStructureBaseText(ctx, eus, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
 		if err != nil {
 			return title, body, err
 		}
@@ -252,7 +317,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 	return title, body, nil
 }
 
-func makeStructureBaseText(ctx context.Context, s *EveUniverseService, typeID, solarSystemID int32, structureID int64) (string, error) {
+func makeOrbitalBaseText(ctx context.Context, s *EveUniverseService, planetID, typeID, solarSystemID int32) (string, error) {
 	structureType, err := s.GetOrCreateEveTypeESI(ctx, typeID)
 	if err != nil {
 		return "", err
@@ -261,15 +326,46 @@ func makeStructureBaseText(ctx context.Context, s *EveUniverseService, typeID, s
 	if err != nil {
 		return "", err
 	}
-	structure, err := s.GetOrCreateEveLocationESI(ctx, structureID)
+	out := fmt.Sprintf("The %s at %s in %s ", structureType.Name, "???", makeLocationLink(solarSystem))
+	return out, nil
+}
+
+func makeStructureBaseText(ctx context.Context, s *EveUniverseService, typeID, solarSystemID int32, structureID int64, structureName string) (string, error) {
+	structureType, err := s.GetOrCreateEveTypeESI(ctx, typeID)
 	if err != nil {
 		return "", err
 	}
-	structureName := structure.DisplayName2()
-	if structureName == "" {
-		structureName = "?"
+	solarSystem, err := s.GetOrCreateEveSolarSystemESI(ctx, solarSystemID)
+	if err != nil {
+		return "", err
 	}
-	out := fmt.Sprintf("The %s **%s** in %s ", structureType.Name, structureName, makeLocationLink(solarSystem))
+	var ownerLink string
+	isUpwellStructure := structureType.Group.Category.ID == app.EveCategoryStructure
+	if isUpwellStructure {
+		structure, err := s.GetOrCreateEveLocationESI(ctx, structureID)
+		if err != nil {
+			return "", err
+		}
+		if structure.Variant() == app.EveLocationStructure {
+			structureName = structure.DisplayName2()
+			if structure.Owner != nil {
+				ownerLink = makeEveEntityProfileLink(structure.Owner)
+			}
+		}
+	}
+	var name string
+	isOrbital := structureType.Group.Category.ID == app.EveCategoryOrbitals
+	if isOrbital && structureName != "" {
+		name = fmt.Sprintf("**%s**", structureName)
+	} else if structureName != "" {
+		name = fmt.Sprintf("%s **%s**", structureType.Name, structureName)
+	} else {
+		name = structureType.Name
+	}
+	out := fmt.Sprintf("The %s in %s ", name, makeLocationLink(solarSystem))
+	if ownerLink != "" {
+		out += fmt.Sprintf("belonging to %s ", ownerLink)
+	}
 	return out, nil
 }
 

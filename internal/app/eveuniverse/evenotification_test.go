@@ -62,9 +62,10 @@ externalID2: 60002599`
 }
 
 type notification struct {
-	Type      string    `json:"type"`
-	Text      string    `json:"text"`
-	Timestamp time.Time `json:"timestamp"`
+	NotificationID int       `json:"notification_id"`
+	Type           string    `json:"type"`
+	Text           string    `json:"text"`
+	Timestamp      time.Time `json:"timestamp"`
 }
 
 func TestRenderCharacterNotification2(t *testing.T) {
@@ -96,8 +97,12 @@ func TestRenderCharacterNotification2(t *testing.T) {
 	factory.CreateEveEntityCorporation(app.EveEntity{ID: 2001})
 	factory.CreateEveEntityCorporation(app.EveEntity{ID: 2002})
 	factory.CreateEveEntityCorporation(app.EveEntity{ID: 2011})
+	factory.CreateEveType(storage.CreateEveTypeParams{ID: 2233})
+	factory.CreateEveEntityCorporation(app.EveEntity{ID: 3011})
 	notifTypes := set.NewFromSlice([]string{
 		"CorpAllBillMsg",
+		"OrbitalAttacked",
+		"OrbitalReinforced",
 		"OwnershipTransferred",
 		"StructureAnchoring",
 		"StructureDestroyed",
@@ -117,6 +122,10 @@ func TestRenderCharacterNotification2(t *testing.T) {
 				if assert.NoError(t, err) {
 					assert.False(t, title.IsEmpty())
 					assert.False(t, body.IsEmpty())
+					switch n.NotificationID {
+					case 1000000515:
+						assert.Contains(t, body.ValueOrZero(), "POCO")
+					}
 				}
 			}
 		})
