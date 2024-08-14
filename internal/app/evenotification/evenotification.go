@@ -42,6 +42,9 @@ func (s *EveNotificationService) RenderESI(ctx context.Context, type_, text stri
 		OrbitalReinforced:
 		return s.renderOrbitals(ctx, type_, text)
 
+	case MoonminingExtractionStarted:
+		return s.renderMoonMining(ctx, type_, text)
+
 	case OwnershipTransferred,
 		StructureAnchoring,
 		StructureDestroyed,
@@ -57,7 +60,7 @@ func (s *EveNotificationService) RenderESI(ctx context.Context, type_, text stri
 
 	case TowerAlertMsg,
 		TowerResourceAlertMsg:
-		return s.renderTower(ctx, type_, text, timestamp)
+		return s.renderTower(ctx, type_, text)
 	}
 	return optional.Optional[string]{}, optional.Optional[string]{}, nil
 }

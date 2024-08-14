@@ -1028,6 +1028,33 @@ func (f Factory) CreateEvePlanet(args ...storage.CreateEvePlanetParams) *app.Eve
 	return o
 }
 
+func (f Factory) CreateEveMoon(args ...storage.CreateEveMoonParams) *app.EveMoon {
+	var arg storage.CreateEveMoonParams
+	ctx := context.TODO()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_moons", "id", 1))
+	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Moon #%d", arg.ID)
+	}
+	if arg.SolarSystemID == 0 {
+		x := f.CreateEveSolarSystem()
+		arg.SolarSystemID = x.ID
+	}
+	err := f.st.CreateEveMoon(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetEveMoon(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 	var arg app.EveRace
 	ctx := context.TODO()

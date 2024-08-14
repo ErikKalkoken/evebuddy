@@ -3,7 +3,6 @@ package evenotification
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/antihax/goesi/notification"
@@ -11,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func (s *EveNotificationService) renderTower(ctx context.Context, type_, text string, timestamp time.Time) (optional.Optional[string], optional.Optional[string], error) {
+func (s *EveNotificationService) renderTower(ctx context.Context, type_, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
 	switch type_ {
 	case TowerAlertMsg:
@@ -20,7 +19,7 @@ func (s *EveNotificationService) renderTower(ctx context.Context, type_, text st
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := s.makeTowerBaseText(ctx, data.MoonID, data.TypeID, data.SolarSystemID)
+		out, err := s.makeTowerBaseText(ctx, data.MoonID, data.TypeID)
 		if err != nil {
 			return title, body, err
 		}
@@ -48,7 +47,7 @@ func (s *EveNotificationService) renderTower(ctx context.Context, type_, text st
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := s.makeTowerBaseText(ctx, data.MoonID, data.TypeID, data.SolarSystemID)
+		out, err := s.makeTowerBaseText(ctx, data.MoonID, data.TypeID)
 		if err != nil {
 			return title, body, err
 		}
@@ -64,15 +63,15 @@ func (s *EveNotificationService) renderTower(ctx context.Context, type_, text st
 	return title, body, nil
 }
 
-func (s *EveNotificationService) makeTowerBaseText(ctx context.Context, moonID, typeID, solarSystemID int32) (string, error) {
+func (s *EveNotificationService) makeTowerBaseText(ctx context.Context, moonID, typeID int32) (string, error) {
 	structureType, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, typeID)
 	if err != nil {
 		return "", err
 	}
-	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, solarSystemID)
+	moon, err := s.EveUniverseService.GetOrCreateEveMoonESI(ctx, moonID)
 	if err != nil {
 		return "", err
 	}
-	out := fmt.Sprintf("The %s at %s in %s ", structureType.Name, "???", makeLocationLink(solarSystem))
+	out := fmt.Sprintf("The %s at %s in %s ", structureType.Name, moon.Name, makeLocationLink(moon.SolarSystem))
 	return out, nil
 }

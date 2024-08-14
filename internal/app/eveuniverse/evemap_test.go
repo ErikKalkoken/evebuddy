@@ -352,3 +352,53 @@ func TestGetOrCreateEvePlanetESI(t *testing.T) {
 		}
 	})
 }
+
+func TestGetOrCreateEveMoonESI(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(r, client)
+	ctx := context.Background()
+	t.Run("should return existing moon", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		factory.CreateEveMoon(storage.CreateEveMoonParams{ID: 25})
+		// when
+		x1, err := s.GetOrCreateEveMoonESI(ctx, 25)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, int32(25), x1.ID)
+		}
+	})
+	t.Run("should fetch moon from ESI and create it", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		solarSystem := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000003})
+		data := map[string]any{
+			"moon_id": 40000042,
+			"name":    "Akpivem I - Moon 1",
+			"position": map[string]any{
+				"x": 58605102008,
+				"y": -3066616285,
+				"z": -55193617920,
+			},
+			"system_id": 30000003,
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/v1/universe/moons/40000042/",
+			httpmock.NewJsonResponderOrPanic(200, data))
+		// when
+		x1, err := s.GetOrCreateEveMoonESI(ctx, 40000042)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, int32(40000042), x1.ID)
+			assert.Equal(t, "Akpivem I - Moon 1", x1.Name)
+			assert.Equal(t, solarSystem, x1.SolarSystem)
+		}
+	})
+}

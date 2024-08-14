@@ -28,6 +28,7 @@ const (
 	StructureWentLowPower              = "StructureWentLowPower"
 	TowerAlertMsg                      = "TowerAlertMsg"
 	TowerResourceAlertMsg              = "TowerResourceAlertMsg"
+	MoonminingExtractionStarted        = "MoonminingExtractionStarted"
 )
 
 var notificationTypes = []string{
@@ -54,6 +55,7 @@ var notificationTypes = []string{
 	StructureOnline,
 	StructureUnanchoring,
 	StructureUnderAttack,
+	MoonminingExtractionStarted,
 	StructureWentHighPower,
 	StructureWentLowPower,
 	TowerAlertMsg,

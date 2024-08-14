@@ -93,6 +93,7 @@ func TestRenderCharacterNotification2(t *testing.T) {
 	factory.CreateEveType(storage.CreateEveTypeParams{ID: 32458})
 	factory.CreateEveType(storage.CreateEveTypeParams{ID: 16213})
 	factory.CreateEvePlanet(storage.CreateEvePlanetParams{ID: 40161469})
+	factory.CreateEveMoon(storage.CreateEveMoonParams{ID: 40161465})
 	notifTypes := set.NewFromSlice(evenotification.NotificationTypesSupported())
 	typeTested := make(map[string]bool)
 	for _, n := range notifications {

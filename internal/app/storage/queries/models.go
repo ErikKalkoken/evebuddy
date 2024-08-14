@@ -297,6 +297,12 @@ type EveMarketPrice struct {
 	AveragePrice  float64
 }
 
+type EveMoon struct {
+	ID               int64
+	Name             string
+	EveSolarSystemID int64
+}
+
 type EvePlanet struct {
 	ID               int64
 	Name             string
