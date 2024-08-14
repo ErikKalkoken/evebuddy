@@ -113,3 +113,45 @@ func (eu *EveUniverseService) createEveSolarSystemFromESI(ctx context.Context, i
 	}
 	return y.(*app.EveSolarSystem), nil
 }
+
+func (eu *EveUniverseService) GetOrCreateEvePlanetESI(ctx context.Context, id int32) (*app.EvePlanet, error) {
+	x, err := eu.st.GetEvePlanet(ctx, id)
+	if errors.Is(err, storage.ErrNotFound) {
+		return eu.createEvePlanetFromESI(ctx, id)
+	} else if err != nil {
+		return x, err
+	}
+	return x, nil
+}
+
+func (eu *EveUniverseService) createEvePlanetFromESI(ctx context.Context, id int32) (*app.EvePlanet, error) {
+	key := fmt.Sprintf("createEvePlanetFromESI-%d", id)
+	y, err, _ := eu.sfg.Do(key, func() (any, error) {
+		planet, _, err := eu.esiClient.ESI.UniverseApi.GetUniversePlanetsPlanetId(ctx, id, nil)
+		if err != nil {
+			return nil, err
+		}
+		system, err := eu.GetOrCreateEveSolarSystemESI(ctx, planet.SystemId)
+		if err != nil {
+			return nil, err
+		}
+		type_, err := eu.GetOrCreateEveTypeESI(ctx, planet.TypeId)
+		if err != nil {
+			return nil, err
+		}
+		arg := storage.CreateEvePlanetParams{
+			ID:            planet.PlanetId,
+			Name:          planet.Name,
+			SolarSystemID: system.ID,
+			TypeID:        type_.ID,
+		}
+		if err := eu.st.CreateEvePlanet(ctx, arg); err != nil {
+			return nil, err
+		}
+		return eu.st.GetEvePlanet(ctx, id)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return y.(*app.EvePlanet), nil
+}

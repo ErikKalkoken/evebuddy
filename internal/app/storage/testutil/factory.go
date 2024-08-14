@@ -997,6 +997,37 @@ func (f Factory) CreateEveSolarSystem(args ...storage.CreateEveSolarSystemParams
 	return o
 }
 
+func (f Factory) CreateEvePlanet(args ...storage.CreateEvePlanetParams) *app.EvePlanet {
+	var arg storage.CreateEvePlanetParams
+	ctx := context.TODO()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_planets", "id", 1))
+	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("Planet #%d", arg.ID)
+	}
+	if arg.SolarSystemID == 0 {
+		x := f.CreateEveSolarSystem()
+		arg.SolarSystemID = x.ID
+	}
+	if arg.TypeID == 0 {
+		x := f.CreateEveType()
+		arg.TypeID = x.ID
+	}
+	err := f.st.CreateEvePlanet(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetEvePlanet(ctx, arg.ID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 	var arg app.EveRace
 	ctx := context.TODO()

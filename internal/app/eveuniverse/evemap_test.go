@@ -299,3 +299,56 @@ func TestGetOrCreateEveSolarSystemESI(t *testing.T) {
 		}
 	})
 }
+
+func TestGetOrCreateEvePlanetESI(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	client := goesi.NewAPIClient(nil, "")
+	s := eveuniverse.New(r, client)
+	ctx := context.Background()
+	t.Run("should return existing planet", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		factory.CreateEvePlanet(storage.CreateEvePlanetParams{ID: 25})
+		// when
+		x1, err := s.GetOrCreateEvePlanetESI(ctx, 25)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, int32(25), x1.ID)
+		}
+	})
+	t.Run("should fetch planet from ESI and create it", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		solarSystem := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000003})
+		type_ := factory.CreateEveType(storage.CreateEveTypeParams{ID: 13})
+		data := map[string]any{
+			"name":      "Akpivem III",
+			"planet_id": 40000046,
+			"position": map[string]any{
+				"x": -189226344497,
+				"y": 9901605317,
+				"z": -254852632979,
+			},
+			"system_id": 30000003,
+			"type_id":   13,
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			"https://esi.evetech.net/v1/universe/planets/40000046/",
+			httpmock.NewJsonResponderOrPanic(200, data))
+		// when
+		x1, err := s.GetOrCreateEvePlanetESI(ctx, 40000046)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, int32(40000046), x1.ID)
+			assert.Equal(t, "Akpivem III", x1.Name)
+			assert.Equal(t, solarSystem, x1.SolarSystem)
+			assert.Equal(t, type_, x1.Type)
+		}
+	})
+}

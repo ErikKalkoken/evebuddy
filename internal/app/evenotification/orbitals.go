@@ -19,7 +19,7 @@ func (s *EveNotificationService) renderOrbitals(ctx context.Context, type_, text
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := s.makeOrbitalBaseText(ctx, data.PlanetID, data.TypeID, data.SolarSystemID)
+		out, err := s.makeOrbitalBaseText(ctx, data.PlanetID, data.TypeID)
 		if err != nil {
 			return title, body, err
 		}
@@ -47,7 +47,7 @@ func (s *EveNotificationService) renderOrbitals(ctx context.Context, type_, text
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := s.makeOrbitalBaseText(ctx, data.PlanetID, data.TypeID, data.SolarSystemID)
+		out, err := s.makeOrbitalBaseText(ctx, data.PlanetID, data.TypeID)
 		if err != nil {
 			return title, body, err
 		}
@@ -73,15 +73,15 @@ func (s *EveNotificationService) renderOrbitals(ctx context.Context, type_, text
 	return title, body, nil
 }
 
-func (s *EveNotificationService) makeOrbitalBaseText(ctx context.Context, planetID, typeID, solarSystemID int32) (string, error) {
+func (s *EveNotificationService) makeOrbitalBaseText(ctx context.Context, planetID, typeID int32) (string, error) {
 	structureType, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, typeID)
 	if err != nil {
 		return "", err
 	}
-	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, solarSystemID)
+	planet, err := s.EveUniverseService.GetOrCreateEvePlanetESI(ctx, planetID)
 	if err != nil {
 		return "", err
 	}
-	out := fmt.Sprintf("The %s at %s in %s ", structureType.Name, "???", makeLocationLink(solarSystem))
+	out := fmt.Sprintf("The %s at %s in %s ", structureType.Name, planet.Name, makeLocationLink(planet.SolarSystem))
 	return out, nil
 }
