@@ -99,25 +99,12 @@ func TestRenderCharacterNotification2(t *testing.T) {
 	factory.CreateEveEntityCorporation(app.EveEntity{ID: 2011})
 	factory.CreateEveType(storage.CreateEveTypeParams{ID: 2233})
 	factory.CreateEveEntityCorporation(app.EveEntity{ID: 3011})
-	notifTypes := set.NewFromSlice([]string{
-		"CorpAllBillMsg",
-		"OrbitalAttacked",
-		"OrbitalReinforced",
-		"OwnershipTransferred",
-		"StructureAnchoring",
-		"StructureDestroyed",
-		"StructureFuelAlert",
-		"StructureLostShields",
-		"StructureLostArmor",
-		"StructureOnline",
-		"StructureWentLowPower",
-		"StructureWentHighPower",
-		"StructureUnanchoring",
-		"StructureUnderAttack",
-	})
+	notifTypes := set.NewFromSlice(eveuniverse.NotificationTypesSupported())
+	typeTested := make(map[string]bool)
 	for _, n := range notifications {
 		t.Run("should render notification type "+n.Type, func(t *testing.T) {
 			if notifTypes.Has(n.Type) {
+				typeTested[n.Type] = true
 				title, body, err := eu.RenderEveNotificationESI(ctx, n.Type, n.Text, n.Timestamp)
 				if assert.NoError(t, err) {
 					assert.False(t, title.IsEmpty())
@@ -129,5 +116,10 @@ func TestRenderCharacterNotification2(t *testing.T) {
 				}
 			}
 		})
+	}
+	for _, n := range notifTypes.ToSlice() {
+		if !typeTested[n] {
+			t.Fatalf("Failed to test supported notification type: %s", n)
+		}
 	}
 }

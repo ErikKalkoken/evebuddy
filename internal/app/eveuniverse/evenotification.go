@@ -15,11 +15,50 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	CorpAllBillMsg         = "CorpAllBillMsg"
+	OrbitalAttacked        = "OrbitalAttacked"
+	OrbitalReinforced      = "OrbitalReinforced"
+	OwnershipTransferred   = "OwnershipTransferred"
+	StructureAnchoring     = "StructureAnchoring"
+	StructureDestroyed     = "StructureDestroyed"
+	StructureFuelAlert     = "StructureFuelAlert"
+	StructureLostShields   = "StructureLostShields"
+	StructureLostArmor     = "StructureLostArmor"
+	StructureOnline        = "StructureOnline"
+	StructureWentLowPower  = "StructureWentLowPower"
+	StructureWentHighPower = "StructureWentHighPower"
+	StructureUnanchoring   = "StructureUnanchoring"
+	StructureUnderAttack   = "StructureUnderAttack"
+)
+
+var notificationTypes = []string{
+	CorpAllBillMsg,
+	OrbitalAttacked,
+	OrbitalReinforced,
+	OwnershipTransferred,
+	StructureAnchoring,
+	StructureDestroyed,
+	StructureFuelAlert,
+	StructureLostShields,
+	StructureLostArmor,
+	StructureOnline,
+	StructureWentLowPower,
+	StructureWentHighPower,
+	StructureUnanchoring,
+	StructureUnderAttack,
+}
+
+// NotificationTypesSupported returns a list of all supported notification types.
+func NotificationTypesSupported() []string {
+	return notificationTypes
+}
+
 // RenderEveNotificationESI renders title and body for a notification and return them.
 func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, type_, text string, timestamp time.Time) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
 	switch type_ {
-	case "CorpAllBillMsg":
+	case CorpAllBillMsg:
 		title.Set("Bill issued")
 		var data notificationtype.CorpAllBillMsgV2
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -48,7 +87,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		body.Set(out.String())
 
 	// Orbitals (aka POCOs)
-	case "OrbitalAttacked":
+	case OrbitalAttacked:
 		title.Set("Orbital under attack")
 		var data notification.OrbitalAttacked
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -76,7 +115,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		}
 		body.Set(out)
 
-	case "OrbitalReinforced":
+	case OrbitalReinforced:
 		title.Set("Orbital reinforced")
 		var data notification.OrbitalReinforced
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -106,7 +145,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		body.Set(out)
 
 	// Structure notifications
-	case "OwnershipTransferred":
+	case OwnershipTransferred:
 		title.Set("Ownership transferred")
 		var d struct {
 			characterID     int32
@@ -158,7 +197,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		)
 		body.Set(out)
 
-	case "StructureAnchoring":
+	case StructureAnchoring:
 		title.Set("Structure anchoring")
 		var data notification.StructureAnchoring
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -171,7 +210,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		out += "has started anchoring."
 		body.Set(out)
 
-	case "StructureUnderAttack":
+	case StructureUnderAttack:
 		title.Set("Structure under attack")
 		var data notification.StructureUnderAttack
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -199,7 +238,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		}
 		body.Set(out)
 
-	case "StructureLostShields":
+	case StructureLostShields:
 		title.Set("Structure lost shields")
 		var data notification.StructureLostShields
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -215,7 +254,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		)
 		body.Set(out)
 
-	case "StructureLostArmor":
+	case StructureLostArmor:
 		title.Set("Structure lost armor")
 		var data notification.StructureLostArmor
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -231,7 +270,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		)
 		body.Set(out)
 
-	case "StructureDestroyed":
+	case StructureDestroyed:
 		title.Set("Structure destroyed")
 		var data notification.StructureDestroyed
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -244,7 +283,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		out += "has been destroyed."
 		body.Set(out)
 
-	case "StructureWentLowPower":
+	case StructureWentLowPower:
 		title.Set("Structure went low power")
 		var data notification.StructureWentLowPower
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -257,7 +296,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		out += "went to low power mode."
 		body.Set(out)
 
-	case "StructureWentHighPower":
+	case StructureWentHighPower:
 		title.Set("Structure went high power")
 		var data notification.StructureWentHighPower
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -270,7 +309,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		out += "went to high power mode."
 		body.Set(out)
 
-	case "StructureOnline":
+	case StructureOnline:
 		title.Set("Structure online")
 		var data notification.StructureOnline
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -283,7 +322,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		out += "is now online."
 		body.Set(out)
 
-	case "StructureFuelAlert":
+	case StructureFuelAlert:
 		title.Set("Structure fuel alert")
 		var data notification.StructureFuelAlert
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -296,7 +335,7 @@ func (eus *EveUniverseService) RenderEveNotificationESI(ctx context.Context, typ
 		out += "is running out of fuel in 24hrs."
 		body.Set(out)
 
-	case "StructureUnanchoring":
+	case StructureUnanchoring:
 		title.Set("Structure unanchoring")
 		var data notification.StructureUnanchoring
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
