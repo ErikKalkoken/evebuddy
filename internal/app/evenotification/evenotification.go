@@ -42,7 +42,11 @@ func (s *EveNotificationService) RenderESI(ctx context.Context, type_, text stri
 		OrbitalReinforced:
 		return s.renderOrbitals(ctx, type_, text)
 
-	case MoonminingExtractionStarted:
+	case MoonminingExtractionStarted,
+		MoonminingExtractionFinished,
+		MoonminingAutomaticFracture,
+		MoonminingExtractionCancelled,
+		MoonminingLaserFired:
 		return s.renderMoonMining(ctx, type_, text)
 
 	case OwnershipTransferred,

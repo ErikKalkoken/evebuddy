@@ -29,12 +29,20 @@ const (
 	TowerAlertMsg                      = "TowerAlertMsg"
 	TowerResourceAlertMsg              = "TowerResourceAlertMsg"
 	MoonminingExtractionStarted        = "MoonminingExtractionStarted"
+	MoonminingExtractionFinished       = "MoonminingExtractionFinished"
+	MoonminingAutomaticFracture        = "MoonminingAutomaticFracture"
+	MoonminingExtractionCancelled      = "MoonminingExtractionCancelled"
+	MoonminingLaserFired               = "MoonminingLaserFired"
 )
 
 var notificationTypes = []string{
 	BillOutOfMoneyMsg,
 	BillPaidCorpAllMsg,
 	CharAppAcceptMsg,
+	MoonminingExtractionFinished,
+	MoonminingAutomaticFracture,
+	MoonminingExtractionCancelled,
+	MoonminingLaserFired,
 	CharAppRejectMsg,
 	CharAppWithdrawMsg,
 	CharLeftCorpMsg,
