@@ -116,7 +116,7 @@ func (a *notificationsArea) makeNotificationList() *widget.List {
 			}
 			n := a.notifications[id]
 			item := co.(*widgets.MailHeaderItem)
-			item.Set(n.Sender.Name, n.TitleOutput(), n.Timestamp, n.IsRead)
+			item.Set(n.Sender.Name, n.TitleDisplay(), n.Timestamp, n.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.detail.RemoveAll()
@@ -133,6 +133,8 @@ func (a *notificationsArea) refresh() {
 	a.detail.RemoveAll()
 	a.notifications = make([]*app.CharacterNotification, 0)
 	a.notificationList.Refresh()
+	a.notificationList.UnselectAll()
+	a.notificationsTop.SetText("")
 	var counts map[app.NotificationCategory]int
 	if characterID := a.ui.characterID(); characterID != 0 {
 		var err error
@@ -159,6 +161,7 @@ func (a *notificationsArea) refresh() {
 	categories = slices.Insert(categories, 0, unread)
 	a.categories = categories
 	a.categoryList.Refresh()
+	a.categoryList.UnselectAll()
 	a.categoryTop.SetText(fmt.Sprintf("%s total", humanize.Comma(int64(999))))
 }
 
@@ -198,7 +201,7 @@ func (a *notificationsArea) makeTopText() (string, widget.Importance) {
 
 func (a *notificationsArea) setDetails(n *app.CharacterNotification) {
 	a.detail.RemoveAll()
-	subject := widget.NewLabel(n.TitleFake())
+	subject := widget.NewLabel(n.TitleDisplay())
 	subject.TextStyle.Bold = true
 	a.detail.Add(subject)
 	header := fmt.Sprintf("From: %s\nSent: %s", n.Sender.Name, n.Timestamp.Format(app.TimeDefaultFormat))

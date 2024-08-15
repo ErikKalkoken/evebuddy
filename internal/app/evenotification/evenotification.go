@@ -40,7 +40,7 @@ func (s *EveNotificationService) RenderESI(ctx context.Context, type_, text stri
 
 	case OrbitalAttacked,
 		OrbitalReinforced:
-		return s.renderOrbitals(ctx, type_, text)
+		return s.renderOrbital(ctx, type_, text)
 
 	case MoonminingExtractionStarted,
 		MoonminingExtractionFinished,
@@ -60,11 +60,20 @@ func (s *EveNotificationService) RenderESI(ctx context.Context, type_, text stri
 		StructureUnderAttack,
 		StructureWentHighPower,
 		StructureWentLowPower:
-		return s.renderStructures(ctx, type_, text, timestamp)
+		return s.renderStructure(ctx, type_, text, timestamp)
 
 	case TowerAlertMsg,
 		TowerResourceAlertMsg:
 		return s.renderTower(ctx, type_, text)
+	case AllWarSurrenderMsg,
+		CorpWarSurrenderMsg,
+		WarAdopted,
+		WarDeclared,
+		WarHQRemovedFromSpace,
+		WarInherited,
+		WarInvalid,
+		WarRetractedByConcord:
+		return s.renderWar(ctx, type_, text)
 	}
 	return optional.Optional[string]{}, optional.Optional[string]{}, nil
 }

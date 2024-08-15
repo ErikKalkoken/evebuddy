@@ -371,7 +371,7 @@
     },
     {
         "notification_id": 1000000903,
-        "type": "WarAdopted",
+        "type": "WarAdopted ",
         "sender_id": 2902,
         "sender_type": "corporation",
         "timestamp": "2019-09-11T17:17:00Z",

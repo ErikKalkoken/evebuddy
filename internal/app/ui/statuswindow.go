@@ -19,6 +19,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 )
 
+const (
+	tickerDelay = 3 * time.Second
+)
+
 // An entity which has update sections, e.g. a character
 type sectionEntity struct {
 	id   int32
@@ -373,7 +377,7 @@ func (a *statusWindow) refreshDetailArea() {
 }
 
 func (a *statusWindow) startTicker(ctx context.Context) {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(tickerDelay)
 	go func() {
 		for {
 			select {

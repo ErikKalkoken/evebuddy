@@ -21,8 +21,8 @@ type CharacterNotification struct {
 	Type           string
 }
 
-// TitleOutput returns the rendered title when it exists, or else the fake tile.
-func (cn *CharacterNotification) TitleOutput() string {
+// TitleDisplay returns the rendered title when it exists, or else the fake tile.
+func (cn *CharacterNotification) TitleDisplay() string {
 	if cn.Title.IsEmpty() {
 		return cn.TitleFake()
 	}

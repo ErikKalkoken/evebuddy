@@ -96,14 +96,18 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_, te
 		if err != nil {
 			return title, body, err
 		}
-		cancelledBy, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.CancelledBy)
-		if err != nil {
-			return title, body, err
+		cancelledBy := ""
+		if data.CancelledBy != 0 {
+			x, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.CancelledBy)
+			if err != nil {
+				return title, body, err
+			}
+			cancelledBy = fmt.Sprintf(" by %s", makeEveEntityProfileLink(x))
 		}
-		out := fmt.Sprintf("An ongoing extraction for %s "+
-			"has been cancelled by %s.",
+		out := fmt.Sprintf(
+			"An ongoing extraction for %s has been cancelled%s.",
 			structureText,
-			makeEveEntityProfileLink(cancelledBy),
+			cancelledBy,
 		)
 		body.Set(out)
 
@@ -117,19 +121,24 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_, te
 		if err != nil {
 			return title, body, err
 		}
-		firedBy, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.FiredBy)
-		if err != nil {
-			return title, body, err
+		firedBy := ""
+		if data.FiredBy != 0 {
+			x, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.FiredBy)
+			if err != nil {
+				return title, body, err
+			}
+			firedBy = fmt.Sprintf("by %s ", makeEveEntityProfileLink(x))
 		}
+
 		ores, err := s.makeOreText(ctx, data.OreVolumeByType)
 		if err != nil {
 			return title, body, err
 		}
-		out := fmt.Sprintf("The moon drill fitted to %s"+
-			"has been fired by %s "+
-			"and the moon products are ready to be harvested.\n\n%s",
+		out := fmt.Sprintf(
+			"The moon drill fitted to %s has been fired %s"+
+				"and the moon products are ready to be harvested.\n\n%s",
 			structureText,
-			makeEveEntityProfileLink(firedBy),
+			firedBy,
 			ores,
 		)
 		body.Set(out)

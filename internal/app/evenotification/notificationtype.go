@@ -33,9 +33,25 @@ const (
 	MoonminingAutomaticFracture        = "MoonminingAutomaticFracture"
 	MoonminingExtractionCancelled      = "MoonminingExtractionCancelled"
 	MoonminingLaserFired               = "MoonminingLaserFired"
+	WarDeclared                        = "WarDeclared"
+	WarInherited                       = "WarInherited"
+	AllWarSurrenderMsg                 = "AllWarSurrenderMsg"
+	CorpWarSurrenderMsg                = "CorpWarSurrenderMsg"
+	WarHQRemovedFromSpace              = "WarHQRemovedFromSpace"
+	WarAdopted                         = "WarAdopted "
+	WarInvalid                         = "WarInvalid"
+	WarRetractedByConcord              = "WarRetractedByConcord"
 )
 
 var notificationTypes = []string{
+	WarRetractedByConcord,
+	WarDeclared,
+	WarInvalid,
+	WarAdopted,
+	WarHQRemovedFromSpace,
+	AllWarSurrenderMsg,
+	WarInherited,
+	CorpWarSurrenderMsg,
 	BillOutOfMoneyMsg,
 	BillPaidCorpAllMsg,
 	CharAppAcceptMsg,
