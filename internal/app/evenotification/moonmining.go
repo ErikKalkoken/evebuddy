@@ -1,12 +1,17 @@
 package evenotification
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"maps"
+	"slices"
+	"strings"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/antihax/goesi/notification"
+	"github.com/dustin/go-humanize"
 	"gopkg.in/yaml.v3"
 )
 
@@ -23,12 +28,17 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_, te
 		if err != nil {
 			return title, body, err
 		}
+		ores, err := s.makeOreText(ctx, data.OreVolumeByType)
+		if err != nil {
+			return title, body, err
+		}
 		out := fmt.Sprintf("A moon mining extraction has been started %s.\n\n"+
 			"The chunk will be ready on location at %s, "+
-			"and will fracture automatically on %s.\n",
+			"and will fracture automatically on %s.\n\n%s",
 			structureText,
 			fromLDAPTime(data.ReadyTime).Format(app.TimeDefaultFormat),
 			fromLDAPTime(data.AutoTime).Format(app.TimeDefaultFormat),
+			ores,
 		)
 		body.Set(out)
 
@@ -42,11 +52,16 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_, te
 		if err != nil {
 			return title, body, err
 		}
+		ores, err := s.makeOreText(ctx, data.OreVolumeByType)
+		if err != nil {
+			return title, body, err
+		}
 		out := fmt.Sprintf("The extraction %s "+
 			"is finished and the chunk is ready to be shot at.\n\n"+
-			"The chunk will automatically fracture on %s.",
+			"The chunk will automatically fracture on %s.\n\n%s",
 			structureText,
 			fromLDAPTime(data.AutoTime).Format(app.TimeDefaultFormat),
+			ores,
 		)
 		body.Set(out)
 
@@ -60,9 +75,14 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_, te
 		if err != nil {
 			return title, body, err
 		}
+		ores, err := s.makeOreText(ctx, data.OreVolumeByType)
+		if err != nil {
+			return title, body, err
+		}
 		out := fmt.Sprintf("The moon drill fitted to %s "+
-			"has automatically fired and the moon products are ready to be harvested.",
+			"has automatically fired and the moon products are ready to be harvested.\n\n%s",
 			structureText,
+			ores,
 		)
 		body.Set(out)
 
@@ -101,11 +121,16 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_, te
 		if err != nil {
 			return title, body, err
 		}
+		ores, err := s.makeOreText(ctx, data.OreVolumeByType)
+		if err != nil {
+			return title, body, err
+		}
 		out := fmt.Sprintf("The moon drill fitted to %s"+
 			"has been fired by %s "+
-			"and the moon products are ready to be harvested.",
+			"and the moon products are ready to be harvested.\n\n%s",
 			structureText,
 			makeEveEntityProfileLink(firedBy),
+			ores,
 		)
 		body.Set(out)
 	}
@@ -126,6 +151,34 @@ func (s *EveNotificationService) makeMoonMiningBaseText(ctx context.Context, moo
 	return out, nil
 }
 
-// func (s* EveNotificationService) makeOreText(ctx context.Context, ores map[int32]float64) (string, err){
-// 	entities, err := s.EveUniverseService.ToEveEntities(ctx, 0)
-// }
+type oreItem struct {
+	id     int32
+	name   string
+	volume float64
+}
+
+func (s *EveNotificationService) makeOreText(ctx context.Context, ores map[int32]float64) (string, error) {
+	ids := slices.Collect(maps.Keys(ores))
+	entities, err := s.EveUniverseService.ToEveEntities(ctx, ids)
+	if err != nil {
+		return "", err
+	}
+	items := make([]oreItem, 0)
+	for id, v := range ores {
+		i := oreItem{
+			id:     id,
+			name:   entities[id].Name,
+			volume: v,
+		}
+		items = append(items, i)
+	}
+	slices.SortFunc(items, func(a, b oreItem) int {
+		return cmp.Compare(a.name, b.name)
+	})
+	lines := make([]string, 0)
+	for i := range slices.Values(items) {
+		text := fmt.Sprintf("%s: %s m3", i.name, humanize.Comma(int64(i.volume)))
+		lines = append(lines, text)
+	}
+	return strings.Join(lines, "\n\n"), nil
+}

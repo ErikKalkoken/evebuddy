@@ -3,7 +3,7 @@
 name: CI/CD
 
 env:
-  GOVERSION: "1.22.4"
+  GOVERSION: "1.23"
   NAME: "evebuddy"
   FULLNAME: "EVE Buddy"
   FULLNAME2: "EVE_Buddy"  # for AppImage file, e.g. with spaces replaced by underscores
