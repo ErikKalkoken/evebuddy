@@ -191,7 +191,7 @@
         "sender_id": 2901,
         "sender_type": "corporation",
         "timestamp": "2019-09-21T18:53:00Z",
-        "text": "allStructureInfo:\n- - 1000000000001\n  - Hadozeko - 56 LARGE SHIPS CAP COMPONENTS T2\n  - 35825\nhour: 19\nnumStructures: 1\ntimestamp: 132141703753688216\nweekday: 255\n",
+        "text": "allStructureInfo:\n- - 1000000000001\n  - Hadozeko - 56 LARGE SHIPS CAP COMPONENTS T2\n  - 35835\nhour: 19\nnumStructures: 1\ntimestamp: 132141703753688216\nweekday: 255\n",
         "is_read": false
     },
     {

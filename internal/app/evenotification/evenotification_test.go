@@ -101,6 +101,8 @@ func TestRenderCharacterNotification2(t *testing.T) {
 	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 46301})
 	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 46302})
 	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 46303})
+	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 35894})
+	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 35835})
 	notifTypes := set.NewFromSlice(evenotification.NotificationTypesSupported())
 	typeTested := make(map[string]bool)
 	for _, n := range notifications {

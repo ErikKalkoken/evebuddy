@@ -1,8 +1,11 @@
 package evenotification
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"time"
 
@@ -81,9 +84,9 @@ func (s *EveNotificationService) renderStructure(ctx context.Context, type_, tex
 		out += "has started anchoring."
 		body.Set(out)
 
-	case StructureUnderAttack:
-		title.Set("Structure under attack")
-		var data notification.StructureUnderAttack
+	case StructureDestroyed:
+		title.Set("Structure destroyed")
+		var data notification.StructureDestroyed
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
@@ -91,22 +94,20 @@ func (s *EveNotificationService) renderStructure(ctx context.Context, type_, tex
 		if err != nil {
 			return title, body, err
 		}
-		attackChar, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.CharID)
+		out += "has been destroyed."
+		body.Set(out)
+
+	case StructureFuelAlert:
+		title.Set("Structure fuel alert")
+		var data notification.StructureFuelAlert
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		out, err := s.makeStructureBaseText(ctx, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
 		if err != nil {
 			return title, body, err
 		}
-		out += fmt.Sprintf("is under attack.\n\n"+
-			"Attacking Character: %s\n\n"+
-			"Attacking Corporation: %s",
-			makeEveEntityProfileLink(attackChar),
-			makeCorporationLink(data.CorpName),
-		)
-		if data.AllianceName != "" {
-			out += fmt.Sprintf(
-				"\n\nAttacking Alliance: %s",
-				makeAllianceLink(data.AllianceName),
-			)
-		}
+		out += "is running out of fuel in 24hrs."
 		body.Set(out)
 
 	case StructureLostShields:
@@ -141,45 +142,6 @@ func (s *EveNotificationService) renderStructure(ctx context.Context, type_, tex
 		)
 		body.Set(out)
 
-	case StructureDestroyed:
-		title.Set("Structure destroyed")
-		var data notification.StructureDestroyed
-		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-			return title, body, err
-		}
-		out, err := s.makeStructureBaseText(ctx, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
-		if err != nil {
-			return title, body, err
-		}
-		out += "has been destroyed."
-		body.Set(out)
-
-	case StructureWentLowPower:
-		title.Set("Structure went low power")
-		var data notification.StructureWentLowPower
-		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-			return title, body, err
-		}
-		out, err := s.makeStructureBaseText(ctx, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
-		if err != nil {
-			return title, body, err
-		}
-		out += "went to low power mode."
-		body.Set(out)
-
-	case StructureWentHighPower:
-		title.Set("Structure went high power")
-		var data notification.StructureWentHighPower
-		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-			return title, body, err
-		}
-		out, err := s.makeStructureBaseText(ctx, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
-		if err != nil {
-			return title, body, err
-		}
-		out += "went to high power mode."
-		body.Set(out)
-
 	case StructureOnline:
 		title.Set("Structure online")
 		var data notification.StructureOnline
@@ -193,17 +155,63 @@ func (s *EveNotificationService) renderStructure(ctx context.Context, type_, tex
 		out += "is now online."
 		body.Set(out)
 
-	case StructureFuelAlert:
-		title.Set("Structure fuel alert")
-		var data notification.StructureFuelAlert
+	case StructuresReinforcementChanged:
+		var data notification.StructuresReinforcementChanged
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
+		typeIDs := make([]int32, 0)
+		structures := make([]structureInfo, 0)
+		for _, x := range data.AllStructureInfo {
+			typeID := int32(x[2].(int))
+			s := structureInfo{
+				structureID: int64(x[0].(int)),
+				name:        x[1].(string),
+				typeID:      typeID,
+			}
+			structures = append(structures, s)
+			typeIDs = append(typeIDs, typeID)
+		}
+		slices.SortFunc(structures, func(a structureInfo, b structureInfo) int {
+			return cmp.Compare(a.name, b.name)
+		})
+		entities, err := s.EveUniverseService.ToEveEntities(ctx, typeIDs)
+		if err != nil {
+			return title, body, err
+		}
+		lines := make([]string, 0)
+		for _, s := range structures {
+			lines = append(lines, fmt.Sprintf("- %s (%s)", s.name, entities[s.typeID].Name))
+		}
+		title.Set("Structure reinforcement time changed")
+		out := fmt.Sprintf(
+			"Reinforcement hour has been changed to %d:00 "+
+				"for the following structures:\n\n%s",
+			data.Hour,
+			strings.Join(lines, "\n\n"),
+		)
+		body.Set(out)
+
+	case StructureServicesOffline:
+		var data notification.StructureServicesOffline
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		entities, err := s.EveUniverseService.ToEveEntities(ctx, data.ListOfServiceModuleIDs)
+		if err != nil {
+			return title, body, err
+		}
+		lines := make([]string, 0)
+		for e := range maps.Values(entities) {
+			lines = append(lines, fmt.Sprintf("- %s", e.Name))
+		}
+		slices.Sort(lines)
+		title.Set("Structure services are offline")
 		out, err := s.makeStructureBaseText(ctx, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
 		if err != nil {
 			return title, body, err
 		}
-		out += "is running out of fuel in 24hrs."
+		out += fmt.Sprintf("has all services off-lined.\n\n%s", strings.Join(lines, "\n\n"))
 		body.Set(out)
 
 	case StructureUnanchoring:
@@ -222,8 +230,69 @@ func (s *EveNotificationService) renderStructure(ctx context.Context, type_, tex
 			due.Format(app.TimeDefaultFormat),
 		)
 		body.Set(out)
+
+	case StructureUnderAttack:
+		title.Set("Structure under attack")
+		var data notification.StructureUnderAttack
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		out, err := s.makeStructureBaseText(ctx, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
+		if err != nil {
+			return title, body, err
+		}
+		attackChar, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.CharID)
+		if err != nil {
+			return title, body, err
+		}
+		out += fmt.Sprintf("is under attack.\n\n"+
+			"Attacking Character: %s\n\n"+
+			"Attacking Corporation: %s",
+			makeEveEntityProfileLink(attackChar),
+			makeCorporationLink(data.CorpName),
+		)
+		if data.AllianceName != "" {
+			out += fmt.Sprintf(
+				"\n\nAttacking Alliance: %s",
+				makeAllianceLink(data.AllianceName),
+			)
+		}
+		body.Set(out)
+
+	case StructureWentHighPower:
+		title.Set("Structure went high power")
+		var data notification.StructureWentHighPower
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		out, err := s.makeStructureBaseText(ctx, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
+		if err != nil {
+			return title, body, err
+		}
+		out += "went to high power mode."
+		body.Set(out)
+
+	case StructureWentLowPower:
+		title.Set("Structure went low power")
+		var data notification.StructureWentLowPower
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		out, err := s.makeStructureBaseText(ctx, data.StructureTypeID, data.SolarsystemID, data.StructureID, "")
+		if err != nil {
+			return title, body, err
+		}
+		out += "went to low power mode."
+		body.Set(out)
+
 	}
 	return title, body, nil
+}
+
+type structureInfo struct {
+	structureID int64
+	name        string
+	typeID      int32
 }
 
 func (s *EveNotificationService) makeStructureBaseText(ctx context.Context, typeID, solarSystemID int32, structureID int64, structureName string) (string, error) {
