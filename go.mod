@@ -32,6 +32,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.4.0 // indirect
 	github.com/rymdport/portal v0.2.3 // indirect
+	github.com/writeas/go-strip-markdown v2.0.1+incompatible // indirect
 )
 
 require (

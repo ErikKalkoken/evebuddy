@@ -6,6 +6,9 @@ import (
 	"log/slog"
 	"time"
 
+	"fyne.io/fyne/v2"
+	stripmd "github.com/writeas/go-strip-markdown"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 )
@@ -145,6 +148,7 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		if isShown && hasChanged {
 			u.notificationsArea.refresh()
 		}
+		go u.processNotifications(ctx, characterID)
 	case app.SectionSkills:
 		if isShown && hasChanged {
 			u.skillCatalogueArea.refresh()
@@ -165,5 +169,25 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))
+	}
+}
+
+func (u *ui) processNotifications(ctx context.Context, characterID int32) {
+	nn, err := u.CharacterService.ListCharacterNotificationsUnprocessed(ctx, characterID)
+	if err != nil {
+		slog.Error("Failed to fetch notifications for processing", "characterID", characterID, "error", err)
+		return
+	}
+	for _, n := range nn {
+		if n.Type != "dummy" {
+			continue
+		}
+		body := stripmd.Strip(n.Body.ValueOrZero())
+		x := fyne.NewNotification(n.Title.ValueOrZero(), body)
+		u.fyneApp.SendNotification(x)
+		if err := u.CharacterService.UpdateCharacterNotificationSetProcessed(ctx, n); err != nil {
+			slog.Error("Failed to set notification as processed", "characterID", characterID, "id", n.ID, "error", err)
+			return
+		}
 	}
 }

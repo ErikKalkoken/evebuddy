@@ -116,6 +116,7 @@ type CharacterNotification struct {
 	Timestamp      time.Time
 	Title          sql.NullString
 	TypeID         int64
+	IsProcessed    bool
 }
 
 type CharacterSectionStatus struct {

@@ -1,3 +1,4 @@
+// Package evenotification contains the EveNotification service.
 package evenotification
 
 import (
@@ -103,7 +104,7 @@ func NotificationTypesSupported() []string {
 	return notificationTypes
 }
 
-// EveNotificationService provides services to handle notifications
+// EveNotificationService is a service for rendering notifications.
 type EveNotificationService struct {
 	EveUniverseService *eveuniverse.EveUniverseService
 }

@@ -111,7 +111,7 @@ func (q *Queries) CreateNotificationType(ctx context.Context, name string) (int6
 }
 
 const getCharacterNotification = `-- name: GetCharacterNotification :one
-SELECT cn.id, cn.body, cn.character_id, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, ee.id, ee.category, ee.name, nt.id, nt.name
+SELECT cn.id, cn.body, cn.character_id, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.is_processed, ee.id, ee.category, ee.name, nt.id, nt.name
 FROM character_notifications cn
 JOIN eve_entities ee ON ee.id = cn.sender_id
 JOIN notification_types nt ON nt.id = cn.type_id
@@ -143,6 +143,7 @@ func (q *Queries) GetCharacterNotification(ctx context.Context, arg GetCharacter
 		&i.CharacterNotification.Timestamp,
 		&i.CharacterNotification.Title,
 		&i.CharacterNotification.TypeID,
+		&i.CharacterNotification.IsProcessed,
 		&i.EveEntity.ID,
 		&i.EveEntity.Category,
 		&i.EveEntity.Name,
@@ -195,7 +196,7 @@ func (q *Queries) ListCharacterNotificationIDs(ctx context.Context, characterID 
 }
 
 const listCharacterNotificationsTypes = `-- name: ListCharacterNotificationsTypes :many
-SELECT cn.id, cn.body, cn.character_id, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, ee.id, ee.category, ee.name, nt.id, nt.name
+SELECT cn.id, cn.body, cn.character_id, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.is_processed, ee.id, ee.category, ee.name, nt.id, nt.name
 FROM character_notifications cn
 JOIN eve_entities ee ON ee.id = cn.sender_id
 JOIN notification_types nt ON nt.id = cn.type_id
@@ -246,6 +247,63 @@ func (q *Queries) ListCharacterNotificationsTypes(ctx context.Context, arg ListC
 			&i.CharacterNotification.Timestamp,
 			&i.CharacterNotification.Title,
 			&i.CharacterNotification.TypeID,
+			&i.CharacterNotification.IsProcessed,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+			&i.NotificationType.ID,
+			&i.NotificationType.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterNotificationsUnprocessed = `-- name: ListCharacterNotificationsUnprocessed :many
+SELECT cn.id, cn.body, cn.character_id, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.is_processed, ee.id, ee.category, ee.name, nt.id, nt.name
+FROM character_notifications cn
+JOIN eve_entities ee ON ee.id = cn.sender_id
+JOIN notification_types nt ON nt.id = cn.type_id
+WHERE character_id = ?
+AND cn.is_processed IS FALSE
+ORDER BY timestamp DESC
+`
+
+type ListCharacterNotificationsUnprocessedRow struct {
+	CharacterNotification CharacterNotification
+	EveEntity             EveEntity
+	NotificationType      NotificationType
+}
+
+func (q *Queries) ListCharacterNotificationsUnprocessed(ctx context.Context, characterID int64) ([]ListCharacterNotificationsUnprocessedRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterNotificationsUnprocessed, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterNotificationsUnprocessedRow
+	for rows.Next() {
+		var i ListCharacterNotificationsUnprocessedRow
+		if err := rows.Scan(
+			&i.CharacterNotification.ID,
+			&i.CharacterNotification.Body,
+			&i.CharacterNotification.CharacterID,
+			&i.CharacterNotification.IsRead,
+			&i.CharacterNotification.NotificationID,
+			&i.CharacterNotification.SenderID,
+			&i.CharacterNotification.Text,
+			&i.CharacterNotification.Timestamp,
+			&i.CharacterNotification.Title,
+			&i.CharacterNotification.TypeID,
+			&i.CharacterNotification.IsProcessed,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
@@ -266,12 +324,14 @@ func (q *Queries) ListCharacterNotificationsTypes(ctx context.Context, arg ListC
 }
 
 const listCharacterNotificationsUnread = `-- name: ListCharacterNotificationsUnread :many
-SELECT cn.id, cn.body, cn.character_id, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, ee.id, ee.category, ee.name, nt.id, nt.name
+SELECT cn.id, cn.body, cn.character_id, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.is_processed, ee.id, ee.category, ee.name, nt.id, nt.name
 FROM character_notifications cn
 JOIN eve_entities ee ON ee.id = cn.sender_id
 JOIN notification_types nt ON nt.id = cn.type_id
 WHERE character_id = ?
 AND cn.is_read IS FALSE
+AND title IS NOT NULL
+AND body IS NOT NULL
 ORDER BY timestamp DESC
 `
 
@@ -301,6 +361,7 @@ func (q *Queries) ListCharacterNotificationsUnread(ctx context.Context, characte
 			&i.CharacterNotification.Timestamp,
 			&i.CharacterNotification.Title,
 			&i.CharacterNotification.TypeID,
+			&i.CharacterNotification.IsProcessed,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
@@ -343,5 +404,17 @@ func (q *Queries) UpdateCharacterNotification(ctx context.Context, arg UpdateCha
 		arg.IsRead,
 		arg.Title,
 	)
+	return err
+}
+
+const updateCharacterNotificationSetProcessed = `-- name: UpdateCharacterNotificationSetProcessed :exec
+UPDATE character_notifications
+SET
+    is_processed = TRUE
+WHERE id = ?1
+`
+
+func (q *Queries) UpdateCharacterNotificationSetProcessed(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterNotificationSetProcessed, id)
 	return err
 }

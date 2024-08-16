@@ -31,6 +31,14 @@ func (s *CharacterService) ListCharacterNotificationsUnread(ctx context.Context,
 	return s.st.ListCharacterNotificationsUnread(ctx, characterID)
 }
 
+func (s *CharacterService) ListCharacterNotificationsUnprocessed(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
+	return s.st.ListCharacterNotificationsUnprocessed(ctx, characterID)
+}
+
+func (s *CharacterService) UpdateCharacterNotificationSetProcessed(ctx context.Context, n *app.CharacterNotification) error {
+	return s.st.UpdateCharacterNotificationSetProcessed(ctx, n.ID)
+}
+
 func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionNotifications {
 		panic("called with wrong section")

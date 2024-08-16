@@ -56,6 +56,18 @@ func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, charact
 	return ee, nil
 }
 
+func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
+	rows, err := st.q.ListCharacterNotificationsUnprocessed(ctx, int64(characterID))
+	if err != nil {
+		return nil, err
+	}
+	ee := make([]*app.CharacterNotification, len(rows))
+	for i, row := range rows {
+		ee[i] = characterNotificationFromDBModel(row.CharacterNotification, row.EveEntity, row.NotificationType)
+	}
+	return ee, nil
+}
+
 func characterNotificationFromDBModel(o queries.CharacterNotification, sender queries.EveEntity, type_ queries.NotificationType) *app.CharacterNotification {
 	o2 := &app.CharacterNotification{
 		ID:             o.ID,
@@ -157,4 +169,11 @@ func (st *Storage) CalcCharacterNotificationUnreadCounts(ctx context.Context, ch
 		x[r.Name] = int(r.Sum.Float64)
 	}
 	return x, nil
+}
+
+func (st *Storage) UpdateCharacterNotificationSetProcessed(ctx context.Context, id int64) error {
+	if err := st.q.UpdateCharacterNotificationSetProcessed(ctx, id); err != nil {
+		return fmt.Errorf("failed to set notification PK %d as notified: %w", id, err)
+	}
+	return nil
 }

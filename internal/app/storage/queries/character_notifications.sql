@@ -42,7 +42,19 @@ JOIN eve_entities ee ON ee.id = cn.sender_id
 JOIN notification_types nt ON nt.id = cn.type_id
 WHERE character_id = ?
 AND cn.is_read IS FALSE
+AND title IS NOT NULL
+AND body IS NOT NULL
 ORDER BY timestamp DESC;
+
+-- name: ListCharacterNotificationsUnprocessed :many
+SELECT sqlc.embed(cn), sqlc.embed(ee), sqlc.embed(nt)
+FROM character_notifications cn
+JOIN eve_entities ee ON ee.id = cn.sender_id
+JOIN notification_types nt ON nt.id = cn.type_id
+WHERE character_id = ?
+AND cn.is_processed IS FALSE
+ORDER BY timestamp DESC;
+
 
 -- name: CalcCharacterNotificationUnreadCounts :many
 SELECT cn.type_id, nt.name, SUM(NOT cn.is_read)
@@ -57,6 +69,12 @@ SET
     body = ?2,
     is_read = ?3,
     title = ?4
+WHERE id = ?1;
+
+-- name: UpdateCharacterNotificationSetProcessed :exec
+UPDATE character_notifications
+SET
+    is_processed = TRUE
 WHERE id = ?1;
 
 -- name: CreateNotificationType :one

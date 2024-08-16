@@ -28,6 +28,7 @@ EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) player
 - Wealth: Charts showing wealth distribution across all characters
 - Assets search: Full asset search across all your characters
 - Can minimize to system tray and show indicator for new mail
+- Receive desktop notifications about important communications (e.g. Structure gets attacked)
 
 ## Screenshot
 
