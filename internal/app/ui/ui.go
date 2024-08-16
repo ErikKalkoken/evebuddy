@@ -64,6 +64,7 @@ type ui struct {
 	skillqueueArea        *skillqueueArea
 	shipsArea             *shipsArea
 	statusWindow          fyne.Window
+	settingsWindow        fyne.Window
 	themeName             string
 	walletJournalArea     *walletJournalArea
 	walletTransactionArea *walletTransactionArea

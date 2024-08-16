@@ -7,9 +7,12 @@ import (
 	"strconv"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/dustin/go-humanize"
 )
 
@@ -32,28 +35,46 @@ const (
 	themeLight = "Light"
 )
 
-func (u *ui) showSettingsDialog() {
-	d, err := makeSettingsDialog(u)
-	if err != nil {
-		t := "Failed to open the settings dialog"
-		slog.Error(t, "err", err)
-		u.showErrorDialog(t, err)
-	} else {
-		d.Show()
-	}
+type settingsWindow struct {
+	content fyne.CanvasObject
+	ui      *ui
+	window  fyne.Window
 }
 
-func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
-	maxMails := u.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault)
-	maxMailsEntry := widget.NewEntry()
-	maxMailsEntry.SetText(strconv.Itoa(maxMails))
-	maxMailsEntry.Validator = newPositiveNumberValidator()
+func (u *ui) showSettingsWindow() {
+	if u.settingsWindow != nil {
+		u.settingsWindow.Show()
+		return
+	}
+	sw, err := u.newSettingsWindow()
+	if err != nil {
+		panic(err)
+	}
+	w := u.fyneApp.NewWindow(u.makeWindowTitle("Settings"))
+	w.SetContent(sw.content)
+	w.Resize(fyne.Size{Width: 1100, Height: 500})
+	w.Show()
+	w.SetCloseIntercept(func() {
+		u.settingsWindow = nil
+		w.Hide()
+	})
+	u.settingsWindow = w
+	sw.window = w
+}
 
-	maxTransactions := u.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
-	maxTransactionsEntry := widget.NewEntry()
-	maxTransactionsEntry.SetText(strconv.Itoa(maxTransactions))
-	maxTransactionsEntry.Validator = newPositiveNumberValidator()
+func (u *ui) newSettingsWindow() (*settingsWindow, error) {
+	sw := &settingsWindow{ui: u}
+	tabs := container.NewAppTabs(
+		container.NewTabItem("General", sw.makeGeneralPage()),
+		container.NewTabItem("Eve Online", sw.makeEVEOnlinePage()),
+		container.NewTabItem("Notifications", sw.makeNotificationPage()),
+	)
+	tabs.SetTabLocation(container.TabLocationLeading)
+	sw.content = tabs
+	return sw, nil
+}
 
+func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 	clearBtn := widget.NewButton("Clear NOW", func() {
 		d := dialog.NewConfirm(
 			"Clear image cache",
@@ -62,15 +83,15 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 				if !confirmed {
 					return
 				}
-				count, err := u.EveImageService.ClearCache()
+				count, err := w.ui.EveImageService.ClearCache()
 				if err != nil {
 					slog.Error(err.Error())
-					u.showErrorDialog("Failed to clear image cache", err)
+					w.ui.showErrorDialog("Failed to clear image cache", err)
 				} else {
 					slog.Info("Cleared images cache", "count", count)
 				}
 			},
-			u.window,
+			w.window,
 		)
 		d.Show()
 	})
@@ -78,11 +99,11 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	themeRadio := widget.NewRadioGroup(
 		[]string{themeAuto, themeDark, themeLight}, func(s string) {},
 	)
-	name := u.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault)
+	name := w.ui.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault)
 	themeRadio.SetSelected(name)
 
 	var cacheSize string
-	s, err := u.EveImageService.Size()
+	s, err := w.ui.EveImageService.Size()
 	if err != nil {
 		cacheSize = "?"
 	} else {
@@ -90,23 +111,12 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 	}
 	cacheHintText := fmt.Sprintf("Clear the local image cache (%s)", cacheSize)
 
-	sysTrayEnabled := u.fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, true)
+	sysTrayEnabled := w.ui.fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, true)
 	sysTrayCheck := widget.NewCheck("Show in system tray", nil)
 	sysTrayCheck.SetChecked(sysTrayEnabled)
 
-	var d *dialog.CustomDialog
 	form := &widget.Form{
 		Items: []*widget.FormItem{
-			{
-				Text:     "Maximum mails",
-				Widget:   maxMailsEntry,
-				HintText: "Maximum number of mails downloaded. 0 = unlimited.",
-			},
-			{
-				Text:     "Maximum wallet transaction",
-				Widget:   maxTransactionsEntry,
-				HintText: "Maximum number of wallet transaction downloaded. 0 = unlimited.",
-			},
 			{
 				Text:     "Theme",
 				Widget:   themeRadio,
@@ -119,8 +129,44 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 			},
 			{
 				Text:     "Image cache",
-				Widget:   clearBtn,
+				Widget:   container.NewHBox(clearBtn),
 				HintText: cacheHintText,
+			},
+		},
+		OnSubmit: func() {
+			w.ui.themeSet(themeRadio.Selected)
+			w.ui.fyneApp.Preferences().SetString(settingTheme, themeRadio.Selected)
+			w.ui.fyneApp.Preferences().SetBool(settingSysTrayEnabled, sysTrayCheck.Checked)
+		},
+		OnCancel: func() {
+			w.window.Hide()
+		},
+	}
+	return makePage("General settings", form)
+}
+
+func (w *settingsWindow) makeEVEOnlinePage() fyne.CanvasObject {
+	maxMails := w.ui.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault)
+	maxMailsEntry := widget.NewEntry()
+	maxMailsEntry.SetText(strconv.Itoa(maxMails))
+	maxMailsEntry.Validator = newPositiveNumberValidator()
+
+	maxTransactions := w.ui.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
+	maxTransactionsEntry := widget.NewEntry()
+	maxTransactionsEntry.SetText(strconv.Itoa(maxTransactions))
+	maxTransactionsEntry.Validator = newPositiveNumberValidator()
+
+	form := &widget.Form{
+		Items: []*widget.FormItem{
+			{
+				Text:     "Maximum mails",
+				Widget:   maxMailsEntry,
+				HintText: "Maximum number of mails downloaded. 0 = unlimited.",
+			},
+			{
+				Text:     "Maximum wallet transaction",
+				Widget:   maxTransactionsEntry,
+				HintText: "Maximum number of wallet transaction downloaded. 0 = unlimited.",
 			},
 		},
 		OnSubmit: func() {
@@ -128,34 +174,52 @@ func makeSettingsDialog(u *ui) (*dialog.CustomDialog, error) {
 			if err != nil {
 				return
 			}
-			u.fyneApp.Preferences().SetInt(settingMaxMails, maxMails)
-			u.themeSet(themeRadio.Selected)
-			u.fyneApp.Preferences().SetString(settingTheme, themeRadio.Selected)
-			u.fyneApp.Preferences().SetBool(settingSysTrayEnabled, sysTrayCheck.Checked)
-			d.Hide()
+			w.ui.fyneApp.Preferences().SetInt(settingMaxMails, maxMails)
+			maxTransactions, err := strconv.Atoi(maxTransactionsEntry.Text)
+			if err != nil {
+				return
+			}
+			w.ui.fyneApp.Preferences().SetInt(settingMaxWalletTransactions, maxTransactions)
 		},
 		OnCancel: func() {
-			d.Hide()
+			w.window.Hide()
 		},
 	}
-	d = dialog.NewCustomWithoutButtons("Settings", form, u.window)
-	return d, nil
+	return makePage("Eve Online settings", form)
 }
 
-// // settingsArea is the UI area for settings.
-// type settingsArea struct {
-// 	content *fyne.Container
-// 	ui      *ui
-// }
+func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
+	notificationEnabled := widget.NewCheck("Notification enabled", nil)
 
-// func (u *ui) newSettingsArea() *settingsArea {
-// 	content := container.NewVBox()
-// 	m := &settingsArea{
-// 		ui:      u,
-// 		content: content,
-// 	}
-// 	return m
-// }
+	form := &widget.Form{
+		Items: []*widget.FormItem{
+			{
+				Text:     "General",
+				Widget:   notificationEnabled,
+				HintText: "Wether notifications are enabled",
+			},
+		},
+		OnSubmit: func() {
+			// tbd
+		},
+		OnCancel: func() {
+			w.window.Hide()
+		},
+	}
+
+	categories := make(map[app.NotificationCategory][]string)
+	for _, n := range evenotification.NotificationTypesSupported() {
+		c := app.Notification2category[n]
+		categories[c] = append(categories[c], n)
+	}
+	for c, nn := range categories {
+
+		x := widget.NewCheckGroup(nn, nil)
+		form.Append(app.NotificationCategoryNames[c], x)
+	}
+
+	return makePage("Eve Online settings", form)
+}
 
 // newPositiveNumberValidator ensures entry is a positive number (incl. zero).
 func newPositiveNumberValidator() fyne.StringValidator {
@@ -170,4 +234,17 @@ func newPositiveNumberValidator() fyne.StringValidator {
 		}
 		return nil
 	}
+}
+
+func makePage(title string, content fyne.CanvasObject) fyne.CanvasObject {
+	l := widget.NewLabel(title)
+	l.Importance = widget.HighImportance
+	l.TextStyle.Bold = true
+	return container.NewBorder(
+		container.NewVBox(l, widget.NewSeparator()),
+		nil,
+		nil,
+		nil,
+		container.NewVScroll(content),
+	)
 }

@@ -11,7 +11,7 @@ import (
 func makeMenu(u *ui) (*fyne.MainMenu, *fyne.Menu) {
 	fileMenu := fyne.NewMenu("File",
 		fyne.NewMenuItem("Settings...", func() {
-			u.showSettingsDialog()
+			u.showSettingsWindow()
 		}),
 	)
 	switchItem := fyne.NewMenuItem("Switch", nil)

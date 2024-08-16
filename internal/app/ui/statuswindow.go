@@ -38,15 +38,16 @@ type statusWindow struct {
 	entityList        *widget.List
 	entities          []sectionEntity
 	charactersTop     *widget.Label
-	content           fyne.CanvasObject
 	details           *fyne.Container
 	sectionGrid       *widget.GridWrap
 	selectedEntityID  int
 	selectedSectionID int
 	sections          []app.SectionStatus
 	sectionsTop       *widget.Label
-	window            fyne.Window
-	ui                *ui
+
+	content fyne.CanvasObject
+	ui      *ui
+	window  fyne.Window
 
 	mu sync.Mutex
 }
