@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/pkg/optional"
 )
 
 const (

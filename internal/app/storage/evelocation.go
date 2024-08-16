@@ -9,8 +9,8 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/pkg/optional"
+	"github.com/ErikKalkoken/evebuddy/pkg/set"
 )
 
 type UpdateOrCreateLocationParams struct {

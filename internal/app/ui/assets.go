@@ -18,7 +18,7 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/pkg/optional"
 	"github.com/dustin/go-humanize"
 )
 

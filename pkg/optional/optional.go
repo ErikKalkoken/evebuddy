@@ -1,6 +1,6 @@
-// Package optional provides type safe optional variables.
+// Package optional provides the generic type Optional, which represents an optional value.
 //
-// It also provides the ability to convert optionals to and from sql Null types.
+// It also includes helpers to convert variables of sql.NullX type to Optional type and vice versa.
 package optional
 
 import (
@@ -30,17 +30,6 @@ func New[T any](v T) Optional[T] {
 	return o
 }
 
-// IsEmpty reports wether an Optional is empty.
-func (o Optional[T]) IsEmpty() bool {
-	return !o.isPresent
-}
-
-// Set sets a new value.
-func (o *Optional[T]) Set(v T) {
-	o.value = v
-	o.isPresent = true
-}
-
 // Clear removes any value.
 func (o *Optional[T]) Clear() {
 	var z T
@@ -48,12 +37,9 @@ func (o *Optional[T]) Clear() {
 	o.isPresent = false
 }
 
-// String returns a string representation of an Optional.
-func (o Optional[T]) String() string {
-	if o.IsEmpty() {
-		return "<empty>"
-	}
-	return fmt.Sprint(o.value)
+// IsEmpty reports wether an Optional is empty.
+func (o Optional[T]) IsEmpty() bool {
+	return !o.isPresent
 }
 
 // MustValue returns the value of an Optional or panics if it is empty.
@@ -62,6 +48,20 @@ func (o Optional[T]) MustValue() T {
 		panic(ErrIsEmpty)
 	}
 	return o.value
+}
+
+// Set sets a new value.
+func (o *Optional[T]) Set(v T) {
+	o.value = v
+	o.isPresent = true
+}
+
+// String returns a string representation of an Optional.
+func (o Optional[T]) String() string {
+	if o.IsEmpty() {
+		return "<empty>"
+	}
+	return fmt.Sprint(o.value)
 }
 
 // Value returns the value of an Optional.

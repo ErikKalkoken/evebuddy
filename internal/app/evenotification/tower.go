@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/pkg/optional"
 	"github.com/antihax/goesi/notification"
 	"github.com/dustin/go-humanize"
 	"gopkg.in/yaml.v3"

@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/pkg/optional"
 )
 
 type EveTypeVariant uint

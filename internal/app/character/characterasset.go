@@ -6,13 +6,14 @@ import (
 	"math"
 	"net/http"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/pkg/optional"
+	"github.com/ErikKalkoken/evebuddy/pkg/set"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/pkg/optional"
 	"github.com/stretchr/testify/assert"
 )
 

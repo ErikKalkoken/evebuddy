@@ -19,6 +19,7 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/stretchr/testify v1.9.0
 	github.com/wcharczuk/go-chart/v2 v2.1.1
+	github.com/writeas/go-strip-markdown v2.0.1+incompatible
 	golang.org/x/exp v0.0.0-20240707233637-46b078467d37
 	golang.org/x/text v0.16.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -32,7 +33,6 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.4.0 // indirect
 	github.com/rymdport/portal v0.2.3 // indirect
-	github.com/writeas/go-strip-markdown v2.0.1+incompatible // indirect
 )
 
 require (

@@ -15,7 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/pkg/optional"
 )
 
 // skillqueueArea is the UI area that shows the skillqueue

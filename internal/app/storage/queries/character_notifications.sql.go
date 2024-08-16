@@ -274,6 +274,8 @@ JOIN eve_entities ee ON ee.id = cn.sender_id
 JOIN notification_types nt ON nt.id = cn.type_id
 WHERE character_id = ?
 AND cn.is_processed IS FALSE
+AND title IS NOT NULL
+AND body IS NOT NULL
 ORDER BY timestamp DESC
 `
 
@@ -330,8 +332,6 @@ JOIN eve_entities ee ON ee.id = cn.sender_id
 JOIN notification_types nt ON nt.id = cn.type_id
 WHERE character_id = ?
 AND cn.is_read IS FALSE
-AND title IS NOT NULL
-AND body IS NOT NULL
 ORDER BY timestamp DESC
 `
 
