@@ -1,11 +1,9 @@
-main.go.bak
 .vscode/
 *.sqlite
 .temp/
 temp/
 *.sqlite-shm
 *.sqlite-wal
-evebuddy
 EVE Buddy.tar.xz
 *.log
 evebuddy.exe
