@@ -11,6 +11,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
+	"github.com/ErikKalkoken/evebuddy/pkg/set"
 )
 
 const (
@@ -148,7 +149,9 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		if isShown && hasChanged {
 			u.notificationsArea.refresh()
 		}
-		go u.processNotifications(ctx, characterID)
+		if u.fyneApp.Preferences().Bool(settingNotificationsEnabled) {
+			go u.processNotifications(ctx, characterID)
+		}
 	case app.SectionSkills:
 		if isShown && hasChanged {
 			u.skillCatalogueArea.refresh()
@@ -178,8 +181,9 @@ func (u *ui) processNotifications(ctx context.Context, characterID int32) {
 		slog.Error("Failed to fetch notifications for processing", "characterID", characterID, "error", err)
 		return
 	}
+	typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 	for _, n := range nn {
-		if n.Type != "dummy" {
+		if !typesEnabled.Has(n.Type) {
 			continue
 		}
 		body := stripmd.Strip(n.Body.ValueOrZero())

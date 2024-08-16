@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -13,19 +14,22 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
+	"github.com/ErikKalkoken/evebuddy/pkg/set"
 	"github.com/dustin/go-humanize"
 )
 
 // Setting keys
 const (
-	settingLastCharacterID              = "settings-lastCharacterID"
-	settingMaxMails                     = "settings-maxMails"
+	settingLastCharacterID              = "settingLastCharacterID"
+	settingMaxMails                     = "settingMaxMails"
 	settingMaxMailsDefault              = 1_000
-	settingMaxWalletTransactions        = "settings-maxWalletTransactions"
+	settingMaxWalletTransactions        = "settingMaxWalletTransactions"
 	settingMaxWalletTransactionsDefault = 10_000
-	settingTheme                        = "settings-theme"
+	settingTheme                        = "settingTheme"
 	settingThemeDefault                 = themeAuto
-	settingSysTrayEnabled               = "settings-sysTrayEnabled"
+	settingSysTrayEnabled               = "settingSysTrayEnabled"
+	settingNotificationsEnabled         = "settingNotificationsEnabled"
+	settingNotificationsTypesEnabled    = "settingNotificationsTypesEnabled"
 )
 
 // Themes
@@ -189,35 +193,50 @@ func (w *settingsWindow) makeEVEOnlinePage() fyne.CanvasObject {
 }
 
 func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
-	notificationEnabled := widget.NewCheck("Notification enabled", nil)
+	items := make([]*widget.FormItem, 0)
 
-	form := &widget.Form{
-		Items: []*widget.FormItem{
-			{
-				Text:     "General",
-				Widget:   notificationEnabled,
-				HintText: "Wether notifications are enabled",
-			},
-		},
-		OnSubmit: func() {
-			// tbd
-		},
-		OnCancel: func() {
-			w.window.Hide()
-		},
-	}
+	notificationsEnabledCheck := widget.NewCheck("Notifications enabled", nil)
+	notificationsEnabledCheck.Checked = w.ui.fyneApp.Preferences().Bool(settingNotificationsEnabled)
+	items = append(items, &widget.FormItem{
+		Text:     "Master",
+		Widget:   notificationsEnabledCheck,
+		HintText: "Wether notifications are enabled",
+	})
 
 	categories := make(map[app.NotificationCategory][]string)
 	for _, n := range evenotification.NotificationTypesSupported() {
 		c := app.Notification2category[n]
 		categories[c] = append(categories[c], n)
 	}
-	for c, nn := range categories {
-
-		x := widget.NewCheckGroup(nn, nil)
-		form.Append(app.NotificationCategoryNames[c], x)
+	typesEnabled := set.NewFromSlice(w.ui.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
+	groups := make([]*widget.CheckGroup, 0)
+	for c, nts := range categories {
+		selected := make([]string, 0)
+		for _, nt := range nts {
+			if typesEnabled.Has(nt) {
+				selected = append(selected, nt)
+			}
+		}
+		cg := widget.NewCheckGroup(nts, nil)
+		cg.Selected = selected
+		items = append(items, widget.NewFormItem(app.NotificationCategoryNames[c], cg))
+		groups = append(groups, cg)
 	}
 
+	form := &widget.Form{
+		Items: items,
+		OnSubmit: func() {
+			w.ui.fyneApp.Preferences().SetBool(settingNotificationsEnabled, notificationsEnabledCheck.Checked)
+			enabled := make([]string, 0)
+			for _, cg := range groups {
+				enabled = slices.Concat(enabled, cg.Selected)
+			}
+			w.ui.fyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, enabled)
+		},
+		OnCancel: func() {
+			w.window.Hide()
+		},
+	}
 	return makePage("Eve Online settings", form)
 }
 
