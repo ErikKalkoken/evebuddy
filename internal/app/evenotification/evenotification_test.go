@@ -103,12 +103,13 @@ func TestRenderCharacterNotification2(t *testing.T) {
 	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 46303})
 	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 35894})
 	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 35835})
-	notifTypes := set.NewFromSlice(evenotification.NotificationTypesSupported())
-	typeTested := make(map[string]bool)
+	notifTypes := set.NewFromSlice(evenotification.SupportedTypes())
+	typeTested := make(map[evenotification.Type]bool)
 	for _, n := range notifications {
 		t.Run("should render notification type "+n.Type, func(t *testing.T) {
-			if notifTypes.Has(n.Type) {
-				typeTested[n.Type] = true
+			t2 := evenotification.Type(n.Type)
+			if notifTypes.Has(t2) {
+				typeTested[t2] = true
 				title, body, err := en.RenderESI(ctx, n.Type, n.Text, n.Timestamp)
 				if assert.NoError(t, err) {
 					assert.False(t, title.IsEmpty())

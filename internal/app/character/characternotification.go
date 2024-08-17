@@ -5,26 +5,31 @@ import (
 	"log/slog"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/pkg/set"
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) CalcCharacterNotificationUnreadCounts(ctx context.Context, characterID int32) (map[app.NotificationCategory]int, error) {
+func (s *CharacterService) CalcCharacterNotificationUnreadCounts(ctx context.Context, characterID int32) (map[evenotification.Category]int, error) {
 	types, err := s.st.CalcCharacterNotificationUnreadCounts(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	categories := make(map[app.NotificationCategory]int)
+	categories := make(map[evenotification.Category]int)
 	for name, count := range types {
-		c := app.Notification2category[name]
+		c := evenotification.Type2category[evenotification.Type(name)]
 		categories[c] += count
 	}
 	return categories, nil
 }
 
-func (s *CharacterService) ListCharacterNotificationsTypes(ctx context.Context, characterID int32, types []string) ([]*app.CharacterNotification, error) {
-	return s.st.ListCharacterNotificationsTypes(ctx, characterID, types)
+func (s *CharacterService) ListCharacterNotificationsTypes(ctx context.Context, characterID int32, types []evenotification.Type) ([]*app.CharacterNotification, error) {
+	t2 := make([]string, len(types))
+	for i, v := range types {
+		t2[i] = string(v)
+	}
+	return s.st.ListCharacterNotificationsTypes(ctx, characterID, t2)
 }
 
 func (s *CharacterService) ListCharacterNotificationsUnread(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {

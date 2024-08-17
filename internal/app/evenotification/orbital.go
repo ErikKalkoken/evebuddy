@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func (s *EveNotificationService) renderOrbital(ctx context.Context, type_, text string) (optional.Optional[string], optional.Optional[string], error) {
+func (s *EveNotificationService) renderOrbital(ctx context.Context, type_ Type, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
 	switch type_ {
 	case OrbitalAttacked:

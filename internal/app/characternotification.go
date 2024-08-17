@@ -19,7 +19,7 @@ type CharacterNotification struct {
 	Text           string
 	Timestamp      time.Time
 	Title          optional.Optional[string]
-	Type           string
+	Type           string // This is a string, so that new notification types do not break it
 }
 
 // TitleDisplay returns the rendered title when it exists, or else the fake tile.

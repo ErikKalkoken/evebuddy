@@ -12,14 +12,15 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/dustin/go-humanize"
 )
 
 type notificationCategory struct {
-	id     app.NotificationCategory
-	name   string
-	unread int
+	category evenotification.Category
+	name     string
+	unread   int
 }
 
 // notificationsArea is the UI area that shows the skillqueue
@@ -94,7 +95,7 @@ func (a *notificationsArea) makeCategoryList() *widget.List {
 		}
 		o := a.categories[id]
 		a.detail.RemoveAll()
-		if err := a.setNotifications(o.id); err != nil {
+		if err := a.setNotifications(o.category); err != nil {
 			slog.Error("Failed to load notifications", "err", err)
 			l.UnselectAll()
 		}
@@ -135,7 +136,7 @@ func (a *notificationsArea) refresh() {
 	a.notificationList.Refresh()
 	a.notificationList.UnselectAll()
 	a.notificationsTop.SetText("")
-	var counts map[app.NotificationCategory]int
+	var counts map[evenotification.Category]int
 	if characterID := a.ui.characterID(); characterID != 0 {
 		var err error
 		counts, err = a.ui.CharacterService.CalcCharacterNotificationUnreadCounts(context.TODO(), characterID)
@@ -145,14 +146,14 @@ func (a *notificationsArea) refresh() {
 	}
 	categories := make([]notificationCategory, 0)
 	var unreadTotal int
-	for id, name := range app.NotificationCategoryNames {
+	for _, c := range evenotification.Categories() {
 		nc := notificationCategory{
-			id:     id,
-			name:   name,
-			unread: counts[id],
+			category: c,
+			name:     c.String(),
+			unread:   counts[c],
 		}
 		categories = append(categories, nc)
-		unreadTotal += counts[id]
+		unreadTotal += counts[c]
 	}
 	slices.SortFunc(categories, func(a, b notificationCategory) int {
 		return cmp.Compare(a.name, b.name)
@@ -165,7 +166,7 @@ func (a *notificationsArea) refresh() {
 	a.categoryTop.SetText(fmt.Sprintf("%s total", humanize.Comma(int64(999))))
 }
 
-func (a *notificationsArea) setNotifications(nc app.NotificationCategory) error {
+func (a *notificationsArea) setNotifications(nc evenotification.Category) error {
 	ctx := context.TODO()
 	characterID := a.ui.characterID()
 	var notifications []*app.CharacterNotification
@@ -173,7 +174,7 @@ func (a *notificationsArea) setNotifications(nc app.NotificationCategory) error 
 	if nc == 0 {
 		notifications, err = a.ui.CharacterService.ListCharacterNotificationsUnread(ctx, characterID)
 	} else {
-		types := app.NotificationCategoryTypes[nc]
+		types := evenotification.CategoryTypes[nc]
 		notifications, err = a.ui.CharacterService.ListCharacterNotificationsTypes(ctx, characterID, types)
 	}
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
@@ -162,7 +163,7 @@ func TestListCharacterNotifications(t *testing.T) {
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "bravo"})
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
 		// when
-		tt, err := s.ListCharacterNotificationsTypes(ctx, c.ID, []string{"alpha"})
+		tt, err := s.ListCharacterNotificationsTypes(ctx, c.ID, []evenotification.Type{"alpha"})
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, tt, 2)

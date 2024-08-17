@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/pkg/set"
 	"github.com/dustin/go-humanize"
@@ -203,10 +202,10 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		HintText: "Wether notifications are enabled",
 	})
 
-	categories := make(map[app.NotificationCategory][]string)
-	for _, n := range evenotification.NotificationTypesSupported() {
-		c := app.Notification2category[n]
-		categories[c] = append(categories[c], n)
+	categories := make(map[evenotification.Category][]string)
+	for _, n := range evenotification.SupportedTypes() {
+		c := evenotification.Type2category[n]
+		categories[c] = append(categories[c], string(n))
 	}
 	typesEnabled := set.NewFromSlice(w.ui.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 	groups := make([]*widget.CheckGroup, 0)
@@ -219,7 +218,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		}
 		cg := widget.NewCheckGroup(nts, nil)
 		cg.Selected = selected
-		items = append(items, widget.NewFormItem(app.NotificationCategoryNames[c], cg))
+		items = append(items, widget.NewFormItem(c.String(), cg))
 		groups = append(groups, cg)
 	}
 
