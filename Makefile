@@ -8,7 +8,7 @@ queries:
 	sqlc generate
 
 appimage:
-	./build_appimage.sh
+	scripts/build_appimage.sh
 
 release:
 	fyne package --os linux --src cmd/evebuddy

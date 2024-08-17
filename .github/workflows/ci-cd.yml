@@ -63,7 +63,7 @@ jobs:
         echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
     - name: Build AppImage
-      run: ./build_appimage.sh
+      run: scripts/build_appimage.sh
 
     - uses: actions/upload-artifact@v4
       with:
