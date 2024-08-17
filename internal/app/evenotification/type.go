@@ -2,6 +2,7 @@ package evenotification
 
 type Type string
 
+// All known notification types
 const (
 	AcceptedAlly                              Type = "AcceptedAlly"
 	AcceptedSurrender                         Type = "AcceptedSurrender"

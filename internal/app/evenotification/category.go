@@ -161,7 +161,7 @@ var Type2category = map[Type]Category{
 	IndustryOperationFinished:                 Unknown,
 	IndustryTeamAuctionLost:                   Unknown,
 	IndustryTeamAuctionWon:                    Unknown,
-	InfrastructureHubBillAboutToExpire:        Unknown,
+	InfrastructureHubBillAboutToExpire:        Sovereignty,
 	InsuranceExpirationMsg:                    Unknown,
 	InsuranceFirstShipMsg:                     Unknown,
 	InsuranceInvalidatedMsg:                   Unknown,

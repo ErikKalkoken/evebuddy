@@ -19,10 +19,10 @@ type CharacterNotification struct {
 	Text           string
 	Timestamp      time.Time
 	Title          optional.Optional[string]
-	Type           string // This is a string, so that new notification types do not break it
+	Type           string // This is a string, so that it can handle unknown types
 }
 
-// TitleDisplay returns the rendered title when it exists, or else the fake tile.
+// TitleDisplay returns the rendered title when it exists or else the fake tile.
 func (cn *CharacterNotification) TitleDisplay() string {
 	if cn.Title.IsEmpty() {
 		return cn.TitleFake()
