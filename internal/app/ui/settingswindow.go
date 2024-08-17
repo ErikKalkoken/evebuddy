@@ -22,15 +22,17 @@ import (
 // Setting keys
 const (
 	settingLastCharacterID              = "settingLastCharacterID"
+	settingMaxAge                       = "settingMaxAge"
+	settingMaxAgeDefault                = 3_600
 	settingMaxMails                     = "settingMaxMails"
 	settingMaxMailsDefault              = 1_000
 	settingMaxWalletTransactions        = "settingMaxWalletTransactions"
 	settingMaxWalletTransactionsDefault = 10_000
-	settingTheme                        = "settingTheme"
-	settingThemeDefault                 = themeAuto
-	settingSysTrayEnabled               = "settingSysTrayEnabled"
 	settingNotificationsEnabled         = "settingNotificationsEnabled"
 	settingNotificationsTypesEnabled    = "settingNotificationsTypesEnabled"
+	settingSysTrayEnabled               = "settingSysTrayEnabled"
+	settingTheme                        = "settingTheme"
+	settingThemeDefault                 = themeAuto
 )
 
 // Themes
@@ -83,8 +85,14 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 	submit := widget.NewButtonWithIcon("Apply", theme.ConfirmIcon(), nil)
 	submit.Importance = widget.HighImportance
 	submit.Disable()
-
 	form := widget.NewForm()
+	checkSubmit := func() {
+		if err := form.Validate(); err != nil {
+			submit.Disable()
+		} else {
+			submit.Enable()
+		}
+	}
 
 	themeRadio := widget.NewRadioGroup(
 		[]string{themeAuto, themeDark, themeLight}, func(s string) {},
@@ -96,10 +104,16 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 		Widget:   themeRadio,
 		HintText: "Chose the preferred theme",
 	})
+	themeRadio.OnChanged = func(string) {
+		checkSubmit()
+	}
 
 	sysTrayEnabled := w.ui.fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, true)
 	sysTrayCheck := widget.NewCheck("Show in system tray", nil)
 	sysTrayCheck.SetChecked(sysTrayEnabled)
+	sysTrayCheck.OnChanged = func(b bool) {
+		checkSubmit()
+	}
 	form.AppendItem(&widget.FormItem{
 		Text:     "System Tray",
 		Widget:   sysTrayCheck,
@@ -143,6 +157,11 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 	content := container.NewVBox()
 	content.Add(form)
 	submit.OnTapped = func() {
+		if err := form.Validate(); err != nil {
+			d := dialog.NewInformation("Invalid input", err.Error(), w.window)
+			d.Show()
+			return
+		}
 		w.ui.themeSet(themeRadio.Selected)
 		w.ui.fyneApp.Preferences().SetString(settingTheme, themeRadio.Selected)
 		w.ui.fyneApp.Preferences().SetBool(settingSysTrayEnabled, sysTrayCheck.Checked)
@@ -158,13 +177,22 @@ func (w *settingsWindow) makeEVEOnlinePage() fyne.CanvasObject {
 	submit := widget.NewButtonWithIcon("Apply", theme.ConfirmIcon(), nil)
 	submit.Importance = widget.HighImportance
 	submit.Disable()
-
 	form := widget.NewForm()
+	checkSubmit := func() {
+		if err := form.Validate(); err != nil {
+			submit.Disable()
+		} else {
+			submit.Enable()
+		}
+	}
+
 	mm := w.ui.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault)
 	maxMails := widget.NewEntry()
 	maxMails.SetText(strconv.Itoa(mm))
 	maxMails.Validator = newPositiveNumberValidator()
-	maxMails.OnChanged = func(s string) { submit.Enable() }
+	maxMails.OnChanged = func(s string) {
+		checkSubmit()
+	}
 	form.AppendItem(&widget.FormItem{
 		Text:     "Maximum mails",
 		Widget:   maxMails,
@@ -176,7 +204,7 @@ func (w *settingsWindow) makeEVEOnlinePage() fyne.CanvasObject {
 	maxTransactions.SetText(strconv.Itoa(mwt))
 	maxTransactions.Validator = newPositiveNumberValidator()
 	maxTransactions.OnChanged = func(s string) {
-		submit.Enable()
+		checkSubmit()
 	}
 	form.AppendItem(&widget.FormItem{
 		Text:     "Maximum wallet transaction",
@@ -217,18 +245,26 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	submit := widget.NewButtonWithIcon("Apply", theme.ConfirmIcon(), nil)
 	submit.Importance = widget.HighImportance
 	submit.Disable()
-
-	content := container.NewVBox()
 	form := widget.NewForm()
+	checkSubmit := func() {
+		if err := form.Validate(); err != nil {
+			submit.Disable()
+		} else {
+			submit.Enable()
+		}
+	}
 
 	notificationsEnabledCheck := widget.NewCheck("Notifications enabled", nil)
 	notificationsEnabledCheck.Checked = w.ui.fyneApp.Preferences().Bool(settingNotificationsEnabled)
-	notificationsEnabledCheck.OnChanged = func(b bool) { submit.Enable() }
+	notificationsEnabledCheck.OnChanged = func(b bool) {
+		checkSubmit()
+	}
 	form.AppendItem(&widget.FormItem{
 		Text:     "Master",
 		Widget:   notificationsEnabledCheck,
 		HintText: "Wether notifications are enabled",
 	})
+	form.Append("", container.NewPadded())
 
 	categories := make(map[evenotification.Category][]string)
 	for _, n := range evenotification.SupportedTypes() {
@@ -247,15 +283,52 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		cg := widget.NewCheckGroup(nts, nil)
 		cg.Selected = selected
 		cg.OnChanged = func(s []string) {
-			submit.Enable()
+			checkSubmit()
 		}
 		form.AppendItem(widget.NewFormItem(c.String(), cg))
+		form.Append("", container.NewPadded())
 		groups = append(groups, cg)
 	}
+
+	ma := w.ui.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
+	maxAge := widget.NewEntry()
+	maxAge.SetText(strconv.Itoa(ma))
+	maxAge.Validator = newPositiveNumberValidator()
+	maxAge.OnChanged = func(s string) {
+		checkSubmit()
+	}
+	form.AppendItem(&widget.FormItem{
+		Text:     "Max age",
+		Widget:   maxAge,
+		HintText: "Max age in seconds. Older communications will not be notified.",
+	})
+
+	content := container.NewVBox()
 	content.Add(form)
 	content.Add(container.NewPadded())
 
+	selectAll := widget.NewButton("Select All", func() {
+		for _, cg := range groups {
+			cg.SetSelected(cg.Options)
+		}
+	})
+	unselectAll := widget.NewButton("Unselect All", func() {
+		for _, cg := range groups {
+			cg.SetSelected([]string{})
+		}
+	})
+
 	submit.OnTapped = func() {
+		if err := form.Validate(); err != nil {
+			d := dialog.NewInformation("Invalid input", err.Error(), w.window)
+			d.Show()
+			return
+		}
+		v, err := strconv.Atoi(maxAge.Text)
+		if err != nil {
+			return
+		}
+		w.ui.fyneApp.Preferences().SetInt(settingMaxAge, v)
 		w.ui.fyneApp.Preferences().SetBool(settingNotificationsEnabled, notificationsEnabledCheck.Checked)
 		enabled := make([]string, 0)
 		for _, cg := range groups {
@@ -267,7 +340,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
 		w.window.Hide()
 	})
-	content.Add(container.NewHBox(layout.NewSpacer(), cancel, submit))
+	content.Add(container.NewHBox(selectAll, unselectAll, layout.NewSpacer(), cancel, submit))
 
 	return makePage("Notification settings", content)
 }

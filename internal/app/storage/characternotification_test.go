@@ -191,14 +191,63 @@ func TestCharacterNotification(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "bravo"})
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha"})
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha", IsRead: true})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "bravo",
+		})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "alpha",
+		})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "alpha",
+			IsRead:      true,
+		})
 		// when
 		ee, err := r.ListCharacterNotificationsUnread(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ee, 2)
+		}
+	})
+	t.Run("can list unprocessed notifs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		now := time.Now().UTC()
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			Body:        optional.New("title"),
+			CharacterID: c.ID,
+			IsProcessed: false,
+			Type:        "bravo",
+			Timestamp:   now,
+			Title:       optional.New("title"),
+		})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "alpha",
+			Timestamp:   now,
+		})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			CharacterID: c.ID,
+			Type:        "alpha",
+			IsProcessed: true,
+			Timestamp:   now,
+		})
+		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+			Body:        optional.New("title"),
+			CharacterID: c.ID,
+			IsProcessed: false,
+			Type:        "bravo",
+			Timestamp:   now.Add(-25 * time.Hour),
+			Title:       optional.New("title"),
+		})
+		// when
+		ee, err := r.ListCharacterNotificationsUnprocessed(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, ee, 1)
 		}
 	})
 }

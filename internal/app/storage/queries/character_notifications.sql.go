@@ -54,6 +54,7 @@ INSERT INTO character_notifications (
     body,
     character_id,
     is_read,
+    is_processed,
     notification_id,
     sender_id,
     text,
@@ -62,7 +63,7 @@ INSERT INTO character_notifications (
     type_id
 )
 VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 )
 `
 
@@ -70,6 +71,7 @@ type CreateCharacterNotificationParams struct {
 	Body           sql.NullString
 	CharacterID    int64
 	IsRead         bool
+	IsProcessed    bool
 	NotificationID int64
 	SenderID       int64
 	Text           string
@@ -83,6 +85,7 @@ func (q *Queries) CreateCharacterNotification(ctx context.Context, arg CreateCha
 		arg.Body,
 		arg.CharacterID,
 		arg.IsRead,
+		arg.IsProcessed,
 		arg.NotificationID,
 		arg.SenderID,
 		arg.Text,
@@ -276,7 +279,8 @@ WHERE character_id = ?
 AND cn.is_processed IS FALSE
 AND title IS NOT NULL
 AND body IS NOT NULL
-ORDER BY timestamp DESC
+AND timestamp > datetime("now", "-6 hours")
+ORDER BY timestamp
 `
 
 type ListCharacterNotificationsUnprocessedRow struct {

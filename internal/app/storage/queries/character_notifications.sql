@@ -3,6 +3,7 @@ INSERT INTO character_notifications (
     body,
     character_id,
     is_read,
+    is_processed,
     notification_id,
     sender_id,
     text,
@@ -11,7 +12,7 @@ INSERT INTO character_notifications (
     type_id
 )
 VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 );
 
 -- name: GetCharacterNotification :one
@@ -53,7 +54,8 @@ WHERE character_id = ?
 AND cn.is_processed IS FALSE
 AND title IS NOT NULL
 AND body IS NOT NULL
-ORDER BY timestamp DESC;
+AND timestamp > datetime("now", "-24 hours")
+ORDER BY timestamp;
 
 
 -- name: CalcCharacterNotificationUnreadCounts :many

@@ -36,6 +36,7 @@ func (s *CharacterService) ListCharacterNotificationsUnread(ctx context.Context,
 	return s.st.ListCharacterNotificationsUnread(ctx, characterID)
 }
 
+// ListCharacterNotificationsUnprocessed returns all unprocessed notifications for a given character, which are not older then 24 hours and which have rendered title and body.
 func (s *CharacterService) ListCharacterNotificationsUnprocessed(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
 	return s.st.ListCharacterNotificationsUnprocessed(ctx, characterID)
 }

@@ -88,6 +88,7 @@ type CreateCharacterNotificationParams struct {
 	Body           optional.Optional[string]
 	CharacterID    int32
 	IsRead         bool
+	IsProcessed    bool
 	NotificationID int64
 	SenderID       int32
 	Text           string
@@ -108,6 +109,7 @@ func (st *Storage) CreateCharacterNotification(ctx context.Context, arg CreateCh
 		Body:           optional.ToNullString(arg.Body),
 		CharacterID:    int64(arg.CharacterID),
 		IsRead:         arg.IsRead,
+		IsProcessed:    arg.IsProcessed,
 		NotificationID: arg.NotificationID,
 		SenderID:       int64(arg.SenderID),
 		Text:           arg.Text,

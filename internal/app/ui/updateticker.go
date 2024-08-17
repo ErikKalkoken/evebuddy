@@ -176,14 +176,16 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 }
 
 func (u *ui) processNotifications(ctx context.Context, characterID int32) {
+	maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
 	nn, err := u.CharacterService.ListCharacterNotificationsUnprocessed(ctx, characterID)
 	if err != nil {
 		slog.Error("Failed to fetch notifications for processing", "characterID", characterID, "error", err)
 		return
 	}
 	typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
+	oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
 	for _, n := range nn {
-		if !typesEnabled.Has(n.Type) {
+		if !typesEnabled.Has(n.Type) || n.Timestamp.Before(oldest) {
 			continue
 		}
 		body := stripmd.Strip(n.Body.ValueOrZero())
