@@ -28,7 +28,8 @@ const (
 	settingMaxMailsDefault              = 1_000
 	settingMaxWalletTransactions        = "settingMaxWalletTransactions"
 	settingMaxWalletTransactionsDefault = 10_000
-	settingNotificationsEnabled         = "settingNotificationsEnabled"
+	settingCommunicationsEnabled        = "settingCommunicationsEnabled"
+	settingMailEnabled                  = "settingMailEnabled"
 	settingNotificationsTypesEnabled    = "settingNotificationsTypesEnabled"
 	settingSysTrayEnabled               = "settingSysTrayEnabled"
 	settingTheme                        = "settingTheme"
@@ -254,15 +255,26 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		}
 	}
 
-	notificationsEnabledCheck := widget.NewCheck("Notifications enabled", nil)
-	notificationsEnabledCheck.Checked = w.ui.fyneApp.Preferences().Bool(settingNotificationsEnabled)
-	notificationsEnabledCheck.OnChanged = func(b bool) {
+	mailEnabledCheck := widget.NewCheck("Notif new mails", nil)
+	mailEnabledCheck.Checked = w.ui.fyneApp.Preferences().Bool(settingMailEnabled)
+	mailEnabledCheck.OnChanged = func(b bool) {
 		checkSubmit()
 	}
 	form.AppendItem(&widget.FormItem{
-		Text:     "Master",
-		Widget:   notificationsEnabledCheck,
-		HintText: "Wether notifications are enabled",
+		Text:     "Mail",
+		Widget:   mailEnabledCheck,
+		HintText: "Wether to notify new mails",
+	})
+
+	communicationsEnabledCheck := widget.NewCheck("Notify new communications", nil)
+	communicationsEnabledCheck.Checked = w.ui.fyneApp.Preferences().Bool(settingCommunicationsEnabled)
+	communicationsEnabledCheck.OnChanged = func(b bool) {
+		checkSubmit()
+	}
+	form.AppendItem(&widget.FormItem{
+		Text:     "Communications",
+		Widget:   communicationsEnabledCheck,
+		HintText: "Wether to notify new communications",
 	})
 	form.Append("", container.NewPadded())
 
@@ -329,7 +341,8 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 			return
 		}
 		w.ui.fyneApp.Preferences().SetInt(settingMaxAge, v)
-		w.ui.fyneApp.Preferences().SetBool(settingNotificationsEnabled, notificationsEnabledCheck.Checked)
+		w.ui.fyneApp.Preferences().SetBool(settingMailEnabled, mailEnabledCheck.Checked)
+		w.ui.fyneApp.Preferences().SetBool(settingCommunicationsEnabled, communicationsEnabledCheck.Checked)
 		enabled := make([]string, 0)
 		for _, cg := range groups {
 			enabled = slices.Concat(enabled, cg.Selected)

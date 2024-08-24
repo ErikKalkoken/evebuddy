@@ -149,7 +149,7 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		if isShown && hasChanged {
 			u.notificationsArea.refresh()
 		}
-		if u.fyneApp.Preferences().Bool(settingNotificationsEnabled) {
+		if u.fyneApp.Preferences().Bool(settingCommunicationsEnabled) {
 			go u.processNotifications(ctx, characterID)
 		}
 	case app.SectionSkills:
