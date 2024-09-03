@@ -28,7 +28,10 @@ EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) player
 - Wealth: Charts showing wealth distribution across all characters
 - Assets search: Full asset search across all your characters
 - Can minimize to system tray and show indicator for new mail
-- Receive desktop notifications about important communications (e.g. Structure gets attacked)
+- Receive desktop notifications about new communications (e.g. Structure gets attacked) and mails
+- Single executable file, no installation required
+- Desktop app that runs on Windows, Linux and macOS
+- Automatic dark and light theme
 
 ## Screenshot
 
@@ -56,12 +59,14 @@ To run EVE buddy just download and unzip the latest release to your computer. Th
 
 ### Mac OS
 
-> [!NOTE]
-> The MAC version is currently experimental only, since we have not been able to verify that the release process actually works. We would very much appreciate any feedback on wether the package works or what needs to be improved.
-
-1. Download the darwin zip file from the latest release on Github.
+1. Download the darwin zip file from the latest release on Github for your respective platform (arm or intel).
 1. Unzip the file into a directory of your choice
-1. Remove the quarantine flag by running this command in a terminal window: `sudo xattr -r -d com.apple.quarantine "EVE Buddy.app"` (For more details please see [here](https://docs.fyne.io/faq/troubleshoot#distribution))
+1. Run the .app file to start the app.
+
+> [!TIP]
+> MacOS may report this app incorrectly as "damaged", because it is not signed with an Apple certificate. You can remove this error by opening a terminal and running the following command. For more information please see [Fyne Troubleshooting](https://docs.fyne.io/faq/troubleshoot#distribution):
+>
+> ```sudo xattr -r -d com.apple.quarantine "EVE Buddy.app"```
 
 ### Build and run from repository
 
