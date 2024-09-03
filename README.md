@@ -18,7 +18,7 @@ A companion app for Eve Online players
 
 EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players. Key features are:
 
-- Import information for each characters:
+- Information about each character:
   - Assets: Full asset browser
   - Character: Curren clone, jump clones, and more...
   - Mails: Full mail client for receiving and sending Eve mails

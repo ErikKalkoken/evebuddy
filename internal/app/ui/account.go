@@ -146,7 +146,8 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 						}
 					}
 					a.ui.refreshOverview()
-					return a.ui.refreshCharacterMenu()
+					a.ui.toolbarArea.refresh()
+					return nil
 				}(c.id)
 				if err != nil {
 					slog.Error("Failed to delete a character", "character", c, "err", err)
@@ -203,9 +204,7 @@ func (a *accountArea) showAddCharacterDialog() {
 				return err
 			}
 			a.ui.refreshOverview()
-			if err := a.ui.refreshCharacterMenu(); err != nil {
-				return err
-			}
+			a.ui.toolbarArea.refresh()
 			if isFirst {
 				if err := a.ui.setAnyCharacter(); err != nil {
 					return err

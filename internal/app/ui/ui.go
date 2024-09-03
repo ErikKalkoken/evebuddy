@@ -51,7 +51,6 @@ type ui struct {
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
 	character             *app.Character
-	characterMenu         *fyne.Menu
 	isDebug               bool
 	implantsArea          *implantsArea
 	jumpClonesArea        *jumpClonesArea
@@ -66,17 +65,17 @@ type ui struct {
 	statusWindow          fyne.Window
 	settingsWindow        fyne.Window
 	themeName             string
+	toolbarArea           *toolbarArea
 	walletJournalArea     *walletJournalArea
 	walletTransactionArea *walletTransactionArea
 	wealthArea            *wealthArea
 
-	assetTab     *container.TabItem
-	characterTab *container.TabItem
-	mailTab      *container.TabItem
-	overviewTab  *container.TabItem
-	skillTab     *container.TabItem
-	walletTab    *container.TabItem
-	tabs         *container.AppTabs
+	assetTab    *container.TabItem
+	mailTab     *container.TabItem
+	overviewTab *container.TabItem
+	skillTab    *container.TabItem
+	walletTab   *container.TabItem
+	tabs        *container.AppTabs
 }
 
 // NewUI build the UI and returns it.
@@ -97,8 +96,8 @@ func NewUI(isDebug bool) *ui {
 	u.biographyArea = u.newBiographyArea()
 	u.jumpClonesArea = u.NewJumpClonesArea()
 	u.implantsArea = u.newImplantsArea()
-	u.characterTab = container.NewTabItemWithIcon("Character",
-		resourceCharacterplaceholder32Jpeg, container.NewAppTabs(
+	characterTab := container.NewTabItemWithIcon("Character",
+		theme.AccountIcon(), container.NewAppTabs(
 			container.NewTabItem("Augmentations", u.implantsArea.content),
 			container.NewTabItem("Jump Clones", u.jumpClonesArea.content),
 			container.NewTabItem("Attributes", u.attributesArea.content),
@@ -147,10 +146,13 @@ func NewUI(isDebug bool) *ui {
 			container.NewTabItem("Market Transactions", u.walletTransactionArea.content),
 		))
 
-	u.statusBarArea = u.newStatusBarArea()
-
-	u.tabs = container.NewAppTabs(u.characterTab, u.assetTab, u.mailTab, u.skillTab, u.walletTab, u.overviewTab)
+	u.tabs = container.NewAppTabs(characterTab, u.assetTab, u.mailTab, u.skillTab, u.walletTab, u.overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
+
+	u.toolbarArea = u.newToolbarArea()
+	u.statusBarArea = u.newStatusBarArea()
+	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, nil, u.tabs)
+	u.window.SetContent(mainContent)
 
 	// Define system tray menu
 	if fyneApp.Preferences().Bool(settingSysTrayEnabled) {
@@ -170,10 +172,7 @@ func NewUI(isDebug bool) *ui {
 			u.window.Hide()
 		})
 	}
-	mainContent := container.NewBorder(nil, u.statusBarArea.content, nil, nil, u.tabs)
-	u.window.SetContent(mainContent)
-	menu, characterMenu := makeMenu(u)
-	u.characterMenu = characterMenu
+	menu := makeMenu(u)
 	u.window.SetMainMenu(menu)
 	u.window.SetMaster()
 	return u
@@ -321,21 +320,12 @@ func (u *ui) setCharacter(c *app.Character) {
 		s = "[No character]"
 	}
 	u.window.SetTitle(fmt.Sprintf("%s - %s", s, u.appName()))
-	if c != nil {
-		r, _ := u.EveImageService.CharacterPortrait(c.ID, 128)
-		u.characterTab.Icon = r
-	} else {
-		u.characterTab.Icon = resourceCharacterplaceholder32Jpeg
-	}
 	u.refreshCharacter()
 	u.tabs.Refresh()
 	u.fyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
 }
 
 func (u *ui) refreshCharacter() {
-	if err := u.refreshCharacterMenu(); err != nil {
-		log.Fatalf("failed to refresh character menu: %s", err)
-	}
 	u.assetsArea.redraw()
 	u.assetSearchArea.refresh()
 	u.attributesArea.refresh()
@@ -347,6 +337,7 @@ func (u *ui) refreshCharacter() {
 	u.shipsArea.refresh()
 	u.skillqueueArea.refresh()
 	u.skillCatalogueArea.redraw()
+	u.toolbarArea.refresh()
 	u.walletJournalArea.refresh()
 	u.walletTransactionArea.refresh()
 	u.wealthArea.refresh()

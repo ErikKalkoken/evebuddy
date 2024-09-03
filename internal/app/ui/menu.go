@@ -1,27 +1,48 @@
 package ui
 
 import (
-	"context"
-	"log/slog"
 	"net/url"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/driver/desktop"
 )
 
-func makeMenu(u *ui) (*fyne.MainMenu, *fyne.Menu) {
-	fileMenu := fyne.NewMenu("File",
-		fyne.NewMenuItem("Settings...", func() {
-			u.showSettingsWindow()
-		}),
-	)
-	switchItem := fyne.NewMenuItem("Switch", nil)
-	switchItem.ChildMenu = fyne.NewMenu("")
-	characterMenu := fyne.NewMenu("Characters",
-		switchItem,
+func makeMenu(u *ui) *fyne.MainMenu {
+	fileMenu := fyne.NewMenu("File")
+
+	settingsItem := fyne.NewMenuItem("Settings...", func() {
+		u.showSettingsWindow()
+	})
+	settingsShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyS, Modifier: fyne.KeyModifierAlt}
+	settingsItem.Shortcut = settingsShortcut
+	u.window.Canvas().AddShortcut(settingsShortcut, func(shortcut fyne.Shortcut) {
+		u.showSettingsWindow()
+	})
+
+	charactersItem := fyne.NewMenuItem("Manage characters...", func() {
+		u.showAccountDialog()
+	})
+	charactersShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierAlt}
+	charactersItem.Shortcut = charactersShortcut
+	u.window.Canvas().AddShortcut(charactersShortcut, func(shortcut fyne.Shortcut) {
+		u.showAccountDialog()
+	})
+
+	statusItem := fyne.NewMenuItem("Update status...", func() {
+		u.showStatusWindow()
+	})
+	statusShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyU, Modifier: fyne.KeyModifierAlt}
+	statusItem.Shortcut = statusShortcut
+	u.window.Canvas().AddShortcut(statusShortcut, func(shortcut fyne.Shortcut) {
+		u.showStatusWindow()
+	})
+
+	toolsMenu := fyne.NewMenu("Tools",
+		charactersItem,
 		fyne.NewMenuItemSeparator(),
-		fyne.NewMenuItem("Manage...", func() {
-			u.showAccountDialog()
-		}),
+		statusItem,
+		fyne.NewMenuItemSeparator(),
+		settingsItem,
 	)
 	helpMenu := fyne.NewMenu("Help",
 		fyne.NewMenuItem("Website", func() {
@@ -37,50 +58,6 @@ func makeMenu(u *ui) (*fyne.MainMenu, *fyne.Menu) {
 			u.showAboutDialog()
 		}),
 	)
-	main := fyne.NewMainMenu(fileMenu, characterMenu, helpMenu)
-	return main, characterMenu
-}
-
-func (u *ui) refreshCharacterMenu() error {
-	switchItem := u.characterMenu.Items[0]
-	currentCharacterID := u.characterID()
-	ctx := context.TODO()
-	menuItems := make([]*fyne.MenuItem, 0)
-	cc, err := u.CharacterService.ListCharactersShort(ctx)
-	if err != nil {
-		return err
-	}
-	for _, myC := range cc {
-		if myC.ID == currentCharacterID {
-			continue
-		}
-		item := fyne.NewMenuItem(myC.Name, func() {
-			err := u.loadCharacter(ctx, myC.ID)
-			if err != nil {
-				msg := "Failed to switch to new character"
-				slog.Error(msg, "err", err)
-				u.showErrorDialog(msg, err)
-				return
-			}
-		})
-		item.Icon = resourceCharacterplaceholder32Jpeg
-		go func() {
-			r, err := u.EveImageService.CharacterPortrait(myC.ID, defaultIconSize)
-			if err != nil {
-				slog.Error("Failed to fetch character portrait", "characterID", myC.ID, "err", err)
-				r = resourceCharacterplaceholder32Jpeg
-			}
-			item.Icon = r
-			u.characterMenu.Refresh()
-		}()
-		menuItems = append(menuItems, item)
-	}
-	switchItem.ChildMenu.Items = menuItems
-	if len(menuItems) == 0 {
-		switchItem.Disabled = true
-	} else {
-		switchItem.Disabled = false
-	}
-	u.characterMenu.Refresh()
-	return nil
+	main := fyne.NewMainMenu(fileMenu, toolsMenu, helpMenu)
+	return main
 }

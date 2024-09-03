@@ -1,3 +1,5 @@
+// Package notification2 contains type definitions to unmarshal Eve notifications from ESI.
+// It extends the notification package from goesi.
 package notification2
 
 type CorpAllBillMsgV2 struct {
