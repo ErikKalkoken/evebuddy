@@ -14,12 +14,11 @@ func (s *EveNotificationService) renderOrbital(ctx context.Context, type_ Type, 
 	var title, body optional.Optional[string]
 	switch type_ {
 	case OrbitalAttacked:
-		title.Set("Orbital under attack")
 		var data notification.OrbitalAttacked
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := s.makeOrbitalBaseText(ctx, data.PlanetID, data.TypeID)
+		o, err := s.makeOrbitalBaseText(ctx, data.PlanetID, data.TypeID)
 		if err != nil {
 			return title, body, err
 		}
@@ -27,27 +26,32 @@ func (s *EveNotificationService) renderOrbital(ctx context.Context, type_ Type, 
 		if err != nil {
 			return title, body, err
 		}
-		out += fmt.Sprintf("is under attack.\n\n"+
+		title.Set(fmt.Sprintf(
+			"%s at %s is under attack",
+			o.type_.Name,
+			o.planet.Name,
+		))
+		t := fmt.Sprintf("%s is under attack.\n\n"+
 			"Attacking Character: %s\n\n"+
 			"Attacking Corporation: %s",
+			o.intro,
 			makeEveEntityProfileLink(entities[data.AggressorID]),
 			makeEveEntityProfileLink(entities[data.AggressorCorpID]),
 		)
 		if data.AggressorAllianceID != 0 {
-			out += fmt.Sprintf(
+			t += fmt.Sprintf(
 				"\n\nAttacking Alliance: %s",
 				makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
 			)
 		}
-		body.Set(out)
+		body.Set(t)
 
 	case OrbitalReinforced:
-		title.Set("Orbital reinforced")
 		var data notification.OrbitalReinforced
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		out, err := s.makeOrbitalBaseText(ctx, data.PlanetID, data.TypeID)
+		o, err := s.makeOrbitalBaseText(ctx, data.PlanetID, data.TypeID)
 		if err != nil {
 			return title, body, err
 		}
@@ -55,7 +59,12 @@ func (s *EveNotificationService) renderOrbital(ctx context.Context, type_ Type, 
 		if err != nil {
 			return title, body, err
 		}
-		out += fmt.Sprintf("has been reinforced and will come out at %s.\n\n"+
+		title.Set(fmt.Sprintf(
+			"%s at %s has been reinforced",
+			o.type_.Name,
+			o.planet.Name,
+		))
+		t := fmt.Sprintf("has been reinforced and will come out at %s.\n\n"+
 			"Attacking Character: %s\n\n"+
 			"Attacking Corporation: %s",
 			fromLDAPTime(data.ReinforceExitTime).Format(app.TimeDefaultFormat),
@@ -63,25 +72,41 @@ func (s *EveNotificationService) renderOrbital(ctx context.Context, type_ Type, 
 			makeEveEntityProfileLink(entities[data.AggressorCorpID]),
 		)
 		if data.AggressorAllianceID != 0 {
-			out += fmt.Sprintf(
+			t += fmt.Sprintf(
 				"\n\nAttacking Alliance: %s",
 				makeEveEntityProfileLink(entities[data.AggressorAllianceID]),
 			)
 		}
-		body.Set(out)
+		body.Set(t)
 	}
 	return title, body, nil
 }
 
-func (s *EveNotificationService) makeOrbitalBaseText(ctx context.Context, planetID, typeID int32) (string, error) {
+type orbitalInfo struct {
+	type_  *app.EveType
+	planet *app.EvePlanet
+	intro  string
+}
+
+func (s *EveNotificationService) makeOrbitalBaseText(ctx context.Context, planetID, typeID int32) (orbitalInfo, error) {
 	structureType, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, typeID)
 	if err != nil {
-		return "", err
+		return orbitalInfo{}, err
 	}
 	planet, err := s.EveUniverseService.GetOrCreateEvePlanetESI(ctx, planetID)
 	if err != nil {
-		return "", err
+		return orbitalInfo{}, err
 	}
-	out := fmt.Sprintf("The %s at %s in %s ", structureType.Name, planet.Name, makeLocationLink(planet.SolarSystem))
-	return out, nil
+	into := fmt.Sprintf(
+		"The %s at %s in %s ",
+		structureType.Name,
+		planet.Name,
+		makeLocationLink(planet.SolarSystem),
+	)
+	x := orbitalInfo{
+		type_:  structureType,
+		planet: planet,
+		intro:  into,
+	}
+	return x, nil
 }
