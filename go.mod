@@ -19,7 +19,6 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/stretchr/testify v1.9.0
 	github.com/wcharczuk/go-chart/v2 v2.1.2
-	github.com/writeas/go-strip-markdown v2.0.1+incompatible
 	golang.org/x/exp v0.0.0-20240823005443-9b4947da3948
 	golang.org/x/text v0.17.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1

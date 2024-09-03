@@ -207,7 +207,6 @@ func (u *ui) processNotifications(ctx context.Context, characterID int32) {
 }
 
 func (u *ui) processMails(ctx context.Context, characterID int32) {
-	// TODO: Do we need another setting just for mail?
 	maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
 	mm, err := u.CharacterService.ListCharacterMailHeadersForUnprocessed(ctx, characterID)
 	if err != nil {
@@ -217,7 +216,7 @@ func (u *ui) processMails(ctx context.Context, characterID int32) {
 	oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
 	for _, m := range mm {
 		if m.Timestamp.Before(oldest) {
-			// continue
+			continue
 		}
 		title := fmt.Sprintf("New Mail from %s", m.From)
 		body := m.Subject

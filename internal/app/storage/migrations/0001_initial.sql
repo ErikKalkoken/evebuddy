@@ -119,6 +119,22 @@ CREATE TABLE eve_solar_systems (
 CREATE INDEX eve_solar_systems_idx1 ON eve_solar_systems (eve_constellation_id);
 CREATE INDEX eve_solar_systems_idx2 ON eve_solar_systems (name);
 
+CREATE TABLE eve_moons (
+    id INTEGER PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    eve_solar_system_id INTEGER NOT NULL,
+    FOREIGN KEY (eve_solar_system_id) REFERENCES eve_solar_systems(id) ON DELETE CASCADE
+);
+
+CREATE TABLE eve_planets (
+    id INTEGER PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    eve_solar_system_id INTEGER NOT NULL,
+    eve_type_id INTEGER NOT NULL,
+    FOREIGN KEY (eve_solar_system_id) REFERENCES eve_solar_systems(id) ON DELETE CASCADE,
+    FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE
+);
+
 CREATE TABLE eve_races (
     id INTEGER PRIMARY KEY NOT NULL,
     description TEXT NOT NULL,
@@ -338,6 +354,7 @@ CREATE TABLE character_mails (
     body TEXT NOT NULL,
     character_id INTEGER NOT NULL,
     from_id INTEGER NOT NULL,
+    is_processed BOOL NOT NULL,
     is_read BOOL NOT NULL,
     mail_id INTEGER NOT NULL,
     subject TEXT NOT NULL,
@@ -365,6 +382,7 @@ CREATE TABLE character_notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     body TEXT,
     character_id INTEGER NOT NULL,
+    is_processed BOOL NOT NULL,
     is_read BOOL NOT NULL,
     notification_id INTEGER NOT NULL,
     sender_id INTEGER NOT NULL,
@@ -383,6 +401,7 @@ CREATE TABLE notification_types (
     name TEXT NOT NULL,
     UNIQUE (name)
 );
+
 
 CREATE TABLE character_skills (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
