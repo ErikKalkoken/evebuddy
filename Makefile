@@ -11,4 +11,4 @@ appimage:
 	scripts/build_appimage.sh
 
 release:
-	fyne package --os linux --src cmd/evebuddy
+	fyne package --os linux --src cmd/evebuddy --release
