@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	stripmd "github.com/writeas/go-strip-markdown"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
@@ -137,19 +136,28 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 			u.wealthArea.refresh()
 		}
 	case app.SectionMailLabels,
-		app.SectionMailLists,
-		app.SectionMails:
+		app.SectionMailLists:
 		if isShown && hasChanged {
 			u.mailArea.refresh()
 		}
 		if hasChanged {
 			u.overviewArea.refresh()
 		}
+	case app.SectionMails:
+		if isShown && hasChanged {
+			u.mailArea.refresh()
+		}
+		if hasChanged {
+			u.overviewArea.refresh()
+		}
+		if u.fyneApp.Preferences().Bool(settingNotifyMailsEnabled) {
+			go u.processMails(ctx, characterID)
+		}
 	case app.SectionNotifications:
 		if isShown && hasChanged {
 			u.notificationsArea.refresh()
 		}
-		if u.fyneApp.Preferences().Bool(settingCommunicationsEnabled) {
+		if u.fyneApp.Preferences().Bool(settingNotifyCommunicationsEnabled) {
 			go u.processNotifications(ctx, characterID)
 		}
 	case app.SectionSkills:
@@ -188,11 +196,35 @@ func (u *ui) processNotifications(ctx context.Context, characterID int32) {
 		if !typesEnabled.Has(n.Type) || n.Timestamp.Before(oldest) {
 			continue
 		}
-		body := stripmd.Strip(n.Body.ValueOrZero())
-		x := fyne.NewNotification(n.Title.ValueOrZero(), body)
+		title := fmt.Sprintf("New Communication from %s", n.Sender.Name)
+		x := fyne.NewNotification(title, n.Title.ValueOrZero())
 		u.fyneApp.SendNotification(x)
 		if err := u.CharacterService.UpdateCharacterNotificationSetProcessed(ctx, n); err != nil {
 			slog.Error("Failed to set notification as processed", "characterID", characterID, "id", n.ID, "error", err)
+			return
+		}
+	}
+}
+
+func (u *ui) processMails(ctx context.Context, characterID int32) {
+	// TODO: Do we need another setting just for mail?
+	maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
+	mm, err := u.CharacterService.ListCharacterMailHeadersForUnprocessed(ctx, characterID)
+	if err != nil {
+		slog.Error("Failed to fetch mails for processing", "characterID", characterID, "error", err)
+		return
+	}
+	oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
+	for _, m := range mm {
+		if m.Timestamp.Before(oldest) {
+			// continue
+		}
+		title := fmt.Sprintf("New Mail from %s", m.From)
+		body := m.Subject
+		x := fyne.NewNotification(title, body)
+		u.fyneApp.SendNotification(x)
+		if err := u.CharacterService.UpdateCharacterMailSetProcessed(ctx, m.ID); err != nil {
+			slog.Error("Failed to set mail as processed", "characterID", characterID, "id", m.MailID, "error", err)
 			return
 		}
 	}

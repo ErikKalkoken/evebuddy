@@ -2,8 +2,8 @@
 INSERT INTO character_notifications (
     body,
     character_id,
-    is_read,
     is_processed,
+    is_read,
     notification_id,
     sender_id,
     text,

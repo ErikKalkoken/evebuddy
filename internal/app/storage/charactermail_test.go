@@ -52,6 +52,20 @@ func TestMailCreate(t *testing.T) {
 			assert.Equal(t, label.LabelID, m.Labels[0].LabelID)
 		}
 	})
+	t.Run("can set processed", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		m := factory.CreateCharacterMail()
+		// when
+		err := r.UpdateCharacterMailSetProcessed(ctx, m.ID)
+		// then
+		if assert.NoError(t, err) {
+			o, err := r.GetCharacterMail(ctx, m.CharacterID, m.MailID)
+			if assert.NoError(t, err) {
+				assert.True(t, o.IsProcessed)
+			}
+		}
+	})
 }
 
 func TestMail(t *testing.T) {

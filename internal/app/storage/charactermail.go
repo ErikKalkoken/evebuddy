@@ -17,6 +17,7 @@ type CreateCharacterMailParams struct {
 	CharacterID  int32
 	FromID       int32
 	LabelIDs     []int32
+	IsProcessed  bool
 	IsRead       bool
 	MailID       int32
 	RecipientIDs []int32
@@ -40,6 +41,7 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 			FromID:      int64(from.ID),
 			MailID:      int64(arg.MailID),
 			Subject:     arg.Subject,
+			IsProcessed: arg.IsProcessed,
 			IsRead:      arg.IsRead,
 			Timestamp:   arg.Timestamp,
 		}
@@ -196,11 +198,11 @@ func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterI
 }
 
 func (st *Storage) UpdateCharacterMail(ctx context.Context, characterID int32, mailPK int64, isRead bool, labelIDs []int32) error {
-	arg := queries.UpdateMailParams{
+	arg := queries.UpdateCharacterMailIsReadParams{
 		ID:     mailPK,
 		IsRead: isRead,
 	}
-	if err := st.q.UpdateMail(ctx, arg); err != nil {
+	if err := st.q.UpdateCharacterMailIsRead(ctx, arg); err != nil {
 		return fmt.Errorf("failed to update mail PK %d for character %d: %w", mailPK, characterID, err)
 	}
 	if err := st.updateCharacterMailLabels(ctx, characterID, mailPK, labelIDs); err != nil {
@@ -230,6 +232,7 @@ func characterMailFromDBModel(
 		Body:        mail.Body,
 		CharacterID: int32(mail.CharacterID),
 		From:        eveEntityFromDBModel(from),
+		IsProcessed: mail.IsProcessed,
 		IsRead:      mail.IsRead,
 		ID:          mail.ID,
 		Labels:      ll,
@@ -239,4 +242,11 @@ func characterMailFromDBModel(
 		Timestamp:   mail.Timestamp,
 	}
 	return &m
+}
+
+func (st *Storage) UpdateCharacterMailSetProcessed(ctx context.Context, id int64) error {
+	if err := st.q.UpdateCharacterMailSetProcessed(ctx, id); err != nil {
+		return fmt.Errorf("failed to set mail PK %d as processed: %w", id, err)
+	}
+	return nil
 }

@@ -73,6 +73,7 @@ func characterNotificationFromDBModel(o queries.CharacterNotification, sender qu
 		ID:             o.ID,
 		Body:           optional.FromNullString(o.Body),
 		CharacterID:    int32(o.CharacterID),
+		IsProcessed:    o.IsProcessed,
 		IsRead:         o.IsRead,
 		NotificationID: o.NotificationID,
 		Sender:         eveEntityFromDBModel(sender),

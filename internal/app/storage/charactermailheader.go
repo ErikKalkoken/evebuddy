@@ -20,7 +20,7 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 		}
 		mm := make([]*app.CharacterMailHeader, len(rows))
 		for i, r := range rows {
-			mm[i] = characterMailHeaderFromDBModel(characterID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
+			mm[i] = characterMailHeaderFromDBModel(characterID, r.ID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
 		}
 		return mm, nil
 	case app.MailLabelNone:
@@ -30,7 +30,7 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 		}
 		mm := make([]*app.CharacterMailHeader, len(rows))
 		for i, r := range rows {
-			mm[i] = characterMailHeaderFromDBModel(characterID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
+			mm[i] = characterMailHeaderFromDBModel(characterID, r.ID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
 		}
 		return mm, nil
 	case app.MailLabelSent:
@@ -44,7 +44,7 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 		}
 		mm := make([]*app.CharacterMailHeader, len(rows))
 		for i, r := range rows {
-			mm[i] = characterMailHeaderFromDBModel(characterID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
+			mm[i] = characterMailHeaderFromDBModel(characterID, r.ID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
 		}
 		return mm, nil
 	default:
@@ -58,7 +58,7 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 		}
 		mm := make([]*app.CharacterMailHeader, len(rows))
 		for i, r := range rows {
-			mm[i] = characterMailHeaderFromDBModel(characterID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
+			mm[i] = characterMailHeaderFromDBModel(characterID, r.ID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
 		}
 		return mm, nil
 	}
@@ -75,13 +75,30 @@ func (st *Storage) ListCharacterMailHeadersForListOrdered(ctx context.Context, c
 	}
 	mm := make([]*app.CharacterMailHeader, len(rows))
 	for i, r := range rows {
-		mm[i] = characterMailHeaderFromDBModel(characterID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
+		mm[i] = characterMailHeaderFromDBModel(characterID, r.ID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
+	}
+	return mm, nil
+}
+
+func (st *Storage) ListCharacterMailHeadersForUnprocessed(ctx context.Context, characterID int32) ([]*app.CharacterMailHeader, error) {
+	arg := queries.ListMailsUnprocessedParams{
+		CharacterID: int64(characterID),
+		LabelID:     app.MailLabelSent,
+	}
+	rows, err := st.q.ListMailsUnprocessed(ctx, arg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list unprocessed mails for character %d: %w", characterID, err)
+	}
+	mm := make([]*app.CharacterMailHeader, len(rows))
+	for i, r := range rows {
+		mm[i] = characterMailHeaderFromDBModel(characterID, r.ID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
 	}
 	return mm, nil
 }
 
 func characterMailHeaderFromDBModel(
 	characterID int32,
+	id int64,
 	from string,
 	isRead bool,
 	mailID int64,
@@ -91,6 +108,7 @@ func characterMailHeaderFromDBModel(
 	m := &app.CharacterMailHeader{
 		CharacterID: characterID,
 		From:        from,
+		ID:          id,
 		IsRead:      isRead,
 		MailID:      int32(mailID),
 		Subject:     subject,

@@ -23,13 +23,13 @@ import (
 const (
 	settingLastCharacterID              = "settingLastCharacterID"
 	settingMaxAge                       = "settingMaxAge"
-	settingMaxAgeDefault                = 3_600
+	settingMaxAgeDefault                = 3_600 * 6
 	settingMaxMails                     = "settingMaxMails"
 	settingMaxMailsDefault              = 1_000
 	settingMaxWalletTransactions        = "settingMaxWalletTransactions"
 	settingMaxWalletTransactionsDefault = 10_000
-	settingCommunicationsEnabled        = "settingCommunicationsEnabled"
-	settingMailEnabled                  = "settingMailEnabled"
+	settingNotifyCommunicationsEnabled  = "settingNotifyCommunicationsEnabled"
+	settingNotifyMailsEnabled           = "settingNotifyMailsEnabled"
 	settingNotificationsTypesEnabled    = "settingNotificationsTypesEnabled"
 	settingSysTrayEnabled               = "settingSysTrayEnabled"
 	settingTheme                        = "settingTheme"
@@ -256,7 +256,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	}
 
 	mailEnabledCheck := widget.NewCheck("Notif new mails", nil)
-	mailEnabledCheck.Checked = w.ui.fyneApp.Preferences().Bool(settingMailEnabled)
+	mailEnabledCheck.Checked = w.ui.fyneApp.Preferences().Bool(settingNotifyMailsEnabled)
 	mailEnabledCheck.OnChanged = func(b bool) {
 		checkSubmit()
 	}
@@ -267,7 +267,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	})
 
 	communicationsEnabledCheck := widget.NewCheck("Notify new communications", nil)
-	communicationsEnabledCheck.Checked = w.ui.fyneApp.Preferences().Bool(settingCommunicationsEnabled)
+	communicationsEnabledCheck.Checked = w.ui.fyneApp.Preferences().Bool(settingNotifyCommunicationsEnabled)
 	communicationsEnabledCheck.OnChanged = func(b bool) {
 		checkSubmit()
 	}
@@ -312,7 +312,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	form.AppendItem(&widget.FormItem{
 		Text:     "Max age",
 		Widget:   maxAge,
-		HintText: "Max age in seconds. Older communications will not be notified.",
+		HintText: "Max age in seconds. Older mails and communications will not be notified.",
 	})
 
 	content := container.NewVBox()
@@ -341,8 +341,8 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 			return
 		}
 		w.ui.fyneApp.Preferences().SetInt(settingMaxAge, v)
-		w.ui.fyneApp.Preferences().SetBool(settingMailEnabled, mailEnabledCheck.Checked)
-		w.ui.fyneApp.Preferences().SetBool(settingCommunicationsEnabled, communicationsEnabledCheck.Checked)
+		w.ui.fyneApp.Preferences().SetBool(settingNotifyMailsEnabled, mailEnabledCheck.Checked)
+		w.ui.fyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, communicationsEnabledCheck.Checked)
 		enabled := make([]string, 0)
 		for _, cg := range groups {
 			enabled = slices.Concat(enabled, cg.Selected)

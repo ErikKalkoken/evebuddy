@@ -12,7 +12,7 @@ type CharacterNotification struct {
 	ID             int64
 	Body           optional.Optional[string]
 	CharacterID    int32
-	IsNotified     bool
+	IsProcessed    bool
 	IsRead         bool
 	NotificationID int64
 	Sender         *EveEntity

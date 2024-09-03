@@ -1,0 +1,1 @@
+ALTER TABLE character_mails ADD COLUMN is_processed BOOL NOT NULL DEFAULT FALSE;

@@ -131,6 +131,34 @@ func TestListMailHeaders(t *testing.T) {
 			assert.Equal(t, want, got)
 		}
 	})
+	t.Run("should return unprocessed mails only and ignore sent mails", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		m1 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsProcessed: false,
+		})
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsProcessed: true,
+		})
+		l := factory.CreateCharacterMailLabel(app.CharacterMailLabel{CharacterID: c.ID, LabelID: app.MailLabelSent})
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsProcessed: false,
+			LabelIDs:    []int32{l.LabelID},
+		})
+		factory.CreateCharacterMail()
+		// when
+		xx, err := r.ListCharacterMailHeadersForUnprocessed(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			want := []int32{m1.MailID}
+			got := mailIDsFromHeaders(xx)
+			assert.Equal(t, want, got)
+		}
+	})
 }
 
 func mailIDsFromHeaders(hh []*app.CharacterMailHeader) []int32 {

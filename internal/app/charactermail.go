@@ -34,6 +34,7 @@ type CharacterMail struct {
 	CharacterID int32
 	From        *EveEntity
 	Labels      []*CharacterMailLabel
+	IsProcessed bool
 	IsRead      bool
 	ID          int64
 	MailID      int32
@@ -47,6 +48,7 @@ type CharacterMailHeader struct {
 	CharacterID int32
 	From        string
 	IsRead      bool
+	ID          int64
 	MailID      int32
 	Subject     string
 	Timestamp   time.Time

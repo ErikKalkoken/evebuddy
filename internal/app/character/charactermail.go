@@ -164,3 +164,12 @@ func (s *CharacterService) ListCharacterMailHeadersForListOrdered(ctx context.Co
 func (s *CharacterService) ListCharacterMailLabelsOrdered(ctx context.Context, characterID int32) ([]*app.CharacterMailLabel, error) {
 	return s.st.ListCharacterMailLabelsOrdered(ctx, characterID)
 }
+
+// ListCharacterMailHeadersForUnprocessed returns all unprocessed mails for a character except sent mails ordered by timestamp.
+func (s *CharacterService) ListCharacterMailHeadersForUnprocessed(ctx context.Context, characterID int32) ([]*app.CharacterMailHeader, error) {
+	return s.st.ListCharacterMailHeadersForUnprocessed(ctx, characterID)
+}
+
+func (s *CharacterService) UpdateCharacterMailSetProcessed(ctx context.Context, id int64) error {
+	return s.st.UpdateCharacterMailSetProcessed(ctx, id)
+}

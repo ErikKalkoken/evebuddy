@@ -3,13 +3,14 @@ INSERT INTO character_mails (
     body,
     character_id,
     from_id,
+    is_processed,
     is_read,
     mail_id,
     subject,
     timestamp
 )
 VALUES (
-    ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?
 )
 RETURNING *;
 
@@ -91,14 +92,14 @@ FROM character_mails
 WHERE character_id = ?;
 
 -- name: ListMailsOrdered :many
-SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+SELECT cm.id, cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
 FROM character_mails cm
 JOIN eve_entities ee ON ee.id = cm.from_id
 WHERE character_id = ?
 ORDER BY timestamp DESC;
 
 -- name: ListMailsNoLabelOrdered :many
-SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+SELECT cm.id, cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
 FROM character_mails cm
 JOIN eve_entities ee ON ee.id = cm.from_id
 LEFT JOIN character_mail_mail_labels cml ON cml.character_mail_id = cm.id
@@ -107,7 +108,7 @@ AND cml.character_mail_id IS NULL
 ORDER BY timestamp DESC;
 
 -- name: ListMailsForLabelOrdered :many
-SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+SELECT cm.id, cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
 FROM character_mails cm
 JOIN eve_entities ee ON ee.id = cm.from_id
 JOIN character_mail_mail_labels cml ON cml.character_mail_id = cm.id
@@ -117,7 +118,7 @@ AND label_id = ?
 ORDER BY timestamp DESC;
 
 -- name: ListMailsForSentOrdered :many
-SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, group_concat(ee.name, ", ") as from_name
+SELECT cm.id, cm.subject, cm.mail_id, cm.timestamp, cm.is_read, group_concat(ee.name, ", ") as from_name
 FROM character_mails cm
 JOIN character_mails_recipients cmr ON cmr.mail_id = cm.id
 JOIN eve_entities ee ON ee.id = cmr.eve_entity_id
@@ -129,7 +130,7 @@ GROUP BY cm.mail_id
 ORDER BY timestamp DESC;
 
 -- name: ListMailsForListOrdered :many
-SELECT cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+SELECT cm.id, cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
 FROM character_mails cm
 JOIN eve_entities ee ON ee.id = cm.from_id
 JOIN character_mails_recipients cmr ON cmr.mail_id = cm.id
@@ -137,7 +138,24 @@ WHERE character_id = ?
 AND cmr.eve_entity_id = ?
 ORDER BY timestamp DESC;
 
--- name: UpdateMail :exec
+-- name: ListMailsUnprocessed :many
+SELECT cm.id, cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+FROM character_mails cm
+JOIN eve_entities ee ON ee.id = cm.from_id
+LEFT JOIN character_mail_mail_labels cml ON cml.character_mail_id = cm.id
+LEFT JOIN character_mail_labels ON character_mail_labels.id = cml.character_mail_label_id
+WHERE cm.character_id = ?
+AND (label_id <> ? OR label_id IS NULL)
+AND is_processed = FALSE
+ORDER BY timestamp ASC;
+
+-- name: UpdateCharacterMailIsRead :exec
 UPDATE character_mails
 SET is_read = ?2
+WHERE id = ?1;
+
+-- name: UpdateCharacterMailSetProcessed :exec
+UPDATE character_mails
+SET
+    is_processed = TRUE
 WHERE id = ?1;

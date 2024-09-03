@@ -168,6 +168,20 @@ func TestCharacterNotification(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can set processed", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		n := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{})
+		// when
+		err := r.UpdateCharacterNotificationSetProcessed(ctx, n.ID)
+		// then
+		if assert.NoError(t, err) {
+			o, err := r.GetCharacterNotification(ctx, n.CharacterID, n.ID)
+			if assert.NoError(t, err) {
+				assert.True(t, o.IsProcessed)
+			}
+		}
+	})
 	t.Run("can calculate unread counts", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -250,6 +264,7 @@ func TestCharacterNotification(t *testing.T) {
 			assert.Len(t, ee, 1)
 		}
 	})
+
 }
 
 func TestNotificationType(t *testing.T) {
