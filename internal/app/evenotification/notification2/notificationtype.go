@@ -35,6 +35,16 @@ type OwnershipTransferredV2 struct {
 	StructureTypeID int32  `yaml:"structureTypeID"`
 }
 
+type StructureImpendingAbandonmentAssetsAtRisk struct {
+	DaysUntilAbandon      int32  `yaml:"daysUntilAbandon"`
+	IsCorpOwned           bool   `yaml:"isCorpOwned"`
+	SolarSystemID         int32  `yaml:"solarsystemID"`
+	StructureID           int64  `yaml:"structureID"`
+	StructureLink         string `yaml:"structureLink"`
+	StructureShowInfoData []any  `yaml:"structureShowInfoData"`
+	StructureTypeID       int32  `yaml:"structureTypeID"`
+}
+
 type WarAdopted struct {
 	AgainstID    int32 `yaml:"againstID"`
 	AllianceID   int32 `yaml:"allianceID"`

@@ -78,3 +78,9 @@ func patchLinks(s string) string {
 	r := regexp.MustCompile(`(\[\w*\]\(.*\))(\n\n)`)
 	return string(r.ReplaceAll([]byte(s), []byte("$1 $2")))
 }
+
+// Strip removes all XML from a given string and return the result.
+func Strip(xml string) string {
+	b := html.UnescapeString(bodyPolicy.Sanitize(xml))
+	return b
+}

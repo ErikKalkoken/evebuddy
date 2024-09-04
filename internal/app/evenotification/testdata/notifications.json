@@ -229,7 +229,14 @@
         "text": "charID: 1001\nnewOwnerCorpID: 2002\noldOwnerCorpID: 2001\nsolarSystemID: 30002537\nstructureID: 1111000000001\nstructureName: POCO\nstructureTypeID: 2233\n",
         "is_read": true
     },
-
+    {
+        "notification_id": 1000000516,
+        "type": "StructureImpendingAbandonmentAssetsAtRisk",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T14:08:00Z",
+        "text": "daysUntilAbandon: 2\nisCorpOwned: true\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureLink: <a href=\"showinfo:35835//1000000000001\">Amamake - Alpha</a>\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835"
+    },
     {
         "notification_id": 1000000601,
         "type": "OrbitalAttacked",

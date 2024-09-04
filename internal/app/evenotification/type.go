@@ -2,7 +2,7 @@ package evenotification
 
 type Type string
 
-// All known notification types
+// A specific notification type
 const (
 	AcceptedAlly                              Type = "AcceptedAlly"
 	AcceptedSurrender                         Type = "AcceptedSurrender"
@@ -272,6 +272,7 @@ var supportedTypes = []Type{
 	StructureFuelAlert,
 	StructureLostArmor,
 	StructureLostShields,
+	StructureImpendingAbandonmentAssetsAtRisk,
 	StructureOnline,
 	StructureServicesOffline,
 	StructuresReinforcementChanged,

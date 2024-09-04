@@ -56,6 +56,7 @@ func (s *EveNotificationService) RenderESI(ctx context.Context, type_, text stri
 		StructureAnchoring,
 		StructureDestroyed,
 		StructureFuelAlert,
+		StructureImpendingAbandonmentAssetsAtRisk,
 		StructureLostArmor,
 		StructureLostShields,
 		StructureOnline,

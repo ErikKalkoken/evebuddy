@@ -58,7 +58,7 @@ type notification struct {
 	Timestamp      time.Time `json:"timestamp"`
 }
 
-func TestRenderCharacterNotification2(t *testing.T) {
+func TestRenderAllCharacterNotifications(t *testing.T) {
 	data, err := os.ReadFile("testdata/notifications.json")
 	if err != nil {
 		panic(err)

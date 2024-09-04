@@ -64,5 +64,10 @@ func TestXMLtoMarkdown(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
 
+func TestStrip(t *testing.T) {
+	got := evehtml.Strip(`<a href="showinfo:35835//1039523841193">Helgatild - 9-12</a>`)
+	want := "Helgatild - 9-12"
+	assert.Equal(t, want, got)
 }

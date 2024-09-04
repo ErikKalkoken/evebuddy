@@ -14,11 +14,14 @@ import (
 // and it's method are supposed to be used directly inside the functions
 // for creating and updating a fyne tree.
 //
-// When updating an existing tree, please always create a new object
-// and then replace the old object which is used by the tree widget.
+// It is not recommended to update an existing tree, while it is being used by a tree widget.
+// This can lead to data races. Instead, create and update a new object
+// and then replace the old object once the update is complete.
 //
 // Nodes can be of any type.
-// Nodes that have child nodes are reported as branches. Note that this means there can not be any empty branch nodes.
+//
+// Nodes that have child nodes are reported as branches.
+// This means there can not be any empty branch nodes.
 type FyneTree[T any] struct {
 	ids     map[widget.TreeNodeID][]widget.TreeNodeID
 	parents map[widget.TreeNodeID]widget.TreeNodeID
