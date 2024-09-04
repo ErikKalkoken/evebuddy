@@ -636,6 +636,16 @@
     },
     {
         "notification_id": 1000001102,
+        "type": "CharAppRejectMsg",
+        "sender_id": 2902,
+        "sender_type": "corporation",
+        "timestamp": "2019-11-18T20:00:00Z",
+        "text": "applicationText: ''\ncharID: 1011\ncorpID: 2001",
+        "is_read": false,
+        "is_sent": false
+    },
+    {
+        "notification_id": 1000001103,
         "type": "CorpAllBillMsg",
         "sender_id": 2902,
         "sender_type": "corporation",
@@ -645,12 +655,12 @@
         "is_sent": false
     },
     {
-        "notification_id": 1000001103,
-        "type": "CharAppRejectMsg",
+        "notification_id": 1000001104,
+        "type": "CorpAllBillMsg",
         "sender_id": 2902,
         "sender_type": "corporation",
         "timestamp": "2019-11-18T20:00:00Z",
-        "text": "applicationText: ''\ncharID: 1011\ncorpID: 2001",
+        "text": "amount: 146225\nbillTypeID: 2\ncreditorID: 2011\ncurrentDate: 133695263824047076\ndebtorID: 2001\ndueDate: 133721177390000000\nexternalID: 27\nexternalID2: 60003760",
         "is_read": false,
         "is_sent": false
     },

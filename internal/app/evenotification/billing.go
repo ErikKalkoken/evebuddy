@@ -12,6 +12,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	billTypeLease                = 2
+	billTypeAllianceFee          = 5
+	billTypeInfrastructureHubFee = 7
+)
+
 func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
 	switch type_ {
@@ -51,20 +57,49 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
-		entities, err := s.EveUniverseService.ToEveEntities(ctx, []int32{data.CreditorID, data.DebtorID})
+		ids := []int32{data.CreditorID, data.DebtorID}
+		if data.ExternalID != -1 && data.ExternalID == int64(int32(data.ExternalID)) {
+			ids = append(ids, int32(data.ExternalID))
+		}
+		if data.ExternalID2 != -1 && data.ExternalID2 == int64(int32(data.ExternalID2)) {
+			ids = append(ids, int32(data.ExternalID2))
+		}
+		entities, err := s.EveUniverseService.ToEveEntities(ctx, ids)
 		if err != nil {
 			return title, body, err
 		}
-		out := fmt.Sprintf(
+		var external1 string
+		if x, ok := entities[int32(data.ExternalID)]; ok {
+			external1 = x.Name
+		} else {
+			external1 = "?"
+		}
+		var external2 string
+		if x, ok := entities[int32(data.ExternalID2)]; ok {
+			external2 = x.Name
+		} else {
+			external2 = "?"
+		}
+		var billPurpose string
+		switch data.BillTypeID {
+		case billTypeLease:
+			billPurpose = fmt.Sprintf("extending the lease of **%s** at **%s**", external1, external2)
+		case billTypeAllianceFee:
+			billPurpose = fmt.Sprintf("maintenance of **%s**", external1)
+		case billTypeInfrastructureHubFee:
+			billPurpose = fmt.Sprintf("maintenance of infrastructure hub in **%s**", external1)
+		default:
+			billPurpose = "?"
+		}
+		body.Set(fmt.Sprintf(
 			"A bill of **%s** ISK, due **%s** owed by %s to %s was issued on %s. This bill is for %s.",
 			humanize.Commaf(data.Amount),
 			fromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
 			makeEveEntityProfileLink(entities[data.DebtorID]),
 			makeEveEntityProfileLink(entities[data.CreditorID]),
 			fromLDAPTime(data.CurrentDate).Format(app.TimeDefaultFormat),
-			billTypeName(data.BillTypeID),
-		)
-		body.Set(out)
+			billPurpose,
+		))
 
 	case InfrastructureHubBillAboutToExpire:
 		title.Set("IHub Bill About to Expire")
@@ -111,8 +146,12 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 
 func billTypeName(id int32) string {
 	switch id {
-	case 7:
-		return "Infrastructure Hub"
+	case billTypeLease:
+		return "lease"
+	case billTypeAllianceFee:
+		return "alliance fee"
+	case billTypeInfrastructureHubFee:
+		return "infrastructure hub fee"
 	}
 	return "?"
 }

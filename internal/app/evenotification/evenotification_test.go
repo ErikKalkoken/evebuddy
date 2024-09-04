@@ -33,6 +33,8 @@ func TestRenderCharacterNotification(t *testing.T) {
 		httpmock.Reset()
 		creditor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000023})
 		debtor := factory.CreateEveEntityCorporation(app.EveEntity{ID: 98267621})
+		office := factory.CreateEveEntityInventoryType(app.EveEntity{ID: 27})
+		station := factory.CreateEveEntity(app.EveEntity{ID: 60003760, Category: app.EveEntityStation})
 		text := `
 amount: 10000
 billTypeID: 2
@@ -41,12 +43,14 @@ currentDate: 133678830021821155
 debtorID: 98267621
 dueDate: 133704743590000000
 externalID: 27
-externalID2: 60002599`
+externalID2: 60003760`
 		title, body, err := en.RenderESI(ctx, "CorpAllBillMsg", text, time.Now())
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Bill issued", title.ValueOrZero())
 			assert.Contains(t, body.ValueOrZero(), creditor.Name)
 			assert.Contains(t, body.ValueOrZero(), debtor.Name)
+			assert.Contains(t, body.ValueOrZero(), office.Name)
+			assert.Contains(t, body.ValueOrZero(), station.Name)
 		}
 	})
 }
@@ -103,6 +107,7 @@ func TestRenderAllCharacterNotifications(t *testing.T) {
 	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 46303})
 	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 35894})
 	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 35835})
+	factory.CreateEveEntityInventoryType(app.EveEntity{ID: 27})
 	factory.CreateEveEntity(app.EveEntity{ID: 60003760, Category: app.EveEntityStation})
 	notifTypes := set.NewFromSlice(evenotification.SupportedTypes())
 	typeTested := make(map[evenotification.Type]bool)

@@ -18,6 +18,27 @@ import (
 func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_ Type, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
 	switch type_ {
+	case MoonminingAutomaticFracture:
+		var data notification.MoonminingAutomaticFracture
+		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+			return title, body, err
+		}
+		o, err := s.makeMoonMiningBaseText(ctx, data.MoonID, data.StructureName)
+		if err != nil {
+			return title, body, err
+		}
+		title.Set(fmt.Sprintf("Extraction for %s has autofractured", data.StructureName))
+		ores, err := s.makeOreText(ctx, data.OreVolumeByType)
+		if err != nil {
+			return title, body, err
+		}
+		out := fmt.Sprintf("The extraction for %s "+
+			"has reached the end of it's lifetime and has fractured automatically. The moon products are ready to be harvested.\n\n%s",
+			o.text,
+			ores,
+		)
+		body.Set(out)
+
 	case MoonminingExtractionStarted:
 		var data notification.MoonminingExtractionStarted
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -27,7 +48,7 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_ Typ
 		if err != nil {
 			return title, body, err
 		}
-		title.Set(fmt.Sprintf("%s has started extraction", data.StructureName))
+		title.Set(fmt.Sprintf("Extraction started at %s", data.StructureName))
 		ores, err := s.makeOreText(ctx, data.OreVolumeByType)
 		if err != nil {
 			return title, body, err
@@ -51,7 +72,7 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_ Typ
 		if err != nil {
 			return title, body, err
 		}
-		title.Set(fmt.Sprintf("%s has finished extraction", data.StructureName))
+		title.Set(fmt.Sprintf("Extraction finished at %s", data.StructureName))
 		ores, err := s.makeOreText(ctx, data.OreVolumeByType)
 		if err != nil {
 			return title, body, err
@@ -65,27 +86,6 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_ Typ
 		)
 		body.Set(out)
 
-	case MoonminingAutomaticFracture:
-		var data notification.MoonminingAutomaticFracture
-		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
-			return title, body, err
-		}
-		o, err := s.makeMoonMiningBaseText(ctx, data.MoonID, data.StructureName)
-		if err != nil {
-			return title, body, err
-		}
-		title.Set(fmt.Sprintf("%s has auto fractured", data.StructureName))
-		ores, err := s.makeOreText(ctx, data.OreVolumeByType)
-		if err != nil {
-			return title, body, err
-		}
-		out := fmt.Sprintf("The moon drill fitted to %s "+
-			"has automatically fired and the moon products are ready to be harvested.\n\n%s",
-			o.text,
-			ores,
-		)
-		body.Set(out)
-
 	case MoonminingExtractionCancelled:
 		var data notification.MoonminingExtractionCancelled
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
@@ -95,7 +95,7 @@ func (s *EveNotificationService) renderMoonMining(ctx context.Context, type_ Typ
 		if err != nil {
 			return title, body, err
 		}
-		title.Set(fmt.Sprintf("%s has canceled it's extraction", data.StructureName))
+		title.Set(fmt.Sprintf("Extraction canceled at %s", data.StructureName))
 		cancelledBy := ""
 		if data.CancelledBy != 0 {
 			x, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.CancelledBy)
@@ -193,7 +193,7 @@ func (s *EveNotificationService) makeOreText(ctx context.Context, ores map[int32
 	slices.SortFunc(items, func(a, b oreItem) int {
 		return cmp.Compare(a.name, b.name)
 	})
-	lines := make([]string, 0)
+	lines := []string{"Estimated ore composition:"}
 	for i := range slices.Values(items) {
 		text := fmt.Sprintf("%s: %s m3", i.name, humanize.Comma(int64(i.volume)))
 		lines = append(lines, text)

@@ -115,7 +115,7 @@ jobs:
         echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
     - name: ZIP package
-      run: zip -r ${{ env.NAME }}-${{ env.VERSION }}-windows-x64.zip "cmd/evebuddy/${{ env.FULLNAME }}.exe"
+      run: zip -j ${{ env.NAME }}-${{ env.VERSION }}-windows-x64.zip "cmd/evebuddy/${{ env.FULLNAME }}.exe"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
