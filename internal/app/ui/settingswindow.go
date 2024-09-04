@@ -319,12 +319,12 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	content.Add(form)
 	content.Add(container.NewPadded())
 
-	selectAll := widget.NewButton("Select All", func() {
+	selectAll := widget.NewButton("Enable all communication types", func() {
 		for _, cg := range groups {
 			cg.SetSelected(cg.Options)
 		}
 	})
-	unselectAll := widget.NewButton("Unselect All", func() {
+	unselectAll := widget.NewButton("Disable all communication types", func() {
 		for _, cg := range groups {
 			cg.SetSelected([]string{})
 		}

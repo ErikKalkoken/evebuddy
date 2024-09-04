@@ -29,6 +29,8 @@ func (s *EveNotificationService) renderStructure(ctx context.Context, type_ Type
 		return s.renderStructureFuelAlert(ctx, text)
 	case StructureImpendingAbandonmentAssetsAtRisk:
 		return s.renderStructureImpendingAbandonmentAssetsAtRisk(ctx, text)
+	case StructureItemsMovedToSafety:
+		return s.renderStructureItemsMovedToSafety(ctx, text)
 	case StructureLostArmor:
 		return s.renderStructureLostArmor(ctx, text)
 	case StructureLostShields:
@@ -189,6 +191,35 @@ func (s *EveNotificationService) renderStructureImpendingAbandonmentAssetsAtRisk
 		name,
 		makeLocationLink(solarSystem),
 		data.DaysUntilAbandon,
+	))
+	return title, body, nil
+}
+
+func (s *EveNotificationService) renderStructureItemsMovedToSafety(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {
+	var title, body optional.Optional[string]
+	var data notification2.StructureItemsMovedToSafety
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return title, body, err
+	}
+	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarSystemID)
+	if err != nil {
+		return title, body, err
+	}
+	station, err := s.EveUniverseService.GetOrCreateEveEntityESI(ctx, data.NewStationID)
+	if err != nil {
+		return title, body, err
+	}
+	name := evehtml.Strip(data.StructureLink)
+	title.Set(fmt.Sprintf("Your assets located in %s have been moved to asset safety", name))
+	body.Set(fmt.Sprintf(
+		"You assets located at **%s** in %s have been moved to asset safety.\n\n"+
+			"They can be moved to a location of your choosing earliest at %s.\n\n"+
+			"They will be moved automatically to %s by %s.",
+		name,
+		makeLocationLink(solarSystem),
+		fromLDAPTime(data.AssetSafetyMinimumTimestamp).Format(app.TimeDefaultFormat),
+		station.Name,
+		fromLDAPTime(data.AssetSafetyFullTimestamp).Format(app.TimeDefaultFormat),
 	))
 	return title, body, nil
 }

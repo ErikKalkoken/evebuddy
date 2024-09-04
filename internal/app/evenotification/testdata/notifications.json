@@ -238,6 +238,14 @@
         "text": "daysUntilAbandon: 2\nisCorpOwned: true\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureLink: <a href=\"showinfo:35835//1000000000001\">Amamake - Alpha</a>\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835"
     },
     {
+        "notification_id": 1000000517,
+        "type": "StructureItemsMovedToSafety",
+        "sender_id": 2901,
+        "sender_type": "corporation",
+        "timestamp": "2019-08-16T14:08:00Z",
+        "text": "assetSafetyDurationFull: 17280000000000\nassetSafetyDurationMinimum: 4320000000000\nassetSafetyFullTimestamp: 133575078174301831\nassetSafetyMinimumTimestamp: 133562118174301831\nisCorpOwned: false\nnewStationID: 60003760\nsolarsystemID: 30002537\nstructureID: &id001 1000000000001\nstructureLink: <a href=\"showinfo:35835//1035811287521\">Amamake - Alpha</a>\nstructureShowInfoData:\n- showinfo\n- 35835\n- *id001\nstructureTypeID: 35835"
+    },
+    {
         "notification_id": 1000000601,
         "type": "OrbitalAttacked",
         "sender_id": 2901,

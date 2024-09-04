@@ -45,6 +45,20 @@ type StructureImpendingAbandonmentAssetsAtRisk struct {
 	StructureTypeID       int32  `yaml:"structureTypeID"`
 }
 
+type StructureItemsMovedToSafety struct {
+	AssetSafetyDurationFull     int64  `yaml:"assetSafetyDurationFull"`
+	AssetSafetyDurationMinimum  int64  `yaml:"assetSafetyDurationMinimum"`
+	AssetSafetyFullTimestamp    int64  `yaml:"assetSafetyFullTimestamp"`
+	AssetSafetyMinimumTimestamp int64  `yaml:"assetSafetyMinimumTimestamp"`
+	IsCorpOwned                 bool   `yaml:"isCorpOwned"`
+	NewStationID                int32  `yaml:"newStationID"`
+	SolarSystemID               int32  `yaml:"solarsystemID"`
+	StructureID                 int64  `yaml:"structureID"`
+	StructureLink               string `yaml:"structureLink"`
+	StructureShowInfoData       []any  `yaml:"structureShowInfoData"`
+	StructureTypeID             int32  `yaml:"structureTypeID"`
+}
+
 type WarAdopted struct {
 	AgainstID    int32 `yaml:"againstID"`
 	AllianceID   int32 `yaml:"allianceID"`
