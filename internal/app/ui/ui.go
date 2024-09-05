@@ -155,8 +155,8 @@ func NewUI(isDebug bool) *ui {
 	u.window.SetContent(mainContent)
 
 	// Define system tray menu
-	if fyneApp.Preferences().Bool(settingSysTrayEnabled) {
-		name := fyneApp.Metadata().Name
+	if fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, true) {
+		name := u.appName()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true
 		m := fyne.NewMenu(
@@ -239,6 +239,7 @@ func (u *ui) Init() {
 	})
 
 	u.themeSet(u.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault))
+	u.hideMailIndicator() // init system tray icon
 }
 
 func (u *ui) themeSet(name string) {

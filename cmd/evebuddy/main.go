@@ -34,22 +34,21 @@ const (
 
 // defined flags
 var (
-	levelFlag    logLevelFlag
-	debugFlag    = flag.Bool("debug", false, "Show additional debug information")
-	logFileFlag  = flag.Bool("logfile", false, "Write logs to a file instead of the console")
-	removeFlag   = flag.Bool("remove-user-files", false, "Remove all user files of this app")
-	showDirsFlag = flag.Bool("show-dirs", false, "Show directories where data is stored")
+	levelFlag     logLevelFlag
+	debugFlag     = flag.Bool("debug", false, "Show additional debug information")
+	logFileFlag   = flag.Bool("logfile", true, "Write logs to a file instead of the console")
+	uninstallFlag = flag.Bool("uninstall", false, "Uninstalls the app by deleting all user files")
+	showDirsFlag  = flag.Bool("show-dirs", false, "Show directories where user data is stored")
 )
 
 func init() {
-	levelFlag.value = slog.LevelWarn
+	levelFlag.value = slog.LevelInfo
 	flag.Var(&levelFlag, "loglevel", "set log level")
 }
 
 func main() {
 	flag.Parse()
 	slog.SetLogLoggerLevel(levelFlag.value)
-	log.SetFlags(log.LstdFlags | log.Llongfile)
 	ad := appdirs.New("evebuddy")
 	if *showDirsFlag {
 		fmt.Printf("Database: %s\n", ad.UserData())
@@ -57,25 +56,12 @@ func main() {
 		fmt.Printf("Logs: %s\n", ad.UserLog())
 		return
 	}
-	if *removeFlag {
-		fmt.Print("Are you sure you want to remove all locally stored data of this app (y/N)?")
+	if *uninstallFlag {
+		fmt.Print("Are you sure you want to uninstall this app and delete all user files (y/N)?")
 		var input string
 		fmt.Scanln(&input)
 		if strings.ToLower(input) == "y" {
-			pp := []struct {
-				name string
-				path string
-			}{
-				{"user data", ad.UserData()},
-				{"user log", ad.UserLog()},
-				{"user cache", ad.UserCache()},
-			}
-			for _, p := range pp {
-				if err := os.RemoveAll(p.path); err != nil {
-					log.Fatal(err)
-				}
-				fmt.Printf("Deleted %s: %s\n", p.name, p.path)
-			}
+			uninstall(ad.UserData(), ad.UserLog(), ad.UserCache())
 		} else {
 			fmt.Println("Aborted")
 		}
@@ -135,7 +121,7 @@ func main() {
 	cs.StatusCacheService = sc
 	cs.SSOService = sso.New(ssoClientId, httpClient, cache)
 
-	imageCacheDir, err := makeImageCachePath(ad)
+	imageCacheDir, err := initImageCachePath(ad)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -169,10 +155,27 @@ func makeDSN(ad *appdirs.App) (string, error) {
 	return dsn, nil
 }
 
-func makeImageCachePath(ad *appdirs.App) (string, error) {
+func initImageCachePath(ad *appdirs.App) (string, error) {
 	p := filepath.Join(ad.UserCache(), "images")
 	if err := os.MkdirAll(p, os.ModePerm); err != nil {
 		return "", err
 	}
 	return p, nil
+}
+
+func uninstall(data string, logs string, cache string) {
+	pp := []struct {
+		name string
+		path string
+	}{
+		{"user data", data},
+		{"user log", logs},
+		{"user cache", cache},
+	}
+	for _, p := range pp {
+		if err := os.RemoveAll(p.path); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Deleted %s: %s\n", p.name, p.path)
+	}
 }
