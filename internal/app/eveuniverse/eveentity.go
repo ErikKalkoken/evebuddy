@@ -43,7 +43,7 @@ func (eu *EveUniverseService) ToEveEntities(ctx context.Context, ids []int32) (m
 		return nil, err
 	}
 	r := make(map[int32]*app.EveEntity)
-	for id := range ids2.Iter() {
+	for id := range ids2.All() {
 		x, err := eu.GetOrCreateEveEntityESI(ctx, id)
 		if err != nil {
 			return nil, err

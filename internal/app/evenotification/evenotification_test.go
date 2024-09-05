@@ -128,7 +128,7 @@ func TestRenderAllCharacterNotifications(t *testing.T) {
 			}
 		})
 	}
-	for n := range notifTypes.Iter() {
+	for n := range notifTypes.All() {
 		if !typeTested[n] {
 			t.Errorf("Failed to test supported notification type: %s", n)
 		}

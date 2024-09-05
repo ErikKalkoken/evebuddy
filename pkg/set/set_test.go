@@ -115,7 +115,7 @@ func TestSetOther(t *testing.T) {
 	t.Run("can iterate over set", func(t *testing.T) {
 		s1 := set.NewFromSlice([]int{1, 2, 3})
 		s2 := set.New[int]()
-		for e := range s1.Iter() {
+		for e := range s1.All() {
 			s2.Add(e)
 		}
 		assert.Equal(t, s1, s2)

@@ -1,4 +1,4 @@
-// Package set implements a generic set type.
+// Package set implements a generic set container type.
 package set
 
 import (
@@ -7,12 +7,12 @@ import (
 	"maps"
 )
 
-// A set of values.
+// Set is a container for a set of values.
 type Set[T comparable] struct {
 	values map[T]struct{}
 }
 
-// New returns a new set.
+// New returns a new Set.
 func New[T comparable]() *Set[T] {
 	s := &Set[T]{values: make(map[T]struct{})}
 	return s
@@ -30,6 +30,12 @@ func NewFromSlice[T comparable](slice []T) *Set[T] {
 // Add adds an element to the set
 func (s *Set[T]) Add(v T) {
 	s.values[v] = struct{}{}
+}
+
+// All returns on iterator over all elements of a set.
+// Note that sets are unordered, so elements will be returned in no particular order.
+func (s *Set[T]) All() iter.Seq[T] {
+	return maps.Keys(s.values)
 }
 
 // Clear removes all elements from a set.
@@ -76,12 +82,6 @@ func (s *Set[T]) Intersect(other *Set[T]) *Set[T] {
 		n.Add(v)
 	}
 	return n
-}
-
-// Iter returns on iterator of a set.
-// Note that sets are unordered, so elements will be returned in no particular order.
-func (s *Set[T]) Iter() iter.Seq[T] {
-	return maps.Keys(s.values)
 }
 
 // Remove removes an element from a set.
