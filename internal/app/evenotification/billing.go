@@ -14,7 +14,7 @@ import (
 
 const (
 	billTypeLease                = 2
-	billTypeAllianceFee          = 5
+	billTypeAlliance             = 5
 	billTypeInfrastructureHubFee = 7
 )
 
@@ -35,11 +35,11 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		body.Set(out)
 
 	case BillOutOfMoneyMsg:
-		title.Set("Insufficient Funds for Bill")
 		var data notification2.CorpAllBillMsgV2
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
+		title.Set(fmt.Sprintf("Insufficient funds for %s bill", billTypeName(data.BillTypeID)))
 		out := fmt.Sprintf(
 			"The selected corporation wallet division for automatic payments "+
 				"does not have enough current funds available to pay the %s bill, "+
@@ -52,11 +52,11 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		body.Set(out)
 
 	case CorpAllBillMsg:
-		title.Set("Bill issued")
 		var data notification2.CorpAllBillMsgV2
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
+		title.Set(fmt.Sprintf("Bill issued for %s", billTypeName(data.BillTypeID)))
 		ids := []int32{data.CreditorID, data.DebtorID}
 		if data.ExternalID != -1 && data.ExternalID == int64(int32(data.ExternalID)) {
 			ids = append(ids, int32(data.ExternalID))
@@ -84,7 +84,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		switch data.BillTypeID {
 		case billTypeLease:
 			billPurpose = fmt.Sprintf("extending the lease of **%s** at **%s**", external1, external2)
-		case billTypeAllianceFee:
+		case billTypeAlliance:
 			billPurpose = fmt.Sprintf("maintenance of **%s**", external1)
 		case billTypeInfrastructureHubFee:
 			billPurpose = fmt.Sprintf("maintenance of infrastructure hub in **%s**", external1)
@@ -148,8 +148,8 @@ func billTypeName(id int32) string {
 	switch id {
 	case billTypeLease:
 		return "lease"
-	case billTypeAllianceFee:
-		return "alliance fee"
+	case billTypeAlliance:
+		return "alliance maintenance"
 	case billTypeInfrastructureHubFee:
 		return "infrastructure hub fee"
 	}

@@ -203,22 +203,28 @@ func (u *ui) Init() {
 	u.window.Resize(fyne.NewSize(float32(width), float32(height)))
 
 	keyTabsMainID := "tabs-main-id"
-	index := u.fyneApp.Preferences().IntWithFallback(keyTabsMainID, -1)
-	if index != -1 {
-		u.tabs.SelectIndex(index)
-	}
 	makeSubTabsKey := func(i int) string {
 		return fmt.Sprintf("tabs-sub%d-id", i)
 	}
-	for i, o := range u.tabs.Items {
-		tabs, ok := o.Content.(*container.AppTabs)
-		if !ok {
-			continue
-		}
-		key := makeSubTabsKey(i)
-		index := u.fyneApp.Preferences().IntWithFallback(key, -1)
+	if !u.hasCharacter() {
+		// reset to overview tab if no character
+		u.tabs.Select(u.overviewTab)
+		u.overviewTab.Content.(*container.AppTabs).SelectIndex(0)
+	} else {
+		index := u.fyneApp.Preferences().IntWithFallback(keyTabsMainID, -1)
 		if index != -1 {
-			tabs.SelectIndex(index)
+			u.tabs.SelectIndex(index)
+		}
+		for i, o := range u.tabs.Items {
+			tabs, ok := o.Content.(*container.AppTabs)
+			if !ok {
+				continue
+			}
+			key := makeSubTabsKey(i)
+			index := u.fyneApp.Preferences().IntWithFallback(key, -1)
+			if index != -1 {
+				tabs.SelectIndex(index)
+			}
 		}
 	}
 	u.window.SetOnClosed(func() {

@@ -45,6 +45,7 @@ func (a *toolbarArea) refresh() {
 		a.icon.Refresh()
 		a.name.Text = "No character"
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
+		a.name.Importance = widget.LowImportance
 	} else {
 		r, err := a.ui.EveImageService.CharacterPortrait(c.ID, defaultIconSize)
 		if err != nil {
@@ -56,6 +57,7 @@ func (a *toolbarArea) refresh() {
 		s := fmt.Sprintf("%s (%s)", c.EveCharacter.Name, c.EveCharacter.Corporation.Name)
 		a.name.Text = s
 		a.name.TextStyle = fyne.TextStyle{Bold: true}
+		a.name.Importance = widget.MediumImportance
 	}
 	a.name.Refresh()
 

@@ -62,6 +62,7 @@ func main() {
 		fmt.Scanln(&input)
 		if strings.ToLower(input) == "y" {
 			uninstall(ad.UserData(), ad.UserLog(), ad.UserCache())
+			fmt.Printf("App uninstalled")
 		} else {
 			fmt.Println("Aborted")
 		}
