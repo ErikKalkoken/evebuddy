@@ -35,6 +35,11 @@ EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) player
 - Desktop app that runs on Windows, Linux and macOS
 - Automatic dark and light theme
 
+> [!IMPORTANT]
+> This is an early version and not yet considered fully stable. We therefore very much appreciate any user feedback, so we can find and squash any remaining bugs. If you encounter any bugs please feel free to open an issue or chat with us on Discord.
+> Some features may not be fully implemented yet (e.g. some notification types). Our current focus is on bug fixing, rather then adding more features. But if you are missing anything important, please feel free to open a feature request.
+> We very much welcome any contributions. If you like to provide a fix or add a feature please feel free top open a PR.
+
 ## Screenshot
 
 ![example](https://cdn.imgpile.com/f/aD27GDt_xl.png)
