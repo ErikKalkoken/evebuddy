@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -79,8 +78,7 @@ type ui struct {
 }
 
 // NewUI build the UI and returns it.
-func NewUI(isDebug bool) *ui {
-	fyneApp := fyneapp.NewWithID("io.github.erikkalkoken.evebuddy")
+func NewUI(fyneApp fyne.App, isDebug bool) *ui {
 	desk, ok := fyneApp.(desktop.App)
 	if !ok {
 		log.Fatal("Failed to initialize as desktop app")

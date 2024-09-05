@@ -9,12 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUninstall(t *testing.T) {
+func TestDeleteAll(t *testing.T) {
 	// given
-	paths := make([]string, 0)
-	for range 3 {
-		paths = append(paths, t.TempDir())
+	ap := appDirs{
+		cache:    t.TempDir(),
+		data:     t.TempDir(),
+		log:      t.TempDir(),
+		settings: t.TempDir(),
 	}
+	paths := []string{ap.cache, ap.data, ap.log, ap.settings}
 	for _, p := range paths {
 		x := filepath.Join(p, "dummy.txt")
 		if err := os.WriteFile(x, []byte("dummy"), 0644); err != nil {
@@ -22,17 +25,17 @@ func TestUninstall(t *testing.T) {
 		}
 	}
 	for _, p := range paths {
-		assert.True(t, Exists(p))
+		assert.True(t, fileExists(p))
 	}
 	// when
-	uninstall(paths[0], paths[1], paths[2])
+	ap.deleteAll()
 	// then
 	for _, p := range paths {
-		assert.False(t, Exists(p))
+		assert.False(t, fileExists(p))
 	}
 }
 
-func Exists(name string) bool {
+func fileExists(name string) bool {
 	_, err := os.Stat(name)
 	if err == nil {
 		return true

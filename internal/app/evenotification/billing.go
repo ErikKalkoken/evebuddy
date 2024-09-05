@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	billTypeLease                = 2
-	billTypeAlliance             = 5
-	billTypeInfrastructureHubFee = 7
+	billTypeLease             = 2
+	billTypeAlliance          = 5
+	billTypeInfrastructureHub = 7
 )
 
 func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, text string) (optional.Optional[string], optional.Optional[string], error) {
@@ -86,7 +86,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 			billPurpose = fmt.Sprintf("extending the lease of **%s** at **%s**", external1, external2)
 		case billTypeAlliance:
 			billPurpose = fmt.Sprintf("maintenance of **%s**", external1)
-		case billTypeInfrastructureHubFee:
+		case billTypeInfrastructureHub:
 			billPurpose = fmt.Sprintf("maintenance of infrastructure hub in **%s**", external1)
 		default:
 			billPurpose = "?"
@@ -150,8 +150,8 @@ func billTypeName(id int32) string {
 		return "lease"
 	case billTypeAlliance:
 		return "alliance maintenance"
-	case billTypeInfrastructureHubFee:
-		return "infrastructure hub fee"
+	case billTypeInfrastructureHub:
+		return "infrastructure hub upkeep"
 	}
 	return "?"
 }
