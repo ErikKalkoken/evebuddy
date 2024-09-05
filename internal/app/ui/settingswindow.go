@@ -166,6 +166,7 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 		w.ui.themeSet(themeRadio.Selected)
 		w.ui.fyneApp.Preferences().SetString(settingTheme, themeRadio.Selected)
 		w.ui.fyneApp.Preferences().SetBool(settingSysTrayEnabled, sysTrayCheck.Checked)
+		submit.Disable()
 	}
 	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
 		w.window.Hide()
