@@ -29,6 +29,8 @@ func (s *EveNotificationService) renderStructure(ctx context.Context, type_ Type
 		return s.renderStructureFuelAlert(ctx, text)
 	case StructureImpendingAbandonmentAssetsAtRisk:
 		return s.renderStructureImpendingAbandonmentAssetsAtRisk(ctx, text)
+	case StructureItemsDelivered:
+		return s.renderStructureItemsDelivered(ctx, text)
 	case StructureItemsMovedToSafety:
 		return s.renderStructureItemsMovedToSafety(ctx, text)
 	case StructureLostArmor:
@@ -192,6 +194,48 @@ func (s *EveNotificationService) renderStructureImpendingAbandonmentAssetsAtRisk
 		makeLocationLink(solarSystem),
 		data.DaysUntilAbandon,
 	))
+	return title, body, nil
+}
+
+func (s *EveNotificationService) renderStructureItemsDelivered(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {
+	var title, body optional.Optional[string]
+	var data notification2.StructureItemsDelivered
+	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
+		return title, body, err
+	}
+	ids := []int32{data.CharID, data.StructureTypeID}
+	for _, r := range data.ListOfTypesAndQty {
+		ids = append(ids, r[1])
+	}
+	entities, err := s.EveUniverseService.ToEveEntities(ctx, ids)
+	if err != nil {
+		return title, body, err
+	}
+	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarSystemID)
+	if err != nil {
+		return title, body, err
+	}
+	structure, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, data.StructureID)
+	if err != nil {
+		return title, body, err
+	}
+	title.Set(fmt.Sprintf("Items delivered from %s", entities[data.CharID].Name))
+	var location string
+	if structure.Name != "" {
+		location = fmt.Sprintf("**%s**", structure.Name)
+	} else {
+		location = fmt.Sprintf("a %s", makeEveEntityProfileLink(entities[data.StructureTypeID]))
+	}
+	b := fmt.Sprintf(
+		"%s has delivered the following items to %s in %s:\n\n",
+		makeEveEntityProfileLink(entities[data.CharID]),
+		location,
+		makeLocationLink(solarSystem),
+	)
+	for _, r := range data.ListOfTypesAndQty {
+		b += fmt.Sprintf("%dx %s\n\n", r[0], entities[r[1]].Name)
+	}
+	body.Set(b)
 	return title, body, nil
 }
 

@@ -271,6 +271,7 @@ var supportedTypes = []Type{
 	StructureDestroyed,
 	StructureFuelAlert,
 	StructureImpendingAbandonmentAssetsAtRisk,
+	StructureItemsDelivered,
 	StructureItemsMovedToSafety,
 	StructureLostArmor,
 	StructureLostShields,

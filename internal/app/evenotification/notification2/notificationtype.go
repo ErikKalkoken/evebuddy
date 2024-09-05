@@ -45,6 +45,15 @@ type StructureImpendingAbandonmentAssetsAtRisk struct {
 	StructureTypeID       int32  `yaml:"structureTypeID"`
 }
 
+type StructureItemsDelivered struct {
+	CharID                int32     `yaml:"charID"`
+	ListOfTypesAndQty     [][]int32 `yaml:"listOfTypesAndQty"`
+	SolarSystemID         int32     `yaml:"solarsystemID"`
+	StructureID           int64     `yaml:"structureID"`
+	StructureShowInfoData []any     `yaml:"structureShowInfoData"`
+	StructureTypeID       int32     `yaml:"structureTypeID"`
+}
+
 type StructureItemsMovedToSafety struct {
 	AssetSafetyDurationFull     int64  `yaml:"assetSafetyDurationFull"`
 	AssetSafetyDurationMinimum  int64  `yaml:"assetSafetyDurationMinimum"`
