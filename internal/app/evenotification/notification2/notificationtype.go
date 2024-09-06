@@ -13,6 +13,12 @@ type CorpAllBillMsgV2 struct {
 	ExternalID2 int64   `yaml:"externalID2"`
 }
 
+type DeclareWar struct {
+	CharID     int32 `yaml:"charID"`
+	DefenderID int32 `yaml:"defenderID"`
+	EntityID   int32 `yaml:"entityID"`
+}
+
 type InfrastructureHubBillAboutToExpire struct {
 	BillID        int32 `yaml:"billID"`
 	CorpID        int32 `yaml:"corpID"`

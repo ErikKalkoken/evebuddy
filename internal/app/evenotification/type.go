@@ -257,6 +257,7 @@ var supportedTypes = []Type{
 	CorpAppNewMsg,
 	CorpAppRejectCustomMsg,
 	CorpWarSurrenderMsg,
+	DeclareWar,
 	IHubDestroyedByBillFailure,
 	InfrastructureHubBillAboutToExpire,
 	MoonminingAutomaticFracture,

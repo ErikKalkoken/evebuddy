@@ -75,6 +75,7 @@ func (s *EveNotificationService) RenderESI(ctx context.Context, type_, text stri
 		return s.renderTower(ctx, t, text)
 	case AllWarSurrenderMsg,
 		CorpWarSurrenderMsg,
+		DeclareWar,
 		WarAdopted,
 		WarDeclared,
 		WarHQRemovedFromSpace,
