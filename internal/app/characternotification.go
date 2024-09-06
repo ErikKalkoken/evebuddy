@@ -5,7 +5,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/ErikKalkoken/evebuddy/pkg/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type CharacterNotification struct {

@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
-	"github.com/ErikKalkoken/evebuddy/pkg/set"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // shipsArea is the UI area that shows the skillqueue

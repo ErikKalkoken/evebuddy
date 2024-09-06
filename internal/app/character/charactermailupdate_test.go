@@ -13,7 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/ErikKalkoken/evebuddy/pkg/set"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func TestUpdateMail(t *testing.T) {

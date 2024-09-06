@@ -3,7 +3,7 @@ package app
 import (
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/pkg/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type CharacterSkillqueueItem struct {

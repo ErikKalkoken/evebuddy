@@ -12,8 +12,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/ErikKalkoken/evebuddy/pkg/optional"
-	"github.com/ErikKalkoken/evebuddy/pkg/set"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )

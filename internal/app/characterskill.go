@@ -1,6 +1,6 @@
 package app
 
-import "github.com/ErikKalkoken/evebuddy/pkg/optional"
+import "github.com/ErikKalkoken/evebuddy/internal/optional"
 
 type CharacterShipAbility struct {
 	Type   EntityShort[int32]

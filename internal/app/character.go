@@ -3,7 +3,7 @@ package app
 import (
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/pkg/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 // An Eve Online character owners by the user.
