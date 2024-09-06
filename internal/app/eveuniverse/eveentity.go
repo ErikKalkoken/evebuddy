@@ -205,7 +205,7 @@ func (eu *EveUniverseService) resolveEveEntityNamesRemotely(ctx context.Context,
 		return nil
 	}
 	for _, e := range ee {
-		if missing.Has(int32(e.ID)) {
+		if missing.Contains(int32(e.ID)) {
 			_, err := eu.st.GetOrCreateEveEntity(ctx, e.ID, e.Name, e.Category)
 			if err != nil {
 				return err

@@ -90,7 +90,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 			locationIDs := set.New[int64]()
 			for _, ca := range assets {
 				typeIDs.Add(ca.TypeId)
-				if !itemIDs.Has(ca.LocationId) {
+				if !itemIDs.Contains(ca.LocationId) {
 					locationIDs.Add(ca.LocationId) // location IDs that are not referencing other itemIDs are locations
 				}
 			}
@@ -113,7 +113,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 			}
 			existingIDs := set.NewFromSlice(ids)
 			for _, a := range assets {
-				if existingIDs.Has(a.ItemId) {
+				if existingIDs.Contains(a.ItemId) {
 					arg := storage.UpdateCharacterAssetParams{
 						CharacterID:  characterID,
 						ItemID:       a.ItemId,

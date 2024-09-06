@@ -68,7 +68,7 @@ func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, 
 			var newNotifs []esi.GetCharactersCharacterIdNotifications200Ok
 			var existingNotifs []esi.GetCharactersCharacterIdNotifications200Ok
 			for _, n := range notifications {
-				if existingIDs.Has(n.NotificationId) {
+				if existingIDs.Contains(n.NotificationId) {
 					existingNotifs = append(existingNotifs, n)
 				} else {
 					newNotifs = append(newNotifs, n)

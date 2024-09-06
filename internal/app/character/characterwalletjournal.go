@@ -46,7 +46,7 @@ func (s *CharacterService) updateCharacterWalletJournalEntryESI(ctx context.Cont
 			existingIDs := set.NewFromSlice(ii)
 			var newEntries []esi.GetCharactersCharacterIdWalletJournal200Ok
 			for _, e := range entries {
-				if existingIDs.Has(e.Id) {
+				if existingIDs.Contains(e.Id) {
 					continue
 				}
 				newEntries = append(newEntries, e)

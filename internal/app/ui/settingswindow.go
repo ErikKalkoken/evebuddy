@@ -289,7 +289,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	for c, nts := range categories {
 		selected := make([]string, 0)
 		for _, nt := range nts {
-			if typesEnabled.Has(nt) {
+			if typesEnabled.Contains(nt) {
 				selected = append(selected, nt)
 			}
 		}

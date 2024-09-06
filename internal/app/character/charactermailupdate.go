@@ -170,7 +170,7 @@ func (s *CharacterService) determineNewMail(ctx context.Context, characterID int
 		return newMail, existingMail, err
 	}
 	for _, h := range mm {
-		if existingIDs.Has(h.MailId) {
+		if existingIDs.Contains(h.MailId) {
 			existingMail = append(existingMail, h)
 		} else {
 			newMail = append(newMail, h)

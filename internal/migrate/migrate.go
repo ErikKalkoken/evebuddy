@@ -105,7 +105,7 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 			continue
 		}
 		name := strings.TrimSuffix(fn, ext)
-		if appliedMigrations.Has(name) {
+		if appliedMigrations.Contains(name) {
 			continue
 		}
 		unapplied = append(unapplied, migration{name: name, filename: fn})

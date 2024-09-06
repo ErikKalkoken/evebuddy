@@ -48,7 +48,7 @@ func (s *Set[T]) Clear() {
 func (s *Set[T]) Difference(other *Set[T]) *Set[T] {
 	n := NewFromSlice([]T{})
 	for v := range s.values {
-		if other.Has(v) {
+		if other.Contains(v) {
 			continue
 		}
 		n.Add(v)
@@ -66,8 +66,8 @@ func (s *Set[T]) Equal(other *Set[T]) bool {
 	return x == 0
 }
 
-// Has reports wether an item is in this set.
-func (s *Set[T]) Has(item T) bool {
+// Contains reports wether an item is in this set.
+func (s *Set[T]) Contains(item T) bool {
 	_, ok := s.values[item]
 	return ok
 }
@@ -76,7 +76,7 @@ func (s *Set[T]) Has(item T) bool {
 func (s *Set[T]) Intersect(other *Set[T]) *Set[T] {
 	n := NewFromSlice([]T{})
 	for v := range s.values {
-		if !other.Has(v) {
+		if !other.Contains(v) {
 			continue
 		}
 		n.Add(v)

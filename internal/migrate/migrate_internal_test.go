@@ -33,8 +33,8 @@ func TestApplyMigrations(t *testing.T) {
 			tables, err := ListTableNames(db)
 			if assert.NoError(t, err) {
 				names := set.NewFromSlice(tables)
-				assert.True(t, names.Has("alpha"))
-				assert.True(t, names.Has("bravo"))
+				assert.True(t, names.Contains("alpha"))
+				assert.True(t, names.Contains("bravo"))
 			}
 		}
 	})
@@ -54,8 +54,8 @@ func TestApplyMigrations(t *testing.T) {
 			tables, err := ListTableNames(db)
 			if assert.NoError(t, err) {
 				names := set.NewFromSlice(tables)
-				assert.False(t, names.Has("alpha"))
-				assert.True(t, names.Has("bravo"))
+				assert.False(t, names.Contains("alpha"))
+				assert.True(t, names.Contains("bravo"))
 			}
 		}
 	})
@@ -76,8 +76,8 @@ func TestApplyMigrations(t *testing.T) {
 			tables, err := ListTableNames(db)
 			if assert.NoError(t, err) {
 				names := set.NewFromSlice(tables)
-				assert.False(t, names.Has("alpha"))
-				assert.False(t, names.Has("bravo"))
+				assert.False(t, names.Contains("alpha"))
+				assert.False(t, names.Contains("bravo"))
 			}
 		}
 	})

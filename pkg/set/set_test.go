@@ -54,7 +54,7 @@ func TestSetHas(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("case: %v", c.in), func(t *testing.T) {
-			result := s.Has(c.in)
+			result := s.Contains(c.in)
 			assert.Equal(t, c.want, result)
 		})
 	}

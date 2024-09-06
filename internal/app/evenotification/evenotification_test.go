@@ -114,7 +114,7 @@ func TestRenderAllCharacterNotifications(t *testing.T) {
 	for _, n := range notifications {
 		t.Run("should render notification type "+n.Type, func(t *testing.T) {
 			t2 := evenotification.Type(n.Type)
-			if notifTypes.Has(t2) {
+			if notifTypes.Contains(t2) {
 				typeTested[t2] = true
 				title, body, err := en.RenderESI(ctx, n.Type, n.Text, n.Timestamp)
 				if assert.NoError(t, err) {

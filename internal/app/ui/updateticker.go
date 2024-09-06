@@ -193,7 +193,7 @@ func (u *ui) processNotifications(ctx context.Context, characterID int32) {
 	typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 	oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
 	for _, n := range nn {
-		if !typesEnabled.Has(n.Type) || n.Timestamp.Before(oldest) {
+		if !typesEnabled.Contains(n.Type) || n.Timestamp.Before(oldest) {
 			continue
 		}
 		title := fmt.Sprintf("New Communication from %s", n.Sender.Name)
