@@ -83,6 +83,13 @@ func (s *EveNotificationService) RenderESI(ctx context.Context, type_, text stri
 		WarInvalid,
 		WarRetractedByConcord:
 		return s.renderWar(ctx, t, text)
+	case EntosisCaptureStarted,
+		SovAllClaimAcquiredMsg,
+		SovAllClaimLostMsg,
+		SovCommandNodeEventStarted,
+		SovStructureDestroyed,
+		SovStructureReinforced:
+		return s.renderSov(ctx, t, text)
 	}
 	return optional.Optional[string]{}, optional.Optional[string]{}, nil
 }

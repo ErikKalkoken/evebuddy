@@ -6,7 +6,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-func makeLocationLink(ess *app.EveSolarSystem) string {
+func makeSolarSystemLink(ess *app.EveSolarSystem) string {
 	x := fmt.Sprintf(
 		"%s (%s)",
 		makeMarkDownLink(ess.Name, makeDotLanProfileURL(ess.Name, dotlanSolarSystem)),
@@ -42,6 +42,8 @@ func makeEveEntityProfileLink(e *app.EveEntity) string {
 		url = makeEveWhoCharacterURL(e.ID)
 	case app.EveEntityCorporation:
 		url = makeDotLanProfileURL(e.Name, dotlanCorporation)
+	default:
+		return e.Name
 	}
 	return makeMarkDownLink(e.Name, url)
 }

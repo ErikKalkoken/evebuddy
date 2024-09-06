@@ -101,7 +101,7 @@ func (s *EveNotificationService) makeOrbitalBaseText(ctx context.Context, planet
 		"The %s at %s in %s ",
 		structureType.Name,
 		planet.Name,
-		makeLocationLink(planet.SolarSystem),
+		makeSolarSystemLink(planet.SolarSystem),
 	)
 	x := orbitalInfo{
 		type_:  structureType,

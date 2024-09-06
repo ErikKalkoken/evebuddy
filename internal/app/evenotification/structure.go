@@ -191,7 +191,7 @@ func (s *EveNotificationService) renderStructureImpendingAbandonmentAssetsAtRisk
 			"These assets are at risk of loss as the structure is close to becoming abandoned.\n\n"+
 			"In approximately %d days this structure will become abandoned.",
 		name,
-		makeLocationLink(solarSystem),
+		makeSolarSystemLink(solarSystem),
 		data.DaysUntilAbandon,
 	))
 	return title, body, nil
@@ -230,7 +230,7 @@ func (s *EveNotificationService) renderStructureItemsDelivered(ctx context.Conte
 		"%s has delivered the following items to %s in %s:\n\n",
 		makeEveEntityProfileLink(entities[data.CharID]),
 		location,
-		makeLocationLink(solarSystem),
+		makeSolarSystemLink(solarSystem),
 	)
 	for _, r := range data.ListOfTypesAndQty {
 		b += fmt.Sprintf("%dx %s\n\n", r[0], entities[r[1]].Name)
@@ -260,7 +260,7 @@ func (s *EveNotificationService) renderStructureItemsMovedToSafety(ctx context.C
 			"They can be moved to a location of your choosing earliest at %s.\n\n"+
 			"They will be moved automatically to %s by %s.",
 		name,
-		makeLocationLink(solarSystem),
+		makeSolarSystemLink(solarSystem),
 		fromLDAPTime(data.AssetSafetyMinimumTimestamp).Format(app.TimeDefaultFormat),
 		station.Name,
 		fromLDAPTime(data.AssetSafetyFullTimestamp).Format(app.TimeDefaultFormat),
@@ -544,7 +544,7 @@ func (s *EveNotificationService) makeStructureBaseText(ctx context.Context, type
 	} else {
 		name = structureType.Name
 	}
-	text := fmt.Sprintf("The %s in %s", name, makeLocationLink(solarSystem))
+	text := fmt.Sprintf("The %s in %s", name, makeSolarSystemLink(solarSystem))
 	if ownerLink != "" {
 		text += fmt.Sprintf(" belonging to %s", ownerLink)
 	}

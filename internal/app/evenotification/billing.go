@@ -113,7 +113,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		}
 		out := fmt.Sprintf("Maintenance bill for Infrastructure Hub in %s expires at %s, "+
 			"if not paid in time this Infrastructure Hub will self-destruct.",
-			makeLocationLink(solarSystem),
+			makeSolarSystemLink(solarSystem),
 			fromLDAPTime(data.DueDate).Format(app.TimeDefaultFormat),
 		)
 		body.Set(out)
@@ -137,7 +137,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		))
 		out := fmt.Sprintf("%s in %s has self-destructed, as the standard maintenance bills where not paid.",
 			structureType.Name,
-			makeLocationLink(solarSystem),
+			makeSolarSystemLink(solarSystem),
 		)
 		body.Set(out)
 	}

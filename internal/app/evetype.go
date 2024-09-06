@@ -4,7 +4,9 @@ import "github.com/ErikKalkoken/evebuddy/internal/evehtml"
 
 const (
 	EveTypeAssetSafetyWrap = 60
+	EveTypeIHUB            = 32458
 	EveTypeSolarSystem     = 5
+	EveTypeTCU             = 32226
 )
 
 // EveType is a type in Eve Online.

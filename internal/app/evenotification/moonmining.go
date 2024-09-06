@@ -160,7 +160,7 @@ func (s *EveNotificationService) makeMoonMiningBaseText(ctx context.Context, moo
 		"for **%s** at %s in %s",
 		structureName,
 		moon.Name,
-		makeLocationLink(moon.SolarSystem),
+		makeSolarSystemLink(moon.SolarSystem),
 	)
 	x := moonMiningInfo{
 		moon: moon,

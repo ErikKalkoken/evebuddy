@@ -91,7 +91,7 @@ func (s *EveNotificationService) makeTowerBaseText(ctx context.Context, moonID, 
 	if err != nil {
 		return towerInfo{}, err
 	}
-	intro := fmt.Sprintf("The %s at %s in %s ", structureType.Name, moon.Name, makeLocationLink(moon.SolarSystem))
+	intro := fmt.Sprintf("The %s at %s in %s ", structureType.Name, moon.Name, makeSolarSystemLink(moon.SolarSystem))
 	x := towerInfo{
 		type_: structureType,
 		moon:  moon,

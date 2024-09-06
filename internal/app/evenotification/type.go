@@ -291,6 +291,12 @@ var supportedTypes = []Type{
 	WarInherited,
 	WarInvalid,
 	WarRetractedByConcord,
+	SovAllClaimAcquiredMsg,
+	SovCommandNodeEventStarted,
+	SovAllClaimLostMsg,
+	EntosisCaptureStarted,
+	SovStructureReinforced,
+	SovStructureDestroyed,
 }
 
 // SupportedTypes returns a list of all supported notification types.
