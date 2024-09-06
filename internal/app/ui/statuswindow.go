@@ -338,7 +338,10 @@ func (a *statusWindow) makeDetailsContent(d sectionStatusData) []fyne.CanvasObje
 	formLeading := makeForm(items[0:3])
 	formTrailing := makeForm(items[3:])
 	oo = append(oo, container.NewGridWithColumns(2, formLeading, formTrailing))
-	oo = append(oo, widget.NewButton(fmt.Sprintf("Force update %s", d.sectionName), func() {
+	b := widget.NewButton(fmt.Sprintf("Force update %s", d.sectionName), func() {
+		if d.sectionID == "" {
+			return
+		}
 		if d.IsGeneralSection() {
 			go a.ui.updateGeneralSectionAndRefreshIfNeeded(
 				context.TODO(), app.GeneralSection(d.sectionID), true)
@@ -346,8 +349,11 @@ func (a *statusWindow) makeDetailsContent(d sectionStatusData) []fyne.CanvasObje
 			go a.ui.updateCharacterSectionAndRefreshIfNeeded(
 				context.TODO(), d.entityID, app.CharacterSection(d.sectionID), true)
 		}
-
-	}))
+	})
+	if d.sectionName == "" {
+		b.Disable()
+	}
+	oo = append(oo, b)
 	return oo
 }
 
