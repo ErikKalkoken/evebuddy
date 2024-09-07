@@ -28,6 +28,9 @@ import (
 const (
 	defaultIconSize = 32
 	myFloatFormat   = "#,###.##"
+	keyTabsMainID   = "tabs-main-id"
+	keyWindowWidth  = "window-width"
+	keyWindowHeight = "window-height"
 )
 
 // The ui is the root object of the UI and contains all UI areas.
@@ -194,16 +197,10 @@ func (u *ui) Init() {
 		u.resetCharacter()
 	}
 
-	keyW := "window-width"
-	width := u.fyneApp.Preferences().FloatWithFallback(keyW, 1000)
-	keyH := "window-height"
-	height := u.fyneApp.Preferences().FloatWithFallback(keyH, 600)
+	width := u.fyneApp.Preferences().FloatWithFallback(keyWindowWidth, 1000)
+	height := u.fyneApp.Preferences().FloatWithFallback(keyWindowHeight, 600)
 	u.window.Resize(fyne.NewSize(float32(width), float32(height)))
 
-	keyTabsMainID := "tabs-main-id"
-	makeSubTabsKey := func(i int) string {
-		return fmt.Sprintf("tabs-sub%d-id", i)
-	}
 	if !u.hasCharacter() {
 		// reset to overview tab if no character
 		u.tabs.Select(u.overviewTab)
@@ -225,25 +222,39 @@ func (u *ui) Init() {
 			}
 		}
 	}
-	u.window.SetOnClosed(func() {
-		s := u.window.Canvas().Size()
-		u.fyneApp.Preferences().SetFloat(keyW, float64(s.Width))
-		u.fyneApp.Preferences().SetFloat(keyH, float64(s.Height))
-		index := u.tabs.SelectedIndex()
-		u.fyneApp.Preferences().SetInt(keyTabsMainID, index)
-		for i, o := range u.tabs.Items {
-			tabs, ok := o.Content.(*container.AppTabs)
-			if !ok {
-				continue
-			}
-			key := makeSubTabsKey(i)
-			index := tabs.SelectedIndex()
-			u.fyneApp.Preferences().SetInt(key, index)
-		}
-	})
 
 	u.themeSet(u.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault))
 	u.hideMailIndicator() // init system tray icon
+
+	u.fyneApp.Lifecycle().SetOnStopped(func() {
+		slog.Info("App is shutting down")
+		u.saveAppState()
+	})
+}
+
+func (u *ui) saveAppState() {
+	a := u.fyneApp
+	if u.window == nil || a == nil {
+		slog.Warn("Failed to save app state")
+	}
+	s := u.window.Canvas().Size()
+	u.fyneApp.Preferences().SetFloat(keyWindowWidth, float64(s.Width))
+	u.fyneApp.Preferences().SetFloat(keyWindowHeight, float64(s.Height))
+	if u.tabs == nil {
+		slog.Warn("Failed to save tabs in app state")
+	}
+	index := u.tabs.SelectedIndex()
+	u.fyneApp.Preferences().SetInt(keyTabsMainID, index)
+	for i, o := range u.tabs.Items {
+		tabs, ok := o.Content.(*container.AppTabs)
+		if !ok {
+			continue
+		}
+		key := makeSubTabsKey(i)
+		index := tabs.SelectedIndex()
+		u.fyneApp.Preferences().SetInt(key, index)
+	}
+	slog.Info("Saved app state")
 }
 
 func (u *ui) themeSet(name string) {
@@ -421,4 +432,8 @@ func (u *ui) appName() string {
 
 func (u *ui) makeWindowTitle(subTitle string) string {
 	return fmt.Sprintf("%s - %s", subTitle, u.appName())
+}
+
+func makeSubTabsKey(i int) string {
+	return fmt.Sprintf("tabs-sub%d-id", i)
 }
