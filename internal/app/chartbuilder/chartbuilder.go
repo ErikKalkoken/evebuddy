@@ -104,6 +104,9 @@ func (cb ChartBuilder) render(ct ChartType, title string, values []Value) (fyne.
 	if max.Value == 0 {
 		return nil, errInsufficientData
 	}
+	slices.SortFunc(values, func(a Value, b Value) int {
+		return cmp.Compare(a.Label, b.Label)
+	})
 	var content []byte
 	var err error
 	switch ct {
@@ -201,8 +204,9 @@ func (cb ChartBuilder) makeBarChart(data []Value) ([]byte, error) {
 		Width:  1024,
 		Height: 512,
 		XAxis: chart.Style{
-			Hidden:    false,
-			FontColor: cb.foregroundColor(),
+			Hidden:              false,
+			FontColor:           cb.foregroundColor(),
+			TextRotationDegrees: 90,
 		},
 		YAxis: chart.YAxis{
 			Style: chart.Style{
