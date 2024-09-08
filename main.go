@@ -14,6 +14,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/dialog"
 	xappdirs "github.com/chasinglogic/appdirs"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -65,7 +66,7 @@ var (
 	debugFlag     = flag.Bool("debug", false, "Show additional debug information")
 	logFileFlag   = flag.Bool("logfile", true, "Write logs to a file instead of the console")
 	uninstallFlag = flag.Bool("uninstall", false, "Uninstalls the app by deleting all user files")
-	showDirsFlag  = flag.Bool("show-dirs", false, "Show directories where user data is stored")
+	// showDirsFlag  = flag.Bool("show-dirs", false, "Show directories where user data is stored")
 )
 
 // appDirs represents the app's local directories for storing logs etc.
@@ -92,7 +93,6 @@ func (ad appDirs) deleteAll() error {
 		if err := os.RemoveAll(p); err != nil {
 			return err
 		}
-		fmt.Printf("Deleted %s\n", p)
 	}
 	return nil
 }
@@ -137,25 +137,15 @@ func main() {
 	if err := debug.SetCrashOutput(f, debug.CrashOptions{}); err != nil {
 		log.Fatal(err)
 	}
-	if *showDirsFlag {
-		fmt.Printf("Database: %s\n", ad.data)
-		fmt.Printf("Cache: %s\n", ad.cache)
-		fmt.Printf("Logs: %s\n", ad.log)
-		fmt.Printf("Settings: %s\n", ad.settings)
-		return
-	}
+	// if *showDirsFlag {
+	// 	fmt.Printf("Database: %s\n", ad.data)
+	// 	fmt.Printf("Cache: %s\n", ad.cache)
+	// 	fmt.Printf("Logs: %s\n", ad.log)
+	// 	fmt.Printf("Settings: %s\n", ad.settings)
+	// 	return
+	// }
 	if *uninstallFlag {
-		fmt.Print("Are you sure you want to uninstall this app and delete all user files (y/N)?")
-		var input string
-		fmt.Scanln(&input)
-		if strings.ToLower(input) == "y" {
-			if err := ad.deleteAll(); err != nil {
-				log.Fatal(err)
-			}
-			fmt.Printf("App uninstalled")
-		} else {
-			fmt.Println("Aborted")
-		}
+		uninstall(fyneApp, ad)
 		return
 	}
 	if *logFileFlag {
@@ -225,4 +215,38 @@ func main() {
 	u.StatusCacheService = sc
 	u.Init()
 	u.ShowAndRun()
+}
+
+func uninstall(fyneApp fyne.App, ad appDirs) {
+	w := fyneApp.NewWindow("Uninstall - EVE Buddy")
+	w.SetFullScreen(true)
+	d := dialog.NewConfirm(
+		"Confirmation",
+		"Are you sure you want to uninstall this app and delete all user files?",
+		func(isConfirmed bool) {
+			var result string
+			if isConfirmed {
+				if err := ad.deleteAll(); err != nil {
+					d3 := dialog.NewError(err, w)
+					d3.Show()
+					d3.SetOnClosed(func() {
+						w.Close()
+					})
+					return
+				} else {
+					result = "User files deleted"
+				}
+			} else {
+				result = "Aborted"
+			}
+			d2 := dialog.NewInformation("Uninstall", result, w)
+			d2.Show()
+			d2.SetOnClosed(func() {
+				w.Close()
+			})
+		},
+		w,
+	)
+	d.Show()
+	w.ShowAndRun()
 }
