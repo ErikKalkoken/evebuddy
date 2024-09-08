@@ -5,7 +5,7 @@
 set -e
 
 # Parameters
-metadir="cmd/evebuddy"
+metadir="."
 
 # Constants
 dest="temp.Appdir"

@@ -10,9 +10,9 @@ A companion app for Eve Online players
 
 - [Description](#description)
 - [Screenshot](#screenshot)
-- [Installation](#installation)
-- [Updating](#updating)
-- [Removing the app](#removing-the-app)
+- [Install](#install)
+- [Update](#update)
+- [Uninstall](#uninstall)
   [FAQ](#faq)
 - [Credits](#credits)
 
@@ -52,7 +52,7 @@ A more detailed overview of the provided features:
 
 ![example](https://cdn.imgpile.com/f/aD27GDt_xl.png)
 
-## Installation
+## Install
 
 To install EVE buddy just download and unzip the latest release from the releases page to your computer. The app ships as a single executable file that can be run directly. When you run the app for the first time it will automatically install itself for the current user (i.e. by creating folders in the home folder for the current user).
 
@@ -95,34 +95,24 @@ When you have all necessary tools installed, you can build and run this app dire
 go run github.com/ErikKalkoken/evebuddy@latest
 ```
 
-## Updating
+## Update
 
 The app will inform you when there is a new version available for download. To update your app just download and unzip the newest version for your platform from the [releases page](https://github.com/ErikKalkoken/evebuddy/releases). Then overwrite the old executable file with the new one.
 
-## Removing the app
+## Uninstall
 
-If you no longer want to use the app, here is how you can uninstall it from your computer.
-
-First run the uninstall command to delete all data (example are for Linux):
+If you no longer want to use the app you can uninstall it by running the executable with the uninstall parameter:
 
 ```sh
 ./evebuddy -uninstall
 ```
 
+This command will ask for confirmation and then remove all user data from your computer like characters, log files, etc.
+
 Then delete the file itself:
 
 ```sh
 rm evebuddy
-```
-
-## Troubleshooting
-
-The app can be started with optional command line arguments, which offers some additional features and can help with trouble shooting. For example you can enable logging to a file and/or increase the log level.
-
-For a description of all features please run the app with the help flag:
-
-```sh
-./evebuddy -h
 ```
 
 ## FAQ
