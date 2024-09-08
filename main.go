@@ -7,9 +7,13 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	xappdirs "github.com/chasinglogic/appdirs"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
@@ -27,9 +31,32 @@ import (
 )
 
 const (
-	ssoClientID = "11ae857fe4d149b2be60d875649c05f1"
-	appID       = "io.github.erikkalkoken.evebuddy"
+	ssoClientID     = "11ae857fe4d149b2be60d875649c05f1"
+	appID           = "io.github.erikkalkoken.evebuddy"
+	appName         = "evebuddy"
+	logFileName     = "evebuddy.log"
+	dbFileName      = "evebuddy.sqlite"
+	cacheFolderName = "images"
+	userAgent       = "EveBuddy kalkoken87@gmail.com"
 )
+
+type logLevelFlag struct {
+	value slog.Level
+}
+
+func (l logLevelFlag) String() string {
+	return l.value.String()
+}
+
+func (l *logLevelFlag) Set(value string) error {
+	m := map[string]slog.Level{"DEBUG": slog.LevelDebug, "INFO": slog.LevelInfo, "WARN": slog.LevelWarn, "ERROR": slog.LevelError}
+	v, ok := m[strings.ToUpper(value)]
+	if !ok {
+		return fmt.Errorf("unknown log level")
+	}
+	l.value = v
+	return nil
+}
 
 // defined flags
 var (
@@ -39,6 +66,58 @@ var (
 	uninstallFlag = flag.Bool("uninstall", false, "Uninstalls the app by deleting all user files")
 	showDirsFlag  = flag.Bool("show-dirs", false, "Show directories where user data is stored")
 )
+
+// appDirs represents the app's local directories for storing logs etc.
+type appDirs struct {
+	cache    string
+	data     string
+	log      string
+	settings string
+}
+
+func newAppDirs(fyneApp fyne.App) appDirs {
+	ad := xappdirs.New(appName)
+	x := appDirs{
+		data:     ad.UserData(),
+		cache:    ad.UserCache(),
+		log:      ad.UserLog(),
+		settings: fyneApp.Storage().RootURI().Path(),
+	}
+	return x
+}
+
+func (ad appDirs) deleteAll() error {
+	for _, p := range []string{ad.log, ad.cache, ad.data, ad.settings} {
+		if err := os.RemoveAll(p); err != nil {
+			return err
+		}
+		fmt.Printf("Deleted %s\n", p)
+	}
+	return nil
+}
+
+func (ad appDirs) initLogFile() (string, error) {
+	if err := os.MkdirAll(ad.log, os.ModePerm); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s/%s", ad.log, logFileName), nil
+}
+
+func (ad appDirs) initDSN() (string, error) {
+	if err := os.MkdirAll(ad.data, os.ModePerm); err != nil {
+		return "", err
+	}
+	dsn := fmt.Sprintf("file:%s/%s", ad.data, dbFileName)
+	return dsn, nil
+}
+
+func (ad appDirs) initImageCachePath() (string, error) {
+	p := filepath.Join(ad.cache, cacheFolderName)
+	if err := os.MkdirAll(p, os.ModePerm); err != nil {
+		return "", err
+	}
+	return p, nil
+}
 
 func init() {
 	levelFlag.value = slog.LevelInfo
@@ -105,7 +184,6 @@ func main() {
 			},
 		},
 	}
-	userAgent := "EveBuddy kalkoken87@gmail.com"
 	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
 	cache := cache.New()
 	sc := statuscache.New(cache)

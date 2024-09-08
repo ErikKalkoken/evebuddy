@@ -18,13 +18,20 @@ A companion app for Eve Online players
 
 ## Description
 
-EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players. In can perform 3 different roles:
+EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) players. It has three key features:
 
-1. As a clone to the Eve client it can show same the information about your character, e.g. your eve mails or the current clone
-2. In addition it provides useful cross-character features, like searching for an item in
-3. It can alert you when new mail or important communication arrive
+- Give you access to your characters without having to log into the Eve client or switching your current Eve character
+- Provide you with helpful functions, that the Eve client is lacking, like asset search across all your characters
+- Notify you about game important events (e.g. structure attacked) and new Eve mails
 
-Key features are:
+> [!IMPORTANT]
+> This is an early version and not yet considered fully stable. We would very much appreciate your feedback, so we can find and squash remaining bugs. If you encounter any problems please feel free to open an issue or chat with us on Discord.
+> Some features may not be fully implemented yet (e.g. some notification types). Our current focus is on bug fixing, rather then adding more features. But if you are missing anything important, please feel free to open a feature request.
+> We very much welcome any contributions. If you like to provide a fix or add a feature please feel free top open a PR.
+
+## Features
+
+A more detailed overview of the provided features:
 
 - Information about each character:
   - Assets: Full asset browser
@@ -40,11 +47,6 @@ Key features are:
 - Single executable file, no installation required
 - Desktop app that runs on Windows, Linux and macOS
 - Automatic dark and light theme
-
-> [!IMPORTANT]
-> This is an early version and not yet considered fully stable. We therefore very much appreciate any user feedback, so we can find and squash any remaining bugs. If you encounter any bugs please feel free to open an issue or chat with us on Discord.
-> Some features may not be fully implemented yet (e.g. some notification types). Our current focus is on bug fixing, rather then adding more features. But if you are missing anything important, please feel free to open a feature request.
-> We very much welcome any contributions. If you like to provide a fix or add a feature please feel free top open a PR.
 
 ## Screenshot
 
