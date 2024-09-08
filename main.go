@@ -12,10 +12,7 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/dialog"
-	xappdirs "github.com/chasinglogic/appdirs"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
@@ -25,21 +22,21 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/httptransport"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
+	"github.com/ErikKalkoken/evebuddy/internal/uninstall"
 	"github.com/antihax/goesi"
 )
 
 const (
-	ssoClientID     = "11ae857fe4d149b2be60d875649c05f1"
-	appID           = "io.github.erikkalkoken.evebuddy"
-	appName         = "evebuddy"
-	logFileName     = "evebuddy.log"
-	dbFileName      = "evebuddy.sqlite"
-	cacheFolderName = "images"
-	userAgent       = "EveBuddy kalkoken87@gmail.com"
+	ssoClientID = "11ae857fe4d149b2be60d875649c05f1"
+	appID       = "io.github.erikkalkoken.evebuddy"
+	userAgent   = "EveBuddy kalkoken87@gmail.com"
+	dbFileName  = "evebuddy.sqlite"
+	logFileName = "evebuddy.log"
 )
 
 type logLevelFlag struct {
@@ -69,57 +66,6 @@ var (
 	// showDirsFlag  = flag.Bool("show-dirs", false, "Show directories where user data is stored")
 )
 
-// appDirs represents the app's local directories for storing logs etc.
-type appDirs struct {
-	cache    string
-	data     string
-	log      string
-	settings string
-}
-
-func newAppDirs(fyneApp fyne.App) appDirs {
-	ad := xappdirs.New(appName)
-	x := appDirs{
-		data:     ad.UserData(),
-		cache:    ad.UserCache(),
-		log:      ad.UserLog(),
-		settings: fyneApp.Storage().RootURI().Path(),
-	}
-	return x
-}
-
-func (ad appDirs) deleteAll() error {
-	for _, p := range []string{ad.log, ad.cache, ad.data, ad.settings} {
-		if err := os.RemoveAll(p); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (ad appDirs) initLogFile() (string, error) {
-	if err := os.MkdirAll(ad.log, os.ModePerm); err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s/%s", ad.log, logFileName), nil
-}
-
-func (ad appDirs) initDSN() (string, error) {
-	if err := os.MkdirAll(ad.data, os.ModePerm); err != nil {
-		return "", err
-	}
-	dsn := fmt.Sprintf("file:%s/%s", ad.data, dbFileName)
-	return dsn, nil
-}
-
-func (ad appDirs) initImageCachePath() (string, error) {
-	p := filepath.Join(ad.cache, cacheFolderName)
-	if err := os.MkdirAll(p, os.ModePerm); err != nil {
-		return "", err
-	}
-	return p, nil
-}
-
 func init() {
 	levelFlag.value = slog.LevelInfo
 	flag.Var(&levelFlag, "loglevel", "set log level")
@@ -127,14 +73,9 @@ func init() {
 
 func main() {
 	flag.Parse()
-	slog.SetLogLoggerLevel(levelFlag.value)
 	fyneApp := app.NewWithID(appID)
-	ad := newAppDirs(fyneApp)
-	f, err := os.Create(filepath.Join(ad.log, "crash.txt"))
+	ad, err := appdirs.New(fyneApp)
 	if err != nil {
-		log.Fatal(err)
-	}
-	if err := debug.SetCrashOutput(f, debug.CrashOptions{}); err != nil {
 		log.Fatal(err)
 	}
 	// if *showDirsFlag {
@@ -145,24 +86,26 @@ func main() {
 	// 	return
 	// }
 	if *uninstallFlag {
-		uninstall(fyneApp, ad)
+		uninstall.RunApp(fyneApp, ad)
 		return
 	}
+	f, err := os.Create(filepath.Join(ad.Log, "crash.txt"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := debug.SetCrashOutput(f, debug.CrashOptions{}); err != nil {
+		log.Fatal(err)
+	}
+	slog.SetLogLoggerLevel(levelFlag.value)
 	if *logFileFlag {
-		fn, err := ad.initLogFile()
-		if err != nil {
-			log.Fatal(err)
-		}
+		fn := fmt.Sprintf("%s/%s", ad.Log, logFileName)
 		log.SetOutput(&lumberjack.Logger{
 			Filename:   fn,
 			MaxSize:    50, // megabytes
 			MaxBackups: 3,
 		})
 	}
-	dsn, err := ad.initDSN()
-	if err != nil {
-		log.Fatal(err)
-	}
+	dsn := fmt.Sprintf("file:%s/%s", ad.Data, dbFileName)
 	db, err := storage.InitDB(dsn)
 	if err != nil {
 		log.Fatalf("Failed to initialize database %s: %s", dsn, err)
@@ -201,52 +144,13 @@ func main() {
 	cs.StatusCacheService = sc
 	cs.SSOService = sso.New(ssoClientID, httpClient, cache)
 
-	imageCacheDir, err := ad.initImageCachePath()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	u := ui.NewUI(fyneApp, *debugFlag)
 	u.CacheService = cache
 	u.CharacterService = cs
 	u.ESIStatusService = esistatus.New(esiClient)
-	u.EveImageService = eveimage.New(imageCacheDir, httpClient)
+	u.EveImageService = eveimage.New(ad.Cache, httpClient)
 	u.EveUniverseService = eu
 	u.StatusCacheService = sc
 	u.Init()
 	u.ShowAndRun()
-}
-
-func uninstall(fyneApp fyne.App, ad appDirs) {
-	w := fyneApp.NewWindow("Uninstall - EVE Buddy")
-	w.SetFullScreen(true)
-	d := dialog.NewConfirm(
-		"Confirmation",
-		"Are you sure you want to uninstall this app and delete all user files?",
-		func(isConfirmed bool) {
-			var result string
-			if isConfirmed {
-				if err := ad.deleteAll(); err != nil {
-					d3 := dialog.NewError(err, w)
-					d3.Show()
-					d3.SetOnClosed(func() {
-						w.Close()
-					})
-					return
-				} else {
-					result = "User files deleted"
-				}
-			} else {
-				result = "Aborted"
-			}
-			d2 := dialog.NewInformation("Uninstall", result, w)
-			d2.Show()
-			d2.SetOnClosed(func() {
-				w.Close()
-			})
-		},
-		w,
-	)
-	d.Show()
-	w.ShowAndRun()
 }
