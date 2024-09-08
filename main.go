@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -129,6 +130,13 @@ func main() {
 	slog.SetLogLoggerLevel(levelFlag.value)
 	fyneApp := app.NewWithID(appID)
 	ad := newAppDirs(fyneApp)
+	f, err := os.Create(filepath.Join(ad.log, "crash.txt"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := debug.SetCrashOutput(f, debug.CrashOptions{}); err != nil {
+		log.Fatal(err)
+	}
 	if *showDirsFlag {
 		fmt.Printf("Database: %s\n", ad.data)
 		fmt.Printf("Cache: %s\n", ad.cache)
