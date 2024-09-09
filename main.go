@@ -86,7 +86,8 @@ func main() {
 	// 	return
 	// }
 	if *uninstallFlag {
-		uninstall.RunApp(fyneApp, ad)
+		u := uninstall.NewUI(fyneApp, ad)
+		u.ShowAndRun()
 		return
 	}
 	f, err := os.Create(filepath.Join(ad.Log, "crash.txt"))

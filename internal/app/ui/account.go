@@ -193,6 +193,7 @@ func (a *accountArea) showAddCharacterDialog() {
 	d1.SetOnClosed(cancel)
 	go func() {
 		err := func() error {
+			defer cancel()
 			characterID, err := a.ui.CharacterService.UpdateOrCreateCharacterFromSSO(ctx, infoText)
 			if errors.Is(err, character.ErrAborted) {
 				return nil

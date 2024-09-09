@@ -1,7 +1,10 @@
 package uninstall
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"os"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -13,37 +16,105 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 )
 
-// RunApp runs the uninstall app
-func RunApp(fyneApp fyne.App, ad appdirs.AppDirs) {
+var ErrCancel = errors.New("user aborted")
+
+type UI struct {
+	app    fyne.App
+	ad     appdirs.AppDirs
+	window fyne.Window
+}
+
+func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) UI {
 	w := fyneApp.NewWindow("Uninstall - EVE Buddy")
-	label := widget.NewLabel(
-		"Are you sure you want to uninstall this app\n" +
-			"and delete all user files?")
-	ok := widget.NewButtonWithIcon("OK", theme.ConfirmIcon(), func() {
-		if err := ad.DeleteAll(); err != nil {
-			closeApp(w, fmt.Sprintf("ERROR: %s", err))
-			return
-		}
-		closeApp(w, "Files deleted")
+	x := UI{
+		app:    fyneApp,
+		ad:     ad,
+		window: w,
+	}
+	return x
+}
+
+// RunApp runs the uninstall app
+func (u *UI) ShowAndRun() {
+	c := u.makePage()
+	u.window.SetContent(c)
+	u.window.Resize(fyne.Size{Width: 400, Height: 344})
+	u.window.ShowAndRun()
+}
+
+func (u *UI) makePage() *fyne.Container {
+	label := widget.NewLabel(fmt.Sprintf(
+		"Are you sure you want to uninstall %s\n"+
+			"and delete all user files?",
+		u.app.Metadata().Name,
+	))
+	okBtn := widget.NewButtonWithIcon("Uninstall", theme.ConfirmIcon(), func() {
+		title := widget.NewLabel("Removing user files...")
+		pb := widget.NewProgressBar()
+		errText := widget.NewLabel("")
+		errText.Importance = widget.DangerImportance
+		ctx, cancel := context.WithCancel(context.Background())
+		cancelBtn := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
+			cancel()
+			u.closeWithDialog("Aborted")
+		})
+		closeBtn := widget.NewButtonWithIcon("Close", theme.ConfirmIcon(), func() {
+			u.window.Close()
+		})
+		closeBtn.Disable()
+		c := container.NewBorder(
+			nil,
+			container.NewHBox(cancelBtn, layout.NewSpacer(), closeBtn),
+			nil,
+			nil,
+			container.NewVBox(title, pb, errText),
+		)
+		u.window.SetContent(c)
+		go func() {
+			if err := u.removeFolders(ctx, pb); err == ErrCancel {
+				title.SetText("Uninstall aborted")
+			} else if err != nil {
+				title.SetText("Uninstall failed")
+				errText.SetText(fmt.Sprintf("ERROR: %s", err))
+			} else {
+				title.SetText("Uninstall completed")
+			}
+			cancel()
+			cancelBtn.Disable()
+			closeBtn.Enable()
+		}()
 	})
-	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
-		closeApp(w, "Aborted")
+	cancelBtn := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
+		u.closeWithDialog("Aborted")
 	})
-	cancel.Importance = widget.HighImportance
 	c := container.NewBorder(
 		nil,
-		container.NewHBox(cancel, layout.NewSpacer(), ok),
+		container.NewHBox(cancelBtn, layout.NewSpacer(), okBtn),
 		nil,
 		nil,
 		container.NewCenter(label),
 	)
-	w.SetContent(c)
-	w.Resize(fyne.Size{Width: 300, Height: 200})
-	w.ShowAndRun()
+	return c
 }
 
-func closeApp(w fyne.Window, message string) {
-	d := dialog.NewInformation("Uninstall", message, w)
-	d.SetOnClosed(w.Close)
+func (u *UI) closeWithDialog(message string) {
+	d := dialog.NewInformation("Uninstall", message, u.window)
+	d.SetOnClosed(u.window.Close)
 	d.Show()
+}
+
+func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
+	folders := u.ad.Folders()
+	for i, p := range folders {
+		select {
+		case <-ctx.Done():
+			return ErrCancel
+		default:
+			if err := os.RemoveAll(p); err != nil {
+				return err
+			}
+			pb.SetValue(float64(i+1) / float64(len(folders)))
+		}
+	}
+	return nil
 }

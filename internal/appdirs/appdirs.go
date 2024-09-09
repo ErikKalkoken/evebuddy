@@ -42,11 +42,6 @@ func New(fyneApp fyne.App) (AppDirs, error) {
 	return x, nil
 }
 
-func (ad AppDirs) DeleteAll() error {
-	for _, p := range []string{ad.Log, ad.Cache, ad.Data, ad.Settings} {
-		if err := os.RemoveAll(p); err != nil {
-			return err
-		}
-	}
-	return nil
+func (ad AppDirs) Folders() []string {
+	return []string{ad.Log, ad.Cache, ad.Data, ad.Settings}
 }
