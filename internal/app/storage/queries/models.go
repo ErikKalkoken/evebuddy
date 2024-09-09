@@ -72,11 +72,11 @@ type CharacterMail struct {
 	Body        string
 	CharacterID int64
 	FromID      int64
+	IsProcessed bool
 	IsRead      bool
 	MailID      int64
 	Subject     string
 	Timestamp   time.Time
-	IsProcessed bool
 }
 
 type CharacterMailLabel struct {
@@ -110,6 +110,7 @@ type CharacterNotification struct {
 	ID             int64
 	Body           sql.NullString
 	CharacterID    int64
+	IsProcessed    bool
 	IsRead         bool
 	NotificationID int64
 	SenderID       int64
@@ -117,7 +118,6 @@ type CharacterNotification struct {
 	Timestamp      time.Time
 	Title          sql.NullString
 	TypeID         int64
-	IsProcessed    bool
 }
 
 type CharacterSectionStatus struct {

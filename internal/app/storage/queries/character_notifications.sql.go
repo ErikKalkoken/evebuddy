@@ -114,7 +114,7 @@ func (q *Queries) CreateNotificationType(ctx context.Context, name string) (int6
 }
 
 const getCharacterNotification = `-- name: GetCharacterNotification :one
-SELECT cn.id, cn.body, cn.character_id, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.is_processed, ee.id, ee.category, ee.name, nt.id, nt.name
+SELECT cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, ee.id, ee.category, ee.name, nt.id, nt.name
 FROM character_notifications cn
 JOIN eve_entities ee ON ee.id = cn.sender_id
 JOIN notification_types nt ON nt.id = cn.type_id
@@ -139,6 +139,7 @@ func (q *Queries) GetCharacterNotification(ctx context.Context, arg GetCharacter
 		&i.CharacterNotification.ID,
 		&i.CharacterNotification.Body,
 		&i.CharacterNotification.CharacterID,
+		&i.CharacterNotification.IsProcessed,
 		&i.CharacterNotification.IsRead,
 		&i.CharacterNotification.NotificationID,
 		&i.CharacterNotification.SenderID,
@@ -146,7 +147,6 @@ func (q *Queries) GetCharacterNotification(ctx context.Context, arg GetCharacter
 		&i.CharacterNotification.Timestamp,
 		&i.CharacterNotification.Title,
 		&i.CharacterNotification.TypeID,
-		&i.CharacterNotification.IsProcessed,
 		&i.EveEntity.ID,
 		&i.EveEntity.Category,
 		&i.EveEntity.Name,
@@ -199,7 +199,7 @@ func (q *Queries) ListCharacterNotificationIDs(ctx context.Context, characterID 
 }
 
 const listCharacterNotificationsTypes = `-- name: ListCharacterNotificationsTypes :many
-SELECT cn.id, cn.body, cn.character_id, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.is_processed, ee.id, ee.category, ee.name, nt.id, nt.name
+SELECT cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, ee.id, ee.category, ee.name, nt.id, nt.name
 FROM character_notifications cn
 JOIN eve_entities ee ON ee.id = cn.sender_id
 JOIN notification_types nt ON nt.id = cn.type_id
@@ -243,6 +243,7 @@ func (q *Queries) ListCharacterNotificationsTypes(ctx context.Context, arg ListC
 			&i.CharacterNotification.ID,
 			&i.CharacterNotification.Body,
 			&i.CharacterNotification.CharacterID,
+			&i.CharacterNotification.IsProcessed,
 			&i.CharacterNotification.IsRead,
 			&i.CharacterNotification.NotificationID,
 			&i.CharacterNotification.SenderID,
@@ -250,7 +251,6 @@ func (q *Queries) ListCharacterNotificationsTypes(ctx context.Context, arg ListC
 			&i.CharacterNotification.Timestamp,
 			&i.CharacterNotification.Title,
 			&i.CharacterNotification.TypeID,
-			&i.CharacterNotification.IsProcessed,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
@@ -271,7 +271,7 @@ func (q *Queries) ListCharacterNotificationsTypes(ctx context.Context, arg ListC
 }
 
 const listCharacterNotificationsUnprocessed = `-- name: ListCharacterNotificationsUnprocessed :many
-SELECT cn.id, cn.body, cn.character_id, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.is_processed, ee.id, ee.category, ee.name, nt.id, nt.name
+SELECT cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, ee.id, ee.category, ee.name, nt.id, nt.name
 FROM character_notifications cn
 JOIN eve_entities ee ON ee.id = cn.sender_id
 JOIN notification_types nt ON nt.id = cn.type_id
@@ -302,6 +302,7 @@ func (q *Queries) ListCharacterNotificationsUnprocessed(ctx context.Context, cha
 			&i.CharacterNotification.ID,
 			&i.CharacterNotification.Body,
 			&i.CharacterNotification.CharacterID,
+			&i.CharacterNotification.IsProcessed,
 			&i.CharacterNotification.IsRead,
 			&i.CharacterNotification.NotificationID,
 			&i.CharacterNotification.SenderID,
@@ -309,7 +310,6 @@ func (q *Queries) ListCharacterNotificationsUnprocessed(ctx context.Context, cha
 			&i.CharacterNotification.Timestamp,
 			&i.CharacterNotification.Title,
 			&i.CharacterNotification.TypeID,
-			&i.CharacterNotification.IsProcessed,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,
@@ -330,7 +330,7 @@ func (q *Queries) ListCharacterNotificationsUnprocessed(ctx context.Context, cha
 }
 
 const listCharacterNotificationsUnread = `-- name: ListCharacterNotificationsUnread :many
-SELECT cn.id, cn.body, cn.character_id, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, cn.is_processed, ee.id, ee.category, ee.name, nt.id, nt.name
+SELECT cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, ee.id, ee.category, ee.name, nt.id, nt.name
 FROM character_notifications cn
 JOIN eve_entities ee ON ee.id = cn.sender_id
 JOIN notification_types nt ON nt.id = cn.type_id
@@ -358,6 +358,7 @@ func (q *Queries) ListCharacterNotificationsUnread(ctx context.Context, characte
 			&i.CharacterNotification.ID,
 			&i.CharacterNotification.Body,
 			&i.CharacterNotification.CharacterID,
+			&i.CharacterNotification.IsProcessed,
 			&i.CharacterNotification.IsRead,
 			&i.CharacterNotification.NotificationID,
 			&i.CharacterNotification.SenderID,
@@ -365,7 +366,6 @@ func (q *Queries) ListCharacterNotificationsUnread(ctx context.Context, characte
 			&i.CharacterNotification.Timestamp,
 			&i.CharacterNotification.Title,
 			&i.CharacterNotification.TypeID,
-			&i.CharacterNotification.IsProcessed,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
 			&i.EveEntity.Name,

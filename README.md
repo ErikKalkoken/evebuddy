@@ -50,7 +50,7 @@ A more detailed overview of the provided features:
 
 ## Screenshot
 
-![example](https://cdn.imgpile.com/f/aD27GDt_xl.png)
+![example](https://cdn.imgpile.com/f/0zxWmcB_xl.png)
 
 ## Install
 

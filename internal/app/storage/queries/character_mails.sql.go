@@ -24,7 +24,7 @@ INSERT INTO character_mails (
 VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?
 )
-RETURNING id, body, character_id, from_id, is_read, mail_id, subject, timestamp, is_processed
+RETURNING id, body, character_id, from_id, is_processed, is_read, mail_id, subject, timestamp
 `
 
 type CreateMailParams struct {
@@ -55,11 +55,11 @@ func (q *Queries) CreateMail(ctx context.Context, arg CreateMailParams) (Charact
 		&i.Body,
 		&i.CharacterID,
 		&i.FromID,
+		&i.IsProcessed,
 		&i.IsRead,
 		&i.MailID,
 		&i.Subject,
 		&i.Timestamp,
-		&i.IsProcessed,
 	)
 	return i, err
 }
@@ -241,7 +241,7 @@ func (q *Queries) GetCharacterMailListUnreadCounts(ctx context.Context, characte
 }
 
 const getMail = `-- name: GetMail :one
-SELECT character_mails.id, character_mails.body, character_mails.character_id, character_mails.from_id, character_mails.is_read, character_mails.mail_id, character_mails.subject, character_mails.timestamp, character_mails.is_processed, eve_entities.id, eve_entities.category, eve_entities.name
+SELECT character_mails.id, character_mails.body, character_mails.character_id, character_mails.from_id, character_mails.is_processed, character_mails.is_read, character_mails.mail_id, character_mails.subject, character_mails.timestamp, eve_entities.id, eve_entities.category, eve_entities.name
 FROM character_mails
 JOIN eve_entities ON eve_entities.id = character_mails.from_id
 WHERE character_id = ?
@@ -266,11 +266,11 @@ func (q *Queries) GetMail(ctx context.Context, arg GetMailParams) (GetMailRow, e
 		&i.CharacterMail.Body,
 		&i.CharacterMail.CharacterID,
 		&i.CharacterMail.FromID,
+		&i.CharacterMail.IsProcessed,
 		&i.CharacterMail.IsRead,
 		&i.CharacterMail.MailID,
 		&i.CharacterMail.Subject,
 		&i.CharacterMail.Timestamp,
-		&i.CharacterMail.IsProcessed,
 		&i.EveEntity.ID,
 		&i.EveEntity.Category,
 		&i.EveEntity.Name,
