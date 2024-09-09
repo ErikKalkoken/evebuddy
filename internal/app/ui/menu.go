@@ -4,7 +4,12 @@ import (
 	"net/url"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 )
 
 func makeMenu(u *ui) *fyne.MainMenu {
@@ -54,10 +59,46 @@ func makeMenu(u *ui) *fyne.MainMenu {
 			_ = u.fyneApp.OpenURL(url)
 		}),
 		fyne.NewMenuItemSeparator(),
-		fyne.NewMenuItem("About...", func() {
+		fyne.NewMenuItem("User data...", func() {
+			u.showUserDataDialog()
+		}), fyne.NewMenuItem("About...", func() {
 			u.showAboutDialog()
 		}),
 	)
 	main := fyne.NewMainMenu(fileMenu, toolsMenu, helpMenu)
 	return main
+}
+
+func (u *ui) showAboutDialog() {
+	c := container.NewVBox()
+	info := u.fyneApp.Metadata()
+	appData := widget.NewRichTextFromMarkdown(
+		"## " + u.appName() + "\n**Version:** " + info.Version)
+	c.Add(appData)
+	uri, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
+	c.Add(widget.NewHyperlink("Website", uri))
+	c.Add(widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."))
+	c.Add(widget.NewLabel("(c) 2024 Erik Kalkoken"))
+	d := dialog.NewCustom("About", "Close", c, u.window)
+	d.Show()
+}
+
+func (u *ui) showUserDataDialog() {
+	f := widget.NewForm(
+		widget.NewFormItem("Cache", makePathEntry(u.window.Clipboard(), u.ad.Cache)),
+		widget.NewFormItem("Data", makePathEntry(u.window.Clipboard(), u.ad.Data)),
+		widget.NewFormItem("Log", makePathEntry(u.window.Clipboard(), u.ad.Log)),
+		widget.NewFormItem("Settings", makePathEntry(u.window.Clipboard(), u.ad.Settings)),
+	)
+	d := dialog.NewCustom("User data", "Close", f, u.window)
+	d.Show()
+}
+
+func makePathEntry(cb fyne.Clipboard, p string) *fyne.Container {
+	return container.NewHBox(
+		widget.NewLabel(p),
+		layout.NewSpacer(),
+		widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
+			cb.SetContent(p)
+		}))
 }

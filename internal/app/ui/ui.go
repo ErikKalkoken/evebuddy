@@ -22,6 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 )
 
 // UI constants
@@ -47,6 +48,7 @@ type ui struct {
 	fyneApp            fyne.App
 	deskApp            desktop.App
 	window             fyne.Window
+	ad                 appdirs.AppDirs
 
 	assetsArea            *assetsArea
 	assetSearchArea       *assetSearchArea
@@ -81,7 +83,7 @@ type ui struct {
 }
 
 // NewUI build the UI and returns it.
-func NewUI(fyneApp fyne.App, isDebug bool) *ui {
+func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isDebug bool) *ui {
 	desk, ok := fyneApp.(desktop.App)
 	if !ok {
 		log.Fatal("Failed to initialize as desktop app")
@@ -92,6 +94,7 @@ func NewUI(fyneApp fyne.App, isDebug bool) *ui {
 		sfg:     new(singleflight.Group),
 		window:  fyneApp.NewWindow(""),
 		deskApp: desk,
+		ad:      ad,
 	}
 	u.attributesArea = u.newAttributesArena()
 	u.biographyArea = u.newBiographyArea()
@@ -298,7 +301,7 @@ func (u *ui) ShowAndRun() {
 		u.startUpdateTickerGeneralSections()
 		u.startUpdateTickerCharacters()
 	}()
-	u.refreshOverview()
+	go u.refreshOverview()
 	u.window.ShowAndRun()
 }
 

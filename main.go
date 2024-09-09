@@ -32,11 +32,13 @@ import (
 )
 
 const (
-	ssoClientID = "11ae857fe4d149b2be60d875649c05f1"
-	appID       = "io.github.erikkalkoken.evebuddy"
-	userAgent   = "EveBuddy kalkoken87@gmail.com"
-	dbFileName  = "evebuddy.sqlite"
-	logFileName = "evebuddy.log"
+	ssoClientID   = "11ae857fe4d149b2be60d875649c05f1"
+	appID         = "io.github.erikkalkoken.evebuddy"
+	userAgent     = "EveBuddy kalkoken87@gmail.com"
+	dbFileName    = "evebuddy.sqlite"
+	logFileName   = "evebuddy.log"
+	logMaxSizeMB  = 50
+	logMaxBackups = 3
 )
 
 type logLevelFlag struct {
@@ -61,9 +63,7 @@ func (l *logLevelFlag) Set(value string) error {
 var (
 	levelFlag     logLevelFlag
 	debugFlag     = flag.Bool("debug", false, "Show additional debug information")
-	logFileFlag   = flag.Bool("logfile", true, "Write logs to a file instead of the console")
 	uninstallFlag = flag.Bool("uninstall", false, "Uninstalls the app by deleting all user files")
-	// showDirsFlag  = flag.Bool("show-dirs", false, "Show directories where user data is stored")
 )
 
 func init() {
@@ -78,13 +78,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// if *showDirsFlag {
-	// 	fmt.Printf("Database: %s\n", ad.data)
-	// 	fmt.Printf("Cache: %s\n", ad.cache)
-	// 	fmt.Printf("Logs: %s\n", ad.log)
-	// 	fmt.Printf("Settings: %s\n", ad.settings)
-	// 	return
-	// }
 	if *uninstallFlag {
 		u := uninstall.NewUI(fyneApp, ad)
 		u.ShowAndRun()
@@ -98,14 +91,12 @@ func main() {
 		log.Fatal(err)
 	}
 	slog.SetLogLoggerLevel(levelFlag.value)
-	if *logFileFlag {
-		fn := fmt.Sprintf("%s/%s", ad.Log, logFileName)
-		log.SetOutput(&lumberjack.Logger{
-			Filename:   fn,
-			MaxSize:    50, // megabytes
-			MaxBackups: 3,
-		})
-	}
+	fn := fmt.Sprintf("%s/%s", ad.Log, logFileName)
+	log.SetOutput(&lumberjack.Logger{
+		Filename:   fn,
+		MaxSize:    logMaxSizeMB, // megabytes
+		MaxBackups: logMaxBackups,
+	})
 	dsn := fmt.Sprintf("file:%s/%s", ad.Data, dbFileName)
 	db, err := storage.InitDB(dsn)
 	if err != nil {
@@ -145,7 +136,7 @@ func main() {
 	cs.StatusCacheService = sc
 	cs.SSOService = sso.New(ssoClientID, httpClient, cache)
 
-	u := ui.NewUI(fyneApp, *debugFlag)
+	u := ui.NewUI(fyneApp, ad, *debugFlag)
 	u.CacheService = cache
 	u.CharacterService = cs
 	u.ESIStatusService = esistatus.New(esiClient)
