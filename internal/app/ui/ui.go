@@ -132,6 +132,11 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 			container.NewTabItem("Communications", u.notificationsArea.content),
 		))
 
+	contractTab := container.NewTabItemWithIcon("Contracts",
+		theme.NewThemedResource(resourceEditnoteSvg), container.NewAppTabs(
+			container.NewTabItem("Contracts", u.mailArea.content),
+		))
+
 	u.overviewArea = u.newOverviewArea()
 	u.locationsArea = u.newLocationsArea()
 	u.trainingArea = u.newTrainingArea()
@@ -169,6 +174,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 	u.tabs = container.NewAppTabs(
 		characterTab,
 		u.assetTab,
+		contractTab,
 		u.mailTab,
 		u.planetTab,
 		u.skillTab,
