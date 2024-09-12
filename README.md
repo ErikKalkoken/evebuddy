@@ -2,9 +2,10 @@
 
 A companion app for Eve Online players
 
-![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)
-![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml/badge.svg)
-![GitHub License](https://img.shields.io/github/license/ErikKalkoken/evebuddy)
+[![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy/releases)
+[![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml)
+[![GitHub License](https://img.shields.io/github/license/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy?tab=MIT-1-ov-file#readme)
+[![chat](https://img.shields.io/discord/790364535294132234)](https://discord.gg/tVSCQEVJnJ)
 
 ## Contents
 
@@ -22,7 +23,7 @@ EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) player
 
 - Give you access to your characters without having to log into the Eve client or switching your current Eve character
 - Provide you with helpful functions, that the Eve client is lacking, like asset search across all your characters
-- Notify you about game important events (e.g. structure attacked) and new Eve mails
+- Notify you about important game events (e.g. structure attacked) and new Eve mails
 
 > [!IMPORTANT]
 > This is an early version and not yet considered fully stable. We would very much appreciate your feedback, so we can find and squash remaining bugs. If you encounter any problems please feel free to open an issue or chat with us on Discord.
@@ -116,6 +117,10 @@ rm evebuddy
 ```
 
 ## FAQ
+
+### Where can I get support?
+
+If encounters a bug please open an issue. For support questions please join us on our [Discord server](https://discord.gg/tVSCQEVJnJ). T
 
 ### Where is my data stored? I am concerned about potentially leaking sensitive data
 
