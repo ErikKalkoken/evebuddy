@@ -8,9 +8,11 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 )
@@ -71,14 +73,16 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
 			icon.FillMode = canvas.ImageFillOriginal
 			first := widget.NewLabel("Template")
-			second := widget.NewLabel("Template")
-			return container.NewHBox(icon, first, second)
+			second := widgets.NewTappableIcon(theme.InfoIcon(), nil)
+			third := widget.NewLabel("Template")
+			return container.NewHBox(icon, first, second, third)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
 			hbox := co.(*fyne.Container)
 			icon := hbox.Objects[0].(*canvas.Image)
 			first := hbox.Objects[1].(*widget.Label)
-			second := hbox.Objects[2].(*widget.Label)
+			second := hbox.Objects[2].(*widgets.TappableIcon)
+			third := hbox.Objects[3].(*widget.Label)
 			n, ok := a.treeData.Value(uid)
 			if !ok {
 				return
@@ -96,17 +100,25 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 					t = "No implants"
 					i = widget.LowImportance
 				}
-				second.Text = t
-				second.Importance = i
-				second.Refresh()
-				second.Show()
+				if !n.IsUnknown {
+					second.OnTapped = func() {
+						a.ui.showLocationInfoWindow(n.LocationID)
+					}
+					second.Show()
+				} else {
+					second.Hide()
+				}
+				third.Text = t
+				third.Importance = i
+				third.Refresh()
+				third.Show()
 			} else {
 				refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
 					return a.ui.EveImageService.InventoryTypeIcon(n.ImplantTypeID, defaultIconSize)
 				})
 				first.SetText(n.ImplantTypeName)
 				second.Hide()
-				second.Hide()
+				third.Hide()
 			}
 		},
 	)
@@ -116,10 +128,10 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 		if !ok {
 			return
 		}
-		if n.IsRoot() && !n.IsUnknown {
-			a.ui.showLocationInfoWindow(n.LocationID)
-			return
-		}
+		// if n.IsRoot() && !n.IsUnknown {
+		// 	a.ui.showLocationInfoWindow(n.LocationID)
+		// 	return
+		// }
 		if !n.IsRoot() {
 			a.ui.showTypeInfoWindow(n.ImplantTypeID, a.ui.characterID())
 		}
