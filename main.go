@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"fyne.io/fyne/v2/app"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -29,16 +31,19 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/uninstall"
 	"github.com/antihax/goesi"
+	"github.com/juju/mutex/v2"
 )
 
 const (
-	ssoClientID   = "11ae857fe4d149b2be60d875649c05f1"
 	appID         = "io.github.erikkalkoken.evebuddy"
-	userAgent     = "EveBuddy kalkoken87@gmail.com"
 	dbFileName    = "evebuddy.sqlite"
 	logFileName   = "evebuddy.log"
-	logMaxSizeMB  = 50
 	logMaxBackups = 3
+	logMaxSizeMB  = 50
+	mutexDelay    = 100 * time.Millisecond
+	mutexTimeout  = 250 * time.Millisecond
+	ssoClientID   = "11ae857fe4d149b2be60d875649c05f1"
+	userAgent     = "EveBuddy kalkoken87@gmail.com"
 )
 
 type logLevelFlag struct {
@@ -71,18 +76,30 @@ func init() {
 	flag.Var(&levelFlag, "loglevel", "set log level")
 }
 
+type realtime struct{}
+
+func (r realtime) After(d time.Duration) <-chan time.Time {
+	c := make(chan time.Time)
+	go func() {
+		time.Sleep(d)
+		c <- time.Now()
+	}()
+	return c
+}
+
+func (r realtime) Now() time.Time {
+	return time.Now()
+}
+
 func main() {
-	flag.Parse()
 	fyneApp := app.NewWithID(appID)
 	ad, err := appdirs.New(fyneApp)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if *uninstallFlag {
-		u := uninstall.NewUI(fyneApp, ad)
-		u.ShowAndRun()
-		return
-	}
+	flag.Parse()
+
+	// setup crash reporting
 	f, err := os.Create(filepath.Join(ad.Log, "crash.txt"))
 	if err != nil {
 		log.Fatal(err)
@@ -90,6 +107,8 @@ func main() {
 	if err := debug.SetCrashOutput(f, debug.CrashOptions{}); err != nil {
 		log.Fatal(err)
 	}
+
+	// setup logging
 	slog.SetLogLoggerLevel(levelFlag.value)
 	fn := fmt.Sprintf("%s/%s", ad.Log, logFileName)
 	log.SetOutput(&lumberjack.Logger{
@@ -97,6 +116,33 @@ func main() {
 		MaxSize:    logMaxSizeMB, // megabytes
 		MaxBackups: logMaxBackups,
 	})
+
+	// ensure only one instance is running
+	slog.Info("Checking for other instances")
+	r, err := mutex.Acquire(mutex.Spec{
+		Name:    strings.ReplaceAll(appID, ".", "-"),
+		Clock:   realtime{},
+		Delay:   mutexDelay,
+		Timeout: mutexTimeout,
+	})
+	if errors.Is(err, mutex.ErrTimeout) {
+		slog.Warn("Attempted to run an additional instance. Shutting down that process.")
+		fmt.Println("There is already an instance running")
+		os.Exit(1)
+	} else if err != nil {
+		log.Fatal(err)
+	}
+	defer r.Release()
+	slog.Info("No other instances running")
+
+	// start uninstall app if requested
+	if *uninstallFlag {
+		u := uninstall.NewUI(fyneApp, ad)
+		u.ShowAndRun()
+		return
+	}
+
+	// init database
 	dsn := fmt.Sprintf("file:%s/%s", ad.Data, dbFileName)
 	db, err := storage.InitDB(dsn)
 	if err != nil {
@@ -104,6 +150,8 @@ func main() {
 	}
 	defer db.Close()
 	st := storage.New(db)
+
+	// init HTTP client, ESI client and cache
 	httpClient := &http.Client{
 		Transport: httptransport.LoggedTransport{},
 	}
@@ -119,23 +167,28 @@ func main() {
 	}
 	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
 	cache := cache.New()
+
+	// Init StatusCache service
 	sc := statuscache.New(cache)
 	if err := sc.InitCache(context.TODO(), st); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-
+	// Init EveUniverse service
 	eu := eveuniverse.New(st, esiClient)
 	eu.StatusCacheService = sc
 
+	// Init EveNotification service
 	en := evenotification.New()
 	en.EveUniverseService = eu
 
+	// Init Character service
 	cs := character.New(st, httpClient, esiClient)
 	cs.EveNotificationService = en
 	cs.EveUniverseService = eu
 	cs.StatusCacheService = sc
 	cs.SSOService = sso.New(ssoClientID, httpClient, cache)
 
+	// Init UI
 	u := ui.NewUI(fyneApp, ad, *debugFlag)
 	u.CacheService = cache
 	u.CharacterService = cs
@@ -144,5 +197,7 @@ func main() {
 	u.EveUniverseService = eu
 	u.StatusCacheService = sc
 	u.Init()
+
+	// Start app
 	u.ShowAndRun()
 }
