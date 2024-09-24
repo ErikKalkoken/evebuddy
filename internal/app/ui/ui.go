@@ -92,10 +92,10 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isDebug bool) *ui {
 		fyneApp: fyneApp,
 		isDebug: isDebug,
 		sfg:     new(singleflight.Group),
-		window:  fyneApp.NewWindow(""),
 		deskApp: desk,
 		ad:      ad,
 	}
+	u.window = fyneApp.NewWindow(u.appName())
 	u.attributesArea = u.newAttributesArena()
 	u.biographyArea = u.newBiographyArea()
 	u.jumpClonesArea = u.NewJumpClonesArea()
@@ -332,13 +332,6 @@ func (u *ui) loadCharacter(ctx context.Context, characterID int32) error {
 
 func (u *ui) setCharacter(c *app.Character) {
 	u.character = c
-	var s string
-	if c != nil {
-		s = c.EveCharacter.Name
-	} else {
-		s = "[No character]"
-	}
-	u.window.SetTitle(fmt.Sprintf("%s - %s", s, u.appName()))
 	u.refreshCharacter()
 	u.tabs.Refresh()
 	u.fyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
