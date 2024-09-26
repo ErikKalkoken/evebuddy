@@ -11,10 +11,15 @@ JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
 WHERE character_id = ?
 AND eve_type_id = ?;
 
--- name: DeleteExcludedCharacterSkills :exec
+-- name: DeleteCharacterSkills :exec
 DELETE FROM character_skills
 WHERE character_id = ?
-AND eve_type_id NOT IN (sqlc.slice('eve_type_ids'));
+AND eve_type_id IN (sqlc.slice('eve_type_ids'));
+
+-- name: ListCharacterSkillIDs :many
+SELECT eve_type_id
+FROM character_skills
+WHERE character_id = ?;
 
 -- name: ListCharacterShipsAbilities :many
 SELECT DISTINCT ss2.ship_type_id as type_id, et.name as type_name, eg.id as group_id, eg.name as group_name,

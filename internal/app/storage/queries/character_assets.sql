@@ -15,10 +15,10 @@ VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 );
 
--- name: DeleteExcludedCharacterAssets :exec
+-- name: DeleteCharacterAssets :exec
 DELETE FROM character_assets
 WHERE character_id = ?
-AND item_id NOT IN (sqlc.slice('item_ids'));
+AND item_id IN (sqlc.slice('item_ids'));
 
 -- name: GetCharacterAsset :one
 SELECT

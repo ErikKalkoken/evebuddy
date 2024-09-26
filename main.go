@@ -8,6 +8,7 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -15,6 +16,8 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2/app"
+	"github.com/antihax/goesi"
+	"github.com/juju/mutex/v2"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
@@ -30,8 +33,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/httptransport"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/ErikKalkoken/evebuddy/internal/uninstall"
-	"github.com/antihax/goesi"
-	"github.com/juju/mutex/v2"
 )
 
 const (
@@ -69,6 +70,7 @@ var (
 	levelFlag     logLevelFlag
 	debugFlag     = flag.Bool("debug", false, "Show additional debug information")
 	uninstallFlag = flag.Bool("uninstall", false, "Uninstalls the app by deleting all user files")
+	pprofFlag     = flag.Bool("pprof", false, "Enable pprof web server")
 )
 
 func init() {
@@ -197,6 +199,13 @@ func main() {
 	u.EveUniverseService = eu
 	u.StatusCacheService = sc
 	u.Init()
+
+	// start pprof web server
+	if *pprofFlag {
+		go func() {
+			log.Println(http.ListenAndServe("localhost:6060", nil))
+		}()
+	}
 
 	// Start app
 	u.ShowAndRun()

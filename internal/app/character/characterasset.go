@@ -82,15 +82,15 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			assets := data.([]esiCharacterAssetPlus)
-			itemIDs := set.New[int64]()
+			incomingIDs := set.New[int64]()
 			for _, ca := range assets {
-				itemIDs.Add(ca.ItemId)
+				incomingIDs.Add(ca.ItemId)
 			}
 			typeIDs := set.New[int32]()
 			locationIDs := set.New[int64]()
 			for _, ca := range assets {
 				typeIDs.Add(ca.TypeId)
-				if !itemIDs.Contains(ca.LocationId) {
+				if !incomingIDs.Contains(ca.LocationId) {
 					locationIDs.Add(ca.LocationId) // location IDs that are not referencing other itemIDs are locations
 				}
 			}
@@ -107,13 +107,13 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 			if err := s.EveUniverseService.AddMissingEveTypes(ctx, typeIDs.ToSlice()); err != nil {
 				return err
 			}
-			ids, err := s.st.ListCharacterAssetIDs(ctx, characterID)
+			x, err := s.st.ListCharacterAssetIDs(ctx, characterID)
 			if err != nil {
 				return err
 			}
-			existingIDs := set.NewFromSlice(ids)
+			currentIDs := set.NewFromSlice(x)
 			for _, a := range assets {
-				if existingIDs.Contains(a.ItemId) {
+				if currentIDs.Contains(a.ItemId) {
 					arg := storage.UpdateCharacterAssetParams{
 						CharacterID:  characterID,
 						ItemID:       a.ItemId,
@@ -143,8 +143,11 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 						return err
 					}
 				}
-				if err := s.st.DeleteExcludedCharacterAssets(ctx, characterID, itemIDs.ToSlice()); err != nil {
-					return err
+				obsoleteIDs := currentIDs.Difference(incomingIDs)
+				if obsoleteIDs.Size() > 0 {
+					if err := s.st.DeleteCharacterAssets(ctx, characterID, obsoleteIDs.ToSlice()); err != nil {
+						return err
+					}
 				}
 			}
 			return nil

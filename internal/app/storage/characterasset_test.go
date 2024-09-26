@@ -9,7 +9,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func TestCharacterAsset(t *testing.T) {
@@ -112,21 +111,19 @@ func TestCharacterAsset(t *testing.T) {
 			assert.Equal(t, x1.EveType, oo[0].EveType)
 		}
 	})
-	t.Run("can delete excluded assets", func(t *testing.T) {
+	t.Run("can delete assets", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		x1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
-		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		x2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
 		// when
-		err := r.DeleteExcludedCharacterAssets(ctx, c.ID, []int64{x1.ItemID})
+		err := r.DeleteCharacterAssets(ctx, c.ID, []int64{x2.ItemID})
 		// then
 		if assert.NoError(t, err) {
 			ids, err := r.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				got := set.NewFromSlice(ids)
-				want := set.NewFromSlice([]int64{x1.ItemID})
-				assert.Equal(t, want, got)
+				assert.ElementsMatch(t, []int64{x1.ItemID}, ids)
 			}
 		}
 	})

@@ -82,9 +82,16 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		// old := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 41})
 		factory.CreateEveType(storage.CreateEveTypeParams{ID: 42})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID: c.ID,
+			EveTypeID:   41,
+		})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID: c.ID,
+			EveTypeID:   42,
+		})
 		data := map[string]any{
 			"skills": []map[string]any{
 				{
@@ -109,10 +116,10 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			_, err := st.GetCharacterSkill(ctx, c.ID, 42)
-			assert.Error(t, err, storage.ErrNotFound)
-			_, err = st.GetCharacterSkill(ctx, c.ID, 41)
-			assert.NoError(t, err)
+			ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.ElementsMatch(t, []int32{41}, ids)
+			}
 		}
 	})
 

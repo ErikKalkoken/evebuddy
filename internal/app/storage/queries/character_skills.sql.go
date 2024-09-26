@@ -11,19 +11,19 @@ import (
 	"strings"
 )
 
-const deleteExcludedCharacterSkills = `-- name: DeleteExcludedCharacterSkills :exec
+const deleteCharacterSkills = `-- name: DeleteCharacterSkills :exec
 DELETE FROM character_skills
 WHERE character_id = ?
-AND eve_type_id NOT IN (/*SLICE:eve_type_ids*/?)
+AND eve_type_id IN (/*SLICE:eve_type_ids*/?)
 `
 
-type DeleteExcludedCharacterSkillsParams struct {
+type DeleteCharacterSkillsParams struct {
 	CharacterID int64
 	EveTypeIds  []int64
 }
 
-func (q *Queries) DeleteExcludedCharacterSkills(ctx context.Context, arg DeleteExcludedCharacterSkillsParams) error {
-	query := deleteExcludedCharacterSkills
+func (q *Queries) DeleteCharacterSkills(ctx context.Context, arg DeleteCharacterSkillsParams) error {
+	query := deleteCharacterSkills
 	var queryParams []interface{}
 	queryParams = append(queryParams, arg.CharacterID)
 	if len(arg.EveTypeIds) > 0 {
@@ -264,6 +264,35 @@ func (q *Queries) ListCharacterSkillGroupsProgress(ctx context.Context, arg List
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCharacterSkillIDs = `-- name: ListCharacterSkillIDs :many
+SELECT eve_type_id
+FROM character_skills
+WHERE character_id = ?
+`
+
+func (q *Queries) ListCharacterSkillIDs(ctx context.Context, characterID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterSkillIDs, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var eve_type_id int64
+		if err := rows.Scan(&eve_type_id); err != nil {
+			return nil, err
+		}
+		items = append(items, eve_type_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

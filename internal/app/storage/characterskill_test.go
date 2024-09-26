@@ -69,20 +69,37 @@ func TestCharacterSkill(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can list skill IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		o1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID: c.ID,
+		})
+		o2 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID: c.ID,
+		})
+		// when
+		ids, err := r.ListCharacterSkillIDs(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.ElementsMatch(t, []int32{o1.EveType.ID, o2.EveType.ID}, ids)
+		}
+	})
 	t.Run("can delete excluded skills", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
-		o1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
-		o2 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
+		x1 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
+		x2 := factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{CharacterID: c.ID})
 		// when
-		err := r.DeleteExcludedCharacterSkills(ctx, c.ID, []int32{o2.EveType.ID})
+		err := r.DeleteCharacterSkills(ctx, c.ID, []int32{x2.EveType.ID})
 		// then
 		if assert.NoError(t, err) {
-			_, err := r.GetCharacterSkill(ctx, c.ID, o1.EveType.ID)
-			assert.Error(t, err, storage.ErrNotFound)
-			_, err = r.GetCharacterSkill(ctx, c.ID, o2.EveType.ID)
-			assert.NoError(t, err)
+			ids, err := r.ListCharacterSkillIDs(ctx, c.ID)
+			if assert.NoError(t, err) {
+				assert.ElementsMatch(t, []int32{x1.EveType.ID}, ids)
+			}
 		}
 	})
 }

@@ -72,19 +72,19 @@ func (q *Queries) CreateCharacterAsset(ctx context.Context, arg CreateCharacterA
 	return err
 }
 
-const deleteExcludedCharacterAssets = `-- name: DeleteExcludedCharacterAssets :exec
+const deleteCharacterAssets = `-- name: DeleteCharacterAssets :exec
 DELETE FROM character_assets
 WHERE character_id = ?
-AND item_id NOT IN (/*SLICE:item_ids*/?)
+AND item_id IN (/*SLICE:item_ids*/?)
 `
 
-type DeleteExcludedCharacterAssetsParams struct {
+type DeleteCharacterAssetsParams struct {
 	CharacterID int64
 	ItemIds     []int64
 }
 
-func (q *Queries) DeleteExcludedCharacterAssets(ctx context.Context, arg DeleteExcludedCharacterAssetsParams) error {
-	query := deleteExcludedCharacterAssets
+func (q *Queries) DeleteCharacterAssets(ctx context.Context, arg DeleteCharacterAssetsParams) error {
+	query := deleteCharacterAssets
 	var queryParams []interface{}
 	queryParams = append(queryParams, arg.CharacterID)
 	if len(arg.ItemIds) > 0 {
