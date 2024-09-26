@@ -10,12 +10,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
 
-func (st *Storage) DeleteExcludedCharacterSkills(ctx context.Context, characterID int32, eveTypeIDs []int32) error {
-	arg := queries.DeleteExcludedCharacterSkillsParams{
+func (st *Storage) DeleteCharacterSkills(ctx context.Context, characterID int32, eveTypeIDs []int32) error {
+	arg := queries.DeleteCharacterSkillsParams{
 		CharacterID: int64(characterID),
 		EveTypeIds:  convertNumericSlice[int32, int64](eveTypeIDs),
 	}
-	err := st.q.DeleteExcludedCharacterSkills(ctx, arg)
+	err := st.q.DeleteCharacterSkills(ctx, arg)
 	if err != nil {
 		return err
 	}
@@ -36,6 +36,14 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typ
 	}
 	t2 := characterSkillFromDBModel(row.CharacterSkill, row.EveType, row.EveGroup, row.EveCategory)
 	return t2, nil
+}
+
+func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int32) ([]int32, error) {
+	ids, err := st.q.ListCharacterSkillIDs(ctx, int64(characterID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to list skill IDs for character %d: %w", characterID, err)
+	}
+	return convertNumericSlice[int64, int32](ids), nil
 }
 
 func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]app.ListCharacterSkillProgress, error) {

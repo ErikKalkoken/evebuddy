@@ -122,6 +122,7 @@ func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg Upda
 					return err
 				}
 			}
+			// TODO: Delete obsolete mail labels and list
 			// if err := s.st.DeleteObsoleteCharacterMailLabels(ctx, characterID); err != nil {
 			// 	return err
 			// }

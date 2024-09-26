@@ -7,6 +7,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
 )
 
@@ -38,9 +39,14 @@ func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg Upd
 			if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, total, unallocated); err != nil {
 				return err
 			}
-			var existingSkills []int32
+			x, err := s.st.ListCharacterSkillIDs(ctx, characterID)
+			if err != nil {
+				return err
+			}
+			currentSkillIDs := set.NewFromSlice(x)
+			incomingSkillIDs := set.New[int32]()
 			for _, o := range skills.Skills {
-				existingSkills = append(existingSkills, o.SkillId)
+				incomingSkillIDs.Add(o.SkillId)
 				_, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, o.SkillId)
 				if err != nil {
 					return err
@@ -57,8 +63,11 @@ func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg Upd
 					return err
 				}
 			}
-			if err := s.st.DeleteExcludedCharacterSkills(ctx, characterID, existingSkills); err != nil {
-				return err
+			obsoleteSkillIDs := currentSkillIDs.Difference(incomingSkillIDs)
+			if obsoleteSkillIDs.Size() > 0 {
+				if err := s.st.DeleteCharacterSkills(ctx, characterID, obsoleteSkillIDs.ToSlice()); err != nil {
+					return err
+				}
 			}
 			return nil
 		})
