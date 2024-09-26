@@ -46,12 +46,12 @@ func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacter
 	return nil
 }
 
-func (st *Storage) DeleteExcludedCharacterAssets(ctx context.Context, characterID int32, itemIDs []int64) error {
-	arg := queries.DeleteExcludedCharacterAssetsParams{
+func (st *Storage) DeleteCharacterAssets(ctx context.Context, characterID int32, itemIDs []int64) error {
+	arg := queries.DeleteCharacterAssetsParams{
 		CharacterID: int64(characterID),
 		ItemIds:     itemIDs,
 	}
-	return st.q.DeleteExcludedCharacterAssets(ctx, arg)
+	return st.q.DeleteCharacterAssets(ctx, arg)
 }
 
 func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, itemID int64) (*app.CharacterAsset, error) {

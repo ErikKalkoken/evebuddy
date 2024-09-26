@@ -143,7 +143,8 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 						return err
 					}
 				}
-				if err := s.st.DeleteExcludedCharacterAssets(ctx, characterID, itemIDs.ToSlice()); err != nil {
+				obsoleteIDs := existingIDs.Difference(itemIDs)
+				if err := s.st.DeleteCharacterAssets(ctx, characterID, obsoleteIDs.ToSlice()); err != nil {
 					return err
 				}
 			}
