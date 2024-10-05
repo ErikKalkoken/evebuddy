@@ -327,11 +327,23 @@ func TestResolveEveEntities(t *testing.T) {
 		httpmock.Reset()
 		e1 := factory.CreateEveEntity()
 		// when
-		r, err := s.ToEveEntities(ctx, []int32{e1.ID, 0})
+		r, err := s.ToEveEntities(ctx, []int32{e1.ID})
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, r, 1)
 			assert.Equal(t, *e1, *r[e1.ID])
+		}
+	})
+	t.Run("should return zero value for ID 0", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		// when
+		r, err := s.ToEveEntities(ctx, []int32{0})
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, r, 1)
+			assert.Equal(t, app.EveEntity{}, *r[0])
 		}
 	})
 }
