@@ -190,13 +190,21 @@ func (u *ui) processNotifications(ctx context.Context, characterID int32) {
 		slog.Error("Failed to fetch notifications for processing", "characterID", characterID, "error", err)
 		return
 	}
+	var characterName string
+	character, err := u.CharacterService.GetCharacter(ctx, characterID)
+	if err != nil {
+		slog.Error("Failed to fetch character", "characterID", characterID, "error", err)
+		characterName = "?"
+	} else {
+		characterName = character.EveCharacter.Name
+	}
 	typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 	oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
 	for _, n := range nn {
 		if !typesEnabled.Contains(n.Type) || n.Timestamp.Before(oldest) {
 			continue
 		}
-		title := fmt.Sprintf("New Communication from %s", n.Sender.Name)
+		title := fmt.Sprintf("%s: New Communication from %s", characterName, n.Sender.Name)
 		x := fyne.NewNotification(title, n.Title.ValueOrZero())
 		u.fyneApp.SendNotification(x)
 		if err := u.CharacterService.UpdateCharacterNotificationSetProcessed(ctx, n); err != nil {
@@ -213,12 +221,20 @@ func (u *ui) processMails(ctx context.Context, characterID int32) {
 		slog.Error("Failed to fetch mails for processing", "characterID", characterID, "error", err)
 		return
 	}
+	var characterName string
+	character, err := u.CharacterService.GetCharacter(ctx, characterID)
+	if err != nil {
+		slog.Error("Failed to fetch character", "characterID", characterID, "error", err)
+		characterName = "?"
+	} else {
+		characterName = character.EveCharacter.Name
+	}
 	oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
 	for _, m := range mm {
 		if m.Timestamp.Before(oldest) {
 			continue
 		}
-		title := fmt.Sprintf("New Mail from %s", m.From)
+		title := fmt.Sprintf("%s: New Mail from %s", characterName, m.From)
 		body := m.Subject
 		x := fyne.NewNotification(title, body)
 		u.fyneApp.SendNotification(x)
