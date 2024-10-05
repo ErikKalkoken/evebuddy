@@ -34,6 +34,9 @@ func makeEveWhoCharacterURL(id int32) string {
 }
 
 func makeEveEntityProfileLink(e *app.EveEntity) string {
+	if e == nil {
+		return ""
+	}
 	var url string
 	switch e.Category {
 	case app.EveEntityAlliance:

@@ -69,13 +69,13 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 			return title, body, err
 		}
 		var external1 string
-		if x, ok := entities[int32(data.ExternalID)]; ok {
+		if x, ok := entities[int32(data.ExternalID)]; ok && x.Name != "" {
 			external1 = x.Name
 		} else {
 			external1 = "?"
 		}
 		var external2 string
-		if x, ok := entities[int32(data.ExternalID2)]; ok {
+		if x, ok := entities[int32(data.ExternalID2)]; ok && x.Name != "" {
 			external2 = x.Name
 		} else {
 			external2 = "?"
