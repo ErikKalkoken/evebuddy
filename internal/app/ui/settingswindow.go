@@ -1,39 +1,42 @@
 package ui
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
-	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/dustin/go-humanize"
 )
 
-// Setting keys
+// Settings
 const (
-	settingLastCharacterID              = "settingLastCharacterID"
-	settingMaxAge                       = "settingMaxAge"
-	settingMaxAgeDefault                = 3_600 * 6
-	settingMaxMails                     = "settingMaxMails"
-	settingMaxMailsDefault              = 1_000
-	settingMaxWalletTransactions        = "settingMaxWalletTransactions"
-	settingMaxWalletTransactionsDefault = 10_000
-	settingNotifyCommunicationsEnabled  = "settingNotifyCommunicationsEnabled"
-	settingNotifyMailsEnabled           = "settingNotifyMailsEnabled"
-	settingNotificationsTypesEnabled    = "settingNotificationsTypesEnabled"
-	settingSysTrayEnabled               = "settingSysTrayEnabled"
-	settingTheme                        = "settingTheme"
-	settingThemeDefault                 = themeAuto
+	settingLastCharacterID                    = "settingLastCharacterID"
+	settingMaxAge                             = "settingMaxAgeHours"
+	settingMaxAgeDefault                      = 6  // hours
+	settingMaxAgeMax                          = 24 // hours
+	settingMaxMails                           = "settingMaxMails"
+	settingMaxMailsDefault                    = 1_000
+	settingMaxMailsMax                        = 10_000
+	settingMaxWalletTransactions              = "settingMaxWalletTransactions"
+	settingMaxWalletTransactionsDefault       = 1_000
+	settingMaxWalletTransactionsMax           = 10_000
+	settingNotifyCommunicationsEnabled        = "settingNotifyCommunicationsEnabled"
+	settingNotifyCommunicationsEnabledDefault = false
+	settingNotifyMailsEnabled                 = "settingNotifyMailsEnabled"
+	settingNotifyMailsEnabledDefault          = false
+	settingNotificationsTypesEnabled          = "settingNotificationsTypesEnabled"
+	settingSysTrayEnabled                     = "settingSysTrayEnabled"
+	settingSysTrayEnabledDefault              = true
+	settingTheme                              = "settingTheme"
+	settingThemeDefault                       = themeAuto
 )
 
 // Themes
@@ -60,7 +63,7 @@ func (u *ui) showSettingsWindow() {
 	}
 	w := u.fyneApp.NewWindow(u.makeWindowTitle("Settings"))
 	w.SetContent(sw.content)
-	w.Resize(fyne.Size{Width: 1100, Height: 500})
+	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.Show()
 	w.SetCloseIntercept(func() {
 		u.settingsWindow = nil
@@ -83,44 +86,26 @@ func (u *ui) newSettingsWindow() (*settingsWindow, error) {
 }
 
 func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
-	submit := widget.NewButtonWithIcon("Apply", theme.ConfirmIcon(), nil)
-	submit.Importance = widget.HighImportance
-	submit.Disable()
-	form := widget.NewForm()
-	checkSubmit := func() {
-		if err := form.Validate(); err != nil {
-			submit.Disable()
-		} else {
-			submit.Enable()
-		}
-	}
-
+	// theme
 	themeRadio := widget.NewRadioGroup(
 		[]string{themeAuto, themeDark, themeLight}, func(s string) {},
 	)
 	current := w.ui.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault)
 	themeRadio.SetSelected(current)
-	form.AppendItem(&widget.FormItem{
-		Text:     "Theme",
-		Widget:   themeRadio,
-		HintText: "Chose the preferred theme",
-	})
 	themeRadio.OnChanged = func(string) {
-		checkSubmit()
+		w.ui.themeSet(themeRadio.Selected)
+		w.ui.fyneApp.Preferences().SetString(settingTheme, themeRadio.Selected)
 	}
 
-	sysTrayEnabled := w.ui.fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, true)
-	sysTrayCheck := widget.NewCheck("Show in system tray", nil)
+	// system tray
+	sysTrayEnabled := w.ui.fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault)
+	sysTrayCheck := widget.NewCheck("Minimize to tray", nil)
 	sysTrayCheck.SetChecked(sysTrayEnabled)
 	sysTrayCheck.OnChanged = func(b bool) {
-		checkSubmit()
+		w.ui.fyneApp.Preferences().SetBool(settingSysTrayEnabled, sysTrayCheck.Checked)
 	}
-	form.AppendItem(&widget.FormItem{
-		Text:     "System Tray",
-		Widget:   sysTrayCheck,
-		HintText: "Show icon in system tray (requires restart)",
-	})
 
+	// cache
 	clearBtn := widget.NewButton("Clear NOW", func() {
 		d := dialog.NewConfirm(
 			"Clear image cache",
@@ -149,144 +134,122 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 		cacheSize = humanize.Bytes(uint64(s))
 	}
 	cacheHintText := fmt.Sprintf("Clear the local image cache (%s)", cacheSize)
-	form.AppendItem(&widget.FormItem{
-		Text:     "Image cache",
-		Widget:   container.NewHBox(clearBtn),
-		HintText: cacheHintText,
-	})
 
-	content := container.NewVBox()
-	content.Add(form)
-	submit.OnTapped = func() {
-		if err := form.Validate(); err != nil {
-			d := dialog.NewInformation("Invalid input", err.Error(), w.window)
-			d.Show()
-			return
-		}
-		w.ui.themeSet(themeRadio.Selected)
-		w.ui.fyneApp.Preferences().SetString(settingTheme, themeRadio.Selected)
-		w.ui.fyneApp.Preferences().SetBool(settingSysTrayEnabled, sysTrayCheck.Checked)
-		submit.Disable()
+	settings := &widget.Form{
+		Items: []*widget.FormItem{
+			{
+				Text:     "Style",
+				Widget:   themeRadio,
+				HintText: "Choose the style",
+			},
+			{
+				Text:     "Close button",
+				Widget:   sysTrayCheck,
+				HintText: "App will minimize to system tray when closed (requires restart)",
+			},
+			{
+				Text:     "Image cache",
+				Widget:   container.NewHBox(clearBtn),
+				HintText: cacheHintText,
+			},
+		}}
+	reset := func() {
+		themeRadio.SetSelected(settingThemeDefault)
+		sysTrayCheck.SetChecked(settingSysTrayEnabledDefault)
 	}
-	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
-		w.window.Hide()
-	})
-	content.Add(container.NewHBox(layout.NewSpacer(), cancel, submit))
-	return makePage("General settings", content)
+	return makePage("General settings", settings, reset)
 }
 
 func (w *settingsWindow) makeEVEOnlinePage() fyne.CanvasObject {
-	submit := widget.NewButtonWithIcon("Apply", theme.ConfirmIcon(), nil)
-	submit.Importance = widget.HighImportance
-	submit.Disable()
-	form := widget.NewForm()
-	checkSubmit := func() {
-		if err := form.Validate(); err != nil {
-			submit.Disable()
-		} else {
-			submit.Enable()
-		}
-	}
-
+	// max mails
 	mm := w.ui.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault)
-	maxMails := widget.NewEntry()
-	maxMails.SetText(strconv.Itoa(mm))
-	maxMails.Validator = newPositiveNumberValidator()
-	maxMails.OnChanged = func(s string) {
-		checkSubmit()
+	maxMails := widgets.NewSlider(0, settingMaxMailsMax, mm)
+	maxMails.OnChangeEnded = func(v int) {
+		w.ui.fyneApp.Preferences().SetInt(settingMaxMails, v)
 	}
-	form.AppendItem(&widget.FormItem{
-		Text:     "Maximum mails",
-		Widget:   maxMails,
-		HintText: "Maximum number of mails downloaded. 0 = unlimited.",
-	})
 
+	// max transactions
 	mwt := w.ui.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
-	maxTransactions := widget.NewEntry()
-	maxTransactions.SetText(strconv.Itoa(mwt))
-	maxTransactions.Validator = newPositiveNumberValidator()
-	maxTransactions.OnChanged = func(s string) {
-		checkSubmit()
+	maxTransactions := widgets.NewSlider(0, settingMaxWalletTransactionsMax, mwt)
+	maxTransactions.OnChangeEnded = func(v int) {
+		w.ui.fyneApp.Preferences().SetInt(settingMaxWalletTransactions, v)
 	}
-	form.AppendItem(&widget.FormItem{
-		Text:     "Maximum wallet transaction",
-		Widget:   maxTransactions,
-		HintText: "Maximum number of wallet transaction downloaded. 0 = unlimited.",
-	})
 
-	content := container.NewVBox()
-	content.Add(form)
-	content.Add(container.NewPadded())
-
-	submit.OnTapped = func() {
-		if err := form.Validate(); err != nil {
-			d := dialog.NewInformation("Invalid input", err.Error(), w.window)
-			d.Show()
-			return
-		}
-		mm, err := strconv.Atoi(maxMails.Text)
-		if err != nil {
-			return
-		}
-		w.ui.fyneApp.Preferences().SetInt(settingMaxMails, mm)
-		mwt, err := strconv.Atoi(maxTransactions.Text)
-		if err != nil {
-			return
-		}
-		w.ui.fyneApp.Preferences().SetInt(settingMaxWalletTransactions, mwt)
-		submit.Disable()
+	settings := &widget.Form{
+		Items: []*widget.FormItem{
+			{
+				Text:     "Maximum mails",
+				Widget:   maxMails,
+				HintText: "Maximum number of mails downloaded. 0 = unlimited.",
+			},
+			{
+				Text:     "Maximum wallet transaction",
+				Widget:   maxTransactions,
+				HintText: "Maximum number of wallet transaction downloaded. 0 = unlimited.",
+			},
+		},
 	}
-	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
-		w.window.Hide()
-	})
-	content.Add(container.NewHBox(layout.NewSpacer(), cancel, submit))
-	return makePage("Eve Online settings", content)
+	x := func() {
+		maxMails.SetValue(settingMaxMailsDefault)
+		maxTransactions.SetValue(settingMaxWalletTransactionsDefault)
+	}
+	return makePage("Eve Online settings", settings, x)
 }
 
 func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
-	submit := widget.NewButtonWithIcon("Apply", theme.ConfirmIcon(), nil)
-	submit.Importance = widget.HighImportance
-	submit.Disable()
-	form := widget.NewForm()
-	checkSubmit := func() {
-		if err := form.Validate(); err != nil {
-			submit.Disable()
-		} else {
-			submit.Enable()
-		}
-	}
+	s1 := widget.NewForm()
 
+	// mail toogle
 	mailEnabledCheck := widget.NewCheck("Notif new mails", nil)
-	mailEnabledCheck.Checked = w.ui.fyneApp.Preferences().Bool(settingNotifyMailsEnabled)
+	mailEnabledCheck.Checked = w.ui.fyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault)
 	mailEnabledCheck.OnChanged = func(b bool) {
-		checkSubmit()
+		w.ui.fyneApp.Preferences().SetBool(settingNotifyMailsEnabled, mailEnabledCheck.Checked)
 	}
-	form.AppendItem(&widget.FormItem{
+	s1.AppendItem(&widget.FormItem{
 		Text:     "Mail",
 		Widget:   mailEnabledCheck,
 		HintText: "Wether to notify new mails",
 	})
 
+	// notifications toogle
 	communicationsEnabledCheck := widget.NewCheck("Notify new communications", nil)
-	communicationsEnabledCheck.Checked = w.ui.fyneApp.Preferences().Bool(settingNotifyCommunicationsEnabled)
+	communicationsEnabledCheck.Checked = w.ui.fyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault)
 	communicationsEnabledCheck.OnChanged = func(b bool) {
-		checkSubmit()
+		w.ui.fyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, communicationsEnabledCheck.Checked)
 	}
-	form.AppendItem(&widget.FormItem{
+	s1.AppendItem(&widget.FormItem{
 		Text:     "Communications",
 		Widget:   communicationsEnabledCheck,
 		HintText: "Wether to notify new communications",
 	})
-	form.Append("", container.NewPadded())
 
-	categories := make(map[evenotification.Category][]string)
+	// max age
+	ma := w.ui.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
+	maxAge := widgets.NewSlider(1, settingMaxAgeMax, ma)
+	maxAge.OnChangeEnded = func(v int) {
+		w.ui.fyneApp.Preferences().SetInt(settingMaxAge, v)
+	}
+	s1.AppendItem(&widget.FormItem{
+		Text:     "Max age",
+		Widget:   maxAge,
+		HintText: "Max age in hours. Older mails and communications will not be notified.",
+	})
+
+	s2 := widget.NewForm()
+	categoriesAndTypes := make(map[evenotification.Category][]string)
 	for _, n := range evenotification.SupportedTypes() {
 		c := evenotification.Type2category[n]
-		categories[c] = append(categories[c], string(n))
+		categoriesAndTypes[c] = append(categoriesAndTypes[c], string(n))
 	}
+	categories := make([]evenotification.Category, 0)
+	for c := range categoriesAndTypes {
+		categories = append(categories, c)
+	}
+	slices.Sort(categories)
 	typesEnabled := set.NewFromSlice(w.ui.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 	groups := make([]*widget.CheckGroup, 0)
-	for c, nts := range categories {
+	for _, c := range categories {
+		nts := categoriesAndTypes[c]
 		selected := make([]string, 0)
 		for _, nt := range nts {
 			if typesEnabled.Contains(nt) {
@@ -296,91 +259,52 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		cg := widget.NewCheckGroup(nts, nil)
 		cg.Selected = selected
 		cg.OnChanged = func(s []string) {
-			checkSubmit()
+			enabled := make([]string, 0)
+			for _, cg := range groups {
+				enabled = slices.Concat(enabled, cg.Selected)
+			}
+			w.ui.fyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, enabled)
 		}
-		form.AppendItem(widget.NewFormItem(c.String(), cg))
-		form.Append("", container.NewPadded())
+		s2.AppendItem(widget.NewFormItem(c.String(), cg))
+		enableAll := widget.NewButton("Enable all", func() {
+			cg.SetSelected(cg.Options)
+		})
+		disableAll := widget.NewButton("Disable all", func() {
+			cg.SetSelected([]string{})
+		})
+		s2.Append("", container.NewHBox(enableAll, disableAll))
+		s2.Append("", container.NewPadded())
 		groups = append(groups, cg)
 	}
-
-	ma := w.ui.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
-	maxAge := widget.NewEntry()
-	maxAge.SetText(strconv.Itoa(ma))
-	maxAge.Validator = newPositiveNumberValidator()
-	maxAge.OnChanged = func(s string) {
-		checkSubmit()
-	}
-	form.AppendItem(&widget.FormItem{
-		Text:     "Max age",
-		Widget:   maxAge,
-		HintText: "Max age in seconds. Older mails and communications will not be notified.",
-	})
-
-	content := container.NewVBox()
-	content.Add(form)
-	content.Add(container.NewPadded())
-
-	selectAll := widget.NewButton("Enable all communication types", func() {
-		for _, cg := range groups {
-			cg.SetSelected(cg.Options)
-		}
-	})
-	unselectAll := widget.NewButton("Disable all communication types", func() {
+	title1 := widget.NewLabel("Global")
+	title1.TextStyle.Bold = true
+	title2 := widget.NewLabel("Communication Types")
+	title2.TextStyle.Bold = true
+	c := container.NewVBox(
+		title1,
+		s1,
+		container.NewPadded(),
+		title2,
+		s2,
+	)
+	reset := func() {
+		mailEnabledCheck.SetChecked(settingNotifyMailsEnabledDefault)
+		communicationsEnabledCheck.SetChecked(settingNotifyCommunicationsEnabledDefault)
+		maxAge.SetValue(settingMaxAgeDefault)
 		for _, cg := range groups {
 			cg.SetSelected([]string{})
 		}
-	})
-
-	submit.OnTapped = func() {
-		if err := form.Validate(); err != nil {
-			d := dialog.NewInformation("Invalid input", err.Error(), w.window)
-			d.Show()
-			return
-		}
-		v, err := strconv.Atoi(maxAge.Text)
-		if err != nil {
-			return
-		}
-		w.ui.fyneApp.Preferences().SetInt(settingMaxAge, v)
-		w.ui.fyneApp.Preferences().SetBool(settingNotifyMailsEnabled, mailEnabledCheck.Checked)
-		w.ui.fyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, communicationsEnabledCheck.Checked)
-		enabled := make([]string, 0)
-		for _, cg := range groups {
-			enabled = slices.Concat(enabled, cg.Selected)
-		}
-		w.ui.fyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, enabled)
-		submit.Disable()
 	}
-	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
-		w.window.Hide()
-	})
-	content.Add(container.NewHBox(selectAll, unselectAll, layout.NewSpacer(), cancel, submit))
-
-	return makePage("Notification settings", content)
+	return makePage("Notification settings", c, reset)
 }
 
-// newPositiveNumberValidator ensures entry is a positive number (incl. zero).
-func newPositiveNumberValidator() fyne.StringValidator {
-	myErr := errors.New("must be positive number")
-	return func(text string) error {
-		val, err := strconv.Atoi(text)
-		if err != nil {
-			return myErr
-		}
-		if val < 0 {
-			return myErr
-		}
-		return nil
-	}
-}
-
-func makePage(title string, content fyne.CanvasObject) fyne.CanvasObject {
+func makePage(title string, content fyne.CanvasObject, resetSettings func()) fyne.CanvasObject {
 	l := widget.NewLabel(title)
 	l.Importance = widget.HighImportance
 	l.TextStyle.Bold = true
 	return container.NewBorder(
 		container.NewVBox(l, widget.NewSeparator()),
-		nil,
+		container.NewHBox(widget.NewButton("Reset", resetSettings)),
 		nil,
 		nil,
 		container.NewVScroll(content),

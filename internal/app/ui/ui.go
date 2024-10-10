@@ -159,7 +159,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isDebug bool) *ui {
 	u.window.SetContent(mainContent)
 
 	// Define system tray menu
-	if fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, true) {
+	if fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault) {
 		name := u.appName()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true

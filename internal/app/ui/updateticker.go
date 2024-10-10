@@ -150,14 +150,14 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		if hasChanged {
 			u.overviewArea.refresh()
 		}
-		if u.fyneApp.Preferences().Bool(settingNotifyMailsEnabled) {
+		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
 			go u.processMails(ctx, characterID)
 		}
 	case app.SectionNotifications:
 		if isShown && hasChanged {
 			u.notificationsArea.refresh()
 		}
-		if u.fyneApp.Preferences().Bool(settingNotifyCommunicationsEnabled) {
+		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault) {
 			go u.processNotifications(ctx, characterID)
 		}
 	case app.SectionSkills:
