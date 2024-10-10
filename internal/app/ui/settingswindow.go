@@ -34,7 +34,7 @@ const (
 	settingNotifyMailsEnabledDefault          = false
 	settingNotificationsTypesEnabled          = "settingNotificationsTypesEnabled"
 	settingSysTrayEnabled                     = "settingSysTrayEnabled"
-	settingSysTrayEnabledDefault              = true
+	settingSysTrayEnabledDefault              = false
 	settingTheme                              = "settingTheme"
 	settingThemeDefault                       = themeAuto
 )
