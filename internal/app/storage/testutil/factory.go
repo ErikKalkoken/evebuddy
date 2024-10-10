@@ -416,11 +416,11 @@ func (f Factory) CreateCharacterSkillqueueItem(args ...storage.SkillqueueItemPar
 		hours := rand.IntN(90)*24 + 3
 		arg.FinishDate = arg.StartDate.Add(time.Hour * time.Duration(hours))
 	}
-	err := f.st.CreateSkillqueueItem(ctx, arg)
+	err := f.st.CreateCharacterSkillqueueItem(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
-	i, err := f.st.GetSkillqueueItem(ctx, arg.CharacterID, arg.QueuePosition)
+	i, err := f.st.GetCharacterSkillqueueItem(ctx, arg.CharacterID, arg.QueuePosition)
 	if err != nil {
 		panic(err)
 	}

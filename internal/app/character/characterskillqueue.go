@@ -12,11 +12,11 @@ import (
 )
 
 func (s *CharacterService) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error) {
-	return s.st.GetTotalTrainingTime(ctx, characterID)
+	return s.st.GetCharacterTotalTrainingTime(ctx, characterID)
 }
 
 func (s *CharacterService) ListCharacterSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
-	return s.st.ListSkillqueueItems(ctx, characterID)
+	return s.st.ListCharacterSkillqueueItems(ctx, characterID)
 }
 
 // UpdateCharacterSkillqueueESI updates the skillqueue for a character from ESI

@@ -63,7 +63,7 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			ii, err := st.ListSkillqueueItems(ctx, c.ID)
+			ii, err := st.ListCharacterSkillqueueItems(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ii, 3)
 			}

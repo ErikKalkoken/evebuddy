@@ -21,7 +21,7 @@ type SkillqueueItemParams struct {
 	TrainingStartSP int
 }
 
-func (st *Storage) GetTotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error) {
+func (st *Storage) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error) {
 	var d optional.Optional[time.Duration]
 	x, err := st.q.GetTotalTrainingTime(ctx, int64(characterID))
 	if err != nil {
@@ -34,7 +34,7 @@ func (st *Storage) GetTotalTrainingTime(ctx context.Context, characterID int32) 
 	return d, nil
 }
 
-func (st *Storage) CreateSkillqueueItem(ctx context.Context, arg SkillqueueItemParams) error {
+func (st *Storage) CreateCharacterSkillqueueItem(ctx context.Context, arg SkillqueueItemParams) error {
 	return createCharacterSkillqueueItem(ctx, st.q, arg)
 }
 
@@ -69,7 +69,7 @@ func createCharacterSkillqueueItem(ctx context.Context, q *queries.Queries, arg 
 	return err
 }
 
-func (st *Storage) GetSkillqueueItem(ctx context.Context, characterID int32, pos int) (*app.CharacterSkillqueueItem, error) {
+func (st *Storage) GetCharacterSkillqueueItem(ctx context.Context, characterID int32, pos int) (*app.CharacterSkillqueueItem, error) {
 	arg := queries.GetCharacterSkillqueueItemParams{
 		CharacterID:   int64(characterID),
 		QueuePosition: int64(pos),
@@ -81,7 +81,7 @@ func (st *Storage) GetSkillqueueItem(ctx context.Context, characterID int32, pos
 	return skillqueueItemFromDBModel(row.CharacterSkillqueueItem, row.SkillName, row.GroupName, row.SkillDescription), err
 }
 
-func (st *Storage) ListSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
+func (st *Storage) ListCharacterSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
 	rows, err := st.q.ListCharacterSkillqueueItems(ctx, int64(characterID))
 	if err != nil {
 		return nil, err

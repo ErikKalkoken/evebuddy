@@ -26,10 +26,10 @@ func TestSkillqueueItems(t *testing.T) {
 			QueuePosition: 4,
 		}
 		// when
-		err := r.CreateSkillqueueItem(ctx, arg)
+		err := r.CreateCharacterSkillqueueItem(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
-			i, err := r.GetSkillqueueItem(ctx, c.ID, 4)
+			i, err := r.GetCharacterSkillqueueItem(ctx, c.ID, 4)
 			if assert.NoError(t, err) {
 				assert.Equal(t, 5, i.FinishedLevel)
 			}
@@ -43,7 +43,7 @@ func TestSkillqueueItems(t *testing.T) {
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
 		// when
-		ii, err := r.ListSkillqueueItems(ctx, c.ID)
+		ii, err := r.ListCharacterSkillqueueItems(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ii, 3)
@@ -69,7 +69,7 @@ func TestSkillqueueItems(t *testing.T) {
 		err := r.ReplaceCharacterSkillqueueItems(ctx, c.ID, []storage.SkillqueueItemParams{arg})
 		// then
 		if assert.NoError(t, err) {
-			ii, err := r.ListSkillqueueItems(ctx, c.ID)
+			ii, err := r.ListCharacterSkillqueueItems(ctx, c.ID)
 			if assert.NoError(t, err) {
 				assert.Len(t, ii, 1)
 			}
@@ -98,7 +98,7 @@ func TestSkillqueueItemsCalculateTrainingTime(t *testing.T) {
 			FinishDate:  now.Add(4 * time.Hour),
 		})
 		// when
-		v, err := r.GetTotalTrainingTime(ctx, c.ID)
+		v, err := r.GetCharacterTotalTrainingTime(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			assert.InDelta(t, 3*time.Hour, v.MustValue(), float64(time.Second*1))
