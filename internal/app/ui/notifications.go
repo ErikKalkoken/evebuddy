@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -69,20 +71,26 @@ func (a *notificationsArea) makeCategoryList() *widget.List {
 			return len(a.categories)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("title")
+			return container.NewHBox(
+				widget.NewLabel("template"), layout.NewSpacer(), widgets.NewBadge("999"),
+			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.categories) {
 				return
 			}
 			c := a.categories[id]
-			label := co.(*widget.Label)
+			hbox := co.(*fyne.Container).Objects
+			label := hbox[0].(*widget.Label)
+			badge := hbox[2].(*widgets.Badge)
 			text := c.name
 			if c.unread > 0 {
-				text += fmt.Sprintf(" (%s)", humanize.Comma(int64(c.unread)))
 				label.TextStyle.Bold = true
+				badge.SetText(strconv.Itoa(c.unread))
+				badge.Show()
 			} else {
 				label.TextStyle.Bold = false
+				badge.Hide()
 			}
 			label.Text = text
 			label.Refresh()

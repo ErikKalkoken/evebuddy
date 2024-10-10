@@ -184,9 +184,9 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		s := headers[tci.Col]
-		row := co.(*fyne.Container)
-		sb := row.Objects[0].(*widget.Entry)
-		label := row.Objects[1].(*widget.Label)
+		row := co.(*fyne.Container).Objects
+		sb := row[0].(*widget.Entry)
+		label := row[1].(*widget.Label)
 		switch tci.Col {
 		case 0, 2, 3, 4:
 			label.Hide()
@@ -204,7 +204,7 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 			label.Show()
 			sb.Hide()
 		}
-		button := row.Objects[2].(*widget.Button)
+		button := row[2].(*widget.Button)
 		switch a.colSort[tci.Col] {
 		case sortOff:
 			button.SetIcon(a.iconSortOff)

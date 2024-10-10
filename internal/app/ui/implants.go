@@ -51,9 +51,9 @@ func (a *implantsArea) makeImplantList() *widget.List {
 				return
 			}
 			o := a.implants[id]
-			row := co.(*fyne.Container)
-			icon := row.Objects[0].(*canvas.Image)
-			label := row.Objects[1].(*widget.Label)
+			row := co.(*fyne.Container).Objects
+			icon := row[0].(*canvas.Image)
+			label := row[1].(*widget.Label)
 			label.SetText(fmt.Sprintf("%s\nSlot %d", o.EveType.Name, o.SlotNum))
 			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
 				return a.ui.EveImageService.InventoryTypeIcon(o.EveType.ID, 64)

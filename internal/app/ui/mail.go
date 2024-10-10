@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -158,23 +159,32 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 		},
 		func(isBranch bool) fyne.CanvasObject {
 			return container.NewHBox(
-				widget.NewIcon(&fyne.StaticResource{}), widget.NewLabel("Branch template"))
+				widget.NewIcon(resourceBlankSvg),
+				widget.NewLabel("template"),
+				layout.NewSpacer(),
+				widgets.NewBadge("999"),
+			)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			label := co.(*fyne.Container).Objects[1].(*widget.Label)
 			node, ok := a.foldersData.Value(uid)
 			if !ok {
 				return
 			}
-			icon := co.(*fyne.Container).Objects[0].(*widget.Icon)
+			hbox := co.(*fyne.Container).Objects
+			icon := hbox[0].(*widget.Icon)
 			icon.SetResource(node.icon())
-			var text string
+			label := hbox[1].(*widget.Label)
+			badge := hbox[3].(*widgets.Badge)
 			if node.UnreadCount == 0 {
-				text = node.Name
+				label.TextStyle.Bold = false
+				badge.Hide()
 			} else {
-				text = fmt.Sprintf("%s (%d)", node.Name, node.UnreadCount)
+				label.TextStyle.Bold = true
+				badge.SetText(strconv.Itoa(node.UnreadCount))
+				badge.Show()
 			}
-			label.SetText(text)
+			label.Text = node.Name
+			label.Refresh()
 		},
 	)
 	tree.OnSelected = func(uid string) {
