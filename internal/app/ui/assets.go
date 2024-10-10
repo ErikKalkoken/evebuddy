@@ -124,9 +124,9 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 			return container.NewHBox(prefix, widget.NewLabel("Location"))
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			row := co.(*fyne.Container)
-			prefix := row.Objects[0].(*widget.Label)
-			label := row.Objects[1].(*widget.Label)
+			row := co.(*fyne.Container).Objects
+			prefix := row[0].(*widget.Label)
+			label := row[1].(*widget.Label)
 			n, ok := a.locationsData.Value(uid)
 			if !ok {
 				return

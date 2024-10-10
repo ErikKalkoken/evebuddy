@@ -96,16 +96,16 @@ func (a *accountArea) makeCharacterList() *widget.List {
 				return
 			}
 			c := a.characters[id]
-			row := co.(*fyne.Container)
-			name := row.Objects[1].(*widget.Label)
+			row := co.(*fyne.Container).Objects
+			name := row[1].(*widget.Label)
 			name.SetText(c.name)
 
-			icon := row.Objects[0].(*canvas.Image)
+			icon := row[0].(*canvas.Image)
 			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
 				return a.ui.EveImageService.CharacterPortrait(c.id, defaultIconSize)
 			})
 
-			row.Objects[3].(*widget.Button).OnTapped = func() {
+			row[3].(*widget.Button).OnTapped = func() {
 				a.showDeleteDialog(c)
 			}
 		})

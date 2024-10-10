@@ -142,11 +142,11 @@ func (a *statusWindow) makeEntityList() *widget.List {
 				return
 			}
 			c := a.entities[id]
-			row := co.(*fyne.Container)
-			name := row.Objects[1].(*widget.Label)
+			row := co.(*fyne.Container).Objects
+			name := row[1].(*widget.Label)
 			name.SetText(c.name)
 
-			icon := row.Objects[0].(*canvas.Image)
+			icon := row[0].(*canvas.Image)
 			if c.IsGeneralSection() {
 				icon.Resource = eveicon.GetResourceByName(eveicon.StarMap)
 				icon.Refresh()
@@ -156,7 +156,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 				})
 			}
 
-			pb := row.Objects[2].(*widget.Activity)
+			pb := row[2].(*widget.Activity)
 			if c.ss.IsRunning {
 				pb.Start()
 				pb.Show()
@@ -165,7 +165,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 				pb.Hide()
 			}
 
-			status := row.Objects[4].(*widget.Label)
+			status := row[4].(*widget.Label)
 			t := c.ss.Display()
 			i := status2widgetImportance(c.ss.Status())
 			status.Text = t
@@ -233,16 +233,16 @@ func (a *statusWindow) makeSectionGrid() *widget.GridWrap {
 				return
 			}
 			cs := a.sections[id]
-			hbox := co.(*fyne.Container)
-			name := hbox.Objects[0].(*widget.Label)
-			status := hbox.Objects[3].(*widget.Label)
+			hbox := co.(*fyne.Container).Objects
+			name := hbox[0].(*widget.Label)
+			status := hbox[3].(*widget.Label)
 			name.SetText(cs.SectionName)
 			s, i := statusDisplay(cs)
 			status.Text = s
 			status.Importance = i
 			status.Refresh()
 
-			pb := hbox.Objects[1].(*widget.Activity)
+			pb := hbox[1].(*widget.Activity)
 			if cs.IsRunning() {
 				pb.Start()
 				pb.Show()

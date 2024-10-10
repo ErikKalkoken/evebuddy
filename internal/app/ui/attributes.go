@@ -65,11 +65,11 @@ func (a *attributesArea) makeAttributeList() *widget.List {
 				return
 			}
 			q := a.attributes[id]
-			row := co.(*fyne.Container)
-			name := row.Objects[1].(*widget.Label)
+			hbox := co.(*fyne.Container).Objects
+			name := hbox[1].(*widget.Label)
 			name.SetText(q.name)
 
-			icon := row.Objects[0].(*canvas.Image)
+			icon := hbox[0].(*canvas.Image)
 			if q.isText() {
 				icon.Hide()
 			} else {
@@ -78,7 +78,7 @@ func (a *attributesArea) makeAttributeList() *widget.List {
 				icon.Refresh()
 			}
 
-			points := row.Objects[3].(*widget.Label)
+			points := hbox[3].(*widget.Label)
 			if q.isText() {
 				points.Hide()
 			} else {

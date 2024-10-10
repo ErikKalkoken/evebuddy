@@ -675,11 +675,11 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			o := a.requiredSkills[id]
-			row := co.(*fyne.Container)
-			skill := row.Objects[0].(*widget.Label)
-			text := row.Objects[2].(*widget.Label)
-			level := row.Objects[3].(*widgets.SkillLevel)
-			icon := row.Objects[4].(*widget.Icon)
+			row := co.(*fyne.Container).Objects
+			skill := row[0].(*widget.Label)
+			text := row[2].(*widget.Label)
+			level := row[3].(*widgets.SkillLevel)
+			icon := row[4].(*widget.Icon)
 			skill.SetText(skillDisplayName(o.name, o.requiredLevel))
 			if o.activeLevel == 0 && o.trainedLevel == 0 {
 				text.Text = "Skill not injected"
@@ -750,9 +750,9 @@ func (a *typeInfoWindow) makeLocationTab() fyne.CanvasObject {
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			o := data[id]
-			row := co.(*fyne.Container)
-			label := row.Objects[0].(*widget.Label)
-			value := row.Objects[2].(*widget.Label)
+			row := co.(*fyne.Container).Objects
+			label := row[0].(*widget.Label)
+			value := row[2].(*widget.Label)
 			label.SetText(o.label)
 			value.Importance = o.importance
 			value.Text = o.value

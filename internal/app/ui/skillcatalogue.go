@@ -91,11 +91,11 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 				return
 			}
 			group := a.groups[id]
-			row := co.(*fyne.Container)
-			c := row.Objects[0].(*fyne.Container).Objects[1].(*fyne.Container)
-			name := c.Objects[0].(*widget.Label)
-			total := c.Objects[2].(*widget.Label)
-			pb := row.Objects[0].(*fyne.Container).Objects[0].(*widget.ProgressBar)
+			row := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects
+			c := row[1].(*fyne.Container).Objects
+			name := c[0].(*widget.Label)
+			total := c[2].(*widget.Label)
+			pb := row[0].(*widget.ProgressBar)
 			pb.SetValue(group.completionP())
 			name.SetText(group.name)
 			total.SetText(humanize.Comma(int64(group.total)))
@@ -152,9 +152,9 @@ func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 				return
 			}
 			skill := a.skills[id]
-			row := co.(*fyne.Container)
-			level := row.Objects[0].(*widgets.SkillLevel)
-			label := row.Objects[1].(*widget.Label)
+			row := co.(*fyne.Container).Objects
+			level := row[0].(*widgets.SkillLevel)
+			label := row[1].(*widget.Label)
 			label.SetText(skill.name)
 			level.Set(skill.activeLevel, skill.trainedLevel, 0)
 		},

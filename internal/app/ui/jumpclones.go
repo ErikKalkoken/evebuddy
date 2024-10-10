@@ -78,11 +78,11 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			return container.NewHBox(icon, first, second, third)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			hbox := co.(*fyne.Container)
-			icon := hbox.Objects[0].(*canvas.Image)
-			first := hbox.Objects[1].(*widget.Label)
-			second := hbox.Objects[2].(*widgets.TappableIcon)
-			third := hbox.Objects[3].(*widget.Label)
+			hbox := co.(*fyne.Container).Objects
+			icon := hbox[0].(*canvas.Image)
+			first := hbox[1].(*widget.Label)
+			second := hbox[2].(*widgets.TappableIcon)
+			third := hbox[3].(*widget.Label)
 			n, ok := a.treeData.Value(uid)
 			if !ok {
 				return
