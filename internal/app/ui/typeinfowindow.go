@@ -717,26 +717,7 @@ type infoRow struct {
 }
 
 func (a *typeInfoWindow) makeLocationTab() fyne.CanvasObject {
-	i := systemSecurity2Importance(a.location.SolarSystem.SecurityType())
-	data := []infoRow{
-		{
-			label: "Region",
-			value: a.location.SolarSystem.Constellation.Region.Name,
-		},
-		{
-			label: "Constellation",
-			value: a.location.SolarSystem.Constellation.Name},
-		{
-			label: "Solar System",
-			value: a.location.SolarSystem.Name,
-		},
-		{
-			label:      "Security",
-			value:      fmt.Sprintf("%.1f", a.location.SolarSystem.SecurityStatus),
-			importance: i,
-		},
-	}
-
+	data := makeLocationData(a.location)
 	l := widget.NewList(
 		func() int {
 			return len(data)
@@ -763,4 +744,30 @@ func (a *typeInfoWindow) makeLocationTab() fyne.CanvasObject {
 		l.UnselectAll()
 	}
 	return l
+}
+
+func makeLocationData(l *app.EveLocation) []infoRow {
+	if l.SolarSystem == nil {
+		return make([]infoRow, 0)
+	}
+	i := systemSecurity2Importance(l.SolarSystem.SecurityType())
+	data := []infoRow{
+		{
+			label: "Region",
+			value: l.SolarSystem.Constellation.Region.Name,
+		},
+		{
+			label: "Constellation",
+			value: l.SolarSystem.Constellation.Name},
+		{
+			label: "Solar System",
+			value: l.SolarSystem.Name,
+		},
+		{
+			label:      "Security",
+			value:      fmt.Sprintf("%.1f", l.SolarSystem.SecurityStatus),
+			importance: i,
+		},
+	}
+	return data
 }
