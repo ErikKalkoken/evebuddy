@@ -58,6 +58,9 @@ func (lc EveLocation) alternativeName() string {
 	case EveLocationAssetSafety:
 		return "Asset Safety"
 	case EveLocationSolarSystem:
+		if lc.SolarSystem == nil {
+			return fmt.Sprintf("Unknown solar system #%d", lc.ID)
+		}
 		return lc.SolarSystem.Name
 	case EveLocationStructure:
 		return fmt.Sprintf("Unknown structure #%d", lc.ID)
