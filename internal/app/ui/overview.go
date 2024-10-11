@@ -290,19 +290,21 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 			}
 		}
 		if m.Location != nil {
-			c.region = &app.EntityShort[int32]{
-				ID:   m.Location.SolarSystem.Constellation.Region.ID,
-				Name: m.Location.SolarSystem.Constellation.Region.Name,
-			}
 			c.location = &app.EntityShort[int64]{
 				ID:   m.Location.ID,
 				Name: m.Location.DisplayName(),
 			}
-			c.solarSystem = &app.EntityShort[int32]{
-				ID:   m.Location.SolarSystem.ID,
-				Name: m.Location.SolarSystem.Name,
+			if m.Location.SolarSystem != nil {
+				c.solarSystem = &app.EntityShort[int32]{
+					ID:   m.Location.SolarSystem.ID,
+					Name: m.Location.SolarSystem.Name,
+				}
+				c.systemSecurity = optional.New(m.Location.SolarSystem.SecurityStatus)
+				c.region = &app.EntityShort[int32]{
+					ID:   m.Location.SolarSystem.Constellation.Region.ID,
+					Name: m.Location.SolarSystem.Constellation.Region.Name,
+				}
 			}
-			c.systemSecurity = optional.New(m.Location.SolarSystem.SecurityStatus)
 		}
 		if m.Ship != nil {
 			c.ship = &app.EntityShort[int32]{
