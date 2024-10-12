@@ -107,8 +107,7 @@ func (a *wealthArea) refresh() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.charts.RemoveAll()
-	a.charts.Add(typesChart)
-	a.charts.Add(charactersChart)
+	a.charts.Add(container.NewHBox(typesChart, charactersChart))
 	a.charts.Add(assetsChart)
 	a.charts.Add(walletChart)
 
