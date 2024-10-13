@@ -7,14 +7,14 @@ import (
 	"time"
 )
 
-const defaultCleanupDuration = time.Minute * 10
+const (
+	cleanUpTimeOutDefault = time.Minute * 10
+)
 
 // An in-memory cache.
 type Cache struct {
-	items sync.Map
-
-	m           sync.Mutex
-	lastCleanup time.Time
+	items  sync.Map
+	closeC chan struct{}
 }
 
 type item struct {
@@ -24,9 +24,39 @@ type item struct {
 
 // New creates a new cache and returns it.
 func New() *Cache {
-	c := Cache{}
-	c.lastCleanup = time.Now()
+	return create(cleanUpTimeOutDefault)
+}
+
+// NewWithTimeout creates a new cache with a specific timeout for the regular clean up and returns it.
+func NewWithTimeout(timeout time.Duration) *Cache {
+	if timeout == 0 {
+		panic("timeout can not be zero")
+	}
+	return create(timeout)
+}
+
+func create(timeout time.Duration) *Cache {
+	c := Cache{
+		closeC: make(chan struct{}),
+	}
+	ticker := time.NewTicker(timeout)
+	go func() {
+		for {
+			select {
+			case <-c.closeC:
+				slog.Info("cache closed")
+				return
+			case <-ticker.C:
+				c.cleanUp()
+			}
+		}
+	}()
 	return &c
+}
+
+// Close closes the cache and frees allocated resources.
+func (c *Cache) Close() {
+	close(c.closeC)
 }
 
 // Clear removes all cache keys.
@@ -48,7 +78,8 @@ func (c *Cache) Exists(key any) bool {
 	return ok
 }
 
-// Get returns an item if it exits
+// Get returns an item if it exits and it not stale.
+// It also reports whether the item was found.
 func (c *Cache) Get(key any) (any, bool) {
 	value, ok := c.items.Load(key)
 	if !ok {
@@ -73,23 +104,19 @@ func (c *Cache) Set(key any, value any, timeout time.Duration) {
 	}
 	i := item{Value: value, ExpiresAt: at}
 	c.items.Store(key, i)
-	// run cleanup when due
-	c.m.Lock()
-	defer c.m.Unlock()
-	if time.Since(c.lastCleanup) > defaultCleanupDuration {
-		c.lastCleanup = time.Now()
-		go c.Reorganize()
-	}
 }
 
-// Reorganize removes all expired keys
-func (c *Cache) Reorganize() {
-	slog.Info("cache: started reorganize")
+// cleanUp removes all expired keys
+func (c *Cache) cleanUp() {
+	slog.Info("cache clean up: started")
+	count := 0
 	c.items.Range(func(key, value any) bool {
 		_, found := c.Get(key)
 		if !found {
 			c.Delete(key)
+			count++
 		}
 		return true
 	})
+	slog.Info("cache clean up: completed", "removed", count)
 }
