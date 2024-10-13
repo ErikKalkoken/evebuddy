@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -23,16 +22,14 @@ type wealthArea struct {
 	charts  *fyne.Container
 	top     *widget.Label
 	ui      *ui
-
-	mu sync.Mutex
 }
 
 func (u *ui) newWealthArea() *wealthArea {
 	a := &wealthArea{
-		ui:     u,
-		charts: container.NewVBox(),
-		top:    widget.NewLabel(""),
+		ui:  u,
+		top: widget.NewLabel(""),
 	}
+	a.charts = a.makeCharts()
 	a.top.TextStyle.Bold = true
 	a.content = container.NewBorder(
 		container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil,
@@ -40,11 +37,12 @@ func (u *ui) newWealthArea() *wealthArea {
 	return a
 }
 
-type dataRow struct {
-	label  string
-	wallet float64
-	assets float64
-	total  float64
+func (a *wealthArea) makeCharts() *fyne.Container {
+	return container.NewVBox(
+		container.NewHBox(widget.NewLabel(""), widget.NewLabel("")),
+		widget.NewLabel(""),
+		widget.NewLabel(""),
+	)
 }
 
 func (a *wealthArea) refresh() {
@@ -104,17 +102,23 @@ func (a *wealthArea) refresh() {
 		total += r.assets + r.wallet
 	}
 
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.charts.RemoveAll()
-	a.charts.Add(typesChart)
-	a.charts.Add(charactersChart)
-	a.charts.Add(assetsChart)
-	a.charts.Add(walletChart)
+	pieCharts := a.charts.Objects[0].(*fyne.Container).Objects
+	pieCharts[0] = typesChart
+	pieCharts[1] = charactersChart
+	a.charts.Objects[1] = assetsChart
+	a.charts.Objects[2] = walletChart
+	a.charts.Refresh()
 
 	a.top.Text = fmt.Sprintf("%s ISK total wealth • %d characters", humanize.Number(total, 1), characters)
 	a.top.Importance = widget.MediumImportance
 	a.top.Refresh()
+}
+
+type dataRow struct {
+	label  string
+	wallet float64
+	assets float64
+	total  float64
 }
 
 func (a *wealthArea) compileData() ([]dataRow, int, error) {

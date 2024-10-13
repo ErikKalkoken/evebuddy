@@ -120,11 +120,30 @@ rm evebuddy
 
 ### Where can I get support?
 
-If encounters a bug please open an issue. For support questions please join us on our [Discord server](https://discord.gg/tVSCQEVJnJ). T
+Fo bugs and feature requests please open an issue in the GitHub repository.
 
-### Where is my data stored? I am concerned about potentially leaking sensitive data
+For support and any other questions please join us on in our channel #eve-buddy on this [Discord server](https://discord.gg/tVSCQEVJnJ).
 
-All data downloaded from CCP's servers is stored on your computer only. There is no data transferred to any servers and the maintainers of this software have no access to your data. Therefore there is very little risk of sensitive data being leaked.
+### Is my character data safe from being leaked to external parties?
+
+All character data retrieved from CCP's servers is stored on your local computer only. EVE Buddy does not share your character data with any third parties. This makes this app much safer btw, then most websites, which naturally need to store your data on their servers.
+
+### Why do I not see all of my character's data in the app?
+
+#### Server limitations
+
+CCP's servers have limitations on how far back some character data can be retrieved.
+
+Here is an overview of some limitations:
+
+- Wallet journal: 30 days, 2.500 entries
+- Wallet transaction: 2.500 entries
+
+ However, EVE Buddy will keep all historic data once retrieved. For example: If you allow EVE Buddy to update on a regular basis, it will be able to keep a record of your wallet transactions over many months and years.
+
+#### Structures
+
+A special case are Upwell structures. Access to structures depends on in-game docking rights. Unfortunately, it is not possible to later retrieve the name or location of a structure, which the character no longer has access to. For example character assets might be displayed in an "unknown structure".
 
 ## Credits
 

@@ -9,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 )
 
-func TestCacheExported(t *testing.T) {
+func TestCache(t *testing.T) {
 	t.Parallel()
 	c := cache.New()
 	t.Run("can set a key", func(t *testing.T) {
@@ -59,27 +59,29 @@ func TestCacheExported(t *testing.T) {
 		// then
 		assert.False(t, c.Exists("k4"))
 	})
+
+}
+
+func TestCache2(t *testing.T) {
+	t.Parallel()
 	t.Run("can clear all keys", func(t *testing.T) {
 		// given
-		c2 := cache.New()
-		c2.Set("dummy-1", "xxx", time.Second*100)
-		c2.Set("dummy-2", "xxx", time.Second*100)
+		c := cache.New()
+		c.Set("dummy-1", "xxx", time.Second*100)
+		c.Set("dummy-2", "xxx", time.Second*100)
 		// when
-		c2.Clear()
+		c.Clear()
 		// then
-		assert.False(t, c2.Exists("dummy-1"))
-		assert.False(t, c2.Exists("dummy-2"))
+		assert.False(t, c.Exists("dummy-1"))
+		assert.False(t, c.Exists("dummy-2"))
 	})
-	t.Run("can remove all expired keys", func(t *testing.T) {
-		// given
-		c3 := cache.New()
-		c3.Set("dummy-1", "xxx", time.Millisecond*20)
-		c3.Set("dummy-2", "xxx", time.Second*100)
-		time.Sleep(time.Millisecond * 50)
-		// when
-		c3.Reorganize()
-		// then
-		assert.False(t, c3.Exists("dummy-1"))
-		assert.True(t, c3.Exists("dummy-2"))
+	t.Run("can close cache", func(t *testing.T) {
+		c := cache.New()
+		c.Close()
+	})
+	t.Run("should not allow zero timeout", func(t *testing.T) {
+		assert.Panics(t, func() {
+			cache.NewWithTimeout(0)
+		})
 	})
 }
