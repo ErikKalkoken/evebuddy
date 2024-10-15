@@ -10,7 +10,8 @@ import (
 
 const (
 	appName         = "evebuddy"
-	cacheFolderName = "images"
+	cacheFolderName = "cache"
+	logFolderName   = "log"
 )
 
 // AppDirs represents the app's local directories for storing logs etc.
@@ -25,8 +26,8 @@ func New(fyneApp fyne.App) (AppDirs, error) {
 	ad := xappdirs.New(appName)
 	x := AppDirs{
 		Data:     ad.UserData(),
-		Cache:    ad.UserCache(),
-		Log:      ad.UserLog(),
+		Cache:    filepath.Join(ad.UserData(), cacheFolderName),
+		Log:      filepath.Join(ad.UserData(), logFolderName),
 		Settings: fyneApp.Storage().RootURI().Path(),
 	}
 	if err := os.MkdirAll(x.Log, os.ModePerm); err != nil {
@@ -35,8 +36,7 @@ func New(fyneApp fyne.App) (AppDirs, error) {
 	if err := os.MkdirAll(x.Data, os.ModePerm); err != nil {
 		return x, err
 	}
-	p := filepath.Join(x.Cache, cacheFolderName)
-	if err := os.MkdirAll(p, os.ModePerm); err != nil {
+	if err := os.MkdirAll(x.Cache, os.ModePerm); err != nil {
 		return x, err
 	}
 	return x, nil
