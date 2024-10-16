@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
-	"runtime"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -289,14 +287,6 @@ func (u *ui) themeGet() string {
 // ShowAndRun shows the UI and runs it (blocking).
 func (u *ui) ShowAndRun() {
 	go func() {
-		// Workaround to mitigate a bug that causes the window to sometimes render
-		// only in parts and freeze. The issue is known to happen on Linux desktops.
-		if runtime.GOOS == "linux" {
-			time.Sleep(1000 * time.Millisecond)
-			s := u.window.Canvas().Size()
-			u.window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
-			u.window.Resize(fyne.NewSize(s.Width, s.Height))
-		}
 		u.statusBarArea.StartUpdateTicker()
 		u.startUpdateTickerGeneralSections()
 		u.startUpdateTickerCharacters()
@@ -337,7 +327,14 @@ func (u *ui) setCharacter(c *app.Character) {
 	u.fyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
 }
 
+func (u *ui) resetCharacter() {
+	u.character = nil
+	u.fyneApp.Preferences().SetInt(settingLastCharacterID, 0)
+	u.refreshCharacter()
+}
+
 func (u *ui) refreshCharacter() {
+	u.toolbarArea.refresh()
 	u.assetsArea.redraw()
 	u.assetSearchArea.refresh()
 	u.attributesArea.refresh()
@@ -349,7 +346,6 @@ func (u *ui) refreshCharacter() {
 	u.shipsArea.refresh()
 	u.skillqueueArea.refresh()
 	u.skillCatalogueArea.redraw()
-	u.toolbarArea.refresh()
 	u.walletJournalArea.refresh()
 	u.walletTransactionArea.refresh()
 	u.wealthArea.refresh()
@@ -391,12 +387,6 @@ func (u *ui) setAnyCharacter() error {
 
 func (u *ui) refreshOverview() {
 	u.overviewArea.refresh()
-}
-
-func (u *ui) resetCharacter() {
-	u.character = nil
-	u.fyneApp.Preferences().SetInt(settingLastCharacterID, 0)
-	u.refreshCharacter()
 }
 
 func (u *ui) showMailIndicator() {
