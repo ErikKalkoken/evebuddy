@@ -10,9 +10,9 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 )
@@ -73,7 +73,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
 			icon.FillMode = canvas.ImageFillOriginal
 			first := widget.NewLabel("Template")
-			second := widgets.NewTappableIcon(theme.InfoIcon(), nil)
+			second := kwidget.NewTappableIcon(theme.InfoIcon(), nil)
 			third := widget.NewLabel("Template")
 			return container.NewHBox(icon, first, second, third)
 		},
@@ -81,7 +81,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			hbox := co.(*fyne.Container).Objects
 			icon := hbox[0].(*canvas.Image)
 			first := hbox[1].(*widget.Label)
-			second := hbox[2].(*widgets.TappableIcon)
+			second := hbox[2].(*kwidget.TappableIcon)
 			third := hbox[3].(*widget.Label)
 			n, ok := a.treeData.Value(uid)
 			if !ok {

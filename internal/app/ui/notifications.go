@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
@@ -72,7 +73,7 @@ func (a *notificationsArea) makeCategoryList() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(
-				widget.NewLabel("template"), layout.NewSpacer(), widgets.NewBadge("999"),
+				widget.NewLabel("template"), layout.NewSpacer(), kwidget.NewBadge("999"),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -82,7 +83,7 @@ func (a *notificationsArea) makeCategoryList() *widget.List {
 			c := a.categories[id]
 			hbox := co.(*fyne.Container).Objects
 			label := hbox[0].(*widget.Label)
-			badge := hbox[2].(*widgets.Badge)
+			badge := hbox[2].(*kwidget.Badge)
 			text := c.name
 			if c.unread > 0 {
 				label.TextStyle.Bold = true

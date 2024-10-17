@@ -11,8 +11,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 )
 
@@ -162,15 +162,15 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 
 func (w *settingsWindow) makeEVEOnlinePage() fyne.CanvasObject {
 	// max mails
-	mm := w.ui.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault)
-	maxMails := widgets.NewSlider(0, settingMaxMailsMax, mm)
+	maxMails := kwidget.NewSlider[int](0, settingMaxMailsMax, 1)
+	maxMails.SetValue(w.ui.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault))
 	maxMails.OnChangeEnded = func(v int) {
 		w.ui.fyneApp.Preferences().SetInt(settingMaxMails, v)
 	}
 
 	// max transactions
-	mwt := w.ui.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
-	maxTransactions := widgets.NewSlider(0, settingMaxWalletTransactionsMax, mwt)
+	maxTransactions := kwidget.NewSlider[int](0, settingMaxWalletTransactionsMax, 1)
+	maxTransactions.SetValue(w.ui.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault))
 	maxTransactions.OnChangeEnded = func(v int) {
 		w.ui.fyneApp.Preferences().SetInt(settingMaxWalletTransactions, v)
 	}
@@ -224,8 +224,8 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	})
 
 	// max age
-	ma := w.ui.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
-	maxAge := widgets.NewSlider(1, settingMaxAgeMax, ma)
+	maxAge := kwidget.NewSlider[int](1, settingMaxAgeMax, 1)
+	maxAge.SetValue(w.ui.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault))
 	maxAge.OnChangeEnded = func(v int) {
 		w.ui.fyneApp.Preferences().SetInt(settingMaxAge, v)
 	}

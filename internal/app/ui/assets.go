@@ -12,6 +12,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
@@ -19,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/dustin/go-humanize"
 )
 
 type locationDataNodeType uint
@@ -473,7 +474,7 @@ func (a *assetsArea) updateLocationPath(location locationDataNode) {
 	for i, n := range path {
 		isLast := i == len(path)-1
 		if !isLast {
-			l := widgets.NewTappableLabel(n.Name, func() {
+			l := kwidget.NewTappableLabel(n.Name, func() {
 				if err := a.selectLocation(n); err != nil {
 					slog.Warn("Failed to redraw assets", "err", err)
 				}
@@ -486,7 +487,7 @@ func (a *assetsArea) updateLocationPath(location locationDataNode) {
 		}
 		if n.IsRoot() {
 			if !n.IsUnknown {
-				a.locationPath.Add(widgets.NewTappableIcon(theme.InfoIcon(), func() {
+				a.locationPath.Add(kwidget.NewTappableIcon(theme.InfoIcon(), func() {
 					a.ui.showLocationInfoWindow(n.ContainerID)
 				}))
 				a.locationPath.Add(container.NewPadded())
