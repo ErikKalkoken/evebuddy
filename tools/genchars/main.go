@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 )
 
@@ -26,7 +27,7 @@ func main() {
 		log.Fatalf("Failed to initialize database %s: %s", dsn, err)
 	}
 	defer db.Close()
-	// st := storage.New(db)
-	// ctx := context.Background()
-
+	st := storage.New(db)
+	f := testutil.NewFactory(st, db)
+	f.CreateCharacter()
 }

@@ -286,13 +286,15 @@ func (u *ui) themeGet() string {
 
 // ShowAndRun shows the UI and runs it (blocking).
 func (u *ui) ShowAndRun() {
-	u.statusBarArea.StartUpdateTicker()
 	if !u.isOffline {
 		go func() {
 			u.startUpdateTickerGeneralSections()
 			u.startUpdateTickerCharacters()
 		}()
+	} else {
+		slog.Info("Starting in offline mode")
 	}
+	go u.statusBarArea.StartUpdateTicker()
 	go u.refreshOverview()
 	u.window.ShowAndRun()
 }

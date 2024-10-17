@@ -108,6 +108,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 	}()
 	if a.ui.isOffline {
 		a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
+		a.refreshUpdateStatus()
 		return
 	}
 	updateTicker := time.NewTicker(characterUpdateStatusTicker)
