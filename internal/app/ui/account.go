@@ -62,6 +62,9 @@ func (u *ui) newAccountArea() *accountArea {
 		a.showAddCharacterDialog()
 	})
 	b.Importance = widget.HighImportance
+	if a.ui.isOffline {
+		b.Disable()
+	}
 	a.content = container.NewBorder(b, a.bottom, nil, nil, a.list)
 	return a
 }

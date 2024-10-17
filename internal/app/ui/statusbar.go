@@ -98,19 +98,23 @@ func (a *statusBarArea) showDetail() {
 }
 
 func (a *statusBarArea) StartUpdateTicker() {
-	updateTicker := time.NewTicker(characterUpdateStatusTicker)
-	go func() {
-		for {
-			a.refreshUpdateStatus()
-			<-updateTicker.C
-		}
-	}()
 	clockTicker := time.NewTicker(clockUpdateTicker)
 	go func() {
 		for {
 			t := time.Now().UTC().Format("15:04")
 			a.eveClock.Set(t)
 			<-clockTicker.C
+		}
+	}()
+	if a.ui.isOffline {
+		a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
+		return
+	}
+	updateTicker := time.NewTicker(characterUpdateStatusTicker)
+	go func() {
+		for {
+			a.refreshUpdateStatus()
+			<-updateTicker.C
 		}
 	}()
 	esiStatusTicker := time.NewTicker(esiStatusUpdateTicker)

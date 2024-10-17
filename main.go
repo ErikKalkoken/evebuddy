@@ -69,8 +69,8 @@ func (l *logLevelFlag) Set(value string) error {
 // defined flags
 var (
 	levelFlag     logLevelFlag
-	debugFlag     = flag.Bool("debug", false, "Show additional debug information")
-	uninstallFlag = flag.Bool("uninstall", false, "Uninstalls the app by deleting all user files")
+	offlineFlag   = flag.Bool("offline", false, "Start app in offline mode")
+	uninstallFlag = flag.Bool("uninstall", false, "Start uninstall app")
 	pprofFlag     = flag.Bool("pprof", false, "Enable pprof web server")
 )
 
@@ -95,8 +95,8 @@ func (r realtime) Now() time.Time {
 }
 
 func main() {
-	fyneApp := app.NewWithID(appID)
-	ad, err := appdirs.New(fyneApp)
+	// init dirs & flags
+	ad, err := appdirs.New()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -137,6 +137,10 @@ func main() {
 	}
 	defer r.Release()
 	slog.Info("No other instances running")
+
+	// start fyne app
+	fyneApp := app.NewWithID(appID)
+	ad.SetSettings(fyneApp.Storage().RootURI().Path())
 
 	// start uninstall app if requested
 	if *uninstallFlag {
@@ -192,11 +196,11 @@ func main() {
 	cs.SSOService = sso.New(ssoClientID, httpClient, cache)
 
 	// Init UI
-	u := ui.NewUI(fyneApp, ad, *debugFlag)
+	u := ui.NewUI(fyneApp, ad, *offlineFlag)
 	u.CacheService = cache
 	u.CharacterService = cs
 	u.ESIStatusService = esistatus.New(esiClient)
-	u.EveImageService = eveimage.New(ad.Cache, httpClient)
+	u.EveImageService = eveimage.New(ad.Cache, httpClient, *offlineFlag)
 	u.EveUniverseService = eu
 	u.StatusCacheService = sc
 	u.Init()

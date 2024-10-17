@@ -53,7 +53,7 @@ type ui struct {
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
 	character             *app.Character
-	isDebug               bool
+	isOffline             bool
 	implantsArea          *implantsArea
 	jumpClonesArea        *jumpClonesArea
 	mailArea              *mailArea
@@ -81,17 +81,17 @@ type ui struct {
 }
 
 // NewUI build the UI and returns it.
-func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isDebug bool) *ui {
+func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isOffline bool) *ui {
 	desk, ok := fyneApp.(desktop.App)
 	if !ok {
 		log.Fatal("Failed to initialize as desktop app")
 	}
 	u := &ui{
-		fyneApp: fyneApp,
-		isDebug: isDebug,
-		sfg:     new(singleflight.Group),
-		deskApp: desk,
-		ad:      ad,
+		fyneApp:   fyneApp,
+		isOffline: isOffline,
+		sfg:       new(singleflight.Group),
+		deskApp:   desk,
+		ad:        ad,
 	}
 	u.window = fyneApp.NewWindow(u.appName())
 	u.attributesArea = u.newAttributesArena()
@@ -286,11 +286,13 @@ func (u *ui) themeGet() string {
 
 // ShowAndRun shows the UI and runs it (blocking).
 func (u *ui) ShowAndRun() {
-	go func() {
-		u.statusBarArea.StartUpdateTicker()
-		u.startUpdateTickerGeneralSections()
-		u.startUpdateTickerCharacters()
-	}()
+	u.statusBarArea.StartUpdateTicker()
+	if !u.isOffline {
+		go func() {
+			u.startUpdateTickerGeneralSections()
+			u.startUpdateTickerCharacters()
+		}()
+	}
 	go u.refreshOverview()
 	u.window.ShowAndRun()
 }

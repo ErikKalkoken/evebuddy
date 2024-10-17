@@ -106,6 +106,9 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 			a.ui.updateCharacterAndRefreshIfNeeded(context.TODO(), c.id, true)
 		}
 	})
+	if a.ui.isOffline {
+		b.Disable()
+	}
 	top2 := container.NewVBox(container.NewHBox(a.sectionsTop, layout.NewSpacer(), b), widget.NewSeparator())
 	sections := container.NewBorder(top2, nil, nil, nil, a.sectionGrid)
 
@@ -350,7 +353,7 @@ func (a *statusWindow) makeDetailsContent(d sectionStatusData) []fyne.CanvasObje
 				context.TODO(), d.entityID, app.CharacterSection(d.sectionID), true)
 		}
 	})
-	if d.sectionName == "" {
+	if a.ui.isOffline || d.sectionName == "" {
 		b.Disable()
 	}
 	oo = append(oo, b)

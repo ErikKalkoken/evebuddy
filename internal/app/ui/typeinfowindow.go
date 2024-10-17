@@ -396,11 +396,6 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 			data = append(data, groupedRows[ag]...)
 		}
 	}
-	if a.ui.isDebug {
-		data = append(data, attributeRow{label: "DEBUG", isTitle: true})
-		data = append(data, attributeRow{label: "Owner", value: fmt.Sprint(a.owner)})
-		data = append(data, attributeRow{label: "Type ID", value: fmt.Sprint(a.et.ID)})
-	}
 	return data
 }
 
@@ -472,11 +467,7 @@ func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int
 }
 
 func (a *typeInfoWindow) makeTitle(suffix string) string {
-	s := fmt.Sprintf("%s (%s): %s", a.et.Name, a.et.Group.Name, suffix)
-	if a.ui.isDebug {
-		s += " DEBUG"
-	}
-	return s
+	return fmt.Sprintf("%s (%s): %s", a.et.Name, a.et.Group.Name, suffix)
 }
 
 func (a *typeInfoWindow) makeContent() fyne.CanvasObject {

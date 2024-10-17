@@ -49,15 +49,21 @@ func makeMenu(u *ui) *fyne.MainMenu {
 		fyne.NewMenuItemSeparator(),
 		settingsItem,
 	)
+	website := fyne.NewMenuItem("Website", func() {
+		url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
+		_ = u.fyneApp.OpenURL(url)
+	})
+	report := fyne.NewMenuItem("Report a bug", func() {
+		url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy/issues")
+		_ = u.fyneApp.OpenURL(url)
+	})
+	if u.isOffline {
+		website.Disabled = true
+		report.Disabled = true
+	}
 	helpMenu := fyne.NewMenu("Help",
-		fyne.NewMenuItem("Website", func() {
-			url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
-			_ = u.fyneApp.OpenURL(url)
-		}),
-		fyne.NewMenuItem("Report a bug", func() {
-			url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy/issues")
-			_ = u.fyneApp.OpenURL(url)
-		}),
+		website,
+		report,
 		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("User data...", func() {
 			u.showUserDataDialog()
