@@ -183,13 +183,15 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isOffline bool) *ui {
 func (u *ui) Init() {
 	var c *app.Character
 	var err error
-	cID := u.fyneApp.Preferences().Int(settingLastCharacterID)
-	if cID != 0 {
-		c, err = u.CharacterService.GetCharacter(context.TODO(), int32(cID))
-		if err != nil {
-			if !errors.Is(err, character.ErrNotFound) {
-				slog.Error("Failed to load character", "error", err)
-			}
+	ctx := context.Background()
+	if cID := u.fyneApp.Preferences().Int(settingLastCharacterID); cID != 0 {
+		c, err = u.CharacterService.GetCharacter(ctx, int32(cID))
+	} else {
+		c, err = u.CharacterService.GetAnyCharacter(ctx)
+	}
+	if err != nil {
+		if !errors.Is(err, character.ErrNotFound) {
+			slog.Error("Failed to load character", "error", err)
 		}
 	}
 	if c != nil {
