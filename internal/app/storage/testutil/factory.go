@@ -554,7 +554,7 @@ func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharact
 	}
 	err := f.st.CreateCharacterWalletJournalEntry(ctx, arg)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("%s|%+v", err, arg))
 	}
 	i, err := f.st.GetCharacterWalletJournalEntry(ctx, arg.CharacterID, arg.RefID)
 	if err != nil {
