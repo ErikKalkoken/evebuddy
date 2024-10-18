@@ -62,6 +62,9 @@ func (u *ui) newAccountArea() *accountArea {
 		a.showAddCharacterDialog()
 	})
 	b.Importance = widget.HighImportance
+	if a.ui.isOffline {
+		b.Disable()
+	}
 	a.content = container.NewBorder(b, a.bottom, nil, nil, a.list)
 	return a
 }
@@ -145,7 +148,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 							return err
 						}
 					}
-					a.ui.refreshOverview()
+					a.ui.refreshCrossPages()
 					a.ui.toolbarArea.refresh()
 					return nil
 				}(c.id)
@@ -204,7 +207,7 @@ func (a *accountArea) showAddCharacterDialog() {
 			if err := a.Refresh(); err != nil {
 				return err
 			}
-			a.ui.refreshOverview()
+			a.ui.refreshCrossPages()
 			a.ui.toolbarArea.refresh()
 			if isFirst {
 				if err := a.ui.setAnyCharacter(); err != nil {

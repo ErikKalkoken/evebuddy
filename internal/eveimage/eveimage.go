@@ -25,16 +25,18 @@ var (
 
 // EveImageService provides cached access to images on the Eve Online image server.
 type EveImageService struct {
+	cacheDir   string // cacheDir is where the image files are stored for caching
 	httpClient *http.Client
-	// cacheDir is where the image files are stored for caching
-	cacheDir string
-	sfg      *singleflight.Group
+	isOffline  bool
+	sfg        *singleflight.Group
 }
 
 // New returns a new Images object. path is the location of the file cache.
 // When no path is given (empty string) it will create a temporary directory instead.
-// When not provides a httpClient (nil) it will use the default client.
-func New(cacheDir string, httpClient *http.Client) *EveImageService {
+// When no httpClient (nil) is provided it will use the default client.
+// When isOffline is set to true, it will return a dummy image
+// instead of trying to fetch images from the image server, which are not already cached.
+func New(cacheDir string, httpClient *http.Client, isOffline bool) *EveImageService {
 	if cacheDir == "" {
 		p, err := os.MkdirTemp("", "eveimage")
 		if err != nil {
@@ -46,8 +48,9 @@ func New(cacheDir string, httpClient *http.Client) *EveImageService {
 		httpClient = http.DefaultClient
 	}
 	m := &EveImageService{
-		httpClient: httpClient,
 		cacheDir:   cacheDir,
+		httpClient: httpClient,
+		isOffline:  isOffline,
 		sfg:        new(singleflight.Group),
 	}
 	return m
@@ -162,6 +165,9 @@ func (m *EveImageService) image(url string) (fyne.Resource, error) {
 	name := filepath.Join(m.cacheDir, hash+".tmp")
 	dat, err := os.ReadFile(name)
 	if errors.Is(err, os.ErrNotExist) {
+		if m.isOffline {
+			return resourceBrokenimageSvg, nil
+		}
 		x, err, _ := m.sfg.Do(hash, func() (any, error) {
 			dat, err = loadDataFromURL(url, m.httpClient)
 			if err != nil {

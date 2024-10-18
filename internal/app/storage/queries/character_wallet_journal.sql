@@ -20,12 +20,19 @@ VALUES (
 );
 
 -- name: GetCharacterWalletJournalEntry :one
-SELECT sqlc.embed(character_wallet_journal_entries), sqlc.embed(character_wallet_journal_entry_first_parties), sqlc.embed(character_wallet_journal_entry_second_parties), sqlc.embed(character_wallet_journal_entry_tax_receivers)
-FROM character_wallet_journal_entries
-LEFT JOIN character_wallet_journal_entry_first_parties ON character_wallet_journal_entry_first_parties.id = character_wallet_journal_entries.first_party_id
-LEFT JOIN character_wallet_journal_entry_second_parties ON character_wallet_journal_entry_second_parties.id = character_wallet_journal_entries.second_party_id
-LEFT JOIN character_wallet_journal_entry_tax_receivers ON character_wallet_journal_entry_tax_receivers.id = character_wallet_journal_entries.tax_receiver_id
-WHERE character_id = ? and character_wallet_journal_entries.ref_id = ?;
+SELECT
+    sqlc.embed(wje),
+    fp.name as first_name,
+    fp.category as first_category,
+    sp.name as second_name,
+    sp.category as second_category,
+    tr.name as tax_name,
+    tr.category as tax_category
+FROM character_wallet_journal_entries wje
+LEFT JOIN eve_entities AS fp ON fp.id = wje.first_party_id
+LEFT JOIN eve_entities AS sp ON sp.id = wje.second_party_id
+LEFT JOIN eve_entities AS tr ON tr.id = wje.tax_receiver_id
+WHERE character_id = ? and wje.ref_id = ?;
 
 -- name: ListCharacterWalletJournalEntryRefIDs :many
 SELECT ref_id
@@ -33,10 +40,17 @@ FROM character_wallet_journal_entries
 WHERE character_id = ?;
 
 -- name: ListCharacterWalletJournalEntries :many
-SELECT DISTINCT sqlc.embed(character_wallet_journal_entries), sqlc.embed(character_wallet_journal_entry_first_parties), sqlc.embed(character_wallet_journal_entry_second_parties), sqlc.embed(character_wallet_journal_entry_tax_receivers)
-FROM character_wallet_journal_entries
-LEFT JOIN character_wallet_journal_entry_first_parties ON character_wallet_journal_entry_first_parties.id = character_wallet_journal_entries.first_party_id
-LEFT JOIN character_wallet_journal_entry_second_parties ON character_wallet_journal_entry_second_parties.id = character_wallet_journal_entries.second_party_id
-LEFT JOIN character_wallet_journal_entry_tax_receivers ON character_wallet_journal_entry_tax_receivers.id = character_wallet_journal_entries.tax_receiver_id
+SELECT
+    sqlc.embed(wje),
+    fp.name as first_name,
+    fp.category as first_category,
+    sp.name as second_name,
+    sp.category as second_category,
+    tr.name as tax_name,
+    tr.category as tax_category
+FROM character_wallet_journal_entries wje
+LEFT JOIN eve_entities AS fp ON fp.id = wje.first_party_id
+LEFT JOIN eve_entities AS sp ON sp.id = wje.second_party_id
+LEFT JOIN eve_entities AS tr ON tr.id = wje.tax_receiver_id
 WHERE character_id = ?
 ORDER BY date DESC;

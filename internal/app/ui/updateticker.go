@@ -77,6 +77,9 @@ func (u *ui) startUpdateTickerCharacters() {
 // updateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
 func (u *ui) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
+	if u.isOffline {
+		return
+	}
 	for _, s := range app.CharacterSections {
 		go func(s app.CharacterSection) {
 			u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)

@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -162,7 +163,7 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 				widget.NewIcon(resourceBlankSvg),
 				widget.NewLabel("template"),
 				layout.NewSpacer(),
-				widgets.NewBadge("999"),
+				kwidget.NewBadge("999"),
 			)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
@@ -174,7 +175,7 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 			icon := hbox[0].(*widget.Icon)
 			icon.SetResource(node.icon())
 			label := hbox[1].(*widget.Label)
-			badge := hbox[3].(*widgets.Badge)
+			badge := hbox[3].(*kwidget.Badge)
 			if node.UnreadCount == 0 {
 				label.TextStyle.Bold = false
 				badge.Hide()
@@ -525,7 +526,7 @@ func (a *mailArea) setMail(mailID int32) {
 		a.setErrorText()
 		return
 	}
-	if !a.mail.IsRead {
+	if !a.ui.isOffline && !a.mail.IsRead {
 		go func() {
 			err = a.ui.CharacterService.UpdateMailRead(ctx, characterID, a.mail.MailID)
 			if err != nil {

@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
-	"runtime"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
@@ -29,9 +31,6 @@ import (
 const (
 	defaultIconSize = 32
 	myFloatFormat   = "#,###.##"
-	keyTabsMainID   = "tabs-main-id"
-	keyWindowWidth  = "window-width"
-	keyWindowHeight = "window-height"
 )
 
 // The ui is the root object of the UI and contains all UI areas.
@@ -55,7 +54,7 @@ type ui struct {
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
 	character             *app.Character
-	isDebug               bool
+	isOffline             bool
 	implantsArea          *implantsArea
 	jumpClonesArea        *jumpClonesArea
 	mailArea              *mailArea
@@ -83,17 +82,17 @@ type ui struct {
 }
 
 // NewUI build the UI and returns it.
-func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isDebug bool) *ui {
+func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isOffline bool) *ui {
 	desk, ok := fyneApp.(desktop.App)
 	if !ok {
 		log.Fatal("Failed to initialize as desktop app")
 	}
 	u := &ui{
-		fyneApp: fyneApp,
-		isDebug: isDebug,
-		sfg:     new(singleflight.Group),
-		deskApp: desk,
-		ad:      ad,
+		fyneApp:   fyneApp,
+		isOffline: isOffline,
+		sfg:       new(singleflight.Group),
+		deskApp:   desk,
+		ad:        ad,
 	}
 	u.window = fyneApp.NewWindow(u.appName())
 	u.attributesArea = u.newAttributesArena()
@@ -158,7 +157,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isDebug bool) *ui {
 	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, nil, u.tabs)
 	u.window.SetContent(mainContent)
 
-	// Define system tray menu
+	// system tray menu
 	if fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault) {
 		name := u.appName()
 		item := fyne.NewMenuItem(name, nil)
@@ -176,88 +175,14 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isDebug bool) *ui {
 			u.window.Hide()
 		})
 	}
+	u.hideMailIndicator() // init system tray icon
+
+	u.themeSet(u.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault))
+
 	menu := makeMenu(u)
 	u.window.SetMainMenu(menu)
 	u.window.SetMaster()
 	return u
-}
-
-func (u *ui) Init() {
-	var c *app.Character
-	var err error
-	cID := u.fyneApp.Preferences().Int(settingLastCharacterID)
-	if cID != 0 {
-		c, err = u.CharacterService.GetCharacter(context.TODO(), int32(cID))
-		if err != nil {
-			if !errors.Is(err, character.ErrNotFound) {
-				slog.Error("Failed to load character", "error", err)
-			}
-		}
-	}
-	if c != nil {
-		u.setCharacter(c)
-	} else {
-		u.resetCharacter()
-	}
-
-	width := u.fyneApp.Preferences().FloatWithFallback(keyWindowWidth, 1000)
-	height := u.fyneApp.Preferences().FloatWithFallback(keyWindowHeight, 600)
-	u.window.Resize(fyne.NewSize(float32(width), float32(height)))
-
-	if !u.hasCharacter() {
-		// reset to overview tab if no character
-		u.tabs.Select(u.overviewTab)
-		u.overviewTab.Content.(*container.AppTabs).SelectIndex(0)
-	} else {
-		index := u.fyneApp.Preferences().IntWithFallback(keyTabsMainID, -1)
-		if index != -1 {
-			u.tabs.SelectIndex(index)
-		}
-		for i, o := range u.tabs.Items {
-			tabs, ok := o.Content.(*container.AppTabs)
-			if !ok {
-				continue
-			}
-			key := makeSubTabsKey(i)
-			index := u.fyneApp.Preferences().IntWithFallback(key, -1)
-			if index != -1 {
-				tabs.SelectIndex(index)
-			}
-		}
-	}
-
-	u.themeSet(u.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault))
-	u.hideMailIndicator() // init system tray icon
-
-	u.fyneApp.Lifecycle().SetOnStopped(func() {
-		slog.Info("App is shutting down")
-		u.saveAppState()
-	})
-}
-
-func (u *ui) saveAppState() {
-	a := u.fyneApp
-	if u.window == nil || a == nil {
-		slog.Warn("Failed to save app state")
-	}
-	s := u.window.Canvas().Size()
-	u.fyneApp.Preferences().SetFloat(keyWindowWidth, float64(s.Width))
-	u.fyneApp.Preferences().SetFloat(keyWindowHeight, float64(s.Height))
-	if u.tabs == nil {
-		slog.Warn("Failed to save tabs in app state")
-	}
-	index := u.tabs.SelectedIndex()
-	u.fyneApp.Preferences().SetInt(keyTabsMainID, index)
-	for i, o := range u.tabs.Items {
-		tabs, ok := o.Content.(*container.AppTabs)
-		if !ok {
-			continue
-		}
-		key := makeSubTabsKey(i)
-		index := tabs.SelectedIndex()
-		u.fyneApp.Preferences().SetInt(key, index)
-	}
-	slog.Info("Saved app state")
 }
 
 func (u *ui) themeSet(name string) {
@@ -286,23 +211,101 @@ func (u *ui) themeGet() string {
 	return u.themeName
 }
 
+func (u *ui) Init() {
+	var c *app.Character
+	var err error
+	ctx := context.Background()
+	if cID := u.fyneApp.Preferences().Int(settingLastCharacterID); cID != 0 {
+		c, err = u.CharacterService.GetCharacter(ctx, int32(cID))
+		if err != nil {
+			if !errors.Is(err, character.ErrNotFound) {
+				slog.Error("Failed to load character", "error", err)
+			}
+		}
+	}
+	if c == nil {
+		c, err = u.CharacterService.GetAnyCharacter(ctx)
+		if err != nil {
+			if !errors.Is(err, character.ErrNotFound) {
+				slog.Error("Failed to load character", "error", err)
+			}
+		}
+	}
+	if c == nil {
+		return
+	}
+
+	u.character = c
+	index := u.fyneApp.Preferences().IntWithFallback(settingTabsMainID, -1)
+	if index != -1 {
+		u.tabs.SelectIndex(index)
+		for i, o := range u.tabs.Items {
+			tabs, ok := o.Content.(*container.AppTabs)
+			if !ok {
+				continue
+			}
+			key := makeSubTabsKey(i)
+			index := u.fyneApp.Preferences().IntWithFallback(key, -1)
+			if index != -1 {
+				tabs.SelectIndex(index)
+			}
+		}
+	}
+}
+
 // ShowAndRun shows the UI and runs it (blocking).
 func (u *ui) ShowAndRun() {
-	go func() {
-		// Workaround to mitigate a bug that causes the window to sometimes render
-		// only in parts and freeze. The issue is known to happen on Linux desktops.
-		if runtime.GOOS == "linux" {
-			time.Sleep(1000 * time.Millisecond)
-			s := u.window.Canvas().Size()
-			u.window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
-			u.window.Resize(fyne.NewSize(s.Width, s.Height))
+	u.fyneApp.Lifecycle().SetOnStopped(func() {
+		slog.Info("App is shutting down")
+		u.saveAppState()
+	})
+	u.fyneApp.Lifecycle().SetOnStarted(func() {
+		if u.isOffline {
+			slog.Info("Started in offline mode")
 		}
-		u.statusBarArea.StartUpdateTicker()
-		u.startUpdateTickerGeneralSections()
-		u.startUpdateTickerCharacters()
-	}()
-	go u.refreshOverview()
+		if u.hasCharacter() {
+			u.refreshCrossPages()
+			u.setCharacter(u.character)
+		} else {
+			u.resetCharacter()
+		}
+		if !u.isOffline {
+			go func() {
+				u.startUpdateTickerGeneralSections()
+				u.startUpdateTickerCharacters()
+			}()
+		}
+		go u.statusBarArea.StartUpdateTicker()
+	})
+	width := float32(u.fyneApp.Preferences().FloatWithFallback(settingWindowWidth, settingWindowHeightDefault))
+	height := float32(u.fyneApp.Preferences().FloatWithFallback(settingWindowHeight, settingWindowHeightDefault))
+	u.window.Resize(fyne.NewSize(width, height))
 	u.window.ShowAndRun()
+}
+
+func (u *ui) saveAppState() {
+	a := u.fyneApp
+	if u.window == nil || a == nil {
+		slog.Warn("Failed to save app state")
+	}
+	s := u.window.Canvas().Size()
+	u.fyneApp.Preferences().SetFloat(settingWindowWidth, float64(s.Width))
+	u.fyneApp.Preferences().SetFloat(settingWindowHeight, float64(s.Height))
+	if u.tabs == nil {
+		slog.Warn("Failed to save tabs in app state")
+	}
+	index := u.tabs.SelectedIndex()
+	u.fyneApp.Preferences().SetInt(settingTabsMainID, index)
+	for i, o := range u.tabs.Items {
+		tabs, ok := o.Content.(*container.AppTabs)
+		if !ok {
+			continue
+		}
+		key := makeSubTabsKey(i)
+		index := tabs.SelectedIndex()
+		u.fyneApp.Preferences().SetInt(key, index)
+	}
+	slog.Info("Saved app state")
 }
 
 // characterID returns the ID of the current character or 0 if non it set.
@@ -333,28 +336,44 @@ func (u *ui) loadCharacter(ctx context.Context, characterID int32) error {
 func (u *ui) setCharacter(c *app.Character) {
 	u.character = c
 	u.refreshCharacter()
-	u.tabs.Refresh()
 	u.fyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
 }
 
+func (u *ui) resetCharacter() {
+	u.character = nil
+	u.fyneApp.Preferences().SetInt(settingLastCharacterID, 0)
+	u.refreshCharacter()
+}
+
 func (u *ui) refreshCharacter() {
-	u.assetsArea.redraw()
-	u.assetSearchArea.refresh()
-	u.attributesArea.refresh()
-	u.biographyArea.refresh()
-	u.jumpClonesArea.redraw()
-	u.implantsArea.refresh()
-	u.mailArea.redraw()
-	u.notificationsArea.refresh()
-	u.shipsArea.refresh()
-	u.skillqueueArea.refresh()
-	u.skillCatalogueArea.redraw()
-	u.toolbarArea.refresh()
-	u.walletJournalArea.refresh()
-	u.walletTransactionArea.refresh()
-	u.wealthArea.refresh()
+	ff := []func(){
+		u.assetsArea.redraw,
+		u.attributesArea.refresh,
+		u.biographyArea.refresh,
+		u.implantsArea.refresh,
+		u.jumpClonesArea.redraw,
+		u.mailArea.redraw,
+		u.notificationsArea.refresh,
+		u.shipsArea.refresh,
+		u.skillCatalogueArea.redraw,
+		u.skillqueueArea.refresh,
+		u.toolbarArea.refresh,
+		u.walletJournalArea.refresh,
+		u.walletTransactionArea.refresh,
+	}
 	c := u.currentCharacter()
+	ff = append(ff, func() {
+		u.toogleTabs(c != nil)
+	})
+	runFunctionsWithProgressDialog("Loading character", ff, u.window)
 	if c != nil {
+		u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
+	}
+	go u.statusBarArea.refreshUpdateStatus()
+}
+
+func (u *ui) toogleTabs(enabled bool) {
+	if enabled {
 		for i := range u.tabs.Items {
 			u.tabs.EnableIndex(i)
 		}
@@ -362,7 +381,6 @@ func (u *ui) refreshCharacter() {
 		for i := range subTabs.Items {
 			subTabs.EnableIndex(i)
 		}
-		u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 	} else {
 		for i := range u.tabs.Items {
 			u.tabs.DisableIndex(i)
@@ -372,9 +390,9 @@ func (u *ui) refreshCharacter() {
 		for i := range subTabs.Items {
 			subTabs.DisableIndex(i)
 		}
+		u.overviewTab.Content.(*container.AppTabs).SelectIndex(0)
 	}
-	go u.statusBarArea.refreshUpdateStatus()
-	u.window.Content().Refresh()
+	u.tabs.Refresh()
 }
 
 func (u *ui) setAnyCharacter() error {
@@ -389,14 +407,40 @@ func (u *ui) setAnyCharacter() error {
 	return nil
 }
 
-func (u *ui) refreshOverview() {
-	u.overviewArea.refresh()
+// refreshCrossPages refreshed all pages under the characters tab.
+func (u *ui) refreshCrossPages() {
+	ff := []func(){
+		u.overviewArea.refresh,
+		u.assetSearchArea.refresh,
+		u.wealthArea.refresh,
+	}
+	runFunctionsWithProgressDialog("Updating characters", ff, u.window)
 }
 
-func (u *ui) resetCharacter() {
-	u.character = nil
-	u.fyneApp.Preferences().SetInt(settingLastCharacterID, 0)
-	u.refreshCharacter()
+func runFunctionsWithProgressDialog(title string, ff []func(), w fyne.Window) {
+	start := time.Now()
+	slog.Debug(title, "state", "started")
+	p := binding.NewFloat()
+	pg := widget.NewProgressBarWithData(p)
+	pg.Max = float64(len(ff))
+	d := dialog.NewCustomWithoutButtons(title, pg, w)
+	d.Show()
+	d.Resize(fyne.NewSize(250, 100))
+	defer d.Hide()
+	var wg sync.WaitGroup
+	var completed atomic.Int64
+	for i, f := range ff {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			f()
+			x := completed.Add(1)
+			p.Set(float64(x))
+			slog.Debug("Updated page", "i", i)
+		}()
+	}
+	wg.Wait()
+	slog.Debug(title, "state", "done", "duration", time.Since(start))
 }
 
 func (u *ui) showMailIndicator() {

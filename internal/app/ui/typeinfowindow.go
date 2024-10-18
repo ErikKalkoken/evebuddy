@@ -12,14 +12,16 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 type attributeGroup string
@@ -396,11 +398,6 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 			data = append(data, groupedRows[ag]...)
 		}
 	}
-	if a.ui.isDebug {
-		data = append(data, attributeRow{label: "DEBUG", isTitle: true})
-		data = append(data, attributeRow{label: "Owner", value: fmt.Sprint(a.owner)})
-		data = append(data, attributeRow{label: "Type ID", value: fmt.Sprint(a.et.ID)})
-	}
 	return data
 }
 
@@ -472,11 +469,7 @@ func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int
 }
 
 func (a *typeInfoWindow) makeTitle(suffix string) string {
-	s := fmt.Sprintf("%s (%s): %s", a.et.Name, a.et.Group.Name, suffix)
-	if a.ui.isDebug {
-		s += " DEBUG"
-	}
-	return s
+	return fmt.Sprintf("%s (%s): %s", a.et.Name, a.et.Group.Name, suffix)
 }
 
 func (a *typeInfoWindow) makeContent() fyne.CanvasObject {
@@ -512,7 +505,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		if err != nil {
 			panic(err)
 		}
-		render := widgets.NewTappableImage(r, canvas.ImageFillContain, func() {
+		render := kwidget.NewTappableImage(r, canvas.ImageFillContain, func() {
 			w := a.ui.fyneApp.NewWindow(a.ui.makeWindowTitle(a.makeTitle("Render")))
 			size := 512
 			i := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {

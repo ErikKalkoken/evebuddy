@@ -27,14 +27,14 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typ
 		CharacterID: int64(characterID),
 		EveTypeID:   int64(typeID),
 	}
-	row, err := st.q.GetCharacterSkill(ctx, arg)
+	r, err := st.q.GetCharacterSkill(ctx, arg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to get skill %d for character %d: %w", typeID, characterID, err)
 	}
-	t2 := characterSkillFromDBModel(row.CharacterSkill, row.EveType, row.EveGroup, row.EveCategory)
+	t2 := characterSkillFromDBModel(r.CharacterSkill, r.EveType, r.EveGroup, r.EveCategory)
 	return t2, nil
 }
 
@@ -51,18 +51,18 @@ func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, 
 		CharacterID: int64(characterID),
 		EveGroupID:  int64(eveGroupID),
 	}
-	xx, err := st.q.ListCharacterSkillProgress(ctx, arg)
+	rows, err := st.q.ListCharacterSkillProgress(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
-	oo := make([]app.ListCharacterSkillProgress, len(xx))
-	for i, x := range xx {
+	oo := make([]app.ListCharacterSkillProgress, len(rows))
+	for i, r := range rows {
 		oo[i] = app.ListCharacterSkillProgress{
-			ActiveSkillLevel:  int(x.ActiveSkillLevel.Int64),
-			TypeDescription:   x.Description,
-			TypeID:            int32(x.ID),
-			TypeName:          x.Name,
-			TrainedSkillLevel: int(x.TrainedSkillLevel.Int64),
+			ActiveSkillLevel:  int(r.ActiveSkillLevel.Int64),
+			TypeDescription:   r.Description,
+			TypeID:            int32(r.ID),
+			TypeName:          r.Name,
+			TrainedSkillLevel: int(r.TrainedSkillLevel.Int64),
 		}
 	}
 	return oo, nil
@@ -73,19 +73,19 @@ func (st *Storage) ListCharacterSkillGroupsProgress(ctx context.Context, charact
 		CharacterID:   int64(characterID),
 		EveCategoryID: app.EveCategorySkill,
 	}
-	xx, err := st.q.ListCharacterSkillGroupsProgress(ctx, arg)
+	rows, err := st.q.ListCharacterSkillGroupsProgress(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
-	oo := make([]app.ListCharacterSkillGroupProgress, len(xx))
-	for i, x := range xx {
+	oo := make([]app.ListCharacterSkillGroupProgress, len(rows))
+	for i, r := range rows {
 		o := app.ListCharacterSkillGroupProgress{
-			GroupID:   int32(x.EveGroupID),
-			GroupName: x.EveGroupName,
-			Total:     float64(x.Total),
+			GroupID:   int32(r.EveGroupID),
+			GroupName: r.EveGroupName,
+			Total:     float64(r.Total),
 		}
-		if x.Trained.Valid {
-			o.Trained = x.Trained.Float64
+		if r.Trained.Valid {
+			o.Trained = r.Trained.Float64
 		}
 		oo[i] = o
 	}

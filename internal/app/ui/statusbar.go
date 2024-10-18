@@ -92,25 +92,30 @@ func (a *statusBarArea) showDetail() {
 	lb := widget.NewLabel(text)
 	lb.Wrapping = fyne.TextWrapWord
 	lb.Importance = i
-	d := dialog.NewCustom("ESI status", "OK", container.NewVScroll(lb), a.ui.window)
+	d := dialog.NewCustom("ESI status", "OK", lb, a.ui.window)
 	d.Show()
 	d.Resize(fyne.Size{Width: 400, Height: 200})
 }
 
 func (a *statusBarArea) StartUpdateTicker() {
-	updateTicker := time.NewTicker(characterUpdateStatusTicker)
-	go func() {
-		for {
-			a.refreshUpdateStatus()
-			<-updateTicker.C
-		}
-	}()
 	clockTicker := time.NewTicker(clockUpdateTicker)
 	go func() {
 		for {
 			t := time.Now().UTC().Format("15:04")
 			a.eveClock.Set(t)
 			<-clockTicker.C
+		}
+	}()
+	if a.ui.isOffline {
+		a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
+		a.refreshUpdateStatus()
+		return
+	}
+	updateTicker := time.NewTicker(characterUpdateStatusTicker)
+	go func() {
+		for {
+			a.refreshUpdateStatus()
+			<-updateTicker.C
 		}
 	}()
 	esiStatusTicker := time.NewTicker(esiStatusUpdateTicker)

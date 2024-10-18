@@ -69,8 +69,8 @@ func (l *logLevelFlag) Set(value string) error {
 // defined flags
 var (
 	levelFlag     logLevelFlag
-	debugFlag     = flag.Bool("debug", false, "Show additional debug information")
-	uninstallFlag = flag.Bool("uninstall", false, "Uninstalls the app by deleting all user files")
+	offlineFlag   = flag.Bool("offline", false, "Start app in offline mode")
+	uninstallFlag = flag.Bool("uninstall", false, "Start uninstall app")
 	pprofFlag     = flag.Bool("pprof", false, "Enable pprof web server")
 )
 
@@ -95,8 +95,8 @@ func (r realtime) Now() time.Time {
 }
 
 func main() {
-	fyneApp := app.NewWithID(appID)
-	ad, err := appdirs.New(fyneApp)
+	// init dirs & flags
+	ad, err := appdirs.New()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -113,9 +113,9 @@ func main() {
 
 	// setup logging
 	slog.SetLogLoggerLevel(levelFlag.value)
-	fn := fmt.Sprintf("%s/%s", ad.Log, logFileName)
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	log.SetOutput(&lumberjack.Logger{
-		Filename:   fn,
+		Filename:   fmt.Sprintf("%s/%s", ad.Log, logFileName),
 		MaxSize:    logMaxSizeMB, // megabytes
 		MaxBackups: logMaxBackups,
 	})
@@ -138,8 +138,13 @@ func main() {
 	defer r.Release()
 	slog.Info("No other instances running")
 
+	// start fyne app
+	fyneApp := app.NewWithID(appID)
+	ad.SetSettings(fyneApp.Storage().RootURI().Path())
+
 	// start uninstall app if requested
 	if *uninstallFlag {
+		log.SetOutput(os.Stderr)
 		u := uninstall.NewUI(fyneApp, ad)
 		u.ShowAndRun()
 		return
@@ -192,14 +197,16 @@ func main() {
 	cs.SSOService = sso.New(ssoClientID, httpClient, cache)
 
 	// Init UI
-	u := ui.NewUI(fyneApp, ad, *debugFlag)
+	u := ui.NewUI(fyneApp, ad, *offlineFlag)
+	slog.Debug("ui instance created")
 	u.CacheService = cache
 	u.CharacterService = cs
 	u.ESIStatusService = esistatus.New(esiClient)
-	u.EveImageService = eveimage.New(ad.Cache, httpClient)
+	u.EveImageService = eveimage.New(ad.Cache, httpClient, *offlineFlag)
 	u.EveUniverseService = eu
 	u.StatusCacheService = sc
 	u.Init()
+	slog.Debug("ui initialized")
 
 	// start pprof web server
 	if *pprofFlag {

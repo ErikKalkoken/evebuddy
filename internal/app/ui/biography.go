@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 )
@@ -17,7 +16,7 @@ type biographyArea struct {
 func (u *ui) newBiographyArea() *biographyArea {
 	a := &biographyArea{ui: u, text: widget.NewLabel("")}
 	a.text.Wrapping = fyne.TextWrapBreak
-	a.content = container.NewVScroll(a.text)
+	a.content = a.text
 	return a
 }
 
