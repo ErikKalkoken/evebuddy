@@ -148,7 +148,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 							return err
 						}
 					}
-					a.ui.refreshOverview()
+					a.ui.refreshCrossPages()
 					a.ui.toolbarArea.refresh()
 					return nil
 				}(c.id)
@@ -207,7 +207,7 @@ func (a *accountArea) showAddCharacterDialog() {
 			if err := a.Refresh(); err != nil {
 				return err
 			}
-			a.ui.refreshOverview()
+			a.ui.refreshCrossPages()
 			a.ui.toolbarArea.refresh()
 			if isFirst {
 				if err := a.ui.setAnyCharacter(); err != nil {

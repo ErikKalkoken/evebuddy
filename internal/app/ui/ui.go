@@ -264,6 +264,7 @@ func (u *ui) ShowAndRun() {
 			slog.Info("Started in offline mode")
 		}
 		if u.hasCharacter() {
+			u.refreshCrossPages()
 			u.setCharacter(u.character)
 		} else {
 			u.resetCharacter()
@@ -345,55 +346,30 @@ func (u *ui) resetCharacter() {
 }
 
 func (u *ui) refreshCharacter() {
-	start := time.Now()
-	slog.Debug("Refresh started")
 	ff := []func(){
 		u.assetsArea.redraw,
-		u.assetSearchArea.refresh,
 		u.attributesArea.refresh,
 		u.biographyArea.refresh,
 		u.implantsArea.refresh,
 		u.jumpClonesArea.redraw,
 		u.mailArea.redraw,
 		u.notificationsArea.refresh,
-		u.overviewArea.refresh,
 		u.shipsArea.refresh,
 		u.skillCatalogueArea.redraw,
 		u.skillqueueArea.refresh,
 		u.toolbarArea.refresh,
 		u.walletJournalArea.refresh,
 		u.walletTransactionArea.refresh,
-		u.wealthArea.refresh,
 	}
 	c := u.currentCharacter()
 	ff = append(ff, func() {
 		u.toogleTabs(c != nil)
 	})
-	p := binding.NewFloat()
-	pg := widget.NewProgressBarWithData(p)
-	pg.Max = float64(len(ff))
-	d := dialog.NewCustomWithoutButtons("Loading character", pg, u.window)
-	d.Show()
-	d.Resize(fyne.NewSize(250, 100))
-	defer d.Hide()
-	var wg sync.WaitGroup
-	var completed atomic.Int64
-	for i, f := range ff {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			f()
-			x := completed.Add(1)
-			p.Set(float64(x))
-			slog.Debug("Refreshed page", "i", i)
-		}()
-	}
-	wg.Wait()
+	runFunctionsWithProgressDialog("Loading character", ff, u.window)
 	if c != nil {
 		u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 	}
 	go u.statusBarArea.refreshUpdateStatus()
-	slog.Debug("Refresh done", "duration", time.Since(start))
 }
 
 func (u *ui) toogleTabs(enabled bool) {
@@ -431,8 +407,40 @@ func (u *ui) setAnyCharacter() error {
 	return nil
 }
 
-func (u *ui) refreshOverview() {
-	u.overviewArea.refresh()
+// refreshCrossPages refreshed all pages under the characters tab.
+func (u *ui) refreshCrossPages() {
+	ff := []func(){
+		u.overviewArea.refresh,
+		u.assetSearchArea.refresh,
+		u.wealthArea.refresh,
+	}
+	runFunctionsWithProgressDialog("Updating characters", ff, u.window)
+}
+
+func runFunctionsWithProgressDialog(title string, ff []func(), w fyne.Window) {
+	start := time.Now()
+	slog.Debug(title, "state", "started")
+	p := binding.NewFloat()
+	pg := widget.NewProgressBarWithData(p)
+	pg.Max = float64(len(ff))
+	d := dialog.NewCustomWithoutButtons(title, pg, w)
+	d.Show()
+	d.Resize(fyne.NewSize(250, 100))
+	defer d.Hide()
+	var wg sync.WaitGroup
+	var completed atomic.Int64
+	for i, f := range ff {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			f()
+			x := completed.Add(1)
+			p.Set(float64(x))
+			slog.Debug("Updated page", "i", i)
+		}()
+	}
+	wg.Wait()
+	slog.Debug(title, "state", "done", "duration", time.Since(start))
 }
 
 func (u *ui) showMailIndicator() {
