@@ -230,9 +230,6 @@ func (u *ui) Init() {
 		}
 	}
 	if c == nil {
-		// reset to overview tab if no character
-		u.tabs.Select(u.overviewTab)
-		u.overviewTab.Content.(*container.AppTabs).SelectIndex(0)
 		return
 	}
 
@@ -348,18 +345,19 @@ func (u *ui) resetCharacter() {
 
 func (u *ui) refreshCharacter() {
 	ff := []func(){
-		u.toolbarArea.refresh,
 		u.assetsArea.redraw,
 		u.assetSearchArea.refresh,
 		u.attributesArea.refresh,
 		u.biographyArea.refresh,
-		u.jumpClonesArea.redraw,
 		u.implantsArea.refresh,
+		u.jumpClonesArea.redraw,
 		u.mailArea.redraw,
+		u.overviewArea.refresh,
 		u.notificationsArea.refresh,
 		u.shipsArea.refresh,
-		u.skillqueueArea.refresh,
 		u.skillCatalogueArea.redraw,
+		u.skillqueueArea.refresh,
+		u.toolbarArea.refresh,
 		u.walletJournalArea.refresh,
 		u.walletTransactionArea.refresh,
 		u.wealthArea.refresh,
@@ -408,6 +406,7 @@ func (u *ui) toogleTabs(c *app.Character) {
 		for i := range subTabs.Items {
 			subTabs.DisableIndex(i)
 		}
+		u.overviewTab.Content.(*container.AppTabs).SelectIndex(0)
 	}
 	u.window.Content().Refresh()
 }

@@ -86,6 +86,7 @@ func (u *UI) makePage() *fyne.Container {
 			closeBtn.Enable()
 		}()
 	})
+	okBtn.Importance = widget.DangerImportance
 	cancelBtn := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
 		u.closeWithDialog("Aborted")
 	})
@@ -119,9 +120,10 @@ func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
 			slog.Info("Deleted directory", "path", p)
 		}
 	}
-	for _, k := range ui.SettingKeys() {
+	keys := ui.SettingKeys()
+	for _, k := range keys {
 		u.app.Preferences().RemoveValue(k)
-		slog.Info("Deleted setting", "key", k)
 	}
+	slog.Info("Deleted setting keys", "path", u.ad.Settings, "count", len(keys))
 	return nil
 }

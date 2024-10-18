@@ -174,7 +174,9 @@ func (a *walletJournalArea) makeTopText() (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	s := fmt.Sprintf("Balance: %s", ihumanize.OptionalFloat(c.WalletBalance, 1, "?"))
+	b := ihumanize.OptionalFloat(c.WalletBalance, 1, "?")
+	t := humanize.Comma(int64(len(a.entries)))
+	s := fmt.Sprintf("Balance: %s • Entries: %s", b, t)
 	return s, widget.MediumImportance
 }
 

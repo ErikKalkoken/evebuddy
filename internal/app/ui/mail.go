@@ -526,7 +526,7 @@ func (a *mailArea) setMail(mailID int32) {
 		a.setErrorText()
 		return
 	}
-	if !a.mail.IsRead {
+	if !a.ui.isOffline && !a.mail.IsRead {
 		go func() {
 			err = a.ui.CharacterService.UpdateMailRead(ctx, characterID, a.mail.MailID)
 			if err != nil {

@@ -146,7 +146,9 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	return "", widget.MediumImportance
+	t := humanize.Comma(int64(len(a.transactions)))
+	s := fmt.Sprintf("Entries: %s", t)
+	return s, widget.MediumImportance
 }
 
 func (a *walletTransactionArea) updateEntries() error {

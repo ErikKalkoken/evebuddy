@@ -392,7 +392,8 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}
-	return fmt.Sprintf("%d locations", total), widget.MediumImportance, nil
+	locations := humanize.Comma(int64(total))
+	return fmt.Sprintf("%s locations", locations), widget.MediumImportance, nil
 }
 
 func (a *assetsArea) selectLocation(location locationDataNode) error {

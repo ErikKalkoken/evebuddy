@@ -33,7 +33,7 @@ type notificationsArea struct {
 
 	categories   []notificationCategory
 	categoryList *widget.List
-	categoryTop  *widget.Label
+	top          *widget.Label
 
 	notifications    []*app.CharacterNotification
 	notificationList *widget.List
@@ -46,7 +46,7 @@ func (u *ui) newNotificationsArea() *notificationsArea {
 	a := notificationsArea{
 		ui:               u,
 		categories:       make([]notificationCategory, 0),
-		categoryTop:      widget.NewLabel(""),
+		top:              widget.NewLabel(""),
 		notifications:    make([]*app.CharacterNotification, 0),
 		notificationsTop: widget.NewLabel(""),
 	}
@@ -59,7 +59,7 @@ func (u *ui) newNotificationsArea() *notificationsArea {
 	split1.Offset = 0.35
 	a.categoryList = a.makeCategoryList()
 	a.content = container.NewHSplit(
-		container.NewBorder(a.categoryTop, nil, nil, nil, a.categoryList),
+		container.NewBorder(a.top, nil, nil, nil, a.categoryList),
 		split1,
 	)
 	a.content.Offset = 0.15
@@ -172,7 +172,7 @@ func (a *notificationsArea) refresh() {
 	a.categories = categories
 	a.categoryList.Refresh()
 	a.categoryList.UnselectAll()
-	a.categoryTop.SetText(fmt.Sprintf("%s total", humanize.Comma(int64(999))))
+	a.top.Text, a.top.Importance = a.makeTopText()
 }
 
 func (a *notificationsArea) setNotifications(nc evenotification.Category) error {
@@ -198,7 +198,7 @@ func (a *notificationsArea) setNotifications(nc evenotification.Category) error 
 func (a *notificationsArea) makeTopText() (string, widget.Importance) {
 	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionImplants)
 	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance
+		return "Waiting for data to load...", widget.WarningImportance
 	}
 	var unread int
 	for _, n := range a.notifications {
@@ -206,7 +206,7 @@ func (a *notificationsArea) makeTopText() (string, widget.Importance) {
 			unread++
 		}
 	}
-	return fmt.Sprintf("%d notifications (%d unread)", len(a.notifications), unread), widget.MediumImportance
+	return fmt.Sprintf("%d total", len(a.notifications)), widget.MediumImportance
 }
 
 func (a *notificationsArea) setDetails(n *app.CharacterNotification) {
