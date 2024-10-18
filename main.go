@@ -144,6 +144,7 @@ func main() {
 
 	// start uninstall app if requested
 	if *uninstallFlag {
+		log.SetOutput(os.Stderr)
 		u := uninstall.NewUI(fyneApp, ad)
 		u.ShowAndRun()
 		return

@@ -16,36 +16,6 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-// Settings
-const (
-	settingLastCharacterID                    = "settingLastCharacterID"
-	settingMaxAge                             = "settingMaxAgeHours"
-	settingMaxAgeDefault                      = 6  // hours
-	settingMaxAgeMax                          = 24 // hours
-	settingMaxMails                           = "settingMaxMails"
-	settingMaxMailsDefault                    = 1_000
-	settingMaxMailsMax                        = 10_000
-	settingMaxWalletTransactions              = "settingMaxWalletTransactions"
-	settingMaxWalletTransactionsDefault       = 1_000
-	settingMaxWalletTransactionsMax           = 10_000
-	settingNotifyCommunicationsEnabled        = "settingNotifyCommunicationsEnabled"
-	settingNotifyCommunicationsEnabledDefault = false
-	settingNotifyMailsEnabled                 = "settingNotifyMailsEnabled"
-	settingNotifyMailsEnabledDefault          = false
-	settingNotificationsTypesEnabled          = "settingNotificationsTypesEnabled"
-	settingSysTrayEnabled                     = "settingSysTrayEnabled"
-	settingSysTrayEnabledDefault              = false
-	settingTheme                              = "settingTheme"
-	settingThemeDefault                       = themeAuto
-)
-
-// Themes
-const (
-	themeAuto  = "Auto"
-	themeDark  = "Dark"
-	themeLight = "Light"
-)
-
 type settingsWindow struct {
 	content fyne.CanvasObject
 	ui      *ui
@@ -84,6 +54,13 @@ func (u *ui) newSettingsWindow() (*settingsWindow, error) {
 	sw.content = tabs
 	return sw, nil
 }
+
+// Themes
+const (
+	themeAuto  = "Auto"
+	themeDark  = "Dark"
+	themeLight = "Light"
+)
 
 func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 	// theme

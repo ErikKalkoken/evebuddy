@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"fyne.io/fyne/v2"
@@ -13,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 )
 
@@ -104,7 +106,7 @@ func (u *UI) closeWithDialog(message string) {
 }
 
 func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
-	folders := u.ad.Folders()
+	folders := []string{u.ad.Log, u.ad.Cache, u.ad.Data}
 	for i, p := range folders {
 		select {
 		case <-ctx.Done():
@@ -114,7 +116,12 @@ func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
 				return err
 			}
 			pb.SetValue(float64(i+1) / float64(len(folders)))
+			slog.Info("Deleted directory", "path", p)
 		}
+	}
+	for _, k := range ui.SettingKeys() {
+		u.app.Preferences().RemoveValue(k)
+		slog.Info("Deleted setting", "key", k)
 	}
 	return nil
 }
