@@ -14,6 +14,12 @@ const (
 	dbFileName = "evebuddy.sqlite"
 )
 
+const (
+	assetItemsPerLocation = 1000
+	assetLocations        = 30
+	walletJournalEntries  = 1000
+)
+
 func main() {
 	// init dirs
 	ad, err := appdirs.New()
@@ -31,35 +37,40 @@ func main() {
 	st := storage.New(db)
 	f := testutil.NewFactory(st, db)
 	c := f.CreateCharacter()
-	// wallet journal
-	first := f.CreateEveEntityCharacter()
-	second := f.CreateEveEntityCharacter()
-	tax := f.CreateEveEntityCharacter()
-	for i := range 1_000 {
-		f.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
-			CharacterID:   c.ID,
-			FirstPartyID:  first.ID,
-			SecondPartyID: second.ID,
-			TaxReceiverID: tax.ID,
-		})
-		printProgress("wallet journal", 1_000, i)
-	}
-	fmt.Println()
-	fmt.Println("Created wallet journal entries")
+
 	// assets
-	for i := range 30 {
-		ca := f.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
-		for range 1_000 {
+	for i := range assetLocations {
+		l := f.CreateLocationStructure()
+		ca := f.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID: c.ID,
+			LocationID:  l.ID,
+		})
+		for range assetItemsPerLocation - 1 {
 			f.CreateCharacterAsset(storage.CreateCharacterAssetParams{
 				CharacterID: c.ID,
 				LocationID:  ca.LocationID,
 				EveTypeID:   ca.EveType.ID,
 			})
 		}
-		printProgress("assets", 30, i)
+		printProgress("assets", assetLocations, i)
 	}
-	fmt.Println()
-	fmt.Println("Created assets")
+	fmt.Printf("Created %d assets\n", assetLocations*assetItemsPerLocation)
+
+	// wallet journal
+	first := f.CreateEveEntityCharacter()
+	second := f.CreateEveEntityCharacter()
+	tax := f.CreateEveEntityCharacter()
+	for i := range walletJournalEntries {
+		f.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{
+			CharacterID:   c.ID,
+			FirstPartyID:  first.ID,
+			SecondPartyID: second.ID,
+			TaxReceiverID: tax.ID,
+		})
+		printProgress("wallet journal", walletJournalEntries, i)
+	}
+	fmt.Printf("Created %d wallet journal entries\n", walletJournalEntries)
+
 	// set all sections as loaded
 	for _, s := range app.CharacterSections {
 		f.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
@@ -71,5 +82,5 @@ func main() {
 }
 
 func printProgress(s string, t, c int) {
-	fmt.Printf("\r%s: %d%%", s, int(float64(c)/float64(t)*100))
+	fmt.Printf("%s: %d%%\r", s, int(float64(c)/float64(t)*100))
 }

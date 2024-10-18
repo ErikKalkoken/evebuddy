@@ -13,6 +13,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/hashicorp/go-version v1.7.0
+	github.com/icrowley/fake v0.0.0-20240710202011-f797eb4a99c0
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/juju/mutex/v2 v2.0.0
 	github.com/lestrrat-go/jwx/v2 v2.1.1
@@ -33,6 +34,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
+	github.com/corpix/uarand v0.0.0-20170723150923-031be390f409 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
 	github.com/fredbi/uri v1.1.0 // indirect

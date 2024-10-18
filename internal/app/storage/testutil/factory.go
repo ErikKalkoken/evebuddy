@@ -12,6 +12,8 @@ import (
 	"slices"
 	"time"
 
+	"github.com/icrowley/fake"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -650,7 +652,7 @@ func (f Factory) CreateEveCharacter(args ...storage.CreateEveCharacterParams) *a
 		arg.ID = int32(f.calcNewID("eve_characters", "id", 1))
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Generated character #%d", arg.ID)
+		arg.Name = fake.FullName()
 	}
 	if arg.CorporationID == 0 {
 		c := f.CreateEveEntityCorporation()
@@ -734,7 +736,18 @@ func (f Factory) CreateEveEntity(args ...app.EveEntity) *app.EveEntity {
 		arg.Category = app.EveEntityCharacter
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("%s #%d", arg.Category, arg.ID)
+		switch arg.Category {
+		case app.EveEntityCharacter:
+			arg.Name = fake.FullName()
+		case app.EveEntityCorporation:
+			arg.Name = fake.Company()
+		case app.EveEntityAlliance:
+			arg.Name = fake.Company()
+		case app.EveEntityFaction:
+			arg.Name = fake.Color()
+		default:
+			arg.Name = fmt.Sprintf("%s #%d", arg.Category, arg.ID)
+		}
 	}
 	e, err := f.st.CreateEveEntity(ctx, arg.ID, arg.Name, arg.Category)
 	if err != nil {
@@ -787,7 +800,7 @@ func (f Factory) CreateEveCategory(args ...storage.CreateEveCategoryParams) *app
 		arg.ID = int32(f.calcNewID("eve_categories", "id", 1))
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Category #%d", arg.ID)
+		arg.Name = fake.Industry()
 	}
 	r, err := f.st.CreateEveCategory(ctx, arg)
 	if err != nil {
@@ -806,7 +819,7 @@ func (f Factory) CreateEveGroup(args ...storage.CreateEveGroupParams) *app.EveGr
 		arg.ID = int32(f.calcNewID("eve_groups", "id", 1))
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Group #%d", arg.ID)
+		arg.Name = fake.Brand()
 	}
 	if arg.CategoryID == 0 {
 		x := f.CreateEveCategory()
@@ -843,7 +856,10 @@ func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *app.EveType
 		arg.Mass = rand.Float32() * 10_000_000_000
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Type #%d", arg.ID)
+		arg.Name = fake.ProductName()
+	}
+	if arg.Description == "" {
+		arg.Name = fake.Paragraphs()
 	}
 	if arg.PortionSize == 0 {
 		arg.PortionSize = 1
@@ -931,7 +947,7 @@ func (f Factory) CreateEveRegion(args ...storage.CreateEveRegionParams) *app.Eve
 		arg.ID = int32(f.calcNewID("eve_regions", "id", 1))
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Region #%d", arg.ID)
+		arg.Name = fake.Continent()
 	}
 	o, err := f.st.CreateEveRegion(ctx, arg)
 	if err != nil {
@@ -950,7 +966,7 @@ func (f Factory) CreateEveConstellation(args ...storage.CreateEveConstellationPa
 		arg.ID = int32(f.calcNewID("eve_constellations", "id", 1))
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Constellation #%d", arg.ID)
+		arg.Name = fake.Country()
 	}
 	if arg.RegionID == 0 {
 		x := f.CreateEveRegion()
@@ -977,7 +993,7 @@ func (f Factory) CreateEveSolarSystem(args ...storage.CreateEveSolarSystemParams
 		arg.ID = int32(f.calcNewID("eve_solar_systems", "id", 1))
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Solar System #%d", arg.ID)
+		arg.Name = fake.City()
 	}
 	if arg.ConstellationID == 0 {
 		x := f.CreateEveConstellation()
@@ -1007,7 +1023,7 @@ func (f Factory) CreateEvePlanet(args ...storage.CreateEvePlanetParams) *app.Eve
 		arg.ID = int32(f.calcNewID("eve_planets", "id", 1))
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Planet #%d", arg.ID)
+		arg.Name = fake.Street()
 	}
 	if arg.SolarSystemID == 0 {
 		x := f.CreateEveSolarSystem()
@@ -1087,7 +1103,7 @@ func (f Factory) CreateLocationStructure(args ...storage.UpdateOrCreateLocationP
 		arg.ID = f.calcNewID("eve_locations", "id", 1_900_000_000_000)
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Structure #%d", arg.ID)
+		arg.Name = fake.Words()
 	}
 	if arg.EveSolarSystemID.IsEmpty() {
 		x := f.CreateEveSolarSystem()
