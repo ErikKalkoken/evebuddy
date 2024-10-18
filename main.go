@@ -197,6 +197,7 @@ func main() {
 
 	// Init UI
 	u := ui.NewUI(fyneApp, ad, *offlineFlag)
+	slog.Debug("ui instance created")
 	u.CacheService = cache
 	u.CharacterService = cs
 	u.ESIStatusService = esistatus.New(esiClient)
@@ -204,6 +205,7 @@ func main() {
 	u.EveUniverseService = eu
 	u.StatusCacheService = sc
 	u.Init()
+	slog.Debug("ui initialized")
 
 	// start pprof web server
 	if *pprofFlag {
