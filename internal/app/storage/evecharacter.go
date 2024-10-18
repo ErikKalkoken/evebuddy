@@ -64,19 +64,29 @@ func (st *Storage) DeleteEveCharacter(ctx context.Context, characterID int32) er
 }
 
 func (st *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*app.EveCharacter, error) {
-	row, err := st.q.GetEveCharacter(ctx, int64(characterID))
+	r, err := st.q.GetEveCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to get EveCharacter %d: %w", characterID, err)
 	}
+	alliance := nullEveEntry{
+		ID:       r.EveCharacter.AllianceID,
+		Name:     r.AllianceName,
+		Category: r.AllianceCategory,
+	}
+	faction := nullEveEntry{
+		ID:       r.EveCharacter.FactionID,
+		Name:     r.FactionName,
+		Category: r.FactionCategory,
+	}
 	c := eveCharacterFromDBModel(
-		row.EveCharacter,
-		row.EveEntity,
-		row.EveRace,
-		row.EveCharacterAlliance,
-		row.EveCharacterFaction,
+		r.EveCharacter,
+		r.EveEntity,
+		r.EveRace,
+		alliance,
+		faction,
 	)
 	return c, nil
 }
@@ -117,16 +127,16 @@ func eveCharacterFromDBModel(
 	character queries.EveCharacter,
 	corporation queries.EveEntity,
 	race queries.EveRace,
-	alliance queries.EveCharacterAlliance,
-	faction queries.EveCharacterFaction,
+	alliance nullEveEntry,
+	faction nullEveEntry,
 ) *app.EveCharacter {
 	x := app.EveCharacter{
-		Alliance:       eveEntityFromNullableDBModel(nullEveEntry(alliance)),
+		Alliance:       eveEntityFromNullableDBModel(alliance),
 		Birthday:       character.Birthday,
 		Corporation:    eveEntityFromDBModel(corporation),
 		Description:    character.Description,
 		Gender:         character.Gender,
-		Faction:        eveEntityFromNullableDBModel(nullEveEntry(faction)),
+		Faction:        eveEntityFromNullableDBModel(faction),
 		ID:             int32(character.ID),
 		Name:           character.Name,
 		Race:           eveRaceFromDBModel(race),

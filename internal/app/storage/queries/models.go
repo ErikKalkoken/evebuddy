@@ -222,18 +222,6 @@ type EveCharacter struct {
 	Title          string
 }
 
-type EveCharacterAlliance struct {
-	ID       sql.NullInt64
-	Category sql.NullString
-	Name     sql.NullString
-}
-
-type EveCharacterFaction struct {
-	ID       sql.NullInt64
-	Category sql.NullString
-	Name     sql.NullString
-}
-
 type EveConstellation struct {
 	ID          int64
 	EveRegionID int64

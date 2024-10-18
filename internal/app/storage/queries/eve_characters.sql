@@ -22,17 +22,19 @@ WHERE id = ?;
 
 -- name: GetEveCharacter :one
 SELECT
-    sqlc.embed(eve_characters),
-    sqlc.embed(corporations),
-    sqlc.embed(eve_races),
-    sqlc.embed(eve_character_alliances),
-    sqlc.embed(eve_character_factions)
-FROM eve_characters
-JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
-JOIN eve_races ON eve_races.id = eve_characters.race_id
-LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
-LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.faction_id
-WHERE eve_characters.id = ?;
+    sqlc.embed(ec),
+    sqlc.embed(eec),
+    sqlc.embed(er),
+    eea.name as alliance_name,
+    eea.category as alliance_category,
+    eef.name as faction_name,
+    eef.category as faction_category
+FROM eve_characters ec
+JOIN eve_entities AS eec ON eec.id = ec.corporation_id
+JOIN eve_races er ON er.id = ec.race_id
+LEFT JOIN eve_entities as eea ON eea.id = ec.alliance_id
+LEFT JOIN eve_entities as eef ON eef.id = ec.faction_id
+WHERE ec.id = ?;
 
 -- name: ListEveCharacterIDs :many
 SELECT id
