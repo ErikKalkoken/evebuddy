@@ -9,9 +9,11 @@ import (
 	"log/slog"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
@@ -333,7 +335,6 @@ func (u *ui) loadCharacter(ctx context.Context, characterID int32) error {
 func (u *ui) setCharacter(c *app.Character) {
 	u.character = c
 	u.refreshCharacter()
-	u.tabs.Refresh()
 	u.fyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
 }
 
@@ -344,6 +345,8 @@ func (u *ui) resetCharacter() {
 }
 
 func (u *ui) refreshCharacter() {
+	start := time.Now()
+	slog.Debug("Refresh started")
 	ff := []func(){
 		u.assetsArea.redraw,
 		u.assetSearchArea.refresh,
@@ -352,8 +355,8 @@ func (u *ui) refreshCharacter() {
 		u.implantsArea.refresh,
 		u.jumpClonesArea.redraw,
 		u.mailArea.redraw,
-		u.overviewArea.refresh,
 		u.notificationsArea.refresh,
+		u.overviewArea.refresh,
 		u.shipsArea.refresh,
 		u.skillCatalogueArea.redraw,
 		u.skillqueueArea.refresh,
@@ -363,7 +366,11 @@ func (u *ui) refreshCharacter() {
 		u.wealthArea.refresh,
 	}
 	c := u.currentCharacter()
-	pg := widget.NewProgressBar()
+	ff = append(ff, func() {
+		u.toogleTabs(c != nil)
+	})
+	p := binding.NewFloat()
+	pg := widget.NewProgressBarWithData(p)
 	pg.Max = float64(len(ff))
 	d := dialog.NewCustomWithoutButtons("Loading character", pg, u.window)
 	d.Show()
@@ -371,25 +378,26 @@ func (u *ui) refreshCharacter() {
 	defer d.Hide()
 	var wg sync.WaitGroup
 	var completed atomic.Int64
-	for _, f := range ff {
+	for i, f := range ff {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			f()
 			x := completed.Add(1)
-			pg.SetValue(float64(x))
+			p.Set(float64(x))
+			slog.Debug("Refreshed page", "i", i)
 		}()
 	}
 	wg.Wait()
-	u.toogleTabs(c)
 	if c != nil {
 		u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 	}
 	go u.statusBarArea.refreshUpdateStatus()
+	slog.Debug("Refresh done", "duration", time.Since(start))
 }
 
-func (u *ui) toogleTabs(c *app.Character) {
-	if c != nil {
+func (u *ui) toogleTabs(enabled bool) {
+	if enabled {
 		for i := range u.tabs.Items {
 			u.tabs.EnableIndex(i)
 		}
@@ -408,7 +416,7 @@ func (u *ui) toogleTabs(c *app.Character) {
 		}
 		u.overviewTab.Content.(*container.AppTabs).SelectIndex(0)
 	}
-	u.window.Content().Refresh()
+	u.tabs.Refresh()
 }
 
 func (u *ui) setAnyCharacter() error {

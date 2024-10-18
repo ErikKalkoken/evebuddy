@@ -92,7 +92,7 @@ func (a *statusBarArea) showDetail() {
 	lb := widget.NewLabel(text)
 	lb.Wrapping = fyne.TextWrapWord
 	lb.Importance = i
-	d := dialog.NewCustom("ESI status", "OK", container.NewVScroll(lb), a.ui.window)
+	d := dialog.NewCustom("ESI status", "OK", lb, a.ui.window)
 	d.Show()
 	d.Resize(fyne.Size{Width: 400, Height: 200})
 }

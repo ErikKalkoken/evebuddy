@@ -113,9 +113,9 @@ func main() {
 
 	// setup logging
 	slog.SetLogLoggerLevel(levelFlag.value)
-	fn := fmt.Sprintf("%s/%s", ad.Log, logFileName)
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	log.SetOutput(&lumberjack.Logger{
-		Filename:   fn,
+		Filename:   fmt.Sprintf("%s/%s", ad.Log, logFileName),
 		MaxSize:    logMaxSizeMB, // megabytes
 		MaxBackups: logMaxBackups,
 	})
