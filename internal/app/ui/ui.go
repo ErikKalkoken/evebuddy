@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"sync"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -340,22 +342,50 @@ func (u *ui) resetCharacter() {
 }
 
 func (u *ui) refreshCharacter() {
-	u.toolbarArea.refresh()
-	u.assetsArea.redraw()
-	u.assetSearchArea.refresh()
-	u.attributesArea.refresh()
-	u.biographyArea.refresh()
-	u.jumpClonesArea.redraw()
-	u.implantsArea.refresh()
-	u.mailArea.redraw()
-	u.notificationsArea.refresh()
-	u.shipsArea.refresh()
-	u.skillqueueArea.refresh()
-	u.skillCatalogueArea.redraw()
-	u.walletJournalArea.refresh()
-	u.walletTransactionArea.refresh()
-	u.wealthArea.refresh()
+	ff := []func(){
+		u.toolbarArea.refresh,
+		u.assetsArea.redraw,
+		u.assetSearchArea.refresh,
+		u.attributesArea.refresh,
+		u.biographyArea.refresh,
+		u.jumpClonesArea.redraw,
+		u.implantsArea.refresh,
+		u.mailArea.redraw,
+		u.notificationsArea.refresh,
+		u.shipsArea.refresh,
+		u.skillqueueArea.refresh,
+		u.skillCatalogueArea.redraw,
+		u.walletJournalArea.refresh,
+		u.walletTransactionArea.refresh,
+		u.wealthArea.refresh,
+	}
 	c := u.currentCharacter()
+	pg := widget.NewProgressBar()
+	pg.Max = float64(len(ff))
+	d := dialog.NewCustomWithoutButtons("Loading character", pg, u.window)
+	d.Show()
+	d.Resize(fyne.NewSize(250, 100))
+	defer d.Hide()
+	var wg sync.WaitGroup
+	var completed atomic.Int64
+	for _, f := range ff {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			f()
+			x := completed.Add(1)
+			pg.SetValue(float64(x))
+		}()
+	}
+	wg.Wait()
+	u.toogleTabs(c)
+	if c != nil {
+		u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
+	}
+	go u.statusBarArea.refreshUpdateStatus()
+}
+
+func (u *ui) toogleTabs(c *app.Character) {
 	if c != nil {
 		for i := range u.tabs.Items {
 			u.tabs.EnableIndex(i)
@@ -364,7 +394,6 @@ func (u *ui) refreshCharacter() {
 		for i := range subTabs.Items {
 			subTabs.EnableIndex(i)
 		}
-		u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 	} else {
 		for i := range u.tabs.Items {
 			u.tabs.DisableIndex(i)
@@ -375,7 +404,6 @@ func (u *ui) refreshCharacter() {
 			subTabs.DisableIndex(i)
 		}
 	}
-	go u.statusBarArea.refreshUpdateStatus()
 	u.window.Content().Refresh()
 }
 
