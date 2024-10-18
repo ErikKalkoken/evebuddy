@@ -27,11 +27,13 @@ import (
 
 // UI constants
 const (
-	defaultIconSize = 32
-	myFloatFormat   = "#,###.##"
-	keyTabsMainID   = "tabs-main-id"
-	keyWindowWidth  = "window-width"
-	keyWindowHeight = "window-height"
+	defaultIconSize        = 32
+	myFloatFormat          = "#,###.##"
+	keyTabsMainID          = "tabs-main-id"
+	keyWindowWidth         = "window-width"
+	keyWindowWidthDefault  = 1000
+	keyWindowHeight        = "window-height"
+	keyWindowHeightDefault = 600
 )
 
 // The ui is the root object of the UI and contains all UI areas.
@@ -158,7 +160,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isOffline bool) *ui {
 	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, nil, u.tabs)
 	u.window.SetContent(mainContent)
 
-	// Define system tray menu
+	// system tray menu
 	if fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault) {
 		name := u.appName()
 		item := fyne.NewMenuItem(name, nil)
@@ -176,6 +178,8 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isOffline bool) *ui {
 			u.window.Hide()
 		})
 	}
+	u.hideMailIndicator() // init system tray icon
+
 	menu := makeMenu(u)
 	u.window.SetMainMenu(menu)
 	u.window.SetMaster()
@@ -196,70 +200,30 @@ func (u *ui) Init() {
 			slog.Error("Failed to load character", "error", err)
 		}
 	}
-	if c != nil {
-		u.setCharacter(c)
-	} else {
-		u.resetCharacter()
-	}
-
-	width := u.fyneApp.Preferences().FloatWithFallback(keyWindowWidth, 1000)
-	height := u.fyneApp.Preferences().FloatWithFallback(keyWindowHeight, 600)
-	u.window.Resize(fyne.NewSize(float32(width), float32(height)))
-
-	if !u.hasCharacter() {
+	if c == nil {
 		// reset to overview tab if no character
 		u.tabs.Select(u.overviewTab)
 		u.overviewTab.Content.(*container.AppTabs).SelectIndex(0)
-	} else {
-		index := u.fyneApp.Preferences().IntWithFallback(keyTabsMainID, -1)
-		if index != -1 {
-			u.tabs.SelectIndex(index)
-		}
-		for i, o := range u.tabs.Items {
-			tabs, ok := o.Content.(*container.AppTabs)
-			if !ok {
-				continue
-			}
-			key := makeSubTabsKey(i)
-			index := u.fyneApp.Preferences().IntWithFallback(key, -1)
-			if index != -1 {
-				tabs.SelectIndex(index)
-			}
-		}
+		return
 	}
 
-	u.themeSet(u.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault))
-	u.hideMailIndicator() // init system tray icon
-
-	u.fyneApp.Lifecycle().SetOnStopped(func() {
-		slog.Info("App is shutting down")
-		u.saveAppState()
-	})
-}
-
-func (u *ui) saveAppState() {
-	a := u.fyneApp
-	if u.window == nil || a == nil {
-		slog.Warn("Failed to save app state")
+	u.character = c
+	index := u.fyneApp.Preferences().IntWithFallback(keyTabsMainID, -1)
+	if index != -1 {
+		u.tabs.SelectIndex(index)
 	}
-	s := u.window.Canvas().Size()
-	u.fyneApp.Preferences().SetFloat(keyWindowWidth, float64(s.Width))
-	u.fyneApp.Preferences().SetFloat(keyWindowHeight, float64(s.Height))
-	if u.tabs == nil {
-		slog.Warn("Failed to save tabs in app state")
-	}
-	index := u.tabs.SelectedIndex()
-	u.fyneApp.Preferences().SetInt(keyTabsMainID, index)
 	for i, o := range u.tabs.Items {
 		tabs, ok := o.Content.(*container.AppTabs)
 		if !ok {
 			continue
 		}
 		key := makeSubTabsKey(i)
-		index := tabs.SelectedIndex()
-		u.fyneApp.Preferences().SetInt(key, index)
+		index := u.fyneApp.Preferences().IntWithFallback(key, -1)
+		if index != -1 {
+			tabs.SelectIndex(index)
+		}
 	}
-	slog.Info("Saved app state")
+	u.themeSet(u.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault))
 }
 
 func (u *ui) themeSet(name string) {
@@ -290,17 +254,56 @@ func (u *ui) themeGet() string {
 
 // ShowAndRun shows the UI and runs it (blocking).
 func (u *ui) ShowAndRun() {
-	if !u.isOffline {
-		go func() {
-			u.startUpdateTickerGeneralSections()
-			u.startUpdateTickerCharacters()
-		}()
-	} else {
-		slog.Info("Starting in offline mode")
-	}
-	go u.statusBarArea.StartUpdateTicker()
-	go u.refreshOverview()
+	u.fyneApp.Lifecycle().SetOnStopped(func() {
+		slog.Info("App is shutting down")
+		u.saveAppState()
+	})
+	u.fyneApp.Lifecycle().SetOnStarted(func() {
+		if u.isOffline {
+			slog.Info("Started in offline mode")
+		}
+		if u.hasCharacter() {
+			u.setCharacter(u.character)
+		} else {
+			u.resetCharacter()
+		}
+		if !u.isOffline {
+			go func() {
+				u.startUpdateTickerGeneralSections()
+				u.startUpdateTickerCharacters()
+			}()
+		}
+		go u.statusBarArea.StartUpdateTicker()
+	})
+	width := float32(u.fyneApp.Preferences().FloatWithFallback(keyWindowWidth, keyWindowHeightDefault))
+	height := float32(u.fyneApp.Preferences().FloatWithFallback(keyWindowHeight, keyWindowHeightDefault))
+	u.window.Resize(fyne.NewSize(width, height))
 	u.window.ShowAndRun()
+}
+
+func (u *ui) saveAppState() {
+	a := u.fyneApp
+	if u.window == nil || a == nil {
+		slog.Warn("Failed to save app state")
+	}
+	s := u.window.Canvas().Size()
+	u.fyneApp.Preferences().SetFloat(keyWindowWidth, float64(s.Width))
+	u.fyneApp.Preferences().SetFloat(keyWindowHeight, float64(s.Height))
+	if u.tabs == nil {
+		slog.Warn("Failed to save tabs in app state")
+	}
+	index := u.tabs.SelectedIndex()
+	u.fyneApp.Preferences().SetInt(keyTabsMainID, index)
+	for i, o := range u.tabs.Items {
+		tabs, ok := o.Content.(*container.AppTabs)
+		if !ok {
+			continue
+		}
+		key := makeSubTabsKey(i)
+		index := tabs.SelectedIndex()
+		u.fyneApp.Preferences().SetInt(key, index)
+	}
+	slog.Info("Saved app state")
 }
 
 // characterID returns the ID of the current character or 0 if non it set.
