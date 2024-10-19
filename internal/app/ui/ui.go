@@ -423,8 +423,9 @@ func (u *ui) setAnyCharacter() error {
 // refreshCrossPages refreshed all pages under the characters tab.
 func (u *ui) refreshCrossPages() {
 	ff := []func(){
-		u.overviewArea.refresh,
 		u.assetSearchArea.refresh,
+		u.overviewArea.refresh,
+		u.toolbarArea.refresh,
 		u.wealthArea.refresh,
 	}
 	runFunctionsWithProgressDialog("Updating characters", ff, u.window)

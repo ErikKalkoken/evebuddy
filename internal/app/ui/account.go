@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type accountCharacter struct {
@@ -24,26 +25,53 @@ type accountCharacter struct {
 
 // accountArea is the UI area for managing of characters.
 type accountArea struct {
+	bottom     *widget.Label
 	characters []accountCharacter
 	content    *fyne.Container
 	dialog     *dialog.CustomDialog
-	bottom     *widget.Label
-	ui         *ui
 	list       *widget.List
+	ui         *ui
 }
 
-func (u *ui) showAccountDialog() {
+func (u *ui) showAccountDialog() error {
+	currentChars := set.New[int32]()
+	cc, err := u.CharacterService.ListCharactersShort(context.Background())
+	if err != nil {
+		return fmt.Errorf("list characters: %w", err)
+	}
+	for _, c := range cc {
+		currentChars.Add(c.ID)
+	}
 	a := u.newAccountArea()
 	dialog := dialog.NewCustom("Manage Characters", "Close", a.content, u.window)
 	a.dialog = dialog
+	dialog.SetOnClosed(func() {
+		incomingChars := set.New[int32]()
+		for _, c := range a.characters {
+			incomingChars.Add(c.id)
+		}
+		if currentChars.Equal(incomingChars) {
+			return
+		}
+		if !incomingChars.Contains(a.ui.characterID()) {
+			if err := a.ui.setAnyCharacter(); err != nil {
+				slog.Error("Failed to set any character", "error", err)
+			}
+		}
+		if currentChars.Difference(incomingChars).Size() == 0 {
+			// no char has been deleted but still need to update switch button
+			a.ui.toolbarArea.refresh()
+			return
+		}
+		a.ui.refreshCrossPages()
+	})
 	dialog.Show()
 	dialog.Resize(fyne.Size{Width: 500, Height: 500})
 	if err := a.Refresh(); err != nil {
 		dialog.Hide()
-		t := "Failed to open dialog to manage characters"
-		slog.Error(t, "err", err)
-		u.showErrorDialog(t, err)
+		return err
 	}
+	return nil
 }
 
 func (u *ui) newAccountArea() *accountArea {
@@ -141,15 +169,6 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 					if err := a.Refresh(); err != nil {
 						return err
 					}
-					isCurrentChar := characterID == a.ui.characterID()
-					if isCurrentChar {
-						err := a.ui.setAnyCharacter()
-						if err != nil {
-							return err
-						}
-					}
-					a.ui.refreshCrossPages()
-					a.ui.toolbarArea.refresh()
 					return nil
 				}(c.id)
 				if err != nil {
@@ -203,19 +222,10 @@ func (a *accountArea) showAddCharacterDialog() {
 			} else if err != nil {
 				return err
 			}
-			isFirst := len(a.characters) == 0
 			if err := a.Refresh(); err != nil {
 				return err
 			}
-			a.ui.refreshCrossPages()
-			a.ui.toolbarArea.refresh()
-			if isFirst {
-				if err := a.ui.setAnyCharacter(); err != nil {
-					return err
-				}
-			} else {
-				a.ui.updateCharacterAndRefreshIfNeeded(ctx, characterID, false)
-			}
+			a.ui.updateCharacterAndRefreshIfNeeded(ctx, characterID, false)
 			return nil
 		}()
 		d1.Hide()
