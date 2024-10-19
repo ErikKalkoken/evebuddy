@@ -195,7 +195,11 @@ func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpClo
 		arg.CharacterID = x.ID
 	}
 	if arg.JumpCloneID == 0 {
-		arg.JumpCloneID = int64(f.calcNewIDWithCharacter("character_jump_clones", "jump_clone_id", arg.CharacterID))
+		arg.JumpCloneID = f.calcNewIDWithCharacter(
+			"character_jump_clones",
+			"jump_clone_id",
+			arg.CharacterID,
+		)
 	}
 	if arg.LocationID == 0 {
 		x := f.CreateLocationStructure()
@@ -231,15 +235,11 @@ func (f Factory) CreateCharacterMail(args ...storage.CreateCharacterMailParams) 
 		arg.FromID = from.ID
 	}
 	if arg.MailID == 0 {
-		ids, err := f.st.ListCharacterMailIDs(ctx, arg.CharacterID)
-		if err != nil {
-			panic(err)
-		}
-		if len(ids) > 0 {
-			arg.MailID = slices.Max(ids) + 1
-		} else {
-			arg.MailID = 1
-		}
+		arg.MailID = int32(f.calcNewIDWithCharacter(
+			"character_mails",
+			"mail_id",
+			arg.CharacterID,
+		))
 	}
 	if arg.Body == "" {
 		arg.Body = fake.Paragraph()
@@ -285,7 +285,7 @@ func (f Factory) CreateCharacterMailLabel(args ...app.CharacterMailLabel) *app.C
 	if arg.LabelID == 0 {
 		ll, err := f.st.ListCharacterMailLabelsOrdered(ctx, arg.CharacterID)
 		if err != nil {
-			panic(err)
+			panic(fmt.Sprintf("list mail labels: %s", err))
 		}
 		var ids []int32
 		for _, o := range ll {
@@ -597,7 +597,11 @@ func (f Factory) CreateCharacterWalletTransaction(args ...storage.CreateCharacte
 		arg.CharacterID = x.ID
 	}
 	if arg.TransactionID == 0 {
-		arg.TransactionID = int64(f.calcNewIDWithCharacter("character_wallet_transactions", "transaction_id", arg.CharacterID))
+		arg.TransactionID = f.calcNewIDWithCharacter(
+			"character_wallet_transactions",
+			"transaction_id",
+			arg.CharacterID,
+		)
 	}
 	if arg.UnitPrice == 0 {
 		arg.UnitPrice = rand.Float64() * 100_000_000
@@ -627,7 +631,11 @@ func (f Factory) CreateCharacterNotification(args ...storage.CreateCharacterNoti
 		arg.CharacterID = x.ID
 	}
 	if arg.NotificationID == 0 {
-		arg.NotificationID = f.calcNewIDWithCharacter("character_notifications", "notification_id", arg.CharacterID)
+		arg.NotificationID = f.calcNewIDWithCharacter(
+			"character_notifications",
+			"notification_id",
+			arg.CharacterID,
+		)
 	}
 	if arg.SenderID == 0 {
 		x := f.CreateEveEntityCorporation()
