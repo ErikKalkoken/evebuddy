@@ -173,6 +173,15 @@ func (a *notificationsArea) refresh() {
 	a.categoryList.Refresh()
 	a.categoryList.UnselectAll()
 	a.top.Text, a.top.Importance = a.makeTopText()
+	a.top.Refresh()
+}
+
+func (a *notificationsArea) makeTopText() (string, widget.Importance) {
+	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionImplants)
+	if !hasData {
+		return "Waiting for data to load...", widget.WarningImportance
+	}
+	return fmt.Sprintf("%d total", len(a.notifications)), widget.MediumImportance
 }
 
 func (a *notificationsArea) setNotifications(nc evenotification.Category) error {
@@ -193,20 +202,6 @@ func (a *notificationsArea) setNotifications(nc evenotification.Category) error 
 	a.notificationList.Refresh()
 	a.notificationsTop.SetText(fmt.Sprintf("%s notifications", humanize.Comma(int64(len(notifications)))))
 	return nil
-}
-
-func (a *notificationsArea) makeTopText() (string, widget.Importance) {
-	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionImplants)
-	if !hasData {
-		return "Waiting for data to load...", widget.WarningImportance
-	}
-	var unread int
-	for _, n := range a.notifications {
-		if !n.IsRead {
-			unread++
-		}
-	}
-	return fmt.Sprintf("%d total", len(a.notifications)), widget.MediumImportance
 }
 
 func (a *notificationsArea) setDetails(n *app.CharacterNotification) {

@@ -17,9 +17,9 @@ import (
 type implantsArea struct {
 	content  *fyne.Container
 	implants []*app.CharacterImplant
+	list     *widget.List
 	top      *widget.Label
 	ui       *ui
-	list     *widget.List
 }
 
 func (u *ui) newImplantsArea() *implantsArea {

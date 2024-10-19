@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -280,6 +281,18 @@ func (u *ui) ShowAndRun() {
 	width := float32(u.fyneApp.Preferences().FloatWithFallback(settingWindowWidth, settingWindowHeightDefault))
 	height := float32(u.fyneApp.Preferences().FloatWithFallback(settingWindowHeight, settingWindowHeightDefault))
 	u.window.Resize(fyne.NewSize(width, height))
+
+	// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
+	// only in parts and freeze. The issue is known to happen on Linux desktops.
+	if runtime.GOOS == "linux" {
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			s := u.window.Canvas().Size()
+			u.window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
+			u.window.Resize(fyne.NewSize(s.Width, s.Height))
+		}()
+	}
+
 	u.window.ShowAndRun()
 }
 
