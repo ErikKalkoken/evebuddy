@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
-	"slices"
 	"time"
 
 	"github.com/icrowley/fake"
@@ -283,22 +282,11 @@ func (f Factory) CreateCharacterMailLabel(args ...app.CharacterMailLabel) *app.C
 		arg.CharacterID = c.ID
 	}
 	if arg.LabelID == 0 {
-		ll, err := f.st.ListCharacterMailLabelsOrdered(ctx, arg.CharacterID)
-		if err != nil {
-			panic(fmt.Sprintf("list mail labels: %s", err))
-		}
-		var ids []int32
-		for _, o := range ll {
-			ids = append(ids, o.LabelID)
-		}
-		if len(ids) > 0 {
-			arg.LabelID = slices.Max(ids) + 1
-		} else {
-			arg.LabelID = 100
-		}
+		l := int32(f.calcNewIDWithCharacter("character_mail_labels", "label_id", arg.CharacterID))
+		arg.LabelID = max(l, 10) // generate "custom" mail label
 	}
 	if arg.Name == "" {
-		arg.Name = fake.Color()
+		arg.Name = fmt.Sprintf("%s %s", fake.Color(), fake.Language())
 	}
 	if arg.Color == "" {
 		arg.Color = "#FFFFFF"
@@ -540,7 +528,7 @@ func (f Factory) CreateCharacterWalletJournalEntry(args ...storage.CreateCharact
 		arg.Description = fake.Sentence()
 	}
 	if arg.Reason == "" {
-		arg.Reason = fmt.Sprintf("Reason #%d", arg.RefID)
+		arg.Reason = fake.Sentence()
 	}
 	if arg.RefType == "" {
 		arg.RefType = "player_donation"
@@ -760,7 +748,9 @@ func (f Factory) CreateEveEntity(args ...app.EveEntity) *app.EveEntity {
 		case app.EveEntityAlliance:
 			arg.Name = fake.Company()
 		case app.EveEntityFaction:
-			arg.Name = fake.Color()
+			arg.Name = fake.JobTitle()
+		case app.EveEntityMailList:
+			arg.Name = fmt.Sprintf("%s %s", fake.Color(), fake.Industry())
 		default:
 			arg.Name = fmt.Sprintf("%s #%d", arg.Category, arg.ID)
 		}
@@ -1070,7 +1060,7 @@ func (f Factory) CreateEveMoon(args ...storage.CreateEveMoonParams) *app.EveMoon
 		arg.ID = int32(f.calcNewID("eve_moons", "id", 1))
 	}
 	if arg.Name == "" {
-		arg.Name = fmt.Sprintf("Moon #%d", arg.ID)
+		arg.Name = fmt.Sprintf("%s %s", fake.Color(), fake.Street())
 	}
 	if arg.SolarSystemID == 0 {
 		x := f.CreateEveSolarSystem()
@@ -1100,7 +1090,7 @@ func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 		arg.Name = fmt.Sprintf("%s #%d", fake.JobTitle(), arg.ID)
 	}
 	if arg.Description == "" {
-		arg.Description = fmt.Sprintf("Description #%d", arg.ID)
+		arg.Description = fake.Paragraph()
 	}
 	r, err := f.st.CreateEveRace(ctx, arg.ID, arg.Description, arg.Name)
 	if err != nil {

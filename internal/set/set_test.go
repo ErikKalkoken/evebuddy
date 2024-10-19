@@ -9,6 +9,7 @@ import (
 )
 
 func TestSetAdd(t *testing.T) {
+	t.Parallel()
 	t.Run("can add to empty", func(t *testing.T) {
 		got := set.New[int]()
 		got.Add(3)
@@ -20,11 +21,11 @@ func TestSetAdd(t *testing.T) {
 		got.Add(3)
 		want := set.NewFromSlice([]int{1, 2, 3})
 		assert.Equal(t, want, got)
-
 	})
 }
 
 func TestSetRemove(t *testing.T) {
+	t.Parallel()
 	t.Run("can remove item when it exists", func(t *testing.T) {
 		got := set.NewFromSlice([]int{1, 2})
 		got.Remove(2)
@@ -40,6 +41,7 @@ func TestSetRemove(t *testing.T) {
 }
 
 func TestSetHas(t *testing.T) {
+	t.Parallel()
 	s := set.NewFromSlice([]int{3, 7, 9})
 	cases := []struct {
 		in   int
@@ -61,6 +63,7 @@ func TestSetHas(t *testing.T) {
 }
 
 func TestSetSize(t *testing.T) {
+	t.Parallel()
 	t.Run("can determine size of filled set", func(t *testing.T) {
 		s1 := set.NewFromSlice([]int{1, 2, 3})
 		assert.Equal(t, 3, s1.Size())
@@ -72,6 +75,7 @@ func TestSetSize(t *testing.T) {
 }
 
 func TestSetOther(t *testing.T) {
+	t.Parallel()
 	t.Run("can convert to string", func(t *testing.T) {
 		x := []int{42}
 		s := set.NewFromSlice(x)
@@ -124,6 +128,7 @@ func TestSetOther(t *testing.T) {
 }
 
 func TestSetEqual(t *testing.T) {
+	t.Parallel()
 	t.Run("report true when sets are equal", func(t *testing.T) {
 		s1 := set.NewFromSlice([]int{1, 2})
 		s2 := set.NewFromSlice([]int{1, 2})

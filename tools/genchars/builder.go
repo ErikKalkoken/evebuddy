@@ -14,11 +14,14 @@ import (
 const (
 	assetItemsPerLocation      = 100
 	assetTypes                 = 10
-	implants                   = 8
+	implants                   = 2
 	jumpClones                 = 2
 	locations                  = 5
 	mailEntities               = 50
+	mailMaxRecipients          = 3
 	mails                      = 1000
+	mailLabels                 = 10
+	mailLists                  = 10
 	notifications              = 1000
 	skillqueue                 = 2
 	skills                     = 5
@@ -68,7 +71,6 @@ func (b *CharacterBuilder) Create() {
 	// should be last
 	b.setCharacterSections()
 	b.setGeneralSections()
-	fmt.Printf("COMPLETED: %s\n", b.c.EveCharacter.Name)
 }
 
 func (b *CharacterBuilder) createTypes() {
@@ -105,15 +107,19 @@ func (b *CharacterBuilder) createAttributes() {
 	b.f.CreateCharacterAttributes(storage.UpdateOrCreateCharacterAttributesParams{CharacterID: b.c.ID})
 	fmt.Println("Created attributes")
 }
+
 func (b *CharacterBuilder) createCharacter() {
+	c := b.f.CreateEveEntityCharacter()
 	a := b.f.CreateEveEntityAlliance()
 	ec := b.f.CreateEveCharacter(storage.CreateEveCharacterParams{
 		AllianceID: a.ID,
+		Name:       c.Name,
+		ID:         c.ID,
 	})
 	b.c = b.f.CreateCharacter(storage.UpdateOrCreateCharacterParams{
 		ID: ec.ID,
 	})
-	fmt.Printf("Creating new character %s\n", b.c.EveCharacter.Name)
+	fmt.Printf("Creating new character %s with factor %d\n", b.c.EveCharacter.Name, b.Factor)
 }
 
 func (b *CharacterBuilder) createImplants() {
@@ -153,34 +159,86 @@ func (b *CharacterBuilder) createJumpClones() {
 }
 
 func (b *CharacterBuilder) createMail() {
-	labelIDs := []int32{app.MailLabelInbox, app.MailLabelCorp, app.MailLabelAlliance}
+	labelIDs := []int32{app.MailLabelInbox, app.MailLabelSent, app.MailLabelCorp, app.MailLabelAlliance}
 	for _, l := range labelIDs {
 		b.f.CreateCharacterMailLabel(app.CharacterMailLabel{
 			CharacterID: b.c.ID,
 			LabelID:     l,
 		})
 	}
+	for range mailLabels * b.Factor {
+		ml := b.f.CreateCharacterMailLabel(app.CharacterMailLabel{
+			CharacterID: b.c.ID,
+		})
+		labelIDs = append(labelIDs, ml.LabelID)
+	}
 	randomLabelID := func() int32 {
 		return labelIDs[rand.IntN(len(labelIDs))]
 	}
+	listIDs := make([]int32, 0)
+	for range mailLists * b.Factor {
+		ml := b.f.CreateCharacterMailList(b.c.ID)
+		listIDs = append(listIDs, ml.ID)
+	}
+	randomListID := func() int32 {
+		return listIDs[rand.IntN(len(listIDs))]
+	}
 	randomEntityID := b.makeRandomEntities(mailEntities * b.Factor)
 	for i := range mails * b.Factor {
-		labelID := randomLabelID()
-		var recipientID int32
-		switch labelID {
-		case app.MailLabelCorp:
-			recipientID = b.c.EveCharacter.Corporation.ID
-		case app.MailLabelAlliance:
-			recipientID = b.c.EveCharacter.Alliance.ID
-		default:
-			recipientID = randomEntityID()
+		var mail storage.CreateCharacterMailParams
+		isList := spin(0.2)
+		if isList {
+			recipientIDs := make([]int32, 0)
+			m := map[int32]bool{randomListID(): true}
+			for range rand.IntN(mailMaxRecipients * b.Factor) {
+				m[randomEntityID()] = true
+			}
+			for id := range m {
+				recipientIDs = append(recipientIDs, id)
+			}
+			mail = storage.CreateCharacterMailParams{
+				CharacterID:  b.c.ID,
+				FromID:       randomEntityID(),
+				RecipientIDs: recipientIDs,
+				IsRead:       spin(0.2),
+			}
+		} else {
+			labelID := randomLabelID()
+			recipientIDs := make([]int32, 0)
+			var fromID int32
+			var isRead bool
+			switch labelID {
+			case app.MailLabelCorp:
+				fromID = randomEntityID()
+				recipientIDs = append(recipientIDs, b.c.EveCharacter.Corporation.ID)
+				isRead = spin(0.2)
+			case app.MailLabelAlliance:
+				fromID = randomEntityID()
+				recipientIDs = append(recipientIDs, b.c.EveCharacter.Alliance.ID)
+				isRead = spin(0.2)
+			case app.MailLabelSent:
+				fromID = b.c.EveCharacter.ID
+				recipientIDs = append(recipientIDs, randomEntityID())
+			default:
+				fromID = randomEntityID()
+				m := make(map[int32]bool)
+				for range rand.IntN(mailMaxRecipients * b.Factor) {
+					m[randomEntityID()] = true
+				}
+				for id := range m {
+					recipientIDs = append(recipientIDs, id)
+				}
+				isRead = spin(0.2)
+			}
+			mail = storage.CreateCharacterMailParams{
+				CharacterID:  b.c.ID,
+				FromID:       fromID,
+				RecipientIDs: recipientIDs,
+				LabelIDs:     []int32{labelID},
+				IsRead:       isRead,
+			}
 		}
-		b.f.CreateCharacterMail(storage.CreateCharacterMailParams{
-			CharacterID:  b.c.ID,
-			FromID:       randomEntityID(),
-			RecipientIDs: []int32{recipientID},
-			LabelIDs:     []int32{labelID},
-		})
+		b.f.CreateCharacterMail(mail)
 		printProgress("mails", mails*b.Factor, i)
 	}
 	printSummary("mails", mails*b.Factor)
@@ -314,4 +372,10 @@ func printProgress(s string, t, c int) {
 
 func printSummary(s string, n int) {
 	fmt.Printf("Created %5d %s\n", n, s)
+}
+
+// spin simulates the spin of a roulette wheel.
+// It reports whether an event with the given probability occurred.
+func spin(probability float64) bool {
+	return rand.Float64() < probability
 }
