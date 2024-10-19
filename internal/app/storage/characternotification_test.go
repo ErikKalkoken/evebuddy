@@ -191,7 +191,7 @@ func TestCharacterNotification(t *testing.T) {
 		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID, Type: "alpha", IsRead: true})
 		factory.CreateCharacterNotification()
 		// when
-		x, err := r.CalcCharacterNotificationUnreadCounts(ctx, c.ID)
+		x, err := r.CountCharacterNotificationUnreads(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
 			want := map[string]int{

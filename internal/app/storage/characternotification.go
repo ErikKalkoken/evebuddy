@@ -162,7 +162,7 @@ func (st *Storage) GetOrCreateNotificationType(ctx context.Context, name string)
 	return id, nil
 }
 
-func (st *Storage) CalcCharacterNotificationUnreadCounts(ctx context.Context, characterID int32) (map[string]int, error) {
+func (st *Storage) CountCharacterNotificationUnreads(ctx context.Context, characterID int32) (map[string]int, error) {
 	rows, err := st.q.CalcCharacterNotificationUnreadCounts(ctx, int64(characterID))
 	if err != nil {
 		return nil, err

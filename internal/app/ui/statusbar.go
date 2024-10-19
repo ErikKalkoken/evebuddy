@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
@@ -41,6 +43,7 @@ const (
 
 // statusBarArea is the UI area showing the current status aka status bar.
 type statusBarArea struct {
+	characterCount     *kwidget.TappableLabel
 	content            *fyne.Container
 	eveClock           binding.String
 	eveStatus          *widgets.StatusBarItem
@@ -53,6 +56,11 @@ type statusBarArea struct {
 
 func (u *ui) newStatusBarArea() *statusBarArea {
 	a := &statusBarArea{
+		characterCount: kwidget.NewTappableLabel("?", func() {
+			if err := u.showAccountDialog(); err != nil {
+				u.showErrorDialog("Failed to show account dialog", err)
+			}
+		}),
 		eveClock:           binding.NewString(),
 		infoText:           widget.NewLabel(""),
 		u:                  u,
@@ -62,17 +70,17 @@ func (u *ui) newStatusBarArea() *statusBarArea {
 		u.showStatusWindow()
 	})
 	a.eveStatus = widgets.NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showDetail)
-
 	a.eveClock.Set("?")
-	clock := widget.NewLabelWithData(a.eveClock)
 	a.content = container.NewVBox(widget.NewSeparator(), container.NewHBox(
 		a.infoText,
 		layout.NewSpacer(),
 		a.updateNotification,
 		widget.NewSeparator(),
+		a.characterCount,
+		widget.NewSeparator(),
 		a.updateStatus,
 		widget.NewSeparator(),
-		clock,
+		widget.NewLabelWithData(a.eveClock),
 		widget.NewSeparator(),
 		a.eveStatus,
 	))
@@ -157,6 +165,15 @@ func (a *statusBarArea) StartUpdateTicker() {
 		a.updateNotification.Add(widget.NewSeparator())
 		a.updateNotification.Add(l)
 	}()
+}
+
+func (a *statusBarArea) refreshCharacterCount() {
+	x, err := a.u.CharacterService.ListCharactersShort(context.Background())
+	if err != nil {
+		slog.Error("Failed to fetch character list", "error", err)
+		return
+	}
+	a.characterCount.SetText(fmt.Sprintf("%d characters", len(x)))
 }
 
 func (a *statusBarArea) refreshUpdateStatus() {

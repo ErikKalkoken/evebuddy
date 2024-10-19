@@ -426,6 +426,7 @@ func (u *ui) refreshCrossPages() {
 		u.overviewArea.refresh,
 		u.toolbarArea.refresh,
 		u.wealthArea.refresh,
+		u.statusBarArea.refreshCharacterCount,
 	}
 	runFunctionsWithProgressDialog("Updating characters", ff, u.window)
 }

@@ -44,8 +44,9 @@ func (u *ui) showAccountDialog() error {
 			}
 		}
 		if currentChars.Difference(incomingChars).Size() == 0 {
-			// no char has been deleted but still need to update switch button
+			// no char has been deleted but still need to update some cross info
 			a.u.toolbarArea.refresh()
+			u.statusBarArea.refreshCharacterCount()
 			return
 		}
 		a.u.refreshCrossPages()

@@ -148,7 +148,7 @@ func (a *notificationsArea) refresh() {
 	var counts map[evenotification.Category]int
 	if characterID := a.u.characterID(); characterID != 0 {
 		var err error
-		counts, err = a.u.CharacterService.CalcCharacterNotificationUnreadCounts(context.TODO(), characterID)
+		counts, err = a.u.CharacterService.CountCharacterNotificationUnreads(context.TODO(), characterID)
 		if err != nil {
 			slog.Error("Failed to fetch notification unread counts", "error", err)
 		}
