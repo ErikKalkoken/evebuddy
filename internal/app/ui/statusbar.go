@@ -168,11 +168,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 }
 
 func (a *statusBarArea) refreshCharacterCount() {
-	x, err := a.u.CharacterService.ListCharactersShort(context.Background())
-	if err != nil {
-		slog.Error("Failed to fetch character list", "error", err)
-		return
-	}
+	x := a.u.StatusCacheService.ListCharacters()
 	a.characterCount.SetText(fmt.Sprintf("%d characters", len(x)))
 }
 

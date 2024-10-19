@@ -30,15 +30,15 @@ func newImageResourceAsync(placeholder fyne.Resource, loader func() (fyne.Resour
 // refreshImageResourceAsync refreshes the resource of an image asynchronously.
 // This prevents fyne to wait with rendering an image until a resource is fully loaded from a web server.
 func refreshImageResourceAsync(image *canvas.Image, loader func() (fyne.Resource, error)) {
-	go func(*canvas.Image) {
+	go func() {
 		r, err := loader()
 		if err != nil {
 			slog.Warn("Failed to fetch image resource", "err", err)
-		} else {
-			image.Resource = r
-			image.Refresh()
+			r = theme.BrokenImageIcon()
 		}
-	}(image)
+		image.Resource = r
+		image.Refresh()
+	}()
 }
 
 func skillDisplayName[N int | int32 | int64 | uint | uint32 | uint64](name string, level N) string {

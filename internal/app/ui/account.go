@@ -71,22 +71,19 @@ type accountArea struct {
 	content    *fyne.Container
 	dialog     *dialog.CustomDialog
 	list       *widget.List
-	top        *widget.Label
+	title      *widget.Label
 	u          *ui
 }
 
 func (u *ui) newAccountArea() *accountArea {
 	a := &accountArea{
 		characters: make([]accountCharacter, 0),
-		top:        widget.NewLabel(""),
+		title:      widget.NewLabel(""),
 		u:          u,
 	}
 
 	a.list = a.makeCharacterList()
-	a.top.TextStyle.Bold = true
-
-	hint := widget.NewLabel("Hint: Click any character to select it")
-	hint.Importance = widget.LowImportance
+	a.title.TextStyle.Bold = true
 	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.showAddCharacterDialog()
 	})
@@ -94,10 +91,9 @@ func (u *ui) newAccountArea() *accountArea {
 	if a.u.isOffline {
 		add.Disable()
 	}
-	bottom := container.NewVBox(add, hint)
 	a.content = container.NewBorder(
-		container.NewVBox(a.top, widget.NewSeparator()),
-		bottom,
+		a.title,
+		container.NewVBox(add, container.NewPadded()),
 		nil,
 		nil,
 		a.list,
@@ -208,7 +204,7 @@ func (a *accountArea) refresh() error {
 	}
 	a.characters = cc2
 	a.list.Refresh()
-	a.top.SetText(fmt.Sprintf("%d characters", len(a.characters)))
+	a.title.SetText(fmt.Sprintf("Characters (%d)", len(a.characters)))
 	return nil
 }
 

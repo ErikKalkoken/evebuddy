@@ -263,12 +263,14 @@ func (u *ui) ShowAndRun() {
 		if u.isOffline {
 			slog.Info("Started in offline mode")
 		}
-		if u.hasCharacter() {
+		go func() {
 			u.refreshCrossPages()
-			u.setCharacter(u.character)
-		} else {
-			u.resetCharacter()
-		}
+			if u.hasCharacter() {
+				u.setCharacter(u.character)
+			} else {
+				u.resetCharacter()
+			}
+		}()
 		if !u.isOffline {
 			go func() {
 				u.startUpdateTickerGeneralSections()
@@ -358,25 +360,28 @@ func (u *ui) resetCharacter() {
 }
 
 func (u *ui) refreshCharacter() {
-	ff := []func(){
-		u.assetsArea.redraw,
-		u.attributesArea.refresh,
-		u.biographyArea.refresh,
-		u.implantsArea.refresh,
-		u.jumpClonesArea.redraw,
-		u.mailArea.redraw,
-		u.notificationsArea.refresh,
-		u.shipsArea.refresh,
-		u.skillCatalogueArea.redraw,
-		u.skillqueueArea.refresh,
-		u.toolbarArea.refresh,
-		u.walletJournalArea.refresh,
-		u.walletTransactionArea.refresh,
+	ff := map[string]func(){
+		"assets":            u.assetsArea.redraw,
+		"attributes":        u.attributesArea.refresh,
+		"bio":               u.biographyArea.refresh,
+		"implants":          u.implantsArea.refresh,
+		"jumpClones":        u.jumpClonesArea.redraw,
+		"mail":              u.mailArea.redraw,
+		"notifications":     u.notificationsArea.refresh,
+		"ships":             u.shipsArea.refresh,
+		"skillCatalogue":    u.skillCatalogueArea.redraw,
+		"skillqueue":        u.skillqueueArea.refresh,
+		"toolbar":           u.toolbarArea.refresh,
+		"walletJournal":     u.walletJournalArea.refresh,
+		"walletTransaction": u.walletTransactionArea.refresh,
 	}
 	c := u.currentCharacter()
-	ff = append(ff, func() {
+	ff["toogleTabs"] = func() {
 		u.toogleTabs(c != nil)
-	})
+	}
+	if c != nil {
+		slog.Debug("Refreshing character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
+	}
 	runFunctionsWithProgressDialog("Loading character", ff, u.window)
 	if c != nil {
 		u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
@@ -421,19 +426,20 @@ func (u *ui) setAnyCharacter() error {
 
 // refreshCrossPages refreshed all pages under the characters tab.
 func (u *ui) refreshCrossPages() {
-	ff := []func(){
-		u.assetSearchArea.refresh,
-		u.overviewArea.refresh,
-		u.toolbarArea.refresh,
-		u.wealthArea.refresh,
-		u.statusBarArea.refreshCharacterCount,
+	ff := map[string]func(){
+		"assetSearch": u.assetSearchArea.refresh,
+		"overview":    u.overviewArea.refresh,
+		"toolbar":     u.toolbarArea.refresh,
+		"wealth":      u.wealthArea.refresh,
+		"statusBar":   u.statusBarArea.refreshCharacterCount,
 	}
 	runFunctionsWithProgressDialog("Updating characters", ff, u.window)
 }
 
-func runFunctionsWithProgressDialog(title string, ff []func(), w fyne.Window) {
+func runFunctionsWithProgressDialog(title string, ff map[string]func(), w fyne.Window) {
 	start := time.Now()
-	slog.Debug(title, "state", "started")
+	myLog := slog.With("title", title)
+	myLog.Debug("started")
 	p := binding.NewFloat()
 	pg := widget.NewProgressBarWithData(p)
 	pg.Max = float64(len(ff))
@@ -443,18 +449,19 @@ func runFunctionsWithProgressDialog(title string, ff []func(), w fyne.Window) {
 	defer d.Hide()
 	var wg sync.WaitGroup
 	var completed atomic.Int64
-	for i, f := range ff {
+	for name, f := range ff {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			start2 := time.Now()
 			f()
 			x := completed.Add(1)
 			p.Set(float64(x))
-			slog.Debug("Updated page", "i", i)
+			myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
 		}()
 	}
 	wg.Wait()
-	slog.Debug(title, "state", "done", "duration", time.Since(start))
+	myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
 }
 
 func (u *ui) showMailIndicator() {

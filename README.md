@@ -48,6 +48,7 @@ A more detailed overview of the provided features:
 - Single executable file, no installation required
 - Desktop app that runs on Windows, Linux and macOS
 - Automatic dark and light theme
+- Offline mode
 
 ## Screenshot
 
