@@ -187,24 +187,6 @@ type CharacterWalletJournalEntry struct {
 	TaxReceiverID sql.NullInt64
 }
 
-type CharacterWalletJournalEntryFirstParty struct {
-	ID       sql.NullInt64
-	Category sql.NullString
-	Name     sql.NullString
-}
-
-type CharacterWalletJournalEntrySecondParty struct {
-	ID       sql.NullInt64
-	Category sql.NullString
-	Name     sql.NullString
-}
-
-type CharacterWalletJournalEntryTaxReceiver struct {
-	ID       sql.NullInt64
-	Category sql.NullString
-	Name     sql.NullString
-}
-
 type CharacterWalletTransaction struct {
 	ID            int64
 	CharacterID   int64
@@ -238,18 +220,6 @@ type EveCharacter struct {
 	RaceID         int64
 	SecurityStatus float64
 	Title          string
-}
-
-type EveCharacterAlliance struct {
-	ID       sql.NullInt64
-	Category sql.NullString
-	Name     sql.NullString
-}
-
-type EveCharacterFaction struct {
-	ID       sql.NullInt64
-	Category sql.NullString
-	Name     sql.NullString
 }
 
 type EveConstellation struct {

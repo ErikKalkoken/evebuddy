@@ -13,7 +13,7 @@ import (
 func TestLoadResourceFromURL(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	dat, err := os.ReadFile("character_93330670_64.jpeg")
+	dat, err := os.ReadFile("testdata/character_93330670_64.jpeg")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,6 +49,40 @@ func TestLoadResourceFromURL(t *testing.T) {
 		// then
 		if assert.Error(t, err) {
 			assert.IsType(t, HTTPError{}, err)
+		}
+	})
+}
+
+func TestImageFetching(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	dat, err := os.ReadFile("testdata/character_93330670_64.jpeg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	url := "https://images.evetech.net/alliances/99/logo?size=64"
+	t.Run("can fetch image from the image server", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		httpmock.RegisterResponder("GET", url, httpmock.NewBytesResponder(200, dat))
+		//when
+		m := New(t.TempDir(), http.DefaultClient, false)
+		r, err := m.image(url)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, dat, r.Content())
+		}
+	})
+	t.Run("should return dummy image when offline", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		httpmock.RegisterResponder("GET", url, httpmock.NewBytesResponder(200, dat))
+		//when
+		m := New(t.TempDir(), http.DefaultClient, true)
+		r, err := m.image(url)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, resourceBrokenimageSvg, r)
 		}
 	})
 }

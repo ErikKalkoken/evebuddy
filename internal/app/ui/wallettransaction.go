@@ -30,14 +30,14 @@ type walletTransactionArea struct {
 	transactions []walletTransaction
 	table        *widget.Table
 	top          *widget.Label
-	ui           *ui
+	u            *ui
 }
 
 func (u *ui) newWalletTransactionArea() *walletTransactionArea {
 	a := walletTransactionArea{
-		ui:           u,
-		transactions: make([]walletTransaction, 0),
 		top:          widget.NewLabel(""),
+		transactions: make([]walletTransaction, 0),
+		u:            u,
 	}
 	a.top.TextStyle.Bold = true
 
@@ -138,24 +138,26 @@ func (a *walletTransactionArea) refresh() {
 }
 
 func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	characterID := a.ui.characterID()
-	hasData := a.ui.StatusCacheService.CharacterSectionExists(characterID, app.SectionWalletTransactions)
+	characterID := a.u.characterID()
+	hasData := a.u.StatusCacheService.CharacterSectionExists(characterID, app.SectionWalletTransactions)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	return "", widget.MediumImportance
+	t := humanize.Comma(int64(len(a.transactions)))
+	s := fmt.Sprintf("Entries: %s", t)
+	return s, widget.MediumImportance
 }
 
 func (a *walletTransactionArea) updateEntries() error {
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		a.transactions = make([]walletTransaction, 0)
 		return nil
 	}
-	characterID := a.ui.characterID()
-	ww, err := a.ui.CharacterService.ListCharacterWalletTransactions(context.TODO(), characterID)
+	characterID := a.u.characterID()
+	ww, err := a.u.CharacterService.ListCharacterWalletTransactions(context.TODO(), characterID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch wallet journal for character %d: %w", characterID, err)
 	}

@@ -22,24 +22,28 @@ type toolbarArea struct {
 	icon         *canvas.Image
 	name         *widget.Label
 	switchButton *widgets.ContextMenuButton
-	ui           *ui
+	u            *ui
 }
 
 func (u *ui) newToolbarArea() *toolbarArea {
-	a := &toolbarArea{ui: u}
-	a.icon = canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
+	a := &toolbarArea{
+		icon: canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg),
+		name: widget.NewLabel(""),
+		switchButton: widgets.NewContextMenuButtonWithIcon(
+			theme.NewThemedResource(resourceSwitchaccountSvg), "Switch", fyne.NewMenu(""),
+		),
+		u: u,
+	}
 	a.icon.FillMode = canvas.ImageFillContain
 	a.icon.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
-	a.name = widget.NewLabel("")
-	a.switchButton = widgets.NewContextMenuButtonWithIcon(
-		theme.NewThemedResource(resourceSwitchaccountSvg), "Switch", fyne.NewMenu(""))
+
 	c := container.NewHBox(container.NewPadded(a.icon), a.name, layout.NewSpacer(), a.switchButton)
 	a.content = container.NewVBox(c, widget.NewSeparator())
 	return a
 }
 
 func (a *toolbarArea) refresh() {
-	c := a.ui.currentCharacter()
+	c := a.u.currentCharacter()
 	if c == nil {
 		a.icon.Resource = resourceCharacterplaceholder32Jpeg
 		a.icon.Refresh()
@@ -47,7 +51,7 @@ func (a *toolbarArea) refresh() {
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
 		a.name.Importance = widget.LowImportance
 	} else {
-		r, err := a.ui.EveImageService.CharacterPortrait(c.ID, defaultIconSize)
+		r, err := a.u.EveImageService.CharacterPortrait(c.ID, defaultIconSize)
 		if err != nil {
 			slog.Error("Failed to fetch character portrait", "characterID", c.ID, "err", err)
 			r = resourceCharacterplaceholder32Jpeg
@@ -65,7 +69,7 @@ func (a *toolbarArea) refresh() {
 	if err != nil {
 		msg := "Failed to create switch menu"
 		slog.Error(msg, "err", err)
-		a.ui.statusBarArea.SetError(msg)
+		a.u.statusBarArea.SetError(msg)
 		return
 	}
 	a.switchButton.SetMenuItems(menuItems)
@@ -79,7 +83,7 @@ func (a *toolbarArea) refresh() {
 func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) {
 	ctx := context.TODO()
 	menuItems := make([]*fyne.MenuItem, 0)
-	cc, err := a.ui.CharacterService.ListCharactersShort(ctx)
+	cc, err := a.u.CharacterService.ListCharactersShort(ctx)
 	if err != nil {
 		return menuItems, err
 	}
@@ -88,18 +92,18 @@ func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) 
 			continue
 		}
 		item := fyne.NewMenuItem(myC.Name, func() {
-			err := a.ui.loadCharacter(ctx, myC.ID)
+			err := a.u.loadCharacter(ctx, myC.ID)
 			if err != nil {
 				msg := "Failed to switch to new character"
 				slog.Error(msg, "err", err)
-				a.ui.showErrorDialog(msg, err)
+				a.u.showErrorDialog(msg, err)
 				return
 
 			}
 		})
 		item.Icon = resourceCharacterplaceholder32Jpeg
 		go func() {
-			r, err := a.ui.EveImageService.CharacterPortrait(myC.ID, defaultIconSize)
+			r, err := a.u.EveImageService.CharacterPortrait(myC.ID, defaultIconSize)
 			if err != nil {
 				slog.Error("Failed to fetch character portrait", "characterID", myC.ID, "err", err)
 				r = resourceCharacterplaceholder32Jpeg

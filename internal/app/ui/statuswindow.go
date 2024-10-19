@@ -35,21 +35,20 @@ func (se sectionEntity) IsGeneralSection() bool {
 }
 
 type statusWindow struct {
-	entityList        *widget.List
-	entities          []sectionEntity
 	charactersTop     *widget.Label
-	details           *fyne.Container
+	content           fyne.CanvasObject
+	entities          []sectionEntity
+	entityList        *widget.List
 	sectionGrid       *widget.GridWrap
-	selectedEntityID  int
-	selectedSectionID int
 	sections          []app.SectionStatus
 	sectionsTop       *widget.Label
+	selectedEntityID  int
+	selectedSectionID int
+	u                 *ui
+	window            fyne.Window
 
-	content fyne.CanvasObject
-	ui      *ui
-	window  fyne.Window
-
-	mu sync.Mutex
+	mu      sync.Mutex
+	details *fyne.Container
 }
 
 func (u *ui) showStatusWindow() {
@@ -86,7 +85,7 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 		sections:          make([]app.SectionStatus, 0),
 		sectionsTop:       widget.NewLabel(""),
 		selectedSectionID: -1,
-		ui:                u,
+		u:                 u,
 	}
 	a.entityList = a.makeEntityList()
 	a.charactersTop.TextStyle.Bold = true
@@ -101,11 +100,14 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 		}
 		c := a.entities[a.selectedEntityID]
 		if c.IsGeneralSection() {
-			a.ui.updateGeneralSectionsAndRefreshIfNeeded(true)
+			a.u.updateGeneralSectionsAndRefreshIfNeeded(true)
 		} else {
-			a.ui.updateCharacterAndRefreshIfNeeded(context.TODO(), c.id, true)
+			a.u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.id, true)
 		}
 	})
+	if a.u.isOffline {
+		b.Disable()
+	}
 	top2 := container.NewVBox(container.NewHBox(a.sectionsTop, layout.NewSpacer(), b), widget.NewSeparator())
 	sections := container.NewBorder(top2, nil, nil, nil, a.sectionGrid)
 
@@ -152,7 +154,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 				icon.Refresh()
 			} else {
 				refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-					return a.ui.EveImageService.CharacterPortrait(c.id, defaultIconSize)
+					return a.u.EveImageService.CharacterPortrait(c.id, defaultIconSize)
 				})
 			}
 
@@ -195,13 +197,13 @@ func (a *statusWindow) refresh() error {
 
 func (a *statusWindow) refreshEntityList() error {
 	entities := make([]sectionEntity, 0)
-	cc := a.ui.StatusCacheService.ListCharacters()
+	cc := a.u.StatusCacheService.ListCharacters()
 	for _, c := range cc {
-		ss := a.ui.StatusCacheService.CharacterSectionSummary(c.ID)
+		ss := a.u.StatusCacheService.CharacterSectionSummary(c.ID)
 		o := sectionEntity{id: c.ID, name: c.Name, ss: ss}
 		entities = append(entities, o)
 	}
-	ss := a.ui.StatusCacheService.GeneralSectionSummary()
+	ss := a.u.StatusCacheService.GeneralSectionSummary()
 	o := sectionEntity{
 		id:   app.GeneralSectionEntityID,
 		name: app.GeneralSectionEntityName,
@@ -343,14 +345,14 @@ func (a *statusWindow) makeDetailsContent(d sectionStatusData) []fyne.CanvasObje
 			return
 		}
 		if d.IsGeneralSection() {
-			go a.ui.updateGeneralSectionAndRefreshIfNeeded(
+			go a.u.updateGeneralSectionAndRefreshIfNeeded(
 				context.TODO(), app.GeneralSection(d.sectionID), true)
 		} else {
-			go a.ui.updateCharacterSectionAndRefreshIfNeeded(
+			go a.u.updateCharacterSectionAndRefreshIfNeeded(
 				context.TODO(), d.entityID, app.CharacterSection(d.sectionID), true)
 		}
 	})
-	if d.sectionName == "" {
+	if a.u.isOffline || d.sectionName == "" {
 		b.Disable()
 	}
 	oo = append(oo, b)
@@ -377,7 +379,7 @@ func (a *statusWindow) refreshDetailArea() {
 		return
 	}
 	se := a.entities[a.selectedEntityID]
-	a.sections = a.ui.StatusCacheService.SectionList(se.id)
+	a.sections = a.u.StatusCacheService.SectionList(se.id)
 	a.sectionGrid.Refresh()
 	a.sectionsTop.SetText(fmt.Sprintf("Update status for %s", se.name))
 	a.setDetails()

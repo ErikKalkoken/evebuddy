@@ -22,34 +22,38 @@ func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
 
 const getCharacter = `-- name: GetCharacter :one
 SELECT
-    characters.id, characters.asset_value, characters.home_id, characters.last_login_at, characters.location_id, characters.ship_id, characters.total_sp, characters.unallocated_sp, characters.wallet_balance,
-    eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
-    corporations.id, corporations.category, corporations.name,
-    eve_races.id, eve_races.description, eve_races.name,
-    eve_character_alliances.id, eve_character_alliances.category, eve_character_alliances.name,
-    eve_character_factions.id, eve_character_factions.category, eve_character_factions.name,
+    cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance,
+    ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title,
+    eec.id, eec.category, eec.name,
+    er.id, er.description, er.name,
+    eea.name as alliance_name,
+    eea.category as alliance_category,
+    eef.name as faction_name,
+    eef.category as faction_category,
     home_id,
     location_id,
     ship_id
-FROM characters
-JOIN eve_characters ON eve_characters.id = characters.id
-JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
-JOIN eve_races ON eve_races.id = eve_characters.race_id
-LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
-LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.faction_id
-WHERE characters.id = ?
+FROM characters cc
+JOIN eve_characters ec ON ec.id = cc.id
+JOIN eve_entities eec ON eec.id = ec.corporation_id
+JOIN eve_races er ON er .id = ec.race_id
+LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
+LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
+WHERE cc.id = ?
 `
 
 type GetCharacterRow struct {
-	Character            Character
-	EveCharacter         EveCharacter
-	EveEntity            EveEntity
-	EveRace              EveRace
-	EveCharacterAlliance EveCharacterAlliance
-	EveCharacterFaction  EveCharacterFaction
-	HomeID               sql.NullInt64
-	LocationID           sql.NullInt64
-	ShipID               sql.NullInt64
+	Character        Character
+	EveCharacter     EveCharacter
+	EveEntity        EveEntity
+	EveRace          EveRace
+	AllianceName     sql.NullString
+	AllianceCategory sql.NullString
+	FactionName      sql.NullString
+	FactionCategory  sql.NullString
+	HomeID           sql.NullInt64
+	LocationID       sql.NullInt64
+	ShipID           sql.NullInt64
 }
 
 func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, error) {
@@ -82,12 +86,10 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.EveRace.ID,
 		&i.EveRace.Description,
 		&i.EveRace.Name,
-		&i.EveCharacterAlliance.ID,
-		&i.EveCharacterAlliance.Category,
-		&i.EveCharacterAlliance.Name,
-		&i.EveCharacterFaction.ID,
-		&i.EveCharacterFaction.Category,
-		&i.EveCharacterFaction.Name,
+		&i.AllianceName,
+		&i.AllianceCategory,
+		&i.FactionName,
+		&i.FactionCategory,
 		&i.HomeID,
 		&i.LocationID,
 		&i.ShipID,
@@ -138,34 +140,38 @@ func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
 
 const listCharacters = `-- name: ListCharacters :many
 SELECT DISTINCT
-    characters.id, characters.asset_value, characters.home_id, characters.last_login_at, characters.location_id, characters.ship_id, characters.total_sp, characters.unallocated_sp, characters.wallet_balance,
-    eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
-    corporations.id, corporations.category, corporations.name,
-    eve_races.id, eve_races.description, eve_races.name,
-    eve_character_alliances.id, eve_character_alliances.category, eve_character_alliances.name,
-    eve_character_factions.id, eve_character_factions.category, eve_character_factions.name,
+    cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance,
+    ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title,
+    eec.id, eec.category, eec.name,
+    er.id, er.description, er.name,
+    eea.name as alliance_name,
+    eea.category as alliance_category,
+    eef.name as faction_name,
+    eef.category as faction_category,
     home_id,
     location_id,
     ship_id
-FROM characters
-JOIN eve_characters ON eve_characters.id = characters.id
-JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
-JOIN eve_races ON eve_races.id = eve_characters.race_id
-LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
-LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.faction_id
-ORDER BY eve_characters.name
+FROM characters cc
+JOIN eve_characters ec ON ec.id = cc.id
+JOIN eve_entities eec ON eec.id = ec.corporation_id
+JOIN eve_races er ON er.id = ec.race_id
+LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
+LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
+ORDER BY ec.name
 `
 
 type ListCharactersRow struct {
-	Character            Character
-	EveCharacter         EveCharacter
-	EveEntity            EveEntity
-	EveRace              EveRace
-	EveCharacterAlliance EveCharacterAlliance
-	EveCharacterFaction  EveCharacterFaction
-	HomeID               sql.NullInt64
-	LocationID           sql.NullInt64
-	ShipID               sql.NullInt64
+	Character        Character
+	EveCharacter     EveCharacter
+	EveEntity        EveEntity
+	EveRace          EveRace
+	AllianceName     sql.NullString
+	AllianceCategory sql.NullString
+	FactionName      sql.NullString
+	FactionCategory  sql.NullString
+	HomeID           sql.NullInt64
+	LocationID       sql.NullInt64
+	ShipID           sql.NullInt64
 }
 
 func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, error) {
@@ -204,12 +210,10 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.EveRace.ID,
 			&i.EveRace.Description,
 			&i.EveRace.Name,
-			&i.EveCharacterAlliance.ID,
-			&i.EveCharacterAlliance.Category,
-			&i.EveCharacterAlliance.Name,
-			&i.EveCharacterFaction.ID,
-			&i.EveCharacterFaction.Category,
-			&i.EveCharacterFaction.Name,
+			&i.AllianceName,
+			&i.AllianceCategory,
+			&i.FactionName,
+			&i.FactionCategory,
 			&i.HomeID,
 			&i.LocationID,
 			&i.ShipID,

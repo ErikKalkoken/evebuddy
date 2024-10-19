@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
@@ -27,12 +26,12 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 101})
+		t1 := factory.CreateEveType()
+		t2 := factory.CreateEveType()
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/implants/", c.ID),
-			httpmock.NewJsonResponderOrPanic(200, []int32{100, 101}))
+			httpmock.NewJsonResponderOrPanic(200, []int32{t1.ID, t2.ID}))
 
 		// when
 		changed, err := s.updateCharacterImplantsESI(ctx, UpdateSectionParams{
@@ -48,7 +47,7 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 				for _, o := range oo {
 					got.Add(o.EveType.ID)
 				}
-				want := set.NewFromSlice([]int32{100, 101})
+				want := set.NewFromSlice([]int32{t1.ID, t2.ID})
 				assert.Equal(t, want, got)
 			}
 

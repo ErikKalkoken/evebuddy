@@ -52,14 +52,14 @@ type walletJournalArea struct {
 	entries []walletJournalEntry
 	table   *widget.Table
 	top     *widget.Label
-	ui      *ui
+	u       *ui
 }
 
 func (u *ui) newWalletJournalArea() *walletJournalArea {
 	a := walletJournalArea{
-		ui:      u,
 		entries: make([]walletJournalEntry, 0),
 		top:     widget.NewLabel(""),
+		u:       u,
 	}
 
 	a.top.TextStyle.Bold = true
@@ -142,7 +142,7 @@ func (a *walletJournalArea) makeTable() *widget.Table {
 		e := a.entries[tci.Row]
 		if e.hasReason() {
 			c := widget.NewLabel(e.reason)
-			dlg := dialog.NewCustom("Reason", "OK", c, a.ui.window)
+			dlg := dialog.NewCustom("Reason", "OK", c, a.u.window)
 			dlg.Show()
 		}
 	}
@@ -166,25 +166,27 @@ func (a *walletJournalArea) refresh() {
 }
 
 func (a *walletJournalArea) makeTopText() (string, widget.Importance) {
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	c := a.ui.currentCharacter()
-	hasData := a.ui.StatusCacheService.CharacterSectionExists(c.ID, app.SectionWalletJournal)
+	c := a.u.currentCharacter()
+	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionWalletJournal)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	s := fmt.Sprintf("Balance: %s", ihumanize.OptionalFloat(c.WalletBalance, 1, "?"))
+	b := ihumanize.OptionalFloat(c.WalletBalance, 1, "?")
+	t := humanize.Comma(int64(len(a.entries)))
+	s := fmt.Sprintf("Balance: %s • Entries: %s", b, t)
 	return s, widget.MediumImportance
 }
 
 func (a *walletJournalArea) updateEntries() error {
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		a.entries = make([]walletJournalEntry, 0)
 		return nil
 	}
-	characterID := a.ui.characterID()
-	ww, err := a.ui.CharacterService.ListCharacterWalletJournalEntries(context.TODO(), characterID)
+	characterID := a.u.characterID()
+	ww, err := a.u.CharacterService.ListCharacterWalletJournalEntries(context.TODO(), characterID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch wallet journal for character %d: %w", characterID, err)
 	}

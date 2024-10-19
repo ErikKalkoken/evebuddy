@@ -33,7 +33,7 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 		characterID2 := int64(arg.CharacterID)
 		from, err := st.GetEveEntity(ctx, arg.FromID)
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("get sender: %w", err)
 		}
 		mailParams := queries.CreateMailParams{
 			Body:        arg.Body,
@@ -47,19 +47,19 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 		}
 		mail, err := st.q.CreateMail(ctx, mailParams)
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("create mail: %w", err)
 		}
 		for _, id := range arg.RecipientIDs {
 			arg := queries.CreateMailRecipientParams{MailID: mail.ID, EveEntityID: int64(id)}
 			err := st.q.CreateMailRecipient(ctx, arg)
 			if err != nil {
-				return 0, err
+				return 0, fmt.Errorf("create mail recipient: %w", err)
 			}
 		}
 		if err := st.updateCharacterMailLabels(ctx, arg.CharacterID, mail.ID, arg.LabelIDs); err != nil {
-			return 0, err
+			return 0, fmt.Errorf("update mail labels: %w", err)
 		}
-		slog.Info("Created new mail", "characterID", arg.CharacterID, "mailID", arg.MailID)
+		slog.Debug("Created new mail", "characterID", arg.CharacterID, "mailID", arg.MailID)
 		return mail.ID, nil
 	}()
 	if err != nil {
@@ -76,7 +76,7 @@ func (st *Storage) updateCharacterMailLabels(ctx context.Context, characterID in
 	defer tx.Rollback()
 	qtx := st.q.WithTx(tx)
 	if err := qtx.DeleteMailCharacterMailLabels(ctx, mailPK); err != nil {
-		return err
+		return fmt.Errorf("delete mail labels: %w", err)
 	}
 	for _, l := range labelIDs {
 		arg := queries.GetCharacterMailLabelParams{
@@ -85,13 +85,13 @@ func (st *Storage) updateCharacterMailLabels(ctx context.Context, characterID in
 		}
 		label, err := qtx.GetCharacterMailLabel(ctx, arg)
 		if err != nil {
-			return err
+			return fmt.Errorf("get mail label: %w", err)
 		}
 		mailMailLabelParams := queries.CreateMailCharacterMailLabelParams{
 			CharacterMailID: mailPK, CharacterMailLabelID: label.ID,
 		}
 		if err := qtx.CreateMailCharacterMailLabel(ctx, mailMailLabelParams); err != nil {
-			return err
+			return fmt.Errorf("create mail label: %w", err)
 		}
 	}
 	if err := tx.Commit(); err != nil {

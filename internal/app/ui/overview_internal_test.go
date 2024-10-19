@@ -23,7 +23,7 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		a := overviewArea{
-			ui: u,
+			u: u,
 		}
 		factory.CreateCharacter()
 		// when
@@ -37,7 +37,7 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		a := overviewArea{
-			ui: u,
+			u: u,
 		}
 		st.UpdateOrCreateEveLocation(ctx, storage.UpdateOrCreateLocationParams{
 			ID:   99,

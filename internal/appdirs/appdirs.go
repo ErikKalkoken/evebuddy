@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"fyne.io/fyne/v2"
 	xappdirs "github.com/chasinglogic/appdirs"
 )
 
@@ -22,13 +21,12 @@ type AppDirs struct {
 	Settings string
 }
 
-func New(fyneApp fyne.App) (AppDirs, error) {
+func New() (AppDirs, error) {
 	ad := xappdirs.New(appName)
 	x := AppDirs{
-		Data:     ad.UserData(),
-		Cache:    filepath.Join(ad.UserData(), cacheFolderName),
-		Log:      filepath.Join(ad.UserData(), logFolderName),
-		Settings: fyneApp.Storage().RootURI().Path(),
+		Data:  ad.UserData(),
+		Cache: filepath.Join(ad.UserData(), cacheFolderName),
+		Log:   filepath.Join(ad.UserData(), logFolderName),
 	}
 	if err := os.MkdirAll(x.Log, os.ModePerm); err != nil {
 		return x, err
@@ -42,6 +40,10 @@ func New(fyneApp fyne.App) (AppDirs, error) {
 	return x, nil
 }
 
-func (ad AppDirs) Folders() []string {
+func (ad *AppDirs) SetSettings(p string) {
+	ad.Settings = p
+}
+
+func (ad *AppDirs) Folders() []string {
 	return []string{ad.Log, ad.Cache, ad.Data, ad.Settings}
 }

@@ -125,6 +125,8 @@ CREATE TABLE eve_moons (
     eve_solar_system_id INTEGER NOT NULL,
     FOREIGN KEY (eve_solar_system_id) REFERENCES eve_solar_systems(id) ON DELETE CASCADE
 );
+CREATE INDEX eve_moons_idx1 ON eve_moons (eve_solar_system_id);
+CREATE INDEX eve_moons_idx2 ON eve_moons (name);
 
 CREATE TABLE eve_planets (
     id INTEGER PRIMARY KEY NOT NULL,
@@ -134,6 +136,9 @@ CREATE TABLE eve_planets (
     FOREIGN KEY (eve_solar_system_id) REFERENCES eve_solar_systems(id) ON DELETE CASCADE,
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE
 );
+CREATE INDEX eve_planets_idx1 ON eve_planets (eve_solar_system_id);
+CREATE INDEX eve_planets_idx2 ON eve_planets (eve_type_id);
+CREATE INDEX eve_planets_idx3 ON eve_planets (name);
 
 CREATE TABLE eve_races (
     id INTEGER PRIMARY KEY NOT NULL,
@@ -182,16 +187,6 @@ CREATE INDEX eve_characters_idx1 ON eve_characters (alliance_id);
 CREATE INDEX eve_characters_idx2 ON eve_characters (corporation_id);
 CREATE INDEX eve_characters_idx3 ON eve_characters (faction_id);
 CREATE INDEX eve_characters_idx4 ON eve_characters (race_id);
-
-CREATE VIEW eve_character_alliances AS
-SELECT eve_entities.*
-FROM eve_characters
-LEFT JOIN eve_entities ON eve_entities.id = eve_characters.alliance_id;
-
-CREATE VIEW eve_character_factions AS
-SELECT eve_entities.*
-FROM eve_characters
-LEFT JOIN eve_entities ON eve_entities.id = eve_characters.faction_id;
 
 CREATE TABLE eve_locations (
     id INTEGER PRIMARY KEY NOT NULL,
@@ -243,6 +238,7 @@ CREATE TABLE character_section_status (
     UNIQUE (character_id, section_id)
 );
 CREATE INDEX character_section_status_idx1 ON character_section_status (character_id);
+CREATE INDEX character_section_status_idx2 ON character_section_status (section_id);
 
 CREATE TABLE character_assets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -278,6 +274,7 @@ CREATE TABLE character_attributes (
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     UNIQUE (character_id)
 );
+CREATE INDEX character_attributes_idx1 ON character_attributes (character_id);
 
 CREATE TABLE character_jump_clones (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -290,7 +287,8 @@ CREATE TABLE character_jump_clones (
     UNIQUE (character_id, jump_clone_id)
 );
 CREATE INDEX character_jump_clones_idx1 ON character_jump_clones (character_id);
-CREATE INDEX character_jump_clones_idx2 ON character_jump_clones (location_id);
+CREATE INDEX character_jump_clones_idx2 ON character_jump_clones (jump_clone_id);
+CREATE INDEX character_jump_clones_idx3 ON character_jump_clones (location_id);
 
 CREATE TABLE character_jump_clone_implants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -365,7 +363,8 @@ CREATE TABLE character_mails (
 );
 CREATE INDEX character_mails_idx1 ON character_mails (character_id);
 CREATE INDEX character_mails_idx2 ON character_mails (from_id);
-CREATE INDEX character_mails_idx3 ON character_mails (timestamp DESC);
+CREATE INDEX character_mails_idx3 ON character_mails (mail_id);
+CREATE INDEX character_mails_idx4 ON character_mails (timestamp DESC);
 
 CREATE TABLE character_mail_mail_labels (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -396,12 +395,17 @@ CREATE TABLE character_notifications (
     UNIQUE (character_id, notification_id)
 );
 
+CREATE INDEX character_notifications_idx1 ON character_notifications (character_id);
+CREATE INDEX character_notifications_idx2 ON character_notifications (notification_id);
+CREATE INDEX character_notifications_idx3 ON character_notifications (sender_id);
+CREATE INDEX character_notifications_idx4 ON character_notifications (timestamp DESC);
+CREATE INDEX character_notifications_idx5 ON character_notifications (type_id);
+
 CREATE TABLE notification_types (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     UNIQUE (name)
 );
-
 
 CREATE TABLE character_skills (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -452,6 +456,7 @@ CREATE TABLE character_tokens (
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     UNIQUE (character_id)
 );
+CREATE INDEX character_tokens_idx1 ON character_tokens (character_id);
 
 CREATE TABLE character_token_scopes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -487,25 +492,10 @@ CREATE TABLE character_wallet_journal_entries (
     UNIQUE (character_id, id)
 );
 CREATE INDEX character_wallet_journal_entries_idx1 ON character_wallet_journal_entries (character_id);
-CREATE INDEX character_wallet_journal_entries_idx2 ON character_wallet_journal_entries (date);
+CREATE INDEX character_wallet_journal_entries_idx2 ON character_wallet_journal_entries (date DESC);
 CREATE INDEX character_wallet_journal_entries_idx3 ON character_wallet_journal_entries (first_party_id);
 CREATE INDEX character_wallet_journal_entries_idx4 ON character_wallet_journal_entries (second_party_id);
 CREATE INDEX character_wallet_journal_entries_idx5 ON character_wallet_journal_entries (tax_receiver_id);
-
-CREATE VIEW character_wallet_journal_entry_first_parties AS
-SELECT eve_entities.*
-FROM character_wallet_journal_entries
-LEFT JOIN eve_entities ON eve_entities.id = character_wallet_journal_entries.first_party_id;
-
-CREATE VIEW character_wallet_journal_entry_second_parties AS
-SELECT eve_entities.*
-FROM character_wallet_journal_entries
-LEFT JOIN eve_entities ON eve_entities.id = character_wallet_journal_entries.second_party_id;
-
-CREATE VIEW character_wallet_journal_entry_tax_receivers AS
-SELECT eve_entities.*
-FROM character_wallet_journal_entries
-LEFT JOIN eve_entities ON eve_entities.id = character_wallet_journal_entries.tax_receiver_id;
 
 CREATE TABLE character_wallet_transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -528,6 +518,7 @@ CREATE TABLE character_wallet_transactions (
 );
 CREATE INDEX character_wallet_transactions_idx1 ON character_wallet_transactions (character_id);
 CREATE INDEX character_wallet_transactions_idx2 ON character_wallet_transactions (client_id);
-CREATE INDEX character_wallet_transactions_idx3 ON character_wallet_transactions (date);
+CREATE INDEX character_wallet_transactions_idx3 ON character_wallet_transactions (date DESC);
 CREATE INDEX character_wallet_transactions_idx4 ON character_wallet_transactions (eve_type_id);
 CREATE INDEX character_wallet_transactions_idx5 ON character_wallet_transactions (location_id);
+CREATE INDEX character_wallet_transactions_idx6 ON character_wallet_transactions (transaction_id);

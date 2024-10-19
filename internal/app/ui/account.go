@@ -15,7 +15,50 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
+
+func (u *ui) showAccountDialog() error {
+	currentChars := set.New[int32]()
+	cc, err := u.CharacterService.ListCharactersShort(context.Background())
+	if err != nil {
+		return fmt.Errorf("list characters: %w", err)
+	}
+	for _, c := range cc {
+		currentChars.Add(c.ID)
+	}
+	a := u.newAccountArea()
+	dialog := dialog.NewCustom("Manage Characters", "Close", a.content, u.window)
+	a.dialog = dialog
+	dialog.SetOnClosed(func() {
+		incomingChars := set.New[int32]()
+		for _, c := range a.characters {
+			incomingChars.Add(c.id)
+		}
+		if currentChars.Equal(incomingChars) {
+			return
+		}
+		if !incomingChars.Contains(a.u.characterID()) {
+			if err := a.u.setAnyCharacter(); err != nil {
+				slog.Error("Failed to set any character", "error", err)
+			}
+		}
+		if currentChars.Difference(incomingChars).Size() == 0 {
+			// no char has been deleted but still need to update some cross info
+			a.u.toolbarArea.refresh()
+			u.statusBarArea.refreshCharacterCount()
+			return
+		}
+		a.u.refreshCrossPages()
+	})
+	dialog.Show()
+	dialog.Resize(fyne.Size{Width: 500, Height: 500})
+	if err := a.refresh(); err != nil {
+		dialog.Hide()
+		return err
+	}
+	return nil
+}
 
 type accountCharacter struct {
 	id   int32
@@ -27,42 +70,34 @@ type accountArea struct {
 	characters []accountCharacter
 	content    *fyne.Container
 	dialog     *dialog.CustomDialog
-	bottom     *widget.Label
-	ui         *ui
 	list       *widget.List
-}
-
-func (u *ui) showAccountDialog() {
-	a := u.newAccountArea()
-	dialog := dialog.NewCustom("Manage Characters", "Close", a.content, u.window)
-	a.dialog = dialog
-	dialog.Show()
-	dialog.Resize(fyne.Size{Width: 500, Height: 500})
-	if err := a.Refresh(); err != nil {
-		dialog.Hide()
-		t := "Failed to open dialog to manage characters"
-		slog.Error(t, "err", err)
-		u.showErrorDialog(t, err)
-	}
+	title      *widget.Label
+	u          *ui
 }
 
 func (u *ui) newAccountArea() *accountArea {
 	a := &accountArea{
 		characters: make([]accountCharacter, 0),
-		ui:         u,
+		title:      widget.NewLabel(""),
+		u:          u,
 	}
 
-	a.bottom = widget.NewLabel("Hint: Click any character to enable it")
-	a.bottom.Importance = widget.LowImportance
-	a.bottom.Hide()
-
 	a.list = a.makeCharacterList()
-
-	b := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
+	a.title.TextStyle.Bold = true
+	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.showAddCharacterDialog()
 	})
-	b.Importance = widget.HighImportance
-	a.content = container.NewBorder(b, a.bottom, nil, nil, a.list)
+	add.Importance = widget.HighImportance
+	if a.u.isOffline {
+		add.Disable()
+	}
+	a.content = container.NewBorder(
+		a.title,
+		container.NewVBox(add, container.NewPadded()),
+		nil,
+		nil,
+		a.list,
+	)
 	return a
 }
 
@@ -102,7 +137,7 @@ func (a *accountArea) makeCharacterList() *widget.List {
 
 			icon := row[0].(*canvas.Image)
 			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.ui.EveImageService.CharacterPortrait(c.id, defaultIconSize)
+				return a.u.EveImageService.CharacterPortrait(c.id, defaultIconSize)
 			})
 
 			row[3].(*widget.Button).OnTapped = func() {
@@ -115,7 +150,7 @@ func (a *accountArea) makeCharacterList() *widget.List {
 			return
 		}
 		c := a.characters[id]
-		if err := a.ui.loadCharacter(context.TODO(), c.id); err != nil {
+		if err := a.u.loadCharacter(context.TODO(), c.id); err != nil {
 			slog.Error("failed to load current character", "char", c, "err", err)
 			return
 		}
@@ -130,38 +165,36 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 		fmt.Sprintf("Are you sure you want to delete %s?", c.name),
 		func(confirmed bool) {
 			if confirmed {
-				err := func(characterID int32) error {
-					err := a.ui.CharacterService.DeleteCharacter(context.TODO(), characterID)
-					if err != nil {
-						return err
-					}
-					if err := a.Refresh(); err != nil {
-						return err
-					}
-					isCurrentChar := characterID == a.ui.characterID()
-					if isCurrentChar {
-						err := a.ui.setAnyCharacter()
+				pg := widget.NewProgressBarInfinite()
+				pg.Start()
+				d2 := dialog.NewCustomWithoutButtons(fmt.Sprintf("Deleting %s...", c.name), pg, a.u.window)
+				d2.Show()
+				go func() {
+					err := func(characterID int32) error {
+						err := a.u.CharacterService.DeleteCharacter(context.TODO(), characterID)
 						if err != nil {
 							return err
 						}
+						if err := a.refresh(); err != nil {
+							return err
+						}
+						return nil
+					}(c.id)
+					d2.Hide()
+					if err != nil {
+						slog.Error("Failed to delete a character", "character", c, "err", err)
+						a.u.showErrorDialog("Failed to delete a character", err)
 					}
-					a.ui.refreshOverview()
-					a.ui.toolbarArea.refresh()
-					return nil
-				}(c.id)
-				if err != nil {
-					slog.Error("Failed to delete a character", "character", c, "err", err)
-					a.ui.showErrorDialog("Failed to delete a character", err)
-				}
+				}()
 			}
 		},
-		a.ui.window,
+		a.u.window,
 	)
 	d1.Show()
 }
 
-func (a *accountArea) Refresh() error {
-	cc, err := a.ui.CharacterService.ListCharactersShort(context.TODO())
+func (a *accountArea) refresh() error {
+	cc, err := a.u.CharacterService.ListCharactersShort(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -171,11 +204,7 @@ func (a *accountArea) Refresh() error {
 	}
 	a.characters = cc2
 	a.list.Refresh()
-	if len(cc2) > 0 {
-		a.bottom.Show()
-	} else {
-		a.bottom.Hide()
-	}
+	a.title.SetText(fmt.Sprintf("Characters (%d)", len(a.characters)))
 	return nil
 }
 
@@ -188,37 +217,28 @@ func (a *accountArea) showAddCharacterDialog() {
 		"Add Character",
 		"Cancel",
 		content,
-		a.ui.window,
+		a.u.window,
 	)
 	d1.SetOnClosed(cancel)
 	go func() {
 		err := func() error {
 			defer cancel()
-			characterID, err := a.ui.CharacterService.UpdateOrCreateCharacterFromSSO(ctx, infoText)
+			characterID, err := a.u.CharacterService.UpdateOrCreateCharacterFromSSO(ctx, infoText)
 			if errors.Is(err, character.ErrAborted) {
 				return nil
 			} else if err != nil {
 				return err
 			}
-			isFirst := len(a.characters) == 0
-			if err := a.Refresh(); err != nil {
+			if err := a.refresh(); err != nil {
 				return err
 			}
-			a.ui.refreshOverview()
-			a.ui.toolbarArea.refresh()
-			if isFirst {
-				if err := a.ui.setAnyCharacter(); err != nil {
-					return err
-				}
-			} else {
-				a.ui.updateCharacterAndRefreshIfNeeded(ctx, characterID, false)
-			}
+			a.u.updateCharacterAndRefreshIfNeeded(ctx, characterID, false)
 			return nil
 		}()
 		d1.Hide()
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
-			a.ui.showErrorDialog("Failed add a new character", err)
+			a.u.showErrorDialog("Failed add a new character", err)
 		}
 	}()
 	d1.Show()

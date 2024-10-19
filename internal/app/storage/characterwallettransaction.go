@@ -41,8 +41,10 @@ func (st *Storage) CreateCharacterWalletTransaction(ctx context.Context, arg Cre
 		UnitPrice:     arg.UnitPrice,
 	}
 
-	err := st.q.CreateCharacterWalletTransaction(ctx, arg2)
-	return err
+	if err := st.q.CreateCharacterWalletTransaction(ctx, arg2); err != nil {
+		return fmt.Errorf("create wallet transaction: %+v: %w", arg2, err)
+	}
+	return nil
 }
 
 func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, characterID int32, transactionID int64) (*app.CharacterWalletTransaction, error) {

@@ -22,24 +22,34 @@ func (st *Storage) DeleteCharacter(ctx context.Context, characterID int32) error
 }
 
 func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Character, error) {
-	row, err := st.q.GetCharacter(ctx, int64(characterID))
+	r, err := st.q.GetCharacter(ctx, int64(characterID))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to get Character %d: %w", characterID, err)
 	}
+	alliance := nullEveEntry{
+		ID:       r.EveCharacter.AllianceID,
+		Name:     r.AllianceName,
+		Category: r.AllianceCategory,
+	}
+	faction := nullEveEntry{
+		ID:       r.EveCharacter.FactionID,
+		Name:     r.FactionName,
+		Category: r.FactionCategory,
+	}
 	c, err := st.characterFromDBModel(
 		ctx,
-		row.Character,
-		row.EveCharacter,
-		row.EveEntity,
-		row.EveRace,
-		row.EveCharacterAlliance,
-		row.EveCharacterFaction,
-		row.HomeID,
-		row.LocationID,
-		row.ShipID,
+		r.Character,
+		r.EveCharacter,
+		r.EveEntity,
+		r.EveRace,
+		alliance,
+		faction,
+		r.HomeID,
+		r.LocationID,
+		r.ShipID,
 	)
 	if err != nil {
 		return nil, err
@@ -65,18 +75,28 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 		return nil, fmt.Errorf("failed to list Characters: %w", err)
 	}
 	cc := make([]*app.Character, len(rows))
-	for i, row := range rows {
+	for i, r := range rows {
+		alliance := nullEveEntry{
+			ID:       r.EveCharacter.AllianceID,
+			Name:     r.AllianceName,
+			Category: r.AllianceCategory,
+		}
+		faction := nullEveEntry{
+			ID:       r.EveCharacter.FactionID,
+			Name:     r.FactionName,
+			Category: r.FactionCategory,
+		}
 		c, err := st.characterFromDBModel(
 			ctx,
-			row.Character,
-			row.EveCharacter,
-			row.EveEntity,
-			row.EveRace,
-			row.EveCharacterAlliance,
-			row.EveCharacterFaction,
-			row.HomeID,
-			row.LocationID,
-			row.ShipID,
+			r.Character,
+			r.EveCharacter,
+			r.EveEntity,
+			r.EveRace,
+			alliance,
+			faction,
+			r.HomeID,
+			r.LocationID,
+			r.ShipID,
 		)
 		if err != nil {
 			return nil, err
@@ -222,8 +242,8 @@ func (st *Storage) characterFromDBModel(
 	eveCharacter queries.EveCharacter,
 	corporation queries.EveEntity,
 	race queries.EveRace,
-	alliance queries.EveCharacterAlliance,
-	faction queries.EveCharacterFaction,
+	alliance nullEveEntry,
+	faction nullEveEntry,
 	homeID sql.NullInt64,
 	locationID sql.NullInt64,
 	shipID sql.NullInt64,

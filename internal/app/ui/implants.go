@@ -17,16 +17,16 @@ import (
 type implantsArea struct {
 	content  *fyne.Container
 	implants []*app.CharacterImplant
-	top      *widget.Label
-	ui       *ui
 	list     *widget.List
+	top      *widget.Label
+	u        *ui
 }
 
 func (u *ui) newImplantsArea() *implantsArea {
 	a := implantsArea{
 		implants: make([]*app.CharacterImplant, 0),
 		top:      widget.NewLabel(""),
-		ui:       u,
+		u:        u,
 	}
 	a.top.TextStyle.Bold = true
 	a.list = a.makeImplantList()
@@ -56,7 +56,7 @@ func (a *implantsArea) makeImplantList() *widget.List {
 			label := row[1].(*widget.Label)
 			label.SetText(fmt.Sprintf("%s\nSlot %d", o.EveType.Name, o.SlotNum))
 			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.ui.EveImageService.InventoryTypeIcon(o.EveType.ID, 64)
+				return a.u.EveImageService.InventoryTypeIcon(o.EveType.ID, 64)
 			})
 		})
 
@@ -66,7 +66,7 @@ func (a *implantsArea) makeImplantList() *widget.List {
 			return
 		}
 		o := a.implants[id]
-		a.ui.showTypeInfoWindow(o.EveType.ID, a.ui.characterID())
+		a.u.showTypeInfoWindow(o.EveType.ID, a.u.characterID())
 	}
 	return l
 }
@@ -87,11 +87,11 @@ func (a *implantsArea) refresh() {
 }
 
 func (a *implantsArea) updateImplants() error {
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		a.implants = make([]*app.CharacterImplant, 0)
 		return nil
 	}
-	implants, err := a.ui.CharacterService.ListCharacterImplants(context.TODO(), a.ui.characterID())
+	implants, err := a.u.CharacterService.ListCharacterImplants(context.TODO(), a.u.characterID())
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (a *implantsArea) updateImplants() error {
 }
 
 func (a *implantsArea) makeTopText() (string, widget.Importance) {
-	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionImplants)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

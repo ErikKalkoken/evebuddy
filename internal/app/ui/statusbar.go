@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
@@ -41,38 +43,44 @@ const (
 
 // statusBarArea is the UI area showing the current status aka status bar.
 type statusBarArea struct {
+	characterCount     *kwidget.TappableLabel
 	content            *fyne.Container
 	eveClock           binding.String
 	eveStatus          *widgets.StatusBarItem
 	eveStatusError     string
 	infoText           *widget.Label
+	u                  *ui
 	updateNotification *fyne.Container
 	updateStatus       *widgets.StatusBarItem
-	ui                 *ui
 }
 
 func (u *ui) newStatusBarArea() *statusBarArea {
 	a := &statusBarArea{
-		infoText:           widget.NewLabel(""),
+		characterCount: kwidget.NewTappableLabel("?", func() {
+			if err := u.showAccountDialog(); err != nil {
+				u.showErrorDialog("Failed to show account dialog", err)
+			}
+		}),
 		eveClock:           binding.NewString(),
+		infoText:           widget.NewLabel(""),
+		u:                  u,
 		updateNotification: container.NewHBox(),
-		ui:                 u,
 	}
 	a.updateStatus = widgets.NewStatusBarItem(nil, "?", func() {
 		u.showStatusWindow()
 	})
 	a.eveStatus = widgets.NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showDetail)
-
 	a.eveClock.Set("?")
-	clock := widget.NewLabelWithData(a.eveClock)
 	a.content = container.NewVBox(widget.NewSeparator(), container.NewHBox(
 		a.infoText,
 		layout.NewSpacer(),
 		a.updateNotification,
 		widget.NewSeparator(),
+		a.characterCount,
+		widget.NewSeparator(),
 		a.updateStatus,
 		widget.NewSeparator(),
-		clock,
+		widget.NewLabelWithData(a.eveClock),
 		widget.NewSeparator(),
 		a.eveStatus,
 	))
@@ -92,19 +100,12 @@ func (a *statusBarArea) showDetail() {
 	lb := widget.NewLabel(text)
 	lb.Wrapping = fyne.TextWrapWord
 	lb.Importance = i
-	d := dialog.NewCustom("ESI status", "OK", container.NewVScroll(lb), a.ui.window)
+	d := dialog.NewCustom("ESI status", "OK", lb, a.u.window)
 	d.Show()
 	d.Resize(fyne.Size{Width: 400, Height: 200})
 }
 
 func (a *statusBarArea) StartUpdateTicker() {
-	updateTicker := time.NewTicker(characterUpdateStatusTicker)
-	go func() {
-		for {
-			a.refreshUpdateStatus()
-			<-updateTicker.C
-		}
-	}()
 	clockTicker := time.NewTicker(clockUpdateTicker)
 	go func() {
 		for {
@@ -113,10 +114,22 @@ func (a *statusBarArea) StartUpdateTicker() {
 			<-clockTicker.C
 		}
 	}()
+	if a.u.isOffline {
+		a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
+		a.refreshUpdateStatus()
+		return
+	}
+	updateTicker := time.NewTicker(characterUpdateStatusTicker)
+	go func() {
+		for {
+			a.refreshUpdateStatus()
+			<-updateTicker.C
+		}
+	}()
 	esiStatusTicker := time.NewTicker(esiStatusUpdateTicker)
 	go func() {
 		for {
-			x, err := a.ui.ESIStatusService.Fetch(context.TODO())
+			x, err := a.u.ESIStatusService.Fetch(context.TODO())
 			var t, errorMessage string
 			var s eveStatus
 			if err != nil {
@@ -138,7 +151,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 		}
 	}()
 	go func() {
-		current := a.ui.fyneApp.Metadata().Version
+		current := a.u.fyneApp.Metadata().Version
 		_, isNewer, err := github.AvailableUpdate(githubOwner, githubRepo, current)
 		if err != nil {
 			slog.Error("Failed to fetch latest version from github", "err", err)
@@ -154,8 +167,13 @@ func (a *statusBarArea) StartUpdateTicker() {
 	}()
 }
 
+func (a *statusBarArea) refreshCharacterCount() {
+	x := a.u.StatusCacheService.ListCharacters()
+	a.characterCount.SetText(fmt.Sprintf("%d characters", len(x)))
+}
+
 func (a *statusBarArea) refreshUpdateStatus() {
-	x := a.ui.StatusCacheService.Summary()
+	x := a.u.StatusCacheService.Summary()
 	a.updateStatus.SetTextAndImportance(x.Display(), status2widgetImportance(x.Status()))
 }
 

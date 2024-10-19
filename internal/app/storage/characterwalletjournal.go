@@ -64,16 +64,15 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, character
 		CharacterID: int64(characterID),
 		RefID:       refID,
 	}
-	row, err := st.q.GetCharacterWalletJournalEntry(ctx, arg)
+	r, err := st.q.GetCharacterWalletJournalEntry(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
-	return characterWalletJournalEntryFromDBModel(
-		row.CharacterWalletJournalEntry,
-		row.CharacterWalletJournalEntryFirstParty,
-		row.CharacterWalletJournalEntrySecondParty,
-		row.CharacterWalletJournalEntryTaxReceiver,
-	), err
+	o := r.CharacterWalletJournalEntry
+	firstParty := nullEveEntry{ID: o.FirstPartyID, Name: r.FirstName, Category: r.FirstCategory}
+	secondParty := nullEveEntry{ID: o.SecondPartyID, Name: r.SecondName, Category: r.SecondCategory}
+	taxReceiver := nullEveEntry{ID: o.TaxReceiverID, Name: r.TaxName, Category: r.TaxCategory}
+	return characterWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver), err
 }
 
 func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int32) ([]int64, error) {
@@ -86,21 +85,19 @@ func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, charac
 		return nil, err
 	}
 	ee := make([]*app.CharacterWalletJournalEntry, len(rows))
-	for i, row := range rows {
-		ee[i] = characterWalletJournalEntryFromDBModel(
-			row.CharacterWalletJournalEntry,
-			row.CharacterWalletJournalEntryFirstParty,
-			row.CharacterWalletJournalEntrySecondParty,
-			row.CharacterWalletJournalEntryTaxReceiver)
+	for i, r := range rows {
+		o := r.CharacterWalletJournalEntry
+		firstParty := nullEveEntry{ID: o.FirstPartyID, Name: r.FirstName, Category: r.FirstCategory}
+		secondParty := nullEveEntry{ID: o.SecondPartyID, Name: r.SecondName, Category: r.SecondCategory}
+		taxReceiver := nullEveEntry{ID: o.TaxReceiverID, Name: r.TaxName, Category: r.TaxCategory}
+		ee[i] = characterWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver)
 	}
 	return ee, nil
 }
 
 func characterWalletJournalEntryFromDBModel(
 	o queries.CharacterWalletJournalEntry,
-	firstParty queries.CharacterWalletJournalEntryFirstParty,
-	secondParty queries.CharacterWalletJournalEntrySecondParty,
-	taxReceiver queries.CharacterWalletJournalEntryTaxReceiver,
+	firstParty, secondParty, taxReceiver nullEveEntry,
 ) *app.CharacterWalletJournalEntry {
 	o2 := &app.CharacterWalletJournalEntry{
 		Amount:        o.Amount,
@@ -109,15 +106,15 @@ func characterWalletJournalEntryFromDBModel(
 		ContextIDType: o.ContextIDType,
 		Date:          o.Date,
 		Description:   o.Description,
-		FirstParty:    eveEntityFromNullableDBModel(nullEveEntry(firstParty)),
+		FirstParty:    eveEntityFromNullableDBModel(firstParty),
 		ID:            o.ID,
 		RefID:         o.RefID,
 		CharacterID:   int32(o.CharacterID),
 		Reason:        o.Reason,
 		RefType:       o.RefType,
-		SecondParty:   eveEntityFromNullableDBModel(nullEveEntry(secondParty)),
+		SecondParty:   eveEntityFromNullableDBModel(secondParty),
 		Tax:           o.Tax,
-		TaxReceiver:   eveEntityFromNullableDBModel(nullEveEntry(taxReceiver)),
+		TaxReceiver:   eveEntityFromNullableDBModel(taxReceiver),
 	}
 	return o2
 }

@@ -4,22 +4,24 @@ WHERE id = ?;
 
 -- name: GetCharacter :one
 SELECT
-    sqlc.embed(characters),
-    sqlc.embed(eve_characters),
-    sqlc.embed(corporations),
-    sqlc.embed(eve_races),
-    sqlc.embed(eve_character_alliances),
-    sqlc.embed(eve_character_factions),
+    sqlc.embed(cc),
+    sqlc.embed(ec),
+    sqlc.embed(eec),
+    sqlc.embed(er),
+    eea.name as alliance_name,
+    eea.category as alliance_category,
+    eef.name as faction_name,
+    eef.category as faction_category,
     home_id,
     location_id,
     ship_id
-FROM characters
-JOIN eve_characters ON eve_characters.id = characters.id
-JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
-JOIN eve_races ON eve_races.id = eve_characters.race_id
-LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
-LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.faction_id
-WHERE characters.id = ?;
+FROM characters cc
+JOIN eve_characters ec ON ec.id = cc.id
+JOIN eve_entities eec ON eec.id = ec.corporation_id
+JOIN eve_races er ON er .id = ec.race_id
+LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
+LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
+WHERE cc.id = ?;
 
 -- name: GetCharacterAssetValue :one
 SELECT asset_value
@@ -28,22 +30,24 @@ WHERE id = ?;
 
 -- name: ListCharacters :many
 SELECT DISTINCT
-    sqlc.embed(characters),
-    sqlc.embed(eve_characters),
-    sqlc.embed(corporations),
-    sqlc.embed(eve_races),
-    sqlc.embed(eve_character_alliances),
-    sqlc.embed(eve_character_factions),
+    sqlc.embed(cc),
+    sqlc.embed(ec),
+    sqlc.embed(eec),
+    sqlc.embed(er),
+    eea.name as alliance_name,
+    eea.category as alliance_category,
+    eef.name as faction_name,
+    eef.category as faction_category,
     home_id,
     location_id,
     ship_id
-FROM characters
-JOIN eve_characters ON eve_characters.id = characters.id
-JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
-JOIN eve_races ON eve_races.id = eve_characters.race_id
-LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
-LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.faction_id
-ORDER BY eve_characters.name;
+FROM characters cc
+JOIN eve_characters ec ON ec.id = cc.id
+JOIN eve_entities eec ON eec.id = ec.corporation_id
+JOIN eve_races er ON er.id = ec.race_id
+LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
+LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
+ORDER BY ec.name;
 
 -- name: ListCharactersShort :many
 SELECT DISTINCT eve_characters.id, eve_characters.name

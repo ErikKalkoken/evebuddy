@@ -73,25 +73,29 @@ func (q *Queries) DeleteEveCharacter(ctx context.Context, id int64) error {
 
 const getEveCharacter = `-- name: GetEveCharacter :one
 SELECT
-    eve_characters.alliance_id, eve_characters.birthday, eve_characters.corporation_id, eve_characters.description, eve_characters.gender, eve_characters.faction_id, eve_characters.id, eve_characters.name, eve_characters.race_id, eve_characters.security_status, eve_characters.title,
-    corporations.id, corporations.category, corporations.name,
-    eve_races.id, eve_races.description, eve_races.name,
-    eve_character_alliances.id, eve_character_alliances.category, eve_character_alliances.name,
-    eve_character_factions.id, eve_character_factions.category, eve_character_factions.name
-FROM eve_characters
-JOIN eve_entities AS corporations ON corporations.id = eve_characters.corporation_id
-JOIN eve_races ON eve_races.id = eve_characters.race_id
-LEFT JOIN eve_character_alliances ON eve_character_alliances.id = eve_characters.alliance_id
-LEFT JOIN eve_character_factions ON eve_character_factions.id = eve_characters.faction_id
-WHERE eve_characters.id = ?
+    ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title,
+    eec.id, eec.category, eec.name,
+    er.id, er.description, er.name,
+    eea.name as alliance_name,
+    eea.category as alliance_category,
+    eef.name as faction_name,
+    eef.category as faction_category
+FROM eve_characters ec
+JOIN eve_entities AS eec ON eec.id = ec.corporation_id
+JOIN eve_races er ON er.id = ec.race_id
+LEFT JOIN eve_entities as eea ON eea.id = ec.alliance_id
+LEFT JOIN eve_entities as eef ON eef.id = ec.faction_id
+WHERE ec.id = ?
 `
 
 type GetEveCharacterRow struct {
-	EveCharacter         EveCharacter
-	EveEntity            EveEntity
-	EveRace              EveRace
-	EveCharacterAlliance EveCharacterAlliance
-	EveCharacterFaction  EveCharacterFaction
+	EveCharacter     EveCharacter
+	EveEntity        EveEntity
+	EveRace          EveRace
+	AllianceName     sql.NullString
+	AllianceCategory sql.NullString
+	FactionName      sql.NullString
+	FactionCategory  sql.NullString
 }
 
 func (q *Queries) GetEveCharacter(ctx context.Context, id int64) (GetEveCharacterRow, error) {
@@ -115,12 +119,10 @@ func (q *Queries) GetEveCharacter(ctx context.Context, id int64) (GetEveCharacte
 		&i.EveRace.ID,
 		&i.EveRace.Description,
 		&i.EveRace.Name,
-		&i.EveCharacterAlliance.ID,
-		&i.EveCharacterAlliance.Category,
-		&i.EveCharacterAlliance.Name,
-		&i.EveCharacterFaction.ID,
-		&i.EveCharacterFaction.Category,
-		&i.EveCharacterFaction.Name,
+		&i.AllianceName,
+		&i.AllianceCategory,
+		&i.FactionName,
+		&i.FactionCategory,
 	)
 	return i, err
 }

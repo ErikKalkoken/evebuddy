@@ -12,6 +12,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
@@ -19,7 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/dustin/go-humanize"
 )
 
 type locationDataNodeType uint
@@ -73,7 +74,7 @@ type assetsArea struct {
 	locationsTop     *widget.Label
 	selectedLocation optional.Optional[locationDataNode]
 	assetCollection  assetcollection.AssetCollection
-	ui               *ui
+	u                *ui
 }
 
 func (u *ui) newAssetsArea() *assetsArea {
@@ -84,7 +85,7 @@ func (u *ui) newAssetsArea() *assetsArea {
 		assetsBottom:  widget.NewLabel(""),
 		locationsData: fynetree.New[locationDataNode](),
 		locationsTop:  widget.NewLabel(""),
-		ui:            u,
+		u:             u,
 	}
 	a.locationsTop.TextStyle.Bold = true
 	a.locationsWidget = a.makeLocationsTree()
@@ -173,7 +174,7 @@ func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
 			return len(a.assets)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewAssetListWidget(a.ui.EveImageService, defaultAssetIcon)
+			return widgets.NewAssetListWidget(a.u.EveImageService, defaultAssetIcon)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.assets) {
@@ -205,7 +206,7 @@ func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
 				}
 			}
 		} else {
-			a.ui.showTypeInfoWindow(ca.EveType.ID, a.ui.characterID())
+			a.u.showTypeInfoWindow(ca.EveType.ID, a.u.characterID())
 		}
 	}
 	return g
@@ -240,15 +241,15 @@ func (a *assetsArea) redraw() {
 func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], error) {
 	ctx := context.TODO()
 	tree := fynetree.New[locationDataNode]()
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		return tree, nil
 	}
-	characterID := a.ui.characterID()
-	assets, err := a.ui.CharacterService.ListCharacterAssets(ctx, characterID)
+	characterID := a.u.characterID()
+	assets, err := a.u.CharacterService.ListCharacterAssets(ctx, characterID)
 	if err != nil {
 		return tree, err
 	}
-	oo, err := a.ui.EveUniverseService.ListEveLocations(ctx)
+	oo, err := a.u.EveUniverseService.ListEveLocations(ctx)
 	if err != nil {
 		return tree, err
 	}
@@ -384,14 +385,15 @@ func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 }
 
 func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance, nil
 	}
-	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionAssets)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionAssets)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}
-	return fmt.Sprintf("%d locations", total), widget.MediumImportance, nil
+	locations := humanize.Comma(int64(total))
+	return fmt.Sprintf("%s locations", locations), widget.MediumImportance, nil
 }
 
 func (a *assetsArea) selectLocation(location locationDataNode) error {
@@ -407,11 +409,11 @@ func (a *assetsArea) selectLocation(location locationDataNode) error {
 	var f func(context.Context, int32, int64) ([]*app.CharacterAsset, error)
 	switch location.Type {
 	case nodeShipHangar:
-		f = a.ui.CharacterService.ListCharacterAssetsInShipHangar
+		f = a.u.CharacterService.ListCharacterAssetsInShipHangar
 	case nodeItemHangar:
-		f = a.ui.CharacterService.ListCharacterAssetsInItemHangar
+		f = a.u.CharacterService.ListCharacterAssetsInItemHangar
 	default:
-		f = a.ui.CharacterService.ListCharacterAssetsInLocation
+		f = a.u.CharacterService.ListCharacterAssetsInLocation
 	}
 	assets, err := f(context.TODO(), location.CharacterID, location.ContainerID)
 	if err != nil {
@@ -473,7 +475,7 @@ func (a *assetsArea) updateLocationPath(location locationDataNode) {
 	for i, n := range path {
 		isLast := i == len(path)-1
 		if !isLast {
-			l := widgets.NewTappableLabel(n.Name, func() {
+			l := kwidget.NewTappableLabel(n.Name, func() {
 				if err := a.selectLocation(n); err != nil {
 					slog.Warn("Failed to redraw assets", "err", err)
 				}
@@ -486,8 +488,8 @@ func (a *assetsArea) updateLocationPath(location locationDataNode) {
 		}
 		if n.IsRoot() {
 			if !n.IsUnknown {
-				a.locationPath.Add(widgets.NewTappableIcon(theme.InfoIcon(), func() {
-					a.ui.showLocationInfoWindow(n.ContainerID)
+				a.locationPath.Add(kwidget.NewTappableIcon(theme.InfoIcon(), func() {
+					a.u.showLocationInfoWindow(n.ContainerID)
 				}))
 				a.locationPath.Add(container.NewPadded())
 			}

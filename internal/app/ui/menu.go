@@ -25,12 +25,16 @@ func makeMenu(u *ui) *fyne.MainMenu {
 	})
 
 	charactersItem := fyne.NewMenuItem("Manage characters...", func() {
-		u.showAccountDialog()
+		if err := u.showAccountDialog(); err != nil {
+			u.showErrorDialog("Failed to show account dialog", err)
+		}
 	})
 	charactersShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierAlt}
 	charactersItem.Shortcut = charactersShortcut
 	u.window.Canvas().AddShortcut(charactersShortcut, func(shortcut fyne.Shortcut) {
-		u.showAccountDialog()
+		if err := u.showAccountDialog(); err != nil {
+			u.showErrorDialog("Failed to show account dialog", err)
+		}
 	})
 
 	statusItem := fyne.NewMenuItem("Update status...", func() {
@@ -49,15 +53,21 @@ func makeMenu(u *ui) *fyne.MainMenu {
 		fyne.NewMenuItemSeparator(),
 		settingsItem,
 	)
+	website := fyne.NewMenuItem("Website", func() {
+		url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
+		_ = u.fyneApp.OpenURL(url)
+	})
+	report := fyne.NewMenuItem("Report a bug", func() {
+		url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy/issues")
+		_ = u.fyneApp.OpenURL(url)
+	})
+	if u.isOffline {
+		website.Disabled = true
+		report.Disabled = true
+	}
 	helpMenu := fyne.NewMenu("Help",
-		fyne.NewMenuItem("Website", func() {
-			url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
-			_ = u.fyneApp.OpenURL(url)
-		}),
-		fyne.NewMenuItem("Report a bug", func() {
-			url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy/issues")
-			_ = u.fyneApp.OpenURL(url)
-		}),
+		website,
+		report,
 		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("User data...", func() {
 			u.showUserDataDialog()

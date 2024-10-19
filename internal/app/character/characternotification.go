@@ -11,8 +11,8 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) CalcCharacterNotificationUnreadCounts(ctx context.Context, characterID int32) (map[evenotification.Category]int, error) {
-	types, err := s.st.CalcCharacterNotificationUnreadCounts(ctx, characterID)
+func (s *CharacterService) CountCharacterNotificationUnreads(ctx context.Context, characterID int32) (map[evenotification.Category]int, error) {
+	types, err := s.st.CountCharacterNotificationUnreads(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}

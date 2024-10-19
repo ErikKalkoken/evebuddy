@@ -21,16 +21,16 @@ type overviewCharacter struct {
 	assetValue     optional.Optional[float64]
 	birthday       time.Time
 	corporation    string
-	id             int32
 	home           *app.EntityShort[int64]
+	id             int32
 	lastLoginAt    optional.Optional[time.Time]
 	location       *app.EntityShort[int64]
 	name           string
+	region         *app.EntityShort[int32]
+	security       float64
+	ship           *app.EntityShort[int32]
 	solarSystem    *app.EntityShort[int32]
 	systemSecurity optional.Optional[float32]
-	region         *app.EntityShort[int32]
-	ship           *app.EntityShort[int32]
-	security       float64
 	totalSP        optional.Optional[int]
 	training       optional.Optional[time.Duration]
 	unallocatedSP  optional.Optional[int]
@@ -40,18 +40,18 @@ type overviewCharacter struct {
 
 // overviewArea is the UI area that shows an overview of all the user's characters.
 type overviewArea struct {
-	content    *fyne.Container
 	characters []overviewCharacter
+	content    *fyne.Container
 	table      *widget.Table
 	top        *widget.Label
-	ui         *ui
+	u          *ui
 }
 
 func (u *ui) newOverviewArea() *overviewArea {
 	a := overviewArea{
 		characters: make([]overviewCharacter, 0),
 		top:        widget.NewLabel(""),
-		ui:         u,
+		u:          u,
 	}
 	a.top.TextStyle.Bold = true
 
@@ -72,39 +72,39 @@ func (a *overviewArea) makeTable() *widget.Table {
 		{"Alliance", 200, nil},
 		{"Security", 80, nil},
 		{"Unread", 80, func(oc overviewCharacter) {
-			a.ui.selectCharacterAndTab(oc.id, a.ui.mailTab, 0)
+			a.u.selectCharacterAndTab(oc.id, a.u.mailTab, 0)
 		}},
 		{"Total SP", 80, func(oc overviewCharacter) {
-			a.ui.selectCharacterAndTab(oc.id, a.ui.skillTab, 1)
+			a.u.selectCharacterAndTab(oc.id, a.u.skillTab, 1)
 		}},
 		{"Unall. SP", 80, func(oc overviewCharacter) {
-			a.ui.selectCharacterAndTab(oc.id, a.ui.skillTab, 1)
+			a.u.selectCharacterAndTab(oc.id, a.u.skillTab, 1)
 		}},
 		{"Training", 80, func(oc overviewCharacter) {
-			a.ui.selectCharacterAndTab(oc.id, a.ui.skillTab, 0)
+			a.u.selectCharacterAndTab(oc.id, a.u.skillTab, 0)
 		}},
 		{"Wallet", 80, func(oc overviewCharacter) {
-			a.ui.selectCharacterAndTab(oc.id, a.ui.walletTab, 0)
+			a.u.selectCharacterAndTab(oc.id, a.u.walletTab, 0)
 		}},
 		{"Assets", 80, func(oc overviewCharacter) {
-			a.ui.selectCharacterAndTab(oc.id, a.ui.assetTab, 0)
+			a.u.selectCharacterAndTab(oc.id, a.u.assetTab, 0)
 		}},
 		{"Location", 150, func(oc overviewCharacter) {
 			if oc.location != nil {
-				a.ui.showLocationInfoWindow(oc.location.ID)
+				a.u.showLocationInfoWindow(oc.location.ID)
 			}
 		}},
 		{"System", 150, nil},
 		{"Region", 150, nil},
 		{"Ship", 150, func(oc overviewCharacter) {
 			if oc.ship != nil {
-				a.ui.showTypeInfoWindow(oc.ship.ID, a.ui.characterID())
+				a.u.showTypeInfoWindow(oc.ship.ID, a.u.characterID())
 			}
 		}},
 		{"Last Login", 100, nil},
 		{"Home", 150, func(oc overviewCharacter) {
 			if oc.home != nil {
-				a.ui.showLocationInfoWindow(oc.home.ID)
+				a.u.showLocationInfoWindow(oc.home.ID)
 			}
 		}},
 		{"Age", 100, nil},
@@ -265,7 +265,7 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 	var totals overviewTotals
 	var err error
 	ctx := context.TODO()
-	mycc, err := a.ui.CharacterService.ListCharacters(ctx)
+	mycc, err := a.u.CharacterService.ListCharacters(ctx)
 	if err != nil {
 		return totals, fmt.Errorf("failed to fetch characters: %w", err)
 	}
@@ -315,14 +315,14 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 		cc[i] = c
 	}
 	for i, c := range cc {
-		v, err := a.ui.CharacterService.GetCharacterTotalTrainingTime(ctx, c.id)
+		v, err := a.u.CharacterService.GetCharacterTotalTrainingTime(ctx, c.id)
 		if err != nil {
 			return totals, fmt.Errorf("failed to fetch skill queue count for character %d, %w", c.id, err)
 		}
 		cc[i].training = v
 	}
 	for i, c := range cc {
-		total, unread, err := a.ui.CharacterService.GetCharacterMailCounts(ctx, c.id)
+		total, unread, err := a.u.CharacterService.GetCharacterMailCounts(ctx, c.id)
 		if err != nil {
 			return totals, fmt.Errorf("failed to fetch mail counts for character %d, %w", c.id, err)
 		}
@@ -331,7 +331,7 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 		}
 	}
 	for i, c := range cc {
-		v, err := a.ui.CharacterService.CharacterAssetTotalValue(ctx, c.id)
+		v, err := a.u.CharacterService.CharacterAssetTotalValue(ctx, c.id)
 		if err != nil {
 			return totals, fmt.Errorf("failed to fetch asset total value for character %d, %w", c.id, err)
 		}
@@ -360,7 +360,7 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 		}
 	}
 	if hasUnread {
-		a.ui.showMailIndicator()
+		a.u.showMailIndicator()
 	}
 	return totals, nil
 }

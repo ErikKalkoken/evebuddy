@@ -29,18 +29,18 @@ func (a attribute) isText() bool {
 
 // attributesArea is the UI area that shows the skillqueue
 type attributesArea struct {
-	content    fyne.CanvasObject
 	attributes []attribute
-	top        *widget.Label
-	ui         *ui
+	content    fyne.CanvasObject
 	list       *widget.List
+	top        *widget.Label
+	u          *ui
 }
 
 func (u *ui) newAttributesArena() *attributesArea {
 	a := attributesArea{
 		attributes: make([]attribute, 0),
 		top:        widget.NewLabel(""),
-		ui:         u,
+		u:          u,
 	}
 	a.top.TextStyle.Bold = true
 	list := a.makeAttributeList()
@@ -110,7 +110,7 @@ func (a *attributesArea) refresh() {
 }
 
 func (a *attributesArea) makeTopText(total int) (string, widget.Importance) {
-	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionAttributes)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionAttributes)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
@@ -118,12 +118,12 @@ func (a *attributesArea) makeTopText(total int) (string, widget.Importance) {
 }
 
 func (a *attributesArea) updateData() (int, error) {
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		a.attributes = make([]attribute, 0)
 		return 0, nil
 	}
 	ctx := context.TODO()
-	ca, err := a.ui.CharacterService.GetCharacterAttributes(ctx, a.ui.characterID())
+	ca, err := a.u.CharacterService.GetCharacterAttributes(ctx, a.u.characterID())
 	if errors.Is(err, character.ErrNotFound) {
 		a.attributes = make([]attribute, 0)
 		return 0, nil

@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
@@ -28,11 +29,11 @@ type notificationCategory struct {
 // notificationsArea is the UI area that shows the skillqueue
 type notificationsArea struct {
 	content *container.Split
-	ui      *ui
+	u       *ui
 
 	categories   []notificationCategory
 	categoryList *widget.List
-	categoryTop  *widget.Label
+	top          *widget.Label
 
 	notifications    []*app.CharacterNotification
 	notificationList *widget.List
@@ -43,11 +44,11 @@ type notificationsArea struct {
 
 func (u *ui) newNotificationsArea() *notificationsArea {
 	a := notificationsArea{
-		ui:               u,
 		categories:       make([]notificationCategory, 0),
-		categoryTop:      widget.NewLabel(""),
 		notifications:    make([]*app.CharacterNotification, 0),
 		notificationsTop: widget.NewLabel(""),
+		top:              widget.NewLabel(""),
+		u:                u,
 	}
 	a.detail = container.NewVBox()
 	a.notificationList = a.makeNotificationList()
@@ -58,7 +59,7 @@ func (u *ui) newNotificationsArea() *notificationsArea {
 	split1.Offset = 0.35
 	a.categoryList = a.makeCategoryList()
 	a.content = container.NewHSplit(
-		container.NewBorder(a.categoryTop, nil, nil, nil, a.categoryList),
+		container.NewBorder(a.top, nil, nil, nil, a.categoryList),
 		split1,
 	)
 	a.content.Offset = 0.15
@@ -72,7 +73,7 @@ func (a *notificationsArea) makeCategoryList() *widget.List {
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(
-				widget.NewLabel("template"), layout.NewSpacer(), widgets.NewBadge("999"),
+				widget.NewLabel("template"), layout.NewSpacer(), kwidget.NewBadge("999"),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -82,7 +83,7 @@ func (a *notificationsArea) makeCategoryList() *widget.List {
 			c := a.categories[id]
 			hbox := co.(*fyne.Container).Objects
 			label := hbox[0].(*widget.Label)
-			badge := hbox[2].(*widgets.Badge)
+			badge := hbox[2].(*kwidget.Badge)
 			text := c.name
 			if c.unread > 0 {
 				label.TextStyle.Bold = true
@@ -145,9 +146,9 @@ func (a *notificationsArea) refresh() {
 	a.notificationList.UnselectAll()
 	a.notificationsTop.SetText("")
 	var counts map[evenotification.Category]int
-	if characterID := a.ui.characterID(); characterID != 0 {
+	if characterID := a.u.characterID(); characterID != 0 {
 		var err error
-		counts, err = a.ui.CharacterService.CalcCharacterNotificationUnreadCounts(context.TODO(), characterID)
+		counts, err = a.u.CharacterService.CountCharacterNotificationUnreads(context.TODO(), characterID)
 		if err != nil {
 			slog.Error("Failed to fetch notification unread counts", "error", err)
 		}
@@ -171,19 +172,28 @@ func (a *notificationsArea) refresh() {
 	a.categories = categories
 	a.categoryList.Refresh()
 	a.categoryList.UnselectAll()
-	a.categoryTop.SetText(fmt.Sprintf("%s total", humanize.Comma(int64(999))))
+	a.top.Text, a.top.Importance = a.makeTopText()
+	a.top.Refresh()
+}
+
+func (a *notificationsArea) makeTopText() (string, widget.Importance) {
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionImplants)
+	if !hasData {
+		return "Waiting for data to load...", widget.WarningImportance
+	}
+	return fmt.Sprintf("%d total", len(a.notifications)), widget.MediumImportance
 }
 
 func (a *notificationsArea) setNotifications(nc evenotification.Category) error {
 	ctx := context.TODO()
-	characterID := a.ui.characterID()
+	characterID := a.u.characterID()
 	var notifications []*app.CharacterNotification
 	var err error
 	if nc == 0 {
-		notifications, err = a.ui.CharacterService.ListCharacterNotificationsUnread(ctx, characterID)
+		notifications, err = a.u.CharacterService.ListCharacterNotificationsUnread(ctx, characterID)
 	} else {
 		types := evenotification.CategoryTypes[nc]
-		notifications, err = a.ui.CharacterService.ListCharacterNotificationsTypes(ctx, characterID, types)
+		notifications, err = a.u.CharacterService.ListCharacterNotificationsTypes(ctx, characterID, types)
 	}
 	if err != nil {
 		return err
@@ -192,20 +202,6 @@ func (a *notificationsArea) setNotifications(nc evenotification.Category) error 
 	a.notificationList.Refresh()
 	a.notificationsTop.SetText(fmt.Sprintf("%s notifications", humanize.Comma(int64(len(notifications)))))
 	return nil
-}
-
-func (a *notificationsArea) makeTopText() (string, widget.Importance) {
-	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionImplants)
-	if !hasData {
-		return "Waiting for character data to be loaded...", widget.WarningImportance
-	}
-	var unread int
-	for _, n := range a.notifications {
-		if !n.IsRead {
-			unread++
-		}
-	}
-	return fmt.Sprintf("%d notifications (%d unread)", len(a.notifications), unread), widget.MediumImportance
 }
 
 func (a *notificationsArea) setDetails(n *app.CharacterNotification) {

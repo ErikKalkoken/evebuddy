@@ -21,13 +21,13 @@ type wealthArea struct {
 	content fyne.CanvasObject
 	charts  *fyne.Container
 	top     *widget.Label
-	ui      *ui
+	u       *ui
 }
 
 func (u *ui) newWealthArea() *wealthArea {
 	a := &wealthArea{
-		ui:  u,
 		top: widget.NewLabel(""),
+		u:   u,
 	}
 	a.charts = a.makeCharts()
 	a.top.TextStyle.Bold = true
@@ -123,33 +123,33 @@ type dataRow struct {
 
 func (a *wealthArea) compileData() ([]dataRow, int, error) {
 	ctx := context.TODO()
-	cc, err := a.ui.CharacterService.ListCharacters(ctx)
+	cc, err := a.u.CharacterService.ListCharacters(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
 	selected := make([]*app.Character, 0)
 	for _, c := range cc {
-		hasAssets := a.ui.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets)
-		hasWallet := a.ui.StatusCacheService.CharacterSectionExists(c.ID, app.SectionWalletBalance)
+		hasAssets := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets)
+		hasWallet := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionWalletBalance)
 		if hasAssets && hasWallet {
 			selected = append(selected, c)
 		}
 	}
 	data := make([]dataRow, 0)
 	for _, c := range selected {
-		assetTotal, err := a.ui.CharacterService.CharacterAssetTotalValue(ctx, c.ID)
+		assetTotal, err := a.u.CharacterService.CharacterAssetTotalValue(ctx, c.ID)
 		if err != nil {
 			return nil, 0, err
 		}
-		if assetTotal.IsEmpty() && a.ui.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets) {
+		if assetTotal.IsEmpty() && a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets) {
 			go func(characterID int32) {
-				_, err := a.ui.CharacterService.UpdateCharacterAssetTotalValue(ctx, characterID)
+				_, err := a.u.CharacterService.UpdateCharacterAssetTotalValue(ctx, characterID)
 				if err != nil {
 					slog.Error("failed to update asset totals", "characterID", characterID, "err", err)
 					return
 				}
-				a.ui.wealthArea.refresh()
-				a.ui.overviewArea.refresh()
+				a.u.wealthArea.refresh()
+				a.u.overviewArea.refresh()
 			}(c.ID)
 		}
 		if c.WalletBalance.IsEmpty() && assetTotal.IsEmpty() {
