@@ -45,41 +45,40 @@ type ui struct {
 	EveImageService    app.EveImageService
 	EveUniverseService *eveuniverse.EveUniverseService
 	StatusCacheService app.StatusCacheService
-	fyneApp            fyne.App
-	deskApp            desktop.App
-	window             fyne.Window
-	ad                 appdirs.AppDirs
 
+	ad                    appdirs.AppDirs
 	assetsArea            *assetsArea
 	assetSearchArea       *assetSearchArea
+	assetTab              *container.TabItem
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
 	character             *app.Character
-	isOffline             bool
+	deskApp               desktop.App
+	fyneApp               fyne.App
 	implantsArea          *implantsArea
+	isOffline             bool
 	jumpClonesArea        *jumpClonesArea
 	mailArea              *mailArea
+	mailTab               *container.TabItem
 	notificationsArea     *notificationsArea
 	overviewArea          *overviewArea
+	overviewTab           *container.TabItem
+	settingsWindow        fyne.Window
 	sfg                   *singleflight.Group
-	statusBarArea         *statusBarArea
+	shipsArea             *shipsArea
 	skillCatalogueArea    *skillCatalogueArea
 	skillqueueArea        *skillqueueArea
-	shipsArea             *shipsArea
+	skillTab              *container.TabItem
+	statusBarArea         *statusBarArea
 	statusWindow          fyne.Window
-	settingsWindow        fyne.Window
+	tabs                  *container.AppTabs
 	themeName             string
 	toolbarArea           *toolbarArea
 	walletJournalArea     *walletJournalArea
+	walletTab             *container.TabItem
 	walletTransactionArea *walletTransactionArea
 	wealthArea            *wealthArea
-
-	assetTab    *container.TabItem
-	mailTab     *container.TabItem
-	overviewTab *container.TabItem
-	skillTab    *container.TabItem
-	walletTab   *container.TabItem
-	tabs        *container.AppTabs
+	window                fyne.Window
 }
 
 // NewUI build the UI and returns it.
@@ -89,11 +88,11 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isOffline bool) *ui {
 		log.Fatal("Failed to initialize as desktop app")
 	}
 	u := &ui{
+		ad:        ad,
+		deskApp:   desk,
 		fyneApp:   fyneApp,
 		isOffline: isOffline,
 		sfg:       new(singleflight.Group),
-		deskApp:   desk,
-		ad:        ad,
 	}
 	u.window = fyneApp.NewWindow(u.appName())
 	u.attributesArea = u.newAttributesArena()

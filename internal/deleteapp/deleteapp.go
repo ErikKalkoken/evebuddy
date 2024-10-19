@@ -41,7 +41,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) UI {
 func (u *UI) ShowAndRun() {
 	c := u.makePage()
 	u.window.SetContent(c)
-	u.window.Resize(fyne.Size{Width: 400, Height: 344})
+	u.window.Resize(fyne.Size{Width: 400, Height: 200})
 	u.window.ShowAndRun()
 }
 

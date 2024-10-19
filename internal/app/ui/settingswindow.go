@@ -18,7 +18,7 @@ import (
 
 type settingsWindow struct {
 	content fyne.CanvasObject
-	ui      *ui
+	u       *ui
 	window  fyne.Window
 }
 
@@ -44,7 +44,7 @@ func (u *ui) showSettingsWindow() {
 }
 
 func (u *ui) newSettingsWindow() (*settingsWindow, error) {
-	sw := &settingsWindow{ui: u}
+	sw := &settingsWindow{u: u}
 	tabs := container.NewAppTabs(
 		container.NewTabItem("General", sw.makeGeneralPage()),
 		container.NewTabItem("Eve Online", sw.makeEVEOnlinePage()),
@@ -67,19 +67,19 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 	themeRadio := widget.NewRadioGroup(
 		[]string{themeAuto, themeDark, themeLight}, func(s string) {},
 	)
-	current := w.ui.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault)
+	current := w.u.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault)
 	themeRadio.SetSelected(current)
 	themeRadio.OnChanged = func(string) {
-		w.ui.themeSet(themeRadio.Selected)
-		w.ui.fyneApp.Preferences().SetString(settingTheme, themeRadio.Selected)
+		w.u.themeSet(themeRadio.Selected)
+		w.u.fyneApp.Preferences().SetString(settingTheme, themeRadio.Selected)
 	}
 
 	// system tray
-	sysTrayEnabled := w.ui.fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault)
+	sysTrayEnabled := w.u.fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault)
 	sysTrayCheck := widget.NewCheck("Minimize to tray", nil)
 	sysTrayCheck.SetChecked(sysTrayEnabled)
 	sysTrayCheck.OnChanged = func(b bool) {
-		w.ui.fyneApp.Preferences().SetBool(settingSysTrayEnabled, sysTrayCheck.Checked)
+		w.u.fyneApp.Preferences().SetBool(settingSysTrayEnabled, sysTrayCheck.Checked)
 	}
 
 	// cache
@@ -91,10 +91,10 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 				if !confirmed {
 					return
 				}
-				count, err := w.ui.EveImageService.ClearCache()
+				count, err := w.u.EveImageService.ClearCache()
 				if err != nil {
 					slog.Error(err.Error())
-					w.ui.showErrorDialog("Failed to clear image cache", err)
+					w.u.showErrorDialog("Failed to clear image cache", err)
 				} else {
 					slog.Info("Cleared images cache", "count", count)
 				}
@@ -104,7 +104,7 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 		d.Show()
 	})
 	var cacheSize string
-	s, err := w.ui.EveImageService.Size()
+	s, err := w.u.EveImageService.Size()
 	if err != nil {
 		cacheSize = "?"
 	} else {
@@ -140,16 +140,16 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 func (w *settingsWindow) makeEVEOnlinePage() fyne.CanvasObject {
 	// max mails
 	maxMails := kwidget.NewSlider[int](0, settingMaxMailsMax, 1)
-	maxMails.SetValue(w.ui.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault))
+	maxMails.SetValue(w.u.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault))
 	maxMails.OnChangeEnded = func(v int) {
-		w.ui.fyneApp.Preferences().SetInt(settingMaxMails, v)
+		w.u.fyneApp.Preferences().SetInt(settingMaxMails, v)
 	}
 
 	// max transactions
 	maxTransactions := kwidget.NewSlider[int](0, settingMaxWalletTransactionsMax, 1)
-	maxTransactions.SetValue(w.ui.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault))
+	maxTransactions.SetValue(w.u.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault))
 	maxTransactions.OnChangeEnded = func(v int) {
-		w.ui.fyneApp.Preferences().SetInt(settingMaxWalletTransactions, v)
+		w.u.fyneApp.Preferences().SetInt(settingMaxWalletTransactions, v)
 	}
 
 	settings := &widget.Form{
@@ -178,9 +178,9 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 
 	// mail toogle
 	mailEnabledCheck := widget.NewCheck("Notif new mails", nil)
-	mailEnabledCheck.Checked = w.ui.fyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault)
+	mailEnabledCheck.Checked = w.u.fyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault)
 	mailEnabledCheck.OnChanged = func(b bool) {
-		w.ui.fyneApp.Preferences().SetBool(settingNotifyMailsEnabled, mailEnabledCheck.Checked)
+		w.u.fyneApp.Preferences().SetBool(settingNotifyMailsEnabled, mailEnabledCheck.Checked)
 	}
 	s1.AppendItem(&widget.FormItem{
 		Text:     "Mail",
@@ -190,9 +190,9 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 
 	// notifications toogle
 	communicationsEnabledCheck := widget.NewCheck("Notify new communications", nil)
-	communicationsEnabledCheck.Checked = w.ui.fyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault)
+	communicationsEnabledCheck.Checked = w.u.fyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault)
 	communicationsEnabledCheck.OnChanged = func(b bool) {
-		w.ui.fyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, communicationsEnabledCheck.Checked)
+		w.u.fyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, communicationsEnabledCheck.Checked)
 	}
 	s1.AppendItem(&widget.FormItem{
 		Text:     "Communications",
@@ -202,9 +202,9 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 
 	// max age
 	maxAge := kwidget.NewSlider[int](1, settingMaxAgeMax, 1)
-	maxAge.SetValue(w.ui.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault))
+	maxAge.SetValue(w.u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault))
 	maxAge.OnChangeEnded = func(v int) {
-		w.ui.fyneApp.Preferences().SetInt(settingMaxAge, v)
+		w.u.fyneApp.Preferences().SetInt(settingMaxAge, v)
 	}
 	s1.AppendItem(&widget.FormItem{
 		Text:     "Max age",
@@ -223,7 +223,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		categories = append(categories, c)
 	}
 	slices.Sort(categories)
-	typesEnabled := set.NewFromSlice(w.ui.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
+	typesEnabled := set.NewFromSlice(w.u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 	groups := make([]*widget.CheckGroup, 0)
 	for _, c := range categories {
 		nts := categoriesAndTypes[c]
@@ -240,7 +240,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 			for _, cg := range groups {
 				enabled = slices.Concat(enabled, cg.Selected)
 			}
-			w.ui.fyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, enabled)
+			w.u.fyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, enabled)
 		}
 		s2.AppendItem(widget.NewFormItem(c.String(), cg))
 		enableAll := widget.NewButton("Enable all", func() {

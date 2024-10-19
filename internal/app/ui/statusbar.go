@@ -46,17 +46,17 @@ type statusBarArea struct {
 	eveStatus          *widgets.StatusBarItem
 	eveStatusError     string
 	infoText           *widget.Label
+	u                  *ui
 	updateNotification *fyne.Container
 	updateStatus       *widgets.StatusBarItem
-	ui                 *ui
 }
 
 func (u *ui) newStatusBarArea() *statusBarArea {
 	a := &statusBarArea{
-		infoText:           widget.NewLabel(""),
 		eveClock:           binding.NewString(),
+		infoText:           widget.NewLabel(""),
+		u:                  u,
 		updateNotification: container.NewHBox(),
-		ui:                 u,
 	}
 	a.updateStatus = widgets.NewStatusBarItem(nil, "?", func() {
 		u.showStatusWindow()
@@ -92,7 +92,7 @@ func (a *statusBarArea) showDetail() {
 	lb := widget.NewLabel(text)
 	lb.Wrapping = fyne.TextWrapWord
 	lb.Importance = i
-	d := dialog.NewCustom("ESI status", "OK", lb, a.ui.window)
+	d := dialog.NewCustom("ESI status", "OK", lb, a.u.window)
 	d.Show()
 	d.Resize(fyne.Size{Width: 400, Height: 200})
 }
@@ -106,7 +106,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 			<-clockTicker.C
 		}
 	}()
-	if a.ui.isOffline {
+	if a.u.isOffline {
 		a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
 		a.refreshUpdateStatus()
 		return
@@ -121,7 +121,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 	esiStatusTicker := time.NewTicker(esiStatusUpdateTicker)
 	go func() {
 		for {
-			x, err := a.ui.ESIStatusService.Fetch(context.TODO())
+			x, err := a.u.ESIStatusService.Fetch(context.TODO())
 			var t, errorMessage string
 			var s eveStatus
 			if err != nil {
@@ -143,7 +143,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 		}
 	}()
 	go func() {
-		current := a.ui.fyneApp.Metadata().Version
+		current := a.u.fyneApp.Metadata().Version
 		_, isNewer, err := github.AvailableUpdate(githubOwner, githubRepo, current)
 		if err != nil {
 			slog.Error("Failed to fetch latest version from github", "err", err)
@@ -160,7 +160,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 }
 
 func (a *statusBarArea) refreshUpdateStatus() {
-	x := a.ui.StatusCacheService.Summary()
+	x := a.u.StatusCacheService.Summary()
 	a.updateStatus.SetTextAndImportance(x.Display(), status2widgetImportance(x.Status()))
 }
 

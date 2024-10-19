@@ -24,38 +24,38 @@ import (
 // mailArea is the UI area showing the mail folders.
 type mailArea struct {
 	content fyne.CanvasObject
-	ui      *ui
+	u       *ui
 
-	folderSection fyne.CanvasObject
-	lastUID       string
-	lastFolderAll folderNode
-	foldersWidget *widget.Tree
-	foldersData   *fynetree.FyneTree[folderNode]
 	currentFolder optional.Optional[folderNode]
+	foldersData   *fynetree.FyneTree[folderNode]
+	folderSection fyne.CanvasObject
+	foldersWidget *widget.Tree
+	lastFolderAll folderNode
+	lastUID       string
 
+	headerList    *widget.List
+	headers       []*app.CharacterMailHeader
 	headerSection fyne.CanvasObject
 	headerTop     *widget.Label
-	headerList    *widget.List
 	lastSelected  widget.ListItemID
-	headers       []*app.CharacterMailHeader
 
 	body        *widget.Label
-	mailSection fyne.CanvasObject
 	header      *widget.Label
 	mail        *app.CharacterMail
+	mailSection fyne.CanvasObject
 	subject     *widget.Label
 	toolbar     *widget.Toolbar
 }
 
 func (u *ui) newMailArea() *mailArea {
 	a := &mailArea{
-		foldersData: fynetree.New[folderNode](),
-		ui:          u,
-		headerTop:   widget.NewLabel(""),
-		headers:     make([]*app.CharacterMailHeader, 0),
 		body:        widget.NewLabel(""),
+		foldersData: fynetree.New[folderNode](),
 		header:      widget.NewLabel(""),
+		headers:     make([]*app.CharacterMailHeader, 0),
+		headerTop:   widget.NewLabel(""),
 		subject:     widget.NewLabel(""),
+		u:           u,
 	}
 
 	// Mail
@@ -210,12 +210,12 @@ func (a *mailArea) redraw() {
 }
 
 func (a *mailArea) refresh() {
-	characterID := a.ui.characterID()
+	characterID := a.u.characterID()
 	folderAll, err := a.updateFolderData(characterID)
 	if err != nil {
 		t := "Failed to build folder tree"
 		slog.Error(t, "character", characterID, "error", err)
-		a.ui.showErrorDialog(t, err)
+		a.u.showErrorDialog(t, err)
 		return
 	}
 	a.foldersWidget.Refresh()
@@ -241,8 +241,8 @@ func (a *mailArea) updateMailTab(unreadCount int) {
 	if unreadCount > 0 {
 		s += fmt.Sprintf(" (%s)", humanize.Comma(int64(unreadCount)))
 	}
-	a.ui.mailTab.Text = s
-	a.ui.tabs.Refresh()
+	a.u.mailTab.Text = s
+	a.u.tabs.Refresh()
 }
 
 func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
@@ -252,12 +252,12 @@ func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
 		return folderNode{}, nil
 	}
 	ctx := context.TODO()
-	labelUnreadCounts, err := a.ui.CharacterService.GetCharacterMailLabelUnreadCounts(ctx, characterID)
+	labelUnreadCounts, err := a.u.CharacterService.GetCharacterMailLabelUnreadCounts(ctx, characterID)
 	if err != nil {
 		a.foldersData = tree
 		return folderNode{}, err
 	}
-	listUnreadCounts, err := a.ui.CharacterService.GetCharacterMailListUnreadCounts(ctx, characterID)
+	listUnreadCounts, err := a.u.CharacterService.GetCharacterMailListUnreadCounts(ctx, characterID)
 	if err != nil {
 		a.foldersData = tree
 		return folderNode{}, err
@@ -303,7 +303,7 @@ func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
 	}
 
 	// Add custom labels
-	labels, err := a.ui.CharacterService.ListCharacterMailLabelsOrdered(ctx, characterID)
+	labels, err := a.u.CharacterService.ListCharacterMailLabelsOrdered(ctx, characterID)
 	if err != nil {
 		return folderNode{}, err
 	}
@@ -333,7 +333,7 @@ func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
 	}
 
 	// Add mailing lists
-	lists, err := a.ui.CharacterService.ListCharacterMailLists(ctx, characterID)
+	lists, err := a.u.CharacterService.ListCharacterMailLists(ctx, characterID)
 	if err != nil {
 		return folderNode{}, err
 	}
@@ -393,7 +393,7 @@ func (a *mailArea) makeHeaderList() *widget.List {
 				return
 			}
 			m := a.headers[id]
-			if !a.ui.hasCharacter() {
+			if !a.u.hasCharacter() {
 				return
 			}
 			item := co.(*widgets.MailHeaderItem)
@@ -451,10 +451,10 @@ func (a *mailArea) updateHeaders() error {
 	var err error
 	switch folder.Category {
 	case nodeCategoryLabel:
-		headers, err = a.ui.CharacterService.ListCharacterMailHeadersForLabelOrdered(
+		headers, err = a.u.CharacterService.ListCharacterMailHeadersForLabelOrdered(
 			ctx, folder.CharacterID, folder.ObjID)
 	case nodeCategoryList:
-		headers, err = a.ui.CharacterService.ListCharacterMailHeadersForListOrdered(
+		headers, err = a.u.CharacterService.ListCharacterMailHeadersForListOrdered(
 			ctx, folder.CharacterID, folder.ObjID)
 	}
 	if err != nil {
@@ -469,10 +469,10 @@ func (a *mailArea) updateHeaders() error {
 }
 
 func (a *mailArea) makeFolderTopText() (string, widget.Importance) {
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No Character", widget.LowImportance
 	}
-	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionSkillqueue)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
@@ -483,28 +483,28 @@ func (a *mailArea) makeFolderTopText() (string, widget.Importance) {
 func (a *mailArea) makeToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.MailReplyIcon(), func() {
-			a.ui.showSendMessageWindow(createMessageReply, a.mail)
+			a.u.showSendMessageWindow(createMessageReply, a.mail)
 		}),
 		widget.NewToolbarAction(theme.MailReplyAllIcon(), func() {
-			a.ui.showSendMessageWindow(createMessageReplyAll, a.mail)
+			a.u.showSendMessageWindow(createMessageReplyAll, a.mail)
 		}),
 		widget.NewToolbarAction(theme.MailForwardIcon(), func() {
-			a.ui.showSendMessageWindow(createMessageForward, a.mail)
+			a.u.showSendMessageWindow(createMessageForward, a.mail)
 		}),
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.DeleteIcon(), func() {
 			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Subject)
 			d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
 				if confirmed {
-					if err := a.ui.CharacterService.DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID); err != nil {
+					if err := a.u.CharacterService.DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID); err != nil {
 						t := "Failed to delete mail"
 						slog.Error(t, "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
-						a.ui.showErrorDialog(t, err)
+						a.u.showErrorDialog(t, err)
 					} else {
 						a.headerRefresh()
 					}
 				}
-			}, a.ui.window)
+			}, a.u.window)
 			d.Show()
 		}),
 	)
@@ -518,24 +518,24 @@ func (a *mailArea) clearMail() {
 
 func (a *mailArea) setMail(mailID int32) {
 	ctx := context.TODO()
-	characterID := a.ui.characterID()
+	characterID := a.u.characterID()
 	var err error
-	a.mail, err = a.ui.CharacterService.GetCharacterMail(ctx, characterID, mailID)
+	a.mail, err = a.u.CharacterService.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
 		a.setErrorText()
 		return
 	}
-	if !a.ui.isOffline && !a.mail.IsRead {
+	if !a.u.isOffline && !a.mail.IsRead {
 		go func() {
-			err = a.ui.CharacterService.UpdateMailRead(ctx, characterID, a.mail.MailID)
+			err = a.u.CharacterService.UpdateMailRead(ctx, characterID, a.mail.MailID)
 			if err != nil {
 				slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
 				a.setErrorText()
 				return
 			}
 			a.refresh()
-			a.ui.overviewArea.refresh()
+			a.u.overviewArea.refresh()
 		}()
 	}
 

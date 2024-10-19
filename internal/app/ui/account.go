@@ -30,7 +30,7 @@ type accountArea struct {
 	content    *fyne.Container
 	dialog     *dialog.CustomDialog
 	list       *widget.List
-	ui         *ui
+	u          *ui
 }
 
 func (u *ui) showAccountDialog() error {
@@ -53,17 +53,17 @@ func (u *ui) showAccountDialog() error {
 		if currentChars.Equal(incomingChars) {
 			return
 		}
-		if !incomingChars.Contains(a.ui.characterID()) {
-			if err := a.ui.setAnyCharacter(); err != nil {
+		if !incomingChars.Contains(a.u.characterID()) {
+			if err := a.u.setAnyCharacter(); err != nil {
 				slog.Error("Failed to set any character", "error", err)
 			}
 		}
 		if currentChars.Difference(incomingChars).Size() == 0 {
 			// no char has been deleted but still need to update switch button
-			a.ui.toolbarArea.refresh()
+			a.u.toolbarArea.refresh()
 			return
 		}
-		a.ui.refreshCrossPages()
+		a.u.refreshCrossPages()
 	})
 	dialog.Show()
 	dialog.Resize(fyne.Size{Width: 500, Height: 500})
@@ -77,7 +77,7 @@ func (u *ui) showAccountDialog() error {
 func (u *ui) newAccountArea() *accountArea {
 	a := &accountArea{
 		characters: make([]accountCharacter, 0),
-		ui:         u,
+		u:          u,
 	}
 
 	a.bottom = widget.NewLabel("Hint: Click any character to enable it")
@@ -90,7 +90,7 @@ func (u *ui) newAccountArea() *accountArea {
 		a.showAddCharacterDialog()
 	})
 	b.Importance = widget.HighImportance
-	if a.ui.isOffline {
+	if a.u.isOffline {
 		b.Disable()
 	}
 	a.content = container.NewBorder(b, a.bottom, nil, nil, a.list)
@@ -133,7 +133,7 @@ func (a *accountArea) makeCharacterList() *widget.List {
 
 			icon := row[0].(*canvas.Image)
 			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.ui.EveImageService.CharacterPortrait(c.id, defaultIconSize)
+				return a.u.EveImageService.CharacterPortrait(c.id, defaultIconSize)
 			})
 
 			row[3].(*widget.Button).OnTapped = func() {
@@ -146,7 +146,7 @@ func (a *accountArea) makeCharacterList() *widget.List {
 			return
 		}
 		c := a.characters[id]
-		if err := a.ui.loadCharacter(context.TODO(), c.id); err != nil {
+		if err := a.u.loadCharacter(context.TODO(), c.id); err != nil {
 			slog.Error("failed to load current character", "char", c, "err", err)
 			return
 		}
@@ -162,7 +162,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 		func(confirmed bool) {
 			if confirmed {
 				err := func(characterID int32) error {
-					err := a.ui.CharacterService.DeleteCharacter(context.TODO(), characterID)
+					err := a.u.CharacterService.DeleteCharacter(context.TODO(), characterID)
 					if err != nil {
 						return err
 					}
@@ -173,17 +173,17 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 				}(c.id)
 				if err != nil {
 					slog.Error("Failed to delete a character", "character", c, "err", err)
-					a.ui.showErrorDialog("Failed to delete a character", err)
+					a.u.showErrorDialog("Failed to delete a character", err)
 				}
 			}
 		},
-		a.ui.window,
+		a.u.window,
 	)
 	d1.Show()
 }
 
 func (a *accountArea) Refresh() error {
-	cc, err := a.ui.CharacterService.ListCharactersShort(context.TODO())
+	cc, err := a.u.CharacterService.ListCharactersShort(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -210,13 +210,13 @@ func (a *accountArea) showAddCharacterDialog() {
 		"Add Character",
 		"Cancel",
 		content,
-		a.ui.window,
+		a.u.window,
 	)
 	d1.SetOnClosed(cancel)
 	go func() {
 		err := func() error {
 			defer cancel()
-			characterID, err := a.ui.CharacterService.UpdateOrCreateCharacterFromSSO(ctx, infoText)
+			characterID, err := a.u.CharacterService.UpdateOrCreateCharacterFromSSO(ctx, infoText)
 			if errors.Is(err, character.ErrAborted) {
 				return nil
 			} else if err != nil {
@@ -225,13 +225,13 @@ func (a *accountArea) showAddCharacterDialog() {
 			if err := a.Refresh(); err != nil {
 				return err
 			}
-			a.ui.updateCharacterAndRefreshIfNeeded(ctx, characterID, false)
+			a.u.updateCharacterAndRefreshIfNeeded(ctx, characterID, false)
 			return nil
 		}()
 		d1.Hide()
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
-			a.ui.showErrorDialog("Failed add a new character", err)
+			a.u.showErrorDialog("Failed add a new character", err)
 		}
 	}()
 	d1.Show()

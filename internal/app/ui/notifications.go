@@ -29,7 +29,7 @@ type notificationCategory struct {
 // notificationsArea is the UI area that shows the skillqueue
 type notificationsArea struct {
 	content *container.Split
-	ui      *ui
+	u       *ui
 
 	categories   []notificationCategory
 	categoryList *widget.List
@@ -44,11 +44,11 @@ type notificationsArea struct {
 
 func (u *ui) newNotificationsArea() *notificationsArea {
 	a := notificationsArea{
-		ui:               u,
 		categories:       make([]notificationCategory, 0),
-		top:              widget.NewLabel(""),
 		notifications:    make([]*app.CharacterNotification, 0),
 		notificationsTop: widget.NewLabel(""),
+		top:              widget.NewLabel(""),
+		u:                u,
 	}
 	a.detail = container.NewVBox()
 	a.notificationList = a.makeNotificationList()
@@ -146,9 +146,9 @@ func (a *notificationsArea) refresh() {
 	a.notificationList.UnselectAll()
 	a.notificationsTop.SetText("")
 	var counts map[evenotification.Category]int
-	if characterID := a.ui.characterID(); characterID != 0 {
+	if characterID := a.u.characterID(); characterID != 0 {
 		var err error
-		counts, err = a.ui.CharacterService.CalcCharacterNotificationUnreadCounts(context.TODO(), characterID)
+		counts, err = a.u.CharacterService.CalcCharacterNotificationUnreadCounts(context.TODO(), characterID)
 		if err != nil {
 			slog.Error("Failed to fetch notification unread counts", "error", err)
 		}
@@ -177,7 +177,7 @@ func (a *notificationsArea) refresh() {
 }
 
 func (a *notificationsArea) makeTopText() (string, widget.Importance) {
-	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionImplants)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
@@ -186,14 +186,14 @@ func (a *notificationsArea) makeTopText() (string, widget.Importance) {
 
 func (a *notificationsArea) setNotifications(nc evenotification.Category) error {
 	ctx := context.TODO()
-	characterID := a.ui.characterID()
+	characterID := a.u.characterID()
 	var notifications []*app.CharacterNotification
 	var err error
 	if nc == 0 {
-		notifications, err = a.ui.CharacterService.ListCharacterNotificationsUnread(ctx, characterID)
+		notifications, err = a.u.CharacterService.ListCharacterNotificationsUnread(ctx, characterID)
 	} else {
 		types := evenotification.CategoryTypes[nc]
-		notifications, err = a.ui.CharacterService.ListCharacterNotificationsTypes(ctx, characterID, types)
+		notifications, err = a.u.CharacterService.ListCharacterNotificationsTypes(ctx, characterID, types)
 	}
 	if err != nil {
 		return err

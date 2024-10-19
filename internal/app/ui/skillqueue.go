@@ -22,16 +22,16 @@ import (
 type skillqueueArea struct {
 	content *fyne.Container
 	items   []*app.CharacterSkillqueueItem
-	total   *widget.Label
-	ui      *ui
 	list    *widget.List
+	total   *widget.Label
+	u       *ui
 }
 
 func (u *ui) newSkillqueueArea() *skillqueueArea {
 	a := skillqueueArea{
 		items: make([]*app.CharacterSkillqueueItem, 0),
 		total: widget.NewLabel(""),
-		ui:    u,
+		u:     u,
 	}
 
 	a.total.TextStyle.Bold = true
@@ -98,14 +98,14 @@ func (a *skillqueueArea) makeSkillqueue() *widget.List {
 
 		}
 		s := container.NewScroll(form)
-		dlg := dialog.NewCustom("Skill Details", "OK", s, a.ui.window)
+		dlg := dialog.NewCustom("Skill Details", "OK", s, a.u.window)
 		dlg.SetOnClosed(func() {
 			list.UnselectAll()
 		})
 		dlg.Show()
 		dlg.Resize(fyne.Size{
-			Width:  0.8 * a.ui.window.Canvas().Size().Width,
-			Height: 0.8 * a.ui.window.Canvas().Size().Height,
+			Width:  0.8 * a.u.window.Canvas().Size().Width,
+			Height: 0.8 * a.u.window.Canvas().Size().Height,
 		})
 	}
 	return list
@@ -124,8 +124,8 @@ func (a *skillqueueArea) refresh() {
 		if !completion.IsEmpty() && completion.ValueOrZero() < 1 {
 			s += fmt.Sprintf(" (%.0f%%)", completion.MustValue()*100)
 		}
-		a.ui.skillTab.Text = s
-		a.ui.tabs.Refresh()
+		a.u.skillTab.Text = s
+		a.u.tabs.Refresh()
 		t, i = a.makeTopText(total)
 	}
 	a.total.Text = t
@@ -137,11 +137,11 @@ func (a *skillqueueArea) updateItems() (optional.Optional[time.Duration], option
 	var remaining optional.Optional[time.Duration]
 	var completion optional.Optional[float64]
 	ctx := context.TODO()
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		a.items = make([]*app.CharacterSkillqueueItem, 0)
 		return remaining, completion, nil
 	}
-	items, err := a.ui.CharacterService.ListCharacterSkillqueueItems(ctx, a.ui.characterID())
+	items, err := a.u.CharacterService.ListCharacterSkillqueueItems(ctx, a.u.characterID())
 	if err != nil {
 		return remaining, completion, err
 	}
@@ -156,7 +156,7 @@ func (a *skillqueueArea) updateItems() (optional.Optional[time.Duration], option
 }
 
 func (a *skillqueueArea) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {
-	hasData := a.ui.StatusCacheService.CharacterSectionExists(a.ui.characterID(), app.SectionSkillqueue)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

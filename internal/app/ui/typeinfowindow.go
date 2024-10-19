@@ -180,15 +180,15 @@ type attributeRow struct {
 type typeInfoWindow struct {
 	attributesData []attributeRow
 	content        fyne.CanvasObject
-	location       *app.EveLocation
-	owner          *app.EveEntity
 	et             *app.EveType
-	price          *app.EveMarketPrice
 	fittingData    []attributeRow
+	location       *app.EveLocation
+	metaLevel      int
+	owner          *app.EveEntity
+	price          *app.EveMarketPrice
 	requiredSkills []requiredSkill
 	techLevel      int
-	metaLevel      int
-	ui             *ui
+	u              *ui
 	window         fyne.Window
 }
 
@@ -220,7 +220,7 @@ func (u *ui) showInfoWindow(iw *typeInfoWindow, err error) {
 func (u *ui) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*typeInfoWindow, error) {
 	ctx := context.TODO()
 	a := &typeInfoWindow{
-		ui: u,
+		u: u,
 	}
 	if locationID != 0 {
 		location, err := u.EveUniverseService.GetEveLocation(ctx, locationID)
@@ -349,7 +349,7 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 				x := attributes[app.EveDogmaAttributeWarpSpeedMultiplier]
 				value = value * x.Value
 			}
-			v, substituteIcon := a.ui.EveUniverseService.FormatValue(ctx, value, o.DogmaAttribute.Unit)
+			v, substituteIcon := a.u.EveUniverseService.FormatValue(ctx, value, o.DogmaAttribute.Unit)
 			var iconID int32
 			if substituteIcon != 0 {
 				iconID = substituteIcon
@@ -366,9 +366,9 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 	}
 	data := make([]attributeRow, 0)
 	if a.et.Volume > 0 {
-		v, _ := a.ui.EveUniverseService.FormatValue(ctx, a.et.Volume, app.EveUnitVolume)
+		v, _ := a.u.EveUniverseService.FormatValue(ctx, a.et.Volume, app.EveUnitVolume)
 		if a.et.Volume != a.et.PackagedVolume {
-			v2, _ := a.ui.EveUniverseService.FormatValue(ctx, a.et.PackagedVolume, app.EveUnitVolume)
+			v2, _ := a.u.EveUniverseService.FormatValue(ctx, a.et.PackagedVolume, app.EveUnitVolume)
 			v += fmt.Sprintf(" (%s Packaged)", v2)
 		}
 		r := attributeRow{
@@ -410,7 +410,7 @@ func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int
 		}
 		iconID := o.DogmaAttribute.IconID
 		r, _ := eveicon.GetResourceByIconID(iconID)
-		v, _ := a.ui.EveUniverseService.FormatValue(ctx, o.Value, o.DogmaAttribute.Unit)
+		v, _ := a.u.EveUniverseService.FormatValue(ctx, o.Value, o.DogmaAttribute.Unit)
 		data = append(data, attributeRow{
 			icon:  r,
 			label: o.DogmaAttribute.DisplayName,
@@ -444,7 +444,7 @@ func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int
 			continue
 		}
 		requiredLevel := int(daLevel.Value)
-		et, err := a.ui.EveUniverseService.GetEveType(ctx, typeID)
+		et, err := a.u.EveUniverseService.GetEveType(ctx, typeID)
 		if err != nil {
 			return nil, err
 		}
@@ -454,7 +454,7 @@ func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int
 			name:          et.Name,
 			typeID:        typeID,
 		}
-		cs, err := a.ui.CharacterService.GetCharacterSkill(ctx, characterID, typeID)
+		cs, err := a.u.CharacterService.GetCharacterSkill(ctx, characterID, typeID)
 		if errors.Is(err, character.ErrNotFound) {
 			// do nothing
 		} else if err != nil {
@@ -501,15 +501,15 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 	typeIcon := container.New(&topLeftLayout{})
 	if a.et.HasRender() {
 		size := 128
-		r, err := a.ui.EveImageService.InventoryTypeRender(a.et.ID, size)
+		r, err := a.u.EveImageService.InventoryTypeRender(a.et.ID, size)
 		if err != nil {
 			panic(err)
 		}
 		render := kwidget.NewTappableImage(r, canvas.ImageFillContain, func() {
-			w := a.ui.fyneApp.NewWindow(a.ui.makeWindowTitle(a.makeTitle("Render")))
+			w := a.u.fyneApp.NewWindow(a.u.makeWindowTitle(a.makeTitle("Render")))
 			size := 512
 			i := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
-				return a.ui.EveImageService.InventoryTypeRender(a.et.ID, size)
+				return a.u.EveImageService.InventoryTypeRender(a.et.ID, size)
 			})
 			i.FillMode = canvas.ImageFillContain
 			s := float32(size) / w.Canvas().Scale()
@@ -517,7 +517,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			w.SetContent(i)
 			w.Show()
 		})
-		s := float32(size) / a.ui.window.Canvas().Scale()
+		s := float32(size) / a.u.window.Canvas().Scale()
 		render.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(render)
 		if a.metaLevel > 4 {
@@ -538,15 +538,15 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		size := 64
 		icon := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
-				return a.ui.EveImageService.InventoryTypeSKIN(a.et.ID, size)
+				return a.u.EveImageService.InventoryTypeSKIN(a.et.ID, size)
 			} else if a.et.IsBlueprint() {
-				return a.ui.EveImageService.InventoryTypeBPO(a.et.ID, size)
+				return a.u.EveImageService.InventoryTypeBPO(a.et.ID, size)
 			} else {
-				return a.ui.EveImageService.InventoryTypeIcon(a.et.ID, size)
+				return a.u.EveImageService.InventoryTypeIcon(a.et.ID, size)
 			}
 		})
 		icon.FillMode = canvas.ImageFillContain
-		s := float32(size) * 1.3 / a.ui.window.Canvas().Scale()
+		s := float32(size) * 1.3 / a.u.window.Canvas().Scale()
 		icon.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(icon)
 	}
@@ -557,9 +557,9 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		refreshImageResourceAsync(ownerIcon, func() (fyne.Resource, error) {
 			switch a.owner.Category {
 			case app.EveEntityCharacter:
-				return a.ui.EveImageService.CharacterPortrait(a.owner.ID, 32)
+				return a.u.EveImageService.CharacterPortrait(a.owner.ID, 32)
 			case app.EveEntityCorporation:
-				return a.ui.EveImageService.CorporationLogo(a.owner.ID, 32)
+				return a.u.EveImageService.CorporationLogo(a.owner.ID, 32)
 			default:
 				panic("Unexpected owner type")
 			}
@@ -697,7 +697,7 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 	)
 	l.OnSelected = func(id widget.ListItemID) {
 		r := a.requiredSkills[id]
-		a.ui.showTypeInfoWindow(r.typeID, a.owner.ID)
+		a.u.showTypeInfoWindow(r.typeID, a.owner.ID)
 		l.UnselectAll()
 	}
 	return l

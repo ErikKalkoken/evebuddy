@@ -40,26 +40,26 @@ type skillTrained struct {
 // skillCatalogueArea is the UI area that shows the skill catalogue
 type skillCatalogueArea struct {
 	content        *fyne.Container
-	groupsGrid     *widget.GridWrap
 	groups         []skillGroupProgress
-	skillsGrid     *widget.GridWrap
-	skills         []skillTrained
-	total          *widget.Label
+	groupsGrid     *widget.GridWrap
 	levelBlocked   *theme.ErrorThemedResource
 	levelTrained   *theme.PrimaryThemedResource
 	levelUnTrained *theme.DisabledResource
-	ui             *ui
+	skills         []skillTrained
+	skillsGrid     *widget.GridWrap
+	total          *widget.Label
+	u              *ui
 }
 
 func (u *ui) newSkillCatalogueArea() *skillCatalogueArea {
 	a := &skillCatalogueArea{
 		groups:         make([]skillGroupProgress, 0),
-		skills:         make([]skillTrained, 0),
-		total:          widget.NewLabel(""),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
-		ui:             u,
+		skills:         make([]skillTrained, 0),
+		total:          widget.NewLabel(""),
+		u:              u,
 	}
 	a.total.TextStyle.Bold = true
 	a.groupsGrid = a.makeSkillGroups()
@@ -107,12 +107,12 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 			return
 		}
 		group := a.groups[id]
-		if !a.ui.hasCharacter() {
+		if !a.u.hasCharacter() {
 			g.UnselectAll()
 			return
 		}
-		oo, err := a.ui.CharacterService.ListCharacterSkillProgress(
-			context.TODO(), a.ui.characterID(), group.id,
+		oo, err := a.u.CharacterService.ListCharacterSkillProgress(
+			context.TODO(), a.u.characterID(), group.id,
 		)
 		if err != nil {
 			slog.Error("Failed to fetch skill group data", "err", err)
@@ -165,7 +165,7 @@ func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 			return
 		}
 		skill := a.skills[id]
-		a.ui.showTypeInfoWindow(skill.id, a.ui.characterID())
+		a.u.showTypeInfoWindow(skill.id, a.u.characterID())
 	}
 	return g
 }
@@ -178,7 +178,7 @@ func (a *skillCatalogueArea) redraw() {
 
 func (a *skillCatalogueArea) refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
-		exists := a.ui.StatusCacheService.GeneralSectionExists(app.SectionEveCategories)
+		exists := a.u.StatusCacheService.GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
 			return "Waiting for universe data to be loaded...", widget.WarningImportance, nil
 		}
@@ -198,10 +198,10 @@ func (a *skillCatalogueArea) refresh() {
 }
 
 func (a *skillCatalogueArea) makeTopText() (string, widget.Importance, error) {
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No Character", widget.LowImportance, nil
 	}
-	c := a.ui.currentCharacter()
+	c := a.u.currentCharacter()
 	total := ihumanize.Optional(c.TotalSP, "?")
 	unallocated := ihumanize.Optional(c.UnallocatedSP, "?")
 	t := fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated)
@@ -209,10 +209,10 @@ func (a *skillCatalogueArea) makeTopText() (string, widget.Importance, error) {
 }
 
 func (a *skillCatalogueArea) updateGroups() error {
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		return nil
 	}
-	gg, err := a.ui.CharacterService.ListCharacterSkillGroupsProgress(context.TODO(), a.ui.characterID())
+	gg, err := a.u.CharacterService.ListCharacterSkillGroupsProgress(context.TODO(), a.u.characterID())
 	if err != nil {
 		return err
 	}

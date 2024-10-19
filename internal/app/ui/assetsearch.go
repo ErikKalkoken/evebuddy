@@ -43,7 +43,7 @@ type assetSearchArea struct {
 	colSearch       []string
 	searchBoxes     []*widget.Entry
 	total           *widget.Label
-	ui              *ui
+	u               *ui
 }
 
 type assetSearchRow struct {
@@ -65,7 +65,7 @@ type assetSearchRow struct {
 
 func (u *ui) newAssetSearchArea() *assetSearchArea {
 	a := &assetSearchArea{
-		ui:             u,
+		u:              u,
 		assetsFiltered: make([]*assetSearchRow, 0),
 		iconSortAsc:    theme.MoveUpIcon(),
 		iconSortDesc:   theme.MoveDownIcon(),
@@ -228,9 +228,9 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 		r := a.assetsFiltered[tci.Row]
 		switch tci.Col {
 		case 0:
-			a.ui.showTypeInfoWindow(r.typeID, a.ui.characterID())
+			a.u.showTypeInfoWindow(r.typeID, a.u.characterID())
 		case 3:
-			a.ui.showLocationInfoWindow(r.locationID)
+			a.u.showLocationInfoWindow(r.locationID)
 		}
 	}
 	return t
@@ -346,7 +346,7 @@ func (a *assetSearchArea) refresh() {
 
 func (a *assetSearchArea) loadData() (bool, error) {
 	ctx := context.TODO()
-	cc, err := a.ui.CharacterService.ListCharactersShort(ctx)
+	cc, err := a.u.CharacterService.ListCharactersShort(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -358,11 +358,11 @@ func (a *assetSearchArea) loadData() (bool, error) {
 		m2[o.ID] = o.Name
 	}
 	a.characterNames = m2
-	assets, err := a.ui.CharacterService.ListAllCharacterAssets(ctx)
+	assets, err := a.u.CharacterService.ListAllCharacterAssets(ctx)
 	if err != nil {
 		return false, err
 	}
-	locations, err := a.ui.EveUniverseService.ListEveLocations(ctx)
+	locations, err := a.u.EveUniverseService.ListEveLocations(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -387,10 +387,10 @@ func (a *assetSearchArea) updateFoundInfo() {
 }
 
 func (a *assetSearchArea) characterCount() int {
-	cc := a.ui.StatusCacheService.ListCharacters()
+	cc := a.u.StatusCacheService.ListCharacters()
 	validCount := 0
 	for _, c := range cc {
-		if a.ui.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets) {
+		if a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets) {
 			validCount++
 		}
 	}

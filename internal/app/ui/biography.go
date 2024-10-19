@@ -10,11 +10,11 @@ import (
 type biographyArea struct {
 	content fyne.CanvasObject
 	text    *widget.Label
-	ui      *ui
+	u       *ui
 }
 
 func (u *ui) newBiographyArea() *biographyArea {
-	a := &biographyArea{ui: u, text: widget.NewLabel("")}
+	a := &biographyArea{u: u, text: widget.NewLabel("")}
 	a.text.Wrapping = fyne.TextWrapBreak
 	a.content = a.text
 	return a
@@ -22,7 +22,7 @@ func (u *ui) newBiographyArea() *biographyArea {
 
 func (a *biographyArea) refresh() {
 	var s string
-	c := a.ui.currentCharacter()
+	c := a.u.currentCharacter()
 	if c == nil {
 		s = ""
 	} else {

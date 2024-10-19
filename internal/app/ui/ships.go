@@ -18,20 +18,20 @@ import (
 // shipsArea is the UI area that shows the skillqueue
 type shipsArea struct {
 	content       *fyne.Container
-	ships         []*app.CharacterShipAbility
-	searchBox     *widget.Entry
-	groupSelect   *widget.Select
-	selectedGroup string
 	grid          *widget.GridWrap
+	groupSelect   *widget.Select
+	searchBox     *widget.Entry
+	selectedGroup string
+	ships         []*app.CharacterShipAbility
 	top           *widget.Label
-	ui            *ui
+	u             *ui
 }
 
 func (u *ui) newShipArea() *shipsArea {
 	a := shipsArea{
-		ui:    u,
 		ships: make([]*app.CharacterShipAbility, 0),
 		top:   widget.NewLabel(""),
+		u:     u,
 	}
 	a.top.TextStyle.Bold = true
 	a.searchBox = a.makeSearchBox()
@@ -54,7 +54,7 @@ func (a *shipsArea) makeGroupSelect() *widget.Select {
 		if err := a.updateEntries(context.TODO()); err != nil {
 			t := "Failed to update ship search"
 			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
+			a.u.statusBarArea.SetError(t)
 		}
 		a.grid.Refresh()
 		a.grid.ScrollToTop()
@@ -72,7 +72,7 @@ func (a *shipsArea) makeSearchBox() *widget.Entry {
 		if err := a.updateEntries(context.TODO()); err != nil {
 			t := "Failed to update ship search"
 			slog.Error(t, "err", err)
-			a.ui.statusBarArea.SetError(t)
+			a.u.statusBarArea.SetError(t)
 		}
 		a.grid.Refresh()
 		a.grid.ScrollToTop()
@@ -86,7 +86,7 @@ func (a *shipsArea) makeShipsGrid() *widget.GridWrap {
 			return len(a.ships)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewShipItem(a.ui.EveImageService, resourceQuestionmarkSvg)
+			return widgets.NewShipItem(a.u.EveImageService, resourceQuestionmarkSvg)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.ships) {
@@ -102,14 +102,14 @@ func (a *shipsArea) makeShipsGrid() *widget.GridWrap {
 			return
 		}
 		o := a.ships[id]
-		a.ui.showTypeInfoWindow(o.Type.ID, a.ui.characterID())
+		a.u.showTypeInfoWindow(o.Type.ID, a.u.characterID())
 	}
 	return g
 }
 
 func (a *shipsArea) refresh() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
-		exists := a.ui.StatusCacheService.GeneralSectionExists(app.SectionEveCategories)
+		exists := a.u.StatusCacheService.GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
 			return "Waiting for universe data to be loaded...", widget.WarningImportance, false, nil
 		}
@@ -136,16 +136,16 @@ func (a *shipsArea) refresh() {
 }
 
 func (a *shipsArea) updateEntries(ctx context.Context) error {
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		a.ships = make([]*app.CharacterShipAbility, 0)
 		a.grid.Refresh()
 		a.searchBox.SetText("")
 		a.groupSelect.SetOptions([]string{})
 		return nil
 	}
-	characterID := a.ui.characterID()
+	characterID := a.u.characterID()
 	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
-	oo, err := a.ui.CharacterService.ListCharacterShipsAbilities(ctx, characterID, search)
+	oo, err := a.u.CharacterService.ListCharacterShipsAbilities(ctx, characterID, search)
 	if err != nil {
 		return err
 	}
@@ -168,15 +168,15 @@ func (a *shipsArea) updateEntries(ctx context.Context) error {
 }
 
 func (a *shipsArea) makeTopText(ctx context.Context) (string, widget.Importance, bool, error) {
-	if !a.ui.hasCharacter() {
+	if !a.u.hasCharacter() {
 		return "No character", widget.LowImportance, false, nil
 	}
-	characterID := a.ui.characterID()
-	hasData := a.ui.StatusCacheService.CharacterSectionExists(characterID, app.SectionSkills)
+	characterID := a.u.characterID()
+	hasData := a.u.StatusCacheService.CharacterSectionExists(characterID, app.SectionSkills)
 	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil
 	}
-	oo, err := a.ui.CharacterService.ListCharacterShipsAbilities(ctx, characterID, "%%")
+	oo, err := a.u.CharacterService.ListCharacterShipsAbilities(ctx, characterID, "%%")
 	if err != nil {
 		return "", 0, false, err
 	}
