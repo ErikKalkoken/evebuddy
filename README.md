@@ -53,7 +53,7 @@ A more detailed overview of the provided features:
 
 ![example](https://cdn.imgpile.com/f/0zxWmcB_xl.png)
 
-## Install
+## Installing
 
 To install EVE buddy just download and unzip the latest release from the releases page to your computer. The app ships as a single executable file that can be run directly. When you run the app for the first time it will automatically install itself for the current user (i.e. by creating folders in the home folder for the current user).
 
@@ -96,19 +96,21 @@ When you have all necessary tools installed, you can build and run this app dire
 go run github.com/ErikKalkoken/evebuddy@latest
 ```
 
-## Update
+## Updating
 
 The app will inform you when there is a new version available for download. To update your app just download and unzip the newest version for your platform from the [releases page](https://github.com/ErikKalkoken/evebuddy/releases). Then overwrite the old executable file with the new one.
 
-## Uninstall
+## Uninstalling
 
-If you no longer want to use the app you can uninstall it by running the executable with the uninstall parameter:
+If you no longer want to use the app you can uninstall it.
+
+First start the app for deleting user data:
 
 ```sh
-./evebuddy -uninstall
+./evebuddy --delete-data
 ```
 
-This command will ask for confirmation and then remove all user data from your computer like characters, log files, etc.
+This command will ask for confirmation and then delete user data from your computer like characters, log files, etc.
 
 Then delete the file itself:
 

@@ -30,10 +30,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
+	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/ErikKalkoken/evebuddy/internal/httptransport"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
-	"github.com/ErikKalkoken/evebuddy/internal/uninstall"
 )
 
 const (
@@ -57,7 +57,12 @@ func (l logLevelFlag) String() string {
 }
 
 func (l *logLevelFlag) Set(value string) error {
-	m := map[string]slog.Level{"DEBUG": slog.LevelDebug, "INFO": slog.LevelInfo, "WARN": slog.LevelWarn, "ERROR": slog.LevelError}
+	m := map[string]slog.Level{
+		"DEBUG": slog.LevelDebug,
+		"INFO":  slog.LevelInfo,
+		"WARN":  slog.LevelWarn,
+		"ERROR": slog.LevelError,
+	}
 	v, ok := m[strings.ToUpper(value)]
 	if !ok {
 		return fmt.Errorf("unknown log level")
@@ -70,7 +75,7 @@ func (l *logLevelFlag) Set(value string) error {
 var (
 	levelFlag     logLevelFlag
 	offlineFlag   = flag.Bool("offline", false, "Start app in offline mode")
-	uninstallFlag = flag.Bool("uninstall", false, "Start uninstall app")
+	deleteAppFlag = flag.Bool("delete-data", false, "Delete user data")
 	pprofFlag     = flag.Bool("pprof", false, "Enable pprof web server")
 )
 
@@ -143,9 +148,9 @@ func main() {
 	ad.SetSettings(fyneApp.Storage().RootURI().Path())
 
 	// start uninstall app if requested
-	if *uninstallFlag {
+	if *deleteAppFlag {
 		log.SetOutput(os.Stderr)
-		u := uninstall.NewUI(fyneApp, ad)
+		u := deleteapp.NewUI(fyneApp, ad)
 		u.ShowAndRun()
 		return
 	}

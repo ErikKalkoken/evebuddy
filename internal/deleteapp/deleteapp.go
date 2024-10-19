@@ -1,4 +1,5 @@
-package uninstall
+// Package deleteapp contains the Fyne app for deleting the current users's data.
+package deleteapp
 
 import (
 	"context"
@@ -27,7 +28,7 @@ type UI struct {
 }
 
 func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) UI {
-	w := fyneApp.NewWindow("Uninstall - EVE Buddy")
+	w := fyneApp.NewWindow("Delete User Data - EVE Buddy")
 	x := UI{
 		app:    fyneApp,
 		ad:     ad,
@@ -36,7 +37,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) UI {
 	return x
 }
 
-// RunApp runs the uninstall app
+// RunApp runs the delete data app
 func (u *UI) ShowAndRun() {
 	c := u.makePage()
 	u.window.SetContent(c)
@@ -45,13 +46,12 @@ func (u *UI) ShowAndRun() {
 }
 
 func (u *UI) makePage() *fyne.Container {
-	label := widget.NewLabel(fmt.Sprintf(
-		"Are you sure you want to uninstall %s\n"+
-			"and delete all user files?",
-		u.app.Metadata().Name,
+	label := widget.NewLabel(fmt.Sprint(
+		"Are you sure you want to delete\n" +
+			"all data of the current user?",
 	))
-	okBtn := widget.NewButtonWithIcon("Uninstall", theme.ConfirmIcon(), func() {
-		title := widget.NewLabel("Removing user files...")
+	okBtn := widget.NewButtonWithIcon("Delete", theme.ConfirmIcon(), func() {
+		title := widget.NewLabel("Deleting user data...")
 		pb := widget.NewProgressBar()
 		errText := widget.NewLabel("")
 		errText.Importance = widget.DangerImportance
@@ -74,12 +74,12 @@ func (u *UI) makePage() *fyne.Container {
 		u.window.SetContent(c)
 		go func() {
 			if err := u.removeFolders(ctx, pb); err == ErrCancel {
-				title.SetText("Uninstall aborted")
+				title.SetText("Data delete aborted")
 			} else if err != nil {
-				title.SetText("Uninstall failed")
+				title.SetText("Data delete failed")
 				errText.SetText(fmt.Sprintf("ERROR: %s", err))
 			} else {
-				title.SetText("Uninstall completed")
+				title.SetText("Data delete completed")
 			}
 			cancel()
 			cancelBtn.Disable()
@@ -101,7 +101,7 @@ func (u *UI) makePage() *fyne.Container {
 }
 
 func (u *UI) closeWithDialog(message string) {
-	d := dialog.NewInformation("Uninstall", message, u.window)
+	d := dialog.NewInformation("Delete User Data", message, u.window)
 	d.SetOnClosed(u.window.Close)
 	d.Show()
 }
