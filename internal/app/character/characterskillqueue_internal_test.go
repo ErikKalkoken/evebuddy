@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
 
@@ -26,28 +25,28 @@ func TestUpdateSkillqueueESI(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 100})
-		factory.CreateEveType(storage.CreateEveTypeParams{ID: 101})
+		t1 := factory.CreateEveType()
+		t2 := factory.CreateEveType()
 		data := []map[string]any{
 			{
 				"finish_date":    "2016-06-29T10:47:00Z",
 				"finished_level": 3,
 				"queue_position": 0,
-				"skill_id":       100,
+				"skill_id":       t1.ID,
 				"start_date":     "2016-06-29T10:46:00Z",
 			},
 			{
 				"finish_date":    "2016-07-15T10:47:00Z",
 				"finished_level": 4,
 				"queue_position": 1,
-				"skill_id":       100,
+				"skill_id":       t1.ID,
 				"start_date":     "2016-06-29T10:47:00Z",
 			},
 			{
 				"finish_date":    "2016-08-30T10:47:00Z",
 				"finished_level": 2,
 				"queue_position": 2,
-				"skill_id":       101,
+				"skill_id":       t2.ID,
 				"start_date":     "2016-07-15T10:47:00Z",
 			}}
 		httpmock.RegisterResponder(

@@ -25,7 +25,7 @@ func TestSendMail(t *testing.T) {
 		httpmock.Reset()
 		c := factory.CreateCharacter()
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		r := factory.CreateEveEntityCharacter(app.EveEntity{ID: 90000001})
+		r := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"POST",
