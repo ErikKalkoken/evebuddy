@@ -18,21 +18,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-type accountCharacter struct {
-	id   int32
-	name string
-}
-
-// accountArea is the UI area for managing of characters.
-type accountArea struct {
-	bottom     *widget.Label
-	characters []accountCharacter
-	content    *fyne.Container
-	dialog     *dialog.CustomDialog
-	list       *widget.List
-	u          *ui
-}
-
 func (u *ui) showAccountDialog() error {
 	currentChars := set.New[int32]()
 	cc, err := u.CharacterService.ListCharactersShort(context.Background())
@@ -67,33 +52,55 @@ func (u *ui) showAccountDialog() error {
 	})
 	dialog.Show()
 	dialog.Resize(fyne.Size{Width: 500, Height: 500})
-	if err := a.Refresh(); err != nil {
+	if err := a.refresh(); err != nil {
 		dialog.Hide()
 		return err
 	}
 	return nil
 }
 
+type accountCharacter struct {
+	id   int32
+	name string
+}
+
+// accountArea is the UI area for managing of characters.
+type accountArea struct {
+	characters []accountCharacter
+	content    *fyne.Container
+	dialog     *dialog.CustomDialog
+	list       *widget.List
+	top        *widget.Label
+	u          *ui
+}
+
 func (u *ui) newAccountArea() *accountArea {
 	a := &accountArea{
 		characters: make([]accountCharacter, 0),
+		top:        widget.NewLabel(""),
 		u:          u,
 	}
 
-	a.bottom = widget.NewLabel("Hint: Click any character to enable it")
-	a.bottom.Importance = widget.LowImportance
-	a.bottom.Hide()
-
 	a.list = a.makeCharacterList()
+	a.top.TextStyle.Bold = true
 
-	b := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
+	hint := widget.NewLabel("Hint: Click any character to select it")
+	hint.Importance = widget.LowImportance
+	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.showAddCharacterDialog()
 	})
-	b.Importance = widget.HighImportance
+	add.Importance = widget.HighImportance
 	if a.u.isOffline {
-		b.Disable()
+		add.Disable()
 	}
-	a.content = container.NewBorder(b, a.bottom, nil, nil, a.list)
+	bottom := container.NewVBox(add, hint)
+	a.content = container.NewBorder(
+		container.NewVBox(a.top, widget.NewSeparator()),
+		bottom,
+		nil,
+		nil,
+		a.list,
+	)
 	return a
 }
 
@@ -166,7 +173,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 					if err != nil {
 						return err
 					}
-					if err := a.Refresh(); err != nil {
+					if err := a.refresh(); err != nil {
 						return err
 					}
 					return nil
@@ -182,7 +189,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 	d1.Show()
 }
 
-func (a *accountArea) Refresh() error {
+func (a *accountArea) refresh() error {
 	cc, err := a.u.CharacterService.ListCharactersShort(context.TODO())
 	if err != nil {
 		return err
@@ -193,11 +200,7 @@ func (a *accountArea) Refresh() error {
 	}
 	a.characters = cc2
 	a.list.Refresh()
-	if len(cc2) > 0 {
-		a.bottom.Show()
-	} else {
-		a.bottom.Hide()
-	}
+	a.top.SetText(fmt.Sprintf("%d characters", len(a.characters)))
 	return nil
 }
 
@@ -222,7 +225,7 @@ func (a *accountArea) showAddCharacterDialog() {
 			} else if err != nil {
 				return err
 			}
-			if err := a.Refresh(); err != nil {
+			if err := a.refresh(); err != nil {
 				return err
 			}
 			a.u.updateCharacterAndRefreshIfNeeded(ctx, characterID, false)
