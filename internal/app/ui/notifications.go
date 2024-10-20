@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
@@ -39,7 +40,9 @@ type notificationsArea struct {
 	notificationList *widget.List
 	notificationsTop *widget.Label
 
-	detail *fyne.Container
+	current *app.CharacterNotification
+	detail  *fyne.Container
+	toolbar *widget.Toolbar
 }
 
 func (u *ui) newNotificationsArea() *notificationsArea {
@@ -50,11 +53,13 @@ func (u *ui) newNotificationsArea() *notificationsArea {
 		top:              widget.NewLabel(""),
 		u:                u,
 	}
+	a.toolbar = a.makeToolbar()
+	a.toolbar.Hide()
 	a.detail = container.NewVBox()
 	a.notificationList = a.makeNotificationList()
 	split1 := container.NewHSplit(
 		container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList),
-		a.detail,
+		container.NewBorder(a.toolbar, nil, nil, nil, a.detail),
 	)
 	split1.Offset = 0.35
 	a.categoryList = a.makeCategoryList()
@@ -103,7 +108,7 @@ func (a *notificationsArea) makeCategoryList() *widget.List {
 			return
 		}
 		o := a.categories[id]
-		a.detail.RemoveAll()
+		a.clearDetail()
 		if err := a.setNotifications(o.category); err != nil {
 			slog.Error("Failed to load notifications", "err", err)
 			l.UnselectAll()
@@ -129,18 +134,30 @@ func (a *notificationsArea) makeNotificationList() *widget.List {
 			item.Set(n.Sender.Name, n.TitleDisplay(), n.Timestamp, n.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
-		a.detail.RemoveAll()
+		a.clearDetail()
 		if id >= len(a.notifications) {
 			defer l.UnselectAll()
 			return
 		}
-		a.setDetails(a.notifications[id])
+		a.setDetail(a.notifications[id])
 	}
 	return l
 }
 
+func (a *notificationsArea) makeToolbar() *widget.Toolbar {
+	toolbar := widget.NewToolbar(
+		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
+			if a.current == nil {
+				return
+			}
+			a.u.window.Clipboard().SetContent(a.current.String())
+		}),
+	)
+	return toolbar
+}
+
 func (a *notificationsArea) refresh() {
-	a.detail.RemoveAll()
+	a.clearDetail()
 	a.notifications = make([]*app.CharacterNotification, 0)
 	a.notificationList.Refresh()
 	a.notificationList.UnselectAll()
@@ -204,17 +221,27 @@ func (a *notificationsArea) setNotifications(nc evenotification.Category) error 
 	return nil
 }
 
-func (a *notificationsArea) setDetails(n *app.CharacterNotification) {
+func (a *notificationsArea) clearDetail() {
+	a.detail.RemoveAll()
+	a.toolbar.Hide()
+	a.current = nil
+}
+
+func (a *notificationsArea) setDetail(n *app.CharacterNotification) {
+	if n.RecipientName == "" && a.u.hasCharacter() {
+		n.RecipientName = a.u.currentCharacter().EveCharacter.Name
+	}
 	a.detail.RemoveAll()
 	subject := widget.NewLabel(n.TitleDisplay())
 	subject.TextStyle.Bold = true
 	a.detail.Add(subject)
-	header := fmt.Sprintf("From: %s\nSent: %s", n.Sender.Name, n.Timestamp.Format(app.TimeDefaultFormat))
-	a.detail.Add(widget.NewLabel(header))
+	a.detail.Add(widget.NewLabel(n.Header()))
 	body := widget.NewRichTextFromMarkdown(n.Body.ValueOrZero())
 	body.Wrapping = fyne.TextWrapWord
 	if n.Body.IsEmpty() {
 		body.ParseMarkdown("*This notification type is not fully supported yet*")
 	}
 	a.detail.Add(body)
+	a.current = n
+	a.toolbar.Show()
 }

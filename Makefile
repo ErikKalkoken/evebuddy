@@ -12,3 +12,6 @@ appimage:
 
 release:
 	fyne package --os linux --release
+
+loc:
+	gocloc ./internal --by-file --include-lang=Go --not-match="\.sql\.go" --not-match-d="eveicon" --not-match="_test\.go"
