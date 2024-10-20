@@ -49,7 +49,9 @@ func (w *StatusBarItem) SetTextAndImportance(text string, importance widget.Impo
 }
 
 func (w *StatusBarItem) Tapped(_ *fyne.PointEvent) {
-	w.OnTapped()
+	if w.OnTapped != nil {
+		w.OnTapped()
+	}
 }
 
 func (w *StatusBarItem) TappedSecondary(_ *fyne.PointEvent) {

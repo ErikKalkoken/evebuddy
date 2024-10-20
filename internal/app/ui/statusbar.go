@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
@@ -43,48 +42,73 @@ const (
 
 // statusBarArea is the UI area showing the current status aka status bar.
 type statusBarArea struct {
-	characterCount     *kwidget.TappableLabel
-	content            *fyne.Container
-	eveClock           binding.String
-	eveStatus          *widgets.StatusBarItem
-	eveStatusError     string
-	infoText           *widget.Label
-	u                  *ui
-	updateNotification *fyne.Container
-	updateStatus       *widgets.StatusBarItem
+	characterCount *widgets.StatusBarItem
+	content        *fyne.Container
+	eveClock       *widgets.StatusBarItem
+	eveStatus      *widgets.StatusBarItem
+	eveStatusError string
+	infoText       *widget.Label
+	newVersionHint *fyne.Container
+	u              *ui
+	updateStatus   *widgets.StatusBarItem
 }
 
 func (u *ui) newStatusBarArea() *statusBarArea {
 	a := &statusBarArea{
-		characterCount: kwidget.NewTappableLabel("?", func() {
-			if err := u.showAccountDialog(); err != nil {
-				u.showErrorDialog("Failed to show account dialog", err)
-			}
-		}),
-		eveClock:           binding.NewString(),
-		infoText:           widget.NewLabel(""),
-		u:                  u,
-		updateNotification: container.NewHBox(),
+		infoText:       widget.NewLabel(""),
+		newVersionHint: container.NewHBox(),
+		u:              u,
 	}
-	a.updateStatus = widgets.NewStatusBarItem(nil, "?", func() {
+	a.characterCount = widgets.NewStatusBarItem(theme.AccountIcon(), "?", func() {
+		if err := u.showAccountDialog(); err != nil {
+			u.showErrorDialog("Failed to show account dialog", err)
+		}
+	})
+	a.updateStatus = widgets.NewStatusBarItem(theme.NewThemedResource(resourceUpdateSvg), "?", func() {
 		u.showStatusWindow()
 	})
+	a.eveClock = widgets.NewStatusBarItem(
+		theme.NewThemedResource(resourceAccesstimefilledSvg),
+		"?",
+		a.showClockDialog,
+	)
 	a.eveStatus = widgets.NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showDetail)
-	a.eveClock.Set("?")
 	a.content = container.NewVBox(widget.NewSeparator(), container.NewHBox(
 		a.infoText,
 		layout.NewSpacer(),
-		a.updateNotification,
-		widget.NewSeparator(),
-		a.characterCount,
+		a.newVersionHint,
 		widget.NewSeparator(),
 		a.updateStatus,
 		widget.NewSeparator(),
-		widget.NewLabelWithData(a.eveClock),
+		a.characterCount,
+		widget.NewSeparator(),
+		a.eveClock,
 		widget.NewSeparator(),
 		a.eveStatus,
 	))
 	return a
+}
+
+func (a *statusBarArea) showClockDialog() {
+	content := widget.NewRichTextFromMarkdown("")
+	d := dialog.NewCustom("EVE Clock", "Close", content, a.u.window)
+	stop := make(chan struct{})
+	timer := time.NewTicker(1 * time.Second)
+	go func() {
+		for {
+			s := time.Now().UTC().Format("15:04:05")
+			content.ParseMarkdown(fmt.Sprintf("# %s", s))
+			select {
+			case <-stop:
+				return
+			case <-timer.C:
+			}
+		}
+	}()
+	d.SetOnClosed(func() {
+		stop <- struct{}{}
+	})
+	d.Show()
 }
 
 func (a *statusBarArea) showDetail() {
@@ -110,7 +134,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 	go func() {
 		for {
 			t := time.Now().UTC().Format("15:04")
-			a.eveClock.Set(t)
+			a.eveClock.SetText(t)
 			<-clockTicker.C
 		}
 	}()
@@ -162,14 +186,14 @@ func (a *statusBarArea) StartUpdateTicker() {
 		}
 		x, _ := url.Parse(websiteURL + "/releases")
 		l := widget.NewHyperlink("Update available", x)
-		a.updateNotification.Add(widget.NewSeparator())
-		a.updateNotification.Add(l)
+		a.newVersionHint.Add(widget.NewSeparator())
+		a.newVersionHint.Add(l)
 	}()
 }
 
 func (a *statusBarArea) refreshCharacterCount() {
 	x := a.u.StatusCacheService.ListCharacters()
-	a.characterCount.SetText(fmt.Sprintf("%d characters", len(x)))
+	a.characterCount.SetText(strconv.Itoa(len(x)))
 }
 
 func (a *statusBarArea) refreshUpdateStatus() {
