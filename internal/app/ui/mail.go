@@ -491,6 +491,9 @@ func (a *mailArea) makeToolbar() *widget.Toolbar {
 		widget.NewToolbarAction(theme.MailForwardIcon(), func() {
 			a.u.showSendMessageWindow(createMessageForward, a.mail)
 		}),
+		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
+			a.u.window.Clipboard().SetContent(a.mail.ToString(app.TimeDefaultFormat))
+		}),
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.DeleteIcon(), func() {
 			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Subject)
