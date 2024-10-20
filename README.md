@@ -14,7 +14,7 @@ A companion app for Eve Online players available on Windows, Linux and macOS.
 - [Install](#install)
 - [Update](#update)
 - [Uninstall](#uninstall)
-  [FAQ](#faq)
+- [FAQ](#faq)
 - [Credits](#credits)
 
 ## Description
@@ -26,8 +26,8 @@ EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) player
 - Notify you about important game events (e.g. structure attacked) and new Eve mails
 
 > [!IMPORTANT]
-> This is an early version and not yet considered fully stable. We would very much appreciate your feedback, so we can find and squash remaining bugs. If you encounter any problems please feel free to open an issue or chat with us on Discord.
-> Some features may not be fully implemented yet (e.g. some notification types). Our current focus is on bug fixing, rather then adding more features. But if you are missing anything important, please feel free to open a feature request.
+> This is an early version and not yet considered fully stable. We would very much appreciate your feedback, so we can find and squash remaining bugs. If you encounter any problems please feel free to open an issue or chat with us on our [Discord server]((https://discord.gg/tVSCQEVJnJ)) in the support channel **#evebuddy**.<br>
+> Some features may not be fully implemented yet (e.g. some notification types). Our current focus is on bug fixing, rather then adding more features. But if you are missing anything important, please feel free to open a feature request.<br>
 > We very much welcome any contributions. If you like to provide a fix or add a feature please feel free top open a PR.
 
 ## Features
@@ -54,7 +54,7 @@ A more detailed overview of the provided features:
 
 ![example](https://cdn.imgpile.com/f/0zxWmcB_xl.png)
 
-## Installing
+## Install
 
 To install EVE buddy just download and unzip the latest release from the releases page to your computer. The app ships as a single executable file that can be run directly. When you run the app for the first time it will automatically install itself for the current user (i.e. by creating folders in the home folder for the current user).
 
@@ -97,11 +97,11 @@ When you have all necessary tools installed, you can build and run this app dire
 go run github.com/ErikKalkoken/evebuddy@latest
 ```
 
-## Updating
+## Update
 
 The app will inform you when there is a new version available for download. To update your app just download and unzip the newest version for your platform from the [releases page](https://github.com/ErikKalkoken/evebuddy/releases). Then overwrite the old executable file with the new one.
 
-## Uninstalling
+## Uninstall
 
 If you no longer want to use the app you can uninstall it.
 

@@ -14,6 +14,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
@@ -476,7 +478,8 @@ func (a *mailArea) makeFolderTopText() (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	s := fmt.Sprintf("%d mails", len(a.headers))
+	p := message.NewPrinter(language.English)
+	s := p.Sprintf("%d mails", len(a.headers))
 	return s, widget.MediumImportance
 }
 
@@ -490,6 +493,9 @@ func (a *mailArea) makeToolbar() *widget.Toolbar {
 		}),
 		widget.NewToolbarAction(theme.MailForwardIcon(), func() {
 			a.u.showSendMessageWindow(createMessageForward, a.mail)
+		}),
+		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
+			a.u.window.Clipboard().SetContent(a.mail.String())
 		}),
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.DeleteIcon(), func() {
@@ -539,8 +545,7 @@ func (a *mailArea) setMail(mailID int32) {
 		}()
 	}
 
-	header := a.mail.MakeHeaderText(app.TimeDefaultFormat)
-	a.updateContent(a.mail.Subject, header, a.mail.BodyPlain())
+	a.updateContent(a.mail.Subject, a.mail.Header(), a.mail.BodyPlain())
 	a.toolbar.Show()
 }
 

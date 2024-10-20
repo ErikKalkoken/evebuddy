@@ -46,7 +46,7 @@ func (ss StatusSummary) Display() string {
 	case StatusOK:
 		return "OK"
 	case StatusWorking:
-		return fmt.Sprintf("%.0f%% Fresh", ss.ProgressP()*100)
+		return fmt.Sprintf("%.0f%%", ss.ProgressP()*100)
 	}
 	return "?"
 }

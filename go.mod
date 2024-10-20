@@ -22,6 +22,7 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/stretchr/testify v1.9.0
 	github.com/wcharczuk/go-chart/v2 v2.1.2
+	github.com/yuin/goldmark v1.7.7
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
 	golang.org/x/sync v0.8.0
 	golang.org/x/text v0.19.0
@@ -67,7 +68,6 @@ require (
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
-	github.com/yuin/goldmark v1.7.7 // indirect
 	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/image v0.21.0 // indirect
 	golang.org/x/mobile v0.0.0-20241004191011-08a83c5af9f8 // indirect

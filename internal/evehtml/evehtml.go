@@ -79,7 +79,7 @@ func patchLinks(s string) string {
 	return string(r.ReplaceAll([]byte(s), []byte("$1 $2")))
 }
 
-// Strip removes all XML from a given string and return the result.
+// Strip removes all XML/HTML from a given string and return the result.
 func Strip(xml string) string {
 	b := html.UnescapeString(bodyPolicy.Sanitize(xml))
 	return b
