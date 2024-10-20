@@ -56,12 +56,12 @@ func (cn *CharacterNotification) TitleFake() string {
 func (cn *CharacterNotification) Header() string {
 	s := fmt.Sprintf(
 		"From: %s\n"+
-			"Sent: %s\n",
+			"Sent: %s",
 		cn.Sender.Name,
 		cn.Timestamp.Format(TimeDefaultFormat),
 	)
 	if cn.RecipientName != "" {
-		s += fmt.Sprintf("To: %s\n", cn.RecipientName)
+		s += fmt.Sprintf("\nTo: %s", cn.RecipientName)
 	}
 	return s
 }

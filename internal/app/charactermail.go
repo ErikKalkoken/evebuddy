@@ -59,14 +59,14 @@ func (cm CharacterMail) BodyPlain() string {
 	return evehtml.ToPlain(cm.Body)
 }
 
-// BodyForward returns a mail's content as string.
-func (cm CharacterMail) ToString(timeFormat string) string {
-	s := fmt.Sprintf("%s\n", cm.Subject) + cm.MakeHeaderText(timeFormat) + "\n\n" + cm.BodyPlain()
+// String returns a mail's content as string.
+func (cm CharacterMail) String() string {
+	s := fmt.Sprintf("%s\n", cm.Subject) + cm.Header() + "\n\n" + cm.BodyPlain()
 	return s
 }
 
-// MakeHeaderText returns the mail's header as formatted text.
-func (cm CharacterMail) MakeHeaderText(timeFormat string) string {
+// Header returns a mail's header as string.
+func (cm CharacterMail) Header() string {
 	var names []string
 	for _, n := range cm.Recipients {
 		names = append(names, n.Name)
@@ -76,7 +76,7 @@ func (cm CharacterMail) MakeHeaderText(timeFormat string) string {
 			"Sent: %s\n"+
 			"To: %s",
 		cm.From.Name,
-		cm.Timestamp.Format(timeFormat),
+		cm.Timestamp.Format(TimeDefaultFormat),
 		strings.Join(names, ", "),
 	)
 	return header

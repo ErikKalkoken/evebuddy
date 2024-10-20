@@ -198,7 +198,7 @@ func (a *notificationsArea) makeTopText() (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
-	return fmt.Sprintf("%d total", len(a.notifications)), widget.MediumImportance
+	return "", widget.MediumImportance
 }
 
 func (a *notificationsArea) setNotifications(nc evenotification.Category) error {
