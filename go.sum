@@ -47,6 +47,10 @@ github.com/BurntSushi/toml v1.4.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/ErikKalkoken/fyne-kx v0.0.0-20241017191228-704cdd115b48 h1:LYF0lAShpyI+MXGp6fHe0V/2o+Lu8m9rmK88JUInTnQ=
 github.com/ErikKalkoken/fyne-kx v0.0.0-20241017191228-704cdd115b48/go.mod h1:T1f84yGlDtqUUhjdSHVhX9yhzvFCxNLdsj08lUxkdww=
+github.com/ErikKalkoken/fyne-kx v0.0.0-20241021221045-aa4b8b869409 h1:eplXRvIH8We8HRqeCaMkT+C8rLziSGMxupNMySo1hYA=
+github.com/ErikKalkoken/fyne-kx v0.0.0-20241021221045-aa4b8b869409/go.mod h1:ueLS7Zytv2fABIxPaVbWht1l3V38wltsH5YEyI0Kxkc=
+github.com/ErikKalkoken/fyne-kx v0.0.0-20241021230645-c18f7bea26db h1:BrI9+iSSBpRXXgJfnRRQOkG+8ml4RZe4Bc2//unyi/Q=
+github.com/ErikKalkoken/fyne-kx v0.0.0-20241021230645-c18f7bea26db/go.mod h1:ueLS7Zytv2fABIxPaVbWht1l3V38wltsH5YEyI0Kxkc=
 github.com/JohannesKaufmann/html-to-markdown v1.6.0 h1:04VXMiE50YYfCfLboJCLcgqF5x+rHJnb1ssNmqpLH/k=
 github.com/JohannesKaufmann/html-to-markdown v1.6.0/go.mod h1:NUI78lGg/a7vpEJTz/0uOcYMaibytE4BUOQS8k78yPQ=
 github.com/PuerkitoBio/goquery v1.9.2/go.mod h1:GHPCaP0ODyyxqcNoFGYlAprUFH81NuRPd0GX3Zu2Mvk=

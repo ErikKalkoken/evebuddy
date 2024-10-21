@@ -7,12 +7,14 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
+	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
+	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/dustin/go-humanize"
 )
 
 type settingsWindow struct {
@@ -83,10 +85,9 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 
 	// cache
 	clearBtn := widget.NewButton("Clear NOW", func() {
-		showProgressModal(
+		m := kmodal.NewProgressInfinite(
 			"Clearing cache...",
-			"Image cache cleared",
-			"Failed to clear image cache",
+			"",
 			func() error {
 				n, err := w.u.EveImageService.ClearCache()
 				if err != nil {
@@ -97,6 +98,16 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 			},
 			w.window,
 		)
+		m.OnSuccess = func() {
+			d := dialog.NewInformation("Image cache", "Image cache cleared", w.window)
+			d.Show()
+		}
+		m.OnError = func(err error) {
+			slog.Error("Failed to clear image cache", "error", err)
+			d := newErrorDialog("Failed to clear image cache", err, w.u.window)
+			d.Show()
+		}
+		m.Show()
 	})
 	var cacheSize string
 	s, err := w.u.EveImageService.Size()

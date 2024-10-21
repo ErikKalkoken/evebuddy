@@ -14,6 +14,9 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
@@ -172,14 +175,12 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 		"Delete",
 		func(confirmed bool) {
 			if confirmed {
-				showProgressModal(
+				m := kmodal.NewProgressInfinite(
+					"Deleting character",
 					fmt.Sprintf("Deleting %s...", c.name),
-					fmt.Sprintf("Character %s deleted", c.name),
-					fmt.Sprintf("Failed to delete character %s", c.name),
 					func() error {
 						err := a.u.CharacterService.DeleteCharacter(context.TODO(), c.id)
 						if err != nil {
-							slog.Error("Failed to delete character", "characterID", c.id)
 							return err
 						}
 						if err := a.refresh(); err != nil {
@@ -189,6 +190,16 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 					},
 					a.u.window,
 				)
+				m.OnSuccess = func() {
+					d := dialog.NewInformation("Delete Character", fmt.Sprintf("Character %s deleted", c.name), a.u.window)
+					d.Show()
+				}
+				m.OnError = func(err error) {
+					slog.Error("Failed to delete character", "characterID", c.id)
+					d := newErrorDialog(fmt.Sprintf("Failed to delete character %s", c.name), err, a.u.window)
+					d.Show()
+				}
+				m.Show()
 			}
 		},
 		a.u.window,

@@ -15,10 +15,9 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
+	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -442,31 +441,28 @@ func (u *UI) refreshCrossPages() {
 }
 
 func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Window) {
-	start := time.Now()
-	myLog := slog.With("title", title)
-	myLog.Debug("started")
-	p := binding.NewFloat()
-	pg := widget.NewProgressBarWithData(p)
-	pg.Max = float64(len(ff))
-	d := dialog.NewCustomWithoutButtons(title, pg, w)
-	d.Show()
-	d.Resize(fyne.NewSize(250, 100))
-	defer d.Hide()
-	var wg sync.WaitGroup
-	var completed atomic.Int64
-	for name, f := range ff {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			start2 := time.Now()
-			f()
-			x := completed.Add(1)
-			p.Set(float64(x))
-			myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
-		}()
-	}
-	wg.Wait()
-	myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
+	m := kxmodal.NewProgress("Updating", title, func(p binding.Float) error {
+		start := time.Now()
+		myLog := slog.With("title", title)
+		myLog.Debug("started")
+		var wg sync.WaitGroup
+		var completed atomic.Int64
+		for name, f := range ff {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				start2 := time.Now()
+				f()
+				x := completed.Add(1)
+				p.Set(float64(x))
+				myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
+			}()
+		}
+		wg.Wait()
+		myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
+		return nil
+	}, float64(len(ff)), w)
+	m.Show()
 }
 
 func (u *UI) showMailIndicator() {
