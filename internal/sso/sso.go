@@ -299,8 +299,6 @@ func (s *SSOService) fetchOauthToken(form url.Values) (*tokenPayload, error) {
 		return nil, err
 	}
 
-	slog.Debug("Response from SSO API", "body", string(body))
-
 	token := tokenPayload{}
 	if err := json.Unmarshal(body, &token); err != nil {
 		return nil, err

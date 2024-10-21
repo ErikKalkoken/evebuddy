@@ -15,7 +15,8 @@ import (
 //
 // Responses with status code below 400 are logged with INFO level.
 // Responses with status code of 400 or higher are logged with WARNING level.
-// When DEBUG logging is enabled, will also log details of request and response.
+// When DEBUG logging is enabled, will also log details of request and response including headers.
+// Authorization headers in requests are redacted.
 type LoggedTransport struct{}
 
 func (r LoggedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -80,7 +81,11 @@ func logRequest(req *http.Request) bool {
 				req.Body = io.NopCloser(bytes.NewBuffer(body))
 			}
 		}
-		slog.Debug("HTTP request", "method", req.Method, "url", req.URL, "header", req.Header, "body", reqBody)
+		h := req.Header.Clone()
+		if h.Get("Authorization") != "" {
+			h.Set("Authorization", "REDACTED") // never log this header
+		}
+		slog.Debug("HTTP request", "method", req.Method, "url", req.URL, "header", h, "body", reqBody)
 	}
 	return isDebug
 }

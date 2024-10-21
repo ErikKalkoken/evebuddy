@@ -62,14 +62,40 @@ func TestLoggedTransport(t *testing.T) {
 		httpmock.RegisterResponder(
 			"GET",
 			"https://www.example.com/",
-			httpmock.NewStringResponder(http.StatusOK, "Test"))
+			httpmock.NewStringResponder(http.StatusOK, "Test").HeaderSet(http.Header{"dummy": []string{"bravo"}}))
+		req, err := http.NewRequest("GET", "https://www.example.com/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("dummy", "alpha")
 		// when
-		r, err := httpClient.Get("https://www.example.com/")
+		r, err := httpClient.Do(req)
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusOK, r.StatusCode)
 			assert.Contains(t, buf.String(), "INFO HTTP response method=GET url=https://www.example.com/ status=200")
-			assert.Contains(t, buf.String(), "DEBUG HTTP request method=GET url=https://www.example.com/ header=map[] body=")
-			assert.Contains(t, buf.String(), "DEBUG HTTP response method=GET url=https://www.example.com/ status=200 header=map[] body=Test")
+			assert.Contains(t, buf.String(), "DEBUG HTTP request method=GET url=https://www.example.com/ header=map[Dummy:[alpha]] body=")
+			assert.Contains(t, buf.String(), "DEBUG HTTP response method=GET url=https://www.example.com/ status=200 header=map[Dummy:[bravo]] body=Test")
+		}
+	})
+	t.Run("should never log authorization headers in request", func(t *testing.T) {
+		// given
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://www.example.com/",
+			httpmock.NewStringResponder(http.StatusOK, "Test"))
+		req, err := http.NewRequest("GET", "https://www.example.com/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Authorization", "token")
+		req.Header.Set("Dummy", "alpha")
+		// when
+		r, err := httpClient.Do(req)
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusOK, r.StatusCode)
+			assert.Contains(t, buf.String(), "DEBUG HTTP request method=GET url=https://www.example.com/ header=\"map[Authorization:[REDACTED] Dummy:[alpha]]\" body=")
 		}
 	})
 }
