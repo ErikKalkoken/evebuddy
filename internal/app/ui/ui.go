@@ -381,7 +381,7 @@ func (u *ui) refreshCharacter() {
 	if c != nil {
 		slog.Debug("Refreshing character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
 	}
-	runFunctionsWithProgressDialog("Loading character", ff, u.window)
+	runFunctionsWithProgressModal("Loading character", ff, u.window)
 	if c != nil {
 		u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 	}
@@ -432,10 +432,10 @@ func (u *ui) refreshCrossPages() {
 		"wealth":      u.wealthArea.refresh,
 		"statusBar":   u.statusBarArea.refreshCharacterCount,
 	}
-	runFunctionsWithProgressDialog("Updating characters", ff, u.window)
+	runFunctionsWithProgressModal("Updating characters", ff, u.window)
 }
 
-func runFunctionsWithProgressDialog(title string, ff map[string]func(), w fyne.Window) {
+func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Window) {
 	start := time.Now()
 	myLog := slog.With("title", title)
 	myLog.Debug("started")

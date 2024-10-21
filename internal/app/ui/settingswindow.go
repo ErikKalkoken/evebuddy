@@ -83,16 +83,20 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 
 	// cache
 	clearBtn := widget.NewButton("Clear NOW", func() {
-		go func() {
-			count, err := w.u.EveImageService.ClearCache()
-			if err != nil {
-				slog.Error(err.Error())
-				d := newErrorDialog("Failed to clear image cache", err, w.window)
-				d.Show()
-			} else {
-				slog.Info("Cleared images cache", "count", count)
-			}
-		}()
+		showProgressModal(
+			"Clearing cache...",
+			"Image cache cleared",
+			"Failed to clear image cache",
+			func() error {
+				n, err := w.u.EveImageService.ClearCache()
+				if err != nil {
+					return err
+				}
+				slog.Info("Cleared image cache", "count", n)
+				return nil
+			},
+			w.window,
+		)
 	})
 	var cacheSize string
 	s, err := w.u.EveImageService.Size()

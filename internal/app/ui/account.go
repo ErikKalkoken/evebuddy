@@ -172,28 +172,23 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 		"Delete",
 		func(confirmed bool) {
 			if confirmed {
-				pg := widget.NewProgressBarInfinite()
-				pg.Start()
-				d2 := dialog.NewCustomWithoutButtons(fmt.Sprintf("Deleting %s...", c.name), pg, a.u.window)
-				d2.Show()
-				go func() {
-					err := func(characterID int32) error {
-						err := a.u.CharacterService.DeleteCharacter(context.TODO(), characterID)
+				showProgressModal(
+					fmt.Sprintf("Deleting %s...", c.name),
+					fmt.Sprintf("Character %s deleted", c.name),
+					fmt.Sprintf("Failed to delete character %s", c.name),
+					func() error {
+						err := a.u.CharacterService.DeleteCharacter(context.TODO(), c.id)
 						if err != nil {
+							slog.Error("Failed to delete character", "characterID", c.id)
 							return err
 						}
 						if err := a.refresh(); err != nil {
 							return err
 						}
 						return nil
-					}(c.id)
-					d2.Hide()
-					if err != nil {
-						slog.Error("Failed to delete a character", "character", c, "err", err)
-						d3 := newErrorDialog("Failed to delete a character", err, a.u.window)
-						d3.Show()
-					}
-				}()
+					},
+					a.u.window,
+				)
 			}
 		},
 		a.u.window,

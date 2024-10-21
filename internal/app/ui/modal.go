@@ -29,3 +29,22 @@ func newErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog
 	d := dialog.NewCustom("Error", "OK", x, parent)
 	return d
 }
+
+// showProgressModal shows a modal with a progress indicator while an action is running.
+func showProgressModal(action, success, failure string, f func() error, parent fyne.Window) {
+	pg := widget.NewProgressBarInfinite()
+	pg.Start()
+	d1 := dialog.NewCustomWithoutButtons(action, pg, parent)
+	d1.Show()
+	go func() {
+		err := f()
+		d1.Hide()
+		if err != nil {
+			d2 := newErrorDialog(failure, err, parent)
+			d2.Show()
+		} else {
+			d2 := dialog.NewInformation("Completed", success, parent)
+			d2.Show()
+		}
+	}()
+}
