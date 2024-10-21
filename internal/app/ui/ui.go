@@ -24,7 +24,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 )
 
@@ -470,16 +469,6 @@ func (u *ui) showMailIndicator() {
 
 func (u *ui) hideMailIndicator() {
 	u.deskApp.SetSystemTrayIcon(resourceIconPng)
-}
-
-func (u *ui) showErrorDialog(message string, err error) {
-	text := widget.NewLabel(fmt.Sprintf("%s\n\n%s", message, humanize.Error(err)))
-	text.Wrapping = fyne.TextWrapWord
-	text.Importance = widget.DangerImportance
-	x := container.NewVScroll(text)
-	x.SetMinSize(fyne.Size{Width: 400, Height: 100})
-	d := dialog.NewCustom("Error", "OK", x, u.window)
-	d.Show()
 }
 
 func (u *ui) appName() string {

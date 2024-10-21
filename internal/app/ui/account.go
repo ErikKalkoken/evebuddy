@@ -18,46 +18,52 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-func (u *ui) showAccountDialog() error {
-	currentChars := set.New[int32]()
-	cc, err := u.CharacterService.ListCharactersShort(context.Background())
-	if err != nil {
-		return fmt.Errorf("list characters: %w", err)
-	}
-	for _, c := range cc {
-		currentChars.Add(c.ID)
-	}
-	a := u.newAccountArea()
-	dialog := dialog.NewCustom("Manage Characters", "Close", a.content, u.window)
-	a.dialog = dialog
-	dialog.SetOnClosed(func() {
-		incomingChars := set.New[int32]()
-		for _, c := range a.characters {
-			incomingChars.Add(c.id)
+func (u *ui) showAccountDialog() {
+	err := func() error {
+		currentChars := set.New[int32]()
+		cc, err := u.CharacterService.ListCharactersShort(context.Background())
+		if err != nil {
+			return fmt.Errorf("list characters: %w", err)
 		}
-		if currentChars.Equal(incomingChars) {
-			return
+		for _, c := range cc {
+			currentChars.Add(c.ID)
 		}
-		if !incomingChars.Contains(a.u.characterID()) {
-			if err := a.u.setAnyCharacter(); err != nil {
-				slog.Error("Failed to set any character", "error", err)
+		a := u.newAccountArea()
+		d := dialog.NewCustom("Manage Characters", "Close", a.content, u.window)
+		a.dialog = d
+		d.SetOnClosed(func() {
+			incomingChars := set.New[int32]()
+			for _, c := range a.characters {
+				incomingChars.Add(c.id)
 			}
+			if currentChars.Equal(incomingChars) {
+				return
+			}
+			if !incomingChars.Contains(a.u.characterID()) {
+				if err := a.u.setAnyCharacter(); err != nil {
+					slog.Error("Failed to set any character", "error", err)
+				}
+			}
+			if currentChars.Difference(incomingChars).Size() == 0 {
+				// no char has been deleted but still need to update some cross info
+				a.u.toolbarArea.refresh()
+				u.statusBarArea.refreshCharacterCount()
+				return
+			}
+			a.u.refreshCrossPages()
+		})
+		d.Show()
+		d.Resize(fyne.Size{Width: 500, Height: 500})
+		if err := a.refresh(); err != nil {
+			d.Hide()
+			return err
 		}
-		if currentChars.Difference(incomingChars).Size() == 0 {
-			// no char has been deleted but still need to update some cross info
-			a.u.toolbarArea.refresh()
-			u.statusBarArea.refreshCharacterCount()
-			return
-		}
-		a.u.refreshCrossPages()
-	})
-	dialog.Show()
-	dialog.Resize(fyne.Size{Width: 500, Height: 500})
-	if err := a.refresh(); err != nil {
-		dialog.Hide()
-		return err
+		return nil
+	}()
+	if err != nil {
+		d := newErrorDialog("Failed to show account dialog", err, u.window)
+		d.Show()
 	}
-	return nil
 }
 
 type accountCharacter struct {
@@ -160,9 +166,10 @@ func (a *accountArea) makeCharacterList() *widget.List {
 }
 
 func (a *accountArea) showDeleteDialog(c accountCharacter) {
-	d1 := dialog.NewConfirm(
+	d1 := newConfirmDialog(
 		"Delete Character",
-		fmt.Sprintf("Are you sure you want to delete %s?", c.name),
+		fmt.Sprintf("Are you sure you want to delete character %s?", c.name),
+		"Delete",
 		func(confirmed bool) {
 			if confirmed {
 				pg := widget.NewProgressBarInfinite()
@@ -183,7 +190,8 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 					d2.Hide()
 					if err != nil {
 						slog.Error("Failed to delete a character", "character", c, "err", err)
-						a.u.showErrorDialog("Failed to delete a character", err)
+						d3 := newErrorDialog("Failed to delete a character", err, a.u.window)
+						d3.Show()
 					}
 				}()
 			}
@@ -238,7 +246,8 @@ func (a *accountArea) showAddCharacterDialog() {
 		d1.Hide()
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
-			a.u.showErrorDialog("Failed add a new character", err)
+			d2 := newErrorDialog("Failed add a new character", err, a.u.window)
+			d2.Show()
 		}
 	}()
 	d1.Show()

@@ -126,7 +126,8 @@ func (u *ui) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fyne.Wind
 			if err != nil {
 				t := "Failed to send mail"
 				slog.Error(t, "err", err)
-				u.showErrorDialog(t, err)
+				d := newErrorDialog(t, err, u.window)
+				d.Show()
 				return
 			}
 			w.Hide()

@@ -60,9 +60,7 @@ func (u *ui) newStatusBarArea() *statusBarArea {
 		u:              u,
 	}
 	a.characterCount = widgets.NewStatusBarItem(theme.AccountIcon(), "?", func() {
-		if err := u.showAccountDialog(); err != nil {
-			u.showErrorDialog("Failed to show account dialog", err)
-		}
+		u.showAccountDialog()
 	})
 	a.updateStatus = widgets.NewStatusBarItem(theme.NewThemedResource(resourceUpdateSvg), "?", func() {
 		u.showStatusWindow()

@@ -7,7 +7,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
@@ -84,24 +83,16 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 
 	// cache
 	clearBtn := widget.NewButton("Clear NOW", func() {
-		d := dialog.NewConfirm(
-			"Clear image cache",
-			"Are you sure you want to clear the image cache?",
-			func(confirmed bool) {
-				if !confirmed {
-					return
-				}
-				count, err := w.u.EveImageService.ClearCache()
-				if err != nil {
-					slog.Error(err.Error())
-					w.u.showErrorDialog("Failed to clear image cache", err)
-				} else {
-					slog.Info("Cleared images cache", "count", count)
-				}
-			},
-			w.window,
-		)
-		d.Show()
+		go func() {
+			count, err := w.u.EveImageService.ClearCache()
+			if err != nil {
+				slog.Error(err.Error())
+				d := newErrorDialog("Failed to clear image cache", err, w.window)
+				d.Show()
+			} else {
+				slog.Info("Cleared images cache", "count", count)
+			}
+		}()
 	})
 	var cacheSize string
 	s, err := w.u.EveImageService.Size()

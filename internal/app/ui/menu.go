@@ -25,16 +25,12 @@ func makeMenu(u *ui) *fyne.MainMenu {
 	})
 
 	charactersItem := fyne.NewMenuItem("Manage characters...", func() {
-		if err := u.showAccountDialog(); err != nil {
-			u.showErrorDialog("Failed to show account dialog", err)
-		}
+		u.showAccountDialog()
 	})
 	charactersShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierAlt}
 	charactersItem.Shortcut = charactersShortcut
 	u.window.Canvas().AddShortcut(charactersShortcut, func(shortcut fyne.Shortcut) {
-		if err := u.showAccountDialog(); err != nil {
-			u.showErrorDialog("Failed to show account dialog", err)
-		}
+		u.showAccountDialog()
 	})
 
 	statusItem := fyne.NewMenuItem("Update status...", func() {

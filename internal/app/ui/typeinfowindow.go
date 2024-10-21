@@ -204,7 +204,8 @@ func (u *ui) showInfoWindow(iw *typeInfoWindow, err error) {
 	if err != nil {
 		t := "Failed to open info window"
 		slog.Error(t, "err", err)
-		u.showErrorDialog(t, err)
+		d := newErrorDialog(t, err, u.window)
+		d.Show()
 		return
 	}
 	if iw == nil {
