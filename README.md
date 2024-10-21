@@ -105,7 +105,7 @@ The app will inform you when there is a new version available for download. To u
 
 If you no longer want to use the app you can uninstall it.
 
-First start the app for deleting user data:
+First start the delete app for removing your user data:
 
 ```sh
 ./evebuddy --delete-data
@@ -127,9 +127,17 @@ Fo bugs and feature requests please open an issue in the GitHub repository.
 
 For support and any other questions please join us on in our channel #eve-buddy on this [Discord server](https://discord.gg/tVSCQEVJnJ).
 
-### Is my character data safe from being leaked to external parties?
+### What safety measures are taken to protect my character data and token?
 
-All character data retrieved from CCP's servers is stored on your local computer only. EVE Buddy does not share your character data with any third parties. This makes this app much safer btw, then most websites, which naturally need to store your data on their servers.
+EVE Buddy is designed to protect your character data and token and has implemented the following safety measures:
+
+1. All character data and tokens retrieved from CCP's servers are stored on your local computer only. Your data is therefore safe as long as you prevent any unauthorized access to the data on your computer.
+
+1. EVE Buddy also does not log any tokens (they are replaced with the text `REDACTED`). It is therefore safe to share your logs with maintainers for troubleshooting.
+
+1. EVE Buddy is fully compliant with the requirements for [OAuth 2.0 for Mobile or Desktop Applications](https://docs.esi.evetech.net/docs/sso/native_sso_flow.html) from CCP.
+
+1. In case you need to switch computers you can remove your data with the [delete app](#uninstall).
 
 ### Why do I not see all of my character's data in the app?
 

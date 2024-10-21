@@ -234,8 +234,6 @@ func (s *SSOService) retrieveTokenPayload(code, codeVerifier string) (*tokenPayl
 		return nil, err
 	}
 
-	slog.Debug("Response from API", "body", string(body))
-
 	token := tokenPayload{}
 	if err := json.Unmarshal(body, &token); err != nil {
 		return nil, err
@@ -281,9 +279,7 @@ func (s *SSOService) fetchOauthToken(form url.Values) (*tokenPayload, error) {
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Host", "login.eveonline.com")
-
 	slog.Info("Requesting token from SSO API", "grant_type", form.Get("grant_type"), "url", ssoTokenUrl)
-	slog.Debug("Request", "form", form)
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
