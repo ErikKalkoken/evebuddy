@@ -30,7 +30,7 @@ type notificationCategory struct {
 // notificationsArea is the UI area that shows the skillqueue
 type notificationsArea struct {
 	content *container.Split
-	u       *ui
+	u       *UI
 
 	categories   []notificationCategory
 	categoryList *widget.List
@@ -45,7 +45,7 @@ type notificationsArea struct {
 	toolbar *widget.Toolbar
 }
 
-func (u *ui) newNotificationsArea() *notificationsArea {
+func (u *UI) newNotificationsArea() *notificationsArea {
 	a := notificationsArea{
 		categories:       make([]notificationCategory, 0),
 		notifications:    make([]*app.CharacterNotification, 0),

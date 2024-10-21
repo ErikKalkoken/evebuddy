@@ -25,7 +25,7 @@ import (
 // mailArea is the UI area showing the mail folders.
 type mailArea struct {
 	content fyne.CanvasObject
-	u       *ui
+	u       *UI
 
 	currentFolder optional.Optional[folderNode]
 	foldersData   *fynetree.FyneTree[folderNode]
@@ -48,7 +48,7 @@ type mailArea struct {
 	toolbar     *widget.Toolbar
 }
 
-func (u *ui) newMailArea() *mailArea {
+func (u *UI) newMailArea() *mailArea {
 	a := &mailArea{
 		body:        widget.NewLabel(""),
 		foldersData: fynetree.New[folderNode](),
@@ -533,7 +533,7 @@ func (a *mailArea) setMail(mailID int32) {
 		a.setErrorText()
 		return
 	}
-	if !a.u.isOffline && !a.mail.IsRead {
+	if !a.u.IsOffline && !a.mail.IsRead {
 		go func() {
 			err = a.u.CharacterService.UpdateMailRead(ctx, characterID, a.mail.MailID)
 			if err != nil {

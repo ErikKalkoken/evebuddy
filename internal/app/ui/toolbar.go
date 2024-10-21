@@ -22,10 +22,10 @@ type toolbarArea struct {
 	icon         *canvas.Image
 	name         *widget.Label
 	switchButton *widgets.ContextMenuButton
-	u            *ui
+	u            *UI
 }
 
-func (u *ui) newToolbarArea() *toolbarArea {
+func (u *UI) newToolbarArea() *toolbarArea {
 	a := &toolbarArea{
 		icon: canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg),
 		name: widget.NewLabel(""),

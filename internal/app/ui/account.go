@@ -18,7 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
-func (u *ui) showAccountDialog() {
+func (u *UI) showAccountDialog() {
 	err := func() error {
 		currentChars := set.New[int32]()
 		cc, err := u.CharacterService.ListCharactersShort(context.Background())
@@ -78,10 +78,10 @@ type accountArea struct {
 	dialog     *dialog.CustomDialog
 	list       *widget.List
 	title      *widget.Label
-	u          *ui
+	u          *UI
 }
 
-func (u *ui) newAccountArea() *accountArea {
+func (u *UI) newAccountArea() *accountArea {
 	a := &accountArea{
 		characters: make([]accountCharacter, 0),
 		title:      widget.NewLabel(""),
@@ -94,7 +94,7 @@ func (u *ui) newAccountArea() *accountArea {
 		a.showAddCharacterDialog()
 	})
 	add.Importance = widget.HighImportance
-	if a.u.isOffline {
+	if a.u.IsOffline {
 		add.Disable()
 	}
 	a.content = container.NewBorder(
@@ -212,7 +212,7 @@ func (a *accountArea) refresh() error {
 }
 
 func (a *accountArea) showAddCharacterDialog() {
-	ctx, cancel := context.WithCancel(context.TODO())
+	cancelCTX, cancel := context.WithCancel(context.TODO())
 	s := "Please follow instructions in your browser to add a new character."
 	infoText := binding.BindString(&s)
 	content := widget.NewLabelWithData(infoText)
@@ -225,8 +225,7 @@ func (a *accountArea) showAddCharacterDialog() {
 	d1.SetOnClosed(cancel)
 	go func() {
 		err := func() error {
-			defer cancel()
-			characterID, err := a.u.CharacterService.UpdateOrCreateCharacterFromSSO(ctx, infoText)
+			characterID, err := a.u.CharacterService.UpdateOrCreateCharacterFromSSO(cancelCTX, infoText)
 			if errors.Is(err, character.ErrAborted) {
 				return nil
 			} else if err != nil {
@@ -235,7 +234,7 @@ func (a *accountArea) showAddCharacterDialog() {
 			if err := a.refresh(); err != nil {
 				return err
 			}
-			a.u.updateCharacterAndRefreshIfNeeded(ctx, characterID, false)
+			a.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
 			return nil
 		}()
 		d1.Hide()

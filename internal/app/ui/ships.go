@@ -24,10 +24,10 @@ type shipsArea struct {
 	selectedGroup string
 	ships         []*app.CharacterShipAbility
 	top           *widget.Label
-	u             *ui
+	u             *UI
 }
 
-func (u *ui) newShipArea() *shipsArea {
+func (u *UI) newShipArea() *shipsArea {
 	a := shipsArea{
 		ships: make([]*app.CharacterShipAbility, 0),
 		top:   widget.NewLabel(""),

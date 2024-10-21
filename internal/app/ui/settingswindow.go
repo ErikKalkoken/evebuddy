@@ -17,11 +17,11 @@ import (
 
 type settingsWindow struct {
 	content fyne.CanvasObject
-	u       *ui
+	u       *UI
 	window  fyne.Window
 }
 
-func (u *ui) showSettingsWindow() {
+func (u *UI) showSettingsWindow() {
 	if u.settingsWindow != nil {
 		u.settingsWindow.Show()
 		return
@@ -42,7 +42,7 @@ func (u *ui) showSettingsWindow() {
 	sw.window = w
 }
 
-func (u *ui) newSettingsWindow() (*settingsWindow, error) {
+func (u *UI) newSettingsWindow() (*settingsWindow, error) {
 	sw := &settingsWindow{u: u}
 	tabs := container.NewAppTabs(
 		container.NewTabItem("General", sw.makeGeneralPage()),

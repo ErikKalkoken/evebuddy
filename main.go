@@ -73,10 +73,11 @@ func (l *logLevelFlag) Set(value string) error {
 
 // defined flags
 var (
-	levelFlag     logLevelFlag
-	offlineFlag   = flag.Bool("offline", false, "Start app in offline mode")
-	deleteAppFlag = flag.Bool("delete-data", false, "Delete user data")
-	pprofFlag     = flag.Bool("pprof", false, "Enable pprof web server")
+	levelFlag                  logLevelFlag
+	deleteAppFlag              = flag.Bool("delete-data", false, "Delete user data")
+	isUpdateTickerDisabledFlag = flag.Bool("disable-updates", false, "Disable all periodic updates")
+	isOfflineFlag              = flag.Bool("offline", false, "Start app in offline mode")
+	pprofFlag                  = flag.Bool("pprof", false, "Enable pprof web server")
 )
 
 func init() {
@@ -204,14 +205,16 @@ func main() {
 	cs.SSOService = sso.New(ssoClientID, httpClient, cache)
 
 	// Init UI
-	u := ui.NewUI(fyneApp, ad, *offlineFlag)
+	u := ui.NewUI(fyneApp, ad)
 	slog.Debug("ui instance created")
 	u.CacheService = cache
 	u.CharacterService = cs
 	u.ESIStatusService = esistatus.New(esiClient)
-	u.EveImageService = eveimage.New(ad.Cache, httpClient, *offlineFlag)
+	u.EveImageService = eveimage.New(ad.Cache, httpClient, *isOfflineFlag)
 	u.EveUniverseService = eu
 	u.StatusCacheService = sc
+	u.IsOffline = *isOfflineFlag
+	u.IsUpdateTickerDisabled = *isUpdateTickerDisabledFlag
 	u.Init()
 	slog.Debug("ui initialized")
 

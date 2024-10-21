@@ -21,10 +21,10 @@ type wealthArea struct {
 	content fyne.CanvasObject
 	charts  *fyne.Container
 	top     *widget.Label
-	u       *ui
+	u       *UI
 }
 
-func (u *ui) newWealthArea() *wealthArea {
+func (u *UI) newWealthArea() *wealthArea {
 	a := &wealthArea{
 		top: widget.NewLabel(""),
 		u:   u,

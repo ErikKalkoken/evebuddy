@@ -48,10 +48,10 @@ type skillCatalogueArea struct {
 	skills         []skillTrained
 	skillsGrid     *widget.GridWrap
 	total          *widget.Label
-	u              *ui
+	u              *UI
 }
 
-func (u *ui) newSkillCatalogueArea() *skillCatalogueArea {
+func (u *UI) newSkillCatalogueArea() *skillCatalogueArea {
 	a := &skillCatalogueArea{
 		groups:         make([]skillGroupProgress, 0),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),

@@ -74,10 +74,10 @@ type assetsArea struct {
 	locationsTop     *widget.Label
 	selectedLocation optional.Optional[locationDataNode]
 	assetCollection  assetcollection.AssetCollection
-	u                *ui
+	u                *UI
 }
 
-func (u *ui) newAssetsArea() *assetsArea {
+func (u *UI) newAssetsArea() *assetsArea {
 	myHBox := layout.NewCustomPaddedHBoxLayout(-5)
 	a := assetsArea{
 		assets:        make([]*app.CharacterAsset, 0),

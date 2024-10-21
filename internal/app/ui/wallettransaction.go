@@ -30,10 +30,10 @@ type walletTransactionArea struct {
 	transactions []walletTransaction
 	table        *widget.Table
 	top          *widget.Label
-	u            *ui
+	u            *UI
 }
 
-func (u *ui) newWalletTransactionArea() *walletTransactionArea {
+func (u *UI) newWalletTransactionArea() *walletTransactionArea {
 	a := walletTransactionArea{
 		top:          widget.NewLabel(""),
 		transactions: make([]walletTransaction, 0),

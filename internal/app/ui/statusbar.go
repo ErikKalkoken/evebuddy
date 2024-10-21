@@ -49,11 +49,11 @@ type statusBarArea struct {
 	eveStatusError string
 	infoText       *widget.Label
 	newVersionHint *fyne.Container
-	u              *ui
+	u              *UI
 	updateStatus   *widgets.StatusBarItem
 }
 
-func (u *ui) newStatusBarArea() *statusBarArea {
+func (u *UI) newStatusBarArea() *statusBarArea {
 	a := &statusBarArea{
 		infoText:       widget.NewLabel(""),
 		newVersionHint: container.NewHBox(),
@@ -136,7 +136,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 			<-clockTicker.C
 		}
 	}()
-	if a.u.isOffline {
+	if a.u.IsOffline {
 		a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
 		a.refreshUpdateStatus()
 		return
