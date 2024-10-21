@@ -8,7 +8,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -26,7 +25,7 @@ import (
 // mailArea is the UI area showing the mail folders.
 type mailArea struct {
 	content fyne.CanvasObject
-	u       *ui
+	u       *UI
 
 	currentFolder optional.Optional[folderNode]
 	foldersData   *fynetree.FyneTree[folderNode]
@@ -49,7 +48,7 @@ type mailArea struct {
 	toolbar     *widget.Toolbar
 }
 
-func (u *ui) newMailArea() *mailArea {
+func (u *UI) newMailArea() *mailArea {
 	a := &mailArea{
 		body:        widget.NewLabel(""),
 		foldersData: fynetree.New[folderNode](),
@@ -217,7 +216,8 @@ func (a *mailArea) refresh() {
 	if err != nil {
 		t := "Failed to build folder tree"
 		slog.Error(t, "character", characterID, "error", err)
-		a.u.showErrorDialog(t, err)
+		d := newErrorDialog(t, err, a.u.window)
+		d.Show()
 		return
 	}
 	a.foldersWidget.Refresh()
@@ -499,13 +499,14 @@ func (a *mailArea) makeToolbar() *widget.Toolbar {
 		}),
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.DeleteIcon(), func() {
-			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Subject)
-			d := dialog.NewConfirm("Delete mail", t, func(confirmed bool) {
+			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Header())
+			d := newConfirmDialog("Delete mail", t, "Delete", func(confirmed bool) {
 				if confirmed {
 					if err := a.u.CharacterService.DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID); err != nil {
 						t := "Failed to delete mail"
 						slog.Error(t, "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
-						a.u.showErrorDialog(t, err)
+						d2 := newErrorDialog(t, err, a.u.window)
+						d2.Show()
 					} else {
 						a.headerRefresh()
 					}
@@ -532,7 +533,7 @@ func (a *mailArea) setMail(mailID int32) {
 		a.setErrorText()
 		return
 	}
-	if !a.u.isOffline && !a.mail.IsRead {
+	if !a.u.IsOffline && !a.mail.IsRead {
 		go func() {
 			err = a.u.CharacterService.UpdateMailRead(ctx, characterID, a.mail.MailID)
 			if err != nil {

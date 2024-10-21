@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func makeMenu(u *ui) *fyne.MainMenu {
+func makeMenu(u *UI) *fyne.MainMenu {
 	fileMenu := fyne.NewMenu("File")
 
 	settingsItem := fyne.NewMenuItem("Settings...", func() {
@@ -25,16 +25,12 @@ func makeMenu(u *ui) *fyne.MainMenu {
 	})
 
 	charactersItem := fyne.NewMenuItem("Manage characters...", func() {
-		if err := u.showAccountDialog(); err != nil {
-			u.showErrorDialog("Failed to show account dialog", err)
-		}
+		u.showAccountDialog()
 	})
 	charactersShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierAlt}
 	charactersItem.Shortcut = charactersShortcut
 	u.window.Canvas().AddShortcut(charactersShortcut, func(shortcut fyne.Shortcut) {
-		if err := u.showAccountDialog(); err != nil {
-			u.showErrorDialog("Failed to show account dialog", err)
-		}
+		u.showAccountDialog()
 	})
 
 	statusItem := fyne.NewMenuItem("Update status...", func() {
@@ -61,7 +57,7 @@ func makeMenu(u *ui) *fyne.MainMenu {
 		url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy/issues")
 		_ = u.fyneApp.OpenURL(url)
 	})
-	if u.isOffline {
+	if u.IsOffline {
 		website.Disabled = true
 		report.Disabled = true
 	}
@@ -79,7 +75,7 @@ func makeMenu(u *ui) *fyne.MainMenu {
 	return main
 }
 
-func (u *ui) showAboutDialog() {
+func (u *UI) showAboutDialog() {
 	c := container.NewVBox()
 	info := u.fyneApp.Metadata()
 	appData := widget.NewRichTextFromMarkdown(
@@ -93,7 +89,7 @@ func (u *ui) showAboutDialog() {
 	d.Show()
 }
 
-func (u *ui) showUserDataDialog() {
+func (u *UI) showUserDataDialog() {
 	f := widget.NewForm(
 		widget.NewFormItem("Cache", makePathEntry(u.window.Clipboard(), u.ad.Cache)),
 		widget.NewFormItem("Data", makePathEntry(u.window.Clipboard(), u.ad.Data)),

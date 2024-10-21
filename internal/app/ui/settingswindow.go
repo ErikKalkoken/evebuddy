@@ -7,7 +7,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
@@ -18,11 +17,11 @@ import (
 
 type settingsWindow struct {
 	content fyne.CanvasObject
-	u       *ui
+	u       *UI
 	window  fyne.Window
 }
 
-func (u *ui) showSettingsWindow() {
+func (u *UI) showSettingsWindow() {
 	if u.settingsWindow != nil {
 		u.settingsWindow.Show()
 		return
@@ -43,7 +42,7 @@ func (u *ui) showSettingsWindow() {
 	sw.window = w
 }
 
-func (u *ui) newSettingsWindow() (*settingsWindow, error) {
+func (u *UI) newSettingsWindow() (*settingsWindow, error) {
 	sw := &settingsWindow{u: u}
 	tabs := container.NewAppTabs(
 		container.NewTabItem("General", sw.makeGeneralPage()),
@@ -84,24 +83,20 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 
 	// cache
 	clearBtn := widget.NewButton("Clear NOW", func() {
-		d := dialog.NewConfirm(
-			"Clear image cache",
-			"Are you sure you want to clear the image cache?",
-			func(confirmed bool) {
-				if !confirmed {
-					return
-				}
-				count, err := w.u.EveImageService.ClearCache()
+		showProgressModal(
+			"Clearing cache...",
+			"Image cache cleared",
+			"Failed to clear image cache",
+			func() error {
+				n, err := w.u.EveImageService.ClearCache()
 				if err != nil {
-					slog.Error(err.Error())
-					w.u.showErrorDialog("Failed to clear image cache", err)
-				} else {
-					slog.Info("Cleared images cache", "count", count)
+					return err
 				}
+				slog.Info("Cleared image cache", "count", n)
+				return nil
 			},
 			w.window,
 		)
-		d.Show()
 	})
 	var cacheSize string
 	s, err := w.u.EveImageService.Size()

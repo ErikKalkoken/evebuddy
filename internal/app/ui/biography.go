@@ -10,10 +10,10 @@ import (
 type biographyArea struct {
 	content fyne.CanvasObject
 	text    *widget.Label
-	u       *ui
+	u       *UI
 }
 
-func (u *ui) newBiographyArea() *biographyArea {
+func (u *UI) newBiographyArea() *biographyArea {
 	a := &biographyArea{u: u, text: widget.NewLabel("")}
 	a.text.Wrapping = fyne.TextWrapBreak
 	a.content = a.text

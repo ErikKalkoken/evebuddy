@@ -55,8 +55,8 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 	})
 }
 
-func newUI(st *storage.Storage) *ui {
-	u := &ui{
+func newUI(st *storage.Storage) *UI {
+	u := &UI{
 		CharacterService: newCharacterService(st),
 	}
 	return u

@@ -15,9 +15,6 @@ import (
 )
 
 func TestLoggedTransport(t *testing.T) {
-	httpClient := &http.Client{
-		Transport: httptransport.LoggedTransport{},
-	}
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	var buf bytes.Buffer
@@ -27,6 +24,9 @@ func TestLoggedTransport(t *testing.T) {
 	}()
 	t.Run("can log GET request with 200", func(t *testing.T) {
 		// given
+		myClient := &http.Client{
+			Transport: httptransport.LoggedTransport{},
+		}
 		slog.SetLogLoggerLevel(slog.LevelInfo)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
@@ -34,7 +34,7 @@ func TestLoggedTransport(t *testing.T) {
 			"https://www.example.com/",
 			httpmock.NewStringResponder(http.StatusOK, "Test"))
 		// when
-		r, err := httpClient.Get("https://www.example.com/")
+		r, err := myClient.Get("https://www.example.com/")
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusOK, r.StatusCode)
 			assert.Contains(t, buf.String(), "INFO HTTP response method=GET url=https://www.example.com/ status=200")
@@ -42,6 +42,9 @@ func TestLoggedTransport(t *testing.T) {
 	})
 	t.Run("can log POST request with 404", func(t *testing.T) {
 		// given
+		myClient := &http.Client{
+			Transport: httptransport.LoggedTransport{},
+		}
 		slog.SetLogLoggerLevel(slog.LevelInfo)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
@@ -49,7 +52,7 @@ func TestLoggedTransport(t *testing.T) {
 			"https://www.example.com/",
 			httpmock.NewStringResponder(http.StatusNotFound, "Test"))
 		// when
-		r, err := httpClient.Get("https://www.example.com/")
+		r, err := myClient.Get("https://www.example.com/")
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusNotFound, r.StatusCode)
 			assert.Contains(t, buf.String(), "WARN HTTP response method=GET url=https://www.example.com/ status=404")
@@ -57,19 +60,75 @@ func TestLoggedTransport(t *testing.T) {
 	})
 	t.Run("can log request and response details when level is DEBUG", func(t *testing.T) {
 		// given
+		myClient := &http.Client{
+			Transport: httptransport.LoggedTransport{},
+		}
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://www.example.com/",
+			httpmock.NewStringResponder(http.StatusOK, "Test").HeaderSet(http.Header{"dummy": []string{"bravo"}}))
+		req, err := http.NewRequest("GET", "https://www.example.com/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("dummy", "alpha")
+		// when
+		r, err := myClient.Do(req)
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusOK, r.StatusCode)
+			assert.Contains(t, buf.String(), "INFO HTTP response method=GET url=https://www.example.com/ status=200")
+			assert.Contains(t, buf.String(), "DEBUG HTTP request method=GET url=https://www.example.com/ header=map[Dummy:[alpha]] body=")
+			assert.Contains(t, buf.String(), "DEBUG HTTP response method=GET url=https://www.example.com/ status=200 header=map[Dummy:[bravo]] body=Test")
+		}
+	})
+	t.Run("should never log authorization headers in request", func(t *testing.T) {
+		// given
+		myClient := &http.Client{
+			Transport: httptransport.LoggedTransport{},
+		}
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
 			"https://www.example.com/",
 			httpmock.NewStringResponder(http.StatusOK, "Test"))
+		req, err := http.NewRequest("GET", "https://www.example.com/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Authorization", "token")
+		req.Header.Set("Dummy", "alpha")
 		// when
-		r, err := httpClient.Get("https://www.example.com/")
+		r, err := myClient.Do(req)
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusOK, r.StatusCode)
-			assert.Contains(t, buf.String(), "INFO HTTP response method=GET url=https://www.example.com/ status=200")
-			assert.Contains(t, buf.String(), "DEBUG HTTP request method=GET url=https://www.example.com/ header=map[] body=")
-			assert.Contains(t, buf.String(), "DEBUG HTTP response method=GET url=https://www.example.com/ status=200 header=map[] body=Test")
+			assert.Contains(t, buf.String(), "DEBUG HTTP request method=GET url=https://www.example.com/ header=\"map[Authorization:[REDACTED] Dummy:[alpha]]\" body=")
+		}
+	})
+	t.Run("can redact response bodies for blocked URLs", func(t *testing.T) {
+		// given
+		myClient := &http.Client{
+			Transport: httptransport.LoggedTransport{
+				BlockedResponseURLs: []string{"https://www.example.com/"},
+			},
+		}
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://www.example.com/",
+			httpmock.NewStringResponder(http.StatusOK, "Test"))
+		req, err := http.NewRequest("GET", "https://www.example.com/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// when
+		r, err := myClient.Do(req)
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusOK, r.StatusCode)
+			assert.Contains(t, buf.String(), "DEBUG HTTP response method=GET url=https://www.example.com/ status=200 header=map[] body=REDACTED")
 		}
 	})
 }

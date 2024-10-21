@@ -24,7 +24,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 )
 
@@ -34,17 +33,21 @@ const (
 	myFloatFormat   = "#,###.##"
 )
 
-// The ui is the root object of the UI and contains all UI areas.
+// The UI is the root object of the UI and contains all UI areas.
 //
-// Each UI area holds a pointer of the ui instance, so that areas can
+// Each UI area holds a pointer of the UI instance, so that areas can
 // call methods on other UI areas and access shared variables in the UI.
-type ui struct {
+type UI struct {
 	CacheService       app.CacheService
 	CharacterService   *character.CharacterService
 	ESIStatusService   app.ESIStatusService
 	EveImageService    app.EveImageService
 	EveUniverseService *eveuniverse.EveUniverseService
 	StatusCacheService app.StatusCacheService
+	// Run the app in offline mode
+	IsOffline bool
+	// Whether to disable update tickers (useful for debugging)
+	IsUpdateTickerDisabled bool
 
 	ad                    appdirs.AppDirs
 	assetsArea            *assetsArea
@@ -56,7 +59,6 @@ type ui struct {
 	deskApp               desktop.App
 	fyneApp               fyne.App
 	implantsArea          *implantsArea
-	isOffline             bool
 	jumpClonesArea        *jumpClonesArea
 	mailArea              *mailArea
 	mailTab               *container.TabItem
@@ -82,17 +84,16 @@ type ui struct {
 }
 
 // NewUI build the UI and returns it.
-func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isOffline bool) *ui {
+func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 	desk, ok := fyneApp.(desktop.App)
 	if !ok {
 		log.Fatal("Failed to initialize as desktop app")
 	}
-	u := &ui{
-		ad:        ad,
-		deskApp:   desk,
-		fyneApp:   fyneApp,
-		isOffline: isOffline,
-		sfg:       new(singleflight.Group),
+	u := &UI{
+		ad:      ad,
+		deskApp: desk,
+		fyneApp: fyneApp,
+		sfg:     new(singleflight.Group),
 	}
 	u.window = fyneApp.NewWindow(u.appName())
 	u.attributesArea = u.newAttributesArena()
@@ -185,7 +186,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs, isOffline bool) *ui {
 	return u
 }
 
-func (u *ui) themeSet(name string) {
+func (u *UI) themeSet(name string) {
 	switch name {
 	case themeAuto:
 		switch u.fyneApp.Settings().ThemeVariant() {
@@ -207,11 +208,11 @@ func (u *ui) themeSet(name string) {
 	}
 }
 
-func (u *ui) themeGet() string {
+func (u *UI) themeGet() string {
 	return u.themeName
 }
 
-func (u *ui) Init() {
+func (u *UI) Init() {
 	var c *app.Character
 	var err error
 	ctx := context.Background()
@@ -254,14 +255,14 @@ func (u *ui) Init() {
 }
 
 // ShowAndRun shows the UI and runs it (blocking).
-func (u *ui) ShowAndRun() {
-	u.fyneApp.Lifecycle().SetOnStopped(func() {
-		slog.Info("App is shutting down")
-		u.saveAppState()
-	})
+func (u *UI) ShowAndRun() {
 	u.fyneApp.Lifecycle().SetOnStarted(func() {
-		if u.isOffline {
+		slog.Info("App started")
+		if u.IsOffline {
 			slog.Info("Started in offline mode")
+		}
+		if u.IsUpdateTickerDisabled {
+			slog.Info("Update ticker disabled")
 		}
 		go func() {
 			u.refreshCrossPages()
@@ -271,13 +272,17 @@ func (u *ui) ShowAndRun() {
 				u.resetCharacter()
 			}
 		}()
-		if !u.isOffline {
+		if !u.IsOffline && !u.IsUpdateTickerDisabled {
 			go func() {
 				u.startUpdateTickerGeneralSections()
 				u.startUpdateTickerCharacters()
 			}()
 		}
 		go u.statusBarArea.StartUpdateTicker()
+	})
+	u.fyneApp.Lifecycle().SetOnStopped(func() {
+		u.saveAppState()
+		slog.Info("App shut down complete")
 	})
 	width := float32(u.fyneApp.Preferences().FloatWithFallback(settingWindowWidth, settingWindowHeightDefault))
 	height := float32(u.fyneApp.Preferences().FloatWithFallback(settingWindowHeight, settingWindowHeightDefault))
@@ -297,7 +302,7 @@ func (u *ui) ShowAndRun() {
 	u.window.ShowAndRun()
 }
 
-func (u *ui) saveAppState() {
+func (u *UI) saveAppState() {
 	a := u.fyneApp
 	if u.window == nil || a == nil {
 		slog.Warn("Failed to save app state")
@@ -323,22 +328,22 @@ func (u *ui) saveAppState() {
 }
 
 // characterID returns the ID of the current character or 0 if non it set.
-func (u *ui) characterID() int32 {
+func (u *UI) characterID() int32 {
 	if u.character == nil {
 		return 0
 	}
 	return u.character.ID
 }
 
-func (u *ui) currentCharacter() *app.Character {
+func (u *UI) currentCharacter() *app.Character {
 	return u.character
 }
 
-func (u *ui) hasCharacter() bool {
+func (u *UI) hasCharacter() bool {
 	return u.character != nil
 }
 
-func (u *ui) loadCharacter(ctx context.Context, characterID int32) error {
+func (u *UI) loadCharacter(ctx context.Context, characterID int32) error {
 	c, err := u.CharacterService.GetCharacter(ctx, characterID)
 	if err != nil {
 		return err
@@ -347,19 +352,19 @@ func (u *ui) loadCharacter(ctx context.Context, characterID int32) error {
 	return nil
 }
 
-func (u *ui) setCharacter(c *app.Character) {
+func (u *UI) setCharacter(c *app.Character) {
 	u.character = c
 	u.refreshCharacter()
 	u.fyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
 }
 
-func (u *ui) resetCharacter() {
+func (u *UI) resetCharacter() {
 	u.character = nil
 	u.fyneApp.Preferences().SetInt(settingLastCharacterID, 0)
 	u.refreshCharacter()
 }
 
-func (u *ui) refreshCharacter() {
+func (u *UI) refreshCharacter() {
 	ff := map[string]func(){
 		"assets":            u.assetsArea.redraw,
 		"attributes":        u.attributesArea.refresh,
@@ -382,14 +387,14 @@ func (u *ui) refreshCharacter() {
 	if c != nil {
 		slog.Debug("Refreshing character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
 	}
-	runFunctionsWithProgressDialog("Loading character", ff, u.window)
+	runFunctionsWithProgressModal("Loading character", ff, u.window)
 	if c != nil {
 		u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 	}
 	go u.statusBarArea.refreshUpdateStatus()
 }
 
-func (u *ui) toogleTabs(enabled bool) {
+func (u *UI) toogleTabs(enabled bool) {
 	if enabled {
 		for i := range u.tabs.Items {
 			u.tabs.EnableIndex(i)
@@ -412,7 +417,7 @@ func (u *ui) toogleTabs(enabled bool) {
 	u.tabs.Refresh()
 }
 
-func (u *ui) setAnyCharacter() error {
+func (u *UI) setAnyCharacter() error {
 	c, err := u.CharacterService.GetAnyCharacter(context.TODO())
 	if errors.Is(err, character.ErrNotFound) {
 		u.resetCharacter()
@@ -425,7 +430,7 @@ func (u *ui) setAnyCharacter() error {
 }
 
 // refreshCrossPages refreshed all pages under the characters tab.
-func (u *ui) refreshCrossPages() {
+func (u *UI) refreshCrossPages() {
 	ff := map[string]func(){
 		"assetSearch": u.assetSearchArea.refresh,
 		"overview":    u.overviewArea.refresh,
@@ -433,10 +438,10 @@ func (u *ui) refreshCrossPages() {
 		"wealth":      u.wealthArea.refresh,
 		"statusBar":   u.statusBarArea.refreshCharacterCount,
 	}
-	runFunctionsWithProgressDialog("Updating characters", ff, u.window)
+	runFunctionsWithProgressModal("Updating characters", ff, u.window)
 }
 
-func runFunctionsWithProgressDialog(title string, ff map[string]func(), w fyne.Window) {
+func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Window) {
 	start := time.Now()
 	myLog := slog.With("title", title)
 	myLog.Debug("started")
@@ -464,25 +469,15 @@ func runFunctionsWithProgressDialog(title string, ff map[string]func(), w fyne.W
 	myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
 }
 
-func (u *ui) showMailIndicator() {
+func (u *UI) showMailIndicator() {
 	u.deskApp.SetSystemTrayIcon(resourceIconmarkedPng)
 }
 
-func (u *ui) hideMailIndicator() {
+func (u *UI) hideMailIndicator() {
 	u.deskApp.SetSystemTrayIcon(resourceIconPng)
 }
 
-func (u *ui) showErrorDialog(message string, err error) {
-	text := widget.NewLabel(fmt.Sprintf("%s\n\n%s", message, humanize.Error(err)))
-	text.Wrapping = fyne.TextWrapWord
-	text.Importance = widget.DangerImportance
-	x := container.NewVScroll(text)
-	x.SetMinSize(fyne.Size{Width: 400, Height: 100})
-	d := dialog.NewCustom("Error", "OK", x, u.window)
-	d.Show()
-}
-
-func (u *ui) appName() string {
+func (u *UI) appName() string {
 	info := u.fyneApp.Metadata()
 	name := info.Name
 	if name == "" {
@@ -491,7 +486,7 @@ func (u *ui) appName() string {
 	return name
 }
 
-func (u *ui) makeWindowTitle(subTitle string) string {
+func (u *UI) makeWindowTitle(subTitle string) string {
 	return fmt.Sprintf("%s - %s", subTitle, u.appName())
 }
 

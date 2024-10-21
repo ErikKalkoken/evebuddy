@@ -49,20 +49,18 @@ type statusBarArea struct {
 	eveStatusError string
 	infoText       *widget.Label
 	newVersionHint *fyne.Container
-	u              *ui
+	u              *UI
 	updateStatus   *widgets.StatusBarItem
 }
 
-func (u *ui) newStatusBarArea() *statusBarArea {
+func (u *UI) newStatusBarArea() *statusBarArea {
 	a := &statusBarArea{
 		infoText:       widget.NewLabel(""),
 		newVersionHint: container.NewHBox(),
 		u:              u,
 	}
 	a.characterCount = widgets.NewStatusBarItem(theme.AccountIcon(), "?", func() {
-		if err := u.showAccountDialog(); err != nil {
-			u.showErrorDialog("Failed to show account dialog", err)
-		}
+		u.showAccountDialog()
 	})
 	a.updateStatus = widgets.NewStatusBarItem(theme.NewThemedResource(resourceUpdateSvg), "?", func() {
 		u.showStatusWindow()
@@ -138,7 +136,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 			<-clockTicker.C
 		}
 	}()
-	if a.u.isOffline {
+	if a.u.IsOffline {
 		a.setEveStatus(eveStatusOffline, "OFFLINE", "Offline mode")
 		a.refreshUpdateStatus()
 		return

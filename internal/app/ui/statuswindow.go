@@ -44,14 +44,14 @@ type statusWindow struct {
 	sectionsTop       *widget.Label
 	selectedEntityID  int
 	selectedSectionID int
-	u                 *ui
+	u                 *UI
 	window            fyne.Window
 
 	mu      sync.Mutex
 	details *fyne.Container
 }
 
-func (u *ui) showStatusWindow() {
+func (u *UI) showStatusWindow() {
 	if u.statusWindow != nil {
 		u.statusWindow.Show()
 		return
@@ -77,7 +77,7 @@ func (u *ui) showStatusWindow() {
 	sw.window = w
 }
 
-func (u *ui) newStatusWindow() (*statusWindow, error) {
+func (u *UI) newStatusWindow() (*statusWindow, error) {
 	a := &statusWindow{
 		entities:          make([]sectionEntity, 0),
 		charactersTop:     widget.NewLabel(""),
@@ -105,7 +105,7 @@ func (u *ui) newStatusWindow() (*statusWindow, error) {
 			a.u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.id, true)
 		}
 	})
-	if a.u.isOffline {
+	if a.u.IsOffline {
 		b.Disable()
 	}
 	top2 := container.NewVBox(container.NewHBox(a.sectionsTop, layout.NewSpacer(), b), widget.NewSeparator())
@@ -352,7 +352,7 @@ func (a *statusWindow) makeDetailsContent(d sectionStatusData) []fyne.CanvasObje
 				context.TODO(), d.entityID, app.CharacterSection(d.sectionID), true)
 		}
 	})
-	if a.u.isOffline || d.sectionName == "" {
+	if a.u.IsOffline || d.sectionName == "" {
 		b.Disable()
 	}
 	oo = append(oo, b)

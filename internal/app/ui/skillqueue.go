@@ -24,10 +24,10 @@ type skillqueueArea struct {
 	items   []*app.CharacterSkillqueueItem
 	list    *widget.List
 	total   *widget.Label
-	u       *ui
+	u       *UI
 }
 
-func (u *ui) newSkillqueueArea() *skillqueueArea {
+func (u *UI) newSkillqueueArea() *skillqueueArea {
 	a := skillqueueArea{
 		items: make([]*app.CharacterSkillqueueItem, 0),
 		total: widget.NewLabel(""),

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -15,16 +16,21 @@ import (
 //
 // Responses with status code below 400 are logged with INFO level.
 // Responses with status code of 400 or higher are logged with WARNING level.
-// When DEBUG logging is enabled, will also log details of request and response.
-type LoggedTransport struct{}
+// When DEBUG logging is enabled, will also log details of request and response including headers.
+// Authorization headers in requests are redacted.
+// Can redact response bodies for URLs (e.g. which would contain tokens)
+type LoggedTransport struct {
+	// Pattern for blocked URLs. Body of blocked URLs will not be logged.
+	BlockedResponseURLs []string
+}
 
-func (r LoggedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (t LoggedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	isDebug := logRequest(req)
 	resp, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
 		return resp, err
 	}
-	logResponse(isDebug, resp, req)
+	logResponse(t.BlockedResponseURLs, isDebug, resp, req)
 	return resp, err
 }
 
@@ -39,6 +45,8 @@ type LoggedTransportWithRetries struct {
 	MaxRetries         int
 	StatusCodesToRetry []int
 	DelayMilliseconds  int
+	// Pattern for blocked URLs. Body of blocked URLs will not be logged.
+	BlockedResponseURLs []string
 }
 
 func (t LoggedTransportWithRetries) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -57,7 +65,7 @@ func (t LoggedTransportWithRetries) RoundTrip(req *http.Request) (*http.Response
 		if err != nil {
 			return resp, err
 		}
-		logResponse(isDebug, resp, req)
+		logResponse(t.BlockedResponseURLs, isDebug, resp, req)
 		if slices.Contains(t.StatusCodesToRetry, resp.StatusCode) && retry < maxRetries {
 			retry++
 			slog.Warn("Retrying", "method", req.Method, "url", req.URL, "retry", retry, "maxRetries", maxRetries)
@@ -80,22 +88,46 @@ func logRequest(req *http.Request) bool {
 				req.Body = io.NopCloser(bytes.NewBuffer(body))
 			}
 		}
-		slog.Debug("HTTP request", "method", req.Method, "url", req.URL, "header", req.Header, "body", reqBody)
+		h := req.Header.Clone()
+		if h.Get("Authorization") != "" {
+			h.Set("Authorization", "REDACTED") // never log this header
+		}
+		slog.Debug("HTTP request", "method", req.Method, "url", req.URL, "header", h, "body", reqBody)
 	}
 	return isDebug
 }
 
-func logResponse(isDebug bool, resp *http.Response, req *http.Request) {
+func logResponse(blockedURLs []string, isDebug bool, resp *http.Response, req *http.Request) {
 	if isDebug {
-		respBody := ""
-		if resp.Body != nil {
+		var respBody string
+		var isBlocked bool
+		url := req.URL.String()
+		for _, u := range blockedURLs {
+			if strings.Contains(url, u) {
+				isBlocked = true
+				break
+			}
+		}
+		if isBlocked {
+			respBody = "REDACTED"
+		} else if resp.Body != nil {
 			body, err := io.ReadAll(resp.Body)
 			if err == nil {
 				respBody = string(body)
 				resp.Body = io.NopCloser(bytes.NewBuffer(body))
 			}
 		}
-		slog.Debug("HTTP response", "method", req.Method, "url", req.URL, "status", resp.StatusCode, "header", resp.Header, "body", respBody)
+		slog.Debug(
+			"HTTP response",
+			"method", req.Method,
+			"url", req.URL,
+			"status",
+			resp.StatusCode,
+			"header",
+			resp.Header,
+			"body",
+			respBody,
+		)
 	}
 	var level slog.Level
 	if resp.StatusCode >= 400 {
@@ -103,5 +135,15 @@ func logResponse(isDebug bool, resp *http.Response, req *http.Request) {
 	} else {
 		level = slog.LevelInfo
 	}
-	slog.Log(context.Background(), level, "HTTP response", "method", req.Method, "url", req.URL, "status", resp.StatusCode)
+	slog.Log(
+		context.Background(),
+		level,
+		"HTTP response",
+		"method",
+		req.Method,
+		"url",
+		req.URL,
+		"status",
+		resp.StatusCode,
+	)
 }

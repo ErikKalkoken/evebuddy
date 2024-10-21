@@ -22,10 +22,10 @@ type toolbarArea struct {
 	icon         *canvas.Image
 	name         *widget.Label
 	switchButton *widgets.ContextMenuButton
-	u            *ui
+	u            *UI
 }
 
-func (u *ui) newToolbarArea() *toolbarArea {
+func (u *UI) newToolbarArea() *toolbarArea {
 	a := &toolbarArea{
 		icon: canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg),
 		name: widget.NewLabel(""),
@@ -96,7 +96,8 @@ func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) 
 			if err != nil {
 				msg := "Failed to switch to new character"
 				slog.Error(msg, "err", err)
-				a.u.showErrorDialog(msg, err)
+				d := newErrorDialog(msg, err, a.u.window)
+				d.Show()
 				return
 
 			}

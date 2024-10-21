@@ -19,10 +19,10 @@ type implantsArea struct {
 	implants []*app.CharacterImplant
 	list     *widget.List
 	top      *widget.Label
-	u        *ui
+	u        *UI
 }
 
-func (u *ui) newImplantsArea() *implantsArea {
+func (u *UI) newImplantsArea() *implantsArea {
 	a := implantsArea{
 		implants: make([]*app.CharacterImplant, 0),
 		top:      widget.NewLabel(""),

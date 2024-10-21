@@ -33,10 +33,10 @@ type attributesArea struct {
 	content    fyne.CanvasObject
 	list       *widget.List
 	top        *widget.Label
-	u          *ui
+	u          *UI
 }
 
-func (u *ui) newAttributesArena() *attributesArea {
+func (u *UI) newAttributesArena() *attributesArea {
 	a := attributesArea{
 		attributes: make([]attribute, 0),
 		top:        widget.NewLabel(""),

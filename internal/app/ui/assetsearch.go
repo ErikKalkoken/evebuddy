@@ -43,7 +43,7 @@ type assetSearchArea struct {
 	colSearch       []string
 	searchBoxes     []*widget.Entry
 	total           *widget.Label
-	u               *ui
+	u               *UI
 }
 
 type assetSearchRow struct {
@@ -63,7 +63,7 @@ type assetSearchRow struct {
 	typeName        string
 }
 
-func (u *ui) newAssetSearchArea() *assetSearchArea {
+func (u *UI) newAssetSearchArea() *assetSearchArea {
 	a := &assetSearchArea{
 		u:              u,
 		assetsFiltered: make([]*assetSearchRow, 0),

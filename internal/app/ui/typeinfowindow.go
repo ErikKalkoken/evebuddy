@@ -188,23 +188,24 @@ type typeInfoWindow struct {
 	price          *app.EveMarketPrice
 	requiredSkills []requiredSkill
 	techLevel      int
-	u              *ui
+	u              *UI
 	window         fyne.Window
 }
 
-func (u *ui) showTypeInfoWindow(typeID, characterID int32) {
+func (u *UI) showTypeInfoWindow(typeID, characterID int32) {
 	u.showInfoWindow(u.newTypeInfoWindow(typeID, characterID, 0))
 }
 
-func (u *ui) showLocationInfoWindow(locationID int64) {
+func (u *UI) showLocationInfoWindow(locationID int64) {
 	u.showInfoWindow(u.newTypeInfoWindow(0, 0, locationID))
 }
 
-func (u *ui) showInfoWindow(iw *typeInfoWindow, err error) {
+func (u *UI) showInfoWindow(iw *typeInfoWindow, err error) {
 	if err != nil {
 		t := "Failed to open info window"
 		slog.Error(t, "err", err)
-		u.showErrorDialog(t, err)
+		d := newErrorDialog(t, err, u.window)
+		d.Show()
 		return
 	}
 	if iw == nil {
@@ -217,7 +218,7 @@ func (u *ui) showInfoWindow(iw *typeInfoWindow, err error) {
 	w.Show()
 }
 
-func (u *ui) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*typeInfoWindow, error) {
+func (u *UI) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*typeInfoWindow, error) {
 	ctx := context.TODO()
 	a := &typeInfoWindow{
 		u: u,

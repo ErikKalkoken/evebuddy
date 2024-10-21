@@ -27,7 +27,7 @@ const (
 	createMessageForward
 )
 
-func (u *ui) showSendMessageWindow(mode int, mail *app.CharacterMail) {
+func (u *UI) showSendMessageWindow(mode int, mail *app.CharacterMail) {
 	w, err := u.makeSendMessageWindow(mode, mail)
 	if err != nil {
 		slog.Error("failed to create send message window", "error", err)
@@ -36,7 +36,7 @@ func (u *ui) showSendMessageWindow(mode int, mail *app.CharacterMail) {
 	}
 }
 
-func (u *ui) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fyne.Window, error) {
+func (u *UI) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fyne.Window, error) {
 	currentChar := *u.currentCharacter()
 	w := u.fyneApp.NewWindow(u.makeWindowTitle(fmt.Sprintf("New message [%s]", currentChar.EveCharacter.Name)))
 
@@ -126,7 +126,8 @@ func (u *ui) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fyne.Wind
 			if err != nil {
 				t := "Failed to send mail"
 				slog.Error(t, "err", err)
-				u.showErrorDialog(t, err)
+				d := newErrorDialog(t, err, u.window)
+				d.Show()
 				return
 			}
 			w.Hide()
@@ -154,7 +155,7 @@ func checkInput(subject string, r *mailrecipient.MailRecipients, body string) er
 	return nil
 }
 
-func (u *ui) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
+func (u *UI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
 	label := widget.NewLabel("Search")
 	entry := widgets.NewCompletionEntry([]string{})
 	content := container.New(layout.NewFormLayout(), label, entry)
@@ -202,7 +203,7 @@ func (u *ui) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int
 	d.Show()
 }
 
-func (u *ui) makeRecipientOptions(search string) ([]string, error) {
+func (u *UI) makeRecipientOptions(search string) ([]string, error) {
 	ee, err := u.EveUniverseService.ListEveEntitiesByPartialName(context.TODO(), search)
 	if err != nil {
 		return nil, err

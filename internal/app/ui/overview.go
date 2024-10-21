@@ -44,10 +44,10 @@ type overviewArea struct {
 	content    *fyne.Container
 	table      *widget.Table
 	top        *widget.Label
-	u          *ui
+	u          *UI
 }
 
-func (u *ui) newOverviewArea() *overviewArea {
+func (u *UI) newOverviewArea() *overviewArea {
 	a := overviewArea{
 		characters: make([]overviewCharacter, 0),
 		top:        widget.NewLabel(""),
@@ -212,7 +212,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 	return t
 }
 
-func (u *ui) selectCharacterAndTab(characterID int32, tab *container.TabItem, subIndex int) {
+func (u *UI) selectCharacterAndTab(characterID int32, tab *container.TabItem, subIndex int) {
 	if err := u.loadCharacter(context.TODO(), characterID); err != nil {
 		panic(err)
 	}

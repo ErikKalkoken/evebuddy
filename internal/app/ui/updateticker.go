@@ -18,7 +18,7 @@ const (
 	generalSectionsUpdateTicker   = 60 * time.Second
 )
 
-func (u *ui) startUpdateTickerGeneralSections() {
+func (u *UI) startUpdateTickerGeneralSections() {
 	ticker := time.NewTicker(generalSectionsUpdateTicker)
 	go func() {
 		for {
@@ -28,7 +28,7 @@ func (u *ui) startUpdateTickerGeneralSections() {
 	}()
 }
 
-func (u *ui) updateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
+func (u *UI) updateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
 	for _, s := range app.GeneralSections {
 		go func(s app.GeneralSection) {
 			u.updateGeneralSectionAndRefreshIfNeeded(context.TODO(), s, forceUpdate)
@@ -36,7 +36,7 @@ func (u *ui) updateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
 	}
 }
 
-func (u *ui) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
+func (u *UI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
 	hasChanged, err := u.EveUniverseService.UpdateSection(ctx, section, forceUpdate)
 	if err != nil {
 		slog.Error("Failed to update general section", "section", section, "err", err)
@@ -55,7 +55,7 @@ func (u *ui) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section
 	}
 }
 
-func (u *ui) startUpdateTickerCharacters() {
+func (u *UI) startUpdateTickerCharacters() {
 	ticker := time.NewTicker(characterSectionsUpdateTicker)
 	go func() {
 		for {
@@ -76,8 +76,8 @@ func (u *ui) startUpdateTickerCharacters() {
 
 // updateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
-func (u *ui) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
-	if u.isOffline {
+func (u *UI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
+	if u.IsOffline {
 		return
 	}
 	for _, s := range app.CharacterSections {
@@ -92,7 +92,7 @@ func (u *ui) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID 
 //
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
+func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
 	hasChanged, err := u.CharacterService.UpdateSectionIfNeeded(
 		ctx, character.UpdateSectionParams{
 			CharacterID:           characterID,
@@ -186,7 +186,7 @@ func (u *ui) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 	}
 }
 
-func (u *ui) processNotifications(ctx context.Context, characterID int32) {
+func (u *UI) processNotifications(ctx context.Context, characterID int32) {
 	maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
 	nn, err := u.CharacterService.ListCharacterNotificationsUnprocessed(ctx, characterID)
 	if err != nil {
@@ -217,7 +217,7 @@ func (u *ui) processNotifications(ctx context.Context, characterID int32) {
 	}
 }
 
-func (u *ui) processMails(ctx context.Context, characterID int32) {
+func (u *UI) processMails(ctx context.Context, characterID int32) {
 	maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
 	mm, err := u.CharacterService.ListCharacterMailHeadersForUnprocessed(ctx, characterID)
 	if err != nil {

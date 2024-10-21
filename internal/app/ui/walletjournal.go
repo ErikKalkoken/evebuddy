@@ -52,10 +52,10 @@ type walletJournalArea struct {
 	entries []walletJournalEntry
 	table   *widget.Table
 	top     *widget.Label
-	u       *ui
+	u       *UI
 }
 
-func (u *ui) newWalletJournalArea() *walletJournalArea {
+func (u *UI) newWalletJournalArea() *walletJournalArea {
 	a := walletJournalArea{
 		entries: make([]walletJournalEntry, 0),
 		top:     widget.NewLabel(""),

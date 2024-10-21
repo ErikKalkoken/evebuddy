@@ -48,6 +48,7 @@ func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.Char
 }
 
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
+// The provided context is used for the SSO authentication process only and can be canceled.
 func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, infoText binding.ExternalString) (int32, error) {
 	ssoToken, err := s.SSOService.Authenticate(ctx, esiScopes)
 	if errors.Is(err, sso.ErrAborted) {
@@ -66,7 +67,7 @@ func (s *CharacterService) UpdateOrCreateCharacterFromSSO(ctx context.Context, i
 		Scopes:       ssoToken.Scopes,
 		TokenType:    ssoToken.TokenType,
 	}
-	ctx = contextWithESIToken(ctx, token.AccessToken)
+	ctx = contextWithESIToken(context.Background(), token.AccessToken)
 	myCharacter := &app.Character{
 		ID: token.CharacterID,
 	}

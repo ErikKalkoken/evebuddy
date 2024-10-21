@@ -45,10 +45,10 @@ type jumpClonesArea struct {
 	top        *widget.Label
 	treeData   *fynetree.FyneTree[jumpCloneNode]
 	treeWidget *widget.Tree
-	u          *ui
+	u          *UI
 }
 
-func (u *ui) NewJumpClonesArea() *jumpClonesArea {
+func (u *UI) NewJumpClonesArea() *jumpClonesArea {
 	a := jumpClonesArea{
 		top:      widget.NewLabel(""),
 		treeData: fynetree.New[jumpCloneNode](),
