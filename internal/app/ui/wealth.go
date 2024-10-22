@@ -145,7 +145,7 @@ func (a *wealthArea) compileData() ([]dataRow, int, error) {
 			go func(characterID int32) {
 				_, err := a.u.CharacterService.UpdateCharacterAssetTotalValue(ctx, characterID)
 				if err != nil {
-					slog.Error("failed to update asset totals", "characterID", characterID, "err", err)
+					slog.Error("update asset totals", "characterID", characterID, "err", err)
 					return
 				}
 				a.u.wealthArea.refresh()

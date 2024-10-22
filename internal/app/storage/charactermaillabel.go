@@ -16,7 +16,7 @@ func (st *Storage) DeleteObsoleteCharacterMailLabels(ctx context.Context, charac
 		CharacterID_2: int64(characterID),
 	}
 	if err := st.q.DeleteObsoleteCharacterMailLabels(ctx, arg); err != nil {
-		return fmt.Errorf("failed to delete obsolete mail labels for character %d: %w", characterID, err)
+		return fmt.Errorf("delete obsolete mail labels for character %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -31,7 +31,7 @@ func (st *Storage) GetCharacterMailLabel(ctx context.Context, characterID, label
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
+		return nil, fmt.Errorf("get mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
 	}
 	l2 := characterMailLabelFromDBModel(l)
 	return l2, nil
@@ -80,7 +80,7 @@ func (st *Storage) GetOrCreateCharacterMailLabel(ctx context.Context, arg MailLa
 		return characterMailLabelFromDBModel(l), nil
 	}()
 	if err != nil {
-		return label, fmt.Errorf("failed to get or create mail label for character %d and label %d: %w", arg.CharacterID, arg.LabelID, err)
+		return label, fmt.Errorf("get or create mail label for character %d and label %d: %w", arg.CharacterID, arg.LabelID, err)
 	}
 	return label, nil
 }
@@ -88,7 +88,7 @@ func (st *Storage) GetOrCreateCharacterMailLabel(ctx context.Context, arg MailLa
 func (st *Storage) ListCharacterMailLabelsOrdered(ctx context.Context, characterID int32) ([]*app.CharacterMailLabel, error) {
 	ll, err := st.q.ListCharacterMailLabelsOrdered(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("failed to list mail label IDs for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("list mail label IDs for character %d: %w", characterID, err)
 	}
 	ll2 := make([]*app.CharacterMailLabel, len(ll))
 	for i, l := range ll {
@@ -107,7 +107,7 @@ func (st *Storage) UpdateOrCreateCharacterMailLabel(ctx context.Context, arg Mai
 	}
 	l, err := st.q.UpdateOrCreateCharacterMailLabel(ctx, arg1)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update or create mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
+		return nil, fmt.Errorf("update or create mail label for character %d with label %d: %w", arg.CharacterID, arg.LabelID, err)
 	}
 	label := characterMailLabelFromDBModel(l)
 	return label, nil

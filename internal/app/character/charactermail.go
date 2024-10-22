@@ -129,7 +129,7 @@ func eveEntitiesToESIMailRecipients(ee []*app.EveEntity) ([]esi.PostCharactersCh
 	for i, e := range ee {
 		c, ok := eveEntityCategory2MailRecipientType[e.Category]
 		if !ok {
-			return rr, fmt.Errorf("failed to match EveEntity category to ESI mail recipient type: %v", e)
+			return rr, fmt.Errorf("match EveEntity category to ESI mail recipient type: %v", e)
 		}
 		rr[i] = esi.PostCharactersCharacterIdMailRecipient{
 			RecipientId:   e.ID,

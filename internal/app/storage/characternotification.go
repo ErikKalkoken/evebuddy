@@ -149,7 +149,7 @@ func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCh
 		Title:  optional.ToNullString(arg.Title),
 	}
 	if err := st.q.UpdateCharacterNotification(ctx, arg2); err != nil {
-		return fmt.Errorf("failed to update notification PK %d for character %d: %w", arg.ID, arg.CharacterID, err)
+		return fmt.Errorf("update notification PK %d for character %d: %w", arg.ID, arg.CharacterID, err)
 	}
 	return nil
 }
@@ -188,7 +188,7 @@ func (st *Storage) CountCharacterNotificationUnreads(ctx context.Context, charac
 
 func (st *Storage) UpdateCharacterNotificationSetProcessed(ctx context.Context, id int64) error {
 	if err := st.q.UpdateCharacterNotificationSetProcessed(ctx, id); err != nil {
-		return fmt.Errorf("failed to set notification PK %d as notified: %w", id, err)
+		return fmt.Errorf("set notification PK %d as notified: %w", id, err)
 	}
 	return nil
 }

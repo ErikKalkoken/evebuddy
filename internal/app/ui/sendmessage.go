@@ -30,7 +30,7 @@ const (
 func (u *UI) showSendMessageWindow(mode int, mail *app.CharacterMail) {
 	w, err := u.makeSendMessageWindow(mode, mail)
 	if err != nil {
-		slog.Error("failed to create send message window", "error", err)
+		slog.Error("create send message window", "error", err)
 	} else {
 		w.Show()
 	}

@@ -29,7 +29,7 @@ func (st *Storage) CreateEveGroup(ctx context.Context, arg CreateEveGroupParams)
 	}
 	err := st.q.CreateEveGroup(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("failed to create EveGroup %v, %w", arg, err)
+		return fmt.Errorf("create EveGroup %v, %w", arg, err)
 	}
 	return nil
 }
@@ -40,7 +40,7 @@ func (st *Storage) GetEveGroup(ctx context.Context, id int32) (*app.EveGroup, er
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get EveGroup for id %d: %w", id, err)
+		return nil, fmt.Errorf("get EveGroup for id %d: %w", id, err)
 	}
 	g := eveGroupFromDBModel(row.EveGroup, row.EveCategory)
 	return g, nil

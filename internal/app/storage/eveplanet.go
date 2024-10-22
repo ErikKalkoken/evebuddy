@@ -29,7 +29,7 @@ func (st *Storage) CreateEvePlanet(ctx context.Context, arg CreateEvePlanetParam
 	}
 	err := st.q.CreateEvePlanet(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("failed to create EvePlanet %v, %w", arg, err)
+		return fmt.Errorf("create EvePlanet %v, %w", arg, err)
 	}
 	return nil
 }
@@ -40,7 +40,7 @@ func (st *Storage) GetEvePlanet(ctx context.Context, id int32) (*app.EvePlanet, 
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get EvePlanet for id %d: %w", id, err)
+		return nil, fmt.Errorf("get EvePlanet for id %d: %w", id, err)
 	}
 	g := evePlanetFromDBModel(
 		row.EvePlanet,

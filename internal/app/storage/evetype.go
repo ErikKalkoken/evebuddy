@@ -50,7 +50,7 @@ func (st *Storage) CreateEveType(ctx context.Context, arg CreateEveTypeParams) e
 	}
 	err := st.q.CreateEveType(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("failed to create EveType %v, %w", arg, err)
+		return fmt.Errorf("create EveType %v, %w", arg, err)
 	}
 	return nil
 }
@@ -61,7 +61,7 @@ func (st *Storage) GetEveType(ctx context.Context, id int32) (*app.EveType, erro
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get EveType for id %d: %w", id, err)
+		return nil, fmt.Errorf("get EveType for id %d: %w", id, err)
 	}
 	t := eveTypeFromDBModel(row.EveType, row.EveGroup, row.EveCategory)
 	return t, nil

@@ -32,7 +32,7 @@ func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID in
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get update status for character %d with section %s: %w", characterID, section, err)
+		return nil, fmt.Errorf("get update status for character %d with section %s: %w", characterID, section, err)
 	}
 	s2 := characterSectionStatusFromDBModel(s)
 	return s2, nil
@@ -41,7 +41,7 @@ func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID in
 func (st *Storage) ListCharacterSectionStatus(ctx context.Context, characterID int32) ([]*app.CharacterSectionStatus, error) {
 	rows, err := st.q.ListCharacterSectionStatus(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("failed to list character update status for ID %d: %w", characterID, err)
+		return nil, fmt.Errorf("list character update status for ID %d: %w", characterID, err)
 	}
 	oo := make([]*app.CharacterSectionStatus, len(rows))
 	for i, row := range rows {

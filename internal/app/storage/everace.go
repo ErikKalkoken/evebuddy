@@ -18,7 +18,7 @@ func (st *Storage) CreateEveRace(ctx context.Context, id int32, description, nam
 	}
 	o, err := st.q.CreateEveRace(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create race %d: %w", id, err)
+		return nil, fmt.Errorf("create race %d: %w", id, err)
 	}
 	return eveRaceFromDBModel(o), nil
 }
@@ -29,7 +29,7 @@ func (st *Storage) GetEveRace(ctx context.Context, id int32) (*app.EveRace, erro
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get Race for id %d: %w", id, err)
+		return nil, fmt.Errorf("get Race for id %d: %w", id, err)
 	}
 	return eveRaceFromDBModel(o), nil
 }

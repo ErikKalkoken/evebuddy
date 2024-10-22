@@ -63,7 +63,7 @@ func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterM
 		return mail.ID, nil
 	}()
 	if err != nil {
-		return 0, fmt.Errorf("failed to create mail for character %d and mail ID %d: %w", arg.CharacterID, arg.MailID, err)
+		return 0, fmt.Errorf("create mail for character %d and mail ID %d: %w", arg.CharacterID, arg.MailID, err)
 	}
 	return id, err
 }
@@ -125,7 +125,7 @@ func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int
 		return mail, nil
 	}()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get mail for character %d with mail ID %d: %w", characterID, mailID, err)
+		return nil, fmt.Errorf("get mail for character %d with mail ID %d: %w", characterID, mailID, err)
 	}
 	return mail, nil
 }
@@ -147,7 +147,7 @@ func (st *Storage) DeleteCharacterMail(ctx context.Context, characterID, mailID 
 	}
 	err := st.q.DeleteMail(ctx, arg)
 	if err != nil {
-		return fmt.Errorf("failed to delete mail for character %d with ID%d: %w", characterID, mailID, err)
+		return fmt.Errorf("delete mail for character %d with ID%d: %w", characterID, mailID, err)
 	}
 	return nil
 }
@@ -155,7 +155,7 @@ func (st *Storage) DeleteCharacterMail(ctx context.Context, characterID, mailID 
 func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int32) ([]int32, error) {
 	ids, err := st.q.ListMailIDs(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("failed to list mail IDs for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
 	}
 	ids2 := convertNumericSlice[int64, int32](ids)
 	return ids2, nil
@@ -164,7 +164,7 @@ func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int32) 
 func (st *Storage) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
 	rows, err := st.q.GetCharacterMailLabelUnreadCounts(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get mail label unread counts for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get mail label unread counts for character %d: %w", characterID, err)
 	}
 	result := make(map[int32]int)
 	for _, r := range rows {
@@ -176,7 +176,7 @@ func (st *Storage) GetCharacterMailLabelUnreadCounts(ctx context.Context, charac
 func (st *Storage) GetCharacterMailListUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
 	rows, err := st.q.GetCharacterMailListUnreadCounts(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get mail list unread counts for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get mail list unread counts for character %d: %w", characterID, err)
 	}
 	result := make(map[int32]int)
 	for _, r := range rows {
@@ -188,7 +188,7 @@ func (st *Storage) GetCharacterMailListUnreadCounts(ctx context.Context, charact
 func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterID int32) ([]*app.EveEntity, error) {
 	ll, err := st.q.ListCharacterMailListsOrdered(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("failed to list mail lists for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("list mail lists for character %d: %w", characterID, err)
 	}
 	ee := make([]*app.EveEntity, len(ll))
 	for i, l := range ll {
@@ -203,10 +203,10 @@ func (st *Storage) UpdateCharacterMail(ctx context.Context, characterID int32, m
 		IsRead: isRead,
 	}
 	if err := st.q.UpdateCharacterMailIsRead(ctx, arg); err != nil {
-		return fmt.Errorf("failed to update mail PK %d for character %d: %w", mailPK, characterID, err)
+		return fmt.Errorf("update mail PK %d for character %d: %w", mailPK, characterID, err)
 	}
 	if err := st.updateCharacterMailLabels(ctx, characterID, mailPK, labelIDs); err != nil {
-		return fmt.Errorf("failed to update labels for mail PK %d and character %d: %w", mailPK, characterID, err)
+		return fmt.Errorf("update labels for mail PK %d and character %d: %w", mailPK, characterID, err)
 	}
 	return nil
 }
@@ -246,7 +246,7 @@ func characterMailFromDBModel(
 
 func (st *Storage) UpdateCharacterMailSetProcessed(ctx context.Context, id int64) error {
 	if err := st.q.UpdateCharacterMailSetProcessed(ctx, id); err != nil {
-		return fmt.Errorf("failed to set mail PK %d as processed: %w", id, err)
+		return fmt.Errorf("set mail PK %d as processed: %w", id, err)
 	}
 	return nil
 }

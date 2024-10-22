@@ -87,7 +87,7 @@ func (eu *EveUniverseService) UpdateAllEveCharactersESI(ctx context.Context) err
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return fmt.Errorf("failed to update EveCharacters: %w", err)
+		return fmt.Errorf("update EveCharacters: %w", err)
 	}
 	slog.Info("Finished updating eve characters", "count", len(ids))
 	return nil
@@ -152,7 +152,7 @@ func (eu *EveUniverseService) updateEveCharacterESI(ctx context.Context, charact
 		return nil
 	})
 	if err := g.Wait(); err != nil {
-		return fmt.Errorf("failed to update EveCharacter %d: %w", c.ID, err)
+		return fmt.Errorf("update EveCharacter %d: %w", c.ID, err)
 	}
 	if err := eu.st.UpdateEveCharacter(ctx, c); err != nil {
 		return err

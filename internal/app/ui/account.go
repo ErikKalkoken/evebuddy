@@ -160,7 +160,7 @@ func (a *accountArea) makeCharacterList() *widget.List {
 		}
 		c := a.characters[id]
 		if err := a.u.loadCharacter(context.TODO(), c.id); err != nil {
-			slog.Error("failed to load current character", "char", c, "err", err)
+			slog.Error("load current character", "char", c, "err", err)
 			return
 		}
 		a.dialog.Hide()

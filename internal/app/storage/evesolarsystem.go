@@ -29,7 +29,7 @@ func (st *Storage) CreateEveSolarSystem(ctx context.Context, arg CreateEveSolarS
 	}
 	err := st.q.CreateEveSolarSystem(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("failed to create EveSolarSystem %v, %w", arg, err)
+		return fmt.Errorf("create EveSolarSystem %v, %w", arg, err)
 	}
 	return nil
 }
@@ -40,7 +40,7 @@ func (st *Storage) GetEveSolarSystem(ctx context.Context, id int32) (*app.EveSol
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get EveSolarSystem for id %d: %w", id, err)
+		return nil, fmt.Errorf("get EveSolarSystem for id %d: %w", id, err)
 	}
 	t := eveSolarSystemFromDBModel(row.EveSolarSystem, row.EveConstellation, row.EveRegion)
 	return t, nil

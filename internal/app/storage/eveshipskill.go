@@ -20,7 +20,7 @@ func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int32, rank u
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get ShipSkill for %v: %w", arg, err)
+		return nil, fmt.Errorf("get ShipSkill for %v: %w", arg, err)
 	}
 	return eveShipSkillFromDBModel(row.Rank, row.ShipTypeID, row.SkillTypeID, row.SkillName, row.SkillLevel), nil
 }
@@ -28,7 +28,7 @@ func (st *Storage) GetEveShipSkill(ctx context.Context, shipTypeID int32, rank u
 func (st *Storage) ListEveShipSkills(ctx context.Context, shipTypeID int32) ([]*app.EveShipSkill, error) {
 	rows, err := st.q.ListShipSkills(ctx, int64(shipTypeID))
 	if err != nil {
-		return nil, fmt.Errorf("failed to list ship skills for ID %d: %w", shipTypeID, err)
+		return nil, fmt.Errorf("list ship skills for ID %d: %w", shipTypeID, err)
 	}
 	oo := make([]*app.EveShipSkill, len(rows))
 	for i, row := range rows {
@@ -96,7 +96,7 @@ func (st *Storage) createShipSkillIfExists(ctx context.Context, q *queries.Queri
 			SkillLevel:  level.Int64,
 		}
 		if err := q.CreateShipSkill(ctx, arg); err != nil {
-			return fmt.Errorf("failed to create ship skill: %v, %w", arg, err)
+			return fmt.Errorf("create ship skill: %v, %w", arg, err)
 		}
 	}
 	return nil
@@ -120,7 +120,7 @@ func (st *Storage) CreateEveShipSkill(ctx context.Context, arg CreateShipSkillPa
 		SkillLevel:  int64(arg.SkillLevel),
 	}
 	if err := st.q.CreateShipSkill(ctx, arg2); err != nil {
-		return fmt.Errorf("failed to create ShipSkill %v, %w", arg2, err)
+		return fmt.Errorf("create ShipSkill %v, %w", arg2, err)
 	}
 	return nil
 }

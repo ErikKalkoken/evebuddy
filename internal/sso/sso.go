@@ -340,7 +340,7 @@ func (s *SSOService) getKey(ctx context.Context, token *jwt.Token) (any, error) 
 
 	var rawKey any
 	if err := key.Raw(&rawKey); err != nil {
-		return nil, fmt.Errorf("failed to create public key: %s", err)
+		return nil, fmt.Errorf("create public key: %s", err)
 	}
 	return rawKey, nil
 }

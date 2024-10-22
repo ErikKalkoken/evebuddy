@@ -32,7 +32,7 @@ func (st *Storage) GetCharacterJumpClone(ctx context.Context, characterID int32,
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get jump clone for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get jump clone for character %d: %w", characterID, err)
 	}
 	o := characterJumpCloneFromDBModel(row.CharacterJumpClone, row.LocationName, row.RegionID, row.RegionName)
 	x, err := listCharacterJumpCloneImplants(ctx, st.q, o.ID)
@@ -50,7 +50,7 @@ func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, clo
 	}
 	row2, err := q.ListCharacterJumpCloneImplant(ctx, arg2)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get character jump clone implants for clone ID %d: %w", cloneID, err)
+		return nil, fmt.Errorf("get character jump clone implants for clone ID %d: %w", cloneID, err)
 	}
 	x := make([]*app.CharacterJumpCloneImplant, len(row2))
 	for i, row := range row2 {
@@ -113,7 +113,7 @@ func createCharacterJumpClone(ctx context.Context, q *queries.Queries, arg Creat
 	}
 	cloneID, err := q.CreateCharacterJumpClone(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("failed to create character jump clone %v, %w", arg, err)
+		return fmt.Errorf("create character jump clone %v, %w", arg, err)
 	}
 	for _, eveTypeID := range arg.Implants {
 		arg3 := queries.CreateCharacterJumpCloneImplantParams{
@@ -121,7 +121,7 @@ func createCharacterJumpClone(ctx context.Context, q *queries.Queries, arg Creat
 			EveTypeID: int64(eveTypeID),
 		}
 		if err := q.CreateCharacterJumpCloneImplant(ctx, arg3); err != nil {
-			return fmt.Errorf("failed to create character jump clone implant %v, %w", arg, err)
+			return fmt.Errorf("create character jump clone implant %v, %w", arg, err)
 		}
 	}
 	return nil

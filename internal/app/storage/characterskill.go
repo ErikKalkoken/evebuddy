@@ -32,7 +32,7 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typ
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get skill %d for character %d: %w", typeID, characterID, err)
+		return nil, fmt.Errorf("get skill %d for character %d: %w", typeID, characterID, err)
 	}
 	t2 := characterSkillFromDBModel(r.CharacterSkill, r.EveType, r.EveGroup, r.EveCategory)
 	return t2, nil
@@ -41,7 +41,7 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typ
 func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int32) ([]int32, error) {
 	ids, err := st.q.ListCharacterSkillIDs(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("failed to list skill IDs for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("list skill IDs for character %d: %w", characterID, err)
 	}
 	return convertNumericSlice[int64, int32](ids), nil
 }
@@ -109,7 +109,7 @@ func (st *Storage) UpdateOrCreateCharacterSkill(ctx context.Context, arg UpdateO
 		TrainedSkillLevel:  int64(arg.TrainedSkillLevel),
 	}
 	if err := st.q.UpdateOrCreateCharacterSkill(ctx, arg2); err != nil {
-		return fmt.Errorf("failed to update or create character skill for character %d: %w", arg.CharacterID, err)
+		return fmt.Errorf("update or create character skill for character %d: %w", arg.CharacterID, err)
 	}
 	return nil
 }

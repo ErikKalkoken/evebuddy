@@ -16,7 +16,7 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 	case app.MailLabelAll:
 		rows, err := st.q.ListMailsOrdered(ctx, int64(characterID))
 		if err != nil {
-			return nil, fmt.Errorf("failed to list mails for character %d: %w", characterID, err)
+			return nil, fmt.Errorf("list mails for character %d: %w", characterID, err)
 		}
 		mm := make([]*app.CharacterMailHeader, len(rows))
 		for i, r := range rows {
@@ -36,7 +36,7 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 	case app.MailLabelNone:
 		rows, err := st.q.ListMailsNoLabelOrdered(ctx, int64(characterID))
 		if err != nil {
-			return nil, fmt.Errorf("failed to list mails for character %d: %w", characterID, err)
+			return nil, fmt.Errorf("list mails for character %d: %w", characterID, err)
 		}
 		mm := make([]*app.CharacterMailHeader, len(rows))
 		for i, r := range rows {
@@ -50,7 +50,7 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 		}
 		rows, err := st.q.ListMailsForSentOrdered(ctx, arg)
 		if err != nil {
-			return nil, fmt.Errorf("failed to list mails for character %d: %w", characterID, err)
+			return nil, fmt.Errorf("list mails for character %d: %w", characterID, err)
 		}
 		mm := make([]*app.CharacterMailHeader, len(rows))
 		for i, r := range rows {
@@ -81,7 +81,7 @@ func (st *Storage) ListCharacterMailHeadersForListOrdered(ctx context.Context, c
 	}
 	rows, err := st.q.ListMailsForListOrdered(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list mail IDs for character %d and list %d: %w", characterID, listID, err)
+		return nil, fmt.Errorf("list mail IDs for character %d and list %d: %w", characterID, listID, err)
 	}
 	mm := make([]*app.CharacterMailHeader, len(rows))
 	for i, r := range rows {
@@ -97,7 +97,7 @@ func (st *Storage) ListCharacterMailHeadersForUnprocessed(ctx context.Context, c
 	}
 	rows, err := st.q.ListMailsUnprocessed(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list unprocessed mails for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("list unprocessed mails for character %d: %w", characterID, err)
 	}
 	mm := make([]*app.CharacterMailHeader, len(rows))
 	for i, r := range rows {

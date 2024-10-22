@@ -219,7 +219,7 @@ func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32
 		g.Go(func() error {
 			err := s.fetchAndStoreMail(ctx, characterID, mailID)
 			if err != nil {
-				return fmt.Errorf("failed to fetch mail %d: %w", mailID, err)
+				return fmt.Errorf("fetch mail %d: %w", mailID, err)
 			}
 			return nil
 		})

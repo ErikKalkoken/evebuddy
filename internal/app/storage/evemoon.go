@@ -27,7 +27,7 @@ func (st *Storage) CreateEveMoon(ctx context.Context, arg CreateEveMoonParams) e
 	}
 	err := st.q.CreateEveMoon(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("failed to create EveMoon %v, %w", arg, err)
+		return fmt.Errorf("create EveMoon %v, %w", arg, err)
 	}
 	return nil
 }
@@ -38,7 +38,7 @@ func (st *Storage) GetEveMoon(ctx context.Context, id int32) (*app.EveMoon, erro
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get EveMoon for id %d: %w", id, err)
+		return nil, fmt.Errorf("get EveMoon for id %d: %w", id, err)
 	}
 	g := EveMoonFromDBModel(
 		row.EveMoon,
