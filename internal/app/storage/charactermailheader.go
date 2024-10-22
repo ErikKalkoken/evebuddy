@@ -23,6 +23,16 @@ func (st *Storage) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, 
 			mm[i] = characterMailHeaderFromDBModel(characterID, r.ID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
 		}
 		return mm, nil
+	case app.MailLabelUnread:
+		rows, err := st.q.ListMailsUnreadOrdered(ctx, int64(characterID))
+		if err != nil {
+			return nil, fmt.Errorf("list unread mails for character %d: %w", characterID, err)
+		}
+		mm := make([]*app.CharacterMailHeader, len(rows))
+		for i, r := range rows {
+			mm[i] = characterMailHeaderFromDBModel(characterID, r.ID, r.FromName, r.IsRead, r.MailID, r.Subject, r.Timestamp)
+		}
+		return mm, nil
 	case app.MailLabelNone:
 		rows, err := st.q.ListMailsNoLabelOrdered(ctx, int64(characterID))
 		if err != nil {

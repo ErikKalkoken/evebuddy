@@ -98,6 +98,14 @@ JOIN eve_entities ee ON ee.id = cm.from_id
 WHERE character_id = ?
 ORDER BY timestamp DESC;
 
+-- name: ListMailsUnreadOrdered :many
+SELECT cm.id, cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+FROM character_mails cm
+JOIN eve_entities ee ON ee.id = cm.from_id
+WHERE character_id = ?
+AND is_read IS FALSE
+ORDER BY timestamp DESC;
+
 -- name: ListMailsNoLabelOrdered :many
 SELECT cm.id, cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
 FROM character_mails cm

@@ -682,6 +682,54 @@ func (q *Queries) ListMailsUnprocessed(ctx context.Context, arg ListMailsUnproce
 	return items, nil
 }
 
+const listMailsUnreadOrdered = `-- name: ListMailsUnreadOrdered :many
+SELECT cm.id, cm.subject, cm.mail_id, cm.timestamp, cm.is_read, ee.name as from_name
+FROM character_mails cm
+JOIN eve_entities ee ON ee.id = cm.from_id
+WHERE character_id = ?
+AND is_read IS FALSE
+ORDER BY timestamp DESC
+`
+
+type ListMailsUnreadOrderedRow struct {
+	ID        int64
+	Subject   string
+	MailID    int64
+	Timestamp time.Time
+	IsRead    bool
+	FromName  string
+}
+
+func (q *Queries) ListMailsUnreadOrdered(ctx context.Context, characterID int64) ([]ListMailsUnreadOrderedRow, error) {
+	rows, err := q.db.QueryContext(ctx, listMailsUnreadOrdered, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListMailsUnreadOrderedRow
+	for rows.Next() {
+		var i ListMailsUnreadOrderedRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Subject,
+			&i.MailID,
+			&i.Timestamp,
+			&i.IsRead,
+			&i.FromName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateCharacterMailIsRead = `-- name: UpdateCharacterMailIsRead :exec
 UPDATE character_mails
 SET is_read = ?2
