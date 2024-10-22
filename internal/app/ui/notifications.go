@@ -184,8 +184,18 @@ func (a *notificationsArea) refresh() {
 	slices.SortFunc(categories, func(a, b notificationCategory) int {
 		return cmp.Compare(a.name, b.name)
 	})
-	unread := notificationCategory{name: "Unread", unread: unreadTotal}
-	categories = slices.Insert(categories, 0, unread)
+	c1 := notificationCategory{
+		category: evenotification.Unread,
+		name:     "Unread",
+		unread:   unreadTotal,
+	}
+	categories = slices.Insert(categories, 0, c1)
+	c2 := notificationCategory{
+		category: evenotification.All,
+		name:     "All",
+		unread:   unreadTotal,
+	}
+	categories = append(categories, c2)
 	a.categories = categories
 	a.categoryList.Refresh()
 	a.categoryList.UnselectAll()
@@ -198,7 +208,7 @@ func (a *notificationsArea) makeTopText() (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
-	return "", widget.MediumImportance
+	return fmt.Sprintf("%d categories", len(a.categories)), widget.MediumImportance
 }
 
 func (a *notificationsArea) setNotifications(nc evenotification.Category) error {
@@ -206,9 +216,12 @@ func (a *notificationsArea) setNotifications(nc evenotification.Category) error 
 	characterID := a.u.characterID()
 	var notifications []*app.CharacterNotification
 	var err error
-	if nc == 0 {
+	switch nc {
+	case evenotification.All:
+		notifications, err = a.u.CharacterService.ListCharacterNotificationsAll(ctx, characterID)
+	case evenotification.Unread:
 		notifications, err = a.u.CharacterService.ListCharacterNotificationsUnread(ctx, characterID)
-	} else {
+	default:
 		types := evenotification.CategoryTypes[nc]
 		notifications, err = a.u.CharacterService.ListCharacterNotificationsTypes(ctx, characterID, types)
 	}

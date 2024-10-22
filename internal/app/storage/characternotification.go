@@ -44,6 +44,18 @@ func (st *Storage) ListCharacterNotificationsTypes(ctx context.Context, characte
 	return ee, nil
 }
 
+func (st *Storage) ListCharacterNotificationsAll(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
+	rows, err := st.q.ListCharacterNotificationsAll(ctx, int64(characterID))
+	if err != nil {
+		return nil, err
+	}
+	ee := make([]*app.CharacterNotification, len(rows))
+	for i, r := range rows {
+		ee[i] = characterNotificationFromDBModel(r.CharacterNotification, r.EveEntity, r.NotificationType)
+	}
+	return ee, nil
+}
+
 func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
 	rows, err := st.q.ListCharacterNotificationsUnread(ctx, int64(characterID))
 	if err != nil {

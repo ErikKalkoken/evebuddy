@@ -198,6 +198,61 @@ func (q *Queries) ListCharacterNotificationIDs(ctx context.Context, characterID 
 	return items, nil
 }
 
+const listCharacterNotificationsAll = `-- name: ListCharacterNotificationsAll :many
+SELECT cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, ee.id, ee.category, ee.name, nt.id, nt.name
+FROM character_notifications cn
+JOIN eve_entities ee ON ee.id = cn.sender_id
+JOIN notification_types nt ON nt.id = cn.type_id
+WHERE character_id = ?
+ORDER BY timestamp DESC
+`
+
+type ListCharacterNotificationsAllRow struct {
+	CharacterNotification CharacterNotification
+	EveEntity             EveEntity
+	NotificationType      NotificationType
+}
+
+func (q *Queries) ListCharacterNotificationsAll(ctx context.Context, characterID int64) ([]ListCharacterNotificationsAllRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterNotificationsAll, characterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterNotificationsAllRow
+	for rows.Next() {
+		var i ListCharacterNotificationsAllRow
+		if err := rows.Scan(
+			&i.CharacterNotification.ID,
+			&i.CharacterNotification.Body,
+			&i.CharacterNotification.CharacterID,
+			&i.CharacterNotification.IsProcessed,
+			&i.CharacterNotification.IsRead,
+			&i.CharacterNotification.NotificationID,
+			&i.CharacterNotification.SenderID,
+			&i.CharacterNotification.Text,
+			&i.CharacterNotification.Timestamp,
+			&i.CharacterNotification.Title,
+			&i.CharacterNotification.TypeID,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+			&i.NotificationType.ID,
+			&i.NotificationType.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterNotificationsTypes = `-- name: ListCharacterNotificationsTypes :many
 SELECT cn.id, cn.body, cn.character_id, cn.is_processed, cn.is_read, cn.notification_id, cn.sender_id, cn.text, cn.timestamp, cn.title, cn.type_id, ee.id, ee.category, ee.name, nt.id, nt.name
 FROM character_notifications cn

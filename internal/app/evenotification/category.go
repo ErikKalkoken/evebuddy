@@ -21,6 +21,8 @@ const (
 	Structure
 	War
 	Unknown
+	Unread
+	All
 )
 
 var category2Name = map[Category]string{

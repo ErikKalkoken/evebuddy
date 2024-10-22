@@ -32,6 +32,10 @@ func (s *CharacterService) ListCharacterNotificationsTypes(ctx context.Context, 
 	return s.st.ListCharacterNotificationsTypes(ctx, characterID, t2)
 }
 
+func (s *CharacterService) ListCharacterNotificationsAll(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
+	return s.st.ListCharacterNotificationsAll(ctx, characterID)
+}
+
 func (s *CharacterService) ListCharacterNotificationsUnread(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
 	return s.st.ListCharacterNotificationsUnread(ctx, characterID)
 }
