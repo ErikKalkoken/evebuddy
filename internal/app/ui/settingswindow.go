@@ -9,8 +9,8 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
-	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
-	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
@@ -76,16 +76,18 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 	}
 
 	// system tray
-	sysTrayEnabled := w.u.fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault)
-	sysTrayCheck := widget.NewCheck("Minimize to tray", nil)
-	sysTrayCheck.SetChecked(sysTrayEnabled)
-	sysTrayCheck.OnChanged = func(b bool) {
-		w.u.fyneApp.Preferences().SetBool(settingSysTrayEnabled, sysTrayCheck.Checked)
-	}
+	sysTrayCheck := kxwidget.NewToggle(func(b bool) {
+		w.u.fyneApp.Preferences().SetBool(settingSysTrayEnabled, b)
+	})
+	sysTrayEnabled := w.u.fyneApp.Preferences().BoolWithFallback(
+		settingSysTrayEnabled,
+		settingSysTrayEnabledDefault,
+	)
+	sysTrayCheck.SetState(sysTrayEnabled)
 
 	// cache
 	clearBtn := widget.NewButton("Clear NOW", func() {
-		m := kmodal.NewProgressInfinite(
+		m := kxmodal.NewProgressInfinite(
 			"Clearing cache...",
 			"",
 			func() error {
@@ -107,7 +109,7 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 			d := newErrorDialog("Failed to clear image cache", err, w.u.window)
 			d.Show()
 		}
-		m.Show()
+		m.Start()
 	})
 	var cacheSize string
 	s, err := w.u.EveImageService.Size()
@@ -138,24 +140,26 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 		}}
 	reset := func() {
 		themeRadio.SetSelected(settingThemeDefault)
-		sysTrayCheck.SetChecked(settingSysTrayEnabledDefault)
+		sysTrayCheck.SetState(settingSysTrayEnabledDefault)
 	}
 	return makePage("General settings", settings, reset)
 }
 
 func (w *settingsWindow) makeEVEOnlinePage() fyne.CanvasObject {
 	// max mails
-	maxMails := kwidget.NewSlider[int](0, settingMaxMailsMax, 1)
-	maxMails.SetValue(w.u.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault))
-	maxMails.OnChangeEnded = func(v int) {
-		w.u.fyneApp.Preferences().SetInt(settingMaxMails, v)
+	maxMails := kxwidget.NewSliderWithValue(0, settingMaxMailsMax)
+	v1 := w.u.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault)
+	maxMails.SetValue(float64(v1))
+	maxMails.OnChangeEnded = func(v float64) {
+		w.u.fyneApp.Preferences().SetInt(settingMaxMails, int(v))
 	}
 
 	// max transactions
-	maxTransactions := kwidget.NewSlider[int](0, settingMaxWalletTransactionsMax, 1)
-	maxTransactions.SetValue(w.u.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault))
-	maxTransactions.OnChangeEnded = func(v int) {
-		w.u.fyneApp.Preferences().SetInt(settingMaxWalletTransactions, v)
+	maxTransactions := kxwidget.NewSliderWithValue(0, settingMaxWalletTransactionsMax)
+	v2 := w.u.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
+	maxTransactions.SetValue(float64(v2))
+	maxTransactions.OnChangeEnded = func(v float64) {
+		w.u.fyneApp.Preferences().SetInt(settingMaxWalletTransactions, int(v))
 	}
 
 	settings := &widget.Form{
@@ -183,11 +187,13 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	s1 := widget.NewForm()
 
 	// mail toogle
-	mailEnabledCheck := widget.NewCheck("Notif new mails", nil)
-	mailEnabledCheck.Checked = w.u.fyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault)
-	mailEnabledCheck.OnChanged = func(b bool) {
-		w.u.fyneApp.Preferences().SetBool(settingNotifyMailsEnabled, mailEnabledCheck.Checked)
-	}
+	mailEnabledCheck := kxwidget.NewToggle(func(b bool) {
+		w.u.fyneApp.Preferences().SetBool(settingNotifyMailsEnabled, b)
+	})
+	mailEnabledCheck.On = w.u.fyneApp.Preferences().BoolWithFallback(
+		settingNotifyMailsEnabled,
+		settingNotifyMailsEnabledDefault,
+	)
 	s1.AppendItem(&widget.FormItem{
 		Text:     "Mail",
 		Widget:   mailEnabledCheck,
@@ -195,11 +201,13 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	})
 
 	// notifications toogle
-	communicationsEnabledCheck := widget.NewCheck("Notify new communications", nil)
-	communicationsEnabledCheck.Checked = w.u.fyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault)
-	communicationsEnabledCheck.OnChanged = func(b bool) {
-		w.u.fyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, communicationsEnabledCheck.Checked)
-	}
+	communicationsEnabledCheck := kxwidget.NewToggle(func(on bool) {
+		w.u.fyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
+	})
+	communicationsEnabledCheck.On = w.u.fyneApp.Preferences().BoolWithFallback(
+		settingNotifyCommunicationsEnabled,
+		settingNotifyCommunicationsEnabledDefault,
+	)
 	s1.AppendItem(&widget.FormItem{
 		Text:     "Communications",
 		Widget:   communicationsEnabledCheck,
@@ -207,10 +215,11 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	})
 
 	// max age
-	maxAge := kwidget.NewSlider[int](1, settingMaxAgeMax, 1)
-	maxAge.SetValue(w.u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault))
-	maxAge.OnChangeEnded = func(v int) {
-		w.u.fyneApp.Preferences().SetInt(settingMaxAge, v)
+	maxAge := kxwidget.NewSliderWithValue(1, settingMaxAgeMax)
+	v := w.u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
+	maxAge.SetValue(float64(v))
+	maxAge.OnChangeEnded = func(v float64) {
+		w.u.fyneApp.Preferences().SetInt(settingMaxAge, int(v))
 	}
 	s1.AppendItem(&widget.FormItem{
 		Text:     "Max age",
@@ -271,8 +280,8 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		s2,
 	)
 	reset := func() {
-		mailEnabledCheck.SetChecked(settingNotifyMailsEnabledDefault)
-		communicationsEnabledCheck.SetChecked(settingNotifyCommunicationsEnabledDefault)
+		mailEnabledCheck.SetState(settingNotifyMailsEnabledDefault)
+		communicationsEnabledCheck.SetState(settingNotifyCommunicationsEnabledDefault)
 		maxAge.SetValue(settingMaxAgeDefault)
 		for _, cg := range groups {
 			cg.SetSelected([]string{})

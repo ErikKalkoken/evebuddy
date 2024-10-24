@@ -199,7 +199,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 					d := newErrorDialog(fmt.Sprintf("Failed to delete character %s", c.name), err, a.u.window)
 					d.Show()
 				}
-				m.Show()
+				m.Start()
 			}
 		},
 		a.u.window,
