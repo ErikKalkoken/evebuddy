@@ -59,6 +59,8 @@ github.com/ErikKalkoken/fyne-kx v0.0.0-20241024195037-142dbbc8adf3 h1:CpwUNLYLOy
 github.com/ErikKalkoken/fyne-kx v0.0.0-20241024195037-142dbbc8adf3/go.mod h1:N/YVe+viCUiSOr2TziRV7s9iEOlIfS/n/s5r5LiPcXg=
 github.com/ErikKalkoken/fyne-kx v0.0.0-20241025012529-798494caf8ba h1:YgKJLY07gl+r5u/TiyoXCbowAD1zxJrl3QgN5UUL89c=
 github.com/ErikKalkoken/fyne-kx v0.0.0-20241025012529-798494caf8ba/go.mod h1:N/YVe+viCUiSOr2TziRV7s9iEOlIfS/n/s5r5LiPcXg=
+github.com/ErikKalkoken/fyne-kx v0.0.0-20241025163225-8aa589f2368b h1:LtbMUZVxwcxzrXWerUAm1LYVmvAdaZYBPxoMV5/3LmI=
+github.com/ErikKalkoken/fyne-kx v0.0.0-20241025163225-8aa589f2368b/go.mod h1:N/YVe+viCUiSOr2TziRV7s9iEOlIfS/n/s5r5LiPcXg=
 github.com/JohannesKaufmann/html-to-markdown v1.6.0 h1:04VXMiE50YYfCfLboJCLcgqF5x+rHJnb1ssNmqpLH/k=
 github.com/JohannesKaufmann/html-to-markdown v1.6.0/go.mod h1:NUI78lGg/a7vpEJTz/0uOcYMaibytE4BUOQS8k78yPQ=
 github.com/PuerkitoBio/goquery v1.9.2/go.mod h1:GHPCaP0ODyyxqcNoFGYlAprUFH81NuRPd0GX3Zu2Mvk=

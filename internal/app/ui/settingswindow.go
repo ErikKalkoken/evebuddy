@@ -56,25 +56,7 @@ func (u *UI) newSettingsWindow() (*settingsWindow, error) {
 	return sw, nil
 }
 
-// Themes
-const (
-	themeAuto  = "Auto"
-	themeDark  = "Dark"
-	themeLight = "Light"
-)
-
 func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
-	// theme
-	themeRadio := widget.NewRadioGroup(
-		[]string{themeAuto, themeDark, themeLight}, func(s string) {},
-	)
-	current := w.u.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault)
-	themeRadio.SetSelected(current)
-	themeRadio.OnChanged = func(string) {
-		w.u.themeSet(themeRadio.Selected)
-		w.u.fyneApp.Preferences().SetString(settingTheme, themeRadio.Selected)
-	}
-
 	// system tray
 	sysTrayCheck := kxwidget.NewToggle(func(b bool) {
 		w.u.fyneApp.Preferences().SetBool(settingSysTrayEnabled, b)
@@ -123,11 +105,6 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 	settings := &widget.Form{
 		Items: []*widget.FormItem{
 			{
-				Text:     "Style",
-				Widget:   themeRadio,
-				HintText: "Choose the style",
-			},
-			{
 				Text:     "Close button",
 				Widget:   sysTrayCheck,
 				HintText: "App will minimize to system tray when closed (requires restart)",
@@ -139,7 +116,6 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 			},
 		}}
 	reset := func() {
-		themeRadio.SetSelected(settingThemeDefault)
 		sysTrayCheck.SetState(settingSysTrayEnabledDefault)
 	}
 	return makePage("General settings", settings, reset)

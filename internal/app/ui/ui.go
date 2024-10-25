@@ -73,7 +73,6 @@ type UI struct {
 	statusBarArea         *statusBarArea
 	statusWindow          fyne.Window
 	tabs                  *container.AppTabs
-	themeName             string
 	toolbarArea           *toolbarArea
 	walletJournalArea     *walletJournalArea
 	walletTab             *container.TabItem
@@ -177,38 +176,10 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 	}
 	u.hideMailIndicator() // init system tray icon
 
-	u.themeSet(u.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault))
-
 	menu := makeMenu(u)
 	u.window.SetMainMenu(menu)
 	u.window.SetMaster()
 	return u
-}
-
-func (u *UI) themeSet(name string) {
-	switch name {
-	case themeAuto:
-		switch u.fyneApp.Settings().ThemeVariant() {
-		case 0:
-			u.themeName = themeDark
-		default:
-			u.themeName = themeLight
-		}
-	case themeLight:
-		u.themeName = themeLight
-	case themeDark:
-		u.themeName = themeDark
-	}
-	switch u.themeName {
-	case themeDark:
-		u.fyneApp.Settings().SetTheme(theme.DarkTheme())
-	case themeLight:
-		u.fyneApp.Settings().SetTheme(theme.LightTheme())
-	}
-}
-
-func (u *UI) themeGet() string {
-	return u.themeName
 }
 
 func (u *UI) Init() {
@@ -257,6 +228,17 @@ func (u *UI) Init() {
 func (u *UI) ShowAndRun() {
 	u.fyneApp.Lifecycle().SetOnStarted(func() {
 		slog.Info("App started")
+
+		// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
+		// only in parts and freeze. The issue is known to happen on Linux desktops.
+		if runtime.GOOS == "linux" {
+			go func() {
+				time.Sleep(500 * time.Millisecond)
+				s := u.window.Canvas().Size()
+				u.window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
+				u.window.Resize(fyne.NewSize(s.Width, s.Height))
+			}()
+		}
 		if u.IsOffline {
 			slog.Info("Started in offline mode")
 		}
@@ -286,17 +268,6 @@ func (u *UI) ShowAndRun() {
 	width := float32(u.fyneApp.Preferences().FloatWithFallback(settingWindowWidth, settingWindowHeightDefault))
 	height := float32(u.fyneApp.Preferences().FloatWithFallback(settingWindowHeight, settingWindowHeightDefault))
 	u.window.Resize(fyne.NewSize(width, height))
-
-	// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
-	// only in parts and freeze. The issue is known to happen on Linux desktops.
-	if runtime.GOOS == "linux" {
-		go func() {
-			time.Sleep(500 * time.Millisecond)
-			s := u.window.Canvas().Size()
-			u.window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
-			u.window.Resize(fyne.NewSize(s.Width, s.Height))
-		}()
-	}
 
 	u.window.ShowAndRun()
 }
