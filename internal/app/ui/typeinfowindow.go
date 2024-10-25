@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -506,7 +506,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		if err != nil {
 			panic(err)
 		}
-		render := kwidget.NewTappableImage(r, canvas.ImageFillContain, func() {
+		render := kxwidget.NewTappableImage(r, func() {
 			w := a.u.fyneApp.NewWindow(a.u.makeWindowTitle(a.makeTitle("Render")))
 			size := 512
 			i := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
@@ -518,6 +518,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			w.SetContent(i)
 			w.Show()
 		})
+		render.SetFillMode(canvas.ImageFillContain)
 		s := float32(size) / a.u.window.Canvas().Scale()
 		render.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(render)
