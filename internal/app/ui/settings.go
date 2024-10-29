@@ -20,8 +20,6 @@ const (
 	settingSysTrayEnabled                     = "settingSysTrayEnabled"
 	settingSysTrayEnabledDefault              = false
 	settingTabsMainID                         = "tabs-main-id"
-	settingTheme                              = "settingTheme"
-	settingThemeDefault                       = themeAuto
 	settingWindowHeight                       = "window-height"
 	settingWindowHeightDefault                = 600
 	settingWindowWidth                        = "window-width"
@@ -40,7 +38,6 @@ func SettingKeys() []string {
 		settingNotifyMailsEnabled,
 		settingSysTrayEnabled,
 		settingTabsMainID,
-		settingTheme,
 		settingWindowHeight,
 		settingWindowWidth,
 	}

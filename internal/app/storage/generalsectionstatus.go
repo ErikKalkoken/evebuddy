@@ -18,7 +18,7 @@ func (st *Storage) GetGeneralSectionStatus(ctx context.Context, section app.Gene
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get status for general section %s: %w", section, err)
+		return nil, fmt.Errorf("get status for general section %s: %w", section, err)
 	}
 	s2 := generalSectionStatusFromDBModel(s)
 	return s2, nil
@@ -27,7 +27,7 @@ func (st *Storage) GetGeneralSectionStatus(ctx context.Context, section app.Gene
 func (st *Storage) ListGeneralSectionStatus(ctx context.Context) ([]*app.GeneralSectionStatus, error) {
 	rows, err := st.q.ListGeneralSectionStatus(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list general section status: %w", err)
+		return nil, fmt.Errorf("list general section status: %w", err)
 	}
 	oo := make([]*app.GeneralSectionStatus, len(rows))
 	for i, row := range rows {

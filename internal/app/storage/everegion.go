@@ -27,7 +27,7 @@ func (st *Storage) CreateEveRegion(ctx context.Context, arg CreateEveRegionParam
 	}
 	e, err := st.q.CreateEveRegion(ctx, arg2)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create EveRegion %v, %w", arg2, err)
+		return nil, fmt.Errorf("create EveRegion %v, %w", arg2, err)
 	}
 	return eveRegionFromDBModel(e), nil
 }
@@ -38,7 +38,7 @@ func (st *Storage) GetEveRegion(ctx context.Context, id int32) (*app.EveRegion, 
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get EveRegion for id %d: %w", id, err)
+		return nil, fmt.Errorf("get EveRegion for id %d: %w", id, err)
 	}
 	return eveRegionFromDBModel(c), nil
 }

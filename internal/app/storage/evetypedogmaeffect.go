@@ -26,7 +26,7 @@ func (st *Storage) CreateEveTypeDogmaEffect(ctx context.Context, arg CreateEveTy
 	}
 	err := st.q.CreateEveTypeDogmaEffect(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("failed to create EveTypeDogmaEffect %v, %w", arg, err)
+		return fmt.Errorf("create EveTypeDogmaEffect %v, %w", arg, err)
 	}
 	return nil
 }
@@ -41,7 +41,7 @@ func (st *Storage) GetEveTypeDogmaEffect(ctx context.Context, eveTypeID, dogmaAt
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return false, fmt.Errorf("failed to get EveTypeDogmaEffect for %v: %w", arg, err)
+		return false, fmt.Errorf("get EveTypeDogmaEffect for %v: %w", arg, err)
 	}
 	return row.IsDefault, nil
 }

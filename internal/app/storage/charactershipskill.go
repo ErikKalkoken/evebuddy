@@ -16,7 +16,7 @@ func (st *Storage) ListCharacterShipsAbilities(ctx context.Context, characterID 
 	}
 	rows, err := st.q.ListCharacterShipsAbilities(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list ship abilities for character %d and search %s: %w", characterID, search, err)
+		return nil, fmt.Errorf("list ship abilities for character %d and search %s: %w", characterID, search, err)
 	}
 	oo := make([]*app.CharacterShipAbility, len(rows))
 	for i, row := range rows {
@@ -37,7 +37,7 @@ func (st *Storage) ListCharacterShipSkills(ctx context.Context, characterID, shi
 	}
 	rows, err := st.q.ListCharacterShipSkills(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list character ship skills for character %d and type %d: %w", characterID, shipTypeID, err)
+		return nil, fmt.Errorf("list character ship skills for character %d and type %d: %w", characterID, shipTypeID, err)
 	}
 	oo := make([]*app.CharacterShipSkill, len(rows))
 	for i, r := range rows {

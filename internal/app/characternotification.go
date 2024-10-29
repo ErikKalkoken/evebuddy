@@ -71,7 +71,7 @@ func (cn *CharacterNotification) String() string {
 	s := cn.TitleDisplay() + "\n" + cn.Header()
 	b, err := cn.BodyPlain()
 	if err != nil {
-		slog.Error("failed to render notification to string", "id", cn.ID, "error", err)
+		slog.Error("render notification to string", "id", cn.ID, "error", err)
 		return s
 	}
 	s += "\n\n"

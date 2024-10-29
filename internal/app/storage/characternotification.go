@@ -44,6 +44,18 @@ func (st *Storage) ListCharacterNotificationsTypes(ctx context.Context, characte
 	return ee, nil
 }
 
+func (st *Storage) ListCharacterNotificationsAll(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
+	rows, err := st.q.ListCharacterNotificationsAll(ctx, int64(characterID))
+	if err != nil {
+		return nil, err
+	}
+	ee := make([]*app.CharacterNotification, len(rows))
+	for i, r := range rows {
+		ee[i] = characterNotificationFromDBModel(r.CharacterNotification, r.EveEntity, r.NotificationType)
+	}
+	return ee, nil
+}
+
 func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
 	rows, err := st.q.ListCharacterNotificationsUnread(ctx, int64(characterID))
 	if err != nil {
@@ -137,7 +149,7 @@ func (st *Storage) UpdateCharacterNotification(ctx context.Context, arg UpdateCh
 		Title:  optional.ToNullString(arg.Title),
 	}
 	if err := st.q.UpdateCharacterNotification(ctx, arg2); err != nil {
-		return fmt.Errorf("failed to update notification PK %d for character %d: %w", arg.ID, arg.CharacterID, err)
+		return fmt.Errorf("update notification PK %d for character %d: %w", arg.ID, arg.CharacterID, err)
 	}
 	return nil
 }
@@ -176,7 +188,7 @@ func (st *Storage) CountCharacterNotificationUnreads(ctx context.Context, charac
 
 func (st *Storage) UpdateCharacterNotificationSetProcessed(ctx context.Context, id int64) error {
 	if err := st.q.UpdateCharacterNotificationSetProcessed(ctx, id); err != nil {
-		return fmt.Errorf("failed to set notification PK %d as notified: %w", id, err)
+		return fmt.Errorf("set notification PK %d as notified: %w", id, err)
 	}
 	return nil
 }

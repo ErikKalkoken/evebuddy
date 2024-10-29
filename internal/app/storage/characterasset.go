@@ -41,7 +41,7 @@ func (st *Storage) CreateCharacterAsset(ctx context.Context, arg CreateCharacter
 		Quantity:        int64(arg.Quantity),
 	}
 	if err := st.q.CreateCharacterAsset(ctx, arg2); err != nil {
-		return fmt.Errorf("failed to create character asset %v, %w", arg, err)
+		return fmt.Errorf("create character asset %v, %w", arg, err)
 	}
 	return nil
 }
@@ -64,7 +64,7 @@ func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, ite
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get character asset for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get character asset for character %d: %w", characterID, err)
 	}
 	o := characterAssetFromDBModel(r.CharacterAsset, r.EveType, r.EveGroup, r.EveCategory, r.Price)
 	return o, nil
@@ -158,7 +158,7 @@ func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacter
 		Quantity:     int64(arg.Quantity),
 	}
 	if err := st.q.UpdateCharacterAsset(ctx, arg2); err != nil {
-		return fmt.Errorf("failed to update character asset %v, %w", arg, err)
+		return fmt.Errorf("update character asset %v, %w", arg, err)
 	}
 	return nil
 }

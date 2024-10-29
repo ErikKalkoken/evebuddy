@@ -267,7 +267,7 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 	ctx := context.TODO()
 	mycc, err := a.u.CharacterService.ListCharacters(ctx)
 	if err != nil {
-		return totals, fmt.Errorf("failed to fetch characters: %w", err)
+		return totals, fmt.Errorf("fetch characters: %w", err)
 	}
 	cc := make([]overviewCharacter, len(mycc))
 	for i, m := range mycc {
@@ -317,14 +317,14 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 	for i, c := range cc {
 		v, err := a.u.CharacterService.GetCharacterTotalTrainingTime(ctx, c.id)
 		if err != nil {
-			return totals, fmt.Errorf("failed to fetch skill queue count for character %d, %w", c.id, err)
+			return totals, fmt.Errorf("fetch skill queue count for character %d, %w", c.id, err)
 		}
 		cc[i].training = v
 	}
 	for i, c := range cc {
 		total, unread, err := a.u.CharacterService.GetCharacterMailCounts(ctx, c.id)
 		if err != nil {
-			return totals, fmt.Errorf("failed to fetch mail counts for character %d, %w", c.id, err)
+			return totals, fmt.Errorf("fetch mail counts for character %d, %w", c.id, err)
 		}
 		if total > 0 {
 			cc[i].unreadCount = optional.New(unread)
@@ -333,7 +333,7 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 	for i, c := range cc {
 		v, err := a.u.CharacterService.CharacterAssetTotalValue(ctx, c.id)
 		if err != nil {
-			return totals, fmt.Errorf("failed to fetch asset total value for character %d, %w", c.id, err)
+			return totals, fmt.Errorf("fetch asset total value for character %d, %w", c.id, err)
 		}
 		cc[i].assetValue = v
 	}

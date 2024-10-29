@@ -96,7 +96,7 @@ func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) 
 			if err != nil {
 				msg := "Failed to switch to new character"
 				slog.Error(msg, "err", err)
-				d := newErrorDialog(msg, err, a.u.window)
+				d := NewErrorDialog(msg, err, a.u.window)
 				d.Show()
 				return
 

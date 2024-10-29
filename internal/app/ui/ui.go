@@ -15,10 +15,9 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
+	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -74,7 +73,6 @@ type UI struct {
 	statusBarArea         *statusBarArea
 	statusWindow          fyne.Window
 	tabs                  *container.AppTabs
-	themeName             string
 	toolbarArea           *toolbarArea
 	walletJournalArea     *walletJournalArea
 	walletTab             *container.TabItem
@@ -178,38 +176,10 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 	}
 	u.hideMailIndicator() // init system tray icon
 
-	u.themeSet(u.fyneApp.Preferences().StringWithFallback(settingTheme, settingThemeDefault))
-
 	menu := makeMenu(u)
 	u.window.SetMainMenu(menu)
 	u.window.SetMaster()
 	return u
-}
-
-func (u *UI) themeSet(name string) {
-	switch name {
-	case themeAuto:
-		switch u.fyneApp.Settings().ThemeVariant() {
-		case 0:
-			u.themeName = themeDark
-		default:
-			u.themeName = themeLight
-		}
-	case themeLight:
-		u.themeName = themeLight
-	case themeDark:
-		u.themeName = themeDark
-	}
-	switch u.themeName {
-	case themeDark:
-		u.fyneApp.Settings().SetTheme(theme.DarkTheme())
-	case themeLight:
-		u.fyneApp.Settings().SetTheme(theme.LightTheme())
-	}
-}
-
-func (u *UI) themeGet() string {
-	return u.themeName
 }
 
 func (u *UI) Init() {
@@ -258,6 +228,17 @@ func (u *UI) Init() {
 func (u *UI) ShowAndRun() {
 	u.fyneApp.Lifecycle().SetOnStarted(func() {
 		slog.Info("App started")
+
+		// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
+		// only in parts and freeze. The issue is known to happen on Linux desktops.
+		if runtime.GOOS == "linux" {
+			go func() {
+				time.Sleep(500 * time.Millisecond)
+				s := u.window.Canvas().Size()
+				u.window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
+				u.window.Resize(fyne.NewSize(s.Width, s.Height))
+			}()
+		}
 		if u.IsOffline {
 			slog.Info("Started in offline mode")
 		}
@@ -287,17 +268,6 @@ func (u *UI) ShowAndRun() {
 	width := float32(u.fyneApp.Preferences().FloatWithFallback(settingWindowWidth, settingWindowHeightDefault))
 	height := float32(u.fyneApp.Preferences().FloatWithFallback(settingWindowHeight, settingWindowHeightDefault))
 	u.window.Resize(fyne.NewSize(width, height))
-
-	// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
-	// only in parts and freeze. The issue is known to happen on Linux desktops.
-	if runtime.GOOS == "linux" {
-		go func() {
-			time.Sleep(500 * time.Millisecond)
-			s := u.window.Canvas().Size()
-			u.window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
-			u.window.Resize(fyne.NewSize(s.Width, s.Height))
-		}()
-	}
 
 	u.window.ShowAndRun()
 }
@@ -442,31 +412,28 @@ func (u *UI) refreshCrossPages() {
 }
 
 func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Window) {
-	start := time.Now()
-	myLog := slog.With("title", title)
-	myLog.Debug("started")
-	p := binding.NewFloat()
-	pg := widget.NewProgressBarWithData(p)
-	pg.Max = float64(len(ff))
-	d := dialog.NewCustomWithoutButtons(title, pg, w)
-	d.Show()
-	d.Resize(fyne.NewSize(250, 100))
-	defer d.Hide()
-	var wg sync.WaitGroup
-	var completed atomic.Int64
-	for name, f := range ff {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			start2 := time.Now()
-			f()
-			x := completed.Add(1)
-			p.Set(float64(x))
-			myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
-		}()
-	}
-	wg.Wait()
-	myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
+	m := kxmodal.NewProgress("Updating", title, func(p binding.Float) error {
+		start := time.Now()
+		myLog := slog.With("title", title)
+		myLog.Debug("started")
+		var wg sync.WaitGroup
+		var completed atomic.Int64
+		for name, f := range ff {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				start2 := time.Now()
+				f()
+				x := completed.Add(1)
+				p.Set(float64(x))
+				myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
+			}()
+		}
+		wg.Wait()
+		myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
+		return nil
+	}, float64(len(ff)), w)
+	m.Start()
 }
 
 func (u *UI) showMailIndicator() {

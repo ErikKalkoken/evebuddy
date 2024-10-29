@@ -16,7 +16,7 @@ func (st *Storage) GetEveMarketPrice(ctx context.Context, typeID int32) (*app.Ev
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get eve market price for type %d: %w", typeID, err)
+		return nil, fmt.Errorf("get eve market price for type %d: %w", typeID, err)
 	}
 	t2 := eveMarketPriceFromDBModel(row)
 	return t2, nil
@@ -35,7 +35,7 @@ func (st *Storage) UpdateOrCreateEveMarketPrice(ctx context.Context, arg UpdateO
 		AveragePrice:  arg.AveragePrice,
 	}
 	if err := st.q.UpdateOrCreateEveMarketPrice(ctx, arg2); err != nil {
-		return fmt.Errorf("failed to update or create eve market price %v: %w", arg, err)
+		return fmt.Errorf("update or create eve market price %v: %w", arg, err)
 	}
 	return nil
 }

@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	fyne.io/fyne/v2 v2.5.2
-	github.com/ErikKalkoken/fyne-kx v0.0.0-20241017191228-704cdd115b48
+	github.com/ErikKalkoken/fyne-kx v0.0.0-20241025224328-e7bed590b159
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.10.0
 	github.com/antihax/goesi v0.0.0-20240717031005-2b07d40f2805

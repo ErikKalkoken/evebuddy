@@ -50,7 +50,7 @@ func (st *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacte
 	}
 	err := st.q.CreateEveCharacter(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("failed to create EveCharacter %v, %w", arg2, err)
+		return fmt.Errorf("create EveCharacter %v, %w", arg2, err)
 	}
 	return nil
 }
@@ -58,7 +58,7 @@ func (st *Storage) CreateEveCharacter(ctx context.Context, arg CreateEveCharacte
 func (st *Storage) DeleteEveCharacter(ctx context.Context, characterID int32) error {
 	err := st.q.DeleteEveCharacter(ctx, int64(characterID))
 	if err != nil {
-		return fmt.Errorf("failed to delete EveCharacter %d: %w", characterID, err)
+		return fmt.Errorf("delete EveCharacter %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -69,7 +69,7 @@ func (st *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*app
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get EveCharacter %d: %w", characterID, err)
+		return nil, fmt.Errorf("get EveCharacter %d: %w", characterID, err)
 	}
 	alliance := nullEveEntry{
 		ID:       r.EveCharacter.AllianceID,
@@ -94,7 +94,7 @@ func (st *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*app
 func (st *Storage) ListEveCharacterIDs(ctx context.Context) ([]int32, error) {
 	ids, err := st.q.ListEveCharacterIDs(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list EveCharacterIDs: %w", err)
+		return nil, fmt.Errorf("list EveCharacterIDs: %w", err)
 	}
 	ids2 := convertNumericSlice[int64, int32](ids)
 	return ids2, nil
@@ -118,7 +118,7 @@ func (st *Storage) UpdateEveCharacter(ctx context.Context, c *app.EveCharacter) 
 		arg.FactionID.Valid = true
 	}
 	if err := st.q.UpdateEveCharacter(ctx, arg); err != nil {
-		return fmt.Errorf("failed to update or create EveCharacter %d: %w", c.ID, err)
+		return fmt.Errorf("update or create EveCharacter %d: %w", c.ID, err)
 	}
 	return nil
 }

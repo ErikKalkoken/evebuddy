@@ -95,22 +95,24 @@ func (u *UI) newMailArea() *mailArea {
 type folderNodeCategory int
 
 const (
-	nodeCategoryBranch folderNodeCategory = iota
+	nodeCategoryBranch folderNodeCategory = iota + 1
 	nodeCategoryLabel
 	nodeCategoryList
 )
 
-type folderNodeType string
+type folderNodeType uint
 
 const (
-	folderNodeAll      folderNodeType = "all"
-	folderNodeInbox    folderNodeType = "inbox"
-	folderNodeSent     folderNodeType = "sent"
-	folderNodeCorp     folderNodeType = "corp"
-	folderNodeAlliance folderNodeType = "alliance"
-	folderNodeTrash    folderNodeType = "trash"
-	folderNodeLabel    folderNodeType = "label"
-	folderNodeList     folderNodeType = "list"
+	folderNodeUndefined folderNodeType = iota
+	folderNodeAll
+	folderNodeAlliance
+	folderNodeCorp
+	folderNodeInbox
+	folderNodeLabel
+	folderNodeList
+	folderNodeSent
+	folderNodeTrash
+	folderNodeUnread
 )
 
 // A folderNode in the folder tree, e.g. the inbox
@@ -129,10 +131,10 @@ func (f folderNode) IsEmpty() bool {
 }
 
 func (f folderNode) UID() widget.TreeNodeID {
-	if f.CharacterID == 0 || f.Type == "" {
+	if f.CharacterID == 0 || f.Type == folderNodeUndefined {
 		panic("some IDs are not set")
 	}
-	return fmt.Sprintf("%d-%s-%d", f.CharacterID, f.Type, f.ObjID)
+	return fmt.Sprintf("%d-%d-%d", f.CharacterID, f.Type, f.ObjID)
 }
 
 func (f folderNode) isBranch() bool {
@@ -216,7 +218,7 @@ func (a *mailArea) refresh() {
 	if err != nil {
 		t := "Failed to build folder tree"
 		slog.Error(t, "character", characterID, "error", err)
-		d := newErrorDialog(t, err, a.u.window)
+		d := NewErrorDialog(t, err, a.u.window)
 		d.Show()
 		return
 	}
@@ -266,16 +268,16 @@ func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
 	}
 	totalUnreadCount, totalLabelsUnreadCount, totalListUnreadCount := calcUnreadTotals(labelUnreadCounts, listUnreadCounts)
 
-	// Add all folder
-	folderAll := folderNode{
+	// Add unread folder
+	folderUnread := folderNode{
 		Category:    nodeCategoryLabel,
 		CharacterID: characterID,
-		Type:        folderNodeAll,
-		Name:        "All Mails",
-		ObjID:       app.MailLabelAll,
+		Type:        folderNodeUnread,
+		Name:        "Unread",
+		ObjID:       app.MailLabelUnread,
 		UnreadCount: totalUnreadCount,
 	}
-	tree.MustAdd("", folderAll.UID(), folderAll)
+	tree.MustAdd("", folderUnread.UID(), folderUnread)
 
 	// Add default folders
 	defaultFolders := []struct {
@@ -363,6 +365,17 @@ func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
 			tree.MustAdd(uid, n.UID(), n)
 		}
 	}
+	// Add all folder
+	folderAll := folderNode{
+		Category:    nodeCategoryLabel,
+		CharacterID: characterID,
+		Type:        folderNodeAll,
+		Name:        "All Mails",
+		ObjID:       app.MailLabelAll,
+		UnreadCount: totalUnreadCount,
+	}
+	tree.MustAdd("", folderAll.UID(), folderAll)
+
 	a.foldersData = tree
 	return folderAll, nil
 }
@@ -454,10 +467,16 @@ func (a *mailArea) updateHeaders() error {
 	switch folder.Category {
 	case nodeCategoryLabel:
 		headers, err = a.u.CharacterService.ListCharacterMailHeadersForLabelOrdered(
-			ctx, folder.CharacterID, folder.ObjID)
+			ctx,
+			folder.CharacterID,
+			folder.ObjID,
+		)
 	case nodeCategoryList:
 		headers, err = a.u.CharacterService.ListCharacterMailHeadersForListOrdered(
-			ctx, folder.CharacterID, folder.ObjID)
+			ctx,
+			folder.CharacterID,
+			folder.ObjID,
+		)
 	}
 	if err != nil {
 		return err
@@ -500,12 +519,12 @@ func (a *mailArea) makeToolbar() *widget.Toolbar {
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.DeleteIcon(), func() {
 			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Header())
-			d := newConfirmDialog("Delete mail", t, "Delete", func(confirmed bool) {
+			d := NewConfirmDialog("Delete mail", t, "Delete", func(confirmed bool) {
 				if confirmed {
 					if err := a.u.CharacterService.DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID); err != nil {
 						t := "Failed to delete mail"
 						slog.Error(t, "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
-						d2 := newErrorDialog(t, err, a.u.window)
+						d2 := NewErrorDialog(t, err, a.u.window)
 						d2.Show()
 					} else {
 						a.headerRefresh()

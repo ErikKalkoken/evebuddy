@@ -41,7 +41,7 @@ func (st *Storage) CreateEveDogmaAttribute(ctx context.Context, arg CreateEveDog
 	}
 	o, err := st.q.CreateEveDogmaAttribute(ctx, arg2)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create EveDogmaAttribute %v, %w", arg2, err)
+		return nil, fmt.Errorf("create EveDogmaAttribute %v, %w", arg2, err)
 	}
 	return eveDogmaAttributeFromDBModel(o), nil
 }
@@ -52,7 +52,7 @@ func (st *Storage) GetEveDogmaAttribute(ctx context.Context, id int32) (*app.Eve
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get EveDogmaAttribute for id %d: %w", id, err)
+		return nil, fmt.Errorf("get EveDogmaAttribute for id %d: %w", id, err)
 	}
 	return eveDogmaAttributeFromDBModel(c), nil
 }

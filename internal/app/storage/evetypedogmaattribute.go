@@ -27,7 +27,7 @@ func (st *Storage) CreateEveTypeDogmaAttribute(ctx context.Context, arg CreateEv
 	}
 	err := st.q.CreateEveTypeDogmaAttribute(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("failed to create EveTypeDogmaAttribute %v, %w", arg, err)
+		return fmt.Errorf("create EveTypeDogmaAttribute %v, %w", arg, err)
 	}
 	return nil
 }
@@ -42,7 +42,7 @@ func (st *Storage) GetEveTypeDogmaAttribute(ctx context.Context, eveTypeID, dogm
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return 0, fmt.Errorf("failed to get EveTypeDogmaAttribute for %v: %w", arg, err)
+		return 0, fmt.Errorf("get EveTypeDogmaAttribute for %v: %w", arg, err)
 	}
 	return float32(row.Value), nil
 }
@@ -50,7 +50,7 @@ func (st *Storage) GetEveTypeDogmaAttribute(ctx context.Context, eveTypeID, dogm
 func (st *Storage) ListEveTypeDogmaAttributesForType(ctx context.Context, typeID int32) ([]*app.EveDogmaAttributeForType, error) {
 	rows, err := st.q.ListEveTypeDogmaAttributesForType(ctx, int64(typeID))
 	if err != nil {
-		return nil, fmt.Errorf("failed to list dogma attributes for type %d: %w", typeID, err)
+		return nil, fmt.Errorf("list dogma attributes for type %d: %w", typeID, err)
 	}
 	oo := make([]*app.EveDogmaAttributeForType, len(rows))
 	for i, r := range rows {

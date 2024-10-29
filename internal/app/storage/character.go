@@ -16,7 +16,7 @@ import (
 func (st *Storage) DeleteCharacter(ctx context.Context, characterID int32) error {
 	err := st.q.DeleteCharacter(ctx, int64(characterID))
 	if err != nil {
-		return fmt.Errorf("failed to delete Character %d: %w", characterID, err)
+		return fmt.Errorf("delete Character %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -27,7 +27,7 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Ch
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get Character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get Character %d: %w", characterID, err)
 	}
 	alliance := nullEveEntry{
 		ID:       r.EveCharacter.AllianceID,
@@ -72,7 +72,7 @@ func (st *Storage) GetFirstCharacter(ctx context.Context) (*app.Character, error
 func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error) {
 	rows, err := st.q.ListCharacters(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list Characters: %w", err)
+		return nil, fmt.Errorf("list Characters: %w", err)
 	}
 	cc := make([]*app.Character, len(rows))
 	for i, r := range rows {
@@ -109,7 +109,7 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.CharacterShort, error) {
 	rows, err := st.q.ListCharactersShort(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list short characters: %w", err)
+		return nil, fmt.Errorf("list short characters: %w", err)
 
 	}
 	cc := make([]*app.CharacterShort, len(rows))
@@ -122,7 +122,7 @@ func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.CharacterSho
 func (st *Storage) ListCharacterIDs(ctx context.Context) ([]int32, error) {
 	ids, err := st.q.ListCharacterIDs(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list character IDs: %w", err)
+		return nil, fmt.Errorf("list character IDs: %w", err)
 	}
 	ids2 := convertNumericSlice[int64, int32](ids)
 	return ids2, nil
@@ -134,7 +134,7 @@ func (st *Storage) UpdateCharacterHome(ctx context.Context, characterID int32, h
 		HomeID: optional.ToNullInt64(homeID),
 	}
 	if err := st.q.UpdateCharacterHomeId(ctx, arg); err != nil {
-		return fmt.Errorf("failed to update home for character %d: %w", characterID, err)
+		return fmt.Errorf("update home for character %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -145,7 +145,7 @@ func (st *Storage) UpdateCharacterLastLoginAt(ctx context.Context, characterID i
 		LastLoginAt: optional.ToNullTime(v),
 	}
 	if err := st.q.UpdateCharacterLastLoginAt(ctx, arg); err != nil {
-		return fmt.Errorf("failed to update last login for character %d: %w", characterID, err)
+		return fmt.Errorf("update last login for character %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -156,7 +156,7 @@ func (st *Storage) UpdateCharacterLocation(ctx context.Context, characterID int3
 		LocationID: optional.ToNullInt64(locationID),
 	}
 	if err := st.q.UpdateCharacterLocationID(ctx, arg); err != nil {
-		return fmt.Errorf("failed to update last login for character %d: %w", characterID, err)
+		return fmt.Errorf("update last login for character %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -167,7 +167,7 @@ func (st *Storage) UpdateCharacterShip(ctx context.Context, characterID int32, s
 		ShipID: optional.ToNullInt64(shipID),
 	}
 	if err := st.q.UpdateCharacterShipID(ctx, arg); err != nil {
-		return fmt.Errorf("failed to update ship for character %d: %w", characterID, err)
+		return fmt.Errorf("update ship for character %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -179,7 +179,7 @@ func (st *Storage) UpdateCharacterSkillPoints(ctx context.Context, characterID i
 		UnallocatedSp: optional.ToNullInt64(unallocatedSP),
 	}
 	if err := st.q.UpdateCharacterSP(ctx, arg); err != nil {
-		return fmt.Errorf("failed to update sp for character %d: %w", characterID, err)
+		return fmt.Errorf("update sp for character %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -190,7 +190,7 @@ func (st *Storage) UpdateCharacterWalletBalance(ctx context.Context, characterID
 		WalletBalance: optional.ToNullFloat64(v),
 	}
 	if err := st.q.UpdateCharacterWalletBalance(ctx, arg); err != nil {
-		return fmt.Errorf("failed to update wallet balance for character %d: %w", characterID, err)
+		return fmt.Errorf("update wallet balance for character %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -201,7 +201,7 @@ func (st *Storage) UpdateCharacterAssetValue(ctx context.Context, characterID in
 		AssetValue: optional.ToNullFloat64(v),
 	}
 	if err := st.q.UpdateCharacterAssetValue(ctx, arg); err != nil {
-		return fmt.Errorf("failed to update asset value for character %d: %w", characterID, err)
+		return fmt.Errorf("update asset value for character %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -231,7 +231,7 @@ func (st *Storage) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCrea
 		WalletBalance: optional.ToNullFloat64(arg.WalletBalance),
 	}
 	if err := st.q.UpdateOrCreateCharacter(ctx, arg2); err != nil {
-		return fmt.Errorf("failed to update or create Character %d: %w", arg.ID, err)
+		return fmt.Errorf("update or create Character %d: %w", arg.ID, err)
 	}
 	return nil
 }

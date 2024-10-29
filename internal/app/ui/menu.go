@@ -13,35 +13,23 @@ import (
 )
 
 func makeMenu(u *UI) *fyne.MainMenu {
+	// File menu
 	fileMenu := fyne.NewMenu("File")
 
-	settingsItem := fyne.NewMenuItem("Settings...", func() {
-		u.showSettingsWindow()
-	})
-	settingsShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyS, Modifier: fyne.KeyModifierAlt}
-	settingsItem.Shortcut = settingsShortcut
-	u.window.Canvas().AddShortcut(settingsShortcut, func(shortcut fyne.Shortcut) {
-		u.showSettingsWindow()
-	})
+	// Tools menu
+	settingsItem := fyne.NewMenuItem("Settings...", u.showSettingsWindow)
+	settingsItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyComma, Modifier: fyne.KeyModifierControl}
+	u.window.Canvas().AddShortcut(addShortcutFromMenuItem(settingsItem))
 
-	charactersItem := fyne.NewMenuItem("Manage characters...", func() {
-		u.showAccountDialog()
-	})
-	charactersShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierAlt}
-	charactersItem.Shortcut = charactersShortcut
-	u.window.Canvas().AddShortcut(charactersShortcut, func(shortcut fyne.Shortcut) {
-		u.showAccountDialog()
-	})
+	charactersItem := fyne.NewMenuItem("Manage characters...", u.showAccountDialog)
+	charactersItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierAlt}
+	u.window.Canvas().AddShortcut(addShortcutFromMenuItem(charactersItem))
 
-	statusItem := fyne.NewMenuItem("Update status...", func() {
-		u.showStatusWindow()
-	})
-	statusShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyU, Modifier: fyne.KeyModifierAlt}
-	statusItem.Shortcut = statusShortcut
-	u.window.Canvas().AddShortcut(statusShortcut, func(shortcut fyne.Shortcut) {
-		u.showStatusWindow()
-	})
+	statusItem := fyne.NewMenuItem("Update status...", u.showStatusWindow)
+	statusItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyU, Modifier: fyne.KeyModifierAlt}
+	u.window.Canvas().AddShortcut(addShortcutFromMenuItem(statusItem))
 
+	// Help menu
 	toolsMenu := fyne.NewMenu("Tools",
 		charactersItem,
 		fyne.NewMenuItemSeparator(),
@@ -61,6 +49,8 @@ func makeMenu(u *UI) *fyne.MainMenu {
 		website.Disabled = true
 		report.Disabled = true
 	}
+
+	// Help menu
 	helpMenu := fyne.NewMenu("Help",
 		website,
 		report,
@@ -86,6 +76,7 @@ func (u *UI) showAboutDialog() {
 	c.Add(widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."))
 	c.Add(widget.NewLabel("(c) 2024 Erik Kalkoken"))
 	d := dialog.NewCustom("About", "Close", c, u.window)
+	AddDialogKeyHandler(d, u.window)
 	d.Show()
 }
 
@@ -97,6 +88,7 @@ func (u *UI) showUserDataDialog() {
 		widget.NewFormItem("Settings", makePathEntry(u.window.Clipboard(), u.ad.Settings)),
 	)
 	d := dialog.NewCustom("User data", "Close", f, u.window)
+	AddDialogKeyHandler(d, u.window)
 	d.Show()
 }
 
@@ -107,4 +99,16 @@ func makePathEntry(cb fyne.Clipboard, p string) *fyne.Container {
 		widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
 			cb.SetContent(p)
 		}))
+}
+
+// addShortcutFromMenuItem is a helper for defining shortcuts.
+// It allows to add an already defined shortcut from a menu item to the canvas.
+//
+// For example:
+//
+//	window.Canvas().AddShortcut(menuItem)
+func addShortcutFromMenuItem(item *fyne.MenuItem) (fyne.Shortcut, func(fyne.Shortcut)) {
+	return item.Shortcut, func(s fyne.Shortcut) {
+		item.Action()
+	}
 }

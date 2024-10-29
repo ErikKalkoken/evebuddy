@@ -30,7 +30,7 @@ func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, t
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get implant %d for character %d: %w", typeID, characterID, err)
+		return nil, fmt.Errorf("get implant %d for character %d: %w", typeID, characterID, err)
 	}
 	t2 := characterImplantFromDBModel(
 		row.CharacterImplant,
@@ -93,7 +93,7 @@ func createCharacterImplant(ctx context.Context, q *queries.Queries, arg CreateC
 	}
 	err := q.CreateCharacterImplant(ctx, arg2)
 	if err != nil {
-		return fmt.Errorf("failed to create character implant %v, %w", arg, err)
+		return fmt.Errorf("create character implant %v, %w", arg, err)
 	}
 	return nil
 }

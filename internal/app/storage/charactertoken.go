@@ -16,7 +16,7 @@ func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*a
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("failed to get token for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get token for character %d: %w", characterID, err)
 	}
 	ss, err := st.q.ListCharacterTokenScopes(ctx, int64(characterID))
 	if err != nil {
@@ -40,7 +40,7 @@ func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *app.Char
 	}
 	token, err := st.q.UpdateOrCreateCharacterToken(ctx, arg)
 	if err != nil {
-		return fmt.Errorf("failed to update or create token for character %d: %w", t.CharacterID, err)
+		return fmt.Errorf("update or create token for character %d: %w", t.CharacterID, err)
 	}
 	ss := make([]queries.Scope, len(t.Scopes))
 	for i, name := range t.Scopes {
