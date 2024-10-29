@@ -33,6 +33,7 @@ func (u *UI) showAccountDialog() {
 		}
 		a := u.newAccountArea()
 		d := dialog.NewCustom("Manage Characters", "Close", a.content, u.window)
+		AddDialogKeyHandler(d, u.window)
 		a.dialog = d
 		d.SetOnClosed(func() {
 			incomingChars := set.New[int32]()
@@ -64,7 +65,7 @@ func (u *UI) showAccountDialog() {
 		return nil
 	}()
 	if err != nil {
-		d := newErrorDialog("Failed to show account dialog", err, u.window)
+		d := NewErrorDialog("Failed to show account dialog", err, u.window)
 		d.Show()
 	}
 }
@@ -169,7 +170,7 @@ func (a *accountArea) makeCharacterList() *widget.List {
 }
 
 func (a *accountArea) showDeleteDialog(c accountCharacter) {
-	d1 := newConfirmDialog(
+	d1 := NewConfirmDialog(
 		"Delete Character",
 		fmt.Sprintf("Are you sure you want to delete character %s?", c.name),
 		"Delete",
@@ -192,11 +193,12 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 				)
 				m.OnSuccess = func() {
 					d := dialog.NewInformation("Delete Character", fmt.Sprintf("Character %s deleted", c.name), a.u.window)
+					AddDialogKeyHandler(d, a.u.window)
 					d.Show()
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete character", "characterID", c.id)
-					d := newErrorDialog(fmt.Sprintf("Failed to delete character %s", c.name), err, a.u.window)
+					d := NewErrorDialog(fmt.Sprintf("Failed to delete character %s", c.name), err, a.u.window)
 					d.Show()
 				}
 				m.Start()
@@ -233,6 +235,7 @@ func (a *accountArea) showAddCharacterDialog() {
 		content,
 		a.u.window,
 	)
+	AddDialogKeyHandler(d1, a.u.window)
 	d1.SetOnClosed(cancel)
 	go func() {
 		err := func() error {
@@ -251,7 +254,7 @@ func (a *accountArea) showAddCharacterDialog() {
 		d1.Hide()
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
-			d2 := newErrorDialog("Failed add a new character", err, a.u.window)
+			d2 := NewErrorDialog("Failed add a new character", err, a.u.window)
 			d2.Show()
 		}
 	}()

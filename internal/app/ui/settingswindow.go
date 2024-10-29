@@ -88,7 +88,7 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 		}
 		m.OnError = func(err error) {
 			slog.Error("Failed to clear image cache", "error", err)
-			d := newErrorDialog("Failed to clear image cache", err, w.u.window)
+			d := NewErrorDialog("Failed to clear image cache", err, w.u.window)
 			d.Show()
 		}
 		m.Start()
