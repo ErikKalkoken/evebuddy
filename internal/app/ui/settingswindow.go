@@ -123,7 +123,7 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 
 func (w *settingsWindow) makeEVEOnlinePage() fyne.CanvasObject {
 	// max mails
-	maxMails := kxwidget.NewSliderWithValue(0, settingMaxMailsMax)
+	maxMails := kxwidget.NewSlider(0, settingMaxMailsMax)
 	v1 := w.u.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault)
 	maxMails.SetValue(float64(v1))
 	maxMails.OnChangeEnded = func(v float64) {
@@ -131,7 +131,7 @@ func (w *settingsWindow) makeEVEOnlinePage() fyne.CanvasObject {
 	}
 
 	// max transactions
-	maxTransactions := kxwidget.NewSliderWithValue(0, settingMaxWalletTransactionsMax)
+	maxTransactions := kxwidget.NewSlider(0, settingMaxWalletTransactionsMax)
 	v2 := w.u.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
 	maxTransactions.SetValue(float64(v2))
 	maxTransactions.OnChangeEnded = func(v float64) {
@@ -191,7 +191,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	})
 
 	// max age
-	maxAge := kxwidget.NewSliderWithValue(1, settingMaxAgeMax)
+	maxAge := kxwidget.NewSlider(1, settingMaxAgeMax)
 	v := w.u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
 	maxAge.SetValue(float64(v))
 	maxAge.OnChangeEnded = func(v float64) {
