@@ -108,15 +108,6 @@ func main() {
 	}
 	flag.Parse()
 
-	// setup crash reporting
-	f, err := os.Create(filepath.Join(ad.Log, "crash.txt"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := debug.SetCrashOutput(f, debug.CrashOptions{}); err != nil {
-		log.Fatal(err)
-	}
-
 	// setup logging
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
@@ -154,6 +145,15 @@ func main() {
 		u := deleteapp.NewUI(fyneApp, ad)
 		u.ShowAndRun()
 		return
+	}
+
+	// setup crash reporting
+	f, err := os.Create(filepath.Join(ad.Log, "crash.txt"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := debug.SetCrashOutput(f, debug.CrashOptions{}); err != nil {
+		log.Fatal(err)
 	}
 
 	// init database
