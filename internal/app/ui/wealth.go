@@ -17,6 +17,14 @@ import (
 	"github.com/golang/freetype/truetype"
 )
 
+const (
+	chartBaseSize  = 300
+	pieChartWidth  = chartBaseSize
+	pieChartHeight = chartBaseSize
+	barChartWidth  = 2 * chartBaseSize
+	barChartHeight = chartBaseSize
+)
+
 type wealthArea struct {
 	content fyne.CanvasObject
 	charts  *fyne.Container
@@ -31,9 +39,12 @@ func (u *UI) newWealthArea() *wealthArea {
 	}
 	a.charts = a.makeCharts()
 	a.top.TextStyle.Bold = true
+	cs := container.NewScroll(a.charts)
+	cs.SetMinSize(fyne.NewSize(barChartWidth, barChartHeight))
 	a.content = container.NewBorder(
 		container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil,
-		container.NewScroll(a.charts))
+		cs,
+	)
 	return a
 }
 
@@ -60,9 +71,10 @@ func (a *wealthArea) refresh() {
 		a.top.Refresh()
 		return
 	}
-	cb := chartbuilder.New()
+	cb := chartbuilder.New(a.u.window)
 	cb.ForegroundColor = theme.Color(theme.ColorNameForeground)
 	cb.BackgroundColor = theme.Color(theme.ColorNameBackground)
+	cb.FontSize = 10
 	f := theme.DefaultTextFont().Content()
 	font, err := truetype.Parse(f)
 	if err != nil {
@@ -73,7 +85,8 @@ func (a *wealthArea) refresh() {
 	for i, r := range data {
 		charactersData[i] = chartbuilder.Value{Label: r.label, Value: r.assets + r.wallet}
 	}
-	charactersChart := cb.Render(chartbuilder.Pie, "Total Wealth By Character", charactersData)
+	pieChartSize := fyne.NewSize(pieChartWidth, pieChartHeight)
+	charactersChart := cb.Render(chartbuilder.Pie, pieChartSize, "Total Wealth By Character", charactersData)
 
 	var totalWallet, totalAssets float64
 	for _, r := range data {
@@ -83,19 +96,20 @@ func (a *wealthArea) refresh() {
 	typesData := make([]chartbuilder.Value, 2)
 	typesData[0] = chartbuilder.Value{Label: "Assets", Value: totalAssets}
 	typesData[1] = chartbuilder.Value{Label: "Wallet", Value: totalWallet}
-	typesChart := cb.Render(chartbuilder.Pie, "Total Wealth By Type", typesData)
+	typesChart := cb.Render(chartbuilder.Pie, pieChartSize, "Total Wealth By Type", typesData)
 
+	barChartSize := fyne.NewSize(barChartWidth, barChartHeight)
 	assetsData := make([]chartbuilder.Value, len(data))
 	for i, r := range data {
 		assetsData[i] = chartbuilder.Value{Label: r.label, Value: r.assets}
 	}
-	assetsChart := cb.Render(chartbuilder.Bar, "Assets Value By Character", assetsData)
+	assetsChart := cb.Render(chartbuilder.Bar, barChartSize, "Assets Value By Character", assetsData)
 
 	walletData := make([]chartbuilder.Value, len(data))
 	for i, r := range data {
 		walletData[i] = chartbuilder.Value{Label: r.label, Value: r.wallet}
 	}
-	walletChart := cb.Render(chartbuilder.Bar, "Wallet Balance By Character", walletData)
+	walletChart := cb.Render(chartbuilder.Bar, barChartSize, "Wallet Balance By Character", walletData)
 
 	var total float64
 	for _, r := range data {
