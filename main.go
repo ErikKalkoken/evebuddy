@@ -118,6 +118,15 @@ func main() {
 	}
 	log.SetOutput(logger)
 
+	// setup crash reporting
+	crashFile, err := os.Create(filepath.Join(ad.Log, "crash.txt"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
+		log.Fatal(err)
+	}
+
 	// ensure only one instance is running
 	slog.Info("Checking for other instances")
 	r, err := mutex.Acquire(mutex.Spec{
@@ -143,21 +152,16 @@ func main() {
 	// start uninstall app if requested
 	if *deleteAppFlag {
 		log.SetOutput(os.Stderr)
+		debug.SetCrashOutput(nil, debug.CrashOptions{})
+		if err := crashFile.Close(); err != nil {
+			slog.Error("Failed to close crash file", "error", err)
+		}
 		if err := logger.Close(); err != nil {
 			slog.Error("Failed to close log file", "error", err)
 		}
 		u := deleteapp.NewUI(fyneApp, ad)
 		u.ShowAndRun()
 		return
-	}
-
-	// setup crash reporting
-	f, err := os.Create(filepath.Join(ad.Log, "crash.txt"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := debug.SetCrashOutput(f, debug.CrashOptions{}); err != nil {
-		log.Fatal(err)
 	}
 
 	// init database
