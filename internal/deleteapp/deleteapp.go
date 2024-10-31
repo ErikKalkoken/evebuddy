@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -124,6 +125,7 @@ func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
 	for _, k := range keys {
 		u.app.Preferences().RemoveValue(k)
 	}
-	slog.Info("Deleted setting keys", "path", u.ad.Settings, "count", len(keys))
+	p := filepath.Dir(u.ad.Settings)
+	slog.Info("Deleted setting keys", "path", p, "count", len(keys))
 	return nil
 }

@@ -111,11 +111,12 @@ func main() {
 	// setup logging
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-	log.SetOutput(&lumberjack.Logger{
+	logger := &lumberjack.Logger{
 		Filename:   fmt.Sprintf("%s/%s", ad.Log, logFileName),
-		MaxSize:    logMaxSizeMB, // megabytes
+		MaxSize:    logMaxSizeMB,
 		MaxBackups: logMaxBackups,
-	})
+	}
+	log.SetOutput(logger)
 
 	// ensure only one instance is running
 	slog.Info("Checking for other instances")
@@ -142,6 +143,9 @@ func main() {
 	// start uninstall app if requested
 	if *deleteAppFlag {
 		log.SetOutput(os.Stderr)
+		if err := logger.Close(); err != nil {
+			slog.Error("Failed to close log file", "error", err)
+		}
 		u := deleteapp.NewUI(fyneApp, ad)
 		u.ShowAndRun()
 		return
