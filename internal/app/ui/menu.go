@@ -2,6 +2,7 @@ package ui
 
 import (
 	"net/url"
+	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -92,7 +93,8 @@ func (u *UI) showUserDataDialog() {
 	d.Show()
 }
 
-func makePathEntry(cb fyne.Clipboard, p string) *fyne.Container {
+func makePathEntry(cb fyne.Clipboard, path string) *fyne.Container {
+	p := filepath.Dir(path)
 	return container.NewHBox(
 		widget.NewLabel(p),
 		layout.NewSpacer(),

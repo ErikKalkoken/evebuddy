@@ -46,10 +46,6 @@ func (u *UI) ShowAndRun() {
 }
 
 func (u *UI) makePage() *fyne.Container {
-	label := widget.NewLabel(fmt.Sprint(
-		"Are you sure you want to delete\n" +
-			"all data of the current user?",
-	))
 	okBtn := widget.NewButtonWithIcon("Delete", theme.ConfirmIcon(), func() {
 		title := widget.NewLabel("Deleting user data...")
 		pb := widget.NewProgressBar()
@@ -90,6 +86,10 @@ func (u *UI) makePage() *fyne.Container {
 	cancelBtn := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
 		u.closeWithDialog("Aborted")
 	})
+	label := widget.NewLabel(fmt.Sprint(
+		"Are you sure you want to delete\n" +
+			"all data of the current user?",
+	))
 	c := container.NewBorder(
 		nil,
 		container.NewHBox(cancelBtn, layout.NewSpacer(), okBtn),
