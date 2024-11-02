@@ -58,7 +58,7 @@ func (u *UI) newSettingsWindow() (*settingsWindow, error) {
 
 func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 	// system tray
-	sysTrayCheck := kxwidget.NewToggle(func(b bool) {
+	sysTrayCheck := kxwidget.NewSwitch(func(b bool) {
 		w.u.fyneApp.Preferences().SetBool(settingSysTrayEnabled, b)
 	})
 	sysTrayEnabled := w.u.fyneApp.Preferences().BoolWithFallback(
@@ -163,13 +163,13 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	s1 := widget.NewForm()
 
 	// mail toogle
-	mailEnabledCheck := kxwidget.NewToggle(func(b bool) {
+	mailEnabledCheck := kxwidget.NewSwitch(func(b bool) {
 		w.u.fyneApp.Preferences().SetBool(settingNotifyMailsEnabled, b)
 	})
-	mailEnabledCheck.On = w.u.fyneApp.Preferences().BoolWithFallback(
+	mailEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
 		settingNotifyMailsEnabled,
 		settingNotifyMailsEnabledDefault,
-	)
+	))
 	s1.AppendItem(&widget.FormItem{
 		Text:     "Mail",
 		Widget:   mailEnabledCheck,
@@ -177,13 +177,13 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	})
 
 	// notifications toogle
-	communicationsEnabledCheck := kxwidget.NewToggle(func(on bool) {
+	communicationsEnabledCheck := kxwidget.NewSwitch(func(on bool) {
 		w.u.fyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
 	})
-	communicationsEnabledCheck.On = w.u.fyneApp.Preferences().BoolWithFallback(
+	communicationsEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
 		settingNotifyCommunicationsEnabled,
 		settingNotifyCommunicationsEnabledDefault,
-	)
+	))
 	s1.AppendItem(&widget.FormItem{
 		Text:     "Communications",
 		Widget:   communicationsEnabledCheck,
