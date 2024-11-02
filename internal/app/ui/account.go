@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
@@ -33,7 +34,7 @@ func (u *UI) showAccountDialog() {
 		}
 		a := u.newAccountArea()
 		d := dialog.NewCustom("Manage Characters", "Close", a.content, u.window)
-		AddDialogKeyHandler(d, u.window)
+		kxdialog.AddDialogKeyHandler(d, u.window)
 		a.dialog = d
 		d.SetOnClosed(func() {
 			incomingChars := set.New[int32]()
@@ -193,7 +194,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 				)
 				m.OnSuccess = func() {
 					d := dialog.NewInformation("Delete Character", fmt.Sprintf("Character %s deleted", c.name), a.u.window)
-					AddDialogKeyHandler(d, a.u.window)
+					kxdialog.AddDialogKeyHandler(d, a.u.window)
 					d.Show()
 				}
 				m.OnError = func(err error) {
@@ -235,7 +236,7 @@ func (a *accountArea) showAddCharacterDialog() {
 		content,
 		a.u.window,
 	)
-	AddDialogKeyHandler(d1, a.u.window)
+	kxdialog.AddDialogKeyHandler(d1, a.u.window)
 	d1.SetOnClosed(cancel)
 	go func() {
 		err := func() error {

@@ -58,6 +58,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			CharacterID:  c.ID,
 			Section:      section,
 			ErrorMessage: "error",
+			CompletedAt:  time.Now().Add(-5 * time.Second),
 		})
 		hasUpdated := false
 		arg := UpdateSectionParams{CharacterID: c.ID, Section: section}
@@ -91,6 +92,7 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 			CharacterID: c.ID,
 			Section:     section,
 			Data:        "old",
+			CompletedAt: time.Now().Add(-5 * time.Second),
 		})
 		hasUpdated := false
 		arg := UpdateSectionParams{CharacterID: c.ID, Section: section}

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"net/url"
+	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -10,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 )
 
 func makeMenu(u *UI) *fyne.MainMenu {
@@ -76,7 +78,7 @@ func (u *UI) showAboutDialog() {
 	c.Add(widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."))
 	c.Add(widget.NewLabel("(c) 2024 Erik Kalkoken"))
 	d := dialog.NewCustom("About", "Close", c, u.window)
-	AddDialogKeyHandler(d, u.window)
+	kxdialog.AddDialogKeyHandler(d, u.window)
 	d.Show()
 }
 
@@ -88,11 +90,12 @@ func (u *UI) showUserDataDialog() {
 		widget.NewFormItem("Settings", makePathEntry(u.window.Clipboard(), u.ad.Settings)),
 	)
 	d := dialog.NewCustom("User data", "Close", f, u.window)
-	AddDialogKeyHandler(d, u.window)
+	kxdialog.AddDialogKeyHandler(d, u.window)
 	d.Show()
 }
 
-func makePathEntry(cb fyne.Clipboard, p string) *fyne.Container {
+func makePathEntry(cb fyne.Clipboard, path string) *fyne.Container {
+	p := filepath.Dir(path)
 	return container.NewHBox(
 		widget.NewLabel(p),
 		layout.NewSpacer(),

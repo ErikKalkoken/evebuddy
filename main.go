@@ -108,23 +108,24 @@ func main() {
 	}
 	flag.Parse()
 
-	// setup crash reporting
-	f, err := os.Create(filepath.Join(ad.Log, "crash.txt"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := debug.SetCrashOutput(f, debug.CrashOptions{}); err != nil {
-		log.Fatal(err)
-	}
-
 	// setup logging
 	slog.SetLogLoggerLevel(levelFlag.value)
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-	log.SetOutput(&lumberjack.Logger{
+	logger := &lumberjack.Logger{
 		Filename:   fmt.Sprintf("%s/%s", ad.Log, logFileName),
-		MaxSize:    logMaxSizeMB, // megabytes
+		MaxSize:    logMaxSizeMB,
 		MaxBackups: logMaxBackups,
-	})
+	}
+	log.SetOutput(logger)
+
+	// setup crash reporting
+	crashFile, err := os.Create(filepath.Join(ad.Log, "crash.txt"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
+		log.Fatal(err)
+	}
 
 	// ensure only one instance is running
 	slog.Info("Checking for other instances")
@@ -151,6 +152,13 @@ func main() {
 	// start uninstall app if requested
 	if *deleteAppFlag {
 		log.SetOutput(os.Stderr)
+		debug.SetCrashOutput(nil, debug.CrashOptions{})
+		if err := crashFile.Close(); err != nil {
+			slog.Error("Failed to close crash file", "error", err)
+		}
+		if err := logger.Close(); err != nil {
+			slog.Error("Failed to close log file", "error", err)
+		}
 		u := deleteapp.NewUI(fyneApp, ad)
 		u.ShowAndRun()
 		return

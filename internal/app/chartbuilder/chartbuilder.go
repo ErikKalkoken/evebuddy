@@ -32,6 +32,9 @@ const (
 
 const (
 	chartOtherThreshold = 0.05
+	defaultWidth        = 300
+	defaultHeight       = 300
+	chartPadding        = 0.05 // per cent
 )
 
 type Value struct {
@@ -47,22 +50,27 @@ type ChartBuilder struct {
 	ForegroundColor color.Color
 	BackgroundColor color.Color
 	Font            *truetype.Font
+	FontSize        float32
+
+	window fyne.Window
 }
 
 // New returns a new ChartBuilder object.
 //
 // The builder can be customized by setting it's exported fields.
-func New() ChartBuilder {
+func New(window fyne.Window) ChartBuilder {
 	cb := ChartBuilder{
 		ForegroundColor: color.Black,
 		BackgroundColor: color.White,
+		FontSize:        chart.DefaultFontSize,
+		window:          window,
 	}
 	return cb
 }
 
 // Render returns a rendered chart in a Fyne container.
-func (cb ChartBuilder) Render(ct ChartType, title string, values []Value) *fyne.Container {
-	chart, err := cb.render(ct, title, values)
+func (cb ChartBuilder) Render(ct ChartType, size fyne.Size, title string, values []Value) *fyne.Container {
+	chart, err := cb.render(ct, size, title, values)
 	if err != nil {
 		var t string
 		var i widget.Importance
@@ -94,7 +102,7 @@ func (cb ChartBuilder) backgroundColor() drawing.Color {
 	return chartColor(cb.BackgroundColor)
 }
 
-func (cb ChartBuilder) render(ct ChartType, title string, values []Value) (fyne.CanvasObject, error) {
+func (cb ChartBuilder) render(ct ChartType, size fyne.Size, title string, values []Value) (fyne.CanvasObject, error) {
 	if len(values) < 2 {
 		return nil, errInsufficientData
 	}
@@ -107,13 +115,14 @@ func (cb ChartBuilder) render(ct ChartType, title string, values []Value) (fyne.
 	slices.SortFunc(values, func(a Value, b Value) int {
 		return cmp.Compare(a.Label, b.Label)
 	})
+	pixelW, pixelH := imageSize(cb.window, size)
 	var content []byte
 	var err error
 	switch ct {
 	case Bar:
-		content, err = cb.makeBarChart(values)
+		content, err = cb.makeBarChart(pixelW, pixelH, values)
 	case Pie:
-		content, err = cb.makePieChart(values)
+		content, err = cb.makePieChart(pixelW, pixelH, values)
 	}
 	if err != nil {
 		return nil, err
@@ -121,7 +130,8 @@ func (cb ChartBuilder) render(ct ChartType, title string, values []Value) (fyne.
 	fn := makeFileName(title)
 	r := fyne.NewStaticResource(fn, content)
 	chart := canvas.NewImageFromResource(r)
-	chart.FillMode = canvas.ImageFillOriginal
+	chart.SetMinSize(size)
+	chart.FillMode = canvas.ImageFillContain
 	return chart, nil
 }
 
@@ -133,7 +143,24 @@ func makeFileName(title string) string {
 	return fn
 }
 
-func (cb ChartBuilder) makePieChart(values []Value) ([]byte, error) {
+// imageSize returns the size of a chart image in pixel.
+func imageSize(w fyne.Window, s fyne.Size) (int, int) {
+	if w == nil {
+		return 1, 1
+	}
+	f := w.Canvas().Scale()
+	return int(s.Width * f), int(s.Height * f)
+}
+
+func fontSize(w fyne.Window, size float32) float64 {
+	if w == nil {
+		return float64(size)
+	}
+	f := w.Canvas().Scale()
+	return float64(size / f)
+}
+
+func (cb ChartBuilder) makePieChart(width, height int, values []Value) ([]byte, error) {
 	var total, other float64
 	for _, r := range values {
 		total += r.Value
@@ -157,23 +184,25 @@ func (cb ChartBuilder) makePieChart(values []Value) ([]byte, error) {
 		}
 		chartValues = append(chartValues, o)
 	}
-
+	fs := fontSize(cb.window, cb.FontSize)
 	pie := chart.PieChart{
-		Width:  512,
-		Height: 512,
+		Width:  width,
+		Height: height,
 		Background: chart.Style{
 			FillColor: chart.ColorTransparent,
 			Padding: chart.Box{
-				Top:    25,
-				Bottom: 25,
+				Top:    int(chartPadding * float32(height)),
+				Bottom: int(chartPadding * float32(height)),
 			},
 		},
 		Canvas: chart.Style{
 			FillColor: chart.ColorTransparent,
+			FontSize:  fs,
 		},
 		SliceStyle: chart.Style{
 			FontColor:   cb.foregroundColor(),
 			StrokeColor: cb.backgroundColor(),
+			FontSize:    fs,
 		},
 		Font:   cb.Font,
 		Values: chartValues,
@@ -185,7 +214,7 @@ func (cb ChartBuilder) makePieChart(values []Value) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (cb ChartBuilder) makeBarChart(data []Value) ([]byte, error) {
+func (cb ChartBuilder) makeBarChart(width, height int, data []Value) ([]byte, error) {
 	bars := make([]chart.Value, len(data))
 	for i, r := range data {
 		bars[i] = chart.Value{
@@ -193,25 +222,30 @@ func (cb ChartBuilder) makeBarChart(data []Value) ([]byte, error) {
 			Value: r.Value,
 		}
 	}
+
+	fs := fontSize(cb.window, cb.FontSize)
 	barChart := chart.BarChart{
 		Background: chart.Style{
 			FillColor: chart.ColorTransparent,
 		},
 		Canvas: chart.Style{
 			FillColor: chart.ColorTransparent,
+			FontSize:  fs,
 		},
 		Font:   cb.Font,
-		Width:  1024,
-		Height: 512,
+		Width:  width,
+		Height: height,
 		XAxis: chart.Style{
 			Hidden:              false,
 			FontColor:           cb.foregroundColor(),
+			FontSize:            fs,
 			TextRotationDegrees: 90,
 		},
 		YAxis: chart.YAxis{
 			Style: chart.Style{
 				Hidden:    false,
 				FontColor: cb.foregroundColor(),
+				FontSize:  fs,
 			},
 			ValueFormatter: numericValueFormatter,
 		},
