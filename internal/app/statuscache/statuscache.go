@@ -225,10 +225,11 @@ func (sc *StatusCacheService) GeneralSectionSet(o *app.GeneralSectionStatus) {
 func (sc *StatusCacheService) GeneralSectionSummary() app.StatusSummary {
 	ss := sc.calcGeneralSectionSummary()
 	s := app.StatusSummary{
-		Current: ss.current,
-		Errors:  ss.errors,
-		Missing: ss.missing,
-		Total:   len(app.GeneralSections),
+		Current:   ss.current,
+		Errors:    ss.errors,
+		Missing:   ss.missing,
+		IsRunning: ss.isRunning,
+		Total:     len(app.GeneralSections),
 	}
 	return s
 }
@@ -236,13 +237,16 @@ func (sc *StatusCacheService) GeneralSectionSummary() app.StatusSummary {
 func (sc *StatusCacheService) calcGeneralSectionSummary() statusSummary {
 	var ss statusSummary
 	gsl := sc.GeneralSectionList()
-	for _, x := range gsl {
-		if !x.IsOK() {
+	for _, o := range gsl {
+		if !o.IsOK() {
 			ss.errors++
-		} else if x.IsMissing() {
+		} else if o.IsMissing() {
 			ss.missing++
-		} else if x.IsCurrent() {
+		} else if o.IsCurrent() {
 			ss.current++
+		}
+		if o.IsRunning() {
+			ss.isRunning = true
 		}
 	}
 	if diff := len(app.GeneralSections) - len(gsl); diff > 0 {
