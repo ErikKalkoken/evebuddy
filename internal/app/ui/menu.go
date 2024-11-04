@@ -21,15 +21,17 @@ func makeMenu(u *UI) *fyne.MainMenu {
 	// Tools menu
 	settingsItem := fyne.NewMenuItem("Settings...", u.showSettingsWindow)
 	settingsItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyComma, Modifier: fyne.KeyModifierControl}
-	u.window.Canvas().AddShortcut(addShortcutFromMenuItem(settingsItem))
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, settingsItem)
 
 	charactersItem := fyne.NewMenuItem("Manage characters...", u.showAccountDialog)
 	charactersItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierAlt}
-	u.window.Canvas().AddShortcut(addShortcutFromMenuItem(charactersItem))
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, charactersItem)
 
 	statusItem := fyne.NewMenuItem("Update status...", u.showStatusWindow)
 	statusItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyU, Modifier: fyne.KeyModifierAlt}
-	u.window.Canvas().AddShortcut(addShortcutFromMenuItem(statusItem))
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, statusItem)
+
+	u.enableMenuShortcuts()
 
 	// Help menu
 	toolsMenu := fyne.NewMenu("Tools",
@@ -63,8 +65,28 @@ func makeMenu(u *UI) *fyne.MainMenu {
 			u.showAboutDialog()
 		}),
 	)
+
 	main := fyne.NewMainMenu(fileMenu, toolsMenu, helpMenu)
 	return main
+}
+
+// enableMenuShortcuts enables all registered menu shortcuts.
+func (u *UI) enableMenuShortcuts() {
+	addShortcutFromMenuItem := func(item *fyne.MenuItem) (fyne.Shortcut, func(fyne.Shortcut)) {
+		return item.Shortcut, func(s fyne.Shortcut) {
+			item.Action()
+		}
+	}
+	for _, mi := range u.menuItemsWithShortcut {
+		u.window.Canvas().AddShortcut(addShortcutFromMenuItem(mi))
+	}
+}
+
+// disableMenuShortcuts disabled all registered menu shortcuts.
+func (u *UI) disableMenuShortcuts() {
+	for _, mi := range u.menuItemsWithShortcut {
+		u.window.Canvas().RemoveShortcut(mi.Shortcut)
+	}
 }
 
 func (u *UI) showAboutDialog() {
@@ -79,6 +101,10 @@ func (u *UI) showAboutDialog() {
 	c.Add(widget.NewLabel("(c) 2024 Erik Kalkoken"))
 	d := dialog.NewCustom("About", "Close", c, u.window)
 	kxdialog.AddDialogKeyHandler(d, u.window)
+	u.disableMenuShortcuts()
+	d.SetOnClosed(func() {
+		u.enableMenuShortcuts()
+	})
 	d.Show()
 }
 
@@ -91,6 +117,10 @@ func (u *UI) showUserDataDialog() {
 	)
 	d := dialog.NewCustom("User data", "Close", f, u.window)
 	kxdialog.AddDialogKeyHandler(d, u.window)
+	u.disableMenuShortcuts()
+	d.SetOnClosed(func() {
+		u.enableMenuShortcuts()
+	})
 	d.Show()
 }
 
@@ -102,16 +132,4 @@ func makePathEntry(cb fyne.Clipboard, path string) *fyne.Container {
 		widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
 			cb.SetContent(p)
 		}))
-}
-
-// addShortcutFromMenuItem is a helper for defining shortcuts.
-// It allows to add an already defined shortcut from a menu item to the canvas.
-//
-// For example:
-//
-//	window.Canvas().AddShortcut(menuItem)
-func addShortcutFromMenuItem(item *fyne.MenuItem) (fyne.Shortcut, func(fyne.Shortcut)) {
-	return item.Shortcut, func(s fyne.Shortcut) {
-		item.Action()
-	}
 }

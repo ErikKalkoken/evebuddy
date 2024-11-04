@@ -35,6 +35,7 @@ const (
 	defaultWidth        = 300
 	defaultHeight       = 300
 	chartPadding        = 0.05 // per cent
+	defaultFontSize     = 10
 )
 
 type Value struct {
@@ -50,7 +51,7 @@ type ChartBuilder struct {
 	ForegroundColor color.Color
 	BackgroundColor color.Color
 	Font            *truetype.Font
-	FontSize        float32
+	FontSize        float64
 
 	window fyne.Window
 }
@@ -62,7 +63,7 @@ func New(window fyne.Window) ChartBuilder {
 	cb := ChartBuilder{
 		ForegroundColor: color.Black,
 		BackgroundColor: color.White,
-		FontSize:        chart.DefaultFontSize,
+		FontSize:        defaultFontSize,
 		window:          window,
 	}
 	return cb
@@ -184,7 +185,6 @@ func (cb ChartBuilder) makePieChart(width, height int, values []Value) ([]byte, 
 		}
 		chartValues = append(chartValues, o)
 	}
-	fs := fontSize(cb.window, cb.FontSize)
 	pie := chart.PieChart{
 		Width:  width,
 		Height: height,
@@ -197,12 +197,12 @@ func (cb ChartBuilder) makePieChart(width, height int, values []Value) ([]byte, 
 		},
 		Canvas: chart.Style{
 			FillColor: chart.ColorTransparent,
-			FontSize:  fs,
+			FontSize:  cb.FontSize,
 		},
 		SliceStyle: chart.Style{
 			FontColor:   cb.foregroundColor(),
 			StrokeColor: cb.backgroundColor(),
-			FontSize:    fs,
+			FontSize:    cb.FontSize,
 		},
 		Font:   cb.Font,
 		Values: chartValues,
@@ -223,14 +223,14 @@ func (cb ChartBuilder) makeBarChart(width, height int, data []Value) ([]byte, er
 		}
 	}
 
-	fs := fontSize(cb.window, cb.FontSize)
+	// fs := fontSize(cb.window, cb.FontSize)
 	barChart := chart.BarChart{
 		Background: chart.Style{
 			FillColor: chart.ColorTransparent,
 		},
 		Canvas: chart.Style{
 			FillColor: chart.ColorTransparent,
-			FontSize:  fs,
+			FontSize:  cb.FontSize,
 		},
 		Font:   cb.Font,
 		Width:  width,
@@ -238,14 +238,14 @@ func (cb ChartBuilder) makeBarChart(width, height int, data []Value) ([]byte, er
 		XAxis: chart.Style{
 			Hidden:              false,
 			FontColor:           cb.foregroundColor(),
-			FontSize:            fs,
+			FontSize:            cb.FontSize,
 			TextRotationDegrees: 90,
 		},
 		YAxis: chart.YAxis{
 			Style: chart.Style{
 				Hidden:    false,
 				FontColor: cb.foregroundColor(),
-				FontSize:  fs,
+				FontSize:  cb.FontSize,
 			},
 			ValueFormatter: numericValueFormatter,
 		},
