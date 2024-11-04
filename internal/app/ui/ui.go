@@ -79,6 +79,7 @@ type UI struct {
 	walletTransactionArea *walletTransactionArea
 	wealthArea            *wealthArea
 	window                fyne.Window
+	menuItemsWithShortcut []*fyne.MenuItem
 }
 
 // NewUI build the UI and returns it.

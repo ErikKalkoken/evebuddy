@@ -37,6 +37,7 @@ func (u *UI) showAccountDialog() {
 		kxdialog.AddDialogKeyHandler(d, u.window)
 		a.dialog = d
 		d.SetOnClosed(func() {
+			defer a.u.enableMenuShortcuts()
 			incomingChars := set.New[int32]()
 			for _, c := range a.characters {
 				incomingChars.Add(c.id)
@@ -57,6 +58,7 @@ func (u *UI) showAccountDialog() {
 			}
 			a.u.refreshCrossPages()
 		})
+		u.disableMenuShortcuts()
 		d.Show()
 		d.Resize(fyne.Size{Width: 500, Height: 500})
 		if err := a.refresh(); err != nil {
