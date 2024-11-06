@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -63,51 +64,26 @@ func (u *UI) newOverviewArea() *overviewArea {
 
 func (a *overviewArea) makeTable() *widget.Table {
 	var headers = []struct {
-		text   string
-		width  float32
-		action func(overviewCharacter)
+		text     string
+		maxChars int
 	}{
-		{"Name", 200, nil},
-		{"Corporation", 200, nil},
-		{"Alliance", 200, nil},
-		{"Security", 80, nil},
-		{"Unread", 80, func(oc overviewCharacter) {
-			a.u.selectCharacterAndTab(oc.id, a.u.mailTab, 0)
-		}},
-		{"Total SP", 80, func(oc overviewCharacter) {
-			a.u.selectCharacterAndTab(oc.id, a.u.skillTab, 1)
-		}},
-		{"Unall. SP", 80, func(oc overviewCharacter) {
-			a.u.selectCharacterAndTab(oc.id, a.u.skillTab, 1)
-		}},
-		{"Training", 80, func(oc overviewCharacter) {
-			a.u.selectCharacterAndTab(oc.id, a.u.skillTab, 0)
-		}},
-		{"Wallet", 80, func(oc overviewCharacter) {
-			a.u.selectCharacterAndTab(oc.id, a.u.walletTab, 0)
-		}},
-		{"Assets", 80, func(oc overviewCharacter) {
-			a.u.selectCharacterAndTab(oc.id, a.u.assetTab, 0)
-		}},
-		{"Location", 150, func(oc overviewCharacter) {
-			if oc.location != nil {
-				a.u.showLocationInfoWindow(oc.location.ID)
-			}
-		}},
-		{"System", 150, nil},
-		{"Region", 150, nil},
-		{"Ship", 150, func(oc overviewCharacter) {
-			if oc.ship != nil {
-				a.u.showTypeInfoWindow(oc.ship.ID, a.u.characterID())
-			}
-		}},
-		{"Last Login", 100, nil},
-		{"Home", 150, func(oc overviewCharacter) {
-			if oc.home != nil {
-				a.u.showLocationInfoWindow(oc.home.ID)
-			}
-		}},
-		{"Age", 100, nil},
+		{"Name", 20},
+		{"Corporation", 20},
+		{"Alliance", 20},
+		{"Security", 10},
+		{"Unread", 5},
+		{"Total SP", 5},
+		{"Unall. SP", 5},
+		{"Training", 5},
+		{"Wallet", 5},
+		{"Assets", 5},
+		{"Location", 15},
+		{"System", 15},
+		{"Region", 15},
+		{"Ship", 15},
+		{"Last Login", 10},
+		{"Home", 15},
+		{"Age", 10},
 	}
 
 	t := widget.NewTable(
@@ -115,9 +91,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 			return len(a.characters), len(headers)
 		},
 		func() fyne.CanvasObject {
-			x := widget.NewLabel("Template")
-			x.Truncation = fyne.TextTruncateEllipsis
-			return x
+			return widget.NewLabel("Template Template Template")
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			l := co.(*widget.Label)
@@ -126,56 +100,58 @@ func (a *overviewArea) makeTable() *widget.Table {
 			}
 			c := a.characters[tci.Row]
 			l.Importance = widget.MediumImportance
+			var text string
 			switch tci.Col {
 			case 0:
-				l.Text = c.name
+				text = c.name
 			case 1:
-				l.Text = c.corporation
+				text = c.corporation
 			case 2:
-				l.Text = c.alliance
+				text = c.alliance
 			case 3:
-				l.Text = fmt.Sprintf("%.1f", c.security)
+				text = fmt.Sprintf("%.1f", c.security)
 				if c.security > 0 {
 					l.Importance = widget.SuccessImportance
 				} else if c.security < 0 {
 					l.Importance = widget.DangerImportance
 				}
 			case 4:
-				l.Text = ihumanize.Optional(c.unreadCount, "?")
+				text = ihumanize.Optional(c.unreadCount, "?")
 			case 5:
-				l.Text = ihumanize.Optional(c.totalSP, "?")
+				text = ihumanize.Optional(c.totalSP, "?")
 			case 6:
-				l.Text = ihumanize.Optional(c.unallocatedSP, "?")
+				text = ihumanize.Optional(c.unallocatedSP, "?")
 			case 7:
 				if c.training.IsEmpty() {
-					l.Text = "Inactive"
+					text = "Inactive"
 					l.Importance = widget.WarningImportance
 				} else {
-					l.Text = ihumanize.Duration(c.training.MustValue())
+					text = ihumanize.Duration(c.training.MustValue())
 				}
 			case 8:
-				l.Text = ihumanize.OptionalFloat(c.walletBalance, 1, "?")
+				text = ihumanize.OptionalFloat(c.walletBalance, 1, "?")
 			case 9:
-				l.Text = ihumanize.OptionalFloat(c.assetValue, 1, "?")
+				text = ihumanize.OptionalFloat(c.assetValue, 1, "?")
 			case 10:
-				l.Text = entityNameOrFallback(c.location, "?")
+				text = entityNameOrFallback(c.location, "?")
 			case 11:
 				if c.solarSystem == nil || c.systemSecurity.IsEmpty() {
-					l.Text = "?"
+					text = "?"
 				} else {
-					l.Text = fmt.Sprintf("%s %.1f", c.solarSystem.Name, c.systemSecurity.MustValue())
+					text = fmt.Sprintf("%s %.1f", c.solarSystem.Name, c.systemSecurity.MustValue())
 				}
 			case 12:
-				l.Text = entityNameOrFallback(c.region, "?")
+				text = entityNameOrFallback(c.region, "?")
 			case 13:
-				l.Text = entityNameOrFallback(c.ship, "?")
+				text = entityNameOrFallback(c.ship, "?")
 			case 14:
-				l.Text = ihumanize.Optional(c.lastLoginAt, "?")
+				text = ihumanize.Optional(c.lastLoginAt, "?")
 			case 15:
-				l.Text = entityNameOrFallback(c.home, "?")
+				text = entityNameOrFallback(c.home, "?")
 			case 16:
-				l.Text = humanize.RelTime(c.birthday, time.Now(), "", "")
+				text = humanize.RelTime(c.birthday, time.Now(), "", "")
 			}
+			l.Text = text
 			l.Refresh()
 		},
 	)
@@ -187,27 +163,16 @@ func (a *overviewArea) makeTable() *widget.Table {
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
 		s := headers[tci.Col]
 		label := co.(*widget.Label)
-		label.Text = s.text
-		if headers[tci.Col].action != nil {
-			label.Importance = widget.HighImportance
-		} else {
-			label.Importance = widget.MediumImportance
-		}
-		label.Refresh()
+		label.SetText(s.text)
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
-		if tci.Row <= len(a.characters) {
-			return
-		}
-		c := a.characters[tci.Row]
-		if action := headers[tci.Col].action; action != nil {
-			action(c)
-		}
 	}
 
 	for i, h := range headers {
-		t.SetColumnWidth(i, h.width)
+		x := widget.NewLabel(strings.Repeat("w", h.maxChars))
+		w := x.MinSize().Width
+		t.SetColumnWidth(i, w)
 	}
 	return t
 }
