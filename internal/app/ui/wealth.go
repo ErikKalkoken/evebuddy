@@ -77,9 +77,10 @@ func (a *wealthArea) refresh() {
 	f := theme.DefaultTextFont().Content()
 	font, err := truetype.Parse(f)
 	if err != nil {
-		panic(err)
+		slog.Error("Failed to initialize TTF", "error", err)
+	} else {
+		cb.Font = font
 	}
-	cb.Font = font
 	charactersData := make([]chartbuilder.Value, len(data))
 	for i, r := range data {
 		charactersData[i] = chartbuilder.Value{Label: r.label, Value: r.assets + r.wallet}

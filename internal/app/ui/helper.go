@@ -63,7 +63,7 @@ func systemSecurity2Importance(t app.SolarSystemSecurityType) widget.Importance 
 	case app.NullSec:
 		return widget.DangerImportance
 	}
-	panic("Invalid security")
+	return widget.MediumImportance
 }
 
 func status2widgetImportance(s app.Status) widget.Importance {

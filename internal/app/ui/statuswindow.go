@@ -56,17 +56,11 @@ func (u *UI) showStatusWindow() {
 		u.statusWindow.Show()
 		return
 	}
-	sw, err := u.newStatusWindow()
-	if err != nil {
-		panic(err)
-	}
-	if err := sw.refresh(); err != nil {
-		panic(err)
-	}
 	w := u.fyneApp.NewWindow(u.makeWindowTitle("Status"))
+	sw := u.newStatusWindow()
+	sw.refresh()
 	w.SetContent(sw.content)
 	w.Resize(fyne.Size{Width: 1100, Height: 500})
-	w.Show()
 	ctx, cancel := context.WithCancel(context.TODO())
 	sw.startTicker(ctx)
 	w.SetOnClosed(func() {
@@ -75,9 +69,10 @@ func (u *UI) showStatusWindow() {
 	})
 	u.statusWindow = w
 	sw.window = w
+	w.Show()
 }
 
-func (u *UI) newStatusWindow() (*statusWindow, error) {
+func (u *UI) newStatusWindow() *statusWindow {
 	a := &statusWindow{
 		entities:          make([]sectionEntity, 0),
 		charactersTop:     widget.NewLabel(""),
@@ -120,7 +115,7 @@ func (u *UI) newStatusWindow() (*statusWindow, error) {
 	hs := container.NewHSplit(characters, vs)
 	hs.SetOffset(0.33)
 	a.content = hs
-	return a, nil
+	return a
 }
 
 func (a *statusWindow) makeEntityList() *widget.List {
@@ -188,11 +183,10 @@ func (a *statusWindow) makeEntityList() *widget.List {
 	return list
 }
 
-func (a *statusWindow) refresh() error {
+func (a *statusWindow) refresh() {
 	a.refreshEntityList()
 	a.refreshDetailArea()
 	a.charactersTop.SetText(fmt.Sprintf("Entities: %d", len(a.entities)))
-	return nil
 }
 
 func (a *statusWindow) refreshEntityList() error {

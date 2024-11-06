@@ -204,8 +204,10 @@ func (cb ChartBuilder) makePieChart(width, height int, values []Value) ([]byte, 
 			StrokeColor: cb.backgroundColor(),
 			FontSize:    cb.FontSize,
 		},
-		Font:   cb.Font,
 		Values: chartValues,
+	}
+	if cb.Font != nil {
+		pie.Font = cb.Font
 	}
 	var buf bytes.Buffer
 	if err := pie.Render(chart.PNG, &buf); err != nil {
@@ -232,7 +234,6 @@ func (cb ChartBuilder) makeBarChart(width, height int, data []Value) ([]byte, er
 			FillColor: chart.ColorTransparent,
 			FontSize:  cb.FontSize,
 		},
-		Font:   cb.Font,
 		Width:  width,
 		Height: height,
 		XAxis: chart.Style{
@@ -250,6 +251,9 @@ func (cb ChartBuilder) makeBarChart(width, height int, data []Value) ([]byte, er
 			ValueFormatter: numericValueFormatter,
 		},
 		Bars: bars,
+	}
+	if cb.Font != nil {
+		barChart.Font = cb.Font
 	}
 	var buf bytes.Buffer
 	if err := barChart.Render(chart.PNG, &buf); err != nil {

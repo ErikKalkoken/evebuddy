@@ -28,23 +28,19 @@ func (u *UI) showSettingsWindow() {
 		u.settingsWindow.Show()
 		return
 	}
-	sw, err := u.newSettingsWindow()
-	if err != nil {
-		panic(err)
-	}
 	w := u.fyneApp.NewWindow(u.makeWindowTitle("Settings"))
+	sw := u.newSettingsWindow()
 	w.SetContent(sw.content)
 	w.Resize(fyne.Size{Width: 700, Height: 500})
-	w.Show()
-	w.SetCloseIntercept(func() {
+	w.SetOnClosed(func() {
 		u.settingsWindow = nil
-		w.Hide()
 	})
 	u.settingsWindow = w
 	sw.window = w
+	w.Show()
 }
 
-func (u *UI) newSettingsWindow() (*settingsWindow, error) {
+func (u *UI) newSettingsWindow() *settingsWindow {
 	sw := &settingsWindow{u: u}
 	tabs := container.NewAppTabs(
 		container.NewTabItem("General", sw.makeGeneralPage()),
@@ -53,7 +49,7 @@ func (u *UI) newSettingsWindow() (*settingsWindow, error) {
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
 	sw.content = tabs
-	return sw, nil
+	return sw
 }
 
 func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
