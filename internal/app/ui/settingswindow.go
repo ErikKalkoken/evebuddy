@@ -199,11 +199,10 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		HintText: "Max age in hours. Older mails and communications will not be notified.",
 	})
 
-	s2 := widget.NewForm()
-	categoriesAndTypes := make(map[evenotification.Category][]string)
+	categoriesAndTypes := make(map[evenotification.Category][]evenotification.Type)
 	for _, n := range evenotification.SupportedTypes() {
 		c := evenotification.Type2category[n]
-		categoriesAndTypes[c] = append(categoriesAndTypes[c], string(n))
+		categoriesAndTypes[c] = append(categoriesAndTypes[c], n)
 	}
 	categories := make([]evenotification.Category, 0)
 	for c := range categoriesAndTypes {
@@ -211,34 +210,40 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	}
 	slices.Sort(categories)
 	typesEnabled := set.NewFromSlice(w.u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
-	groups := make([]*widget.CheckGroup, 0)
+	notifsAll := make([]*kxwidget.Switch, 0)
+	s2 := widget.NewForm()
 	for _, c := range categories {
+		s2.Append("", widget.NewLabel(c.String()))
 		nts := categoriesAndTypes[c]
-		selected := make([]string, 0)
+		notifsCategory := make([]*kxwidget.Switch, 0)
 		for _, nt := range nts {
-			if typesEnabled.Contains(nt) {
-				selected = append(selected, nt)
+			sw := kxwidget.NewSwitch(func(on bool) {
+				if on {
+					typesEnabled.Add(nt.String())
+				} else {
+					typesEnabled.Remove(nt.String())
+				}
+				w.u.fyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
+			})
+			if typesEnabled.Contains(nt.String()) {
+				sw.On = true
 			}
+			s2.AppendItem(widget.NewFormItem(nt.Display(), sw))
+			notifsCategory = append(notifsCategory, sw)
+			notifsAll = append(notifsAll, sw)
 		}
-		cg := widget.NewCheckGroup(nts, nil)
-		cg.Selected = selected
-		cg.OnChanged = func(s []string) {
-			enabled := make([]string, 0)
-			for _, cg := range groups {
-				enabled = slices.Concat(enabled, cg.Selected)
-			}
-			w.u.fyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, enabled)
-		}
-		s2.AppendItem(widget.NewFormItem(c.String(), cg))
 		enableAll := widget.NewButton("Enable all", func() {
-			cg.SetSelected(cg.Options)
+			for _, sw := range notifsCategory {
+				sw.SetState(true)
+			}
 		})
 		disableAll := widget.NewButton("Disable all", func() {
-			cg.SetSelected([]string{})
+			for _, sw := range notifsCategory {
+				sw.SetState(false)
+			}
 		})
 		s2.Append("", container.NewHBox(enableAll, disableAll))
 		s2.Append("", container.NewPadded())
-		groups = append(groups, cg)
 	}
 	title1 := widget.NewLabel("Global")
 	title1.TextStyle.Bold = true
@@ -255,8 +260,8 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		mailEnabledCheck.SetState(settingNotifyMailsEnabledDefault)
 		communicationsEnabledCheck.SetState(settingNotifyCommunicationsEnabledDefault)
 		maxAge.SetValue(settingMaxAgeDefault)
-		for _, cg := range groups {
-			cg.SetSelected([]string{})
+		for _, sw := range notifsAll {
+			sw.SetState(false)
 		}
 	}
 	return makePage("Notification settings", c, reset)

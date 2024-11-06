@@ -1,5 +1,10 @@
 package evenotification
 
+import (
+	"strings"
+	"unicode"
+)
+
 type Type string
 
 // A specific notification type
@@ -242,6 +247,27 @@ const (
 
 func (nt Type) String() string {
 	return string(nt)
+}
+
+// Display returns a string representation for display.
+func (nt Type) Display() string {
+	var b strings.Builder
+	var last rune
+	s := nt.String()
+	for i, r := range s {
+		var next rune
+		if i < len(s)-1 {
+			next = rune(s[i+1])
+		}
+		if last != 0 {
+			if unicode.IsUpper(r) && (unicode.IsLower(last) || unicode.IsLower(next)) {
+				b.WriteRune(' ')
+			}
+		}
+		b.WriteRune(r)
+		last = r
+	}
+	return b.String()
 }
 
 var supportedTypes = []Type{
