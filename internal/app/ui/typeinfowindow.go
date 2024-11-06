@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"golang.org/x/text/cases"
@@ -504,7 +505,8 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		size := 128
 		r, err := a.u.EveImageService.InventoryTypeRender(a.et.ID, size)
 		if err != nil {
-			panic(err)
+			slog.Error("Failed to load inventory type render", "typeID", a.et.ID, "error", err)
+			r = theme.BrokenImageIcon()
 		}
 		render := kxwidget.NewTappableImage(r, func() {
 			w := a.u.fyneApp.NewWindow(a.u.makeWindowTitle(a.makeTitle("Render")))
