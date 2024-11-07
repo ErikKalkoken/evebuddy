@@ -85,15 +85,14 @@ func (a *walletJournalArea) makeTable() *widget.Table {
 			return len(a.entries), len(headers)
 		},
 		func() fyne.CanvasObject {
-			x := widget.NewLabel("Template")
-			x.Truncation = fyne.TextTruncateEllipsis
-			return x
+			return widget.NewLabel("Template Template")
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			l := co.(*widget.Label)
 			l.Importance = widget.MediumImportance
 			l.Alignment = fyne.TextAlignLeading
-			if tci.Row >= len(a.entries) {
+			l.Truncation = fyne.TextTruncateOff
+			if tci.Row >= len(a.entries) || tci.Row < 0 {
 				return
 			}
 			w := a.entries[tci.Row]
@@ -117,8 +116,8 @@ func (a *walletJournalArea) makeTable() *widget.Table {
 				l.Alignment = fyne.TextAlignTrailing
 				l.Text = humanize.FormatFloat(myFloatFormat, w.balance)
 			case 4:
-				l.Truncation = fyne.TextTruncateEllipsis
 				l.Text = w.descriptionWithReason()
+				l.Truncation = fyne.TextTruncateClip
 			}
 			l.Refresh()
 		},
@@ -136,7 +135,7 @@ func (a *walletJournalArea) makeTable() *widget.Table {
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
-		if tci.Row >= len(a.entries) {
+		if tci.Row >= len(a.entries) || tci.Row < 0 {
 			return
 		}
 		e := a.entries[tci.Row]

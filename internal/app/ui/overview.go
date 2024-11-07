@@ -95,7 +95,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			l := co.(*widget.Label)
-			if tci.Row >= len(a.characters) {
+			if tci.Row >= len(a.characters) || tci.Row < 0 {
 				return
 			}
 			c := a.characters[tci.Row]
@@ -152,6 +152,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 				text = humanize.RelTime(c.birthday, time.Now(), "", "")
 			}
 			l.Text = text
+			l.Truncation = fyne.TextTruncateClip
 			l.Refresh()
 		},
 	)

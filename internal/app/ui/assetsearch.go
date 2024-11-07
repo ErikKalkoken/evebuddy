@@ -143,24 +143,23 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 			return len(a.assetsFiltered), len(headers)
 		},
 		func() fyne.CanvasObject {
-			label := widget.NewLabel("Template")
-			label.Truncation = fyne.TextTruncateEllipsis
-			return label
+			return widget.NewLabel("Template")
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			if tci.Row >= len(a.assetsFiltered) {
+			if tci.Row >= len(a.assetsFiltered) || tci.Row < 0 {
 				return
 			}
 			r := a.assetsFiltered[tci.Row]
-			label := co.(*widget.Label)
+			l := co.(*widget.Label)
+			l.Truncation = fyne.TextTruncateClip
+			l.Alignment = fyne.TextAlignLeading
 			var t string
-			var ta fyne.TextAlign
 			switch tci.Col {
 			case 0:
 				t = r.name
 			case 1:
 				t = r.quantityDisplay
-				ta = fyne.TextAlignTrailing
+				l.Alignment = fyne.TextAlignTrailing
 			case 2:
 				t = r.groupName
 			case 3:
@@ -169,10 +168,10 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 				t = r.characterName
 			case 5:
 				t = r.priceDisplay
+				l.Alignment = fyne.TextAlignTrailing
 			}
-			label.Text = t
-			label.Alignment = ta
-			label.Refresh()
+			l.Text = t
+			l.Refresh()
 		},
 	)
 	t.ShowHeaderRow = true
@@ -222,7 +221,7 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
-		if tci.Row >= len(a.assetsFiltered) {
+		if tci.Row >= len(a.assetsFiltered) || tci.Row < 0 {
 			return
 		}
 		r := a.assetsFiltered[tci.Row]
