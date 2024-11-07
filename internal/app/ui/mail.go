@@ -63,8 +63,8 @@ func (u *UI) newMailArea() *mailArea {
 	a.toolbar = a.makeToolbar()
 	a.toolbar.Hide()
 	a.subject.TextStyle = fyne.TextStyle{Bold: true}
-	a.subject.Truncation = fyne.TextTruncateEllipsis
-	a.header.Truncation = fyne.TextTruncateEllipsis
+	a.subject.Truncation = fyne.TextTruncateClip
+	a.header.Truncation = fyne.TextTruncateClip
 	wrapper := container.NewVBox(a.toolbar, a.subject, a.header)
 	a.body.Wrapping = fyne.TextWrapWord
 	a.mailSection = container.NewBorder(wrapper, nil, nil, nil, container.NewVScroll(a.body))

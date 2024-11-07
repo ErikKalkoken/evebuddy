@@ -52,11 +52,11 @@ func (a *walletTransactionArea) makeTable() *widget.Table {
 		text  string
 		width float32
 	}{
-		{"Date", 130},
+		{"Date", 150},
 		{"Quantity", 130},
 		{"Type", 200},
-		{"Unit Price", 130},
-		{"Total", 130},
+		{"Unit Price", 200},
+		{"Total", 200},
 		{"Client", 250},
 		{"Where", 250},
 	}
@@ -65,15 +65,14 @@ func (a *walletTransactionArea) makeTable() *widget.Table {
 			return len(a.transactions), len(headers)
 		},
 		func() fyne.CanvasObject {
-			x := widget.NewLabel("Template")
-			x.Truncation = fyne.TextTruncateEllipsis
-			return x
+			return widget.NewLabel("Template  Template")
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			l := co.(*widget.Label)
 			l.Importance = widget.MediumImportance
 			l.Alignment = fyne.TextAlignLeading
-			if tci.Row >= len(a.transactions) {
+			l.Truncation = fyne.TextTruncateOff
+			if tci.Row >= len(a.transactions) || tci.Row < 0 {
 				return
 			}
 			w := a.transactions[tci.Row]
@@ -85,6 +84,7 @@ func (a *walletTransactionArea) makeTable() *widget.Table {
 				l.Text = humanize.Comma(int64(w.quantity))
 			case 2:
 				l.Text = w.eveType
+				l.Truncation = fyne.TextTruncateClip
 			case 3:
 				l.Alignment = fyne.TextAlignTrailing
 				l.Text = humanize.FormatFloat(myFloatFormat, w.unitPrice)
@@ -101,8 +101,10 @@ func (a *walletTransactionArea) makeTable() *widget.Table {
 				}
 			case 5:
 				l.Text = w.client
+				l.Truncation = fyne.TextTruncateClip
 			case 6:
 				l.Text = w.location
+				l.Truncation = fyne.TextTruncateClip
 			}
 			l.Refresh()
 		},
