@@ -67,9 +67,9 @@ func (u *UI) newAssetSearchArea() *assetSearchArea {
 	a := &assetSearchArea{
 		u:              u,
 		assetsFiltered: make([]*assetSearchRow, 0),
-		iconSortAsc:    theme.MoveUpIcon(),
-		iconSortDesc:   theme.MoveDownIcon(),
-		iconSortOff:    theme.NewThemedResource(resourceBlankSvg),
+		iconSortAsc:    theme.NewThemedResource(resourceSortAscendingSvg),
+		iconSortDesc:   theme.NewThemedResource(resourceSortDescendingSvg),
+		iconSortOff:    theme.NewThemedResource(resourceSortSvg),
 		total:          widget.NewLabel(""),
 		found:          widget.NewLabel(""),
 	}
@@ -127,7 +127,7 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 		width float32
 	}{
 		{"Name", 300},
-		{"Quantity", 75},
+		{"Qty.", 75},
 		{"Group", 200},
 		{"Location", 350},
 		{"Character", 200},
