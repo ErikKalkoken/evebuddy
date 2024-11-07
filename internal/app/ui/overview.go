@@ -70,19 +70,19 @@ func (a *overviewArea) makeTable() *widget.Table {
 		{"Name", 20},
 		{"Corporation", 20},
 		{"Alliance", 20},
-		{"Security", 10},
+		{"Security", 5},
 		{"Unread", 5},
 		{"Total SP", 5},
 		{"Unall. SP", 5},
 		{"Training", 5},
 		{"Wallet", 5},
 		{"Assets", 5},
-		{"Location", 15},
+		{"Location", 20},
 		{"System", 15},
 		{"Region", 15},
 		{"Ship", 15},
 		{"Last Login", 10},
-		{"Home", 15},
+		{"Home", 20},
 		{"Age", 10},
 	}
 
@@ -91,7 +91,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 			return len(a.characters), len(headers)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("Template Template Template")
+			return widget.NewLabel("Template")
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			l := co.(*widget.Label)
@@ -99,6 +99,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 				return
 			}
 			c := a.characters[tci.Row]
+			l.Alignment = fyne.TextAlignLeading
 			l.Importance = widget.MediumImportance
 			var text string
 			switch tci.Col {
@@ -115,12 +116,16 @@ func (a *overviewArea) makeTable() *widget.Table {
 				} else if c.security < 0 {
 					l.Importance = widget.DangerImportance
 				}
+				l.Alignment = fyne.TextAlignTrailing
 			case 4:
 				text = ihumanize.Optional(c.unreadCount, "?")
+				l.Alignment = fyne.TextAlignTrailing
 			case 5:
 				text = ihumanize.Optional(c.totalSP, "?")
+				l.Alignment = fyne.TextAlignTrailing
 			case 6:
 				text = ihumanize.Optional(c.unallocatedSP, "?")
+				l.Alignment = fyne.TextAlignTrailing
 			case 7:
 				if c.training.IsEmpty() {
 					text = "Inactive"
@@ -130,8 +135,10 @@ func (a *overviewArea) makeTable() *widget.Table {
 				}
 			case 8:
 				text = ihumanize.OptionalFloat(c.walletBalance, 1, "?")
+				l.Alignment = fyne.TextAlignTrailing
 			case 9:
 				text = ihumanize.OptionalFloat(c.assetValue, 1, "?")
+				l.Alignment = fyne.TextAlignTrailing
 			case 10:
 				text = entityNameOrFallback(c.location, "?")
 			case 11:
@@ -150,6 +157,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 				text = entityNameOrFallback(c.home, "?")
 			case 16:
 				text = humanize.RelTime(c.birthday, time.Now(), "", "")
+				l.Alignment = fyne.TextAlignTrailing
 			}
 			l.Text = text
 			l.Truncation = fyne.TextTruncateClip
@@ -176,15 +184,6 @@ func (a *overviewArea) makeTable() *widget.Table {
 		t.SetColumnWidth(i, w)
 	}
 	return t
-}
-
-func (u *UI) selectCharacterAndTab(characterID int32, tab *container.TabItem, subIndex int) {
-	if err := u.loadCharacter(context.TODO(), characterID); err != nil {
-		panic(err)
-	}
-	u.tabs.Select(tab)
-	t := tab.Content.(*container.AppTabs)
-	t.SelectIndex(subIndex)
 }
 
 func (a *overviewArea) refresh() {
