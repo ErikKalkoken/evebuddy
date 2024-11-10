@@ -10,10 +10,10 @@ A companion app for Eve Online players available on Windows, Linux and macOS.
 ## Contents
 
 - [Description](#description)
-- [Screenshot](#screenshot)
-- [Install](#install)
-- [Update](#update)
-- [Uninstall](#uninstall)
+- [Highlights](#highlights)
+- [Installing](#installing)
+- [Updateing](#updateing)
+- [Uninstalling](#uninstalling)
 - [FAQ](#faq)
 - [Credits](#credits)
 
@@ -50,11 +50,46 @@ A more detailed overview of the provided features:
 - Automatic dark and light theme
 - Offline mode
 
-## Screenshot
+## Highlights
 
-![example](https://cdn.imgpile.com/f/0zxWmcB_xl.png)
+### Asset browser for each character
 
-## Install
+You can browse the assets of a character by location. The view by location is simliar to the in-game view when docked.
+
+![Screenshot from 2024-11-10 16-53-30](https://github.com/user-attachments/assets/9c4991ab-406a-44cd-9a18-fec1c10c1a42)
+
+### Full mail client
+
+You can receieve, send and delete eve mails. Similar to the in-game mail client.
+
+![Screenshot from 2024-11-10 16-52-55](https://github.com/user-attachments/assets/d7b226c5-1355-4b99-bef7-e0a3b1e75cd6)
+
+### Overview of all characters
+
+The overview pages gives you key information about all you characters at a glance.
+
+![Screenshot from 2024-11-10 16-54-22](https://github.com/user-attachments/assets/10838273-3a75-4160-aabf-5cc895bde1c4)
+
+### Asset search accross all characters
+
+You can search for assets accross all characters.
+
+![Screenshot from 2024-11-10 16-52-07](https://github.com/user-attachments/assets/c40f3b7f-279f-4b3c-9135-0c3b043ee0d9)
+
+### Wealth charts accross all characters
+
+The wealth page gives you a graphical overview of your total wealth (= wallets + asset value) and contains breaksdowns that help you better understand the structure of your wealth.
+
+![Screenshot from 2024-11-10 16-54-56](https://github.com/user-attachments/assets/3d26e44f-cdc7-45fe-a441-4ed982662fa7)
+
+### Desktop notifications
+
+EVE Buddy can send your desktop notifications to inform you about new communications and mails.
+
+![Screenshot from 2024-11-10 17-18-27](https://github.com/user-attachments/assets/0a05ddec-bf31-42c6-a1f1-c2661bd12c49)
+
+
+## Installing
 
 To install EVE buddy just download and unzip the latest release from the releases page to your computer. The app ships as a single executable file that can be run directly. When you run the app for the first time it will automatically install itself for the current user (i.e. by creating folders in the home folder for the current user).
 
@@ -97,11 +132,11 @@ When you have all necessary tools installed, you can build and run this app dire
 go run github.com/ErikKalkoken/evebuddy@latest
 ```
 
-## Update
+## Updateing
 
 The app will inform you when there is a new version available for download. To update your app just download and unzip the newest version for your platform from the [releases page](https://github.com/ErikKalkoken/evebuddy/releases). Then overwrite the old executable file with the new one.
 
-## Uninstall
+## Uninstalling
 
 If you no longer want to use the app you can uninstall it.
 
