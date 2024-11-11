@@ -70,13 +70,13 @@ The overview pages gives you key information about all you characters at a glanc
 
 ![Screenshot from 2024-11-10 16-54-22](https://github.com/user-attachments/assets/10838273-3a75-4160-aabf-5cc895bde1c4)
 
-### Asset search accross all characters
+### Asset search across all characters
 
-You can search for assets accross all characters.
+You can search for assets across all characters.
 
 ![Screenshot from 2024-11-10 16-52-07](https://github.com/user-attachments/assets/c40f3b7f-279f-4b3c-9135-0c3b043ee0d9)
 
-### Wealth charts accross all characters
+### Wealth charts across all characters
 
 The wealth page gives you a graphical overview of your total wealth (= wallets + asset value) and contains breaksdowns that help you better understand the structure of your wealth.
 
