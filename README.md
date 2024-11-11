@@ -12,7 +12,7 @@ A companion app for Eve Online players available on Windows, Linux and macOS.
 - [Description](#description)
 - [Highlights](#highlights)
 - [Installing](#installing)
-- [Updateing](#updateing)
+- [Updating](#updating)
 - [Uninstalling](#uninstalling)
 - [FAQ](#faq)
 - [Credits](#credits)
@@ -54,13 +54,13 @@ A more detailed overview of the provided features:
 
 ### Asset browser for each character
 
-You can browse the assets of a character by location. The view by location is simliar to the in-game view when docked.
+You can browse the assets of a character by location. The view by location is similar to the in-game view when docked.
 
 ![Screenshot from 2024-11-10 16-53-30](https://github.com/user-attachments/assets/9c4991ab-406a-44cd-9a18-fec1c10c1a42)
 
 ### Full mail client
 
-You can receieve, send and delete eve mails. Similar to the in-game mail client.
+You can receive, send and delete eve mails. Similar to the in-game mail client.
 
 ![Screenshot from 2024-11-10 16-52-55](https://github.com/user-attachments/assets/d7b226c5-1355-4b99-bef7-e0a3b1e75cd6)
 
@@ -78,7 +78,7 @@ You can search for assets across all characters.
 
 ### Wealth charts across all characters
 
-The wealth page gives you a graphical overview of your total wealth (= wallets + asset value) and contains breaksdowns that help you better understand the structure of your wealth.
+The wealth page gives you a graphical overview of your total wealth (= wallets + asset value) and contains breakdowns that help you better understand the structure of your wealth.
 
 ![Screenshot from 2024-11-10 16-54-56](https://github.com/user-attachments/assets/3d26e44f-cdc7-45fe-a441-4ed982662fa7)
 
@@ -87,7 +87,6 @@ The wealth page gives you a graphical overview of your total wealth (= wallets +
 EVE Buddy can send your desktop notifications to inform you about new communications and mails.
 
 ![Screenshot from 2024-11-10 17-18-27](https://github.com/user-attachments/assets/0a05ddec-bf31-42c6-a1f1-c2661bd12c49)
-
 
 ## Installing
 
@@ -132,7 +131,7 @@ When you have all necessary tools installed, you can build and run this app dire
 go run github.com/ErikKalkoken/evebuddy@latest
 ```
 
-## Updateing
+## Updating
 
 The app will inform you when there is a new version available for download. To update your app just download and unzip the newest version for your platform from the [releases page](https://github.com/ErikKalkoken/evebuddy/releases). Then overwrite the old executable file with the new one.
 
@@ -172,7 +171,7 @@ EVE Buddy is designed to protect your character data and token and has implement
 
 1. EVE Buddy is fully compliant with the requirements for [OAuth 2.0 for Mobile or Desktop Applications](https://docs.esi.evetech.net/docs/sso/native_sso_flow.html) from CCP.
 
-1. In case you need to switch computers you can remove your data with the [delete app](#uninstall).
+1. In case you need to switch computers you can remove your data with the [delete app](#uninstalling).
 
 ### Why do I not see all of my character's data in the app?
 
