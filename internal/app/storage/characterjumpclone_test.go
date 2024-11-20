@@ -90,6 +90,7 @@ func TestCharacterJumpClone(t *testing.T) {
 			x, err := r.GetCharacterJumpClone(ctx, c.ID, 5)
 			if assert.NoError(t, err) {
 				assert.Equal(t, location.ID, x.Location.ID)
+				assert.Equal(t, "dummy", x.Name)
 				if assert.NotEmpty(t, x.Implants) {
 					y := x.Implants[0]
 					assert.Equal(t, eveType, y.EveType)

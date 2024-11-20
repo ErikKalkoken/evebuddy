@@ -224,6 +224,9 @@ func (f Factory) CreateCharacterJumpClone(args ...storage.CreateCharacterJumpClo
 		x := f.CreateEveType()
 		arg.Implants = append(arg.Implants, x.ID)
 	}
+	if arg.Name == "" {
+		arg.Name = fmt.Sprintf("JC-%d", arg.JumpCloneID)
+	}
 	err := f.st.CreateCharacterJumpClone(ctx, arg)
 	if err != nil {
 		panic(err)

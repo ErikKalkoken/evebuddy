@@ -24,6 +24,7 @@ type jumpCloneNode struct {
 	ImplantTypeDescription string
 	IsUnknown              bool
 	JumpCloneID            int32
+	JumpCloneName          string
 	LocationID             int64
 	LocationName           string
 }
@@ -169,9 +170,10 @@ func (a *jumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 	}
 	for _, c := range clones {
 		n := jumpCloneNode{
-			JumpCloneID:  c.JumpCloneID,
-			ImplantCount: len(c.Implants),
-			LocationID:   c.Location.ID,
+			ImplantCount:  len(c.Implants),
+			JumpCloneID:   c.JumpCloneID,
+			JumpCloneName: c.Name,
+			LocationID:    c.Location.ID,
 		}
 		// TODO: Refactor to use same location method for all unknown location cases
 		if c.Location.Name != "" {
@@ -183,10 +185,10 @@ func (a *jumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 		uid := tree.MustAdd("", n.UID(), n)
 		for _, i := range c.Implants {
 			n := jumpCloneNode{
-				JumpCloneID:            c.JumpCloneID,
-				ImplantTypeName:        i.EveType.Name,
-				ImplantTypeID:          i.EveType.ID,
 				ImplantTypeDescription: i.EveType.DescriptionPlain(),
+				ImplantTypeID:          i.EveType.ID,
+				ImplantTypeName:        i.EveType.Name,
+				JumpCloneID:            c.JumpCloneID,
 			}
 			tree.MustAdd(uid, n.UID(), n)
 		}

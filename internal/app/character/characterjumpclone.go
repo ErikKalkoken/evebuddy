@@ -52,9 +52,10 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 				}
 				args[i] = storage.CreateCharacterJumpCloneParams{
 					CharacterID: characterID,
-					LocationID:  jc.LocationId,
-					JumpCloneID: int64(jc.JumpCloneId),
 					Implants:    jc.Implants,
+					JumpCloneID: int64(jc.JumpCloneId),
+					LocationID:  jc.LocationId,
+					Name:        jc.Name,
 				}
 			}
 			if err := s.st.ReplaceCharacterJumpClones(ctx, characterID, args); err != nil {
