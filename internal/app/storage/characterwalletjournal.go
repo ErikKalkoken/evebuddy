@@ -9,6 +9,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 )
 
+// FIXME: Wrong unique clause and missing index for ref_id
+
 type CreateCharacterWalletJournalEntryParams struct {
 	Amount        float64
 	Balance       float64
