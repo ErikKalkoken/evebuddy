@@ -63,9 +63,8 @@ func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg Upd
 					return err
 				}
 			}
-			obsoleteSkillIDs := currentSkillIDs.Difference(incomingSkillIDs)
-			if obsoleteSkillIDs.Size() > 0 {
-				if err := s.st.DeleteCharacterSkills(ctx, characterID, obsoleteSkillIDs.ToSlice()); err != nil {
+			if ids := currentSkillIDs.Difference(incomingSkillIDs); ids.Size() > 0 {
+				if err := s.st.DeleteCharacterSkills(ctx, characterID, ids.ToSlice()); err != nil {
 					return err
 				}
 			}
