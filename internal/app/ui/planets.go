@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -12,13 +11,14 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 )
 
 // planetArea is the UI area that shows the skillqueue
 type planetArea struct {
 	content *fyne.Container
 	planets []*app.CharacterPlanet
-	table   *widget.Table
+	list    *widget.List
 	top     *widget.Label
 	u       *UI
 }
@@ -31,81 +31,30 @@ func (u *UI) newPlanetArea() *planetArea {
 	}
 
 	a.top.TextStyle.Bold = true
-	a.table = a.makeTable()
+	a.list = a.makeList()
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+	a.content = container.NewBorder(top, nil, nil, nil, a.list)
 	return &a
 }
 
-func (a *planetArea) makeTable() *widget.Table {
-	var headers = []struct {
-		text  string
-		width float32
-	}{
-		{"Region", 150},
-		{"Constellation", 150},
-		{"System", 150},
-		{"Sec.", 50},
-		{"Planet", 150},
-		{"Type", 150},
-		{"Installations", 100},
-		{"Upgrade Lvl.", 100},
-		{"Last Update", 100},
-	}
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(a.planets), len(headers)
+func (a *planetArea) makeList() *widget.List {
+	t := widget.NewList(
+		func() int {
+			return len(a.planets)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("Template Template")
+			return widgets.NewPlanet(a.u.EveImageService)
 		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			l := co.(*widget.Label)
-			l.Importance = widget.MediumImportance
-			l.Alignment = fyne.TextAlignLeading
-			l.Truncation = fyne.TextTruncateOff
-			if tci.Row >= len(a.planets) || tci.Row < 0 {
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(a.planets) || id < 0 {
 				return
 			}
-			p := a.planets[tci.Row]
-			switch tci.Col {
-			case 0:
-				l.Text = p.EvePlanet.SolarSystem.Constellation.Region.Name
-			case 1:
-				l.Text = p.EvePlanet.SolarSystem.Constellation.Name
-			case 2:
-				l.Text = p.EvePlanet.SolarSystem.Name
-			case 3:
-				l.Text = fmt.Sprintf("%.1f", p.EvePlanet.SolarSystem.SecurityStatus)
-				l.Importance = p.EvePlanet.SolarSystem.SecurityType().ToImportance()
-			case 4:
-				l.Text = p.EvePlanet.Name
-			case 5:
-				l.Text = p.EvePlanet.TypeDisplay()
-			case 6:
-				l.Alignment = fyne.TextAlignTrailing
-				l.Text = strconv.Itoa(p.NumPins)
-			case 7:
-				l.Alignment = fyne.TextAlignTrailing
-				l.Text = strconv.Itoa(p.UpgradeLevel)
-			case 8:
-				l.Text = humanize.Time(p.LastUpdate)
-			}
-			l.Refresh()
+			o := co.(*widgets.Planet)
+			p := a.planets[id]
+			o.Set(p)
 		},
 	)
-	t.ShowHeaderRow = true
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
-	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
-		co.(*widget.Label).SetText(s.text)
-	}
-	for i, h := range headers {
-		t.SetColumnWidth(i, h.width)
-	}
-	t.OnSelected = func(tci widget.TableCellID) {
+	t.OnSelected = func(id widget.ListItemID) {
 		defer t.UnselectAll()
 	}
 	return t
@@ -124,7 +73,7 @@ func (a *planetArea) refresh() {
 	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
-	a.table.Refresh()
+	a.list.Refresh()
 }
 
 func (a *planetArea) makeTopText() (string, widget.Importance) {
@@ -137,7 +86,7 @@ func (a *planetArea) makeTopText() (string, widget.Importance) {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
 	t := humanize.Comma(int64(len(a.planets)))
-	s := fmt.Sprintf("Planets: %s", t)
+	s := fmt.Sprintf("Colonies: %s", t)
 	return s, widget.MediumImportance
 }
 

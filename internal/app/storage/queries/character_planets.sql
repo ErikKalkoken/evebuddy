@@ -61,6 +61,4 @@ FROM
 WHERE
     character_id = ?
 ORDER BY
-    er.name,
-    ecs.name,
     ep.name;

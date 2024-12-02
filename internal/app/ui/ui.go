@@ -117,7 +117,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 	u.planetArea = u.newPlanetArea()
 	planetTab := container.NewTabItemWithIcon("Planets",
 		theme.NewThemedResource(resourceEarthSvg), container.NewAppTabs(
-			container.NewTabItem("Planets", u.planetArea.content),
+			container.NewTabItem("Colonies", u.planetArea.content),
 		))
 
 	u.mailArea = u.newMailArea()

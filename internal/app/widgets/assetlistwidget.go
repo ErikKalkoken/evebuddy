@@ -9,7 +9,7 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-const iconSize = 64
+const assetListIconSize = 64
 
 type AssetListWidget struct {
 	widget.BaseWidget
@@ -53,13 +53,13 @@ func (o *AssetListWidget) SetAsset(ca *app.CharacterAsset) {
 	refreshImageResourceAsync(o.icon, func() (fyne.Resource, error) {
 		switch ca.Variant() {
 		case app.VariantSKIN:
-			return o.sv.InventoryTypeSKIN(ca.EveType.ID, iconSize)
+			return o.sv.InventoryTypeSKIN(ca.EveType.ID, assetListIconSize)
 		case app.VariantBPO:
-			return o.sv.InventoryTypeBPO(ca.EveType.ID, iconSize)
+			return o.sv.InventoryTypeBPO(ca.EveType.ID, assetListIconSize)
 		case app.VariantBPC:
-			return o.sv.InventoryTypeBPC(ca.EveType.ID, iconSize)
+			return o.sv.InventoryTypeBPC(ca.EveType.ID, assetListIconSize)
 		default:
-			return o.sv.InventoryTypeIcon(ca.EveType.ID, iconSize)
+			return o.sv.InventoryTypeIcon(ca.EveType.ID, assetListIconSize)
 		}
 	})
 }
