@@ -84,7 +84,7 @@ func (s *EveNotificationService) renderCorpWarSurrenderMsg(ctx context.Context, 
 
 func (s *EveNotificationService) renderDeclareWar(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
-	var data notification2.DeclareWar
+	var data notification.DeclareWar
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}

@@ -13,12 +13,6 @@ type CorpAllBillMsgV2 struct {
 	ExternalID2 int64   `yaml:"externalID2"`
 }
 
-type DeclareWar struct {
-	CharID     int32 `yaml:"charID"`
-	DefenderID int32 `yaml:"defenderID"`
-	EntityID   int32 `yaml:"entityID"`
-}
-
 type InfrastructureHubBillAboutToExpire struct {
 	BillID        int32 `yaml:"billID"`
 	CorpID        int32 `yaml:"corpID"`
@@ -49,15 +43,6 @@ type StructureImpendingAbandonmentAssetsAtRisk struct {
 	StructureLink         string `yaml:"structureLink"`
 	StructureShowInfoData []any  `yaml:"structureShowInfoData"`
 	StructureTypeID       int32  `yaml:"structureTypeID"`
-}
-
-type StructureItemsDelivered struct {
-	CharID                int32     `yaml:"charID"`
-	ListOfTypesAndQty     [][]int32 `yaml:"listOfTypesAndQty"`
-	SolarSystemID         int32     `yaml:"solarsystemID"`
-	StructureID           int64     `yaml:"structureID"`
-	StructureShowInfoData []any     `yaml:"structureShowInfoData"`
-	StructureTypeID       int32     `yaml:"structureTypeID"`
 }
 
 type StructureItemsMovedToSafety struct {
