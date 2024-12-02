@@ -120,6 +120,15 @@ type CharacterNotification struct {
 	TypeID         int64
 }
 
+type CharacterPlanet struct {
+	ID           int64
+	CharacterID  int64
+	EvePlanetID  int64
+	LastUpdate   time.Time
+	NumPins      int64
+	UpgradeLevel int64
+}
+
 type CharacterSectionStatus struct {
 	ID          int64
 	CharacterID int64

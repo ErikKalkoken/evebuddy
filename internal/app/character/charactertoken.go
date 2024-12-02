@@ -23,6 +23,7 @@ var esiScopes = []string{
 	"esi-mail.read_mail.v1",
 	"esi-mail.organize_mail.v1",
 	"esi-mail.send_mail.v1",
+	"esi-planets.manage_planets.v1",
 	"esi-search.search_structures.v1",
 	"esi-skills.read_skills.v1",
 	"esi-skills.read_skillqueue.v1",

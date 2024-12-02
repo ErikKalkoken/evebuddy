@@ -339,6 +339,40 @@ func (f Factory) CreateCharacterMailList(characterID int32, args ...app.EveEntit
 	return &e
 }
 
+func (f Factory) CreateCharacterPlanet(args ...storage.CreateCharacterPlanetParams) *app.CharacterPlanet {
+	ctx := context.TODO()
+	var arg storage.CreateCharacterPlanetParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.EvePlanetID == 0 {
+		x := f.CreateEvePlanet()
+		arg.EvePlanetID = x.ID
+	}
+	if arg.NumPins == 0 {
+		arg.NumPins = rand.IntN(20) + 1
+	}
+	if arg.UpgradeLevel == 0 {
+		arg.UpgradeLevel = rand.IntN(5)
+	}
+	if arg.LastUpdate.IsZero() {
+		arg.LastUpdate = time.Now().UTC()
+	}
+	err := f.st.CreateCharacterPlanet(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCharacterPlanet(ctx, arg.CharacterID, arg.EvePlanetID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSkillParams) *app.CharacterSkill {
 	ctx := context.TODO()
 	var arg storage.UpdateOrCreateCharacterSkillParams

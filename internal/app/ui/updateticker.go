@@ -138,6 +138,10 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 			u.overviewArea.refresh()
 			u.wealthArea.refresh()
 		}
+	// case app.SectionPlanets:
+	// 	if isShown && hasChanged {
+	// 		u.implantsArea.refresh()
+	// 	}
 	case app.SectionMailLabels,
 		app.SectionMailLists:
 		if isShown && hasChanged {
