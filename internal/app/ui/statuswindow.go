@@ -164,7 +164,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 
 			status := row[4].(*widget.Label)
 			t := c.ss.Display()
-			i := status2widgetImportance(c.ss.Status())
+			i := c.ss.Status().ToImportance()
 			status.Text = t
 			status.Importance = i
 			status.Refresh()

@@ -59,4 +59,8 @@ FROM
     JOIN eve_constellations ecs ON ecs.id = ess.eve_constellation_id
     JOIN eve_regions er ON er.id = ecs.eve_region_id
 WHERE
-    character_id = ?;
+    character_id = ?
+ORDER BY
+    er.name,
+    ecs.name,
+    ep.name;

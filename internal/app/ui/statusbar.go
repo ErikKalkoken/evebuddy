@@ -196,7 +196,7 @@ func (a *statusBarArea) refreshCharacterCount() {
 
 func (a *statusBarArea) refreshUpdateStatus() {
 	x := a.u.StatusCacheService.Summary()
-	a.updateStatus.SetTextAndImportance(x.Display(), status2widgetImportance(x.Status()))
+	a.updateStatus.SetTextAndImportance(x.Display(), x.Status().ToImportance())
 }
 
 func (a *statusBarArea) setEveStatus(status eveStatus, title, errorMessage string) {

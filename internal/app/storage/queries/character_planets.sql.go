@@ -164,6 +164,10 @@ FROM
     JOIN eve_regions er ON er.id = ecs.eve_region_id
 WHERE
     character_id = ?
+ORDER BY
+    er.name,
+    ecs.name,
+    ep.name
 `
 
 type ListCharacterPlanetsRow struct {

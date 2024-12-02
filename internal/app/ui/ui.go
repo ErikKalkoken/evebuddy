@@ -64,6 +64,7 @@ type UI struct {
 	notificationsArea     *notificationsArea
 	overviewArea          *overviewArea
 	overviewTab           *container.TabItem
+	planetArea            *planetArea
 	settingsWindow        fyne.Window
 	sfg                   *singleflight.Group
 	shipsArea             *shipsArea
@@ -113,6 +114,12 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 			container.NewTabItem("Assets", u.assetsArea.content),
 		))
 
+	u.planetArea = u.newPlanetArea()
+	planetTab := container.NewTabItemWithIcon("Planets",
+		theme.NewThemedResource(resourceEarthSvg), container.NewAppTabs(
+			container.NewTabItem("Planets", u.planetArea.content),
+		))
+
 	u.mailArea = u.newMailArea()
 	u.notificationsArea = u.newNotificationsArea()
 	u.mailTab = container.NewTabItemWithIcon("",
@@ -149,7 +156,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 			container.NewTabItem("Market Transactions", u.walletTransactionArea.content),
 		))
 
-	u.tabs = container.NewAppTabs(characterTab, u.assetTab, u.mailTab, u.skillTab, u.walletTab, u.overviewTab)
+	u.tabs = container.NewAppTabs(characterTab, u.assetTab, u.mailTab, planetTab, u.skillTab, u.walletTab, u.overviewTab)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	u.toolbarArea = u.newToolbarArea()
@@ -344,6 +351,7 @@ func (u *UI) refreshCharacter() {
 		"jumpClones":        u.jumpClonesArea.redraw,
 		"mail":              u.mailArea.redraw,
 		"notifications":     u.notificationsArea.refresh,
+		"planets":           u.planetArea.refresh,
 		"ships":             u.shipsArea.refresh,
 		"skillCatalogue":    u.skillCatalogueArea.redraw,
 		"skillqueue":        u.skillqueueArea.refresh,

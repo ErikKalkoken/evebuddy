@@ -747,7 +747,6 @@ func makeLocationData(l *app.EveLocation) []infoRow {
 	if l.SolarSystem == nil {
 		return make([]infoRow, 0)
 	}
-	i := systemSecurity2Importance(l.SolarSystem.SecurityType())
 	data := []infoRow{
 		{
 			label: "Region",
@@ -763,7 +762,7 @@ func makeLocationData(l *app.EveLocation) []infoRow {
 		{
 			label:      "Security",
 			value:      fmt.Sprintf("%.1f", l.SolarSystem.SecurityStatus),
-			importance: i,
+			importance: l.SolarSystem.SecurityType().ToImportance(),
 		},
 	}
 	return data
