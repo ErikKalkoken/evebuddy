@@ -36,7 +36,6 @@ func TestPlanet(t *testing.T) {
 				assert.Equal(t, c.ID, i.CharacterID)
 				assert.Equal(t, evePlanet, i.EvePlanet)
 				assert.Equal(t, lastUpdate, i.LastUpdate)
-				assert.Equal(t, 7, i.NumPins)
 				assert.Equal(t, 3, i.UpgradeLevel)
 			}
 		}
@@ -83,7 +82,6 @@ func TestPlanet(t *testing.T) {
 				assert.Equal(t, c.ID, i.CharacterID)
 				assert.Equal(t, evePlanet, i.EvePlanet)
 				assert.Equal(t, lastUpdate, i.LastUpdate)
-				assert.Equal(t, 7, i.NumPins)
 				assert.Equal(t, 3, i.UpgradeLevel)
 			}
 		}

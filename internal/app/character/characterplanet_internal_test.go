@@ -90,7 +90,6 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 			p, err := st.GetCharacterPlanet(ctx, c.ID, 40023691)
 			if assert.NoError(t, err) {
 				assert.Equal(t, time.Date(2016, 11, 28, 16, 42, 51, 0, time.UTC), p.LastUpdate)
-				assert.Equal(t, 77, p.NumPins)
 				assert.Equal(t, 3, p.UpgradeLevel)
 				pins, err := st.ListPlanetPins(ctx, p.ID)
 				if assert.NoError(t, err) {
@@ -189,7 +188,6 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 			p, err := st.GetCharacterPlanet(ctx, c.ID, 40023691)
 			if assert.NoError(t, err) {
 				assert.Equal(t, time.Date(2016, 11, 28, 16, 42, 51, 0, time.UTC), p.LastUpdate)
-				assert.Equal(t, 77, p.NumPins)
 				assert.Equal(t, 3, p.UpgradeLevel)
 				pins, err := st.ListPlanetPins(ctx, p.ID)
 				if assert.NoError(t, err) {
@@ -290,7 +288,6 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 				o, err := st.GetCharacterPlanet(ctx, c.ID, 40023691)
 				if assert.NoError(t, err) {
 					assert.Equal(t, time.Date(2016, 11, 28, 16, 42, 51, 0, time.UTC), o.LastUpdate)
-					assert.Equal(t, 77, o.NumPins)
 					assert.Equal(t, 3, o.UpgradeLevel)
 				}
 			}

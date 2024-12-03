@@ -2,6 +2,8 @@ package widgets
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -14,7 +16,7 @@ import (
 
 const (
 	planetImageSize  = 128
-	planetWidgetSize = 40
+	planetWidgetSize = 80
 )
 
 type Planet struct {
@@ -22,6 +24,7 @@ type Planet struct {
 	image    *canvas.Image
 	security *widget.Label
 	title    *widget.Label
+	content  *widget.Label
 	sv       app.EveImageService
 }
 
@@ -31,6 +34,7 @@ func NewPlanet(sv app.EveImageService) *Planet {
 	image.SetMinSize(fyne.Size{Width: planetWidgetSize, Height: planetWidgetSize})
 	w := &Planet{
 		image:    image,
+		content:  widget.NewLabel("first\nsecond"),
 		security: widget.NewLabel(""),
 		title:    widget.NewLabel(""),
 		sv:       sv,
@@ -47,7 +51,36 @@ func (w *Planet) Set(cp *app.CharacterPlanet) {
 	w.security.Text = fmt.Sprintf("%.1f", cp.EvePlanet.SolarSystem.SecurityStatus)
 	w.security.Importance = cp.EvePlanet.SolarSystem.SecurityType().ToImportance()
 	w.security.Refresh()
-	w.title.SetText(fmt.Sprintf("%s - %s - %d installations", cp.EvePlanet.Name, cp.EvePlanet.TypeDisplay(), cp.NumPins))
+	s := fmt.Sprintf("%s - %s - %d installations", cp.EvePlanet.Name, cp.EvePlanet.TypeDisplay(), len(cp.Pins))
+	w.title.SetText(s)
+	extractors := make(map[string]time.Time)
+	processors := make(map[string]bool)
+	for _, p := range cp.Pins {
+		switch p.Type.Group.ID {
+		case app.EveGroupProcessors:
+			if p.Schematic != nil {
+				processors[p.Schematic.Name] = true
+			}
+		case app.EveGroupExtractorControlUnits:
+			if p.ExtractorProductType != nil {
+				extractors[p.ExtractorProductType.Name] = p.ExpiryTime.ValueOrZero()
+			}
+		}
+	}
+	l := make([]string, 0)
+	for name, expiry := range extractors {
+		var exp string
+		if expiry.After(time.Now()) {
+			exp = expiry.Format(app.TimeDefaultFormat)
+		} else {
+			exp = "EXPIRED"
+		}
+		l = append(l, fmt.Sprintf("Extraction: %s by %s", name, exp))
+	}
+	for name := range processors {
+		l = append(l, fmt.Sprintf("Production: %s", name))
+	}
+	w.content.SetText(strings.Join(l, "\n"))
 }
 
 func (w *Planet) CreateRenderer() fyne.WidgetRenderer {
@@ -56,7 +89,10 @@ func (w *Planet) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		w.image,
 		nil,
-		container.NewHBox(w.security, w.title),
+		container.NewVBox(
+			container.NewHBox(w.security, w.title),
+			w.content,
+		),
 	)
 	return widget.NewSimpleRenderer(c)
 }

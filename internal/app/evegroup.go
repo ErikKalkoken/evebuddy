@@ -13,6 +13,8 @@ const (
 	EveGroupSecureCargoContainer         = 340
 	EveGroupSuperCarrier                 = 659
 	EveGroupTitan                        = 30
+	EveGroupProcessors                   = 1028
+	EveGroupExtractorControlUnits        = 1063
 )
 
 // EveGroup is a group in Eve Online.

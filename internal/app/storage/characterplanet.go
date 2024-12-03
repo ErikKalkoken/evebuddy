@@ -30,7 +30,11 @@ func (st *Storage) GetCharacterPlanet(ctx context.Context, characterID int32, pl
 	if err != nil {
 		return nil, err
 	}
-	return characterPlanetFromDBModel(r), err
+	pp, err := st.ListPlanetPins(ctx, r.CharacterPlanet.ID)
+	if err != nil {
+		return nil, err
+	}
+	return characterPlanetFromDBModel(r, pp), err
 }
 
 func (st *Storage) ListCharacterPlanets(ctx context.Context, characterID int32) ([]*app.CharacterPlanet, error) {
@@ -40,7 +44,11 @@ func (st *Storage) ListCharacterPlanets(ctx context.Context, characterID int32) 
 	}
 	oo := make([]*app.CharacterPlanet, len(rows))
 	for i, r := range rows {
-		oo[i] = characterPlanetFromDBModel(queries.GetCharacterPlanetRow(r))
+		pp, err := st.ListPlanetPins(ctx, r.CharacterPlanet.ID)
+		if err != nil {
+			return nil, err
+		}
+		oo[i] = characterPlanetFromDBModel(queries.GetCharacterPlanetRow(r), pp)
 	}
 	return oo, nil
 }
@@ -88,17 +96,17 @@ func createCharacterPlanet(ctx context.Context, q *queries.Queries, arg CreateCh
 	return id, nil
 }
 
-func characterPlanetFromDBModel(r queries.GetCharacterPlanetRow) *app.CharacterPlanet {
+func characterPlanetFromDBModel(r queries.GetCharacterPlanetRow, pp []*app.PlanetPin) *app.CharacterPlanet {
 	et := eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory)
 	ess := eveSolarSystemFromDBModel(r.EveSolarSystem, r.EveConstellation, r.EveRegion)
 	ep := evePlanetFromDBModel(r.EvePlanet, ess, et)
-	o2 := &app.CharacterPlanet{
+	o := &app.CharacterPlanet{
 		ID:           r.CharacterPlanet.ID,
 		CharacterID:  int32(r.CharacterPlanet.CharacterID),
 		EvePlanet:    ep,
 		LastUpdate:   r.CharacterPlanet.LastUpdate,
-		NumPins:      int(r.CharacterPlanet.NumPins),
 		UpgradeLevel: int(r.CharacterPlanet.UpgradeLevel),
 	}
-	return o2
+	o.Pins = pp
+	return o
 }
