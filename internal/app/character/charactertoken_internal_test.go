@@ -14,7 +14,7 @@ func TestHasTokenWithScopes(t *testing.T) {
 	defer db.Close()
 	s := newCharacterService(st)
 	ctx := context.Background()
-	t.Run("should create new queue", func(t *testing.T) {
+	t.Run("should return true when token has all scopes", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
@@ -26,5 +26,18 @@ func TestHasTokenWithScopes(t *testing.T) {
 			assert.True(t, x)
 		}
 
+	})
+	t.Run("should return false when token is missing scopes", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		esiScopes2 := []string{"esi-assets.read_assets.v1"}
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID, Scopes: esiScopes2})
+		// when
+		x, err := s.CharacterHasTokenWithScopes(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.False(t, x)
+		}
 	})
 }
