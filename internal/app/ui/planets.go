@@ -2,15 +2,17 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 )
 
@@ -85,9 +87,18 @@ func (a *planetArea) makeTopText() (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	t := humanize.Comma(int64(len(a.planets)))
-	s := fmt.Sprintf("Colonies: %s", t)
-	return s, widget.MediumImportance
+	var max string
+	s, err := a.u.CharacterService.GetCharacterSkill(context.Background(), c.ID, app.EveTypeInterplanetaryConsolidation)
+	if errors.Is(err, character.ErrNotFound) {
+		max = "1"
+	} else if err != nil {
+		max = "?"
+		slog.Error("Trying to fetch skill for character", "character", c.ID, "error", err)
+	} else {
+		max = strconv.Itoa(s.ActiveSkillLevel + 1)
+	}
+	t := fmt.Sprintf("Colonies: %d / %s", len(a.planets), max)
+	return t, widget.MediumImportance
 }
 
 func (a *planetArea) updateEntries() error {

@@ -172,6 +172,7 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 			u.skillCatalogueArea.refresh()
 			u.shipsArea.refresh()
 			u.overviewArea.refresh()
+			u.planetArea.refresh()
 		}
 	case app.SectionSkillqueue:
 		if isShown {
