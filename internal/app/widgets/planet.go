@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -12,20 +13,22 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 const (
-	planetImageSize  = 128
-	planetWidgetSize = 80
+	planetImageSize  = 256
+	planetWidgetSize = 100
 )
 
 type Planet struct {
 	widget.BaseWidget
-	image    *canvas.Image
-	security *widget.Label
-	title    *widget.Label
-	content  *widget.Label
-	sv       app.EveImageService
+	image      *canvas.Image
+	security   *widget.Label
+	title      *widget.Label
+	extracting *widget.Label
+	producing  *widget.Label
+	sv         app.EveImageService
 }
 
 func NewPlanet(sv app.EveImageService) *Planet {
@@ -33,11 +36,12 @@ func NewPlanet(sv app.EveImageService) *Planet {
 	image.FillMode = canvas.ImageFillContain
 	image.SetMinSize(fyne.Size{Width: planetWidgetSize, Height: planetWidgetSize})
 	w := &Planet{
-		image:    image,
-		content:  widget.NewLabel("first\nsecond"),
-		security: widget.NewLabel(""),
-		title:    widget.NewLabel(""),
-		sv:       sv,
+		image:      image,
+		extracting: widget.NewLabel(""),
+		producing:  widget.NewLabel(""),
+		security:   widget.NewLabel(""),
+		title:      widget.NewLabel(""),
+		sv:         sv,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -53,34 +57,41 @@ func (w *Planet) Set(cp *app.CharacterPlanet) {
 	w.security.Refresh()
 	s := fmt.Sprintf("%s - %s - %d installations", cp.EvePlanet.Name, cp.EvePlanet.TypeDisplay(), len(cp.Pins))
 	w.title.SetText(s)
-	extractors := make(map[string]time.Time)
-	processors := make(map[string]bool)
+	extractions := set.New[string]()
+	expireTimes := make([]time.Time, 0)
+	productions := set.New[string]()
 	for _, p := range cp.Pins {
+		if x := p.ExpiryTime.ValueOrZero(); x.After(time.Now()) {
+			expireTimes = append(expireTimes, x)
+		}
 		switch p.Type.Group.ID {
 		case app.EveGroupProcessors:
 			if p.Schematic != nil {
-				processors[p.Schematic.Name] = true
+				productions.Add(p.Schematic.Name)
 			}
 		case app.EveGroupExtractorControlUnits:
 			if p.ExtractorProductType != nil {
-				extractors[p.ExtractorProductType.Name] = p.ExpiryTime.ValueOrZero()
+				extractions.Add(p.ExtractorProductType.Name)
 			}
 		}
 	}
-	l := make([]string, 0)
-	for name, expiry := range extractors {
-		var exp string
-		if expiry.After(time.Now()) {
-			exp = expiry.Format(app.TimeDefaultFormat)
-		} else {
-			exp = "EXPIRED"
-		}
-		l = append(l, fmt.Sprintf("Extraction: %s by %s", name, exp))
+	extractions2 := extractions.ToSlice()
+	slices.Sort(extractions2)
+	ex := strings.Join(extractions2, ",")
+	var deadline string
+	if len(expireTimes) == 0 {
+		deadline = "EXPIRED"
+	} else {
+		slices.SortFunc(expireTimes, func(a, b time.Time) int {
+			return b.Compare(a)
+		})
+		deadline = expireTimes[0].Format(app.TimeDefaultFormat)
 	}
-	for name := range processors {
-		l = append(l, fmt.Sprintf("Production: %s", name))
-	}
-	w.content.SetText(strings.Join(l, "\n"))
+	w.extracting.SetText(fmt.Sprintf("%s by %s", ex, deadline))
+	productions2 := productions.ToSlice()
+	slices.Sort(productions2)
+	prd := strings.Join(productions2, ",")
+	w.producing.SetText(fmt.Sprintf("%s", prd))
 }
 
 func (w *Planet) CreateRenderer() fyne.WidgetRenderer {
@@ -91,7 +102,11 @@ func (w *Planet) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		container.NewVBox(
 			container.NewHBox(w.security, w.title),
-			w.content,
+			widget.NewSeparator(),
+			widget.NewForm(
+				widget.NewFormItem("Extracting", w.extracting),
+				widget.NewFormItem("Producing", w.producing),
+			),
 		),
 	)
 	return widget.NewSimpleRenderer(c)

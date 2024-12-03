@@ -25,18 +25,6 @@ CREATE INDEX planet_pins_idx3 ON planet_pins (factory_schema_id);
 
 CREATE INDEX planet_pins_idx4 ON planet_pins (type_id);
 
-CREATE INDEX planet_pins_idx5 ON planet_pins (schematic_id);
+CREATE INDEX planet_pins_idx5 ON planet_pins (pin_id);
 
-CREATE TABLE planet_pin_contents (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    amount INTEGER NOT NULL,
-    type_id INTEGER NOT NULL,
-    pin_id INTEGER NOT NULL,
-    FOREIGN KEY (pin_id) REFERENCES planet_pins(id) ON DELETE CASCADE,
-    FOREIGN KEY (type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
-    UNIQUE (pin_id, type_id)
-);
-
-CREATE INDEX planet_pin_contents_idx1 ON planet_pin_contents (pin_id);
-
-CREATE INDEX planet_pin_contents_idx2 ON planet_pin_contents (type_id);
+CREATE INDEX planet_pins_idx6 ON planet_pins (schematic_id);

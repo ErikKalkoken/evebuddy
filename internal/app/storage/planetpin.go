@@ -24,9 +24,9 @@ type CreatePlanetPinParams struct {
 	TypeID                 int32
 }
 
-func (st *Storage) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParams) (int64, error) {
+func (st *Storage) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParams) error {
 	if arg.CharacterPlanetID == 0 {
-		return 0, fmt.Errorf("create PlanetPin - invalid IDs %+v", arg)
+		return fmt.Errorf("create PlanetPin - invalid IDs %+v", arg)
 	}
 	arg2 := queries.CreatePlanetPinParams{
 		CharacterPlanetID:      arg.CharacterPlanetID,
@@ -39,11 +39,10 @@ func (st *Storage) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParam
 		LastCycleStart:         NewNullTime(arg.LastCycleStart),
 		PinID:                  arg.PinID,
 	}
-	id, err := st.q.CreatePlanetPin(ctx, arg2)
-	if err != nil {
-		return 0, fmt.Errorf("create PlanetPin %v, %w", arg, err)
+	if err := st.q.CreatePlanetPin(ctx, arg2); err != nil {
+		return fmt.Errorf("create PlanetPin %v, %w", arg, err)
 	}
-	return id, nil
+	return nil
 }
 
 func (st *Storage) GetPlanetPin(ctx context.Context, characterPlanetID, pinID int64) (*app.PlanetPin, error) {
@@ -58,11 +57,7 @@ func (st *Storage) GetPlanetPin(ctx context.Context, characterPlanetID, pinID in
 		}
 		return nil, fmt.Errorf("get PlanetPin for %+v: %w", arg, err)
 	}
-	cc, err := st.ListPlanetPinContents(ctx, r.PlanetPin.ID)
-	if err != nil {
-		return nil, err
-	}
-	return st.planetPinFromDBModel(ctx, r, cc)
+	return st.planetPinFromDBModel(ctx, r)
 }
 
 func (st *Storage) ListPlanetPins(ctx context.Context, characterPlanetID int64) ([]*app.PlanetPin, error) {
@@ -72,11 +67,7 @@ func (st *Storage) ListPlanetPins(ctx context.Context, characterPlanetID int64) 
 	}
 	oo := make([]*app.PlanetPin, len(rows))
 	for i, r := range rows {
-		cc, err := st.ListPlanetPinContents(ctx, r.PlanetPin.ID)
-		if err != nil {
-			return nil, err
-		}
-		o, err := st.planetPinFromDBModel(ctx, queries.GetPlanetPinRow(r), cc)
+		o, err := st.planetPinFromDBModel(ctx, queries.GetPlanetPinRow(r))
 		if err != nil {
 			return nil, err
 		}
@@ -85,7 +76,7 @@ func (st *Storage) ListPlanetPins(ctx context.Context, characterPlanetID int64) 
 	return oo, nil
 }
 
-func (st *Storage) planetPinFromDBModel(ctx context.Context, r queries.GetPlanetPinRow, cc []*app.PlanetPinContent) (*app.PlanetPin, error) {
+func (st *Storage) planetPinFromDBModel(ctx context.Context, r queries.GetPlanetPinRow) (*app.PlanetPin, error) {
 	o := &app.PlanetPin{
 		ID:             r.PlanetPin.PinID,
 		ExpiryTime:     optional.FromNullTime(r.PlanetPin.ExpiryTime),
@@ -114,6 +105,5 @@ func (st *Storage) planetPinFromDBModel(ctx context.Context, r queries.GetPlanet
 		}
 		o.ExtractorProductType = et
 	}
-	o.Contents = cc
 	return o, nil
 }

@@ -92,24 +92,8 @@ func (s *CharacterService) updateCharacterPlanetsESI(ctx context.Context, arg Up
 						}
 						arg.SchematicID = optional.New(es.ID)
 					}
-					planetPinID, err := s.st.CreatePlanetPin(ctx, arg)
-					if err != nil {
+					if err := s.st.CreatePlanetPin(ctx, arg); err != nil {
 						return err
-					}
-					// create pin contents
-					for _, c := range pin.Contents {
-						et, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, c.TypeId)
-						if err != nil {
-							return err
-						}
-						arg := storage.CreatePlanetPinContentParams{
-							Amount:      int(c.Amount),
-							EveTypeID:   et.ID,
-							PlanetPinID: planetPinID,
-						}
-						if err := s.st.CreatePlanetPinContent(ctx, arg); err != nil {
-							return err
-						}
 					}
 				}
 			}

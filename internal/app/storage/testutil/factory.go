@@ -390,37 +390,10 @@ func (f Factory) CreatePlanetPin(args ...storage.CreatePlanetPinParams) *app.Pla
 		x := f.CreateEveType()
 		arg.TypeID = x.ID
 	}
-	if _, err := f.st.CreatePlanetPin(ctx, arg); err != nil {
+	if err := f.st.CreatePlanetPin(ctx, arg); err != nil {
 		panic(err)
 	}
 	o, err := f.st.GetPlanetPin(ctx, arg.CharacterPlanetID, arg.PinID)
-	if err != nil {
-		panic(err)
-	}
-	return o
-}
-
-func (f Factory) CreatePlanetPinContent(args ...storage.CreatePlanetPinContentParams) *app.PlanetPinContent {
-	ctx := context.TODO()
-	var arg storage.CreatePlanetPinContentParams
-	if len(args) > 0 {
-		arg = args[0]
-	}
-	if arg.PlanetPinID == 0 {
-		x := f.CreatePlanetPin()
-		arg.PlanetPinID = x.ID
-	}
-	if arg.EveTypeID == 0 {
-		x := f.CreateEveType()
-		arg.EveTypeID = x.ID
-	}
-	if arg.Amount == 0 {
-		arg.Amount = rand.IntN(99000)
-	}
-	if err := f.st.CreatePlanetPinContent(ctx, arg); err != nil {
-		panic(err)
-	}
-	o, err := f.st.GetPlanetPinContent(ctx, arg.PlanetPinID, arg.EveTypeID)
 	if err != nil {
 		panic(err)
 	}

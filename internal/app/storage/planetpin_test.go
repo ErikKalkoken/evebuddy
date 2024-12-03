@@ -27,7 +27,7 @@ func TestPlanetPin(t *testing.T) {
 			PinID:             42,
 		}
 		// when
-		_, err := r.CreatePlanetPin(ctx, arg)
+		err := r.CreatePlanetPin(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetPlanetPin(ctx, planet.ID, 42)
@@ -42,7 +42,6 @@ func TestPlanetPin(t *testing.T) {
 		planet := factory.CreateCharacterPlanet()
 		pinType := factory.CreateEveType()
 		productType := factory.CreateEveType()
-		contentType := factory.CreateEveType()
 		expiryTime := time.Now().UTC()
 		installTime := time.Now().UTC()
 		lastCycleStart := time.Now().UTC()
@@ -60,15 +59,7 @@ func TestPlanetPin(t *testing.T) {
 			TypeID:                 pinType.ID,
 		}
 		// when
-		id, err := r.CreatePlanetPin(ctx, arg)
-		arg2 := storage.CreatePlanetPinContentParams{
-			Amount:      42,
-			EveTypeID:   contentType.ID,
-			PlanetPinID: id,
-		}
-		if err := r.CreatePlanetPinContent(ctx, arg2); err != nil {
-			t.Fatal(err)
-		}
+		err := r.CreatePlanetPin(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			c2, err := r.GetPlanetPin(ctx, planet.ID, 42)
@@ -80,9 +71,6 @@ func TestPlanetPin(t *testing.T) {
 				assert.Equal(t, optional.New(lastCycleStart), c2.LastCycleStart)
 				assert.Equal(t, schematic, c2.Schematic)
 				assert.Equal(t, factorySchematic, c2.FactorySchematic)
-				assert.Len(t, c2.Contents, 1)
-				assert.Equal(t, 42, c2.Contents[0].Amount)
-				assert.Equal(t, contentType, c2.Contents[0].Type)
 			}
 		}
 	})

@@ -194,9 +194,6 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 					assert.Len(t, pins, 1)
 					pin, err := st.GetPlanetPin(ctx, p.ID, 1000000017021)
 					if assert.NoError(t, err) {
-						assert.Len(t, pin.Contents, 1)
-						assert.Equal(t, 42, pin.Contents[0].Amount)
-						assert.Equal(t, contentType, pin.Contents[0].Type)
 						assert.Equal(t, time.Date(2024, 12, 4, 9, 39, 8, 0, time.UTC), pin.ExpiryTime.ValueOrZero())
 						assert.Equal(t, time.Date(2024, 12, 3, 7, 39, 8, 0, time.UTC), pin.InstallTime.ValueOrZero())
 						assert.Equal(t, time.Date(2024, 12, 3, 7, 39, 12, 0, time.UTC), pin.LastCycleStart.ValueOrZero())

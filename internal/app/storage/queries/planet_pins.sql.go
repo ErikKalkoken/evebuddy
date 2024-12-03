@@ -10,7 +10,7 @@ import (
 	"database/sql"
 )
 
-const createPlanetPin = `-- name: CreatePlanetPin :one
+const createPlanetPin = `-- name: CreatePlanetPin :exec
 INSERT INTO
     planet_pins (
         character_planet_id,
@@ -24,7 +24,7 @@ INSERT INTO
         pin_id
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+    (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreatePlanetPinParams struct {
@@ -39,8 +39,8 @@ type CreatePlanetPinParams struct {
 	PinID                  int64
 }
 
-func (q *Queries) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createPlanetPin,
+func (q *Queries) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParams) error {
+	_, err := q.db.ExecContext(ctx, createPlanetPin,
 		arg.CharacterPlanetID,
 		arg.ExtractorProductTypeID,
 		arg.FactorySchemaID,
@@ -51,26 +51,6 @@ func (q *Queries) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParams
 		arg.LastCycleStart,
 		arg.PinID,
 	)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
-}
-
-const createPlanetPinContent = `-- name: CreatePlanetPinContent :exec
-INSERT INTO
-    planet_pin_contents (amount, type_id, pin_id)
-VALUES
-    (?, ?, ?)
-`
-
-type CreatePlanetPinContentParams struct {
-	Amount int64
-	TypeID int64
-	PinID  int64
-}
-
-func (q *Queries) CreatePlanetPinContent(ctx context.Context, arg CreatePlanetPinContentParams) error {
-	_, err := q.db.ExecContext(ctx, createPlanetPinContent, arg.Amount, arg.TypeID, arg.PinID)
 	return err
 }
 
@@ -153,138 +133,6 @@ func (q *Queries) GetPlanetPin(ctx context.Context, arg GetPlanetPinParams) (Get
 		&i.FactorySchematicCycle,
 	)
 	return i, err
-}
-
-const getPlanetPinContent = `-- name: GetPlanetPinContent :one
-SELECT
-    ppc.id, ppc.amount, ppc.type_id, ppc.pin_id,
-    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
-    eg.id, eg.eve_category_id, eg.name, eg.is_published,
-    ec.id, ec.name, ec.is_published
-FROM
-    planet_pin_contents ppc
-    JOIN eve_types et ON et.id = ppc.type_id
-    JOIN eve_groups eg ON eg.id = et.eve_group_id
-    JOIN eve_categories ec ON ec.id = eg.eve_category_id
-WHERE
-    ppc.pin_id = ?
-    AND ppc.type_id = ?
-`
-
-type GetPlanetPinContentParams struct {
-	PinID  int64
-	TypeID int64
-}
-
-type GetPlanetPinContentRow struct {
-	PlanetPinContent PlanetPinContent
-	EveType          EveType
-	EveGroup         EveGroup
-	EveCategory      EveCategory
-}
-
-func (q *Queries) GetPlanetPinContent(ctx context.Context, arg GetPlanetPinContentParams) (GetPlanetPinContentRow, error) {
-	row := q.db.QueryRowContext(ctx, getPlanetPinContent, arg.PinID, arg.TypeID)
-	var i GetPlanetPinContentRow
-	err := row.Scan(
-		&i.PlanetPinContent.ID,
-		&i.PlanetPinContent.Amount,
-		&i.PlanetPinContent.TypeID,
-		&i.PlanetPinContent.PinID,
-		&i.EveType.ID,
-		&i.EveType.EveGroupID,
-		&i.EveType.Capacity,
-		&i.EveType.Description,
-		&i.EveType.GraphicID,
-		&i.EveType.IconID,
-		&i.EveType.IsPublished,
-		&i.EveType.MarketGroupID,
-		&i.EveType.Mass,
-		&i.EveType.Name,
-		&i.EveType.PackagedVolume,
-		&i.EveType.PortionSize,
-		&i.EveType.Radius,
-		&i.EveType.Volume,
-		&i.EveGroup.ID,
-		&i.EveGroup.EveCategoryID,
-		&i.EveGroup.Name,
-		&i.EveGroup.IsPublished,
-		&i.EveCategory.ID,
-		&i.EveCategory.Name,
-		&i.EveCategory.IsPublished,
-	)
-	return i, err
-}
-
-const listPlanetPinContents = `-- name: ListPlanetPinContents :many
-SELECT
-    ppc.id, ppc.amount, ppc.type_id, ppc.pin_id,
-    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
-    eg.id, eg.eve_category_id, eg.name, eg.is_published,
-    ec.id, ec.name, ec.is_published
-FROM
-    planet_pin_contents ppc
-    JOIN eve_types et ON et.id = ppc.type_id
-    JOIN eve_groups eg ON eg.id = et.eve_group_id
-    JOIN eve_categories ec ON ec.id = eg.eve_category_id
-WHERE
-    ppc.pin_id = ?
-`
-
-type ListPlanetPinContentsRow struct {
-	PlanetPinContent PlanetPinContent
-	EveType          EveType
-	EveGroup         EveGroup
-	EveCategory      EveCategory
-}
-
-func (q *Queries) ListPlanetPinContents(ctx context.Context, pinID int64) ([]ListPlanetPinContentsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listPlanetPinContents, pinID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListPlanetPinContentsRow
-	for rows.Next() {
-		var i ListPlanetPinContentsRow
-		if err := rows.Scan(
-			&i.PlanetPinContent.ID,
-			&i.PlanetPinContent.Amount,
-			&i.PlanetPinContent.TypeID,
-			&i.PlanetPinContent.PinID,
-			&i.EveType.ID,
-			&i.EveType.EveGroupID,
-			&i.EveType.Capacity,
-			&i.EveType.Description,
-			&i.EveType.GraphicID,
-			&i.EveType.IconID,
-			&i.EveType.IsPublished,
-			&i.EveType.MarketGroupID,
-			&i.EveType.Mass,
-			&i.EveType.Name,
-			&i.EveType.PackagedVolume,
-			&i.EveType.PortionSize,
-			&i.EveType.Radius,
-			&i.EveType.Volume,
-			&i.EveGroup.ID,
-			&i.EveGroup.EveCategoryID,
-			&i.EveGroup.Name,
-			&i.EveGroup.IsPublished,
-			&i.EveCategory.ID,
-			&i.EveCategory.Name,
-			&i.EveCategory.IsPublished,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const listPlanetPins = `-- name: ListPlanetPins :many

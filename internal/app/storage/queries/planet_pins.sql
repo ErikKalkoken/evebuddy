@@ -1,4 +1,4 @@
--- name: CreatePlanetPin :one
+-- name: CreatePlanetPin :exec
 INSERT INTO
     planet_pins (
         character_planet_id,
@@ -12,7 +12,7 @@ INSERT INTO
         pin_id
     )
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id;
+    (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: GetPlanetPin :one
 SELECT
@@ -54,38 +54,3 @@ FROM
     LEFT JOIN eve_schematics fes ON fes.id = pp.factory_schema_id
 WHERE
     character_planet_id = ?;
-
--- name: CreatePlanetPinContent :exec
-INSERT INTO
-    planet_pin_contents (amount, type_id, pin_id)
-VALUES
-    (?, ?, ?);
-
--- name: GetPlanetPinContent :one
-SELECT
-    sqlc.embed(ppc),
-    sqlc.embed(et),
-    sqlc.embed(eg),
-    sqlc.embed(ec)
-FROM
-    planet_pin_contents ppc
-    JOIN eve_types et ON et.id = ppc.type_id
-    JOIN eve_groups eg ON eg.id = et.eve_group_id
-    JOIN eve_categories ec ON ec.id = eg.eve_category_id
-WHERE
-    ppc.pin_id = ?
-    AND ppc.type_id = ?;
-
--- name: ListPlanetPinContents :many
-SELECT
-    sqlc.embed(ppc),
-    sqlc.embed(et),
-    sqlc.embed(eg),
-    sqlc.embed(ec)
-FROM
-    planet_pin_contents ppc
-    JOIN eve_types et ON et.id = ppc.type_id
-    JOIN eve_groups eg ON eg.id = et.eve_group_id
-    JOIN eve_categories ec ON ec.id = eg.eve_category_id
-WHERE
-    ppc.pin_id = ?;

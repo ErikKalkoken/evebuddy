@@ -384,13 +384,6 @@ type PlanetPin struct {
 	TypeID                 int64
 }
 
-type PlanetPinContent struct {
-	ID     int64
-	Amount int64
-	TypeID int64
-	PinID  int64
-}
-
 type Scope struct {
 	ID   int64
 	Name string
