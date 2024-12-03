@@ -303,6 +303,12 @@ type EveRegion struct {
 	Name        string
 }
 
+type EveSchematic struct {
+	ID        int64
+	Name      string
+	CycleTime int64
+}
+
 type EveShipSkill struct {
 	ID          int64
 	Rank        int64

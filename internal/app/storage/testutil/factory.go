@@ -863,6 +863,7 @@ func eveEntityWithCategory(args []app.EveEntity, category app.EveEntityCategory)
 	args2 := []app.EveEntity{e}
 	return args2
 }
+
 func (f Factory) CreateEveCategory(args ...storage.CreateEveCategoryParams) *app.EveCategory {
 	var arg storage.CreateEveCategoryParams
 	ctx := context.TODO()
@@ -1160,6 +1161,25 @@ func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 		arg.Description = fake.Paragraph()
 	}
 	r, err := f.st.CreateEveRace(ctx, arg.ID, arg.Description, arg.Name)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
+
+func (f Factory) CreateEveSchematic(args ...storage.CreateEveSchematicParams) *app.EveSchematic {
+	var arg storage.CreateEveSchematicParams
+	ctx := context.TODO()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_schematics", "id", 1))
+	}
+	if arg.Name == "" {
+		arg.Name = fake.ProductName()
+	}
+	r, err := f.st.CreateEveSchematic(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
