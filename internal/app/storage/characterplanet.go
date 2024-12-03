@@ -17,7 +17,7 @@ type CreateCharacterPlanetParams struct {
 	UpgradeLevel int
 }
 
-func (st *Storage) CreateCharacterPlanet(ctx context.Context, arg CreateCharacterPlanetParams) error {
+func (st *Storage) CreateCharacterPlanet(ctx context.Context, arg CreateCharacterPlanetParams) (int64, error) {
 	return createCharacterPlanet(ctx, st.q, arg)
 }
 
@@ -45,30 +45,34 @@ func (st *Storage) ListCharacterPlanets(ctx context.Context, characterID int32) 
 	return oo, nil
 }
 
-func (st *Storage) ReplaceCharacterPlanets(ctx context.Context, characterID int32, args []CreateCharacterPlanetParams) error {
+// ReplaceCharacterPlanets replaces all existing planets for a character with the new ones and returns their IDs.
+func (st *Storage) ReplaceCharacterPlanets(ctx context.Context, characterID int32, args []CreateCharacterPlanetParams) ([]int64, error) {
 	tx, err := st.db.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 	qtx := st.q.WithTx(tx)
 	if err := qtx.DeleteCharacterPlanets(ctx, int64(characterID)); err != nil {
-		return err
+		return nil, err
 	}
+	ids := make([]int64, 0)
 	for _, arg := range args {
-		if err := createCharacterPlanet(ctx, qtx, arg); err != nil {
-			return err
+		id, err := createCharacterPlanet(ctx, qtx, arg)
+		if err != nil {
+			return nil, err
 		}
+		ids = append(ids, id)
 	}
 	if err := tx.Commit(); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return ids, nil
 }
 
-func createCharacterPlanet(ctx context.Context, q *queries.Queries, arg CreateCharacterPlanetParams) error {
+func createCharacterPlanet(ctx context.Context, q *queries.Queries, arg CreateCharacterPlanetParams) (int64, error) {
 	if arg.CharacterID == 0 || arg.EvePlanetID == 0 {
-		return fmt.Errorf("create planet: IDs can not be zero: %+v", arg)
+		return 0, fmt.Errorf("create planet: IDs can not be zero: %+v", arg)
 	}
 	arg2 := queries.CreateCharacterPlanetParams{
 		CharacterID:  int64(arg.CharacterID),
@@ -77,10 +81,11 @@ func createCharacterPlanet(ctx context.Context, q *queries.Queries, arg CreateCh
 		NumPins:      int64(arg.NumPins),
 		UpgradeLevel: int64(arg.UpgradeLevel),
 	}
-	if err := q.CreateCharacterPlanet(ctx, arg2); err != nil {
-		return fmt.Errorf("create planet: %+v: %w", arg2, err)
+	id, err := q.CreateCharacterPlanet(ctx, arg2)
+	if err != nil {
+		return 0, fmt.Errorf("create planet: %+v: %w", arg2, err)
 	}
-	return nil
+	return id, nil
 }
 
 func characterPlanetFromDBModel(r queries.GetCharacterPlanetRow) *app.CharacterPlanet {
@@ -88,6 +93,7 @@ func characterPlanetFromDBModel(r queries.GetCharacterPlanetRow) *app.CharacterP
 	ess := eveSolarSystemFromDBModel(r.EveSolarSystem, r.EveConstellation, r.EveRegion)
 	ep := evePlanetFromDBModel(r.EvePlanet, ess, et)
 	o2 := &app.CharacterPlanet{
+		ID:           r.CharacterPlanet.ID,
 		CharacterID:  int32(r.CharacterPlanet.CharacterID),
 		EvePlanet:    ep,
 		LastUpdate:   r.CharacterPlanet.LastUpdate,

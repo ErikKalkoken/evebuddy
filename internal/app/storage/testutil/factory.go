@@ -362,11 +362,65 @@ func (f Factory) CreateCharacterPlanet(args ...storage.CreateCharacterPlanetPara
 	if arg.LastUpdate.IsZero() {
 		arg.LastUpdate = time.Now().UTC()
 	}
-	err := f.st.CreateCharacterPlanet(ctx, arg)
+	_, err := f.st.CreateCharacterPlanet(ctx, arg)
 	if err != nil {
 		panic(err)
 	}
 	o, err := f.st.GetCharacterPlanet(ctx, arg.CharacterID, arg.EvePlanetID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+func (f Factory) CreatePlanetPin(args ...storage.CreatePlanetPinParams) *app.PlanetPin {
+	ctx := context.TODO()
+	var arg storage.CreatePlanetPinParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterPlanetID == 0 {
+		x := f.CreateCharacterPlanet()
+		arg.CharacterPlanetID = x.ID
+	}
+	if arg.PinID == 0 {
+		arg.PinID = f.calcNewID("planet_pins", "pin_id", 1)
+	}
+	if arg.TypeID == 0 {
+		x := f.CreateEveType()
+		arg.TypeID = x.ID
+	}
+	if _, err := f.st.CreatePlanetPin(ctx, arg); err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetPlanetPin(ctx, arg.CharacterPlanetID, arg.PinID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+func (f Factory) CreatePlanetPinContent(args ...storage.CreatePlanetPinContentParams) *app.PlanetPinContent {
+	ctx := context.TODO()
+	var arg storage.CreatePlanetPinContentParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.PlanetPinID == 0 {
+		x := f.CreatePlanetPin()
+		arg.PlanetPinID = x.ID
+	}
+	if arg.EveTypeID == 0 {
+		x := f.CreateEveType()
+		arg.EveTypeID = x.ID
+	}
+	if arg.Amount == 0 {
+		arg.Amount = rand.IntN(99000)
+	}
+	if err := f.st.CreatePlanetPinContent(ctx, arg); err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetPlanetPinContent(ctx, arg.PlanetPinID, arg.EveTypeID)
 	if err != nil {
 		panic(err)
 	}

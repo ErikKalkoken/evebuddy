@@ -1,0 +1,107 @@
+package storage_test
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestPlanetPin(t *testing.T) {
+	db, r, factory := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("can get and create minimal", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		planet := factory.CreateCharacterPlanet()
+		input := factory.CreateEveType()
+		arg := storage.CreatePlanetPinParams{
+			CharacterPlanetID: planet.ID,
+			TypeID:            input.ID,
+			PinID:             42,
+		}
+		// when
+		_, err := r.CreatePlanetPin(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetPlanetPin(ctx, planet.ID, 42)
+			if assert.NoError(t, err) {
+				assert.Equal(t, input, c2.Type)
+			}
+		}
+	})
+	t.Run("can get and create complete", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		planet := factory.CreateCharacterPlanet()
+		pinType := factory.CreateEveType()
+		productType := factory.CreateEveType()
+		contentType := factory.CreateEveType()
+		expiryTime := time.Now().UTC()
+		installTime := time.Now().UTC()
+		lastCycleStart := time.Now().UTC()
+		schematic := factory.CreateEveSchematic()
+		factorySchematic := factory.CreateEveSchematic()
+		arg := storage.CreatePlanetPinParams{
+			CharacterPlanetID:      planet.ID,
+			ExpiryTime:             expiryTime,
+			ExtractorProductTypeID: optional.New(productType.ID),
+			FactorySchemaID:        optional.New(factorySchematic.ID),
+			InstallTime:            installTime,
+			LastCycleStart:         lastCycleStart,
+			PinID:                  42,
+			SchematicID:            optional.New(schematic.ID),
+			TypeID:                 pinType.ID,
+		}
+		// when
+		id, err := r.CreatePlanetPin(ctx, arg)
+		arg2 := storage.CreatePlanetPinContentParams{
+			Amount:      42,
+			EveTypeID:   contentType.ID,
+			PlanetPinID: id,
+		}
+		if err := r.CreatePlanetPinContent(ctx, arg2); err != nil {
+			t.Fatal(err)
+		}
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetPlanetPin(ctx, planet.ID, 42)
+			if assert.NoError(t, err) {
+				assert.Equal(t, pinType, c2.Type)
+				assert.Equal(t, productType, c2.ExtractorProductType)
+				assert.Equal(t, optional.New(expiryTime), c2.ExpiryTime)
+				assert.Equal(t, optional.New(installTime), c2.InstallTime)
+				assert.Equal(t, optional.New(lastCycleStart), c2.LastCycleStart)
+				assert.Equal(t, schematic, c2.Schematic)
+				assert.Equal(t, factorySchematic, c2.FactorySchematic)
+				assert.Len(t, c2.Contents, 1)
+				assert.Equal(t, 42, c2.Contents[0].Amount)
+				assert.Equal(t, contentType, c2.Contents[0].Type)
+			}
+		}
+	})
+	t.Run("can list pins", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		p := factory.CreateCharacterPlanet()
+		x1 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p.ID})
+		x2 := factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: p.ID})
+		// when
+		oo, err := r.ListPlanetPins(ctx, p.ID)
+		// then
+		if assert.NoError(t, err) {
+			got := set.New[int64]()
+			for _, o := range oo {
+				got.Add(o.ID)
+			}
+			want := set.NewFromSlice([]int64{x1.ID, x2.ID})
+			assert.Equal(t, want, got)
+		}
+	})
+}

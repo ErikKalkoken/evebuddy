@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const createCharacterPlanet = `-- name: CreateCharacterPlanet :exec
+const createCharacterPlanet = `-- name: CreateCharacterPlanet :one
 INSERT INTO
     character_planets (
         character_id,
@@ -21,6 +21,7 @@ INSERT INTO
     )
 VALUES
     (?, ?, ?, ?, ?)
+    RETURNING id
 `
 
 type CreateCharacterPlanetParams struct {
@@ -31,15 +32,17 @@ type CreateCharacterPlanetParams struct {
 	UpgradeLevel int64
 }
 
-func (q *Queries) CreateCharacterPlanet(ctx context.Context, arg CreateCharacterPlanetParams) error {
-	_, err := q.db.ExecContext(ctx, createCharacterPlanet,
+func (q *Queries) CreateCharacterPlanet(ctx context.Context, arg CreateCharacterPlanetParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createCharacterPlanet,
 		arg.CharacterID,
 		arg.EvePlanetID,
 		arg.LastUpdate,
 		arg.NumPins,
 		arg.UpgradeLevel,
 	)
-	return err
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const deleteCharacterPlanets = `-- name: DeleteCharacterPlanets :exec

@@ -371,6 +371,26 @@ type NotificationType struct {
 	Name string
 }
 
+type PlanetPin struct {
+	ID                     int64
+	CharacterPlanetID      int64
+	ExpiryTime             sql.NullTime
+	ExtractorProductTypeID sql.NullInt64
+	FactorySchemaID        sql.NullInt64
+	InstallTime            sql.NullTime
+	LastCycleStart         sql.NullTime
+	PinID                  int64
+	SchematicID            sql.NullInt64
+	TypeID                 int64
+}
+
+type PlanetPinContent struct {
+	ID     int64
+	Amount int64
+	TypeID int64
+	PinID  int64
+}
+
 type Scope struct {
 	ID   int64
 	Name string

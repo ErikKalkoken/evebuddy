@@ -1,4 +1,4 @@
--- name: CreateCharacterPlanet :exec
+-- name: CreateCharacterPlanet :one
 INSERT INTO
     character_planets (
         character_id,
@@ -8,7 +8,8 @@ INSERT INTO
         upgrade_level
     )
 VALUES
-    (?, ?, ?, ?, ?);
+    (?, ?, ?, ?, ?)
+    RETURNING id;
 
 -- name: DeleteCharacterPlanets :exec
 DELETE FROM

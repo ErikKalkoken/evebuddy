@@ -28,7 +28,7 @@ func TestPlanet(t *testing.T) {
 			UpgradeLevel: 3,
 		}
 		// when
-		err := r.CreateCharacterPlanet(ctx, arg)
+		_, err := r.CreateCharacterPlanet(ctx, arg)
 		// then
 		if assert.NoError(t, err) {
 			i, err := r.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
@@ -75,7 +75,7 @@ func TestPlanet(t *testing.T) {
 			UpgradeLevel: 3,
 		}
 		// when
-		err := r.ReplaceCharacterPlanets(ctx, c.ID, []storage.CreateCharacterPlanetParams{arg})
+		_, err := r.ReplaceCharacterPlanets(ctx, c.ID, []storage.CreateCharacterPlanetParams{arg})
 		// then
 		if assert.NoError(t, err) {
 			i, err := r.GetCharacterPlanet(ctx, c.ID, evePlanet.ID)
