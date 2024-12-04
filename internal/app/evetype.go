@@ -1,12 +1,18 @@
 package app
 
-import "github.com/ErikKalkoken/evebuddy/internal/evehtml"
+import (
+	"fyne.io/fyne/v2"
+	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
+	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
+)
 
 const (
-	EveTypeAssetSafetyWrap = 60
-	EveTypeIHUB            = 32458
-	EveTypeSolarSystem     = 5
-	EveTypeTCU             = 32226
+	EveTypeAssetSafetyWrap             = 60
+	EveTypeIHUB                        = 32458
+	EveTypeInterplanetaryConsolidation = 2495
+	EveTypeSolarSystem                 = 5
+	EveTypeTCU                         = 32226
+	EveTypePlanetTemperate             = 11
 )
 
 // EveType is a type in Eve Online.
@@ -75,4 +81,17 @@ func (et EveType) HasRender() bool {
 		return true
 	}
 	return false
+}
+
+// Icon returns the icon for a type from the eveicon package
+// and whether and icon exists for this type.
+func (ep EveType) Icon() (fyne.Resource, bool) {
+	if ep.IconID == 0 {
+		return nil, false
+	}
+	res, ok := eveicon.GetResourceByIconID(ep.IconID)
+	if !ok {
+		return nil, false
+	}
+	return res, true
 }

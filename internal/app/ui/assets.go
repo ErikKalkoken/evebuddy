@@ -136,7 +136,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 			if n.IsRoot() {
 				if !n.IsUnknown {
 					prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurityValue)
-					prefix.Importance = systemSecurity2Importance(n.SystemSecurityType)
+					prefix.Importance = n.SystemSecurityType.ToImportance()
 				} else {
 					prefix.Text = "?"
 					prefix.Importance = widget.LowImportance

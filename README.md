@@ -38,13 +38,16 @@ A more detailed overview of the provided features:
   - Assets: Full asset browser
   - Character: Curren clone, jump clones, and more...
   - Mails: Full mail client for receiving and sending Eve mails
+  - Planets: Status of PI colonies
   - Skills: Training queue, catalogue of all trained skills and what ships can be flown
   - Wallet: Wallet and Wallet Transactions
-- Overview of all your characters (e.g. wallet, skill points, location)
-- Wealth: Charts showing wealth distribution across all characters
-- Assets search: Full asset search across all your characters
+- Combined view over all characters:
+  - Overview (e.g. wallet, skill points, location)
+  - Assets search: Full asset search across all your characters
+  - Show list of all planetary industry colonies
+  - Wealth: Charts showing wealth distribution across all characters
 - Can minimize to system tray and show indicator for new mail
-- Receive desktop notifications about new communications (e.g. Structure gets attacked) and mails
+- Receive desktop notifications about new communications (e.g. Structure gets attacked), mails and expired PI extractions
 - Single executable file, no installation required
 - Desktop app that runs on Windows, Linux and macOS
 - Automatic dark and light theme
@@ -64,6 +67,12 @@ You can receive, send and delete eve mails. Similar to the in-game mail client.
 
 ![Screenshot from 2024-11-10 16-52-55](https://github.com/user-attachments/assets/d7b226c5-1355-4b99-bef7-e0a3b1e75cd6)
 
+### Planetary Industry
+
+You can see the current status of your PI colonies. And you can also get notifications when an extraction has expired.
+
+![Screenshot from 2024-12-04 15-15-32](https://github.com/user-attachments/assets/a866bd0c-e18a-46b5-a99e-bc94520e3295)
+
 ### Overview of all characters
 
 The overview pages gives you key information about all you characters at a glance.
@@ -75,6 +84,12 @@ The overview pages gives you key information about all you characters at a glanc
 You can search for assets across all characters.
 
 ![Screenshot from 2024-11-10 16-52-07](https://github.com/user-attachments/assets/c40f3b7f-279f-4b3c-9135-0c3b043ee0d9)
+
+### Colonies of all characters
+
+You can see all colonies used for planetey industry from all your characters at a glance.
+
+![Screenshot from 2024-12-04 17-47-45](https://github.com/user-attachments/assets/80338f3a-510b-4a45-98bd-836898b720c9)
 
 ### Wealth charts across all characters
 

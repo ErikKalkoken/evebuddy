@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -172,7 +173,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		HintText: "Wether to notify new mails",
 	})
 
-	// notifications toogle
+	// communications toogle
 	communicationsEnabledCheck := kxwidget.NewSwitch(func(on bool) {
 		w.u.fyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
 	})
@@ -197,6 +198,23 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		Text:     "Max age",
 		Widget:   maxAge,
 		HintText: "Max age in hours. Older mails and communications will not be notified.",
+	})
+
+	// PI toogle
+	piEnabledCheck := kxwidget.NewSwitch(func(on bool) {
+		w.u.fyneApp.Preferences().SetBool(settingNotifyPIEnabled, on)
+		if on {
+			w.u.fyneApp.Preferences().SetString(settingNotifyPIEarliest, time.Now().Format(time.RFC3339))
+		}
+	})
+	piEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
+		settingNotifyPIEnabled,
+		settingNotifyPIEnabledDefault,
+	))
+	s1.AppendItem(&widget.FormItem{
+		Text:     "Planetary Industry",
+		Widget:   piEnabledCheck,
+		HintText: "Wether to notify about expired extractions",
 	})
 
 	categoriesAndTypes := make(map[evenotification.Category][]evenotification.Type)
@@ -259,6 +277,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	reset := func() {
 		mailEnabledCheck.SetState(settingNotifyMailsEnabledDefault)
 		communicationsEnabledCheck.SetState(settingNotifyCommunicationsEnabledDefault)
+		piEnabledCheck.SetState(settingNotifyPIEnabledDefault)
 		maxAge.SetValue(settingMaxAgeDefault)
 		for _, sw := range notifsAll {
 			sw.SetState(false)

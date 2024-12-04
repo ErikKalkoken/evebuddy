@@ -74,8 +74,9 @@ func (u *UI) showAccountDialog() {
 }
 
 type accountCharacter struct {
-	id   int32
-	name string
+	id                int32
+	name              string
+	hasTokenWithScope bool
 }
 
 // accountArea is the UI area for managing of characters.
@@ -120,24 +121,17 @@ func (a *accountArea) makeCharacterList() *widget.List {
 			return len(a.characters)
 		},
 		func() fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
-			icon.FillMode = canvas.ImageFillContain
-			icon.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
+			portrait := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
+			portrait.FillMode = canvas.ImageFillContain
+			portrait.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
 			name := widget.NewLabel("Template")
 			button := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {})
 			button.Importance = widget.DangerImportance
-			row := container.NewHBox(icon, name, layout.NewSpacer(), button)
+			issue := widget.NewLabel("Scope issue - please re-add!")
+			issue.Importance = widget.WarningImportance
+			issue.Hide()
+			row := container.NewHBox(portrait, name, issue, layout.NewSpacer(), button)
 			return row
-
-			// hasToken, err := a.ui.service.HasTokenWithScopes(char.ID)
-			// if err != nil {
-			// 	slog.Error("Can not check if character has token", "err", err)
-			// 	continue
-			// }
-			// if !hasToken {
-			// 	row.Add(widget.NewIcon(theme.WarningIcon()))
-			// }
-
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.characters) {
@@ -153,7 +147,14 @@ func (a *accountArea) makeCharacterList() *widget.List {
 				return a.u.EveImageService.CharacterPortrait(c.id, defaultIconSize)
 			})
 
-			row[3].(*widget.Button).OnTapped = func() {
+			issue := row[2].(*widget.Label)
+			if !c.hasTokenWithScope {
+				issue.Show()
+			} else {
+				issue.Hide()
+			}
+
+			row[4].(*widget.Button).OnTapped = func() {
 				a.showDeleteDialog(c)
 			}
 		})
@@ -219,7 +220,12 @@ func (a *accountArea) refresh() error {
 	}
 	cc2 := make([]accountCharacter, len(cc))
 	for i, c := range cc {
-		cc2[i] = accountCharacter{id: c.ID, name: c.Name}
+		hasToken, err := a.u.CharacterService.CharacterHasTokenWithScopes(context.Background(), c.ID)
+		if err != nil {
+			slog.Error("Tried to check if character has token", "err", err)
+			hasToken = true // do not report error when state is unclear
+		}
+		cc2[i] = accountCharacter{id: c.ID, name: c.Name, hasTokenWithScope: hasToken}
 	}
 	a.characters = cc2
 	a.list.Refresh()

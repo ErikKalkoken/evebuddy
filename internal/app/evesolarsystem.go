@@ -2,9 +2,26 @@ package app
 
 import (
 	"math"
+
+	"fyne.io/fyne/v2/widget"
 )
 
 type SolarSystemSecurityType uint
+
+// ToImportance returns the importance value for a security type.
+func (t SolarSystemSecurityType) ToImportance() widget.Importance {
+	switch t {
+	case SuperHighSec:
+		return widget.HighImportance
+	case HighSec:
+		return widget.SuccessImportance
+	case LowSec:
+		return widget.WarningImportance
+	case NullSec:
+		return widget.DangerImportance
+	}
+	return widget.MediumImportance
+}
 
 const (
 	NullSec SolarSystemSecurityType = iota

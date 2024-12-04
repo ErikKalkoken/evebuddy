@@ -61,6 +61,7 @@ type StatusCacheStorage interface {
 }
 
 type StatusCacheService interface {
+	CharacterName(int32) string
 	CharacterSectionExists(int32, CharacterSection) bool
 	CharacterSectionSet(*CharacterSectionStatus)
 	CharacterSectionSummary(int32) StatusSummary

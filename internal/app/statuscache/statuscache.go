@@ -79,7 +79,7 @@ func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section app
 	v := x.(cacheValue)
 	o := app.SectionStatus{
 		EntityID:     characterID,
-		EntityName:   sc.characterName(characterID),
+		EntityName:   sc.CharacterName(characterID),
 		SectionID:    string(section),
 		SectionName:  section.DisplayName(),
 		CompletedAt:  v.CompletedAt,
@@ -165,6 +165,20 @@ func (sc *StatusCacheService) CharacterSectionSet(o *app.CharacterSectionStatus)
 		StartedAt:    o.StartedAt,
 	}
 	sc.cache.Set(k, v, 0)
+}
+
+// Return the name of a character by ID or an empty string if not found.
+func (sc *StatusCacheService) CharacterName(characterID int32) string {
+	cc := sc.ListCharacters()
+	if len(cc) == 0 {
+		return ""
+	}
+	for _, c := range cc {
+		if c.ID == characterID {
+			return c.Name
+		}
+	}
+	return ""
 }
 
 func (sc *StatusCacheService) GeneralSectionExists(section app.GeneralSection) bool {
@@ -305,17 +319,4 @@ func (sc *StatusCacheService) ListCharacters() []*app.CharacterShort {
 
 func (sc *StatusCacheService) setCharacters(cc []*app.CharacterShort) {
 	sc.cache.Set(keyCharacters, cc, 0)
-}
-
-func (sc *StatusCacheService) characterName(characterID int32) string {
-	cc := sc.ListCharacters()
-	if len(cc) == 0 {
-		return ""
-	}
-	for _, c := range cc {
-		if c.ID == characterID {
-			return c.Name
-		}
-	}
-	return ""
 }

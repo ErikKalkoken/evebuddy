@@ -17,7 +17,9 @@ CREATE TABLE eve_entities (
     category TEXT NOT NULL,
     name TEXT NOT NULL
 );
+
 CREATE INDEX eve_entities_idx1 ON eve_entities (name);
+
 CREATE INDEX eve_entities_idx2 ON eve_entities (category);
 
 CREATE TABLE eve_dogma_attributes (
@@ -38,6 +40,7 @@ CREATE TABLE eve_categories (
     name TEXT NOT NULL,
     is_published BOOL NOT NULL
 );
+
 CREATE INDEX eve_categories_idx1 ON eve_categories (name);
 
 CREATE TABLE eve_groups (
@@ -47,7 +50,9 @@ CREATE TABLE eve_groups (
     is_published BOOL NOT NULL,
     FOREIGN KEY (eve_category_id) REFERENCES eve_categories(id) ON DELETE CASCADE
 );
+
 CREATE INDEX eve_groups_idx1 ON eve_groups (eve_category_id);
+
 CREATE INDEX eve_groups_idx2 ON eve_groups (name);
 
 CREATE TABLE eve_types (
@@ -67,7 +72,9 @@ CREATE TABLE eve_types (
     volume REAL NOT NULL,
     FOREIGN KEY (eve_group_id) REFERENCES eve_groups(id) ON DELETE CASCADE
 );
+
 CREATE INDEX eve_types_idx1 ON eve_types (eve_group_id);
+
 CREATE INDEX eve_types_idx2 ON eve_types (name);
 
 CREATE TABLE eve_type_dogma_attributes (
@@ -79,7 +86,9 @@ CREATE TABLE eve_type_dogma_attributes (
     FOREIGN KEY (dogma_attribute_id) REFERENCES eve_dogma_attributes(id) ON DELETE CASCADE,
     UNIQUE (eve_type_id, dogma_attribute_id)
 );
+
 CREATE INDEX eve_type_dogma_attributes_idx1 ON eve_type_dogma_attributes (dogma_attribute_id);
+
 CREATE INDEX eve_type_dogma_attributes_idx2 ON eve_type_dogma_attributes (eve_type_id);
 
 CREATE TABLE eve_type_dogma_effects (
@@ -90,7 +99,9 @@ CREATE TABLE eve_type_dogma_effects (
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
     UNIQUE (eve_type_id, dogma_effect_id)
 );
+
 CREATE INDEX eve_type_dogma_effects_idx1 ON eve_type_dogma_effects (dogma_effect_id);
+
 CREATE INDEX eve_type_dogma_effects_idx2 ON eve_type_dogma_effects (eve_type_id);
 
 CREATE TABLE eve_regions (
@@ -98,6 +109,7 @@ CREATE TABLE eve_regions (
     description TEXT NOT NULL,
     name TEXT NOT NULL
 );
+
 CREATE INDEX eve_regions_idx1 ON eve_regions (name);
 
 CREATE TABLE eve_constellations (
@@ -106,7 +118,9 @@ CREATE TABLE eve_constellations (
     name TEXT NOT NULL,
     FOREIGN KEY (eve_region_id) REFERENCES eve_regions(id) ON DELETE CASCADE
 );
+
 CREATE INDEX eve_constellations_idx1 ON eve_constellations (eve_region_id);
+
 CREATE INDEX eve_constellations_idx2 ON eve_constellations (name);
 
 CREATE TABLE eve_solar_systems (
@@ -116,7 +130,9 @@ CREATE TABLE eve_solar_systems (
     security_status REAL NOT NULL,
     FOREIGN KEY (eve_constellation_id) REFERENCES eve_constellations(id) ON DELETE CASCADE
 );
+
 CREATE INDEX eve_solar_systems_idx1 ON eve_solar_systems (eve_constellation_id);
+
 CREATE INDEX eve_solar_systems_idx2 ON eve_solar_systems (name);
 
 CREATE TABLE eve_moons (
@@ -125,7 +141,9 @@ CREATE TABLE eve_moons (
     eve_solar_system_id INTEGER NOT NULL,
     FOREIGN KEY (eve_solar_system_id) REFERENCES eve_solar_systems(id) ON DELETE CASCADE
 );
+
 CREATE INDEX eve_moons_idx1 ON eve_moons (eve_solar_system_id);
+
 CREATE INDEX eve_moons_idx2 ON eve_moons (name);
 
 CREATE TABLE eve_planets (
@@ -136,8 +154,11 @@ CREATE TABLE eve_planets (
     FOREIGN KEY (eve_solar_system_id) REFERENCES eve_solar_systems(id) ON DELETE CASCADE,
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE
 );
+
 CREATE INDEX eve_planets_idx1 ON eve_planets (eve_solar_system_id);
+
 CREATE INDEX eve_planets_idx2 ON eve_planets (eve_type_id);
+
 CREATE INDEX eve_planets_idx3 ON eve_planets (name);
 
 CREATE TABLE eve_races (
@@ -156,8 +177,11 @@ CREATE TABLE eve_ship_skills (
     FOREIGN KEY (skill_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
     UNIQUE (ship_type_id, rank)
 );
+
 CREATE INDEX eve_ship_skills_idx1 ON eve_ship_skills (rank);
+
 CREATE INDEX eve_ship_skills_idx2 ON eve_ship_skills (ship_type_id);
+
 CREATE INDEX eve_ship_skills_idx3 ON eve_ship_skills (skill_type_id);
 
 CREATE TABLE eve_market_prices(
@@ -178,14 +202,22 @@ CREATE TABLE eve_characters (
     race_id INTEGER NOT NULL,
     security_status REAL NOT NULL,
     title TEXT NOT NULL,
-    FOREIGN KEY (alliance_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
-    FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
-    FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE SET NULL,
-    FOREIGN KEY (race_id) REFERENCES eve_races(id) ON DELETE CASCADE
+    FOREIGN KEY (alliance_id) REFERENCES eve_entities(id) ON DELETE
+    SET
+        NULL,
+        FOREIGN KEY (corporation_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
+        FOREIGN KEY (faction_id) REFERENCES eve_entities(id) ON DELETE
+    SET
+        NULL,
+        FOREIGN KEY (race_id) REFERENCES eve_races(id) ON DELETE CASCADE
 );
+
 CREATE INDEX eve_characters_idx1 ON eve_characters (alliance_id);
+
 CREATE INDEX eve_characters_idx2 ON eve_characters (corporation_id);
+
 CREATE INDEX eve_characters_idx3 ON eve_characters (faction_id);
+
 CREATE INDEX eve_characters_idx4 ON eve_characters (race_id);
 
 CREATE TABLE eve_locations (
@@ -195,13 +227,23 @@ CREATE TABLE eve_locations (
     name TEXT NOT NULL,
     owner_id INTEGER,
     updated_at DATETIME NOT NULL,
-    FOREIGN KEY (eve_solar_system_id) REFERENCES eve_solar_systems(id) ON DELETE SET NULL,
-    FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE SET NULL,
-    FOREIGN KEY (owner_id) REFERENCES eve_entities(id) ON DELETE SET NULL
+    FOREIGN KEY (eve_solar_system_id) REFERENCES eve_solar_systems(id) ON DELETE
+    SET
+        NULL,
+        FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE
+    SET
+        NULL,
+        FOREIGN KEY (owner_id) REFERENCES eve_entities(id) ON DELETE
+    SET
+        NULL
 );
+
 CREATE INDEX eve_locations_idx1 ON eve_locations (eve_solar_system_id);
+
 CREATE INDEX eve_locations_idx2 ON eve_locations (eve_type_id);
+
 CREATE INDEX eve_locations_idx3 ON eve_locations (owner_id);
+
 CREATE INDEX eve_locations_idx4 ON eve_locations (name);
 
 -- characters
@@ -216,12 +258,21 @@ CREATE TABLE characters (
     unallocated_sp INTEGER,
     wallet_balance REAL,
     FOREIGN KEY (id) REFERENCES eve_characters(id) ON DELETE CASCADE,
-    FOREIGN KEY (home_id) REFERENCES eve_locations(id) ON DELETE SET NULL,
-    FOREIGN KEY (location_id) REFERENCES eve_locations(id) ON DELETE SET NULL,
-    FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE SET NULL
+    FOREIGN KEY (home_id) REFERENCES eve_locations(id) ON DELETE
+    SET
+        NULL,
+        FOREIGN KEY (location_id) REFERENCES eve_locations(id) ON DELETE
+    SET
+        NULL,
+        FOREIGN KEY (ship_id) REFERENCES eve_types(id) ON DELETE
+    SET
+        NULL
 );
+
 CREATE INDEX characters_idx1 ON characters (home_id);
+
 CREATE INDEX characters_idx2 ON characters (location_id);
+
 CREATE INDEX characters_idx3 ON characters (ship_id);
 
 CREATE TABLE character_section_status (
@@ -237,7 +288,9 @@ CREATE TABLE character_section_status (
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     UNIQUE (character_id, section_id)
 );
+
 CREATE INDEX character_section_status_idx1 ON character_section_status (character_id);
+
 CREATE INDEX character_section_status_idx2 ON character_section_status (section_id);
 
 CREATE TABLE character_assets (
@@ -256,9 +309,13 @@ CREATE TABLE character_assets (
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
     UNIQUE (character_id, item_id)
 );
+
 CREATE INDEX character_assets_idx1 ON character_assets (character_id);
+
 CREATE INDEX character_assets_idx2 ON character_assets (item_id);
+
 CREATE INDEX character_assets_idx3 ON character_assets (location_id);
+
 CREATE INDEX character_assets_idx4 ON character_assets (name);
 
 CREATE TABLE character_attributes (
@@ -274,6 +331,7 @@ CREATE TABLE character_attributes (
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     UNIQUE (character_id)
 );
+
 CREATE INDEX character_attributes_idx1 ON character_attributes (character_id);
 
 CREATE TABLE character_jump_clones (
@@ -286,8 +344,11 @@ CREATE TABLE character_jump_clones (
     FOREIGN KEY (location_id) REFERENCES eve_locations(id) ON DELETE CASCADE,
     UNIQUE (character_id, jump_clone_id)
 );
+
 CREATE INDEX character_jump_clones_idx1 ON character_jump_clones (character_id);
+
 CREATE INDEX character_jump_clones_idx2 ON character_jump_clones (jump_clone_id);
+
 CREATE INDEX character_jump_clones_idx3 ON character_jump_clones (location_id);
 
 CREATE TABLE character_jump_clone_implants (
@@ -298,7 +359,9 @@ CREATE TABLE character_jump_clone_implants (
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
     UNIQUE (clone_id, eve_type_id)
 );
+
 CREATE INDEX character_jump_clone_implants_idx1 ON character_jump_clone_implants (clone_id);
+
 CREATE INDEX character_jump_clone_implants_idx2 ON character_jump_clone_implants (eve_type_id);
 
 CREATE TABLE character_implants (
@@ -309,7 +372,9 @@ CREATE TABLE character_implants (
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
     UNIQUE (character_id, eve_type_id)
 );
+
 CREATE INDEX character_implants_idx1 ON character_implants (character_id);
+
 CREATE INDEX character_implants_idx2 ON character_implants (eve_type_id);
 
 CREATE TABLE character_mail_lists (
@@ -320,7 +385,9 @@ CREATE TABLE character_mail_lists (
     FOREIGN KEY (eve_entity_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     UNIQUE (character_id, eve_entity_id)
 );
+
 CREATE INDEX character_mail_lists_idx1 ON character_mail_lists (character_id);
+
 CREATE INDEX character_mail_lists_idx2 ON character_mail_lists (eve_entity_id);
 
 CREATE TABLE character_mail_labels (
@@ -333,7 +400,9 @@ CREATE TABLE character_mail_labels (
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     UNIQUE (character_id, label_id)
 );
+
 CREATE INDEX character_mail_labels_idx1 ON character_mail_labels (character_id);
+
 CREATE INDEX character_mail_labels_idx2 ON character_mail_labels (label_id);
 
 CREATE TABLE character_mails_recipients (
@@ -344,7 +413,9 @@ CREATE TABLE character_mails_recipients (
     FOREIGN KEY (eve_entity_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     UNIQUE (mail_id, eve_entity_id)
 );
+
 CREATE INDEX character_mails_recipients_idx1 ON character_mails_recipients (mail_id);
+
 CREATE INDEX character_mails_recipients_idx2 ON character_mails_recipients (eve_entity_id);
 
 CREATE TABLE character_mails (
@@ -361,9 +432,13 @@ CREATE TABLE character_mails (
     FOREIGN KEY (from_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     UNIQUE (character_id, mail_id)
 );
+
 CREATE INDEX character_mails_idx1 ON character_mails (character_id);
+
 CREATE INDEX character_mails_idx2 ON character_mails (from_id);
+
 CREATE INDEX character_mails_idx3 ON character_mails (mail_id);
+
 CREATE INDEX character_mails_idx4 ON character_mails (timestamp DESC);
 
 CREATE TABLE character_mail_mail_labels (
@@ -374,7 +449,9 @@ CREATE TABLE character_mail_mail_labels (
     FOREIGN KEY (character_mail_id) REFERENCES character_mails(id) ON DELETE CASCADE,
     UNIQUE (character_mail_label_id, character_mail_id)
 );
+
 CREATE INDEX character_mail_mail_labels_idx1 ON character_mail_mail_labels (character_mail_label_id);
+
 CREATE INDEX character_mail_mail_labels_idx2 ON character_mail_mail_labels (character_mail_id);
 
 CREATE TABLE character_notifications (
@@ -396,9 +473,13 @@ CREATE TABLE character_notifications (
 );
 
 CREATE INDEX character_notifications_idx1 ON character_notifications (character_id);
+
 CREATE INDEX character_notifications_idx2 ON character_notifications (notification_id);
+
 CREATE INDEX character_notifications_idx3 ON character_notifications (sender_id);
+
 CREATE INDEX character_notifications_idx4 ON character_notifications (timestamp DESC);
+
 CREATE INDEX character_notifications_idx5 ON character_notifications (type_id);
 
 CREATE TABLE notification_types (
@@ -418,7 +499,9 @@ CREATE TABLE character_skills (
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
     UNIQUE (character_id, eve_type_id)
 );
+
 CREATE INDEX character_skills_idx1 ON character_skills (character_id);
+
 CREATE INDEX character_skills_idx2 ON character_skills (eve_type_id);
 
 CREATE TABLE character_skillqueue_items (
@@ -436,8 +519,11 @@ CREATE TABLE character_skillqueue_items (
     FOREIGN KEY (eve_type_id) REFERENCES eve_types(id) ON DELETE CASCADE,
     UNIQUE (character_id, queue_position)
 );
+
 CREATE INDEX character_skillqueue_items_idx1 ON character_skillqueue_items (character_id);
+
 CREATE INDEX character_skillqueue_items_idx2 ON character_skillqueue_items (eve_type_id);
+
 CREATE INDEX character_skillqueue_items_idx3 ON character_skillqueue_items (queue_position);
 
 CREATE TABLE scopes (
@@ -456,6 +542,7 @@ CREATE TABLE character_tokens (
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     UNIQUE (character_id)
 );
+
 CREATE INDEX character_tokens_idx1 ON character_tokens (character_id);
 
 CREATE TABLE character_token_scopes (
@@ -466,7 +553,9 @@ CREATE TABLE character_token_scopes (
     FOREIGN KEY (scope_id) REFERENCES scopes(id) ON DELETE CASCADE,
     UNIQUE (character_token_id, scope_id)
 );
+
 CREATE INDEX character_token_scopes_idx1 ON character_token_scopes (character_token_id);
+
 CREATE INDEX character_token_scopes_idx2 ON character_token_scopes (scope_id);
 
 CREATE TABLE character_wallet_journal_entries (
@@ -491,10 +580,15 @@ CREATE TABLE character_wallet_journal_entries (
     FOREIGN KEY (tax_receiver_id) REFERENCES eve_entities(id) ON DELETE CASCADE,
     UNIQUE (character_id, id)
 );
+
 CREATE INDEX character_wallet_journal_entries_idx1 ON character_wallet_journal_entries (character_id);
+
 CREATE INDEX character_wallet_journal_entries_idx2 ON character_wallet_journal_entries (date DESC);
+
 CREATE INDEX character_wallet_journal_entries_idx3 ON character_wallet_journal_entries (first_party_id);
+
 CREATE INDEX character_wallet_journal_entries_idx4 ON character_wallet_journal_entries (second_party_id);
+
 CREATE INDEX character_wallet_journal_entries_idx5 ON character_wallet_journal_entries (tax_receiver_id);
 
 CREATE TABLE character_wallet_transactions (
@@ -516,9 +610,15 @@ CREATE TABLE character_wallet_transactions (
     FOREIGN KEY (location_id) REFERENCES eve_locations(id) ON DELETE CASCADE,
     UNIQUE (character_id, transaction_id)
 );
+
 CREATE INDEX character_wallet_transactions_idx1 ON character_wallet_transactions (character_id);
+
 CREATE INDEX character_wallet_transactions_idx2 ON character_wallet_transactions (client_id);
+
 CREATE INDEX character_wallet_transactions_idx3 ON character_wallet_transactions (date DESC);
+
 CREATE INDEX character_wallet_transactions_idx4 ON character_wallet_transactions (eve_type_id);
+
 CREATE INDEX character_wallet_transactions_idx5 ON character_wallet_transactions (location_id);
+
 CREATE INDEX character_wallet_transactions_idx6 ON character_wallet_transactions (transaction_id);

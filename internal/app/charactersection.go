@@ -25,6 +25,7 @@ const (
 	SectionMails              CharacterSection = "mails"
 	SectionNotifications      CharacterSection = "notifications"
 	SectionOnline             CharacterSection = "online"
+	SectionPlanets            CharacterSection = "planets"
 	SectionShip               CharacterSection = "ship"
 	SectionSkills             CharacterSection = "skills"
 	SectionSkillqueue         CharacterSection = "skillqueue"
@@ -44,6 +45,7 @@ var CharacterSections = []CharacterSection{
 	SectionMails,
 	SectionNotifications,
 	SectionOnline,
+	SectionPlanets,
 	SectionShip,
 	SectionSkills,
 	SectionSkillqueue,
@@ -57,13 +59,14 @@ var characterSectionTimeouts = map[CharacterSection]time.Duration{
 	SectionAttributes:         120 * time.Second,
 	SectionImplants:           120 * time.Second,
 	SectionJumpClones:         120 * time.Second,
-	SectionLocation:           300 * time.Second, // 5 seconds min
-	SectionMailLabels:         60 * time.Second,  // 30 seconds min
+	SectionLocation:           300 * time.Second, // minimum 5 seconds
+	SectionMailLabels:         60 * time.Second,  // minimum 30 seconds
 	SectionMailLists:          120 * time.Second,
-	SectionMails:              60 * time.Second, // 30 seconds min
+	SectionMails:              60 * time.Second, // minimum 30 seconds
 	SectionNotifications:      600 * time.Second,
-	SectionOnline:             300 * time.Second, // 30 seconds min
-	SectionShip:               300 * time.Second, // 5 seconds min
+	SectionOnline:             300 * time.Second, // minimum 30 seconds
+	SectionPlanets:            600 * time.Second,
+	SectionShip:               300 * time.Second, // minimum 5 seconds
 	SectionSkillqueue:         120 * time.Second,
 	SectionSkills:             120 * time.Second,
 	SectionWalletBalance:      120 * time.Second,

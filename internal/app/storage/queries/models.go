@@ -120,6 +120,15 @@ type CharacterNotification struct {
 	TypeID         int64
 }
 
+type CharacterPlanet struct {
+	ID           int64
+	CharacterID  int64
+	EvePlanetID  int64
+	LastUpdate   time.Time
+	LastNotified sql.NullTime
+	UpgradeLevel int64
+}
+
 type CharacterSectionStatus struct {
 	ID          int64
 	CharacterID int64
@@ -294,6 +303,12 @@ type EveRegion struct {
 	Name        string
 }
 
+type EveSchematic struct {
+	ID        int64
+	Name      string
+	CycleTime int64
+}
+
 type EveShipSkill struct {
 	ID          int64
 	Rank        int64
@@ -354,6 +369,19 @@ type GeneralSectionStatus struct {
 type NotificationType struct {
 	ID   int64
 	Name string
+}
+
+type PlanetPin struct {
+	ID                     int64
+	CharacterPlanetID      int64
+	ExpiryTime             sql.NullTime
+	ExtractorProductTypeID sql.NullInt64
+	FactorySchemaID        sql.NullInt64
+	InstallTime            sql.NullTime
+	LastCycleStart         sql.NullTime
+	PinID                  int64
+	SchematicID            sql.NullInt64
+	TypeID                 int64
 }
 
 type Scope struct {

@@ -199,7 +199,7 @@ func (s *EveNotificationService) renderStructureImpendingAbandonmentAssetsAtRisk
 
 func (s *EveNotificationService) renderStructureItemsDelivered(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
-	var data notification2.StructureItemsDelivered
+	var data notification.StructureItemsDelivered
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -211,7 +211,7 @@ func (s *EveNotificationService) renderStructureItemsDelivered(ctx context.Conte
 	if err != nil {
 		return title, body, err
 	}
-	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarSystemID)
+	solarSystem, err := s.EveUniverseService.GetOrCreateEveSolarSystemESI(ctx, data.SolarsystemID)
 	if err != nil {
 		return title, body, err
 	}

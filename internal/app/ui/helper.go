@@ -7,7 +7,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
@@ -50,33 +49,4 @@ func boolIconResource(ok bool) fyne.Resource {
 		return theme.NewSuccessThemedResource(theme.ConfirmIcon())
 	}
 	return theme.NewErrorThemedResource(theme.CancelIcon())
-}
-
-func systemSecurity2Importance(t app.SolarSystemSecurityType) widget.Importance {
-	switch t {
-	case app.SuperHighSec:
-		return widget.HighImportance
-	case app.HighSec:
-		return widget.SuccessImportance
-	case app.LowSec:
-		return widget.WarningImportance
-	case app.NullSec:
-		return widget.DangerImportance
-	}
-	return widget.MediumImportance
-}
-
-func status2widgetImportance(s app.Status) widget.Importance {
-	m := map[app.Status]widget.Importance{
-		app.StatusError:   widget.DangerImportance,
-		app.StatusMissing: widget.WarningImportance,
-		app.StatusOK:      widget.MediumImportance,
-		app.StatusUnknown: widget.LowImportance,
-		app.StatusWorking: widget.MediumImportance,
-	}
-	i, ok := m[s]
-	if !ok {
-		i = widget.MediumImportance
-	}
-	return i
 }

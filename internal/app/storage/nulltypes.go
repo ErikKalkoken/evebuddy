@@ -21,6 +21,16 @@ func NewNullString(v string) sql.NullString {
 	return sql.NullString{String: v, Valid: true}
 }
 
-func NewNullTime(v time.Time) sql.NullTime {
+func NewNullTimeFromTime(v time.Time) sql.NullTime {
+	if v.IsZero() {
+		return sql.NullTime{}
+	}
 	return sql.NullTime{Time: v, Valid: true}
+}
+
+func NewTimeFromNullTime(v sql.NullTime) time.Time {
+	if !v.Valid {
+		return time.Time{}
+	}
+	return v.Time
 }

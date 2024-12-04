@@ -1,8 +1,27 @@
 package app
 
-import "fmt"
+import (
+	"fmt"
+
+	"fyne.io/fyne/v2/widget"
+)
 
 type Status uint
+
+func (s Status) ToImportance() widget.Importance {
+	m := map[Status]widget.Importance{
+		StatusError:   widget.DangerImportance,
+		StatusMissing: widget.WarningImportance,
+		StatusOK:      widget.MediumImportance,
+		StatusUnknown: widget.LowImportance,
+		StatusWorking: widget.MediumImportance,
+	}
+	i, ok := m[s]
+	if !ok {
+		i = widget.MediumImportance
+	}
+	return i
+}
 
 const (
 	StatusUnknown Status = iota

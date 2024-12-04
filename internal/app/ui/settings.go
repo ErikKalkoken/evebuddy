@@ -17,6 +17,9 @@ const (
 	settingNotifyCommunicationsEnabledDefault = false
 	settingNotifyMailsEnabled                 = "settingNotifyMailsEnabled"
 	settingNotifyMailsEnabledDefault          = false
+	settingNotifyPIEnabled                    = "settingNotifyPIEnabled"
+	settingNotifyPIEnabledDefault             = false
+	settingNotifyPIEarliest                   = "settingNotifyPIEarliest"
 	settingSysTrayEnabled                     = "settingSysTrayEnabled"
 	settingSysTrayEnabledDefault              = false
 	settingTabsMainID                         = "tabs-main-id"
@@ -36,6 +39,7 @@ func SettingKeys() []string {
 		settingNotificationsTypesEnabled,
 		settingNotifyCommunicationsEnabled,
 		settingNotifyMailsEnabled,
+		settingNotifyPIEnabled,
 		settingSysTrayEnabled,
 		settingTabsMainID,
 		settingWindowHeight,

@@ -44,6 +44,13 @@ func NewFactory(st *storage.Storage, db *sql.DB) Factory {
 	return f
 }
 
+func (f Factory) RandomTime() time.Time {
+	hours := time.Duration(rand.IntN(100_000))
+	seconds := time.Duration(rand.IntN(3600))
+	d := hours*time.Hour + seconds*time.Second
+	return time.Now().Add(-d).UTC()
+}
+
 func (f Factory) CreateCharacter(args ...storage.UpdateOrCreateCharacterParams) *app.Character {
 	ctx := context.TODO()
 	var arg storage.UpdateOrCreateCharacterParams
@@ -339,6 +346,64 @@ func (f Factory) CreateCharacterMailList(characterID int32, args ...app.EveEntit
 	return &e
 }
 
+func (f Factory) CreateCharacterPlanet(args ...storage.CreateCharacterPlanetParams) *app.CharacterPlanet {
+	ctx := context.TODO()
+	var arg storage.CreateCharacterPlanetParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.EvePlanetID == 0 {
+		x := f.CreateEvePlanet()
+		arg.EvePlanetID = x.ID
+	}
+	if arg.UpgradeLevel == 0 {
+		arg.UpgradeLevel = rand.IntN(5)
+	}
+	if arg.LastUpdate.IsZero() {
+		arg.LastUpdate = time.Now().UTC()
+	}
+	_, err := f.st.CreateCharacterPlanet(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCharacterPlanet(ctx, arg.CharacterID, arg.EvePlanetID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+func (f Factory) CreatePlanetPin(args ...storage.CreatePlanetPinParams) *app.PlanetPin {
+	ctx := context.TODO()
+	var arg storage.CreatePlanetPinParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.CharacterPlanetID == 0 {
+		x := f.CreateCharacterPlanet()
+		arg.CharacterPlanetID = x.ID
+	}
+	if arg.PinID == 0 {
+		arg.PinID = f.calcNewID("planet_pins", "pin_id", 1)
+	}
+	if arg.TypeID == 0 {
+		x := f.CreateEveType()
+		arg.TypeID = x.ID
+	}
+	if err := f.st.CreatePlanetPin(ctx, arg); err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetPlanetPin(ctx, arg.CharacterPlanetID, arg.PinID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSkillParams) *app.CharacterSkill {
 	ctx := context.TODO()
 	var arg storage.UpdateOrCreateCharacterSkillParams
@@ -500,7 +565,7 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 	if err != nil {
 		panic(err)
 	}
-	t := storage.NewNullTime(arg.CompletedAt)
+	t := storage.NewNullTimeFromTime(arg.CompletedAt)
 	arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID:  arg.CharacterID,
 		Section:      arg.Section,
@@ -732,7 +797,7 @@ func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) 
 	if err != nil {
 		panic(err)
 	}
-	t := storage.NewNullTime(arg.CompletedAt)
+	t := storage.NewNullTimeFromTime(arg.CompletedAt)
 	arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 		Section:     arg.Section,
 		Error:       &arg.ErrorMessage,
@@ -829,6 +894,7 @@ func eveEntityWithCategory(args []app.EveEntity, category app.EveEntityCategory)
 	args2 := []app.EveEntity{e}
 	return args2
 }
+
 func (f Factory) CreateEveCategory(args ...storage.CreateEveCategoryParams) *app.EveCategory {
 	var arg storage.CreateEveCategoryParams
 	ctx := context.TODO()
@@ -1126,6 +1192,25 @@ func (f Factory) CreateEveRace(args ...app.EveRace) *app.EveRace {
 		arg.Description = fake.Paragraph()
 	}
 	r, err := f.st.CreateEveRace(ctx, arg.ID, arg.Description, arg.Name)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
+
+func (f Factory) CreateEveSchematic(args ...storage.CreateEveSchematicParams) *app.EveSchematic {
+	var arg storage.CreateEveSchematicParams
+	ctx := context.TODO()
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ID == 0 {
+		arg.ID = int32(f.calcNewID("eve_schematics", "id", 1))
+	}
+	if arg.Name == "" {
+		arg.Name = fake.ProductName()
+	}
+	r, err := f.st.CreateEveSchematic(ctx, arg)
 	if err != nil {
 		panic(err)
 	}

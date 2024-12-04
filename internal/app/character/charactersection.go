@@ -75,6 +75,8 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 		f = s.updateCharacterNotificationsESI
 	case app.SectionOnline:
 		f = s.updateCharacterOnlineESI
+	case app.SectionPlanets:
+		f = s.updateCharacterPlanetsESI
 	case app.SectionShip:
 		f = s.updateCharacterShipESI
 	case app.SectionSkillqueue:
@@ -168,7 +170,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	}
 
 	// record successful completion
-	completedAt := storage.NewNullTime(time.Now())
+	completedAt := storage.NewNullTimeFromTime(time.Now())
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}
 	arg2 = storage.UpdateOrCreateCharacterSectionStatusParams{
