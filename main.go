@@ -152,7 +152,9 @@ func main() {
 	// start uninstall app if requested
 	if *deleteAppFlag {
 		log.SetOutput(os.Stderr)
-		debug.SetCrashOutput(nil, debug.CrashOptions{})
+		if err := debug.SetCrashOutput(nil, debug.CrashOptions{}); err != nil {
+			slog.Error("Failed to set crash output", "error", err)
+		}
 		if err := crashFile.Close(); err != nil {
 			slog.Error("Failed to close crash file", "error", err)
 		}

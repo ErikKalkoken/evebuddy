@@ -22,7 +22,6 @@ import (
 type skillqueueArea struct {
 	content *fyne.Container
 	items   []*app.CharacterSkillqueueItem
-	list    *widget.List
 	total   *widget.Label
 	u       *UI
 }

@@ -447,7 +447,9 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 				start2 := time.Now()
 				f()
 				x := completed.Add(1)
-				p.Set(float64(x))
+				if err := p.Set(float64(x)); err != nil {
+					myLog.Warn("failed set progress", "error", err)
+				}
 				myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
 			}()
 		}

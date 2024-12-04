@@ -202,7 +202,9 @@ func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
 					continue
 				}
 				if n.ContainerID == ca.ItemID {
-					a.selectLocation(n)
+					if err := a.selectLocation(n); err != nil {
+						slog.Warn("failed to select location", "error", "err")
+					}
 				}
 			}
 		} else {

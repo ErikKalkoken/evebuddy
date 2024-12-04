@@ -31,7 +31,6 @@ func (a attribute) isText() bool {
 type attributesArea struct {
 	attributes []attribute
 	content    fyne.CanvasObject
-	list       *widget.List
 	top        *widget.Label
 	u          *UI
 }

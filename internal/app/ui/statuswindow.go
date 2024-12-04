@@ -184,7 +184,9 @@ func (a *statusWindow) makeEntityList() *widget.List {
 }
 
 func (a *statusWindow) refresh() {
-	a.refreshEntityList()
+	if err := a.refreshEntityList(); err != nil {
+		slog.Warn("failed to refresh entity list for status window", "error", err)
+	}
 	a.refreshDetailArea()
 	a.charactersTop.SetText(fmt.Sprintf("Entities: %d", len(a.entities)))
 }
