@@ -125,7 +125,7 @@ type CharacterPlanet struct {
 	CharacterID  int64
 	EvePlanetID  int64
 	LastUpdate   time.Time
-	NumPins      int64
+	LastNotified sql.NullTime
 	UpgradeLevel int64
 }
 

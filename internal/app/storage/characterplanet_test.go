@@ -24,7 +24,6 @@ func TestPlanet(t *testing.T) {
 			CharacterID:  c.ID,
 			EvePlanetID:  evePlanet.ID,
 			LastUpdate:   lastUpdate,
-			NumPins:      7,
 			UpgradeLevel: 3,
 		}
 		// when
@@ -70,7 +69,6 @@ func TestPlanet(t *testing.T) {
 			CharacterID:  c.ID,
 			EvePlanetID:  evePlanet.ID,
 			LastUpdate:   lastUpdate,
-			NumPins:      7,
 			UpgradeLevel: 3,
 		}
 		// when

@@ -41,7 +41,11 @@ func TestCharacterPlanetExtractedTypes(t *testing.T) {
 		// when
 		x := cp.ExtractedTypes()
 		// then
-		assert.Equal(t, []*app.EveType{productType1a, productType2}, x)
+		got := make([]int32, 0)
+		for _, o := range x {
+			got = append(got, o.ID)
+		}
+		assert.ElementsMatch(t, []int32{productType1a.ID, productType2.ID}, got)
 	})
 	t.Run("should return empty when no extractor", func(t *testing.T) {
 		// given
@@ -96,7 +100,12 @@ func TestCharacterPlanetProducedSchematics(t *testing.T) {
 		// when
 		x := cp.ProducedSchematics()
 		// then
-		assert.Equal(t, []*app.EveSchematic{schematic1a, schematic2}, x)
+		got := make([]int32, 0)
+		for _, o := range x {
+			got = append(got, o.ID)
+		}
+		assert.ElementsMatch(t, []int32{schematic1a.ID, schematic2.ID}, got)
+
 	})
 	t.Run("should return empty when no processor", func(t *testing.T) {
 		// given
@@ -139,7 +148,7 @@ func TestCharacterPlanetExtractionsExpire(t *testing.T) {
 			processorPin,
 		}}
 		// when
-		x := cp.ExtractionsExpire()
+		x := cp.ExtractionsExpiryTime()
 		// then
 		assert.Equal(t, et2, x)
 	})
@@ -152,7 +161,7 @@ func TestCharacterPlanetExtractionsExpire(t *testing.T) {
 			processorPin,
 		}}
 		// when
-		x := cp.ExtractionsExpire()
+		x := cp.ExtractionsExpiryTime()
 		// then
 		assert.True(t, x.IsZero())
 	})

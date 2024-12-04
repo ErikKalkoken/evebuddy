@@ -13,7 +13,6 @@ type CreateCharacterPlanetParams struct {
 	CharacterID  int32
 	EvePlanetID  int32
 	LastUpdate   time.Time
-	NumPins      int
 	UpgradeLevel int
 }
 
@@ -86,7 +85,6 @@ func createCharacterPlanet(ctx context.Context, q *queries.Queries, arg CreateCh
 		CharacterID:  int64(arg.CharacterID),
 		EvePlanetID:  int64(arg.EvePlanetID),
 		LastUpdate:   arg.LastUpdate,
-		NumPins:      int64(arg.NumPins),
 		UpgradeLevel: int64(arg.UpgradeLevel),
 	}
 	id, err := q.CreateCharacterPlanet(ctx, arg2)

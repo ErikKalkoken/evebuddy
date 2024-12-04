@@ -13,7 +13,7 @@ type CharacterPlanet struct {
 	CharacterID  int32
 	EvePlanet    *EvePlanet
 	LastUpdate   time.Time
-	LastNotified time.Time
+	LastNotified time.Time // expiry time that was last notified
 	Pins         []*PlanetPin
 	UpgradeLevel int
 }
@@ -30,9 +30,9 @@ func (cp CharacterPlanet) ExtractedTypes() []*EveType {
 	return slices.Collect(maps.Values(types))
 }
 
-// ExtractionsExpire returns the point of time when all extraction have expired.
+// ExtractionsExpiryTime returns the final expiry time for all extractions.
 // When no expiry data is found it will return a zero time.
-func (cp CharacterPlanet) ExtractionsExpire() time.Time {
+func (cp CharacterPlanet) ExtractionsExpiryTime() time.Time {
 	expireTimes := make([]time.Time, 0)
 	for _, p := range cp.Pins {
 		if p.Type.Group.ID != EveGroupExtractorControlUnits {

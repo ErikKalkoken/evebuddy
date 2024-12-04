@@ -4,12 +4,10 @@ INSERT INTO
         character_id,
         eve_planet_id,
         last_update,
-        num_pins,
         upgrade_level
     )
 VALUES
-    (?, ?, ?, ?, ?)
-    RETURNING id;
+    (?, ?, ?, ?) RETURNING id;
 
 -- name: DeleteCharacterPlanets :exec
 DELETE FROM

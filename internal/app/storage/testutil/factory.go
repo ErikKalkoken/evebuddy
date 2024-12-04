@@ -353,9 +353,6 @@ func (f Factory) CreateCharacterPlanet(args ...storage.CreateCharacterPlanetPara
 		x := f.CreateEvePlanet()
 		arg.EvePlanetID = x.ID
 	}
-	if arg.NumPins == 0 {
-		arg.NumPins = rand.IntN(20) + 1
-	}
 	if arg.UpgradeLevel == 0 {
 		arg.UpgradeLevel = rand.IntN(5)
 	}

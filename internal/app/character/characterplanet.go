@@ -40,7 +40,6 @@ func (s *CharacterService) updateCharacterPlanetsESI(ctx context.Context, arg Up
 					CharacterID:  characterID,
 					EvePlanetID:  o.PlanetId,
 					LastUpdate:   o.LastUpdate,
-					NumPins:      int(o.NumPins),
 					UpgradeLevel: int(o.UpgradeLevel),
 				}
 			}

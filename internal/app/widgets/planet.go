@@ -62,7 +62,7 @@ func (w *Planet) Set(cp *app.CharacterPlanet) {
 	})
 	extracted2 := strings.Join(extracted, ",")
 	var deadline string
-	if x := cp.ExtractionsExpire(); x.IsZero() {
+	if x := cp.ExtractionsExpiryTime(); x.IsZero() {
 		deadline = "EXPIRED"
 	} else {
 		deadline = x.Format(app.TimeDefaultFormat)

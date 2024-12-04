@@ -16,19 +16,16 @@ INSERT INTO
         character_id,
         eve_planet_id,
         last_update,
-        num_pins,
         upgrade_level
     )
 VALUES
-    (?, ?, ?, ?, ?)
-    RETURNING id
+    (?, ?, ?, ?) RETURNING id
 `
 
 type CreateCharacterPlanetParams struct {
 	CharacterID  int64
 	EvePlanetID  int64
 	LastUpdate   time.Time
-	NumPins      int64
 	UpgradeLevel int64
 }
 
@@ -37,7 +34,6 @@ func (q *Queries) CreateCharacterPlanet(ctx context.Context, arg CreateCharacter
 		arg.CharacterID,
 		arg.EvePlanetID,
 		arg.LastUpdate,
-		arg.NumPins,
 		arg.UpgradeLevel,
 	)
 	var id int64
@@ -59,7 +55,7 @@ func (q *Queries) DeleteCharacterPlanets(ctx context.Context, characterID int64)
 
 const getCharacterPlanet = `-- name: GetCharacterPlanet :one
 SELECT
-    cp.id, cp.character_id, cp.eve_planet_id, cp.last_update, cp.num_pins, cp.upgrade_level,
+    cp.id, cp.character_id, cp.eve_planet_id, cp.last_update, cp.last_notified, cp.upgrade_level,
     ep.id, ep.name, ep.eve_solar_system_id, ep.eve_type_id,
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
     eg.id, eg.eve_category_id, eg.name, eg.is_published,
@@ -105,7 +101,7 @@ func (q *Queries) GetCharacterPlanet(ctx context.Context, arg GetCharacterPlanet
 		&i.CharacterPlanet.CharacterID,
 		&i.CharacterPlanet.EvePlanetID,
 		&i.CharacterPlanet.LastUpdate,
-		&i.CharacterPlanet.NumPins,
+		&i.CharacterPlanet.LastNotified,
 		&i.CharacterPlanet.UpgradeLevel,
 		&i.EvePlanet.ID,
 		&i.EvePlanet.Name,
@@ -148,7 +144,7 @@ func (q *Queries) GetCharacterPlanet(ctx context.Context, arg GetCharacterPlanet
 
 const listCharacterPlanets = `-- name: ListCharacterPlanets :many
 SELECT
-    cp.id, cp.character_id, cp.eve_planet_id, cp.last_update, cp.num_pins, cp.upgrade_level,
+    cp.id, cp.character_id, cp.eve_planet_id, cp.last_update, cp.last_notified, cp.upgrade_level,
     ep.id, ep.name, ep.eve_solar_system_id, ep.eve_type_id,
     et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
     eg.id, eg.eve_category_id, eg.name, eg.is_published,
@@ -196,7 +192,7 @@ func (q *Queries) ListCharacterPlanets(ctx context.Context, characterID int64) (
 			&i.CharacterPlanet.CharacterID,
 			&i.CharacterPlanet.EvePlanetID,
 			&i.CharacterPlanet.LastUpdate,
-			&i.CharacterPlanet.NumPins,
+			&i.CharacterPlanet.LastNotified,
 			&i.CharacterPlanet.UpgradeLevel,
 			&i.EvePlanet.ID,
 			&i.EvePlanet.Name,
