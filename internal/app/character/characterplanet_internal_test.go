@@ -204,7 +204,7 @@ func TestUpdateCharacterPlanetsESI(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should replace planets", func(t *testing.T) {
+	t.Run("should update planets and remove obsoletes", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()

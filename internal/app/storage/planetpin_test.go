@@ -92,4 +92,28 @@ func TestPlanetPin(t *testing.T) {
 			assert.Equal(t, want, got)
 		}
 	})
+	t.Run("can delete pins", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		planet1 := factory.CreateCharacterPlanet()
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: planet1.ID})
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: planet1.ID})
+		planet2 := factory.CreateCharacterPlanet()
+		factory.CreatePlanetPin(storage.CreatePlanetPinParams{CharacterPlanetID: planet2.ID})
+		// when
+		err := r.DeletePlanetPins(ctx, planet1.ID)
+		// then
+		if assert.NoError(t, err) {
+			oo1, err := r.ListPlanetPins(ctx, planet1.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assert.Len(t, oo1, 0)
+			oo2, err := r.ListPlanetPins(ctx, planet2.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assert.Len(t, oo2, 1)
+		}
+	})
 }

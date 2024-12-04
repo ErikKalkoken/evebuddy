@@ -13,7 +13,7 @@ type CharacterPlanet struct {
 	CharacterID  int32
 	EvePlanet    *EvePlanet
 	LastUpdate   time.Time
-	LastNotified time.Time // expiry time that was last notified
+	LastNotified optional.Optional[time.Time] // expiry time that was last notified
 	Pins         []*PlanetPin
 	UpgradeLevel int
 }

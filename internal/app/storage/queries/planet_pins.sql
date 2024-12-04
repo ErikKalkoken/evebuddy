@@ -14,6 +14,12 @@ INSERT INTO
 VALUES
     (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+-- name: DeletePlanetPins :exec
+DELETE FROM
+    planet_pins
+WHERE
+    character_planet_id = ?;
+
 -- name: GetPlanetPin :one
 SELECT
     sqlc.embed(pp),

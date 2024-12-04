@@ -7,6 +7,8 @@ package queries
 
 import (
 	"context"
+	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -15,16 +17,18 @@ INSERT INTO
     character_planets (
         character_id,
         eve_planet_id,
+        last_notified,
         last_update,
         upgrade_level
     )
 VALUES
-    (?, ?, ?, ?) RETURNING id
+    (?1, ?2, ?3, ?4, ?5) RETURNING id
 `
 
 type CreateCharacterPlanetParams struct {
 	CharacterID  int64
 	EvePlanetID  int64
+	LastNotified sql.NullTime
 	LastUpdate   time.Time
 	UpgradeLevel int64
 }
@@ -33,6 +37,7 @@ func (q *Queries) CreateCharacterPlanet(ctx context.Context, arg CreateCharacter
 	row := q.db.QueryRowContext(ctx, createCharacterPlanet,
 		arg.CharacterID,
 		arg.EvePlanetID,
+		arg.LastNotified,
 		arg.LastUpdate,
 		arg.UpgradeLevel,
 	)
@@ -46,10 +51,27 @@ DELETE FROM
     character_planets
 WHERE
     character_id = ?
+    AND eve_planet_id IN (/*SLICE:eve_planet_ids*/?)
 `
 
-func (q *Queries) DeleteCharacterPlanets(ctx context.Context, characterID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteCharacterPlanets, characterID)
+type DeleteCharacterPlanetsParams struct {
+	CharacterID  int64
+	EvePlanetIds []int64
+}
+
+func (q *Queries) DeleteCharacterPlanets(ctx context.Context, arg DeleteCharacterPlanetsParams) error {
+	query := deleteCharacterPlanets
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CharacterID)
+	if len(arg.EvePlanetIds) > 0 {
+		for _, v := range arg.EvePlanetIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:eve_planet_ids*/?", strings.Repeat(",?", len(arg.EvePlanetIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:eve_planet_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
 	return err
 }
 
@@ -241,4 +263,42 @@ func (q *Queries) ListCharacterPlanets(ctx context.Context, characterID int64) (
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateOrCreateCharacterPlanet = `-- name: UpdateOrCreateCharacterPlanet :one
+INSERT INTO
+    character_planets (
+        character_id,
+        eve_planet_id,
+        last_update,
+        upgrade_level
+    )
+VALUES
+    (?1, ?2, ?3, ?4) ON CONFLICT(character_id, eve_planet_id) DO
+UPDATE
+SET
+    last_update = ?3,
+    upgrade_level = ?4
+WHERE
+    character_id = ?1
+    AND eve_planet_id = ?2 RETURNING id
+`
+
+type UpdateOrCreateCharacterPlanetParams struct {
+	CharacterID  int64
+	EvePlanetID  int64
+	LastUpdate   time.Time
+	UpgradeLevel int64
+}
+
+func (q *Queries) UpdateOrCreateCharacterPlanet(ctx context.Context, arg UpdateOrCreateCharacterPlanetParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, updateOrCreateCharacterPlanet,
+		arg.CharacterID,
+		arg.EvePlanetID,
+		arg.LastUpdate,
+		arg.UpgradeLevel,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }

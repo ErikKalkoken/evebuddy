@@ -558,7 +558,7 @@ func (f Factory) CreateCharacterSectionStatus(args ...CharacterSectionStatusPara
 	if err != nil {
 		panic(err)
 	}
-	t := storage.NewNullTime(arg.CompletedAt)
+	t := storage.NewNullTimeFromTime(arg.CompletedAt)
 	arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
 		CharacterID:  arg.CharacterID,
 		Section:      arg.Section,
@@ -790,7 +790,7 @@ func (f Factory) CreateGeneralSectionStatus(args ...GeneralSectionStatusParams) 
 	if err != nil {
 		panic(err)
 	}
-	t := storage.NewNullTime(arg.CompletedAt)
+	t := storage.NewNullTimeFromTime(arg.CompletedAt)
 	arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 		Section:     arg.Section,
 		Error:       &arg.ErrorMessage,

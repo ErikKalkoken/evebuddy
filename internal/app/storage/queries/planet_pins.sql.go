@@ -54,6 +54,18 @@ func (q *Queries) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParams
 	return err
 }
 
+const deletePlanetPins = `-- name: DeletePlanetPins :exec
+DELETE FROM
+    planet_pins
+WHERE
+    character_planet_id = ?
+`
+
+func (q *Queries) DeletePlanetPins(ctx context.Context, characterPlanetID int64) error {
+	_, err := q.db.ExecContext(ctx, deletePlanetPins, characterPlanetID)
+	return err
+}
+
 const getPlanetPin = `-- name: GetPlanetPin :one
 SELECT
     pp.id, pp.character_planet_id, pp.expiry_time, pp.extractor_product_type_id, pp.factory_schema_id, pp.install_time, pp.last_cycle_start, pp.pin_id, pp.schematic_id, pp.type_id,

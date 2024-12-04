@@ -76,7 +76,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		s.StatusCacheService.GeneralSectionSet(o)
 		return false, err
 	}
-	completedAt := storage.NewNullTime(time.Now())
+	completedAt := storage.NewNullTimeFromTime(time.Now())
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}
 	arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{

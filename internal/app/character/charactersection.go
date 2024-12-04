@@ -170,7 +170,7 @@ func (s *CharacterService) updateSectionIfChanged(
 	}
 
 	// record successful completion
-	completedAt := storage.NewNullTime(time.Now())
+	completedAt := storage.NewNullTimeFromTime(time.Now())
 	errorMessage := ""
 	startedAt2 := optional.Optional[time.Time]{}
 	arg2 = storage.UpdateOrCreateCharacterSectionStatusParams{

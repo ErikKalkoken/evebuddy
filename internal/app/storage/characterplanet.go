@@ -7,17 +7,68 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type CreateCharacterPlanetParams struct {
+	CharacterID  int32
+	EvePlanetID  int32
+	LastNotified time.Time
+	LastUpdate   time.Time
+	UpgradeLevel int
+}
+
+func (st *Storage) CreateCharacterPlanet(ctx context.Context, arg CreateCharacterPlanetParams) (int64, error) {
+	if arg.CharacterID == 0 || arg.EvePlanetID == 0 {
+		return 0, fmt.Errorf("create planet: IDs can not be zero: %+v", arg)
+	}
+	arg2 := queries.CreateCharacterPlanetParams{
+		CharacterID:  int64(arg.CharacterID),
+		EvePlanetID:  int64(arg.EvePlanetID),
+		LastNotified: NewNullTimeFromTime(arg.LastNotified),
+		LastUpdate:   arg.LastUpdate,
+		UpgradeLevel: int64(arg.UpgradeLevel),
+	}
+	id, err := st.q.CreateCharacterPlanet(ctx, arg2)
+	if err != nil {
+		return 0, fmt.Errorf("create create planet: %+v: %w", arg2, err)
+	}
+	return id, nil
+}
+
+type UpdateOrCreateCharacterPlanetParams struct {
 	CharacterID  int32
 	EvePlanetID  int32
 	LastUpdate   time.Time
 	UpgradeLevel int
 }
 
-func (st *Storage) CreateCharacterPlanet(ctx context.Context, arg CreateCharacterPlanetParams) (int64, error) {
-	return createCharacterPlanet(ctx, st.q, arg)
+func (st *Storage) UpdateOrCreateCharacterPlanet(ctx context.Context, arg UpdateOrCreateCharacterPlanetParams) (int64, error) {
+	if arg.CharacterID == 0 || arg.EvePlanetID == 0 {
+		return 0, fmt.Errorf("update or create planet: IDs can not be zero: %+v", arg)
+	}
+	arg2 := queries.UpdateOrCreateCharacterPlanetParams{
+		CharacterID:  int64(arg.CharacterID),
+		EvePlanetID:  int64(arg.EvePlanetID),
+		LastUpdate:   arg.LastUpdate,
+		UpgradeLevel: int64(arg.UpgradeLevel),
+	}
+	id, err := st.q.UpdateOrCreateCharacterPlanet(ctx, arg2)
+	if err != nil {
+		return 0, fmt.Errorf("update or create create planet: %+v: %w", arg2, err)
+	}
+	return id, nil
+}
+
+func (st *Storage) DeleteCharacterPlanet(ctx context.Context, characterID int32, planetIDs []int32) error {
+	arg := queries.DeleteCharacterPlanetsParams{
+		CharacterID:  int64(characterID),
+		EvePlanetIds: convertNumericSlice[int32, int64](planetIDs),
+	}
+	if err := st.q.DeleteCharacterPlanets(ctx, arg); err != nil {
+		return fmt.Errorf("delete character planets: %+v: %w", arg, err)
+	}
+	return nil
 }
 
 func (st *Storage) GetCharacterPlanet(ctx context.Context, characterID int32, planetID int32) (*app.CharacterPlanet, error) {
@@ -52,48 +103,6 @@ func (st *Storage) ListCharacterPlanets(ctx context.Context, characterID int32) 
 	return oo, nil
 }
 
-// ReplaceCharacterPlanets replaces all existing planets for a character with the new ones and returns their IDs.
-func (st *Storage) ReplaceCharacterPlanets(ctx context.Context, characterID int32, args []CreateCharacterPlanetParams) ([]int64, error) {
-	tx, err := st.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-	qtx := st.q.WithTx(tx)
-	if err := qtx.DeleteCharacterPlanets(ctx, int64(characterID)); err != nil {
-		return nil, err
-	}
-	ids := make([]int64, 0)
-	for _, arg := range args {
-		id, err := createCharacterPlanet(ctx, qtx, arg)
-		if err != nil {
-			return nil, err
-		}
-		ids = append(ids, id)
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	return ids, nil
-}
-
-func createCharacterPlanet(ctx context.Context, q *queries.Queries, arg CreateCharacterPlanetParams) (int64, error) {
-	if arg.CharacterID == 0 || arg.EvePlanetID == 0 {
-		return 0, fmt.Errorf("create planet: IDs can not be zero: %+v", arg)
-	}
-	arg2 := queries.CreateCharacterPlanetParams{
-		CharacterID:  int64(arg.CharacterID),
-		EvePlanetID:  int64(arg.EvePlanetID),
-		LastUpdate:   arg.LastUpdate,
-		UpgradeLevel: int64(arg.UpgradeLevel),
-	}
-	id, err := q.CreateCharacterPlanet(ctx, arg2)
-	if err != nil {
-		return 0, fmt.Errorf("create planet: %+v: %w", arg2, err)
-	}
-	return id, nil
-}
-
 func characterPlanetFromDBModel(r queries.GetCharacterPlanetRow, pp []*app.PlanetPin) *app.CharacterPlanet {
 	et := eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory)
 	ess := eveSolarSystemFromDBModel(r.EveSolarSystem, r.EveConstellation, r.EveRegion)
@@ -102,6 +111,7 @@ func characterPlanetFromDBModel(r queries.GetCharacterPlanetRow, pp []*app.Plane
 		ID:           r.CharacterPlanet.ID,
 		CharacterID:  int32(r.CharacterPlanet.CharacterID),
 		EvePlanet:    ep,
+		LastNotified: optional.FromNullTime(r.CharacterPlanet.LastNotified),
 		LastUpdate:   r.CharacterPlanet.LastUpdate,
 		UpgradeLevel: int(r.CharacterPlanet.UpgradeLevel),
 	}

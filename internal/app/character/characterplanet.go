@@ -6,6 +6,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 	"github.com/antihax/goesi/esi"
 )
 
@@ -29,41 +30,55 @@ func (s *CharacterService) updateCharacterPlanetsESI(ctx context.Context, arg Up
 			return planets, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
+			// remove obsolete planets
+			pp, err := s.st.ListCharacterPlanets(ctx, characterID)
+			if err != nil {
+				return err
+			}
+			existing := set.New[int32]()
+			for _, p := range pp {
+				existing.Add(p.EvePlanet.ID)
+			}
 			planets := data.([]esi.GetCharactersCharacterIdPlanets200Ok)
-			args := make([]storage.CreateCharacterPlanetParams, len(planets))
-			for i, o := range planets {
+			incoming := set.New[int32]()
+			for _, p := range planets {
+				incoming.Add(p.PlanetId)
+			}
+			obsolete := existing.Difference(incoming)
+			if err := s.st.DeleteCharacterPlanet(ctx, characterID, obsolete.ToSlice()); err != nil {
+				return err
+			}
+			// update or create planet
+			for _, o := range planets {
 				_, err := s.EveUniverseService.GetOrCreateEvePlanetESI(ctx, o.PlanetId)
 				if err != nil {
 					return err
 				}
-				args[i] = storage.CreateCharacterPlanetParams{
+				arg := storage.UpdateOrCreateCharacterPlanetParams{
 					CharacterID:  characterID,
 					EvePlanetID:  o.PlanetId,
 					LastUpdate:   o.LastUpdate,
 					UpgradeLevel: int(o.UpgradeLevel),
 				}
-			}
-			_, err := s.st.ReplaceCharacterPlanets(ctx, characterID, args)
-			if err != nil {
-				return err
-			}
-			planets2, err := s.st.ListCharacterPlanets(ctx, characterID)
-			if err != nil {
-				return err
-			}
-			for _, p := range planets2 {
-				planet, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanetsPlanetId(ctx, characterID, p.EvePlanet.ID, nil)
+				characterPlanetID, err := s.st.UpdateOrCreateCharacterPlanet(ctx, arg)
 				if err != nil {
 					return err
 				}
+				planet, _, err := s.esiClient.ESI.PlanetaryInteractionApi.GetCharactersCharacterIdPlanetsPlanetId(ctx, characterID, o.PlanetId, nil)
+				if err != nil {
+					return err
+				}
+				// replace planet pins
+				if err := s.st.DeletePlanetPins(ctx, characterPlanetID); err != nil {
+					return err
+				}
 				for _, pin := range planet.Pins {
-					// create pins
 					et, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, pin.TypeId)
 					if err != nil {
 						return err
 					}
 					arg := storage.CreatePlanetPinParams{
-						CharacterPlanetID: p.ID,
+						CharacterPlanetID: characterPlanetID,
 						TypeID:            et.ID,
 						PinID:             pin.PinId,
 						ExpiryTime:        pin.ExpiryTime,

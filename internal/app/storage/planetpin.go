@@ -34,13 +34,20 @@ func (st *Storage) CreatePlanetPin(ctx context.Context, arg CreatePlanetPinParam
 		FactorySchemaID:        optional.ToNullInt64(arg.FactorySchemaID),
 		SchematicID:            optional.ToNullInt64(arg.SchematicID),
 		TypeID:                 int64(arg.TypeID),
-		ExpiryTime:             NewNullTime(arg.ExpiryTime),
-		InstallTime:            NewNullTime(arg.InstallTime),
-		LastCycleStart:         NewNullTime(arg.LastCycleStart),
+		ExpiryTime:             NewNullTimeFromTime(arg.ExpiryTime),
+		InstallTime:            NewNullTimeFromTime(arg.InstallTime),
+		LastCycleStart:         NewNullTimeFromTime(arg.LastCycleStart),
 		PinID:                  arg.PinID,
 	}
 	if err := st.q.CreatePlanetPin(ctx, arg2); err != nil {
 		return fmt.Errorf("create PlanetPin %v, %w", arg, err)
+	}
+	return nil
+}
+
+func (st *Storage) DeletePlanetPins(ctx context.Context, characterPlanetID int64) error {
+	if err := st.q.DeletePlanetPins(ctx, characterPlanetID); err != nil {
+		return fmt.Errorf("delete planet pins for %d: %w", characterPlanetID, err)
 	}
 	return nil
 }
