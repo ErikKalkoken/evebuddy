@@ -41,9 +41,11 @@ A more detailed overview of the provided features:
   - Planets: Status of PI colonies
   - Skills: Training queue, catalogue of all trained skills and what ships can be flown
   - Wallet: Wallet and Wallet Transactions
-- Overview of all your characters (e.g. wallet, skill points, location)
-- Wealth: Charts showing wealth distribution across all characters
-- Assets search: Full asset search across all your characters
+- Combined view over all characters:
+  - Overview (e.g. wallet, skill points, location)
+  - Assets search: Full asset search across all your characters
+  - Show list of all planetary industry colonies
+  - Wealth: Charts showing wealth distribution across all characters
 - Can minimize to system tray and show indicator for new mail
 - Receive desktop notifications about new communications (e.g. Structure gets attacked), mails and expired PI extractions
 - Single executable file, no installation required

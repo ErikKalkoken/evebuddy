@@ -144,6 +144,7 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 	case app.SectionPlanets:
 		if isShown && hasChanged {
 			u.planetArea.refresh()
+			u.coloniesArea.refresh()
 		}
 	case app.SectionMailLabels,
 		app.SectionMailLists:
@@ -201,7 +202,7 @@ func (u *UI) processNotifications(ctx context.Context, characterID int32) {
 		slog.Error("Failed to fetch notifications for processing", "characterID", characterID, "error", err)
 		return
 	}
-	characterName := u.fetchCharacterName(ctx, characterID)
+	characterName := u.StatusCacheService.CharacterName(characterID)
 	typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 	oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
 	for _, n := range nn {
@@ -225,7 +226,7 @@ func (u *UI) processMails(ctx context.Context, characterID int32) {
 		slog.Error("Failed to fetch mails for processing", "characterID", characterID, "error", err)
 		return
 	}
-	characterName := u.fetchCharacterName(ctx, characterID)
+	characterName := u.StatusCacheService.CharacterName(characterID)
 	oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
 	for _, m := range mm {
 		if m.Timestamp.Before(oldest) {
@@ -248,7 +249,7 @@ func (u *UI) notifyExpiredExtractions(ctx context.Context, characterID int32) {
 		slog.Error("failed to fetch character planets for notifications", "error", err)
 		return
 	}
-	characterName := u.fetchCharacterName(ctx, characterID)
+	characterName := u.StatusCacheService.CharacterName(characterID)
 	x := u.fyneApp.Preferences().String(settingNotifyPIEarliest)
 	earliest, _ := time.Parse(time.RFC3339, x) // time when setting was enabled
 	for _, p := range planets {
@@ -267,16 +268,4 @@ func (u *UI) notifyExpiredExtractions(ctx context.Context, characterID int32) {
 			slog.Error("failed to update last notified", "error", err)
 		}
 	}
-}
-
-func (u *UI) fetchCharacterName(ctx context.Context, characterID int32) string {
-	var characterName string
-	character, err := u.CharacterService.GetCharacter(ctx, characterID)
-	if err != nil {
-		slog.Error("Failed to fetch character", "characterID", characterID, "error", err)
-		characterName = "?"
-	} else {
-		characterName = character.EveCharacter.Name
-	}
-	return characterName
 }

@@ -164,6 +164,105 @@ func (q *Queries) GetCharacterPlanet(ctx context.Context, arg GetCharacterPlanet
 	return i, err
 }
 
+const listAllCharacterPlanets = `-- name: ListAllCharacterPlanets :many
+SELECT
+    cp.id, cp.character_id, cp.eve_planet_id, cp.last_update, cp.last_notified, cp.upgrade_level,
+    ep.id, ep.name, ep.eve_solar_system_id, ep.eve_type_id,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ect.id, ect.name, ect.is_published,
+    ess.id, ess.eve_constellation_id, ess.name, ess.security_status,
+    ecs.id, ecs.eve_region_id, ecs.name,
+    er.id, er.description, er.name
+FROM
+    character_planets cp
+    JOIN eve_planets ep ON ep.id = cp.eve_planet_id
+    JOIN eve_types et ON et.id = ep.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ect ON ect.id = eg.eve_category_id
+    JOIN eve_solar_systems ess ON ess.id = ep.eve_solar_system_id
+    JOIN eve_constellations ecs ON ecs.id = ess.eve_constellation_id
+    JOIN eve_regions er ON er.id = ecs.eve_region_id
+ORDER BY
+    ep.name
+`
+
+type ListAllCharacterPlanetsRow struct {
+	CharacterPlanet  CharacterPlanet
+	EvePlanet        EvePlanet
+	EveType          EveType
+	EveGroup         EveGroup
+	EveCategory      EveCategory
+	EveSolarSystem   EveSolarSystem
+	EveConstellation EveConstellation
+	EveRegion        EveRegion
+}
+
+func (q *Queries) ListAllCharacterPlanets(ctx context.Context) ([]ListAllCharacterPlanetsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllCharacterPlanets)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllCharacterPlanetsRow
+	for rows.Next() {
+		var i ListAllCharacterPlanetsRow
+		if err := rows.Scan(
+			&i.CharacterPlanet.ID,
+			&i.CharacterPlanet.CharacterID,
+			&i.CharacterPlanet.EvePlanetID,
+			&i.CharacterPlanet.LastUpdate,
+			&i.CharacterPlanet.LastNotified,
+			&i.CharacterPlanet.UpgradeLevel,
+			&i.EvePlanet.ID,
+			&i.EvePlanet.Name,
+			&i.EvePlanet.EveSolarSystemID,
+			&i.EvePlanet.EveTypeID,
+			&i.EveType.ID,
+			&i.EveType.EveGroupID,
+			&i.EveType.Capacity,
+			&i.EveType.Description,
+			&i.EveType.GraphicID,
+			&i.EveType.IconID,
+			&i.EveType.IsPublished,
+			&i.EveType.MarketGroupID,
+			&i.EveType.Mass,
+			&i.EveType.Name,
+			&i.EveType.PackagedVolume,
+			&i.EveType.PortionSize,
+			&i.EveType.Radius,
+			&i.EveType.Volume,
+			&i.EveGroup.ID,
+			&i.EveGroup.EveCategoryID,
+			&i.EveGroup.Name,
+			&i.EveGroup.IsPublished,
+			&i.EveCategory.ID,
+			&i.EveCategory.Name,
+			&i.EveCategory.IsPublished,
+			&i.EveSolarSystem.ID,
+			&i.EveSolarSystem.EveConstellationID,
+			&i.EveSolarSystem.Name,
+			&i.EveSolarSystem.SecurityStatus,
+			&i.EveConstellation.ID,
+			&i.EveConstellation.EveRegionID,
+			&i.EveConstellation.Name,
+			&i.EveRegion.ID,
+			&i.EveRegion.Description,
+			&i.EveRegion.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterPlanets = `-- name: ListCharacterPlanets :many
 SELECT
     cp.id, cp.character_id, cp.eve_planet_id, cp.last_update, cp.last_notified, cp.upgrade_level,

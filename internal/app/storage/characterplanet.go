@@ -63,6 +63,22 @@ func (st *Storage) GetCharacterPlanet(ctx context.Context, characterID int32, pl
 	return characterPlanetFromDBModel(r, pp), err
 }
 
+func (st *Storage) ListAllCharacterPlanets(ctx context.Context) ([]*app.CharacterPlanet, error) {
+	rows, err := st.q.ListAllCharacterPlanets(ctx)
+	if err != nil {
+		return nil, err
+	}
+	oo := make([]*app.CharacterPlanet, len(rows))
+	for i, r := range rows {
+		pp, err := st.ListPlanetPins(ctx, r.CharacterPlanet.ID)
+		if err != nil {
+			return nil, err
+		}
+		oo[i] = characterPlanetFromDBModel(queries.GetCharacterPlanetRow(r), pp)
+	}
+	return oo, nil
+}
+
 func (st *Storage) ListCharacterPlanets(ctx context.Context, characterID int32) ([]*app.CharacterPlanet, error) {
 	rows, err := st.q.ListCharacterPlanets(ctx, int64(characterID))
 	if err != nil {

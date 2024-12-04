@@ -99,7 +99,7 @@ func (a *planetArea) makeTopText() (string, widget.Importance) {
 	} else {
 		max = strconv.Itoa(s.ActiveSkillLevel + 1)
 	}
-	t := fmt.Sprintf("Colonies: %d / %s", len(a.planets), max)
+	t := fmt.Sprintf("Installed: %d / %s", len(a.planets), max)
 	return t, widget.MediumImportance
 }
 
@@ -120,11 +120,11 @@ func (a *planetArea) updateEntries() error {
 func (a *planetArea) updateTab() {
 	var expiredCount int
 	for _, p := range a.planets {
-		if p.ExtractionsExpiryTime().Before(time.Now()) {
+		if t := p.ExtractionsExpiryTime(); !t.IsZero() && t.Before(time.Now()) {
 			expiredCount++
 		}
 	}
-	s := "Planets"
+	s := "Colonies"
 	if expiredCount > 0 {
 		s += fmt.Sprintf(" (%d)", expiredCount)
 	}

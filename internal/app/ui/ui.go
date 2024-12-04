@@ -54,6 +54,7 @@ type UI struct {
 	assetTab              *container.TabItem
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
+	coloniesArea          *coloniesArea
 	character             *app.Character
 	deskApp               desktop.App
 	fyneApp               fyne.App
@@ -116,7 +117,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 		))
 
 	u.planetArea = u.newPlanetArea()
-	u.planetTab = container.NewTabItemWithIcon("Planets",
+	u.planetTab = container.NewTabItemWithIcon("Colonies",
 		theme.NewThemedResource(resourceEarthSvg), container.NewAppTabs(
 			container.NewTabItem("Colonies", u.planetArea.content),
 		))
@@ -131,11 +132,13 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 
 	u.overviewArea = u.newOverviewArea()
 	u.assetSearchArea = u.newAssetSearchArea()
+	u.coloniesArea = u.newColoniesArea()
 	u.wealthArea = u.newWealthArea()
 	u.overviewTab = container.NewTabItemWithIcon("Characters",
 		theme.NewThemedResource(resourceGroupSvg), container.NewAppTabs(
 			container.NewTabItem("Overview", u.overviewArea.content),
 			container.NewTabItem("Assets", u.assetSearchArea.content),
+			container.NewTabItem("Colonies", u.coloniesArea.content),
 			container.NewTabItem("Wealth", u.wealthArea.content),
 		))
 
@@ -423,6 +426,7 @@ func (u *UI) refreshCrossPages() {
 		"assetSearch": u.assetSearchArea.refresh,
 		"overview":    u.overviewArea.refresh,
 		"toolbar":     u.toolbarArea.refresh,
+		"colony":      u.coloniesArea.refresh,
 		"wealth":      u.wealthArea.refresh,
 		"statusBar":   u.statusBarArea.refreshCharacterCount,
 	}

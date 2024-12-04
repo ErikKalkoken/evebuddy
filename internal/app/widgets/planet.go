@@ -33,10 +33,10 @@ func NewPlanet() *Planet {
 	image := canvas.NewImageFromResource(theme.BrokenImageIcon())
 	image.FillMode = canvas.ImageFillContain
 	image.SetMinSize(fyne.Size{Width: planetWidgetSize, Height: planetWidgetSize})
-	expired := widget.NewLabel("EXPIRED")
-	expired.Importance = widget.WarningImportance
+	offline := widget.NewLabel("OFFLINE")
+	offline.Importance = widget.WarningImportance
 	w := &Planet{
-		expired:    expired,
+		expired:    offline,
 		extracting: widget.NewLabel(""),
 		image:      image,
 		producing:  widget.NewLabel(""),
@@ -77,10 +77,19 @@ func (w *Planet) Set(cp *app.CharacterPlanet) {
 	} else {
 		w.expired.Hide()
 	}
-	w.extracting.SetText(fmt.Sprintf("%s by %s", extracted, deadline))
+	var x string
+	if extracted != "" {
+		x = fmt.Sprintf("%s by %s", extracted, deadline)
+	} else {
+		x = "-"
+	}
+	w.extracting.SetText(x)
 
-	produced2 := strings.Join(cp.ProducedSchematicNames(), ",")
-	w.producing.SetText(fmt.Sprintf("%s", produced2))
+	produced := strings.Join(cp.ProducedSchematicNames(), ",")
+	if produced == "" {
+		produced = "-"
+	}
+	w.producing.SetText(fmt.Sprintf("%s", produced))
 }
 
 func (w *Planet) CreateRenderer() fyne.WidgetRenderer {

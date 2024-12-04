@@ -11,6 +11,10 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
+func (s *CharacterService) ListAllCharacterPlanets(ctx context.Context) ([]*app.CharacterPlanet, error) {
+	return s.st.ListAllCharacterPlanets(ctx)
+}
+
 func (s *CharacterService) ListCharacterPlanets(ctx context.Context, characterID int32) ([]*app.CharacterPlanet, error) {
 	return s.st.ListCharacterPlanets(ctx, characterID)
 }
