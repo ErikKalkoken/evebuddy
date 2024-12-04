@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -13,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 const (
@@ -58,41 +56,33 @@ func (w *Planet) Set(cp *app.CharacterPlanet) {
 	w.security.Refresh()
 	s := fmt.Sprintf("%s - %s - %d installations", cp.EvePlanet.Name, cp.EvePlanet.TypeDisplay(), len(cp.Pins))
 	w.title.SetText(s)
-	extractions := set.New[string]()
-	expireTimes := make([]time.Time, 0)
-	productions := set.New[string]()
-	for _, p := range cp.Pins {
-		if x := p.ExpiryTime.ValueOrZero(); x.After(time.Now()) {
-			expireTimes = append(expireTimes, x)
-		}
-		switch p.Type.Group.ID {
-		case app.EveGroupProcessors:
-			if p.Schematic != nil {
-				productions.Add(p.Schematic.Name)
-			}
-		case app.EveGroupExtractorControlUnits:
-			if p.ExtractorProductType != nil {
-				extractions.Add(p.ExtractorProductType.Name)
-			}
-		}
-	}
-	extractions2 := extractions.ToSlice()
-	slices.Sort(extractions2)
-	ex := strings.Join(extractions2, ",")
+
+	extracted := extractedStringsSorted(cp.ExtractedTypes(), func(a *app.EveType) string {
+		return a.Name
+	})
+	extracted2 := strings.Join(extracted, ",")
 	var deadline string
-	if len(expireTimes) == 0 {
+	if x := cp.ExtractionsExpire(); x.IsZero() {
 		deadline = "EXPIRED"
 	} else {
-		slices.SortFunc(expireTimes, func(a, b time.Time) int {
-			return b.Compare(a)
-		})
-		deadline = expireTimes[0].Format(app.TimeDefaultFormat)
+		deadline = x.Format(app.TimeDefaultFormat)
 	}
-	w.extracting.SetText(fmt.Sprintf("%s by %s", ex, deadline))
-	productions2 := productions.ToSlice()
-	slices.Sort(productions2)
-	prd := strings.Join(productions2, ",")
-	w.producing.SetText(fmt.Sprintf("%s", prd))
+	w.extracting.SetText(fmt.Sprintf("%s by %s", extracted2, deadline))
+
+	produced := extractedStringsSorted(cp.ProducedSchematics(), func(a *app.EveSchematic) string {
+		return a.Name
+	})
+	produced2 := strings.Join(produced, ",")
+	w.producing.SetText(fmt.Sprintf("%s", produced2))
+}
+
+func extractedStringsSorted[T any](s []T, extract func(a T) string) []string {
+	s2 := make([]string, 0)
+	for _, x := range s {
+		s2 = append(s2, extract(x))
+	}
+	slices.Sort(s2)
+	return s2
 }
 
 func (w *Planet) CreateRenderer() fyne.WidgetRenderer {
