@@ -45,7 +45,7 @@ func (a *planetArea) makeList() *widget.List {
 			return len(a.planets)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewPlanet(a.u.EveImageService)
+			return widgets.NewPlanet()
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.planets) || id < 0 {

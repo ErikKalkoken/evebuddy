@@ -1,6 +1,8 @@
 package app
 
-import "regexp"
+import (
+	"regexp"
+)
 
 var rePlanetType = regexp.MustCompile(`Planet \((\S*)\)`)
 
@@ -12,7 +14,7 @@ type EvePlanet struct {
 	Type        *EveType
 }
 
-func (ep *EvePlanet) TypeDisplay() string {
+func (ep EvePlanet) TypeDisplay() string {
 	if ep.Type == nil {
 		return ""
 	}

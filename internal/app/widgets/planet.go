@@ -18,7 +18,7 @@ import (
 
 const (
 	planetImageSize  = 256
-	planetWidgetSize = 100
+	planetWidgetSize = 120
 )
 
 type Planet struct {
@@ -28,10 +28,9 @@ type Planet struct {
 	title      *widget.Label
 	extracting *widget.Label
 	producing  *widget.Label
-	sv         app.EveImageService
 }
 
-func NewPlanet(sv app.EveImageService) *Planet {
+func NewPlanet() *Planet {
 	image := canvas.NewImageFromResource(theme.BrokenImageIcon())
 	image.FillMode = canvas.ImageFillContain
 	image.SetMinSize(fyne.Size{Width: planetWidgetSize, Height: planetWidgetSize})
@@ -41,17 +40,19 @@ func NewPlanet(sv app.EveImageService) *Planet {
 		producing:  widget.NewLabel(""),
 		security:   widget.NewLabel(""),
 		title:      widget.NewLabel(""),
-		sv:         sv,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *Planet) Set(cp *app.CharacterPlanet) {
-	refreshImageResourceAsync(w.image, func() (fyne.Resource, error) {
-		return w.sv.InventoryTypeIcon(cp.EvePlanet.Type.ID, planetImageSize)
-
-	})
+	if cp.EvePlanet != nil && cp.EvePlanet.Type != nil {
+		res, ok := cp.EvePlanet.Type.Icon()
+		if ok {
+			w.image.Resource = res
+			w.image.Refresh()
+		}
+	}
 	w.security.Text = fmt.Sprintf("%.1f", cp.EvePlanet.SolarSystem.SecurityStatus)
 	w.security.Importance = cp.EvePlanet.SolarSystem.SecurityType().ToImportance()
 	w.security.Refresh()
@@ -98,11 +99,10 @@ func (w *Planet) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewBorder(
 		nil,
 		nil,
-		w.image,
+		container.NewVBox(w.image),
 		nil,
 		container.NewVBox(
-			container.NewHBox(w.security, w.title),
-			widget.NewSeparator(),
+			container.NewStack(canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground)), container.NewHBox(w.security, w.title)),
 			widget.NewForm(
 				widget.NewFormItem("Extracting", w.extracting),
 				widget.NewFormItem("Producing", w.producing),
