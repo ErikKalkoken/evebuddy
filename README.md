@@ -65,6 +65,12 @@ You can receive, send and delete eve mails. Similar to the in-game mail client.
 
 ![Screenshot from 2024-11-10 16-52-55](https://github.com/user-attachments/assets/d7b226c5-1355-4b99-bef7-e0a3b1e75cd6)
 
+### Planetary Industry
+
+You can see the current status of your PI colonies. And you can also get notifications when an extraction has expired.
+
+![Screenshot from 2024-12-04 15-15-32](https://github.com/user-attachments/assets/a866bd0c-e18a-46b5-a99e-bc94520e3295)
+
 ### Overview of all characters
 
 The overview pages gives you key information about all you characters at a glance.
