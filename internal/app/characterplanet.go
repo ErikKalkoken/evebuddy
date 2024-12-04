@@ -30,6 +30,12 @@ func (cp CharacterPlanet) ExtractedTypes() []*EveType {
 	return slices.Collect(maps.Values(types))
 }
 
+func (cp CharacterPlanet) ExtractedTypeNames() []string {
+	return extractedStringsSorted(cp.ExtractedTypes(), func(a *EveType) string {
+		return a.Name
+	})
+}
+
 // ExtractionsExpiryTime returns the final expiry time for all extractions.
 // When no expiry data is found it will return a zero time.
 func (cp CharacterPlanet) ExtractionsExpiryTime() time.Time {
@@ -38,9 +44,10 @@ func (cp CharacterPlanet) ExtractionsExpiryTime() time.Time {
 		if p.Type.Group.ID != EveGroupExtractorControlUnits {
 			continue
 		}
-		if x := p.ExpiryTime.ValueOrZero(); x.After(time.Now()) {
-			expireTimes = append(expireTimes, x)
+		if p.ExpiryTime.IsEmpty() {
+			continue
 		}
+		expireTimes = append(expireTimes, p.ExpiryTime.ValueOrZero())
 	}
 	if len(expireTimes) == 0 {
 		return time.Time{}
@@ -63,6 +70,12 @@ func (cp CharacterPlanet) ProducedSchematics() []*EveSchematic {
 	return slices.Collect(maps.Values(schematics))
 }
 
+func (cp CharacterPlanet) ProducedSchematicNames() []string {
+	return extractedStringsSorted(cp.ProducedSchematics(), func(a *EveSchematic) string {
+		return a.Name
+	})
+}
+
 type PlanetPin struct {
 	ID                   int64
 	ExpiryTime           optional.Optional[time.Time]
@@ -72,4 +85,13 @@ type PlanetPin struct {
 	LastCycleStart       optional.Optional[time.Time]
 	Schematic            *EveSchematic
 	Type                 *EveType
+}
+
+func extractedStringsSorted[T any](s []T, extract func(a T) string) []string {
+	s2 := make([]string, 0)
+	for _, x := range s {
+		s2 = append(s2, extract(x))
+	}
+	slices.Sort(s2)
+	return s2
 }

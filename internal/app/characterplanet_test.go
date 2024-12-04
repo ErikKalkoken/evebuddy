@@ -152,6 +152,21 @@ func TestCharacterPlanetExtractionsExpire(t *testing.T) {
 		// then
 		assert.Equal(t, et2, x)
 	})
+	t.Run("should return expiration date in the past", func(t *testing.T) {
+		// given
+		et1 := time.Now().Add(-5 * time.Hour).UTC()
+		cp := &app.CharacterPlanet{Pins: []*app.PlanetPin{
+			{
+				Type:       extractorType,
+				ExpiryTime: optional.New(et1),
+			},
+			processorPin,
+		}}
+		// when
+		x := cp.ExtractionsExpiryTime()
+		// then
+		assert.Equal(t, et1, x)
+	})
 	t.Run("should return zero time when no expiration date", func(t *testing.T) {
 		// given
 		cp := &app.CharacterPlanet{Pins: []*app.PlanetPin{
