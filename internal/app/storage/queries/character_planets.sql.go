@@ -265,6 +265,27 @@ func (q *Queries) ListCharacterPlanets(ctx context.Context, characterID int64) (
 	return items, nil
 }
 
+const updateCharacterPlanetLastNotified = `-- name: UpdateCharacterPlanetLastNotified :exec
+UPDATE
+    character_planets
+SET
+    last_notified = ?
+WHERE
+    character_id = ?
+    AND eve_planet_id = ?
+`
+
+type UpdateCharacterPlanetLastNotifiedParams struct {
+	LastNotified sql.NullTime
+	CharacterID  int64
+	EvePlanetID  int64
+}
+
+func (q *Queries) UpdateCharacterPlanetLastNotified(ctx context.Context, arg UpdateCharacterPlanetLastNotifiedParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterPlanetLastNotified, arg.LastNotified, arg.CharacterID, arg.EvePlanetID)
+	return err
+}
+
 const updateOrCreateCharacterPlanet = `-- name: UpdateOrCreateCharacterPlanet :one
 INSERT INTO
     character_planets (

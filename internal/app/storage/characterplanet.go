@@ -36,30 +36,6 @@ func (st *Storage) CreateCharacterPlanet(ctx context.Context, arg CreateCharacte
 	return id, nil
 }
 
-type UpdateOrCreateCharacterPlanetParams struct {
-	CharacterID  int32
-	EvePlanetID  int32
-	LastUpdate   time.Time
-	UpgradeLevel int
-}
-
-func (st *Storage) UpdateOrCreateCharacterPlanet(ctx context.Context, arg UpdateOrCreateCharacterPlanetParams) (int64, error) {
-	if arg.CharacterID == 0 || arg.EvePlanetID == 0 {
-		return 0, fmt.Errorf("update or create planet: IDs can not be zero: %+v", arg)
-	}
-	arg2 := queries.UpdateOrCreateCharacterPlanetParams{
-		CharacterID:  int64(arg.CharacterID),
-		EvePlanetID:  int64(arg.EvePlanetID),
-		LastUpdate:   arg.LastUpdate,
-		UpgradeLevel: int64(arg.UpgradeLevel),
-	}
-	id, err := st.q.UpdateOrCreateCharacterPlanet(ctx, arg2)
-	if err != nil {
-		return 0, fmt.Errorf("update or create create planet: %+v: %w", arg2, err)
-	}
-	return id, nil
-}
-
 func (st *Storage) DeleteCharacterPlanet(ctx context.Context, characterID int32, planetIDs []int32) error {
 	arg := queries.DeleteCharacterPlanetsParams{
 		CharacterID:  int64(characterID),
@@ -117,4 +93,49 @@ func characterPlanetFromDBModel(r queries.GetCharacterPlanetRow, pp []*app.Plane
 	}
 	o.Pins = pp
 	return o
+}
+
+type UpdateCharacterPlanetLastNotifiedParams struct {
+	CharacterID  int32
+	EvePlanetID  int32
+	LastNotified time.Time
+}
+
+func (st *Storage) UpdateCharacterPlanetLastNotified(ctx context.Context, arg UpdateCharacterPlanetLastNotifiedParams) error {
+	if arg.CharacterID == 0 || arg.EvePlanetID == 0 {
+		return fmt.Errorf("update character planet last notified : IDs can not be zero: %+v", arg)
+	}
+	arg2 := queries.UpdateCharacterPlanetLastNotifiedParams{
+		CharacterID:  int64(arg.CharacterID),
+		EvePlanetID:  int64(arg.EvePlanetID),
+		LastNotified: NewNullTimeFromTime(arg.LastNotified),
+	}
+	if err := st.q.UpdateCharacterPlanetLastNotified(ctx, arg2); err != nil {
+		return fmt.Errorf("update character planet last notified: %+v: %w", arg2, err)
+	}
+	return nil
+}
+
+type UpdateOrCreateCharacterPlanetParams struct {
+	CharacterID  int32
+	EvePlanetID  int32
+	LastUpdate   time.Time
+	UpgradeLevel int
+}
+
+func (st *Storage) UpdateOrCreateCharacterPlanet(ctx context.Context, arg UpdateOrCreateCharacterPlanetParams) (int64, error) {
+	if arg.CharacterID == 0 || arg.EvePlanetID == 0 {
+		return 0, fmt.Errorf("update or create planet: IDs can not be zero: %+v", arg)
+	}
+	arg2 := queries.UpdateOrCreateCharacterPlanetParams{
+		CharacterID:  int64(arg.CharacterID),
+		EvePlanetID:  int64(arg.EvePlanetID),
+		LastUpdate:   arg.LastUpdate,
+		UpgradeLevel: int64(arg.UpgradeLevel),
+	}
+	id, err := st.q.UpdateOrCreateCharacterPlanet(ctx, arg2)
+	if err != nil {
+		return 0, fmt.Errorf("update or create create planet: %+v: %w", arg2, err)
+	}
+	return id, nil
 }

@@ -64,6 +64,15 @@ WHERE
 ORDER BY
     ep.name;
 
+-- name: UpdateCharacterPlanetLastNotified :exec
+UPDATE
+    character_planets
+SET
+    last_notified = ?
+WHERE
+    character_id = ?
+    AND eve_planet_id = ?;
+
 -- name: UpdateOrCreateCharacterPlanet :one
 INSERT INTO
     character_planets (

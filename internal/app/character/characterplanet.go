@@ -2,6 +2,7 @@ package character
 
 import (
 	"context"
+	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -12,6 +13,15 @@ import (
 
 func (s *CharacterService) ListCharacterPlanets(ctx context.Context, characterID int32) ([]*app.CharacterPlanet, error) {
 	return s.st.ListCharacterPlanets(ctx, characterID)
+}
+
+func (s *CharacterService) UpdateCharacterPlanetLastNotified(ctx context.Context, characterID, evePlanetID int32, t time.Time) error {
+	arg := storage.UpdateCharacterPlanetLastNotifiedParams{
+		CharacterID:  characterID,
+		EvePlanetID:  evePlanetID,
+		LastNotified: t,
+	}
+	return s.st.UpdateCharacterPlanetLastNotified(ctx, arg)
 }
 
 // TODO: Improve update logic to only update changes

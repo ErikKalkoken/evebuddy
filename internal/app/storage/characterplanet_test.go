@@ -111,4 +111,24 @@ func TestPlanet(t *testing.T) {
 			assert.ElementsMatch(t, []int32{p3.EvePlanet.ID}, []int32{oo[0].EvePlanet.ID})
 		}
 	})
+	t.Run("can update last notified", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		planet := factory.CreateCharacterPlanet()
+		lastNotified := factory.RandomTime()
+		arg := storage.UpdateCharacterPlanetLastNotifiedParams{
+			CharacterID:  planet.CharacterID,
+			EvePlanetID:  planet.EvePlanet.ID,
+			LastNotified: lastNotified,
+		}
+		// when
+		err := r.UpdateCharacterPlanetLastNotified(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			i, err := r.GetCharacterPlanet(ctx, planet.CharacterID, planet.EvePlanet.ID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, lastNotified, i.LastNotified.ValueOrZero())
+			}
+		}
+	})
 }

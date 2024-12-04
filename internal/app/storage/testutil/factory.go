@@ -44,6 +44,13 @@ func NewFactory(st *storage.Storage, db *sql.DB) Factory {
 	return f
 }
 
+func (f Factory) RandomTime() time.Time {
+	hours := time.Duration(rand.IntN(100_000))
+	seconds := time.Duration(rand.IntN(3600))
+	d := hours*time.Hour + seconds*time.Second
+	return time.Now().Add(-d).UTC()
+}
+
 func (f Factory) CreateCharacter(args ...storage.UpdateOrCreateCharacterParams) *app.Character {
 	ctx := context.TODO()
 	var arg storage.UpdateOrCreateCharacterParams
