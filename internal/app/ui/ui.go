@@ -65,6 +65,7 @@ type UI struct {
 	overviewArea          *overviewArea
 	overviewTab           *container.TabItem
 	planetArea            *planetArea
+	planetTab             *container.TabItem
 	settingsWindow        fyne.Window
 	sfg                   *singleflight.Group
 	shipsArea             *shipsArea
@@ -115,7 +116,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 		))
 
 	u.planetArea = u.newPlanetArea()
-	planetTab := container.NewTabItemWithIcon("Planets",
+	u.planetTab = container.NewTabItemWithIcon("Planets",
 		theme.NewThemedResource(resourceEarthSvg), container.NewAppTabs(
 			container.NewTabItem("Colonies", u.planetArea.content),
 		))
@@ -156,7 +157,15 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 			container.NewTabItem("Market Transactions", u.walletTransactionArea.content),
 		))
 
-	u.tabs = container.NewAppTabs(characterTab, u.assetTab, u.mailTab, planetTab, u.skillTab, u.walletTab, u.overviewTab)
+	u.tabs = container.NewAppTabs(
+		characterTab,
+		u.assetTab,
+		u.mailTab,
+		u.planetTab,
+		u.skillTab,
+		u.walletTab,
+		u.overviewTab,
+	)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
 	u.toolbarArea = u.newToolbarArea()

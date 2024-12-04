@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -76,6 +77,7 @@ func (a *planetArea) refresh() {
 	a.top.Importance = i
 	a.top.Refresh()
 	a.list.Refresh()
+	a.updateTab()
 }
 
 func (a *planetArea) makeTopText() (string, widget.Importance) {
@@ -113,4 +115,19 @@ func (a *planetArea) updateEntries() error {
 		return fmt.Errorf("fetch planets for character %d: %w", characterID, err)
 	}
 	return nil
+}
+
+func (a *planetArea) updateTab() {
+	var expiredCount int
+	for _, p := range a.planets {
+		if p.ExtractionsExpiryTime().Before(time.Now()) {
+			expiredCount++
+		}
+	}
+	s := "Planets"
+	if expiredCount > 0 {
+		s += fmt.Sprintf(" (%d)", expiredCount)
+	}
+	a.u.planetTab.Text = s
+	a.u.tabs.Refresh()
 }

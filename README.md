@@ -38,13 +38,14 @@ A more detailed overview of the provided features:
   - Assets: Full asset browser
   - Character: Curren clone, jump clones, and more...
   - Mails: Full mail client for receiving and sending Eve mails
+  - Planets: Status of PI colonies
   - Skills: Training queue, catalogue of all trained skills and what ships can be flown
   - Wallet: Wallet and Wallet Transactions
 - Overview of all your characters (e.g. wallet, skill points, location)
 - Wealth: Charts showing wealth distribution across all characters
 - Assets search: Full asset search across all your characters
 - Can minimize to system tray and show indicator for new mail
-- Receive desktop notifications about new communications (e.g. Structure gets attacked) and mails
+- Receive desktop notifications about new communications (e.g. Structure gets attacked), mails and expired PI extractions
 - Single executable file, no installation required
 - Desktop app that runs on Windows, Linux and macOS
 - Automatic dark and light theme
