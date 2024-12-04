@@ -93,7 +93,9 @@ func (eu *EveUniverseService) AddMissingEveEntities(ctx context.Context, ids []i
 	}
 	if len(badIDs) > 0 {
 		for _, id := range badIDs {
-			eu.st.GetOrCreateEveEntity(ctx, id, "?", app.EveEntityUnknown)
+			if _, err := eu.st.GetOrCreateEveEntity(ctx, id, "?", app.EveEntityUnknown); err != nil {
+				slog.Error("Failed to mark unresolvable EveEntity", "id", id, "error", err)
+			}
 		}
 		slog.Warn("Marking unresolvable EveEntity IDs as unknown", "ids", badIDs)
 	}

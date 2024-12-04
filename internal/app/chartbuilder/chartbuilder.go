@@ -153,13 +153,13 @@ func imageSize(w fyne.Window, s fyne.Size) (int, int) {
 	return int(s.Width * f), int(s.Height * f)
 }
 
-func fontSize(w fyne.Window, size float32) float64 {
-	if w == nil {
-		return float64(size)
-	}
-	f := w.Canvas().Scale()
-	return float64(size / f)
-}
+// func fontSize(w fyne.Window, size float32) float64 {
+// 	if w == nil {
+// 		return float64(size)
+// 	}
+// 	f := w.Canvas().Scale()
+// 	return float64(size / f)
+// }
 
 func (cb ChartBuilder) makePieChart(width, height int, values []Value) ([]byte, error) {
 	var total, other float64

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification/notification2"
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/antihax/goesi/notification"
@@ -67,7 +66,7 @@ func (s *EveNotificationService) renderOwnershipTransferred(ctx context.Context,
 		structureTypeID int32
 	}
 	if strings.Contains(text, "newOwnerCorpID") {
-		var data notification2.OwnershipTransferredV2
+		var data notification.OwnershipTransferredV2
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
@@ -176,7 +175,7 @@ func (s *EveNotificationService) renderStructureFuelAlert(ctx context.Context, t
 
 func (s *EveNotificationService) renderStructureImpendingAbandonmentAssetsAtRisk(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
-	var data notification2.StructureImpendingAbandonmentAssetsAtRisk
+	var data notification.StructureImpendingAbandonmentAssetsAtRisk
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -241,7 +240,7 @@ func (s *EveNotificationService) renderStructureItemsDelivered(ctx context.Conte
 
 func (s *EveNotificationService) renderStructureItemsMovedToSafety(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
-	var data notification2.StructureItemsMovedToSafety
+	var data notification.StructureItemsMovedToSafety
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}

@@ -21,7 +21,9 @@ func TestApplyMigrations(t *testing.T) {
 	t.Run("should apply all migrations from scratch", func(t *testing.T) {
 		// given
 		db := CreateTestDB()
-		createMigrationTracking(db)
+		if err := createMigrationTracking(db); err != nil {
+			t.Fatal(err)
+		}
 		// when
 		err := applyNewMigrations(db, migrations)
 		// then
@@ -41,8 +43,12 @@ func TestApplyMigrations(t *testing.T) {
 	t.Run("should apply new migrations only", func(t *testing.T) {
 		// given
 		db := CreateTestDB()
-		createMigrationTracking(db)
-		recordMigration(db, "0001_alpha")
+		if err := createMigrationTracking(db); err != nil {
+			t.Fatal(err)
+		}
+		if err := recordMigration(db, "0001_alpha"); err != nil {
+			t.Fatal(err)
+		}
 		// when
 		err := applyNewMigrations(db, migrations)
 		// then
@@ -62,9 +68,15 @@ func TestApplyMigrations(t *testing.T) {
 	t.Run("should do nothing when no new migrations", func(t *testing.T) {
 		// given
 		db := CreateTestDB()
-		createMigrationTracking(db)
-		recordMigration(db, "0001_alpha")
-		recordMigration(db, "0002_bravo")
+		if err := createMigrationTracking(db); err != nil {
+			t.Fatal(err)
+		}
+		if err := recordMigration(db, "0001_alpha"); err != nil {
+			t.Fatal(err)
+		}
+		if err := recordMigration(db, "0002_bravo"); err != nil {
+			t.Fatal(err)
+		}
 		// when
 		err := applyNewMigrations(db, migrations)
 		// then
@@ -86,9 +98,15 @@ func TestApplyMigrations(t *testing.T) {
 func TestMigrate(t *testing.T) {
 	t.Run("can record migrations", func(t *testing.T) {
 		db := CreateTestDB()
-		createMigrationTracking(db)
-		recordMigration(db, "test1")
-		recordMigration(db, "test2")
+		if err := createMigrationTracking(db); err != nil {
+			t.Fatal(err)
+		}
+		if err := recordMigration(db, "test1"); err != nil {
+			t.Fatal(err)
+		}
+		if err := recordMigration(db, "test2"); err != nil {
+			t.Fatal(err)
+		}
 		names, err := listMigrationNames(db)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []string{"test1", "test2"}, names)

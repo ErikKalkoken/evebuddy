@@ -39,10 +39,12 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 		a := overviewArea{
 			u: u,
 		}
-		st.UpdateOrCreateEveLocation(ctx, storage.UpdateOrCreateLocationParams{
+		if err := st.UpdateOrCreateEveLocation(ctx, storage.UpdateOrCreateLocationParams{
 			ID:   99,
 			Name: "Dummy",
-		})
+		}); err != nil {
+			t.Fatal(err)
+		}
 		factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{
 			LocationID: optional.New(int64(99)),
 		})

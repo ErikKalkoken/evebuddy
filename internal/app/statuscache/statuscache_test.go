@@ -188,7 +188,9 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		sc.InitCache(ctx, st)
+		if err := sc.InitCache(ctx, st); err != nil {
+			t.Fatal(err)
+		}
 		// when
 		ss := sc.Summary()
 		// then
@@ -222,7 +224,9 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		sc.InitCache(ctx, st)
+		if err := sc.InitCache(ctx, st); err != nil {
+			t.Fatal(err)
+		}
 		o := &app.CharacterSectionStatus{
 			CharacterID:  characters[0],
 			Section:      app.SectionLocation,
@@ -263,7 +267,9 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		sc.InitCache(ctx, st)
+		if err := sc.InitCache(ctx, st); err != nil {
+			t.Fatal(err)
+		}
 		o := &app.GeneralSectionStatus{
 			Section:      app.SectionEveCharacters,
 			ErrorMessage: "error",
@@ -304,7 +310,9 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		sc.InitCache(ctx, st)
+		if err := sc.InitCache(ctx, st); err != nil {
+			t.Fatal(err)
+		}
 		// when
 		ss := sc.Summary()
 		// then
@@ -341,7 +349,9 @@ func TestStatusCacheSummary(t *testing.T) {
 			})
 			sc.GeneralSectionSet(o)
 		}
-		sc.InitCache(ctx, st)
+		if err := sc.InitCache(ctx, st); err != nil {
+			t.Fatal(err)
+		}
 		// when
 		ss := sc.Summary()
 		// then
@@ -378,7 +388,9 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.GeneralSectionSet(o)
 			}
 		}
-		sc.InitCache(ctx, st)
+		if err := sc.InitCache(ctx, st); err != nil {
+			t.Fatal(err)
+		}
 		o := &app.CharacterSectionStatus{
 			CharacterID: characters[0],
 			Section:     app.SectionLocation,
@@ -419,7 +431,9 @@ func TestStatusCacheSummary(t *testing.T) {
 				sc.GeneralSectionSet(o)
 			}
 		}
-		sc.InitCache(ctx, st)
+		if err := sc.InitCache(ctx, st); err != nil {
+			t.Fatal(err)
+		}
 		o := &app.GeneralSectionStatus{
 			Section:     app.SectionEveCharacters,
 			CompletedAt: time.Now().Add(-30 * time.Hour),

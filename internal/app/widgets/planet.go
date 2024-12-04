@@ -89,7 +89,7 @@ func (w *Planet) Set(cp *app.CharacterPlanet) {
 	if produced == "" {
 		produced = "-"
 	}
-	w.producing.SetText(fmt.Sprintf("%s", produced))
+	w.producing.SetText(produced)
 }
 
 func (w *Planet) CreateRenderer() fyne.WidgetRenderer {

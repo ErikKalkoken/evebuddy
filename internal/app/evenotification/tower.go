@@ -78,7 +78,6 @@ func (s *EveNotificationService) renderTowerResourceAlertMsg(ctx context.Context
 type towerInfo struct {
 	type_ *app.EveType
 	moon  *app.EveMoon
-	owner *app.EveEntity
 	intro string
 }
 

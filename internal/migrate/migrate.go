@@ -132,7 +132,9 @@ func applyNewMigrations(db *sql.DB, migrations MigrateFS) error {
 			return err
 		}
 		count++
-		recordMigration(db, m.name)
+		if err := recordMigration(db, m.name); err != nil {
+			return err
+		}
 		slog.Info("Successfully applied new migration", "name", m.name)
 	}
 	fmt.Println("DONE")

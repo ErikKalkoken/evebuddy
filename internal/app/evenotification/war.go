@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification/notification2"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/antihax/goesi/notification"
 	"gopkg.in/yaml.v3"
@@ -105,7 +104,7 @@ func (s *EveNotificationService) renderDeclareWar(ctx context.Context, text stri
 
 func (s *EveNotificationService) renderWarAdopted(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
-	var data notification2.WarAdopted
+	var data notification.WarAdopted
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -140,7 +139,7 @@ func (s *EveNotificationService) renderWarAdopted(ctx context.Context, text stri
 
 func (s *EveNotificationService) renderWarDeclared(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
-	var data notification2.WarDeclared
+	var data notification.WarDeclared
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -168,7 +167,7 @@ func (s *EveNotificationService) renderWarDeclared(ctx context.Context, text str
 
 func (s *EveNotificationService) renderWarHQRemovedFromSpace(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
-	var data notification2.WarHQRemovedFromSpace
+	var data notification.WarHQRemovedFromSpace
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -192,7 +191,7 @@ func (s *EveNotificationService) renderWarHQRemovedFromSpace(ctx context.Context
 
 func (s *EveNotificationService) renderWarInherited(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
-	var data notification2.WarInherited
+	var data notification.WarInherited
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -233,7 +232,7 @@ func (s *EveNotificationService) renderWarInherited(ctx context.Context, text st
 
 func (s *EveNotificationService) renderWarInvalid(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
-	var data notification2.WarInvalid
+	var data notification.WarInvalid
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
@@ -258,7 +257,7 @@ func (s *EveNotificationService) renderWarInvalid(ctx context.Context, text stri
 
 func (s *EveNotificationService) renderWarRetractedByConcord(ctx context.Context, text string) (optional.Optional[string], optional.Optional[string], error) {
 	var title, body optional.Optional[string]
-	var data notification2.WarRetractedByConcord
+	var data notification.WarRetractedByConcord
 	if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 		return title, body, err
 	}
