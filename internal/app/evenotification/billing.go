@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification/notification2"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/antihax/goesi/notification"
 	"github.com/dustin/go-humanize"
@@ -35,7 +34,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		body.Set(out)
 
 	case BillOutOfMoneyMsg:
-		var data notification2.CorpAllBillMsgV2
+		var data notification.CorpAllBillMsgV2
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
@@ -52,7 +51,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		body.Set(out)
 
 	case CorpAllBillMsg:
-		var data notification2.CorpAllBillMsgV2
+		var data notification.CorpAllBillMsgV2
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
@@ -103,7 +102,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 
 	case InfrastructureHubBillAboutToExpire:
 		title.Set("IHub Bill About to Expire")
-		var data notification2.InfrastructureHubBillAboutToExpire
+		var data notification.InfrastructureHubBillAboutToExpire
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
@@ -119,7 +118,7 @@ func (s *EveNotificationService) renderBilling(ctx context.Context, type_ Type, 
 		body.Set(out)
 
 	case IHubDestroyedByBillFailure:
-		var data notification2.IHubDestroyedByBillFailure
+		var data notification.IHubDestroyedByBillFailure
 		if err := yaml.Unmarshal([]byte(text), &data); err != nil {
 			return title, body, err
 		}
