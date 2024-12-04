@@ -85,6 +85,12 @@ You can search for assets across all characters.
 
 ![Screenshot from 2024-11-10 16-52-07](https://github.com/user-attachments/assets/c40f3b7f-279f-4b3c-9135-0c3b043ee0d9)
 
+### Colonies of all characters
+
+You can see all colonies used for planetey industry from all your characters at a glance.
+
+![Screenshot from 2024-12-04 17-47-45](https://github.com/user-attachments/assets/80338f3a-510b-4a45-98bd-836898b720c9)
+
 ### Wealth charts across all characters
 
 The wealth page gives you a graphical overview of your total wealth (= wallets + asset value) and contains breakdowns that help you better understand the structure of your wealth.
