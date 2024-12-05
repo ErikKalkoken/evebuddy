@@ -152,7 +152,7 @@ func (m *EveImageService) InventoryTypeBPC(id int32, size int) (fyne.Resource, e
 	return m.image(url)
 }
 
-// InventoryTypeBPC returns the icon for a SKIN type.
+// InventoryTypeSKIN returns the icon for a SKIN type.
 func (m *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, error) {
 	if size != 64 {
 		return nil, ErrInvalidSize
