@@ -104,7 +104,7 @@ func TestCharacterSkill(t *testing.T) {
 	})
 }
 
-func TestCharacterSkillList(t *testing.T) {
+func TestCharacterSkillLists(t *testing.T) {
 	db, r, factory := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
@@ -122,6 +122,24 @@ func TestCharacterSkillList(t *testing.T) {
 		})
 		// when
 		xx, err := r.ListCharacterSkillGroupsProgress(ctx, c.ID)
+		if assert.NoError(t, err) {
+			assert.Len(t, xx, 1)
+		}
+	})
+	t.Run("should return list of skill groups with progress", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		category := factory.CreateEveCategory(storage.CreateEveCategoryParams{ID: app.EveCategorySkill})
+		group := factory.CreateEveGroup(storage.CreateEveGroupParams{CategoryID: category.ID, IsPublished: true})
+		myType := factory.CreateEveType(storage.CreateEveTypeParams{GroupID: group.ID, IsPublished: true})
+		factory.CreateCharacterSkill(storage.UpdateOrCreateCharacterSkillParams{
+			CharacterID:       c.ID,
+			EveTypeID:         myType.ID,
+			TrainedSkillLevel: 5,
+		})
+		// when
+		xx, err := r.ListCharacterSkillProgress(ctx, c.ID, group.ID)
 		if assert.NoError(t, err) {
 			assert.Len(t, xx, 1)
 		}

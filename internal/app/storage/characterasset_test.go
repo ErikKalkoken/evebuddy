@@ -127,6 +127,57 @@ func TestCharacterAsset(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can list assets for character", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		ca2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		// when
+		got, err := r.ListCharacterAssets(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			want := []*app.CharacterAsset{ca1, ca2}
+			assert.ElementsMatch(t, want, got)
+		}
+	})
+	t.Run("can list assets for character in item hangar", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		location := factory.CreateLocationStructure()
+		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID:  c.ID,
+			LocationFlag: "Hangar",
+			LocationID:   location.ID,
+		})
+		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID:  c.ID,
+			LocationFlag: "XXX",
+			LocationID:   location.ID,
+		})
+		// when
+		got, err := r.ListCharacterAssetsInItemHangar(ctx, c.ID, ca1.LocationID)
+		// then
+		if assert.NoError(t, err) {
+			want := []*app.CharacterAsset{ca1}
+			assert.ElementsMatch(t, want, got)
+		}
+	})
+	t.Run("can list assets for character in location", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{CharacterID: c.ID})
+		// when
+		got, err := r.ListCharacterAssetsInLocation(ctx, c.ID, ca1.LocationID)
+		// then
+		if assert.NoError(t, err) {
+			want := []*app.CharacterAsset{ca1}
+			assert.ElementsMatch(t, want, got)
+		}
+	})
 	t.Run("can list all assets", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -137,7 +188,35 @@ func TestCharacterAsset(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			want := []*app.CharacterAsset{ca1, ca2}
-			assert.Equal(t, want, got)
+			assert.ElementsMatch(t, want, got)
 		}
 	})
+	t.Run("can calculate total asset value for character", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		ca1 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID: c.ID,
+			Quantity:    1,
+		})
+		ca2 := factory.CreateCharacterAsset(storage.CreateCharacterAssetParams{
+			CharacterID: c.ID,
+			Quantity:    2,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       ca1.EveType.ID,
+			AveragePrice: 100.1,
+		})
+		factory.CreateEveMarketPrice(storage.UpdateOrCreateEveMarketPriceParams{
+			TypeID:       ca2.EveType.ID,
+			AveragePrice: 200.2,
+		})
+		// when
+		got, err := r.CalculateCharacterAssetTotalValue(ctx, c.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.InDelta(t, 500.5, got, 0.1)
+		}
+	})
+
 }

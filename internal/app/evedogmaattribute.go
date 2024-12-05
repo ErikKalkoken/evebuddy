@@ -184,9 +184,3 @@ type EveDogmaAttribute struct {
 	IsStackable  bool
 	Unit         EveUnitID
 }
-
-type EveDogmaAttributeForType struct {
-	EveType        *EveType
-	DogmaAttribute *EveDogmaAttribute
-	Value          float32
-}

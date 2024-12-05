@@ -131,4 +131,24 @@ func TestPlanet(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can list planets from all characters", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		p1 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c1.ID})
+		p2 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c1.ID})
+		c2 := factory.CreateCharacter()
+		p3 := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c2.ID})
+		// when
+		oo, err := r.ListAllCharacterPlanets(ctx)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, oo, 3)
+			assert.ElementsMatch(
+				t,
+				[]int32{p1.EvePlanet.ID, p2.EvePlanet.ID, p3.EvePlanet.ID},
+				[]int32{oo[0].EvePlanet.ID, oo[1].EvePlanet.ID, oo[2].EvePlanet.ID},
+			)
+		}
+	})
 }

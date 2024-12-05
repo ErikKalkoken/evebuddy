@@ -986,7 +986,7 @@ func (f Factory) CreateEveType(args ...storage.CreateEveTypeParams) *app.EveType
 	return o
 }
 
-func (f Factory) CreateEveTypeDogmaAttribute(args ...storage.CreateEveTypeDogmaAttributeParams) {
+func (f Factory) CreateEveTypeDogmaAttribute(args ...storage.CreateEveTypeDogmaAttributeParams) *app.EveTypeDogmaAttribute {
 	var arg storage.CreateEveTypeDogmaAttributeParams
 	ctx := context.TODO()
 	if len(args) > 0 {
@@ -1006,6 +1006,24 @@ func (f Factory) CreateEveTypeDogmaAttribute(args ...storage.CreateEveTypeDogmaA
 	if err := f.st.CreateEveTypeDogmaAttribute(ctx, arg); err != nil {
 		panic(err)
 	}
+	v, err := f.st.GetEveTypeDogmaAttribute(ctx, arg.EveTypeID, arg.DogmaAttributeID)
+	if err != nil {
+		panic(err)
+	}
+	et, err := f.st.GetEveType(ctx, arg.EveTypeID)
+	if err != nil {
+		panic(err)
+	}
+	da, err := f.st.GetEveDogmaAttribute(ctx, arg.DogmaAttributeID)
+	if err != nil {
+		panic(err)
+	}
+	o := &app.EveTypeDogmaAttribute{
+		EveType:        et,
+		DogmaAttribute: da,
+		Value:          v,
+	}
+	return o
 }
 
 func (f Factory) CreateEveDogmaAttribute(args ...storage.CreateEveDogmaAttributeParams) *app.EveDogmaAttribute {

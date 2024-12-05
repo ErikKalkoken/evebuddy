@@ -95,3 +95,9 @@ func (ep EveType) Icon() (fyne.Resource, bool) {
 	}
 	return res, true
 }
+
+type EveTypeDogmaAttribute struct {
+	EveType        *EveType
+	DogmaAttribute *EveDogmaAttribute
+	Value          float32
+}
