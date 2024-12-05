@@ -33,13 +33,14 @@ const (
 
 const (
 	defaultPort            = 30123
-	defaultSsoCallbackPath = "/callback"
+	defaultSSOCallbackPath = "/callback"
 	host                   = "localhost"
 	oauthURL               = "https://login.eveonline.com/.well-known/oauth-authorization-server"
 	ssoHost                = "login.eveonline.com"
-	ssoIssuer1             = "login.eveonline.com"
+	ssoIssuer1             = ssoHost
 	ssoIssuer2             = "https://login.eveonline.com"
-	ssoTokenUrl            = "https://login.eveonline.com/v2/oauth/token"
+	ssoTokenURL            = "https://login.eveonline.com/v2/oauth/token"
+	ssoAuthorizeURL        = "https://login.eveonline.com/v2/oauth/authorize"
 	cacheTimeoutJWKSet     = 6 * 3600
 )
 
@@ -70,7 +71,7 @@ type SSOService struct {
 func New(clientID string, client *http.Client, cache CacheService) *SSOService {
 	s := &SSOService{
 		Port:         defaultPort,
-		CallbackPath: defaultSsoCallbackPath,
+		CallbackPath: defaultSSOCallbackPath,
 		cache:        cache,
 		httpClient:   client,
 		clientID:     clientID,
@@ -81,12 +82,12 @@ func New(clientID string, client *http.Client, cache CacheService) *SSOService {
 // Authenticate an Eve Online character via OAuth 2.0 PKCE and return the new SSO token.
 // Will open a new browser tab on the desktop and run a web server for the OAuth process.
 func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token, error) {
-	codeVerifier, err := generateRandomString(32)
+	codeVerifier, err := generateRandomStringBase64(32)
 	if err != nil {
 		return nil, err
 	}
 	serverCtx := context.WithValue(ctx, keyCodeVerifier, codeVerifier)
-	state, err := generateRandomString(16)
+	state, err := generateRandomStringBase64(16)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +135,8 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		serverCtx = context.WithValue(serverCtx, keyAuthenticatedCharacter, token)
 		fmt.Fprintf(
 			w,
-			"<p>SSO authentication successful for <b>%s</b>.</p><p>You can close this tab now and return to the app.</p>",
+			"<p>SSO authentication successful for <b>%s</b>.</p>"+
+				"<p>You can close this tab now and return to the app.</p>",
 			token.CharacterName,
 		)
 		cancel() // shutdown http server
@@ -187,17 +189,20 @@ func (s *SSOService) startSSO(state string, codeVerifier string, scopes []string
 	if err != nil {
 		return err
 	}
+	u := makeStartURL(s.clientID, challenge, s.redirectURI(), state, scopes)
+	return browser.OpenURL(u)
+}
+
+func makeStartURL(clientID, challenge, redirectURI, state string, scopes []string) string {
 	v := url.Values{}
+	v.Set("client_id", clientID)
+	v.Set("code_challenge_method", "S256")
+	v.Set("code_challenge", challenge)
+	v.Set("redirect_uri", redirectURI)
 	v.Set("response_type", "code")
-	v.Set("redirect_uri", s.redirectURI())
-	v.Set("client_id", s.clientID)
 	v.Set("scope", strings.Join(scopes, " "))
 	v.Set("state", state)
-	v.Set("code_challenge", challenge)
-	v.Set("code_challenge_method", "S256")
-
-	url := fmt.Sprintf("https://login.eveonline.com/v2/oauth/authorize/?%v", v.Encode())
-	return browser.OpenURL(url)
+	return ssoAuthorizeURL + "/?" + v.Encode()
 }
 
 // Retrieve SSO token from API in exchange for code
@@ -208,11 +213,7 @@ func (s *SSOService) retrieveTokenPayload(code, codeVerifier string) (*tokenPayl
 		"client_id":     {s.clientID},
 		"code_verifier": {codeVerifier},
 	}
-	req, err := http.NewRequest(
-		"POST",
-		"https://login.eveonline.com/v2/oauth/token",
-		strings.NewReader(form.Encode()),
-	)
+	req, err := http.NewRequest("POST", ssoTokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +255,7 @@ func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*To
 		"refresh_token": {refreshToken},
 		"client_id":     {s.clientID},
 	}
-	rawToken, err := s.fetchOauthToken(form)
+	rawToken, err := s.fetchOAuthToken(form)
 	if err != nil {
 		return nil, err
 	}
@@ -270,16 +271,14 @@ func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*To
 	return &token, nil
 }
 
-func (s *SSOService) fetchOauthToken(form url.Values) (*tokenPayload, error) {
-	req, err := http.NewRequest(
-		"POST", ssoTokenUrl, strings.NewReader(form.Encode()),
-	)
+func (s *SSOService) fetchOAuthToken(form url.Values) (*tokenPayload, error) {
+	req, err := http.NewRequest("POST", ssoTokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Host", "login.eveonline.com")
-	slog.Info("Requesting token from SSO API", "grant_type", form.Get("grant_type"), "url", ssoTokenUrl)
+	req.Header.Add("Host", ssoHost)
+	slog.Info("Requesting token from SSO API", "grant_type", form.Get("grant_type"), "url", ssoTokenURL)
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
@@ -410,17 +409,15 @@ func validateClaims(ssoClientId string, claims jwt.MapClaims) error {
 
 func calcCodeChallenge(codeVerifier string) (string, error) {
 	h := sha256.New()
-	_, err := h.Write([]byte(codeVerifier))
-	if err != nil {
+	if _, err := h.Write([]byte(codeVerifier)); err != nil {
 		return "", err
 	}
-	bs := h.Sum(nil)
-	challenge := base64.RawURLEncoding.EncodeToString(bs)
+	challenge := base64.RawURLEncoding.EncodeToString(h.Sum(nil))
 	return challenge, nil
 }
 
-// Generate a random string of given length
-func generateRandomString(length int) (string, error) {
+// generateRandomStringBase64 returns a random string of given length with base64 encoding.
+func generateRandomStringBase64(length int) (string, error) {
 	data := make([]byte, length)
 	_, err := rand.Read(data)
 	if err != nil {
