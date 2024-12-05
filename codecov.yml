@@ -1,0 +1,7 @@
+ignore:
+  - "internal/app/storage/queries"
+  - "internal/app/storage/testutil"
+  - "internal/eveicon/mapping.go"
+  - "internal/eveicon/resource.go"
+  - "evebuddy/internal/app/ui/resource.go"
+  - "tools"
