@@ -6,6 +6,7 @@ A companion app for Eve Online players available on Windows, Linux and macOS.
 [![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml)
 [![GitHub License](https://img.shields.io/github/license/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy?tab=MIT-1-ov-file#readme)
 [![chat](https://img.shields.io/discord/790364535294132234)](https://discord.gg/tVSCQEVJnJ)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/ErikKalkoken/evebuddy/total)
 
 ## Contents
 
