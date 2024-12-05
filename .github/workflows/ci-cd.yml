@@ -23,16 +23,21 @@ jobs:
       with:
         go-version: ${{ env.GOVERSION }}
 
-    - name: Install build dependencies
+    - name: Install OS dependencies
       run: |
         sudo apt-get update
         sudo apt-get install gcc libgl1-mesa-dev xorg-dev
 
-    - name: Build
-      run: go build -v ./...
+    - name: Install go dependencies
+      run: go mod download
 
-    - name: Test
-      run: go test -v ./...
+    - name: Run tests
+      run: go test -coverprofile=coverage.txt
+
+    - name: Upload results to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   package_linux:
     if: startsWith(github.ref, 'refs/tags/')
