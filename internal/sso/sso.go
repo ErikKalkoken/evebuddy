@@ -32,15 +32,15 @@ const (
 )
 
 const (
-	defaultPort            = 30123
-	defaultSSOCallbackPath = "/callback"
+	portDefault            = 30123
+	callbackPathDefault    = "/callback"
 	host                   = "localhost"
-	oauthURL               = "https://login.eveonline.com/.well-known/oauth-authorization-server"
+	oauthURLDefault        = "https://login.eveonline.com/.well-known/oauth-authorization-server"
 	ssoHost                = "login.eveonline.com"
 	ssoIssuer1             = ssoHost
 	ssoIssuer2             = "https://login.eveonline.com"
-	ssoTokenURL            = "https://login.eveonline.com/v2/oauth/token"
-	ssoAuthorizeURL        = "https://login.eveonline.com/v2/oauth/authorize"
+	ssoTokenURLDefault     = "https://login.eveonline.com/v2/oauth/token"
+	ssoAuthorizeURLDefault = "https://login.eveonline.com/v2/oauth/authorize"
 	cacheTimeoutJWKSet     = 6 * 3600
 )
 
@@ -59,8 +59,11 @@ type CacheService interface {
 // SSOService is a service for authentication Eve Online characters.
 type SSOService struct {
 	// SSO configuration can be modified before calling any method.
-	CallbackPath string
-	Port         int
+	CallbackPath    string
+	OAuthURL        string
+	Port            int
+	SSOAuthorizeURL string
+	SSOTokenURL     string
 
 	cache      CacheService
 	clientID   string
@@ -70,11 +73,15 @@ type SSOService struct {
 // Returns a new SSO service.
 func New(clientID string, client *http.Client, cache CacheService) *SSOService {
 	s := &SSOService{
-		Port:         defaultPort,
-		CallbackPath: defaultSSOCallbackPath,
-		cache:        cache,
-		httpClient:   client,
-		clientID:     clientID,
+		CallbackPath:    callbackPathDefault,
+		OAuthURL:        oauthURLDefault,
+		Port:            portDefault,
+		SSOAuthorizeURL: ssoAuthorizeURLDefault,
+		SSOTokenURL:     ssoTokenURLDefault,
+
+		cache:      cache,
+		httpClient: client,
+		clientID:   clientID,
 	}
 	return s
 }
@@ -105,7 +112,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		}
 		code := v.Get("code")
 		codeVerifier := serverCtx.Value(keyCodeVerifier).(string)
-		rawToken, err := s.retrieveTokenPayload(code, codeVerifier)
+		rawToken, err := s.fetchNewToken(code, codeVerifier)
 		if err != nil {
 			msg := "Failed to retrieve token payload"
 			slog.Error(msg, "error", err)
@@ -189,31 +196,31 @@ func (s *SSOService) startSSO(state string, codeVerifier string, scopes []string
 	if err != nil {
 		return err
 	}
-	u := makeStartURL(s.clientID, challenge, s.redirectURI(), state, scopes)
+	u := s.makeStartURL(challenge, state, scopes)
 	return browser.OpenURL(u)
 }
 
-func makeStartURL(clientID, challenge, redirectURI, state string, scopes []string) string {
+func (s *SSOService) makeStartURL(challenge, state string, scopes []string) string {
 	v := url.Values{}
-	v.Set("client_id", clientID)
+	v.Set("client_id", s.clientID)
 	v.Set("code_challenge_method", "S256")
 	v.Set("code_challenge", challenge)
-	v.Set("redirect_uri", redirectURI)
+	v.Set("redirect_uri", s.redirectURI())
 	v.Set("response_type", "code")
 	v.Set("scope", strings.Join(scopes, " "))
 	v.Set("state", state)
-	return ssoAuthorizeURL + "/?" + v.Encode()
+	return s.SSOAuthorizeURL + "/?" + v.Encode()
 }
 
-// Retrieve SSO token from API in exchange for code
-func (s *SSOService) retrieveTokenPayload(code, codeVerifier string) (*tokenPayload, error) {
+// fetchNewToken returns a new token from SSO API.
+func (s *SSOService) fetchNewToken(code, codeVerifier string) (*tokenPayload, error) {
 	form := url.Values{
-		"grant_type":    {"authorization_code"},
-		"code":          {code},
 		"client_id":     {s.clientID},
 		"code_verifier": {codeVerifier},
+		"code":          {code},
+		"grant_type":    {"authorization_code"},
 	}
-	req, err := http.NewRequest("POST", ssoTokenURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequest("POST", s.SSOTokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -225,22 +232,19 @@ func (s *SSOService) retrieveTokenPayload(code, codeVerifier string) (*tokenPayl
 	if err != nil {
 		return nil, err
 	}
-
 	if resp.Body != nil {
 		defer resp.Body.Close()
 	}
-
 	body, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		return nil, err
 	}
-
 	token := tokenPayload{}
 	if err := json.Unmarshal(body, &token); err != nil {
 		return nil, err
 	}
 	if token.Error != "" {
-		return nil, fmt.Errorf("details %v, %v: %w", token.Error, token.ErrorDescription, ErrTokenError)
+		return nil, fmt.Errorf("retrieve token payload: %s, %s: %w", token.Error, token.ErrorDescription, ErrTokenError)
 	}
 	return &token, nil
 }
@@ -250,12 +254,7 @@ func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*To
 	if refreshToken == "" {
 		return nil, ErrMissingRefreshToken
 	}
-	form := url.Values{
-		"grant_type":    {"refresh_token"},
-		"refresh_token": {refreshToken},
-		"client_id":     {s.clientID},
-	}
-	rawToken, err := s.fetchOAuthToken(form)
+	rawToken, err := s.fetchRefreshedToken(refreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -271,24 +270,27 @@ func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*To
 	return &token, nil
 }
 
-func (s *SSOService) fetchOAuthToken(form url.Values) (*tokenPayload, error) {
-	req, err := http.NewRequest("POST", ssoTokenURL, strings.NewReader(form.Encode()))
+func (s *SSOService) fetchRefreshedToken(refreshToken string) (*tokenPayload, error) {
+	form := url.Values{
+		"client_id":     {s.clientID},
+		"grant_type":    {"refresh_token"},
+		"refresh_token": {refreshToken},
+	}
+	req, err := http.NewRequest("POST", s.SSOTokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Host", ssoHost)
-	slog.Info("Requesting token from SSO API", "grant_type", form.Get("grant_type"), "url", ssoTokenURL)
+	slog.Info("Requesting token from SSO API", "grant_type", form.Get("grant_type"), "url", s.SSOTokenURL)
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
-
 	if resp.Body != nil {
 		defer resp.Body.Close()
 	}
-
 	body, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		return nil, err
@@ -299,7 +301,7 @@ func (s *SSOService) fetchOAuthToken(form url.Values) (*tokenPayload, error) {
 		return nil, err
 	}
 	if token.Error != "" {
-		return nil, fmt.Errorf("details %v, %v: %w", token.Error, token.ErrorDescription, ErrTokenError)
+		return nil, fmt.Errorf("refresh token: %s, %s: %w", token.Error, token.ErrorDescription, ErrTokenError)
 	}
 	return &token, nil
 }
@@ -339,7 +341,7 @@ func (s *SSOService) getKey(ctx context.Context, token *jwt.Token) (any, error) 
 
 	var rawKey any
 	if err := key.Raw(&rawKey); err != nil {
-		return nil, fmt.Errorf("create public key: %s", err)
+		return nil, fmt.Errorf("create public key: %w", err)
 	}
 	return rawKey, nil
 }
@@ -351,7 +353,7 @@ func (s *SSOService) fetchJWKSet(ctx context.Context) (jwk.Set, error) {
 	if found {
 		return v.(jwk.Set), nil
 	}
-	jwksURL, err := s.determineJwksURL()
+	jwksURL, err := s.determineJWKsURL()
 	if err != nil {
 		return nil, err
 	}
@@ -364,8 +366,8 @@ func (s *SSOService) fetchJWKSet(ctx context.Context) (jwk.Set, error) {
 }
 
 // Determine URL for JWK sets dynamically from web site and return it
-func (s *SSOService) determineJwksURL() (string, error) {
-	resp, err := s.httpClient.Get(oauthURL)
+func (s *SSOService) determineJWKsURL() (string, error) {
+	resp, err := s.httpClient.Get(s.OAuthURL)
 	if err != nil {
 		return "", err
 	}

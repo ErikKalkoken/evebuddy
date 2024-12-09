@@ -50,7 +50,7 @@ func newToken(rawToken *tokenPayload, claims jwt.MapClaims) (*Token, error) {
 // token payload as returned from SSO API
 type tokenPayload struct {
 	AccessToken      string `json:"access_token"`
-	ExpiresIn        int32  `json:"expires_in"`
+	ExpiresIn        int    `json:"expires_in"`
 	TokenType        string `json:"token_type"`
 	RefreshToken     string `json:"refresh_token"`
 	Error            string `json:"error"`
