@@ -86,3 +86,16 @@ func TestImageFetching(t *testing.T) {
 		}
 	})
 }
+
+func TestEveImageOther(t *testing.T) {
+	t.Run("can fetch a SKIN type from the image server", func(t *testing.T) {
+		//when
+		m := New(t.TempDir(), http.DefaultClient, false)
+		r, err := m.InventoryTypeSKIN(99, 64)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, resourceSkinicon64pxPng, r)
+		}
+	})
+
+}

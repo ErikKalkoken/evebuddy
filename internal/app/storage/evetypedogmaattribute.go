@@ -47,14 +47,14 @@ func (st *Storage) GetEveTypeDogmaAttribute(ctx context.Context, eveTypeID, dogm
 	return float32(row.Value), nil
 }
 
-func (st *Storage) ListEveTypeDogmaAttributesForType(ctx context.Context, typeID int32) ([]*app.EveDogmaAttributeForType, error) {
+func (st *Storage) ListEveTypeDogmaAttributesForType(ctx context.Context, typeID int32) ([]*app.EveTypeDogmaAttribute, error) {
 	rows, err := st.q.ListEveTypeDogmaAttributesForType(ctx, int64(typeID))
 	if err != nil {
 		return nil, fmt.Errorf("list dogma attributes for type %d: %w", typeID, err)
 	}
-	oo := make([]*app.EveDogmaAttributeForType, len(rows))
+	oo := make([]*app.EveTypeDogmaAttribute, len(rows))
 	for i, r := range rows {
-		o := &app.EveDogmaAttributeForType{
+		o := &app.EveTypeDogmaAttribute{
 			DogmaAttribute: eveDogmaAttributeFromDBModel(r.EveDogmaAttribute),
 			EveType:        eveTypeFromDBModel(r.EveType, r.EveGroup, r.EveCategory),
 			Value:          float32(r.Value),

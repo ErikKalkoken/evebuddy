@@ -232,6 +232,6 @@ func (eu *EveUniverseService) UpdateEveShipSkills(ctx context.Context) error {
 func (eu *EveUniverseService) ListEveTypeDogmaAttributesForType(
 	ctx context.Context,
 	typeID int32,
-) ([]*app.EveDogmaAttributeForType, error) {
+) ([]*app.EveTypeDogmaAttribute, error) {
 	return eu.st.ListEveTypeDogmaAttributesForType(ctx, typeID)
 }

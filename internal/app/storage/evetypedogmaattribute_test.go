@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 )
@@ -32,6 +33,24 @@ func TestEveTypeDogmaAttribute(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, float32(123.45), v)
 			}
+		}
+	})
+	t.Run("can list", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		et := factory.CreateEveType()
+		o1 := factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
+			EveTypeID: et.ID,
+		})
+		o2 := factory.CreateEveTypeDogmaAttribute(storage.CreateEveTypeDogmaAttributeParams{
+			EveTypeID: et.ID,
+		})
+		factory.CreateEveTypeDogmaAttribute()
+		// when
+		oo, err := r.ListEveTypeDogmaAttributesForType(ctx, et.ID)
+		// then
+		if assert.NoError(t, err) {
+			assert.ElementsMatch(t, []*app.EveTypeDogmaAttribute{o1, o2}, oo)
 		}
 	})
 }

@@ -18,20 +18,17 @@ func TestGeneralSectionStatus(t *testing.T) {
 	t.Run("can list", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c.ID,
-			Section:     app.SectionSkillqueue,
+		s1 := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
+			Section: app.SectionEveCategories,
 		})
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c.ID,
-			Section:     app.SectionImplants,
+		s2 := factory.CreateGeneralSectionStatus(testutil.GeneralSectionStatusParams{
+			Section: app.SectionEveCharacters,
 		})
 		// when
-		oo, err := r.ListCharacterSectionStatus(ctx, c.ID)
+		oo, err := r.ListGeneralSectionStatus(ctx)
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, oo, 2)
+			assert.ElementsMatch(t, []*app.GeneralSectionStatus{s1, s2}, oo)
 		}
 	})
 	t.Run("can set from scratch", func(t *testing.T) {

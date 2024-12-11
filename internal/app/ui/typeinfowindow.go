@@ -261,7 +261,7 @@ func (u *UI) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*ty
 	if err != nil {
 		return nil, err
 	}
-	attributes := make(map[int32]*app.EveDogmaAttributeForType)
+	attributes := make(map[int32]*app.EveTypeDogmaAttribute)
 	for _, o := range oo {
 		attributes[o.DogmaAttribute.ID] = o
 	}
@@ -283,7 +283,7 @@ func (a *typeInfoWindow) isLocation() bool {
 	return a.location != nil
 }
 
-func calcLevels(attributes map[int32]*app.EveDogmaAttributeForType) (int, int) {
+func calcLevels(attributes map[int32]*app.EveTypeDogmaAttribute) (int, int) {
 	var tech, meta int
 	x, ok := attributes[app.EveDogmaAttributeTechLevel]
 	if ok {
@@ -296,7 +296,7 @@ func calcLevels(attributes map[int32]*app.EveDogmaAttributeForType) (int, int) {
 	return tech, meta
 }
 
-func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[int32]*app.EveDogmaAttributeForType) []attributeRow {
+func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
 	droneCapacity, ok := attributes[app.EveDogmaAttributeDroneCapacity]
 	hasDrones := ok && droneCapacity.Value > 0
 
@@ -306,7 +306,7 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 	groupedRows := make(map[attributeGroup][]attributeRow)
 
 	for _, ag := range attributeGroups {
-		attributeSelection := make([]*app.EveDogmaAttributeForType, 0)
+		attributeSelection := make([]*app.EveTypeDogmaAttribute, 0)
 		for _, da := range attributeGroupsMap[ag] {
 			o, ok := attributes[da]
 			if !ok {
@@ -403,7 +403,7 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 	return data
 }
 
-func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int32]*app.EveDogmaAttributeForType) []attributeRow {
+func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
 	data := make([]attributeRow, 0)
 	for _, da := range attributeGroupsMap[attributeGroupFitting] {
 		o, ok := attributes[da]
@@ -422,7 +422,7 @@ func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int
 	return data
 }
 
-func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveDogmaAttributeForType) ([]requiredSkill, error) {
+func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveTypeDogmaAttribute) ([]requiredSkill, error) {
 	skills := make([]requiredSkill, 0)
 	skillAttributes := []struct {
 		id    int32

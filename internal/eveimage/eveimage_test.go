@@ -107,6 +107,36 @@ func TestImageFetching(t *testing.T) {
 			assert.Equal(t, dat, r.Content())
 		}
 	})
+	t.Run("can fetch a type BPO from the image server", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://images.evetech.net/types/99/bp?size=64",
+			httpmock.NewBytesResponder(200, dat))
+		//when
+		m := eveimage.New(t.TempDir(), http.DefaultClient, false)
+		r, err := m.InventoryTypeBPO(99, 64)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, dat, r.Content())
+		}
+	})
+	t.Run("can fetch a type BPC from the image server", func(t *testing.T) {
+		// given
+		httpmock.Reset()
+		httpmock.RegisterResponder(
+			"GET",
+			"https://images.evetech.net/types/99/bpc?size=64",
+			httpmock.NewBytesResponder(200, dat))
+		//when
+		m := eveimage.New(t.TempDir(), http.DefaultClient, false)
+		r, err := m.InventoryTypeBPC(99, 64)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, dat, r.Content())
+		}
+	})
 	t.Run("should convert images size errors", func(t *testing.T) {
 		// given
 		httpmock.Reset()

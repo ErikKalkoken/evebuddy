@@ -107,7 +107,7 @@ func TestLocation(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can update existing", func(t *testing.T) {
+	t.Run("can list locations", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		l1 := factory.CreateLocationStructure()
@@ -117,6 +117,18 @@ func TestLocation(t *testing.T) {
 		if assert.NoError(t, err) {
 			want := []*app.EveLocation{l1, l2}
 			assert.Equal(t, want, got)
+		}
+	})
+	t.Run("can return IDs of missing locations", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{
+			ID: 42,
+		})
+		// when
+		got, err := r.MissingEveLocations(ctx, []int64{42, 99})
+		if assert.NoError(t, err) {
+			assert.Equal(t, []int64{99}, got)
 		}
 	})
 }
