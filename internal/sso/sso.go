@@ -15,33 +15,26 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/pkg/browser"
 )
 
 type contextKey int
 
 const (
-	keyCodeVerifier           contextKey = iota
-	keyError                  contextKey = iota
-	keyState                  contextKey = iota
-	keyAuthenticatedCharacter contextKey = iota
+	keyCodeVerifier contextKey = iota
+	keyError
+	keyState
+	keyAuthenticatedCharacter
 )
 
 const (
 	portDefault            = 30123
 	callbackPathDefault    = "/callback"
 	host                   = "localhost"
-	oauthURLDefault        = "https://login.eveonline.com/.well-known/oauth-authorization-server"
 	ssoHost                = "login.eveonline.com"
-	ssoIssuer1             = ssoHost
-	ssoIssuer2             = "https://login.eveonline.com"
 	ssoTokenURLDefault     = "https://login.eveonline.com/v2/oauth/token"
 	ssoAuthorizeURLDefault = "https://login.eveonline.com/v2/oauth/authorize"
-	cacheTimeoutJWKSet     = 6 * 3600
 )
 
 var (
@@ -49,12 +42,6 @@ var (
 	ErrTokenError          = errors.New("token error")
 	ErrMissingRefreshToken = errors.New("missing refresh token")
 )
-
-// Defines a cache service
-type CacheService interface {
-	Get(any) (any, bool)
-	Set(any, any, time.Duration)
-}
 
 // SSOService is a service for authentication Eve Online characters.
 type SSOService struct {
@@ -65,21 +52,18 @@ type SSOService struct {
 	SSOAuthorizeURL string
 	SSOTokenURL     string
 
-	cache      CacheService
 	clientID   string
 	httpClient *http.Client
 }
 
 // Returns a new SSO service.
-func New(clientID string, client *http.Client, cache CacheService) *SSOService {
+func New(clientID string, client *http.Client) *SSOService {
 	s := &SSOService{
 		CallbackPath:    callbackPathDefault,
-		OAuthURL:        oauthURLDefault,
 		Port:            portDefault,
 		SSOAuthorizeURL: ssoAuthorizeURLDefault,
 		SSOTokenURL:     ssoTokenURLDefault,
 
-		cache:      cache,
 		httpClient: client,
 		clientID:   clientID,
 	}
@@ -121,7 +105,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 			cancel()
 			return
 		}
-		claims, err := s.validateToken(ctx, rawToken.AccessToken)
+		jwtToken, err := validateJWT(ctx, rawToken.AccessToken)
 		if err != nil {
 			msg := "Failed to validate token"
 			slog.Error(msg, "token", rawToken.AccessToken, "error", err)
@@ -130,15 +114,18 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 			cancel()
 			return
 		}
-		token, err := newToken(rawToken, claims)
+		characterID, err := extractCharacterID(jwtToken)
 		if err != nil {
-			msg := "Failed to construct token"
-			slog.Error(msg, "error", err)
+			msg := "Failed to validate token"
+			slog.Error(msg, "token", rawToken.AccessToken, "error", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			serverCtx = context.WithValue(serverCtx, keyError, err)
 			cancel()
 			return
 		}
+		characterName := extractCharacterName(jwtToken)
+		scopes := extractScopes(jwtToken)
+		token := newToken(rawToken, characterID, characterName, scopes)
 		serverCtx = context.WithValue(serverCtx, keyAuthenticatedCharacter, token)
 		fmt.Fprintf(
 			w,
@@ -258,7 +245,7 @@ func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*To
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.validateToken(ctx, rawToken.AccessToken)
+	_, err = validateJWT(ctx, rawToken.AccessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -304,109 +291,6 @@ func (s *SSOService) fetchRefreshedToken(refreshToken string) (*tokenPayload, er
 		return nil, fmt.Errorf("refresh token: %s, %s: %w", token.Error, token.ErrorDescription, ErrTokenError)
 	}
 	return &token, nil
-}
-
-// validateToken validated a JWT token and returns the claims.
-// Returns an error when the token is not valid.
-func (s *SSOService) validateToken(ctx context.Context, tokenString string) (jwt.MapClaims, error) {
-	// parse token and validate signature
-	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (any, error) {
-		return s.getKey(ctx, t)
-	})
-	if err != nil {
-		return nil, err
-	}
-	claims := token.Claims.(jwt.MapClaims)
-	if err := validateClaims(s.clientID, claims); err != nil {
-		return nil, err
-	}
-	return claims, nil
-}
-
-// getKey returns the public key for a JWT token.
-func (s *SSOService) getKey(ctx context.Context, token *jwt.Token) (any, error) {
-	set, err := s.fetchJWKSet(ctx)
-	if err != nil {
-		return nil, err
-	}
-	keyID, ok := token.Header["kid"].(string)
-	if !ok {
-		return nil, errors.New("expecting JWT header to have string kid")
-	}
-
-	key, ok := set.LookupKeyID(keyID)
-	if !ok {
-		return nil, fmt.Errorf("unable to find key %q", keyID)
-	}
-
-	var rawKey any
-	if err := key.Raw(&rawKey); err != nil {
-		return nil, fmt.Errorf("create public key: %w", err)
-	}
-	return rawKey, nil
-}
-
-// fetchJWKSet returns the current JWK set from the web. It is cached.
-func (s *SSOService) fetchJWKSet(ctx context.Context) (jwk.Set, error) {
-	key := "jwk-set"
-	v, found := s.cache.Get(key)
-	if found {
-		return v.(jwk.Set), nil
-	}
-	jwksURL, err := s.determineJWKsURL()
-	if err != nil {
-		return nil, err
-	}
-	set, err := jwk.Fetch(ctx, jwksURL)
-	if err != nil {
-		return nil, err
-	}
-	s.cache.Set(key, set, cacheTimeoutJWKSet)
-	return set, nil
-}
-
-// Determine URL for JWK sets dynamically from web site and return it
-func (s *SSOService) determineJWKsURL() (string, error) {
-	resp, err := s.httpClient.Get(s.OAuthURL)
-	if err != nil {
-		return "", err
-	}
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	var data map[string]any
-	if err := json.Unmarshal(body, &data); err != nil {
-		return "", err
-	}
-	jwksURL := data["jwks_uri"].(string)
-	return jwksURL, nil
-}
-
-func validateClaims(ssoClientId string, claims jwt.MapClaims) error {
-	// validate issuer claim
-	iss, err := claims.GetIssuer()
-	if err != nil {
-		return err
-	}
-	if iss != ssoIssuer1 && iss != ssoIssuer2 {
-		return fmt.Errorf("invalid issuer claim")
-	}
-	// validate audience claim
-	aud, err := claims.GetAudience()
-	if err != nil {
-		return err
-	}
-	if aud[0] != ssoClientId {
-		return fmt.Errorf("invalid first audience claim")
-	}
-	if aud[1] != "EVE Online" {
-		return fmt.Errorf("invalid 2nd audience claim")
-	}
-	return nil
 }
 
 func calcCodeChallenge(codeVerifier string) (string, error) {

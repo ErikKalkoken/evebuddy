@@ -212,7 +212,7 @@ func main() {
 	cs.EveNotificationService = en
 	cs.EveUniverseService = eu
 	cs.StatusCacheService = sc
-	cs.SSOService = sso.New(ssoClientID, httpClient, cache)
+	cs.SSOService = sso.New(ssoClientID, httpClient)
 
 	// Init UI
 	u := ui.NewUI(fyneApp, ad)

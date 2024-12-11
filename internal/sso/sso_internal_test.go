@@ -13,7 +13,7 @@ import (
 
 func TestSSO(t *testing.T) {
 	t.Run("can create a new service", func(t *testing.T) {
-		s := New("clientID", http.DefaultClient, nil)
+		s := New("clientID", http.DefaultClient)
 		assert.Equal(t, s.address(), "localhost:30123")
 		assert.Equal(t, s.redirectURI(), "http://localhost:30123/callback")
 		assert.Equal(t, s.CallbackPath, callbackPathDefault)
@@ -21,7 +21,7 @@ func TestSSO(t *testing.T) {
 	})
 	t.Run("can generate a correct start URL", func(t *testing.T) {
 		// given
-		s := New("clientID", http.DefaultClient, nil)
+		s := New("clientID", http.DefaultClient)
 		// when
 		got := s.makeStartURL("challenge", "state", []string{"esi-characters.read_blueprints.v1"})
 		// then
@@ -76,7 +76,7 @@ func TestSSOFetchNewToken(t *testing.T) {
 			actualRequestHeader = req.Header.Clone()
 		}))
 		defer server.Close()
-		s := New("abc", http.DefaultClient, nil)
+		s := New("abc", http.DefaultClient)
 		s.SSOTokenURL = server.URL
 		// when
 		x, err := s.fetchNewToken("code", "codeVerifier")
@@ -111,7 +111,7 @@ func TestSSOFetchNewToken(t *testing.T) {
 			}
 		}))
 		defer server.Close()
-		s := New("abc", http.DefaultClient, nil)
+		s := New("abc", http.DefaultClient)
 		s.SSOTokenURL = server.URL
 		// when
 		_, err := s.fetchNewToken("code", "codeVerifier")
@@ -144,7 +144,7 @@ func TestSSOFetchRefreshedToken(t *testing.T) {
 			actualRequestHeader = req.Header.Clone()
 		}))
 		defer server.Close()
-		s := New("abc", http.DefaultClient, nil)
+		s := New("abc", http.DefaultClient)
 		s.SSOTokenURL = server.URL
 		// when
 		x, err := s.fetchRefreshedToken("refreshToken")
@@ -178,40 +178,11 @@ func TestSSOFetchRefreshedToken(t *testing.T) {
 			}
 		}))
 		defer server.Close()
-		s := New("abc", http.DefaultClient, nil)
+		s := New("abc", http.DefaultClient)
 		s.SSOTokenURL = server.URL
 		// when
 		_, err := s.fetchRefreshedToken("refreshToken")
 		// then
 		assert.ErrorIs(t, err, ErrTokenError)
-	})
-}
-
-func TestDetermineJWKsURL(t *testing.T) {
-	t.Run("can retrieve url", func(t *testing.T) {
-		// given
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			var err error
-			_, err = io.ReadAll(req.Body)
-			if err != nil {
-				t.Fatal(err)
-			}
-			d := map[string]any{
-				"jwks_uri": "https://login.eveonline.com/oauth/jwks",
-			}
-			b, _ := json.Marshal(d)
-			if _, err := rw.Write(b); err != nil {
-				t.Fatal(err)
-			}
-		}))
-		defer server.Close()
-		s := New("abc", http.DefaultClient, nil)
-		s.SSOTokenURL = server.URL
-		// when
-		x, err := s.determineJWKsURL()
-		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, "https://login.eveonline.com/oauth/jwks", x)
-		}
 	})
 }
