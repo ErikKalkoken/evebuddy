@@ -125,7 +125,7 @@ func (u *UI) showUserDataDialog() {
 }
 
 func makePathEntry(cb fyne.Clipboard, path string) *fyne.Container {
-	p := filepath.Dir(path)
+	p := filepath.Clean(path)
 	return container.NewHBox(
 		widget.NewLabel(p),
 		layout.NewSpacer(),
