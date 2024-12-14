@@ -59,6 +59,7 @@ type UI struct {
 	deskApp               desktop.App
 	fyneApp               fyne.App
 	implantsArea          *implantsArea
+	locationsArea         *locationsArea
 	jumpClonesArea        *jumpClonesArea
 	mailArea              *mailArea
 	mailTab               *container.TabItem
@@ -131,12 +132,14 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 		))
 
 	u.overviewArea = u.newOverviewArea()
+	u.locationsArea = u.newLocationsArea()
 	u.assetSearchArea = u.newAssetSearchArea()
 	u.coloniesArea = u.newColoniesArea()
 	u.wealthArea = u.newWealthArea()
 	u.overviewTab = container.NewTabItemWithIcon("Characters",
 		theme.NewThemedResource(resourceGroupSvg), container.NewAppTabs(
 			container.NewTabItem("Overview", u.overviewArea.content),
+			container.NewTabItem("Locations", u.locationsArea.content),
 			container.NewTabItem("Assets", u.assetSearchArea.content),
 			container.NewTabItem("Colonies", u.coloniesArea.content),
 			container.NewTabItem("Wealth", u.wealthArea.content),
@@ -425,6 +428,7 @@ func (u *UI) refreshCrossPages() {
 	ff := map[string]func(){
 		"assetSearch": u.assetSearchArea.refresh,
 		"overview":    u.overviewArea.refresh,
+		"locations":   u.locationsArea.refresh,
 		"toolbar":     u.toolbarArea.refresh,
 		"colony":      u.coloniesArea.refresh,
 		"wealth":      u.wealthArea.refresh,

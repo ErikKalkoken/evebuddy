@@ -398,7 +398,6 @@ func (a *assetSearchArea) characterCount() int {
 
 func (a *assetSearchArea) makeTopText(c int) (string, widget.Importance) {
 	it := humanize.Comma(int64(len(a.assets)))
-	ch := humanize.Comma(int64(c))
-	text := fmt.Sprintf("%s total items - %s characters", it, ch)
+	text := fmt.Sprintf("%d characters • %s items", c, it)
 	return text, widget.MediumImportance
 }

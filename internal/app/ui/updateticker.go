@@ -143,11 +143,9 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 	case app.SectionLocation,
 		app.SectionOnline,
-		app.SectionShip,
-		app.SectionWalletBalance:
-		if hasChanged {
-			u.overviewArea.refresh()
-			u.wealthArea.refresh()
+		app.SectionShip:
+		if isShown && hasChanged {
+			u.locationsArea.refresh()
 		}
 	case app.SectionPlanets:
 		if isShown && hasChanged {
@@ -195,6 +193,11 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 		if isShown {
 			u.skillqueueArea.refresh()
+		}
+	case app.SectionWalletBalance:
+		if isShown && hasChanged {
+			u.overviewArea.refresh()
+			u.wealthArea.refresh()
 		}
 	case app.SectionWalletJournal:
 		if isShown && hasChanged {

@@ -18,25 +18,20 @@ import (
 )
 
 type overviewCharacter struct {
-	alliance       string
-	assetValue     optional.Optional[float64]
-	birthday       time.Time
-	corporation    string
-	home           *app.EntityShort[int64]
-	id             int32
-	lastLoginAt    optional.Optional[time.Time]
-	location       *app.EntityShort[int64]
-	name           string
-	region         *app.EntityShort[int32]
-	security       float64
-	ship           *app.EntityShort[int32]
-	solarSystem    *app.EntityShort[int32]
-	systemSecurity optional.Optional[float32]
-	totalSP        optional.Optional[int]
-	training       optional.Optional[time.Duration]
-	unallocatedSP  optional.Optional[int]
-	unreadCount    optional.Optional[int]
-	walletBalance  optional.Optional[float64]
+	alliance      string
+	assetValue    optional.Optional[float64]
+	birthday      time.Time
+	corporation   string
+	home          *app.EntityShort[int64]
+	id            int32
+	lastLoginAt   optional.Optional[time.Time]
+	name          string
+	security      float64
+	totalSP       optional.Optional[int]
+	training      optional.Optional[time.Duration]
+	unallocatedSP optional.Optional[int]
+	unreadCount   optional.Optional[int]
+	walletBalance optional.Optional[float64]
 }
 
 // overviewArea is the UI area that shows an overview of all the user's characters.
@@ -77,10 +72,6 @@ func (a *overviewArea) makeTable() *widget.Table {
 		{"Training", 5},
 		{"Wallet", 5},
 		{"Assets", 5},
-		{"Location", 20},
-		{"System", 15},
-		{"Region", 15},
-		{"Ship", 15},
 		{"Last Login", 10},
 		{"Home", 20},
 		{"Age", 10},
@@ -140,22 +131,10 @@ func (a *overviewArea) makeTable() *widget.Table {
 				text = ihumanize.OptionalFloat(c.assetValue, 1, "?")
 				l.Alignment = fyne.TextAlignTrailing
 			case 10:
-				text = entityNameOrFallback(c.location, "?")
-			case 11:
-				if c.solarSystem == nil || c.systemSecurity.IsEmpty() {
-					text = "?"
-				} else {
-					text = fmt.Sprintf("%s %.1f", c.solarSystem.Name, c.systemSecurity.MustValue())
-				}
-			case 12:
-				text = entityNameOrFallback(c.region, "?")
-			case 13:
-				text = entityNameOrFallback(c.ship, "?")
-			case 14:
 				text = ihumanize.Optional(c.lastLoginAt, "?")
-			case 15:
+			case 11:
 				text = entityNameOrFallback(c.home, "?")
-			case 16:
+			case 12:
 				text = humanize.RelTime(c.birthday, time.Now(), "", "")
 				l.Alignment = fyne.TextAlignTrailing
 			}
@@ -200,7 +179,7 @@ func (a *overviewArea) refresh() {
 		spText := ihumanize.Optional(totals.sp, "?")
 		unreadText := ihumanize.Optional(totals.unread, "?")
 		s := fmt.Sprintf(
-			"Total: %d characters • %s ISK wallet • %s ISK assets • %s SP  • %s unread",
+			"%d characters • %s ISK wallet • %s ISK assets • %s SP  • %s unread",
 			len(a.characters),
 			walletText,
 			assetsText,
@@ -252,29 +231,6 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 			c.home = &app.EntityShort[int64]{
 				ID:   m.Home.ID,
 				Name: m.Home.DisplayName(),
-			}
-		}
-		if m.Location != nil {
-			c.location = &app.EntityShort[int64]{
-				ID:   m.Location.ID,
-				Name: m.Location.DisplayName(),
-			}
-			if m.Location.SolarSystem != nil {
-				c.solarSystem = &app.EntityShort[int32]{
-					ID:   m.Location.SolarSystem.ID,
-					Name: m.Location.SolarSystem.Name,
-				}
-				c.systemSecurity = optional.New(m.Location.SolarSystem.SecurityStatus)
-				c.region = &app.EntityShort[int32]{
-					ID:   m.Location.SolarSystem.Constellation.Region.ID,
-					Name: m.Location.SolarSystem.Constellation.Region.Name,
-				}
-			}
-		}
-		if m.Ship != nil {
-			c.ship = &app.EntityShort[int32]{
-				ID:   m.Ship.ID,
-				Name: m.Ship.Name,
 			}
 		}
 		cc[i] = c
