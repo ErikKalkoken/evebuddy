@@ -58,7 +58,10 @@ func (st *Storage) CreateCharacterWalletJournalEntry(ctx context.Context, arg Cr
 		arg2.TaxReceiverID.Valid = true
 	}
 	err := st.q.CreateCharacterWalletJournalEntry(ctx, arg2)
-	return err
+	if err != nil {
+		return fmt.Errorf("create wallet journal entry for character %d: %w", arg.CharacterID, err)
+	}
+	return nil
 }
 
 func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, characterID int32, refID int64) (*app.CharacterWalletJournalEntry, error) {
@@ -68,7 +71,7 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, character
 	}
 	r, err := st.q.GetCharacterWalletJournalEntry(ctx, arg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get wallet journal entry for character %d: %w", characterID, err)
 	}
 	o := r.CharacterWalletJournalEntry
 	firstParty := nullEveEntry{ID: o.FirstPartyID, Name: r.FirstName, Category: r.FirstCategory}
@@ -78,13 +81,17 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, character
 }
 
 func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int32) ([]int64, error) {
-	return st.q.ListCharacterWalletJournalEntryRefIDs(ctx, int64(characterID))
+	ids, err := st.q.ListCharacterWalletJournalEntryRefIDs(ctx, int64(characterID))
+	if err != nil {
+		return nil, fmt.Errorf("list wallet journal entry ids for character %d: %w", characterID, err)
+	}
+	return ids, nil
 }
 
-func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, characterID int32) ([]*app.CharacterWalletJournalEntry, error) {
-	rows, err := st.q.ListCharacterWalletJournalEntries(ctx, int64(characterID))
+func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, id int32) ([]*app.CharacterWalletJournalEntry, error) {
+	rows, err := st.q.ListCharacterWalletJournalEntries(ctx, int64(id))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list wallet journal entries for character %d: %w", id, err)
 	}
 	ee := make([]*app.CharacterWalletJournalEntry, len(rows))
 	for i, r := range rows {

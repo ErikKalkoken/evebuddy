@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -157,7 +158,7 @@ func (w *settingsWindow) makeEVEOnlinePage() fyne.CanvasObject {
 }
 
 func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
-	s1 := widget.NewForm()
+	f1 := widget.NewForm()
 
 	// mail toogle
 	mailEnabledCheck := kxwidget.NewSwitch(func(b bool) {
@@ -167,7 +168,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		settingNotifyMailsEnabled,
 		settingNotifyMailsEnabledDefault,
 	))
-	s1.AppendItem(&widget.FormItem{
+	f1.AppendItem(&widget.FormItem{
 		Text:     "Mail",
 		Widget:   mailEnabledCheck,
 		HintText: "Wether to notify new mails",
@@ -181,7 +182,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		settingNotifyCommunicationsEnabled,
 		settingNotifyCommunicationsEnabledDefault,
 	))
-	s1.AppendItem(&widget.FormItem{
+	f1.AppendItem(&widget.FormItem{
 		Text:     "Communications",
 		Widget:   communicationsEnabledCheck,
 		HintText: "Wether to notify new communications",
@@ -194,7 +195,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	maxAge.OnChangeEnded = func(v float64) {
 		w.u.fyneApp.Preferences().SetInt(settingMaxAge, int(v))
 	}
-	s1.AppendItem(&widget.FormItem{
+	f1.AppendItem(&widget.FormItem{
 		Text:     "Max age",
 		Widget:   maxAge,
 		HintText: "Max age in hours. Older mails and communications will not be notified.",
@@ -211,12 +212,45 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		settingNotifyPIEnabled,
 		settingNotifyPIEnabledDefault,
 	))
-	s1.AppendItem(&widget.FormItem{
+	f1.AppendItem(&widget.FormItem{
 		Text:     "Planetary Industry",
 		Widget:   piEnabledCheck,
 		HintText: "Wether to notify about expired extractions",
 	})
 
+	// Training toogle
+	// TODO: Improve switch API to allow switch not to be set on error
+	trainingEnabledCheck := kxwidget.NewSwitch(func(on bool) {
+		ctx := context.Background()
+		if on {
+			err := w.u.CharacterService.EnableAllTrainingWatchers(ctx)
+			if err != nil {
+				d := NewErrorDialog("failed to enable training notification", err, w.window)
+				d.Show()
+			} else {
+				w.u.fyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, true)
+			}
+		} else {
+			err := w.u.CharacterService.DisableAllTrainingWatchers(ctx)
+			if err != nil {
+				d := NewErrorDialog("failed to disable training notification", err, w.window)
+				d.Show()
+			} else {
+				w.u.fyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, false)
+			}
+		}
+	})
+	trainingEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
+		settingNotifyTrainingEnabled,
+		settingNotifyTrainingEnabledDefault,
+	))
+	f1.AppendItem(&widget.FormItem{
+		Text:     "Training",
+		Widget:   trainingEnabledCheck,
+		HintText: "Wether to notify when skillqueue is empty",
+	})
+
+	f2 := widget.NewForm()
 	categoriesAndTypes := make(map[evenotification.Category][]evenotification.Type)
 	for _, n := range evenotification.SupportedTypes() {
 		c := evenotification.Type2category[n]
@@ -229,9 +263,8 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	slices.Sort(categories)
 	typesEnabled := set.NewFromSlice(w.u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 	notifsAll := make([]*kxwidget.Switch, 0)
-	s2 := widget.NewForm()
 	for _, c := range categories {
-		s2.Append("", widget.NewLabel(c.String()))
+		f2.Append("", widget.NewLabel(c.String()))
 		nts := categoriesAndTypes[c]
 		notifsCategory := make([]*kxwidget.Switch, 0)
 		for _, nt := range nts {
@@ -246,7 +279,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 			if typesEnabled.Contains(nt.String()) {
 				sw.On = true
 			}
-			s2.AppendItem(widget.NewFormItem(nt.Display(), sw))
+			f2.AppendItem(widget.NewFormItem(nt.Display(), sw))
 			notifsCategory = append(notifsCategory, sw)
 			notifsAll = append(notifsAll, sw)
 		}
@@ -260,8 +293,8 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 				sw.SetState(false)
 			}
 		})
-		s2.Append("", container.NewHBox(enableAll, disableAll))
-		s2.Append("", container.NewPadded())
+		f2.Append("", container.NewHBox(enableAll, disableAll))
+		f2.Append("", container.NewPadded())
 	}
 	title1 := widget.NewLabel("Global")
 	title1.TextStyle.Bold = true
@@ -269,15 +302,16 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	title2.TextStyle.Bold = true
 	c := container.NewVBox(
 		title1,
-		s1,
+		f1,
 		container.NewPadded(),
 		title2,
-		s2,
+		f2,
 	)
 	reset := func() {
 		mailEnabledCheck.SetState(settingNotifyMailsEnabledDefault)
 		communicationsEnabledCheck.SetState(settingNotifyCommunicationsEnabledDefault)
 		piEnabledCheck.SetState(settingNotifyPIEnabledDefault)
+		trainingEnabledCheck.SetState(settingNotifyTrainingEnabledDefault)
 		maxAge.SetValue(settingMaxAgeDefault)
 		for _, sw := range notifsAll {
 			sw.SetState(false)

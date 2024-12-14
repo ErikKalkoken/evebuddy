@@ -16,7 +16,11 @@ type CreateCharacterImplantParams struct {
 }
 
 func (st *Storage) CreateCharacterImplant(ctx context.Context, arg CreateCharacterImplantParams) error {
-	return createCharacterImplant(ctx, st.q, arg)
+	err := createCharacterImplant(ctx, st.q, arg)
+	if err != nil {
+		return fmt.Errorf("create implant for character ID %d: %w", arg.CharacterID, err)
+	}
+	return nil
 }
 
 func (st *Storage) GetCharacterImplant(ctx context.Context, characterID int32, typeID int32) (*app.CharacterImplant, error) {
@@ -47,7 +51,7 @@ func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int32)
 	}
 	rows, err := st.q.ListCharacterImplants(ctx, arg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list implants for character ID %d: %w", characterID, err)
 	}
 	ii2 := make([]*app.CharacterImplant, len(rows))
 	for i, row := range rows {
@@ -62,23 +66,29 @@ func (st *Storage) ListCharacterImplants(ctx context.Context, characterID int32)
 }
 
 func (st *Storage) ReplaceCharacterImplants(ctx context.Context, characterID int32, args []CreateCharacterImplantParams) error {
-	tx, err := st.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	qtx := st.q.WithTx(tx)
-	if err := qtx.DeleteCharacterImplants(ctx, int64(characterID)); err != nil {
-		return err
-	}
-	for _, arg := range args {
-		err := createCharacterImplant(ctx, qtx, arg)
+	err := func() error {
+		tx, err := st.db.Begin()
 		if err != nil {
 			return err
 		}
-	}
-	if err := tx.Commit(); err != nil {
-		return err
+		defer tx.Rollback()
+		qtx := st.q.WithTx(tx)
+		if err := qtx.DeleteCharacterImplants(ctx, int64(characterID)); err != nil {
+			return err
+		}
+		for _, arg := range args {
+			err := createCharacterImplant(ctx, qtx, arg)
+			if err != nil {
+				return err
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+		return nil
+	}()
+	if err != nil {
+		return fmt.Errorf("replace implants for character ID %d: %w", characterID, err)
 	}
 	return nil
 }

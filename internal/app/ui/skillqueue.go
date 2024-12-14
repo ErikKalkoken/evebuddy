@@ -113,34 +113,35 @@ func (a *skillqueueArea) makeSkillqueue() *widget.List {
 func (a *skillqueueArea) refresh() {
 	var t string
 	var i widget.Importance
-	total, completion, err := a.updateItems()
+	remaining, completion, err := a.updateItems()
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
 	} else {
 		s := "Skills"
-		if !completion.IsEmpty() && completion.ValueOrZero() < 1 {
+		if remaining.IsEmpty() {
+			s += " (!)"
+		} else if completion.ValueOrZero() < 1 {
 			s += fmt.Sprintf(" (%.0f%%)", completion.MustValue()*100)
 		}
 		a.u.skillTab.Text = s
 		a.u.tabs.Refresh()
-		t, i = a.makeTopText(total)
+		t, i = a.makeTopText(remaining)
 	}
 	a.total.Text = t
 	a.total.Importance = i
 	a.total.Refresh()
 }
 
-func (a *skillqueueArea) updateItems() (optional.Optional[time.Duration], optional.Optional[float64], error) {
-	var remaining optional.Optional[time.Duration]
-	var completion optional.Optional[float64]
+func (a *skillqueueArea) updateItems() (remaining optional.Optional[time.Duration], completion optional.Optional[float64], err error) {
 	ctx := context.TODO()
 	if !a.u.hasCharacter() {
 		a.items = make([]*app.CharacterSkillqueueItem, 0)
-		return remaining, completion, nil
+		return
 	}
-	items, err := a.u.CharacterService.ListCharacterSkillqueueItems(ctx, a.u.characterID())
+	var items []*app.CharacterSkillqueueItem
+	items, err = a.u.CharacterService.ListCharacterSkillqueueItems(ctx, a.u.characterID())
 	if err != nil {
 		return remaining, completion, err
 	}
@@ -151,7 +152,7 @@ func (a *skillqueueArea) updateItems() (optional.Optional[time.Duration], option
 		}
 	}
 	a.items = items
-	return remaining, completion, nil
+	return
 }
 
 func (a *skillqueueArea) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {

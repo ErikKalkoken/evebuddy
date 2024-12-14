@@ -11,8 +11,10 @@ import (
 )
 
 const deleteCharacter = `-- name: DeleteCharacter :exec
-DELETE FROM characters
-WHERE id = ?
+DELETE FROM
+    characters
+WHERE
+    id = ?
 `
 
 func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
@@ -20,9 +22,21 @@ func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
 	return err
 }
 
+const disableAllTrainingWatchers = `-- name: DisableAllTrainingWatchers :exec
+UPDATE
+    characters
+SET
+    is_training_watched = FALSE
+`
+
+func (q *Queries) DisableAllTrainingWatchers(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, disableAllTrainingWatchers)
+	return err
+}
+
 const getCharacter = `-- name: GetCharacter :one
 SELECT
-    cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance,
+    cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched,
     ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title,
     eec.id, eec.category, eec.name,
     er.id, er.description, er.name,
@@ -33,13 +47,15 @@ SELECT
     home_id,
     location_id,
     ship_id
-FROM characters cc
-JOIN eve_characters ec ON ec.id = cc.id
-JOIN eve_entities eec ON eec.id = ec.corporation_id
-JOIN eve_races er ON er .id = ec.race_id
-LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
-LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
-WHERE cc.id = ?
+FROM
+    characters cc
+    JOIN eve_characters ec ON ec.id = cc.id
+    JOIN eve_entities eec ON eec.id = ec.corporation_id
+    JOIN eve_races er ON er.id = ec.race_id
+    LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
+    LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
+WHERE
+    cc.id = ?
 `
 
 type GetCharacterRow struct {
@@ -69,6 +85,7 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 		&i.Character.TotalSp,
 		&i.Character.UnallocatedSp,
 		&i.Character.WalletBalance,
+		&i.Character.IsTrainingWatched,
 		&i.EveCharacter.AllianceID,
 		&i.EveCharacter.Birthday,
 		&i.EveCharacter.CorporationID,
@@ -98,9 +115,12 @@ func (q *Queries) GetCharacter(ctx context.Context, id int64) (GetCharacterRow, 
 }
 
 const getCharacterAssetValue = `-- name: GetCharacterAssetValue :one
-SELECT asset_value
-FROM characters
-WHERE id = ?
+SELECT
+    asset_value
+FROM
+    characters
+WHERE
+    id = ?
 `
 
 func (q *Queries) GetCharacterAssetValue(ctx context.Context, id int64) (sql.NullFloat64, error) {
@@ -111,8 +131,10 @@ func (q *Queries) GetCharacterAssetValue(ctx context.Context, id int64) (sql.Nul
 }
 
 const listCharacterIDs = `-- name: ListCharacterIDs :many
-SELECT id
-FROM characters
+SELECT
+    id
+FROM
+    characters
 `
 
 func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
@@ -139,8 +161,8 @@ func (q *Queries) ListCharacterIDs(ctx context.Context) ([]int64, error) {
 }
 
 const listCharacters = `-- name: ListCharacters :many
-SELECT DISTINCT
-    cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance,
+SELECT
+    DISTINCT cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched,
     ec.alliance_id, ec.birthday, ec.corporation_id, ec.description, ec.gender, ec.faction_id, ec.id, ec.name, ec.race_id, ec.security_status, ec.title,
     eec.id, eec.category, eec.name,
     er.id, er.description, er.name,
@@ -151,13 +173,15 @@ SELECT DISTINCT
     home_id,
     location_id,
     ship_id
-FROM characters cc
-JOIN eve_characters ec ON ec.id = cc.id
-JOIN eve_entities eec ON eec.id = ec.corporation_id
-JOIN eve_races er ON er.id = ec.race_id
-LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
-LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
-ORDER BY ec.name
+FROM
+    characters cc
+    JOIN eve_characters ec ON ec.id = cc.id
+    JOIN eve_entities eec ON eec.id = ec.corporation_id
+    JOIN eve_races er ON er.id = ec.race_id
+    LEFT JOIN eve_entities eea ON eea.id = ec.alliance_id
+    LEFT JOIN eve_entities eef ON eef.id = ec.faction_id
+ORDER BY
+    ec.name
 `
 
 type ListCharactersRow struct {
@@ -193,6 +217,7 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 			&i.Character.TotalSp,
 			&i.Character.UnallocatedSp,
 			&i.Character.WalletBalance,
+			&i.Character.IsTrainingWatched,
 			&i.EveCharacter.AllianceID,
 			&i.EveCharacter.Birthday,
 			&i.EveCharacter.CorporationID,
@@ -232,10 +257,14 @@ func (q *Queries) ListCharacters(ctx context.Context) ([]ListCharactersRow, erro
 }
 
 const listCharactersShort = `-- name: ListCharactersShort :many
-SELECT DISTINCT eve_characters.id, eve_characters.name
-FROM characters
-JOIN eve_characters ON eve_characters.id = characters.id
-ORDER BY eve_characters.name
+SELECT
+    DISTINCT eve_characters.id,
+    eve_characters.name
+FROM
+    characters
+    JOIN eve_characters ON eve_characters.id = characters.id
+ORDER BY
+    eve_characters.name
 `
 
 type ListCharactersShortRow struct {
@@ -267,10 +296,12 @@ func (q *Queries) ListCharactersShort(ctx context.Context) ([]ListCharactersShor
 }
 
 const updateCharacterAssetValue = `-- name: UpdateCharacterAssetValue :exec
-UPDATE characters
+UPDATE
+    characters
 SET
     asset_value = ?
-WHERE id = ?
+WHERE
+    id = ?
 `
 
 type UpdateCharacterAssetValueParams struct {
@@ -284,10 +315,12 @@ func (q *Queries) UpdateCharacterAssetValue(ctx context.Context, arg UpdateChara
 }
 
 const updateCharacterHomeId = `-- name: UpdateCharacterHomeId :exec
-UPDATE characters
+UPDATE
+    characters
 SET
     home_id = ?
-WHERE id = ?
+WHERE
+    id = ?
 `
 
 type UpdateCharacterHomeIdParams struct {
@@ -300,11 +333,32 @@ func (q *Queries) UpdateCharacterHomeId(ctx context.Context, arg UpdateCharacter
 	return err
 }
 
+const updateCharacterIsTrainingWatched = `-- name: UpdateCharacterIsTrainingWatched :exec
+UPDATE
+    characters
+SET
+    is_training_watched = ?
+WHERE
+    id = ?
+`
+
+type UpdateCharacterIsTrainingWatchedParams struct {
+	IsTrainingWatched bool
+	ID                int64
+}
+
+func (q *Queries) UpdateCharacterIsTrainingWatched(ctx context.Context, arg UpdateCharacterIsTrainingWatchedParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterIsTrainingWatched, arg.IsTrainingWatched, arg.ID)
+	return err
+}
+
 const updateCharacterLastLoginAt = `-- name: UpdateCharacterLastLoginAt :exec
-UPDATE characters
+UPDATE
+    characters
 SET
     last_login_at = ?
-WHERE id = ?
+WHERE
+    id = ?
 `
 
 type UpdateCharacterLastLoginAtParams struct {
@@ -318,10 +372,12 @@ func (q *Queries) UpdateCharacterLastLoginAt(ctx context.Context, arg UpdateChar
 }
 
 const updateCharacterLocationID = `-- name: UpdateCharacterLocationID :exec
-UPDATE characters
+UPDATE
+    characters
 SET
     location_id = ?
-WHERE id = ?
+WHERE
+    id = ?
 `
 
 type UpdateCharacterLocationIDParams struct {
@@ -335,11 +391,13 @@ func (q *Queries) UpdateCharacterLocationID(ctx context.Context, arg UpdateChara
 }
 
 const updateCharacterSP = `-- name: UpdateCharacterSP :exec
-UPDATE characters
+UPDATE
+    characters
 SET
     total_sp = ?,
     unallocated_sp = ?
-WHERE id = ?
+WHERE
+    id = ?
 `
 
 type UpdateCharacterSPParams struct {
@@ -354,10 +412,12 @@ func (q *Queries) UpdateCharacterSP(ctx context.Context, arg UpdateCharacterSPPa
 }
 
 const updateCharacterShipID = `-- name: UpdateCharacterShipID :exec
-UPDATE characters
+UPDATE
+    characters
 SET
     ship_id = ?
-WHERE id = ?
+WHERE
+    id = ?
 `
 
 type UpdateCharacterShipIDParams struct {
@@ -371,10 +431,12 @@ func (q *Queries) UpdateCharacterShipID(ctx context.Context, arg UpdateCharacter
 }
 
 const updateCharacterWalletBalance = `-- name: UpdateCharacterWalletBalance :exec
-UPDATE characters
+UPDATE
+    characters
 SET
     wallet_balance = ?
-WHERE id = ?
+WHERE
+    id = ?
 `
 
 type UpdateCharacterWalletBalanceParams struct {
@@ -388,22 +450,23 @@ func (q *Queries) UpdateCharacterWalletBalance(ctx context.Context, arg UpdateCh
 }
 
 const updateOrCreateCharacter = `-- name: UpdateOrCreateCharacter :exec
-INSERT INTO characters (
-    id,
-    home_id,
-    last_login_at,
-    location_id,
-    ship_id,
-    total_sp,
-    unallocated_sp,
-    wallet_balance,
-    asset_value
-)
-VALUES (
-    ?1, ?2, ?3, ?4, ?5 ,?6, ?7, ?8, ?9
-)
-ON CONFLICT(id) DO
-UPDATE SET
+INSERT INTO
+    characters (
+        id,
+        home_id,
+        last_login_at,
+        location_id,
+        ship_id,
+        total_sp,
+        unallocated_sp,
+        wallet_balance,
+        asset_value,
+        is_training_watched
+    )
+VALUES
+    (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10) ON CONFLICT(id) DO
+UPDATE
+SET
     home_id = ?2,
     last_login_at = ?3,
     location_id = ?4,
@@ -411,20 +474,23 @@ UPDATE SET
     total_sp = ?6,
     unallocated_sp = ?7,
     wallet_balance = ?8,
-    asset_value = ?9
-WHERE id = ?1
+    asset_value = ?9,
+    is_training_watched = ?10
+WHERE
+    id = ?1
 `
 
 type UpdateOrCreateCharacterParams struct {
-	ID            int64
-	HomeID        sql.NullInt64
-	LastLoginAt   sql.NullTime
-	LocationID    sql.NullInt64
-	ShipID        sql.NullInt64
-	TotalSp       sql.NullInt64
-	UnallocatedSp sql.NullInt64
-	WalletBalance sql.NullFloat64
-	AssetValue    sql.NullFloat64
+	ID                int64
+	HomeID            sql.NullInt64
+	LastLoginAt       sql.NullTime
+	LocationID        sql.NullInt64
+	ShipID            sql.NullInt64
+	TotalSp           sql.NullInt64
+	UnallocatedSp     sql.NullInt64
+	WalletBalance     sql.NullFloat64
+	AssetValue        sql.NullFloat64
+	IsTrainingWatched bool
 }
 
 func (q *Queries) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreateCharacterParams) error {
@@ -438,6 +504,7 @@ func (q *Queries) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreat
 		arg.UnallocatedSp,
 		arg.WalletBalance,
 		arg.AssetValue,
+		arg.IsTrainingWatched,
 	)
 	return err
 }

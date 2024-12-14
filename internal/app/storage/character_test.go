@@ -298,6 +298,38 @@ func TestUpdateCharacterFields(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can update is training watched", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter()
+		// when
+		err := r.UpdateCharacterIsTrainingWatched(ctx, c1.ID, true)
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.True(t, c2.IsTrainingWatched)
+			}
+		}
+	})
+	t.Run("can update is training watched 2", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c1 := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{IsTrainingWatched: true})
+		c2, err := r.GetCharacter(ctx, c1.ID)
+		if assert.NoError(t, err) {
+			assert.True(t, c2.IsTrainingWatched)
+		}
+		// when
+		err = r.UpdateCharacterIsTrainingWatched(ctx, c1.ID, false)
+		// then
+		if assert.NoError(t, err) {
+			c2, err := r.GetCharacter(ctx, c1.ID)
+			if assert.NoError(t, err) {
+				assert.False(t, c2.IsTrainingWatched)
+			}
+		}
+	})
 	t.Run("can update skill points", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

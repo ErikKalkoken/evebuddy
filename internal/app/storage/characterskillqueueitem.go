@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -25,7 +26,7 @@ func (st *Storage) GetCharacterTotalTrainingTime(ctx context.Context, characterI
 	var d optional.Optional[time.Duration]
 	x, err := st.q.GetTotalTrainingTime(ctx, int64(characterID))
 	if err != nil {
-		return d, err
+		return d, fmt.Errorf("fetching total training time for character %d: %w", characterID, err)
 	}
 	if !x.Valid {
 		return d, nil
@@ -66,6 +67,9 @@ func createCharacterSkillqueueItem(ctx context.Context, q *queries.Queries, arg 
 		arg2.TrainingStartSp.Valid = true
 	}
 	err := q.CreateCharacterSkillqueueItem(ctx, arg2)
+	if err != nil {
+		return fmt.Errorf("create skill queue item for character %d: %w", arg.CharacterID, err)
+	}
 	return err
 }
 
@@ -76,7 +80,7 @@ func (st *Storage) GetCharacterSkillqueueItem(ctx context.Context, characterID i
 	}
 	row, err := st.q.GetCharacterSkillqueueItem(ctx, arg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get skill queue item for character %d: %w", characterID, err)
 	}
 	return skillqueueItemFromDBModel(row.CharacterSkillqueueItem, row.SkillName, row.GroupName, row.SkillDescription), err
 }
@@ -84,7 +88,7 @@ func (st *Storage) GetCharacterSkillqueueItem(ctx context.Context, characterID i
 func (st *Storage) ListCharacterSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
 	rows, err := st.q.ListCharacterSkillqueueItems(ctx, int64(characterID))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list skill queue items for character %d: %w", characterID, err)
 	}
 	ii2 := make([]*app.CharacterSkillqueueItem, len(rows))
 	for i, row := range rows {
@@ -94,23 +98,29 @@ func (st *Storage) ListCharacterSkillqueueItems(ctx context.Context, characterID
 }
 
 func (st *Storage) ReplaceCharacterSkillqueueItems(ctx context.Context, characterID int32, args []SkillqueueItemParams) error {
-	tx, err := st.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	qtx := st.q.WithTx(tx)
-	if err := qtx.DeleteCharacterSkillqueueItems(ctx, int64(characterID)); err != nil {
-		return err
-	}
-	for _, arg := range args {
-		err := createCharacterSkillqueueItem(ctx, qtx, arg)
+	err := func() error {
+		tx, err := st.db.Begin()
 		if err != nil {
 			return err
 		}
-	}
-	if err := tx.Commit(); err != nil {
-		return err
+		defer tx.Rollback()
+		qtx := st.q.WithTx(tx)
+		if err := qtx.DeleteCharacterSkillqueueItems(ctx, int64(characterID)); err != nil {
+			return err
+		}
+		for _, arg := range args {
+			err := createCharacterSkillqueueItem(ctx, qtx, arg)
+			if err != nil {
+				return err
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+		return nil
+	}()
+	if err != nil {
+		return fmt.Errorf("replace skill queue items for character %d: %w", characterID, err)
 	}
 	return nil
 }

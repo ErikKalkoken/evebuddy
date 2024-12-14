@@ -31,45 +31,51 @@ func (st *Storage) GetCharacterToken(ctx context.Context, characterID int32) (*a
 }
 
 func (st *Storage) UpdateOrCreateCharacterToken(ctx context.Context, t *app.CharacterToken) error {
-	arg := queries.UpdateOrCreateCharacterTokenParams{
-		AccessToken:  t.AccessToken,
-		CharacterID:  int64(t.CharacterID),
-		ExpiresAt:    t.ExpiresAt,
-		RefreshToken: t.RefreshToken,
-		TokenType:    t.TokenType,
-	}
-	token, err := st.q.UpdateOrCreateCharacterToken(ctx, arg)
-	if err != nil {
-		return fmt.Errorf("update or create token for character %d: %w", t.CharacterID, err)
-	}
-	ss := make([]queries.Scope, len(t.Scopes))
-	for i, name := range t.Scopes {
-		s, err := st.getOrCreateScope(ctx, name)
+	err := func() error {
+		arg := queries.UpdateOrCreateCharacterTokenParams{
+			AccessToken:  t.AccessToken,
+			CharacterID:  int64(t.CharacterID),
+			ExpiresAt:    t.ExpiresAt,
+			RefreshToken: t.RefreshToken,
+			TokenType:    t.TokenType,
+		}
+		token, err := st.q.UpdateOrCreateCharacterToken(ctx, arg)
 		if err != nil {
 			return err
 		}
-		ss[i] = s
-	}
-	tx, err := st.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	qtx := st.q.WithTx(tx)
-	if err := qtx.ClearCharacterTokenScopes(ctx, int64(t.CharacterID)); err != nil {
-		return err
-	}
-	for _, s := range ss {
-		arg := queries.AddCharacterTokenScopeParams{
-			CharacterTokenID: token.ID,
-			ScopeID:          s.ID,
+		ss := make([]queries.Scope, len(t.Scopes))
+		for i, name := range t.Scopes {
+			s, err := st.getOrCreateScope(ctx, name)
+			if err != nil {
+				return err
+			}
+			ss[i] = s
 		}
-		if err := qtx.AddCharacterTokenScope(ctx, arg); err != nil {
+		tx, err := st.db.Begin()
+		if err != nil {
 			return err
 		}
-	}
-	if err := tx.Commit(); err != nil {
-		return err
+		defer tx.Rollback()
+		qtx := st.q.WithTx(tx)
+		if err := qtx.ClearCharacterTokenScopes(ctx, int64(t.CharacterID)); err != nil {
+			return err
+		}
+		for _, s := range ss {
+			arg := queries.AddCharacterTokenScopeParams{
+				CharacterTokenID: token.ID,
+				ScopeID:          s.ID,
+			}
+			if err := qtx.AddCharacterTokenScope(ctx, arg); err != nil {
+				return err
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+		return nil
+	}()
+	if err != nil {
+		return fmt.Errorf("update or create token for character %d: %w", t.CharacterID, err)
 	}
 	return nil
 }

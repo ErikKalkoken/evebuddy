@@ -19,6 +19,8 @@ const (
 	settingNotifyMailsEnabledDefault          = false
 	settingNotifyPIEnabled                    = "settingNotifyPIEnabled"
 	settingNotifyPIEnabledDefault             = false
+	settingNotifyTrainingEnabled              = "settingNotifyTrainingEnabled"
+	settingNotifyTrainingEnabledDefault       = false
 	settingNotifyPIEarliest                   = "settingNotifyPIEarliest"
 	settingSysTrayEnabled                     = "settingSysTrayEnabled"
 	settingSysTrayEnabledDefault              = false

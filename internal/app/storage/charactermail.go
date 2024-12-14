@@ -28,12 +28,12 @@ type CreateCharacterMailParams struct {
 func (st *Storage) CreateCharacterMail(ctx context.Context, arg CreateCharacterMailParams) (int64, error) {
 	id, err := func() (int64, error) {
 		if len(arg.RecipientIDs) == 0 {
-			return 0, errors.New("can not create mail without recipients")
+			return 0, fmt.Errorf("missing recipients")
 		}
 		characterID2 := int64(arg.CharacterID)
 		from, err := st.GetEveEntity(ctx, arg.FromID)
 		if err != nil {
-			return 0, fmt.Errorf("get sender: %w", err)
+			return 0, err
 		}
 		mailParams := queries.CreateMailParams{
 			Body:        arg.Body,
@@ -130,13 +130,19 @@ func (st *Storage) GetCharacterMail(ctx context.Context, characterID, mailID int
 	return mail, nil
 }
 
-func (st *Storage) GetCharacterMailUnreadCount(ctx context.Context, characterID int32) (int, error) {
-	count, err := st.q.GetMailUnreadCount(ctx, int64(characterID))
+func (st *Storage) GetCharacterMailUnreadCount(ctx context.Context, id int32) (int, error) {
+	count, err := st.q.GetMailUnreadCount(ctx, int64(id))
+	if err != nil {
+		return 0, fmt.Errorf("get mail unread count for character %d: %w", id, err)
+	}
 	return int(count), err
 }
 
-func (st *Storage) GetCharacterMailCount(ctx context.Context, characterID int32) (int, error) {
-	count, err := st.q.GetMailCount(ctx, int64(characterID))
+func (st *Storage) GetCharacterMailCount(ctx context.Context, id int32) (int, error) {
+	count, err := st.q.GetMailCount(ctx, int64(id))
+	if err != nil {
+		return 0, fmt.Errorf("get mail count for character %d: %w", id, err)
+	}
 	return int(count), err
 }
 

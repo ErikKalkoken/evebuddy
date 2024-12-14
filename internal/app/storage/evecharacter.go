@@ -130,7 +130,7 @@ func eveCharacterFromDBModel(
 	alliance nullEveEntry,
 	faction nullEveEntry,
 ) *app.EveCharacter {
-	x := app.EveCharacter{
+	o := app.EveCharacter{
 		Alliance:       eveEntityFromNullableDBModel(alliance),
 		Birthday:       character.Birthday,
 		Corporation:    eveEntityFromDBModel(corporation),
@@ -143,5 +143,5 @@ func eveCharacterFromDBModel(
 		SecurityStatus: character.SecurityStatus,
 		Title:          character.Title,
 	}
-	return &x
+	return &o
 }

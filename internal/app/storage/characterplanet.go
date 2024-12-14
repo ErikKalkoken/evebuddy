@@ -66,29 +66,29 @@ func (st *Storage) GetCharacterPlanet(ctx context.Context, characterID int32, pl
 func (st *Storage) ListAllCharacterPlanets(ctx context.Context) ([]*app.CharacterPlanet, error) {
 	rows, err := st.q.ListAllCharacterPlanets(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list all planets: %w", err)
 	}
 	oo := make([]*app.CharacterPlanet, len(rows))
 	for i, r := range rows {
 		pp, err := st.ListPlanetPins(ctx, r.CharacterPlanet.ID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("list all planet pins: %w", err)
 		}
 		oo[i] = characterPlanetFromDBModel(queries.GetCharacterPlanetRow(r), pp)
 	}
 	return oo, nil
 }
 
-func (st *Storage) ListCharacterPlanets(ctx context.Context, characterID int32) ([]*app.CharacterPlanet, error) {
-	rows, err := st.q.ListCharacterPlanets(ctx, int64(characterID))
+func (st *Storage) ListCharacterPlanets(ctx context.Context, id int32) ([]*app.CharacterPlanet, error) {
+	rows, err := st.q.ListCharacterPlanets(ctx, int64(id))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list planets for character %d: %w", id, err)
 	}
 	oo := make([]*app.CharacterPlanet, len(rows))
 	for i, r := range rows {
 		pp, err := st.ListPlanetPins(ctx, r.CharacterPlanet.ID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("list planet pins for character %d: %w", id, err)
 		}
 		oo[i] = characterPlanetFromDBModel(queries.GetCharacterPlanetRow(r), pp)
 	}
