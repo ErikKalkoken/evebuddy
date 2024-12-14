@@ -143,15 +143,15 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 	case app.SectionLocation,
 		app.SectionOnline,
-		app.SectionShip,
-		app.SectionWalletBalance:
+		app.SectionShip:
 		if hasChanged {
-			u.overviewArea.refresh()
-			u.wealthArea.refresh()
+			u.locationsArea.refresh()
 		}
 	case app.SectionPlanets:
 		if isShown && hasChanged {
 			u.planetArea.refresh()
+		}
+		if hasChanged {
 			u.coloniesArea.refresh()
 		}
 	case app.SectionMailLabels,
@@ -183,8 +183,10 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		if isShown && hasChanged {
 			u.skillCatalogueArea.refresh()
 			u.shipsArea.refresh()
-			u.overviewArea.refresh()
 			u.planetArea.refresh()
+		}
+		if hasChanged {
+			u.trainingArea.refresh()
 		}
 	case app.SectionSkillqueue:
 		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
@@ -195,6 +197,14 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 		if isShown {
 			u.skillqueueArea.refresh()
+		}
+		if hasChanged {
+			u.trainingArea.refresh()
+		}
+	case app.SectionWalletBalance:
+		if hasChanged {
+			u.overviewArea.refresh()
+			u.wealthArea.refresh()
 		}
 	case app.SectionWalletJournal:
 		if isShown && hasChanged {
