@@ -139,6 +139,17 @@ func (st *Storage) UpdateCharacterHome(ctx context.Context, characterID int32, h
 	return nil
 }
 
+func (st *Storage) UpdateCharacterIsTrainingWatched(ctx context.Context, characterID int32, isWatched bool) error {
+	arg := queries.UpdateCharacterIsTrainingWatchedParams{
+		ID:                int64(characterID),
+		IsTrainingWatched: isWatched,
+	}
+	if err := st.q.UpdateCharacterIsTrainingWatched(ctx, arg); err != nil {
+		return fmt.Errorf("update is training watched for character %d: %w", characterID, err)
+	}
+	return nil
+}
+
 func (st *Storage) UpdateCharacterLastLoginAt(ctx context.Context, characterID int32, v optional.Optional[time.Time]) error {
 	arg := queries.UpdateCharacterLastLoginAtParams{
 		ID:          int64(characterID),
@@ -207,31 +218,33 @@ func (st *Storage) UpdateCharacterAssetValue(ctx context.Context, characterID in
 }
 
 type UpdateOrCreateCharacterParams struct {
-	AssetValue    optional.Optional[float64]
-	ID            int32
-	HomeID        optional.Optional[int64]
-	LastLoginAt   optional.Optional[time.Time]
-	LocationID    optional.Optional[int64]
-	ShipID        optional.Optional[int32]
-	TotalSP       optional.Optional[int]
-	UnallocatedSP optional.Optional[int]
-	WalletBalance optional.Optional[float64]
+	AssetValue        optional.Optional[float64]
+	ID                int32
+	IsTrainingWatched bool
+	HomeID            optional.Optional[int64]
+	LastLoginAt       optional.Optional[time.Time]
+	LocationID        optional.Optional[int64]
+	ShipID            optional.Optional[int32]
+	TotalSP           optional.Optional[int]
+	UnallocatedSP     optional.Optional[int]
+	WalletBalance     optional.Optional[float64]
 }
 
 func (st *Storage) UpdateOrCreateCharacter(ctx context.Context, arg UpdateOrCreateCharacterParams) error {
 	arg2 := queries.UpdateOrCreateCharacterParams{
-		ID:            int64(arg.ID),
-		AssetValue:    optional.ToNullFloat64(arg.AssetValue),
-		HomeID:        optional.ToNullInt64(arg.HomeID),
-		LastLoginAt:   optional.ToNullTime(arg.LastLoginAt),
-		LocationID:    optional.ToNullInt64(arg.LocationID),
-		ShipID:        optional.ToNullInt64(arg.ShipID),
-		TotalSp:       optional.ToNullInt64(arg.TotalSP),
-		UnallocatedSp: optional.ToNullInt64(arg.UnallocatedSP),
-		WalletBalance: optional.ToNullFloat64(arg.WalletBalance),
+		ID:                int64(arg.ID),
+		AssetValue:        optional.ToNullFloat64(arg.AssetValue),
+		IsTrainingWatched: arg.IsTrainingWatched,
+		HomeID:            optional.ToNullInt64(arg.HomeID),
+		LastLoginAt:       optional.ToNullTime(arg.LastLoginAt),
+		LocationID:        optional.ToNullInt64(arg.LocationID),
+		ShipID:            optional.ToNullInt64(arg.ShipID),
+		TotalSp:           optional.ToNullInt64(arg.TotalSP),
+		UnallocatedSp:     optional.ToNullInt64(arg.UnallocatedSP),
+		WalletBalance:     optional.ToNullFloat64(arg.WalletBalance),
 	}
 	if err := st.q.UpdateOrCreateCharacter(ctx, arg2); err != nil {
-		return fmt.Errorf("update or create Character %d: %w", arg.ID, err)
+		return fmt.Errorf("update or create character %d: %w", arg.ID, err)
 	}
 	return nil
 }
@@ -248,37 +261,38 @@ func (st *Storage) characterFromDBModel(
 	locationID sql.NullInt64,
 	shipID sql.NullInt64,
 ) (*app.Character, error) {
-	c := app.Character{
-		AssetValue:    optional.FromNullFloat64(character.AssetValue),
-		EveCharacter:  eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
-		ID:            int32(character.ID),
-		LastLoginAt:   optional.FromNullTime(character.LastLoginAt),
-		TotalSP:       optional.FromNullInt64ToInteger[int](character.TotalSp),
-		UnallocatedSP: optional.FromNullInt64ToInteger[int](character.UnallocatedSp),
-		WalletBalance: optional.FromNullFloat64(character.WalletBalance),
+	o := app.Character{
+		AssetValue:        optional.FromNullFloat64(character.AssetValue),
+		EveCharacter:      eveCharacterFromDBModel(eveCharacter, corporation, race, alliance, faction),
+		ID:                int32(character.ID),
+		IsTrainingWatched: character.IsTrainingWatched,
+		LastLoginAt:       optional.FromNullTime(character.LastLoginAt),
+		TotalSP:           optional.FromNullInt64ToInteger[int](character.TotalSp),
+		UnallocatedSP:     optional.FromNullInt64ToInteger[int](character.UnallocatedSp),
+		WalletBalance:     optional.FromNullFloat64(character.WalletBalance),
 	}
 	if homeID.Valid {
 		x, err := st.GetEveLocation(ctx, homeID.Int64)
 		if err != nil {
 			return nil, err
 		}
-		c.Home = x
+		o.Home = x
 	}
 	if locationID.Valid {
 		x, err := st.GetEveLocation(ctx, locationID.Int64)
 		if err != nil {
 			return nil, err
 		}
-		c.Location = x
+		o.Location = x
 	}
 	if shipID.Valid {
 		x, err := st.GetEveType(ctx, int32(shipID.Int64))
 		if err != nil {
 			return nil, err
 		}
-		c.Ship = x
+		o.Ship = x
 	}
-	return &c, nil
+	return &o, nil
 }
 
 func (st *Storage) GetCharacterAssetValue(ctx context.Context, characterID int32) (optional.Optional[float64], error) {

@@ -10,15 +10,16 @@ import (
 )
 
 type Character struct {
-	ID            int64
-	AssetValue    sql.NullFloat64
-	HomeID        sql.NullInt64
-	LastLoginAt   sql.NullTime
-	LocationID    sql.NullInt64
-	ShipID        sql.NullInt64
-	TotalSp       sql.NullInt64
-	UnallocatedSp sql.NullInt64
-	WalletBalance sql.NullFloat64
+	ID                int64
+	AssetValue        sql.NullFloat64
+	HomeID            sql.NullInt64
+	LastLoginAt       sql.NullTime
+	LocationID        sql.NullInt64
+	ShipID            sql.NullInt64
+	TotalSp           sql.NullInt64
+	UnallocatedSp     sql.NullInt64
+	WalletBalance     sql.NullFloat64
+	IsTrainingWatched bool
 }
 
 type CharacterAsset struct {

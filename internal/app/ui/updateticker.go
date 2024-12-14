@@ -71,6 +71,14 @@ func (u *UI) startUpdateTickerCharacters() {
 					if u.fyneApp.Preferences().BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault) {
 						go u.notifyExpiredExtractions(context.TODO(), c.ID)
 					}
+					if u.fyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
+						go func() {
+							err := u.notifyExpiredTraining(context.TODO(), c.ID)
+							if err != nil {
+								slog.Error("notify expired training", "error", err)
+							}
+						}()
+					}
 				}
 			}()
 			<-ticker.C
@@ -179,6 +187,12 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 			u.planetArea.refresh()
 		}
 	case app.SectionSkillqueue:
+		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
+			err := u.CharacterService.EnableTrainingWatcher(ctx, characterID)
+			if err != nil {
+				slog.Error("Failed to enable training watcher", "characterID", characterID, "error", err)
+			}
+		}
 		if isShown {
 			u.skillqueueArea.refresh()
 		}
@@ -268,4 +282,25 @@ func (u *UI) notifyExpiredExtractions(ctx context.Context, characterID int32) {
 			slog.Error("failed to update last notified", "error", err)
 		}
 	}
+}
+
+func (u *UI) notifyExpiredTraining(ctx context.Context, characterID int32) error {
+	c, err := u.CharacterService.GetCharacter(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	if !c.IsTrainingWatched {
+		return nil
+	}
+	t, err := u.CharacterService.GetCharacterTotalTrainingTime(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	if !t.IsEmpty() {
+		return nil
+	}
+	title := fmt.Sprintf("%s: No skill in training", c.EveCharacter.Name)
+	content := "There is currently no skill being trained for this character."
+	u.fyneApp.SendNotification(fyne.NewNotification(title, content))
+	return u.CharacterService.UpdateCharacterIsTrainingWatched(ctx, characterID, false)
 }

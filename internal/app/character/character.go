@@ -16,15 +16,77 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) DeleteCharacter(ctx context.Context, characterID int32) error {
-	if err := s.st.DeleteCharacter(ctx, characterID); err != nil {
+func (s *CharacterService) DeleteCharacter(ctx context.Context, id int32) error {
+	if err := s.st.DeleteCharacter(ctx, id); err != nil {
 		return err
 	}
 	return s.StatusCacheService.UpdateCharacters(ctx, s.st)
 }
 
-func (s *CharacterService) GetCharacter(ctx context.Context, characterID int32) (*app.Character, error) {
-	o, err := s.st.GetCharacter(ctx, characterID)
+// EnableTrainingWatcher enables training watcher for a character when it has an active training queue.
+func (s *CharacterService) EnableTrainingWatcher(ctx context.Context, characterID int32) error {
+	c, err := s.GetCharacter(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	if c.IsTrainingWatched {
+		return nil
+	}
+	t, err := s.GetCharacterTotalTrainingTime(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	if t.IsEmpty() {
+		return nil
+	}
+	err = s.UpdateCharacterIsTrainingWatched(ctx, characterID, true)
+	if err != nil {
+		return err
+	}
+	slog.Info("Enabled training watcher", "characterID", characterID)
+	return nil
+}
+
+// EnableAllTrainingWatchers enables training watches for any currently active training queue.
+func (s *CharacterService) EnableAllTrainingWatchers(ctx context.Context) error {
+	ids, err := s.st.ListCharacterIDs(ctx)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		t, err := s.GetCharacterTotalTrainingTime(ctx, id)
+		if err != nil {
+			return err
+		}
+		if t.IsEmpty() {
+			continue
+		}
+		err = s.UpdateCharacterIsTrainingWatched(ctx, id, true)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// DisableAllTrainingWatchers disables training watches for all characters.
+// TODO: Replace with simpler SET query
+func (s *CharacterService) DisableAllTrainingWatchers(ctx context.Context) error {
+	ids, err := s.st.ListCharacterIDs(ctx)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		err = s.UpdateCharacterIsTrainingWatched(ctx, id, false)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *CharacterService) GetCharacter(ctx context.Context, id int32) (*app.Character, error) {
+	o, err := s.st.GetCharacter(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
@@ -45,6 +107,10 @@ func (s *CharacterService) ListCharacters(ctx context.Context) ([]*app.Character
 
 func (s *CharacterService) ListCharactersShort(ctx context.Context) ([]*app.CharacterShort, error) {
 	return s.st.ListCharactersShort(ctx)
+}
+
+func (s *CharacterService) UpdateCharacterIsTrainingWatched(ctx context.Context, id int32, v bool) error {
+	return s.st.UpdateCharacterIsTrainingWatched(ctx, id, v)
 }
 
 // UpdateOrCreateCharacterFromSSO creates or updates a character via SSO authentication.
