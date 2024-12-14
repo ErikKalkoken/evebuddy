@@ -77,6 +77,7 @@ type UI struct {
 	statusBarArea         *statusBarArea
 	statusWindow          fyne.Window
 	tabs                  *container.AppTabs
+	trainingArea          *trainingArea
 	toolbarArea           *toolbarArea
 	walletJournalArea     *walletJournalArea
 	walletTab             *container.TabItem
@@ -133,6 +134,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 
 	u.overviewArea = u.newOverviewArea()
 	u.locationsArea = u.newLocationsArea()
+	u.trainingArea = u.newTrainingArea()
 	u.assetSearchArea = u.newAssetSearchArea()
 	u.coloniesArea = u.newColoniesArea()
 	u.wealthArea = u.newWealthArea()
@@ -140,6 +142,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 		theme.NewThemedResource(resourceGroupSvg), container.NewAppTabs(
 			container.NewTabItem("Overview", u.overviewArea.content),
 			container.NewTabItem("Locations", u.locationsArea.content),
+			container.NewTabItem("Training", u.trainingArea.content),
 			container.NewTabItem("Assets", u.assetSearchArea.content),
 			container.NewTabItem("Colonies", u.coloniesArea.content),
 			container.NewTabItem("Wealth", u.wealthArea.content),
@@ -427,12 +430,13 @@ func (u *UI) setAnyCharacter() error {
 func (u *UI) refreshCrossPages() {
 	ff := map[string]func(){
 		"assetSearch": u.assetSearchArea.refresh,
-		"overview":    u.overviewArea.refresh,
-		"locations":   u.locationsArea.refresh,
-		"toolbar":     u.toolbarArea.refresh,
 		"colony":      u.coloniesArea.refresh,
-		"wealth":      u.wealthArea.refresh,
+		"locations":   u.locationsArea.refresh,
+		"overview":    u.overviewArea.refresh,
 		"statusBar":   u.statusBarArea.refreshCharacterCount,
+		"toolbar":     u.toolbarArea.refresh,
+		"training":    u.trainingArea.refresh,
+		"wealth":      u.wealthArea.refresh,
 	}
 	runFunctionsWithProgressModal("Updating characters", ff, u.window)
 }

@@ -27,9 +27,6 @@ type overviewCharacter struct {
 	lastLoginAt   optional.Optional[time.Time]
 	name          string
 	security      float64
-	totalSP       optional.Optional[int]
-	training      optional.Optional[time.Duration]
-	unallocatedSP optional.Optional[int]
 	unreadCount   optional.Optional[int]
 	walletBalance optional.Optional[float64]
 }
@@ -67,9 +64,6 @@ func (a *overviewArea) makeTable() *widget.Table {
 		{"Alliance", 20},
 		{"Security", 5},
 		{"Unread", 5},
-		{"Total SP", 5},
-		{"Unall. SP", 5},
-		{"Training", 5},
 		{"Wallet", 5},
 		{"Assets", 5},
 		{"Last Login", 10},
@@ -112,29 +106,16 @@ func (a *overviewArea) makeTable() *widget.Table {
 				text = ihumanize.Optional(c.unreadCount, "?")
 				l.Alignment = fyne.TextAlignTrailing
 			case 5:
-				text = ihumanize.Optional(c.totalSP, "?")
-				l.Alignment = fyne.TextAlignTrailing
-			case 6:
-				text = ihumanize.Optional(c.unallocatedSP, "?")
-				l.Alignment = fyne.TextAlignTrailing
-			case 7:
-				if c.training.IsEmpty() {
-					text = "Inactive"
-					l.Importance = widget.WarningImportance
-				} else {
-					text = ihumanize.Duration(c.training.MustValue())
-				}
-			case 8:
 				text = ihumanize.OptionalFloat(c.walletBalance, 1, "?")
 				l.Alignment = fyne.TextAlignTrailing
-			case 9:
+			case 6:
 				text = ihumanize.OptionalFloat(c.assetValue, 1, "?")
 				l.Alignment = fyne.TextAlignTrailing
-			case 10:
+			case 7:
 				text = ihumanize.Optional(c.lastLoginAt, "?")
-			case 11:
+			case 8:
 				text = entityNameOrFallback(c.home, "?")
-			case 12:
+			case 9:
 				text = humanize.RelTime(c.birthday, time.Now(), "", "")
 				l.Alignment = fyne.TextAlignTrailing
 			}
@@ -176,14 +157,12 @@ func (a *overviewArea) refresh() {
 		}
 		walletText := ihumanize.OptionalFloat(totals.wallet, 1, "?")
 		assetsText := ihumanize.OptionalFloat(totals.assets, 1, "?")
-		spText := ihumanize.Optional(totals.sp, "?")
 		unreadText := ihumanize.Optional(totals.unread, "?")
 		s := fmt.Sprintf(
-			"%d characters • %s ISK wallet • %s ISK assets • %s SP  • %s unread",
+			"%d characters • %s ISK wallet • %s ISK assets • %s unread",
 			len(a.characters),
 			walletText,
 			assetsText,
-			spText,
 			unreadText,
 		)
 		return s, widget.MediumImportance, nil
@@ -199,7 +178,6 @@ func (a *overviewArea) refresh() {
 }
 
 type overviewTotals struct {
-	sp     optional.Optional[int]
 	unread optional.Optional[int]
 	wallet optional.Optional[float64]
 	assets optional.Optional[float64]
@@ -223,8 +201,6 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 			id:            m.ID,
 			name:          m.EveCharacter.Name,
 			security:      m.EveCharacter.SecurityStatus,
-			totalSP:       m.TotalSP,
-			unallocatedSP: m.UnallocatedSP,
 			walletBalance: m.WalletBalance,
 		}
 		if m.Home != nil {
@@ -234,13 +210,6 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 			}
 		}
 		cc[i] = c
-	}
-	for i, c := range cc {
-		v, err := a.u.CharacterService.GetCharacterTotalTrainingTime(ctx, c.id)
-		if err != nil {
-			return totals, err
-		}
-		cc[i].training = v
 	}
 	for i, c := range cc {
 		total, unread, err := a.u.CharacterService.GetCharacterMailCounts(ctx, c.id)
@@ -259,9 +228,6 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 		cc[i].assetValue = v
 	}
 	for _, c := range cc {
-		if !c.totalSP.IsEmpty() {
-			totals.sp.Set(totals.sp.ValueOrZero() + c.totalSP.MustValue())
-		}
 		if !c.unreadCount.IsEmpty() {
 			totals.unread.Set(totals.unread.ValueOrZero() + c.unreadCount.MustValue())
 		}
