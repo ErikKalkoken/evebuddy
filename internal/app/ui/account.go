@@ -27,7 +27,7 @@ func (u *UI) showAccountDialog() {
 		currentChars := set.New[int32]()
 		cc, err := u.CharacterService.ListCharactersShort(context.Background())
 		if err != nil {
-			return fmt.Errorf("list characters: %w", err)
+			return err
 		}
 		for _, c := range cc {
 			currentChars.Add(c.ID)

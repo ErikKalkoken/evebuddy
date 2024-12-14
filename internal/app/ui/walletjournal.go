@@ -187,7 +187,7 @@ func (a *walletJournalArea) updateEntries() error {
 	characterID := a.u.characterID()
 	ww, err := a.u.CharacterService.ListCharacterWalletJournalEntries(context.TODO(), characterID)
 	if err != nil {
-		return fmt.Errorf("fetch wallet journal for character %d: %w", characterID, err)
+		return err
 	}
 	entries := make([]walletJournalEntry, len(ww))
 	for i, w := range ww {

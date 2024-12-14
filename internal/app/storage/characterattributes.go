@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -28,7 +29,7 @@ func (st *Storage) GetCharacterAttributes(ctx context.Context, characterID int32
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("get attributes for character ID %d: %w", characterID, err)
 	}
 	return characterAttributeFromDBModel(o), nil
 }

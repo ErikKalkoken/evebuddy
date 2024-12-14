@@ -247,7 +247,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	f1.AppendItem(&widget.FormItem{
 		Text:     "Training",
 		Widget:   trainingEnabledCheck,
-		HintText: "Wether to notify when training has stopped",
+		HintText: "Wether to notify when skillqueue is empty",
 	})
 
 	f2 := widget.NewForm()

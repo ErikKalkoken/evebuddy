@@ -66,7 +66,7 @@ func listCharacterJumpCloneImplants(ctx context.Context, q *queries.Queries, clo
 func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int32) ([]*app.CharacterJumpClone, error) {
 	rows, err := st.q.ListCharacterJumpClones(ctx, int64(characterID))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get jump clones for character %d: %w", characterID, err)
 	}
 	oo := make([]*app.CharacterJumpClone, len(rows))
 	for i, row := range rows {
@@ -81,22 +81,28 @@ func (st *Storage) ListCharacterJumpClones(ctx context.Context, characterID int3
 }
 
 func (st *Storage) ReplaceCharacterJumpClones(ctx context.Context, characterID int32, args []CreateCharacterJumpCloneParams) error {
-	tx, err := st.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	qtx := st.q.WithTx(tx)
-	if err := qtx.DeleteCharacterJumpClones(ctx, int64(characterID)); err != nil {
-		return err
-	}
-	for _, arg := range args {
-		if err := createCharacterJumpClone(ctx, qtx, arg); err != nil {
+	err := func() error {
+		tx, err := st.db.Begin()
+		if err != nil {
 			return err
 		}
-	}
-	if err := tx.Commit(); err != nil {
-		return err
+		defer tx.Rollback()
+		qtx := st.q.WithTx(tx)
+		if err := qtx.DeleteCharacterJumpClones(ctx, int64(characterID)); err != nil {
+			return err
+		}
+		for _, arg := range args {
+			if err := createCharacterJumpClone(ctx, qtx, arg); err != nil {
+				return err
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+		return nil
+	}()
+	if err != nil {
+		return fmt.Errorf("replace jump clones for character %d: %w", characterID, err)
 	}
 	return nil
 }

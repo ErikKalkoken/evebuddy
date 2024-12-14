@@ -43,7 +43,7 @@ func (st *Storage) CreateEveEntity(ctx context.Context, id int32, name string, c
 		return eveEntityFromDBModel(e), nil
 	}()
 	if err != nil {
-		return nil, fmt.Errorf("create EveEntity %d: %w", id, err)
+		return nil, fmt.Errorf("create eve entity %d: %w", id, err)
 	}
 	return e, nil
 }
@@ -54,7 +54,7 @@ func (st *Storage) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, 
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("get EveEntity for id %d: %w", id, err)
+		return nil, fmt.Errorf("get eve entity for id %d: %w", id, err)
 	}
 	return eveEntityFromDBModel(e), nil
 }
@@ -67,7 +67,7 @@ func (st *Storage) ListEveEntityByNameAndCategory(ctx context.Context, name stri
 	}
 	ee, err := st.q.ListEveEntityByNameAndCategory(ctx, arg)
 	if err != nil {
-		return ee2, fmt.Errorf("get EveEntity by name %s and category %s: %w", name, category, err)
+		return ee2, fmt.Errorf("get eve entity by name %s and category %s: %w", name, category, err)
 	}
 	for _, e := range ee {
 		ee2 = append(ee2, eveEntityFromDBModel(e))
@@ -116,7 +116,7 @@ func (st *Storage) GetOrCreateEveEntity(ctx context.Context, id int32, name stri
 func (st *Storage) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
 	ee, err := st.q.ListEveEntitiesByPartialName(ctx, fmt.Sprintf("%%%s%%", partial))
 	if err != nil {
-		return nil, fmt.Errorf("list EveEntity by partial name %s: %w", partial, err)
+		return nil, fmt.Errorf("list eve entity by partial name %s: %w", partial, err)
 	}
 	ee2 := make([]*app.EveEntity, len(ee))
 	for i, e := range ee {
@@ -128,7 +128,7 @@ func (st *Storage) ListEveEntitiesByPartialName(ctx context.Context, partial str
 func (st *Storage) ListEveEntityIDs(ctx context.Context) ([]int32, error) {
 	ids, err := st.q.ListEveEntityIDs(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list EveEntity IDs: %w", err)
+		return nil, fmt.Errorf("list eve entity id: %w", err)
 	}
 	ids2 := convertNumericSlice[int64, int32](ids)
 	return ids2, nil
@@ -137,7 +137,7 @@ func (st *Storage) ListEveEntityIDs(ctx context.Context) ([]int32, error) {
 func (st *Storage) ListEveEntitiesByName(ctx context.Context, name string) ([]*app.EveEntity, error) {
 	ee, err := st.q.ListEveEntitiesByName(ctx, name)
 	if err != nil {
-		return nil, fmt.Errorf("list EveEntities by name %s: %w", name, err)
+		return nil, fmt.Errorf("list eve entities by name %s: %w", name, err)
 	}
 	ee2 := make([]*app.EveEntity, len(ee))
 	for i, e := range ee {
@@ -162,7 +162,7 @@ func (st *Storage) MissingEveEntityIDs(ctx context.Context, ids []int32) (*set.S
 
 func (st *Storage) UpdateOrCreateEveEntity(ctx context.Context, id int32, name string, category app.EveEntityCategory) (*app.EveEntity, error) {
 	if id == 0 {
-		return nil, fmt.Errorf("can't update or create EveEntity with ID %d", id)
+		return nil, fmt.Errorf("can't update or create eve entity with ID %d", id)
 	}
 	categoryDB := eveEntityDBModelCategoryFromCategory(category)
 	arg := queries.UpdateOrCreateEveEntityParams{
@@ -172,7 +172,7 @@ func (st *Storage) UpdateOrCreateEveEntity(ctx context.Context, id int32, name s
 	}
 	e, err := st.q.UpdateOrCreateEveEntity(ctx, arg)
 	if err != nil {
-		return nil, fmt.Errorf("update or create EveEntity %d: %w", id, err)
+		return nil, fmt.Errorf("update or create eve entity %d: %w", id, err)
 	}
 	return eveEntityFromDBModel(e), nil
 }
@@ -193,7 +193,7 @@ func eveEntityCategoryFromDBModel(c string) app.EveEntityCategory {
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
-		panic(fmt.Sprintf("Can not map invalid category: %s", c))
+		panic(fmt.Errorf("can not map invalid category: %s", c))
 	}
 	return c2
 }
@@ -214,7 +214,7 @@ func eveEntityDBModelCategoryFromCategory(c app.EveEntityCategory) string {
 	}
 	c2, ok := categoryMap[c]
 	if !ok {
-		panic(fmt.Sprintf("Can not map invalid category: %v", c))
+		panic(fmt.Errorf("can not map invalid category: %v", c))
 	}
 	return c2
 }

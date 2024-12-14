@@ -32,7 +32,7 @@ func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID in
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("get update status for character %d with section %s: %w", characterID, section, err)
+		return nil, fmt.Errorf("get status for character %d with section %s: %w", characterID, section, err)
 	}
 	s2 := characterSectionStatusFromDBModel(s)
 	return s2, nil
@@ -41,7 +41,7 @@ func (st *Storage) GetCharacterSectionStatus(ctx context.Context, characterID in
 func (st *Storage) ListCharacterSectionStatus(ctx context.Context, characterID int32) ([]*app.CharacterSectionStatus, error) {
 	rows, err := st.q.ListCharacterSectionStatus(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("list character update status for ID %d: %w", characterID, err)
+		return nil, fmt.Errorf("list character status for ID %d: %w", characterID, err)
 	}
 	oo := make([]*app.CharacterSectionStatus, len(rows))
 	for i, row := range rows {
@@ -65,54 +65,60 @@ func (st *Storage) UpdateOrCreateCharacterSectionStatus(ctx context.Context, arg
 	if arg.CharacterID == 0 || arg.Section == "" {
 		panic("Invalid params")
 	}
-	tx, err := st.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-	qtx := st.q.WithTx(tx)
-	var arg2 queries.UpdateOrCreateCharacterSectionStatusParams
-	old, err := qtx.GetCharacterSectionStatus(ctx, queries.GetCharacterSectionStatusParams{
-		CharacterID: int64(arg.CharacterID),
-		SectionID:   string(arg.Section),
-	})
-	if errors.Is(err, sql.ErrNoRows) {
-		arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
+	o, err := func() (*app.CharacterSectionStatus, error) {
+		tx, err := st.db.Begin()
+		if err != nil {
+			return nil, err
+		}
+		defer tx.Rollback()
+		qtx := st.q.WithTx(tx)
+		var arg2 queries.UpdateOrCreateCharacterSectionStatusParams
+		old, err := qtx.GetCharacterSectionStatus(ctx, queries.GetCharacterSectionStatusParams{
 			CharacterID: int64(arg.CharacterID),
 			SectionID:   string(arg.Section),
+		})
+		if errors.Is(err, sql.ErrNoRows) {
+			arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
+				CharacterID: int64(arg.CharacterID),
+				SectionID:   string(arg.Section),
+			}
+		} else if err != nil {
+			return nil, err
+		} else {
+			arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
+				CharacterID: int64(arg.CharacterID),
+				SectionID:   string(arg.Section),
+				CompletedAt: old.CompletedAt,
+				ContentHash: old.ContentHash,
+				Error:       old.Error,
+				StartedAt:   old.StartedAt,
+			}
 		}
-	} else if err != nil {
-		return nil, err
-	} else {
-		arg2 = queries.UpdateOrCreateCharacterSectionStatusParams{
-			CharacterID: int64(arg.CharacterID),
-			SectionID:   string(arg.Section),
-			CompletedAt: old.CompletedAt,
-			ContentHash: old.ContentHash,
-			Error:       old.Error,
-			StartedAt:   old.StartedAt,
+		if arg.CompletedAt != nil {
+			arg2.CompletedAt = *arg.CompletedAt
 		}
-	}
-	if arg.CompletedAt != nil {
-		arg2.CompletedAt = *arg.CompletedAt
-	}
-	if arg.ContentHash != nil {
-		arg2.ContentHash = *arg.ContentHash
-	}
-	if arg.ErrorMessage != nil {
-		arg2.Error = *arg.ErrorMessage
-	}
-	if arg.StartedAt != nil {
-		arg2.StartedAt = optional.ToNullTime(*arg.StartedAt)
-	}
-	o, err := qtx.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
+		if arg.ContentHash != nil {
+			arg2.ContentHash = *arg.ContentHash
+		}
+		if arg.ErrorMessage != nil {
+			arg2.Error = *arg.ErrorMessage
+		}
+		if arg.StartedAt != nil {
+			arg2.StartedAt = optional.ToNullTime(*arg.StartedAt)
+		}
+		o, err := qtx.UpdateOrCreateCharacterSectionStatus(ctx, arg2)
+		if err != nil {
+			return nil, err
+		}
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return characterSectionStatusFromDBModel(o), nil
+	}()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("update or create status for character %d and section %s: %w", arg.CharacterID, arg.Section, err)
 	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	return characterSectionStatusFromDBModel(o), nil
+	return o, nil
 }
 
 func characterSectionStatusFromDBModel(o queries.CharacterSectionStatus) *app.CharacterSectionStatus {

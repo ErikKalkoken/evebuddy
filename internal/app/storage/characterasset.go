@@ -73,13 +73,17 @@ func (st *Storage) GetCharacterAsset(ctx context.Context, characterID int32, ite
 func (st *Storage) CalculateCharacterAssetTotalValue(ctx context.Context, characterID int32) (float64, error) {
 	v, err := st.q.CalculateCharacterAssetTotalValue(ctx, int64(characterID))
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("calculate character asset for character %d: %w", characterID, err)
 	}
 	return v.Float64, nil
 }
 
 func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32) ([]int64, error) {
-	return st.q.ListCharacterAssetIDs(ctx, int64(characterID))
+	ids, err := st.q.ListCharacterAssetIDs(ctx, int64(characterID))
+	if err != nil {
+		return nil, fmt.Errorf("list character asset IDs: %w", err)
+	}
+	return ids, nil
 }
 
 func (st *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {
@@ -91,7 +95,7 @@ func (st *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, characte
 	}
 	rows, err := st.q.ListCharacterAssetsInShipHangar(ctx, arg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list assets in ship hangar for character ID %d: %w", characterID, err)
 	}
 	ii2 := make([]*app.CharacterAsset, len(rows))
 	for i, r := range rows {
@@ -109,7 +113,7 @@ func (st *Storage) ListCharacterAssetsInItemHangar(ctx context.Context, characte
 	}
 	rows, err := st.q.ListCharacterAssetsInItemHangar(ctx, arg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list assets in item hangar for character ID %d: %w", characterID, err)
 	}
 	ii2 := make([]*app.CharacterAsset, len(rows))
 	for i, r := range rows {
@@ -125,7 +129,7 @@ func (st *Storage) ListCharacterAssetsInLocation(ctx context.Context, characterI
 	}
 	rows, err := st.q.ListCharacterAssetsInLocation(ctx, arg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list assets in location for character ID %d: %w", characterID, err)
 	}
 	ii2 := make([]*app.CharacterAsset, len(rows))
 	for i, r := range rows {
@@ -166,7 +170,7 @@ func (st *Storage) UpdateCharacterAsset(ctx context.Context, arg UpdateCharacter
 func (st *Storage) ListAllCharacterAssets(ctx context.Context) ([]*app.CharacterAsset, error) {
 	rows, err := st.q.ListAllCharacterAssets(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list all character assets: %w", err)
 	}
 	oo := make([]*app.CharacterAsset, len(rows))
 	for i, r := range rows {
@@ -178,7 +182,7 @@ func (st *Storage) ListAllCharacterAssets(ctx context.Context) ([]*app.Character
 func (st *Storage) ListCharacterAssets(ctx context.Context, characterID int32) ([]*app.CharacterAsset, error) {
 	rows, err := st.q.ListCharacterAssets(ctx, int64(characterID))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list assets for character ID %d: %w", characterID, err)
 	}
 	oo := make([]*app.CharacterAsset, len(rows))
 	for i, r := range rows {

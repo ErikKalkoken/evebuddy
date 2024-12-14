@@ -146,7 +146,7 @@ func (a *coloniesArea) makeTopText() (string, widget.Importance) {
 func (a *coloniesArea) updateEntries() error {
 	pp, err := a.u.CharacterService.ListAllCharacterPlanets(context.TODO())
 	if err != nil {
-		return fmt.Errorf("fetch all planets: %w", err)
+		return err
 	}
 	rows := make([]colonyRow, len(pp))
 	for i, w := range pp {

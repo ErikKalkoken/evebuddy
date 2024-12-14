@@ -17,7 +17,7 @@ func (st *Storage) DeleteCharacterSkills(ctx context.Context, characterID int32,
 	}
 	err := st.q.DeleteCharacterSkills(ctx, arg)
 	if err != nil {
-		return err
+		return fmt.Errorf("delete skills for character %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -41,7 +41,7 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typ
 func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int32) ([]int32, error) {
 	ids, err := st.q.ListCharacterSkillIDs(ctx, int64(characterID))
 	if err != nil {
-		return nil, fmt.Errorf("list skill IDs for character %d: %w", characterID, err)
+		return nil, fmt.Errorf("list skill ids for character %d: %w", characterID, err)
 	}
 	return convertNumericSlice[int64, int32](ids), nil
 }
@@ -53,7 +53,7 @@ func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, 
 	}
 	rows, err := st.q.ListCharacterSkillProgress(ctx, arg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list skill progress for character %d: %w", characterID, err)
 	}
 	oo := make([]app.ListCharacterSkillProgress, len(rows))
 	for i, r := range rows {
@@ -75,7 +75,7 @@ func (st *Storage) ListCharacterSkillGroupsProgress(ctx context.Context, charact
 	}
 	rows, err := st.q.ListCharacterSkillGroupsProgress(ctx, arg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list skill groups progress for character %d: %w", characterID, err)
 	}
 	oo := make([]app.ListCharacterSkillGroupProgress, len(rows))
 	for i, r := range rows {

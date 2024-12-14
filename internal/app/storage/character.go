@@ -16,7 +16,7 @@ import (
 func (st *Storage) DeleteCharacter(ctx context.Context, characterID int32) error {
 	err := st.q.DeleteCharacter(ctx, int64(characterID))
 	if err != nil {
-		return fmt.Errorf("delete Character %d: %w", characterID, err)
+		return fmt.Errorf("delete character %d: %w", characterID, err)
 	}
 	return nil
 }
@@ -27,7 +27,7 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Ch
 		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("get Character %d: %w", characterID, err)
+		return nil, fmt.Errorf("get character %d: %w", characterID, err)
 	}
 	alliance := nullEveEntry{
 		ID:       r.EveCharacter.AllianceID,
@@ -52,7 +52,7 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Ch
 		r.ShipID,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get character %d: %w", characterID, err)
 	}
 	return c, nil
 }
@@ -60,7 +60,7 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Ch
 func (st *Storage) GetFirstCharacter(ctx context.Context) (*app.Character, error) {
 	ids, err := st.ListCharacterIDs(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list first character: %w", err)
 	}
 	if len(ids) == 0 {
 		return nil, ErrNotFound
@@ -72,7 +72,7 @@ func (st *Storage) GetFirstCharacter(ctx context.Context) (*app.Character, error
 func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error) {
 	rows, err := st.q.ListCharacters(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list Characters: %w", err)
+		return nil, fmt.Errorf("list characters: %w", err)
 	}
 	cc := make([]*app.Character, len(rows))
 	for i, r := range rows {
@@ -99,7 +99,7 @@ func (st *Storage) ListCharacters(ctx context.Context) ([]*app.Character, error)
 			r.ShipID,
 		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("list characters: %w", err)
 		}
 		cc[i] = c
 	}
@@ -295,10 +295,10 @@ func (st *Storage) characterFromDBModel(
 	return &o, nil
 }
 
-func (st *Storage) GetCharacterAssetValue(ctx context.Context, characterID int32) (optional.Optional[float64], error) {
-	v, err := st.q.GetCharacterAssetValue(ctx, int64(characterID))
+func (st *Storage) GetCharacterAssetValue(ctx context.Context, id int32) (optional.Optional[float64], error) {
+	v, err := st.q.GetCharacterAssetValue(ctx, int64(id))
 	if err != nil {
-		return optional.Optional[float64]{}, err
+		return optional.Optional[float64]{}, fmt.Errorf("get asset value for character %d: %w", id, err)
 	}
 	return optional.FromNullFloat64(v), nil
 }

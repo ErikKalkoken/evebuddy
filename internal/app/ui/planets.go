@@ -112,7 +112,7 @@ func (a *planetArea) updateEntries() error {
 	var err error
 	a.planets, err = a.u.CharacterService.ListCharacterPlanets(context.TODO(), characterID)
 	if err != nil {
-		return fmt.Errorf("fetch planets for character %d: %w", characterID, err)
+		return err
 	}
 	return nil
 }

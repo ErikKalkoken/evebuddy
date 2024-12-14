@@ -54,19 +54,23 @@ func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, characterI
 	}
 	row, err := st.q.GetCharacterWalletTransaction(ctx, arg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get wallet transaction for character %d: %w", characterID, err)
 	}
 	return characterWalletTransactionFromDBModel(row.CharacterWalletTransaction, row.EveEntity, row.EveTypeName, row.LocationName), err
 }
 
 func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, characterID int32) ([]int64, error) {
-	return st.q.ListCharacterWalletTransactionIDs(ctx, int64(characterID))
+	ids, err := st.q.ListCharacterWalletTransactionIDs(ctx, int64(characterID))
+	if err != nil {
+		return nil, fmt.Errorf("list wallet transaction ids for character %d: %w", characterID, err)
+	}
+	return ids, nil
 }
 
 func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*app.CharacterWalletTransaction, error) {
 	rows, err := st.q.ListCharacterWalletTransactions(ctx, int64(characterID))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list wallet transactions for character %d: %w", characterID, err)
 	}
 	ee := make([]*app.CharacterWalletTransaction, len(rows))
 	for i, row := range rows {
