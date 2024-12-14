@@ -21,6 +21,13 @@ func (st *Storage) DeleteCharacter(ctx context.Context, characterID int32) error
 	return nil
 }
 
+func (st *Storage) DisableAllTrainingWatchers(ctx context.Context) error {
+	if err := st.q.DisableAllTrainingWatchers(ctx); err != nil {
+		return fmt.Errorf("disable all training watchers: %w", err)
+	}
+	return nil
+}
+
 func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Character, error) {
 	r, err := st.q.GetCharacter(ctx, int64(characterID))
 	if err != nil {

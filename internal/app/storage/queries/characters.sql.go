@@ -22,6 +22,18 @@ func (q *Queries) DeleteCharacter(ctx context.Context, id int64) error {
 	return err
 }
 
+const disableAllTrainingWatchers = `-- name: DisableAllTrainingWatchers :exec
+UPDATE
+    characters
+SET
+    is_training_watched = FALSE
+`
+
+func (q *Queries) DisableAllTrainingWatchers(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, disableAllTrainingWatchers)
+	return err
+}
+
 const getCharacter = `-- name: GetCharacter :one
 SELECT
     cc.id, cc.asset_value, cc.home_id, cc.last_login_at, cc.location_id, cc.ship_id, cc.total_sp, cc.unallocated_sp, cc.wallet_balance, cc.is_training_watched,

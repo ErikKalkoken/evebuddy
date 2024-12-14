@@ -4,6 +4,12 @@ DELETE FROM
 WHERE
     id = ?;
 
+-- name: DisableAllTrainingWatchers :exec
+UPDATE
+    characters
+SET
+    is_training_watched = FALSE;
+
 -- name: GetCharacter :one
 SELECT
     sqlc.embed(cc),

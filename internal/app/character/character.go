@@ -70,19 +70,8 @@ func (s *CharacterService) EnableAllTrainingWatchers(ctx context.Context) error 
 }
 
 // DisableAllTrainingWatchers disables training watches for all characters.
-// TODO: Replace with simpler SET query
 func (s *CharacterService) DisableAllTrainingWatchers(ctx context.Context) error {
-	ids, err := s.st.ListCharacterIDs(ctx)
-	if err != nil {
-		return err
-	}
-	for _, id := range ids {
-		err = s.UpdateCharacterIsTrainingWatched(ctx, id, false)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return s.st.DisableAllTrainingWatchers(ctx)
 }
 
 func (s *CharacterService) GetCharacter(ctx context.Context, id int32) (*app.Character, error) {
