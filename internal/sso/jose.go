@@ -11,21 +11,26 @@ import (
 )
 
 const (
-	jwksURL     = "https://login.eveonline.com/oauth/jwks"
 	ssoAudience = "EVE Online"
 	ssoIssuer1  = "login.eveonline.com"
 	ssoIssuer2  = "https://login.eveonline.com"
+	jwksURL     = "https://login.eveonline.com/oauth/jwks"
+)
+
+var (
+	jwkFetch       = jwk.Fetch
+	jwkParseString = jwt.ParseString
 )
 
 // validateJWT validates a JWT payload and when valid returns it as parsed object.
 func validateJWT(ctx context.Context, accessToken string) (jwt.Token, error) {
 	// fetch the JWK set
-	set, err := jwk.Fetch(ctx, jwksURL)
+	set, err := jwkFetch(ctx, jwksURL)
 	if err != nil {
 		return nil, fmt.Errorf("fetching JWK set: %w", err)
 	}
 	// validate token
-	token, err := jwt.ParseString(
+	token, err := jwkParseString(
 		accessToken,
 		jwt.WithKeySet(set),
 		jwt.WithAudience(ssoAudience),

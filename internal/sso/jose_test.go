@@ -7,29 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type fakeToken struct {
-	jwt.Token
-
-	data    map[string]any
-	subject string
-}
-
-func newFakeToken() fakeToken {
-	f := fakeToken{
-		data: make(map[string]any),
-	}
-	return f
-}
-
-func (t fakeToken) Get(k string) (any, bool) {
-	x, ok := t.data[k]
-	return x, ok
-}
-
-func (t fakeToken) Subject() string {
-	return t.subject
-}
-
 func TestJoseExtractCharacterID(t *testing.T) {
 	cases := []struct {
 		name        string
