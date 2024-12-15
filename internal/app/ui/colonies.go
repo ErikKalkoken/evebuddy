@@ -57,10 +57,10 @@ func (a *coloniesArea) makeTable() *widget.Table {
 	}{
 		{"Planet", 150},
 		{"Sec.", 50},
-		{"Type", 150},
-		{"Extracting", 150},
+		{"Type", 100},
+		{"Extracting", 200},
 		{"Due", 150},
-		{"Producing", 150},
+		{"Producing", 200},
 		{"Region", 150},
 		{"Character", 150},
 	}
@@ -69,7 +69,7 @@ func (a *coloniesArea) makeTable() *widget.Table {
 			return len(a.rows), len(headers)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("Template  Template")
+			return widget.NewLabel("Template")
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
 			l := co.(*widget.Label)
@@ -91,15 +91,18 @@ func (a *coloniesArea) makeTable() *widget.Table {
 				l.Text = w.planetType
 			case 3:
 				l.Text = w.extracting
+				l.Truncation = fyne.TextTruncateEllipsis
 			case 4:
 				l.Text = w.due
 				l.Importance = w.dueImportance
 			case 5:
 				l.Text = w.producing
+				l.Truncation = fyne.TextTruncateEllipsis
 			case 6:
 				l.Text = w.region
 			case 7:
 				l.Text = w.character
+				l.Truncation = fyne.TextTruncateEllipsis
 			}
 			l.Refresh()
 		},
@@ -149,26 +152,26 @@ func (a *coloniesArea) updateEntries() error {
 		return err
 	}
 	rows := make([]colonyRow, len(pp))
-	for i, w := range pp {
+	for i, p := range pp {
 		r := colonyRow{
-			character:          a.u.StatusCacheService.CharacterName(w.CharacterID),
-			planet:             w.EvePlanet.Name,
-			planetType:         w.EvePlanet.TypeDisplay(),
-			region:             w.EvePlanet.SolarSystem.Constellation.Region.Name,
-			security:           fmt.Sprintf("%0.1f", w.EvePlanet.SolarSystem.SecurityStatus),
-			securityImportance: w.EvePlanet.SolarSystem.SecurityType().ToImportance(),
+			character:          a.u.StatusCacheService.CharacterName(p.CharacterID),
+			planet:             p.EvePlanet.Name,
+			planetType:         p.EvePlanet.TypeDisplay(),
+			region:             p.EvePlanet.SolarSystem.Constellation.Region.Name,
+			security:           fmt.Sprintf("%0.1f", p.EvePlanet.SolarSystem.SecurityStatus),
+			securityImportance: p.EvePlanet.SolarSystem.SecurityType().ToImportance(),
 		}
-		extractions := strings.Join(w.ExtractedTypeNames(), ", ")
+		extractions := strings.Join(p.ExtractedTypeNames(), ", ")
 		if extractions == "" {
 			extractions = "-"
 		}
 		r.extracting = extractions
-		productions := strings.Join(w.ProducedSchematicNames(), ", ")
+		productions := strings.Join(p.ProducedSchematicNames(), ", ")
 		if productions == "" {
 			productions = "-"
 		}
 		r.producing = productions
-		due := w.ExtractionsExpiryTime()
+		due := p.ExtractionsExpiryTime()
 		if due.IsZero() {
 			r.due = "-"
 		} else if due.Before(time.Now()) {
