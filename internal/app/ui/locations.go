@@ -55,7 +55,7 @@ func (a *locationsArea) makeTable() *widget.Table {
 		maxChars int
 	}{
 		{"Name", 20},
-		{"Location", 30},
+		{"Location", 35},
 		{"System", 15},
 		{"Sec.", 5},
 		{"Region", 15},
@@ -81,8 +81,10 @@ func (a *locationsArea) makeTable() *widget.Table {
 			switch tci.Col {
 			case 0:
 				l.Text = c.name
+				l.Truncation = fyne.TextTruncateEllipsis
 			case 1:
 				l.Text = entityNameOrFallback(c.location, "?")
+				l.Truncation = fyne.TextTruncateEllipsis
 			case 2:
 				if c.solarSystem == nil || c.systemSecurity.IsEmpty() {
 					l.Text = "?"
@@ -102,6 +104,7 @@ func (a *locationsArea) makeTable() *widget.Table {
 				l.Text = entityNameOrFallback(c.region, "?")
 			case 5:
 				l.Text = entityNameOrFallback(c.ship, "?")
+				l.Truncation = fyne.TextTruncateEllipsis
 			}
 			l.Refresh()
 		},

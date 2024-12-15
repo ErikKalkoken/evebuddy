@@ -174,7 +174,7 @@ func (st *Storage) UpdateCharacterLocation(ctx context.Context, characterID int3
 		LocationID: optional.ToNullInt64(locationID),
 	}
 	if err := st.q.UpdateCharacterLocationID(ctx, arg); err != nil {
-		return fmt.Errorf("update last login for character %d: %w", characterID, err)
+		return fmt.Errorf("update location for character %d: %w", characterID, err)
 	}
 	return nil
 }
