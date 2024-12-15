@@ -117,75 +117,76 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		return
 	}
 	isShown := characterID == u.characterID()
+	needsRefresh := hasChanged || forceUpdate
 	switch s {
 	case app.SectionAssets:
-		if isShown && hasChanged {
+		if isShown && needsRefresh {
 			u.assetsArea.redraw()
 		}
-		if hasChanged {
+		if needsRefresh {
 			u.assetSearchArea.refresh()
 			u.wealthArea.refresh()
 		}
 	case app.SectionAttributes:
-		if isShown && hasChanged {
+		if isShown && needsRefresh {
 			u.attributesArea.refresh()
 		}
 	case app.SectionImplants:
-		if isShown && hasChanged {
+		if isShown && needsRefresh {
 			u.implantsArea.refresh()
 		}
 	case app.SectionJumpClones:
-		if isShown && hasChanged {
+		if isShown && needsRefresh {
 			u.jumpClonesArea.redraw()
 		}
-		if hasChanged {
+		if needsRefresh {
 			u.overviewArea.refresh()
 		}
 	case app.SectionLocation,
 		app.SectionOnline,
 		app.SectionShip:
-		if hasChanged {
+		if needsRefresh {
 			u.locationsArea.refresh()
 		}
 	case app.SectionPlanets:
-		if isShown && hasChanged {
+		if isShown && needsRefresh {
 			u.planetArea.refresh()
 		}
-		if hasChanged {
+		if needsRefresh {
 			u.coloniesArea.refresh()
 		}
 	case app.SectionMailLabels,
 		app.SectionMailLists:
-		if isShown && hasChanged {
+		if isShown && needsRefresh {
 			u.mailArea.refresh()
 		}
-		if hasChanged {
+		if needsRefresh {
 			u.overviewArea.refresh()
 		}
 	case app.SectionMails:
-		if isShown && hasChanged {
+		if isShown && needsRefresh {
 			u.mailArea.refresh()
 		}
-		if hasChanged {
+		if needsRefresh {
 			u.overviewArea.refresh()
 		}
 		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
 			go u.processMails(ctx, characterID)
 		}
 	case app.SectionNotifications:
-		if isShown && hasChanged {
+		if isShown && needsRefresh {
 			u.notificationsArea.refresh()
 		}
 		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault) {
 			go u.processNotifications(ctx, characterID)
 		}
 	case app.SectionSkills:
-		if isShown && hasChanged {
+		if isShown && needsRefresh {
 			u.skillCatalogueArea.refresh()
 			u.shipsArea.refresh()
 			u.planetArea.refresh()
 		}
-		if hasChanged {
+		if needsRefresh {
 			u.trainingArea.refresh()
 		}
 	case app.SectionSkillqueue:
@@ -198,20 +199,20 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		if isShown {
 			u.skillqueueArea.refresh()
 		}
-		if hasChanged {
+		if needsRefresh {
 			u.trainingArea.refresh()
 		}
 	case app.SectionWalletBalance:
-		if hasChanged {
+		if needsRefresh {
 			u.overviewArea.refresh()
 			u.wealthArea.refresh()
 		}
 	case app.SectionWalletJournal:
-		if isShown && hasChanged {
+		if isShown && needsRefresh {
 			u.walletJournalArea.refresh()
 		}
 	case app.SectionWalletTransactions:
-		if isShown && hasChanged {
+		if isShown && needsRefresh {
 			u.walletTransactionArea.refresh()
 		}
 	default:

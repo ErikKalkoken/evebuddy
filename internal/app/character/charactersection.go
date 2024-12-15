@@ -97,7 +97,6 @@ func (s *CharacterService) UpdateSectionIfNeeded(ctx context.Context, arg Update
 		return f(ctx, arg)
 	})
 	if err != nil {
-		// TODO: Move this part into updateCharacterSectionIfChanged()
 		errorMessage := humanize.Error(err)
 		startedAt := optional.Optional[time.Time]{}
 		arg2 := storage.UpdateOrCreateCharacterSectionStatusParams{
@@ -151,16 +150,14 @@ func (s *CharacterService) updateSectionIfChanged(
 	}
 	// identify if changed
 	var hasChanged bool
-	if !arg.ForceUpdate {
-		u, err := s.getCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
-		if err != nil {
-			return false, err
-		}
-		if u == nil {
-			hasChanged = true
-		} else {
-			hasChanged = u.ContentHash != hash
-		}
+	u, err := s.getCharacterSectionStatus(ctx, arg.CharacterID, arg.Section)
+	if err != nil {
+		return false, err
+	}
+	if u == nil {
+		hasChanged = true
+	} else {
+		hasChanged = u.ContentHash != hash
 	}
 	// update if needed
 	if arg.ForceUpdate || hasChanged {
