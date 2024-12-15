@@ -91,7 +91,12 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		v := req.URL.Query()
 		newState := v.Get("state")
 		if newState != serverCtx.Value(keyState).(string) {
-			http.Error(w, "Invalid state", http.StatusForbidden)
+			err = fmt.Errorf("invalid state")
+			msg := "Failed to verify SSO session"
+			slog.Warn(msg, "error", err)
+			http.Error(w, msg, http.StatusForbidden)
+			serverCtx = context.WithValue(serverCtx, keyError, err)
+			cancel()
 			return
 		}
 		code := v.Get("code")
@@ -99,7 +104,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		rawToken, err := s.fetchNewToken(code, codeVerifier)
 		if err != nil {
 			msg := "Failed to retrieve token payload"
-			slog.Error(msg, "error", err)
+			slog.Warn(msg, "error", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			serverCtx = context.WithValue(serverCtx, keyError, err)
 			cancel()
@@ -108,7 +113,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		jwtToken, err := validateJWT(ctx, rawToken.AccessToken)
 		if err != nil {
 			msg := "Failed to validate token"
-			slog.Error(msg, "token", rawToken.AccessToken, "error", err)
+			slog.Warn(msg, "token", rawToken.AccessToken, "error", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			serverCtx = context.WithValue(serverCtx, keyError, err)
 			cancel()
@@ -117,7 +122,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		characterID, err := extractCharacterID(jwtToken)
 		if err != nil {
 			msg := "Failed to validate token"
-			slog.Error(msg, "token", rawToken.AccessToken, "error", err)
+			slog.Warn(msg, "token", rawToken.AccessToken, "error", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			serverCtx = context.WithValue(serverCtx, keyError, err)
 			cancel()

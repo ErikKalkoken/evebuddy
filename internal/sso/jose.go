@@ -31,7 +31,7 @@ func validateJWT(ctx context.Context, accessToken string) (jwt.Token, error) {
 		jwt.WithAudience(ssoAudience),
 		jwt.WithValidator(jwt.ValidatorFunc(func(ctx context.Context, t jwt.Token) jwt.ValidationError {
 			if x := t.Issuer(); x != ssoIssuer1 && x != ssoIssuer2 {
-				return jwt.NewValidationError(fmt.Errorf("invalid issuer"))
+				return jwt.NewValidationError(fmt.Errorf("invalid issuer: %s", x))
 			}
 			return nil
 		})),
@@ -46,7 +46,7 @@ func validateJWT(ctx context.Context, accessToken string) (jwt.Token, error) {
 func extractCharacterID(token jwt.Token) (int, error) {
 	p := strings.Split(token.Subject(), ":")
 	if len(p) != 3 || p[0] != "CHARACTER" || p[1] != "EVE" {
-		return 0, fmt.Errorf("invalid subject")
+		return 0, fmt.Errorf("invalid subject in JWK")
 	}
 	return strconv.Atoi(p[2])
 }
@@ -62,11 +62,11 @@ func extractCharacterName(token jwt.Token) string {
 
 // extractScopes returns the scopes in a JWT.
 func extractScopes(token jwt.Token) []string {
+	scopes := make([]string, 0)
 	x, ok := token.Get("scp")
 	if !ok {
-		return nil
+		return scopes
 	}
-	scopes := make([]string, 0)
 	for _, s := range x.([]any) {
 		scopes = append(scopes, s.(string))
 	}
