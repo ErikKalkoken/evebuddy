@@ -385,7 +385,7 @@ func (u *UI) refreshCharacter() {
 		slog.Debug("Refreshing character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
 	}
 	runFunctionsWithProgressModal("Loading character", ff, u.window)
-	if c != nil {
+	if c != nil && !u.IsUpdateTickerDisabled {
 		u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 	}
 	go u.statusBarArea.refreshUpdateStatus()
