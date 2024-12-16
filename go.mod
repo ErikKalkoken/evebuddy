@@ -3,11 +3,11 @@ module github.com/ErikKalkoken/evebuddy
 go 1.23
 
 require (
-	fyne.io/fyne/v2 v2.5.2
+	fyne.io/fyne/v2 v2.5.3
 	github.com/ErikKalkoken/fyne-kx v0.2.0
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.10.0
-	github.com/antihax/goesi v0.0.0-20241203030839-a52ebd1b1642
+	github.com/antihax/goesi v0.0.0-20241216030825-f102f993c3b1
 	github.com/chasinglogic/appdirs v0.0.0-20240910093348-1aea124d8cd9
 	github.com/dustin/go-humanize v1.0.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
@@ -22,7 +22,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/wcharczuk/go-chart/v2 v2.1.2
 	github.com/yuin/goldmark v1.7.8
-	golang.org/x/exp v0.0.0-20241210194714-1829a127f884
+	golang.org/x/exp v0.0.0-20241215155358-4a5509556b9e
 	golang.org/x/sync v0.10.0
 	golang.org/x/text v0.21.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -60,7 +60,7 @@ require (
 	github.com/lestrrat-go/httprc v1.0.6 // indirect
 	github.com/lestrrat-go/iter v1.0.2 // indirect
 	github.com/lestrrat-go/option v1.0.1 // indirect
-	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.4.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rymdport/portal v0.3.0 // indirect
@@ -69,7 +69,7 @@ require (
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/image v0.23.0 // indirect
-	golang.org/x/mobile v0.0.0-20241204233305-ce44b2716d33 // indirect
+	golang.org/x/mobile v0.0.0-20241213221354-a87c1cf6cf46 // indirect
 	golang.org/x/net v0.32.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect

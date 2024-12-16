@@ -1,4 +1,5 @@
 ignore:
+  - "internal/app/ui"
   - "internal/app/storage/queries"
   - "internal/app/storage/testutil"
   - "internal/eveicon/mapping.go"
