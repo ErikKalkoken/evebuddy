@@ -12,9 +12,11 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/pkg/browser"
 )
@@ -148,25 +150,32 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	router.HandleFunc("/", makeHandler(func(w http.ResponseWriter, r *http.Request) (int, error) {
 		return http.StatusNotFound, fmt.Errorf("not found")
 	}))
+	// we want to be sure the server is running before starting the browser
+	// and we want to be able to exit early in case the port is blocked
 	server := &http.Server{
 		Addr:    s.address(),
 		Handler: router,
 	}
+	l, err := net.Listen("tcp", s.address())
+	if err != nil {
+		return nil, fmt.Errorf("failed to start server: %w", err)
+	}
 	go func() {
 		slog.Info("Web server started", "address", s.address())
-		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		if err := server.Serve(l); err != http.ErrServerClosed {
 			slog.Error("Web server terminated prematurely", "error", err)
 		}
 	}()
-
 	if err := s.startSSO(state, codeVerifier, scopes); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to start SSO session")
 	}
+	<-serverCtx.Done()
 
-	<-serverCtx.Done() // wait for the signal to gracefully shutdown the server
+	shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownRelease()
 
-	if err := server.Shutdown(context.TODO()); err != nil {
-		return nil, err
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		return nil, fmt.Errorf("server shutdown error: %w", err)
 	}
 	slog.Info("Web server stopped")
 
