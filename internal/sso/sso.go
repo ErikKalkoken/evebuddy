@@ -97,6 +97,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	}
 	serverCtx = context.WithValue(serverCtx, keyState, state)
 	serverCtx, cancel := context.WithCancel(serverCtx)
+	defer cancel()
 
 	makeHandler := func(fn func(http.ResponseWriter, *http.Request) (int, error)) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -148,7 +149,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		return http.StatusOK, nil
 	}))
 	router.HandleFunc("/", makeHandler(func(w http.ResponseWriter, r *http.Request) (int, error) {
-		return http.StatusNotFound, fmt.Errorf("not found")
+		return http.StatusNotFound, fmt.Errorf("unexpected route requested: %s", r.RequestURI)
 	}))
 	// we want to be sure the server is running before starting the browser
 	// and we want to be able to exit early in case the port is blocked
@@ -158,13 +159,14 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	}
 	l, err := net.Listen("tcp", s.address())
 	if err != nil {
-		return nil, fmt.Errorf("failed to start server: %w", err)
+		return nil, fmt.Errorf("listen on address: %w", err)
 	}
 	go func() {
 		slog.Info("Web server started", "address", s.address())
 		if err := server.Serve(l); err != http.ErrServerClosed {
 			slog.Error("Web server terminated prematurely", "error", err)
 		}
+		cancel()
 	}()
 	if err := s.startSSO(state, codeVerifier, scopes); err != nil {
 		return nil, fmt.Errorf("failed to start SSO session")
