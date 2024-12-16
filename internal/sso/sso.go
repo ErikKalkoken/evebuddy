@@ -12,9 +12,11 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/pkg/browser"
 )
@@ -29,12 +31,12 @@ const (
 )
 
 const (
-	portDefault            = 30123
-	callbackPathDefault    = "/callback"
-	host                   = "localhost"
-	ssoHost                = "login.eveonline.com"
-	ssoTokenURLDefault     = "https://login.eveonline.com/v2/oauth/token"
-	ssoAuthorizeURLDefault = "https://login.eveonline.com/v2/oauth/authorize"
+	portDefault         = 30123
+	callbackPathDefault = "/callback"
+	host                = "localhost"
+	ssoHost             = "login.eveonline.com"
+	tokenURLDefault     = "https://login.eveonline.com/v2/oauth/token"
+	authorizeURLDefault = "https://login.eveonline.com/v2/oauth/authorize"
 )
 
 var (
@@ -43,29 +45,40 @@ var (
 	ErrMissingRefreshToken = errors.New("missing refresh token")
 )
 
+var (
+	openURL = browser.OpenURL
+)
+
 // SSOService is a service for authentication Eve Online characters.
 type SSOService struct {
-	// SSO configuration can be modified before calling any method.
-	CallbackPath    string
-	OAuthURL        string
-	Port            int
-	SSOAuthorizeURL string
-	SSOTokenURL     string
-
-	clientID   string
-	httpClient *http.Client
+	authorizeURL string
+	callbackPath string
+	clientID     string
+	httpClient   *http.Client
+	port         int
+	tokenURL     string
 }
 
 // Returns a new SSO service.
 func New(clientID string, client *http.Client) *SSOService {
-	s := &SSOService{
-		CallbackPath:    callbackPathDefault,
-		Port:            portDefault,
-		SSOAuthorizeURL: ssoAuthorizeURLDefault,
-		SSOTokenURL:     ssoTokenURLDefault,
+	return new(clientID, client, callbackPathDefault, portDefault, authorizeURLDefault, tokenURLDefault)
+}
 
-		httpClient: client,
-		clientID:   clientID,
+func new(
+	clientID string,
+	client *http.Client,
+	callbackPath string,
+	port int,
+	authorizeURL,
+	tokenURL string,
+) *SSOService {
+	s := &SSOService{
+		authorizeURL: authorizeURL,
+		callbackPath: callbackPath,
+		clientID:     clientID,
+		httpClient:   client,
+		port:         port,
+		tokenURL:     tokenURL,
 	}
 	return s
 }
@@ -84,44 +97,44 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	}
 	serverCtx = context.WithValue(serverCtx, keyState, state)
 	serverCtx, cancel := context.WithCancel(serverCtx)
+	defer cancel()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc(s.CallbackPath, func(w http.ResponseWriter, req *http.Request) {
+	makeHandler := func(fn func(http.ResponseWriter, *http.Request) (int, error)) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			status, err := fn(w, r)
+			if err != nil {
+				msg := "SSO callback failed"
+				slog.Warn(msg, "error", err)
+				http.Error(w, msg, status)
+				serverCtx = context.WithValue(serverCtx, keyError, err)
+			} else {
+				slog.Info("request", "status", status, "path", r.URL.Path)
+			}
+			cancel() // shutdown http server
+		}
+	}
+
+	router := http.NewServeMux()
+	router.HandleFunc(s.callbackPath, makeHandler(func(w http.ResponseWriter, req *http.Request) (int, error) {
 		slog.Info("Received SSO callback request")
 		v := req.URL.Query()
 		newState := v.Get("state")
 		if newState != serverCtx.Value(keyState).(string) {
-			http.Error(w, "Invalid state", http.StatusForbidden)
-			return
+			return http.StatusUnauthorized, fmt.Errorf("invalid state")
 		}
 		code := v.Get("code")
 		codeVerifier := serverCtx.Value(keyCodeVerifier).(string)
 		rawToken, err := s.fetchNewToken(code, codeVerifier)
 		if err != nil {
-			msg := "Failed to retrieve token payload"
-			slog.Error(msg, "error", err)
-			http.Error(w, msg, http.StatusInternalServerError)
-			serverCtx = context.WithValue(serverCtx, keyError, err)
-			cancel()
-			return
+			return http.StatusUnauthorized, fmt.Errorf("fetch new token: %w", err)
 		}
 		jwtToken, err := validateJWT(ctx, rawToken.AccessToken)
 		if err != nil {
-			msg := "Failed to validate token"
-			slog.Error(msg, "token", rawToken.AccessToken, "error", err)
-			http.Error(w, msg, http.StatusInternalServerError)
-			serverCtx = context.WithValue(serverCtx, keyError, err)
-			cancel()
-			return
+			return http.StatusUnauthorized, fmt.Errorf("token validation: %w", err)
 		}
 		characterID, err := extractCharacterID(jwtToken)
 		if err != nil {
-			msg := "Failed to validate token"
-			slog.Error(msg, "token", rawToken.AccessToken, "error", err)
-			http.Error(w, msg, http.StatusInternalServerError)
-			serverCtx = context.WithValue(serverCtx, keyError, err)
-			cancel()
-			return
+			return http.StatusInternalServerError, fmt.Errorf("extract character ID:%w", err)
 		}
 		characterName := extractCharacterName(jwtToken)
 		scopes := extractScopes(jwtToken)
@@ -133,27 +146,38 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 				"<p>You can close this tab now and return to the app.</p>",
 			token.CharacterName,
 		)
-		cancel() // shutdown http server
-	})
-
-	if err := s.startSSO(state, codeVerifier, scopes); err != nil {
-		return nil, err
-	}
+		return http.StatusOK, nil
+	}))
+	router.HandleFunc("/", makeHandler(func(w http.ResponseWriter, r *http.Request) (int, error) {
+		return http.StatusNotFound, fmt.Errorf("unexpected route requested: %s", r.RequestURI)
+	}))
+	// we want to be sure the server is running before starting the browser
+	// and we want to be able to exit early in case the port is blocked
 	server := &http.Server{
 		Addr:    s.address(),
-		Handler: mux,
+		Handler: router,
+	}
+	l, err := net.Listen("tcp", s.address())
+	if err != nil {
+		return nil, fmt.Errorf("listen on address: %w", err)
 	}
 	go func() {
 		slog.Info("Web server started", "address", s.address())
-		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		if err := server.Serve(l); err != http.ErrServerClosed {
 			slog.Error("Web server terminated prematurely", "error", err)
 		}
+		cancel()
 	}()
+	if err := s.startSSO(state, codeVerifier, scopes); err != nil {
+		return nil, fmt.Errorf("failed to start SSO session")
+	}
+	<-serverCtx.Done()
 
-	<-serverCtx.Done() // wait for the signal to gracefully shutdown the server
+	shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownRelease()
 
-	if err := server.Shutdown(context.TODO()); err != nil {
-		return nil, err
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		return nil, fmt.Errorf("server shutdown error: %w", err)
 	}
 	slog.Info("Web server stopped")
 
@@ -170,11 +194,11 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 }
 
 func (s *SSOService) address() string {
-	return fmt.Sprintf("%s:%d", host, s.Port)
+	return fmt.Sprintf("%s:%d", host, s.port)
 }
 
 func (s *SSOService) redirectURI() string {
-	return fmt.Sprintf("http://%s%s", s.address(), s.CallbackPath)
+	return fmt.Sprintf("http://%s%s", s.address(), s.callbackPath)
 }
 
 // Open browser and show character selection for SSO.
@@ -184,7 +208,7 @@ func (s *SSOService) startSSO(state string, codeVerifier string, scopes []string
 		return err
 	}
 	u := s.makeStartURL(challenge, state, scopes)
-	return browser.OpenURL(u)
+	return openURL(u)
 }
 
 func (s *SSOService) makeStartURL(challenge, state string, scopes []string) string {
@@ -196,7 +220,7 @@ func (s *SSOService) makeStartURL(challenge, state string, scopes []string) stri
 	v.Set("response_type", "code")
 	v.Set("scope", strings.Join(scopes, " "))
 	v.Set("state", state)
-	return s.SSOAuthorizeURL + "/?" + v.Encode()
+	return s.authorizeURL + "/?" + v.Encode()
 }
 
 // fetchNewToken returns a new token from SSO API.
@@ -207,7 +231,7 @@ func (s *SSOService) fetchNewToken(code, codeVerifier string) (*tokenPayload, er
 		"code":          {code},
 		"grant_type":    {"authorization_code"},
 	}
-	req, err := http.NewRequest("POST", s.SSOTokenURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequest("POST", s.tokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -263,13 +287,13 @@ func (s *SSOService) fetchRefreshedToken(refreshToken string) (*tokenPayload, er
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {refreshToken},
 	}
-	req, err := http.NewRequest("POST", s.SSOTokenURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequest("POST", s.tokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Host", ssoHost)
-	slog.Info("Requesting token from SSO API", "grant_type", form.Get("grant_type"), "url", s.SSOTokenURL)
+	slog.Info("Requesting token from SSO API", "grant_type", form.Get("grant_type"), "url", s.tokenURL)
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
