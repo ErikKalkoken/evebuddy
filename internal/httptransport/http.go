@@ -20,8 +20,8 @@ import (
 // Authorization headers in requests are redacted.
 // Can redact response bodies for URLs (e.g. which would contain tokens)
 type LoggedTransport struct {
-	// Pattern for blocked URLs. Body of blocked URLs will not be logged.
-	BlockedResponseURLs []string
+	// Body of blacklisted response URLs will not be logged.
+	BlacklistedResponseURLs []string
 }
 
 func (t LoggedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -30,7 +30,7 @@ func (t LoggedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		return resp, err
 	}
-	logResponse(t.BlockedResponseURLs, isDebug, resp, req)
+	logResponse(t.BlacklistedResponseURLs, isDebug, resp, req)
 	return resp, err
 }
 

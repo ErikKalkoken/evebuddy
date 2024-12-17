@@ -178,7 +178,8 @@ func main() {
 	// init HTTP client, ESI client and cache
 	httpClient := &http.Client{
 		Transport: httptransport.LoggedTransport{
-			BlockedResponseURLs: []string{"login.eveonline.com/v2/oauth/token"},
+			// tokens must not be logged
+			BlacklistedResponseURLs: []string{"login.eveonline.com/v2/oauth/token"},
 		},
 	}
 	esiHttpClient := &http.Client{

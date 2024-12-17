@@ -3,6 +3,8 @@ package sso
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -23,12 +25,13 @@ var (
 )
 
 // validateJWT validates a JWT payload and when valid returns it as parsed object.
-func validateJWT(ctx context.Context, accessToken string) (jwt.Token, error) {
+func validateJWT(ctx context.Context, client *http.Client, accessToken string) (jwt.Token, error) {
 	// fetch the JWK set
-	set, err := jwkFetch(ctx, jwksURL)
+	set, err := jwkFetch(ctx, jwksURL, jwk.WithHTTPClient(client))
 	if err != nil {
 		return nil, fmt.Errorf("fetching JWK set: %w", err)
 	}
+	slog.Debug("jwk fetched", "set", set) // TODO: Remove me when no longer needed
 	// validate token
 	token, err := jwkParseString(
 		accessToken,
