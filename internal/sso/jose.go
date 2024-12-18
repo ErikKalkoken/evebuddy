@@ -3,20 +3,21 @@ package sso
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
 const (
-	ssoAudience = "EVE Online"
-	ssoIssuer1  = "login.eveonline.com"
-	ssoIssuer2  = "https://login.eveonline.com"
-	jwksURL     = "https://login.eveonline.com/oauth/jwks"
+	ssoAudience    = "EVE Online"
+	ssoIssuer1     = "login.eveonline.com"
+	ssoIssuer2     = "https://login.eveonline.com"
+	jwksURL        = "https://login.eveonline.com/oauth/jwks"
+	validationSkew = 3 * time.Second // allowed time difference between local and server clock when validating JWT
 )
 
 var (
@@ -31,10 +32,10 @@ func validateJWT(ctx context.Context, client *http.Client, accessToken string) (
 	if err != nil {
 		return nil, fmt.Errorf("fetching JWK set: %w", err)
 	}
-	slog.Debug("jwk fetched", "set", set) // TODO: Remove me when no longer needed
 	// validate token
 	token, err := jwkParseString(
 		accessToken,
+		jwt.WithAcceptableSkew(validationSkew),
 		jwt.WithKeySet(set),
 		jwt.WithAudience(ssoAudience),
 		jwt.WithValidator(jwt.ValidatorFunc(func(ctx context.Context, t jwt.Token) jwt.ValidationError {
