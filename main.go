@@ -147,8 +147,6 @@ func main() {
 	fyneApp := app.NewWithID(appID)
 	ad.SetSettings(fyneApp.Storage().RootURI().Path())
 
-	fmt.Println(fyneApp.Preferences().Float("window-height"))
-
 	// start uninstall app if requested
 	if *deleteAppFlag {
 		log.SetOutput(os.Stderr)

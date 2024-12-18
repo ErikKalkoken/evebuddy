@@ -13,11 +13,10 @@ import (
 )
 
 const (
-	ssoAudience    = "EVE Online"
-	ssoIssuer1     = "login.eveonline.com"
-	ssoIssuer2     = "https://login.eveonline.com"
-	jwksURL        = "https://login.eveonline.com/oauth/jwks"
-	validationSkew = 3 * time.Second // allowed time difference between local and server clock when validating JWT
+	ssoAudience = "EVE Online"
+	ssoIssuer1  = "login.eveonline.com"
+	ssoIssuer2  = "https://login.eveonline.com"
+	jwksURL     = "https://login.eveonline.com/oauth/jwks"
 )
 
 var (
@@ -35,7 +34,7 @@ func validateJWT(ctx context.Context, client *http.Client, accessToken string) (
 	// validate token
 	token, err := jwkParseString(
 		accessToken,
-		jwt.WithAcceptableSkew(validationSkew),
+		jwt.WithAcceptableSkew(1*time.Second), // workaround for time truncation (https://github.com/lestrrat-go/jwx/issues/763)
 		jwt.WithKeySet(set),
 		jwt.WithAudience(ssoAudience),
 		jwt.WithValidator(jwt.ValidatorFunc(func(ctx context.Context, t jwt.Token) jwt.ValidationError {
