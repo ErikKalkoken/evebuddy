@@ -136,9 +136,7 @@ func main() {
 		Timeout: mutexTimeout,
 	})
 	if errors.Is(err, mutex.ErrTimeout) {
-		slog.Warn("Attempted to run an additional instance. Shutting down that process.")
-		fmt.Println("There is already an instance running")
-		os.Exit(1)
+		log.Fatal("There is already an instance running")
 	} else if err != nil {
 		log.Fatal(err)
 	}
@@ -148,6 +146,8 @@ func main() {
 	// start fyne app
 	fyneApp := app.NewWithID(appID)
 	ad.SetSettings(fyneApp.Storage().RootURI().Path())
+
+	fmt.Println(fyneApp.Preferences().Float("window-height"))
 
 	// start uninstall app if requested
 	if *deleteAppFlag {
@@ -178,7 +178,8 @@ func main() {
 	// init HTTP client, ESI client and cache
 	httpClient := &http.Client{
 		Transport: httptransport.LoggedTransport{
-			BlockedResponseURLs: []string{"login.eveonline.com/v2/oauth/token"},
+			// tokens must not be logged
+			BlacklistedResponseURLs: []string{"login.eveonline.com/v2/oauth/token"},
 		},
 	}
 	esiHttpClient := &http.Client{

@@ -128,7 +128,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		if err != nil {
 			return http.StatusUnauthorized, fmt.Errorf("fetch new token: %w", err)
 		}
-		jwtToken, err := validateJWT(ctx, rawToken.AccessToken)
+		jwtToken, err := validateJWT(ctx, s.httpClient, rawToken.AccessToken)
 		if err != nil {
 			return http.StatusUnauthorized, fmt.Errorf("token validation: %w", err)
 		}
@@ -269,7 +269,7 @@ func (s *SSOService) RefreshToken(ctx context.Context, refreshToken string) (*To
 	if err != nil {
 		return nil, err
 	}
-	_, err = validateJWT(ctx, rawToken.AccessToken)
+	_, err = validateJWT(ctx, s.httpClient, rawToken.AccessToken)
 	if err != nil {
 		return nil, err
 	}

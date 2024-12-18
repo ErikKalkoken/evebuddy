@@ -111,7 +111,7 @@ func TestLoggedTransport(t *testing.T) {
 		// given
 		myClient := &http.Client{
 			Transport: httptransport.LoggedTransport{
-				BlockedResponseURLs: []string{"https://www.example.com/"},
+				BlacklistedResponseURLs: []string{"https://www.example.com/"},
 			},
 		}
 		slog.SetLogLoggerLevel(slog.LevelDebug)
