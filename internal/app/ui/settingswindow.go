@@ -65,6 +65,17 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 	)
 	sysTrayCheck.SetState(sysTrayEnabled)
 
+	// log level
+	logLevel := widget.NewSelect(LogLevelNames(), func(s string) {
+		w.u.fyneApp.Preferences().SetString(SettingLogLevel, s)
+		slog.SetLogLoggerLevel(LogLevelName2Level(s))
+	})
+	logLevelSelected := w.u.fyneApp.Preferences().StringWithFallback(
+		SettingLogLevel,
+		SettingLogLevelDefault,
+	)
+	logLevel.SetSelected(logLevelSelected)
+
 	// cache
 	clearBtn := widget.NewButton("Clear NOW", func() {
 		m := kxmodal.NewProgressInfinite(
@@ -112,9 +123,15 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 				Widget:   container.NewHBox(clearBtn),
 				HintText: cacheHintText,
 			},
+			{
+				Text:     "Log level",
+				Widget:   logLevel,
+				HintText: "Current log level",
+			},
 		}}
 	reset := func() {
 		sysTrayCheck.SetState(settingSysTrayEnabledDefault)
+		logLevel.SetSelected(SettingLogLevelDefault)
 	}
 	return makePage("General settings", settings, reset)
 }

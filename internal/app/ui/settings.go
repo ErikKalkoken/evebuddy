@@ -1,5 +1,11 @@
 package ui
 
+import (
+	"log/slog"
+	"maps"
+	"slices"
+)
+
 // Settings
 const (
 	settingLastCharacterID                    = "settingLastCharacterID"
@@ -29,6 +35,8 @@ const (
 	settingWindowHeightDefault                = 600
 	settingWindowWidth                        = "window-width"
 	settingWindowWidthDefault                 = 1000
+	SettingLogLevel                           = "logLevel"
+	SettingLogLevelDefault                    = "warning"
 )
 
 // SettingKeys returns all setting keys.
@@ -47,4 +55,25 @@ func SettingKeys() []string {
 		settingWindowHeight,
 		settingWindowWidth,
 	}
+}
+
+var logLevelName2Level = map[string]slog.Level{
+	"debug":   slog.LevelDebug,
+	"error":   slog.LevelError,
+	"info":    slog.LevelInfo,
+	"warning": slog.LevelWarn,
+}
+
+func LogLevelName2Level(s string) slog.Level {
+	l, ok := logLevelName2Level[s]
+	if !ok {
+		l = slog.LevelInfo
+	}
+	return l
+}
+
+func LogLevelNames() []string {
+	x := slices.Collect(maps.Keys(logLevelName2Level))
+	slices.Sort(x)
+	return x
 }
