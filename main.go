@@ -37,23 +37,16 @@ import (
 )
 
 const (
-	appID         = "io.github.erikkalkoken.evebuddy"
-	dbFileName    = "evebuddy.sqlite"
-	logFileName   = "evebuddy.log"
-	logMaxBackups = 3
-	logMaxSizeMB  = 50
-	mutexDelay    = 100 * time.Millisecond
-	mutexTimeout  = 250 * time.Millisecond
-	ssoClientID   = "11ae857fe4d149b2be60d875649c05f1"
-	userAgent     = "EveBuddy kalkoken87@gmail.com"
-)
-
-// defined flags
-var (
-	deleteAppFlag              = flag.Bool("delete-data", false, "Delete user data")
-	isUpdateTickerDisabledFlag = flag.Bool("disable-updates", false, "Disable all periodic updates")
-	isOfflineFlag              = flag.Bool("offline", false, "Start app in offline mode")
-	pprofFlag                  = flag.Bool("pprof", false, "Enable pprof web server")
+	appID           = "io.github.erikkalkoken.evebuddy"
+	dbFileName      = "evebuddy.sqlite"
+	logFileName     = "evebuddy.log"
+	logMaxBackups   = 3
+	logMaxSizeMB    = 50
+	mutexDelay      = 100 * time.Millisecond
+	mutexTimeout    = 250 * time.Millisecond
+	ssoClientID     = "11ae857fe4d149b2be60d875649c05f1"
+	userAgent       = "EveBuddy kalkoken87@gmail.com"
+	logLevelDefault = slog.LevelWarn // for startup only
 )
 
 type realtime struct{}
@@ -72,14 +65,21 @@ func (r realtime) Now() time.Time {
 }
 
 func main() {
-	// init dirs & flags
+	// flags
+	deleteAppFlag := flag.Bool("delete-data", false, "Delete user data")
+	isUpdateTickerDisabledFlag := flag.Bool("disable-updates", false, "Disable all periodic updates")
+	isOfflineFlag := flag.Bool("offline", false, "Start app in offline mode")
+	pprofFlag := flag.Bool("pprof", false, "Enable pprof web server")
+	flag.Parse()
+
+	// init dirs
 	ad, err := appdirs.New()
 	if err != nil {
 		log.Fatal(err)
 	}
-	flag.Parse()
 
 	// setup logging
+	slog.SetLogLoggerLevel(logLevelDefault)
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	logger := &lumberjack.Logger{
 		Filename:   fmt.Sprintf("%s/%s", ad.Log, logFileName),
@@ -122,7 +122,7 @@ func main() {
 	// set log level
 	ln := fyneApp.Preferences().StringWithFallback(ui.SettingLogLevel, ui.SettingLogLevelDefault)
 	l := ui.LogLevelName2Level(ln)
-	if l != slog.LevelInfo {
+	if l != logLevelDefault {
 		slog.Info("Setting log level", "level", ln)
 		slog.SetLogLoggerLevel(l)
 	}
