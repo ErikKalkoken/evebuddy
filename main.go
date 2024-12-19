@@ -37,53 +37,17 @@ import (
 )
 
 const (
-	appID         = "io.github.erikkalkoken.evebuddy"
-	dbFileName    = "evebuddy.sqlite"
-	logFileName   = "evebuddy.log"
-	logMaxBackups = 3
-	logMaxSizeMB  = 50
-	mutexDelay    = 100 * time.Millisecond
-	mutexTimeout  = 250 * time.Millisecond
-	ssoClientID   = "11ae857fe4d149b2be60d875649c05f1"
-	userAgent     = "EveBuddy kalkoken87@gmail.com"
+	appID           = "io.github.erikkalkoken.evebuddy"
+	dbFileName      = "evebuddy.sqlite"
+	logFileName     = "evebuddy.log"
+	logMaxBackups   = 3
+	logMaxSizeMB    = 50
+	mutexDelay      = 100 * time.Millisecond
+	mutexTimeout    = 250 * time.Millisecond
+	ssoClientID     = "11ae857fe4d149b2be60d875649c05f1"
+	userAgent       = "EveBuddy kalkoken87@gmail.com"
+	logLevelDefault = slog.LevelWarn // for startup only
 )
-
-type logLevelFlag struct {
-	value slog.Level
-}
-
-func (l logLevelFlag) String() string {
-	return l.value.String()
-}
-
-func (l *logLevelFlag) Set(value string) error {
-	m := map[string]slog.Level{
-		"DEBUG": slog.LevelDebug,
-		"INFO":  slog.LevelInfo,
-		"WARN":  slog.LevelWarn,
-		"ERROR": slog.LevelError,
-	}
-	v, ok := m[strings.ToUpper(value)]
-	if !ok {
-		return fmt.Errorf("unknown log level")
-	}
-	l.value = v
-	return nil
-}
-
-// defined flags
-var (
-	levelFlag                  logLevelFlag
-	deleteAppFlag              = flag.Bool("delete-data", false, "Delete user data")
-	isUpdateTickerDisabledFlag = flag.Bool("disable-updates", false, "Disable all periodic updates")
-	isOfflineFlag              = flag.Bool("offline", false, "Start app in offline mode")
-	pprofFlag                  = flag.Bool("pprof", false, "Enable pprof web server")
-)
-
-func init() {
-	levelFlag.value = slog.LevelInfo
-	flag.Var(&levelFlag, "loglevel", "set log level")
-}
 
 type realtime struct{}
 
@@ -101,15 +65,21 @@ func (r realtime) Now() time.Time {
 }
 
 func main() {
-	// init dirs & flags
+	// flags
+	deleteAppFlag := flag.Bool("delete-data", false, "Delete user data")
+	isUpdateTickerDisabledFlag := flag.Bool("disable-updates", false, "Disable all periodic updates")
+	isOfflineFlag := flag.Bool("offline", false, "Start app in offline mode")
+	pprofFlag := flag.Bool("pprof", false, "Enable pprof web server")
+	flag.Parse()
+
+	// init dirs
 	ad, err := appdirs.New()
 	if err != nil {
 		log.Fatal(err)
 	}
-	flag.Parse()
 
 	// setup logging
-	slog.SetLogLoggerLevel(levelFlag.value)
+	slog.SetLogLoggerLevel(logLevelDefault)
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	logger := &lumberjack.Logger{
 		Filename:   fmt.Sprintf("%s/%s", ad.Log, logFileName),
@@ -121,10 +91,10 @@ func main() {
 	// setup crash reporting
 	crashFile, err := os.Create(filepath.Join(ad.Log, "crash.txt"))
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("Failed to create crash report file", "error", err)
 	}
 	if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
-		log.Fatal(err)
+		slog.Error("Failed to setup crash report", "error", err)
 	}
 
 	// ensure only one instance is running
@@ -136,9 +106,11 @@ func main() {
 		Timeout: mutexTimeout,
 	})
 	if errors.Is(err, mutex.ErrTimeout) {
-		log.Fatal("There is already an instance running")
+		slog.Error("There is already an instance running. Aborting.")
+		os.Exit(1)
 	} else if err != nil {
-		log.Fatal(err)
+		slog.Error("Failed to acquire mutex. Aborting.", "error", err)
+		os.Exit(1)
 	}
 	defer r.Release()
 	slog.Info("No other instances running")
@@ -146,6 +118,14 @@ func main() {
 	// start fyne app
 	fyneApp := app.NewWithID(appID)
 	ad.SetSettings(fyneApp.Storage().RootURI().Path())
+
+	// set log level
+	ln := fyneApp.Preferences().StringWithFallback(ui.SettingLogLevel, ui.SettingLogLevelDefault)
+	l := ui.LogLevelName2Level(ln)
+	if l != logLevelDefault {
+		slog.Info("Setting log level", "level", ln)
+		slog.SetLogLoggerLevel(l)
+	}
 
 	// start uninstall app if requested
 	if *deleteAppFlag {
@@ -168,7 +148,8 @@ func main() {
 	dsn := fmt.Sprintf("file:%s/%s", ad.Data, dbFileName)
 	db, err := storage.InitDB(dsn)
 	if err != nil {
-		log.Fatalf("Failed to initialize database %s: %s", dsn, err)
+		slog.Error("Failed to initialize database", "dsn", dsn, "error", err)
+		os.Exit(1)
 	}
 	defer db.Close()
 	st := storage.New(db)
@@ -196,7 +177,8 @@ func main() {
 	// Init StatusCache service
 	sc := statuscache.New(cache)
 	if err := sc.InitCache(context.TODO(), st); err != nil {
-		log.Fatal(err)
+		slog.Error("Failed to init cache", "error", err)
+		os.Exit(1)
 	}
 	// Init EveUniverse service
 	eu := eveuniverse.New(st, esiClient)
