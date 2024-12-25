@@ -86,7 +86,7 @@ func (a *shipsArea) makeShipsGrid() *widget.GridWrap {
 			return len(a.ships)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewShipItem(a.u.EveImageService, resourceQuestionmarkSvg)
+			return widgets.NewShipItem(a.u.EveImageService, a.u.CacheService, resourceQuestionmarkSvg)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.ships) {

@@ -2,9 +2,13 @@ package widgets
 
 import (
 	"bytes"
+	"fmt"
 	"image"
-	"image/color"
 	"image/draw"
+	"log/slog"
+	"time"
+
+	_ "image/jpeg"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -19,13 +23,14 @@ import (
 // The ShipItem widget is used to render items on the type info window.
 type ShipItem struct {
 	widget.BaseWidget
+	cache        app.CacheService
+	fallbackIcon fyne.Resource
 	image        *canvas.Image
 	label        *widget.Label
-	fallbackIcon fyne.Resource
 	sv           app.EveImageService
 }
 
-func NewShipItem(sv app.EveImageService, fallbackIcon fyne.Resource) *ShipItem {
+func NewShipItem(sv app.EveImageService, cache app.CacheService, fallbackIcon fyne.Resource) *ShipItem {
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{128, 128}
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))
@@ -36,6 +41,7 @@ func NewShipItem(sv app.EveImageService, fallbackIcon fyne.Resource) *ShipItem {
 		label:        widget.NewLabel("First line\nSecond Line\nThird Line"),
 		fallbackIcon: fallbackIcon,
 		sv:           sv,
+		cache:        cache,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -53,38 +59,39 @@ func (w *ShipItem) Set(typeID int32, label string, canFly bool) {
 	}
 	w.label.Importance = i
 	w.label.Refresh()
-	go func(img *canvas.Image) {
-		r, err := w.sv.InventoryTypeRender(typeID, 256)
-		if err != nil {
-			return
+	go func() {
+		key := fmt.Sprintf("ship-image-%d", typeID)
+		var img *image.RGBA
+		y, ok := w.cache.Get(key)
+		if !ok {
+			r, err := w.sv.InventoryTypeRender(typeID, 256)
+			if err != nil {
+				slog.Error("failed to fetch image for ship render", "error", err)
+				return
+			}
+			x, _, err := image.Decode(bytes.NewReader(r.Content()))
+			if err != nil {
+				slog.Error("failed to decode image for ship render", "error", err)
+				return
+			}
+			j, ok := x.(*image.YCbCr)
+			if !ok {
+				slog.Error("failed to recognize image format", "typeID", typeID)
+				return
+			}
+			b := j.Bounds()
+			img = image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
+			draw.Draw(img, img.Bounds(), j, b.Min, draw.Src)
+			w.cache.Set(key, img, 3600*time.Second)
+		} else {
+			img = y.(*image.RGBA)
 		}
-		i, _, err := image.Decode(bytes.NewReader(r.Content()))
-		if err != nil {
-			panic(err)
-		}
-		j := i.(*image.YCbCr)
-		b := j.Bounds()
-		m := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
-		draw.Draw(m, m.Bounds(), j, b.Min, draw.Src)
 		if !canFly {
-			m = effect.Grayscale(m)
+			img = effect.Grayscale(img)
 		}
-		w.image.Image = m
+		w.image.Image = img
 		w.image.Refresh()
-	}(w.image)
-}
-
-func adjustBrightness(c color.Color, f float32) color.Color {
-	r, g, b, a := c.RGBA()
-	r = uint32(float32(r) * f)
-	g = uint32(float32(g) * f)
-	b = uint32(float32(b) * f)
-	return color.RGBA{
-		uint8((r >> 9)),
-		uint8((g >> 9)),
-		uint8((b >> 9)),
-		uint8((a >> 9)),
-	}
+	}()
 }
 
 func (w *ShipItem) CreateRenderer() fyne.WidgetRenderer {
