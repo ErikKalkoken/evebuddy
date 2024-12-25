@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
@@ -32,10 +31,15 @@ func validateJWT(ctx context.Context, client *http.Client, accessToken string) (
 		return nil, fmt.Errorf("fetching JWK set: %w", err)
 	}
 	// validate token
+	// we are disabling the iat check, because it is not required and causes occasional
+	// false validation errors, when the server and local clock are not fully in sync.
+	// see also: https://github.com/lestrrat-go/jwx/issues/763
 	token, err := jwkParseString(
 		accessToken,
-		jwt.WithAcceptableSkew(1*time.Second), // workaround for time truncation (https://github.com/lestrrat-go/jwx/issues/763)
 		jwt.WithKeySet(set),
+		jwt.WithResetValidators(true),
+		jwt.WithValidator(jwt.IsExpirationValid()),
+		jwt.WithValidator(jwt.IsNbfValid()),
 		jwt.WithAudience(ssoAudience),
 		jwt.WithValidator(jwt.ValidatorFunc(func(ctx context.Context, t jwt.Token) jwt.ValidationError {
 			if x := t.Issuer(); x != ssoIssuer1 && x != ssoIssuer2 {
