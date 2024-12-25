@@ -95,6 +95,6 @@ func (w *ShipItem) Set(typeID int32, label string, canFly bool) {
 }
 
 func (w *ShipItem) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewVBox(w.image, w.label)
+	c := container.NewVBox(container.NewPadded(w.image), w.label)
 	return widget.NewSimpleRenderer(c)
 }
