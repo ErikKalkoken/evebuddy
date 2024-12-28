@@ -102,7 +102,7 @@ func (a *shipsArea) makeShipsGrid() *widget.GridWrap {
 			return
 		}
 		o := a.ships[id]
-		a.u.showTypeInfoWindow(o.Type.ID, a.u.characterID())
+		a.u.showTypeInfoWindow(o.Type.ID, a.u.characterID(), requirementsTab)
 	}
 	return g
 }

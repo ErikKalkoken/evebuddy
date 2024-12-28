@@ -66,7 +66,7 @@ func (a *implantsArea) makeImplantList() *widget.List {
 			return
 		}
 		o := a.implants[id]
-		a.u.showTypeInfoWindow(o.EveType.ID, a.u.characterID())
+		a.u.showTypeInfoWindow(o.EveType.ID, a.u.characterID(), descriptionTab)
 	}
 	return l
 }

@@ -208,7 +208,7 @@ func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
 				}
 			}
 		} else {
-			a.u.showTypeInfoWindow(ca.EveType.ID, a.u.characterID())
+			a.u.showTypeInfoWindow(ca.EveType.ID, a.u.characterID(), descriptionTab)
 		}
 	}
 	return g
