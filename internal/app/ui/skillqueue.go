@@ -123,7 +123,7 @@ func (a *skillqueueArea) refresh() {
 		if remaining.IsEmpty() {
 			s += " (!)"
 		} else if completion.ValueOrZero() < 1 {
-			s += fmt.Sprintf(" (%.0f%%)", completion.MustValue()*100)
+			s += fmt.Sprintf(" (%.0f%%)", completion.ValueOrZero()*100)
 		}
 		a.u.skillTab.Text = s
 		a.u.tabs.Refresh()

@@ -96,7 +96,11 @@ func (a *locationsArea) makeTable() *widget.Table {
 					l.Text = "?"
 					l.Importance = widget.LowImportance
 				} else {
-					l.Text = fmt.Sprintf("%.1f", c.systemSecurity.MustValue())
+					if c.systemSecurity.IsEmpty() {
+						l.Text = "?"
+					} else {
+						l.Text = fmt.Sprintf("%.1f", c.systemSecurity.ValueOrZero())
+					}
 					l.Importance = c.securityImportance
 				}
 				l.Alignment = fyne.TextAlignTrailing

@@ -229,13 +229,13 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 	}
 	for _, c := range cc {
 		if !c.unreadCount.IsEmpty() {
-			totals.unread.Set(totals.unread.ValueOrZero() + c.unreadCount.MustValue())
+			totals.unread.Set(totals.unread.ValueOrZero() + c.unreadCount.ValueOrZero())
 		}
 		if !c.walletBalance.IsEmpty() {
-			totals.wallet.Set(totals.wallet.ValueOrZero() + c.walletBalance.MustValue())
+			totals.wallet.Set(totals.wallet.ValueOrZero() + c.walletBalance.ValueOrZero())
 		}
 		if !c.assetValue.IsEmpty() {
-			totals.assets.Set(totals.assets.ValueOrZero() + c.assetValue.MustValue())
+			totals.assets.Set(totals.assets.ValueOrZero() + c.assetValue.ValueOrZero())
 		}
 	}
 	a.characters = cc
