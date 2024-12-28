@@ -32,14 +32,16 @@ type shipsArea struct {
 	searchBox       *widget.Entry
 	ships           []*app.CharacterShipAbility
 	top             *widget.Label
+	foundText       *widget.Label
 	u               *UI
 }
 
 func (u *UI) newShipArea() *shipsArea {
 	a := shipsArea{
-		ships: make([]*app.CharacterShipAbility, 0),
-		top:   widget.NewLabel(""),
-		u:     u,
+		ships:     make([]*app.CharacterShipAbility, 0),
+		top:       widget.NewLabel(""),
+		foundText: widget.NewLabel(""),
+		u:         u,
 	}
 	a.top.TextStyle.Bold = true
 
@@ -81,15 +83,20 @@ func (u *UI) newShipArea() *shipsArea {
 
 	a.grid = a.makeShipsGrid()
 	b := widget.NewButton("Reset", func() {
-		a.searchBox.SetText("")
-		a.groupSelect.ClearSelected()
-		a.flyableSelect.ClearSelected()
+		a.reset()
 	})
-	top := container.NewHBox(a.top, layout.NewSpacer(), b)
+	top := container.NewHBox(a.top, a.foundText, layout.NewSpacer(), b)
 	entries := container.NewBorder(nil, nil, nil, container.NewHBox(a.groupSelect, a.flyableSelect), a.searchBox)
 	topBox := container.NewVBox(top, widget.NewSeparator(), entries)
 	a.content = container.NewBorder(topBox, nil, nil, nil, a.grid)
 	return &a
+}
+
+func (a *shipsArea) reset() {
+	a.searchBox.SetText("")
+	a.groupSelect.ClearSelected()
+	a.flyableSelect.ClearSelected()
+	a.foundText.Hide()
 }
 
 func (a *shipsArea) makeShipsGrid() *widget.GridWrap {
@@ -144,6 +151,7 @@ func (a *shipsArea) refresh() {
 	} else {
 		a.searchBox.Disable()
 	}
+	a.reset()
 }
 
 func (a *shipsArea) updateEntries() error {
@@ -195,6 +203,8 @@ func (a *shipsArea) updateEntries() error {
 	flyable := f.ToSlice()
 	slices.Sort(flyable)
 	a.flyableSelect.SetOptions(flyable)
+	a.foundText.SetText(fmt.Sprintf("%d found", len(ships)))
+	a.foundText.Show()
 	return nil
 }
 
