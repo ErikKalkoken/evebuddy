@@ -25,6 +25,13 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 )
 
+type typeWindowTab uint
+
+const (
+	descriptionTab typeWindowTab = iota + 1
+	requirementsTab
+)
+
 type attributeGroup string
 
 func (ag attributeGroup) DisplayName() string {
@@ -193,12 +200,12 @@ type typeInfoWindow struct {
 	window         fyne.Window
 }
 
-func (u *UI) showTypeInfoWindow(typeID, characterID int32) {
-	u.showInfoWindow(u.newTypeInfoWindow(typeID, characterID, 0))
+func (u *UI) showTypeInfoWindow(typeID, characterID int32, selectTab typeWindowTab) {
+	u.showInfoWindow(u.newTypeInfoWindow(typeID, characterID, 0, selectTab))
 }
 
 func (u *UI) showLocationInfoWindow(locationID int64) {
-	u.showInfoWindow(u.newTypeInfoWindow(0, 0, locationID))
+	u.showInfoWindow(u.newTypeInfoWindow(0, 0, locationID, descriptionTab))
 }
 
 func (u *UI) showInfoWindow(iw *typeInfoWindow, err error) {
@@ -219,7 +226,7 @@ func (u *UI) showInfoWindow(iw *typeInfoWindow, err error) {
 	w.Show()
 }
 
-func (u *UI) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*typeInfoWindow, error) {
+func (u *UI) newTypeInfoWindow(typeID, characterID int32, locationID int64, selectTab typeWindowTab) (*typeInfoWindow, error) {
 	ctx := context.TODO()
 	a := &typeInfoWindow{
 		u: u,
@@ -275,7 +282,7 @@ func (u *UI) newTypeInfoWindow(typeID, characterID int32, locationID int64) (*ty
 		a.requiredSkills = skills
 	}
 	a.techLevel, a.metaLevel = calcLevels(attributes)
-	a.content = a.makeContent()
+	a.content = a.makeContent(selectTab)
 	return a, nil
 }
 
@@ -474,10 +481,13 @@ func (a *typeInfoWindow) makeTitle(suffix string) string {
 	return fmt.Sprintf("%s (%s): %s", a.et.Name, a.et.Group.Name, suffix)
 }
 
-func (a *typeInfoWindow) makeContent() fyne.CanvasObject {
+func (a *typeInfoWindow) makeContent(selectTab typeWindowTab) fyne.CanvasObject {
 	top := a.makeTop()
-	description := container.NewTabItem("Description", a.makeDescriptionTab())
-	tabs := container.NewAppTabs(description)
+	t := container.NewTabItem("Description", a.makeDescriptionTab())
+	tabs := container.NewAppTabs(t)
+	if selectTab == requirementsTab {
+		tabs.Select(t)
+	}
 	if len(a.attributesData) > 0 && a.et.Group.Category.ID != app.EveCategoryStation {
 		tabs.Append(container.NewTabItem("Attributes", a.makeAttributesTab()))
 	}
@@ -485,7 +495,11 @@ func (a *typeInfoWindow) makeContent() fyne.CanvasObject {
 		tabs.Append(container.NewTabItem("Fittings", a.makeFittingsTab()))
 	}
 	if len(a.requiredSkills) > 0 {
-		tabs.Append(container.NewTabItem("Requirements", a.makeRequirementsTab()))
+		t := container.NewTabItem("Requirements", a.makeRequirementsTab())
+		tabs.Append(t)
+		if selectTab == requirementsTab {
+			tabs.Select(t)
+		}
 	}
 	if a.isLocation() {
 		location := container.NewTabItem("Location", a.makeLocationTab())
@@ -701,7 +715,7 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 	)
 	l.OnSelected = func(id widget.ListItemID) {
 		r := a.requiredSkills[id]
-		a.u.showTypeInfoWindow(r.typeID, a.owner.ID)
+		a.u.showTypeInfoWindow(r.typeID, a.owner.ID, descriptionTab)
 		l.UnselectAll()
 	}
 	return l

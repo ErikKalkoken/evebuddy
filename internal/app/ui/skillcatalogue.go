@@ -165,7 +165,7 @@ func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 			return
 		}
 		skill := a.skills[id]
-		a.u.showTypeInfoWindow(skill.id, a.u.characterID())
+		a.u.showTypeInfoWindow(skill.id, a.u.characterID(), descriptionTab)
 	}
 	return g
 }

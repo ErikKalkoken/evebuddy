@@ -7,6 +7,7 @@ require (
 	github.com/ErikKalkoken/fyne-kx v0.2.0
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.10.0
+	github.com/anthonynsimon/bild v0.14.0
 	github.com/antihax/goesi v0.0.0-20241216030825-f102f993c3b1
 	github.com/chasinglogic/appdirs v0.0.0-20240910093348-1aea124d8cd9
 	github.com/dustin/go-humanize v1.0.1

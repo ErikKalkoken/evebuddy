@@ -87,7 +87,7 @@ func (a *trainingArea) makeTable() *widget.Table {
 					text = "Inactive"
 					l.Importance = widget.WarningImportance
 				} else {
-					text = ihumanize.Duration(c.training.MustValue())
+					text = ihumanize.Duration(c.training.ValueOrZero())
 				}
 			}
 			l.Text = text

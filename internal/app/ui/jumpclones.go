@@ -134,7 +134,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 		// 	return
 		// }
 		if !n.IsRoot() {
-			a.u.showTypeInfoWindow(n.ImplantTypeID, a.u.characterID())
+			a.u.showTypeInfoWindow(n.ImplantTypeID, a.u.characterID(), descriptionTab)
 		}
 	}
 	return t
