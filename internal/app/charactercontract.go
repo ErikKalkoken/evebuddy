@@ -6,38 +6,40 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-type CharacterContractAvailability string
+type CharacterContractAvailability uint
 
 const (
-	AvailabilityPublic      CharacterContractAvailability = "PU"
-	AvailabilityPersonal    CharacterContractAvailability = "PR"
-	AvailabilityCorporation CharacterContractAvailability = "CR"
-	AvailabilityAlliance    CharacterContractAvailability = "AL"
+	ContractAvailabilityUnknown CharacterContractAvailability = iota
+	ContractAvailabilityPublic
+	ContractAvailabilityPersonal
+	ContractAvailabilityCorporation
+	ContractAvailabilityAlliance
 )
 
-type CharacterContractStatus string
+type CharacterContractStatus uint
 
 const (
-	StatusOutstanding        CharacterContractStatus = "OS"
-	StatusInProgress         CharacterContractStatus = "IP"
-	StatusFinishedIssuer     CharacterContractStatus = "FI"
-	StatusFinishedContractor CharacterContractStatus = "FC"
-	StatusFinished           CharacterContractStatus = "FN"
-	StatusCancelled          CharacterContractStatus = "CC"
-	StatusRejected           CharacterContractStatus = "RJ"
-	StatusFailed             CharacterContractStatus = "FL"
-	StatusDeleted            CharacterContractStatus = "DL"
-	StatusReversed           CharacterContractStatus = "RV"
+	ContractStatusUnknown CharacterContractStatus = iota
+	ContractStatusOutstanding
+	ContractStatusInProgress
+	ContractStatusFinishedIssuer
+	ContractStatusFinishedContractor
+	ContractStatusFinished
+	ContractStatusCancelled
+	ContractStatusRejected
+	ContractStatusFailed
+	ContractStatusDeleted
+	ContractStatusReversed
 )
 
-type CharacterContractType string
+type CharacterContractType uint
 
 const (
-	TypeUnknown      CharacterContractType = "UN"
-	TypeItemExchange CharacterContractType = "IE"
-	TypeAuction      CharacterContractType = "AT"
-	TypeCourier      CharacterContractType = "CR"
-	TypeLoan         CharacterContractType = "LN"
+	ContractTypeUnknown CharacterContractType = iota
+	ContractTypeItemExchange
+	ContractTypeAuction
+	ContractTypeCourier
+	ContractTypeLoan
 )
 
 type CharacterContract struct {

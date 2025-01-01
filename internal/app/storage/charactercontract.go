@@ -13,63 +13,65 @@ import (
 type CreateCharacterContractParams struct {
 	AcceptorID          int32
 	AssigneeID          int32
-	Availability        app.CharacterContractAvailability
+	Availability        string
 	Buyout              float64
 	CharacterID         int32
 	Collateral          float64
 	ContractID          int32
-	DateAccepted        optional.Optional[time.Time]
-	DateCompleted       optional.Optional[time.Time]
+	DateAccepted        time.Time
+	DateCompleted       time.Time
 	DateExpired         time.Time
 	DateIssued          time.Time
 	DaysToComplete      int32
-	EndLocationID       optional.Optional[int64]
+	EndLocationID       int64
 	ForCorporation      bool
 	IssuerCorporationID int32
 	IssuerID            int32
 	Price               float64
 	Reward              float64
-	StartLocationID     optional.Optional[int64]
-	Status              app.CharacterContractStatus
+	StartLocationID     int64
+	Status              string
 	Title               string
-	Type                app.CharacterContractType
+	Type                string
 	Volume              float64
 }
 
 func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharacterContractParams) (int64, error) {
-	if arg.CharacterID == 0 || arg.ContractID == 0 || arg.Status == "" {
+	if arg.CharacterID == 0 || arg.ContractID == 0 || arg.Status == "" || arg.Availability == "" || arg.Type == "" {
 		return 0, fmt.Errorf("create character contract. Mandatory fields not set: %v", arg)
 	}
 	arg2 := queries.CreateCharacterContractParams{
-		Availability:        string(arg.Availability),
+		Availability:        arg.Availability,
 		Buyout:              arg.Buyout,
 		CharacterID:         int64(arg.CharacterID),
 		Collateral:          arg.Collateral,
 		ContractID:          int64(arg.ContractID),
-		DateAccepted:        optional.ToNullTime(arg.DateAccepted),
-		DateCompleted:       optional.ToNullTime(arg.DateCompleted),
+		DateAccepted:        NewNullTimeFromTime(arg.DateAccepted),
+		DateCompleted:       NewNullTimeFromTime(arg.DateCompleted),
 		DateExpired:         arg.DateExpired,
 		DateIssued:          arg.DateIssued,
 		DaysToComplete:      int64(arg.DaysToComplete),
-		EndLocationID:       optional.ToNullInt64(arg.EndLocationID),
 		ForCorporation:      arg.ForCorporation,
 		IssuerCorporationID: int64(arg.IssuerCorporationID),
 		IssuerID:            int64(arg.IssuerID),
 		Price:               arg.Price,
 		Reward:              arg.Reward,
-		StartLocationID:     optional.ToNullInt64(arg.StartLocationID),
-		Status:              string(arg.Status),
+		Status:              arg.Status,
 		Title:               arg.Title,
-		Type:                string(arg.Type),
+		Type:                arg.Type,
 		Volume:              arg.Volume,
 	}
 	if arg.AcceptorID != 0 {
-		arg2.AcceptorID.Int64 = int64(arg.AcceptorID)
-		arg2.AcceptorID.Valid = true
+		arg2.AcceptorID = NewNullInt64(int64(arg.AcceptorID))
 	}
 	if arg.AssigneeID != 0 {
-		arg2.AssigneeID.Int64 = int64(arg.AssigneeID)
-		arg2.AssigneeID.Valid = true
+		arg2.AssigneeID = NewNullInt64(int64(arg.AssigneeID))
+	}
+	if arg.EndLocationID != 0 {
+		arg2.EndLocationID = NewNullInt64(arg.EndLocationID)
+	}
+	if arg.StartLocationID != 0 {
+		arg2.StartLocationID = NewNullInt64(arg.StartLocationID)
 	}
 	id, err := st.q.CreateCharacterContract(ctx, arg2)
 	if err != nil {
@@ -119,11 +121,11 @@ func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int32
 type UpdateCharacterContractParams struct {
 	AcceptorID    int32
 	AssigneeID    int32
-	DateAccepted  optional.Optional[time.Time]
-	DateCompleted optional.Optional[time.Time]
+	DateAccepted  time.Time
+	DateCompleted time.Time
 	CharacterID   int32
 	ContractID    int32
-	Status        app.CharacterContractStatus
+	Status        string
 }
 
 func (st *Storage) UpdateCharacterContract(ctx context.Context, arg UpdateCharacterContractParams) error {
@@ -133,9 +135,9 @@ func (st *Storage) UpdateCharacterContract(ctx context.Context, arg UpdateCharac
 	arg2 := queries.UpdateCharacterContractParams{
 		CharacterID:   int64(arg.CharacterID),
 		ContractID:    int64(arg.ContractID),
-		DateAccepted:  optional.ToNullTime(arg.DateAccepted),
-		DateCompleted: optional.ToNullTime(arg.DateCompleted),
-		Status:        string(arg.Status),
+		DateAccepted:  NewNullTimeFromTime(arg.DateAccepted),
+		DateCompleted: NewNullTimeFromTime(arg.DateCompleted),
+		Status:        arg.Status,
 	}
 	if arg.AcceptorID != 0 {
 		arg2.AcceptorID.Int64 = int64(arg.AcceptorID)
@@ -168,6 +170,33 @@ func (st *Storage) UpdateCharacterContract(ctx context.Context, arg UpdateCharac
 // 	return ee, nil
 // }
 
+var contractAvailableToEnum = map[string]app.CharacterContractAvailability{
+	"alliance":    app.ContractAvailabilityAlliance,
+	"corporation": app.ContractAvailabilityCorporation,
+	"personal":    app.ContractAvailabilityPersonal,
+	"public":      app.ContractAvailabilityPublic,
+}
+
+var contractStatusToEnum = map[string]app.CharacterContractStatus{
+	"cancelled":           app.ContractStatusCancelled,
+	"deleted":             app.ContractStatusDeleted,
+	"failed":              app.ContractStatusFailed,
+	"finished_contractor": app.ContractStatusFinishedContractor,
+	"finished_issuer":     app.ContractStatusFinishedIssuer,
+	"finished":            app.ContractStatusFinished,
+	"in_progress":         app.ContractStatusInProgress,
+	"outstanding":         app.ContractStatusOutstanding,
+	"rejected":            app.ContractStatusRejected,
+	"reversed":            app.ContractStatusReversed,
+}
+
+var contractTypeToEnum = map[string]app.CharacterContractType{
+	"auction":       app.ContractTypeAuction,
+	"courier":       app.ContractTypeCourier,
+	"item_exchange": app.ContractTypeItemExchange,
+	"loan":          app.ContractTypeLoan,
+}
+
 func characterContractFromDBModel(
 	o queries.CharacterContract,
 	issuerCorporation queries.EveEntity,
@@ -175,11 +204,23 @@ func characterContractFromDBModel(
 	acceptor nullEveEntry,
 	assignee nullEveEntry,
 ) *app.CharacterContract {
+	availability, ok := contractAvailableToEnum[o.Availability]
+	if !ok {
+		availability = app.ContractAvailabilityUnknown
+	}
+	status, ok := contractStatusToEnum[o.Status]
+	if !ok {
+		status = app.ContractStatusUnknown
+	}
+	typ, ok := contractTypeToEnum[o.Type]
+	if !ok {
+		typ = app.ContractTypeUnknown
+	}
 	o2 := &app.CharacterContract{
 		ID:                o.ID,
 		Acceptor:          eveEntityFromNullableDBModel(acceptor),
 		Assignee:          eveEntityFromNullableDBModel(assignee),
-		Availability:      app.CharacterContractAvailability(o.Availability),
+		Availability:      availability,
 		Buyout:            o.Buyout,
 		CharacterID:       int32(o.CharacterID),
 		Collateral:        o.Collateral,
@@ -196,9 +237,9 @@ func characterContractFromDBModel(
 		Price:             o.Price,
 		Reward:            o.Reward,
 		StartLocationID:   optional.FromNullInt64(o.StartLocationID),
-		Status:            app.CharacterContractStatus(o.Status),
+		Status:            status,
 		Title:             o.Title,
-		Type:              app.CharacterContractType(o.Type),
+		Type:              typ,
 		Volume:            o.Volume,
 	}
 	return o2

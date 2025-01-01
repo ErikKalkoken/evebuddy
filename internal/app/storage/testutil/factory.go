@@ -188,7 +188,7 @@ func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContract
 		arg = args[0]
 	}
 	if arg.Availability == "" {
-		arg.Availability = app.AvailabilityPublic
+		arg.Availability = "public"
 	}
 	if arg.CharacterID == 0 {
 		x := f.CreateCharacter()
@@ -226,10 +226,10 @@ func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContract
 		arg.IssuerCorporationID = c.EveCharacter.Corporation.ID
 	}
 	if arg.Status == "" {
-		arg.Status = app.StatusOutstanding
+		arg.Status = "outstanding"
 	}
 	if arg.Type == "" {
-		arg.Type = app.TypeItemExchange
+		arg.Type = "item_exchange"
 	}
 	_, err := f.st.CreateCharacterContract(ctx, arg)
 	if err != nil {

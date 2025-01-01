@@ -26,15 +26,15 @@ func TestCharacterContract(t *testing.T) {
 		dateExpired := time.Now().Add(12 * time.Hour).UTC()
 		dateIssued := time.Now().UTC()
 		arg := storage.CreateCharacterContractParams{
-			Availability:        app.AvailabilityPersonal,
+			Availability:        "personal",
 			CharacterID:         c.ID,
 			ContractID:          42,
 			DateExpired:         dateExpired,
 			DateIssued:          dateIssued,
 			IssuerCorporationID: issuerCorporation.ID,
 			IssuerID:            issuer.ID,
-			Status:              app.StatusOutstanding,
-			Type:                app.TypeCourier,
+			Status:              "outstanding",
+			Type:                "courier",
 		}
 		// when
 		id, err := r.CreateCharacterContract(ctx, arg)
@@ -45,9 +45,9 @@ func TestCharacterContract(t *testing.T) {
 				assert.Equal(t, id, o.ID)
 				assert.Equal(t, issuer, o.Issuer)
 				assert.Equal(t, dateExpired, o.DateExpired)
-				assert.Equal(t, app.AvailabilityPersonal, o.Availability)
-				assert.Equal(t, app.StatusOutstanding, o.Status)
-				assert.Equal(t, app.TypeCourier, o.Type)
+				assert.Equal(t, app.ContractAvailabilityPersonal, o.Availability)
+				assert.Equal(t, app.ContractStatusOutstanding, o.Status)
+				assert.Equal(t, app.ContractTypeCourier, o.Type)
 			}
 		}
 	})
@@ -56,14 +56,14 @@ func TestCharacterContract(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
-		dateAccepted := optional.New(time.Now().UTC())
-		dateCompleted := optional.New(time.Now().UTC())
+		dateAccepted := time.Now().UTC()
+		dateCompleted := time.Now().UTC()
 		arg2 := storage.UpdateCharacterContractParams{
 			CharacterID:   o.CharacterID,
 			ContractID:    o.ContractID,
 			DateAccepted:  dateAccepted,
 			DateCompleted: dateCompleted,
-			Status:        app.StatusFinished,
+			Status:        "finished",
 		}
 		// when
 		err := r.UpdateCharacterContract(ctx, arg2)
@@ -71,9 +71,9 @@ func TestCharacterContract(t *testing.T) {
 		if assert.NoError(t, err) {
 			o, err := r.GetCharacterContract(ctx, o.CharacterID, o.ContractID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, app.StatusFinished, o.Status)
-				assert.Equal(t, dateAccepted, o.DateAccepted)
-				assert.Equal(t, dateCompleted, o.DateCompleted)
+				assert.Equal(t, app.ContractStatusFinished, o.Status)
+				assert.Equal(t, optional.New(dateAccepted), o.DateAccepted)
+				assert.Equal(t, optional.New(dateCompleted), o.DateCompleted)
 			}
 		}
 	})
