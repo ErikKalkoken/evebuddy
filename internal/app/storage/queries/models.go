@@ -48,6 +48,53 @@ type CharacterAttribute struct {
 	Willpower     int64
 }
 
+type CharacterContract struct {
+	ID                  int64
+	AcceptorID          sql.NullInt64
+	AssigneeID          sql.NullInt64
+	Availability        string
+	Buyout              float64
+	CharacterID         int64
+	Collateral          float64
+	ContractID          int64
+	DateAccepted        sql.NullTime
+	DateCompleted       sql.NullTime
+	DateExpired         time.Time
+	DateIssued          time.Time
+	DaysToComplete      int64
+	EndLocationID       sql.NullInt64
+	ForCorporation      bool
+	IssuerCorporationID int64
+	IssuerID            int64
+	Price               float64
+	Reward              float64
+	StartLocationID     sql.NullInt64
+	Status              string
+	Title               string
+	Type                string
+	Volume              float64
+}
+
+type CharacterContractBid struct {
+	ID         int64
+	ContractID int64
+	Amount     float64
+	BidID      int64
+	BidderID   int64
+	DateBid    time.Time
+}
+
+type CharacterContractItem struct {
+	ID          int64
+	ContractID  int64
+	IsIncluded  bool
+	IsSingleton bool
+	Quantity    int64
+	RawQuantity int64
+	RecordID    int64
+	TypeID      int64
+}
+
 type CharacterImplant struct {
 	ID          int64
 	CharacterID int64

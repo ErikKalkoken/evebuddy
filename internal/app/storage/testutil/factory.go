@@ -181,6 +181,67 @@ func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams
 	return o
 }
 
+func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContractParams) *app.CharacterContract {
+	ctx := context.TODO()
+	var arg storage.CreateCharacterContractParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.Availability == "" {
+		arg.Availability = app.AvailabilityPublic
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.ContractID == 0 {
+		arg.ContractID = int32(f.calcNewIDWithCharacter(
+			"character_contracts",
+			"contract_id",
+			arg.CharacterID,
+		))
+	}
+	if arg.DateIssued.IsZero() {
+		arg.DateIssued = time.Now().UTC()
+	}
+	if arg.DateExpired.IsZero() {
+		arg.DateExpired = arg.DateIssued.Add(time.Duration(rand.IntN(200)+12) * time.Hour)
+	}
+	if arg.IssuerID == 0 {
+		c, err := f.st.GetCharacter(ctx, arg.CharacterID)
+		if err != nil {
+			panic(err)
+		}
+		_, err = f.st.GetOrCreateEveEntity(ctx, c.ID, c.EveCharacter.Name, app.EveEntityCharacter)
+		if err != nil {
+			panic(err)
+		}
+		arg.IssuerID = c.ID
+	}
+	if arg.IssuerCorporationID == 0 {
+		c, err := f.st.GetCharacter(ctx, arg.CharacterID)
+		if err != nil {
+			panic(err)
+		}
+		arg.IssuerCorporationID = c.EveCharacter.Corporation.ID
+	}
+	if arg.Status == "" {
+		arg.Status = app.StatusOutstanding
+	}
+	if arg.Type == "" {
+		arg.Type = app.TypeItemExchange
+	}
+	_, err := f.st.CreateCharacterContract(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCharacterContract(ctx, arg.CharacterID, arg.ContractID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantParams) *app.CharacterImplant {
 	ctx := context.TODO()
 	var arg storage.CreateCharacterImplantParams
