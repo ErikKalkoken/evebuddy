@@ -4,31 +4,33 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type CharacterContractAvailability uint
 
 const (
 	ContractAvailabilityUnknown CharacterContractAvailability = iota
-	ContractAvailabilityPublic
-	ContractAvailabilityPersonal
-	ContractAvailabilityCorporation
 	ContractAvailabilityAlliance
+	ContractAvailabilityCorporation
+	ContractAvailabilityPersonal
+	ContractAvailabilityPublic
 )
 
 type CharacterContractStatus uint
 
 const (
 	ContractStatusUnknown CharacterContractStatus = iota
-	ContractStatusOutstanding
-	ContractStatusInProgress
-	ContractStatusFinishedIssuer
-	ContractStatusFinishedContractor
-	ContractStatusFinished
 	ContractStatusCancelled
-	ContractStatusRejected
-	ContractStatusFailed
 	ContractStatusDeleted
+	ContractStatusFailed
+	ContractStatusFinished
+	ContractStatusFinishedContractor
+	ContractStatusFinishedIssuer
+	ContractStatusInProgress
+	ContractStatusOutstanding
+	ContractStatusRejected
 	ContractStatusReversed
 )
 
@@ -36,11 +38,26 @@ type CharacterContractType uint
 
 const (
 	ContractTypeUnknown CharacterContractType = iota
-	ContractTypeItemExchange
 	ContractTypeAuction
 	ContractTypeCourier
+	ContractTypeItemExchange
 	ContractTypeLoan
 )
+
+var cct2String = map[CharacterContractType]string{
+	ContractTypeAuction:      "auction",
+	ContractTypeCourier:      "courier",
+	ContractTypeItemExchange: "item exchange",
+	ContractTypeLoan:         "loan",
+}
+
+func (cct CharacterContractType) String() string {
+	s, ok := cct2String[cct]
+	if !ok {
+		return "unknown"
+	}
+	return s
+}
 
 type CharacterContract struct {
 	ID                int64
@@ -67,4 +84,9 @@ type CharacterContract struct {
 	Title             string
 	Type              CharacterContractType
 	Volume            float64
+}
+
+func (cc CharacterContract) TypeDisplay() string {
+	c := cases.Title(language.English)
+	return c.String(cc.Type.String())
 }

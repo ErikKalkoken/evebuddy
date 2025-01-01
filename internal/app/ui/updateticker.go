@@ -131,6 +131,10 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		if isShown && needsRefresh {
 			u.attributesArea.refresh()
 		}
+	case app.SectionContracts:
+		if isShown && needsRefresh {
+			u.contractsArea.refresh()
+		}
 	case app.SectionImplants:
 		if isShown && needsRefresh {
 			u.implantsArea.refresh()
