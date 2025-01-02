@@ -148,9 +148,10 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		)
 		return http.StatusOK, nil
 	}))
-	router.HandleFunc("/", makeHandler(func(w http.ResponseWriter, r *http.Request) (int, error) {
-		return http.StatusNotFound, fmt.Errorf("unexpected route requested: %s", r.RequestURI)
-	}))
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		slog.Info("request", "status", http.StatusNotFound, "path", r.URL.Path)
+		http.Error(w, "not found", http.StatusNotFound)
+	})
 	// we want to be sure the server is running before starting the browser
 	// and we want to be able to exit early in case the port is blocked
 	server := &http.Server{

@@ -20,6 +20,7 @@ func (s *CharacterService) DeleteCharacter(ctx context.Context, id int32) error 
 	if err := s.st.DeleteCharacter(ctx, id); err != nil {
 		return err
 	}
+	slog.Info("Character deleted", "characterID", id)
 	return s.StatusCacheService.UpdateCharacters(ctx, s.st)
 }
 

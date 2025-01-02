@@ -155,3 +155,22 @@ func TestSetEqual(t *testing.T) {
 		assert.False(t, s1.Equal(s2))
 	})
 }
+
+func TestIsSubset(t *testing.T) {
+	t.Parallel()
+	t.Run("report true when a is subset of b", func(t *testing.T) {
+		a := set.NewFromSlice([]int{1, 2})
+		b := set.NewFromSlice([]int{1, 2, 3})
+		assert.True(t, a.IsSubset(b))
+	})
+	t.Run("report true when a is same as b", func(t *testing.T) {
+		a := set.NewFromSlice([]int{1, 2})
+		b := set.NewFromSlice([]int{1, 2})
+		assert.True(t, a.IsSubset(b))
+	})
+	t.Run("report false when a is not a subset of b", func(t *testing.T) {
+		a := set.NewFromSlice([]int{1, 3})
+		b := set.NewFromSlice([]int{1, 2, 4})
+		assert.False(t, a.IsSubset(b))
+	})
+}

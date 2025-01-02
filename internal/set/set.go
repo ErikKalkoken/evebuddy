@@ -48,12 +48,17 @@ func (s *Set[T]) Clear() {
 func (s *Set[T]) Difference(other *Set[T]) *Set[T] {
 	n := NewFromSlice([]T{})
 	for v := range s.values {
-		if other.Contains(v) {
-			continue
+		if !other.Contains(v) {
+			n.Add(v)
 		}
-		n.Add(v)
 	}
 	return n
+}
+
+// IsSubset reports whether a set is the subset of another set.
+func (s *Set[T]) IsSubset(other *Set[T]) bool {
+	x := s.Difference(other)
+	return x.Size() == 0
 }
 
 // Equal reports wether two sets are equal.
