@@ -242,6 +242,41 @@ func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContract
 	return o
 }
 
+func (f Factory) CreateCharacterContractItem(args ...storage.CreateCharacterContractItemParams) *app.CharacterContractItem {
+	ctx := context.TODO()
+	var arg storage.CreateCharacterContractItemParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ContractID == 0 {
+		c := f.CreateCharacterContract()
+		arg.ContractID = c.ID
+	}
+	if arg.RecordID == 0 {
+		arg.RecordID = f.calcNewIDWithParam(
+			"character_contract_items",
+			"record_id",
+			"contract_id",
+			arg.ContractID,
+		)
+	}
+	if arg.Quantity == 0 {
+		arg.Quantity = rand.IntN(10_000)
+	}
+	if arg.TypeID == 0 {
+		x := f.CreateEveType()
+		arg.TypeID = x.ID
+	}
+	if err := f.st.CreateCharacterContractItem(ctx, arg); err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCharacterContractItem(ctx, arg.ContractID, arg.RecordID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantParams) *app.CharacterImplant {
 	ctx := context.TODO()
 	var arg storage.CreateCharacterImplantParams
@@ -1380,14 +1415,14 @@ func (f *Factory) calcNewIDWithCharacter(table, id_field string, characterID int
 	return max.Int64 + 1
 }
 
-// func (f *Factory) calcNewIDWithParam(table, id_field, where_field string, where_value int64) int64 {
-// 	var max sql.NullInt64
-// 	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", id_field, table, where_field)
-// 	if err := f.db.QueryRow(sql, where_value).Scan(&max); err != nil {
-// 		panic(err)
-// 	}
-// 	return max.Int64 + 1
-// }
+func (f *Factory) calcNewIDWithParam(table, id_field, where_field string, where_value int64) int64 {
+	var max sql.NullInt64
+	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", id_field, table, where_field)
+	if err := f.db.QueryRow(sql, where_value).Scan(&max); err != nil {
+		panic(err)
+	}
+	return max.Int64 + 1
+}
 
 func calcContentHash(data any) (string, error) {
 	b, err := json.Marshal(data)

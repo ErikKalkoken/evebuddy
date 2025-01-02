@@ -12,9 +12,11 @@ import (
 )
 
 const deleteCharacterSkills = `-- name: DeleteCharacterSkills :exec
-DELETE FROM character_skills
-WHERE character_id = ?
-AND eve_type_id IN (/*SLICE:eve_type_ids*/?)
+DELETE FROM
+    character_skills
+WHERE
+    character_id = ?
+    AND eve_type_id IN (/*SLICE:eve_type_ids*/?)
 `
 
 type DeleteCharacterSkillsParams struct {
@@ -40,16 +42,18 @@ func (q *Queries) DeleteCharacterSkills(ctx context.Context, arg DeleteCharacter
 
 const getCharacterSkill = `-- name: GetCharacterSkill :one
 SELECT
-    character_skills.id, character_skills.active_skill_level, character_skills.character_id, character_skills.eve_type_id, character_skills.skill_points_in_skill, character_skills.trained_skill_level,
-    eve_types.id, eve_types.eve_group_id, eve_types.capacity, eve_types.description, eve_types.graphic_id, eve_types.icon_id, eve_types.is_published, eve_types.market_group_id, eve_types.mass, eve_types.name, eve_types.packaged_volume, eve_types.portion_size, eve_types.radius, eve_types.volume,
-    eve_groups.id, eve_groups.eve_category_id, eve_groups.name, eve_groups.is_published,
-    eve_categories.id, eve_categories.name, eve_categories.is_published
-FROM character_skills
-JOIN eve_types ON eve_types.id = character_skills.eve_type_id
-JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
-JOIN eve_categories ON eve_categories.id = eve_groups.eve_category_id
-WHERE character_id = ?
-AND eve_type_id = ?
+    cs.id, cs.active_skill_level, cs.character_id, cs.eve_type_id, cs.skill_points_in_skill, cs.trained_skill_level,
+    et.id, et.eve_group_id, et.capacity, et.description, et.graphic_id, et.icon_id, et.is_published, et.market_group_id, et.mass, et.name, et.packaged_volume, et.portion_size, et.radius, et.volume,
+    eg.id, eg.eve_category_id, eg.name, eg.is_published,
+    ec.id, ec.name, ec.is_published
+FROM
+    character_skills cs
+    JOIN eve_types et ON et.id = cs.eve_type_id
+    JOIN eve_groups eg ON eg.id = et.eve_group_id
+    JOIN eve_categories ec ON ec.id = eg.eve_category_id
+WHERE
+    character_id = ?
+    AND eve_type_id = ?
 `
 
 type GetCharacterSkillParams struct {
@@ -108,12 +112,16 @@ SELECT
     skill_level,
     cs.active_skill_level,
     cs.trained_skill_level
-FROM eve_ship_skills ess
-JOIN eve_types as sht ON sht.id = ess.ship_type_id
-JOIN eve_types as skt ON skt.id = ess.skill_type_id
-LEFT JOIN character_skills cs ON cs.eve_type_id = skill_type_id AND cs.character_id = ?
-WHERE ship_type_id = ?
-ORDER BY RANK
+FROM
+    eve_ship_skills ess
+    JOIN eve_types as sht ON sht.id = ess.ship_type_id
+    JOIN eve_types as skt ON skt.id = ess.skill_type_id
+    LEFT JOIN character_skills cs ON cs.eve_type_id = skill_type_id
+    AND cs.character_id = ?
+WHERE
+    ship_type_id = ?
+ORDER BY
+    RANK
 `
 
 type ListCharacterShipSkillsParams struct {
@@ -163,18 +171,31 @@ func (q *Queries) ListCharacterShipSkills(ctx context.Context, arg ListCharacter
 }
 
 const listCharacterShipsAbilities = `-- name: ListCharacterShipsAbilities :many
-SELECT DISTINCT ss2.ship_type_id as type_id, et.name as type_name, eg.id as group_id, eg.name as group_name,
-(
-	SELECT COUNT(*) - SUM(IFNULL(cs.active_skill_level, 0) >= ss.skill_level) == 0
-	FROM eve_ship_skills ss
-	LEFT JOIN character_skills cs ON cs.eve_type_id = ss.skill_type_id AND cs.character_id = ?
-	WHERE ss.ship_type_id = ss2.ship_type_id
-) as can_fly
-FROM eve_ship_skills ss2
-JOIN eve_types et ON et.ID = ss2.ship_type_id
-JOIN eve_groups eg ON eg.ID = et.eve_group_id
-WHERE et.name LIKE ?
-ORDER BY et.name
+SELECT
+    DISTINCT ss2.ship_type_id as type_id,
+    et.name as type_name,
+    eg.id as group_id,
+    eg.name as group_name,
+    (
+        SELECT
+            COUNT(*) - SUM(
+                IFNULL(cs.active_skill_level, 0) >= ss.skill_level
+            ) == 0
+        FROM
+            eve_ship_skills ss
+            LEFT JOIN character_skills cs ON cs.eve_type_id = ss.skill_type_id
+            AND cs.character_id = ?
+        WHERE
+            ss.ship_type_id = ss2.ship_type_id
+    ) as can_fly
+FROM
+    eve_ship_skills ss2
+    JOIN eve_types et ON et.ID = ss2.ship_type_id
+    JOIN eve_groups eg ON eg.ID = et.eve_group_id
+WHERE
+    et.name LIKE ?
+ORDER BY
+    et.name
 `
 
 type ListCharacterShipsAbilitiesParams struct {
@@ -225,13 +246,19 @@ SELECT
     eve_groups.name as eve_group_name,
     COUNT(eve_types.id) as total,
     SUM(character_skills.trained_skill_level / 5.0) AS trained
-FROM eve_types
-JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id AND eve_groups.is_published IS TRUE
-LEFT JOIN character_skills ON character_skills.eve_type_id = eve_types.id AND character_skills.character_id = ?
-WHERE eve_groups.eve_category_id = ?
-AND eve_types.is_published IS TRUE
-GROUP BY eve_groups.name
-ORDER BY eve_groups.name
+FROM
+    eve_types
+    JOIN eve_groups ON eve_groups.id = eve_types.eve_group_id
+    AND eve_groups.is_published IS TRUE
+    LEFT JOIN character_skills ON character_skills.eve_type_id = eve_types.id
+    AND character_skills.character_id = ?
+WHERE
+    eve_groups.eve_category_id = ?
+    AND eve_types.is_published IS TRUE
+GROUP BY
+    eve_groups.name
+ORDER BY
+    eve_groups.name
 `
 
 type ListCharacterSkillGroupsProgressParams struct {
@@ -275,9 +302,12 @@ func (q *Queries) ListCharacterSkillGroupsProgress(ctx context.Context, arg List
 }
 
 const listCharacterSkillIDs = `-- name: ListCharacterSkillIDs :many
-SELECT eve_type_id
-FROM character_skills
-WHERE character_id = ?
+SELECT
+    eve_type_id
+FROM
+    character_skills
+WHERE
+    character_id = ?
 `
 
 func (q *Queries) ListCharacterSkillIDs(ctx context.Context, characterID int64) ([]int64, error) {
@@ -310,11 +340,15 @@ SELECT
     eve_types.description,
     character_skills.active_skill_level,
     character_skills.trained_skill_level
-FROM eve_types
-LEFT JOIN character_skills ON character_skills.eve_type_id = eve_types.id AND character_skills.character_id = ?
-WHERE eve_types.eve_group_id = ?
-AND eve_types.is_published IS TRUE
-ORDER BY eve_types.name
+FROM
+    eve_types
+    LEFT JOIN character_skills ON character_skills.eve_type_id = eve_types.id
+    AND character_skills.character_id = ?
+WHERE
+    eve_types.eve_group_id = ?
+    AND eve_types.is_published IS TRUE
+ORDER BY
+    eve_types.name
 `
 
 type ListCharacterSkillProgressParams struct {
@@ -360,23 +394,24 @@ func (q *Queries) ListCharacterSkillProgress(ctx context.Context, arg ListCharac
 }
 
 const updateOrCreateCharacterSkill = `-- name: UpdateOrCreateCharacterSkill :exec
-INSERT INTO character_skills (
-    character_id,
-    eve_type_id,
-    active_skill_level,
-    skill_points_in_skill,
-    trained_skill_level
-)
-VALUES (
-    ?1, ?2, ?3, ?4, ?5
-)
-ON CONFLICT(character_id, eve_type_id) DO
-UPDATE SET
+INSERT INTO
+    character_skills (
+        character_id,
+        eve_type_id,
+        active_skill_level,
+        skill_points_in_skill,
+        trained_skill_level
+    )
+VALUES
+    (?1, ?2, ?3, ?4, ?5) ON CONFLICT(character_id, eve_type_id) DO
+UPDATE
+SET
     active_skill_level = ?3,
     skill_points_in_skill = ?4,
     trained_skill_level = ?5
-WHERE character_id = ?1
-AND eve_type_id = ?2
+WHERE
+    character_id = ?1
+    AND eve_type_id = ?2
 `
 
 type UpdateOrCreateCharacterSkillParams struct {
