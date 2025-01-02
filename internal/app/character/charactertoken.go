@@ -39,9 +39,9 @@ func (s *CharacterService) CharacterHasTokenWithScopes(ctx context.Context, char
 	} else if err != nil {
 		return false, err
 	}
-	got := set.NewFromSlice(t.Scopes)
-	want := set.NewFromSlice(esiScopes)
-	return got.Equal(want), nil
+	incoming := set.NewFromSlice(t.Scopes)
+	required := set.NewFromSlice(esiScopes)
+	return required.IsSubset(incoming), nil
 }
 
 // getValidCharacterToken returns a valid token for a character. Convenience function.
