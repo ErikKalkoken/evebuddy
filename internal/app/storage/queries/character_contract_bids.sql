@@ -36,3 +36,11 @@ FROM
     JOIN eve_entities ee ON ee.id = ccb.bidder_id
 WHERE
     contract_id = ?;
+
+-- name: ListCharacterContractBidIDs :many
+SELECT
+    bid_id
+FROM
+    character_contract_bids
+WHERE
+    contract_id = ?;

@@ -37,7 +37,7 @@ func TestCharacterContractBid(t *testing.T) {
 		if assert.NoError(t, err) {
 			o, err := r.GetCharacterContractBid(ctx, c.ID, bidID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, amount, o.Amount)
+				assert.InDelta(t, amount, o.Amount, 0.1)
 				assert.Equal(t, bidder, o.Bidder)
 				assert.Equal(t, dateBid, o.DateBid)
 			}

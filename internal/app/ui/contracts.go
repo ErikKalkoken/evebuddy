@@ -99,7 +99,11 @@ func (a *contractsArea) makeTable() *widget.Table {
 			case 2:
 				l.Text = o.Issuer.Name
 			case 3:
-				l.Text = o.Assignee.Name
+				if o.Assignee == nil {
+					l.Text = ""
+				} else {
+					l.Text = o.Assignee.Name
+				}
 			case 4:
 				l.Text = o.StatusDisplay()
 			case 5:
@@ -144,142 +148,6 @@ func (a *contractsArea) makeTable() *widget.Table {
 	return t
 }
 
-func (a *contractsArea) showContract(o *app.CharacterContract) {
-	w := a.u.fyneApp.NewWindow("Contract")
-	t := widget.NewLabel(fmt.Sprintf("%s (%s)", o.NameDisplay(), o.TypeDisplay()))
-	t.Importance = widget.HighImportance
-	t.TextStyle.Bold = true
-	expiredAt := o.DateExpiredEffective()
-	expirationDate := fmt.Sprintf(
-		"%s (%s)",
-		expiredAt.Format(app.TimeDefaultFormat),
-		strings.Trim(humanize.RelTime(expiredAt, time.Now(), "", ""), " "),
-	)
-	makeLocation := func(l *app.EntityShort[int64]) *kxwidget.TappableLabel {
-		x := kxwidget.NewTappableLabel(l.Name, func() {
-			a.u.showLocationInfoWindow(l.ID)
-		})
-		x.TextStyle.Bold = true
-		return x
-	}
-	makeISKString := func(v float64) string {
-		t := humanize.Commaf(v) + " ISK"
-		if math.Abs(v) > 999 {
-			t += fmt.Sprintf(" (%s)", ihumanize.Number(v, 1))
-		}
-		return t
-	}
-	main := container.NewVBox(
-		&widget.Form{
-			Items: []*widget.FormItem{
-				{Text: "Info by issuer", Widget: widget.NewLabel(o.TitleDisplay())},
-				{Text: "Type", Widget: widget.NewLabel(o.TypeDisplay())},
-				{Text: "Issued By", Widget: widget.NewLabel(o.Issuer.Name)},
-				{Text: "Availability", Widget: widget.NewLabel(o.AvailabilityDisplay())},
-				{Text: "Contractor", Widget: widget.NewLabel(o.ContractorDisplay())},
-				{Text: "Status", Widget: widget.NewLabel(o.StatusDisplay())},
-				{Text: "Location", Widget: makeLocation(o.StartLocation)},
-				{Text: "Date Issued", Widget: widget.NewLabel(o.DateIssued.Format(app.TimeDefaultFormat))},
-				{Text: "Expiration Date", Widget: widget.NewLabel(expirationDate)},
-			},
-		},
-		widget.NewSeparator(),
-	)
-	switch o.Type {
-	case app.ContractTypeCourier:
-		var collateral string
-		if o.Collateral == 0 {
-			collateral = "(None)"
-		} else {
-			collateral = makeISKString(o.Collateral)
-		}
-		main.Add(&widget.Form{
-			Items: []*widget.FormItem{
-				{Text: "Complete In", Widget: widget.NewLabel(fmt.Sprintf("%d days", o.DaysToComplete))},
-				{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%f m3", o.Volume))},
-				{Text: "Reward", Widget: widget.NewLabel(makeISKString(o.Reward))},
-				{Text: "Collateral", Widget: widget.NewLabel(collateral)},
-				{Text: "Destination", Widget: makeLocation(o.EndLocation)},
-			},
-		})
-		main.Add(widget.NewSeparator())
-	case app.ContractTypeItemExchange, app.ContractTypeAuction:
-		items, err := a.u.CharacterService.ListCharacterContractItems(context.TODO(), o.ID)
-		if err != nil {
-			d := NewErrorDialog("Failed to fetch contract items", err, w)
-			d.SetOnClosed(w.Hide)
-			d.Show()
-		}
-		var itemsIncluded, itemsRequested []*app.CharacterContractItem
-		for _, it := range items {
-			if it.IsIncluded {
-				itemsIncluded = append(itemsIncluded, it)
-			} else {
-				itemsRequested = append(itemsRequested, it)
-			}
-		}
-		// payment
-		f := widget.NewForm()
-		if o.Price > 0 {
-			x := widget.NewLabel(makeISKString(o.Price))
-			x.Importance = widget.DangerImportance
-			f.Append("Buyer Will Pay", x)
-		} else {
-			x := widget.NewLabel(makeISKString(o.Reward))
-			x.Importance = widget.SuccessImportance
-			f.Append("Buyer Will Get", x)
-		}
-		main.Add(f)
-		main.Add(widget.NewSeparator())
-		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
-			typ := kxwidget.NewTappableLabel(it.Type.Name, func() {
-				a.u.showTypeInfoWindow(it.Type.ID, o.CharacterID, 0)
-			})
-			typ.TextStyle.Bold = true
-			return container.NewHBox(
-				typ,
-				widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
-				widget.NewLabel(fmt.Sprintf("x %s ", humanize.Comma(int64(it.Quantity)))),
-			)
-		}
-		// included items
-		if len(itemsIncluded) > 0 {
-			t := widget.NewLabel("Buyer Will Get")
-			t.Importance = widget.SuccessImportance
-			c := container.NewVBox(t)
-			for _, it := range itemsIncluded {
-				c.Add(makeItem(it))
-			}
-			main.Add(c)
-			main.Add(widget.NewSeparator())
-		}
-		// requested items
-		if len(itemsRequested) > 0 {
-			t := widget.NewLabel("Buyer Will Provide")
-			t.Importance = widget.DangerImportance
-			c := container.NewVBox(t)
-			for _, it := range itemsRequested {
-				c.Add(makeItem(it))
-			}
-			main.Add(c)
-			main.Add(widget.NewSeparator())
-		}
-	}
-	b := widget.NewButton("Close", func() {
-		w.Hide()
-	})
-	vs := container.NewVScroll(main)
-	vs.SetMinSize(fyne.NewSize(600, 400))
-	w.SetContent(container.NewPadded(container.NewBorder(
-		container.NewVBox(t, widget.NewSeparator()),
-		container.NewCenter(b),
-		nil,
-		nil,
-		vs,
-	)))
-	w.Show()
-}
-
 func (a *contractsArea) refresh() {
 	var t string
 	var i widget.Importance
@@ -322,4 +190,190 @@ func (a *contractsArea) updateEntries() error {
 		return err
 	}
 	return nil
+}
+
+func (a *contractsArea) showContract(c *app.CharacterContract) {
+	w := a.u.fyneApp.NewWindow("Contract")
+	makeLocation := func(l *app.EntityShort[int64]) *kxwidget.TappableLabel {
+		x := kxwidget.NewTappableLabel(l.Name, func() {
+			a.u.showLocationInfoWindow(l.ID)
+		})
+		x.TextStyle.Bold = true
+		return x
+	}
+	makeISKString := func(v float64) string {
+		t := humanize.Commaf(v) + " ISK"
+		if math.Abs(v) > 999 {
+			t += fmt.Sprintf(" (%s)", ihumanize.Number(v, 1))
+		}
+		return t
+	}
+	makeBaseInfo := func(c *app.CharacterContract) fyne.CanvasObject {
+		f := widget.NewForm()
+		f.Append("Info by issuer", widget.NewLabel(c.TitleDisplay()))
+		f.Append("Type", widget.NewLabel(c.TypeDisplay()))
+		f.Append("Issued By", widget.NewLabel(c.Issuer.Name))
+		f.Append("Availability", widget.NewLabel(c.AvailabilityDisplay()))
+		if c.Type == app.ContractTypeCourier {
+			f.Append("Contractor", widget.NewLabel(c.ContractorDisplay()))
+		}
+		f.Append("Status", widget.NewLabel(c.StatusDisplay()))
+		f.Append("Location", makeLocation(c.StartLocation))
+		if c.Type == app.ContractTypeCourier || c.Type == app.ContractTypeItemExchange {
+			expiredAt := c.DateExpiredEffective()
+			expirationDate := fmt.Sprintf(
+				"%s (%s)",
+				expiredAt.Format(app.TimeDefaultFormat),
+				strings.Trim(humanize.RelTime(expiredAt, time.Now(), "", ""), " "),
+			)
+			f.Append("Date Issued", widget.NewLabel(c.DateIssued.Format(app.TimeDefaultFormat)))
+			f.Append("Expiration Date", widget.NewLabel(expirationDate))
+		}
+		return f
+	}
+	makePaymentInfo := func(c *app.CharacterContract) fyne.CanvasObject {
+		f2 := widget.NewForm()
+		if c.Price > 0 {
+			x := widget.NewLabel(makeISKString(c.Price))
+			x.Importance = widget.DangerImportance
+			f2.Append("Buyer Will Pay", x)
+		} else {
+			x := widget.NewLabel(makeISKString(c.Reward))
+			x.Importance = widget.SuccessImportance
+			f2.Append("Buyer Will Get", x)
+		}
+		return f2
+	}
+	makeCourierInfo := func(c *app.CharacterContract) fyne.CanvasObject {
+		var collateral string
+		if c.Collateral == 0 {
+			collateral = "(None)"
+		} else {
+			collateral = makeISKString(c.Collateral)
+		}
+		f := &widget.Form{
+			Items: []*widget.FormItem{
+				{Text: "Complete In", Widget: widget.NewLabel(fmt.Sprintf("%d days", c.DaysToComplete))},
+				{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%f m3", c.Volume))},
+				{Text: "Reward", Widget: widget.NewLabel(makeISKString(c.Reward))},
+				{Text: "Collateral", Widget: widget.NewLabel(collateral)},
+				{Text: "Destination", Widget: makeLocation(c.EndLocation)},
+			},
+		}
+		return f
+	}
+	makeBidInfo := func(c *app.CharacterContract) fyne.CanvasObject {
+		ctx := context.TODO()
+		total, err := a.u.CharacterService.CountCharacterContractBids(ctx, c.ID)
+		if err != nil {
+			d := NewErrorDialog("Failed to count contract bids", err, w)
+			d.SetOnClosed(w.Hide)
+			d.Show()
+		}
+		var currentBid string
+		if total == 0 {
+			currentBid = "(None)"
+		} else {
+			top, err := a.u.CharacterService.GetCharacterContractTopBid(ctx, c.ID)
+			if err != nil {
+				d := NewErrorDialog("Failed to get top bid", err, w)
+				d.SetOnClosed(w.Hide)
+				d.Show()
+			}
+			currentBid = fmt.Sprintf("%s (%d bids so far)", makeISKString(float64(top.Amount)), total)
+		}
+		f := &widget.Form{
+			Items: []*widget.FormItem{
+				{Text: "Starting Bid", Widget: widget.NewLabel(makeISKString(c.Price))},
+				{Text: "Buyout Price", Widget: widget.NewLabel(makeISKString(c.Buyout))},
+				{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
+				{Text: "Expires", Widget: widget.NewLabel(c.DateExpired.Format(app.TimeDefaultFormat))},
+			},
+		}
+		return f
+	}
+	makeItemsInfo := func(c *app.CharacterContract) fyne.CanvasObject {
+		vb := container.NewVBox()
+		items, err := a.u.CharacterService.ListCharacterContractItems(context.TODO(), c.ID)
+		if err != nil {
+			d := NewErrorDialog("Failed to fetch contract items", err, w)
+			d.SetOnClosed(w.Hide)
+			d.Show()
+		}
+		var itemsIncluded, itemsRequested []*app.CharacterContractItem
+		for _, it := range items {
+			if it.IsIncluded {
+				itemsIncluded = append(itemsIncluded, it)
+			} else {
+				itemsRequested = append(itemsRequested, it)
+			}
+		}
+		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
+			typ := kxwidget.NewTappableLabel(it.Type.Name, func() {
+				a.u.showTypeInfoWindow(it.Type.ID, c.CharacterID, 0)
+			})
+			typ.TextStyle.Bold = true
+			return container.NewHBox(
+				typ,
+				widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
+				widget.NewLabel(fmt.Sprintf("x %s ", humanize.Comma(int64(it.Quantity)))),
+			)
+		}
+		// included items
+		if len(itemsIncluded) > 0 {
+			t := widget.NewLabel("Buyer Will Get")
+			t.Importance = widget.SuccessImportance
+			vb.Add(t)
+			for _, it := range itemsIncluded {
+				vb.Add(makeItem(it))
+			}
+		}
+		// requested items
+		if len(itemsRequested) > 0 {
+			t := widget.NewLabel("Buyer Will Provide")
+			t.Importance = widget.DangerImportance
+			vb.Add(t)
+			for _, it := range itemsRequested {
+				vb.Add(makeItem(it))
+			}
+		}
+		return vb
+	}
+
+	// construct window content
+	main := container.NewVBox(makeBaseInfo(c), widget.NewSeparator())
+	switch c.Type {
+	case app.ContractTypeCourier:
+		main.Add(makeCourierInfo(c))
+	case app.ContractTypeItemExchange:
+		main.Add(makePaymentInfo(c))
+		main.Add(widget.NewSeparator())
+		main.Add(makeItemsInfo(c))
+	case app.ContractTypeAuction:
+		main.Add(makeBidInfo(c))
+		main.Add(widget.NewSeparator())
+		main.Add(makeItemsInfo(c))
+	}
+	main.Add(widget.NewSeparator())
+
+	t := widget.NewLabel(fmt.Sprintf("%s (%s)", c.NameDisplay(), c.TypeDisplay()))
+	t.Importance = widget.HighImportance
+	t.TextStyle.Bold = true
+	top := container.NewVBox(t, widget.NewSeparator())
+
+	bottom := container.NewCenter(widget.NewButton("Close", func() {
+		w.Hide()
+	}))
+
+	vs := container.NewVScroll(main)
+	vs.SetMinSize(fyne.NewSize(600, 400))
+
+	w.SetContent(container.NewPadded(container.NewBorder(
+		top,
+		bottom,
+		nil,
+		nil,
+		vs,
+	)))
+	w.Show()
 }

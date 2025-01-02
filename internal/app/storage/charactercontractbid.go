@@ -7,11 +7,12 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type CreateCharacterContractBidParams struct {
 	ContractID int64
-	Amount     float64
+	Amount     float32
 	BidID      int32
 	BidderID   int32
 	DateBid    time.Time
@@ -23,7 +24,7 @@ func (st *Storage) CreateCharacterContractBid(ctx context.Context, arg CreateCha
 	}
 	arg2 := queries.CreateCharacterContractBidParams{
 		ContractID: arg.ContractID,
-		Amount:     arg.Amount,
+		Amount:     float64(arg.Amount),
 		BidID:      int64(arg.BidID),
 		BidderID:   int64(arg.BidderID),
 		DateBid:    arg.DateBid,
@@ -58,10 +59,18 @@ func (st *Storage) ListCharacterContractBids(ctx context.Context, contractID int
 	return oo, nil
 }
 
+func (st *Storage) ListCharacterContractBidIDs(ctx context.Context, contractID int64) (*set.Set[int32], error) {
+	ids, err := st.q.ListCharacterContractBidIDs(ctx, contractID)
+	if err != nil {
+		return nil, fmt.Errorf("list bid IDs for contract %d: %w", contractID, err)
+	}
+	return set.NewFromSlice(convertNumericSlice[int64, int32](ids)), err
+}
+
 func characterContractBidFromDBModel(o queries.CharacterContractBid, e queries.EveEntity) *app.CharacterContractBid {
 	o2 := &app.CharacterContractBid{
 		ContractID: o.ContractID,
-		Amount:     o.Amount,
+		Amount:     float32(o.Amount),
 		BidID:      int32(o.BidID),
 		Bidder:     eveEntityFromDBModel(e),
 		DateBid:    o.DateBid,

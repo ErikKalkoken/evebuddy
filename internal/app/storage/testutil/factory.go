@@ -261,7 +261,7 @@ func (f Factory) CreateCharacterContractBid(args ...storage.CreateCharacterContr
 		))
 	}
 	if arg.Amount == 0 {
-		arg.Amount = rand.Float64() * 100_000_000
+		arg.Amount = rand.Float32() * 100_000_000
 	}
 	if arg.BidderID == 0 {
 		x := f.CreateEveEntityCharacter()

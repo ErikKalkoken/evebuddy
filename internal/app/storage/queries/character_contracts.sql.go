@@ -303,6 +303,7 @@ FROM
     LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
 WHERE
     character_id = ?
+    AND status <> "deleted"
 `
 
 type ListCharacterContractsRow struct {

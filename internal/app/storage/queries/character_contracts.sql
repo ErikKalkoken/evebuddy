@@ -127,7 +127,8 @@ FROM
     LEFT JOIN eve_solar_systems AS end_solar_systems ON end_solar_systems.id = end_locations.eve_solar_system_id
     LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
 WHERE
-    character_id = ?;
+    character_id = ?
+    AND status <> "deleted";
 
 -- name: ListCharacterContractIDs :many
 SELECT

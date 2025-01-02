@@ -87,6 +87,38 @@ func (q *Queries) GetCharacterContractBid(ctx context.Context, arg GetCharacterC
 	return i, err
 }
 
+const listCharacterContractBidIDs = `-- name: ListCharacterContractBidIDs :many
+SELECT
+    bid_id
+FROM
+    character_contract_bids
+WHERE
+    contract_id = ?
+`
+
+func (q *Queries) ListCharacterContractBidIDs(ctx context.Context, contractID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterContractBidIDs, contractID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var bid_id int64
+		if err := rows.Scan(&bid_id); err != nil {
+			return nil, err
+		}
+		items = append(items, bid_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCharacterContractBids = `-- name: ListCharacterContractBids :many
 SELECT
     ccb.id, ccb.contract_id, ccb.amount, ccb.bid_id, ccb.bidder_id, ccb.date_bid,
