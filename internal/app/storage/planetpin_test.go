@@ -88,7 +88,7 @@ func TestPlanetPin(t *testing.T) {
 			for _, o := range oo {
 				got.Add(o.ID)
 			}
-			want := set.NewFromSlice([]int64{x1.ID, x2.ID})
+			want := set.New(x1.ID, x2.ID)
 			assert.Equal(t, want, got)
 		}
 	})

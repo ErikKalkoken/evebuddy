@@ -148,7 +148,7 @@ func TestUpdateMail(t *testing.T) {
 						for _, l := range lists {
 							got.Add(l.ID)
 						}
-						want := set.NewFromSlice([]int32{m2.ID})
+						want := set.New(m2.ID)
 						assert.Equal(t, want, got)
 					}
 				}
@@ -260,7 +260,7 @@ func TestUpdateMail(t *testing.T) {
 				for _, l := range labels {
 					got.Add(l.LabelID)
 				}
-				want := set.NewFromSlice([]int32{16, 32})
+				want := set.New[int32](16, 32)
 				assert.Equal(t, want, got)
 			}
 		}

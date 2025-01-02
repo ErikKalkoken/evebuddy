@@ -111,7 +111,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 			if err != nil {
 				return err
 			}
-			currentIDs := set.NewFromSlice(x)
+			currentIDs := set.New(x...)
 			for _, a := range assets {
 				if currentIDs.Contains(a.ItemId) {
 					arg := storage.UpdateCharacterAssetParams{

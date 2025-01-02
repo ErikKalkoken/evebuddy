@@ -108,7 +108,7 @@ func TestWalletJournalEntry(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			got := set.NewFromSlice(ids)
-			want := set.NewFromSlice([]int64{e1.RefID, e2.RefID, e3.RefID})
+			want := set.New(e1.RefID, e2.RefID, e3.RefID)
 			assert.Equal(t, want, got)
 		}
 	})

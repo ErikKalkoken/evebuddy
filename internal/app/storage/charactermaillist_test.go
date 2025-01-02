@@ -80,7 +80,7 @@ func TestMailList(t *testing.T) {
 				for _, l := range lists {
 					got.Add(l.ID)
 				}
-				want := set.NewFromSlice([]int32{e3.ID})
+				want := set.New(e3.ID)
 				assert.Equal(t, want, got)
 			}
 		}

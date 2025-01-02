@@ -11,17 +11,17 @@ import (
 type Set[T comparable] map[T]struct{}
 
 // New returns a new Set.
-func New[T comparable]() Set[T] {
-	return Set[T]{}
-}
-
-// NewFromSlice returns a new set from a slice.
-func NewFromSlice[T comparable](slice []T) Set[T] {
-	s := New[T]()
-	for _, el := range slice {
-		s[el] = struct{}{}
+func New[T comparable](vals ...T) Set[T] {
+	s := Set[T]{}
+	for _, v := range vals {
+		s[v] = struct{}{}
 	}
 	return s
+}
+
+// NewFromSlice returns a new set from the elements of a slice.
+func NewFromSlice[T comparable](slice []T) Set[T] {
+	return New[T](slice...)
 }
 
 // Add adds an element to the set
@@ -44,13 +44,13 @@ func (s Set[T]) Clear() {
 
 // Clone returns a clone of a set.
 func (s Set[T]) Clone() Set[T] {
-	return NewFromSlice(s.ToSlice())
+	return New(s.ToSlice()...)
 }
 
 // Difference returns a new set which elements from current set,
 // that does not exist in other set.
 func (s Set[T]) Difference(other Set[T]) Set[T] {
-	n := NewFromSlice([]T{})
+	n := New[T]()
 	for v := range s {
 		if !other.Contains(v) {
 			n.Add(v)

@@ -68,7 +68,7 @@ func TestCharacterImplant(t *testing.T) {
 			for _, o := range oo {
 				got.Add(o.EveType.ID)
 			}
-			want := set.NewFromSlice([]int32{x1.EveType.ID, x2.EveType.ID})
+			want := set.New(x1.EveType.ID, x2.EveType.ID)
 			assert.Equal(t, want, got)
 		}
 	})

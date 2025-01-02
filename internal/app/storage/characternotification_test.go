@@ -94,7 +94,7 @@ func TestCharacterNotification(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			got := set.NewFromSlice(ids)
-			want := set.NewFromSlice([]int64{e1.NotificationID, e2.NotificationID, e3.NotificationID})
+			want := set.New(e1.NotificationID, e2.NotificationID, e3.NotificationID)
 			assert.Equal(t, want, got)
 		}
 	})
