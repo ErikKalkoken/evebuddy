@@ -145,10 +145,11 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 	w := a.u.fyneApp.NewWindow("Contract")
 	t := widget.NewLabel(o.NameDisplay())
 	t.Importance = widget.HighImportance
+	expiredAt := o.DateExpiredEffective()
 	expirationDate := fmt.Sprintf(
 		"%s (%s)",
-		o.DateExpired.Format(app.TimeDefaultFormat),
-		strings.Trim(humanize.RelTime(o.DateExpired, time.Now(), "", ""), " "),
+		expiredAt.Format(app.TimeDefaultFormat),
+		strings.Trim(humanize.RelTime(expiredAt, time.Now(), "", ""), " "),
 	)
 	main := container.NewVBox(
 		&widget.Form{
@@ -162,7 +163,9 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 				{Text: "Date Issued", Widget: widget.NewLabel(o.DateIssued.Format(app.TimeDefaultFormat))},
 				{Text: "Expiration Date", Widget: widget.NewLabel(expirationDate)},
 			},
-		})
+		},
+		widget.NewSeparator(),
+	)
 	switch o.Type {
 	case app.ContractTypeCourier:
 		var collateral string
@@ -171,7 +174,6 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 		} else {
 			collateral = fmt.Sprintf("%s ISK", humanize.Commaf(o.Collateral))
 		}
-		main.Add(widget.NewSeparator())
 		main.Add(&widget.Form{
 			Items: []*widget.FormItem{
 				{Text: "Complete In", Widget: widget.NewLabel(fmt.Sprintf("%d days", o.DaysToComplete))},
@@ -181,6 +183,7 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 				{Text: "Destination", Widget: widget.NewLabel(o.EndLocation.Name)},
 			},
 		})
+		main.Add(widget.NewSeparator())
 	}
 	b := widget.NewButton("Close", func() {
 		w.Hide()
@@ -192,6 +195,7 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 		nil,
 		main,
 	))
+	w.Resize(fyne.NewSize(600, 400))
 	w.Show()
 }
 
