@@ -135,7 +135,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 
 	u.contractsArea = u.newContractsArea()
 	contractTab := container.NewTabItemWithIcon("Contracts",
-		theme.NewThemedResource(resourceEditnoteSvg), container.NewAppTabs(
+		theme.NewThemedResource(resourceFileSignSvg), container.NewAppTabs(
 			container.NewTabItem("Contracts", u.contractsArea.content),
 		))
 
