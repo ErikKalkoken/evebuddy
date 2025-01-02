@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -92,7 +93,20 @@ func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contra
 	o := r.CharacterContract
 	acceptor := nullEveEntry{ID: o.AcceptorID, Name: r.AcceptorName, Category: r.AcceptorCategory}
 	assignee := nullEveEntry{ID: o.AssigneeID, Name: r.AssigneeName, Category: r.AssigneeCategory}
-	return characterContractFromDBModel(o, r.EveEntity, r.EveEntity_2, acceptor, assignee), err
+	o2 := characterContractFromDBModel(
+		o,
+		r.EveEntity,
+		r.EveEntity_2,
+		acceptor,
+		assignee,
+		r.EndLocationName,
+		r.StartLocationName,
+		r.EndSolarSystemID,
+		r.EndSolarSystemName,
+		r.StartSolarSystemID,
+		r.StartSolarSystemName,
+	)
+	return o2, err
 }
 
 func (st *Storage) ListCharacterContractIDs(ctx context.Context, characterID int32) ([]int32, error) {
@@ -113,7 +127,19 @@ func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int32
 		o := r.CharacterContract
 		acceptor := nullEveEntry{ID: o.AcceptorID, Name: r.AcceptorName, Category: r.AcceptorCategory}
 		assignee := nullEveEntry{ID: o.AssigneeID, Name: r.AssigneeName, Category: r.AssigneeCategory}
-		oo[i] = characterContractFromDBModel(o, r.EveEntity, r.EveEntity_2, acceptor, assignee)
+		oo[i] = characterContractFromDBModel(
+			o,
+			r.EveEntity,
+			r.EveEntity_2,
+			acceptor,
+			assignee,
+			r.EndLocationName,
+			r.StartLocationName,
+			r.EndSolarSystemID,
+			r.EndSolarSystemName,
+			r.StartSolarSystemID,
+			r.StartSolarSystemName,
+		)
 	}
 	return oo, nil
 }
@@ -203,6 +229,12 @@ func characterContractFromDBModel(
 	issuer queries.EveEntity,
 	acceptor nullEveEntry,
 	assignee nullEveEntry,
+	endLocationName sql.NullString,
+	startLocationName sql.NullString,
+	endSolarSystemID sql.NullInt64,
+	endSolarSystemName sql.NullString,
+	startSolarSystemID sql.NullInt64,
+	startSolarSystemName sql.NullString,
 ) *app.CharacterContract {
 	availability, ok := contractAvailableToEnum[o.Availability]
 	if !ok {
@@ -230,17 +262,39 @@ func characterContractFromDBModel(
 		DateExpired:       o.DateExpired,
 		DateIssued:        o.DateIssued,
 		DaysToComplete:    int32(o.DaysToComplete),
-		EndLocationID:     optional.FromNullInt64(o.EndLocationID),
 		ForCorporation:    o.ForCorporation,
 		IssuerCorporation: eveEntityFromDBModel(issuerCorporation),
 		Issuer:            eveEntityFromDBModel(issuer),
 		Price:             o.Price,
 		Reward:            o.Reward,
-		StartLocationID:   optional.FromNullInt64(o.StartLocationID),
 		Status:            status,
 		Title:             o.Title,
 		Type:              typ,
 		Volume:            o.Volume,
+	}
+	if o.EndLocationID.Valid && endLocationName.Valid {
+		o2.EndLocation = &app.EntityShort[int64]{
+			ID:   o.EndLocationID.Int64,
+			Name: endLocationName.String,
+		}
+	}
+	if o.StartLocationID.Valid && startLocationName.Valid {
+		o2.StartLocation = &app.EntityShort[int64]{
+			ID:   o.StartLocationID.Int64,
+			Name: startLocationName.String,
+		}
+	}
+	if endSolarSystemID.Valid && endSolarSystemName.Valid {
+		o2.EndSolarSystem = &app.EntityShort[int32]{
+			ID:   int32(endSolarSystemID.Int64),
+			Name: endSolarSystemName.String,
+		}
+	}
+	if startSolarSystemID.Valid && startSolarSystemName.Valid {
+		o2.StartSolarSystem = &app.EntityShort[int32]{
+			ID:   int32(startSolarSystemID.Int64),
+			Name: startSolarSystemName.String,
+		}
 	}
 	return o2
 }

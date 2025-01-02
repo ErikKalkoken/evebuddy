@@ -12,16 +12,19 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type contractEntry struct {
-	from    string
-	info    string
-	issued  time.Time
-	name    string
-	expired time.Time
-	to      string
-	type_   string
+	from     string
+	info     string
+	issued   time.Time
+	accepted optional.Optional[time.Time]
+	name     string
+	expired  time.Time
+	status   string
+	to       string
+	type_    string
 }
 
 // func (e contractEntry) refTypeOutput() string {
@@ -59,13 +62,14 @@ func (a *contractsArea) makeTable() *widget.Table {
 		text  string
 		width float32
 	}{
-		{"Contract", 150},
-		{"Type", 150},
-		{"From", 200},
-		{"To", 200},
+		{"Contract", 200},
+		{"Type", 120},
+		{"Status", 100},
+		{"From", 150},
+		{"To", 150},
 		{"Date Issued", 150},
+		{"Date Accepted", 150},
 		{"Time Left", 150},
-		{"Info by Issuer", 200},
 	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
@@ -89,20 +93,26 @@ func (a *contractsArea) makeTable() *widget.Table {
 			case 1:
 				l.Text = w.type_
 			case 2:
-				l.Text = w.from
+				l.Text = w.status
 			case 3:
-				l.Text = w.to
+				l.Text = w.from
 			case 4:
-				l.Text = w.issued.Format(app.TimeDefaultFormat)
+				l.Text = w.to
 			case 5:
-				if w.expired.After(time.Now()) {
+				l.Text = w.issued.Format(app.TimeDefaultFormat)
+			case 6:
+				if w.accepted.IsEmpty() {
+					l.Text = ""
+				} else {
+					l.Text = w.accepted.MustValue().Format(app.TimeDefaultFormat)
+				}
+			case 7:
+				if w.expired.Before(time.Now()) {
 					l.Text = "EXPIRED"
+					l.Importance = widget.DangerImportance
 				} else {
 					l.Text = humanize.Time(w.expired)
 				}
-				l.Importance = widget.DangerImportance
-			case 6:
-				l.Text = w.info
 			}
 			l.Refresh()
 		},
@@ -171,15 +181,17 @@ func (a *contractsArea) updateEntries() error {
 	entries := make([]contractEntry, len(oo))
 	for i, o := range oo {
 		var e contractEntry
-		e.name = "[Multiple Items]"
+		e.name = o.NameDisplay()
 		e.type_ = o.TypeDisplay()
 		e.from = o.Issuer.Name
 		if o.Assignee != nil {
 			e.to = o.Assignee.Name
 		}
 		e.issued = o.DateIssued
-		e.expired = o.DateExpired
+		e.accepted = o.DateAccepted
+		e.expired = o.DateExpiredEffective()
 		e.info = o.Title
+		e.status = o.StatusDisplay()
 		entries[i] = e
 	}
 	a.entries = entries

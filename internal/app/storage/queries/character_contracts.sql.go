@@ -131,13 +131,23 @@ SELECT
     acceptor.name as acceptor_name,
     acceptor.category as acceptor_category,
     assignee.name as assignee_name,
-    assignee.category as assignee_category
+    assignee.category as assignee_category,
+    end_locations.name as end_location_name,
+    start_locations.name as start_location_name,
+    end_solar_systems.id as end_solar_system_id,
+    end_solar_systems.name as end_solar_system_name,
+    start_solar_systems.id as start_solar_system_id,
+    start_solar_systems.name as start_solar_system_name
 FROM
     character_contracts cc
     JOIN eve_entities AS issuer_corporation ON issuer_corporation.id = cc.issuer_corporation_id
     JOIN eve_entities AS issuer ON issuer.id = cc.issuer_id
     LEFT JOIN eve_entities AS acceptor ON acceptor.id = cc.acceptor_id
     LEFT JOIN eve_entities AS assignee ON assignee.id = cc.assignee_id
+    LEFT JOIN eve_locations AS end_locations ON end_locations.id = cc.end_location_id
+    LEFT JOIN eve_locations AS start_locations ON start_locations.id = cc.start_location_id
+    LEFT JOIN eve_solar_systems AS end_solar_systems ON end_solar_systems.id = end_locations.eve_solar_system_id
+    LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
 WHERE
     character_id = ?
     AND cc.contract_id = ?
@@ -149,13 +159,19 @@ type GetCharacterContractParams struct {
 }
 
 type GetCharacterContractRow struct {
-	CharacterContract CharacterContract
-	EveEntity         EveEntity
-	EveEntity_2       EveEntity
-	AcceptorName      sql.NullString
-	AcceptorCategory  sql.NullString
-	AssigneeName      sql.NullString
-	AssigneeCategory  sql.NullString
+	CharacterContract    CharacterContract
+	EveEntity            EveEntity
+	EveEntity_2          EveEntity
+	AcceptorName         sql.NullString
+	AcceptorCategory     sql.NullString
+	AssigneeName         sql.NullString
+	AssigneeCategory     sql.NullString
+	EndLocationName      sql.NullString
+	StartLocationName    sql.NullString
+	EndSolarSystemID     sql.NullInt64
+	EndSolarSystemName   sql.NullString
+	StartSolarSystemID   sql.NullInt64
+	StartSolarSystemName sql.NullString
 }
 
 func (q *Queries) GetCharacterContract(ctx context.Context, arg GetCharacterContractParams) (GetCharacterContractRow, error) {
@@ -196,6 +212,12 @@ func (q *Queries) GetCharacterContract(ctx context.Context, arg GetCharacterCont
 		&i.AcceptorCategory,
 		&i.AssigneeName,
 		&i.AssigneeCategory,
+		&i.EndLocationName,
+		&i.StartLocationName,
+		&i.EndSolarSystemID,
+		&i.EndSolarSystemName,
+		&i.StartSolarSystemID,
+		&i.StartSolarSystemName,
 	)
 	return i, err
 }
@@ -240,25 +262,41 @@ SELECT
     acceptor.name as acceptor_name,
     acceptor.category as acceptor_category,
     assignee.name as assignee_name,
-    assignee.category as assignee_category
+    assignee.category as assignee_category,
+    end_locations.name as end_location_name,
+    start_locations.name as start_location_name,
+    end_solar_systems.id as end_solar_system_id,
+    end_solar_systems.name as end_solar_system_name,
+    start_solar_systems.id as start_solar_system_id,
+    start_solar_systems.name as start_solar_system_name
 FROM
     character_contracts cc
     JOIN eve_entities AS issuer_corporation ON issuer_corporation.id = cc.issuer_corporation_id
     JOIN eve_entities AS issuer ON issuer.id = cc.issuer_id
     LEFT JOIN eve_entities AS acceptor ON acceptor.id = cc.acceptor_id
     LEFT JOIN eve_entities AS assignee ON assignee.id = cc.assignee_id
+    LEFT JOIN eve_locations AS end_locations ON end_locations.id = cc.end_location_id
+    LEFT JOIN eve_locations AS start_locations ON start_locations.id = cc.start_location_id
+    LEFT JOIN eve_solar_systems AS end_solar_systems ON end_solar_systems.id = end_locations.eve_solar_system_id
+    LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
 WHERE
     character_id = ?
 `
 
 type ListCharacterContractsRow struct {
-	CharacterContract CharacterContract
-	EveEntity         EveEntity
-	EveEntity_2       EveEntity
-	AcceptorName      sql.NullString
-	AcceptorCategory  sql.NullString
-	AssigneeName      sql.NullString
-	AssigneeCategory  sql.NullString
+	CharacterContract    CharacterContract
+	EveEntity            EveEntity
+	EveEntity_2          EveEntity
+	AcceptorName         sql.NullString
+	AcceptorCategory     sql.NullString
+	AssigneeName         sql.NullString
+	AssigneeCategory     sql.NullString
+	EndLocationName      sql.NullString
+	StartLocationName    sql.NullString
+	EndSolarSystemID     sql.NullInt64
+	EndSolarSystemName   sql.NullString
+	StartSolarSystemID   sql.NullInt64
+	StartSolarSystemName sql.NullString
 }
 
 func (q *Queries) ListCharacterContracts(ctx context.Context, characterID int64) ([]ListCharacterContractsRow, error) {
@@ -305,6 +343,12 @@ func (q *Queries) ListCharacterContracts(ctx context.Context, characterID int64)
 			&i.AcceptorCategory,
 			&i.AssigneeName,
 			&i.AssigneeCategory,
+			&i.EndLocationName,
+			&i.StartLocationName,
+			&i.EndSolarSystemID,
+			&i.EndSolarSystemName,
+			&i.StartSolarSystemID,
+			&i.StartSolarSystemName,
 		); err != nil {
 			return nil, err
 		}

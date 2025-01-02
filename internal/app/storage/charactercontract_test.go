@@ -51,6 +51,52 @@ func TestCharacterContract(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can create new full", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		issuer := factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
+		issuerCorporation := c.EveCharacter.Corporation
+		dateExpired := time.Now().Add(12 * time.Hour).UTC()
+		dateIssued := time.Now().UTC()
+		startLocation := factory.CreateLocationStructure()
+		endLocation := factory.CreateLocationStructure()
+		arg := storage.CreateCharacterContractParams{
+			Availability:        "personal",
+			CharacterID:         c.ID,
+			ContractID:          42,
+			DateExpired:         dateExpired,
+			DateIssued:          dateIssued,
+			IssuerCorporationID: issuerCorporation.ID,
+			IssuerID:            issuer.ID,
+			Status:              "outstanding",
+			Type:                "courier",
+			EndLocationID:       endLocation.ID,
+			StartLocationID:     startLocation.ID,
+		}
+		// when
+		id, err := r.CreateCharacterContract(ctx, arg)
+		// then
+		if assert.NoError(t, err) {
+			o, err := r.GetCharacterContract(ctx, c.ID, 42)
+			if assert.NoError(t, err) {
+				assert.Equal(t, id, o.ID)
+				assert.Equal(t, issuer, o.Issuer)
+				assert.Equal(t, dateExpired, o.DateExpired)
+				assert.Equal(t, app.ContractAvailabilityPersonal, o.Availability)
+				assert.Equal(t, app.ContractStatusOutstanding, o.Status)
+				assert.Equal(t, app.ContractTypeCourier, o.Type)
+				assert.Equal(t, endLocation.ID, o.EndLocation.ID)
+				assert.Equal(t, endLocation.Name, o.EndLocation.Name)
+				assert.Equal(t, startLocation.ID, o.StartLocation.ID)
+				assert.Equal(t, startLocation.Name, o.StartLocation.Name)
+				assert.Equal(t, endLocation.SolarSystem.ID, o.EndSolarSystem.ID)
+				assert.Equal(t, endLocation.SolarSystem.Name, o.EndSolarSystem.Name)
+				assert.Equal(t, startLocation.SolarSystem.ID, o.StartSolarSystem.ID)
+				assert.Equal(t, startLocation.SolarSystem.Name, o.StartSolarSystem.Name)
+			}
+		}
+	})
 	t.Run("can update contract", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

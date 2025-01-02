@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -34,6 +35,27 @@ const (
 	ContractStatusReversed
 )
 
+var ccs2String = map[CharacterContractStatus]string{
+	ContractStatusCancelled:          "cancelled",
+	ContractStatusDeleted:            "deleted",
+	ContractStatusFailed:             "failed",
+	ContractStatusFinished:           "finished",
+	ContractStatusFinishedContractor: "finished contractor",
+	ContractStatusFinishedIssuer:     "finished issuer",
+	ContractStatusInProgress:         "in progress",
+	ContractStatusOutstanding:        "outstanding",
+	ContractStatusRejected:           "rejected",
+	ContractStatusReversed:           "reversed",
+}
+
+func (ccs CharacterContractStatus) String() string {
+	s, ok := ccs2String[ccs]
+	if !ok {
+		return "unknown"
+	}
+	return s
+}
+
 type CharacterContractType uint
 
 const (
@@ -59,6 +81,8 @@ func (cct CharacterContractType) String() string {
 	return s
 }
 
+var languageCaser = cases.Title(language.English)
+
 type CharacterContract struct {
 	ID                int64
 	Acceptor          *EveEntity
@@ -73,20 +97,39 @@ type CharacterContract struct {
 	DateExpired       time.Time
 	DateIssued        time.Time
 	DaysToComplete    int32
-	EndLocationID     optional.Optional[int64]
+	EndLocation       *EntityShort[int64]
+	EndSolarSystem    *EntityShort[int32]
 	ForCorporation    bool
 	IssuerCorporation *EveEntity
 	Issuer            *EveEntity
 	Price             float64
 	Reward            float64
-	StartLocationID   optional.Optional[int64]
+	StartLocation     *EntityShort[int64]
+	StartSolarSystem  *EntityShort[int32]
 	Status            CharacterContractStatus
 	Title             string
 	Type              CharacterContractType
 	Volume            float64
 }
 
+func (cc CharacterContract) NameDisplay() string {
+	if cc.Type == ContractTypeCourier {
+		return fmt.Sprintf("%s >> %s (%.0f m3)", cc.StartSolarSystem.Name, cc.EndSolarSystem.Name, cc.Volume)
+	}
+	return "[Multiple Items]"
+}
+
+func (cc CharacterContract) StatusDisplay() string {
+	return languageCaser.String(cc.Status.String())
+}
+
 func (cc CharacterContract) TypeDisplay() string {
-	c := cases.Title(language.English)
-	return c.String(cc.Type.String())
+	return languageCaser.String(cc.Type.String())
+}
+
+func (cc CharacterContract) DateExpiredEffective() time.Time {
+	if cc.DateAccepted.IsEmpty() {
+		return cc.DateExpired
+	}
+	return cc.DateAccepted.ValueOrZero().Add(time.Duration(cc.DaysToComplete) * time.Hour * 24)
 }
