@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -65,9 +66,9 @@ func (a *contractsArea) makeTable() *widget.Table {
 	}{
 		{"Contract", 200},
 		{"Type", 120},
-		{"Status", 100},
 		{"From", 150},
 		{"To", 150},
+		{"Status", 100},
 		{"Date Issued", 150},
 		{"Date Accepted", 150},
 		{"Time Left", 150},
@@ -94,11 +95,11 @@ func (a *contractsArea) makeTable() *widget.Table {
 			case 1:
 				l.Text = o.TypeDisplay()
 			case 2:
-				l.Text = o.StatusDisplay()
-			case 3:
 				l.Text = o.Issuer.Name
-			case 4:
+			case 3:
 				l.Text = o.Assignee.Name
+			case 4:
+				l.Text = o.StatusDisplay()
 			case 5:
 				l.Text = o.DateIssued.Format(app.TimeDefaultFormat)
 			case 6:
@@ -184,6 +185,62 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 			},
 		})
 		main.Add(widget.NewSeparator())
+	case app.ContractTypeItemExchange, app.ContractTypeAuction:
+		items, err := a.u.CharacterService.ListCharacterContractItems(context.TODO(), o.ID)
+		if err != nil {
+			d := NewErrorDialog("Failed to fetch contract items", err, w)
+			d.SetOnClosed(w.Hide)
+			d.Show()
+		}
+		var itemsIncluded, itemsRequested []*app.CharacterContractItem
+		for _, it := range items {
+			if it.IsIncluded {
+				itemsIncluded = append(itemsIncluded, it)
+			} else {
+				itemsRequested = append(itemsRequested, it)
+			}
+		}
+		// payment
+		f := widget.NewForm()
+		if o.Price > 0 {
+			x := widget.NewLabel(humanize.Commaf(o.Price) + " ISK")
+			x.Importance = widget.DangerImportance
+			f.Append("Buyer Will Pay", x)
+		} else {
+			x := widget.NewLabel(humanize.Commaf(o.Reward) + " ISK")
+			x.Importance = widget.SuccessImportance
+			f.Append("Buyer Will Get", x)
+		}
+		main.Add(f)
+		main.Add(widget.NewSeparator())
+		makeItemLabel := func(it *app.CharacterContractItem) *kxwidget.TappableLabel {
+			t := fmt.Sprintf("%s (%s) x %d ", it.Type.Name, it.Type.Group.Name, it.Quantity)
+			return kxwidget.NewTappableLabel(t, func() {
+				a.u.showTypeInfoWindow(it.Type.ID, o.CharacterID, 0)
+			})
+		}
+		// included items
+		if len(itemsIncluded) > 0 {
+			t := widget.NewLabel("Buyer Will Get")
+			t.Importance = widget.SuccessImportance
+			c := container.NewVBox(t)
+			for _, it := range itemsIncluded {
+				c.Add(makeItemLabel(it))
+			}
+			main.Add(c)
+			main.Add(widget.NewSeparator())
+		}
+		// requested items
+		if len(itemsRequested) > 0 {
+			t := widget.NewLabel("Buyer Will Provide")
+			t.Importance = widget.DangerImportance
+			c := container.NewVBox(t)
+			for _, it := range itemsRequested {
+				c.Add(makeItemLabel(it))
+			}
+			main.Add(c)
+			main.Add(widget.NewSeparator())
+		}
 	}
 	b := widget.NewButton("Close", func() {
 		w.Hide()

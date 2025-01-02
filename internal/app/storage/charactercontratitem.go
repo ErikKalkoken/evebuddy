@@ -12,8 +12,8 @@ type CreateCharacterContractItemParams struct {
 	ContractID  int64
 	IsIncluded  bool
 	IsSingleton bool
-	Quantity    int
-	RawQuantity int
+	Quantity    int32
+	RawQuantity int32
 	RecordID    int64
 	TypeID      int32
 }

@@ -261,7 +261,7 @@ func (f Factory) CreateCharacterContractItem(args ...storage.CreateCharacterCont
 		)
 	}
 	if arg.Quantity == 0 {
-		arg.Quantity = rand.IntN(10_000)
+		arg.Quantity = int32(rand.IntN(10_000))
 	}
 	if arg.TypeID == 0 {
 		x := f.CreateEveType()

@@ -9,8 +9,6 @@ import (
 	"golang.org/x/text/language"
 )
 
-var languageCaser = cases.Title(language.English)
-
 type CharacterContractAvailability uint
 
 const (
@@ -128,7 +126,8 @@ type CharacterContract struct {
 }
 
 func (cc CharacterContract) AvailabilityDisplay() string {
-	return languageCaser.String(cc.Availability.String())
+	caser := cases.Title(language.English)
+	return caser.String(cc.Availability.String())
 }
 
 func (cc CharacterContract) NameDisplay() string {
@@ -139,7 +138,8 @@ func (cc CharacterContract) NameDisplay() string {
 }
 
 func (cc CharacterContract) StatusDisplay() string {
-	return languageCaser.String(cc.Status.String())
+	caser := cases.Title(language.English)
+	return caser.String(cc.Status.String())
 }
 
 func (cc CharacterContract) TitleDisplay() string {
@@ -150,7 +150,8 @@ func (cc CharacterContract) TitleDisplay() string {
 }
 
 func (cc CharacterContract) TypeDisplay() string {
-	return languageCaser.String(cc.Type.String())
+	caser := cases.Title(language.English)
+	return caser.String(cc.Type.String())
 }
 
 func (cc CharacterContract) DateExpiredEffective() time.Time {

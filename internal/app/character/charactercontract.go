@@ -16,6 +16,10 @@ func (s *CharacterService) ListCharacterContracts(ctx context.Context, character
 	return s.st.ListCharacterContracts(ctx, characterID)
 }
 
+func (s *CharacterService) ListCharacterContractItems(ctx context.Context, contractID int64) ([]*app.CharacterContractItem, error) {
+	return s.st.ListCharacterContractItems(ctx, contractID)
+}
+
 // updateCharacterContractsESI updates the wallet journal from ESI and reports wether it has changed.
 func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionContracts {
@@ -73,47 +77,10 @@ func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg 
 			// create new entries
 			if len(newObjs) > 0 {
 				for _, o := range newObjs {
-					if o.StartLocationId != 0 {
-						_, err = s.EveUniverseService.GetOrCreateEveLocationESI(ctx, o.StartLocationId)
-						if err != nil {
-							slog.Error("get or create contract start location", "record", o, "error", err)
-							continue
-						}
-					}
-					if o.EndLocationId != 0 {
-						_, err = s.EveUniverseService.GetOrCreateEveLocationESI(ctx, o.EndLocationId)
-						if err != nil {
-							slog.Error("get or create contract end location", "record", o, "error", err)
-							continue
-						}
-					}
-					arg := storage.CreateCharacterContractParams{
-						AcceptorID:          o.AcceptorId,
-						AssigneeID:          o.AssigneeId,
-						Availability:        o.Availability,
-						Buyout:              o.Buyout,
-						CharacterID:         characterID,
-						Collateral:          o.Collateral,
-						ContractID:          o.ContractId,
-						DateAccepted:        o.DateAccepted,
-						DateCompleted:       o.DateCompleted,
-						DateExpired:         o.DateExpired,
-						DateIssued:          o.DateIssued,
-						DaysToComplete:      o.DaysToComplete,
-						EndLocationID:       o.EndLocationId,
-						ForCorporation:      o.ForCorporation,
-						IssuerCorporationID: o.IssuerCorporationId,
-						IssuerID:            o.IssuerId,
-						Price:               o.Price,
-						Reward:              o.Reward,
-						StartLocationID:     o.StartLocationId,
-						Status:              o.Status,
-						Title:               o.Title,
-						Type:                o.Type_,
-						Volume:              o.Volume,
-					}
-					if _, err := s.st.CreateCharacterContract(ctx, arg); err != nil {
-						return err
+					err := s.createNewContract(ctx, characterID, o)
+					if err != nil {
+						slog.Error("create contract", "contract", o, "error", err)
+						continue
 					}
 				}
 				slog.Info("Stored new contracts", "characterID", characterID, "count", len(newObjs))
@@ -137,4 +104,71 @@ func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg 
 			}
 			return nil
 		})
+}
+
+func (s *CharacterService) createNewContract(ctx context.Context, characterID int32, o esi.GetCharactersCharacterIdContracts200Ok) error {
+	if o.StartLocationId != 0 {
+		_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, o.StartLocationId)
+		if err != nil {
+			return err
+		}
+	}
+	if o.EndLocationId != 0 {
+		_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, o.EndLocationId)
+		if err != nil {
+			return err
+		}
+	}
+	arg := storage.CreateCharacterContractParams{
+		AcceptorID:          o.AcceptorId,
+		AssigneeID:          o.AssigneeId,
+		Availability:        o.Availability,
+		Buyout:              o.Buyout,
+		CharacterID:         characterID,
+		Collateral:          o.Collateral,
+		ContractID:          o.ContractId,
+		DateAccepted:        o.DateAccepted,
+		DateCompleted:       o.DateCompleted,
+		DateExpired:         o.DateExpired,
+		DateIssued:          o.DateIssued,
+		DaysToComplete:      o.DaysToComplete,
+		EndLocationID:       o.EndLocationId,
+		ForCorporation:      o.ForCorporation,
+		IssuerCorporationID: o.IssuerCorporationId,
+		IssuerID:            o.IssuerId,
+		Price:               o.Price,
+		Reward:              o.Reward,
+		StartLocationID:     o.StartLocationId,
+		Status:              o.Status,
+		Title:               o.Title,
+		Type:                o.Type_,
+		Volume:              o.Volume,
+	}
+	id, err := s.st.CreateCharacterContract(ctx, arg)
+	if err != nil {
+		return err
+	}
+	items, _, err := s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContractsContractIdItems(ctx, characterID, o.ContractId, nil)
+	if err != nil {
+		return err
+	}
+	for _, it := range items {
+		et, err := s.EveUniverseService.GetOrCreateEveTypeESI(ctx, it.TypeId)
+		if err != nil {
+			return err
+		}
+		arg := storage.CreateCharacterContractItemParams{
+			ContractID:  id,
+			IsIncluded:  it.IsIncluded,
+			IsSingleton: it.IsSingleton,
+			Quantity:    it.Quantity,
+			RawQuantity: it.RawQuantity,
+			RecordID:    it.RecordId,
+			TypeID:      et.ID,
+		}
+		if err := s.st.CreateCharacterContractItem(ctx, arg); err != nil {
+			return err
+		}
+	}
+	return nil
 }
