@@ -148,10 +148,10 @@ func (st *Storage) ListEveEntitiesByName(ctx context.Context, name string) ([]*a
 
 // MissingEveEntityIDs returns the IDs, which are have no respective EveEntity in the database.
 // IDs with value 0 are ignored.
-func (st *Storage) MissingEveEntityIDs(ctx context.Context, ids []int32) (*set.Set[int32], error) {
+func (st *Storage) MissingEveEntityIDs(ctx context.Context, ids []int32) (set.Set[int32], error) {
 	currentIDs, err := st.ListEveEntityIDs(ctx)
 	if err != nil {
-		return nil, err
+		return set.New[int32](), err
 	}
 	current := set.NewFromSlice(currentIDs)
 	incoming := set.NewFromSlice(ids)

@@ -24,6 +24,18 @@ func TestSetAdd(t *testing.T) {
 	})
 }
 
+func TestSetClose(t *testing.T) {
+	t.Parallel()
+	t.Run("can clone a set", func(t *testing.T) {
+		a := set.NewFromSlice([]int{1, 2})
+		b := a.Clone()
+		assert.True(t, b.Equal(a))
+		a.Add(3)
+		b.Add(4)
+		assert.False(t, b.Equal(a))
+	})
+}
+
 func TestSetRemove(t *testing.T) {
 	t.Parallel()
 	t.Run("can remove item when it exists", func(t *testing.T) {
