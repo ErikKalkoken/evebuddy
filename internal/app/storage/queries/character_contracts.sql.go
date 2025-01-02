@@ -137,7 +137,17 @@ SELECT
     end_solar_systems.id as end_solar_system_id,
     end_solar_systems.name as end_solar_system_name,
     start_solar_systems.id as start_solar_system_id,
-    start_solar_systems.name as start_solar_system_name
+    start_solar_systems.name as start_solar_system_name,
+    (
+        SELECT
+            IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
+        FROM
+            character_contract_items cci
+            LEFT JOIN eve_types et ON et.id = cci.type_id
+        WHERE
+            cci.contract_id = cc.id
+            AND cci.is_included IS TRUE
+    ) as items
 FROM
     character_contracts cc
     JOIN eve_entities AS issuer_corporation ON issuer_corporation.id = cc.issuer_corporation_id
@@ -172,6 +182,7 @@ type GetCharacterContractRow struct {
 	EndSolarSystemName   sql.NullString
 	StartSolarSystemID   sql.NullInt64
 	StartSolarSystemName sql.NullString
+	Items                interface{}
 }
 
 func (q *Queries) GetCharacterContract(ctx context.Context, arg GetCharacterContractParams) (GetCharacterContractRow, error) {
@@ -218,6 +229,7 @@ func (q *Queries) GetCharacterContract(ctx context.Context, arg GetCharacterCont
 		&i.EndSolarSystemName,
 		&i.StartSolarSystemID,
 		&i.StartSolarSystemName,
+		&i.Items,
 	)
 	return i, err
 }
@@ -268,7 +280,17 @@ SELECT
     end_solar_systems.id as end_solar_system_id,
     end_solar_systems.name as end_solar_system_name,
     start_solar_systems.id as start_solar_system_id,
-    start_solar_systems.name as start_solar_system_name
+    start_solar_systems.name as start_solar_system_name,
+    (
+        SELECT
+            IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
+        FROM
+            character_contract_items cci
+            LEFT JOIN eve_types et ON et.id = cci.type_id
+        WHERE
+            cci.contract_id = cc.id
+            AND cci.is_included IS TRUE
+    ) as items
 FROM
     character_contracts cc
     JOIN eve_entities AS issuer_corporation ON issuer_corporation.id = cc.issuer_corporation_id
@@ -297,6 +319,7 @@ type ListCharacterContractsRow struct {
 	EndSolarSystemName   sql.NullString
 	StartSolarSystemID   sql.NullInt64
 	StartSolarSystemName sql.NullString
+	Items                interface{}
 }
 
 func (q *Queries) ListCharacterContracts(ctx context.Context, characterID int64) ([]ListCharacterContractsRow, error) {
@@ -349,6 +372,7 @@ func (q *Queries) ListCharacterContracts(ctx context.Context, characterID int64)
 			&i.EndSolarSystemName,
 			&i.StartSolarSystemID,
 			&i.StartSolarSystemName,
+			&i.Items,
 		); err != nil {
 			return nil, err
 		}

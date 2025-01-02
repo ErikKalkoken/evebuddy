@@ -113,8 +113,9 @@ type CharacterContract struct {
 	EndLocation       *EntityShort[int64]
 	EndSolarSystem    *EntityShort[int32]
 	ForCorporation    bool
-	IssuerCorporation *EveEntity
 	Issuer            *EveEntity
+	IssuerCorporation *EveEntity
+	Items             []string
 	Price             float64
 	Reward            float64
 	StartLocation     *EntityShort[int64]
@@ -130,11 +131,24 @@ func (cc CharacterContract) AvailabilityDisplay() string {
 	return caser.String(cc.Availability.String())
 }
 
+func (cc CharacterContract) ContractorDisplay() string {
+	if cc.Acceptor == nil {
+		return ""
+	}
+	return cc.Acceptor.Name
+}
+
 func (cc CharacterContract) NameDisplay() string {
 	if cc.Type == ContractTypeCourier {
 		return fmt.Sprintf("%s >> %s (%.0f m3)", cc.StartSolarSystem.Name, cc.EndSolarSystem.Name, cc.Volume)
 	}
-	return "[Multiple Items]"
+	if len(cc.Items) > 1 {
+		return "[Multiple Items]"
+	}
+	if len(cc.Items) == 1 {
+		return cc.Items[0]
+	}
+	return "?"
 }
 
 func (cc CharacterContract) StatusDisplay() string {

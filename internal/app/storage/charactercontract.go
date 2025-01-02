@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -105,6 +106,7 @@ func (st *Storage) GetCharacterContract(ctx context.Context, characterID, contra
 		r.EndSolarSystemName,
 		r.StartSolarSystemID,
 		r.StartSolarSystemName,
+		r.Items,
 	)
 	return o2, err
 }
@@ -139,6 +141,7 @@ func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int32
 			r.EndSolarSystemName,
 			r.StartSolarSystemID,
 			r.StartSolarSystemName,
+			r.Items,
 		)
 	}
 	return oo, nil
@@ -180,22 +183,6 @@ func (st *Storage) UpdateCharacterContract(ctx context.Context, arg UpdateCharac
 	return nil
 }
 
-// func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, id int32) ([]*app.CharacterContract, error) {
-// 	rows, err := st.q.ListCharacterWalletJournalEntries(ctx, int64(id))
-// 	if err != nil {
-// 		return nil, fmt.Errorf("list wallet journal entries for character %d: %w", id, err)
-// 	}
-// 	ee := make([]*app.CharacterContract, len(rows))
-// 	for i, r := range rows {
-// 		o := r.CharacterContract
-// 		firstParty := nullEveEntry{ID: o.FirstPartyID, Name: r.FirstName, Category: r.FirstCategory}
-// 		secondParty := nullEveEntry{ID: o.SecondPartyID, Name: r.SecondName, Category: r.SecondCategory}
-// 		taxReceiver := nullEveEntry{ID: o.TaxReceiverID, Name: r.TaxName, Category: r.TaxCategory}
-// 		ee[i] = characterContractFromDBModel(o, firstParty, secondParty, taxReceiver)
-// 	}
-// 	return ee, nil
-// }
-
 var contractAvailableToEnum = map[string]app.CharacterContractAvailability{
 	"alliance":    app.ContractAvailabilityAlliance,
 	"corporation": app.ContractAvailabilityCorporation,
@@ -235,6 +222,7 @@ func characterContractFromDBModel(
 	endSolarSystemName sql.NullString,
 	startSolarSystemID sql.NullInt64,
 	startSolarSystemName sql.NullString,
+	items any,
 ) *app.CharacterContract {
 	availability, ok := contractAvailableToEnum[o.Availability]
 	if !ok {
@@ -247,6 +235,10 @@ func characterContractFromDBModel(
 	typ, ok := contractTypeToEnum[o.Type]
 	if !ok {
 		typ = app.ContractTypeUnknown
+	}
+	i2, ok := items.(string)
+	if !ok {
+		i2 = ""
 	}
 	o2 := &app.CharacterContract{
 		ID:                o.ID,
@@ -265,6 +257,7 @@ func characterContractFromDBModel(
 		ForCorporation:    o.ForCorporation,
 		IssuerCorporation: eveEntityFromDBModel(issuerCorporation),
 		Issuer:            eveEntityFromDBModel(issuer),
+		Items:             strings.Split(i2, ","),
 		Price:             o.Price,
 		Reward:            o.Reward,
 		Status:            status,

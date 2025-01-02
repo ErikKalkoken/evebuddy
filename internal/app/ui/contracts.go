@@ -64,14 +64,14 @@ func (a *contractsArea) makeTable() *widget.Table {
 		text  string
 		width float32
 	}{
-		{"Contract", 200},
+		{"Contract", 300},
 		{"Type", 120},
 		{"From", 150},
 		{"To", 150},
 		{"Status", 100},
 		{"Date Issued", 150},
 		{"Date Accepted", 150},
-		{"Time Left", 150},
+		{"Time Left", 100},
 	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
@@ -144,14 +144,20 @@ func (a *contractsArea) makeTable() *widget.Table {
 
 func (a *contractsArea) showContract(o *app.CharacterContract) {
 	w := a.u.fyneApp.NewWindow("Contract")
-	t := widget.NewLabel(o.NameDisplay())
+	t := widget.NewLabel(fmt.Sprintf("%s (%s)", o.NameDisplay(), o.TypeDisplay()))
 	t.Importance = widget.HighImportance
+	t.TextStyle.Bold = true
 	expiredAt := o.DateExpiredEffective()
 	expirationDate := fmt.Sprintf(
 		"%s (%s)",
 		expiredAt.Format(app.TimeDefaultFormat),
 		strings.Trim(humanize.RelTime(expiredAt, time.Now(), "", ""), " "),
 	)
+	makeLocation := func(l *app.EntityShort[int64]) *kxwidget.TappableLabel {
+		return kxwidget.NewTappableLabel(l.Name, func() {
+			a.u.showLocationInfoWindow(l.ID)
+		})
+	}
 	main := container.NewVBox(
 		&widget.Form{
 			Items: []*widget.FormItem{
@@ -159,8 +165,9 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 				{Text: "Type", Widget: widget.NewLabel(o.TypeDisplay())},
 				{Text: "Issued By", Widget: widget.NewLabel(o.Issuer.Name)},
 				{Text: "Availability", Widget: widget.NewLabel(o.AvailabilityDisplay())},
+				{Text: "Contractor", Widget: widget.NewLabel(o.ContractorDisplay())},
 				{Text: "Status", Widget: widget.NewLabel(o.StatusDisplay())},
-				{Text: "Location", Widget: widget.NewLabel(o.StartLocation.Name)},
+				{Text: "Location", Widget: makeLocation(o.StartLocation)},
 				{Text: "Date Issued", Widget: widget.NewLabel(o.DateIssued.Format(app.TimeDefaultFormat))},
 				{Text: "Expiration Date", Widget: widget.NewLabel(expirationDate)},
 			},
@@ -181,7 +188,7 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 				{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%f m3", o.Volume))},
 				{Text: "Reward", Widget: widget.NewLabel(fmt.Sprintf("%s ISK", humanize.Commaf(o.Reward)))},
 				{Text: "Collateral", Widget: widget.NewLabel(collateral)},
-				{Text: "Destination", Widget: widget.NewLabel(o.EndLocation.Name)},
+				{Text: "Destination", Widget: makeLocation(o.EndLocation)},
 			},
 		})
 		main.Add(widget.NewSeparator())
