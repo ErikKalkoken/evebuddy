@@ -9,6 +9,8 @@ import (
 	"golang.org/x/text/language"
 )
 
+var languageCaser = cases.Title(language.English)
+
 type CharacterContractAvailability uint
 
 const (
@@ -18,6 +20,21 @@ const (
 	ContractAvailabilityPersonal
 	ContractAvailabilityPublic
 )
+
+var cca2String = map[CharacterContractAvailability]string{
+	ContractAvailabilityAlliance:    "alliance",
+	ContractAvailabilityCorporation: "corporation",
+	ContractAvailabilityPersonal:    "personal",
+	ContractAvailabilityPublic:      "public",
+}
+
+func (cca CharacterContractAvailability) String() string {
+	s, ok := cca2String[cca]
+	if !ok {
+		return "unknown"
+	}
+	return s
+}
 
 type CharacterContractStatus uint
 
@@ -81,8 +98,6 @@ func (cct CharacterContractType) String() string {
 	return s
 }
 
-var languageCaser = cases.Title(language.English)
-
 type CharacterContract struct {
 	ID                int64
 	Acceptor          *EveEntity
@@ -112,6 +127,10 @@ type CharacterContract struct {
 	Volume            float64
 }
 
+func (cc CharacterContract) AvailabilityDisplay() string {
+	return languageCaser.String(cc.Availability.String())
+}
+
 func (cc CharacterContract) NameDisplay() string {
 	if cc.Type == ContractTypeCourier {
 		return fmt.Sprintf("%s >> %s (%.0f m3)", cc.StartSolarSystem.Name, cc.EndSolarSystem.Name, cc.Volume)
@@ -121,6 +140,13 @@ func (cc CharacterContract) NameDisplay() string {
 
 func (cc CharacterContract) StatusDisplay() string {
 	return languageCaser.String(cc.Status.String())
+}
+
+func (cc CharacterContract) TitleDisplay() string {
+	if cc.Title == "" {
+		return "(None)"
+	}
+	return cc.Title
 }
 
 func (cc CharacterContract) TypeDisplay() string {

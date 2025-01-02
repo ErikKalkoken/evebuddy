@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -134,9 +135,64 @@ func (a *contractsArea) makeTable() *widget.Table {
 		if tci.Row >= len(a.contracts) || tci.Row < 0 {
 			return
 		}
-		// TODO
+		o := a.contracts[tci.Row]
+		a.showContract(o)
 	}
 	return t
+}
+
+func (a *contractsArea) showContract(o *app.CharacterContract) {
+	w := a.u.fyneApp.NewWindow("Contract")
+	t := widget.NewLabel(o.NameDisplay())
+	t.Importance = widget.HighImportance
+	expirationDate := fmt.Sprintf(
+		"%s (%s)",
+		o.DateExpired.Format(app.TimeDefaultFormat),
+		strings.Trim(humanize.RelTime(o.DateExpired, time.Now(), "", ""), " "),
+	)
+	main := container.NewVBox(
+		&widget.Form{
+			Items: []*widget.FormItem{
+				{Text: "Info by issuer", Widget: widget.NewLabel(o.TitleDisplay())},
+				{Text: "Type", Widget: widget.NewLabel(o.TypeDisplay())},
+				{Text: "Issued By", Widget: widget.NewLabel(o.Issuer.Name)},
+				{Text: "Availability", Widget: widget.NewLabel(o.AvailabilityDisplay())},
+				{Text: "Status", Widget: widget.NewLabel(o.StatusDisplay())},
+				{Text: "Location", Widget: widget.NewLabel(o.StartLocation.Name)},
+				{Text: "Date Issued", Widget: widget.NewLabel(o.DateIssued.Format(app.TimeDefaultFormat))},
+				{Text: "Expiration Date", Widget: widget.NewLabel(expirationDate)},
+			},
+		})
+	switch o.Type {
+	case app.ContractTypeCourier:
+		var collateral string
+		if o.Collateral == 0 {
+			collateral = "(None)"
+		} else {
+			collateral = fmt.Sprintf("%s ISK", humanize.Commaf(o.Collateral))
+		}
+		main.Add(widget.NewSeparator())
+		main.Add(&widget.Form{
+			Items: []*widget.FormItem{
+				{Text: "Complete In", Widget: widget.NewLabel(fmt.Sprintf("%d days", o.DaysToComplete))},
+				{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%f m3", o.Volume))},
+				{Text: "Reward", Widget: widget.NewLabel(fmt.Sprintf("%s ISK", humanize.Commaf(o.Reward)))},
+				{Text: "Collateral", Widget: widget.NewLabel(collateral)},
+				{Text: "Destination", Widget: widget.NewLabel(o.EndLocation.Name)},
+			},
+		})
+	}
+	b := widget.NewButton("Close", func() {
+		w.Hide()
+	})
+	w.SetContent(container.NewBorder(
+		container.NewVBox(t, widget.NewSeparator()),
+		container.NewCenter(b),
+		nil,
+		nil,
+		main,
+	))
+	w.Show()
 }
 
 func (a *contractsArea) refresh() {
