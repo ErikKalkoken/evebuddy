@@ -36,18 +36,18 @@ type contractEntry struct {
 
 // contractsArea is the UI area that shows the skillqueue
 type contractsArea struct {
-	content *fyne.Container
-	entries []contractEntry
-	table   *widget.Table
-	top     *widget.Label
-	u       *UI
+	content   *fyne.Container
+	contracts []*app.CharacterContract
+	table     *widget.Table
+	top       *widget.Label
+	u         *UI
 }
 
 func (u *UI) newContractsArea() *contractsArea {
 	a := contractsArea{
-		entries: make([]contractEntry, 0),
-		top:     widget.NewLabel(""),
-		u:       u,
+		contracts: make([]*app.CharacterContract, 0),
+		top:       widget.NewLabel(""),
+		u:         u,
 	}
 
 	a.top.TextStyle.Bold = true
@@ -73,7 +73,7 @@ func (a *contractsArea) makeTable() *widget.Table {
 	}
 	t := widget.NewTable(
 		func() (rows int, cols int) {
-			return len(a.entries), len(headers)
+			return len(a.contracts), len(headers)
 		},
 		func() fyne.CanvasObject {
 			return widget.NewLabel("Template Template")
@@ -83,35 +83,36 @@ func (a *contractsArea) makeTable() *widget.Table {
 			l.Importance = widget.MediumImportance
 			l.Alignment = fyne.TextAlignLeading
 			l.Truncation = fyne.TextTruncateOff
-			if tci.Row >= len(a.entries) || tci.Row < 0 {
+			if tci.Row >= len(a.contracts) || tci.Row < 0 {
 				return
 			}
-			w := a.entries[tci.Row]
+			o := a.contracts[tci.Row]
 			switch tci.Col {
 			case 0:
-				l.Text = w.name
+				l.Text = o.NameDisplay()
 			case 1:
-				l.Text = w.type_
+				l.Text = o.TypeDisplay()
 			case 2:
-				l.Text = w.status
+				l.Text = o.StatusDisplay()
 			case 3:
-				l.Text = w.from
+				l.Text = o.Issuer.Name
 			case 4:
-				l.Text = w.to
+				l.Text = o.Assignee.Name
 			case 5:
-				l.Text = w.issued.Format(app.TimeDefaultFormat)
+				l.Text = o.DateIssued.Format(app.TimeDefaultFormat)
 			case 6:
-				if w.accepted.IsEmpty() {
+				if o.DateAccepted.IsEmpty() {
 					l.Text = ""
 				} else {
-					l.Text = w.accepted.MustValue().Format(app.TimeDefaultFormat)
+					l.Text = o.DateAccepted.MustValue().Format(app.TimeDefaultFormat)
 				}
 			case 7:
-				if w.expired.Before(time.Now()) {
+				x := o.DateExpiredEffective()
+				if x.Before(time.Now()) {
 					l.Text = "EXPIRED"
 					l.Importance = widget.DangerImportance
 				} else {
-					l.Text = humanize.Time(w.expired)
+					l.Text = humanize.RelTime(x, time.Now(), "", "")
 				}
 			}
 			l.Refresh()
@@ -130,7 +131,7 @@ func (a *contractsArea) makeTable() *widget.Table {
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
-		if tci.Row >= len(a.entries) || tci.Row < 0 {
+		if tci.Row >= len(a.contracts) || tci.Row < 0 {
 			return
 		}
 		// TODO
@@ -163,37 +164,21 @@ func (a *contractsArea) makeTopText() (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	t := humanize.Comma(int64(len(a.entries)))
+	t := humanize.Comma(int64(len(a.contracts)))
 	s := fmt.Sprintf("Entries: %s", t)
 	return s, widget.MediumImportance
 }
 
 func (a *contractsArea) updateEntries() error {
 	if !a.u.hasCharacter() {
-		a.entries = make([]contractEntry, 0)
+		a.contracts = make([]*app.CharacterContract, 0)
 		return nil
 	}
 	characterID := a.u.characterID()
-	oo, err := a.u.CharacterService.ListCharacterContracts(context.TODO(), characterID)
+	var err error
+	a.contracts, err = a.u.CharacterService.ListCharacterContracts(context.TODO(), characterID)
 	if err != nil {
 		return err
 	}
-	entries := make([]contractEntry, len(oo))
-	for i, o := range oo {
-		var e contractEntry
-		e.name = o.NameDisplay()
-		e.type_ = o.TypeDisplay()
-		e.from = o.Issuer.Name
-		if o.Assignee != nil {
-			e.to = o.Assignee.Name
-		}
-		e.issued = o.DateIssued
-		e.accepted = o.DateAccepted
-		e.expired = o.DateExpiredEffective()
-		e.info = o.Title
-		e.status = o.StatusDisplay()
-		entries[i] = e
-	}
-	a.entries = entries
 	return nil
 }
