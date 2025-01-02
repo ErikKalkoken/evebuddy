@@ -22,7 +22,7 @@ const (
 var cca2String = map[CharacterContractAvailability]string{
 	ContractAvailabilityAlliance:    "alliance",
 	ContractAvailabilityCorporation: "corporation",
-	ContractAvailabilityPersonal:    "personal",
+	ContractAvailabilityPersonal:    "private",
 	ContractAvailabilityPublic:      "public",
 }
 
@@ -128,12 +128,16 @@ type CharacterContract struct {
 
 func (cc CharacterContract) AvailabilityDisplay() string {
 	caser := cases.Title(language.English)
-	return caser.String(cc.Availability.String())
+	s := caser.String(cc.Availability.String())
+	if cc.Assignee != nil && cc.Availability != ContractAvailabilityPublic && cc.Availability != ContractAvailabilityUnknown {
+		s += " - " + cc.Assignee.Name
+	}
+	return s
 }
 
 func (cc CharacterContract) ContractorDisplay() string {
 	if cc.Acceptor == nil {
-		return ""
+		return "(None)"
 	}
 	return cc.Acceptor.Name
 }

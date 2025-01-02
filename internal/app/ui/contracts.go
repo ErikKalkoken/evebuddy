@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -154,9 +156,18 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 		strings.Trim(humanize.RelTime(expiredAt, time.Now(), "", ""), " "),
 	)
 	makeLocation := func(l *app.EntityShort[int64]) *kxwidget.TappableLabel {
-		return kxwidget.NewTappableLabel(l.Name, func() {
+		x := kxwidget.NewTappableLabel(l.Name, func() {
 			a.u.showLocationInfoWindow(l.ID)
 		})
+		x.TextStyle.Bold = true
+		return x
+	}
+	makeISKString := func(v float64) string {
+		t := humanize.Commaf(v) + " ISK"
+		if math.Abs(v) > 999 {
+			t += fmt.Sprintf(" (%s)", ihumanize.Number(v, 1))
+		}
+		return t
 	}
 	main := container.NewVBox(
 		&widget.Form{
@@ -180,13 +191,13 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 		if o.Collateral == 0 {
 			collateral = "(None)"
 		} else {
-			collateral = fmt.Sprintf("%s ISK", humanize.Commaf(o.Collateral))
+			collateral = makeISKString(o.Collateral)
 		}
 		main.Add(&widget.Form{
 			Items: []*widget.FormItem{
 				{Text: "Complete In", Widget: widget.NewLabel(fmt.Sprintf("%d days", o.DaysToComplete))},
 				{Text: "Volume", Widget: widget.NewLabel(fmt.Sprintf("%f m3", o.Volume))},
-				{Text: "Reward", Widget: widget.NewLabel(fmt.Sprintf("%s ISK", humanize.Commaf(o.Reward)))},
+				{Text: "Reward", Widget: widget.NewLabel(makeISKString(o.Reward))},
 				{Text: "Collateral", Widget: widget.NewLabel(collateral)},
 				{Text: "Destination", Widget: makeLocation(o.EndLocation)},
 			},
@@ -210,21 +221,26 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 		// payment
 		f := widget.NewForm()
 		if o.Price > 0 {
-			x := widget.NewLabel(humanize.Commaf(o.Price) + " ISK")
+			x := widget.NewLabel(makeISKString(o.Price))
 			x.Importance = widget.DangerImportance
 			f.Append("Buyer Will Pay", x)
 		} else {
-			x := widget.NewLabel(humanize.Commaf(o.Reward) + " ISK")
+			x := widget.NewLabel(makeISKString(o.Reward))
 			x.Importance = widget.SuccessImportance
 			f.Append("Buyer Will Get", x)
 		}
 		main.Add(f)
 		main.Add(widget.NewSeparator())
-		makeItemLabel := func(it *app.CharacterContractItem) *kxwidget.TappableLabel {
-			t := fmt.Sprintf("%s (%s) x %d ", it.Type.Name, it.Type.Group.Name, it.Quantity)
-			return kxwidget.NewTappableLabel(t, func() {
+		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
+			typ := kxwidget.NewTappableLabel(it.Type.Name, func() {
 				a.u.showTypeInfoWindow(it.Type.ID, o.CharacterID, 0)
 			})
+			typ.TextStyle.Bold = true
+			return container.NewHBox(
+				typ,
+				widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
+				widget.NewLabel(fmt.Sprintf("x %s ", humanize.Comma(int64(it.Quantity)))),
+			)
 		}
 		// included items
 		if len(itemsIncluded) > 0 {
@@ -232,7 +248,7 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 			t.Importance = widget.SuccessImportance
 			c := container.NewVBox(t)
 			for _, it := range itemsIncluded {
-				c.Add(makeItemLabel(it))
+				c.Add(makeItem(it))
 			}
 			main.Add(c)
 			main.Add(widget.NewSeparator())
@@ -243,7 +259,7 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 			t.Importance = widget.DangerImportance
 			c := container.NewVBox(t)
 			for _, it := range itemsRequested {
-				c.Add(makeItemLabel(it))
+				c.Add(makeItem(it))
 			}
 			main.Add(c)
 			main.Add(widget.NewSeparator())
@@ -252,14 +268,15 @@ func (a *contractsArea) showContract(o *app.CharacterContract) {
 	b := widget.NewButton("Close", func() {
 		w.Hide()
 	})
-	w.SetContent(container.NewBorder(
+	vs := container.NewVScroll(main)
+	vs.SetMinSize(fyne.NewSize(600, 400))
+	w.SetContent(container.NewPadded(container.NewBorder(
 		container.NewVBox(t, widget.NewSeparator()),
 		container.NewCenter(b),
 		nil,
 		nil,
-		main,
-	))
-	w.Resize(fyne.NewSize(600, 400))
+		vs,
+	)))
 	w.Show()
 }
 
