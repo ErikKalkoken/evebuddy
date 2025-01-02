@@ -242,6 +242,44 @@ func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContract
 	return o
 }
 
+func (f Factory) CreateCharacterContractBid(args ...storage.CreateCharacterContractBidParams) *app.CharacterContractBid {
+	ctx := context.TODO()
+	var arg storage.CreateCharacterContractBidParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ContractID == 0 {
+		c := f.CreateCharacterContract()
+		arg.ContractID = c.ID
+	}
+	if arg.BidID == 0 {
+		arg.BidID = int32(f.calcNewIDWithParam(
+			"character_contract_bids",
+			"bid_id",
+			"contract_id",
+			arg.ContractID,
+		))
+	}
+	if arg.Amount == 0 {
+		arg.Amount = rand.Float64() * 100_000_000
+	}
+	if arg.BidderID == 0 {
+		x := f.CreateEveEntityCharacter()
+		arg.BidderID = x.ID
+	}
+	if arg.DateBid.IsZero() {
+		arg.DateBid = time.Now().UTC()
+	}
+	if err := f.st.CreateCharacterContractBid(ctx, arg); err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCharacterContractBid(ctx, arg.ContractID, arg.BidID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateCharacterContractItem(args ...storage.CreateCharacterContractItemParams) *app.CharacterContractItem {
 	ctx := context.TODO()
 	var arg storage.CreateCharacterContractItemParams

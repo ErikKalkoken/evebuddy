@@ -41,7 +41,7 @@ func TestCharacterContractItem(t *testing.T) {
 			}
 		}
 	})
-	t.Run("can list existing contracts", func(t *testing.T) {
+	t.Run("can list existing items", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacterContract()
