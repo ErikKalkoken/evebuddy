@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 func entityNameOrFallback[T int | int32 | int64](e *app.EntityShort[T], fallback string) string {

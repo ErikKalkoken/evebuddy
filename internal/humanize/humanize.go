@@ -10,12 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/antihax/goesi/esi"
 	"github.com/dustin/go-humanize"
 	"github.com/mattn/go-sqlite3"
 	"golang.org/x/exp/constraints"
+
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/sso"
 )
 
 // Number returns a humanized number, e.g. 1234 becomes 1.23K
@@ -24,16 +25,16 @@ func Number(value float64, decimals int) string {
 	var a string
 	v2 := math.Abs(value)
 	switch {
-	case v2 >= 1000000000000:
+	case v2 >= 1_000_000_000_000:
 		s = 12
 		a = " T"
-	case v2 >= 1000000000:
+	case v2 >= 1_000_000_000:
 		s = 9
 		a = " B"
-	case v2 >= 1000000:
+	case v2 >= 1_000_000:
 		s = 6
 		a = " M"
-	case v2 >= 1000:
+	case v2 >= 1_000:
 		s = 3
 		a = " K"
 	default:
