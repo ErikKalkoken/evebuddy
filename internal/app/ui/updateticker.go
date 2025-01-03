@@ -18,6 +18,11 @@ const (
 	generalSectionsUpdateTicker   = 60 * time.Second
 )
 
+func (u *UI) sendDesktopNotification(title, content string) {
+	u.fyneApp.SendNotification(fyne.NewNotification(title, content))
+	slog.Info("desktop notification sent", "title", title, "content", content)
+}
+
 func (u *UI) startUpdateTickerGeneralSections() {
 	ticker := time.NewTicker(generalSectionsUpdateTicker)
 	go func() {
@@ -77,8 +82,7 @@ func (u *UI) startUpdateTickerCharacters() {
 					}
 					if u.fyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
 						go func() {
-							err := u.notifyExpiredTraining(context.TODO(), c.ID)
-							if err != nil {
+							if err := u.CharacterService.NotifyExpiredTraining(context.TODO(), c.ID, u.sendDesktopNotification); err != nil {
 								slog.Error("notify expired training", "error", err)
 							}
 						}()
@@ -100,11 +104,6 @@ func (u *UI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID 
 		s := s
 		go u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 	}
-}
-
-func (u *UI) sendDesktopNotification(title, content string) {
-	u.fyneApp.SendNotification(fyne.NewNotification(title, content))
-	slog.Info("desktop notification sent", "title", title, "content", content)
 }
 
 // updateCharacterSectionAndRefreshIfNeeded runs update for a character section if needed
@@ -252,27 +251,4 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))
 	}
-}
-
-func (u *UI) notifyExpiredTraining(ctx context.Context, characterID int32) error {
-	c, err := u.CharacterService.GetCharacter(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	if !c.IsTrainingWatched {
-		return nil
-	}
-	t, err := u.CharacterService.GetCharacterTotalTrainingTime(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	if !t.IsEmpty() {
-		return nil
-	}
-	title := fmt.Sprintf("%s: No skill in training", c.EveCharacter.Name)
-	content := "There is currently no skill being trained for this character."
-	nf := fyne.NewNotification(title, content)
-	u.fyneApp.SendNotification(nf)
-	slog.Info("training notification sent", "notif", nf)
-	return u.CharacterService.UpdateCharacterIsTrainingWatched(ctx, characterID, false)
 }

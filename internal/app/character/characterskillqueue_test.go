@@ -1,75 +1,60 @@
-package ui
+package character_test
 
 import (
 	"context"
 	"testing"
 
-	"fyne.io/fyne/v2"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
-type mockApp struct {
-	fyne.App
-
-	notifications []*fyne.Notification
-}
-
-func newMockApp() *mockApp {
-	a := &mockApp{
-		notifications: make([]*fyne.Notification, 0),
-	}
-	return a
-}
-
-func (a *mockApp) SendNotification(n *fyne.Notification) {
-	a.notifications = append(a.notifications, n)
-}
-
 func TestUpdateTickerNotifyExpiredTraining(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
-	u := newUI(st)
+	cs := newCharacterService(st)
 	ctx := context.Background()
 	t.Run("send notification when watched & expired", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		a := newMockApp()
-		u.fyneApp = a
 		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{IsTrainingWatched: true})
+		var sendCount int
 		// when
-		err := u.notifyExpiredTraining(ctx, c.ID)
+		err := cs.NotifyExpiredTraining(ctx, c.ID, func(title, content string) {
+			sendCount++
+		})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, len(a.notifications), 1)
+			assert.Equal(t, sendCount, 1)
 		}
 	})
 	t.Run("do nothing when not watched", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		a := newMockApp()
-		u.fyneApp = a
 		c := factory.CreateCharacter()
+		var sendCount int
 		// when
-		err := u.notifyExpiredTraining(ctx, c.ID)
+		err := cs.NotifyExpiredTraining(ctx, c.ID, func(title, content string) {
+			sendCount++
+		})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, len(a.notifications), 0)
+			assert.Equal(t, sendCount, 0)
 		}
 	})
 	t.Run("don't send notification when watched and training ongoing", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		a := newMockApp()
-		u.fyneApp = a
 		c := factory.CreateCharacter(storage.UpdateOrCreateCharacterParams{IsTrainingWatched: true})
 		factory.CreateCharacterSkillqueueItem(storage.SkillqueueItemParams{CharacterID: c.ID})
+		var sendCount int
 		// when
-		err := u.notifyExpiredTraining(ctx, c.ID)
+		err := cs.NotifyExpiredTraining(ctx, c.ID, func(title, content string) {
+			sendCount++
+		})
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, len(a.notifications), 0)
+			assert.Equal(t, sendCount, 0)
 		}
 	})
 }

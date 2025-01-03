@@ -2,6 +2,7 @@ package character
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -13,6 +14,27 @@ import (
 
 func (s *CharacterService) GetCharacterTotalTrainingTime(ctx context.Context, characterID int32) (optional.Optional[time.Duration], error) {
 	return s.st.GetCharacterTotalTrainingTime(ctx, characterID)
+}
+
+func (cs *CharacterService) NotifyExpiredTraining(ctx context.Context, characterID int32, notify func(title, content string)) error {
+	c, err := cs.GetCharacter(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	if !c.IsTrainingWatched {
+		return nil
+	}
+	t, err := cs.GetCharacterTotalTrainingTime(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	if !t.IsEmpty() {
+		return nil
+	}
+	title := fmt.Sprintf("%s: No skill in training", c.EveCharacter.Name)
+	content := "There is currently no skill being trained for this character."
+	notify(title, content)
+	return cs.UpdateCharacterIsTrainingWatched(ctx, characterID, false)
 }
 
 func (s *CharacterService) ListCharacterSkillqueueItems(ctx context.Context, characterID int32) ([]*app.CharacterSkillqueueItem, error) {
