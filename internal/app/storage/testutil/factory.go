@@ -555,6 +555,17 @@ func (f Factory) CreatePlanetPin(args ...storage.CreatePlanetPinParams) *app.Pla
 	return o
 }
 
+func (f Factory) CreatePlanetPinExtractor(args ...storage.CreatePlanetPinParams) *app.PlanetPin {
+	var arg storage.CreatePlanetPinParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	eg := f.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupExtractorControlUnits})
+	et := f.CreateEveType(storage.CreateEveTypeParams{GroupID: eg.ID})
+	arg.TypeID = et.ID
+	return f.CreatePlanetPin(arg)
+}
+
 func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSkillParams) *app.CharacterSkill {
 	ctx := context.TODO()
 	var arg storage.UpdateOrCreateCharacterSkillParams

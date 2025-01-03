@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/antihax/goesi/esi"
+	esioptional "github.com/antihax/goesi/optional"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/antihax/goesi/esi"
-	esioptional "github.com/antihax/goesi/optional"
 )
 
 func (s *CharacterService) CountCharacterContractBids(ctx context.Context, contractID int64) (int, error) {
@@ -45,11 +46,10 @@ func (cs *CharacterService) NotifyUpdatedContracts(ctx context.Context, characte
 	if err != nil {
 		return err
 	}
-	character, err := cs.GetCharacter(ctx, characterID)
+	characterName, err := cs.getCharacterName(ctx, characterID)
 	if err != nil {
 		return err
 	}
-	characterName := character.EveCharacter.Name
 	for _, c := range cc {
 		if c.UpdatedAt.Before(earliest) {
 			continue

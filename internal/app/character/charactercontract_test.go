@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO: Add more test cases
+
 func TestNotifyUpdatedContracts(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
