@@ -34,12 +34,25 @@ func TestSet(t *testing.T) {
 		got := s1.Union(s2)
 		assert.Equal(t, want, got)
 	})
-	t.Run("can intersect", func(t *testing.T) {
+	t.Run("can calculate intersection", func(t *testing.T) {
 		s1 := set.New(1, 2)
 		s2 := set.New(2, 3)
 		want := set.New(2)
 		got := s1.Intersect(s2)
 		assert.Equal(t, want, got)
+	})
+	t.Run("can calculate isDisjoint", func(t *testing.T) {
+		a := set.New(1, 2)
+		b := set.New(2, 3)
+		c := set.New(3, 4)
+		assert.False(t, a.IsDisjoint(b))
+		assert.True(t, a.IsDisjoint(c))
+	})
+	t.Run("can calculate isSuperset", func(t *testing.T) {
+		a := set.New(1, 2)
+		b := set.New(1, 2, 3)
+		assert.True(t, b.IsSuperset(a))
+		assert.False(t, a.IsSuperset(b))
 	})
 	t.Run("can calculate difference", func(t *testing.T) {
 		s1 := set.New(1, 2)

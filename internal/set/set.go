@@ -83,9 +83,21 @@ func (s Set[T]) Intersect(other Set[T]) Set[T] {
 	return n
 }
 
+// IsDisjoint reports whether a set has any elements in common with another set.
+func (s Set[T]) IsDisjoint(other Set[T]) bool {
+	x := s.Intersect(other)
+	return x.Size() == 0
+}
+
 // IsSubset reports whether a set is the subset of another set.
 func (s Set[T]) IsSubset(other Set[T]) bool {
 	x := s.Difference(other)
+	return x.Size() == 0
+}
+
+// IsSuperset reports whether a set is the superset of another set.
+func (s Set[T]) IsSuperset(other Set[T]) bool {
+	x := other.Difference(s)
 	return x.Size() == 0
 }
 
