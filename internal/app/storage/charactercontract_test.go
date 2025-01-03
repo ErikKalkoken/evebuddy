@@ -127,18 +127,12 @@ func TestCharacterContract(t *testing.T) {
 	t.Run("can update notified", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
-		arg2 := storage.UpdateCharacterContractNotifiedParams{
-			CharacterID:    o.CharacterID,
-			ContractID:     o.ContractID,
-			StatusNotified: app.ContractStatusInProgress,
-		}
+		c := factory.CreateCharacterContract()
 		// when
-		err := r.UpdateCharacterContractNotified(ctx, arg2)
+		err := r.UpdateCharacterContractNotified(ctx, c.ID, app.ContractStatusInProgress)
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetCharacterContract(ctx, o.CharacterID, o.ContractID)
+			o, err := r.GetCharacterContract(ctx, c.CharacterID, c.ContractID)
 			if assert.NoError(t, err) {
 				assert.Equal(t, app.ContractStatusInProgress, o.StatusNotified)
 			}

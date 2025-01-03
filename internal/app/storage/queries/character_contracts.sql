@@ -163,5 +163,4 @@ SET
     status_notified = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE
-    character_id = ?
-    AND contract_id = ?;
+    id = ?;

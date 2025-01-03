@@ -135,6 +135,9 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		if isShown && needsRefresh {
 			u.contractsArea.refresh()
 		}
+		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyContractsEnabled, settingNotifyCommunicationsEnabledDefault) {
+			go u.notifyContractUpdates(ctx, characterID)
+		}
 	case app.SectionImplants:
 		if isShown && needsRefresh {
 			u.implantsArea.refresh()
@@ -175,14 +178,14 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 			u.overviewArea.refresh()
 		}
 		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
-			go u.processMails(ctx, characterID)
+			go u.notifyMails(ctx, characterID)
 		}
 	case app.SectionNotifications:
 		if isShown && needsRefresh {
 			u.notificationsArea.refresh()
 		}
 		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault) {
-			go u.processNotifications(ctx, characterID)
+			go u.notifyCommunications(ctx, characterID)
 		}
 	case app.SectionSkills:
 		if isShown && needsRefresh {
@@ -224,7 +227,7 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 	}
 }
 
-func (u *UI) processNotifications(ctx context.Context, characterID int32) {
+func (u *UI) notifyCommunications(ctx context.Context, characterID int32) {
 	maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
 	nn, err := u.CharacterService.ListCharacterNotificationsUnprocessed(ctx, characterID)
 	if err != nil {
@@ -239,8 +242,10 @@ func (u *UI) processNotifications(ctx context.Context, characterID int32) {
 			continue
 		}
 		title := fmt.Sprintf("%s: New Communication from %s", characterName, n.Sender.Name)
-		x := fyne.NewNotification(title, n.Title.ValueOrZero())
-		u.fyneApp.SendNotification(x)
+		content := n.Title.ValueOrZero()
+		nf := fyne.NewNotification(title, content)
+		u.fyneApp.SendNotification(nf)
+		slog.Info("communications notification sent", "notif", nf)
 		if err := u.CharacterService.UpdateCharacterNotificationSetProcessed(ctx, n); err != nil {
 			slog.Error("Failed to set notification as processed", "characterID", characterID, "id", n.ID, "error", err)
 			return
@@ -248,7 +253,7 @@ func (u *UI) processNotifications(ctx context.Context, characterID int32) {
 	}
 }
 
-func (u *UI) processMails(ctx context.Context, characterID int32) {
+func (u *UI) notifyMails(ctx context.Context, characterID int32) {
 	maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
 	mm, err := u.CharacterService.ListCharacterMailHeadersForUnprocessed(ctx, characterID)
 	if err != nil {
@@ -262,11 +267,62 @@ func (u *UI) processMails(ctx context.Context, characterID int32) {
 			continue
 		}
 		title := fmt.Sprintf("%s: New Mail from %s", characterName, m.From)
-		body := m.Subject
-		x := fyne.NewNotification(title, body)
-		u.fyneApp.SendNotification(x)
+		content := m.Subject
+		nf := fyne.NewNotification(title, content)
+		u.fyneApp.SendNotification(nf)
+		slog.Info("mail notification sent", "notif", nf)
 		if err := u.CharacterService.UpdateCharacterMailSetProcessed(ctx, m.ID); err != nil {
 			slog.Error("Failed to set mail as processed", "characterID", characterID, "id", m.MailID, "error", err)
+			return
+		}
+	}
+}
+
+func (u *UI) notifyContractUpdates(ctx context.Context, characterID int32) {
+	cc, err := u.CharacterService.ListCharacterContracts(ctx, characterID)
+	if err != nil {
+		slog.Error("Failed to fetch contracts for processing", "characterID", characterID, "error", err)
+		return
+	}
+	characterName := u.StatusCacheService.CharacterName(characterID)
+	earliest, _ := time.Parse(time.RFC3339, u.fyneApp.Preferences().String(settingNotifyContractsEarliest))
+	for _, c := range cc {
+		if c.UpdatedAt.Before(earliest) {
+			continue
+		}
+		if c.Status == c.StatusNotified {
+			continue
+		}
+		if c.Acceptor != nil && c.Acceptor.ID == characterID {
+			continue // ignore status changed caused by the current character
+		}
+		var content string
+		name := "'" + c.NameDisplay() + "'"
+		switch c.Type {
+		case app.ContractTypeCourier:
+			switch c.Status {
+			case app.ContractStatusInProgress:
+				content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.ContractorDisplay())
+			case app.ContractStatusFinished:
+				content = fmt.Sprintf("Contract %s has been delivered", name)
+			case app.ContractStatusFailed:
+				content = fmt.Sprintf("Contract %s has been failed by %s", name, c.ContractorDisplay())
+			}
+		case app.ContractTypeItemExchange:
+			switch c.Status {
+			case app.ContractStatusFinished:
+				content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.ContractorDisplay())
+			}
+		}
+		if content == "" {
+			continue
+		}
+		title := fmt.Sprintf("%s: Contract updated", characterName)
+		nf := fyne.NewNotification(title, content)
+		u.fyneApp.SendNotification(nf)
+		slog.Info("contract notification sent", "notif", nf)
+		if err := u.CharacterService.UpdateCharacterContractNotified(ctx, c.ID, c.Status); err != nil {
+			slog.Error("Failed to record contract notification", "characterID", characterID, "id", c.ID, "error", err)
 			return
 		}
 	}
@@ -292,7 +348,9 @@ func (u *UI) notifyExpiredExtractions(ctx context.Context, characterID int32) {
 		title := fmt.Sprintf("%s: PI extraction expired", characterName)
 		extracted := strings.Join(p.ExtractedTypeNames(), ",")
 		content := fmt.Sprintf("Extraction expired at %s for %s", p.EvePlanet.Name, extracted)
-		u.fyneApp.SendNotification(fyne.NewNotification(title, content))
+		nf := fyne.NewNotification(title, content)
+		u.fyneApp.SendNotification(nf)
+		slog.Info("pi notification sent", "notif", nf)
 		if err := u.CharacterService.UpdateCharacterPlanetLastNotified(ctx, characterID, p.EvePlanet.ID, expiration); err != nil {
 			slog.Error("failed to update last notified", "error", err)
 		}
@@ -316,6 +374,8 @@ func (u *UI) notifyExpiredTraining(ctx context.Context, characterID int32) error
 	}
 	title := fmt.Sprintf("%s: No skill in training", c.EveCharacter.Name)
 	content := "There is currently no skill being trained for this character."
-	u.fyneApp.SendNotification(fyne.NewNotification(title, content))
+	nf := fyne.NewNotification(title, content)
+	u.fyneApp.SendNotification(nf)
+	slog.Info("training notification sent", "notif", nf)
 	return u.CharacterService.UpdateCharacterIsTrainingWatched(ctx, characterID, false)
 }

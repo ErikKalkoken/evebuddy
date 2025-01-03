@@ -443,17 +443,15 @@ SET
     status_notified = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE
-    character_id = ?
-    AND contract_id = ?
+    id = ?
 `
 
 type UpdateCharacterContractNotifiedParams struct {
 	StatusNotified string
-	CharacterID    int64
-	ContractID     int64
+	ID             int64
 }
 
 func (q *Queries) UpdateCharacterContractNotified(ctx context.Context, arg UpdateCharacterContractNotifiedParams) error {
-	_, err := q.db.ExecContext(ctx, updateCharacterContractNotified, arg.StatusNotified, arg.CharacterID, arg.ContractID)
+	_, err := q.db.ExecContext(ctx, updateCharacterContractNotified, arg.StatusNotified, arg.ID)
 	return err
 }

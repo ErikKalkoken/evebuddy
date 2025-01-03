@@ -270,6 +270,9 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	// Contracts toogle
 	contractsEnabledCheck := kxwidget.NewSwitch(func(on bool) {
 		w.u.fyneApp.Preferences().SetBool(settingNotifyContractsEnabled, on)
+		if on {
+			w.u.fyneApp.Preferences().SetString(settingNotifyContractsEarliest, time.Now().Format(time.RFC3339))
+		}
 	})
 	contractsEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
 		settingNotifyContractsEnabled,

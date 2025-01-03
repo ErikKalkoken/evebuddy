@@ -12,14 +12,6 @@ import (
 	esioptional "github.com/antihax/goesi/optional"
 )
 
-func (s *CharacterService) ListCharacterContracts(ctx context.Context, characterID int32) ([]*app.CharacterContract, error) {
-	return s.st.ListCharacterContracts(ctx, characterID)
-}
-
-func (s *CharacterService) ListCharacterContractItems(ctx context.Context, contractID int64) ([]*app.CharacterContractItem, error) {
-	return s.st.ListCharacterContractItems(ctx, contractID)
-}
-
 func (s *CharacterService) CountCharacterContractBids(ctx context.Context, contractID int64) (int, error) {
 	x, err := s.st.ListCharacterContractBidIDs(ctx, contractID)
 	if err != nil {
@@ -44,6 +36,18 @@ func (s *CharacterService) GetCharacterContractTopBid(ctx context.Context, contr
 		}
 	}
 	return top, nil
+}
+
+func (s *CharacterService) ListCharacterContracts(ctx context.Context, characterID int32) ([]*app.CharacterContract, error) {
+	return s.st.ListCharacterContracts(ctx, characterID)
+}
+
+func (s *CharacterService) ListCharacterContractItems(ctx context.Context, contractID int64) ([]*app.CharacterContractItem, error) {
+	return s.st.ListCharacterContractItems(ctx, contractID)
+}
+
+func (s *CharacterService) UpdateCharacterContractNotified(ctx context.Context, id int64, status app.ContractStatus) error {
+	return s.st.UpdateCharacterContractNotified(ctx, id, status)
 }
 
 // updateCharacterContractsESI updates the wallet journal from ESI and reports wether it has changed.

@@ -25,7 +25,7 @@ const (
 	settingNotifyCommunicationsEnabledDefault = false
 	settingNotifyContractsEnabled             = "settingNotifyContractsEnabled"
 	settingNotifyContractsEnabledDefault      = false
-	settingNotifyContractsMaxAgeDefault       = 12 // hours
+	settingNotifyContractsEarliest            = "settingNotifyContractsEarliest"
 	settingNotifyMailsEnabled                 = "settingNotifyMailsEnabled"
 	settingNotifyMailsEnabledDefault          = false
 	settingNotifyPIEarliest                   = "settingNotifyPIEarliest"

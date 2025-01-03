@@ -211,26 +211,19 @@ func (st *Storage) UpdateCharacterContract(ctx context.Context, arg UpdateCharac
 	return nil
 }
 
-type UpdateCharacterContractNotifiedParams struct {
-	CharacterID    int32
-	ContractID     int32
-	StatusNotified app.ContractStatus
-}
-
-func (st *Storage) UpdateCharacterContractNotified(ctx context.Context, arg UpdateCharacterContractNotifiedParams) error {
-	if arg.CharacterID == 0 || arg.ContractID == 0 {
-		return fmt.Errorf("update character contract notified. IDs not set: %v", arg)
+func (st *Storage) UpdateCharacterContractNotified(ctx context.Context, id int64, status app.ContractStatus) error {
+	if id == 0 {
+		return fmt.Errorf("update character contract notified. IDs not set: %d", id)
 	}
 	var statusNotified string
 	for k, v := range contractStatusToEnum {
-		if v == arg.StatusNotified {
+		if v == status {
 			statusNotified = k
 			break
 		}
 	}
 	arg2 := queries.UpdateCharacterContractNotifiedParams{
-		CharacterID:    int64(arg.CharacterID),
-		ContractID:     int64(arg.ContractID),
+		ID:             id,
 		StatusNotified: statusNotified,
 	}
 	err := st.q.UpdateCharacterContractNotified(ctx, arg2)
