@@ -8,6 +8,65 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestSet(t *testing.T) {
+	t.Parallel()
+	t.Run("can convert to string", func(t *testing.T) {
+		s := set.New(42)
+		assert.Equal(t, "[42]", fmt.Sprint(s))
+	})
+	t.Run("can clear", func(t *testing.T) {
+		got := set.New(1, 2)
+		got.Clear()
+		want := set.New[int]()
+		assert.Equal(t, want, got)
+	})
+	t.Run("can convert to slice", func(t *testing.T) {
+		s := set.New(1, 2)
+		got := s.ToSlice()
+		assert.Len(t, got, 2)
+		assert.Contains(t, got, 1)
+		assert.Contains(t, got, 2)
+	})
+	t.Run("can union", func(t *testing.T) {
+		s1 := set.New(1, 2)
+		s2 := set.New(2, 3)
+		want := set.New(1, 2, 3)
+		got := s1.Union(s2)
+		assert.Equal(t, want, got)
+	})
+	t.Run("can intersect", func(t *testing.T) {
+		s1 := set.New(1, 2)
+		s2 := set.New(2, 3)
+		want := set.New(2)
+		got := s1.Intersect(s2)
+		assert.Equal(t, want, got)
+	})
+	t.Run("can calculate difference", func(t *testing.T) {
+		s1 := set.New(1, 2)
+		s2 := set.New(2, 3)
+		want := set.New(1)
+		got := s1.Difference(s2)
+		assert.Equal(t, want, got)
+	})
+	t.Run("can iterate over set", func(t *testing.T) {
+		s1 := set.New(1, 2, 3)
+		s2 := set.New[int]()
+		for e := range s1.Values() {
+			s2.Add(e)
+		}
+		assert.Equal(t, s1, s2)
+	})
+	t.Run("can assert equality", func(t *testing.T) {
+		a1 := set.New(1, 2, 3)
+		a2 := set.New(1, 2, 3)
+		b := set.New(2, 3, 4)
+		c := set.New[int]()
+		assert.Equal(t, a1, a2)
+		assert.NotEqual(t, b, a2)
+		assert.NotEqual(t, b, c)
+	})
+}
+
 func TestSetAdd(t *testing.T) {
 	t.Parallel()
 	t.Run("can add to empty", func(t *testing.T) {
@@ -24,7 +83,7 @@ func TestSetAdd(t *testing.T) {
 	})
 }
 
-func TestSetClose(t *testing.T) {
+func TestSetClone(t *testing.T) {
 	t.Parallel()
 	t.Run("can clone a set", func(t *testing.T) {
 		a := set.New(1, 2)
@@ -98,57 +157,6 @@ func TestSetSize(t *testing.T) {
 		s2 := set.New[int]()
 		assert.Equal(t, 0, s2.Size())
 	})
-}
-
-func TestSetOther(t *testing.T) {
-	t.Parallel()
-	t.Run("can convert to string", func(t *testing.T) {
-		s := set.New(42)
-		assert.Equal(t, "[42]", fmt.Sprint(s))
-	})
-	t.Run("can clear", func(t *testing.T) {
-		got := set.New(1, 2)
-		got.Clear()
-		want := set.New[int]()
-		assert.Equal(t, want, got)
-	})
-	t.Run("can convert to slice", func(t *testing.T) {
-		s := set.New(1, 2)
-		got := s.ToSlice()
-		assert.Len(t, got, 2)
-		assert.Contains(t, got, 1)
-		assert.Contains(t, got, 2)
-	})
-	t.Run("can union", func(t *testing.T) {
-		s1 := set.New(1, 2)
-		s2 := set.New(2, 3)
-		want := set.New(1, 2, 3)
-		got := s1.Union(s2)
-		assert.Equal(t, want, got)
-	})
-	t.Run("can intersect", func(t *testing.T) {
-		s1 := set.New(1, 2)
-		s2 := set.New(2, 3)
-		want := set.New(2)
-		got := s1.Intersect(s2)
-		assert.Equal(t, want, got)
-	})
-	t.Run("can calculate difference", func(t *testing.T) {
-		s1 := set.New(1, 2)
-		s2 := set.New(2, 3)
-		want := set.New(1)
-		got := s1.Difference(s2)
-		assert.Equal(t, want, got)
-	})
-	t.Run("can iterate over set", func(t *testing.T) {
-		s1 := set.New(1, 2, 3)
-		s2 := set.New[int]()
-		for e := range s1.All() {
-			s2.Add(e)
-		}
-		assert.Equal(t, s1, s2)
-	})
-
 }
 
 func TestSetEqual(t *testing.T) {

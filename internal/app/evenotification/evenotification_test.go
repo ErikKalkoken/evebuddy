@@ -92,7 +92,7 @@ func TestShouldRenderAllNotifications(t *testing.T) {
 			}
 		})
 	}
-	for n := range notifTypes.All() {
+	for n := range notifTypes.Values() {
 		if !typeTested[n] {
 			t.Errorf("Failed to test supported notification type: %s", n)
 		}

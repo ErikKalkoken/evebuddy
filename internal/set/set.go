@@ -32,12 +32,6 @@ func (s Set[T]) Add(v T) {
 	s[v] = struct{}{}
 }
 
-// All returns on iterator over all elements of a set.
-// Note that sets are unordered, so elements will be returned in no particular order.
-func (s Set[T]) All() iter.Seq[T] {
-	return maps.Keys(s)
-}
-
 // Clear removes all elements from a set.
 func (s Set[T]) Clear() {
 	for k := range s {
@@ -102,7 +96,7 @@ func (s Set[T]) Remove(v T) {
 }
 
 // Pop removes a random element from a set and returns it.
-// It returns an error if the set is empty.
+// Or if the set is empty an error is returned.
 func (s Set[T]) Pop() (T, error) {
 	for v := range s {
 		delete(s, v)
@@ -138,4 +132,10 @@ func (s Set[T]) Union(other Set[T]) Set[T] {
 		n.Add(v)
 	}
 	return n
+}
+
+// Values returns on iterator over all elements of a set.
+// Note that sets are unordered, so elements will be returned in no particular order.
+func (s Set[T]) Values() iter.Seq[T] {
+	return maps.Keys(s)
 }
