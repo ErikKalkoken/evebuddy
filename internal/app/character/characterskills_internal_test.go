@@ -118,7 +118,7 @@ func TestUpdateCharacterSkillsESI(t *testing.T) {
 			assert.True(t, changed)
 			ids, err := st.ListCharacterSkillIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.ElementsMatch(t, []int32{41}, ids)
+				assert.ElementsMatch(t, []int32{41}, ids.ToSlice())
 			}
 		}
 	})

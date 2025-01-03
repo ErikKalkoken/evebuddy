@@ -198,3 +198,19 @@ func TestIsSubset(t *testing.T) {
 		assert.False(t, a.IsSubset(b))
 	})
 }
+
+func TestPop(t *testing.T) {
+	t.Parallel()
+	t.Run("can remove element", func(t *testing.T) {
+		s := set.New(1, 2, 3)
+		x, err := s.Pop()
+		if assert.NoError(t, err) {
+			assert.True(t, set.New(1, 2, 3).Contains(x))
+		}
+	})
+	t.Run("should return error when set is empty", func(t *testing.T) {
+		s := set.New[int]()
+		_, err := s.Pop()
+		assert.ErrorIs(t, err, set.ErrNotFound)
+	})
+}

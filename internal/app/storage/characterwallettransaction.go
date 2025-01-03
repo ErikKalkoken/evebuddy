@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type CreateCharacterWalletTransactionParams struct {
@@ -59,12 +60,12 @@ func (st *Storage) GetCharacterWalletTransaction(ctx context.Context, characterI
 	return characterWalletTransactionFromDBModel(row.CharacterWalletTransaction, row.EveEntity, row.EveTypeName, row.LocationName), err
 }
 
-func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, characterID int32) ([]int64, error) {
+func (st *Storage) ListCharacterWalletTransactionIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
 	ids, err := st.q.ListCharacterWalletTransactionIDs(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list wallet transaction ids for character %d: %w", characterID, err)
 	}
-	return ids, nil
+	return set.NewFromSlice(ids), nil
 }
 
 func (st *Storage) ListCharacterWalletTransactions(ctx context.Context, characterID int32) ([]*app.CharacterWalletTransaction, error) {

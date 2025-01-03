@@ -39,11 +39,10 @@ func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg Upd
 			if err := s.st.UpdateCharacterSkillPoints(ctx, characterID, total, unallocated); err != nil {
 				return err
 			}
-			x, err := s.st.ListCharacterSkillIDs(ctx, characterID)
+			currentSkillIDs, err := s.st.ListCharacterSkillIDs(ctx, characterID)
 			if err != nil {
 				return err
 			}
-			currentSkillIDs := set.NewFromSlice(x)
 			incomingSkillIDs := set.New[int32]()
 			for _, o := range skills.Skills {
 				incomingSkillIDs.Add(o.SkillId)

@@ -80,7 +80,7 @@ func (eu *EveUniverseService) UpdateAllEveCharactersESI(ctx context.Context) err
 	slog.Info("Started updating eve characters", "count", len(ids))
 	g := new(errgroup.Group)
 	g.SetLimit(10)
-	for _, id := range ids {
+	for id := range ids.All() {
 		id := id
 		g.Go(func() error {
 			return eu.updateEveCharacterESI(ctx, id)

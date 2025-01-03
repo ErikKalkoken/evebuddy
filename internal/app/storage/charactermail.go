@@ -10,6 +10,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type CreateCharacterMailParams struct {
@@ -158,13 +159,12 @@ func (st *Storage) DeleteCharacterMail(ctx context.Context, characterID, mailID 
 	return nil
 }
 
-func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int32) ([]int32, error) {
+func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int32) (set.Set[int32], error) {
 	ids, err := st.q.ListMailIDs(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
 	}
-	ids2 := convertNumericSlice[int64, int32](ids)
-	return ids2, nil
+	return set.NewFromSlice(convertNumericSlice[int64, int32](ids)), nil
 }
 
 func (st *Storage) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {

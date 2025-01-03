@@ -181,7 +181,7 @@ func TestEveEntityIDs(t *testing.T) {
 		got, err := r.ListEveEntityIDs(ctx)
 		// then
 		if assert.NoError(t, err) {
-			want := []int32{5, 42}
+			want := set.New[int32](5, 42)
 			assert.Equal(t, want, got)
 		}
 	})

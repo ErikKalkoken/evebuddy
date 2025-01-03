@@ -104,10 +104,9 @@ func TestWalletJournalEntry(t *testing.T) {
 		e2 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		e3 := factory.CreateCharacterWalletJournalEntry(storage.CreateCharacterWalletJournalEntryParams{CharacterID: c.ID})
 		// when
-		ids, err := r.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
+		got, err := r.ListCharacterWalletJournalEntryIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := set.NewFromSlice(ids)
 			want := set.New(e1.RefID, e2.RefID, e3.RefID)
 			assert.Equal(t, want, got)
 		}

@@ -125,12 +125,12 @@ func (st *Storage) ListEveEntitiesByPartialName(ctx context.Context, partial str
 	return ee2, nil
 }
 
-func (st *Storage) ListEveEntityIDs(ctx context.Context) ([]int32, error) {
+func (st *Storage) ListEveEntityIDs(ctx context.Context) (set.Set[int32], error) {
 	ids, err := st.q.ListEveEntityIDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list eve entity id: %w", err)
 	}
-	ids2 := convertNumericSlice[int64, int32](ids)
+	ids2 := set.NewFromSlice(convertNumericSlice[int64, int32](ids))
 	return ids2, nil
 }
 
@@ -149,13 +149,12 @@ func (st *Storage) ListEveEntitiesByName(ctx context.Context, name string) ([]*a
 // MissingEveEntityIDs returns the IDs, which are have no respective EveEntity in the database.
 // IDs with value 0 are ignored.
 func (st *Storage) MissingEveEntityIDs(ctx context.Context, ids []int32) (set.Set[int32], error) {
-	currentIDs, err := st.ListEveEntityIDs(ctx)
+	incoming := set.NewFromSlice(ids)
+	incoming.Remove(0)
+	current, err := st.ListEveEntityIDs(ctx)
 	if err != nil {
 		return set.New[int32](), err
 	}
-	current := set.NewFromSlice(currentIDs)
-	incoming := set.NewFromSlice(ids)
-	incoming.Remove(0)
 	missing := incoming.Difference(current)
 	return missing, nil
 }

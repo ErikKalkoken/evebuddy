@@ -2,10 +2,13 @@
 package set
 
 import (
+	"errors"
 	"fmt"
 	"iter"
 	"maps"
 )
+
+var ErrNotFound = errors.New("not found")
 
 // Set is a container for a set of values.
 type Set[T comparable] map[T]struct{}
@@ -47,6 +50,12 @@ func (s Set[T]) Clone() Set[T] {
 	return New(s.ToSlice()...)
 }
 
+// Contains reports wether an item is in this set.
+func (s Set[T]) Contains(v T) bool {
+	_, ok := s[v]
+	return ok
+}
+
 // Difference returns a new set which elements from current set,
 // that does not exist in other set.
 func (s Set[T]) Difference(other Set[T]) Set[T] {
@@ -67,12 +76,6 @@ func (s Set[T]) Equal(other Set[T]) bool {
 	d := s.Difference(other)
 	x := d.Size()
 	return x == 0
-}
-
-// Contains reports wether an item is in this set.
-func (s Set[T]) Contains(v T) bool {
-	_, ok := s[v]
-	return ok
 }
 
 // Intersect returns a new set which contains elements found in both sets only.
@@ -96,6 +99,17 @@ func (s Set[T]) IsSubset(other Set[T]) bool {
 // It does nothing when the element doesn't exist.
 func (s Set[T]) Remove(v T) {
 	delete(s, v)
+}
+
+// Pop removes a random element from a set and returns it.
+// It returns an error if the set is empty.
+func (s Set[T]) Pop() (T, error) {
+	for v := range s {
+		delete(s, v)
+		return v, nil
+	}
+	var x T
+	return x, ErrNotFound
 }
 
 // Size returns the number of elements in a set.

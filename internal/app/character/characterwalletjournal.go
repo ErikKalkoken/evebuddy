@@ -39,11 +39,10 @@ func (s *CharacterService) updateCharacterWalletJournalEntryESI(ctx context.Cont
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			entries := data.([]esi.GetCharactersCharacterIdWalletJournal200Ok)
-			ii, err := s.st.ListCharacterWalletJournalEntryIDs(ctx, characterID)
+			existingIDs, err := s.st.ListCharacterWalletJournalEntryIDs(ctx, characterID)
 			if err != nil {
 				return err
 			}
-			existingIDs := set.NewFromSlice(ii)
 			var newEntries []esi.GetCharactersCharacterIdWalletJournal200Ok
 			for _, e := range entries {
 				if existingIDs.Contains(e.Id) {

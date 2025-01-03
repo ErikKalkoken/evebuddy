@@ -54,7 +54,7 @@ func (s *CharacterService) EnableAllTrainingWatchers(ctx context.Context) error 
 	if err != nil {
 		return err
 	}
-	for _, id := range ids {
+	for id := range ids.All() {
 		t, err := s.GetCharacterTotalTrainingTime(ctx, id)
 		if err != nil {
 			return err

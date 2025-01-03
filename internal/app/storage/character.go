@@ -11,6 +11,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func (st *Storage) DeleteCharacter(ctx context.Context, characterID int32) error {
@@ -69,10 +70,11 @@ func (st *Storage) GetFirstCharacter(ctx context.Context) (*app.Character, error
 	if err != nil {
 		return nil, fmt.Errorf("list first character: %w", err)
 	}
-	if len(ids) == 0 {
+	id, err := ids.Pop()
+	if err != nil {
 		return nil, ErrNotFound
 	}
-	return st.GetCharacter(ctx, ids[0])
+	return st.GetCharacter(ctx, id)
 
 }
 
@@ -126,12 +128,12 @@ func (st *Storage) ListCharactersShort(ctx context.Context) ([]*app.CharacterSho
 	return cc, nil
 }
 
-func (st *Storage) ListCharacterIDs(ctx context.Context) ([]int32, error) {
+func (st *Storage) ListCharacterIDs(ctx context.Context) (set.Set[int32], error) {
 	ids, err := st.q.ListCharacterIDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list character IDs: %w", err)
 	}
-	ids2 := convertNumericSlice[int64, int32](ids)
+	ids2 := set.NewFromSlice(convertNumericSlice[int64, int32](ids))
 	return ids2, nil
 }
 
