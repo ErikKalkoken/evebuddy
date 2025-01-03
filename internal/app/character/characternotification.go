@@ -2,7 +2,9 @@ package character
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
@@ -24,6 +26,32 @@ func (s *CharacterService) CountCharacterNotificationUnreads(ctx context.Context
 	return categories, nil
 }
 
+// TODO: Add tests for NotifyCommunications
+
+func (cs *CharacterService) NotifyCommunications(ctx context.Context, characterID int32, oldest time.Time, typesEnabled set.Set[string], notify func(title, content string)) error {
+	nn, err := cs.st.ListCharacterNotificationsUnprocessed(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	characterName, err := cs.getCharacterName(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	for _, n := range nn {
+		if !typesEnabled.Contains(n.Type) || n.Timestamp.Before(oldest) {
+			continue
+		}
+		title := fmt.Sprintf("%s: New Communication from %s", characterName, n.Sender.Name)
+		content := n.Title.ValueOrZero()
+		notify(title, content)
+		slog.Info("communications notification sent", "title", title, "content", content)
+		if err := cs.st.UpdateCharacterNotificationSetProcessed(ctx, n.ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *CharacterService) ListCharacterNotificationsTypes(ctx context.Context, characterID int32, types []evenotification.Type) ([]*app.CharacterNotification, error) {
 	t2 := make([]string, len(types))
 	for i, v := range types {
@@ -38,15 +66,6 @@ func (s *CharacterService) ListCharacterNotificationsAll(ctx context.Context, ch
 
 func (s *CharacterService) ListCharacterNotificationsUnread(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
 	return s.st.ListCharacterNotificationsUnread(ctx, characterID)
-}
-
-// ListCharacterNotificationsUnprocessed returns all unprocessed notifications for a given character, which are not older then 24 hours and which have rendered title and body.
-func (s *CharacterService) ListCharacterNotificationsUnprocessed(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
-	return s.st.ListCharacterNotificationsUnprocessed(ctx, characterID)
-}
-
-func (s *CharacterService) UpdateCharacterNotificationSetProcessed(ctx context.Context, n *app.CharacterNotification) error {
-	return s.st.UpdateCharacterNotificationSetProcessed(ctx, n.ID)
 }
 
 func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {

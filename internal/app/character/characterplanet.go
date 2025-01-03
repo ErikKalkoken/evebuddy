@@ -36,7 +36,12 @@ func (cs *CharacterService) NotifyExpiredExtractions(ctx context.Context, charac
 		content := fmt.Sprintf("Extraction expired at %s for %s", p.EvePlanet.Name, extracted)
 		notify(title, content)
 		slog.Info("pi notification sent", "title", title, "content", content)
-		if err := cs.UpdateCharacterPlanetLastNotified(ctx, characterID, p.EvePlanet.ID, expiration); err != nil {
+		arg := storage.UpdateCharacterPlanetLastNotifiedParams{
+			CharacterID:  characterID,
+			EvePlanetID:  p.EvePlanet.ID,
+			LastNotified: expiration,
+		}
+		if err := cs.st.UpdateCharacterPlanetLastNotified(ctx, arg); err != nil {
 			return err
 		}
 	}
@@ -49,15 +54,6 @@ func (s *CharacterService) ListAllCharacterPlanets(ctx context.Context) ([]*app.
 
 func (s *CharacterService) ListCharacterPlanets(ctx context.Context, characterID int32) ([]*app.CharacterPlanet, error) {
 	return s.st.ListCharacterPlanets(ctx, characterID)
-}
-
-func (s *CharacterService) UpdateCharacterPlanetLastNotified(ctx context.Context, characterID, evePlanetID int32, t time.Time) error {
-	arg := storage.UpdateCharacterPlanetLastNotifiedParams{
-		CharacterID:  characterID,
-		EvePlanetID:  evePlanetID,
-		LastNotified: t,
-	}
-	return s.st.UpdateCharacterPlanetLastNotified(ctx, arg)
 }
 
 // TODO: Improve update logic to only update changes

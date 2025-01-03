@@ -198,7 +198,14 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 			u.notificationsArea.refresh()
 		}
 		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault) {
-			go u.notifyCommunications(ctx, characterID)
+			go func() {
+				maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
+				oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
+				typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
+				if err := u.CharacterService.NotifyCommunications(ctx, characterID, oldest, typesEnabled, u.sendDesktopNotification); err != nil {
+					slog.Error("notify communications", "characterID", characterID, "error", err)
+				}
+			}()
 		}
 	case app.SectionSkills:
 		if isShown && needsRefresh {
@@ -237,32 +244,6 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))
-	}
-}
-
-func (u *UI) notifyCommunications(ctx context.Context, characterID int32) {
-	maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
-	nn, err := u.CharacterService.ListCharacterNotificationsUnprocessed(ctx, characterID)
-	if err != nil {
-		slog.Error("Failed to fetch notifications for processing", "characterID", characterID, "error", err)
-		return
-	}
-	characterName := u.StatusCacheService.CharacterName(characterID)
-	typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
-	oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
-	for _, n := range nn {
-		if !typesEnabled.Contains(n.Type) || n.Timestamp.Before(oldest) {
-			continue
-		}
-		title := fmt.Sprintf("%s: New Communication from %s", characterName, n.Sender.Name)
-		content := n.Title.ValueOrZero()
-		nf := fyne.NewNotification(title, content)
-		u.fyneApp.SendNotification(nf)
-		slog.Info("communications notification sent", "notif", nf)
-		if err := u.CharacterService.UpdateCharacterNotificationSetProcessed(ctx, n); err != nil {
-			slog.Error("Failed to set notification as processed", "characterID", characterID, "id", n.ID, "error", err)
-			return
-		}
 	}
 }
 

@@ -127,6 +127,8 @@ var contractTypeFromESIValue = map[string]app.ContractType{
 	"unknown":       app.ContractTypeUnknown,
 }
 
+// FIXME: Only store updates when contract has changed (import for notifs)
+
 // updateCharacterContractsESI updates the wallet journal from ESI and reports wether it has changed.
 func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionContracts {
