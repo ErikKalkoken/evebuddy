@@ -21,9 +21,11 @@ INSERT INTO
         reward,
         start_location_id,
         status,
+        status_notified,
         title,
         type,
-        volume
+        volume,
+        updated_at
     )
 VALUES
     (
@@ -49,7 +51,9 @@ VALUES
         ?,
         ?,
         ?,
-        ?
+        ?,
+        ?,
+        CURRENT_TIMESTAMP
     ) RETURNING id;
 
 -- name: GetCharacterContract :one
@@ -146,7 +150,18 @@ SET
     assignee_id = ?,
     date_accepted = ?,
     date_completed = ?,
-    status = ?
+    status = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE
+    character_id = ?
+    AND contract_id = ?;
+
+-- name: UpdateCharacterContractNotified :exec
+UPDATE
+    character_contracts
+SET
+    status_notified = ?,
+    updated_at = CURRENT_TIMESTAMP
 WHERE
     character_id = ?
     AND contract_id = ?;

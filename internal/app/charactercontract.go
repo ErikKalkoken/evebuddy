@@ -9,35 +9,35 @@ import (
 	"golang.org/x/text/language"
 )
 
-type CharacterContractAvailability uint
+type ContractAvailability uint
 
 const (
-	ContractAvailabilityUnknown CharacterContractAvailability = iota
+	ContractAvailabilityUndefined ContractAvailability = iota
 	ContractAvailabilityAlliance
 	ContractAvailabilityCorporation
 	ContractAvailabilityPersonal
 	ContractAvailabilityPublic
 )
 
-var cca2String = map[CharacterContractAvailability]string{
+var cca2String = map[ContractAvailability]string{
 	ContractAvailabilityAlliance:    "alliance",
 	ContractAvailabilityCorporation: "corporation",
 	ContractAvailabilityPersonal:    "private",
 	ContractAvailabilityPublic:      "public",
 }
 
-func (cca CharacterContractAvailability) String() string {
+func (cca ContractAvailability) String() string {
 	s, ok := cca2String[cca]
 	if !ok {
-		return "unknown"
+		return "?"
 	}
 	return s
 }
 
-type CharacterContractStatus uint
+type ContractStatus uint
 
 const (
-	ContractStatusUnknown CharacterContractStatus = iota
+	ContractStatusUndefined ContractStatus = iota
 	ContractStatusCancelled
 	ContractStatusDeleted
 	ContractStatusFailed
@@ -50,7 +50,7 @@ const (
 	ContractStatusReversed
 )
 
-var ccs2String = map[CharacterContractStatus]string{
+var ccs2String = map[ContractStatus]string{
 	ContractStatusCancelled:          "cancelled",
 	ContractStatusDeleted:            "deleted",
 	ContractStatusFailed:             "failed",
@@ -63,35 +63,37 @@ var ccs2String = map[CharacterContractStatus]string{
 	ContractStatusReversed:           "reversed",
 }
 
-func (ccs CharacterContractStatus) String() string {
+func (ccs ContractStatus) String() string {
 	s, ok := ccs2String[ccs]
 	if !ok {
-		return "unknown"
+		return "?"
 	}
 	return s
 }
 
-type CharacterContractType uint
+type ContractType uint
 
 const (
-	ContractTypeUnknown CharacterContractType = iota
+	ContractTypeUndefined ContractType = iota
 	ContractTypeAuction
 	ContractTypeCourier
 	ContractTypeItemExchange
 	ContractTypeLoan
+	ContractTypeUnknown
 )
 
-var cct2String = map[CharacterContractType]string{
+var cct2String = map[ContractType]string{
 	ContractTypeAuction:      "auction",
 	ContractTypeCourier:      "courier",
 	ContractTypeItemExchange: "item exchange",
 	ContractTypeLoan:         "loan",
+	ContractTypeUnknown:      "unknown",
 }
 
-func (cct CharacterContractType) String() string {
+func (cct ContractType) String() string {
 	s, ok := cct2String[cct]
 	if !ok {
-		return "unknown"
+		return "?"
 	}
 	return s
 }
@@ -100,7 +102,7 @@ type CharacterContract struct {
 	ID                int64
 	Acceptor          *EveEntity
 	Assignee          *EveEntity
-	Availability      CharacterContractAvailability
+	Availability      ContractAvailability
 	Buyout            float64
 	CharacterID       int32
 	Collateral        float64
@@ -120,16 +122,18 @@ type CharacterContract struct {
 	Reward            float64
 	StartLocation     *EntityShort[int64]
 	StartSolarSystem  *EntityShort[int32]
-	Status            CharacterContractStatus
+	Status            ContractStatus
+	StatusNotified    ContractStatus
 	Title             string
-	Type              CharacterContractType
+	Type              ContractType
+	UpdatedAt         time.Time
 	Volume            float64
 }
 
 func (cc CharacterContract) AvailabilityDisplay() string {
 	caser := cases.Title(language.English)
 	s := caser.String(cc.Availability.String())
-	if cc.Assignee != nil && cc.Availability != ContractAvailabilityPublic && cc.Availability != ContractAvailabilityUnknown {
+	if cc.Assignee != nil && cc.Availability != ContractAvailabilityPublic && cc.Availability != ContractAvailabilityUndefined {
 		s += " - " + cc.Assignee.Name
 	}
 	return s

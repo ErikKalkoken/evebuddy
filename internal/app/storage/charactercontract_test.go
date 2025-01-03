@@ -48,6 +48,7 @@ func TestCharacterContract(t *testing.T) {
 				assert.Equal(t, app.ContractAvailabilityPersonal, o.Availability)
 				assert.Equal(t, app.ContractStatusOutstanding, o.Status)
 				assert.Equal(t, app.ContractTypeCourier, o.Type)
+				assert.WithinDuration(t, time.Now().UTC(), o.UpdatedAt, 5*time.Second)
 			}
 		}
 	})
@@ -120,6 +121,26 @@ func TestCharacterContract(t *testing.T) {
 				assert.Equal(t, app.ContractStatusFinished, o.Status)
 				assert.Equal(t, optional.New(dateAccepted), o.DateAccepted)
 				assert.Equal(t, optional.New(dateCompleted), o.DateCompleted)
+			}
+		}
+	})
+	t.Run("can update notified", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		c := factory.CreateCharacter()
+		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
+		arg2 := storage.UpdateCharacterContractNotifiedParams{
+			CharacterID:    o.CharacterID,
+			ContractID:     o.ContractID,
+			StatusNotified: app.ContractStatusInProgress,
+		}
+		// when
+		err := r.UpdateCharacterContractNotified(ctx, arg2)
+		// then
+		if assert.NoError(t, err) {
+			o, err := r.GetCharacterContract(ctx, o.CharacterID, o.ContractID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, app.ContractStatusInProgress, o.StatusNotified)
 			}
 		}
 	})

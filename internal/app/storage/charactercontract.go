@@ -12,6 +12,34 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
+var contractAvailableToEnum = map[string]app.ContractAvailability{
+	"alliance":    app.ContractAvailabilityAlliance,
+	"corporation": app.ContractAvailabilityCorporation,
+	"personal":    app.ContractAvailabilityPersonal,
+	"public":      app.ContractAvailabilityPublic,
+}
+
+var contractStatusToEnum = map[string]app.ContractStatus{
+	"cancelled":           app.ContractStatusCancelled,
+	"deleted":             app.ContractStatusDeleted,
+	"failed":              app.ContractStatusFailed,
+	"finished_contractor": app.ContractStatusFinishedContractor,
+	"finished_issuer":     app.ContractStatusFinishedIssuer,
+	"finished":            app.ContractStatusFinished,
+	"in_progress":         app.ContractStatusInProgress,
+	"outstanding":         app.ContractStatusOutstanding,
+	"rejected":            app.ContractStatusRejected,
+	"reversed":            app.ContractStatusReversed,
+}
+
+var contractTypeToEnum = map[string]app.ContractType{
+	"auction":       app.ContractTypeAuction,
+	"courier":       app.ContractTypeCourier,
+	"item_exchange": app.ContractTypeItemExchange,
+	"loan":          app.ContractTypeLoan,
+	"undefined":     app.ContractTypeUndefined,
+}
+
 type CreateCharacterContractParams struct {
 	AcceptorID          int32
 	AssigneeID          int32
@@ -183,31 +211,33 @@ func (st *Storage) UpdateCharacterContract(ctx context.Context, arg UpdateCharac
 	return nil
 }
 
-var contractAvailableToEnum = map[string]app.CharacterContractAvailability{
-	"alliance":    app.ContractAvailabilityAlliance,
-	"corporation": app.ContractAvailabilityCorporation,
-	"personal":    app.ContractAvailabilityPersonal,
-	"public":      app.ContractAvailabilityPublic,
+type UpdateCharacterContractNotifiedParams struct {
+	CharacterID    int32
+	ContractID     int32
+	StatusNotified app.ContractStatus
 }
 
-var contractStatusToEnum = map[string]app.CharacterContractStatus{
-	"cancelled":           app.ContractStatusCancelled,
-	"deleted":             app.ContractStatusDeleted,
-	"failed":              app.ContractStatusFailed,
-	"finished_contractor": app.ContractStatusFinishedContractor,
-	"finished_issuer":     app.ContractStatusFinishedIssuer,
-	"finished":            app.ContractStatusFinished,
-	"in_progress":         app.ContractStatusInProgress,
-	"outstanding":         app.ContractStatusOutstanding,
-	"rejected":            app.ContractStatusRejected,
-	"reversed":            app.ContractStatusReversed,
-}
-
-var contractTypeToEnum = map[string]app.CharacterContractType{
-	"auction":       app.ContractTypeAuction,
-	"courier":       app.ContractTypeCourier,
-	"item_exchange": app.ContractTypeItemExchange,
-	"loan":          app.ContractTypeLoan,
+func (st *Storage) UpdateCharacterContractNotified(ctx context.Context, arg UpdateCharacterContractNotifiedParams) error {
+	if arg.CharacterID == 0 || arg.ContractID == 0 {
+		return fmt.Errorf("update character contract notified. IDs not set: %v", arg)
+	}
+	var statusNotified string
+	for k, v := range contractStatusToEnum {
+		if v == arg.StatusNotified {
+			statusNotified = k
+			break
+		}
+	}
+	arg2 := queries.UpdateCharacterContractNotifiedParams{
+		CharacterID:    int64(arg.CharacterID),
+		ContractID:     int64(arg.ContractID),
+		StatusNotified: statusNotified,
+	}
+	err := st.q.UpdateCharacterContractNotified(ctx, arg2)
+	if err != nil {
+		return fmt.Errorf("update character contract notified: %w", err)
+	}
+	return nil
 }
 
 func characterContractFromDBModel(
@@ -226,15 +256,19 @@ func characterContractFromDBModel(
 ) *app.CharacterContract {
 	availability, ok := contractAvailableToEnum[o.Availability]
 	if !ok {
-		availability = app.ContractAvailabilityUnknown
+		availability = app.ContractAvailabilityUndefined
 	}
 	status, ok := contractStatusToEnum[o.Status]
 	if !ok {
-		status = app.ContractStatusUnknown
+		status = app.ContractStatusUndefined
+	}
+	statusNotified, ok := contractStatusToEnum[o.StatusNotified]
+	if !ok {
+		statusNotified = app.ContractStatusUndefined
 	}
 	typ, ok := contractTypeToEnum[o.Type]
 	if !ok {
-		typ = app.ContractTypeUnknown
+		typ = app.ContractTypeUndefined
 	}
 	i2, ok := items.(string)
 	if !ok {
@@ -261,8 +295,10 @@ func characterContractFromDBModel(
 		Price:             o.Price,
 		Reward:            o.Reward,
 		Status:            status,
+		StatusNotified:    statusNotified,
 		Title:             o.Title,
 		Type:              typ,
+		UpdatedAt:         o.UpdatedAt,
 		Volume:            o.Volume,
 	}
 	if o.EndLocationID.Valid && endLocationName.Valid {

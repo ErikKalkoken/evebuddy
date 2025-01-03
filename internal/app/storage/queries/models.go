@@ -70,8 +70,10 @@ type CharacterContract struct {
 	Reward              float64
 	StartLocationID     sql.NullInt64
 	Status              string
+	StatusNotified      string
 	Title               string
 	Type                string
+	UpdatedAt           time.Time
 	Volume              float64
 }
 

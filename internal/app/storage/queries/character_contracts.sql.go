@@ -34,9 +34,11 @@ INSERT INTO
         reward,
         start_location_id,
         status,
+        status_notified,
         title,
         type,
-        volume
+        volume,
+        updated_at
     )
 VALUES
     (
@@ -62,7 +64,9 @@ VALUES
         ?,
         ?,
         ?,
-        ?
+        ?,
+        ?,
+        CURRENT_TIMESTAMP
     ) RETURNING id
 `
 
@@ -87,6 +91,7 @@ type CreateCharacterContractParams struct {
 	Reward              float64
 	StartLocationID     sql.NullInt64
 	Status              string
+	StatusNotified      string
 	Title               string
 	Type                string
 	Volume              float64
@@ -114,6 +119,7 @@ func (q *Queries) CreateCharacterContract(ctx context.Context, arg CreateCharact
 		arg.Reward,
 		arg.StartLocationID,
 		arg.Status,
+		arg.StatusNotified,
 		arg.Title,
 		arg.Type,
 		arg.Volume,
@@ -125,7 +131,7 @@ func (q *Queries) CreateCharacterContract(ctx context.Context, arg CreateCharact
 
 const getCharacterContract = `-- name: GetCharacterContract :one
 SELECT
-    cc.id, cc.acceptor_id, cc.assignee_id, cc.availability, cc.buyout, cc.character_id, cc.collateral, cc.contract_id, cc.date_accepted, cc.date_completed, cc.date_expired, cc.date_issued, cc.days_to_complete, cc.end_location_id, cc.for_corporation, cc.issuer_corporation_id, cc.issuer_id, cc.price, cc.reward, cc.start_location_id, cc.status, cc.title, cc.type, cc.volume,
+    cc.id, cc.acceptor_id, cc.assignee_id, cc.availability, cc.buyout, cc.character_id, cc.collateral, cc.contract_id, cc.date_accepted, cc.date_completed, cc.date_expired, cc.date_issued, cc.days_to_complete, cc.end_location_id, cc.for_corporation, cc.issuer_corporation_id, cc.issuer_id, cc.price, cc.reward, cc.start_location_id, cc.status, cc.status_notified, cc.title, cc.type, cc.updated_at, cc.volume,
     issuer_corporation.id, issuer_corporation.category, issuer_corporation.name,
     issuer.id, issuer.category, issuer.name,
     acceptor.name as acceptor_name,
@@ -210,8 +216,10 @@ func (q *Queries) GetCharacterContract(ctx context.Context, arg GetCharacterCont
 		&i.CharacterContract.Reward,
 		&i.CharacterContract.StartLocationID,
 		&i.CharacterContract.Status,
+		&i.CharacterContract.StatusNotified,
 		&i.CharacterContract.Title,
 		&i.CharacterContract.Type,
+		&i.CharacterContract.UpdatedAt,
 		&i.CharacterContract.Volume,
 		&i.EveEntity.ID,
 		&i.EveEntity.Category,
@@ -268,7 +276,7 @@ func (q *Queries) ListCharacterContractIDs(ctx context.Context, characterID int6
 
 const listCharacterContracts = `-- name: ListCharacterContracts :many
 SELECT
-    cc.id, cc.acceptor_id, cc.assignee_id, cc.availability, cc.buyout, cc.character_id, cc.collateral, cc.contract_id, cc.date_accepted, cc.date_completed, cc.date_expired, cc.date_issued, cc.days_to_complete, cc.end_location_id, cc.for_corporation, cc.issuer_corporation_id, cc.issuer_id, cc.price, cc.reward, cc.start_location_id, cc.status, cc.title, cc.type, cc.volume,
+    cc.id, cc.acceptor_id, cc.assignee_id, cc.availability, cc.buyout, cc.character_id, cc.collateral, cc.contract_id, cc.date_accepted, cc.date_completed, cc.date_expired, cc.date_issued, cc.days_to_complete, cc.end_location_id, cc.for_corporation, cc.issuer_corporation_id, cc.issuer_id, cc.price, cc.reward, cc.start_location_id, cc.status, cc.status_notified, cc.title, cc.type, cc.updated_at, cc.volume,
     issuer_corporation.id, issuer_corporation.category, issuer_corporation.name,
     issuer.id, issuer.category, issuer.name,
     acceptor.name as acceptor_name,
@@ -354,8 +362,10 @@ func (q *Queries) ListCharacterContracts(ctx context.Context, characterID int64)
 			&i.CharacterContract.Reward,
 			&i.CharacterContract.StartLocationID,
 			&i.CharacterContract.Status,
+			&i.CharacterContract.StatusNotified,
 			&i.CharacterContract.Title,
 			&i.CharacterContract.Type,
+			&i.CharacterContract.UpdatedAt,
 			&i.CharacterContract.Volume,
 			&i.EveEntity.ID,
 			&i.EveEntity.Category,
@@ -396,7 +406,8 @@ SET
     assignee_id = ?,
     date_accepted = ?,
     date_completed = ?,
-    status = ?
+    status = ?,
+    updated_at = CURRENT_TIMESTAMP
 WHERE
     character_id = ?
     AND contract_id = ?
@@ -422,5 +433,27 @@ func (q *Queries) UpdateCharacterContract(ctx context.Context, arg UpdateCharact
 		arg.CharacterID,
 		arg.ContractID,
 	)
+	return err
+}
+
+const updateCharacterContractNotified = `-- name: UpdateCharacterContractNotified :exec
+UPDATE
+    character_contracts
+SET
+    status_notified = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE
+    character_id = ?
+    AND contract_id = ?
+`
+
+type UpdateCharacterContractNotifiedParams struct {
+	StatusNotified string
+	CharacterID    int64
+	ContractID     int64
+}
+
+func (q *Queries) UpdateCharacterContractNotified(ctx context.Context, arg UpdateCharacterContractNotifiedParams) error {
+	_, err := q.db.ExecContext(ctx, updateCharacterContractNotified, arg.StatusNotified, arg.CharacterID, arg.ContractID)
 	return err
 }
