@@ -80,6 +80,7 @@ type CreateCharacterContractParams struct {
 	Reward              float64
 	StartLocationID     int64
 	Status              app.ContractStatus
+	StatusNotified      app.ContractStatus
 	Title               string
 	Type                app.ContractType
 	Volume              float64
@@ -106,6 +107,7 @@ func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharac
 		Price:               arg.Price,
 		Reward:              arg.Reward,
 		Status:              contractStatusToDBValue[arg.Status],
+		StatusNotified:      contractStatusToDBValue[arg.StatusNotified],
 		Title:               arg.Title,
 		Type:                contractTypeToDBValue[arg.Type],
 		Volume:              arg.Volume,

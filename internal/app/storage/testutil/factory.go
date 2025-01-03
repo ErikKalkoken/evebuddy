@@ -242,6 +242,23 @@ func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContract
 	return o
 }
 
+func (f Factory) CreateCharacterContractCourier(args ...storage.CreateCharacterContractParams) *app.CharacterContract {
+	var arg storage.CreateCharacterContractParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	arg.Type = app.ContractTypeCourier
+	if arg.EndLocationID == 0 {
+		x := f.CreateLocationStructure()
+		arg.EndLocationID = x.ID
+	}
+	if arg.StartLocationID == 0 {
+		x := f.CreateLocationStructure()
+		arg.StartLocationID = x.ID
+	}
+	return f.CreateCharacterContract(arg)
+}
+
 func (f Factory) CreateCharacterContractBid(args ...storage.CreateCharacterContractBidParams) *app.CharacterContractBid {
 	ctx := context.TODO()
 	var arg storage.CreateCharacterContractBidParams

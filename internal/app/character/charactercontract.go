@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -39,16 +40,63 @@ func (s *CharacterService) GetCharacterContractTopBid(ctx context.Context, contr
 	return top, nil
 }
 
+func (cs *CharacterService) NotifyUpdatedContracts(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
+	cc, err := cs.ListCharacterContracts(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	character, err := cs.GetCharacter(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	characterName := character.EveCharacter.Name
+	for _, c := range cc {
+		if c.UpdatedAt.Before(earliest) {
+			continue
+		}
+		if c.Status == c.StatusNotified {
+			continue
+		}
+		if c.Acceptor != nil && c.Acceptor.ID == characterID {
+			continue // ignore status changed caused by the current character
+		}
+		var content string
+		name := "'" + c.NameDisplay() + "'"
+		switch c.Type {
+		case app.ContractTypeCourier:
+			switch c.Status {
+			case app.ContractStatusInProgress:
+				content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.ContractorDisplay())
+			case app.ContractStatusFinished:
+				content = fmt.Sprintf("Contract %s has been delivered", name)
+			case app.ContractStatusFailed:
+				content = fmt.Sprintf("Contract %s has been failed by %s", name, c.ContractorDisplay())
+			}
+		case app.ContractTypeItemExchange:
+			switch c.Status {
+			case app.ContractStatusFinished:
+				content = fmt.Sprintf("Contract %s has been accepted by %s", name, c.ContractorDisplay())
+			}
+		}
+		if content == "" {
+			continue
+		}
+		title := fmt.Sprintf("%s: Contract updated", characterName)
+		notify(title, content)
+		slog.Info("contract notification sent", "title", title, "content", content)
+		if err := cs.st.UpdateCharacterContractNotified(ctx, c.ID, c.Status); err != nil {
+			return fmt.Errorf("record contract notification: %w", err)
+		}
+	}
+	return nil
+}
+
 func (s *CharacterService) ListCharacterContracts(ctx context.Context, characterID int32) ([]*app.CharacterContract, error) {
 	return s.st.ListCharacterContracts(ctx, characterID)
 }
 
 func (s *CharacterService) ListCharacterContractItems(ctx context.Context, contractID int64) ([]*app.CharacterContractItem, error) {
 	return s.st.ListCharacterContractItems(ctx, contractID)
-}
-
-func (s *CharacterService) UpdateCharacterContractNotified(ctx context.Context, id int64, status app.ContractStatus) error {
-	return s.st.UpdateCharacterContractNotified(ctx, id, status)
 }
 
 var contractAvailabilityFromESIValue = map[string]app.ContractAvailability{
