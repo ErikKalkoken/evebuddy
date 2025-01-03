@@ -7,6 +7,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // FIXME: Wrong unique clause and missing index for ref_id
@@ -80,12 +81,12 @@ func (st *Storage) GetCharacterWalletJournalEntry(ctx context.Context, character
 	return characterWalletJournalEntryFromDBModel(o, firstParty, secondParty, taxReceiver), err
 }
 
-func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int32) ([]int64, error) {
+func (st *Storage) ListCharacterWalletJournalEntryIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
 	ids, err := st.q.ListCharacterWalletJournalEntryRefIDs(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list wallet journal entry ids for character %d: %w", characterID, err)
 	}
-	return ids, nil
+	return set.NewFromSlice(ids), nil
 }
 
 func (st *Storage) ListCharacterWalletJournalEntries(ctx context.Context, id int32) ([]*app.CharacterWalletJournalEntry, error) {

@@ -90,11 +90,10 @@ func TestCharacterNotification(t *testing.T) {
 		e2 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
 		e3 := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{CharacterID: c.ID})
 		// when
-		ids, err := r.ListCharacterNotificationIDs(ctx, c.ID)
+		got, err := r.ListCharacterNotificationIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := set.NewFromSlice(ids)
-			want := set.NewFromSlice([]int64{e1.NotificationID, e2.NotificationID, e3.NotificationID})
+			want := set.New(e1.NotificationID, e2.NotificationID, e3.NotificationID)
 			assert.Equal(t, want, got)
 		}
 	})

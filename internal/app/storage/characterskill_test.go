@@ -83,7 +83,7 @@ func TestCharacterSkill(t *testing.T) {
 		ids, err := r.ListCharacterSkillIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			assert.ElementsMatch(t, []int32{o1.EveType.ID, o2.EveType.ID}, ids)
+			assert.ElementsMatch(t, []int32{o1.EveType.ID, o2.EveType.ID}, ids.ToSlice())
 		}
 	})
 	t.Run("can delete excluded skills", func(t *testing.T) {
@@ -98,7 +98,7 @@ func TestCharacterSkill(t *testing.T) {
 		if assert.NoError(t, err) {
 			ids, err := r.ListCharacterSkillIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.ElementsMatch(t, []int32{x1.EveType.ID}, ids)
+				assert.ElementsMatch(t, []int32{x1.EveType.ID}, ids.ToSlice())
 			}
 		}
 	})

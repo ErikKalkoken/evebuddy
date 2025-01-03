@@ -47,10 +47,9 @@ func TestUpdateCharacterImplantsESI(t *testing.T) {
 				for _, o := range oo {
 					got.Add(o.EveType.ID)
 				}
-				want := set.NewFromSlice([]int32{t1.ID, t2.ID})
-				assert.Equal(t, want, got)
+				want := set.New(t1.ID, t2.ID)
+				assert.True(t, want.Equal(got))
 			}
-
 		}
 	})
 }

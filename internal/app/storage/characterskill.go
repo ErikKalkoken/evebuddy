@@ -8,6 +8,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func (st *Storage) DeleteCharacterSkills(ctx context.Context, characterID int32, eveTypeIDs []int32) error {
@@ -38,12 +39,13 @@ func (st *Storage) GetCharacterSkill(ctx context.Context, characterID int32, typ
 	return t2, nil
 }
 
-func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int32) ([]int32, error) {
-	ids, err := st.q.ListCharacterSkillIDs(ctx, int64(characterID))
+func (st *Storage) ListCharacterSkillIDs(ctx context.Context, characterID int32) (set.Set[int32], error) {
+	ids1, err := st.q.ListCharacterSkillIDs(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list skill ids for character %d: %w", characterID, err)
 	}
-	return convertNumericSlice[int64, int32](ids), nil
+	ids2 := set.NewFromSlice(convertNumericSlice[int64, int32](ids1))
+	return ids2, nil
 }
 
 func (st *Storage) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]app.ListCharacterSkillProgress, error) {

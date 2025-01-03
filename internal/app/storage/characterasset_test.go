@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func TestCharacterAsset(t *testing.T) {
@@ -123,7 +124,7 @@ func TestCharacterAsset(t *testing.T) {
 		if assert.NoError(t, err) {
 			ids, err := r.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.ElementsMatch(t, []int64{x1.ItemID}, ids)
+				assert.Equal(t, set.New(x1.ItemID), ids)
 			}
 		}
 	})

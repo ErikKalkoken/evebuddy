@@ -140,7 +140,7 @@ func TestUpdateMail(t *testing.T) {
 							got.Add(l.LabelID)
 						}
 						want := set.NewFromSlice(labelIDs)
-						assert.Equal(t, want, got)
+						assert.True(t, want.Equal(got))
 					}
 					lists, err := st.ListCharacterMailListsOrdered(ctx, c2.ID)
 					if assert.NoError(t, err) {
@@ -148,8 +148,8 @@ func TestUpdateMail(t *testing.T) {
 						for _, l := range lists {
 							got.Add(l.ID)
 						}
-						want := set.NewFromSlice([]int32{m2.ID})
-						assert.Equal(t, want, got)
+						want := set.New(m2.ID)
+						assert.True(t, want.Equal(got))
 					}
 				}
 			}
@@ -260,7 +260,7 @@ func TestUpdateMail(t *testing.T) {
 				for _, l := range labels {
 					got.Add(l.LabelID)
 				}
-				want := set.NewFromSlice([]int32{16, 32})
+				want := set.New[int32](16, 32)
 				assert.Equal(t, want, got)
 			}
 		}

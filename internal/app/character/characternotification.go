@@ -64,11 +64,10 @@ func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, 
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			notifications := data.([]esi.GetCharactersCharacterIdNotifications200Ok)
-			ii, err := s.st.ListCharacterNotificationIDs(ctx, characterID)
+			existingIDs, err := s.st.ListCharacterNotificationIDs(ctx, characterID)
 			if err != nil {
 				return err
 			}
-			existingIDs := set.NewFromSlice(ii)
 			var newNotifs []esi.GetCharactersCharacterIdNotifications200Ok
 			var existingNotifs []esi.GetCharactersCharacterIdNotifications200Ok
 			for _, n := range notifications {

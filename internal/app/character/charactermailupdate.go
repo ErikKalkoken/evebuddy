@@ -180,12 +180,11 @@ func (s *CharacterService) determineNewMail(ctx context.Context, characterID int
 	return newMail, existingMail, nil
 }
 
-func (s *CharacterService) determineMailIDs(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) (*set.Set[int32], *set.Set[int32], error) {
-	ids, err := s.st.ListCharacterMailIDs(ctx, characterID)
+func (s *CharacterService) determineMailIDs(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) (set.Set[int32], set.Set[int32], error) {
+	existingIDs, err := s.st.ListCharacterMailIDs(ctx, characterID)
 	if err != nil {
-		return nil, nil, err
+		return set.New[int32](), set.New[int32](), err
 	}
-	existingIDs := set.NewFromSlice(ids)
 	incomingIDs := set.New[int32]()
 	for _, h := range headers {
 		incomingIDs.Add(h.MailId)

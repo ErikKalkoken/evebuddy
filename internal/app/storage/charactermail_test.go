@@ -92,10 +92,9 @@ func TestMail(t *testing.T) {
 			})
 		}
 		// when
-		ids, err := r.ListCharacterMailIDs(ctx, c.ID)
+		got, err := r.ListCharacterMailIDs(ctx, c.ID)
 		// then
 		assert.NoError(t, err)
-		got := set.NewFromSlice(ids)
 		want := set.NewFromSlice([]int32{10, 11, 12})
 		assert.Equal(t, want, got)
 	})

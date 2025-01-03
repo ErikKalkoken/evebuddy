@@ -46,7 +46,7 @@ func (eu *EveUniverseService) ToEveEntities(ctx context.Context, ids []int32) (m
 	if _, err := eu.AddMissingEveEntities(ctx, ids2.ToSlice()); err != nil {
 		return nil, err
 	}
-	for id := range ids2.All() {
+	for id := range ids2.Values() {
 		x, err := eu.GetOrCreateEveEntityESI(ctx, id)
 		if err != nil {
 			return nil, err

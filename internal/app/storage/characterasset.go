@@ -9,6 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type CreateCharacterAssetParams struct {
@@ -78,12 +79,12 @@ func (st *Storage) CalculateCharacterAssetTotalValue(ctx context.Context, charac
 	return v.Float64, nil
 }
 
-func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32) ([]int64, error) {
+func (st *Storage) ListCharacterAssetIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
 	ids, err := st.q.ListCharacterAssetIDs(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list character asset IDs: %w", err)
 	}
-	return ids, nil
+	return set.NewFromSlice(ids), nil
 }
 
 func (st *Storage) ListCharacterAssetsInShipHangar(ctx context.Context, characterID int32, locationID int64) ([]*app.CharacterAsset, error) {

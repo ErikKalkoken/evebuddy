@@ -159,7 +159,7 @@ func TestUpdateCharacterAssetsESI(t *testing.T) {
 			assert.True(t, changed)
 			ids, err := st.ListCharacterAssetIDs(ctx, c.ID)
 			if assert.NoError(t, err) {
-				assert.ElementsMatch(t, []int64{1000000016835, 1000000016836}, ids)
+				assert.ElementsMatch(t, []int64{1000000016835, 1000000016836}, ids.ToSlice())
 			}
 		}
 	})

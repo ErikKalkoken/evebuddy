@@ -9,6 +9,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 type CreateEveCharacterParams struct {
@@ -91,12 +92,12 @@ func (st *Storage) GetEveCharacter(ctx context.Context, characterID int32) (*app
 	return c, nil
 }
 
-func (st *Storage) ListEveCharacterIDs(ctx context.Context) ([]int32, error) {
+func (st *Storage) ListEveCharacterIDs(ctx context.Context) (set.Set[int32], error) {
 	ids, err := st.q.ListEveCharacterIDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list EveCharacterIDs: %w", err)
 	}
-	ids2 := convertNumericSlice[int64, int32](ids)
+	ids2 := set.NewFromSlice(convertNumericSlice[int64, int32](ids))
 	return ids2, nil
 }
 

@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int32, notificationID int64) (*app.CharacterNotification, error) {
@@ -24,12 +25,12 @@ func (st *Storage) GetCharacterNotification(ctx context.Context, characterID int
 	return characterNotificationFromDBModel(row.CharacterNotification, row.EveEntity, row.NotificationType), err
 }
 
-func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID int32) ([]int64, error) {
+func (st *Storage) ListCharacterNotificationIDs(ctx context.Context, characterID int32) (set.Set[int64], error) {
 	ids, err := st.q.ListCharacterNotificationIDs(ctx, int64(characterID))
 	if err != nil {
 		return nil, fmt.Errorf("list notification ids for character %d: %w", characterID, err)
 	}
-	return ids, nil
+	return set.NewFromSlice(ids), nil
 }
 
 func (st *Storage) ListCharacterNotificationsTypes(ctx context.Context, characterID int32, types []string) ([]*app.CharacterNotification, error) {

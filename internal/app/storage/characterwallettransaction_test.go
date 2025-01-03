@@ -65,11 +65,10 @@ func TestWalletTransaction(t *testing.T) {
 		e2 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		e3 := factory.CreateCharacterWalletTransaction(storage.CreateCharacterWalletTransactionParams{CharacterID: c.ID})
 		// when
-		ids, err := r.ListCharacterWalletTransactionIDs(ctx, c.ID)
+		got, err := r.ListCharacterWalletTransactionIDs(ctx, c.ID)
 		// then
 		if assert.NoError(t, err) {
-			got := set.NewFromSlice(ids)
-			want := set.NewFromSlice([]int64{e1.TransactionID, e2.TransactionID, e3.TransactionID})
+			want := set.New(e1.TransactionID, e2.TransactionID, e3.TransactionID)
 			assert.Equal(t, want, got)
 		}
 	})
