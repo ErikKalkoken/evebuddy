@@ -9,6 +9,8 @@ import (
 // Settings
 const (
 	settingLastCharacterID                    = "settingLastCharacterID"
+	SettingLogLevel                           = "logLevel"
+	SettingLogLevelDefault                    = "warning"
 	settingMaxAge                             = "settingMaxAgeHours"
 	settingMaxAgeDefault                      = 6  // hours
 	settingMaxAgeMax                          = 24 // hours
@@ -21,13 +23,16 @@ const (
 	settingNotificationsTypesEnabled          = "settingNotificationsTypesEnabled"
 	settingNotifyCommunicationsEnabled        = "settingNotifyCommunicationsEnabled"
 	settingNotifyCommunicationsEnabledDefault = false
+	settingNotifyContractsEnabled             = "settingNotifyContractsEnabled"
+	settingNotifyContractsEnabledDefault      = false
+	settingNotifyContractsMaxAgeDefault       = 12 // hours
 	settingNotifyMailsEnabled                 = "settingNotifyMailsEnabled"
 	settingNotifyMailsEnabledDefault          = false
+	settingNotifyPIEarliest                   = "settingNotifyPIEarliest"
 	settingNotifyPIEnabled                    = "settingNotifyPIEnabled"
 	settingNotifyPIEnabledDefault             = false
 	settingNotifyTrainingEnabled              = "settingNotifyTrainingEnabled"
 	settingNotifyTrainingEnabledDefault       = false
-	settingNotifyPIEarliest                   = "settingNotifyPIEarliest"
 	settingSysTrayEnabled                     = "settingSysTrayEnabled"
 	settingSysTrayEnabledDefault              = false
 	settingTabsMainID                         = "tabs-main-id"
@@ -35,8 +40,6 @@ const (
 	settingWindowHeightDefault                = 600
 	settingWindowWidth                        = "window-width"
 	settingWindowWidthDefault                 = 1000
-	SettingLogLevel                           = "logLevel"
-	SettingLogLevelDefault                    = "warning"
 )
 
 // SettingKeys returns all setting keys.
@@ -48,8 +51,10 @@ func SettingKeys() []string {
 		settingMaxWalletTransactions,
 		settingNotificationsTypesEnabled,
 		settingNotifyCommunicationsEnabled,
+		settingNotifyContractsEnabled,
 		settingNotifyMailsEnabled,
 		settingNotifyPIEnabled,
+		settingNotifyTrainingEnabled,
 		settingSysTrayEnabled,
 		settingTabsMainID,
 		settingWindowHeight,

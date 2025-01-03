@@ -267,6 +267,20 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		HintText: "Wether to notify when skillqueue is empty",
 	})
 
+	// Contracts toogle
+	contractsEnabledCheck := kxwidget.NewSwitch(func(on bool) {
+		w.u.fyneApp.Preferences().SetBool(settingNotifyContractsEnabled, on)
+	})
+	contractsEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
+		settingNotifyContractsEnabled,
+		settingNotifyCommunicationsEnabledDefault,
+	))
+	f1.AppendItem(&widget.FormItem{
+		Text:     "Contracts",
+		Widget:   contractsEnabledCheck,
+		HintText: "Wether to notify when contract status changes",
+	})
+
 	f2 := widget.NewForm()
 	categoriesAndTypes := make(map[evenotification.Category][]evenotification.Type)
 	for _, n := range evenotification.SupportedTypes() {
@@ -329,6 +343,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		communicationsEnabledCheck.SetState(settingNotifyCommunicationsEnabledDefault)
 		piEnabledCheck.SetState(settingNotifyPIEnabledDefault)
 		trainingEnabledCheck.SetState(settingNotifyTrainingEnabledDefault)
+		contractsEnabledCheck.SetState(settingNotifyTrainingEnabledDefault)
 		maxAge.SetValue(settingMaxAgeDefault)
 		for _, sw := range notifsAll {
 			sw.SetState(false)
