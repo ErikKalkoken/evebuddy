@@ -2,6 +2,7 @@ package character
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -48,6 +49,34 @@ func (s *CharacterService) ListCharacterContractItems(ctx context.Context, contr
 
 func (s *CharacterService) UpdateCharacterContractNotified(ctx context.Context, id int64, status app.ContractStatus) error {
 	return s.st.UpdateCharacterContractNotified(ctx, id, status)
+}
+
+var contractAvailabilityFromESIValue = map[string]app.ContractAvailability{
+	"alliance":    app.ContractAvailabilityAlliance,
+	"corporation": app.ContractAvailabilityCorporation,
+	"personal":    app.ContractAvailabilityPersonal,
+	"public":      app.ContractAvailabilityPublic,
+}
+
+var contractStatusFromESIValue = map[string]app.ContractStatus{
+	"cancelled":           app.ContractStatusCancelled,
+	"deleted":             app.ContractStatusDeleted,
+	"failed":              app.ContractStatusFailed,
+	"finished_contractor": app.ContractStatusFinishedContractor,
+	"finished_issuer":     app.ContractStatusFinishedIssuer,
+	"finished":            app.ContractStatusFinished,
+	"in_progress":         app.ContractStatusInProgress,
+	"outstanding":         app.ContractStatusOutstanding,
+	"rejected":            app.ContractStatusRejected,
+	"reversed":            app.ContractStatusReversed,
+}
+
+var contractTypeFromESIValue = map[string]app.ContractType{
+	"auction":       app.ContractTypeAuction,
+	"courier":       app.ContractTypeCourier,
+	"item_exchange": app.ContractTypeItemExchange,
+	"loan":          app.ContractTypeLoan,
+	"unknown":       app.ContractTypeUnknown,
 }
 
 // updateCharacterContractsESI updates the wallet journal from ESI and reports wether it has changed.
@@ -117,6 +146,10 @@ func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg 
 			}
 			if len(existingContracts) > 0 {
 				for _, c := range existingContracts {
+					status, ok := contractStatusFromESIValue[c.Status]
+					if !ok {
+						return fmt.Errorf("unknown status: %s", c.Status)
+					}
 					arg := storage.UpdateCharacterContractParams{
 						AcceptorID:    c.AcceptorId,
 						AssigneeID:    c.AssigneeId,
@@ -124,7 +157,7 @@ func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg 
 						DateCompleted: c.DateCompleted,
 						CharacterID:   characterID,
 						ContractID:    c.ContractId,
-						Status:        c.Status,
+						Status:        status,
 					}
 					if err := s.st.UpdateCharacterContract(ctx, arg); err != nil {
 						return err
@@ -147,49 +180,61 @@ func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg 
 		})
 }
 
-func (s *CharacterService) createNewContract(ctx context.Context, characterID int32, o esi.GetCharactersCharacterIdContracts200Ok) error {
-	if o.StartLocationId != 0 {
-		_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, o.StartLocationId)
+func (s *CharacterService) createNewContract(ctx context.Context, characterID int32, c esi.GetCharactersCharacterIdContracts200Ok) error {
+	if c.StartLocationId != 0 {
+		_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, c.StartLocationId)
 		if err != nil {
 			return err
 		}
 	}
-	if o.EndLocationId != 0 {
-		_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, o.EndLocationId)
+	if c.EndLocationId != 0 {
+		_, err := s.EveUniverseService.GetOrCreateEveLocationESI(ctx, c.EndLocationId)
 		if err != nil {
 			return err
 		}
+	}
+	availability, ok := contractAvailabilityFromESIValue[c.Availability]
+	if !ok {
+		return fmt.Errorf("unknown availability: %s", c.Availability)
+	}
+	status, ok := contractStatusFromESIValue[c.Status]
+	if !ok {
+		return fmt.Errorf("unknown status: %s", c.Status)
+	}
+	typ, ok := contractTypeFromESIValue[c.Type_]
+	if !ok {
+		return fmt.Errorf("unknown type: %s", c.Type_)
 	}
 	arg := storage.CreateCharacterContractParams{
-		AcceptorID:          o.AcceptorId,
-		AssigneeID:          o.AssigneeId,
-		Availability:        o.Availability,
-		Buyout:              o.Buyout,
+		AcceptorID:          c.AcceptorId,
+		AssigneeID:          c.AssigneeId,
+		Availability:        availability,
+		Buyout:              c.Buyout,
 		CharacterID:         characterID,
-		Collateral:          o.Collateral,
-		ContractID:          o.ContractId,
-		DateAccepted:        o.DateAccepted,
-		DateCompleted:       o.DateCompleted,
-		DateExpired:         o.DateExpired,
-		DateIssued:          o.DateIssued,
-		DaysToComplete:      o.DaysToComplete,
-		EndLocationID:       o.EndLocationId,
-		ForCorporation:      o.ForCorporation,
-		IssuerCorporationID: o.IssuerCorporationId,
-		IssuerID:            o.IssuerId,
-		Price:               o.Price,
-		Reward:              o.Reward,
-		StartLocationID:     o.StartLocationId,
-		Status:              o.Status,
-		Title:               o.Title,
-		Type:                o.Type_,
-		Volume:              o.Volume,
+		Collateral:          c.Collateral,
+		ContractID:          c.ContractId,
+		DateAccepted:        c.DateAccepted,
+		DateCompleted:       c.DateCompleted,
+		DateExpired:         c.DateExpired,
+		DateIssued:          c.DateIssued,
+		DaysToComplete:      c.DaysToComplete,
+		EndLocationID:       c.EndLocationId,
+		ForCorporation:      c.ForCorporation,
+		IssuerCorporationID: c.IssuerCorporationId,
+		IssuerID:            c.IssuerId,
+		Price:               c.Price,
+		Reward:              c.Reward,
+		StartLocationID:     c.StartLocationId,
+		Status:              status,
+		Title:               c.Title,
+		Type:                typ,
+		Volume:              c.Volume,
 	}
 	id, err := s.st.CreateCharacterContract(ctx, arg)
 	if err != nil {
 		return err
 	}
-	items, _, err := s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContractsContractIdItems(ctx, characterID, o.ContractId, nil)
+	items, _, err := s.esiClient.ESI.ContractsApi.GetCharactersCharacterIdContractsContractIdItems(ctx, characterID, c.ContractId, nil)
 	if err != nil {
 		return err
 	}

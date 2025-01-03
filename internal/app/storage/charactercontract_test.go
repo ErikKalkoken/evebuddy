@@ -26,15 +26,15 @@ func TestCharacterContract(t *testing.T) {
 		dateExpired := time.Now().Add(12 * time.Hour).UTC()
 		dateIssued := time.Now().UTC()
 		arg := storage.CreateCharacterContractParams{
-			Availability:        "personal",
+			Availability:        app.ContractAvailabilityPersonal,
 			CharacterID:         c.ID,
 			ContractID:          42,
 			DateExpired:         dateExpired,
 			DateIssued:          dateIssued,
 			IssuerCorporationID: issuerCorporation.ID,
 			IssuerID:            issuer.ID,
-			Status:              "outstanding",
-			Type:                "courier",
+			Status:              app.ContractStatusOutstanding,
+			Type:                app.ContractTypeCourier,
 		}
 		// when
 		id, err := r.CreateCharacterContract(ctx, arg)
@@ -63,15 +63,15 @@ func TestCharacterContract(t *testing.T) {
 		startLocation := factory.CreateLocationStructure()
 		endLocation := factory.CreateLocationStructure()
 		arg := storage.CreateCharacterContractParams{
-			Availability:        "personal",
+			Availability:        app.ContractAvailabilityPersonal,
 			CharacterID:         c.ID,
 			ContractID:          42,
 			DateExpired:         dateExpired,
 			DateIssued:          dateIssued,
 			IssuerCorporationID: issuerCorporation.ID,
 			IssuerID:            issuer.ID,
-			Status:              "outstanding",
-			Type:                "courier",
+			Status:              app.ContractStatusOutstanding,
+			Type:                app.ContractTypeCourier,
 			EndLocationID:       endLocation.ID,
 			StartLocationID:     startLocation.ID,
 		}
@@ -110,7 +110,7 @@ func TestCharacterContract(t *testing.T) {
 			ContractID:    o.ContractID,
 			DateAccepted:  dateAccepted,
 			DateCompleted: dateCompleted,
-			Status:        "finished",
+			Status:        app.ContractStatusFinished,
 		}
 		// when
 		err := r.UpdateCharacterContract(ctx, arg2)

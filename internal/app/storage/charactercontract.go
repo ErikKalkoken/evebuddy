@@ -12,14 +12,16 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-var contractAvailableToEnum = map[string]app.ContractAvailability{
+var contractAvailabilityFromDBValue = map[string]app.ContractAvailability{
+	"":            app.ContractAvailabilityUndefined,
 	"alliance":    app.ContractAvailabilityAlliance,
 	"corporation": app.ContractAvailabilityCorporation,
 	"personal":    app.ContractAvailabilityPersonal,
 	"public":      app.ContractAvailabilityPublic,
 }
 
-var contractStatusToEnum = map[string]app.ContractStatus{
+var contractStatusFromDBValue = map[string]app.ContractStatus{
+	"":                    app.ContractStatusUndefined,
 	"cancelled":           app.ContractStatusCancelled,
 	"deleted":             app.ContractStatusDeleted,
 	"failed":              app.ContractStatusFailed,
@@ -32,18 +34,35 @@ var contractStatusToEnum = map[string]app.ContractStatus{
 	"reversed":            app.ContractStatusReversed,
 }
 
-var contractTypeToEnum = map[string]app.ContractType{
+var contractTypeFromDBValue = map[string]app.ContractType{
+	"":              app.ContractTypeUndefined,
 	"auction":       app.ContractTypeAuction,
 	"courier":       app.ContractTypeCourier,
 	"item_exchange": app.ContractTypeItemExchange,
 	"loan":          app.ContractTypeLoan,
-	"undefined":     app.ContractTypeUndefined,
+	"unknown":       app.ContractTypeUnknown,
+}
+
+var contractAvailabilityToDBValue = map[app.ContractAvailability]string{}
+var contractStatusToDBValue = map[app.ContractStatus]string{}
+var contractTypeToDBValue = map[app.ContractType]string{}
+
+func init() {
+	for k, v := range contractAvailabilityFromDBValue {
+		contractAvailabilityToDBValue[v] = k
+	}
+	for k, v := range contractStatusFromDBValue {
+		contractStatusToDBValue[v] = k
+	}
+	for k, v := range contractTypeFromDBValue {
+		contractTypeToDBValue[v] = k
+	}
 }
 
 type CreateCharacterContractParams struct {
 	AcceptorID          int32
 	AssigneeID          int32
-	Availability        string
+	Availability        app.ContractAvailability
 	Buyout              float64
 	CharacterID         int32
 	Collateral          float64
@@ -60,18 +79,18 @@ type CreateCharacterContractParams struct {
 	Price               float64
 	Reward              float64
 	StartLocationID     int64
-	Status              string
+	Status              app.ContractStatus
 	Title               string
-	Type                string
+	Type                app.ContractType
 	Volume              float64
 }
 
 func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharacterContractParams) (int64, error) {
-	if arg.CharacterID == 0 || arg.ContractID == 0 || arg.Status == "" || arg.Availability == "" || arg.Type == "" {
+	if arg.CharacterID == 0 || arg.ContractID == 0 {
 		return 0, fmt.Errorf("create character contract. Mandatory fields not set: %v", arg)
 	}
 	arg2 := queries.CreateCharacterContractParams{
-		Availability:        arg.Availability,
+		Availability:        contractAvailabilityToDBValue[arg.Availability],
 		Buyout:              arg.Buyout,
 		CharacterID:         int64(arg.CharacterID),
 		Collateral:          arg.Collateral,
@@ -86,9 +105,9 @@ func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharac
 		IssuerID:            int64(arg.IssuerID),
 		Price:               arg.Price,
 		Reward:              arg.Reward,
-		Status:              arg.Status,
+		Status:              contractStatusToDBValue[arg.Status],
 		Title:               arg.Title,
-		Type:                arg.Type,
+		Type:                contractTypeToDBValue[arg.Type],
 		Volume:              arg.Volume,
 	}
 	if arg.AcceptorID != 0 {
@@ -182,7 +201,7 @@ type UpdateCharacterContractParams struct {
 	DateCompleted time.Time
 	CharacterID   int32
 	ContractID    int32
-	Status        string
+	Status        app.ContractStatus
 }
 
 func (st *Storage) UpdateCharacterContract(ctx context.Context, arg UpdateCharacterContractParams) error {
@@ -194,7 +213,7 @@ func (st *Storage) UpdateCharacterContract(ctx context.Context, arg UpdateCharac
 		ContractID:    int64(arg.ContractID),
 		DateAccepted:  NewNullTimeFromTime(arg.DateAccepted),
 		DateCompleted: NewNullTimeFromTime(arg.DateCompleted),
-		Status:        arg.Status,
+		Status:        contractStatusToDBValue[arg.Status],
 	}
 	if arg.AcceptorID != 0 {
 		arg2.AcceptorID.Int64 = int64(arg.AcceptorID)
@@ -216,7 +235,7 @@ func (st *Storage) UpdateCharacterContractNotified(ctx context.Context, id int64
 		return fmt.Errorf("update character contract notified. IDs not set: %d", id)
 	}
 	var statusNotified string
-	for k, v := range contractStatusToEnum {
+	for k, v := range contractStatusFromDBValue {
 		if v == status {
 			statusNotified = k
 			break
@@ -247,22 +266,6 @@ func characterContractFromDBModel(
 	startSolarSystemName sql.NullString,
 	items any,
 ) *app.CharacterContract {
-	availability, ok := contractAvailableToEnum[o.Availability]
-	if !ok {
-		availability = app.ContractAvailabilityUndefined
-	}
-	status, ok := contractStatusToEnum[o.Status]
-	if !ok {
-		status = app.ContractStatusUndefined
-	}
-	statusNotified, ok := contractStatusToEnum[o.StatusNotified]
-	if !ok {
-		statusNotified = app.ContractStatusUndefined
-	}
-	typ, ok := contractTypeToEnum[o.Type]
-	if !ok {
-		typ = app.ContractTypeUndefined
-	}
 	i2, ok := items.(string)
 	if !ok {
 		i2 = ""
@@ -271,7 +274,7 @@ func characterContractFromDBModel(
 		ID:                o.ID,
 		Acceptor:          eveEntityFromNullableDBModel(acceptor),
 		Assignee:          eveEntityFromNullableDBModel(assignee),
-		Availability:      availability,
+		Availability:      contractAvailabilityFromDBValue[o.Availability],
 		Buyout:            o.Buyout,
 		CharacterID:       int32(o.CharacterID),
 		Collateral:        o.Collateral,
@@ -287,10 +290,10 @@ func characterContractFromDBModel(
 		Items:             strings.Split(i2, ","),
 		Price:             o.Price,
 		Reward:            o.Reward,
-		Status:            status,
-		StatusNotified:    statusNotified,
+		Status:            contractStatusFromDBValue[o.Status],
+		StatusNotified:    contractStatusFromDBValue[o.StatusNotified],
 		Title:             o.Title,
-		Type:              typ,
+		Type:              contractTypeFromDBValue[o.Type],
 		UpdatedAt:         o.UpdatedAt,
 		Volume:            o.Volume,
 	}

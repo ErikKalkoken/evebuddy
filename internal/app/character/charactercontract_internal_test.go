@@ -218,9 +218,9 @@ func TestUpdateContractESI(t *testing.T) {
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
 		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
 			CharacterID:  c.ID,
-			Availability: "public",
-			Status:       "outstanding",
-			Type:         "courier",
+			Availability: app.ContractAvailabilityPublic,
+			Status:       app.ContractStatusOutstanding,
+			Type:         app.ContractTypeCourier,
 		})
 		data := []map[string]any{
 			{
