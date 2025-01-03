@@ -83,7 +83,6 @@ func (cs *CharacterService) NotifyUpdatedContracts(ctx context.Context, characte
 		}
 		title := fmt.Sprintf("%s: Contract updated", characterName)
 		notify(title, content)
-		slog.Info("contract notification sent", "title", title, "content", content)
 		if err := cs.st.UpdateCharacterContractNotified(ctx, c.ID, c.Status); err != nil {
 			return fmt.Errorf("record contract notification: %w", err)
 		}

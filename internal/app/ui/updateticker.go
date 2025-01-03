@@ -104,6 +104,7 @@ func (u *UI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID 
 
 func (u *UI) sendDesktopNotification(title, content string) {
 	u.fyneApp.SendNotification(fyne.NewNotification(title, content))
+	slog.Info("desktop notification sent", "title", title, "content", content)
 }
 
 // updateCharacterSectionAndRefreshIfNeeded runs update for a character section if needed
@@ -191,7 +192,13 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 			u.overviewArea.refresh()
 		}
 		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
-			go u.notifyMails(ctx, characterID)
+			go func() {
+				maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
+				oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
+				if err := u.CharacterService.NotifyMails(ctx, characterID, oldest, u.sendDesktopNotification); err != nil {
+					slog.Error("notify mails", "characterID", characterID, "error", err)
+				}
+			}()
 		}
 	case app.SectionNotifications:
 		if isShown && needsRefresh {
@@ -244,31 +251,6 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))
-	}
-}
-
-func (u *UI) notifyMails(ctx context.Context, characterID int32) {
-	maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
-	mm, err := u.CharacterService.ListCharacterMailHeadersForUnprocessed(ctx, characterID)
-	if err != nil {
-		slog.Error("Failed to fetch mails for processing", "characterID", characterID, "error", err)
-		return
-	}
-	characterName := u.StatusCacheService.CharacterName(characterID)
-	oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
-	for _, m := range mm {
-		if m.Timestamp.Before(oldest) {
-			continue
-		}
-		title := fmt.Sprintf("%s: New Mail from %s", characterName, m.From)
-		content := m.Subject
-		nf := fyne.NewNotification(title, content)
-		u.fyneApp.SendNotification(nf)
-		slog.Info("mail notification sent", "notif", nf)
-		if err := u.CharacterService.UpdateCharacterMailSetProcessed(ctx, m.ID); err != nil {
-			slog.Error("Failed to set mail as processed", "characterID", characterID, "id", m.MailID, "error", err)
-			return
-		}
 	}
 }
 

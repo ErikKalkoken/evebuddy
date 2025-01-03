@@ -147,6 +147,31 @@ func (s *CharacterService) GetCharacterMailListUnreadCounts(ctx context.Context,
 	return s.st.GetCharacterMailListUnreadCounts(ctx, characterID)
 }
 
+// TODO: Add tests for NotifyMails
+
+func (cs *CharacterService) NotifyMails(ctx context.Context, characterID int32, oldest time.Time, notify func(title, content string)) error {
+	mm, err := cs.st.ListCharacterMailHeadersForUnprocessed(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	characterName, err := cs.getCharacterName(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	for _, m := range mm {
+		if m.Timestamp.Before(oldest) {
+			continue
+		}
+		title := fmt.Sprintf("%s: New Mail from %s", characterName, m.From)
+		content := m.Subject
+		notify(title, content)
+		if err := cs.st.UpdateCharacterMailSetProcessed(ctx, m.ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *CharacterService) ListCharacterMailLists(ctx context.Context, characterID int32) ([]*app.EveEntity, error) {
 	return s.st.ListCharacterMailListsOrdered(ctx, characterID)
 }
@@ -162,13 +187,4 @@ func (s *CharacterService) ListCharacterMailHeadersForListOrdered(ctx context.Co
 
 func (s *CharacterService) ListCharacterMailLabelsOrdered(ctx context.Context, characterID int32) ([]*app.CharacterMailLabel, error) {
 	return s.st.ListCharacterMailLabelsOrdered(ctx, characterID)
-}
-
-// ListCharacterMailHeadersForUnprocessed returns all unprocessed mails for a character except sent mails ordered by timestamp.
-func (s *CharacterService) ListCharacterMailHeadersForUnprocessed(ctx context.Context, characterID int32) ([]*app.CharacterMailHeader, error) {
-	return s.st.ListCharacterMailHeadersForUnprocessed(ctx, characterID)
-}
-
-func (s *CharacterService) UpdateCharacterMailSetProcessed(ctx context.Context, id int64) error {
-	return s.st.UpdateCharacterMailSetProcessed(ctx, id)
 }

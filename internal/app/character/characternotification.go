@@ -44,7 +44,6 @@ func (cs *CharacterService) NotifyCommunications(ctx context.Context, characterI
 		title := fmt.Sprintf("%s: New Communication from %s", characterName, n.Sender.Name)
 		content := n.Title.ValueOrZero()
 		notify(title, content)
-		slog.Info("communications notification sent", "title", title, "content", content)
 		if err := cs.st.UpdateCharacterNotificationSetProcessed(ctx, n.ID); err != nil {
 			return err
 		}

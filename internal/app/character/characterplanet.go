@@ -3,7 +3,6 @@ package character
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 	"time"
 
@@ -35,7 +34,6 @@ func (cs *CharacterService) NotifyExpiredExtractions(ctx context.Context, charac
 		extracted := strings.Join(p.ExtractedTypeNames(), ",")
 		content := fmt.Sprintf("Extraction expired at %s for %s", p.EvePlanet.Name, extracted)
 		notify(title, content)
-		slog.Info("pi notification sent", "title", title, "content", content)
 		arg := storage.UpdateCharacterPlanetLastNotifiedParams{
 			CharacterID:  characterID,
 			EvePlanetID:  p.EvePlanet.ID,
