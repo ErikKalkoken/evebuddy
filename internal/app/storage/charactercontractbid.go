@@ -59,7 +59,7 @@ func (st *Storage) ListCharacterContractBids(ctx context.Context, contractID int
 	return oo, nil
 }
 
-func (st *Storage) ListCharacterContractBidIDs(ctx context.Context, contractID int64) (*set.Set[int32], error) {
+func (st *Storage) ListCharacterContractBidIDs(ctx context.Context, contractID int64) (set.Set[int32], error) {
 	ids, err := st.q.ListCharacterContractBidIDs(ctx, contractID)
 	if err != nil {
 		return nil, fmt.Errorf("list bid IDs for contract %d: %w", contractID, err)

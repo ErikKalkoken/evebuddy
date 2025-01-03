@@ -51,16 +51,20 @@ func TestNumber1(t *testing.T) {
 
 func TestDuration(t *testing.T) {
 	var cases = []struct {
-		in  time.Duration
-		out string
+		name string
+		in   time.Duration
+		want string
 	}{
-		{24*10*time.Hour + 5*time.Hour + 3*time.Minute, "10d 5h"},
-		{5*time.Hour + 3*time.Minute, "5h 3m"},
+		{"weeks and days", 24*10*time.Hour + 5*time.Hour + 3*time.Minute, "1w 3d 5h"},
+		{"days and hours", 24*3*time.Hour + 5*time.Hour + 3*time.Minute, "3d 5h"},
+		{"hours and minutes", 5*time.Hour + 3*time.Minute, "5h 3m"},
+		{"below 1 minute", 59 * time.Second, "<1m"},
+		{"negative duration", -5*time.Hour - 3*time.Minute, "0m"},
 	}
 	for _, tc := range cases {
-		t.Run(fmt.Sprintf("Can format duration: %v", tc.in), func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			got := humanize.Duration(tc.in)
-			assert.Equal(t, tc.out, got)
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }

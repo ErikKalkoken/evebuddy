@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -120,7 +119,7 @@ func (a *contractsArea) makeTable() *widget.Table {
 					l.Text = "EXPIRED"
 					l.Importance = widget.DangerImportance
 				} else {
-					l.Text = humanize.RelTime(x, time.Now(), "", "")
+					l.Text = ihumanize.RelTime(x)
 				}
 			}
 			l.Refresh()
@@ -194,6 +193,11 @@ func (a *contractsArea) updateEntries() error {
 
 func (a *contractsArea) showContract(c *app.CharacterContract) {
 	w := a.u.fyneApp.NewWindow("Contract")
+	makeTimeString := func(t time.Time) string {
+		ts := c.DateExpired.Format(app.TimeDefaultFormat)
+		ds := ihumanize.RelTime(t)
+		return fmt.Sprintf("%s (%s)", ts, ds)
+	}
 	makeLocation := func(l *app.EntityShort[int64]) *kxwidget.TappableLabel {
 		x := kxwidget.NewTappableLabel(l.Name, func() {
 			a.u.showLocationInfoWindow(l.ID)
@@ -220,14 +224,8 @@ func (a *contractsArea) showContract(c *app.CharacterContract) {
 		f.Append("Status", widget.NewLabel(c.StatusDisplay()))
 		f.Append("Location", makeLocation(c.StartLocation))
 		if c.Type == app.ContractTypeCourier || c.Type == app.ContractTypeItemExchange {
-			expiredAt := c.DateExpiredEffective()
-			expirationDate := fmt.Sprintf(
-				"%s (%s)",
-				expiredAt.Format(app.TimeDefaultFormat),
-				strings.Trim(humanize.RelTime(expiredAt, time.Now(), "", ""), " "),
-			)
 			f.Append("Date Issued", widget.NewLabel(c.DateIssued.Format(app.TimeDefaultFormat)))
-			f.Append("Expiration Date", widget.NewLabel(expirationDate))
+			f.Append("Expiration Date", widget.NewLabel(makeTimeString(c.DateExpiredEffective())))
 		}
 		return f
 	}
@@ -287,7 +285,7 @@ func (a *contractsArea) showContract(c *app.CharacterContract) {
 				{Text: "Starting Bid", Widget: widget.NewLabel(makeISKString(c.Price))},
 				{Text: "Buyout Price", Widget: widget.NewLabel(makeISKString(c.Buyout))},
 				{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
-				{Text: "Expires", Widget: widget.NewLabel(c.DateExpired.Format(app.TimeDefaultFormat))},
+				{Text: "Expires", Widget: widget.NewLabel(makeTimeString(c.DateExpired))},
 			},
 		}
 		return f
@@ -366,7 +364,7 @@ func (a *contractsArea) showContract(c *app.CharacterContract) {
 	}))
 
 	vs := container.NewVScroll(main)
-	vs.SetMinSize(fyne.NewSize(600, 400))
+	vs.SetMinSize(fyne.NewSize(600, 500))
 
 	w.SetContent(container.NewPadded(container.NewBorder(
 		top,

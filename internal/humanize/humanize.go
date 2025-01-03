@@ -59,17 +59,37 @@ func Number(value float64, decimals int) string {
 	return r
 }
 
-// Duration returns a humanized duration, e.g. 22d 10h 5m.
+// Duration returns a humanized duration, e.g. "10h 5m".
+//
+// Shows days and hours for duration over 1 day, else hours and minutes.
+// Rounds to full minutes.
+// Negative durations are returned as "0 m"
 func Duration(duration time.Duration) string {
-	m := int(math.Round(duration.Abs().Minutes()))
+	if duration < 0 {
+		return "0m"
+	}
+	mRaw := duration.Abs().Minutes()
+	if mRaw < 1 {
+		return "<1m"
+	}
+	m := int(math.Round(mRaw))
+	w := m / 60 / 24 / 7
+	m -= w * 60 * 24 * 7
 	d := m / 60 / 24
 	m -= d * 60 * 24
 	h := m / 60
 	m -= h * 60
-	if d > 0 {
+	if w > 0 {
+		return fmt.Sprintf("%dw %dd %dh", w, d, h)
+	} else if d > 0 {
 		return fmt.Sprintf("%dd %dh", d, h)
 	}
 	return fmt.Sprintf("%dh %dm", h, m)
+}
+
+// RelTime returns the duration until a time in the future.
+func RelTime(t time.Time) string {
+	return Duration(time.Until(t))
 }
 
 func Optional[T time.Duration | time.Time | string | int | int32 | int64](o optional.Optional[T], fallback string) string {
@@ -81,7 +101,7 @@ func Optional[T time.Duration | time.Time | string | int | int32 | int64](o opti
 	case time.Duration:
 		return Duration(x)
 	case time.Time:
-		return humanize.RelTime(x, time.Now(), "", "")
+		return RelTime(x)
 	case string:
 		return x
 	case int:
