@@ -10,55 +10,54 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: Add more test cases
-
 func TestNotifyExpiredExtractions(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()
 	cs := newCharacterService(st)
 	ctx := context.Background()
-	t.Run("send notification when an extraction has expired and not notified", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		p := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{CharacterID: c.ID})
-		factory.CreatePlanetPinExtractor(storage.CreatePlanetPinParams{
-			CharacterPlanetID: p.ID,
-			ExpiryTime:        time.Now().Add(-3 * time.Hour),
+	now := time.Now().UTC()
+	earliest := now.Add(-24 * time.Hour)
+	cases := []struct {
+		name         string
+		isExtractor  bool
+		expiryTime   time.Time
+		lastNotified time.Time
+		shouldNotify bool
+	}{
+		{"extraction expired and not yet notified", true, now.Add(-3 * time.Hour), time.Time{}, true},
+		{"extraction expired and already notified", true, now.Add(-3 * time.Hour), now.Add(-3 * time.Hour), false},
+		{"extraction not expired", true, now.Add(3 * time.Hour), time.Time{}, false},
+		{"extraction expired old", true, now.Add(-48 * time.Hour), time.Time{}, false},
+		{"no expiration date", true, time.Time{}, time.Time{}, false},
+		{"non extractor expired", false, now.Add(-3 * time.Hour), time.Time{}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			testutil.TruncateTables(db)
+			p := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{
+				LastNotified: tc.lastNotified,
+			})
+			if tc.isExtractor {
+				factory.CreatePlanetPinExtractor(storage.CreatePlanetPinParams{
+					CharacterPlanetID: p.ID,
+					ExpiryTime:        tc.expiryTime,
+				})
+			} else {
+				factory.CreatePlanetPin(storage.CreatePlanetPinParams{
+					CharacterPlanetID: p.ID,
+					ExpiryTime:        tc.expiryTime,
+				})
+			}
+			var sendCount int
+			// when
+			err := cs.NotifyExpiredExtractions(ctx, p.CharacterID, earliest, func(title string, content string) {
+				sendCount++
+			})
+			// then
+			if assert.NoError(t, err) {
+				assert.Equal(t, tc.shouldNotify, sendCount == 1)
+			}
 		})
-		earliest := time.Now().Add(-24 * time.Hour)
-		var sendCount int
-		// when
-		err := cs.NotifyExpiredExtractions(ctx, c.ID, earliest, func(title string, content string) {
-			sendCount++
-		})
-		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, sendCount, 1)
-		}
-	})
-	t.Run("send no notification when extraction has expired and already notified", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		expires := time.Now().Add(-3 * time.Hour)
-		p := factory.CreateCharacterPlanet(storage.CreateCharacterPlanetParams{
-			CharacterID:  c.ID,
-			LastNotified: expires,
-		})
-		factory.CreatePlanetPinExtractor(storage.CreatePlanetPinParams{
-			CharacterPlanetID: p.ID,
-			ExpiryTime:        expires,
-		})
-		earliest := time.Now().Add(-24 * time.Hour)
-		var sendCount int
-		// when
-		err := cs.NotifyExpiredExtractions(ctx, c.ID, earliest, func(title string, content string) {
-			sendCount++
-		})
-		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, sendCount, 0)
-		}
-	})
+	}
 }

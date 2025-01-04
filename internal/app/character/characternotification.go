@@ -33,6 +33,9 @@ func (cs *CharacterService) NotifyCommunications(ctx context.Context, characterI
 	if err != nil {
 		return err
 	}
+	if len(nn) == 0 {
+		return nil
+	}
 	characterName, err := cs.getCharacterName(ctx, characterID)
 	if err != nil {
 		return err
