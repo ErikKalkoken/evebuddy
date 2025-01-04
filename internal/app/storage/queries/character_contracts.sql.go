@@ -400,6 +400,136 @@ func (q *Queries) ListCharacterContracts(ctx context.Context, characterID int64)
 	return items, nil
 }
 
+const listCharacterContractsForNotify = `-- name: ListCharacterContractsForNotify :many
+SELECT
+    cc.id, cc.acceptor_id, cc.assignee_id, cc.availability, cc.buyout, cc.character_id, cc.collateral, cc.contract_id, cc.date_accepted, cc.date_completed, cc.date_expired, cc.date_issued, cc.days_to_complete, cc.end_location_id, cc.for_corporation, cc.issuer_corporation_id, cc.issuer_id, cc.price, cc.reward, cc.start_location_id, cc.status, cc.status_notified, cc.title, cc.type, cc.updated_at, cc.volume,
+    issuer_corporation.id, issuer_corporation.category, issuer_corporation.name,
+    issuer.id, issuer.category, issuer.name,
+    acceptor.name as acceptor_name,
+    acceptor.category as acceptor_category,
+    assignee.name as assignee_name,
+    assignee.category as assignee_category,
+    end_locations.name as end_location_name,
+    start_locations.name as start_location_name,
+    end_solar_systems.id as end_solar_system_id,
+    end_solar_systems.name as end_solar_system_name,
+    start_solar_systems.id as start_solar_system_id,
+    start_solar_systems.name as start_solar_system_name,
+    (
+        SELECT
+            IFNULL(GROUP_CONCAT(name || " x " || quantity), "")
+        FROM
+            character_contract_items cci
+            LEFT JOIN eve_types et ON et.id = cci.type_id
+        WHERE
+            cci.contract_id = cc.id
+            AND cci.is_included IS TRUE
+    ) as items
+FROM
+    character_contracts cc
+    JOIN eve_entities AS issuer_corporation ON issuer_corporation.id = cc.issuer_corporation_id
+    JOIN eve_entities AS issuer ON issuer.id = cc.issuer_id
+    LEFT JOIN eve_entities AS acceptor ON acceptor.id = cc.acceptor_id
+    LEFT JOIN eve_entities AS assignee ON assignee.id = cc.assignee_id
+    LEFT JOIN eve_locations AS end_locations ON end_locations.id = cc.end_location_id
+    LEFT JOIN eve_locations AS start_locations ON start_locations.id = cc.start_location_id
+    LEFT JOIN eve_solar_systems AS end_solar_systems ON end_solar_systems.id = end_locations.eve_solar_system_id
+    LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
+WHERE
+    character_id = ?
+    AND status <> "deleted"
+    AND cc.updated_at > ?
+`
+
+type ListCharacterContractsForNotifyParams struct {
+	CharacterID int64
+	UpdatedAt   time.Time
+}
+
+type ListCharacterContractsForNotifyRow struct {
+	CharacterContract    CharacterContract
+	EveEntity            EveEntity
+	EveEntity_2          EveEntity
+	AcceptorName         sql.NullString
+	AcceptorCategory     sql.NullString
+	AssigneeName         sql.NullString
+	AssigneeCategory     sql.NullString
+	EndLocationName      sql.NullString
+	StartLocationName    sql.NullString
+	EndSolarSystemID     sql.NullInt64
+	EndSolarSystemName   sql.NullString
+	StartSolarSystemID   sql.NullInt64
+	StartSolarSystemName sql.NullString
+	Items                interface{}
+}
+
+func (q *Queries) ListCharacterContractsForNotify(ctx context.Context, arg ListCharacterContractsForNotifyParams) ([]ListCharacterContractsForNotifyRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterContractsForNotify, arg.CharacterID, arg.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCharacterContractsForNotifyRow
+	for rows.Next() {
+		var i ListCharacterContractsForNotifyRow
+		if err := rows.Scan(
+			&i.CharacterContract.ID,
+			&i.CharacterContract.AcceptorID,
+			&i.CharacterContract.AssigneeID,
+			&i.CharacterContract.Availability,
+			&i.CharacterContract.Buyout,
+			&i.CharacterContract.CharacterID,
+			&i.CharacterContract.Collateral,
+			&i.CharacterContract.ContractID,
+			&i.CharacterContract.DateAccepted,
+			&i.CharacterContract.DateCompleted,
+			&i.CharacterContract.DateExpired,
+			&i.CharacterContract.DateIssued,
+			&i.CharacterContract.DaysToComplete,
+			&i.CharacterContract.EndLocationID,
+			&i.CharacterContract.ForCorporation,
+			&i.CharacterContract.IssuerCorporationID,
+			&i.CharacterContract.IssuerID,
+			&i.CharacterContract.Price,
+			&i.CharacterContract.Reward,
+			&i.CharacterContract.StartLocationID,
+			&i.CharacterContract.Status,
+			&i.CharacterContract.StatusNotified,
+			&i.CharacterContract.Title,
+			&i.CharacterContract.Type,
+			&i.CharacterContract.UpdatedAt,
+			&i.CharacterContract.Volume,
+			&i.EveEntity.ID,
+			&i.EveEntity.Category,
+			&i.EveEntity.Name,
+			&i.EveEntity_2.ID,
+			&i.EveEntity_2.Category,
+			&i.EveEntity_2.Name,
+			&i.AcceptorName,
+			&i.AcceptorCategory,
+			&i.AssigneeName,
+			&i.AssigneeCategory,
+			&i.EndLocationName,
+			&i.StartLocationName,
+			&i.EndSolarSystemID,
+			&i.EndSolarSystemName,
+			&i.StartSolarSystemID,
+			&i.StartSolarSystemName,
+			&i.Items,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateCharacterContract = `-- name: UpdateCharacterContract :exec
 UPDATE
     character_contracts

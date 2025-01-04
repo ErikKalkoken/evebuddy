@@ -29,7 +29,7 @@ func (s *CharacterService) CountCharacterNotificationUnreads(ctx context.Context
 // TODO: Add tests for NotifyCommunications
 
 func (cs *CharacterService) NotifyCommunications(ctx context.Context, characterID int32, earliest time.Time, typesEnabled set.Set[string], notify func(title, content string)) error {
-	nn, err := cs.st.ListCharacterNotificationsUnprocessed(ctx, characterID)
+	nn, err := cs.st.ListCharacterNotificationsUnprocessed(ctx, characterID, earliest)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func (cs *CharacterService) NotifyCommunications(ctx context.Context, characterI
 		return err
 	}
 	for _, n := range nn {
-		if !typesEnabled.Contains(n.Type) || n.Timestamp.Before(earliest) {
+		if !typesEnabled.Contains(n.Type) {
 			continue
 		}
 		title := fmt.Sprintf("%s: New Communication from %s", characterName, n.Sender.Name)

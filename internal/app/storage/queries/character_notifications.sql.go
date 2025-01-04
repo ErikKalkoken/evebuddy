@@ -334,9 +334,14 @@ WHERE character_id = ?
 AND cn.is_processed IS FALSE
 AND title IS NOT NULL
 AND body IS NOT NULL
-AND timestamp > datetime("now", "-24 hours")
+AND timestamp > ?
 ORDER BY timestamp
 `
+
+type ListCharacterNotificationsUnprocessedParams struct {
+	CharacterID int64
+	Timestamp   time.Time
+}
 
 type ListCharacterNotificationsUnprocessedRow struct {
 	CharacterNotification CharacterNotification
@@ -344,8 +349,8 @@ type ListCharacterNotificationsUnprocessedRow struct {
 	NotificationType      NotificationType
 }
 
-func (q *Queries) ListCharacterNotificationsUnprocessed(ctx context.Context, characterID int64) ([]ListCharacterNotificationsUnprocessedRow, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacterNotificationsUnprocessed, characterID)
+func (q *Queries) ListCharacterNotificationsUnprocessed(ctx context.Context, arg ListCharacterNotificationsUnprocessedParams) ([]ListCharacterNotificationsUnprocessedRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCharacterNotificationsUnprocessed, arg.CharacterID, arg.Timestamp)
 	if err != nil {
 		return nil, err
 	}

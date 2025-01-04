@@ -61,7 +61,7 @@ func (s *CharacterService) GetCharacterMailListUnreadCounts(ctx context.Context,
 }
 
 func (cs *CharacterService) NotifyMails(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
-	mm, err := cs.st.ListCharacterMailHeadersForUnprocessed(ctx, characterID)
+	mm, err := cs.st.ListCharacterMailHeadersForUnprocessed(ctx, characterID, earliest)
 	if err != nil {
 		return err
 	}

@@ -174,4 +174,22 @@ func TestCharacterContract(t *testing.T) {
 			assert.Len(t, oo, 3)
 		}
 	})
+	t.Run("can list existing contracts for notify", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		now := time.Now().UTC()
+		c := factory.CreateCharacter()
+		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
+		factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID: c.ID,
+			UpdatedAt:   now.Add(-12 * time.Hour),
+		})
+		// when
+		oo, err := r.ListCharacterContractsForNotify(ctx, c.ID, now.Add(-10*time.Hour))
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, oo, 1)
+			assert.Equal(t, o.ID, oo[0].ID)
+		}
+	})
 }

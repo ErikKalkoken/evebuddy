@@ -67,6 +67,7 @@ func (r realtime) Now() time.Time {
 func main() {
 	// flags
 	deleteAppFlag := flag.Bool("delete-data", false, "Delete user data")
+	dirsFlag := flag.Bool("dirs", false, "Show directories for user data")
 	isUpdateTickerDisabledFlag := flag.Bool("disable-updates", false, "Disable all periodic updates")
 	isOfflineFlag := flag.Bool("offline", false, "Start app in offline mode")
 	pprofFlag := flag.Bool("pprof", false, "Enable pprof web server")
@@ -125,6 +126,13 @@ func main() {
 	if l != logLevelDefault {
 		slog.Info("Setting log level", "level", ln)
 		slog.SetLogLoggerLevel(l)
+	}
+
+	if *dirsFlag {
+		for _, s := range ad.Folders() {
+			fmt.Println(s)
+		}
+		return
 	}
 
 	// start uninstall app if requested

@@ -73,8 +73,12 @@ func (st *Storage) ListCharacterNotificationsUnread(ctx context.Context, charact
 	return ee, nil
 }
 
-func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, characterID int32) ([]*app.CharacterNotification, error) {
-	rows, err := st.q.ListCharacterNotificationsUnprocessed(ctx, int64(characterID))
+func (st *Storage) ListCharacterNotificationsUnprocessed(ctx context.Context, characterID int32, earliest time.Time) ([]*app.CharacterNotification, error) {
+	arg := queries.ListCharacterNotificationsUnprocessedParams{
+		CharacterID: int64(characterID),
+		Timestamp:   earliest,
+	}
+	rows, err := st.q.ListCharacterNotificationsUnprocessed(ctx, arg)
 	if err != nil {
 		return nil, fmt.Errorf("list unprocessed notifications for character %d: %w", characterID, err)
 	}

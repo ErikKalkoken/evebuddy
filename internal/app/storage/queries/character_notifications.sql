@@ -62,7 +62,7 @@ WHERE character_id = ?
 AND cn.is_processed IS FALSE
 AND title IS NOT NULL
 AND body IS NOT NULL
-AND timestamp > datetime("now", "-24 hours")
+AND timestamp > ?
 ORDER BY timestamp;
 
 

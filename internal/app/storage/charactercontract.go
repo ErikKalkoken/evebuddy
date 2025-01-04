@@ -201,6 +201,38 @@ func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int32
 	return oo, nil
 }
 
+func (st *Storage) ListCharacterContractsForNotify(ctx context.Context, characterID int32, earliest time.Time) ([]*app.CharacterContract, error) {
+	arg := queries.ListCharacterContractsForNotifyParams{
+		CharacterID: int64(characterID),
+		UpdatedAt:   earliest,
+	}
+	rows, err := st.q.ListCharacterContractsForNotify(ctx, arg)
+	if err != nil {
+		return nil, fmt.Errorf("list contracts to notify for character %d: %w", characterID, err)
+	}
+	oo := make([]*app.CharacterContract, len(rows))
+	for i, r := range rows {
+		o := r.CharacterContract
+		acceptor := nullEveEntry{ID: o.AcceptorID, Name: r.AcceptorName, Category: r.AcceptorCategory}
+		assignee := nullEveEntry{ID: o.AssigneeID, Name: r.AssigneeName, Category: r.AssigneeCategory}
+		oo[i] = characterContractFromDBModel(
+			o,
+			r.EveEntity,
+			r.EveEntity_2,
+			acceptor,
+			assignee,
+			r.EndLocationName,
+			r.StartLocationName,
+			r.EndSolarSystemID,
+			r.EndSolarSystemName,
+			r.StartSolarSystemID,
+			r.StartSolarSystemName,
+			r.Items,
+		)
+	}
+	return oo, nil
+}
+
 type UpdateCharacterContractParams struct {
 	AcceptorID    int32
 	DateAccepted  time.Time

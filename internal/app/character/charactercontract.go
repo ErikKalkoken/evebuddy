@@ -42,7 +42,7 @@ func (s *CharacterService) GetCharacterContractTopBid(ctx context.Context, contr
 }
 
 func (cs *CharacterService) NotifyUpdatedContracts(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
-	cc, err := cs.ListCharacterContracts(ctx, characterID)
+	cc, err := cs.st.ListCharacterContractsForNotify(ctx, characterID, earliest)
 	if err != nil {
 		return err
 	}
@@ -51,9 +51,6 @@ func (cs *CharacterService) NotifyUpdatedContracts(ctx context.Context, characte
 		return err
 	}
 	for _, c := range cc {
-		if c.UpdatedAt.Before(earliest) {
-			continue
-		}
 		if c.Status == c.StatusNotified {
 			continue
 		}
