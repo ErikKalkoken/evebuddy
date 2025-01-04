@@ -14,6 +14,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
@@ -174,7 +176,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 	}()
 	go func() {
 		current := a.u.fyneApp.Metadata().Version
-		_, isNewer, err := github.AvailableUpdate(githubOwner, githubRepo, current)
+		newVersion, isNewer, err := github.AvailableUpdate(githubOwner, githubRepo, current)
 		if err != nil {
 			slog.Error("Failed to fetch latest version from github", "err", err)
 			return
@@ -182,8 +184,26 @@ func (a *statusBarArea) StartUpdateTicker() {
 		if !isNewer {
 			return
 		}
-		x, _ := url.Parse(websiteURL + "/releases")
-		l := widget.NewHyperlink("Update available", x)
+		l := kxwidget.NewTappableLabel("Update available", func() {
+			c := container.NewVBox(
+				container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), widget.NewLabel(newVersion)),
+				container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), widget.NewLabel("v"+current)),
+			)
+			u, _ := url.Parse(websiteURL + "/releases")
+			d := dialog.NewCustomConfirm("Update available", "Download", "Close", c, func(ok bool) {
+				if !ok {
+					return
+				}
+				if err := a.u.fyneApp.OpenURL(u); err != nil {
+					d2 := NewErrorDialog("Failed to open download page", err, a.u.window)
+					d2.Show()
+				}
+			}, a.u.window,
+			)
+			kxdialog.AddDialogKeyHandler(d, a.u.window)
+			d.Show()
+		})
+		l.Importance = widget.HighImportance
 		a.newVersionHint.Add(widget.NewSeparator())
 		a.newVersionHint.Add(l)
 	}()
