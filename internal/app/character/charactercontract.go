@@ -126,8 +126,6 @@ var contractTypeFromESIValue = map[string]app.ContractType{
 	"unknown":       app.ContractTypeUnknown,
 }
 
-// FIXME: Only store updates when contract has changed (import for notifs)
-
 // updateCharacterContractsESI updates the wallet journal from ESI and reports wether it has changed.
 func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionContracts {
@@ -184,35 +182,28 @@ func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg 
 			slog.Debug("contracts", "existing", existingIDs, "entries", contracts)
 			// create new entries
 			if len(newContracts) > 0 {
-				for _, o := range newContracts {
-					err := s.createNewContract(ctx, characterID, o)
-					if err != nil {
-						slog.Error("create contract", "contract", o, "error", err)
+				var count int
+				for _, c := range newContracts {
+					if err := s.createNewContract(ctx, characterID, c); err != nil {
+						slog.Error("create contract", "contract", c, "error", err)
 						continue
+					} else {
+						count++
 					}
 				}
-				slog.Info("Stored new contracts", "characterID", characterID, "count", len(newContracts))
+				slog.Info("Stored new contracts", "characterID", characterID, "count", count)
 			}
 			if len(existingContracts) > 0 {
+				var count int
 				for _, c := range existingContracts {
-					status, ok := contractStatusFromESIValue[c.Status]
-					if !ok {
-						return fmt.Errorf("unknown status: %s", c.Status)
-					}
-					arg := storage.UpdateCharacterContractParams{
-						AcceptorID:    c.AcceptorId,
-						AssigneeID:    c.AssigneeId,
-						DateAccepted:  c.DateAccepted,
-						DateCompleted: c.DateCompleted,
-						CharacterID:   characterID,
-						ContractID:    c.ContractId,
-						Status:        status,
-					}
-					if err := s.st.UpdateCharacterContract(ctx, arg); err != nil {
-						return err
+					if err := s.updateContract(ctx, characterID, c); err != nil {
+						slog.Error("update contract", "contract", c, "error", err)
+						continue
+					} else {
+						count++
 					}
 				}
-				slog.Info("Updated contracts", "characterID", characterID, "count", len(existingContracts))
+				slog.Info("Updated contracts", "characterID", characterID, "count", count)
 			}
 			// add new bids for auctions
 			for _, c := range contracts {
@@ -304,6 +295,39 @@ func (s *CharacterService) createNewContract(ctx context.Context, characterID in
 		if err := s.st.CreateCharacterContractItem(ctx, arg); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (s *CharacterService) updateContract(ctx context.Context, characterID int32, c esi.GetCharactersCharacterIdContracts200Ok) error {
+	status, ok := contractStatusFromESIValue[c.Status]
+	if !ok {
+		return fmt.Errorf("unknown status: %s", c.Status)
+	}
+	o, err := s.st.GetCharacterContract(ctx, characterID, c.ContractId)
+	if err != nil {
+		return err
+	}
+	var acceptorID int32
+	if o.Acceptor != nil {
+		acceptorID = o.Acceptor.ID
+	}
+	if c.AcceptorId == acceptorID &&
+		c.DateAccepted.Equal(o.DateAccepted.ValueOrZero()) &&
+		c.DateCompleted.Equal(o.DateCompleted.ValueOrZero()) &&
+		o.Status == contractStatusFromESIValue[c.Status] {
+		return nil
+	}
+	arg := storage.UpdateCharacterContractParams{
+		AcceptorID:    c.AcceptorId,
+		DateAccepted:  c.DateAccepted,
+		DateCompleted: c.DateCompleted,
+		CharacterID:   characterID,
+		ContractID:    c.ContractId,
+		Status:        status,
+	}
+	if err := s.st.UpdateCharacterContract(ctx, arg); err != nil {
+		return err
 	}
 	return nil
 }

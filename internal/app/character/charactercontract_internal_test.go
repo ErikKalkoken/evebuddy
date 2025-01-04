@@ -216,30 +216,33 @@ func TestUpdateContractESI(t *testing.T) {
 		c := factory.CreateCharacter()
 		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
 		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
-		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
 			CharacterID:  c.ID,
 			Availability: app.ContractAvailabilityPublic,
 			Status:       app.ContractStatusOutstanding,
 			Type:         app.ContractTypeCourier,
 		})
+		acceptor := factory.CreateEveEntityCharacter()
 		data := []map[string]any{
 			{
-				"acceptor_id":           0,
+				"acceptor_id":           acceptor.ID,
 				"assignee_id":           0,
 				"availability":          "public",
-				"buyout":                o.Buyout,
-				"contract_id":           o.ContractID,
+				"buyout":                o1.Buyout,
+				"contract_id":           o1.ContractID,
 				"date_accepted":         "2017-06-06T13:12:32Z",
 				"date_completed":        "2017-06-07T13:12:32Z",
-				"days_to_complete":      0,
+				"date_expired":          o1.DateExpired.Format(time.RFC3339),
+				"date_issued":           o1.DateIssued.Format(time.RFC3339),
+				"days_to_complete":      o1.DaysToComplete,
 				"for_corporation":       true,
 				"issuer_corporation_id": c.EveCharacter.Corporation.ID,
 				"issuer_id":             c.ID,
-				"price":                 1000000.01,
-				"reward":                0.01,
+				"price":                 o1.Price,
+				"reward":                o1.Reward,
 				"status":                "finished",
 				"type":                  "courier",
-				"volume":                o.Volume,
+				"volume":                o1.Volume,
 			},
 		}
 		httpmock.RegisterResponder(
@@ -254,9 +257,63 @@ func TestUpdateContractESI(t *testing.T) {
 		// then
 		if assert.NoError(t, err) {
 			assert.True(t, changed)
-			o, err := st.GetCharacterContract(ctx, c.ID, o.ContractID)
+			o2, err := st.GetCharacterContract(ctx, c.ID, o1.ContractID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, app.ContractStatusFinished, o.Status)
+				assert.Equal(t, acceptor, o2.Acceptor)
+				assert.Equal(t, app.ContractStatusFinished, o2.Status)
+				assert.Equal(t, time.Date(2017, 6, 6, 13, 12, 32, 0, time.UTC), o2.DateAccepted.MustValue())
+				assert.Equal(t, time.Date(2017, 6, 7, 13, 12, 32, 0, time.UTC), o2.DateCompleted.MustValue())
+				assert.Equal(t, o1.DateIssued, o2.DateIssued)
+				assert.Equal(t, o1.DateExpired, o2.DateExpired)
+			}
+		}
+	})
+	t.Run("should not update unchanged contract", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c := factory.CreateCharacter()
+		factory.CreateEveEntityCharacter(app.EveEntity{ID: c.ID})
+		factory.CreateCharacterToken(app.CharacterToken{CharacterID: c.ID})
+		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			CharacterID:  c.ID,
+			Availability: app.ContractAvailabilityPublic,
+			Status:       app.ContractStatusOutstanding,
+			Type:         app.ContractTypeCourier,
+		})
+		data := []map[string]any{
+			{
+				"availability":          "public",
+				"buyout":                o1.Buyout,
+				"contract_id":           o1.ContractID,
+				"date_expired":          o1.DateExpired.Format(time.RFC3339),
+				"date_issued":           o1.DateIssued.Format(time.RFC3339),
+				"days_to_complete":      o1.DaysToComplete,
+				"for_corporation":       true,
+				"issuer_corporation_id": c.EveCharacter.Corporation.ID,
+				"issuer_id":             c.ID,
+				"price":                 o1.Price,
+				"reward":                o1.Reward,
+				"status":                "outstanding",
+				"type":                  "courier",
+				"volume":                o1.Volume,
+			},
+		}
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v1/characters/%d/contracts/", c.ID),
+			httpmock.NewJsonResponderOrPanic(200, data))
+		// when
+		changed, err := s.updateCharacterContractsESI(ctx, UpdateSectionParams{
+			CharacterID: c.ID,
+			Section:     app.SectionContracts,
+		})
+		// then
+		if assert.NoError(t, err) {
+			assert.True(t, changed)
+			o2, err := st.GetCharacterContract(ctx, c.ID, o1.ContractID)
+			if assert.NoError(t, err) {
+				assert.Equal(t, o1.UpdatedAt, o2.UpdatedAt)
 			}
 		}
 	})

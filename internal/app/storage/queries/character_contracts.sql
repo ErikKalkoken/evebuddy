@@ -24,8 +24,8 @@ INSERT INTO
         status_notified,
         title,
         type,
-        volume,
-        updated_at
+        updated_at,
+        volume
     )
 VALUES
     (
@@ -53,7 +53,7 @@ VALUES
         ?,
         ?,
         ?,
-        CURRENT_TIMESTAMP
+        ?
     ) RETURNING id;
 
 -- name: GetCharacterContract :one
@@ -147,11 +147,10 @@ UPDATE
     character_contracts
 SET
     acceptor_id = ?,
-    assignee_id = ?,
     date_accepted = ?,
     date_completed = ?,
     status = ?,
-    updated_at = CURRENT_TIMESTAMP
+    updated_at = ?
 WHERE
     character_id = ?
     AND contract_id = ?;
@@ -161,6 +160,6 @@ UPDATE
     character_contracts
 SET
     status_notified = ?,
-    updated_at = CURRENT_TIMESTAMP
+    updated_at = ?
 WHERE
     id = ?;

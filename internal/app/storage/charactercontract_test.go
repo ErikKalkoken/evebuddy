@@ -95,19 +95,21 @@ func TestCharacterContract(t *testing.T) {
 				assert.Equal(t, endLocation.SolarSystem.Name, o.EndSolarSystem.Name)
 				assert.Equal(t, startLocation.SolarSystem.ID, o.StartSolarSystem.ID)
 				assert.Equal(t, startLocation.SolarSystem.Name, o.StartSolarSystem.Name)
+				assert.WithinDuration(t, time.Now().UTC(), o.UpdatedAt, 5*time.Second)
 			}
 		}
 	})
 	t.Run("can update contract", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		o := factory.CreateCharacterContract(storage.CreateCharacterContractParams{CharacterID: c.ID})
+		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			UpdatedAt: time.Now().UTC().Add(-5 * time.Second),
+		})
 		dateAccepted := time.Now().UTC()
 		dateCompleted := time.Now().UTC()
 		arg2 := storage.UpdateCharacterContractParams{
-			CharacterID:   o.CharacterID,
-			ContractID:    o.ContractID,
+			CharacterID:   o1.CharacterID,
+			ContractID:    o1.ContractID,
 			DateAccepted:  dateAccepted,
 			DateCompleted: dateCompleted,
 			Status:        app.ContractStatusFinished,
@@ -116,25 +118,29 @@ func TestCharacterContract(t *testing.T) {
 		err := r.UpdateCharacterContract(ctx, arg2)
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetCharacterContract(ctx, o.CharacterID, o.ContractID)
+			o2, err := r.GetCharacterContract(ctx, o1.CharacterID, o1.ContractID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, app.ContractStatusFinished, o.Status)
-				assert.Equal(t, optional.New(dateAccepted), o.DateAccepted)
-				assert.Equal(t, optional.New(dateCompleted), o.DateCompleted)
+				assert.Equal(t, app.ContractStatusFinished, o2.Status)
+				assert.Equal(t, optional.New(dateAccepted), o2.DateAccepted)
+				assert.Equal(t, optional.New(dateCompleted), o2.DateCompleted)
+				assert.Less(t, o1.UpdatedAt, o2.UpdatedAt)
 			}
 		}
 	})
 	t.Run("can update notified", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		c := factory.CreateCharacterContract()
+		o1 := factory.CreateCharacterContract(storage.CreateCharacterContractParams{
+			UpdatedAt: time.Now().UTC().Add(-5 * time.Second),
+		})
 		// when
-		err := r.UpdateCharacterContractNotified(ctx, c.ID, app.ContractStatusInProgress)
+		err := r.UpdateCharacterContractNotified(ctx, o1.ID, app.ContractStatusInProgress)
 		// then
 		if assert.NoError(t, err) {
-			o, err := r.GetCharacterContract(ctx, c.CharacterID, c.ContractID)
+			o2, err := r.GetCharacterContract(ctx, o1.CharacterID, o1.ContractID)
 			if assert.NoError(t, err) {
-				assert.Equal(t, app.ContractStatusInProgress, o.StatusNotified)
+				assert.Equal(t, app.ContractStatusInProgress, o2.StatusNotified)
+				assert.Less(t, o1.UpdatedAt, o2.UpdatedAt)
 			}
 		}
 	})

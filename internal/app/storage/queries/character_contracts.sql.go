@@ -37,8 +37,8 @@ INSERT INTO
         status_notified,
         title,
         type,
-        volume,
-        updated_at
+        updated_at,
+        volume
     )
 VALUES
     (
@@ -66,7 +66,7 @@ VALUES
         ?,
         ?,
         ?,
-        CURRENT_TIMESTAMP
+        ?
     ) RETURNING id
 `
 
@@ -94,6 +94,7 @@ type CreateCharacterContractParams struct {
 	StatusNotified      string
 	Title               string
 	Type                string
+	UpdatedAt           time.Time
 	Volume              float64
 }
 
@@ -122,6 +123,7 @@ func (q *Queries) CreateCharacterContract(ctx context.Context, arg CreateCharact
 		arg.StatusNotified,
 		arg.Title,
 		arg.Type,
+		arg.UpdatedAt,
 		arg.Volume,
 	)
 	var id int64
@@ -403,11 +405,10 @@ UPDATE
     character_contracts
 SET
     acceptor_id = ?,
-    assignee_id = ?,
     date_accepted = ?,
     date_completed = ?,
     status = ?,
-    updated_at = CURRENT_TIMESTAMP
+    updated_at = ?
 WHERE
     character_id = ?
     AND contract_id = ?
@@ -415,10 +416,10 @@ WHERE
 
 type UpdateCharacterContractParams struct {
 	AcceptorID    sql.NullInt64
-	AssigneeID    sql.NullInt64
 	DateAccepted  sql.NullTime
 	DateCompleted sql.NullTime
 	Status        string
+	UpdatedAt     time.Time
 	CharacterID   int64
 	ContractID    int64
 }
@@ -426,10 +427,10 @@ type UpdateCharacterContractParams struct {
 func (q *Queries) UpdateCharacterContract(ctx context.Context, arg UpdateCharacterContractParams) error {
 	_, err := q.db.ExecContext(ctx, updateCharacterContract,
 		arg.AcceptorID,
-		arg.AssigneeID,
 		arg.DateAccepted,
 		arg.DateCompleted,
 		arg.Status,
+		arg.UpdatedAt,
 		arg.CharacterID,
 		arg.ContractID,
 	)
@@ -441,17 +442,18 @@ UPDATE
     character_contracts
 SET
     status_notified = ?,
-    updated_at = CURRENT_TIMESTAMP
+    updated_at = ?
 WHERE
     id = ?
 `
 
 type UpdateCharacterContractNotifiedParams struct {
 	StatusNotified string
+	UpdatedAt      time.Time
 	ID             int64
 }
 
 func (q *Queries) UpdateCharacterContractNotified(ctx context.Context, arg UpdateCharacterContractNotifiedParams) error {
-	_, err := q.db.ExecContext(ctx, updateCharacterContractNotified, arg.StatusNotified, arg.ID)
+	_, err := q.db.ExecContext(ctx, updateCharacterContractNotified, arg.StatusNotified, arg.UpdatedAt, arg.ID)
 	return err
 }

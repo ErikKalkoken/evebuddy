@@ -228,7 +228,17 @@ func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContract
 	if arg.Status == app.ContractStatusUndefined {
 		arg.Status = app.ContractStatusOutstanding
 	}
-	if arg.Type == app.ContractTypeUndefined {
+	switch arg.Type {
+	case app.ContractTypeCourier:
+		if arg.EndLocationID == 0 {
+			x := f.CreateLocationStructure()
+			arg.EndLocationID = x.ID
+		}
+		if arg.StartLocationID == 0 {
+			x := f.CreateLocationStructure()
+			arg.StartLocationID = x.ID
+		}
+	case app.ContractTypeUndefined:
 		arg.Type = app.ContractTypeItemExchange
 	}
 	_, err := f.st.CreateCharacterContract(ctx, arg)
@@ -248,14 +258,6 @@ func (f Factory) CreateCharacterContractCourier(args ...storage.CreateCharacterC
 		arg = args[0]
 	}
 	arg.Type = app.ContractTypeCourier
-	if arg.EndLocationID == 0 {
-		x := f.CreateLocationStructure()
-		arg.EndLocationID = x.ID
-	}
-	if arg.StartLocationID == 0 {
-		x := f.CreateLocationStructure()
-		arg.StartLocationID = x.ID
-	}
 	return f.CreateCharacterContract(arg)
 }
 

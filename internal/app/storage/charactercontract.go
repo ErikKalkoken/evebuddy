@@ -83,12 +83,16 @@ type CreateCharacterContractParams struct {
 	StatusNotified      app.ContractStatus
 	Title               string
 	Type                app.ContractType
+	UpdatedAt           time.Time
 	Volume              float64
 }
 
 func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharacterContractParams) (int64, error) {
 	if arg.CharacterID == 0 || arg.ContractID == 0 {
 		return 0, fmt.Errorf("create character contract. Mandatory fields not set: %v", arg)
+	}
+	if arg.UpdatedAt.IsZero() {
+		arg.UpdatedAt = time.Now().UTC()
 	}
 	arg2 := queries.CreateCharacterContractParams{
 		Availability:        contractAvailabilityToDBValue[arg.Availability],
@@ -110,6 +114,7 @@ func (st *Storage) CreateCharacterContract(ctx context.Context, arg CreateCharac
 		StatusNotified:      contractStatusToDBValue[arg.StatusNotified],
 		Title:               arg.Title,
 		Type:                contractTypeToDBValue[arg.Type],
+		UpdatedAt:           arg.UpdatedAt,
 		Volume:              arg.Volume,
 	}
 	if arg.AcceptorID != 0 {
@@ -198,7 +203,6 @@ func (st *Storage) ListCharacterContracts(ctx context.Context, characterID int32
 
 type UpdateCharacterContractParams struct {
 	AcceptorID    int32
-	AssigneeID    int32
 	DateAccepted  time.Time
 	DateCompleted time.Time
 	CharacterID   int32
@@ -216,14 +220,11 @@ func (st *Storage) UpdateCharacterContract(ctx context.Context, arg UpdateCharac
 		DateAccepted:  NewNullTimeFromTime(arg.DateAccepted),
 		DateCompleted: NewNullTimeFromTime(arg.DateCompleted),
 		Status:        contractStatusToDBValue[arg.Status],
+		UpdatedAt:     time.Now().UTC(),
 	}
 	if arg.AcceptorID != 0 {
 		arg2.AcceptorID.Int64 = int64(arg.AcceptorID)
 		arg2.AcceptorID.Valid = true
-	}
-	if arg.AssigneeID != 0 {
-		arg2.AssigneeID.Int64 = int64(arg.AssigneeID)
-		arg2.AssigneeID.Valid = true
 	}
 	err := st.q.UpdateCharacterContract(ctx, arg2)
 	if err != nil {
@@ -246,6 +247,7 @@ func (st *Storage) UpdateCharacterContractNotified(ctx context.Context, id int64
 	arg2 := queries.UpdateCharacterContractNotifiedParams{
 		ID:             id,
 		StatusNotified: statusNotified,
+		UpdatedAt:      time.Now().UTC(),
 	}
 	err := st.q.UpdateCharacterContractNotified(ctx, arg2)
 	if err != nil {
