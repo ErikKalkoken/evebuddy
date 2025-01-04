@@ -74,7 +74,7 @@ func (u *UI) startUpdateTickerCharacters() {
 					go u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 					if u.fyneApp.Preferences().BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault) {
 						go func() {
-							earliest, _ := time.Parse(time.RFC3339, u.fyneApp.Preferences().String(settingNotifyPIEarliest))
+							earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyPIEarliest)
 							if err := u.CharacterService.NotifyExpiredExtractions(context.TODO(), c.ID, earliest, u.sendDesktopNotification); err != nil {
 								slog.Error("notify expired extractions", "characterID", c.ID, "error", err)
 							}
@@ -82,6 +82,7 @@ func (u *UI) startUpdateTickerCharacters() {
 					}
 					if u.fyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
 						go func() {
+							// earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
 							if err := u.CharacterService.NotifyExpiredTraining(context.TODO(), c.ID, u.sendDesktopNotification); err != nil {
 								slog.Error("notify expired training", "error", err)
 							}
@@ -145,7 +146,7 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyContractsEnabled, settingNotifyCommunicationsEnabledDefault) {
 			go func() {
-				earliest, _ := time.Parse(time.RFC3339, u.fyneApp.Preferences().String(settingNotifyContractsEarliest))
+				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyContractsEarliest)
 				if err := u.CharacterService.NotifyUpdatedContracts(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify contract update", "error", err)
 				}
@@ -192,9 +193,8 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
 			go func() {
-				maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
-				oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
-				if err := u.CharacterService.NotifyMails(ctx, characterID, oldest, u.sendDesktopNotification); err != nil {
+				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyMailsEarliest)
+				if err := u.CharacterService.NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify mails", "characterID", characterID, "error", err)
 				}
 			}()
@@ -205,10 +205,9 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault) {
 			go func() {
-				maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
-				oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
+				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyCommunicationsEarliest)
 				typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
-				if err := u.CharacterService.NotifyCommunications(ctx, characterID, oldest, typesEnabled, u.sendDesktopNotification); err != nil {
+				if err := u.CharacterService.NotifyCommunications(ctx, characterID, earliest, typesEnabled, u.sendDesktopNotification); err != nil {
 					slog.Error("notify communications", "characterID", characterID, "error", err)
 				}
 			}()
@@ -251,4 +250,22 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))
 	}
+}
+
+// calcNotifyEarliest returns the earliest time for a class of notifications.
+// Might return a zero time in some circumstances.
+func calcNotifyEarliest(pref fyne.Preferences, settingEarliest string) time.Time {
+	earliest, err := time.Parse(time.RFC3339, pref.String(settingEarliest))
+	if err != nil {
+		earliest = time.Time{}
+	}
+	timeoutDays := pref.IntWithFallback(settingNotifyTimeoutHours, settingNotifyTimeoutHoursDefault)
+	var timeout time.Time
+	if timeoutDays > 0 {
+		timeout = time.Now().UTC().Add(-time.Duration(timeoutDays) * time.Hour)
+	}
+	if earliest.After(timeout) {
+		return earliest
+	}
+	return timeout
 }

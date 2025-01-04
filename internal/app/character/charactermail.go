@@ -60,7 +60,7 @@ func (s *CharacterService) GetCharacterMailListUnreadCounts(ctx context.Context,
 	return s.st.GetCharacterMailListUnreadCounts(ctx, characterID)
 }
 
-func (cs *CharacterService) NotifyMails(ctx context.Context, characterID int32, oldest time.Time, notify func(title, content string)) error {
+func (cs *CharacterService) NotifyMails(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
 	mm, err := cs.st.ListCharacterMailHeadersForUnprocessed(ctx, characterID)
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func (cs *CharacterService) NotifyMails(ctx context.Context, characterID int32, 
 		return err
 	}
 	for _, m := range mm {
-		if m.Timestamp.Before(oldest) {
+		if m.Timestamp.Before(earliest) {
 			continue
 		}
 		title := fmt.Sprintf("%s: New Mail from %s", characterName, m.From)
