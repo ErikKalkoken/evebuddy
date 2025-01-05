@@ -278,7 +278,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	})
 
 	// notify timeout
-	notifyTimeout := kxwidget.NewSlider(0, settingNotifyTimeoutHoursMax)
+	notifyTimeout := kxwidget.NewSlider(1, settingNotifyTimeoutHoursMax)
 	v := w.u.fyneApp.Preferences().IntWithFallback(settingNotifyTimeoutHours, settingNotifyTimeoutHoursDefault)
 	notifyTimeout.SetValue(float64(v))
 	notifyTimeout.OnChangeEnded = func(v float64) {
@@ -287,7 +287,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	f1.AppendItem(&widget.FormItem{
 		Text:     "Notification timeout",
 		Widget:   notifyTimeout,
-		HintText: "Events older then this threshold in hours will no longer be notified. Set to 0 to disable",
+		HintText: "Events older then this value in hours will not be notified",
 	})
 
 	// communications types

@@ -11,20 +11,35 @@ import (
 type myPref struct {
 	fyne.Preferences
 
-	earliest        string
-	timeout         int
-	timeoutFallback int
+	data map[string]any
 }
 
 func (p myPref) IntWithFallback(key string, fallback int) int {
-	if p.timeoutFallback != 0 {
-		return p.timeoutFallback
+	x, ok := p.data[key]
+	if !ok {
+		return fallback
 	}
-	return p.timeout
+	v, ok := x.(int)
+	if !ok {
+		return fallback
+	}
+	return v
 }
 
-func (p myPref) String(k string) string {
-	return p.earliest
+func (p myPref) String(key string) string {
+	x, ok := p.data[key]
+	if !ok {
+		return ""
+	}
+	v, ok := x.(string)
+	if !ok {
+		return ""
+	}
+	return v
+}
+
+func (p myPref) SetString(k, v string) {
+	p.data[k] = v
 }
 
 func TestCalcEarliest(t *testing.T) {
@@ -32,29 +47,39 @@ func TestCalcEarliest(t *testing.T) {
 	f := func(v time.Time) string {
 		return v.Format(time.RFC3339)
 	}
+	earliestFallback := now.Add(-notifyEarliestFallback)
+	timeoutDefault := now.Add(-settingNotifyTimeoutHoursDefault * time.Hour)
 	cases := []struct {
-		name                 string
-		earliest             string
-		timeoutHours         int
-		timeoutHoursFallback int
-		want                 time.Time
+		name         string
+		earliest     string
+		timeoutHours int
+		shouldSet    bool
+		want         time.Time
 	}{
-		{"earliest after timeout", f(now.Add(-1 * time.Hour)), 30 * 24, 0, now.Add(-1 * time.Hour)},
-		{"earliest before timeout", f(now.Add(-60 * 24 * time.Hour)), 30 * 24, 0, now.Add(-30 * 24 * time.Hour)},
-		{"earliest before timeout fallback", f(now.Add(-60 * 24 * time.Hour)), 0, 30 * 24, now.Add(-30 * 24 * time.Hour)},
-		{"timeout not set", f(now.Add(-60 * 24 * time.Hour)), 0, 0, now.Add(-60 * 24 * time.Hour)},
-		{"earliest not set", "", 30 * 24, 0, now.Add(-30 * 24 * time.Hour)},
-		{"nothing set", "", 0, 0, time.Time{}},
+		{"earliest after timeout", f(now.Add(-1 * time.Hour)), 15 * 24, false, now.Add(-1 * time.Hour)},
+		{"earliest before timeout", f(now.Add(-60 * 24 * time.Hour)), 15 * 24, false, now.Add(-15 * 24 * time.Hour)},
+		{"earliest before timeout fallback", f(now.Add(-60 * 24 * time.Hour)), 0, false, timeoutDefault},
+		{"timeout not set", f(now.Add(-60 * 24 * time.Hour)), 0, false, timeoutDefault},
+		{"earliest not set", "", 15 * 2, true, earliestFallback},
+		{"nothing set", "", 0, true, earliestFallback},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			// given
 			p := myPref{
-				earliest:        tc.earliest,
-				timeout:         tc.timeoutHours,
-				timeoutFallback: tc.timeoutHoursFallback,
+				data: make(map[string]any),
 			}
-			x := calcNotifyEarliest(p, "alpha")
-			assert.WithinDuration(t, tc.want, x, 5*time.Second)
+			p.data["earliest"] = tc.earliest
+			if tc.timeoutHours != 0 {
+				p.data[settingNotifyTimeoutHours] = tc.timeoutHours
+			}
+			// when
+			v := calcNotifyEarliest(p, "earliest")
+			// then
+			assert.WithinDuration(t, tc.want, v, 5*time.Second)
+			if tc.shouldSet {
+				assert.Equal(t, earliestFallback.Format(time.RFC3339), p.data["earliest"])
+			}
 		})
 	}
 }

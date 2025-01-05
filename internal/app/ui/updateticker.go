@@ -16,6 +16,7 @@ import (
 const (
 	characterSectionsUpdateTicker = 10 * time.Second
 	generalSectionsUpdateTicker   = 60 * time.Second
+	notifyEarliestFallback        = 24 * time.Hour
 )
 
 func (u *UI) sendDesktopNotification(title, content string) {
@@ -257,7 +258,10 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 func calcNotifyEarliest(pref fyne.Preferences, settingEarliest string) time.Time {
 	earliest, err := time.Parse(time.RFC3339, pref.String(settingEarliest))
 	if err != nil {
-		earliest = time.Time{}
+		// Recording the earliest when enabling a switch was added later for mails and communications
+		// This workaround avoids a potential notification spam from older items.
+		earliest = time.Now().UTC().Add(-notifyEarliestFallback)
+		pref.SetString(settingEarliest, earliest.Format(time.RFC3339))
 	}
 	timeoutDays := pref.IntWithFallback(settingNotifyTimeoutHours, settingNotifyTimeoutHoursDefault)
 	var timeout time.Time
@@ -268,4 +272,5 @@ func calcNotifyEarliest(pref fyne.Preferences, settingEarliest string) time.Time
 		return earliest
 	}
 	return timeout
+
 }
