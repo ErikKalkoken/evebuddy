@@ -477,7 +477,7 @@ func (a *assetsArea) updateLocationPath(location locationDataNode) {
 	for i, n := range path {
 		isLast := i == len(path)-1
 		if !isLast {
-			l := kwidget.NewTappableLabel(n.Name, func() {
+			l := newCustomHyperlink(n.Name, func() {
 				if err := a.selectLocation(n); err != nil {
 					slog.Warn("Failed to redraw assets", "err", err)
 				}

@@ -15,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
@@ -184,7 +183,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 		if !v.IsRemoteNewer {
 			return
 		}
-		l := kxwidget.NewTappableLabel("Update available", func() {
+		l := newCustomHyperlink("Update available", func() {
 			c := container.NewVBox(
 				container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), widget.NewLabel(v.Latest)),
 				container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), widget.NewLabel(v.Local)),
@@ -203,7 +202,6 @@ func (a *statusBarArea) StartUpdateTicker() {
 			kxdialog.AddDialogKeyHandler(d, a.u.window)
 			d.Show()
 		})
-		l.Importance = widget.HighImportance
 		a.newVersionHint.Add(widget.NewSeparator())
 		a.newVersionHint.Add(l)
 	}()

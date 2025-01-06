@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -198,11 +197,10 @@ func (a *contractsArea) showContract(c *app.CharacterContract) {
 		ds := ihumanize.RelTime(t)
 		return fmt.Sprintf("%s (%s)", ts, ds)
 	}
-	makeLocation := func(l *app.EntityShort[int64]) *kxwidget.TappableLabel {
-		x := kxwidget.NewTappableLabel(l.Name, func() {
+	makeLocation := func(l *app.EntityShort[int64]) fyne.CanvasObject {
+		x := newCustomHyperlink(l.Name, func() {
 			a.u.showLocationInfoWindow(l.ID)
 		})
-		x.TextStyle.Bold = true
 		return x
 	}
 	makeISKString := func(v float64) string {
@@ -307,12 +305,11 @@ func (a *contractsArea) showContract(c *app.CharacterContract) {
 			}
 		}
 		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
-			typ := kxwidget.NewTappableLabel(it.Type.Name, func() {
+			x := newCustomHyperlink(it.Type.Name, func() {
 				a.u.showTypeInfoWindow(it.Type.ID, c.CharacterID, 0)
 			})
-			typ.TextStyle.Bold = true
 			return container.NewHBox(
-				typ,
+				x,
 				widget.NewLabel(fmt.Sprintf("(%s)", it.Type.Group.Name)),
 				widget.NewLabel(fmt.Sprintf("x %s ", humanize.Comma(int64(it.Quantity)))),
 			)
