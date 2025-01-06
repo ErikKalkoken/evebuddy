@@ -176,18 +176,18 @@ func (a *statusBarArea) StartUpdateTicker() {
 	}()
 	go func() {
 		current := a.u.fyneApp.Metadata().Version
-		newVersion, isNewer, err := github.AvailableUpdate(githubOwner, githubRepo, current)
+		v, err := github.AvailableUpdate(githubOwner, githubRepo, current)
 		if err != nil {
 			slog.Error("Failed to fetch latest version from github", "err", err)
 			return
 		}
-		if !isNewer {
+		if !v.IsRemoteNewer {
 			return
 		}
 		l := kxwidget.NewTappableLabel("Update available", func() {
 			c := container.NewVBox(
-				container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), widget.NewLabel(newVersion)),
-				container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), widget.NewLabel("v"+current)),
+				container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), widget.NewLabel(v.Latest)),
+				container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), widget.NewLabel(v.Local)),
 			)
 			u, _ := url.Parse(websiteURL + "/releases")
 			d := dialog.NewCustomConfirm("Update available", "Download", "Close", c, func(ok bool) {
