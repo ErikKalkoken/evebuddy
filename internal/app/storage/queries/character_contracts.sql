@@ -132,7 +132,9 @@ FROM
     LEFT JOIN eve_solar_systems AS start_solar_systems ON start_solar_systems.id = start_locations.eve_solar_system_id
 WHERE
     character_id = ?
-    AND status <> "deleted";
+    AND status <> "deleted"
+ORDER BY
+    date_issued DESC;
 
 -- name: ListCharacterContractsForNotify :many
 SELECT
@@ -181,7 +183,6 @@ FROM
     character_contracts
 WHERE
     character_id = ?;
-
 
 -- name: UpdateCharacterContract :exec
 UPDATE

@@ -49,6 +49,8 @@ CREATE INDEX character_contracts_idx6 ON character_contracts (end_location_id);
 
 CREATE INDEX character_contracts_idx7 ON character_contracts (start_location_id);
 
+CREATE INDEX character_contracts_idx8 ON character_contracts (date_issued);
+
 CREATE TABLE character_contract_bids (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     contract_id INTEGER NOT NULL,

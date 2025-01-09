@@ -182,3 +182,7 @@ func (cc CharacterContract) DateExpiredEffective() time.Time {
 	}
 	return cc.DateAccepted.ValueOrZero().Add(time.Duration(cc.DaysToComplete) * time.Hour * 24)
 }
+
+func (cc CharacterContract) IsExpired() bool {
+	return cc.DateExpiredEffective().Before(time.Now())
+}

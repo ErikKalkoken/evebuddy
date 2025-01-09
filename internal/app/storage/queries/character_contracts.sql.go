@@ -314,6 +314,8 @@ FROM
 WHERE
     character_id = ?
     AND status <> "deleted"
+ORDER BY
+    date_issued DESC
 `
 
 type ListCharacterContractsRow struct {

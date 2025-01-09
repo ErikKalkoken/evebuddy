@@ -113,12 +113,11 @@ func (a *contractsArea) makeTable() *widget.Table {
 					l.Text = o.DateAccepted.MustValue().Format(app.TimeDefaultFormat)
 				}
 			case 7:
-				x := o.DateExpiredEffective()
-				if x.Before(time.Now()) {
+				if o.IsExpired() {
 					l.Text = "EXPIRED"
 					l.Importance = widget.DangerImportance
 				} else {
-					l.Text = ihumanize.RelTime(x)
+					l.Text = ihumanize.RelTime(o.DateExpiredEffective())
 				}
 			}
 			l.Refresh()
@@ -192,9 +191,15 @@ func (a *contractsArea) updateEntries() error {
 
 func (a *contractsArea) showContract(c *app.CharacterContract) {
 	w := a.u.fyneApp.NewWindow("Contract")
-	makeTimeString := func(t time.Time) string {
-		ts := c.DateExpired.Format(app.TimeDefaultFormat)
-		ds := ihumanize.RelTime(t)
+	makeExpiresString := func(c *app.CharacterContract) string {
+		t := c.DateExpiredEffective()
+		ts := t.Format(app.TimeDefaultFormat)
+		var ds string
+		if c.IsExpired() {
+			ds = "EXPIRED"
+		} else {
+			ds = ihumanize.RelTime(t)
+		}
 		return fmt.Sprintf("%s (%s)", ts, ds)
 	}
 	makeLocation := func(l *app.EntityShort[int64]) fyne.CanvasObject {
@@ -223,7 +228,7 @@ func (a *contractsArea) showContract(c *app.CharacterContract) {
 		f.Append("Location", makeLocation(c.StartLocation))
 		if c.Type == app.ContractTypeCourier || c.Type == app.ContractTypeItemExchange {
 			f.Append("Date Issued", widget.NewLabel(c.DateIssued.Format(app.TimeDefaultFormat)))
-			f.Append("Expiration Date", widget.NewLabel(makeTimeString(c.DateExpiredEffective())))
+			f.Append("Expiration Date", widget.NewLabel(makeExpiresString(c)))
 		}
 		return f
 	}
@@ -283,7 +288,7 @@ func (a *contractsArea) showContract(c *app.CharacterContract) {
 				{Text: "Starting Bid", Widget: widget.NewLabel(makeISKString(c.Price))},
 				{Text: "Buyout Price", Widget: widget.NewLabel(makeISKString(c.Buyout))},
 				{Text: "Current Bid", Widget: widget.NewLabel(currentBid)},
-				{Text: "Expires", Widget: widget.NewLabel(makeTimeString(c.DateExpired))},
+				{Text: "Expires", Widget: widget.NewLabel(makeExpiresString(c))},
 			},
 		}
 		return f
