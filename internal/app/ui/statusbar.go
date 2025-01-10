@@ -14,12 +14,13 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 const (
@@ -174,16 +175,33 @@ func (a *statusBarArea) StartUpdateTicker() {
 	}()
 	go func() {
 		current := a.u.fyneApp.Metadata().Version
-		_, isNewer, err := github.AvailableUpdate(githubOwner, githubRepo, current)
+		v, err := github.AvailableUpdate(githubOwner, githubRepo, current)
 		if err != nil {
 			slog.Error("Failed to fetch latest version from github", "err", err)
 			return
 		}
-		if !isNewer {
+		if !v.IsRemoteNewer {
 			return
 		}
-		x, _ := url.Parse(websiteURL + "/releases")
-		l := widget.NewHyperlink("Update available", x)
+		l := newCustomHyperlink("Update available", func() {
+			c := container.NewVBox(
+				container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), widget.NewLabel(v.Latest)),
+				container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), widget.NewLabel(v.Local)),
+			)
+			u, _ := url.Parse(websiteURL + "/releases")
+			d := dialog.NewCustomConfirm("Update available", "Download", "Close", c, func(ok bool) {
+				if !ok {
+					return
+				}
+				if err := a.u.fyneApp.OpenURL(u); err != nil {
+					d2 := NewErrorDialog("Failed to open download page", err, a.u.window)
+					d2.Show()
+				}
+			}, a.u.window,
+			)
+			kxdialog.AddDialogKeyHandler(d, a.u.window)
+			d.Show()
+		})
 		a.newVersionHint.Add(widget.NewSeparator())
 		a.newVersionHint.Add(l)
 	}()

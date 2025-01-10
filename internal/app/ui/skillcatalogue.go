@@ -14,7 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/dustin/go-humanize"
 
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 type skillGroupProgress struct {

@@ -10,12 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/sso"
 	"github.com/antihax/goesi/esi"
 	"github.com/dustin/go-humanize"
 	"github.com/mattn/go-sqlite3"
 	"golang.org/x/exp/constraints"
+
+	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/sso"
 )
 
 // Number returns a humanized number, e.g. 1234 becomes 1.23K
@@ -24,16 +25,16 @@ func Number(value float64, decimals int) string {
 	var a string
 	v2 := math.Abs(value)
 	switch {
-	case v2 >= 1000000000000:
+	case v2 >= 1_000_000_000_000:
 		s = 12
 		a = " T"
-	case v2 >= 1000000000:
+	case v2 >= 1_000_000_000:
 		s = 9
 		a = " B"
-	case v2 >= 1000000:
+	case v2 >= 1_000_000:
 		s = 6
 		a = " M"
-	case v2 >= 1000:
+	case v2 >= 1_000:
 		s = 3
 		a = " K"
 	default:
@@ -58,17 +59,37 @@ func Number(value float64, decimals int) string {
 	return r
 }
 
-// Duration returns a humanized duration, e.g. 22d 10h 5m.
+// Duration returns a humanized duration, e.g. "10h 5m".
+//
+// Shows days and hours for duration over 1 day, else hours and minutes.
+// Rounds to full minutes.
+// Negative durations are returned as "0 m"
 func Duration(duration time.Duration) string {
-	m := int(math.Round(duration.Abs().Minutes()))
+	if duration < 0 {
+		return "0m"
+	}
+	mRaw := duration.Abs().Minutes()
+	if mRaw < 1 {
+		return "<1m"
+	}
+	m := int(math.Round(mRaw))
+	w := m / 60 / 24 / 7
+	m -= w * 60 * 24 * 7
 	d := m / 60 / 24
 	m -= d * 60 * 24
 	h := m / 60
 	m -= h * 60
-	if d > 0 {
+	if w > 0 {
+		return fmt.Sprintf("%dw %dd %dh", w, d, h)
+	} else if d > 0 {
 		return fmt.Sprintf("%dd %dh", d, h)
 	}
 	return fmt.Sprintf("%dh %dm", h, m)
+}
+
+// RelTime returns the duration until a time in the future.
+func RelTime(t time.Time) string {
+	return Duration(time.Until(t))
 }
 
 func Optional[T time.Duration | time.Time | string | int | int32 | int64](o optional.Optional[T], fallback string) string {
@@ -80,7 +101,7 @@ func Optional[T time.Duration | time.Time | string | int | int32 | int64](o opti
 	case time.Duration:
 		return Duration(x)
 	case time.Time:
-		return humanize.RelTime(x, time.Now(), "", "")
+		return RelTime(x)
 	case string:
 		return x
 	case int:

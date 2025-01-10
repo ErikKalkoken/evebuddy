@@ -7,9 +7,10 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 func entityNameOrFallback[T int | int32 | int64](e *app.EntityShort[T], fallback string) string {
@@ -49,4 +50,11 @@ func boolIconResource(ok bool) fyne.Resource {
 		return theme.NewSuccessThemedResource(theme.ConfirmIcon())
 	}
 	return theme.NewErrorThemedResource(theme.CancelIcon())
+}
+
+// newCustomHyperlink returns a new hyperlink with a custom action.
+func newCustomHyperlink(text string, onTapped func()) *widget.Hyperlink {
+	x := widget.NewHyperlink(text, nil)
+	x.OnTapped = onTapped
+	return x
 }

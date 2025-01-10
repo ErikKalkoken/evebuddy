@@ -159,14 +159,6 @@ func (st *Storage) DeleteCharacterMail(ctx context.Context, characterID, mailID 
 	return nil
 }
 
-func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int32) (set.Set[int32], error) {
-	ids, err := st.q.ListMailIDs(ctx, int64(characterID))
-	if err != nil {
-		return nil, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
-	}
-	return set.NewFromSlice(convertNumericSlice[int64, int32](ids)), nil
-}
-
 func (st *Storage) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
 	rows, err := st.q.GetCharacterMailLabelUnreadCounts(ctx, int64(characterID))
 	if err != nil {
@@ -189,6 +181,14 @@ func (st *Storage) GetCharacterMailListUnreadCounts(ctx context.Context, charact
 		result[int32(r.ListID)] = int(r.UnreadCount2)
 	}
 	return result, nil
+}
+
+func (st *Storage) ListCharacterMailIDs(ctx context.Context, characterID int32) (set.Set[int32], error) {
+	ids, err := st.q.ListMailIDs(ctx, int64(characterID))
+	if err != nil {
+		return nil, fmt.Errorf("list mail IDs for character %d: %w", characterID, err)
+	}
+	return set.NewFromSlice(convertNumericSlice[int64, int32](ids)), nil
 }
 
 func (st *Storage) ListCharacterMailListsOrdered(ctx context.Context, characterID int32) ([]*app.EveEntity, error) {

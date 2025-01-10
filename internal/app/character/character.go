@@ -91,6 +91,17 @@ func (s *CharacterService) GetAnyCharacter(ctx context.Context) (*app.Character,
 	return o, err
 }
 
+func (cs *CharacterService) getCharacterName(ctx context.Context, characterID int32) (string, error) {
+	character, err := cs.GetCharacter(ctx, characterID)
+	if err != nil {
+		return "", err
+	}
+	if character.EveCharacter == nil {
+		return "", nil
+	}
+	return character.EveCharacter.Name, nil
+}
+
 func (s *CharacterService) ListCharacters(ctx context.Context) ([]*app.Character, error) {
 	return s.st.ListCharacters(ctx)
 }

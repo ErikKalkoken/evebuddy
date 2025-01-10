@@ -13,29 +13,51 @@ import (
 
 var ErrHttpError = errors.New("HTTP error")
 
+// VersionInfo represents the version information. All versions are normalized.
+type VersionInfo struct {
+	Local         string // version of local installation
+	Remote        string // latest version available remote
+	Latest        string // latest version
+	IsRemoteNewer bool
+}
+
+// AvailableUpdate return the version of the latest release and reports wether the update is newer.
+func AvailableUpdate(gitHubOwner, githubRepo, localVersion string) (VersionInfo, error) {
+	return availableUpdate(gitHubOwner, githubRepo, localVersion, fetchGitHubLatest)
+}
+
+func availableUpdate(owner, repo, localVersion string, githubLatest func(owner, repo string) (string, error)) (VersionInfo, error) {
+	local, err := version.NewVersion(localVersion)
+	if err != nil {
+		return VersionInfo{}, err
+	}
+	r, err := githubLatest(owner, repo)
+	if err != nil {
+		return VersionInfo{}, err
+	}
+	remote, err := version.NewVersion(r)
+	if err != nil {
+		return VersionInfo{}, err
+	}
+	v := VersionInfo{
+		Local:  local.String(),
+		Remote: remote.String(),
+	}
+	if local.LessThan(remote) {
+		v.Latest = remote.String()
+		v.IsRemoteNewer = true
+	} else {
+		v.Latest = local.String()
+		v.IsRemoteNewer = false
+	}
+	return v, nil
+}
+
 type githubRelease struct {
 	TagName string `json:"tag_name"`
 }
 
-// AvailableUpdate return the version of the latest release and reports wether the update is newer.
-func AvailableUpdate(owner, repo, current string) (string, bool, error) {
-	v1, err := version.NewVersion(current)
-	if err != nil {
-		return "", false, err
-	}
-	latest, err := fetchLatest(owner, repo)
-	if err != nil {
-		return "", false, err
-	}
-	v2, err := version.NewVersion(latest)
-	if err != nil {
-		return "", false, err
-	}
-	isNewer := v1.LessThan(v2)
-	return latest, isNewer, nil
-}
-
-func fetchLatest(owner, repo string) (string, error) {
+func fetchGitHubLatest(owner, repo string) (string, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repo)
 	r, err := http.Get(url)
 	if err != nil {

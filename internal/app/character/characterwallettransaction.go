@@ -67,11 +67,13 @@ func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Conte
 			for _, o := range newEntries {
 				_, err = s.EveUniverseService.GetOrCreateEveTypeESI(ctx, o.TypeId)
 				if err != nil {
-					return err
+					slog.Error("get or create wallet journal type", "record", o, "error", err)
+					continue
 				}
 				_, err = s.EveUniverseService.GetOrCreateEveLocationESI(ctx, o.LocationId)
 				if err != nil {
-					return err
+					slog.Error("get or create wallet journal location", "record", o, "error", err)
+					continue
 				}
 				arg := storage.CreateCharacterWalletTransactionParams{
 					ClientID:      o.ClientId,

@@ -17,7 +17,7 @@ import (
 
 type CharacterNotification struct {
 	ID             int64
-	Body           optional.Optional[string]
+	Body           optional.Optional[string] // generated body text in markdown
 	CharacterID    int32
 	IsProcessed    bool
 	IsRead         bool
@@ -26,8 +26,8 @@ type CharacterNotification struct {
 	Sender         *EveEntity
 	Text           string
 	Timestamp      time.Time
-	Title          optional.Optional[string]
-	Type           string // This is a string, so that it can handle unknown types
+	Title          optional.Optional[string] // generated title text in markdown
+	Type           string                    // This is a string, so that it can handle unknown types
 }
 
 // TitleDisplay returns the rendered title when it exists or else the fake tile.

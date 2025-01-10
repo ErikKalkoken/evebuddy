@@ -13,13 +13,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
-var eveEntityCategory2MailRecipientType = map[app.EveEntityCategory]string{
-	app.EveEntityAlliance:    "alliance",
-	app.EveEntityCharacter:   "character",
-	app.EveEntityCorporation: "corporation",
-	app.EveEntityMailList:    "mailing_list",
-}
-
 // DeleteCharacterMail deletes a mail both on ESI and in the database.
 func (s *CharacterService) DeleteCharacterMail(ctx context.Context, characterID, mailID int32) error {
 	token, err := s.getValidCharacterToken(ctx, characterID)
@@ -57,6 +50,54 @@ func (s *CharacterService) GetCharacterMailCounts(ctx context.Context, character
 		return 0, 0, err
 	}
 	return total, unread, nil
+}
+
+func (s *CharacterService) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
+	return s.st.GetCharacterMailLabelUnreadCounts(ctx, characterID)
+}
+
+func (s *CharacterService) GetCharacterMailListUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
+	return s.st.GetCharacterMailListUnreadCounts(ctx, characterID)
+}
+
+func (cs *CharacterService) NotifyMails(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
+	mm, err := cs.st.ListCharacterMailHeadersForUnprocessed(ctx, characterID, earliest)
+	if err != nil {
+		return err
+	}
+	characterName, err := cs.getCharacterName(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	for _, m := range mm {
+		if m.Timestamp.Before(earliest) {
+			continue
+		}
+		title := fmt.Sprintf("%s: New Mail from %s", characterName, m.From)
+		content := m.Subject
+		notify(title, content)
+		if err := cs.st.UpdateCharacterMailSetProcessed(ctx, m.ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *CharacterService) ListCharacterMailLists(ctx context.Context, characterID int32) ([]*app.EveEntity, error) {
+	return s.st.ListCharacterMailListsOrdered(ctx, characterID)
+}
+
+// ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
+func (s *CharacterService) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]*app.CharacterMailHeader, error) {
+	return s.st.ListCharacterMailHeadersForLabelOrdered(ctx, characterID, labelID)
+}
+
+func (s *CharacterService) ListCharacterMailHeadersForListOrdered(ctx context.Context, characterID int32, listID int32) ([]*app.CharacterMailHeader, error) {
+	return s.st.ListCharacterMailHeadersForListOrdered(ctx, characterID, listID)
+}
+
+func (s *CharacterService) ListCharacterMailLabelsOrdered(ctx context.Context, characterID int32) ([]*app.CharacterMailLabel, error) {
+	return s.st.ListCharacterMailLabelsOrdered(ctx, characterID)
 }
 
 // SendCharacterMail creates a new mail on ESI and stores it locally.
@@ -124,6 +165,13 @@ func (s *CharacterService) SendCharacterMail(ctx context.Context, characterID in
 	return mailID, nil
 }
 
+var eveEntityCategory2MailRecipientType = map[app.EveEntityCategory]string{
+	app.EveEntityAlliance:    "alliance",
+	app.EveEntityCharacter:   "character",
+	app.EveEntityCorporation: "corporation",
+	app.EveEntityMailList:    "mailing_list",
+}
+
 func eveEntitiesToESIMailRecipients(ee []*app.EveEntity) ([]esi.PostCharactersCharacterIdMailRecipient, error) {
 	rr := make([]esi.PostCharactersCharacterIdMailRecipient, len(ee))
 	for i, e := range ee {
@@ -137,38 +185,4 @@ func eveEntitiesToESIMailRecipients(ee []*app.EveEntity) ([]esi.PostCharactersCh
 		}
 	}
 	return rr, nil
-}
-
-func (s *CharacterService) GetCharacterMailLabelUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
-	return s.st.GetCharacterMailLabelUnreadCounts(ctx, characterID)
-}
-
-func (s *CharacterService) GetCharacterMailListUnreadCounts(ctx context.Context, characterID int32) (map[int32]int, error) {
-	return s.st.GetCharacterMailListUnreadCounts(ctx, characterID)
-}
-
-func (s *CharacterService) ListCharacterMailLists(ctx context.Context, characterID int32) ([]*app.EveEntity, error) {
-	return s.st.ListCharacterMailListsOrdered(ctx, characterID)
-}
-
-// ListMailsForLabel returns a character's mails for a label in descending order by timestamp.
-func (s *CharacterService) ListCharacterMailHeadersForLabelOrdered(ctx context.Context, characterID int32, labelID int32) ([]*app.CharacterMailHeader, error) {
-	return s.st.ListCharacterMailHeadersForLabelOrdered(ctx, characterID, labelID)
-}
-
-func (s *CharacterService) ListCharacterMailHeadersForListOrdered(ctx context.Context, characterID int32, listID int32) ([]*app.CharacterMailHeader, error) {
-	return s.st.ListCharacterMailHeadersForListOrdered(ctx, characterID, listID)
-}
-
-func (s *CharacterService) ListCharacterMailLabelsOrdered(ctx context.Context, characterID int32) ([]*app.CharacterMailLabel, error) {
-	return s.st.ListCharacterMailLabelsOrdered(ctx, characterID)
-}
-
-// ListCharacterMailHeadersForUnprocessed returns all unprocessed mails for a character except sent mails ordered by timestamp.
-func (s *CharacterService) ListCharacterMailHeadersForUnprocessed(ctx context.Context, characterID int32) ([]*app.CharacterMailHeader, error) {
-	return s.st.ListCharacterMailHeadersForUnprocessed(ctx, characterID)
-}
-
-func (s *CharacterService) UpdateCharacterMailSetProcessed(ctx context.Context, id int64) error {
-	return s.st.UpdateCharacterMailSetProcessed(ctx, id)
 }

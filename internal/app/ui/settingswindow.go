@@ -178,8 +178,11 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	f1 := widget.NewForm()
 
 	// mail toogle
-	mailEnabledCheck := kxwidget.NewSwitch(func(b bool) {
-		w.u.fyneApp.Preferences().SetBool(settingNotifyMailsEnabled, b)
+	mailEnabledCheck := kxwidget.NewSwitch(func(on bool) {
+		w.u.fyneApp.Preferences().SetBool(settingNotifyMailsEnabled, on)
+		if on {
+			w.u.fyneApp.Preferences().SetString(settingNotifyMailsEarliest, time.Now().Format(time.RFC3339))
+		}
 	})
 	mailEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
 		settingNotifyMailsEnabled,
@@ -194,6 +197,9 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	// communications toogle
 	communicationsEnabledCheck := kxwidget.NewSwitch(func(on bool) {
 		w.u.fyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
+		if on {
+			w.u.fyneApp.Preferences().SetString(settingNotifyCommunicationsEarliest, time.Now().Format(time.RFC3339))
+		}
 	})
 	communicationsEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
 		settingNotifyCommunicationsEnabled,
@@ -203,19 +209,6 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		Text:     "Communications",
 		Widget:   communicationsEnabledCheck,
 		HintText: "Wether to notify new communications",
-	})
-
-	// max age
-	maxAge := kxwidget.NewSlider(1, settingMaxAgeMax)
-	v := w.u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
-	maxAge.SetValue(float64(v))
-	maxAge.OnChangeEnded = func(v float64) {
-		w.u.fyneApp.Preferences().SetInt(settingMaxAge, int(v))
-	}
-	f1.AppendItem(&widget.FormItem{
-		Text:     "Max age",
-		Widget:   maxAge,
-		HintText: "Max age in hours. Older mails and communications will not be notified.",
 	})
 
 	// PI toogle
@@ -267,6 +260,37 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		HintText: "Wether to notify when skillqueue is empty",
 	})
 
+	// Contracts toogle
+	contractsEnabledCheck := kxwidget.NewSwitch(func(on bool) {
+		w.u.fyneApp.Preferences().SetBool(settingNotifyContractsEnabled, on)
+		if on {
+			w.u.fyneApp.Preferences().SetString(settingNotifyContractsEarliest, time.Now().Format(time.RFC3339))
+		}
+	})
+	contractsEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
+		settingNotifyContractsEnabled,
+		settingNotifyCommunicationsEnabledDefault,
+	))
+	f1.AppendItem(&widget.FormItem{
+		Text:     "Contracts",
+		Widget:   contractsEnabledCheck,
+		HintText: "Wether to notify when contract status changes",
+	})
+
+	// notify timeout
+	notifyTimeout := kxwidget.NewSlider(1, settingNotifyTimeoutHoursMax)
+	v := w.u.fyneApp.Preferences().IntWithFallback(settingNotifyTimeoutHours, settingNotifyTimeoutHoursDefault)
+	notifyTimeout.SetValue(float64(v))
+	notifyTimeout.OnChangeEnded = func(v float64) {
+		w.u.fyneApp.Preferences().SetInt(settingNotifyTimeoutHours, int(v))
+	}
+	f1.AppendItem(&widget.FormItem{
+		Text:     "Notification timeout",
+		Widget:   notifyTimeout,
+		HintText: "Events older then this value in hours will not be notified",
+	})
+
+	// communications types
 	f2 := widget.NewForm()
 	categoriesAndTypes := make(map[evenotification.Category][]evenotification.Type)
 	for _, n := range evenotification.SupportedTypes() {
@@ -329,7 +353,8 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		communicationsEnabledCheck.SetState(settingNotifyCommunicationsEnabledDefault)
 		piEnabledCheck.SetState(settingNotifyPIEnabledDefault)
 		trainingEnabledCheck.SetState(settingNotifyTrainingEnabledDefault)
-		maxAge.SetValue(settingMaxAgeDefault)
+		contractsEnabledCheck.SetState(settingNotifyTrainingEnabledDefault)
+		notifyTimeout.SetValue(settingNotifyTimeoutHoursDefault)
 		for _, sw := range notifsAll {
 			sw.SetState(false)
 		}

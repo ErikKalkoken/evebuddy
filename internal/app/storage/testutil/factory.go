@@ -181,6 +181,159 @@ func (f Factory) CreateCharacterAsset(args ...storage.CreateCharacterAssetParams
 	return o
 }
 
+func (f Factory) CreateCharacterContract(args ...storage.CreateCharacterContractParams) *app.CharacterContract {
+	ctx := context.TODO()
+	var arg storage.CreateCharacterContractParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.Availability == app.ContractAvailabilityUndefined {
+		arg.Availability = app.ContractAvailabilityPublic
+	}
+	if arg.CharacterID == 0 {
+		x := f.CreateCharacter()
+		arg.CharacterID = x.ID
+	}
+	if arg.ContractID == 0 {
+		arg.ContractID = int32(f.calcNewIDWithCharacter(
+			"character_contracts",
+			"contract_id",
+			arg.CharacterID,
+		))
+	}
+	if arg.DateIssued.IsZero() {
+		arg.DateIssued = time.Now().UTC()
+	}
+	if arg.DateExpired.IsZero() {
+		arg.DateExpired = arg.DateIssued.Add(time.Duration(rand.IntN(200)+12) * time.Hour)
+	}
+	if arg.IssuerID == 0 {
+		c, err := f.st.GetCharacter(ctx, arg.CharacterID)
+		if err != nil {
+			panic(err)
+		}
+		_, err = f.st.GetOrCreateEveEntity(ctx, c.ID, c.EveCharacter.Name, app.EveEntityCharacter)
+		if err != nil {
+			panic(err)
+		}
+		arg.IssuerID = c.ID
+	}
+	if arg.IssuerCorporationID == 0 {
+		c, err := f.st.GetCharacter(ctx, arg.CharacterID)
+		if err != nil {
+			panic(err)
+		}
+		arg.IssuerCorporationID = c.EveCharacter.Corporation.ID
+	}
+	if arg.Status == app.ContractStatusUndefined {
+		arg.Status = app.ContractStatusOutstanding
+	}
+	switch arg.Type {
+	case app.ContractTypeCourier:
+		if arg.EndLocationID == 0 {
+			x := f.CreateLocationStructure()
+			arg.EndLocationID = x.ID
+		}
+		if arg.StartLocationID == 0 {
+			x := f.CreateLocationStructure()
+			arg.StartLocationID = x.ID
+		}
+	case app.ContractTypeUndefined:
+		arg.Type = app.ContractTypeItemExchange
+	}
+	_, err := f.st.CreateCharacterContract(ctx, arg)
+	if err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCharacterContract(ctx, arg.CharacterID, arg.ContractID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+func (f Factory) CreateCharacterContractCourier(args ...storage.CreateCharacterContractParams) *app.CharacterContract {
+	var arg storage.CreateCharacterContractParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	arg.Type = app.ContractTypeCourier
+	return f.CreateCharacterContract(arg)
+}
+
+func (f Factory) CreateCharacterContractBid(args ...storage.CreateCharacterContractBidParams) *app.CharacterContractBid {
+	ctx := context.TODO()
+	var arg storage.CreateCharacterContractBidParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ContractID == 0 {
+		c := f.CreateCharacterContract()
+		arg.ContractID = c.ID
+	}
+	if arg.BidID == 0 {
+		arg.BidID = int32(f.calcNewIDWithParam(
+			"character_contract_bids",
+			"bid_id",
+			"contract_id",
+			arg.ContractID,
+		))
+	}
+	if arg.Amount == 0 {
+		arg.Amount = rand.Float32() * 100_000_000
+	}
+	if arg.BidderID == 0 {
+		x := f.CreateEveEntityCharacter()
+		arg.BidderID = x.ID
+	}
+	if arg.DateBid.IsZero() {
+		arg.DateBid = time.Now().UTC()
+	}
+	if err := f.st.CreateCharacterContractBid(ctx, arg); err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCharacterContractBid(ctx, arg.ContractID, arg.BidID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+func (f Factory) CreateCharacterContractItem(args ...storage.CreateCharacterContractItemParams) *app.CharacterContractItem {
+	ctx := context.TODO()
+	var arg storage.CreateCharacterContractItemParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	if arg.ContractID == 0 {
+		c := f.CreateCharacterContract()
+		arg.ContractID = c.ID
+	}
+	if arg.RecordID == 0 {
+		arg.RecordID = f.calcNewIDWithParam(
+			"character_contract_items",
+			"record_id",
+			"contract_id",
+			arg.ContractID,
+		)
+	}
+	if arg.Quantity == 0 {
+		arg.Quantity = int32(rand.IntN(10_000))
+	}
+	if arg.TypeID == 0 {
+		x := f.CreateEveType()
+		arg.TypeID = x.ID
+	}
+	if err := f.st.CreateCharacterContractItem(ctx, arg); err != nil {
+		panic(err)
+	}
+	o, err := f.st.GetCharacterContractItem(ctx, arg.ContractID, arg.RecordID)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
 func (f Factory) CreateCharacterImplant(args ...storage.CreateCharacterImplantParams) *app.CharacterImplant {
 	ctx := context.TODO()
 	var arg storage.CreateCharacterImplantParams
@@ -402,6 +555,17 @@ func (f Factory) CreatePlanetPin(args ...storage.CreatePlanetPinParams) *app.Pla
 		panic(err)
 	}
 	return o
+}
+
+func (f Factory) CreatePlanetPinExtractor(args ...storage.CreatePlanetPinParams) *app.PlanetPin {
+	var arg storage.CreatePlanetPinParams
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	eg := f.CreateEveGroup(storage.CreateEveGroupParams{ID: app.EveGroupExtractorControlUnits})
+	et := f.CreateEveType(storage.CreateEveTypeParams{GroupID: eg.ID})
+	arg.TypeID = et.ID
+	return f.CreatePlanetPin(arg)
 }
 
 func (f Factory) CreateCharacterSkill(args ...storage.UpdateOrCreateCharacterSkillParams) *app.CharacterSkill {
@@ -1319,14 +1483,14 @@ func (f *Factory) calcNewIDWithCharacter(table, id_field string, characterID int
 	return max.Int64 + 1
 }
 
-// func (f *Factory) calcNewIDWithParam(table, id_field, where_field string, where_value int64) int64 {
-// 	var max sql.NullInt64
-// 	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", id_field, table, where_field)
-// 	if err := f.db.QueryRow(sql, where_value).Scan(&max); err != nil {
-// 		panic(err)
-// 	}
-// 	return max.Int64 + 1
-// }
+func (f *Factory) calcNewIDWithParam(table, id_field, where_field string, where_value int64) int64 {
+	var max sql.NullInt64
+	sql := fmt.Sprintf("SELECT MAX(%s) FROM %s WHERE %s = ?;", id_field, table, where_field)
+	if err := f.db.QueryRow(sql, where_value).Scan(&max); err != nil {
+		panic(err)
+	}
+	return max.Int64 + 1
+}
 
 func calcContentHash(data any) (string, error) {
 	b, err := json.Marshal(data)

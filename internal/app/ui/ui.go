@@ -56,6 +56,7 @@ type UI struct {
 	biographyArea         *biographyArea
 	coloniesArea          *coloniesArea
 	character             *app.Character
+	contractsArea         *contractsArea
 	deskApp               desktop.App
 	fyneApp               fyne.App
 	implantsArea          *implantsArea
@@ -132,6 +133,12 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 			container.NewTabItem("Communications", u.notificationsArea.content),
 		))
 
+	u.contractsArea = u.newContractsArea()
+	contractTab := container.NewTabItemWithIcon("Contracts",
+		theme.NewThemedResource(resourceFileSignSvg), container.NewAppTabs(
+			container.NewTabItem("Contracts", u.contractsArea.content),
+		))
+
 	u.overviewArea = u.newOverviewArea()
 	u.locationsArea = u.newLocationsArea()
 	u.trainingArea = u.newTrainingArea()
@@ -169,6 +176,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 	u.tabs = container.NewAppTabs(
 		characterTab,
 		u.assetTab,
+		contractTab,
 		u.mailTab,
 		u.planetTab,
 		u.skillTab,
@@ -365,6 +373,7 @@ func (u *UI) refreshCharacter() {
 		"assets":            u.assetsArea.redraw,
 		"attributes":        u.attributesArea.refresh,
 		"bio":               u.biographyArea.refresh,
+		"contracts":         u.contractsArea.refresh,
 		"implants":          u.implantsArea.refresh,
 		"jumpClones":        u.jumpClonesArea.redraw,
 		"mail":              u.mailArea.redraw,

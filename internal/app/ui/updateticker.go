@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -17,7 +16,13 @@ import (
 const (
 	characterSectionsUpdateTicker = 10 * time.Second
 	generalSectionsUpdateTicker   = 60 * time.Second
+	notifyEarliestFallback        = 24 * time.Hour
 )
+
+func (u *UI) sendDesktopNotification(title, content string) {
+	u.fyneApp.SendNotification(fyne.NewNotification(title, content))
+	slog.Info("desktop notification sent", "title", title, "content", content)
+}
 
 func (u *UI) startUpdateTickerGeneralSections() {
 	ticker := time.NewTicker(generalSectionsUpdateTicker)
@@ -69,12 +74,17 @@ func (u *UI) startUpdateTickerCharacters() {
 				for _, c := range cc {
 					go u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 					if u.fyneApp.Preferences().BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault) {
-						go u.notifyExpiredExtractions(context.TODO(), c.ID)
+						go func() {
+							earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyPIEarliest)
+							if err := u.CharacterService.NotifyExpiredExtractions(context.TODO(), c.ID, earliest, u.sendDesktopNotification); err != nil {
+								slog.Error("notify expired extractions", "characterID", c.ID, "error", err)
+							}
+						}()
 					}
 					if u.fyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
 						go func() {
-							err := u.notifyExpiredTraining(context.TODO(), c.ID)
-							if err != nil {
+							// earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
+							if err := u.CharacterService.NotifyExpiredTraining(context.TODO(), c.ID, u.sendDesktopNotification); err != nil {
 								slog.Error("notify expired training", "error", err)
 							}
 						}()
@@ -131,6 +141,18 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		if isShown && needsRefresh {
 			u.attributesArea.refresh()
 		}
+	case app.SectionContracts:
+		if isShown && needsRefresh {
+			u.contractsArea.refresh()
+		}
+		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyContractsEnabled, settingNotifyCommunicationsEnabledDefault) {
+			go func() {
+				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyContractsEarliest)
+				if err := u.CharacterService.NotifyUpdatedContracts(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
+					slog.Error("notify contract update", "error", err)
+				}
+			}()
+		}
 	case app.SectionImplants:
 		if isShown && needsRefresh {
 			u.implantsArea.refresh()
@@ -171,14 +193,25 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 			u.overviewArea.refresh()
 		}
 		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
-			go u.processMails(ctx, characterID)
+			go func() {
+				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyMailsEarliest)
+				if err := u.CharacterService.NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
+					slog.Error("notify mails", "characterID", characterID, "error", err)
+				}
+			}()
 		}
 	case app.SectionNotifications:
 		if isShown && needsRefresh {
 			u.notificationsArea.refresh()
 		}
 		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault) {
-			go u.processNotifications(ctx, characterID)
+			go func() {
+				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyCommunicationsEarliest)
+				typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
+				if err := u.CharacterService.NotifyCommunications(ctx, characterID, earliest, typesEnabled, u.sendDesktopNotification); err != nil {
+					slog.Error("notify communications", "characterID", characterID, "error", err)
+				}
+			}()
 		}
 	case app.SectionSkills:
 		if isShown && needsRefresh {
@@ -220,98 +253,24 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 	}
 }
 
-func (u *UI) processNotifications(ctx context.Context, characterID int32) {
-	maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
-	nn, err := u.CharacterService.ListCharacterNotificationsUnprocessed(ctx, characterID)
+// calcNotifyEarliest returns the earliest time for a class of notifications.
+// Might return a zero time in some circumstances.
+func calcNotifyEarliest(pref fyne.Preferences, settingEarliest string) time.Time {
+	earliest, err := time.Parse(time.RFC3339, pref.String(settingEarliest))
 	if err != nil {
-		slog.Error("Failed to fetch notifications for processing", "characterID", characterID, "error", err)
-		return
+		// Recording the earliest when enabling a switch was added later for mails and communications
+		// This workaround avoids a potential notification spam from older items.
+		earliest = time.Now().UTC().Add(-notifyEarliestFallback)
+		pref.SetString(settingEarliest, earliest.Format(time.RFC3339))
 	}
-	characterName := u.StatusCacheService.CharacterName(characterID)
-	typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
-	oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
-	for _, n := range nn {
-		if !typesEnabled.Contains(n.Type) || n.Timestamp.Before(oldest) {
-			continue
-		}
-		title := fmt.Sprintf("%s: New Communication from %s", characterName, n.Sender.Name)
-		x := fyne.NewNotification(title, n.Title.ValueOrZero())
-		u.fyneApp.SendNotification(x)
-		if err := u.CharacterService.UpdateCharacterNotificationSetProcessed(ctx, n); err != nil {
-			slog.Error("Failed to set notification as processed", "characterID", characterID, "id", n.ID, "error", err)
-			return
-		}
+	timeoutDays := pref.IntWithFallback(settingNotifyTimeoutHours, settingNotifyTimeoutHoursDefault)
+	var timeout time.Time
+	if timeoutDays > 0 {
+		timeout = time.Now().UTC().Add(-time.Duration(timeoutDays) * time.Hour)
 	}
-}
+	if earliest.After(timeout) {
+		return earliest
+	}
+	return timeout
 
-func (u *UI) processMails(ctx context.Context, characterID int32) {
-	maxAge := u.fyneApp.Preferences().IntWithFallback(settingMaxAge, settingMaxAgeDefault)
-	mm, err := u.CharacterService.ListCharacterMailHeadersForUnprocessed(ctx, characterID)
-	if err != nil {
-		slog.Error("Failed to fetch mails for processing", "characterID", characterID, "error", err)
-		return
-	}
-	characterName := u.StatusCacheService.CharacterName(characterID)
-	oldest := time.Now().UTC().Add(time.Second * time.Duration(maxAge) * -1)
-	for _, m := range mm {
-		if m.Timestamp.Before(oldest) {
-			continue
-		}
-		title := fmt.Sprintf("%s: New Mail from %s", characterName, m.From)
-		body := m.Subject
-		x := fyne.NewNotification(title, body)
-		u.fyneApp.SendNotification(x)
-		if err := u.CharacterService.UpdateCharacterMailSetProcessed(ctx, m.ID); err != nil {
-			slog.Error("Failed to set mail as processed", "characterID", characterID, "id", m.MailID, "error", err)
-			return
-		}
-	}
-}
-
-func (u *UI) notifyExpiredExtractions(ctx context.Context, characterID int32) {
-	planets, err := u.CharacterService.ListCharacterPlanets(ctx, characterID)
-	if err != nil {
-		slog.Error("failed to fetch character planets for notifications", "error", err)
-		return
-	}
-	characterName := u.StatusCacheService.CharacterName(characterID)
-	x := u.fyneApp.Preferences().String(settingNotifyPIEarliest)
-	earliest, _ := time.Parse(time.RFC3339, x) // time when setting was enabled
-	for _, p := range planets {
-		expiration := p.ExtractionsExpiryTime()
-		if expiration.IsZero() || expiration.After(time.Now()) || expiration.Before(earliest) {
-			continue
-		}
-		if p.LastNotified.ValueOrZero().Equal(expiration) {
-			continue
-		}
-		title := fmt.Sprintf("%s: PI extraction expired", characterName)
-		extracted := strings.Join(p.ExtractedTypeNames(), ",")
-		content := fmt.Sprintf("Extraction expired at %s for %s", p.EvePlanet.Name, extracted)
-		u.fyneApp.SendNotification(fyne.NewNotification(title, content))
-		if err := u.CharacterService.UpdateCharacterPlanetLastNotified(ctx, characterID, p.EvePlanet.ID, expiration); err != nil {
-			slog.Error("failed to update last notified", "error", err)
-		}
-	}
-}
-
-func (u *UI) notifyExpiredTraining(ctx context.Context, characterID int32) error {
-	c, err := u.CharacterService.GetCharacter(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	if !c.IsTrainingWatched {
-		return nil
-	}
-	t, err := u.CharacterService.GetCharacterTotalTrainingTime(ctx, characterID)
-	if err != nil {
-		return err
-	}
-	if !t.IsEmpty() {
-		return nil
-	}
-	title := fmt.Sprintf("%s: No skill in training", c.EveCharacter.Name)
-	content := "There is currently no skill being trained for this character."
-	u.fyneApp.SendNotification(fyne.NewNotification(title, content))
-	return u.CharacterService.UpdateCharacterIsTrainingWatched(ctx, characterID, false)
 }

@@ -10,7 +10,7 @@ import (
 
 	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 // NewConfirmDialog returns a new pre-configured confirm dialog.

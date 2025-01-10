@@ -229,7 +229,7 @@ func TestCharacterNotification(t *testing.T) {
 		testutil.TruncateTables(db)
 		c := factory.CreateCharacter()
 		now := time.Now().UTC()
-		factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
+		o := factory.CreateCharacterNotification(storage.CreateCharacterNotificationParams{
 			Body:        optional.New("title"),
 			CharacterID: c.ID,
 			IsProcessed: false,
@@ -257,13 +257,13 @@ func TestCharacterNotification(t *testing.T) {
 			Title:       optional.New("title"),
 		})
 		// when
-		ee, err := r.ListCharacterNotificationsUnprocessed(ctx, c.ID)
+		ee, err := r.ListCharacterNotificationsUnprocessed(ctx, c.ID, now.Add(-24*time.Hour))
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, ee, 1)
+			assert.Equal(t, o.ID, ee[0].ID)
 		}
 	})
-
 }
 
 func TestNotificationType(t *testing.T) {

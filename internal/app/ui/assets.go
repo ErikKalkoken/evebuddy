@@ -17,9 +17,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
-	ihumanize "github.com/ErikKalkoken/evebuddy/internal/app/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -477,7 +477,7 @@ func (a *assetsArea) updateLocationPath(location locationDataNode) {
 	for i, n := range path {
 		isLast := i == len(path)-1
 		if !isLast {
-			l := kwidget.NewTappableLabel(n.Name, func() {
+			l := newCustomHyperlink(n.Name, func() {
 				if err := a.selectLocation(n); err != nil {
 					slog.Warn("Failed to redraw assets", "err", err)
 				}

@@ -155,6 +155,7 @@ LEFT JOIN character_mail_labels ON character_mail_labels.id = cml.character_mail
 WHERE cm.character_id = ?
 AND (label_id <> ? OR label_id IS NULL)
 AND is_processed = FALSE
+AND timestamp > ?
 ORDER BY timestamp ASC;
 
 -- name: UpdateCharacterMailIsRead :exec

@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 type Planet struct {
 	widget.BaseWidget
 	extracting *widget.Label
-	expired    *widget.Label
+	post       *widget.Label
 	image      *canvas.Image
 	producing  *widget.Label
 	security   *widget.Label
@@ -33,10 +34,8 @@ func NewPlanet() *Planet {
 	image := canvas.NewImageFromResource(theme.BrokenImageIcon())
 	image.FillMode = canvas.ImageFillContain
 	image.SetMinSize(fyne.Size{Width: planetWidgetSize, Height: planetWidgetSize})
-	offline := widget.NewLabel("OFFLINE")
-	offline.Importance = widget.WarningImportance
 	w := &Planet{
-		expired:    offline,
+		post:       widget.NewLabel(""),
 		extracting: widget.NewLabel(""),
 		image:      image,
 		producing:  widget.NewLabel(""),
@@ -64,26 +63,31 @@ func (w *Planet) Set(cp *app.CharacterPlanet) {
 	extracted := strings.Join(cp.ExtractedTypeNames(), ",")
 	var deadline string
 	isExpired := false
-	if x := cp.ExtractionsExpiryTime(); x.IsZero() {
+	expires := cp.ExtractionsExpiryTime()
+	if expires.IsZero() {
 		deadline = "?"
+		w.post.Hide()
 	} else {
-		deadline = x.Format(app.TimeDefaultFormat)
-		if x.Before(time.Now()) {
+		deadline = expires.Format(app.TimeDefaultFormat)
+		if expires.Before(time.Now()) {
 			isExpired = true
 		}
+		w.post.Show()
 	}
 	if isExpired {
-		w.expired.Show()
+		w.post.Text = "EXPIRED"
+		w.post.Importance = widget.DangerImportance
+		w.post.Refresh()
 	} else {
-		w.expired.Hide()
+		w.post.Text = humanize.RelTime(expires)
+		w.post.Importance = widget.SuccessImportance
+		w.post.Refresh()
 	}
-	var x string
 	if extracted != "" {
-		x = fmt.Sprintf("%s by %s", extracted, deadline)
+		w.extracting.SetText(fmt.Sprintf("%s by %s", extracted, deadline))
 	} else {
-		x = "-"
+		w.extracting.SetText("-")
 	}
-	w.extracting.SetText(x)
 
 	produced := strings.Join(cp.ProducedSchematicNames(), ",")
 	if produced == "" {
@@ -101,7 +105,7 @@ func (w *Planet) CreateRenderer() fyne.WidgetRenderer {
 		container.NewVBox(
 			container.NewStack(canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground)), container.NewHBox(w.security, w.title)),
 			widget.NewForm(
-				widget.NewFormItem("Extracting", container.NewHBox(w.extracting, w.expired)),
+				widget.NewFormItem("Extracting", container.NewHBox(w.extracting, w.post)),
 				widget.NewFormItem("Producing", w.producing),
 			),
 		),

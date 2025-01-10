@@ -31,34 +31,25 @@ func TestAvailableUpdate(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder("GET", "https://api.github.com/repos/ErikKalkoken/janice/releases/latest",
 			httpmock.NewJsonResponderOrPanic(200, data))
-		got, x, err := github.AvailableUpdate("ErikKalkoken", "janice", "v0.1.0")
+		v, err := github.AvailableUpdate("ErikKalkoken", "janice", "0.1.0")
 		if assert.NoError(t, err) {
-			assert.True(t, x)
-			assert.Equal(t, "v0.2.0", got)
+			assert.Equal(t, github.VersionInfo{"0.1.0", "0.2.0", "0.2.0", true}, v)
 		}
 	})
-	t.Run("should report when no new version available", func(t *testing.T) {
+	t.Run("should report when remote has no newer version", func(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder("GET", "https://api.github.com/repos/ErikKalkoken/janice/releases/latest",
 			httpmock.NewJsonResponderOrPanic(200, data))
-		got, x, err := github.AvailableUpdate("ErikKalkoken", "janice", "v0.2.0")
+		v, err := github.AvailableUpdate("ErikKalkoken", "janice", "0.2.0")
 		if assert.NoError(t, err) {
-			assert.False(t, x)
-			assert.Equal(t, "v0.2.0", got)
+			assert.Equal(t, github.VersionInfo{"0.2.0", "0.2.0", "0.2.0", false}, v)
 		}
 	})
 	t.Run("should report error when request failed", func(t *testing.T) {
 		httpmock.Reset()
 		httpmock.RegisterResponder("GET", "https://api.github.com/repos/ErikKalkoken/janice/releases/latest",
 			httpmock.NewErrorResponder(fmt.Errorf("some error")))
-		_, _, err := github.AvailableUpdate("ErikKalkoken", "janice", "v0.2.0")
+		_, err := github.AvailableUpdate("ErikKalkoken", "janice", "v0.2.0")
 		assert.Error(t, err)
-	})
-	t.Run("should report error when no release found", func(t *testing.T) {
-		httpmock.Reset()
-		httpmock.RegisterResponder("GET", "https://api.github.com/repos/ErikKalkoken/janice/releases/latest",
-			httpmock.NewJsonResponderOrPanic(404, map[string]any{"message": "Not found"}))
-		_, _, err := github.AvailableUpdate("ErikKalkoken", "janice", "v0.2.0")
-		assert.ErrorIs(t, err, github.ErrHttpError)
 	})
 }

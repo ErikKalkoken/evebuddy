@@ -635,12 +635,14 @@ LEFT JOIN character_mail_labels ON character_mail_labels.id = cml.character_mail
 WHERE cm.character_id = ?
 AND (label_id <> ? OR label_id IS NULL)
 AND is_processed = FALSE
+AND timestamp > ?
 ORDER BY timestamp ASC
 `
 
 type ListMailsUnprocessedParams struct {
 	CharacterID int64
 	LabelID     int64
+	Timestamp   time.Time
 }
 
 type ListMailsUnprocessedRow struct {
@@ -653,7 +655,7 @@ type ListMailsUnprocessedRow struct {
 }
 
 func (q *Queries) ListMailsUnprocessed(ctx context.Context, arg ListMailsUnprocessedParams) ([]ListMailsUnprocessedRow, error) {
-	rows, err := q.db.QueryContext(ctx, listMailsUnprocessed, arg.CharacterID, arg.LabelID)
+	rows, err := q.db.QueryContext(ctx, listMailsUnprocessed, arg.CharacterID, arg.LabelID, arg.Timestamp)
 	if err != nil {
 		return nil, err
 	}

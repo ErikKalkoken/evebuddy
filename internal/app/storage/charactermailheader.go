@@ -90,10 +90,11 @@ func (st *Storage) ListCharacterMailHeadersForListOrdered(ctx context.Context, c
 	return mm, nil
 }
 
-func (st *Storage) ListCharacterMailHeadersForUnprocessed(ctx context.Context, characterID int32) ([]*app.CharacterMailHeader, error) {
+func (st *Storage) ListCharacterMailHeadersForUnprocessed(ctx context.Context, characterID int32, earliest time.Time) ([]*app.CharacterMailHeader, error) {
 	arg := queries.ListMailsUnprocessedParams{
 		CharacterID: int64(characterID),
 		LabelID:     app.MailLabelSent,
+		Timestamp:   earliest,
 	}
 	rows, err := st.q.ListMailsUnprocessed(ctx, arg)
 	if err != nil {

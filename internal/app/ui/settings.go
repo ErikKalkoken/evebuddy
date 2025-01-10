@@ -9,9 +9,8 @@ import (
 // Settings
 const (
 	settingLastCharacterID                    = "settingLastCharacterID"
-	settingMaxAge                             = "settingMaxAgeHours"
-	settingMaxAgeDefault                      = 6  // hours
-	settingMaxAgeMax                          = 24 // hours
+	SettingLogLevel                           = "logLevel"
+	SettingLogLevelDefault                    = "warning"
 	settingMaxMails                           = "settingMaxMails"
 	settingMaxMailsDefault                    = 1_000
 	settingMaxMailsMax                        = 10_000
@@ -19,15 +18,24 @@ const (
 	settingMaxWalletTransactionsDefault       = 1_000
 	settingMaxWalletTransactionsMax           = 10_000
 	settingNotificationsTypesEnabled          = "settingNotificationsTypesEnabled"
+	settingNotifyCommunicationsEarliest       = "settingNotifyCommunicationsEarliest"
 	settingNotifyCommunicationsEnabled        = "settingNotifyCommunicationsEnabled"
 	settingNotifyCommunicationsEnabledDefault = false
+	settingNotifyContractsEarliest            = "settingNotifyContractsEarliest"
+	settingNotifyContractsEnabled             = "settingNotifyContractsEnabled"
+	settingNotifyContractsEnabledDefault      = false
+	settingNotifyMailsEarliest                = "settingNotifyMailsEarliest"
 	settingNotifyMailsEnabled                 = "settingNotifyMailsEnabled"
 	settingNotifyMailsEnabledDefault          = false
+	settingNotifyPIEarliest                   = "settingNotifyPIEarliest"
 	settingNotifyPIEnabled                    = "settingNotifyPIEnabled"
 	settingNotifyPIEnabledDefault             = false
+	settingNotifyTimeoutHours                 = "settingNotifyTimeoutHours"
+	settingNotifyTimeoutHoursDefault          = 30 * 24
+	settingNotifyTimeoutHoursMax              = 90 * 24
+	settingNotifyTrainingEarliest             = "settingNotifyTrainingEarliest"
 	settingNotifyTrainingEnabled              = "settingNotifyTrainingEnabled"
 	settingNotifyTrainingEnabledDefault       = false
-	settingNotifyPIEarliest                   = "settingNotifyPIEarliest"
 	settingSysTrayEnabled                     = "settingSysTrayEnabled"
 	settingSysTrayEnabledDefault              = false
 	settingTabsMainID                         = "tabs-main-id"
@@ -35,21 +43,26 @@ const (
 	settingWindowHeightDefault                = 600
 	settingWindowWidth                        = "window-width"
 	settingWindowWidthDefault                 = 1000
-	SettingLogLevel                           = "logLevel"
-	SettingLogLevelDefault                    = "warning"
 )
 
-// SettingKeys returns all setting keys.
+// SettingKeys returns all setting keys. Mostly to know what to delete.
 func SettingKeys() []string {
 	return []string{
 		settingLastCharacterID,
-		settingMaxAge,
 		settingMaxMails,
 		settingMaxWalletTransactions,
 		settingNotificationsTypesEnabled,
 		settingNotifyCommunicationsEnabled,
+		settingNotifyCommunicationsEarliest,
+		settingNotifyContractsEnabled,
+		settingNotifyContractsEarliest,
 		settingNotifyMailsEnabled,
+		settingNotifyMailsEarliest,
 		settingNotifyPIEnabled,
+		settingNotifyPIEarliest,
+		settingNotifyTimeoutHours,
+		settingNotifyTrainingEnabled,
+		settingNotifyTrainingEarliest,
 		settingSysTrayEnabled,
 		settingTabsMainID,
 		settingWindowHeight,

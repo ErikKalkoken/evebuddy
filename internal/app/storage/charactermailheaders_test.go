@@ -134,6 +134,7 @@ func TestListMailHeaders(t *testing.T) {
 	t.Run("should return unprocessed mails only and ignore sent mails", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
+		now := time.Now().UTC()
 		c := factory.CreateCharacter()
 		m1 := factory.CreateCharacterMail(storage.CreateCharacterMailParams{
 			CharacterID: c.ID,
@@ -149,9 +150,14 @@ func TestListMailHeaders(t *testing.T) {
 			IsProcessed: false,
 			LabelIDs:    []int32{l.LabelID},
 		})
+		factory.CreateCharacterMail(storage.CreateCharacterMailParams{
+			CharacterID: c.ID,
+			IsProcessed: false,
+			Timestamp:   now.Add(-10 * time.Hour),
+		})
 		factory.CreateCharacterMail()
 		// when
-		xx, err := r.ListCharacterMailHeadersForUnprocessed(ctx, c.ID)
+		xx, err := r.ListCharacterMailHeadersForUnprocessed(ctx, c.ID, now.Add(-5*time.Hour))
 		// then
 		if assert.NoError(t, err) {
 			want := []int32{m1.MailID}

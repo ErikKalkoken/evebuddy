@@ -17,6 +17,7 @@ type CharacterSection string
 const (
 	SectionAssets             CharacterSection = "assets"
 	SectionAttributes         CharacterSection = "attributes"
+	SectionContracts          CharacterSection = "contracts"
 	SectionImplants           CharacterSection = "implants"
 	SectionJumpClones         CharacterSection = "jump_clones"
 	SectionLocation           CharacterSection = "location"
@@ -37,6 +38,7 @@ const (
 var CharacterSections = []CharacterSection{
 	SectionAssets,
 	SectionAttributes,
+	SectionContracts,
 	SectionImplants,
 	SectionJumpClones,
 	SectionLocation,
@@ -57,6 +59,7 @@ var CharacterSections = []CharacterSection{
 var characterSectionTimeouts = map[CharacterSection]time.Duration{
 	SectionAssets:             3600 * time.Second,
 	SectionAttributes:         120 * time.Second,
+	SectionContracts:          300 * time.Second,
 	SectionImplants:           120 * time.Second,
 	SectionJumpClones:         120 * time.Second,
 	SectionLocation:           300 * time.Second, // minimum 5 seconds

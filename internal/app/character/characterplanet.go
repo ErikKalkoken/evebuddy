@@ -2,6 +2,8 @@ package character
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -11,21 +13,45 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
+func (cs *CharacterService) NotifyExpiredExtractions(ctx context.Context, characterID int32, earliest time.Time, notify func(title, content string)) error {
+	planets, err := cs.ListCharacterPlanets(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	characterName, err := cs.getCharacterName(ctx, characterID)
+	if err != nil {
+		return err
+	}
+	for _, p := range planets {
+		expiration := p.ExtractionsExpiryTime()
+		if expiration.IsZero() || expiration.After(time.Now()) || expiration.Before(earliest) {
+			continue
+		}
+		if p.LastNotified.ValueOrZero().Equal(expiration) {
+			continue
+		}
+		title := fmt.Sprintf("%s: PI extraction expired", characterName)
+		extracted := strings.Join(p.ExtractedTypeNames(), ",")
+		content := fmt.Sprintf("Extraction expired at %s for %s", p.EvePlanet.Name, extracted)
+		notify(title, content)
+		arg := storage.UpdateCharacterPlanetLastNotifiedParams{
+			CharacterID:  characterID,
+			EvePlanetID:  p.EvePlanet.ID,
+			LastNotified: expiration,
+		}
+		if err := cs.st.UpdateCharacterPlanetLastNotified(ctx, arg); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *CharacterService) ListAllCharacterPlanets(ctx context.Context) ([]*app.CharacterPlanet, error) {
 	return s.st.ListAllCharacterPlanets(ctx)
 }
 
 func (s *CharacterService) ListCharacterPlanets(ctx context.Context, characterID int32) ([]*app.CharacterPlanet, error) {
 	return s.st.ListCharacterPlanets(ctx, characterID)
-}
-
-func (s *CharacterService) UpdateCharacterPlanetLastNotified(ctx context.Context, characterID, evePlanetID int32, t time.Time) error {
-	arg := storage.UpdateCharacterPlanetLastNotifiedParams{
-		CharacterID:  characterID,
-		EvePlanetID:  evePlanetID,
-		LastNotified: t,
-	}
-	return s.st.UpdateCharacterPlanetLastNotified(ctx, arg)
 }
 
 // TODO: Improve update logic to only update changes
