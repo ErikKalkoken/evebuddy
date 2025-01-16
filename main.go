@@ -25,6 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -37,16 +38,17 @@ import (
 )
 
 const (
-	appID           = "io.github.erikkalkoken.evebuddy"
-	dbFileName      = "evebuddy.sqlite"
-	logFileName     = "evebuddy.log"
-	logMaxBackups   = 3
-	logMaxSizeMB    = 50
-	mutexDelay      = 100 * time.Millisecond
-	mutexTimeout    = 250 * time.Millisecond
-	ssoClientID     = "11ae857fe4d149b2be60d875649c05f1"
-	userAgent       = "EveBuddy kalkoken87@gmail.com"
-	logLevelDefault = slog.LevelWarn // for startup only
+	appID               = "io.github.erikkalkoken.evebuddy"
+	dbFileName          = "evebuddy.sqlite"
+	logFileName         = "evebuddy.log"
+	logMaxBackups       = 3
+	logMaxSizeMB        = 50
+	mutexDelay          = 100 * time.Millisecond
+	mutexTimeout        = 250 * time.Millisecond
+	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
+	userAgent           = "EveBuddy kalkoken87@gmail.com"
+	logLevelDefault     = slog.LevelWarn // for startup only
+	cacheCleanUpTimeout = time.Minute * 30
 )
 
 type realtime struct{}
@@ -180,10 +182,10 @@ func main() {
 		},
 	}
 	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
-	cache := cache.New()
+	memCache := cache.New()
 
 	// Init StatusCache service
-	sc := statuscache.New(cache)
+	sc := statuscache.New(memCache)
 	if err := sc.InitCache(context.TODO(), st); err != nil {
 		slog.Error("Failed to init cache", "error", err)
 		os.Exit(1)
@@ -203,13 +205,17 @@ func main() {
 	cs.StatusCacheService = sc
 	cs.SSOService = sso.New(ssoClientID, httpClient)
 
+	// PCache init
+	pc := pcache.New(st, cacheCleanUpTimeout)
+	go pc.CleanUp()
+
 	// Init UI
 	u := ui.NewUI(fyneApp, ad)
 	slog.Debug("ui instance created")
-	u.CacheService = cache
+	u.CacheService = memCache
 	u.CharacterService = cs
 	u.ESIStatusService = esistatus.New(esiClient)
-	u.EveImageService = eveimage.New(ad.Cache, httpClient, *isOfflineFlag)
+	u.EveImageService = eveimage.New(pc, httpClient, *isOfflineFlag)
 	u.EveUniverseService = eu
 	u.StatusCacheService = sc
 	u.IsOffline = *isOfflineFlag

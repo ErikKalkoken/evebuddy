@@ -9,6 +9,14 @@ import (
 	"time"
 )
 
+type Cache struct {
+	ID        int64
+	CreatedAt time.Time
+	ExpiresAt sql.NullTime
+	Key       string
+	Value     []byte
+}
+
 type Character struct {
 	ID                int64
 	AssetValue        sql.NullFloat64

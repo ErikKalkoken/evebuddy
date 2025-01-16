@@ -4,6 +4,7 @@ package statuscache
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -64,6 +65,10 @@ type cacheKey struct {
 	section string
 }
 
+func (ck cacheKey) String() string {
+	return fmt.Sprintf("%d-%s", ck.id, ck.section)
+}
+
 type cacheValue struct {
 	CompletedAt  time.Time
 	ErrorMessage string
@@ -72,7 +77,7 @@ type cacheValue struct {
 
 func (sc *StatusCacheService) CharacterSectionGet(characterID int32, section app.CharacterSection) (app.SectionStatus, bool) {
 	k := cacheKey{id: characterID, section: string(section)}
-	x, ok := sc.cache.Get(k)
+	x, ok := sc.cache.Get(k.String())
 	if !ok {
 		return app.SectionStatus{}, false
 	}
@@ -164,7 +169,7 @@ func (sc *StatusCacheService) CharacterSectionSet(o *app.CharacterSectionStatus)
 		CompletedAt:  o.CompletedAt,
 		StartedAt:    o.StartedAt,
 	}
-	sc.cache.Set(k, v, 0)
+	sc.cache.Set(k.String(), v, 0)
 }
 
 // Return the name of a character by ID or an empty string if not found.
@@ -191,7 +196,7 @@ func (sc *StatusCacheService) GeneralSectionExists(section app.GeneralSection) b
 
 func (sc *StatusCacheService) GeneralSectionGet(section app.GeneralSection) (app.SectionStatus, bool) {
 	k := cacheKey{id: app.GeneralSectionEntityID, section: string(section)}
-	x, ok := sc.cache.Get(k)
+	x, ok := sc.cache.Get(k.String())
 	if !ok {
 		return app.SectionStatus{}, false
 	}
@@ -233,7 +238,7 @@ func (sc *StatusCacheService) GeneralSectionSet(o *app.GeneralSectionStatus) {
 		CompletedAt:  o.CompletedAt,
 		StartedAt:    o.StartedAt,
 	}
-	sc.cache.Set(k, v, 0)
+	sc.cache.Set(k.String(), v, 0)
 }
 
 func (sc *StatusCacheService) GeneralSectionSummary() app.StatusSummary {
