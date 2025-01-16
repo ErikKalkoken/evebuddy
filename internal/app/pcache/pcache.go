@@ -10,28 +10,35 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 )
 
+// PCache is a persistent cache. It can automatically remove expired items.
 type PCache struct {
 	st     *storage.Storage
 	closeC chan struct{}
 }
 
+// New returns a new PCache.
+//
+// cleanUpTimeout is the timeout between automatic clean-up intervals. When set to 0 no cleanUp will be done.
+// Make sure to close this object again to free all it's resources.
 func New(st *storage.Storage, cleanUpTimeout time.Duration) *PCache {
 	c := &PCache{
 		st:     st,
 		closeC: make(chan struct{}),
 	}
-	ticker := time.NewTicker(cleanUpTimeout)
-	go func() {
-		for {
-			select {
-			case <-c.closeC:
-				slog.Info("cache closed")
-				return
-			case <-ticker.C:
-				c.CleanUp()
+	if cleanUpTimeout > 0 {
+		ticker := time.NewTicker(cleanUpTimeout)
+		go func() {
+			for {
+				select {
+				case <-c.closeC:
+					slog.Info("cache closed")
+					return
+				case <-ticker.C:
+					c.CleanUp()
+				}
 			}
-		}
-	}()
+		}()
+	}
 	return c
 }
 
@@ -49,6 +56,11 @@ func (c *PCache) Clear() {
 	}
 }
 
+// Close closes the cache and frees allocated resources.
+func (c *PCache) Close() {
+	close(c.closeC)
+}
+
 func (c *PCache) Delete(key string) {
 	err := c.st.CacheDelete(context.Background(), key)
 	if err != nil {
@@ -64,7 +76,7 @@ func (c *PCache) Exists(key string) bool {
 	return found
 }
 
-func (c *PCache) Get(key string) (any, bool) {
+func (c *PCache) Get(key string) ([]byte, bool) {
 	v, err := c.st.CacheGet(context.Background(), key)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, false
@@ -76,14 +88,14 @@ func (c *PCache) Get(key string) (any, bool) {
 	return v, true
 }
 
-func (c *PCache) Set(key string, value any, timeout time.Duration) {
+func (c *PCache) Set(key string, value []byte, timeout time.Duration) {
 	var expiresAt time.Time
 	if timeout > 0 {
 		expiresAt = time.Now().Add(timeout)
 	}
 	arg := storage.CacheSetParams{
 		Key:       key,
-		Value:     value.([]byte),
+		Value:     value,
 		ExpiresAt: expiresAt,
 	}
 	err := c.st.CacheSet(context.Background(), arg)

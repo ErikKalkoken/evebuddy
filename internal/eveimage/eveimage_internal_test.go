@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -54,8 +54,29 @@ func TestLoadResourceFromURL(t *testing.T) {
 	})
 }
 
+type cache map[string][]byte
+
+func newCache() cache {
+	return make(cache)
+}
+
+func (c cache) Get(k string) ([]byte, bool) {
+	v, ok := c[k]
+	return v, ok
+}
+
+func (c cache) Set(k string, v []byte, d time.Duration) {
+	c[k] = v
+}
+
+func (c cache) Clear() {
+	for k := range c {
+		delete(c, k)
+	}
+}
+
 func TestImageFetching(t *testing.T) {
-	c := cache.New()
+	c := newCache()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	dat, err := os.ReadFile("testdata/character_93330670_64.jpeg")

@@ -4,15 +4,35 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 
+type cache map[string][]byte
+
+func newCache() cache {
+	return make(cache)
+}
+
+func (c cache) Get(k string) ([]byte, bool) {
+	v, ok := c[k]
+	return v, ok
+}
+
+func (c cache) Set(k string, v []byte, d time.Duration) {
+	c[k] = v
+}
+
+func (c cache) Clear() {
+	for k := range c {
+		delete(c, k)
+	}
+}
+
 func TestImageFetching(t *testing.T) {
-	c := cache.New()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	dat, err := os.ReadFile("testdata/character_93330670_64.jpeg")
@@ -21,7 +41,7 @@ func TestImageFetching(t *testing.T) {
 	}
 	t.Run("can fetch an alliance logo from the image server", func(t *testing.T) {
 		// given
-		c.Clear()
+		c := newCache()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -37,6 +57,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a character portrait from the image server", func(t *testing.T) {
 		// given
+		c := newCache()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -52,7 +73,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a corporation logo from the image server", func(t *testing.T) {
 		// given
-		c.Clear()
+		c := newCache()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -68,6 +89,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a faction logo from the image server", func(t *testing.T) {
 		// given
+		c := newCache()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -83,7 +105,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a type icon from the image server", func(t *testing.T) {
 		// given
-		c.Clear()
+		c := newCache()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -99,7 +121,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a type render from the image server", func(t *testing.T) {
 		// given
-		c.Clear()
+		c := newCache()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -115,7 +137,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a type BPO from the image server", func(t *testing.T) {
 		// given
-		c.Clear()
+		c := newCache()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -131,7 +153,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can fetch a type BPC from the image server", func(t *testing.T) {
 		// given
-		c.Clear()
+		c := newCache()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -147,7 +169,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("should convert images size errors", func(t *testing.T) {
 		// given
-		c.Clear()
+		c := newCache()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",
@@ -161,7 +183,7 @@ func TestImageFetching(t *testing.T) {
 	})
 	t.Run("can clear cache", func(t *testing.T) {
 		// given
-		c.Clear()
+		c := newCache()
 		httpmock.Reset()
 		httpmock.RegisterResponder(
 			"GET",

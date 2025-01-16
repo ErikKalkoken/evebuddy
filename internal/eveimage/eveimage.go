@@ -31,8 +31,8 @@ var (
 // Defines a cache service
 type CacheService interface {
 	Clear()
-	Get(string) (any, bool)
-	Set(string, any, time.Duration)
+	Get(string) ([]byte, bool)
+	Set(string, []byte, time.Duration)
 }
 
 // EveImageService provides cached access to images on the Eve Online image server.
@@ -170,7 +170,8 @@ func (m *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, 
 func (m *EveImageService) image(url string, timeout time.Duration) (fyne.Resource, error) {
 	key := "eveimage-" + makeMD5Hash(url)
 	var dat []byte
-	x, found := m.cache.Get(key)
+	var found bool
+	dat, found = m.cache.Get(key)
 	if !found {
 		if m.isOffline {
 			return resourceBrokenimageSvg, nil
@@ -187,12 +188,6 @@ func (m *EveImageService) image(url string, timeout time.Duration) (fyne.Resourc
 			return nil, err
 		}
 		dat = x.([]byte)
-	} else {
-		var ok bool
-		dat, ok = x.([]byte)
-		if !ok {
-			return resourceBrokenimageSvg, nil
-		}
 	}
 	r := fyne.NewStaticResource(key, dat)
 	return r, nil
