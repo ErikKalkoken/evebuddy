@@ -68,19 +68,19 @@ func (c *Cache) Clear() {
 }
 
 // Delete deletes an item from the cache
-func (c *Cache) Delete(key any) {
+func (c *Cache) Delete(key string) {
 	c.items.Delete(key)
 }
 
 // Exists reports wether a key exists
-func (c *Cache) Exists(key any) bool {
+func (c *Cache) Exists(key string) bool {
 	_, ok := c.Get(key)
 	return ok
 }
 
 // Get returns an item if it exits and it not stale.
 // It also reports whether the item was found.
-func (c *Cache) Get(key any) (any, bool) {
+func (c *Cache) Get(key string) (any, bool) {
 	value, ok := c.items.Load(key)
 	if !ok {
 		return nil, false
@@ -96,7 +96,7 @@ func (c *Cache) Get(key any) (any, bool) {
 //
 // If an item with the same key already exists it will be overwritten.
 // An item with timeout = 0 never expires
-func (c *Cache) Set(key any, value any, timeout time.Duration) {
+func (c *Cache) Set(key string, value any, timeout time.Duration) {
 	var at time.Time
 	if timeout > 0 {
 		at = time.Now().Add(timeout)
@@ -110,9 +110,9 @@ func (c *Cache) cleanUp() {
 	slog.Info("cache clean up: started")
 	count := 0
 	c.items.Range(func(key, value any) bool {
-		_, found := c.Get(key)
+		_, found := c.Get(key.(string))
 		if !found {
-			c.Delete(key)
+			c.Delete(key.(string))
 			count++
 		}
 		return true

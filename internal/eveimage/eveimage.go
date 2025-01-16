@@ -31,8 +31,8 @@ var (
 // Defines a cache service
 type CacheService interface {
 	Clear()
-	Get(any) (any, bool)
-	Set(any, any, time.Duration)
+	Get(string) (any, bool)
+	Set(string, any, time.Duration)
 }
 
 // EveImageService provides cached access to images on the Eve Online image server.

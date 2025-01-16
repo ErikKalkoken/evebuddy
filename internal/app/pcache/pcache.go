@@ -49,23 +49,23 @@ func (c *PCache) Clear() {
 	}
 }
 
-func (c *PCache) Delete(key any) {
-	err := c.st.CacheDelete(context.Background(), key.(string))
+func (c *PCache) Delete(key string) {
+	err := c.st.CacheDelete(context.Background(), key)
 	if err != nil {
 		slog.Error("cache failure", "error", err)
 	}
 }
 
-func (c *PCache) Exists(key any) bool {
-	found, err := c.st.CacheExists(context.Background(), key.(string))
+func (c *PCache) Exists(key string) bool {
+	found, err := c.st.CacheExists(context.Background(), key)
 	if err != nil {
 		slog.Error("cache failure", "error", err)
 	}
 	return found
 }
 
-func (c *PCache) Get(key any) (any, bool) {
-	v, err := c.st.CacheGet(context.Background(), key.(string))
+func (c *PCache) Get(key string) (any, bool) {
+	v, err := c.st.CacheGet(context.Background(), key)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, false
 	}
@@ -76,13 +76,13 @@ func (c *PCache) Get(key any) (any, bool) {
 	return v, true
 }
 
-func (c *PCache) Set(key, value any, timeout time.Duration) {
+func (c *PCache) Set(key string, value any, timeout time.Duration) {
 	var expiresAt time.Time
 	if timeout > 0 {
 		expiresAt = time.Now().Add(timeout)
 	}
 	arg := storage.CacheSetParams{
-		Key:       key.(string),
+		Key:       key,
 		Value:     value.([]byte),
 		ExpiresAt: expiresAt,
 	}
