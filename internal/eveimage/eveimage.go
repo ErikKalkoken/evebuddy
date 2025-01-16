@@ -7,11 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
-	"os"
-	"path"
-	"path/filepath"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"golang.org/x/sync/singleflight"
@@ -23,32 +20,32 @@ var (
 	ErrInvalidSize = errors.New("invalid size")
 )
 
+// Defines a cache service
+type CacheService interface {
+	Clear()
+	Get(any) (any, bool)
+	Set(any, any, time.Duration)
+}
+
 // EveImageService provides cached access to images on the Eve Online image server.
 type EveImageService struct {
-	cacheDir   string // cacheDir is where the image files are stored for caching
+	cache      CacheService
 	httpClient *http.Client
 	isOffline  bool
 	sfg        *singleflight.Group
 }
 
-// New returns a new Images object. path is the location of the file cache.
-// When no path is given (empty string) it will create a temporary directory instead.
+// New returns a new EveImageService object.
+//
 // When no httpClient (nil) is provided it will use the default client.
 // When isOffline is set to true, it will return a dummy image
 // instead of trying to fetch images from the image server, which are not already cached.
-func New(cacheDir string, httpClient *http.Client, isOffline bool) *EveImageService {
-	if cacheDir == "" {
-		p, err := os.MkdirTemp("", "eveimage")
-		if err != nil {
-			log.Fatal(err)
-		}
-		cacheDir = p
-	}
+func New(cache CacheService, httpClient *http.Client, isOffline bool) *EveImageService {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
 	m := &EveImageService{
-		cacheDir:   cacheDir,
+		cache:      cache,
 		httpClient: httpClient,
 		isOffline:  isOffline,
 		sfg:        new(singleflight.Group),
@@ -160,32 +157,36 @@ func (m *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, 
 	return resourceSkinicon64pxPng, nil
 }
 
+// image returns an Eve image as fyne resource.
+// It returns it from cache or - if not found - will try to fetch it from the Internet.
 func (m *EveImageService) image(url string) (fyne.Resource, error) {
-	hash := makeMD5Hash(url)
-	name := filepath.Join(m.cacheDir, hash+".tmp")
-	dat, err := os.ReadFile(name)
-	if errors.Is(err, os.ErrNotExist) {
+	key := "eveimage-" + makeMD5Hash(url)
+	var dat []byte
+	x, found := m.cache.Get(key)
+	if !found {
 		if m.isOffline {
 			return resourceBrokenimageSvg, nil
 		}
-		x, err, _ := m.sfg.Do(hash, func() (any, error) {
-			dat, err = loadDataFromURL(url, m.httpClient)
+		x, err, _ := m.sfg.Do(key, func() (any, error) {
+			byt, err := loadDataFromURL(url, m.httpClient)
 			if err != nil {
 				return nil, err
 			}
-			if err := os.WriteFile(name, dat, 0666); err != nil {
-				return nil, err
-			}
-			return dat, nil
+			m.cache.Set(key, byt, 0)
+			return byt, nil
 		})
 		if err != nil {
 			return nil, err
 		}
 		dat = x.([]byte)
-	} else if err != nil {
-		return nil, err
+	} else {
+		var ok bool
+		dat, ok = x.([]byte)
+		if !ok {
+			return resourceBrokenimageSvg, nil
+		}
 	}
-	r := fyne.NewStaticResource(fmt.Sprintf("eve-image-%s", hash), dat)
+	r := fyne.NewStaticResource(key, dat)
 	return r, nil
 }
 
@@ -224,38 +225,16 @@ func makeMD5Hash(text string) string {
 
 // ClearCache clears the images cache and returns the number of deleted entries.
 func (m *EveImageService) ClearCache() (int, error) {
-	files, err := os.ReadDir(m.cacheDir)
-	if err != nil {
-		return 0, err
-	}
-	for _, f := range files {
-		os.RemoveAll(path.Join(m.cacheDir, f.Name()))
-	}
-	return len(files), nil
+	m.cache.Clear()
+	return 0, nil
 }
 
-// Size returns the total size of all image files in by bytes.
+// Size returns the total size of all image files in bytes.
 func (m *EveImageService) Size() (int, error) {
-	files, err := os.ReadDir(m.cacheDir)
-	if err != nil {
-		return 0, err
-	}
-	var s int64
-	for _, f := range files {
-		info, err := f.Info()
-		if err != nil {
-			return 0, err
-		}
-		s += info.Size()
-	}
-	return int(s), nil
+	return 0, nil
 }
 
 // Count returns the number of all image files.
 func (m *EveImageService) Count() (int, error) {
-	files, err := os.ReadDir(m.cacheDir)
-	if err != nil {
-		return 0, err
-	}
-	return len(files), nil
+	return 0, nil
 }

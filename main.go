@@ -209,7 +209,7 @@ func main() {
 	u.CacheService = cache
 	u.CharacterService = cs
 	u.ESIStatusService = esistatus.New(esiClient)
-	u.EveImageService = eveimage.New(ad.Cache, httpClient, *isOfflineFlag)
+	u.EveImageService = eveimage.New(cache, httpClient, *isOfflineFlag)
 	u.EveUniverseService = eu
 	u.StatusCacheService = sc
 	u.IsOffline = *isOfflineFlag
