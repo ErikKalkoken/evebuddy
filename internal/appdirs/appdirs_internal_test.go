@@ -9,13 +9,12 @@ import (
 func TestAppDirs(t *testing.T) {
 	t.Run("can folder names", func(t *testing.T) {
 		ad := AppDirs{
-			Cache:    "cache",
 			Data:     "data",
 			Log:      "log",
 			Settings: "settings",
 		}
 		got := ad.Folders()
-		expected := []string{"cache", "data", "log", "settings"}
+		expected := []string{"data", "log", "settings"}
 		assert.ElementsMatch(t, expected, got)
 	})
 }

@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"slices"
 	"time"
@@ -13,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
@@ -82,11 +80,10 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 			"Clearing cache...",
 			"",
 			func() error {
-				n, err := w.u.EveImageService.ClearCache()
-				if err != nil {
+				if err := w.u.EveImageService.ClearCache(); err != nil {
 					return err
 				}
-				slog.Info("Cleared image cache", "count", n)
+				slog.Info("Cleared image cache")
 				return nil
 			},
 			w.window,
@@ -102,15 +99,6 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 		}
 		m.Start()
 	})
-	var cacheSize string
-	s, err := w.u.EveImageService.Size()
-	if err != nil {
-		cacheSize = "?"
-	} else {
-		cacheSize = humanize.Bytes(uint64(s))
-	}
-	cacheHintText := fmt.Sprintf("Clear the local image cache (%s)", cacheSize)
-
 	settings := &widget.Form{
 		Items: []*widget.FormItem{
 			{
@@ -121,7 +109,7 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 			{
 				Text:     "Image cache",
 				Widget:   container.NewHBox(clearBtn),
-				HintText: cacheHintText,
+				HintText: "Clear the local image cache",
 			},
 			{
 				Text:     "Log level",

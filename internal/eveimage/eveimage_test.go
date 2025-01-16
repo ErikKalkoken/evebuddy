@@ -173,7 +173,7 @@ func TestImageFetching(t *testing.T) {
 			t.Fatal(err)
 		}
 		//when
-		_, err = m.ClearCache()
+		err = m.ClearCache()
 		// then
 		assert.NoError(t, err)
 	})

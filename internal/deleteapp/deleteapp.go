@@ -108,7 +108,7 @@ func (u *UI) closeWithDialog(message string) {
 }
 
 func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
-	folders := []string{u.ad.Log, u.ad.Cache, u.ad.Data}
+	folders := []string{u.ad.Log, u.ad.Data}
 	for i, p := range folders {
 		select {
 		case <-ctx.Done():

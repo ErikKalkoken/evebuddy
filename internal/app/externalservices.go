@@ -18,11 +18,10 @@ type CacheService interface {
 type EveImageService interface {
 	CharacterPortrait(int32, int) (fyne.Resource, error)
 	CorporationLogo(int32, int) (fyne.Resource, error)
-	ClearCache() (int, error)
+	ClearCache() error
 	InventoryTypeBPO(int32, int) (fyne.Resource, error)
 	InventoryTypeBPC(int32, int) (fyne.Resource, error)
 	InventoryTypeIcon(int32, int) (fyne.Resource, error)
 	InventoryTypeRender(int32, int) (fyne.Resource, error)
 	InventoryTypeSKIN(int32, int) (fyne.Resource, error)
-	Size() (int, error)
 }

@@ -180,10 +180,10 @@ func main() {
 		},
 	}
 	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
-	cache := cache.New()
+	memCache := cache.New()
 
 	// Init StatusCache service
-	sc := statuscache.New(cache)
+	sc := statuscache.New(memCache)
 	if err := sc.InitCache(context.TODO(), st); err != nil {
 		slog.Error("Failed to init cache", "error", err)
 		os.Exit(1)
@@ -206,10 +206,10 @@ func main() {
 	// Init UI
 	u := ui.NewUI(fyneApp, ad)
 	slog.Debug("ui instance created")
-	u.CacheService = cache
+	u.CacheService = memCache
 	u.CharacterService = cs
 	u.ESIStatusService = esistatus.New(esiClient)
-	u.EveImageService = eveimage.New(cache, httpClient, *isOfflineFlag)
+	u.EveImageService = eveimage.New(cache.New(), httpClient, *isOfflineFlag)
 	u.EveUniverseService = eu
 	u.StatusCacheService = sc
 	u.IsOffline = *isOfflineFlag

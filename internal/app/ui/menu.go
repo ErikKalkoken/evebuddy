@@ -110,7 +110,6 @@ func (u *UI) showAboutDialog() {
 
 func (u *UI) showUserDataDialog() {
 	f := widget.NewForm(
-		widget.NewFormItem("Cache", makePathEntry(u.window.Clipboard(), u.ad.Cache)),
 		widget.NewFormItem("Data", makePathEntry(u.window.Clipboard(), u.ad.Data)),
 		widget.NewFormItem("Log", makePathEntry(u.window.Clipboard(), u.ad.Log)),
 		widget.NewFormItem("Settings", makePathEntry(u.window.Clipboard(), u.ad.Settings)),

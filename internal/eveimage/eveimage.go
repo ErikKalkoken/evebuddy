@@ -224,17 +224,7 @@ func makeMD5Hash(text string) string {
 }
 
 // ClearCache clears the images cache and returns the number of deleted entries.
-func (m *EveImageService) ClearCache() (int, error) {
+func (m *EveImageService) ClearCache() error {
 	m.cache.Clear()
-	return 0, nil
-}
-
-// Size returns the total size of all image files in bytes.
-func (m *EveImageService) Size() (int, error) {
-	return 0, nil
-}
-
-// Count returns the number of all image files.
-func (m *EveImageService) Count() (int, error) {
-	return 0, nil
+	return nil
 }
