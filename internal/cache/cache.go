@@ -97,7 +97,6 @@ func (c *Cache) Get(key any) (any, bool) {
 // If an item with the same key already exists it will be overwritten.
 // An item with timeout = 0 never expires
 func (c *Cache) Set(key any, value any, timeout time.Duration) {
-	// store the item
 	var at time.Time
 	if timeout > 0 {
 		at = time.Now().Add(timeout)

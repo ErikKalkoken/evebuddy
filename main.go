@@ -25,6 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -209,7 +210,7 @@ func main() {
 	u.CacheService = memCache
 	u.CharacterService = cs
 	u.ESIStatusService = esistatus.New(esiClient)
-	u.EveImageService = eveimage.New(cache.New(), httpClient, *isOfflineFlag)
+	u.EveImageService = eveimage.New(pcache.New(st), httpClient, *isOfflineFlag)
 	u.EveUniverseService = eu
 	u.StatusCacheService = sc
 	u.IsOffline = *isOfflineFlag
