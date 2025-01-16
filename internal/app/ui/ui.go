@@ -23,7 +23,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 )
 
 // UI constants
@@ -47,23 +46,25 @@ type UI struct {
 	IsOffline bool
 	// Whether to disable update tickers (useful for debugging)
 	IsUpdateTickerDisabled bool
+	// Directories for storing user data (information only)
+	UserDirs map[string]string
 
-	ad                    appdirs.AppDirs
 	assetsArea            *assetsArea
 	assetSearchArea       *assetSearchArea
 	assetTab              *container.TabItem
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
-	coloniesArea          *coloniesArea
 	character             *app.Character
+	coloniesArea          *coloniesArea
 	contractsArea         *contractsArea
 	deskApp               desktop.App
 	fyneApp               fyne.App
 	implantsArea          *implantsArea
-	locationsArea         *locationsArea
 	jumpClonesArea        *jumpClonesArea
+	locationsArea         *locationsArea
 	mailArea              *mailArea
 	mailTab               *container.TabItem
+	menuItemsWithShortcut []*fyne.MenuItem
 	notificationsArea     *notificationsArea
 	overviewArea          *overviewArea
 	overviewTab           *container.TabItem
@@ -78,24 +79,22 @@ type UI struct {
 	statusBarArea         *statusBarArea
 	statusWindow          fyne.Window
 	tabs                  *container.AppTabs
-	trainingArea          *trainingArea
 	toolbarArea           *toolbarArea
+	trainingArea          *trainingArea
 	walletJournalArea     *walletJournalArea
 	walletTab             *container.TabItem
 	walletTransactionArea *walletTransactionArea
 	wealthArea            *wealthArea
 	window                fyne.Window
-	menuItemsWithShortcut []*fyne.MenuItem
 }
 
 // NewUI build the UI and returns it.
-func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
+func NewUI(fyneApp fyne.App) *UI {
 	desk, ok := fyneApp.(desktop.App)
 	if !ok {
 		log.Fatal("Failed to initialize as desktop app")
 	}
 	u := &UI{
-		ad:      ad,
 		deskApp: desk,
 		fyneApp: fyneApp,
 		sfg:     new(singleflight.Group),

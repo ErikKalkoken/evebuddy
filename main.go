@@ -210,7 +210,7 @@ func main() {
 	go pc.CleanUp()
 
 	// Init UI
-	u := ui.NewUI(fyneApp, ad)
+	u := ui.NewUI(fyneApp)
 	slog.Debug("ui instance created")
 	u.CacheService = memCache
 	u.CharacterService = cs
@@ -220,6 +220,11 @@ func main() {
 	u.StatusCacheService = sc
 	u.IsOffline = *isOfflineFlag
 	u.IsUpdateTickerDisabled = *isUpdateTickerDisabledFlag
+	u.UserDirs = map[string]string{
+		"data":     ad.Data,
+		"log":      ad.Log,
+		"settings": ad.Settings,
+	}
 	u.Init()
 	slog.Debug("ui initialized")
 
