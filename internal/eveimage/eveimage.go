@@ -14,6 +14,14 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+// cache timeouts per image category
+const (
+	timeoutAlliance    = time.Hour * 24 * 3
+	timeoutCharacter   = time.Hour * 24 * 1
+	timeoutCorporation = time.Hour * 24 * 1
+	timeoutDefault     = 0
+)
+
 var (
 	ErrHttpError   = errors.New("http error")
 	ErrNoImage     = errors.New("no image from API")
@@ -62,7 +70,7 @@ func (m *EveImageService) AllianceLogo(id int32, size int) (fyne.Resource, error
 		}
 		return nil, err
 	}
-	return m.image(url)
+	return m.image(url, timeoutAlliance)
 }
 
 // CharacterPortrait returns the portrait for a character.
@@ -74,7 +82,7 @@ func (m *EveImageService) CharacterPortrait(id int32, size int) (fyne.Resource, 
 		}
 		return nil, err
 	}
-	return m.image(url)
+	return m.image(url, timeoutCharacter)
 }
 
 // CorporationLogo returns the logo for a corporation.
@@ -86,7 +94,7 @@ func (m *EveImageService) CorporationLogo(id int32, size int) (fyne.Resource, er
 		}
 		return nil, err
 	}
-	return m.image(url)
+	return m.image(url, timeoutCorporation)
 }
 
 // FactionLogo returns the logo for a faction.
@@ -98,7 +106,7 @@ func (m *EveImageService) FactionLogo(id int32, size int) (fyne.Resource, error)
 		}
 		return nil, err
 	}
-	return m.image(url)
+	return m.image(url, timeoutDefault)
 }
 
 // InventoryTypeRender returns the render for a type. Note that not ever type has a render.
@@ -110,7 +118,7 @@ func (m *EveImageService) InventoryTypeRender(id int32, size int) (fyne.Resource
 		}
 		return nil, err
 	}
-	return m.image(url)
+	return m.image(url, timeoutDefault)
 }
 
 // InventoryTypeIcon returns the icon for a type.
@@ -122,7 +130,7 @@ func (m *EveImageService) InventoryTypeIcon(id int32, size int) (fyne.Resource, 
 		}
 		return nil, err
 	}
-	return m.image(url)
+	return m.image(url, timeoutDefault)
 }
 
 // InventoryTypeBPO returns the icon for a BPO type.
@@ -134,7 +142,7 @@ func (m *EveImageService) InventoryTypeBPO(id int32, size int) (fyne.Resource, e
 		}
 		return nil, err
 	}
-	return m.image(url)
+	return m.image(url, timeoutDefault)
 }
 
 // InventoryTypeBPC returns the icon for a BPC type.
@@ -146,7 +154,7 @@ func (m *EveImageService) InventoryTypeBPC(id int32, size int) (fyne.Resource, e
 		}
 		return nil, err
 	}
-	return m.image(url)
+	return m.image(url, timeoutDefault)
 }
 
 // InventoryTypeSKIN returns the icon for a SKIN type.
@@ -159,7 +167,7 @@ func (m *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, 
 
 // image returns an Eve image as fyne resource.
 // It returns it from cache or - if not found - will try to fetch it from the Internet.
-func (m *EveImageService) image(url string) (fyne.Resource, error) {
+func (m *EveImageService) image(url string, timeout time.Duration) (fyne.Resource, error) {
 	key := "eveimage-" + makeMD5Hash(url)
 	var dat []byte
 	x, found := m.cache.Get(key)
@@ -172,7 +180,7 @@ func (m *EveImageService) image(url string) (fyne.Resource, error) {
 			if err != nil {
 				return nil, err
 			}
-			m.cache.Set(key, byt, 0)
+			m.cache.Set(key, byt, timeout)
 			return byt, nil
 		})
 		if err != nil {

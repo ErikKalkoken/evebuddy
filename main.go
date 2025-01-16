@@ -38,16 +38,17 @@ import (
 )
 
 const (
-	appID           = "io.github.erikkalkoken.evebuddy"
-	dbFileName      = "evebuddy.sqlite"
-	logFileName     = "evebuddy.log"
-	logMaxBackups   = 3
-	logMaxSizeMB    = 50
-	mutexDelay      = 100 * time.Millisecond
-	mutexTimeout    = 250 * time.Millisecond
-	ssoClientID     = "11ae857fe4d149b2be60d875649c05f1"
-	userAgent       = "EveBuddy kalkoken87@gmail.com"
-	logLevelDefault = slog.LevelWarn // for startup only
+	appID               = "io.github.erikkalkoken.evebuddy"
+	dbFileName          = "evebuddy.sqlite"
+	logFileName         = "evebuddy.log"
+	logMaxBackups       = 3
+	logMaxSizeMB        = 50
+	mutexDelay          = 100 * time.Millisecond
+	mutexTimeout        = 250 * time.Millisecond
+	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
+	userAgent           = "EveBuddy kalkoken87@gmail.com"
+	logLevelDefault     = slog.LevelWarn // for startup only
+	cacheCleanUpTimeout = time.Minute * 30
 )
 
 type realtime struct{}
@@ -204,13 +205,17 @@ func main() {
 	cs.StatusCacheService = sc
 	cs.SSOService = sso.New(ssoClientID, httpClient)
 
+	// PCache init
+	pc := pcache.New(st, cacheCleanUpTimeout)
+	go pc.CleanUp()
+
 	// Init UI
 	u := ui.NewUI(fyneApp, ad)
 	slog.Debug("ui instance created")
 	u.CacheService = memCache
 	u.CharacterService = cs
 	u.ESIStatusService = esistatus.New(esiClient)
-	u.EveImageService = eveimage.New(pcache.New(st), httpClient, *isOfflineFlag)
+	u.EveImageService = eveimage.New(pc, httpClient, *isOfflineFlag)
 	u.EveUniverseService = eu
 	u.StatusCacheService = sc
 	u.IsOffline = *isOfflineFlag

@@ -70,7 +70,7 @@ func TestImageFetching(t *testing.T) {
 		httpmock.RegisterResponder("GET", url, httpmock.NewBytesResponder(200, dat))
 		//when
 		m := New(c, http.DefaultClient, false)
-		r, err := m.image(url)
+		r, err := m.image(url, 0)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, dat, r.Content())
@@ -83,7 +83,7 @@ func TestImageFetching(t *testing.T) {
 		httpmock.RegisterResponder("GET", url, httpmock.NewBytesResponder(200, dat))
 		//when
 		m := New(c, http.DefaultClient, true)
-		r, err := m.image(url)
+		r, err := m.image(url, 0)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, resourceBrokenimageSvg, r)

@@ -18,7 +18,7 @@ func (st *Storage) CacheClear(ctx context.Context) error {
 	return nil
 }
 
-func (st *Storage) CacheCleanup(ctx context.Context) error {
+func (st *Storage) CacheCleanUp(ctx context.Context) error {
 	err := st.q.CacheCleanUp(ctx, NewNullTimeFromTime(time.Now().UTC()))
 	if err != nil {
 		return fmt.Errorf("cache cleanup: %w", err)
