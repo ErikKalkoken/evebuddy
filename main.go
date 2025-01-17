@@ -12,6 +12,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"time"
 
@@ -38,18 +39,18 @@ import (
 
 const (
 	appID               = "io.github.erikkalkoken.evebuddy"
-	dbFileName          = "evebuddy.sqlite"
-	logFileName         = "evebuddy.log"
+	appName             = "evebuddy"
+	cacheCleanUpTimeout = time.Minute * 30
+	dbFileName          = appName + ".sqlite"
+	logFileName         = appName + ".log"
+	logFolderName       = "log"
+	logLevelDefault     = slog.LevelWarn // for startup only
 	logMaxBackups       = 3
 	logMaxSizeMB        = 50
 	mutexDelay          = 100 * time.Millisecond
 	mutexTimeout        = 250 * time.Millisecond
 	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
 	userAgent           = "EveBuddy kalkoken87@gmail.com"
-	logLevelDefault     = slog.LevelWarn // for startup only
-	cacheCleanUpTimeout = time.Minute * 30
-	appName             = "evebuddy"
-	logFolderName       = "log"
 )
 
 func main() {
@@ -61,43 +62,33 @@ func main() {
 	pprofFlag := flag.Bool("pprof", false, "Enable pprof web server")
 	flag.Parse()
 
+	isDesktop := runtime.GOOS != "android" && runtime.GOOS != "ios"
+
 	// init dirs
 	ad := appdirs.New(appName)
 	dataDir := ad.UserData()
 	if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
 		log.Fatal(err)
 	}
-	logDir := filepath.Join(dataDir, logFolderName)
-	if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
-		log.Fatal(err)
-	}
 
 	// setup logging
 	slog.SetLogLoggerLevel(logLevelDefault)
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-	logger := &lumberjack.Logger{
-		Filename:   fmt.Sprintf("%s/%s", logDir, logFileName),
-		MaxSize:    logMaxSizeMB,
-		MaxBackups: logMaxBackups,
+	var logger *lumberjack.Logger
+	var logDir string
+	if isDesktop {
+		logDir = filepath.Join(dataDir, logFolderName)
+		if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
+			log.Fatal(err)
+		}
+		logger = &lumberjack.Logger{
+			Filename:   fmt.Sprintf("%s/%s", logDir, logFileName),
+			MaxSize:    logMaxSizeMB,
+			MaxBackups: logMaxBackups,
+		}
+		multi := io.MultiWriter(os.Stderr, logger)
+		log.SetOutput(multi)
 	}
-	multi := io.MultiWriter(os.Stderr, logger)
-	log.SetOutput(multi)
-
-	// setup crash reporting
-	crashFile, err := os.Create(filepath.Join(logDir, "crash.txt"))
-	if err != nil {
-		slog.Error("Failed to create crash report file", "error", err)
-	}
-	if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
-		slog.Error("Failed to setup crash report", "error", err)
-	}
-
-	var mu mutex.Releaser
-	mu, err = ensureSingleInstance()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer mu.Release()
 
 	// start fyne app
 	fyneApp := app.NewWithID(appID)
@@ -123,14 +114,7 @@ func main() {
 	}
 
 	// start uninstall app if requested
-	if *deleteAppFlag {
-		log.SetOutput(os.Stderr)
-		if err := debug.SetCrashOutput(nil, debug.CrashOptions{}); err != nil {
-			slog.Error("Failed to set crash output", "error", err)
-		}
-		if err := crashFile.Close(); err != nil {
-			slog.Error("Failed to close crash file", "error", err)
-		}
+	if isDesktop && *deleteAppFlag {
 		if err := logger.Close(); err != nil {
 			slog.Error("Failed to close log file", "error", err)
 		}
@@ -138,6 +122,29 @@ func main() {
 		u.UserDirs = userDirs
 		u.ShowAndRun()
 		return
+	}
+
+	// ensure single instance
+	var mu mutex.Releaser
+	var err error
+	if isDesktop {
+		mu, err = ensureSingleInstance()
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer mu.Release()
+	}
+
+	// setup crash reporting
+	if isDesktop {
+		crashFile, err := os.Create(filepath.Join(userDirs["log"], "crash.txt"))
+		if err != nil {
+			slog.Error("Failed to create crash report file", "error", err)
+		}
+		defer crashFile.Close()
+		if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
+			slog.Error("Failed to setup crash report", "error", err)
+		}
 	}
 
 	// init database

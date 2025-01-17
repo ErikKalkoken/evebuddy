@@ -114,7 +114,9 @@ func (u *UI) showAboutDialog() {
 func (u *UI) showUserDataDialog() {
 	names := make([]string, 0)
 	for n := range u.UserDirs {
-		names = append(names, n)
+		if n != "" {
+			names = append(names, n)
+		}
 	}
 	slices.Sort(names)
 	caser := cases.Title(language.English)
