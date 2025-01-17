@@ -71,12 +71,6 @@ var jwkSetData = map[string]any{
 func TestSSOEnd2End(t *testing.T) {
 	ctx := context.Background()
 	// monkey patching 3rd party packages
-	openURLOrig := openURL
-	openURL = func(u string) error {
-		_, err := http.Get(u)
-		return err
-	}
-	defer func() { openURL = openURLOrig }()
 	jwkFetchOrig := jwkFetch
 	jwkFetch = func(_ context.Context, _ string, _ ...jwk.FetchOption) (jwk.Set, error) {
 		x := &fakeJWKSet{}
@@ -132,6 +126,14 @@ func TestSSOEnd2End(t *testing.T) {
 		http.Error(w, "not found", http.StatusNotFound)
 		t.Fatal("unexpected URL: ", req.URL)
 	}
+	ssoNew := func(clientID string, client *http.Client, callbackPath string, port int, authorizeURL, tokenURL string) *SSOService {
+		s := new(clientID, client, callbackPath, port, authorizeURL, tokenURL)
+		s.OpenURL = func(u *url.URL) error {
+			_, err := http.Get(u.String())
+			return err
+		}
+		return s
+	}
 	t.Run("can create new token", func(t *testing.T) {
 		// given
 		router := http.NewServeMux()
@@ -141,7 +143,7 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := new("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
 		// when
 		token, err := s.Authenticate(ctx, []string{"alpha"})
 		// then
@@ -169,7 +171,7 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := new("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
 		// when
 		_, err := s.Authenticate(ctx, []string{"alpha"})
 		// then
@@ -184,7 +186,7 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := new("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
 		// when
 		_, err := s.Authenticate(ctx, []string{"alpha"})
 		// then
@@ -199,7 +201,7 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := new("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
 		originalPatch := jwkFetch
 		jwkFetch = func(_ context.Context, _ string, _ ...jwk.FetchOption) (jwk.Set, error) {
 			return nil, fmt.Errorf("failed")
@@ -219,7 +221,7 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := new("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
 		originalPatch := jwkParseString
 		jwkParseString = func(s string, options ...jwt.ParseOption) (jwt.Token, error) {
 			return nil, fmt.Errorf("failed")
@@ -238,7 +240,7 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := new("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
 		// when
 		token, err := s.RefreshToken(ctx, "refreshToken")
 		// then
@@ -256,7 +258,7 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := new("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
 		// when
 		_, err := s.RefreshToken(ctx, "")
 		// then
@@ -270,7 +272,7 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := new("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
 		// when
 		_, err := s.RefreshToken(ctx, "refreshToken")
 		// then
@@ -284,7 +286,7 @@ func TestSSOEnd2End(t *testing.T) {
 		router.HandleFunc("/", notFoundHandler)
 		server := httptest.NewServer(router)
 		defer server.Close()
-		s := new("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
+		s := ssoNew("client-id", http.DefaultClient, "/callback", 8000, server.URL+"/authorize", server.URL+"/token")
 		originalPatch := jwkParseString
 		jwkParseString = func(s string, options ...jwt.ParseOption) (jwt.Token, error) {
 			return nil, fmt.Errorf("failed")

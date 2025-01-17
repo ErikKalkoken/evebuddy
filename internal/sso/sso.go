@@ -17,8 +17,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/pkg/browser"
 )
 
 type contextKey int
@@ -45,12 +43,11 @@ var (
 	ErrMissingRefreshToken = errors.New("missing refresh token")
 )
 
-var (
-	openURL = browser.OpenURL
-)
-
 // SSOService is a service for authentication Eve Online characters.
 type SSOService struct {
+	// Function to open the default browser. This must to be configured.
+	OpenURL func(*url.URL) error
+
 	authorizeURL string
 	callbackPath string
 	clientID     string
@@ -59,7 +56,9 @@ type SSOService struct {
 	tokenURL     string
 }
 
-// Returns a new SSO service.
+// New returns a new SSO service.
+//
+// Important: The OpenURL function must be configured.
 func New(clientID string, client *http.Client) *SSOService {
 	return new(clientID, client, callbackPathDefault, portDefault, authorizeURLDefault, tokenURLDefault)
 }
@@ -69,7 +68,7 @@ func new(
 	client *http.Client,
 	callbackPath string,
 	port int,
-	authorizeURL,
+	authorizeURL string,
 	tokenURL string,
 ) *SSOService {
 	s := &SSOService{
@@ -79,6 +78,7 @@ func new(
 		httpClient:   client,
 		port:         port,
 		tokenURL:     tokenURL,
+		OpenURL:      func(u *url.URL) error { return errors.New("not configured: OpenURL") },
 	}
 	return s
 }
@@ -120,7 +120,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		v := req.URL.Query()
 		newState := v.Get("state")
 		if newState != serverCtx.Value(keyState).(string) {
-			return http.StatusUnauthorized, fmt.Errorf("invalid state")
+			return http.StatusUnauthorized, errors.New("invalid state")
 		}
 		code := v.Get("code")
 		codeVerifier := serverCtx.Value(keyCodeVerifier).(string)
@@ -134,7 +134,7 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		}
 		characterID, err := extractCharacterID(jwtToken)
 		if err != nil {
-			return http.StatusInternalServerError, fmt.Errorf("extract character ID:%w", err)
+			return http.StatusInternalServerError, fmt.Errorf("extract character ID: %w", err)
 		}
 		characterName := extractCharacterName(jwtToken)
 		scopes := extractScopes(jwtToken)
@@ -158,19 +158,23 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 		Addr:    s.address(),
 		Handler: router,
 	}
-	l, err := net.Listen("tcp", s.address())
+	l, err := net.Listen("tcp", server.Addr)
 	if err != nil {
 		return nil, fmt.Errorf("listen on address: %w", err)
 	}
 	go func() {
-		slog.Info("Web server started", "address", s.address())
+		slog.Info("Web server started", "address", server.Addr)
 		if err := server.Serve(l); err != http.ErrServerClosed {
 			slog.Error("Web server terminated prematurely", "error", err)
 		}
 		cancel()
+		slog.Info("Web server stopped")
 	}()
 	if err := s.startSSO(state, codeVerifier, scopes); err != nil {
-		return nil, fmt.Errorf("failed to start SSO session")
+		if err := server.Close(); err != nil {
+			slog.Error("server close", "error", err)
+		}
+		return nil, fmt.Errorf("failed to start SSO session: %w", err)
 	}
 	<-serverCtx.Done()
 
@@ -178,9 +182,8 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	defer shutdownRelease()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		return nil, fmt.Errorf("server shutdown error: %w", err)
+		return nil, fmt.Errorf("server shutdown: %w", err)
 	}
-	slog.Info("Web server stopped")
 
 	errValue := serverCtx.Value(keyError)
 	if errValue != nil {
@@ -208,8 +211,12 @@ func (s *SSOService) startSSO(state string, codeVerifier string, scopes []string
 	if err != nil {
 		return err
 	}
-	u := s.makeStartURL(challenge, state, scopes)
-	return openURL(u)
+	rawURL := s.makeStartURL(challenge, state, scopes)
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return err
+	}
+	return s.OpenURL(u)
 }
 
 func (s *SSOService) makeStartURL(challenge, state string, scopes []string) string {

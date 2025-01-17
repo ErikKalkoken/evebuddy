@@ -110,7 +110,7 @@ func (u *UI) showAboutDialog() {
 
 func (u *UI) showUserDataDialog() {
 	f := widget.NewForm(
-		widget.NewFormItem("DB", makePathEntry(u.window.Clipboard(), u.DataPaths["dsn"])),
+		widget.NewFormItem("DB", makePathEntry(u.window.Clipboard(), u.DataPaths["db"])),
 		widget.NewFormItem("Log", makePathEntry(u.window.Clipboard(), u.DataPaths["log"])),
 		widget.NewFormItem("Settings", makePathEntry(u.window.Clipboard(), u.fyneApp.Storage().RootURI().Path())),
 	)

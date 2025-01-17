@@ -146,15 +146,16 @@ func main() {
 	}
 
 	// init database
-	var dsn string
+	var dbPath string
 	if isDesktop {
-		dsn = fmt.Sprintf("file:%s/%s", dataDir, dbFileName)
+		dbPath = fmt.Sprintf("%s/%s", dataDir, dbFileName)
 	} else {
-		dsn = ensureFileExists(fyneApp.Storage(), dbFileName)
+		// EXPERIMENTAL
+		dbPath = ensureFileExists(fyneApp.Storage(), dbFileName)
 	}
-	db, err := storage.InitDB(dsn)
+	db, err := storage.InitDB("file://" + dbPath)
 	if err != nil {
-		slog.Error("Failed to initialize database", "dsn", dsn, "error", err)
+		slog.Error("Failed to initialize database", "dsn", dbPath, "error", err)
 		os.Exit(1)
 	}
 	defer db.Close()
@@ -199,7 +200,9 @@ func main() {
 	cs.EveNotificationService = en
 	cs.EveUniverseService = eu
 	cs.StatusCacheService = sc
-	cs.SSOService = sso.New(ssoClientID, httpClient)
+	ssoService := sso.New(ssoClientID, httpClient)
+	ssoService.OpenURL = fyneApp.OpenURL
+	cs.SSOService = ssoService
 
 	// PCache init
 	pc := pcache.New(st, cacheCleanUpTimeout)
@@ -217,7 +220,7 @@ func main() {
 	u.IsOffline = *isOfflineFlag
 	u.IsUpdateTickerDisabled = *isUpdateTickerDisabledFlag
 	u.DataPaths = map[string]string{
-		"dsn": dsn,
+		"db":  dbPath,
 		"log": logDir,
 	}
 	u.Init()
@@ -242,11 +245,11 @@ func ensureFileExists(st fyne.Storage, name string) string {
 		if err != nil {
 			log.Fatal(err)
 		}
-		p = u.URI().String()
+		p = u.URI().Path()
 		u.Close()
 		log.Println("created new file: ", p)
 	} else {
-		p = u.URI().String()
+		p = u.URI().Path()
 		u.Close()
 		log.Println("found existing file: ", p)
 	}
