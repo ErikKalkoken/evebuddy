@@ -8,7 +8,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 )
 
 const (
@@ -21,16 +20,14 @@ var randomFlag = flag.Bool("random", false, "whether to apply the factor with ra
 
 func main() {
 	flag.Parse()
-
-	// init dirs
-	ad, err := appdirs.New()
-	if err != nil {
-		log.Fatal(err)
+	if len(flag.Args()) == 0 {
+		log.Fatal("Missing DB path")
 	}
+	dbPath := flag.Arg(0)
 
 	// init database
-	dsn := fmt.Sprintf("file:%s/%s", ad.Data, dbFileName)
-	db, err := storage.InitDB(dsn)
+	dsn := "file:" + dbPath
+	db, err := storage.InitDB("file:" + dbPath)
 	if err != nil {
 		log.Fatalf("Failed to initialize database %s: %s", dsn, err)
 	}

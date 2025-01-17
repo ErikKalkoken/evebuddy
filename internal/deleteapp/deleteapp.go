@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -17,22 +16,21 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 )
 
 var ErrCancel = errors.New("user aborted")
 
 type UI struct {
+	UserDirs map[string]string
+
 	app    fyne.App
-	ad     appdirs.AppDirs
 	window fyne.Window
 }
 
-func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) UI {
+func NewUI(fyneApp fyne.App) UI {
 	w := fyneApp.NewWindow("Delete User Data - EVE Buddy")
 	x := UI{
 		app:    fyneApp,
-		ad:     ad,
 		window: w,
 	}
 	return x
@@ -108,7 +106,7 @@ func (u *UI) closeWithDialog(message string) {
 }
 
 func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
-	folders := []string{u.ad.Log, u.ad.Data}
+	folders := []string{u.UserDirs["log"], u.UserDirs["data"]}
 	for i, p := range folders {
 		select {
 		case <-ctx.Done():
@@ -125,7 +123,6 @@ func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
 	for _, k := range keys {
 		u.app.Preferences().RemoveValue(k)
 	}
-	p := filepath.Dir(u.ad.Settings)
-	slog.Info("Deleted setting keys", "path", p, "count", len(keys))
+	slog.Info("Deleted setting keys", "count", len(keys))
 	return nil
 }

@@ -18,6 +18,7 @@ import (
 
 	"fyne.io/fyne/v2/app"
 	"github.com/antihax/goesi"
+	"github.com/chasinglogic/appdirs"
 	"github.com/juju/mutex/v2"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -29,7 +30,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
@@ -49,6 +49,8 @@ const (
 	userAgent           = "EveBuddy kalkoken87@gmail.com"
 	logLevelDefault     = slog.LevelWarn // for startup only
 	cacheCleanUpTimeout = time.Minute * 30
+	appName             = "evebuddy"
+	logFolderName       = "log"
 )
 
 type realtime struct{}
@@ -76,8 +78,13 @@ func main() {
 	flag.Parse()
 
 	// init dirs
-	ad, err := appdirs.New()
-	if err != nil {
+	ad := appdirs.New(appName)
+	dataDir := ad.UserData()
+	if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
+		log.Fatal(err)
+	}
+	logDir := filepath.Join(dataDir, logFolderName)
+	if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
 		log.Fatal(err)
 	}
 
@@ -85,14 +92,14 @@ func main() {
 	slog.SetLogLoggerLevel(logLevelDefault)
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	logger := &lumberjack.Logger{
-		Filename:   fmt.Sprintf("%s/%s", ad.Log, logFileName),
+		Filename:   fmt.Sprintf("%s/%s", logDir, logFileName),
 		MaxSize:    logMaxSizeMB,
 		MaxBackups: logMaxBackups,
 	}
 	log.SetOutput(logger)
 
 	// setup crash reporting
-	crashFile, err := os.Create(filepath.Join(ad.Log, "crash.txt"))
+	crashFile, err := os.Create(filepath.Join(logDir, "crash.txt"))
 	if err != nil {
 		slog.Error("Failed to create crash report file", "error", err)
 	}
@@ -120,7 +127,6 @@ func main() {
 
 	// start fyne app
 	fyneApp := app.NewWithID(appID)
-	ad.SetSettings(fyneApp.Storage().RootURI().Path())
 
 	// set log level
 	ln := fyneApp.Preferences().StringWithFallback(ui.SettingLogLevel, ui.SettingLogLevelDefault)
@@ -130,8 +136,13 @@ func main() {
 		slog.SetLogLoggerLevel(l)
 	}
 
+	userDirs := map[string]string{
+		"data":     dataDir,
+		"log":      logDir,
+		"settings": fyneApp.Storage().RootURI().Path(),
+	}
 	if *dirsFlag {
-		for _, s := range ad.Folders() {
+		for _, s := range userDirs {
 			fmt.Println(s)
 		}
 		return
@@ -149,13 +160,14 @@ func main() {
 		if err := logger.Close(); err != nil {
 			slog.Error("Failed to close log file", "error", err)
 		}
-		u := deleteapp.NewUI(fyneApp, ad)
+		u := deleteapp.NewUI(fyneApp)
+		u.UserDirs = userDirs
 		u.ShowAndRun()
 		return
 	}
 
 	// init database
-	dsn := fmt.Sprintf("file:%s/%s", ad.Data, dbFileName)
+	dsn := fmt.Sprintf("file:%s/%s", dataDir, dbFileName)
 	db, err := storage.InitDB(dsn)
 	if err != nil {
 		slog.Error("Failed to initialize database", "dsn", dsn, "error", err)
@@ -220,11 +232,7 @@ func main() {
 	u.StatusCacheService = sc
 	u.IsOffline = *isOfflineFlag
 	u.IsUpdateTickerDisabled = *isUpdateTickerDisabledFlag
-	u.UserDirs = map[string]string{
-		"data":     ad.Data,
-		"log":      ad.Log,
-		"settings": ad.Settings,
-	}
+	u.UserDirs = userDirs
 	u.Init()
 	slog.Debug("ui initialized")
 
