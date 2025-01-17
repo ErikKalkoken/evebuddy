@@ -45,8 +45,8 @@ type UI struct {
 	IsOffline bool
 	// Whether to disable update tickers (useful for debugging)
 	IsUpdateTickerDisabled bool
-	// Directories for storing user data (information only)
-	UserDirs map[string]string
+	// Paths to user data (for information only)
+	DataPaths map[string]string
 
 	assetsArea            *assetsArea
 	assetSearchArea       *assetSearchArea

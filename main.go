@@ -16,6 +16,7 @@ import (
 	"runtime/debug"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"github.com/antihax/goesi"
 	"github.com/chasinglogic/appdirs"
@@ -65,10 +66,13 @@ func main() {
 	isDesktop := runtime.GOOS != "android" && runtime.GOOS != "ios"
 
 	// init dirs
-	ad := appdirs.New(appName)
-	dataDir := ad.UserData()
-	if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
-		log.Fatal(err)
+	var dataDir string
+	if isDesktop {
+		ad := appdirs.New(appName)
+		dataDir = ad.UserData()
+		if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// setup logging
@@ -101,15 +105,9 @@ func main() {
 		slog.SetLogLoggerLevel(l)
 	}
 
-	userDirs := map[string]string{
-		"data":     dataDir,
-		"log":      logDir,
-		"settings": fyneApp.Storage().RootURI().Path(),
-	}
 	if *dirsFlag {
-		for _, s := range userDirs {
-			fmt.Println(s)
-		}
+		fmt.Println(dataDir)
+		fmt.Println(fyneApp.Storage().RootURI().Path())
 		return
 	}
 
@@ -119,7 +117,7 @@ func main() {
 			slog.Error("Failed to close log file", "error", err)
 		}
 		u := deleteapp.NewUI(fyneApp)
-		u.UserDirs = userDirs
+		u.DataDir = dataDir
 		u.ShowAndRun()
 		return
 	}
@@ -136,8 +134,8 @@ func main() {
 	}
 
 	// setup crash reporting
-	if isDesktop {
-		crashFile, err := os.Create(filepath.Join(userDirs["log"], "crash.txt"))
+	if isDesktop && logDir != "" {
+		crashFile, err := os.Create(filepath.Join(logDir, "crash.txt"))
 		if err != nil {
 			slog.Error("Failed to create crash report file", "error", err)
 		}
@@ -148,7 +146,12 @@ func main() {
 	}
 
 	// init database
-	dsn := fmt.Sprintf("file:%s/%s", dataDir, dbFileName)
+	var dsn string
+	if isDesktop {
+		dsn = fmt.Sprintf("file:%s/%s", dataDir, dbFileName)
+	} else {
+		dsn = ensureFileExists(fyneApp.Storage(), dbFileName)
+	}
 	db, err := storage.InitDB(dsn)
 	if err != nil {
 		slog.Error("Failed to initialize database", "dsn", dsn, "error", err)
@@ -213,7 +216,10 @@ func main() {
 	u.StatusCacheService = sc
 	u.IsOffline = *isOfflineFlag
 	u.IsUpdateTickerDisabled = *isUpdateTickerDisabledFlag
-	u.UserDirs = userDirs
+	u.DataPaths = map[string]string{
+		"dsn": dsn,
+		"log": logDir,
+	}
 	u.Init()
 	slog.Debug("ui initialized")
 
@@ -226,4 +232,23 @@ func main() {
 
 	// Start app
 	u.ShowAndRun()
+}
+
+func ensureFileExists(st fyne.Storage, name string) string {
+	var p string
+	u, err := st.Open(name)
+	if err != nil {
+		u, err := st.Create(name)
+		if err != nil {
+			log.Fatal(err)
+		}
+		p = u.URI().String()
+		u.Close()
+		log.Println("created new file: ", p)
+	} else {
+		p = u.URI().String()
+		u.Close()
+		log.Println("found existing file: ", p)
+	}
+	return p
 }

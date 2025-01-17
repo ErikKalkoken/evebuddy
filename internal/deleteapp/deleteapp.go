@@ -21,7 +21,7 @@ import (
 var ErrCancel = errors.New("user aborted")
 
 type UI struct {
-	UserDirs map[string]string
+	DataDir string
 
 	app    fyne.App
 	window fyne.Window
@@ -106,7 +106,7 @@ func (u *UI) closeWithDialog(message string) {
 }
 
 func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
-	folders := []string{u.UserDirs["log"], u.UserDirs["data"]}
+	folders := []string{u.DataDir}
 	for i, p := range folders {
 		select {
 		case <-ctx.Done():

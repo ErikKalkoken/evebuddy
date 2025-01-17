@@ -3,7 +3,6 @@ package ui
 import (
 	"net/url"
 	"path/filepath"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -13,8 +12,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 func makeMenu(u *UI) *fyne.MainMenu {
@@ -112,18 +109,11 @@ func (u *UI) showAboutDialog() {
 }
 
 func (u *UI) showUserDataDialog() {
-	names := make([]string, 0)
-	for n := range u.UserDirs {
-		if n != "" {
-			names = append(names, n)
-		}
-	}
-	slices.Sort(names)
-	caser := cases.Title(language.English)
-	f := widget.NewForm()
-	for _, n := range names {
-		f.Append(caser.String(n), makePathEntry(u.window.Clipboard(), u.UserDirs[n]))
-	}
+	f := widget.NewForm(
+		widget.NewFormItem("DB", makePathEntry(u.window.Clipboard(), u.DataPaths["dsn"])),
+		widget.NewFormItem("Log", makePathEntry(u.window.Clipboard(), u.DataPaths["log"])),
+		widget.NewFormItem("Settings", makePathEntry(u.window.Clipboard(), u.fyneApp.Storage().RootURI().Path())),
+	)
 	d := dialog.NewCustom("User data", "Close", f, u.window)
 	kxdialog.AddDialogKeyHandler(d, u.window)
 	u.disableMenuShortcuts()
