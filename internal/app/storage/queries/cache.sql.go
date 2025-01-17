@@ -80,7 +80,13 @@ INSERT INTO
         value
     )
 VALUES
-    (?, ?, ?)
+    (?1, ?2, ?3) ON CONFLICT(key) DO
+UPDATE
+SET
+    expires_at = ?1,
+    value = ?3
+WHERE
+    key = ?2
 `
 
 type CacheSetParams struct {

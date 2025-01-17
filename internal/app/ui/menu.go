@@ -110,9 +110,9 @@ func (u *UI) showAboutDialog() {
 
 func (u *UI) showUserDataDialog() {
 	f := widget.NewForm(
-		widget.NewFormItem("Data", makePathEntry(u.window.Clipboard(), u.ad.Data)),
-		widget.NewFormItem("Log", makePathEntry(u.window.Clipboard(), u.ad.Log)),
-		widget.NewFormItem("Settings", makePathEntry(u.window.Clipboard(), u.ad.Settings)),
+		widget.NewFormItem("DB", makePathEntry(u.window.Clipboard(), u.DataPaths["db"])),
+		widget.NewFormItem("Log", makePathEntry(u.window.Clipboard(), u.DataPaths["log"])),
+		widget.NewFormItem("Settings", makePathEntry(u.window.Clipboard(), u.fyneApp.Storage().RootURI().Path())),
 	)
 	d := dialog.NewCustom("User data", "Close", f, u.window)
 	kxdialog.AddDialogKeyHandler(d, u.window)

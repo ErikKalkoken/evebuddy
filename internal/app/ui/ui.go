@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"runtime"
 	"sync"
@@ -23,7 +22,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 )
 
 // UI constants
@@ -47,23 +45,25 @@ type UI struct {
 	IsOffline bool
 	// Whether to disable update tickers (useful for debugging)
 	IsUpdateTickerDisabled bool
+	// Paths to user data (for information only)
+	DataPaths map[string]string
 
-	ad                    appdirs.AppDirs
 	assetsArea            *assetsArea
 	assetSearchArea       *assetSearchArea
 	assetTab              *container.TabItem
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
-	coloniesArea          *coloniesArea
 	character             *app.Character
+	coloniesArea          *coloniesArea
 	contractsArea         *contractsArea
 	deskApp               desktop.App
 	fyneApp               fyne.App
 	implantsArea          *implantsArea
-	locationsArea         *locationsArea
 	jumpClonesArea        *jumpClonesArea
+	locationsArea         *locationsArea
 	mailArea              *mailArea
 	mailTab               *container.TabItem
+	menuItemsWithShortcut []*fyne.MenuItem
 	notificationsArea     *notificationsArea
 	overviewArea          *overviewArea
 	overviewTab           *container.TabItem
@@ -78,28 +78,22 @@ type UI struct {
 	statusBarArea         *statusBarArea
 	statusWindow          fyne.Window
 	tabs                  *container.AppTabs
-	trainingArea          *trainingArea
 	toolbarArea           *toolbarArea
+	trainingArea          *trainingArea
 	walletJournalArea     *walletJournalArea
 	walletTab             *container.TabItem
 	walletTransactionArea *walletTransactionArea
 	wealthArea            *wealthArea
 	window                fyne.Window
-	menuItemsWithShortcut []*fyne.MenuItem
 }
 
 // NewUI build the UI and returns it.
-func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
-	desk, ok := fyneApp.(desktop.App)
-	if !ok {
-		log.Fatal("Failed to initialize as desktop app")
-	}
+func NewUI(fyneApp fyne.App) *UI {
 	u := &UI{
-		ad:      ad,
-		deskApp: desk,
 		fyneApp: fyneApp,
 		sfg:     new(singleflight.Group),
 	}
+	u.identifyDesktop()
 	u.window = fyneApp.NewWindow(u.appName())
 	u.attributesArea = u.newAttributesArena()
 	u.biographyArea = u.newBiographyArea()
@@ -191,7 +185,7 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 	u.window.SetContent(mainContent)
 
 	// system tray menu
-	if fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault) {
+	if u.isDesktop() && fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault) {
 		name := u.appName()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true
@@ -214,6 +208,20 @@ func NewUI(fyneApp fyne.App, ad appdirs.AppDirs) *UI {
 	u.window.SetMainMenu(menu)
 	u.window.SetMaster()
 	return u
+}
+
+func (u *UI) identifyDesktop() {
+	desk, ok := u.fyneApp.(desktop.App)
+	if ok {
+		slog.Debug("Running in desktop mode")
+		u.deskApp = desk
+	} else {
+		slog.Debug("Running in mobile mode")
+	}
+}
+
+func (u *UI) isDesktop() bool {
+	return u.deskApp != nil
 }
 
 func (u *UI) Init() {
@@ -478,10 +486,16 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 }
 
 func (u *UI) showMailIndicator() {
+	if !u.isDesktop() {
+		return
+	}
 	u.deskApp.SetSystemTrayIcon(resourceIconmarkedPng)
 }
 
 func (u *UI) hideMailIndicator() {
+	if !u.isDesktop() {
+		return
+	}
 	u.deskApp.SetSystemTrayIcon(resourceIconPng)
 }
 

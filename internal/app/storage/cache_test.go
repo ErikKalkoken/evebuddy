@@ -34,6 +34,34 @@ func TestCache(t *testing.T) {
 			}
 		}
 	})
+	t.Run("can update existing entry", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		key := "key"
+		err := r.CacheSet(ctx, storage.CacheSetParams{
+			Key:       key,
+			Value:     []byte("old-value"),
+			ExpiresAt: time.Now().Add(3 * time.Minute),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		value := []byte("value")
+		expiresAt := time.Now().Add(5 * time.Minute)
+		// when
+		err = r.CacheSet(ctx, storage.CacheSetParams{
+			Key:       key,
+			Value:     value,
+			ExpiresAt: expiresAt,
+		})
+		// then
+		if assert.NoError(t, err) {
+			v, err := r.CacheGet(ctx, key)
+			if assert.NoError(t, err) {
+				assert.Equal(t, value, v)
+			}
+		}
+	})
 	t.Run("should return true when entry exists", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

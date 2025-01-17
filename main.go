@@ -3,21 +3,23 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
-	"strings"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"github.com/antihax/goesi"
+	"github.com/chasinglogic/appdirs"
 	"github.com/juju/mutex/v2"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -29,7 +31,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/appdirs"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
@@ -39,32 +40,19 @@ import (
 
 const (
 	appID               = "io.github.erikkalkoken.evebuddy"
-	dbFileName          = "evebuddy.sqlite"
-	logFileName         = "evebuddy.log"
+	appName             = "evebuddy"
+	cacheCleanUpTimeout = time.Minute * 30
+	dbFileName          = appName + ".sqlite"
+	logFileName         = appName + ".log"
+	logFolderName       = "log"
+	logLevelDefault     = slog.LevelWarn // for startup only
 	logMaxBackups       = 3
 	logMaxSizeMB        = 50
 	mutexDelay          = 100 * time.Millisecond
 	mutexTimeout        = 250 * time.Millisecond
 	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
 	userAgent           = "EveBuddy kalkoken87@gmail.com"
-	logLevelDefault     = slog.LevelWarn // for startup only
-	cacheCleanUpTimeout = time.Minute * 30
 )
-
-type realtime struct{}
-
-func (r realtime) After(d time.Duration) <-chan time.Time {
-	c := make(chan time.Time)
-	go func() {
-		time.Sleep(d)
-		c <- time.Now()
-	}()
-	return c
-}
-
-func (r realtime) Now() time.Time {
-	return time.Now()
-}
 
 func main() {
 	// flags
@@ -75,52 +63,39 @@ func main() {
 	pprofFlag := flag.Bool("pprof", false, "Enable pprof web server")
 	flag.Parse()
 
+	isDesktop := runtime.GOOS != "android" && runtime.GOOS != "ios"
+
 	// init dirs
-	ad, err := appdirs.New()
-	if err != nil {
-		log.Fatal(err)
+	var dataDir string
+	if isDesktop {
+		ad := appdirs.New(appName)
+		dataDir = ad.UserData()
+		if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// setup logging
 	slog.SetLogLoggerLevel(logLevelDefault)
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-	logger := &lumberjack.Logger{
-		Filename:   fmt.Sprintf("%s/%s", ad.Log, logFileName),
-		MaxSize:    logMaxSizeMB,
-		MaxBackups: logMaxBackups,
+	var logger *lumberjack.Logger
+	var logDir string
+	if isDesktop {
+		logDir = filepath.Join(dataDir, logFolderName)
+		if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
+			log.Fatal(err)
+		}
+		logger = &lumberjack.Logger{
+			Filename:   fmt.Sprintf("%s/%s", logDir, logFileName),
+			MaxSize:    logMaxSizeMB,
+			MaxBackups: logMaxBackups,
+		}
+		multi := io.MultiWriter(os.Stderr, logger)
+		log.SetOutput(multi)
 	}
-	log.SetOutput(logger)
-
-	// setup crash reporting
-	crashFile, err := os.Create(filepath.Join(ad.Log, "crash.txt"))
-	if err != nil {
-		slog.Error("Failed to create crash report file", "error", err)
-	}
-	if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
-		slog.Error("Failed to setup crash report", "error", err)
-	}
-
-	// ensure only one instance is running
-	slog.Info("Checking for other instances")
-	r, err := mutex.Acquire(mutex.Spec{
-		Name:    strings.ReplaceAll(appID, ".", "-"),
-		Clock:   realtime{},
-		Delay:   mutexDelay,
-		Timeout: mutexTimeout,
-	})
-	if errors.Is(err, mutex.ErrTimeout) {
-		slog.Error("There is already an instance running. Aborting.")
-		os.Exit(1)
-	} else if err != nil {
-		slog.Error("Failed to acquire mutex. Aborting.", "error", err)
-		os.Exit(1)
-	}
-	defer r.Release()
-	slog.Info("No other instances running")
 
 	// start fyne app
 	fyneApp := app.NewWithID(appID)
-	ad.SetSettings(fyneApp.Storage().RootURI().Path())
 
 	// set log level
 	ln := fyneApp.Preferences().StringWithFallback(ui.SettingLogLevel, ui.SettingLogLevelDefault)
@@ -131,34 +106,56 @@ func main() {
 	}
 
 	if *dirsFlag {
-		for _, s := range ad.Folders() {
-			fmt.Println(s)
-		}
+		fmt.Println(dataDir)
+		fmt.Println(fyneApp.Storage().RootURI().Path())
 		return
 	}
 
 	// start uninstall app if requested
-	if *deleteAppFlag {
-		log.SetOutput(os.Stderr)
-		if err := debug.SetCrashOutput(nil, debug.CrashOptions{}); err != nil {
-			slog.Error("Failed to set crash output", "error", err)
-		}
-		if err := crashFile.Close(); err != nil {
-			slog.Error("Failed to close crash file", "error", err)
-		}
+	if isDesktop && *deleteAppFlag {
 		if err := logger.Close(); err != nil {
 			slog.Error("Failed to close log file", "error", err)
 		}
-		u := deleteapp.NewUI(fyneApp, ad)
+		u := deleteapp.NewUI(fyneApp)
+		u.DataDir = dataDir
 		u.ShowAndRun()
 		return
 	}
 
+	// ensure single instance
+	var mu mutex.Releaser
+	var err error
+	if isDesktop {
+		mu, err = ensureSingleInstance()
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer mu.Release()
+	}
+
+	// setup crash reporting
+	if isDesktop && logDir != "" {
+		crashFile, err := os.Create(filepath.Join(logDir, "crash.txt"))
+		if err != nil {
+			slog.Error("Failed to create crash report file", "error", err)
+		}
+		defer crashFile.Close()
+		if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
+			slog.Error("Failed to setup crash report", "error", err)
+		}
+	}
+
 	// init database
-	dsn := fmt.Sprintf("file:%s/%s", ad.Data, dbFileName)
-	db, err := storage.InitDB(dsn)
+	var dbPath string
+	if isDesktop {
+		dbPath = fmt.Sprintf("%s/%s", dataDir, dbFileName)
+	} else {
+		// EXPERIMENTAL
+		dbPath = ensureFileExists(fyneApp.Storage(), dbFileName)
+	}
+	db, err := storage.InitDB("file://" + dbPath)
 	if err != nil {
-		slog.Error("Failed to initialize database", "dsn", dsn, "error", err)
+		slog.Error("Failed to initialize database", "dsn", dbPath, "error", err)
 		os.Exit(1)
 	}
 	defer db.Close()
@@ -203,14 +200,16 @@ func main() {
 	cs.EveNotificationService = en
 	cs.EveUniverseService = eu
 	cs.StatusCacheService = sc
-	cs.SSOService = sso.New(ssoClientID, httpClient)
+	ssoService := sso.New(ssoClientID, httpClient)
+	ssoService.OpenURL = fyneApp.OpenURL
+	cs.SSOService = ssoService
 
 	// PCache init
 	pc := pcache.New(st, cacheCleanUpTimeout)
 	go pc.CleanUp()
 
 	// Init UI
-	u := ui.NewUI(fyneApp, ad)
+	u := ui.NewUI(fyneApp)
 	slog.Debug("ui instance created")
 	u.CacheService = memCache
 	u.CharacterService = cs
@@ -220,6 +219,10 @@ func main() {
 	u.StatusCacheService = sc
 	u.IsOffline = *isOfflineFlag
 	u.IsUpdateTickerDisabled = *isUpdateTickerDisabledFlag
+	u.DataPaths = map[string]string{
+		"db":  dbPath,
+		"log": logDir,
+	}
 	u.Init()
 	slog.Debug("ui initialized")
 
@@ -232,4 +235,23 @@ func main() {
 
 	// Start app
 	u.ShowAndRun()
+}
+
+func ensureFileExists(st fyne.Storage, name string) string {
+	var p string
+	u, err := st.Open(name)
+	if err != nil {
+		u, err := st.Create(name)
+		if err != nil {
+			log.Fatal(err)
+		}
+		p = u.URI().Path()
+		u.Close()
+		log.Println("created new file: ", p)
+	} else {
+		p = u.URI().Path()
+		u.Close()
+		log.Println("found existing file: ", p)
+	}
+	return p
 }
