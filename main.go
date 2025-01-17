@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -13,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2/app"
@@ -52,21 +50,6 @@ const (
 	appName             = "evebuddy"
 	logFolderName       = "log"
 )
-
-type realtime struct{}
-
-func (r realtime) After(d time.Duration) <-chan time.Time {
-	c := make(chan time.Time)
-	go func() {
-		time.Sleep(d)
-		c <- time.Now()
-	}()
-	return c
-}
-
-func (r realtime) Now() time.Time {
-	return time.Now()
-}
 
 func main() {
 	// flags
@@ -107,23 +90,12 @@ func main() {
 		slog.Error("Failed to setup crash report", "error", err)
 	}
 
-	// ensure only one instance is running
-	slog.Info("Checking for other instances")
-	r, err := mutex.Acquire(mutex.Spec{
-		Name:    strings.ReplaceAll(appID, ".", "-"),
-		Clock:   realtime{},
-		Delay:   mutexDelay,
-		Timeout: mutexTimeout,
-	})
-	if errors.Is(err, mutex.ErrTimeout) {
-		slog.Error("There is already an instance running. Aborting.")
-		os.Exit(1)
-	} else if err != nil {
-		slog.Error("Failed to acquire mutex. Aborting.", "error", err)
-		os.Exit(1)
+	var mu mutex.Releaser
+	mu, err = ensureSingleInstance()
+	if err != nil {
+		log.Fatal(err)
 	}
-	defer r.Release()
-	slog.Info("No other instances running")
+	defer mu.Release()
 
 	// start fyne app
 	fyneApp := app.NewWithID(appID)
