@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"runtime"
 	"sync"
@@ -90,15 +89,11 @@ type UI struct {
 
 // NewUI build the UI and returns it.
 func NewUI(fyneApp fyne.App) *UI {
-	desk, ok := fyneApp.(desktop.App)
-	if !ok {
-		log.Fatal("Failed to initialize as desktop app")
-	}
 	u := &UI{
-		deskApp: desk,
 		fyneApp: fyneApp,
 		sfg:     new(singleflight.Group),
 	}
+	u.identifyDesktop()
 	u.window = fyneApp.NewWindow(u.appName())
 	u.attributesArea = u.newAttributesArena()
 	u.biographyArea = u.newBiographyArea()
@@ -190,7 +185,7 @@ func NewUI(fyneApp fyne.App) *UI {
 	u.window.SetContent(mainContent)
 
 	// system tray menu
-	if fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault) {
+	if u.isDesktop() && fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault) {
 		name := u.appName()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true
@@ -213,6 +208,20 @@ func NewUI(fyneApp fyne.App) *UI {
 	u.window.SetMainMenu(menu)
 	u.window.SetMaster()
 	return u
+}
+
+func (u *UI) identifyDesktop() {
+	desk, ok := u.fyneApp.(desktop.App)
+	if ok {
+		slog.Debug("Running in desktop mode")
+		u.deskApp = desk
+	} else {
+		slog.Debug("Running in mobile mode")
+	}
+}
+
+func (u *UI) isDesktop() bool {
+	return u.deskApp != nil
 }
 
 func (u *UI) Init() {
@@ -477,10 +486,16 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 }
 
 func (u *UI) showMailIndicator() {
+	if !u.isDesktop() {
+		return
+	}
 	u.deskApp.SetSystemTrayIcon(resourceIconmarkedPng)
 }
 
 func (u *UI) hideMailIndicator() {
+	if !u.isDesktop() {
+		return
+	}
 	u.deskApp.SetSystemTrayIcon(resourceIconPng)
 }
 
