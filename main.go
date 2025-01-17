@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -79,7 +80,8 @@ func main() {
 		MaxSize:    logMaxSizeMB,
 		MaxBackups: logMaxBackups,
 	}
-	log.SetOutput(logger)
+	multi := io.MultiWriter(os.Stderr, logger)
+	log.SetOutput(multi)
 
 	// setup crash reporting
 	crashFile, err := os.Create(filepath.Join(logDir, "crash.txt"))
