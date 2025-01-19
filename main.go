@@ -12,15 +12,14 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"path/filepath"
-	"runtime"
 	"runtime/debug"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/driver/desktop"
 	"github.com/antihax/goesi"
 	"github.com/chasinglogic/appdirs"
-	"github.com/juju/mutex/v2"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
@@ -48,54 +47,28 @@ const (
 	logLevelDefault     = slog.LevelWarn // for startup only
 	logMaxBackups       = 3
 	logMaxSizeMB        = 50
-	mutexDelay          = 100 * time.Millisecond
-	mutexTimeout        = 250 * time.Millisecond
 	ssoClientID         = "11ae857fe4d149b2be60d875649c05f1"
 	userAgent           = "EveBuddy kalkoken87@gmail.com"
 )
 
+// define flags
+var (
+	deleteAppFlag              = flag.Bool("delete-data", false, "Delete user data")
+	dirsFlag                   = flag.Bool("dirs", false, "Show directories for user data")
+	isUpdateTickerDisabledFlag = flag.Bool("disable-updates", false, "Disable all periodic updates")
+	isOfflineFlag              = flag.Bool("offline", false, "Start app in offline mode")
+	pprofFlag                  = flag.Bool("pprof", false, "Enable pprof web server")
+)
+
 func main() {
-	// flags
-	deleteAppFlag := flag.Bool("delete-data", false, "Delete user data")
-	dirsFlag := flag.Bool("dirs", false, "Show directories for user data")
-	isUpdateTickerDisabledFlag := flag.Bool("disable-updates", false, "Disable all periodic updates")
-	isOfflineFlag := flag.Bool("offline", false, "Start app in offline mode")
-	pprofFlag := flag.Bool("pprof", false, "Enable pprof web server")
-	flag.Parse()
-
-	isDesktop := runtime.GOOS != "android" && runtime.GOOS != "ios"
-
-	// init dirs
-	var dataDir string
-	if isDesktop {
-		ad := appdirs.New(appName)
-		dataDir = ad.UserData()
-		if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	// setup logging
+	// init log & flags
 	slog.SetLogLoggerLevel(logLevelDefault)
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-	var logger *lumberjack.Logger
-	var logDir string
-	if isDesktop {
-		logDir = filepath.Join(dataDir, logFolderName)
-		if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
-			log.Fatal(err)
-		}
-		logger = &lumberjack.Logger{
-			Filename:   fmt.Sprintf("%s/%s", logDir, logFileName),
-			MaxSize:    logMaxSizeMB,
-			MaxBackups: logMaxBackups,
-		}
-		multi := io.MultiWriter(os.Stderr, logger)
-		log.SetOutput(multi)
-	}
+	flag.Parse()
 
 	// start fyne app
 	fyneApp := app.NewWithID(appID)
+	_, isDesktop := fyneApp.(desktop.App)
 
 	// set log level
 	ln := fyneApp.Preferences().StringWithFallback(ui.SettingLogLevel, ui.SettingLogLevelDefault)
@@ -105,36 +78,45 @@ func main() {
 		slog.SetLogLoggerLevel(l)
 	}
 
-	if *dirsFlag {
-		fmt.Println(dataDir)
-		fmt.Println(fyneApp.Storage().RootURI().Path())
-		return
-	}
-
-	// start uninstall app if requested
-	if isDesktop && *deleteAppFlag {
-		if err := logger.Close(); err != nil {
-			slog.Error("Failed to close log file", "error", err)
-		}
-		u := deleteapp.NewUI(fyneApp)
-		u.DataDir = dataDir
-		u.ShowAndRun()
-		return
-	}
-
-	// ensure single instance
-	var mu mutex.Releaser
-	var err error
+	var dataDir, logDir string
+	// desktop related init
 	if isDesktop {
-		mu, err = ensureSingleInstance()
+		// data dir
+		ad := appdirs.New(appName)
+		dataDir = ad.UserData()
+		if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
+			log.Fatal(err)
+		}
+
+		// start uninstall app if requested
+		if *deleteAppFlag {
+			u := deleteapp.NewUI(fyneApp)
+			u.DataDir = dataDir
+			u.ShowAndRun()
+			return
+		}
+
+		// setup logfile for desktop
+		logDir = filepath.Join(dataDir, logFolderName)
+		if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
+			log.Fatal(err)
+		}
+		logger := &lumberjack.Logger{
+			Filename:   fmt.Sprintf("%s/%s", logDir, logFileName),
+			MaxSize:    logMaxSizeMB,
+			MaxBackups: logMaxBackups,
+		}
+		multi := io.MultiWriter(os.Stderr, logger)
+		log.SetOutput(multi)
+
+		// ensure single instance
+		mu, err := ensureSingleInstance()
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer mu.Release()
-	}
 
-	// setup crash reporting
-	if isDesktop && logDir != "" {
+		// setup crash reporting
 		crashFile, err := os.Create(filepath.Join(logDir, "crash.txt"))
 		if err != nil {
 			slog.Error("Failed to create crash report file", "error", err)
@@ -143,6 +125,12 @@ func main() {
 		if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
 			slog.Error("Failed to setup crash report", "error", err)
 		}
+	}
+
+	if *dirsFlag {
+		fmt.Println(dataDir)
+		fmt.Println(fyneApp.Storage().RootURI().Path())
+		return
 	}
 
 	// init database

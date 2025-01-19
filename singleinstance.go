@@ -10,6 +10,11 @@ import (
 	"github.com/juju/mutex/v2"
 )
 
+const (
+	mutexDelay   = 100 * time.Millisecond
+	mutexTimeout = 250 * time.Millisecond
+)
+
 type realtime struct{}
 
 func (r realtime) After(d time.Duration) <-chan time.Time {
