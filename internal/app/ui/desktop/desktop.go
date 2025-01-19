@@ -49,12 +49,17 @@ type DesktopUI struct {
 	// Paths to user data (for information only)
 	DataPaths map[string]string
 
+	character *app.Character
+	deskApp   fyneDesktop.App
+	fyneApp   fyne.App
+	sfg       *singleflight.Group
+	window    fyne.Window
+
 	assetsArea            *assetsArea
 	assetSearchArea       *assetSearchArea
 	assetTab              *container.TabItem
 	attributesArea        *attributesArea
 	biographyArea         *biographyArea
-	character             *app.Character
 	coloniesArea          *coloniesArea
 	contractsArea         *contractsArea
 	implantsArea          *implantsArea
@@ -82,11 +87,6 @@ type DesktopUI struct {
 	walletTab             *container.TabItem
 	walletTransactionArea *walletTransactionArea
 	wealthArea            *wealthArea
-
-	deskApp fyneDesktop.App
-	fyneApp fyne.App
-	sfg     *singleflight.Group
-	window  fyne.Window
 }
 
 var _ ui.UI = (*DesktopUI)(nil)
@@ -232,7 +232,7 @@ func (u *DesktopUI) Init() {
 	var c *app.Character
 	var err error
 	ctx := context.Background()
-	if cID := u.fyneApp.Preferences().Int(settingLastCharacterID); cID != 0 {
+	if cID := u.fyneApp.Preferences().Int(ui.SettingLastCharacterID); cID != 0 {
 		c, err = u.CharacterService.GetCharacter(ctx, int32(cID))
 		if err != nil {
 			if !errors.Is(err, character.ErrNotFound) {
@@ -371,12 +371,12 @@ func (u *DesktopUI) loadCharacter(ctx context.Context, characterID int32) error 
 func (u *DesktopUI) setCharacter(c *app.Character) {
 	u.character = c
 	u.refreshCharacter()
-	u.fyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
+	u.fyneApp.Preferences().SetInt(ui.SettingLastCharacterID, int(c.ID))
 }
 
 func (u *DesktopUI) resetCharacter() {
 	u.character = nil
-	u.fyneApp.Preferences().SetInt(settingLastCharacterID, 0)
+	u.fyneApp.Preferences().SetInt(ui.SettingLastCharacterID, 0)
 	u.refreshCharacter()
 }
 

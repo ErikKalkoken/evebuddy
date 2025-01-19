@@ -10,6 +10,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -73,15 +74,15 @@ func (u *DesktopUI) startUpdateTickerCharacters() {
 				}
 				for _, c := range cc {
 					go u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
-					if u.fyneApp.Preferences().BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault) {
+					if u.fyneApp.Preferences().BoolWithFallback(ui.SettingNotifyPIEnabled, ui.SettingNotifyPIEnabledDefault) {
 						go func() {
-							earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyPIEarliest)
+							earliest := calcNotifyEarliest(u.fyneApp.Preferences(), ui.SettingNotifyPIEarliest)
 							if err := u.CharacterService.NotifyExpiredExtractions(context.TODO(), c.ID, earliest, u.sendDesktopNotification); err != nil {
 								slog.Error("notify expired extractions", "characterID", c.ID, "error", err)
 							}
 						}()
 					}
-					if u.fyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
+					if u.fyneApp.Preferences().BoolWithFallback(ui.SettingNotifyTrainingEnabled, ui.SettingNotifyTrainingEnabledDefault) {
 						go func() {
 							// earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
 							if err := u.CharacterService.NotifyExpiredTraining(context.TODO(), c.ID, u.sendDesktopNotification); err != nil {
@@ -119,8 +120,8 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 			CharacterID:           characterID,
 			Section:               s,
 			ForceUpdate:           forceUpdate,
-			MaxMails:              u.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault),
-			MaxWalletTransactions: u.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault),
+			MaxMails:              u.fyneApp.Preferences().IntWithFallback(ui.SettingMaxMails, ui.SettingMaxMailsDefault),
+			MaxWalletTransactions: u.fyneApp.Preferences().IntWithFallback(ui.SettingMaxWalletTransactions, ui.SettingMaxWalletTransactionsDefault),
 		})
 	if err != nil {
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
@@ -145,9 +146,9 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 		if isShown && needsRefresh {
 			u.contractsArea.refresh()
 		}
-		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyContractsEnabled, settingNotifyCommunicationsEnabledDefault) {
+		if u.fyneApp.Preferences().BoolWithFallback(ui.SettingNotifyContractsEnabled, ui.SettingNotifyCommunicationsEnabledDefault) {
 			go func() {
-				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyContractsEarliest)
+				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), ui.SettingNotifyContractsEarliest)
 				if err := u.CharacterService.NotifyUpdatedContracts(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify contract update", "error", err)
 				}
@@ -192,9 +193,9 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 		if needsRefresh {
 			u.overviewArea.refresh()
 		}
-		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
+		if u.fyneApp.Preferences().BoolWithFallback(ui.SettingNotifyMailsEnabled, ui.SettingNotifyMailsEnabledDefault) {
 			go func() {
-				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyMailsEarliest)
+				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), ui.SettingNotifyMailsEarliest)
 				if err := u.CharacterService.NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify mails", "characterID", characterID, "error", err)
 				}
@@ -204,10 +205,10 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 		if isShown && needsRefresh {
 			u.notificationsArea.refresh()
 		}
-		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault) {
+		if u.fyneApp.Preferences().BoolWithFallback(ui.SettingNotifyCommunicationsEnabled, ui.SettingNotifyCommunicationsEnabledDefault) {
 			go func() {
-				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyCommunicationsEarliest)
-				typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
+				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), ui.SettingNotifyCommunicationsEarliest)
+				typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(ui.SettingNotificationsTypesEnabled))
 				if err := u.CharacterService.NotifyCommunications(ctx, characterID, earliest, typesEnabled, u.sendDesktopNotification); err != nil {
 					slog.Error("notify communications", "characterID", characterID, "error", err)
 				}
@@ -223,7 +224,7 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 			u.trainingArea.refresh()
 		}
 	case app.SectionSkillqueue:
-		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
+		if u.fyneApp.Preferences().BoolWithFallback(ui.SettingNotifyTrainingEnabled, ui.SettingNotifyTrainingEnabledDefault) {
 			err := u.CharacterService.EnableTrainingWatcher(ctx, characterID)
 			if err != nil {
 				slog.Error("Failed to enable training watcher", "characterID", characterID, "error", err)
@@ -263,7 +264,7 @@ func calcNotifyEarliest(pref fyne.Preferences, settingEarliest string) time.Time
 		earliest = time.Now().UTC().Add(-notifyEarliestFallback)
 		pref.SetString(settingEarliest, earliest.Format(time.RFC3339))
 	}
-	timeoutDays := pref.IntWithFallback(settingNotifyTimeoutHours, settingNotifyTimeoutHoursDefault)
+	timeoutDays := pref.IntWithFallback(ui.SettingNotifyTimeoutHours, ui.SettingNotifyTimeoutHoursDefault)
 	var timeout time.Time
 	if timeoutDays > 0 {
 		timeout = time.Now().UTC().Add(-time.Duration(timeoutDays) * time.Hour)

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,7 +49,7 @@ func TestCalcEarliest(t *testing.T) {
 		return v.Format(time.RFC3339)
 	}
 	earliestFallback := now.Add(-notifyEarliestFallback)
-	timeoutDefault := now.Add(-settingNotifyTimeoutHoursDefault * time.Hour)
+	timeoutDefault := now.Add(-ui.SettingNotifyTimeoutHoursDefault * time.Hour)
 	cases := []struct {
 		name         string
 		earliest     string
@@ -71,7 +72,7 @@ func TestCalcEarliest(t *testing.T) {
 			}
 			p.data["earliest"] = tc.earliest
 			if tc.timeoutHours != 0 {
-				p.data[settingNotifyTimeoutHours] = tc.timeoutHours
+				p.data[ui.SettingNotifyTimeoutHours] = tc.timeoutHours
 			}
 			// when
 			v := calcNotifyEarliest(p, "earliest")

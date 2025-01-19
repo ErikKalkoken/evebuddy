@@ -2,6 +2,10 @@
 package mobile
 
 import (
+	"context"
+	"errors"
+	"log/slog"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
@@ -28,9 +32,10 @@ type MobileUI struct {
 	// Whether to disable update tickers (useful for debugging)
 	IsUpdateTickerDisabled bool
 
-	fyneApp fyne.App
-	sfg     *singleflight.Group
-	window  fyne.Window
+	character *app.Character
+	fyneApp   fyne.App
+	sfg       *singleflight.Group
+	window    fyne.Window
 }
 
 var _ ui.UI = (*MobileUI)(nil)
@@ -122,6 +127,30 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 }
 
 func (u *MobileUI) Init() {
+	var c *app.Character
+	var err error
+	ctx := context.Background()
+	if cID := u.fyneApp.Preferences().Int(ui.SettingLastCharacterID); cID != 0 {
+		c, err = u.CharacterService.GetCharacter(ctx, int32(cID))
+		if err != nil {
+			if !errors.Is(err, character.ErrNotFound) {
+				slog.Error("Failed to load character", "error", err)
+			}
+		}
+	}
+	if c == nil {
+		c, err = u.CharacterService.GetAnyCharacter(ctx)
+		if err != nil {
+			if !errors.Is(err, character.ErrNotFound) {
+				slog.Error("Failed to load character", "error", err)
+			}
+		}
+	}
+	if c == nil {
+		return
+	}
+
+	u.character = c
 }
 
 func (u *MobileUI) ShowAndRun() {

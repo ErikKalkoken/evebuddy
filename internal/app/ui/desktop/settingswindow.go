@@ -14,6 +14,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -64,13 +65,13 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 	sysTrayCheck.SetState(sysTrayEnabled)
 
 	// log level
-	logLevel := widget.NewSelect(LogLevelNames(), func(s string) {
-		w.u.fyneApp.Preferences().SetString(SettingLogLevel, s)
-		slog.SetLogLoggerLevel(LogLevelName2Level(s))
+	logLevel := widget.NewSelect(ui.LogLevelNames(), func(s string) {
+		w.u.fyneApp.Preferences().SetString(ui.SettingLogLevel, s)
+		slog.SetLogLoggerLevel(ui.LogLevelName2Level(s))
 	})
 	logLevelSelected := w.u.fyneApp.Preferences().StringWithFallback(
-		SettingLogLevel,
-		SettingLogLevelDefault,
+		ui.SettingLogLevel,
+		ui.SettingLogLevelDefault,
 	)
 	logLevel.SetSelected(logLevelSelected)
 
@@ -119,26 +120,26 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 		}}
 	reset := func() {
 		sysTrayCheck.SetState(settingSysTrayEnabledDefault)
-		logLevel.SetSelected(SettingLogLevelDefault)
+		logLevel.SetSelected(ui.SettingLogLevelDefault)
 	}
 	return makePage("General settings", settings, reset)
 }
 
 func (w *settingsWindow) makeEVEOnlinePage() fyne.CanvasObject {
 	// max mails
-	maxMails := kxwidget.NewSlider(0, settingMaxMailsMax)
-	v1 := w.u.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault)
+	maxMails := kxwidget.NewSlider(0, ui.SettingMaxMailsMax)
+	v1 := w.u.fyneApp.Preferences().IntWithFallback(ui.SettingMaxMails, ui.SettingMaxMailsDefault)
 	maxMails.SetValue(float64(v1))
 	maxMails.OnChangeEnded = func(v float64) {
-		w.u.fyneApp.Preferences().SetInt(settingMaxMails, int(v))
+		w.u.fyneApp.Preferences().SetInt(ui.SettingMaxMails, int(v))
 	}
 
 	// max transactions
-	maxTransactions := kxwidget.NewSlider(0, settingMaxWalletTransactionsMax)
-	v2 := w.u.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault)
+	maxTransactions := kxwidget.NewSlider(0, ui.SettingMaxWalletTransactionsMax)
+	v2 := w.u.fyneApp.Preferences().IntWithFallback(ui.SettingMaxWalletTransactions, ui.SettingMaxWalletTransactionsDefault)
 	maxTransactions.SetValue(float64(v2))
 	maxTransactions.OnChangeEnded = func(v float64) {
-		w.u.fyneApp.Preferences().SetInt(settingMaxWalletTransactions, int(v))
+		w.u.fyneApp.Preferences().SetInt(ui.SettingMaxWalletTransactions, int(v))
 	}
 
 	settings := &widget.Form{
@@ -156,8 +157,8 @@ func (w *settingsWindow) makeEVEOnlinePage() fyne.CanvasObject {
 		},
 	}
 	x := func() {
-		maxMails.SetValue(settingMaxMailsDefault)
-		maxTransactions.SetValue(settingMaxWalletTransactionsDefault)
+		maxMails.SetValue(ui.SettingMaxMailsDefault)
+		maxTransactions.SetValue(ui.SettingMaxWalletTransactionsDefault)
 	}
 	return makePage("Eve Online settings", settings, x)
 }
@@ -167,14 +168,14 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 
 	// mail toogle
 	mailEnabledCheck := kxwidget.NewSwitch(func(on bool) {
-		w.u.fyneApp.Preferences().SetBool(settingNotifyMailsEnabled, on)
+		w.u.fyneApp.Preferences().SetBool(ui.SettingNotifyMailsEnabled, on)
 		if on {
-			w.u.fyneApp.Preferences().SetString(settingNotifyMailsEarliest, time.Now().Format(time.RFC3339))
+			w.u.fyneApp.Preferences().SetString(ui.SettingNotifyMailsEarliest, time.Now().Format(time.RFC3339))
 		}
 	})
 	mailEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
-		settingNotifyMailsEnabled,
-		settingNotifyMailsEnabledDefault,
+		ui.SettingNotifyMailsEnabled,
+		ui.SettingNotifyMailsEnabledDefault,
 	))
 	f1.AppendItem(&widget.FormItem{
 		Text:     "Mail",
@@ -184,14 +185,14 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 
 	// communications toogle
 	communicationsEnabledCheck := kxwidget.NewSwitch(func(on bool) {
-		w.u.fyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
+		w.u.fyneApp.Preferences().SetBool(ui.SettingNotifyCommunicationsEnabled, on)
 		if on {
-			w.u.fyneApp.Preferences().SetString(settingNotifyCommunicationsEarliest, time.Now().Format(time.RFC3339))
+			w.u.fyneApp.Preferences().SetString(ui.SettingNotifyCommunicationsEarliest, time.Now().Format(time.RFC3339))
 		}
 	})
 	communicationsEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
-		settingNotifyCommunicationsEnabled,
-		settingNotifyCommunicationsEnabledDefault,
+		ui.SettingNotifyCommunicationsEnabled,
+		ui.SettingNotifyCommunicationsEnabledDefault,
 	))
 	f1.AppendItem(&widget.FormItem{
 		Text:     "Communications",
@@ -201,14 +202,14 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 
 	// PI toogle
 	piEnabledCheck := kxwidget.NewSwitch(func(on bool) {
-		w.u.fyneApp.Preferences().SetBool(settingNotifyPIEnabled, on)
+		w.u.fyneApp.Preferences().SetBool(ui.SettingNotifyPIEnabled, on)
 		if on {
-			w.u.fyneApp.Preferences().SetString(settingNotifyPIEarliest, time.Now().Format(time.RFC3339))
+			w.u.fyneApp.Preferences().SetString(ui.SettingNotifyPIEarliest, time.Now().Format(time.RFC3339))
 		}
 	})
 	piEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
-		settingNotifyPIEnabled,
-		settingNotifyPIEnabledDefault,
+		ui.SettingNotifyPIEnabled,
+		ui.SettingNotifyPIEnabledDefault,
 	))
 	f1.AppendItem(&widget.FormItem{
 		Text:     "Planetary Industry",
@@ -226,7 +227,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 				d := NewErrorDialog("failed to enable training notification", err, w.window)
 				d.Show()
 			} else {
-				w.u.fyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, true)
+				w.u.fyneApp.Preferences().SetBool(ui.SettingNotifyTrainingEnabled, true)
 			}
 		} else {
 			err := w.u.CharacterService.DisableAllTrainingWatchers(ctx)
@@ -234,13 +235,13 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 				d := NewErrorDialog("failed to disable training notification", err, w.window)
 				d.Show()
 			} else {
-				w.u.fyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, false)
+				w.u.fyneApp.Preferences().SetBool(ui.SettingNotifyTrainingEnabled, false)
 			}
 		}
 	})
 	trainingEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
-		settingNotifyTrainingEnabled,
-		settingNotifyTrainingEnabledDefault,
+		ui.SettingNotifyTrainingEnabled,
+		ui.SettingNotifyTrainingEnabledDefault,
 	))
 	f1.AppendItem(&widget.FormItem{
 		Text:     "Training",
@@ -250,14 +251,14 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 
 	// Contracts toogle
 	contractsEnabledCheck := kxwidget.NewSwitch(func(on bool) {
-		w.u.fyneApp.Preferences().SetBool(settingNotifyContractsEnabled, on)
+		w.u.fyneApp.Preferences().SetBool(ui.SettingNotifyContractsEnabled, on)
 		if on {
-			w.u.fyneApp.Preferences().SetString(settingNotifyContractsEarliest, time.Now().Format(time.RFC3339))
+			w.u.fyneApp.Preferences().SetString(ui.SettingNotifyContractsEarliest, time.Now().Format(time.RFC3339))
 		}
 	})
 	contractsEnabledCheck.SetState(w.u.fyneApp.Preferences().BoolWithFallback(
-		settingNotifyContractsEnabled,
-		settingNotifyCommunicationsEnabledDefault,
+		ui.SettingNotifyContractsEnabled,
+		ui.SettingNotifyCommunicationsEnabledDefault,
 	))
 	f1.AppendItem(&widget.FormItem{
 		Text:     "Contracts",
@@ -266,11 +267,11 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 	})
 
 	// notify timeout
-	notifyTimeout := kxwidget.NewSlider(1, settingNotifyTimeoutHoursMax)
-	v := w.u.fyneApp.Preferences().IntWithFallback(settingNotifyTimeoutHours, settingNotifyTimeoutHoursDefault)
+	notifyTimeout := kxwidget.NewSlider(1, ui.SettingNotifyTimeoutHoursMax)
+	v := w.u.fyneApp.Preferences().IntWithFallback(ui.SettingNotifyTimeoutHours, ui.SettingNotifyTimeoutHoursDefault)
 	notifyTimeout.SetValue(float64(v))
 	notifyTimeout.OnChangeEnded = func(v float64) {
-		w.u.fyneApp.Preferences().SetInt(settingNotifyTimeoutHours, int(v))
+		w.u.fyneApp.Preferences().SetInt(ui.SettingNotifyTimeoutHours, int(v))
 	}
 	f1.AppendItem(&widget.FormItem{
 		Text:     "Notification timeout",
@@ -290,7 +291,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		categories = append(categories, c)
 	}
 	slices.Sort(categories)
-	typesEnabled := set.NewFromSlice(w.u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
+	typesEnabled := set.NewFromSlice(w.u.fyneApp.Preferences().StringList(ui.SettingNotificationsTypesEnabled))
 	notifsAll := make([]*kxwidget.Switch, 0)
 	for _, c := range categories {
 		f2.Append("", widget.NewLabel(c.String()))
@@ -303,7 +304,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 				} else {
 					typesEnabled.Remove(nt.String())
 				}
-				w.u.fyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
+				w.u.fyneApp.Preferences().SetStringList(ui.SettingNotificationsTypesEnabled, typesEnabled.ToSlice())
 			})
 			if typesEnabled.Contains(nt.String()) {
 				sw.On = true
@@ -337,12 +338,12 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		f2,
 	)
 	reset := func() {
-		mailEnabledCheck.SetState(settingNotifyMailsEnabledDefault)
-		communicationsEnabledCheck.SetState(settingNotifyCommunicationsEnabledDefault)
-		piEnabledCheck.SetState(settingNotifyPIEnabledDefault)
-		trainingEnabledCheck.SetState(settingNotifyTrainingEnabledDefault)
-		contractsEnabledCheck.SetState(settingNotifyTrainingEnabledDefault)
-		notifyTimeout.SetValue(settingNotifyTimeoutHoursDefault)
+		mailEnabledCheck.SetState(ui.SettingNotifyMailsEnabledDefault)
+		communicationsEnabledCheck.SetState(ui.SettingNotifyCommunicationsEnabledDefault)
+		piEnabledCheck.SetState(ui.SettingNotifyPIEnabledDefault)
+		trainingEnabledCheck.SetState(ui.SettingNotifyTrainingEnabledDefault)
+		contractsEnabledCheck.SetState(ui.SettingNotifyTrainingEnabledDefault)
+		notifyTimeout.SetValue(ui.SettingNotifyTimeoutHoursDefault)
 		for _, sw := range notifsAll {
 			sw.SetState(false)
 		}

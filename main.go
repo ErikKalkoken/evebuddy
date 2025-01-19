@@ -29,6 +29,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	desktop1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/desktop"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/mobile"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
@@ -72,8 +73,8 @@ func main() {
 	_, isDesktop := fyneApp.(desktop.App)
 
 	// set log level
-	ln := fyneApp.Preferences().StringWithFallback(desktop1.SettingLogLevel, desktop1.SettingLogLevelDefault)
-	l := desktop1.LogLevelName2Level(ln)
+	ln := fyneApp.Preferences().StringWithFallback(ui.SettingLogLevel, ui.SettingLogLevelDefault)
+	l := ui.LogLevelName2Level(ln)
 	if l != logLevelDefault {
 		slog.Info("Setting log level", "level", ln)
 		slog.SetLogLoggerLevel(l)
