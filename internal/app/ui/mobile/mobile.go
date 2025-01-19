@@ -8,7 +8,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/sync/singleflight"
@@ -17,7 +16,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+)
+
+// Mobile UI constants
+const (
+	defaultIconSize = 64
+	myFloatFormat   = "#,###.##"
 )
 
 type MobileUI struct {
@@ -32,10 +36,12 @@ type MobileUI struct {
 	// Whether to disable update tickers (useful for debugging)
 	IsUpdateTickerDisabled bool
 
-	character *app.Character
-	fyneApp   fyne.App
-	sfg       *singleflight.Group
-	window    fyne.Window
+	navBar       *container.AppTabs
+	characterTab *container.TabItem
+	character    *app.Character
+	fyneApp      fyne.App
+	sfg          *singleflight.Group
+	window       fyne.Window
 }
 
 var _ ui.UI = (*MobileUI)(nil)
@@ -48,81 +54,85 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	}
 	u.window = fyneApp.NewWindow(u.appName())
 
-	var main *widgets.Navigator
-	var menu *widget.List
-	items := []struct {
-		icon   fyne.Resource
-		name   string
-		action func()
-	}{
-		{
-			theme.AccountIcon(), "Character Sheet", func() {
+	var main *Navigator
+	menu := NewNavList(
+		NewNavListItem(
+			theme.AccountIcon(),
+			"Character Sheet",
+			func() {
 				main.Push("Character Sheet",
 					container.NewVBox(
 						widget.NewLabel("Character Sheet"),
-						widget.NewButton("Detail >", func() {
-							main.Push("Detail", widget.NewLabel("Detail"))
-						}),
+						NewNavList(
+							NewNavListItem(
+								nil,
+								"Attributes",
+								func() {
+									main.Push("Attributes", widget.NewLabel("PLACEHOLDER"))
+								},
+							),
+							NewNavListItem(
+								nil,
+								"Implants",
+								func() {
+									main.Push("Implants", widget.NewLabel("PLACEHOLDER"))
+								},
+							),
+						),
 					))
 			},
-		},
-		{
-			theme.NewThemedResource(ui.IconInventory2Svg), "Assets", func() {
+		),
+		NewNavListItem(
+			theme.NewThemedResource(ui.IconInventory2Svg),
+			"Assets",
+			func() {
 				main.Push("Assets", widget.NewLabel("PLACEHOLDER"))
 			},
-		},
-		{
-			theme.NewThemedResource(ui.IconEarthSvg), "Colonies", func() {
+		),
+		NewNavListItem(
+			theme.NewThemedResource(ui.IconEarthSvg),
+			"Colonies",
+			func() {
 				main.Push("Colonies", widget.NewLabel("PLACEHOLDER"))
 			},
-		},
-		{
-			theme.MailComposeIcon(), "Mail", func() {
+		),
+		NewNavListItem(
+			theme.MailComposeIcon(),
+			"Mail",
+			func() {
 				main.Push("Mail", widget.NewLabel("PLACEHOLDER"))
 			},
-		},
-		{
-			theme.MailComposeIcon(), "Communications", func() {
+		),
+		NewNavListItem(
+			theme.MailComposeIcon(),
+			"Communications",
+			func() {
 				main.Push("Communications", widget.NewLabel("PLACEHOLDER"))
 			},
-		},
-		{
-			theme.NewThemedResource(ui.IconFileSignSvg), "Contracts", func() {
+		),
+		NewNavListItem(
+			theme.NewThemedResource(ui.IconFileSignSvg),
+			"Contracts",
+			func() {
 				main.Push("Contracts", widget.NewLabel("PLACEHOLDER"))
 			},
-		},
-		{
-			theme.NewThemedResource(ui.IconGroupSvg), "Characters", func() {
+		),
+		NewNavListItem(
+			theme.NewThemedResource(ui.IconGroupSvg),
+			"Characters",
+			func() {
 				main.Push("Characters", widget.NewLabel("PLACEHOLDER"))
 			},
-		},
-	}
-	menu = widget.NewList(
-		func() int {
-			return len(items)
-		},
-		func() fyne.CanvasObject {
-			return container.NewHBox(widget.NewIcon(theme.MediaFastForwardIcon()), widget.NewLabel(""), layout.NewSpacer(), widget.NewLabel(">"))
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			item := items[id]
-			hbox := co.(*fyne.Container).Objects
-			hbox[0].(*widget.Icon).SetResource(item.icon)
-			hbox[1].(*widget.Label).SetText(item.name)
-		},
+		))
+	main = NewNavigator("Home", menu)
+	u.characterTab = container.NewTabItemWithIcon("", theme.AccountIcon(), widget.NewLabel("Character"))
+	u.navBar = container.NewAppTabs(
+		container.NewTabItemWithIcon("", theme.HomeIcon(), main),
+		u.characterTab,
+		container.NewTabItemWithIcon("", theme.MenuIcon(), widget.NewLabel("More")),
 	)
-	menu.OnSelected = func(id widget.ListItemID) {
-		defer menu.UnselectAll()
-		items[id].action()
-	}
-	main = widgets.NewNavigator("Home", menu)
-	master := container.NewAppTabs(
-		container.NewTabItemWithIcon("Home", theme.HomeIcon(), main),
-		container.NewTabItemWithIcon("Character", theme.AccountIcon(), widget.NewLabel("Character")),
-		container.NewTabItemWithIcon("More", theme.MenuIcon(), widget.NewLabel("More")),
-	)
-	master.SetTabLocation(container.TabLocationBottom)
-	u.window.SetContent(master)
+	u.navBar.SetTabLocation(container.TabLocationBottom)
+	u.window.SetContent(u.navBar)
 	return u
 }
 
@@ -149,11 +159,37 @@ func (u *MobileUI) Init() {
 	if c == nil {
 		return
 	}
-
 	u.character = c
 }
 
 func (u *MobileUI) ShowAndRun() {
+	u.fyneApp.Lifecycle().SetOnStarted(func() {
+		slog.Info("App started")
+		if u.IsOffline {
+			slog.Info("Started in offline mode")
+		}
+		if u.IsUpdateTickerDisabled {
+			slog.Info("Update ticker disabled")
+		}
+		go func() {
+			// u.refreshCrossPages()
+			if u.hasCharacter() {
+				u.setCharacter(u.character)
+			} else {
+				u.resetCharacter()
+			}
+		}()
+		// if !u.IsOffline && !u.IsUpdateTickerDisabled {
+		// 	go func() {
+		// 		u.startUpdateTickerGeneralSections()
+		// 		u.startUpdateTickerCharacters()
+		// 	}()
+		// }
+		// go u.statusBarArea.StartUpdateTicker()
+	})
+	u.fyneApp.Lifecycle().SetOnStopped(func() {
+		slog.Info("App shut down complete")
+	})
 	u.window.ShowAndRun()
 }
 
@@ -164,4 +200,33 @@ func (u *MobileUI) appName() string {
 		return "EVE Buddy"
 	}
 	return name
+}
+
+func (u *MobileUI) hasCharacter() bool {
+	return u.character != nil
+}
+
+func (u *MobileUI) setCharacter(c *app.Character) {
+	u.character = c
+	u.refreshCharacter()
+	u.fyneApp.Preferences().SetInt(ui.SettingLastCharacterID, int(c.ID))
+}
+
+func (u *MobileUI) resetCharacter() {
+	u.character = nil
+	u.fyneApp.Preferences().SetInt(ui.SettingLastCharacterID, 0)
+	u.refreshCharacter()
+}
+
+func (u *MobileUI) refreshCharacter() {
+	if u.character != nil {
+		characterID := u.character.ID
+		r, err := u.EveImageService.CharacterPortrait(characterID, defaultIconSize)
+		if err != nil {
+			slog.Error("Failed to fetch character portrait", "characterID", characterID, "err", err)
+			r = ui.IconCharacterplaceholder32Jpeg
+		}
+		u.characterTab.Icon = r
+		u.navBar.Refresh()
+	}
 }

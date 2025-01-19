@@ -25,7 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
-// UI constants
+// Desktop UI constants
 const (
 	defaultIconSize = 32
 	myFloatFormat   = "#,###.##"

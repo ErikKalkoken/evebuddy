@@ -82,13 +82,15 @@ func main() {
 
 	var dataDir, logDir string
 	// desktop related init
+
+	//FIXME: Remove for mobile
+	// data dir
+	ad := appdirs.New(appName)
+	dataDir = ad.UserData()
+	if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
+		log.Fatal(err)
+	}
 	if isDesktop {
-		// data dir
-		ad := appdirs.New(appName)
-		dataDir = ad.UserData()
-		if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
-			log.Fatal(err)
-		}
 
 		// start uninstall app if requested
 		if *deleteAppFlag {
@@ -136,13 +138,13 @@ func main() {
 	}
 
 	// init database
-	var dbPath string
-	if isDesktop {
-		dbPath = fmt.Sprintf("%s/%s", dataDir, dbFileName)
-	} else {
-		// EXPERIMENTAL
-		dbPath = ensureFileExists(fyneApp.Storage(), dbFileName)
-	}
+	// var dbPath string
+	dbPath := fmt.Sprintf("%s/%s", dataDir, dbFileName)
+	// if isDesktop {
+	// } else {
+	// 	// EXPERIMENTAL
+	// 	dbPath = ensureFileExists(fyneApp.Storage(), dbFileName)
+	// }
 	db, err := storage.InitDB("file://" + dbPath)
 	if err != nil {
 		slog.Error("Failed to initialize database", "dsn", dbPath, "error", err)
