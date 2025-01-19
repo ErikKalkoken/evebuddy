@@ -23,10 +23,11 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	desktop1 "github.com/ErikKalkoken/evebuddy/internal/app/desktopui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/desktopui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/mobileui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -71,8 +72,8 @@ func main() {
 	_, isDesktop := fyneApp.(desktop.App)
 
 	// set log level
-	ln := fyneApp.Preferences().StringWithFallback(desktop1.SettingLogLevel, desktop1.SettingLogLevelDefault)
-	l := desktop1.LogLevelName2Level(ln)
+	ln := fyneApp.Preferences().StringWithFallback(desktopui.SettingLogLevel, desktopui.SettingLogLevelDefault)
+	l := desktopui.LogLevelName2Level(ln)
 	if l != logLevelDefault {
 		slog.Info("Setting log level", "level", ln)
 		slog.SetLogLoggerLevel(l)
@@ -197,32 +198,59 @@ func main() {
 	go pc.CleanUp()
 
 	// Init UI
-	u := desktop1.NewDesktopUI(fyneApp)
-	slog.Debug("ui instance created")
-	u.CacheService = memCache
-	u.CharacterService = cs
-	u.ESIStatusService = esistatus.New(esiClient)
-	u.EveImageService = eveimage.New(pc, httpClient, *isOfflineFlag)
-	u.EveUniverseService = eu
-	u.StatusCacheService = sc
-	u.IsOffline = *isOfflineFlag
-	u.IsUpdateTickerDisabled = *isUpdateTickerDisabledFlag
-	u.DataPaths = map[string]string{
-		"db":  dbPath,
-		"log": logDir,
-	}
-	u.Init()
-	slog.Debug("ui initialized")
+	ess := esistatus.New(esiClient)
+	eis := eveimage.New(pc, httpClient, *isOfflineFlag)
+	if isDesktop {
+		u := desktopui.NewDesktopUI(fyneApp)
+		slog.Debug("ui instance created")
+		u.CacheService = memCache
+		u.CharacterService = cs
+		u.ESIStatusService = ess
+		u.EveImageService = eis
+		u.EveUniverseService = eu
+		u.StatusCacheService = sc
+		u.IsOffline = *isOfflineFlag
+		u.IsUpdateTickerDisabled = *isUpdateTickerDisabledFlag
+		u.DataPaths = map[string]string{
+			"db":  dbPath,
+			"log": logDir,
+		}
+		u.Init()
+		slog.Debug("ui initialized")
 
-	// start pprof web server
-	if *pprofFlag {
-		go func() {
-			log.Println(http.ListenAndServe("localhost:6060", nil))
-		}()
-	}
+		// start pprof web server
+		if *pprofFlag {
+			go func() {
+				log.Println(http.ListenAndServe("localhost:6060", nil))
+			}()
+		}
 
-	// Start app
-	u.ShowAndRun()
+		// Start app
+		u.ShowAndRun()
+	} else {
+		u := mobileui.NewMobileUI(fyneApp)
+		slog.Debug("ui instance created")
+		u.CacheService = memCache
+		u.CharacterService = cs
+		u.ESIStatusService = ess
+		u.EveImageService = eis
+		u.EveUniverseService = eu
+		u.StatusCacheService = sc
+		u.IsOffline = *isOfflineFlag
+		u.IsUpdateTickerDisabled = *isUpdateTickerDisabledFlag
+		u.Init()
+		slog.Debug("ui initialized")
+
+		// start pprof web server
+		if *pprofFlag {
+			go func() {
+				log.Println(http.ListenAndServe("localhost:6060", nil))
+			}()
+		}
+
+		// Start app
+		u.ShowAndRun()
+	}
 }
 
 func ensureFileExists(st fyne.Storage, name string) string {

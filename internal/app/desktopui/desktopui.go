@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
 // UI constants
@@ -86,6 +87,8 @@ type DesktopUI struct {
 	sfg     *singleflight.Group
 	window  fyne.Window
 }
+
+var _ ui.UI = (*DesktopUI)(nil)
 
 // NewDesktopUI build the UI and returns it.
 func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
