@@ -1,3 +1,4 @@
+// Package mobile contains the code for rendering the mobile UI.
 package mobile
 
 import (

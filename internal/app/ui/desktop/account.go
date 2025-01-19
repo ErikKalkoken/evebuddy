@@ -19,6 +19,7 @@ import (
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -121,7 +122,7 @@ func (a *accountArea) makeCharacterList() *widget.List {
 			return len(a.characters)
 		},
 		func() fyne.CanvasObject {
-			portrait := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
+			portrait := canvas.NewImageFromResource(ui.IconCharacterplaceholder32Jpeg)
 			portrait.FillMode = canvas.ImageFillContain
 			portrait.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
 			name := widget.NewLabel("Template")

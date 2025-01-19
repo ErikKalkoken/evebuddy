@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 )
 
@@ -27,10 +28,10 @@ type toolbarArea struct {
 
 func (u *DesktopUI) newToolbarArea() *toolbarArea {
 	a := &toolbarArea{
-		icon: canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg),
+		icon: canvas.NewImageFromResource(ui.IconCharacterplaceholder32Jpeg),
 		name: widget.NewLabel(""),
 		switchButton: widgets.NewContextMenuButtonWithIcon(
-			theme.NewThemedResource(resourceSwitchaccountSvg), "Switch", fyne.NewMenu(""),
+			theme.NewThemedResource(ui.IconSwitchaccountSvg), "Switch", fyne.NewMenu(""),
 		),
 		u: u,
 	}
@@ -45,7 +46,7 @@ func (u *DesktopUI) newToolbarArea() *toolbarArea {
 func (a *toolbarArea) refresh() {
 	c := a.u.currentCharacter()
 	if c == nil {
-		a.icon.Resource = resourceCharacterplaceholder32Jpeg
+		a.icon.Resource = ui.IconCharacterplaceholder32Jpeg
 		a.icon.Refresh()
 		a.name.Text = "No character"
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
@@ -54,7 +55,7 @@ func (a *toolbarArea) refresh() {
 		r, err := a.u.EveImageService.CharacterPortrait(c.ID, defaultIconSize)
 		if err != nil {
 			slog.Error("Failed to fetch character portrait", "characterID", c.ID, "err", err)
-			r = resourceCharacterplaceholder32Jpeg
+			r = ui.IconCharacterplaceholder32Jpeg
 		}
 		a.icon.Resource = r
 		a.icon.Refresh()
@@ -102,12 +103,12 @@ func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) 
 
 			}
 		})
-		item.Icon = resourceCharacterplaceholder32Jpeg
+		item.Icon = ui.IconCharacterplaceholder32Jpeg
 		go func() {
 			r, err := a.u.EveImageService.CharacterPortrait(myC.ID, defaultIconSize)
 			if err != nil {
 				slog.Error("Failed to fetch character portrait", "characterID", myC.ID, "err", err)
-				r = resourceCharacterplaceholder32Jpeg
+				r = ui.IconCharacterplaceholder32Jpeg
 			}
 			item.Icon = r
 			a.switchButton.Refresh()

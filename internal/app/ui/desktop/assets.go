@@ -17,6 +17,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -60,7 +61,7 @@ func (n locationDataNode) IsRoot() bool {
 	return n.Type == nodeLocation
 }
 
-var defaultAssetIcon = theme.NewDisabledResource(resourceQuestionmarkSvg)
+var defaultAssetIcon = theme.NewDisabledResource(ui.IconQuestionmarkSvg)
 
 // assetsArea is the UI area that shows the skillqueue
 type assetsArea struct {

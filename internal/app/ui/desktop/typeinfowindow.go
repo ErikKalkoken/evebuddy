@@ -20,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -525,7 +526,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		render := kxwidget.NewTappableImage(r, func() {
 			w := a.u.fyneApp.NewWindow(a.u.makeWindowTitle(a.makeTitle("Render")))
 			size := 512
-			i := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
+			i := newImageResourceAsync(ui.IconQuestionmarkSvg, func() (fyne.Resource, error) {
 				return a.u.EveImageService.InventoryTypeRender(a.et.ID, size)
 			})
 			i.FillMode = canvas.ImageFillContain
@@ -554,7 +555,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		}
 	} else {
 		size := 64
-		icon := newImageResourceAsync(resourceQuestionmarkSvg, func() (fyne.Resource, error) {
+		icon := newImageResourceAsync(ui.IconQuestionmarkSvg, func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
 				return a.u.EveImageService.InventoryTypeSKIN(a.et.ID, size)
 			} else if a.et.IsBlueprint() {
@@ -568,7 +569,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		icon.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(icon)
 	}
-	ownerIcon := canvas.NewImageFromResource(resourceQuestionmarkSvg)
+	ownerIcon := canvas.NewImageFromResource(ui.IconQuestionmarkSvg)
 	ownerIcon.FillMode = canvas.ImageFillOriginal
 	ownerName := widget.NewLabel("")
 	if a.owner != nil {
@@ -681,7 +682,7 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 				layout.NewSpacer(),
 				widget.NewLabel("Check"),
 				widgets.NewSkillLevel(),
-				widget.NewIcon(resourceQuestionmarkSvg),
+				widget.NewIcon(ui.IconQuestionmarkSvg),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {

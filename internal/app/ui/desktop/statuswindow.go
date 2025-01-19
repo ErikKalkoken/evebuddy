@@ -15,6 +15,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
@@ -124,7 +125,7 @@ func (a *statusWindow) makeEntityList() *widget.List {
 			return len(a.entities)
 		},
 		func() fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(resourceQuestionmarkSvg)
+			icon := canvas.NewImageFromResource(ui.IconQuestionmarkSvg)
 			icon.FillMode = canvas.ImageFillContain
 			icon.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
 			name := widget.NewLabel("Template")

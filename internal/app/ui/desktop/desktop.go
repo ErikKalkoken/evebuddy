@@ -1,3 +1,4 @@
+// Package desktop contains the code for rendering the desktop UI.
 package desktop
 
 import (
@@ -112,13 +113,13 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 
 	u.assetsArea = u.newAssetsArea()
 	u.assetTab = container.NewTabItemWithIcon("Assets",
-		theme.NewThemedResource(resourceInventory2Svg), container.NewAppTabs(
+		theme.NewThemedResource(ui.IconInventory2Svg), container.NewAppTabs(
 			container.NewTabItem("Assets", u.assetsArea.content),
 		))
 
 	u.planetArea = u.newPlanetArea()
 	u.planetTab = container.NewTabItemWithIcon("Colonies",
-		theme.NewThemedResource(resourceEarthSvg), container.NewAppTabs(
+		theme.NewThemedResource(ui.IconEarthSvg), container.NewAppTabs(
 			container.NewTabItem("Colonies", u.planetArea.content),
 		))
 
@@ -132,7 +133,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 
 	u.contractsArea = u.newContractsArea()
 	contractTab := container.NewTabItemWithIcon("Contracts",
-		theme.NewThemedResource(resourceFileSignSvg), container.NewAppTabs(
+		theme.NewThemedResource(ui.IconFileSignSvg), container.NewAppTabs(
 			container.NewTabItem("Contracts", u.contractsArea.content),
 		))
 
@@ -143,7 +144,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	u.coloniesArea = u.newColoniesArea()
 	u.wealthArea = u.newWealthArea()
 	u.overviewTab = container.NewTabItemWithIcon("Characters",
-		theme.NewThemedResource(resourceGroupSvg), container.NewAppTabs(
+		theme.NewThemedResource(ui.IconGroupSvg), container.NewAppTabs(
 			container.NewTabItem("Overview", u.overviewArea.content),
 			container.NewTabItem("Locations", u.locationsArea.content),
 			container.NewTabItem("Training", u.trainingArea.content),
@@ -156,7 +157,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	u.skillCatalogueArea = u.newSkillCatalogueArea()
 	u.shipsArea = u.newShipArea()
 	u.skillTab = container.NewTabItemWithIcon("Skills",
-		theme.NewThemedResource(resourceSchoolSvg), container.NewAppTabs(
+		theme.NewThemedResource(ui.IconSchoolSvg), container.NewAppTabs(
 			container.NewTabItem("Training Queue", u.skillqueueArea.content),
 			container.NewTabItem("Skill Catalogue", u.skillCatalogueArea.content),
 			container.NewTabItem("Ships", u.shipsArea.content),
@@ -165,7 +166,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	u.walletJournalArea = u.newWalletJournalArea()
 	u.walletTransactionArea = u.newWalletTransactionArea()
 	u.walletTab = container.NewTabItemWithIcon("Wallet",
-		theme.NewThemedResource(resourceAttachmoneySvg), container.NewAppTabs(
+		theme.NewThemedResource(ui.IconAttachmoneySvg), container.NewAppTabs(
 			container.NewTabItem("Transactions", u.walletJournalArea.content),
 			container.NewTabItem("Market Transactions", u.walletTransactionArea.content),
 		))
@@ -492,14 +493,14 @@ func (u *DesktopUI) showMailIndicator() {
 	if !u.isDesktop() {
 		return
 	}
-	u.deskApp.SetSystemTrayIcon(resourceIconmarkedPng)
+	u.deskApp.SetSystemTrayIcon(ui.IconIconmarkedPng)
 }
 
 func (u *DesktopUI) hideMailIndicator() {
 	if !u.isDesktop() {
 		return
 	}
-	u.deskApp.SetSystemTrayIcon(resourceIconPng)
+	u.deskApp.SetSystemTrayIcon(ui.IconIconPng)
 }
 
 func (u *DesktopUI) appName() string {

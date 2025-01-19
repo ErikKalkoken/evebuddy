@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/dustin/go-humanize"
 )
@@ -67,9 +68,9 @@ func (u *DesktopUI) newAssetSearchArea() *assetSearchArea {
 	a := &assetSearchArea{
 		u:              u,
 		assetsFiltered: make([]*assetSearchRow, 0),
-		iconSortAsc:    theme.NewThemedResource(resourceSortAscendingSvg),
-		iconSortDesc:   theme.NewThemedResource(resourceSortDescendingSvg),
-		iconSortOff:    theme.NewThemedResource(resourceSortSvg),
+		iconSortAsc:    theme.NewThemedResource(ui.IconSortAscendingSvg),
+		iconSortDesc:   theme.NewThemedResource(ui.IconSortDescendingSvg),
+		iconSortOff:    theme.NewThemedResource(ui.IconSortSvg),
 		total:          widget.NewLabel(""),
 		found:          widget.NewLabel(""),
 	}

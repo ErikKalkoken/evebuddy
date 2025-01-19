@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
 // implantsArea is the UI area that shows the skillqueue
@@ -41,7 +42,7 @@ func (a *implantsArea) makeImplantList() *widget.List {
 			return len(a.implants)
 		},
 		func() fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
+			icon := canvas.NewImageFromResource(ui.IconCharacterplaceholder32Jpeg)
 			icon.FillMode = canvas.ImageFillContain
 			icon.SetMinSize(fyne.Size{Width: 42, Height: 42})
 			return container.NewHBox(icon, widget.NewLabel("placeholder\nslot"))
