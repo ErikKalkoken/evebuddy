@@ -15,7 +15,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/desktopui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/desktop"
 )
 
 var ErrCancel = errors.New("user aborted")
@@ -119,7 +119,7 @@ func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
 			slog.Info("Deleted directory", "path", p)
 		}
 	}
-	keys := desktopui.SettingKeys()
+	keys := desktop.SettingKeys()
 	for _, k := range keys {
 		u.app.Preferences().RemoveValue(k)
 	}

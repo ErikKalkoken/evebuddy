@@ -23,14 +23,14 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/desktopui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/esistatus"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/mobileui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
+	desktop1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/desktop"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/mobile"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
@@ -72,8 +72,8 @@ func main() {
 	_, isDesktop := fyneApp.(desktop.App)
 
 	// set log level
-	ln := fyneApp.Preferences().StringWithFallback(desktopui.SettingLogLevel, desktopui.SettingLogLevelDefault)
-	l := desktopui.LogLevelName2Level(ln)
+	ln := fyneApp.Preferences().StringWithFallback(desktop1.SettingLogLevel, desktop1.SettingLogLevelDefault)
+	l := desktop1.LogLevelName2Level(ln)
 	if l != logLevelDefault {
 		slog.Info("Setting log level", "level", ln)
 		slog.SetLogLoggerLevel(l)
@@ -201,7 +201,7 @@ func main() {
 	ess := esistatus.New(esiClient)
 	eis := eveimage.New(pc, httpClient, *isOfflineFlag)
 	if isDesktop {
-		u := desktopui.NewDesktopUI(fyneApp)
+		u := desktop1.NewDesktopUI(fyneApp)
 		slog.Debug("ui instance created")
 		u.CacheService = memCache
 		u.CharacterService = cs
@@ -228,7 +228,7 @@ func main() {
 		// Start app
 		u.ShowAndRun()
 	} else {
-		u := mobileui.NewMobileUI(fyneApp)
+		u := mobile.NewMobileUI(fyneApp)
 		slog.Debug("ui instance created")
 		u.CacheService = memCache
 		u.CharacterService = cs
