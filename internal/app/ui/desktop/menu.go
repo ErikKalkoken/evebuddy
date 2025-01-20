@@ -43,11 +43,11 @@ func makeMenu(u *DesktopUI) *fyne.MainMenu {
 	)
 	website := fyne.NewMenuItem("Website", func() {
 		url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
-		_ = u.fyneApp.OpenURL(url)
+		_ = u.FyneApp.OpenURL(url)
 	})
 	report := fyne.NewMenuItem("Report a bug", func() {
 		url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy/issues")
-		_ = u.fyneApp.OpenURL(url)
+		_ = u.FyneApp.OpenURL(url)
 	})
 	if u.IsOffline {
 		website.Disabled = true
@@ -78,29 +78,29 @@ func (u *DesktopUI) enableMenuShortcuts() {
 		}
 	}
 	for _, mi := range u.menuItemsWithShortcut {
-		u.window.Canvas().AddShortcut(addShortcutFromMenuItem(mi))
+		u.Window.Canvas().AddShortcut(addShortcutFromMenuItem(mi))
 	}
 }
 
 // disableMenuShortcuts disabled all registered menu shortcuts.
 func (u *DesktopUI) disableMenuShortcuts() {
 	for _, mi := range u.menuItemsWithShortcut {
-		u.window.Canvas().RemoveShortcut(mi.Shortcut)
+		u.Window.Canvas().RemoveShortcut(mi.Shortcut)
 	}
 }
 
 func (u *DesktopUI) showAboutDialog() {
 	c := container.NewVBox()
-	info := u.fyneApp.Metadata()
+	info := u.FyneApp.Metadata()
 	appData := widget.NewRichTextFromMarkdown(
-		"## " + u.appName() + "\n**Version:** " + info.Version)
+		"## " + u.AppName() + "\n**Version:** " + info.Version)
 	c.Add(appData)
 	uri, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
 	c.Add(widget.NewHyperlink("Website", uri))
 	c.Add(widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."))
 	c.Add(widget.NewLabel("(c) 2024 Erik Kalkoken"))
-	d := dialog.NewCustom("About", "Close", c, u.window)
-	kxdialog.AddDialogKeyHandler(d, u.window)
+	d := dialog.NewCustom("About", "Close", c, u.Window)
+	kxdialog.AddDialogKeyHandler(d, u.Window)
 	u.disableMenuShortcuts()
 	d.SetOnClosed(func() {
 		u.enableMenuShortcuts()
@@ -110,12 +110,12 @@ func (u *DesktopUI) showAboutDialog() {
 
 func (u *DesktopUI) showUserDataDialog() {
 	f := widget.NewForm(
-		widget.NewFormItem("DB", makePathEntry(u.window.Clipboard(), u.DataPaths["db"])),
-		widget.NewFormItem("Log", makePathEntry(u.window.Clipboard(), u.DataPaths["log"])),
-		widget.NewFormItem("Settings", makePathEntry(u.window.Clipboard(), u.fyneApp.Storage().RootURI().Path())),
+		widget.NewFormItem("DB", makePathEntry(u.Window.Clipboard(), u.DataPaths["db"])),
+		widget.NewFormItem("Log", makePathEntry(u.Window.Clipboard(), u.DataPaths["log"])),
+		widget.NewFormItem("Settings", makePathEntry(u.Window.Clipboard(), u.FyneApp.Storage().RootURI().Path())),
 	)
-	d := dialog.NewCustom("User data", "Close", f, u.window)
-	kxdialog.AddDialogKeyHandler(d, u.window)
+	d := dialog.NewCustom("User data", "Close", f, u.Window)
+	kxdialog.AddDialogKeyHandler(d, u.Window)
 	u.disableMenuShortcuts()
 	d.SetOnClosed(func() {
 		u.enableMenuShortcuts()

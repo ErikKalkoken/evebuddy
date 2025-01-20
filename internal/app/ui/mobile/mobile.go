@@ -2,19 +2,13 @@
 package mobile
 
 import (
-	"context"
-	"errors"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"golang.org/x/sync/singleflight"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
@@ -25,34 +19,16 @@ const (
 )
 
 type MobileUI struct {
-	CacheService       app.CacheService
-	CharacterService   *character.CharacterService
-	ESIStatusService   app.ESIStatusService
-	EveImageService    app.EveImageService
-	EveUniverseService *eveuniverse.EveUniverseService
-	StatusCacheService app.StatusCacheService
-	// Run the app in offline mode
-	IsOffline bool
-	// Whether to disable update tickers (useful for debugging)
-	IsUpdateTickerDisabled bool
+	ui.BaseUI
 
 	navBar       *container.AppTabs
 	characterTab *container.TabItem
-	character    *app.Character
-	fyneApp      fyne.App
-	sfg          *singleflight.Group
-	window       fyne.Window
 }
-
-var _ ui.UI = (*MobileUI)(nil)
 
 // NewUI build the UI and returns it.
 func NewMobileUI(fyneApp fyne.App) *MobileUI {
-	u := &MobileUI{
-		fyneApp: fyneApp,
-		sfg:     new(singleflight.Group),
-	}
-	u.window = fyneApp.NewWindow(u.appName())
+	u := &MobileUI{}
+	u.BaseUI = ui.NewBaseUI(fyneApp, u.refreshCharacter)
 
 	var main *Navigator
 	menu := NewNavList(
@@ -130,38 +106,12 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		container.NewTabItemWithIcon("", theme.SettingsIcon(), widget.NewLabel("Settings")),
 	)
 	u.navBar.SetTabLocation(container.TabLocationBottom)
-	u.window.SetContent(u.navBar)
+	u.Window.SetContent(u.navBar)
 	return u
 }
 
-func (u *MobileUI) Init() {
-	var c *app.Character
-	var err error
-	ctx := context.Background()
-	if cID := u.fyneApp.Preferences().Int(ui.SettingLastCharacterID); cID != 0 {
-		c, err = u.CharacterService.GetCharacter(ctx, int32(cID))
-		if err != nil {
-			if !errors.Is(err, character.ErrNotFound) {
-				slog.Error("Failed to load character", "error", err)
-			}
-		}
-	}
-	if c == nil {
-		c, err = u.CharacterService.GetAnyCharacter(ctx)
-		if err != nil {
-			if !errors.Is(err, character.ErrNotFound) {
-				slog.Error("Failed to load character", "error", err)
-			}
-		}
-	}
-	if c == nil {
-		return
-	}
-	u.character = c
-}
-
 func (u *MobileUI) ShowAndRun() {
-	u.fyneApp.Lifecycle().SetOnStarted(func() {
+	u.FyneApp.Lifecycle().SetOnStarted(func() {
 		slog.Info("App started")
 		if u.IsOffline {
 			slog.Info("Started in offline mode")
@@ -171,10 +121,10 @@ func (u *MobileUI) ShowAndRun() {
 		}
 		go func() {
 			// u.refreshCrossPages()
-			if u.hasCharacter() {
-				u.setCharacter(u.character)
+			if u.HasCharacter() {
+				u.SetCharacter(u.Character)
 			} else {
-				u.resetCharacter()
+				u.ResetCharacter()
 			}
 		}()
 		// if !u.IsOffline && !u.IsUpdateTickerDisabled {
@@ -185,40 +135,15 @@ func (u *MobileUI) ShowAndRun() {
 		// }
 		// go u.statusBarArea.StartUpdateTicker()
 	})
-	u.fyneApp.Lifecycle().SetOnStopped(func() {
+	u.FyneApp.Lifecycle().SetOnStopped(func() {
 		slog.Info("App shut down complete")
 	})
-	u.window.ShowAndRun()
-}
-
-func (u *MobileUI) appName() string {
-	info := u.fyneApp.Metadata()
-	name := info.Name
-	if name == "" {
-		return "EVE Buddy"
-	}
-	return name
-}
-
-func (u *MobileUI) hasCharacter() bool {
-	return u.character != nil
-}
-
-func (u *MobileUI) setCharacter(c *app.Character) {
-	u.character = c
-	u.refreshCharacter()
-	u.fyneApp.Preferences().SetInt(ui.SettingLastCharacterID, int(c.ID))
-}
-
-func (u *MobileUI) resetCharacter() {
-	u.character = nil
-	u.fyneApp.Preferences().SetInt(ui.SettingLastCharacterID, 0)
-	u.refreshCharacter()
+	u.Window.ShowAndRun()
 }
 
 func (u *MobileUI) refreshCharacter() {
-	if u.character != nil {
-		characterID := u.character.ID
+	if u.Character != nil {
+		characterID := u.Character.ID
 		r, err := u.EveImageService.CharacterPortrait(characterID, defaultIconSize)
 		if err != nil {
 			slog.Error("Failed to fetch character portrait", "characterID", characterID, "err", err)

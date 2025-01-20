@@ -67,7 +67,7 @@ func (a *implantsArea) makeImplantList() *widget.List {
 			return
 		}
 		o := a.implants[id]
-		a.u.showTypeInfoWindow(o.EveType.ID, a.u.characterID(), descriptionTab)
+		a.u.showTypeInfoWindow(o.EveType.ID, a.u.CharacterID(), descriptionTab)
 	}
 	return l
 }
@@ -88,11 +88,11 @@ func (a *implantsArea) refresh() {
 }
 
 func (a *implantsArea) updateImplants() error {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		a.implants = make([]*app.CharacterImplant, 0)
 		return nil
 	}
-	implants, err := a.u.CharacterService.ListCharacterImplants(context.TODO(), a.u.characterID())
+	implants, err := a.u.CharacterService.ListCharacterImplants(context.TODO(), a.u.CharacterID())
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (a *implantsArea) updateImplants() error {
 }
 
 func (a *implantsArea) makeTopText() (string, widget.Importance) {
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionImplants)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

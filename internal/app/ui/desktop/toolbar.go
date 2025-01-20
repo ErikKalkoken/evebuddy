@@ -44,7 +44,7 @@ func (u *DesktopUI) newToolbarArea() *toolbarArea {
 }
 
 func (a *toolbarArea) refresh() {
-	c := a.u.currentCharacter()
+	c := a.u.CurrentCharacter()
 	if c == nil {
 		a.icon.Resource = ui.IconCharacterplaceholder32Jpeg
 		a.icon.Refresh()
@@ -93,11 +93,11 @@ func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) 
 			continue
 		}
 		item := fyne.NewMenuItem(myC.Name, func() {
-			err := a.u.loadCharacter(ctx, myC.ID)
+			err := a.u.LoadCharacter(ctx, myC.ID)
 			if err != nil {
 				msg := "Failed to switch to new character"
 				slog.Error(msg, "err", err)
-				d := NewErrorDialog(msg, err, a.u.window)
+				d := NewErrorDialog(msg, err, a.u.Window)
 				d.Show()
 				return
 

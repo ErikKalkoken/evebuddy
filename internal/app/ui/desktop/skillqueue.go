@@ -97,14 +97,14 @@ func (a *skillqueueArea) makeSkillqueue() *widget.List {
 
 		}
 		s := container.NewScroll(form)
-		dlg := dialog.NewCustom("Skill Details", "OK", s, a.u.window)
+		dlg := dialog.NewCustom("Skill Details", "OK", s, a.u.Window)
 		dlg.SetOnClosed(func() {
 			list.UnselectAll()
 		})
 		dlg.Show()
 		dlg.Resize(fyne.Size{
-			Width:  0.8 * a.u.window.Canvas().Size().Width,
-			Height: 0.8 * a.u.window.Canvas().Size().Height,
+			Width:  0.8 * a.u.Window.Canvas().Size().Width,
+			Height: 0.8 * a.u.Window.Canvas().Size().Height,
 		})
 	}
 	return list
@@ -136,12 +136,12 @@ func (a *skillqueueArea) refresh() {
 
 func (a *skillqueueArea) updateItems() (remaining optional.Optional[time.Duration], completion optional.Optional[float64], err error) {
 	ctx := context.TODO()
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		a.items = make([]*app.CharacterSkillqueueItem, 0)
 		return
 	}
 	var items []*app.CharacterSkillqueueItem
-	items, err = a.u.CharacterService.ListCharacterSkillqueueItems(ctx, a.u.characterID())
+	items, err = a.u.CharacterService.ListCharacterSkillqueueItems(ctx, a.u.CharacterID())
 	if err != nil {
 		return remaining, completion, err
 	}
@@ -156,7 +156,7 @@ func (a *skillqueueArea) updateItems() (remaining optional.Optional[time.Duratio
 }
 
 func (a *skillqueueArea) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionSkillqueue)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

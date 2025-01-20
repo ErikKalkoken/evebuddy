@@ -57,7 +57,7 @@ func (u *DesktopUI) showStatusWindow() {
 		u.statusWindow.Show()
 		return
 	}
-	w := u.fyneApp.NewWindow(u.makeWindowTitle("Status"))
+	w := u.FyneApp.NewWindow(u.makeWindowTitle("Status"))
 	sw := u.newStatusWindow()
 	sw.refresh()
 	w.SetContent(sw.content)

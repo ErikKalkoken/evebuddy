@@ -228,7 +228,7 @@ func (a *assetSearchArea) makeAssetsTable() *widget.Table {
 		r := a.assetsFiltered[tci.Row]
 		switch tci.Col {
 		case 0:
-			a.u.showTypeInfoWindow(r.typeID, a.u.characterID(), descriptionTab)
+			a.u.showTypeInfoWindow(r.typeID, a.u.CharacterID(), descriptionTab)
 		case 3:
 			a.u.showLocationInfoWindow(r.locationID)
 		}

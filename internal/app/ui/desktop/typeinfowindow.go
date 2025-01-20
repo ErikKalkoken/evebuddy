@@ -213,14 +213,14 @@ func (u *DesktopUI) showInfoWindow(iw *typeInfoWindow, err error) {
 	if err != nil {
 		t := "Failed to open info window"
 		slog.Error(t, "err", err)
-		d := NewErrorDialog(t, err, u.window)
+		d := NewErrorDialog(t, err, u.Window)
 		d.Show()
 		return
 	}
 	if iw == nil {
 		return
 	}
-	w := u.fyneApp.NewWindow(u.makeWindowTitle(iw.makeTitle("Information")))
+	w := u.FyneApp.NewWindow(u.makeWindowTitle(iw.makeTitle("Information")))
 	iw.window = w
 	w.SetContent(iw.content)
 	w.Resize(fyne.Size{Width: 500, Height: 500})
@@ -524,7 +524,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			r = theme.BrokenImageIcon()
 		}
 		render := kxwidget.NewTappableImage(r, func() {
-			w := a.u.fyneApp.NewWindow(a.u.makeWindowTitle(a.makeTitle("Render")))
+			w := a.u.FyneApp.NewWindow(a.u.makeWindowTitle(a.makeTitle("Render")))
 			size := 512
 			i := newImageResourceAsync(ui.IconQuestionmarkSvg, func() (fyne.Resource, error) {
 				return a.u.EveImageService.InventoryTypeRender(a.et.ID, size)
@@ -536,7 +536,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			w.Show()
 		})
 		render.SetFillMode(canvas.ImageFillContain)
-		s := float32(size) / a.u.window.Canvas().Scale()
+		s := float32(size) / a.u.Window.Canvas().Scale()
 		render.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(render)
 		if a.metaLevel > 4 {
@@ -565,7 +565,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			}
 		})
 		icon.FillMode = canvas.ImageFillContain
-		s := float32(size) * 1.3 / a.u.window.Canvas().Scale()
+		s := float32(size) * 1.3 / a.u.Window.Canvas().Scale()
 		icon.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(icon)
 	}

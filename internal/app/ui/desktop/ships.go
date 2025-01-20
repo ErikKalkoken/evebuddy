@@ -53,7 +53,7 @@ func (u *DesktopUI) newShipArea() *shipsArea {
 			return
 		}
 		if err := a.updateEntries(); err != nil {
-			d := NewErrorDialog("Failed to update ships", err, a.u.window)
+			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
 			d.Show()
 		}
 		a.grid.Refresh()
@@ -63,7 +63,7 @@ func (u *DesktopUI) newShipArea() *shipsArea {
 	a.groupSelect = widget.NewSelect([]string{}, func(s string) {
 		a.groupSelected = s
 		if err := a.updateEntries(); err != nil {
-			d := NewErrorDialog("Failed to update ships", err, a.u.window)
+			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
 			d.Show()
 		}
 		a.grid.Refresh()
@@ -74,7 +74,7 @@ func (u *DesktopUI) newShipArea() *shipsArea {
 	a.flyableSelect = widget.NewSelect([]string{}, func(s string) {
 		a.flyableSelected = s
 		if err := a.updateEntries(); err != nil {
-			d := NewErrorDialog("Failed to update ships", err, a.u.window)
+			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
 			d.Show()
 		}
 		a.grid.Refresh()
@@ -122,7 +122,7 @@ func (a *shipsArea) makeShipsGrid() *widget.GridWrap {
 			return
 		}
 		o := a.ships[id]
-		a.u.showTypeInfoWindow(o.Type.ID, a.u.characterID(), requirementsTab)
+		a.u.showTypeInfoWindow(o.Type.ID, a.u.CharacterID(), requirementsTab)
 	}
 	return g
 }
@@ -156,7 +156,7 @@ func (a *shipsArea) refresh() {
 }
 
 func (a *shipsArea) updateEntries() error {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		a.ships = make([]*app.CharacterShipAbility, 0)
 		a.grid.Refresh()
 		a.searchBox.SetText("")
@@ -164,7 +164,7 @@ func (a *shipsArea) updateEntries() error {
 		a.flyableSelect.SetOptions([]string{})
 		return nil
 	}
-	characterID := a.u.characterID()
+	characterID := a.u.CharacterID()
 	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
 	oo, err := a.u.CharacterService.ListCharacterShipsAbilities(context.Background(), characterID, search)
 	if err != nil {
@@ -210,10 +210,10 @@ func (a *shipsArea) updateEntries() error {
 }
 
 func (a *shipsArea) makeTopText() (string, widget.Importance, bool, error) {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance, false, nil
 	}
-	characterID := a.u.characterID()
+	characterID := a.u.CharacterID()
 	hasData := a.u.StatusCacheService.CharacterSectionExists(characterID, app.SectionSkills)
 	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil

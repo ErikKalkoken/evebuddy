@@ -58,9 +58,8 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 }
 
 func newUI(st *storage.Storage) *DesktopUI {
-	u := &DesktopUI{
-		CharacterService: newCharacterService(st),
-	}
+	u := &DesktopUI{}
+	u.CharacterService = newCharacterService(st)
 	return u
 }
 

@@ -150,7 +150,7 @@ func (a *notificationsArea) makeToolbar() *widget.Toolbar {
 			if a.current == nil {
 				return
 			}
-			a.u.window.Clipboard().SetContent(a.current.String())
+			a.u.Window.Clipboard().SetContent(a.current.String())
 		}),
 	)
 	return toolbar
@@ -163,7 +163,7 @@ func (a *notificationsArea) refresh() {
 	a.notificationList.UnselectAll()
 	a.notificationsTop.SetText("")
 	var counts map[evenotification.Category]int
-	if characterID := a.u.characterID(); characterID != 0 {
+	if characterID := a.u.CharacterID(); characterID != 0 {
 		var err error
 		counts, err = a.u.CharacterService.CountCharacterNotificationUnreads(context.TODO(), characterID)
 		if err != nil {
@@ -204,7 +204,7 @@ func (a *notificationsArea) refresh() {
 }
 
 func (a *notificationsArea) makeTopText() (string, widget.Importance) {
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionImplants)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
@@ -213,7 +213,7 @@ func (a *notificationsArea) makeTopText() (string, widget.Importance) {
 
 func (a *notificationsArea) setNotifications(nc evenotification.Category) error {
 	ctx := context.TODO()
-	characterID := a.u.characterID()
+	characterID := a.u.CharacterID()
 	var notifications []*app.CharacterNotification
 	var err error
 	switch nc {
@@ -241,8 +241,8 @@ func (a *notificationsArea) clearDetail() {
 }
 
 func (a *notificationsArea) setDetail(n *app.CharacterNotification) {
-	if n.RecipientName == "" && a.u.hasCharacter() {
-		n.RecipientName = a.u.currentCharacter().EveCharacter.Name
+	if n.RecipientName == "" && a.u.HasCharacter() {
+		n.RecipientName = a.u.CurrentCharacter().EveCharacter.Name
 	}
 	a.detail.RemoveAll()
 	subject := widget.NewLabel(n.TitleDisplay())

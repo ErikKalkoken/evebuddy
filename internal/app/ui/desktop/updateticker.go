@@ -21,7 +21,7 @@ const (
 )
 
 func (u *DesktopUI) sendDesktopNotification(title, content string) {
-	u.fyneApp.SendNotification(fyne.NewNotification(title, content))
+	u.FyneApp.SendNotification(fyne.NewNotification(title, content))
 	slog.Info("desktop notification sent", "title", title, "content", content)
 }
 
@@ -74,15 +74,15 @@ func (u *DesktopUI) startUpdateTickerCharacters() {
 				}
 				for _, c := range cc {
 					go u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
-					if u.fyneApp.Preferences().BoolWithFallback(ui.SettingNotifyPIEnabled, ui.SettingNotifyPIEnabledDefault) {
+					if u.FyneApp.Preferences().BoolWithFallback(ui.SettingNotifyPIEnabled, ui.SettingNotifyPIEnabledDefault) {
 						go func() {
-							earliest := calcNotifyEarliest(u.fyneApp.Preferences(), ui.SettingNotifyPIEarliest)
+							earliest := calcNotifyEarliest(u.FyneApp.Preferences(), ui.SettingNotifyPIEarliest)
 							if err := u.CharacterService.NotifyExpiredExtractions(context.TODO(), c.ID, earliest, u.sendDesktopNotification); err != nil {
 								slog.Error("notify expired extractions", "characterID", c.ID, "error", err)
 							}
 						}()
 					}
-					if u.fyneApp.Preferences().BoolWithFallback(ui.SettingNotifyTrainingEnabled, ui.SettingNotifyTrainingEnabledDefault) {
+					if u.FyneApp.Preferences().BoolWithFallback(ui.SettingNotifyTrainingEnabled, ui.SettingNotifyTrainingEnabledDefault) {
 						go func() {
 							// earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
 							if err := u.CharacterService.NotifyExpiredTraining(context.TODO(), c.ID, u.sendDesktopNotification); err != nil {
@@ -120,14 +120,14 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 			CharacterID:           characterID,
 			Section:               s,
 			ForceUpdate:           forceUpdate,
-			MaxMails:              u.fyneApp.Preferences().IntWithFallback(ui.SettingMaxMails, ui.SettingMaxMailsDefault),
-			MaxWalletTransactions: u.fyneApp.Preferences().IntWithFallback(ui.SettingMaxWalletTransactions, ui.SettingMaxWalletTransactionsDefault),
+			MaxMails:              u.FyneApp.Preferences().IntWithFallback(ui.SettingMaxMails, ui.SettingMaxMailsDefault),
+			MaxWalletTransactions: u.FyneApp.Preferences().IntWithFallback(ui.SettingMaxWalletTransactions, ui.SettingMaxWalletTransactionsDefault),
 		})
 	if err != nil {
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
 		return
 	}
-	isShown := characterID == u.characterID()
+	isShown := characterID == u.CharacterID()
 	needsRefresh := hasChanged || forceUpdate
 	switch s {
 	case app.SectionAssets:
@@ -146,9 +146,9 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 		if isShown && needsRefresh {
 			u.contractsArea.refresh()
 		}
-		if u.fyneApp.Preferences().BoolWithFallback(ui.SettingNotifyContractsEnabled, ui.SettingNotifyCommunicationsEnabledDefault) {
+		if u.FyneApp.Preferences().BoolWithFallback(ui.SettingNotifyContractsEnabled, ui.SettingNotifyCommunicationsEnabledDefault) {
 			go func() {
-				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), ui.SettingNotifyContractsEarliest)
+				earliest := calcNotifyEarliest(u.FyneApp.Preferences(), ui.SettingNotifyContractsEarliest)
 				if err := u.CharacterService.NotifyUpdatedContracts(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify contract update", "error", err)
 				}
@@ -193,9 +193,9 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 		if needsRefresh {
 			u.overviewArea.refresh()
 		}
-		if u.fyneApp.Preferences().BoolWithFallback(ui.SettingNotifyMailsEnabled, ui.SettingNotifyMailsEnabledDefault) {
+		if u.FyneApp.Preferences().BoolWithFallback(ui.SettingNotifyMailsEnabled, ui.SettingNotifyMailsEnabledDefault) {
 			go func() {
-				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), ui.SettingNotifyMailsEarliest)
+				earliest := calcNotifyEarliest(u.FyneApp.Preferences(), ui.SettingNotifyMailsEarliest)
 				if err := u.CharacterService.NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify mails", "characterID", characterID, "error", err)
 				}
@@ -205,10 +205,10 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 		if isShown && needsRefresh {
 			u.notificationsArea.refresh()
 		}
-		if u.fyneApp.Preferences().BoolWithFallback(ui.SettingNotifyCommunicationsEnabled, ui.SettingNotifyCommunicationsEnabledDefault) {
+		if u.FyneApp.Preferences().BoolWithFallback(ui.SettingNotifyCommunicationsEnabled, ui.SettingNotifyCommunicationsEnabledDefault) {
 			go func() {
-				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), ui.SettingNotifyCommunicationsEarliest)
-				typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(ui.SettingNotificationsTypesEnabled))
+				earliest := calcNotifyEarliest(u.FyneApp.Preferences(), ui.SettingNotifyCommunicationsEarliest)
+				typesEnabled := set.NewFromSlice(u.FyneApp.Preferences().StringList(ui.SettingNotificationsTypesEnabled))
 				if err := u.CharacterService.NotifyCommunications(ctx, characterID, earliest, typesEnabled, u.sendDesktopNotification); err != nil {
 					slog.Error("notify communications", "characterID", characterID, "error", err)
 				}
@@ -224,7 +224,7 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 			u.trainingArea.refresh()
 		}
 	case app.SectionSkillqueue:
-		if u.fyneApp.Preferences().BoolWithFallback(ui.SettingNotifyTrainingEnabled, ui.SettingNotifyTrainingEnabledDefault) {
+		if u.FyneApp.Preferences().BoolWithFallback(ui.SettingNotifyTrainingEnabled, ui.SettingNotifyTrainingEnabledDefault) {
 			err := u.CharacterService.EnableTrainingWatcher(ctx, characterID)
 			if err != nil {
 				slog.Error("Failed to enable training watcher", "characterID", characterID, "error", err)

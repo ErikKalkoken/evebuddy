@@ -214,12 +214,12 @@ func (a *mailArea) redraw() {
 }
 
 func (a *mailArea) refresh() {
-	characterID := a.u.characterID()
+	characterID := a.u.CharacterID()
 	folderAll, err := a.updateFolderData(characterID)
 	if err != nil {
 		t := "Failed to build folder tree"
 		slog.Error(t, "character", characterID, "error", err)
-		d := NewErrorDialog(t, err, a.u.window)
+		d := NewErrorDialog(t, err, a.u.Window)
 		d.Show()
 		return
 	}
@@ -409,7 +409,7 @@ func (a *mailArea) makeHeaderList() *widget.List {
 				return
 			}
 			m := a.headers[id]
-			if !a.u.hasCharacter() {
+			if !a.u.HasCharacter() {
 				return
 			}
 			item := co.(*widgets.MailHeaderItem)
@@ -491,10 +491,10 @@ func (a *mailArea) updateHeaders() error {
 }
 
 func (a *mailArea) makeFolderTopText() (string, widget.Importance) {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		return "No Character", widget.LowImportance
 	}
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionSkillqueue)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
@@ -515,7 +515,7 @@ func (a *mailArea) makeToolbar() *widget.Toolbar {
 			a.u.showSendMessageWindow(createMessageForward, a.mail)
 		}),
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-			a.u.window.Clipboard().SetContent(a.mail.String())
+			a.u.Window.Clipboard().SetContent(a.mail.String())
 		}),
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.DeleteIcon(), func() {
@@ -525,13 +525,13 @@ func (a *mailArea) makeToolbar() *widget.Toolbar {
 					if err := a.u.CharacterService.DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID); err != nil {
 						t := "Failed to delete mail"
 						slog.Error(t, "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
-						d2 := NewErrorDialog(t, err, a.u.window)
+						d2 := NewErrorDialog(t, err, a.u.Window)
 						d2.Show()
 					} else {
 						a.headerRefresh()
 					}
 				}
-			}, a.u.window)
+			}, a.u.Window)
 			d.Show()
 		}),
 	)
@@ -545,7 +545,7 @@ func (a *mailArea) clearMail() {
 
 func (a *mailArea) setMail(mailID int32) {
 	ctx := context.TODO()
-	characterID := a.u.characterID()
+	characterID := a.u.CharacterID()
 	var err error
 	a.mail, err = a.u.CharacterService.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {

@@ -22,7 +22,7 @@ func (u *DesktopUI) newBiographyArea() *biographyArea {
 
 func (a *biographyArea) refresh() {
 	var s string
-	c := a.u.currentCharacter()
+	c := a.u.CurrentCharacter()
 	if c == nil {
 		s = ""
 	} else {

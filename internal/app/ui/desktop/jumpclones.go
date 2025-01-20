@@ -135,7 +135,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 		// 	return
 		// }
 		if !n.IsRoot() {
-			a.u.showTypeInfoWindow(n.ImplantTypeID, a.u.characterID(), descriptionTab)
+			a.u.showTypeInfoWindow(n.ImplantTypeID, a.u.CharacterID(), descriptionTab)
 		}
 	}
 	return t
@@ -162,10 +162,10 @@ func (a *jumpClonesArea) redraw() {
 
 func (a *jumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error) {
 	tree := fynetree.New[jumpCloneNode]()
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		return tree, nil
 	}
-	clones, err := a.u.CharacterService.ListCharacterJumpClones(context.TODO(), a.u.characterID())
+	clones, err := a.u.CharacterService.ListCharacterJumpClones(context.TODO(), a.u.CharacterID())
 	if err != nil {
 		return tree, err
 	}
@@ -198,10 +198,10 @@ func (a *jumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 }
 
 func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance) {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionJumpClones)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionJumpClones)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

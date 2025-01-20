@@ -37,8 +37,8 @@ func (u *DesktopUI) showSendMessageWindow(mode int, mail *app.CharacterMail) {
 }
 
 func (u *DesktopUI) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fyne.Window, error) {
-	currentChar := *u.currentCharacter()
-	w := u.fyneApp.NewWindow(u.makeWindowTitle(fmt.Sprintf("New message [%s]", currentChar.EveCharacter.Name)))
+	currentChar := *u.CurrentCharacter()
+	w := u.FyneApp.NewWindow(u.makeWindowTitle(fmt.Sprintf("New message [%s]", currentChar.EveCharacter.Name)))
 
 	fromInput := widget.NewEntry()
 	fromInput.Disable()
@@ -126,7 +126,7 @@ func (u *DesktopUI) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fy
 			if err != nil {
 				t := "Failed to send mail"
 				slog.Error(t, "err", err)
-				d := NewErrorDialog(t, err, u.window)
+				d := NewErrorDialog(t, err, u.Window)
 				d.Show()
 				return
 			}

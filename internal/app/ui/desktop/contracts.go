@@ -162,10 +162,10 @@ func (a *contractsArea) refresh() {
 }
 
 func (a *contractsArea) makeTopText() (string, widget.Importance) {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	c := a.u.currentCharacter()
+	c := a.u.CurrentCharacter()
 	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionContracts)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
@@ -176,11 +176,11 @@ func (a *contractsArea) makeTopText() (string, widget.Importance) {
 }
 
 func (a *contractsArea) updateEntries() error {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		a.contracts = make([]*app.CharacterContract, 0)
 		return nil
 	}
-	characterID := a.u.characterID()
+	characterID := a.u.CharacterID()
 	var err error
 	a.contracts, err = a.u.CharacterService.ListCharacterContracts(context.TODO(), characterID)
 	if err != nil {
@@ -190,7 +190,7 @@ func (a *contractsArea) updateEntries() error {
 }
 
 func (a *contractsArea) showContract(c *app.CharacterContract) {
-	w := a.u.fyneApp.NewWindow("Contract")
+	w := a.u.FyneApp.NewWindow("Contract")
 	makeExpiresString := func(c *app.CharacterContract) string {
 		t := c.DateExpiredEffective()
 		ts := t.Format(app.TimeDefaultFormat)

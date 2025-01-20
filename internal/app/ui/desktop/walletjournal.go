@@ -141,7 +141,7 @@ func (a *walletJournalArea) makeTable() *widget.Table {
 		e := a.entries[tci.Row]
 		if e.hasReason() {
 			c := widget.NewLabel(e.reason)
-			dlg := dialog.NewCustom("Reason", "OK", c, a.u.window)
+			dlg := dialog.NewCustom("Reason", "OK", c, a.u.Window)
 			dlg.Show()
 		}
 	}
@@ -165,10 +165,10 @@ func (a *walletJournalArea) refresh() {
 }
 
 func (a *walletJournalArea) makeTopText() (string, widget.Importance) {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	c := a.u.currentCharacter()
+	c := a.u.CurrentCharacter()
 	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionWalletJournal)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
@@ -180,11 +180,11 @@ func (a *walletJournalArea) makeTopText() (string, widget.Importance) {
 }
 
 func (a *walletJournalArea) updateEntries() error {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		a.entries = make([]walletJournalEntry, 0)
 		return nil
 	}
-	characterID := a.u.characterID()
+	characterID := a.u.CharacterID()
 	ww, err := a.u.CharacterService.ListCharacterWalletJournalEntries(context.TODO(), characterID)
 	if err != nil {
 		return err

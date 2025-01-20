@@ -209,7 +209,7 @@ func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
 				}
 			}
 		} else {
-			a.u.showTypeInfoWindow(ca.EveType.ID, a.u.characterID(), descriptionTab)
+			a.u.showTypeInfoWindow(ca.EveType.ID, a.u.CharacterID(), descriptionTab)
 		}
 	}
 	return g
@@ -244,10 +244,10 @@ func (a *assetsArea) redraw() {
 func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], error) {
 	ctx := context.TODO()
 	tree := fynetree.New[locationDataNode]()
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		return tree, nil
 	}
-	characterID := a.u.characterID()
+	characterID := a.u.CharacterID()
 	assets, err := a.u.CharacterService.ListCharacterAssets(ctx, characterID)
 	if err != nil {
 		return tree, err
@@ -388,10 +388,10 @@ func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 }
 
 func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance, nil
 	}
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionAssets)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionAssets)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}

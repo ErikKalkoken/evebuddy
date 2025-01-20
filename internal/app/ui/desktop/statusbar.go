@@ -91,7 +91,7 @@ func (u *DesktopUI) newStatusBarArea() *statusBarArea {
 
 func (a *statusBarArea) showClockDialog() {
 	content := widget.NewRichTextFromMarkdown("")
-	d := dialog.NewCustom("EVE Clock", "Close", content, a.u.window)
+	d := dialog.NewCustom("EVE Clock", "Close", content, a.u.Window)
 	stop := make(chan struct{})
 	timer := time.NewTicker(1 * time.Second)
 	go func() {
@@ -124,7 +124,7 @@ func (a *statusBarArea) showDetail() {
 	lb := widget.NewLabel(text)
 	lb.Wrapping = fyne.TextWrapWord
 	lb.Importance = i
-	d := dialog.NewCustom("ESI status", "OK", lb, a.u.window)
+	d := dialog.NewCustom("ESI status", "OK", lb, a.u.Window)
 	d.Show()
 	d.Resize(fyne.Size{Width: 400, Height: 200})
 }
@@ -175,7 +175,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 		}
 	}()
 	go func() {
-		current := a.u.fyneApp.Metadata().Version
+		current := a.u.FyneApp.Metadata().Version
 		v, err := github.AvailableUpdate(githubOwner, githubRepo, current)
 		if err != nil {
 			slog.Error("Failed to fetch latest version from github", "err", err)
@@ -194,13 +194,13 @@ func (a *statusBarArea) StartUpdateTicker() {
 				if !ok {
 					return
 				}
-				if err := a.u.fyneApp.OpenURL(u); err != nil {
-					d2 := NewErrorDialog("Failed to open download page", err, a.u.window)
+				if err := a.u.FyneApp.OpenURL(u); err != nil {
+					d2 := NewErrorDialog("Failed to open download page", err, a.u.Window)
 					d2.Show()
 				}
-			}, a.u.window,
+			}, a.u.Window,
 			)
-			kxdialog.AddDialogKeyHandler(d, a.u.window)
+			kxdialog.AddDialogKeyHandler(d, a.u.Window)
 			d.Show()
 		})
 		a.newVersionHint.Add(widget.NewSeparator())

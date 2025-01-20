@@ -81,10 +81,10 @@ func (a *planetArea) refresh() {
 }
 
 func (a *planetArea) makeTopText() (string, widget.Importance) {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	c := a.u.currentCharacter()
+	c := a.u.CurrentCharacter()
 	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionPlanets)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
@@ -104,11 +104,11 @@ func (a *planetArea) makeTopText() (string, widget.Importance) {
 }
 
 func (a *planetArea) updateEntries() error {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		a.planets = make([]*app.CharacterPlanet, 0)
 		return nil
 	}
-	characterID := a.u.characterID()
+	characterID := a.u.CharacterID()
 	var err error
 	a.planets, err = a.u.CharacterService.ListCharacterPlanets(context.TODO(), characterID)
 	if err != nil {

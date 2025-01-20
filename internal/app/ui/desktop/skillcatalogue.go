@@ -107,12 +107,12 @@ func (a *skillCatalogueArea) makeSkillGroups() *widget.GridWrap {
 			return
 		}
 		group := a.groups[id]
-		if !a.u.hasCharacter() {
+		if !a.u.HasCharacter() {
 			g.UnselectAll()
 			return
 		}
 		oo, err := a.u.CharacterService.ListCharacterSkillProgress(
-			context.TODO(), a.u.characterID(), group.id,
+			context.TODO(), a.u.CharacterID(), group.id,
 		)
 		if err != nil {
 			slog.Error("Failed to fetch skill group data", "err", err)
@@ -165,7 +165,7 @@ func (a *skillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 			return
 		}
 		skill := a.skills[id]
-		a.u.showTypeInfoWindow(skill.id, a.u.characterID(), descriptionTab)
+		a.u.showTypeInfoWindow(skill.id, a.u.CharacterID(), descriptionTab)
 	}
 	return g
 }
@@ -198,10 +198,10 @@ func (a *skillCatalogueArea) refresh() {
 }
 
 func (a *skillCatalogueArea) makeTopText() (string, widget.Importance, error) {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		return "No Character", widget.LowImportance, nil
 	}
-	c := a.u.currentCharacter()
+	c := a.u.CurrentCharacter()
 	total := ihumanize.Optional(c.TotalSP, "?")
 	unallocated := ihumanize.Optional(c.UnallocatedSP, "?")
 	t := fmt.Sprintf("%s Total Skill Points (%s Unallocated)", total, unallocated)
@@ -209,10 +209,10 @@ func (a *skillCatalogueArea) makeTopText() (string, widget.Importance, error) {
 }
 
 func (a *skillCatalogueArea) updateGroups() error {
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		return nil
 	}
-	gg, err := a.u.CharacterService.ListCharacterSkillGroupsProgress(context.TODO(), a.u.characterID())
+	gg, err := a.u.CharacterService.ListCharacterSkillGroupsProgress(context.TODO(), a.u.CharacterID())
 	if err != nil {
 		return err
 	}
