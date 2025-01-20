@@ -32,13 +32,13 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	u.BaseUI = ui.NewBaseUI(fyneApp, u.refreshCharacter, u.refreshCrossPages)
 	u.AccountArea = u.NewAccountArea(u.updateCharacterAndRefreshIfNeeded)
 
-	var home *Navigator
-	menu := NewNavList(
+	var characterNav *Navigator
+	homeList := NewNavList(
 		NewNavListItem(
 			theme.AccountIcon(),
 			"Character Sheet",
 			func() {
-				home.Push(
+				characterNav.Push(
 					NewAppBar(
 						"Character Sheet",
 						NewNavList(
@@ -46,14 +46,14 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 								nil,
 								"Attributes",
 								func() {
-									home.Push(NewAppBar("Attributes", u.AttributesArea.Content))
+									characterNav.Push(NewAppBar("Attributes", u.AttributesArea.Content))
 								},
 							),
 							NewNavListItem(
 								nil,
 								"Implants",
 								func() {
-									home.Push(NewAppBar("Implants", widget.NewLabel("PLACEHOLDER")))
+									characterNav.Push(NewAppBar("Implants", widget.NewLabel("PLACEHOLDER")))
 								},
 							),
 						),
@@ -64,57 +64,76 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			theme.NewThemedResource(ui.IconInventory2Svg),
 			"Assets",
 			func() {
-				home.Push(NewAppBar("Assets", widget.NewLabel("PLACEHOLDER")))
+				characterNav.Push(NewAppBar("Assets", widget.NewLabel("PLACEHOLDER")))
 			},
 		),
 		NewNavListItem(
 			theme.NewThemedResource(ui.IconEarthSvg),
 			"Colonies",
 			func() {
-				home.Push(NewAppBar("Colonies", widget.NewLabel("PLACEHOLDER")))
+				characterNav.Push(NewAppBar("Colonies", widget.NewLabel("PLACEHOLDER")))
 			},
 		),
 		NewNavListItem(
 			theme.MailComposeIcon(),
 			"Mail",
 			func() {
-				home.Push(NewAppBar("Mail", widget.NewLabel("PLACEHOLDER")))
+				characterNav.Push(NewAppBar("Mail", widget.NewLabel("PLACEHOLDER")))
 			},
 		),
 		NewNavListItem(
 			theme.MailComposeIcon(),
 			"Communications",
 			func() {
-				home.Push(NewAppBar("Communications", widget.NewLabel("PLACEHOLDER")))
+				characterNav.Push(NewAppBar("Communications", widget.NewLabel("PLACEHOLDER")))
 			},
 		),
 		NewNavListItem(
 			theme.NewThemedResource(ui.IconFileSignSvg),
 			"Contracts",
 			func() {
-				home.Push(NewAppBar("Contracts", widget.NewLabel("PLACEHOLDER")))
+				characterNav.Push(NewAppBar("Contracts", widget.NewLabel("PLACEHOLDER")))
+			},
+		))
+	characterNav = NewNavigator(NewAppBar("Character", homeList))
+
+	var crossNav *Navigator
+	crossList := NewNavList(
+		NewNavListItem(
+			nil,
+			"Overview",
+			func() {
+				crossNav.Push(NewAppBar("Overview", widget.NewLabel("PLACEHOLDER")))
 			},
 		),
 		NewNavListItem(
-			theme.NewThemedResource(ui.IconGroupSvg),
-			"Characters",
+			nil,
+			"Asset Search",
 			func() {
-				home.Push(NewAppBar("Characters", widget.NewLabel("PLACEHOLDER")))
+				crossNav.Push(NewAppBar("Asset Search", widget.NewLabel("PLACEHOLDER")))
 			},
-		))
-	home = NewNavigator(NewAppBar("Home", menu))
+		),
+		NewNavListItem(
+			nil,
+			"Wealth",
+			func() {
+				crossNav.Push(NewAppBar("Wealth", widget.NewLabel("PLACEHOLDER")))
+			},
+		),
+	)
+	crossNav = NewNavigator(NewAppBar("Characters", crossList))
 
+	var settingsNav *Navigator
 	makePage := func(c fyne.CanvasObject) fyne.CanvasObject {
 		return container.NewScroll(c)
 	}
-	var settings *Navigator
 	settingsList := NewNavList(
 		NewNavListItem(
 			nil,
 			"General",
 			func() {
 				c, f := u.MakeGeneralSettingsPage(nil)
-				settings.Push(
+				settingsNav.Push(
 					NewAppBar("General", makePage(c), NewMenuToolbarAction(
 						fyne.NewMenuItem(
 							"Reset", f,
@@ -126,7 +145,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			"Eve Online",
 			func() {
 				c, f := u.MakeEVEOnlinePage()
-				settings.Push(
+				settingsNav.Push(
 					NewAppBar("Eve Online", makePage(c), NewMenuToolbarAction(
 						fyne.NewMenuItem(
 							"Reset", f,
@@ -138,7 +157,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			"Notifications",
 			func() {
 				c, f := u.MakeNotificationPage(nil)
-				settings.Push(
+				settingsNav.Push(
 					NewAppBar("Notifications", makePage(c), NewMenuToolbarAction(
 						fyne.NewMenuItem(
 							"Reset", f,
@@ -146,14 +165,22 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 					)))
 			},
 		),
+		NewNavListItem(
+			nil,
+			"Manage characters",
+			func() {
+				settingsNav.Push(
+					NewAppBar("Manage characters", u.AccountArea.Content))
+			},
+		),
 	)
-	settings = NewNavigator(NewAppBar("Settings", settingsList))
+	settingsNav = NewNavigator(NewAppBar("Settings", settingsList))
 
-	u.characterTab = container.NewTabItemWithIcon("", theme.AccountIcon(), u.AccountArea.Content)
+	u.characterTab = container.NewTabItemWithIcon("", theme.AccountIcon(), characterNav)
 	u.navBar = container.NewAppTabs(
-		container.NewTabItemWithIcon("", theme.HomeIcon(), home),
 		u.characterTab,
-		container.NewTabItemWithIcon("", theme.SettingsIcon(), settings),
+		container.NewTabItemWithIcon("", theme.NewThemedResource(ui.IconGroupSvg), crossNav),
+		container.NewTabItemWithIcon("", theme.SettingsIcon(), settingsNav),
 	)
 	u.navBar.SetTabLocation(container.TabLocationBottom)
 	u.Window.SetContent(u.navBar)
