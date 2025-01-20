@@ -8,10 +8,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
+// An AppBar displays navigation, actions, and text at the top of a screen
 type AppBar struct {
 	widget.BaseWidget
 
@@ -19,12 +18,15 @@ type AppBar struct {
 
 	body  fyne.CanvasObject
 	title string
+	items []widget.ToolbarItem
 }
 
-func NewAppBar(title string, body fyne.CanvasObject) *AppBar {
+// NewAppBar returns a new AppBar. The toolbar items are optional.
+func NewAppBar(title string, body fyne.CanvasObject, items ...widget.ToolbarItem) *AppBar {
 	w := &AppBar{
 		body:  body,
 		title: title,
+		items: items,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -36,9 +38,12 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 	row := container.NewStack(container.NewHBox(layout.NewSpacer(), title, layout.NewSpacer()))
 	if w.Navigator != nil {
 		row.Add(container.NewHBox(kxwidget.NewTappableIcon(
-			theme.NewThemedResource(ui.IconChevronLeftSvg), func() {
+			theme.NavigateBackIcon(), func() {
 				w.Navigator.Pop()
 			})))
+	}
+	if len(w.items) > 0 {
+		row.Add(container.NewHBox(layout.NewSpacer(), widget.NewToolbar(w.items...)))
 	}
 	top := container.NewVBox(row, widget.NewSeparator())
 	c := container.NewBorder(top, nil, nil, nil, w.body)

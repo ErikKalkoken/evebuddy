@@ -34,10 +34,22 @@ func (u *DesktopUI) showSettingsWindow() {
 func (u *DesktopUI) NewSettingsArea() *SettingsArea {
 	sw := &SettingsArea{u: u}
 	tabs := container.NewAppTabs(
-		container.NewTabItem("General", makePage(u.MakeGeneralSettingsPage(u.settingsWindow))),
-		container.NewTabItem("Desktop", makePage(u.MakeDesktopSettingsPage())),
-		container.NewTabItem("Eve Online", makePage(u.MakeEVEOnlinePage())),
-		container.NewTabItem("Notifications", makePage(u.MakeNotificationPage(u.settingsWindow))),
+		container.NewTabItem("General", func() fyne.CanvasObject {
+			c, f := u.MakeGeneralSettingsPage(u.settingsWindow)
+			return makePage("Desktop", c, f)
+		}()),
+		container.NewTabItem("Desktop", func() fyne.CanvasObject {
+			c, f := u.MakeDesktopSettingsPage()
+			return makePage("Desktop", c, f)
+		}()),
+		container.NewTabItem("Eve Online", func() fyne.CanvasObject {
+			c, f := u.MakeEVEOnlinePage()
+			return makePage("Desktop", c, f)
+		}()),
+		container.NewTabItem("Notifications", func() fyne.CanvasObject {
+			c, f := u.MakeNotificationPage(u.settingsWindow)
+			return makePage("Notifications", c, f)
+		}()),
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
 	sw.content = tabs
@@ -69,12 +81,14 @@ func (u *DesktopUI) MakeDesktopSettingsPage() (fyne.CanvasObject, func()) {
 	return settings, reset
 }
 
-func makePage(content fyne.CanvasObject, resetSettings func()) fyne.CanvasObject {
+func makePage(title string, content fyne.CanvasObject, resetSettings func()) fyne.CanvasObject {
+	x := widget.NewLabel(title)
+	x.TextStyle.Bold = true
 	return container.NewBorder(
-		nil,
+		container.NewVBox(x, widget.NewSeparator()),
 		container.NewHBox(widget.NewButton("Reset", resetSettings)),
 		nil,
 		nil,
-		container.NewVScroll(content),
+		container.NewScroll(content),
 	)
 }

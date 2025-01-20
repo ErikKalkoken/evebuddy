@@ -104,7 +104,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		))
 	home = NewNavigator(NewAppBar("Home", menu))
 
-	makePage := func(c fyne.CanvasObject, _ func()) fyne.CanvasObject {
+	makePage := func(c fyne.CanvasObject) fyne.CanvasObject {
 		return container.NewScroll(c)
 	}
 	var settings *Navigator
@@ -113,21 +113,37 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			nil,
 			"General",
 			func() {
-				settings.Push(NewAppBar("General", makePage(u.MakeGeneralSettingsPage(nil))))
+				c, f := u.MakeGeneralSettingsPage(nil)
+				settings.Push(
+					NewAppBar("General", makePage(c), NewMenuToolbarAction(
+						fyne.NewMenuItem(
+							"Reset", f,
+						))))
 			},
 		),
 		NewNavListItem(
 			nil,
 			"Eve Online",
 			func() {
-				settings.Push(NewAppBar("Eve Online", makePage(u.MakeEVEOnlinePage())))
+				c, f := u.MakeEVEOnlinePage()
+				settings.Push(
+					NewAppBar("Eve Online", makePage(c), NewMenuToolbarAction(
+						fyne.NewMenuItem(
+							"Reset", f,
+						))))
 			},
 		),
 		NewNavListItem(
 			nil,
 			"Notifications",
 			func() {
-				settings.Push(NewAppBar("Notifications", makePage(u.MakeNotificationPage(nil))))
+				c, f := u.MakeNotificationPage(nil)
+				settings.Push(
+					NewAppBar("Notifications", makePage(c), NewMenuToolbarAction(
+						fyne.NewMenuItem(
+							"Reset", f,
+						),
+					)))
 			},
 		),
 	)
