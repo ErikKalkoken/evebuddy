@@ -55,11 +55,12 @@ const (
 
 // define flags
 var (
-	deleteAppFlag              = flag.Bool("delete-data", false, "Delete user data")
-	dirsFlag                   = flag.Bool("dirs", false, "Show directories for user data")
-	isUpdateTickerDisabledFlag = flag.Bool("disable-updates", false, "Disable all periodic updates")
-	isOfflineFlag              = flag.Bool("offline", false, "Start app in offline mode")
-	pprofFlag                  = flag.Bool("pprof", false, "Enable pprof web server")
+	deleteDataFlag     = flag.Bool("delete-data", false, "Delete user data")
+	dirsFlag           = flag.Bool("dirs", false, "Show directories for user data")
+	disableUpdatesFlag = flag.Bool("disable-updates", false, "Disable all periodic updates")
+	offlineFlag        = flag.Bool("offline", false, "Start app in offline mode")
+	pprofFlag          = flag.Bool("pprof", false, "Enable pprof web server")
+	developFlag        = flag.Bool("dev", false, "Enable developer features")
 )
 
 func main() {
@@ -83,17 +84,18 @@ func main() {
 	var dataDir, logDir string
 	// desktop related init
 
-	//FIXME: Remove for mobile
 	// data dir
-	ad := appdirs.New(appName)
-	dataDir = ad.UserData()
-	if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
-		log.Fatal(err)
+	if isDesktop || *developFlag {
+		ad := appdirs.New(appName)
+		dataDir = ad.UserData()
+		if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
+			log.Fatal(err)
+		}
 	}
-	if isDesktop {
 
+	if isDesktop {
 		// start uninstall app if requested
-		if *deleteAppFlag {
+		if *deleteDataFlag {
 			u := deleteapp.NewUI(fyneApp)
 			u.DataDir = dataDir
 			u.ShowAndRun()
@@ -138,13 +140,13 @@ func main() {
 	}
 
 	// init database
-	// var dbPath string
-	dbPath := fmt.Sprintf("%s/%s", dataDir, dbFileName)
-	// if isDesktop {
-	// } else {
-	// 	// EXPERIMENTAL
-	// 	dbPath = ensureFileExists(fyneApp.Storage(), dbFileName)
-	// }
+	var dbPath string
+	if isDesktop || *developFlag {
+		dbPath = fmt.Sprintf("%s/%s", dataDir, dbFileName)
+	} else {
+		// EXPERIMENTAL
+		dbPath = ensureFileExists(fyneApp.Storage(), dbFileName)
+	}
 	db, err := storage.InitDB("file://" + dbPath)
 	if err != nil {
 		slog.Error("Failed to initialize database", "dsn", dbPath, "error", err)
@@ -202,7 +204,7 @@ func main() {
 
 	// Init UI
 	ess := esistatus.New(esiClient)
-	eis := eveimage.New(pc, httpClient, *isOfflineFlag)
+	eis := eveimage.New(pc, httpClient, *offlineFlag)
 	if isDesktop {
 		u := desktop1.NewDesktopUI(fyneApp)
 		slog.Debug("ui instance created")
@@ -212,8 +214,8 @@ func main() {
 		u.EveImageService = eis
 		u.EveUniverseService = eu
 		u.StatusCacheService = sc
-		u.IsOffline = *isOfflineFlag
-		u.IsUpdateTickerDisabled = *isUpdateTickerDisabledFlag
+		u.IsOffline = *offlineFlag
+		u.IsUpdateTickerDisabled = *disableUpdatesFlag
 		u.DataPaths = map[string]string{
 			"db":  dbPath,
 			"log": logDir,
@@ -239,8 +241,8 @@ func main() {
 		u.EveImageService = eis
 		u.EveUniverseService = eu
 		u.StatusCacheService = sc
-		u.IsOffline = *isOfflineFlag
-		u.IsUpdateTickerDisabled = *isUpdateTickerDisabledFlag
+		u.IsOffline = *offlineFlag
+		u.IsUpdateTickerDisabled = *disableUpdatesFlag
 		u.Init()
 		slog.Debug("ui initialized")
 

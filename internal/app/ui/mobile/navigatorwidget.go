@@ -5,12 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 // Navigator is a container that allows the user to navigate to a new page
@@ -27,7 +22,7 @@ type Navigator struct {
 // NewNavigator return a new Navigator and defines the root page.
 func NewNavigator(title string, content fyne.CanvasObject) *Navigator {
 	n := &Navigator{
-		stack: container.NewStack(content),
+		stack: container.NewStack(NewAppBar(title, content, nil)),
 	}
 	n.ExtendBaseWidget(n)
 	return n
@@ -39,22 +34,7 @@ func (n *Navigator) Push(title string, content fyne.CanvasObject) {
 		n.mu.Lock()
 		defer n.mu.Unlock()
 		previous := n.topPage()
-		x := widget.NewLabel(title)
-		x.Importance = widget.HighImportance
-		x.TextStyle.Bold = true
-		appBar := container.NewVBox(
-			container.NewHBox(
-				kxwidget.NewTappableIcon(theme.NewThemedResource(ui.IconChevronLeftSvg), func() {
-					n.Pop()
-				}),
-				layout.NewSpacer(),
-				x,
-				layout.NewSpacer(),
-			),
-			widget.NewSeparator(),
-		)
-		page := container.NewBorder(appBar, nil, nil, nil, content)
-		n.stack.Add(page)
+		n.stack.Add(NewAppBar(title, content, n))
 		previous.Hide()
 	}()
 	n.stack.Refresh()

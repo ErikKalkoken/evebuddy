@@ -3,8 +3,6 @@ package mobile
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
@@ -44,17 +42,22 @@ func (w *NavList) CreateRenderer() fyne.WidgetRenderer {
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(
-				widget.NewIcon(theme.BrokenImageIcon()),
+				widget.NewIcon(ui.IconBlankSvg),
 				widget.NewLabel("Template"),
-				layout.NewSpacer(),
-				widget.NewIcon(theme.NewThemedResource(ui.IconChevronRightSvg)),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			item := w.items[id]
 			hbox := co.(*fyne.Container).Objects
-			hbox[0].(*widget.Icon).SetResource(item.icon)
-			hbox[1].(*widget.Label).SetText(item.title)
+			title := hbox[1]
+			title.(*widget.Label).SetText(item.title)
+			icon := hbox[0]
+			if item.icon != nil {
+				icon.(*widget.Icon).SetResource(item.icon)
+				icon.Show()
+			} else {
+				icon.Hide()
+			}
 		},
 	)
 	c.OnSelected = func(id widget.ListItemID) {
