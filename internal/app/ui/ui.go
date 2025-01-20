@@ -34,6 +34,8 @@ type BaseUI struct {
 	FyneApp   fyne.App
 	Window    fyne.Window
 
+	AttributesArea *Attributes
+
 	refreshCharacter  func()
 	refreshCrossPages func()
 }
@@ -48,6 +50,7 @@ func NewBaseUI(fyneApp fyne.App, refreshCharacter, refreshCrossPages func()) *Ba
 		refreshCrossPages: refreshCrossPages,
 	}
 	u.Window = fyneApp.NewWindow(u.AppName())
+	u.AttributesArea = u.NewAttributes()
 	return u
 }
 
