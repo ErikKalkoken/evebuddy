@@ -13,6 +13,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -203,7 +204,7 @@ func (a *contractsArea) showContract(c *app.CharacterContract) {
 		return fmt.Sprintf("%s (%s)", ts, ds)
 	}
 	makeLocation := func(l *app.EntityShort[int64]) fyne.CanvasObject {
-		x := newCustomHyperlink(l.Name, func() {
+		x := ui.NewCustomHyperlink(l.Name, func() {
 			a.u.showLocationInfoWindow(l.ID)
 		})
 		return x
@@ -267,7 +268,7 @@ func (a *contractsArea) showContract(c *app.CharacterContract) {
 		ctx := context.TODO()
 		total, err := a.u.CharacterService.CountCharacterContractBids(ctx, c.ID)
 		if err != nil {
-			d := NewErrorDialog("Failed to count contract bids", err, w)
+			d := ui.NewErrorDialog("Failed to count contract bids", err, w)
 			d.SetOnClosed(w.Hide)
 			d.Show()
 		}
@@ -277,7 +278,7 @@ func (a *contractsArea) showContract(c *app.CharacterContract) {
 		} else {
 			top, err := a.u.CharacterService.GetCharacterContractTopBid(ctx, c.ID)
 			if err != nil {
-				d := NewErrorDialog("Failed to get top bid", err, w)
+				d := ui.NewErrorDialog("Failed to get top bid", err, w)
 				d.SetOnClosed(w.Hide)
 				d.Show()
 			}
@@ -297,7 +298,7 @@ func (a *contractsArea) showContract(c *app.CharacterContract) {
 		vb := container.NewVBox()
 		items, err := a.u.CharacterService.ListCharacterContractItems(context.TODO(), c.ID)
 		if err != nil {
-			d := NewErrorDialog("Failed to fetch contract items", err, w)
+			d := ui.NewErrorDialog("Failed to fetch contract items", err, w)
 			d.SetOnClosed(w.Hide)
 			d.Show()
 		}
@@ -310,7 +311,7 @@ func (a *contractsArea) showContract(c *app.CharacterContract) {
 			}
 		}
 		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
-			x := newCustomHyperlink(it.Type.Name, func() {
+			x := ui.NewCustomHyperlink(it.Type.Name, func() {
 				a.u.showTypeInfoWindow(it.Type.ID, c.CharacterID, 0)
 			})
 			return container.NewHBox(

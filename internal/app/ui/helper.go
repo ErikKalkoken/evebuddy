@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"fmt"
@@ -13,23 +13,23 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
-func entityNameOrFallback[T int | int32 | int64](e *app.EntityShort[T], fallback string) string {
+func EntityNameOrFallback[T int | int32 | int64](e *app.EntityShort[T], fallback string) string {
 	if e == nil {
 		return fallback
 	}
 	return e.Name
 }
 
-// newImageResourceAsync shows a placeholder resource and refreshes it once the main resource is loaded asynchronously.
-func newImageResourceAsync(placeholder fyne.Resource, loader func() (fyne.Resource, error)) *canvas.Image {
+// NewImageResourceAsync shows a placeholder resource and refreshes it once the main resource is loaded asynchronously.
+func NewImageResourceAsync(placeholder fyne.Resource, loader func() (fyne.Resource, error)) *canvas.Image {
 	image := canvas.NewImageFromResource(placeholder)
-	refreshImageResourceAsync(image, loader)
+	RefreshImageResourceAsync(image, loader)
 	return image
 }
 
-// refreshImageResourceAsync refreshes the resource of an image asynchronously.
+// RefreshImageResourceAsync refreshes the resource of an image asynchronously.
 // This prevents fyne to wait with rendering an image until a resource is fully loaded from a web server.
-func refreshImageResourceAsync(image *canvas.Image, loader func() (fyne.Resource, error)) {
+func RefreshImageResourceAsync(image *canvas.Image, loader func() (fyne.Resource, error)) {
 	go func() {
 		r, err := loader()
 		if err != nil {
@@ -41,19 +41,19 @@ func refreshImageResourceAsync(image *canvas.Image, loader func() (fyne.Resource
 	}()
 }
 
-func skillDisplayName[N int | int32 | int64 | uint | uint32 | uint64](name string, level N) string {
+func SkillDisplayName[N int | int32 | int64 | uint | uint32 | uint64](name string, level N) string {
 	return fmt.Sprintf("%s %s", name, ihumanize.RomanLetter(level))
 }
 
-func boolIconResource(ok bool) fyne.Resource {
+func BoolIconResource(ok bool) fyne.Resource {
 	if ok {
 		return theme.NewSuccessThemedResource(theme.ConfirmIcon())
 	}
 	return theme.NewErrorThemedResource(theme.CancelIcon())
 }
 
-// newCustomHyperlink returns a new hyperlink with a custom action.
-func newCustomHyperlink(text string, onTapped func()) *widget.Hyperlink {
+// NewCustomHyperlink returns a new hyperlink with a custom action.
+func NewCustomHyperlink(text string, onTapped func()) *widget.Hyperlink {
 	x := widget.NewHyperlink(text, nil)
 	x.OnTapped = onTapped
 	return x

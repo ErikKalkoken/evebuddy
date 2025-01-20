@@ -12,6 +12,12 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 )
 
+// Base UI constants
+const (
+	defaultIconSize = 64
+	myFloatFormat   = "#,###.##"
+)
+
 type BaseUI struct {
 	CacheService       app.CacheService
 	CharacterService   *character.CharacterService
@@ -28,13 +34,18 @@ type BaseUI struct {
 	FyneApp   fyne.App
 	Window    fyne.Window
 
-	refreshCharacter func()
+	refreshCharacter  func()
+	refreshCrossPages func()
 }
 
-func NewBaseUI(fyneApp fyne.App, refreshCharacter func()) *BaseUI {
+func NewBaseUI(fyneApp fyne.App, refreshCharacter, refreshCrossPages func()) *BaseUI {
+	if refreshCharacter == nil || refreshCrossPages == nil {
+		panic("need to define refresh callbacks")
+	}
 	u := &BaseUI{
-		FyneApp:          fyneApp,
-		refreshCharacter: refreshCharacter,
+		FyneApp:           fyneApp,
+		refreshCharacter:  refreshCharacter,
+		refreshCrossPages: refreshCrossPages,
 	}
 	u.Window = fyneApp.NewWindow(u.AppName())
 	return u
@@ -110,4 +121,16 @@ func (u *BaseUI) ResetCharacter() {
 	u.Character = nil
 	u.FyneApp.Preferences().SetInt(SettingLastCharacterID, 0)
 	u.refreshCharacter()
+}
+
+func (u *BaseUI) SetAnyCharacter() error {
+	c, err := u.CharacterService.GetAnyCharacter(context.TODO())
+	if errors.Is(err, character.ErrNotFound) {
+		u.ResetCharacter()
+		return nil
+	} else if err != nil {
+		return err
+	}
+	u.SetCharacter(c)
+	return nil
 }

@@ -17,6 +17,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/mailrecipient"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 )
 
@@ -126,7 +127,7 @@ func (u *DesktopUI) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fy
 			if err != nil {
 				t := "Failed to send mail"
 				slog.Error(t, "err", err)
-				d := NewErrorDialog(t, err, u.Window)
+				d := ui.NewErrorDialog(t, err, u.Window)
 				d.Show()
 				return
 			}

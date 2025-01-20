@@ -219,7 +219,7 @@ func (a *mailArea) refresh() {
 	if err != nil {
 		t := "Failed to build folder tree"
 		slog.Error(t, "character", characterID, "error", err)
-		d := NewErrorDialog(t, err, a.u.Window)
+		d := ui.NewErrorDialog(t, err, a.u.Window)
 		d.Show()
 		return
 	}
@@ -520,12 +520,12 @@ func (a *mailArea) makeToolbar() *widget.Toolbar {
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.DeleteIcon(), func() {
 			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Header())
-			d := NewConfirmDialog("Delete mail", t, "Delete", func(confirmed bool) {
+			d := ui.NewConfirmDialog("Delete mail", t, "Delete", func(confirmed bool) {
 				if confirmed {
 					if err := a.u.CharacterService.DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID); err != nil {
 						t := "Failed to delete mail"
 						slog.Error(t, "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
-						d2 := NewErrorDialog(t, err, a.u.Window)
+						d2 := ui.NewErrorDialog(t, err, a.u.Window)
 						d2.Show()
 					} else {
 						a.headerRefresh()

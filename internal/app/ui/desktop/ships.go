@@ -53,7 +53,7 @@ func (u *DesktopUI) newShipArea() *shipsArea {
 			return
 		}
 		if err := a.updateEntries(); err != nil {
-			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
+			d := ui.NewErrorDialog("Failed to update ships", err, a.u.Window)
 			d.Show()
 		}
 		a.grid.Refresh()
@@ -63,7 +63,7 @@ func (u *DesktopUI) newShipArea() *shipsArea {
 	a.groupSelect = widget.NewSelect([]string{}, func(s string) {
 		a.groupSelected = s
 		if err := a.updateEntries(); err != nil {
-			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
+			d := ui.NewErrorDialog("Failed to update ships", err, a.u.Window)
 			d.Show()
 		}
 		a.grid.Refresh()
@@ -74,7 +74,7 @@ func (u *DesktopUI) newShipArea() *shipsArea {
 	a.flyableSelect = widget.NewSelect([]string{}, func(s string) {
 		a.flyableSelected = s
 		if err := a.updateEntries(); err != nil {
-			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
+			d := ui.NewErrorDialog("Failed to update ships", err, a.u.Window)
 			d.Show()
 		}
 		a.grid.Refresh()

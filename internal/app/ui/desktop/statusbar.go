@@ -62,7 +62,7 @@ func (u *DesktopUI) newStatusBarArea() *statusBarArea {
 		u:              u,
 	}
 	a.characterCount = widgets.NewStatusBarItem(theme.AccountIcon(), "?", func() {
-		u.showAccountDialog()
+		u.ShowAccountDialog()
 	})
 	a.updateStatus = widgets.NewStatusBarItem(theme.NewThemedResource(ui.IconUpdateSvg), "?", func() {
 		u.showStatusWindow()
@@ -184,7 +184,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 		if !v.IsRemoteNewer {
 			return
 		}
-		l := newCustomHyperlink("Update available", func() {
+		l := ui.NewCustomHyperlink("Update available", func() {
 			c := container.NewVBox(
 				container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), widget.NewLabel(v.Latest)),
 				container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), widget.NewLabel(v.Local)),
@@ -195,7 +195,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 					return
 				}
 				if err := a.u.FyneApp.OpenURL(u); err != nil {
-					d2 := NewErrorDialog("Failed to open download page", err, a.u.Window)
+					d2 := ui.NewErrorDialog("Failed to open download page", err, a.u.Window)
 					d2.Show()
 				}
 			}, a.u.Window,

@@ -23,7 +23,7 @@ func makeMenu(u *DesktopUI) *fyne.MainMenu {
 	settingsItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyComma, Modifier: fyne.KeyModifierControl}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, settingsItem)
 
-	charactersItem := fyne.NewMenuItem("Manage characters...", u.showAccountDialog)
+	charactersItem := fyne.NewMenuItem("Manage characters...", u.ShowAccountDialog)
 	charactersItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierAlt}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, charactersItem)
 

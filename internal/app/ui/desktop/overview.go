@@ -13,6 +13,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -114,7 +115,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 			case 7:
 				text = ihumanize.Optional(c.lastLoginAt, "?")
 			case 8:
-				text = entityNameOrFallback(c.home, "?")
+				text = ui.EntityNameOrFallback(c.home, "?")
 			case 9:
 				text = humanize.RelTime(c.birthday, time.Now(), "", "")
 				l.Alignment = fyne.TextAlignTrailing

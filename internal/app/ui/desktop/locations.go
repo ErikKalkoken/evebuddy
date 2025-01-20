@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
@@ -83,7 +84,7 @@ func (a *locationsArea) makeTable() *widget.Table {
 				l.Text = c.name
 				l.Truncation = fyne.TextTruncateEllipsis
 			case 1:
-				l.Text = entityNameOrFallback(c.location, "?")
+				l.Text = ui.EntityNameOrFallback(c.location, "?")
 				l.Truncation = fyne.TextTruncateEllipsis
 			case 2:
 				if c.solarSystem == nil || c.systemSecurity.IsEmpty() {
@@ -105,9 +106,9 @@ func (a *locationsArea) makeTable() *widget.Table {
 				}
 				l.Alignment = fyne.TextAlignTrailing
 			case 4:
-				l.Text = entityNameOrFallback(c.region, "?")
+				l.Text = ui.EntityNameOrFallback(c.region, "?")
 			case 5:
-				l.Text = entityNameOrFallback(c.ship, "?")
+				l.Text = ui.EntityNameOrFallback(c.ship, "?")
 				l.Truncation = fyne.TextTruncateEllipsis
 			}
 			l.Refresh()

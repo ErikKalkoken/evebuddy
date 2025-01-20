@@ -213,7 +213,7 @@ func (u *DesktopUI) showInfoWindow(iw *typeInfoWindow, err error) {
 	if err != nil {
 		t := "Failed to open info window"
 		slog.Error(t, "err", err)
-		d := NewErrorDialog(t, err, u.Window)
+		d := ui.NewErrorDialog(t, err, u.Window)
 		d.Show()
 		return
 	}
@@ -526,7 +526,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		render := kxwidget.NewTappableImage(r, func() {
 			w := a.u.FyneApp.NewWindow(a.u.makeWindowTitle(a.makeTitle("Render")))
 			size := 512
-			i := newImageResourceAsync(ui.IconQuestionmarkSvg, func() (fyne.Resource, error) {
+			i := ui.NewImageResourceAsync(ui.IconQuestionmarkSvg, func() (fyne.Resource, error) {
 				return a.u.EveImageService.InventoryTypeRender(a.et.ID, size)
 			})
 			i.FillMode = canvas.ImageFillContain
@@ -555,7 +555,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		}
 	} else {
 		size := 64
-		icon := newImageResourceAsync(ui.IconQuestionmarkSvg, func() (fyne.Resource, error) {
+		icon := ui.NewImageResourceAsync(ui.IconQuestionmarkSvg, func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
 				return a.u.EveImageService.InventoryTypeSKIN(a.et.ID, size)
 			} else if a.et.IsBlueprint() {
@@ -573,7 +573,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 	ownerIcon.FillMode = canvas.ImageFillOriginal
 	ownerName := widget.NewLabel("")
 	if a.owner != nil {
-		refreshImageResourceAsync(ownerIcon, func() (fyne.Resource, error) {
+		ui.RefreshImageResourceAsync(ownerIcon, func() (fyne.Resource, error) {
 			switch a.owner.Category {
 			case app.EveEntityCharacter:
 				return a.u.EveImageService.CharacterPortrait(a.owner.ID, 32)
@@ -595,7 +595,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			break
 		}
 	}
-	checkIcon := widget.NewIcon(boolIconResource(hasRequiredSkills))
+	checkIcon := widget.NewIcon(ui.BoolIconResource(hasRequiredSkills))
 	if a.owner != nil && !a.owner.IsCharacter() || len(a.requiredSkills) == 0 {
 		checkIcon.Hide()
 	}
@@ -692,7 +692,7 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 			text := row[2].(*widget.Label)
 			level := row[3].(*widgets.SkillLevel)
 			icon := row[4].(*widget.Icon)
-			skill.SetText(skillDisplayName(o.name, o.requiredLevel))
+			skill.SetText(ui.SkillDisplayName(o.name, o.requiredLevel))
 			if o.activeLevel == 0 && o.trainedLevel == 0 {
 				text.Text = "Skill not injected"
 				text.Importance = widget.DangerImportance
@@ -701,7 +701,7 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 				level.Hide()
 				icon.Hide()
 			} else if o.activeLevel >= o.requiredLevel {
-				icon.SetResource(boolIconResource(true))
+				icon.SetResource(ui.BoolIconResource(true))
 				icon.Show()
 				text.Hide()
 				level.Hide()

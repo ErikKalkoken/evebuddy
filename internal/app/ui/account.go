@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -19,60 +19,7 @@ import (
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
-
-func (u *DesktopUI) showAccountDialog() {
-	err := func() error {
-		currentChars := set.New[int32]()
-		cc, err := u.CharacterService.ListCharactersShort(context.Background())
-		if err != nil {
-			return err
-		}
-		for _, c := range cc {
-			currentChars.Add(c.ID)
-		}
-		a := u.newAccountArea()
-		d := dialog.NewCustom("Manage Characters", "Close", a.content, u.Window)
-		kxdialog.AddDialogKeyHandler(d, u.Window)
-		a.dialog = d
-		d.SetOnClosed(func() {
-			defer a.u.enableMenuShortcuts()
-			incomingChars := set.New[int32]()
-			for _, c := range a.characters {
-				incomingChars.Add(c.id)
-			}
-			if currentChars.Equal(incomingChars) {
-				return
-			}
-			if !incomingChars.Contains(a.u.CharacterID()) {
-				if err := a.u.setAnyCharacter(); err != nil {
-					slog.Error("Failed to set any character", "error", err)
-				}
-			}
-			if currentChars.Difference(incomingChars).Size() == 0 {
-				// no char has been deleted but still need to update some cross info
-				a.u.toolbarArea.refresh()
-				u.statusBarArea.refreshCharacterCount()
-				return
-			}
-			a.u.refreshCrossPages()
-		})
-		u.disableMenuShortcuts()
-		d.Show()
-		d.Resize(fyne.Size{Width: 500, Height: 500})
-		if err := a.refresh(); err != nil {
-			d.Hide()
-			return err
-		}
-		return nil
-	}()
-	if err != nil {
-		d := NewErrorDialog("Failed to show account dialog", err, u.Window)
-		d.Show()
-	}
-}
 
 type accountCharacter struct {
 	id                int32
@@ -80,21 +27,26 @@ type accountCharacter struct {
 	hasTokenWithScope bool
 }
 
-// accountArea is the UI area for managing of characters.
-type accountArea struct {
+// AccountArea is the UI area for managing of characters.
+type AccountArea struct {
+	Content *fyne.Container
+
 	characters []accountCharacter
-	content    *fyne.Container
-	dialog     *dialog.CustomDialog
 	list       *widget.List
 	title      *widget.Label
-	u          *DesktopUI
+	u          *BaseUI
+
+	OnSelectCharacter func()
+
+	updateAndRefresh func(context.Context, int32, bool)
 }
 
-func (u *DesktopUI) newAccountArea() *accountArea {
-	a := &accountArea{
-		characters: make([]accountCharacter, 0),
-		title:      widget.NewLabel(""),
-		u:          u,
+func (u *BaseUI) NewAccountArea(updateAndRefresh func(context.Context, int32, bool)) *AccountArea {
+	a := &AccountArea{
+		characters:       make([]accountCharacter, 0),
+		title:            widget.NewLabel(""),
+		u:                u,
+		updateAndRefresh: updateAndRefresh,
 	}
 
 	a.list = a.makeCharacterList()
@@ -106,7 +58,7 @@ func (u *DesktopUI) newAccountArea() *accountArea {
 	if a.u.IsOffline {
 		add.Disable()
 	}
-	a.content = container.NewBorder(
+	a.Content = container.NewBorder(
 		a.title,
 		container.NewVBox(add, container.NewPadded()),
 		nil,
@@ -116,13 +68,13 @@ func (u *DesktopUI) newAccountArea() *accountArea {
 	return a
 }
 
-func (a *accountArea) makeCharacterList() *widget.List {
+func (a *AccountArea) makeCharacterList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.characters)
 		},
 		func() fyne.CanvasObject {
-			portrait := canvas.NewImageFromResource(ui.IconCharacterplaceholder32Jpeg)
+			portrait := canvas.NewImageFromResource(IconCharacterplaceholder32Jpeg)
 			portrait.FillMode = canvas.ImageFillContain
 			portrait.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
 			name := widget.NewLabel("Template")
@@ -144,7 +96,7 @@ func (a *accountArea) makeCharacterList() *widget.List {
 			name.SetText(c.name)
 
 			icon := row[0].(*canvas.Image)
-			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
+			RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
 				return a.u.EveImageService.CharacterPortrait(c.id, defaultIconSize)
 			})
 
@@ -169,12 +121,14 @@ func (a *accountArea) makeCharacterList() *widget.List {
 			slog.Error("load current character", "char", c, "err", err)
 			return
 		}
-		a.dialog.Hide()
+		if a.OnSelectCharacter != nil {
+			a.OnSelectCharacter()
+		}
 	}
 	return l
 }
 
-func (a *accountArea) showDeleteDialog(c accountCharacter) {
+func (a *AccountArea) showDeleteDialog(c accountCharacter) {
 	d1 := NewConfirmDialog(
 		"Delete Character",
 		fmt.Sprintf("Are you sure you want to delete character %s?", c.name),
@@ -189,7 +143,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 						if err != nil {
 							return err
 						}
-						if err := a.refresh(); err != nil {
+						if err := a.Refresh(); err != nil {
 							return err
 						}
 						return nil
@@ -214,7 +168,7 @@ func (a *accountArea) showDeleteDialog(c accountCharacter) {
 	d1.Show()
 }
 
-func (a *accountArea) refresh() error {
+func (a *AccountArea) Refresh() error {
 	cc, err := a.u.CharacterService.ListCharactersShort(context.TODO())
 	if err != nil {
 		return err
@@ -234,7 +188,7 @@ func (a *accountArea) refresh() error {
 	return nil
 }
 
-func (a *accountArea) showAddCharacterDialog() {
+func (a *AccountArea) showAddCharacterDialog() {
 	cancelCTX, cancel := context.WithCancel(context.TODO())
 	s := "Please follow instructions in your browser to add a new character."
 	infoText := binding.BindString(&s)
@@ -255,10 +209,10 @@ func (a *accountArea) showAddCharacterDialog() {
 			} else if err != nil {
 				return err
 			}
-			if err := a.refresh(); err != nil {
+			if err := a.Refresh(); err != nil {
 				return err
 			}
-			a.u.updateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
+			a.updateAndRefresh(context.Background(), characterID, false)
 			return nil
 		}()
 		d1.Hide()

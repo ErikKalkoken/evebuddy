@@ -95,7 +95,7 @@ func (w *settingsWindow) makeGeneralPage() fyne.CanvasObject {
 		}
 		m.OnError = func(err error) {
 			slog.Error("Failed to clear image cache", "error", err)
-			d := NewErrorDialog("Failed to clear image cache", err, w.u.Window)
+			d := ui.NewErrorDialog("Failed to clear image cache", err, w.u.Window)
 			d.Show()
 		}
 		m.Start()
@@ -224,7 +224,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		if on {
 			err := w.u.CharacterService.EnableAllTrainingWatchers(ctx)
 			if err != nil {
-				d := NewErrorDialog("failed to enable training notification", err, w.window)
+				d := ui.NewErrorDialog("failed to enable training notification", err, w.window)
 				d.Show()
 			} else {
 				w.u.FyneApp.Preferences().SetBool(ui.SettingNotifyTrainingEnabled, true)
@@ -232,7 +232,7 @@ func (w *settingsWindow) makeNotificationPage() fyne.CanvasObject {
 		} else {
 			err := w.u.CharacterService.DisableAllTrainingWatchers(ctx)
 			if err != nil {
-				d := NewErrorDialog("failed to disable training notification", err, w.window)
+				d := ui.NewErrorDialog("failed to disable training notification", err, w.window)
 				d.Show()
 			} else {
 				w.u.FyneApp.Preferences().SetBool(ui.SettingNotifyTrainingEnabled, false)

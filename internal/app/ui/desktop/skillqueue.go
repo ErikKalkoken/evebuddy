@@ -13,6 +13,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -75,7 +76,7 @@ func (a *skillqueueArea) makeSkillqueue() *widget.List {
 			value string
 			wrap  bool
 		}{
-			{"Name", skillDisplayName(q.SkillName, q.FinishedLevel), false},
+			{"Name", ui.SkillDisplayName(q.SkillName, q.FinishedLevel), false},
 			{"Group", q.GroupName, false},
 			{"Description", q.SkillDescription, true},
 			{"Start date", timeFormattedOrFallback(q.StartDate, app.TimeDefaultFormat, "?"), false},
