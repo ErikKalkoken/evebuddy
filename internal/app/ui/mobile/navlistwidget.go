@@ -3,6 +3,7 @@ package mobile
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
@@ -44,6 +45,8 @@ func (w *NavList) CreateRenderer() fyne.WidgetRenderer {
 			return container.NewHBox(
 				widget.NewIcon(ui.IconBlankSvg),
 				widget.NewLabel("Template"),
+				layout.NewSpacer(),
+				widget.NewIcon(ui.IconChevronRightSvg),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {

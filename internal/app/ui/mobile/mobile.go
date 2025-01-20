@@ -38,69 +38,71 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			theme.AccountIcon(),
 			"Character Sheet",
 			func() {
-				home.Push("Character Sheet",
-					NewNavList(
-						NewNavListItem(
-							nil,
-							"Attributes",
-							func() {
-								home.Push("Attributes", u.AttributesArea.Content)
-							},
+				home.Push(
+					NewAppBar(
+						"Character Sheet",
+						NewNavList(
+							NewNavListItem(
+								nil,
+								"Attributes",
+								func() {
+									home.Push(NewAppBar("Attributes", u.AttributesArea.Content))
+								},
+							),
+							NewNavListItem(
+								nil,
+								"Implants",
+								func() {
+									home.Push(NewAppBar("Implants", widget.NewLabel("PLACEHOLDER")))
+								},
+							),
 						),
-						NewNavListItem(
-							nil,
-							"Implants",
-							func() {
-								home.Push("Implants", widget.NewLabel("PLACEHOLDER"))
-							},
-						),
-					),
-				)
+					))
 			},
 		),
 		NewNavListItem(
 			theme.NewThemedResource(ui.IconInventory2Svg),
 			"Assets",
 			func() {
-				home.Push("Assets", widget.NewLabel("PLACEHOLDER"))
+				home.Push(NewAppBar("Assets", widget.NewLabel("PLACEHOLDER")))
 			},
 		),
 		NewNavListItem(
 			theme.NewThemedResource(ui.IconEarthSvg),
 			"Colonies",
 			func() {
-				home.Push("Colonies", widget.NewLabel("PLACEHOLDER"))
+				home.Push(NewAppBar("Colonies", widget.NewLabel("PLACEHOLDER")))
 			},
 		),
 		NewNavListItem(
 			theme.MailComposeIcon(),
 			"Mail",
 			func() {
-				home.Push("Mail", widget.NewLabel("PLACEHOLDER"))
+				home.Push(NewAppBar("Mail", widget.NewLabel("PLACEHOLDER")))
 			},
 		),
 		NewNavListItem(
 			theme.MailComposeIcon(),
 			"Communications",
 			func() {
-				home.Push("Communications", widget.NewLabel("PLACEHOLDER"))
+				home.Push(NewAppBar("Communications", widget.NewLabel("PLACEHOLDER")))
 			},
 		),
 		NewNavListItem(
 			theme.NewThemedResource(ui.IconFileSignSvg),
 			"Contracts",
 			func() {
-				home.Push("Contracts", widget.NewLabel("PLACEHOLDER"))
+				home.Push(NewAppBar("Contracts", widget.NewLabel("PLACEHOLDER")))
 			},
 		),
 		NewNavListItem(
 			theme.NewThemedResource(ui.IconGroupSvg),
 			"Characters",
 			func() {
-				home.Push("Characters", widget.NewLabel("PLACEHOLDER"))
+				home.Push(NewAppBar("Characters", widget.NewLabel("PLACEHOLDER")))
 			},
 		))
-	home = NewNavigator("Home", menu)
+	home = NewNavigator(NewAppBar("Home", menu))
 
 	makePage := func(c fyne.CanvasObject, _ func()) fyne.CanvasObject {
 		return container.NewScroll(c)
@@ -111,34 +113,25 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			nil,
 			"General",
 			func() {
-				settings.Push(
-					"General",
-					makePage(u.MakeGeneralSettingsPage(nil)),
-				)
+				settings.Push(NewAppBar("General", makePage(u.MakeGeneralSettingsPage(nil))))
 			},
 		),
 		NewNavListItem(
 			nil,
 			"Eve Online",
 			func() {
-				settings.Push(
-					"Eve Online",
-					makePage(u.MakeEVEOnlinePage()),
-				)
+				settings.Push(NewAppBar("Eve Online", makePage(u.MakeEVEOnlinePage())))
 			},
 		),
 		NewNavListItem(
 			nil,
 			"Notifications",
 			func() {
-				settings.Push(
-					"Notifications",
-					makePage(u.MakeNotificationPage(nil)),
-				)
+				settings.Push(NewAppBar("Notifications", makePage(u.MakeNotificationPage(nil))))
 			},
 		),
 	)
-	settings = NewNavigator("Settings", settingsList)
+	settings = NewNavigator(NewAppBar("Settings", settingsList))
 
 	u.characterTab = container.NewTabItemWithIcon("", theme.AccountIcon(), widget.NewLabel(""))
 	u.navBar = container.NewAppTabs(

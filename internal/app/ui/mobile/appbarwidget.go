@@ -15,16 +15,16 @@ import (
 type AppBar struct {
 	widget.BaseWidget
 
-	body      fyne.CanvasObject
-	navigator *Navigator
-	title     string
+	Navigator *Navigator
+
+	body  fyne.CanvasObject
+	title string
 }
 
-func NewAppBar(title string, body fyne.CanvasObject, n *Navigator) *AppBar {
+func NewAppBar(title string, body fyne.CanvasObject) *AppBar {
 	w := &AppBar{
-		body:      body,
-		navigator: n,
-		title:     title,
+		body:  body,
+		title: title,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -34,10 +34,10 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 	title := widget.NewLabel(w.title)
 	title.TextStyle.Bold = true
 	row := container.NewStack(container.NewHBox(layout.NewSpacer(), title, layout.NewSpacer()))
-	if w.navigator != nil {
+	if w.Navigator != nil {
 		row.Add(container.NewHBox(kxwidget.NewTappableIcon(
-			theme.NewThemedResource(ui.IconArrowLeftSvg), func() {
-				w.navigator.Pop()
+			theme.NewThemedResource(ui.IconChevronLeftSvg), func() {
+				w.Navigator.Pop()
 			})))
 	}
 	top := container.NewVBox(row, widget.NewSeparator())

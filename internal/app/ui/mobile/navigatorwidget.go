@@ -20,21 +20,22 @@ type Navigator struct {
 }
 
 // NewNavigator return a new Navigator and defines the root page.
-func NewNavigator(title string, content fyne.CanvasObject) *Navigator {
+func NewNavigator(ab *AppBar) *Navigator {
 	n := &Navigator{
-		stack: container.NewStack(NewAppBar(title, content, nil)),
+		stack: container.NewStack(ab),
 	}
 	n.ExtendBaseWidget(n)
 	return n
 }
 
 // Push adds a new page and shows it.
-func (n *Navigator) Push(title string, content fyne.CanvasObject) {
+func (n *Navigator) Push(ab *AppBar) {
+	ab.Navigator = n
 	func() {
 		n.mu.Lock()
 		defer n.mu.Unlock()
 		previous := n.topPage()
-		n.stack.Add(NewAppBar(title, content, n))
+		n.stack.Add(ab)
 		previous.Hide()
 	}()
 	n.stack.Refresh()
