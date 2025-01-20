@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
 type navListItem struct {
@@ -42,7 +43,12 @@ func (w *NavList) CreateRenderer() fyne.WidgetRenderer {
 			return len(w.items)
 		},
 		func() fyne.CanvasObject {
-			return container.NewHBox(widget.NewIcon(theme.BrokenImageIcon()), widget.NewLabel("Template"), layout.NewSpacer(), widget.NewLabel(">"))
+			return container.NewHBox(
+				widget.NewIcon(theme.BrokenImageIcon()),
+				widget.NewLabel("Template"),
+				layout.NewSpacer(),
+				widget.NewIcon(theme.NewThemedResource(ui.IconChevronRightSvg)),
+			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			item := w.items[id]

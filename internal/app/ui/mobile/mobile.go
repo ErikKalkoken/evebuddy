@@ -61,25 +61,23 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			"Character Sheet",
 			func() {
 				main.Push("Character Sheet",
-					container.NewVBox(
-						widget.NewLabel("Character Sheet"),
-						NewNavList(
-							NewNavListItem(
-								nil,
-								"Attributes",
-								func() {
-									main.Push("Attributes", widget.NewLabel("PLACEHOLDER"))
-								},
-							),
-							NewNavListItem(
-								nil,
-								"Implants",
-								func() {
-									main.Push("Implants", widget.NewLabel("PLACEHOLDER"))
-								},
-							),
+					NewNavList(
+						NewNavListItem(
+							nil,
+							"Attributes",
+							func() {
+								main.Push("Attributes", widget.NewLabel("PLACEHOLDER"))
+							},
 						),
-					))
+						NewNavListItem(
+							nil,
+							"Implants",
+							func() {
+								main.Push("Implants", widget.NewLabel("PLACEHOLDER"))
+							},
+						),
+					),
+				)
 			},
 		),
 		NewNavListItem(

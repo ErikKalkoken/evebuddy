@@ -5,7 +5,12 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 // Navigator is a container that allows the user to navigate to a new page
@@ -15,18 +20,15 @@ import (
 type Navigator struct {
 	widget.BaseWidget
 
-	mu     sync.Mutex
-	stack  *fyne.Container // stack of pages. First object is the root page.
-	titles []string
+	mu    sync.Mutex
+	stack *fyne.Container // stack of pages. First object is the root page.
 }
 
 // NewNavigator return a new Navigator and defines the root page.
 func NewNavigator(title string, content fyne.CanvasObject) *Navigator {
 	n := &Navigator{
-		stack:  container.NewStack(content),
-		titles: make([]string, 0),
+		stack: container.NewStack(content),
 	}
-	n.titles = append(n.titles, title)
 	n.ExtendBaseWidget(n)
 	return n
 }
@@ -36,14 +38,23 @@ func (n *Navigator) Push(title string, content fyne.CanvasObject) {
 	func() {
 		n.mu.Lock()
 		defer n.mu.Unlock()
-		link := widget.NewHyperlink("< "+n.topTitle(), nil)
-		link.OnTapped = func() {
-			n.Pop()
-		}
 		previous := n.topPage()
-		page := container.NewBorder(link, nil, nil, nil, content)
+		x := widget.NewLabel(title)
+		x.Importance = widget.HighImportance
+		x.TextStyle.Bold = true
+		appBar := container.NewVBox(
+			container.NewHBox(
+				kxwidget.NewTappableIcon(theme.NewThemedResource(ui.IconChevronLeftSvg), func() {
+					n.Pop()
+				}),
+				layout.NewSpacer(),
+				x,
+				layout.NewSpacer(),
+			),
+			widget.NewSeparator(),
+		)
+		page := container.NewBorder(appBar, nil, nil, nil, content)
 		n.stack.Add(page)
-		n.titles = append(n.titles, title)
 		previous.Hide()
 	}()
 	n.stack.Refresh()
@@ -59,7 +70,6 @@ func (n *Navigator) Pop() {
 			return
 		}
 		n.stack.Remove(n.topPage())
-		n.titles = n.titles[:len(n.titles)-1]
 		n.topPage().Show()
 	}()
 	n.stack.Refresh()
@@ -73,7 +83,6 @@ func (n *Navigator) PopAll() {
 		defer n.mu.Unlock()
 		for len(n.stack.Objects) > 1 {
 			n.stack.Remove(n.topPage())
-			n.titles = n.titles[:len(n.titles)-2]
 		}
 	}()
 	n.stack.Refresh()
@@ -81,10 +90,6 @@ func (n *Navigator) PopAll() {
 
 func (n *Navigator) topPage() fyne.CanvasObject {
 	return n.stack.Objects[len(n.stack.Objects)-1]
-}
-
-func (n *Navigator) topTitle() string {
-	return n.titles[len(n.titles)-1]
 }
 
 func (n *Navigator) CreateRenderer() fyne.WidgetRenderer {
