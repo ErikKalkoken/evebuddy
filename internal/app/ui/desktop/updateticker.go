@@ -140,7 +140,7 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 		}
 	case app.SectionAttributes:
 		if isShown && needsRefresh {
-			u.attributesArea.refresh()
+			u.attributesArea.Refresh()
 		}
 	case app.SectionContracts:
 		if isShown && needsRefresh {

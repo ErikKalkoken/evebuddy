@@ -19,16 +19,19 @@ const (
 )
 
 type MobileUI struct {
-	ui.BaseUI
+	*ui.BaseUI
 
-	navBar       *container.AppTabs
-	characterTab *container.TabItem
+	navBar         *container.AppTabs
+	characterTab   *container.TabItem
+	attributesArea *ui.Attributes
 }
 
 // NewUI build the UI and returns it.
 func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	u := &MobileUI{}
 	u.BaseUI = ui.NewBaseUI(fyneApp, u.refreshCharacter)
+
+	u.attributesArea = u.NewAttributes()
 
 	var main *Navigator
 	menu := NewNavList(
@@ -42,7 +45,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 							nil,
 							"Attributes",
 							func() {
-								main.Push("Attributes", widget.NewLabel("PLACEHOLDER"))
+								main.Push("Attributes", u.attributesArea.Content)
 							},
 						),
 						NewNavListItem(
@@ -151,5 +154,6 @@ func (u *MobileUI) refreshCharacter() {
 		}
 		u.characterTab.Icon = r
 		u.navBar.Refresh()
+		u.attributesArea.Refresh()
 	}
 }

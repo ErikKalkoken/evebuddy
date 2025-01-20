@@ -34,7 +34,7 @@ const (
 // Each DesktopUI area holds a pointer of the DesktopUI instance, so that areas can
 // call methods on other DesktopUI areas and access shared variables in the DesktopUI.
 type DesktopUI struct {
-	ui.BaseUI
+	*ui.BaseUI
 
 	// Paths to user data (for information only)
 	DataPaths map[string]string
@@ -45,7 +45,7 @@ type DesktopUI struct {
 	assetsArea            *assetsArea
 	assetSearchArea       *assetSearchArea
 	assetTab              *container.TabItem
-	attributesArea        *attributesArea
+	attributesArea        *ui.Attributes
 	biographyArea         *biographyArea
 	coloniesArea          *coloniesArea
 	contractsArea         *contractsArea
@@ -83,7 +83,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	}
 	u.BaseUI = ui.NewBaseUI(fyneApp, u.refreshCharacter)
 	u.identifyDesktop()
-	u.attributesArea = u.newAttributesArena()
+	u.attributesArea = u.NewAttributes()
 	u.biographyArea = u.newBiographyArea()
 	u.jumpClonesArea = u.NewJumpClonesArea()
 	u.implantsArea = u.newImplantsArea()
@@ -91,7 +91,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		theme.AccountIcon(), container.NewAppTabs(
 			container.NewTabItem("Augmentations", u.implantsArea.content),
 			container.NewTabItem("Jump Clones", u.jumpClonesArea.content),
-			container.NewTabItem("Attributes", u.attributesArea.content),
+			container.NewTabItem("Attributes", u.attributesArea.Content),
 			container.NewTabItem("Biography", u.biographyArea.content),
 		))
 
@@ -307,7 +307,7 @@ func (u *DesktopUI) saveAppState() {
 func (u *DesktopUI) refreshCharacter() {
 	ff := map[string]func(){
 		"assets":            u.assetsArea.redraw,
-		"attributes":        u.attributesArea.refresh,
+		"attributes":        u.attributesArea.Refresh,
 		"bio":               u.biographyArea.refresh,
 		"contracts":         u.contractsArea.refresh,
 		"implants":          u.implantsArea.refresh,

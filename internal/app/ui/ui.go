@@ -31,8 +31,8 @@ type BaseUI struct {
 	refreshCharacter func()
 }
 
-func NewBaseUI(fyneApp fyne.App, refreshCharacter func()) BaseUI {
-	u := BaseUI{
+func NewBaseUI(fyneApp fyne.App, refreshCharacter func()) *BaseUI {
+	u := &BaseUI{
 		FyneApp:          fyneApp,
 		refreshCharacter: refreshCharacter,
 	}
