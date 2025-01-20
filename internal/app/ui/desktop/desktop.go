@@ -13,15 +13,12 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/dialog"
 	fyneDesktop "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
-	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
 // Desktop UI constants
@@ -60,13 +57,11 @@ type DesktopUI struct {
 	overviewTab           *container.TabItem
 	planetArea            *planetArea
 	planetTab             *container.TabItem
-	settingsWindow        fyne.Window
 	shipsArea             *shipsArea
 	skillCatalogueArea    *skillCatalogueArea
 	skillqueueArea        *skillqueueArea
 	skillTab              *container.TabItem
 	statusBarArea         *statusBarArea
-	statusWindow          fyne.Window
 	tabs                  *container.AppTabs
 	toolbarArea           *toolbarArea
 	trainingArea          *trainingArea
@@ -74,6 +69,10 @@ type DesktopUI struct {
 	walletTab             *container.TabItem
 	walletTransactionArea *walletTransactionArea
 	wealthArea            *wealthArea
+
+	accountWindow  fyne.Window
+	settingsWindow fyne.Window
+	statusWindow   fyne.Window
 }
 
 // NewDesktopUI build the UI and returns it.
@@ -83,6 +82,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	}
 	u.BaseUI = ui.NewBaseUI(fyneApp, u.refreshCharacter, u.refreshCrossPages)
 	u.identifyDesktop()
+	u.AccountArea = u.NewAccountArea(u.updateCharacterAndRefreshIfNeeded)
 	u.biographyArea = u.newBiographyArea()
 	u.jumpClonesArea = u.NewJumpClonesArea()
 	u.implantsArea = u.newImplantsArea()
@@ -422,49 +422,49 @@ func makeSubTabsKey(i int) string {
 	return fmt.Sprintf("tabs-sub%d-id", i)
 }
 
-func (u *DesktopUI) ShowAccountDialog() {
-	err := func() error {
-		currentChars := set.New[int32]()
-		cc, err := u.CharacterService.ListCharactersShort(context.Background())
-		if err != nil {
-			return err
-		}
-		for _, c := range cc {
-			currentChars.Add(c.ID)
-		}
-		a := u.NewAccountArea(u.updateCharacterAndRefreshIfNeeded)
-		d := dialog.NewCustom("Manage Characters", "Close", a.Content, u.Window)
-		kxdialog.AddDialogKeyHandler(d, u.Window)
-		a.OnSelectCharacter = func() {
-			d.Hide()
-		}
-		d.SetOnClosed(func() {
-			defer u.enableMenuShortcuts()
-			// incomingChars := set.New[int32]()
-			// for _, c := range a.characters {
-			// 	incomingChars.Add(c.id)
-			// }
-			// if currentChars.Equal(incomingChars) {
-			// 	return
-			// }
-			// if !incomingChars.Contains(u.CharacterID()) {
-			// 	if err := u.SetAnyCharacter(); err != nil {
-			// 		slog.Error("Failed to set any character", "error", err)
-			// 	}
-			// }
-			u.refreshCrossPages()
-		})
-		u.disableMenuShortcuts()
-		d.Show()
-		d.Resize(fyne.Size{Width: 500, Height: 500})
-		if err := a.Refresh(); err != nil {
-			d.Hide()
-			return err
-		}
-		return nil
-	}()
-	if err != nil {
-		d := ui.NewErrorDialog("Failed to show account dialog", err, u.Window)
-		d.Show()
-	}
-}
+// func (u *DesktopUI) ShowAccountDialog() {
+// 	err := func() error {
+// 		currentChars := set.New[int32]()
+// 		cc, err := u.CharacterService.ListCharactersShort(context.Background())
+// 		if err != nil {
+// 			return err
+// 		}
+// 		for _, c := range cc {
+// 			currentChars.Add(c.ID)
+// 		}
+// 		a := u.NewAccountArea(u.updateCharacterAndRefreshIfNeeded)
+// 		d := dialog.NewCustom("Manage Characters", "Close", a.Content, u.Window)
+// 		kxdialog.AddDialogKeyHandler(d, u.Window)
+// 		a.OnSelectCharacter = func() {
+// 			d.Hide()
+// 		}
+// 		d.SetOnClosed(func() {
+// 			defer u.enableMenuShortcuts()
+// 			// incomingChars := set.New[int32]()
+// 			// for _, c := range a.characters {
+// 			// 	incomingChars.Add(c.id)
+// 			// }
+// 			// if currentChars.Equal(incomingChars) {
+// 			// 	return
+// 			// }
+// 			// if !incomingChars.Contains(u.CharacterID()) {
+// 			// 	if err := u.SetAnyCharacter(); err != nil {
+// 			// 		slog.Error("Failed to set any character", "error", err)
+// 			// 	}
+// 			// }
+// 			u.refreshCrossPages()
+// 		})
+// 		u.disableMenuShortcuts()
+// 		d.Show()
+// 		d.Resize(fyne.Size{Width: 500, Height: 500})
+// 		if err := a.Refresh(); err != nil {
+// 			d.Hide()
+// 			return err
+// 		}
+// 		return nil
+// 	}()
+// 	if err != nil {
+// 		d := ui.NewErrorDialog("Failed to show account dialog", err, u.Window)
+// 		d.Show()
+// 	}
+// }

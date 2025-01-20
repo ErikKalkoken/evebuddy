@@ -7,7 +7,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -31,6 +30,7 @@ type MobileUI struct {
 func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	u := &MobileUI{}
 	u.BaseUI = ui.NewBaseUI(fyneApp, u.refreshCharacter, u.refreshCrossPages)
+	u.AccountArea = u.NewAccountArea(u.updateCharacterAndRefreshIfNeeded)
 
 	var home *Navigator
 	menu := NewNavList(
@@ -149,31 +149,13 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	)
 	settings = NewNavigator(NewAppBar("Settings", settingsList))
 
-	u.characterTab = container.NewTabItemWithIcon("", theme.AccountIcon(), widget.NewLabel(""))
+	u.characterTab = container.NewTabItemWithIcon("", theme.AccountIcon(), u.AccountArea.Content)
 	u.navBar = container.NewAppTabs(
 		container.NewTabItemWithIcon("", theme.HomeIcon(), home),
 		u.characterTab,
 		container.NewTabItemWithIcon("", theme.SettingsIcon(), settings),
 	)
 	u.navBar.SetTabLocation(container.TabLocationBottom)
-	u.navBar.OnSelected = func(ti *container.TabItem) {
-		if ti == u.characterTab {
-			a := u.NewAccountArea(u.updateCharacterAndRefreshIfNeeded)
-			d := dialog.NewCustom("Manage Characters", "Close", a.Content, u.Window)
-			a.OnSelectCharacter = func() {
-				d.Hide()
-			}
-			d.SetOnClosed(func() {
-				u.refreshCrossPages()
-			})
-			d.Resize(fyne.Size{Width: 500, Height: 500})
-			if err := a.Refresh(); err != nil {
-				d.Hide()
-				// return err
-			}
-			d.Show()
-		}
-	}
 	u.Window.SetContent(u.navBar)
 	return u
 }
@@ -220,6 +202,7 @@ func (u *MobileUI) refreshCharacter() {
 		u.characterTab.Icon = r
 		u.navBar.Refresh()
 		u.AttributesArea.Refresh()
+		u.AccountArea.Refresh()
 	}
 }
 

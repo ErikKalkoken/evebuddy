@@ -62,7 +62,7 @@ func (u *DesktopUI) newStatusBarArea() *statusBarArea {
 		u:              u,
 	}
 	a.characterCount = widgets.NewStatusBarItem(theme.AccountIcon(), "?", func() {
-		u.ShowAccountDialog()
+		u.showAccountWindow()
 	})
 	a.updateStatus = widgets.NewStatusBarItem(theme.NewThemedResource(ui.IconUpdateSvg), "?", func() {
 		u.showStatusWindow()

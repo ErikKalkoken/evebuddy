@@ -21,6 +21,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 )
 
+const (
+	accountIconSize = 32
+)
+
 type accountCharacter struct {
 	id                int32
 	name              string
@@ -76,7 +80,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 		func() fyne.CanvasObject {
 			portrait := canvas.NewImageFromResource(IconCharacterplaceholder32Jpeg)
 			portrait.FillMode = canvas.ImageFillContain
-			portrait.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
+			portrait.SetMinSize(fyne.Size{Width: accountIconSize, Height: accountIconSize})
 			name := widget.NewLabel("Template")
 			button := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {})
 			button.Importance = widget.DangerImportance

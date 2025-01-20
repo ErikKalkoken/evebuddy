@@ -35,6 +35,7 @@ type BaseUI struct {
 	Window    fyne.Window
 
 	AttributesArea *Attributes
+	AccountArea    *AccountArea
 
 	refreshCharacter  func()
 	refreshCrossPages func()
