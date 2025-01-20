@@ -129,7 +129,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	u.navBar = container.NewAppTabs(
 		container.NewTabItemWithIcon("", theme.HomeIcon(), main),
 		u.characterTab,
-		container.NewTabItemWithIcon("", theme.MenuIcon(), widget.NewLabel("More")),
+		container.NewTabItemWithIcon("", theme.SettingsIcon(), widget.NewLabel("Settings")),
 	)
 	u.navBar.SetTabLocation(container.TabLocationBottom)
 	u.window.SetContent(u.navBar)

@@ -8,27 +8,27 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type NavListItem struct {
-	Action func()
-	Icon   fyne.Resource
-	Title  string
+type navListItem struct {
+	action func()
+	icon   fyne.Resource
+	title  string
 }
 
-func NewNavListItem(icon fyne.Resource, title string, action func()) NavListItem {
-	return NavListItem{
-		Action: action,
-		Icon:   icon,
-		Title:  title,
+func NewNavListItem(icon fyne.Resource, title string, action func()) navListItem {
+	return navListItem{
+		action: action,
+		icon:   icon,
+		title:  title,
 	}
 }
 
 type NavList struct {
 	widget.BaseWidget
 
-	items []NavListItem
+	items []navListItem
 }
 
-func NewNavList(items ...NavListItem) *NavList {
+func NewNavList(items ...navListItem) *NavList {
 	w := &NavList{
 		items: items,
 	}
@@ -47,13 +47,13 @@ func (w *NavList) CreateRenderer() fyne.WidgetRenderer {
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			item := w.items[id]
 			hbox := co.(*fyne.Container).Objects
-			hbox[0].(*widget.Icon).SetResource(item.Icon)
-			hbox[1].(*widget.Label).SetText(item.Title)
+			hbox[0].(*widget.Icon).SetResource(item.icon)
+			hbox[1].(*widget.Label).SetText(item.title)
 		},
 	)
 	c.OnSelected = func(id widget.ListItemID) {
 		defer c.UnselectAll()
-		if a := w.items[id].Action; a != nil {
+		if a := w.items[id].action; a != nil {
 			a()
 		}
 	}
