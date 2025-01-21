@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -48,10 +48,10 @@ type SkillCatalogueArea struct {
 	skills         []skillTrained
 	skillsGrid     *widget.GridWrap
 	total          *widget.Label
-	u              *DesktopUI
+	u              *BaseUI
 }
 
-func (u *DesktopUI) NewSkillCatalogueArea() *SkillCatalogueArea {
+func (u *BaseUI) NewSkillCatalogueArea() *SkillCatalogueArea {
 	a := &SkillCatalogueArea{
 		groups:         make([]skillGroupProgress, 0),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
@@ -165,12 +165,12 @@ func (a *SkillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
 			return
 		}
 		skill := a.skills[id]
-		a.u.showTypeInfoWindow(skill.id, a.u.CharacterID(), descriptionTab)
+		a.u.ShowTypeInfoWindow(skill.id, a.u.CharacterID(), DescriptionTab)
 	}
 	return g
 }
 
-func (a *SkillCatalogueArea) redraw() {
+func (a *SkillCatalogueArea) Redraw() {
 	a.groupsGrid.UnselectAll()
 	a.skills = make([]skillTrained, 0)
 	a.Refresh()

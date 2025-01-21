@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"cmp"
@@ -29,10 +29,10 @@ type WealthArea struct {
 	Content fyne.CanvasObject
 	charts  *fyne.Container
 	top     *widget.Label
-	u       *DesktopUI
+	u       *BaseUI
 }
 
-func (u *DesktopUI) NewWealthArea() *WealthArea {
+func (u *BaseUI) NewWealthArea() *WealthArea {
 	a := &WealthArea{
 		top: widget.NewLabel(""),
 		u:   u,

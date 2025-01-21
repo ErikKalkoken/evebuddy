@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -23,10 +23,10 @@ type PlanetArea struct {
 	planets []*app.CharacterPlanet
 	list    *widget.List
 	top     *widget.Label
-	u       *DesktopUI
+	u       *BaseUI
 }
 
-func (u *DesktopUI) NewPlanetArea() *PlanetArea {
+func (u *BaseUI) NewPlanetArea() *PlanetArea {
 	a := PlanetArea{
 		planets: make([]*app.CharacterPlanet, 0),
 		top:     widget.NewLabel(""),
@@ -128,6 +128,7 @@ func (a *PlanetArea) updateTab() {
 	if expiredCount > 0 {
 		s += fmt.Sprintf(" (%d)", expiredCount)
 	}
-	a.u.planetTab.Text = s
-	a.u.tabs.Refresh()
+	// FIXME
+	// a.u.planetTab.Text = s
+	// a.u.tabs.Refresh()
 }

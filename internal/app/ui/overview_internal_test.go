@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/stretchr/testify/assert"
@@ -58,10 +57,8 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 	})
 }
 
-func newUI(st *storage.Storage) *DesktopUI {
-	u := &DesktopUI{
-		BaseUI: &ui.BaseUI{},
-	}
+func newUI(st *storage.Storage) *BaseUI {
+	u := &BaseUI{}
 	u.CharacterService = newCharacterService(st)
 	return u
 }

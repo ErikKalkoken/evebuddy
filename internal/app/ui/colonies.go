@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -33,10 +33,10 @@ type ColoniesArea struct {
 	rows    []colonyRow
 	table   *widget.Table
 	top     *widget.Label
-	u       *DesktopUI
+	u       *BaseUI
 }
 
-func (u *DesktopUI) NewColoniesArea() *ColoniesArea {
+func (u *BaseUI) NewColoniesArea() *ColoniesArea {
 	a := ColoniesArea{
 		top:  widget.NewLabel(""),
 		rows: make([]colonyRow, 0),

@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"fyne.io/fyne/v2"
@@ -10,17 +10,17 @@ import (
 type BiographyArea struct {
 	Content fyne.CanvasObject
 	text    *widget.Label
-	u       *DesktopUI
+	u       *BaseUI
 }
 
-func (u *DesktopUI) NewBiographyArea() *BiographyArea {
+func (u *BaseUI) NewBiographyArea() *BiographyArea {
 	a := &BiographyArea{u: u, text: widget.NewLabel("")}
 	a.text.Wrapping = fyne.TextWrapBreak
 	a.Content = a.text
 	return a
 }
 
-func (a *BiographyArea) refresh() {
+func (a *BiographyArea) Refresh() {
 	var s string
 	c := a.u.CurrentCharacter()
 	if c == nil {

@@ -41,16 +41,13 @@ type AccountArea struct {
 	u          *BaseUI
 
 	OnSelectCharacter func()
-
-	updateAndRefresh func(context.Context, int32, bool)
 }
 
-func (u *BaseUI) NewAccountArea(updateAndRefresh func(context.Context, int32, bool)) *AccountArea {
+func (u *BaseUI) NewAccountArea() *AccountArea {
 	a := &AccountArea{
-		characters:       make([]accountCharacter, 0),
-		title:            widget.NewLabel(""),
-		u:                u,
-		updateAndRefresh: updateAndRefresh,
+		characters: make([]accountCharacter, 0),
+		title:      widget.NewLabel(""),
+		u:          u,
 	}
 
 	a.list = a.makeCharacterList()
@@ -216,7 +213,7 @@ func (a *AccountArea) showAddCharacterDialog() {
 			if err := a.Refresh(); err != nil {
 				return err
 			}
-			a.updateAndRefresh(context.Background(), characterID, false)
+			a.u.UpdateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
 			return nil
 		}()
 		d1.Hide()

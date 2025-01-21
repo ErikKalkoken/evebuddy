@@ -2,20 +2,15 @@
 package desktop
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"runtime"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	fyneDesktop "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
-	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
@@ -40,26 +35,6 @@ type DesktopUI struct {
 	deskApp fyneDesktop.App
 	sfg     *singleflight.Group
 
-	AssetsArea            *AssetsArea
-	AssetSearchArea       *AssetSearchArea
-	BiographyArea         *BiographyArea
-	ColoniesArea          *ColoniesArea
-	ContractsArea         *ContractsArea
-	ImplantsArea          *ImplantsArea
-	JumpClonesArea        *JumpClonesArea
-	LocationsArea         *LocationsArea
-	MailArea              *MailArea
-	NotificationsArea     *NotificationsArea
-	OverviewArea          *OverviewArea
-	PlanetArea            *PlanetArea
-	ShipsArea             *ShipsArea
-	SkillCatalogueArea    *SkillCatalogueArea
-	SkillqueueArea        *SkillqueueArea
-	TrainingArea          *TrainingArea
-	WalletJournalArea     *WalletJournalArea
-	WalletTransactionArea *WalletTransactionArea
-	WealthArea            *WealthArea
-
 	statusBarArea *statusBarArea
 	toolbarArea   *toolbarArea
 
@@ -82,12 +57,8 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	u := &DesktopUI{
 		sfg: new(singleflight.Group),
 	}
-	u.BaseUI = ui.NewBaseUI(fyneApp, u.RefreshCharacter, u.RefreshCrossPages)
+	u.BaseUI = ui.NewBaseUI(fyneApp)
 	u.identifyDesktop()
-	u.AccountArea = u.NewAccountArea(u.UpdateCharacterAndRefreshIfNeeded)
-	u.BiographyArea = u.NewBiographyArea()
-	u.JumpClonesArea = u.NewJumpClonesArea()
-	u.ImplantsArea = u.NewImplantsArea()
 	characterTab := container.NewTabItemWithIcon("Character",
 		theme.AccountIcon(), container.NewAppTabs(
 			container.NewTabItem("Augmentations", u.ImplantsArea.Content),
@@ -96,38 +67,27 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 			container.NewTabItem("Biography", u.BiographyArea.Content),
 		))
 
-	u.AssetsArea = u.NewAssetsArea()
 	u.assetTab = container.NewTabItemWithIcon("Assets",
 		theme.NewThemedResource(ui.IconInventory2Svg), container.NewAppTabs(
 			container.NewTabItem("Assets", u.AssetsArea.Content),
 		))
 
-	u.PlanetArea = u.NewPlanetArea()
 	u.planetTab = container.NewTabItemWithIcon("Colonies",
 		theme.NewThemedResource(ui.IconEarthSvg), container.NewAppTabs(
 			container.NewTabItem("Colonies", u.PlanetArea.Content),
 		))
 
-	u.MailArea = u.NewMailArea()
-	u.NotificationsArea = u.NewNotificationsArea()
 	u.mailTab = container.NewTabItemWithIcon("",
 		theme.MailComposeIcon(), container.NewAppTabs(
 			container.NewTabItem("Mail", u.MailArea.Content),
 			container.NewTabItem("Communications", u.NotificationsArea.Content),
 		))
 
-	u.ContractsArea = u.NewContractsArea()
 	contractTab := container.NewTabItemWithIcon("Contracts",
 		theme.NewThemedResource(ui.IconFileSignSvg), container.NewAppTabs(
 			container.NewTabItem("Contracts", u.ContractsArea.Content),
 		))
 
-	u.OverviewArea = u.NewOverviewArea()
-	u.LocationsArea = u.NewLocationsArea()
-	u.TrainingArea = u.NewTrainingArea()
-	u.AssetSearchArea = u.NewAssetSearchArea()
-	u.ColoniesArea = u.NewColoniesArea()
-	u.WealthArea = u.NewWealthArea()
 	u.overviewTab = container.NewTabItemWithIcon("Characters",
 		theme.NewThemedResource(ui.IconGroupSvg), container.NewAppTabs(
 			container.NewTabItem("Overview", u.OverviewArea.Content),
@@ -138,9 +98,6 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 			container.NewTabItem("Wealth", u.WealthArea.Content),
 		))
 
-	u.SkillqueueArea = u.NewSkillqueueArea()
-	u.SkillCatalogueArea = u.NewSkillCatalogueArea()
-	u.ShipsArea = u.newShipArea()
 	u.skillTab = container.NewTabItemWithIcon("Skills",
 		theme.NewThemedResource(ui.IconSchoolSvg), container.NewAppTabs(
 			container.NewTabItem("Training Queue", u.SkillqueueArea.Content),
@@ -148,8 +105,6 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 			container.NewTabItem("Ships", u.ShipsArea.Content),
 		))
 
-	u.WalletJournalArea = u.NewWalletJournalArea()
-	u.WalletTransactionArea = u.NewWalletTransactionArea()
 	u.walletTab = container.NewTabItemWithIcon("Wallet",
 		theme.NewThemedResource(ui.IconAttachmoneySvg), container.NewAppTabs(
 			container.NewTabItem("Transactions", u.WalletJournalArea.Content),
@@ -235,8 +190,6 @@ func (u *DesktopUI) Init() {
 // ShowAndRun shows the UI and runs it (blocking).
 func (u *DesktopUI) ShowAndRun() {
 	u.FyneApp.Lifecycle().SetOnStarted(func() {
-		slog.Info("App started")
-
 		// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
 		// only in parts and freeze. The issue is known to happen on Linux desktops.
 		if runtime.GOOS == "linux" {
@@ -247,37 +200,16 @@ func (u *DesktopUI) ShowAndRun() {
 				u.Window.Resize(fyne.NewSize(s.Width, s.Height))
 			}()
 		}
-		if u.IsOffline {
-			slog.Info("Started in offline mode")
-		}
-		if u.IsUpdateTickerDisabled {
-			slog.Info("Update ticker disabled")
-		}
-		go func() {
-			u.RefreshCrossPages()
-			if u.HasCharacter() {
-				u.SetCharacter(u.Character)
-			} else {
-				u.ResetCharacter()
-			}
-		}()
-		if !u.IsOffline && !u.IsUpdateTickerDisabled {
-			go func() {
-				u.startUpdateTickerGeneralSections()
-				u.startUpdateTickerCharacters()
-			}()
-		}
 		go u.statusBarArea.StartUpdateTicker()
 	})
 	u.FyneApp.Lifecycle().SetOnStopped(func() {
 		u.saveAppState()
-		slog.Info("App shut down complete")
 	})
 	width := float32(u.FyneApp.Preferences().FloatWithFallback(settingWindowWidth, settingWindowHeightDefault))
 	height := float32(u.FyneApp.Preferences().FloatWithFallback(settingWindowHeight, settingWindowHeightDefault))
 	u.Window.Resize(fyne.NewSize(width, height))
 
-	u.Window.ShowAndRun()
+	u.BaseUI.ShowAndRun()
 }
 
 func (u *DesktopUI) saveAppState() {
@@ -305,38 +237,6 @@ func (u *DesktopUI) saveAppState() {
 	slog.Info("Saved app state")
 }
 
-func (u *DesktopUI) RefreshCharacter() {
-	ff := map[string]func(){
-		"assets":            u.AssetsArea.Redraw,
-		"attributes":        u.AttributesArea.Refresh,
-		"bio":               u.BiographyArea.refresh,
-		"contracts":         u.ContractsArea.Refresh,
-		"implants":          u.ImplantsArea.Refresh,
-		"jumpClones":        u.JumpClonesArea.redraw,
-		"mail":              u.MailArea.Redraw,
-		"notifications":     u.NotificationsArea.Refresh,
-		"planets":           u.PlanetArea.Refresh,
-		"ships":             u.ShipsArea.Refresh,
-		"skillCatalogue":    u.SkillCatalogueArea.redraw,
-		"skillqueue":        u.SkillqueueArea.Refresh,
-		"toolbar":           u.toolbarArea.refresh,
-		"walletJournal":     u.WalletJournalArea.Refresh,
-		"walletTransaction": u.WalletTransactionArea.Refresh,
-	}
-	c := u.CurrentCharacter()
-	ff["toogleTabs"] = func() {
-		u.toogleTabs(c != nil)
-	}
-	if c != nil {
-		slog.Debug("Refreshing character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
-	}
-	runFunctionsWithProgressModal("Loading character", ff, u.Window)
-	if c != nil && !u.IsUpdateTickerDisabled {
-		u.UpdateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
-	}
-	go u.statusBarArea.refreshUpdateStatus()
-}
-
 func (u *DesktopUI) toogleTabs(enabled bool) {
 	if enabled {
 		for i := range u.tabs.Items {
@@ -358,48 +258,6 @@ func (u *DesktopUI) toogleTabs(enabled bool) {
 		u.overviewTab.Content.(*container.AppTabs).SelectIndex(0)
 	}
 	u.tabs.Refresh()
-}
-
-// RefreshCrossPages refreshed all pages under the characters tab.
-func (u *DesktopUI) RefreshCrossPages() {
-	ff := map[string]func(){
-		"assetSearch": u.AssetSearchArea.Refresh,
-		"colony":      u.ColoniesArea.Refresh,
-		"locations":   u.LocationsArea.Refresh,
-		"overview":    u.OverviewArea.Refresh,
-		"statusBar":   u.statusBarArea.refreshCharacterCount,
-		"toolbar":     u.toolbarArea.refresh,
-		"training":    u.TrainingArea.Refresh,
-		"wealth":      u.WealthArea.Refresh,
-	}
-	runFunctionsWithProgressModal("Updating characters", ff, u.Window)
-}
-
-func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Window) {
-	m := kxmodal.NewProgress("Updating", title, func(p binding.Float) error {
-		start := time.Now()
-		myLog := slog.With("title", title)
-		myLog.Debug("started")
-		var wg sync.WaitGroup
-		var completed atomic.Int64
-		for name, f := range ff {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				start2 := time.Now()
-				f()
-				x := completed.Add(1)
-				if err := p.Set(float64(x)); err != nil {
-					myLog.Warn("failed set progress", "error", err)
-				}
-				myLog.Debug("part completed", "name", name, "duration", time.Since(start2).Milliseconds())
-			}()
-		}
-		wg.Wait()
-		myLog.Debug("completed", "duration", time.Since(start).Milliseconds())
-		return nil
-	}, float64(len(ff)), w)
-	m.Start()
 }
 
 func (u *DesktopUI) showMailIndicator() {

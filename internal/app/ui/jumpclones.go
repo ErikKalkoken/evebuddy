@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 )
@@ -47,10 +46,10 @@ type JumpClonesArea struct {
 	top        *widget.Label
 	treeData   *fynetree.FyneTree[jumpCloneNode]
 	treeWidget *widget.Tree
-	u          *DesktopUI
+	u          *BaseUI
 }
 
-func (u *DesktopUI) NewJumpClonesArea() *JumpClonesArea {
+func (u *BaseUI) NewJumpClonesArea() *JumpClonesArea {
 	a := JumpClonesArea{
 		top:      widget.NewLabel(""),
 		treeData: fynetree.New[jumpCloneNode](),
@@ -72,7 +71,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 			return a.treeData.IsBranch(uid)
 		},
 		func(branch bool) fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(ui.IconCharacterplaceholder32Jpeg)
+			icon := canvas.NewImageFromResource(IconCharacterplaceholder32Jpeg)
 			icon.FillMode = canvas.ImageFillOriginal
 			first := widget.NewLabel("Template")
 			second := kwidget.NewTappableIcon(theme.InfoIcon(), nil)
@@ -104,7 +103,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 				}
 				if !n.IsUnknown {
 					second.OnTapped = func() {
-						a.u.showLocationInfoWindow(n.LocationID)
+						a.u.ShowLocationInfoWindow(n.LocationID)
 					}
 					second.Show()
 				} else {
@@ -115,7 +114,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 				third.Refresh()
 				third.Show()
 			} else {
-				ui.RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
+				RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
 					return a.u.EveImageService.InventoryTypeIcon(n.ImplantTypeID, defaultIconSize)
 				})
 				first.SetText(n.ImplantTypeName)
@@ -131,17 +130,17 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 			return
 		}
 		// if n.IsRoot() && !n.IsUnknown {
-		// 	a.ui.showLocationInfoWindow(n.LocationID)
+		// 	a.ShowLocationInfoWindow(n.LocationID)
 		// 	return
 		// }
 		if !n.IsRoot() {
-			a.u.showTypeInfoWindow(n.ImplantTypeID, a.u.CharacterID(), descriptionTab)
+			a.u.ShowTypeInfoWindow(n.ImplantTypeID, a.u.CharacterID(), DescriptionTab)
 		}
 	}
 	return t
 }
 
-func (a *JumpClonesArea) redraw() {
+func (a *JumpClonesArea) Redraw() {
 	var t string
 	var i widget.Importance
 	tree, err := a.newTreeData()

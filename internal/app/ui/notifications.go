@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"cmp"
@@ -30,7 +30,7 @@ type notificationCategory struct {
 // NotificationsArea is the UI area that shows the skillqueue
 type NotificationsArea struct {
 	Content *container.Split
-	u       *DesktopUI
+	u       *BaseUI
 
 	categories   []notificationCategory
 	categoryList *widget.List
@@ -45,7 +45,7 @@ type NotificationsArea struct {
 	toolbar *widget.Toolbar
 }
 
-func (u *DesktopUI) NewNotificationsArea() *NotificationsArea {
+func (u *BaseUI) NewNotificationsArea() *NotificationsArea {
 	a := NotificationsArea{
 		categories:       make([]notificationCategory, 0),
 		notifications:    make([]*app.CharacterNotification, 0),

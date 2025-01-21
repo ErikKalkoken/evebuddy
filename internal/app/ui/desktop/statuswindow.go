@@ -96,7 +96,7 @@ func (u *DesktopUI) newStatusWindow() *statusWindow {
 		}
 		c := a.entities[a.selectedEntityID]
 		if c.IsGeneralSection() {
-			a.u.updateGeneralSectionsAndRefreshIfNeeded(true)
+			a.u.UpdateGeneralSectionsAndRefreshIfNeeded(true)
 		} else {
 			a.u.UpdateCharacterAndRefreshIfNeeded(context.TODO(), c.id, true)
 		}
@@ -342,10 +342,10 @@ func (a *statusWindow) makeDetailsContent(d sectionStatusData) []fyne.CanvasObje
 			return
 		}
 		if d.IsGeneralSection() {
-			go a.u.updateGeneralSectionAndRefreshIfNeeded(
+			go a.u.UpdateGeneralSectionAndRefreshIfNeeded(
 				context.TODO(), app.GeneralSection(d.sectionID), true)
 		} else {
-			go a.u.updateCharacterSectionAndRefreshIfNeeded(
+			go a.u.UpdateCharacterSectionAndRefreshIfNeeded(
 				context.TODO(), d.entityID, app.CharacterSection(d.sectionID), true)
 		}
 	})

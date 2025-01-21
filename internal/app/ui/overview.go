@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -38,10 +37,10 @@ type OverviewArea struct {
 	Content    *fyne.Container
 	table      *widget.Table
 	top        *widget.Label
-	u          *DesktopUI
+	u          *BaseUI
 }
 
-func (u *DesktopUI) NewOverviewArea() *OverviewArea {
+func (u *BaseUI) NewOverviewArea() *OverviewArea {
 	a := OverviewArea{
 		characters: make([]overviewCharacter, 0),
 		top:        widget.NewLabel(""),
@@ -115,7 +114,7 @@ func (a *OverviewArea) makeTable() *widget.Table {
 			case 7:
 				text = ihumanize.Optional(c.lastLoginAt, "?")
 			case 8:
-				text = ui.EntityNameOrFallback(c.home, "?")
+				text = EntityNameOrFallback(c.home, "?")
 			case 9:
 				text = humanize.RelTime(c.birthday, time.Now(), "", "")
 				l.Alignment = fyne.TextAlignTrailing
@@ -240,15 +239,17 @@ func (a *OverviewArea) updateCharacters() (overviewTotals, error) {
 		}
 	}
 	a.characters = cc
-	var hasUnread bool
-	for _, c := range a.characters {
-		if c.unreadCount.ValueOrZero() > 0 {
-			hasUnread = true
-			break
-		}
-	}
-	if hasUnread {
-		a.u.showMailIndicator()
-	}
+
+	// FIXME
+	// var hasUnread bool
+	// for _, c := range a.characters {
+	// 	if c.unreadCount.ValueOrZero() > 0 {
+	// 		hasUnread = true
+	// 		break
+	// 	}
+	// }
+	// if hasUnread {
+	// 	a.u.showMailIndicator()
+	// }
 	return totals, nil
 }

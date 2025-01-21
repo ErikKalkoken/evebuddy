@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -24,10 +23,10 @@ type SkillqueueArea struct {
 	Content *fyne.Container
 	items   []*app.CharacterSkillqueueItem
 	total   *widget.Label
-	u       *DesktopUI
+	u       *BaseUI
 }
 
-func (u *DesktopUI) NewSkillqueueArea() *SkillqueueArea {
+func (u *BaseUI) NewSkillqueueArea() *SkillqueueArea {
 	a := SkillqueueArea{
 		items: make([]*app.CharacterSkillqueueItem, 0),
 		total: widget.NewLabel(""),
@@ -76,7 +75,7 @@ func (a *SkillqueueArea) makeSkillqueue() *widget.List {
 			value string
 			wrap  bool
 		}{
-			{"Name", ui.SkillDisplayName(q.SkillName, q.FinishedLevel), false},
+			{"Name", SkillDisplayName(q.SkillName, q.FinishedLevel), false},
 			{"Group", q.GroupName, false},
 			{"Description", q.SkillDescription, true},
 			{"Start date", timeFormattedOrFallback(q.StartDate, app.TimeDefaultFormat, "?"), false},
@@ -126,8 +125,9 @@ func (a *SkillqueueArea) Refresh() {
 		} else if completion.ValueOrZero() < 1 {
 			s += fmt.Sprintf(" (%.0f%%)", completion.ValueOrZero()*100)
 		}
-		a.u.skillTab.Text = s
-		a.u.tabs.Refresh()
+		// FIXME
+		// a.u.skillTab.Text = s
+		// a.u.tabs.Refresh()
 		t, i = a.makeTopText(remaining)
 	}
 	a.total.Text = t

@@ -26,13 +26,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
-type typeWindowTab uint
-
-const (
-	descriptionTab typeWindowTab = iota + 1
-	requirementsTab
-)
-
 type attributeGroup string
 
 func (ag attributeGroup) DisplayName() string {
@@ -201,12 +194,12 @@ type typeInfoWindow struct {
 	window         fyne.Window
 }
 
-func (u *DesktopUI) showTypeInfoWindow(typeID, characterID int32, selectTab typeWindowTab) {
+func (u *DesktopUI) ShowTypeInfoWindow(typeID, characterID int32, selectTab ui.TypeWindowTab) {
 	u.showInfoWindow(u.newTypeInfoWindow(typeID, characterID, 0, selectTab))
 }
 
-func (u *DesktopUI) showLocationInfoWindow(locationID int64) {
-	u.showInfoWindow(u.newTypeInfoWindow(0, 0, locationID, descriptionTab))
+func (u *DesktopUI) ShowLocationInfoWindow(locationID int64) {
+	u.showInfoWindow(u.newTypeInfoWindow(0, 0, locationID, ui.DescriptionTab))
 }
 
 func (u *DesktopUI) showInfoWindow(iw *typeInfoWindow, err error) {
@@ -227,7 +220,7 @@ func (u *DesktopUI) showInfoWindow(iw *typeInfoWindow, err error) {
 	w.Show()
 }
 
-func (u *DesktopUI) newTypeInfoWindow(typeID, characterID int32, locationID int64, selectTab typeWindowTab) (*typeInfoWindow, error) {
+func (u *DesktopUI) newTypeInfoWindow(typeID, characterID int32, locationID int64, selectTab ui.TypeWindowTab) (*typeInfoWindow, error) {
 	ctx := context.TODO()
 	a := &typeInfoWindow{
 		u: u,
@@ -482,11 +475,11 @@ func (a *typeInfoWindow) makeTitle(suffix string) string {
 	return fmt.Sprintf("%s (%s): %s", a.et.Name, a.et.Group.Name, suffix)
 }
 
-func (a *typeInfoWindow) makeContent(selectTab typeWindowTab) fyne.CanvasObject {
+func (a *typeInfoWindow) makeContent(selectTab ui.TypeWindowTab) fyne.CanvasObject {
 	top := a.makeTop()
 	t := container.NewTabItem("Description", a.makeDescriptionTab())
 	tabs := container.NewAppTabs(t)
-	if selectTab == requirementsTab {
+	if selectTab == ui.RequirementsTab {
 		tabs.Select(t)
 	}
 	if len(a.attributesData) > 0 && a.et.Group.Category.ID != app.EveCategoryStation {
@@ -498,7 +491,7 @@ func (a *typeInfoWindow) makeContent(selectTab typeWindowTab) fyne.CanvasObject 
 	if len(a.requiredSkills) > 0 {
 		t := container.NewTabItem("Requirements", a.makeRequirementsTab())
 		tabs.Append(t)
-		if selectTab == requirementsTab {
+		if selectTab == ui.RequirementsTab {
 			tabs.Select(t)
 		}
 	}
@@ -716,7 +709,7 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 	)
 	l.OnSelected = func(id widget.ListItemID) {
 		r := a.requiredSkills[id]
-		a.u.showTypeInfoWindow(r.typeID, a.owner.ID, descriptionTab)
+		a.u.ShowTypeInfoWindow(r.typeID, a.owner.ID, ui.DescriptionTab)
 		l.UnselectAll()
 	}
 	return l

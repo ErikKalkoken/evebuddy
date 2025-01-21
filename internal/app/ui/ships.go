@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
@@ -34,10 +33,10 @@ type ShipsArea struct {
 	ships           []*app.CharacterShipAbility
 	top             *widget.Label
 	foundText       *widget.Label
-	u               *DesktopUI
+	u               *BaseUI
 }
 
-func (u *DesktopUI) newShipArea() *ShipsArea {
+func (u *BaseUI) newShipArea() *ShipsArea {
 	a := ShipsArea{
 		ships:     make([]*app.CharacterShipAbility, 0),
 		top:       widget.NewLabel(""),
@@ -53,7 +52,7 @@ func (u *DesktopUI) newShipArea() *ShipsArea {
 			return
 		}
 		if err := a.updateEntries(); err != nil {
-			d := ui.NewErrorDialog("Failed to update ships", err, a.u.Window)
+			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
 			d.Show()
 		}
 		a.grid.Refresh()
@@ -63,7 +62,7 @@ func (u *DesktopUI) newShipArea() *ShipsArea {
 	a.groupSelect = widget.NewSelect([]string{}, func(s string) {
 		a.groupSelected = s
 		if err := a.updateEntries(); err != nil {
-			d := ui.NewErrorDialog("Failed to update ships", err, a.u.Window)
+			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
 			d.Show()
 		}
 		a.grid.Refresh()
@@ -74,7 +73,7 @@ func (u *DesktopUI) newShipArea() *ShipsArea {
 	a.flyableSelect = widget.NewSelect([]string{}, func(s string) {
 		a.flyableSelected = s
 		if err := a.updateEntries(); err != nil {
-			d := ui.NewErrorDialog("Failed to update ships", err, a.u.Window)
+			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
 			d.Show()
 		}
 		a.grid.Refresh()
@@ -106,7 +105,7 @@ func (a *ShipsArea) makeShipsGrid() *widget.GridWrap {
 			return len(a.ships)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewShipItem(a.u.EveImageService, a.u.CacheService, ui.IconQuestionmarkSvg)
+			return widgets.NewShipItem(a.u.EveImageService, a.u.CacheService, IconQuestionmarkSvg)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.ships) {
@@ -122,7 +121,7 @@ func (a *ShipsArea) makeShipsGrid() *widget.GridWrap {
 			return
 		}
 		o := a.ships[id]
-		a.u.showTypeInfoWindow(o.Type.ID, a.u.CharacterID(), requirementsTab)
+		a.u.ShowTypeInfoWindow(o.Type.ID, a.u.CharacterID(), RequirementsTab)
 	}
 	return g
 }

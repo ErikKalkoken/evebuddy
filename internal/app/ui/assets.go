@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"cmp"
@@ -17,7 +17,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -61,7 +60,7 @@ func (n locationDataNode) IsRoot() bool {
 	return n.Type == nodeLocation
 }
 
-var defaultAssetIcon = theme.NewDisabledResource(ui.IconQuestionmarkSvg)
+var defaultAssetIcon = theme.NewDisabledResource(IconQuestionmarkSvg)
 
 // AssetsArea is the UI area that shows the skillqueue
 type AssetsArea struct {
@@ -75,10 +74,10 @@ type AssetsArea struct {
 	locationsTop     *widget.Label
 	locationsWidget  *widget.Tree
 	selectedLocation optional.Optional[locationDataNode]
-	u                *DesktopUI
+	u                *BaseUI
 }
 
-func (u *DesktopUI) NewAssetsArea() *AssetsArea {
+func (u *BaseUI) NewAssetsArea() *AssetsArea {
 	myHBox := layout.NewCustomPaddedHBoxLayout(-5)
 	a := AssetsArea{
 		assets:        make([]*app.CharacterAsset, 0),
@@ -209,7 +208,7 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 				}
 			}
 		} else {
-			a.u.showTypeInfoWindow(ca.EveType.ID, a.u.CharacterID(), descriptionTab)
+			a.u.ShowTypeInfoWindow(ca.EveType.ID, a.u.CharacterID(), DescriptionTab)
 		}
 	}
 	return g
@@ -478,7 +477,7 @@ func (a *AssetsArea) updateLocationPath(location locationDataNode) {
 	for i, n := range path {
 		isLast := i == len(path)-1
 		if !isLast {
-			l := ui.NewCustomHyperlink(n.Name, func() {
+			l := NewCustomHyperlink(n.Name, func() {
 				if err := a.selectLocation(n); err != nil {
 					slog.Warn("Failed to redraw assets", "err", err)
 				}
@@ -492,7 +491,7 @@ func (a *AssetsArea) updateLocationPath(location locationDataNode) {
 		if n.IsRoot() {
 			if !n.IsUnknown {
 				a.locationPath.Add(kwidget.NewTappableIcon(theme.InfoIcon(), func() {
-					a.u.showLocationInfoWindow(n.ContainerID)
+					a.u.ShowLocationInfoWindow(n.ContainerID)
 				}))
 				a.locationPath.Add(container.NewPadded())
 			}

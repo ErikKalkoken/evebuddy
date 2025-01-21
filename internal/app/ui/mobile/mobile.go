@@ -2,21 +2,11 @@
 package mobile
 
 import (
-	"context"
-	"log/slog"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-)
-
-// Mobile UI constants
-const (
-	defaultIconSize = 64
-	myFloatFormat   = "#,###.##"
 )
 
 type MobileUI struct {
@@ -29,8 +19,9 @@ type MobileUI struct {
 // NewUI build the UI and returns it.
 func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	u := &MobileUI{}
-	u.BaseUI = ui.NewBaseUI(fyneApp, u.refreshCharacter, u.refreshCrossPages)
-	u.AccountArea = u.NewAccountArea(u.updateCharacterAndRefreshIfNeeded)
+	u.BaseUI = ui.NewBaseUI(fyneApp)
+
+	u.AccountArea.Refresh()
 
 	var characterNav *Navigator
 	homeList := NewNavList(
@@ -185,58 +176,4 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	u.navBar.SetTabLocation(container.TabLocationBottom)
 	u.Window.SetContent(u.navBar)
 	return u
-}
-
-func (u *MobileUI) ShowAndRun() {
-	u.FyneApp.Lifecycle().SetOnStarted(func() {
-		slog.Info("App started")
-		if u.IsOffline {
-			slog.Info("Started in offline mode")
-		}
-		if u.IsUpdateTickerDisabled {
-			slog.Info("Update ticker disabled")
-		}
-		go func() {
-			// u.refreshCrossPages()
-			if u.HasCharacter() {
-				u.SetCharacter(u.Character)
-			} else {
-				u.ResetCharacter()
-			}
-		}()
-		// if !u.IsOffline && !u.IsUpdateTickerDisabled {
-		// 	go func() {
-		// 		u.startUpdateTickerGeneralSections()
-		// 		u.startUpdateTickerCharacters()
-		// 	}()
-		// }
-		// go u.statusBarArea.StartUpdateTicker()
-	})
-	u.FyneApp.Lifecycle().SetOnStopped(func() {
-		slog.Info("App shut down complete")
-	})
-	u.Window.ShowAndRun()
-}
-
-func (u *MobileUI) refreshCharacter() {
-	if u.Character != nil {
-		characterID := u.Character.ID
-		r, err := u.EveImageService.CharacterPortrait(characterID, defaultIconSize)
-		if err != nil {
-			slog.Error("Failed to fetch character portrait", "characterID", characterID, "err", err)
-			r = ui.IconCharacterplaceholder32Jpeg
-		}
-		u.characterTab.Icon = r
-		u.navBar.Refresh()
-		u.AttributesArea.Refresh()
-		u.AccountArea.Refresh()
-	}
-}
-
-func (u *MobileUI) refreshCrossPages() {
-	// TODO
-}
-
-func (u *MobileUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
-	// TODO
 }

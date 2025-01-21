@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -30,10 +30,10 @@ type WalletTransactionArea struct {
 	transactions []walletTransaction
 	table        *widget.Table
 	top          *widget.Label
-	u            *DesktopUI
+	u            *BaseUI
 }
 
-func (u *DesktopUI) NewWalletTransactionArea() *WalletTransactionArea {
+func (u *BaseUI) NewWalletTransactionArea() *WalletTransactionArea {
 	a := WalletTransactionArea{
 		top:          widget.NewLabel(""),
 		transactions: make([]walletTransaction, 0),

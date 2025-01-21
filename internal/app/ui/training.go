@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -29,10 +29,10 @@ type TrainingArea struct {
 	Content    *fyne.Container
 	table      *widget.Table
 	top        *widget.Label
-	u          *DesktopUI
+	u          *BaseUI
 }
 
-func (u *DesktopUI) NewTrainingArea() *TrainingArea {
+func (u *BaseUI) NewTrainingArea() *TrainingArea {
 	a := TrainingArea{
 		characters: make([]trainingCharacter, 0),
 		top:        widget.NewLabel(""),

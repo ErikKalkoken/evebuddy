@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -43,10 +42,10 @@ type ContractsArea struct {
 	contracts []*app.CharacterContract
 	table     *widget.Table
 	top       *widget.Label
-	u         *DesktopUI
+	u         *BaseUI
 }
 
-func (u *DesktopUI) NewContractsArea() *ContractsArea {
+func (u *BaseUI) NewContractsArea() *ContractsArea {
 	a := ContractsArea{
 		contracts: make([]*app.CharacterContract, 0),
 		top:       widget.NewLabel(""),
@@ -204,8 +203,8 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		return fmt.Sprintf("%s (%s)", ts, ds)
 	}
 	makeLocation := func(l *app.EntityShort[int64]) fyne.CanvasObject {
-		x := ui.NewCustomHyperlink(l.Name, func() {
-			a.u.showLocationInfoWindow(l.ID)
+		x := NewCustomHyperlink(l.Name, func() {
+			a.u.ShowLocationInfoWindow(l.ID)
 		})
 		return x
 	}
@@ -268,7 +267,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		ctx := context.TODO()
 		total, err := a.u.CharacterService.CountCharacterContractBids(ctx, c.ID)
 		if err != nil {
-			d := ui.NewErrorDialog("Failed to count contract bids", err, w)
+			d := NewErrorDialog("Failed to count contract bids", err, w)
 			d.SetOnClosed(w.Hide)
 			d.Show()
 		}
@@ -278,7 +277,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		} else {
 			top, err := a.u.CharacterService.GetCharacterContractTopBid(ctx, c.ID)
 			if err != nil {
-				d := ui.NewErrorDialog("Failed to get top bid", err, w)
+				d := NewErrorDialog("Failed to get top bid", err, w)
 				d.SetOnClosed(w.Hide)
 				d.Show()
 			}
@@ -298,7 +297,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		vb := container.NewVBox()
 		items, err := a.u.CharacterService.ListCharacterContractItems(context.TODO(), c.ID)
 		if err != nil {
-			d := ui.NewErrorDialog("Failed to fetch contract items", err, w)
+			d := NewErrorDialog("Failed to fetch contract items", err, w)
 			d.SetOnClosed(w.Hide)
 			d.Show()
 		}
@@ -311,8 +310,8 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 			}
 		}
 		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
-			x := ui.NewCustomHyperlink(it.Type.Name, func() {
-				a.u.showTypeInfoWindow(it.Type.ID, c.CharacterID, 0)
+			x := NewCustomHyperlink(it.Type.Name, func() {
+				a.u.ShowTypeInfoWindow(it.Type.ID, c.CharacterID, 0)
 			})
 			return container.NewHBox(
 				x,

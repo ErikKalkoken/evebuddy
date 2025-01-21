@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"cmp"
@@ -15,7 +15,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/dustin/go-humanize"
 )
@@ -44,7 +43,7 @@ type AssetSearchArea struct {
 	colSearch       []string
 	searchBoxes     []*widget.Entry
 	total           *widget.Label
-	u               *DesktopUI
+	u               *BaseUI
 }
 
 type assetSearchRow struct {
@@ -64,13 +63,13 @@ type assetSearchRow struct {
 	typeName        string
 }
 
-func (u *DesktopUI) NewAssetSearchArea() *AssetSearchArea {
+func (u *BaseUI) NewAssetSearchArea() *AssetSearchArea {
 	a := &AssetSearchArea{
 		u:              u,
 		assetsFiltered: make([]*assetSearchRow, 0),
-		iconSortAsc:    theme.NewThemedResource(ui.IconSortAscendingSvg),
-		iconSortDesc:   theme.NewThemedResource(ui.IconSortDescendingSvg),
-		iconSortOff:    theme.NewThemedResource(ui.IconSortSvg),
+		iconSortAsc:    theme.NewThemedResource(IconSortAscendingSvg),
+		iconSortDesc:   theme.NewThemedResource(IconSortDescendingSvg),
+		iconSortOff:    theme.NewThemedResource(IconSortSvg),
 		total:          widget.NewLabel(""),
 		found:          widget.NewLabel(""),
 	}
@@ -228,9 +227,9 @@ func (a *AssetSearchArea) makeAssetsTable() *widget.Table {
 		r := a.assetsFiltered[tci.Row]
 		switch tci.Col {
 		case 0:
-			a.u.showTypeInfoWindow(r.typeID, a.u.CharacterID(), descriptionTab)
+			a.u.ShowTypeInfoWindow(r.typeID, a.u.CharacterID(), DescriptionTab)
 		case 3:
-			a.u.showLocationInfoWindow(r.locationID)
+			a.u.ShowLocationInfoWindow(r.locationID)
 		}
 	}
 	return t

@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -17,7 +17,6 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -26,7 +25,7 @@ import (
 // MailArea is the UI area showing the mail folders.
 type MailArea struct {
 	Content fyne.CanvasObject
-	u       *DesktopUI
+	u       *BaseUI
 
 	currentFolder optional.Optional[folderNode]
 	foldersData   *fynetree.FyneTree[folderNode]
@@ -49,7 +48,7 @@ type MailArea struct {
 	toolbar     *widget.Toolbar
 }
 
-func (u *DesktopUI) NewMailArea() *MailArea {
+func (u *BaseUI) NewMailArea() *MailArea {
 	a := &MailArea{
 		body:        widget.NewLabel(""),
 		foldersData: fynetree.New[folderNode](),
@@ -77,7 +76,8 @@ func (u *DesktopUI) NewMailArea() *MailArea {
 	// Folders
 	a.foldersWidget = a.makeFolderTree()
 	newButton := widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
-		u.showSendMessageWindow(createMessageNew, nil)
+		// FIXME
+		// u.showSendMessageWindow(createMessageNew, nil)
 	})
 	newButton.Importance = widget.HighImportance
 	top := container.NewHBox(layout.NewSpacer(), container.NewPadded(newButton), layout.NewSpacer())
@@ -164,7 +164,7 @@ func (a *MailArea) makeFolderTree() *widget.Tree {
 		},
 		func(isBranch bool) fyne.CanvasObject {
 			return container.NewHBox(
-				widget.NewIcon(ui.IconBlankSvg),
+				widget.NewIcon(IconBlankSvg),
 				widget.NewLabel("template"),
 				layout.NewSpacer(),
 				kwidget.NewBadge("999"),
@@ -219,7 +219,7 @@ func (a *MailArea) Refresh() {
 	if err != nil {
 		t := "Failed to build folder tree"
 		slog.Error(t, "character", characterID, "error", err)
-		d := ui.NewErrorDialog(t, err, a.u.Window)
+		d := NewErrorDialog(t, err, a.u.Window)
 		d.Show()
 		return
 	}
@@ -246,8 +246,9 @@ func (a *MailArea) updateMailTab(unreadCount int) {
 	if unreadCount > 0 {
 		s += fmt.Sprintf(" (%s)", humanize.Comma(int64(unreadCount)))
 	}
-	a.u.mailTab.Text = s
-	a.u.tabs.Refresh()
+	// FIXME
+	// a.u.mailTab.Text = s
+	// a.u.tabs.Refresh()
 }
 
 func (a *MailArea) updateFolderData(characterID int32) (folderNode, error) {
@@ -506,13 +507,16 @@ func (a *MailArea) makeFolderTopText() (string, widget.Importance) {
 func (a *MailArea) makeToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.MailReplyIcon(), func() {
-			a.u.showSendMessageWindow(createMessageReply, a.mail)
+			// FIXME
+			// a.u.showSendMessageWindow(createMessageReply, a.mail)
 		}),
 		widget.NewToolbarAction(theme.MailReplyAllIcon(), func() {
-			a.u.showSendMessageWindow(createMessageReplyAll, a.mail)
+			// FIXME
+			// a.u.showSendMessageWindow(createMessageReplyAll, a.mail)
 		}),
 		widget.NewToolbarAction(theme.MailForwardIcon(), func() {
-			a.u.showSendMessageWindow(createMessageForward, a.mail)
+			// FIXME
+			// a.u.showSendMessageWindow(createMessageForward, a.mail)
 		}),
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
 			a.u.Window.Clipboard().SetContent(a.mail.String())
@@ -520,12 +524,12 @@ func (a *MailArea) makeToolbar() *widget.Toolbar {
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.DeleteIcon(), func() {
 			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Header())
-			d := ui.NewConfirmDialog("Delete mail", t, "Delete", func(confirmed bool) {
+			d := NewConfirmDialog("Delete mail", t, "Delete", func(confirmed bool) {
 				if confirmed {
 					if err := a.u.CharacterService.DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID); err != nil {
 						t := "Failed to delete mail"
 						slog.Error(t, "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
-						d2 := ui.NewErrorDialog(t, err, a.u.Window)
+						d2 := NewErrorDialog(t, err, a.u.Window)
 						d2.Show()
 					} else {
 						a.headerRefresh()

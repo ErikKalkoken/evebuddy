@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -52,10 +52,10 @@ type WalletJournalArea struct {
 	entries []walletJournalEntry
 	table   *widget.Table
 	top     *widget.Label
-	u       *DesktopUI
+	u       *BaseUI
 }
 
-func (u *DesktopUI) NewWalletJournalArea() *WalletJournalArea {
+func (u *BaseUI) NewWalletJournalArea() *WalletJournalArea {
 	a := WalletJournalArea{
 		entries: make([]walletJournalEntry, 0),
 		top:     widget.NewLabel(""),

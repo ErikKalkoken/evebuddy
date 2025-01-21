@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
 // ImplantsArea is the UI area that shows the skillqueue
@@ -20,10 +19,10 @@ type ImplantsArea struct {
 	implants []*app.CharacterImplant
 	list     *widget.List
 	top      *widget.Label
-	u        *DesktopUI
+	u        *BaseUI
 }
 
-func (u *DesktopUI) NewImplantsArea() *ImplantsArea {
+func (u *BaseUI) NewImplantsArea() *ImplantsArea {
 	a := ImplantsArea{
 		implants: make([]*app.CharacterImplant, 0),
 		top:      widget.NewLabel(""),
@@ -42,7 +41,7 @@ func (a *ImplantsArea) makeImplantList() *widget.List {
 			return len(a.implants)
 		},
 		func() fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(ui.IconCharacterplaceholder32Jpeg)
+			icon := canvas.NewImageFromResource(IconCharacterplaceholder32Jpeg)
 			icon.FillMode = canvas.ImageFillContain
 			icon.SetMinSize(fyne.Size{Width: 42, Height: 42})
 			return container.NewHBox(icon, widget.NewLabel("placeholder\nslot"))
@@ -56,7 +55,7 @@ func (a *ImplantsArea) makeImplantList() *widget.List {
 			icon := row[0].(*canvas.Image)
 			label := row[1].(*widget.Label)
 			label.SetText(fmt.Sprintf("%s\nSlot %d", o.EveType.Name, o.SlotNum))
-			ui.RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
+			RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
 				return a.u.EveImageService.InventoryTypeIcon(o.EveType.ID, 64)
 			})
 		})
@@ -67,7 +66,7 @@ func (a *ImplantsArea) makeImplantList() *widget.List {
 			return
 		}
 		o := a.implants[id]
-		a.u.showTypeInfoWindow(o.EveType.ID, a.u.CharacterID(), descriptionTab)
+		a.u.ShowTypeInfoWindow(o.EveType.ID, a.u.CharacterID(), DescriptionTab)
 	}
 	return l
 }
