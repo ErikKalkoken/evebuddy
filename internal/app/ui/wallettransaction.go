@@ -87,10 +87,10 @@ func (a *WalletTransactionArea) makeTable() *widget.Table {
 				l.Truncation = fyne.TextTruncateClip
 			case 3:
 				l.Alignment = fyne.TextAlignTrailing
-				l.Text = humanize.FormatFloat(myFloatFormat, w.unitPrice)
+				l.Text = humanize.FormatFloat(MyFloatFormat, w.unitPrice)
 			case 4:
 				l.Alignment = fyne.TextAlignTrailing
-				l.Text = humanize.FormatFloat(myFloatFormat, w.total)
+				l.Text = humanize.FormatFloat(MyFloatFormat, w.total)
 				switch {
 				case w.total < 0:
 					l.Importance = widget.DangerImportance

@@ -103,7 +103,7 @@ func (a *WalletJournalArea) makeTable() *widget.Table {
 				l.Text = w.refTypeOutput()
 			case 2:
 				l.Alignment = fyne.TextAlignTrailing
-				l.Text = humanize.FormatFloat(myFloatFormat, w.amount)
+				l.Text = humanize.FormatFloat(MyFloatFormat, w.amount)
 				switch {
 				case w.amount < 0:
 					l.Importance = widget.DangerImportance
@@ -114,7 +114,7 @@ func (a *WalletJournalArea) makeTable() *widget.Table {
 				}
 			case 3:
 				l.Alignment = fyne.TextAlignTrailing
-				l.Text = humanize.FormatFloat(myFloatFormat, w.balance)
+				l.Text = humanize.FormatFloat(MyFloatFormat, w.balance)
 			case 4:
 				l.Text = w.descriptionWithReason()
 				l.Truncation = fyne.TextTruncateClip

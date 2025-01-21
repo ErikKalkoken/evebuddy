@@ -100,7 +100,6 @@ func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) 
 				d := ui.NewErrorDialog(msg, err, a.u.Window)
 				d.Show()
 				return
-
 			}
 		})
 		item.Icon = ui.IconCharacterplaceholder32Jpeg

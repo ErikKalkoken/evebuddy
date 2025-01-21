@@ -2,6 +2,8 @@
 package mobile
 
 import (
+	"log/slog"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
@@ -11,9 +13,6 @@ import (
 
 type MobileUI struct {
 	*ui.BaseUI
-
-	navBar       *container.AppTabs
-	characterTab *container.TabItem
 }
 
 // NewUI build the UI and returns it.
@@ -164,14 +163,25 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		),
 	)
 	settingsNav = NewNavigator(NewAppBar("Settings", settingsList))
-
-	u.characterTab = container.NewTabItemWithIcon("", theme.AccountIcon(), characterNav)
-	u.navBar = container.NewAppTabs(
-		u.characterTab,
+	characterTab := container.NewTabItemWithIcon("", ui.IconCharacterplaceholder32Jpeg, characterNav)
+	navBar := container.NewAppTabs(
+		characterTab,
 		container.NewTabItemWithIcon("", theme.NewThemedResource(ui.IconGroupSvg), crossNav),
 		container.NewTabItemWithIcon("", theme.SettingsIcon(), settingsNav),
 	)
-	u.navBar.SetTabLocation(container.TabLocationBottom)
-	u.Window.SetContent(u.navBar)
+	u.OnSetCharacter = func(id int32) {
+		go func() {
+			r, err := u.EveImageService.CharacterPortrait(id, ui.DefaultIconSize)
+			if err != nil {
+				slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
+				r = ui.IconCharacterplaceholder32Jpeg
+			}
+			characterTab.Icon = r
+			navBar.Refresh()
+		}()
+
+	}
+	navBar.SetTabLocation(container.TabLocationBottom)
+	u.Window.SetContent(navBar)
 	return u
 }

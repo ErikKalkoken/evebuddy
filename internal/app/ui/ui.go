@@ -19,8 +19,8 @@ import (
 
 // Base UI constants
 const (
-	defaultIconSize = 64
-	myFloatFormat   = "#,###.##"
+	DefaultIconSize = 64
+	MyFloatFormat   = "#,###.##"
 )
 
 type BaseUI struct {
@@ -34,6 +34,8 @@ type BaseUI struct {
 	IsOffline bool
 	// Whether to disable update tickers (useful for debugging)
 	IsUpdateTickerDisabled bool
+
+	OnSetCharacter func(int32)
 
 	Character *app.Character
 	FyneApp   fyne.App
@@ -191,6 +193,9 @@ func (u *BaseUI) SetCharacter(c *app.Character) {
 	u.Character = c
 	u.RefreshCharacter()
 	u.FyneApp.Preferences().SetInt(SettingLastCharacterID, int(c.ID))
+	if u.OnSetCharacter != nil {
+		u.OnSetCharacter(c.ID)
+	}
 }
 
 func (u *BaseUI) ResetCharacter() {
