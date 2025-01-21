@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	planetImageSize  = 256
-	planetWidgetSize = 120
+	planetImageSize         = 256
+	planetWidgetSizeDesktop = 120
+	planetWidgetSizeMobile  = 60
 )
 
 type Planet struct {
@@ -33,7 +34,14 @@ type Planet struct {
 func NewPlanet() *Planet {
 	image := canvas.NewImageFromResource(theme.BrokenImageIcon())
 	image.FillMode = canvas.ImageFillContain
-	image.SetMinSize(fyne.Size{Width: planetWidgetSize, Height: planetWidgetSize})
+	isMobile := fyne.CurrentDevice().IsMobile()
+	var size float32
+	if isMobile {
+		size = planetWidgetSizeMobile
+	} else {
+		size = planetWidgetSizeDesktop
+	}
+	image.SetMinSize(fyne.Size{Width: size, Height: size})
 	w := &Planet{
 		post:       widget.NewLabel(""),
 		extracting: widget.NewLabel(""),

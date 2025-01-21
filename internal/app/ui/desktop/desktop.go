@@ -9,7 +9,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	fyneDesktop "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"golang.org/x/sync/singleflight"
 
@@ -33,8 +32,7 @@ type DesktopUI struct {
 	// Paths to user data (for information only)
 	DataPaths map[string]string
 
-	deskApp fyneDesktop.App
-	sfg     *singleflight.Group
+	sfg *singleflight.Group
 
 	statusBarArea *statusBarArea
 	toolbarArea   *toolbarArea
@@ -59,6 +57,9 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		sfg: new(singleflight.Group),
 	}
 	u.BaseUI = ui.NewBaseUI(fyneApp)
+	if u.DeskApp == nil {
+		panic("Could not start in desktop mode")
+	}
 	u.OnInit = func(_ *app.Character) {
 		index := u.FyneApp.Preferences().IntWithFallback(settingTabsMainID, -1)
 		if index != -1 {
@@ -174,11 +175,6 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	u.Window.SetContent(mainContent)
 
 	// system tray menu
-	desk, ok := u.FyneApp.(fyneDesktop.App)
-	if !ok {
-		panic("not running on desktop")
-	}
-	u.deskApp = desk
 	if fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault) {
 		name := u.AppName()
 		item := fyne.NewMenuItem(name, nil)
@@ -191,7 +187,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 				u.Window.Show()
 			}),
 		)
-		u.deskApp.SetSystemTrayMenu(m)
+		u.DeskApp.SetSystemTrayMenu(m)
 		u.Window.SetCloseIntercept(func() {
 			u.Window.Hide()
 		})
@@ -252,11 +248,11 @@ func (u *DesktopUI) toogleTabs(enabled bool) {
 }
 
 func (u *DesktopUI) showMailIndicator() {
-	u.deskApp.SetSystemTrayIcon(ui.IconIconmarkedPng)
+	u.DeskApp.SetSystemTrayIcon(ui.IconIconmarkedPng)
 }
 
 func (u *DesktopUI) hideMailIndicator() {
-	u.deskApp.SetSystemTrayIcon(ui.IconIconPng)
+	u.DeskApp.SetSystemTrayIcon(ui.IconIconPng)
 }
 
 func (u *DesktopUI) makeWindowTitle(subTitle string) string {

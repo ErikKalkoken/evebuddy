@@ -19,6 +19,7 @@ type SkillQueueItem struct {
 	progress   *widget.ProgressBar
 	name       *widget.Label
 	skillLevel *SkillLevel
+	isMobile   bool
 }
 
 func NewSkillQueueItem() *SkillQueueItem {
@@ -27,6 +28,7 @@ func NewSkillQueueItem() *SkillQueueItem {
 		name:       widget.NewLabel("skill"),
 		progress:   widget.NewProgressBar(),
 		skillLevel: NewSkillLevel(),
+		isMobile:   fyne.CurrentDevice().IsMobile(),
 	}
 	w.progress.Hide()
 	w.ExtendBaseWidget(w)
@@ -87,8 +89,10 @@ func (w *SkillQueueItem) SetError(message string, err error) {
 }
 
 func (w *SkillQueueItem) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(
-		nil, nil, w.skillLevel, nil,
-		container.NewStack(w.progress, container.NewHBox(w.name, layout.NewSpacer(), w.duration)))
+	queue := container.NewStack(w.progress, container.NewHBox(w.name, layout.NewSpacer(), w.duration))
+	if w.isMobile {
+		return widget.NewSimpleRenderer(queue)
+	}
+	c := container.NewBorder(nil, nil, w.skillLevel, nil, queue)
 	return widget.NewSimpleRenderer(c)
 }

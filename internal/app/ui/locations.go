@@ -114,7 +114,9 @@ func (a *LocationsArea) makeTable() *widget.Table {
 		},
 	)
 	t.ShowHeaderRow = true
-	t.StickyColumnCount = 1
+	if a.u.IsDesktop() {
+		t.StickyColumnCount = 1
+	}
 	t.CreateHeader = func() fyne.CanvasObject {
 		return widget.NewLabel("Template")
 	}

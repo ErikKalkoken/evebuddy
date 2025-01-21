@@ -10,6 +10,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/driver/desktop"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -45,6 +46,7 @@ type BaseUI struct {
 	OnShowAndRun       func()
 
 	FyneApp fyne.App
+	DeskApp desktop.App
 	Window  fyne.Window
 
 	AccountArea           *AccountArea
@@ -81,6 +83,11 @@ func NewBaseUI(fyneApp fyne.App) *BaseUI {
 	}
 	u.Window = fyneApp.NewWindow(u.AppName())
 
+	desk, ok := u.FyneApp.(desktop.App)
+	if ok {
+		u.DeskApp = desk
+	}
+
 	u.AccountArea = u.NewAccountArea()
 	u.AssetsArea = u.NewAssetsArea()
 	u.AssetSearchArea = u.NewAssetSearchArea()
@@ -104,6 +111,10 @@ func NewBaseUI(fyneApp fyne.App) *BaseUI {
 	u.WealthArea = u.NewWealthArea()
 
 	return u
+}
+
+func (u BaseUI) IsDesktop() bool {
+	return u.DeskApp != nil
 }
 
 func (u BaseUI) AppName() string {

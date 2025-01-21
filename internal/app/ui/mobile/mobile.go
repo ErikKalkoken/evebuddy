@@ -32,6 +32,20 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 						NewNavList(
 							NewNavListItem(
 								nil,
+								"Augmentations",
+								func() {
+									characterNav.Push(NewAppBar("Augmentations", u.ImplantsArea.Content))
+								},
+							),
+							NewNavListItem(
+								nil,
+								"Jump Clones",
+								func() {
+									characterNav.Push(NewAppBar("Jump Clones", container.NewScroll(u.JumpClonesArea.Content)))
+								},
+							),
+							NewNavListItem(
+								nil,
 								"Attributes",
 								func() {
 									characterNav.Push(NewAppBar("Attributes", u.AttributesArea.Content))
@@ -39,9 +53,9 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 							),
 							NewNavListItem(
 								nil,
-								"Implants",
+								"Bio",
 								func() {
-									characterNav.Push(NewAppBar("Implants", widget.NewLabel("PLACEHOLDER")))
+									characterNav.Push(NewAppBar("Bio", container.NewScroll(u.BiographyArea.Content)))
 								},
 							),
 						),
@@ -52,14 +66,14 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			theme.NewThemedResource(ui.IconInventory2Svg),
 			"Assets",
 			func() {
-				characterNav.Push(NewAppBar("Assets", widget.NewLabel("PLACEHOLDER")))
+				characterNav.Push(NewAppBar("Bio", container.NewScroll(u.AssetsArea.Content)))
 			},
 		),
 		NewNavListItem(
 			theme.NewThemedResource(ui.IconEarthSvg),
 			"Colonies",
 			func() {
-				characterNav.Push(NewAppBar("Colonies", widget.NewLabel("PLACEHOLDER")))
+				characterNav.Push(NewAppBar("Colonies", u.PlanetArea.Content))
 			},
 		),
 		NewNavListItem(
@@ -80,9 +94,69 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			theme.NewThemedResource(ui.IconFileSignSvg),
 			"Contracts",
 			func() {
-				characterNav.Push(NewAppBar("Contracts", widget.NewLabel("PLACEHOLDER")))
+				characterNav.Push(NewAppBar("Contracts", u.ContractsArea.Content))
 			},
-		))
+		),
+		NewNavListItem(
+			theme.NewThemedResource(ui.IconSchoolSvg),
+			"Skills",
+			func() {
+				characterNav.Push(
+					NewAppBar(
+						"Skills",
+						NewNavList(
+							NewNavListItem(
+								nil,
+								"Training Queue",
+								func() {
+									characterNav.Push(NewAppBar("Training Queue", u.SkillqueueArea.Content))
+								},
+							),
+							NewNavListItem(
+								nil,
+								"Skill Catalogue",
+								func() {
+									characterNav.Push(NewAppBar("Skill Catalogue", u.SkillCatalogueArea.Content))
+								},
+							),
+							NewNavListItem(
+								nil,
+								"Ships",
+								func() {
+									characterNav.Push(NewAppBar("Ships", u.ShipsArea.Content))
+								},
+							),
+						),
+					))
+			},
+		),
+		NewNavListItem(
+			theme.NewThemedResource(ui.IconAttachmoneySvg),
+			"Wallet",
+			func() {
+				characterNav.Push(
+					NewAppBar(
+						"Wallet",
+						NewNavList(
+							NewNavListItem(
+								nil,
+								"Transactions",
+								func() {
+									characterNav.Push(NewAppBar("Transactions", u.WalletJournalArea.Content))
+								},
+							),
+							NewNavListItem(
+								nil,
+								"Market Transactions",
+								func() {
+									characterNav.Push(NewAppBar("Market Transactions", u.WalletTransactionArea.Content))
+								},
+							),
+						),
+					))
+			},
+		),
+	)
 	characterNav = NewNavigator(NewAppBar("Character", homeList))
 
 	var crossNav *Navigator
@@ -91,21 +165,42 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			nil,
 			"Overview",
 			func() {
-				crossNav.Push(NewAppBar("Overview", widget.NewLabel("PLACEHOLDER")))
+				crossNav.Push(NewAppBar("Overview", u.OverviewArea.Content))
 			},
 		),
 		NewNavListItem(
 			nil,
 			"Asset Search",
 			func() {
-				crossNav.Push(NewAppBar("Asset Search", widget.NewLabel("PLACEHOLDER")))
+				crossNav.Push(NewAppBar("Asset Search", u.AssetSearchArea.Content))
+			},
+		),
+		NewNavListItem(
+			nil,
+			"Locations",
+			func() {
+				crossNav.Push(NewAppBar("Locations", u.LocationsArea.Content))
+			},
+		),
+		NewNavListItem(
+			nil,
+			"Training",
+			func() {
+				crossNav.Push(NewAppBar("Training", u.TrainingArea.Content))
+			},
+		),
+		NewNavListItem(
+			nil,
+			"Colonies",
+			func() {
+				crossNav.Push(NewAppBar("Colonies", u.ColoniesArea.Content))
 			},
 		),
 		NewNavListItem(
 			nil,
 			"Wealth",
 			func() {
-				crossNav.Push(NewAppBar("Wealth", widget.NewLabel("PLACEHOLDER")))
+				crossNav.Push(NewAppBar("Wealth", u.WealthArea.Content))
 			},
 		),
 	)
