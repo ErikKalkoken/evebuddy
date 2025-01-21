@@ -14,17 +14,17 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
-// implantsArea is the UI area that shows the skillqueue
-type implantsArea struct {
-	content  *fyne.Container
+// ImplantsArea is the UI area that shows the skillqueue
+type ImplantsArea struct {
+	Content  *fyne.Container
 	implants []*app.CharacterImplant
 	list     *widget.List
 	top      *widget.Label
 	u        *DesktopUI
 }
 
-func (u *DesktopUI) newImplantsArea() *implantsArea {
-	a := implantsArea{
+func (u *DesktopUI) NewImplantsArea() *ImplantsArea {
+	a := ImplantsArea{
 		implants: make([]*app.CharacterImplant, 0),
 		top:      widget.NewLabel(""),
 		u:        u,
@@ -32,11 +32,11 @@ func (u *DesktopUI) newImplantsArea() *implantsArea {
 	a.top.TextStyle.Bold = true
 	a.list = a.makeImplantList()
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, a.list)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.list)
 	return &a
 }
 
-func (a *implantsArea) makeImplantList() *widget.List {
+func (a *ImplantsArea) makeImplantList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.implants)
@@ -72,7 +72,7 @@ func (a *implantsArea) makeImplantList() *widget.List {
 	return l
 }
 
-func (a *implantsArea) refresh() {
+func (a *ImplantsArea) Refresh() {
 	var t string
 	var i widget.Importance
 	if err := a.updateImplants(); err != nil {
@@ -87,7 +87,7 @@ func (a *implantsArea) refresh() {
 	a.top.Refresh()
 }
 
-func (a *implantsArea) updateImplants() error {
+func (a *ImplantsArea) updateImplants() error {
 	if !a.u.HasCharacter() {
 		a.implants = make([]*app.CharacterImplant, 0)
 		return nil
@@ -101,7 +101,7 @@ func (a *implantsArea) updateImplants() error {
 	return nil
 }
 
-func (a *implantsArea) makeTopText() (string, widget.Importance) {
+func (a *ImplantsArea) makeTopText() (string, widget.Importance) {
 	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance

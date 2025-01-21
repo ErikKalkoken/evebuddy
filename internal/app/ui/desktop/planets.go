@@ -17,17 +17,17 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 )
 
-// planetArea is the UI area that shows the skillqueue
-type planetArea struct {
-	content *fyne.Container
+// PlanetArea is the UI area that shows the skillqueue
+type PlanetArea struct {
+	Content *fyne.Container
 	planets []*app.CharacterPlanet
 	list    *widget.List
 	top     *widget.Label
 	u       *DesktopUI
 }
 
-func (u *DesktopUI) newPlanetArea() *planetArea {
-	a := planetArea{
+func (u *DesktopUI) NewPlanetArea() *PlanetArea {
+	a := PlanetArea{
 		planets: make([]*app.CharacterPlanet, 0),
 		top:     widget.NewLabel(""),
 		u:       u,
@@ -36,11 +36,11 @@ func (u *DesktopUI) newPlanetArea() *planetArea {
 	a.top.TextStyle.Bold = true
 	a.list = a.makeList()
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, a.list)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.list)
 	return &a
 }
 
-func (a *planetArea) makeList() *widget.List {
+func (a *PlanetArea) makeList() *widget.List {
 	t := widget.NewList(
 		func() int {
 			return len(a.planets)
@@ -63,7 +63,7 @@ func (a *planetArea) makeList() *widget.List {
 	return t
 }
 
-func (a *planetArea) refresh() {
+func (a *PlanetArea) Refresh() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -80,7 +80,7 @@ func (a *planetArea) refresh() {
 	a.updateTab()
 }
 
-func (a *planetArea) makeTopText() (string, widget.Importance) {
+func (a *PlanetArea) makeTopText() (string, widget.Importance) {
 	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
@@ -103,7 +103,7 @@ func (a *planetArea) makeTopText() (string, widget.Importance) {
 	return t, widget.MediumImportance
 }
 
-func (a *planetArea) updateEntries() error {
+func (a *PlanetArea) updateEntries() error {
 	if !a.u.HasCharacter() {
 		a.planets = make([]*app.CharacterPlanet, 0)
 		return nil
@@ -117,7 +117,7 @@ func (a *planetArea) updateEntries() error {
 	return nil
 }
 
-func (a *planetArea) updateTab() {
+func (a *PlanetArea) updateTab() {
 	var expiredCount int
 	for _, p := range a.planets {
 		if t := p.ExtractionsExpiryTime(); !t.IsZero() && t.Before(time.Now()) {

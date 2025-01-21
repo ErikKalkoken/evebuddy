@@ -27,17 +27,17 @@ type colonyRow struct {
 	securityImportance widget.Importance
 }
 
-// coloniesArea is the UI area that shows the skillqueue
-type coloniesArea struct {
-	content *fyne.Container
+// ColoniesArea is the UI area that shows the skillqueue
+type ColoniesArea struct {
+	Content *fyne.Container
 	rows    []colonyRow
 	table   *widget.Table
 	top     *widget.Label
 	u       *DesktopUI
 }
 
-func (u *DesktopUI) newColoniesArea() *coloniesArea {
-	a := coloniesArea{
+func (u *DesktopUI) NewColoniesArea() *ColoniesArea {
+	a := ColoniesArea{
 		top:  widget.NewLabel(""),
 		rows: make([]colonyRow, 0),
 		u:    u,
@@ -46,11 +46,11 @@ func (u *DesktopUI) newColoniesArea() *coloniesArea {
 
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.table = a.makeTable()
-	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
 	return &a
 }
 
-func (a *coloniesArea) makeTable() *widget.Table {
+func (a *ColoniesArea) makeTable() *widget.Table {
 	var headers = []struct {
 		text  string
 		width float32
@@ -124,7 +124,7 @@ func (a *coloniesArea) makeTable() *widget.Table {
 	return t
 }
 
-func (a *coloniesArea) refresh() {
+func (a *ColoniesArea) Refresh() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -140,13 +140,13 @@ func (a *coloniesArea) refresh() {
 	a.table.Refresh()
 }
 
-func (a *coloniesArea) makeTopText() (string, widget.Importance) {
+func (a *ColoniesArea) makeTopText() (string, widget.Importance) {
 	t := humanize.Comma(int64(len(a.rows)))
 	s := fmt.Sprintf("Colonies: %s", t)
 	return s, widget.MediumImportance
 }
 
-func (a *coloniesArea) updateEntries() error {
+func (a *ColoniesArea) updateEntries() error {
 	pp, err := a.u.CharacterService.ListAllCharacterPlanets(context.TODO())
 	if err != nil {
 		return err

@@ -19,16 +19,16 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-// skillqueueArea is the UI area that shows the skillqueue
-type skillqueueArea struct {
-	content *fyne.Container
+// SkillqueueArea is the UI area that shows the skillqueue
+type SkillqueueArea struct {
+	Content *fyne.Container
 	items   []*app.CharacterSkillqueueItem
 	total   *widget.Label
 	u       *DesktopUI
 }
 
-func (u *DesktopUI) newSkillqueueArea() *skillqueueArea {
-	a := skillqueueArea{
+func (u *DesktopUI) NewSkillqueueArea() *SkillqueueArea {
+	a := SkillqueueArea{
 		items: make([]*app.CharacterSkillqueueItem, 0),
 		total: widget.NewLabel(""),
 		u:     u,
@@ -38,11 +38,11 @@ func (u *DesktopUI) newSkillqueueArea() *skillqueueArea {
 	list := a.makeSkillqueue()
 
 	top := container.NewVBox(a.total, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, list)
+	a.Content = container.NewBorder(top, nil, nil, nil, list)
 	return &a
 }
 
-func (a *skillqueueArea) makeSkillqueue() *widget.List {
+func (a *SkillqueueArea) makeSkillqueue() *widget.List {
 	list := widget.NewList(
 		func() int {
 			return len(a.items)
@@ -111,7 +111,7 @@ func (a *skillqueueArea) makeSkillqueue() *widget.List {
 	return list
 }
 
-func (a *skillqueueArea) refresh() {
+func (a *SkillqueueArea) Refresh() {
 	var t string
 	var i widget.Importance
 	remaining, completion, err := a.updateItems()
@@ -135,7 +135,7 @@ func (a *skillqueueArea) refresh() {
 	a.total.Refresh()
 }
 
-func (a *skillqueueArea) updateItems() (remaining optional.Optional[time.Duration], completion optional.Optional[float64], err error) {
+func (a *SkillqueueArea) updateItems() (remaining optional.Optional[time.Duration], completion optional.Optional[float64], err error) {
 	ctx := context.TODO()
 	if !a.u.HasCharacter() {
 		a.items = make([]*app.CharacterSkillqueueItem, 0)
@@ -156,7 +156,7 @@ func (a *skillqueueArea) updateItems() (remaining optional.Optional[time.Duratio
 	return
 }
 
-func (a *skillqueueArea) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {
+func (a *SkillqueueArea) makeTopText(total optional.Optional[time.Duration]) (string, widget.Importance) {
 	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionSkillqueue)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance

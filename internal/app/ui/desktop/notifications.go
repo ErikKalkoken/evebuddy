@@ -27,9 +27,9 @@ type notificationCategory struct {
 	unread   int
 }
 
-// notificationsArea is the UI area that shows the skillqueue
-type notificationsArea struct {
-	content *container.Split
+// NotificationsArea is the UI area that shows the skillqueue
+type NotificationsArea struct {
+	Content *container.Split
 	u       *DesktopUI
 
 	categories   []notificationCategory
@@ -45,8 +45,8 @@ type notificationsArea struct {
 	toolbar *widget.Toolbar
 }
 
-func (u *DesktopUI) newNotificationsArea() *notificationsArea {
-	a := notificationsArea{
+func (u *DesktopUI) NewNotificationsArea() *NotificationsArea {
+	a := NotificationsArea{
 		categories:       make([]notificationCategory, 0),
 		notifications:    make([]*app.CharacterNotification, 0),
 		notificationsTop: widget.NewLabel(""),
@@ -63,15 +63,15 @@ func (u *DesktopUI) newNotificationsArea() *notificationsArea {
 	)
 	split1.Offset = 0.35
 	a.categoryList = a.makeCategoryList()
-	a.content = container.NewHSplit(
+	a.Content = container.NewHSplit(
 		container.NewBorder(a.top, nil, nil, nil, a.categoryList),
 		split1,
 	)
-	a.content.Offset = 0.15
+	a.Content.Offset = 0.15
 	return &a
 }
 
-func (a *notificationsArea) makeCategoryList() *widget.List {
+func (a *NotificationsArea) makeCategoryList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.categories)
@@ -117,7 +117,7 @@ func (a *notificationsArea) makeCategoryList() *widget.List {
 	return l
 }
 
-func (a *notificationsArea) makeNotificationList() *widget.List {
+func (a *NotificationsArea) makeNotificationList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.notifications)
@@ -144,7 +144,7 @@ func (a *notificationsArea) makeNotificationList() *widget.List {
 	return l
 }
 
-func (a *notificationsArea) makeToolbar() *widget.Toolbar {
+func (a *NotificationsArea) makeToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
 			if a.current == nil {
@@ -156,7 +156,7 @@ func (a *notificationsArea) makeToolbar() *widget.Toolbar {
 	return toolbar
 }
 
-func (a *notificationsArea) refresh() {
+func (a *NotificationsArea) Refresh() {
 	a.clearDetail()
 	a.notifications = make([]*app.CharacterNotification, 0)
 	a.notificationList.Refresh()
@@ -203,7 +203,7 @@ func (a *notificationsArea) refresh() {
 	a.top.Refresh()
 }
 
-func (a *notificationsArea) makeTopText() (string, widget.Importance) {
+func (a *NotificationsArea) makeTopText() (string, widget.Importance) {
 	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
@@ -211,7 +211,7 @@ func (a *notificationsArea) makeTopText() (string, widget.Importance) {
 	return fmt.Sprintf("%d categories", len(a.categories)), widget.MediumImportance
 }
 
-func (a *notificationsArea) setNotifications(nc evenotification.Category) error {
+func (a *NotificationsArea) setNotifications(nc evenotification.Category) error {
 	ctx := context.TODO()
 	characterID := a.u.CharacterID()
 	var notifications []*app.CharacterNotification
@@ -234,13 +234,13 @@ func (a *notificationsArea) setNotifications(nc evenotification.Category) error 
 	return nil
 }
 
-func (a *notificationsArea) clearDetail() {
+func (a *NotificationsArea) clearDetail() {
 	a.detail.RemoveAll()
 	a.toolbar.Hide()
 	a.current = nil
 }
 
-func (a *notificationsArea) setDetail(n *app.CharacterNotification) {
+func (a *NotificationsArea) setDetail(n *app.CharacterNotification) {
 	if n.RecipientName == "" && a.u.HasCharacter() {
 		n.RecipientName = a.u.CurrentCharacter().EveCharacter.Name
 	}

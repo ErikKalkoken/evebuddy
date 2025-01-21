@@ -32,17 +32,17 @@ type overviewCharacter struct {
 	walletBalance optional.Optional[float64]
 }
 
-// overviewArea is the UI area that shows an overview of all the user's characters.
-type overviewArea struct {
+// OverviewArea is the UI area that shows an overview of all the user's characters.
+type OverviewArea struct {
 	characters []overviewCharacter
-	content    *fyne.Container
+	Content    *fyne.Container
 	table      *widget.Table
 	top        *widget.Label
 	u          *DesktopUI
 }
 
-func (u *DesktopUI) newOverviewArea() *overviewArea {
-	a := overviewArea{
+func (u *DesktopUI) NewOverviewArea() *OverviewArea {
+	a := OverviewArea{
 		characters: make([]overviewCharacter, 0),
 		top:        widget.NewLabel(""),
 		u:          u,
@@ -51,11 +51,11 @@ func (u *DesktopUI) newOverviewArea() *overviewArea {
 
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.table = a.makeTable()
-	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
 	return &a
 }
 
-func (a *overviewArea) makeTable() *widget.Table {
+func (a *OverviewArea) makeTable() *widget.Table {
 	var headers = []struct {
 		text     string
 		maxChars int
@@ -147,7 +147,7 @@ func (a *overviewArea) makeTable() *widget.Table {
 	return t
 }
 
-func (a *overviewArea) refresh() {
+func (a *OverviewArea) Refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
 		totals, err := a.updateCharacters()
 		if err != nil {
@@ -184,7 +184,7 @@ type overviewTotals struct {
 	assets optional.Optional[float64]
 }
 
-func (a *overviewArea) updateCharacters() (overviewTotals, error) {
+func (a *OverviewArea) updateCharacters() (overviewTotals, error) {
 	var totals overviewTotals
 	var err error
 	ctx := context.TODO()

@@ -52,8 +52,8 @@ func (u *DesktopUI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, 
 	switch section {
 	case app.SectionEveCategories:
 		if hasChanged {
-			u.shipsArea.refresh()
-			u.skillCatalogueArea.refresh()
+			u.ShipsArea.Refresh()
+			u.SkillCatalogueArea.Refresh()
 		}
 	case app.SectionEveCharacters, app.SectionEveMarketPrices:
 		// nothing to refresh
@@ -73,7 +73,7 @@ func (u *DesktopUI) startUpdateTickerCharacters() {
 					return
 				}
 				for _, c := range cc {
-					go u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
+					go u.UpdateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 					if u.FyneApp.Preferences().BoolWithFallback(ui.SettingNotifyPIEnabled, ui.SettingNotifyPIEnabledDefault) {
 						go func() {
 							earliest := calcNotifyEarliest(u.FyneApp.Preferences(), ui.SettingNotifyPIEarliest)
@@ -97,9 +97,9 @@ func (u *DesktopUI) startUpdateTickerCharacters() {
 	}()
 }
 
-// updateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
+// UpdateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
-func (u *DesktopUI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
+func (u *DesktopUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
 	if u.IsOffline {
 		return
 	}
@@ -132,11 +132,11 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 	switch s {
 	case app.SectionAssets:
 		if isShown && needsRefresh {
-			u.assetsArea.redraw()
+			u.AssetsArea.Redraw()
 		}
 		if needsRefresh {
-			u.assetSearchArea.refresh()
-			u.wealthArea.refresh()
+			u.AssetSearchArea.Refresh()
+			u.WealthArea.Refresh()
 		}
 	case app.SectionAttributes:
 		if isShown && needsRefresh {
@@ -144,7 +144,7 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 		}
 	case app.SectionContracts:
 		if isShown && needsRefresh {
-			u.contractsArea.refresh()
+			u.ContractsArea.Refresh()
 		}
 		if u.FyneApp.Preferences().BoolWithFallback(ui.SettingNotifyContractsEnabled, ui.SettingNotifyCommunicationsEnabledDefault) {
 			go func() {
@@ -156,42 +156,42 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 		}
 	case app.SectionImplants:
 		if isShown && needsRefresh {
-			u.implantsArea.refresh()
+			u.ImplantsArea.Refresh()
 		}
 	case app.SectionJumpClones:
 		if isShown && needsRefresh {
-			u.jumpClonesArea.redraw()
+			u.JumpClonesArea.redraw()
 		}
 		if needsRefresh {
-			u.overviewArea.refresh()
+			u.OverviewArea.Refresh()
 		}
 	case app.SectionLocation,
 		app.SectionOnline,
 		app.SectionShip:
 		if needsRefresh {
-			u.locationsArea.refresh()
+			u.LocationsArea.Refresh()
 		}
 	case app.SectionPlanets:
 		if isShown && needsRefresh {
-			u.planetArea.refresh()
+			u.PlanetArea.Refresh()
 		}
 		if needsRefresh {
-			u.coloniesArea.refresh()
+			u.ColoniesArea.Refresh()
 		}
 	case app.SectionMailLabels,
 		app.SectionMailLists:
 		if isShown && needsRefresh {
-			u.mailArea.refresh()
+			u.MailArea.Refresh()
 		}
 		if needsRefresh {
-			u.overviewArea.refresh()
+			u.OverviewArea.Refresh()
 		}
 	case app.SectionMails:
 		if isShown && needsRefresh {
-			u.mailArea.refresh()
+			u.MailArea.Refresh()
 		}
 		if needsRefresh {
-			u.overviewArea.refresh()
+			u.OverviewArea.Refresh()
 		}
 		if u.FyneApp.Preferences().BoolWithFallback(ui.SettingNotifyMailsEnabled, ui.SettingNotifyMailsEnabledDefault) {
 			go func() {
@@ -203,7 +203,7 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 		}
 	case app.SectionNotifications:
 		if isShown && needsRefresh {
-			u.notificationsArea.refresh()
+			u.NotificationsArea.Refresh()
 		}
 		if u.FyneApp.Preferences().BoolWithFallback(ui.SettingNotifyCommunicationsEnabled, ui.SettingNotifyCommunicationsEnabledDefault) {
 			go func() {
@@ -216,12 +216,12 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 		}
 	case app.SectionSkills:
 		if isShown && needsRefresh {
-			u.skillCatalogueArea.refresh()
-			u.shipsArea.refresh()
-			u.planetArea.refresh()
+			u.SkillCatalogueArea.Refresh()
+			u.ShipsArea.Refresh()
+			u.PlanetArea.Refresh()
 		}
 		if needsRefresh {
-			u.trainingArea.refresh()
+			u.TrainingArea.Refresh()
 		}
 	case app.SectionSkillqueue:
 		if u.FyneApp.Preferences().BoolWithFallback(ui.SettingNotifyTrainingEnabled, ui.SettingNotifyTrainingEnabledDefault) {
@@ -231,23 +231,23 @@ func (u *DesktopUI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context
 			}
 		}
 		if isShown {
-			u.skillqueueArea.refresh()
+			u.SkillqueueArea.Refresh()
 		}
 		if needsRefresh {
-			u.trainingArea.refresh()
+			u.TrainingArea.Refresh()
 		}
 	case app.SectionWalletBalance:
 		if needsRefresh {
-			u.overviewArea.refresh()
-			u.wealthArea.refresh()
+			u.OverviewArea.Refresh()
+			u.WealthArea.Refresh()
 		}
 	case app.SectionWalletJournal:
 		if isShown && needsRefresh {
-			u.walletJournalArea.refresh()
+			u.WalletJournalArea.Refresh()
 		}
 	case app.SectionWalletTransactions:
 		if isShown && needsRefresh {
-			u.walletTransactionArea.refresh()
+			u.WalletTransactionArea.Refresh()
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))

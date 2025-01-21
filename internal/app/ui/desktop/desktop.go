@@ -40,39 +40,41 @@ type DesktopUI struct {
 	deskApp fyneDesktop.App
 	sfg     *singleflight.Group
 
-	assetsArea            *assetsArea
-	assetSearchArea       *assetSearchArea
-	assetTab              *container.TabItem
-	biographyArea         *biographyArea
-	coloniesArea          *coloniesArea
-	contractsArea         *contractsArea
-	implantsArea          *implantsArea
-	jumpClonesArea        *jumpClonesArea
-	locationsArea         *locationsArea
-	mailArea              *mailArea
-	mailTab               *container.TabItem
-	menuItemsWithShortcut []*fyne.MenuItem
-	notificationsArea     *notificationsArea
-	overviewArea          *overviewArea
-	overviewTab           *container.TabItem
-	planetArea            *planetArea
-	planetTab             *container.TabItem
-	shipsArea             *shipsArea
-	skillCatalogueArea    *skillCatalogueArea
-	skillqueueArea        *skillqueueArea
-	skillTab              *container.TabItem
-	statusBarArea         *statusBarArea
-	tabs                  *container.AppTabs
-	toolbarArea           *toolbarArea
-	trainingArea          *trainingArea
-	walletJournalArea     *walletJournalArea
-	walletTab             *container.TabItem
-	walletTransactionArea *walletTransactionArea
-	wealthArea            *wealthArea
+	AssetsArea            *AssetsArea
+	AssetSearchArea       *AssetSearchArea
+	BiographyArea         *BiographyArea
+	ColoniesArea          *ColoniesArea
+	ContractsArea         *ContractsArea
+	ImplantsArea          *ImplantsArea
+	JumpClonesArea        *JumpClonesArea
+	LocationsArea         *LocationsArea
+	MailArea              *MailArea
+	NotificationsArea     *NotificationsArea
+	OverviewArea          *OverviewArea
+	PlanetArea            *PlanetArea
+	ShipsArea             *ShipsArea
+	SkillCatalogueArea    *SkillCatalogueArea
+	SkillqueueArea        *SkillqueueArea
+	TrainingArea          *TrainingArea
+	WalletJournalArea     *WalletJournalArea
+	WalletTransactionArea *WalletTransactionArea
+	WealthArea            *WealthArea
 
-	accountWindow  fyne.Window
-	settingsWindow fyne.Window
-	statusWindow   fyne.Window
+	statusBarArea *statusBarArea
+	toolbarArea   *toolbarArea
+
+	assetTab    *container.TabItem
+	mailTab     *container.TabItem
+	overviewTab *container.TabItem
+	planetTab   *container.TabItem
+	skillTab    *container.TabItem
+	tabs        *container.AppTabs
+	walletTab   *container.TabItem
+
+	menuItemsWithShortcut []*fyne.MenuItem
+	accountWindow         fyne.Window
+	settingsWindow        fyne.Window
+	statusWindow          fyne.Window
 }
 
 // NewDesktopUI build the UI and returns it.
@@ -80,78 +82,78 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	u := &DesktopUI{
 		sfg: new(singleflight.Group),
 	}
-	u.BaseUI = ui.NewBaseUI(fyneApp, u.refreshCharacter, u.refreshCrossPages)
+	u.BaseUI = ui.NewBaseUI(fyneApp, u.RefreshCharacter, u.RefreshCrossPages)
 	u.identifyDesktop()
-	u.AccountArea = u.NewAccountArea(u.updateCharacterAndRefreshIfNeeded)
-	u.biographyArea = u.newBiographyArea()
-	u.jumpClonesArea = u.NewJumpClonesArea()
-	u.implantsArea = u.newImplantsArea()
+	u.AccountArea = u.NewAccountArea(u.UpdateCharacterAndRefreshIfNeeded)
+	u.BiographyArea = u.NewBiographyArea()
+	u.JumpClonesArea = u.NewJumpClonesArea()
+	u.ImplantsArea = u.NewImplantsArea()
 	characterTab := container.NewTabItemWithIcon("Character",
 		theme.AccountIcon(), container.NewAppTabs(
-			container.NewTabItem("Augmentations", u.implantsArea.content),
-			container.NewTabItem("Jump Clones", u.jumpClonesArea.content),
+			container.NewTabItem("Augmentations", u.ImplantsArea.Content),
+			container.NewTabItem("Jump Clones", u.JumpClonesArea.Content),
 			container.NewTabItem("Attributes", u.AttributesArea.Content),
-			container.NewTabItem("Biography", u.biographyArea.content),
+			container.NewTabItem("Biography", u.BiographyArea.Content),
 		))
 
-	u.assetsArea = u.newAssetsArea()
+	u.AssetsArea = u.NewAssetsArea()
 	u.assetTab = container.NewTabItemWithIcon("Assets",
 		theme.NewThemedResource(ui.IconInventory2Svg), container.NewAppTabs(
-			container.NewTabItem("Assets", u.assetsArea.content),
+			container.NewTabItem("Assets", u.AssetsArea.Content),
 		))
 
-	u.planetArea = u.newPlanetArea()
+	u.PlanetArea = u.NewPlanetArea()
 	u.planetTab = container.NewTabItemWithIcon("Colonies",
 		theme.NewThemedResource(ui.IconEarthSvg), container.NewAppTabs(
-			container.NewTabItem("Colonies", u.planetArea.content),
+			container.NewTabItem("Colonies", u.PlanetArea.Content),
 		))
 
-	u.mailArea = u.newMailArea()
-	u.notificationsArea = u.newNotificationsArea()
+	u.MailArea = u.NewMailArea()
+	u.NotificationsArea = u.NewNotificationsArea()
 	u.mailTab = container.NewTabItemWithIcon("",
 		theme.MailComposeIcon(), container.NewAppTabs(
-			container.NewTabItem("Mail", u.mailArea.content),
-			container.NewTabItem("Communications", u.notificationsArea.content),
+			container.NewTabItem("Mail", u.MailArea.Content),
+			container.NewTabItem("Communications", u.NotificationsArea.Content),
 		))
 
-	u.contractsArea = u.newContractsArea()
+	u.ContractsArea = u.NewContractsArea()
 	contractTab := container.NewTabItemWithIcon("Contracts",
 		theme.NewThemedResource(ui.IconFileSignSvg), container.NewAppTabs(
-			container.NewTabItem("Contracts", u.contractsArea.content),
+			container.NewTabItem("Contracts", u.ContractsArea.Content),
 		))
 
-	u.overviewArea = u.newOverviewArea()
-	u.locationsArea = u.newLocationsArea()
-	u.trainingArea = u.newTrainingArea()
-	u.assetSearchArea = u.newAssetSearchArea()
-	u.coloniesArea = u.newColoniesArea()
-	u.wealthArea = u.newWealthArea()
+	u.OverviewArea = u.NewOverviewArea()
+	u.LocationsArea = u.NewLocationsArea()
+	u.TrainingArea = u.NewTrainingArea()
+	u.AssetSearchArea = u.NewAssetSearchArea()
+	u.ColoniesArea = u.NewColoniesArea()
+	u.WealthArea = u.NewWealthArea()
 	u.overviewTab = container.NewTabItemWithIcon("Characters",
 		theme.NewThemedResource(ui.IconGroupSvg), container.NewAppTabs(
-			container.NewTabItem("Overview", u.overviewArea.content),
-			container.NewTabItem("Locations", u.locationsArea.content),
-			container.NewTabItem("Training", u.trainingArea.content),
-			container.NewTabItem("Assets", u.assetSearchArea.content),
-			container.NewTabItem("Colonies", u.coloniesArea.content),
-			container.NewTabItem("Wealth", u.wealthArea.content),
+			container.NewTabItem("Overview", u.OverviewArea.Content),
+			container.NewTabItem("Locations", u.LocationsArea.Content),
+			container.NewTabItem("Training", u.TrainingArea.Content),
+			container.NewTabItem("Assets", u.AssetSearchArea.Content),
+			container.NewTabItem("Colonies", u.ColoniesArea.Content),
+			container.NewTabItem("Wealth", u.WealthArea.Content),
 		))
 
-	u.skillqueueArea = u.newSkillqueueArea()
-	u.skillCatalogueArea = u.newSkillCatalogueArea()
-	u.shipsArea = u.newShipArea()
+	u.SkillqueueArea = u.NewSkillqueueArea()
+	u.SkillCatalogueArea = u.NewSkillCatalogueArea()
+	u.ShipsArea = u.newShipArea()
 	u.skillTab = container.NewTabItemWithIcon("Skills",
 		theme.NewThemedResource(ui.IconSchoolSvg), container.NewAppTabs(
-			container.NewTabItem("Training Queue", u.skillqueueArea.content),
-			container.NewTabItem("Skill Catalogue", u.skillCatalogueArea.content),
-			container.NewTabItem("Ships", u.shipsArea.content),
+			container.NewTabItem("Training Queue", u.SkillqueueArea.Content),
+			container.NewTabItem("Skill Catalogue", u.SkillCatalogueArea.Content),
+			container.NewTabItem("Ships", u.ShipsArea.Content),
 		))
 
-	u.walletJournalArea = u.newWalletJournalArea()
-	u.walletTransactionArea = u.newWalletTransactionArea()
+	u.WalletJournalArea = u.NewWalletJournalArea()
+	u.WalletTransactionArea = u.NewWalletTransactionArea()
 	u.walletTab = container.NewTabItemWithIcon("Wallet",
 		theme.NewThemedResource(ui.IconAttachmoneySvg), container.NewAppTabs(
-			container.NewTabItem("Transactions", u.walletJournalArea.content),
-			container.NewTabItem("Market Transactions", u.walletTransactionArea.content),
+			container.NewTabItem("Transactions", u.WalletJournalArea.Content),
+			container.NewTabItem("Market Transactions", u.WalletTransactionArea.Content),
 		))
 
 	u.tabs = container.NewAppTabs(
@@ -252,7 +254,7 @@ func (u *DesktopUI) ShowAndRun() {
 			slog.Info("Update ticker disabled")
 		}
 		go func() {
-			u.refreshCrossPages()
+			u.RefreshCrossPages()
 			if u.HasCharacter() {
 				u.SetCharacter(u.Character)
 			} else {
@@ -303,23 +305,23 @@ func (u *DesktopUI) saveAppState() {
 	slog.Info("Saved app state")
 }
 
-func (u *DesktopUI) refreshCharacter() {
+func (u *DesktopUI) RefreshCharacter() {
 	ff := map[string]func(){
-		"assets":            u.assetsArea.redraw,
+		"assets":            u.AssetsArea.Redraw,
 		"attributes":        u.AttributesArea.Refresh,
-		"bio":               u.biographyArea.refresh,
-		"contracts":         u.contractsArea.refresh,
-		"implants":          u.implantsArea.refresh,
-		"jumpClones":        u.jumpClonesArea.redraw,
-		"mail":              u.mailArea.redraw,
-		"notifications":     u.notificationsArea.refresh,
-		"planets":           u.planetArea.refresh,
-		"ships":             u.shipsArea.refresh,
-		"skillCatalogue":    u.skillCatalogueArea.redraw,
-		"skillqueue":        u.skillqueueArea.refresh,
+		"bio":               u.BiographyArea.refresh,
+		"contracts":         u.ContractsArea.Refresh,
+		"implants":          u.ImplantsArea.Refresh,
+		"jumpClones":        u.JumpClonesArea.redraw,
+		"mail":              u.MailArea.Redraw,
+		"notifications":     u.NotificationsArea.Refresh,
+		"planets":           u.PlanetArea.Refresh,
+		"ships":             u.ShipsArea.Refresh,
+		"skillCatalogue":    u.SkillCatalogueArea.redraw,
+		"skillqueue":        u.SkillqueueArea.Refresh,
 		"toolbar":           u.toolbarArea.refresh,
-		"walletJournal":     u.walletJournalArea.refresh,
-		"walletTransaction": u.walletTransactionArea.refresh,
+		"walletJournal":     u.WalletJournalArea.Refresh,
+		"walletTransaction": u.WalletTransactionArea.Refresh,
 	}
 	c := u.CurrentCharacter()
 	ff["toogleTabs"] = func() {
@@ -330,7 +332,7 @@ func (u *DesktopUI) refreshCharacter() {
 	}
 	runFunctionsWithProgressModal("Loading character", ff, u.Window)
 	if c != nil && !u.IsUpdateTickerDisabled {
-		u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
+		u.UpdateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 	}
 	go u.statusBarArea.refreshUpdateStatus()
 }
@@ -358,17 +360,17 @@ func (u *DesktopUI) toogleTabs(enabled bool) {
 	u.tabs.Refresh()
 }
 
-// refreshCrossPages refreshed all pages under the characters tab.
-func (u *DesktopUI) refreshCrossPages() {
+// RefreshCrossPages refreshed all pages under the characters tab.
+func (u *DesktopUI) RefreshCrossPages() {
 	ff := map[string]func(){
-		"assetSearch": u.assetSearchArea.refresh,
-		"colony":      u.coloniesArea.refresh,
-		"locations":   u.locationsArea.refresh,
-		"overview":    u.overviewArea.refresh,
+		"assetSearch": u.AssetSearchArea.Refresh,
+		"colony":      u.ColoniesArea.Refresh,
+		"locations":   u.LocationsArea.Refresh,
+		"overview":    u.OverviewArea.Refresh,
 		"statusBar":   u.statusBarArea.refreshCharacterCount,
 		"toolbar":     u.toolbarArea.refresh,
-		"training":    u.trainingArea.refresh,
-		"wealth":      u.wealthArea.refresh,
+		"training":    u.TrainingArea.Refresh,
+		"wealth":      u.WealthArea.Refresh,
 	}
 	runFunctionsWithProgressModal("Updating characters", ff, u.Window)
 }

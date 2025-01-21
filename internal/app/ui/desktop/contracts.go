@@ -37,17 +37,17 @@ type contractEntry struct {
 // 	return s
 // }
 
-// contractsArea is the UI area that shows the skillqueue
-type contractsArea struct {
-	content   *fyne.Container
+// ContractsArea is the UI area that shows the skillqueue
+type ContractsArea struct {
+	Content   *fyne.Container
 	contracts []*app.CharacterContract
 	table     *widget.Table
 	top       *widget.Label
 	u         *DesktopUI
 }
 
-func (u *DesktopUI) newContractsArea() *contractsArea {
-	a := contractsArea{
+func (u *DesktopUI) NewContractsArea() *ContractsArea {
+	a := ContractsArea{
 		contracts: make([]*app.CharacterContract, 0),
 		top:       widget.NewLabel(""),
 		u:         u,
@@ -56,11 +56,11 @@ func (u *DesktopUI) newContractsArea() *contractsArea {
 	a.top.TextStyle.Bold = true
 	a.table = a.makeTable()
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
 	return &a
 }
 
-func (a *contractsArea) makeTable() *widget.Table {
+func (a *ContractsArea) makeTable() *widget.Table {
 	var headers = []struct {
 		text  string
 		width float32
@@ -146,7 +146,7 @@ func (a *contractsArea) makeTable() *widget.Table {
 	return t
 }
 
-func (a *contractsArea) refresh() {
+func (a *ContractsArea) Refresh() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -162,7 +162,7 @@ func (a *contractsArea) refresh() {
 	a.table.Refresh()
 }
 
-func (a *contractsArea) makeTopText() (string, widget.Importance) {
+func (a *ContractsArea) makeTopText() (string, widget.Importance) {
 	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
@@ -176,7 +176,7 @@ func (a *contractsArea) makeTopText() (string, widget.Importance) {
 	return s, widget.MediumImportance
 }
 
-func (a *contractsArea) updateEntries() error {
+func (a *ContractsArea) updateEntries() error {
 	if !a.u.HasCharacter() {
 		a.contracts = make([]*app.CharacterContract, 0)
 		return nil
@@ -190,7 +190,7 @@ func (a *contractsArea) updateEntries() error {
 	return nil
 }
 
-func (a *contractsArea) showContract(c *app.CharacterContract) {
+func (a *ContractsArea) showContract(c *app.CharacterContract) {
 	w := a.u.FyneApp.NewWindow("Contract")
 	makeExpiresString := func(c *app.CharacterContract) string {
 		t := c.DateExpiredEffective()

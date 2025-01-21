@@ -23,7 +23,7 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 	t.Run("can update a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		a := overviewArea{
+		a := OverviewArea{
 			u: u,
 		}
 		factory.CreateCharacter()
@@ -37,7 +37,7 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 	t.Run("can handle empty location", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		a := overviewArea{
+		a := OverviewArea{
 			u: u,
 		}
 		if err := st.UpdateOrCreateEveLocation(ctx, storage.UpdateOrCreateLocationParams{

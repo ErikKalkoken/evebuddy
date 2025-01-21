@@ -24,17 +24,17 @@ type walletTransaction struct {
 	unitPrice float64
 }
 
-// walletTransactionArea is the UI area that shows the skillqueue
-type walletTransactionArea struct {
-	content      *fyne.Container
+// WalletTransactionArea is the UI area that shows the skillqueue
+type WalletTransactionArea struct {
+	Content      *fyne.Container
 	transactions []walletTransaction
 	table        *widget.Table
 	top          *widget.Label
 	u            *DesktopUI
 }
 
-func (u *DesktopUI) newWalletTransactionArea() *walletTransactionArea {
-	a := walletTransactionArea{
+func (u *DesktopUI) NewWalletTransactionArea() *WalletTransactionArea {
+	a := WalletTransactionArea{
 		top:          widget.NewLabel(""),
 		transactions: make([]walletTransaction, 0),
 		u:            u,
@@ -43,11 +43,11 @@ func (u *DesktopUI) newWalletTransactionArea() *walletTransactionArea {
 
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.table = a.makeTable()
-	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
 	return &a
 }
 
-func (a *walletTransactionArea) makeTable() *widget.Table {
+func (a *WalletTransactionArea) makeTable() *widget.Table {
 	var headers = []struct {
 		text  string
 		width float32
@@ -123,7 +123,7 @@ func (a *walletTransactionArea) makeTable() *widget.Table {
 	return t
 }
 
-func (a *walletTransactionArea) refresh() {
+func (a *WalletTransactionArea) Refresh() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -139,7 +139,7 @@ func (a *walletTransactionArea) refresh() {
 	a.table.Refresh()
 }
 
-func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
+func (a *WalletTransactionArea) makeTopText() (string, widget.Importance) {
 	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
@@ -153,7 +153,7 @@ func (a *walletTransactionArea) makeTopText() (string, widget.Importance) {
 	return s, widget.MediumImportance
 }
 
-func (a *walletTransactionArea) updateEntries() error {
+func (a *WalletTransactionArea) updateEntries() error {
 	if !a.u.HasCharacter() {
 		a.transactions = make([]walletTransaction, 0)
 		return nil

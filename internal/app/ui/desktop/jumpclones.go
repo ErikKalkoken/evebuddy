@@ -41,17 +41,17 @@ func (n jumpCloneNode) UID() widget.TreeNodeID {
 	return fmt.Sprintf("%d-%d", n.JumpCloneID, n.ImplantTypeID)
 }
 
-// jumpClonesArea is the UI area that shows the skillqueue
-type jumpClonesArea struct {
-	content    *fyne.Container
+// JumpClonesArea is the UI area that shows the skillqueue
+type JumpClonesArea struct {
+	Content    *fyne.Container
 	top        *widget.Label
 	treeData   *fynetree.FyneTree[jumpCloneNode]
 	treeWidget *widget.Tree
 	u          *DesktopUI
 }
 
-func (u *DesktopUI) NewJumpClonesArea() *jumpClonesArea {
-	a := jumpClonesArea{
+func (u *DesktopUI) NewJumpClonesArea() *JumpClonesArea {
+	a := JumpClonesArea{
 		top:      widget.NewLabel(""),
 		treeData: fynetree.New[jumpCloneNode](),
 		u:        u,
@@ -59,11 +59,11 @@ func (u *DesktopUI) NewJumpClonesArea() *jumpClonesArea {
 	a.top.TextStyle.Bold = true
 	a.treeWidget = a.makeTree()
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, a.treeWidget)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.treeWidget)
 	return &a
 }
 
-func (a *jumpClonesArea) makeTree() *widget.Tree {
+func (a *JumpClonesArea) makeTree() *widget.Tree {
 	t := widget.NewTree(
 		func(uid widget.TreeNodeID) []widget.TreeNodeID {
 			return a.treeData.ChildUIDs(uid)
@@ -141,7 +141,7 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 	return t
 }
 
-func (a *jumpClonesArea) redraw() {
+func (a *JumpClonesArea) redraw() {
 	var t string
 	var i widget.Importance
 	tree, err := a.newTreeData()
@@ -160,7 +160,7 @@ func (a *jumpClonesArea) redraw() {
 	a.treeWidget.Refresh()
 }
 
-func (a *jumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error) {
+func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error) {
 	tree := fynetree.New[jumpCloneNode]()
 	if !a.u.HasCharacter() {
 		return tree, nil
@@ -197,7 +197,7 @@ func (a *jumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 	return tree, err
 }
 
-func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance) {
+func (a *JumpClonesArea) makeTopText(total int) (string, widget.Importance) {
 	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}

@@ -63,24 +63,24 @@ func (n locationDataNode) IsRoot() bool {
 
 var defaultAssetIcon = theme.NewDisabledResource(ui.IconQuestionmarkSvg)
 
-// assetsArea is the UI area that shows the skillqueue
-type assetsArea struct {
-	content          fyne.CanvasObject
+// AssetsArea is the UI area that shows the skillqueue
+type AssetsArea struct {
+	assetCollection  assetcollection.AssetCollection
 	assetGrid        *widget.GridWrap
 	assets           []*app.CharacterAsset
-	locationPath     *fyne.Container
 	assetsBottom     *widget.Label
-	locationsWidget  *widget.Tree
+	Content          fyne.CanvasObject
+	locationPath     *fyne.Container
 	locationsData    *fynetree.FyneTree[locationDataNode]
 	locationsTop     *widget.Label
+	locationsWidget  *widget.Tree
 	selectedLocation optional.Optional[locationDataNode]
-	assetCollection  assetcollection.AssetCollection
 	u                *DesktopUI
 }
 
-func (u *DesktopUI) newAssetsArea() *assetsArea {
+func (u *DesktopUI) NewAssetsArea() *AssetsArea {
 	myHBox := layout.NewCustomPaddedHBoxLayout(-5)
-	a := assetsArea{
+	a := AssetsArea{
 		assets:        make([]*app.CharacterAsset, 0),
 		locationPath:  container.New(myHBox),
 		assetsBottom:  widget.NewLabel(""),
@@ -108,11 +108,11 @@ func (u *DesktopUI) newAssetsArea() *assetsArea {
 	)
 	main := container.NewHSplit(locations, assets)
 	main.SetOffset(0.33)
-	a.content = main
+	a.Content = main
 	return &a
 }
 
-func (a *assetsArea) makeLocationsTree() *widget.Tree {
+func (a *AssetsArea) makeLocationsTree() *widget.Tree {
 	t := widget.NewTree(
 		func(uid widget.TreeNodeID) []widget.TreeNodeID {
 			return a.locationsData.ChildUIDs(uid)
@@ -161,7 +161,7 @@ func (a *assetsArea) makeLocationsTree() *widget.Tree {
 	return t
 }
 
-func (a *assetsArea) clearAssets() error {
+func (a *AssetsArea) clearAssets() error {
 	a.assets = make([]*app.CharacterAsset, 0)
 	a.assetGrid.Refresh()
 	a.locationPath.RemoveAll()
@@ -169,7 +169,7 @@ func (a *assetsArea) clearAssets() error {
 	return nil
 }
 
-func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
+func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
 			return len(a.assets)
@@ -215,7 +215,7 @@ func (a *assetsArea) makeAssetGrid() *widget.GridWrap {
 	return g
 }
 
-func (a *assetsArea) redraw() {
+func (a *AssetsArea) Redraw() {
 	a.locationsWidget.CloseAllBranches()
 	a.locationsWidget.ScrollToTop()
 	t, i, err := func() (string, widget.Importance, error) {
@@ -241,7 +241,7 @@ func (a *assetsArea) redraw() {
 	a.locationsWidget.Refresh()
 }
 
-func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], error) {
+func (a *AssetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], error) {
 	ctx := context.TODO()
 	tree := fynetree.New[locationDataNode]()
 	if !a.u.HasCharacter() {
@@ -387,7 +387,7 @@ func (a *assetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 	return tree, nil
 }
 
-func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
+func (a *AssetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance, nil
 	}
@@ -399,7 +399,7 @@ func (a *assetsArea) makeTopText(total int) (string, widget.Importance, error) {
 	return fmt.Sprintf("%s locations", locations), widget.MediumImportance, nil
 }
 
-func (a *assetsArea) selectLocation(location locationDataNode) error {
+func (a *AssetsArea) selectLocation(location locationDataNode) error {
 	a.assets = make([]*app.CharacterAsset, 0)
 	a.assetGrid.Refresh()
 	a.selectedLocation.Set(location)
@@ -464,7 +464,7 @@ func (a *assetsArea) selectLocation(location locationDataNode) error {
 	return nil
 }
 
-func (a *assetsArea) updateLocationPath(location locationDataNode) {
+func (a *AssetsArea) updateLocationPath(location locationDataNode) {
 	path := make([]locationDataNode, 0)
 	for _, uid := range a.locationsData.Path(location.UID()) {
 		n, ok := a.locationsData.Value(uid)

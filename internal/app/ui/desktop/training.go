@@ -23,17 +23,17 @@ type trainingCharacter struct {
 	unallocatedSP optional.Optional[int]
 }
 
-// trainingArea is the UI area that shows an overview of all the user's characters.
-type trainingArea struct {
+// TrainingArea is the UI area that shows an overview of all the user's characters.
+type TrainingArea struct {
 	characters []trainingCharacter
-	content    *fyne.Container
+	Content    *fyne.Container
 	table      *widget.Table
 	top        *widget.Label
 	u          *DesktopUI
 }
 
-func (u *DesktopUI) newTrainingArea() *trainingArea {
-	a := trainingArea{
+func (u *DesktopUI) NewTrainingArea() *TrainingArea {
+	a := TrainingArea{
 		characters: make([]trainingCharacter, 0),
 		top:        widget.NewLabel(""),
 		u:          u,
@@ -42,11 +42,11 @@ func (u *DesktopUI) newTrainingArea() *trainingArea {
 
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.table = a.makeTable()
-	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
 	return &a
 }
 
-func (a *trainingArea) makeTable() *widget.Table {
+func (a *TrainingArea) makeTable() *widget.Table {
 	var headers = []struct {
 		text     string
 		maxChars int
@@ -117,7 +117,7 @@ func (a *trainingArea) makeTable() *widget.Table {
 	return t
 }
 
-func (a *trainingArea) refresh() {
+func (a *TrainingArea) Refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
 		totalSP, err := a.updateCharacters()
 		if err != nil {
@@ -140,7 +140,7 @@ func (a *trainingArea) refresh() {
 	a.table.Refresh()
 }
 
-func (a *trainingArea) updateCharacters() (optional.Optional[int], error) {
+func (a *TrainingArea) updateCharacters() (optional.Optional[int], error) {
 	var totalSP optional.Optional[int]
 	var err error
 	ctx := context.TODO()

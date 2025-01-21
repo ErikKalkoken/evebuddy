@@ -98,7 +98,7 @@ func (u *DesktopUI) newStatusWindow() *statusWindow {
 		if c.IsGeneralSection() {
 			a.u.updateGeneralSectionsAndRefreshIfNeeded(true)
 		} else {
-			a.u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.id, true)
+			a.u.UpdateCharacterAndRefreshIfNeeded(context.TODO(), c.id, true)
 		}
 	})
 	if a.u.IsOffline {

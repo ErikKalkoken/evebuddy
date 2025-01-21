@@ -46,17 +46,17 @@ func (e walletJournalEntry) descriptionWithReason() string {
 	return fmt.Sprintf("[r] %s", e.description)
 }
 
-// walletJournalArea is the UI area that shows the skillqueue
-type walletJournalArea struct {
-	content *fyne.Container
+// WalletJournalArea is the UI area that shows the skillqueue
+type WalletJournalArea struct {
+	Content *fyne.Container
 	entries []walletJournalEntry
 	table   *widget.Table
 	top     *widget.Label
 	u       *DesktopUI
 }
 
-func (u *DesktopUI) newWalletJournalArea() *walletJournalArea {
-	a := walletJournalArea{
+func (u *DesktopUI) NewWalletJournalArea() *WalletJournalArea {
+	a := WalletJournalArea{
 		entries: make([]walletJournalEntry, 0),
 		top:     widget.NewLabel(""),
 		u:       u,
@@ -65,11 +65,11 @@ func (u *DesktopUI) newWalletJournalArea() *walletJournalArea {
 	a.top.TextStyle.Bold = true
 	a.table = a.makeTable()
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
 	return &a
 }
 
-func (a *walletJournalArea) makeTable() *widget.Table {
+func (a *WalletJournalArea) makeTable() *widget.Table {
 	var headers = []struct {
 		text  string
 		width float32
@@ -148,7 +148,7 @@ func (a *walletJournalArea) makeTable() *widget.Table {
 	return t
 }
 
-func (a *walletJournalArea) refresh() {
+func (a *WalletJournalArea) Refresh() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -164,7 +164,7 @@ func (a *walletJournalArea) refresh() {
 	a.table.Refresh()
 }
 
-func (a *walletJournalArea) makeTopText() (string, widget.Importance) {
+func (a *WalletJournalArea) makeTopText() (string, widget.Importance) {
 	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
@@ -179,7 +179,7 @@ func (a *walletJournalArea) makeTopText() (string, widget.Importance) {
 	return s, widget.MediumImportance
 }
 
-func (a *walletJournalArea) updateEntries() error {
+func (a *WalletJournalArea) updateEntries() error {
 	if !a.u.HasCharacter() {
 		a.entries = make([]walletJournalEntry, 0)
 		return nil

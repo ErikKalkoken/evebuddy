@@ -23,9 +23,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-// mailArea is the UI area showing the mail folders.
-type mailArea struct {
-	content fyne.CanvasObject
+// MailArea is the UI area showing the mail folders.
+type MailArea struct {
+	Content fyne.CanvasObject
 	u       *DesktopUI
 
 	currentFolder optional.Optional[folderNode]
@@ -49,8 +49,8 @@ type mailArea struct {
 	toolbar     *widget.Toolbar
 }
 
-func (u *DesktopUI) newMailArea() *mailArea {
-	a := &mailArea{
+func (u *DesktopUI) NewMailArea() *MailArea {
+	a := &MailArea{
 		body:        widget.NewLabel(""),
 		foldersData: fynetree.New[folderNode](),
 		header:      widget.NewLabel(""),
@@ -89,7 +89,7 @@ func (u *DesktopUI) newMailArea() *mailArea {
 	split1.SetOffset(0.35)
 	split2 := container.NewHSplit(a.folderSection, split1)
 	split2.SetOffset(0.15)
-	a.content = split2
+	a.Content = split2
 	return a
 }
 
@@ -154,7 +154,7 @@ func (f folderNode) icon() fyne.Resource {
 	return theme.FolderIcon()
 }
 
-func (a *mailArea) makeFolderTree() *widget.Tree {
+func (a *MailArea) makeFolderTree() *widget.Tree {
 	tree := widget.NewTree(
 		func(uid widget.TreeNodeID) []widget.TreeNodeID {
 			return a.foldersData.ChildUIDs(uid)
@@ -208,12 +208,12 @@ func (a *mailArea) makeFolderTree() *widget.Tree {
 	return tree
 }
 
-func (a *mailArea) redraw() {
+func (a *MailArea) Redraw() {
 	a.lastUID = ""
-	a.refresh()
+	a.Refresh()
 }
 
-func (a *mailArea) refresh() {
+func (a *MailArea) Refresh() {
 	characterID := a.u.CharacterID()
 	folderAll, err := a.updateFolderData(characterID)
 	if err != nil {
@@ -241,7 +241,7 @@ func (a *mailArea) refresh() {
 	a.updateMailTab(folderAll.UnreadCount)
 }
 
-func (a *mailArea) updateMailTab(unreadCount int) {
+func (a *MailArea) updateMailTab(unreadCount int) {
 	s := "Comm."
 	if unreadCount > 0 {
 		s += fmt.Sprintf(" (%s)", humanize.Comma(int64(unreadCount)))
@@ -250,7 +250,7 @@ func (a *mailArea) updateMailTab(unreadCount int) {
 	a.u.tabs.Refresh()
 }
 
-func (a *mailArea) updateFolderData(characterID int32) (folderNode, error) {
+func (a *MailArea) updateFolderData(characterID int32) (folderNode, error) {
 	tree := fynetree.New[folderNode]()
 	if characterID == 0 {
 		a.foldersData = tree
@@ -396,7 +396,7 @@ func calcUnreadTotals(labelCounts, listCounts map[int32]int) (int, int, int) {
 	return total, labels, lists
 }
 
-func (a *mailArea) makeHeaderList() *widget.List {
+func (a *MailArea) makeHeaderList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.headers)
@@ -426,14 +426,14 @@ func (a *mailArea) makeHeaderList() *widget.List {
 	return l
 }
 
-func (a *mailArea) setFolder(folder folderNode) {
+func (a *MailArea) setFolder(folder folderNode) {
 	a.currentFolder = optional.New(folder)
 	a.headerRefresh()
 	a.headerList.ScrollToTop()
 	a.headerList.UnselectAll()
 	a.clearMail()
 }
-func (a *mailArea) clearFolder() {
+func (a *MailArea) clearFolder() {
 	a.currentFolder = optional.Optional[folderNode]{}
 	a.headers = make([]*app.CharacterMailHeader, 0)
 	a.headerList.Refresh()
@@ -441,7 +441,7 @@ func (a *mailArea) clearFolder() {
 	a.clearMail()
 }
 
-func (a *mailArea) headerRefresh() {
+func (a *MailArea) headerRefresh() {
 	var t string
 	var i widget.Importance
 	if err := a.updateHeaders(); err != nil {
@@ -456,7 +456,7 @@ func (a *mailArea) headerRefresh() {
 	a.headerTop.Refresh()
 }
 
-func (a *mailArea) updateHeaders() error {
+func (a *MailArea) updateHeaders() error {
 	ctx := context.TODO()
 	folderOption := a.currentFolder
 	if folderOption.IsEmpty() {
@@ -490,7 +490,7 @@ func (a *mailArea) updateHeaders() error {
 	return nil
 }
 
-func (a *mailArea) makeFolderTopText() (string, widget.Importance) {
+func (a *MailArea) makeFolderTopText() (string, widget.Importance) {
 	if !a.u.HasCharacter() {
 		return "No Character", widget.LowImportance
 	}
@@ -503,7 +503,7 @@ func (a *mailArea) makeFolderTopText() (string, widget.Importance) {
 	return s, widget.MediumImportance
 }
 
-func (a *mailArea) makeToolbar() *widget.Toolbar {
+func (a *MailArea) makeToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.MailReplyIcon(), func() {
 			a.u.showSendMessageWindow(createMessageReply, a.mail)
@@ -538,12 +538,12 @@ func (a *mailArea) makeToolbar() *widget.Toolbar {
 	return toolbar
 }
 
-func (a *mailArea) clearMail() {
+func (a *MailArea) clearMail() {
 	a.updateContent("", "", "")
 	a.toolbar.Hide()
 }
 
-func (a *mailArea) setMail(mailID int32) {
+func (a *MailArea) setMail(mailID int32) {
 	ctx := context.TODO()
 	characterID := a.u.CharacterID()
 	var err error
@@ -561,8 +561,8 @@ func (a *mailArea) setMail(mailID int32) {
 				a.setErrorText()
 				return
 			}
-			a.refresh()
-			a.u.overviewArea.refresh()
+			a.Refresh()
+			a.u.OverviewArea.Refresh()
 		}()
 	}
 
@@ -570,13 +570,13 @@ func (a *mailArea) setMail(mailID int32) {
 	a.toolbar.Show()
 }
 
-func (a *mailArea) updateContent(s string, h string, b string) {
+func (a *MailArea) updateContent(s string, h string, b string) {
 	a.subject.SetText(s)
 	a.header.SetText(h)
 	a.body.SetText(b)
 }
 
-func (a *mailArea) setErrorText() {
+func (a *MailArea) setErrorText() {
 	a.clearMail()
 	a.subject.Text = "ERROR"
 	a.subject.Importance = widget.DangerImportance

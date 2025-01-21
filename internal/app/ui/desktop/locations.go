@@ -27,17 +27,17 @@ type locationCharacter struct {
 	securityImportance widget.Importance
 }
 
-// locationsArea is the UI area that shows an overview of all the user's characters.
-type locationsArea struct {
+// LocationsArea is the UI area that shows an overview of all the user's characters.
+type LocationsArea struct {
 	characters []locationCharacter
-	content    *fyne.Container
+	Content    *fyne.Container
 	table      *widget.Table
 	top        *widget.Label
 	u          *DesktopUI
 }
 
-func (u *DesktopUI) newLocationsArea() *locationsArea {
-	a := locationsArea{
+func (u *DesktopUI) NewLocationsArea() *LocationsArea {
+	a := LocationsArea{
 		characters: make([]locationCharacter, 0),
 		top:        widget.NewLabel(""),
 		u:          u,
@@ -46,11 +46,11 @@ func (u *DesktopUI) newLocationsArea() *locationsArea {
 
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.table = a.makeTable()
-	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
 	return &a
 }
 
-func (a *locationsArea) makeTable() *widget.Table {
+func (a *LocationsArea) makeTable() *widget.Table {
 	var headers = []struct {
 		text     string
 		maxChars int
@@ -136,7 +136,7 @@ func (a *locationsArea) makeTable() *widget.Table {
 	return t
 }
 
-func (a *locationsArea) refresh() {
+func (a *LocationsArea) Refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
 		locations, err := a.updateCharacters()
 		if err != nil {
@@ -158,7 +158,7 @@ func (a *locationsArea) refresh() {
 	a.table.Refresh()
 }
 
-func (a *locationsArea) updateCharacters() (int, error) {
+func (a *LocationsArea) updateCharacters() (int, error) {
 	var err error
 	ctx := context.TODO()
 	mycc, err := a.u.CharacterService.ListCharacters(ctx)

@@ -25,15 +25,15 @@ const (
 	barChartHeight = chartBaseSize
 )
 
-type wealthArea struct {
-	content fyne.CanvasObject
+type WealthArea struct {
+	Content fyne.CanvasObject
 	charts  *fyne.Container
 	top     *widget.Label
 	u       *DesktopUI
 }
 
-func (u *DesktopUI) newWealthArea() *wealthArea {
-	a := &wealthArea{
+func (u *DesktopUI) NewWealthArea() *WealthArea {
+	a := &WealthArea{
 		top: widget.NewLabel(""),
 		u:   u,
 	}
@@ -41,14 +41,14 @@ func (u *DesktopUI) newWealthArea() *wealthArea {
 	a.top.TextStyle.Bold = true
 	cs := container.NewScroll(a.charts)
 	cs.SetMinSize(fyne.NewSize(barChartWidth, barChartHeight))
-	a.content = container.NewBorder(
+	a.Content = container.NewBorder(
 		container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil,
 		cs,
 	)
 	return a
 }
 
-func (a *wealthArea) makeCharts() *fyne.Container {
+func (a *WealthArea) makeCharts() *fyne.Container {
 	return container.NewVBox(
 		container.NewHBox(widget.NewLabel(""), widget.NewLabel("")),
 		widget.NewLabel(""),
@@ -56,7 +56,7 @@ func (a *wealthArea) makeCharts() *fyne.Container {
 	)
 }
 
-func (a *wealthArea) refresh() {
+func (a *WealthArea) Refresh() {
 	data, characters, err := a.compileData()
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
@@ -135,7 +135,7 @@ type dataRow struct {
 	total  float64
 }
 
-func (a *wealthArea) compileData() ([]dataRow, int, error) {
+func (a *WealthArea) compileData() ([]dataRow, int, error) {
 	ctx := context.TODO()
 	cc, err := a.u.CharacterService.ListCharacters(ctx)
 	if err != nil {
@@ -162,8 +162,8 @@ func (a *wealthArea) compileData() ([]dataRow, int, error) {
 					slog.Error("update asset totals", "characterID", characterID, "err", err)
 					return
 				}
-				a.u.wealthArea.refresh()
-				a.u.overviewArea.refresh()
+				a.u.WealthArea.Refresh()
+				a.u.OverviewArea.Refresh()
 			}(c.ID)
 		}
 		if c.WalletBalance.IsEmpty() && assetTotal.IsEmpty() {
