@@ -144,9 +144,7 @@ func (a *AccountArea) showDeleteDialog(c accountCharacter) {
 						if err != nil {
 							return err
 						}
-						if err := a.Refresh(); err != nil {
-							return err
-						}
+						a.Refresh()
 						return nil
 					},
 					a.u.Window,
@@ -169,10 +167,11 @@ func (a *AccountArea) showDeleteDialog(c accountCharacter) {
 	d1.Show()
 }
 
-func (a *AccountArea) Refresh() error {
+func (a *AccountArea) Refresh() {
 	cc, err := a.u.CharacterService.ListCharactersShort(context.TODO())
 	if err != nil {
-		return err
+		slog.Error("account refresh", "error", err)
+		return
 	}
 	cc2 := make([]accountCharacter, len(cc))
 	for i, c := range cc {
@@ -186,7 +185,6 @@ func (a *AccountArea) Refresh() error {
 	a.characters = cc2
 	a.list.Refresh()
 	a.title.SetText(fmt.Sprintf("Characters (%d)", len(a.characters)))
-	return nil
 }
 
 func (a *AccountArea) showAddCharacterDialog() {
@@ -210,9 +208,7 @@ func (a *AccountArea) showAddCharacterDialog() {
 			} else if err != nil {
 				return err
 			}
-			if err := a.Refresh(); err != nil {
-				return err
-			}
+			a.Refresh()
 			a.u.UpdateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
 			return nil
 		}()

@@ -2,7 +2,6 @@ package desktop
 
 import (
 	"fyne.io/fyne/v2"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
 type accountWindow struct {
@@ -24,11 +23,6 @@ func (u *DesktopUI) showAccountWindow() {
 	w.Resize(fyne.Size{Width: 500, Height: 500})
 	w.SetContent(u.AccountArea.Content)
 	w.Show()
-	if err := u.AccountArea.Refresh(); err != nil {
-		w.Hide()
-		d := ui.NewErrorDialog("Failed to show characters", err, u.Window)
-		d.Show()
-	}
 	u.AccountArea.OnSelectCharacter = func() {
 		w.Hide()
 	}

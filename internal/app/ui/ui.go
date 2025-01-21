@@ -103,6 +103,7 @@ func (u BaseUI) AppName() string {
 }
 
 func (u *BaseUI) Init() {
+	u.AccountArea.Refresh()
 	var c *app.Character
 	var err error
 	ctx := context.Background()

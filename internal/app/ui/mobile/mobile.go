@@ -21,8 +21,6 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	u := &MobileUI{}
 	u.BaseUI = ui.NewBaseUI(fyneApp)
 
-	u.AccountArea.Refresh()
-
 	var characterNav *Navigator
 	homeList := NewNavList(
 		NewNavListItem(
