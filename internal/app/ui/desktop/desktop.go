@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"golang.org/x/sync/singleflight"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
@@ -58,7 +59,51 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		sfg: new(singleflight.Group),
 	}
 	u.BaseUI = ui.NewBaseUI(fyneApp)
-	u.identifyDesktop()
+	u.OnInit = func(_ *app.Character) {
+		index := u.FyneApp.Preferences().IntWithFallback(settingTabsMainID, -1)
+		if index != -1 {
+			u.tabs.SelectIndex(index)
+			for i, o := range u.tabs.Items {
+				tabs, ok := o.Content.(*container.AppTabs)
+				if !ok {
+					continue
+				}
+				key := makeSubTabsKey(i)
+				index := u.FyneApp.Preferences().IntWithFallback(key, -1)
+				if index != -1 {
+					tabs.SelectIndex(index)
+				}
+			}
+		}
+	}
+	u.OnShowAndRun = func() {
+		width := float32(u.FyneApp.Preferences().FloatWithFallback(settingWindowWidth, settingWindowHeightDefault))
+		height := float32(u.FyneApp.Preferences().FloatWithFallback(settingWindowHeight, settingWindowHeightDefault))
+		u.Window.Resize(fyne.NewSize(width, height))
+	}
+	u.OnAppStarted = func() {
+		// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
+		// only in parts and freeze. The issue is known to happen on Linux desktops.
+		if runtime.GOOS == "linux" {
+			go func() {
+				time.Sleep(500 * time.Millisecond)
+				s := u.Window.Canvas().Size()
+				u.Window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
+				u.Window.Resize(fyne.NewSize(s.Width, s.Height))
+			}()
+		}
+		go u.statusBarArea.StartUpdateTicker()
+	}
+	u.OnAppStopped = func() {
+		u.saveAppState()
+	}
+	u.OnRefreshCharacter = func(c *app.Character) {
+		go u.toolbarArea.refresh()
+		go u.toogleTabs(c != nil)
+		go u.statusBarArea.refreshUpdateStatus()
+		go u.statusBarArea.refreshCharacterCount()
+	}
+
 	characterTab := container.NewTabItemWithIcon("Character",
 		theme.AccountIcon(), container.NewAppTabs(
 			container.NewTabItem("Augmentations", u.ImplantsArea.Content),
@@ -129,7 +174,12 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	u.Window.SetContent(mainContent)
 
 	// system tray menu
-	if u.isDesktop() && fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault) {
+	desk, ok := u.FyneApp.(fyneDesktop.App)
+	if !ok {
+		panic("not running on desktop")
+	}
+	u.deskApp = desk
+	if fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault) {
 		name := u.AppName()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true
@@ -154,67 +204,8 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	return u
 }
 
-func (u *DesktopUI) identifyDesktop() {
-	desk, ok := u.FyneApp.(fyneDesktop.App)
-	if ok {
-		slog.Debug("Running in desktop mode")
-		u.deskApp = desk
-	} else {
-		slog.Debug("Running in mobile mode")
-	}
-}
-
-func (u *DesktopUI) isDesktop() bool {
-	return u.deskApp != nil
-}
-
-func (u *DesktopUI) Init() {
-	u.BaseUI.Init()
-	index := u.FyneApp.Preferences().IntWithFallback(settingTabsMainID, -1)
-	if index != -1 {
-		u.tabs.SelectIndex(index)
-		for i, o := range u.tabs.Items {
-			tabs, ok := o.Content.(*container.AppTabs)
-			if !ok {
-				continue
-			}
-			key := makeSubTabsKey(i)
-			index := u.FyneApp.Preferences().IntWithFallback(key, -1)
-			if index != -1 {
-				tabs.SelectIndex(index)
-			}
-		}
-	}
-}
-
-// ShowAndRun shows the UI and runs it (blocking).
-func (u *DesktopUI) ShowAndRun() {
-	u.FyneApp.Lifecycle().SetOnStarted(func() {
-		// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
-		// only in parts and freeze. The issue is known to happen on Linux desktops.
-		if runtime.GOOS == "linux" {
-			go func() {
-				time.Sleep(500 * time.Millisecond)
-				s := u.Window.Canvas().Size()
-				u.Window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
-				u.Window.Resize(fyne.NewSize(s.Width, s.Height))
-			}()
-		}
-		go u.statusBarArea.StartUpdateTicker()
-	})
-	u.FyneApp.Lifecycle().SetOnStopped(func() {
-		u.saveAppState()
-	})
-	width := float32(u.FyneApp.Preferences().FloatWithFallback(settingWindowWidth, settingWindowHeightDefault))
-	height := float32(u.FyneApp.Preferences().FloatWithFallback(settingWindowHeight, settingWindowHeightDefault))
-	u.Window.Resize(fyne.NewSize(width, height))
-
-	u.BaseUI.ShowAndRun()
-}
-
 func (u *DesktopUI) saveAppState() {
-	a := u.FyneApp
-	if u.Window == nil || a == nil {
+	if u.Window == nil || u.FyneApp == nil {
 		slog.Warn("Failed to save app state")
 	}
 	s := u.Window.Canvas().Size()
@@ -261,16 +252,10 @@ func (u *DesktopUI) toogleTabs(enabled bool) {
 }
 
 func (u *DesktopUI) showMailIndicator() {
-	if !u.isDesktop() {
-		return
-	}
 	u.deskApp.SetSystemTrayIcon(ui.IconIconmarkedPng)
 }
 
 func (u *DesktopUI) hideMailIndicator() {
-	if !u.isDesktop() {
-		return
-	}
 	u.deskApp.SetSystemTrayIcon(ui.IconIconPng)
 }
 
@@ -281,50 +266,3 @@ func (u *DesktopUI) makeWindowTitle(subTitle string) string {
 func makeSubTabsKey(i int) string {
 	return fmt.Sprintf("tabs-sub%d-id", i)
 }
-
-// func (u *DesktopUI) ShowAccountDialog() {
-// 	err := func() error {
-// 		currentChars := set.New[int32]()
-// 		cc, err := u.CharacterService.ListCharactersShort(context.Background())
-// 		if err != nil {
-// 			return err
-// 		}
-// 		for _, c := range cc {
-// 			currentChars.Add(c.ID)
-// 		}
-// 		a := u.NewAccountArea(u.updateCharacterAndRefreshIfNeeded)
-// 		d := dialog.NewCustom("Manage Characters", "Close", a.Content, u.Window)
-// 		kxdialog.AddDialogKeyHandler(d, u.Window)
-// 		a.OnSelectCharacter = func() {
-// 			d.Hide()
-// 		}
-// 		d.SetOnClosed(func() {
-// 			defer u.enableMenuShortcuts()
-// 			// incomingChars := set.New[int32]()
-// 			// for _, c := range a.characters {
-// 			// 	incomingChars.Add(c.id)
-// 			// }
-// 			// if currentChars.Equal(incomingChars) {
-// 			// 	return
-// 			// }
-// 			// if !incomingChars.Contains(u.CharacterID()) {
-// 			// 	if err := u.SetAnyCharacter(); err != nil {
-// 			// 		slog.Error("Failed to set any character", "error", err)
-// 			// 	}
-// 			// }
-// 			u.refreshCrossPages()
-// 		})
-// 		u.disableMenuShortcuts()
-// 		d.Show()
-// 		d.Resize(fyne.Size{Width: 500, Height: 500})
-// 		if err := a.Refresh(); err != nil {
-// 			d.Hide()
-// 			return err
-// 		}
-// 		return nil
-// 	}()
-// 	if err != nil {
-// 		d := ui.NewErrorDialog("Failed to show account dialog", err, u.Window)
-// 		d.Show()
-// 	}
-// }

@@ -23,6 +23,7 @@ const (
 	MyFloatFormat   = "#,###.##"
 )
 
+// BaseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type BaseUI struct {
 	CacheService       app.CacheService
 	CharacterService   *character.CharacterService
@@ -35,11 +36,16 @@ type BaseUI struct {
 	// Whether to disable update tickers (useful for debugging)
 	IsUpdateTickerDisabled bool
 
-	OnSetCharacter func(int32)
+	// callbacks
+	OnAppStarted       func()
+	OnAppStopped       func()
+	OnInit             func(*app.Character)
+	OnRefreshCharacter func(*app.Character)
+	OnSetCharacter     func(int32)
+	OnShowAndRun       func()
 
-	Character *app.Character
-	FyneApp   fyne.App
-	Window    fyne.Window
+	FyneApp fyne.App
+	Window  fyne.Window
 
 	AccountArea           *AccountArea
 	AssetsArea            *AssetsArea
@@ -62,8 +68,13 @@ type BaseUI struct {
 	WalletJournalArea     *WalletJournalArea
 	WalletTransactionArea *WalletTransactionArea
 	WealthArea            *WealthArea
+
+	character *app.Character
 }
 
+// NewBaseUI returns a new BaseUI.
+//
+// Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
 func NewBaseUI(fyneApp fyne.App) *BaseUI {
 	u := &BaseUI{
 		FyneApp: fyneApp,
@@ -128,7 +139,10 @@ func (u *BaseUI) Init() {
 	if c == nil {
 		return
 	}
-	u.Character = c
+	u.character = c
+	if u.OnInit != nil {
+		u.OnInit(c)
+	}
 }
 
 // ShowAndRun shows the UI and runs it (blocking).
@@ -145,7 +159,7 @@ func (u *BaseUI) ShowAndRun() {
 		go func() {
 			u.RefreshCrossPages()
 			if u.HasCharacter() {
-				u.SetCharacter(u.Character)
+				u.SetCharacter(u.character)
 			} else {
 				u.ResetCharacter()
 			}
@@ -156,28 +170,36 @@ func (u *BaseUI) ShowAndRun() {
 				u.startUpdateTickerCharacters()
 			}()
 		}
+		if u.OnAppStarted != nil {
+			u.OnAppStarted()
+		}
 	})
 	u.FyneApp.Lifecycle().SetOnStopped(func() {
+		if u.OnAppStopped != nil {
+			u.OnAppStopped()
+		}
 		slog.Info("App shut down complete")
 	})
-
+	if u.OnShowAndRun != nil {
+		u.OnShowAndRun()
+	}
 	u.Window.ShowAndRun()
 }
 
 // CharacterID returns the ID of the current character or 0 if non it set.
 func (u *BaseUI) CharacterID() int32 {
-	if u.Character == nil {
+	if u.character == nil {
 		return 0
 	}
-	return u.Character.ID
+	return u.character.ID
 }
 
 func (u *BaseUI) CurrentCharacter() *app.Character {
-	return u.Character
+	return u.character
 }
 
 func (u *BaseUI) HasCharacter() bool {
-	return u.Character != nil
+	return u.character != nil
 }
 
 func (u *BaseUI) LoadCharacter(ctx context.Context, characterID int32) error {
@@ -190,7 +212,7 @@ func (u *BaseUI) LoadCharacter(ctx context.Context, characterID int32) error {
 }
 
 func (u *BaseUI) SetCharacter(c *app.Character) {
-	u.Character = c
+	u.character = c
 	u.RefreshCharacter()
 	u.FyneApp.Preferences().SetInt(SettingLastCharacterID, int(c.ID))
 	if u.OnSetCharacter != nil {
@@ -199,7 +221,7 @@ func (u *BaseUI) SetCharacter(c *app.Character) {
 }
 
 func (u *BaseUI) ResetCharacter() {
-	u.Character = nil
+	u.character = nil
 	u.FyneApp.Preferences().SetInt(SettingLastCharacterID, 0)
 	u.RefreshCharacter()
 }
@@ -218,26 +240,22 @@ func (u *BaseUI) SetAnyCharacter() error {
 
 func (u *BaseUI) RefreshCharacter() {
 	ff := map[string]func(){
-		"assets":         u.AssetsArea.Redraw,
-		"attributes":     u.AttributesArea.Refresh,
-		"bio":            u.BiographyArea.Refresh,
-		"contracts":      u.ContractsArea.Refresh,
-		"implants":       u.ImplantsArea.Refresh,
-		"jumpClones":     u.JumpClonesArea.Redraw,
-		"mail":           u.MailArea.Redraw,
-		"notifications":  u.NotificationsArea.Refresh,
-		"planets":        u.PlanetArea.Refresh,
-		"ships":          u.ShipsArea.Refresh,
-		"skillCatalogue": u.SkillCatalogueArea.Redraw,
-		"skillqueue":     u.SkillqueueArea.Refresh,
-		// "toolbar":           u.toolbarArea.refresh,
+		"assets":            u.AssetsArea.Redraw,
+		"attributes":        u.AttributesArea.Refresh,
+		"bio":               u.BiographyArea.Refresh,
+		"contracts":         u.ContractsArea.Refresh,
+		"implants":          u.ImplantsArea.Refresh,
+		"jumpClones":        u.JumpClonesArea.Redraw,
+		"mail":              u.MailArea.Redraw,
+		"notifications":     u.NotificationsArea.Refresh,
+		"planets":           u.PlanetArea.Refresh,
+		"ships":             u.ShipsArea.Refresh,
+		"skillCatalogue":    u.SkillCatalogueArea.Redraw,
+		"skillqueue":        u.SkillqueueArea.Refresh,
 		"walletJournal":     u.WalletJournalArea.Refresh,
 		"walletTransaction": u.WalletTransactionArea.Refresh,
 	}
 	c := u.CurrentCharacter()
-	// ff["toogleTabs"] = func() {
-	// 	u.toogleTabs(c != nil)
-	// }
 	if c != nil {
 		slog.Debug("Refreshing character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
 	}
@@ -245,7 +263,9 @@ func (u *BaseUI) RefreshCharacter() {
 	if c != nil && !u.IsUpdateTickerDisabled {
 		u.UpdateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
 	}
-	// go u.statusBarArea.refreshUpdateStatus()
+	if u.OnRefreshCharacter != nil {
+		u.OnRefreshCharacter(c)
+	}
 }
 
 // RefreshCrossPages refreshed all pages under the characters tab.
