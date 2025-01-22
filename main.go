@@ -86,7 +86,7 @@ func main() {
 			log.Fatal(err)
 		}
 		logger = &lumberjack.Logger{
-			Filename:   fmt.Sprintf("%s/%s", logDir, logFileName),
+			Filename:   filepath.Join(logDir, logFileName),
 			MaxSize:    logMaxSizeMB,
 			MaxBackups: logMaxBackups,
 		}
@@ -148,14 +148,15 @@ func main() {
 	// init database
 	var dbPath string
 	if isDesktop {
-		dbPath = fmt.Sprintf("%s/%s", dataDir, dbFileName)
+		dbPath = filepath.Join(dataDir, dbFileName)
 	} else {
 		// EXPERIMENTAL
 		dbPath = ensureFileExists(fyneApp.Storage(), dbFileName)
 	}
-	db, err := storage.InitDB("file://" + dbPath)
+	dsn := "file:///" + filepath.ToSlash(dbPath)
+	db, err := storage.InitDB(dsn)
 	if err != nil {
-		slog.Error("Failed to initialize database", "dsn", dbPath, "error", err)
+		slog.Error("Failed to initialize database", "dsn", dsn, "error", err)
 		os.Exit(1)
 	}
 	defer db.Close()
