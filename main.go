@@ -56,11 +56,12 @@ const (
 // define flags
 var (
 	deleteDataFlag     = flag.Bool("delete-data", false, "Delete user data")
+	developFlag        = flag.Bool("dev", false, "Enable developer features")
 	dirsFlag           = flag.Bool("dirs", false, "Show directories for user data")
 	disableUpdatesFlag = flag.Bool("disable-updates", false, "Disable all periodic updates")
 	offlineFlag        = flag.Bool("offline", false, "Start app in offline mode")
 	pprofFlag          = flag.Bool("pprof", false, "Enable pprof web server")
-	developFlag        = flag.Bool("dev", false, "Enable developer features")
+	versionFlag        = flag.Bool("v", false, "Show version")
 )
 
 func main() {
@@ -72,6 +73,11 @@ func main() {
 	// start fyne app
 	fyneApp := app.NewWithID(appID)
 	_, isDesktop := fyneApp.(desktop.App)
+
+	if *versionFlag {
+		fmt.Println(fyneApp.Metadata().Version)
+		return
+	}
 
 	// set log level
 	ln := fyneApp.Preferences().StringWithFallback(ui.SettingLogLevel, ui.SettingLogLevelDefault)
