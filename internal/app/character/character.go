@@ -84,7 +84,7 @@ func (s *CharacterService) GetCharacter(ctx context.Context, id int32) (*app.Cha
 }
 
 func (s *CharacterService) GetAnyCharacter(ctx context.Context) (*app.Character, error) {
-	o, err := s.st.GetFirstCharacter(ctx)
+	o, err := s.st.GetAnyCharacter(ctx)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}

@@ -65,7 +65,7 @@ func (st *Storage) GetCharacter(ctx context.Context, characterID int32) (*app.Ch
 	return c, nil
 }
 
-func (st *Storage) GetFirstCharacter(ctx context.Context) (*app.Character, error) {
+func (st *Storage) GetAnyCharacter(ctx context.Context) (*app.Character, error) {
 	ids, err := st.ListCharacterIDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list first character: %w", err)
