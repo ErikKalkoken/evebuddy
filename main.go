@@ -8,11 +8,14 @@ import (
 	"io"
 	"log"
 	"log/slog"
+	"maps"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -62,6 +65,7 @@ var (
 	offlineFlag        = flag.Bool("offline", false, "Start app in offline mode")
 	pprofFlag          = flag.Bool("pprof", false, "Enable pprof web server")
 	versionFlag        = flag.Bool("v", false, "Show version")
+	logLevelFlag       = flag.String("log-level", "", "Set log level for this session")
 )
 
 func main() {
@@ -69,6 +73,22 @@ func main() {
 	slog.SetLogLoggerLevel(logLevelDefault)
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	flag.Parse()
+
+	// set manual log level for this session if requested
+	if v := *logLevelFlag; v != "" {
+		m := map[string]slog.Level{
+			"debug": slog.LevelDebug,
+			"info":  slog.LevelInfo,
+			"warn":  slog.LevelWarn,
+			"error": slog.LevelError,
+		}
+		l, ok := m[strings.ToLower(v)]
+		if !ok {
+			fmt.Println("valid log levels are: ", strings.Join(slices.Collect(maps.Keys(m)), ", "))
+			os.Exit(1)
+		}
+		slog.SetLogLoggerLevel(l)
+	}
 
 	// start fyne app
 	fyneApp := app.NewWithID(appID)
@@ -79,16 +99,17 @@ func main() {
 		return
 	}
 
-	// set log level
-	ln := fyneApp.Preferences().StringWithFallback(ui.SettingLogLevel, ui.SettingLogLevelDefault)
-	l := ui.LogLevelName2Level(ln)
-	if l != logLevelDefault {
-		slog.Info("Setting log level", "level", ln)
-		slog.SetLogLoggerLevel(l)
+	// set log level from settings
+	if *logLevelFlag == "" {
+		ln := fyneApp.Preferences().StringWithFallback(ui.SettingLogLevel, ui.SettingLogLevelDefault)
+		l := ui.LogLevelName2Level(ln)
+		if l != logLevelDefault {
+			slog.Info("Setting log level", "level", ln)
+			slog.SetLogLoggerLevel(l)
+		}
 	}
 
 	var dataDir, logDir string
-	// desktop related init
 
 	// data dir
 	if isDesktop || *developFlag {
@@ -99,6 +120,7 @@ func main() {
 		}
 	}
 
+	// desktop related init
 	if isDesktop {
 		// start uninstall app if requested
 		if *deleteDataFlag {

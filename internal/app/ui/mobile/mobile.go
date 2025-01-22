@@ -225,7 +225,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			},
 		),
 		NewNavListItemWithIcon(
-			theme.NewThemedResource(ui.IconPortraitSvg),
+			theme.NewThemedResource(ui.IconManageaccountsSvg),
 			"Manage characters",
 			func() {
 				toolsNav.Push(
