@@ -138,6 +138,7 @@ func TestCharacter(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})
+	//FIXME: Flaky test
 	t.Run("should return first character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
