@@ -33,19 +33,37 @@ func NewAppBar(title string, body fyne.CanvasObject, items ...widget.ToolbarItem
 }
 
 func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
-	title := widget.NewLabel(w.title)
-	title.TextStyle.Bold = true
-	row := container.NewStack(container.NewHBox(layout.NewSpacer(), title, layout.NewSpacer()))
-	if w.Navigator != nil {
-		row.Add(container.NewHBox(kxwidget.NewTappableIcon(
-			theme.NavigateBackIcon(), func() {
+	top := container.NewVBox()
+	title := widget.NewRichText(&widget.TextSegment{
+		Style: widget.RichTextStyle{
+			ColorName: theme.ColorNameForeground,
+			Inline:    false,
+			SizeName:  theme.SizeNameSubHeadingText,
+		},
+		Text: w.title,
+	})
+	if w.Navigator == nil {
+		row := container.NewStack(
+			container.NewHBox(layout.NewSpacer(), title, layout.NewSpacer()),
+		)
+		if len(w.items) > 0 {
+			row.Add(container.NewHBox(layout.NewSpacer(), widget.NewToolbar(w.items...)))
+		}
+		top.Add(row)
+	} else {
+		row := container.NewHBox(
+			kxwidget.NewTappableIcon(theme.NavigateBackIcon(), func() {
 				w.Navigator.Pop()
-			})))
+			}),
+		)
+		if len(w.items) > 0 {
+			row.Add(layout.NewSpacer())
+			row.Add(widget.NewToolbar(w.items...))
+		}
+		top.Add(row)
+		top.Add(title)
 	}
-	if len(w.items) > 0 {
-		row.Add(container.NewHBox(layout.NewSpacer(), widget.NewToolbar(w.items...)))
-	}
-	top := container.NewVBox(row, widget.NewSeparator())
+	top.Add(widget.NewSeparator())
 	c := container.NewBorder(top, nil, nil, nil, w.body)
 	return widget.NewSimpleRenderer(c)
 }

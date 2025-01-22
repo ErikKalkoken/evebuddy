@@ -145,6 +145,9 @@ func (u *BaseUI) MakeGeneralSettingsPage(w fyne.Window) (fyne.CanvasObject, func
 				HintText: "Current log level",
 			},
 		}}
+	if !u.IsDesktop() {
+		settings.Orientation = widget.Vertical
+	}
 	reset := func() {
 		logLevel.SetSelected(SettingLogLevelDefault)
 	}
@@ -181,6 +184,9 @@ func (u *BaseUI) MakeEVEOnlinePage() (fyne.CanvasObject, func()) {
 				HintText: "Maximum number of wallet transaction downloaded. 0 = unlimited.",
 			},
 		},
+	}
+	if !u.IsDesktop() {
+		settings.Orientation = widget.Vertical
 	}
 	x := func() {
 		maxMails.SetValue(SettingMaxMailsDefault)
@@ -355,6 +361,11 @@ func (u *BaseUI) MakeNotificationPage(w fyne.Window) (fyne.CanvasObject, func())
 		f2.Append("", container.NewHBox(enableAll, disableAll))
 		f2.Append("", container.NewPadded())
 	}
+	if !u.IsDesktop() {
+		f1.Orientation = widget.Vertical
+		f2.Orientation = widget.Vertical
+	}
+
 	title1 := widget.NewLabel("Global")
 	title1.TextStyle.Bold = true
 	title2 := widget.NewLabel("Communication Types")

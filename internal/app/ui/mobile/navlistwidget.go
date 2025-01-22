@@ -13,12 +13,25 @@ type navListItem struct {
 	title  string
 }
 
-func NewNavListItem(icon fyne.Resource, title string, action func()) navListItem {
+func NewNavListItemWithIcon(icon fyne.Resource, title string, action func()) navListItem {
 	return navListItem{
 		action: action,
 		icon:   icon,
 		title:  title,
 	}
+}
+
+func NewNavListItem(title string, action func()) navListItem {
+	return navListItem{
+		action: action,
+		title:  title,
+	}
+}
+
+func NewNavListItemWithNavigator(nav *Navigator, ab *AppBar) navListItem {
+	return NewNavListItem(ab.title, func() {
+		nav.Push(ab)
+	})
 }
 
 type NavList struct {
