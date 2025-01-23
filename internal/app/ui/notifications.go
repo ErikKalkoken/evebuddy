@@ -111,10 +111,7 @@ func (a *NotificationsArea) makeFolderList() *widget.List {
 		}
 		o := a.Folders[id]
 		a.clearDetail()
-		if err := a.SetNotifications(o.Folder); err != nil {
-			slog.Error("Failed to load notifications", "err", err)
-			l.UnselectAll()
-		}
+		a.SetNotifications(o.Folder)
 	}
 	return l
 }
@@ -217,7 +214,7 @@ func (a *NotificationsArea) makeFolderTopText() (string, widget.Importance) {
 	return fmt.Sprintf("%d folders", len(a.Folders)), widget.MediumImportance
 }
 
-func (a *NotificationsArea) SetNotifications(nc evenotification.Folder) error {
+func (a *NotificationsArea) SetNotifications(nc evenotification.Folder) {
 	ctx := context.Background()
 	characterID := a.u.CharacterID()
 	var notifications []*app.CharacterNotification
@@ -231,13 +228,20 @@ func (a *NotificationsArea) SetNotifications(nc evenotification.Folder) error {
 		types := evenotification.FolderTypes[nc]
 		notifications, err = a.u.CharacterService.ListCharacterNotificationsTypes(ctx, characterID, types)
 	}
-	if err != nil {
-		return err
-	}
 	a.notifications = notifications
-	a.notificationsTop.SetText(fmt.Sprintf("%s • %s notifications", nc.String(), humanize.Comma(int64(len(notifications)))))
+	var top string
+	var importance widget.Importance
+	if err != nil {
+		slog.Error("set notifications", "characterID", characterID, "error", err)
+		top = "Something went wrong"
+		importance = widget.DangerImportance
+	} else {
+		top = fmt.Sprintf("%s • %s notifications", nc.String(), humanize.Comma(int64(len(notifications))))
+	}
+	a.notificationsTop.Text = top
+	a.notificationsTop.Importance = importance
+	a.notificationsTop.Refresh()
 	a.Notifications.Refresh()
-	return nil
 }
 
 func (a *NotificationsArea) clearDetail() {

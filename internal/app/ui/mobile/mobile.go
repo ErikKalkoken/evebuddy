@@ -302,17 +302,14 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				s += fmt.Sprintf(" (%d)", f.Unread)
 			}
 			it := fyne.NewMenuItem(s, func() {
-				if err := u.NotificationsArea.SetNotifications(f.Folder); err != nil {
-					panic(err) // FIXME
-				}
+				u.NotificationsArea.SetNotifications(f.Folder)
 			})
 			items = append(items, it)
 		}
 		communicationsFolder.Items = items
 		communicationsFolder.Refresh()
-		if err := u.NotificationsArea.SetNotifications(evenotification.Unread); err != nil {
-			panic(err) // FIXME
-		}
+		u.NotificationsArea.SetNotifications(evenotification.Unread)
+		characterNav.PopAll()
 	}
 	navBar.SetTabLocation(container.TabLocationBottom)
 	u.Window.SetContent(navBar)
