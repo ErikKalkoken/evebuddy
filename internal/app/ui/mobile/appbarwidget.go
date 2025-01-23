@@ -43,11 +43,9 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 		Text: w.title,
 	})
 	if w.Navigator == nil {
-		row := container.NewStack(
-			container.NewHBox(layout.NewSpacer(), title, layout.NewSpacer()),
-		)
+		row := container.NewHBox(title, layout.NewSpacer())
 		if len(w.items) > 0 {
-			row.Add(container.NewHBox(layout.NewSpacer(), container.NewVBox(widget.NewToolbar(w.items...))))
+			row.Add(container.NewVBox(widget.NewToolbar(w.items...)))
 		}
 		top.Add(row)
 	} else {
@@ -55,9 +53,9 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 			kxwidget.NewTappableIcon(theme.NavigateBackIcon(), func() {
 				w.Navigator.Pop()
 			}),
+			layout.NewSpacer(),
 		)
 		if len(w.items) > 0 {
-			row.Add(layout.NewSpacer())
 			row.Add(container.NewVBox(widget.NewToolbar(w.items...)))
 		}
 		top.Add(row)

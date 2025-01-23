@@ -316,12 +316,12 @@ func (u *BaseUI) MakeNotificationPage(w fyne.Window) (fyne.CanvasObject, func())
 
 	// communications types
 	f2 := widget.NewForm()
-	categoriesAndTypes := make(map[evenotification.Category][]evenotification.Type)
+	categoriesAndTypes := make(map[evenotification.Folder][]evenotification.Type)
 	for _, n := range evenotification.SupportedTypes() {
-		c := evenotification.Type2category[n]
+		c := evenotification.Type2folder[n]
 		categoriesAndTypes[c] = append(categoriesAndTypes[c], n)
 	}
-	categories := make([]evenotification.Category, 0)
+	categories := make([]evenotification.Folder, 0)
 	for c := range categoriesAndTypes {
 		categories = append(categories, c)
 	}

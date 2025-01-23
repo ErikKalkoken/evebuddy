@@ -63,7 +63,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				characterNav.Push(
 					newCharacterAppBar(
 						"Character Sheet",
-						NewNavList(
+						NewNavListWithTitle("Character Sheet",
 							NewNavListItemWithNavigator(
 								characterNav,
 								newCharacterAppBar("Augmentations", u.ImplantsArea.Content),
@@ -109,7 +109,12 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			theme.MailComposeIcon(),
 			"Communications",
 			func() {
-				characterNav.Push(newCharacterAppBar("Communications", widget.NewLabel("PLACEHOLDER")))
+				characterNav.Push(
+					newCharacterAppBar(
+						"Communications",
+						u.NotificationsArea.Notifications,
+					),
+				)
 			},
 		),
 		NewNavListItemWithIcon(
@@ -150,15 +155,9 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				characterNav.Push(
 					newCharacterAppBar(
 						"Wallet",
-						NewNavList(
-							NewNavListItemWithNavigator(
-								characterNav,
-								newCharacterAppBar("Transactions", u.WalletJournalArea.Content),
-							),
-							NewNavListItemWithNavigator(
-								characterNav,
-								newCharacterAppBar("Market Transactions", u.WalletTransactionArea.Content),
-							),
+						container.NewAppTabs(
+							container.NewTabItem("Transactions", u.WalletJournalArea.Content),
+							container.NewTabItem("Market Transactions", u.WalletTransactionArea.Content),
 						),
 					))
 			},

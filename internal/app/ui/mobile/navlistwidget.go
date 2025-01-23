@@ -37,19 +37,25 @@ func NewNavListItemWithNavigator(nav *Navigator, ab *AppBar) navListItem {
 type NavList struct {
 	widget.BaseWidget
 
+	title string
 	items []navListItem
 }
 
 func NewNavList(items ...navListItem) *NavList {
+	return NewNavListWithTitle("", items...)
+}
+
+func NewNavListWithTitle(title string, items ...navListItem) *NavList {
 	w := &NavList{
 		items: items,
+		title: title,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *NavList) CreateRenderer() fyne.WidgetRenderer {
-	c := widget.NewList(
+	list := widget.NewList(
 		func() int {
 			return len(w.items)
 		},
@@ -73,11 +79,16 @@ func (w *NavList) CreateRenderer() fyne.WidgetRenderer {
 			}
 		},
 	)
-	c.OnSelected = func(id widget.ListItemID) {
-		defer c.UnselectAll()
+	list.OnSelected = func(id widget.ListItemID) {
+		defer list.UnselectAll()
 		if a := w.items[id].action; a != nil {
 			a()
 		}
 	}
-	return widget.NewSimpleRenderer(c)
+	if w.title == "" {
+		return widget.NewSimpleRenderer(list)
+	}
+	l := widget.NewLabel(w.title)
+	l.TextStyle.Bold = true
+	return widget.NewSimpleRenderer(container.NewBorder(l, nil, nil, nil, list))
 }

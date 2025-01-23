@@ -5,10 +5,10 @@ import (
 	"slices"
 )
 
-type Category uint
+type Folder uint
 
 const (
-	Bills Category = iota + 1
+	Bills Folder = iota + 1
 	FactionWarfare
 	Contacts
 	Corporate
@@ -25,7 +25,7 @@ const (
 	All
 )
 
-var category2Name = map[Category]string{
+var folder2Name = map[Folder]string{
 	Bills:          "Bills",
 	FactionWarfare: "Faction Warfare",
 	Contacts:       "Contacts",
@@ -40,16 +40,16 @@ var category2Name = map[Category]string{
 	War:            "War",
 }
 
-func (c Category) String() string {
-	return category2Name[c]
+func (c Folder) String() string {
+	return folder2Name[c]
 }
 
-// Categories returns a slice of all categories in alphabetical order.
-func Categories() []Category {
-	return slices.Sorted(maps.Keys(category2Name))
+// Folders returns a slice of all folders in alphabetical order.
+func Folders() []Folder {
+	return slices.Sorted(maps.Keys(folder2Name))
 }
 
-var Type2category = map[Type]Category{
+var Type2folder = map[Type]Folder{
 	AcceptedAlly:                              War,
 	AcceptedSurrender:                         War,
 	AgentRetiredTrigravian:                    Unknown,
@@ -286,15 +286,15 @@ var Type2category = map[Type]Category{
 	WarSurrenderOfferMsg:                      War,
 }
 
-var CategoryTypes map[Category][]Type
+var FolderTypes map[Folder][]Type
 
 func init() {
-	CategoryTypes = make(map[Category][]Type)
-	for type_, category := range Type2category {
-		c := category
-		if category == Unknown {
+	FolderTypes = make(map[Folder][]Type)
+	for type_, folder := range Type2folder {
+		c := folder
+		if folder == Unknown {
 			c = Miscellaneous
 		}
-		CategoryTypes[c] = append(CategoryTypes[c], type_)
+		FolderTypes[c] = append(FolderTypes[c], type_)
 	}
 }
