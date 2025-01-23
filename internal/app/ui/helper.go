@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"log/slog"
+	"regexp"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -57,4 +58,10 @@ func NewCustomHyperlink(text string, onTapped func()) *widget.Hyperlink {
 	x := widget.NewHyperlink(text, nil)
 	x.OnTapped = onTapped
 	return x
+}
+
+// markdownStripLinks strips all links from a text in markdown.
+func markdownStripLinks(s string) string {
+	r := regexp.MustCompile(`\[(.+?)\]\((.+?)\)`)
+	return r.ReplaceAllString(s, "**$1**")
 }

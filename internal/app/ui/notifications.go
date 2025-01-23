@@ -254,7 +254,7 @@ func (a *NotificationsArea) setDetail(n *app.CharacterNotification) {
 	subject.TextStyle.Bold = true
 	a.Detail.Add(subject)
 	a.Detail.Add(widget.NewLabel(n.Header()))
-	body := widget.NewRichTextFromMarkdown(n.Body.ValueOrZero())
+	body := widget.NewRichTextFromMarkdown(markdownStripLinks(n.Body.ValueOrZero()))
 	body.Wrapping = fyne.TextWrapWord
 	if n.Body.IsEmpty() {
 		body.ParseMarkdown("*This notification type is not fully supported yet*")
