@@ -2,20 +2,16 @@ package mobile
 
 import (
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
 // NewToolbarActionMenu returns a ToolBarAction with a context menu.
-func NewToolbarActionMenu(items ...*fyne.MenuItem) *widget.ToolbarAction {
-	if len(items) == 0 {
-		panic("Need to define at least one item")
-	}
-	a := widget.NewToolbarAction(theme.MoreVerticalIcon(), nil)
+func NewToolbarActionMenu(icon fyne.Resource, menu *fyne.Menu) *widget.ToolbarAction {
+	a := widget.NewToolbarAction(icon, nil)
 	o := a.ToolbarObject()
 	a.OnActivated = func() {
 		widget.ShowPopUpMenuAtRelativePosition(
-			fyne.NewMenu("", items...),
+			menu,
 			fyne.CurrentApp().Driver().CanvasForObject(o),
 			fyne.Position{},
 			o,

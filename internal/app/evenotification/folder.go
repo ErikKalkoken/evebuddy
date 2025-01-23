@@ -38,6 +38,9 @@ var folder2Name = map[Folder]string{
 	Sovereignty:    "Sovereignty",
 	Structure:      "Structure",
 	War:            "War",
+	Unread:         "Unread",
+	Unknown:        "Unknown",
+	All:            "All",
 }
 
 func (c Folder) String() string {

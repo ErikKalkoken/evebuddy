@@ -59,7 +59,9 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 			row.Add(container.NewVBox(widget.NewToolbar(w.items...)))
 		}
 		top.Add(row)
-		top.Add(title)
+		if w.title != "" {
+			top.Add(title)
+		}
 	}
 	top.Add(widget.NewSeparator())
 	c := container.NewBorder(top, nil, nil, nil, w.body)

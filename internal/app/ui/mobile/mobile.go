@@ -2,12 +2,14 @@
 package mobile
 
 import (
+	"fmt"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
@@ -55,6 +57,8 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	}
 
 	var characterNav *Navigator
+	communicationsFolder := fyne.NewMenu("", fyne.NewMenuItem("Dummy", func() {}))
+
 	homeList := NewNavList(
 		NewNavListItemWithIcon(
 			theme.AccountIcon(),
@@ -109,10 +113,16 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			theme.MailComposeIcon(),
 			"Communications",
 			func() {
+				u.NotificationsArea.OnSelectNotification = func() {
+					characterNav.Push(
+						newCharacterAppBar("", u.NotificationsArea.Detail),
+					)
+				}
 				characterNav.Push(
 					newCharacterAppBar(
 						"Communications",
 						u.NotificationsArea.Notifications,
+						NewToolbarActionMenu(theme.FolderIcon(), communicationsFolder),
 					),
 				)
 			},
@@ -212,6 +222,9 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	makePage := func(c fyne.CanvasObject) fyne.CanvasObject {
 		return container.NewScroll(c)
 	}
+	makeMenu := func(items ...*fyne.MenuItem) (fyne.Resource, *fyne.Menu) {
+		return theme.MenuExpandIcon(), fyne.NewMenu("", items...)
+	}
 	toolsList := NewNavList(
 		NewNavListItemWithIcon(
 			theme.SettingsIcon(),
@@ -227,9 +240,10 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 									c, f := u.MakeGeneralSettingsPage(nil)
 									toolsNav.Push(
 										NewAppBar("General", makePage(c), NewToolbarActionMenu(
-											fyne.NewMenuItem(
+											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
-											))))
+											)))),
+									)
 								},
 							),
 							NewNavListItem(
@@ -238,9 +252,10 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 									c, f := u.MakeEVEOnlinePage()
 									toolsNav.Push(
 										NewAppBar("Eve Online", makePage(c), NewToolbarActionMenu(
-											fyne.NewMenuItem(
+											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
-											))))
+											)))),
+									)
 								},
 							),
 							NewNavListItem(
@@ -249,10 +264,10 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 									c, f := u.MakeNotificationPage(nil)
 									toolsNav.Push(
 										NewAppBar("Notifications", makePage(c), NewToolbarActionMenu(
-											fyne.NewMenuItem(
+											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
-											),
-										)))
+											)))),
+									)
 								},
 							),
 						),
@@ -275,6 +290,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		container.NewTabItemWithIcon("", theme.NewThemedResource(ui.IconToolsSvg), toolsNav),
 	)
 	u.OnSetCharacter = func(id int32) {
+		// update character selector
 		go func() {
 			r, err := u.EveImageService.CharacterPortrait(id, ui.DefaultIconSize)
 			if err != nil {
@@ -283,6 +299,25 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			}
 			characterSelector.SetIcon(r)
 		}()
+		// setup communications
+		items := make([]*fyne.MenuItem, 0)
+		for _, f := range u.NotificationsArea.Folders {
+			s := f.Name
+			if f.Unread > 0 {
+				s += fmt.Sprintf(" (%d)", f.Unread)
+			}
+			it := fyne.NewMenuItem(s, func() {
+				if err := u.NotificationsArea.SetNotifications(f.Folder); err != nil {
+					panic(err) // FIXME
+				}
+			})
+			items = append(items, it)
+		}
+		communicationsFolder.Items = items
+		communicationsFolder.Refresh()
+		if err := u.NotificationsArea.SetNotifications(evenotification.Unread); err != nil {
+			panic(err) // FIXME
+		}
 	}
 	navBar.SetTabLocation(container.TabLocationBottom)
 	u.Window.SetContent(navBar)

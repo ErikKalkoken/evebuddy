@@ -150,7 +150,7 @@ func (u *BaseUI) Init() {
 	if c == nil {
 		return
 	}
-	u.character = c
+	u.SetCharacter(c)
 	if u.OnInit != nil {
 		u.OnInit(c)
 	}

@@ -21,35 +21,36 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-type notificationFolder struct {
-	folder evenotification.Folder
-	name   string
-	unread int
+type NotificationFolder struct {
+	Folder evenotification.Folder
+	Name   string
+	Unread int
 }
 
 // NotificationsArea is the UI area that shows the skillqueue
 type NotificationsArea struct {
-	Content       fyne.CanvasObject
-	Detail        *fyne.Container
-	Notifications fyne.CanvasObject
-	Toolbar       *widget.Toolbar
+	Content              fyne.CanvasObject
+	Detail               *fyne.Container
+	Notifications        fyne.CanvasObject
+	Toolbar              *widget.Toolbar
+	OnSelectNotification func()
 
-	folders          []notificationFolder
+	Folders          []NotificationFolder
 	folderList       *widget.List
 	current          *app.CharacterNotification
 	notificationList *widget.List
 	notifications    []*app.CharacterNotification
 	notificationsTop *widget.Label
-	top              *widget.Label
+	folderTop        *widget.Label
 	u                *BaseUI
 }
 
 func (u *BaseUI) NewNotificationsArea() *NotificationsArea {
 	a := NotificationsArea{
-		folders:          make([]notificationFolder, 0),
+		Folders:          make([]NotificationFolder, 0),
 		notifications:    make([]*app.CharacterNotification, 0),
 		notificationsTop: widget.NewLabel(""),
-		top:              widget.NewLabel(""),
+		folderTop:        widget.NewLabel(""),
 		u:                u,
 	}
 	a.Toolbar = a.makeToolbar()
@@ -64,7 +65,7 @@ func (u *BaseUI) NewNotificationsArea() *NotificationsArea {
 	split1.Offset = 0.35
 	a.folderList = a.makeFolderList()
 	split2 := container.NewHSplit(
-		container.NewBorder(a.top, nil, nil, nil, a.folderList),
+		container.NewBorder(a.folderTop, nil, nil, nil, a.folderList),
 		split1,
 	)
 	split2.Offset = 0.15
@@ -75,7 +76,7 @@ func (u *BaseUI) NewNotificationsArea() *NotificationsArea {
 func (a *NotificationsArea) makeFolderList() *widget.List {
 	l := widget.NewList(
 		func() int {
-			return len(a.folders)
+			return len(a.Folders)
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(
@@ -83,17 +84,17 @@ func (a *NotificationsArea) makeFolderList() *widget.List {
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(a.folders) {
+			if id >= len(a.Folders) {
 				return
 			}
-			c := a.folders[id]
+			c := a.Folders[id]
 			hbox := co.(*fyne.Container).Objects
 			label := hbox[0].(*widget.Label)
 			badge := hbox[2].(*kwidget.Badge)
-			text := c.name
-			if c.unread > 0 {
+			text := c.Name
+			if c.Unread > 0 {
 				label.TextStyle.Bold = true
-				badge.SetText(strconv.Itoa(c.unread))
+				badge.SetText(strconv.Itoa(c.Unread))
 				badge.Show()
 			} else {
 				label.TextStyle.Bold = false
@@ -104,13 +105,13 @@ func (a *NotificationsArea) makeFolderList() *widget.List {
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.notificationList.UnselectAll()
-		if id >= len(a.folders) {
+		if id >= len(a.Folders) {
 			l.UnselectAll()
 			return
 		}
-		o := a.folders[id]
+		o := a.Folders[id]
 		a.clearDetail()
-		if err := a.setNotifications(o.folder); err != nil {
+		if err := a.SetNotifications(o.Folder); err != nil {
 			slog.Error("Failed to load notifications", "err", err)
 			l.UnselectAll()
 		}
@@ -141,6 +142,9 @@ func (a *NotificationsArea) makeNotificationList() *widget.List {
 			return
 		}
 		a.setDetail(a.notifications[id])
+		if a.OnSelectNotification != nil {
+			a.OnSelectNotification()
+		}
 	}
 	return l
 }
@@ -171,49 +175,49 @@ func (a *NotificationsArea) Refresh() {
 			slog.Error("Failed to fetch notification unread counts", "error", err)
 		}
 	}
-	categories := make([]notificationFolder, 0)
+	folders := make([]NotificationFolder, 0)
 	var unreadTotal int
 	for _, c := range evenotification.Folders() {
-		nc := notificationFolder{
-			folder: c,
-			name:   c.String(),
-			unread: counts[c],
+		nc := NotificationFolder{
+			Folder: c,
+			Name:   c.String(),
+			Unread: counts[c],
 		}
-		categories = append(categories, nc)
+		folders = append(folders, nc)
 		unreadTotal += counts[c]
 	}
-	slices.SortFunc(categories, func(a, b notificationFolder) int {
-		return cmp.Compare(a.name, b.name)
+	slices.SortFunc(folders, func(a, b NotificationFolder) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
-	c1 := notificationFolder{
-		folder: evenotification.Unread,
-		name:   "Unread",
-		unread: unreadTotal,
+	f1 := NotificationFolder{
+		Folder: evenotification.Unread,
+		Name:   "Unread",
+		Unread: unreadTotal,
 	}
-	categories = slices.Insert(categories, 0, c1)
-	c2 := notificationFolder{
-		folder: evenotification.All,
-		name:   "All",
-		unread: unreadTotal,
+	folders = slices.Insert(folders, 0, f1)
+	f2 := NotificationFolder{
+		Folder: evenotification.All,
+		Name:   "All",
+		Unread: unreadTotal,
 	}
-	categories = append(categories, c2)
-	a.folders = categories
+	folders = append(folders, f2)
+	a.Folders = folders
 	a.folderList.Refresh()
 	a.folderList.UnselectAll()
-	a.top.Text, a.top.Importance = a.makeTopText()
-	a.top.Refresh()
+	a.folderTop.Text, a.folderTop.Importance = a.makeFolderTopText()
+	a.folderTop.Refresh()
 }
 
-func (a *NotificationsArea) makeTopText() (string, widget.Importance) {
+func (a *NotificationsArea) makeFolderTopText() (string, widget.Importance) {
 	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
-	return fmt.Sprintf("%d categories", len(a.folders)), widget.MediumImportance
+	return fmt.Sprintf("%d folders", len(a.Folders)), widget.MediumImportance
 }
 
-func (a *NotificationsArea) setNotifications(nc evenotification.Folder) error {
-	ctx := context.TODO()
+func (a *NotificationsArea) SetNotifications(nc evenotification.Folder) error {
+	ctx := context.Background()
 	characterID := a.u.CharacterID()
 	var notifications []*app.CharacterNotification
 	var err error
@@ -230,8 +234,8 @@ func (a *NotificationsArea) setNotifications(nc evenotification.Folder) error {
 		return err
 	}
 	a.notifications = notifications
-	a.notificationList.Refresh()
-	a.notificationsTop.SetText(fmt.Sprintf("%s notifications", humanize.Comma(int64(len(notifications)))))
+	a.notificationsTop.SetText(fmt.Sprintf("%s • %s notifications", nc.String(), humanize.Comma(int64(len(notifications)))))
+	a.Notifications.Refresh()
 	return nil
 }
 
