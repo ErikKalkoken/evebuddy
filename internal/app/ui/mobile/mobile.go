@@ -43,12 +43,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				items = append(items, it)
 			}
 		}
-		widget.ShowPopUpMenuAtRelativePosition(
-			fyne.NewMenu("", items...),
-			fyne.CurrentApp().Driver().CanvasForObject(o),
-			fyne.Position{},
-			o,
-		)
+		ShowContextMenu(o, fyne.NewMenu("", items...))
 	}
 
 	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...widget.ToolbarItem) *AppBar {
@@ -115,7 +110,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			func() {
 				u.NotificationsArea.OnSelectNotification = func() {
 					characterNav.Push(
-						newCharacterAppBar("", u.NotificationsArea.Detail),
+						NewAppBar("", u.NotificationsArea.Detail),
 					)
 				}
 				characterNav.Push(

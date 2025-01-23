@@ -138,12 +138,13 @@ func (a *NotificationsArea) makeNotificationList() *widget.List {
 	l.OnSelected = func(id widget.ListItemID) {
 		a.clearDetail()
 		if id >= len(a.notifications) {
-			defer l.UnselectAll()
+			l.UnselectAll()
 			return
 		}
 		a.setDetail(a.notifications[id])
 		if a.OnSelectNotification != nil {
 			a.OnSelectNotification()
+			l.UnselectAll()
 		}
 	}
 	return l
