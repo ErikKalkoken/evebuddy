@@ -22,9 +22,9 @@ import (
 )
 
 type NotificationFolder struct {
-	Folder evenotification.Folder
-	Name   string
-	Unread int
+	Folder      evenotification.Folder
+	Name        string
+	UnreadCount int
 }
 
 // NotificationsArea is the UI area that shows the skillqueue
@@ -92,9 +92,9 @@ func (a *NotificationsArea) makeFolderList() *widget.List {
 			label := hbox[0].(*widget.Label)
 			badge := hbox[2].(*kwidget.Badge)
 			text := c.Name
-			if c.Unread > 0 {
+			if c.UnreadCount > 0 {
 				label.TextStyle.Bold = true
-				badge.SetText(strconv.Itoa(c.Unread))
+				badge.SetText(strconv.Itoa(c.UnreadCount))
 				badge.Show()
 			} else {
 				label.TextStyle.Bold = false
@@ -111,7 +111,7 @@ func (a *NotificationsArea) makeFolderList() *widget.List {
 		}
 		o := a.Folders[id]
 		a.clearDetail()
-		a.SetNotifications(o.Folder)
+		a.SetFolder(o.Folder)
 	}
 	return l
 }
@@ -177,9 +177,9 @@ func (a *NotificationsArea) Refresh() {
 	var unreadTotal int
 	for _, c := range evenotification.Folders() {
 		nc := NotificationFolder{
-			Folder: c,
-			Name:   c.String(),
-			Unread: counts[c],
+			Folder:      c,
+			Name:        c.String(),
+			UnreadCount: counts[c],
 		}
 		folders = append(folders, nc)
 		unreadTotal += counts[c]
@@ -188,15 +188,15 @@ func (a *NotificationsArea) Refresh() {
 		return cmp.Compare(a.Name, b.Name)
 	})
 	f1 := NotificationFolder{
-		Folder: evenotification.Unread,
-		Name:   "Unread",
-		Unread: unreadTotal,
+		Folder:      evenotification.Unread,
+		Name:        "Unread",
+		UnreadCount: unreadTotal,
 	}
 	folders = slices.Insert(folders, 0, f1)
 	f2 := NotificationFolder{
-		Folder: evenotification.All,
-		Name:   "All",
-		Unread: unreadTotal,
+		Folder:      evenotification.All,
+		Name:        "All",
+		UnreadCount: unreadTotal,
 	}
 	folders = append(folders, f2)
 	a.Folders = folders
@@ -214,7 +214,11 @@ func (a *NotificationsArea) makeFolderTopText() (string, widget.Importance) {
 	return fmt.Sprintf("%d folders", len(a.Folders)), widget.MediumImportance
 }
 
-func (a *NotificationsArea) SetNotifications(nc evenotification.Folder) {
+func (a *NotificationsArea) ResetFolders() {
+	a.SetFolder(evenotification.Unread)
+}
+
+func (a *NotificationsArea) SetFolder(nc evenotification.Folder) {
 	ctx := context.Background()
 	characterID := a.u.CharacterID()
 	var notifications []*app.CharacterNotification

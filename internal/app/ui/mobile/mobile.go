@@ -9,7 +9,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
@@ -52,7 +51,8 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	}
 
 	var characterNav *Navigator
-	communicationsFolder := fyne.NewMenu("", fyne.NewMenuItem("Dummy", func() {}))
+	mailMenu := fyne.NewMenu("")
+	communicationsMenu := fyne.NewMenu("")
 
 	homeList := NewNavList(
 		NewNavListItemWithIcon(
@@ -101,11 +101,21 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			theme.MailComposeIcon(),
 			"Mail",
 			func() {
-				characterNav.Push(newCharacterAppBar("Mail", widget.NewLabel("PLACEHOLDER")))
+				u.MailArea.OnSelectMail = func() {
+					characterNav.Push(
+						NewAppBar("", u.MailArea.Detail),
+					)
+				}
+				characterNav.Push(
+					newCharacterAppBar(
+						"Mail",
+						u.MailArea.Headers,
+						NewToolbarActionMenu(theme.FolderIcon(), mailMenu),
+					))
 			},
 		),
 		NewNavListItemWithIcon(
-			theme.MailComposeIcon(),
+			theme.InfoIcon(),
 			"Communications",
 			func() {
 				u.NotificationsArea.OnSelectNotification = func() {
@@ -117,7 +127,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 					newCharacterAppBar(
 						"Communications",
 						u.NotificationsArea.Notifications,
-						NewToolbarActionMenu(theme.FolderIcon(), communicationsFolder),
+						NewToolbarActionMenu(theme.FolderIcon(), communicationsMenu),
 					),
 				)
 			},
@@ -294,24 +304,54 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			}
 			characterSelector.SetIcon(r)
 		}()
-		// setup communications
-		items := make([]*fyne.MenuItem, 0)
-		for _, f := range u.NotificationsArea.Folders {
-			s := f.Name
-			if f.Unread > 0 {
-				s += fmt.Sprintf(" (%d)", f.Unread)
-			}
-			it := fyne.NewMenuItem(s, func() {
-				u.NotificationsArea.SetNotifications(f.Folder)
-			})
-			items = append(items, it)
-		}
-		communicationsFolder.Items = items
-		communicationsFolder.Refresh()
-		u.NotificationsArea.SetNotifications(evenotification.Unread)
+
+		// init mail
+		u.MailArea.ResetFolders()
+		mailMenu.Items = u.makeMailMenu()
+		mailMenu.Refresh()
+
+		// init communications
+		u.NotificationsArea.ResetFolders()
+		communicationsMenu.Items = u.makeCommunicationsMenu()
+		communicationsMenu.Refresh()
+
 		characterNav.PopAll()
 	}
 	navBar.SetTabLocation(container.TabLocationBottom)
 	u.Window.SetContent(navBar)
 	return u
+}
+
+func (u *MobileUI) makeMailMenu() []*fyne.MenuItem {
+	// current := u.MailArea.CurrentFolder.ValueOrZero()
+	items1 := make([]*fyne.MenuItem, 0)
+	for _, f := range u.MailArea.Folders() {
+		s := f.Name
+		if f.UnreadCount > 0 {
+			s += fmt.Sprintf(" (%d)", f.UnreadCount)
+		}
+		it := fyne.NewMenuItem(s, func() {
+			u.MailArea.SetFolder(f)
+		})
+		// if f == current {
+		// 	it.Disabled = true
+		// }
+		items1 = append(items1, it)
+	}
+	return items1
+}
+
+func (u *MobileUI) makeCommunicationsMenu() []*fyne.MenuItem {
+	items2 := make([]*fyne.MenuItem, 0)
+	for _, f := range u.NotificationsArea.Folders {
+		s := f.Name
+		if f.UnreadCount > 0 {
+			s += fmt.Sprintf(" (%d)", f.UnreadCount)
+		}
+		it := fyne.NewMenuItem(s, func() {
+			u.NotificationsArea.SetFolder(f.Folder)
+		})
+		items2 = append(items2, it)
+	}
+	return items2
 }

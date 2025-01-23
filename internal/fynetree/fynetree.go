@@ -59,6 +59,27 @@ func (t *FyneTree[T]) Add(parentUID widget.TreeNodeID, uid widget.TreeNodeID, va
 	return uid, nil
 }
 
+// ChildUIDs returns the child UIDs of a node.
+func (t *FyneTree[T]) ChildUIDs(uid widget.TreeNodeID) []widget.TreeNodeID {
+	return t.ids[uid]
+}
+
+// FIXME: Method does not return full tree
+func (t *FyneTree[T]) Flat() []T {
+	var s []T
+	uid := ""
+	for _, id := range t.ChildUIDs(uid) {
+		s = append(s, t.MustValue(id))
+	}
+	return s
+}
+
+// IsBranch reports wether a node is a branch.
+func (t *FyneTree[T]) IsBranch(uid widget.TreeNodeID) bool {
+	_, found := t.ids[uid]
+	return found
+}
+
 // MustAdd is like Add, but panics if adding fails.
 func (t *FyneTree[T]) MustAdd(parentUID widget.TreeNodeID, uid widget.TreeNodeID, value T) widget.TreeNodeID {
 	uid, err := t.Add(parentUID, uid, value)
@@ -68,26 +89,14 @@ func (t *FyneTree[T]) MustAdd(parentUID widget.TreeNodeID, uid widget.TreeNodeID
 	return uid
 }
 
-// ChildUIDs returns the child UIDs of a node.
-func (t *FyneTree[T]) ChildUIDs(uid widget.TreeNodeID) []widget.TreeNodeID {
-	return t.ids[uid]
-}
-
-// IsBranch reports wether a node is a branch.
-func (t *FyneTree[T]) IsBranch(uid widget.TreeNodeID) bool {
-	_, found := t.ids[uid]
-	return found
-}
-
-// Parent returns the UID of the parent node.
-func (t *FyneTree[T]) Parent(uid widget.TreeNodeID) (parent widget.TreeNodeID, ok bool) {
-	parent, ok = t.parents[uid]
-	return
-}
-
-// Size returns the number of nodes in the tree
-func (t *FyneTree[T]) Size() int {
-	return len(t.values)
+// MustValue returns the value of a node or panics if the node does not exist.
+// This method mainly exists to simplify test code and should not be used in production code.
+func (t *FyneTree[T]) MustValue(uid widget.TreeNodeID) T {
+	v, ok := t.Value(uid)
+	if !ok {
+		panic("node does not exist")
+	}
+	return v
 }
 
 // Path returns the UIDs of nodes between a given node and the root.
@@ -104,6 +113,17 @@ func (t *FyneTree[T]) Path(uid widget.TreeNodeID) []widget.TreeNodeID {
 	return path
 }
 
+// Parent returns the UID of the parent node.
+func (t *FyneTree[T]) Parent(uid widget.TreeNodeID) (parent widget.TreeNodeID, ok bool) {
+	parent, ok = t.parents[uid]
+	return
+}
+
+// Size returns the number of nodes in the tree
+func (t *FyneTree[T]) Size() int {
+	return len(t.values)
+}
+
 // Value returns the value of a node and reports wether the node exists
 //
 // Note that when using this method with a Fyne widget it is possible,
@@ -112,16 +132,6 @@ func (t *FyneTree[T]) Path(uid widget.TreeNodeID) []widget.TreeNodeID {
 func (t *FyneTree[T]) Value(uid widget.TreeNodeID) (value T, ok bool) {
 	value, ok = t.value(uid)
 	return
-}
-
-// MustValue returns the value of a node or panics if the node does not exist.
-// This method mainly exists to simplify test code and should not be used in production code.
-func (t *FyneTree[T]) MustValue(uid widget.TreeNodeID) T {
-	v, ok := t.Value(uid)
-	if !ok {
-		panic("node does not exist")
-	}
-	return v
 }
 
 // Value returns the value of a node or a fallback value.

@@ -65,6 +65,7 @@ func (n *Navigator) PopAll() {
 		for len(n.stack.Objects) > 1 {
 			n.stack.Remove(n.topPage())
 		}
+		n.topPage().Show()
 	}()
 	n.stack.Refresh()
 }
