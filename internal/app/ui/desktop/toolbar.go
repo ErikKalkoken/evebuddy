@@ -82,9 +82,8 @@ func (a *toolbarArea) refresh() {
 }
 
 func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) {
-	ctx := context.TODO()
 	menuItems := make([]*fyne.MenuItem, 0)
-	cc, err := a.u.CharacterService.ListCharactersShort(ctx)
+	cc, err := a.u.CharacterService.ListCharactersShort(context.Background())
 	if err != nil {
 		return menuItems, err
 	}
@@ -93,7 +92,7 @@ func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) 
 			continue
 		}
 		item := fyne.NewMenuItem(myC.Name, func() {
-			err := a.u.LoadCharacter(ctx, myC.ID)
+			err := a.u.LoadCharacter(myC.ID)
 			if err != nil {
 				msg := "Failed to switch to new character"
 				slog.Error(msg, "err", err)

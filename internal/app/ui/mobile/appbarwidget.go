@@ -47,7 +47,7 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 			container.NewHBox(layout.NewSpacer(), title, layout.NewSpacer()),
 		)
 		if len(w.items) > 0 {
-			row.Add(container.NewHBox(layout.NewSpacer(), widget.NewToolbar(w.items...)))
+			row.Add(container.NewHBox(layout.NewSpacer(), container.NewVBox(widget.NewToolbar(w.items...))))
 		}
 		top.Add(row)
 	} else {
@@ -58,7 +58,7 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 		)
 		if len(w.items) > 0 {
 			row.Add(layout.NewSpacer())
-			row.Add(widget.NewToolbar(w.items...))
+			row.Add(container.NewVBox(widget.NewToolbar(w.items...)))
 		}
 		top.Add(row)
 		top.Add(title)

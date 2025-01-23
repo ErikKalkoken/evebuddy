@@ -314,6 +314,7 @@ func (sc *StatusCacheService) updateCharacters(ctx context.Context, r app.Status
 	return cc, nil
 }
 
+// ListCharacters returns the list of the users characters in alphabetical order.
 func (sc *StatusCacheService) ListCharacters() []*app.CharacterShort {
 	x, ok := sc.cache.Get(keyCharacters)
 	if !ok {

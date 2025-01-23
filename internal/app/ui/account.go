@@ -79,7 +79,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 			portrait.FillMode = canvas.ImageFillContain
 			portrait.SetMinSize(fyne.Size{Width: accountIconSize, Height: accountIconSize})
 			name := widget.NewLabel("Template")
-			button := widget.NewButtonWithIcon("Delete", theme.DeleteIcon(), func() {})
+			button := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
 			button.Importance = widget.DangerImportance
 			issue := widget.NewLabel("Scope issue - please re-add!")
 			issue.Importance = widget.WarningImportance
@@ -118,7 +118,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 			return
 		}
 		c := a.characters[id]
-		if err := a.u.LoadCharacter(context.TODO(), c.id); err != nil {
+		if err := a.u.LoadCharacter(c.id); err != nil {
 			slog.Error("load current character", "char", c, "err", err)
 			return
 		}
@@ -209,7 +209,10 @@ func (a *AccountArea) showAddCharacterDialog() {
 				return err
 			}
 			a.Refresh()
-			a.u.UpdateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
+			go a.u.UpdateCharacterAndRefreshIfNeeded(context.Background(), characterID, false)
+			if !a.u.HasCharacter() {
+				a.u.LoadCharacter(characterID)
+			}
 			return nil
 		}()
 		d1.Hide()

@@ -18,7 +18,7 @@ func (u *DesktopUI) showAccountWindow() {
 	u.accountWindow = w
 	w.SetOnClosed(func() {
 		u.accountWindow = nil
-		u.RefreshCrossPages()
+		u.RefreshCrossPages() //FIXME: Is this really needed?
 	})
 	w.Resize(fyne.Size{Width: 500, Height: 500})
 	w.SetContent(u.AccountArea.Content)

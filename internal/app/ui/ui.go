@@ -213,8 +213,8 @@ func (u *BaseUI) HasCharacter() bool {
 	return u.character != nil
 }
 
-func (u *BaseUI) LoadCharacter(ctx context.Context, characterID int32) error {
-	c, err := u.CharacterService.GetCharacter(ctx, characterID)
+func (u *BaseUI) LoadCharacter(characterID int32) error {
+	c, err := u.CharacterService.GetCharacter(context.Background(), characterID)
 	if err != nil {
 		return err
 	}

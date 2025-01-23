@@ -6,8 +6,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// NewMenuToolbarAction returns a ToolBarAction with a context menu.
-func NewMenuToolbarAction(items ...*fyne.MenuItem) *widget.ToolbarAction {
+// NewToolbarActionMenu returns a ToolBarAction with a context menu.
+func NewToolbarActionMenu(items ...*fyne.MenuItem) *widget.ToolbarAction {
 	if len(items) == 0 {
 		panic("Need to define at least one item")
 	}
