@@ -20,6 +20,9 @@ import (
 // PlanetArea is the UI area that shows the skillqueue
 type PlanetArea struct {
 	Content *fyne.Container
+
+	OnCountRefresh func(count int)
+
 	planets []*app.CharacterPlanet
 	list    *widget.List
 	top     *widget.Label
@@ -77,7 +80,15 @@ func (a *PlanetArea) Refresh() {
 	a.top.Importance = i
 	a.top.Refresh()
 	a.list.Refresh()
-	a.updateTab()
+	if a.OnCountRefresh != nil {
+		var expiredCount int
+		for _, p := range a.planets {
+			if t := p.ExtractionsExpiryTime(); !t.IsZero() && t.Before(time.Now()) {
+				expiredCount++
+			}
+		}
+		a.OnCountRefresh(expiredCount)
+	}
 }
 
 func (a *PlanetArea) makeTopText() (string, widget.Importance) {
@@ -115,20 +126,4 @@ func (a *PlanetArea) updateEntries() error {
 		return err
 	}
 	return nil
-}
-
-func (a *PlanetArea) updateTab() {
-	var expiredCount int
-	for _, p := range a.planets {
-		if t := p.ExtractionsExpiryTime(); !t.IsZero() && t.Before(time.Now()) {
-			expiredCount++
-		}
-	}
-	s := "Colonies"
-	if expiredCount > 0 {
-		s += fmt.Sprintf(" (%d)", expiredCount)
-	}
-	// FIXME
-	// a.u.planetTab.Text = s
-	// a.u.tabs.Refresh()
 }

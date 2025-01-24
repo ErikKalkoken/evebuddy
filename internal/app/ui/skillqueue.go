@@ -21,9 +21,12 @@ import (
 // SkillqueueArea is the UI area that shows the skillqueue
 type SkillqueueArea struct {
 	Content *fyne.Container
-	items   []*app.CharacterSkillqueueItem
-	total   *widget.Label
-	u       *BaseUI
+
+	OnStatusRefresh func(status string)
+
+	items []*app.CharacterSkillqueueItem
+	total *widget.Label
+	u     *BaseUI
 }
 
 func (u *BaseUI) NewSkillqueueArea() *SkillqueueArea {
@@ -119,15 +122,15 @@ func (a *SkillqueueArea) Refresh() {
 		t = "ERROR"
 		i = widget.DangerImportance
 	} else {
-		s := "Skills"
+		s := ""
 		if remaining.IsEmpty() {
-			s += " (!)"
+			s += "!"
 		} else if completion.ValueOrZero() < 1 {
-			s += fmt.Sprintf(" (%.0f%%)", completion.ValueOrZero()*100)
+			s += fmt.Sprintf("%.0f%%", completion.ValueOrZero()*100)
 		}
-		// FIXME
-		// a.u.skillTab.Text = s
-		// a.u.tabs.Refresh()
+		if a.OnStatusRefresh != nil {
+			a.OnStatusRefresh(s)
+		}
 		t, i = a.makeTopText(remaining)
 	}
 	a.total.Text = t

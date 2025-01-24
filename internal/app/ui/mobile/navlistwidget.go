@@ -3,32 +3,34 @@ package mobile
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 )
 
-type navListItem struct {
-	action func()
-	icon   fyne.Resource
-	title  string
+type NavListItem struct {
+	Action func()
+	Icon   fyne.Resource
+	Title  string
+	Suffix string
 }
 
-func NewNavListItemWithIcon(icon fyne.Resource, title string, action func()) navListItem {
-	return navListItem{
-		action: action,
-		icon:   icon,
-		title:  title,
+func NewNavListItemWithIcon(icon fyne.Resource, title string, action func()) *NavListItem {
+	return &NavListItem{
+		Action: action,
+		Icon:   icon,
+		Title:  title,
 	}
 }
 
-func NewNavListItem(title string, action func()) navListItem {
-	return navListItem{
-		action: action,
-		title:  title,
+func NewNavListItem(title string, action func()) *NavListItem {
+	return &NavListItem{
+		Action: action,
+		Title:  title,
 	}
 }
 
-func NewNavListItemWithNavigator(nav *Navigator, ab *AppBar) navListItem {
+func NewNavListItemWithNavigator(nav *Navigator, ab *AppBar) *NavListItem {
 	return NewNavListItem(ab.title, func() {
 		nav.Push(ab)
 	})
@@ -38,14 +40,14 @@ type NavList struct {
 	widget.BaseWidget
 
 	title string
-	items []navListItem
+	items []*NavListItem
 }
 
-func NewNavList(items ...navListItem) *NavList {
+func NewNavList(items ...*NavListItem) *NavList {
 	return NewNavListWithTitle("", items...)
 }
 
-func NewNavListWithTitle(title string, items ...navListItem) *NavList {
+func NewNavListWithTitle(title string, items ...*NavListItem) *NavList {
 	w := &NavList{
 		items: items,
 		title: title,
@@ -62,26 +64,38 @@ func (w *NavList) CreateRenderer() fyne.WidgetRenderer {
 		func() fyne.CanvasObject {
 			return container.NewHBox(
 				widget.NewIcon(ui.IconBlankSvg),
-				widget.NewLabel("Template"),
+				widget.NewLabel("Title"),
+				layout.NewSpacer(),
+				widget.NewLabel("Suffix"),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			item := w.items[id]
 			hbox := co.(*fyne.Container).Objects
-			title := hbox[1]
-			title.(*widget.Label).SetText(item.title)
-			icon := hbox[0]
-			if item.icon != nil {
-				icon.(*widget.Icon).SetResource(item.icon)
+
+			title := hbox[1].(*widget.Label)
+			title.SetText(item.Title)
+
+			icon := hbox[0].(*widget.Icon)
+			if item.Icon != nil {
+				icon.SetResource(item.Icon)
 				icon.Show()
 			} else {
 				icon.Hide()
+			}
+
+			suffix := hbox[3].(*widget.Label)
+			if item.Suffix == "" {
+				suffix.Hide()
+			} else {
+				suffix.SetText(item.Suffix)
+				suffix.Show()
 			}
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
 		defer list.UnselectAll()
-		if a := w.items[id].action; a != nil {
+		if a := w.items[id].Action; a != nil {
 			a()
 		}
 	}

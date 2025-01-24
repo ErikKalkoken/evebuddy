@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/dustin/go-humanize"
 )
 
 type MobileUI struct {
@@ -54,7 +55,74 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
 
-	homeList := NewNavList(
+	navListMail := NewNavListItemWithIcon(
+		theme.MailComposeIcon(),
+		"Mail",
+		func() {
+			u.MailArea.OnSelectMail = func() {
+				characterNav.Push(
+					NewAppBar("", u.MailArea.Detail),
+				)
+			}
+			characterNav.Push(
+				newCharacterAppBar(
+					"Mail",
+					u.MailArea.Headers,
+					NewToolbarActionMenu(theme.FolderIcon(), mailMenu),
+				))
+		},
+	)
+
+	navListCommunications := NewNavListItemWithIcon(
+		theme.InfoIcon(),
+		"Communications",
+		func() {
+			u.NotificationsArea.OnSelectNotification = func() {
+				characterNav.Push(
+					NewAppBar("", u.NotificationsArea.Detail),
+				)
+			}
+			characterNav.Push(
+				newCharacterAppBar(
+					"Communications",
+					u.NotificationsArea.Notifications,
+					NewToolbarActionMenu(theme.FolderIcon(), communicationsMenu),
+				),
+			)
+		},
+	)
+	navListColonies := NewNavListItemWithIcon(
+		theme.NewThemedResource(ui.IconEarthSvg),
+		"Colonies",
+		func() {
+			characterNav.Push(newCharacterAppBar("Colonies", u.PlanetArea.Content))
+		},
+	)
+	navListSkills := NewNavListItemWithIcon(
+		theme.NewThemedResource(ui.IconSchoolSvg),
+		"Skills",
+		func() {
+			characterNav.Push(
+				newCharacterAppBar(
+					"Skills",
+					NewNavList(
+						NewNavListItemWithNavigator(
+							characterNav,
+							newCharacterAppBar("Training Queue", u.SkillqueueArea.Content),
+						),
+						NewNavListItemWithNavigator(
+							characterNav,
+							newCharacterAppBar("Skill Catalogue", u.SkillCatalogueArea.Content),
+						),
+						NewNavListItemWithNavigator(
+							characterNav,
+							newCharacterAppBar("Ships", u.ShipsArea.Content),
+						),
+					),
+				))
+		},
+	)
+	characterList := NewNavList(
 		NewNavListItemWithIcon(
 			theme.AccountIcon(),
 			"Character Sheet",
@@ -90,48 +158,9 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				characterNav.Push(newCharacterAppBar("Assets", container.NewScroll(u.AssetsArea.Content)))
 			},
 		),
-		NewNavListItemWithIcon(
-			theme.NewThemedResource(ui.IconEarthSvg),
-			"Colonies",
-			func() {
-				characterNav.Push(newCharacterAppBar("Colonies", u.PlanetArea.Content))
-			},
-		),
-		NewNavListItemWithIcon(
-			theme.MailComposeIcon(),
-			"Mail",
-			func() {
-				u.MailArea.OnSelectMail = func() {
-					characterNav.Push(
-						NewAppBar("", u.MailArea.Detail),
-					)
-				}
-				characterNav.Push(
-					newCharacterAppBar(
-						"Mail",
-						u.MailArea.Headers,
-						NewToolbarActionMenu(theme.FolderIcon(), mailMenu),
-					))
-			},
-		),
-		NewNavListItemWithIcon(
-			theme.InfoIcon(),
-			"Communications",
-			func() {
-				u.NotificationsArea.OnSelectNotification = func() {
-					characterNav.Push(
-						NewAppBar("", u.NotificationsArea.Detail),
-					)
-				}
-				characterNav.Push(
-					newCharacterAppBar(
-						"Communications",
-						u.NotificationsArea.Notifications,
-						NewToolbarActionMenu(theme.FolderIcon(), communicationsMenu),
-					),
-				)
-			},
-		),
+		navListColonies,
+		navListMail,
+		navListCommunications,
 		NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconFileSignSvg),
 			"Contracts",
@@ -139,30 +168,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				characterNav.Push(newCharacterAppBar("Contracts", u.ContractsArea.Content))
 			},
 		),
-		NewNavListItemWithIcon(
-			theme.NewThemedResource(ui.IconSchoolSvg),
-			"Skills",
-			func() {
-				characterNav.Push(
-					newCharacterAppBar(
-						"Skills",
-						NewNavList(
-							NewNavListItemWithNavigator(
-								characterNav,
-								newCharacterAppBar("Training Queue", u.SkillqueueArea.Content),
-							),
-							NewNavListItemWithNavigator(
-								characterNav,
-								newCharacterAppBar("Skill Catalogue", u.SkillCatalogueArea.Content),
-							),
-							NewNavListItemWithNavigator(
-								characterNav,
-								newCharacterAppBar("Ships", u.ShipsArea.Content),
-							),
-						),
-					))
-			},
-		),
+		navListSkills,
 		NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconAttachmoneySvg),
 			"Wallet",
@@ -179,7 +185,39 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		),
 	)
 
-	characterPage := newCharacterAppBar("Character", homeList)
+	u.PlanetArea.OnCountRefresh = func(count int) {
+		s := ""
+		if count > 0 {
+			s = humanize.Comma(int64(count))
+		}
+		navListColonies.Suffix = s
+		characterList.Refresh()
+	}
+
+	u.MailArea.OnCountRefresh = func(count int) {
+		s := ""
+		if count > 0 {
+			s = humanize.Comma(int64(count))
+		}
+		navListMail.Suffix = s
+		characterList.Refresh()
+	}
+
+	u.NotificationsArea.OnCountRefresh = func(count int) {
+		s := ""
+		if count > 0 {
+			s = humanize.Comma(int64(count))
+		}
+		navListCommunications.Suffix = s
+		characterList.Refresh()
+	}
+
+	u.SkillqueueArea.OnStatusRefresh = func(status string) {
+		navListSkills.Suffix = status
+		characterList.Refresh()
+	}
+
+	characterPage := newCharacterAppBar("Character", characterList)
 	characterNav = NewNavigator(characterPage)
 
 	var crossNav *Navigator

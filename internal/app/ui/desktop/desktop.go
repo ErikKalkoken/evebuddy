@@ -14,6 +14,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/dustin/go-humanize"
 )
 
 // Desktop UI constants
@@ -38,10 +39,7 @@ type DesktopUI struct {
 	toolbarArea   *toolbarArea
 
 	assetTab    *container.TabItem
-	mailTab     *container.TabItem
 	overviewTab *container.TabItem
-	planetTab   *container.TabItem
-	skillTab    *container.TabItem
 	tabs        *container.AppTabs
 	walletTab   *container.TabItem
 
@@ -105,6 +103,13 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		go u.statusBarArea.refreshCharacterCount()
 	}
 
+	makeTitleWithCount := func(title string, count int) string {
+		if count > 0 {
+			title += fmt.Sprintf(" (%s)", humanize.Comma(int64(count)))
+		}
+		return title
+	}
+
 	characterTab := container.NewTabItemWithIcon("Character",
 		theme.AccountIcon(), container.NewAppTabs(
 			container.NewTabItem("Augmentations", u.ImplantsArea.Content),
@@ -118,16 +123,24 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 			container.NewTabItem("Assets", u.AssetsArea.Content),
 		))
 
-	u.planetTab = container.NewTabItemWithIcon("Colonies",
+	planetTab := container.NewTabItemWithIcon("Colonies",
 		theme.NewThemedResource(ui.IconEarthSvg), container.NewAppTabs(
 			container.NewTabItem("Colonies", u.PlanetArea.Content),
 		))
+	u.PlanetArea.OnCountRefresh = func(count int) {
+		planetTab.Text = makeTitleWithCount("Colonies", count)
+		u.tabs.Refresh()
+	}
 
-	u.mailTab = container.NewTabItemWithIcon("",
+	mailTab := container.NewTabItemWithIcon("",
 		theme.MailComposeIcon(), container.NewAppTabs(
 			container.NewTabItem("Mail", u.MailArea.Content),
 			container.NewTabItem("Communications", u.NotificationsArea.Content),
 		))
+	u.MailArea.OnCountRefresh = func(count int) {
+		mailTab.Text = makeTitleWithCount("Comm.", count)
+		u.tabs.Refresh()
+	}
 
 	contractTab := container.NewTabItemWithIcon("Contracts",
 		theme.NewThemedResource(ui.IconFileSignSvg), container.NewAppTabs(
@@ -144,12 +157,16 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 			container.NewTabItem("Wealth", u.WealthArea.Content),
 		))
 
-	u.skillTab = container.NewTabItemWithIcon("Skills",
+	skillTab := container.NewTabItemWithIcon("Skills",
 		theme.NewThemedResource(ui.IconSchoolSvg), container.NewAppTabs(
 			container.NewTabItem("Training Queue", u.SkillqueueArea.Content),
 			container.NewTabItem("Skill Catalogue", u.SkillCatalogueArea.Content),
 			container.NewTabItem("Ships", u.ShipsArea.Content),
 		))
+	u.SkillqueueArea.OnStatusRefresh = func(status string) {
+		skillTab.Text = fmt.Sprintf("Skills (%s)", status)
+		u.tabs.Refresh()
+	}
 
 	u.walletTab = container.NewTabItemWithIcon("Wallet",
 		theme.NewThemedResource(ui.IconAttachmoneySvg), container.NewAppTabs(
@@ -161,9 +178,9 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		characterTab,
 		u.assetTab,
 		contractTab,
-		u.mailTab,
-		u.planetTab,
-		u.skillTab,
+		mailTab,
+		planetTab,
+		skillTab,
 		u.walletTab,
 		u.overviewTab,
 	)

@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/dustin/go-humanize"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
@@ -29,7 +28,8 @@ type MailArea struct {
 	Detail        fyne.CanvasObject
 	Headers       fyne.CanvasObject
 
-	OnSelectMail func()
+	OnSelectMail   func()
+	OnCountRefresh func(count int)
 
 	body          *widget.Label
 	folderData    *fynetree.FyneTree[FolderNode]
@@ -227,9 +227,11 @@ func (a *MailArea) Refresh() {
 		d.Show()
 		return
 	}
+	if a.OnCountRefresh != nil {
+		a.OnCountRefresh(folderAll.UnreadCount)
+	}
 	a.folderTree.Refresh()
 	if folderAll.IsEmpty() {
-		a.updateMailTab(0)
 		a.clearFolder()
 		return
 	}
@@ -242,17 +244,6 @@ func (a *MailArea) Refresh() {
 		a.headerRefresh()
 	}
 	a.folderDefault = folderAll
-	a.updateMailTab(folderAll.UnreadCount)
-}
-
-func (a *MailArea) updateMailTab(unreadCount int) {
-	s := "Comm."
-	if unreadCount > 0 {
-		s += fmt.Sprintf(" (%s)", humanize.Comma(int64(unreadCount)))
-	}
-	// FIXME
-	// a.u.mailTab.Text = s
-	// a.u.tabs.Refresh()
 }
 
 func (a *MailArea) updateFolderData(characterID int32) (FolderNode, error) {
