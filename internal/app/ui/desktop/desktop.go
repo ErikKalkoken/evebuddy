@@ -102,6 +102,9 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		go u.statusBarArea.refreshUpdateStatus()
 		go u.statusBarArea.refreshCharacterCount()
 	}
+	u.MailArea.SendMessage = func(mode ui.SendMessageMode, cm *app.CharacterMail) {
+		u.showSendMessageWindow(mode, cm)
+	}
 
 	makeTitleWithCount := func(title string, count int) string {
 		if count > 0 {
@@ -137,7 +140,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 			container.NewTabItem("Mail", u.MailArea.Content),
 			container.NewTabItem("Communications", u.NotificationsArea.Content),
 		))
-	u.MailArea.OnCountRefresh = func(count int) {
+	u.MailArea.OnUnreadRefresh = func(count int) {
 		mailTab.Text = makeTitleWithCount("Comm.", count)
 		u.tabs.Refresh()
 	}

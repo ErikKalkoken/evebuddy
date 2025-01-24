@@ -21,14 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 )
 
-const (
-	createMessageNew = iota
-	createMessageReply
-	createMessageReplyAll
-	createMessageForward
-)
-
-func (u *DesktopUI) showSendMessageWindow(mode int, mail *app.CharacterMail) {
+func (u *DesktopUI) showSendMessageWindow(mode ui.SendMessageMode, mail *app.CharacterMail) {
 	w, err := u.makeSendMessageWindow(mode, mail)
 	if err != nil {
 		slog.Error("create send message window", "error", err)
@@ -37,7 +30,7 @@ func (u *DesktopUI) showSendMessageWindow(mode int, mail *app.CharacterMail) {
 	}
 }
 
-func (u *DesktopUI) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fyne.Window, error) {
+func (u *DesktopUI) makeSendMessageWindow(mode ui.SendMessageMode, mail *app.CharacterMail) (fyne.Window, error) {
 	currentChar := *u.CurrentCharacter()
 	w := u.FyneApp.NewWindow(u.makeWindowTitle(fmt.Sprintf("New message [%s]", currentChar.EveCharacter.Name)))
 
@@ -61,17 +54,17 @@ func (u *DesktopUI) makeSendMessageWindow(mode int, mail *app.CharacterMail) (fy
 	if mail != nil {
 		const sep = "\n\n--------------------------------\n"
 		switch mode {
-		case createMessageReply:
+		case ui.SendMessageReply:
 			r := mailrecipient.NewFromEntities([]*app.EveEntity{mail.From})
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(sep + mail.String())
-		case createMessageReplyAll:
+		case ui.SendMessageReplyAll:
 			r := mailrecipient.NewFromEntities(mail.Recipients)
 			toInput.SetText(r.String())
 			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			bodyInput.SetText(sep + mail.String())
-		case createMessageForward:
+		case ui.SendMessageForward:
 			subjectInput.SetText(fmt.Sprintf("Fw: %s", mail.Subject))
 			bodyInput.SetText(sep + mail.String())
 		default:

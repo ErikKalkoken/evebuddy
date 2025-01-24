@@ -21,6 +21,15 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
+type SendMessageMode uint
+
+const (
+	SendMessageNew SendMessageMode = iota + 1
+	SendMessageReply
+	SendMessageReplyAll
+	SendMessageForward
+)
+
 // MailArea is the UI area showing the mail folders.
 type MailArea struct {
 	Content       fyne.CanvasObject
@@ -28,8 +37,9 @@ type MailArea struct {
 	Detail        fyne.CanvasObject
 	Headers       fyne.CanvasObject
 
-	OnSelectMail   func()
-	OnCountRefresh func(count int)
+	OnSelectMail    func()
+	OnUnreadRefresh func(count int)
+	SendMessage     func(mode SendMessageMode, cm *app.CharacterMail)
 
 	body          *widget.Label
 	folderData    *fynetree.FyneTree[FolderNode]
@@ -75,8 +85,10 @@ func (u *BaseUI) NewMailArea() *MailArea {
 	// Folders
 	a.folderTree = a.makeFolderTree()
 	newButton := widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
-		// FIXME
-		// u.showSendMessageWindow(createMessageNew, nil)
+		if a.SendMessage == nil {
+			return
+		}
+		a.SendMessage(SendMessageNew, nil)
 	})
 	newButton.Importance = widget.HighImportance
 	top := container.NewHBox(layout.NewSpacer(), container.NewPadded(newButton), layout.NewSpacer())
@@ -226,8 +238,8 @@ func (a *MailArea) Refresh() {
 		d.Show()
 		return
 	}
-	if a.OnCountRefresh != nil {
-		a.OnCountRefresh(folderAll.UnreadCount)
+	if a.OnUnreadRefresh != nil {
+		a.OnUnreadRefresh(folderAll.UnreadCount)
 	}
 	a.folderTree.Refresh()
 	if folderAll.IsEmpty() {
@@ -508,40 +520,56 @@ func (a *MailArea) makeFolderTopText(f FolderNode) (string, widget.Importance) {
 	return s, widget.MediumImportance
 }
 
+func (a *MailArea) MakeDeleteAction(success func()) *widget.ToolbarAction {
+	return widget.NewToolbarAction(theme.DeleteIcon(), func() {
+		s := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Header())
+		d := NewConfirmDialog("Delete mail", s, "Delete", func(confirmed bool) {
+			if confirmed {
+				if err := a.u.CharacterService.DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID); err != nil {
+					t := "Failed to delete mail"
+					slog.Error(t, "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
+					d2 := NewErrorDialog(t, err, a.u.Window)
+					d2.Show()
+				} else {
+					a.headerRefresh()
+					if success != nil {
+						success()
+					}
+				}
+			}
+		}, a.u.Window)
+		d.Show()
+	})
+}
+
 func (a *MailArea) makeToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.MailReplyIcon(), func() {
-			// FIXME
-			// a.u.showSendMessageWindow(createMessageReply, a.mail)
+			if a.SendMessage == nil {
+				return
+			}
+			a.SendMessage(SendMessageReply, a.mail)
 		}),
 		widget.NewToolbarAction(theme.MailReplyAllIcon(), func() {
-			// FIXME
-			// a.u.showSendMessageWindow(createMessageReplyAll, a.mail)
+			if a.SendMessage == nil {
+				return
+			}
+			a.SendMessage(SendMessageReplyAll, a.mail)
 		}),
 		widget.NewToolbarAction(theme.MailForwardIcon(), func() {
-			// FIXME
-			// a.u.showSendMessageWindow(createMessageForward, a.mail)
+			if a.SendMessage == nil {
+				return
+			}
+			a.SendMessage(SendMessageForward, a.mail)
 		}),
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
+			if a.SendMessage == nil {
+				return
+			}
 			a.u.Window.Clipboard().SetContent(a.mail.String())
 		}),
 		widget.NewToolbarSpacer(),
-		widget.NewToolbarAction(theme.DeleteIcon(), func() {
-			t := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Header())
-			d := NewConfirmDialog("Delete mail", t, "Delete", func(confirmed bool) {
-				if confirmed {
-					if err := a.u.CharacterService.DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID); err != nil {
-						t := "Failed to delete mail"
-						slog.Error(t, "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
-						d2 := NewErrorDialog(t, err, a.u.Window)
-						d2.Show()
-					} else {
-						a.headerRefresh()
-					}
-				}
-			}, a.u.Window)
-			d.Show()
-		}),
+		a.MakeDeleteAction(nil),
 	)
 	return toolbar
 }

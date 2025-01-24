@@ -7,8 +7,10 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/dustin/go-humanize"
 )
@@ -21,6 +23,11 @@ type MobileUI struct {
 func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	u := &MobileUI{}
 	u.BaseUI = ui.NewBaseUI(fyneApp)
+
+	u.MailArea.SendMessage = func(_ ui.SendMessageMode, _ *app.CharacterMail) {
+		d := dialog.NewInformation("Send Message", "PLACEHOLDER", u.Window)
+		d.Show()
+	}
 
 	characterSelector := widget.NewToolbarAction(ui.IconCharacterplaceholder32Jpeg, nil)
 	characterSelector.OnActivated = func() {
@@ -59,9 +66,12 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		theme.MailComposeIcon(),
 		"Mail",
 		func() {
+			deleteAction := u.MailArea.MakeDeleteAction(func() {
+				characterNav.Pop()
+			})
 			u.MailArea.OnSelectMail = func() {
 				characterNav.Push(
-					NewAppBar("", u.MailArea.Detail),
+					NewAppBar("", u.MailArea.Detail, deleteAction),
 				)
 			}
 			characterNav.Push(
@@ -194,7 +204,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		characterList.Refresh()
 	}
 
-	u.MailArea.OnCountRefresh = func(count int) {
+	u.MailArea.OnUnreadRefresh = func(count int) {
 		s := ""
 		if count > 0 {
 			s = humanize.Comma(int64(count))
@@ -203,7 +213,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		characterList.Refresh()
 	}
 
-	u.NotificationsArea.OnCountRefresh = func(count int) {
+	u.NotificationsArea.OnUnreadRefresh = func(count int) {
 		s := ""
 		if count > 0 {
 			s = humanize.Comma(int64(count))

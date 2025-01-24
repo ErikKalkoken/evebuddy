@@ -34,7 +34,7 @@ type NotificationsArea struct {
 	Notifications        fyne.CanvasObject
 	Toolbar              *widget.Toolbar
 	OnSelectNotification func()
-	OnCountRefresh       func(count int)
+	OnUnreadRefresh      func(count int)
 
 	Folders          []NotificationFolder
 	folderList       *widget.List
@@ -205,8 +205,8 @@ func (a *NotificationsArea) Refresh() {
 	a.folderList.UnselectAll()
 	a.folderTop.Text, a.folderTop.Importance = a.makeFolderTopText()
 	a.folderTop.Refresh()
-	if a.OnCountRefresh != nil {
-		a.OnCountRefresh(unreadTotal)
+	if a.OnUnreadRefresh != nil {
+		a.OnUnreadRefresh(unreadTotal)
 	}
 }
 
