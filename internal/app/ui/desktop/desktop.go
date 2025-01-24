@@ -38,10 +38,8 @@ type DesktopUI struct {
 	statusBarArea *statusBarArea
 	toolbarArea   *toolbarArea
 
-	assetTab    *container.TabItem
 	overviewTab *container.TabItem
 	tabs        *container.AppTabs
-	walletTab   *container.TabItem
 
 	menuItemsWithShortcut []*fyne.MenuItem
 	accountWindow         fyne.Window
@@ -113,15 +111,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		return title
 	}
 
-	characterTab := container.NewTabItemWithIcon("Character",
-		theme.AccountIcon(), container.NewAppTabs(
-			container.NewTabItem("Augmentations", u.ImplantsArea.Content),
-			container.NewTabItem("Jump Clones", u.JumpClonesArea.Content),
-			container.NewTabItem("Attributes", u.AttributesArea.Content),
-			container.NewTabItem("Biography", u.BiographyArea.Content),
-		))
-
-	u.assetTab = container.NewTabItemWithIcon("Assets",
+	assetTab := container.NewTabItemWithIcon("Assets",
 		theme.NewThemedResource(ui.IconInventory2Svg), container.NewAppTabs(
 			container.NewTabItem("Assets", u.AssetsArea.Content),
 		))
@@ -145,6 +135,12 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		u.tabs.Refresh()
 	}
 
+	clonesTab := container.NewTabItemWithIcon("Clones",
+		theme.NewThemedResource(ui.IconHeadSnowflakeSvg), container.NewAppTabs(
+			container.NewTabItem("Augmentations", u.ImplantsArea.Content),
+			container.NewTabItem("Jump Clones", u.JumpClonesArea.Content),
+		))
+
 	contractTab := container.NewTabItemWithIcon("Contracts",
 		theme.NewThemedResource(ui.IconFileSignSvg), container.NewAppTabs(
 			container.NewTabItem("Contracts", u.ContractsArea.Content),
@@ -165,26 +161,27 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 			container.NewTabItem("Training Queue", u.SkillqueueArea.Content),
 			container.NewTabItem("Skill Catalogue", u.SkillCatalogueArea.Content),
 			container.NewTabItem("Ships", u.ShipsArea.Content),
+			container.NewTabItem("Augmentations", u.ImplantsArea.Content),
 		))
 	u.SkillqueueArea.OnStatusRefresh = func(status string) {
 		skillTab.Text = fmt.Sprintf("Skills (%s)", status)
 		u.tabs.Refresh()
 	}
 
-	u.walletTab = container.NewTabItemWithIcon("Wallet",
+	walletTab := container.NewTabItemWithIcon("Wallet",
 		theme.NewThemedResource(ui.IconAttachmoneySvg), container.NewAppTabs(
 			container.NewTabItem("Transactions", u.WalletJournalArea.Content),
 			container.NewTabItem("Market Transactions", u.WalletTransactionArea.Content),
 		))
 
 	u.tabs = container.NewAppTabs(
-		characterTab,
-		u.assetTab,
+		assetTab,
+		clonesTab,
 		contractTab,
 		mailTab,
 		planetTab,
 		skillTab,
-		u.walletTab,
+		walletTab,
 		u.overviewTab,
 	)
 	u.tabs.SetTabLocation(container.TabLocationLeading)

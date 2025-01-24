@@ -134,34 +134,6 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	)
 	characterList := NewNavList(
 		NewNavListItemWithIcon(
-			theme.AccountIcon(),
-			"Character Sheet",
-			func() {
-				characterNav.Push(
-					newCharacterAppBar(
-						"Character Sheet",
-						NewNavListWithTitle("Character Sheet",
-							NewNavListItemWithNavigator(
-								characterNav,
-								newCharacterAppBar("Augmentations", u.ImplantsArea.Content),
-							),
-							NewNavListItemWithNavigator(
-								characterNav,
-								newCharacterAppBar("Jump Clones", container.NewScroll(u.JumpClonesArea.Content)),
-							),
-							NewNavListItemWithNavigator(
-								characterNav,
-								newCharacterAppBar("Attributes", u.AttributesArea.Content),
-							),
-							NewNavListItemWithNavigator(
-								characterNav,
-								newCharacterAppBar("Bio", container.NewScroll(u.BiographyArea.Content)),
-							),
-						),
-					))
-			},
-		),
-		NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconInventory2Svg),
 			"Assets",
 			func() {
@@ -174,6 +146,20 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		navListColonies,
 		navListMail,
 		navListCommunications,
+		NewNavListItemWithIcon(
+			theme.NewThemedResource(ui.IconHeadSnowflakeSvg),
+			"Clones",
+			func() {
+				characterNav.Push(
+					newCharacterAppBar(
+						"Clones",
+						container.NewAppTabs(
+							container.NewTabItem("Augmentations", u.ImplantsArea.Content),
+							container.NewTabItem("Jump Clones", u.JumpClonesArea.Content),
+						),
+					))
+			},
+		),
 		NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconFileSignSvg),
 			"Contracts",
