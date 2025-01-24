@@ -65,3 +65,15 @@ func markdownStripLinks(s string) string {
 	r := regexp.MustCompile(`\[(.+?)\]\((.+?)\)`)
 	return r.ReplaceAllString(s, "**$1**")
 }
+
+func NewSubHeading(text string) *widget.RichText {
+	x := widget.NewRichText(&widget.TextSegment{
+		Style: widget.RichTextStyle{
+			ColorName: theme.ColorNameForeground,
+			Inline:    false,
+			SizeName:  theme.SizeNameSubHeadingText,
+		},
+		Text: text,
+	})
+	return x
+}

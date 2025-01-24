@@ -43,7 +43,7 @@ type MailArea struct {
 	lastSelected  widget.ListItemID
 	lastUID       string
 	mail          *app.CharacterMail
-	subject       *widget.Label
+	subject       *widgets.SubHeading
 	toolbar       *widget.Toolbar
 	u             *BaseUI
 }
@@ -55,19 +55,18 @@ func (u *BaseUI) NewMailArea() *MailArea {
 		header:     widget.NewLabel(""),
 		headers:    make([]*app.CharacterMailHeader, 0),
 		headerTop:  widget.NewLabel(""),
-		subject:    widget.NewLabel(""),
+		subject:    widgets.NewSubHeading(""),
 		u:          u,
 	}
 
 	// Mail
 	a.toolbar = a.makeToolbar()
 	a.toolbar.Hide()
-	a.subject.TextStyle = fyne.TextStyle{Bold: true}
 	a.subject.Truncation = fyne.TextTruncateClip
 	a.header.Truncation = fyne.TextTruncateClip
-	detailHead := container.NewVBox(a.toolbar, a.subject, a.header)
 	a.body.Wrapping = fyne.TextWrapWord
-	a.Detail = container.NewBorder(detailHead, nil, nil, nil, container.NewVScroll(a.body))
+	a.Detail = container.NewBorder(container.NewVBox(a.subject, a.header), nil, nil, nil, container.NewVScroll(a.body))
+	detailWithToolbar := container.NewBorder(a.toolbar, nil, nil, nil, a.Detail)
 
 	// Headers
 	a.headerList = a.makeHeaderList()
@@ -85,7 +84,7 @@ func (u *BaseUI) NewMailArea() *MailArea {
 	a.folderSection = container.NewBorder(top, nil, nil, nil, a.folderTree)
 
 	// Combine sections
-	split1 := container.NewHSplit(a.Headers, a.Detail)
+	split1 := container.NewHSplit(a.Headers, detailWithToolbar)
 	split1.SetOffset(0.35)
 	split2 := container.NewHSplit(a.folderSection, split1)
 	split2.SetOffset(0.15)
@@ -586,7 +585,7 @@ func (a *MailArea) updateContent(s string, h string, b string) {
 
 func (a *MailArea) setErrorText() {
 	a.clearMail()
-	a.subject.Text = "ERROR"
-	a.subject.Importance = widget.DangerImportance
-	a.subject.Refresh()
+	a.body.Text = "ERROR"
+	a.body.Importance = widget.DangerImportance
+	a.body.Refresh()
 }
