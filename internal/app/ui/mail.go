@@ -32,12 +32,11 @@ const (
 
 // MailArea is the UI area showing the mail folders.
 type MailArea struct {
-	Content       fyne.CanvasObject
-	CurrentFolder optional.Optional[FolderNode]
-	Detail        fyne.CanvasObject
-	Headers       fyne.CanvasObject
-
-	OnSelectMail    func()
+	Content         fyne.CanvasObject
+	CurrentFolder   optional.Optional[FolderNode]
+	Detail          fyne.CanvasObject
+	Headers         fyne.CanvasObject
+	OnSelected      func()
 	OnUnreadRefresh func(count int)
 	SendMessage     func(mode SendMessageMode, cm *app.CharacterMail)
 
@@ -429,8 +428,8 @@ func (a *MailArea) makeHeaderList() *widget.List {
 		r := a.headers[id]
 		a.setMail(r.MailID)
 		a.lastSelected = id
-		if a.OnSelectMail != nil {
-			a.OnSelectMail()
+		if a.OnSelected != nil {
+			a.OnSelected()
 			l.UnselectAll()
 		}
 	}

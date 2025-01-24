@@ -60,15 +60,19 @@ func (n locationDataNode) IsRoot() bool {
 	return n.Type == nodeLocation
 }
 
-var defaultAssetIcon = theme.NewDisabledResource(IconQuestionmarkSvg)
+var defaultAssetIcon = theme.NewThemedResource(IconBlankSvg)
 
 // AssetsArea is the UI area that shows the skillqueue
 type AssetsArea struct {
+	Content        fyne.CanvasObject
+	Locations      fyne.CanvasObject
+	LocationAssets fyne.CanvasObject
+	OnSelected     func()
+
 	assetCollection  assetcollection.AssetCollection
 	assetGrid        *widget.GridWrap
 	assets           []*app.CharacterAsset
 	assetsBottom     *widget.Label
-	Content          fyne.CanvasObject
 	locationPath     *fyne.Container
 	locationsData    *fynetree.FyneTree[locationDataNode]
 	locationsTop     *widget.Label
@@ -78,18 +82,17 @@ type AssetsArea struct {
 }
 
 func (u *BaseUI) NewAssetsArea() *AssetsArea {
-	myHBox := layout.NewCustomPaddedHBoxLayout(-5)
 	a := AssetsArea{
 		assets:        make([]*app.CharacterAsset, 0),
-		locationPath:  container.New(myHBox),
 		assetsBottom:  widget.NewLabel(""),
+		locationPath:  container.New(layout.NewCustomPaddedHBoxLayout(-5)),
 		locationsData: fynetree.New[locationDataNode](),
 		locationsTop:  widget.NewLabel(""),
 		u:             u,
 	}
 	a.locationsTop.TextStyle.Bold = true
 	a.locationsWidget = a.makeLocationsTree()
-	locations := container.NewBorder(
+	a.Locations = container.NewBorder(
 		container.NewVBox(a.locationsTop, widget.NewSeparator()),
 		nil,
 		nil,
@@ -98,20 +101,24 @@ func (u *BaseUI) NewAssetsArea() *AssetsArea {
 	)
 
 	a.assetGrid = a.makeAssetGrid()
-	assets := container.NewBorder(
+	a.LocationAssets = container.NewBorder(
 		container.NewVBox(a.locationPath, widget.NewSeparator()),
 		container.NewVBox(widget.NewSeparator(), a.assetsBottom),
 		nil,
 		nil,
 		a.assetGrid,
 	)
-	main := container.NewHSplit(locations, assets)
+	main := container.NewHSplit(a.Locations, a.LocationAssets)
 	main.SetOffset(0.33)
 	a.Content = main
 	return &a
 }
 
 func (a *AssetsArea) makeLocationsTree() *widget.Tree {
+	labelSizeName := theme.SizeNameText
+	if !a.u.IsDesktop() {
+		labelSizeName = theme.SizeNameCaptionText
+	}
 	t := widget.NewTree(
 		func(uid widget.TreeNodeID) []widget.TreeNodeID {
 			return a.locationsData.ChildUIDs(uid)
@@ -120,14 +127,15 @@ func (a *AssetsArea) makeLocationsTree() *widget.Tree {
 			return a.locationsData.IsBranch(uid)
 		},
 		func(branch bool) fyne.CanvasObject {
-			prefix := widget.NewLabel("1.0")
-			prefix.Importance = widget.HighImportance
-			return container.NewHBox(prefix, widget.NewLabel("Location"))
+			return container.New(layout.NewCustomPaddedHBoxLayout(-5),
+				widgets.NewLabelWithSize("1.0", labelSizeName),
+				widgets.NewLabelWithSize("Location", labelSizeName),
+			)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
 			row := co.(*fyne.Container).Objects
-			prefix := row[0].(*widget.Label)
-			label := row[1].(*widget.Label)
+			prefix := row[0].(*widgets.Label)
+			label := row[1].(*widgets.Label)
 			n, ok := a.locationsData.Value(uid)
 			if !ok {
 				return
@@ -155,6 +163,10 @@ func (a *AssetsArea) makeLocationsTree() *widget.Tree {
 		}
 		if err := a.selectLocation(n); err != nil {
 			slog.Warn("Failed to redraw assets", "err", err)
+		}
+		if a.OnSelected != nil {
+			a.OnSelected()
+			t.UnselectAll()
 		}
 	}
 	return t

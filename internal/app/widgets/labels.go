@@ -10,30 +10,30 @@ import (
 
 // SubHeading is a label with larger size meant for headings.
 type Heading struct {
-	label
+	Label
 }
 
 func NewHeading(text string) *Heading {
 	w := &Heading{
-		label: *newLabel(text, theme.SizeNameHeadingText),
+		Label: *NewLabelWithSize(text, theme.SizeNameHeadingText),
 	}
 	return w
 }
 
 // SubHeading is a label with larger size meant for sub headings.
 type SubHeading struct {
-	label
+	Label
 }
 
 func NewSubHeading(text string) *SubHeading {
 	w := &SubHeading{
-		label: *newLabel(text, theme.SizeNameSubHeadingText),
+		Label: *NewLabelWithSize(text, theme.SizeNameSubHeadingText),
 	}
 	return w
 }
 
-// label is a re-implementation of a Fyne Label. This is necessary for setting a custom size.
-type label struct {
+// Label is a re-implementation of a Fyne Label. This is necessary for setting a custom size.
+type Label struct {
 	widget.BaseWidget
 
 	Alignment  fyne.TextAlign
@@ -45,31 +45,34 @@ type label struct {
 
 	mu       sync.Mutex
 	provider *widget.RichText
+	sizeName fyne.ThemeSizeName
 }
 
-func newLabel(text string, sizeName fyne.ThemeSizeName) *label {
-	w := &label{
+func NewLabelWithSize(text string, sizeName fyne.ThemeSizeName) *Label {
+	w := &Label{
 		Text: text,
 		provider: widget.NewRichText(&widget.TextSegment{
 			Style: widget.RichTextStyle{
 				ColorName: theme.ColorNameForeground,
 				SizeName:  sizeName,
+				Inline:    true,
 			},
 			Text: text,
 		}),
+		sizeName: sizeName,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (w *label) SetText(text string) {
+func (w *Label) SetText(text string) {
 	w.mu.Lock()
 	w.Text = text
 	w.mu.Unlock()
 	w.Refresh()
 }
 
-func (w *label) Refresh() {
+func (w *Label) Refresh() {
 	if w.provider == nil { // not created until visible
 		return
 	}
@@ -78,11 +81,12 @@ func (w *label) Refresh() {
 	w.BaseWidget.Refresh()
 }
 
-func (w *label) CreateRenderer() fyne.WidgetRenderer {
+func (w *Label) CreateRenderer() fyne.WidgetRenderer {
+	w.syncSegments()
 	return widget.NewSimpleRenderer(w.provider)
 }
 
-func (w *label) syncSegments() {
+func (w *Label) syncSegments() {
 	var color fyne.ThemeColorName
 	switch w.Importance {
 	case widget.LowImportance:
@@ -110,7 +114,8 @@ func (w *label) syncSegments() {
 		Alignment: w.Alignment,
 		ColorName: color,
 		TextStyle: w.TextStyle,
-		SizeName:  theme.SizeNameSubHeadingText,
+		Inline:    true,
+		SizeName:  w.sizeName,
 	}
 	seg.Text = w.Text
 }

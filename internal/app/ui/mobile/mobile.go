@@ -69,7 +69,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			deleteAction := u.MailArea.MakeDeleteAction(func() {
 				characterNav.Pop()
 			})
-			u.MailArea.OnSelectMail = func() {
+			u.MailArea.OnSelected = func() {
 				characterNav.Push(
 					NewAppBar("", u.MailArea.Detail, deleteAction),
 				)
@@ -87,7 +87,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		theme.InfoIcon(),
 		"Communications",
 		func() {
-			u.NotificationsArea.OnSelectNotification = func() {
+			u.NotificationsArea.OnSelected = func() {
 				characterNav.Push(
 					NewAppBar("", u.NotificationsArea.Detail),
 				)
@@ -165,7 +165,10 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			theme.NewThemedResource(ui.IconInventory2Svg),
 			"Assets",
 			func() {
-				characterNav.Push(newCharacterAppBar("Assets", container.NewScroll(u.AssetsArea.Content)))
+				u.AssetsArea.OnSelected = func() {
+					characterNav.Push(newCharacterAppBar("", u.AssetsArea.LocationAssets))
+				}
+				characterNav.Push(newCharacterAppBar("Assets", container.NewHScroll(u.AssetsArea.Locations)))
 			},
 		),
 		navListColonies,

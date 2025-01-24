@@ -18,6 +18,7 @@ type AssetListWidget struct {
 	quantity     *widget.Label
 	fallbackIcon fyne.Resource
 	sv           app.EveImageService
+	isMobile     bool
 }
 
 func NewAssetListWidget(sv app.EveImageService, fallbackIcon fyne.Resource) *AssetListWidget {
@@ -30,6 +31,7 @@ func NewAssetListWidget(sv app.EveImageService, fallbackIcon fyne.Resource) *Ass
 		quantity:     widget.NewLabel("99.999"),
 		fallbackIcon: fallbackIcon,
 		sv:           sv,
+		isMobile:     fyne.CurrentDevice().IsMobile(),
 	}
 	item.ExtendBaseWidget(item)
 	return item
@@ -70,6 +72,11 @@ func (o *AssetListWidget) SetAsset(ca *app.CharacterAsset) {
 }
 
 func (o *AssetListWidget) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(nil, nil, o.icon, o.quantity, o.name)
+	var c *fyne.Container
+	if o.isMobile {
+		c = container.NewBorder(nil, nil, o.icon, nil, o.name)
+	} else {
+		c = container.NewBorder(nil, nil, o.icon, o.quantity, o.name)
+	}
 	return widget.NewSimpleRenderer(c)
 }
