@@ -203,6 +203,7 @@ func main() {
 	}
 	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
 	memCache := cache.New()
+	defer memCache.Close()
 
 	// Init StatusCache service
 	sc := statuscache.New(memCache)

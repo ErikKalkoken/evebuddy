@@ -22,22 +22,29 @@ type item struct {
 	ExpiresAt time.Time
 }
 
-// New creates a new cache and returns it.
+// New creates a new cache with default timeout and returns it.
+//
+// Users can close the cache to free allocated resources when the cache is no longer needed.
 func New() *Cache {
 	return create(cleanUpTimeOutDefault)
 }
 
-// NewWithTimeout creates a new cache with a specific timeout for the regular clean up and returns it.
+// NewWithTimeout creates a new cache with a specific timeout for the regular clean-up and returns it.
+//
+// A timeout of 0 disables the automatic clean-up and cache users then need to start clean-up manually.
+//
+// When automatic clean-up is enabled users can close the cache
+// to free allocated resources when the cache is no longer needed.
 func NewWithTimeout(timeout time.Duration) *Cache {
-	if timeout == 0 {
-		panic("timeout can not be zero")
-	}
 	return create(timeout)
 }
 
 func create(timeout time.Duration) *Cache {
-	c := Cache{
+	c := &Cache{
 		closeC: make(chan struct{}),
+	}
+	if timeout <= 0 {
+		return c
 	}
 	ticker := time.NewTicker(timeout)
 	go func() {
@@ -47,11 +54,11 @@ func create(timeout time.Duration) *Cache {
 				slog.Info("cache closed")
 				return
 			case <-ticker.C:
-				c.cleanUp()
+				c.CleanUp()
 			}
 		}
 	}()
-	return &c
+	return c
 }
 
 // Close closes the cache and frees allocated resources.
@@ -105,9 +112,9 @@ func (c *Cache) Set(key string, value any, timeout time.Duration) {
 	c.items.Store(key, i)
 }
 
-// cleanUp removes all expired keys
-func (c *Cache) cleanUp() {
-	slog.Info("cache clean up: started")
+// CleanUp removes all expired keys
+func (c *Cache) CleanUp() {
+	slog.Info("cache clean-up: started")
 	count := 0
 	c.items.Range(func(key, value any) bool {
 		_, found := c.Get(key.(string))
@@ -117,5 +124,5 @@ func (c *Cache) cleanUp() {
 		}
 		return true
 	})
-	slog.Info("cache clean up: completed", "removed", count)
+	slog.Info("cache clean-up: completed", "removed", count)
 }
