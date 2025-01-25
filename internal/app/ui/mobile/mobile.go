@@ -132,6 +132,20 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				))
 		},
 	)
+	navListWallet := NewNavListItemWithIcon(
+		theme.NewThemedResource(ui.IconAttachmoneySvg),
+		"Wallet",
+		func() {
+			characterNav.Push(
+				newCharacterAppBar(
+					"Wallet",
+					container.NewAppTabs(
+						container.NewTabItem("Transactions", u.WalletJournalArea.Content),
+						container.NewTabItem("Market Transactions", u.WalletTransactionArea.Content),
+					),
+				))
+		},
+	)
 	characterList := NewNavList(
 		NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconInventory2Svg),
@@ -168,20 +182,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			},
 		),
 		navListSkills,
-		NewNavListItemWithIcon(
-			theme.NewThemedResource(ui.IconAttachmoneySvg),
-			"Wallet",
-			func() {
-				characterNav.Push(
-					newCharacterAppBar(
-						"Wallet",
-						container.NewAppTabs(
-							container.NewTabItem("Transactions", u.WalletJournalArea.Content),
-							container.NewTabItem("Market Transactions", u.WalletTransactionArea.Content),
-						),
-					))
-			},
-		),
+		navListWallet,
 	)
 
 	u.PlanetArea.OnCountRefresh = func(count int) {
@@ -213,6 +214,11 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 
 	u.SkillqueueArea.OnStatusRefresh = func(status string) {
 		navListSkills.Suffix = status
+		characterList.Refresh()
+	}
+
+	u.WalletJournalArea.OnBalanceRefresh = func(b string) {
+		navListWallet.Suffix = b
 		characterList.Refresh()
 	}
 

@@ -49,6 +49,9 @@ func (e walletJournalEntry) descriptionWithReason() string {
 // WalletJournalArea is the UI area that shows the skillqueue
 type WalletJournalArea struct {
 	Content *fyne.Container
+
+	OnBalanceRefresh func(balance string)
+
 	entries []walletJournalEntry
 	table   *widget.Table
 	top     *widget.Label
@@ -176,6 +179,9 @@ func (a *WalletJournalArea) makeTopText() (string, widget.Importance) {
 	b := ihumanize.OptionalFloat(c.WalletBalance, 1, "?")
 	t := humanize.Comma(int64(len(a.entries)))
 	s := fmt.Sprintf("Balance: %s • Entries: %s", b, t)
+	if a.OnBalanceRefresh != nil {
+		a.OnBalanceRefresh(b)
+	}
 	return s, widget.MediumImportance
 }
 
