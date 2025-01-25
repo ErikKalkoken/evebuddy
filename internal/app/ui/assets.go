@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -13,7 +14,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -61,8 +61,6 @@ func (n locationDataNode) IsRoot() bool {
 	return n.Type == nodeLocation
 }
 
-var defaultAssetIcon = theme.NewThemedResource(IconBlankSvg)
-
 // AssetsArea is the UI area that shows the skillqueue
 type AssetsArea struct {
 	Content        fyne.CanvasObject
@@ -74,7 +72,7 @@ type AssetsArea struct {
 	assetGrid        *widget.GridWrap
 	assets           []*app.CharacterAsset
 	assetsBottom     *widget.Label
-	locationPath     *fyne.Container
+	locationPath     *widget.Label
 	locationsData    *fynetree.FyneTree[locationDataNode]
 	locationsTop     *widget.Label
 	locationsWidget  *widget.Tree
@@ -83,10 +81,13 @@ type AssetsArea struct {
 }
 
 func (u *BaseUI) NewAssetsArea() *AssetsArea {
+	lp := widget.NewLabel("")
+	lp.Wrapping = fyne.TextWrapWord
+	lp.TextStyle.Bold = true
 	a := AssetsArea{
 		assets:        make([]*app.CharacterAsset, 0),
 		assetsBottom:  widget.NewLabel(""),
-		locationPath:  container.New(layout.NewCustomPaddedHBoxLayout(-5)),
+		locationPath:  lp,
 		locationsData: fynetree.New[locationDataNode](),
 		locationsTop:  widget.NewLabel(""),
 		u:             u,
@@ -162,6 +163,10 @@ func (a *AssetsArea) makeLocationsTree() *widget.Tree {
 		if !ok {
 			return
 		}
+		if n.Type == nodeLocation {
+			t.UnselectAll()
+			return
+		}
 		if err := a.selectLocation(n); err != nil {
 			slog.Warn("Failed to redraw assets", "err", err)
 		}
@@ -176,7 +181,7 @@ func (a *AssetsArea) makeLocationsTree() *widget.Tree {
 func (a *AssetsArea) clearAssets() error {
 	a.assets = make([]*app.CharacterAsset, 0)
 	a.assetGrid.Refresh()
-	a.locationPath.RemoveAll()
+	a.locationPath.SetText("")
 	a.selectedLocation.Clear()
 	return nil
 }
@@ -188,7 +193,7 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 		},
 		func() fyne.CanvasObject {
 			const assetListIconSize = 64
-			return widgets.NewAssetListWidget(func(image *canvas.Image, ca *app.CharacterAsset) {
+			return widgets.NewAsset(func(image *canvas.Image, ca *app.CharacterAsset) {
 				RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
 					switch ca.Variant() {
 					case app.VariantSKIN:
@@ -208,8 +213,8 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 				return
 			}
 			ca := a.assets[id]
-			item := co.(*widgets.AssetListWidget)
-			item.SetAsset(ca)
+			item := co.(*widgets.Asset)
+			item.Set(ca)
 		},
 	)
 	g.OnSelected = func(id widget.GridWrapItemID) {
@@ -500,35 +505,11 @@ func (a *AssetsArea) updateLocationPath(location locationDataNode) {
 		path = append(path, n)
 	}
 	path = append(path, location)
-	a.locationPath.RemoveAll()
-	for i, n := range path {
-		isLast := i == len(path)-1
-		if !isLast {
-			l := NewCustomHyperlink(n.Name, func() {
-				if err := a.selectLocation(n); err != nil {
-					slog.Warn("Failed to redraw assets", "err", err)
-				}
-			})
-			a.locationPath.Add(l)
-		} else {
-			l := widget.NewLabel(n.Name)
-			l.TextStyle.Bold = true
-			a.locationPath.Add(l)
-		}
-		if n.IsRoot() {
-			if !n.IsUnknown {
-				a.locationPath.Add(kwidget.NewTappableIcon(theme.InfoIcon(), func() {
-					a.u.ShowLocationInfoWindow(n.ContainerID)
-				}))
-				a.locationPath.Add(container.NewPadded())
-			}
-		}
-		if !isLast {
-			l := widget.NewLabel("＞")
-			l.Importance = widget.LowImportance
-			a.locationPath.Add(l)
-		}
+	parts := make([]string, 0)
+	for _, n := range path {
+		parts = append(parts, n.Name)
 	}
+	a.locationPath.SetText(strings.Join(parts, " ＞ "))
 }
 
 func makeNameWithCount(name string, count int) string {

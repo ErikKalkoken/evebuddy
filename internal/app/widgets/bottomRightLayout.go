@@ -2,9 +2,9 @@ package widgets
 
 import "fyne.io/fyne/v2"
 
-type topLeftLayout struct{}
+type bottomRightLayout struct{}
 
-func (d *topLeftLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+func (d *bottomRightLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	w, h := float32(0), float32(0)
 	for _, o := range objects {
 		childSize := o.MinSize()
@@ -18,7 +18,7 @@ func (d *topLeftLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	return fyne.NewSize(w, h)
 }
 
-func (d *topLeftLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
+func (d *bottomRightLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
 	pos := fyne.NewPos(containerSize.Width, containerSize.Height)
 	for _, o := range objects {
 		size := o.MinSize()
