@@ -1,82 +1,170 @@
 package widgets
 
 import (
+	"strings"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/dustin/go-humanize"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
-const assetListIconSize = 64
+const (
+	typeIconSize       = 55
+	labelMaxCharacters = 11
+)
+
+type assetBadge struct {
+	widget.BaseWidget
+
+	quantity *canvas.Text
+}
+
+func NewAssetBadge() *assetBadge {
+	q := canvas.NewText("", theme.Color(theme.ColorNameForeground))
+	q.TextSize = theme.CaptionTextSize()
+	w := &assetBadge{quantity: q}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *assetBadge) SetQuantity(q int) {
+	w.quantity.Text = humanize.Comma(int64(q))
+	w.quantity.Refresh()
+}
+
+func (w *assetBadge) CreateRenderer() fyne.WidgetRenderer {
+	p := theme.Padding()
+	bgPadding := layout.CustomPaddedLayout{TopPadding: 0, BottomPadding: 0, LeftPadding: p, RightPadding: p}
+	customPadding := layout.CustomPaddedLayout{TopPadding: p / 2, BottomPadding: p / 2, LeftPadding: p / 2, RightPadding: p / 2}
+	c := container.New(customPadding, container.NewStack(
+		canvas.NewRectangle(theme.Color(theme.ColorNameBackground)),
+		container.New(bgPadding, w.quantity),
+	))
+	return widget.NewSimpleRenderer(c)
+}
+
+type assetLabel struct {
+	widget.BaseWidget
+
+	label1 *canvas.Text
+	label2 *canvas.Text
+}
+
+func NewAssetLabel() *assetLabel {
+	l1 := canvas.NewText("", theme.Color(theme.ColorNameForeground))
+	l1.TextSize = theme.CaptionTextSize()
+	l2 := canvas.NewText("", theme.Color(theme.ColorNameForeground))
+	l2.TextSize = theme.CaptionTextSize()
+	w := &assetLabel{label1: l1, label2: l2}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *assetLabel) SetText(s string) {
+	l1, l2 := splitLines(s, labelMaxCharacters)
+	w.label1.Text = l1
+	w.label2.Text = l2
+	w.label1.Refresh()
+	w.label2.Refresh()
+}
+
+func (w *assetLabel) CreateRenderer() fyne.WidgetRenderer {
+	customVBox := layout.NewCustomPaddedVBoxLayout(0)
+	customHBox := layout.NewCustomPaddedHBoxLayout(0)
+	c := container.New(
+		customVBox,
+		container.New(customHBox, layout.NewSpacer(), w.label1, layout.NewSpacer()),
+		container.New(customHBox, layout.NewSpacer(), w.label2, layout.NewSpacer()),
+	)
+	return widget.NewSimpleRenderer(c)
+}
 
 type AssetListWidget struct {
 	widget.BaseWidget
-	icon         *canvas.Image
-	name         *widget.Label
-	quantity     *widget.Label
-	fallbackIcon fyne.Resource
-	sv           app.EveImageService
-	isMobile     bool
+	badge      *assetBadge
+	icon       *canvas.Image
+	iconLoader func(*canvas.Image, *app.CharacterAsset)
+	label      *assetLabel
 }
 
-func NewAssetListWidget(sv app.EveImageService, fallbackIcon fyne.Resource) *AssetListWidget {
-	icon := canvas.NewImageFromResource(fallbackIcon)
+func NewAssetListWidget(iconLoader func(image *canvas.Image, ca *app.CharacterAsset)) *AssetListWidget {
+	icon := canvas.NewImageFromResource(theme.NewDisabledResource(theme.BrokenImageIcon()))
 	icon.FillMode = canvas.ImageFillContain
-	icon.SetMinSize(fyne.Size{Width: 40, Height: 40})
-	item := &AssetListWidget{
-		icon:         icon,
-		name:         widget.NewLabel("Asset Template Name XXX\nAsset Template Name XXX"),
-		quantity:     widget.NewLabel("99.999"),
-		fallbackIcon: fallbackIcon,
-		sv:           sv,
-		isMobile:     fyne.CurrentDevice().IsMobile(),
+	icon.SetMinSize(fyne.NewSquareSize(typeIconSize))
+	w := &AssetListWidget{
+		icon:       icon,
+		label:      NewAssetLabel(),
+		iconLoader: iconLoader,
+		badge:      NewAssetBadge(),
 	}
-	item.ExtendBaseWidget(item)
-	return item
+	w.badge.Hide()
+	w.ExtendBaseWidget(w)
+	return w
 }
 
 func (o *AssetListWidget) SetAsset(ca *app.CharacterAsset) {
-	o.name.Text = ca.DisplayName()
-	o.name.Wrapping = fyne.TextWrapWord
-	o.name.Refresh()
-
+	o.label.SetText(ca.DisplayName())
 	if !ca.IsSingleton {
-		o.quantity.SetText(humanize.Comma(int64(ca.Quantity)))
-		o.quantity.Show()
+		o.badge.SetQuantity(int(ca.Quantity))
+		o.badge.Show()
 	} else {
-		o.quantity.Hide()
+		o.badge.Hide()
 	}
-
-	res, ok := ca.EveType.Icon()
-	if !ok {
-		o.icon.Resource = o.fallbackIcon
-		o.icon.Refresh()
-		refreshImageResourceAsync(o.icon, func() (fyne.Resource, error) {
-			switch ca.Variant() {
-			case app.VariantSKIN:
-				return o.sv.InventoryTypeSKIN(ca.EveType.ID, assetListIconSize)
-			case app.VariantBPO:
-				return o.sv.InventoryTypeBPO(ca.EveType.ID, assetListIconSize)
-			case app.VariantBPC:
-				return o.sv.InventoryTypeBPC(ca.EveType.ID, assetListIconSize)
-			default:
-				return o.sv.InventoryTypeIcon(ca.EveType.ID, assetListIconSize)
-			}
-		})
-	} else {
-		o.icon.Resource = res
-		o.icon.Refresh()
-	}
+	o.iconLoader(o.icon, ca)
 }
 
 func (o *AssetListWidget) CreateRenderer() fyne.WidgetRenderer {
-	var c *fyne.Container
-	if o.isMobile {
-		c = container.NewBorder(nil, nil, o.icon, nil, o.name)
-	} else {
-		c = container.NewBorder(nil, nil, o.icon, o.quantity, o.name)
-	}
+	customVBox := layout.NewCustomPaddedVBoxLayout(0)
+	c := container.NewPadded(container.New(
+		customVBox,
+		container.New(&topLeftLayout{}, o.icon, o.badge),
+		o.label,
+	))
 	return widget.NewSimpleRenderer(c)
+}
+
+// splitLines will split a strings into 2 lines while ensuring no line is longer then maxLine characters.
+//
+// When possible it will wrap on spaces.
+func splitLines(s string, maxLine int) (string, string) {
+	if len(s) < maxLine {
+		return s, ""
+	}
+	if len(s) > 2*maxLine {
+		s = s[:2*maxLine]
+	}
+	ll := make([]string, 2)
+	p := strings.Split(s, " ")
+	if len(p) == 1 {
+		// wrapping on spaces failed
+		ll[0] = s[:min(len(s), maxLine)]
+		if len(s) > maxLine {
+			ll[1] = s[maxLine:min(len(s), 2*maxLine)]
+		}
+		return ll[0], ll[1]
+	}
+	var l int
+	ll[l] = p[0]
+	for _, x := range p[1:] {
+		if len(ll[l]+x)+1 > maxLine {
+			if l == 1 {
+				remaining := max(0, maxLine-len(ll[l])-1)
+				if remaining > 0 {
+					ll[l] += " " + x[:remaining]
+				}
+				break
+			}
+			l++
+			ll[l] += x
+			continue
+		}
+		ll[l] += " " + x
+	}
+	return ll[0], ll[1]
 }

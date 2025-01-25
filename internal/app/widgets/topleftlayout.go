@@ -1,4 +1,4 @@
-package desktop
+package widgets
 
 import "fyne.io/fyne/v2"
 
@@ -19,10 +19,10 @@ func (d *topLeftLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 }
 
 func (d *topLeftLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
-	pos := fyne.NewPos(0, 0)
+	pos := fyne.NewPos(containerSize.Width, containerSize.Height)
 	for _, o := range objects {
 		size := o.MinSize()
 		o.Resize(size)
-		o.Move(pos)
+		o.Move(pos.SubtractXY(size.Width, size.Height))
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -186,7 +187,21 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 			return len(a.assets)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewAssetListWidget(a.u.EveImageService, defaultAssetIcon)
+			const assetListIconSize = 64
+			return widgets.NewAssetListWidget(func(image *canvas.Image, ca *app.CharacterAsset) {
+				RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
+					switch ca.Variant() {
+					case app.VariantSKIN:
+						return a.u.EveImageService.InventoryTypeSKIN(ca.EveType.ID, assetListIconSize)
+					case app.VariantBPO:
+						return a.u.EveImageService.InventoryTypeBPO(ca.EveType.ID, assetListIconSize)
+					case app.VariantBPC:
+						return a.u.EveImageService.InventoryTypeBPC(ca.EveType.ID, assetListIconSize)
+					default:
+						return a.u.EveImageService.InventoryTypeIcon(ca.EveType.ID, assetListIconSize)
+					}
+				})
+			})
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.assets) {
