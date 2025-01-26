@@ -12,6 +12,7 @@ import (
 /*
 - TODO: Remove padding between navbar and body
 - TODO: Double-check we have sufficient padding on the utmost border of the app
+- TODO: Make widgets thread safe
 */
 
 const (
@@ -26,39 +27,54 @@ type navBarItem struct {
 	label   string
 	icon    fyne.Resource
 	content fyne.CanvasObject
+
+	// OnSelected is an optional callback that fires when a new destination is selected.
+	OnSelected func()
+
+	// OnSelectedAgain is an optional callback that fires when the current destination is selected again.
+	// This is often used for jumping back to the first page in a Navigator.
+	OnSelectedAgain func()
 }
 
+// NewNavBarItem returns a new NavBarItem.
+//
+// A NavBarItem sets up a destination in a navigation bar.
 func NewNavBarItem(label string, icon fyne.Resource, content fyne.CanvasObject) navBarItem {
 	return navBarItem{label: label, icon: icon, content: content}
 }
 
+// A destination represents a fully configured item in a navigation bar.
 type destination struct {
 	widget.BaseWidget
 
-	iconActive   fyne.Resource
-	iconInactive fyne.Resource
-	icon         *canvas.Image
-	label        *canvas.Text
-	navbar       *NavBar
-	id           int
-	isEnabled    bool
+	icon            *canvas.Image
+	iconActive      fyne.Resource
+	iconInactive    fyne.Resource
+	id              int
+	isEnabled       bool
+	label           *canvas.Text
+	navbar          *NavBar
+	onSelected      func()
+	onSelectedAgain func()
 }
 
 var _ fyne.Tappable = (*destination)(nil)
 
-func newDestination(icon fyne.Resource, label string, nb *NavBar, id int) *destination {
+func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSelected func(), onSelectedAgain func()) *destination {
 	l := canvas.NewText(label, theme.Color(colorForeground))
 	l.TextSize = theme.Size(theme.SizeNameCaptionText)
 	i := canvas.NewImageFromResource(theme.NewThemedResource(icon))
 	i.FillMode = canvas.ImageFillContain
 	i.SetMinSize(fyne.NewSquareSize(iconMinSize))
 	w := &destination{
-		iconActive:   theme.NewPrimaryThemedResource(icon),
-		iconInactive: theme.NewThemedResource(icon),
-		icon:         i,
-		label:        l,
-		navbar:       nb,
-		id:           id,
+		icon:            i,
+		iconActive:      theme.NewPrimaryThemedResource(icon),
+		iconInactive:    theme.NewThemedResource(icon),
+		id:              id,
+		label:           l,
+		navbar:          nb,
+		onSelected:      onSelected,
+		onSelectedAgain: onSelectedAgain,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -108,6 +124,7 @@ func (w *destination) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c)
 }
 
+// A NavBar lets people switch between UI views on smaller devices.
 type NavBar struct {
 	widget.BaseWidget
 
@@ -128,7 +145,7 @@ func NewNavBar(items ...navBarItem) *NavBar {
 	}
 	w.ExtendBaseWidget(w)
 	for idx, it := range items {
-		w.bar.Add(newDestination(it.icon, it.label, w, idx))
+		w.bar.Add(newDestination(it.icon, it.label, w, idx, it.OnSelected, it.OnSelectedAgain))
 		b := it.content
 		b.Hide()
 		w.body.Add(b)
@@ -142,6 +159,9 @@ func (w *NavBar) Select(idx int) {
 		return
 	}
 	if idx == w.selected {
+		if d := w.destination(idx); d.onSelectedAgain != nil {
+			d.onSelectedAgain()
+		}
 		return
 	}
 	w.selectDestination(idx)
@@ -156,8 +176,12 @@ func (w *NavBar) selectDestination(idx int) {
 	w.body.Objects[current].Hide()
 	w.body.Objects[idx].Show()
 	w.destination(current).disable()
-	w.destination(idx).enable()
+	d := w.destination(idx)
+	d.enable()
 	w.selected = idx
+	if d.onSelected != nil {
+		d.onSelected()
+	}
 }
 
 func (w *NavBar) Refresh() {

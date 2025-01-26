@@ -349,6 +349,9 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		theme.NewThemedResource(ui.IconAccountSvg),
 		characterNav,
 	)
+	characterDest.OnSelectedAgain = func() {
+		characterNav.PopAll()
+	}
 	navBar := NewNavBar(
 		characterDest,
 		NewNavBarItem(
