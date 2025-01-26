@@ -227,37 +227,43 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 
 	var crossNav *Navigator
 	crossList := NewNavList(
-		NewNavListItem(
+		NewNavListItemWithIcon(
+			theme.NewThemedResource(ui.IconAccountMultipleSvg),
 			"Overview",
 			func() {
 				crossNav.Push(NewAppBar("Overview", u.OverviewArea.Content))
 			},
 		),
-		NewNavListItem(
+		NewNavListItemWithIcon(
+			theme.NewThemedResource(ui.IconInventory2Svg),
 			"Asset Search",
 			func() {
 				crossNav.Push(NewAppBar("Asset Search", u.AssetSearchArea.Content))
 			},
 		),
-		NewNavListItem(
+		NewNavListItemWithIcon(
+			theme.NewThemedResource(ui.IconMapMarkerSvg),
 			"Locations",
 			func() {
 				crossNav.Push(NewAppBar("Locations", u.LocationsArea.Content))
 			},
 		),
-		NewNavListItem(
+		NewNavListItemWithIcon(
+			theme.NewThemedResource(ui.IconSchoolSvg),
 			"Training",
 			func() {
 				crossNav.Push(NewAppBar("Training", u.TrainingArea.Content))
 			},
 		),
-		NewNavListItem(
+		NewNavListItemWithIcon(
+			theme.NewThemedResource(ui.IconEarthSvg),
 			"Colonies",
 			func() {
 				crossNav.Push(NewAppBar("Colonies", u.ColoniesArea.Content))
 			},
 		),
-		NewNavListItem(
+		NewNavListItemWithIcon(
+			theme.NewThemedResource(ui.IconGoldSvg),
 			"Wealth",
 			func() {
 				crossNav.Push(NewAppBar("Wealth", u.WealthArea.Content))

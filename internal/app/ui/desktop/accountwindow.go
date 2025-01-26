@@ -20,7 +20,7 @@ func (u *DesktopUI) showAccountWindow() {
 		u.accountWindow = nil
 		u.RefreshCrossPages() //FIXME: Is this really needed?
 	})
-	w.Resize(fyne.Size{Width: 500, Height: 500})
+	w.Resize(fyne.Size{Width: 500, Height: 300})
 	w.SetContent(u.AccountArea.Content)
 	w.Show()
 	u.AccountArea.OnSelectCharacter = func() {

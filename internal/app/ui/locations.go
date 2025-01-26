@@ -8,6 +8,8 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -26,11 +28,21 @@ type locationCharacter struct {
 	securityImportance widget.Importance
 }
 
+func (c locationCharacter) systemSecurityDisplay() string {
+	if c.systemSecurity.IsEmpty() {
+		return "?"
+	}
+	return fmt.Sprintf("%.1f", c.systemSecurity.ValueOrZero())
+}
+
 // LocationsArea is the UI area that shows an overview of all the user's characters.
+//
+// It generates output which is customized for either desktop or mobile.
 type LocationsArea struct {
+	Content fyne.CanvasObject
+
 	characters []locationCharacter
-	Content    *fyne.Container
-	table      *widget.Table
+	body       fyne.CanvasObject
 	top        *widget.Label
 	u          *BaseUI
 }
@@ -44,8 +56,12 @@ func (u *BaseUI) NewLocationsArea() *LocationsArea {
 	a.top.TextStyle.Bold = true
 
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.table = a.makeTable()
-	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
+	if a.u.IsDesktop() {
+		a.body = a.makeTable()
+	} else {
+		a.body = a.makeList()
+	}
+	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
 	return &a
 }
 
@@ -86,23 +102,10 @@ func (a *LocationsArea) makeTable() *widget.Table {
 				l.Text = EntityNameOrFallback(c.location, "?")
 				l.Truncation = fyne.TextTruncateEllipsis
 			case 2:
-				if c.solarSystem == nil || c.systemSecurity.IsEmpty() {
-					l.Text = "?"
-				} else {
-					l.Text = c.solarSystem.Name
-				}
+				l.Text = EntityNameOrFallback(c.solarSystem, "?")
 			case 3:
-				if c.systemSecurity.IsEmpty() {
-					l.Text = "?"
-					l.Importance = widget.LowImportance
-				} else {
-					if c.systemSecurity.IsEmpty() {
-						l.Text = "?"
-					} else {
-						l.Text = fmt.Sprintf("%.1f", c.systemSecurity.ValueOrZero())
-					}
-					l.Importance = c.securityImportance
-				}
+				l.Text = c.systemSecurityDisplay()
+				l.Importance = c.securityImportance
 				l.Alignment = fyne.TextAlignTrailing
 			case 4:
 				l.Text = EntityNameOrFallback(c.region, "?")
@@ -114,9 +117,7 @@ func (a *LocationsArea) makeTable() *widget.Table {
 		},
 	)
 	t.ShowHeaderRow = true
-	if a.u.IsDesktop() {
-		t.StickyColumnCount = 1
-	}
+	t.StickyColumnCount = 1
 	t.CreateHeader = func() fyne.CanvasObject {
 		return widget.NewLabel("Template")
 	}
@@ -135,6 +136,55 @@ func (a *LocationsArea) makeTable() *widget.Table {
 		t.SetColumnWidth(i, w)
 	}
 	return t
+}
+
+func (a *LocationsArea) makeList() *widget.List {
+	p := theme.Padding()
+	removeVPadding := layout.NewCustomPaddedLayout(-p, -p, 0, 0)
+	makeXLabel := func(style ...fyne.TextStyle) fyne.CanvasObject {
+		x := widget.NewLabel("Template")
+		if len(style) > 0 {
+			x.TextStyle = style[0]
+		}
+		x.Truncation = fyne.TextTruncateEllipsis
+		c := container.New(removeVPadding, x)
+		return c
+	}
+	unfurlXLabel := func(co fyne.CanvasObject) *widget.Label {
+		return co.(*fyne.Container).Objects[0].(*widget.Label)
+	}
+	l := widget.NewList(
+		func() int {
+			return len(a.characters)
+		},
+		func() fyne.CanvasObject {
+			return container.New(
+				layout.NewCustomPaddedVBoxLayout(0),
+				makeXLabel(fyne.TextStyle{Bold: true}),
+				makeXLabel(),
+				makeXLabel(),
+				makeXLabel(),
+			)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			vbox := co.(*fyne.Container).Objects
+			if id >= len(a.characters) || id < 0 {
+				return
+			}
+			c := a.characters[id]
+			location := c.systemSecurityDisplay()
+			if c.location != nil {
+				location += " " + c.location.Name
+			} else {
+				location += " " + EntityNameOrFallback(c.solarSystem, "?")
+			}
+			unfurlXLabel(vbox[0]).SetText(c.name)
+			unfurlXLabel(vbox[1]).SetText(location)
+			unfurlXLabel(vbox[2]).SetText(EntityNameOrFallback(c.region, "?"))
+			unfurlXLabel(vbox[3]).SetText(EntityNameOrFallback(c.ship, "?"))
+		},
+	)
+	return l
 }
 
 func (a *LocationsArea) Refresh() {
@@ -156,7 +206,7 @@ func (a *LocationsArea) Refresh() {
 	}
 	a.top.Text = t
 	a.top.Importance = i
-	a.table.Refresh()
+	a.body.Refresh()
 }
 
 func (a *LocationsArea) updateCharacters() (int, error) {
