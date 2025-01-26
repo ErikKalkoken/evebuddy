@@ -170,6 +170,7 @@ func (a *AssetsArea) makeLocationsTree() *widget.Tree {
 			return
 		}
 		if n.Type == nodeLocation {
+			t.OpenBranch(uid)
 			t.UnselectAll()
 			return
 		}

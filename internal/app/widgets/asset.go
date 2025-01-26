@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	typeIconSize       = 55
-	labelMaxCharacters = 11
+	typeIconSize = 55
 )
 
 type Asset struct {

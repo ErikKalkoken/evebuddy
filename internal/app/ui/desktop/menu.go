@@ -90,16 +90,7 @@ func (u *DesktopUI) disableMenuShortcuts() {
 }
 
 func (u *DesktopUI) showAboutDialog() {
-	c := container.NewVBox()
-	info := u.FyneApp.Metadata()
-	appData := widget.NewRichTextFromMarkdown(
-		"## " + u.AppName() + "\n**Version:** " + info.Version)
-	c.Add(appData)
-	uri, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
-	c.Add(widget.NewHyperlink("Website", uri))
-	c.Add(widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."))
-	c.Add(widget.NewLabel("(c) 2024 Erik Kalkoken"))
-	d := dialog.NewCustom("About", "Close", c, u.Window)
+	d := dialog.NewCustom("About", "Close", u.MakeAboutPage(), u.Window)
 	kxdialog.AddDialogKeyHandler(d, u.Window)
 	u.disableMenuShortcuts()
 	d.SetOnClosed(func() {

@@ -11,6 +11,10 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+const (
+	labelMaxCharacters = 10
+)
+
 type assetLabel struct {
 	widget.BaseWidget
 

@@ -85,7 +85,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	)
 
 	navListCommunications := NewNavListItemWithIcon(
-		theme.InfoIcon(),
+		theme.NewThemedResource(ui.IconMessageSvg),
 		"Communications",
 		func() {
 			u.NotificationsArea.OnSelected = func() {
@@ -280,7 +280,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	}
 
 	// tools
-	var toolsNav *Navigator
+	var moreNav *Navigator
 	makePage := func(c fyne.CanvasObject) fyne.CanvasObject {
 		return container.NewScroll(c)
 	}
@@ -292,7 +292,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			theme.NewThemedResource(ui.IconCogSvg),
 			"Settings",
 			func() {
-				toolsNav.Push(
+				moreNav.Push(
 					NewAppBar(
 						"Settings",
 						NewNavList(
@@ -300,7 +300,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 								"General",
 								func() {
 									c, f := u.MakeGeneralSettingsPage(nil)
-									toolsNav.Push(
+									moreNav.Push(
 										NewAppBar("General", makePage(c), NewToolbarActionMenu(
 											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
@@ -312,7 +312,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 								"Eve Online",
 								func() {
 									c, f := u.MakeEVEOnlinePage()
-									toolsNav.Push(
+									moreNav.Push(
 										NewAppBar("Eve Online", makePage(c), NewToolbarActionMenu(
 											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
@@ -321,10 +321,10 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 								},
 							),
 							NewNavListItem(
-								"Notification - General",
+								"Notifications",
 								func() {
 									c, f := u.MakeNotificationGeneralPage(nil)
-									toolsNav.Push(
+									moreNav.Push(
 										NewAppBar("Notification - General", makePage(c), NewToolbarActionMenu(
 											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
@@ -336,7 +336,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 								"Notification - Types",
 								func() {
 									c, f := u.MakeNotificationTypesPage()
-									toolsNav.Push(
+									moreNav.Push(
 										NewAppBar("Notification - Types", makePage(c), NewToolbarActionMenu(
 											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
@@ -352,12 +352,18 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			theme.NewThemedResource(ui.IconManageaccountsSvg),
 			"Manage characters",
 			func() {
-				toolsNav.Push(
-					NewAppBar("Manage characters", u.AccountArea.Content))
+				moreNav.Push(NewAppBar("Manage characters", u.AccountArea.Content))
+			},
+		),
+		NewNavListItemWithIcon(
+			theme.InfoIcon(),
+			"About",
+			func() {
+				moreNav.Push(NewAppBar("About", u.MakeAboutPage()))
 			},
 		),
 	)
-	toolsNav = NewNavigator(NewAppBar("Tools", toolsList))
+	moreNav = NewNavigator(NewAppBar("More", toolsList))
 
 	// navigation bar
 	characterDest := NewNavBarItem("Character", theme.NewThemedResource(ui.IconAccountSvg), characterNav)
@@ -368,11 +374,11 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	crossDest.OnSelectedAgain = func() {
 		crossNav.PopAll()
 	}
-	toolsDest := NewNavBarItem("Tools", theme.NewThemedResource(ui.IconToolsSvg), toolsNav)
-	toolsDest.OnSelectedAgain = func() {
-		toolsNav.PopAll()
+	moreDest := NewNavBarItem("More", theme.MenuIcon(), moreNav)
+	moreDest.OnSelectedAgain = func() {
+		moreNav.PopAll()
 	}
-	navBar := NewNavBar(characterDest, crossDest, toolsDest)
+	navBar := NewNavBar(characterDest, crossDest, moreDest)
 
 	u.OnSetCharacter = func(id int32) {
 		// update character selector

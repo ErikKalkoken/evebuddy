@@ -4,13 +4,16 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/widget"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -335,4 +338,17 @@ const (
 
 func (ui BaseUI) ShowTypeInfoWindow(typeID, characterID int32, selectTab TypeWindowTab) {
 
+}
+
+func (u *BaseUI) MakeAboutPage() fyne.CanvasObject {
+	c := container.NewVBox()
+	info := u.FyneApp.Metadata()
+	appData := widget.NewRichTextFromMarkdown(
+		"## " + u.AppName() + "\n**Version:** " + info.Version)
+	c.Add(appData)
+	uri, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
+	c.Add(widget.NewHyperlink("Website", uri))
+	c.Add(widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."))
+	c.Add(widget.NewLabel("(c) 2024 Erik Kalkoken"))
+	return c
 }
