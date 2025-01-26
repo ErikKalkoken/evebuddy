@@ -15,48 +15,50 @@ import (
 */
 
 const (
+	colorPrimary    = theme.ColorNamePrimary
 	colorPill       = theme.ColorNameInputBorder
-	colorLabel      = theme.ColorNameForeground
+	colorForeground = theme.ColorNameForeground
 	colorBackground = theme.ColorNameMenuBackground
 	iconMinSize     = 24
 )
 
 type navBarItem struct {
-	label   string
-	icon    fyne.Resource
-	content fyne.CanvasObject
+	label        string
+	iconActive   fyne.Resource
+	iconInactive fyne.Resource
+	content      fyne.CanvasObject
 }
 
-func NewNavBarItem(label string, icon fyne.Resource, content fyne.CanvasObject) navBarItem {
-	return navBarItem{label: label, icon: icon, content: content}
+func NewNavBarItem(label string, iconActive fyne.Resource, iconInactive fyne.Resource, content fyne.CanvasObject) navBarItem {
+	return navBarItem{label: label, iconActive: iconActive, iconInactive: iconInactive, content: content}
 }
 
 type destination struct {
 	widget.BaseWidget
-	icon   *canvas.Image
-	pill   *canvas.Rectangle
-	label  *canvas.Text
-	navbar *NavBar
-	id     int
+	iconActive   fyne.Resource
+	iconInactive fyne.Resource
+	icon         *canvas.Image
+	label        *canvas.Text
+	navbar       *NavBar
+	id           int
+	isEnabled    bool
 }
 
 var _ fyne.Tappable = (*destination)(nil)
 
-func newDestination(icon fyne.Resource, label string, nb *NavBar, id int) *destination {
-	l := canvas.NewText(label, theme.Color(colorLabel))
+func newDestination(iconActive fyne.Resource, iconInactive fyne.Resource, label string, nb *NavBar, id int) *destination {
+	l := canvas.NewText(label, theme.Color(colorForeground))
 	l.TextSize = theme.Size(theme.SizeNameCaptionText)
-	p := canvas.NewRectangle(theme.Color(colorPill))
-	p.Hide()
-	p.CornerRadius = 10
-	i := canvas.NewImageFromResource(icon)
+	i := canvas.NewImageFromResource(theme.NewThemedResource(iconInactive))
 	i.FillMode = canvas.ImageFillContain
 	i.SetMinSize(fyne.NewSquareSize(iconMinSize))
 	w := &destination{
-		icon:   i,
-		pill:   p,
-		label:  l,
-		navbar: nb,
-		id:     id,
+		iconActive:   theme.NewPrimaryThemedResource(iconActive),
+		iconInactive: theme.NewThemedResource(iconInactive),
+		icon:         i,
+		label:        l,
+		navbar:       nb,
+		id:           id,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -65,10 +67,14 @@ func newDestination(icon fyne.Resource, label string, nb *NavBar, id int) *desti
 func (w *destination) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
-	w.label.Color = th.Color(colorLabel, v)
+	if w.isEnabled {
+		w.label.Color = th.Color(colorPrimary, v)
+		w.icon.Resource = w.iconActive
+	} else {
+		w.label.Color = th.Color(colorForeground, v)
+		w.icon.Resource = w.iconInactive
+	}
 	w.label.Refresh()
-	w.pill.FillColor = th.Color(colorPill, v)
-	w.pill.Refresh()
 	w.icon.Refresh()
 	w.BaseWidget.Refresh()
 }
@@ -81,17 +87,13 @@ func (w *destination) TappedSecondary(_ *fyne.PointEvent) {
 }
 
 func (w *destination) enable() {
-	w.label.TextStyle.Bold = true
-	w.label.Refresh()
-	w.pill.Show()
-	w.pill.Refresh()
+	w.isEnabled = true
+	w.Refresh()
 }
 
 func (w *destination) disable() {
-	w.label.TextStyle.Bold = false
-	w.label.Refresh()
-	w.pill.Hide()
-	w.pill.Refresh()
+	w.isEnabled = false
+	w.Refresh()
 }
 
 func (w *destination) CreateRenderer() fyne.WidgetRenderer {
@@ -101,10 +103,7 @@ func (w *destination) CreateRenderer() fyne.WidgetRenderer {
 		container.New(layout.NewCustomPaddedLayout(-p/2, -p/2, 0, 0), container.NewCenter(w.label)),
 		nil,
 		nil,
-		container.NewStack(
-			w.pill,
-			container.New(layout.NewCustomPaddedLayout(p/2, p/2, 0, 0), w.icon),
-		),
+		w.icon,
 	)
 	return widget.NewSimpleRenderer(c)
 }
@@ -129,7 +128,7 @@ func NewNavBar(items ...navBarItem) *NavBar {
 	}
 	w.ExtendBaseWidget(w)
 	for idx, it := range items {
-		w.bar.Add(newDestination(it.icon, it.label, w, idx))
+		w.bar.Add(newDestination(it.iconActive, it.iconInactive, it.label, w, idx))
 		b := it.content
 		b.Hide()
 		w.body.Add(b)

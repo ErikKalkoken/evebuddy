@@ -275,7 +275,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	}
 	toolsList := NewNavList(
 		NewNavListItemWithIcon(
-			theme.SettingsIcon(),
+			theme.NewThemedResource(ui.IconTuneSvg),
 			"Settings",
 			func() {
 				toolsNav.Push(
@@ -345,9 +345,24 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	)
 	toolsNav = NewNavigator(NewAppBar("Tools", toolsList))
 	navBar := NewNavBar(
-		NewNavBarItem("Character", theme.AccountIcon(), characterNav),
-		NewNavBarItem("Characters", theme.NewThemedResource(ui.IconGroupSvg), crossNav),
-		NewNavBarItem("Tools", theme.NewThemedResource(ui.IconToolsSvg), toolsNav),
+		NewNavBarItem(
+			"Character",
+			theme.NewThemedResource(ui.IconAccountSvg),
+			theme.NewThemedResource(ui.IconAccountOutlineSvg),
+			characterNav,
+		),
+		NewNavBarItem(
+			"Characters",
+			theme.NewThemedResource(ui.IconAccountMultipleSvg),
+			theme.NewThemedResource(ui.IconAccountMultipleOutlineSvg),
+			crossNav,
+		),
+		NewNavBarItem(
+			"Tools",
+			theme.NewThemedResource(ui.IconCogSvg),
+			theme.NewThemedResource(ui.IconCogOutlineSvg),
+			toolsNav,
+		),
 	)
 	u.OnSetCharacter = func(id int32) {
 		// update character selector
