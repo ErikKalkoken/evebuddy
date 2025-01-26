@@ -98,7 +98,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 
 			icon := row[0].(*canvas.Image)
 			RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.u.EveImageService.CharacterPortrait(c.id, DefaultIconSize)
+				return a.u.EveImageService.CharacterPortrait(c.id, DefaultIconPixelSize)
 			})
 
 			issue := row[2].(*widget.Label)

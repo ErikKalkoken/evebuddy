@@ -121,6 +121,12 @@ func (a *AssetsArea) makeLocationsTree() *widget.Tree {
 	if !a.u.IsDesktop() {
 		labelSizeName = theme.SizeNameCaptionText
 	}
+	makeNameWithCount := func(name string, count int) string {
+		if count == 0 {
+			return name
+		}
+		return fmt.Sprintf("%s (%s)", name, humanize.Comma(int64(count)))
+	}
 	t := widget.NewTree(
 		func(uid widget.TreeNodeID) []widget.TreeNodeID {
 			return a.locationsData.ChildUIDs(uid)
@@ -510,13 +516,6 @@ func (a *AssetsArea) updateLocationPath(location locationDataNode) {
 		parts = append(parts, n.Name)
 	}
 	a.locationPath.SetText(strings.Join(parts, " ＞ "))
-}
-
-func makeNameWithCount(name string, count int) string {
-	if count == 0 {
-		return name
-	}
-	return fmt.Sprintf("%s (%s)", name, humanize.Comma(int64(count)))
 }
 
 // func (u *ui) showNewAssetWindow(ca *app.CharacterAsset) {

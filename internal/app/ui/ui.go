@@ -20,8 +20,9 @@ import (
 
 // Base UI constants
 const (
-	DefaultIconSize = 64
-	MyFloatFormat   = "#,###.##"
+	DefaultIconPixelSize = 64
+	DefaultIconUnitSize  = 32
+	MyFloatFormat        = "#,###.##"
 )
 
 // BaseUI represents the core UI logic and is used by both the desktop and mobile UI.

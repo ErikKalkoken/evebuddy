@@ -368,7 +368,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	u.OnSetCharacter = func(id int32) {
 		// update character selector
 		go func() {
-			r, err := u.EveImageService.CharacterPortrait(id, ui.DefaultIconSize)
+			r, err := u.EveImageService.CharacterPortrait(id, ui.DefaultIconPixelSize)
 			if err != nil {
 				slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
 				r = ui.IconCharacterplaceholder32Jpeg
