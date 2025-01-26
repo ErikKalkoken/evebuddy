@@ -26,10 +26,12 @@ const (
 )
 
 type WealthArea struct {
-	Content fyne.CanvasObject
-	charts  *fyne.Container
-	top     *widget.Label
-	u       *BaseUI
+	Content        fyne.CanvasObject
+	OnTotalRefresh func(total string)
+
+	charts *fyne.Container
+	top    *widget.Label
+	u      *BaseUI
 }
 
 func (u *BaseUI) NewWealthArea() *WealthArea {
@@ -123,9 +125,14 @@ func (a *WealthArea) Refresh() {
 	a.charts.Objects[2] = walletChart
 	a.charts.Refresh()
 
-	a.top.Text = fmt.Sprintf("%s ISK total wealth • %d characters", humanize.Number(total, 1), characters)
+	totalText := humanize.Number(total, 1)
+	a.top.Text = fmt.Sprintf("%s ISK total wealth • %d characters", totalText, characters)
 	a.top.Importance = widget.MediumImportance
 	a.top.Refresh()
+
+	if a.OnTotalRefresh != nil {
+		a.OnTotalRefresh(totalText)
+	}
 }
 
 type dataRow struct {

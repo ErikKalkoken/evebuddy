@@ -196,7 +196,7 @@ func (w *NavBar) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	c := container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), container.NewBorder(
 		nil,
-		container.NewStack(w.bg, container.New(layout.NewCustomPaddedLayout(p*3, p*3, p, p), w.bar)),
+		container.NewStack(w.bg, container.New(layout.NewCustomPaddedLayout(p*2, p*2, p, p), w.bar)),
 		nil,
 		nil,
 		container.NewPadded(w.body),

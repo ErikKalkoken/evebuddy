@@ -29,6 +29,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		d.Show()
 	}
 
+	// character
 	characterSelector := widget.NewToolbarAction(ui.IconCharacterplaceholder32Jpeg, nil)
 	characterSelector.OnActivated = func() {
 		o := characterSelector.ToolbarObject()
@@ -225,7 +226,15 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	characterPage := newCharacterAppBar("Character", characterList)
 	characterNav = NewNavigator(characterPage)
 
+	// characters cross
 	var crossNav *Navigator
+	navListWealth := NewNavListItemWithIcon(
+		theme.NewThemedResource(ui.IconGoldSvg),
+		"Wealth",
+		func() {
+			crossNav.Push(NewAppBar("Wealth", u.WealthArea.Content))
+		},
+	)
 	crossList := NewNavList(
 		NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconAccountMultipleSvg),
@@ -262,16 +271,15 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				crossNav.Push(NewAppBar("Colonies", u.ColoniesArea.Content))
 			},
 		),
-		NewNavListItemWithIcon(
-			theme.NewThemedResource(ui.IconGoldSvg),
-			"Wealth",
-			func() {
-				crossNav.Push(NewAppBar("Wealth", u.WealthArea.Content))
-			},
-		),
+		navListWealth,
 	)
 	crossNav = NewNavigator(NewAppBar("Characters", crossList))
+	u.WealthArea.OnTotalRefresh = func(total string) {
+		navListWealth.Suffix = total
+		crossList.Refresh()
+	}
 
+	// tools
 	var toolsNav *Navigator
 	makePage := func(c fyne.CanvasObject) fyne.CanvasObject {
 		return container.NewScroll(c)
@@ -350,27 +358,22 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		),
 	)
 	toolsNav = NewNavigator(NewAppBar("Tools", toolsList))
-	characterDest := NewNavBarItem(
-		"Character",
-		theme.NewThemedResource(ui.IconAccountSvg),
-		characterNav,
-	)
+
+	// navigation bar
+	characterDest := NewNavBarItem("Character", theme.NewThemedResource(ui.IconAccountSvg), characterNav)
 	characterDest.OnSelectedAgain = func() {
 		characterNav.PopAll()
 	}
-	navBar := NewNavBar(
-		characterDest,
-		NewNavBarItem(
-			"Characters",
-			theme.NewThemedResource(ui.IconAccountMultipleSvg),
-			crossNav,
-		),
-		NewNavBarItem(
-			"Tools",
-			theme.NewThemedResource(ui.IconToolsSvg),
-			toolsNav,
-		),
-	)
+	crossDest := NewNavBarItem("Characters", theme.NewThemedResource(ui.IconAccountMultipleSvg), crossNav)
+	crossDest.OnSelectedAgain = func() {
+		crossNav.PopAll()
+	}
+	toolsDest := NewNavBarItem("Tools", theme.NewThemedResource(ui.IconToolsSvg), toolsNav)
+	toolsDest.OnSelectedAgain = func() {
+		toolsNav.PopAll()
+	}
+	navBar := NewNavBar(characterDest, crossDest, toolsDest)
+
 	u.OnSetCharacter = func(id int32) {
 		// update character selector
 		go func() {
