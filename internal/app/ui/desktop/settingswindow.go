@@ -46,9 +46,13 @@ func (u *DesktopUI) NewSettingsArea() *SettingsArea {
 			c, f := u.MakeEVEOnlinePage()
 			return makePage("Desktop", c, f)
 		}()),
-		container.NewTabItem("Notifications", func() fyne.CanvasObject {
-			c, f := u.MakeNotificationPage(u.settingsWindow)
-			return makePage("Notifications", c, f)
+		container.NewTabItem("Notification - General", func() fyne.CanvasObject {
+			c, f := u.MakeNotificationGeneralPage(u.settingsWindow)
+			return makePage("Notification - General", c, f)
+		}()),
+		container.NewTabItem("Notification - Types", func() fyne.CanvasObject {
+			c, f := u.MakeNotificationTypesPage()
+			return makePage("Notification - Types", c, f)
 		}()),
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)

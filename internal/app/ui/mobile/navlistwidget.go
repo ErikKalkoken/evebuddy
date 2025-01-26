@@ -31,7 +31,7 @@ func NewNavListItem(title string, action func()) *NavListItem {
 }
 
 func NewNavListItemWithNavigator(nav *Navigator, ab *AppBar) *NavListItem {
-	return NewNavListItem(ab.title, func() {
+	return NewNavListItem(ab.Title(), func() {
 		nav.Push(ab)
 	})
 }
@@ -99,10 +99,11 @@ func (w *NavList) CreateRenderer() fyne.WidgetRenderer {
 			a()
 		}
 	}
-	if w.title == "" {
-		return widget.NewSimpleRenderer(list)
-	}
 	l := widget.NewLabel(w.title)
 	l.TextStyle.Bold = true
-	return widget.NewSimpleRenderer(container.NewBorder(l, nil, nil, nil, list))
+	if w.title == "" {
+		l.Hide()
+	}
+	c := container.NewBorder(l, nil, nil, nil, list)
+	return widget.NewSimpleRenderer(c)
 }

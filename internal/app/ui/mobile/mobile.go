@@ -307,11 +307,23 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 								},
 							),
 							NewNavListItem(
-								"Notifications",
+								"Notification - General",
 								func() {
-									c, f := u.MakeNotificationPage(nil)
+									c, f := u.MakeNotificationGeneralPage(nil)
 									toolsNav.Push(
-										NewAppBar("Notifications", makePage(c), NewToolbarActionMenu(
+										NewAppBar("Notification - General", makePage(c), NewToolbarActionMenu(
+											makeMenu(fyne.NewMenuItem(
+												"Reset", f,
+											)))),
+									)
+								},
+							),
+							NewNavListItem(
+								"Notification - Types",
+								func() {
+									c, f := u.MakeNotificationTypesPage()
+									toolsNav.Push(
+										NewAppBar("Notification - Types", makePage(c), NewToolbarActionMenu(
 											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
 											)))),
@@ -332,10 +344,10 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		),
 	)
 	toolsNav = NewNavigator(NewAppBar("Tools", toolsList))
-	navBar := container.NewAppTabs(
-		container.NewTabItemWithIcon("", theme.AccountIcon(), characterNav),
-		container.NewTabItemWithIcon("", theme.NewThemedResource(ui.IconGroupSvg), crossNav),
-		container.NewTabItemWithIcon("", theme.NewThemedResource(ui.IconToolsSvg), toolsNav),
+	navBar := NewNavBar(
+		NewNavBarItem("Character", theme.AccountIcon(), characterNav),
+		NewNavBarItem("Characters", theme.NewThemedResource(ui.IconGroupSvg), crossNav),
+		NewNavBarItem("Tools", theme.NewThemedResource(ui.IconToolsSvg), toolsNav),
 	)
 	u.OnSetCharacter = func(id int32) {
 		// update character selector
@@ -360,7 +372,6 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 
 		characterNav.PopAll()
 	}
-	navBar.SetTabLocation(container.TabLocationBottom)
 	u.Window.SetContent(navBar)
 	return u
 }

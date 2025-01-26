@@ -176,12 +176,12 @@ func (u *BaseUI) MakeEVEOnlinePage() (fyne.CanvasObject, func()) {
 			{
 				Text:     "Maximum mails",
 				Widget:   maxMails,
-				HintText: "Maximum number of mails downloaded. 0 = unlimited.",
+				HintText: "Max number of mails downloaded. 0 = unlimited.",
 			},
 			{
 				Text:     "Maximum wallet transaction",
 				Widget:   maxTransactions,
-				HintText: "Maximum number of wallet transaction downloaded. 0 = unlimited.",
+				HintText: "Max wallet transactions downloaded. 0 = unlimited.",
 			},
 		},
 	}
@@ -195,11 +195,11 @@ func (u *BaseUI) MakeEVEOnlinePage() (fyne.CanvasObject, func()) {
 	return settings, x
 }
 
-func (u *BaseUI) MakeNotificationPage(w fyne.Window) (fyne.CanvasObject, func()) {
+func (u *BaseUI) MakeNotificationGeneralPage(w fyne.Window) (fyne.CanvasObject, func()) {
 	if w == nil {
 		w = u.Window
 	}
-	f1 := widget.NewForm()
+	form := widget.NewForm()
 
 	// mail toogle
 	mailEnabledCheck := kxwidget.NewSwitch(func(on bool) {
@@ -212,7 +212,7 @@ func (u *BaseUI) MakeNotificationPage(w fyne.Window) (fyne.CanvasObject, func())
 		SettingNotifyMailsEnabled,
 		SettingNotifyMailsEnabledDefault,
 	))
-	f1.AppendItem(&widget.FormItem{
+	form.AppendItem(&widget.FormItem{
 		Text:     "Mail",
 		Widget:   mailEnabledCheck,
 		HintText: "Wether to notify new mails",
@@ -229,7 +229,7 @@ func (u *BaseUI) MakeNotificationPage(w fyne.Window) (fyne.CanvasObject, func())
 		SettingNotifyCommunicationsEnabled,
 		SettingNotifyCommunicationsEnabledDefault,
 	))
-	f1.AppendItem(&widget.FormItem{
+	form.AppendItem(&widget.FormItem{
 		Text:     "Communications",
 		Widget:   communicationsEnabledCheck,
 		HintText: "Wether to notify new communications",
@@ -246,7 +246,7 @@ func (u *BaseUI) MakeNotificationPage(w fyne.Window) (fyne.CanvasObject, func())
 		SettingNotifyPIEnabled,
 		SettingNotifyPIEnabledDefault,
 	))
-	f1.AppendItem(&widget.FormItem{
+	form.AppendItem(&widget.FormItem{
 		Text:     "Planetary Industry",
 		Widget:   piEnabledCheck,
 		HintText: "Wether to notify about expired extractions",
@@ -278,7 +278,7 @@ func (u *BaseUI) MakeNotificationPage(w fyne.Window) (fyne.CanvasObject, func())
 		SettingNotifyTrainingEnabled,
 		SettingNotifyTrainingEnabledDefault,
 	))
-	f1.AppendItem(&widget.FormItem{
+	form.AppendItem(&widget.FormItem{
 		Text:     "Training",
 		Widget:   trainingEnabledCheck,
 		HintText: "Wether to notify when skillqueue is empty",
@@ -295,7 +295,7 @@ func (u *BaseUI) MakeNotificationPage(w fyne.Window) (fyne.CanvasObject, func())
 		SettingNotifyContractsEnabled,
 		SettingNotifyCommunicationsEnabledDefault,
 	))
-	f1.AppendItem(&widget.FormItem{
+	form.AppendItem(&widget.FormItem{
 		Text:     "Contracts",
 		Widget:   contractsEnabledCheck,
 		HintText: "Wether to notify when contract status changes",
@@ -308,14 +308,29 @@ func (u *BaseUI) MakeNotificationPage(w fyne.Window) (fyne.CanvasObject, func())
 	notifyTimeout.OnChangeEnded = func(v float64) {
 		u.FyneApp.Preferences().SetInt(SettingNotifyTimeoutHours, int(v))
 	}
-	f1.AppendItem(&widget.FormItem{
+	form.AppendItem(&widget.FormItem{
 		Text:     "Notification timeout",
 		Widget:   notifyTimeout,
 		HintText: "Events older then this value in hours will not be notified",
 	})
 
-	// communications types
-	f2 := widget.NewForm()
+	if !u.IsDesktop() {
+		form.Orientation = widget.Vertical
+	}
+
+	reset := func() {
+		mailEnabledCheck.SetState(SettingNotifyMailsEnabledDefault)
+		communicationsEnabledCheck.SetState(SettingNotifyCommunicationsEnabledDefault)
+		piEnabledCheck.SetState(SettingNotifyPIEnabledDefault)
+		trainingEnabledCheck.SetState(SettingNotifyTrainingEnabledDefault)
+		contractsEnabledCheck.SetState(SettingNotifyTrainingEnabledDefault)
+		notifyTimeout.SetValue(SettingNotifyTimeoutHoursDefault)
+	}
+	return form, reset
+}
+
+func (u *BaseUI) MakeNotificationTypesPage() (fyne.CanvasObject, func()) {
+	form := widget.NewForm()
 	categoriesAndTypes := make(map[evenotification.Folder][]evenotification.Type)
 	for _, n := range evenotification.SupportedTypes() {
 		c := evenotification.Type2folder[n]
@@ -329,7 +344,7 @@ func (u *BaseUI) MakeNotificationPage(w fyne.Window) (fyne.CanvasObject, func())
 	typesEnabled := set.NewFromSlice(u.FyneApp.Preferences().StringList(SettingNotificationsTypesEnabled))
 	notifsAll := make([]*kxwidget.Switch, 0)
 	for _, c := range categories {
-		f2.Append("", widget.NewLabel(c.String()))
+		form.Append("", widget.NewLabel(c.String()))
 		nts := categoriesAndTypes[c]
 		notifsCategory := make([]*kxwidget.Switch, 0)
 		for _, nt := range nts {
@@ -344,7 +359,7 @@ func (u *BaseUI) MakeNotificationPage(w fyne.Window) (fyne.CanvasObject, func())
 			if typesEnabled.Contains(nt.String()) {
 				sw.On = true
 			}
-			f2.AppendItem(widget.NewFormItem(nt.Display(), sw))
+			form.AppendItem(widget.NewFormItem(nt.Display(), sw))
 			notifsCategory = append(notifsCategory, sw)
 			notifsAll = append(notifsAll, sw)
 		}
@@ -358,35 +373,16 @@ func (u *BaseUI) MakeNotificationPage(w fyne.Window) (fyne.CanvasObject, func())
 				sw.SetState(false)
 			}
 		})
-		f2.Append("", container.NewHBox(enableAll, disableAll))
-		f2.Append("", container.NewPadded())
-	}
-	if !u.IsDesktop() {
-		f1.Orientation = widget.Vertical
-		f2.Orientation = widget.Vertical
+		form.Append("", container.NewHBox(enableAll, disableAll))
+		form.Append("", container.NewPadded())
 	}
 
-	title1 := widget.NewLabel("Global")
-	title1.TextStyle.Bold = true
-	title2 := widget.NewLabel("Communication Types")
-	title2.TextStyle.Bold = true
-	c := container.NewVBox(
-		title1,
-		f1,
-		container.NewPadded(),
-		title2,
-		f2,
-	)
+	form.Orientation = widget.Vertical
+
 	reset := func() {
-		mailEnabledCheck.SetState(SettingNotifyMailsEnabledDefault)
-		communicationsEnabledCheck.SetState(SettingNotifyCommunicationsEnabledDefault)
-		piEnabledCheck.SetState(SettingNotifyPIEnabledDefault)
-		trainingEnabledCheck.SetState(SettingNotifyTrainingEnabledDefault)
-		contractsEnabledCheck.SetState(SettingNotifyTrainingEnabledDefault)
-		notifyTimeout.SetValue(SettingNotifyTimeoutHoursDefault)
 		for _, sw := range notifsAll {
 			sw.SetState(false)
 		}
 	}
-	return c, reset
+	return form, reset
 }
