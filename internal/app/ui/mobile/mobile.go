@@ -275,7 +275,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	}
 	toolsList := NewNavList(
 		NewNavListItemWithIcon(
-			theme.NewThemedResource(ui.IconTuneSvg),
+			theme.NewThemedResource(ui.IconCogSvg),
 			"Settings",
 			func() {
 				toolsNav.Push(
@@ -344,23 +344,21 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		),
 	)
 	toolsNav = NewNavigator(NewAppBar("Tools", toolsList))
+	characterDest := NewNavBarItem(
+		"Character",
+		theme.NewThemedResource(ui.IconAccountSvg),
+		characterNav,
+	)
 	navBar := NewNavBar(
-		NewNavBarItem(
-			"Character",
-			theme.NewThemedResource(ui.IconAccountSvg),
-			theme.NewThemedResource(ui.IconAccountOutlineSvg),
-			characterNav,
-		),
+		characterDest,
 		NewNavBarItem(
 			"Characters",
 			theme.NewThemedResource(ui.IconAccountMultipleSvg),
-			theme.NewThemedResource(ui.IconAccountMultipleOutlineSvg),
 			crossNav,
 		),
 		NewNavBarItem(
 			"Tools",
-			theme.NewThemedResource(ui.IconCogSvg),
-			theme.NewThemedResource(ui.IconCogOutlineSvg),
+			theme.NewThemedResource(ui.IconToolsSvg),
 			toolsNav,
 		),
 	)

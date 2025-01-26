@@ -23,18 +23,18 @@ const (
 )
 
 type navBarItem struct {
-	label        string
-	iconActive   fyne.Resource
-	iconInactive fyne.Resource
-	content      fyne.CanvasObject
+	label   string
+	icon    fyne.Resource
+	content fyne.CanvasObject
 }
 
-func NewNavBarItem(label string, iconActive fyne.Resource, iconInactive fyne.Resource, content fyne.CanvasObject) navBarItem {
-	return navBarItem{label: label, iconActive: iconActive, iconInactive: iconInactive, content: content}
+func NewNavBarItem(label string, icon fyne.Resource, content fyne.CanvasObject) navBarItem {
+	return navBarItem{label: label, icon: icon, content: content}
 }
 
 type destination struct {
 	widget.BaseWidget
+
 	iconActive   fyne.Resource
 	iconInactive fyne.Resource
 	icon         *canvas.Image
@@ -46,15 +46,15 @@ type destination struct {
 
 var _ fyne.Tappable = (*destination)(nil)
 
-func newDestination(iconActive fyne.Resource, iconInactive fyne.Resource, label string, nb *NavBar, id int) *destination {
+func newDestination(icon fyne.Resource, label string, nb *NavBar, id int) *destination {
 	l := canvas.NewText(label, theme.Color(colorForeground))
 	l.TextSize = theme.Size(theme.SizeNameCaptionText)
-	i := canvas.NewImageFromResource(theme.NewThemedResource(iconInactive))
+	i := canvas.NewImageFromResource(theme.NewThemedResource(icon))
 	i.FillMode = canvas.ImageFillContain
 	i.SetMinSize(fyne.NewSquareSize(iconMinSize))
 	w := &destination{
-		iconActive:   theme.NewPrimaryThemedResource(iconActive),
-		iconInactive: theme.NewThemedResource(iconInactive),
+		iconActive:   theme.NewPrimaryThemedResource(icon),
+		iconInactive: theme.NewThemedResource(icon),
 		icon:         i,
 		label:        l,
 		navbar:       nb,
@@ -128,12 +128,12 @@ func NewNavBar(items ...navBarItem) *NavBar {
 	}
 	w.ExtendBaseWidget(w)
 	for idx, it := range items {
-		w.bar.Add(newDestination(it.iconActive, it.iconInactive, it.label, w, idx))
+		w.bar.Add(newDestination(it.icon, it.label, w, idx))
 		b := it.content
 		b.Hide()
 		w.body.Add(b)
 	}
-	w.Select(0)
+	w.selectDestination(0)
 	return w
 }
 
@@ -141,11 +141,22 @@ func (w *NavBar) Select(idx int) {
 	if idx > len(w.body.Objects)-1 {
 		return
 	}
+	if idx == w.selected {
+		return
+	}
+	w.selectDestination(idx)
+}
+
+func (w *NavBar) destination(idx int) *destination {
+	return w.bar.Objects[idx].(*destination)
+}
+
+func (w *NavBar) selectDestination(idx int) {
 	current := w.selected
 	w.body.Objects[current].Hide()
 	w.body.Objects[idx].Show()
-	w.bar.Objects[current].(*destination).disable()
-	w.bar.Objects[idx].(*destination).enable()
+	w.destination(current).disable()
+	w.destination(idx).enable()
 	w.selected = idx
 }
 
