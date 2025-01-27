@@ -19,9 +19,12 @@ func (u *DesktopUI) showAccountWindow() {
 	w.SetOnClosed(func() {
 		u.accountWindow = nil
 		u.RefreshCrossPages() //FIXME: Is this really needed?
+		u.toolbarArea.refresh()
+		u.statusBarArea.refreshCharacterCount()
 	})
 	w.Resize(fyne.Size{Width: 500, Height: 300})
 	w.SetContent(u.AccountArea.Content)
+	u.AccountArea.SetWindow(w)
 	w.Show()
 	u.AccountArea.OnSelectCharacter = func() {
 		w.Hide()

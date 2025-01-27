@@ -38,6 +38,7 @@ type AccountArea struct {
 	characters []accountCharacter
 	list       *widget.List
 	title      *widget.Label
+	window     fyne.Window
 	u          *BaseUI
 
 	OnSelectCharacter func()
@@ -47,6 +48,7 @@ func (u *BaseUI) NewAccountArea() *AccountArea {
 	a := &AccountArea{
 		characters: make([]accountCharacter, 0),
 		title:      widget.NewLabel(""),
+		window:     u.Window,
 		u:          u,
 	}
 
@@ -67,6 +69,10 @@ func (u *BaseUI) NewAccountArea() *AccountArea {
 		a.list,
 	)
 	return a
+}
+
+func (a *AccountArea) SetWindow(w fyne.Window) {
+	a.window = w
 }
 
 func (a *AccountArea) makeCharacterList() *widget.List {
@@ -147,22 +153,22 @@ func (a *AccountArea) showDeleteDialog(c accountCharacter) {
 						a.Refresh()
 						return nil
 					},
-					a.u.Window,
+					a.window,
 				)
 				m.OnSuccess = func() {
-					d := dialog.NewInformation("Delete Character", fmt.Sprintf("Character %s deleted", c.name), a.u.Window)
-					kxdialog.AddDialogKeyHandler(d, a.u.Window)
+					d := dialog.NewInformation("Delete Character", fmt.Sprintf("Character %s deleted", c.name), a.window)
+					kxdialog.AddDialogKeyHandler(d, a.window)
 					d.Show()
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete character", "characterID", c.id)
-					d := NewErrorDialog(fmt.Sprintf("Failed to delete character %s", c.name), err, a.u.Window)
+					d := NewErrorDialog(fmt.Sprintf("Failed to delete character %s", c.name), err, a.window)
 					d.Show()
 				}
 				m.Start()
 			}
 		},
-		a.u.Window,
+		a.window,
 	)
 	d1.Show()
 }
@@ -196,9 +202,9 @@ func (a *AccountArea) showAddCharacterDialog() {
 		"Add Character",
 		"Cancel",
 		content,
-		a.u.Window,
+		a.window,
 	)
-	kxdialog.AddDialogKeyHandler(d1, a.u.Window)
+	kxdialog.AddDialogKeyHandler(d1, a.window)
 	d1.SetOnClosed(cancel)
 	go func() {
 		err := func() error {
@@ -218,7 +224,7 @@ func (a *AccountArea) showAddCharacterDialog() {
 		d1.Hide()
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
-			d2 := NewErrorDialog("Failed add a new character", err, a.u.Window)
+			d2 := NewErrorDialog("Failed add a new character", err, a.window)
 			d2.Show()
 		}
 	}()

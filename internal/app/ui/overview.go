@@ -31,11 +31,25 @@ type overviewCharacter struct {
 	walletBalance optional.Optional[float64]
 }
 
+var overviewHeaders = []headerDef{
+	{"Name", 20},
+	{"Corporation", 20},
+	{"Alliance", 20},
+	{"Security", 5},
+	{"Unread", 5},
+	{"Wallet", 5},
+	{"Assets", 5},
+	{"Last Login", 10},
+	{"Home", 20},
+	{"Age", 10},
+}
+
 // OverviewArea is the UI area that shows an overview of all the user's characters.
 type OverviewArea struct {
+	Content fyne.CanvasObject
+
 	characters []overviewCharacter
-	Content    *fyne.Container
-	table      *widget.Table
+	body       fyne.CanvasObject
 	top        *widget.Label
 	u          *BaseUI
 }
@@ -47,81 +61,79 @@ func (u *BaseUI) NewOverviewArea() *OverviewArea {
 		u:          u,
 	}
 	a.top.TextStyle.Bold = true
-
+	a.top.Wrapping = fyne.TextWrapWord
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.table = a.makeTable()
-	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
+	if a.u.IsDesktop() {
+		a.body = a.makeTable()
+	} else {
+		a.body = a.makeList()
+	}
+	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
 	return &a
 }
 
-func (a *OverviewArea) makeTable() *widget.Table {
-	var headers = []struct {
-		text     string
-		maxChars int
-	}{
-		{"Name", 20},
-		{"Corporation", 20},
-		{"Alliance", 20},
-		{"Security", 5},
-		{"Unread", 5},
-		{"Wallet", 5},
-		{"Assets", 5},
-		{"Last Login", 10},
-		{"Home", 20},
-		{"Age", 10},
+func (a *OverviewArea) makeList() *widget.List {
+	l := widget.NewList(
+		func() int {
+			return len(a.characters)
+		},
+		func() fyne.CanvasObject {
+			return makeListRowObject(overviewHeaders)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			f := co.(*fyne.Container).Objects
+			if id >= len(a.characters) || id < 0 {
+				return
+			}
+			c := a.characters[id]
+			for col := range len(overviewHeaders) {
+				row := f[col*2].(*fyne.Container).Objects[1].(*fyne.Container).Objects
+				data := row[1].(*widget.Label)
+				data.Text, data.Alignment, data.Importance = a.makeDataLabel(col, c)
+				data.Truncation = fyne.TextTruncateEllipsis
+				bg := f[col*2].(*fyne.Container).Objects[0]
+				if col == 0 {
+					bg.Show()
+					data.TextStyle.Bold = true
+					label := row[0].(*widget.Label)
+					label.TextStyle.Bold = true
+					label.Refresh()
+				} else {
+					bg.Hide()
+				}
+				data.Refresh()
+				divider := f[col*2+1]
+				if col > 0 && col < len(overviewHeaders)-1 {
+					divider.Show()
+				} else {
+					divider.Hide()
+				}
+			}
+		},
+	)
+	l.OnSelected = func(id widget.ListItemID) {
+		l.UnselectAll()
 	}
+	return l
+}
 
+func (a *OverviewArea) makeTable() *widget.Table {
 	t := widget.NewTable(
 		func() (rows int, cols int) {
-			return len(a.characters), len(headers)
+			return len(a.characters), len(overviewHeaders)
 		},
 		func() fyne.CanvasObject {
 			return widget.NewLabel("Template")
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			l := co.(*widget.Label)
+			cell := co.(*widget.Label)
 			if tci.Row >= len(a.characters) || tci.Row < 0 {
 				return
 			}
 			c := a.characters[tci.Row]
-			l.Alignment = fyne.TextAlignLeading
-			l.Importance = widget.MediumImportance
-			var text string
-			switch tci.Col {
-			case 0:
-				text = c.name
-			case 1:
-				text = c.corporation
-			case 2:
-				text = c.alliance
-			case 3:
-				text = fmt.Sprintf("%.1f", c.security)
-				if c.security > 0 {
-					l.Importance = widget.SuccessImportance
-				} else if c.security < 0 {
-					l.Importance = widget.DangerImportance
-				}
-				l.Alignment = fyne.TextAlignTrailing
-			case 4:
-				text = ihumanize.Optional(c.unreadCount, "?")
-				l.Alignment = fyne.TextAlignTrailing
-			case 5:
-				text = ihumanize.OptionalFloat(c.walletBalance, 1, "?")
-				l.Alignment = fyne.TextAlignTrailing
-			case 6:
-				text = ihumanize.OptionalFloat(c.assetValue, 1, "?")
-				l.Alignment = fyne.TextAlignTrailing
-			case 7:
-				text = ihumanize.Optional(c.lastLoginAt, "?")
-			case 8:
-				text = EntityNameOrFallback(c.home, "?")
-			case 9:
-				text = humanize.RelTime(c.birthday, time.Now(), "", "")
-				l.Alignment = fyne.TextAlignTrailing
-			}
-			l.Text = text
-			l.Truncation = fyne.TextTruncateClip
-			l.Refresh()
+			cell.Text, cell.Alignment, cell.Importance = a.makeDataLabel(tci.Col, c)
+			cell.Truncation = fyne.TextTruncateClip
+			cell.Refresh()
 		},
 	)
 	t.ShowHeaderRow = true
@@ -132,7 +144,7 @@ func (a *OverviewArea) makeTable() *widget.Table {
 		return widget.NewLabel("Template")
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
+		s := overviewHeaders[tci.Col]
 		label := co.(*widget.Label)
 		label.SetText(s.text)
 	}
@@ -140,12 +152,52 @@ func (a *OverviewArea) makeTable() *widget.Table {
 		defer t.UnselectAll()
 	}
 
-	for i, h := range headers {
+	for i, h := range overviewHeaders {
 		x := widget.NewLabel(strings.Repeat("w", h.maxChars))
 		w := x.MinSize().Width
 		t.SetColumnWidth(i, w)
 	}
 	return t
+}
+
+func (*OverviewArea) makeDataLabel(col int, c overviewCharacter) (string, fyne.TextAlign, widget.Importance) {
+	var align fyne.TextAlign
+	var importance widget.Importance
+	var text string
+	switch col {
+	case 0:
+		text = c.name
+	case 1:
+		text = c.corporation
+	case 2:
+		text = c.alliance
+	case 3:
+		text = fmt.Sprintf("%.1f", c.security)
+		if c.security > 0 {
+			importance = widget.SuccessImportance
+		} else if c.security < 0 {
+			importance = widget.DangerImportance
+		}
+		align = fyne.TextAlignTrailing
+	case 4:
+		text = ihumanize.Optional(c.unreadCount, "?")
+		align = fyne.TextAlignTrailing
+	case 5:
+		text = ihumanize.OptionalFloat(c.walletBalance, 1, "?")
+		align = fyne.TextAlignTrailing
+	case 6:
+		text = ihumanize.OptionalFloat(c.assetValue, 1, "?")
+		align = fyne.TextAlignTrailing
+	case 7:
+		text = ihumanize.Optional(c.lastLoginAt, "?")
+		align = fyne.TextAlignTrailing
+	case 8:
+		text = EntityNameOrFallback(c.home, "?")
+	case 9:
+		text = humanize.RelTime(c.birthday, time.Now(), "", "")
+		align = fyne.TextAlignTrailing
+	}
+	return text, align, importance
 }
 
 func (a *OverviewArea) Refresh() {
@@ -176,7 +228,7 @@ func (a *OverviewArea) Refresh() {
 	}
 	a.top.Text = t
 	a.top.Importance = i
-	a.table.Refresh()
+	a.body.Refresh()
 }
 
 type overviewTotals struct {
