@@ -29,10 +29,12 @@ type AppBar struct {
 
 // NewAppBar returns a new AppBar. The toolbar items are optional.
 func NewAppBar(title string, body fyne.CanvasObject, items ...widget.ToolbarItem) *AppBar {
+	bg := canvas.NewRectangle(theme.Color(colorAppBarBackground))
+	bg.SetMinSize(fyne.NewSize(10, 45))
 	w := &AppBar{
 		body:  body,
 		items: items,
-		bg:    canvas.NewRectangle(theme.Color(colorAppBarBackground)),
+		bg:    bg,
 	}
 	w.ExtendBaseWidget(w)
 	if title != "" {
@@ -64,34 +66,20 @@ func (w *AppBar) Refresh() {
 }
 
 func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
-	top := container.NewVBox()
-	if w.Navigator == nil {
-		row := container.NewHBox()
-		if w.title != nil {
-			row.Add(w.title)
-			row.Add(layout.NewSpacer())
-		}
-		if len(w.items) > 0 {
-			row.Add(container.NewVBox(widget.NewToolbar(w.items...)))
-		}
-		top.Add(row)
-	} else {
-		row := container.NewHBox(
-			kxwidget.NewTappableIcon(theme.NavigateBackIcon(), func() {
-				w.Navigator.Pop()
-			}),
-			layout.NewSpacer(),
-		)
-		if len(w.items) > 0 {
-			row.Add(container.NewVBox(widget.NewToolbar(w.items...)))
-		}
-		top.Add(row)
-		if w.title != nil {
-			top.Add(w.title)
-		}
+	row := container.NewStack()
+	if w.title != nil {
+		row.Add(container.NewHBox(layout.NewSpacer(), w.title, layout.NewSpacer()))
+	}
+	if w.Navigator != nil {
+		row.Add(container.NewHBox(kxwidget.NewTappableIcon(theme.NavigateBackIcon(), func() {
+			w.Navigator.Pop()
+		})))
+	}
+	if len(w.items) > 0 {
+		row.Add(container.NewHBox(layout.NewSpacer(), widget.NewToolbar(w.items...)))
 	}
 	p := theme.Padding()
-	top2 := container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), container.NewStack(w.bg, top))
-	c := container.NewBorder(top2, nil, nil, nil, w.body)
+	top := container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), container.NewStack(w.bg, row))
+	c := container.NewBorder(top, nil, nil, nil, w.body)
 	return widget.NewSimpleRenderer(c)
 }

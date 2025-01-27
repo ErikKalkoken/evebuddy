@@ -33,9 +33,10 @@ type accountCharacter struct {
 
 // AccountArea is the UI area for managing of characters.
 type AccountArea struct {
-	Content *fyne.Container
+	Content fyne.CanvasObject
 
 	characters []accountCharacter
+	emptyHint  *widget.Label
 	list       *widget.List
 	title      *widget.Label
 	window     fyne.Window
@@ -45,29 +46,36 @@ type AccountArea struct {
 }
 
 func (u *BaseUI) NewAccountArea() *AccountArea {
+	info := widget.NewLabel("No characters")
+	info.Importance = widget.LowImportance
 	a := &AccountArea{
 		characters: make([]accountCharacter, 0),
 		title:      widget.NewLabel(""),
 		window:     u.Window,
+		emptyHint:  info,
 		u:          u,
 	}
 
 	a.list = a.makeCharacterList()
 	a.title.TextStyle.Bold = true
 	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
-		a.showAddCharacterDialog()
+		a.ShowAddCharacterDialog()
 	})
 	add.Importance = widget.HighImportance
 	if a.u.IsOffline {
 		add.Disable()
 	}
-	a.Content = container.NewBorder(
-		a.title,
-		container.NewVBox(add, container.NewPadded()),
-		nil,
-		nil,
-		a.list,
-	)
+	if a.u.IsDesktop() {
+		a.Content = container.NewBorder(
+			a.title,
+			container.NewVBox(add, container.NewPadded()),
+			nil,
+			nil,
+			a.list,
+		)
+	} else {
+		a.Content = container.NewStack(a.emptyHint, a.list)
+	}
 	return a
 }
 
@@ -189,11 +197,16 @@ func (a *AccountArea) Refresh() {
 		cc2[i] = accountCharacter{id: c.ID, name: c.Name, hasTokenWithScope: hasToken}
 	}
 	a.characters = cc2
+	if len(a.characters) == 0 {
+		a.emptyHint.Show()
+	} else {
+		a.emptyHint.Hide()
+	}
 	a.list.Refresh()
 	a.title.SetText(fmt.Sprintf("Characters (%d)", len(a.characters)))
 }
 
-func (a *AccountArea) showAddCharacterDialog() {
+func (a *AccountArea) ShowAddCharacterDialog() {
 	cancelCTX, cancel := context.WithCancel(context.TODO())
 	s := "Please follow instructions in your browser to add a new character."
 	infoText := binding.BindString(&s)

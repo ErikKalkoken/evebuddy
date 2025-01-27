@@ -89,7 +89,7 @@ func (a *OverviewArea) makeList() *widget.List {
 			for col := range len(overviewHeaders) {
 				row := f[col*2].(*fyne.Container).Objects[1].(*fyne.Container).Objects
 				data := row[1].(*widget.Label)
-				data.Text, data.Alignment, data.Importance = a.makeDataLabel(col, c)
+				data.Text, _, data.Importance = a.makeDataLabel(col, c)
 				data.Truncation = fyne.TextTruncateEllipsis
 				bg := f[col*2].(*fyne.Container).Objects[0]
 				if col == 0 {
