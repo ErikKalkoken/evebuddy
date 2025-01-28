@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"strings"
-
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
 	"fyne.io/fyne/v2"
@@ -14,8 +12,8 @@ import (
 )
 
 type headerDef struct {
-	text     string
-	maxChars int
+	text  string
+	width float32
 }
 
 func maxHeaderWidth(headers []headerDef) float32 {
@@ -34,7 +32,7 @@ func makeTopLabel() *widget.Label {
 	return x
 }
 
-func makeDataTable[S ~[]E, E any](
+func makeDataTableForDesktop[S ~[]E, E any](
 	headers []headerDef,
 	data *S,
 	makeLabel func(int, E) (string, fyne.TextAlign, widget.Importance),
@@ -70,19 +68,13 @@ func makeDataTable[S ~[]E, E any](
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
 	}
-	adjustColumnWidth(t, headers)
+	for i, h := range headers {
+		t.SetColumnWidth(i, h.width)
+	}
 	return t
 }
 
-func adjustColumnWidth(t *widget.Table, headers []headerDef) {
-	for i, h := range headers {
-		x := widget.NewLabel(strings.Repeat("w", h.maxChars))
-		w := x.MinSize().Width
-		t.SetColumnWidth(i, w)
-	}
-}
-
-func makeVTable[S ~[]E, E any](
+func makeDataTableForMobile[S ~[]E, E any](
 	headers []headerDef,
 	data *S,
 	makeLabel func(int, E) (string, fyne.TextAlign, widget.Importance),

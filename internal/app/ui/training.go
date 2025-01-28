@@ -39,10 +39,10 @@ func (u *BaseUI) NewTrainingArea() *TrainingArea {
 		u:          u,
 	}
 	headers := []headerDef{
-		{"Name", 20},
-		{"SP", 5},
-		{"Unall. SP", 5},
-		{"Training", 5},
+		{"Name", 250},
+		{"SP", 100},
+		{"Unall. SP", 100},
+		{"Training", 100},
 	}
 	makeDataLabel := func(col int, c trainingCharacter) (string, fyne.TextAlign, widget.Importance) {
 		var align fyne.TextAlign
@@ -68,9 +68,9 @@ func (u *BaseUI) NewTrainingArea() *TrainingArea {
 		return text, align, importance
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTable(headers, &a.characters, makeDataLabel)
+		a.body = makeDataTableForDesktop(headers, &a.characters, makeDataLabel)
 	} else {
-		a.body = makeVTable(headers, &a.characters, makeDataLabel)
+		a.body = makeDataTableForMobile(headers, &a.characters, makeDataLabel)
 	}
 	top2 := container.NewVBox(a.top, widget.NewSeparator())
 	a.Content = container.NewBorder(top2, nil, nil, nil, a.body)

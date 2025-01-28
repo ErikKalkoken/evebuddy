@@ -29,32 +29,21 @@ type colonyRow struct {
 
 // ColoniesArea is the UI area that shows the skillqueue
 type ColoniesArea struct {
-	Content *fyne.Container
-	rows    []colonyRow
-	table   *widget.Table
-	top     *widget.Label
-	u       *BaseUI
+	Content fyne.CanvasObject
+
+	body fyne.CanvasObject
+	rows []colonyRow
+	top  *widget.Label
+	u    *BaseUI
 }
 
 func (u *BaseUI) NewColoniesArea() *ColoniesArea {
 	a := ColoniesArea{
-		top:  widget.NewLabel(""),
 		rows: make([]colonyRow, 0),
+		top:  makeTopLabel(),
 		u:    u,
 	}
-	a.top.TextStyle.Bold = true
-
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.table = a.makeTable()
-	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
-	return &a
-}
-
-func (a *ColoniesArea) makeTable() *widget.Table {
-	var headers = []struct {
-		text  string
-		width float32
-	}{
+	headers := []headerDef{
 		{"Planet", 150},
 		{"Sec.", 50},
 		{"Type", 100},
@@ -64,64 +53,41 @@ func (a *ColoniesArea) makeTable() *widget.Table {
 		{"Region", 150},
 		{"Character", 150},
 	}
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(a.rows), len(headers)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Template")
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			l := co.(*widget.Label)
-			l.Importance = widget.MediumImportance
-			l.Alignment = fyne.TextAlignLeading
-			l.Truncation = fyne.TextTruncateOff
-			if tci.Row >= len(a.rows) || tci.Row < 0 {
-				return
-			}
-			w := a.rows[tci.Row]
-			switch tci.Col {
-			case 0:
-				l.Text = w.planet
-			case 1:
-				l.Text = w.security
-				l.Importance = w.securityImportance
-				l.Alignment = fyne.TextAlignTrailing
-			case 2:
-				l.Text = w.planetType
-			case 3:
-				l.Text = w.extracting
-				l.Truncation = fyne.TextTruncateEllipsis
-			case 4:
-				l.Text = w.due
-				l.Importance = w.dueImportance
-			case 5:
-				l.Text = w.producing
-				l.Truncation = fyne.TextTruncateEllipsis
-			case 6:
-				l.Text = w.region
-			case 7:
-				l.Text = w.character
-				l.Truncation = fyne.TextTruncateEllipsis
-			}
-			l.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
+	makeDataLabel := func(col int, w colonyRow) (string, fyne.TextAlign, widget.Importance) {
+		var align fyne.TextAlign
+		var importance widget.Importance
+		var text string
+		switch col {
+		case 0:
+			text = w.planet
+		case 1:
+			text = w.security
+			importance = w.securityImportance
+			align = fyne.TextAlignTrailing
+		case 2:
+			text = w.planetType
+		case 3:
+			text = w.extracting
+		case 4:
+			text = w.due
+			importance = w.dueImportance
+		case 5:
+			text = w.producing
+		case 6:
+			text = w.region
+		case 7:
+			text = w.character
+		}
+		return text, align, importance
 	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
-		co.(*widget.Label).SetText(s.text)
+	if a.u.IsDesktop() {
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel)
+	} else {
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel)
 	}
-	for i, h := range headers {
-		t.SetColumnWidth(i, h.width)
-	}
-	t.OnSelected = func(id widget.TableCellID) {
-		t.UnselectAll()
-	}
-	return t
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
+	return &a
 }
 
 func (a *ColoniesArea) Refresh() {
@@ -137,7 +103,7 @@ func (a *ColoniesArea) Refresh() {
 	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
-	a.table.Refresh()
+	a.body.Refresh()
 }
 
 func (a *ColoniesArea) makeTopText() (string, widget.Importance) {

@@ -48,16 +48,16 @@ func (u *BaseUI) NewOverviewArea() *OverviewArea {
 	}
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	headers := []headerDef{
-		{"Name", 20},
-		{"Corporation", 20},
-		{"Alliance", 20},
-		{"Security", 5},
-		{"Unread", 5},
-		{"Wallet", 5},
-		{"Assets", 5},
-		{"Last Login", 10},
-		{"Home", 20},
-		{"Age", 10},
+		{"Name", 250},
+		{"Corporation", 250},
+		{"Alliance", 250},
+		{"Security", 50},
+		{"Unread", 100},
+		{"Wallet", 100},
+		{"Assets", 100},
+		{"Last Login", 100},
+		{"Home", 250},
+		{"Age", 100},
 	}
 	makeDataLabel := func(col int, c overviewCharacter) (string, fyne.TextAlign, widget.Importance) {
 		var align fyne.TextAlign
@@ -99,9 +99,9 @@ func (u *BaseUI) NewOverviewArea() *OverviewArea {
 		return text, align, importance
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTable(headers, &a.characters, makeDataLabel)
+		a.body = makeDataTableForDesktop(headers, &a.characters, makeDataLabel)
 	} else {
-		a.body = makeVTable(headers, &a.characters, makeDataLabel)
+		a.body = makeDataTableForMobile(headers, &a.characters, makeDataLabel)
 	}
 	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
 	return &a
