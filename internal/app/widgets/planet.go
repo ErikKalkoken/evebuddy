@@ -19,36 +19,39 @@ const (
 	planetImageSize         = 256
 	planetWidgetSizeDesktop = 120
 	planetWidgetSizeMobile  = 60
+	planetBackgroundColor   = theme.ColorNameInputBackground
 )
 
 type Planet struct {
 	widget.BaseWidget
+
+	bg         *canvas.Rectangle
 	extracting *widget.Label
-	post       *widget.Label
 	image      *canvas.Image
+	post       *widget.Label
 	producing  *widget.Label
 	security   *widget.Label
-	title      *widget.Label
+	location   *widget.Label
 }
 
 func NewPlanet() *Planet {
 	image := canvas.NewImageFromResource(theme.BrokenImageIcon())
 	image.FillMode = canvas.ImageFillContain
-	isMobile := fyne.CurrentDevice().IsMobile()
-	var size float32
-	if isMobile {
-		size = planetWidgetSizeMobile
-	} else {
-		size = planetWidgetSizeDesktop
-	}
-	image.SetMinSize(fyne.Size{Width: size, Height: size})
+	image.SetMinSize(fyne.Size{Width: planetWidgetSizeDesktop, Height: planetWidgetSizeDesktop})
+	extracting := widget.NewLabel("")
+	extracting.Truncation = fyne.TextTruncateEllipsis
+	producing := widget.NewLabel("")
+	producing.Truncation = fyne.TextTruncateEllipsis
+	location := widget.NewLabel("")
+	location.Truncation = fyne.TextTruncateEllipsis
 	w := &Planet{
-		post:       widget.NewLabel(""),
-		extracting: widget.NewLabel(""),
+		bg:         canvas.NewRectangle(theme.Color(planetBackgroundColor)),
+		extracting: extracting,
 		image:      image,
-		producing:  widget.NewLabel(""),
+		post:       widget.NewLabel(""),
+		producing:  producing,
 		security:   widget.NewLabel(""),
-		title:      widget.NewLabel(""),
+		location:   location,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -66,7 +69,7 @@ func (w *Planet) Set(cp *app.CharacterPlanet) {
 	w.security.Importance = cp.EvePlanet.SolarSystem.SecurityType().ToImportance()
 	w.security.Refresh()
 	s := fmt.Sprintf("%s - %s - %d installations", cp.EvePlanet.Name, cp.EvePlanet.TypeDisplay(), len(cp.Pins))
-	w.title.SetText(s)
+	w.location.SetText(s)
 
 	extracted := strings.Join(cp.ExtractedTypeNames(), ",")
 	var deadline string
@@ -104,19 +107,36 @@ func (w *Planet) Set(cp *app.CharacterPlanet) {
 	w.producing.SetText(produced)
 }
 
+func (w *Planet) Refresh() {
+	th := w.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	w.bg.FillColor = th.Color(planetBackgroundColor, v)
+	w.bg.Refresh()
+	w.BaseWidget.Refresh()
+
+}
+
 func (w *Planet) CreateRenderer() fyne.WidgetRenderer {
+	data := container.NewVBox(
+		container.NewStack(
+			w.bg,
+			container.NewBorder(nil, nil, w.security, nil, w.location),
+		),
+		widget.NewForm(
+			widget.NewFormItem("Extracting", w.extracting),
+			widget.NewFormItem("Extraction due", w.post),
+			widget.NewFormItem("Producing", w.producing),
+		),
+	)
+	if fyne.CurrentDevice().IsMobile() {
+		return widget.NewSimpleRenderer(data)
+	}
 	c := container.NewBorder(
 		nil,
 		nil,
 		container.NewVBox(w.image),
 		nil,
-		container.NewVBox(
-			container.NewStack(canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground)), container.NewHBox(w.security, w.title)),
-			widget.NewForm(
-				widget.NewFormItem("Extracting", container.NewHBox(w.extracting, w.post)),
-				widget.NewFormItem("Producing", w.producing),
-			),
-		),
+		data,
 	)
 	return widget.NewSimpleRenderer(c)
 }

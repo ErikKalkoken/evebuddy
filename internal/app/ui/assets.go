@@ -83,7 +83,6 @@ type AssetsArea struct {
 func (u *BaseUI) NewAssetsArea() *AssetsArea {
 	lp := widget.NewLabel("")
 	lp.Wrapping = fyne.TextWrapWord
-	lp.TextStyle.Bold = true
 	a := AssetsArea{
 		assets:        make([]*app.CharacterAsset, 0),
 		assetsBottom:  widget.NewLabel(""),

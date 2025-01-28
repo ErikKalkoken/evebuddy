@@ -40,6 +40,16 @@ func (w *assetLabel) SetText(s string) {
 	w.label2.Refresh()
 }
 
+func (w *assetLabel) Refresh() {
+	th := w.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	w.label1.Color = th.Color(theme.ColorNameForeground, v)
+	w.label1.Refresh()
+	w.label2.Color = th.Color(theme.ColorNameForeground, v)
+	w.label2.Refresh()
+	w.BaseWidget.Refresh()
+}
+
 func (w *assetLabel) CreateRenderer() fyne.WidgetRenderer {
 	customVBox := layout.NewCustomPaddedVBoxLayout(0)
 	customHBox := layout.NewCustomPaddedHBoxLayout(0)

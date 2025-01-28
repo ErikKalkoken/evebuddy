@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
@@ -23,7 +24,7 @@ type AppBar struct {
 
 	body  fyne.CanvasObject
 	bg    *canvas.Rectangle
-	title *widget.RichText
+	title *widgets.SubHeading
 	items []widget.ToolbarItem
 }
 
@@ -38,23 +39,16 @@ func NewAppBar(title string, body fyne.CanvasObject, items ...widget.ToolbarItem
 	}
 	w.ExtendBaseWidget(w)
 	if title != "" {
-		w.title = widget.NewRichText(&widget.TextSegment{
-			Style: widget.RichTextStyle{
-				ColorName: theme.ColorNameForeground,
-				Inline:    false,
-				SizeName:  theme.SizeNameSubHeadingText,
-			},
-			Text: title,
-		})
+		w.title = widgets.NewSubHeading(title)
 	}
 	return w
 }
 
 func (w *AppBar) Title() string {
-	if w.title == nil || len(w.title.Segments) == 0 {
+	if w.title == nil {
 		return ""
 	}
-	return w.title.Segments[0].Textual()
+	return w.title.Text
 }
 
 func (w *AppBar) Refresh() {

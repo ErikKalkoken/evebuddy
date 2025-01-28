@@ -113,7 +113,6 @@ func (w *destination) disable() {
 }
 
 func (w *destination) CreateRenderer() fyne.WidgetRenderer {
-	// p := theme.Padding()
 	c := container.New(layout.NewCustomPaddedVBoxLayout(0),
 		w.icon,
 		container.NewHBox(layout.NewSpacer(), w.label, layout.NewSpacer()),
