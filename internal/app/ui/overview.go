@@ -43,11 +43,9 @@ type OverviewArea struct {
 func (u *BaseUI) NewOverviewArea() *OverviewArea {
 	a := OverviewArea{
 		characters: make([]overviewCharacter, 0),
-		top:        widget.NewLabel(""),
+		top:        makeTopLabel(),
 		u:          u,
 	}
-	a.top.TextStyle.Bold = true
-	a.top.Wrapping = fyne.TextWrapWord
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	headers := []headerDef{
 		{"Name", 20},
@@ -61,53 +59,52 @@ func (u *BaseUI) NewOverviewArea() *OverviewArea {
 		{"Home", 20},
 		{"Age", 10},
 	}
+	makeDataLabel := func(col int, c overviewCharacter) (string, fyne.TextAlign, widget.Importance) {
+		var align fyne.TextAlign
+		var importance widget.Importance
+		var text string
+		switch col {
+		case 0:
+			text = c.name
+		case 1:
+			text = c.corporation
+		case 2:
+			text = c.alliance
+		case 3:
+			text = fmt.Sprintf("%.1f", c.security)
+			if c.security > 0 {
+				importance = widget.SuccessImportance
+			} else if c.security < 0 {
+				importance = widget.DangerImportance
+			}
+			align = fyne.TextAlignTrailing
+		case 4:
+			text = ihumanize.Optional(c.unreadCount, "?")
+			align = fyne.TextAlignTrailing
+		case 5:
+			text = ihumanize.OptionalFloat(c.walletBalance, 1, "?")
+			align = fyne.TextAlignTrailing
+		case 6:
+			text = ihumanize.OptionalFloat(c.assetValue, 1, "?")
+			align = fyne.TextAlignTrailing
+		case 7:
+			text = ihumanize.Optional(c.lastLoginAt, "?")
+			align = fyne.TextAlignTrailing
+		case 8:
+			text = EntityNameOrFallback(c.home, "?")
+		case 9:
+			text = humanize.RelTime(c.birthday, time.Now(), "", "")
+			align = fyne.TextAlignTrailing
+		}
+		return text, align, importance
+	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTable(headers, &a.characters, a.makeDataLabel)
+		a.body = makeDataTable(headers, &a.characters, makeDataLabel)
 	} else {
-		a.body = makeVTable(headers, &a.characters, a.makeDataLabel)
+		a.body = makeVTable(headers, &a.characters, makeDataLabel)
 	}
 	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
 	return &a
-}
-
-func (*OverviewArea) makeDataLabel(col int, c overviewCharacter) (string, fyne.TextAlign, widget.Importance) {
-	var align fyne.TextAlign
-	var importance widget.Importance
-	var text string
-	switch col {
-	case 0:
-		text = c.name
-	case 1:
-		text = c.corporation
-	case 2:
-		text = c.alliance
-	case 3:
-		text = fmt.Sprintf("%.1f", c.security)
-		if c.security > 0 {
-			importance = widget.SuccessImportance
-		} else if c.security < 0 {
-			importance = widget.DangerImportance
-		}
-		align = fyne.TextAlignTrailing
-	case 4:
-		text = ihumanize.Optional(c.unreadCount, "?")
-		align = fyne.TextAlignTrailing
-	case 5:
-		text = ihumanize.OptionalFloat(c.walletBalance, 1, "?")
-		align = fyne.TextAlignTrailing
-	case 6:
-		text = ihumanize.OptionalFloat(c.assetValue, 1, "?")
-		align = fyne.TextAlignTrailing
-	case 7:
-		text = ihumanize.Optional(c.lastLoginAt, "?")
-		align = fyne.TextAlignTrailing
-	case 8:
-		text = EntityNameOrFallback(c.home, "?")
-	case 9:
-		text = humanize.RelTime(c.birthday, time.Now(), "", "")
-		align = fyne.TextAlignTrailing
-	}
-	return text, align, importance
 }
 
 func (a *OverviewArea) Refresh() {

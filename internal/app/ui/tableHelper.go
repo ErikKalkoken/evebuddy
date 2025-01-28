@@ -27,6 +27,13 @@ func maxHeaderWidth(headers []headerDef) float32 {
 	return m
 }
 
+func makeTopLabel() *widget.Label {
+	x := widget.NewLabel("")
+	x.TextStyle.Bold = true
+	x.Wrapping = fyne.TextWrapWord
+	return x
+}
+
 func makeDataTable[S ~[]E, E any](
 	headers []headerDef,
 	data *S,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -27,8 +26,8 @@ type trainingCharacter struct {
 type TrainingArea struct {
 	Content *fyne.Container
 
+	body       fyne.CanvasObject
 	characters []trainingCharacter
-	table      *widget.Table
 	top        *widget.Label
 	u          *BaseUI
 }
@@ -36,88 +35,46 @@ type TrainingArea struct {
 func (u *BaseUI) NewTrainingArea() *TrainingArea {
 	a := TrainingArea{
 		characters: make([]trainingCharacter, 0),
-		top:        widget.NewLabel(""),
+		top:        makeTopLabel(),
 		u:          u,
 	}
-	a.top.TextStyle.Bold = true
-
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.table = a.makeTable()
-	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
-	return &a
-}
-
-func (a *TrainingArea) makeTable() *widget.Table {
-	var headers = []struct {
-		text     string
-		maxChars int
-	}{
+	headers := []headerDef{
 		{"Name", 20},
 		{"SP", 5},
 		{"Unall. SP", 5},
 		{"Training", 5},
 	}
-
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(a.characters), len(headers)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Template")
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			l := co.(*widget.Label)
-			if tci.Row >= len(a.characters) || tci.Row < 0 {
-				return
+	makeDataLabel := func(col int, c trainingCharacter) (string, fyne.TextAlign, widget.Importance) {
+		var align fyne.TextAlign
+		var importance widget.Importance
+		var text string
+		switch col {
+		case 0:
+			text = c.name
+		case 1:
+			text = ihumanize.Optional(c.totalSP, "?")
+			align = fyne.TextAlignTrailing
+		case 2:
+			text = ihumanize.Optional(c.unallocatedSP, "?")
+			align = fyne.TextAlignTrailing
+		case 3:
+			if c.training.IsEmpty() {
+				text = "Inactive"
+				importance = widget.WarningImportance
+			} else {
+				text = ihumanize.Duration(c.training.ValueOrZero())
 			}
-			c := a.characters[tci.Row]
-			l.Alignment = fyne.TextAlignLeading
-			l.Importance = widget.MediumImportance
-			var text string
-			switch tci.Col {
-			case 0:
-				text = c.name
-			case 1:
-				text = ihumanize.Optional(c.totalSP, "?")
-				l.Alignment = fyne.TextAlignTrailing
-			case 2:
-				text = ihumanize.Optional(c.unallocatedSP, "?")
-				l.Alignment = fyne.TextAlignTrailing
-			case 3:
-				if c.training.IsEmpty() {
-					text = "Inactive"
-					l.Importance = widget.WarningImportance
-				} else {
-					text = ihumanize.Duration(c.training.ValueOrZero())
-				}
-			}
-			l.Text = text
-			l.Truncation = fyne.TextTruncateClip
-			l.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
+		}
+		return text, align, importance
+	}
 	if a.u.IsDesktop() {
-		t.StickyColumnCount = 1
+		a.body = makeDataTable(headers, &a.characters, makeDataLabel)
+	} else {
+		a.body = makeVTable(headers, &a.characters, makeDataLabel)
 	}
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
-	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
-		label := co.(*widget.Label)
-		label.SetText(s.text)
-	}
-	t.OnSelected = func(tci widget.TableCellID) {
-		defer t.UnselectAll()
-	}
-
-	for i, h := range headers {
-		x := widget.NewLabel(strings.Repeat("w", h.maxChars))
-		w := x.MinSize().Width
-		t.SetColumnWidth(i, w)
-	}
-	return t
+	top2 := container.NewVBox(a.top, widget.NewSeparator())
+	a.Content = container.NewBorder(top2, nil, nil, nil, a.body)
+	return &a
 }
 
 func (a *TrainingArea) Refresh() {
@@ -140,7 +97,7 @@ func (a *TrainingArea) Refresh() {
 	}
 	a.top.Text = t
 	a.top.Importance = i
-	a.table.Refresh()
+	a.body.Refresh()
 }
 
 func (a *TrainingArea) updateCharacters() (optional.Optional[int], error) {
