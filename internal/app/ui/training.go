@@ -25,8 +25,9 @@ type trainingCharacter struct {
 
 // TrainingArea is the UI area that shows an overview of all the user's characters.
 type TrainingArea struct {
+	Content *fyne.Container
+
 	characters []trainingCharacter
-	Content    *fyne.Container
 	table      *widget.Table
 	top        *widget.Label
 	u          *BaseUI

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -31,19 +30,6 @@ type overviewCharacter struct {
 	walletBalance optional.Optional[float64]
 }
 
-var overviewHeaders = []headerDef{
-	{"Name", 20},
-	{"Corporation", 20},
-	{"Alliance", 20},
-	{"Security", 5},
-	{"Unread", 5},
-	{"Wallet", 5},
-	{"Assets", 5},
-	{"Last Login", 10},
-	{"Home", 20},
-	{"Age", 10},
-}
-
 // OverviewArea is the UI area that shows an overview of all the user's characters.
 type OverviewArea struct {
 	Content fyne.CanvasObject
@@ -63,101 +49,25 @@ func (u *BaseUI) NewOverviewArea() *OverviewArea {
 	a.top.TextStyle.Bold = true
 	a.top.Wrapping = fyne.TextWrapWord
 	top := container.NewVBox(a.top, widget.NewSeparator())
+	headers := []headerDef{
+		{"Name", 20},
+		{"Corporation", 20},
+		{"Alliance", 20},
+		{"Security", 5},
+		{"Unread", 5},
+		{"Wallet", 5},
+		{"Assets", 5},
+		{"Last Login", 10},
+		{"Home", 20},
+		{"Age", 10},
+	}
 	if a.u.IsDesktop() {
-		a.body = a.makeTable()
+		a.body = makeDataTable(headers, &a.characters, a.makeDataLabel)
 	} else {
-		a.body = a.makeList()
+		a.body = makeVTable(headers, &a.characters, a.makeDataLabel)
 	}
 	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
 	return &a
-}
-
-func (a *OverviewArea) makeList() *widget.List {
-	l := widget.NewList(
-		func() int {
-			return len(a.characters)
-		},
-		func() fyne.CanvasObject {
-			return makeListRowObject(overviewHeaders)
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			f := co.(*fyne.Container).Objects
-			if id >= len(a.characters) || id < 0 {
-				return
-			}
-			c := a.characters[id]
-			for col := range len(overviewHeaders) {
-				row := f[col*2].(*fyne.Container).Objects[1].(*fyne.Container).Objects
-				data := row[1].(*widget.Label)
-				data.Text, _, data.Importance = a.makeDataLabel(col, c)
-				data.Truncation = fyne.TextTruncateEllipsis
-				bg := f[col*2].(*fyne.Container).Objects[0]
-				if col == 0 {
-					bg.Show()
-					data.TextStyle.Bold = true
-					label := row[0].(*widget.Label)
-					label.TextStyle.Bold = true
-					label.Refresh()
-				} else {
-					bg.Hide()
-				}
-				data.Refresh()
-				divider := f[col*2+1]
-				if col > 0 && col < len(overviewHeaders)-1 {
-					divider.Show()
-				} else {
-					divider.Hide()
-				}
-			}
-		},
-	)
-	l.OnSelected = func(id widget.ListItemID) {
-		l.UnselectAll()
-	}
-	return l
-}
-
-func (a *OverviewArea) makeTable() *widget.Table {
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(a.characters), len(overviewHeaders)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Template")
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			cell := co.(*widget.Label)
-			if tci.Row >= len(a.characters) || tci.Row < 0 {
-				return
-			}
-			c := a.characters[tci.Row]
-			cell.Text, cell.Alignment, cell.Importance = a.makeDataLabel(tci.Col, c)
-			cell.Truncation = fyne.TextTruncateClip
-			cell.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
-	if a.u.IsDesktop() {
-		t.StickyColumnCount = 1
-	}
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
-	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := overviewHeaders[tci.Col]
-		label := co.(*widget.Label)
-		label.SetText(s.text)
-	}
-	t.OnSelected = func(tci widget.TableCellID) {
-		defer t.UnselectAll()
-	}
-
-	for i, h := range overviewHeaders {
-		x := widget.NewLabel(strings.Repeat("w", h.maxChars))
-		w := x.MinSize().Width
-		t.SetColumnWidth(i, w)
-	}
-	return t
 }
 
 func (*OverviewArea) makeDataLabel(col int, c overviewCharacter) (string, fyne.TextAlign, widget.Importance) {
