@@ -44,7 +44,6 @@ type DesktopUI struct {
 	menuItemsWithShortcut []*fyne.MenuItem
 	accountWindow         fyne.Window
 	settingsWindow        fyne.Window
-	statusWindow          fyne.Window
 }
 
 // NewDesktopUI build the UI and returns it.
@@ -270,10 +269,6 @@ func (u *DesktopUI) showMailIndicator() {
 
 func (u *DesktopUI) hideMailIndicator() {
 	u.DeskApp.SetSystemTrayIcon(ui.IconIconPng)
-}
-
-func (u *DesktopUI) makeWindowTitle(subTitle string) string {
-	return fmt.Sprintf("%s - %s", subTitle, u.AppName())
 }
 
 func makeSubTabsKey(i int) string {

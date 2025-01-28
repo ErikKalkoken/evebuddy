@@ -14,7 +14,7 @@ func (u *DesktopUI) showAccountWindow() {
 		u.accountWindow.Show()
 		return
 	}
-	w := u.FyneApp.NewWindow(u.makeWindowTitle("Characters"))
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Characters"))
 	u.accountWindow = w
 	w.SetOnClosed(func() {
 		u.accountWindow = nil

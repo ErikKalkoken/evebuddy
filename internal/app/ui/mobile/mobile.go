@@ -4,6 +4,7 @@ package mobile
 import (
 	"fmt"
 	"log/slog"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -17,6 +18,8 @@ import (
 
 type MobileUI struct {
 	*ui.BaseUI
+
+	navItemUpdateStatus *NavListItem
 }
 
 // NewUI build the UI and returns it.
@@ -63,7 +66,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
 
-	navListMail := NewNavListItemWithIcon(
+	navItemMail := NewNavListItemWithIcon(
 		theme.MailComposeIcon(),
 		"Mail",
 		func() {
@@ -84,7 +87,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		},
 	)
 
-	navListCommunications := NewNavListItemWithIcon(
+	navItemCommunications := NewNavListItemWithIcon(
 		theme.NewThemedResource(ui.IconMessageSvg),
 		"Communications",
 		func() {
@@ -102,14 +105,14 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			)
 		},
 	)
-	navListColonies := NewNavListItemWithIcon(
+	navItemColonies := NewNavListItemWithIcon(
 		theme.NewThemedResource(ui.IconEarthSvg),
 		"Colonies",
 		func() {
 			characterNav.Push(newCharacterAppBar("Colonies", u.PlanetArea.Content))
 		},
 	)
-	navListSkills := NewNavListItemWithIcon(
+	navItemSkills := NewNavListItemWithIcon(
 		theme.NewThemedResource(ui.IconSchoolSvg),
 		"Skills",
 		func() {
@@ -133,7 +136,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				))
 		},
 	)
-	navListWallet := NewNavListItemWithIcon(
+	navItemWallet := NewNavListItemWithIcon(
 		theme.NewThemedResource(ui.IconAttachmoneySvg),
 		"Wallet",
 		func() {
@@ -158,9 +161,9 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				characterNav.Push(newCharacterAppBar("Assets", container.NewHScroll(u.AssetsArea.Locations)))
 			},
 		),
-		navListColonies,
-		navListMail,
-		navListCommunications,
+		navItemColonies,
+		navItemMail,
+		navItemCommunications,
 		NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconHeadSnowflakeSvg),
 			"Clones",
@@ -182,8 +185,8 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				characterNav.Push(newCharacterAppBar("Contracts", u.ContractsArea.Content))
 			},
 		),
-		navListSkills,
-		navListWallet,
+		navItemSkills,
+		navItemWallet,
 	)
 
 	u.PlanetArea.OnCountRefresh = func(count int) {
@@ -191,7 +194,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		if count > 0 {
 			s = humanize.Comma(int64(count))
 		}
-		navListColonies.Suffix = s
+		navItemColonies.Suffix = s
 		characterList.Refresh()
 	}
 
@@ -200,7 +203,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		if count > 0 {
 			s = humanize.Comma(int64(count))
 		}
-		navListMail.Suffix = s
+		navItemMail.Suffix = s
 		characterList.Refresh()
 	}
 
@@ -209,17 +212,17 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		if count > 0 {
 			s = humanize.Comma(int64(count))
 		}
-		navListCommunications.Suffix = s
+		navItemCommunications.Suffix = s
 		characterList.Refresh()
 	}
 
 	u.SkillqueueArea.OnStatusRefresh = func(status string) {
-		navListSkills.Suffix = status
+		navItemSkills.Suffix = status
 		characterList.Refresh()
 	}
 
 	u.WalletJournalArea.OnBalanceRefresh = func(b string) {
-		navListWallet.Suffix = b
+		navItemWallet.Suffix = b
 		characterList.Refresh()
 	}
 
@@ -228,7 +231,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 
 	// characters cross
 	var crossNav *Navigator
-	navListWealth := NewNavListItemWithIcon(
+	navItemWealth := NewNavListItemWithIcon(
 		theme.NewThemedResource(ui.IconGoldSvg),
 		"Wealth",
 		func() {
@@ -271,11 +274,11 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				crossNav.Push(NewAppBar("Colonies", u.ColoniesArea.Content))
 			},
 		),
-		navListWealth,
+		navItemWealth,
 	)
 	crossNav = NewNavigator(NewAppBar("Characters", crossList))
 	u.WealthArea.OnTotalRefresh = func(total string) {
-		navListWealth.Suffix = total
+		navItemWealth.Suffix = total
 		crossList.Refresh()
 	}
 
@@ -287,6 +290,13 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	makeMenu := func(items ...*fyne.MenuItem) (fyne.Resource, *fyne.Menu) {
 		return theme.MenuExpandIcon(), fyne.NewMenu("", items...)
 	}
+	u.navItemUpdateStatus = NewNavListItemWithIcon(
+		theme.NewThemedResource(ui.IconUpdateSvg),
+		"Update status",
+		func() {
+			u.ShowUpdateStatusWindow()
+		},
+	)
 	toolsList := NewNavList(
 		NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconCogSvg),
@@ -360,12 +370,13 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			},
 		),
 		NewNavListItemWithIcon(
-			theme.InfoIcon(),
+			theme.NewThemedResource(ui.IconInformationSvg),
 			"About",
 			func() {
 				moreNav.Push(NewAppBar("About", u.MakeAboutPage()))
 			},
 		),
+		u.navItemUpdateStatus,
 	)
 	moreNav = NewNavigator(NewAppBar("More", toolsList))
 
@@ -407,6 +418,19 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 
 		characterNav.PopAll()
 	}
+
+	u.OnAppStarted = func() {
+		ticker := time.NewTicker(2 * time.Second)
+		go func() {
+			for {
+				x := u.StatusCacheService.Summary()
+				u.navItemUpdateStatus.Suffix = x.Display()
+				toolsList.Refresh()
+				<-ticker.C
+			}
+		}()
+	}
+
 	u.Window.SetContent(navBar)
 	return u
 }

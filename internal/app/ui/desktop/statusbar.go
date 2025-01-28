@@ -65,14 +65,14 @@ func (u *DesktopUI) newStatusBarArea() *statusBarArea {
 		u.showAccountWindow()
 	})
 	a.updateStatus = widgets.NewStatusBarItem(theme.NewThemedResource(ui.IconUpdateSvg), "?", func() {
-		u.showStatusWindow()
+		u.ShowUpdateStatusWindow()
 	})
 	a.eveClock = widgets.NewStatusBarItem(
 		theme.NewThemedResource(ui.IconAccesstimefilledSvg),
 		"?",
 		a.showClockDialog,
 	)
-	a.eveStatus = widgets.NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showDetail)
+	a.eveStatus = widgets.NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
 	a.content = container.NewVBox(widget.NewSeparator(), container.NewHBox(
 		a.infoText,
 		layout.NewSpacer(),
@@ -111,7 +111,7 @@ func (a *statusBarArea) showClockDialog() {
 	d.Show()
 }
 
-func (a *statusBarArea) showDetail() {
+func (a *statusBarArea) showEveStatusDialog() {
 	var i widget.Importance
 	var text string
 	if a.eveStatusError == "" {

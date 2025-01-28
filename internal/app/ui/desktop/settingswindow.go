@@ -19,7 +19,7 @@ func (u *DesktopUI) showSettingsWindow() {
 		u.settingsWindow.Show()
 		return
 	}
-	w := u.FyneApp.NewWindow(u.makeWindowTitle("Settings"))
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Settings"))
 	sw := u.NewSettingsArea()
 	w.SetContent(sw.content)
 	w.Resize(fyne.Size{Width: 700, Height: 500})

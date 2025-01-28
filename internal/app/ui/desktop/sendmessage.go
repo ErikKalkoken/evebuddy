@@ -32,7 +32,7 @@ func (u *DesktopUI) showSendMessageWindow(mode ui.SendMessageMode, mail *app.Cha
 
 func (u *DesktopUI) makeSendMessageWindow(mode ui.SendMessageMode, mail *app.CharacterMail) (fyne.Window, error) {
 	currentChar := *u.CurrentCharacter()
-	w := u.FyneApp.NewWindow(u.makeWindowTitle(fmt.Sprintf("New message [%s]", currentChar.EveCharacter.Name)))
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle(fmt.Sprintf("New message [%s]", currentChar.EveCharacter.Name)))
 
 	fromInput := widget.NewEntry()
 	fromInput.Disable()

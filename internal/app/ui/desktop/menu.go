@@ -27,7 +27,7 @@ func makeMenu(u *DesktopUI) *fyne.MainMenu {
 	charactersItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierAlt}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, charactersItem)
 
-	statusItem := fyne.NewMenuItem("Update status...", u.showStatusWindow)
+	statusItem := fyne.NewMenuItem("Update status...", u.ShowUpdateStatusWindow)
 	statusItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyU, Modifier: fyne.KeyModifierAlt}
 	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, statusItem)
 

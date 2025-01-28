@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"sync"
@@ -75,7 +76,8 @@ type BaseUI struct {
 	WalletTransactionArea *WalletTransactionArea
 	WealthArea            *WealthArea
 
-	character *app.Character
+	character    *app.Character
+	statusWindow fyne.Window
 }
 
 // NewBaseUI returns a new BaseUI.
@@ -128,6 +130,10 @@ func (u BaseUI) AppName() string {
 		return "EVE Buddy"
 	}
 	return name
+}
+
+func (u *BaseUI) MakeWindowTitle(subTitle string) string {
+	return fmt.Sprintf("%s - %s", subTitle, u.AppName())
 }
 
 func (u *BaseUI) Init() {
@@ -351,4 +357,24 @@ func (u *BaseUI) MakeAboutPage() fyne.CanvasObject {
 	c.Add(widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."))
 	c.Add(widget.NewLabel("(c) 2024 Erik Kalkoken"))
 	return c
+}
+
+func (u *BaseUI) ShowUpdateStatusWindow() {
+	if u.statusWindow != nil {
+		u.statusWindow.Show()
+		return
+	}
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Status"))
+	a := u.NewUpdateStatusArea()
+	a.Refresh()
+	w.SetContent(a.Content)
+	w.Resize(fyne.Size{Width: 1100, Height: 500})
+	ctx, cancel := context.WithCancel(context.Background())
+	a.StartTicker(ctx)
+	w.SetOnClosed(func() {
+		cancel()
+		u.statusWindow = nil
+	})
+	u.statusWindow = w
+	w.Show()
 }

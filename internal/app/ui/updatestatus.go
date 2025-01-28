@@ -34,13 +34,13 @@ func (se sectionEntity) IsGeneralSection() bool {
 	return se.id == app.GeneralSectionEntityID
 }
 
-type StatusArea struct {
+type UpdateStatusArea struct {
 	Content          fyne.CanvasObject
-	Entities         fyne.CanvasObject
 	OnEntitySelected func()
 
+	entities          fyne.CanvasObject
 	charactersTop     *widget.Label
-	entities          []sectionEntity
+	sectionEntities   []sectionEntity
 	entityList        *widget.List
 	sectionGrid       *widget.GridWrap
 	sections          []app.SectionStatus
@@ -53,9 +53,9 @@ type StatusArea struct {
 	details *fyne.Container
 }
 
-func (u *BaseUI) NewStatusArea() *StatusArea {
-	a := &StatusArea{
-		entities:          make([]sectionEntity, 0),
+func (u *BaseUI) NewUpdateStatusArea() *UpdateStatusArea {
+	a := &UpdateStatusArea{
+		sectionEntities:   make([]sectionEntity, 0),
 		charactersTop:     widget.NewLabel(""),
 		selectedEntityID:  -1,
 		sections:          make([]app.SectionStatus, 0),
@@ -65,7 +65,7 @@ func (u *BaseUI) NewStatusArea() *StatusArea {
 	}
 	a.entityList = a.makeEntityList()
 	a.charactersTop.TextStyle.Bold = true
-	a.Entities = container.NewBorder(
+	a.entities = container.NewBorder(
 		container.NewVBox(a.charactersTop, widget.NewSeparator()),
 		nil,
 		nil,
@@ -76,10 +76,10 @@ func (u *BaseUI) NewStatusArea() *StatusArea {
 	a.sectionGrid = a.makeSectionGrid()
 	a.sectionsTop.TextStyle.Bold = true
 	b := widget.NewButton("Force update all sections", func() {
-		if a.selectedEntityID == -1 || a.selectedEntityID >= len(a.entities) {
+		if a.selectedEntityID == -1 || a.selectedEntityID >= len(a.sectionEntities) {
 			return
 		}
-		c := a.entities[a.selectedEntityID]
+		c := a.sectionEntities[a.selectedEntityID]
 		if c.IsGeneralSection() {
 			a.u.UpdateGeneralSectionsAndRefreshIfNeeded(true)
 		} else {
@@ -92,22 +92,26 @@ func (u *BaseUI) NewStatusArea() *StatusArea {
 	top2 := container.NewVBox(container.NewHBox(a.sectionsTop, layout.NewSpacer(), b), widget.NewSeparator())
 	sections := container.NewBorder(top2, nil, nil, nil, a.sectionGrid)
 
-	var vs *fyne.Container
 	headline := widget.NewLabel("Section details")
 	headline.TextStyle.Bold = true
 	a.details = container.NewVBox()
 
-	vs = container.NewBorder(nil, container.NewVBox(widget.NewSeparator(), a.details), nil, nil, sections)
-	hs := container.NewHSplit(a.Entities, vs)
+	vs := container.NewBorder(nil, container.NewVBox(widget.NewSeparator(), a.details), nil, nil, sections)
+	hs := container.NewHSplit(a.entities, vs)
 	hs.SetOffset(0.33)
-	a.Content = hs
+
+	if !u.IsDesktop() {
+		a.Content = a.entities
+	} else {
+		a.Content = hs
+	}
 	return a
 }
 
-func (a *StatusArea) makeEntityList() *widget.List {
+func (a *UpdateStatusArea) makeEntityList() *widget.List {
 	list := widget.NewList(
 		func() int {
-			return len(a.entities)
+			return len(a.sectionEntities)
 		},
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(IconQuestionmarkSvg)
@@ -121,10 +125,10 @@ func (a *StatusArea) makeEntityList() *widget.List {
 			return row
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(a.entities) {
+			if id >= len(a.sectionEntities) {
 				return
 			}
-			c := a.entities[id]
+			c := a.sectionEntities[id]
 			row := co.(*fyne.Container).Objects
 			name := row[1].(*widget.Label)
 			name.SetText(c.name)
@@ -157,7 +161,7 @@ func (a *StatusArea) makeEntityList() *widget.List {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		if id >= len(a.entities) {
+		if id >= len(a.sectionEntities) {
 			list.UnselectAll()
 			return
 		}
@@ -172,15 +176,15 @@ func (a *StatusArea) makeEntityList() *widget.List {
 	return list
 }
 
-func (a *StatusArea) Refresh() {
+func (a *UpdateStatusArea) Refresh() {
 	if err := a.refreshEntityList(); err != nil {
 		slog.Warn("failed to refresh entity list for status window", "error", err)
 	}
 	a.refreshDetailArea()
-	a.charactersTop.SetText(fmt.Sprintf("Entities: %d", len(a.entities)))
+	a.charactersTop.SetText(fmt.Sprintf("Entities: %d", len(a.sectionEntities)))
 }
 
-func (a *StatusArea) refreshEntityList() error {
+func (a *UpdateStatusArea) refreshEntityList() error {
 	entities := make([]sectionEntity, 0)
 	cc := a.u.StatusCacheService.ListCharacters()
 	for _, c := range cc {
@@ -195,12 +199,12 @@ func (a *StatusArea) refreshEntityList() error {
 		ss:   ss,
 	}
 	entities = append(entities, o)
-	a.entities = entities
+	a.sectionEntities = entities
 	a.entityList.Refresh()
 	return nil
 }
 
-func (a *StatusArea) makeSectionGrid() *widget.GridWrap {
+func (a *UpdateStatusArea) makeSectionGrid() *widget.GridWrap {
 	l := widget.NewGridWrap(
 		func() int {
 			return len(a.sections)
@@ -274,7 +278,7 @@ func (x sectionStatusData) IsGeneralSection() bool {
 	return x.entityID == app.GeneralSectionEntityID
 }
 
-func (a *StatusArea) setDetails() {
+func (a *UpdateStatusArea) setDetails() {
 	var d sectionStatusData
 	ss, found, err := a.fetchSelectedEntityStatus()
 	if err != nil {
@@ -304,7 +308,7 @@ func (a *StatusArea) setDetails() {
 	}
 }
 
-func (a *StatusArea) fetchSelectedEntityStatus() (app.SectionStatus, bool, error) {
+func (a *UpdateStatusArea) fetchSelectedEntityStatus() (app.SectionStatus, bool, error) {
 	id := a.selectedSectionID
 	if id == -1 || id >= len(a.sections) {
 		return app.SectionStatus{}, false, nil
@@ -312,7 +316,7 @@ func (a *StatusArea) fetchSelectedEntityStatus() (app.SectionStatus, bool, error
 	return a.sections[id], true, nil
 }
 
-func (a *StatusArea) makeDetailsContent(d sectionStatusData) []fyne.CanvasObject {
+func (a *UpdateStatusArea) makeDetailsContent(d sectionStatusData) []fyne.CanvasObject {
 	items := []formItems{
 		{label: "Section", value: d.sectionName},
 		{label: "Status", value: d.sv, importance: d.si},
@@ -359,18 +363,18 @@ func makeForm(data []formItems) *widget.Form {
 	return form
 }
 
-func (a *StatusArea) refreshDetailArea() {
-	if a.selectedEntityID == -1 || a.selectedEntityID >= len(a.entities) {
+func (a *UpdateStatusArea) refreshDetailArea() {
+	if a.selectedEntityID == -1 || a.selectedEntityID >= len(a.sectionEntities) {
 		return
 	}
-	se := a.entities[a.selectedEntityID]
+	se := a.sectionEntities[a.selectedEntityID]
 	a.sections = a.u.StatusCacheService.SectionList(se.id)
 	a.sectionGrid.Refresh()
 	a.sectionsTop.SetText(fmt.Sprintf("Update status for %s", se.name))
 	a.setDetails()
 }
 
-func (a *StatusArea) StartTicker(ctx context.Context) {
+func (a *UpdateStatusArea) StartTicker(ctx context.Context) {
 	ticker := time.NewTicker(statusAreaTicker)
 	go func() {
 		for {

@@ -213,7 +213,7 @@ func (u *DesktopUI) showInfoWindow(iw *typeInfoWindow, err error) {
 	if iw == nil {
 		return
 	}
-	w := u.FyneApp.NewWindow(u.makeWindowTitle(iw.makeTitle("Information")))
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle(iw.makeTitle("Information")))
 	iw.window = w
 	w.SetContent(iw.content)
 	w.Resize(fyne.Size{Width: 500, Height: 500})
@@ -517,7 +517,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			r = theme.BrokenImageIcon()
 		}
 		render := kxwidget.NewTappableImage(r, func() {
-			w := a.u.FyneApp.NewWindow(a.u.makeWindowTitle(a.makeTitle("Render")))
+			w := a.u.FyneApp.NewWindow(a.u.MakeWindowTitle(a.makeTitle("Render")))
 			size := 512
 			i := ui.NewImageResourceAsync(ui.IconQuestionmarkSvg, func() (fyne.Resource, error) {
 				return a.u.EveImageService.InventoryTypeRender(a.et.ID, size)
