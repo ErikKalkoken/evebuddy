@@ -36,6 +36,7 @@ func makeDataTableForDesktop[S ~[]E, E any](
 	headers []headerDef,
 	data *S,
 	makeLabel func(int, E) (string, fyne.TextAlign, widget.Importance),
+	onSelected func(E),
 ) *widget.Table {
 	t := widget.NewTable(
 		func() (rows int, cols int) {
@@ -49,8 +50,8 @@ func makeDataTableForDesktop[S ~[]E, E any](
 			if tci.Row >= len(*data) || tci.Row < 0 {
 				return
 			}
-			c := (*data)[tci.Row]
-			cell.Text, cell.Alignment, cell.Importance = makeLabel(tci.Col, c)
+			r := (*data)[tci.Row]
+			cell.Text, cell.Alignment, cell.Importance = makeLabel(tci.Col, r)
 			cell.Truncation = fyne.TextTruncateClip
 			cell.Refresh()
 		},
@@ -61,12 +62,19 @@ func makeDataTableForDesktop[S ~[]E, E any](
 		return widget.NewLabel("Template")
 	}
 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
+		h := headers[tci.Col]
 		label := co.(*widget.Label)
-		label.SetText(s.text)
+		label.SetText(h.text)
 	}
 	t.OnSelected = func(tci widget.TableCellID) {
 		defer t.UnselectAll()
+		if onSelected != nil {
+			if tci.Row >= len(*data) || tci.Row < 0 {
+				return
+			}
+			r := (*data)[tci.Row]
+			onSelected(r)
+		}
 	}
 	for i, h := range headers {
 		t.SetColumnWidth(i, h.width)
@@ -78,6 +86,7 @@ func makeDataTableForMobile[S ~[]E, E any](
 	headers []headerDef,
 	data *S,
 	makeLabel func(int, E) (string, fyne.TextAlign, widget.Importance),
+	onSelected func(E),
 ) *widget.List {
 	l := widget.NewList(
 		func() int {
@@ -101,11 +110,11 @@ func makeDataTableForMobile[S ~[]E, E any](
 			if id >= len(*data) || id < 0 {
 				return
 			}
-			c := (*data)[id]
+			r := (*data)[id]
 			for col := range len(headers) {
 				row := f[col*2].(*fyne.Container).Objects[1].(*fyne.Container).Objects
 				data := row[1].(*widget.Label)
-				data.Text, _, data.Importance = makeLabel(col, c)
+				data.Text, _, data.Importance = makeLabel(col, r)
 				data.Truncation = fyne.TextTruncateEllipsis
 				bg := f[col*2].(*fyne.Container).Objects[0]
 				if col == 0 {
@@ -128,7 +137,14 @@ func makeDataTableForMobile[S ~[]E, E any](
 		},
 	)
 	l.OnSelected = func(id widget.ListItemID) {
-		l.UnselectAll()
+		defer l.UnselectAll()
+		if onSelected != nil {
+			if id >= len(*data) || id < 0 {
+				return
+			}
+			r := (*data)[id]
+			onSelected(r)
+		}
 	}
 	return l
 }

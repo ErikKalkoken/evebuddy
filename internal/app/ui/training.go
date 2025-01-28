@@ -26,17 +26,17 @@ type trainingCharacter struct {
 type TrainingArea struct {
 	Content *fyne.Container
 
-	body       fyne.CanvasObject
-	characters []trainingCharacter
-	top        *widget.Label
-	u          *BaseUI
+	body fyne.CanvasObject
+	rows []trainingCharacter
+	top  *widget.Label
+	u    *BaseUI
 }
 
 func (u *BaseUI) NewTrainingArea() *TrainingArea {
 	a := TrainingArea{
-		characters: make([]trainingCharacter, 0),
-		top:        makeTopLabel(),
-		u:          u,
+		rows: make([]trainingCharacter, 0),
+		top:  makeTopLabel(),
+		u:    u,
 	}
 	headers := []headerDef{
 		{"Name", 250},
@@ -68,9 +68,9 @@ func (u *BaseUI) NewTrainingArea() *TrainingArea {
 		return text, align, importance
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.characters, makeDataLabel)
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.characters, makeDataLabel)
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
 	}
 	top2 := container.NewVBox(a.top, widget.NewSeparator())
 	a.Content = container.NewBorder(top2, nil, nil, nil, a.body)
@@ -83,11 +83,11 @@ func (a *TrainingArea) Refresh() {
 		if err != nil {
 			return "", 0, err
 		}
-		if len(a.characters) == 0 {
+		if len(a.rows) == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
 		spText := ihumanize.Optional(totalSP, "?")
-		s := fmt.Sprintf("%d characters • %s Total SP", len(a.characters), spText)
+		s := fmt.Sprintf("%d characters • %s Total SP", len(a.rows), spText)
 		return s, widget.MediumImportance, nil
 	}()
 	if err != nil {
@@ -130,6 +130,6 @@ func (a *TrainingArea) updateCharacters() (optional.Optional[int], error) {
 			totalSP.Set(totalSP.ValueOrZero() + c.totalSP.ValueOrZero())
 		}
 	}
-	a.characters = cc
+	a.rows = cc
 	return totalSP, nil
 }

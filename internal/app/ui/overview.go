@@ -34,17 +34,17 @@ type overviewCharacter struct {
 type OverviewArea struct {
 	Content fyne.CanvasObject
 
-	characters []overviewCharacter
-	body       fyne.CanvasObject
-	top        *widget.Label
-	u          *BaseUI
+	rows []overviewCharacter
+	body fyne.CanvasObject
+	top  *widget.Label
+	u    *BaseUI
 }
 
 func (u *BaseUI) NewOverviewArea() *OverviewArea {
 	a := OverviewArea{
-		characters: make([]overviewCharacter, 0),
-		top:        makeTopLabel(),
-		u:          u,
+		rows: make([]overviewCharacter, 0),
+		top:  makeTopLabel(),
+		u:    u,
 	}
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	headers := []headerDef{
@@ -99,9 +99,9 @@ func (u *BaseUI) NewOverviewArea() *OverviewArea {
 		return text, align, importance
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.characters, makeDataLabel)
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.characters, makeDataLabel)
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
 	}
 	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
 	return &a
@@ -113,7 +113,7 @@ func (a *OverviewArea) Refresh() {
 		if err != nil {
 			return "", 0, err
 		}
-		if len(a.characters) == 0 {
+		if len(a.rows) == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
 		walletText := ihumanize.OptionalFloat(totals.wallet, 1, "?")
@@ -121,7 +121,7 @@ func (a *OverviewArea) Refresh() {
 		unreadText := ihumanize.Optional(totals.unread, "?")
 		s := fmt.Sprintf(
 			"%d characters • %s ISK wallet • %s ISK assets • %s unread",
-			len(a.characters),
+			len(a.rows),
 			walletText,
 			assetsText,
 			unreadText,
@@ -199,7 +199,7 @@ func (a *OverviewArea) updateCharacters() (overviewTotals, error) {
 			totals.assets.Set(totals.assets.ValueOrZero() + c.assetValue.ValueOrZero())
 		}
 	}
-	a.characters = cc
+	a.rows = cc
 
 	// FIXME
 	// var hasUnread bool

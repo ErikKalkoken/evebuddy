@@ -246,13 +246,14 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				crossNav.Push(NewAppBar("Overview", u.OverviewArea.Content))
 			},
 		),
-		NewNavListItemWithIcon(
-			theme.NewThemedResource(ui.IconInventory2Svg),
-			"Asset Search",
-			func() {
-				crossNav.Push(NewAppBar("Asset Search", u.AssetSearchArea.Content))
-			},
-		),
+		// TODO: Enable once mobile friendly version is available
+		// NewNavListItemWithIcon(
+		// 	theme.NewThemedResource(ui.IconInventory2Svg),
+		// 	"Asset Search",
+		// 	func() {
+		// 		crossNav.Push(NewAppBar("Asset Search", u.AssetSearchArea.Content))
+		// 	},
+		// ),
 		NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconMapMarkerSvg),
 			"Locations",

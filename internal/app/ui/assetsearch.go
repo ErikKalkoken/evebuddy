@@ -29,18 +29,19 @@ const (
 
 // AssetSearchArea is the UI area that shows the skillqueue
 type AssetSearchArea struct {
-	assets          []*assetSearchRow
+	Content *fyne.Container
+
 	assetCollection assetcollection.AssetCollection
-	assetTable      *widget.Table
+	assets          []*assetSearchRow
 	assetsFiltered  []*assetSearchRow
-	colSort         []assetSortDir
+	assetTable      *widget.Table
 	characterNames  map[int32]string
-	Content         *fyne.Container
+	colSearch       []string
+	colSort         []assetSortDir
+	found           *widget.Label
 	iconSortAsc     fyne.Resource
 	iconSortDesc    fyne.Resource
 	iconSortOff     fyne.Resource
-	found           *widget.Label
-	colSearch       []string
 	searchBoxes     []*widget.Entry
 	total           *widget.Label
 	u               *BaseUI
@@ -320,6 +321,9 @@ func (a *AssetSearchArea) resetSearch() {
 }
 
 func (a *AssetSearchArea) Refresh() {
+	if !a.u.IsDesktop() {
+		return // TODO: Temporary until mobile friendly version is available
+	}
 	var t string
 	var i widget.Importance
 	characterCount := a.characterCount()

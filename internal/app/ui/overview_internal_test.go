@@ -30,7 +30,7 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 		_, err := a.updateCharacters()
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, a.characters, 1)
+			assert.Len(t, a.rows, 1)
 		}
 	})
 	t.Run("can handle empty location", func(t *testing.T) {
@@ -52,7 +52,7 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 		_, err := a.updateCharacters()
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, a.characters, 1)
+			assert.Len(t, a.rows, 1)
 		}
 	})
 }

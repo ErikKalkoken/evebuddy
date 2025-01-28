@@ -26,32 +26,54 @@ type walletTransaction struct {
 
 // WalletTransactionArea is the UI area that shows the skillqueue
 type WalletTransactionArea struct {
-	Content      *fyne.Container
-	transactions []walletTransaction
-	table        *widget.Table
-	top          *widget.Label
-	u            *BaseUI
+	Content fyne.CanvasObject
+
+	rows []walletTransaction
+	body fyne.CanvasObject
+	top  *widget.Label
+	u    *BaseUI
 }
 
 func (u *BaseUI) NewWalletTransactionArea() *WalletTransactionArea {
 	a := WalletTransactionArea{
-		top:          widget.NewLabel(""),
-		transactions: make([]walletTransaction, 0),
-		u:            u,
+		top:  makeTopLabel(),
+		rows: make([]walletTransaction, 0),
+		u:    u,
 	}
-	a.top.TextStyle.Bold = true
-
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.table = a.makeTable()
-	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
-	return &a
-}
-
-func (a *WalletTransactionArea) makeTable() *widget.Table {
-	var headers = []struct {
-		text  string
-		width float32
-	}{
+	makeDataLabel := func(col int, w walletTransaction) (string, fyne.TextAlign, widget.Importance) {
+		var align fyne.TextAlign
+		var importance widget.Importance
+		var text string
+		switch col {
+		case 0:
+			text = w.date.Format(app.TimeDefaultFormat)
+		case 1:
+			align = fyne.TextAlignTrailing
+			text = humanize.Comma(int64(w.quantity))
+		case 2:
+			text = w.eveType
+		case 3:
+			align = fyne.TextAlignTrailing
+			text = humanize.FormatFloat(MyFloatFormat, w.unitPrice)
+		case 4:
+			align = fyne.TextAlignTrailing
+			text = humanize.FormatFloat(MyFloatFormat, w.total)
+			switch {
+			case w.total < 0:
+				importance = widget.DangerImportance
+			case w.total > 0:
+				importance = widget.SuccessImportance
+			default:
+				importance = widget.MediumImportance
+			}
+		case 5:
+			text = w.client
+		case 6:
+			text = w.location
+		}
+		return text, align, importance
+	}
+	var headers = []headerDef{
 		{"Date", 150},
 		{"Quantity", 130},
 		{"Type", 200},
@@ -60,67 +82,14 @@ func (a *WalletTransactionArea) makeTable() *widget.Table {
 		{"Client", 250},
 		{"Where", 250},
 	}
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(a.transactions), len(headers)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Template  Template")
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			l := co.(*widget.Label)
-			l.Importance = widget.MediumImportance
-			l.Alignment = fyne.TextAlignLeading
-			l.Truncation = fyne.TextTruncateOff
-			if tci.Row >= len(a.transactions) || tci.Row < 0 {
-				return
-			}
-			w := a.transactions[tci.Row]
-			switch tci.Col {
-			case 0:
-				l.Text = w.date.Format(app.TimeDefaultFormat)
-			case 1:
-				l.Alignment = fyne.TextAlignTrailing
-				l.Text = humanize.Comma(int64(w.quantity))
-			case 2:
-				l.Text = w.eveType
-				l.Truncation = fyne.TextTruncateClip
-			case 3:
-				l.Alignment = fyne.TextAlignTrailing
-				l.Text = humanize.FormatFloat(MyFloatFormat, w.unitPrice)
-			case 4:
-				l.Alignment = fyne.TextAlignTrailing
-				l.Text = humanize.FormatFloat(MyFloatFormat, w.total)
-				switch {
-				case w.total < 0:
-					l.Importance = widget.DangerImportance
-				case w.total > 0:
-					l.Importance = widget.SuccessImportance
-				default:
-					l.Importance = widget.MediumImportance
-				}
-			case 5:
-				l.Text = w.client
-				l.Truncation = fyne.TextTruncateClip
-			case 6:
-				l.Text = w.location
-				l.Truncation = fyne.TextTruncateClip
-			}
-			l.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
+	if a.u.IsDesktop() {
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
+	} else {
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
 	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
-		co.(*widget.Label).SetText(s.text)
-	}
-	for i, h := range headers {
-		t.SetColumnWidth(i, h.width)
-	}
-	return t
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
+	return &a
 }
 
 func (a *WalletTransactionArea) Refresh() {
@@ -136,7 +105,7 @@ func (a *WalletTransactionArea) Refresh() {
 	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
-	a.table.Refresh()
+	a.body.Refresh()
 }
 
 func (a *WalletTransactionArea) makeTopText() (string, widget.Importance) {
@@ -148,14 +117,14 @@ func (a *WalletTransactionArea) makeTopText() (string, widget.Importance) {
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
-	t := humanize.Comma(int64(len(a.transactions)))
+	t := humanize.Comma(int64(len(a.rows)))
 	s := fmt.Sprintf("Entries: %s", t)
 	return s, widget.MediumImportance
 }
 
 func (a *WalletTransactionArea) updateEntries() error {
 	if !a.u.HasCharacter() {
-		a.transactions = make([]walletTransaction, 0)
+		a.rows = make([]walletTransaction, 0)
 		return nil
 	}
 	characterID := a.u.CharacterID()
@@ -178,6 +147,6 @@ func (a *WalletTransactionArea) updateEntries() error {
 		}
 		transactions[i] = tx
 	}
-	a.transactions = transactions
+	a.rows = transactions
 	return nil
 }

@@ -52,103 +52,67 @@ type WalletJournalArea struct {
 
 	OnBalanceRefresh func(balance string)
 
-	entries []walletJournalEntry
-	table   *widget.Table
-	top     *widget.Label
-	u       *BaseUI
+	rows []walletJournalEntry
+	body fyne.CanvasObject
+	top  *widget.Label
+	u    *BaseUI
 }
 
 func (u *BaseUI) NewWalletJournalArea() *WalletJournalArea {
 	a := WalletJournalArea{
-		entries: make([]walletJournalEntry, 0),
-		top:     widget.NewLabel(""),
-		u:       u,
+		rows: make([]walletJournalEntry, 0),
+		top:  makeTopLabel(),
+		u:    u,
 	}
-
-	a.top.TextStyle.Bold = true
-	a.table = a.makeTable()
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
-	return &a
-}
-
-func (a *WalletJournalArea) makeTable() *widget.Table {
-	var headers = []struct {
-		text  string
-		width float32
-	}{
+	var headers = []headerDef{
 		{"Date", 150},
 		{"Type", 150},
 		{"Amount", 200},
 		{"Balance", 200},
 		{"Description", 450},
 	}
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(a.entries), len(headers)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Template Template")
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			l := co.(*widget.Label)
-			l.Importance = widget.MediumImportance
-			l.Alignment = fyne.TextAlignLeading
-			l.Truncation = fyne.TextTruncateOff
-			if tci.Row >= len(a.entries) || tci.Row < 0 {
-				return
+	makeDataLabel := func(col int, w walletJournalEntry) (string, fyne.TextAlign, widget.Importance) {
+		var align fyne.TextAlign
+		var importance widget.Importance
+		var text string
+		switch col {
+		case 0:
+			text = w.date.Format(app.TimeDefaultFormat)
+		case 1:
+			text = w.refTypeOutput()
+		case 2:
+			align = fyne.TextAlignTrailing
+			text = humanize.FormatFloat(MyFloatFormat, w.amount)
+			switch {
+			case w.amount < 0:
+				importance = widget.DangerImportance
+			case w.amount > 0:
+				importance = widget.SuccessImportance
+			default:
+				importance = widget.MediumImportance
 			}
-			w := a.entries[tci.Row]
-			switch tci.Col {
-			case 0:
-				l.Text = w.date.Format(app.TimeDefaultFormat)
-			case 1:
-				l.Text = w.refTypeOutput()
-			case 2:
-				l.Alignment = fyne.TextAlignTrailing
-				l.Text = humanize.FormatFloat(MyFloatFormat, w.amount)
-				switch {
-				case w.amount < 0:
-					l.Importance = widget.DangerImportance
-				case w.amount > 0:
-					l.Importance = widget.SuccessImportance
-				default:
-					l.Importance = widget.MediumImportance
-				}
-			case 3:
-				l.Alignment = fyne.TextAlignTrailing
-				l.Text = humanize.FormatFloat(MyFloatFormat, w.balance)
-			case 4:
-				l.Text = w.descriptionWithReason()
-				l.Truncation = fyne.TextTruncateClip
-			}
-			l.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
-	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
-		co.(*widget.Label).SetText(s.text)
-	}
-	for i, h := range headers {
-		t.SetColumnWidth(i, h.width)
-	}
-	t.OnSelected = func(tci widget.TableCellID) {
-		defer t.UnselectAll()
-		if tci.Row >= len(a.entries) || tci.Row < 0 {
-			return
+		case 3:
+			align = fyne.TextAlignTrailing
+			text = humanize.FormatFloat(MyFloatFormat, w.balance)
+		case 4:
+			text = w.descriptionWithReason()
 		}
-		e := a.entries[tci.Row]
-		if e.hasReason() {
-			c := widget.NewLabel(e.reason)
-			dlg := dialog.NewCustom("Reason", "OK", c, a.u.Window)
+		return text, align, importance
+	}
+	showReasonDialog := func(row walletJournalEntry) {
+		if row.hasReason() {
+			dlg := dialog.NewCustom("Reason", "OK", widget.NewLabel(row.reason), a.u.Window)
 			dlg.Show()
 		}
 	}
-	return t
+	if a.u.IsDesktop() {
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, showReasonDialog)
+	} else {
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, showReasonDialog)
+	}
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
+	return &a
 }
 
 func (a *WalletJournalArea) Refresh() {
@@ -164,7 +128,7 @@ func (a *WalletJournalArea) Refresh() {
 	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
-	a.table.Refresh()
+	a.body.Refresh()
 }
 
 func (a *WalletJournalArea) makeTopText() (string, widget.Importance) {
@@ -177,7 +141,7 @@ func (a *WalletJournalArea) makeTopText() (string, widget.Importance) {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
 	b := ihumanize.OptionalFloat(c.WalletBalance, 1, "?")
-	t := humanize.Comma(int64(len(a.entries)))
+	t := humanize.Comma(int64(len(a.rows)))
 	s := fmt.Sprintf("Balance: %s • Entries: %s", b, t)
 	if a.OnBalanceRefresh != nil {
 		a.OnBalanceRefresh(b)
@@ -187,7 +151,7 @@ func (a *WalletJournalArea) makeTopText() (string, widget.Importance) {
 
 func (a *WalletJournalArea) updateEntries() error {
 	if !a.u.HasCharacter() {
-		a.entries = make([]walletJournalEntry, 0)
+		a.rows = make([]walletJournalEntry, 0)
 		return nil
 	}
 	characterID := a.u.CharacterID()
@@ -206,6 +170,6 @@ func (a *WalletJournalArea) updateEntries() error {
 		w2.refType = w.RefType
 		entries[i] = w2
 	}
-	a.entries = entries
+	a.rows = entries
 	return nil
 }

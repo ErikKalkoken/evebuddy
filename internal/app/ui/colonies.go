@@ -81,9 +81,9 @@ func (u *BaseUI) NewColoniesArea() *ColoniesArea {
 		return text, align, importance
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel)
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel)
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
 	}
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
