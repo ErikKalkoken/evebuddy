@@ -102,11 +102,28 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	u.MailArea.SendMessage = func(mode ui.SendMessageMode, cm *app.CharacterMail) {
 		u.showSendMessageWindow(mode, cm)
 	}
+	showItemWindow := func(iw *ui.ItemInfoArea, err error) {
+		if err != nil {
+			t := "Failed to open info window"
+			slog.Error(t, "err", err)
+			d := ui.NewErrorDialog(t, err, u.Window)
+			d.Show()
+			return
+		}
+		if iw == nil {
+			return
+		}
+		w := u.FyneApp.NewWindow(u.MakeWindowTitle(iw.MakeTitle("Information")))
+		iw.Window = w
+		w.SetContent(iw.Content)
+		w.Resize(fyne.Size{Width: 500, Height: 500})
+		w.Show()
+	}
 	u.ShowTypeInfoWindow = func(typeID, characterID int32, selectTab ui.TypeWindowTab) {
-		u.showInfoWindow(u.newTypeInfoWindow(typeID, characterID, 0, selectTab))
+		showItemWindow(u.NewItemInfoArea(typeID, characterID, 0, selectTab))
 	}
 	u.ShowLocationInfoWindow = func(locationID int64) {
-		u.showInfoWindow(u.newTypeInfoWindow(0, 0, locationID, ui.DescriptionTab))
+		showItemWindow(u.NewItemInfoArea(0, 0, locationID, ui.DescriptionTab))
 	}
 
 	makeTitleWithCount := func(title string, count int) string {

@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"context"
@@ -20,7 +20,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -179,9 +178,13 @@ type attributeRow struct {
 	isTitle bool
 }
 
-type typeInfoWindow struct {
+// ItemInfoArea represents a UI component to display information about Eve Online items;
+// similar to the info window in the game client.
+type ItemInfoArea struct {
+	Content fyne.CanvasObject
+	Window  fyne.Window // defaults to main window
+
 	attributesData []attributeRow
-	content        fyne.CanvasObject
 	et             *app.EveType
 	fittingData    []attributeRow
 	location       *app.EveLocation
@@ -190,32 +193,14 @@ type typeInfoWindow struct {
 	price          *app.EveMarketPrice
 	requiredSkills []requiredSkill
 	techLevel      int
-	u              *DesktopUI
-	window         fyne.Window
+	u              *BaseUI
 }
 
-func (u *DesktopUI) showInfoWindow(iw *typeInfoWindow, err error) {
-	if err != nil {
-		t := "Failed to open info window"
-		slog.Error(t, "err", err)
-		d := ui.NewErrorDialog(t, err, u.Window)
-		d.Show()
-		return
-	}
-	if iw == nil {
-		return
-	}
-	w := u.FyneApp.NewWindow(u.MakeWindowTitle(iw.makeTitle("Information")))
-	iw.window = w
-	w.SetContent(iw.content)
-	w.Resize(fyne.Size{Width: 500, Height: 500})
-	w.Show()
-}
-
-func (u *DesktopUI) newTypeInfoWindow(typeID, characterID int32, locationID int64, selectTab ui.TypeWindowTab) (*typeInfoWindow, error) {
+func (u *BaseUI) NewItemInfoArea(typeID, characterID int32, locationID int64, selectTab TypeWindowTab) (*ItemInfoArea, error) {
 	ctx := context.TODO()
-	a := &typeInfoWindow{
-		u: u,
+	a := &ItemInfoArea{
+		u:      u,
+		Window: u.Window,
 	}
 	if locationID != 0 {
 		location, err := u.EveUniverseService.GetEveLocation(ctx, locationID)
@@ -268,11 +253,15 @@ func (u *DesktopUI) newTypeInfoWindow(typeID, characterID int32, locationID int6
 		a.requiredSkills = skills
 	}
 	a.techLevel, a.metaLevel = calcLevels(attributes)
-	a.content = a.makeContent(selectTab)
+	a.Content = a.makeContent(selectTab)
 	return a, nil
 }
 
-func (a *typeInfoWindow) isLocation() bool {
+func (a *ItemInfoArea) MakeTitle(suffix string) string {
+	return fmt.Sprintf("%s (%s): %s", a.et.Name, a.et.Group.Name, suffix)
+}
+
+func (a *ItemInfoArea) isLocation() bool {
 	return a.location != nil
 }
 
@@ -289,7 +278,7 @@ func calcLevels(attributes map[int32]*app.EveTypeDogmaAttribute) (int, int) {
 	return tech, meta
 }
 
-func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
+func (a *ItemInfoArea) calcAttributesData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
 	droneCapacity, ok := attributes[app.EveDogmaAttributeDroneCapacity]
 	hasDrones := ok && droneCapacity.Value > 0
 
@@ -396,7 +385,7 @@ func (a *typeInfoWindow) calcAttributesData(ctx context.Context, attributes map[
 	return data
 }
 
-func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
+func (a *ItemInfoArea) calcFittingData(ctx context.Context, attributes map[int32]*app.EveTypeDogmaAttribute) []attributeRow {
 	data := make([]attributeRow, 0)
 	for _, da := range attributeGroupsMap[attributeGroupFitting] {
 		o, ok := attributes[da]
@@ -415,7 +404,7 @@ func (a *typeInfoWindow) calcFittingData(ctx context.Context, attributes map[int
 	return data
 }
 
-func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveTypeDogmaAttribute) ([]requiredSkill, error) {
+func (a *ItemInfoArea) calcRequiredSkills(ctx context.Context, characterID int32, attributes map[int32]*app.EveTypeDogmaAttribute) ([]requiredSkill, error) {
 	skills := make([]requiredSkill, 0)
 	skillAttributes := []struct {
 		id    int32
@@ -463,15 +452,11 @@ func (a *typeInfoWindow) calcRequiredSkills(ctx context.Context, characterID int
 	return skills, nil
 }
 
-func (a *typeInfoWindow) makeTitle(suffix string) string {
-	return fmt.Sprintf("%s (%s): %s", a.et.Name, a.et.Group.Name, suffix)
-}
-
-func (a *typeInfoWindow) makeContent(selectTab ui.TypeWindowTab) fyne.CanvasObject {
+func (a *ItemInfoArea) makeContent(selectTab TypeWindowTab) fyne.CanvasObject {
 	top := a.makeTop()
 	t := container.NewTabItem("Description", a.makeDescriptionTab())
 	tabs := container.NewAppTabs(t)
-	if selectTab == ui.RequirementsTab {
+	if selectTab == RequirementsTab {
 		tabs.Select(t)
 	}
 	if len(a.attributesData) > 0 && a.et.Group.Category.ID != app.EveCategoryStation {
@@ -483,7 +468,7 @@ func (a *typeInfoWindow) makeContent(selectTab ui.TypeWindowTab) fyne.CanvasObje
 	if len(a.requiredSkills) > 0 {
 		t := container.NewTabItem("Requirements", a.makeRequirementsTab())
 		tabs.Append(t)
-		if selectTab == ui.RequirementsTab {
+		if selectTab == RequirementsTab {
 			tabs.Select(t)
 		}
 	}
@@ -499,7 +484,7 @@ func (a *typeInfoWindow) makeContent(selectTab ui.TypeWindowTab) fyne.CanvasObje
 	return c
 }
 
-func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
+func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 	typeIcon := container.New(&topLeftLayout{})
 	if a.et.HasRender() {
 		size := 128
@@ -509,9 +494,9 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			r = theme.BrokenImageIcon()
 		}
 		render := kxwidget.NewTappableImage(r, func() {
-			w := a.u.FyneApp.NewWindow(a.u.MakeWindowTitle(a.makeTitle("Render")))
+			w := a.u.FyneApp.NewWindow(a.u.MakeWindowTitle(a.MakeTitle("Render")))
 			size := 512
-			i := ui.NewImageResourceAsync(ui.IconQuestionmarkSvg, func() (fyne.Resource, error) {
+			i := NewImageResourceAsync(IconQuestionmarkSvg, func() (fyne.Resource, error) {
 				return a.u.EveImageService.InventoryTypeRender(a.et.ID, size)
 			})
 			i.FillMode = canvas.ImageFillContain
@@ -540,7 +525,7 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		}
 	} else {
 		size := 64
-		icon := ui.NewImageResourceAsync(ui.IconQuestionmarkSvg, func() (fyne.Resource, error) {
+		icon := NewImageResourceAsync(IconQuestionmarkSvg, func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
 				return a.u.EveImageService.InventoryTypeSKIN(a.et.ID, size)
 			} else if a.et.IsBlueprint() {
@@ -554,16 +539,18 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 		icon.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(icon)
 	}
-	ownerIcon := canvas.NewImageFromResource(ui.IconQuestionmarkSvg)
-	ownerIcon.FillMode = canvas.ImageFillOriginal
+	ownerIcon := canvas.NewImageFromResource(IconQuestionmarkSvg)
+	ownerIcon.FillMode = canvas.ImageFillContain
+	ownerIcon.SetMinSize(fyne.NewSquareSize(DefaultIconUnitSize))
 	ownerName := widget.NewLabel("")
+	ownerName.Wrapping = fyne.TextWrapWord
 	if a.owner != nil {
-		ui.RefreshImageResourceAsync(ownerIcon, func() (fyne.Resource, error) {
+		RefreshImageResourceAsync(ownerIcon, func() (fyne.Resource, error) {
 			switch a.owner.Category {
 			case app.EveEntityCharacter:
-				return a.u.EveImageService.CharacterPortrait(a.owner.ID, 32)
+				return a.u.EveImageService.CharacterPortrait(a.owner.ID, DefaultIconPixelSize)
 			case app.EveEntityCorporation:
-				return a.u.EveImageService.CorporationLogo(a.owner.ID, 32)
+				return a.u.EveImageService.CorporationLogo(a.owner.ID, DefaultIconPixelSize)
 			default:
 				panic("Unexpected owner type")
 			}
@@ -580,30 +567,40 @@ func (a *typeInfoWindow) makeTop() fyne.CanvasObject {
 			break
 		}
 	}
-	checkIcon := widget.NewIcon(ui.BoolIconResource(hasRequiredSkills))
+	checkIcon := widget.NewIcon(BoolIconResource(hasRequiredSkills))
 	if a.owner != nil && !a.owner.IsCharacter() || len(a.requiredSkills) == 0 {
 		checkIcon.Hide()
 	}
 	title := widget.NewLabel("")
+	title.Wrapping = fyne.TextWrapWord
 	if a.isLocation() {
 		title.SetText(a.location.Name)
 	} else {
-		title.Hide()
+		title.SetText(a.et.Name)
 	}
-	return container.NewHBox(
+	return container.NewBorder(
+		nil,
+		nil,
 		typeIcon,
+		nil,
 		container.NewVBox(
 			title,
-			container.NewHBox(ownerIcon, ownerName, checkIcon)))
+			container.NewBorder(
+				nil,
+				nil,
+				container.NewHBox(checkIcon, ownerIcon),
+				nil,
+				ownerName,
+			)))
 }
 
-func (a *typeInfoWindow) makeDescriptionTab() fyne.CanvasObject {
+func (a *ItemInfoArea) makeDescriptionTab() fyne.CanvasObject {
 	description := widget.NewLabel(a.et.DescriptionPlain())
 	description.Wrapping = fyne.TextWrapWord
 	return container.NewVScroll(description)
 }
 
-func (a *typeInfoWindow) makeMarketTab() fyne.CanvasObject {
+func (a *ItemInfoArea) makeMarketTab() fyne.CanvasObject {
 	c := container.NewHBox(
 		widget.NewLabel("Average price"),
 		layout.NewSpacer(),
@@ -612,7 +609,7 @@ func (a *typeInfoWindow) makeMarketTab() fyne.CanvasObject {
 	return container.NewVScroll(c)
 }
 
-func (a *typeInfoWindow) makeAttributesTab() fyne.CanvasObject {
+func (a *ItemInfoArea) makeAttributesTab() fyne.CanvasObject {
 	list := widget.NewList(
 		func() int {
 			return len(a.attributesData)
@@ -636,7 +633,7 @@ func (a *typeInfoWindow) makeAttributesTab() fyne.CanvasObject {
 	return list
 }
 
-func (a *typeInfoWindow) makeFittingsTab() fyne.CanvasObject {
+func (a *ItemInfoArea) makeFittingsTab() fyne.CanvasObject {
 	l := widget.NewList(
 		func() int {
 			return len(a.fittingData)
@@ -656,7 +653,7 @@ func (a *typeInfoWindow) makeFittingsTab() fyne.CanvasObject {
 	return l
 }
 
-func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
+func (a *ItemInfoArea) makeRequirementsTab() fyne.CanvasObject {
 	l := widget.NewList(
 		func() int {
 			return len(a.requiredSkills)
@@ -667,7 +664,7 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 				layout.NewSpacer(),
 				widget.NewLabel("Check"),
 				widgets.NewSkillLevel(),
-				widget.NewIcon(ui.IconQuestionmarkSvg),
+				widget.NewIcon(IconQuestionmarkSvg),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -677,7 +674,7 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 			text := row[2].(*widget.Label)
 			level := row[3].(*widgets.SkillLevel)
 			icon := row[4].(*widget.Icon)
-			skill.SetText(ui.SkillDisplayName(o.name, o.requiredLevel))
+			skill.SetText(SkillDisplayName(o.name, o.requiredLevel))
 			if o.activeLevel == 0 && o.trainedLevel == 0 {
 				text.Text = "Skill not injected"
 				text.Importance = widget.DangerImportance
@@ -686,7 +683,7 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 				level.Hide()
 				icon.Hide()
 			} else if o.activeLevel >= o.requiredLevel {
-				icon.SetResource(ui.BoolIconResource(true))
+				icon.SetResource(BoolIconResource(true))
 				icon.Show()
 				text.Hide()
 				level.Hide()
@@ -701,7 +698,7 @@ func (a *typeInfoWindow) makeRequirementsTab() fyne.CanvasObject {
 	)
 	l.OnSelected = func(id widget.ListItemID) {
 		r := a.requiredSkills[id]
-		a.u.ShowTypeInfoWindow(r.typeID, a.owner.ID, ui.DescriptionTab)
+		a.u.ShowTypeInfoWindow(r.typeID, a.owner.ID, DescriptionTab)
 		l.UnselectAll()
 	}
 	return l
@@ -713,7 +710,7 @@ type infoRow struct {
 	value      string
 }
 
-func (a *typeInfoWindow) makeLocationTab() fyne.CanvasObject {
+func (a *ItemInfoArea) makeLocationTab() fyne.CanvasObject {
 	data := makeLocationData(a.location)
 	l := widget.NewList(
 		func() int {

@@ -26,11 +26,23 @@ type MobileUI struct {
 func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	u := &MobileUI{}
 	u.BaseUI = ui.NewBaseUI(fyneApp)
+	showItemWindow := func(iw *ui.ItemInfoArea, err error) {
+		if err != nil {
+			t := "Failed to show item info"
+			slog.Error(t, "err", err)
+			d := ui.NewErrorDialog(t, err, u.Window)
+			d.Show()
+			return
+		}
+		w := u.FyneApp.NewWindow("Information")
+		w.SetContent(iw.Content)
+		w.Show()
+	}
 	u.ShowTypeInfoWindow = func(typeID, characterID int32, selectTab ui.TypeWindowTab) {
-		// TODO
+		showItemWindow(u.NewItemInfoArea(typeID, characterID, 0, selectTab))
 	}
 	u.ShowLocationInfoWindow = func(locationID int64) {
-		// TODO
+		showItemWindow(u.NewItemInfoArea(0, 0, locationID, ui.DescriptionTab))
 	}
 
 	u.MailArea.SendMessage = func(_ ui.SendMessageMode, _ *app.CharacterMail) {
