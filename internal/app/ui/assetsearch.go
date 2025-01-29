@@ -71,9 +71,10 @@ func (u *BaseUI) NewAssetSearchArea() *AssetSearchArea {
 		iconSortAsc:    theme.NewThemedResource(IconSortAscendingSvg),
 		iconSortDesc:   theme.NewThemedResource(IconSortDescendingSvg),
 		iconSortOff:    theme.NewThemedResource(IconSortSvg),
-		total:          makeTopLabel(),
+		total:          widget.NewLabel(""),
 		found:          widget.NewLabel(""),
 	}
+	a.total.TextStyle.Bold = true
 	a.found.Hide()
 	a.assetTable = a.makeAssetsTable()
 	b := widget.NewButton("Reset", func() {

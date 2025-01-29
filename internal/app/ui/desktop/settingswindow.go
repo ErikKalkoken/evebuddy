@@ -61,7 +61,7 @@ func (u *DesktopUI) NewSettingsArea() *SettingsArea {
 }
 
 func (u *DesktopUI) MakeDesktopSettingsPage() (fyne.CanvasObject, func()) {
-	// // system tray
+	// system tray
 	sysTrayCheck := kxwidget.NewSwitch(func(b bool) {
 		u.FyneApp.Preferences().SetBool(settingSysTrayEnabled, b)
 	})
@@ -71,12 +71,22 @@ func (u *DesktopUI) MakeDesktopSettingsPage() (fyne.CanvasObject, func()) {
 	)
 	sysTrayCheck.SetState(sysTrayEnabled)
 
+	// window
+	resetWindow := widget.NewButton("Reset main window size", func() {
+		u.Window.Resize(fyne.NewSize(settingWindowWidthDefault, settingWindowHeightDefault))
+	})
+
 	settings := &widget.Form{
 		Items: []*widget.FormItem{
 			{
 				Text:     "Close button",
 				Widget:   sysTrayCheck,
 				HintText: "App will minimize to system tray when closed (requires restart)",
+			},
+			{
+				Text:     "Window",
+				Widget:   resetWindow,
+				HintText: "Resets window size to defaults",
 			},
 		}}
 	reset := func() {

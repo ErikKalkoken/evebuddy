@@ -66,6 +66,7 @@ var (
 	pprofFlag          = flag.Bool("pprof", false, "Enable pprof web server")
 	versionFlag        = flag.Bool("v", false, "Show version")
 	logLevelFlag       = flag.String("log-level", "", "Set log level for this session")
+	resetSettingsFlag  = flag.Bool("reset-settings", false, "Resets desktop settings")
 )
 
 func main() {
@@ -258,6 +259,11 @@ func main() {
 			go func() {
 				log.Println(http.ListenAndServe("localhost:6060", nil))
 			}()
+		}
+
+		// reset main window size
+		if *resetSettingsFlag {
+			u.ResetDesktopSettings()
 		}
 
 		// Start app

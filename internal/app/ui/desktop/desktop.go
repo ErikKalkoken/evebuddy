@@ -271,6 +271,13 @@ func (u *DesktopUI) hideMailIndicator() {
 	u.DeskApp.SetSystemTrayIcon(ui.IconIconPng)
 }
 
+func (u *DesktopUI) ResetDesktopSettings() {
+	u.FyneApp.Preferences().SetBool(settingSysTrayEnabled, settingSysTrayEnabledDefault)
+	u.FyneApp.Preferences().SetBool(settingSysTrayEnabled, settingSysTrayEnabledDefault)
+	u.FyneApp.Preferences().SetInt(settingTabsMainID, 0)
+	u.FyneApp.Preferences().SetFloat(settingWindowHeight, settingWindowHeightDefault)
+}
+
 func makeSubTabsKey(i int) string {
 	return fmt.Sprintf("tabs-sub%d-id", i)
 }

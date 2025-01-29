@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -18,11 +19,9 @@ import (
 )
 
 const (
-	chartBaseSize  = 300
-	pieChartWidth  = chartBaseSize
-	pieChartHeight = chartBaseSize
-	barChartWidth  = 2 * chartBaseSize
-	barChartHeight = chartBaseSize
+	chartBaseSize = 300
+	chartWidth    = chartBaseSize * 1.618
+	chartHeight   = chartBaseSize
 )
 
 type WealthArea struct {
@@ -49,10 +48,20 @@ func (u *BaseUI) NewWealthArea() *WealthArea {
 }
 
 func (a *WealthArea) makeCharts() *fyne.Container {
-	return container.NewVBox(
-		container.NewGridWrap(fyne.NewSize(pieChartWidth, pieChartHeight), widget.NewLabel("Loading..."), widget.NewLabel("Loading...")),
-		container.NewGridWrap(fyne.NewSize(barChartWidth, barChartHeight), widget.NewLabel("Loading..."), widget.NewLabel("Loading...")),
+	makePlaceholder := func() fyne.CanvasObject {
+		x := canvas.NewImageFromResource(theme.BrokenImageIcon())
+		x.FillMode = canvas.ImageFillContain
+		x.SetMinSize(fyne.NewSize(chartWidth, chartHeight))
+		return container.NewPadded(x)
+	}
+	c := container.NewGridWrap(
+		fyne.NewSize(chartWidth, chartHeight),
+		makePlaceholder(),
+		makePlaceholder(),
+		makePlaceholder(),
+		makePlaceholder(),
 	)
+	return c
 }
 
 func (a *WealthArea) Refresh() {
@@ -84,7 +93,7 @@ func (a *WealthArea) Refresh() {
 	for i, r := range data {
 		charactersData[i] = chartbuilder.Value{Label: r.label, Value: r.assets + r.wallet}
 	}
-	pieChartSize := fyne.NewSize(pieChartWidth, pieChartHeight)
+	pieChartSize := fyne.NewSize(chartWidth, chartHeight)
 	charactersChart := cb.Render(chartbuilder.Pie, pieChartSize, "Total Wealth By Character", charactersData)
 
 	var totalWallet, totalAssets float64
@@ -97,7 +106,7 @@ func (a *WealthArea) Refresh() {
 	typesData[1] = chartbuilder.Value{Label: "Wallet", Value: totalWallet}
 	typesChart := cb.Render(chartbuilder.Pie, pieChartSize, "Total Wealth By Type", typesData)
 
-	barChartSize := fyne.NewSize(barChartWidth, barChartHeight)
+	barChartSize := fyne.NewSize(chartWidth, chartHeight)
 	assetsData := make([]chartbuilder.Value, len(data))
 	for i, r := range data {
 		assetsData[i] = chartbuilder.Value{Label: r.label, Value: r.assets}
@@ -115,12 +124,11 @@ func (a *WealthArea) Refresh() {
 		total += r.assets + r.wallet
 	}
 
-	pieCharts := a.charts.Objects[0].(*fyne.Container).Objects
-	pieCharts[0] = typesChart
-	pieCharts[1] = charactersChart
-	barCharts := a.charts.Objects[1].(*fyne.Container).Objects
-	barCharts[0] = assetsChart
-	barCharts[1] = walletChart
+	charts := a.charts.Objects
+	charts[0] = typesChart
+	charts[1] = charactersChart
+	charts[2] = assetsChart
+	charts[3] = walletChart
 	a.charts.Refresh()
 
 	totalText := humanize.Number(total, 1)

@@ -56,7 +56,7 @@ func (u *BaseUI) NewLocationsArea() *LocationsArea {
 
 	headers := []headerDef{
 		{"Name", 200},
-		{"Location", 350},
+		{"Location", 250},
 		{"System", 150},
 		{"Sec.", 50},
 		{"Region", 150},
