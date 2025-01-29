@@ -26,6 +26,12 @@ type MobileUI struct {
 func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	u := &MobileUI{}
 	u.BaseUI = ui.NewBaseUI(fyneApp)
+	u.ShowTypeInfoWindow = func(typeID, characterID int32, selectTab ui.TypeWindowTab) {
+		// TODO
+	}
+	u.ShowLocationInfoWindow = func(locationID int64) {
+		// TODO
+	}
 
 	u.MailArea.SendMessage = func(_ ui.SendMessageMode, _ *app.CharacterMail) {
 		d := dialog.NewInformation("Send Message", "PLACEHOLDER", u.Window)

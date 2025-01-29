@@ -61,6 +61,10 @@ type BaseUI struct {
 	OnSetCharacter     func(int32)
 	OnShowAndRun       func()
 
+	// need to be implemented for each platform
+	ShowTypeInfoWindow     func(int32, int32, TypeWindowTab)
+	ShowLocationInfoWindow func(int64)
+
 	FyneApp fyne.App
 	DeskApp desktop.App
 	Window  fyne.Window
@@ -97,6 +101,9 @@ type BaseUI struct {
 func NewBaseUI(fyneApp fyne.App) *BaseUI {
 	u := &BaseUI{
 		FyneApp: fyneApp,
+		ShowTypeInfoWindow: func(_, _ int32, _ TypeWindowTab) {
+			panic("not implemented")
+		},
 	}
 	u.Window = fyneApp.NewWindow(u.AppName())
 
@@ -342,20 +349,12 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 	m.Start()
 }
 
-func (ui *BaseUI) ShowLocationInfoWindow(int64) {
-
-}
-
 type TypeWindowTab uint
 
 const (
 	DescriptionTab TypeWindowTab = iota + 1
 	RequirementsTab
 )
-
-func (u BaseUI) ShowTypeInfoWindow(typeID, characterID int32, selectTab TypeWindowTab) {
-
-}
 
 func (u *BaseUI) WebsiteRootURL() *url.URL {
 	s := u.FyneApp.Metadata().Custom["Website"]

@@ -22,6 +22,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 type locationDataNodeType uint
@@ -71,6 +72,7 @@ type AssetsArea struct {
 	assetCollection  assetcollection.AssetCollection
 	assetGrid        *widget.GridWrap
 	assets           []*app.CharacterAsset
+	locationIcon     *kxwidget.TappableIcon
 	assetsBottom     *widget.Label
 	locationPath     *widget.Label
 	locationsData    *fynetree.FyneTree[locationDataNode]
@@ -101,8 +103,23 @@ func (u *BaseUI) NewAssetsArea() *AssetsArea {
 	)
 
 	a.assetGrid = a.makeAssetGrid()
+	a.locationIcon = kxwidget.NewTappableIcon(theme.InfoIcon(), func() {
+		if a.selectedLocation.IsEmpty() {
+			return
+		}
+		p := a.locationsData.Path(a.selectedLocation.MustValue().UID())
+		if len(p) == 0 {
+			return
+		}
+		root, ok := a.locationsData.Value(p[0])
+		if !ok {
+			return
+		}
+		u.ShowLocationInfoWindow(root.ContainerID)
+	})
+	gridTop := container.NewBorder(nil, nil, nil, a.locationIcon, a.locationPath)
 	a.LocationAssets = container.NewBorder(
-		container.NewVBox(a.locationPath, widget.NewSeparator()),
+		container.NewVBox(gridTop, widget.NewSeparator()),
 		container.NewVBox(widget.NewSeparator(), a.assetsBottom),
 		nil,
 		nil,
@@ -188,6 +205,7 @@ func (a *AssetsArea) clearAssets() error {
 	a.assetGrid.Refresh()
 	a.locationPath.SetText("")
 	a.selectedLocation.Clear()
+	a.locationIcon.Hide()
 	return nil
 }
 
@@ -497,6 +515,7 @@ func (a *AssetsArea) selectLocation(location locationDataNode) error {
 	}
 	a.updateLocationPath(location)
 	a.assetsBottom.SetText(fmt.Sprintf("%d Items - %s ISK Est. Price", len(assets), ihumanize.Number(total, 1)))
+	a.locationIcon.Show()
 	return nil
 }
 

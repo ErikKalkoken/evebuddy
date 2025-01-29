@@ -10,40 +10,44 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-type assetBadge struct {
+const (
+	colorAssetQuantityBadgeBackground = theme.ColorNameMenuBackground
+)
+
+type assetQuantityBadge struct {
 	widget.BaseWidget
 
 	quantity *canvas.Text
 	bg       *canvas.Rectangle
 }
 
-func NewAssetBadge() *assetBadge {
+func NewAssetQuantityBadge() *assetQuantityBadge {
 	q := canvas.NewText("", theme.Color(theme.ColorNameForeground))
 	q.TextSize = theme.CaptionTextSize()
-	w := &assetBadge{
+	w := &assetQuantityBadge{
 		quantity: q,
-		bg:       canvas.NewRectangle(theme.Color(theme.ColorNameBackground)),
+		bg:       canvas.NewRectangle(theme.Color(colorAssetQuantityBadgeBackground)),
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-func (w *assetBadge) SetQuantity(q int) {
+func (w *assetQuantityBadge) SetQuantity(q int) {
 	w.quantity.Text = humanize.Comma(int64(q))
 	w.quantity.Refresh()
 }
 
-func (w *assetBadge) Refresh() {
+func (w *assetQuantityBadge) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	w.quantity.Color = th.Color(theme.ColorNameForeground, v)
 	w.quantity.Refresh()
-	w.bg.FillColor = th.Color(theme.ColorNameBackground, v)
+	w.bg.FillColor = th.Color(colorAssetQuantityBadgeBackground, v)
 	w.bg.Refresh()
 	w.BaseWidget.Refresh()
 }
 
-func (w *assetBadge) CreateRenderer() fyne.WidgetRenderer {
+func (w *assetQuantityBadge) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	bgPadding := layout.NewCustomPaddedLayout(0, 0, p, p)
 	customPadding := layout.NewCustomPaddedLayout(p/2, p/2, p/2, p/2)

@@ -102,6 +102,12 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	u.MailArea.SendMessage = func(mode ui.SendMessageMode, cm *app.CharacterMail) {
 		u.showSendMessageWindow(mode, cm)
 	}
+	u.ShowTypeInfoWindow = func(typeID, characterID int32, selectTab ui.TypeWindowTab) {
+		u.showInfoWindow(u.newTypeInfoWindow(typeID, characterID, 0, selectTab))
+	}
+	u.ShowLocationInfoWindow = func(locationID int64) {
+		u.showInfoWindow(u.newTypeInfoWindow(0, 0, locationID, ui.DescriptionTab))
+	}
 
 	makeTitleWithCount := func(title string, count int) string {
 		if count > 0 {

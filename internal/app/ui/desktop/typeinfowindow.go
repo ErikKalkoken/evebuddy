@@ -194,14 +194,6 @@ type typeInfoWindow struct {
 	window         fyne.Window
 }
 
-func (u *DesktopUI) ShowTypeInfoWindow(typeID, characterID int32, selectTab ui.TypeWindowTab) {
-	u.showInfoWindow(u.newTypeInfoWindow(typeID, characterID, 0, selectTab))
-}
-
-func (u *DesktopUI) ShowLocationInfoWindow(locationID int64) {
-	u.showInfoWindow(u.newTypeInfoWindow(0, 0, locationID, ui.DescriptionTab))
-}
-
 func (u *DesktopUI) showInfoWindow(iw *typeInfoWindow, err error) {
 	if err != nil {
 		t := "Failed to open info window"

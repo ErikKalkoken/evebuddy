@@ -17,7 +17,7 @@ const (
 
 type Asset struct {
 	widget.BaseWidget
-	badge      *assetBadge
+	badge      *assetQuantityBadge
 	icon       *canvas.Image
 	iconLoader func(*canvas.Image, *app.CharacterAsset)
 	label      *assetLabel
@@ -31,7 +31,7 @@ func NewAsset(iconLoader func(image *canvas.Image, ca *app.CharacterAsset)) *Ass
 		icon:       icon,
 		label:      NewAssetLabel(),
 		iconLoader: iconLoader,
-		badge:      NewAssetBadge(),
+		badge:      NewAssetQuantityBadge(),
 	}
 	w.badge.Hide()
 	w.ExtendBaseWidget(w)
