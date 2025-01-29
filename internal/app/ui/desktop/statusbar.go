@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"strconv"
 	"time"
 
@@ -20,7 +19,6 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
-	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -28,9 +26,6 @@ const (
 	characterUpdateStatusTicker = 2 * time.Second
 	clockUpdateTicker           = 2 * time.Second
 	esiStatusUpdateTicker       = 60 * time.Second
-	githubOwner                 = "ErikKalkoken"
-	githubRepo                  = "evebuddy"
-	websiteURL                  = "https://github.com/ErikKalkoken/evebuddy"
 )
 
 type eveStatus uint
@@ -175,10 +170,9 @@ func (a *statusBarArea) StartUpdateTicker() {
 		}
 	}()
 	go func() {
-		current := a.u.FyneApp.Metadata().Version
-		v, err := github.AvailableUpdate(githubOwner, githubRepo, current)
+		v, err := a.u.AvailableUpdate()
 		if err != nil {
-			slog.Error("Failed to fetch latest version from github", "err", err)
+			slog.Error("fetch latest version from github", "err", err)
 			return
 		}
 		if !v.IsRemoteNewer {
@@ -189,7 +183,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 				container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), widget.NewLabel(v.Latest)),
 				container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), widget.NewLabel(v.Local)),
 			)
-			u, _ := url.Parse(websiteURL + "/releases")
+			u := a.u.WebsiteRootURL().JoinPath("releases")
 			d := dialog.NewCustomConfirm("Update available", "Download", "Close", c, func(ok bool) {
 				if !ok {
 					return

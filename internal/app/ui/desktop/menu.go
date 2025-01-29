@@ -1,7 +1,7 @@
 package desktop
 
 import (
-	"net/url"
+	"log/slog"
 	"path/filepath"
 
 	"fyne.io/fyne/v2"
@@ -42,12 +42,15 @@ func makeMenu(u *DesktopUI) *fyne.MainMenu {
 		settingsItem,
 	)
 	website := fyne.NewMenuItem("Website", func() {
-		url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
-		_ = u.FyneApp.OpenURL(url)
+		if err := u.FyneApp.OpenURL(u.WebsiteRootURL()); err != nil {
+			slog.Error("open main website", "error", err)
+		}
 	})
 	report := fyne.NewMenuItem("Report a bug", func() {
-		url, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy/issues")
-		_ = u.FyneApp.OpenURL(url)
+		url := u.WebsiteRootURL().JoinPath("issues")
+		if err := u.FyneApp.OpenURL(url); err != nil {
+			slog.Error("open issue website", "error", err)
+		}
 	})
 	if u.IsOffline {
 		website.Disabled = true

@@ -20,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/github"
 )
 
 // Base UI constants
@@ -27,6 +28,13 @@ const (
 	DefaultIconPixelSize = 64
 	DefaultIconUnitSize  = 32
 	MyFloatFormat        = "#,###.##"
+)
+
+// update info
+const (
+	githubOwner        = "ErikKalkoken"
+	githubRepo         = "evebuddy"
+	fallbackWebsiteURL = "https://github.com/ErikKalkoken/evebuddy"
 )
 
 // BaseUI represents the core UI logic and is used by both the desktop and mobile UI.
@@ -342,8 +350,21 @@ const (
 	RequirementsTab
 )
 
-func (ui BaseUI) ShowTypeInfoWindow(typeID, characterID int32, selectTab TypeWindowTab) {
+func (u BaseUI) ShowTypeInfoWindow(typeID, characterID int32, selectTab TypeWindowTab) {
 
+}
+
+func (u *BaseUI) WebsiteRootURL() *url.URL {
+	s := u.FyneApp.Metadata().Custom["Website"]
+	if s == "" {
+		s = fallbackWebsiteURL
+	}
+	uri, err := url.Parse(s)
+	if err != nil {
+		slog.Error("parse main website URL")
+		uri, _ = url.Parse(fallbackWebsiteURL)
+	}
+	return uri
 }
 
 func (u *BaseUI) MakeAboutPage() fyne.CanvasObject {
@@ -352,8 +373,7 @@ func (u *BaseUI) MakeAboutPage() fyne.CanvasObject {
 	appData := widget.NewRichTextFromMarkdown(
 		"## " + u.AppName() + "\n**Version:** " + info.Version)
 	c.Add(appData)
-	uri, _ := url.Parse("https://github.com/ErikKalkoken/evebuddy")
-	c.Add(widget.NewHyperlink("Website", uri))
+	c.Add(widget.NewHyperlink("Website", u.WebsiteRootURL()))
 	c.Add(widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."))
 	c.Add(widget.NewLabel("(c) 2024 Erik Kalkoken"))
 	return c
@@ -377,4 +397,13 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 	})
 	u.statusWindow = w
 	w.Show()
+}
+
+func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {
+	current := u.FyneApp.Metadata().Version
+	v, err := github.AvailableUpdate(githubOwner, githubRepo, current)
+	if err != nil {
+		return github.VersionInfo{}, err
+	}
+	return v, nil
 }
