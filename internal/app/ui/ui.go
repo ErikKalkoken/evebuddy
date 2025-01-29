@@ -14,13 +14,16 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
 // Base UI constants
@@ -368,14 +371,35 @@ func (u *BaseUI) WebsiteRootURL() *url.URL {
 }
 
 func (u *BaseUI) MakeAboutPage() fyne.CanvasObject {
-	c := container.NewVBox()
-	info := u.FyneApp.Metadata()
-	appData := widget.NewRichTextFromMarkdown(
-		"## " + u.AppName() + "\n**Version:** " + info.Version)
-	c.Add(appData)
-	c.Add(widget.NewHyperlink("Website", u.WebsiteRootURL()))
-	c.Add(widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."))
-	c.Add(widget.NewLabel("(c) 2024 Erik Kalkoken"))
+	latest := widget.NewLabel("?")
+	local := widget.NewLabel("?")
+	go func() {
+		v, err := u.AvailableUpdate()
+		if err != nil {
+			slog.Error("fetch github version for about", "error", err)
+			s := humanize.Error(err)
+			latest.SetText(s)
+			local.SetText(s)
+		}
+		latest.SetText(v.Latest)
+		local.SetText(v.Local)
+	}()
+	title := widgets.NewSubHeading(u.AppName())
+	title.TextStyle.Bold = true
+	c := container.New(
+		layout.NewCustomPaddedVBoxLayout(0),
+		title,
+		container.New(layout.NewCustomPaddedVBoxLayout(0),
+			container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), latest),
+			container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), local),
+		),
+		container.NewHBox(
+			widget.NewHyperlink("Website", u.WebsiteRootURL()),
+			widget.NewHyperlink("Downloads", u.WebsiteRootURL().JoinPath("releases")),
+		),
+		widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."),
+		widget.NewLabel("(c) 2024-25 Erik Kalkoken"),
+	)
 	return c
 }
 

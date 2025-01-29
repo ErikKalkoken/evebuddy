@@ -172,7 +172,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 	go func() {
 		v, err := a.u.AvailableUpdate()
 		if err != nil {
-			slog.Error("fetch latest version from github", "err", err)
+			slog.Error("fetch latest github version for download hint", "err", err)
 			return
 		}
 		if !v.IsRemoteNewer {
