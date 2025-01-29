@@ -36,13 +36,11 @@ type WealthArea struct {
 
 func (u *BaseUI) NewWealthArea() *WealthArea {
 	a := &WealthArea{
-		top: widget.NewLabel(""),
+		top: makeTopLabel(),
 		u:   u,
 	}
 	a.charts = a.makeCharts()
-	a.top.TextStyle.Bold = true
 	cs := container.NewScroll(a.charts)
-	cs.SetMinSize(fyne.NewSize(barChartWidth, barChartHeight))
 	a.Content = container.NewBorder(
 		container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil,
 		cs,
@@ -52,9 +50,8 @@ func (u *BaseUI) NewWealthArea() *WealthArea {
 
 func (a *WealthArea) makeCharts() *fyne.Container {
 	return container.NewVBox(
-		container.NewHBox(widget.NewLabel(""), widget.NewLabel("")),
-		widget.NewLabel(""),
-		widget.NewLabel(""),
+		container.NewGridWrap(fyne.NewSize(pieChartWidth, pieChartHeight), widget.NewLabel("Loading..."), widget.NewLabel("Loading...")),
+		container.NewGridWrap(fyne.NewSize(barChartWidth, barChartHeight), widget.NewLabel("Loading..."), widget.NewLabel("Loading...")),
 	)
 }
 
@@ -121,8 +118,9 @@ func (a *WealthArea) Refresh() {
 	pieCharts := a.charts.Objects[0].(*fyne.Container).Objects
 	pieCharts[0] = typesChart
 	pieCharts[1] = charactersChart
-	a.charts.Objects[1] = assetsChart
-	a.charts.Objects[2] = walletChart
+	barCharts := a.charts.Objects[1].(*fyne.Container).Objects
+	barCharts[0] = assetsChart
+	barCharts[1] = walletChart
 	a.charts.Refresh()
 
 	totalText := humanize.Number(total, 1)
