@@ -59,7 +59,7 @@ func (u *BaseUI) NewUpdateStatusArea() *UpdateStatusArea {
 		charactersTop:     widget.NewLabel(""),
 		selectedEntityID:  -1,
 		sections:          make([]app.SectionStatus, 0),
-		sectionsTop:       makeTopLabel(),
+		sectionsTop:       widget.NewLabel(""),
 		selectedSectionID: -1,
 		u:                 u,
 	}
@@ -74,6 +74,7 @@ func (u *BaseUI) NewUpdateStatusArea() *UpdateStatusArea {
 	)
 
 	a.sectionGrid = a.makeSectionGrid()
+	a.sectionsTop.TextStyle.Bold = true
 	b := widget.NewButton("Force update all sections", func() {
 		if a.selectedEntityID == -1 || a.selectedEntityID >= len(a.sectionEntities) {
 			return

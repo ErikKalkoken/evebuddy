@@ -110,7 +110,6 @@ func (sc *StatusCacheService) CharacterSectionList(characterID int32) []app.Sect
 type statusSummary struct {
 	current   int
 	errors    int
-	missing   int
 	isRunning bool
 }
 
@@ -118,7 +117,6 @@ type statusSummary struct {
 func (ss *statusSummary) add(other statusSummary) {
 	ss.current += other.current
 	ss.errors += other.errors
-	ss.missing += other.missing
 	ss.isRunning = ss.isRunning || other.isRunning
 }
 
@@ -129,7 +127,6 @@ func (sc *StatusCacheService) CharacterSectionSummary(characterID int32) app.Sta
 		Current:   ss.current,
 		Errors:    ss.errors,
 		IsRunning: ss.isRunning,
-		Missing:   ss.missing,
 		Total:     total,
 	}
 	return s
@@ -141,17 +138,12 @@ func (sc *StatusCacheService) calcCharacterSectionSummary(characterID int32) sta
 	for _, o := range csl {
 		if !o.IsOK() {
 			ss.errors++
-		} else if o.IsMissing() {
-			ss.missing++
 		} else if o.IsCurrent() {
 			ss.current++
 		}
 		if o.IsRunning() {
 			ss.isRunning = true
 		}
-	}
-	if diff := len(app.CharacterSections) - len(csl); diff > 0 {
-		ss.missing += diff
 	}
 	return ss
 }
@@ -246,7 +238,6 @@ func (sc *StatusCacheService) GeneralSectionSummary() app.StatusSummary {
 	s := app.StatusSummary{
 		Current:   ss.current,
 		Errors:    ss.errors,
-		Missing:   ss.missing,
 		IsRunning: ss.isRunning,
 		Total:     len(app.GeneralSections),
 	}
@@ -259,17 +250,12 @@ func (sc *StatusCacheService) calcGeneralSectionSummary() statusSummary {
 	for _, o := range gsl {
 		if !o.IsOK() {
 			ss.errors++
-		} else if o.IsMissing() {
-			ss.missing++
 		} else if o.IsCurrent() {
 			ss.current++
 		}
 		if o.IsRunning() {
 			ss.isRunning = true
 		}
-	}
-	if diff := len(app.GeneralSections) - len(gsl); diff > 0 {
-		ss.missing += diff
 	}
 	return ss
 }
@@ -293,7 +279,6 @@ func (sc *StatusCacheService) Summary() app.StatusSummary {
 	s := app.StatusSummary{
 		Current:   ss.current,
 		Errors:    ss.errors,
-		Missing:   ss.missing,
 		IsRunning: ss.isRunning,
 		Total:     len(app.CharacterSections)*len(cc) + len(app.GeneralSections),
 	}
