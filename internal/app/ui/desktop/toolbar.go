@@ -36,7 +36,7 @@ func (u *DesktopUI) newToolbarArea() *toolbarArea {
 		u: u,
 	}
 	a.icon.FillMode = canvas.ImageFillContain
-	a.icon.SetMinSize(fyne.Size{Width: defaultIconSize, Height: defaultIconSize})
+	a.icon.SetMinSize(fyne.Size{Width: ui.DefaultIconUnitSize, Height: ui.DefaultIconUnitSize})
 
 	c := container.NewHBox(container.NewPadded(a.icon), a.name, layout.NewSpacer(), a.switchButton)
 	a.content = container.NewVBox(c, widget.NewSeparator())
@@ -52,7 +52,7 @@ func (a *toolbarArea) refresh() {
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
 		a.name.Importance = widget.LowImportance
 	} else {
-		r, err := a.u.EveImageService.CharacterPortrait(c.ID, defaultIconSize)
+		r, err := a.u.EveImageService.CharacterPortrait(c.ID, ui.DefaultIconPixelSize)
 		if err != nil {
 			slog.Error("Failed to fetch character portrait", "characterID", c.ID, "err", err)
 			r = ui.IconCharacterplaceholder32Jpeg
@@ -103,7 +103,7 @@ func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) 
 		})
 		item.Icon = ui.IconCharacterplaceholder32Jpeg
 		go func() {
-			r, err := a.u.EveImageService.CharacterPortrait(myC.ID, defaultIconSize)
+			r, err := a.u.EveImageService.CharacterPortrait(myC.ID, ui.DefaultIconPixelSize)
 			if err != nil {
 				slog.Error("Failed to fetch character portrait", "characterID", myC.ID, "err", err)
 				r = ui.IconCharacterplaceholder32Jpeg

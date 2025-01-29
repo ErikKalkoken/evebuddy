@@ -71,7 +71,8 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 		},
 		func(branch bool) fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(IconCharacterplaceholder32Jpeg)
-			icon.FillMode = canvas.ImageFillOriginal
+			icon.FillMode = canvas.ImageFillContain
+			icon.SetMinSize(fyne.NewSquareSize(DefaultIconUnitSize))
 			first := widget.NewLabel("Template")
 			second := kwidget.NewTappableIcon(theme.InfoIcon(), nil)
 			third := widget.NewLabel("Template")

@@ -17,12 +17,6 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-// Desktop UI constants
-const (
-	defaultIconSize = 32
-	myFloatFormat   = "#,###.##"
-)
-
 // The DesktopUI is the root object of the DesktopUI and contains all DesktopUI areas.
 //
 // Each DesktopUI area holds a pointer of the DesktopUI instance, so that areas can

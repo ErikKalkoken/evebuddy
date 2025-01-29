@@ -215,18 +215,17 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 			return len(a.assets)
 		},
 		func() fyne.CanvasObject {
-			const assetListIconSize = 64
 			return widgets.NewAsset(func(image *canvas.Image, ca *app.CharacterAsset) {
 				RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
 					switch ca.Variant() {
 					case app.VariantSKIN:
-						return a.u.EveImageService.InventoryTypeSKIN(ca.EveType.ID, assetListIconSize)
+						return a.u.EveImageService.InventoryTypeSKIN(ca.EveType.ID, DefaultIconPixelSize)
 					case app.VariantBPO:
-						return a.u.EveImageService.InventoryTypeBPO(ca.EveType.ID, assetListIconSize)
+						return a.u.EveImageService.InventoryTypeBPO(ca.EveType.ID, DefaultIconPixelSize)
 					case app.VariantBPC:
-						return a.u.EveImageService.InventoryTypeBPC(ca.EveType.ID, assetListIconSize)
+						return a.u.EveImageService.InventoryTypeBPC(ca.EveType.ID, DefaultIconPixelSize)
 					default:
-						return a.u.EveImageService.InventoryTypeIcon(ca.EveType.ID, assetListIconSize)
+						return a.u.EveImageService.InventoryTypeIcon(ca.EveType.ID, DefaultIconPixelSize)
 					}
 				})
 			})

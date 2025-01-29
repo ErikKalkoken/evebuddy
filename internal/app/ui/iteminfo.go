@@ -520,22 +520,22 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 				n = eveicon.Faction
 			}
 			marker := canvas.NewImageFromResource(eveicon.GetResourceByName(n))
-			marker.FillMode = canvas.ImageFillOriginal
-			typeIcon.Add(marker)
+			marker.FillMode = canvas.ImageFillContain
+			marker.SetMinSize(fyne.NewSquareSize(render.MinSize().Width * 0.2))
+			typeIcon.Add(container.NewPadded(marker))
 		}
 	} else {
-		size := 64
 		icon := NewImageResourceAsync(IconQuestionmarkSvg, func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
-				return a.u.EveImageService.InventoryTypeSKIN(a.et.ID, size)
+				return a.u.EveImageService.InventoryTypeSKIN(a.et.ID, DefaultIconPixelSize)
 			} else if a.et.IsBlueprint() {
-				return a.u.EveImageService.InventoryTypeBPO(a.et.ID, size)
+				return a.u.EveImageService.InventoryTypeBPO(a.et.ID, DefaultIconPixelSize)
 			} else {
-				return a.u.EveImageService.InventoryTypeIcon(a.et.ID, size)
+				return a.u.EveImageService.InventoryTypeIcon(a.et.ID, DefaultIconPixelSize)
 			}
 		})
 		icon.FillMode = canvas.ImageFillContain
-		s := float32(size) * 1.3 / a.u.Window.Canvas().Scale()
+		s := float32(DefaultIconPixelSize) * 1.3 / a.u.Window.Canvas().Scale()
 		icon.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(icon)
 	}

@@ -55,7 +55,7 @@ func (a *Attributes) makeAttributeList() *widget.List {
 		func() fyne.CanvasObject {
 			icon := canvas.NewImageFromResource(IconQuestionmarkSvg)
 			icon.FillMode = canvas.ImageFillContain
-			icon.SetMinSize(fyne.Size{Width: 32, Height: 32})
+			icon.SetMinSize(fyne.Size{Width: DefaultIconUnitSize, Height: DefaultIconUnitSize})
 			return container.NewHBox(
 				icon, widget.NewLabel("placeholder"), layout.NewSpacer(), widget.NewLabel("points"))
 		},
