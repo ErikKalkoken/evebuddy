@@ -321,7 +321,7 @@ func (a *AssetSearchArea) resetSearch() {
 }
 
 func (a *AssetSearchArea) Refresh() {
-	if !a.u.IsDesktop() {
+	if a.u.IsMobile() {
 		return // TODO: Temporary until mobile friendly version is available
 	}
 	var t string

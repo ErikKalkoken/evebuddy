@@ -145,7 +145,7 @@ func (u *BaseUI) MakeGeneralSettingsPage(w fyne.Window) (fyne.CanvasObject, func
 				HintText: "Current log level",
 			},
 		}}
-	if !u.IsDesktop() {
+	if u.IsMobile() {
 		settings.Orientation = widget.Vertical
 	}
 	reset := func() {
@@ -185,7 +185,7 @@ func (u *BaseUI) MakeEVEOnlinePage() (fyne.CanvasObject, func()) {
 			},
 		},
 	}
-	if !u.IsDesktop() {
+	if u.IsMobile() {
 		settings.Orientation = widget.Vertical
 	}
 	x := func() {
@@ -314,7 +314,7 @@ func (u *BaseUI) MakeNotificationGeneralPage(w fyne.Window) (fyne.CanvasObject, 
 		HintText: "Events older then this value in hours will not be notified",
 	})
 
-	if !u.IsDesktop() {
+	if u.IsMobile() {
 		form.Orientation = widget.Vertical
 	}
 

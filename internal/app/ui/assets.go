@@ -133,7 +133,7 @@ func (u *BaseUI) NewAssetsArea() *AssetsArea {
 
 func (a *AssetsArea) makeLocationsTree() *widget.Tree {
 	labelSizeName := theme.SizeNameText
-	if !a.u.IsDesktop() {
+	if a.u.IsMobile() {
 		labelSizeName = theme.SizeNameCaptionText
 	}
 	makeNameWithCount := func(name string, count int) string {

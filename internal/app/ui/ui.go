@@ -93,6 +93,7 @@ type BaseUI struct {
 
 	character    *app.Character
 	statusWindow fyne.Window
+	isMobile     bool
 }
 
 // NewBaseUI returns a new BaseUI.
@@ -104,6 +105,10 @@ func NewBaseUI(fyneApp fyne.App) *BaseUI {
 		ShowTypeInfoWindow: func(_, _ int32, _ TypeWindowTab) {
 			panic("not implemented")
 		},
+		ShowLocationInfoWindow: func(_ int64) {
+			panic("not implemented")
+		},
+		isMobile: fyne.CurrentDevice().IsMobile(),
 	}
 	u.Window = fyneApp.NewWindow(u.AppName())
 
@@ -139,6 +144,10 @@ func NewBaseUI(fyneApp fyne.App) *BaseUI {
 
 func (u BaseUI) IsDesktop() bool {
 	return u.DeskApp != nil
+}
+
+func (u BaseUI) IsMobile() bool {
+	return u.isMobile
 }
 
 func (u BaseUI) AppName() string {

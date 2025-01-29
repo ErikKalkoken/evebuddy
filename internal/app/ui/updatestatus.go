@@ -100,7 +100,7 @@ func (u *BaseUI) NewUpdateStatusArea() *UpdateStatusArea {
 	hs := container.NewHSplit(a.entities, vs)
 	hs.SetOffset(0.33)
 
-	if !u.IsDesktop() {
+	if u.IsMobile() {
 		a.Content = a.entities
 	} else {
 		a.Content = hs
