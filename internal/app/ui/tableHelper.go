@@ -25,11 +25,12 @@ func maxHeaderWidth(headers []headerDef) float32 {
 	return m
 }
 
+// makeTopLabel returns a new empty label meant for the top bar on a screen.
 func makeTopLabel() *widget.Label {
-	x := widget.NewLabel("")
-	x.TextStyle.Bold = true
-	x.Wrapping = fyne.TextWrapWord
-	return x
+	l := widget.NewLabel("")
+	l.TextStyle.Bold = true
+	l.Wrapping = fyne.TextWrapWord
+	return l
 }
 
 func makeDataTableForDesktop[S ~[]E, E any](

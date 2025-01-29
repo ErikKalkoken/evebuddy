@@ -58,10 +58,9 @@ func (u *BaseUI) NewSkillCatalogueArea() *SkillCatalogueArea {
 		levelTrained:   theme.NewPrimaryThemedResource(theme.MediaStopIcon()),
 		levelUnTrained: theme.NewDisabledResource(theme.MediaStopIcon()),
 		skills:         make([]skillTrained, 0),
-		total:          widget.NewLabel(""),
+		total:          makeTopLabel(),
 		u:              u,
 	}
-	a.total.TextStyle.Bold = true
 	a.groupsGrid = a.makeSkillGroups()
 	a.skillsGrid = a.makeSkillsGrid()
 	s := container.NewVSplit(a.groupsGrid, a.skillsGrid)

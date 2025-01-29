@@ -88,10 +88,9 @@ func (u *BaseUI) NewAssetsArea() *AssetsArea {
 		assetsBottom:  widget.NewLabel(""),
 		locationPath:  lp,
 		locationsData: fynetree.New[locationDataNode](),
-		locationsTop:  widget.NewLabel(""),
+		locationsTop:  makeTopLabel(),
 		u:             u,
 	}
-	a.locationsTop.TextStyle.Bold = true
 	a.locationsWidget = a.makeLocationsTree()
 	a.Locations = container.NewBorder(
 		container.NewVBox(a.locationsTop, widget.NewSeparator()),

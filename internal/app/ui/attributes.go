@@ -39,10 +39,9 @@ type Attributes struct {
 func (u *BaseUI) NewAttributes() *Attributes {
 	a := Attributes{
 		attributes: make([]attribute, 0),
-		top:        widget.NewLabel(""),
+		top:        makeTopLabel(),
 		u:          u,
 	}
-	a.top.TextStyle.Bold = true
 	list := a.makeAttributeList()
 	a.Content = container.NewBorder(container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil, list)
 	return &a

@@ -25,10 +25,9 @@ type ImplantsArea struct {
 func (u *BaseUI) NewImplantsArea() *ImplantsArea {
 	a := ImplantsArea{
 		implants: make([]*app.CharacterImplant, 0),
-		top:      widget.NewLabel(""),
+		top:      makeTopLabel(),
 		u:        u,
 	}
-	a.top.TextStyle.Bold = true
 	a.list = a.makeImplantList()
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.Content = container.NewBorder(top, nil, nil, nil, a.list)

@@ -51,11 +51,10 @@ type JumpClonesArea struct {
 
 func (u *BaseUI) NewJumpClonesArea() *JumpClonesArea {
 	a := JumpClonesArea{
-		top:      widget.NewLabel(""),
+		top:      makeTopLabel(),
 		treeData: fynetree.New[jumpCloneNode](),
 		u:        u,
 	}
-	a.top.TextStyle.Bold = true
 	a.treeWidget = a.makeTree()
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.Content = container.NewBorder(top, nil, nil, nil, a.treeWidget)

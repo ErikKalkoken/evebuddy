@@ -32,13 +32,10 @@ type SkillqueueArea struct {
 func (u *BaseUI) NewSkillqueueArea() *SkillqueueArea {
 	a := SkillqueueArea{
 		items: make([]*app.CharacterSkillqueueItem, 0),
-		total: widget.NewLabel(""),
+		total: makeTopLabel(),
 		u:     u,
 	}
-
-	a.total.TextStyle.Bold = true
 	list := a.makeSkillqueue()
-
 	top := container.NewVBox(a.total, widget.NewSeparator())
 	a.Content = container.NewBorder(top, nil, nil, nil, list)
 	return &a

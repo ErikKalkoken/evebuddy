@@ -32,11 +32,9 @@ type PlanetArea struct {
 func (u *BaseUI) NewPlanetArea() *PlanetArea {
 	a := PlanetArea{
 		planets: make([]*app.CharacterPlanet, 0),
-		top:     widget.NewLabel(""),
+		top:     makeTopLabel(),
 		u:       u,
 	}
-
-	a.top.TextStyle.Bold = true
 	a.list = a.makeList()
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.Content = container.NewBorder(top, nil, nil, nil, a.list)

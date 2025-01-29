@@ -50,14 +50,13 @@ func (u *BaseUI) NewAccountArea() *AccountArea {
 	info.Importance = widget.LowImportance
 	a := &AccountArea{
 		characters: make([]accountCharacter, 0),
-		title:      widget.NewLabel(""),
+		title:      makeTopLabel(),
 		window:     u.Window,
 		emptyHint:  info,
 		u:          u,
 	}
 
 	a.list = a.makeCharacterList()
-	a.title.TextStyle.Bold = true
 	add := widget.NewButtonWithIcon("Add Character", theme.ContentAddIcon(), func() {
 		a.ShowAddCharacterDialog()
 	})

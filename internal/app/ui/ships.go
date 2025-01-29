@@ -39,12 +39,10 @@ type ShipsArea struct {
 func (u *BaseUI) newShipArea() *ShipsArea {
 	a := ShipsArea{
 		ships:     make([]*app.CharacterShipAbility, 0),
-		top:       widget.NewLabel(""),
+		top:       makeTopLabel(),
 		foundText: widget.NewLabel(""),
 		u:         u,
 	}
-	a.top.TextStyle.Bold = true
-
 	a.searchBox = widget.NewEntry()
 	a.searchBox.SetPlaceHolder("Filter by ship name")
 	a.searchBox.OnChanged = func(s string) {

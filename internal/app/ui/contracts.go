@@ -48,11 +48,9 @@ type ContractsArea struct {
 func (u *BaseUI) NewContractsArea() *ContractsArea {
 	a := ContractsArea{
 		contracts: make([]*app.CharacterContract, 0),
-		top:       widget.NewLabel(""),
+		top:       makeTopLabel(),
 		u:         u,
 	}
-
-	a.top.TextStyle.Bold = true
 	a.table = a.makeTable()
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
