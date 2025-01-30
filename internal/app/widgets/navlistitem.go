@@ -44,12 +44,6 @@ type NavList struct {
 	items []*NavListItem
 }
 
-const (
-	sizeHeading    = 18
-	sizeSupporting = 14
-	sizeIcon       = 32
-)
-
 type navListItem struct {
 	widget.BaseWidget
 
@@ -67,12 +61,9 @@ func newNavListItem(icon fyne.Resource, headline, supporting string) *navListIte
 	i2.FillMode = canvas.ImageFillContain
 	i2.SetMinSize(fyne.NewSquareSize(sizeIcon))
 	h := canvas.NewText(headline, theme.Color(theme.ColorNameForeground))
-	h.TextSize = sizeHeading
+	h.TextSize = 16
 	t := canvas.NewText(supporting, theme.Color(theme.ColorNameForeground))
-	t.TextSize = sizeSupporting
-	if supporting == "" {
-		t.Hide()
-	}
+	t.TextSize = 14
 	w := &navListItem{
 		headline:   h,
 		supporting: t,

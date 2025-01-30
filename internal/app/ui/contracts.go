@@ -38,9 +38,10 @@ type contractEntry struct {
 
 // ContractsArea is the UI area that shows the skillqueue
 type ContractsArea struct {
-	Content   *fyne.Container
+	Content *fyne.Container
+
 	contracts []*app.CharacterContract
-	table     *widget.Table
+	body      fyne.CanvasObject
 	top       *widget.Label
 	u         *BaseUI
 }
@@ -51,17 +52,7 @@ func (u *BaseUI) NewContractsArea() *ContractsArea {
 		top:       makeTopLabel(),
 		u:         u,
 	}
-	a.table = a.makeTable()
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.Content = container.NewBorder(top, nil, nil, nil, a.table)
-	return &a
-}
-
-func (a *ContractsArea) makeTable() *widget.Table {
-	var headers = []struct {
-		text  string
-		width float32
-	}{
+	headers := []headerDef{
 		{"Contract", 300},
 		{"Type", 120},
 		{"From", 150},
@@ -71,77 +62,108 @@ func (a *ContractsArea) makeTable() *widget.Table {
 		{"Date Accepted", 150},
 		{"Time Left", 100},
 	}
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(a.contracts), len(headers)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Template Template")
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			l := co.(*widget.Label)
-			l.Importance = widget.MediumImportance
-			l.Alignment = fyne.TextAlignLeading
-			l.Truncation = fyne.TextTruncateOff
-			if tci.Row >= len(a.contracts) || tci.Row < 0 {
-				return
+	makeDataLabel := func(col int, o *app.CharacterContract) (string, fyne.TextAlign, widget.Importance) {
+		var align fyne.TextAlign
+		var importance widget.Importance
+		var text string
+		switch col {
+		case 0:
+			text = o.NameDisplay()
+		case 1:
+			text = o.TypeDisplay()
+		case 2:
+			text = o.Issuer.Name
+		case 3:
+			if o.Assignee == nil {
+				text = ""
+			} else {
+				text = o.Assignee.Name
 			}
-			o := a.contracts[tci.Row]
-			switch tci.Col {
-			case 0:
-				l.Text = o.NameDisplay()
-			case 1:
-				l.Text = o.TypeDisplay()
-			case 2:
-				l.Text = o.Issuer.Name
-			case 3:
-				if o.Assignee == nil {
-					l.Text = ""
-				} else {
-					l.Text = o.Assignee.Name
-				}
-			case 4:
-				l.Text = o.StatusDisplay()
-			case 5:
-				l.Text = o.DateIssued.Format(app.TimeDefaultFormat)
-			case 6:
-				if o.DateAccepted.IsEmpty() {
-					l.Text = ""
-				} else {
-					l.Text = o.DateAccepted.MustValue().Format(app.TimeDefaultFormat)
-				}
-			case 7:
-				if o.IsExpired() {
-					l.Text = "EXPIRED"
-					l.Importance = widget.DangerImportance
-				} else {
-					l.Text = ihumanize.RelTime(o.DateExpiredEffective())
-				}
+		case 4:
+			text = o.StatusDisplay()
+		case 5:
+			text = o.DateIssued.Format(app.TimeDefaultFormat)
+		case 6:
+			if o.DateAccepted.IsEmpty() {
+				text = ""
+			} else {
+				text = o.DateAccepted.MustValue().Format(app.TimeDefaultFormat)
 			}
-			l.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
-	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
-		co.(*widget.Label).SetText(s.text)
-	}
-	for i, h := range headers {
-		t.SetColumnWidth(i, h.width)
-	}
-	t.OnSelected = func(tci widget.TableCellID) {
-		defer t.UnselectAll()
-		if tci.Row >= len(a.contracts) || tci.Row < 0 {
-			return
+		case 7:
+			if o.IsExpired() {
+				text = "EXPIRED"
+				importance = widget.DangerImportance
+			} else {
+				text = ihumanize.RelTime(o.DateExpiredEffective())
+			}
 		}
-		o := a.contracts[tci.Row]
+		return text, align, importance
+	}
+	onSelected := func(o *app.CharacterContract) {
 		a.showContract(o)
 	}
-	return t
+	if a.u.IsDesktop() {
+		a.body = makeDataTableForDesktop(headers, &a.contracts, makeDataLabel, onSelected)
+	} else {
+		a.body = makeDataTableForMobile(headers, &a.contracts, makeDataLabel, onSelected)
+	}
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
+	return &a
 }
+
+// func (a *ContractsArea) makeTable() *widget.Table {
+// 	var headers = []struct {
+// 		text  string
+// 		width float32
+// 	}{
+// 		{"Contract", 300},
+// 		{"Type", 120},
+// 		{"From", 150},
+// 		{"To", 150},
+// 		{"Status", 100},
+// 		{"Date Issued", 150},
+// 		{"Date Accepted", 150},
+// 		{"Time Left", 100},
+// 	}
+// 	t := widget.NewTable(
+// 		func() (rows int, cols int) {
+// 			return len(a.contracts), len(headers)
+// 		},
+// 		func() fyne.CanvasObject {
+// 			return widget.NewLabel("Template Template")
+// 		},
+// 		func(tci widget.TableCellID, co fyne.CanvasObject) {
+// 			if tci.Row >= len(a.contracts) || tci.Row < 0 {
+// 				return
+// 			}
+// 			l := co.(*widget.Label)
+// 			w := a.contracts[tci.Row]
+// 			l.Text, l.Alignment, l.Importance = makeDataLabel(tci.Col, w)
+// 			l.Refresh()
+// 		},
+// 	)
+// 	t.ShowHeaderRow = true
+// 	t.CreateHeader = func() fyne.CanvasObject {
+// 		return widget.NewLabel("Template")
+// 	}
+// 	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
+// 		s := headers[tci.Col]
+// 		co.(*widget.Label).SetText(s.text)
+// 	}
+// 	for i, h := range headers {
+// 		t.SetColumnWidth(i, h.width)
+// 	}
+// 	t.OnSelected = func(tci widget.TableCellID) {
+// 		defer t.UnselectAll()
+// 		if tci.Row >= len(a.contracts) || tci.Row < 0 {
+// 			return
+// 		}
+// 		o := a.contracts[tci.Row]
+// 		a.showContract(o)
+// 	}
+// 	return t
+// }
 
 func (a *ContractsArea) Refresh() {
 	var t string
@@ -156,7 +178,7 @@ func (a *ContractsArea) Refresh() {
 	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
-	a.table.Refresh()
+	a.body.Refresh()
 }
 
 func (a *ContractsArea) makeTopText() (string, widget.Importance) {
@@ -215,6 +237,9 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 	}
 	makeBaseInfo := func(c *app.CharacterContract) fyne.CanvasObject {
 		f := widget.NewForm()
+		if a.u.isMobile {
+			f.Orientation = widget.Vertical
+		}
 		f.Append("Info by issuer", widget.NewLabel(c.TitleDisplay()))
 		f.Append("Type", widget.NewLabel(c.TypeDisplay()))
 		f.Append("Issued By", widget.NewLabel(c.Issuer.Name))
@@ -231,17 +256,20 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		return f
 	}
 	makePaymentInfo := func(c *app.CharacterContract) fyne.CanvasObject {
-		f2 := widget.NewForm()
+		f := widget.NewForm()
+		if a.u.isMobile {
+			f.Orientation = widget.Vertical
+		}
 		if c.Price > 0 {
 			x := widget.NewLabel(makeISKString(c.Price))
 			x.Importance = widget.DangerImportance
-			f2.Append("Buyer Will Pay", x)
+			f.Append("Buyer Will Pay", x)
 		} else {
 			x := widget.NewLabel(makeISKString(c.Reward))
 			x.Importance = widget.SuccessImportance
-			f2.Append("Buyer Will Get", x)
+			f.Append("Buyer Will Get", x)
 		}
-		return f2
+		return f
 	}
 	makeCourierInfo := func(c *app.CharacterContract) fyne.CanvasObject {
 		var collateral string
