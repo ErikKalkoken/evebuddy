@@ -13,13 +13,14 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/dustin/go-humanize"
 )
 
 type MobileUI struct {
 	*ui.BaseUI
 
-	navItemUpdateStatus *NavListItem
+	navItemUpdateStatus *widgets.NavListItem
 }
 
 // NewUI build the UI and returns it.
@@ -72,19 +73,19 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				items = append(items, it)
 			}
 		}
-		ShowContextMenu(o, fyne.NewMenu("", items...))
+		widgets.ShowContextMenu(o, fyne.NewMenu("", items...))
 	}
 
-	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...widget.ToolbarItem) *AppBar {
+	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...widget.ToolbarItem) *widgets.AppBar {
 		items = append(items, characterSelector)
-		return NewAppBar(title, body, items...)
+		return widgets.NewAppBar(title, body, items...)
 	}
 
-	var characterNav *Navigator
+	var characterNav *widgets.Navigator
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
 
-	navItemMail := NewNavListItemWithIcon(
+	navItemMail := widgets.NewNavListItemWithIcon(
 		theme.MailComposeIcon(),
 		"Mail",
 		func() {
@@ -93,60 +94,60 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			})
 			u.MailArea.OnSelected = func() {
 				characterNav.Push(
-					NewAppBar("", u.MailArea.Detail, deleteAction),
+					widgets.NewAppBar("", u.MailArea.Detail, deleteAction),
 				)
 			}
 			characterNav.Push(
 				newCharacterAppBar(
 					"Mail",
 					u.MailArea.Headers,
-					NewToolbarActionMenu(theme.FolderIcon(), mailMenu),
+					widgets.NewToolbarActionMenu(theme.FolderIcon(), mailMenu),
 				))
 		},
 	)
 
-	navItemCommunications := NewNavListItemWithIcon(
+	navItemCommunications := widgets.NewNavListItemWithIcon(
 		theme.NewThemedResource(ui.IconMessageSvg),
 		"Communications",
 		func() {
 			u.NotificationsArea.OnSelected = func() {
 				characterNav.Push(
-					NewAppBar("", u.NotificationsArea.Detail),
+					widgets.NewAppBar("", u.NotificationsArea.Detail),
 				)
 			}
 			characterNav.Push(
 				newCharacterAppBar(
 					"Communications",
 					u.NotificationsArea.Notifications,
-					NewToolbarActionMenu(theme.FolderIcon(), communicationsMenu),
+					widgets.NewToolbarActionMenu(theme.FolderIcon(), communicationsMenu),
 				),
 			)
 		},
 	)
-	navItemColonies := NewNavListItemWithIcon(
+	navItemColonies := widgets.NewNavListItemWithIcon(
 		theme.NewThemedResource(ui.IconEarthSvg),
 		"Colonies",
 		func() {
 			characterNav.Push(newCharacterAppBar("Colonies", u.PlanetArea.Content))
 		},
 	)
-	navItemSkills := NewNavListItemWithIcon(
+	navItemSkills := widgets.NewNavListItemWithIcon(
 		theme.NewThemedResource(ui.IconSchoolSvg),
 		"Skills",
 		func() {
 			characterNav.Push(
 				newCharacterAppBar(
 					"Skills",
-					NewNavList(
-						NewNavListItemWithNavigator(
+					widgets.NewNavList(
+						widgets.NewNavListItemWithNavigator(
 							characterNav,
 							newCharacterAppBar("Training Queue", u.SkillqueueArea.Content),
 						),
-						NewNavListItemWithNavigator(
+						widgets.NewNavListItemWithNavigator(
 							characterNav,
 							newCharacterAppBar("Skill Catalogue", u.SkillCatalogueArea.Content),
 						),
-						NewNavListItemWithNavigator(
+						widgets.NewNavListItemWithNavigator(
 							characterNav,
 							newCharacterAppBar("Ships", u.ShipsArea.Content),
 						),
@@ -154,7 +155,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				))
 		},
 	)
-	navItemWallet := NewNavListItemWithIcon(
+	navItemWallet := widgets.NewNavListItemWithIcon(
 		theme.NewThemedResource(ui.IconAttachmoneySvg),
 		"Wallet",
 		func() {
@@ -168,8 +169,8 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				))
 		},
 	)
-	characterList := NewNavList(
-		NewNavListItemWithIcon(
+	characterList := widgets.NewNavList(
+		widgets.NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconInventory2Svg),
 			"Assets",
 			func() {
@@ -182,7 +183,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		navItemColonies,
 		navItemMail,
 		navItemCommunications,
-		NewNavListItemWithIcon(
+		widgets.NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconHeadSnowflakeSvg),
 			"Clones",
 			func() {
@@ -196,7 +197,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 					))
 			},
 		),
-		NewNavListItemWithIcon(
+		widgets.NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconFileSignSvg),
 			"Contracts",
 			func() {
@@ -210,163 +211,163 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	u.PlanetArea.OnCountRefresh = func(count int) {
 		s := ""
 		if count > 0 {
-			s = humanize.Comma(int64(count))
+			s = fmt.Sprintf("%s expired extractions", humanize.Comma(int64(count)))
 		}
-		navItemColonies.Suffix = s
+		navItemColonies.Supporting = s
 		characterList.Refresh()
 	}
 
 	u.MailArea.OnUnreadRefresh = func(count int) {
 		s := ""
 		if count > 0 {
-			s = humanize.Comma(int64(count))
+			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count)))
 		}
-		navItemMail.Suffix = s
+		navItemMail.Supporting = s
 		characterList.Refresh()
 	}
 
 	u.NotificationsArea.OnUnreadRefresh = func(count int) {
 		s := ""
 		if count > 0 {
-			s = humanize.Comma(int64(count))
+			s = fmt.Sprintf("%s unread", humanize.Comma(int64(count)))
 		}
-		navItemCommunications.Suffix = s
+		navItemCommunications.Supporting = s
 		characterList.Refresh()
 	}
 
 	u.SkillqueueArea.OnStatusRefresh = func(status string) {
-		navItemSkills.Suffix = status
+		navItemSkills.Supporting = status
 		characterList.Refresh()
 	}
 
 	u.WalletJournalArea.OnBalanceRefresh = func(b string) {
-		navItemWallet.Suffix = b
+		navItemWallet.Supporting = "Balance: " + b
 		characterList.Refresh()
 	}
 
 	characterPage := newCharacterAppBar("Character", characterList)
-	characterNav = NewNavigator(characterPage)
+	characterNav = widgets.NewNavigator(characterPage)
 
 	// characters cross
-	var crossNav *Navigator
-	navItemWealth := NewNavListItemWithIcon(
+	var crossNav *widgets.Navigator
+	navItemWealth := widgets.NewNavListItemWithIcon(
 		theme.NewThemedResource(ui.IconGoldSvg),
 		"Wealth",
 		func() {
-			crossNav.Push(NewAppBar("Wealth", u.WealthArea.Content))
+			crossNav.Push(widgets.NewAppBar("Wealth", u.WealthArea.Content))
 		},
 	)
-	crossList := NewNavList(
-		NewNavListItemWithIcon(
+	crossList := widgets.NewNavList(
+		widgets.NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconAccountMultipleSvg),
 			"Overview",
 			func() {
-				crossNav.Push(NewAppBar("Overview", u.OverviewArea.Content))
+				crossNav.Push(widgets.NewAppBar("Overview", u.OverviewArea.Content))
 			},
 		),
 		// TODO: Enable once mobile friendly version is available
-		// NewNavListItemWithIcon(
+		// widgets.NewNavListItemWithIcon(
 		// 	theme.NewThemedResource(ui.IconInventory2Svg),
 		// 	"Asset Search",
 		// 	func() {
-		// 		crossNav.Push(NewAppBar("Asset Search", u.AssetSearchArea.Content))
+		// 		crossNav.Push(widgets.NewAppBar("Asset Search", u.AssetSearchArea.Content))
 		// 	},
 		// ),
-		NewNavListItemWithIcon(
+		widgets.NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconMapMarkerSvg),
 			"Locations",
 			func() {
-				crossNav.Push(NewAppBar("Locations", u.LocationsArea.Content))
+				crossNav.Push(widgets.NewAppBar("Locations", u.LocationsArea.Content))
 			},
 		),
-		NewNavListItemWithIcon(
+		widgets.NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconSchoolSvg),
 			"Training",
 			func() {
-				crossNav.Push(NewAppBar("Training", u.TrainingArea.Content))
+				crossNav.Push(widgets.NewAppBar("Training", u.TrainingArea.Content))
 			},
 		),
-		NewNavListItemWithIcon(
+		widgets.NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconEarthSvg),
 			"Colonies",
 			func() {
-				crossNav.Push(NewAppBar("Colonies", u.ColoniesArea.Content))
+				crossNav.Push(widgets.NewAppBar("Colonies", u.ColoniesArea.Content))
 			},
 		),
 		navItemWealth,
 	)
-	crossNav = NewNavigator(NewAppBar("Characters", crossList))
+	crossNav = widgets.NewNavigator(widgets.NewAppBar("Characters", crossList))
 	u.WealthArea.OnTotalRefresh = func(total string) {
-		navItemWealth.Suffix = total
+		navItemWealth.Supporting = total
 		crossList.Refresh()
 	}
 
 	// tools
-	var moreNav *Navigator
+	var moreNav *widgets.Navigator
 	makePage := func(c fyne.CanvasObject) fyne.CanvasObject {
 		return container.NewScroll(c)
 	}
 	makeMenu := func(items ...*fyne.MenuItem) (fyne.Resource, *fyne.Menu) {
 		return theme.MenuExpandIcon(), fyne.NewMenu("", items...)
 	}
-	u.navItemUpdateStatus = NewNavListItemWithIcon(
+	u.navItemUpdateStatus = widgets.NewNavListItemWithIcon(
 		theme.NewThemedResource(ui.IconUpdateSvg),
 		"Update status",
 		func() {
 			u.ShowUpdateStatusWindow()
 		},
 	)
-	toolsList := NewNavList(
-		NewNavListItemWithIcon(
+	toolsList := widgets.NewNavList(
+		widgets.NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconCogSvg),
 			"Settings",
 			func() {
 				moreNav.Push(
-					NewAppBar(
+					widgets.NewAppBar(
 						"Settings",
-						NewNavList(
-							NewNavListItem(
+						widgets.NewNavList(
+							widgets.NewNavListItem(
 								"General",
 								func() {
 									c, f := u.MakeGeneralSettingsPage(nil)
 									moreNav.Push(
-										NewAppBar("General", makePage(c), NewToolbarActionMenu(
+										widgets.NewAppBar("General", makePage(c), widgets.NewToolbarActionMenu(
 											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
 											)))),
 									)
 								},
 							),
-							NewNavListItem(
+							widgets.NewNavListItem(
 								"Eve Online",
 								func() {
 									c, f := u.MakeEVEOnlinePage()
 									moreNav.Push(
-										NewAppBar("Eve Online", makePage(c), NewToolbarActionMenu(
+										widgets.NewAppBar("Eve Online", makePage(c), widgets.NewToolbarActionMenu(
 											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
 											)))),
 									)
 								},
 							),
-							NewNavListItem(
+							widgets.NewNavListItem(
 								"Notifications",
 								func() {
 									c, f := u.MakeNotificationGeneralPage(nil)
 									moreNav.Push(
-										NewAppBar("Notification - General", makePage(c), NewToolbarActionMenu(
+										widgets.NewAppBar("Notification - General", makePage(c), widgets.NewToolbarActionMenu(
 											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
 											)))),
 									)
 								},
 							),
-							NewNavListItem(
+							widgets.NewNavListItem(
 								"Notification - Types",
 								func() {
 									c, f := u.MakeNotificationTypesPage()
 									moreNav.Push(
-										NewAppBar("Notification - Types", makePage(c), NewToolbarActionMenu(
+										widgets.NewAppBar("Notification - Types", makePage(c), widgets.NewToolbarActionMenu(
 											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
 											)))),
@@ -377,42 +378,42 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 					))
 			},
 		),
-		NewNavListItemWithIcon(
+		widgets.NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconManageaccountsSvg),
 			"Manage characters",
 			func() {
-				moreNav.Push(NewAppBar(
+				moreNav.Push(widgets.NewAppBar(
 					"Manage characters",
 					u.AccountArea.Content,
 					widget.NewToolbarAction(theme.ContentAddIcon(), u.AccountArea.ShowAddCharacterDialog),
 				))
 			},
 		),
-		NewNavListItemWithIcon(
+		widgets.NewNavListItemWithIcon(
 			theme.NewThemedResource(ui.IconInformationSvg),
 			"About",
 			func() {
-				moreNav.Push(NewAppBar("About", u.MakeAboutPage()))
+				moreNav.Push(widgets.NewAppBar("About", u.MakeAboutPage()))
 			},
 		),
 		u.navItemUpdateStatus,
 	)
-	moreNav = NewNavigator(NewAppBar("More", toolsList))
+	moreNav = widgets.NewNavigator(widgets.NewAppBar("More", toolsList))
 
 	// navigation bar
-	characterDest := NewNavBarItem("Character", theme.NewThemedResource(ui.IconAccountSvg), characterNav)
+	characterDest := widgets.NewNavBarItem("Character", theme.NewThemedResource(ui.IconAccountSvg), characterNav)
 	characterDest.OnSelectedAgain = func() {
 		characterNav.PopAll()
 	}
-	crossDest := NewNavBarItem("Characters", theme.NewThemedResource(ui.IconAccountMultipleSvg), crossNav)
+	crossDest := widgets.NewNavBarItem("Characters", theme.NewThemedResource(ui.IconAccountMultipleSvg), crossNav)
 	crossDest.OnSelectedAgain = func() {
 		crossNav.PopAll()
 	}
-	moreDest := NewNavBarItem("More", theme.MenuIcon(), moreNav)
+	moreDest := widgets.NewNavBarItem("More", theme.MenuIcon(), moreNav)
 	moreDest.OnSelectedAgain = func() {
 		moreNav.PopAll()
 	}
-	navBar := NewNavBar(characterDest, crossDest, moreDest)
+	navBar := widgets.NewNavBar(characterDest, crossDest, moreDest)
 
 	u.OnSetCharacter = func(id int32) {
 		// update character selector
@@ -443,7 +444,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		go func() {
 			for {
 				x := u.StatusCacheService.Summary()
-				u.navItemUpdateStatus.Suffix = x.Display()
+				u.navItemUpdateStatus.Supporting = x.Display()
 				toolsList.Refresh()
 				<-ticker.C
 			}

@@ -1,4 +1,4 @@
-package mobile
+package widgets
 
 import (
 	"fyne.io/fyne/v2"
@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
@@ -24,7 +23,7 @@ type AppBar struct {
 
 	body  fyne.CanvasObject
 	bg    *canvas.Rectangle
-	title *widgets.SubHeading
+	title *SubHeading
 	items []widget.ToolbarItem
 }
 
@@ -39,7 +38,7 @@ func NewAppBar(title string, body fyne.CanvasObject, items ...widget.ToolbarItem
 	}
 	w.ExtendBaseWidget(w)
 	if title != "" {
-		w.title = widgets.NewSubHeading(title)
+		w.title = NewSubHeading(title)
 	}
 	return w
 }
@@ -65,7 +64,7 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 		row.Add(container.NewHBox(layout.NewSpacer(), w.title, layout.NewSpacer()))
 	}
 	if w.Navigator != nil {
-		row.Add(container.NewHBox(kxwidget.NewTappableIcon(theme.NavigateBackIcon(), func() {
+		row.Add(container.NewHBox(kxwidget.NewTappableIcon(theme.NewThemedResource(iconChevronLeftSvg), func() {
 			w.Navigator.Pop()
 		})))
 	}

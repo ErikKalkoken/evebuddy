@@ -1,4 +1,4 @@
-package mobile
+package widgets
 
 import (
 	"fyne.io/fyne/v2"

@@ -1,4 +1,4 @@
-package mobile
+package widgets
 
 import (
 	"fyne.io/fyne/v2"
@@ -13,12 +13,4 @@ func NewToolbarActionMenu(icon fyne.Resource, menu *fyne.Menu) *widget.ToolbarAc
 		ShowContextMenu(o, menu)
 	}
 	return a
-}
-
-func ShowContextMenu(o fyne.CanvasObject, menu *fyne.Menu) {
-	m := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(o))
-	m.ShowAtRelativePosition(fyne.NewPos(
-		-m.Size().Width+o.Size().Width,
-		o.Size().Height,
-	), o)
 }
