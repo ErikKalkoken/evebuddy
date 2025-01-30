@@ -26,7 +26,7 @@ func NewAssetLabel() *assetLabel {
 	l1 := canvas.NewText("", theme.Color(theme.ColorNameForeground))
 	l1.TextSize = theme.CaptionTextSize()
 	l2 := canvas.NewText("", theme.Color(theme.ColorNameForeground))
-	l2.TextSize = theme.CaptionTextSize()
+	l2.TextSize = l1.TextSize
 	w := &assetLabel{label1: l1, label2: l2}
 	w.ExtendBaseWidget(w)
 	return w

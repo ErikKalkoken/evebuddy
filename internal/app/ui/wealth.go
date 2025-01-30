@@ -19,9 +19,9 @@ import (
 )
 
 const (
-	chartBaseSize = 300
-	chartWidth    = chartBaseSize * 1.618
-	chartHeight   = chartBaseSize
+	chartBaseSize = 440
+	chartWidth    = chartBaseSize
+	chartHeight   = chartBaseSize / 1.618
 )
 
 type WealthArea struct {

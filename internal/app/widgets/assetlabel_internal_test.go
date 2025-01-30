@@ -22,6 +22,7 @@ func TestSplitLines(t *testing.T) {
 		{"two lines with truncation", "first second third", "first", "second thi"},
 		{"one long word", "firstSecondThirdForth", "firstSecon", "dThirdFort"},
 		{"special 1", "Erik Kalkoken's Cald", "Erik", "Kalkoken's"},
+		// {"two lines two words", "Contaminated Nanite", "Contaminat", "ed Nanite"}, FIXME!
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

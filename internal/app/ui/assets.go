@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"slices"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
@@ -72,7 +72,6 @@ type AssetsArea struct {
 	assetCollection  assetcollection.AssetCollection
 	assetGrid        *widget.GridWrap
 	assets           []*app.CharacterAsset
-	locationIcon     *kxwidget.TappableIcon
 	assetsBottom     *widget.Label
 	locationPath     *widget.Label
 	locationsData    *fynetree.FyneTree[locationDataNode]
@@ -103,21 +102,7 @@ func (u *BaseUI) NewAssetsArea() *AssetsArea {
 	)
 
 	a.assetGrid = a.makeAssetGrid()
-	a.locationIcon = kxwidget.NewTappableIcon(theme.InfoIcon(), func() {
-		if a.selectedLocation.IsEmpty() {
-			return
-		}
-		p := a.locationsData.Path(a.selectedLocation.MustValue().UID())
-		if len(p) == 0 {
-			return
-		}
-		root, ok := a.locationsData.Value(p[0])
-		if !ok {
-			return
-		}
-		u.ShowLocationInfoWindow(root.ContainerID)
-	})
-	gridTop := container.NewBorder(nil, nil, nil, a.locationIcon, a.locationPath)
+	gridTop := a.locationPath
 	a.LocationAssets = container.NewBorder(
 		container.NewVBox(gridTop, widget.NewSeparator()),
 		container.NewVBox(widget.NewSeparator(), a.assetsBottom),
@@ -146,19 +131,29 @@ func (a *AssetsArea) makeLocationsTree() *widget.Tree {
 			return a.locationsData.IsBranch(uid)
 		},
 		func(branch bool) fyne.CanvasObject {
-			return container.New(layout.NewCustomPaddedHBoxLayout(-5),
-				widget.NewLabel("1.0"),
-				widget.NewLabel("Location"),
+			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
+			main := widget.NewLabel("Location")
+			main.Truncation = fyne.TextTruncateEllipsis
+			spacer := canvas.NewRectangle(color.Transparent)
+			spacer.SetMinSize(fyne.NewSize(40, 10))
+			return container.NewBorder(
+				nil,
+				nil,
+				container.NewStack(spacer, widget.NewLabel("-9.9")),
+				iconInfo,
+				main,
 			)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			row := co.(*fyne.Container).Objects
-			prefix := row[0].(*widget.Label)
-			label := row[1].(*widget.Label)
 			n, ok := a.locationsData.Value(uid)
 			if !ok {
 				return
 			}
+			row := co.(*fyne.Container).Objects
+			label := row[0].(*widget.Label)
+			spacer := row[1].(*fyne.Container).Objects[0]
+			prefix := row[1].(*fyne.Container).Objects[1].(*widget.Label)
+			infoIcon := row[2].(*kxwidget.TappableIcon)
 			label.SetText(makeNameWithCount(n.Name, n.Count))
 			if n.IsRoot() {
 				if !n.IsUnknown {
@@ -170,8 +165,15 @@ func (a *AssetsArea) makeLocationsTree() *widget.Tree {
 				}
 				prefix.Refresh()
 				prefix.Show()
+				infoIcon.OnTapped = func() {
+					a.u.ShowLocationInfoWindow(n.ContainerID)
+				}
+				infoIcon.Show()
+				spacer.Show()
 			} else {
 				prefix.Hide()
+				infoIcon.Hide()
+				spacer.Hide()
 			}
 		},
 	)
@@ -201,7 +203,6 @@ func (a *AssetsArea) clearAssets() error {
 	a.assetGrid.Refresh()
 	a.locationPath.SetText("")
 	a.selectedLocation.Clear()
-	a.locationIcon.Hide()
 	return nil
 }
 
@@ -510,7 +511,6 @@ func (a *AssetsArea) selectLocation(location locationDataNode) error {
 	}
 	a.updateLocationPath(location)
 	a.assetsBottom.SetText(fmt.Sprintf("%d Items - %s ISK Est. Price", len(assets), ihumanize.Number(total, 1)))
-	a.locationIcon.Show()
 	return nil
 }
 

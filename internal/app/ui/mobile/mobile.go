@@ -385,7 +385,10 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				moreNav.Push(widgets.NewAppBar(
 					"Manage characters",
 					u.AccountArea.Content,
-					widget.NewToolbarAction(theme.ContentAddIcon(), u.AccountArea.ShowAddCharacterDialog),
+					widget.NewToolbarAction(
+						theme.NewPrimaryThemedResource(theme.ContentAddIcon()),
+						u.AccountArea.ShowAddCharacterDialog,
+					),
 				))
 			},
 		),

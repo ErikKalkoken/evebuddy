@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -78,20 +79,29 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 			main := widget.NewLabel("Template")
 			main.Truncation = fyne.TextTruncateEllipsis
 			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
-			prefix := widget.NewLabel("1.0")
-			return container.NewBorder(nil, nil, container.NewHBox(iconMain, prefix), iconInfo, main)
+			spacer := canvas.NewRectangle(color.Transparent)
+			spacer.SetMinSize(fyne.NewSize(40, 10))
+			prefix := widget.NewLabel("-9.9")
+			return container.NewBorder(
+				nil,
+				nil,
+				container.NewHBox(iconMain, container.NewStack(spacer, prefix)),
+				iconInfo,
+				main,
+			)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			border := co.(*fyne.Container).Objects
-			main := border[0].(*widget.Label)
-			hbox := border[1].(*fyne.Container).Objects
-			iconMain := hbox[0].(*canvas.Image)
-			prefix := hbox[1].(*widget.Label)
-			iconInfo := border[2].(*kxwidget.TappableIcon)
 			n, ok := a.treeData.Value(uid)
 			if !ok {
 				return
 			}
+			border := co.(*fyne.Container).Objects
+			main := border[0].(*widget.Label)
+			hbox := border[1].(*fyne.Container).Objects
+			iconMain := hbox[0].(*canvas.Image)
+			spacer := hbox[1].(*fyne.Container).Objects[0]
+			prefix := hbox[1].(*fyne.Container).Objects[1].(*widget.Label)
+			iconInfo := border[2].(*kxwidget.TappableIcon)
 			if n.IsRoot() {
 				iconMain.Resource = eveicon.GetResourceByName(eveicon.CloningCenter)
 				iconMain.Refresh()
@@ -112,6 +122,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 					prefix.Importance = widget.LowImportance
 				}
 				prefix.Show()
+				spacer.Show()
 			} else {
 				RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
 					return a.u.EveImageService.InventoryTypeIcon(n.ImplantTypeID, DefaultIconPixelSize)
@@ -121,6 +132,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 					a.u.ShowTypeInfoWindow(n.ImplantTypeID, a.u.CharacterID(), DescriptionTab)
 				}
 				prefix.Hide()
+				spacer.Hide()
 			}
 		},
 	)

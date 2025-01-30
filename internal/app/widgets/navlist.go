@@ -3,7 +3,6 @@ package widgets
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -26,7 +25,7 @@ func (w *NavList) CreateRenderer() fyne.WidgetRenderer {
 			return len(w.items)
 		},
 		func() fyne.CanvasObject {
-			return newNavListItem(theme.BrokenImageIcon(), "", "")
+			return newNavListItem(iconBlankSvg, "", "")
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			item := w.items[id]

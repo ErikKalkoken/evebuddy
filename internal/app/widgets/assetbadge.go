@@ -23,7 +23,7 @@ type assetQuantityBadge struct {
 
 func NewAssetQuantityBadge() *assetQuantityBadge {
 	q := canvas.NewText("", theme.Color(theme.ColorNameForeground))
-	q.TextSize = theme.CaptionTextSize()
+	q.TextSize = sizeLabelText
 	w := &assetQuantityBadge{
 		quantity: q,
 		bg:       canvas.NewRectangle(theme.Color(colorAssetQuantityBadgeBackground)),
@@ -51,7 +51,6 @@ func (w *assetQuantityBadge) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	bgPadding := layout.NewCustomPaddedLayout(0, 0, p, p)
 	customPadding := layout.NewCustomPaddedLayout(p/2, p/2, p/2, p/2)
-
 	c := container.New(customPadding, container.NewStack(
 		w.bg,
 		container.New(bgPadding, w.quantity),
