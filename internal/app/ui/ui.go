@@ -62,7 +62,7 @@ type BaseUI struct {
 	OnShowAndRun       func()
 
 	// need to be implemented for each platform
-	ShowTypeInfoWindow     func(int32, int32, TypeWindowTab)
+	ShowTypeInfoWindow     func(typeID, characterID int32, selectTab TypeWindowTab)
 	ShowLocationInfoWindow func(int64)
 
 	FyneApp fyne.App

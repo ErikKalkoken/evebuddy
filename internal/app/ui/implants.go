@@ -8,9 +8,12 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 // ImplantsArea is the UI area that shows the skillqueue
@@ -35,15 +38,31 @@ func (u *BaseUI) NewImplantsArea() *ImplantsArea {
 }
 
 func (a *ImplantsArea) makeImplantList() *widget.List {
+	p := theme.Padding()
 	l := widget.NewList(
 		func() int {
 			return len(a.implants)
 		},
 		func() fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(IconCharacterplaceholder32Jpeg)
-			icon.FillMode = canvas.ImageFillContain
-			icon.SetMinSize(fyne.Size{Width: 42, Height: 42})
-			return container.NewHBox(icon, widget.NewLabel("placeholder\nslot"))
+			iconMain := canvas.NewImageFromResource(IconCharacterplaceholder32Jpeg)
+			iconMain.FillMode = canvas.ImageFillContain
+			iconMain.SetMinSize(fyne.Size{Width: 42, Height: 42})
+			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
+			name := widget.NewLabel("placeholder")
+			name.Truncation = fyne.TextTruncateEllipsis
+			slot := widget.NewLabel("placeholder")
+			slot.Truncation = fyne.TextTruncateEllipsis
+			return container.NewBorder(
+				nil,
+				nil,
+				iconMain,
+				iconInfo,
+				container.New(
+					layout.NewCustomPaddedVBoxLayout(0),
+					container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0), name),
+					container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0), slot),
+				),
+			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.implants) {
@@ -51,21 +70,23 @@ func (a *ImplantsArea) makeImplantList() *widget.List {
 			}
 			o := a.implants[id]
 			row := co.(*fyne.Container).Objects
-			icon := row[0].(*canvas.Image)
-			label := row[1].(*widget.Label)
-			label.SetText(fmt.Sprintf("%s\nSlot %d", o.EveType.Name, o.SlotNum))
-			RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
+			vbox := row[0].(*fyne.Container).Objects
+			name := vbox[0].(*fyne.Container).Objects[0].(*widget.Label)
+			name.SetText(o.EveType.Name)
+			slot := vbox[1].(*fyne.Container).Objects[0].(*widget.Label)
+			slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
+			iconMain := row[1].(*canvas.Image)
+			RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
 				return a.u.EveImageService.InventoryTypeIcon(o.EveType.ID, DefaultIconPixelSize)
 			})
+			iconInfo := row[2].(*kxwidget.TappableIcon)
+			iconInfo.OnTapped = func() {
+				a.u.ShowTypeInfoWindow(o.EveType.ID, a.u.CharacterID(), DescriptionTab)
+			}
 		})
 
 	l.OnSelected = func(id widget.ListItemID) {
 		defer l.UnselectAll()
-		if id >= len(a.implants) {
-			return
-		}
-		o := a.implants[id]
-		a.u.ShowTypeInfoWindow(o.EveType.ID, a.u.CharacterID(), DescriptionTab)
 	}
 	return l
 }
