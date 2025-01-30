@@ -13,6 +13,7 @@ import (
 	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 )
@@ -27,6 +28,8 @@ type jumpCloneNode struct {
 	JumpCloneName          string
 	LocationID             int64
 	LocationName           string
+	SystemSecurityValue    float32
+	SystemSecurityType     app.SolarSystemSecurityType
 }
 
 func (n jumpCloneNode) IsRoot() bool {
@@ -62,6 +65,10 @@ func (u *BaseUI) NewJumpClonesArea() *JumpClonesArea {
 }
 
 func (a *JumpClonesArea) makeTree() *widget.Tree {
+	labelSizeName := theme.SizeNameText
+	if a.u.IsMobile() {
+		labelSizeName = theme.SizeNameCaptionText
+	}
 	t := widget.NewTree(
 		func(uid widget.TreeNodeID) []widget.TreeNodeID {
 			return a.treeData.ChildUIDs(uid)
@@ -73,53 +80,50 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 			icon := canvas.NewImageFromResource(IconCharacterplaceholder32Jpeg)
 			icon.FillMode = canvas.ImageFillContain
 			icon.SetMinSize(fyne.NewSquareSize(DefaultIconUnitSize))
-			first := widget.NewLabel("Template")
-			second := kwidget.NewTappableIcon(theme.InfoIcon(), nil)
-			third := widget.NewLabel("Template")
-			return container.NewHBox(icon, first, second, third)
+			main := widgets.NewLabelWithSize("Template", labelSizeName)
+			main.Truncation = fyne.TextTruncateEllipsis
+			infoIcon := kwidget.NewTappableIcon(theme.InfoIcon(), nil)
+			prefix := widgets.NewLabelWithSize("[8]", labelSizeName)
+			return container.NewBorder(nil, nil, container.NewHBox(icon, prefix), infoIcon, main)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			hbox := co.(*fyne.Container).Objects
-			icon := hbox[0].(*canvas.Image)
-			first := hbox[1].(*widget.Label)
-			second := hbox[2].(*kwidget.TappableIcon)
-			third := hbox[3].(*widget.Label)
+			border := co.(*fyne.Container).Objects
+			main := border[0].(*widgets.Label)
+			hbox := border[1].(*fyne.Container).Objects
+			mainIcon := hbox[0].(*canvas.Image)
+			prefix := hbox[1].(*widgets.Label)
+			infoIcon := border[2].(*kwidget.TappableIcon)
 			n, ok := a.treeData.Value(uid)
 			if !ok {
 				return
 			}
 			if n.IsRoot() {
-				icon.Resource = eveicon.GetResourceByName(eveicon.CloningCenter)
-				icon.Refresh()
-				first.SetText(n.LocationName)
-				var t string
-				var i widget.Importance
-				if n.ImplantCount > 0 {
-					t = fmt.Sprintf("%d implants", n.ImplantCount)
-					i = widget.MediumImportance
-				} else {
-					t = "No implants"
-					i = widget.LowImportance
-				}
+				mainIcon.Resource = eveicon.GetResourceByName(eveicon.CloningCenter)
+				mainIcon.Refresh()
 				if !n.IsUnknown {
-					second.OnTapped = func() {
+					infoIcon.OnTapped = func() {
 						a.u.ShowLocationInfoWindow(n.LocationID)
 					}
-					second.Show()
+					infoIcon.Show()
 				} else {
-					second.Hide()
+					infoIcon.Hide()
 				}
-				third.Text = t
-				third.Importance = i
-				third.Refresh()
-				third.Show()
+				main.SetText(n.LocationName)
+				if !n.IsUnknown {
+					prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurityValue)
+					prefix.Importance = n.SystemSecurityType.ToImportance()
+				} else {
+					prefix.Text = "?"
+					prefix.Importance = widget.LowImportance
+				}
+				prefix.Show()
 			} else {
-				RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
+				RefreshImageResourceAsync(mainIcon, func() (fyne.Resource, error) {
 					return a.u.EveImageService.InventoryTypeIcon(n.ImplantTypeID, DefaultIconPixelSize)
 				})
-				first.SetText(n.ImplantTypeName)
-				second.Hide()
-				third.Hide()
+				main.SetText(n.ImplantTypeName)
+				infoIcon.Hide()
+				prefix.Hide()
 			}
 		},
 	)
@@ -129,10 +133,6 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 		if !ok {
 			return
 		}
-		// if n.IsRoot() && !n.IsUnknown {
-		// 	a.ShowLocationInfoWindow(n.LocationID)
-		// 	return
-		// }
 		if !n.IsRoot() {
 			a.u.ShowTypeInfoWindow(n.ImplantTypeID, a.u.CharacterID(), DescriptionTab)
 		}
@@ -164,7 +164,8 @@ func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 	if !a.u.HasCharacter() {
 		return tree, nil
 	}
-	clones, err := a.u.CharacterService.ListCharacterJumpClones(context.TODO(), a.u.CharacterID())
+	ctx := context.Background()
+	clones, err := a.u.CharacterService.ListCharacterJumpClones(ctx, a.u.CharacterID())
 	if err != nil {
 		return tree, err
 	}
@@ -176,9 +177,17 @@ func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 			LocationID:    c.Location.ID,
 		}
 		// TODO: Refactor to use same location method for all unknown location cases
-		if c.Location.Name != "" {
-			n.LocationName = c.Location.Name
-		} else {
+		if c.Location != nil {
+			loc, err := a.u.EveUniverseService.GetEveLocation(ctx, c.Location.ID)
+			if err != nil {
+				slog.Error("get location for jump clone", "error", err)
+			} else {
+				n.LocationName = loc.Name
+				n.SystemSecurityValue = float32(loc.SolarSystem.SecurityStatus)
+				n.SystemSecurityType = loc.SolarSystem.SecurityType()
+			}
+		}
+		if n.LocationName == "" {
 			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 			n.IsUnknown = true
 		}
