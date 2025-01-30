@@ -13,7 +13,6 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 )
@@ -65,10 +64,6 @@ func (u *BaseUI) NewJumpClonesArea() *JumpClonesArea {
 }
 
 func (a *JumpClonesArea) makeTree() *widget.Tree {
-	labelSizeName := theme.SizeNameText
-	if a.u.IsMobile() {
-		labelSizeName = theme.SizeNameCaptionText
-	}
 	t := widget.NewTree(
 		func(uid widget.TreeNodeID) []widget.TreeNodeID {
 			return a.treeData.ChildUIDs(uid)
@@ -80,18 +75,18 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 			iconMain := canvas.NewImageFromResource(IconCharacterplaceholder32Jpeg)
 			iconMain.FillMode = canvas.ImageFillContain
 			iconMain.SetMinSize(fyne.NewSquareSize(DefaultIconUnitSize))
-			main := widgets.NewLabelWithSize("Template", labelSizeName)
+			main := widget.NewLabel("Template")
 			main.Truncation = fyne.TextTruncateEllipsis
 			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
-			prefix := widgets.NewLabelWithSize("[8]", labelSizeName)
+			prefix := widget.NewLabel("1.0")
 			return container.NewBorder(nil, nil, container.NewHBox(iconMain, prefix), iconInfo, main)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
 			border := co.(*fyne.Container).Objects
-			main := border[0].(*widgets.Label)
+			main := border[0].(*widget.Label)
 			hbox := border[1].(*fyne.Container).Objects
 			iconMain := hbox[0].(*canvas.Image)
-			prefix := hbox[1].(*widgets.Label)
+			prefix := hbox[1].(*widget.Label)
 			iconInfo := border[2].(*kxwidget.TappableIcon)
 			n, ok := a.treeData.Value(uid)
 			if !ok {

@@ -132,10 +132,6 @@ func (u *BaseUI) NewAssetsArea() *AssetsArea {
 }
 
 func (a *AssetsArea) makeLocationsTree() *widget.Tree {
-	labelSizeName := theme.SizeNameText
-	if a.u.IsMobile() {
-		labelSizeName = theme.SizeNameCaptionText
-	}
 	makeNameWithCount := func(name string, count int) string {
 		if count == 0 {
 			return name
@@ -151,14 +147,14 @@ func (a *AssetsArea) makeLocationsTree() *widget.Tree {
 		},
 		func(branch bool) fyne.CanvasObject {
 			return container.New(layout.NewCustomPaddedHBoxLayout(-5),
-				widgets.NewLabelWithSize("1.0", labelSizeName),
-				widgets.NewLabelWithSize("Location", labelSizeName),
+				widget.NewLabel("1.0"),
+				widget.NewLabel("Location"),
 			)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
 			row := co.(*fyne.Container).Objects
-			prefix := row[0].(*widgets.Label)
-			label := row[1].(*widgets.Label)
+			prefix := row[0].(*widget.Label)
+			label := row[1].(*widget.Label)
 			n, ok := a.locationsData.Value(uid)
 			if !ok {
 				return
