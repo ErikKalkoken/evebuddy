@@ -29,12 +29,12 @@ type NotificationFolder struct {
 
 // NotificationsArea is the UI area that shows the skillqueue
 type NotificationsArea struct {
-	Content         fyne.CanvasObject
-	Detail          *fyne.Container
-	Notifications   fyne.CanvasObject
-	Toolbar         *widget.Toolbar
-	OnSelected      func()
-	OnUnreadRefresh func(count int)
+	Content       fyne.CanvasObject
+	Detail        *fyne.Container
+	Notifications fyne.CanvasObject
+	Toolbar       *widget.Toolbar
+	OnSelected    func()
+	OnRefresh     func(count int)
 
 	Folders          []NotificationFolder
 	folderList       *widget.List
@@ -205,8 +205,8 @@ func (a *NotificationsArea) Refresh() {
 	a.folderList.UnselectAll()
 	a.folderTop.Text, a.folderTop.Importance = a.makeFolderTopText()
 	a.folderTop.Refresh()
-	if a.OnUnreadRefresh != nil {
-		a.OnUnreadRefresh(unreadTotal)
+	if a.OnRefresh != nil {
+		a.OnRefresh(unreadTotal)
 	}
 }
 

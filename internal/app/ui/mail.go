@@ -32,13 +32,13 @@ const (
 
 // MailArea is the UI area showing the mail folders.
 type MailArea struct {
-	Content         fyne.CanvasObject
-	CurrentFolder   optional.Optional[FolderNode]
-	Detail          fyne.CanvasObject
-	Headers         fyne.CanvasObject
-	OnSelected      func()
-	OnUnreadRefresh func(count int)
-	SendMessage     func(mode SendMessageMode, cm *app.CharacterMail)
+	Content       fyne.CanvasObject
+	CurrentFolder optional.Optional[FolderNode]
+	Detail        fyne.CanvasObject
+	Headers       fyne.CanvasObject
+	OnSelected    func()
+	OnRefresh     func(count int)
+	SendMessage   func(mode SendMessageMode, cm *app.CharacterMail)
 
 	body          *widget.Label
 	folderData    *fynetree.FyneTree[FolderNode]
@@ -237,8 +237,8 @@ func (a *MailArea) Refresh() {
 		d.Show()
 		return
 	}
-	if a.OnUnreadRefresh != nil {
-		a.OnUnreadRefresh(folderAll.UnreadCount)
+	if a.OnRefresh != nil {
+		a.OnRefresh(folderAll.UnreadCount)
 	}
 	a.folderTree.Refresh()
 	if folderAll.IsEmpty() {

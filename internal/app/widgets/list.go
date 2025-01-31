@@ -6,12 +6,12 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func NewNavList(items ...*NavListItem) *NavList {
+func NewNavList(items ...*ListItem) *List {
 	return NewNavListWithTitle("", items...)
 }
 
-func NewNavListWithTitle(title string, items ...*NavListItem) *NavList {
-	w := &NavList{
+func NewNavListWithTitle(title string, items ...*ListItem) *List {
+	w := &List{
 		items: items,
 		title: title,
 	}
@@ -19,17 +19,17 @@ func NewNavListWithTitle(title string, items ...*NavListItem) *NavList {
 	return w
 }
 
-func (w *NavList) CreateRenderer() fyne.WidgetRenderer {
+func (w *List) CreateRenderer() fyne.WidgetRenderer {
 	list := widget.NewList(
 		func() int {
 			return len(w.items)
 		},
 		func() fyne.CanvasObject {
-			return newNavListItem(iconBlankSvg, "", "")
+			return newListItem(iconBlankSvg, "", "")
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			item := w.items[id]
-			w := co.(*navListItem)
+			w := co.(*listItem)
 			w.Set(item.Icon, item.Headline, item.Supporting)
 		},
 	)

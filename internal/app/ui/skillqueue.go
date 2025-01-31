@@ -22,7 +22,7 @@ import (
 type SkillqueueArea struct {
 	Content *fyne.Container
 
-	OnStatusRefresh func(status string)
+	OnRefresh func(status string)
 
 	items []*app.CharacterSkillqueueItem
 	total *widget.Label
@@ -125,8 +125,8 @@ func (a *SkillqueueArea) Refresh() {
 		} else if completion.ValueOrZero() < 1 {
 			s += fmt.Sprintf("%.0f%%", completion.ValueOrZero()*100)
 		}
-		if a.OnStatusRefresh != nil {
-			a.OnStatusRefresh(s)
+		if a.OnRefresh != nil {
+			a.OnRefresh(s)
 		}
 		t, i = a.makeTopText(remaining)
 	}

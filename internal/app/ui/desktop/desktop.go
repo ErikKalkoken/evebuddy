@@ -136,7 +136,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		theme.NewThemedResource(ui.IconEarthSvg), container.NewAppTabs(
 			container.NewTabItem("Colonies", u.PlanetArea.Content),
 		))
-	u.PlanetArea.OnCountRefresh = func(count int) {
+	u.PlanetArea.OnRefresh = func(count int) {
 		planetTab.Text = makeTitleWithCount("Colonies", count)
 		u.tabs.Refresh()
 	}
@@ -146,7 +146,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 			container.NewTabItem("Mail", u.MailArea.Content),
 			container.NewTabItem("Communications", u.NotificationsArea.Content),
 		))
-	u.MailArea.OnUnreadRefresh = func(count int) {
+	u.MailArea.OnRefresh = func(count int) {
 		mailTab.Text = makeTitleWithCount("Comm.", count)
 		u.tabs.Refresh()
 	}
@@ -179,7 +179,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 			container.NewTabItem("Ships", u.ShipsArea.Content),
 			container.NewTabItem("Attributes", u.AttributesArea.Content),
 		))
-	u.SkillqueueArea.OnStatusRefresh = func(status string) {
+	u.SkillqueueArea.OnRefresh = func(status string) {
 		skillTab.Text = fmt.Sprintf("Skills (%s)", status)
 		u.tabs.Refresh()
 	}

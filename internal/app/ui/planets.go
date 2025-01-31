@@ -21,7 +21,7 @@ import (
 type PlanetArea struct {
 	Content *fyne.Container
 
-	OnCountRefresh func(count int)
+	OnRefresh func(count int)
 
 	planets []*app.CharacterPlanet
 	list    *widget.List
@@ -78,14 +78,14 @@ func (a *PlanetArea) Refresh() {
 	a.top.Importance = i
 	a.top.Refresh()
 	a.list.Refresh()
-	if a.OnCountRefresh != nil {
+	if a.OnRefresh != nil {
 		var expiredCount int
 		for _, p := range a.planets {
 			if t := p.ExtractionsExpiryTime(); !t.IsZero() && t.Before(time.Now()) {
 				expiredCount++
 			}
 		}
-		a.OnCountRefresh(expiredCount)
+		a.OnRefresh(expiredCount)
 	}
 }
 

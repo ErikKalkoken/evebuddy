@@ -9,42 +9,51 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type NavListItem struct {
+type ListItem struct {
 	Action     func()
 	Icon       fyne.Resource
 	Headline   string
 	Supporting string
 }
 
-func NewNavListItemWithIcon(icon fyne.Resource, headline string, action func()) *NavListItem {
-	return &NavListItem{
+func NewListItemWithIcon(icon fyne.Resource, headline string, action func()) *ListItem {
+	return &ListItem{
 		Action:   action,
 		Icon:     icon,
 		Headline: headline,
 	}
 }
 
-func NewNavListItem(headline string, action func()) *NavListItem {
-	return &NavListItem{
+func NewListItemWithIconAndText(icon fyne.Resource, headline, supporting string, action func()) *ListItem {
+	return &ListItem{
+		Action:     action,
+		Icon:       icon,
+		Headline:   headline,
+		Supporting: supporting,
+	}
+}
+
+func NewListItem(headline string, action func()) *ListItem {
+	return &ListItem{
 		Action:   action,
 		Headline: headline,
 	}
 }
 
-func NewNavListItemWithNavigator(nav *Navigator, ab *AppBar) *NavListItem {
-	return NewNavListItem(ab.Title(), func() {
+func NewListItemWithNavigator(nav *Navigator, ab *AppBar) *ListItem {
+	return NewListItem(ab.Title(), func() {
 		nav.Push(ab)
 	})
 }
 
-type NavList struct {
+type List struct {
 	widget.BaseWidget
 
 	title string
-	items []*NavListItem
+	items []*ListItem
 }
 
-type navListItem struct {
+type listItem struct {
 	widget.BaseWidget
 
 	headline   *canvas.Text
@@ -53,7 +62,7 @@ type navListItem struct {
 	indicator  *canvas.Image
 }
 
-func newNavListItem(icon fyne.Resource, headline, supporting string) *navListItem {
+func newListItem(icon fyne.Resource, headline, supporting string) *listItem {
 	i1 := canvas.NewImageFromResource(icon)
 	i1.FillMode = canvas.ImageFillContain
 	i1.SetMinSize(fyne.NewSquareSize(sizeIcon))
@@ -64,7 +73,7 @@ func newNavListItem(icon fyne.Resource, headline, supporting string) *navListIte
 	h.TextSize = 16
 	t := canvas.NewText(supporting, theme.Color(theme.ColorNameForeground))
 	t.TextSize = 14
-	w := &navListItem{
+	w := &listItem{
 		headline:   h,
 		supporting: t,
 		icon:       i1,
@@ -74,14 +83,18 @@ func newNavListItem(icon fyne.Resource, headline, supporting string) *navListIte
 	return w
 }
 
-func (w *navListItem) Set(icon fyne.Resource, headline, supporting string) {
+func (w *listItem) Set(icon fyne.Resource, headline, supporting string) {
 	w.icon.Resource = icon
 	w.headline.Text = headline
 	w.supporting.Text = supporting
 	w.Refresh()
 }
 
-func (w *navListItem) Refresh() {
+func (w *listItem) Refresh() {
+	th := w.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	w.headline.Color = th.Color(theme.ColorNameForeground, v)
+	w.supporting.Color = th.Color(theme.ColorNameForeground, v)
 	w.icon.Refresh()
 	w.headline.Refresh()
 	if w.supporting.Text == "" {
@@ -93,7 +106,7 @@ func (w *navListItem) Refresh() {
 	w.BaseWidget.Refresh()
 }
 
-func (w *navListItem) CreateRenderer() fyne.WidgetRenderer {
+func (w *listItem) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
 	c := container.NewBorder(
 		nil,
@@ -101,8 +114,7 @@ func (w *navListItem) CreateRenderer() fyne.WidgetRenderer {
 		container.New(layout.NewCustomPaddedLayout(p, p, 2*p, 2*p), w.icon),
 		container.New(layout.NewCustomPaddedLayout(p, p, 2*p, 2*p), w.indicator),
 		container.NewPadded(
-			container.New(
-				layout.NewCustomPaddedVBoxLayout(0),
+			container.NewVBox(
 				w.headline,
 				w.supporting,
 			)),

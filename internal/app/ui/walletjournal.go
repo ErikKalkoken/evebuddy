@@ -50,7 +50,7 @@ func (e walletJournalEntry) descriptionWithReason() string {
 type WalletJournalArea struct {
 	Content *fyne.Container
 
-	OnBalanceRefresh func(balance string)
+	OnRefresh func(balance string)
 
 	rows []walletJournalEntry
 	body fyne.CanvasObject
@@ -143,8 +143,8 @@ func (a *WalletJournalArea) makeTopText() (string, widget.Importance) {
 	b := ihumanize.OptionalFloat(c.WalletBalance, 1, "?")
 	t := humanize.Comma(int64(len(a.rows)))
 	s := fmt.Sprintf("Balance: %s • Entries: %s", b, t)
-	if a.OnBalanceRefresh != nil {
-		a.OnBalanceRefresh(b)
+	if a.OnRefresh != nil {
+		a.OnRefresh(b)
 	}
 	return s, widget.MediumImportance
 }

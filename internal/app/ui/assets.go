@@ -68,6 +68,7 @@ type AssetsArea struct {
 	Locations      fyne.CanvasObject
 	LocationAssets fyne.CanvasObject
 	OnSelected     func()
+	OnReDraw       func(string)
 
 	assetCollection  assetcollection.AssetCollection
 	assetGrid        *widget.GridWrap
@@ -289,6 +290,9 @@ func (a *AssetsArea) Redraw() {
 	a.locationsTop.Importance = i
 	a.locationsTop.Refresh()
 	a.locationsWidget.Refresh()
+	if a.OnReDraw != nil {
+		a.OnReDraw(t)
+	}
 }
 
 func (a *AssetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], error) {
