@@ -66,5 +66,5 @@ func (w *SkillLevel) CreateRenderer() fyne.WidgetRenderer {
 	for i := range 5 {
 		c.Add(w.dots[i])
 	}
-	return widget.NewSimpleRenderer(c)
+	return widget.NewSimpleRenderer(container.NewPadded(c))
 }

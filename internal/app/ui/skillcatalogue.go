@@ -7,7 +7,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -39,14 +38,15 @@ type skillTrained struct {
 
 // SkillCatalogueArea is the UI area that shows the skill catalogue
 type SkillCatalogueArea struct {
-	Content        *fyne.Container
+	Content fyne.CanvasObject
+
 	groups         []skillGroupProgress
-	groupsGrid     *widget.GridWrap
+	groupsGrid     fyne.CanvasObject
 	levelBlocked   *theme.ErrorThemedResource
 	levelTrained   *theme.PrimaryThemedResource
 	levelUnTrained *theme.DisabledResource
 	skills         []skillTrained
-	skillsGrid     *widget.GridWrap
+	skillsGrid     fyne.CanvasObject
 	total          *widget.Label
 	u              *BaseUI
 }
@@ -61,116 +61,158 @@ func (u *BaseUI) NewSkillCatalogueArea() *SkillCatalogueArea {
 		total:          makeTopLabel(),
 		u:              u,
 	}
-	a.groupsGrid = a.makeSkillGroups()
+	a.groupsGrid = a.makeGroupsGrid()
 	a.skillsGrid = a.makeSkillsGrid()
 	s := container.NewVSplit(a.groupsGrid, a.skillsGrid)
 	a.Content = container.NewBorder(a.total, nil, nil, nil, s)
 	return a
 }
 
-func (a *SkillCatalogueArea) makeSkillGroups() *widget.GridWrap {
-	g := widget.NewGridWrap(
-		func() int {
-			return len(a.groups)
-		},
-		func() fyne.CanvasObject {
+func (a *SkillCatalogueArea) makeGroupsGrid() fyne.CanvasObject {
+	length := func() int {
+		return len(a.groups)
+	}
+	makeCreateItem := func(trunc fyne.TextTruncation) func() fyne.CanvasObject {
+		return func() fyne.CanvasObject {
 			pb := widget.NewProgressBar()
 			pb.TextFormatter = func() string {
 				return ""
 			}
+			title := widget.NewLabel("Corporation Management")
+			title.Truncation = trunc
 			row := container.NewPadded(container.NewStack(
 				pb,
-				container.NewHBox(
-					widget.NewLabel("Corporation Management"), layout.NewSpacer(), widget.NewLabel("99"),
+				container.NewBorder(
+					nil,
+					nil,
+					nil,
+					widget.NewLabel("99"),
+					title,
 				)))
 			return row
-		},
-		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
-			if id >= len(a.groups) {
-				return
-			}
-			group := a.groups[id]
-			row := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects
-			c := row[1].(*fyne.Container).Objects
-			name := c[0].(*widget.Label)
-			total := c[2].(*widget.Label)
-			pb := row[0].(*widget.ProgressBar)
-			pb.SetValue(group.completionP())
-			name.SetText(group.name)
-			total.SetText(humanize.Comma(int64(group.total)))
-		},
-	)
-	g.OnSelected = func(id widget.ListItemID) {
+		}
+	}
+	updateItem := func(id int, co fyne.CanvasObject) {
 		if id >= len(a.groups) {
-			g.UnselectAll()
 			return
 		}
 		group := a.groups[id]
-		if !a.u.HasCharacter() {
-			g.UnselectAll()
-			return
-		}
-		oo, err := a.u.CharacterService.ListCharacterSkillProgress(
-			context.TODO(), a.u.CharacterID(), group.id,
-		)
-		if err != nil {
-			slog.Error("Failed to fetch skill group data", "err", err)
-			g.UnselectAll()
-			return
-		}
-		skills := make([]skillTrained, len(oo))
-		for i, o := range oo {
-			skills[i] = skillTrained{
-				activeLevel:  o.ActiveSkillLevel,
-				description:  o.TypeDescription,
-				groupName:    group.name,
-				id:           o.TypeID,
-				name:         o.TypeName,
-				trainedLevel: o.TrainedSkillLevel,
-			}
-		}
-		a.skills = skills
-		a.skillsGrid.Refresh()
+		row := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects
+		c := row[1].(*fyne.Container).Objects
+		name := c[0].(*widget.Label)
+		total := c[1].(*widget.Label)
+		pb := row[0].(*widget.ProgressBar)
+		pb.SetValue(group.completionP())
+		name.SetText(group.name)
+		total.SetText(humanize.Comma(int64(group.total)))
 	}
-	return g
-}
-
-func (a *SkillCatalogueArea) makeSkillsGrid() *widget.GridWrap {
-	g := widget.NewGridWrap(
-		func() int {
-			return len(a.skills)
-		},
-		func() fyne.CanvasObject {
-			c := container.NewHBox(
-				widgets.NewSkillLevel(),
-				widget.NewLabel("Capital Shipboard Compression Technology"))
-			return c
-		},
-		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
-			if id >= len(a.skills) {
+	makeOnSelected := func(unselectAll func()) func(int) {
+		return func(id int) {
+			if id >= len(a.groups) {
+				unselectAll()
 				return
 			}
-			skill := a.skills[id]
-			row := co.(*fyne.Container).Objects
-			level := row[0].(*widgets.SkillLevel)
-			label := row[1].(*widget.Label)
-			label.SetText(skill.name)
-			level.Set(skill.activeLevel, skill.trainedLevel, 0)
-		},
-	)
-	g.OnSelected = func(id widget.GridWrapItemID) {
-		defer g.UnselectAll()
+			group := a.groups[id]
+			if !a.u.HasCharacter() {
+				unselectAll()
+				return
+			}
+			oo, err := a.u.CharacterService.ListCharacterSkillProgress(
+				context.TODO(), a.u.CharacterID(), group.id,
+			)
+			if err != nil {
+				slog.Error("Failed to fetch skill group data", "err", err)
+				unselectAll()
+				return
+			}
+			skills := make([]skillTrained, len(oo))
+			for i, o := range oo {
+				skills[i] = skillTrained{
+					activeLevel:  o.ActiveSkillLevel,
+					description:  o.TypeDescription,
+					groupName:    group.name,
+					id:           o.TypeID,
+					name:         o.TypeName,
+					trainedLevel: o.TrainedSkillLevel,
+				}
+			}
+			a.skills = skills
+			a.skillsGrid.Refresh()
+		}
+	}
+	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
+}
+
+func (a *SkillCatalogueArea) makeSkillsGrid() fyne.CanvasObject {
+	length := func() int {
+		return len(a.skills)
+	}
+	makeCreateItem := func(trunc fyne.TextTruncation) func() fyne.CanvasObject {
+		return func() fyne.CanvasObject {
+			title := widget.NewLabel("Capital Shipboard Compression Technology")
+			title.Truncation = trunc
+			c := container.NewBorder(
+				nil,
+				nil,
+				widgets.NewSkillLevel(),
+				nil,
+				title,
+			)
+			return c
+		}
+	}
+	updateItem := func(id int, co fyne.CanvasObject) {
 		if id >= len(a.skills) {
 			return
 		}
 		skill := a.skills[id]
-		a.u.ShowTypeInfoWindow(skill.id, a.u.CharacterID(), DescriptionTab)
+		row := co.(*fyne.Container).Objects
+		label := row[0].(*widget.Label)
+		label.SetText(skill.name)
+		level := row[1].(*widgets.SkillLevel)
+		level.Set(skill.activeLevel, skill.trainedLevel, 0)
 	}
-	return g
+	makeOnSelected := func(unselectAll func()) func(int) {
+		unselectAll()
+		return func(id int) {
+			if id >= len(a.skills) {
+				return
+			}
+			skill := a.skills[id]
+			a.u.ShowTypeInfoWindow(skill.id, a.u.CharacterID(), DescriptionTab)
+		}
+	}
+	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)
+}
+
+// makeGridOrList makes and returns a GridWrap on desktop and a List on mobile.
+//
+// This allows the grid items to render nicely as list on mobile and also enable truncation.
+func makeGridOrList(isMobile bool, length func() int, makeCreateItem func(trunc fyne.TextTruncation) func() fyne.CanvasObject, updateItem func(id int, co fyne.CanvasObject), makeOnSelected func(unselectAll func()) func(int)) fyne.CanvasObject {
+	var w fyne.CanvasObject
+	if isMobile {
+		w = widget.NewList(length, makeCreateItem(fyne.TextTruncateEllipsis), updateItem)
+		l := w.(*widget.List)
+		l.OnSelected = makeOnSelected(func() {
+			l.UnselectAll()
+		})
+	} else {
+		w = widget.NewGridWrap(length, makeCreateItem(fyne.TextTruncateOff), updateItem)
+		g := w.(*widget.GridWrap)
+		g.OnSelected = makeOnSelected(func() {
+			g.UnselectAll()
+		})
+	}
+	return w
 }
 
 func (a *SkillCatalogueArea) Redraw() {
-	a.groupsGrid.UnselectAll()
+	switch x := a.groupsGrid.(type) {
+	case *widget.GridWrap:
+		x.UnselectAll()
+	case *widget.List:
+		x.UnselectAll()
+	}
 	a.skills = make([]skillTrained, 0)
 	a.Refresh()
 }
