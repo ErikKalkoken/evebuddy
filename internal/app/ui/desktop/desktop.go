@@ -136,8 +136,8 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		theme.NewThemedResource(ui.IconEarthSvg), container.NewAppTabs(
 			container.NewTabItem("Colonies", u.PlanetArea.Content),
 		))
-	u.PlanetArea.OnRefresh = func(count int) {
-		planetTab.Text = makeTitleWithCount("Colonies", count)
+	u.PlanetArea.OnRefresh = func(_, expired int) {
+		planetTab.Text = makeTitleWithCount("Colonies", expired)
 		u.tabs.Refresh()
 	}
 
@@ -153,7 +153,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 
 	clonesTab := container.NewTabItemWithIcon("Clones",
 		theme.NewThemedResource(ui.IconHeadSnowflakeSvg), container.NewAppTabs(
-			container.NewTabItem("Augmentations", u.ImplantsArea.Content),
+			container.NewTabItem("Current Clone", u.ImplantsArea.Content),
 			container.NewTabItem("Jump Clones", u.JumpClonesArea.Content),
 		))
 

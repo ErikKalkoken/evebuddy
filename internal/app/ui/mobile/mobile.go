@@ -180,25 +180,26 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		},
 	)
 
+	navItemClones := widgets.NewListItemWithIcon(
+		theme.NewThemedResource(ui.IconHeadSnowflakeSvg),
+		"Clones",
+		func() {
+			characterNav.Push(
+				newCharacterAppBar(
+					"Clones",
+					container.NewAppTabs(
+						container.NewTabItem("Current Clone", u.ImplantsArea.Content),
+						container.NewTabItem("Jump Clones", u.JumpClonesArea.Content),
+					),
+				))
+		},
+	)
 	characterList := widgets.NewNavList(
 		navItemAssets,
 		navItemColonies,
 		navItemMail,
 		navItemCommunications,
-		widgets.NewListItemWithIcon(
-			theme.NewThemedResource(ui.IconHeadSnowflakeSvg),
-			"Clones",
-			func() {
-				characterNav.Push(
-					newCharacterAppBar(
-						"Clones",
-						container.NewAppTabs(
-							container.NewTabItem("Augmentations", u.ImplantsArea.Content),
-							container.NewTabItem("Jump Clones", u.JumpClonesArea.Content),
-						),
-					))
-			},
-		),
+		navItemClones,
 		widgets.NewListItemWithIcon(
 			theme.NewThemedResource(ui.IconFileSignSvg),
 			"Contracts",
@@ -215,10 +216,18 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		characterList.Refresh()
 	}
 
-	u.PlanetArea.OnRefresh = func(count int) {
-		s := ""
-		if count > 0 {
-			s = fmt.Sprintf("%s expired extractions", humanize.Comma(int64(count)))
+	u.JumpClonesArea.OnReDraw = func(clonesCount int) {
+		navItemClones.Supporting = fmt.Sprintf("%d jump clones", clonesCount)
+		characterList.Refresh()
+	}
+
+	u.PlanetArea.OnRefresh = func(total, expired int) {
+		var s string
+		if total > 0 {
+			s = fmt.Sprintf("%d colonies", total)
+			if expired > 0 {
+				s += fmt.Sprintf(" • %d expired", expired)
+			}
 		}
 		navItemColonies.Supporting = s
 		characterList.Refresh()

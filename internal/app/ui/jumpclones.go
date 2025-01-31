@@ -45,7 +45,9 @@ func (n jumpCloneNode) UID() widget.TreeNodeID {
 
 // JumpClonesArea is the UI area that shows the skillqueue
 type JumpClonesArea struct {
-	Content    *fyne.Container
+	Content  *fyne.Container
+	OnReDraw func(clonesCount int)
+
 	top        *widget.Label
 	treeData   *fynetree.FyneTree[jumpCloneNode]
 	treeWidget *widget.Tree
@@ -145,13 +147,14 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 func (a *JumpClonesArea) Redraw() {
 	var t string
 	var i widget.Importance
+	var clonesCount int
 	tree, err := a.newTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
 	} else {
-		clonesCount := len(tree.ChildUIDs(""))
+		clonesCount = len(tree.ChildUIDs(""))
 		t, i = a.makeTopText(clonesCount)
 	}
 	a.treeData = tree
@@ -159,6 +162,9 @@ func (a *JumpClonesArea) Redraw() {
 	a.top.Importance = i
 	a.top.Refresh()
 	a.treeWidget.Refresh()
+	if a.OnReDraw != nil {
+		a.OnReDraw(clonesCount)
+	}
 }
 
 func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error) {
