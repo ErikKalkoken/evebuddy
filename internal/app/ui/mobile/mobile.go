@@ -242,7 +242,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		characterList.Refresh()
 	}
 
-	u.SkillqueueArea.OnRefresh = func(status string) {
+	u.SkillqueueArea.OnRefresh = func(_, status string) {
 		navItemSkills.Supporting = status
 		characterList.Refresh()
 	}
@@ -304,7 +304,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		navItemWealth,
 	)
 	crossNav = widgets.NewNavigator(widgets.NewAppBar("Characters", crossList))
-	u.WealthArea.OnTotalRefresh = func(total string) {
+	u.WealthArea.OnRefresh = func(total string) {
 		navItemWealth.Supporting = total
 		crossList.Refresh()
 	}
@@ -322,6 +322,20 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		"Update status",
 		func() {
 			u.ShowUpdateStatusWindow()
+		},
+	)
+	navItemManageCharacters := widgets.NewListItemWithIcon(
+		theme.NewThemedResource(ui.IconManageaccountsSvg),
+		"Manage characters",
+		func() {
+			moreNav.Push(widgets.NewAppBar(
+				"Manage characters",
+				u.AccountArea.Content,
+				widget.NewToolbarAction(
+					theme.NewPrimaryThemedResource(theme.ContentAddIcon()),
+					u.AccountArea.ShowAddCharacterDialog,
+				),
+			))
 		},
 	)
 	toolsList := widgets.NewNavList(
@@ -385,20 +399,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 					))
 			},
 		),
-		widgets.NewListItemWithIcon(
-			theme.NewThemedResource(ui.IconManageaccountsSvg),
-			"Manage characters",
-			func() {
-				moreNav.Push(widgets.NewAppBar(
-					"Manage characters",
-					u.AccountArea.Content,
-					widget.NewToolbarAction(
-						theme.NewPrimaryThemedResource(theme.ContentAddIcon()),
-						u.AccountArea.ShowAddCharacterDialog,
-					),
-				))
-			},
-		),
+		navItemManageCharacters,
 		widgets.NewListItemWithIcon(
 			theme.NewThemedResource(ui.IconInformationSvg),
 			"About",
@@ -408,6 +409,9 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		),
 		u.navItemUpdateStatus,
 	)
+	u.AccountArea.OnRefresh = func(characterCount int) {
+		navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", characterCount)
+	}
 	moreNav = widgets.NewNavigator(widgets.NewAppBar("More", toolsList))
 
 	// navigation bar

@@ -25,8 +25,8 @@ const (
 )
 
 type WealthArea struct {
-	Content        fyne.CanvasObject
-	OnTotalRefresh func(total string)
+	Content   fyne.CanvasObject
+	OnRefresh func(total string)
 
 	charts *fyne.Container
 	top    *widget.Label
@@ -136,8 +136,9 @@ func (a *WealthArea) Refresh() {
 	a.top.Importance = widget.MediumImportance
 	a.top.Refresh()
 
-	if a.OnTotalRefresh != nil {
-		a.OnTotalRefresh(totalText)
+	if a.OnRefresh != nil {
+		s := fmt.Sprintf("Wallet: %s - Assets: %s", humanize.Number(totalWallet, 1), humanize.Number(totalAssets, 1))
+		a.OnRefresh(s)
 	}
 }
 

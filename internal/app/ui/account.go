@@ -29,7 +29,9 @@ type accountCharacter struct {
 
 // AccountArea is the UI area for managing of characters.
 type AccountArea struct {
-	Content fyne.CanvasObject
+	Content           fyne.CanvasObject
+	OnSelectCharacter func()
+	OnRefresh         func(characterCount int)
 
 	characters []accountCharacter
 	emptyHint  *widget.Label
@@ -37,8 +39,6 @@ type AccountArea struct {
 	title      *widget.Label
 	window     fyne.Window
 	u          *BaseUI
-
-	OnSelectCharacter func()
 }
 
 func (u *BaseUI) NewAccountArea() *AccountArea {
@@ -192,13 +192,17 @@ func (a *AccountArea) Refresh() {
 		cc2[i] = accountCharacter{id: c.ID, name: c.Name, hasTokenWithScope: hasToken}
 	}
 	a.characters = cc2
-	if len(a.characters) == 0 {
+	characterCount := len(a.characters)
+	if characterCount == 0 {
 		a.emptyHint.Show()
 	} else {
 		a.emptyHint.Hide()
 	}
 	a.list.Refresh()
-	a.title.SetText(fmt.Sprintf("Characters (%d)", len(a.characters)))
+	a.title.SetText(fmt.Sprintf("Characters (%d)", characterCount))
+	if a.OnRefresh != nil {
+		a.OnRefresh(characterCount)
+	}
 }
 
 func (a *AccountArea) ShowAddCharacterDialog() {

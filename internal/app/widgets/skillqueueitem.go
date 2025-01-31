@@ -2,15 +2,13 @@ package widgets
 
 import (
 	"fmt"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type SkillQueueItem struct {
@@ -23,36 +21,48 @@ type SkillQueueItem struct {
 }
 
 func NewSkillQueueItem() *SkillQueueItem {
+	name := widget.NewLabel("skill")
+	name.Truncation = fyne.TextTruncateEllipsis
+	pb := widget.NewProgressBar()
 	w := &SkillQueueItem{
 		duration:   widget.NewLabel("duration"),
-		name:       widget.NewLabel("skill"),
-		progress:   widget.NewProgressBar(),
+		name:       name,
+		progress:   pb,
 		skillLevel: NewSkillLevel(),
 		isMobile:   fyne.CurrentDevice().IsMobile(),
 	}
-	w.progress.Hide()
 	w.ExtendBaseWidget(w)
+	pb.Hide()
+	if w.isMobile {
+		pb.TextFormatter = func() string {
+			return ""
+		}
+	}
 	return w
 }
 
-func (w *SkillQueueItem) Set(name string, targetLevel int, isActive bool, remaining, duration optional.Optional[time.Duration], completionP float64) {
+// func (w *SkillQueueItem) Set(isActive bool, remaining, duration optional.Optional[time.Duration], completionP float64) {
+
+func (w *SkillQueueItem) Set(q *app.CharacterSkillqueueItem) {
 	var (
 		i widget.Importance
 		d string
 	)
+	isActive := q.IsActive()
+	completionP := q.CompletionP()
 	isCompleted := completionP == 1
 	if isCompleted {
 		i = widget.LowImportance
 		d = "Completed"
 	} else if isActive {
 		i = widget.MediumImportance
-		d = humanize.Optional(remaining, "?")
+		d = humanize.Optional(q.Remaining(), "?")
 	} else {
 		i = widget.MediumImportance
-		d = humanize.Optional(duration, "?")
+		d = humanize.Optional(q.Duration(), "?")
 	}
 	w.name.Importance = i
-	w.name.Text = fmt.Sprintf("%s %s", name, humanize.RomanLetter(targetLevel))
+	w.name.Text = q.String()
 	w.name.Refresh()
 	w.duration.Text = d
 	w.duration.Importance = i
@@ -65,17 +75,17 @@ func (w *SkillQueueItem) Set(name string, targetLevel int, isActive bool, remain
 	}
 	var active, trained, required int
 	if isCompleted {
-		active = targetLevel
-		trained = targetLevel
-		required = targetLevel
+		active = q.FinishedLevel
+		trained = q.FinishedLevel
+		required = q.FinishedLevel
 	} else if isActive {
-		active = targetLevel - 1
-		trained = targetLevel - 1
+		active = q.FinishedLevel - 1
+		trained = q.FinishedLevel - 1
 		required = 0
 	} else {
-		active = targetLevel - 1
-		trained = targetLevel - 1
-		required = targetLevel
+		active = q.FinishedLevel - 1
+		trained = q.FinishedLevel - 1
+		required = q.FinishedLevel
 	}
 	w.skillLevel.Set(active, trained, required)
 }
@@ -89,7 +99,9 @@ func (w *SkillQueueItem) SetError(message string, err error) {
 }
 
 func (w *SkillQueueItem) CreateRenderer() fyne.WidgetRenderer {
-	queue := container.NewStack(w.progress, container.NewHBox(w.name, layout.NewSpacer(), w.duration))
+	queue := container.NewStack(
+		w.progress,
+		container.NewBorder(nil, nil, nil, w.duration, w.name))
 	if w.isMobile {
 		return widget.NewSimpleRenderer(queue)
 	}

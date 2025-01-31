@@ -179,7 +179,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 			container.NewTabItem("Ships", u.ShipsArea.Content),
 			container.NewTabItem("Attributes", u.AttributesArea.Content),
 		))
-	u.SkillqueueArea.OnRefresh = func(status string) {
+	u.SkillqueueArea.OnRefresh = func(status, _ string) {
 		skillTab.Text = fmt.Sprintf("Skills (%s)", status)
 		u.tabs.Refresh()
 	}

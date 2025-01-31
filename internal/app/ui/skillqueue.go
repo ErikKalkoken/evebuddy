@@ -22,7 +22,7 @@ import (
 type SkillqueueArea struct {
 	Content *fyne.Container
 
-	OnRefresh func(status string)
+	OnRefresh func(statusShort, statusLong string)
 
 	items []*app.CharacterSkillqueueItem
 	total *widget.Label
@@ -35,13 +35,13 @@ func (u *BaseUI) NewSkillqueueArea() *SkillqueueArea {
 		total: makeTopLabel(),
 		u:     u,
 	}
-	list := a.makeSkillqueue()
+	list := a.makeSkillQueue()
 	top := container.NewVBox(a.total, widget.NewSeparator())
 	a.Content = container.NewBorder(top, nil, nil, nil, list)
 	return &a
 }
 
-func (a *SkillqueueArea) makeSkillqueue() *widget.List {
+func (a *SkillqueueArea) makeSkillQueue() *widget.List {
 	list := widget.NewList(
 		func() int {
 			return len(a.items)
@@ -55,7 +55,7 @@ func (a *SkillqueueArea) makeSkillqueue() *widget.List {
 			}
 			q := a.items[id]
 			item := co.(*widgets.SkillQueueItem)
-			item.Set(q.SkillName, q.FinishedLevel, q.IsActive(), q.Remaining(), q.Duration(), q.CompletionP())
+			item.Set(q)
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
@@ -88,6 +88,9 @@ func (a *SkillqueueArea) makeSkillqueue() *widget.List {
 			{"Active?", isActive, false},
 		}
 		form := widget.NewForm()
+		if a.u.IsMobile() {
+			form.Orientation = widget.Vertical
+		}
 		for _, row := range data {
 			c := widget.NewLabel(row.value)
 			if row.wrap {
@@ -97,15 +100,12 @@ func (a *SkillqueueArea) makeSkillqueue() *widget.List {
 
 		}
 		s := container.NewScroll(form)
+		s.SetMinSize(fyne.NewSize(500, 300))
 		dlg := dialog.NewCustom("Skill Details", "OK", s, a.u.Window)
 		dlg.SetOnClosed(func() {
 			list.UnselectAll()
 		})
 		dlg.Show()
-		dlg.Resize(fyne.Size{
-			Width:  0.8 * a.u.Window.Canvas().Size().Width,
-			Height: 0.8 * a.u.Window.Canvas().Size().Height,
-		})
 	}
 	return list
 }
@@ -113,20 +113,22 @@ func (a *SkillqueueArea) makeSkillqueue() *widget.List {
 func (a *SkillqueueArea) Refresh() {
 	var t string
 	var i widget.Importance
-	remaining, completion, err := a.updateItems()
+	remaining, completion, current, err := a.updateItems()
 	if err != nil {
 		slog.Error("Failed to refresh skill queue UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
 	} else {
-		s := ""
+		var s1, s2 string
 		if remaining.IsEmpty() {
-			s += "!"
+			s1 = "!"
+			s2 = "training paused"
 		} else if completion.ValueOrZero() < 1 {
-			s += fmt.Sprintf("%.0f%%", completion.ValueOrZero()*100)
+			s1 = fmt.Sprintf("%.0f%%", completion.ValueOrZero()*100)
+			s2 = fmt.Sprintf("%s (%s)", current, s1)
 		}
 		if a.OnRefresh != nil {
-			a.OnRefresh(s)
+			a.OnRefresh(s1, s2)
 		}
 		t, i = a.makeTopText(remaining)
 	}
@@ -135,7 +137,12 @@ func (a *SkillqueueArea) Refresh() {
 	a.total.Refresh()
 }
 
-func (a *SkillqueueArea) updateItems() (remaining optional.Optional[time.Duration], completion optional.Optional[float64], err error) {
+func (a *SkillqueueArea) updateItems() (
+	remaining optional.Optional[time.Duration],
+	completion optional.Optional[float64],
+	current *app.CharacterSkillqueueItem,
+	err error,
+) {
 	ctx := context.TODO()
 	if !a.u.HasCharacter() {
 		a.items = make([]*app.CharacterSkillqueueItem, 0)
@@ -144,12 +151,13 @@ func (a *SkillqueueArea) updateItems() (remaining optional.Optional[time.Duratio
 	var items []*app.CharacterSkillqueueItem
 	items, err = a.u.CharacterService.ListCharacterSkillqueueItems(ctx, a.u.CharacterID())
 	if err != nil {
-		return remaining, completion, err
+		return
 	}
 	for _, item := range items {
 		remaining = optional.New(remaining.ValueOrZero() + item.Remaining().ValueOrZero())
 		if item.IsActive() {
 			completion = optional.New(item.CompletionP())
+			current = item
 		}
 	}
 	a.items = items
