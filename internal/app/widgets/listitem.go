@@ -115,7 +115,7 @@ func (w *listItem) Refresh() {
 }
 
 func (w *listItem) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(
+	c := container.NewPadded(container.NewBorder(
 		nil,
 		nil,
 		w.iconWrapped,
@@ -130,6 +130,6 @@ func (w *listItem) CreateRenderer() fyne.WidgetRenderer {
 				),
 				layout.NewSpacer(),
 			)),
-	)
+	))
 	return widget.NewSimpleRenderer(c)
 }

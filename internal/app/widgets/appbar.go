@@ -7,8 +7,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 const (
@@ -64,7 +62,7 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 		row.Add(container.NewHBox(layout.NewSpacer(), w.title, layout.NewSpacer()))
 	}
 	if w.Navigator != nil {
-		icon := kxwidget.NewTappableIcon(theme.NewThemedResource(iconChevronLeftSvg), func() {
+		icon := NewIconButton(theme.NewThemedResource(iconChevronLeftSvg), func() {
 			w.Navigator.Pop()
 		})
 		row.Add(container.NewHBox(icon))
