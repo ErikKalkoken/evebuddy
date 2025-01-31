@@ -73,7 +73,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 			return a.treeData.IsBranch(uid)
 		},
 		func(branch bool) fyne.CanvasObject {
-			iconMain := canvas.NewImageFromResource(IconCharacterplaceholder32Jpeg)
+			iconMain := canvas.NewImageFromResource(IconCharacterplaceholder64Jpeg)
 			iconMain.FillMode = canvas.ImageFillContain
 			iconMain.SetMinSize(fyne.NewSquareSize(DefaultIconUnitSize))
 			main := widget.NewLabel("Template")

@@ -52,7 +52,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	}
 
 	// character
-	characterSelector := widget.NewToolbarAction(ui.IconCharacterplaceholder32Jpeg, nil)
+	characterSelector := widget.NewToolbarAction(ui.IconCharacterplaceholder64Jpeg, nil)
 	characterSelector.OnActivated = func() {
 		o := characterSelector.ToolbarObject()
 		characterID := u.CharacterID()
@@ -435,7 +435,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			r, err := u.EveImageService.CharacterPortrait(id, ui.DefaultIconPixelSize)
 			if err != nil {
 				slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
-				r = ui.IconCharacterplaceholder32Jpeg
+				r = ui.IconCharacterplaceholder64Jpeg
 			}
 			characterSelector.SetIcon(r)
 		}()

@@ -84,7 +84,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 			return len(a.characters)
 		},
 		func() fyne.CanvasObject {
-			portrait := canvas.NewImageFromResource(IconCharacterplaceholder32Jpeg)
+			portrait := canvas.NewImageFromResource(IconCharacterplaceholder64Jpeg)
 			portrait.FillMode = canvas.ImageFillContain
 			portrait.SetMinSize(fyne.Size{Width: DefaultIconUnitSize, Height: DefaultIconUnitSize})
 			name := widget.NewLabel("Template")

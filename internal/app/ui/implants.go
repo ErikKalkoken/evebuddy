@@ -44,7 +44,7 @@ func (a *ImplantsArea) makeImplantList() *widget.List {
 			return len(a.implants)
 		},
 		func() fyne.CanvasObject {
-			iconMain := canvas.NewImageFromResource(IconCharacterplaceholder32Jpeg)
+			iconMain := canvas.NewImageFromResource(IconCharacterplaceholder64Jpeg)
 			iconMain.FillMode = canvas.ImageFillContain
 			iconMain.SetMinSize(fyne.Size{Width: 42, Height: 42})
 			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
