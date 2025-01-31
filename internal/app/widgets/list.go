@@ -25,7 +25,7 @@ func (w *List) CreateRenderer() fyne.WidgetRenderer {
 			return len(w.items)
 		},
 		func() fyne.CanvasObject {
-			return newListItem(iconBlankSvg, "", "")
+			return newListItem(iconBlankSvg, "Headline", "Supporting")
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			item := w.items[id]

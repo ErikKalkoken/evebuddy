@@ -56,10 +56,11 @@ type List struct {
 type listItem struct {
 	widget.BaseWidget
 
-	headline   *canvas.Text
-	supporting *canvas.Text
-	icon       *canvas.Image
-	indicator  *canvas.Image
+	headline    *canvas.Text
+	supporting  *canvas.Text
+	icon        *canvas.Image
+	iconWrapped *fyne.Container
+	indicator   *canvas.Image
 }
 
 func newListItem(icon fyne.Resource, headline, supporting string) *listItem {
@@ -79,6 +80,8 @@ func newListItem(icon fyne.Resource, headline, supporting string) *listItem {
 		icon:       i1,
 		indicator:  i2,
 	}
+	p := theme.Padding()
+	w.iconWrapped = container.NewCenter(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), w.icon))
 	w.ExtendBaseWidget(w)
 	return w
 }
@@ -87,6 +90,16 @@ func (w *listItem) Set(icon fyne.Resource, headline, supporting string) {
 	w.icon.Resource = icon
 	w.headline.Text = headline
 	w.supporting.Text = supporting
+	if supporting == "" {
+		w.supporting.Hide()
+	} else {
+		w.supporting.Show()
+	}
+	if icon == nil {
+		w.iconWrapped.Hide()
+	} else {
+		w.iconWrapped.Show()
+	}
 	w.Refresh()
 }
 
@@ -97,26 +110,25 @@ func (w *listItem) Refresh() {
 	w.supporting.Color = th.Color(theme.ColorNameForeground, v)
 	w.icon.Refresh()
 	w.headline.Refresh()
-	if w.supporting.Text == "" {
-		w.supporting.Hide()
-	} else {
-		w.supporting.Show()
-	}
 	w.supporting.Refresh()
 	w.BaseWidget.Refresh()
 }
 
 func (w *listItem) CreateRenderer() fyne.WidgetRenderer {
-	p := theme.Padding()
 	c := container.NewBorder(
 		nil,
 		nil,
-		container.New(layout.NewCustomPaddedLayout(p, p, 2*p, 2*p), w.icon),
-		container.New(layout.NewCustomPaddedLayout(p, p, 2*p, 2*p), w.indicator),
+		w.iconWrapped,
+		container.NewCenter(w.indicator),
 		container.NewPadded(
 			container.NewVBox(
-				w.headline,
-				w.supporting,
+				layout.NewSpacer(),
+				container.New(
+					layout.NewCustomPaddedVBoxLayout(0),
+					w.headline,
+					w.supporting,
+				),
+				layout.NewSpacer(),
 			)),
 	)
 	return widget.NewSimpleRenderer(c)
