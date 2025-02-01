@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -13,55 +12,48 @@ import (
 
 type MailHeaderItem struct {
 	widget.BaseWidget
-	from       *canvas.Text
-	subject    *canvas.Text
-	timestamp  *canvas.Text
+	from       *widget.Label
+	subject    *Label
+	timestamp  *widget.Label
 	timeFormat string
 }
 
 func NewMailHeaderItem(timeFormat string) *MailHeaderItem {
-	foregroundColor := theme.Color(theme.ColorNameForeground)
+	subject := NewLabelWithSize("", theme.SizeNameSubHeadingText)
+	subject.Truncation = fyne.TextTruncateEllipsis
+	from := widget.NewLabel("")
+	from.Truncation = fyne.TextTruncateEllipsis
 	w := &MailHeaderItem{
-		from:       canvas.NewText("xxxxxxxxxxxxxxx", foregroundColor),
-		subject:    canvas.NewText("xxxxxxxxxxxxxxx", foregroundColor),
-		timestamp:  canvas.NewText("xxxxxxxxxxxxxxx", foregroundColor),
+		from:       from,
+		subject:    subject,
+		timestamp:  widget.NewLabel(""),
 		timeFormat: timeFormat,
 	}
-	w.subject.TextSize = theme.TextSize() * 1.15
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *MailHeaderItem) Set(from, subject string, timestamp time.Time, isRead bool) {
-	fg := theme.Color(theme.ColorNameForeground)
 	w.from.Text = from
 	w.from.TextStyle = fyne.TextStyle{Bold: !isRead}
-	w.from.Color = fg
 	w.from.Refresh()
-
 	w.timestamp.Text = timestamp.Format(w.timeFormat)
 	w.timestamp.TextStyle = fyne.TextStyle{Bold: !isRead}
-	w.timestamp.Color = fg
 	w.timestamp.Refresh()
-
 	w.subject.Text = subject
 	w.subject.TextStyle = fyne.TextStyle{Bold: !isRead}
-	w.subject.Color = fg
-	w.subject.Refresh()
-}
-
-func (w *MailHeaderItem) SetError(s string) {
-	w.from.Text = "ERROR"
-	w.subject.Color = theme.Color(theme.ColorNameError)
-	w.subject.Text = s
-	w.subject.Color = theme.Color(theme.ColorNameError)
 	w.subject.Refresh()
 }
 
 func (w *MailHeaderItem) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewPadded(container.NewPadded(container.NewVBox(
-		container.NewHBox(w.from, layout.NewSpacer(), w.timestamp),
-		w.subject,
-	)))
+	p := theme.Padding()
+	c := container.New(
+		layout.NewCustomPaddedVBoxLayout(0),
+		container.New(
+			layout.NewCustomPaddedLayout(0, -2*p, 0, 0),
+			container.NewBorder(nil, nil, nil, w.timestamp, w.from),
+		),
+		container.New(layout.NewCustomPaddedLayout(-2*p, 0, 0, 0), w.subject),
+	)
 	return widget.NewSimpleRenderer(c)
 }
