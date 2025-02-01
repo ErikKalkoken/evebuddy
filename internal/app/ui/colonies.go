@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/dustin/go-humanize"
 )
 
 type colonyRow struct {
@@ -19,6 +18,7 @@ type colonyRow struct {
 	due                string
 	dueImportance      widget.Importance
 	extracting         string
+	isExpired          bool
 	planet             string
 	planetType         string
 	producing          string
@@ -29,7 +29,8 @@ type colonyRow struct {
 
 // ColoniesArea is the UI area that shows the skillqueue
 type ColoniesArea struct {
-	Content fyne.CanvasObject
+	Content   fyne.CanvasObject
+	OnRefresh func(top string)
 
 	body fyne.CanvasObject
 	rows []colonyRow
@@ -104,11 +105,22 @@ func (a *ColoniesArea) Refresh() {
 	a.top.Importance = i
 	a.top.Refresh()
 	a.body.Refresh()
+	if a.OnRefresh != nil {
+		a.OnRefresh(t)
+	}
 }
 
 func (a *ColoniesArea) makeTopText() (string, widget.Importance) {
-	t := humanize.Comma(int64(len(a.rows)))
-	s := fmt.Sprintf("Colonies: %s", t)
+	var expiredCount int
+	for _, c := range a.rows {
+		if c.isExpired {
+			expiredCount++
+		}
+	}
+	s := fmt.Sprintf("%d colonies", len(a.rows))
+	if expiredCount > 0 {
+		s += fmt.Sprintf(" • %d expired", expiredCount)
+	}
 	return s, widget.MediumImportance
 }
 
@@ -143,6 +155,7 @@ func (a *ColoniesArea) updateEntries() error {
 		} else if due.Before(time.Now()) {
 			r.due = "OFFLINE"
 			r.dueImportance = widget.WarningImportance
+			r.isExpired = true
 		} else {
 			r.due = due.Format(app.TimeDefaultFormat)
 		}

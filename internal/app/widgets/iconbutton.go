@@ -3,6 +3,7 @@ package widgets
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
@@ -13,7 +14,7 @@ import (
 type IconButton struct {
 	widget.DisableableWidget
 
-	// The function that is called when the icon is tapped.
+	// This callback runs when the icon is tapped.
 	OnTapped func()
 
 	icon    *canvas.Image
@@ -23,7 +24,7 @@ type IconButton struct {
 var _ fyne.Tappable = (*IconButton)(nil)
 var _ desktop.Hoverable = (*IconButton)(nil)
 
-// NewIconButton returns a new instance of a [IconButton] widget.
+// NewIconButton returns a new instance of an [IconButton].
 func NewIconButton(icon fyne.Resource, tapped func()) *IconButton {
 	i := canvas.NewImageFromResource(icon)
 	i.FillMode = canvas.ImageFillContain
@@ -34,6 +35,21 @@ func NewIconButton(icon fyne.Resource, tapped func()) *IconButton {
 	}
 	w.ExtendBaseWidget(w)
 	return w
+}
+
+// NewIconButtonWithMenu returns an [IconButton] with a context menu.
+func NewIconButtonWithMenu(icon fyne.Resource, menu *fyne.Menu) *IconButton {
+	a := NewIconButton(icon, nil)
+	a.OnTapped = func() {
+		ShowContextMenu(a, menu)
+	}
+	return a
+}
+
+// SetIcon replaces the current icon.
+func (w *IconButton) SetIcon(icon fyne.Resource) {
+	w.icon.Resource = icon
+	w.icon.Refresh()
 }
 
 func (w *IconButton) Tapped(_ *fyne.PointEvent) {
@@ -68,5 +84,5 @@ func (w *IconButton) MouseOut() {
 }
 
 func (w *IconButton) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(w.icon)
+	return widget.NewSimpleRenderer(container.NewPadded(w.icon))
 }

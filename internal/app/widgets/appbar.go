@@ -22,11 +22,11 @@ type AppBar struct {
 	body  fyne.CanvasObject
 	bg    *canvas.Rectangle
 	title *SubHeading
-	items []widget.ToolbarItem
+	items []*IconButton
 }
 
 // NewAppBar returns a new AppBar. The toolbar items are optional.
-func NewAppBar(title string, body fyne.CanvasObject, items ...widget.ToolbarItem) *AppBar {
+func NewAppBar(title string, body fyne.CanvasObject, items ...*IconButton) *AppBar {
 	bg := canvas.NewRectangle(theme.Color(colorAppBarBackground))
 	bg.SetMinSize(fyne.NewSize(10, 45))
 	w := &AppBar{
@@ -68,7 +68,11 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 		row.Add(container.NewHBox(icon))
 	}
 	if len(w.items) > 0 {
-		row.Add(container.NewHBox(layout.NewSpacer(), widget.NewToolbar(w.items...)))
+		c := container.NewHBox(layout.NewSpacer())
+		for _, ib := range w.items {
+			c.Add(ib)
+		}
+		row.Add(c)
 	}
 	p := theme.Padding()
 	top := container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), container.NewStack(w.bg, row))

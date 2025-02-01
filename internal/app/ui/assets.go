@@ -68,7 +68,7 @@ type AssetsArea struct {
 	Locations      fyne.CanvasObject
 	LocationAssets fyne.CanvasObject
 	OnSelected     func()
-	OnReDraw       func(string)
+	OnRedraw       func(string)
 
 	assetCollection  assetcollection.AssetCollection
 	assetGrid        *widget.GridWrap
@@ -290,8 +290,8 @@ func (a *AssetsArea) Redraw() {
 	a.locationsTop.Importance = i
 	a.locationsTop.Refresh()
 	a.locationsWidget.Refresh()
-	if a.OnReDraw != nil {
-		a.OnReDraw(t)
+	if a.OnRedraw != nil {
+		a.OnRedraw(t)
 	}
 }
 
@@ -442,15 +442,17 @@ func (a *AssetsArea) newLocationData() (*fynetree.FyneTree[locationDataNode], er
 }
 
 func (a *AssetsArea) makeTopText(total int) (string, widget.Importance, error) {
-	if !a.u.HasCharacter() {
+	c := a.u.CurrentCharacter()
+	if c == nil {
 		return "No character", widget.LowImportance, nil
 	}
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionAssets)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance, nil
 	}
 	locations := humanize.Comma(int64(total))
-	return fmt.Sprintf("%s locations", locations), widget.MediumImportance, nil
+	text := fmt.Sprintf("%s locations • %s total value", locations, ihumanize.OptionalFloat(c.AssetValue, 1, "?"))
+	return text, widget.MediumImportance, nil
 }
 
 func (a *AssetsArea) selectLocation(location locationDataNode) error {

@@ -519,8 +519,8 @@ func (a *MailArea) makeFolderTopText(f FolderNode) (string, widget.Importance) {
 	return s, widget.MediumImportance
 }
 
-func (a *MailArea) MakeDeleteAction(success func()) *widget.ToolbarAction {
-	return widget.NewToolbarAction(theme.DeleteIcon(), func() {
+func (a *MailArea) MakeDeleteAction(onSuccess func()) func() {
+	return func() {
 		s := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Header())
 		d := NewConfirmDialog("Delete mail", s, "Delete", func(confirmed bool) {
 			if confirmed {
@@ -531,14 +531,14 @@ func (a *MailArea) MakeDeleteAction(success func()) *widget.ToolbarAction {
 					d2.Show()
 				} else {
 					a.headerRefresh()
-					if success != nil {
-						success()
+					if onSuccess != nil {
+						onSuccess()
 					}
 				}
 			}
 		}, a.u.Window)
 		d.Show()
-	})
+	}
 }
 
 func (a *MailArea) makeToolbar() *widget.Toolbar {
@@ -568,7 +568,7 @@ func (a *MailArea) makeToolbar() *widget.Toolbar {
 			a.u.Window.Clipboard().SetContent(a.mail.String())
 		}),
 		widget.NewToolbarSpacer(),
-		a.MakeDeleteAction(nil),
+		widget.NewToolbarAction(theme.DeleteIcon(), a.MakeDeleteAction(nil)),
 	)
 	return toolbar
 }

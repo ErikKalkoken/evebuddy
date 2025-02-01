@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
@@ -52,9 +51,9 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	}
 
 	// character
-	characterSelector := widget.NewToolbarAction(ui.IconCharacterplaceholder64Jpeg, nil)
-	characterSelector.OnActivated = func() {
-		o := characterSelector.ToolbarObject()
+	characterSelector := widgets.NewIconButton(ui.IconCharacterplaceholder64Jpeg, nil)
+	characterSelector.OnTapped = func() {
+		o := characterSelector
 		characterID := u.CharacterID()
 		cc := u.StatusCacheService.ListCharacters()
 		items := make([]*fyne.MenuItem, 0)
@@ -76,7 +75,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		widgets.ShowContextMenu(o, fyne.NewMenu("", items...))
 	}
 
-	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...widget.ToolbarItem) *widgets.AppBar {
+	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...*widgets.IconButton) *widgets.AppBar {
 		items = append(items, characterSelector)
 		return widgets.NewAppBar(title, body, items...)
 	}
@@ -89,9 +88,9 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		theme.MailComposeIcon(),
 		"Mail",
 		func() {
-			deleteAction := u.MailArea.MakeDeleteAction(func() {
+			deleteAction := widgets.NewIconButton(theme.DeleteIcon(), u.MailArea.MakeDeleteAction(func() {
 				characterNav.Pop()
-			})
+			}))
 			u.MailArea.OnSelected = func() {
 				characterNav.Push(
 					widgets.NewAppBar("", u.MailArea.Detail, deleteAction),
@@ -101,7 +100,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				newCharacterAppBar(
 					"Mail",
 					u.MailArea.Headers,
-					widgets.NewToolbarActionMenu(theme.FolderIcon(), mailMenu),
+					widgets.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
 				))
 		},
 	)
@@ -119,7 +118,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				newCharacterAppBar(
 					"Communications",
 					u.NotificationsArea.Notifications,
-					widgets.NewToolbarActionMenu(theme.FolderIcon(), communicationsMenu),
+					widgets.NewIconButtonWithMenu(theme.FolderIcon(), communicationsMenu),
 				),
 			)
 		},
@@ -134,7 +133,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			characterNav.Push(newCharacterAppBar("Assets", container.NewHScroll(u.AssetsArea.Locations)))
 		},
 	)
-	navItemColonies := widgets.NewListItemWithIcon(
+	navItemColonies1 := widgets.NewListItemWithIcon(
 		theme.NewThemedResource(ui.IconEarthSvg),
 		"Colonies",
 		func() {
@@ -196,7 +195,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	)
 	characterList := widgets.NewNavList(
 		navItemAssets,
-		navItemColonies,
+		navItemColonies1,
 		navItemMail,
 		navItemCommunications,
 		navItemClones,
@@ -211,7 +210,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		navItemWallet,
 	)
 
-	u.AssetsArea.OnReDraw = func(s string) {
+	u.AssetsArea.OnRedraw = func(s string) {
 		navItemAssets.Supporting = s
 		characterList.Refresh()
 	}
@@ -229,7 +228,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				s += fmt.Sprintf(" • %d expired", expired)
 			}
 		}
-		navItemColonies.Supporting = s
+		navItemColonies1.Supporting = s
 		characterList.Refresh()
 	}
 
@@ -273,6 +272,13 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			crossNav.Push(widgets.NewAppBar("Wealth", u.WealthArea.Content))
 		},
 	)
+	navItemColonies2 := widgets.NewListItemWithIcon(
+		theme.NewThemedResource(ui.IconEarthSvg),
+		"Colonies",
+		func() {
+			crossNav.Push(widgets.NewAppBar("Colonies", u.ColoniesArea.Content))
+		},
+	)
 	crossList := widgets.NewNavList(
 		widgets.NewListItemWithIcon(
 			theme.NewThemedResource(ui.IconAccountMultipleSvg),
@@ -303,16 +309,14 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				crossNav.Push(widgets.NewAppBar("Training", u.TrainingArea.Content))
 			},
 		),
-		widgets.NewListItemWithIcon(
-			theme.NewThemedResource(ui.IconEarthSvg),
-			"Colonies",
-			func() {
-				crossNav.Push(widgets.NewAppBar("Colonies", u.ColoniesArea.Content))
-			},
-		),
+		navItemColonies2,
 		navItemWealth,
 	)
 	crossNav = widgets.NewNavigator(widgets.NewAppBar("Characters", crossList))
+	u.ColoniesArea.OnRefresh = func(top string) {
+		navItemColonies2.Supporting = top
+		crossList.Refresh()
+	}
 	u.WealthArea.OnRefresh = func(total string) {
 		navItemWealth.Supporting = total
 		crossList.Refresh()
@@ -340,7 +344,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			moreNav.Push(widgets.NewAppBar(
 				"Manage characters",
 				u.AccountArea.Content,
-				widget.NewToolbarAction(
+				widgets.NewIconButton(
 					theme.NewPrimaryThemedResource(theme.ContentAddIcon()),
 					u.AccountArea.ShowAddCharacterDialog,
 				),
@@ -361,7 +365,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 								func() {
 									c, f := u.MakeGeneralSettingsPage(nil)
 									moreNav.Push(
-										widgets.NewAppBar("General", makePage(c), widgets.NewToolbarActionMenu(
+										widgets.NewAppBar("General", makePage(c), widgets.NewIconButtonWithMenu(
 											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
 											)))),
@@ -373,7 +377,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 								func() {
 									c, f := u.MakeEVEOnlinePage()
 									moreNav.Push(
-										widgets.NewAppBar("Eve Online", makePage(c), widgets.NewToolbarActionMenu(
+										widgets.NewAppBar("Eve Online", makePage(c), widgets.NewIconButtonWithMenu(
 											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
 											)))),
@@ -385,7 +389,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 								func() {
 									c, f := u.MakeNotificationGeneralPage(nil)
 									moreNav.Push(
-										widgets.NewAppBar("Notification - General", makePage(c), widgets.NewToolbarActionMenu(
+										widgets.NewAppBar("Notification - General", makePage(c), widgets.NewIconButtonWithMenu(
 											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
 											)))),
@@ -397,7 +401,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 								func() {
 									c, f := u.MakeNotificationTypesPage()
 									moreNav.Push(
-										widgets.NewAppBar("Notification - Types", makePage(c), widgets.NewToolbarActionMenu(
+										widgets.NewAppBar("Notification - Types", makePage(c), widgets.NewIconButtonWithMenu(
 											makeMenu(fyne.NewMenuItem(
 												"Reset", f,
 											)))),

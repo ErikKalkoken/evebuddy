@@ -130,12 +130,19 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 	needsRefresh := hasChanged || forceUpdate
 	switch s {
 	case app.SectionAssets:
-		if isShown && needsRefresh {
-			u.AssetsArea.Redraw()
-		}
 		if needsRefresh {
+			v, err := u.CharacterService.UpdateCharacterAssetTotalValue(ctx, characterID)
+			if err != nil {
+				slog.Error("update asset total value", "characterID", characterID, "err", err)
+			}
+			if isShown {
+				u.character.AssetValue.Set(v)
+			}
 			u.AssetSearchArea.Refresh()
 			u.WealthArea.Refresh()
+		}
+		if isShown && needsRefresh {
+			u.AssetsArea.Redraw()
 		}
 	case app.SectionAttributes:
 		if isShown && needsRefresh {

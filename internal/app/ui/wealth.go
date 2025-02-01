@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/chartbuilder"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/golang/freetype/truetype"
 )
 
@@ -68,7 +68,7 @@ func (a *WealthArea) Refresh() {
 	data, characters, err := a.compileData()
 	if err != nil {
 		slog.Error("Failed to fetch data for charts", "err", err)
-		a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", humanize.Error(err))
+		a.top.Text = fmt.Sprintf("Failed to fetch data for charts: %s", ihumanize.Error(err))
 		a.top.Importance = widget.DangerImportance
 		a.top.Refresh()
 		return
@@ -131,13 +131,13 @@ func (a *WealthArea) Refresh() {
 	charts[3] = walletChart
 	a.charts.Refresh()
 
-	totalText := humanize.Number(total, 1)
+	totalText := ihumanize.Number(total, 1)
 	a.top.Text = fmt.Sprintf("%s ISK total wealth • %d characters", totalText, characters)
 	a.top.Importance = widget.MediumImportance
 	a.top.Refresh()
 
 	if a.OnRefresh != nil {
-		s := fmt.Sprintf("Wallet: %s - Assets: %s", humanize.Number(totalWallet, 1), humanize.Number(totalAssets, 1))
+		s := fmt.Sprintf("Wallet: %s • Assets: %s", ihumanize.Number(totalWallet, 1), ihumanize.Number(totalAssets, 1))
 		a.OnRefresh(s)
 	}
 }
@@ -168,17 +168,6 @@ func (a *WealthArea) compileData() ([]dataRow, int, error) {
 		assetTotal, err := a.u.CharacterService.CharacterAssetTotalValue(ctx, c.ID)
 		if err != nil {
 			return nil, 0, err
-		}
-		if assetTotal.IsEmpty() && a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionAssets) {
-			go func(characterID int32) {
-				_, err := a.u.CharacterService.UpdateCharacterAssetTotalValue(ctx, characterID)
-				if err != nil {
-					slog.Error("update asset totals", "characterID", characterID, "err", err)
-					return
-				}
-				a.u.WealthArea.Refresh()
-				a.u.OverviewArea.Refresh()
-			}(c.ID)
 		}
 		if c.WalletBalance.IsEmpty() && assetTotal.IsEmpty() {
 			continue
