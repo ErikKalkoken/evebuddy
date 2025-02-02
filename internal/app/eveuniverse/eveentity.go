@@ -72,7 +72,7 @@ func (eu *EveUniverseService) AddMissingEveEntities(ctx context.Context, ids []i
 	}
 	var ee []esi.PostUniverseNames200Ok
 	var badIDs []int32
-	for _, chunk := range chunkBy(missingIDs, 1000) { // PostUniverseNames max is 1000 IDs
+	for chunk := range slices.Chunk(missingIDs, 1000) { // PostUniverseNames max is 1000 IDs
 		eeChunk, badChunk, err := eu.resolveIDs(ctx, chunk)
 		if err != nil {
 			return nil, err

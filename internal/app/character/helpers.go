@@ -1,8 +1,16 @@
 package character
 
-func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
-	for chunkSize < len(items) {
-		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
+import "iter"
+
+// Count adds an item counter to an iterator.
+// This allows to range over an iterator with an index similar to ranging over a slice.
+func Count[T any](it iter.Seq[T], start int) iter.Seq2[int, T] {
+	return func(yield func(int, T) bool) {
+		for v := range it {
+			if !yield(start, v) {
+				return
+			}
+			start++
+		}
 	}
-	return append(chunks, items)
 }
