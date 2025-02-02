@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
@@ -392,7 +393,7 @@ func (u *BaseUI) MakeAboutPage() fyne.CanvasObject {
 		latest.SetText(v.Latest)
 		local.SetText(v.Local)
 	}()
-	title := widgets.NewSubHeading(u.AppName())
+	title := widgets.NewLabelWithSize(u.AppName(), theme.SizeNameSubHeadingText)
 	title.TextStyle.Bold = true
 	c := container.New(
 		layout.NewCustomPaddedVBoxLayout(0),

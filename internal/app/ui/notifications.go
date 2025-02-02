@@ -263,7 +263,7 @@ func (a *NotificationsArea) setDetail(n *app.CharacterNotification) {
 		n.RecipientName = a.u.CurrentCharacter().EveCharacter.Name
 	}
 	a.Detail.RemoveAll()
-	subject := widgets.NewSubHeading(n.TitleDisplay())
+	subject := widgets.NewLabelWithSize(n.TitleDisplay(), theme.SizeNameSubHeadingText)
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
 	a.Detail.Add(widget.NewLabel(n.Header()))

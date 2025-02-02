@@ -52,7 +52,7 @@ type MailArea struct {
 	lastSelected  widget.ListItemID
 	lastUID       string
 	mail          *app.CharacterMail
-	subject       *widgets.SubHeading
+	subject       *widgets.Label
 	toolbar       *widget.Toolbar
 	u             *BaseUI
 }
@@ -64,7 +64,7 @@ func (u *BaseUI) NewMailArea() *MailArea {
 		header:     widget.NewLabel(""),
 		headers:    make([]*app.CharacterMailHeader, 0),
 		headerTop:  widget.NewLabel(""),
-		subject:    widgets.NewSubHeading(""),
+		subject:    widgets.NewLabelWithSize("", theme.SizeNameSubHeadingText),
 		u:          u,
 	}
 

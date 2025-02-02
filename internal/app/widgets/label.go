@@ -8,31 +8,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// SubHeading is a label with larger size meant for headings.
-type Heading struct {
-	Label
-}
-
-func NewHeading(text string) *Heading {
-	w := &Heading{
-		Label: *NewLabelWithSize(text, theme.SizeNameHeadingText),
-	}
-	return w
-}
-
-// SubHeading is a label with larger size meant for sub headings.
-type SubHeading struct {
-	Label
-}
-
-func NewSubHeading(text string) *SubHeading {
-	w := &SubHeading{
-		Label: *NewLabelWithSize(text, theme.SizeNameSubHeadingText),
-	}
-	return w
-}
-
-// Label is a re-implementation of a Fyne Label. This is necessary for setting a custom size.
+// Label is a re-implementation of a Fyne Label, which also allows different sizes but has the same API.
 type Label struct {
 	widget.BaseWidget
 
