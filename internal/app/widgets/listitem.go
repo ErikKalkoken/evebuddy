@@ -56,38 +56,40 @@ type List struct {
 type listItem struct {
 	widget.BaseWidget
 
-	headline    *canvas.Text
-	supporting  *canvas.Text
-	icon        *canvas.Image
-	iconWrapped *fyne.Container
-	indicator   *canvas.Image
+	headline        *canvas.Text
+	supporting      *canvas.Text
+	leading         *canvas.Image
+	leadingWrapped  *fyne.Container
+	trailingWrapped *fyne.Container
+	trailing        *canvas.Image
 }
 
-func newListItem(icon fyne.Resource, headline, supporting string) *listItem {
-	i1 := canvas.NewImageFromResource(icon)
+func newListItem(iconLeading fyne.Resource, headline, supporting string) *listItem {
+	i1 := canvas.NewImageFromResource(iconLeading)
 	i1.FillMode = canvas.ImageFillContain
 	i1.SetMinSize(fyne.NewSquareSize(sizeIcon))
 	i2 := canvas.NewImageFromResource(theme.NewThemedResource(iconChevronRightSvg))
 	i2.FillMode = canvas.ImageFillContain
 	i2.SetMinSize(fyne.NewSquareSize(sizeIcon))
 	h := canvas.NewText(headline, theme.Color(theme.ColorNameForeground))
-	h.TextSize = 16
+	h.TextSize = theme.Size(theme.SizeNameSubHeadingText)
 	t := canvas.NewText(supporting, theme.Color(theme.ColorNameForeground))
-	t.TextSize = 14
+	t.TextSize = theme.Size(theme.SizeNameText)
 	w := &listItem{
 		headline:   h,
 		supporting: t,
-		icon:       i1,
-		indicator:  i2,
+		leading:    i1,
+		trailing:   i2,
 	}
 	p := theme.Padding()
-	w.iconWrapped = container.NewCenter(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), w.icon))
+	w.leadingWrapped = container.NewCenter(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), w.leading))
+	w.trailingWrapped = container.NewCenter(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), w.trailing))
 	w.ExtendBaseWidget(w)
 	return w
 }
 
 func (w *listItem) Set(icon fyne.Resource, headline, supporting string) {
-	w.icon.Resource = icon
+	w.leading.Resource = icon
 	w.headline.Text = headline
 	w.supporting.Text = supporting
 	if supporting == "" {
@@ -96,9 +98,9 @@ func (w *listItem) Set(icon fyne.Resource, headline, supporting string) {
 		w.supporting.Show()
 	}
 	if icon == nil {
-		w.iconWrapped.Hide()
+		w.leadingWrapped.Hide()
 	} else {
-		w.iconWrapped.Show()
+		w.leadingWrapped.Show()
 	}
 	w.Refresh()
 }
@@ -108,7 +110,7 @@ func (w *listItem) Refresh() {
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	w.headline.Color = th.Color(theme.ColorNameForeground, v)
 	w.supporting.Color = th.Color(theme.ColorNameForeground, v)
-	w.icon.Refresh()
+	w.leading.Refresh()
 	w.headline.Refresh()
 	w.supporting.Refresh()
 	w.BaseWidget.Refresh()
@@ -118,8 +120,8 @@ func (w *listItem) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewPadded(container.NewBorder(
 		nil,
 		nil,
-		w.iconWrapped,
-		container.NewCenter(w.indicator),
+		w.leadingWrapped,
+		w.trailingWrapped,
 		container.NewPadded(
 			container.NewVBox(
 				layout.NewSpacer(),

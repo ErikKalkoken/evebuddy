@@ -21,7 +21,7 @@ type AppBar struct {
 
 	body  fyne.CanvasObject
 	bg    *canvas.Rectangle
-	title *SubHeading
+	title *Heading
 	items []*IconButton
 }
 
@@ -36,7 +36,7 @@ func NewAppBar(title string, body fyne.CanvasObject, items ...*IconButton) *AppB
 	}
 	w.ExtendBaseWidget(w)
 	if title != "" {
-		w.title = NewSubHeading(title)
+		w.title = NewHeading(title)
 	}
 	return w
 }
