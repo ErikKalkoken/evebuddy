@@ -11,23 +11,24 @@ import (
 
 type ListItem struct {
 	Action     func()
-	Icon       fyne.Resource
 	Headline   string
+	Leading    fyne.Resource
 	Supporting string
+	Trailing   fyne.Resource
 }
 
-func NewListItemWithIcon(icon fyne.Resource, headline string, action func()) *ListItem {
+func NewListItemWithIcon(leading fyne.Resource, headline string, action func()) *ListItem {
 	return &ListItem{
 		Action:   action,
-		Icon:     icon,
+		Leading:  leading,
 		Headline: headline,
 	}
 }
 
-func NewListItemWithIconAndText(icon fyne.Resource, headline, supporting string, action func()) *ListItem {
+func NewListItemWithIconAndText(leading fyne.Resource, headline, supporting string, action func()) *ListItem {
 	return &ListItem{
 		Action:     action,
-		Icon:       icon,
+		Leading:    leading,
 		Headline:   headline,
 		Supporting: supporting,
 	}
@@ -41,9 +42,11 @@ func NewListItem(headline string, action func()) *ListItem {
 }
 
 func NewListItemWithNavigator(nav *Navigator, ab *AppBar) *ListItem {
-	return NewListItem(ab.Title(), func() {
+	w := NewListItem(ab.Title(), func() {
 		nav.Push(ab)
 	})
+	w.Trailing = theme.NewThemedResource(iconChevronRightSvg)
+	return w
 }
 
 type List struct {
@@ -64,11 +67,17 @@ type listItem struct {
 	trailing        *canvas.Image
 }
 
-func newListItem(iconLeading fyne.Resource, headline, supporting string) *listItem {
-	i1 := canvas.NewImageFromResource(iconLeading)
+func newListItem(leading, trailing fyne.Resource, headline, supporting string) *listItem {
+	if leading == nil {
+		leading = iconBlankSvg
+	}
+	i1 := canvas.NewImageFromResource(leading)
 	i1.FillMode = canvas.ImageFillContain
 	i1.SetMinSize(fyne.NewSquareSize(sizeIcon))
-	i2 := canvas.NewImageFromResource(theme.NewThemedResource(iconChevronRightSvg))
+	if trailing == nil {
+		trailing = iconBlankSvg
+	}
+	i2 := canvas.NewImageFromResource(trailing)
 	i2.FillMode = canvas.ImageFillContain
 	i2.SetMinSize(fyne.NewSquareSize(sizeIcon))
 	h := canvas.NewText(headline, theme.Color(theme.ColorNameForeground))
@@ -85,24 +94,35 @@ func newListItem(iconLeading fyne.Resource, headline, supporting string) *listIt
 	w.leadingWrapped = container.NewCenter(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), w.leading))
 	w.trailingWrapped = container.NewCenter(container.New(layout.NewCustomPaddedLayout(0, 0, p, p), w.trailing))
 	w.ExtendBaseWidget(w)
+	w.updateVisibility(leading, trailing, supporting)
 	return w
 }
 
-func (w *listItem) Set(icon fyne.Resource, headline, supporting string) {
-	w.leading.Resource = icon
+func (w *listItem) Set(leading, trailing fyne.Resource, headline, supporting string) {
+	w.leading.Resource = leading
+	w.trailing.Resource = trailing
 	w.headline.Text = headline
 	w.supporting.Text = supporting
+	w.updateVisibility(leading, trailing, supporting)
+	w.Refresh()
+}
+
+func (w *listItem) updateVisibility(leading fyne.Resource, trailing fyne.Resource, supporting string) {
 	if supporting == "" {
 		w.supporting.Hide()
 	} else {
 		w.supporting.Show()
 	}
-	if icon == nil {
+	if leading == nil {
 		w.leadingWrapped.Hide()
 	} else {
 		w.leadingWrapped.Show()
 	}
-	w.Refresh()
+	if trailing == nil {
+		w.trailingWrapped.Hide()
+	} else {
+		w.trailingWrapped.Show()
+	}
 }
 
 func (w *listItem) Refresh() {
@@ -111,6 +131,7 @@ func (w *listItem) Refresh() {
 	w.headline.Color = th.Color(theme.ColorNameForeground, v)
 	w.supporting.Color = th.Color(theme.ColorNameForeground, v)
 	w.leading.Refresh()
+	w.trailing.Refresh()
 	w.headline.Refresh()
 	w.supporting.Refresh()
 	w.BaseWidget.Refresh()

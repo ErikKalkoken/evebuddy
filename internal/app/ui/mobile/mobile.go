@@ -51,7 +51,8 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	}
 
 	// character
-	characterSelector := widgets.NewIconButton(ui.IconCharacterplaceholder64Jpeg, nil)
+	fallbackAvatar, _ := ui.MakeAvatar(ui.IconCharacterplaceholder64Jpeg)
+	characterSelector := widgets.NewIconButton(fallbackAvatar, nil)
 	characterSelector.OnTapped = func() {
 		o := characterSelector
 		characterID := u.CharacterID()
@@ -444,15 +445,9 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 
 	u.OnSetCharacter = func(id int32) {
 		// update character selector
-		go func() {
-			r, err := u.EveImageService.CharacterPortrait(id, ui.DefaultIconPixelSize)
-			if err != nil {
-				slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
-				r = ui.IconCharacterplaceholder64Jpeg
-			}
+		go u.UpdateAvatar(id, func(r fyne.Resource) {
 			characterSelector.SetIcon(r)
-		}()
-
+		})
 		// init mail
 		u.MailArea.ResetFolders()
 		mailMenu.Items = u.makeMailMenu()

@@ -52,13 +52,10 @@ func (a *toolbarArea) refresh() {
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
 		a.name.Importance = widget.LowImportance
 	} else {
-		r, err := a.u.EveImageService.CharacterPortrait(c.ID, ui.DefaultIconPixelSize)
-		if err != nil {
-			slog.Error("Failed to fetch character portrait", "characterID", c.ID, "err", err)
-			r = ui.IconCharacterplaceholder64Jpeg
-		}
-		a.icon.Resource = r
-		a.icon.Refresh()
+		go a.u.UpdateAvatar(c.ID, func(r fyne.Resource) {
+			a.icon.Resource = r
+			a.icon.Refresh()
+		})
 		s := fmt.Sprintf("%s (%s)", c.EveCharacter.Name, c.EveCharacter.Corporation.Name)
 		a.name.Text = s
 		a.name.TextStyle = fyne.TextStyle{Bold: true}
@@ -102,15 +99,10 @@ func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) 
 			}
 		})
 		item.Icon = ui.IconCharacterplaceholder64Jpeg
-		go func() {
-			r, err := a.u.EveImageService.CharacterPortrait(myC.ID, ui.DefaultIconPixelSize)
-			if err != nil {
-				slog.Error("Failed to fetch character portrait", "characterID", myC.ID, "err", err)
-				r = ui.IconCharacterplaceholder64Jpeg
-			}
+		go a.u.UpdateAvatar(myC.ID, func(r fyne.Resource) {
 			item.Icon = r
 			a.switchButton.Refresh()
-		}()
+		})
 		menuItems = append(menuItems, item)
 	}
 	return menuItems, nil

@@ -25,12 +25,12 @@ func (w *List) CreateRenderer() fyne.WidgetRenderer {
 			return len(w.items)
 		},
 		func() fyne.CanvasObject {
-			return newListItem(iconBlankSvg, "Headline", "Supporting")
+			return newListItem(iconBlankSvg, iconBlankSvg, "Headline", "Supporting")
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			item := w.items[id]
 			w := co.(*listItem)
-			w.Set(item.Icon, item.Headline, item.Supporting)
+			w.Set(item.Leading, item.Trailing, item.Headline, item.Supporting)
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {

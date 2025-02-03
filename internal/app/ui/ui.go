@@ -440,3 +440,17 @@ func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {
 	}
 	return v, nil
 }
+
+func (u *BaseUI) UpdateAvatar(id int32, setIcon func(fyne.Resource)) {
+	r, err := u.EveImageService.CharacterPortrait(id, DefaultIconPixelSize)
+	if err != nil {
+		slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
+		r = IconCharacterplaceholder64Jpeg
+	}
+	r2, err := MakeAvatar(r)
+	if err != nil {
+		slog.Error("Failed to make avatar", "characterID", id, "err", err)
+		r2 = IconCharacterplaceholder64Jpeg
+	}
+	setIcon(r2)
+}

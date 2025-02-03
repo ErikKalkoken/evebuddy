@@ -106,8 +106,9 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 			name.SetText(c.name)
 
 			icon := row[0].(*canvas.Image)
-			RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.u.EveImageService.CharacterPortrait(c.id, DefaultIconPixelSize)
+			go a.u.UpdateAvatar(c.id, func(r fyne.Resource) {
+				icon.Resource = r
+				icon.Refresh()
 			})
 
 			issue := row[2].(*widget.Label)

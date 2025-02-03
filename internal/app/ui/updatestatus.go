@@ -138,8 +138,9 @@ func (a *UpdateStatusArea) makeEntityList() *widget.List {
 				icon.Resource = eveicon.GetResourceByName(eveicon.StarMap)
 				icon.Refresh()
 			} else {
-				RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-					return a.u.EveImageService.CharacterPortrait(c.id, DefaultIconPixelSize)
+				go a.u.UpdateAvatar(c.id, func(r fyne.Resource) {
+					icon.Resource = r
+					icon.Refresh()
 				})
 			}
 
