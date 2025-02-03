@@ -19,6 +19,8 @@ import (
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
+// TODO: Mobile: Add column sort
+
 type assetSortDir uint
 
 const (
@@ -51,7 +53,7 @@ type AssetSearchArea struct {
 	assetCollection assetcollection.AssetCollection
 	assets          []*assetSearchRow
 	assetsFiltered  []*assetSearchRow
-	assetTable      *widget.Table
+	body            fyne.CanvasObject
 	characterNames  map[int32]string
 	colSort         []assetSortDir
 	found           *widget.Label
@@ -75,7 +77,6 @@ func (u *BaseUI) NewAssetSearchArea() *AssetSearchArea {
 	}
 	a.total.TextStyle.Bold = true
 	a.found.Hide()
-	a.assetTable = a.makeAssetsTable()
 	reset := widget.NewButton("Reset", func() {
 		a.resetSearch()
 	})
@@ -84,22 +85,53 @@ func (u *BaseUI) NewAssetSearchArea() *AssetSearchArea {
 		container.NewBorder(nil, nil, nil, reset, a.searchBar),
 		widget.NewSeparator(),
 	)
-	a.Content = container.NewBorder(topBox, nil, nil, nil, a.assetTable)
+	var headers = []headerDef{
+		{"Item", 300},
+		{"Class", 200},
+		{"Location", 350},
+		{"Owner", 200},
+		{"Qty.", 75},
+		{"Price", 100},
+	}
+	makeDataLabel := func(col int, r *assetSearchRow) (string, fyne.TextAlign, widget.Importance) {
+		var a fyne.TextAlign
+		var i widget.Importance
+		var t string
+		switch col {
+		case 0:
+			t = r.name
+		case 1:
+			t = r.groupName
+		case 2:
+			t = r.locationName
+		case 3:
+			t = r.characterName
+		case 4:
+			t = r.quantityDisplay
+			a = fyne.TextAlignTrailing
+		case 5:
+			t = r.priceDisplay
+			a = fyne.TextAlignTrailing
+		}
+		return t, a, i
+	}
+	onSelected := func(r *assetSearchRow) {
+		a.u.ShowTypeInfoWindow(r.typeID, a.u.CharacterID(), DescriptionTab)
+	}
+	if a.u.IsMobile() {
+		a.body = makeDataTableForMobile(headers, &a.assetsFiltered, makeDataLabel, onSelected)
+	} else {
+		a.body = a.makeTable(headers, makeDataLabel, onSelected)
+	}
+	a.Content = container.NewBorder(topBox, nil, nil, nil, a.body)
 	return a
 }
 
-func (a *AssetSearchArea) makeAssetsTable() *widget.Table {
-	var headers = []struct {
-		text  string
-		width float32
-	}{
-		{"Name", 300},
-		{"Qty.", 75},
-		{"Group", 200},
-		{"Location", 350},
-		{"Character", 200},
-		{"Price", 100},
-	}
+func (a *AssetSearchArea) makeTable(
+	headers []headerDef,
+	makeDataLabel func(int, *assetSearchRow) (string, fyne.TextAlign, widget.Importance),
+	onSelected func(*assetSearchRow),
+) *widget.Table {
 	a.colSort = make([]assetSortDir, len(headers))
 	for i := range headers {
 		a.colSort[i] = sortOff
@@ -117,32 +149,14 @@ func (a *AssetSearchArea) makeAssetsTable() *widget.Table {
 			}
 			r := a.assetsFiltered[tci.Row]
 			l := co.(*widget.Label)
+			l.Text, l.Alignment, l.Importance = makeDataLabel(tci.Col, r)
 			l.Truncation = fyne.TextTruncateClip
-			l.Alignment = fyne.TextAlignLeading
-			var t string
-			switch tci.Col {
-			case 0:
-				t = r.name
-			case 1:
-				t = r.quantityDisplay
-				l.Alignment = fyne.TextAlignTrailing
-			case 2:
-				t = r.groupName
-			case 3:
-				t = r.locationName
-			case 4:
-				t = r.characterName
-			case 5:
-				t = r.priceDisplay
-				l.Alignment = fyne.TextAlignTrailing
-			}
-			l.Text = t
 			l.Refresh()
 		},
 	)
 	t.ShowHeaderRow = true
-	iconSortAsc := theme.NewThemedResource(IconSortAscendingSvg)
-	iconSortDesc := theme.NewThemedResource(IconSortDescendingSvg)
+	iconSortAsc := theme.NewPrimaryThemedResource(IconSortAscendingSvg)
+	iconSortDesc := theme.NewPrimaryThemedResource(IconSortDescendingSvg)
 	iconSortOff := theme.NewThemedResource(IconSortSvg)
 	t.CreateHeader = func() fyne.CanvasObject {
 		b := widget.NewButtonWithIcon("", iconSortOff, func() {})
@@ -169,18 +183,13 @@ func (a *AssetSearchArea) makeAssetsTable() *widget.Table {
 	for i, h := range headers {
 		t.SetColumnWidth(i, h.width)
 	}
-	t.OnSelected = func(tci widget.TableCellID) {
+	t.OnSelected = func(id widget.TableCellID) {
 		defer t.UnselectAll()
-		if tci.Row >= len(a.assetsFiltered) || tci.Row < 0 {
+		if id.Row >= len(a.assetsFiltered) || id.Row < 0 {
 			return
 		}
-		r := a.assetsFiltered[tci.Row]
-		switch tci.Col {
-		case 0:
-			a.u.ShowTypeInfoWindow(r.typeID, a.u.CharacterID(), DescriptionTab)
-		case 3:
-			a.u.ShowLocationInfoWindow(r.locationID)
-		}
+		r := a.assetsFiltered[id.Row]
+		onSelected(r)
 	}
 	return t
 }
@@ -229,13 +238,13 @@ func (a *AssetSearchArea) processData(sortCol int) {
 			case 0:
 				x = cmp.Compare(a.name, b.name)
 			case 1:
-				x = cmp.Compare(a.quantity, b.quantity)
-			case 2:
 				x = cmp.Compare(a.groupName, b.groupName)
-			case 3:
+			case 2:
 				x = cmp.Compare(a.locationName, b.locationName)
-			case 4:
+			case 3:
 				x = cmp.Compare(a.characterName, b.characterName)
+			case 4:
+				x = cmp.Compare(a.quantity, b.quantity)
 			case 5:
 				x = cmp.Compare(a.price, b.price)
 			}
@@ -248,8 +257,11 @@ func (a *AssetSearchArea) processData(sortCol int) {
 	}
 	a.assetsFiltered = rows
 	a.updateFoundInfo()
-	a.assetTable.Refresh()
-	a.assetTable.ScrollToTop()
+	a.body.Refresh()
+	switch x := a.body.(type) {
+	case *widget.Table:
+		x.ScrollToTop()
+	}
 }
 
 func (a *AssetSearchArea) resetSearch() {
@@ -281,7 +293,7 @@ func (a *AssetSearchArea) Refresh() {
 	a.total.Text = t
 	a.total.Importance = i
 	a.total.Refresh()
-	a.assetTable.Refresh()
+	a.body.Refresh()
 }
 
 func (a *AssetSearchArea) loadData() (bool, error) {
@@ -321,7 +333,7 @@ func (a *AssetSearchArea) loadData() (bool, error) {
 			typeName:      ca.EveType.Name,
 		}
 		if ca.IsSingleton {
-			r.quantityDisplay = ""
+			r.quantityDisplay = "1*"
 			r.quantity = 1
 		} else {
 			r.quantityDisplay = humanize.Comma(int64(ca.Quantity))
