@@ -21,6 +21,15 @@ type VersionInfo struct {
 	IsRemoteNewer bool
 }
 
+// NormalizeVersion returns a normalized version number, e.g. it removes a leading v.
+func NormalizeVersion(v string) (string, error) {
+	version, err := version.NewVersion(v)
+	if err != nil {
+		return "", err
+	}
+	return version.String(), nil
+}
+
 // AvailableUpdate return the version of the latest release and reports wether the update is newer.
 func AvailableUpdate(gitHubOwner, githubRepo, localVersion string) (VersionInfo, error) {
 	return availableUpdate(gitHubOwner, githubRepo, localVersion, fetchGitHubLatest)

@@ -380,18 +380,27 @@ func (u *BaseUI) WebsiteRootURL() *url.URL {
 }
 
 func (u *BaseUI) MakeAboutPage() fyne.CanvasObject {
+	v, err := github.NormalizeVersion(u.FyneApp.Metadata().Version)
+	if err != nil {
+		slog.Error("normalize local version", "error", err)
+		v = "?"
+	}
+	local := widget.NewLabel(v)
 	latest := widget.NewLabel("?")
-	local := widget.NewLabel("?")
+	latest.Hide()
+	spinner := widget.NewActivity()
+	spinner.Start()
 	go func() {
 		v, err := u.AvailableUpdate()
 		if err != nil {
 			slog.Error("fetch github version for about", "error", err)
 			s := humanize.Error(err)
 			latest.SetText(s)
-			local.SetText(s)
+		} else {
+			latest.SetText(v.Latest)
 		}
-		latest.SetText(v.Latest)
-		local.SetText(v.Local)
+		spinner.Hide()
+		latest.Show()
 	}()
 	title := widgets.NewLabelWithSize(u.AppName(), theme.SizeNameSubHeadingText)
 	title.TextStyle.Bold = true
@@ -399,7 +408,7 @@ func (u *BaseUI) MakeAboutPage() fyne.CanvasObject {
 		layout.NewCustomPaddedVBoxLayout(0),
 		title,
 		container.New(layout.NewCustomPaddedVBoxLayout(0),
-			container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), latest),
+			container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), container.NewStack(spinner, latest)),
 			container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), local),
 		),
 		container.NewHBox(
