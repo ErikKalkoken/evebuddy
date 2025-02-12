@@ -426,7 +426,7 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 		u.statusWindow.Show()
 		return
 	}
-	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Status"))
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Update Status"))
 	a := u.NewUpdateStatusArea()
 	a.Refresh()
 	w.SetContent(a.Content)

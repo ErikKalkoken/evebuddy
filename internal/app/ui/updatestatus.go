@@ -10,7 +10,9 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -37,14 +39,11 @@ func (se sectionEntity) IsGeneralSection() bool {
 type detailsItem struct {
 	label      string
 	value      string
-	wrap       bool
 	importance widget.Importance
 }
 
 type UpdateStatusArea struct {
-	Content           fyne.CanvasObject
-	OnEntitySelected  func(int)
-	OnSectionSelected func(int)
+	Content fyne.CanvasObject
 
 	charactersTop     *widget.Label
 	details           []detailsItem
@@ -55,6 +54,8 @@ type UpdateStatusArea struct {
 	entitiesButton    *widget.Button
 	entityList        *widget.List
 	nav               *widgets.Navigator
+	onEntitySelected  func(int)
+	onSectionSelected func(int)
 	sectionEntities   []sectionEntity
 	sectionList       *widget.List
 	sections          []app.SectionStatus
@@ -66,7 +67,7 @@ type UpdateStatusArea struct {
 
 func (u *BaseUI) NewUpdateStatusArea() *UpdateStatusArea {
 	a := &UpdateStatusArea{
-		charactersTop:     widget.NewLabel(""),
+		charactersTop:     makeTopLabel(),
 		details:           make([]detailsItem, 0),
 		detailsTop:        makeTopLabel(),
 		sectionEntities:   make([]sectionEntity, 0),
@@ -77,7 +78,6 @@ func (u *BaseUI) NewUpdateStatusArea() *UpdateStatusArea {
 		u:                 u,
 	}
 	a.entityList = a.makeEntityList()
-	a.charactersTop.TextStyle.Bold = true
 	a.entities = container.NewBorder(
 		container.NewVBox(a.charactersTop, widget.NewSeparator()),
 		nil,
@@ -87,42 +87,48 @@ func (u *BaseUI) NewUpdateStatusArea() *UpdateStatusArea {
 	)
 
 	a.sectionList = a.makeSectionList()
-	a.sectionsTop.TextStyle.Bold = true
 	a.entitiesButton = widget.NewButton("Force update all sections", nil)
 	a.entitiesButton.Disable()
 	top2 := container.NewVBox(a.sectionsTop, widget.NewSeparator())
-	sections := container.NewBorder(top2, a.entitiesButton, nil, nil, a.sectionList)
-
-	headline := widget.NewLabel("Section details")
-	headline.TextStyle.Bold = true
-	a.detailsList = a.makeDetails()
 
 	top3 := container.NewVBox(a.detailsTop, widget.NewSeparator())
 	a.detailsButton = widget.NewButton("Force update section", nil)
 	a.detailsButton.Disable()
-	details := container.NewBorder(top3, a.detailsButton, nil, nil, a.detailsList)
-	vs := container.NewHSplit(sections, details)
-	vs.SetOffset(0.5)
-	hs := container.NewHSplit(a.entities, vs)
-	hs.SetOffset(0.33)
+	a.detailsList = a.makeDetails()
 
 	if u.IsMobile() {
-		ab := widgets.NewAppBar("Update Status", a.entities)
+		sections := container.NewBorder(top2, nil, nil, nil, a.sectionList)
+		details := container.NewBorder(top3, nil, nil, nil, a.detailsList)
+		ab := widgets.NewAppBar("Home", a.entities)
 		a.nav = widgets.NewNavigator(ab)
 		a.Content = a.nav
-		a.OnEntitySelected = func(id int) {
-			entity := a.sectionEntities[id]
+		menu := widgets.NewIconButtonWithMenu(
+			theme.MenuIcon(),
+			fyne.NewMenu("", fyne.NewMenuItem(a.entitiesButton.Text, a.MakeUpdateAllAction())),
+		)
+		a.onEntitySelected = func(id int) {
 			a.nav.Push(
-				widgets.NewAppBar(entity.name, a.sectionList),
+				widgets.NewAppBar("", sections, menu),
 			)
 		}
-		a.OnSectionSelected = func(id int) {
+		a.onSectionSelected = func(id int) {
 			s := a.sections[id]
+			menu := widgets.NewIconButtonWithMenu(
+				theme.MenuIcon(),
+				fyne.NewMenu(
+					"", fyne.NewMenuItem(a.detailsButton.Text, a.makeDetailsAction(s.EntityID, s.SectionID))),
+			)
 			a.nav.Push(
-				widgets.NewAppBar(fmt.Sprintf("%s: %s", s.EntityName, s.SectionName), a.detailsList),
+				widgets.NewAppBar("", details, menu),
 			)
 		}
 	} else {
+		sections := container.NewBorder(top2, a.entitiesButton, nil, nil, a.sectionList)
+		details := container.NewBorder(top3, a.detailsButton, nil, nil, a.detailsList)
+		vs := container.NewHSplit(sections, details)
+		vs.SetOffset(0.5)
+		hs := container.NewHSplit(a.entities, vs)
+		hs.SetOffset(0.33)
 		a.Content = hs
 	}
 	return a
@@ -175,7 +181,7 @@ func (a *UpdateStatusArea) makeEntityList() *widget.List {
 
 			status := row[4].(*widget.Label)
 			t := c.ss.Display()
-			i := c.ss.Status().ToImportance()
+			i := c.ss.Status().ToImportance2()
 			status.Text = t
 			status.Importance = i
 			status.Refresh()
@@ -190,31 +196,35 @@ func (a *UpdateStatusArea) makeEntityList() *widget.List {
 		a.selectedSectionID = -1
 		a.sectionList.UnselectAll()
 
-		a.entitiesButton.OnTapped = func() {
-			c := a.sectionEntities[a.selectedEntityID]
-			if c.IsGeneralSection() {
-				a.u.UpdateGeneralSectionsAndRefreshIfNeeded(true)
-			} else {
-				a.u.UpdateCharacterAndRefreshIfNeeded(context.TODO(), c.id, true)
-			}
-		}
+		a.entitiesButton.OnTapped = a.MakeUpdateAllAction()
 		a.entitiesButton.Enable()
-		if a.OnEntitySelected != nil {
-			a.OnEntitySelected(id)
+		if a.onEntitySelected != nil {
+			a.onEntitySelected(id)
 			list.UnselectAll()
 		}
-		a.updateSections()
-		a.updateDetails()
+		a.refreshSections()
+		a.refreshDetails()
 	}
 	return list
+}
+
+func (a *UpdateStatusArea) MakeUpdateAllAction() func() {
+	return func() {
+		c := a.sectionEntities[a.selectedEntityID]
+		if c.IsGeneralSection() {
+			a.u.UpdateGeneralSectionsAndRefreshIfNeeded(true)
+		} else {
+			a.u.UpdateCharacterAndRefreshIfNeeded(context.Background(), c.id, true)
+		}
+	}
 }
 
 func (a *UpdateStatusArea) Refresh() {
 	if err := a.refreshEntityList(); err != nil {
 		slog.Warn("failed to refresh entity list for status window", "error", err)
 	}
-	a.updateSections()
-	a.updateDetails()
+	a.refreshSections()
+	a.refreshDetails()
 	a.charactersTop.SetText(fmt.Sprintf("Entities: %d", len(a.sectionEntities)))
 }
 
@@ -283,58 +293,46 @@ func (a *UpdateStatusArea) makeSectionList() *widget.List {
 			return
 		}
 		a.selectedSectionID = id
-		a.updateDetails()
-		if a.OnSectionSelected != nil {
-			a.OnSectionSelected(id)
+		a.refreshDetails()
+		if a.onSectionSelected != nil {
+			a.onSectionSelected(id)
 			l.UnselectAll()
 		}
 	}
 	return l
 }
 
-func (a *UpdateStatusArea) updateSections() {
+func (a *UpdateStatusArea) refreshSections() {
 	if a.selectedEntityID == -1 || a.selectedEntityID >= len(a.sectionEntities) {
 		return
 	}
 	se := a.sectionEntities[a.selectedEntityID]
 	a.sections = a.u.StatusCacheService.SectionList(se.id)
 	a.sectionList.Refresh()
-	a.sectionsTop.SetText(fmt.Sprintf("Update status for %s", se.name))
-}
-
-type sectionStatusData struct {
-	entityID    int32
-	entityName  string
-	errorText   string
-	sectionName string
-	completedAt string
-	startedAt   string
-	sectionID   string
-	sv          string
-	si          widget.Importance
-	timeout     string
-}
-
-func (x sectionStatusData) IsGeneralSection() bool {
-	return x.entityID == app.GeneralSectionEntityID
+	a.sectionsTop.SetText(fmt.Sprintf("%s: All sections", se.name))
 }
 
 func (a *UpdateStatusArea) makeDetails() *widget.List {
-	l := widget.NewList(
+	rowLayout := kxlayout.NewColumns(100)
+	var l *widget.List
+	l = widget.NewList(
 		func() int {
 			return len(a.details)
 		},
 		func() fyne.CanvasObject {
-			return container.NewHBox(widget.NewLabel(""), layout.NewSpacer(), widget.NewLabel(""))
+			status := widget.NewLabel("")
+			status.Wrapping = fyne.TextWrapWord
+			label := widget.NewLabel("")
+			return container.New(rowLayout, label, status)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.details) {
 				return
 			}
 			item := a.details[id]
-			hbox := co.(*fyne.Container).Objects
-			label := hbox[0].(*widget.Label)
-			status := hbox[2].(*widget.Label)
+			border := co.(*fyne.Container).Objects
+			label := border[0].(*widget.Label)
+			status := border[1].(*widget.Label)
 			label.SetText(item.label)
 			status.Importance = item.importance
 			v := item.value
@@ -343,6 +341,7 @@ func (a *UpdateStatusArea) makeDetails() *widget.List {
 				status.Importance = widget.LowImportance
 			}
 			status.Text = v
+			l.SetItemHeight(id, status.MinSize().Height)
 			status.Refresh()
 		},
 	)
@@ -352,70 +351,58 @@ func (a *UpdateStatusArea) makeDetails() *widget.List {
 	return l
 }
 
-func (a *UpdateStatusArea) updateDetails() {
-	var d sectionStatusData
-	es, found, err := a.fetchSelectedEntityStatus()
-	if err != nil {
-		slog.Error("Failed to fetch selected entity status")
-	} else if found {
-		d.entityID = es.EntityID
-		d.sectionID = es.SectionID
-		d.sv, d.si = statusDisplay(es)
-		if es.ErrorMessage == "" {
-			d.errorText = "-"
-		} else {
-			d.errorText = es.ErrorMessage
-		}
-		d.entityName = es.EntityName
-		d.sectionName = es.SectionName
-		d.completedAt = ihumanize.Time(es.CompletedAt, "?")
-		d.startedAt = ihumanize.Time(es.StartedAt, "-")
-		now := time.Now()
-		d.timeout = humanize.RelTime(now.Add(es.Timeout), now, "", "")
+func (a *UpdateStatusArea) refreshDetails() {
+	id := a.selectedSectionID
+	if id == -1 || id >= len(a.sections) {
+		a.details = []detailsItem{}
+		a.detailsButton.Disable()
+		a.detailsList.Refresh()
+		a.detailsTop.SetText("")
+		return
 	}
+	es := a.sections[id]
+	statusValue, statusImportance := statusDisplay(es)
+	var errorText string
+	var errorImportance widget.Importance
+	if es.ErrorMessage == "" {
+		errorText = "-"
+	} else {
+		errorText = es.ErrorMessage
+		errorImportance = widget.DangerImportance
+	}
+	completedAt := ihumanize.Time(es.CompletedAt, "?")
+	startedAt := ihumanize.Time(es.StartedAt, "-")
+	now := time.Now()
+	timeout := humanize.RelTime(now.Add(es.Timeout), now, "", "")
+
 	a.details = []detailsItem{
-		{label: "Section", value: d.sectionName},
-		{label: "Status", value: d.sv, importance: d.si},
-		{label: "Error", value: d.errorText, wrap: true},
-		{label: "Started", value: d.startedAt},
-		{label: "Completed", value: d.completedAt},
-		{label: "Timeout", value: d.timeout},
+		{label: "Status", value: statusValue, importance: statusImportance},
+		{label: "Error", value: errorText, importance: errorImportance},
+		{label: "Started", value: startedAt},
+		{label: "Completed", value: completedAt},
+		{label: "Timeout", value: timeout},
 	}
-	a.detailsList.Refresh()
-	if d.entityName != "" {
-		a.detailsTop.SetText(fmt.Sprintf("%s: %s", d.entityName, d.sectionName))
+	if es.EntityName != "" {
+		a.detailsTop.SetText(fmt.Sprintf("%s: Section %s", es.EntityName, es.SectionName))
 	} else {
 		a.detailsTop.SetText("")
 	}
-	a.detailsButton.OnTapped = func() {
-		if d.IsGeneralSection() {
+	a.detailsButton.OnTapped = a.makeDetailsAction(es.EntityID, es.SectionID)
+	a.detailsButton.Enable()
+	a.detailsList.Refresh()
+}
+
+func (a *UpdateStatusArea) makeDetailsAction(entityID int32, sectionID string) func() {
+	return func() {
+		if entityID == app.GeneralSectionEntityID {
 			go a.u.UpdateGeneralSectionAndRefreshIfNeeded(
-				context.TODO(), app.GeneralSection(d.sectionID), true)
+				context.TODO(), app.GeneralSection(sectionID), true)
 		} else {
 			go a.u.UpdateCharacterSectionAndRefreshIfNeeded(
-				context.TODO(), d.entityID, app.CharacterSection(d.sectionID), true)
+				context.TODO(), entityID, app.CharacterSection(sectionID), true)
 		}
 	}
-	if d.sectionID != "" || d.entityID != 0 {
-		a.detailsButton.Enable()
-	} else {
-		a.detailsButton.Disable()
-	}
 }
-
-func (a *UpdateStatusArea) fetchSelectedEntityStatus() (app.SectionStatus, bool, error) {
-	id := a.selectedSectionID
-	if id == -1 || id >= len(a.sections) {
-		return app.SectionStatus{}, false, nil
-	}
-	return a.sections[id], true, nil
-}
-
-// func (a *UpdateStatusArea) makeDetailsContent(d sectionStatusData) []fyne.CanvasObject {
-// 	if a.u.IsOffline || d.sectionName == "" {
-// 		b.Disable()
-// 	}
-// }
 
 func (a *UpdateStatusArea) StartTicker(ctx context.Context) {
 	ticker := time.NewTicker(statusAreaTicker)

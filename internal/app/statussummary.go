@@ -22,6 +22,20 @@ func (s Status) ToImportance() widget.Importance {
 	return i
 }
 
+func (s Status) ToImportance2() widget.Importance {
+	m := map[Status]widget.Importance{
+		StatusError:   widget.DangerImportance,
+		StatusOK:      widget.SuccessImportance,
+		StatusUnknown: widget.LowImportance,
+		StatusWorking: widget.MediumImportance,
+	}
+	i, ok := m[s]
+	if !ok {
+		i = widget.MediumImportance
+	}
+	return i
+}
+
 const (
 	StatusUnknown Status = iota
 	StatusOK
