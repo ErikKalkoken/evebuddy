@@ -35,7 +35,8 @@ func NewShipItem(sv app.EveImageService, cache app.CacheService, fallbackIcon fy
 	lowRight := image.Point{128, 128}
 	image := canvas.NewImageFromImage(image.NewRGBA(image.Rectangle{upLeft, lowRight}))
 	image.FillMode = canvas.ImageFillContain
-	image.SetMinSize(fyne.Size{Width: 128, Height: 128})
+	image.ScaleMode = canvas.ImageScaleFastest
+	image.SetMinSize(fyne.NewSquareSize(128))
 	w := &ShipItem{
 		image:        image,
 		label:        widget.NewLabel("First line\nSecond Line\nThird Line"),

@@ -23,13 +23,10 @@ type SkillLevel struct {
 func NewSkillLevel() *SkillLevel {
 	const s = 12
 	size := fyne.Size{Width: s, Height: s}
-	f := canvas.ImageFillContain
 	untrainedIcon := theme.NewDisabledResource(theme.MediaStopIcon())
 	dots := make([]*canvas.Image, 5)
 	for i := range 5 {
-		dot := canvas.NewImageFromResource(untrainedIcon)
-		dot.FillMode = f
-		dot.SetMinSize(size)
+		dot := NewImageFromResource(untrainedIcon, size)
 		dots[i] = dot
 	}
 	w := &SkillLevel{

@@ -496,12 +496,11 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 		render := kxwidget.NewTappableImage(r, func() {
 			w := a.u.FyneApp.NewWindow(a.u.MakeWindowTitle(a.MakeTitle("Render")))
 			size := 512
-			i := NewImageResourceAsync(IconQuestionmarkSvg, func() (fyne.Resource, error) {
+			s := float32(size) / w.Canvas().Scale()
+			i := NewImageResourceAsync(IconQuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 				return a.u.EveImageService.InventoryTypeRender(a.et.ID, size)
 			})
-			i.FillMode = canvas.ImageFillContain
-			s := float32(size) / w.Canvas().Scale()
-			w.Resize(fyne.Size{Width: s, Height: s})
+			i.ScaleMode = canvas.ImageScaleSmooth
 			w.SetContent(i)
 			w.Show()
 		})
@@ -519,13 +518,15 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 			default:
 				n = eveicon.Faction
 			}
-			marker := canvas.NewImageFromResource(eveicon.GetResourceByName(n))
-			marker.FillMode = canvas.ImageFillContain
-			marker.SetMinSize(fyne.NewSquareSize(render.MinSize().Width * 0.2))
+			marker := widgets.NewImageFromResource(
+				eveicon.GetResourceByName(n),
+				fyne.NewSquareSize(render.MinSize().Width*0.2),
+			)
 			typeIcon.Add(container.NewPadded(marker))
 		}
 	} else {
-		icon := NewImageResourceAsync(IconQuestionmarkSvg, func() (fyne.Resource, error) {
+		s := float32(DefaultIconPixelSize) * 1.3 / a.u.Window.Canvas().Scale()
+		icon := NewImageResourceAsync(IconQuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
 				return a.u.EveImageService.InventoryTypeSKIN(a.et.ID, DefaultIconPixelSize)
 			} else if a.et.IsBlueprint() {
@@ -534,14 +535,9 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 				return a.u.EveImageService.InventoryTypeIcon(a.et.ID, DefaultIconPixelSize)
 			}
 		})
-		icon.FillMode = canvas.ImageFillContain
-		s := float32(DefaultIconPixelSize) * 1.3 / a.u.Window.Canvas().Scale()
-		icon.SetMinSize(fyne.Size{Width: s, Height: s})
 		typeIcon.Add(icon)
 	}
-	ownerIcon := canvas.NewImageFromResource(IconQuestionmarkSvg)
-	ownerIcon.FillMode = canvas.ImageFillContain
-	ownerIcon.SetMinSize(fyne.NewSquareSize(DefaultIconUnitSize))
+	ownerIcon := widgets.NewImageFromResource(IconQuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
 	ownerName := widget.NewLabel("")
 	ownerName.Wrapping = fyne.TextWrapWord
 	if a.owner != nil {

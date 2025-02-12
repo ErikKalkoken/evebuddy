@@ -14,6 +14,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 )
@@ -75,9 +76,10 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 			return a.treeData.IsBranch(uid)
 		},
 		func(branch bool) fyne.CanvasObject {
-			iconMain := canvas.NewImageFromResource(IconCharacterplaceholder64Jpeg)
-			iconMain.FillMode = canvas.ImageFillContain
-			iconMain.SetMinSize(fyne.NewSquareSize(DefaultIconUnitSize))
+			iconMain := widgets.NewImageFromResource(
+				IconCharacterplaceholder64Jpeg,
+				fyne.NewSquareSize(DefaultIconUnitSize),
+			)
 			main := widget.NewLabel("Template")
 			main.Truncation = fyne.TextTruncateEllipsis
 			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)

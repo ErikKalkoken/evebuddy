@@ -12,9 +12,9 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/golang/freetype/truetype"
 	"github.com/wcharczuk/go-chart/v2"
@@ -130,9 +130,7 @@ func (cb ChartBuilder) render(ct ChartType, size fyne.Size, title string, values
 	}
 	fn := makeFileName(title)
 	r := fyne.NewStaticResource(fn, content)
-	chart := canvas.NewImageFromResource(r)
-	chart.SetMinSize(size)
-	chart.FillMode = canvas.ImageFillContain
+	chart := widgets.NewImageFromResource(r, size)
 	return chart, nil
 }
 

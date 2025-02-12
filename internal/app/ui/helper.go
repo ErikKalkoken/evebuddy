@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -22,8 +23,8 @@ func EntityNameOrFallback[T int | int32 | int64](e *app.EntityShort[T], fallback
 }
 
 // NewImageResourceAsync shows a placeholder resource and refreshes it once the main resource is loaded asynchronously.
-func NewImageResourceAsync(placeholder fyne.Resource, loader func() (fyne.Resource, error)) *canvas.Image {
-	image := canvas.NewImageFromResource(placeholder)
+func NewImageResourceAsync(placeholder fyne.Resource, minSize fyne.Size, loader func() (fyne.Resource, error)) *canvas.Image {
+	image := widgets.NewImageFromResource(placeholder, minSize)
 	RefreshImageResourceAsync(image, loader)
 	return image
 }

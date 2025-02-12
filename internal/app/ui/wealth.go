@@ -8,12 +8,12 @@ import (
 	"slices"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/chartbuilder"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/golang/freetype/truetype"
 )
@@ -49,9 +49,7 @@ func (u *BaseUI) NewWealthArea() *WealthArea {
 
 func (a *WealthArea) makeCharts() *fyne.Container {
 	makePlaceholder := func() fyne.CanvasObject {
-		x := canvas.NewImageFromResource(theme.BrokenImageIcon())
-		x.FillMode = canvas.ImageFillContain
-		x.SetMinSize(fyne.NewSize(chartWidth, chartHeight))
+		x := widgets.NewImageFromResource(theme.BrokenImageIcon(), fyne.NewSize(chartWidth, chartHeight))
 		return container.NewPadded(x)
 	}
 	c := container.NewGridWrap(

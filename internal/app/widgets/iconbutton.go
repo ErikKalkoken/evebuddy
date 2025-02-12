@@ -26,9 +26,7 @@ var _ desktop.Hoverable = (*IconButton)(nil)
 
 // NewIconButton returns a new instance of an [IconButton].
 func NewIconButton(icon fyne.Resource, tapped func()) *IconButton {
-	i := canvas.NewImageFromResource(icon)
-	i.FillMode = canvas.ImageFillContain
-	i.SetMinSize(fyne.NewSquareSize(sizeIcon))
+	i := NewImageFromResource(icon, fyne.NewSquareSize(sizeIcon))
 	w := &IconButton{
 		OnTapped: tapped,
 		icon:     i,

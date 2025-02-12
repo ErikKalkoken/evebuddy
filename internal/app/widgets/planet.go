@@ -35,9 +35,7 @@ type Planet struct {
 }
 
 func NewPlanet() *Planet {
-	image := canvas.NewImageFromResource(theme.BrokenImageIcon())
-	image.FillMode = canvas.ImageFillContain
-	image.SetMinSize(fyne.Size{Width: planetWidgetSizeDesktop, Height: planetWidgetSizeDesktop})
+	image := NewImageFromResource(theme.BrokenImageIcon(), fyne.NewSquareSize(planetWidgetSizeDesktop))
 	extracting := widget.NewLabel("")
 	extracting.Truncation = fyne.TextTruncateEllipsis
 	producing := widget.NewLabel("")

@@ -28,16 +28,16 @@ type toolbarArea struct {
 
 func (u *DesktopUI) newToolbarArea() *toolbarArea {
 	a := &toolbarArea{
-		icon: canvas.NewImageFromResource(ui.IconCharacterplaceholder64Jpeg),
+		icon: widgets.NewImageFromResource(
+			ui.IconCharacterplaceholder64Jpeg,
+			fyne.NewSquareSize(ui.DefaultIconUnitSize),
+		),
 		name: widget.NewLabel(""),
 		switchButton: widgets.NewContextMenuButtonWithIcon(
 			theme.NewThemedResource(ui.IconSwitchaccountSvg), "Switch", fyne.NewMenu(""),
 		),
 		u: u,
 	}
-	a.icon.FillMode = canvas.ImageFillContain
-	a.icon.SetMinSize(fyne.Size{Width: ui.DefaultIconUnitSize, Height: ui.DefaultIconUnitSize})
-
 	c := container.NewHBox(container.NewPadded(a.icon), a.name, layout.NewSpacer(), a.switchButton)
 	a.content = container.NewVBox(c, widget.NewSeparator())
 	return a

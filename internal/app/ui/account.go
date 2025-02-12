@@ -19,6 +19,7 @@ import (
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 )
 
 type accountCharacter struct {
@@ -84,9 +85,10 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 			return len(a.characters)
 		},
 		func() fyne.CanvasObject {
-			portrait := canvas.NewImageFromResource(IconCharacterplaceholder64Jpeg)
-			portrait.FillMode = canvas.ImageFillContain
-			portrait.SetMinSize(fyne.Size{Width: DefaultIconUnitSize, Height: DefaultIconUnitSize})
+			portrait := widgets.NewImageFromResource(
+				IconCharacterplaceholder64Jpeg,
+				fyne.NewSquareSize(DefaultIconUnitSize),
+			)
 			name := widget.NewLabel("Template")
 			button := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
 			button.Importance = widget.DangerImportance

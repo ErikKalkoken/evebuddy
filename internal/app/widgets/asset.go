@@ -24,9 +24,10 @@ type Asset struct {
 }
 
 func NewAsset(iconLoader func(image *canvas.Image, ca *app.CharacterAsset)) *Asset {
-	icon := canvas.NewImageFromResource(theme.NewDisabledResource(theme.BrokenImageIcon()))
-	icon.FillMode = canvas.ImageFillContain
-	icon.SetMinSize(fyne.NewSquareSize(typeIconSize))
+	icon := NewImageFromResource(
+		theme.NewDisabledResource(theme.BrokenImageIcon()),
+		fyne.NewSquareSize(typeIconSize),
+	)
 	w := &Asset{
 		icon:       icon,
 		label:      NewAssetLabel(),

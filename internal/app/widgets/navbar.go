@@ -63,9 +63,7 @@ var _ fyne.Tappable = (*destination)(nil)
 func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSelected func(), onSelectedAgain func()) *destination {
 	l := canvas.NewText(label, theme.Color(colorForeground))
 	l.TextSize = theme.Size(theme.SizeNameText)
-	i := canvas.NewImageFromResource(theme.NewThemedResource(icon))
-	i.FillMode = canvas.ImageFillContain
-	i.SetMinSize(fyne.NewSquareSize(iconMinSize))
+	i := NewImageFromResource(theme.NewThemedResource(icon), fyne.NewSquareSize(iconMinSize))
 	w := &destination{
 		icon:            i,
 		iconActive:      theme.NewPrimaryThemedResource(icon),
