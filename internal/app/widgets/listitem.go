@@ -17,20 +17,11 @@ type ListItem struct {
 	Trailing   fyne.Resource
 }
 
-func NewListItemWithIcon(leading fyne.Resource, headline string, action func()) *ListItem {
+func NewListItemWithIcon(headline string, leading fyne.Resource, action func()) *ListItem {
 	return &ListItem{
 		Action:   action,
 		Leading:  leading,
 		Headline: headline,
-	}
-}
-
-func NewListItemWithIconAndText(leading fyne.Resource, headline, supporting string, action func()) *ListItem {
-	return &ListItem{
-		Action:     action,
-		Leading:    leading,
-		Headline:   headline,
-		Supporting: supporting,
 	}
 }
 
@@ -45,7 +36,6 @@ func NewListItemWithNavigator(nav *Navigator, ab *AppBar) *ListItem {
 	w := NewListItem(ab.Title(), func() {
 		nav.Push(ab)
 	})
-	w.Trailing = theme.NewThemedResource(iconChevronRightSvg)
 	return w
 }
 

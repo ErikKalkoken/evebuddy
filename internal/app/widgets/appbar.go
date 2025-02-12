@@ -36,7 +36,7 @@ func NewAppBar(title string, body fyne.CanvasObject, items ...*IconButton) *AppB
 	}
 	w.ExtendBaseWidget(w)
 	if title != "" {
-		w.title = NewLabelWithSize(title, theme.SizeNameHeadingText)
+		w.title = NewLabelWithSize(title, theme.SizeNameSubHeadingText)
 	}
 	return w
 }
@@ -62,7 +62,7 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 		row.Add(container.NewHBox(layout.NewSpacer(), w.title, layout.NewSpacer()))
 	}
 	if w.Navigator != nil {
-		icon := NewIconButton(theme.NewThemedResource(iconChevronLeftSvg), func() {
+		icon := NewIconButton(theme.NavigateBackIcon(), func() {
 			w.Navigator.Pop()
 		})
 		row.Add(container.NewHBox(icon))
