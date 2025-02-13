@@ -187,13 +187,15 @@ func (w *NavBar) Refresh() {
 
 func (w *NavBar) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
-	bar := container.NewStack(w.bg, container.New(layout.NewCustomPaddedLayout(p*2, p*2, p, p), w.bar))
-	c := container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), container.NewBorder(
-		nil,
-		container.New(layout.NewCustomPaddedLayout(-2*p, 0, 0, 0), bar),
-		nil,
-		nil,
-		container.NewPadded(w.body),
-	))
+	bar := container.NewStack(w.bg, container.New(layout.NewCustomPaddedLayout(p*2, p*2, p*2, p*2), w.bar))
+	c := container.New(
+		layout.NewCustomPaddedLayout(-p, -p, -p, -p),
+		container.NewBorder(
+			nil,
+			container.New(layout.NewCustomPaddedLayout(-2*p, 0, 0, 0), bar),
+			nil,
+			nil,
+			container.New(layout.NewCustomPaddedLayout(p, p, p, p), w.body),
+		))
 	return widget.NewSimpleRenderer(c)
 }

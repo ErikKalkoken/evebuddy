@@ -61,15 +61,15 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 			w.Navigator.Pop()
 		})
 	}
+	p := theme.Padding()
 	if len(w.items) > 0 {
 		icons := container.NewHBox()
 		for _, ib := range w.items {
 			icons.Add(ib)
 		}
-		right = icons
+		right = container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), icons)
 	}
 	row := container.NewBorder(nil, nil, left, right, w.title)
-	p := theme.Padding()
 	top := container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), container.NewStack(w.bg, row))
 	c := container.NewBorder(top, nil, nil, nil, w.body)
 	return widget.NewSimpleRenderer(c)

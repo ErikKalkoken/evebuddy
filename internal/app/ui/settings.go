@@ -322,6 +322,15 @@ func (u *BaseUI) MakeNotificationGeneralPage(w fyne.Window) (fyne.CanvasObject, 
 		HintText: "Events older then this value in hours will not be notified",
 	})
 
+	form.AppendItem(&widget.FormItem{
+		Text: "Test notification",
+		Widget: widget.NewButton("Send now", func() {
+			n := fyne.NewNotification("Test", "This is a test notification from EVE Buddy.")
+			u.FyneApp.SendNotification(n)
+		}),
+		HintText: "Send a test notification to verify it works",
+	})
+
 	reset := func() {
 		mailEnabledCheck.SetState(SettingNotifyMailsEnabledDefault)
 		communicationsEnabledCheck.SetState(SettingNotifyCommunicationsEnabledDefault)
