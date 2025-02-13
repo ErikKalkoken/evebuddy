@@ -328,7 +328,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		return container.NewScroll(c)
 	}
 	makeMenu := func(items ...*fyne.MenuItem) (fyne.Resource, *fyne.Menu) {
-		return theme.MenuExpandIcon(), fyne.NewMenu("", items...)
+		return theme.MenuIcon(), fyne.NewMenu("", items...)
 	}
 	u.navItemUpdateStatus = widgets.NewListItemWithIcon(
 		"Update status",
