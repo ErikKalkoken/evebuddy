@@ -5,6 +5,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -26,7 +27,7 @@ var _ desktop.Hoverable = (*IconButton)(nil)
 
 // NewIconButton returns a new instance of an [IconButton].
 func NewIconButton(icon fyne.Resource, tapped func()) *IconButton {
-	i := NewImageFromResource(icon, fyne.NewSquareSize(sizeIcon))
+	i := NewImageFromResource(icon, fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon)))
 	w := &IconButton{
 		OnTapped: tapped,
 		icon:     i,

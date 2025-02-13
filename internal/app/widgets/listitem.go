@@ -61,11 +61,11 @@ func newListItem(leading, trailing fyne.Resource, headline, supporting string) *
 	if leading == nil {
 		leading = iconBlankSvg
 	}
-	i1 := NewImageFromResource(leading, fyne.NewSquareSize(sizeIcon))
+	i1 := NewImageFromResource(leading, fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon)))
 	if trailing == nil {
 		trailing = iconBlankSvg
 	}
-	i2 := NewImageFromResource(trailing, fyne.NewSquareSize(sizeIcon))
+	i2 := NewImageFromResource(trailing, fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon)))
 	h := canvas.NewText(headline, theme.Color(theme.ColorNameForeground))
 	h.TextSize = theme.Size(theme.SizeNameSubHeadingText)
 	t := canvas.NewText(supporting, theme.Color(theme.ColorNameForeground))

@@ -20,7 +20,6 @@ const (
 	colorPill       = theme.ColorNameInputBorder
 	colorForeground = theme.ColorNameForeground
 	colorBackground = theme.ColorNameMenuBackground
-	iconMinSize     = 24
 )
 
 type navBarItem struct {
@@ -62,8 +61,8 @@ var _ fyne.Tappable = (*destination)(nil)
 
 func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSelected func(), onSelectedAgain func()) *destination {
 	l := canvas.NewText(label, theme.Color(colorForeground))
-	l.TextSize = theme.Size(theme.SizeNameText)
-	i := NewImageFromResource(theme.NewThemedResource(icon), fyne.NewSquareSize(iconMinSize))
+	l.TextSize = theme.Size(theme.SizeNameCaptionText)
+	i := NewImageFromResource(theme.NewThemedResource(icon), fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon)))
 	w := &destination{
 		icon:            i,
 		iconActive:      theme.NewPrimaryThemedResource(icon),

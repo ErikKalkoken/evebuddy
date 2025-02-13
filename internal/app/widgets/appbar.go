@@ -29,22 +29,20 @@ type AppBar struct {
 func NewAppBar(title string, body fyne.CanvasObject, items ...*IconButton) *AppBar {
 	bg := canvas.NewRectangle(theme.Color(colorAppBarBackground))
 	bg.SetMinSize(fyne.NewSize(10, 45))
+	t := NewLabelWithSize(title, theme.SizeNameSubHeadingText)
+	t.TextStyle.Bold = true
+	t.Truncation = fyne.TextTruncateEllipsis
 	w := &AppBar{
 		body:  body,
 		items: items,
 		bg:    bg,
+		title: t,
 	}
 	w.ExtendBaseWidget(w)
-	if title != "" {
-		w.title = NewLabelWithSize(title, theme.SizeNameSubHeadingText)
-	}
 	return w
 }
 
 func (w *AppBar) Title() string {
-	if w.title == nil {
-		return ""
-	}
 	return w.title.Text
 }
 
@@ -57,23 +55,20 @@ func (w *AppBar) Refresh() {
 }
 
 func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
-	row := container.NewStack()
-	if w.title != nil {
-		row.Add(container.NewHBox(layout.NewSpacer(), w.title, layout.NewSpacer()))
-	}
+	var left, right fyne.CanvasObject
 	if w.Navigator != nil {
-		icon := NewIconButton(theme.NavigateBackIcon(), func() {
+		left = NewIconButton(theme.NavigateBackIcon(), func() {
 			w.Navigator.Pop()
 		})
-		row.Add(container.NewHBox(icon))
 	}
 	if len(w.items) > 0 {
-		c := container.NewHBox(layout.NewSpacer())
+		icons := container.NewHBox()
 		for _, ib := range w.items {
-			c.Add(ib)
+			icons.Add(ib)
 		}
-		row.Add(c)
+		right = icons
 	}
+	row := container.NewBorder(nil, nil, left, right, w.title)
 	p := theme.Padding()
 	top := container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), container.NewStack(w.bg, row))
 	c := container.NewBorder(top, nil, nil, nil, w.body)

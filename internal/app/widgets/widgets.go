@@ -2,6 +2,5 @@
 package widgets
 
 const (
-	sizeIcon      = 20
 	sizeLabelText = 12
 )
