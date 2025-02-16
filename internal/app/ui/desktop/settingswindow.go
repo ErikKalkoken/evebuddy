@@ -3,8 +3,11 @@ package desktop
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
@@ -20,39 +23,38 @@ func (u *DesktopUI) showSettingsWindow() {
 		return
 	}
 	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Settings"))
-	sw := u.NewSettingsArea()
+	sw := u.NewSettingsArea(w)
 	w.SetContent(sw.content)
 	w.Resize(fyne.Size{Width: 700, Height: 500})
 	w.SetOnClosed(func() {
 		u.settingsWindow = nil
 	})
-	u.settingsWindow = w
 	sw.window = w
 	w.Show()
 }
 
-func (u *DesktopUI) NewSettingsArea() *SettingsArea {
-	sw := &SettingsArea{u: u}
+func (u *DesktopUI) NewSettingsArea(w fyne.Window) *SettingsArea {
+	sw := &SettingsArea{u: u, window: w}
 	tabs := container.NewAppTabs(
 		container.NewTabItem("General", func() fyne.CanvasObject {
-			c, f := u.MakeGeneralSettingsPage(u.settingsWindow)
-			return makePage("Desktop", c, f)
+			c, items := u.MakeGeneralSettingsPage(w)
+			return makePage("Desktop", c, items)
 		}()),
 		container.NewTabItem("Desktop", func() fyne.CanvasObject {
-			c, f := u.MakeDesktopSettingsPage()
-			return makePage("Desktop", c, f)
+			c, items := u.MakeDesktopSettingsPage()
+			return makePage("Desktop", c, items)
 		}()),
 		container.NewTabItem("Eve Online", func() fyne.CanvasObject {
 			c, f := u.MakeEVEOnlinePage()
 			return makePage("Desktop", c, f)
 		}()),
-		container.NewTabItem("Notification - General", func() fyne.CanvasObject {
-			c, f := u.MakeNotificationGeneralPage(u.settingsWindow)
-			return makePage("Notification - General", c, f)
+		container.NewTabItem("Notifications", func() fyne.CanvasObject {
+			c, f := u.MakeNotificationGeneralPage(w)
+			return makePage("Notifications", c, f)
 		}()),
-		container.NewTabItem("Notification - Types", func() fyne.CanvasObject {
-			c, f := u.MakeNotificationTypesPage()
-			return makePage("Notification - Types", c, f)
+		container.NewTabItem("Communications", func() fyne.CanvasObject {
+			c, f := u.MakeNotificationTypesPage(w)
+			return makePage("Communications", c, f)
 		}()),
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
@@ -60,7 +62,7 @@ func (u *DesktopUI) NewSettingsArea() *SettingsArea {
 	return sw
 }
 
-func (u *DesktopUI) MakeDesktopSettingsPage() (fyne.CanvasObject, func()) {
+func (u *DesktopUI) MakeDesktopSettingsPage() (fyne.CanvasObject, []*fyne.MenuItem) {
 	// system tray
 	sysTrayCheck := kxwidget.NewSwitch(func(b bool) {
 		u.FyneApp.Preferences().SetBool(settingSysTrayEnabled, b)
@@ -89,18 +91,24 @@ func (u *DesktopUI) MakeDesktopSettingsPage() (fyne.CanvasObject, func()) {
 				HintText: "Resets window size to defaults",
 			},
 		}}
-	reset := func() {
-		sysTrayCheck.SetState(settingSysTrayEnabledDefault)
+	reset := &fyne.MenuItem{
+		Label: "Reset",
+		Action: func() {
+			sysTrayCheck.SetState(settingSysTrayEnabledDefault)
+		},
 	}
-	return settings, reset
+	return settings, []*fyne.MenuItem{reset}
 }
 
-func makePage(title string, content fyne.CanvasObject, resetSettings func()) fyne.CanvasObject {
-	x := widget.NewLabel(title)
-	x.TextStyle.Bold = true
+func makePage(title string, content fyne.CanvasObject, items []*fyne.MenuItem) fyne.CanvasObject {
+	t := widget.NewLabel(title)
+	t.TextStyle.Bold = true
+	top := container.NewHBox(t, layout.NewSpacer(), container.NewHBox(widgets.NewIconButtonWithMenu(
+		theme.MenuIcon(), fyne.NewMenu("", items...),
+	)))
 	return container.NewBorder(
-		container.NewVBox(x, widget.NewSeparator()),
-		container.NewHBox(widget.NewButton("Reset", resetSettings)),
+		container.NewVBox(top, widget.NewSeparator()),
+		nil,
 		nil,
 		nil,
 		container.NewScroll(content),

@@ -363,12 +363,10 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 							widgets.NewListItem(
 								"General",
 								func() {
-									c, f := u.MakeGeneralSettingsPage(nil)
+									c, f := u.MakeGeneralSettingsPage(u.Window)
 									moreNav.Push(
 										widgets.NewAppBar("General", makePage(c), widgets.NewIconButtonWithMenu(
-											makeMenu(fyne.NewMenuItem(
-												"Reset", f,
-											)))),
+											makeMenu(f...))),
 									)
 								},
 							),
@@ -378,33 +376,27 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 									c, f := u.MakeEVEOnlinePage()
 									moreNav.Push(
 										widgets.NewAppBar("Eve Online", makePage(c), widgets.NewIconButtonWithMenu(
-											makeMenu(fyne.NewMenuItem(
-												"Reset", f,
-											)))),
+											makeMenu(f...))),
 									)
 								},
 							),
 							widgets.NewListItem(
 								"Notifications",
 								func() {
-									c, f := u.MakeNotificationGeneralPage(nil)
+									c, f := u.MakeNotificationGeneralPage(u.Window)
 									moreNav.Push(
-										widgets.NewAppBar("Notification - General", makePage(c), widgets.NewIconButtonWithMenu(
-											makeMenu(fyne.NewMenuItem(
-												"Reset", f,
-											)))),
+										widgets.NewAppBar("Notifications", makePage(c), widgets.NewIconButtonWithMenu(
+											makeMenu(f...))),
 									)
 								},
 							),
 							widgets.NewListItem(
-								"Notification - Types",
+								"Communications",
 								func() {
-									c, f := u.MakeNotificationTypesPage()
+									c, f := u.MakeNotificationTypesPage(u.Window)
 									moreNav.Push(
-										widgets.NewAppBar("Notification - Types", makePage(c), widgets.NewIconButtonWithMenu(
-											makeMenu(fyne.NewMenuItem(
-												"Reset", f,
-											)))),
+										widgets.NewAppBar("Communications", makePage(c), widgets.NewIconButtonWithMenu(
+											makeMenu(f...))),
 									)
 								},
 							),

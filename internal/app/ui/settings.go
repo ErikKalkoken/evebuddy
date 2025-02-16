@@ -2,11 +2,9 @@ package ui
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"maps"
 	"slices"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -96,7 +94,7 @@ func LogLevelNames() []string {
 	return x
 }
 
-func (u *BaseUI) MakeGeneralSettingsPage(w fyne.Window) (fyne.CanvasObject, func()) {
+func (u *BaseUI) MakeGeneralSettingsPage(w fyne.Window) (fyne.CanvasObject, []*fyne.MenuItem) {
 	if w == nil {
 		w = u.Window
 	}
@@ -153,13 +151,16 @@ func (u *BaseUI) MakeGeneralSettingsPage(w fyne.Window) (fyne.CanvasObject, func
 	if u.IsMobile() {
 		settings.Orientation = widget.Vertical
 	}
-	reset := func() {
-		logLevel.SetSelected(SettingLogLevelDefault)
+	reset := &fyne.MenuItem{
+		Label: "Reset to defaults",
+		Action: func() {
+			logLevel.SetSelected(SettingLogLevelDefault)
+		},
 	}
-	return settings, reset
+	return settings, []*fyne.MenuItem{reset}
 }
 
-func (u *BaseUI) MakeEVEOnlinePage() (fyne.CanvasObject, func()) {
+func (u *BaseUI) MakeEVEOnlinePage() (fyne.CanvasObject, []*fyne.MenuItem) {
 	// max mails
 	maxMails := kxwidget.NewSlider(0, SettingMaxMailsMax)
 	v1 := u.FyneApp.Preferences().IntWithFallback(SettingMaxMails, SettingMaxMailsDefault)
@@ -193,14 +194,17 @@ func (u *BaseUI) MakeEVEOnlinePage() (fyne.CanvasObject, func()) {
 	if u.IsMobile() {
 		settings.Orientation = widget.Vertical
 	}
-	x := func() {
-		maxMails.SetValue(SettingMaxMailsDefault)
-		maxTransactions.SetValue(SettingMaxWalletTransactionsDefault)
+	reset := &fyne.MenuItem{
+		Label: "Reset to defaults",
+		Action: func() {
+			maxMails.SetValue(SettingMaxMailsDefault)
+			maxTransactions.SetValue(SettingMaxWalletTransactionsDefault)
+		},
 	}
-	return settings, x
+	return settings, []*fyne.MenuItem{reset}
 }
 
-func (u *BaseUI) MakeNotificationGeneralPage(w fyne.Window) (fyne.CanvasObject, func()) {
+func (u *BaseUI) MakeNotificationGeneralPage(w fyne.Window) (fyne.CanvasObject, []*fyne.MenuItem) {
 	if w == nil {
 		w = u.Window
 	}
@@ -331,145 +335,188 @@ func (u *BaseUI) MakeNotificationGeneralPage(w fyne.Window) (fyne.CanvasObject, 
 		HintText: "Send a test notification to verify it works",
 	})
 
-	reset := func() {
-		mailEnabledCheck.SetState(SettingNotifyMailsEnabledDefault)
-		communicationsEnabledCheck.SetState(SettingNotifyCommunicationsEnabledDefault)
-		piEnabledCheck.SetState(SettingNotifyPIEnabledDefault)
-		trainingEnabledCheck.SetState(SettingNotifyTrainingEnabledDefault)
-		contractsEnabledCheck.SetState(SettingNotifyTrainingEnabledDefault)
-		notifyTimeout.SetValue(SettingNotifyTimeoutHoursDefault)
+	reset := &fyne.MenuItem{
+		Label: "Reset to defaults",
+		Action: func() {
+			mailEnabledCheck.SetState(SettingNotifyMailsEnabledDefault)
+			communicationsEnabledCheck.SetState(SettingNotifyCommunicationsEnabledDefault)
+			piEnabledCheck.SetState(SettingNotifyPIEnabledDefault)
+			trainingEnabledCheck.SetState(SettingNotifyTrainingEnabledDefault)
+			contractsEnabledCheck.SetState(SettingNotifyTrainingEnabledDefault)
+			notifyTimeout.SetValue(SettingNotifyTimeoutHoursDefault)
+		},
 	}
-	return form, reset
+	return form, []*fyne.MenuItem{reset}
 }
 
-type notifType struct {
-	key    string
-	nt     evenotification.Type
-	folder evenotification.Folder
-}
-
-func (u *BaseUI) MakeNotificationTypesPage() (fyne.CanvasObject, func()) {
-	items := make([]notifType, 0)
+func (u *BaseUI) MakeNotificationTypesPage(w fyne.Window) (fyne.CanvasObject, []*fyne.MenuItem) {
+	categoriesAndTypes := make(map[evenotification.Folder][]evenotification.Type)
 	for _, n := range evenotification.SupportedTypes() {
-		f := evenotification.Type2folder[n]
-		i := notifType{
-			key:    fmt.Sprintf("%s: %s", f.String(), n.Display()),
-			folder: f,
-			nt:     n,
-		}
-		items = append(items, i)
+		c := evenotification.Type2folder[n]
+		categoriesAndTypes[c] = append(categoriesAndTypes[c], n)
 	}
-	slices.SortFunc(items, func(a, b notifType) int {
-		return strings.Compare(a.key, b.key)
-	})
+	categories := make([]evenotification.Folder, 0)
+	for c := range categoriesAndTypes {
+		categories = append(categories, c)
+	}
+	slices.Sort(categories)
+
 	typesEnabled := set.NewFromSlice(u.FyneApp.Preferences().StringList(SettingNotificationsTypesEnabled))
 	p := theme.Padding()
 	list := widget.NewList(
 		func() int {
-			return len(items)
+			return len(categories)
 		},
 		func() fyne.CanvasObject {
 			title := widget.NewLabel("Title")
 			title.Truncation = fyne.TextTruncateEllipsis
-			sub := widgets.NewLabelWithSize("Folder", theme.SizeNameCaptionText)
+			sub := widgets.NewLabelWithSize("Enabled", theme.SizeNameCaptionText)
+			sub.Wrapping = fyne.TextWrapBreak
 			return container.NewBorder(
-				nil, nil, nil, container.NewVBox(layout.NewSpacer(), kxwidget.NewSwitch(nil), layout.NewSpacer()),
+				nil, nil, nil, nil,
 				container.NewBorder(
+					container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0), title),
+					nil,
+					nil,
 					nil,
 					container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0), sub),
-					nil,
-					nil,
-					container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0), title),
 				),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			i := items[id]
+			c := categories[id]
 			outer := co.(*fyne.Container).Objects
 			inner := outer[0].(*fyne.Container).Objects
-			title := inner[0].(*fyne.Container).Objects[0].(*widget.Label)
-			title.SetText(i.nt.Display())
-			sub := inner[1].(*fyne.Container).Objects[0].(*widgets.Label)
-			sub.SetText(i.folder.String())
-			s := outer[1].(*fyne.Container).Objects[1].(*kxwidget.Switch)
-			s.OnChanged = func(on bool) {
-				if on {
-					typesEnabled.Add(i.nt.String())
-				} else {
-					typesEnabled.Remove(i.nt.String())
+			title := inner[1].(*fyne.Container).Objects[0].(*widget.Label)
+			title.SetText(c.String())
+			sub := inner[0].(*fyne.Container).Objects[0].(*widgets.Label)
+			var enabled int
+			for _, n := range categoriesAndTypes[c] {
+				if x := n.String(); typesEnabled.Contains(x) {
+					enabled++
 				}
-				u.FyneApp.Preferences().SetStringList(SettingNotificationsTypesEnabled, typesEnabled.ToSlice())
 			}
-			s.SetState(typesEnabled.Contains(i.nt.String()))
+			var s string
+			switch enabled {
+			case 0:
+				s = "Off"
+			case len(categoriesAndTypes[c]):
+				s = "All"
+			default:
+				s = "Some"
+			}
+			sub.SetText(s)
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
 		defer list.UnselectAll()
-		i := items[id]
-		if typesEnabled.Contains(i.nt.String()) {
-			typesEnabled.Remove(i.nt.String())
-		} else {
-			typesEnabled.Add(i.nt.String())
+		f := categories[id]
+
+		list2 := widget.NewList(
+			func() int {
+				return len(categoriesAndTypes[f])
+			},
+			func() fyne.CanvasObject {
+				title := widget.NewLabel("Title")
+				title.Truncation = fyne.TextTruncateEllipsis
+				return container.NewBorder(
+					nil,
+					nil,
+					nil,
+					container.NewVBox(layout.NewSpacer(), kxwidget.NewSwitch(nil), layout.NewSpacer()),
+					container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0), title),
+				)
+			},
+			func(id widget.ListItemID, co fyne.CanvasObject) {
+				nt := categoriesAndTypes[f][id]
+				outer := co.(*fyne.Container).Objects
+				inner := outer[0].(*fyne.Container).Objects
+				title := inner[0].(*widget.Label)
+				title.SetText(nt.Display())
+				s := outer[1].(*fyne.Container).Objects[1].(*kxwidget.Switch)
+				s.OnChanged = func(on bool) {
+					if on {
+						typesEnabled.Add(nt.String())
+					} else {
+						typesEnabled.Remove(nt.String())
+					}
+					u.FyneApp.Preferences().SetStringList(SettingNotificationsTypesEnabled, typesEnabled.ToSlice())
+				}
+				s.SetState(typesEnabled.Contains(nt.String()))
+			},
+		)
+		list2.OnSelected = func(id widget.ListItemID) {
+			defer list2.UnselectAll()
+			nt := categoriesAndTypes[f][id]
+			if typesEnabled.Contains(nt.String()) {
+				typesEnabled.Remove(nt.String())
+			} else {
+				typesEnabled.Add(nt.String())
+			}
+			u.FyneApp.Preferences().SetStringList(SettingNotificationsTypesEnabled, typesEnabled.ToSlice())
+			list2.RefreshItem(id)
 		}
-		u.FyneApp.Preferences().SetStringList(SettingNotificationsTypesEnabled, typesEnabled.ToSlice())
-		list.RefreshItem(id)
+
+		var d dialog.Dialog
+		title := widget.NewLabel(f.String())
+		title.TextStyle.Bold = true
+		top := container.NewBorder(
+			nil, nil, nil, widgets.NewIconButtonWithMenu(
+				theme.MenuIcon(), fyne.NewMenu("", fyne.NewMenuItem(
+					"Enable all",
+					func() {
+						for _, nt := range categoriesAndTypes[f] {
+							typesEnabled.Add(nt.String())
+						}
+						u.FyneApp.Preferences().SetStringList(SettingNotificationsTypesEnabled, typesEnabled.ToSlice())
+						list2.Refresh()
+					}),
+					fyne.NewMenuItem(
+						"Disable all",
+						func() {
+							for _, nt := range categoriesAndTypes[f] {
+								typesEnabled.Remove(nt.String())
+							}
+							u.FyneApp.Preferences().SetStringList(SettingNotificationsTypesEnabled, typesEnabled.ToSlice())
+							list2.Refresh()
+						}))),
+			title,
+		)
+		c := container.NewBorder(
+			container.NewVBox(top, widget.NewSeparator()),
+			nil,
+			nil,
+			nil,
+			list2,
+		)
+
+		d = dialog.NewCustom("Notification Types", "Close", c, w)
+		d.Show()
+		d.Resize(fyne.NewSize(400, 600))
+		d.SetOnClosed(func() {
+			list.Refresh()
+		})
 	}
 
-	// form := widget.NewForm()
-	// if u.IsMobile() {
-	// 	form.Orientation = widget.Vertical
-	// }
-
-	// categoriesAndTypes := make(map[evenotification.Folder][]evenotification.Type)
-	// for _, n := range evenotification.SupportedTypes() {
-	// 	c := evenotification.Type2folder[n]
-	// 	categoriesAndTypes[c] = append(categoriesAndTypes[c], n)
-	// }
-	// categories := make([]evenotification.Folder, 0)
-	// for c := range categoriesAndTypes {
-	// 	categories = append(categories, c)
-	// }
-	// slices.Sort(categories)
-	// typesEnabled := set.NewFromSlice(u.FyneApp.Preferences().StringList(SettingNotificationsTypesEnabled))
-	// notifsAll := make([]*kxwidget.Switch, 0)
-	// for _, c := range categories {
-	// 	form.Append("", widget.NewLabel(c.String()))
-	// 	nts := categoriesAndTypes[c]
-	// 	notifsCategory := make([]*kxwidget.Switch, 0)
-	// 	for _, nt := range nts {
-	// 		sw := kxwidget.NewSwitch(func(on bool) {
-	// 			if on {
-	// 				typesEnabled.Add(nt.String())
-	// 			} else {
-	// 				typesEnabled.Remove(nt.String())
-	// 			}
-	// 			u.FyneApp.Preferences().SetStringList(SettingNotificationsTypesEnabled, typesEnabled.ToSlice())
-	// 		})
-	// 		if typesEnabled.Contains(nt.String()) {
-	// 			sw.On = true
-	// 		}
-	// 		form.AppendItem(widget.NewFormItem(nt.Display(), sw))
-	// 		notifsCategory = append(notifsCategory, sw)
-	// 		notifsAll = append(notifsAll, sw)
-	// 	}
-	// 	enableAll := widget.NewButton("Enable all", func() {
-	// 		for _, sw := range notifsCategory {
-	// 			sw.SetState(true)
-	// 		}
-	// 	})
-	// 	disableAll := widget.NewButton("Disable all", func() {
-	// 		for _, sw := range notifsCategory {
-	// 			sw.SetState(false)
-	// 		}
-	// 	})
-	// 	form.Append("", container.NewHBox(enableAll, disableAll))
-	// 	form.Append("", container.NewPadded())
-	// }
-
-	reset := func() {
-		typesEnabled.Clear()
+	updateTypes := func() {
 		u.FyneApp.Preferences().SetStringList(SettingNotificationsTypesEnabled, typesEnabled.ToSlice())
 		list.Refresh()
 	}
-	return list, reset
+	none := &fyne.MenuItem{
+		Label: "Disable all",
+		Action: func() {
+			typesEnabled.Clear()
+			updateTypes()
+		},
+	}
+	all := &fyne.MenuItem{
+		Label: "Enable all",
+		Action: func() {
+			for _, nt := range evenotification.SupportedTypes() {
+				typesEnabled.Add(nt.String())
+			}
+			updateTypes()
+		},
+	}
+	return list, []*fyne.MenuItem{none, all}
 }
