@@ -174,7 +174,7 @@ func (m *EveImageService) image(url string, timeout time.Duration) (fyne.Resourc
 	dat, found = m.cache.Get(key)
 	if !found {
 		if m.isOffline {
-			return resourceBrokenimageSvg, nil
+			return resourceQuestionmark32Png, nil
 		}
 		x, err, _ := m.sfg.Do(key, func() (any, error) {
 			byt, err := loadDataFromURL(url, m.httpClient)

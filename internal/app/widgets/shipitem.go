@@ -9,6 +9,7 @@ import (
 	"time"
 
 	_ "image/jpeg"
+	_ "image/png"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -70,14 +71,9 @@ func (w *ShipItem) Set(typeID int32, label string, canFly bool) {
 				slog.Error("failed to fetch image for ship render", "error", err)
 				return
 			}
-			x, _, err := image.Decode(bytes.NewReader(r.Content()))
+			j, _, err := image.Decode(bytes.NewReader(r.Content()))
 			if err != nil {
 				slog.Error("failed to decode image for ship render", "error", err)
-				return
-			}
-			j, ok := x.(*image.YCbCr)
-			if !ok {
-				slog.Error("failed to recognize image format", "typeID", typeID)
 				return
 			}
 			b := j.Bounds()

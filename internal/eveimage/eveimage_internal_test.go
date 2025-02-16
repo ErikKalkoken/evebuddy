@@ -107,7 +107,7 @@ func TestImageFetching(t *testing.T) {
 		r, err := m.image(url, 0)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, resourceBrokenimageSvg, r)
+			assert.Equal(t, resourceQuestionmark32Png, r)
 		}
 	})
 	t.Run("can fetch a SKIN type from the image server", func(t *testing.T) {
