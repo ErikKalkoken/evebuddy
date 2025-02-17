@@ -327,7 +327,11 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	makePage := func(c fyne.CanvasObject) fyne.CanvasObject {
 		return container.NewScroll(c)
 	}
-	makeMenu := func(items ...*fyne.MenuItem) (fyne.Resource, *fyne.Menu) {
+	makeSettingsMenu := func(actions []ui.SettingAction) (fyne.Resource, *fyne.Menu) {
+		items := make([]*fyne.MenuItem, 0)
+		for _, a := range actions {
+			items = append(items, fyne.NewMenuItem(a.Label, a.Action))
+		}
 		return theme.MenuIcon(), fyne.NewMenu("", items...)
 	}
 	u.navItemUpdateStatus = widgets.NewListItemWithIcon(
@@ -363,40 +367,36 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 							widgets.NewListItem(
 								"General",
 								func() {
-									c, f := u.MakeGeneralSettingsPage(u.Window)
 									moreNav.Push(
-										widgets.NewAppBar("General", makePage(c), widgets.NewIconButtonWithMenu(
-											makeMenu(f...))),
+										widgets.NewAppBar("General", makePage(u.SettingsArea.GeneralContent), widgets.NewIconButtonWithMenu(
+											makeSettingsMenu(u.SettingsArea.CommunicationsActions))),
 									)
 								},
 							),
 							widgets.NewListItem(
 								"Eve Online",
 								func() {
-									c, f := u.MakeEVEOnlinePage()
 									moreNav.Push(
-										widgets.NewAppBar("Eve Online", makePage(c), widgets.NewIconButtonWithMenu(
-											makeMenu(f...))),
+										widgets.NewAppBar("Eve Online", makePage(u.SettingsArea.EveOnlineContent), widgets.NewIconButtonWithMenu(
+											makeSettingsMenu(u.SettingsArea.EveOnlineActions))),
 									)
 								},
 							),
 							widgets.NewListItem(
 								"Notifications",
 								func() {
-									c, f := u.MakeNotificationsPage(u.Window)
 									moreNav.Push(
-										widgets.NewAppBar("Notifications", makePage(c), widgets.NewIconButtonWithMenu(
-											makeMenu(f...))),
+										widgets.NewAppBar("Notifications", makePage(u.SettingsArea.NotificationsContent), widgets.NewIconButtonWithMenu(
+											makeSettingsMenu(u.SettingsArea.NotificationsActions))),
 									)
 								},
 							),
 							widgets.NewListItem(
 								"Communications",
 								func() {
-									c, f := u.MakeCommunicationsPage(u.Window)
 									moreNav.Push(
-										widgets.NewAppBar("Communications", makePage(c), widgets.NewIconButtonWithMenu(
-											makeMenu(f...))),
+										widgets.NewAppBar("Communications", makePage(u.SettingsArea.CommunicationsSettings), widgets.NewIconButtonWithMenu(
+											makeSettingsMenu(u.SettingsArea.CommunicationsActions))),
 									)
 								},
 							),

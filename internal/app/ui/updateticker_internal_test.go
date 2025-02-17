@@ -48,7 +48,7 @@ func TestCalcEarliest(t *testing.T) {
 		return v.Format(time.RFC3339)
 	}
 	earliestFallback := now.Add(-notifyEarliestFallback)
-	timeoutDefault := now.Add(-SettingNotifyTimeoutHoursDefault * time.Hour)
+	timeoutDefault := now.Add(-settingNotifyTimeoutHoursDefault * time.Hour)
 	cases := []struct {
 		name         string
 		earliest     string
@@ -71,7 +71,7 @@ func TestCalcEarliest(t *testing.T) {
 			}
 			p.data["earliest"] = tc.earliest
 			if tc.timeoutHours != 0 {
-				p.data[SettingNotifyTimeoutHours] = tc.timeoutHours
+				p.data[settingNotifyTimeoutHours] = tc.timeoutHours
 			}
 			// when
 			v := calcNotifyEarliest(p, "earliest")

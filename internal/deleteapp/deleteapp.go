@@ -16,7 +16,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui/desktop"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -121,7 +120,7 @@ func (u *UI) removeFolders(ctx context.Context, pb *widget.ProgressBar) error {
 			slog.Info("Deleted directory", "path", p)
 		}
 	}
-	keys := set.NewFromSlice(ui.SettingKeys()).Union(set.NewFromSlice(desktop.SettingKeys()))
+	keys := set.NewFromSlice(ui.SettingKeys())
 	for k := range keys.Values() {
 		u.app.Preferences().RemoveValue(k)
 	}

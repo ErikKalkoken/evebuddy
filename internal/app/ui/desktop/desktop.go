@@ -50,7 +50,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		panic("Could not start in desktop mode")
 	}
 	u.OnInit = func(_ *app.Character) {
-		index := u.FyneApp.Preferences().IntWithFallback(settingTabsMainID, -1)
+		index := u.FyneApp.Preferences().IntWithFallback(ui.SettingTabsMainID, -1)
 		if index != -1 {
 			u.tabs.SelectIndex(index)
 			for i, o := range u.tabs.Items {
@@ -67,8 +67,8 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		}
 	}
 	u.OnShowAndRun = func() {
-		width := float32(u.FyneApp.Preferences().FloatWithFallback(settingWindowWidth, settingWindowHeightDefault))
-		height := float32(u.FyneApp.Preferences().FloatWithFallback(settingWindowHeight, settingWindowHeightDefault))
+		width := float32(u.FyneApp.Preferences().FloatWithFallback(ui.SettingWindowWidth, ui.SettingWindowHeightDefault))
+		height := float32(u.FyneApp.Preferences().FloatWithFallback(ui.SettingWindowHeight, ui.SettingWindowHeightDefault))
 		u.Window.Resize(fyne.NewSize(width, height))
 	}
 	u.OnAppStarted = func() {
@@ -208,7 +208,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	u.Window.SetContent(mainContent)
 
 	// system tray menu
-	if fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault) {
+	if fyneApp.Preferences().BoolWithFallback(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault) {
 		name := u.AppName()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true
@@ -238,13 +238,13 @@ func (u *DesktopUI) saveAppState() {
 		slog.Warn("Failed to save app state")
 	}
 	s := u.Window.Canvas().Size()
-	u.FyneApp.Preferences().SetFloat(settingWindowWidth, float64(s.Width))
-	u.FyneApp.Preferences().SetFloat(settingWindowHeight, float64(s.Height))
+	u.FyneApp.Preferences().SetFloat(ui.SettingWindowWidth, float64(s.Width))
+	u.FyneApp.Preferences().SetFloat(ui.SettingWindowHeight, float64(s.Height))
 	if u.tabs == nil {
 		slog.Warn("Failed to save tabs in app state")
 	}
 	index := u.tabs.SelectedIndex()
-	u.FyneApp.Preferences().SetInt(settingTabsMainID, index)
+	u.FyneApp.Preferences().SetInt(ui.SettingTabsMainID, index)
 	for i, o := range u.tabs.Items {
 		tabs, ok := o.Content.(*container.AppTabs)
 		if !ok {
@@ -289,12 +289,27 @@ func (u *DesktopUI) hideMailIndicator() {
 }
 
 func (u *DesktopUI) ResetDesktopSettings() {
-	u.FyneApp.Preferences().SetBool(settingSysTrayEnabled, settingSysTrayEnabledDefault)
-	u.FyneApp.Preferences().SetBool(settingSysTrayEnabled, settingSysTrayEnabledDefault)
-	u.FyneApp.Preferences().SetInt(settingTabsMainID, 0)
-	u.FyneApp.Preferences().SetFloat(settingWindowHeight, settingWindowHeightDefault)
+	u.FyneApp.Preferences().SetBool(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault)
+	u.FyneApp.Preferences().SetBool(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault)
+	u.FyneApp.Preferences().SetInt(ui.SettingTabsMainID, 0)
+	u.FyneApp.Preferences().SetFloat(ui.SettingWindowHeight, ui.SettingWindowHeightDefault)
 }
 
 func makeSubTabsKey(i int) string {
 	return fmt.Sprintf("tabs-sub%d-id", i)
+}
+
+func (u *DesktopUI) showSettingsWindow() {
+	if u.settingsWindow != nil {
+		u.settingsWindow.Show()
+		return
+	}
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Settings"))
+	u.SettingsArea.SetWindow(w)
+	w.SetContent(u.SettingsArea.Content)
+	w.Resize(fyne.Size{Width: 700, Height: 500})
+	w.SetOnClosed(func() {
+		u.settingsWindow = nil
+	})
+	w.Show()
 }

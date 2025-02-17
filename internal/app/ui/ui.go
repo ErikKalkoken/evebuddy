@@ -84,6 +84,7 @@ type BaseUI struct {
 	NotificationsArea     *NotificationsArea
 	OverviewArea          *OverviewArea
 	PlanetArea            *PlanetArea
+	SettingsArea          *SettingsArea
 	ShipsArea             *ShipsArea
 	SkillCatalogueArea    *SkillCatalogueArea
 	SkillqueueArea        *SkillqueueArea
@@ -132,6 +133,7 @@ func NewBaseUI(fyneApp fyne.App) *BaseUI {
 	u.NotificationsArea = u.NewNotificationsArea()
 	u.OverviewArea = u.NewOverviewArea()
 	u.PlanetArea = u.NewPlanetArea()
+	u.SettingsArea = u.NewSettingsArea()
 	u.ShipsArea = u.newShipArea()
 	u.SkillCatalogueArea = u.NewSkillCatalogueArea()
 	u.SkillqueueArea = u.NewSkillqueueArea()
@@ -169,7 +171,7 @@ func (u *BaseUI) Init() {
 	var c *app.Character
 	var err error
 	ctx := context.Background()
-	if cID := u.FyneApp.Preferences().Int(SettingLastCharacterID); cID != 0 {
+	if cID := u.FyneApp.Preferences().Int(settingLastCharacterID); cID != 0 {
 		c, err = u.CharacterService.GetCharacter(ctx, int32(cID))
 		if err != nil {
 			if !errors.Is(err, character.ErrNotFound) {
@@ -263,7 +265,7 @@ func (u *BaseUI) LoadCharacter(characterID int32) error {
 func (u *BaseUI) SetCharacter(c *app.Character) {
 	u.character = c
 	u.RefreshCharacter()
-	u.FyneApp.Preferences().SetInt(SettingLastCharacterID, int(c.ID))
+	u.FyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
 	if u.OnSetCharacter != nil {
 		u.OnSetCharacter(c.ID)
 	}
@@ -271,7 +273,7 @@ func (u *BaseUI) SetCharacter(c *app.Character) {
 
 func (u *BaseUI) ResetCharacter() {
 	u.character = nil
-	u.FyneApp.Preferences().SetInt(SettingLastCharacterID, 0)
+	u.FyneApp.Preferences().SetInt(settingLastCharacterID, 0)
 	u.RefreshCharacter()
 }
 
