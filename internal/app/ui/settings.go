@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"maps"
 	"slices"
@@ -421,6 +420,11 @@ func (a *SettingsArea) makeNotificationsPage() (fyne.CanvasObject, []SettingActi
 	return form, []SettingAction{reset}
 }
 
+type notifItem struct {
+	heading string
+	nt      evenotification.Type
+}
+
 func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAction) {
 	groupsAndTypes := make(map[evenotification.Group][]evenotification.Type)
 	for _, n := range evenotification.SupportedGroups() {
@@ -431,141 +435,96 @@ func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAct
 	for c := range groupsAndTypes {
 		groups = append(groups, c)
 	}
+	for _, g := range groups {
+		slices.Sort(groupsAndTypes[g])
+	}
 	slices.Sort(groups)
+	items := make([]notifItem, 0)
+	for _, g := range groups {
+		items = append(items, notifItem{heading: g.String(), nt: ""})
+		for _, nt := range groupsAndTypes[g] {
+			items = append(items, notifItem{heading: "", nt: nt})
+		}
+	}
 
 	typesEnabled := set.NewFromSlice(a.u.FyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
-	p := theme.Padding()
 	list := widget.NewList(
 		func() int {
-			return len(groups)
+			return len(items)
 		},
 		func() fyne.CanvasObject {
-			title := widget.NewLabel("Title")
-			title.Wrapping = fyne.TextWrapBreak
-			title.TextStyle.Bold = true
-			return container.NewBorder(
-				nil,
-				nil,
-				nil,
-				widget.NewLabel("State"),
-				title,
-			)
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			c := groups[id]
-			border := co.(*fyne.Container).Objects
-			title := border[0].(*widget.Label)
-			title.SetText(c.String())
-			state := border[1].(*widget.Label)
-			var enabled int
-			for _, n := range groupsAndTypes[c] {
-				if x := n.String(); typesEnabled.Contains(x) {
-					enabled++
-				}
-			}
-			var s string
-			total := len(groupsAndTypes[c])
-			switch enabled {
-			case 0:
-				s = "Off"
-			case total:
-				s = "All enabled"
-			default:
-				s = fmt.Sprintf("%d / %d enabled", enabled, total)
-			}
-			state.SetText(s)
-		},
-	)
-	list.OnSelected = func(id widget.ListItemID) {
-		defer list.UnselectAll()
-		f := groups[id]
-
-		list2 := widget.NewList(
-			func() int {
-				return len(groupsAndTypes[f])
-			},
-			func() fyne.CanvasObject {
-				title := widget.NewLabel("Title")
-				title.Truncation = fyne.TextTruncateEllipsis
-				return container.NewBorder(
+			p := theme.Padding()
+			label := widget.NewLabel("Template")
+			label.Truncation = fyne.TextTruncateClip
+			heading := widget.NewLabel("Template")
+			heading.TextStyle.Bold = true
+			heading.Hide()
+			c := container.NewStack(
+				heading,
+				container.NewBorder(
 					nil,
 					nil,
 					nil,
 					container.NewVBox(layout.NewSpacer(), kxwidget.NewSwitch(nil), layout.NewSpacer()),
-					container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0), title),
-				)
-			},
-			func(id widget.ListItemID, co fyne.CanvasObject) {
-				nt := groupsAndTypes[f][id]
-				outer := co.(*fyne.Container).Objects
-				inner := outer[0].(*fyne.Container).Objects
-				title := inner[0].(*widget.Label)
-				title.SetText(nt.Display())
-				s := outer[1].(*fyne.Container).Objects[1].(*kxwidget.Switch)
-				s.OnChanged = func(on bool) {
+					container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0), label),
+				))
+			return c
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(items) {
+				return
+			}
+			it := items[id]
+			outer := co.(*fyne.Container)
+			heading := outer.Objects[0].(*widget.Label)
+			inner := outer.Objects[1].(*fyne.Container)
+			if it.heading != "" {
+				inner.Hide()
+				heading.SetText(it.heading)
+				heading.Show()
+			} else {
+				heading.Hide()
+				inner.Show()
+				label := inner.Objects[0].(*fyne.Container).Objects[0].(*widget.Label)
+				label.SetText(it.nt.Display())
+				sw := inner.Objects[1].(*fyne.Container).Objects[1].(*kxwidget.Switch)
+				sw.OnChanged = func(on bool) {
 					if on {
-						typesEnabled.Add(nt.String())
+						typesEnabled.Add(it.nt.String())
 					} else {
-						typesEnabled.Remove(nt.String())
+						typesEnabled.Remove(it.nt.String())
 					}
 					a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
 				}
-				s.SetState(typesEnabled.Contains(nt.String()))
-			},
-		)
-		list2.OnSelected = func(id widget.ListItemID) {
-			defer list2.UnselectAll()
-			nt := groupsAndTypes[f][id]
-			if typesEnabled.Contains(nt.String()) {
-				typesEnabled.Remove(nt.String())
-			} else {
-				typesEnabled.Add(nt.String())
+				sw.On = typesEnabled.Contains(it.nt.String())
+				sw.Refresh()
 			}
-			a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
-			list2.RefreshItem(id)
+		},
+	)
+	list.OnSelected = func(id widget.ListItemID) {
+		defer list.UnselectAll()
+		if id >= len(items) {
+			return
 		}
-
-		var d dialog.Dialog
-		title := widget.NewLabel(f.String())
-		title.TextStyle.Bold = true
-		top := container.NewBorder(
-			nil, nil, nil, widgets.NewIconButtonWithMenu(
-				theme.MenuIcon(), fyne.NewMenu("", fyne.NewMenuItem(
-					"Enable all",
-					func() {
-						for _, nt := range groupsAndTypes[f] {
-							typesEnabled.Add(nt.String())
-						}
-						a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
-						list2.Refresh()
-					}),
-					fyne.NewMenuItem(
-						"Disable all",
-						func() {
-							for _, nt := range groupsAndTypes[f] {
-								typesEnabled.Remove(nt.String())
-							}
-							a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
-							list2.Refresh()
-						}))),
-			title,
-		)
-		c := container.NewBorder(
-			container.NewVBox(top, widget.NewSeparator()),
-			nil,
-			nil,
-			nil,
-			list2,
-		)
-
-		d = dialog.NewCustom("Notification Types", "Close", c, a.window)
-		d.Show()
-		d.Resize(fyne.NewSize(400, 600))
-		d.SetOnClosed(func() {
-			list.Refresh()
-		})
+		it := items[id]
+		if it.heading != "" {
+			return
+		}
+		if typesEnabled.Contains(it.nt.String()) {
+			typesEnabled.Remove(it.nt.String())
+		} else {
+			typesEnabled.Add(it.nt.String())
+		}
+		a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
+		list.RefreshItem(id)
 	}
-
+	c := container.NewBorder(
+		widgets.NewLabelWithSize("Choose which communication types can trigger a notification.", theme.SizeNameCaptionText),
+		nil,
+		nil,
+		nil,
+		list,
+	)
 	updateTypes := func() {
 		a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
 		list.Refresh()
@@ -586,7 +545,7 @@ func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAct
 			updateTypes()
 		},
 	}
-	return list, []SettingAction{none, all}
+	return c, []SettingAction{all, none}
 }
 
 func (a *SettingsArea) makeDesktopSettingsPage() (fyne.CanvasObject, []SettingAction) {
