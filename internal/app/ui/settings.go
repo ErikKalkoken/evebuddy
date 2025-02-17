@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"maps"
 	"slices"
@@ -204,7 +205,7 @@ func (u *BaseUI) MakeEVEOnlinePage() (fyne.CanvasObject, []*fyne.MenuItem) {
 	return settings, []*fyne.MenuItem{reset}
 }
 
-func (u *BaseUI) MakeNotificationGeneralPage(w fyne.Window) (fyne.CanvasObject, []*fyne.MenuItem) {
+func (u *BaseUI) MakeNotificationsPage(w fyne.Window) (fyne.CanvasObject, []*fyne.MenuItem) {
 	if w == nil {
 		w = u.Window
 	}
@@ -349,7 +350,7 @@ func (u *BaseUI) MakeNotificationGeneralPage(w fyne.Window) (fyne.CanvasObject, 
 	return form, []*fyne.MenuItem{reset}
 }
 
-func (u *BaseUI) MakeNotificationTypesPage(w fyne.Window) (fyne.CanvasObject, []*fyne.MenuItem) {
+func (u *BaseUI) MakeCommunicationsPage(w fyne.Window) (fyne.CanvasObject, []*fyne.MenuItem) {
 	categoriesAndTypes := make(map[evenotification.Folder][]evenotification.Type)
 	for _, n := range evenotification.SupportedTypes() {
 		c := evenotification.Type2folder[n]
@@ -369,27 +370,22 @@ func (u *BaseUI) MakeNotificationTypesPage(w fyne.Window) (fyne.CanvasObject, []
 		},
 		func() fyne.CanvasObject {
 			title := widget.NewLabel("Title")
-			title.Truncation = fyne.TextTruncateEllipsis
-			sub := widgets.NewLabelWithSize("Enabled", theme.SizeNameCaptionText)
-			sub.Wrapping = fyne.TextWrapBreak
+			title.Wrapping = fyne.TextWrapBreak
+			title.TextStyle.Bold = true
 			return container.NewBorder(
-				nil, nil, nil, nil,
-				container.NewBorder(
-					container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0), title),
-					nil,
-					nil,
-					nil,
-					container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0), sub),
-				),
+				nil,
+				nil,
+				nil,
+				widget.NewLabel("State"),
+				title,
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			c := categories[id]
-			outer := co.(*fyne.Container).Objects
-			inner := outer[0].(*fyne.Container).Objects
-			title := inner[1].(*fyne.Container).Objects[0].(*widget.Label)
+			border := co.(*fyne.Container).Objects
+			title := border[0].(*widget.Label)
 			title.SetText(c.String())
-			sub := inner[0].(*fyne.Container).Objects[0].(*widgets.Label)
+			state := border[1].(*widget.Label)
 			var enabled int
 			for _, n := range categoriesAndTypes[c] {
 				if x := n.String(); typesEnabled.Contains(x) {
@@ -397,15 +393,16 @@ func (u *BaseUI) MakeNotificationTypesPage(w fyne.Window) (fyne.CanvasObject, []
 				}
 			}
 			var s string
+			total := len(categoriesAndTypes[c])
 			switch enabled {
 			case 0:
 				s = "Off"
-			case len(categoriesAndTypes[c]):
-				s = "All"
+			case total:
+				s = "All enabled"
 			default:
-				s = "Some"
+				s = fmt.Sprintf("%d / %d enabled", enabled, total)
 			}
-			sub.SetText(s)
+			state.SetText(s)
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {

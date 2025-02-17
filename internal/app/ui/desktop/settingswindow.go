@@ -49,11 +49,11 @@ func (u *DesktopUI) NewSettingsArea(w fyne.Window) *SettingsArea {
 			return makePage("Desktop", c, f)
 		}()),
 		container.NewTabItem("Notifications", func() fyne.CanvasObject {
-			c, f := u.MakeNotificationGeneralPage(w)
+			c, f := u.MakeNotificationsPage(w)
 			return makePage("Notifications", c, f)
 		}()),
 		container.NewTabItem("Communications", func() fyne.CanvasObject {
-			c, f := u.MakeNotificationTypesPage(w)
+			c, f := u.MakeCommunicationsPage(w)
 			return makePage("Communications", c, f)
 		}()),
 	)

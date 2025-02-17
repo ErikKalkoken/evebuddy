@@ -383,7 +383,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 							widgets.NewListItem(
 								"Notifications",
 								func() {
-									c, f := u.MakeNotificationGeneralPage(u.Window)
+									c, f := u.MakeNotificationsPage(u.Window)
 									moreNav.Push(
 										widgets.NewAppBar("Notifications", makePage(c), widgets.NewIconButtonWithMenu(
 											makeMenu(f...))),
@@ -393,7 +393,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 							widgets.NewListItem(
 								"Communications",
 								func() {
-									c, f := u.MakeNotificationTypesPage(u.Window)
+									c, f := u.MakeCommunicationsPage(u.Window)
 									moreNav.Push(
 										widgets.NewAppBar("Communications", makePage(c), widgets.NewIconButtonWithMenu(
 											makeMenu(f...))),
