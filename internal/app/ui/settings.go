@@ -422,22 +422,22 @@ func (a *SettingsArea) makeNotificationsPage() (fyne.CanvasObject, []SettingActi
 }
 
 func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAction) {
-	categoriesAndTypes := make(map[evenotification.Folder][]evenotification.Type)
-	for _, n := range evenotification.SupportedTypes() {
-		c := evenotification.Type2folder[n]
-		categoriesAndTypes[c] = append(categoriesAndTypes[c], n)
+	groupsAndTypes := make(map[evenotification.Group][]evenotification.Type)
+	for _, n := range evenotification.SupportedGroups() {
+		c := evenotification.Type2group[n]
+		groupsAndTypes[c] = append(groupsAndTypes[c], n)
 	}
-	categories := make([]evenotification.Folder, 0)
-	for c := range categoriesAndTypes {
-		categories = append(categories, c)
+	groups := make([]evenotification.Group, 0)
+	for c := range groupsAndTypes {
+		groups = append(groups, c)
 	}
-	slices.Sort(categories)
+	slices.Sort(groups)
 
 	typesEnabled := set.NewFromSlice(a.u.FyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 	p := theme.Padding()
 	list := widget.NewList(
 		func() int {
-			return len(categories)
+			return len(groups)
 		},
 		func() fyne.CanvasObject {
 			title := widget.NewLabel("Title")
@@ -452,19 +452,19 @@ func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAct
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			c := categories[id]
+			c := groups[id]
 			border := co.(*fyne.Container).Objects
 			title := border[0].(*widget.Label)
 			title.SetText(c.String())
 			state := border[1].(*widget.Label)
 			var enabled int
-			for _, n := range categoriesAndTypes[c] {
+			for _, n := range groupsAndTypes[c] {
 				if x := n.String(); typesEnabled.Contains(x) {
 					enabled++
 				}
 			}
 			var s string
-			total := len(categoriesAndTypes[c])
+			total := len(groupsAndTypes[c])
 			switch enabled {
 			case 0:
 				s = "Off"
@@ -478,11 +478,11 @@ func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAct
 	)
 	list.OnSelected = func(id widget.ListItemID) {
 		defer list.UnselectAll()
-		f := categories[id]
+		f := groups[id]
 
 		list2 := widget.NewList(
 			func() int {
-				return len(categoriesAndTypes[f])
+				return len(groupsAndTypes[f])
 			},
 			func() fyne.CanvasObject {
 				title := widget.NewLabel("Title")
@@ -496,7 +496,7 @@ func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAct
 				)
 			},
 			func(id widget.ListItemID, co fyne.CanvasObject) {
-				nt := categoriesAndTypes[f][id]
+				nt := groupsAndTypes[f][id]
 				outer := co.(*fyne.Container).Objects
 				inner := outer[0].(*fyne.Container).Objects
 				title := inner[0].(*widget.Label)
@@ -515,7 +515,7 @@ func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAct
 		)
 		list2.OnSelected = func(id widget.ListItemID) {
 			defer list2.UnselectAll()
-			nt := categoriesAndTypes[f][id]
+			nt := groupsAndTypes[f][id]
 			if typesEnabled.Contains(nt.String()) {
 				typesEnabled.Remove(nt.String())
 			} else {
@@ -533,7 +533,7 @@ func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAct
 				theme.MenuIcon(), fyne.NewMenu("", fyne.NewMenuItem(
 					"Enable all",
 					func() {
-						for _, nt := range categoriesAndTypes[f] {
+						for _, nt := range groupsAndTypes[f] {
 							typesEnabled.Add(nt.String())
 						}
 						a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
@@ -542,7 +542,7 @@ func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAct
 					fyne.NewMenuItem(
 						"Disable all",
 						func() {
-							for _, nt := range categoriesAndTypes[f] {
+							for _, nt := range groupsAndTypes[f] {
 								typesEnabled.Remove(nt.String())
 							}
 							a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
@@ -580,7 +580,7 @@ func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAct
 	all := SettingAction{
 		Label: "Enable all",
 		Action: func() {
-			for _, nt := range evenotification.SupportedTypes() {
+			for _, nt := range evenotification.SupportedGroups() {
 				typesEnabled.Add(nt.String())
 			}
 			updateTypes()

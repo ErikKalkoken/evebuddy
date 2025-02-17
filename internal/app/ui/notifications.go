@@ -21,8 +21,8 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-type NotificationFolder struct {
-	Folder      evenotification.Folder
+type NotificationGroup struct {
+	Group       evenotification.Group
 	Name        string
 	UnreadCount int
 }
@@ -36,22 +36,22 @@ type NotificationsArea struct {
 	OnSelected    func()
 	OnRefresh     func(count int)
 
-	Folders          []NotificationFolder
-	folderList       *widget.List
+	Groups           []NotificationGroup
+	groupList        *widget.List
 	current          *app.CharacterNotification
 	notificationList *widget.List
 	notifications    []*app.CharacterNotification
 	notificationsTop *widget.Label
-	folderTop        *widget.Label
+	groupsTop        *widget.Label
 	u                *BaseUI
 }
 
 func (u *BaseUI) NewNotificationsArea() *NotificationsArea {
 	a := NotificationsArea{
-		Folders:          make([]NotificationFolder, 0),
+		Groups:           make([]NotificationGroup, 0),
 		notifications:    make([]*app.CharacterNotification, 0),
 		notificationsTop: widget.NewLabel(""),
-		folderTop:        widget.NewLabel(""),
+		groupsTop:        widget.NewLabel(""),
 		u:                u,
 	}
 	a.Toolbar = a.makeToolbar()
@@ -64,9 +64,9 @@ func (u *BaseUI) NewNotificationsArea() *NotificationsArea {
 		container.NewBorder(a.Toolbar, nil, nil, nil, a.Detail),
 	)
 	split1.Offset = 0.35
-	a.folderList = a.makeFolderList()
+	a.groupList = a.makeGroupList()
 	split2 := container.NewHSplit(
-		container.NewBorder(a.folderTop, nil, nil, nil, a.folderList),
+		container.NewBorder(a.groupsTop, nil, nil, nil, a.groupList),
 		split1,
 	)
 	split2.Offset = 0.15
@@ -74,10 +74,10 @@ func (u *BaseUI) NewNotificationsArea() *NotificationsArea {
 	return &a
 }
 
-func (a *NotificationsArea) makeFolderList() *widget.List {
+func (a *NotificationsArea) makeGroupList() *widget.List {
 	l := widget.NewList(
 		func() int {
-			return len(a.Folders)
+			return len(a.Groups)
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(
@@ -85,10 +85,10 @@ func (a *NotificationsArea) makeFolderList() *widget.List {
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(a.Folders) {
+			if id >= len(a.Groups) {
 				return
 			}
-			c := a.Folders[id]
+			c := a.Groups[id]
 			hbox := co.(*fyne.Container).Objects
 			label := hbox[0].(*widget.Label)
 			badge := hbox[2].(*kwidget.Badge)
@@ -106,13 +106,13 @@ func (a *NotificationsArea) makeFolderList() *widget.List {
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.notificationList.UnselectAll()
-		if id >= len(a.Folders) {
+		if id >= len(a.Groups) {
 			l.UnselectAll()
 			return
 		}
-		o := a.Folders[id]
+		o := a.Groups[id]
 		a.clearDetail()
-		a.SetFolder(o.Folder)
+		a.SetGroup(o.Group)
 	}
 	return l
 }
@@ -166,7 +166,7 @@ func (a *NotificationsArea) Refresh() {
 	a.notificationList.Refresh()
 	a.notificationList.UnselectAll()
 	a.notificationsTop.SetText("")
-	var counts map[evenotification.Folder]int
+	var counts map[evenotification.Group]int
 	if characterID := a.u.CharacterID(); characterID != 0 {
 		var err error
 		counts, err = a.u.CharacterService.CountCharacterNotificationUnreads(context.TODO(), characterID)
@@ -174,55 +174,55 @@ func (a *NotificationsArea) Refresh() {
 			slog.Error("Failed to fetch notification unread counts", "error", err)
 		}
 	}
-	folders := make([]NotificationFolder, 0)
+	groups := make([]NotificationGroup, 0)
 	var unreadTotal int
-	for _, c := range evenotification.Folders() {
-		nc := NotificationFolder{
-			Folder:      c,
+	for _, c := range evenotification.Groups() {
+		nc := NotificationGroup{
+			Group:       c,
 			Name:        c.String(),
 			UnreadCount: counts[c],
 		}
-		folders = append(folders, nc)
+		groups = append(groups, nc)
 		unreadTotal += counts[c]
 	}
-	slices.SortFunc(folders, func(a, b NotificationFolder) int {
+	slices.SortFunc(groups, func(a, b NotificationGroup) int {
 		return cmp.Compare(a.Name, b.Name)
 	})
-	f1 := NotificationFolder{
-		Folder:      evenotification.Unread,
+	f1 := NotificationGroup{
+		Group:       evenotification.Unread,
 		Name:        "Unread",
 		UnreadCount: unreadTotal,
 	}
-	folders = slices.Insert(folders, 0, f1)
-	f2 := NotificationFolder{
-		Folder:      evenotification.All,
+	groups = slices.Insert(groups, 0, f1)
+	f2 := NotificationGroup{
+		Group:       evenotification.All,
 		Name:        "All",
 		UnreadCount: unreadTotal,
 	}
-	folders = append(folders, f2)
-	a.Folders = folders
-	a.folderList.Refresh()
-	a.folderList.UnselectAll()
-	a.folderTop.Text, a.folderTop.Importance = a.makeFolderTopText()
-	a.folderTop.Refresh()
+	groups = append(groups, f2)
+	a.Groups = groups
+	a.groupList.Refresh()
+	a.groupList.UnselectAll()
+	a.groupsTop.Text, a.groupsTop.Importance = a.makeGroupTopText()
+	a.groupsTop.Refresh()
 	if a.OnRefresh != nil {
 		a.OnRefresh(unreadTotal)
 	}
 }
 
-func (a *NotificationsArea) makeFolderTopText() (string, widget.Importance) {
+func (a *NotificationsArea) makeGroupTopText() (string, widget.Importance) {
 	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
-	return fmt.Sprintf("%d folders", len(a.Folders)), widget.MediumImportance
+	return fmt.Sprintf("%d groups", len(a.Groups)), widget.MediumImportance
 }
 
-func (a *NotificationsArea) ResetFolders() {
-	a.SetFolder(evenotification.Unread)
+func (a *NotificationsArea) ResetGroups() {
+	a.SetGroup(evenotification.Unread)
 }
 
-func (a *NotificationsArea) SetFolder(nc evenotification.Folder) {
+func (a *NotificationsArea) SetGroup(nc evenotification.Group) {
 	ctx := context.Background()
 	characterID := a.u.CharacterID()
 	var notifications []*app.CharacterNotification
@@ -233,7 +233,7 @@ func (a *NotificationsArea) SetFolder(nc evenotification.Folder) {
 	case evenotification.Unread:
 		notifications, err = a.u.CharacterService.ListCharacterNotificationsUnread(ctx, characterID)
 	default:
-		types := evenotification.FolderTypes[nc]
+		types := evenotification.GroupTypes[nc]
 		notifications, err = a.u.CharacterService.ListCharacterNotificationsTypes(ctx, characterID, types)
 	}
 	a.notifications = notifications

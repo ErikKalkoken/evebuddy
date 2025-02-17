@@ -5,10 +5,10 @@ import (
 	"slices"
 )
 
-type Folder uint
+type Group uint
 
 const (
-	Bills Folder = iota + 1
+	Bills Group = iota + 1
 	FactionWarfare
 	Contacts
 	Corporate
@@ -25,7 +25,7 @@ const (
 	All
 )
 
-var folder2Name = map[Folder]string{
+var group2Name = map[Group]string{
 	Bills:          "Bills",
 	FactionWarfare: "Faction Warfare",
 	Contacts:       "Contacts",
@@ -43,16 +43,16 @@ var folder2Name = map[Folder]string{
 	All:            "All",
 }
 
-func (c Folder) String() string {
-	return folder2Name[c]
+func (c Group) String() string {
+	return group2Name[c]
 }
 
-// Folders returns a slice of all folders in alphabetical order.
-func Folders() []Folder {
-	return slices.Sorted(maps.Keys(folder2Name))
+// Groups returns a slice of all groups in alphabetical order.
+func Groups() []Group {
+	return slices.Sorted(maps.Keys(group2Name))
 }
 
-var Type2folder = map[Type]Folder{
+var Type2group = map[Type]Group{
 	AcceptedAlly:                              War,
 	AcceptedSurrender:                         War,
 	AgentRetiredTrigravian:                    Unknown,
@@ -289,15 +289,14 @@ var Type2folder = map[Type]Folder{
 	WarSurrenderOfferMsg:                      War,
 }
 
-var FolderTypes map[Folder][]Type
+var GroupTypes map[Group][]Type
 
 func init() {
-	FolderTypes = make(map[Folder][]Type)
-	for type_, folder := range Type2folder {
-		c := folder
-		if folder == Unknown {
-			c = Miscellaneous
+	GroupTypes = make(map[Group][]Type)
+	for t, g := range Type2group {
+		if g == Unknown {
+			g = Miscellaneous
 		}
-		FolderTypes[c] = append(FolderTypes[c], type_)
+		GroupTypes[g] = append(GroupTypes[g], t)
 	}
 }

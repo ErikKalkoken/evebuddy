@@ -325,7 +325,7 @@ var supportedTypes = []Type{
 	SovStructureDestroyed,
 }
 
-// SupportedTypes returns a list of all supported notification types.
-func SupportedTypes() []Type {
+// SupportedGroups returns a list of all supported notification types.
+func SupportedGroups() []Type {
 	return supportedTypes
 }

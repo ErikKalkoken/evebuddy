@@ -445,7 +445,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		mailMenu.Refresh()
 
 		// init communications
-		u.NotificationsArea.ResetFolders()
+		u.NotificationsArea.ResetGroups()
 		communicationsMenu.Items = u.makeCommunicationsMenu()
 		communicationsMenu.Refresh()
 
@@ -489,13 +489,13 @@ func (u *MobileUI) makeMailMenu() []*fyne.MenuItem {
 
 func (u *MobileUI) makeCommunicationsMenu() []*fyne.MenuItem {
 	items2 := make([]*fyne.MenuItem, 0)
-	for _, f := range u.NotificationsArea.Folders {
+	for _, f := range u.NotificationsArea.Groups {
 		s := f.Name
 		if f.UnreadCount > 0 {
 			s += fmt.Sprintf(" (%d)", f.UnreadCount)
 		}
 		it := fyne.NewMenuItem(s, func() {
-			u.NotificationsArea.SetFolder(f.Folder)
+			u.NotificationsArea.SetGroup(f.Group)
 		})
 		items2 = append(items2, it)
 	}
