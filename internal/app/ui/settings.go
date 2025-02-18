@@ -21,6 +21,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
+// TODO: Improve switch API to allow switch not to be set on error
+
 // Exported settings
 const (
 	SettingLogLevel              = "logLevel"
@@ -125,8 +127,6 @@ type SettingsArea struct {
 	EveOnlineContent       fyne.CanvasObject
 	GeneralActions         []SettingAction
 	GeneralContent         fyne.CanvasObject
-	NotificationsActions   []SettingAction
-	NotificationsContent   fyne.CanvasObject
 
 	u      *BaseUI
 	window fyne.Window
@@ -137,18 +137,18 @@ func (u *BaseUI) NewSettingsArea() *SettingsArea {
 	a.GeneralContent, a.GeneralActions = a.makeGeneralSettingsPage()
 	a.DesktopContent, a.DesktopActions = a.makeDesktopSettingsPage()
 	a.EveOnlineContent, a.EveOnlineActions = a.makeEVEOnlinePage()
-	a.NotificationsContent, a.NotificationsActions = a.makeNotificationsPage()
-	a.CommunicationsSettings, a.CommunicationsActions = a.makeCommunicationsPage()
+	a.CommunicationsSettings, a.CommunicationsActions = a.makeNotificationPage()
 
 	makeSettingsPage := func(title string, content fyne.CanvasObject, actions []SettingAction) fyne.CanvasObject {
 		t := widget.NewLabel(title)
 		t.TextStyle.Bold = true
-		top := container.NewHBox(t, layout.NewSpacer())
+		items := make([]*fyne.MenuItem, 0)
 		for _, a := range actions {
-			top.Add(widget.NewButton(a.Label, a.Action))
+			items = append(items, fyne.NewMenuItem(a.Label, a.Action))
 		}
+		options := widgets.NewContextMenuButtonWithIcon(theme.MenuIcon(), "", fyne.NewMenu("", items...))
 		return container.NewBorder(
-			container.NewVBox(top, widget.NewSeparator()),
+			container.NewVBox(container.NewHBox(t, layout.NewSpacer(), options), widget.NewSeparator()),
 			nil,
 			nil,
 			nil,
@@ -160,8 +160,7 @@ func (u *BaseUI) NewSettingsArea() *SettingsArea {
 		container.NewTabItem("General", makeSettingsPage("General", a.GeneralContent, a.GeneralActions)),
 		container.NewTabItem("Desktop", makeSettingsPage("Desktop", a.DesktopContent, a.DesktopActions)),
 		container.NewTabItem("EVE Online", makeSettingsPage("EVE Online", a.EveOnlineContent, a.EveOnlineActions)),
-		container.NewTabItem("Notifications", makeSettingsPage("Notifications", a.NotificationsContent, a.NotificationsActions)),
-		container.NewTabItem("Communications", makeSettingsPage("Communications", a.CommunicationsSettings, a.CommunicationsActions)),
+		container.NewTabItem("Notifications", makeSettingsPage("Notifications", a.CommunicationsSettings, a.CommunicationsActions)),
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
 	a.Content = tabs
@@ -278,66 +277,90 @@ func (a *SettingsArea) makeEVEOnlinePage() (fyne.CanvasObject, []SettingAction) 
 	return settings, []SettingAction{reset}
 }
 
-func (a *SettingsArea) makeNotificationsPage() (fyne.CanvasObject, []SettingAction) {
-	form := widget.NewForm()
-	if a.u.IsMobile() {
-		form.Orientation = widget.Vertical
+type settingItem struct {
+	hint      string        // optional hint text
+	isHeading bool          // when true will render a bold label as heading only
+	isLast    bool          // last item in a group
+	label     string        // label
+	on        func() bool   // returns the state for the switch
+	onChanged func(on bool) // action for changing the switch
+}
+
+func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
+	groupsAndTypes := make(map[evenotification.Group][]evenotification.Type)
+	for _, n := range evenotification.SupportedGroups() {
+		c := evenotification.Type2group[n]
+		groupsAndTypes[c] = append(groupsAndTypes[c], n)
 	}
+	groups := make([]evenotification.Group, 0)
+	for c := range groupsAndTypes {
+		groups = append(groups, c)
+	}
+	for _, g := range groups {
+		slices.Sort(groupsAndTypes[g])
+	}
+	slices.Sort(groups)
+	typesEnabled := set.NewFromSlice(a.u.FyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 
-	// mail toogle
-	mailEnabledCheck := kxwidget.NewSwitch(func(on bool) {
-		a.u.FyneApp.Preferences().SetBool(settingNotifyMailsEnabled, on)
-		if on {
-			a.u.FyneApp.Preferences().SetString(settingNotifyMailsEarliest, time.Now().Format(time.RFC3339))
-		}
-	})
-	mailEnabledCheck.On = a.u.FyneApp.Preferences().BoolWithFallback(
-		settingNotifyMailsEnabled,
-		settingNotifyMailsEnabledDefault,
-	)
-	form.AppendItem(&widget.FormItem{
-		Text:     "Mail",
-		Widget:   mailEnabledCheck,
-		HintText: "Wether to notify new mails",
-	})
+	items := make([]settingItem, 0)
 
-	// communications toogle
-	communicationsEnabledCheck := kxwidget.NewSwitch(func(on bool) {
+	// add global items
+	items = append(items, settingItem{
+		label:     "Global",
+		isHeading: true,
+	})
+	setCommunications := func(on bool) {
 		a.u.FyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
 		if on {
 			a.u.FyneApp.Preferences().SetString(settingNotifyCommunicationsEarliest, time.Now().Format(time.RFC3339))
 		}
+	}
+	items = append(items, settingItem{
+		label: "Notify communications",
+		hint:  "Whether to notify new communications",
+		on: func() bool {
+			return a.u.FyneApp.Preferences().BoolWithFallback(
+				settingNotifyCommunicationsEnabled,
+				settingNotifyCommunicationsEnabledDefault,
+			)
+		},
+		onChanged: setCommunications,
 	})
-	communicationsEnabledCheck.On = a.u.FyneApp.Preferences().BoolWithFallback(
-		settingNotifyCommunicationsEnabled,
-		settingNotifyCommunicationsEnabledDefault,
-	)
-	form.AppendItem(&widget.FormItem{
-		Text:     "Communications",
-		Widget:   communicationsEnabledCheck,
-		HintText: "Wether to notify new communications",
+	setMail := func(on bool) {
+		a.u.FyneApp.Preferences().SetBool(settingNotifyMailsEnabled, on)
+		if on {
+			a.u.FyneApp.Preferences().SetString(settingNotifyMailsEarliest, time.Now().Format(time.RFC3339))
+		}
+	}
+	items = append(items, settingItem{
+		label: "Notify mails",
+		hint:  "Whether to notify new mails",
+		on: func() bool {
+			return a.u.FyneApp.Preferences().BoolWithFallback(
+				settingNotifyMailsEnabled,
+				settingNotifyMailsEnabledDefault,
+			)
+		},
+		onChanged: setMail,
 	})
-
-	// PI toogle
-	piEnabledCheck := kxwidget.NewSwitch(func(on bool) {
+	setPI := func(on bool) {
 		a.u.FyneApp.Preferences().SetBool(settingNotifyPIEnabled, on)
 		if on {
 			a.u.FyneApp.Preferences().SetString(settingNotifyPIEarliest, time.Now().Format(time.RFC3339))
 		}
+	}
+	items = append(items, settingItem{
+		label: "Planetary Industry",
+		hint:  "Whether to notify about expired extractions",
+		on: func() bool {
+			return a.u.FyneApp.Preferences().BoolWithFallback(
+				settingNotifyPIEnabled,
+				settingNotifyPIEnabledDefault,
+			)
+		},
+		onChanged: setPI,
 	})
-	piEnabledCheck.On = a.u.FyneApp.Preferences().BoolWithFallback(
-		settingNotifyPIEnabled,
-		settingNotifyPIEnabledDefault,
-	)
-	form.AppendItem(&widget.FormItem{
-		Text:     "Planetary Industry",
-		Widget:   piEnabledCheck,
-		HintText: "Wether to notify about expired extractions",
-	})
-
-	// Training toogle
-	// TODO: Improve switch API to allow switch not to be set on error
-	trainingEnabledCheck := kxwidget.NewSwitch(func(on bool) {
+	setTraining := func(on bool) {
 		ctx := context.Background()
 		if on {
 			err := a.u.CharacterService.EnableAllTrainingWatchers(ctx)
@@ -356,118 +379,87 @@ func (a *SettingsArea) makeNotificationsPage() (fyne.CanvasObject, []SettingActi
 				a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, false)
 			}
 		}
+	}
+	items = append(items, settingItem{
+		label: "Notify Training",
+		hint:  "Whether to notify abouthen skillqueue is empty",
+		on: func() bool {
+			return a.u.FyneApp.Preferences().BoolWithFallback(
+				settingNotifyTrainingEnabled,
+				settingNotifyTrainingEnabledDefault,
+			)
+		},
+		onChanged: setTraining,
 	})
-	trainingEnabledCheck.On = a.u.FyneApp.Preferences().BoolWithFallback(
-		settingNotifyTrainingEnabled,
-		settingNotifyTrainingEnabledDefault,
-	)
-	form.AppendItem(&widget.FormItem{
-		Text:     "Training",
-		Widget:   trainingEnabledCheck,
-		HintText: "Wether to notify when skillqueue is empty",
-	})
-
-	// Contracts toogle
-	contractsEnabledCheck := kxwidget.NewSwitch(func(on bool) {
+	setContracts := func(on bool) {
 		a.u.FyneApp.Preferences().SetBool(settingNotifyContractsEnabled, on)
 		if on {
 			a.u.FyneApp.Preferences().SetString(settingNotifyContractsEarliest, time.Now().Format(time.RFC3339))
 		}
-	})
-	contractsEnabledCheck.On = a.u.FyneApp.Preferences().BoolWithFallback(
-		settingNotifyContractsEnabled,
-		settingNotifyCommunicationsEnabledDefault,
-	)
-	form.AppendItem(&widget.FormItem{
-		Text:     "Contracts",
-		Widget:   contractsEnabledCheck,
-		HintText: "Wether to notify when contract status changes",
-	})
-
-	// notify timeout
-	notifyTimeout := kxwidget.NewSlider(1, settingNotifyTimeoutHoursMax)
-	v := a.u.FyneApp.Preferences().IntWithFallback(settingNotifyTimeoutHours, settingNotifyTimeoutHoursDefault)
-	notifyTimeout.SetValue(float64(v))
-	notifyTimeout.OnChangeEnded = func(v float64) {
-		a.u.FyneApp.Preferences().SetInt(settingNotifyTimeoutHours, int(v))
 	}
-	form.AppendItem(&widget.FormItem{
-		Text:     "Notification timeout",
-		Widget:   notifyTimeout,
-		HintText: "Events older then this value in hours will not be notified",
-	})
-
-	form.AppendItem(&widget.FormItem{
-		Text: "Test notification",
-		Widget: widget.NewButton("Send now", func() {
-			n := fyne.NewNotification("Test", "This is a test notification from EVE Buddy.")
-			a.u.FyneApp.SendNotification(n)
-		}),
-		HintText: "Send a test notification to verify it works",
-	})
-
-	reset := SettingAction{
-		Label: "Reset to defaults",
-		Action: func() {
-			mailEnabledCheck.SetState(settingNotifyMailsEnabledDefault)
-			communicationsEnabledCheck.SetState(settingNotifyCommunicationsEnabledDefault)
-			piEnabledCheck.SetState(settingNotifyPIEnabledDefault)
-			trainingEnabledCheck.SetState(settingNotifyTrainingEnabledDefault)
-			contractsEnabledCheck.SetState(settingNotifyTrainingEnabledDefault)
-			notifyTimeout.SetValue(settingNotifyTimeoutHoursDefault)
+	items = append(items, settingItem{
+		label: "Notify Contracts",
+		hint:  "Whether to notify when contract status changes",
+		on: func() bool {
+			return a.u.FyneApp.Preferences().BoolWithFallback(
+				settingNotifyContractsEnabled,
+				settingNotifyCommunicationsEnabledDefault)
 		},
-	}
-	return form, []SettingAction{reset}
-}
+		onChanged: setContracts,
+	})
 
-type notifItem struct {
-	heading string
-	nt      evenotification.Type
-}
-
-func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAction) {
-	groupsAndTypes := make(map[evenotification.Group][]evenotification.Type)
-	for _, n := range evenotification.SupportedGroups() {
-		c := evenotification.Type2group[n]
-		groupsAndTypes[c] = append(groupsAndTypes[c], n)
-	}
-	groups := make([]evenotification.Group, 0)
-	for c := range groupsAndTypes {
-		groups = append(groups, c)
-	}
+	// add communication groups
 	for _, g := range groups {
-		slices.Sort(groupsAndTypes[g])
-	}
-	slices.Sort(groups)
-	items := make([]notifItem, 0)
-	for _, g := range groups {
-		items = append(items, notifItem{heading: g.String(), nt: ""})
+		items = append(items, settingItem{
+			label:     "Communications: " + g.String(),
+			isHeading: true,
+		})
 		for _, nt := range groupsAndTypes[g] {
-			items = append(items, notifItem{heading: "", nt: nt})
+			ntStr := nt.String()
+			ntDisplay := nt.Display()
+			it := settingItem{
+				label: ntDisplay,
+				on: func() bool {
+					return typesEnabled.Contains(ntStr)
+				},
+				onChanged: func(on bool) {
+					if on {
+						typesEnabled.Add(ntStr)
+					} else {
+						typesEnabled.Remove(ntStr)
+					}
+					a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
+				},
+			}
+			items = append(items, it)
 		}
 	}
 
-	typesEnabled := set.NewFromSlice(a.u.FyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
-	list := widget.NewList(
+	// identify last items in each group
+	for i := range items[:len(items)-2] {
+		if items[i+1].isHeading {
+			items[i].isLast = true
+		}
+	}
+
+	// create list for generated settings
+	var list *widget.List
+	list = widget.NewList(
 		func() int {
 			return len(items)
 		},
 		func() fyne.CanvasObject {
-			p := theme.Padding()
+			// p := theme.Padding()
 			label := widget.NewLabel("Template")
 			label.Truncation = fyne.TextTruncateClip
-			heading := widget.NewLabel("Template")
-			heading.TextStyle.Bold = true
-			heading.Hide()
-			c := container.NewStack(
-				heading,
-				container.NewBorder(
-					nil,
-					nil,
-					nil,
-					container.NewVBox(layout.NewSpacer(), kxwidget.NewSwitch(nil), layout.NewSpacer()),
-					container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0), label),
-				))
+			hint := widgets.NewLabelWithSize("", theme.SizeNameCaptionText)
+			c := container.NewPadded(container.NewBorder(
+				nil,
+				container.New(layout.NewCustomPaddedLayout(0, 0, 0, 0), widget.NewSeparator()),
+				nil,
+				container.NewVBox(layout.NewSpacer(), kxwidget.NewSwitch(nil), layout.NewSpacer()),
+				container.New(layout.NewCustomPaddedVBoxLayout(0), layout.NewSpacer(), label, hint, layout.NewSpacer()),
+			))
 			return c
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
@@ -475,30 +467,36 @@ func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAct
 				return
 			}
 			it := items[id]
-			outer := co.(*fyne.Container)
-			heading := outer.Objects[0].(*widget.Label)
-			inner := outer.Objects[1].(*fyne.Container)
-			if it.heading != "" {
-				inner.Hide()
-				heading.SetText(it.heading)
-				heading.Show()
+			border := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects
+			main := border[0].(*fyne.Container).Objects
+			label := main[1].(*widget.Label)
+			hint := main[2].(*widgets.Label)
+			sw := border[2].(*fyne.Container).Objects[1].(*kxwidget.Switch)
+			label.Text = it.label
+			if it.hint != "" {
+				hint.SetText(it.hint)
+				hint.Show()
 			} else {
-				heading.Hide()
-				inner.Show()
-				label := inner.Objects[0].(*fyne.Container).Objects[0].(*widget.Label)
-				label.SetText(it.nt.Display())
-				sw := inner.Objects[1].(*fyne.Container).Objects[1].(*kxwidget.Switch)
-				sw.OnChanged = func(on bool) {
-					if on {
-						typesEnabled.Add(it.nt.String())
-					} else {
-						typesEnabled.Remove(it.nt.String())
-					}
-					a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
-				}
-				sw.On = typesEnabled.Contains(it.nt.String())
+				hint.Hide()
+			}
+			if it.isHeading {
+				sw.Hide()
+				label.TextStyle.Bold = true
+			} else {
+				label.TextStyle.Bold = false
+				sw.OnChanged = it.onChanged
+				sw.On = it.on()
+				sw.Show()
 				sw.Refresh()
 			}
+			label.Refresh()
+			sep := border[1].(*fyne.Container).Objects[0].(*widget.Separator)
+			if it.isLast {
+				sep.Show()
+			} else {
+				sep.Hide()
+			}
+			list.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
@@ -507,37 +505,51 @@ func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAct
 			return
 		}
 		it := items[id]
-		if it.heading != "" {
+		if it.isHeading {
 			return
 		}
-		if typesEnabled.Contains(it.nt.String()) {
-			typesEnabled.Remove(it.nt.String())
-		} else {
-			typesEnabled.Add(it.nt.String())
-		}
-		a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
+		it.onChanged(!it.on())
 		list.RefreshItem(id)
 	}
+	list.HideSeparators = true
 	c := container.NewBorder(
-		widgets.NewLabelWithSize("Choose which communication types can trigger a notification.", theme.SizeNameCaptionText),
+		widgets.NewLabelWithSize(
+			"Choose which communication types can trigger a notification.",
+			theme.SizeNameCaptionText,
+		),
 		nil,
 		nil,
 		nil,
 		list,
 	)
+	reset := SettingAction{
+		Label: "Reset to defaults",
+		Action: func() {
+			typesEnabled.Clear()
+			setCommunications(settingNotifyCommunicationsEnabledDefault)
+			setMail(settingNotifyMailsEnabledDefault)
+			setPI(settingNotifyPIEnabledDefault)
+			setTraining(settingNotifyTrainingEnabledDefault)
+			setContracts(settingNotifyTrainingEnabledDefault)
+			list.Refresh()
+		},
+	}
 	updateTypes := func() {
-		a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
+		a.u.FyneApp.Preferences().SetStringList(
+			settingNotificationsTypesEnabled,
+			typesEnabled.ToSlice(),
+		)
 		list.Refresh()
 	}
 	none := SettingAction{
-		Label: "Disable all",
+		Label: "Disable all communication groups",
 		Action: func() {
 			typesEnabled.Clear()
 			updateTypes()
 		},
 	}
 	all := SettingAction{
-		Label: "Enable all",
+		Label: "Enable all communication groups",
 		Action: func() {
 			for _, nt := range evenotification.SupportedGroups() {
 				typesEnabled.Add(nt.String())
@@ -545,7 +557,14 @@ func (a *SettingsArea) makeCommunicationsPage() (fyne.CanvasObject, []SettingAct
 			updateTypes()
 		},
 	}
-	return c, []SettingAction{all, none}
+	send := SettingAction{
+		Label: "Send test notification",
+		Action: func() {
+			n := fyne.NewNotification("Test", "This is a test notification from EVE Buddy.")
+			a.u.FyneApp.SendNotification(n)
+		},
+	}
+	return c, []SettingAction{reset, all, none, send}
 }
 
 func (a *SettingsArea) makeDesktopSettingsPage() (fyne.CanvasObject, []SettingAction) {

@@ -332,7 +332,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		for _, a := range actions {
 			items = append(items, fyne.NewMenuItem(a.Label, a.Action))
 		}
-		return theme.MenuIcon(), fyne.NewMenu("", items...)
+		return theme.MoreVerticalIcon(), fyne.NewMenu("", items...)
 	}
 	u.navItemUpdateStatus = widgets.NewListItemWithIcon(
 		"Update status",
@@ -379,15 +379,6 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 									moreNav.Push(
 										widgets.NewAppBar("Eve Online", makePage(u.SettingsArea.EveOnlineContent), widgets.NewIconButtonWithMenu(
 											makeSettingsMenu(u.SettingsArea.EveOnlineActions))),
-									)
-								},
-							),
-							widgets.NewListItem(
-								"Notifications",
-								func() {
-									moreNav.Push(
-										widgets.NewAppBar("Notifications", makePage(u.SettingsArea.NotificationsContent), widgets.NewIconButtonWithMenu(
-											makeSettingsMenu(u.SettingsArea.NotificationsActions))),
 									)
 								},
 							),

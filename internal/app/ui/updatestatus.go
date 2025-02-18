@@ -103,7 +103,7 @@ func (u *BaseUI) NewUpdateStatusArea() *UpdateStatusArea {
 		a.nav = widgets.NewNavigator(ab)
 		a.Content = a.nav
 		menu := widgets.NewIconButtonWithMenu(
-			theme.MenuIcon(),
+			theme.MoreVerticalIcon(),
 			fyne.NewMenu("", fyne.NewMenuItem(a.entitiesButton.Text, a.MakeUpdateAllAction())),
 		)
 		a.onEntitySelected = func(id int) {
@@ -114,7 +114,7 @@ func (u *BaseUI) NewUpdateStatusArea() *UpdateStatusArea {
 		a.onSectionSelected = func(id int) {
 			s := a.sections[id]
 			menu := widgets.NewIconButtonWithMenu(
-				theme.MenuIcon(),
+				theme.MoreVerticalIcon(),
 				fyne.NewMenu(
 					"", fyne.NewMenuItem(a.detailsButton.Text, a.makeDetailsAction(s.EntityID, s.SectionID))),
 			)
