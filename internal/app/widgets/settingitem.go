@@ -1,4 +1,4 @@
-package ui
+package widgets
 
 import (
 	"fyne.io/fyne/v2"
@@ -40,14 +40,14 @@ func NewSettingItemSeperator() SettingItem {
 // NewSettingItemSwitch creates a switch setting in a setting list.
 func NewSettingItemSwitch(
 	label, hint string,
-	value func() bool,
+	getter func() bool,
 	onChanged func(bool),
 ) SettingItem {
 	return SettingItem{
 		Label: label,
 		Hint:  hint,
 		Getter: func() any {
-			return value()
+			return getter()
 		},
 		onSwitchChanged: onChanged,
 		onSelected: func(it SettingItem, refresh func()) {
@@ -61,13 +61,13 @@ func NewSettingItemSwitch(
 // NewSettingItemCustom creates a custom setting in a setting list.
 func NewSettingItemCustom(
 	label, hint string,
-	value func() any,
+	getter func() any,
 	onselected func(it SettingItem, refresh func()),
 ) SettingItem {
 	return SettingItem{
 		Label:      label,
 		Hint:       hint,
-		Getter:     value,
+		Getter:     getter,
 		onSelected: onselected,
 		variant:    settingCustom,
 	}

@@ -1,4 +1,4 @@
-package ui
+package widgets
 
 import (
 	"fmt"
@@ -8,14 +8,15 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
+// SettingList is a custom list widget for settings.
 type SettingList struct {
 	widget.List
 }
 
+// NewSettingList returns a new SettingList widget.
 func NewSettingList(items []SettingItem) *SettingList {
 	w := &SettingList{}
 	w.Length = func() int {
@@ -25,7 +26,7 @@ func NewSettingList(items []SettingItem) *SettingList {
 		// p := theme.Padding()
 		label := widget.NewLabel("Template")
 		label.Truncation = fyne.TextTruncateClip
-		hint := widgets.NewLabelWithSize("", theme.SizeNameCaptionText)
+		hint := NewLabelWithSize("", theme.SizeNameCaptionText)
 		hint.Truncation = fyne.TextTruncateClip
 		c := container.NewPadded(container.NewBorder(
 			nil,
@@ -46,7 +47,7 @@ func NewSettingList(items []SettingItem) *SettingList {
 		sw := right[0].(*kxwidget.Switch)
 		value := right[1].(*widget.Label)
 		main := border[0].(*fyne.Container).Objects
-		hint := main[2].(*widgets.Label)
+		hint := main[2].(*Label)
 		if it.Hint != "" {
 			hint.SetText(it.Hint)
 			hint.Show()

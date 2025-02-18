@@ -293,17 +293,17 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 	slices.Sort(groups)
 	typesEnabled := set.NewFromSlice(a.u.FyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 
-	items := make([]SettingItem, 0)
+	items := make([]widgets.SettingItem, 0)
 
 	// add global items
-	items = append(items, NewSettingItemHeading("Global"))
+	items = append(items, widgets.NewSettingItemHeading("Global"))
 	setCommunications := func(on bool) {
 		a.u.FyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
 		if on {
 			a.u.FyneApp.Preferences().SetString(settingNotifyCommunicationsEarliest, time.Now().Format(time.RFC3339))
 		}
 	}
-	items = append(items, NewSettingItemSwitch(
+	items = append(items, widgets.NewSettingItemSwitch(
 		"Notify communications",
 		"Whether to notify new communications",
 		func() bool {
@@ -320,7 +320,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			a.u.FyneApp.Preferences().SetString(settingNotifyMailsEarliest, time.Now().Format(time.RFC3339))
 		}
 	}
-	items = append(items, NewSettingItemSwitch(
+	items = append(items, widgets.NewSettingItemSwitch(
 		"Notify mails",
 		"Whether to notify new mails",
 		func() bool {
@@ -337,7 +337,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			a.u.FyneApp.Preferences().SetString(settingNotifyPIEarliest, time.Now().Format(time.RFC3339))
 		}
 	}
-	items = append(items, NewSettingItemSwitch(
+	items = append(items, widgets.NewSettingItemSwitch(
 		"Planetary Industry",
 		"Whether to notify about expired extractions",
 		func() bool {
@@ -368,7 +368,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			}
 		}
 	}
-	items = append(items, NewSettingItemSwitch(
+	items = append(items, widgets.NewSettingItemSwitch(
 		"Notify Training",
 		"Whether to notify abouthen skillqueue is empty",
 		func() bool {
@@ -385,7 +385,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			a.u.FyneApp.Preferences().SetString(settingNotifyContractsEarliest, time.Now().Format(time.RFC3339))
 		}
 	}
-	items = append(items, NewSettingItemSwitch(
+	items = append(items, widgets.NewSettingItemSwitch(
 		"Notify Contracts",
 		"Whether to notify when contract status changes",
 		func() bool {
@@ -396,7 +396,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		},
 		setContracts,
 	))
-	items = append(items, NewSettingItemSlider(
+	items = append(items, widgets.NewSettingItemSlider(
 		"Notify Timeout",
 		"Events older then this value in hours will not be notified",
 		1,
@@ -417,12 +417,12 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 
 	// add communication groups
 	for _, g := range groups {
-		items = append(items, NewSettingItemSeperator())
-		items = append(items, NewSettingItemHeading("Communications: "+g.String()))
+		items = append(items, widgets.NewSettingItemSeperator())
+		items = append(items, widgets.NewSettingItemHeading("Communications: "+g.String()))
 		for _, nt := range groupsAndTypes[g] {
 			ntStr := nt.String()
 			ntDisplay := nt.Display()
-			it := NewSettingItemSwitch(
+			it := widgets.NewSettingItemSwitch(
 				ntDisplay,
 				"",
 				func() bool {
@@ -441,15 +441,8 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		}
 	}
 
-	// // identify last items in each group
-	// for i := range items[:len(items)-2] {
-	// 	if items[i+1].variant == settingHeading {
-	// 		items[i].isLast = true
-	// 	}
-	// }
-
 	// create list for generated settings
-	list := NewSettingList(items)
+	list := widgets.NewSettingList(items)
 	c := container.NewBorder(
 		widgets.NewLabelWithSize(
 			"Choose which communication types can trigger a notification.",
