@@ -2,8 +2,16 @@ package widgets
 
 import (
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+)
+
+const (
+	confirmText = "OK"
+	dismissText = "Cancel"
 )
 
 type settingVariant uint
@@ -90,11 +98,56 @@ func NewSettingItemSlider(
 			sl := kxwidget.NewSlider(minV, maxV)
 			sl.SetValue(float64(getter()))
 			w := window()
-			d := dialog.NewCustomConfirm(it.Label, "OK", "Cancel", sl, func(confirmed bool) {
+			c := container.NewBorder(
+				nil,
+				NewLabelWithSize(it.Hint, theme.SizeNameCaptionText),
+				nil,
+				nil,
+				sl,
+			)
+			d := dialog.NewCustomConfirm(it.Label, confirmText, dismissText, c, func(confirmed bool) {
 				if !confirmed {
 					return
 				}
 				setter(sl.Value())
+				refresh()
+			}, w)
+			d.Show()
+			d.Resize(fyne.NewSize(w.Canvas().Size().Width, 100))
+		},
+		variant: settingCustom,
+	}
+}
+
+func NewSettingItemSelect(
+	label, hint string,
+	options []string,
+	getter func() string,
+	setter func(v string),
+	window func() fyne.Window,
+) SettingItem {
+	return SettingItem{
+		Label: label,
+		Hint:  hint,
+		Getter: func() any {
+			return getter()
+		},
+		onSelected: func(it SettingItem, refresh func()) {
+			sel := widget.NewRadioGroup(options, nil)
+			sel.SetSelected(it.Getter().(string))
+			w := window()
+			c := container.NewBorder(
+				nil,
+				NewLabelWithSize(it.Hint, theme.SizeNameCaptionText),
+				nil,
+				nil,
+				sel,
+			)
+			d := dialog.NewCustomConfirm(it.Label, confirmText, dismissText, c, func(confirmed bool) {
+				if !confirmed {
+					return
+				}
+				setter(sel.Selected)
 				refresh()
 			}, w)
 			d.Show()

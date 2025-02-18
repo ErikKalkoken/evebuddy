@@ -369,25 +369,16 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 								func() {
 									moreNav.Push(
 										widgets.NewAppBar("General", makePage(u.SettingsArea.GeneralContent), widgets.NewIconButtonWithMenu(
-											makeSettingsMenu(u.SettingsArea.CommunicationsActions))),
+											makeSettingsMenu(u.SettingsArea.NotificationActions))),
 									)
 								},
 							),
 							widgets.NewListItem(
-								"Eve Online",
+								"Notifications",
 								func() {
 									moreNav.Push(
-										widgets.NewAppBar("Eve Online", makePage(u.SettingsArea.EveOnlineContent), widgets.NewIconButtonWithMenu(
-											makeSettingsMenu(u.SettingsArea.EveOnlineActions))),
-									)
-								},
-							),
-							widgets.NewListItem(
-								"Communications",
-								func() {
-									moreNav.Push(
-										widgets.NewAppBar("Communications", makePage(u.SettingsArea.CommunicationsSettings), widgets.NewIconButtonWithMenu(
-											makeSettingsMenu(u.SettingsArea.CommunicationsActions))),
+										widgets.NewAppBar("Notifications", makePage(u.SettingsArea.NotificationSettings), widgets.NewIconButtonWithMenu(
+											makeSettingsMenu(u.SettingsArea.NotificationActions))),
 									)
 								},
 							),
