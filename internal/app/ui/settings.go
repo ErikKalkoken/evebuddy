@@ -277,15 +277,6 @@ func (a *SettingsArea) makeEVEOnlinePage() (fyne.CanvasObject, []SettingAction) 
 	return settings, []SettingAction{reset}
 }
 
-type settingItem struct {
-	hint      string        // optional hint text
-	isHeading bool          // when true will render a bold label as heading only
-	isLast    bool          // last item in a group
-	label     string        // label
-	on        func() bool   // returns the state for the switch
-	onChanged func(on bool) // action for changing the switch
-}
-
 func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {
 	groupsAndTypes := make(map[evenotification.Group][]evenotification.Type)
 	for _, n := range evenotification.SupportedGroups() {
@@ -302,64 +293,61 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 	slices.Sort(groups)
 	typesEnabled := set.NewFromSlice(a.u.FyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 
-	items := make([]settingItem, 0)
+	items := make([]SettingItem, 0)
 
 	// add global items
-	items = append(items, settingItem{
-		label:     "Global",
-		isHeading: true,
-	})
+	items = append(items, NewSettingItemHeading("Global"))
 	setCommunications := func(on bool) {
 		a.u.FyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
 		if on {
 			a.u.FyneApp.Preferences().SetString(settingNotifyCommunicationsEarliest, time.Now().Format(time.RFC3339))
 		}
 	}
-	items = append(items, settingItem{
-		label: "Notify communications",
-		hint:  "Whether to notify new communications",
-		on: func() bool {
+	items = append(items, NewSettingItemSwitch(
+		"Notify communications",
+		"Whether to notify new communications",
+		func() bool {
 			return a.u.FyneApp.Preferences().BoolWithFallback(
 				settingNotifyCommunicationsEnabled,
 				settingNotifyCommunicationsEnabledDefault,
 			)
 		},
-		onChanged: setCommunications,
-	})
+		setCommunications,
+	))
 	setMail := func(on bool) {
 		a.u.FyneApp.Preferences().SetBool(settingNotifyMailsEnabled, on)
 		if on {
 			a.u.FyneApp.Preferences().SetString(settingNotifyMailsEarliest, time.Now().Format(time.RFC3339))
 		}
 	}
-	items = append(items, settingItem{
-		label: "Notify mails",
-		hint:  "Whether to notify new mails",
-		on: func() bool {
+	items = append(items, NewSettingItemSwitch(
+		"Notify mails",
+		"Whether to notify new mails",
+		func() bool {
 			return a.u.FyneApp.Preferences().BoolWithFallback(
 				settingNotifyMailsEnabled,
 				settingNotifyMailsEnabledDefault,
 			)
 		},
-		onChanged: setMail,
-	})
+		setMail,
+	))
 	setPI := func(on bool) {
 		a.u.FyneApp.Preferences().SetBool(settingNotifyPIEnabled, on)
 		if on {
 			a.u.FyneApp.Preferences().SetString(settingNotifyPIEarliest, time.Now().Format(time.RFC3339))
 		}
 	}
-	items = append(items, settingItem{
-		label: "Planetary Industry",
-		hint:  "Whether to notify about expired extractions",
-		on: func() bool {
+	items = append(items, NewSettingItemSwitch(
+		"Planetary Industry",
+		"Whether to notify about expired extractions",
+		func() bool {
 			return a.u.FyneApp.Preferences().BoolWithFallback(
 				settingNotifyPIEnabled,
 				settingNotifyPIEnabledDefault,
 			)
 		},
-		onChanged: setPI,
-	})
+		setPI,
+	))
 	setTraining := func(on bool) {
 		ctx := context.Background()
 		if on {
@@ -380,49 +368,67 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			}
 		}
 	}
-	items = append(items, settingItem{
-		label: "Notify Training",
-		hint:  "Whether to notify abouthen skillqueue is empty",
-		on: func() bool {
+	items = append(items, NewSettingItemSwitch(
+		"Notify Training",
+		"Whether to notify abouthen skillqueue is empty",
+		func() bool {
 			return a.u.FyneApp.Preferences().BoolWithFallback(
 				settingNotifyTrainingEnabled,
 				settingNotifyTrainingEnabledDefault,
 			)
 		},
-		onChanged: setTraining,
-	})
+		setTraining,
+	))
 	setContracts := func(on bool) {
 		a.u.FyneApp.Preferences().SetBool(settingNotifyContractsEnabled, on)
 		if on {
 			a.u.FyneApp.Preferences().SetString(settingNotifyContractsEarliest, time.Now().Format(time.RFC3339))
 		}
 	}
-	items = append(items, settingItem{
-		label: "Notify Contracts",
-		hint:  "Whether to notify when contract status changes",
-		on: func() bool {
+	items = append(items, NewSettingItemSwitch(
+		"Notify Contracts",
+		"Whether to notify when contract status changes",
+		func() bool {
 			return a.u.FyneApp.Preferences().BoolWithFallback(
 				settingNotifyContractsEnabled,
-				settingNotifyCommunicationsEnabledDefault)
+				settingNotifyCommunicationsEnabledDefault,
+			)
 		},
-		onChanged: setContracts,
-	})
+		setContracts,
+	))
+	items = append(items, NewSettingItemSlider(
+		"Notify Timeout",
+		"Events older then this value in hours will not be notified",
+		1,
+		settingNotifyTimeoutHoursMax,
+		func() float64 {
+			return float64(a.u.FyneApp.Preferences().IntWithFallback(
+				settingNotifyTimeoutHours,
+				settingNotifyTimeoutHoursDefault,
+			))
+		},
+		func(v float64) {
+			a.u.FyneApp.Preferences().SetInt(settingNotifyTimeoutHours, int(v))
+		},
+		func() fyne.Window {
+			return a.window
+		},
+	))
 
 	// add communication groups
 	for _, g := range groups {
-		items = append(items, settingItem{
-			label:     "Communications: " + g.String(),
-			isHeading: true,
-		})
+		items = append(items, NewSettingItemSeperator())
+		items = append(items, NewSettingItemHeading("Communications: "+g.String()))
 		for _, nt := range groupsAndTypes[g] {
 			ntStr := nt.String()
 			ntDisplay := nt.Display()
-			it := settingItem{
-				label: ntDisplay,
-				on: func() bool {
+			it := NewSettingItemSwitch(
+				ntDisplay,
+				"",
+				func() bool {
 					return typesEnabled.Contains(ntStr)
 				},
-				onChanged: func(on bool) {
+				func(on bool) {
 					if on {
 						typesEnabled.Add(ntStr)
 					} else {
@@ -430,88 +436,20 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 					}
 					a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
 				},
-			}
+			)
 			items = append(items, it)
 		}
 	}
 
-	// identify last items in each group
-	for i := range items[:len(items)-2] {
-		if items[i+1].isHeading {
-			items[i].isLast = true
-		}
-	}
+	// // identify last items in each group
+	// for i := range items[:len(items)-2] {
+	// 	if items[i+1].variant == settingHeading {
+	// 		items[i].isLast = true
+	// 	}
+	// }
 
 	// create list for generated settings
-	var list *widget.List
-	list = widget.NewList(
-		func() int {
-			return len(items)
-		},
-		func() fyne.CanvasObject {
-			// p := theme.Padding()
-			label := widget.NewLabel("Template")
-			label.Truncation = fyne.TextTruncateClip
-			hint := widgets.NewLabelWithSize("", theme.SizeNameCaptionText)
-			c := container.NewPadded(container.NewBorder(
-				nil,
-				container.New(layout.NewCustomPaddedLayout(0, 0, 0, 0), widget.NewSeparator()),
-				nil,
-				container.NewVBox(layout.NewSpacer(), kxwidget.NewSwitch(nil), layout.NewSpacer()),
-				container.New(layout.NewCustomPaddedVBoxLayout(0), layout.NewSpacer(), label, hint, layout.NewSpacer()),
-			))
-			return c
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(items) {
-				return
-			}
-			it := items[id]
-			border := co.(*fyne.Container).Objects[0].(*fyne.Container).Objects
-			main := border[0].(*fyne.Container).Objects
-			label := main[1].(*widget.Label)
-			hint := main[2].(*widgets.Label)
-			sw := border[2].(*fyne.Container).Objects[1].(*kxwidget.Switch)
-			label.Text = it.label
-			if it.hint != "" {
-				hint.SetText(it.hint)
-				hint.Show()
-			} else {
-				hint.Hide()
-			}
-			if it.isHeading {
-				sw.Hide()
-				label.TextStyle.Bold = true
-			} else {
-				label.TextStyle.Bold = false
-				sw.OnChanged = it.onChanged
-				sw.On = it.on()
-				sw.Show()
-				sw.Refresh()
-			}
-			label.Refresh()
-			sep := border[1].(*fyne.Container).Objects[0].(*widget.Separator)
-			if it.isLast {
-				sep.Show()
-			} else {
-				sep.Hide()
-			}
-			list.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
-		},
-	)
-	list.OnSelected = func(id widget.ListItemID) {
-		defer list.UnselectAll()
-		if id >= len(items) {
-			return
-		}
-		it := items[id]
-		if it.isHeading {
-			return
-		}
-		it.onChanged(!it.on())
-		list.RefreshItem(id)
-	}
-	list.HideSeparators = true
+	list := NewSettingList(items)
 	c := container.NewBorder(
 		widgets.NewLabelWithSize(
 			"Choose which communication types can trigger a notification.",
