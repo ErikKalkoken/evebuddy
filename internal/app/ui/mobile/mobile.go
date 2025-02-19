@@ -50,7 +50,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		d.Show()
 	}
 
-	// character
+	// character destination
 	fallbackAvatar, _ := ui.MakeAvatar(ui.IconCharacterplaceholder64Jpeg)
 	characterSelector := widgets.NewIconButton(fallbackAvatar, nil)
 	characterSelector.OnTapped = func() {
@@ -264,7 +264,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	characterPage := newCharacterAppBar("Character", characterList)
 	characterNav = widgets.NewNavigator(characterPage)
 
-	// characters cross
+	// characters cross destination
 	var crossNav *widgets.Navigator
 	navItemWealth := widgets.NewListItemWithIcon(
 		"Wealth",
@@ -322,7 +322,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		crossList.Refresh()
 	}
 
-	// tools
+	// more destination
 	var moreNav *widgets.Navigator
 	makeSettingsMenu := func(actions []ui.SettingAction) (fyne.Resource, *fyne.Menu) {
 		items := make([]*fyne.MenuItem, 0)

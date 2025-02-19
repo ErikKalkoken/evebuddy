@@ -64,7 +64,9 @@ func NewSettingList(items []SettingItem) *SettingList {
 			sw.Hide()
 		case settingSwitch:
 			value.Hide()
-			sw.OnChanged = it.onSwitchChanged
+			sw.OnChanged = func(v bool) {
+				it.Setter(v)
+			}
 			sw.On = it.Getter().(bool)
 			sw.Show()
 			sw.Refresh()

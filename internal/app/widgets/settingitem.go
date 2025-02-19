@@ -26,13 +26,13 @@ const (
 
 // SettingItem represents an item in a setting list.
 type SettingItem struct {
-	Hint   string     // optional hint text
-	Label  string     // label
-	Getter func() any // returns the current value for this setting
+	Hint   string      // optional hint text
+	Label  string      // label
+	Getter func() any  // returns the current value for this setting
+	Setter func(v any) // sets the value for this setting
 
-	onSelected      func(it SettingItem, refresh func()) // action called when selected
-	onSwitchChanged func(on bool)                        // action called when switch changes
-	variant         settingVariant                       // the setting variant of this item
+	onSelected func(it SettingItem, refresh func()) // action called when selected
+	variant    settingVariant                       // the setting variant of this item
 }
 
 // NewSettingItemHeading creates a heading in a setting list.
@@ -57,9 +57,11 @@ func NewSettingItemSwitch(
 		Getter: func() any {
 			return getter()
 		},
-		onSwitchChanged: onChanged,
+		Setter: func(v any) {
+			onChanged(v.(bool))
+		},
 		onSelected: func(it SettingItem, refresh func()) {
-			it.onSwitchChanged(!it.Getter().(bool))
+			it.Setter(!it.Getter().(bool))
 			refresh()
 		},
 		variant: settingSwitch,
@@ -70,13 +72,13 @@ func NewSettingItemSwitch(
 func NewSettingItemCustom(
 	label, hint string,
 	getter func() any,
-	onselected func(it SettingItem, refresh func()),
+	onSelected func(it SettingItem, refresh func()),
 ) SettingItem {
 	return SettingItem{
 		Label:      label,
 		Hint:       hint,
 		Getter:     getter,
-		onSelected: onselected,
+		onSelected: onSelected,
 		variant:    settingCustom,
 	}
 }
@@ -93,6 +95,16 @@ func NewSettingItemSlider(
 		Hint:  hint,
 		Getter: func() any {
 			return getter()
+		},
+		Setter: func(v any) {
+			switch x := v.(type) {
+			case float64:
+				setter(x)
+			case int:
+				setter(float64(x))
+			default:
+				panic("setting item: unsurported type: " + label)
+			}
 		},
 		onSelected: func(it SettingItem, refresh func()) {
 			sl := kxwidget.NewSlider(minV, maxV)
@@ -131,6 +143,9 @@ func NewSettingItemSelect(
 		Hint:  hint,
 		Getter: func() any {
 			return getter()
+		},
+		Setter: func(v any) {
+			setter(v.(string))
 		},
 		onSelected: func(it SettingItem, refresh func()) {
 			sel := widget.NewRadioGroup(options, nil)

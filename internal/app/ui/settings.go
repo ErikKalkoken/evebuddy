@@ -167,78 +167,76 @@ func (a *SettingsArea) currentWindow() fyne.Window {
 }
 
 func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction) {
-	setLogLevel := func(s string) {
-		a.u.FyneApp.Preferences().SetString(SettingLogLevel, s)
-		slog.SetLogLoggerLevel(LogLevelName2Level(s))
-	}
-	setMail := func(v float64) {
-		a.u.FyneApp.Preferences().SetInt(settingMaxMails, int(v))
-	}
-	setTransactions := func(v float64) {
-		a.u.FyneApp.Preferences().SetInt(settingMaxWalletTransactions, int(v))
-	}
+	logLevel := widgets.NewSettingItemSelect(
+		"Log level",
+		"Set current log level",
+		LogLevelNames(),
+		func() string {
+			return a.u.FyneApp.Preferences().StringWithFallback(
+				SettingLogLevel,
+				SettingLogLevelDefault,
+			)
+		},
+		func(s string) {
+			a.u.FyneApp.Preferences().SetString(SettingLogLevel, s)
+			slog.SetLogLoggerLevel(LogLevelName2Level(s))
+		},
+		a.currentWindow,
+	)
+	maxMail := widgets.NewSettingItemSlider(
+		"Maximum mails",
+		"Max number of mails downloaded. 0 = unlimited.",
+		0,
+		settingMaxMailsMax,
+		func() float64 {
+			return float64(a.u.FyneApp.Preferences().IntWithFallback(
+				settingMaxMails,
+				settingMaxMailsDefault))
+		},
+		func(v float64) {
+			a.u.FyneApp.Preferences().SetInt(settingMaxMails, int(v))
+		},
+		a.currentWindow,
+	)
+	maxWallet := widgets.NewSettingItemSlider(
+		"Maximum wallet transaction",
+		"Max wallet transactions downloaded. 0 = unlimited.",
+		0,
+		settingMaxWalletTransactionsMax,
+		func() float64 {
+			return float64(a.u.FyneApp.Preferences().IntWithFallback(
+				settingMaxWalletTransactions,
+				settingMaxWalletTransactionsDefault))
+		},
+		func(v float64) {
+			a.u.FyneApp.Preferences().SetInt(settingMaxWalletTransactions, int(v))
+		},
+		a.currentWindow,
+	)
 	items := []widgets.SettingItem{
 		widgets.NewSettingItemHeading("Application"),
-		widgets.NewSettingItemSelect(
-			"Log level",
-			"Set current log level",
-			LogLevelNames(),
-			func() string {
-				return a.u.FyneApp.Preferences().StringWithFallback(
-					SettingLogLevel,
-					SettingLogLevelDefault,
-				)
-			},
-			setLogLevel,
-			a.currentWindow,
-		),
+		logLevel,
 		widgets.NewSettingItemSeperator(),
 		widgets.NewSettingItemHeading("EVE Online"),
-		widgets.NewSettingItemSlider(
-			"Maximum mails",
-			"Max number of mails downloaded. 0 = unlimited.",
-			0,
-			settingMaxMailsMax,
-			func() float64 {
-				return float64(a.u.FyneApp.Preferences().IntWithFallback(
-					settingMaxMails,
-					settingMaxMailsDefault))
-			},
-			setMail,
-			a.currentWindow,
-		),
-		widgets.NewSettingItemSlider(
-			"Maximum wallet transaction",
-			"Max wallet transactions downloaded. 0 = unlimited.",
-			0,
-			settingMaxWalletTransactionsMax,
-			func() float64 {
-				return float64(a.u.FyneApp.Preferences().IntWithFallback(
-					settingMaxWalletTransactions,
-					settingMaxWalletTransactionsDefault))
-			},
-			setTransactions,
-			a.currentWindow,
-		),
+		maxMail,
+		maxWallet,
 	}
 
-	setSysTray := func(b bool) {
-		a.u.FyneApp.Preferences().SetBool(SettingSysTrayEnabled, b)
-	}
+	sysTray := widgets.NewSettingItemSwitch(
+		"Close button",
+		"App will minimize to system tray when closed (requires restart)",
+		func() bool {
+			return a.u.FyneApp.Preferences().BoolWithFallback(
+				SettingSysTrayEnabled,
+				SettingSysTrayEnabledDefault,
+			)
+		},
+		func(b bool) {
+			a.u.FyneApp.Preferences().SetBool(SettingSysTrayEnabled, b)
+		},
+	)
 	if a.u.IsDesktop() {
-		items = slices.Insert(items, 2,
-			widgets.NewSettingItemSwitch(
-				"Close button",
-				"App will minimize to system tray when closed (requires restart)",
-				func() bool {
-					return a.u.FyneApp.Preferences().BoolWithFallback(
-						SettingSysTrayEnabled,
-						SettingSysTrayEnabledDefault,
-					)
-				},
-				setSysTray,
-			),
-		)
+		items = slices.Insert(items, 2, sysTray)
 	}
 
 	list := widgets.NewSettingList(items)
@@ -273,10 +271,11 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 	reset := SettingAction{
 		Label: "Reset to defaults",
 		Action: func() {
-			setLogLevel(SettingLogLevelDefault)
-			setMail(settingMaxMailsDefault)
-			setTransactions(settingMaxWalletTransactionsDefault)
-			setSysTray(SettingSysTrayEnabledDefault)
+			logLevel.Setter(SettingLogLevelDefault)
+			maxMail.Setter(settingMaxMailsDefault)
+			maxWallet.Setter(settingMaxWalletTransactionsDefault)
+			sysTray.Setter(SettingSysTrayEnabledDefault)
+			list.Refresh()
 		},
 	}
 	actions := []SettingAction{reset, clear}
@@ -308,123 +307,124 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 	typesEnabled := set.NewFromSlice(a.u.FyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 
 	// add global items
-	setCommunications := func(on bool) {
-		a.u.FyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
-		if on {
-			a.u.FyneApp.Preferences().SetString(settingNotifyCommunicationsEarliest, time.Now().Format(time.RFC3339))
-		}
-	}
-	setContracts := func(on bool) {
-		a.u.FyneApp.Preferences().SetBool(settingNotifyContractsEnabled, on)
-		if on {
-			a.u.FyneApp.Preferences().SetString(settingNotifyContractsEarliest, time.Now().Format(time.RFC3339))
-		}
-	}
-	setMail := func(on bool) {
-		a.u.FyneApp.Preferences().SetBool(settingNotifyMailsEnabled, on)
-		if on {
-			a.u.FyneApp.Preferences().SetString(settingNotifyMailsEarliest, time.Now().Format(time.RFC3339))
-		}
-	}
-	setPI := func(on bool) {
-		a.u.FyneApp.Preferences().SetBool(settingNotifyPIEnabled, on)
-		if on {
-			a.u.FyneApp.Preferences().SetString(settingNotifyPIEarliest, time.Now().Format(time.RFC3339))
-		}
-	}
-	setTraining := func(on bool) {
-		ctx := context.Background()
-		if on {
-			err := a.u.CharacterService.EnableAllTrainingWatchers(ctx)
-			if err != nil {
-				d := NewErrorDialog("failed to enable training notification", err, a.currentWindow())
-				d.Show()
-			} else {
-				a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, true)
+	notifyCommunications := widgets.NewSettingItemSwitch(
+		"Notify communications",
+		"Whether to notify new communications",
+		func() bool {
+			return a.u.FyneApp.Preferences().BoolWithFallback(
+				settingNotifyCommunicationsEnabled,
+				settingNotifyCommunicationsEnabledDefault,
+			)
+		},
+		func(on bool) {
+			a.u.FyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
+			if on {
+				a.u.FyneApp.Preferences().SetString(settingNotifyCommunicationsEarliest, time.Now().Format(time.RFC3339))
 			}
-		} else {
-			err := a.u.CharacterService.DisableAllTrainingWatchers(ctx)
-			if err != nil {
-				d := NewErrorDialog("failed to disable training notification", err, a.currentWindow())
-				d.Show()
-			} else {
-				a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, false)
+		},
+	)
+	notifyMails := widgets.NewSettingItemSwitch(
+		"Notify mails",
+		"Whether to notify new mails",
+		func() bool {
+			return a.u.FyneApp.Preferences().BoolWithFallback(
+				settingNotifyMailsEnabled,
+				settingNotifyMailsEnabledDefault,
+			)
+		},
+		func(on bool) {
+			a.u.FyneApp.Preferences().SetBool(settingNotifyMailsEnabled, on)
+			if on {
+				a.u.FyneApp.Preferences().SetString(settingNotifyMailsEarliest, time.Now().Format(time.RFC3339))
 			}
-		}
-	}
+		},
+	)
+	notifyPI := widgets.NewSettingItemSwitch(
+		"Planetary Industry",
+		"Whether to notify about expired extractions",
+		func() bool {
+			return a.u.FyneApp.Preferences().BoolWithFallback(
+				settingNotifyPIEnabled,
+				settingNotifyPIEnabledDefault,
+			)
+		},
+		func(on bool) {
+			a.u.FyneApp.Preferences().SetBool(settingNotifyPIEnabled, on)
+			if on {
+				a.u.FyneApp.Preferences().SetString(settingNotifyPIEarliest, time.Now().Format(time.RFC3339))
+			}
+		},
+	)
+	notifyTraining := widgets.NewSettingItemSwitch(
+		"Notify Training",
+		"Whether to notify abouthen skillqueue is empty",
+		func() bool {
+			return a.u.FyneApp.Preferences().BoolWithFallback(
+				settingNotifyTrainingEnabled,
+				settingNotifyTrainingEnabledDefault,
+			)
+		},
+		func(on bool) {
+			ctx := context.Background()
+			if on {
+				err := a.u.CharacterService.EnableAllTrainingWatchers(ctx)
+				if err != nil {
+					d := NewErrorDialog("failed to enable training notification", err, a.currentWindow())
+					d.Show()
+				} else {
+					a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, true)
+				}
+			} else {
+				err := a.u.CharacterService.DisableAllTrainingWatchers(ctx)
+				if err != nil {
+					d := NewErrorDialog("failed to disable training notification", err, a.currentWindow())
+					d.Show()
+				} else {
+					a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, false)
+				}
+			}
+		},
+	)
+	notifyContracts := widgets.NewSettingItemSwitch(
+		"Notify Contracts",
+		"Whether to notify when contract status changes",
+		func() bool {
+			return a.u.FyneApp.Preferences().BoolWithFallback(
+				settingNotifyContractsEnabled,
+				settingNotifyCommunicationsEnabledDefault,
+			)
+		},
+		func(on bool) {
+			a.u.FyneApp.Preferences().SetBool(settingNotifyContractsEnabled, on)
+			if on {
+				a.u.FyneApp.Preferences().SetString(settingNotifyContractsEarliest, time.Now().Format(time.RFC3339))
+			}
+		},
+	)
+	notifTimeout := widgets.NewSettingItemSlider(
+		"Notify Timeout",
+		"Events older then this value in hours will not be notified",
+		1,
+		settingNotifyTimeoutHoursMax,
+		func() float64 {
+			return float64(a.u.FyneApp.Preferences().IntWithFallback(
+				settingNotifyTimeoutHours,
+				settingNotifyTimeoutHoursDefault,
+			))
+		},
+		func(v float64) {
+			a.u.FyneApp.Preferences().SetInt(settingNotifyTimeoutHours, int(v))
+		},
+		a.currentWindow,
+	)
 	items := []widgets.SettingItem{
 		widgets.NewSettingItemHeading("Global"),
-		widgets.NewSettingItemSwitch(
-			"Notify communications",
-			"Whether to notify new communications",
-			func() bool {
-				return a.u.FyneApp.Preferences().BoolWithFallback(
-					settingNotifyCommunicationsEnabled,
-					settingNotifyCommunicationsEnabledDefault,
-				)
-			},
-			setCommunications,
-		),
-		widgets.NewSettingItemSwitch(
-			"Notify mails",
-			"Whether to notify new mails",
-			func() bool {
-				return a.u.FyneApp.Preferences().BoolWithFallback(
-					settingNotifyMailsEnabled,
-					settingNotifyMailsEnabledDefault,
-				)
-			},
-			setMail,
-		),
-		widgets.NewSettingItemSwitch(
-			"Planetary Industry",
-			"Whether to notify about expired extractions",
-			func() bool {
-				return a.u.FyneApp.Preferences().BoolWithFallback(
-					settingNotifyPIEnabled,
-					settingNotifyPIEnabledDefault,
-				)
-			},
-			setPI,
-		),
-		widgets.NewSettingItemSwitch(
-			"Notify Training",
-			"Whether to notify abouthen skillqueue is empty",
-			func() bool {
-				return a.u.FyneApp.Preferences().BoolWithFallback(
-					settingNotifyTrainingEnabled,
-					settingNotifyTrainingEnabledDefault,
-				)
-			},
-			setTraining,
-		),
-		widgets.NewSettingItemSwitch(
-			"Notify Contracts",
-			"Whether to notify when contract status changes",
-			func() bool {
-				return a.u.FyneApp.Preferences().BoolWithFallback(
-					settingNotifyContractsEnabled,
-					settingNotifyCommunicationsEnabledDefault,
-				)
-			},
-			setContracts,
-		),
-		widgets.NewSettingItemSlider(
-			"Notify Timeout",
-			"Events older then this value in hours will not be notified",
-			1,
-			settingNotifyTimeoutHoursMax,
-			func() float64 {
-				return float64(a.u.FyneApp.Preferences().IntWithFallback(
-					settingNotifyTimeoutHours,
-					settingNotifyTimeoutHoursDefault,
-				))
-			},
-			func(v float64) {
-				a.u.FyneApp.Preferences().SetInt(settingNotifyTimeoutHours, int(v))
-			},
-			a.currentWindow,
-		),
+		notifyCommunications,
+		notifyMails,
+		notifyPI,
+		notifyTraining,
+		notifyContracts,
+		notifTimeout,
 	}
 	// add communication groups
 	for _, g := range groups {
@@ -457,11 +457,12 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		Label: "Reset to defaults",
 		Action: func() {
 			typesEnabled.Clear()
-			setCommunications(settingNotifyCommunicationsEnabledDefault)
-			setMail(settingNotifyMailsEnabledDefault)
-			setPI(settingNotifyPIEnabledDefault)
-			setTraining(settingNotifyTrainingEnabledDefault)
-			setContracts(settingNotifyTrainingEnabledDefault)
+			notifyCommunications.Setter(settingNotifyCommunicationsEnabledDefault)
+			notifyMails.Setter(settingNotifyMailsEnabledDefault)
+			notifyPI.Setter(settingNotifyPIEnabledDefault)
+			notifyTraining.Setter(settingNotifyTrainingEnabledDefault)
+			notifyContracts.Setter(settingNotifyTrainingEnabledDefault)
+			notifTimeout.Setter(settingNotifyTimeoutHoursDefault)
 			list.Refresh()
 		},
 	}
