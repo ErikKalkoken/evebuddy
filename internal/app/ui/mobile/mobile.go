@@ -352,35 +352,48 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			))
 		},
 	)
+	navItemGeneralSettings := widgets.NewListItem(
+		"General",
+		func() {
+			moreNav.Push(widgets.NewAppBar(
+				"General",
+				u.SettingsArea.GeneralContent,
+				widgets.NewIconButtonWithMenu(makeSettingsMenu(u.SettingsArea.NotificationActions)),
+			))
+		},
+	)
+	navItemNotificationSettings := widgets.NewListItem(
+		"Notifications",
+		func() {
+			u.SettingsArea.OnCommunicationGroupSelected = func(
+				title string, content fyne.CanvasObject, actions []ui.SettingAction,
+			) {
+				moreNav.Push(widgets.NewAppBar(
+					title,
+					content,
+					widgets.NewIconButtonWithMenu(makeSettingsMenu(actions)),
+				))
+			}
+			moreNav.Push(widgets.NewAppBar(
+				"Notifications",
+				u.SettingsArea.NotificationSettings,
+				widgets.NewIconButtonWithMenu(makeSettingsMenu(u.SettingsArea.NotificationActions)),
+			))
+		},
+	)
+
 	toolsList := widgets.NewNavList(
 		widgets.NewListItemWithIcon(
 			"Settings",
 			theme.NewThemedResource(ui.IconCogSvg),
 			func() {
-				moreNav.Push(
-					widgets.NewAppBar(
-						"Settings",
-						widgets.NewNavList(
-							widgets.NewListItem(
-								"General",
-								func() {
-									moreNav.Push(
-										widgets.NewAppBar("General", u.SettingsArea.GeneralContent, widgets.NewIconButtonWithMenu(
-											makeSettingsMenu(u.SettingsArea.NotificationActions))),
-									)
-								},
-							),
-							widgets.NewListItem(
-								"Notifications",
-								func() {
-									moreNav.Push(
-										widgets.NewAppBar("Notifications", u.SettingsArea.NotificationSettings, widgets.NewIconButtonWithMenu(
-											makeSettingsMenu(u.SettingsArea.NotificationActions))),
-									)
-								},
-							),
-						),
-					))
+				moreNav.Push(widgets.NewAppBar(
+					"Settings",
+					widgets.NewNavList(
+						navItemGeneralSettings,
+						navItemNotificationSettings,
+					),
+				))
 			},
 		),
 		navItemManageCharacters,

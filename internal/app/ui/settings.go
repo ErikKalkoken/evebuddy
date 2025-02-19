@@ -117,11 +117,13 @@ type SettingAction struct {
 }
 
 type SettingsArea struct {
-	Content              fyne.CanvasObject
-	NotificationActions  []SettingAction
-	NotificationSettings fyne.CanvasObject
-	GeneralActions       []SettingAction
-	GeneralContent       fyne.CanvasObject
+	Content                      fyne.CanvasObject
+	NotificationActions          []SettingAction
+	NotificationSettings         fyne.CanvasObject
+	GeneralActions               []SettingAction
+	GeneralContent               fyne.CanvasObject
+	CommunicationGroupConent     fyne.CanvasObject
+	OnCommunicationGroupSelected func(title string, content fyne.CanvasObject, actions []SettingAction)
 
 	u      *BaseUI
 	window fyne.Window
@@ -322,7 +324,9 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		func(on bool) {
 			a.u.FyneApp.Preferences().SetBool(settingNotifyCommunicationsEnabled, on)
 			if on {
-				a.u.FyneApp.Preferences().SetString(settingNotifyCommunicationsEarliest, time.Now().Format(time.RFC3339))
+				a.u.FyneApp.Preferences().SetString(
+					settingNotifyCommunicationsEarliest,
+					time.Now().Format(time.RFC3339))
 			}
 		},
 	)
@@ -338,7 +342,9 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		func(on bool) {
 			a.u.FyneApp.Preferences().SetBool(settingNotifyMailsEnabled, on)
 			if on {
-				a.u.FyneApp.Preferences().SetString(settingNotifyMailsEarliest, time.Now().Format(time.RFC3339))
+				a.u.FyneApp.Preferences().SetString(
+					settingNotifyMailsEarliest,
+					time.Now().Format(time.RFC3339))
 			}
 		},
 	)
@@ -354,7 +360,9 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		func(on bool) {
 			a.u.FyneApp.Preferences().SetBool(settingNotifyPIEnabled, on)
 			if on {
-				a.u.FyneApp.Preferences().SetString(settingNotifyPIEarliest, time.Now().Format(time.RFC3339))
+				a.u.FyneApp.Preferences().SetString(
+					settingNotifyPIEarliest,
+					time.Now().Format(time.RFC3339))
 			}
 		},
 	)
@@ -400,7 +408,9 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		func(on bool) {
 			a.u.FyneApp.Preferences().SetBool(settingNotifyContractsEnabled, on)
 			if on {
-				a.u.FyneApp.Preferences().SetString(settingNotifyContractsEarliest, time.Now().Format(time.RFC3339))
+				a.u.FyneApp.Preferences().SetString(
+					settingNotifyContractsEarliest,
+					time.Now().Format(time.RFC3339))
 			}
 		},
 	)
@@ -435,7 +445,61 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 
 	// add communication groups
 	const groupHint = "Choose which communications to notfy about"
+	type groupPage struct {
+		content fyne.CanvasObject
+		actions []SettingAction
+	}
+	groupPages := make(map[evenotification.Group]groupPage) // for pre-constructing group pages
 	for _, g := range groups {
+		groupPages[g] = func() groupPage {
+			items2 := make([]widgets.SettingItem, 0)
+			for _, nt := range groupsAndTypes[g] {
+				ntStr := nt.String()
+				ntDisplay := nt.Display()
+				it := widgets.NewSettingItemSwitch(
+					ntDisplay,
+					"",
+					func() bool {
+						return typesEnabled.Contains(ntStr)
+					},
+					func(on bool) {
+						if on {
+							typesEnabled.Add(ntStr)
+						} else {
+							typesEnabled.Remove(ntStr)
+						}
+						a.u.FyneApp.Preferences().SetStringList(
+							settingNotificationsTypesEnabled,
+							typesEnabled.ToSlice())
+					},
+				)
+				items2 = append(items2, it)
+			}
+			list2 := widgets.NewSettingList(items2)
+			enableAll := SettingAction{
+				Label: "Enable all",
+				Action: func() {
+					for _, it := range items2 {
+						it.Setter(true)
+					}
+					list2.Refresh()
+				},
+			}
+			disableAll := SettingAction{
+				Label: "Disable all",
+				Action: func() {
+					for _, it := range items2 {
+						it.Setter(false)
+					}
+					list2.Refresh()
+				},
+			}
+			return groupPage{
+				content: list2,
+				actions: []SettingAction{enableAll, disableAll},
+			}
+		}()
+
 		it := widgets.NewSettingItemCustom(g.String(), groupHint,
 			func() any {
 				var enabled int
@@ -452,59 +516,27 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 				return "Off"
 			},
 			func(it widgets.SettingItem, refresh func()) {
-				items2 := make([]widgets.SettingItem, 0)
-				for _, nt := range groupsAndTypes[g] {
-					ntStr := nt.String()
-					ntDisplay := nt.Display()
-					it := widgets.NewSettingItemSwitch(
-						ntDisplay,
-						"",
-						func() bool {
-							return typesEnabled.Contains(ntStr)
-						},
-						func(on bool) {
-							if on {
-								typesEnabled.Add(ntStr)
-							} else {
-								typesEnabled.Remove(ntStr)
-							}
-							a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
-						},
-					)
-					items2 = append(items2, it)
+				p := groupPages[g]
+				title := g.String()
+				hint := widgets.NewLabelWithSize(groupHint, theme.SizeNameCaptionText)
+				if a.OnCommunicationGroupSelected != nil {
+					c := container.NewBorder(hint, nil, nil, nil, p.content)
+					a.OnCommunicationGroupSelected(title, c, p.actions)
+					return
 				}
 				var d dialog.Dialog
-				list2 := widgets.NewSettingList(items2)
 				buttons := container.NewHBox(
 					widget.NewButton("Close", func() {
 						d.Hide()
 					}),
 					layout.NewSpacer(),
-					widget.NewButton("Enable all", func() {
-						for _, it := range items2 {
-							it.Setter(true)
-						}
-						list2.Refresh()
-					}),
-					widget.NewButton("Disable all", func() {
-						for _, it := range items2 {
-							it.Setter(false)
-						}
-						list2.Refresh()
-					}),
 				)
-				c := container.NewBorder(
-					nil,
-					container.NewVBox(
-						widgets.NewLabelWithSize(groupHint, theme.SizeNameCaptionText),
-						buttons,
-					),
-					nil,
-					nil,
-					list2,
-				)
+				for _, a := range p.actions {
+					buttons.Add(widget.NewButton(a.Label, a.Action))
+				}
+				c := container.NewBorder(nil, container.NewVBox(hint, buttons), nil, nil, p.content)
 				w := a.currentWindow()
-				d = dialog.NewCustomWithoutButtons(g.String(), c, w)
+				d = dialog.NewCustomWithoutButtons(title, c, w)
 				d.Show()
 				s := w.Canvas().Size()
 				var width float32
