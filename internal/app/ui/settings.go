@@ -171,6 +171,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		"Log level",
 		"Set current log level",
 		LogLevelNames(),
+		SettingLogLevelDefault,
 		func() string {
 			return a.u.FyneApp.Preferences().StringWithFallback(
 				SettingLogLevel,
@@ -188,6 +189,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		"Max number of mails downloaded. 0 = unlimited.",
 		0,
 		settingMaxMailsMax,
+		settingMaxMailsDefault,
 		func() float64 {
 			return float64(a.u.FyneApp.Preferences().IntWithFallback(
 				settingMaxMails,
@@ -203,6 +205,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		"Max wallet transactions downloaded. 0 = unlimited.",
 		0,
 		settingMaxWalletTransactionsMax,
+		settingMaxWalletTransactionsDefault,
 		func() float64 {
 			return float64(a.u.FyneApp.Preferences().IntWithFallback(
 				settingMaxWalletTransactions,
@@ -406,6 +409,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		"Events older then this value in hours will not be notified",
 		1,
 		settingNotifyTimeoutHoursMax,
+		settingNotifyTimeoutHoursDefault,
 		func() float64 {
 			return float64(a.u.FyneApp.Preferences().IntWithFallback(
 				settingNotifyTimeoutHours,
@@ -426,30 +430,94 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		notifyContracts,
 		notifTimeout,
 	}
+	items = append(items, widgets.NewSettingItemSeperator())
+	items = append(items, widgets.NewSettingItemHeading("Communication Groups"))
+
 	// add communication groups
+	const groupHint = "Choose which communications to notfy about"
 	for _, g := range groups {
-		items = append(items, widgets.NewSettingItemSeperator())
-		items = append(items, widgets.NewSettingItemHeading("Communications: "+g.String()))
-		for _, nt := range groupsAndTypes[g] {
-			ntStr := nt.String()
-			ntDisplay := nt.Display()
-			it := widgets.NewSettingItemSwitch(
-				ntDisplay,
-				"",
-				func() bool {
-					return typesEnabled.Contains(ntStr)
-				},
-				func(on bool) {
-					if on {
-						typesEnabled.Add(ntStr)
-					} else {
-						typesEnabled.Remove(ntStr)
+		it := widgets.NewSettingItemCustom(g.String(), groupHint,
+			func() any {
+				var enabled int
+				for _, nt := range groupsAndTypes[g] {
+					if typesEnabled.Contains(nt.String()) {
+						enabled++
 					}
-					a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
-				},
-			)
-			items = append(items, it)
-		}
+				}
+				if total := len(groupsAndTypes[g]); total == enabled {
+					return "All"
+				} else if enabled > 0 {
+					return "Some"
+				}
+				return "Off"
+			},
+			func(it widgets.SettingItem, refresh func()) {
+				items2 := make([]widgets.SettingItem, 0)
+				for _, nt := range groupsAndTypes[g] {
+					ntStr := nt.String()
+					ntDisplay := nt.Display()
+					it := widgets.NewSettingItemSwitch(
+						ntDisplay,
+						"",
+						func() bool {
+							return typesEnabled.Contains(ntStr)
+						},
+						func(on bool) {
+							if on {
+								typesEnabled.Add(ntStr)
+							} else {
+								typesEnabled.Remove(ntStr)
+							}
+							a.u.FyneApp.Preferences().SetStringList(settingNotificationsTypesEnabled, typesEnabled.ToSlice())
+						},
+					)
+					items2 = append(items2, it)
+				}
+				var d dialog.Dialog
+				list2 := widgets.NewSettingList(items2)
+				buttons := container.NewHBox(
+					widget.NewButton("Close", func() {
+						d.Hide()
+					}),
+					layout.NewSpacer(),
+					widget.NewButton("Enable all", func() {
+						for _, it := range items2 {
+							it.Setter(true)
+						}
+						list2.Refresh()
+					}),
+					widget.NewButton("Disable all", func() {
+						for _, it := range items2 {
+							it.Setter(false)
+						}
+						list2.Refresh()
+					}),
+				)
+				c := container.NewBorder(
+					nil,
+					container.NewVBox(
+						widgets.NewLabelWithSize(groupHint, theme.SizeNameCaptionText),
+						buttons,
+					),
+					nil,
+					nil,
+					list2,
+				)
+				w := a.currentWindow()
+				d = dialog.NewCustomWithoutButtons(g.String(), c, w)
+				d.Show()
+				s := w.Canvas().Size()
+				var width float32
+				if a.u.IsMobile() {
+					width = s.Width
+				} else {
+					width = s.Width * 0.8
+				}
+				d.Resize(fyne.NewSize(width, s.Height*0.8))
+				d.SetOnClosed(refresh)
+			},
+		)
+		items = append(items, it)
 	}
 
 	list := widgets.NewSettingList(items)

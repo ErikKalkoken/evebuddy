@@ -4,14 +4,16 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
+// relative size of dialog window to current window
 const (
-	confirmText = "OK"
-	dismissText = "Cancel"
+	dialogWidthScale = 0.8 // except on mobile it is always 100%
+	dialogHeightMin  = 100
 )
 
 type settingVariant uint
@@ -85,7 +87,7 @@ func NewSettingItemCustom(
 
 func NewSettingItemSlider(
 	label, hint string,
-	minV, maxV float64,
+	minV, maxV, defaultV float64,
 	getter func() float64,
 	setter func(v float64),
 	window func() fyne.Window,
@@ -109,23 +111,19 @@ func NewSettingItemSlider(
 		onSelected: func(it SettingItem, refresh func()) {
 			sl := kxwidget.NewSlider(minV, maxV)
 			sl.SetValue(float64(getter()))
+			sl.OnChangeEnded = setter
 			w := window()
-			c := container.NewBorder(
-				nil,
-				NewLabelWithSize(it.Hint, theme.SizeNameCaptionText),
-				nil,
-				nil,
+			d := makeSettingDialog(
 				sl,
+				it.Label,
+				it.Hint,
+				func() {
+					sl.SetValue(defaultV)
+				},
+				refresh,
+				w,
 			)
-			d := dialog.NewCustomConfirm(it.Label, confirmText, dismissText, c, func(confirmed bool) {
-				if !confirmed {
-					return
-				}
-				setter(sl.Value())
-				refresh()
-			}, w)
 			d.Show()
-			d.Resize(fyne.NewSize(w.Canvas().Size().Width, 100))
 		},
 		variant: settingCustom,
 	}
@@ -134,6 +132,7 @@ func NewSettingItemSlider(
 func NewSettingItemSelect(
 	label, hint string,
 	options []string,
+	defaultV string,
 	getter func() string,
 	setter func(v string),
 	window func() fyne.Window,
@@ -148,26 +147,55 @@ func NewSettingItemSelect(
 			setter(v.(string))
 		},
 		onSelected: func(it SettingItem, refresh func()) {
-			sel := widget.NewRadioGroup(options, nil)
+			sel := widget.NewRadioGroup(options, setter)
 			sel.SetSelected(it.Getter().(string))
 			w := window()
-			c := container.NewBorder(
-				nil,
-				NewLabelWithSize(it.Hint, theme.SizeNameCaptionText),
-				nil,
-				nil,
+			d := makeSettingDialog(
 				sel,
+				it.Label,
+				it.Hint,
+				func() {
+					sel.SetSelected(defaultV)
+				},
+				refresh,
+				w,
 			)
-			d := dialog.NewCustomConfirm(it.Label, confirmText, dismissText, c, func(confirmed bool) {
-				if !confirmed {
-					return
-				}
-				setter(sel.Selected)
-				refresh()
-			}, w)
 			d.Show()
-			d.Resize(fyne.NewSize(w.Canvas().Size().Width, 100))
 		},
 		variant: settingCustom,
 	}
+}
+
+func makeSettingDialog(setting fyne.CanvasObject, label, hint string, reset func(), refresh func(), w fyne.Window) dialog.Dialog {
+	var d dialog.Dialog
+	buttons := container.NewHBox(
+		widget.NewButton("Close", func() {
+			d.Hide()
+		}),
+		layout.NewSpacer(),
+		widget.NewButton("Reset", func() {
+			reset()
+		}),
+	)
+	c := container.NewBorder(
+		nil,
+		container.NewVBox(
+			NewLabelWithSize(hint, theme.SizeNameCaptionText),
+			buttons,
+		),
+		nil,
+		nil,
+		setting,
+	)
+	d = dialog.NewCustomWithoutButtons(label, c, w)
+	s := w.Canvas().Size()
+	var width float32
+	if fyne.CurrentDevice().IsMobile() {
+		width = s.Width
+	} else {
+		width = s.Width * dialogWidthScale
+	}
+	d.Resize(fyne.NewSize(width, dialogHeightMin))
+	d.SetOnClosed(refresh)
+	return d
 }
