@@ -120,10 +120,6 @@ type SettingsArea struct {
 	Content              fyne.CanvasObject
 	NotificationActions  []SettingAction
 	NotificationSettings fyne.CanvasObject
-	DesktopActions       []SettingAction
-	DesktopContent       fyne.CanvasObject
-	EveOnlineActions     []SettingAction
-	EveOnlineContent     fyne.CanvasObject
 	GeneralActions       []SettingAction
 	GeneralContent       fyne.CanvasObject
 

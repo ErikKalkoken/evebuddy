@@ -324,9 +324,6 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 
 	// tools
 	var moreNav *widgets.Navigator
-	makePage := func(c fyne.CanvasObject) fyne.CanvasObject {
-		return container.NewScroll(c)
-	}
 	makeSettingsMenu := func(actions []ui.SettingAction) (fyne.Resource, *fyne.Menu) {
 		items := make([]*fyne.MenuItem, 0)
 		for _, a := range actions {
@@ -368,7 +365,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 								"General",
 								func() {
 									moreNav.Push(
-										widgets.NewAppBar("General", makePage(u.SettingsArea.GeneralContent), widgets.NewIconButtonWithMenu(
+										widgets.NewAppBar("General", u.SettingsArea.GeneralContent, widgets.NewIconButtonWithMenu(
 											makeSettingsMenu(u.SettingsArea.NotificationActions))),
 									)
 								},
@@ -377,7 +374,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 								"Notifications",
 								func() {
 									moreNav.Push(
-										widgets.NewAppBar("Notifications", makePage(u.SettingsArea.NotificationSettings), widgets.NewIconButtonWithMenu(
+										widgets.NewAppBar("Notifications", u.SettingsArea.NotificationSettings, widgets.NewIconButtonWithMenu(
 											makeSettingsMenu(u.SettingsArea.NotificationActions))),
 									)
 								},
