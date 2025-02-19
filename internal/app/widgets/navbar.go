@@ -181,11 +181,11 @@ func (w *NavBar) destination(idx int) *destination {
 
 func (w *NavBar) selectDestination(idx int) {
 	current := w.selected
-	w.body.Objects[current].Hide()
-	w.body.Objects[idx].Show()
 	w.destination(current).disable()
 	d := w.destination(idx)
 	d.enable()
+	w.body.Objects[current].Hide()
+	w.body.Objects[idx].Show()
 	w.selected = idx
 	if d.onSelected != nil {
 		d.onSelected()
