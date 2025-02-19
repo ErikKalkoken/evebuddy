@@ -16,10 +16,10 @@ import (
 */
 
 const (
-	colorPrimary    = theme.ColorNamePrimary
-	colorPill       = theme.ColorNameInputBorder
-	colorForeground = theme.ColorNameForeground
 	colorBackground = theme.ColorNameMenuBackground
+	colorForeground = theme.ColorNameForeground
+	colorPill       = theme.ColorNameInputBorder
+	colorPrimary    = theme.ColorNamePrimary
 )
 
 type navBarItem struct {
@@ -55,6 +55,7 @@ type destination struct {
 	navbar          *NavBar
 	onSelected      func()
 	onSelectedAgain func()
+	indicator       *canvas.Rectangle
 }
 
 var _ fyne.Tappable = (*destination)(nil)
@@ -63,6 +64,8 @@ func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSele
 	l := canvas.NewText(label, theme.Color(colorForeground))
 	l.TextSize = theme.Size(theme.SizeNameCaptionText)
 	i := NewImageFromResource(theme.NewThemedResource(icon), fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon)))
+	pill := canvas.NewRectangle(theme.Color(colorPill))
+	pill.CornerRadius = 12
 	w := &destination{
 		icon:            i,
 		iconActive:      theme.NewPrimaryThemedResource(icon),
@@ -72,6 +75,7 @@ func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSele
 		navbar:          nb,
 		onSelected:      onSelected,
 		onSelectedAgain: onSelectedAgain,
+		indicator:       pill,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -82,10 +86,16 @@ func (w *destination) Refresh() {
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	if w.isEnabled {
 		w.label.Color = th.Color(colorPrimary, v)
+		w.label.TextStyle.Bold = true
 		w.icon.Resource = w.iconActive
+		w.indicator.FillColor = th.Color(colorPill, v)
+		w.indicator.Show()
+		w.indicator.Refresh()
 	} else {
 		w.label.Color = th.Color(colorForeground, v)
+		w.label.TextStyle.Bold = false
 		w.icon.Resource = w.iconInactive
+		w.indicator.Hide()
 	}
 	w.label.Refresh()
 	w.icon.Refresh()
@@ -110,8 +120,13 @@ func (w *destination) disable() {
 }
 
 func (w *destination) CreateRenderer() fyne.WidgetRenderer {
-	c := container.New(layout.NewCustomPaddedVBoxLayout(0),
-		w.icon,
+	v := theme.Size(theme.SizeNameInlineIcon)
+	w.indicator.Resize(fyne.NewSize(2.7*v, 1.3*v))
+	s := w.indicator.Size()
+	w.indicator.Move(fyne.NewPos(-s.Width/2, -s.Height/2))
+	i := container.NewWithoutLayout(w.indicator)
+	c := container.NewVBox(
+		container.NewStack(container.NewCenter(i), container.NewCenter(w.icon)),
 		container.NewHBox(layout.NewSpacer(), w.label, layout.NewSpacer()),
 	)
 	return widget.NewSimpleRenderer(c)

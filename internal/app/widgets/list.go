@@ -39,6 +39,7 @@ func (w *List) CreateRenderer() fyne.WidgetRenderer {
 			a()
 		}
 	}
+	list.HideSeparators = true
 	l := widget.NewLabel(w.title)
 	l.TextStyle.Bold = true
 	if w.title == "" {
