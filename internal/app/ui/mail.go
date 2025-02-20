@@ -21,15 +21,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-type SendMessageMode uint
-
-const (
-	SendMessageNew SendMessageMode = iota + 1
-	SendMessageReply
-	SendMessageReplyAll
-	SendMessageForward
-)
-
 type folderNodeCategory int
 
 const (
@@ -99,6 +90,7 @@ type MailArea struct {
 	Headers       fyne.CanvasObject
 	OnSelected    func()
 	OnRefresh     func(count int)
+	OnSendMessage func(character *app.Character, mode SendMailMode, mail *app.CharacterMail)
 
 	body          *widget.Label
 	folderData    *fynetree.FyneTree[FolderNode]
@@ -119,13 +111,14 @@ type MailArea struct {
 
 func (u *BaseUI) NewMailArea() *MailArea {
 	a := &MailArea{
-		body:       widget.NewLabel(""),
-		folderData: fynetree.New[FolderNode](),
-		header:     widget.NewLabel(""),
-		headers:    make([]*app.CharacterMailHeader, 0),
-		headerTop:  widget.NewLabel(""),
-		subject:    widgets.NewLabelWithSize("", theme.SizeNameSubHeadingText),
-		u:          u,
+		OnSendMessage: u.ShowSendMailWindow,
+		body:          widget.NewLabel(""),
+		folderData:    fynetree.New[FolderNode](),
+		header:        widget.NewLabel(""),
+		headers:       make([]*app.CharacterMailHeader, 0),
+		headerTop:     widget.NewLabel(""),
+		subject:       widgets.NewLabelWithSize("", theme.SizeNameSubHeadingText),
+		u:             u,
 	}
 
 	// Mail
@@ -144,7 +137,7 @@ func (u *BaseUI) NewMailArea() *MailArea {
 	// Folders
 	a.folderTree = a.makeFolderTree()
 	r, f := a.MakeComposeMessageAction()
-	newButton := widget.NewButtonWithIcon("New message", r, f)
+	newButton := widget.NewButtonWithIcon("Compose", r, f)
 	newButton.Importance = widget.HighImportance
 	top := container.NewHBox(layout.NewSpacer(), container.NewPadded(newButton), layout.NewSpacer())
 
@@ -516,7 +509,7 @@ func (a *MailArea) makeFolderTopText(f FolderNode) (string, widget.Importance) {
 
 func (a *MailArea) MakeComposeMessageAction() (fyne.Resource, func()) {
 	return theme.DocumentCreateIcon(), func() {
-		a.u.showSendMessageWindow(a.u.CurrentCharacter(), SendMessageNew, nil)
+		a.OnSendMessage(a.u.CurrentCharacter(), SendMailNew, nil)
 	}
 }
 
@@ -544,19 +537,19 @@ func (a *MailArea) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 
 func (a *MailArea) MakeForwardAction() (fyne.Resource, func()) {
 	return theme.MailForwardIcon(), func() {
-		a.u.showSendMessageWindow(a.u.CurrentCharacter(), SendMessageForward, a.mail)
+		a.OnSendMessage(a.u.CurrentCharacter(), SendMailForward, a.mail)
 	}
 }
 
 func (a *MailArea) MakeReplyAction() (fyne.Resource, func()) {
 	return theme.MailReplyIcon(), func() {
-		a.u.showSendMessageWindow(a.u.CurrentCharacter(), SendMessageReply, a.mail)
+		a.OnSendMessage(a.u.CurrentCharacter(), SendMailReply, a.mail)
 	}
 }
 
 func (a *MailArea) MakeReplyAllAction() (fyne.Resource, func()) {
 	return theme.MailReplyAllIcon(), func() {
-		a.u.showSendMessageWindow(a.u.CurrentCharacter(), SendMessageReplyAll, a.mail)
+		a.OnSendMessage(a.u.CurrentCharacter(), SendMailReplyAll, a.mail)
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/dustin/go-humanize"
@@ -42,6 +43,8 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	u.ShowLocationInfoWindow = func(locationID int64) {
 		showItemWindow(u.NewItemInfoArea(0, 0, locationID, ui.DescriptionTab))
 	}
+
+	var navBar *widgets.NavBar
 
 	// character destination
 	fallbackAvatar, _ := ui.MakeAvatar(ui.IconCharacterplaceholder64Jpeg)
@@ -77,13 +80,27 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	var characterNav *widgets.Navigator
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
-
+	u.MailArea.OnSendMessage = func(character *app.Character, mode ui.SendMailMode, mail *app.CharacterMail) {
+		page, sendIcon, sendAction := u.MakeSendMailPage(character, mode, mail, u.Window)
+		characterNav.PushNoNavBar(
+			newCharacterAppBar(
+				"New Mail",
+				page,
+				widgets.NewIconButton(sendIcon, func() {
+					if sendAction() {
+						characterNav.Pop()
+					}
+				}),
+			),
+			navBar,
+		)
+	}
 	navItemMail := widgets.NewListItemWithIcon(
 		"Mail",
 		theme.MailComposeIcon(),
 		func() {
 			u.MailArea.OnSelected = func() {
-				characterNav.Push(
+				characterNav.PushNoNavBar(
 					newCharacterAppBar(
 						"Mail",
 						u.MailArea.Detail,
@@ -94,6 +111,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 							characterNav.Pop()
 						})),
 					),
+					navBar,
 				)
 			}
 			characterNav.Push(
@@ -105,14 +123,14 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 				))
 		},
 	)
-
 	navItemCommunications := widgets.NewListItemWithIcon(
 		"Communications",
 		theme.NewThemedResource(ui.IconMessageSvg),
 		func() {
 			u.NotificationsArea.OnSelected = func() {
-				characterNav.Push(
+				characterNav.PushNoNavBar(
 					newCharacterAppBar("Communications", u.NotificationsArea.Detail),
+					navBar,
 				)
 			}
 			characterNav.Push(
@@ -424,7 +442,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	moreDest.OnSelectedAgain = func() {
 		moreNav.PopAll()
 	}
-	navBar := widgets.NewNavBar(characterDest, crossDest, moreDest)
+	navBar = widgets.NewNavBar(characterDest, crossDest, moreDest)
 
 	u.OnSetCharacter = func(id int32) {
 		// update character selector

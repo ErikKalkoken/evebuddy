@@ -19,21 +19,37 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/mailrecipient"
 )
 
-func (u *BaseUI) showSendMessageWindow(character *app.Character, mode SendMessageMode, mail *app.CharacterMail) {
-	var title string
-	if u.IsMobile() {
-		title = "New message"
-	} else {
-		title = u.MakeWindowTitle(fmt.Sprintf("New message [%s]", character.EveCharacter.Name))
-	}
+type SendMailMode uint
+
+const (
+	SendMailNew SendMailMode = iota + 1
+	SendMailReply
+	SendMailReplyAll
+	SendMailForward
+)
+
+func (u *BaseUI) ShowSendMailWindow(character *app.Character, mode SendMailMode, mail *app.CharacterMail) {
+	title := u.MakeWindowTitle(fmt.Sprintf("New message [%s]", character.EveCharacter.Name))
 	w := u.FyneApp.NewWindow(title)
-	page := u.makeSendMessagePage(character, mode, mail, w)
-	w.SetContent(page)
+	page, icon, action := u.MakeSendMailPage(character, mode, mail, w)
+	b := widget.NewButtonWithIcon("Send", icon, func() {
+		if action() {
+			w.Hide()
+		}
+	})
+	b.Importance = widget.HighImportance
+	c := container.NewBorder(nil, b, nil, nil, page)
+	w.SetContent(c)
 	w.Resize(fyne.NewSize(600, 500))
 	w.Show()
 }
 
-func (u *BaseUI) makeSendMessagePage(character *app.Character, mode SendMessageMode, mail *app.CharacterMail, w fyne.Window) fyne.CanvasObject {
+func (u *BaseUI) MakeSendMailPage(
+	character *app.Character,
+	mode SendMailMode,
+	mail *app.CharacterMail,
+	w fyne.Window,
+) (fyne.CanvasObject, fyne.Resource, func() bool) {
 	to := widget.NewEntry()
 	// toInput.MultiLine = true // FIXME: Does not work with columns layout
 	// toInput.Wrapping = fyne.TextWrapWord
@@ -58,34 +74,48 @@ func (u *BaseUI) makeSendMessagePage(character *app.Character, mode SendMessageM
 	if mail != nil {
 		const sep = "\n\n--------------------------------\n"
 		switch mode {
-		case SendMessageReply:
+		case SendMailReply:
 			r := mailrecipient.NewFromEntities([]*app.EveEntity{mail.From})
 			to.SetText(r.String())
 			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			body.SetText(sep + mail.String())
-		case SendMessageReplyAll:
+		case SendMailReplyAll:
 			r := mailrecipient.NewFromEntities(mail.Recipients)
 			to.SetText(r.String())
 			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			body.SetText(sep + mail.String())
-		case SendMessageForward:
+		case SendMailForward:
 			subject.SetText(fmt.Sprintf("Fw: %s", mail.Subject))
 			body.SetText(sep + mail.String())
 		default:
 			panic(fmt.Errorf("undefined mode for create message: %v", mode))
 		}
 	}
-	send := widget.NewButton("Send", func() {
-		ctx := context.TODO()
+
+	// sendAction tries to send the current mail and reports whether it was successful
+	sendAction := func() bool {
 		showErrorDialog := func(message string) {
-			d := dialog.NewInformation("Failed to send message", message, w)
+			d := dialog.NewInformation("Failed to send mail", message, w)
 			d.Show()
 		}
+		if err := to.Validate(); err != nil {
+			showErrorDialog("You need to specify at least on recipient")
+			return false
+		}
+		if err := subject.Validate(); err != nil {
+			showErrorDialog("You need to specify a subject")
+			return false
+		}
+		if err := body.Validate(); err != nil {
+			showErrorDialog("You message can not be empty")
+			return false
+		}
+		ctx := context.TODO()
 		recipients := mailrecipient.NewFromText(to.Text)
 		ee2, err := u.EveUniverseService.ResolveUncleanEveEntities(ctx, recipients.ToEveEntitiesUnclean())
 		if err != nil {
 			showErrorDialog(err.Error())
-			return
+			return false
 		}
 		_, err = u.CharacterService.SendCharacterMail(
 			ctx,
@@ -96,22 +126,10 @@ func (u *BaseUI) makeSendMessagePage(character *app.Character, mode SendMessageM
 		)
 		if err != nil {
 			showErrorDialog(err.Error())
-			return
+			return false
 		}
-		w.Hide()
-	})
-	send.Importance = widget.HighImportance
-	send.Disable()
-	checkFields := func(_ string) {
-		if to.Validate() != nil || subject.Validate() != nil || body.Validate() != nil {
-			send.Disable()
-		} else {
-			send.Enable()
-		}
+		return true
 	}
-	to.OnChanged = checkFields
-	subject.OnChanged = checkFields
-	body.OnChanged = checkFields
 
 	colums := kxlayout.NewColumns(60)
 	page := container.NewBorder(
@@ -120,12 +138,12 @@ func (u *BaseUI) makeSendMessagePage(character *app.Character, mode SendMessageM
 			container.New(colums, widget.NewLabel("To"), to),
 			container.New(colums, widget.NewLabel("Subject"), subject),
 		),
-		container.NewHBox(send),
+		nil,
 		nil,
 		nil,
 		body,
 	)
-	return page
+	return page, theme.MailSendIcon(), sendAction
 }
 
 func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
@@ -156,6 +174,10 @@ func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID
 		toInput.SetText(r.String())
 		dlg.Hide()
 	}
+	showErrorDialog := func(message string) {
+		d := dialog.NewInformation("Something went wrong", message, w)
+		d.Show()
+	}
 	entry := widget.NewEntry()
 	entry.PlaceHolder = "Type to start searching..."
 	entry.ActionItem = widget.NewIcon(theme.SearchIcon())
@@ -169,7 +191,7 @@ func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID
 		names, err = u.makeRecipientOptions(search)
 		if err != nil {
 			slog.Error("Failed to find names", "search", search, "error", err)
-			// TODO: show error message
+			showErrorDialog(err.Error())
 			return
 		}
 		list.Refresh()
@@ -181,7 +203,7 @@ func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID
 			)
 			if err != nil {
 				slog.Error("Failed to search names", "search", search, "error", err)
-				// TODO: show error message
+				showErrorDialog(err.Error())
 				return
 			}
 			if len(missingIDs) == 0 {
@@ -190,7 +212,7 @@ func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID
 			names, err = u.makeRecipientOptions(search)
 			if err != nil {
 				slog.Error("Failed to make name options", "error", err)
-				// TODO: show error message
+				showErrorDialog(err.Error())
 				return
 			}
 			list.Refresh()

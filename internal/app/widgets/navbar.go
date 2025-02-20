@@ -136,32 +136,47 @@ func (w *destination) CreateRenderer() fyne.WidgetRenderer {
 type NavBar struct {
 	widget.BaseWidget
 
-	bar      *fyne.Container
-	body     *fyne.Container
-	bg       *canvas.Rectangle
-	selected int
+	bar          *fyne.Container
+	body         *fyne.Container
+	bg           *canvas.Rectangle
+	destinations *fyne.Container
+	selected     int
 }
 
+// NewNavBar returns new navbar.
+// It is recommended to have at most 5 destinations.
+//
+// It panics if not at least one destination is provided.
 func NewNavBar(items ...navBarItem) *NavBar {
 	if len(items) == 0 {
 		panic("must define at least one item")
 	}
 	w := &NavBar{
-		bar:  container.NewGridWithRows(1),
-		body: container.NewStack(),
-		bg:   canvas.NewRectangle(theme.Color(colorBarBackground)),
+		destinations: container.NewGridWithRows(1),
+		body:         container.NewStack(),
+		bg:           canvas.NewRectangle(theme.Color(colorBarBackground)),
 	}
 	w.ExtendBaseWidget(w)
+
 	for idx, it := range items {
-		w.bar.Add(newDestination(it.icon, it.label, w, idx, it.OnSelected, it.OnSelectedAgain))
+		w.destinations.Add(newDestination(it.icon, it.label, w, idx, it.OnSelected, it.OnSelectedAgain))
 		b := it.content
 		b.Hide()
 		w.body.Add(b)
 	}
+	p := theme.Padding()
+	w.bar = container.New(
+		layout.NewCustomPaddedLayout(-2*p, 0, 0, 0),
+		container.NewStack(
+			w.bg,
+			container.New(layout.NewCustomPaddedLayout(p*3, p*3, p*2, p*2), w.destinations),
+		))
+
 	w.selectDestination(0)
 	return w
 }
 
+// Select switches to a new destination.
 func (w *NavBar) Select(idx int) {
 	if idx > len(w.body.Objects)-1 {
 		return
@@ -175,8 +190,18 @@ func (w *NavBar) Select(idx int) {
 	w.selectDestination(idx)
 }
 
+// HideBar hides the nav bar, while still showing the rest of the page.
+func (w *NavBar) HideBar() {
+	w.destinations.Hide()
+}
+
+// ShowBar shows the nav bar again.
+func (w *NavBar) ShowBar() {
+	w.destinations.Show()
+}
+
 func (w *NavBar) destination(idx int) *destination {
-	return w.bar.Objects[idx].(*destination)
+	return w.destinations.Objects[idx].(*destination)
 }
 
 func (w *NavBar) selectDestination(idx int) {
@@ -202,12 +227,11 @@ func (w *NavBar) Refresh() {
 
 func (w *NavBar) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
-	bar := container.NewStack(w.bg, container.New(layout.NewCustomPaddedLayout(p*3, p*3, p*2, p*2), w.bar))
 	c := container.New(
 		layout.NewCustomPaddedLayout(-p, -p, -p, -p),
 		container.NewBorder(
 			nil,
-			container.New(layout.NewCustomPaddedLayout(-2*p, 0, 0, 0), bar),
+			w.destinations,
 			nil,
 			nil,
 			container.New(layout.NewCustomPaddedLayout(p, p, p, p), w.body),

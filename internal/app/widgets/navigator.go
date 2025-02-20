@@ -15,6 +15,8 @@ import (
 type Navigator struct {
 	widget.BaseWidget
 
+	navBar *NavBar
+
 	mu    sync.Mutex
 	stack *fyne.Container // stack of pages. First object is the root page.
 }
@@ -30,10 +32,29 @@ func NewNavigator(ab *AppBar) *Navigator {
 
 // Push adds a new page and shows it.
 func (n *Navigator) Push(ab *AppBar) {
+	n.push(ab, nil)
+}
+
+// PushNoNavBar adds a new page and shows it without a navbar.
+//
+// Will panic if pushed under an existing page with an already deactivated nav bar.
+func (n *Navigator) PushNoNavBar(ab *AppBar, nb *NavBar) {
+	n.push(ab, nb)
+}
+
+// Push adds a new page and shows it.
+func (n *Navigator) push(ab *AppBar, nb *NavBar) {
 	ab.Navigator = n
 	func() {
 		n.mu.Lock()
 		defer n.mu.Unlock()
+		if nb != nil {
+			if n.navBar != nil {
+				panic("Can not create modal page behind existing modal page")
+			}
+			n.navBar = nb
+			nb.HideBar()
+		}
 		previous := n.topPage()
 		n.stack.Add(ab)
 		previous.Hide()
@@ -52,6 +73,10 @@ func (n *Navigator) Pop() {
 		}
 		n.stack.Remove(n.topPage())
 		n.topPage().Show()
+		if n.navBar != nil {
+			n.navBar.ShowBar()
+			n.navBar = nil
+		}
 	}()
 	n.stack.Refresh()
 }
