@@ -19,73 +19,69 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/mailrecipient"
 )
 
-func (u *BaseUI) showSendMessageWindow(mode SendMessageMode, mail *app.CharacterMail) {
-	w, err := u.makeSendMessageWindow(mode, mail)
-	if err != nil {
-		slog.Error("create send message window", "error", err)
-	} else {
-		w.Show()
-	}
-}
-
-func (u *BaseUI) makeSendMessageWindow(mode SendMessageMode, mail *app.CharacterMail) (fyne.Window, error) {
-	currentChar := u.CurrentCharacter()
+func (u *BaseUI) showSendMessageWindow(character *app.Character, mode SendMessageMode, mail *app.CharacterMail) {
 	var title string
 	if u.IsMobile() {
 		title = "New message"
 	} else {
-		title = u.MakeWindowTitle(fmt.Sprintf("New message [%s]", currentChar.EveCharacter.Name))
+		title = u.MakeWindowTitle(fmt.Sprintf("New message [%s]", character.EveCharacter.Name))
 	}
 	w := u.FyneApp.NewWindow(title)
+	page := u.makeSendMessagePage(character, mode, mail, w)
+	w.SetContent(page)
+	w.Resize(fyne.NewSize(600, 500))
+	w.Show()
+}
 
-	toInput := widget.NewEntry()
+func (u *BaseUI) makeSendMessagePage(character *app.Character, mode SendMessageMode, mail *app.CharacterMail, w fyne.Window) fyne.CanvasObject {
+	to := widget.NewEntry()
 	// toInput.MultiLine = true // FIXME: Does not work with columns layout
 	// toInput.Wrapping = fyne.TextWrapWord
-	toInput.Validator = newNonEmptyStringValidator()
-	toInput.ActionItem = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		u.showAddDialog(w, toInput, currentChar.ID)
+	to.Validator = newNonEmptyStringValidator()
+	to.ActionItem = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
+		u.showAddDialog(w, to, character.ID)
 	})
 
-	fromInput := widget.NewEntry()
-	fromInput.PlaceHolder = currentChar.EveCharacter.Name
-	fromInput.Disable()
+	from := widget.NewEntry()
+	from.PlaceHolder = character.EveCharacter.Name
+	from.Disable()
 
-	subjectInput := widget.NewEntry()
-	subjectInput.Validator = newNonEmptyStringValidator()
+	subject := widget.NewEntry()
+	subject.Validator = newNonEmptyStringValidator()
 
-	bodyInput := widget.NewEntry()
-	bodyInput.MultiLine = true
-	bodyInput.SetMinRowsVisible(14)
-	bodyInput.Validator = newNonEmptyStringValidator()
-	bodyInput.PlaceHolder = "Compose message"
+	body := widget.NewEntry()
+	body.MultiLine = true
+	body.SetMinRowsVisible(14)
+	body.Validator = newNonEmptyStringValidator()
+	body.PlaceHolder = "Compose message"
 
 	if mail != nil {
 		const sep = "\n\n--------------------------------\n"
 		switch mode {
 		case SendMessageReply:
 			r := mailrecipient.NewFromEntities([]*app.EveEntity{mail.From})
-			toInput.SetText(r.String())
-			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
-			bodyInput.SetText(sep + mail.String())
+			to.SetText(r.String())
+			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
+			body.SetText(sep + mail.String())
 		case SendMessageReplyAll:
 			r := mailrecipient.NewFromEntities(mail.Recipients)
-			toInput.SetText(r.String())
-			subjectInput.SetText(fmt.Sprintf("Re: %s", mail.Subject))
-			bodyInput.SetText(sep + mail.String())
+			to.SetText(r.String())
+			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
+			body.SetText(sep + mail.String())
 		case SendMessageForward:
-			subjectInput.SetText(fmt.Sprintf("Fw: %s", mail.Subject))
-			bodyInput.SetText(sep + mail.String())
+			subject.SetText(fmt.Sprintf("Fw: %s", mail.Subject))
+			body.SetText(sep + mail.String())
 		default:
-			return nil, fmt.Errorf("undefined mode for create message: %v", mode)
+			panic(fmt.Errorf("undefined mode for create message: %v", mode))
 		}
 	}
-	sendButton := widget.NewButton("Send", func() {
+	send := widget.NewButton("Send", func() {
 		ctx := context.TODO()
 		showErrorDialog := func(message string) {
 			d := dialog.NewInformation("Failed to send message", message, w)
 			d.Show()
 		}
-		recipients := mailrecipient.NewFromText(toInput.Text)
+		recipients := mailrecipient.NewFromText(to.Text)
 		ee2, err := u.EveUniverseService.ResolveUncleanEveEntities(ctx, recipients.ToEveEntitiesUnclean())
 		if err != nil {
 			showErrorDialog(err.Error())
@@ -93,10 +89,10 @@ func (u *BaseUI) makeSendMessageWindow(mode SendMessageMode, mail *app.Character
 		}
 		_, err = u.CharacterService.SendCharacterMail(
 			ctx,
-			currentChar.ID,
-			subjectInput.Text,
+			character.ID,
+			subject.Text,
 			ee2,
-			bodyInput.Text,
+			body.Text,
 		)
 		if err != nil {
 			showErrorDialog(err.Error())
@@ -104,34 +100,32 @@ func (u *BaseUI) makeSendMessageWindow(mode SendMessageMode, mail *app.Character
 		}
 		w.Hide()
 	})
-	sendButton.Importance = widget.HighImportance
-	sendButton.Disable()
+	send.Importance = widget.HighImportance
+	send.Disable()
 	checkFields := func(_ string) {
-		if toInput.Validate() != nil || subjectInput.Validate() != nil || bodyInput.Validate() != nil {
-			sendButton.Disable()
+		if to.Validate() != nil || subject.Validate() != nil || body.Validate() != nil {
+			send.Disable()
 		} else {
-			sendButton.Enable()
+			send.Enable()
 		}
 	}
-	toInput.OnChanged = checkFields
-	subjectInput.OnChanged = checkFields
-	bodyInput.OnChanged = checkFields
+	to.OnChanged = checkFields
+	subject.OnChanged = checkFields
+	body.OnChanged = checkFields
 
 	colums := kxlayout.NewColumns(60)
-	frame := container.NewBorder(
+	page := container.NewBorder(
 		container.NewVBox(
-			container.New(colums, widget.NewLabel("From"), fromInput),
-			container.New(colums, widget.NewLabel("To"), toInput),
-			container.New(colums, widget.NewLabel("Subject"), subjectInput),
+			container.New(colums, widget.NewLabel("From"), from),
+			container.New(colums, widget.NewLabel("To"), to),
+			container.New(colums, widget.NewLabel("Subject"), subject),
 		),
-		container.NewHBox(sendButton),
+		container.NewHBox(send),
 		nil,
 		nil,
-		bodyInput,
+		body,
 	)
-	w.SetContent(frame)
-	w.Resize(fyne.NewSize(600, 500))
-	return w, nil
+	return page
 }
 
 func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {

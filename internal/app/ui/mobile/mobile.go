@@ -96,13 +96,12 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 					),
 				)
 			}
-			_, f := u.MailArea.MakeSendAction()
 			characterNav.Push(
 				newCharacterAppBar(
 					"Mail",
 					u.MailArea.Headers,
 					widgets.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
-					widgets.NewIconButton(theme.MailComposeIcon(), f),
+					widgets.NewIconButton(u.MailArea.MakeComposeMessageAction()),
 				))
 		},
 	)

@@ -143,7 +143,7 @@ func (u *BaseUI) NewMailArea() *MailArea {
 
 	// Folders
 	a.folderTree = a.makeFolderTree()
-	r, f := a.MakeSendAction()
+	r, f := a.MakeComposeMessageAction()
 	newButton := widget.NewButtonWithIcon("New message", r, f)
 	newButton.Importance = widget.HighImportance
 	top := container.NewHBox(layout.NewSpacer(), container.NewPadded(newButton), layout.NewSpacer())
@@ -514,6 +514,12 @@ func (a *MailArea) makeFolderTopText(f FolderNode) (string, widget.Importance) {
 	return s, widget.MediumImportance
 }
 
+func (a *MailArea) MakeComposeMessageAction() (fyne.Resource, func()) {
+	return theme.DocumentCreateIcon(), func() {
+		a.u.showSendMessageWindow(a.u.CurrentCharacter(), SendMessageNew, nil)
+	}
+}
+
 func (a *MailArea) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 	return theme.DeleteIcon(), func() {
 		s := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Header())
@@ -538,25 +544,19 @@ func (a *MailArea) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 
 func (a *MailArea) MakeForwardAction() (fyne.Resource, func()) {
 	return theme.MailForwardIcon(), func() {
-		a.u.showSendMessageWindow(SendMessageForward, a.mail)
+		a.u.showSendMessageWindow(a.u.CurrentCharacter(), SendMessageForward, a.mail)
 	}
 }
 
 func (a *MailArea) MakeReplyAction() (fyne.Resource, func()) {
 	return theme.MailReplyIcon(), func() {
-		a.u.showSendMessageWindow(SendMessageReply, a.mail)
+		a.u.showSendMessageWindow(a.u.CurrentCharacter(), SendMessageReply, a.mail)
 	}
 }
 
 func (a *MailArea) MakeReplyAllAction() (fyne.Resource, func()) {
 	return theme.MailReplyAllIcon(), func() {
-		a.u.showSendMessageWindow(SendMessageReplyAll, a.mail)
-	}
-}
-
-func (a *MailArea) MakeSendAction() (fyne.Resource, func()) {
-	return theme.ContentAddIcon(), func() {
-		a.u.showSendMessageWindow(SendMessageNew, nil)
+		a.u.showSendMessageWindow(a.u.CurrentCharacter(), SendMessageReplyAll, a.mail)
 	}
 }
 
