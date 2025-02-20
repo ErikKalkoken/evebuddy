@@ -82,6 +82,9 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	communicationsMenu := fyne.NewMenu("")
 	u.MailArea.OnSendMessage = func(character *app.Character, mode ui.SendMailMode, mail *app.CharacterMail) {
 		page, sendIcon, sendAction := u.MakeSendMailPage(character, mode, mail, u.Window)
+		if mode != ui.SendMailNew {
+			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
+		}
 		characterNav.PushNoNavBar(
 			newCharacterAppBar(
 				"",

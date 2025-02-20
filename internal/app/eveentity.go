@@ -1,5 +1,10 @@
 package app
 
+import (
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+)
+
 type EveEntityCategory int
 
 // Supported categories of EveEntity
@@ -49,11 +54,17 @@ func (eec EveEntityCategory) String() string {
 	}
 }
 
+var titler = cases.Title(language.English)
+
 // An EveEntity in EveOnline.
 type EveEntity struct {
 	Category EveEntityCategory
 	ID       int32
 	Name     string
+}
+
+func (ee EveEntity) CategoryDisplay() string {
+	return titler.String(ee.Category.String())
 }
 
 func (ee EveEntity) IsCharacter() bool {

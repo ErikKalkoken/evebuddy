@@ -13,10 +13,9 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/mailrecipient"
+	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 )
 
 type SendMailMode uint
@@ -50,12 +49,8 @@ func (u *BaseUI) MakeSendMailPage(
 	mail *app.CharacterMail,
 	w fyne.Window,
 ) (fyne.CanvasObject, fyne.Resource, func() bool) {
-	to := widget.NewEntry()
-	// toInput.MultiLine = true // FIXME: Does not work with columns layout
-	// toInput.Wrapping = fyne.TextWrapWord
-	to.Validator = newNonEmptyStringValidator()
-	to.ActionItem = widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		u.showAddDialog(w, to, character.ID)
+	to := NewRecipients(func(onSelected func(*app.EveEntity)) {
+		u.showAddDialog(character.ID, onSelected, w)
 	})
 
 	from := widget.NewEntry()
@@ -75,13 +70,11 @@ func (u *BaseUI) MakeSendMailPage(
 		const sep = "\n\n--------------------------------\n"
 		switch mode {
 		case SendMailReply:
-			r := mailrecipient.NewFromEntities([]*app.EveEntity{mail.From})
-			to.SetText(r.String())
+			to.Set([]*app.EveEntity{mail.From})
 			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			body.SetText(sep + mail.String())
 		case SendMailReplyAll:
-			r := mailrecipient.NewFromEntities(mail.Recipients)
-			to.SetText(r.String())
+			to.Set(mail.Recipients)
 			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			body.SetText(sep + mail.String())
 		case SendMailForward:
@@ -98,7 +91,7 @@ func (u *BaseUI) MakeSendMailPage(
 			d := dialog.NewInformation("Failed to send mail", message, w)
 			d.Show()
 		}
-		if err := to.Validate(); err != nil {
+		if to.IsEmpty() {
 			showErrorDialog("A mail needs to have at least one recipient.")
 			return false
 		}
@@ -111,17 +104,11 @@ func (u *BaseUI) MakeSendMailPage(
 			return false
 		}
 		ctx := context.Background()
-		recipients := mailrecipient.NewFromText(to.Text)
-		ee2, err := u.EveUniverseService.ResolveUncleanEveEntities(ctx, recipients.ToEveEntitiesUnclean())
-		if err != nil {
-			showErrorDialog(err.Error())
-			return false
-		}
-		_, err = u.CharacterService.SendCharacterMail(
+		_, err := u.CharacterService.SendCharacterMail(
 			ctx,
 			character.ID,
 			subject.Text,
-			ee2,
+			to.Recipients,
 			body.Text,
 		)
 		if err != nil {
@@ -146,32 +133,41 @@ func (u *BaseUI) MakeSendMailPage(
 	return page, theme.MailSendIcon(), sendAction
 }
 
-func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID int32) {
+func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var dlg dialog.Dialog
-	names := make([]string, 0)
+	items := make([]*app.EveEntity, 0)
 	list := widget.NewList(
 		func() int {
-			return len(names)
+			return len(items)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("") // TODO: Show names and category in different columns, maybe also show icons
+			name := widget.NewLabel("Template")
+			name.Truncation = fyne.TextTruncateClip
+			return container.NewBorder(
+				nil,
+				nil,
+				nil,
+				widget.NewLabel("Template"),
+				name,
+			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(names) {
+			if id >= len(items) {
 				return
 			}
-			co.(*widget.Label).SetText(names[id])
+			it := items[id]
+			row := co.(*fyne.Container).Objects
+			row[0].(*widget.Label).SetText(it.Name)
+			row[1].(*widget.Label).SetText(it.CategoryDisplay())
 		},
 	)
 	list.HideSeparators = true
 	list.OnSelected = func(id widget.ListItemID) {
-		if id >= len(names) {
+		if id >= len(items) {
 			list.UnselectAll()
 			return
 		}
-		r := mailrecipient.NewFromText(toInput.Text)
-		r.AddFromText(names[id])
-		toInput.SetText(r.String())
+		onSelected(items[id])
 		dlg.Hide()
 	}
 	showErrorDialog := func(search string, err error) {
@@ -184,13 +180,13 @@ func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID
 	entry.ActionItem = widget.NewIcon(theme.SearchIcon())
 	entry.OnChanged = func(search string) {
 		if len(search) < 3 {
-			names = []string{}
+			items = items[:0]
 			list.Refresh()
 			return
 		}
 		ctx := context.Background()
 		var err error
-		names, err = u.makeRecipientOptions(ctx, search)
+		items, err = u.EveUniverseService.ListEveEntitiesByPartialName(ctx, search)
 		if err != nil {
 			showErrorDialog(search, err)
 			return
@@ -209,7 +205,7 @@ func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID
 			if len(missingIDs) == 0 {
 				return // no need to update when not changed
 			}
-			names, err = u.makeRecipientOptions(ctx, search)
+			items, err = u.EveUniverseService.ListEveEntitiesByPartialName(ctx, search)
 			if err != nil {
 				showErrorDialog(search, err)
 				return
@@ -239,16 +235,6 @@ func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID
 	}
 	dlg.Resize(fyne.NewSize(s.Width*f, s.Height*f))
 	dlg.Show()
-}
-
-func (u *BaseUI) makeRecipientOptions(ctx context.Context, search string) ([]string, error) {
-	ee, err := u.EveUniverseService.ListEveEntitiesByPartialName(ctx, search)
-	if err != nil {
-		return nil, err
-	}
-	rr := mailrecipient.NewFromEntities(ee)
-	oo := rr.ToOptions()
-	return oo, nil
 }
 
 func newNonEmptyStringValidator() fyne.StringValidator {
