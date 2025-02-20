@@ -141,7 +141,6 @@ func NewBaseUI(fyneApp fyne.App) *BaseUI {
 	u.WalletJournalArea = u.NewWalletJournalArea()
 	u.WalletTransactionArea = u.NewWalletTransactionArea()
 	u.WealthArea = u.NewWealthArea()
-
 	return u
 }
 

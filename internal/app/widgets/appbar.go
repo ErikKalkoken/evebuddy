@@ -65,7 +65,7 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 	if len(w.items) > 0 {
 		icons := container.NewHBox()
 		for _, ib := range w.items {
-			icons.Add(ib)
+			icons.Add(container.New(layout.NewCustomPaddedLayout(0, 0, 2*p, 0), ib))
 		}
 		right = container.New(layout.NewCustomPaddedLayout(0, 0, 0, p), icons)
 	}

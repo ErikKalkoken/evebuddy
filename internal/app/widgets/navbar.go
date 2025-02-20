@@ -18,7 +18,7 @@ import (
 const (
 	colorBackground = theme.ColorNameMenuBackground
 	colorForeground = theme.ColorNameForeground
-	colorPill       = theme.ColorNameInputBorder
+	colorIndicator  = theme.ColorNameInputBorder
 	colorPrimary    = theme.ColorNamePrimary
 )
 
@@ -64,7 +64,7 @@ func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSele
 	l := canvas.NewText(label, theme.Color(colorForeground))
 	l.TextSize = theme.Size(theme.SizeNameCaptionText)
 	i := NewImageFromResource(theme.NewThemedResource(icon), fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon)))
-	pill := canvas.NewRectangle(theme.Color(colorPill))
+	pill := canvas.NewRectangle(theme.Color(colorIndicator))
 	pill.CornerRadius = 12
 	w := &destination{
 		icon:            i,
@@ -88,7 +88,7 @@ func (w *destination) Refresh() {
 		w.label.Color = th.Color(colorPrimary, v)
 		w.label.TextStyle.Bold = true
 		w.icon.Resource = w.iconActive
-		w.indicator.FillColor = th.Color(colorPill, v)
+		w.indicator.FillColor = th.Color(colorIndicator, v)
 		w.indicator.Show()
 		w.indicator.Refresh()
 	} else {

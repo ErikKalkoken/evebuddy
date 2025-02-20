@@ -93,9 +93,6 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		go u.statusBarArea.refreshUpdateStatus()
 		go u.statusBarArea.refreshCharacterCount()
 	}
-	u.MailArea.SendMessage = func(mode ui.SendMessageMode, cm *app.CharacterMail) {
-		u.showSendMessageWindow(mode, cm)
-	}
 	showItemWindow := func(iw *ui.ItemInfoArea, err error) {
 		if err != nil {
 			t := "Failed to open info window"

@@ -30,79 +30,6 @@ const (
 	SendMessageForward
 )
 
-// MailArea is the UI area showing the mail folders.
-type MailArea struct {
-	Content       fyne.CanvasObject
-	CurrentFolder optional.Optional[FolderNode]
-	Detail        fyne.CanvasObject
-	Headers       fyne.CanvasObject
-	OnSelected    func()
-	OnRefresh     func(count int)
-	SendMessage   func(mode SendMessageMode, cm *app.CharacterMail)
-
-	body          *widget.Label
-	folderData    *fynetree.FyneTree[FolderNode]
-	folderSection fyne.CanvasObject
-	folderTree    *widget.Tree
-	header        *widget.Label
-	headerList    *widget.List
-	headers       []*app.CharacterMailHeader
-	headerTop     *widget.Label
-	folderDefault FolderNode
-	lastSelected  widget.ListItemID
-	lastUID       string
-	mail          *app.CharacterMail
-	subject       *widgets.Label
-	toolbar       *widget.Toolbar
-	u             *BaseUI
-}
-
-func (u *BaseUI) NewMailArea() *MailArea {
-	a := &MailArea{
-		body:       widget.NewLabel(""),
-		folderData: fynetree.New[FolderNode](),
-		header:     widget.NewLabel(""),
-		headers:    make([]*app.CharacterMailHeader, 0),
-		headerTop:  widget.NewLabel(""),
-		subject:    widgets.NewLabelWithSize("", theme.SizeNameSubHeadingText),
-		u:          u,
-	}
-
-	// Mail
-	a.toolbar = a.makeToolbar()
-	a.toolbar.Hide()
-	a.subject.Truncation = fyne.TextTruncateClip
-	a.header.Truncation = fyne.TextTruncateClip
-	a.body.Wrapping = fyne.TextWrapWord
-	a.Detail = container.NewBorder(container.NewVBox(a.subject, a.header), nil, nil, nil, container.NewVScroll(a.body))
-	detailWithToolbar := container.NewBorder(a.toolbar, nil, nil, nil, a.Detail)
-
-	// Headers
-	a.headerList = a.makeHeaderList()
-	a.Headers = container.NewBorder(a.headerTop, nil, nil, nil, a.headerList)
-
-	// Folders
-	a.folderTree = a.makeFolderTree()
-	newButton := widget.NewButtonWithIcon("New message", theme.ContentAddIcon(), func() {
-		if a.SendMessage == nil {
-			return
-		}
-		a.SendMessage(SendMessageNew, nil)
-	})
-	newButton.Importance = widget.HighImportance
-	top := container.NewHBox(layout.NewSpacer(), container.NewPadded(newButton), layout.NewSpacer())
-
-	a.folderSection = container.NewBorder(top, nil, nil, nil, a.folderTree)
-
-	// Combine sections
-	split1 := container.NewHSplit(a.Headers, detailWithToolbar)
-	split1.SetOffset(0.35)
-	split2 := container.NewHSplit(a.folderSection, split1)
-	split2.SetOffset(0.15)
-	a.Content = split2
-	return a
-}
-
 type folderNodeCategory int
 
 const (
@@ -162,6 +89,74 @@ func (f FolderNode) icon() fyne.Resource {
 		return theme.DeleteIcon()
 	}
 	return theme.FolderIcon()
+}
+
+// MailArea is the UI area showing the mail folders.
+type MailArea struct {
+	Content       fyne.CanvasObject
+	CurrentFolder optional.Optional[FolderNode]
+	Detail        fyne.CanvasObject
+	Headers       fyne.CanvasObject
+	OnSelected    func()
+	OnRefresh     func(count int)
+
+	body          *widget.Label
+	folderData    *fynetree.FyneTree[FolderNode]
+	folderSection fyne.CanvasObject
+	folderTree    *widget.Tree
+	header        *widget.Label
+	headerList    *widget.List
+	headers       []*app.CharacterMailHeader
+	headerTop     *widget.Label
+	folderDefault FolderNode
+	lastSelected  widget.ListItemID
+	lastUID       string
+	mail          *app.CharacterMail
+	subject       *widgets.Label
+	toolbar       *widget.Toolbar
+	u             *BaseUI
+}
+
+func (u *BaseUI) NewMailArea() *MailArea {
+	a := &MailArea{
+		body:       widget.NewLabel(""),
+		folderData: fynetree.New[FolderNode](),
+		header:     widget.NewLabel(""),
+		headers:    make([]*app.CharacterMailHeader, 0),
+		headerTop:  widget.NewLabel(""),
+		subject:    widgets.NewLabelWithSize("", theme.SizeNameSubHeadingText),
+		u:          u,
+	}
+
+	// Mail
+	a.toolbar = a.makeToolbar()
+	a.toolbar.Hide()
+	a.subject.Truncation = fyne.TextTruncateClip
+	a.header.Truncation = fyne.TextTruncateClip
+	a.body.Wrapping = fyne.TextWrapWord
+	a.Detail = container.NewBorder(container.NewVBox(a.subject, a.header), nil, nil, nil, container.NewVScroll(a.body))
+	detailWithToolbar := container.NewBorder(a.toolbar, nil, nil, nil, a.Detail)
+
+	// Headers
+	a.headerList = a.makeHeaderList()
+	a.Headers = container.NewBorder(a.headerTop, nil, nil, nil, a.headerList)
+
+	// Folders
+	a.folderTree = a.makeFolderTree()
+	r, f := a.MakeSendAction()
+	newButton := widget.NewButtonWithIcon("New message", r, f)
+	newButton.Importance = widget.HighImportance
+	top := container.NewHBox(layout.NewSpacer(), container.NewPadded(newButton), layout.NewSpacer())
+
+	a.folderSection = container.NewBorder(top, nil, nil, nil, a.folderTree)
+
+	// Combine sections
+	split1 := container.NewHSplit(a.Headers, detailWithToolbar)
+	split1.SetOffset(0.35)
+	split2 := container.NewHSplit(a.folderSection, split1)
+	split2.SetOffset(0.15)
+	a.Content = split2
+	return a
 }
 
 func (a *MailArea) makeFolderTree() *widget.Tree {
@@ -519,8 +514,8 @@ func (a *MailArea) makeFolderTopText(f FolderNode) (string, widget.Importance) {
 	return s, widget.MediumImportance
 }
 
-func (a *MailArea) MakeDeleteAction(onSuccess func()) func() {
-	return func() {
+func (a *MailArea) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
+	return theme.DeleteIcon(), func() {
 		s := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Header())
 		d := NewConfirmDialog("Delete mail", s, "Delete", func(confirmed bool) {
 			if confirmed {
@@ -541,34 +536,40 @@ func (a *MailArea) MakeDeleteAction(onSuccess func()) func() {
 	}
 }
 
+func (a *MailArea) MakeForwardAction() (fyne.Resource, func()) {
+	return theme.MailForwardIcon(), func() {
+		a.u.showSendMessageWindow(SendMessageForward, a.mail)
+	}
+}
+
+func (a *MailArea) MakeReplyAction() (fyne.Resource, func()) {
+	return theme.MailReplyIcon(), func() {
+		a.u.showSendMessageWindow(SendMessageReply, a.mail)
+	}
+}
+
+func (a *MailArea) MakeReplyAllAction() (fyne.Resource, func()) {
+	return theme.MailReplyAllIcon(), func() {
+		a.u.showSendMessageWindow(SendMessageReplyAll, a.mail)
+	}
+}
+
+func (a *MailArea) MakeSendAction() (fyne.Resource, func()) {
+	return theme.ContentAddIcon(), func() {
+		a.u.showSendMessageWindow(SendMessageNew, nil)
+	}
+}
+
 func (a *MailArea) makeToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
-		widget.NewToolbarAction(theme.MailReplyIcon(), func() {
-			if a.SendMessage == nil {
-				return
-			}
-			a.SendMessage(SendMessageReply, a.mail)
-		}),
-		widget.NewToolbarAction(theme.MailReplyAllIcon(), func() {
-			if a.SendMessage == nil {
-				return
-			}
-			a.SendMessage(SendMessageReplyAll, a.mail)
-		}),
-		widget.NewToolbarAction(theme.MailForwardIcon(), func() {
-			if a.SendMessage == nil {
-				return
-			}
-			a.SendMessage(SendMessageForward, a.mail)
-		}),
+		widget.NewToolbarAction(a.MakeReplyAction()),
+		widget.NewToolbarAction(a.MakeReplyAllAction()),
+		widget.NewToolbarAction(a.MakeForwardAction()),
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-			if a.SendMessage == nil {
-				return
-			}
 			a.u.Window.Clipboard().SetContent(a.mail.String())
 		}),
 		widget.NewToolbarSpacer(),
-		widget.NewToolbarAction(theme.DeleteIcon(), a.MakeDeleteAction(nil)),
+		widget.NewToolbarAction(a.MakeDeleteAction(nil)),
 	)
 	return toolbar
 }

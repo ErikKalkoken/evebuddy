@@ -8,9 +8,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/dustin/go-humanize"
@@ -43,11 +41,6 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 	}
 	u.ShowLocationInfoWindow = func(locationID int64) {
 		showItemWindow(u.NewItemInfoArea(0, 0, locationID, ui.DescriptionTab))
-	}
-
-	u.MailArea.SendMessage = func(_ ui.SendMessageMode, _ *app.CharacterMail) {
-		d := dialog.NewInformation("Send Message", "PLACEHOLDER", u.Window)
-		d.Show()
 	}
 
 	// character destination
@@ -89,12 +82,18 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		"Mail",
 		theme.MailComposeIcon(),
 		func() {
-			deleteAction := widgets.NewIconButton(theme.DeleteIcon(), u.MailArea.MakeDeleteAction(func() {
-				characterNav.Pop()
-			}))
 			u.MailArea.OnSelected = func() {
 				characterNav.Push(
-					newCharacterAppBar("Mail", u.MailArea.Detail, deleteAction),
+					newCharacterAppBar(
+						"Mail",
+						u.MailArea.Detail,
+						widgets.NewIconButton(u.MailArea.MakeReplyAction()),
+						widgets.NewIconButton(u.MailArea.MakeReplyAllAction()),
+						widgets.NewIconButton(u.MailArea.MakeForwardAction()),
+						widgets.NewIconButton(u.MailArea.MakeDeleteAction(func() {
+							characterNav.Pop()
+						})),
+					),
 				)
 			}
 			characterNav.Push(
@@ -102,6 +101,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 					"Mail",
 					u.MailArea.Headers,
 					widgets.NewIconButtonWithMenu(theme.FolderIcon(), mailMenu),
+					widgets.NewIconButton(u.MailArea.MakeSendAction()),
 				))
 		},
 	)

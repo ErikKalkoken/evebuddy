@@ -14,8 +14,8 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-var ErrEveEntityNameNoMatch = errors.New("no matching EveEntity name")
-var ErrEveEntityNameMultipleMatches = errors.New("multiple matching EveEntity names")
+var ErrEveEntityNameNoMatch = errors.New("no match found with that name")
+var ErrEveEntityNameMultipleMatches = errors.New("multiple matches with that name")
 
 func (eu *EveUniverseService) GetOrCreateEveEntityESI(ctx context.Context, id int32) (*app.EveEntity, error) {
 	o, err := eu.st.GetEveEntity(ctx, id)
@@ -231,10 +231,10 @@ func (eu *EveUniverseService) findEveEntitiesByName(ctx context.Context, names [
 			return nil, err
 		}
 		if len(ee) == 0 {
-			return nil, fmt.Errorf("%s: %w", n, ErrEveEntityNameNoMatch)
+			return nil, fmt.Errorf("\"%s\": %w", n, ErrEveEntityNameNoMatch)
 		}
 		if len(ee) > 1 {
-			return nil, fmt.Errorf("%s: %w", n, ErrEveEntityNameMultipleMatches)
+			return nil, fmt.Errorf("\"%s\": %w", n, ErrEveEntityNameMultipleMatches)
 		}
 		e := ee[0]
 		ee2 = append(ee2, e)
