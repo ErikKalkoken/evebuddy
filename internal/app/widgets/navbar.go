@@ -222,6 +222,7 @@ func (w *NavBar) Refresh() {
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	w.bg.FillColor = th.Color(colorBarBackground, v)
 	w.bg.Refresh()
+	w.destinations.Refresh()
 	w.BaseWidget.Refresh()
 }
 

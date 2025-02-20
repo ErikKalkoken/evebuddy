@@ -471,6 +471,9 @@ func (u *BaseUI) UpdateMailIndicator() {
 	if u.ShowMailIndicator == nil || u.HideMailIndicator == nil {
 		return
 	}
+	if !u.FyneApp.Preferences().BoolWithFallback(SettingSysTrayEnabled, SettingSysTrayEnabledDefault) {
+		return
+	}
 	n, err := u.CharacterService.GetAllCharacterMailUnreadCount(context.Background())
 	if err != nil {
 		slog.Error("update mail indicator", "error", err)

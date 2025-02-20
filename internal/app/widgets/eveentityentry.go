@@ -22,19 +22,27 @@ type EveEntityEntry struct {
 
 	bg            *canvas.Rectangle
 	main          *fyne.Container
+	placeholder   *widget.RichText
 	showAddDialog func(func(*app.EveEntity))
 	mu            sync.Mutex
 }
+
+var _ fyne.Tappable = (*EveEntityEntry)(nil)
 
 func NewEveEntityEntry(showAddDialog func(onSelected func(*app.EveEntity))) *EveEntityEntry {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
 	bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
+	placeholder := widget.NewRichText(&widget.TextSegment{
+		Style: widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder},
+		Text:  "Tap to add recipients...",
+	})
 	w := &EveEntityEntry{
 		bg:            bg,
 		main:          container.NewGridWithColumns(1),
 		Recipients:    make([]*app.EveEntity, 0),
+		placeholder:   placeholder,
 		showAddDialog: showAddDialog,
 	}
 	w.ExtendBaseWidget(w)
@@ -93,32 +101,42 @@ func (w *EveEntityEntry) updateMain() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.main.RemoveAll()
-	for _, r := range w.Recipients {
-		name := widget.NewLabel(r.Name)
-		name.Truncation = fyne.TextTruncateEllipsis
-		category := NewLabelWithSize(r.CategoryDisplay(), theme.SizeNameCaptionText)
-		w.main.Add(container.NewBorder(
-			nil,
-			nil,
-			nil,
-			container.NewHBox(
-				category,
-				NewIconButton(theme.DeleteIcon(), func() {
-					w.remove(r.ID)
-				})),
-			name,
-		),
-		)
+	if len(w.Recipients) == 0 {
+		w.main.Add(w.placeholder)
+	} else {
+		for _, r := range w.Recipients {
+			name := widget.NewLabel(r.Name)
+			name.Truncation = fyne.TextTruncateEllipsis
+			category := NewLabelWithSize(r.CategoryDisplay(), theme.SizeNameCaptionText)
+			w.main.Add(container.NewBorder(
+				nil,
+				nil,
+				nil,
+				container.NewHBox(
+					category,
+					NewIconButton(theme.DeleteIcon(), func() {
+						w.remove(r.ID)
+					})),
+				name,
+			))
+		}
 	}
-	w.main.Add(container.NewHBox(
-		NewIconButton(theme.NewPrimaryThemedResource(theme.ContentAddIcon()), func() {
-			w.showAddDialog(func(ee *app.EveEntity) {
-				w.Add(ee)
-				w.main.Refresh()
-			})
-		})))
+	// w.main.Add(container.NewHBox(
+	// 	NewIconButton(theme.NewPrimaryThemedResource(theme.ContentAddIcon()), func() {
+	// 		w.showAddDialog(func(ee *app.EveEntity) {
+	// 			w.Add(ee)
+	// 		})
+	// 	})))
 }
 
+func (w *EveEntityEntry) Tapped(_ *fyne.PointEvent) {
+	w.showAddDialog(func(ee *app.EveEntity) {
+		w.Add(ee)
+	})
+}
+
+func (w *EveEntityEntry) TappedSecondary(_ *fyne.PointEvent) {
+}
 func (w *EveEntityEntry) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()

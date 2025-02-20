@@ -122,7 +122,7 @@ type SettingsArea struct {
 	NotificationSettings         fyne.CanvasObject
 	GeneralActions               []SettingAction
 	GeneralContent               fyne.CanvasObject
-	CommunicationGroupConent     fyne.CanvasObject
+	CommunicationGroupContent    fyne.CanvasObject
 	OnCommunicationGroupSelected func(title string, content fyne.CanvasObject, actions []SettingAction)
 
 	u      *BaseUI
