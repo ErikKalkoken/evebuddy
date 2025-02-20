@@ -166,7 +166,12 @@ func NewSettingItemSelect(
 	}
 }
 
-func makeSettingDialog(setting fyne.CanvasObject, label, hint string, reset func(), refresh func(), w fyne.Window) dialog.Dialog {
+func makeSettingDialog(
+	setting fyne.CanvasObject,
+	label, hint string,
+	reset, refresh func(),
+	w fyne.Window,
+) dialog.Dialog {
 	var d dialog.Dialog
 	buttons := container.NewHBox(
 		widget.NewButton("Close", func() {
@@ -188,7 +193,7 @@ func makeSettingDialog(setting fyne.CanvasObject, label, hint string, reset func
 		setting,
 	)
 	d = dialog.NewCustomWithoutButtons(label, c, w)
-	s := w.Canvas().Size()
+	_, s := w.Canvas().InteractiveArea()
 	var width float32
 	if fyne.CurrentDevice().IsMobile() {
 		width = s.Width

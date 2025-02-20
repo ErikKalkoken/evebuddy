@@ -84,7 +84,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 		page, sendIcon, sendAction := u.MakeSendMailPage(character, mode, mail, u.Window)
 		characterNav.PushNoNavBar(
 			newCharacterAppBar(
-				"New Mail",
+				"",
 				page,
 				widgets.NewIconButton(sendIcon, func() {
 					if sendAction() {

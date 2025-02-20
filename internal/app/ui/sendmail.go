@@ -99,18 +99,18 @@ func (u *BaseUI) MakeSendMailPage(
 			d.Show()
 		}
 		if err := to.Validate(); err != nil {
-			showErrorDialog("You need to specify at least on recipient")
+			showErrorDialog("A mail needs to have at least one recipient.")
 			return false
 		}
 		if err := subject.Validate(); err != nil {
-			showErrorDialog("You need to specify a subject")
+			showErrorDialog("The subject can not be empty.")
 			return false
 		}
 		if err := body.Validate(); err != nil {
-			showErrorDialog("You message can not be empty")
+			showErrorDialog("The message can not be empty.")
 			return false
 		}
-		ctx := context.TODO()
+		ctx := context.Background()
 		recipients := mailrecipient.NewFromText(to.Text)
 		ee2, err := u.EveUniverseService.ResolveUncleanEveEntities(ctx, recipients.ToEveEntitiesUnclean())
 		if err != nil {
@@ -174,8 +174,9 @@ func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID
 		toInput.SetText(r.String())
 		dlg.Hide()
 	}
-	showErrorDialog := func(message string) {
-		d := dialog.NewInformation("Something went wrong", message, w)
+	showErrorDialog := func(search string, err error) {
+		slog.Error("Failed to resolve names", "search", search, "error", err)
+		d := dialog.NewInformation("Something went wrong", err.Error(), w)
 		d.Show()
 	}
 	entry := widget.NewEntry()
@@ -187,32 +188,30 @@ func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID
 			list.Refresh()
 			return
 		}
+		ctx := context.Background()
 		var err error
-		names, err = u.makeRecipientOptions(search)
+		names, err = u.makeRecipientOptions(ctx, search)
 		if err != nil {
-			slog.Error("Failed to find names", "search", search, "error", err)
-			showErrorDialog(err.Error())
+			showErrorDialog(search, err)
 			return
 		}
 		list.Refresh()
 		go func() {
 			missingIDs, err := u.CharacterService.AddEveEntitiesFromCharacterSearchESI(
-				context.Background(),
+				ctx,
 				characterID,
 				search,
 			)
 			if err != nil {
-				slog.Error("Failed to search names", "search", search, "error", err)
-				showErrorDialog(err.Error())
+				showErrorDialog(search, err)
 				return
 			}
 			if len(missingIDs) == 0 {
 				return // no need to update when not changed
 			}
-			names, err = u.makeRecipientOptions(search)
+			names, err = u.makeRecipientOptions(ctx, search)
 			if err != nil {
-				slog.Error("Failed to make name options", "error", err)
-				showErrorDialog(err.Error())
+				showErrorDialog(search, err)
 				return
 			}
 			list.Refresh()
@@ -222,26 +221,28 @@ func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID
 	rect.StrokeColor = theme.Color(theme.ColorNameMenuBackground)
 	rect.StrokeWidth = 1
 	c := container.NewBorder(
-		entry,
+		container.NewBorder(nil, nil, nil, widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
+			dlg.Hide()
+		}), entry),
 		nil,
 		nil,
 		nil,
 		container.NewStack(rect, list),
 	)
-	dlg = dialog.NewCustom("Add recipient", "Cancel", c, w)
-	s := w.Canvas().Size()
-	var width float32
-	if u.IsMobile() {
-		width = s.Width
+	dlg = dialog.NewCustomWithoutButtons("Add recipient", c, w)
+	_, s := w.Canvas().InteractiveArea()
+	var f float32
+	if fyne.CurrentDevice().IsMobile() {
+		f = 1.0
 	} else {
-		width = s.Width * 0.8
+		f = 0.8
 	}
-	dlg.Resize(fyne.NewSize(width, s.Height*0.8))
+	dlg.Resize(fyne.NewSize(s.Width*f, s.Height*f))
 	dlg.Show()
 }
 
-func (u *BaseUI) makeRecipientOptions(search string) ([]string, error) {
-	ee, err := u.EveUniverseService.ListEveEntitiesByPartialName(context.TODO(), search)
+func (u *BaseUI) makeRecipientOptions(ctx context.Context, search string) ([]string, error) {
+	ee, err := u.EveUniverseService.ListEveEntitiesByPartialName(ctx, search)
 	if err != nil {
 		return nil, err
 	}

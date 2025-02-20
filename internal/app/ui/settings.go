@@ -538,14 +538,8 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 				w := a.currentWindow()
 				d = dialog.NewCustomWithoutButtons(title, c, w)
 				d.Show()
-				s := w.Canvas().Size()
-				var width float32
-				if a.u.IsMobile() {
-					width = s.Width
-				} else {
-					width = s.Width * 0.8
-				}
-				d.Resize(fyne.NewSize(width, s.Height*0.8))
+				_, s := w.Canvas().InteractiveArea()
+				d.Resize(fyne.NewSize(s.Width*0.8, s.Height*0.8))
 				d.SetOnClosed(refresh)
 			},
 		)
