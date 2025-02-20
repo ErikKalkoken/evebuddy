@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -22,7 +23,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 type locationDataNodeType uint

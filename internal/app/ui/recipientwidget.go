@@ -1,8 +1,8 @@
 package ui
 
 import (
-	"fmt"
 	"slices"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -22,6 +22,7 @@ type Recipients struct {
 	bg            *canvas.Rectangle
 	main          *fyne.Container
 	showAddDialog func(func(*app.EveEntity))
+	mu            sync.Mutex
 }
 
 func NewRecipients(showAddDialog func(onSelected func(*app.EveEntity))) *Recipients {
@@ -40,45 +41,72 @@ func NewRecipients(showAddDialog func(onSelected func(*app.EveEntity))) *Recipie
 }
 
 func (w *Recipients) Set(ee []*app.EveEntity) {
+	w.mu.Lock()
 	w.Recipients = ee
-	w.updateMain()
+	w.mu.Unlock()
+	w.Refresh()
 }
 
 func (w *Recipients) Add(ee *app.EveEntity) {
-	for _, o := range w.Recipients {
-		if o.ID == ee.ID {
-			return
+	added := func() bool {
+		w.mu.Lock()
+		defer w.mu.Unlock()
+		for _, o := range w.Recipients {
+			if o.ID == ee.ID {
+				return false
+			}
 		}
+		w.Recipients = append(w.Recipients, ee)
+		return true
+	}()
+	if added {
+		w.Refresh()
 	}
-	w.Recipients = append(w.Recipients, ee)
-	w.updateMain()
 }
 
 func (w *Recipients) remove(id int32) {
-	for i, o := range w.Recipients {
-		if o.ID == id {
-			w.Recipients = slices.Delete(w.Recipients, i, i+1)
-			w.updateMain()
-			return
+	removed := func() bool {
+		w.mu.Lock()
+		defer w.mu.Unlock()
+		for i, o := range w.Recipients {
+			if o.ID == id {
+				w.Recipients = slices.Delete(w.Recipients, i, i+1)
+				return true
+			}
 		}
+		return false
+	}()
+	if removed {
+		w.updateMain()
+		w.Refresh()
 	}
 }
 
 func (w *Recipients) IsEmpty() bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	return len(w.Recipients) == 0
 }
 
 func (w *Recipients) updateMain() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	w.main.RemoveAll()
 	for _, r := range w.Recipients {
+		name := widget.NewLabel(r.Name)
+		name.Truncation = fyne.TextTruncateEllipsis
+		category := widgets.NewLabelWithSize(r.CategoryDisplay(), theme.SizeNameCaptionText)
 		w.main.Add(container.NewBorder(
 			nil,
 			nil,
 			nil,
-			widgets.NewIconButton(theme.DeleteIcon(), func() {
-				w.remove(r.ID)
-			}),
-			widget.NewLabel(fmt.Sprintf("%s [%s]", r.Name, r.Category))),
+			container.NewHBox(
+				category,
+				widgets.NewIconButton(theme.DeleteIcon(), func() {
+					w.remove(r.ID)
+				})),
+			name,
+		),
 		)
 	}
 	w.main.Add(container.NewHBox(
@@ -88,7 +116,6 @@ func (w *Recipients) updateMain() {
 				w.main.Refresh()
 			})
 		})))
-	w.main.Refresh()
 }
 
 func (w *Recipients) Refresh() {
@@ -96,6 +123,7 @@ func (w *Recipients) Refresh() {
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	w.bg.FillColor = th.Color(theme.ColorNameInputBackground, v)
 	w.bg.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
+	w.updateMain()
 	w.BaseWidget.Refresh()
 	w.main.Refresh()
 	w.bg.Refresh()

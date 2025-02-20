@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 )
 
@@ -143,11 +144,12 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 		func() fyne.CanvasObject {
 			name := widget.NewLabel("Template")
 			name.Truncation = fyne.TextTruncateClip
+			category := widgets.NewLabelWithSize("Template", theme.SizeNameCaptionText)
 			return container.NewBorder(
 				nil,
 				nil,
 				nil,
-				widget.NewLabel("Template"),
+				category,
 				name,
 			)
 		},
@@ -158,7 +160,7 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 			it := items[id]
 			row := co.(*fyne.Container).Objects
 			row[0].(*widget.Label).SetText(it.Name)
-			row[1].(*widget.Label).SetText(it.CategoryDisplay())
+			row[1].(*widgets.Label).SetText(it.CategoryDisplay())
 		},
 	)
 	list.HideSeparators = true
