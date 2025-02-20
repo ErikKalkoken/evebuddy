@@ -50,7 +50,7 @@ func (u *BaseUI) MakeSendMailPage(
 	mail *app.CharacterMail,
 	w fyne.Window,
 ) (fyne.CanvasObject, fyne.Resource, func() bool) {
-	to := NewRecipients(func(onSelected func(*app.EveEntity)) {
+	to := widgets.NewEveEntityEntry(func(onSelected func(*app.EveEntity)) {
 		u.showAddDialog(character.ID, onSelected, w)
 	})
 

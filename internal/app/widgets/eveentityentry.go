@@ -1,4 +1,4 @@
-package ui
+package widgets
 
 import (
 	"slices"
@@ -11,10 +11,11 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 )
 
-type Recipients struct {
+// EveEntityEntry represents an entry widgets for entering Eve Entities.
+// Entities can be added and removed.
+type EveEntityEntry struct {
 	widget.BaseWidget
 
 	Recipients []*app.EveEntity
@@ -25,12 +26,12 @@ type Recipients struct {
 	mu            sync.Mutex
 }
 
-func NewRecipients(showAddDialog func(onSelected func(*app.EveEntity))) *Recipients {
+func NewEveEntityEntry(showAddDialog func(onSelected func(*app.EveEntity))) *EveEntityEntry {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
 	bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
-	w := &Recipients{
+	w := &EveEntityEntry{
 		bg:            bg,
 		main:          container.NewGridWithColumns(1),
 		Recipients:    make([]*app.EveEntity, 0),
@@ -40,14 +41,14 @@ func NewRecipients(showAddDialog func(onSelected func(*app.EveEntity))) *Recipie
 	return w
 }
 
-func (w *Recipients) Set(ee []*app.EveEntity) {
+func (w *EveEntityEntry) Set(ee []*app.EveEntity) {
 	w.mu.Lock()
 	w.Recipients = ee
 	w.mu.Unlock()
 	w.Refresh()
 }
 
-func (w *Recipients) Add(ee *app.EveEntity) {
+func (w *EveEntityEntry) Add(ee *app.EveEntity) {
 	added := func() bool {
 		w.mu.Lock()
 		defer w.mu.Unlock()
@@ -64,7 +65,7 @@ func (w *Recipients) Add(ee *app.EveEntity) {
 	}
 }
 
-func (w *Recipients) remove(id int32) {
+func (w *EveEntityEntry) remove(id int32) {
 	removed := func() bool {
 		w.mu.Lock()
 		defer w.mu.Unlock()
@@ -82,27 +83,27 @@ func (w *Recipients) remove(id int32) {
 	}
 }
 
-func (w *Recipients) IsEmpty() bool {
+func (w *EveEntityEntry) IsEmpty() bool {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return len(w.Recipients) == 0
 }
 
-func (w *Recipients) updateMain() {
+func (w *EveEntityEntry) updateMain() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.main.RemoveAll()
 	for _, r := range w.Recipients {
 		name := widget.NewLabel(r.Name)
 		name.Truncation = fyne.TextTruncateEllipsis
-		category := widgets.NewLabelWithSize(r.CategoryDisplay(), theme.SizeNameCaptionText)
+		category := NewLabelWithSize(r.CategoryDisplay(), theme.SizeNameCaptionText)
 		w.main.Add(container.NewBorder(
 			nil,
 			nil,
 			nil,
 			container.NewHBox(
 				category,
-				widgets.NewIconButton(theme.DeleteIcon(), func() {
+				NewIconButton(theme.DeleteIcon(), func() {
 					w.remove(r.ID)
 				})),
 			name,
@@ -110,7 +111,7 @@ func (w *Recipients) updateMain() {
 		)
 	}
 	w.main.Add(container.NewHBox(
-		widgets.NewIconButton(theme.NewPrimaryThemedResource(theme.ContentAddIcon()), func() {
+		NewIconButton(theme.NewPrimaryThemedResource(theme.ContentAddIcon()), func() {
 			w.showAddDialog(func(ee *app.EveEntity) {
 				w.Add(ee)
 				w.main.Refresh()
@@ -118,7 +119,7 @@ func (w *Recipients) updateMain() {
 		})))
 }
 
-func (w *Recipients) Refresh() {
+func (w *EveEntityEntry) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	w.bg.FillColor = th.Color(theme.ColorNameInputBackground, v)
@@ -129,7 +130,7 @@ func (w *Recipients) Refresh() {
 	w.bg.Refresh()
 }
 
-func (w *Recipients) MinSize() fyne.Size {
+func (w *EveEntityEntry) MinSize() fyne.Size {
 	th := w.Theme()
 	innerPadding := th.Size(theme.SizeNameInnerPadding)
 	textSize := th.Size(theme.SizeNameText)
@@ -139,7 +140,7 @@ func (w *Recipients) MinSize() fyne.Size {
 	return minSize.Max(w.BaseWidget.MinSize())
 }
 
-func (w *Recipients) CreateRenderer() fyne.WidgetRenderer {
+func (w *EveEntityEntry) CreateRenderer() fyne.WidgetRenderer {
 	w.updateMain()
 	c := container.NewStack(
 		w.bg,
