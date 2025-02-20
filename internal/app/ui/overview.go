@@ -147,7 +147,7 @@ type overviewTotals struct {
 func (a *OverviewArea) updateCharacters() (overviewTotals, error) {
 	var totals overviewTotals
 	var err error
-	ctx := context.TODO()
+	ctx := context.Background()
 	mycc, err := a.u.CharacterService.ListCharacters(ctx)
 	if err != nil {
 		return totals, err
@@ -200,17 +200,5 @@ func (a *OverviewArea) updateCharacters() (overviewTotals, error) {
 		}
 	}
 	a.rows = cc
-
-	// FIXME
-	// var hasUnread bool
-	// for _, c := range a.characters {
-	// 	if c.unreadCount.ValueOrZero() > 0 {
-	// 		hasUnread = true
-	// 		break
-	// 	}
-	// }
-	// if hasUnread {
-	// 	a.u.showMailIndicator()
-	// }
 	return totals, nil
 }

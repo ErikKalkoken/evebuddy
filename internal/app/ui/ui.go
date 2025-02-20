@@ -61,6 +61,8 @@ type BaseUI struct {
 	OnRefreshCharacter func(*app.Character)
 	OnSetCharacter     func(int32)
 	OnShowAndRun       func()
+	ShowMailIndicator  func()
+	HideMailIndicator  func()
 
 	// need to be implemented for each platform
 	ShowTypeInfoWindow     func(typeID, characterID int32, selectTab TypeWindowTab)
@@ -463,4 +465,20 @@ func (u *BaseUI) UpdateAvatar(id int32, setIcon func(fyne.Resource)) {
 		r2 = IconCharacterplaceholder64Jpeg
 	}
 	setIcon(r2)
+}
+
+func (u *BaseUI) UpdateMailIndicator() {
+	if u.ShowMailIndicator == nil || u.HideMailIndicator == nil {
+		return
+	}
+	n, err := u.CharacterService.GetAllCharacterMailUnreadCount(context.Background())
+	if err != nil {
+		slog.Error("update mail indicator", "error", err)
+		return
+	}
+	if n > 0 {
+		u.ShowMailIndicator()
+	} else {
+		u.HideMailIndicator()
+	}
 }

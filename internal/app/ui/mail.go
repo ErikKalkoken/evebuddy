@@ -592,6 +592,7 @@ func (a *MailArea) setMail(mailID int32) {
 			}
 			a.Refresh()
 			a.u.OverviewArea.Refresh()
+			a.u.UpdateMailIndicator()
 		}()
 	}
 	a.updateContent(a.mail.Subject, a.mail.Header(), a.mail.BodyPlain())

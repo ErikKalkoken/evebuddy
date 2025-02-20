@@ -16,18 +16,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
-// SectionWasUpdated reports wether the section has been updated at all.
-func (s *CharacterService) SectionWasUpdated(ctx context.Context, characterID int32, section app.CharacterSection) (bool, error) {
-	status, err := s.getCharacterSectionStatus(ctx, characterID, section)
-	if err != nil {
-		return false, err
-	}
-	if status == nil {
-		return false, nil
-	}
-	return !status.CompletedAt.IsZero(), nil
-}
-
 type UpdateSectionParams struct {
 	CharacterID           int32
 	Section               app.CharacterSection

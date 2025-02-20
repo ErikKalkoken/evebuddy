@@ -67,18 +67,6 @@ func markdownStripLinks(s string) string {
 	return r.ReplaceAllString(s, "**$1**")
 }
 
-func NewSubHeading(text string) *widget.RichText {
-	x := widget.NewRichText(&widget.TextSegment{
-		Style: widget.RichTextStyle{
-			ColorName: theme.ColorNameForeground,
-			Inline:    false,
-			SizeName:  theme.SizeNameSubHeadingText,
-		},
-		Text: text,
-	})
-	return x
-}
-
 // makeGridOrList makes and returns a GridWrap on desktop and a List on mobile.
 //
 // This allows the grid items to render nicely as list on mobile and also enable truncation.

@@ -197,7 +197,8 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 			u.MailArea.Refresh()
 		}
 		if needsRefresh {
-			u.OverviewArea.Refresh()
+			go u.OverviewArea.Refresh()
+			go u.UpdateMailIndicator()
 		}
 		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
 			go func() {
@@ -279,5 +280,4 @@ func calcNotifyEarliest(pref fyne.Preferences, settingEarliest string) time.Time
 		return earliest
 	}
 	return timeout
-
 }

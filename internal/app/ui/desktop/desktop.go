@@ -65,6 +65,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 				}
 			}
 		}
+		go u.UpdateMailIndicator()
 	}
 	u.OnShowAndRun = func() {
 		width := float32(u.FyneApp.Preferences().FloatWithFallback(ui.SettingWindowWidth, ui.SettingWindowHeightDefault))
@@ -93,6 +94,13 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 		go u.statusBarArea.refreshUpdateStatus()
 		go u.statusBarArea.refreshCharacterCount()
 	}
+	u.ShowMailIndicator = func() {
+		u.DeskApp.SetSystemTrayIcon(ui.IconIconmarkedPng)
+	}
+	u.HideMailIndicator = func() {
+		u.DeskApp.SetSystemTrayIcon(ui.IconIconPng)
+	}
+
 	showItemWindow := func(iw *ui.ItemInfoArea, err error) {
 		if err != nil {
 			t := "Failed to open info window"
@@ -222,7 +230,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 			u.Window.Hide()
 		})
 	}
-	u.hideMailIndicator() // init system tray icon
+	u.HideMailIndicator() // init system tray icon
 
 	menu := makeMenu(u)
 	u.Window.SetMainMenu(menu)
@@ -275,14 +283,6 @@ func (u *DesktopUI) toogleTabs(enabled bool) {
 		u.overviewTab.Content.(*container.AppTabs).SelectIndex(0)
 	}
 	u.tabs.Refresh()
-}
-
-func (u *DesktopUI) showMailIndicator() {
-	u.DeskApp.SetSystemTrayIcon(ui.IconIconmarkedPng)
-}
-
-func (u *DesktopUI) hideMailIndicator() {
-	u.DeskApp.SetSystemTrayIcon(ui.IconIconPng)
 }
 
 func (u *DesktopUI) ResetDesktopSettings() {
