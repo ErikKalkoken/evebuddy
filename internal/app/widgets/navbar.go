@@ -16,10 +16,10 @@ import (
 */
 
 const (
-	colorBackground = theme.ColorNameMenuBackground
-	colorForeground = theme.ColorNameForeground
-	colorIndicator  = theme.ColorNameInputBorder
-	colorPrimary    = theme.ColorNamePrimary
+	colorBarBackground = theme.ColorNameMenuBackground
+	colorForeground    = theme.ColorNameForeground
+	colorIndicator     = theme.ColorNameInputBorder
+	colorPrimary       = theme.ColorNamePrimary
 )
 
 type navBarItem struct {
@@ -149,7 +149,7 @@ func NewNavBar(items ...navBarItem) *NavBar {
 	w := &NavBar{
 		bar:  container.NewGridWithRows(1),
 		body: container.NewStack(),
-		bg:   canvas.NewRectangle(theme.Color(colorBackground)),
+		bg:   canvas.NewRectangle(theme.Color(colorBarBackground)),
 	}
 	w.ExtendBaseWidget(w)
 	for idx, it := range items {
@@ -195,14 +195,14 @@ func (w *NavBar) selectDestination(idx int) {
 func (w *NavBar) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
-	w.bg.FillColor = th.Color(colorBackground, v)
+	w.bg.FillColor = th.Color(colorBarBackground, v)
 	w.bg.Refresh()
 	w.BaseWidget.Refresh()
 }
 
 func (w *NavBar) CreateRenderer() fyne.WidgetRenderer {
 	p := theme.Padding()
-	bar := container.NewStack(w.bg, container.New(layout.NewCustomPaddedLayout(p*2, p*2, p*2, p*2), w.bar))
+	bar := container.NewStack(w.bg, container.New(layout.NewCustomPaddedLayout(p*3, p*3, p*2, p*2), w.bar))
 	c := container.New(
 		layout.NewCustomPaddedLayout(-p, -p, -p, -p),
 		container.NewBorder(

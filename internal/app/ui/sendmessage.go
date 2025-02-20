@@ -142,7 +142,7 @@ func (u *BaseUI) showAddDialog(w fyne.Window, toInput *widget.Entry, characterID
 			return len(names)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("")
+			return widget.NewLabel("") // TODO: Show names and category in different columns, maybe also show icons
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(names) {
