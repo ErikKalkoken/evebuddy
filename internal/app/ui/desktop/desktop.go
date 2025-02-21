@@ -9,12 +9,14 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
+	"github.com/dustin/go-humanize"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/dustin/go-humanize"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 // The DesktopUI is the root object of the DesktopUI and contains all DesktopUI areas.
@@ -23,9 +25,6 @@ import (
 // call methods on other DesktopUI areas and access shared variables in the DesktopUI.
 type DesktopUI struct {
 	*ui.BaseUI
-
-	// Paths to user data (for information only)
-	DataPaths map[string]string
 
 	sfg *singleflight.Group
 
@@ -84,6 +83,14 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 			}()
 		}
 		go u.statusBarArea.StartUpdateTicker()
+		sc := &desktop.CustomShortcut{
+			KeyName:  fyne.KeyS,
+			Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl + fyne.KeyModifierShift,
+		}
+		u.Window.Canvas().AddShortcut(sc, func(shortcut fyne.Shortcut) {
+			sb := iwidget.NewSnackbar("This is a test snack bar!", u.Window)
+			sb.Show()
+		})
 	}
 	u.OnAppStopped = func() {
 		u.saveAppState()

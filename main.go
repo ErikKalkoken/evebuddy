@@ -18,7 +18,6 @@ import (
 	"strings"
 	"time"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/driver/desktop"
 	"github.com/antihax/goesi"
@@ -33,7 +32,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	desktop1 "github.com/ErikKalkoken/evebuddy/internal/app/ui/desktop"
+	uidesktop "github.com/ErikKalkoken/evebuddy/internal/app/ui/desktop"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/mobile"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
@@ -46,6 +45,7 @@ const (
 	appID               = "io.github.erikkalkoken.evebuddy"
 	appName             = "evebuddy"
 	cacheCleanUpTimeout = time.Minute * 30
+	crashFileName       = "crash.txt"
 	dbFileName          = appName + ".sqlite"
 	logFileName         = appName + ".log"
 	logFolderName       = "log"
@@ -110,7 +110,7 @@ func main() {
 		}
 	}
 
-	var dataDir, logDir string
+	var dataDir string
 
 	// data dir
 	if isDesktop || *developFlag {
@@ -119,6 +119,14 @@ func main() {
 		if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
 			log.Fatal(err)
 		}
+	} else {
+		dataDir = fyneApp.Storage().RootURI().Path()
+	}
+
+	if *dirsFlag {
+		fmt.Println(dataDir)
+		fmt.Println(fyneApp.Storage().RootURI().Path())
+		return
 	}
 
 	// desktop related init
@@ -130,52 +138,35 @@ func main() {
 			u.ShowAndRun()
 			return
 		}
+	}
 
-		// setup logfile for desktop
-		logDir = filepath.Join(dataDir, logFolderName)
-		if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
-			log.Fatal(err)
-		}
-		logger := &lumberjack.Logger{
-			Filename:   filepath.Join(logDir, logFileName),
-			MaxSize:    logMaxSizeMB,
-			MaxBackups: logMaxBackups,
-		}
-		multi := io.MultiWriter(os.Stderr, logger)
-		log.SetOutput(multi)
+	// setup logfile for desktop
+	logDir := filepath.Join(dataDir, logFolderName)
+	if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
+		log.Fatal(err)
+	}
+	logFilePath := filepath.Join(logDir, logFileName)
+	logger := &lumberjack.Logger{
+		Filename:   logFilePath,
+		MaxSize:    logMaxSizeMB,
+		MaxBackups: logMaxBackups,
+	}
+	multi := io.MultiWriter(os.Stderr, logger)
+	log.SetOutput(multi)
 
+	if isDesktop {
 		// ensure single instance
 		mu, err := ensureSingleInstance()
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer mu.Release()
-
-		// setup crash reporting
-		crashFile, err := os.Create(filepath.Join(logDir, "crash.txt"))
-		if err != nil {
-			slog.Error("Failed to create crash report file", "error", err)
-		}
-		defer crashFile.Close()
-		if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
-			slog.Error("Failed to setup crash report", "error", err)
-		}
 	}
 
-	if *dirsFlag {
-		fmt.Println(dataDir)
-		fmt.Println(fyneApp.Storage().RootURI().Path())
-		return
-	}
+	crashFilePath := setupCrashFile(logDir)
 
 	// init database
-	var dbPath string
-	if isDesktop || *developFlag {
-		dbPath = filepath.Join(dataDir, dbFileName)
-	} else {
-		// EXPERIMENTAL
-		dbPath = ensureFileExists(fyneApp.Storage(), dbFileName)
-	}
+	dbPath := filepath.Join(dataDir, dbFileName)
 	dsn := "file:///" + filepath.ToSlash(dbPath)
 	db, err := storage.InitDB(dsn)
 	if err != nil {
@@ -237,8 +228,7 @@ func main() {
 	ess := esistatus.New(esiClient)
 	eis := eveimage.New(pc, httpClient, *offlineFlag)
 	if isDesktop {
-		u := desktop1.NewDesktopUI(fyneApp)
-		slog.Debug("ui instance created")
+		u := uidesktop.NewDesktopUI(fyneApp)
 		u.CacheService = memCache
 		u.CharacterService = cs
 		u.ESIStatusService = ess
@@ -248,11 +238,11 @@ func main() {
 		u.IsOffline = *offlineFlag
 		u.IsUpdateTickerDisabled = *disableUpdatesFlag
 		u.DataPaths = map[string]string{
-			"db":  dbPath,
-			"log": logDir,
+			"db":        dbPath,
+			"log":       logFilePath,
+			"crashfile": crashFilePath,
 		}
 		u.Init()
-		slog.Debug("ui initialized")
 
 		// start pprof web server
 		if *pprofFlag {
@@ -270,7 +260,6 @@ func main() {
 		u.ShowAndRun()
 	} else {
 		u := mobile.NewMobileUI(fyneApp)
-		slog.Debug("ui instance created")
 		u.CacheService = memCache
 		u.CharacterService = cs
 		u.ESIStatusService = ess
@@ -279,8 +268,12 @@ func main() {
 		u.StatusCacheService = sc
 		u.IsOffline = *offlineFlag
 		u.IsUpdateTickerDisabled = *disableUpdatesFlag
+		u.DataPaths = map[string]string{
+			"db":        dbPath,
+			"log":       logFilePath,
+			"crashfile": crashFilePath,
+		}
 		u.Init()
-		slog.Debug("ui initialized")
 
 		// start pprof web server
 		if *pprofFlag {
@@ -294,21 +287,16 @@ func main() {
 	}
 }
 
-func ensureFileExists(st fyne.Storage, name string) string {
-	var p string
-	u, err := st.Open(name)
+func setupCrashFile(logDir string) (path string) {
+	path = filepath.Join(logDir, crashFileName)
+	crashFile, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		u, err := st.Create(name)
-		if err != nil {
-			log.Fatal(err)
-		}
-		p = u.URI().Path()
-		u.Close()
-		log.Println("created new file: ", p)
-	} else {
-		p = u.URI().Path()
-		u.Close()
-		log.Println("found existing file: ", p)
+		slog.Error("Failed to open crash report file", "error", err)
+		return
 	}
-	return p
+	if err := debug.SetCrashOutput(crashFile, debug.CrashOptions{}); err != nil {
+		slog.Error("Failed to setup crash report", "error", err)
+	}
+	crashFile.Close()
+	return
 }

@@ -3,6 +3,8 @@ package desktop
 import (
 	"log/slog"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -103,11 +105,22 @@ func (u *DesktopUI) showAboutDialog() {
 }
 
 func (u *DesktopUI) showUserDataDialog() {
-	f := widget.NewForm(
-		widget.NewFormItem("DB", makePathEntry(u.Window.Clipboard(), u.DataPaths["db"])),
-		widget.NewFormItem("Log", makePathEntry(u.Window.Clipboard(), u.DataPaths["log"])),
-		widget.NewFormItem("Settings", makePathEntry(u.Window.Clipboard(), u.FyneApp.Storage().RootURI().Path())),
-	)
+	f := widget.NewForm()
+	type item struct {
+		name string
+		path string
+	}
+	items := make([]item, 0)
+	for n, p := range u.DataPaths {
+		items = append(items, item{n, p})
+	}
+	items = append(items, item{"settings", u.FyneApp.Storage().RootURI().Path()})
+	slices.SortFunc(items, func(a, b item) int {
+		return strings.Compare(a.name, b.name)
+	})
+	for _, it := range items {
+		f.Append(it.name, makePathEntry(u.Window.Clipboard(), it.path))
+	}
 	d := dialog.NewCustom("User data", "Close", f, u.Window)
 	kxdialog.AddDialogKeyHandler(d, u.Window)
 	u.disableMenuShortcuts()

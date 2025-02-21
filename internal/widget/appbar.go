@@ -68,6 +68,6 @@ func (w *AppBar) CreateRenderer() fyne.WidgetRenderer {
 	}
 	row := container.NewBorder(nil, nil, left, right, w.title)
 	top := container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), container.NewStack(w.bg, row))
-	c := container.NewBorder(top, nil, nil, nil, w.body)
+	c := container.NewBorder(top, nil, nil, nil, container.New(layout.NewCustomPaddedLayout(p, p, 0, 0), w.body))
 	return widget.NewSimpleRenderer(c)
 }

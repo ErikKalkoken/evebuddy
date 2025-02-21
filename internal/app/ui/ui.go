@@ -49,6 +49,8 @@ type BaseUI struct {
 	EveImageService    app.EveImageService
 	EveUniverseService *eveuniverse.EveUniverseService
 	StatusCacheService app.StatusCacheService
+	// Paths to user data (for information only)
+	DataPaths map[string]string
 	// Run the app in offline mode
 	IsOffline bool
 	// Whether to disable update tickers (useful for debugging)

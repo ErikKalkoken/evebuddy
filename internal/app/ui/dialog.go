@@ -34,3 +34,8 @@ func NewErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog
 	kxdialog.AddDialogKeyHandler(d, parent)
 	return d
 }
+
+func ShowErrorDialog(message string, err error, parent fyne.Window) {
+	d := NewErrorDialog(message, err, parent)
+	d.Show()
+}

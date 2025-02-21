@@ -20,12 +20,12 @@ type Snackbar struct {
 	widget.PopUp
 
 	// Duration the snackbar is shown before it disappears on it's own
-	Delay time.Duration
+	Timeout time.Duration
 }
 
 // NewSnackbar returns a new snackbar. Call Show() to display it.
 func NewSnackbar(text string, win fyne.Window) *Snackbar {
-	w := &Snackbar{Delay: snackbarDelayDefault}
+	w := &Snackbar{Timeout: snackbarDelayDefault}
 	w.ExtendBaseWidget(w)
 	w.Content = widget.NewLabel(text)
 	c := win.Canvas()
@@ -40,8 +40,13 @@ func NewSnackbar(text string, win fyne.Window) *Snackbar {
 func (w *Snackbar) Show() {
 	w.PopUp.Show()
 	go func() {
-		time.Sleep(w.Delay)
+		time.Sleep(w.Timeout)
 		w.Hide()
 	}()
+}
 
+// ShowSnackbar shows a snackbar immediately with default timeout.
+func ShowSnackbar(text string, win fyne.Window) {
+	sb := NewSnackbar(text, win)
+	sb.Show()
 }
