@@ -40,11 +40,11 @@ type DesktopUI struct {
 }
 
 // NewDesktopUI build the UI and returns it.
-func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
+func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	u := &DesktopUI{
-		sfg: new(singleflight.Group),
+		sfg:    new(singleflight.Group),
+		BaseUI: bui,
 	}
-	u.BaseUI = ui.NewBaseUI(fyneApp)
 	if u.DeskApp == nil {
 		panic("Could not start in desktop mode")
 	}
@@ -229,7 +229,7 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 	u.Window.SetContent(mainContent)
 
 	// system tray menu
-	if fyneApp.Preferences().BoolWithFallback(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault) {
+	if u.FyneApp.Preferences().BoolWithFallback(ui.SettingSysTrayEnabled, ui.SettingSysTrayEnabledDefault) {
 		name := u.AppName()
 		item := fyne.NewMenuItem(name, nil)
 		item.Disabled = true

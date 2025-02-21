@@ -165,6 +165,13 @@ func main() {
 
 	crashFilePath := setupCrashFile(logDir)
 
+	// start pprof web server
+	if *pprofFlag {
+		go func() {
+			log.Println(http.ListenAndServe("localhost:6060", nil))
+		}()
+	}
+
 	// init database
 	dbPath := filepath.Join(dataDir, dbFileName)
 	dsn := "file:///" + filepath.ToSlash(dbPath)
@@ -227,62 +234,30 @@ func main() {
 	// Init UI
 	ess := esistatus.New(esiClient)
 	eis := eveimage.New(pc, httpClient, *offlineFlag)
+	bu := ui.NewBaseUI(fyneApp)
+	bu.CacheService = memCache
+	bu.CharacterService = cs
+	bu.ESIStatusService = ess
+	bu.EveImageService = eis
+	bu.EveUniverseService = eu
+	bu.StatusCacheService = sc
+	bu.IsOffline = *offlineFlag
+	bu.IsUpdateTickerDisabled = *disableUpdatesFlag
+	bu.DataPaths = map[string]string{
+		"db":        dbPath,
+		"log":       logFilePath,
+		"crashfile": crashFilePath,
+	}
 	if isDesktop {
-		u := uidesktop.NewDesktopUI(fyneApp)
-		u.CacheService = memCache
-		u.CharacterService = cs
-		u.ESIStatusService = ess
-		u.EveImageService = eis
-		u.EveUniverseService = eu
-		u.StatusCacheService = sc
-		u.IsOffline = *offlineFlag
-		u.IsUpdateTickerDisabled = *disableUpdatesFlag
-		u.DataPaths = map[string]string{
-			"db":        dbPath,
-			"log":       logFilePath,
-			"crashfile": crashFilePath,
-		}
+		u := uidesktop.NewDesktopUI(bu)
 		u.Init()
-
-		// start pprof web server
-		if *pprofFlag {
-			go func() {
-				log.Println(http.ListenAndServe("localhost:6060", nil))
-			}()
-		}
-
-		// reset main window size
 		if *resetSettingsFlag {
 			u.ResetDesktopSettings()
 		}
-
-		// Start app
 		u.ShowAndRun()
 	} else {
-		u := mobile.NewMobileUI(fyneApp)
-		u.CacheService = memCache
-		u.CharacterService = cs
-		u.ESIStatusService = ess
-		u.EveImageService = eis
-		u.EveUniverseService = eu
-		u.StatusCacheService = sc
-		u.IsOffline = *offlineFlag
-		u.IsUpdateTickerDisabled = *disableUpdatesFlag
-		u.DataPaths = map[string]string{
-			"db":        dbPath,
-			"log":       logFilePath,
-			"crashfile": crashFilePath,
-		}
+		u := mobile.NewMobileUI(bu)
 		u.Init()
-
-		// start pprof web server
-		if *pprofFlag {
-			go func() {
-				log.Println(http.ListenAndServe("localhost:6060", nil))
-			}()
-		}
-
-		// Start app
 		u.ShowAndRun()
 	}
 }

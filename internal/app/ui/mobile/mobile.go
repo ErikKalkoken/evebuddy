@@ -27,9 +27,8 @@ type MobileUI struct {
 }
 
 // NewUI build the UI and returns it.
-func NewMobileUI(fyneApp fyne.App) *MobileUI {
-	u := &MobileUI{}
-	u.BaseUI = ui.NewBaseUI(fyneApp)
+func NewMobileUI(bui *ui.BaseUI) *MobileUI {
+	u := &MobileUI{BaseUI: bui}
 	showItemWindow := func(iw *ui.ItemInfoArea, err error) {
 		if err != nil {
 			t := "Failed to show item info"
