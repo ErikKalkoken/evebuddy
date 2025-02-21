@@ -13,7 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 const (

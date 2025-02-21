@@ -23,7 +23,7 @@ import (
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type attributeGroup string
@@ -519,7 +519,7 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 			default:
 				n = eveicon.Faction
 			}
-			marker := widgets.NewImageFromResource(
+			marker := iwidget.NewImageFromResource(
 				eveicon.GetResourceByName(n),
 				fyne.NewSquareSize(render.MinSize().Width*0.2),
 			)
@@ -538,7 +538,7 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 		})
 		typeIcon.Add(icon)
 	}
-	ownerIcon := widgets.NewImageFromResource(IconQuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
+	ownerIcon := iwidget.NewImageFromResource(IconQuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
 	ownerName := widget.NewLabel("")
 	ownerName.Wrapping = fyne.TextWrapWord
 	if a.owner != nil {

@@ -13,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
@@ -45,7 +45,7 @@ func (a *ImplantsArea) makeImplantList() *widget.List {
 			return len(a.implants)
 		},
 		func() fyne.CanvasObject {
-			iconMain := widgets.NewImageFromResource(IconCharacterplaceholder64Jpeg, fyne.NewSquareSize(42))
+			iconMain := iwidget.NewImageFromResource(IconCharacterplaceholder64Jpeg, fyne.NewSquareSize(42))
 			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
 			name := widget.NewLabel("placeholder")
 			name.Truncation = fyne.TextTruncateEllipsis

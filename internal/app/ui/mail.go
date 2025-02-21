@@ -19,7 +19,7 @@ import (
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type folderNodeCategory int
@@ -105,7 +105,7 @@ type MailArea struct {
 	lastSelected  widget.ListItemID
 	lastUID       string
 	mail          *app.CharacterMail
-	subject       *widgets.Label
+	subject       *iwidget.Label
 	toolbar       *widget.Toolbar
 	u             *BaseUI
 }
@@ -118,7 +118,7 @@ func (u *BaseUI) NewMailArea() *MailArea {
 		header:        widget.NewLabel(""),
 		headers:       make([]*app.CharacterMailHeader, 0),
 		headerTop:     widget.NewLabel(""),
-		subject:       widgets.NewLabelWithSize("", theme.SizeNameSubHeadingText),
+		subject:       iwidget.NewLabelWithSize("", theme.SizeNameSubHeadingText),
 		u:             u,
 	}
 

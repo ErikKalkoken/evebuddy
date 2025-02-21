@@ -14,7 +14,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 // toolbarArea is the UI area showing the current status aka status bar.
@@ -22,18 +22,18 @@ type toolbarArea struct {
 	content      *fyne.Container
 	icon         *canvas.Image
 	name         *widget.Label
-	switchButton *widgets.ContextMenuButton
+	switchButton *iwidget.ContextMenuButton
 	u            *DesktopUI
 }
 
 func (u *DesktopUI) newToolbarArea() *toolbarArea {
 	a := &toolbarArea{
-		icon: widgets.NewImageFromResource(
+		icon: iwidget.NewImageFromResource(
 			ui.IconCharacterplaceholder64Jpeg,
 			fyne.NewSquareSize(ui.DefaultIconUnitSize),
 		),
 		name: widget.NewLabel(""),
-		switchButton: widgets.NewContextMenuButtonWithIcon(
+		switchButton: iwidget.NewContextMenuButtonWithIcon(
 			theme.NewThemedResource(ui.IconSwitchaccountSvg), "Switch", fyne.NewMenu(""),
 		),
 		u: u,

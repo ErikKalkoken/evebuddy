@@ -19,7 +19,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type NotificationGroup struct {
@@ -264,7 +264,7 @@ func (a *NotificationsArea) setDetail(n *app.CharacterNotification) {
 		n.RecipientName = a.u.CurrentCharacter().EveCharacter.Name
 	}
 	a.Detail.RemoveAll()
-	subject := widgets.NewLabelWithSize(n.TitleDisplay(), theme.SizeNameSubHeadingText)
+	subject := iwidget.NewLabelWithSize(n.TitleDisplay(), theme.SizeNameSubHeadingText)
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
 	a.Detail.Add(widget.NewLabel(n.Header()))

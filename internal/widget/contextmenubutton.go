@@ -1,5 +1,5 @@
 // Package widgets contains custom widgets for this app.
-package widgets
+package widget
 
 import (
 	"fyne.io/fyne/v2"

@@ -19,7 +19,7 @@ import (
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type accountCharacter struct {
@@ -85,7 +85,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 			return len(a.characters)
 		},
 		func() fyne.CanvasObject {
-			portrait := widgets.NewImageFromResource(
+			portrait := iwidget.NewImageFromResource(
 				IconCharacterplaceholder64Jpeg,
 				fyne.NewSquareSize(DefaultIconUnitSize),
 			)

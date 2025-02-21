@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 const (

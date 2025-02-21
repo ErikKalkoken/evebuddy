@@ -21,7 +21,7 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type ChartType uint

@@ -16,7 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type jumpCloneNode struct {
@@ -76,7 +76,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 			return a.treeData.IsBranch(uid)
 		},
 		func(branch bool) fyne.CanvasObject {
-			iconMain := widgets.NewImageFromResource(
+			iconMain := iwidget.NewImageFromResource(
 				IconCharacterplaceholder64Jpeg,
 				fyne.NewSquareSize(DefaultIconUnitSize),
 			)

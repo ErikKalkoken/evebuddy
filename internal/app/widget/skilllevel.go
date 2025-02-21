@@ -7,7 +7,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 // SkillLevel shows the skill level status for a character.

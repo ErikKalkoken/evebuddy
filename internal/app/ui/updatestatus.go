@@ -18,7 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 const (
@@ -53,7 +53,7 @@ type UpdateStatusArea struct {
 	entities          fyne.CanvasObject
 	entitiesButton    *widget.Button
 	entityList        *widget.List
-	nav               *widgets.Navigator
+	nav               *iwidget.Navigator
 	onEntitySelected  func(int)
 	onSectionSelected func(int)
 	sectionEntities   []sectionEntity
@@ -99,27 +99,27 @@ func (u *BaseUI) NewUpdateStatusArea() *UpdateStatusArea {
 	if u.IsMobile() {
 		sections := container.NewBorder(top2, nil, nil, nil, a.sectionList)
 		details := container.NewBorder(top3, nil, nil, nil, a.detailsList)
-		ab := widgets.NewAppBar("Home", a.entities)
-		a.nav = widgets.NewNavigator(ab)
+		ab := iwidget.NewAppBar("Home", a.entities)
+		a.nav = iwidget.NewNavigator(ab)
 		a.Content = a.nav
-		menu := widgets.NewIconButtonWithMenu(
+		menu := iwidget.NewIconButtonWithMenu(
 			theme.MoreVerticalIcon(),
 			fyne.NewMenu("", fyne.NewMenuItem(a.entitiesButton.Text, a.MakeUpdateAllAction())),
 		)
 		a.onEntitySelected = func(id int) {
 			a.nav.Push(
-				widgets.NewAppBar("", sections, menu),
+				iwidget.NewAppBar("", sections, menu),
 			)
 		}
 		a.onSectionSelected = func(id int) {
 			s := a.sections[id]
-			menu := widgets.NewIconButtonWithMenu(
+			menu := iwidget.NewIconButtonWithMenu(
 				theme.MoreVerticalIcon(),
 				fyne.NewMenu(
 					"", fyne.NewMenuItem(a.detailsButton.Text, a.makeDetailsAction(s.EntityID, s.SectionID))),
 			)
 			a.nav.Push(
-				widgets.NewAppBar("", details, menu),
+				iwidget.NewAppBar("", details, menu),
 			)
 		}
 	} else {
@@ -140,7 +140,7 @@ func (a *UpdateStatusArea) makeEntityList() *widget.List {
 			return len(a.sectionEntities)
 		},
 		func() fyne.CanvasObject {
-			icon := widgets.NewImageFromResource(IconQuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
+			icon := iwidget.NewImageFromResource(IconQuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
 			name := widget.NewLabel("Template")
 			status := widget.NewLabel("Template")
 			pb := widget.NewActivity()

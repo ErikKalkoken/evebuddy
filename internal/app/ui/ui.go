@@ -24,7 +24,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 // Base UI constants
@@ -405,7 +405,7 @@ func (u *BaseUI) MakeAboutPage() fyne.CanvasObject {
 		spinner.Hide()
 		latest.Show()
 	}()
-	title := widgets.NewLabelWithSize(u.AppName(), theme.SizeNameSubHeadingText)
+	title := iwidget.NewLabelWithSize(u.AppName(), theme.SizeNameSubHeadingText)
 	title.TextStyle.Bold = true
 	c := container.New(
 		layout.NewCustomPaddedVBoxLayout(0),

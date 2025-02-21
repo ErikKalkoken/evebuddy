@@ -12,7 +12,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 func EntityNameOrFallback[T int | int32 | int64](e *app.EntityShort[T], fallback string) string {
@@ -24,7 +24,7 @@ func EntityNameOrFallback[T int | int32 | int64](e *app.EntityShort[T], fallback
 
 // NewImageResourceAsync shows a placeholder resource and refreshes it once the main resource is loaded asynchronously.
 func NewImageResourceAsync(placeholder fyne.Resource, minSize fyne.Size, loader func() (fyne.Resource, error)) *canvas.Image {
-	image := widgets.NewImageFromResource(placeholder, minSize)
+	image := iwidget.NewImageFromResource(placeholder, minSize)
 	RefreshImageResourceAsync(image, loader)
 	return image
 }

@@ -17,7 +17,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
-	"github.com/ErikKalkoken/evebuddy/internal/widgets"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 // TODO: Improve switch API to allow switch not to be set on error
@@ -141,7 +141,7 @@ func (u *BaseUI) NewSettingsArea() *SettingsArea {
 		for _, a := range actions {
 			items = append(items, fyne.NewMenuItem(a.Label, a.Action))
 		}
-		options := widgets.NewContextMenuButtonWithIcon(theme.MoreHorizontalIcon(), "", fyne.NewMenu("", items...))
+		options := iwidget.NewContextMenuButtonWithIcon(theme.MoreHorizontalIcon(), "", fyne.NewMenu("", items...))
 		return container.NewBorder(
 			container.NewVBox(container.NewHBox(t, layout.NewSpacer(), options), widget.NewSeparator()),
 			nil,
@@ -169,7 +169,7 @@ func (a *SettingsArea) currentWindow() fyne.Window {
 }
 
 func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction) {
-	logLevel := widgets.NewSettingItemSelect(
+	logLevel := iwidget.NewSettingItemSelect(
 		"Log level",
 		"Set current log level",
 		LogLevelNames(),
@@ -186,7 +186,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		},
 		a.currentWindow,
 	)
-	maxMail := widgets.NewSettingItemSlider(
+	maxMail := iwidget.NewSettingItemSlider(
 		"Maximum mails",
 		"Max number of mails downloaded. 0 = unlimited.",
 		0,
@@ -202,7 +202,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		},
 		a.currentWindow,
 	)
-	maxWallet := widgets.NewSettingItemSlider(
+	maxWallet := iwidget.NewSettingItemSlider(
 		"Maximum wallet transaction",
 		"Max wallet transactions downloaded. 0 = unlimited.",
 		0,
@@ -218,16 +218,16 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		},
 		a.currentWindow,
 	)
-	items := []widgets.SettingItem{
-		widgets.NewSettingItemHeading("Application"),
+	items := []iwidget.SettingItem{
+		iwidget.NewSettingItemHeading("Application"),
 		logLevel,
-		widgets.NewSettingItemSeperator(),
-		widgets.NewSettingItemHeading("EVE Online"),
+		iwidget.NewSettingItemSeperator(),
+		iwidget.NewSettingItemHeading("EVE Online"),
 		maxMail,
 		maxWallet,
 	}
 
-	sysTray := widgets.NewSettingItemSwitch(
+	sysTray := iwidget.NewSettingItemSwitch(
 		"Close button",
 		"App will minimize to system tray when closed (requires restart)",
 		func() bool {
@@ -244,7 +244,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		items = slices.Insert(items, 2, sysTray)
 	}
 
-	list := widgets.NewSettingList(items)
+	list := iwidget.NewSettingList(items)
 
 	clear := SettingAction{
 		"Clear the local image cache",
@@ -312,7 +312,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 	typesEnabled := set.NewFromSlice(a.u.FyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 
 	// add global items
-	notifyCommunications := widgets.NewSettingItemSwitch(
+	notifyCommunications := iwidget.NewSettingItemSwitch(
 		"Notify communications",
 		"Whether to notify new communications",
 		func() bool {
@@ -330,7 +330,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			}
 		},
 	)
-	notifyMails := widgets.NewSettingItemSwitch(
+	notifyMails := iwidget.NewSettingItemSwitch(
 		"Notify mails",
 		"Whether to notify new mails",
 		func() bool {
@@ -348,7 +348,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			}
 		},
 	)
-	notifyPI := widgets.NewSettingItemSwitch(
+	notifyPI := iwidget.NewSettingItemSwitch(
 		"Planetary Industry",
 		"Whether to notify about expired extractions",
 		func() bool {
@@ -366,7 +366,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			}
 		},
 	)
-	notifyTraining := widgets.NewSettingItemSwitch(
+	notifyTraining := iwidget.NewSettingItemSwitch(
 		"Notify Training",
 		"Whether to notify abouthen skillqueue is empty",
 		func() bool {
@@ -396,7 +396,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			}
 		},
 	)
-	notifyContracts := widgets.NewSettingItemSwitch(
+	notifyContracts := iwidget.NewSettingItemSwitch(
 		"Notify Contracts",
 		"Whether to notify when contract status changes",
 		func() bool {
@@ -414,7 +414,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			}
 		},
 	)
-	notifTimeout := widgets.NewSettingItemSlider(
+	notifTimeout := iwidget.NewSettingItemSlider(
 		"Notify Timeout",
 		"Events older then this value in hours will not be notified",
 		1,
@@ -431,8 +431,8 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		},
 		a.currentWindow,
 	)
-	items := []widgets.SettingItem{
-		widgets.NewSettingItemHeading("Global"),
+	items := []iwidget.SettingItem{
+		iwidget.NewSettingItemHeading("Global"),
 		notifyCommunications,
 		notifyMails,
 		notifyPI,
@@ -440,8 +440,8 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		notifyContracts,
 		notifTimeout,
 	}
-	items = append(items, widgets.NewSettingItemSeperator())
-	items = append(items, widgets.NewSettingItemHeading("Communication Groups"))
+	items = append(items, iwidget.NewSettingItemSeperator())
+	items = append(items, iwidget.NewSettingItemHeading("Communication Groups"))
 
 	// add communication groups
 	const groupHint = "Choose which communications to notfy about"
@@ -452,11 +452,11 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 	groupPages := make(map[evenotification.Group]groupPage) // for pre-constructing group pages
 	for _, g := range groups {
 		groupPages[g] = func() groupPage {
-			items2 := make([]widgets.SettingItem, 0)
+			items2 := make([]iwidget.SettingItem, 0)
 			for _, nt := range groupsAndTypes[g] {
 				ntStr := nt.String()
 				ntDisplay := nt.Display()
-				it := widgets.NewSettingItemSwitch(
+				it := iwidget.NewSettingItemSwitch(
 					ntDisplay,
 					"",
 					func() bool {
@@ -475,7 +475,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 				)
 				items2 = append(items2, it)
 			}
-			list2 := widgets.NewSettingList(items2)
+			list2 := iwidget.NewSettingList(items2)
 			enableAll := SettingAction{
 				Label: "Enable all",
 				Action: func() {
@@ -500,7 +500,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			}
 		}()
 
-		it := widgets.NewSettingItemCustom(g.String(), groupHint,
+		it := iwidget.NewSettingItemCustom(g.String(), groupHint,
 			func() any {
 				var enabled int
 				for _, nt := range groupsAndTypes[g] {
@@ -515,10 +515,10 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 				}
 				return "Off"
 			},
-			func(it widgets.SettingItem, refresh func()) {
+			func(it iwidget.SettingItem, refresh func()) {
 				p := groupPages[g]
 				title := g.String()
-				hint := widgets.NewLabelWithSize(groupHint, theme.SizeNameCaptionText)
+				hint := iwidget.NewLabelWithSize(groupHint, theme.SizeNameCaptionText)
 				if a.OnCommunicationGroupSelected != nil {
 					c := container.NewBorder(hint, nil, nil, nil, p.content)
 					a.OnCommunicationGroupSelected(title, c, p.actions)
@@ -546,7 +546,7 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 		items = append(items, it)
 	}
 
-	list := widgets.NewSettingList(items)
+	list := iwidget.NewSettingList(items)
 	reset := SettingAction{
 		Label: "Reset to defaults",
 		Action: func() {
