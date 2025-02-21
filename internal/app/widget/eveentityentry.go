@@ -1,4 +1,4 @@
-package widgets
+package widget
 
 import (
 	"slices"
@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 // EveEntityEntry represents an entry widgets for entering Eve Entities.
@@ -107,14 +108,14 @@ func (w *EveEntityEntry) updateMain() {
 		for _, r := range w.Recipients {
 			name := widget.NewLabel(r.Name)
 			name.Truncation = fyne.TextTruncateEllipsis
-			category := NewLabelWithSize(r.CategoryDisplay(), theme.SizeNameCaptionText)
+			category := iwidgets.NewLabelWithSize(r.CategoryDisplay(), theme.SizeNameCaptionText)
 			w.main.Add(container.NewBorder(
 				nil,
 				nil,
 				nil,
 				container.NewHBox(
 					category,
-					NewIconButton(theme.DeleteIcon(), func() {
+					iwidgets.NewIconButton(theme.DeleteIcon(), func() {
 						w.remove(r.ID)
 					})),
 				name,

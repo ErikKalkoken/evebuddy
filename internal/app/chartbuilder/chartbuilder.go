@@ -14,13 +14,14 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/golang/freetype/truetype"
 	"github.com/wcharczuk/go-chart/v2"
 	"github.com/wcharczuk/go-chart/v2/drawing"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 type ChartType uint
@@ -130,7 +131,7 @@ func (cb ChartBuilder) render(ct ChartType, size fyne.Size, title string, values
 	}
 	fn := makeFileName(title)
 	r := fyne.NewStaticResource(fn, content)
-	chart := widgets.NewImageFromResource(r, size)
+	chart := iwidgets.NewImageFromResource(r, size)
 	return chart, nil
 }
 

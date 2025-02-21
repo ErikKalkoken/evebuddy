@@ -20,9 +20,10 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 type attributeGroup string
@@ -611,11 +612,11 @@ func (a *ItemInfoArea) makeAttributesTab() fyne.CanvasObject {
 			return len(a.attributesData)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewTypeAttributeItem()
+			return appwidget.NewTypeAttributeItem()
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
 			r := a.attributesData[lii]
-			item := co.(*widgets.TypeAttributeItem)
+			item := co.(*appwidget.TypeAttributeItem)
 			if r.isTitle {
 				item.SetTitle(r.label)
 			} else {
@@ -635,11 +636,11 @@ func (a *ItemInfoArea) makeFittingsTab() fyne.CanvasObject {
 			return len(a.fittingData)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewTypeAttributeItem()
+			return appwidget.NewTypeAttributeItem()
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
 			r := a.fittingData[lii]
-			item := co.(*widgets.TypeAttributeItem)
+			item := co.(*appwidget.TypeAttributeItem)
 			item.SetRegular(r.icon, r.label, r.value)
 		},
 	)
@@ -659,7 +660,7 @@ func (a *ItemInfoArea) makeRequirementsTab() fyne.CanvasObject {
 				widget.NewLabel("Placeholder"),
 				layout.NewSpacer(),
 				widget.NewLabel("Check"),
-				widgets.NewSkillLevel(),
+				appwidget.NewSkillLevel(),
 				widget.NewIcon(IconQuestionmarkSvg),
 			)
 		},
@@ -668,7 +669,7 @@ func (a *ItemInfoArea) makeRequirementsTab() fyne.CanvasObject {
 			row := co.(*fyne.Container).Objects
 			skill := row[0].(*widget.Label)
 			text := row[2].(*widget.Label)
-			level := row[3].(*widgets.SkillLevel)
+			level := row[3].(*appwidget.SkillLevel)
 			icon := row[4].(*widget.Icon)
 			skill.SetText(SkillDisplayName(o.name, o.requiredLevel))
 			if o.activeLevel == 0 && o.trainedLevel == 0 {

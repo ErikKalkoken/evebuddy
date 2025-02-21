@@ -14,7 +14,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 )
 
 // PlanetArea is the UI area that shows the skillqueue
@@ -47,13 +47,13 @@ func (a *PlanetArea) makeList() *widget.List {
 			return len(a.planets)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewPlanet()
+			return appwidget.NewPlanet()
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.planets) || id < 0 {
 				return
 			}
-			o := co.(*widgets.Planet)
+			o := co.(*appwidget.Planet)
 			p := a.planets[id]
 			o.Set(p)
 		},

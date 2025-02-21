@@ -15,7 +15,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 )
 
@@ -50,7 +51,7 @@ func (u *BaseUI) MakeSendMailPage(
 	mail *app.CharacterMail,
 	w fyne.Window,
 ) (fyne.CanvasObject, fyne.Resource, func() bool) {
-	to := widgets.NewEveEntityEntry(func(onSelected func(*app.EveEntity)) {
+	to := appwidget.NewEveEntityEntry(func(onSelected func(*app.EveEntity)) {
 		u.showAddDialog(character.ID, onSelected, w)
 	})
 

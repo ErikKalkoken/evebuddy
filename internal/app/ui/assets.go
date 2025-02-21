@@ -19,7 +19,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -213,7 +213,7 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 			return len(a.assets)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewAsset(func(image *canvas.Image, ca *app.CharacterAsset) {
+			return appwidget.NewAsset(func(image *canvas.Image, ca *app.CharacterAsset) {
 				RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
 					switch ca.Variant() {
 					case app.VariantSKIN:
@@ -233,7 +233,7 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 				return
 			}
 			ca := a.assets[id]
-			item := co.(*widgets.Asset)
+			item := co.(*appwidget.Asset)
 			item.Set(ca)
 		},
 	)

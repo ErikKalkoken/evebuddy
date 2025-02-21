@@ -11,8 +11,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 func EntityNameOrFallback[T int | int32 | int64](e *app.EntityShort[T], fallback string) string {

@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -105,14 +105,14 @@ func (a *ShipsArea) makeShipsGrid() *widget.GridWrap {
 			return len(a.ships)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewShipItem(a.u.EveImageService, a.u.CacheService, IconQuestionmarkSvg)
+			return appwidget.NewShipItem(a.u.EveImageService, a.u.CacheService, IconQuestionmarkSvg)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.ships) {
 				return
 			}
 			o := a.ships[id]
-			item := co.(*widgets.ShipItem)
+			item := co.(*appwidget.ShipItem)
 			item.Set(o.Type.ID, o.Type.Name, o.CanFly)
 		})
 	g.OnSelected = func(id widget.GridWrapItemID) {

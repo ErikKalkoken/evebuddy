@@ -16,9 +16,10 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 type folderNodeCategory int
@@ -396,7 +397,7 @@ func (a *MailArea) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewMailHeaderItem(app.TimeDefaultFormat)
+			return appwidget.NewMailHeaderItem(app.TimeDefaultFormat)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -406,7 +407,7 @@ func (a *MailArea) makeHeaderList() *widget.List {
 			if !a.u.HasCharacter() {
 				return
 			}
-			item := co.(*widgets.MailHeaderItem)
+			item := co.(*appwidget.MailHeaderItem)
 			item.Set(m.From, m.Subject, m.Timestamp, m.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {

@@ -18,7 +18,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -39,15 +39,15 @@ const (
 
 // statusBarArea is the UI area showing the current status aka status bar.
 type statusBarArea struct {
-	characterCount *widgets.StatusBarItem
+	characterCount *appwidget.StatusBarItem
 	content        *fyne.Container
-	eveClock       *widgets.StatusBarItem
-	eveStatus      *widgets.StatusBarItem
+	eveClock       *appwidget.StatusBarItem
+	eveStatus      *appwidget.StatusBarItem
 	eveStatusError string
 	infoText       *widget.Label
 	newVersionHint *fyne.Container
 	u              *DesktopUI
-	updateStatus   *widgets.StatusBarItem
+	updateStatus   *appwidget.StatusBarItem
 }
 
 func (u *DesktopUI) newStatusBarArea() *statusBarArea {
@@ -56,18 +56,18 @@ func (u *DesktopUI) newStatusBarArea() *statusBarArea {
 		newVersionHint: container.NewHBox(),
 		u:              u,
 	}
-	a.characterCount = widgets.NewStatusBarItem(theme.AccountIcon(), "?", func() {
+	a.characterCount = appwidget.NewStatusBarItem(theme.AccountIcon(), "?", func() {
 		u.showAccountWindow()
 	})
-	a.updateStatus = widgets.NewStatusBarItem(theme.NewThemedResource(ui.IconUpdateSvg), "?", func() {
+	a.updateStatus = appwidget.NewStatusBarItem(theme.NewThemedResource(ui.IconUpdateSvg), "?", func() {
 		u.ShowUpdateStatusWindow()
 	})
-	a.eveClock = widgets.NewStatusBarItem(
+	a.eveClock = appwidget.NewStatusBarItem(
 		theme.NewThemedResource(ui.IconAccesstimefilledSvg),
 		"?",
 		a.showClockDialog,
 	)
-	a.eveStatus = widgets.NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
+	a.eveStatus = appwidget.NewStatusBarItem(theme.MediaRecordIcon(), "?", a.showEveStatusDialog)
 	a.content = container.NewVBox(widget.NewSeparator(), container.NewHBox(
 		a.infoText,
 		layout.NewSpacer(),

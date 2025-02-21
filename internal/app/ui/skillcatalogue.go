@@ -10,9 +10,9 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
 	"github.com/dustin/go-humanize"
 
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -154,7 +154,7 @@ func (a *SkillCatalogueArea) makeSkillsGrid() fyne.CanvasObject {
 			c := container.NewBorder(
 				nil,
 				nil,
-				widgets.NewSkillLevel(),
+				appwidget.NewSkillLevel(),
 				nil,
 				title,
 			)
@@ -169,7 +169,7 @@ func (a *SkillCatalogueArea) makeSkillsGrid() fyne.CanvasObject {
 		row := co.(*fyne.Container).Objects
 		label := row[0].(*widget.Label)
 		label.SetText(skill.name)
-		level := row[1].(*widgets.SkillLevel)
+		level := row[1].(*appwidget.SkillLevel)
 		level.Set(skill.activeLevel, skill.trainedLevel, 0)
 	}
 	makeOnSelected := func(unselectAll func()) func(int) {

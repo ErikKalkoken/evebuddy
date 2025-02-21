@@ -1,4 +1,4 @@
-package widgets
+package widget
 
 import (
 	"fmt"
@@ -13,6 +13,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 const (
@@ -35,7 +36,7 @@ type Planet struct {
 }
 
 func NewPlanet() *Planet {
-	image := NewImageFromResource(theme.BrokenImageIcon(), fyne.NewSquareSize(planetWidgetSizeDesktop))
+	image := iwidgets.NewImageFromResource(theme.BrokenImageIcon(), fyne.NewSquareSize(planetWidgetSizeDesktop))
 	extracting := widget.NewLabel("")
 	extracting.Truncation = fyne.TextTruncateEllipsis
 	producing := widget.NewLabel("")

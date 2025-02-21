@@ -14,11 +14,12 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
-	"github.com/dustin/go-humanize"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 type NotificationGroup struct {
@@ -123,14 +124,14 @@ func (a *NotificationsArea) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewMailHeaderItem(app.TimeDefaultFormat)
+			return appwidget.NewMailHeaderItem(app.TimeDefaultFormat)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
 				return
 			}
 			n := a.notifications[id]
-			item := co.(*widgets.MailHeaderItem)
+			item := co.(*appwidget.MailHeaderItem)
 			item.Set(n.Sender.Name, n.TitleDisplay(), n.Timestamp, n.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {

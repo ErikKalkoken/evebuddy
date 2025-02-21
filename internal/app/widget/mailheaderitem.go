@@ -1,4 +1,4 @@
-package widgets
+package widget
 
 import (
 	"time"
@@ -8,18 +8,20 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 type MailHeaderItem struct {
 	widget.BaseWidget
 	from       *widget.Label
-	subject    *Label
+	subject    *iwidgets.Label
 	timestamp  *widget.Label
 	timeFormat string
 }
 
 func NewMailHeaderItem(timeFormat string) *MailHeaderItem {
-	subject := NewLabelWithSize("", theme.SizeNameSubHeadingText)
+	subject := iwidgets.NewLabelWithSize("", theme.SizeNameSubHeadingText)
 	subject.Truncation = fyne.TextTruncateEllipsis
 	from := widget.NewLabel("")
 	from.Truncation = fyne.TextTruncateEllipsis

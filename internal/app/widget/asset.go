@@ -1,4 +1,4 @@
-package widgets
+package widget
 
 import (
 	"fyne.io/fyne/v2"
@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widgets"
 )
 
 const (
@@ -24,7 +25,7 @@ type Asset struct {
 }
 
 func NewAsset(iconLoader func(image *canvas.Image, ca *app.CharacterAsset)) *Asset {
-	icon := NewImageFromResource(
+	icon := iwidgets.NewImageFromResource(
 		theme.NewDisabledResource(theme.BrokenImageIcon()),
 		fyne.NewSquareSize(typeIconSize),
 	)

@@ -13,7 +13,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
@@ -47,14 +47,14 @@ func (a *SkillqueueArea) makeSkillQueue() *widget.List {
 			return len(a.items)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewSkillQueueItem()
+			return appwidget.NewSkillQueueItem()
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.items) {
 				return
 			}
 			q := a.items[id]
-			item := co.(*widgets.SkillQueueItem)
+			item := co.(*appwidget.SkillQueueItem)
 			item.Set(q)
 		})
 
