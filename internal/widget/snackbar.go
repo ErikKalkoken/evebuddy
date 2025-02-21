@@ -13,12 +13,17 @@ const (
 	snackbarDelayDefault = 3 * time.Second
 )
 
+// Snackbars show short updates about app processes at the bottom of the screen.
+//
+// Snackbars appear on the bottom of the screen and disapear on their own after a short while.
 type Snackbar struct {
 	widget.PopUp
 
+	// Duration the snackbar is shown before it disappears on it's own
 	Delay time.Duration
 }
 
+// NewSnackbar returns a new snackbar. Call Show() to display it.
 func NewSnackbar(text string, win fyne.Window) *Snackbar {
 	w := &Snackbar{Delay: snackbarDelayDefault}
 	w.ExtendBaseWidget(w)
@@ -31,6 +36,7 @@ func NewSnackbar(text string, win fyne.Window) *Snackbar {
 	return w
 }
 
+// Show displays the snackbar.
 func (w *Snackbar) Show() {
 	w.PopUp.Show()
 	go func() {

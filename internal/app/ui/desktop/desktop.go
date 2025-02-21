@@ -167,15 +167,24 @@ func NewDesktopUI(fyneApp fyne.App) *DesktopUI {
 			container.NewTabItem("Contracts", u.ContractsArea.Content),
 		))
 
+	overviewAssets := container.NewTabItem("Assets", u.AssetSearchArea.Content)
+	overviewTabs := container.NewAppTabs(
+		container.NewTabItem("Overview", u.OverviewArea.Content),
+		container.NewTabItem("Locations", u.LocationsArea.Content),
+		container.NewTabItem("Training", u.TrainingArea.Content),
+		overviewAssets,
+		container.NewTabItem("Colonies", u.ColoniesArea.Content),
+		container.NewTabItem("Wealth", u.WealthArea.Content),
+	)
+	overviewTabs.OnSelected = func(ti *container.TabItem) {
+		if ti != overviewAssets {
+			return
+		}
+		u.AssetSearchArea.Focus()
+	}
 	u.overviewTab = container.NewTabItemWithIcon("Characters",
-		theme.NewThemedResource(ui.IconGroupSvg), container.NewAppTabs(
-			container.NewTabItem("Overview", u.OverviewArea.Content),
-			container.NewTabItem("Locations", u.LocationsArea.Content),
-			container.NewTabItem("Training", u.TrainingArea.Content),
-			container.NewTabItem("Assets", u.AssetSearchArea.Content),
-			container.NewTabItem("Colonies", u.ColoniesArea.Content),
-			container.NewTabItem("Wealth", u.WealthArea.Content),
-		))
+		theme.NewThemedResource(ui.IconGroupSvg), overviewTabs,
+	)
 
 	skillTab := container.NewTabItemWithIcon("Skills",
 		theme.NewThemedResource(ui.IconSchoolSvg), container.NewAppTabs(

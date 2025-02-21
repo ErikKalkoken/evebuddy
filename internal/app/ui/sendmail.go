@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"image/color"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
@@ -138,7 +137,7 @@ func (u *BaseUI) MakeSendMailPage(
 }
 
 func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
-	var dlg dialog.Dialog
+	var modal *widget.PopUp
 	items := make([]*app.EveEntity, 0)
 	list := widget.NewList(
 		func() int {
@@ -173,7 +172,7 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 			return
 		}
 		onSelected(items[id])
-		dlg.Hide()
+		modal.Hide()
 	}
 	showErrorDialog := func(search string, err error) {
 		slog.Error("Failed to resolve names", "search", search, "error", err)
@@ -218,28 +217,29 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 			list.Refresh()
 		}()
 	}
-	rect := canvas.NewRectangle(color.Transparent)
-	rect.StrokeColor = theme.Color(theme.ColorNameMenuBackground)
-	rect.StrokeWidth = 1
 	c := container.NewBorder(
-		container.NewBorder(nil, nil, nil, widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
-			dlg.Hide()
-		}), entry),
+		container.NewBorder(
+			container.NewHBox(
+				widget.NewLabelWithStyle("Add Recipient", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+				layout.NewSpacer(),
+				widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
+					modal.Hide()
+				}),
+			),
+			nil,
+			nil,
+			nil,
+			entry,
+		),
 		nil,
 		nil,
 		nil,
-		container.NewStack(rect, list),
+		list,
 	)
-	dlg = dialog.NewCustomWithoutButtons("Add recipient", c, w)
+	modal = widget.NewModalPopUp(c, w.Canvas())
 	_, s := w.Canvas().InteractiveArea()
-	var f float32
-	if fyne.CurrentDevice().IsMobile() {
-		f = 1.0
-	} else {
-		f = 0.8
-	}
-	dlg.Resize(fyne.NewSize(s.Width*f, s.Height*f))
-	dlg.Show()
+	modal.Resize(fyne.NewSize(s.Width, s.Height))
+	modal.Show()
 	w.Canvas().Focus(entry)
 }
 

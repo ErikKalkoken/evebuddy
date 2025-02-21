@@ -57,22 +57,21 @@ type AssetSearchArea struct {
 	characterNames  map[int32]string
 	colSort         []assetSortDir
 	found           *widget.Label
-	searchBar       *widget.Entry
+	searchEntry     *widget.Entry
 	total           *widget.Label
 	u               *BaseUI
 }
 
 func (u *BaseUI) NewAssetSearchArea() *AssetSearchArea {
-	sb := widget.NewEntry()
 	a := &AssetSearchArea{
 		assetsFiltered: make([]*assetSearchRow, 0),
-		searchBar:      sb,
+		searchEntry:    widget.NewEntry(),
 		found:          widget.NewLabel(""),
 		total:          makeTopLabel(),
 		u:              u,
 	}
-	sb.ActionItem = widget.NewIcon(theme.SearchIcon())
-	sb.OnChanged = func(s string) {
+	a.searchEntry.ActionItem = widget.NewIcon(theme.SearchIcon())
+	a.searchEntry.OnChanged = func(s string) {
 		a.processData(-1)
 	}
 	a.total.TextStyle.Bold = true
@@ -82,7 +81,7 @@ func (u *BaseUI) NewAssetSearchArea() *AssetSearchArea {
 	})
 	topBox := container.NewVBox(
 		container.NewBorder(nil, nil, nil, a.found, a.total),
-		container.NewBorder(nil, nil, nil, reset, a.searchBar),
+		container.NewBorder(nil, nil, nil, reset, a.searchEntry),
 		widget.NewSeparator(),
 	)
 	var headers = []headerDef{
@@ -125,6 +124,10 @@ func (u *BaseUI) NewAssetSearchArea() *AssetSearchArea {
 	}
 	a.Content = container.NewBorder(topBox, nil, nil, nil, a.body)
 	return a
+}
+
+func (a *AssetSearchArea) Focus() {
+	a.u.Window.Canvas().Focus(a.searchEntry)
 }
 
 func (a *AssetSearchArea) makeTable(
@@ -216,7 +219,7 @@ func (a *AssetSearchArea) processData(sortCol int) {
 		}
 	}
 	rows := make([]*assetSearchRow, 0)
-	search := a.searchBar.Text
+	search := a.searchEntry.Text
 	for _, r := range a.assets {
 		var matches bool
 		if search == "" {
@@ -268,7 +271,7 @@ func (a *AssetSearchArea) resetSearch() {
 	for i := range a.colSort {
 		a.colSort[i] = sortOff
 	}
-	a.searchBar.SetText("")
+	a.searchEntry.SetText("")
 	a.processData(-1)
 }
 

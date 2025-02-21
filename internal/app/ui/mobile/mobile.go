@@ -315,6 +315,7 @@ func NewMobileUI(fyneApp fyne.App) *MobileUI {
 			theme.NewThemedResource(ui.IconInventory2Svg),
 			func() {
 				crossNav.Push(widget.NewAppBar("Asset Search", u.AssetSearchArea.Content))
+				u.AssetSearchArea.Focus()
 			},
 		),
 		widget.NewListItemWithIcon(
