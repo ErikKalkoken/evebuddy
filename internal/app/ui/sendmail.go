@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
@@ -50,9 +51,17 @@ func (u *BaseUI) MakeSendMailPage(
 	mail *app.CharacterMail,
 	w fyne.Window,
 ) (fyne.CanvasObject, fyne.Resource, func() bool) {
-	to := appwidget.NewEveEntityEntry(func(onSelected func(*app.EveEntity)) {
-		u.showAddDialog(character.ID, onSelected, w)
-	})
+	to := appwidget.NewEveEntityEntry(
+		func(image *canvas.Image, it *app.EveEntity) {
+			RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
+				return fetchEveEntityIcon(u.EveImageService, it)
+			})
+		},
+		func(onSelected func(*app.EveEntity)) {
+			u.showAddDialog(character.ID, onSelected, w)
+		},
+		DefaultIconUnitSize,
+	)
 
 	from := widget.NewEntry()
 	from.PlaceHolder = character.EveCharacter.Name
@@ -147,10 +156,11 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 			name := widget.NewLabel("Template")
 			name.Truncation = fyne.TextTruncateClip
 			category := iwidget.NewLabelWithSize("Template", theme.SizeNameCaptionText)
+			icon := iwidget.NewImageFromResource(IconQuestionmark32Png, fyne.NewSquareSize(DefaultIconUnitSize))
 			return container.NewBorder(
 				nil,
 				nil,
-				nil,
+				icon,
 				category,
 				name,
 			)
@@ -162,7 +172,11 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 			it := items[id]
 			row := co.(*fyne.Container).Objects
 			row[0].(*widget.Label).SetText(it.Name)
-			row[1].(*iwidget.Label).SetText(it.CategoryDisplay())
+			icon := row[1].(*canvas.Image)
+			RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
+				return fetchEveEntityIcon(u.EveImageService, it)
+			})
+			row[2].(*iwidget.Label).SetText(it.CategoryDisplay())
 		},
 	)
 	list.HideSeparators = true
@@ -250,5 +264,18 @@ func newNonEmptyStringValidator() fyne.StringValidator {
 			return myErr
 		}
 		return nil
+	}
+}
+
+func fetchEveEntityIcon(s app.EveImageService, it *app.EveEntity) (fyne.Resource, error) {
+	switch it.Category {
+	case app.EveEntityCharacter:
+		return s.CharacterPortrait(it.ID, DefaultIconPixelSize)
+	case app.EveEntityAlliance:
+		return s.AllianceLogo(it.ID, DefaultIconPixelSize)
+	case app.EveEntityCorporation:
+		return s.CorporationLogo(it.ID, DefaultIconPixelSize)
+	default:
+		return IconQuestionmark32Png, nil
 	}
 }

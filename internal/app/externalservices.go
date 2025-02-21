@@ -16,6 +16,7 @@ type CacheService interface {
 }
 
 type EveImageService interface {
+	AllianceLogo(int32, int) (fyne.Resource, error)
 	CharacterPortrait(int32, int) (fyne.Resource, error)
 	CorporationLogo(int32, int) (fyne.Resource, error)
 	ClearCache() error

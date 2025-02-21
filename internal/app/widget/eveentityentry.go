@@ -7,11 +7,12 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	iwidgets "github.com/ErikKalkoken/evebuddy/internal/widget"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 // EveEntityEntry represents an entry widgets for entering Eve Entities.
@@ -22,6 +23,8 @@ type EveEntityEntry struct {
 	Recipients []*app.EveEntity
 
 	bg            *canvas.Rectangle
+	iconLoader    func(*canvas.Image, *app.EveEntity)
+	iconSize      float32
 	main          *fyne.Container
 	placeholder   *widget.RichText
 	showAddDialog func(func(*app.EveEntity))
@@ -30,7 +33,11 @@ type EveEntityEntry struct {
 
 var _ fyne.Tappable = (*EveEntityEntry)(nil)
 
-func NewEveEntityEntry(showAddDialog func(onSelected func(*app.EveEntity))) *EveEntityEntry {
+func NewEveEntityEntry(
+	iconLoader func(*canvas.Image, *app.EveEntity),
+	showAddDialog func(onSelected func(*app.EveEntity)),
+	iconSize float32,
+) *EveEntityEntry {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
@@ -41,6 +48,8 @@ func NewEveEntityEntry(showAddDialog func(onSelected func(*app.EveEntity))) *Eve
 	})
 	w := &EveEntityEntry{
 		bg:            bg,
+		iconLoader:    iconLoader,
+		iconSize:      iconSize,
 		main:          container.NewGridWithColumns(1),
 		Recipients:    make([]*app.EveEntity, 0),
 		placeholder:   placeholder,
@@ -54,6 +63,7 @@ func (w *EveEntityEntry) Set(ee []*app.EveEntity) {
 	w.mu.Lock()
 	w.Recipients = ee
 	w.mu.Unlock()
+	w.updateMain()
 	w.Refresh()
 }
 
@@ -70,6 +80,7 @@ func (w *EveEntityEntry) Add(ee *app.EveEntity) {
 		return true
 	}()
 	if added {
+		w.updateMain()
 		w.Refresh()
 	}
 }
@@ -105,21 +116,24 @@ func (w *EveEntityEntry) updateMain() {
 	if len(w.Recipients) == 0 {
 		w.main.Add(w.placeholder)
 	} else {
+		p := theme.Padding()
 		for _, r := range w.Recipients {
 			name := widget.NewLabel(r.Name)
 			name.Truncation = fyne.TextTruncateEllipsis
-			category := iwidgets.NewLabelWithSize(r.CategoryDisplay(), theme.SizeNameCaptionText)
+			category := iwidget.NewLabelWithSize(r.CategoryDisplay(), theme.SizeNameCaptionText)
+			icon := iwidget.NewImageFromResource(theme.QuestionIcon(), fyne.NewSquareSize(w.iconSize))
 			w.main.Add(container.NewBorder(
 				nil,
 				nil,
-				nil,
+				container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), icon),
 				container.NewHBox(
 					category,
-					iwidgets.NewIconButton(theme.DeleteIcon(), func() {
+					iwidget.NewIconButton(theme.DeleteIcon(), func() {
 						w.remove(r.ID)
 					})),
 				name,
 			))
+			w.iconLoader(icon, r)
 		}
 	}
 	// w.main.Add(container.NewHBox(
