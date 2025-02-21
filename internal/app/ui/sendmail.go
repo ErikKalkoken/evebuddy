@@ -13,11 +13,11 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 )
 
 type SendMailMode uint
@@ -117,6 +117,8 @@ func (u *BaseUI) MakeSendMailPage(
 			showErrorDialog(err.Error())
 			return false
 		}
+		sb := iwidget.NewSnackbar("Your mail has been sent.", u.Window)
+		sb.Show()
 		return true
 	}
 
@@ -238,6 +240,7 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 	}
 	dlg.Resize(fyne.NewSize(s.Width*f, s.Height*f))
 	dlg.Show()
+	w.Canvas().Focus(entry)
 }
 
 func newNonEmptyStringValidator() fyne.StringValidator {
