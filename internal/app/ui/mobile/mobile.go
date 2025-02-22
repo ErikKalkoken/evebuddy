@@ -425,14 +425,14 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		navItemManageCharacters,
 		u.navItemUpdateStatus,
 		iwidget.NewListItemWithIcon(
-			"Debugging",
-			theme.NewThemedResource(ui.IconBugSvg),
+			"Logs",
+			theme.NewThemedResource(ui.IconScriptTextSvg),
 			func() {
-				moreNav.Push(iwidget.NewAppBar("Debugging", iwidget.NewNavList(
+				moreNav.Push(iwidget.NewAppBar("Logs", iwidget.NewNavList(
 					iwidget.NewListItem("Export application log", func() {
 						showExportFileDialog(u.DataPaths["log"], u.Window)
 					}),
-					iwidget.NewListItem("Export crash file", func() {
+					iwidget.NewListItem("Export crash log", func() {
 						showExportFileDialog(u.DataPaths["crashfile"], u.Window)
 					}),
 				)))
