@@ -1,6 +1,8 @@
 package widget
 
 import (
+	"fmt"
+	"image/color"
 	"log/slog"
 	"slices"
 	"sync"
@@ -8,6 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -29,7 +32,7 @@ type EveEntityEntry struct {
 	Placeholder  string
 	FallbackIcon fyne.Resource
 
-	bg          *canvas.Rectangle
+	field       *canvas.Rectangle
 	eis         app.EveImageService
 	hovered     bool
 	label       fyne.CanvasObject
@@ -46,7 +49,7 @@ func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis app.EveI
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
 	bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
 	w := &EveEntityEntry{
-		bg:           bg,
+		field:        bg,
 		eis:          eis,
 		FallbackIcon: icon.Questionmark32Png,
 		label:        label,
@@ -73,7 +76,6 @@ func (w *EveEntityEntry) Set(s []*app.EveEntity) {
 	w.mu.Lock()
 	w.s = s
 	w.mu.Unlock()
-	w.update()
 	w.Refresh()
 }
 
@@ -90,12 +92,11 @@ func (w *EveEntityEntry) Add(ee *app.EveEntity) {
 		return true
 	}()
 	if added {
-		w.update()
 		w.Refresh()
 	}
 }
 
-func (w *EveEntityEntry) remove(id int32) {
+func (w *EveEntityEntry) Remove(id int32) {
 	removed := func() bool {
 		w.mu.Lock()
 		defer w.mu.Unlock()
@@ -108,7 +109,6 @@ func (w *EveEntityEntry) remove(id int32) {
 		return false
 	}()
 	if removed {
-		w.update()
 		w.Refresh()
 	}
 }
@@ -122,33 +122,15 @@ func (w *EveEntityEntry) IsEmpty() bool {
 func (w *EveEntityEntry) update() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	th := w.Theme()
-	isDisabled := w.Disabled()
 	w.main.RemoveAll()
 	colums := kxlayout.NewColumns(w.labelWidth)
 	if len(w.s) == 0 {
 		w.placeholder.Segments[0].(*widget.TextSegment).Text = w.Placeholder
 		w.main.Add(container.New(colums, w.label, w.placeholder))
 	} else {
-		padding := th.Size(theme.SizeNamePadding)
-		iconSize := th.Size(theme.SizeNameInlineIcon)
-		deleteIcon := th.Icon(theme.IconNameDelete)
 		firstRow := true
+		isDisabled := w.Disabled()
 		for _, ee := range w.s {
-			name := widget.NewLabel(ee.Name)
-			name.Truncation = fyne.TextTruncateEllipsis
-			if isDisabled {
-				name.Importance = widget.LowImportance
-			}
-			icon := iwidget.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(iconSize))
-			var delete fyne.CanvasObject
-			if !isDisabled {
-				delete = iwidget.NewIconButton(deleteIcon, func() {
-					w.remove(ee.ID)
-				})
-			} else {
-				delete = container.NewPadded()
-			}
 			var label fyne.CanvasObject
 			if firstRow {
 				label = w.label
@@ -156,43 +138,46 @@ func (w *EveEntityEntry) update() {
 			} else {
 				label = layout.NewSpacer()
 			}
-			row := container.New(
-				colums,
-				label,
-				container.NewBorder(
-					nil,
-					nil,
-					container.New(layout.NewCustomPaddedLayout(0, 0, padding, 0), icon),
-					delete,
-					name,
-				))
-			w.main.Add(row)
-			go func() {
-				res, err := w.eis.EntityIcon(ee.ID, ee.Category.ToEveImage(), DefaultIconPixelSize)
-				if err != nil {
-					slog.Error("eve entity entry icon update", "error", err)
-					res = w.FallbackIcon
+			badge := newEveEntityBadge(ee, w.eis, nil)
+			if isDisabled {
+				badge.Disable()
+			} else {
+				badge.OnTapped = func() {
+					s := fmt.Sprintf("%s (%s)", ee.Name, ee.CategoryDisplay())
+					name := fyne.NewMenuItem(s, nil)
+					// name.Icon = fetchImage(w.eis, ee, w.FallbackIcon)
+					name.Disabled = true
+					remove := fyne.NewMenuItem("Remove", func() {
+						w.Remove(ee.ID)
+					})
+					remove.Icon = theme.DeleteIcon()
+					menu := fyne.NewMenu("",
+						name,
+						fyne.NewMenuItemSeparator(),
+						remove,
+					)
+					pm := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(badge))
+					pm.ShowAtRelativePosition(fyne.Position{}, badge)
+					// go func() {
+					// 	title.Icon = fetchImage(w.eis, ee, w.FallbackIcon)
+					// 	pm.Refresh()
+					// }()
 				}
-				res, err = iwidget.MakeAvatar(res)
-				if err != nil {
-					slog.Error("eve entity entry make avatar", "error", err)
-					res = w.FallbackIcon
-				}
-				icon.Resource = res
-				icon.Refresh()
-			}()
+			}
+			w.main.Add(container.New(colums, label, badge))
 		}
 	}
 }
 
 func (w *EveEntityEntry) Refresh() {
+	w.update()
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
-	w.bg.FillColor = th.Color(theme.ColorNameInputBackground, v)
-	w.bg.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
+	w.field.FillColor = th.Color(theme.ColorNameInputBackground, v)
+	w.field.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
 	w.BaseWidget.Refresh()
 	w.main.Refresh()
-	w.bg.Refresh()
+	w.field.Refresh()
 	w.placeholder.Refresh()
 }
 
@@ -208,9 +193,116 @@ func (w *EveEntityEntry) MinSize() fyne.Size {
 
 func (w *EveEntityEntry) CreateRenderer() fyne.WidgetRenderer {
 	w.update()
-	c := container.NewStack(
-		w.bg,
-		w.main,
-	)
+	c := container.NewStack(w.field, w.main)
 	return widget.NewSimpleRenderer(c)
+}
+
+type eveEntityBadge struct {
+	widget.DisableableWidget
+
+	FallbackIcon fyne.Resource
+	OnTapped     func()
+
+	ee      *app.EveEntity
+	eis     app.EveImageService
+	hovered bool
+}
+
+var _ fyne.Tappable = (*eveEntityBadge)(nil)
+var _ desktop.Hoverable = (*eveEntityBadge)(nil)
+
+func newEveEntityBadge(ee *app.EveEntity, eis app.EveImageService, onTapped func()) *eveEntityBadge {
+	w := &eveEntityBadge{
+		ee:           ee,
+		eis:          eis,
+		FallbackIcon: icon.Questionmark32Png,
+		OnTapped:     onTapped,
+	}
+	w.ExtendBaseWidget(w)
+	return w
+}
+
+func (w *eveEntityBadge) CreateRenderer() fyne.WidgetRenderer {
+	th := w.Theme()
+	v := fyne.CurrentApp().Settings().ThemeVariant()
+	p := th.Size(theme.SizeNamePadding)
+
+	name := widget.NewLabel(w.ee.Name)
+	if w.Disabled() {
+		name.Importance = widget.LowImportance
+	}
+	icon := iwidget.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(th.Size(theme.SizeNameInlineIcon)))
+	rect := canvas.NewRectangle(color.Transparent)
+	rect.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
+	rect.StrokeWidth = 1
+	rect.CornerRadius = 10
+	c := container.New(layout.NewCustomPaddedLayout(p, p, 0, 0),
+		container.NewHBox(
+			container.NewStack(
+				rect,
+				container.New(layout.NewCustomPaddedLayout(-p, -p, 0, 0),
+					container.NewHBox(
+						container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), icon), name,
+					))),
+		),
+	)
+	go func() {
+		icon.Resource = fetchImage(w.eis, w.ee, w.FallbackIcon)
+		icon.Refresh()
+	}()
+	return widget.NewSimpleRenderer(c)
+}
+
+func (w *eveEntityBadge) Tapped(_ *fyne.PointEvent) {
+	if w.Disabled() {
+		return
+	}
+	if w.OnTapped != nil {
+		w.OnTapped()
+	}
+}
+
+func (w *eveEntityBadge) TappedSecondary(_ *fyne.PointEvent) {
+}
+
+// Cursor returns the cursor type of this widget
+func (w *eveEntityBadge) Cursor() desktop.Cursor {
+	if !w.Disabled() && w.hovered {
+		return desktop.PointerCursor
+	}
+	return desktop.DefaultCursor
+}
+
+// MouseIn is a hook that is called if the mouse pointer enters the element.
+func (w *eveEntityBadge) MouseIn(e *desktop.MouseEvent) {
+	if w.Disabled() {
+		return
+	}
+	w.hovered = true
+}
+
+func (w *eveEntityBadge) MouseMoved(*desktop.MouseEvent) {
+	// needed to satisfy the interface only
+}
+
+// MouseOut is a hook that is called if the mouse pointer leaves the element.
+func (w *eveEntityBadge) MouseOut() {
+	if w.Disabled() {
+		return
+	}
+	w.hovered = false
+}
+
+func fetchImage(eis app.EveImageService, ee *app.EveEntity, fallback fyne.Resource) fyne.Resource {
+	res, err := eis.EntityIcon(ee.ID, ee.Category.ToEveImage(), DefaultIconPixelSize)
+	if err != nil {
+		slog.Error("eve entity entry icon update", "error", err)
+		res = fallback
+	}
+	res, err = iwidget.MakeAvatar(res)
+	if err != nil {
+		slog.Error("eve entity entry make avatar", "error", err)
+		res = fallback
+	}
+	return res
 }
