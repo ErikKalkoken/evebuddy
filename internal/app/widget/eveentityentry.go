@@ -1,7 +1,6 @@
 package widget
 
 import (
-	"fmt"
 	"log/slog"
 	"slices"
 	"sync"
@@ -135,8 +134,8 @@ func (w *EveEntityEntry) update() {
 		iconSize := th.Size(theme.SizeNameInlineIcon)
 		deleteIcon := th.Icon(theme.IconNameDelete)
 		firstRow := true
-		for _, r := range w.s {
-			name := widget.NewLabel(r.Name)
+		for _, ee := range w.s {
+			name := widget.NewLabel(ee.Name)
 			name.Truncation = fyne.TextTruncateEllipsis
 			if isDisabled {
 				name.Importance = widget.LowImportance
@@ -145,7 +144,7 @@ func (w *EveEntityEntry) update() {
 			var delete fyne.CanvasObject
 			if !isDisabled {
 				delete = iwidget.NewIconButton(deleteIcon, func() {
-					w.remove(r.ID)
+					w.remove(ee.ID)
 				})
 			} else {
 				delete = container.NewPadded()
@@ -169,7 +168,7 @@ func (w *EveEntityEntry) update() {
 				))
 			w.main.Add(row)
 			go func() {
-				res, err := FetchEveEntityIcon(w.eis, r, DefaultIconPixelSize)
+				res, err := w.eis.EntityIcon(ee.ID, ee.Category.ToEveImage(), DefaultIconPixelSize)
 				if err != nil {
 					slog.Error("eve entity entry icon update", "error", err)
 					res = w.FallbackIcon
@@ -214,24 +213,4 @@ func (w *EveEntityEntry) CreateRenderer() fyne.WidgetRenderer {
 		w.main,
 	)
 	return widget.NewSimpleRenderer(c)
-}
-
-// FetchEveEntityIcon fetches and returns an icon for an EveEntity.
-func FetchEveEntityIcon(s app.EveImageService, ee *app.EveEntity, size int) (fyne.Resource, error) {
-	res, err := func() (fyne.Resource, error) {
-		switch ee.Category {
-		case app.EveEntityCharacter:
-			return s.CharacterPortrait(ee.ID, size)
-		case app.EveEntityAlliance:
-			return s.AllianceLogo(ee.ID, size)
-		case app.EveEntityCorporation:
-			return s.CorporationLogo(ee.ID, size)
-		default:
-			return nil, fmt.Errorf("unsuported category: %s", ee.Category)
-		}
-	}()
-	if err != nil {
-		return nil, fmt.Errorf("fetch eve entity icon for %+v: %w", ee, err)
-	}
-	return res, nil
 }

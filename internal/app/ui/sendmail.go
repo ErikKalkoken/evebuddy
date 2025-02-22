@@ -143,14 +143,24 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 			if id >= len(items) {
 				return
 			}
-			it := items[id]
+			ee := items[id]
 			row := co.(*fyne.Container).Objects
-			row[0].(*widget.Label).SetText(it.Name)
-			icon := row[1].(*canvas.Image)
-			RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return appwidget.FetchEveEntityIcon(u.EveImageService, it, DefaultIconPixelSize)
+			row[0].(*widget.Label).SetText(ee.Name)
+			image := row[1].(*canvas.Image)
+			RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
+				res, err := u.EveImageService.EntityIcon(ee.ID, ee.Category.ToEveImage(), DefaultIconPixelSize)
+				if err != nil {
+					slog.Error("eve entity entry icon update", "error", err)
+					res = icon.Questionmark32Png
+				}
+				res, err = iwidget.MakeAvatar(res)
+				if err != nil {
+					slog.Error("eve entity entry make avatar", "error", err)
+					res = icon.Questionmark32Png
+				}
+				return res, nil
 			})
-			row[2].(*iwidget.Label).SetText(it.CategoryDisplay())
+			row[2].(*iwidget.Label).SetText(ee.CategoryDisplay())
 		},
 	)
 	list.HideSeparators = true
