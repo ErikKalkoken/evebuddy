@@ -16,6 +16,7 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
@@ -162,7 +163,7 @@ func (a *MailArea) makeFolderTree() *widget.Tree {
 		},
 		func(isBranch bool) fyne.CanvasObject {
 			return container.NewHBox(
-				widget.NewIcon(IconBlankSvg),
+				widget.NewIcon(icon.BlankSvg),
 				widget.NewLabel("template"),
 				layout.NewSpacer(),
 				kwidget.NewBadge("999"),

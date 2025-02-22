@@ -16,6 +16,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -158,9 +159,9 @@ func (a *AssetSearchArea) makeTable(
 		},
 	)
 	t.ShowHeaderRow = true
-	iconSortAsc := theme.NewPrimaryThemedResource(IconSortAscendingSvg)
-	iconSortDesc := theme.NewPrimaryThemedResource(IconSortDescendingSvg)
-	iconSortOff := theme.NewThemedResource(IconSortSvg)
+	iconSortAsc := theme.NewPrimaryThemedResource(icon.SortAscendingSvg)
+	iconSortDesc := theme.NewPrimaryThemedResource(icon.SortDescendingSvg)
+	iconSortOff := theme.NewThemedResource(icon.SortSvg)
 	t.CreateHeader = func() fyne.CanvasObject {
 		b := widget.NewButtonWithIcon("", iconSortOff, func() {})
 		return container.NewBorder(nil, nil, nil, b, widget.NewLabel("Template"))

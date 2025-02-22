@@ -17,6 +17,7 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -59,11 +60,11 @@ func (u *DesktopUI) newStatusBarArea() *statusBarArea {
 	a.characterCount = appwidget.NewStatusBarItem(theme.AccountIcon(), "?", func() {
 		u.showAccountWindow()
 	})
-	a.updateStatus = appwidget.NewStatusBarItem(theme.NewThemedResource(ui.IconUpdateSvg), "?", func() {
+	a.updateStatus = appwidget.NewStatusBarItem(theme.NewThemedResource(icon.UpdateSvg), "?", func() {
 		u.ShowUpdateStatusWindow()
 	})
 	a.eveClock = appwidget.NewStatusBarItem(
-		theme.NewThemedResource(ui.IconAccesstimefilledSvg),
+		theme.NewThemedResource(icon.AccesstimefilledSvg),
 		"?",
 		a.showClockDialog,
 	)

@@ -20,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -498,7 +499,7 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 			w := a.u.FyneApp.NewWindow(a.u.MakeWindowTitle(a.MakeTitle("Render")))
 			size := 512
 			s := float32(size) / w.Canvas().Scale()
-			i := NewImageResourceAsync(IconQuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
+			i := NewImageResourceAsync(icon.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 				return a.u.EveImageService.InventoryTypeRender(a.et.ID, size)
 			})
 			i.ScaleMode = canvas.ImageScaleSmooth
@@ -527,7 +528,7 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 		}
 	} else {
 		s := float32(DefaultIconPixelSize) * 1.3 / a.u.Window.Canvas().Scale()
-		icon := NewImageResourceAsync(IconQuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
+		icon := NewImageResourceAsync(icon.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
 				return a.u.EveImageService.InventoryTypeSKIN(a.et.ID, DefaultIconPixelSize)
 			} else if a.et.IsBlueprint() {
@@ -538,7 +539,7 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 		})
 		typeIcon.Add(icon)
 	}
-	ownerIcon := iwidget.NewImageFromResource(IconQuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
+	ownerIcon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
 	ownerName := widget.NewLabel("")
 	ownerName.Wrapping = fyne.TextWrapWord
 	if a.owner != nil {
@@ -661,7 +662,7 @@ func (a *ItemInfoArea) makeRequirementsTab() fyne.CanvasObject {
 				layout.NewSpacer(),
 				widget.NewLabel("Check"),
 				appwidget.NewSkillLevel(),
-				widget.NewIcon(IconQuestionmarkSvg),
+				widget.NewIcon(icon.QuestionmarkSvg),
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {

@@ -1,6 +1,8 @@
 package widget
 
 import (
+	"fmt"
+	"log/slog"
 	"slices"
 	"sync"
 
@@ -13,18 +15,24 @@ import (
 	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+)
+
+const (
+	DefaultIconPixelSize = 64
 )
 
 // EveEntityEntry represents an entry widget for Eve Entity items.
 type EveEntityEntry struct {
 	widget.DisableableWidget
 
-	Placeholder string
+	Placeholder  string
+	FallbackIcon fyne.Resource
 
 	bg          *canvas.Rectangle
+	eis         app.EveImageService
 	hovered     bool
-	iconLoader  func(*canvas.Image, *app.EveEntity)
 	label       fyne.CanvasObject
 	labelWidth  float32
 	main        *fyne.Container
@@ -33,21 +41,18 @@ type EveEntityEntry struct {
 	s           []*app.EveEntity
 }
 
-func NewEveEntityEntry(
-	label fyne.CanvasObject,
-	labelWidth float32,
-	iconLoader func(*canvas.Image, *app.EveEntity),
-) *EveEntityEntry {
+func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis app.EveImageService) *EveEntityEntry {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
 	bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
 	w := &EveEntityEntry{
-		bg:         bg,
-		iconLoader: iconLoader,
-		label:      label,
-		labelWidth: labelWidth,
-		main:       container.New(layout.NewCustomPaddedVBoxLayout(0)),
+		bg:           bg,
+		eis:          eis,
+		FallbackIcon: icon.Questionmark32Png,
+		label:        label,
+		labelWidth:   labelWidth,
+		main:         container.New(layout.NewCustomPaddedVBoxLayout(0)),
 		placeholder: widget.NewRichText(&widget.TextSegment{
 			Style: widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder},
 		}),
@@ -129,7 +134,6 @@ func (w *EveEntityEntry) update() {
 		padding := th.Size(theme.SizeNamePadding)
 		iconSize := th.Size(theme.SizeNameInlineIcon)
 		deleteIcon := th.Icon(theme.IconNameDelete)
-		questionIcon := th.Icon(theme.IconNameQuestion)
 		firstRow := true
 		for _, r := range w.s {
 			name := widget.NewLabel(r.Name)
@@ -137,7 +141,7 @@ func (w *EveEntityEntry) update() {
 			if isDisabled {
 				name.Importance = widget.LowImportance
 			}
-			icon := iwidget.NewImageFromResource(questionIcon, fyne.NewSquareSize(iconSize))
+			icon := iwidget.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(iconSize))
 			var delete fyne.CanvasObject
 			if !isDisabled {
 				delete = iwidget.NewIconButton(deleteIcon, func() {
@@ -164,7 +168,20 @@ func (w *EveEntityEntry) update() {
 					name,
 				))
 			w.main.Add(row)
-			w.iconLoader(icon, r)
+			go func() {
+				res, err := FetchEveEntityIcon(w.eis, r, DefaultIconPixelSize)
+				if err != nil {
+					slog.Error("eve entity entry icon update", "error", err)
+					res = w.FallbackIcon
+				}
+				res, err = iwidget.MakeAvatar(res)
+				if err != nil {
+					slog.Error("eve entity entry make avatar", "error", err)
+					res = w.FallbackIcon
+				}
+				icon.Resource = res
+				icon.Refresh()
+			}()
 		}
 	}
 }
@@ -197,4 +214,24 @@ func (w *EveEntityEntry) CreateRenderer() fyne.WidgetRenderer {
 		w.main,
 	)
 	return widget.NewSimpleRenderer(c)
+}
+
+// FetchEveEntityIcon fetches and returns an icon for an EveEntity.
+func FetchEveEntityIcon(s app.EveImageService, ee *app.EveEntity, size int) (fyne.Resource, error) {
+	res, err := func() (fyne.Resource, error) {
+		switch ee.Category {
+		case app.EveEntityCharacter:
+			return s.CharacterPortrait(ee.ID, size)
+		case app.EveEntityAlliance:
+			return s.AllianceLogo(ee.ID, size)
+		case app.EveEntityCorporation:
+			return s.CorporationLogo(ee.ID, size)
+		default:
+			return nil, fmt.Errorf("unsuported category: %s", ee.Category)
+		}
+	}()
+	if err != nil {
+		return nil, fmt.Errorf("fetch eve entity icon for %+v: %w", ee, err)
+	}
+	return res, nil
 }

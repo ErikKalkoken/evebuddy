@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -40,26 +41,10 @@ func (u *BaseUI) MakeSendMailPage(
 			to.Add(ee)
 		}, w)
 	})
-	to = appwidget.NewEveEntityEntry(
-		toButton,
-		labelWith,
-		func(image *canvas.Image, it *app.EveEntity) {
-			RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
-				return fetchEveEntityIconAsAvatar(u.EveImageService, it)
-			})
-		},
-	)
+	to = appwidget.NewEveEntityEntry(toButton, labelWith, u.EveImageService)
 	to.Placeholder = "Tap To-Button to add recipients..."
 
-	from := appwidget.NewEveEntityEntry(
-		widget.NewLabel("From"),
-		labelWith,
-		func(image *canvas.Image, it *app.EveEntity) {
-			RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
-				return fetchEveEntityIconAsAvatar(u.EveImageService, it)
-			})
-		},
-	)
+	from := appwidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService)
 	from.Set([]*app.EveEntity{{ID: character.ID, Name: character.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	from.Disable()
 
@@ -145,7 +130,7 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 			name := widget.NewLabel("Template")
 			name.Truncation = fyne.TextTruncateClip
 			category := iwidget.NewLabelWithSize("Template", theme.SizeNameCaptionText)
-			icon := iwidget.NewImageFromResource(IconQuestionmark32Png, fyne.NewSquareSize(DefaultIconUnitSize))
+			icon := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(DefaultIconUnitSize))
 			return container.NewBorder(
 				nil,
 				nil,
@@ -163,7 +148,7 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 			row[0].(*widget.Label).SetText(it.Name)
 			icon := row[1].(*canvas.Image)
 			RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return fetchEveEntityIconAsAvatar(u.EveImageService, it)
+				return appwidget.FetchEveEntityIcon(u.EveImageService, it, DefaultIconPixelSize)
 			})
 			row[2].(*iwidget.Label).SetText(it.CategoryDisplay())
 		},
@@ -246,23 +231,4 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 	modal.Resize(fyne.NewSize(s.Width, s.Height))
 	modal.Show()
 	w.Canvas().Focus(entry)
-}
-
-func fetchEveEntityIconAsAvatar(s app.EveImageService, it *app.EveEntity) (fyne.Resource, error) {
-	res, err := func() (fyne.Resource, error) {
-		switch it.Category {
-		case app.EveEntityCharacter:
-			return s.CharacterPortrait(it.ID, DefaultIconPixelSize)
-		case app.EveEntityAlliance:
-			return s.AllianceLogo(it.ID, DefaultIconPixelSize)
-		case app.EveEntityCorporation:
-			return s.CorporationLogo(it.ID, DefaultIconPixelSize)
-		default:
-			return IconQuestionmark32Png, nil
-		}
-	}()
-	if err != nil {
-		return nil, err
-	}
-	return iwidget.MakeAvatar(res)
 }

@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -29,12 +30,12 @@ type toolbarArea struct {
 func (u *DesktopUI) newToolbarArea() *toolbarArea {
 	a := &toolbarArea{
 		icon: iwidget.NewImageFromResource(
-			ui.IconCharacterplaceholder64Jpeg,
+			icon.Characterplaceholder64Jpeg,
 			fyne.NewSquareSize(ui.DefaultIconUnitSize),
 		),
 		name: widget.NewLabel(""),
 		switchButton: iwidget.NewContextMenuButtonWithIcon(
-			theme.NewThemedResource(ui.IconSwitchaccountSvg), "Switch", fyne.NewMenu(""),
+			theme.NewThemedResource(icon.SwitchaccountSvg), "Switch", fyne.NewMenu(""),
 		),
 		u: u,
 	}
@@ -46,7 +47,7 @@ func (u *DesktopUI) newToolbarArea() *toolbarArea {
 func (a *toolbarArea) refresh() {
 	c := a.u.CurrentCharacter()
 	if c == nil {
-		a.icon.Resource = ui.IconCharacterplaceholder64Jpeg
+		a.icon.Resource = icon.Characterplaceholder64Jpeg
 		a.icon.Refresh()
 		a.name.Text = "No character"
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
@@ -98,7 +99,7 @@ func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) 
 				return
 			}
 		})
-		item.Icon = ui.IconCharacterplaceholder64Jpeg
+		item.Icon = icon.Characterplaceholder64Jpeg
 		go a.u.UpdateAvatar(myC.ID, func(r fyne.Resource) {
 			item.Icon = r
 			a.switchButton.Refresh()

@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
@@ -105,7 +106,7 @@ func (a *ShipsArea) makeShipsGrid() *widget.GridWrap {
 			return len(a.ships)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewShipItem(a.u.EveImageService, a.u.CacheService, IconQuestionmarkSvg)
+			return appwidget.NewShipItem(a.u.EveImageService, a.u.CacheService, icon.QuestionmarkSvg)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.ships) {

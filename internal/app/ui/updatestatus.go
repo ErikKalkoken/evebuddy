@@ -16,6 +16,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -140,7 +141,7 @@ func (a *UpdateStatusArea) makeEntityList() *widget.List {
 			return len(a.sectionEntities)
 		},
 		func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(IconQuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
+			icon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
 			name := widget.NewLabel("Template")
 			status := widget.NewLabel("Template")
 			pb := widget.NewActivity()

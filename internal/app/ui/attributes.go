@@ -14,6 +14,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -54,7 +55,7 @@ func (a *Attributes) makeAttributeList() *widget.List {
 			return len(a.attributes)
 		},
 		func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(IconQuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
+			icon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
 			return container.NewHBox(
 				icon, widget.NewLabel("placeholder"), layout.NewSpacer(), widget.NewLabel("points"))
 		},

@@ -14,6 +14,8 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -77,7 +79,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 		},
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(
-				IconCharacterplaceholder64Jpeg,
+				icon.Characterplaceholder64Jpeg,
 				fyne.NewSquareSize(DefaultIconUnitSize),
 			)
 			main := widget.NewLabel("Template")
