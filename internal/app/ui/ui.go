@@ -461,7 +461,7 @@ func (u *BaseUI) UpdateAvatar(id int32, setIcon func(fyne.Resource)) {
 		slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
 		r = IconCharacterplaceholder64Jpeg
 	}
-	r2, err := MakeAvatar(r)
+	r2, err := iwidget.MakeAvatar(r)
 	if err != nil {
 		slog.Error("Failed to make avatar", "characterID", id, "err", err)
 		r2 = IconCharacterplaceholder64Jpeg

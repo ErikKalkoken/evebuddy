@@ -51,7 +51,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	var navBar *iwidget.NavBar
 
 	// character destination
-	fallbackAvatar, _ := ui.MakeAvatar(ui.IconCharacterplaceholder64Jpeg)
+	fallbackAvatar, _ := iwidget.MakeAvatar(ui.IconCharacterplaceholder64Jpeg)
 	characterSelector := iwidget.NewIconButton(fallbackAvatar, nil)
 	characterSelector.OnTapped = func() {
 		o := characterSelector

@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 
@@ -13,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
@@ -51,7 +49,9 @@ func (u *BaseUI) MakeSendMailPage(
 	mail *app.CharacterMail,
 	w fyne.Window,
 ) (fyne.CanvasObject, fyne.Resource, func() bool) {
+	const iconSize = 20
 	to := appwidget.NewEveEntityEntry(
+		"To",
 		func(image *canvas.Image, it *app.EveEntity) {
 			RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
 				return fetchEveEntityIcon(u.EveImageService, it)
@@ -60,20 +60,28 @@ func (u *BaseUI) MakeSendMailPage(
 		func(onSelected func(*app.EveEntity)) {
 			u.showAddDialog(character.ID, onSelected, w)
 		},
-		DefaultIconUnitSize,
+		iconSize,
 	)
 
-	from := widget.NewEntry()
-	from.PlaceHolder = character.EveCharacter.Name
+	from := appwidget.NewEveEntityEntry(
+		"From",
+		func(image *canvas.Image, it *app.EveEntity) {
+			RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
+				return fetchEveEntityIcon(u.EveImageService, it)
+			})
+		},
+		nil,
+		iconSize,
+	)
+	from.Set([]*app.EveEntity{{ID: character.ID, Name: character.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	from.Disable()
 
 	subject := widget.NewEntry()
-	subject.Validator = newNonEmptyStringValidator()
+	subject.PlaceHolder = "Subject"
 
 	body := widget.NewEntry()
 	body.MultiLine = true
 	body.SetMinRowsVisible(14)
-	body.Validator = newNonEmptyStringValidator()
 	body.PlaceHolder = "Compose message"
 
 	if mail != nil {
@@ -105,11 +113,11 @@ func (u *BaseUI) MakeSendMailPage(
 			showErrorDialog("A mail needs to have at least one recipient.")
 			return false
 		}
-		if err := subject.Validate(); err != nil {
+		if subject.Text == "" {
 			showErrorDialog("The subject can not be empty.")
 			return false
 		}
-		if err := body.Validate(); err != nil {
+		if body.Text == "" {
 			showErrorDialog("The message can not be empty.")
 			return false
 		}
@@ -129,14 +137,8 @@ func (u *BaseUI) MakeSendMailPage(
 		sb.Show()
 		return true
 	}
-
-	colums := kxlayout.NewColumns(60)
 	page := container.NewBorder(
-		container.NewVBox(
-			container.New(colums, widget.NewLabel("From"), from),
-			container.New(colums, widget.NewLabel("To"), to),
-			container.New(colums, widget.NewLabel("Subject"), subject),
-		),
+		container.NewVBox(from, to, subject),
 		nil,
 		nil,
 		nil,
@@ -195,7 +197,9 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 	}
 	entry := widget.NewEntry()
 	entry.PlaceHolder = "Type to start searching..."
-	entry.ActionItem = widget.NewIcon(theme.SearchIcon())
+	entry.ActionItem = iwidget.NewIconButton(theme.DeleteIcon(), func() {
+		entry.SetText("")
+	})
 	entry.OnChanged = func(search string) {
 		if len(search) < 3 {
 			items = items[:0]
@@ -257,25 +261,21 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 	w.Canvas().Focus(entry)
 }
 
-func newNonEmptyStringValidator() fyne.StringValidator {
-	myErr := errors.New("can not be empty")
-	return func(text string) error {
-		if len(text) == 0 {
-			return myErr
-		}
-		return nil
-	}
-}
-
 func fetchEveEntityIcon(s app.EveImageService, it *app.EveEntity) (fyne.Resource, error) {
-	switch it.Category {
-	case app.EveEntityCharacter:
-		return s.CharacterPortrait(it.ID, DefaultIconPixelSize)
-	case app.EveEntityAlliance:
-		return s.AllianceLogo(it.ID, DefaultIconPixelSize)
-	case app.EveEntityCorporation:
-		return s.CorporationLogo(it.ID, DefaultIconPixelSize)
-	default:
-		return IconQuestionmark32Png, nil
+	res, err := func() (fyne.Resource, error) {
+		switch it.Category {
+		case app.EveEntityCharacter:
+			return s.CharacterPortrait(it.ID, DefaultIconPixelSize)
+		case app.EveEntityAlliance:
+			return s.AllianceLogo(it.ID, DefaultIconPixelSize)
+		case app.EveEntityCorporation:
+			return s.CorporationLogo(it.ID, DefaultIconPixelSize)
+		default:
+			return IconQuestionmark32Png, nil
+		}
+	}()
+	if err != nil {
+		return nil, err
 	}
+	return iwidget.MakeAvatar(res)
 }

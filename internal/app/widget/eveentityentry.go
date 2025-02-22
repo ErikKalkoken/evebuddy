@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxlayout "github.com/ErikKalkoken/fyne-kx/layout"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -18,8 +19,9 @@ import (
 // EveEntityEntry represents an entry widgets for entering Eve Entities.
 // Entities can be added and removed.
 type EveEntityEntry struct {
-	widget.BaseWidget
+	widget.DisableableWidget
 
+	Label      string
 	Recipients []*app.EveEntity
 
 	bg            *canvas.Rectangle
@@ -34,6 +36,7 @@ type EveEntityEntry struct {
 var _ fyne.Tappable = (*EveEntityEntry)(nil)
 
 func NewEveEntityEntry(
+	label string,
 	iconLoader func(*canvas.Image, *app.EveEntity),
 	showAddDialog func(onSelected func(*app.EveEntity)),
 	iconSize float32,
@@ -47,6 +50,7 @@ func NewEveEntityEntry(
 		Text:  "Tap to add recipients...",
 	})
 	w := &EveEntityEntry{
+		Label:         label,
 		bg:            bg,
 		iconLoader:    iconLoader,
 		iconSize:      iconSize,
@@ -112,27 +116,47 @@ func (w *EveEntityEntry) IsEmpty() bool {
 func (w *EveEntityEntry) updateMain() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	isDisabled := w.Disabled()
 	w.main.RemoveAll()
+	colums := kxlayout.NewColumns(45)
 	if len(w.Recipients) == 0 {
-		w.main.Add(w.placeholder)
+		w.main.Add(container.New(colums, widget.NewLabel(w.Label), w.placeholder))
 	} else {
 		p := theme.Padding()
+		firstRow := true
 		for _, r := range w.Recipients {
 			name := widget.NewLabel(r.Name)
 			name.Truncation = fyne.TextTruncateEllipsis
-			category := iwidget.NewLabelWithSize(r.CategoryDisplay(), theme.SizeNameCaptionText)
+			if isDisabled {
+				name.Importance = widget.LowImportance
+			}
 			icon := iwidget.NewImageFromResource(theme.QuestionIcon(), fyne.NewSquareSize(w.iconSize))
-			w.main.Add(container.NewBorder(
-				nil,
-				nil,
-				container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), icon),
-				container.NewHBox(
-					category,
-					iwidget.NewIconButton(theme.DeleteIcon(), func() {
-						w.remove(r.ID)
-					})),
-				name,
-			))
+			var delete fyne.CanvasObject
+			if !isDisabled {
+				delete = iwidget.NewIconButton(theme.DeleteIcon(), func() {
+					w.remove(r.ID)
+				})
+			} else {
+				delete = container.NewPadded()
+			}
+			var label string
+			if firstRow {
+				label = w.Label
+				firstRow = false
+			} else {
+				label = ""
+			}
+			row := container.New(
+				colums,
+				widget.NewLabel(label),
+				container.NewBorder(
+					nil,
+					nil,
+					container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), icon),
+					delete,
+					name,
+				))
+			w.main.Add(row)
 			w.iconLoader(icon, r)
 		}
 	}
@@ -145,6 +169,9 @@ func (w *EveEntityEntry) updateMain() {
 }
 
 func (w *EveEntityEntry) Tapped(_ *fyne.PointEvent) {
+	if w.Disabled() || w.showAddDialog == nil {
+		return
+	}
 	w.showAddDialog(func(ee *app.EveEntity) {
 		w.Add(ee)
 	})
@@ -152,6 +179,7 @@ func (w *EveEntityEntry) Tapped(_ *fyne.PointEvent) {
 
 func (w *EveEntityEntry) TappedSecondary(_ *fyne.PointEvent) {
 }
+
 func (w *EveEntityEntry) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
