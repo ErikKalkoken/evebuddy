@@ -112,14 +112,13 @@ type MailArea struct {
 
 func (u *BaseUI) NewMailArea() *MailArea {
 	a := &MailArea{
-		OnSendMessage: u.ShowSendMailWindow,
-		body:          widget.NewLabel(""),
-		folderData:    fynetree.New[FolderNode](),
-		header:        widget.NewLabel(""),
-		headers:       make([]*app.CharacterMailHeader, 0),
-		headerTop:     widget.NewLabel(""),
-		subject:       iwidget.NewLabelWithSize("", theme.SizeNameSubHeadingText),
-		u:             u,
+		body:       widget.NewLabel(""),
+		folderData: fynetree.New[FolderNode](),
+		header:     widget.NewLabel(""),
+		headers:    make([]*app.CharacterMailHeader, 0),
+		headerTop:  widget.NewLabel(""),
+		subject:    iwidget.NewLabelWithSize("", theme.SizeNameSubHeadingText),
+		u:          u,
 	}
 
 	// Mail
@@ -508,9 +507,20 @@ func (a *MailArea) makeFolderTopText(f FolderNode) (string, widget.Importance) {
 	return s, widget.MediumImportance
 }
 
+func (a *MailArea) onSendMessage(mode SendMailMode, mail *app.CharacterMail) {
+	if a.OnSendMessage == nil {
+		return
+	}
+	character := a.u.CurrentCharacter()
+	if character == nil {
+		return
+	}
+	a.OnSendMessage(character, mode, mail)
+}
+
 func (a *MailArea) MakeComposeMessageAction() (fyne.Resource, func()) {
 	return theme.DocumentCreateIcon(), func() {
-		a.OnSendMessage(a.u.CurrentCharacter(), SendMailNew, nil)
+		a.onSendMessage(SendMailNew, nil)
 	}
 }
 
@@ -538,19 +548,19 @@ func (a *MailArea) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 
 func (a *MailArea) MakeForwardAction() (fyne.Resource, func()) {
 	return theme.MailForwardIcon(), func() {
-		a.OnSendMessage(a.u.CurrentCharacter(), SendMailForward, a.mail)
+		a.onSendMessage(SendMailForward, a.mail)
 	}
 }
 
 func (a *MailArea) MakeReplyAction() (fyne.Resource, func()) {
 	return theme.MailReplyIcon(), func() {
-		a.OnSendMessage(a.u.CurrentCharacter(), SendMailReply, a.mail)
+		a.onSendMessage(SendMailReply, a.mail)
 	}
 }
 
 func (a *MailArea) MakeReplyAllAction() (fyne.Resource, func()) {
 	return theme.MailReplyAllIcon(), func() {
-		a.OnSendMessage(a.u.CurrentCharacter(), SendMailReplyAll, a.mail)
+		a.onSendMessage(SendMailReplyAll, a.mail)
 	}
 }
 

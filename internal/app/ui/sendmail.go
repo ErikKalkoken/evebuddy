@@ -27,51 +27,35 @@ const (
 	SendMailForward
 )
 
-func (u *BaseUI) ShowSendMailWindow(character *app.Character, mode SendMailMode, mail *app.CharacterMail) {
-	title := u.MakeWindowTitle(fmt.Sprintf("New message [%s]", character.EveCharacter.Name))
-	w := u.FyneApp.NewWindow(title)
-	page, icon, action := u.MakeSendMailPage(character, mode, mail, w)
-	b := widget.NewButtonWithIcon("Send", icon, func() {
-		if action() {
-			w.Hide()
-		}
-	})
-	b.Importance = widget.HighImportance
-	c := container.NewBorder(nil, b, nil, nil, page)
-	w.SetContent(c)
-	w.Resize(fyne.NewSize(600, 500))
-	w.Show()
-}
-
 func (u *BaseUI) MakeSendMailPage(
 	character *app.Character,
 	mode SendMailMode,
 	mail *app.CharacterMail,
 	w fyne.Window,
 ) (fyne.CanvasObject, fyne.Resource, func() bool) {
-	const iconSize = 20
+	const labelWith = 45
 	to := appwidget.NewEveEntityEntry(
 		"To",
+		labelWith,
 		func(image *canvas.Image, it *app.EveEntity) {
 			RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
-				return fetchEveEntityIcon(u.EveImageService, it)
+				return fetchEveEntityIconAsAvatar(u.EveImageService, it)
 			})
 		},
 		func(onSelected func(*app.EveEntity)) {
 			u.showAddDialog(character.ID, onSelected, w)
 		},
-		iconSize,
 	)
 
 	from := appwidget.NewEveEntityEntry(
 		"From",
+		labelWith,
 		func(image *canvas.Image, it *app.EveEntity) {
 			RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
-				return fetchEveEntityIcon(u.EveImageService, it)
+				return fetchEveEntityIconAsAvatar(u.EveImageService, it)
 			})
 		},
 		nil,
-		iconSize,
 	)
 	from.Set([]*app.EveEntity{{ID: character.ID, Name: character.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	from.Disable()
@@ -176,7 +160,7 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 			row[0].(*widget.Label).SetText(it.Name)
 			icon := row[1].(*canvas.Image)
 			RefreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return fetchEveEntityIcon(u.EveImageService, it)
+				return fetchEveEntityIconAsAvatar(u.EveImageService, it)
 			})
 			row[2].(*iwidget.Label).SetText(it.CategoryDisplay())
 		},
@@ -197,7 +181,7 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 	}
 	entry := widget.NewEntry()
 	entry.PlaceHolder = "Type to start searching..."
-	entry.ActionItem = iwidget.NewIconButton(theme.DeleteIcon(), func() {
+	entry.ActionItem = iwidget.NewIconButton(theme.CancelIcon(), func() {
 		entry.SetText("")
 	})
 	entry.OnChanged = func(search string) {
@@ -238,9 +222,9 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 	c := container.NewBorder(
 		container.NewBorder(
 			container.NewHBox(
-				widget.NewLabelWithStyle("Add Recipient", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+				widget.NewLabel("Add Recipient"),
 				layout.NewSpacer(),
-				widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
+				widget.NewButton("Cancel", func() {
 					modal.Hide()
 				}),
 			),
@@ -261,7 +245,7 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 	w.Canvas().Focus(entry)
 }
 
-func fetchEveEntityIcon(s app.EveImageService, it *app.EveEntity) (fyne.Resource, error) {
+func fetchEveEntityIconAsAvatar(s app.EveImageService, it *app.EveEntity) (fyne.Resource, error) {
 	res, err := func() (fyne.Resource, error) {
 		switch it.Category {
 		case app.EveEntityCharacter:

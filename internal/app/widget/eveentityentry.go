@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -22,11 +23,12 @@ type EveEntityEntry struct {
 	widget.DisableableWidget
 
 	Label      string
+	LabelWidth float32
 	Recipients []*app.EveEntity
 
 	bg            *canvas.Rectangle
+	hovered       bool
 	iconLoader    func(*canvas.Image, *app.EveEntity)
-	iconSize      float32
 	main          *fyne.Container
 	placeholder   *widget.RichText
 	showAddDialog func(func(*app.EveEntity))
@@ -34,12 +36,13 @@ type EveEntityEntry struct {
 }
 
 var _ fyne.Tappable = (*EveEntityEntry)(nil)
+var _ desktop.Hoverable = (*EveEntityEntry)(nil)
 
 func NewEveEntityEntry(
 	label string,
+	labelWidth float32,
 	iconLoader func(*canvas.Image, *app.EveEntity),
 	showAddDialog func(onSelected func(*app.EveEntity)),
-	iconSize float32,
 ) *EveEntityEntry {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
@@ -50,13 +53,13 @@ func NewEveEntityEntry(
 		Text:  "Tap to add recipients...",
 	})
 	w := &EveEntityEntry{
-		Label:         label,
 		bg:            bg,
 		iconLoader:    iconLoader,
-		iconSize:      iconSize,
-		main:          container.NewGridWithColumns(1),
-		Recipients:    make([]*app.EveEntity, 0),
+		Label:         label,
+		LabelWidth:    labelWidth,
+		main:          container.New(layout.NewCustomPaddedVBoxLayout(0)),
 		placeholder:   placeholder,
+		Recipients:    make([]*app.EveEntity, 0),
 		showAddDialog: showAddDialog,
 	}
 	w.ExtendBaseWidget(w)
@@ -116,13 +119,17 @@ func (w *EveEntityEntry) IsEmpty() bool {
 func (w *EveEntityEntry) updateMain() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	th := w.Theme()
 	isDisabled := w.Disabled()
 	w.main.RemoveAll()
-	colums := kxlayout.NewColumns(45)
+	colums := kxlayout.NewColumns(w.LabelWidth)
 	if len(w.Recipients) == 0 {
 		w.main.Add(container.New(colums, widget.NewLabel(w.Label), w.placeholder))
 	} else {
-		p := theme.Padding()
+		padding := th.Size(theme.SizeNamePadding)
+		iconSize := th.Size(theme.SizeNameInlineIcon)
+		deleteIcon := th.Icon(theme.IconNameDelete)
+		questionIcon := th.Icon(theme.IconNameQuestion)
 		firstRow := true
 		for _, r := range w.Recipients {
 			name := widget.NewLabel(r.Name)
@@ -130,10 +137,10 @@ func (w *EveEntityEntry) updateMain() {
 			if isDisabled {
 				name.Importance = widget.LowImportance
 			}
-			icon := iwidget.NewImageFromResource(theme.QuestionIcon(), fyne.NewSquareSize(w.iconSize))
+			icon := iwidget.NewImageFromResource(questionIcon, fyne.NewSquareSize(iconSize))
 			var delete fyne.CanvasObject
 			if !isDisabled {
-				delete = iwidget.NewIconButton(theme.DeleteIcon(), func() {
+				delete = iwidget.NewIconButton(deleteIcon, func() {
 					w.remove(r.ID)
 				})
 			} else {
@@ -152,7 +159,7 @@ func (w *EveEntityEntry) updateMain() {
 				container.NewBorder(
 					nil,
 					nil,
-					container.New(layout.NewCustomPaddedLayout(0, 0, p, 0), icon),
+					container.New(layout.NewCustomPaddedLayout(0, 0, padding, 0), icon),
 					delete,
 					name,
 				))
@@ -199,6 +206,28 @@ func (w *EveEntityEntry) MinSize() fyne.Size {
 	minSize = minSize.Add(fyne.NewSquareSize(innerPadding))
 	minSize = minSize.AddWidthHeight(innerPadding*2, innerPadding)
 	return minSize.Max(w.BaseWidget.MinSize())
+}
+
+// Cursor returns the cursor type of this widget
+func (w *EveEntityEntry) Cursor() desktop.Cursor {
+	if w.hovered {
+		return desktop.PointerCursor
+	}
+	return desktop.DefaultCursor
+}
+
+// MouseIn is a hook that is called if the mouse pointer enters the element.
+func (w *EveEntityEntry) MouseIn(e *desktop.MouseEvent) {
+	w.hovered = true
+}
+
+func (w *EveEntityEntry) MouseMoved(*desktop.MouseEvent) {
+	// needed to satisfy the interface only
+}
+
+// MouseOut is a hook that is called if the mouse pointer leaves the element.
+func (w *EveEntityEntry) MouseOut() {
+	w.hovered = false
 }
 
 func (w *EveEntityEntry) CreateRenderer() fyne.WidgetRenderer {

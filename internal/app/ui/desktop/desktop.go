@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 	"golang.org/x/sync/singleflight"
 
@@ -162,6 +163,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 		mailTab.Text = makeTitleWithCount("Comm.", count)
 		u.tabs.Refresh()
 	}
+	u.MailArea.OnSendMessage = u.showSendMailWindow
 
 	clonesTab := container.NewTabItemWithIcon("Clones",
 		theme.NewThemedResource(ui.IconHeadSnowflakeSvg), container.NewAppTabs(
@@ -324,5 +326,21 @@ func (u *DesktopUI) showSettingsWindow() {
 	w.SetOnClosed(func() {
 		u.settingsWindow = nil
 	})
+	w.Show()
+}
+
+func (u *DesktopUI) showSendMailWindow(character *app.Character, mode ui.SendMailMode, mail *app.CharacterMail) {
+	title := u.MakeWindowTitle(fmt.Sprintf("New message [%s]", character.EveCharacter.Name))
+	w := u.FyneApp.NewWindow(title)
+	page, icon, action := u.MakeSendMailPage(character, mode, mail, w)
+	send := widget.NewButtonWithIcon("Send", icon, func() {
+		if action() {
+			w.Hide()
+		}
+	})
+	send.Importance = widget.HighImportance
+	c := container.NewBorder(nil, container.NewHBox(send), nil, nil, page)
+	w.SetContent(c)
+	w.Resize(fyne.NewSize(600, 500))
 	w.Show()
 }
