@@ -124,7 +124,7 @@ func (a *NotificationsArea) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewMailHeaderItem(app.TimeDefaultFormat)
+			return appwidget.NewMailHeaderItem(a.u.EveImageService, app.TimeDefaultFormat)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
@@ -132,7 +132,7 @@ func (a *NotificationsArea) makeNotificationList() *widget.List {
 			}
 			n := a.notifications[id]
 			item := co.(*appwidget.MailHeaderItem)
-			item.Set(n.Sender.Name, n.TitleDisplay(), n.Timestamp, n.IsRead)
+			item.Set(n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.clearDetail()

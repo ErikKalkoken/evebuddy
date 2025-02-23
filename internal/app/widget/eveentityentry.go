@@ -247,7 +247,7 @@ func (w *eveEntityBadge) CreateRenderer() fyne.WidgetRenderer {
 		),
 	)
 	go func() {
-		icon.Resource = fetchImage(w.eis, w.ee, w.FallbackIcon)
+		icon.Resource = fetchEveEntityAvatar(w.eis, w.ee, w.FallbackIcon)
 		icon.Refresh()
 	}()
 	return widget.NewSimpleRenderer(c)
@@ -293,7 +293,10 @@ func (w *eveEntityBadge) MouseOut() {
 	w.hovered = false
 }
 
-func fetchImage(eis app.EveImageService, ee *app.EveEntity, fallback fyne.Resource) fyne.Resource {
+func fetchEveEntityAvatar(eis app.EveImageService, ee *app.EveEntity, fallback fyne.Resource) fyne.Resource {
+	if ee == nil {
+		return fallback
+	}
 	res, err := eis.EntityIcon(ee.ID, ee.Category.ToEveImage(), DefaultIconPixelSize)
 	if err != nil {
 		slog.Error("eve entity entry icon update", "error", err)

@@ -43,11 +43,11 @@ WHERE
 
 -- name: GetMail :one
 SELECT
-    sqlc.embed(character_mails),
-    sqlc.embed(eve_entities)
+    sqlc.embed(cm),
+    sqlc.embed(ee)
 FROM
-    character_mails
-    JOIN eve_entities ON eve_entities.id = character_mails.from_id
+    character_mails cm
+    JOIN eve_entities ee ON ee.id = cm.from_id
 WHERE
     character_id = ?
     AND mail_id = ?;
@@ -134,12 +134,8 @@ WHERE
 
 -- name: ListMailsOrdered :many
 SELECT
-    cm.id,
-    cm.subject,
-    cm.mail_id,
-    cm.timestamp,
-    cm.is_read,
-    ee.name as from_name
+    sqlc.embed(cm),
+    sqlc.embed(ee)
 FROM
     character_mails cm
     JOIN eve_entities ee ON ee.id = cm.from_id
@@ -150,12 +146,8 @@ ORDER BY
 
 -- name: ListMailsUnreadOrdered :many
 SELECT
-    cm.id,
-    cm.subject,
-    cm.mail_id,
-    cm.timestamp,
-    cm.is_read,
-    ee.name as from_name
+    sqlc.embed(cm),
+    sqlc.embed(ee)
 FROM
     character_mails cm
     JOIN eve_entities ee ON ee.id = cm.from_id
@@ -167,12 +159,8 @@ ORDER BY
 
 -- name: ListMailsNoLabelOrdered :many
 SELECT
-    cm.id,
-    cm.subject,
-    cm.mail_id,
-    cm.timestamp,
-    cm.is_read,
-    ee.name as from_name
+    sqlc.embed(cm),
+    sqlc.embed(ee)
 FROM
     character_mails cm
     JOIN eve_entities ee ON ee.id = cm.from_id
@@ -185,12 +173,8 @@ ORDER BY
 
 -- name: ListMailsForLabelOrdered :many
 SELECT
-    cm.id,
-    cm.subject,
-    cm.mail_id,
-    cm.timestamp,
-    cm.is_read,
-    ee.name as from_name
+    sqlc.embed(cm),
+    sqlc.embed(ee)
 FROM
     character_mails cm
     JOIN eve_entities ee ON ee.id = cm.from_id
@@ -202,36 +186,10 @@ WHERE
 ORDER BY
     timestamp DESC;
 
--- name: ListMailsForSentOrdered :many
-SELECT
-    cm.id,
-    cm.subject,
-    cm.mail_id,
-    cm.timestamp,
-    cm.is_read,
-    group_concat(ee.name, ", ") as from_name
-FROM
-    character_mails cm
-    JOIN character_mails_recipients cmr ON cmr.mail_id = cm.id
-    JOIN eve_entities ee ON ee.id = cmr.eve_entity_id
-    JOIN character_mail_mail_labels cml ON cml.character_mail_id = cm.id
-    JOIN character_mail_labels ON character_mail_labels.id = cml.character_mail_label_id
-WHERE
-    cm.character_id = ?
-    AND label_id = ?
-GROUP BY
-    cm.mail_id
-ORDER BY
-    timestamp DESC;
-
 -- name: ListMailsForListOrdered :many
 SELECT
-    cm.id,
-    cm.subject,
-    cm.mail_id,
-    cm.timestamp,
-    cm.is_read,
-    ee.name as from_name
+    sqlc.embed(cm),
+    sqlc.embed(ee)
 FROM
     character_mails cm
     JOIN eve_entities ee ON ee.id = cm.from_id
@@ -244,12 +202,8 @@ ORDER BY
 
 -- name: ListMailsUnprocessed :many
 SELECT
-    cm.id,
-    cm.subject,
-    cm.mail_id,
-    cm.timestamp,
-    cm.is_read,
-    ee.name as from_name
+    sqlc.embed(cm),
+    sqlc.embed(ee)
 FROM
     character_mails cm
     JOIN eve_entities ee ON ee.id = cm.from_id
