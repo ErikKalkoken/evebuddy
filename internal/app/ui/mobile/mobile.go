@@ -86,7 +86,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		if mode != ui.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}
-		characterNav.PushNoNavBar(
+		characterNav.PushHideNavBar(
 			newCharacterAppBar(
 				"",
 				page,
@@ -96,7 +96,6 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 					}
 				}),
 			),
-			navBar,
 		)
 	}
 	navItemMail := iwidget.NewListItemWithIcon(
@@ -104,7 +103,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		theme.MailComposeIcon(),
 		func() {
 			u.MailArea.OnSelected = func() {
-				characterNav.PushNoNavBar(
+				characterNav.PushHideNavBar(
 					newCharacterAppBar(
 						"Mail",
 						u.MailArea.Detail,
@@ -115,7 +114,6 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 							characterNav.Pop()
 						})),
 					),
-					navBar,
 				)
 			}
 			characterNav.Push(
@@ -132,9 +130,8 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		theme.NewThemedResource(icon.MessageSvg),
 		func() {
 			u.NotificationsArea.OnSelected = func() {
-				characterNav.PushNoNavBar(
+				characterNav.PushHideNavBar(
 					newCharacterAppBar("Communications", u.NotificationsArea.Detail),
-					navBar,
 				)
 			}
 			characterNav.Push(
@@ -448,6 +445,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		moreNav.PopAll()
 	}
 	navBar = iwidget.NewNavBar(characterDest, crossDest, moreDest)
+	characterNav.NavBar = navBar
 
 	u.OnSetCharacter = func(id int32) {
 		// update character selector
