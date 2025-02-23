@@ -131,8 +131,8 @@ type CharacterContract struct {
 }
 
 func (cc CharacterContract) AvailabilityDisplay() string {
-	caser := cases.Title(language.English)
-	s := caser.String(cc.Availability.String())
+	titler := cases.Title(language.English)
+	s := titler.String(cc.Availability.String())
 	if cc.Assignee != nil && cc.Availability != ContractAvailabilityPublic && cc.Availability != ContractAvailabilityUndefined {
 		s += " - " + cc.Assignee.Name
 	}

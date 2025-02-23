@@ -378,7 +378,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 			moreNav.Push(iwidget.NewAppBar(
 				"General",
 				u.SettingsArea.GeneralContent,
-				iwidget.NewIconButtonWithMenu(makeSettingsMenu(u.SettingsArea.NotificationActions)),
+				iwidget.NewIconButtonWithMenu(makeSettingsMenu(u.SettingsArea.GeneralActions)),
 			))
 		},
 	)

@@ -298,7 +298,19 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 			showExportFileDialog(a.u.DataPaths["crashfile"], a.window)
 		},
 	}
-	actions := []SettingAction{reset, clear, exportAppLog, exportCrashLog}
+	deleteAppLog := SettingAction{
+		Label: "Delete application log",
+		Action: func() {
+			showDeleteFileDialog("application log", a.u.DataPaths["log"]+"*", a.window)
+		},
+	}
+	deleteCrashLog := SettingAction{
+		Label: "Delete creash log",
+		Action: func() {
+			showDeleteFileDialog("crash log", a.u.DataPaths["crashfile"], a.window)
+		},
+	}
+	actions := []SettingAction{reset, clear, exportAppLog, deleteAppLog, exportCrashLog, deleteCrashLog}
 	if a.u.IsDesktop() {
 		actions = append(actions, SettingAction{
 			Label: "Resets main window size to defaults",
@@ -308,6 +320,33 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		})
 	}
 	return list, actions
+}
+
+func showDeleteFileDialog(name, path string, w fyne.Window) {
+	d := dialog.NewConfirm("Delete "+name, "Are you sure?", func(confirmed bool) {
+		if !confirmed {
+			return
+		}
+		err := func() error {
+			files, err := filepath.Glob(path)
+			if err != nil {
+				return err
+			}
+			for _, f := range files {
+				if err := os.Remove(f); err != nil {
+					return err
+				}
+			}
+			return nil
+		}()
+		if err != nil {
+			slog.Error("delete "+name, "path", path, "error", err)
+			iwidget.ShowSnackbar("ERROR: Failed to delete "+name, w)
+		} else {
+			iwidget.ShowSnackbar(Titler.String(name)+" deleted", w)
+		}
+	}, w)
+	d.Show()
 }
 
 func showExportFileDialog(path string, w fyne.Window) {

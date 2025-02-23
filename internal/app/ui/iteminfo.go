@@ -14,8 +14,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
@@ -30,8 +28,7 @@ import (
 type attributeGroup string
 
 func (ag attributeGroup) DisplayName() string {
-	c := cases.Title(language.English)
-	return c.String(string(ag))
+	return Titler.String(string(ag))
 }
 
 // groups of attributes to display on the attributes and fitting tab
