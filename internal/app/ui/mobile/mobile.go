@@ -2,16 +2,12 @@
 package mobile
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
-	"os"
-	"path/filepath"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -426,20 +422,6 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		navItemManageCharacters,
 		u.navItemUpdateStatus,
 		iwidget.NewListItemWithIcon(
-			"Logs",
-			theme.NewThemedResource(icon.ScriptTextSvg),
-			func() {
-				moreNav.Push(iwidget.NewAppBar("Logs", iwidget.NewNavList(
-					iwidget.NewListItem("Export application log", func() {
-						showExportFileDialog(u.DataPaths["log"], u.Window)
-					}),
-					iwidget.NewListItem("Export crash log", func() {
-						showExportFileDialog(u.DataPaths["crashfile"], u.Window)
-					}),
-				)))
-			},
-		),
-		iwidget.NewListItemWithIcon(
 			"About",
 			theme.NewThemedResource(icon.InformationSvg),
 			func() {
@@ -533,39 +515,4 @@ func (u *MobileUI) makeCommunicationsMenu() []*fyne.MenuItem {
 		items2 = append(items2, it)
 	}
 	return items2
-}
-
-func showExportFileDialog(path string, w fyne.Window) {
-	filename := filepath.Base(path)
-	data, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		iwidget.ShowSnackbar("No file to export: "+filename, w)
-		return
-	} else if err != nil {
-		ui.ShowErrorDialog("Failed to open "+filename, err, w)
-		return
-	}
-	d := dialog.NewFileSave(
-		func(writer fyne.URIWriteCloser, err error) {
-			err2 := func() error {
-				if err != nil {
-					return err
-				}
-				if writer == nil {
-					return nil
-				}
-				defer writer.Close()
-				if _, err := writer.Write(data); err != nil {
-					return err
-				}
-				iwidget.ShowSnackbar("File "+filename+" exported", w)
-				return nil
-			}()
-			if err2 != nil {
-				ui.ShowErrorDialog("Failed to export "+filename, err, w)
-			}
-		}, w,
-	)
-	d.SetFileName(filename)
-	d.Show()
 }

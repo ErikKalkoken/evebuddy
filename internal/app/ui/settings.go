@@ -2,8 +2,11 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"maps"
+	"os"
+	"path/filepath"
 	"slices"
 	"time"
 
@@ -169,7 +172,7 @@ func (a *SettingsArea) currentWindow() fyne.Window {
 }
 
 func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAction) {
-	logLevel := iwidget.NewSettingItemSelect(
+	logLevel := iwidget.NewSettingItemOptions(
 		"Log level",
 		"Set current log level",
 		LogLevelNames(),
@@ -283,7 +286,19 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 			list.Refresh()
 		},
 	}
-	actions := []SettingAction{reset, clear}
+	exportAppLog := SettingAction{
+		Label: "Export application log",
+		Action: func() {
+			showExportFileDialog(a.u.DataPaths["log"], a.window)
+		},
+	}
+	exportCrashLog := SettingAction{
+		Label: "Export crash log",
+		Action: func() {
+			showExportFileDialog(a.u.DataPaths["crashfile"], a.window)
+		},
+	}
+	actions := []SettingAction{reset, clear, exportAppLog, exportCrashLog}
 	if a.u.IsDesktop() {
 		actions = append(actions, SettingAction{
 			Label: "Resets main window size to defaults",
@@ -293,6 +308,41 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		})
 	}
 	return list, actions
+}
+
+func showExportFileDialog(path string, w fyne.Window) {
+	filename := filepath.Base(path)
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		iwidget.ShowSnackbar("No file to export: "+filename, w)
+		return
+	} else if err != nil {
+		ShowErrorDialog("Failed to open "+filename, err, w)
+		return
+	}
+	d := dialog.NewFileSave(
+		func(writer fyne.URIWriteCloser, err error) {
+			err2 := func() error {
+				if err != nil {
+					return err
+				}
+				if writer == nil {
+					return nil
+				}
+				defer writer.Close()
+				if _, err := writer.Write(data); err != nil {
+					return err
+				}
+				iwidget.ShowSnackbar("File "+filename+" exported", w)
+				return nil
+			}()
+			if err2 != nil {
+				ShowErrorDialog("Failed to export "+filename, err, w)
+			}
+		}, w,
+	)
+	d.SetFileName(filename)
+	d.Show()
 }
 
 func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingAction) {

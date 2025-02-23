@@ -129,7 +129,7 @@ func NewSettingItemSlider(
 	}
 }
 
-func NewSettingItemSelect(
+func NewSettingItemOptions(
 	label, hint string,
 	options []string,
 	defaultV string,
