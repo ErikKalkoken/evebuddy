@@ -86,6 +86,9 @@ func (n *Navigator) PopAll() {
 			n.stack.Remove(n.topPage())
 		}
 		n.topPage().Show()
+		if n.NavBar != nil {
+			n.NavBar.ShowBar()
+		}
 	}()
 	n.stack.Refresh()
 }
