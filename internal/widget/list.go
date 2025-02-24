@@ -1,10 +1,21 @@
 package widget
 
 import (
+	"time"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 )
+
+type List struct {
+	widget.BaseWidget
+
+	SelectDelay time.Duration
+
+	title string
+	items []*ListItem
+}
 
 func NewNavList(items ...*ListItem) *List {
 	return NewNavListWithTitle("", items...)
@@ -12,8 +23,9 @@ func NewNavList(items ...*ListItem) *List {
 
 func NewNavListWithTitle(title string, items ...*ListItem) *List {
 	w := &List{
-		items: items,
-		title: title,
+		items:       items,
+		SelectDelay: 500 * time.Millisecond,
+		title:       title,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -34,10 +46,20 @@ func (w *List) CreateRenderer() fyne.WidgetRenderer {
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
-		defer list.UnselectAll()
-		if a := w.items[id].Action; a != nil {
-			a()
+		if id >= len(w.items) {
+			list.UnselectAll()
+			return
 		}
+		a := w.items[id].Action
+		if a == nil {
+			list.UnselectAll()
+			return
+		}
+		a()
+		go func() {
+			time.Sleep(w.SelectDelay)
+			list.UnselectAll()
+		}()
 	}
 	list.HideSeparators = true
 	l := widget.NewLabel(w.title)

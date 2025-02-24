@@ -39,13 +39,6 @@ func NewListItemWithNavigator(nav *Navigator, ab *AppBar) *ListItem {
 	return w
 }
 
-type List struct {
-	widget.BaseWidget
-
-	title string
-	items []*ListItem
-}
-
 type listItem struct {
 	widget.BaseWidget
 

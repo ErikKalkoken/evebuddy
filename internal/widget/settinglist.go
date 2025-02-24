@@ -2,6 +2,7 @@ package widget
 
 import (
 	"fmt"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -14,11 +15,13 @@ import (
 // SettingList is a custom list widget for settings.
 type SettingList struct {
 	widget.List
+
+	SelectDelay time.Duration
 }
 
 // NewSettingList returns a new SettingList widget.
 func NewSettingList(items []SettingItem) *SettingList {
-	w := &SettingList{}
+	w := &SettingList{SelectDelay: 200 * time.Millisecond}
 	w.Length = func() int {
 		return len(items)
 	}
@@ -89,16 +92,22 @@ func NewSettingList(items []SettingItem) *SettingList {
 		w.SetItemHeight(id, co.(*fyne.Container).MinSize().Height)
 	}
 	w.OnSelected = func(id widget.ListItemID) {
-		defer w.UnselectAll()
 		if id >= len(items) {
+			w.UnselectAll()
 			return
 		}
 		it := items[id]
-		if it.onSelected != nil {
-			it.onSelected(it, func() {
-				w.RefreshItem(id)
-			})
+		if it.onSelected == nil {
+			w.UnselectAll()
+			return
 		}
+		it.onSelected(it, func() {
+			w.RefreshItem(id)
+		})
+		go func() {
+			time.Sleep(w.SelectDelay)
+			w.UnselectAll()
+		}()
 	}
 	w.HideSeparators = true
 	w.ExtendBaseWidget(w)
