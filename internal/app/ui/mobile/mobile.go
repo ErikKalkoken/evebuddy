@@ -465,7 +465,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		characterNav.PopAll()
 	}
 
-	u.OnAppStarted = func() {
+	u.OnAppFirstStarted = func() {
 		ticker := time.NewTicker(2 * time.Second)
 		go func() {
 			for {

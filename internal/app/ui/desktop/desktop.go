@@ -73,7 +73,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 		height := float32(u.FyneApp.Preferences().FloatWithFallback(ui.SettingWindowHeight, ui.SettingWindowHeightDefault))
 		u.Window.Resize(fyne.NewSize(width, height))
 	}
-	u.OnAppStarted = func() {
+	u.OnAppFirstStarted = func() {
 		// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
 		// only in parts and freeze. The issue is known to happen on Linux desktops.
 		if runtime.GOOS == "linux" {
@@ -94,7 +94,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 			sb.Show()
 		})
 	}
-	u.OnAppStopped = func() {
+	u.OnAppTerminated = func() {
 		u.saveAppState()
 	}
 	u.OnRefreshCharacter = func(c *app.Character) {

@@ -57,9 +57,8 @@ type BaseUI struct {
 	// Whether to disable update tickers (useful for debugging)
 	IsUpdateTickerDisabled bool
 
-	// callbacks
-	OnAppStarted       func()
-	OnAppStopped       func()
+	OnAppFirstStarted  func()
+	OnAppTerminated    func()
 	OnInit             func(*app.Character)
 	OnRefreshCharacter func(*app.Character)
 	OnSetCharacter     func(int32)
@@ -101,9 +100,10 @@ type BaseUI struct {
 	character    *app.Character
 	statusWindow fyne.Window
 	isMobile     bool
+	wasStarted   atomic.Bool // whether the app has already been started at least once
 }
 
-// NewBaseUI returns a new BaseUI.
+// NewBaseUI constructs and returns a new BaseUI.
 //
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
 func NewBaseUI(fyneApp fyne.App) *BaseUI {
@@ -149,15 +149,7 @@ func NewBaseUI(fyneApp fyne.App) *BaseUI {
 	return u
 }
 
-func (u BaseUI) IsDesktop() bool {
-	return u.DeskApp != nil
-}
-
-func (u BaseUI) IsMobile() bool {
-	return u.isMobile
-}
-
-func (u BaseUI) AppName() string {
+func (u *BaseUI) AppName() string {
 	info := u.FyneApp.Metadata()
 	name := info.Name
 	if name == "" {
@@ -166,10 +158,9 @@ func (u BaseUI) AppName() string {
 	return name
 }
 
-func (u *BaseUI) MakeWindowTitle(subTitle string) string {
-	return fmt.Sprintf("%s - %s", subTitle, u.AppName())
-}
-
+// Init initialized the app.
+// It is meant for initialization logic that requires all services to be initialized and available.
+// It should be called directly after the app was created and before the Fyne loop is started.
 func (u *BaseUI) Init() {
 	u.AccountArea.Refresh()
 	var c *app.Character
@@ -200,11 +191,30 @@ func (u *BaseUI) Init() {
 	}
 }
 
-// ShowAndRun shows the UI and runs it (blocking).
-func (u *BaseUI) ShowAndRun() {
-	u.FyneApp.Lifecycle().SetOnStarted(func() {
-		slog.Info("App started")
+func (u *BaseUI) IsDesktop() bool {
+	return u.DeskApp != nil
+}
 
+func (u *BaseUI) IsMobile() bool {
+	return u.isMobile
+}
+
+func (u *BaseUI) MakeWindowTitle(subTitle string) string {
+	return fmt.Sprintf("%s - %s", subTitle, u.AppName())
+}
+
+// ShowAndRun shows the UI and runs the Fyne loop (blocking),
+func (u *BaseUI) ShowAndRun() {
+	// SetOnStarted is called on initial start,
+	// but also when an app is coninued after it was temporarily stopped,
+	// which can happen on mobile
+	u.FyneApp.Lifecycle().SetOnStarted(func() {
+		wasStarted := !u.wasStarted.CompareAndSwap(false, true)
+		if wasStarted {
+			slog.Info("App continued")
+			return
+		}
+		slog.Info("App started")
 		if u.IsOffline {
 			slog.Info("Started in offline mode")
 		}
@@ -225,20 +235,21 @@ func (u *BaseUI) ShowAndRun() {
 				u.startUpdateTickerCharacters()
 			}()
 		}
-		if u.OnAppStarted != nil {
-			u.OnAppStarted()
+		if u.OnAppFirstStarted != nil {
+			u.OnAppFirstStarted()
 		}
 	})
 	u.FyneApp.Lifecycle().SetOnStopped(func() {
-		if u.OnAppStopped != nil {
-			u.OnAppStopped()
-		}
-		slog.Info("App shut down complete")
+		slog.Info("App stopped")
 	})
 	if u.OnShowAndRun != nil {
 		u.OnShowAndRun()
 	}
 	u.Window.ShowAndRun()
+	slog.Info("App terminated")
+	if u.OnAppTerminated != nil {
+		u.OnAppTerminated()
+	}
 }
 
 // CharacterID returns the ID of the current character or 0 if non it set.
