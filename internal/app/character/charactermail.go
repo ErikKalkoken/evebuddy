@@ -77,7 +77,7 @@ func (cs *CharacterService) NotifyMails(ctx context.Context, characterID int32, 
 		if m.Timestamp.Before(earliest) {
 			continue
 		}
-		title := fmt.Sprintf("%s: New Mail from %s", characterName, m.From)
+		title := fmt.Sprintf("%s: New Mail from %s", characterName, m.From.Name)
 		content := m.Subject
 		notify(title, content)
 		if err := cs.st.UpdateCharacterMailSetProcessed(ctx, m.ID); err != nil {

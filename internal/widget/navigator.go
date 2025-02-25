@@ -1,8 +1,6 @@
 package widget
 
 import (
-	"sync"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
@@ -15,10 +13,8 @@ import (
 type Navigator struct {
 	widget.BaseWidget
 
-	// Current navbar. Required for hide feature.
-	NavBar *NavBar
+	NavBar *NavBar // Current navbar. Required for hide feature.
 
-	mu    sync.Mutex
 	stack *fyne.Container // stack of pages. First object is the root page.
 }
 
@@ -45,52 +41,37 @@ func (n *Navigator) PushHideNavBar(ab *AppBar) {
 
 func (n *Navigator) push(ab *AppBar, hideNavBar bool) {
 	ab.Navigator = n
-	func() {
-		n.mu.Lock()
-		defer n.mu.Unlock()
-		if hideNavBar && n.NavBar != nil {
-			n.NavBar.HideBar()
-		}
-		previous := n.topPage()
-		n.stack.Add(ab)
-		previous.Hide()
-	}()
-	n.stack.Refresh()
+	if hideNavBar && n.NavBar != nil {
+		n.NavBar.HideBar()
+	}
+	previous := n.topPage()
+	n.stack.Add(ab)
+	previous.Hide()
 }
 
 // Pop removes the current page and shows the previous page.
 // Does nothing when the root page is shown.
 func (n *Navigator) Pop() {
-	func() {
-		n.mu.Lock()
-		defer n.mu.Unlock()
-		if len(n.stack.Objects) == 1 {
-			return
-		}
-		n.stack.Remove(n.topPage())
-		n.topPage().Show()
-		if n.NavBar != nil {
-			n.NavBar.ShowBar()
-		}
-	}()
-	n.stack.Refresh()
+	if len(n.stack.Objects) == 1 {
+		return
+	}
+	n.stack.Remove(n.topPage())
+	n.topPage().Show()
+	if n.NavBar != nil {
+		n.NavBar.ShowBar()
+	}
 }
 
 // PopAll removes all additional pages and shows the root page.
 // Does nothing when the root page is shown.
 func (n *Navigator) PopAll() {
-	func() {
-		n.mu.Lock()
-		defer n.mu.Unlock()
-		for len(n.stack.Objects) > 1 {
-			n.stack.Remove(n.topPage())
-		}
-		n.topPage().Show()
-		if n.NavBar != nil {
-			n.NavBar.ShowBar()
-		}
-	}()
-	n.stack.Refresh()
+	for len(n.stack.Objects) > 1 {
+		n.stack.Remove(n.topPage())
+	}
+	n.topPage().Show()
+	if n.NavBar != nil {
+		n.NavBar.ShowBar()
+	}
 }
 
 func (n *Navigator) topPage() fyne.CanvasObject {
