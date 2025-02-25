@@ -8,38 +8,33 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
 // toolbarArea is the UI area showing the current status aka status bar.
 type toolbarArea struct {
-	content      *fyne.Container
-	icon         *canvas.Image
-	name         *widget.Label
-	switchButton *iwidget.ContextMenuButton
-	u            *DesktopUI
+	content *fyne.Container
+	icon    *kwidget.TappableImage
+	name    *widget.Label
+	u       *DesktopUI
 }
 
 func (u *DesktopUI) newToolbarArea() *toolbarArea {
+	i := kwidget.NewTappableImageWithMenu(icon.Characterplaceholder64Jpeg, fyne.NewMenu(""))
+	i.SetFillMode(canvas.ImageFillContain)
+	i.SetMinSize(fyne.NewSquareSize(ui.DefaultIconUnitSize))
 	a := &toolbarArea{
-		icon: iwidget.NewImageFromResource(
-			icon.Characterplaceholder64Jpeg,
-			fyne.NewSquareSize(ui.DefaultIconUnitSize),
-		),
+		icon: i,
 		name: widget.NewLabel(""),
-		switchButton: iwidget.NewContextMenuButtonWithIcon(
-			theme.NewThemedResource(icon.SwitchaccountSvg), "Switch", fyne.NewMenu(""),
-		),
-		u: u,
+		u:    u,
 	}
-	c := container.NewHBox(container.NewPadded(a.icon), a.name, layout.NewSpacer(), a.switchButton)
+	c := container.NewBorder(nil, nil, a.icon, nil, a.name)
 	a.content = container.NewVBox(c, widget.NewSeparator())
 	return a
 }
@@ -47,15 +42,14 @@ func (u *DesktopUI) newToolbarArea() *toolbarArea {
 func (a *toolbarArea) refresh() {
 	c := a.u.CurrentCharacter()
 	if c == nil {
-		a.icon.Resource = icon.Characterplaceholder64Jpeg
-		a.icon.Refresh()
+		r, _ := iwidget.MakeAvatar(icon.Characterplaceholder64Jpeg)
+		a.icon.SetResource(r)
 		a.name.Text = "No character"
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
 		a.name.Importance = widget.LowImportance
 	} else {
 		go a.u.UpdateAvatar(c.ID, func(r fyne.Resource) {
-			a.icon.Resource = r
-			a.icon.Refresh()
+			a.icon.SetResource(r)
 		})
 		s := fmt.Sprintf("%s (%s)", c.EveCharacter.Name, c.EveCharacter.Corporation.Name)
 		a.name.Text = s
@@ -71,12 +65,12 @@ func (a *toolbarArea) refresh() {
 		a.u.statusBarArea.SetError(msg)
 		return
 	}
-	a.switchButton.SetMenuItems(menuItems)
-	if len(menuItems) == 0 {
-		a.switchButton.Disable()
-	} else {
-		a.switchButton.Enable()
-	}
+	a.icon.SetMenuItems(menuItems)
+	// if len(menuItems) == 0 {
+	// 	a.switchButton.Disable()
+	// } else {
+	// 	a.switchButton.Enable()
+	// }
 }
 
 func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) {
@@ -86,9 +80,6 @@ func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) 
 		return menuItems, err
 	}
 	for _, myC := range cc {
-		if c != nil && myC.ID == c.ID {
-			continue
-		}
 		item := fyne.NewMenuItem(myC.Name, func() {
 			err := a.u.LoadCharacter(myC.ID)
 			if err != nil {
@@ -102,8 +93,11 @@ func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) 
 		item.Icon = icon.Characterplaceholder64Jpeg
 		go a.u.UpdateAvatar(myC.ID, func(r fyne.Resource) {
 			item.Icon = r
-			a.switchButton.Refresh()
+			a.icon.Refresh()
 		})
+		if c != nil && myC.ID == c.ID {
+			item.Disabled = true
+		}
 		menuItems = append(menuItems, item)
 	}
 	return menuItems, nil
