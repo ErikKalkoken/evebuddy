@@ -52,26 +52,8 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	fallbackAvatar, _ := fynetools.MakeAvatar(icon.Characterplaceholder64Jpeg)
 	characterSelector := iwidget.NewIconButton(fallbackAvatar, nil)
 	characterSelector.OnTapped = func() {
-		o := characterSelector
-		characterID := u.CharacterID()
-		cc := u.StatusCacheService.ListCharacters()
-		items := make([]*fyne.MenuItem, 0)
-		if len(cc) == 0 {
-			it := fyne.NewMenuItem("No characters", nil)
-			it.Disabled = true
-			items = append(items, it)
-		} else {
-			for _, c := range cc {
-				it := fyne.NewMenuItem(c.Name, func() {
-					u.LoadCharacter(c.ID)
-				})
-				if c.ID == characterID {
-					it.Disabled = true
-				}
-				items = append(items, it)
-			}
-		}
-		iwidget.ShowContextMenu(o, fyne.NewMenu("", items...))
+		items := u.MakeCharacterSwitchMenu()
+		iwidget.ShowContextMenu(characterSelector, fyne.NewMenu("", items...))
 	}
 
 	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...*iwidget.IconButton) *iwidget.AppBar {

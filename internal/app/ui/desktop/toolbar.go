@@ -1,16 +1,13 @@
 package desktop
 
 import (
-	"context"
 	"fmt"
-	"log/slog"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
@@ -58,55 +55,6 @@ func (a *toolbarArea) refresh() {
 	}
 	a.name.Refresh()
 
-	menuItems, err := a.makeMenuItems(c)
-	if err != nil {
-		msg := "Failed to create switch menu"
-		slog.Error(msg, "err", err)
-		a.u.statusBarArea.SetError(msg)
-		return
-	}
+	menuItems := a.u.MakeCharacterSwitchMenu()
 	a.icon.SetMenuItems(menuItems)
-	// if len(menuItems) == 0 {
-	// 	a.switchButton.Disable()
-	// } else {
-	// 	a.switchButton.Enable()
-	// }
-}
-
-func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) {
-	menuItems := make([]*fyne.MenuItem, 0)
-	cc, err := a.u.CharacterService.ListCharactersShort(context.Background())
-	if err != nil {
-		return menuItems, err
-	}
-	for _, myC := range cc {
-		item := fyne.NewMenuItem(myC.Name, func() {
-			err := a.u.LoadCharacter(myC.ID)
-			if err != nil {
-				msg := "Failed to switch to new character"
-				slog.Error(msg, "err", err)
-				d := ui.NewErrorDialog(msg, err, a.u.Window)
-				d.Show()
-				return
-			}
-		})
-		item.Icon = icon.Characterplaceholder64Jpeg
-		isCurrent := c != nil && myC.ID == c.ID
-		if isCurrent {
-			item.Disabled = true
-		}
-		go a.u.UpdateAvatar(myC.ID, func(r fyne.Resource) {
-			if isCurrent {
-				item.Icon, err = fynetools.ImageToGreyscale(r)
-				if err != nil {
-					panic(err)
-				}
-			} else {
-				item.Icon = r
-			}
-			a.icon.Refresh()
-		})
-		menuItems = append(menuItems, item)
-	}
-	return menuItems, nil
 }

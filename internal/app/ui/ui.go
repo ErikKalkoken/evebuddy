@@ -270,10 +270,10 @@ func (u *BaseUI) HasCharacter() bool {
 	return u.character != nil
 }
 
-func (u *BaseUI) LoadCharacter(characterID int32) error {
-	c, err := u.CharacterService.GetCharacter(context.Background(), characterID)
+func (u *BaseUI) LoadCharacter(id int32) error {
+	c, err := u.CharacterService.GetCharacter(context.Background(), id)
 	if err != nil {
-		return err
+		return fmt.Errorf("load character ID %d: %w", id, err)
 	}
 	u.SetCharacter(c)
 	return nil
@@ -493,4 +493,31 @@ func (u *BaseUI) WebsiteRootURL() *url.URL {
 		uri, _ = url.Parse(fallbackWebsiteURL)
 	}
 	return uri
+}
+
+func (u *BaseUI) MakeCharacterSwitchMenu() []*fyne.MenuItem {
+	characterID := u.CharacterID()
+	cc := u.StatusCacheService.ListCharacters()
+	items := make([]*fyne.MenuItem, 0)
+	if len(cc) == 0 {
+		it := fyne.NewMenuItem("No characters", nil)
+		it.Disabled = true
+		items = append(items, it)
+		return items
+	}
+	for _, c := range cc {
+		it := fyne.NewMenuItem(c.Name, func() {
+			err := u.LoadCharacter(c.ID)
+			if err != nil {
+				slog.Error("make character switch menu", "error", err)
+				iwidget.ShowSnackbar("ERROR: Failed to switch character", u.Window)
+			}
+		})
+		if c.ID == characterID {
+			it.Disabled = true
+		}
+		it.Icon = theme.AccountIcon()
+		items = append(items, it)
+	}
+	return items
 }
