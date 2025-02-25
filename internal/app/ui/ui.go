@@ -23,6 +23,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -454,7 +455,7 @@ func (u *BaseUI) UpdateAvatar(id int32, setIcon func(fyne.Resource)) {
 		slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
 		r = icon.Characterplaceholder64Jpeg
 	}
-	r2, err := iwidget.MakeAvatar(r)
+	r2, err := fynetools.MakeAvatar(r)
 	if err != nil {
 		slog.Error("Failed to make avatar", "characterID", id, "err", err)
 		r2 = icon.Characterplaceholder64Jpeg

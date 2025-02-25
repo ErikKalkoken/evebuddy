@@ -13,6 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	"github.com/dustin/go-humanize"
 )
@@ -48,7 +49,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	var navBar *iwidget.NavBar
 
 	// character destination
-	fallbackAvatar, _ := iwidget.MakeAvatar(icon.Characterplaceholder64Jpeg)
+	fallbackAvatar, _ := fynetools.MakeAvatar(icon.Characterplaceholder64Jpeg)
 	characterSelector := iwidget.NewIconButton(fallbackAvatar, nil)
 	characterSelector.OnTapped = func() {
 		o := characterSelector

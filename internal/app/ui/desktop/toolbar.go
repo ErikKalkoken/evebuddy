@@ -13,7 +13,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
@@ -42,7 +42,7 @@ func (u *DesktopUI) newToolbarArea() *toolbarArea {
 func (a *toolbarArea) refresh() {
 	c := a.u.CurrentCharacter()
 	if c == nil {
-		r, _ := iwidget.MakeAvatar(icon.Characterplaceholder64Jpeg)
+		r, _ := fynetools.MakeAvatar(icon.Characterplaceholder64Jpeg)
 		a.icon.SetResource(r)
 		a.name.Text = "No character"
 		a.name.TextStyle = fyne.TextStyle{Italic: true}
@@ -91,13 +91,21 @@ func (a *toolbarArea) makeMenuItems(c *app.Character) ([]*fyne.MenuItem, error) 
 			}
 		})
 		item.Icon = icon.Characterplaceholder64Jpeg
-		go a.u.UpdateAvatar(myC.ID, func(r fyne.Resource) {
-			item.Icon = r
-			a.icon.Refresh()
-		})
-		if c != nil && myC.ID == c.ID {
+		isCurrent := c != nil && myC.ID == c.ID
+		if isCurrent {
 			item.Disabled = true
 		}
+		go a.u.UpdateAvatar(myC.ID, func(r fyne.Resource) {
+			if isCurrent {
+				item.Icon, err = fynetools.ImageToGreyscale(r)
+				if err != nil {
+					panic(err)
+				}
+			} else {
+				item.Icon = r
+			}
+			a.icon.Refresh()
+		})
 		menuItems = append(menuItems, item)
 	}
 	return menuItems, nil

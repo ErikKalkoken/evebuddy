@@ -18,6 +18,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -302,7 +303,7 @@ func fetchEveEntityAvatar(eis app.EveImageService, ee *app.EveEntity, fallback f
 		slog.Error("eve entity entry icon update", "error", err)
 		res = fallback
 	}
-	res, err = iwidget.MakeAvatar(res)
+	res, err = fynetools.MakeAvatar(res)
 	if err != nil {
 		slog.Error("eve entity entry make avatar", "error", err)
 		res = fallback

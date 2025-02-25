@@ -16,6 +16,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -154,7 +155,7 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 					slog.Error("eve entity entry icon update", "error", err)
 					res = icon.Questionmark32Png
 				}
-				res, err = iwidget.MakeAvatar(res)
+				res, err = fynetools.MakeAvatar(res)
 				if err != nil {
 					slog.Error("eve entity entry make avatar", "error", err)
 					res = icon.Questionmark32Png
