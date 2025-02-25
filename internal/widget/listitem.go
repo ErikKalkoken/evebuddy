@@ -122,16 +122,15 @@ func (w *listItem) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		w.leadingWrapped,
 		w.trailingWrapped,
-		container.NewPadded(
-			container.NewVBox(
-				layout.NewSpacer(),
-				container.New(
-					layout.NewCustomPaddedVBoxLayout(0),
-					w.headline,
-					w.supporting,
-				),
-				layout.NewSpacer(),
-			)),
-	))
+		container.NewVBox(
+			layout.NewSpacer(),
+			container.New(
+				layout.NewCustomPaddedVBoxLayout(0),
+				w.headline,
+				w.supporting,
+			),
+			layout.NewSpacer(),
+		)),
+	)
 	return widget.NewSimpleRenderer(c)
 }

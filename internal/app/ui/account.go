@@ -36,7 +36,6 @@ type AccountArea struct {
 	OnRefresh         func(characterCount int)
 
 	characters []accountCharacter
-	emptyHint  *widget.Label
 	list       *widget.List
 	title      *widget.Label
 	window     fyne.Window
@@ -44,13 +43,10 @@ type AccountArea struct {
 }
 
 func (u *BaseUI) NewAccountArea() *AccountArea {
-	info := widget.NewLabel("No characters")
-	info.Importance = widget.LowImportance
 	a := &AccountArea{
 		characters: make([]accountCharacter, 0),
 		title:      makeTopLabel(),
 		window:     u.Window,
-		emptyHint:  info,
 		u:          u,
 	}
 
@@ -71,7 +67,13 @@ func (u *BaseUI) NewAccountArea() *AccountArea {
 			a.list,
 		)
 	} else {
-		a.Content = container.NewStack(a.emptyHint, a.list)
+		a.Content = container.NewBorder(
+			a.title,
+			nil,
+			nil,
+			nil,
+			a.list,
+		)
 	}
 	return a
 }
@@ -196,13 +198,8 @@ func (a *AccountArea) Refresh() {
 		cc2[i] = accountCharacter{id: c.ID, name: c.Name, hasTokenWithScope: hasToken}
 	}
 	a.characters = cc2
-	characterCount := len(a.characters)
-	if characterCount == 0 {
-		a.emptyHint.Show()
-	} else {
-		a.emptyHint.Hide()
-	}
 	a.list.Refresh()
+	characterCount := len(a.characters)
 	a.title.SetText(fmt.Sprintf("Characters (%d)", characterCount))
 	if a.OnRefresh != nil {
 		a.OnRefresh(characterCount)
