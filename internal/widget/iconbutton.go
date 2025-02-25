@@ -19,6 +19,7 @@ type IconButton struct {
 	OnTapped func()
 
 	icon    *canvas.Image
+	menu    *fyne.Menu
 	hovered bool
 }
 
@@ -38,17 +39,30 @@ func NewIconButton(icon fyne.Resource, tapped func()) *IconButton {
 
 // NewIconButtonWithMenu returns an [IconButton] with a context menu.
 func NewIconButtonWithMenu(icon fyne.Resource, menu *fyne.Menu) *IconButton {
-	a := NewIconButton(icon, nil)
-	a.OnTapped = func() {
-		ShowContextMenu(a, menu)
+	w := NewIconButton(icon, nil)
+	w.menu = menu
+	w.OnTapped = func() {
+		if len(w.menu.Items) == 0 {
+			return
+		}
+		ShowContextMenu(w, w.menu)
 	}
-	return a
+	return w
 }
 
 // SetIcon replaces the current icon.
 func (w *IconButton) SetIcon(icon fyne.Resource) {
 	w.icon.Resource = icon
 	w.icon.Refresh()
+}
+
+// SetMenuItems replaces the menu items.
+func (w *IconButton) SetMenuItems(menuItems []*fyne.MenuItem) {
+	if w.menu == nil {
+		return
+	}
+	w.menu.Items = menuItems
+	w.menu.Refresh()
 }
 
 func (w *IconButton) Tapped(_ *fyne.PointEvent) {

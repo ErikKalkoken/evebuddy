@@ -54,7 +54,5 @@ func (a *toolbarArea) refresh() {
 		a.name.Importance = widget.MediumImportance
 	}
 	a.name.Refresh()
-
-	menuItems := a.u.MakeCharacterSwitchMenu()
-	a.icon.SetMenuItems(menuItems)
+	a.icon.SetMenuItems(a.u.MakeCharacterSwitchMenu(a.icon.Refresh))
 }

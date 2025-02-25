@@ -62,6 +62,7 @@ type BaseUI struct {
 	OnAppTerminated    func()
 	OnInit             func(*app.Character)
 	OnRefreshCharacter func(*app.Character)
+	OnRefreshCross     func()
 	OnSetCharacter     func(int32)
 	OnShowAndRun       func()
 	ShowMailIndicator  func()
@@ -299,13 +300,16 @@ func (u *BaseUI) RefreshCharacter() {
 	c := u.CurrentCharacter()
 	if c != nil {
 		slog.Debug("Refreshing character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
+	} else {
+		if u.OnRefreshCharacter != nil {
+			ff["OnRefreshCharacter"] = func() {
+				u.OnRefreshCharacter(c)
+			}
+		}
 	}
 	runFunctionsWithProgressModal("Loading character", ff, u.Window)
 	if c != nil && !u.IsUpdateTickerDisabled {
 		u.UpdateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
-	}
-	if u.OnRefreshCharacter != nil {
-		u.OnRefreshCharacter(c)
 	}
 }
 
@@ -316,10 +320,11 @@ func (u *BaseUI) RefreshCrossPages() {
 		"colony":      u.ColoniesArea.Refresh,
 		"locations":   u.LocationsArea.Refresh,
 		"overview":    u.OverviewArea.Refresh,
-		// "statusBar":   u.statusBarArea.refreshCharacterCount,
-		// "toolbar":     u.toolbarArea.refresh,
-		"training": u.TrainingArea.Refresh,
-		"wealth":   u.WealthArea.Refresh,
+		"training":    u.TrainingArea.Refresh,
+		"wealth":      u.WealthArea.Refresh,
+	}
+	if u.OnRefreshCross != nil {
+		ff["onRefreshCross"] = u.OnRefreshCross
 	}
 	runFunctionsWithProgressModal("Updating characters", ff, u.Window)
 }
@@ -495,7 +500,7 @@ func (u *BaseUI) WebsiteRootURL() *url.URL {
 	return uri
 }
 
-func (u *BaseUI) MakeCharacterSwitchMenu() []*fyne.MenuItem {
+func (u *BaseUI) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 	characterID := u.CharacterID()
 	cc := u.StatusCacheService.ListCharacters()
 	items := make([]*fyne.MenuItem, 0)
@@ -505,6 +510,7 @@ func (u *BaseUI) MakeCharacterSwitchMenu() []*fyne.MenuItem {
 		items = append(items, it)
 		return items
 	}
+	var wg sync.WaitGroup
 	for _, c := range cc {
 		it := fyne.NewMenuItem(c.Name, func() {
 			err := u.LoadCharacter(c.ID)
@@ -514,10 +520,19 @@ func (u *BaseUI) MakeCharacterSwitchMenu() []*fyne.MenuItem {
 			}
 		})
 		if c.ID == characterID {
-			it.Disabled = true
+			continue
 		}
-		it.Icon = theme.AccountIcon()
+		it.Icon, _ = fynetools.MakeAvatar(icon.Characterplaceholder64Jpeg)
+		wg.Add(1)
+		go u.UpdateAvatar(c.ID, func(r fyne.Resource) {
+			defer wg.Done()
+			it.Icon = r
+		})
 		items = append(items, it)
 	}
+	go func() {
+		wg.Wait()
+		refresh()
+	}()
 	return items
 }

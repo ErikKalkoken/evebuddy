@@ -98,8 +98,10 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 		u.saveAppState()
 	}
 	u.OnRefreshCharacter = func(c *app.Character) {
-		go u.toolbarArea.refresh()
 		go u.toogleTabs(c != nil)
+	}
+	u.OnRefreshCross = func() {
+		go u.toolbarArea.refresh()
 		go u.statusBarArea.refreshUpdateStatus()
 		go u.statusBarArea.refreshCharacterCount()
 	}
@@ -344,4 +346,23 @@ func (u *DesktopUI) showSendMailWindow(character *app.Character, mode ui.SendMai
 	w.SetContent(c)
 	w.Resize(fyne.NewSize(600, 500))
 	w.Show()
+}
+
+func (u *DesktopUI) showAccountWindow() {
+	if u.accountWindow != nil {
+		u.accountWindow.Show()
+		return
+	}
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Characters"))
+	u.accountWindow = w
+	w.SetOnClosed(func() {
+		u.accountWindow = nil
+	})
+	w.Resize(fyne.Size{Width: 500, Height: 300})
+	w.SetContent(u.AccountArea.Content)
+	u.AccountArea.SetWindow(w)
+	w.Show()
+	u.AccountArea.OnSelectCharacter = func() {
+		w.Hide()
+	}
 }

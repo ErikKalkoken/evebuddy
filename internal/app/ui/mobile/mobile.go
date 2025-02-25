@@ -9,13 +9,13 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
-	"github.com/dustin/go-humanize"
 )
 
 type MobileUI struct {
@@ -50,12 +50,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 
 	// character destination
 	fallbackAvatar, _ := fynetools.MakeAvatar(icon.Characterplaceholder64Jpeg)
-	characterSelector := iwidget.NewIconButton(fallbackAvatar, nil)
-	characterSelector.OnTapped = func() {
-		items := u.MakeCharacterSwitchMenu()
-		iwidget.ShowContextMenu(characterSelector, fyne.NewMenu("", items...))
-	}
-
+	characterSelector := iwidget.NewIconButtonWithMenu(fallbackAvatar, fyne.NewMenu(""))
 	newCharacterAppBar := func(title string, body fyne.CanvasObject, items ...*iwidget.IconButton) *iwidget.AppBar {
 		items = append(items, characterSelector)
 		return iwidget.NewAppBar(title, body, items...)
@@ -429,6 +424,12 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	}
 	navBar = iwidget.NewNavBar(characterDest, crossDest, moreDest)
 	characterNav.NavBar = navBar
+
+	u.OnRefreshCross = func() {
+		go func() {
+			characterSelector.SetMenuItems(u.MakeCharacterSwitchMenu(characterSelector.Refresh))
+		}()
+	}
 
 	u.OnSetCharacter = func(id int32) {
 		// update character selector

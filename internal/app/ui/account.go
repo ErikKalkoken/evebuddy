@@ -165,14 +165,15 @@ func (a *AccountArea) showDeleteDialog(c accountCharacter) {
 					a.window,
 				)
 				m.OnSuccess = func() {
-					d := dialog.NewInformation("Delete Character", fmt.Sprintf("Character %s deleted", c.name), a.window)
-					kxdialog.AddDialogKeyHandler(d, a.window)
-					d.Show()
+					iwidget.ShowSnackbar(fmt.Sprintf("Character %s deleted", c.name), a.window)
+					if a.u.CharacterID() == c.id {
+						a.u.SetAnyCharacter()
+					}
+					a.u.RefreshCrossPages()
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete character", "characterID", c.id)
-					d := NewErrorDialog(fmt.Sprintf("Failed to delete character %s", c.name), err, a.window)
-					d.Show()
+					iwidget.ShowSnackbar(fmt.Sprintf("ERROR: Failed to delete character %s", c.name), a.window)
 				}
 				m.Start()
 			}
@@ -232,6 +233,7 @@ func (a *AccountArea) ShowAddCharacterDialog() {
 			if !a.u.HasCharacter() {
 				a.u.LoadCharacter(characterID)
 			}
+			a.u.RefreshCrossPages()
 			return nil
 		}()
 		d1.Hide()
