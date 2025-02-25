@@ -432,15 +432,15 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	moreNav = iwidget.NewNavigator(iwidget.NewAppBar("More", toolsList))
 
 	// navigation bar
-	characterDest := iwidget.NewNavBarItem("Character", theme.NewThemedResource(icon.AccountSvg), characterNav)
+	characterDest := iwidget.NewDestination("Character", theme.NewThemedResource(icon.AccountSvg), characterNav)
 	characterDest.OnSelectedAgain = func() {
 		characterNav.PopAll()
 	}
-	crossDest := iwidget.NewNavBarItem("Characters", theme.NewThemedResource(icon.AccountMultipleSvg), crossNav)
+	crossDest := iwidget.NewDestination("Characters", theme.NewThemedResource(icon.AccountMultipleSvg), crossNav)
 	crossDest.OnSelectedAgain = func() {
 		crossNav.PopAll()
 	}
-	moreDest := iwidget.NewNavBarItem("More", theme.MenuIcon(), moreNav)
+	moreDest := iwidget.NewDestination("More", theme.MenuIcon(), moreNav)
 	moreDest.OnSelectedAgain = func() {
 		moreNav.PopAll()
 	}

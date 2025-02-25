@@ -22,7 +22,7 @@ const (
 	colorPrimary       = theme.ColorNamePrimary
 )
 
-type navBarItem struct {
+type destinationDef struct {
 	label   string
 	icon    fyne.Resource
 	content fyne.CanvasObject
@@ -35,11 +35,9 @@ type navBarItem struct {
 	OnSelectedAgain func()
 }
 
-// NewNavBarItem returns a new NavBarItem.
-//
-// A NavBarItem sets up a destination in a navigation bar.
-func NewNavBarItem(label string, icon fyne.Resource, content fyne.CanvasObject) navBarItem {
-	return navBarItem{label: label, icon: icon, content: content}
+// NewDestination returns a new destination for a [NavBar].
+func NewDestination(label string, icon fyne.Resource, content fyne.CanvasObject) destinationDef {
+	return destinationDef{label: label, icon: icon, content: content}
 }
 
 // A NavBar lets people switch between UI views on smaller devices.
@@ -56,8 +54,8 @@ type NavBar struct {
 // NewNavBar returns new navbar.
 // It is recommended to have at most 5 destinations.
 //
-// It panics if not at least one destination is provided.
-func NewNavBar(items ...navBarItem) *NavBar {
+// It panics if no destinations are provided.
+func NewNavBar(items ...destinationDef) *NavBar {
 	if len(items) == 0 {
 		panic("must define at least one item")
 	}
@@ -75,11 +73,12 @@ func NewNavBar(items ...navBarItem) *NavBar {
 		w.body.Add(b)
 	}
 	p := theme.Padding()
+	top := 3.5 * p
 	w.bar = container.New(
-		layout.NewCustomPaddedLayout(-3*p, 0, 0, 0),
+		layout.NewCustomPaddedLayout(-top, 0, 0, 0),
 		container.NewStack(
 			w.bg,
-			container.New(layout.NewCustomPaddedLayout(p*3, p*3, p*2, p*2), w.destinations),
+			container.New(layout.NewCustomPaddedLayout(top, p*4, p*2, p*2), w.destinations),
 		))
 
 	w.selectDestination(0)

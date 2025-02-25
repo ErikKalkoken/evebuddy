@@ -88,7 +88,7 @@ func (w *destination) disable() {
 
 func (w *destination) CreateRenderer() fyne.WidgetRenderer {
 	v := theme.Size(theme.SizeNameInlineIcon)
-	w.indicator.Resize(fyne.NewSize(2.7*v, 1.3*v))
+	w.indicator.Resize(fyne.NewSize(2.85*v, 1.3*v))
 	s := w.indicator.Size()
 	w.indicator.Move(fyne.NewPos(-s.Width/2, -s.Height/2))
 	i := container.NewWithoutLayout(w.indicator)
