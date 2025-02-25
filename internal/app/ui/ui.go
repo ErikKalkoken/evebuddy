@@ -222,6 +222,7 @@ func (u *BaseUI) ShowAndRun() {
 			slog.Info("Update ticker disabled")
 		}
 		go func() {
+			time.Sleep(250 * time.Millisecond) // FIXME: Workaround for occasional progess bar panic
 			u.RefreshCrossPages()
 			if u.HasCharacter() {
 				u.SetCharacter(u.character)
@@ -271,33 +272,6 @@ func (u *BaseUI) HasCharacter() bool {
 func (u *BaseUI) LoadCharacter(characterID int32) error {
 	c, err := u.CharacterService.GetCharacter(context.Background(), characterID)
 	if err != nil {
-		return err
-	}
-	u.SetCharacter(c)
-	return nil
-}
-
-func (u *BaseUI) SetCharacter(c *app.Character) {
-	u.character = c
-	u.RefreshCharacter()
-	u.FyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
-	if u.OnSetCharacter != nil {
-		u.OnSetCharacter(c.ID)
-	}
-}
-
-func (u *BaseUI) ResetCharacter() {
-	u.character = nil
-	u.FyneApp.Preferences().SetInt(settingLastCharacterID, 0)
-	u.RefreshCharacter()
-}
-
-func (u *BaseUI) SetAnyCharacter() error {
-	c, err := u.CharacterService.GetAnyCharacter(context.TODO())
-	if errors.Is(err, character.ErrNotFound) {
-		u.ResetCharacter()
-		return nil
-	} else if err != nil {
 		return err
 	}
 	u.SetCharacter(c)
@@ -376,24 +350,31 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 	m.Start()
 }
 
-type TypeWindowTab uint
+func (u *BaseUI) ResetCharacter() {
+	u.character = nil
+	u.FyneApp.Preferences().SetInt(settingLastCharacterID, 0)
+	u.RefreshCharacter()
+}
 
-const (
-	DescriptionTab TypeWindowTab = iota + 1
-	RequirementsTab
-)
+func (u *BaseUI) SetCharacter(c *app.Character) {
+	u.character = c
+	u.RefreshCharacter()
+	u.FyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
+	if u.OnSetCharacter != nil {
+		u.OnSetCharacter(c.ID)
+	}
+}
 
-func (u *BaseUI) WebsiteRootURL() *url.URL {
-	s := u.FyneApp.Metadata().Custom["Website"]
-	if s == "" {
-		s = fallbackWebsiteURL
+func (u *BaseUI) SetAnyCharacter() error {
+	c, err := u.CharacterService.GetAnyCharacter(context.TODO())
+	if errors.Is(err, character.ErrNotFound) {
+		u.ResetCharacter()
+		return nil
+	} else if err != nil {
+		return err
 	}
-	uri, err := url.Parse(s)
-	if err != nil {
-		slog.Error("parse main website URL")
-		uri, _ = url.Parse(fallbackWebsiteURL)
-	}
-	return uri
+	u.SetCharacter(c)
+	return nil
 }
 
 func (u *BaseUI) MakeAboutPage() fyne.CanvasObject {
@@ -498,4 +479,17 @@ func (u *BaseUI) UpdateMailIndicator() {
 	} else {
 		u.HideMailIndicator()
 	}
+}
+
+func (u *BaseUI) WebsiteRootURL() *url.URL {
+	s := u.FyneApp.Metadata().Custom["Website"]
+	if s == "" {
+		s = fallbackWebsiteURL
+	}
+	uri, err := url.Parse(s)
+	if err != nil {
+		slog.Error("parse main website URL")
+		uri, _ = url.Parse(fallbackWebsiteURL)
+	}
+	return uri
 }

@@ -25,6 +25,13 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
+type TypeWindowTab uint
+
+const (
+	DescriptionTab TypeWindowTab = iota + 1
+	RequirementsTab
+)
+
 type attributeGroup string
 
 func (ag attributeGroup) DisplayName() string {
