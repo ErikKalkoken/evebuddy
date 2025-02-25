@@ -122,16 +122,14 @@ func (w *NavBar) selectDestination(idx int) {
 	currentIdx := w.selectedIdx
 	currentDest := w.destination(currentIdx)
 	newDest := w.destination(idx)
-	newDest.enable()
+	newDest.enable(currentDest != nil)
 	if currentDest != nil {
 		currentDest.disable()
 	}
-	// start animation
 	if currentIdx >= 0 {
 		w.body.Objects[currentIdx].Hide()
 	}
 	w.body.Objects[idx].Show()
-	// stop animation
 	w.selectedIdx = idx
 	if newDest.onSelected != nil {
 		newDest.onSelected()

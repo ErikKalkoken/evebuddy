@@ -1,12 +1,18 @@
 package widget
 
 import (
+	"time"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+)
+
+const (
+	defaultAnimationDuration = 300 * time.Millisecond
 )
 
 // A destination represents a fully configured item in a navigation bar.
@@ -23,6 +29,7 @@ type destination struct {
 	onSelected      func()
 	onSelectedAgain func()
 	indicator       *canvas.Rectangle
+	tapAnim         *fyne.Animation
 }
 
 var _ fyne.Tappable = (*destination)(nil)
@@ -76,24 +83,43 @@ func (w *destination) Tapped(_ *fyne.PointEvent) {
 func (w *destination) TappedSecondary(_ *fyne.PointEvent) {
 }
 
-func (w *destination) enable() {
+func (w *destination) enable(showAnimation bool) {
 	w.isEnabled = true
+	w.tapAnim.Stop()
+	if showAnimation && fyne.CurrentApp().Settings().ShowAnimations() {
+		w.tapAnim.Start()
+	} else {
+		// set to animation end state
+		s := w.indicatorSize()
+		w.indicator.Resize(s)
+		w.indicator.Move(fyne.NewPos(-s.Width/2, -s.Height/2))
+	}
 	w.Refresh()
 }
 
 func (w *destination) disable() {
 	w.isEnabled = false
+	w.tapAnim.Stop()
 	w.Refresh()
 }
 
+func (w *destination) indicatorSize() fyne.Size {
+	v := w.Theme().Size(theme.SizeNameInlineIcon)
+	return fyne.NewSize(2.85*v, 1.3*v)
+}
+
 func (w *destination) CreateRenderer() fyne.WidgetRenderer {
-	v := theme.Size(theme.SizeNameInlineIcon)
-	w.indicator.Resize(fyne.NewSize(2.85*v, 1.3*v))
-	s := w.indicator.Size()
-	w.indicator.Move(fyne.NewPos(-s.Width/2, -s.Height/2))
-	i := container.NewWithoutLayout(w.indicator)
+	s := w.indicatorSize()
+	w.tapAnim = canvas.NewSizeAnimation(s.SubtractWidthHeight(s.Width*0.95, 0), s, defaultAnimationDuration, func(s fyne.Size) {
+		w.indicator.Resize(s)
+		w.indicator.Move(fyne.NewPos(-s.Width/2, -s.Height/2))
+	})
+	w.tapAnim.Curve = fyne.AnimationEaseOut
 	c := container.NewVBox(
-		container.NewStack(container.NewCenter(i), container.NewCenter(w.icon)),
+		container.NewStack(
+			container.NewCenter(container.NewWithoutLayout(w.indicator)),
+			container.NewCenter(w.icon),
+		),
 		container.NewHBox(layout.NewSpacer(), w.label, layout.NewSpacer()),
 	)
 	return widget.NewSimpleRenderer(c)
