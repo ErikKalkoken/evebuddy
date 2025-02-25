@@ -48,7 +48,7 @@ type NavBar struct {
 	bg           *canvas.Rectangle
 	body         *fyne.Container
 	destinations *fyne.Container
-	selected     int
+	selectedIdx  int
 }
 
 // NewNavBar returns new navbar.
@@ -63,6 +63,7 @@ func NewNavBar(items ...destinationDef) *NavBar {
 		destinations: container.NewGridWithRows(1),
 		body:         container.NewStack(),
 		bg:           canvas.NewRectangle(theme.Color(colorBarBackground)),
+		selectedIdx:  -1,
 	}
 	w.ExtendBaseWidget(w)
 
@@ -87,10 +88,10 @@ func NewNavBar(items ...destinationDef) *NavBar {
 
 // Select switches to a new destination.
 func (w *NavBar) Select(idx int) {
-	if idx > len(w.body.Objects)-1 {
-		return
+	if idx < 0 || idx >= len(w.body.Objects) {
+		return // out of bounds
 	}
-	if idx == w.selected {
+	if idx == w.selectedIdx {
 		if d := w.destination(idx); d.onSelectedAgain != nil {
 			d.onSelectedAgain()
 		}
@@ -110,19 +111,30 @@ func (w *NavBar) ShowBar() {
 }
 
 func (w *NavBar) destination(idx int) *destination {
+	if idx < 0 || idx >= len(w.destinations.Objects) {
+		return nil // out of bounds
+	}
 	return w.destinations.Objects[idx].(*destination)
 }
 
+// selectDestination switches to a new destination.
 func (w *NavBar) selectDestination(idx int) {
-	current := w.selected
-	w.destination(current).disable()
-	d := w.destination(idx)
-	d.enable()
-	w.body.Objects[current].Hide()
+	currentIdx := w.selectedIdx
+	currentDest := w.destination(currentIdx)
+	newDest := w.destination(idx)
+	newDest.enable()
+	if currentDest != nil {
+		currentDest.disable()
+	}
+	// start animation
+	if currentIdx >= 0 {
+		w.body.Objects[currentIdx].Hide()
+	}
 	w.body.Objects[idx].Show()
-	w.selected = idx
-	if d.onSelected != nil {
-		d.onSelected()
+	// stop animation
+	w.selectedIdx = idx
+	if newDest.onSelected != nil {
+		newDest.onSelected()
 	}
 }
 
