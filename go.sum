@@ -43,6 +43,8 @@ github.com/ErikKalkoken/fyne-kx v0.2.0 h1:gqSsGvIkfdUkdSo0hpoJeOGCREWHTBIaPywYwb
 github.com/ErikKalkoken/fyne-kx v0.2.0/go.mod h1:N/YVe+viCUiSOr2TziRV7s9iEOlIfS/n/s5r5LiPcXg=
 github.com/ErikKalkoken/fyne-kx v0.2.1 h1:kmzn92Xomp/tyt6ChH7Nk/saopLs4nc2TbrZTHas69U=
 github.com/ErikKalkoken/fyne-kx v0.2.1/go.mod h1:N/YVe+viCUiSOr2TziRV7s9iEOlIfS/n/s5r5LiPcXg=
+github.com/ErikKalkoken/fyne-kx v0.3.0 h1:g+bAAlbiIMywAbe4J6ubLL8ZM1kZUpZrWfkUJJTKKL8=
+github.com/ErikKalkoken/fyne-kx v0.3.0/go.mod h1:hgp1LNuf/ocNZs7i1u8ax5RwoY4fRFzJI/BB57oZZtI=
 github.com/JohannesKaufmann/html-to-markdown v1.6.0 h1:04VXMiE50YYfCfLboJCLcgqF5x+rHJnb1ssNmqpLH/k=
 github.com/JohannesKaufmann/html-to-markdown v1.6.0/go.mod h1:NUI78lGg/a7vpEJTz/0uOcYMaibytE4BUOQS8k78yPQ=
 github.com/PuerkitoBio/goquery v1.9.2/go.mod h1:GHPCaP0ODyyxqcNoFGYlAprUFH81NuRPd0GX3Zu2Mvk=
@@ -106,6 +108,7 @@ github.com/go-text/render v0.2.0 h1:LBYoTmp5jYiJ4NPqDc2pz17MLmA3wHw1dZSVGcOdeAc=
 github.com/go-text/render v0.2.0/go.mod h1:CkiqfukRGKJA5vZZISkjSYrcdtgKQWRa2HIzvwNN5SU=
 github.com/go-text/typesetting v0.2.1 h1:x0jMOGyO3d1qFAPI0j4GSsh7M0Q3Ypjzr4+CEVg82V8=
 github.com/go-text/typesetting v0.2.1/go.mod h1:mTOxEwasOFpAMBjEQDhdWRckoLLeI/+qrQeBCTGEt6M=
+github.com/go-text/typesetting v0.3.0/go.mod h1:qjZLkhRgOEYMhU9eHBr3AR4sfnGJvOXNLt8yRAySFuY=
 github.com/go-text/typesetting-utils v0.0.0-20241103174707-87a29e9e6066 h1:qCuYC+94v2xrb1PoS4NIDe7DGYtLnU2wWiQe9a1B1c0=
 github.com/go-text/typesetting-utils v0.0.0-20241103174707-87a29e9e6066/go.mod h1:DDxDdQEnB70R8owOx3LVpEFvpMK9eeH1o2r0yZhFI9o=
 github.com/goccy/go-json v0.10.5 h1:Fq85nIqj+gXn/S5ahsiTlK3TmC85qgirsdTP/+DeaC4=

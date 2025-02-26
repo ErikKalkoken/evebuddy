@@ -6,7 +6,7 @@ toolchain go1.23.4
 
 require (
 	fyne.io/fyne/v2 v2.5.4
-	github.com/ErikKalkoken/fyne-kx v0.2.1
+	github.com/ErikKalkoken/fyne-kx v0.3.0
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/PuerkitoBio/goquery v1.10.2
 	github.com/anthonynsimon/bild v0.14.0
@@ -47,7 +47,7 @@ require (
 	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a // indirect
 	github.com/go-text/render v0.2.0 // indirect
-	github.com/go-text/typesetting v0.2.1 // indirect
+	github.com/go-text/typesetting v0.3.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.1 // indirect
