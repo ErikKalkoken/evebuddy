@@ -64,6 +64,7 @@ type BaseUI struct {
 	OnRefreshCharacter func(*app.Character)
 	OnRefreshCross     func()
 	OnSetCharacter     func(int32)
+	OnRefreshStatus    func()
 	OnShowAndRun       func()
 	ShowMailIndicator  func()
 	HideMailIndicator  func()
@@ -231,6 +232,7 @@ func (u *BaseUI) ShowAndRun() {
 			} else {
 				u.ResetCharacter()
 			}
+			u.RefreshStatus()
 		}()
 		if !u.IsOffline && !u.IsUpdateTickerDisabled {
 			go func() {
@@ -280,6 +282,15 @@ func (u *BaseUI) LoadCharacter(id int32) error {
 	return nil
 }
 
+// RefreshStatus refreshed all status information pages.
+func (u *BaseUI) RefreshStatus() {
+	if u.OnRefreshStatus == nil {
+		return
+	}
+	go u.OnRefreshStatus()
+}
+
+// RefreshCharacter refreshes all pages for the current character.
 func (u *BaseUI) RefreshCharacter() {
 	ff := map[string]func(){
 		"assets":            u.AssetsArea.Redraw,
@@ -313,7 +324,7 @@ func (u *BaseUI) RefreshCharacter() {
 	}
 }
 
-// RefreshCrossPages refreshed all pages under the characters tab.
+// RefreshCrossPages refreshed all pages that contain information about multiple characters.
 func (u *BaseUI) RefreshCrossPages() {
 	ff := map[string]func(){
 		"assetSearch": u.AssetSearchArea.Refresh,

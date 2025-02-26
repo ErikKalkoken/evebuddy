@@ -100,7 +100,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	u.OnRefreshCharacter = func(c *app.Character) {
 		go u.toogleTabs(c != nil)
 	}
-	u.OnRefreshCross = func() {
+	u.OnRefreshStatus = func() {
 		go u.toolbarArea.refresh()
 		go u.statusBarArea.refreshUpdateStatus()
 		go u.statusBarArea.refreshCharacterCount()

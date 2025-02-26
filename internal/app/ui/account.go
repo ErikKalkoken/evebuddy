@@ -58,10 +58,13 @@ func (u *BaseUI) NewAccountArea() *AccountArea {
 	if a.u.IsOffline {
 		add.Disable()
 	}
+	close := widget.NewButtonWithIcon("Close", theme.CancelIcon(), func() {
+		a.window.Close()
+	})
 	if a.u.IsDesktop() {
 		a.Content = container.NewBorder(
 			a.title,
-			container.NewVBox(add, container.NewPadded()),
+			container.NewHBox(layout.NewSpacer(), close, add, layout.NewSpacer()),
 			nil,
 			nil,
 			a.list,
@@ -137,6 +140,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 			slog.Error("load current character", "char", c, "err", err)
 			return
 		}
+		a.u.RefreshStatus()
 		if a.OnSelectCharacter != nil {
 			a.OnSelectCharacter()
 		}
@@ -170,6 +174,7 @@ func (a *AccountArea) showDeleteDialog(c accountCharacter) {
 						a.u.SetAnyCharacter()
 					}
 					a.u.RefreshCrossPages()
+					a.u.RefreshStatus()
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete character", "characterID", c.id)
@@ -234,6 +239,7 @@ func (a *AccountArea) ShowAddCharacterDialog() {
 				a.u.LoadCharacter(characterID)
 			}
 			a.u.RefreshCrossPages()
+			a.u.RefreshStatus()
 			return nil
 		}()
 		d1.Hide()

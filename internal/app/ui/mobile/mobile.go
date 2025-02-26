@@ -425,7 +425,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	navBar = iwidget.NewNavBar(characterDest, crossDest, moreDest)
 	characterNav.NavBar = navBar
 
-	u.OnRefreshCross = func() {
+	u.OnRefreshStatus = func() {
 		go func() {
 			characterSelector.SetMenuItems(u.MakeCharacterSwitchMenu(characterSelector.Refresh))
 		}()
