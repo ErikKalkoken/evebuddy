@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -66,7 +67,7 @@ func (u *BaseUI) MakeSendMailPage(
 			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			body.SetText(sep + mail.String())
 		case SendMailReplyAll:
-			to.Set(mail.Recipients)
+			to.Set(slices.Concat([]*app.EveEntity{mail.From}, mail.Recipients))
 			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			body.SetText(sep + mail.String())
 		case SendMailForward:

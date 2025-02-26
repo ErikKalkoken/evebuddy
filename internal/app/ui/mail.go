@@ -580,7 +580,7 @@ func (a *MailArea) makeToolbar() *widget.Toolbar {
 }
 
 func (a *MailArea) clearMail() {
-	a.updateContent("", "", "")
+	a.setMailContent("", "", "")
 	a.toolbar.Hide()
 }
 
@@ -607,11 +607,11 @@ func (a *MailArea) setMail(mailID int32) {
 			a.u.UpdateMailIndicator()
 		}()
 	}
-	a.updateContent(a.mail.Subject, a.mail.Header(), a.mail.BodyPlain())
+	a.setMailContent(a.mail.Subject, a.mail.Header(), a.mail.BodyPlain())
 	a.toolbar.Show()
 }
 
-func (a *MailArea) updateContent(s string, h string, b string) {
+func (a *MailArea) setMailContent(s string, h string, b string) {
 	a.subject.SetText(s)
 	a.header.SetText(h)
 	a.body.SetText(b)
