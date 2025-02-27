@@ -436,9 +436,12 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		communicationsMenu.Items = u.makeCommunicationsMenu()
 		communicationsMenu.Refresh()
 		if c == nil {
-			// TODO: disable
+			navBar.Disable(0)
+			navBar.Disable(1)
+			navBar.Select(2)
 		} else {
-			// TODO: enable
+			navBar.Enable(0)
+			navBar.Enable(1)
 		}
 	}
 	u.OnSetCharacter = func(id int32) {

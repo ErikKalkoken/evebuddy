@@ -17,11 +17,12 @@ const (
 
 // A destination represents a fully configured item in a navigation bar.
 type destination struct {
-	widget.BaseWidget
+	widget.DisableableWidget
 
 	icon            *canvas.Image
 	iconActive      fyne.Resource
 	iconInactive    fyne.Resource
+	iconDisabled    fyne.Resource
 	id              int
 	isActive        bool
 	label           *canvas.Text
@@ -44,6 +45,7 @@ func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSele
 		icon:            i,
 		iconActive:      theme.NewPrimaryThemedResource(icon),
 		iconInactive:    theme.NewThemedResource(icon),
+		iconDisabled:    theme.NewDisabledResource(icon),
 		id:              id,
 		label:           l,
 		navbar:          nb,
@@ -65,6 +67,11 @@ func (w *destination) Refresh() {
 		w.indicator.FillColor = th.Color(colorIndicator, v)
 		w.indicator.Show()
 		w.indicator.Refresh()
+	} else if w.Disabled() {
+		w.label.Color = th.Color(theme.ColorNameDisabled, v)
+		w.label.TextStyle.Bold = false
+		w.icon.Resource = w.iconDisabled
+		w.indicator.Hide()
 	} else {
 		w.label.Color = th.Color(colorForeground, v)
 		w.label.TextStyle.Bold = false
@@ -77,6 +84,9 @@ func (w *destination) Refresh() {
 }
 
 func (w *destination) Tapped(_ *fyne.PointEvent) {
+	if w.Disabled() {
+		return
+	}
 	w.navbar.Select(w.id)
 }
 

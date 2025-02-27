@@ -104,14 +104,14 @@ func (w *NavBar) Enable(idx int) {
 	if idx < 0 || idx >= len(w.destinations.Objects) {
 		return // out of bounds
 	}
-
+	w.destinations.Objects[idx].(*destination).Enable()
 }
 
 func (w *NavBar) Disable(idx int) {
 	if idx < 0 || idx >= len(w.destinations.Objects) {
 		return // out of bounds
 	}
-	// w.destinations.Objects[idx].(*destination).
+	w.destinations.Objects[idx].(*destination).Disable()
 }
 
 // HideBar hides the nav bar, while still showing the rest of the page.
