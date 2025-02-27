@@ -312,15 +312,16 @@ func (u *BaseUI) RefreshCharacter() {
 	if c != nil {
 		slog.Debug("Refreshing character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
 	} else {
-		if u.OnRefreshCharacter != nil {
-			ff["OnRefreshCharacter"] = func() {
-				u.OnRefreshCharacter(c)
-			}
+		slog.Debug("Refreshing without character")
+	}
+	if u.OnRefreshCharacter != nil {
+		ff["OnRefreshCharacter"] = func() {
+			u.OnRefreshCharacter(c)
 		}
 	}
 	runFunctionsWithProgressModal("Loading character", ff, u.Window)
 	if c != nil && !u.IsUpdateTickerDisabled {
-		u.UpdateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
+		u.UpdateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
 	}
 }
 
@@ -375,15 +376,15 @@ func (u *BaseUI) ResetCharacter() {
 
 func (u *BaseUI) SetCharacter(c *app.Character) {
 	u.character = c
-	u.RefreshCharacter()
 	u.FyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
 	if u.OnSetCharacter != nil {
 		u.OnSetCharacter(c.ID)
 	}
+	u.RefreshCharacter()
 }
 
 func (u *BaseUI) SetAnyCharacter() error {
-	c, err := u.CharacterService.GetAnyCharacter(context.TODO())
+	c, err := u.CharacterService.GetAnyCharacter(context.Background())
 	if errors.Is(err, character.ErrNotFound) {
 		u.ResetCharacter()
 		return nil

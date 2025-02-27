@@ -12,6 +12,7 @@ import (
 type ListItem struct {
 	Action     func()
 	Headline   string
+	IsDisabled bool
 	Leading    fyne.Resource
 	Supporting string
 	Trailing   fyne.Resource
@@ -39,6 +40,7 @@ func NewListItemWithNavigator(nav *Navigator, ab *AppBar) *ListItem {
 	return w
 }
 
+// A listItem is the widget that renders a [ListItem] in a [List].
 type listItem struct {
 	widget.BaseWidget
 
@@ -48,6 +50,7 @@ type listItem struct {
 	leadingWrapped  *fyne.Container
 	trailingWrapped *fyne.Container
 	trailing        *canvas.Image
+	IsDisabled      bool
 }
 
 func newListItem(leading, trailing fyne.Resource, headline, supporting string) *listItem {
@@ -77,12 +80,13 @@ func newListItem(leading, trailing fyne.Resource, headline, supporting string) *
 	return w
 }
 
-func (w *listItem) Set(leading, trailing fyne.Resource, headline, supporting string) {
-	w.leading.Resource = leading
-	w.trailing.Resource = trailing
-	w.headline.Text = headline
-	w.supporting.Text = supporting
-	w.updateVisibility(leading, trailing, supporting)
+func (w *listItem) Set(it *ListItem) {
+	w.leading.Resource = it.Leading
+	w.trailing.Resource = it.Trailing
+	w.headline.Text = it.Headline
+	w.supporting.Text = it.Supporting
+	w.IsDisabled = it.IsDisabled
+	w.updateVisibility(it.Leading, it.Trailing, it.Supporting)
 	w.Refresh()
 }
 
@@ -107,8 +111,17 @@ func (w *listItem) updateVisibility(leading fyne.Resource, trailing fyne.Resourc
 func (w *listItem) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
-	w.headline.Color = th.Color(theme.ColorNameForeground, v)
-	w.supporting.Color = th.Color(theme.ColorNameForeground, v)
+
+	if w.IsDisabled {
+		c := th.Color(theme.ColorNameDisabled, v)
+		w.headline.Color = c
+		w.supporting.Color = c
+	} else {
+		c := th.Color(theme.ColorNameForeground, v)
+		w.headline.Color = c
+		w.supporting.Color = c
+	}
+
 	w.leading.Refresh()
 	w.trailing.Refresh()
 	w.headline.Refresh()

@@ -430,22 +430,23 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 			characterSelector.SetMenuItems(u.MakeCharacterSwitchMenu(characterSelector.Refresh))
 		}()
 	}
-
+	u.OnRefreshCharacter = func(c *app.Character) {
+		mailMenu.Items = u.makeMailMenu()
+		mailMenu.Refresh()
+		communicationsMenu.Items = u.makeCommunicationsMenu()
+		communicationsMenu.Refresh()
+		if c == nil {
+			// TODO: disable
+		} else {
+			// TODO: enable
+		}
+	}
 	u.OnSetCharacter = func(id int32) {
-		// update character selector
 		go u.UpdateAvatar(id, func(r fyne.Resource) {
 			characterSelector.SetIcon(r)
 		})
-		// init mail
 		u.MailArea.ResetFolders()
-		mailMenu.Items = u.makeMailMenu()
-		mailMenu.Refresh()
-
-		// init communications
 		u.NotificationsArea.ResetGroups()
-		communicationsMenu.Items = u.makeCommunicationsMenu()
-		communicationsMenu.Refresh()
-
 		characterNav.PopAll()
 	}
 

@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// List is a widget that renders a list of selectable items.
 type List struct {
 	widget.BaseWidget
 
@@ -40,9 +41,10 @@ func (w *List) CreateRenderer() fyne.WidgetRenderer {
 			return newListItem(iconBlankSvg, iconBlankSvg, "Headline", "Supporting")
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			item := w.items[id]
-			w := co.(*listItem)
-			w.Set(item.Leading, item.Trailing, item.Headline, item.Supporting)
+			if id >= len(w.items) {
+				return
+			}
+			co.(*listItem).Set(w.items[id])
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
@@ -50,8 +52,9 @@ func (w *List) CreateRenderer() fyne.WidgetRenderer {
 			list.UnselectAll()
 			return
 		}
-		a := w.items[id].Action
-		if a == nil {
+		it := w.items[id]
+		a := it.Action
+		if a == nil || it.IsDisabled {
 			list.UnselectAll()
 			return
 		}
