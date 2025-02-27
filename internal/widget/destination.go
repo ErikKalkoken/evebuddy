@@ -23,7 +23,7 @@ type destination struct {
 	iconActive      fyne.Resource
 	iconInactive    fyne.Resource
 	id              int
-	isEnabled       bool
+	isActive        bool
 	label           *canvas.Text
 	navbar          *NavBar
 	onSelected      func()
@@ -58,7 +58,7 @@ func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSele
 func (w *destination) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
-	if w.isEnabled {
+	if w.isActive {
 		w.label.Color = th.Color(colorPrimary, v)
 		w.label.TextStyle.Bold = true
 		w.icon.Resource = w.iconActive
@@ -83,8 +83,8 @@ func (w *destination) Tapped(_ *fyne.PointEvent) {
 func (w *destination) TappedSecondary(_ *fyne.PointEvent) {
 }
 
-func (w *destination) enable(showAnimation bool) {
-	w.isEnabled = true
+func (w *destination) activate(showAnimation bool) {
+	w.isActive = true
 	w.tapAnim.Stop()
 	if showAnimation && fyne.CurrentApp().Settings().ShowAnimations() {
 		w.tapAnim.Start()
@@ -97,8 +97,8 @@ func (w *destination) enable(showAnimation bool) {
 	w.Refresh()
 }
 
-func (w *destination) disable() {
-	w.isEnabled = false
+func (w *destination) deactivate() {
+	w.isActive = false
 	w.tapAnim.Stop()
 	w.Refresh()
 }

@@ -35,8 +35,8 @@ type destinationDef struct {
 	OnSelectedAgain func()
 }
 
-// NewDestination returns a new destination for a [NavBar].
-func NewDestination(label string, icon fyne.Resource, content fyne.CanvasObject) destinationDef {
+// NewDestinationDef returns a new destination definition for a [NavBar].
+func NewDestinationDef(label string, icon fyne.Resource, content fyne.CanvasObject) destinationDef {
 	return destinationDef{label: label, icon: icon, content: content}
 }
 
@@ -88,7 +88,7 @@ func NewNavBar(items ...destinationDef) *NavBar {
 
 // Select switches to a new destination.
 func (w *NavBar) Select(idx int) {
-	if idx < 0 || idx >= len(w.body.Objects) {
+	if idx < 0 || idx >= len(w.destinations.Objects) {
 		return // out of bounds
 	}
 	if idx == w.selectedIdx {
@@ -98,6 +98,20 @@ func (w *NavBar) Select(idx int) {
 		return
 	}
 	w.selectDestination(idx)
+}
+
+func (w *NavBar) Enable(idx int) {
+	if idx < 0 || idx >= len(w.destinations.Objects) {
+		return // out of bounds
+	}
+
+}
+
+func (w *NavBar) Disable(idx int) {
+	if idx < 0 || idx >= len(w.destinations.Objects) {
+		return // out of bounds
+	}
+	// w.destinations.Objects[idx].(*destination).
 }
 
 // HideBar hides the nav bar, while still showing the rest of the page.
@@ -122,9 +136,9 @@ func (w *NavBar) selectDestination(idx int) {
 	currentIdx := w.selectedIdx
 	currentDest := w.destination(currentIdx)
 	newDest := w.destination(idx)
-	newDest.enable(currentDest != nil)
+	newDest.activate(currentDest != nil)
 	if currentDest != nil {
-		currentDest.disable()
+		currentDest.deactivate()
 	}
 	if currentIdx >= 0 {
 		w.body.Objects[currentIdx].Hide()
