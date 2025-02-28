@@ -42,7 +42,7 @@ jobs:
   package_linux:
     if: startsWith(github.ref, 'refs/tags/')
     needs: test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-20.04  # oldest available image = best AppImage compatibility
     steps:
     - uses: actions/checkout@v4
 
@@ -214,9 +214,47 @@ jobs:
         if-no-files-found: error
         overwrite: true
 
+  package_android:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GOVERSION }}
+
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install gcc libgl1-mesa-dev xorg-dev libfuse2
+
+    - name: Download Android NDK
+      run: |
+        wget -nv https://dl.google.com/android/repository/android-ndk-r27c-linux.zip
+        unzip -q android-ndk-r27c-linux.zip
+
+    - name: Install Fyne tool
+      run: go install fyne.io/fyne/v2/cmd/fyne@latest
+
+    - name: Package Fyne app
+      run: |
+        export ANDROID_NDK_HOME="$PWD/android-ndk-r27c"
+        fyne package --os android
+        ls
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.NAME }}-android
+        path: ${{ env.FULLNAME2 }}.apk
+        if-no-files-found: error
+        overwrite: true
+
   release:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [package_linux, package_darwin_arm, package_darwin_intel, package_windows]
+    needs: [package_linux, package_darwin_arm, package_darwin_intel, package_windows, package_android]
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
@@ -240,3 +278,4 @@ jobs:
           ${{ env.FULLNAME2 }}-${{ env.VERSION }}-x86_64.AppImage
           ${{ env.NAME }}-${{ env.VERSION }}-darwin-arm64.zip
           ${{ env.NAME }}-${{ env.VERSION }}-darwin-intel64.zip
+          ${{ env.FULLNAME2 }}.apk
