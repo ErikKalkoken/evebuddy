@@ -67,7 +67,11 @@ func (u *BaseUI) MakeSendMailPage(
 			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			body.SetText(sep + mail.String())
 		case SendMailReplyAll:
-			to.Set(slices.Concat([]*app.EveEntity{mail.From}, mail.Recipients))
+			oo := slices.Concat([]*app.EveEntity{mail.From}, mail.Recipients)
+			oo = slices.DeleteFunc(oo, func(o *app.EveEntity) bool {
+				return o.ID == character.EveCharacter.ID
+			})
+			to.Set(oo)
 			subject.SetText(fmt.Sprintf("Re: %s", mail.Subject))
 			body.SetText(sep + mail.String())
 		case SendMailForward:

@@ -340,7 +340,7 @@ func (a *SettingsArea) showDeleteFileDialog(name, path string) {
 				return err
 			}
 			for _, f := range files {
-				if err := os.Remove(f); err != nil {
+				if err := os.Truncate(f, 0); err != nil {
 					return err
 				}
 			}

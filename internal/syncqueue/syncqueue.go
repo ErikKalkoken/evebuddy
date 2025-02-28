@@ -1,5 +1,5 @@
-// Package queue provides queues.
-package queue
+// Package syncqueue provides queues for cuncurrent use.
+package syncqueue
 
 import (
 	"context"

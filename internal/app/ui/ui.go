@@ -106,6 +106,7 @@ type BaseUI struct {
 	statusWindow fyne.Window
 	isMobile     bool
 	wasStarted   atomic.Bool // whether the app has already been started at least once
+	isForeground atomic.Bool // whether the app is currently shown in the foreground
 }
 
 // NewBaseUI constructs and returns a new BaseUI.
@@ -241,6 +242,7 @@ func (u *BaseUI) ShowAndRun() {
 		}()
 		u.Snackbar.Start()
 		if !u.IsOffline && !u.IsUpdateTickerDisabled {
+			u.isForeground.Store(true)
 			go func() {
 				u.startUpdateTickerGeneralSections()
 				u.startUpdateTickerCharacters()
@@ -261,6 +263,14 @@ func (u *BaseUI) ShowAndRun() {
 	if u.OnAppTerminated != nil {
 		u.OnAppTerminated()
 	}
+	u.FyneApp.Lifecycle().SetOnEnteredForeground(func() {
+		slog.Info("Entered foreground")
+		u.isForeground.Store(true)
+	})
+	u.FyneApp.Lifecycle().SetOnExitedForeground(func() {
+		u.isForeground.Store(false)
+		slog.Info("Exited foreground")
+	})
 }
 
 // CharacterID returns the ID of the current character or 0 if non it set.

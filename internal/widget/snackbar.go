@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/queue"
+	"github.com/ErikKalkoken/evebuddy/internal/syncqueue"
 )
 
 const (
@@ -30,7 +30,7 @@ type snackbarMessage struct {
 // When a snackbar receives several texts at the same time, it will queue them and display them one after the other.
 type Snackbar struct {
 	isRunning atomic.Bool
-	q         *queue.SyncQueue[snackbarMessage]
+	q         *syncqueue.SyncQueue[snackbarMessage]
 	popup     *widget.PopUp
 	stopC     chan struct{}
 }
@@ -39,7 +39,7 @@ type Snackbar struct {
 func NewSnackbar(win fyne.Window) *Snackbar {
 	sb := &Snackbar{
 		popup: widget.NewPopUp(widget.NewLabel(""), win.Canvas()),
-		q:     queue.New[snackbarMessage](),
+		q:     syncqueue.New[snackbarMessage](),
 	}
 	return sb
 }

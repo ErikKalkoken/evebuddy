@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	characterSectionsUpdateTicker = 10 * time.Second
-	generalSectionsUpdateTicker   = 60 * time.Second
+	characterSectionsUpdateTicker = 60 * time.Second
+	generalSectionsUpdateTicker   = 300 * time.Second
 	notifyEarliestFallback        = 24 * time.Hour
 )
 
@@ -35,6 +35,10 @@ func (u *BaseUI) startUpdateTickerGeneralSections() {
 }
 
 func (u *BaseUI) UpdateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
+	if !u.isForeground.Load() && !forceUpdate {
+		slog.Info("Skipping general sections update while in background")
+		return
+	}
 	for _, s := range app.GeneralSections {
 		go func(s app.GeneralSection) {
 			u.UpdateGeneralSectionAndRefreshIfNeeded(context.TODO(), s, forceUpdate)
@@ -63,34 +67,19 @@ func (u *BaseUI) UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, sec
 
 func (u *BaseUI) startUpdateTickerCharacters() {
 	ticker := time.NewTicker(characterSectionsUpdateTicker)
+	ctx := context.Background()
 	go func() {
 		for {
-			func() {
-				cc, err := u.CharacterService.ListCharactersShort(context.TODO())
-				if err != nil {
-					slog.Error("Failed to fetch list of characters", "err", err)
-					return
-				}
-				for _, c := range cc {
-					go u.UpdateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
-					if u.FyneApp.Preferences().BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault) {
-						go func() {
-							earliest := calcNotifyEarliest(u.FyneApp.Preferences(), settingNotifyPIEarliest)
-							if err := u.CharacterService.NotifyExpiredExtractions(context.TODO(), c.ID, earliest, u.sendDesktopNotification); err != nil {
-								slog.Error("notify expired extractions", "characterID", c.ID, "error", err)
-							}
-						}()
-					}
-					if u.FyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
-						go func() {
-							// earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
-							if err := u.CharacterService.NotifyExpiredTraining(context.TODO(), c.ID, u.sendDesktopNotification); err != nil {
-								slog.Error("notify expired training", "error", err)
-							}
-						}()
-					}
-				}
-			}()
+			cc, err := u.CharacterService.ListCharactersShort(ctx)
+			if err != nil {
+				slog.Error("Failed to update characters and notfy", "error", err)
+				return
+			}
+			for _, c := range cc {
+				go u.UpdateCharacterAndRefreshIfNeeded(ctx, c.ID, false)
+				u.notifyExpiredExtractionsIfNeeded(ctx, c.ID)
+				u.notifyExpiredTrainingIfneeded(ctx, c.ID)
+			}
 			<-ticker.C
 		}
 	}()
@@ -102,7 +91,28 @@ func (u *BaseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 	if u.IsOffline {
 		return
 	}
-	for _, s := range app.CharacterSections {
+	var sections []app.CharacterSection
+	if u.isForeground.Load() {
+		sections = app.CharacterSections
+	} else {
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault) {
+			sections = append(sections, app.SectionNotifications)
+		}
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyContractsEnabled, settingNotifyContractsEnabledDefault) {
+			sections = append(sections, app.SectionContracts)
+		}
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
+			sections = append(sections, app.SectionContracts)
+		}
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault) {
+			sections = append(sections, app.SectionPlanets)
+		}
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
+			sections = append(sections, app.SectionSkillqueue)
+		}
+	}
+	slog.Info("Starting to check character sections for update", "sections", sections)
+	for _, s := range sections {
 		s := s
 		go u.UpdateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 	}
@@ -183,6 +193,7 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 		if needsRefresh {
 			u.ColoniesArea.Refresh()
+			u.notifyExpiredExtractionsIfNeeded(ctx, characterID)
 		}
 	case app.SectionMailLabels,
 		app.SectionMailLists:
@@ -242,6 +253,7 @@ func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, c
 		}
 		if needsRefresh {
 			u.TrainingArea.Refresh()
+			u.notifyExpiredTrainingIfneeded(ctx, characterID)
 		}
 	case app.SectionWalletBalance:
 		if needsRefresh {
@@ -280,4 +292,26 @@ func calcNotifyEarliest(pref fyne.Preferences, settingEarliest string) time.Time
 		return earliest
 	}
 	return timeout
+}
+
+func (u *BaseUI) notifyExpiredTrainingIfneeded(ctx context.Context, characerID int32) {
+	if u.FyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
+		go func() {
+			// earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
+			if err := u.CharacterService.NotifyExpiredTraining(ctx, characerID, u.sendDesktopNotification); err != nil {
+				slog.Error("notify expired training", "error", err)
+			}
+		}()
+	}
+}
+
+func (u *BaseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, characterID int32) {
+	if u.FyneApp.Preferences().BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault) {
+		go func() {
+			earliest := calcNotifyEarliest(u.FyneApp.Preferences(), settingNotifyPIEarliest)
+			if err := u.CharacterService.NotifyExpiredExtractions(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
+				slog.Error("notify expired extractions", "characterID", characterID, "error", err)
+			}
+		}()
+	}
 }

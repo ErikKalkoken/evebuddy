@@ -1,18 +1,18 @@
-package queue_test
+package syncqueue_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/ErikKalkoken/evebuddy/internal/queue"
+	"github.com/ErikKalkoken/evebuddy/internal/syncqueue"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/sync/errgroup"
 )
 
-func TestQueue(t *testing.T) {
+func TestSyncQueue(t *testing.T) {
 	t.Run("should return items in FIFO order", func(t *testing.T) {
-		q := queue.New[int]()
+		q := syncqueue.New[int]()
 		q.Put(99)
 		q.Put(42)
 		v, err := q.GetNoWait()
@@ -25,25 +25,25 @@ func TestQueue(t *testing.T) {
 		}
 	})
 	t.Run("should return specific error when trying to pop from empty queue", func(t *testing.T) {
-		q := queue.New[int]()
+		q := syncqueue.New[int]()
 		_, err := q.GetNoWait()
-		assert.ErrorIs(t, queue.ErrEmpty, err)
+		assert.ErrorIs(t, syncqueue.ErrEmpty, err)
 	})
 	t.Run("should return correct queue size", func(t *testing.T) {
-		q := queue.New[int]()
+		q := syncqueue.New[int]()
 		q.Put(99)
 		q.Put(42)
 		v := q.Size()
 		assert.Equal(t, 2, v)
 	})
 	t.Run("should report wether the queue is empty", func(t *testing.T) {
-		q := queue.New[int]()
+		q := syncqueue.New[int]()
 		assert.True(t, q.IsEmpty())
 		q.Put(99)
 		assert.False(t, q.IsEmpty())
 	})
 	t.Run("should wait until there is an item in the queue", func(t *testing.T) {
-		q := queue.New[int]()
+		q := syncqueue.New[int]()
 		g := new(errgroup.Group)
 		ctx := context.Background()
 		g.Go(func() error {
@@ -62,7 +62,7 @@ func TestQueue(t *testing.T) {
 		}
 	})
 	t.Run("should abort while waiting for a new item the queue", func(t *testing.T) {
-		q := queue.New[int]()
+		q := syncqueue.New[int]()
 		g := new(errgroup.Group)
 		ctx, cancel := context.WithCancel(context.Background())
 		g.Go(func() error {
