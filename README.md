@@ -1,6 +1,6 @@
 # EVE Buddy
 
-A companion app for Eve Online players available on Windows, Linux and macOS.
+A companion app for Eve Online players available on Windows, Linux, macOS and Android.
 
 [![GitHub Release](https://img.shields.io/github/v/release/ErikKalkoken/evebuddy)](https://github.com/ErikKalkoken/evebuddy/releases)
 [![build status](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/ErikKalkoken/evebuddy/actions/workflows/ci-cd.yml)
@@ -36,9 +36,10 @@ EVE Buddy is a companion app for [Eve Online](https://www.eveonline.com/) player
 A more detailed overview of the provided features:
 
 - Information about each character:
-  - Assets: Full asset browser
-  - Character: Curren clone, jump clones, and more...
+  - Assets: Browse through your assets at all your locations
+  - Character: Current clone, jump clones, and more...
   - Mails: Full mail client for receiving and sending Eve mails
+  - Communications: Browse through all communications
   - Planets: Status of PI colonies
   - Skills: Training queue, catalogue of all trained skills and what ships can be flown
   - Wallet: Wallet and Wallet Transactions
@@ -47,10 +48,9 @@ A more detailed overview of the provided features:
   - Assets search: Full asset search across all your characters
   - Show list of all planetary industry colonies
   - Wealth: Charts showing wealth distribution across all characters
-- Can minimize to system tray and show indicator for new mail
-- Receive desktop notifications about new communications (e.g. Structure gets attacked), mails and expired PI extractions
-- Single executable file, no installation required
-- Desktop app that runs on Windows, Linux and macOS
+- Can minimize to system tray and show indicator for new mail (desktop only)
+- Get notified about important events (e.g. structure attacked, training queue expired)
+- Desktop & mobile version
 - Automatic dark and light theme
 - Offline mode
 
@@ -98,15 +98,31 @@ The wealth page gives you a graphical overview of your total wealth (= wallets +
 
 ![Screenshot from 2024-11-10 16-54-56](https://github.com/user-attachments/assets/3d26e44f-cdc7-45fe-a441-4ed982662fa7)
 
-### Desktop notifications
+### Notifications
 
-EVE Buddy can send your desktop notifications to inform you about new communications and mails.
+EVE Buddy can send notifications on your local device to notify about new communications, mails, expired training queues and more.
 
 ![Screenshot from 2024-11-10 17-18-27](https://github.com/user-attachments/assets/0a05ddec-bf31-42c6-a1f1-c2661bd12c49)
 
+### Mobile version
+
+EVE Buddy also works on Android and has a mobile friendly navigation:
+
+#### Character navigation
+
+#### Mail browser
+
 ## Installing
 
-To install EVE buddy just download and unzip the latest release from the releases page to your computer. The app ships as a single executable file that can be run directly. When you run the app for the first time it will automatically install itself for the current user (i.e. by creating folders in the home folder for the current user).
+To install EVE buddy just download the latest release from the releases page to your computer or mobile. The app ships as a single executable file that can be run directly. When you run the app for the first time it will automatically install itself for the current user (i.e. by creating folders in the home folder for the current user).
+
+Please also see the detailed instructions for each platform / installation method:
+
+- [Linux](#linux)
+- [Windows](#windows)
+- [macOS](#mac-os)
+- [Android](#android)
+- [Build from source](#build-from-source)
 
 You find the latest packages for download on the [releases page](https://github.com/ErikKalkoken/evebuddy/releases).
 
@@ -137,9 +153,26 @@ You find the latest packages for download on the [releases page](https://github.
 >
 > ```sudo xattr -r -d com.apple.quarantine "EVE Buddy.app"```
 
-### Build and run from repository
+### Android
 
-You can also build and run the app directly from the repository. For that your system needs to be able to build Fyne apps, which requires you to have installed the Go tools, a C compiler and a systems graphics driver. For details please see [Fyne - Getting started](https://docs.fyne.io/started/).
+> [!NOTE]
+> Please note that the app can currently be only installed from the release page and is currently not available in any of the Android app stores.
+
+1. Make sure you have enabled in settings that you can install from your web browser (For detailed instructions please see [How to install Unknown Sources applications in Android](https://www.appaloosa.io/blog/guides/how-to-install-apps-from-unknown-sources-in-android))
+1. Navigate to the github releases page in your mobile browser
+1. Select to download the latest EVE_Buddy.apk file from the release page (this can take a minute)
+1. When prompted choose to install the file / open the file with the default installer
+1. In case you get a security warning from Google Play Protect:
+   1. Select "More details"
+   1. Select "Install anyway"
+1. Once installation is complete: Select "open" to start the app.
+
+> [!TIP]
+> If you want to use EVE Buddy's notification features you need to allow the app to keep running in the background. This is a setting for the app under Batter > Usage and called "Unrestricted". For details instructions please see [How to prevent apps from 'sleeping' in the background on Android](https://www.androidpolice.com/prevent-apps-from-sleeping-in-the-background-on-android/).
+
+### Build from source
+
+It is also possible to build and run the app directly from the source on the github repository. For that to work your system needs to be setup for building Fyne apps, which requires you to have installed the Go tools, a C compiler and a systems graphics driver. For details please see [Fyne - Getting started](https://docs.fyne.io/started/).
 
 When you have all necessary tools installed, you can build and run this app direct from the repository with:
 
