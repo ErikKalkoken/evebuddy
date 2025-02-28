@@ -13,14 +13,14 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-func (s *CharacterService) CountCharacterNotificationUnreads(ctx context.Context, characterID int32) (map[evenotification.Category]int, error) {
+func (s *CharacterService) CountCharacterNotificationUnreads(ctx context.Context, characterID int32) (map[evenotification.Group]int, error) {
 	types, err := s.st.CountCharacterNotificationUnreads(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
-	categories := make(map[evenotification.Category]int)
+	categories := make(map[evenotification.Group]int)
 	for name, count := range types {
-		c := evenotification.Type2category[evenotification.Type(name)]
+		c := evenotification.Type2group[evenotification.Type(name)]
 		categories[c] += count
 	}
 	return categories, nil

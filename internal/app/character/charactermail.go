@@ -39,7 +39,11 @@ func (s *CharacterService) GetCharacterMail(ctx context.Context, characterID int
 	return o, err
 }
 
-// GetMailUnreadCount returns the number of unread mail for a character.
+func (s *CharacterService) GetAllCharacterMailUnreadCount(ctx context.Context) (int, error) {
+	return s.st.GetAllCharacterMailUnreadCount(ctx)
+}
+
+// GetCharacterMailCounts returns the number of unread mail for a character.
 func (s *CharacterService) GetCharacterMailCounts(ctx context.Context, characterID int32) (int, int, error) {
 	total, err := s.st.GetCharacterMailCount(ctx, characterID)
 	if err != nil {
@@ -73,7 +77,7 @@ func (cs *CharacterService) NotifyMails(ctx context.Context, characterID int32, 
 		if m.Timestamp.Before(earliest) {
 			continue
 		}
-		title := fmt.Sprintf("%s: New Mail from %s", characterName, m.From)
+		title := fmt.Sprintf("%s: New Mail from %s", characterName, m.From.Name)
 		content := m.Subject
 		notify(title, content)
 		if err := cs.st.UpdateCharacterMailSetProcessed(ctx, m.ID); err != nil {

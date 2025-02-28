@@ -138,23 +138,23 @@ func TestCharacter(t *testing.T) {
 		// then
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})
-	t.Run("should return first character", func(t *testing.T) {
+	t.Run("should return a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		c1 := factory.CreateCharacter()
-		factory.CreateCharacter()
+		c2 := factory.CreateCharacter()
 		// when
-		c2, err := r.GetFirstCharacter(ctx)
+		c, err := r.GetAnyCharacter(ctx)
 		// then
 		if assert.NoError(t, err) {
-			assert.Equal(t, c1.ID, c2.ID)
+			assert.Contains(t, []int32{c1.ID, c2.ID}, c.ID)
 		}
 	})
 	t.Run("should return correct error when not found", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		// when
-		_, err := r.GetFirstCharacter(ctx)
+		_, err := r.GetAnyCharacter(ctx)
 		// then
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 	})

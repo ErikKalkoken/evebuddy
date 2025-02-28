@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"image/color"
 	"log/slog"
 
 	"fyne.io/fyne/v2"
@@ -10,11 +11,14 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type jumpCloneNode struct {
@@ -27,6 +31,8 @@ type jumpCloneNode struct {
 	JumpCloneName          string
 	LocationID             int64
 	LocationName           string
+	SystemSecurityValue    float32
+	SystemSecurityType     app.SolarSystemSecurityType
 }
 
 func (n jumpCloneNode) IsRoot() bool {
@@ -40,29 +46,30 @@ func (n jumpCloneNode) UID() widget.TreeNodeID {
 	return fmt.Sprintf("%d-%d", n.JumpCloneID, n.ImplantTypeID)
 }
 
-// jumpClonesArea is the UI area that shows the skillqueue
-type jumpClonesArea struct {
-	content    *fyne.Container
+// JumpClonesArea is the UI area that shows the skillqueue
+type JumpClonesArea struct {
+	Content  *fyne.Container
+	OnReDraw func(clonesCount int)
+
 	top        *widget.Label
 	treeData   *fynetree.FyneTree[jumpCloneNode]
 	treeWidget *widget.Tree
-	u          *UI
+	u          *BaseUI
 }
 
-func (u *UI) NewJumpClonesArea() *jumpClonesArea {
-	a := jumpClonesArea{
-		top:      widget.NewLabel(""),
+func (u *BaseUI) NewJumpClonesArea() *JumpClonesArea {
+	a := JumpClonesArea{
+		top:      makeTopLabel(),
 		treeData: fynetree.New[jumpCloneNode](),
 		u:        u,
 	}
-	a.top.TextStyle.Bold = true
 	a.treeWidget = a.makeTree()
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, a.treeWidget)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.treeWidget)
 	return &a
 }
 
-func (a *jumpClonesArea) makeTree() *widget.Tree {
+func (a *JumpClonesArea) makeTree() *widget.Tree {
 	t := widget.NewTree(
 		func(uid widget.TreeNodeID) []widget.TreeNodeID {
 			return a.treeData.ChildUIDs(uid)
@@ -71,85 +78,87 @@ func (a *jumpClonesArea) makeTree() *widget.Tree {
 			return a.treeData.IsBranch(uid)
 		},
 		func(branch bool) fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
-			icon.FillMode = canvas.ImageFillOriginal
-			first := widget.NewLabel("Template")
-			second := kwidget.NewTappableIcon(theme.InfoIcon(), nil)
-			third := widget.NewLabel("Template")
-			return container.NewHBox(icon, first, second, third)
+			iconMain := iwidget.NewImageFromResource(
+				icon.Characterplaceholder64Jpeg,
+				fyne.NewSquareSize(DefaultIconUnitSize),
+			)
+			main := widget.NewLabel("Template")
+			main.Truncation = fyne.TextTruncateEllipsis
+			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
+			spacer := canvas.NewRectangle(color.Transparent)
+			spacer.SetMinSize(fyne.NewSize(40, 10))
+			prefix := widget.NewLabel("-9.9")
+			return container.NewBorder(
+				nil,
+				nil,
+				container.NewHBox(iconMain, container.NewStack(spacer, prefix)),
+				iconInfo,
+				main,
+			)
 		},
 		func(uid widget.TreeNodeID, b bool, co fyne.CanvasObject) {
-			hbox := co.(*fyne.Container).Objects
-			icon := hbox[0].(*canvas.Image)
-			first := hbox[1].(*widget.Label)
-			second := hbox[2].(*kwidget.TappableIcon)
-			third := hbox[3].(*widget.Label)
 			n, ok := a.treeData.Value(uid)
 			if !ok {
 				return
 			}
+			border := co.(*fyne.Container).Objects
+			main := border[0].(*widget.Label)
+			hbox := border[1].(*fyne.Container).Objects
+			iconMain := hbox[0].(*canvas.Image)
+			spacer := hbox[1].(*fyne.Container).Objects[0]
+			prefix := hbox[1].(*fyne.Container).Objects[1].(*widget.Label)
+			iconInfo := border[2].(*kxwidget.TappableIcon)
 			if n.IsRoot() {
-				icon.Resource = eveicon.GetResourceByName(eveicon.CloningCenter)
-				icon.Refresh()
-				first.SetText(n.LocationName)
-				var t string
-				var i widget.Importance
-				if n.ImplantCount > 0 {
-					t = fmt.Sprintf("%d implants", n.ImplantCount)
-					i = widget.MediumImportance
-				} else {
-					t = "No implants"
-					i = widget.LowImportance
-				}
+				iconMain.Resource = eveicon.GetResourceByName(eveicon.CloningCenter)
+				iconMain.Refresh()
 				if !n.IsUnknown {
-					second.OnTapped = func() {
-						a.u.showLocationInfoWindow(n.LocationID)
+					iconInfo.OnTapped = func() {
+						a.u.ShowLocationInfoWindow(n.LocationID)
 					}
-					second.Show()
+					iconInfo.Show()
 				} else {
-					second.Hide()
+					iconInfo.Hide()
 				}
-				third.Text = t
-				third.Importance = i
-				third.Refresh()
-				third.Show()
+				main.SetText(n.LocationName)
+				if !n.IsUnknown {
+					prefix.Text = fmt.Sprintf("%.1f", n.SystemSecurityValue)
+					prefix.Importance = n.SystemSecurityType.ToImportance()
+				} else {
+					prefix.Text = "?"
+					prefix.Importance = widget.LowImportance
+				}
+				prefix.Show()
+				spacer.Show()
 			} else {
-				refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-					return a.u.EveImageService.InventoryTypeIcon(n.ImplantTypeID, defaultIconSize)
+				RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
+					return a.u.EveImageService.InventoryTypeIcon(n.ImplantTypeID, DefaultIconPixelSize)
 				})
-				first.SetText(n.ImplantTypeName)
-				second.Hide()
-				third.Hide()
+				main.SetText(n.ImplantTypeName)
+				iconInfo.OnTapped = func() {
+					a.u.ShowTypeInfoWindow(n.ImplantTypeID, a.u.CharacterID(), DescriptionTab)
+				}
+				prefix.Hide()
+				spacer.Hide()
 			}
 		},
 	)
 	t.OnSelected = func(uid widget.TreeNodeID) {
 		defer t.UnselectAll()
-		n, ok := a.treeData.Value(uid)
-		if !ok {
-			return
-		}
-		// if n.IsRoot() && !n.IsUnknown {
-		// 	a.ui.showLocationInfoWindow(n.LocationID)
-		// 	return
-		// }
-		if !n.IsRoot() {
-			a.u.showTypeInfoWindow(n.ImplantTypeID, a.u.characterID(), descriptionTab)
-		}
 	}
 	return t
 }
 
-func (a *jumpClonesArea) redraw() {
+func (a *JumpClonesArea) Redraw() {
 	var t string
 	var i widget.Importance
+	var clonesCount int
 	tree, err := a.newTreeData()
 	if err != nil {
 		slog.Error("Failed to refresh jump clones UI", "err", err)
 		t = "ERROR"
 		i = widget.DangerImportance
 	} else {
-		clonesCount := len(tree.ChildUIDs(""))
+		clonesCount = len(tree.ChildUIDs(""))
 		t, i = a.makeTopText(clonesCount)
 	}
 	a.treeData = tree
@@ -157,14 +166,18 @@ func (a *jumpClonesArea) redraw() {
 	a.top.Importance = i
 	a.top.Refresh()
 	a.treeWidget.Refresh()
+	if a.OnReDraw != nil {
+		a.OnReDraw(clonesCount)
+	}
 }
 
-func (a *jumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error) {
+func (a *JumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error) {
 	tree := fynetree.New[jumpCloneNode]()
-	if !a.u.hasCharacter() {
+	if !a.u.HasCharacter() {
 		return tree, nil
 	}
-	clones, err := a.u.CharacterService.ListCharacterJumpClones(context.TODO(), a.u.characterID())
+	ctx := context.Background()
+	clones, err := a.u.CharacterService.ListCharacterJumpClones(ctx, a.u.CharacterID())
 	if err != nil {
 		return tree, err
 	}
@@ -176,9 +189,17 @@ func (a *jumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 			LocationID:    c.Location.ID,
 		}
 		// TODO: Refactor to use same location method for all unknown location cases
-		if c.Location.Name != "" {
-			n.LocationName = c.Location.Name
-		} else {
+		if c.Location != nil {
+			loc, err := a.u.EveUniverseService.GetEveLocation(ctx, c.Location.ID)
+			if err != nil {
+				slog.Error("get location for jump clone", "error", err)
+			} else {
+				n.LocationName = loc.Name
+				n.SystemSecurityValue = float32(loc.SolarSystem.SecurityStatus)
+				n.SystemSecurityType = loc.SolarSystem.SecurityType()
+			}
+		}
+		if n.LocationName == "" {
 			n.LocationName = fmt.Sprintf("Unknown location #%d", c.Location.ID)
 			n.IsUnknown = true
 		}
@@ -196,11 +217,11 @@ func (a *jumpClonesArea) newTreeData() (*fynetree.FyneTree[jumpCloneNode], error
 	return tree, err
 }
 
-func (a *jumpClonesArea) makeTopText(total int) (string, widget.Importance) {
-	if !a.u.hasCharacter() {
+func (a *JumpClonesArea) makeTopText(total int) (string, widget.Importance) {
+	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionJumpClones)
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionJumpClones)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

@@ -3,8 +3,8 @@ package character
 import (
 	"context"
 	"log/slog"
-	"math"
 	"net/http"
+	"slices"
 
 	"github.com/antihax/goesi/esi"
 	esioptional "github.com/antihax/goesi/optional"
@@ -161,17 +161,17 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 }
 
 func (s *CharacterService) fetchCharacterAssetNamesESI(ctx context.Context, characterID int32, ids []int64) (map[int64]string, error) {
-	numResults := int(math.Ceil(float64(len(ids)) / assetNamesMaxIDs))
+	numResults := len(ids) / assetNamesMaxIDs
+	if len(ids)%assetNamesMaxIDs > 0 {
+		numResults++
+	}
 	results := make([][]esi.PostCharactersCharacterIdAssetsNames200Ok, numResults)
 	g := new(errgroup.Group)
-	for num, chunk := range chunkBy(ids, assetNamesMaxIDs) {
-		num := num
-		chunk := chunk
+	for num, chunk := range Count(slices.Chunk(ids, assetNamesMaxIDs), 0) {
 		g.Go(func() error {
 			names, _, err := s.esiClient.ESI.AssetsApi.PostCharactersCharacterIdAssetsNames(ctx, characterID, chunk, nil)
 			if err != nil {
-				slog.Error("Failed to fetch names for assets", "characterID", characterID, "err", err)
-				return nil
+				return err
 			}
 			results[num] = names
 			return nil

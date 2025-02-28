@@ -8,43 +8,61 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
-// implantsArea is the UI area that shows the skillqueue
-type implantsArea struct {
-	content  *fyne.Container
+// ImplantsArea is the UI area that shows the skillqueue
+type ImplantsArea struct {
+	Content  *fyne.Container
 	implants []*app.CharacterImplant
 	list     *widget.List
 	top      *widget.Label
-	u        *UI
+	u        *BaseUI
 }
 
-func (u *UI) newImplantsArea() *implantsArea {
-	a := implantsArea{
+func (u *BaseUI) NewImplantsArea() *ImplantsArea {
+	a := ImplantsArea{
 		implants: make([]*app.CharacterImplant, 0),
-		top:      widget.NewLabel(""),
+		top:      makeTopLabel(),
 		u:        u,
 	}
-	a.top.TextStyle.Bold = true
 	a.list = a.makeImplantList()
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, a.list)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.list)
 	return &a
 }
 
-func (a *implantsArea) makeImplantList() *widget.List {
+func (a *ImplantsArea) makeImplantList() *widget.List {
+	p := theme.Padding()
 	l := widget.NewList(
 		func() int {
 			return len(a.implants)
 		},
 		func() fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(resourceCharacterplaceholder32Jpeg)
-			icon.FillMode = canvas.ImageFillContain
-			icon.SetMinSize(fyne.Size{Width: 42, Height: 42})
-			return container.NewHBox(icon, widget.NewLabel("placeholder\nslot"))
+			iconMain := iwidget.NewImageFromResource(icon.Characterplaceholder64Jpeg, fyne.NewSquareSize(42))
+			iconInfo := kxwidget.NewTappableIcon(theme.InfoIcon(), nil)
+			name := widget.NewLabel("placeholder")
+			name.Truncation = fyne.TextTruncateEllipsis
+			slot := widget.NewLabel("placeholder")
+			slot.Truncation = fyne.TextTruncateEllipsis
+			return container.NewBorder(
+				nil,
+				nil,
+				iconMain,
+				iconInfo,
+				container.New(
+					layout.NewCustomPaddedVBoxLayout(0),
+					container.New(layout.NewCustomPaddedLayout(0, -p, 0, 0), name),
+					container.New(layout.NewCustomPaddedLayout(-p, 0, 0, 0), slot),
+				),
+			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.implants) {
@@ -52,26 +70,28 @@ func (a *implantsArea) makeImplantList() *widget.List {
 			}
 			o := a.implants[id]
 			row := co.(*fyne.Container).Objects
-			icon := row[0].(*canvas.Image)
-			label := row[1].(*widget.Label)
-			label.SetText(fmt.Sprintf("%s\nSlot %d", o.EveType.Name, o.SlotNum))
-			refreshImageResourceAsync(icon, func() (fyne.Resource, error) {
-				return a.u.EveImageService.InventoryTypeIcon(o.EveType.ID, 64)
+			vbox := row[0].(*fyne.Container).Objects
+			name := vbox[0].(*fyne.Container).Objects[0].(*widget.Label)
+			name.SetText(o.EveType.Name)
+			slot := vbox[1].(*fyne.Container).Objects[0].(*widget.Label)
+			slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
+			iconMain := row[1].(*canvas.Image)
+			RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
+				return a.u.EveImageService.InventoryTypeIcon(o.EveType.ID, DefaultIconPixelSize)
 			})
+			iconInfo := row[2].(*kxwidget.TappableIcon)
+			iconInfo.OnTapped = func() {
+				a.u.ShowTypeInfoWindow(o.EveType.ID, a.u.CharacterID(), DescriptionTab)
+			}
 		})
 
 	l.OnSelected = func(id widget.ListItemID) {
 		defer l.UnselectAll()
-		if id >= len(a.implants) {
-			return
-		}
-		o := a.implants[id]
-		a.u.showTypeInfoWindow(o.EveType.ID, a.u.characterID(), descriptionTab)
 	}
 	return l
 }
 
-func (a *implantsArea) refresh() {
+func (a *ImplantsArea) Refresh() {
 	var t string
 	var i widget.Importance
 	if err := a.updateImplants(); err != nil {
@@ -86,12 +106,12 @@ func (a *implantsArea) refresh() {
 	a.top.Refresh()
 }
 
-func (a *implantsArea) updateImplants() error {
-	if !a.u.hasCharacter() {
+func (a *ImplantsArea) updateImplants() error {
+	if !a.u.HasCharacter() {
 		a.implants = make([]*app.CharacterImplant, 0)
 		return nil
 	}
-	implants, err := a.u.CharacterService.ListCharacterImplants(context.TODO(), a.u.characterID())
+	implants, err := a.u.CharacterService.ListCharacterImplants(context.TODO(), a.u.CharacterID())
 	if err != nil {
 		return err
 	}
@@ -100,8 +120,8 @@ func (a *implantsArea) updateImplants() error {
 	return nil
 }
 
-func (a *implantsArea) makeTopText() (string, widget.Importance) {
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionImplants)
+func (a *ImplantsArea) makeTopText() (string, widget.Importance) {
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}

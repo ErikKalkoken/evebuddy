@@ -22,7 +22,7 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 	t.Run("can update a character", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		a := overviewArea{
+		a := OverviewArea{
 			u: u,
 		}
 		factory.CreateCharacter()
@@ -30,13 +30,13 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 		_, err := a.updateCharacters()
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, a.characters, 1)
+			assert.Len(t, a.rows, 1)
 		}
 	})
 	t.Run("can handle empty location", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
-		a := overviewArea{
+		a := OverviewArea{
 			u: u,
 		}
 		if err := st.UpdateOrCreateEveLocation(ctx, storage.UpdateOrCreateLocationParams{
@@ -52,15 +52,14 @@ func TestOverviewUpdateCharacters(t *testing.T) {
 		_, err := a.updateCharacters()
 		// then
 		if assert.NoError(t, err) {
-			assert.Len(t, a.characters, 1)
+			assert.Len(t, a.rows, 1)
 		}
 	})
 }
 
-func newUI(st *storage.Storage) *UI {
-	u := &UI{
-		CharacterService: newCharacterService(st),
-	}
+func newUI(st *storage.Storage) *BaseUI {
+	u := &BaseUI{}
+	u.CharacterService = newCharacterService(st)
 	return u
 }
 

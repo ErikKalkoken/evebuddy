@@ -12,7 +12,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
 
@@ -21,9 +22,9 @@ const (
 	flyableCanNot = "Can Not Fly"
 )
 
-// shipsArea is the UI area that shows the skillqueue
-type shipsArea struct {
-	content         *fyne.Container
+// ShipsArea is the UI area that shows the skillqueue
+type ShipsArea struct {
+	Content         *fyne.Container
 	flyableSelect   *widget.Select
 	flyableSelected string
 	grid            *widget.GridWrap
@@ -33,11 +34,11 @@ type shipsArea struct {
 	ships           []*app.CharacterShipAbility
 	top             *widget.Label
 	foundText       *widget.Label
-	u               *UI
+	u               *BaseUI
 }
 
-func (u *UI) newShipArea() *shipsArea {
-	a := shipsArea{
+func (u *BaseUI) newShipArea() *ShipsArea {
+	a := ShipsArea{
 		ships:     make([]*app.CharacterShipAbility, 0),
 		top:       widget.NewLabel(""),
 		foundText: widget.NewLabel(""),
@@ -52,7 +53,7 @@ func (u *UI) newShipArea() *shipsArea {
 			return
 		}
 		if err := a.updateEntries(); err != nil {
-			d := NewErrorDialog("Failed to update ships", err, a.u.window)
+			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
 			d.Show()
 		}
 		a.grid.Refresh()
@@ -62,7 +63,7 @@ func (u *UI) newShipArea() *shipsArea {
 	a.groupSelect = widget.NewSelect([]string{}, func(s string) {
 		a.groupSelected = s
 		if err := a.updateEntries(); err != nil {
-			d := NewErrorDialog("Failed to update ships", err, a.u.window)
+			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
 			d.Show()
 		}
 		a.grid.Refresh()
@@ -73,7 +74,7 @@ func (u *UI) newShipArea() *shipsArea {
 	a.flyableSelect = widget.NewSelect([]string{}, func(s string) {
 		a.flyableSelected = s
 		if err := a.updateEntries(); err != nil {
-			d := NewErrorDialog("Failed to update ships", err, a.u.window)
+			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
 			d.Show()
 		}
 		a.grid.Refresh()
@@ -88,31 +89,31 @@ func (u *UI) newShipArea() *shipsArea {
 	top := container.NewHBox(a.top, a.foundText, layout.NewSpacer(), b)
 	entries := container.NewBorder(nil, nil, nil, container.NewHBox(a.groupSelect, a.flyableSelect), a.searchBox)
 	topBox := container.NewVBox(top, widget.NewSeparator(), entries)
-	a.content = container.NewBorder(topBox, nil, nil, nil, a.grid)
+	a.Content = container.NewBorder(topBox, nil, nil, nil, a.grid)
 	return &a
 }
 
-func (a *shipsArea) reset() {
+func (a *ShipsArea) reset() {
 	a.searchBox.SetText("")
 	a.groupSelect.ClearSelected()
 	a.flyableSelect.ClearSelected()
 	a.foundText.Hide()
 }
 
-func (a *shipsArea) makeShipsGrid() *widget.GridWrap {
+func (a *ShipsArea) makeShipsGrid() *widget.GridWrap {
 	g := widget.NewGridWrap(
 		func() int {
 			return len(a.ships)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewShipItem(a.u.EveImageService, a.u.CacheService, resourceQuestionmarkSvg)
+			return appwidget.NewShipItem(a.u.EveImageService, a.u.CacheService, icon.QuestionmarkSvg)
 		},
 		func(id widget.GridWrapItemID, co fyne.CanvasObject) {
 			if id >= len(a.ships) {
 				return
 			}
 			o := a.ships[id]
-			item := co.(*widgets.ShipItem)
+			item := co.(*appwidget.ShipItem)
 			item.Set(o.Type.ID, o.Type.Name, o.CanFly)
 		})
 	g.OnSelected = func(id widget.GridWrapItemID) {
@@ -121,12 +122,12 @@ func (a *shipsArea) makeShipsGrid() *widget.GridWrap {
 			return
 		}
 		o := a.ships[id]
-		a.u.showTypeInfoWindow(o.Type.ID, a.u.characterID(), requirementsTab)
+		a.u.ShowTypeInfoWindow(o.Type.ID, a.u.CharacterID(), RequirementsTab)
 	}
 	return g
 }
 
-func (a *shipsArea) refresh() {
+func (a *ShipsArea) Refresh() {
 	t, i, enabled, err := func() (string, widget.Importance, bool, error) {
 		exists := a.u.StatusCacheService.GeneralSectionExists(app.SectionEveCategories)
 		if !exists {
@@ -154,8 +155,8 @@ func (a *shipsArea) refresh() {
 	a.reset()
 }
 
-func (a *shipsArea) updateEntries() error {
-	if !a.u.hasCharacter() {
+func (a *ShipsArea) updateEntries() error {
+	if !a.u.HasCharacter() {
 		a.ships = make([]*app.CharacterShipAbility, 0)
 		a.grid.Refresh()
 		a.searchBox.SetText("")
@@ -163,7 +164,7 @@ func (a *shipsArea) updateEntries() error {
 		a.flyableSelect.SetOptions([]string{})
 		return nil
 	}
-	characterID := a.u.characterID()
+	characterID := a.u.CharacterID()
 	search := fmt.Sprintf("%%%s%%", a.searchBox.Text)
 	oo, err := a.u.CharacterService.ListCharacterShipsAbilities(context.Background(), characterID, search)
 	if err != nil {
@@ -208,11 +209,11 @@ func (a *shipsArea) updateEntries() error {
 	return nil
 }
 
-func (a *shipsArea) makeTopText() (string, widget.Importance, bool, error) {
-	if !a.u.hasCharacter() {
+func (a *ShipsArea) makeTopText() (string, widget.Importance, bool, error) {
+	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance, false, nil
 	}
-	characterID := a.u.characterID()
+	characterID := a.u.CharacterID()
 	hasData := a.u.StatusCacheService.CharacterSectionExists(characterID, app.SectionSkills)
 	if !hasData {
 		return "Waiting for skills to be loaded...", widget.WarningImportance, false, nil

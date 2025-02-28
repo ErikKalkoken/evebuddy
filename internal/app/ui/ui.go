@@ -1,4 +1,3 @@
-// Package ui contains the code for rendering the UI.
 package ui
 
 import (
@@ -6,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"runtime"
+	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -15,220 +14,167 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
-	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
+	"github.com/ErikKalkoken/evebuddy/internal/github"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-// UI constants
+// Base UI constants
 const (
-	defaultIconSize = 32
-	myFloatFormat   = "#,###.##"
+	DefaultIconPixelSize = 64
+	DefaultIconUnitSize  = 32
+	MyFloatFormat        = "#,###.##"
 )
 
-// The UI is the root object of the UI and contains all UI areas.
-//
-// Each UI area holds a pointer of the UI instance, so that areas can
-// call methods on other UI areas and access shared variables in the UI.
-type UI struct {
+// update info
+const (
+	githubOwner        = "ErikKalkoken"
+	githubRepo         = "evebuddy"
+	fallbackWebsiteURL = "https://github.com/ErikKalkoken/evebuddy"
+)
+
+// BaseUI represents the core UI logic and is used by both the desktop and mobile UI.
+type BaseUI struct {
 	CacheService       app.CacheService
 	CharacterService   *character.CharacterService
 	ESIStatusService   app.ESIStatusService
 	EveImageService    app.EveImageService
 	EveUniverseService *eveuniverse.EveUniverseService
 	StatusCacheService app.StatusCacheService
+	// Paths to user data (for information only)
+	DataPaths map[string]string
 	// Run the app in offline mode
 	IsOffline bool
 	// Whether to disable update tickers (useful for debugging)
 	IsUpdateTickerDisabled bool
-	// Paths to user data (for information only)
-	DataPaths map[string]string
 
-	assetsArea            *assetsArea
-	assetSearchArea       *assetSearchArea
-	assetTab              *container.TabItem
-	attributesArea        *attributesArea
-	biographyArea         *biographyArea
-	character             *app.Character
-	coloniesArea          *coloniesArea
-	contractsArea         *contractsArea
-	deskApp               desktop.App
-	fyneApp               fyne.App
-	implantsArea          *implantsArea
-	jumpClonesArea        *jumpClonesArea
-	locationsArea         *locationsArea
-	mailArea              *mailArea
-	mailTab               *container.TabItem
-	menuItemsWithShortcut []*fyne.MenuItem
-	notificationsArea     *notificationsArea
-	overviewArea          *overviewArea
-	overviewTab           *container.TabItem
-	planetArea            *planetArea
-	planetTab             *container.TabItem
-	settingsWindow        fyne.Window
-	sfg                   *singleflight.Group
-	shipsArea             *shipsArea
-	skillCatalogueArea    *skillCatalogueArea
-	skillqueueArea        *skillqueueArea
-	skillTab              *container.TabItem
-	statusBarArea         *statusBarArea
-	statusWindow          fyne.Window
-	tabs                  *container.AppTabs
-	toolbarArea           *toolbarArea
-	trainingArea          *trainingArea
-	walletJournalArea     *walletJournalArea
-	walletTab             *container.TabItem
-	walletTransactionArea *walletTransactionArea
-	wealthArea            *wealthArea
-	window                fyne.Window
+	OnAppFirstStarted  func()
+	OnAppTerminated    func()
+	OnInit             func(*app.Character)
+	OnRefreshCharacter func(*app.Character)
+	OnRefreshCross     func()
+	OnSetCharacter     func(int32)
+	OnRefreshStatus    func()
+	OnShowAndRun       func()
+	ShowMailIndicator  func()
+	HideMailIndicator  func()
+
+	// need to be implemented for each platform
+	ShowTypeInfoWindow     func(typeID, characterID int32, selectTab TypeWindowTab)
+	ShowLocationInfoWindow func(int64)
+
+	FyneApp fyne.App
+	DeskApp desktop.App
+	Window  fyne.Window
+
+	Snackbar *iwidget.Snackbar
+
+	AccountArea           *AccountArea
+	AssetsArea            *AssetsArea
+	AssetSearchArea       *AssetSearchArea
+	AttributesArea        *Attributes
+	BiographyArea         *BiographyArea
+	ColoniesArea          *ColoniesArea
+	ContractsArea         *ContractsArea
+	ImplantsArea          *ImplantsArea
+	JumpClonesArea        *JumpClonesArea
+	LocationsArea         *LocationsArea
+	MailArea              *MailArea
+	NotificationsArea     *NotificationsArea
+	OverviewArea          *OverviewArea
+	PlanetArea            *PlanetArea
+	SettingsArea          *SettingsArea
+	ShipsArea             *ShipsArea
+	SkillCatalogueArea    *SkillCatalogueArea
+	SkillqueueArea        *SkillqueueArea
+	TrainingArea          *TrainingArea
+	WalletJournalArea     *WalletJournalArea
+	WalletTransactionArea *WalletTransactionArea
+	WealthArea            *WealthArea
+
+	character    *app.Character
+	statusWindow fyne.Window
+	isMobile     bool
+	wasStarted   atomic.Bool // whether the app has already been started at least once
+	isForeground atomic.Bool // whether the app is currently shown in the foreground
 }
 
-// NewUI build the UI and returns it.
-func NewUI(fyneApp fyne.App) *UI {
-	u := &UI{
-		fyneApp: fyneApp,
-		sfg:     new(singleflight.Group),
+// NewBaseUI constructs and returns a new BaseUI.
+//
+// Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
+func NewBaseUI(fyneApp fyne.App) *BaseUI {
+	u := &BaseUI{
+		FyneApp: fyneApp,
+		ShowTypeInfoWindow: func(_, _ int32, _ TypeWindowTab) {
+			panic("not implemented")
+		},
+		ShowLocationInfoWindow: func(_ int64) {
+			panic("not implemented")
+		},
+		isMobile: fyne.CurrentDevice().IsMobile(),
 	}
-	u.identifyDesktop()
-	u.window = fyneApp.NewWindow(u.appName())
-	u.attributesArea = u.newAttributesArena()
-	u.biographyArea = u.newBiographyArea()
-	u.jumpClonesArea = u.NewJumpClonesArea()
-	u.implantsArea = u.newImplantsArea()
-	characterTab := container.NewTabItemWithIcon("Character",
-		theme.AccountIcon(), container.NewAppTabs(
-			container.NewTabItem("Augmentations", u.implantsArea.content),
-			container.NewTabItem("Jump Clones", u.jumpClonesArea.content),
-			container.NewTabItem("Attributes", u.attributesArea.content),
-			container.NewTabItem("Biography", u.biographyArea.content),
-		))
+	u.Window = fyneApp.NewWindow(u.AppName())
 
-	u.assetsArea = u.newAssetsArea()
-	u.assetTab = container.NewTabItemWithIcon("Assets",
-		theme.NewThemedResource(resourceInventory2Svg), container.NewAppTabs(
-			container.NewTabItem("Assets", u.assetsArea.content),
-		))
-
-	u.planetArea = u.newPlanetArea()
-	u.planetTab = container.NewTabItemWithIcon("Colonies",
-		theme.NewThemedResource(resourceEarthSvg), container.NewAppTabs(
-			container.NewTabItem("Colonies", u.planetArea.content),
-		))
-
-	u.mailArea = u.newMailArea()
-	u.notificationsArea = u.newNotificationsArea()
-	u.mailTab = container.NewTabItemWithIcon("",
-		theme.MailComposeIcon(), container.NewAppTabs(
-			container.NewTabItem("Mail", u.mailArea.content),
-			container.NewTabItem("Communications", u.notificationsArea.content),
-		))
-
-	u.contractsArea = u.newContractsArea()
-	contractTab := container.NewTabItemWithIcon("Contracts",
-		theme.NewThemedResource(resourceFileSignSvg), container.NewAppTabs(
-			container.NewTabItem("Contracts", u.contractsArea.content),
-		))
-
-	u.overviewArea = u.newOverviewArea()
-	u.locationsArea = u.newLocationsArea()
-	u.trainingArea = u.newTrainingArea()
-	u.assetSearchArea = u.newAssetSearchArea()
-	u.coloniesArea = u.newColoniesArea()
-	u.wealthArea = u.newWealthArea()
-	u.overviewTab = container.NewTabItemWithIcon("Characters",
-		theme.NewThemedResource(resourceGroupSvg), container.NewAppTabs(
-			container.NewTabItem("Overview", u.overviewArea.content),
-			container.NewTabItem("Locations", u.locationsArea.content),
-			container.NewTabItem("Training", u.trainingArea.content),
-			container.NewTabItem("Assets", u.assetSearchArea.content),
-			container.NewTabItem("Colonies", u.coloniesArea.content),
-			container.NewTabItem("Wealth", u.wealthArea.content),
-		))
-
-	u.skillqueueArea = u.newSkillqueueArea()
-	u.skillCatalogueArea = u.newSkillCatalogueArea()
-	u.shipsArea = u.newShipArea()
-	u.skillTab = container.NewTabItemWithIcon("Skills",
-		theme.NewThemedResource(resourceSchoolSvg), container.NewAppTabs(
-			container.NewTabItem("Training Queue", u.skillqueueArea.content),
-			container.NewTabItem("Skill Catalogue", u.skillCatalogueArea.content),
-			container.NewTabItem("Ships", u.shipsArea.content),
-		))
-
-	u.walletJournalArea = u.newWalletJournalArea()
-	u.walletTransactionArea = u.newWalletTransactionArea()
-	u.walletTab = container.NewTabItemWithIcon("Wallet",
-		theme.NewThemedResource(resourceAttachmoneySvg), container.NewAppTabs(
-			container.NewTabItem("Transactions", u.walletJournalArea.content),
-			container.NewTabItem("Market Transactions", u.walletTransactionArea.content),
-		))
-
-	u.tabs = container.NewAppTabs(
-		characterTab,
-		u.assetTab,
-		contractTab,
-		u.mailTab,
-		u.planetTab,
-		u.skillTab,
-		u.walletTab,
-		u.overviewTab,
-	)
-	u.tabs.SetTabLocation(container.TabLocationLeading)
-
-	u.toolbarArea = u.newToolbarArea()
-	u.statusBarArea = u.newStatusBarArea()
-	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, nil, u.tabs)
-	u.window.SetContent(mainContent)
-
-	// system tray menu
-	if u.isDesktop() && fyneApp.Preferences().BoolWithFallback(settingSysTrayEnabled, settingSysTrayEnabledDefault) {
-		name := u.appName()
-		item := fyne.NewMenuItem(name, nil)
-		item.Disabled = true
-		m := fyne.NewMenu(
-			"MyApp",
-			item,
-			fyne.NewMenuItemSeparator(),
-			fyne.NewMenuItem(fmt.Sprintf("Open %s", name), func() {
-				u.window.Show()
-			}),
-		)
-		u.deskApp.SetSystemTrayMenu(m)
-		u.window.SetCloseIntercept(func() {
-			u.window.Hide()
-		})
+	desk, ok := u.FyneApp.(desktop.App)
+	if ok {
+		u.DeskApp = desk
 	}
-	u.hideMailIndicator() // init system tray icon
 
-	menu := makeMenu(u)
-	u.window.SetMainMenu(menu)
-	u.window.SetMaster()
+	u.Snackbar = iwidget.NewSnackbar(u.Window)
+
+	u.AccountArea = u.NewAccountArea()
+	u.AssetsArea = u.NewAssetsArea()
+	u.AssetSearchArea = u.NewAssetSearchArea()
+	u.AttributesArea = u.NewAttributes()
+	u.BiographyArea = u.NewBiographyArea()
+	u.ColoniesArea = u.NewColoniesArea()
+	u.ContractsArea = u.NewContractsArea()
+	u.ImplantsArea = u.NewImplantsArea()
+	u.JumpClonesArea = u.NewJumpClonesArea()
+	u.LocationsArea = u.NewLocationsArea()
+	u.MailArea = u.NewMailArea()
+	u.NotificationsArea = u.NewNotificationsArea()
+	u.OverviewArea = u.NewOverviewArea()
+	u.PlanetArea = u.NewPlanetArea()
+	u.SettingsArea = u.NewSettingsArea()
+	u.ShipsArea = u.newShipArea()
+	u.SkillCatalogueArea = u.NewSkillCatalogueArea()
+	u.SkillqueueArea = u.NewSkillqueueArea()
+	u.TrainingArea = u.NewTrainingArea()
+	u.WalletJournalArea = u.NewWalletJournalArea()
+	u.WalletTransactionArea = u.NewWalletTransactionArea()
+	u.WealthArea = u.NewWealthArea()
 	return u
 }
 
-func (u *UI) identifyDesktop() {
-	desk, ok := u.fyneApp.(desktop.App)
-	if ok {
-		slog.Debug("Running in desktop mode")
-		u.deskApp = desk
-	} else {
-		slog.Debug("Running in mobile mode")
+func (u *BaseUI) AppName() string {
+	info := u.FyneApp.Metadata()
+	name := info.Name
+	if name == "" {
+		return "EVE Buddy"
 	}
+	return name
 }
 
-func (u *UI) isDesktop() bool {
-	return u.deskApp != nil
-}
-
-func (u *UI) Init() {
+// Init initialized the app.
+// It is meant for initialization logic that requires all services to be initialized and available.
+// It should be called directly after the app was created and before the Fyne loop is started.
+func (u *BaseUI) Init() {
+	u.AccountArea.Refresh()
 	var c *app.Character
 	var err error
 	ctx := context.Background()
-	if cID := u.fyneApp.Preferences().Int(settingLastCharacterID); cID != 0 {
+	if cID := u.FyneApp.Preferences().Int(settingLastCharacterID); cID != 0 {
 		c, err = u.CharacterService.GetCharacter(ctx, int32(cID))
 		if err != nil {
 			if !errors.Is(err, character.ErrNotFound) {
@@ -247,40 +193,37 @@ func (u *UI) Init() {
 	if c == nil {
 		return
 	}
-
-	u.character = c
-	index := u.fyneApp.Preferences().IntWithFallback(settingTabsMainID, -1)
-	if index != -1 {
-		u.tabs.SelectIndex(index)
-		for i, o := range u.tabs.Items {
-			tabs, ok := o.Content.(*container.AppTabs)
-			if !ok {
-				continue
-			}
-			key := makeSubTabsKey(i)
-			index := u.fyneApp.Preferences().IntWithFallback(key, -1)
-			if index != -1 {
-				tabs.SelectIndex(index)
-			}
-		}
+	u.SetCharacter(c)
+	if u.OnInit != nil {
+		u.OnInit(c)
 	}
 }
 
-// ShowAndRun shows the UI and runs it (blocking).
-func (u *UI) ShowAndRun() {
-	u.fyneApp.Lifecycle().SetOnStarted(func() {
-		slog.Info("App started")
+func (u *BaseUI) IsDesktop() bool {
+	return u.DeskApp != nil
+}
 
-		// FIXME: Workaround to mitigate a bug that causes the window to sometimes render
-		// only in parts and freeze. The issue is known to happen on Linux desktops.
-		if runtime.GOOS == "linux" {
-			go func() {
-				time.Sleep(500 * time.Millisecond)
-				s := u.window.Canvas().Size()
-				u.window.Resize(fyne.NewSize(s.Width-0.2, s.Height-0.2))
-				u.window.Resize(fyne.NewSize(s.Width, s.Height))
-			}()
+func (u *BaseUI) IsMobile() bool {
+	return u.isMobile
+}
+
+func (u *BaseUI) MakeWindowTitle(subTitle string) string {
+	return fmt.Sprintf("%s - %s", subTitle, u.AppName())
+}
+
+// ShowAndRun shows the UI and runs the Fyne loop (blocking),
+func (u *BaseUI) ShowAndRun() {
+	// SetOnStarted is called on initial start,
+	// but also when an app is coninued after it was temporarily stopped,
+	// which can happen on mobile
+	u.FyneApp.Lifecycle().SetOnStarted(func() {
+		wasStarted := !u.wasStarted.CompareAndSwap(false, true)
+		if wasStarted {
+			slog.Info("App continued")
+			return
 		}
+		// First app start
+		slog.Info("App started")
 		if u.IsOffline {
 			slog.Info("Started in offline mode")
 		}
@@ -288,174 +231,130 @@ func (u *UI) ShowAndRun() {
 			slog.Info("Update ticker disabled")
 		}
 		go func() {
-			u.refreshCrossPages()
-			if u.hasCharacter() {
-				u.setCharacter(u.character)
+			time.Sleep(250 * time.Millisecond) // FIXME: Workaround for occasional progess bar panic
+			u.RefreshCrossPages()
+			if u.HasCharacter() {
+				u.SetCharacter(u.character)
 			} else {
-				u.resetCharacter()
+				u.ResetCharacter()
 			}
+			u.RefreshStatus()
 		}()
+		u.Snackbar.Start()
 		if !u.IsOffline && !u.IsUpdateTickerDisabled {
+			u.isForeground.Store(true)
 			go func() {
 				u.startUpdateTickerGeneralSections()
 				u.startUpdateTickerCharacters()
 			}()
 		}
-		go u.statusBarArea.StartUpdateTicker()
-	})
-	u.fyneApp.Lifecycle().SetOnStopped(func() {
-		u.saveAppState()
-		slog.Info("App shut down complete")
-	})
-	width := float32(u.fyneApp.Preferences().FloatWithFallback(settingWindowWidth, settingWindowHeightDefault))
-	height := float32(u.fyneApp.Preferences().FloatWithFallback(settingWindowHeight, settingWindowHeightDefault))
-	u.window.Resize(fyne.NewSize(width, height))
-
-	u.window.ShowAndRun()
-}
-
-func (u *UI) saveAppState() {
-	a := u.fyneApp
-	if u.window == nil || a == nil {
-		slog.Warn("Failed to save app state")
-	}
-	s := u.window.Canvas().Size()
-	u.fyneApp.Preferences().SetFloat(settingWindowWidth, float64(s.Width))
-	u.fyneApp.Preferences().SetFloat(settingWindowHeight, float64(s.Height))
-	if u.tabs == nil {
-		slog.Warn("Failed to save tabs in app state")
-	}
-	index := u.tabs.SelectedIndex()
-	u.fyneApp.Preferences().SetInt(settingTabsMainID, index)
-	for i, o := range u.tabs.Items {
-		tabs, ok := o.Content.(*container.AppTabs)
-		if !ok {
-			continue
+		if u.OnAppFirstStarted != nil {
+			u.OnAppFirstStarted()
 		}
-		key := makeSubTabsKey(i)
-		index := tabs.SelectedIndex()
-		u.fyneApp.Preferences().SetInt(key, index)
+	})
+	u.FyneApp.Lifecycle().SetOnStopped(func() {
+		slog.Info("App stopped")
+	})
+	if u.OnShowAndRun != nil {
+		u.OnShowAndRun()
 	}
-	slog.Info("Saved app state")
+	u.Window.ShowAndRun()
+	slog.Info("App terminated")
+	if u.OnAppTerminated != nil {
+		u.OnAppTerminated()
+	}
+	u.FyneApp.Lifecycle().SetOnEnteredForeground(func() {
+		slog.Info("Entered foreground")
+		u.isForeground.Store(true)
+	})
+	u.FyneApp.Lifecycle().SetOnExitedForeground(func() {
+		u.isForeground.Store(false)
+		slog.Info("Exited foreground")
+	})
 }
 
-// characterID returns the ID of the current character or 0 if non it set.
-func (u *UI) characterID() int32 {
+// CharacterID returns the ID of the current character or 0 if non it set.
+func (u *BaseUI) CharacterID() int32 {
 	if u.character == nil {
 		return 0
 	}
 	return u.character.ID
 }
 
-func (u *UI) currentCharacter() *app.Character {
+func (u *BaseUI) CurrentCharacter() *app.Character {
 	return u.character
 }
 
-func (u *UI) hasCharacter() bool {
+func (u *BaseUI) HasCharacter() bool {
 	return u.character != nil
 }
 
-func (u *UI) loadCharacter(ctx context.Context, characterID int32) error {
-	c, err := u.CharacterService.GetCharacter(ctx, characterID)
+func (u *BaseUI) LoadCharacter(id int32) error {
+	c, err := u.CharacterService.GetCharacter(context.Background(), id)
 	if err != nil {
-		return err
+		return fmt.Errorf("load character ID %d: %w", id, err)
 	}
-	u.setCharacter(c)
+	u.SetCharacter(c)
 	return nil
 }
 
-func (u *UI) setCharacter(c *app.Character) {
-	u.character = c
-	u.refreshCharacter()
-	u.fyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
+// RefreshStatus refreshed all status information pages.
+func (u *BaseUI) RefreshStatus() {
+	if u.OnRefreshStatus == nil {
+		return
+	}
+	go u.OnRefreshStatus()
 }
 
-func (u *UI) resetCharacter() {
-	u.character = nil
-	u.fyneApp.Preferences().SetInt(settingLastCharacterID, 0)
-	u.refreshCharacter()
-}
-
-func (u *UI) refreshCharacter() {
+// RefreshCharacter refreshes all pages for the current character.
+func (u *BaseUI) RefreshCharacter() {
 	ff := map[string]func(){
-		"assets":            u.assetsArea.redraw,
-		"attributes":        u.attributesArea.refresh,
-		"bio":               u.biographyArea.refresh,
-		"contracts":         u.contractsArea.refresh,
-		"implants":          u.implantsArea.refresh,
-		"jumpClones":        u.jumpClonesArea.redraw,
-		"mail":              u.mailArea.redraw,
-		"notifications":     u.notificationsArea.refresh,
-		"planets":           u.planetArea.refresh,
-		"ships":             u.shipsArea.refresh,
-		"skillCatalogue":    u.skillCatalogueArea.redraw,
-		"skillqueue":        u.skillqueueArea.refresh,
-		"toolbar":           u.toolbarArea.refresh,
-		"walletJournal":     u.walletJournalArea.refresh,
-		"walletTransaction": u.walletTransactionArea.refresh,
+		"assets":            u.AssetsArea.Redraw,
+		"attributes":        u.AttributesArea.Refresh,
+		"bio":               u.BiographyArea.Refresh,
+		"contracts":         u.ContractsArea.Refresh,
+		"implants":          u.ImplantsArea.Refresh,
+		"jumpClones":        u.JumpClonesArea.Redraw,
+		"mail":              u.MailArea.Redraw,
+		"notifications":     u.NotificationsArea.Refresh,
+		"planets":           u.PlanetArea.Refresh,
+		"ships":             u.ShipsArea.Refresh,
+		"skillCatalogue":    u.SkillCatalogueArea.Redraw,
+		"skillqueue":        u.SkillqueueArea.Refresh,
+		"walletJournal":     u.WalletJournalArea.Refresh,
+		"walletTransaction": u.WalletTransactionArea.Refresh,
 	}
-	c := u.currentCharacter()
-	ff["toogleTabs"] = func() {
-		u.toogleTabs(c != nil)
-	}
+	c := u.CurrentCharacter()
 	if c != nil {
 		slog.Debug("Refreshing character", "ID", c.EveCharacter.ID, "name", c.EveCharacter.Name)
-	}
-	runFunctionsWithProgressModal("Loading character", ff, u.window)
-	if c != nil && !u.IsUpdateTickerDisabled {
-		u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
-	}
-	go u.statusBarArea.refreshUpdateStatus()
-}
-
-func (u *UI) toogleTabs(enabled bool) {
-	if enabled {
-		for i := range u.tabs.Items {
-			u.tabs.EnableIndex(i)
-		}
-		subTabs := u.overviewTab.Content.(*container.AppTabs)
-		for i := range subTabs.Items {
-			subTabs.EnableIndex(i)
-		}
 	} else {
-		for i := range u.tabs.Items {
-			u.tabs.DisableIndex(i)
-		}
-		u.tabs.Select(u.overviewTab)
-		subTabs := u.overviewTab.Content.(*container.AppTabs)
-		for i := range subTabs.Items {
-			subTabs.DisableIndex(i)
-		}
-		u.overviewTab.Content.(*container.AppTabs).SelectIndex(0)
+		slog.Debug("Refreshing without character")
 	}
-	u.tabs.Refresh()
+	if u.OnRefreshCharacter != nil {
+		ff["OnRefreshCharacter"] = func() {
+			u.OnRefreshCharacter(c)
+		}
+	}
+	runFunctionsWithProgressModal("Loading character", ff, u.Window)
+	if c != nil && !u.IsUpdateTickerDisabled {
+		u.UpdateCharacterAndRefreshIfNeeded(context.Background(), c.ID, false)
+	}
 }
 
-func (u *UI) setAnyCharacter() error {
-	c, err := u.CharacterService.GetAnyCharacter(context.TODO())
-	if errors.Is(err, character.ErrNotFound) {
-		u.resetCharacter()
-		return nil
-	} else if err != nil {
-		return err
-	}
-	u.setCharacter(c)
-	return nil
-}
-
-// refreshCrossPages refreshed all pages under the characters tab.
-func (u *UI) refreshCrossPages() {
+// RefreshCrossPages refreshed all pages that contain information about multiple characters.
+func (u *BaseUI) RefreshCrossPages() {
 	ff := map[string]func(){
-		"assetSearch": u.assetSearchArea.refresh,
-		"colony":      u.coloniesArea.refresh,
-		"locations":   u.locationsArea.refresh,
-		"overview":    u.overviewArea.refresh,
-		"statusBar":   u.statusBarArea.refreshCharacterCount,
-		"toolbar":     u.toolbarArea.refresh,
-		"training":    u.trainingArea.refresh,
-		"wealth":      u.wealthArea.refresh,
+		"assetSearch": u.AssetSearchArea.Refresh,
+		"colony":      u.ColoniesArea.Refresh,
+		"locations":   u.LocationsArea.Refresh,
+		"overview":    u.OverviewArea.Refresh,
+		"training":    u.TrainingArea.Refresh,
+		"wealth":      u.WealthArea.Refresh,
 	}
-	runFunctionsWithProgressModal("Updating characters", ff, u.window)
+	if u.OnRefreshCross != nil {
+		ff["onRefreshCross"] = u.OnRefreshCross
+	}
+	runFunctionsWithProgressModal("Updating characters", ff, u.Window)
 }
 
 func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Window) {
@@ -485,33 +384,183 @@ func runFunctionsWithProgressModal(title string, ff map[string]func(), w fyne.Wi
 	m.Start()
 }
 
-func (u *UI) showMailIndicator() {
-	if !u.isDesktop() {
+func (u *BaseUI) ResetCharacter() {
+	u.character = nil
+	u.FyneApp.Preferences().SetInt(settingLastCharacterID, 0)
+	u.RefreshCharacter()
+}
+
+func (u *BaseUI) SetCharacter(c *app.Character) {
+	u.character = c
+	u.FyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
+	if u.OnSetCharacter != nil {
+		u.OnSetCharacter(c.ID)
+	}
+	u.RefreshCharacter()
+}
+
+func (u *BaseUI) SetAnyCharacter() error {
+	c, err := u.CharacterService.GetAnyCharacter(context.Background())
+	if errors.Is(err, character.ErrNotFound) {
+		u.ResetCharacter()
+		return nil
+	} else if err != nil {
+		return err
+	}
+	u.SetCharacter(c)
+	return nil
+}
+
+func (u *BaseUI) MakeAboutPage() fyne.CanvasObject {
+	v, err := github.NormalizeVersion(u.FyneApp.Metadata().Version)
+	if err != nil {
+		slog.Error("normalize local version", "error", err)
+		v = "?"
+	}
+	local := widget.NewLabel(v)
+	latest := widget.NewLabel("?")
+	latest.Hide()
+	spinner := widget.NewActivity()
+	spinner.Start()
+	go func() {
+		v, err := u.AvailableUpdate()
+		if err != nil {
+			slog.Error("fetch github version for about", "error", err)
+			s := humanize.Error(err)
+			latest.SetText(s)
+		} else {
+			latest.SetText(v.Latest)
+		}
+		spinner.Hide()
+		latest.Show()
+	}()
+	title := iwidget.NewLabelWithSize(u.AppName(), theme.SizeNameSubHeadingText)
+	title.TextStyle.Bold = true
+	c := container.New(
+		layout.NewCustomPaddedVBoxLayout(0),
+		title,
+		container.New(layout.NewCustomPaddedVBoxLayout(0),
+			container.NewHBox(widget.NewLabel("Latest version:"), layout.NewSpacer(), container.NewStack(spinner, latest)),
+			container.NewHBox(widget.NewLabel("You have:"), layout.NewSpacer(), local),
+		),
+		container.NewHBox(
+			widget.NewHyperlink("Website", u.WebsiteRootURL()),
+			widget.NewHyperlink("Downloads", u.WebsiteRootURL().JoinPath("releases")),
+		),
+		widget.NewLabel("\"EVE\", \"EVE Online\", \"CCP\", \nand all related logos and images \nare trademarks or registered trademarks of CCP hf."),
+		widget.NewLabel("(c) 2024-25 Erik Kalkoken"),
+	)
+	return c
+}
+
+func (u *BaseUI) ShowUpdateStatusWindow() {
+	if u.statusWindow != nil {
+		u.statusWindow.Show()
 		return
 	}
-	u.deskApp.SetSystemTrayIcon(resourceIconmarkedPng)
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Update Status"))
+	a := u.NewUpdateStatusArea()
+	a.Refresh()
+	w.SetContent(a.Content)
+	w.Resize(fyne.Size{Width: 1100, Height: 500})
+	ctx, cancel := context.WithCancel(context.Background())
+	a.StartTicker(ctx)
+	w.SetOnClosed(func() {
+		cancel()
+		u.statusWindow = nil
+	})
+	u.statusWindow = w
+	w.Show()
 }
 
-func (u *UI) hideMailIndicator() {
-	if !u.isDesktop() {
+func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {
+	current := u.FyneApp.Metadata().Version
+	v, err := github.AvailableUpdate(githubOwner, githubRepo, current)
+	if err != nil {
+		return github.VersionInfo{}, err
+	}
+	return v, nil
+}
+
+func (u *BaseUI) UpdateAvatar(id int32, setIcon func(fyne.Resource)) {
+	r, err := u.EveImageService.CharacterPortrait(id, DefaultIconPixelSize)
+	if err != nil {
+		slog.Error("Failed to fetch character portrait", "characterID", id, "err", err)
+		r = icon.Characterplaceholder64Jpeg
+	}
+	r2, err := fynetools.MakeAvatar(r)
+	if err != nil {
+		slog.Error("Failed to make avatar", "characterID", id, "err", err)
+		r2 = icon.Characterplaceholder64Jpeg
+	}
+	setIcon(r2)
+}
+
+func (u *BaseUI) UpdateMailIndicator() {
+	if u.ShowMailIndicator == nil || u.HideMailIndicator == nil {
 		return
 	}
-	u.deskApp.SetSystemTrayIcon(resourceIconPng)
-}
-
-func (u *UI) appName() string {
-	info := u.fyneApp.Metadata()
-	name := info.Name
-	if name == "" {
-		return "EVE Buddy"
+	if !u.FyneApp.Preferences().BoolWithFallback(SettingSysTrayEnabled, SettingSysTrayEnabledDefault) {
+		return
 	}
-	return name
+	n, err := u.CharacterService.GetAllCharacterMailUnreadCount(context.Background())
+	if err != nil {
+		slog.Error("update mail indicator", "error", err)
+		return
+	}
+	if n > 0 {
+		u.ShowMailIndicator()
+	} else {
+		u.HideMailIndicator()
+	}
 }
 
-func (u *UI) makeWindowTitle(subTitle string) string {
-	return fmt.Sprintf("%s - %s", subTitle, u.appName())
+func (u *BaseUI) WebsiteRootURL() *url.URL {
+	s := u.FyneApp.Metadata().Custom["Website"]
+	if s == "" {
+		s = fallbackWebsiteURL
+	}
+	uri, err := url.Parse(s)
+	if err != nil {
+		slog.Error("parse main website URL")
+		uri, _ = url.Parse(fallbackWebsiteURL)
+	}
+	return uri
 }
 
-func makeSubTabsKey(i int) string {
-	return fmt.Sprintf("tabs-sub%d-id", i)
+func (u *BaseUI) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
+	characterID := u.CharacterID()
+	cc := u.StatusCacheService.ListCharacters()
+	items := make([]*fyne.MenuItem, 0)
+	if len(cc) == 0 {
+		it := fyne.NewMenuItem("No characters", nil)
+		it.Disabled = true
+		items = append(items, it)
+		return items
+	}
+	var wg sync.WaitGroup
+	for _, c := range cc {
+		it := fyne.NewMenuItem(c.Name, func() {
+			err := u.LoadCharacter(c.ID)
+			if err != nil {
+				slog.Error("make character switch menu", "error", err)
+				u.Snackbar.Show("ERROR: Failed to switch character")
+			}
+		})
+		if c.ID == characterID {
+			continue
+		}
+		it.Icon, _ = fynetools.MakeAvatar(icon.Characterplaceholder64Jpeg)
+		wg.Add(1)
+		go u.UpdateAvatar(c.ID, func(r fyne.Resource) {
+			defer wg.Done()
+			it.Icon = r
+		})
+		items = append(items, it)
+	}
+	go func() {
+		wg.Wait()
+		refresh()
+	}()
+	return items
 }

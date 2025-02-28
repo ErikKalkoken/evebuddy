@@ -79,9 +79,13 @@ func TestCache2(t *testing.T) {
 		c := cache.New()
 		c.Close()
 	})
-	t.Run("should not allow zero timeout", func(t *testing.T) {
-		assert.Panics(t, func() {
-			cache.NewWithTimeout(0)
-		})
+	t.Run("can start cache without automatic clean-up", func(t *testing.T) {
+		c := cache.NewWithTimeout(0)
+		c.Close()
+	})
+	t.Run("can run clean-up", func(t *testing.T) {
+		c := cache.NewWithTimeout(0)
+		c.CleanUp()
+		c.Close()
 	})
 }

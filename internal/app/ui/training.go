@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -23,111 +22,72 @@ type trainingCharacter struct {
 	unallocatedSP optional.Optional[int]
 }
 
-// trainingArea is the UI area that shows an overview of all the user's characters.
-type trainingArea struct {
-	characters []trainingCharacter
-	content    *fyne.Container
-	table      *widget.Table
-	top        *widget.Label
-	u          *UI
+// TrainingArea is the UI area that shows an overview of all the user's characters.
+type TrainingArea struct {
+	Content *fyne.Container
+
+	body fyne.CanvasObject
+	rows []trainingCharacter
+	top  *widget.Label
+	u    *BaseUI
 }
 
-func (u *UI) newTrainingArea() *trainingArea {
-	a := trainingArea{
-		characters: make([]trainingCharacter, 0),
-		top:        widget.NewLabel(""),
-		u:          u,
+func (u *BaseUI) NewTrainingArea() *TrainingArea {
+	a := TrainingArea{
+		rows: make([]trainingCharacter, 0),
+		top:  makeTopLabel(),
+		u:    u,
 	}
-	a.top.TextStyle.Bold = true
-
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.table = a.makeTable()
-	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+	headers := []headerDef{
+		{"Name", 250},
+		{"SP", 100},
+		{"Unall. SP", 100},
+		{"Training", 100},
+	}
+	makeDataLabel := func(col int, c trainingCharacter) (string, fyne.TextAlign, widget.Importance) {
+		var align fyne.TextAlign
+		var importance widget.Importance
+		var text string
+		switch col {
+		case 0:
+			text = c.name
+		case 1:
+			text = ihumanize.Optional(c.totalSP, "?")
+			align = fyne.TextAlignTrailing
+		case 2:
+			text = ihumanize.Optional(c.unallocatedSP, "?")
+			align = fyne.TextAlignTrailing
+		case 3:
+			if c.training.IsEmpty() {
+				text = "Inactive"
+				importance = widget.WarningImportance
+			} else {
+				text = ihumanize.Duration(c.training.ValueOrZero())
+			}
+		}
+		return text, align, importance
+	}
+	if a.u.IsDesktop() {
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
+	} else {
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
+	}
+	top2 := container.NewVBox(a.top, widget.NewSeparator())
+	a.Content = container.NewBorder(top2, nil, nil, nil, a.body)
 	return &a
 }
 
-func (a *trainingArea) makeTable() *widget.Table {
-	var headers = []struct {
-		text     string
-		maxChars int
-	}{
-		{"Name", 20},
-		{"SP", 5},
-		{"Unall. SP", 5},
-		{"Training", 5},
-	}
-
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(a.characters), len(headers)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Template")
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			l := co.(*widget.Label)
-			if tci.Row >= len(a.characters) || tci.Row < 0 {
-				return
-			}
-			c := a.characters[tci.Row]
-			l.Alignment = fyne.TextAlignLeading
-			l.Importance = widget.MediumImportance
-			var text string
-			switch tci.Col {
-			case 0:
-				text = c.name
-			case 1:
-				text = ihumanize.Optional(c.totalSP, "?")
-				l.Alignment = fyne.TextAlignTrailing
-			case 2:
-				text = ihumanize.Optional(c.unallocatedSP, "?")
-				l.Alignment = fyne.TextAlignTrailing
-			case 3:
-				if c.training.IsEmpty() {
-					text = "Inactive"
-					l.Importance = widget.WarningImportance
-				} else {
-					text = ihumanize.Duration(c.training.ValueOrZero())
-				}
-			}
-			l.Text = text
-			l.Truncation = fyne.TextTruncateClip
-			l.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
-	t.StickyColumnCount = 1
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
-	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
-		label := co.(*widget.Label)
-		label.SetText(s.text)
-	}
-	t.OnSelected = func(tci widget.TableCellID) {
-		defer t.UnselectAll()
-	}
-
-	for i, h := range headers {
-		x := widget.NewLabel(strings.Repeat("w", h.maxChars))
-		w := x.MinSize().Width
-		t.SetColumnWidth(i, w)
-	}
-	return t
-}
-
-func (a *trainingArea) refresh() {
+func (a *TrainingArea) Refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
 		totalSP, err := a.updateCharacters()
 		if err != nil {
 			return "", 0, err
 		}
-		if len(a.characters) == 0 {
+		if len(a.rows) == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
 		spText := ihumanize.Optional(totalSP, "?")
-		s := fmt.Sprintf("%d characters • %s Total SP", len(a.characters), spText)
+		s := fmt.Sprintf("%d characters • %s Total SP", len(a.rows), spText)
 		return s, widget.MediumImportance, nil
 	}()
 	if err != nil {
@@ -137,10 +97,10 @@ func (a *trainingArea) refresh() {
 	}
 	a.top.Text = t
 	a.top.Importance = i
-	a.table.Refresh()
+	a.body.Refresh()
 }
 
-func (a *trainingArea) updateCharacters() (optional.Optional[int], error) {
+func (a *TrainingArea) updateCharacters() (optional.Optional[int], error) {
 	var totalSP optional.Optional[int]
 	var err error
 	ctx := context.TODO()
@@ -170,6 +130,6 @@ func (a *trainingArea) updateCharacters() (optional.Optional[int], error) {
 			totalSP.Set(totalSP.ValueOrZero() + c.totalSP.ValueOrZero())
 		}
 	}
-	a.characters = cc
+	a.rows = cc
 	return totalSP, nil
 }

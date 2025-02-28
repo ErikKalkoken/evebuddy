@@ -14,8 +14,8 @@ import (
 	"github.com/antihax/goesi/esi"
 )
 
-var ErrEveEntityNameNoMatch = errors.New("no matching EveEntity name")
-var ErrEveEntityNameMultipleMatches = errors.New("multiple matching EveEntity names")
+var ErrEveEntityNameNoMatch = errors.New("no match found with that name")
+var ErrEveEntityNameMultipleMatches = errors.New("multiple matches with that name")
 
 func (eu *EveUniverseService) GetOrCreateEveEntityESI(ctx context.Context, id int32) (*app.EveEntity, error) {
 	o, err := eu.st.GetEveEntity(ctx, id)
@@ -72,7 +72,7 @@ func (eu *EveUniverseService) AddMissingEveEntities(ctx context.Context, ids []i
 	}
 	var ee []esi.PostUniverseNames200Ok
 	var badIDs []int32
-	for _, chunk := range chunkBy(missingIDs, 1000) { // PostUniverseNames max is 1000 IDs
+	for chunk := range slices.Chunk(missingIDs, 1000) { // PostUniverseNames max is 1000 IDs
 		eeChunk, badChunk, err := eu.resolveIDs(ctx, chunk)
 		if err != nil {
 			return nil, err
@@ -130,116 +130,6 @@ func (eu *EveUniverseService) resolveIDs(ctx context.Context, ids []int32) ([]es
 
 func (eu *EveUniverseService) ListEveEntitiesByPartialName(ctx context.Context, partial string) ([]*app.EveEntity, error) {
 	return eu.st.ListEveEntitiesByPartialName(ctx, partial)
-}
-
-// Resolve slice of unclean EveEntity objects and return as new slice with resolved objects.
-// Will return an error if some entities can not be resolved.
-func (eu *EveUniverseService) ResolveUncleanEveEntities(ctx context.Context, ee []*app.EveEntity) ([]*app.EveEntity, error) {
-	ee1, names, err := eu.resolveEveEntityLocally(ctx, ee)
-	if err != nil {
-		return nil, err
-	}
-	if err := eu.resolveEveEntityNamesRemotely(ctx, names); err != nil {
-		return nil, err
-	}
-	ee2, err := eu.findEveEntitiesByName(ctx, names)
-	if err != nil {
-		return nil, err
-	}
-	r := slices.Concat(ee1, ee2)
-	return r, nil
-}
-
-// resolveEveEntityLocally tries to resolve EveEntities locally.
-// It returns resolved recipients and a list of remaining unresolved names (if any)
-func (eu *EveUniverseService) resolveEveEntityLocally(ctx context.Context, ee []*app.EveEntity) ([]*app.EveEntity, []string, error) {
-	ee2 := make([]*app.EveEntity, 0, len(ee))
-	names := make([]string, 0, len(ee))
-	for _, r := range ee {
-		if r.Category == app.EveEntityUndefined {
-			names = append(names, r.Name)
-			continue
-		}
-		ee3, err := eu.st.ListEveEntityByNameAndCategory(ctx, r.Name, r.Category)
-		if err != nil {
-			return nil, nil, err
-		}
-		if len(ee3) == 0 {
-			names = append(names, r.Name)
-			continue
-		}
-		if len(ee3) > 1 {
-			return nil, nil, fmt.Errorf("entity %v: %w", r, ErrEveEntityNameMultipleMatches)
-		}
-		ee2 = append(ee2, ee3[0])
-	}
-	return ee2, names, nil
-}
-
-// resolveEveEntityNamesRemotely resolves a list of names remotely and stores them as EveEntity objects.
-func (eu *EveUniverseService) resolveEveEntityNamesRemotely(ctx context.Context, names []string) error {
-	if len(names) == 0 {
-		return nil
-	}
-	r, _, err := eu.esiClient.ESI.UniverseApi.PostUniverseIds(ctx, names, nil)
-	if err != nil {
-		return err
-	}
-	ee := make([]app.EveEntity, 0, len(names))
-	for _, o := range r.Alliances {
-		e := app.EveEntity{ID: o.Id, Name: o.Name, Category: app.EveEntityAlliance}
-		ee = append(ee, e)
-	}
-	for _, o := range r.Characters {
-		e := app.EveEntity{ID: o.Id, Name: o.Name, Category: app.EveEntityCharacter}
-		ee = append(ee, e)
-	}
-	for _, o := range r.Corporations {
-		e := app.EveEntity{ID: o.Id, Name: o.Name, Category: app.EveEntityCorporation}
-		ee = append(ee, e)
-	}
-	ids := make([]int32, len(ee))
-	for i, e := range ee {
-		ids[i] = e.ID
-	}
-	missing, err := eu.st.MissingEveEntityIDs(ctx, ids)
-	if err != nil {
-		return err
-	}
-	if missing.Size() == 0 {
-		return nil
-	}
-	for _, e := range ee {
-		if missing.Contains(int32(e.ID)) {
-			_, err := eu.st.GetOrCreateEveEntity(ctx, e.ID, e.Name, e.Category)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-// findEveEntitiesByName tries to build EveEntity objects from given names
-// by checking against EveEntity objects in the database.
-// Will abort with errors if no match is found or if multiple matches are found for a name.
-func (eu *EveUniverseService) findEveEntitiesByName(ctx context.Context, names []string) ([]*app.EveEntity, error) {
-	ee2 := make([]*app.EveEntity, 0, len(names))
-	for _, n := range names {
-		ee, err := eu.st.ListEveEntitiesByName(ctx, n)
-		if err != nil {
-			return nil, err
-		}
-		if len(ee) == 0 {
-			return nil, fmt.Errorf("%s: %w", n, ErrEveEntityNameNoMatch)
-		}
-		if len(ee) > 1 {
-			return nil, fmt.Errorf("%s: %w", n, ErrEveEntityNameMultipleMatches)
-		}
-		e := ee[0]
-		ee2 = append(ee2, e)
-	}
-	return ee2, nil
 }
 
 func eveEntityCategoryFromESICategory(c string) app.EveEntityCategory {

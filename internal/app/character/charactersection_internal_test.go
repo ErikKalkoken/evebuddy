@@ -117,36 +117,3 @@ func TestUpdateCharacterSectionIfChanged(t *testing.T) {
 		}
 	})
 }
-
-func TestCharacterSectionUpdateMethods(t *testing.T) {
-	db, st, factory := testutil.New()
-	s := newCharacterService(st)
-	ctx := context.Background()
-	t.Run("Can report wether a section was updated", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c.ID,
-			Section:     app.SectionSkillqueue,
-			CompletedAt: time.Now(),
-		})
-		// when
-		x, err := s.SectionWasUpdated(ctx, c.ID, app.SectionSkillqueue)
-		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, true, x)
-		}
-	})
-	t.Run("Can report wether a section was updated 2", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		// when
-		x, err := s.SectionWasUpdated(ctx, c.ID, app.SectionSkillqueue)
-		// then
-		if assert.NoError(t, err) {
-			assert.Equal(t, false, x)
-		}
-	})
-}

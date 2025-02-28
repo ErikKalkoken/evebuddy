@@ -206,3 +206,11 @@ func TestHTTPError(t *testing.T) {
 	s := err.Error()
 	assert.Equal(t, "HTTP error: 200 OK", s)
 }
+
+func TestLive(t *testing.T) {
+	s := eveimage.New(newCache(), http.DefaultClient, true)
+	x, err := s.CharacterPortrait(123, 64)
+	if assert.NoError(t, err) {
+		assert.NotEmpty(t, x.Content())
+	}
+}

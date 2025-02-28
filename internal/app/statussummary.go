@@ -11,8 +11,21 @@ type Status uint
 func (s Status) ToImportance() widget.Importance {
 	m := map[Status]widget.Importance{
 		StatusError:   widget.DangerImportance,
-		StatusMissing: widget.WarningImportance,
 		StatusOK:      widget.MediumImportance,
+		StatusUnknown: widget.LowImportance,
+		StatusWorking: widget.MediumImportance,
+	}
+	i, ok := m[s]
+	if !ok {
+		i = widget.MediumImportance
+	}
+	return i
+}
+
+func (s Status) ToImportance2() widget.Importance {
+	m := map[Status]widget.Importance{
+		StatusError:   widget.DangerImportance,
+		StatusOK:      widget.SuccessImportance,
 		StatusUnknown: widget.LowImportance,
 		StatusWorking: widget.MediumImportance,
 	}
@@ -27,14 +40,12 @@ const (
 	StatusUnknown Status = iota
 	StatusOK
 	StatusError
-	StatusMissing
 	StatusWorking
 )
 
 type StatusSummary struct {
 	Current   int
 	Errors    int
-	Missing   int
 	IsRunning bool
 	Total     int
 }
@@ -47,9 +58,6 @@ func (ss StatusSummary) Status() Status {
 	if ss.Errors > 0 {
 		return StatusError
 	}
-	if ss.Missing > 0 {
-		return StatusMissing
-	}
 	if ss.ProgressP() == 1 {
 		return StatusOK
 	}
@@ -60,8 +68,6 @@ func (ss StatusSummary) Display() string {
 	switch ss.Status() {
 	case StatusError:
 		return fmt.Sprintf("%d ERRORS", ss.Errors)
-	case StatusMissing:
-		return fmt.Sprintf("%d Missing", ss.Missing)
 	case StatusOK:
 		return "OK"
 	case StatusWorking:

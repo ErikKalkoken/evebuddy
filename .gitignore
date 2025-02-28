@@ -13,3 +13,4 @@ evebuddy
 profile*.gif
 __debug_*
 *.apk
+fyne_metadata_init.go

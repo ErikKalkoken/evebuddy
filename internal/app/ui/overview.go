@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -31,128 +30,90 @@ type overviewCharacter struct {
 	walletBalance optional.Optional[float64]
 }
 
-// overviewArea is the UI area that shows an overview of all the user's characters.
-type overviewArea struct {
-	characters []overviewCharacter
-	content    *fyne.Container
-	table      *widget.Table
-	top        *widget.Label
-	u          *UI
+// OverviewArea is the UI area that shows an overview of all the user's characters.
+type OverviewArea struct {
+	Content fyne.CanvasObject
+
+	rows []overviewCharacter
+	body fyne.CanvasObject
+	top  *widget.Label
+	u    *BaseUI
 }
 
-func (u *UI) newOverviewArea() *overviewArea {
-	a := overviewArea{
-		characters: make([]overviewCharacter, 0),
-		top:        widget.NewLabel(""),
-		u:          u,
+func (u *BaseUI) NewOverviewArea() *OverviewArea {
+	a := OverviewArea{
+		rows: make([]overviewCharacter, 0),
+		top:  makeTopLabel(),
+		u:    u,
 	}
-	a.top.TextStyle.Bold = true
-
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.table = a.makeTable()
-	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+	headers := []headerDef{
+		{"Name", 250},
+		{"Corporation", 250},
+		{"Alliance", 250},
+		{"Security", 50},
+		{"Unread", 100},
+		{"Wallet", 100},
+		{"Assets", 100},
+		{"Last Login", 100},
+		{"Home", 250},
+		{"Age", 100},
+	}
+	makeDataLabel := func(col int, c overviewCharacter) (string, fyne.TextAlign, widget.Importance) {
+		var align fyne.TextAlign
+		var importance widget.Importance
+		var text string
+		switch col {
+		case 0:
+			text = c.name
+		case 1:
+			text = c.corporation
+		case 2:
+			text = c.alliance
+		case 3:
+			text = fmt.Sprintf("%.1f", c.security)
+			if c.security > 0 {
+				importance = widget.SuccessImportance
+			} else if c.security < 0 {
+				importance = widget.DangerImportance
+			}
+			align = fyne.TextAlignTrailing
+		case 4:
+			text = ihumanize.Optional(c.unreadCount, "?")
+			align = fyne.TextAlignTrailing
+		case 5:
+			text = ihumanize.OptionalFloat(c.walletBalance, 1, "?")
+			align = fyne.TextAlignTrailing
+		case 6:
+			text = ihumanize.OptionalFloat(c.assetValue, 1, "?")
+			align = fyne.TextAlignTrailing
+		case 7:
+			text = ihumanize.Optional(c.lastLoginAt, "?")
+			align = fyne.TextAlignTrailing
+		case 8:
+			text = EntityNameOrFallback(c.home, "?")
+		case 9:
+			text = humanize.RelTime(c.birthday, time.Now(), "", "")
+			align = fyne.TextAlignTrailing
+		}
+		return text, align, importance
+	}
+	if a.u.IsDesktop() {
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
+	} else {
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
+	}
+	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
 	return &a
 }
 
-func (a *overviewArea) makeTable() *widget.Table {
-	var headers = []struct {
-		text     string
-		maxChars int
-	}{
-		{"Name", 20},
-		{"Corporation", 20},
-		{"Alliance", 20},
-		{"Security", 5},
-		{"Unread", 5},
-		{"Wallet", 5},
-		{"Assets", 5},
-		{"Last Login", 10},
-		{"Home", 20},
-		{"Age", 10},
-	}
-
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(a.characters), len(headers)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Template")
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			l := co.(*widget.Label)
-			if tci.Row >= len(a.characters) || tci.Row < 0 {
-				return
-			}
-			c := a.characters[tci.Row]
-			l.Alignment = fyne.TextAlignLeading
-			l.Importance = widget.MediumImportance
-			var text string
-			switch tci.Col {
-			case 0:
-				text = c.name
-			case 1:
-				text = c.corporation
-			case 2:
-				text = c.alliance
-			case 3:
-				text = fmt.Sprintf("%.1f", c.security)
-				if c.security > 0 {
-					l.Importance = widget.SuccessImportance
-				} else if c.security < 0 {
-					l.Importance = widget.DangerImportance
-				}
-				l.Alignment = fyne.TextAlignTrailing
-			case 4:
-				text = ihumanize.Optional(c.unreadCount, "?")
-				l.Alignment = fyne.TextAlignTrailing
-			case 5:
-				text = ihumanize.OptionalFloat(c.walletBalance, 1, "?")
-				l.Alignment = fyne.TextAlignTrailing
-			case 6:
-				text = ihumanize.OptionalFloat(c.assetValue, 1, "?")
-				l.Alignment = fyne.TextAlignTrailing
-			case 7:
-				text = ihumanize.Optional(c.lastLoginAt, "?")
-			case 8:
-				text = entityNameOrFallback(c.home, "?")
-			case 9:
-				text = humanize.RelTime(c.birthday, time.Now(), "", "")
-				l.Alignment = fyne.TextAlignTrailing
-			}
-			l.Text = text
-			l.Truncation = fyne.TextTruncateClip
-			l.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
-	t.StickyColumnCount = 1
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
-	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
-		label := co.(*widget.Label)
-		label.SetText(s.text)
-	}
-	t.OnSelected = func(tci widget.TableCellID) {
-		defer t.UnselectAll()
-	}
-
-	for i, h := range headers {
-		x := widget.NewLabel(strings.Repeat("w", h.maxChars))
-		w := x.MinSize().Width
-		t.SetColumnWidth(i, w)
-	}
-	return t
-}
-
-func (a *overviewArea) refresh() {
+func (a *OverviewArea) Refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
 		totals, err := a.updateCharacters()
 		if err != nil {
 			return "", 0, err
 		}
-		if len(a.characters) == 0 {
+		if len(a.rows) == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
 		walletText := ihumanize.OptionalFloat(totals.wallet, 1, "?")
@@ -160,7 +121,7 @@ func (a *overviewArea) refresh() {
 		unreadText := ihumanize.Optional(totals.unread, "?")
 		s := fmt.Sprintf(
 			"%d characters • %s ISK wallet • %s ISK assets • %s unread",
-			len(a.characters),
+			len(a.rows),
 			walletText,
 			assetsText,
 			unreadText,
@@ -174,7 +135,7 @@ func (a *overviewArea) refresh() {
 	}
 	a.top.Text = t
 	a.top.Importance = i
-	a.table.Refresh()
+	a.body.Refresh()
 }
 
 type overviewTotals struct {
@@ -183,10 +144,10 @@ type overviewTotals struct {
 	assets optional.Optional[float64]
 }
 
-func (a *overviewArea) updateCharacters() (overviewTotals, error) {
+func (a *OverviewArea) updateCharacters() (overviewTotals, error) {
 	var totals overviewTotals
 	var err error
-	ctx := context.TODO()
+	ctx := context.Background()
 	mycc, err := a.u.CharacterService.ListCharacters(ctx)
 	if err != nil {
 		return totals, err
@@ -238,16 +199,6 @@ func (a *overviewArea) updateCharacters() (overviewTotals, error) {
 			totals.assets.Set(totals.assets.ValueOrZero() + c.assetValue.ValueOrZero())
 		}
 	}
-	a.characters = cc
-	var hasUnread bool
-	for _, c := range a.characters {
-		if c.unreadCount.ValueOrZero() > 0 {
-			hasUnread = true
-			break
-		}
-	}
-	if hasUnread {
-		a.u.showMailIndicator()
-	}
+	a.rows = cc
 	return totals, nil
 }

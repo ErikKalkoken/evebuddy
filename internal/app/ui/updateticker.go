@@ -14,35 +14,39 @@ import (
 )
 
 const (
-	characterSectionsUpdateTicker = 10 * time.Second
-	generalSectionsUpdateTicker   = 60 * time.Second
+	characterSectionsUpdateTicker = 60 * time.Second
+	generalSectionsUpdateTicker   = 300 * time.Second
 	notifyEarliestFallback        = 24 * time.Hour
 )
 
-func (u *UI) sendDesktopNotification(title, content string) {
-	u.fyneApp.SendNotification(fyne.NewNotification(title, content))
+func (u *BaseUI) sendDesktopNotification(title, content string) {
+	u.FyneApp.SendNotification(fyne.NewNotification(title, content))
 	slog.Info("desktop notification sent", "title", title, "content", content)
 }
 
-func (u *UI) startUpdateTickerGeneralSections() {
+func (u *BaseUI) startUpdateTickerGeneralSections() {
 	ticker := time.NewTicker(generalSectionsUpdateTicker)
 	go func() {
 		for {
-			u.updateGeneralSectionsAndRefreshIfNeeded(false)
+			u.UpdateGeneralSectionsAndRefreshIfNeeded(false)
 			<-ticker.C
 		}
 	}()
 }
 
-func (u *UI) updateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
+func (u *BaseUI) UpdateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
+	if !u.isForeground.Load() && !forceUpdate {
+		slog.Info("Skipping general sections update while in background")
+		return
+	}
 	for _, s := range app.GeneralSections {
 		go func(s app.GeneralSection) {
-			u.updateGeneralSectionAndRefreshIfNeeded(context.TODO(), s, forceUpdate)
+			u.UpdateGeneralSectionAndRefreshIfNeeded(context.TODO(), s, forceUpdate)
 		}(s)
 	}
 }
 
-func (u *UI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
+func (u *BaseUI) UpdateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section app.GeneralSection, forceUpdate bool) {
 	hasChanged, err := u.EveUniverseService.UpdateSection(ctx, section, forceUpdate)
 	if err != nil {
 		slog.Error("Failed to update general section", "section", section, "err", err)
@@ -51,8 +55,8 @@ func (u *UI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section
 	switch section {
 	case app.SectionEveCategories:
 		if hasChanged {
-			u.shipsArea.refresh()
-			u.skillCatalogueArea.refresh()
+			u.ShipsArea.Refresh()
+			u.SkillCatalogueArea.Refresh()
 		}
 	case app.SectionEveCharacters, app.SectionEveMarketPrices:
 		// nothing to refresh
@@ -61,93 +65,106 @@ func (u *UI) updateGeneralSectionAndRefreshIfNeeded(ctx context.Context, section
 	}
 }
 
-func (u *UI) startUpdateTickerCharacters() {
+func (u *BaseUI) startUpdateTickerCharacters() {
 	ticker := time.NewTicker(characterSectionsUpdateTicker)
+	ctx := context.Background()
 	go func() {
 		for {
-			func() {
-				cc, err := u.CharacterService.ListCharactersShort(context.TODO())
-				if err != nil {
-					slog.Error("Failed to fetch list of characters", "err", err)
-					return
-				}
-				for _, c := range cc {
-					go u.updateCharacterAndRefreshIfNeeded(context.TODO(), c.ID, false)
-					if u.fyneApp.Preferences().BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault) {
-						go func() {
-							earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyPIEarliest)
-							if err := u.CharacterService.NotifyExpiredExtractions(context.TODO(), c.ID, earliest, u.sendDesktopNotification); err != nil {
-								slog.Error("notify expired extractions", "characterID", c.ID, "error", err)
-							}
-						}()
-					}
-					if u.fyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
-						go func() {
-							// earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
-							if err := u.CharacterService.NotifyExpiredTraining(context.TODO(), c.ID, u.sendDesktopNotification); err != nil {
-								slog.Error("notify expired training", "error", err)
-							}
-						}()
-					}
-				}
-			}()
+			cc, err := u.CharacterService.ListCharactersShort(ctx)
+			if err != nil {
+				slog.Error("Failed to update characters and notfy", "error", err)
+				return
+			}
+			for _, c := range cc {
+				go u.UpdateCharacterAndRefreshIfNeeded(ctx, c.ID, false)
+				u.notifyExpiredExtractionsIfNeeded(ctx, c.ID)
+				u.notifyExpiredTrainingIfneeded(ctx, c.ID)
+			}
 			<-ticker.C
 		}
 	}()
 }
 
-// updateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
+// UpdateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
 // and refreshes the UI accordingly.
-func (u *UI) updateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
+func (u *BaseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characterID int32, forceUpdate bool) {
 	if u.IsOffline {
 		return
 	}
-	for _, s := range app.CharacterSections {
+	var sections []app.CharacterSection
+	if u.isForeground.Load() {
+		sections = app.CharacterSections
+	} else {
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault) {
+			sections = append(sections, app.SectionNotifications)
+		}
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyContractsEnabled, settingNotifyContractsEnabledDefault) {
+			sections = append(sections, app.SectionContracts)
+		}
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
+			sections = append(sections, app.SectionContracts)
+		}
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault) {
+			sections = append(sections, app.SectionPlanets)
+		}
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
+			sections = append(sections, app.SectionSkillqueue)
+		}
+	}
+	slog.Info("Starting to check character sections for update", "sections", sections)
+	for _, s := range sections {
 		s := s
-		go u.updateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
+		go u.UpdateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)
 	}
 }
 
-// updateCharacterSectionAndRefreshIfNeeded runs update for a character section if needed
+// UpdateCharacterSectionAndRefreshIfNeeded runs update for a character section if needed
 // and refreshes the UI accordingly.
 //
 // All UI areas showing data based on character sections needs to be included
 // to make sure they are refreshed when data changes.
-func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
+func (u *BaseUI) UpdateCharacterSectionAndRefreshIfNeeded(ctx context.Context, characterID int32, s app.CharacterSection, forceUpdate bool) {
 	hasChanged, err := u.CharacterService.UpdateSectionIfNeeded(
 		ctx, character.UpdateSectionParams{
 			CharacterID:           characterID,
 			Section:               s,
 			ForceUpdate:           forceUpdate,
-			MaxMails:              u.fyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault),
-			MaxWalletTransactions: u.fyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault),
+			MaxMails:              u.FyneApp.Preferences().IntWithFallback(settingMaxMails, settingMaxMailsDefault),
+			MaxWalletTransactions: u.FyneApp.Preferences().IntWithFallback(settingMaxWalletTransactions, settingMaxWalletTransactionsDefault),
 		})
 	if err != nil {
 		slog.Error("Failed to update character section", "characterID", characterID, "section", s, "err", err)
 		return
 	}
-	isShown := characterID == u.characterID()
+	isShown := characterID == u.CharacterID()
 	needsRefresh := hasChanged || forceUpdate
 	switch s {
 	case app.SectionAssets:
-		if isShown && needsRefresh {
-			u.assetsArea.redraw()
-		}
 		if needsRefresh {
-			u.assetSearchArea.refresh()
-			u.wealthArea.refresh()
+			v, err := u.CharacterService.UpdateCharacterAssetTotalValue(ctx, characterID)
+			if err != nil {
+				slog.Error("update asset total value", "characterID", characterID, "err", err)
+			}
+			if isShown {
+				u.character.AssetValue.Set(v)
+			}
+			u.AssetSearchArea.Refresh()
+			u.WealthArea.Refresh()
+		}
+		if isShown && needsRefresh {
+			u.AssetsArea.Redraw()
 		}
 	case app.SectionAttributes:
 		if isShown && needsRefresh {
-			u.attributesArea.refresh()
+			u.AttributesArea.Refresh()
 		}
 	case app.SectionContracts:
 		if isShown && needsRefresh {
-			u.contractsArea.refresh()
+			u.ContractsArea.Refresh()
 		}
-		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyContractsEnabled, settingNotifyCommunicationsEnabledDefault) {
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyContractsEnabled, settingNotifyCommunicationsEnabledDefault) {
 			go func() {
-				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyContractsEarliest)
+				earliest := calcNotifyEarliest(u.FyneApp.Preferences(), settingNotifyContractsEarliest)
 				if err := u.CharacterService.NotifyUpdatedContracts(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify contract update", "error", err)
 				}
@@ -155,46 +172,48 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 	case app.SectionImplants:
 		if isShown && needsRefresh {
-			u.implantsArea.refresh()
+			u.ImplantsArea.Refresh()
 		}
 	case app.SectionJumpClones:
 		if isShown && needsRefresh {
-			u.jumpClonesArea.redraw()
+			u.JumpClonesArea.Redraw()
 		}
 		if needsRefresh {
-			u.overviewArea.refresh()
+			u.OverviewArea.Refresh()
 		}
 	case app.SectionLocation,
 		app.SectionOnline,
 		app.SectionShip:
 		if needsRefresh {
-			u.locationsArea.refresh()
+			u.LocationsArea.Refresh()
 		}
 	case app.SectionPlanets:
 		if isShown && needsRefresh {
-			u.planetArea.refresh()
+			u.PlanetArea.Refresh()
 		}
 		if needsRefresh {
-			u.coloniesArea.refresh()
+			u.ColoniesArea.Refresh()
+			u.notifyExpiredExtractionsIfNeeded(ctx, characterID)
 		}
 	case app.SectionMailLabels,
 		app.SectionMailLists:
 		if isShown && needsRefresh {
-			u.mailArea.refresh()
+			u.MailArea.Refresh()
 		}
 		if needsRefresh {
-			u.overviewArea.refresh()
+			u.OverviewArea.Refresh()
 		}
 	case app.SectionMails:
 		if isShown && needsRefresh {
-			u.mailArea.refresh()
+			u.MailArea.Refresh()
 		}
 		if needsRefresh {
-			u.overviewArea.refresh()
+			go u.OverviewArea.Refresh()
+			go u.UpdateMailIndicator()
 		}
-		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
 			go func() {
-				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyMailsEarliest)
+				earliest := calcNotifyEarliest(u.FyneApp.Preferences(), settingNotifyMailsEarliest)
 				if err := u.CharacterService.NotifyMails(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
 					slog.Error("notify mails", "characterID", characterID, "error", err)
 				}
@@ -202,12 +221,12 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 	case app.SectionNotifications:
 		if isShown && needsRefresh {
-			u.notificationsArea.refresh()
+			u.NotificationsArea.Refresh()
 		}
-		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault) {
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault) {
 			go func() {
-				earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyCommunicationsEarliest)
-				typesEnabled := set.NewFromSlice(u.fyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
+				earliest := calcNotifyEarliest(u.FyneApp.Preferences(), settingNotifyCommunicationsEarliest)
+				typesEnabled := set.NewFromSlice(u.FyneApp.Preferences().StringList(settingNotificationsTypesEnabled))
 				if err := u.CharacterService.NotifyCommunications(ctx, characterID, earliest, typesEnabled, u.sendDesktopNotification); err != nil {
 					slog.Error("notify communications", "characterID", characterID, "error", err)
 				}
@@ -215,38 +234,39 @@ func (u *UI) updateCharacterSectionAndRefreshIfNeeded(ctx context.Context, chara
 		}
 	case app.SectionSkills:
 		if isShown && needsRefresh {
-			u.skillCatalogueArea.refresh()
-			u.shipsArea.refresh()
-			u.planetArea.refresh()
+			u.SkillCatalogueArea.Refresh()
+			u.ShipsArea.Refresh()
+			u.PlanetArea.Refresh()
 		}
 		if needsRefresh {
-			u.trainingArea.refresh()
+			u.TrainingArea.Refresh()
 		}
 	case app.SectionSkillqueue:
-		if u.fyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
+		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
 			err := u.CharacterService.EnableTrainingWatcher(ctx, characterID)
 			if err != nil {
 				slog.Error("Failed to enable training watcher", "characterID", characterID, "error", err)
 			}
 		}
 		if isShown {
-			u.skillqueueArea.refresh()
+			u.SkillqueueArea.Refresh()
 		}
 		if needsRefresh {
-			u.trainingArea.refresh()
+			u.TrainingArea.Refresh()
+			u.notifyExpiredTrainingIfneeded(ctx, characterID)
 		}
 	case app.SectionWalletBalance:
 		if needsRefresh {
-			u.overviewArea.refresh()
-			u.wealthArea.refresh()
+			u.OverviewArea.Refresh()
+			u.WealthArea.Refresh()
 		}
 	case app.SectionWalletJournal:
 		if isShown && needsRefresh {
-			u.walletJournalArea.refresh()
+			u.WalletJournalArea.Refresh()
 		}
 	case app.SectionWalletTransactions:
 		if isShown && needsRefresh {
-			u.walletTransactionArea.refresh()
+			u.WalletTransactionArea.Refresh()
 		}
 	default:
 		slog.Warn(fmt.Sprintf("section not part of the update ticker: %s", s))
@@ -272,5 +292,26 @@ func calcNotifyEarliest(pref fyne.Preferences, settingEarliest string) time.Time
 		return earliest
 	}
 	return timeout
+}
 
+func (u *BaseUI) notifyExpiredTrainingIfneeded(ctx context.Context, characerID int32) {
+	if u.FyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
+		go func() {
+			// earliest := calcNotifyEarliest(u.fyneApp.Preferences(), settingNotifyTrainingEarliest)
+			if err := u.CharacterService.NotifyExpiredTraining(ctx, characerID, u.sendDesktopNotification); err != nil {
+				slog.Error("notify expired training", "error", err)
+			}
+		}()
+	}
+}
+
+func (u *BaseUI) notifyExpiredExtractionsIfNeeded(ctx context.Context, characterID int32) {
+	if u.FyneApp.Preferences().BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault) {
+		go func() {
+			earliest := calcNotifyEarliest(u.FyneApp.Preferences(), settingNotifyPIEarliest)
+			if err := u.CharacterService.NotifyExpiredExtractions(ctx, characterID, earliest, u.sendDesktopNotification); err != nil {
+				slog.Error("notify expired extractions", "characterID", characterID, "error", err)
+			}
+		}()
+	}
 }

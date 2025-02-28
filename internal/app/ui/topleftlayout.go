@@ -2,8 +2,7 @@ package ui
 
 import "fyne.io/fyne/v2"
 
-type topLeftLayout struct {
-}
+type topLeftLayout struct{}
 
 func (d *topLeftLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	w, h := float32(0), float32(0)

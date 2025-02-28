@@ -139,6 +139,14 @@ func (st *Storage) GetCharacterMailUnreadCount(ctx context.Context, id int32) (i
 	return int(count), err
 }
 
+func (st *Storage) GetAllCharacterMailUnreadCount(ctx context.Context) (int, error) {
+	count, err := st.q.GetAllMailUnreadCount(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("get all mail unread count: %w", err)
+	}
+	return int(count), err
+}
+
 func (st *Storage) GetCharacterMailCount(ctx context.Context, id int32) (int, error) {
 	count, err := st.q.GetMailCount(ctx, int64(id))
 	if err != nil {

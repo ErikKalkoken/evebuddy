@@ -6,23 +6,23 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 )
 
-// biographyArea is the UI area that shows the skillqueue
-type biographyArea struct {
-	content fyne.CanvasObject
+// BiographyArea is the UI area that shows the skillqueue
+type BiographyArea struct {
+	Content fyne.CanvasObject
 	text    *widget.Label
-	u       *UI
+	u       *BaseUI
 }
 
-func (u *UI) newBiographyArea() *biographyArea {
-	a := &biographyArea{u: u, text: widget.NewLabel("")}
+func (u *BaseUI) NewBiographyArea() *BiographyArea {
+	a := &BiographyArea{u: u, text: widget.NewLabel("")}
 	a.text.Wrapping = fyne.TextWrapBreak
-	a.content = a.text
+	a.Content = a.text
 	return a
 }
 
-func (a *biographyArea) refresh() {
+func (a *BiographyArea) Refresh() {
 	var s string
-	c := a.u.currentCharacter()
+	c := a.u.CurrentCharacter()
 	if c == nil {
 		s = ""
 	} else {

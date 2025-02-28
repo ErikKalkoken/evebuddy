@@ -16,7 +16,7 @@ func TestCache(t *testing.T) {
 		c.Set("dummy-2", "xxx", time.Second*100)
 		time.Sleep(time.Millisecond * 50)
 		// when
-		c.cleanUp()
+		c.CleanUp()
 		// then
 		_, found := c.items.Load("dummy-1")
 		assert.False(t, found)

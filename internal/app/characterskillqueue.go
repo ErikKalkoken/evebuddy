@@ -1,8 +1,10 @@
 package app
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
@@ -19,6 +21,10 @@ type CharacterSkillqueueItem struct {
 	SkillName        string
 	SkillDescription string
 	TrainingStartSP  int
+}
+
+func (qi CharacterSkillqueueItem) String() string {
+	return fmt.Sprintf("%s %s", qi.SkillName, humanize.RomanLetter(qi.FinishedLevel))
 }
 
 func (qi CharacterSkillqueueItem) IsActive() bool {

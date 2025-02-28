@@ -4,6 +4,14 @@ import (
 	"fmt"
 )
 
+type category string
+
+const (
+	alliance      category = "alliances"
+	character     category = "characters"
+	corporation   category = "corporations"
+	inventoryType category = "types"
+)
 const (
 	PlaceholderCharacterID   = 1
 	PlaceholderCorporationID = 1
@@ -13,15 +21,6 @@ const (
 const (
 	typeIDCaldariShuttle = 672
 	typeIDBoobook        = 64034
-)
-
-type category string
-
-const (
-	categoryCharacter     category = "characters"
-	categoryCorporation   category = "corporations"
-	categoryAlliance      category = "alliances"
-	categoryInventoryType category = "types"
 )
 
 type imageVariant string
@@ -41,22 +40,22 @@ var typeIDSubstitution = map[int32]int32{
 
 // AllianceLogoURL returns an image URL for an alliance logo
 func AllianceLogoURL(id int32, size int) (string, error) {
-	return imageURL(categoryAlliance, imageVariantLogo, id, size)
+	return imageURL(alliance, imageVariantLogo, id, size)
 }
 
 // CharacterPortraitURL returns an image URL for a character portrait
 func CharacterPortraitURL(id int32, size int) (string, error) {
-	return imageURL(categoryCharacter, imageVariantPortrait, id, size)
+	return imageURL(character, imageVariantPortrait, id, size)
 }
 
 // CorporationLogoURL returns an image URL for a corporation logo
 func CorporationLogoURL(id int32, size int) (string, error) {
-	return imageURL(categoryCorporation, imageVariantLogo, id, size)
+	return imageURL(corporation, imageVariantLogo, id, size)
 }
 
 // FactionLogoURL returns an image URL for a faction logo
 func FactionLogoURL(id int32, size int) (string, error) {
-	return imageURL(categoryCorporation, imageVariantLogo, id, size)
+	return imageURL(corporation, imageVariantLogo, id, size)
 }
 
 // InventoryTypeRenderURL returns an image URL for inventory type render
@@ -65,22 +64,22 @@ func InventoryTypeRenderURL(id int32, size int) (string, error) {
 	if ok {
 		id = newID
 	}
-	return imageURL(categoryInventoryType, imageVariantRender, id, size)
+	return imageURL(inventoryType, imageVariantRender, id, size)
 }
 
 // InventoryTypeIconURL returns an image URL for inventory type icon
 func InventoryTypeIconURL(id int32, size int) (string, error) {
-	return imageURL(categoryInventoryType, imageVariantIcon, id, size)
+	return imageURL(inventoryType, imageVariantIcon, id, size)
 }
 
 // InventoryTypeBPOURL returns an image URL for inventory type bpo
 func InventoryTypeBPOURL(id int32, size int) (string, error) {
-	return imageURL(categoryInventoryType, imageVariantBPO, id, size)
+	return imageURL(inventoryType, imageVariantBPO, id, size)
 }
 
 // InventoryTypeBPCURL returns an image URL for inventory type bpc
 func InventoryTypeBPCURL(id int32, size int) (string, error) {
-	return imageURL(categoryInventoryType, imageVariantBPC, id, size)
+	return imageURL(inventoryType, imageVariantBPC, id, size)
 }
 
 func imageURL(c category, v imageVariant, id int32, size int) (string, error) {

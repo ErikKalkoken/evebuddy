@@ -13,41 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCharacterSectionStatus(t *testing.T) {
-	db, st, factory := testutil.New()
-	defer db.Close()
-	s := newCharacterService(st)
-	ctx := context.Background()
-	t.Run("Can report when updated", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		updateAt := time.Now().Add(3 * time.Hour)
-		factory.CreateCharacterSectionStatus(testutil.CharacterSectionStatusParams{
-			CharacterID: c.ID,
-			Section:     app.SectionSkillqueue,
-			CompletedAt: updateAt,
-		})
-		// when
-		x, err := s.SectionWasUpdated(ctx, c.ID, app.SectionSkillqueue)
-		// then
-		if assert.NoError(t, err) {
-			assert.True(t, x)
-		}
-	})
-	t.Run("Can report when not yet updated", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		c := factory.CreateCharacter()
-		// when
-		x, err := s.SectionWasUpdated(ctx, c.ID, app.SectionSkillqueue)
-		// then
-		if assert.NoError(t, err) {
-			assert.False(t, x)
-		}
-	})
-}
-
 func TestUpdateCharacterSection(t *testing.T) {
 	db, st, factory := testutil.New()
 	defer db.Close()

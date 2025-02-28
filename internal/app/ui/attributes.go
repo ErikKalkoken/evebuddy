@@ -14,7 +14,9 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
+	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type attribute struct {
@@ -27,35 +29,33 @@ func (a attribute) isText() bool {
 	return a.points == 0
 }
 
-// attributesArea is the UI area that shows the skillqueue
-type attributesArea struct {
+// Attributes is the UI area that shows the skillqueue
+type Attributes struct {
+	Content fyne.CanvasObject
+
 	attributes []attribute
-	content    fyne.CanvasObject
 	top        *widget.Label
-	u          *UI
+	u          *BaseUI
 }
 
-func (u *UI) newAttributesArena() *attributesArea {
-	a := attributesArea{
+func (u *BaseUI) NewAttributes() *Attributes {
+	a := Attributes{
 		attributes: make([]attribute, 0),
-		top:        widget.NewLabel(""),
+		top:        makeTopLabel(),
 		u:          u,
 	}
-	a.top.TextStyle.Bold = true
 	list := a.makeAttributeList()
-	a.content = container.NewBorder(container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil, list)
+	a.Content = container.NewBorder(container.NewVBox(a.top, widget.NewSeparator()), nil, nil, nil, list)
 	return &a
 }
 
-func (a *attributesArea) makeAttributeList() *widget.List {
+func (a *Attributes) makeAttributeList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.attributes)
 		},
 		func() fyne.CanvasObject {
-			icon := canvas.NewImageFromResource(resourceQuestionmarkSvg)
-			icon.FillMode = canvas.ImageFillContain
-			icon.SetMinSize(fyne.Size{Width: 32, Height: 32})
+			icon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
 			return container.NewHBox(
 				icon, widget.NewLabel("placeholder"), layout.NewSpacer(), widget.NewLabel("points"))
 		},
@@ -92,7 +92,7 @@ func (a *attributesArea) makeAttributeList() *widget.List {
 	return l
 }
 
-func (a *attributesArea) refresh() {
+func (a *Attributes) Refresh() {
 	var t string
 	var i widget.Importance
 	total, err := a.updateData()
@@ -108,21 +108,21 @@ func (a *attributesArea) refresh() {
 	a.top.Refresh()
 }
 
-func (a *attributesArea) makeTopText(total int) (string, widget.Importance) {
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionAttributes)
+func (a *Attributes) makeTopText(total int) (string, widget.Importance) {
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionAttributes)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
 	}
 	return fmt.Sprintf("Total points: %d", total), widget.MediumImportance
 }
 
-func (a *attributesArea) updateData() (int, error) {
-	if !a.u.hasCharacter() {
+func (a *Attributes) updateData() (int, error) {
+	if !a.u.HasCharacter() {
 		a.attributes = make([]attribute, 0)
 		return 0, nil
 	}
 	ctx := context.TODO()
-	ca, err := a.u.CharacterService.GetCharacterAttributes(ctx, a.u.characterID())
+	ca, err := a.u.CharacterService.GetCharacterAttributes(ctx, a.u.CharacterID())
 	if errors.Is(err, character.ErrNotFound) {
 		a.attributes = make([]attribute, 0)
 		return 0, nil

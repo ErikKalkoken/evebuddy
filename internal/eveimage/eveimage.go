@@ -35,7 +35,8 @@ type CacheService interface {
 	Set(string, []byte, time.Duration)
 }
 
-// EveImageService provides cached access to images on the Eve Online image server.
+// EveImageService represents a service which provides access to images on the Eve Online image server.
+// Images are cached.
 type EveImageService struct {
 	cache      CacheService
 	httpClient *http.Client
@@ -43,7 +44,7 @@ type EveImageService struct {
 	sfg        *singleflight.Group
 }
 
-// New returns a new EveImageService object.
+// New returns a new EveImageService.
 //
 // When no httpClient (nil) is provided it will use the default client.
 // When isOffline is set to true, it will return a dummy image
@@ -165,6 +166,30 @@ func (m *EveImageService) InventoryTypeSKIN(id int32, size int) (fyne.Resource, 
 	return resourceSkinicon64pxPng, nil
 }
 
+// EntityIcon returns the icon for several entity categories.
+func (s *EveImageService) EntityIcon(id int32, category string, size int) (fyne.Resource, error) {
+	res, err := func() (fyne.Resource, error) {
+		switch category {
+		case "character":
+			return s.CharacterPortrait(id, size)
+		case "alliance":
+			return s.AllianceLogo(id, size)
+		case "corporation":
+			return s.CorporationLogo(id, size)
+		case "faction":
+			return s.FactionLogo(id, size)
+		case "inventory_type":
+			return s.InventoryTypeIcon(id, size)
+		default:
+			return nil, fmt.Errorf("unsuported category: %s", category)
+		}
+	}()
+	if err != nil {
+		return nil, fmt.Errorf("entity icon {id %d, category %s, size %d}: %w", id, category, size, err)
+	}
+	return res, nil
+}
+
 // image returns an Eve image as fyne resource.
 // It returns it from cache or - if not found - will try to fetch it from the Internet.
 func (m *EveImageService) image(url string, timeout time.Duration) (fyne.Resource, error) {
@@ -174,7 +199,7 @@ func (m *EveImageService) image(url string, timeout time.Duration) (fyne.Resourc
 	dat, found = m.cache.Get(key)
 	if !found {
 		if m.isOffline {
-			return resourceBrokenimageSvg, nil
+			return resourceQuestionmark32Png, nil
 		}
 		x, err, _ := m.sfg.Do(key, func() (any, error) {
 			byt, err := loadDataFromURL(url, m.httpClient)

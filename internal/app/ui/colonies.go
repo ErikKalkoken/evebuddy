@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/dustin/go-humanize"
 )
 
 type colonyRow struct {
@@ -19,6 +18,7 @@ type colonyRow struct {
 	due                string
 	dueImportance      widget.Importance
 	extracting         string
+	isExpired          bool
 	planet             string
 	planetType         string
 	producing          string
@@ -27,34 +27,24 @@ type colonyRow struct {
 	securityImportance widget.Importance
 }
 
-// coloniesArea is the UI area that shows the skillqueue
-type coloniesArea struct {
-	content *fyne.Container
-	rows    []colonyRow
-	table   *widget.Table
-	top     *widget.Label
-	u       *UI
+// ColoniesArea is the UI area that shows the skillqueue
+type ColoniesArea struct {
+	Content   fyne.CanvasObject
+	OnRefresh func(top string)
+
+	body fyne.CanvasObject
+	rows []colonyRow
+	top  *widget.Label
+	u    *BaseUI
 }
 
-func (u *UI) newColoniesArea() *coloniesArea {
-	a := coloniesArea{
-		top:  widget.NewLabel(""),
+func (u *BaseUI) NewColoniesArea() *ColoniesArea {
+	a := ColoniesArea{
 		rows: make([]colonyRow, 0),
+		top:  makeTopLabel(),
 		u:    u,
 	}
-	a.top.TextStyle.Bold = true
-
-	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.table = a.makeTable()
-	a.content = container.NewBorder(top, nil, nil, nil, a.table)
-	return &a
-}
-
-func (a *coloniesArea) makeTable() *widget.Table {
-	var headers = []struct {
-		text  string
-		width float32
-	}{
+	headers := []headerDef{
 		{"Planet", 150},
 		{"Sec.", 50},
 		{"Type", 100},
@@ -64,67 +54,44 @@ func (a *coloniesArea) makeTable() *widget.Table {
 		{"Region", 150},
 		{"Character", 150},
 	}
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(a.rows), len(headers)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Template")
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			l := co.(*widget.Label)
-			l.Importance = widget.MediumImportance
-			l.Alignment = fyne.TextAlignLeading
-			l.Truncation = fyne.TextTruncateOff
-			if tci.Row >= len(a.rows) || tci.Row < 0 {
-				return
-			}
-			w := a.rows[tci.Row]
-			switch tci.Col {
-			case 0:
-				l.Text = w.planet
-			case 1:
-				l.Text = w.security
-				l.Importance = w.securityImportance
-				l.Alignment = fyne.TextAlignTrailing
-			case 2:
-				l.Text = w.planetType
-			case 3:
-				l.Text = w.extracting
-				l.Truncation = fyne.TextTruncateEllipsis
-			case 4:
-				l.Text = w.due
-				l.Importance = w.dueImportance
-			case 5:
-				l.Text = w.producing
-				l.Truncation = fyne.TextTruncateEllipsis
-			case 6:
-				l.Text = w.region
-			case 7:
-				l.Text = w.character
-				l.Truncation = fyne.TextTruncateEllipsis
-			}
-			l.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
+	makeDataLabel := func(col int, w colonyRow) (string, fyne.TextAlign, widget.Importance) {
+		var align fyne.TextAlign
+		var importance widget.Importance
+		var text string
+		switch col {
+		case 0:
+			text = w.planet
+		case 1:
+			text = w.security
+			importance = w.securityImportance
+			align = fyne.TextAlignTrailing
+		case 2:
+			text = w.planetType
+		case 3:
+			text = w.extracting
+		case 4:
+			text = w.due
+			importance = w.dueImportance
+		case 5:
+			text = w.producing
+		case 6:
+			text = w.region
+		case 7:
+			text = w.character
+		}
+		return text, align, importance
 	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
-		co.(*widget.Label).SetText(s.text)
+	if a.u.IsDesktop() {
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
+	} else {
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
 	}
-	for i, h := range headers {
-		t.SetColumnWidth(i, h.width)
-	}
-	t.OnSelected = func(id widget.TableCellID) {
-		t.UnselectAll()
-	}
-	return t
+	top := container.NewVBox(a.top, widget.NewSeparator())
+	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
+	return &a
 }
 
-func (a *coloniesArea) refresh() {
+func (a *ColoniesArea) Refresh() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -137,16 +104,27 @@ func (a *coloniesArea) refresh() {
 	a.top.Text = t
 	a.top.Importance = i
 	a.top.Refresh()
-	a.table.Refresh()
+	a.body.Refresh()
+	if a.OnRefresh != nil {
+		a.OnRefresh(t)
+	}
 }
 
-func (a *coloniesArea) makeTopText() (string, widget.Importance) {
-	t := humanize.Comma(int64(len(a.rows)))
-	s := fmt.Sprintf("Colonies: %s", t)
+func (a *ColoniesArea) makeTopText() (string, widget.Importance) {
+	var expiredCount int
+	for _, c := range a.rows {
+		if c.isExpired {
+			expiredCount++
+		}
+	}
+	s := fmt.Sprintf("%d colonies", len(a.rows))
+	if expiredCount > 0 {
+		s += fmt.Sprintf(" • %d expired", expiredCount)
+	}
 	return s, widget.MediumImportance
 }
 
-func (a *coloniesArea) updateEntries() error {
+func (a *ColoniesArea) updateEntries() error {
 	pp, err := a.u.CharacterService.ListAllCharacterPlanets(context.TODO())
 	if err != nil {
 		return err
@@ -177,6 +155,7 @@ func (a *coloniesArea) updateEntries() error {
 		} else if due.Before(time.Now()) {
 			r.due = "OFFLINE"
 			r.dueImportance = widget.WarningImportance
+			r.isExpired = true
 		} else {
 			r.due = due.Format(app.TimeDefaultFormat)
 		}

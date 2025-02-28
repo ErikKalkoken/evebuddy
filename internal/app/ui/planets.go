@@ -14,45 +14,46 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 )
 
-// planetArea is the UI area that shows the skillqueue
-type planetArea struct {
-	content *fyne.Container
+// PlanetArea is the UI area that shows the skillqueue
+type PlanetArea struct {
+	Content *fyne.Container
+
+	OnRefresh func(total, expired int)
+
 	planets []*app.CharacterPlanet
 	list    *widget.List
 	top     *widget.Label
-	u       *UI
+	u       *BaseUI
 }
 
-func (u *UI) newPlanetArea() *planetArea {
-	a := planetArea{
+func (u *BaseUI) NewPlanetArea() *PlanetArea {
+	a := PlanetArea{
 		planets: make([]*app.CharacterPlanet, 0),
-		top:     widget.NewLabel(""),
+		top:     makeTopLabel(),
 		u:       u,
 	}
-
-	a.top.TextStyle.Bold = true
 	a.list = a.makeList()
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.content = container.NewBorder(top, nil, nil, nil, a.list)
+	a.Content = container.NewBorder(top, nil, nil, nil, a.list)
 	return &a
 }
 
-func (a *planetArea) makeList() *widget.List {
+func (a *PlanetArea) makeList() *widget.List {
 	t := widget.NewList(
 		func() int {
 			return len(a.planets)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewPlanet()
+			return appwidget.NewPlanet()
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.planets) || id < 0 {
 				return
 			}
-			o := co.(*widgets.Planet)
+			o := co.(*appwidget.Planet)
 			p := a.planets[id]
 			o.Set(p)
 		},
@@ -63,7 +64,7 @@ func (a *planetArea) makeList() *widget.List {
 	return t
 }
 
-func (a *planetArea) refresh() {
+func (a *PlanetArea) Refresh() {
 	var t string
 	var i widget.Importance
 	if err := a.updateEntries(); err != nil {
@@ -77,14 +78,22 @@ func (a *planetArea) refresh() {
 	a.top.Importance = i
 	a.top.Refresh()
 	a.list.Refresh()
-	a.updateTab()
+	if a.OnRefresh != nil {
+		var expiredCount int
+		for _, p := range a.planets {
+			if t := p.ExtractionsExpiryTime(); !t.IsZero() && t.Before(time.Now()) {
+				expiredCount++
+			}
+		}
+		a.OnRefresh(len(a.planets), expiredCount)
+	}
 }
 
-func (a *planetArea) makeTopText() (string, widget.Importance) {
-	if !a.u.hasCharacter() {
+func (a *PlanetArea) makeTopText() (string, widget.Importance) {
+	if !a.u.HasCharacter() {
 		return "No character", widget.LowImportance
 	}
-	c := a.u.currentCharacter()
+	c := a.u.CurrentCharacter()
 	hasData := a.u.StatusCacheService.CharacterSectionExists(c.ID, app.SectionPlanets)
 	if !hasData {
 		return "Waiting for character data to be loaded...", widget.WarningImportance
@@ -103,31 +112,16 @@ func (a *planetArea) makeTopText() (string, widget.Importance) {
 	return t, widget.MediumImportance
 }
 
-func (a *planetArea) updateEntries() error {
-	if !a.u.hasCharacter() {
+func (a *PlanetArea) updateEntries() error {
+	if !a.u.HasCharacter() {
 		a.planets = make([]*app.CharacterPlanet, 0)
 		return nil
 	}
-	characterID := a.u.characterID()
+	characterID := a.u.CharacterID()
 	var err error
 	a.planets, err = a.u.CharacterService.ListCharacterPlanets(context.TODO(), characterID)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (a *planetArea) updateTab() {
-	var expiredCount int
-	for _, p := range a.planets {
-		if t := p.ExtractionsExpiryTime(); !t.IsZero() && t.Before(time.Now()) {
-			expiredCount++
-		}
-	}
-	s := "Colonies"
-	if expiredCount > 0 {
-		s += fmt.Sprintf(" (%d)", expiredCount)
-	}
-	a.u.planetTab.Text = s
-	a.u.tabs.Refresh()
 }

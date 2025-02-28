@@ -14,67 +14,71 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
-	"github.com/ErikKalkoken/evebuddy/internal/app/widgets"
-	"github.com/dustin/go-humanize"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-type notificationCategory struct {
-	category evenotification.Category
-	name     string
-	unread   int
+type NotificationGroup struct {
+	Group       evenotification.Group
+	Name        string
+	UnreadCount int
 }
 
-// notificationsArea is the UI area that shows the skillqueue
-type notificationsArea struct {
-	content *container.Split
-	u       *UI
+// NotificationsArea is the UI area that shows the skillqueue
+type NotificationsArea struct {
+	Content       fyne.CanvasObject
+	Detail        *fyne.Container
+	Notifications fyne.CanvasObject
+	Toolbar       *widget.Toolbar
+	OnSelected    func()
+	OnRefresh     func(count int)
 
-	categories   []notificationCategory
-	categoryList *widget.List
-	top          *widget.Label
-
-	notifications    []*app.CharacterNotification
+	Groups           []NotificationGroup
+	groupList        *widget.List
+	current          *app.CharacterNotification
 	notificationList *widget.List
+	notifications    []*app.CharacterNotification
 	notificationsTop *widget.Label
-
-	current *app.CharacterNotification
-	detail  *fyne.Container
-	toolbar *widget.Toolbar
+	groupsTop        *widget.Label
+	u                *BaseUI
 }
 
-func (u *UI) newNotificationsArea() *notificationsArea {
-	a := notificationsArea{
-		categories:       make([]notificationCategory, 0),
+func (u *BaseUI) NewNotificationsArea() *NotificationsArea {
+	a := NotificationsArea{
+		Groups:           make([]NotificationGroup, 0),
 		notifications:    make([]*app.CharacterNotification, 0),
 		notificationsTop: widget.NewLabel(""),
-		top:              widget.NewLabel(""),
+		groupsTop:        widget.NewLabel(""),
 		u:                u,
 	}
-	a.toolbar = a.makeToolbar()
-	a.toolbar.Hide()
-	a.detail = container.NewVBox()
+	a.Toolbar = a.makeToolbar()
+	a.Toolbar.Hide()
+	a.Detail = container.NewVBox()
 	a.notificationList = a.makeNotificationList()
+	a.Notifications = container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList)
 	split1 := container.NewHSplit(
-		container.NewBorder(a.notificationsTop, nil, nil, nil, a.notificationList),
-		container.NewBorder(a.toolbar, nil, nil, nil, a.detail),
+		a.Notifications,
+		container.NewBorder(a.Toolbar, nil, nil, nil, a.Detail),
 	)
 	split1.Offset = 0.35
-	a.categoryList = a.makeCategoryList()
-	a.content = container.NewHSplit(
-		container.NewBorder(a.top, nil, nil, nil, a.categoryList),
+	a.groupList = a.makeGroupList()
+	split2 := container.NewHSplit(
+		container.NewBorder(a.groupsTop, nil, nil, nil, a.groupList),
 		split1,
 	)
-	a.content.Offset = 0.15
+	split2.Offset = 0.15
+	a.Content = split2
 	return &a
 }
 
-func (a *notificationsArea) makeCategoryList() *widget.List {
+func (a *NotificationsArea) makeGroupList() *widget.List {
 	l := widget.NewList(
 		func() int {
-			return len(a.categories)
+			return len(a.Groups)
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(
@@ -82,17 +86,17 @@ func (a *notificationsArea) makeCategoryList() *widget.List {
 			)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(a.categories) {
+			if id >= len(a.Groups) {
 				return
 			}
-			c := a.categories[id]
+			c := a.Groups[id]
 			hbox := co.(*fyne.Container).Objects
 			label := hbox[0].(*widget.Label)
 			badge := hbox[2].(*kwidget.Badge)
-			text := c.name
-			if c.unread > 0 {
+			text := c.Name
+			if c.UnreadCount > 0 {
 				label.TextStyle.Bold = true
-				badge.SetText(strconv.Itoa(c.unread))
+				badge.SetText(strconv.Itoa(c.UnreadCount))
 				badge.Show()
 			} else {
 				label.TextStyle.Bold = false
@@ -103,117 +107,125 @@ func (a *notificationsArea) makeCategoryList() *widget.List {
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.notificationList.UnselectAll()
-		if id >= len(a.categories) {
+		if id >= len(a.Groups) {
 			l.UnselectAll()
 			return
 		}
-		o := a.categories[id]
+		o := a.Groups[id]
 		a.clearDetail()
-		if err := a.setNotifications(o.category); err != nil {
-			slog.Error("Failed to load notifications", "err", err)
-			l.UnselectAll()
-		}
+		a.SetGroup(o.Group)
 	}
 	return l
 }
 
-func (a *notificationsArea) makeNotificationList() *widget.List {
+func (a *NotificationsArea) makeNotificationList() *widget.List {
 	l := widget.NewList(
 		func() int {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return widgets.NewMailHeaderItem(app.TimeDefaultFormat)
+			return appwidget.NewMailHeaderItem(a.u.EveImageService, app.TimeDefaultFormat)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
 				return
 			}
 			n := a.notifications[id]
-			item := co.(*widgets.MailHeaderItem)
-			item.Set(n.Sender.Name, n.TitleDisplay(), n.Timestamp, n.IsRead)
+			item := co.(*appwidget.MailHeaderItem)
+			item.Set(n.Sender, n.TitleDisplay(), n.Timestamp, n.IsRead)
 		})
 	l.OnSelected = func(id widget.ListItemID) {
 		a.clearDetail()
 		if id >= len(a.notifications) {
-			defer l.UnselectAll()
+			l.UnselectAll()
 			return
 		}
 		a.setDetail(a.notifications[id])
+		if a.OnSelected != nil {
+			a.OnSelected()
+			l.UnselectAll()
+		}
 	}
 	return l
 }
 
-func (a *notificationsArea) makeToolbar() *widget.Toolbar {
+func (a *NotificationsArea) makeToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
 			if a.current == nil {
 				return
 			}
-			a.u.window.Clipboard().SetContent(a.current.String())
+			a.u.Window.Clipboard().SetContent(a.current.String())
 		}),
 	)
 	return toolbar
 }
 
-func (a *notificationsArea) refresh() {
+func (a *NotificationsArea) Refresh() {
 	a.clearDetail()
 	a.notifications = make([]*app.CharacterNotification, 0)
 	a.notificationList.Refresh()
 	a.notificationList.UnselectAll()
 	a.notificationsTop.SetText("")
-	var counts map[evenotification.Category]int
-	if characterID := a.u.characterID(); characterID != 0 {
+	var counts map[evenotification.Group]int
+	if characterID := a.u.CharacterID(); characterID != 0 {
 		var err error
 		counts, err = a.u.CharacterService.CountCharacterNotificationUnreads(context.TODO(), characterID)
 		if err != nil {
 			slog.Error("Failed to fetch notification unread counts", "error", err)
 		}
 	}
-	categories := make([]notificationCategory, 0)
+	groups := make([]NotificationGroup, 0)
 	var unreadTotal int
-	for _, c := range evenotification.Categories() {
-		nc := notificationCategory{
-			category: c,
-			name:     c.String(),
-			unread:   counts[c],
+	for _, c := range evenotification.Groups() {
+		nc := NotificationGroup{
+			Group:       c,
+			Name:        c.String(),
+			UnreadCount: counts[c],
 		}
-		categories = append(categories, nc)
+		groups = append(groups, nc)
 		unreadTotal += counts[c]
 	}
-	slices.SortFunc(categories, func(a, b notificationCategory) int {
-		return cmp.Compare(a.name, b.name)
+	slices.SortFunc(groups, func(a, b NotificationGroup) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
-	c1 := notificationCategory{
-		category: evenotification.Unread,
-		name:     "Unread",
-		unread:   unreadTotal,
+	f1 := NotificationGroup{
+		Group:       evenotification.Unread,
+		Name:        "Unread",
+		UnreadCount: unreadTotal,
 	}
-	categories = slices.Insert(categories, 0, c1)
-	c2 := notificationCategory{
-		category: evenotification.All,
-		name:     "All",
-		unread:   unreadTotal,
+	groups = slices.Insert(groups, 0, f1)
+	f2 := NotificationGroup{
+		Group:       evenotification.All,
+		Name:        "All",
+		UnreadCount: unreadTotal,
 	}
-	categories = append(categories, c2)
-	a.categories = categories
-	a.categoryList.Refresh()
-	a.categoryList.UnselectAll()
-	a.top.Text, a.top.Importance = a.makeTopText()
-	a.top.Refresh()
+	groups = append(groups, f2)
+	a.Groups = groups
+	a.groupList.Refresh()
+	a.groupList.UnselectAll()
+	a.groupsTop.Text, a.groupsTop.Importance = a.makeGroupTopText()
+	a.groupsTop.Refresh()
+	if a.OnRefresh != nil {
+		a.OnRefresh(unreadTotal)
+	}
 }
 
-func (a *notificationsArea) makeTopText() (string, widget.Importance) {
-	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.characterID(), app.SectionImplants)
+func (a *NotificationsArea) makeGroupTopText() (string, widget.Importance) {
+	hasData := a.u.StatusCacheService.CharacterSectionExists(a.u.CharacterID(), app.SectionImplants)
 	if !hasData {
 		return "Waiting for data to load...", widget.WarningImportance
 	}
-	return fmt.Sprintf("%d categories", len(a.categories)), widget.MediumImportance
+	return fmt.Sprintf("%d groups", len(a.Groups)), widget.MediumImportance
 }
 
-func (a *notificationsArea) setNotifications(nc evenotification.Category) error {
-	ctx := context.TODO()
-	characterID := a.u.characterID()
+func (a *NotificationsArea) ResetGroups() {
+	a.SetGroup(evenotification.Unread)
+}
+
+func (a *NotificationsArea) SetGroup(nc evenotification.Group) {
+	ctx := context.Background()
+	characterID := a.u.CharacterID()
 	var notifications []*app.CharacterNotification
 	var err error
 	switch nc {
@@ -222,39 +234,46 @@ func (a *notificationsArea) setNotifications(nc evenotification.Category) error 
 	case evenotification.Unread:
 		notifications, err = a.u.CharacterService.ListCharacterNotificationsUnread(ctx, characterID)
 	default:
-		types := evenotification.CategoryTypes[nc]
+		types := evenotification.GroupTypes[nc]
 		notifications, err = a.u.CharacterService.ListCharacterNotificationsTypes(ctx, characterID, types)
 	}
-	if err != nil {
-		return err
-	}
 	a.notifications = notifications
-	a.notificationList.Refresh()
-	a.notificationsTop.SetText(fmt.Sprintf("%s notifications", humanize.Comma(int64(len(notifications)))))
-	return nil
+	var top string
+	var importance widget.Importance
+	if err != nil {
+		slog.Error("set notifications", "characterID", characterID, "error", err)
+		top = "Something went wrong"
+		importance = widget.DangerImportance
+	} else {
+		top = fmt.Sprintf("%s • %s notifications", nc.String(), humanize.Comma(int64(len(notifications))))
+	}
+	a.notificationsTop.Text = top
+	a.notificationsTop.Importance = importance
+	a.notificationsTop.Refresh()
+	a.Notifications.Refresh()
 }
 
-func (a *notificationsArea) clearDetail() {
-	a.detail.RemoveAll()
-	a.toolbar.Hide()
+func (a *NotificationsArea) clearDetail() {
+	a.Detail.RemoveAll()
+	a.Toolbar.Hide()
 	a.current = nil
 }
 
-func (a *notificationsArea) setDetail(n *app.CharacterNotification) {
-	if n.RecipientName == "" && a.u.hasCharacter() {
-		n.RecipientName = a.u.currentCharacter().EveCharacter.Name
+func (a *NotificationsArea) setDetail(n *app.CharacterNotification) {
+	if n.RecipientName == "" && a.u.HasCharacter() {
+		n.RecipientName = a.u.CurrentCharacter().EveCharacter.Name
 	}
-	a.detail.RemoveAll()
-	subject := widget.NewLabel(n.TitleDisplay())
-	subject.TextStyle.Bold = true
-	a.detail.Add(subject)
-	a.detail.Add(widget.NewLabel(n.Header()))
-	body := widget.NewRichTextFromMarkdown(n.Body.ValueOrZero())
+	a.Detail.RemoveAll()
+	subject := iwidget.NewLabelWithSize(n.TitleDisplay(), theme.SizeNameSubHeadingText)
+	subject.Wrapping = fyne.TextWrapWord
+	a.Detail.Add(subject)
+	a.Detail.Add(widget.NewLabel(n.Header()))
+	body := widget.NewRichTextFromMarkdown(markdownStripLinks(n.Body.ValueOrZero()))
 	body.Wrapping = fyne.TextWrapWord
 	if n.Body.IsEmpty() {
 		body.ParseMarkdown("*This notification type is not fully supported yet*")
 	}
-	a.detail.Add(body)
+	a.Detail.Add(body)
 	a.current = n
-	a.toolbar.Show()
+	a.Toolbar.Show()
 }

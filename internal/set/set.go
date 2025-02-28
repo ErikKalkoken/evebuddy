@@ -24,7 +24,7 @@ func New[T comparable](vals ...T) Set[T] {
 
 // NewFromSlice returns a new set from the elements of a slice.
 func NewFromSlice[T comparable](slice []T) Set[T] {
-	return New[T](slice...)
+	return New(slice...)
 }
 
 // Add adds an element to the set

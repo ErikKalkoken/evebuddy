@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -26,125 +25,85 @@ type locationCharacter struct {
 	securityImportance widget.Importance
 }
 
-// locationsArea is the UI area that shows an overview of all the user's characters.
-type locationsArea struct {
-	characters []locationCharacter
-	content    *fyne.Container
-	table      *widget.Table
-	top        *widget.Label
-	u          *UI
+func (c locationCharacter) systemSecurityDisplay() string {
+	if c.systemSecurity.IsEmpty() {
+		return "?"
+	}
+	return fmt.Sprintf("%.1f", c.systemSecurity.ValueOrZero())
 }
 
-func (u *UI) newLocationsArea() *locationsArea {
-	a := locationsArea{
-		characters: make([]locationCharacter, 0),
-		top:        widget.NewLabel(""),
-		u:          u,
+// LocationsArea is the UI area that shows an overview of all the user's characters.
+//
+// It generates output which is customized for either desktop or mobile.
+type LocationsArea struct {
+	Content fyne.CanvasObject
+
+	rows []locationCharacter
+	body fyne.CanvasObject
+	top  *widget.Label
+	u    *BaseUI
+}
+
+func (u *BaseUI) NewLocationsArea() *LocationsArea {
+	a := LocationsArea{
+		rows: make([]locationCharacter, 0),
+		top:  widget.NewLabel(""),
+		u:    u,
 	}
 	a.top.TextStyle.Bold = true
 
 	top := container.NewVBox(a.top, widget.NewSeparator())
-	a.table = a.makeTable()
-	a.content = container.NewBorder(top, nil, nil, nil, a.table)
+
+	headers := []headerDef{
+		{"Name", 200},
+		{"Location", 250},
+		{"System", 150},
+		{"Sec.", 50},
+		{"Region", 150},
+		{"Ship", 150},
+	}
+
+	makeDataLabel := func(col int, r locationCharacter) (string, fyne.TextAlign, widget.Importance) {
+		var align fyne.TextAlign
+		var importance widget.Importance
+		var text string
+		switch col {
+		case 0:
+			text = r.name
+		case 1:
+			text = EntityNameOrFallback(r.location, "?")
+		case 2:
+			text = EntityNameOrFallback(r.solarSystem, "?")
+		case 3:
+			text = r.systemSecurityDisplay()
+			importance = r.securityImportance
+			align = fyne.TextAlignTrailing
+		case 4:
+			text = EntityNameOrFallback(r.region, "?")
+		case 5:
+			text = EntityNameOrFallback(r.ship, "?")
+		}
+		return text, align, importance
+	}
+	if a.u.IsDesktop() {
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
+	} else {
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
+	}
+	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
 	return &a
 }
 
-func (a *locationsArea) makeTable() *widget.Table {
-	var headers = []struct {
-		text     string
-		maxChars int
-	}{
-		{"Name", 20},
-		{"Location", 35},
-		{"System", 15},
-		{"Sec.", 5},
-		{"Region", 15},
-		{"Ship", 15},
-	}
-
-	t := widget.NewTable(
-		func() (rows int, cols int) {
-			return len(a.characters), len(headers)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Template")
-		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			l := co.(*widget.Label)
-			if tci.Row >= len(a.characters) || tci.Row < 0 {
-				return
-			}
-			c := a.characters[tci.Row]
-			l.Alignment = fyne.TextAlignLeading
-			l.Importance = widget.MediumImportance
-			l.Truncation = fyne.TextTruncateClip
-			switch tci.Col {
-			case 0:
-				l.Text = c.name
-				l.Truncation = fyne.TextTruncateEllipsis
-			case 1:
-				l.Text = entityNameOrFallback(c.location, "?")
-				l.Truncation = fyne.TextTruncateEllipsis
-			case 2:
-				if c.solarSystem == nil || c.systemSecurity.IsEmpty() {
-					l.Text = "?"
-				} else {
-					l.Text = c.solarSystem.Name
-				}
-			case 3:
-				if c.systemSecurity.IsEmpty() {
-					l.Text = "?"
-					l.Importance = widget.LowImportance
-				} else {
-					if c.systemSecurity.IsEmpty() {
-						l.Text = "?"
-					} else {
-						l.Text = fmt.Sprintf("%.1f", c.systemSecurity.ValueOrZero())
-					}
-					l.Importance = c.securityImportance
-				}
-				l.Alignment = fyne.TextAlignTrailing
-			case 4:
-				l.Text = entityNameOrFallback(c.region, "?")
-			case 5:
-				l.Text = entityNameOrFallback(c.ship, "?")
-				l.Truncation = fyne.TextTruncateEllipsis
-			}
-			l.Refresh()
-		},
-	)
-	t.ShowHeaderRow = true
-	t.StickyColumnCount = 1
-	t.CreateHeader = func() fyne.CanvasObject {
-		return widget.NewLabel("Template")
-	}
-	t.UpdateHeader = func(tci widget.TableCellID, co fyne.CanvasObject) {
-		s := headers[tci.Col]
-		label := co.(*widget.Label)
-		label.SetText(s.text)
-	}
-	t.OnSelected = func(tci widget.TableCellID) {
-		defer t.UnselectAll()
-	}
-
-	for i, h := range headers {
-		x := widget.NewLabel(strings.Repeat("w", h.maxChars))
-		w := x.MinSize().Width
-		t.SetColumnWidth(i, w)
-	}
-	return t
-}
-
-func (a *locationsArea) refresh() {
+func (a *LocationsArea) Refresh() {
 	t, i, err := func() (string, widget.Importance, error) {
 		locations, err := a.updateCharacters()
 		if err != nil {
 			return "", 0, err
 		}
-		if len(a.characters) == 0 {
+		if len(a.rows) == 0 {
 			return "No characters", widget.LowImportance, nil
 		}
-		s := fmt.Sprintf("%d characters • %d locations", len(a.characters), locations)
+		s := fmt.Sprintf("%d characters • %d locations", len(a.rows), locations)
 		return s, widget.MediumImportance, nil
 	}()
 	if err != nil {
@@ -154,10 +113,10 @@ func (a *locationsArea) refresh() {
 	}
 	a.top.Text = t
 	a.top.Importance = i
-	a.table.Refresh()
+	a.body.Refresh()
 }
 
-func (a *locationsArea) updateCharacters() (int, error) {
+func (a *LocationsArea) updateCharacters() (int, error) {
 	var err error
 	ctx := context.TODO()
 	mycc, err := a.u.CharacterService.ListCharacters(ctx)
@@ -198,6 +157,6 @@ func (a *locationsArea) updateCharacters() (int, error) {
 		}
 		cc[i] = c
 	}
-	a.characters = cc
+	a.rows = cc
 	return locationIDs.Size(), nil
 }
