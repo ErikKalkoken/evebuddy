@@ -108,9 +108,9 @@ EVE Buddy can send notifications on your local device to notify about new commun
 
 EVE Buddy also works on Android and has a mobile friendly navigation:
 
-#### Character navigation
-
-#### Mail browser
+Character navigation | Mail browser | Asset browser
+-- | -- | --
+![Screenshot_20250301-001409](https://github.com/user-attachments/assets/05b4d70c-65b5-49c6-95ab-d2a6dff846af)|![Screenshot_20250301-002237](https://github.com/user-attachments/assets/d8eec777-2690-49e6-8def-c38ee91ca81e)|![Screenshot_20250301-002825](https://github.com/user-attachments/assets/415956cd-c1d1-471d-afa5-51ff8034dbce)
 
 ## Installing
 
