@@ -35,6 +35,7 @@ type AccountArea struct {
 	OnSelectCharacter func()
 	OnRefresh         func(characterCount int)
 
+	snackbar   *iwidget.Snackbar
 	characters []accountCharacter
 	list       *widget.List
 	title      *widget.Label
@@ -45,6 +46,7 @@ type AccountArea struct {
 func (u *BaseUI) NewAccountArea() *AccountArea {
 	a := &AccountArea{
 		characters: make([]accountCharacter, 0),
+		snackbar:   u.Snackbar,
 		title:      makeTopLabel(),
 		window:     u.Window,
 		u:          u,
@@ -83,6 +85,8 @@ func (u *BaseUI) NewAccountArea() *AccountArea {
 
 func (a *AccountArea) SetWindow(w fyne.Window) {
 	a.window = w
+	a.snackbar = iwidget.NewSnackbar(w)
+	a.snackbar.Start()
 }
 
 func (a *AccountArea) makeCharacterList() *widget.List {
@@ -169,7 +173,7 @@ func (a *AccountArea) showDeleteDialog(c accountCharacter) {
 					a.window,
 				)
 				m.OnSuccess = func() {
-					iwidget.ShowSnackbar(fmt.Sprintf("Character %s deleted", c.name), a.window)
+					a.snackbar.Show(fmt.Sprintf("Character %s deleted", c.name))
 					if a.u.CharacterID() == c.id {
 						a.u.SetAnyCharacter()
 					}
@@ -178,7 +182,7 @@ func (a *AccountArea) showDeleteDialog(c accountCharacter) {
 				}
 				m.OnError = func(err error) {
 					slog.Error("Failed to delete character", "characterID", c.id)
-					iwidget.ShowSnackbar(fmt.Sprintf("ERROR: Failed to delete character %s", c.name), a.window)
+					a.snackbar.Show(fmt.Sprintf("ERROR: Failed to delete character %s", c.name))
 				}
 				m.Start()
 			}

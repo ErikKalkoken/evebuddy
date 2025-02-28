@@ -18,7 +18,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
-	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 // The DesktopUI is the root object of the DesktopUI and contains all DesktopUI areas.
@@ -90,8 +89,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 			Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl + fyne.KeyModifierShift,
 		}
 		u.Window.Canvas().AddShortcut(sc, func(shortcut fyne.Shortcut) {
-			sb := iwidget.NewSnackbar("This is a test snack bar!", u.Window)
-			sb.Show()
+			u.Snackbar.Show(fmt.Sprintf("This is a test snack bar at %s", time.Now().Format("15:04:05.999999999")))
 		})
 	}
 	u.OnAppTerminated = func() {

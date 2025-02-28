@@ -77,6 +77,8 @@ type BaseUI struct {
 	DeskApp desktop.App
 	Window  fyne.Window
 
+	Snackbar *iwidget.Snackbar
+
 	AccountArea           *AccountArea
 	AssetsArea            *AssetsArea
 	AssetSearchArea       *AssetSearchArea
@@ -126,6 +128,8 @@ func NewBaseUI(fyneApp fyne.App) *BaseUI {
 	if ok {
 		u.DeskApp = desk
 	}
+
+	u.Snackbar = iwidget.NewSnackbar(u.Window)
 
 	u.AccountArea = u.NewAccountArea()
 	u.AssetsArea = u.NewAssetsArea()
@@ -217,6 +221,7 @@ func (u *BaseUI) ShowAndRun() {
 			slog.Info("App continued")
 			return
 		}
+		// First app start
 		slog.Info("App started")
 		if u.IsOffline {
 			slog.Info("Started in offline mode")
@@ -234,6 +239,7 @@ func (u *BaseUI) ShowAndRun() {
 			}
 			u.RefreshStatus()
 		}()
+		u.Snackbar.Start()
 		if !u.IsOffline && !u.IsUpdateTickerDisabled {
 			go func() {
 				u.startUpdateTickerGeneralSections()
@@ -528,7 +534,7 @@ func (u *BaseUI) MakeCharacterSwitchMenu(refresh func()) []*fyne.MenuItem {
 			err := u.LoadCharacter(c.ID)
 			if err != nil {
 				slog.Error("make character switch menu", "error", err)
-				iwidget.ShowSnackbar("ERROR: Failed to switch character", u.Window)
+				u.Snackbar.Show("ERROR: Failed to switch character")
 			}
 		})
 		if c.ID == characterID {

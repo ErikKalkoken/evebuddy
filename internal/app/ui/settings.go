@@ -128,12 +128,17 @@ type SettingsArea struct {
 	CommunicationGroupContent    fyne.CanvasObject
 	OnCommunicationGroupSelected func(title string, content fyne.CanvasObject, actions []SettingAction)
 
-	u      *BaseUI
-	window fyne.Window
+	snackbar *iwidget.Snackbar
+	u        *BaseUI
+	window   fyne.Window
 }
 
 func (u *BaseUI) NewSettingsArea() *SettingsArea {
-	a := &SettingsArea{u: u, window: u.Window}
+	a := &SettingsArea{
+		snackbar: u.Snackbar,
+		u:        u,
+		window:   u.Window,
+	}
 	a.GeneralContent, a.GeneralActions = a.makeGeneralSettingsPage()
 	a.NotificationSettings, a.NotificationActions = a.makeNotificationPage()
 
@@ -165,6 +170,8 @@ func (u *BaseUI) NewSettingsArea() *SettingsArea {
 
 func (a *SettingsArea) SetWindow(w fyne.Window) {
 	a.window = w
+	a.snackbar = iwidget.NewSnackbar(w)
+	a.snackbar.Start()
 }
 
 func (a *SettingsArea) currentWindow() fyne.Window {
@@ -289,25 +296,25 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 	exportAppLog := SettingAction{
 		Label: "Export application log",
 		Action: func() {
-			showExportFileDialog(a.u.DataPaths["log"], a.window)
+			a.showExportFileDialog(a.u.DataPaths["log"])
 		},
 	}
 	exportCrashLog := SettingAction{
 		Label: "Export crash log",
 		Action: func() {
-			showExportFileDialog(a.u.DataPaths["crashfile"], a.window)
+			a.showExportFileDialog(a.u.DataPaths["crashfile"])
 		},
 	}
 	deleteAppLog := SettingAction{
 		Label: "Delete application log",
 		Action: func() {
-			showDeleteFileDialog("application log", a.u.DataPaths["log"]+"*", a.window)
+			a.showDeleteFileDialog("application log", a.u.DataPaths["log"]+"*")
 		},
 	}
 	deleteCrashLog := SettingAction{
 		Label: "Delete creash log",
 		Action: func() {
-			showDeleteFileDialog("crash log", a.u.DataPaths["crashfile"], a.window)
+			a.showDeleteFileDialog("crash log", a.u.DataPaths["crashfile"])
 		},
 	}
 	actions := []SettingAction{reset, clear, exportAppLog, deleteAppLog, exportCrashLog, deleteCrashLog}
@@ -322,7 +329,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 	return list, actions
 }
 
-func showDeleteFileDialog(name, path string, w fyne.Window) {
+func (a *SettingsArea) showDeleteFileDialog(name, path string) {
 	d := dialog.NewConfirm("Delete "+name, "Are you sure?", func(confirmed bool) {
 		if !confirmed {
 			return
@@ -341,22 +348,22 @@ func showDeleteFileDialog(name, path string, w fyne.Window) {
 		}()
 		if err != nil {
 			slog.Error("delete "+name, "path", path, "error", err)
-			iwidget.ShowSnackbar("ERROR: Failed to delete "+name, w)
+			a.snackbar.Show("ERROR: Failed to delete " + name)
 		} else {
-			iwidget.ShowSnackbar(Titler.String(name)+" deleted", w)
+			a.snackbar.Show(Titler.String(name) + " deleted")
 		}
-	}, w)
+	}, a.window)
 	d.Show()
 }
 
-func showExportFileDialog(path string, w fyne.Window) {
+func (a *SettingsArea) showExportFileDialog(path string) {
 	filename := filepath.Base(path)
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		iwidget.ShowSnackbar("No file to export: "+filename, w)
+		a.snackbar.Show("No file to export: " + filename)
 		return
 	} else if err != nil {
-		ShowErrorDialog("Failed to open "+filename, err, w)
+		ShowErrorDialog("Failed to open "+filename, err, a.window)
 		return
 	}
 	d := dialog.NewFileSave(
@@ -372,13 +379,13 @@ func showExportFileDialog(path string, w fyne.Window) {
 				if _, err := writer.Write(data); err != nil {
 					return err
 				}
-				iwidget.ShowSnackbar("File "+filename+" exported", w)
+				a.snackbar.Show("File " + filename + " exported")
 				return nil
 			}()
 			if err2 != nil {
-				ShowErrorDialog("Failed to export "+filename, err, w)
+				ShowErrorDialog("Failed to export "+filename, err, a.window)
 			}
-		}, w,
+		}, a.window,
 	)
 	d.SetFileName(filename)
 	d.Show()

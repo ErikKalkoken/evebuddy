@@ -108,8 +108,7 @@ func (u *BaseUI) MakeSendMailPage(
 			showErrorDialog(err.Error())
 			return false
 		}
-		sb := iwidget.NewSnackbar("Your mail has been sent.", u.Window)
-		sb.Show()
+		u.Snackbar.Show("Your mail has been sent.")
 		return true
 	}
 	page := container.NewBorder(
