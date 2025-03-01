@@ -506,7 +506,6 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 			i := NewImageResourceAsync(icon.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 				return a.u.EveImageService.InventoryTypeRender(a.et.ID, size)
 			})
-			i.ScaleMode = canvas.ImageScaleSmooth
 			w.SetContent(i)
 			w.Show()
 		})

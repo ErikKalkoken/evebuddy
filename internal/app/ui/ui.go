@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -23,6 +24,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -128,6 +130,11 @@ func NewBaseUI(fyneApp fyne.App) *BaseUI {
 	desk, ok := u.FyneApp.(desktop.App)
 	if ok {
 		u.DeskApp = desk
+	}
+
+	if u.IsDesktop() {
+		iwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
+		appwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 	}
 
 	u.Snackbar = iwidget.NewSnackbar(u.Window)
