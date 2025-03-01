@@ -19,6 +19,9 @@ release:
 loc:
 	gocloc ./internal --by-file --include-lang=Go --not-match="\.sql\.go" --not-match-d="eveicon" --not-match="_test\.go"
 
-update-android:
+deploy-android:
 	fyne package -os android
+	adb install -r -d EVE_Buddy.apk
+
+install-android:
 	adb install -r -d EVE_Buddy.apk

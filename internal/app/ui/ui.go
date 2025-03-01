@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -23,6 +24,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -128,6 +130,11 @@ func NewBaseUI(fyneApp fyne.App) *BaseUI {
 	desk, ok := u.FyneApp.(desktop.App)
 	if ok {
 		u.DeskApp = desk
+	}
+
+	if u.IsDesktop() {
+		iwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
+		appwidget.DefaultImageScaleMode = canvas.ImageScaleFastest
 	}
 
 	u.Snackbar = iwidget.NewSnackbar(u.Window)
@@ -266,6 +273,8 @@ func (u *BaseUI) ShowAndRun() {
 	u.FyneApp.Lifecycle().SetOnEnteredForeground(func() {
 		slog.Info("Entered foreground")
 		u.isForeground.Store(true)
+		u.updateCharactersIfNeeded(context.Background())
+		u.UpdateGeneralSectionsAndRefreshIfNeeded(false)
 	})
 	u.FyneApp.Lifecycle().SetOnExitedForeground(func() {
 		u.isForeground.Store(false)
@@ -388,15 +397,17 @@ func (u *BaseUI) ResetCharacter() {
 	u.character = nil
 	u.FyneApp.Preferences().SetInt(settingLastCharacterID, 0)
 	u.RefreshCharacter()
+	u.RefreshStatus()
 }
 
 func (u *BaseUI) SetCharacter(c *app.Character) {
 	u.character = c
 	u.FyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
+	u.RefreshCharacter()
+	u.RefreshStatus()
 	if u.OnSetCharacter != nil {
 		u.OnSetCharacter(c.ID)
 	}
-	u.RefreshCharacter()
 }
 
 func (u *BaseUI) SetAnyCharacter() error {

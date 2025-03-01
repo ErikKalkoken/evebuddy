@@ -28,7 +28,7 @@ import (
 // Exported settings
 const (
 	SettingLogLevel              = "logLevel"
-	SettingLogLevelDefault       = "warning"
+	SettingLogLevelDefault       = "info"
 	SettingSysTrayEnabled        = "settingSysTrayEnabled"
 	SettingSysTrayEnabledDefault = false
 	SettingTabsMainID            = "tabs-main-id"

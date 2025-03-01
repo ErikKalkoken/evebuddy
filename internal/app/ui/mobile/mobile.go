@@ -451,6 +451,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		u.MailArea.ResetFolders()
 		u.NotificationsArea.ResetGroups()
 		characterNav.PopAll()
+		navBar.Select(0)
 	}
 
 	u.OnAppFirstStarted = func() {
