@@ -273,6 +273,8 @@ func (u *BaseUI) ShowAndRun() {
 	u.FyneApp.Lifecycle().SetOnEnteredForeground(func() {
 		slog.Info("Entered foreground")
 		u.isForeground.Store(true)
+		u.updateCharactersIfNeeded(context.Background())
+		u.UpdateGeneralSectionsAndRefreshIfNeeded(false)
 	})
 	u.FyneApp.Lifecycle().SetOnExitedForeground(func() {
 		u.isForeground.Store(false)

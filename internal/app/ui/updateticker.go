@@ -39,9 +39,10 @@ func (u *BaseUI) UpdateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
 		slog.Info("Skipping general sections update while in background")
 		return
 	}
+	ctx := context.Background()
 	for _, s := range app.GeneralSections {
 		go func(s app.GeneralSection) {
-			u.UpdateGeneralSectionAndRefreshIfNeeded(context.TODO(), s, forceUpdate)
+			u.UpdateGeneralSectionAndRefreshIfNeeded(ctx, s, forceUpdate)
 		}(s)
 	}
 }
@@ -70,19 +71,38 @@ func (u *BaseUI) startUpdateTickerCharacters() {
 	ctx := context.Background()
 	go func() {
 		for {
-			cc, err := u.CharacterService.ListCharactersShort(ctx)
-			if err != nil {
-				slog.Error("Failed to update characters and notfy", "error", err)
-				return
+			if err := u.updateCharactersIfNeeded(ctx); err != nil {
+				slog.Error("Failed to update characters", "error", err)
 			}
-			for _, c := range cc {
-				go u.UpdateCharacterAndRefreshIfNeeded(ctx, c.ID, false)
-				u.notifyExpiredExtractionsIfNeeded(ctx, c.ID)
-				u.notifyExpiredTrainingIfneeded(ctx, c.ID)
+			if err := u.notifyCharactersIfNeeded(ctx); err != nil {
+				slog.Error("Failed to notify characters", "error", err)
 			}
 			<-ticker.C
 		}
 	}()
+}
+
+func (u *BaseUI) updateCharactersIfNeeded(ctx context.Context) error {
+	cc, err := u.CharacterService.ListCharactersShort(ctx)
+	if err != nil {
+		return err
+	}
+	for _, c := range cc {
+		go u.UpdateCharacterAndRefreshIfNeeded(ctx, c.ID, false)
+	}
+	return nil
+}
+
+func (u *BaseUI) notifyCharactersIfNeeded(ctx context.Context) error {
+	cc, err := u.CharacterService.ListCharactersShort(ctx)
+	if err != nil {
+		return err
+	}
+	for _, c := range cc {
+		u.notifyExpiredExtractionsIfNeeded(ctx, c.ID)
+		u.notifyExpiredTrainingIfneeded(ctx, c.ID)
+	}
+	return nil
 }
 
 // UpdateCharacterAndRefreshIfNeeded runs update for all sections of a character if needed
