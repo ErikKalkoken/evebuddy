@@ -15,6 +15,7 @@ A companion app for Eve Online players available on Windows, Linux, macOS and An
 - [Installing](#installing)
 - [Updating](#updating)
 - [Uninstalling](#uninstalling)
+- [Troubleshooting](#troubleshooting)
 - [FAQ](#faq)
 - [Credits](#credits)
 
@@ -182,11 +183,15 @@ go run github.com/ErikKalkoken/evebuddy@latest
 
 ## Updating
 
-The app will inform you when there is a new version available for download. To update your app just download and unzip the newest version for your platform from the [releases page](https://github.com/ErikKalkoken/evebuddy/releases). Then overwrite the old executable file with the new one.
+The app will inform you when there is a new version available for download. To update your app just download and install the newest version for your platform from the [releases page](https://github.com/ErikKalkoken/evebuddy/releases).
 
 ## Uninstalling
 
 If you no longer want to use the app you can uninstall it.
+
+### Desktop
+
+The desktop versions has an special app for removing our data:
 
 First start the delete app for removing your user data:
 
@@ -201,6 +206,19 @@ Then delete the file itself:
 ```sh
 rm evebuddy
 ```
+
+### Mobile
+
+On mobile you can uninstall the app via the Android Settings and it will also remove all data.
+
+## Troubleshooting
+
+The app has an application log and a crash file that can help with trouble shooting. You can export both logs from the Settings menu in the General section.
+
+To view the logs on mobile you might want to install another app. While there are many decent apps for viewing log and text files on the Google Play store, we can recommend the following two apps:
+
+- For viewing log files: [LogLog](https://play.google.com/store/apps/details?id=io.github.mthli.loglog&hl=en)
+- For viewing txt files: [Text Viewer](https://play.google.com/store/apps/details?id=com.panagola.app.textviewer&hl=en)
 
 ## FAQ
 
