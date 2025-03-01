@@ -388,15 +388,17 @@ func (u *BaseUI) ResetCharacter() {
 	u.character = nil
 	u.FyneApp.Preferences().SetInt(settingLastCharacterID, 0)
 	u.RefreshCharacter()
+	u.RefreshStatus()
 }
 
 func (u *BaseUI) SetCharacter(c *app.Character) {
 	u.character = c
 	u.FyneApp.Preferences().SetInt(settingLastCharacterID, int(c.ID))
+	u.RefreshCharacter()
+	u.RefreshStatus()
 	if u.OnSetCharacter != nil {
 		u.OnSetCharacter(c.ID)
 	}
-	u.RefreshCharacter()
 }
 
 func (u *BaseUI) SetAnyCharacter() error {
