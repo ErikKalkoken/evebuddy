@@ -118,9 +118,10 @@ func (s *SSOService) Authenticate(ctx context.Context, scopes []string) (*Token,
 	router.HandleFunc(s.callbackPath, makeHandler(func(w http.ResponseWriter, req *http.Request) (int, error) {
 		slog.Info("Received SSO callback request")
 		v := req.URL.Query()
-		newState := v.Get("state")
-		if newState != serverCtx.Value(keyState).(string) {
-			return http.StatusUnauthorized, errors.New("invalid state")
+		stateGot := v.Get("state")
+		stateWant := serverCtx.Value(keyState).(string)
+		if stateGot != stateWant {
+			return http.StatusUnauthorized, fmt.Errorf("callback has invalid state. Want: %s - Got: %s", stateWant, stateGot)
 		}
 		code := v.Get("code")
 		codeVerifier := serverCtx.Value(keyCodeVerifier).(string)
