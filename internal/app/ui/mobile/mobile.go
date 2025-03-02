@@ -380,6 +380,13 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		},
 	)
 
+	navItemAbout := iwidget.NewListItemWithIcon(
+		"About",
+		theme.InfoIcon(),
+		func() {
+			moreNav.Push(iwidget.NewAppBar("About", u.MakeAboutPage()))
+		},
+	)
 	toolsList := iwidget.NewNavList(
 		iwidget.NewListItemWithIcon(
 			"Settings",
@@ -396,13 +403,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		),
 		navItemManageCharacters,
 		u.navItemUpdateStatus,
-		iwidget.NewListItemWithIcon(
-			"About",
-			theme.NewThemedResource(icon.InformationSvg),
-			func() {
-				moreNav.Push(iwidget.NewAppBar("About", u.MakeAboutPage()))
-			},
-		),
+		navItemAbout,
 	)
 	u.AccountArea.OnRefresh = func(characterCount int) {
 		navItemManageCharacters.Supporting = fmt.Sprintf("%d characters", characterCount)
@@ -455,13 +456,34 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	}
 
 	u.OnAppFirstStarted = func() {
-		ticker := time.NewTicker(2 * time.Second)
+		tickerUpdateStatus := time.NewTicker(5 * time.Second)
 		go func() {
 			for {
 				x := u.StatusCacheService.Summary()
 				u.navItemUpdateStatus.Supporting = x.Display()
 				toolsList.Refresh()
-				<-ticker.C
+				<-tickerUpdateStatus.C
+			}
+		}()
+		tickerNewVersion := time.NewTicker(3600 * time.Second)
+		go func() {
+			for {
+				v, err := u.AvailableUpdate()
+				if err != nil {
+					slog.Error("fetch github version for menu info", "error", err)
+				} else {
+					if v.IsRemoteNewer {
+						navBar.SetBadge(2, true)
+						navItemAbout.Supporting = "Update available"
+						navItemAbout.Trailing = theme.NewPrimaryThemedResource(icon.Numeric1CircleSvg)
+					} else {
+						navBar.SetBadge(2, false)
+						navItemAbout.Supporting = ""
+						navItemAbout.Trailing = nil
+					}
+				}
+				crossList.Refresh()
+				<-tickerNewVersion.C
 			}
 		}()
 	}

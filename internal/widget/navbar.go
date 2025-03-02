@@ -10,15 +10,12 @@ import (
 )
 
 /*
-- TODO: Remove padding between navbar and body
-- TODO: Double-check we have sufficient padding on the utmost border of the app
 - TODO: Make widgets thread safe
 */
 
 const (
 	colorBarBackground = theme.ColorNameMenuBackground
 	colorForeground    = theme.ColorNameForeground
-	colorIndicator     = theme.ColorNameInputBorder
 	colorPrimary       = theme.ColorNamePrimary
 )
 
@@ -67,8 +64,8 @@ func NewNavBar(items ...destinationDef) *NavBar {
 	}
 	w.ExtendBaseWidget(w)
 
-	for idx, it := range items {
-		w.destinations.Add(newDestination(it.icon, it.label, w, idx, it.OnSelected, it.OnSelectedAgain))
+	for id, it := range items {
+		w.destinations.Add(newDestination(it.icon, it.label, w, id, it.OnSelected, it.OnSelectedAgain))
 		b := it.content
 		b.Hide()
 		w.body.Add(b)
@@ -86,32 +83,20 @@ func NewNavBar(items ...destinationDef) *NavBar {
 	return w
 }
 
-// Select switches to a new destination.
-func (w *NavBar) Select(idx int) {
-	if idx < 0 || idx >= len(w.destinations.Objects) {
+// Enable enables a destination.
+func (w *NavBar) Enable(id int) {
+	if id < 0 || id >= len(w.destinations.Objects) {
 		return // out of bounds
 	}
-	if idx == w.selectedIdx {
-		if d := w.destination(idx); d.onSelectedAgain != nil {
-			d.onSelectedAgain()
-		}
-		return
-	}
-	w.selectDestination(idx)
+	w.destinations.Objects[id].(*destination).Enable()
 }
 
-func (w *NavBar) Enable(idx int) {
-	if idx < 0 || idx >= len(w.destinations.Objects) {
+// Disable disables a destination. Disabled destination can not be interacted with.
+func (w *NavBar) Disable(id int) {
+	if id < 0 || id >= len(w.destinations.Objects) {
 		return // out of bounds
 	}
-	w.destinations.Objects[idx].(*destination).Enable()
-}
-
-func (w *NavBar) Disable(idx int) {
-	if idx < 0 || idx >= len(w.destinations.Objects) {
-		return // out of bounds
-	}
-	w.destinations.Objects[idx].(*destination).Disable()
+	w.destinations.Objects[id].(*destination).Disable()
 }
 
 // HideBar hides the nav bar, while still showing the rest of the page.
@@ -119,23 +104,51 @@ func (w *NavBar) HideBar() {
 	w.destinations.Hide()
 }
 
+// Select switches to a new destination.
+func (w *NavBar) Select(id int) {
+	if id < 0 || id >= len(w.destinations.Objects) {
+		return // out of bounds
+	}
+	if id == w.selectedIdx {
+		if d := w.destination(id); d.onSelectedAgain != nil {
+			d.onSelectedAgain()
+		}
+		return
+	}
+	w.selectDestination(id)
+}
+
 // ShowBar shows the nav bar again.
 func (w *NavBar) ShowBar() {
 	w.destinations.Show()
 }
 
-func (w *NavBar) destination(idx int) *destination {
-	if idx < 0 || idx >= len(w.destinations.Objects) {
+// SetBadge shows or hides the badge of a destination.
+func (w *NavBar) SetBadge(id int, show bool) {
+	d := w.destination(id)
+	if d == nil {
+		return
+	}
+	d.setBadge(show)
+}
+
+// destination returns the destination object for a given id.
+// Returns nil for invalid IDs.
+func (w *NavBar) destination(id int) *destination {
+	if id < 0 || id >= len(w.destinations.Objects) {
 		return nil // out of bounds
 	}
-	return w.destinations.Objects[idx].(*destination)
+	return w.destinations.Objects[id].(*destination)
 }
 
 // selectDestination switches to a new destination.
-func (w *NavBar) selectDestination(idx int) {
+func (w *NavBar) selectDestination(id int) {
 	currentIdx := w.selectedIdx
 	currentDest := w.destination(currentIdx)
-	newDest := w.destination(idx)
+	newDest := w.destination(id)
+	if newDest == nil {
+		return
+	}
 	newDest.activate(currentDest != nil)
 	if currentDest != nil {
 		currentDest.deactivate()
@@ -143,8 +156,8 @@ func (w *NavBar) selectDestination(idx int) {
 	if currentIdx >= 0 {
 		w.body.Objects[currentIdx].Hide()
 	}
-	w.body.Objects[idx].Show()
-	w.selectedIdx = idx
+	w.body.Objects[id].Show()
+	w.selectedIdx = id
 	if newDest.onSelected != nil {
 		newDest.onSelected()
 	}

@@ -160,6 +160,11 @@ var MessageSvg = &fyne.StaticResource{
 	StaticContent: []byte(
 		"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z\" /></svg>"),
 }
+var Numeric1CircleSvg = &fyne.StaticResource{
+	StaticName: "numeric-1-circle.svg",
+	StaticContent: []byte(
+		"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M10,7V9H12V17H14V7H10M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2Z\" /></svg>"),
+}
 var PortraitSvg = &fyne.StaticResource{
 	StaticName: "portrait.svg",
 	StaticContent: []byte(
