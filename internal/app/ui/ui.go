@@ -27,7 +27,6 @@ import (
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
-	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -434,14 +433,24 @@ func (u *BaseUI) MakeAboutPage() fyne.CanvasObject {
 	spinner := widget.NewActivity()
 	spinner.Start()
 	go func() {
+		var s string
+		var i widget.Importance
+		var isBold bool
 		v, err := u.AvailableUpdate()
 		if err != nil {
 			slog.Error("fetch github version for about", "error", err)
-			s := humanize.Error(err)
-			latest.SetText(s)
+			s = "ERROR"
+			i = widget.DangerImportance
+		} else if v.IsRemoteNewer {
+			s = v.Latest
+			isBold = true
 		} else {
-			latest.SetText(v.Latest)
+			s = v.Latest
 		}
+		latest.Text = s
+		latest.TextStyle.Bold = isBold
+		latest.Importance = i
+		latest.Refresh()
 		spinner.Hide()
 		latest.Show()
 	}()

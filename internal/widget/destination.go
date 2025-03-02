@@ -1,8 +1,6 @@
 package widget
 
 import (
-	"time"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -12,24 +10,27 @@ import (
 )
 
 const (
-	defaultAnimationDuration = 300 * time.Millisecond
+	colorIndicator = theme.ColorNameInputBorder
+	colorBadge     = theme.ColorNamePrimary
 )
 
 // A destination represents a fully configured item in a navigation bar.
 type destination struct {
 	widget.DisableableWidget
 
+	badge           *canvas.Circle
 	icon            *canvas.Image
 	iconActive      fyne.Resource
-	iconInactive    fyne.Resource
 	iconDisabled    fyne.Resource
-	id              int
+	iconInactive    fyne.Resource
+	id              int // id of a destination in a navbar
+	indicator       *canvas.Rectangle
 	isActive        bool
+	hasBadge        bool
 	label           *canvas.Text
 	navbar          *NavBar
 	onSelected      func()
 	onSelectedAgain func()
-	indicator       *canvas.Rectangle
 	tapAnim         *fyne.Animation
 }
 
@@ -41,7 +42,9 @@ func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSele
 	i := NewImageFromResource(theme.NewThemedResource(icon), fyne.NewSquareSize(theme.Size(theme.SizeNameInlineIcon)))
 	pill := canvas.NewRectangle(theme.Color(colorIndicator))
 	pill.CornerRadius = 12
+	badge := canvas.NewCircle(theme.Color(colorBadge))
 	w := &destination{
+		badge:           badge,
 		icon:            i,
 		iconActive:      theme.NewPrimaryThemedResource(icon),
 		iconInactive:    theme.NewThemedResource(icon),
@@ -60,6 +63,7 @@ func newDestination(icon fyne.Resource, label string, nb *NavBar, id int, onSele
 func (w *destination) Refresh() {
 	th := w.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
+	w.badge.FillColor = th.Color(colorBadge, v)
 	if w.isActive {
 		w.label.Color = th.Color(colorPrimary, v)
 		w.label.TextStyle.Bold = true
@@ -113,6 +117,14 @@ func (w *destination) deactivate() {
 	w.Refresh()
 }
 
+func (w *destination) setBadge(show bool) {
+	if show {
+		w.badge.Show()
+	} else {
+		w.badge.Hide()
+	}
+}
+
 func (w *destination) indicatorSize() fyne.Size {
 	v := w.Theme().Size(theme.SizeNameInlineIcon)
 	return fyne.NewSize(2.85*v, 1.3*v)
@@ -120,15 +132,23 @@ func (w *destination) indicatorSize() fyne.Size {
 
 func (w *destination) CreateRenderer() fyne.WidgetRenderer {
 	s := w.indicatorSize()
-	w.tapAnim = canvas.NewSizeAnimation(s.SubtractWidthHeight(s.Width*0.95, 0), s, defaultAnimationDuration, func(s fyne.Size) {
-		w.indicator.Resize(s)
-		w.indicator.Move(fyne.NewPos(-s.Width/2, -s.Height/2))
-	})
+	w.tapAnim = canvas.NewSizeAnimation(
+		s.SubtractWidthHeight(s.Width*0.95, 0), s, defaultAnimationDuration, func(s fyne.Size) {
+			w.indicator.Resize(s)
+			w.indicator.Move(fyne.NewPos(-s.Width/2, -s.Height/2))
+		})
 	w.tapAnim.Curve = fyne.AnimationEaseOut
+	w.badge.Resize(fyne.NewSquareSize(6))
+	w.badge.Hide()
 	c := container.NewVBox(
 		container.NewStack(
 			container.NewCenter(container.NewWithoutLayout(w.indicator)),
-			container.NewCenter(w.icon),
+			container.NewCenter(
+				container.NewStack(
+					container.NewCenter(w.icon),
+					container.NewHBox(layout.NewSpacer(), container.NewWithoutLayout(w.badge)),
+				),
+			),
 		),
 		container.NewHBox(layout.NewSpacer(), w.label, layout.NewSpacer()),
 	)
