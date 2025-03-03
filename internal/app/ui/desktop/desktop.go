@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
+	"github.com/icrowley/fake"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
@@ -89,7 +90,15 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 			Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl + fyne.KeyModifierShift,
 		}
 		u.Window.Canvas().AddShortcut(sc, func(shortcut fyne.Shortcut) {
-			u.Snackbar.Show(fmt.Sprintf("This is a test snack bar at %s", time.Now().Format("15:04:05.999999999")))
+			u.Snackbar.Show(fmt.Sprintf(
+				"%s. This is a test snack bar at %s",
+				fake.WordsN(10),
+				time.Now().Format("15:04:05.999999999"),
+			))
+			u.Snackbar.Show(fmt.Sprintf(
+				"This is a test snack bar at %s",
+				time.Now().Format("15:04:05.999999999"),
+			))
 		})
 	}
 	u.OnAppTerminated = func() {

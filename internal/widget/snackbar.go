@@ -87,12 +87,23 @@ func (sb *Snackbar) Start() {
 func (sb *Snackbar) show(text string) {
 	sb.label.SetText(text)
 	_, canvasSize := sb.popup.Canvas.InteractiveArea()
-	outerSize := sb.popup.Content.MinSize().Add(fyne.NewSquareSize(
-		theme.Size(theme.SizeNameInnerPadding) + shadowWidth,
-	))
+	padding := theme.Padding()
+	bWidth := sb.button.MinSize().Width + 2*padding + shadowWidth
+	maxw := canvasSize.Width - bWidth
+	lSize := widget.NewLabel(text).MinSize()
+	var cSize fyne.Size
+	if lSize.Width > maxw {
+		h := lSize.Height * lSize.Width / maxw
+		cSize = fyne.NewSize(maxw, h)
+		sb.label.Wrapping = fyne.TextWrapWord
+	} else {
+		cSize = lSize
+		sb.label.Wrapping = fyne.TextWrapOff
+	}
+	sb.popup.Resize(cSize)
 	sb.popup.Move(fyne.NewPos(
-		canvasSize.Width/2-(outerSize.Width)/2,
-		canvasSize.Height-outerSize.Height-0.2*outerSize.Height,
+		canvasSize.Width/2-(cSize.Width+shadowWidth)/2,
+		canvasSize.Height-1.4*(cSize.Height+shadowWidth),
 	))
 	sb.popup.Show()
 }
