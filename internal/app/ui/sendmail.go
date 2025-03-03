@@ -17,7 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -112,7 +111,7 @@ func (u *BaseUI) MakeSendMailPage(
 			showErrorDialog(err.Error())
 			return false
 		}
-		u.Snackbar.Show("Your mail has been sent.")
+		u.Snackbar.Show(fmt.Sprintf("Your mail to %s has been sent.", to))
 		return true
 	}
 	page := container.NewBorder(
@@ -128,6 +127,7 @@ func (u *BaseUI) MakeSendMailPage(
 func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
 	items := make([]*app.EveEntity, 0)
+	fallbackIcon := icon.Questionmark32Png
 	list := widget.NewList(
 		func() int {
 			return len(items)
@@ -154,15 +154,9 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
 			RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
-				res, err := u.EveImageService.EntityIcon(ee.ID, ee.Category.ToEveImage(), DefaultIconPixelSize)
+				res, err := appwidget.FetchEveEntityAvatar(u.EveImageService, ee, fallbackIcon)
 				if err != nil {
-					slog.Error("eve entity entry icon update", "error", err)
-					res = icon.Questionmark32Png
-				}
-				res, err = fynetools.MakeAvatar(res)
-				if err != nil {
-					slog.Error("eve entity entry make avatar", "error", err)
-					res = icon.Questionmark32Png
+					return fallbackIcon, err
 				}
 				return res, nil
 			})

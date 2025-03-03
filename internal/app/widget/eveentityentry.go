@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"log/slog"
 	"slices"
+	"strings"
 	"sync"
 
 	"fyne.io/fyne/v2"
@@ -30,11 +31,10 @@ const (
 type EveEntityEntry struct {
 	widget.DisableableWidget
 
-	Placeholder  string
-	FallbackIcon fyne.Resource
+	Placeholder string
 
-	field       *canvas.Rectangle
 	eis         app.EveImageService
+	field       *canvas.Rectangle
 	hovered     bool
 	label       fyne.CanvasObject
 	labelWidth  float32
@@ -50,12 +50,11 @@ func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis app.EveI
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
 	bg.CornerRadius = theme.Size(theme.SizeNameInputRadius)
 	w := &EveEntityEntry{
-		field:        bg,
-		eis:          eis,
-		FallbackIcon: icon.Questionmark32Png,
-		label:        label,
-		labelWidth:   labelWidth,
-		main:         container.New(layout.NewCustomPaddedVBoxLayout(0)),
+		field:      bg,
+		eis:        eis,
+		label:      label,
+		labelWidth: labelWidth,
+		main:       container.New(layout.NewCustomPaddedVBoxLayout(0)),
 		placeholder: widget.NewRichText(&widget.TextSegment{
 			Style: widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder},
 		}),
@@ -112,6 +111,15 @@ func (w *EveEntityEntry) Remove(id int32) {
 	if removed {
 		w.Refresh()
 	}
+}
+
+// String returns a list of all entities as string.
+func (w *EveEntityEntry) String() string {
+	s := make([]string, len(w.s))
+	for i, ee := range w.s {
+		s[i] = ee.Name
+	}
+	return strings.Join(s, ", ")
 }
 
 func (w *EveEntityEntry) IsEmpty() bool {
@@ -201,12 +209,12 @@ func (w *EveEntityEntry) CreateRenderer() fyne.WidgetRenderer {
 type eveEntityBadge struct {
 	widget.DisableableWidget
 
-	FallbackIcon fyne.Resource
-	OnTapped     func()
+	OnTapped func()
 
-	ee      *app.EveEntity
-	eis     app.EveImageService
-	hovered bool
+	ee           *app.EveEntity
+	fallbackIcon fyne.Resource
+	eis          app.EveImageService
+	hovered      bool
 }
 
 var _ fyne.Tappable = (*eveEntityBadge)(nil)
@@ -216,7 +224,7 @@ func newEveEntityBadge(ee *app.EveEntity, eis app.EveImageService, onTapped func
 	w := &eveEntityBadge{
 		ee:           ee,
 		eis:          eis,
-		FallbackIcon: icon.Questionmark32Png,
+		fallbackIcon: icon.Questionmark32Png,
 		OnTapped:     onTapped,
 	}
 	w.ExtendBaseWidget(w)
@@ -232,7 +240,7 @@ func (w *eveEntityBadge) CreateRenderer() fyne.WidgetRenderer {
 	if w.Disabled() {
 		name.Importance = widget.LowImportance
 	}
-	icon := iwidget.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(th.Size(theme.SizeNameInlineIcon)))
+	icon := iwidget.NewImageFromResource(w.fallbackIcon, fyne.NewSquareSize(th.Size(theme.SizeNameInlineIcon)))
 	rect := canvas.NewRectangle(color.Transparent)
 	rect.StrokeColor = th.Color(theme.ColorNameInputBorder, v)
 	rect.StrokeWidth = 1
@@ -248,7 +256,12 @@ func (w *eveEntityBadge) CreateRenderer() fyne.WidgetRenderer {
 		),
 	)
 	go func() {
-		icon.Resource = fetchEveEntityAvatar(w.eis, w.ee, w.FallbackIcon)
+		res, err := FetchEveEntityAvatar(w.eis, w.ee, w.fallbackIcon)
+		if err != nil {
+			slog.Error("fetch eve entity avatar", "error", err)
+			res = w.fallbackIcon
+		}
+		icon.Resource = res
 		icon.Refresh()
 	}()
 	return widget.NewSimpleRenderer(c)
@@ -294,19 +307,17 @@ func (w *eveEntityBadge) MouseOut() {
 	w.hovered = false
 }
 
-func fetchEveEntityAvatar(eis app.EveImageService, ee *app.EveEntity, fallback fyne.Resource) fyne.Resource {
+// FetchEveEntityAvatar fetches an icon for an EveEntity and returns it in avatar style.
+func FetchEveEntityAvatar(eis app.EveImageService, ee *app.EveEntity, fallback fyne.Resource) (fyne.Resource, error) {
 	if ee == nil {
-		return fallback
+		return fallback, nil
+	}
+	if ee.Category == app.EveEntityMailList {
+		return theme.MailComposeIcon(), nil
 	}
 	res, err := eis.EntityIcon(ee.ID, ee.Category.ToEveImage(), DefaultIconPixelSize)
 	if err != nil {
-		slog.Error("eve entity entry icon update", "error", err)
-		res = fallback
+		return nil, err
 	}
-	res, err = fynetools.MakeAvatar(res)
-	if err != nil {
-		slog.Error("eve entity entry make avatar", "error", err)
-		res = fallback
-	}
-	return res
+	return fynetools.MakeAvatar(res)
 }

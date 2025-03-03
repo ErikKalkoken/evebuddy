@@ -1,6 +1,7 @@
 package widget
 
 import (
+	"log/slog"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -55,7 +56,12 @@ func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time
 	w.subject.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.Refresh()
 	go func() {
-		w.icon.Resource = fetchEveEntityAvatar(w.eis, from, w.FallbackIcon)
+		res, err := FetchEveEntityAvatar(w.eis, from, w.FallbackIcon)
+		if err != nil {
+			slog.Error("fetch eve entity avatar", "error", err)
+			res = w.FallbackIcon
+		}
+		w.icon.Resource = res
 		w.icon.Refresh()
 	}()
 
