@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/syncqueue"
@@ -29,59 +30,80 @@ type snackbarMessage struct {
 //
 // When a snackbar receives several texts at the same time, it will queue them and display them one after the other.
 type Snackbar struct {
+	button    *IconButton
 	isRunning atomic.Bool
-	q         *syncqueue.SyncQueue[snackbarMessage]
+	label     *widget.Label
 	popup     *widget.PopUp
-	stopC     chan struct{}
+	q         *syncqueue.SyncQueue[snackbarMessage]
+	hideC     chan struct{}
 }
 
 // NewSnackbar returns a new snackbar. Call Start() to activate it.
 func NewSnackbar(win fyne.Window) *Snackbar {
 	sb := &Snackbar{
-		popup: widget.NewPopUp(widget.NewLabel(""), win.Canvas()),
+		label: widget.NewLabel(""),
 		q:     syncqueue.New[snackbarMessage](),
+		hideC: make(chan struct{}),
 	}
+	sb.button = NewIconButton(theme.WindowCloseIcon(), func() {
+		sb.hideC <- struct{}{}
+	})
+	sb.popup = widget.NewPopUp(container.NewBorder(nil, nil, nil, sb.button, sb.label), win.Canvas())
 	return sb
 }
 
 // Show displays a SnackBar with a messsage and the the default timeout.
-func (w *Snackbar) Show(text string) {
-	w.q.Put(snackbarMessage{text: text, timeout: snackbarTimeoutDefault})
+func (sb *Snackbar) Show(text string) {
+	sb.q.Put(snackbarMessage{text: text, timeout: snackbarTimeoutDefault})
 }
 
 // Show displays a SnackBar with a messsage and the a custom timeout.
-func (w *Snackbar) ShowWithTimeout(text string, timeout time.Duration) {
-	w.q.Put(snackbarMessage{text: text, timeout: timeout})
+func (sb *Snackbar) ShowWithTimeout(text string, timeout time.Duration) {
+	sb.q.Put(snackbarMessage{text: text, timeout: timeout})
 }
 
 // Start starts the SnackBar so it can display messages.
 // Start should be called after the Fyne app is started.
-func (w *Snackbar) Start() {
-	isRunning := !w.isRunning.CompareAndSwap(false, true)
+func (sb *Snackbar) Start() {
+	isRunning := !sb.isRunning.CompareAndSwap(false, true)
 	if isRunning {
 		slog.Warn("Snackbar already running")
 		return
 	}
 	go func() {
 		for {
-			m, _ := w.q.Get(context.Background())
-			w.update(m.text)
-			w.popup.Show()
-			time.Sleep(m.timeout)
-			w.popup.Hide()
+			m, _ := sb.q.Get(context.Background())
+			sb.show(m.text)
+			select {
+			case <-sb.hideC:
+			case <-time.After(m.timeout):
+			}
+			sb.popup.Hide()
 		}
 	}()
 	slog.Debug("Snackbar started")
 }
 
-func (w *Snackbar) update(text string) {
-	w.popup.Content.(*widget.Label).SetText(text)
-	_, canvasSize := w.popup.Canvas.InteractiveArea()
-	outerSize := w.popup.Content.MinSize().Add(fyne.NewSquareSize(
-		theme.Size(theme.SizeNameInnerPadding) + shadowWidth,
+func (sb *Snackbar) show(text string) {
+	sb.label.SetText(text)
+	_, canvasSize := sb.popup.Canvas.InteractiveArea()
+	padding := theme.Padding()
+	bWidth := sb.button.MinSize().Width + 2*padding + shadowWidth
+	maxw := canvasSize.Width - bWidth
+	lSize := widget.NewLabel(text).MinSize()
+	var cSize fyne.Size
+	if lSize.Width > maxw {
+		h := lSize.Height * lSize.Width / maxw
+		cSize = fyne.NewSize(maxw, h)
+		sb.label.Wrapping = fyne.TextWrapWord
+	} else {
+		cSize = lSize
+		sb.label.Wrapping = fyne.TextWrapOff
+	}
+	sb.popup.Resize(cSize)
+	sb.popup.Move(fyne.NewPos(
+		canvasSize.Width/2-(cSize.Width+shadowWidth)/2,
+		canvasSize.Height-1.4*(cSize.Height+shadowWidth),
 	))
-	w.popup.Move(fyne.NewPos(
-		canvasSize.Width/2-(outerSize.Width)/2,
-		canvasSize.Height-outerSize.Height-0.2*outerSize.Height,
-	))
+	sb.popup.Show()
 }
