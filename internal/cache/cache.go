@@ -31,42 +31,50 @@ func New() *Cache {
 
 // NewWithTimeout creates a new cache with a specific timeout for the regular clean-up and returns it.
 //
-// A timeout of 0 disables the automatic clean-up and cache users then need to start clean-up manually.
+// A timeout of 0 disables the automatic clean-up and users then need to start clean-up manually.
 //
 // When automatic clean-up is enabled users can close the cache
 // to free allocated resources when the cache is no longer needed.
-func NewWithTimeout(timeout time.Duration) *Cache {
-	return create(timeout)
+func NewWithTimeout(cleanUpTimeout time.Duration) *Cache {
+	return create(cleanUpTimeout)
 }
 
-func create(timeout time.Duration) *Cache {
+func create(cleanUpTimeout time.Duration) *Cache {
 	c := &Cache{
 		closeC: make(chan struct{}),
 	}
-	if timeout <= 0 {
-		return c
-	}
-	ticker := time.NewTicker(timeout)
-	go func() {
-		for {
-			select {
-			case <-c.closeC:
-				slog.Info("cache closed")
-				return
-			case <-ticker.C:
+	if cleanUpTimeout > 0 {
+		go func() {
+			for {
+				select {
+				case <-c.closeC:
+					slog.Info("cache closed")
+					return
+				case <-time.After(cleanUpTimeout):
+				}
 				c.CleanUp()
 			}
-		}
-	}()
+		}()
+	}
 	return c
 }
 
-// Close closes the cache and frees allocated resources.
-func (c *Cache) Close() {
-	close(c.closeC)
+// CleanUp removes all expired items.
+func (c *Cache) CleanUp() {
+	slog.Info("cache clean-up: started")
+	n := 0
+	c.items.Range(func(key, value any) bool {
+		_, found := c.Get(key.(string))
+		if !found {
+			c.Delete(key.(string))
+			n++
+		}
+		return true
+	})
+	slog.Info("cache clean-up: completed", "removed", n)
 }
 
-// Clear removes all cache keys.
+// Clear removes all items.
 func (c *Cache) Clear() {
 	c.items.Range(func(key, value any) bool {
 		c.items.Delete(key)
@@ -74,18 +82,23 @@ func (c *Cache) Clear() {
 	})
 }
 
-// Delete deletes an item from the cache
+// Close closes the cache and frees allocated resources.
+func (c *Cache) Close() {
+	close(c.closeC)
+}
+
+// Delete deletes an item.
 func (c *Cache) Delete(key string) {
 	c.items.Delete(key)
 }
 
-// Exists reports wether a key exists
+// Exists reports wether an item exists. Expired items do not exist.
 func (c *Cache) Exists(key string) bool {
 	_, ok := c.Get(key)
 	return ok
 }
 
-// Get returns an item if it exits and it not stale.
+// Get returns an item that exists and is not expired.
 // It also reports whether the item was found.
 func (c *Cache) Get(key string) (any, bool) {
 	value, ok := c.items.Load(key)
@@ -110,19 +123,4 @@ func (c *Cache) Set(key string, value any, timeout time.Duration) {
 	}
 	i := item{Value: value, ExpiresAt: at}
 	c.items.Store(key, i)
-}
-
-// CleanUp removes all expired keys
-func (c *Cache) CleanUp() {
-	slog.Info("cache clean-up: started")
-	count := 0
-	c.items.Range(func(key, value any) bool {
-		_, found := c.Get(key.(string))
-		if !found {
-			c.Delete(key.(string))
-			count++
-		}
-		return true
-	})
-	slog.Info("cache clean-up: completed", "removed", count)
 }
