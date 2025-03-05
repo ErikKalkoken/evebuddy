@@ -7,9 +7,10 @@ import (
 	"log/slog"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
-	"golang.org/x/sync/singleflight"
 )
 
 // PCache is a 2-level persistent cache.
@@ -24,7 +25,7 @@ type PCache struct {
 // New returns a new PCache.
 //
 // cleanUpTimeout is the timeout between automatic clean-up intervals.
-// When set to 0 automatic clean-up is disabled and cache users need to start clean-ups manually.
+// When set to 0 automatic clean-up is disabled and users need to start clean-ups manually.
 //
 // When automatic clean-up is enabled users can close the cache
 // to free allocated resources when the cache is no longer needed.
@@ -36,15 +37,14 @@ func New(st *storage.Storage, cleanUpTimeout time.Duration) *PCache {
 		st:     st,
 	}
 	if cleanUpTimeout > 0 {
-		ticker := time.NewTicker(cleanUpTimeout)
 		go func() {
 			for {
+				c.CleanUp()
 				select {
 				case <-c.closeC:
 					slog.Info("cache closed")
 					return
-				case <-ticker.C:
-					c.CleanUp()
+				case <-time.After(cleanUpTimeout):
 				}
 			}
 		}()
@@ -52,14 +52,18 @@ func New(st *storage.Storage, cleanUpTimeout time.Duration) *PCache {
 	return c
 }
 
+// CleanUp removes all expired items.
 func (c *PCache) CleanUp() {
-	err := c.st.CacheCleanUp(context.Background())
+	slog.Info("pcache clean-up: started")
+	n, err := c.st.CacheCleanUp(context.Background())
 	if err != nil {
 		slog.Error("cache failure", "error", err)
 	}
 	c.mc.CleanUp()
+	slog.Info("pcache clean-up: completed", "removed", n)
 }
 
+// Clear removes all items.
 func (c *PCache) Clear() {
 	err := c.st.CacheClear(context.Background())
 	if err != nil {
@@ -73,6 +77,7 @@ func (c *PCache) Close() {
 	close(c.closeC)
 }
 
+// Delete deletes an item.
 func (c *PCache) Delete(key string) {
 	err := c.st.CacheDelete(context.Background(), key)
 	if err != nil {
@@ -81,6 +86,7 @@ func (c *PCache) Delete(key string) {
 	c.mc.Delete(key)
 }
 
+// Exists reports wether an item exists. Expired items do not exist.
 func (c *PCache) Exists(key string) bool {
 	if c.mc.Exists(key) {
 		return true
@@ -92,6 +98,8 @@ func (c *PCache) Exists(key string) bool {
 	return found
 }
 
+// Get returns an item that exists and is not expired.
+// It also reports whether the item was found.
 func (c *PCache) Get(key string) ([]byte, bool) {
 	x, found := c.mc.Get(key)
 	if found {
@@ -108,13 +116,17 @@ func (c *PCache) Get(key string) ([]byte, bool) {
 	return v, true
 }
 
+// Set stores an item in the cache.
+//
+// If an item with the same key already exists it will be overwritten.
+// An item with timeout = 0 never expires
 func (c *PCache) Set(key string, value []byte, timeout time.Duration) {
 	var expiresAt time.Time
 	if timeout > 0 {
 		expiresAt = time.Now().Add(timeout)
 	}
 	c.mc.Set(key, value, timeout)
-	_, err, _ := c.sfg.Do(key, func() (interface{}, error) {
+	_, err, _ := c.sfg.Do(key, func() (any, error) {
 		arg := storage.CacheSetParams{
 			Key:       key,
 			Value:     value,

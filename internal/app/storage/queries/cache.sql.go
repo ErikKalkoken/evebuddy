@@ -10,16 +10,19 @@ import (
 	"database/sql"
 )
 
-const cacheCleanUp = `-- name: CacheCleanUp :exec
+const cacheCleanUp = `-- name: CacheCleanUp :execrows
 DELETE FROM
     cache
 WHERE
     expires_at < ?1
 `
 
-func (q *Queries) CacheCleanUp(ctx context.Context, now sql.NullTime) error {
-	_, err := q.db.ExecContext(ctx, cacheCleanUp, now)
-	return err
+func (q *Queries) CacheCleanUp(ctx context.Context, now sql.NullTime) (int64, error) {
+	result, err := q.db.ExecContext(ctx, cacheCleanUp, now)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const cacheClear = `-- name: CacheClear :exec
@@ -51,7 +54,10 @@ FROM
     cache
 WHERE
     key = ?
-    AND expires_at > ?2
+    AND (
+        expires_at > ?2
+        OR expires_at IS NULL
+    )
 `
 
 type CacheGetParams struct {

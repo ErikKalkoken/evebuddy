@@ -2,7 +2,7 @@
 DELETE FROM
     cache;
 
--- name: CacheCleanUp :exec
+-- name: CacheCleanUp :execrows
 DELETE FROM
     cache
 WHERE
@@ -15,7 +15,10 @@ FROM
     cache
 WHERE
     key = ?
-    AND expires_at > sqlc.arg(now);
+    AND (
+        expires_at > sqlc.arg(now)
+        OR expires_at IS NULL
+    );
 
 -- name: CacheDelete :exec
 DELETE FROM

@@ -18,12 +18,12 @@ func (st *Storage) CacheClear(ctx context.Context) error {
 	return nil
 }
 
-func (st *Storage) CacheCleanUp(ctx context.Context) error {
-	err := st.q.CacheCleanUp(ctx, NewNullTimeFromTime(time.Now().UTC()))
+func (st *Storage) CacheCleanUp(ctx context.Context) (int, error) {
+	n, err := st.q.CacheCleanUp(ctx, NewNullTimeFromTime(time.Now().UTC()))
 	if err != nil {
-		return fmt.Errorf("cache cleanup: %w", err)
+		return 0, fmt.Errorf("cache cleanup: %w", err)
 	}
-	return nil
+	return int(n), nil
 }
 
 func (st *Storage) CacheExists(ctx context.Context, key string) (bool, error) {

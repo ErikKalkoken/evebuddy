@@ -20,7 +20,8 @@ import (
 
 // ImplantsArea is the UI area that shows the skillqueue
 type ImplantsArea struct {
-	Content  *fyne.Container
+	Content *fyne.Container
+
 	implants []*app.CharacterImplant
 	list     *widget.List
 	top      *widget.Label

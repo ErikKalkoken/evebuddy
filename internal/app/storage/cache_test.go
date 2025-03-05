@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCache(t *testing.T) {
+func TestCacheGet(t *testing.T) {
 	db, r, _ := testutil.New()
 	defer db.Close()
 	ctx := context.Background()
-	t.Run("can set and get entries", func(t *testing.T) {
+	t.Run("can get and existing entry", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		key := "key"
@@ -34,6 +34,136 @@ func TestCache(t *testing.T) {
 			}
 		}
 	})
+	t.Run("should treat expired entries as non existent for get", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		key := "key"
+		value := []byte("value")
+		expiresAt := time.Now().Add(-time.Minute)
+		err := r.CacheSet(ctx, storage.CacheSetParams{
+			Key:       key,
+			Value:     value,
+			ExpiresAt: expiresAt,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// when
+		_, err = r.CacheGet(ctx, key)
+		// then
+		assert.ErrorIs(t, err, storage.ErrNotFound)
+	})
+	t.Run("should return entries with get which have never expiry", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		key := "key"
+		value := []byte("value")
+		err := r.CacheSet(ctx, storage.CacheSetParams{
+			Key:       key,
+			Value:     value,
+			ExpiresAt: time.Time{},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// when
+		x, err := r.CacheGet(ctx, key)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, value, x)
+		}
+	})
+}
+
+func TestCacheExists(t *testing.T) {
+	db, r, _ := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
+	t.Run("should return true when entry exists", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		key := "key"
+		value := []byte("value")
+		expiresAt := time.Now().Add(time.Minute)
+		err := r.CacheSet(ctx, storage.CacheSetParams{
+			Key:       key,
+			Value:     value,
+			ExpiresAt: expiresAt,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// when
+		ok, err := r.CacheExists(ctx, key)
+		if assert.NoError(t, err) {
+			assert.True(t, ok)
+		}
+	})
+	t.Run("should return false when entry expired", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		key := "key"
+		value := []byte("value")
+		expiresAt := time.Now().Add(-time.Minute)
+		err := r.CacheSet(ctx, storage.CacheSetParams{
+			Key:       key,
+			Value:     value,
+			ExpiresAt: expiresAt,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// when
+		ok, err := r.CacheExists(ctx, key)
+		if assert.NoError(t, err) {
+			assert.False(t, ok)
+		}
+	})
+	t.Run("should report false when entry does not exist", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		key := "key"
+		value := []byte("value")
+		expiresAt := time.Now().Add(time.Minute)
+		err := r.CacheSet(ctx, storage.CacheSetParams{
+			Key:       key,
+			Value:     value,
+			ExpiresAt: expiresAt,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// when
+		ok, err := r.CacheExists(ctx, "key-2")
+		if assert.NoError(t, err) {
+			assert.False(t, ok)
+		}
+	})
+	t.Run("should return true when entry has no expiration date", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		key := "key"
+		value := []byte("value")
+		err := r.CacheSet(ctx, storage.CacheSetParams{
+			Key:       key,
+			Value:     value,
+			ExpiresAt: time.Time{},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// when
+		ok, err := r.CacheExists(ctx, key)
+		if assert.NoError(t, err) {
+			assert.True(t, ok)
+		}
+	})
+}
+
+func TestCacheSet(t *testing.T) {
+	db, r, _ := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
 	t.Run("can update existing entry", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -62,86 +192,12 @@ func TestCache(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should return true when entry exists", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		key := "key"
-		value := []byte("value")
-		expiresAt := time.Now().Add(time.Minute)
-		err := r.CacheSet(ctx, storage.CacheSetParams{
-			Key:       key,
-			Value:     value,
-			ExpiresAt: expiresAt,
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		// when
-		ok, err := r.CacheExists(ctx, key)
-		if assert.NoError(t, err) {
-			assert.True(t, ok)
-		}
-	})
-	t.Run("should report false when entry does not exist", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		key := "key"
-		value := []byte("value")
-		expiresAt := time.Now().Add(time.Minute)
-		err := r.CacheSet(ctx, storage.CacheSetParams{
-			Key:       key,
-			Value:     value,
-			ExpiresAt: expiresAt,
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		// when
-		ok, err := r.CacheExists(ctx, "key-2")
-		if assert.NoError(t, err) {
-			assert.False(t, ok)
-		}
-	})
-	t.Run("should return false when entry expired", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		key := "key"
-		value := []byte("value")
-		expiresAt := time.Now().Add(-time.Minute)
-		err := r.CacheSet(ctx, storage.CacheSetParams{
-			Key:       key,
-			Value:     value,
-			ExpiresAt: expiresAt,
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		// when
-		ok, err := r.CacheExists(ctx, key)
-		if assert.NoError(t, err) {
-			assert.False(t, ok)
-		}
-	})
-	t.Run("should treat expired entries as non existent for get", func(t *testing.T) {
-		// given
-		testutil.TruncateTables(db)
-		key := "key"
-		value := []byte("value")
-		expiresAt := time.Now().Add(-time.Minute)
-		err := r.CacheSet(ctx, storage.CacheSetParams{
-			Key:       key,
-			Value:     value,
-			ExpiresAt: expiresAt,
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		// when
-		_, err = r.CacheGet(ctx, key)
-		// then
-		assert.ErrorIs(t, err, storage.ErrNotFound)
-	})
+}
 
+func TestCacheOther(t *testing.T) {
+	db, r, _ := testutil.New()
+	defer db.Close()
+	ctx := context.Background()
 	t.Run("can delete entries", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
@@ -188,6 +244,58 @@ func TestCache(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.False(t, ok)
 			}
+		}
+	})
+	t.Run("can remove all expired entries", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		now := time.Now()
+		if err := r.CacheSet(ctx, storage.CacheSetParams{
+			Key:       "k1",
+			Value:     []byte("not expired"),
+			ExpiresAt: now.Add(time.Minute),
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if err := r.CacheSet(ctx, storage.CacheSetParams{
+			Key:       "k2",
+			Value:     []byte("expired"),
+			ExpiresAt: now.Add(-time.Minute),
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if err := r.CacheSet(ctx, storage.CacheSetParams{
+			Key:       "k3",
+			Value:     []byte("no expireation date"),
+			ExpiresAt: time.Time{},
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if err := r.CacheSet(ctx, storage.CacheSetParams{
+			Key:       "k4",
+			Value:     []byte("expired"),
+			ExpiresAt: now.Add(-time.Hour),
+		}); err != nil {
+			t.Fatal(err)
+		}
+		// when
+		n, err := r.CacheCleanUp(ctx)
+		// then
+		if assert.NoError(t, err) {
+			assert.Equal(t, 2, n)
+			rows, err := db.Query("SELECT key FROM cache;")
+			if err != nil {
+				t.Fatal(err)
+			}
+			var keys []string
+			for rows.Next() {
+				var k string
+				if err := rows.Scan(&k); err != nil {
+					t.Fatal(err)
+				}
+				keys = append(keys, k)
+			}
+			assert.ElementsMatch(t, []string{"k1", "k3"}, keys)
 		}
 	})
 }

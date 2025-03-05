@@ -229,7 +229,6 @@ func main() {
 
 	// PCache init
 	pc := pcache.New(st, cacheCleanUpTimeout)
-	go pc.CleanUp()
 
 	// Init UI
 	ess := esistatus.New(esiClient)

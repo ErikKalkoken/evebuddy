@@ -16,10 +16,10 @@ import (
 
 // cache timeouts per image category
 const (
-	timeoutAlliance    = time.Hour * 24 * 3
-	timeoutCharacter   = time.Hour * 24 * 1
-	timeoutCorporation = time.Hour * 24 * 1
-	timeoutDefault     = 0
+	timeoutAlliance    = time.Hour * 24 * 7
+	timeoutCharacter   = time.Hour * 24 * 3
+	timeoutCorporation = time.Hour * 24 * 3
+	timeoutNeverExpire = 0
 )
 
 var (
@@ -107,7 +107,7 @@ func (m *EveImageService) FactionLogo(id int32, size int) (fyne.Resource, error)
 		}
 		return nil, err
 	}
-	return m.image(url, timeoutDefault)
+	return m.image(url, timeoutNeverExpire)
 }
 
 // InventoryTypeRender returns the render for a type. Note that not ever type has a render.
@@ -119,7 +119,7 @@ func (m *EveImageService) InventoryTypeRender(id int32, size int) (fyne.Resource
 		}
 		return nil, err
 	}
-	return m.image(url, timeoutDefault)
+	return m.image(url, timeoutNeverExpire)
 }
 
 // InventoryTypeIcon returns the icon for a type.
@@ -131,7 +131,7 @@ func (m *EveImageService) InventoryTypeIcon(id int32, size int) (fyne.Resource, 
 		}
 		return nil, err
 	}
-	return m.image(url, timeoutDefault)
+	return m.image(url, timeoutNeverExpire)
 }
 
 // InventoryTypeBPO returns the icon for a BPO type.
@@ -143,7 +143,7 @@ func (m *EveImageService) InventoryTypeBPO(id int32, size int) (fyne.Resource, e
 		}
 		return nil, err
 	}
-	return m.image(url, timeoutDefault)
+	return m.image(url, timeoutNeverExpire)
 }
 
 // InventoryTypeBPC returns the icon for a BPC type.
@@ -155,7 +155,7 @@ func (m *EveImageService) InventoryTypeBPC(id int32, size int) (fyne.Resource, e
 		}
 		return nil, err
 	}
-	return m.image(url, timeoutDefault)
+	return m.image(url, timeoutNeverExpire)
 }
 
 // InventoryTypeSKIN returns the icon for a SKIN type.
