@@ -101,7 +101,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 			))
 		})
 	}
-	u.OnAppTerminated = func() {
+	u.OnAppStopped = func() {
 		u.saveAppState()
 	}
 	u.OnRefreshCharacter = func(c *app.Character) {
