@@ -13,6 +13,11 @@ A companion app for Eve Online players available on Windows, Linux, macOS and An
 - [Description](#description)
 - [Highlights](#highlights)
 - [Installing](#installing)
+  - [Linux](#linux)
+  - [Windows](#windows)
+  - [macOS](#mac-os)
+  - [Android](#android)
+  - [From source](#from-source)
 - [Updating](#updating)
 - [Uninstalling](#uninstalling)
 - [Troubleshooting](#troubleshooting)
@@ -117,14 +122,6 @@ Character navigation | Mail browser | Asset browser
 
 To install EVE buddy just download the latest release from the releases page to your computer or mobile. The app ships as a single executable file that can be run directly. When you run the app for the first time it will automatically install itself for the current user (i.e. by creating folders in the home folder for the current user).
 
-Please also see the detailed instructions for each platform / installation method:
-
-- [Linux](#linux)
-- [Windows](#windows)
-- [macOS](#mac-os)
-- [Android](#android)
-- [Build from source](#build-from-source)
-
 You find the latest packages for download on the [releases page](https://github.com/ErikKalkoken/evebuddy/releases).
 
 ### Linux
@@ -166,12 +163,13 @@ You find the latest packages for download on the [releases page](https://github.
 1. In case you get a security warning from Google Play Protect:
    1. Select "More details"
    1. Select "Install anyway"
-1. Once installation is complete: Select "open" to start the app.
+1. Enable unrestriced background usage for EVE Buddy in settings. For a guide please see [How to prevent apps from 'sleeping' in the background on Android](https://www.androidpolice.com/prevent-apps-from-sleeping-in-the-background-on-android/)
+1. Select "Unrestricted" under "App battery usage" / "App background usage"
 
-> [!TIP]
-> If you want to use EVE Buddy's notification features you need to allow the app to keep running in the background. This is a setting for the app under Batter > Usage and called "Unrestricted". For details instructions please see [How to prevent apps from 'sleeping' in the background on Android](https://www.androidpolice.com/prevent-apps-from-sleeping-in-the-background-on-android/).
+> [!NOTE]
+> EVE Buddy needs unrestricted background usage in order to function proberbly. The reason is that Android otherwise  automatically suspends apps when you switch to another app. Then you can no longer add new characters, because it requires you to swich to your browser app, but EVE Buddy needs to keep running for the process to work. Also EVE Buddy needs to keep running in order to pick up events for notifications.
 
-### Build from source
+### From source
 
 It is also possible to build and run the app directly from the source on the github repository. For that to work your system needs to be setup for building Fyne apps, which requires you to have installed the Go tools, a C compiler and a systems graphics driver. For details please see [Fyne - Getting started](https://docs.fyne.io/started/).
 
@@ -189,7 +187,7 @@ The app will inform you when there is a new version available for download. To u
 
 If you no longer want to use the app you can uninstall it.
 
-### Desktop
+### Windows, Linux and macOS
 
 The desktop versions has an special app for removing our data:
 
@@ -207,9 +205,9 @@ Then delete the file itself:
 rm evebuddy
 ```
 
-### Mobile
+### Android
 
-On mobile you can uninstall the app via the Android Settings and it will also remove all data.
+On Android you can uninstall the app via Android Settings and it will also remove all data.
 
 ## Troubleshooting
 
