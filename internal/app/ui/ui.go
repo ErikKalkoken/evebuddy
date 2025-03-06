@@ -59,16 +59,17 @@ type BaseUI struct {
 	// Whether to disable update tickers (useful for debugging)
 	IsUpdateTickerDisabled bool
 
+	HideMailIndicator  func()
 	OnAppFirstStarted  func()
+	OnAppStopped       func()
 	OnAppTerminated    func()
 	OnInit             func(*app.Character)
 	OnRefreshCharacter func(*app.Character)
 	OnRefreshCross     func()
-	OnSetCharacter     func(int32)
 	OnRefreshStatus    func()
+	OnSetCharacter     func(int32)
 	OnShowAndRun       func()
 	ShowMailIndicator  func()
-	HideMailIndicator  func()
 
 	// need to be implemented for each platform
 	ShowTypeInfoWindow     func(typeID, characterID int32, selectTab TypeWindowTab)
@@ -258,17 +259,6 @@ func (u *BaseUI) ShowAndRun() {
 			u.OnAppFirstStarted()
 		}
 	})
-	u.FyneApp.Lifecycle().SetOnStopped(func() {
-		slog.Info("App stopped")
-	})
-	if u.OnShowAndRun != nil {
-		u.OnShowAndRun()
-	}
-	u.Window.ShowAndRun()
-	slog.Info("App terminated")
-	if u.OnAppTerminated != nil {
-		u.OnAppTerminated()
-	}
 	u.FyneApp.Lifecycle().SetOnEnteredForeground(func() {
 		slog.Info("Entered foreground")
 		u.isForeground.Store(true)
@@ -279,6 +269,20 @@ func (u *BaseUI) ShowAndRun() {
 		u.isForeground.Store(false)
 		slog.Info("Exited foreground")
 	})
+	u.FyneApp.Lifecycle().SetOnStopped(func() {
+		slog.Info("App stopped")
+		if u.OnAppStopped != nil {
+			u.OnAppStopped()
+		}
+	})
+	if u.OnShowAndRun != nil {
+		u.OnShowAndRun()
+	}
+	u.Window.ShowAndRun()
+	slog.Info("App terminated")
+	if u.OnAppTerminated != nil {
+		u.OnAppTerminated()
+	}
 }
 
 // CharacterID returns the ID of the current character or 0 if non it set.
