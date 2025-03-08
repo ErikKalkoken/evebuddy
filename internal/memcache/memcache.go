@@ -48,7 +48,7 @@ func create(cleanUpTimeout time.Duration) *Cache {
 			for {
 				select {
 				case <-c.closeC:
-					slog.Info("cache closed")
+					slog.Debug("cache closed")
 					return
 				case <-time.After(cleanUpTimeout):
 				}

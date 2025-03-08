@@ -42,7 +42,7 @@ func New(st *storage.Storage, cleanUpTimeout time.Duration) *PCache {
 				c.CleanUp()
 				select {
 				case <-c.closeC:
-					slog.Info("cache closed")
+					slog.Debug("cache closed")
 					return
 				case <-time.After(cleanUpTimeout):
 				}

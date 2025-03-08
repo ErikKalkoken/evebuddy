@@ -227,7 +227,7 @@ func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32
 	if err := g.Wait(); err != nil {
 		return err
 	}
-	slog.Info("Store new mail from ESI", "characterID", characterID, "count", count)
+	slog.Info("Stored new mail from ESI", "characterID", characterID, "count", count)
 	return nil
 }
 

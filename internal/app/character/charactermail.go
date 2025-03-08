@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"time"
 
@@ -166,6 +167,7 @@ func (s *CharacterService) SendCharacterMail(ctx context.Context, characterID in
 	if err != nil {
 		return 0, err
 	}
+	slog.Info("Mail sent", "characterID", characterID, "mailID", mailID)
 	return mailID, nil
 }
 
