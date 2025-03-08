@@ -252,11 +252,9 @@ func (s *SSOService) fetchNewToken(code, codeVerifier string) (*tokenPayload, er
 	if err != nil {
 		return nil, err
 	}
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
-	body, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
 	token := tokenPayload{}
@@ -308,14 +306,11 @@ func (s *SSOService) fetchRefreshedToken(refreshToken string) (*tokenPayload, er
 	if err != nil {
 		return nil, err
 	}
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
-	body, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
-
 	token := tokenPayload{}
 	if err := json.Unmarshal(body, &token); err != nil {
 		return nil, err

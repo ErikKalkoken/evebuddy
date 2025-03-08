@@ -35,8 +35,8 @@ func (u *BaseUI) startUpdateTickerGeneralSections() {
 }
 
 func (u *BaseUI) UpdateGeneralSectionsAndRefreshIfNeeded(forceUpdate bool) {
-	if !u.isForeground.Load() && !forceUpdate {
-		slog.Info("Skipping general sections update while in background")
+	if !forceUpdate && u.IsMobile() && !u.isForeground.Load() {
+		slog.Debug("Skipping general sections update while in background")
 		return
 	}
 	ctx := context.Background()
@@ -112,9 +112,8 @@ func (u *BaseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		return
 	}
 	var sections []app.CharacterSection
-	if u.isForeground.Load() {
-		sections = app.CharacterSections
-	} else {
+	if u.IsMobile() && !u.isForeground.Load() {
+		// only update what is needed for notifications on mobile when running in background to save battery
 		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyCommunicationsEnabled, settingNotifyCommunicationsEnabledDefault) {
 			sections = append(sections, app.SectionNotifications)
 		}
@@ -130,8 +129,13 @@ func (u *BaseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
 			sections = append(sections, app.SectionSkillqueue)
 		}
+	} else {
+		sections = app.CharacterSections
 	}
-	slog.Info("Starting to check character sections for update", "sections", sections)
+	if len(sections) == 0 {
+		return
+	}
+	slog.Debug("Starting to check character sections for update", "sections", sections)
 	for _, s := range sections {
 		s := s
 		go u.UpdateCharacterSectionAndRefreshIfNeeded(ctx, characterID, s, forceUpdate)

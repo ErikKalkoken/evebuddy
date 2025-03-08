@@ -22,6 +22,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"github.com/antihax/goesi"
 	"github.com/chasinglogic/appdirs"
+	"github.com/hashicorp/go-retryablehttp"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
@@ -37,7 +38,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
-	"github.com/ErikKalkoken/evebuddy/internal/httptransport"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 )
 
@@ -183,28 +183,24 @@ func main() {
 	defer db.Close()
 	st := storage.New(db)
 
-	// init HTTP client, ESI client and cache
-	httpClient := &http.Client{
-		Transport: httptransport.LoggedTransport{
-			// tokens must not be logged
-			BlacklistedResponseURLs: []string{"login.eveonline.com/v2/oauth/token"},
-		},
+	// TODO: Add response logging for DEBUG log level
+	// Initialize shared HTTP client
+	// Automatically retries on connection and most server errors
+	// Logs requests on debug level and all HTTP error responses as warnings
+	rhc := retryablehttp.NewClient()
+	rhc.Logger = slog.Default()
+	rhc.ResponseLogHook = func(l retryablehttp.Logger, r *http.Response) {
+		if r.StatusCode >= 400 {
+			slog.Warn("HTTP error response", "method", r.Request.Method, "url", r.Request.URL, "status", r.Status)
+		}
 	}
-	esiHttpClient := &http.Client{
-		Transport: httptransport.LoggedTransportWithRetries{
-			MaxRetries: 3,
-			StatusCodesToRetry: []int{
-				http.StatusBadGateway,
-				http.StatusGatewayTimeout,
-				http.StatusServiceUnavailable,
-			},
-		},
-	}
-	esiClient := goesi.NewAPIClient(esiHttpClient, userAgent)
-	memCache := cache.New()
-	defer memCache.Close()
+
+	// Initialize shared ESI client
+	esiClient := goesi.NewAPIClient(rhc.StandardClient(), userAgent)
 
 	// Init StatusCache service
+	memCache := cache.New()
+	defer memCache.Close()
 	sc := statuscache.New(memCache)
 	if err := sc.InitCache(context.TODO(), st); err != nil {
 		slog.Error("Failed to init cache", "error", err)
@@ -219,11 +215,11 @@ func main() {
 	en.EveUniverseService = eu
 
 	// Init Character service
-	cs := character.New(st, httpClient, esiClient)
+	cs := character.New(st, rhc.StandardClient(), esiClient)
 	cs.EveNotificationService = en
 	cs.EveUniverseService = eu
 	cs.StatusCacheService = sc
-	ssoService := sso.New(ssoClientID, httpClient)
+	ssoService := sso.New(ssoClientID, rhc.StandardClient())
 	ssoService.OpenURL = fyneApp.OpenURL
 	cs.SSOService = ssoService
 
@@ -232,7 +228,7 @@ func main() {
 
 	// Init UI
 	ess := esistatus.New(esiClient)
-	eis := eveimage.New(pc, httpClient, *offlineFlag)
+	eis := eveimage.New(pc, rhc.StandardClient(), *offlineFlag)
 	bu := ui.NewBaseUI(fyneApp)
 	bu.CacheService = memCache
 	bu.CharacterService = cs

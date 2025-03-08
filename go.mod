@@ -14,6 +14,7 @@ require (
 	github.com/chasinglogic/appdirs v0.0.0-20240910093348-1aea124d8cd9
 	github.com/dustin/go-humanize v1.0.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
+	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/go-version v1.7.0
 	github.com/icrowley/fake v0.0.0-20240710202011-f797eb4a99c0
 	github.com/jarcoal/httpmock v1.3.1
@@ -52,6 +53,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.1 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20241217141322-fcc2cadd6f08 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jsummers/gobmp v0.0.0-20230614200233-a9de23ed2e25 // indirect
