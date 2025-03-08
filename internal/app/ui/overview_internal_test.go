@@ -9,7 +9,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/statuscache"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
-	"github.com/ErikKalkoken/evebuddy/internal/cache"
+	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/stretchr/testify/assert"
 )
@@ -64,7 +64,7 @@ func newUI(st *storage.Storage) *BaseUI {
 }
 
 func newCharacterService(st *storage.Storage) *character.CharacterService {
-	sc := statuscache.New(cache.New())
+	sc := statuscache.New(memcache.New())
 	eu := eveuniverse.New(st, nil)
 	eu.StatusCacheService = sc
 	s := character.New(st, nil, nil)

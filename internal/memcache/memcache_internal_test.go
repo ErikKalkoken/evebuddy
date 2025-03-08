@@ -1,4 +1,4 @@
-package cache
+package memcache
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCache(t *testing.T) {
+func TestMemcache(t *testing.T) {
 	t.Parallel()
 	t.Run("can remove all expired keys", func(t *testing.T) {
 		// given

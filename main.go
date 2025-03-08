@@ -35,9 +35,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	uidesktop "github.com/ErikKalkoken/evebuddy/internal/app/ui/desktop"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/mobile"
-	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
+	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 )
 
@@ -183,11 +183,18 @@ func main() {
 	defer db.Close()
 	st := storage.New(db)
 
+	// Initialize caches
+	memCache := memcache.New()
+	defer memCache.Close()
+	pc := pcache.New(st, cacheCleanUpTimeout)
+	defer pc.Close()
+
 	// TODO: Add response logging for DEBUG log level
 	// Initialize shared HTTP client
 	// Automatically retries on connection and most server errors
 	// Logs requests on debug level and all HTTP error responses as warnings
 	rhc := retryablehttp.NewClient()
+	// rhc.HTTPClient.Transport = &httpcache.Transport{Cache: pc}
 	rhc.Logger = slog.Default()
 	rhc.ResponseLogHook = func(l retryablehttp.Logger, r *http.Response) {
 		if r.StatusCode >= 400 {
@@ -199,8 +206,6 @@ func main() {
 	esiClient := goesi.NewAPIClient(rhc.StandardClient(), userAgent)
 
 	// Init StatusCache service
-	memCache := cache.New()
-	defer memCache.Close()
 	sc := statuscache.New(memCache)
 	if err := sc.InitCache(context.TODO(), st); err != nil {
 		slog.Error("Failed to init cache", "error", err)
@@ -222,9 +227,6 @@ func main() {
 	ssoService := sso.New(ssoClientID, rhc.StandardClient())
 	ssoService.OpenURL = fyneApp.OpenURL
 	cs.SSOService = ssoService
-
-	// PCache init
-	pc := pcache.New(st, cacheCleanUpTimeout)
 
 	// Init UI
 	ess := esistatus.New(esiClient)

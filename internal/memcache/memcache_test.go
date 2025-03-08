@@ -1,4 +1,4 @@
-package cache_test
+package memcache_test
 
 import (
 	"testing"
@@ -6,12 +6,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ErikKalkoken/evebuddy/internal/cache"
+	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 )
 
-func TestCache(t *testing.T) {
+func TestMemcache(t *testing.T) {
 	t.Parallel()
-	c := cache.New()
+	c := memcache.New()
 	t.Run("can set a key", func(t *testing.T) {
 		// when
 		c.Set("k1", "xxx", time.Second*100)
@@ -62,11 +62,11 @@ func TestCache(t *testing.T) {
 
 }
 
-func TestCache2(t *testing.T) {
+func TestMemcache2(t *testing.T) {
 	t.Parallel()
 	t.Run("can clear all keys", func(t *testing.T) {
 		// given
-		c := cache.New()
+		c := memcache.New()
 		c.Set("dummy-1", "xxx", time.Second*100)
 		c.Set("dummy-2", "xxx", time.Second*100)
 		// when
@@ -76,15 +76,15 @@ func TestCache2(t *testing.T) {
 		assert.False(t, c.Exists("dummy-2"))
 	})
 	t.Run("can close cache", func(t *testing.T) {
-		c := cache.New()
+		c := memcache.New()
 		c.Close()
 	})
 	t.Run("can start cache without automatic clean-up", func(t *testing.T) {
-		c := cache.NewWithTimeout(0)
+		c := memcache.NewWithTimeout(0)
 		c.Close()
 	})
 	t.Run("can run clean-up", func(t *testing.T) {
-		c := cache.NewWithTimeout(0)
+		c := memcache.NewWithTimeout(0)
 		c.CleanUp()
 		c.Close()
 	})

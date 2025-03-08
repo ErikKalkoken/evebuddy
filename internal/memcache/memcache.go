@@ -1,5 +1,5 @@
 // Package cache implements a simple in-memory cache.
-package cache
+package memcache
 
 import (
 	"log/slog"
