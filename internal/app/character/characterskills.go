@@ -3,6 +3,7 @@ package character
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -19,6 +20,14 @@ func (s *CharacterService) GetCharacterSkill(ctx context.Context, characterID, t
 	return o, err
 }
 
+func (s *CharacterService) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]app.ListCharacterSkillProgress, error) {
+	return s.st.ListCharacterSkillProgress(ctx, characterID, eveGroupID)
+}
+
+func (s *CharacterService) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]app.ListCharacterSkillGroupProgress, error) {
+	return s.st.ListCharacterSkillGroupsProgress(ctx, characterID)
+}
+
 func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg UpdateSectionParams) (bool, error) {
 	if arg.Section != app.SectionSkills {
 		panic("called with wrong section")
@@ -30,6 +39,7 @@ func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg Upd
 			if err != nil {
 				return false, err
 			}
+			slog.Debug("Received character skills from ESI", "characterID", characterID, "items", len(skills.Skills))
 			return skills, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
@@ -62,19 +72,13 @@ func (s *CharacterService) updateCharacterSkillsESI(ctx context.Context, arg Upd
 					return err
 				}
 			}
+			slog.Info("Stored updated character skills", "characterID", characterID, "count", len(skills.Skills))
 			if ids := currentSkillIDs.Difference(incomingSkillIDs); ids.Size() > 0 {
 				if err := s.st.DeleteCharacterSkills(ctx, characterID, ids.ToSlice()); err != nil {
 					return err
 				}
+				slog.Info("Deleted obsolete character skills", "characterID", characterID, "count", ids.Size())
 			}
 			return nil
 		})
-}
-
-func (s *CharacterService) ListCharacterSkillProgress(ctx context.Context, characterID, eveGroupID int32) ([]app.ListCharacterSkillProgress, error) {
-	return s.st.ListCharacterSkillProgress(ctx, characterID, eveGroupID)
-}
-
-func (s *CharacterService) ListCharacterSkillGroupsProgress(ctx context.Context, characterID int32) ([]app.ListCharacterSkillGroupProgress, error) {
-	return s.st.ListCharacterSkillGroupsProgress(ctx, characterID)
 }

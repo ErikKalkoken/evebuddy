@@ -32,7 +32,6 @@ func (s *CharacterService) updateCharacterWalletTransactionESI(ctx context.Conte
 			if err != nil {
 				return false, err
 			}
-			slog.Info("Received wallet transactions from ESI", "entries", len(transactions), "characterID", characterID)
 			return transactions, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
@@ -123,6 +122,6 @@ func (s *CharacterService) fetchWalletTransactionsESI(ctx context.Context, chara
 		}
 		lastID = slices.Min(ids)
 	}
-	slog.Info("Received wallet transactions", "characterID", characterID, "count", len(oo2))
+	slog.Debug("Received wallet transactions", "characterID", characterID, "count", len(oo2))
 	return oo2, nil
 }

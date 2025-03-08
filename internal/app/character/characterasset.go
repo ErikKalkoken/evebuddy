@@ -62,6 +62,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 			if err != nil {
 				return false, err
 			}
+			slog.Debug("Received assets from ESI", "count", len(assets), "characterID", characterID)
 			ids := make([]int64, len(assets))
 			for i, a := range assets {
 				ids[i] = a.ItemId
@@ -70,6 +71,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 			if err != nil {
 				return false, err
 			}
+			slog.Debug("Received asset names from ESI", "count", len(names), "characterID", characterID)
 			assetsPlus := make([]esiCharacterAssetPlus, len(assets))
 			for i, a := range assets {
 				o := esiCharacterAssetPlus{
@@ -111,6 +113,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 			if err != nil {
 				return err
 			}
+			var updated, created int
 			for _, a := range assets {
 				if currentIDs.Contains(a.ItemId) {
 					arg := storage.UpdateCharacterAssetParams{
@@ -125,6 +128,7 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 					if err := s.st.UpdateCharacterAsset(ctx, arg); err != nil {
 						return err
 					}
+					updated++
 				} else {
 					arg := storage.CreateCharacterAssetParams{
 						CharacterID:     characterID,
@@ -141,12 +145,15 @@ func (s *CharacterService) updateCharacterAssetsESI(ctx context.Context, arg Upd
 					if err := s.st.CreateCharacterAsset(ctx, arg); err != nil {
 						return err
 					}
+					created++
 				}
 			}
+			slog.Info("Stored character assets", "characterID", characterID, "created", created, "updated", updated)
 			if ids := currentIDs.Difference(incomingIDs); ids.Size() > 0 {
 				if err := s.st.DeleteCharacterAssets(ctx, characterID, ids.ToSlice()); err != nil {
 					return err
 				}
+				slog.Info("Deleted obsolete character assets", "characterID", characterID, "count", ids.Size())
 			}
 			return nil
 		})

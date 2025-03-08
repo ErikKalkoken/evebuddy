@@ -35,7 +35,7 @@ func (s *CharacterService) updateCharacterMailLabelsESI(ctx context.Context, arg
 			if err != nil {
 				return false, err
 			}
-			slog.Info("Received mail labels from ESI", "characterID", characterID, "count", len(ll.Labels))
+			slog.Debug("Received mail labels from ESI", "characterID", characterID, "count", len(ll.Labels))
 			return ll, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
@@ -101,6 +101,7 @@ func (s *CharacterService) updateCharacterMailsESI(ctx context.Context, arg Upda
 			if err != nil {
 				return false, err
 			}
+			slog.Debug("Received mail headers from ESI", "characterID", characterID, "count", len(headers))
 			return headers, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
@@ -159,7 +160,7 @@ func (s *CharacterService) fetchMailHeadersESI(ctx context.Context, characterID 
 		}
 		lastMailID = slices.Min(ids)
 	}
-	slog.Info("Received mail headers", "characterID", characterID, "count", len(oo2))
+	slog.Debug("Received mail headers", "characterID", characterID, "count", len(oo2))
 	return oo2, nil
 }
 
@@ -226,7 +227,7 @@ func (s *CharacterService) addNewMailsESI(ctx context.Context, characterID int32
 	if err := g.Wait(); err != nil {
 		return err
 	}
-	slog.Info("Received new mail from ESI", "characterID", characterID, "count", count)
+	slog.Info("Store new mail from ESI", "characterID", characterID, "count", count)
 	return nil
 }
 
@@ -258,6 +259,7 @@ func (s *CharacterService) fetchAndStoreMail(ctx context.Context, characterID, m
 }
 
 func (s *CharacterService) updateExistingMail(ctx context.Context, characterID int32, headers []esi.GetCharactersCharacterIdMail200Ok) error {
+	var updated int
 	for _, h := range headers {
 		m, err := s.st.GetCharacterMail(ctx, characterID, h.MailId)
 		if err != nil {
@@ -268,7 +270,11 @@ func (s *CharacterService) updateExistingMail(ctx context.Context, characterID i
 			if err != nil {
 				return err
 			}
+			updated++
 		}
+	}
+	if updated > 0 {
+		slog.Info("Updated mail", "characterID", characterID, "count", updated)
 	}
 	return nil
 }
