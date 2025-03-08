@@ -22,6 +22,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"github.com/antihax/goesi"
 	"github.com/chasinglogic/appdirs"
+	"github.com/gregjones/httpcache"
 	"github.com/hashicorp/go-retryablehttp"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -194,7 +195,7 @@ func main() {
 	// Automatically retries on connection and most server errors
 	// Logs requests on debug level and all HTTP error responses as warnings
 	rhc := retryablehttp.NewClient()
-	// rhc.HTTPClient.Transport = &httpcache.Transport{Cache: pc}
+	rhc.HTTPClient.Transport = httpcache.NewTransport(newCacheAdapter(pc, "httpcache-", 24*time.Hour))
 	rhc.Logger = slog.Default()
 	rhc.ResponseLogHook = func(l retryablehttp.Logger, r *http.Response) {
 		if r.StatusCode >= 400 {
