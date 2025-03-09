@@ -13,8 +13,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 )
 
-// PCache is a 2-level persistent cache.
-// 1st level is in memory. 2nd level is on a persistent storage.
+// PCache is a persistent cache.
+// It stores all items in the provided storage and also keeps a copy in a synced memory cache for faster retrival.
 type PCache struct {
 	closeC chan struct{}
 	mc     *memcache.Cache
@@ -75,6 +75,7 @@ func (c *PCache) Clear() {
 // Close closes the cache and frees allocated resources.
 func (c *PCache) Close() {
 	close(c.closeC)
+	c.mc.Close()
 }
 
 // Delete deletes an item.
