@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/pcache"
-	"github.com/gregjones/httpcache"
+	"github.com/gohugoio/httpcache"
 )
 
 // cacheAdapter enabled the use of pcache with httpcache
