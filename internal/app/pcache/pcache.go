@@ -10,14 +10,14 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
-	"github.com/ErikKalkoken/evebuddy/internal/cache"
+	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 )
 
-// PCache is a 2-level persistent cache.
-// 1st level is in memory. 2nd level is on a persistent storage.
+// PCache is a persistent cache.
+// It stores all items in the provided storage and also keeps a copy in a synced memory cache for faster retrival.
 type PCache struct {
 	closeC chan struct{}
-	mc     *cache.Cache
+	mc     *memcache.Cache
 	sfg    *singleflight.Group
 	st     *storage.Storage
 }
@@ -32,7 +32,7 @@ type PCache struct {
 func New(st *storage.Storage, cleanUpTimeout time.Duration) *PCache {
 	c := &PCache{
 		closeC: make(chan struct{}),
-		mc:     cache.NewWithTimeout(0),
+		mc:     memcache.NewWithTimeout(0),
 		sfg:    new(singleflight.Group),
 		st:     st,
 	}
@@ -42,7 +42,7 @@ func New(st *storage.Storage, cleanUpTimeout time.Duration) *PCache {
 				c.CleanUp()
 				select {
 				case <-c.closeC:
-					slog.Info("cache closed")
+					slog.Debug("cache closed")
 					return
 				case <-time.After(cleanUpTimeout):
 				}
@@ -54,13 +54,13 @@ func New(st *storage.Storage, cleanUpTimeout time.Duration) *PCache {
 
 // CleanUp removes all expired items.
 func (c *PCache) CleanUp() {
-	slog.Info("pcache clean-up: started")
+	slog.Debug("pcache clean-up: started")
 	n, err := c.st.CacheCleanUp(context.Background())
 	if err != nil {
 		slog.Error("cache failure", "error", err)
 	}
 	c.mc.CleanUp()
-	slog.Info("pcache clean-up: completed", "removed", n)
+	slog.Debug("pcache clean-up: completed", "removed", n)
 }
 
 // Clear removes all items.
@@ -75,6 +75,7 @@ func (c *PCache) Clear() {
 // Close closes the cache and frees allocated resources.
 func (c *PCache) Close() {
 	close(c.closeC)
+	c.mc.Close()
 }
 
 // Delete deletes an item.

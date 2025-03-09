@@ -2,6 +2,7 @@ package character
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -26,6 +27,7 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			if err != nil {
 				return false, err
 			}
+			slog.Debug("Received jump clones from ESI", "characterID", characterID, "count", len(clones.JumpClones))
 			return clones, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
@@ -61,6 +63,7 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			if err := s.st.ReplaceCharacterJumpClones(ctx, characterID, args); err != nil {
 				return err
 			}
+			slog.Info("Stored updated jump clones", "characterID", characterID, "count", len(clones.JumpClones))
 			return nil
 		})
 }

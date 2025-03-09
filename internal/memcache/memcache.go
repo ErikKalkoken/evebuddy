@@ -1,5 +1,5 @@
 // Package cache implements a simple in-memory cache.
-package cache
+package memcache
 
 import (
 	"log/slog"
@@ -48,7 +48,7 @@ func create(cleanUpTimeout time.Duration) *Cache {
 			for {
 				select {
 				case <-c.closeC:
-					slog.Info("cache closed")
+					slog.Debug("cache closed")
 					return
 				case <-time.After(cleanUpTimeout):
 				}
@@ -61,7 +61,7 @@ func create(cleanUpTimeout time.Duration) *Cache {
 
 // CleanUp removes all expired items.
 func (c *Cache) CleanUp() {
-	slog.Info("cache clean-up: started")
+	slog.Debug("cache clean-up: started")
 	n := 0
 	c.items.Range(func(key, value any) bool {
 		_, found := c.Get(key.(string))
@@ -71,7 +71,7 @@ func (c *Cache) CleanUp() {
 		}
 		return true
 	})
-	slog.Info("cache clean-up: completed", "removed", n)
+	slog.Debug("cache clean-up: completed", "removed", n)
 }
 
 // Clear removes all items.

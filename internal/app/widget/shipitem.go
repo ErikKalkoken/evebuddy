@@ -66,6 +66,7 @@ func (w *ShipItem) Set(typeID int32, label string, canFly bool) {
 	w.label.Importance = i
 	w.label.Refresh()
 	go func() {
+		// TODO: Move grayscale feature into general package
 		key := fmt.Sprintf("ship-image-%d", typeID)
 		var img *image.RGBA
 		y, ok := w.cache.Get(key)

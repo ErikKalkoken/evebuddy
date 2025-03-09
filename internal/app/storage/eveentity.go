@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/queries"
@@ -173,6 +174,7 @@ func (st *Storage) UpdateOrCreateEveEntity(ctx context.Context, id int32, name s
 	if err != nil {
 		return nil, fmt.Errorf("update or create eve entity %d: %w", id, err)
 	}
+	slog.Info("Stored updated Eve Entities", "ID", id)
 	return eveEntityFromDBModel(e), nil
 }
 

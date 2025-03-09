@@ -33,7 +33,7 @@ func (r realtime) Now() time.Time {
 // ensureSingleInstance sets and returns a mutex for this application instance.
 // The returned mutex must not be released until the application terminates.
 func ensureSingleInstance() (mutex.Releaser, error) {
-	slog.Info("Checking for other instances")
+	slog.Debug("Checking for other instances")
 	mu, err := mutex.Acquire(mutex.Spec{
 		Name:    strings.ReplaceAll(appID, ".", "-"),
 		Clock:   realtime{},

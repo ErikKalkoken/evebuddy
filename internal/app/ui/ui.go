@@ -46,11 +46,11 @@ const (
 
 // BaseUI represents the core UI logic and is used by both the desktop and mobile UI.
 type BaseUI struct {
-	CacheService       app.CacheService
 	CharacterService   *character.CharacterService
 	ESIStatusService   app.ESIStatusService
 	EveImageService    app.EveImageService
 	EveUniverseService *eveuniverse.EveUniverseService
+	MemCache           app.CacheService
 	StatusCacheService app.StatusCacheService
 	// Paths to user data (for information only)
 	DataPaths map[string]string
@@ -58,6 +58,9 @@ type BaseUI struct {
 	IsOffline bool
 	// Whether to disable update tickers (useful for debugging)
 	IsUpdateTickerDisabled bool
+
+	// Clears all caches
+	ClearCache func()
 
 	HideMailIndicator  func()
 	OnAppFirstStarted  func()
@@ -75,11 +78,10 @@ type BaseUI struct {
 	ShowTypeInfoWindow     func(typeID, characterID int32, selectTab TypeWindowTab)
 	ShowLocationInfoWindow func(int64)
 
-	FyneApp fyne.App
-	DeskApp desktop.App
-	Window  fyne.Window
-
+	DeskApp  desktop.App
+	FyneApp  fyne.App
 	Snackbar *iwidget.Snackbar
+	Window   fyne.Window
 
 	AccountArea           *AccountArea
 	AssetsArea            *AssetsArea
@@ -105,10 +107,10 @@ type BaseUI struct {
 	WealthArea            *WealthArea
 
 	character    *app.Character
-	statusWindow fyne.Window
-	isMobile     bool
-	wasStarted   atomic.Bool // whether the app has already been started at least once
 	isForeground atomic.Bool // whether the app is currently shown in the foreground
+	isMobile     bool
+	statusWindow fyne.Window
+	wasStarted   atomic.Bool // whether the app has already been started at least once
 }
 
 // NewBaseUI constructs and returns a new BaseUI.

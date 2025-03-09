@@ -34,7 +34,7 @@ func (s *CharacterService) updateCharacterWalletJournalEntryESI(ctx context.Cont
 			if err != nil {
 				return false, err
 			}
-			slog.Info("Received wallet journal from ESI", "entries", len(entries), "characterID", characterID)
+			slog.Debug("Received wallet journal from ESI", "entries", len(entries), "characterID", characterID)
 			return entries, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {

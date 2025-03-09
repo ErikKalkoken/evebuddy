@@ -54,7 +54,7 @@ func (s *CharacterService) UpdateCharacterSkillqueueESI(ctx context.Context, arg
 			if err != nil {
 				return false, err
 			}
-			slog.Info("Received skillqueue from ESI", "items", len(items), "characterID", characterID)
+			slog.Debug("Received skillqueue from ESI", "characterID", characterID, "items", len(items))
 			return items, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
@@ -80,7 +80,7 @@ func (s *CharacterService) UpdateCharacterSkillqueueESI(ctx context.Context, arg
 			if err := s.st.ReplaceCharacterSkillqueueItems(ctx, characterID, args); err != nil {
 				return err
 			}
-			slog.Info("Updated skillqueue items", "characterID", characterID, "count", len(args))
+			slog.Info("Stored updated skillqueue items", "characterID", characterID, "count", len(args))
 			return nil
 		})
 

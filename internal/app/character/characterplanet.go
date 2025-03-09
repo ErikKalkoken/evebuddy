@@ -3,6 +3,7 @@ package character
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -67,6 +68,7 @@ func (s *CharacterService) updateCharacterPlanetsESI(ctx context.Context, arg Up
 			if err != nil {
 				return false, err
 			}
+			slog.Debug("Received planets from ESI", "characterID", characterID, "count", len(planets))
 			return planets, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
@@ -151,6 +153,7 @@ func (s *CharacterService) updateCharacterPlanetsESI(ctx context.Context, arg Up
 					}
 				}
 			}
+			slog.Info("Stored updated planets", "characterID", characterID, "count", len(planets))
 			return nil
 		})
 }

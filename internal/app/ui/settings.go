@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"maps"
 	"os"
@@ -19,6 +20,7 @@ import (
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -257,31 +259,37 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 	list := iwidget.NewSettingList(items)
 
 	clear := SettingAction{
-		"Clear the local image cache",
+		"Clear cache",
 		func() {
 			w := a.currentWindow()
-			m := kxmodal.NewProgressInfinite(
-				"Clearing cache...",
-				"",
-				func() error {
-					if err := a.u.EveImageService.ClearCache(); err != nil {
-						return err
+			d := NewConfirmDialog(
+				"Clear Cache",
+				"Are you sure you want to clear the cache?",
+				"Clear",
+				func(confirmed bool) {
+					if !confirmed {
+						return
 					}
-					slog.Info("Cleared image cache")
-					return nil
-				},
-				w,
-			)
-			m.OnSuccess = func() {
-				d := dialog.NewInformation("Image cache", "Image cache cleared", w)
-				d.Show()
-			}
-			m.OnError = func(err error) {
-				slog.Error("Failed to clear image cache", "error", err)
-				d := NewErrorDialog("Failed to clear image cache", err, w)
-				d.Show()
-			}
-			m.Start()
+					m := kxmodal.NewProgressInfinite(
+						"Clearing cache...",
+						"",
+						func() error {
+							a.u.ClearCache()
+							return nil
+						},
+						w,
+					)
+					m.OnSuccess = func() {
+						slog.Info("Cleared cache")
+						a.u.Snackbar.Show("Cache cleared")
+					}
+					m.OnError = func(err error) {
+						slog.Error("Failed to clear cache", "error", err)
+						a.u.Snackbar.Show(fmt.Sprintf("Failed to clear cache: %s", humanize.Error(err)))
+					}
+					m.Start()
+				}, w)
+			d.Show()
 		}}
 	reset := SettingAction{
 		Label: "Reset to defaults",
@@ -330,29 +338,33 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 }
 
 func (a *SettingsArea) showDeleteFileDialog(name, path string) {
-	d := dialog.NewConfirm("Delete "+name, "Are you sure?", func(confirmed bool) {
-		if !confirmed {
-			return
-		}
-		err := func() error {
-			files, err := filepath.Glob(path)
-			if err != nil {
-				return err
+	d := NewConfirmDialog(
+		"Delete File",
+		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
+		"Delete",
+		func(confirmed bool) {
+			if !confirmed {
+				return
 			}
-			for _, f := range files {
-				if err := os.Truncate(f, 0); err != nil {
+			err := func() error {
+				files, err := filepath.Glob(path)
+				if err != nil {
 					return err
 				}
+				for _, f := range files {
+					if err := os.Truncate(f, 0); err != nil {
+						return err
+					}
+				}
+				return nil
+			}()
+			if err != nil {
+				slog.Error("delete "+name, "path", path, "error", err)
+				a.snackbar.Show("ERROR: Failed to delete " + name)
+			} else {
+				a.snackbar.Show(Titler.String(name) + " deleted")
 			}
-			return nil
-		}()
-		if err != nil {
-			slog.Error("delete "+name, "path", path, "error", err)
-			a.snackbar.Show("ERROR: Failed to delete " + name)
-		} else {
-			a.snackbar.Show(Titler.String(name) + " deleted")
-		}
-	}, a.window)
+		}, a.window)
 	d.Show()
 }
 

@@ -62,6 +62,12 @@ func New(cache CacheService, httpClient *http.Client, isOffline bool) *EveImageS
 	return m
 }
 
+// ClearCache clears the images cache and returns the number of deleted entries.
+func (m *EveImageService) ClearCache() error {
+	m.cache.Clear()
+	return nil
+}
+
 // AllianceLogo returns the logo for an alliance.
 func (m *EveImageService) AllianceLogo(id int32, size int) (fyne.Resource, error) {
 	url, err := AllianceLogoURL(id, size)
@@ -249,10 +255,4 @@ func loadDataFromURL(url string, client *http.Client) ([]byte, error) {
 func makeMD5Hash(text string) string {
 	hash := md5.Sum([]byte(text))
 	return hex.EncodeToString(hash[:])
-}
-
-// ClearCache clears the images cache and returns the number of deleted entries.
-func (m *EveImageService) ClearCache() error {
-	m.cache.Clear()
-	return nil
 }

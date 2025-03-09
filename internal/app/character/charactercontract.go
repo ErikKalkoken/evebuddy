@@ -141,7 +141,7 @@ func (s *CharacterService) updateCharacterContractsESI(ctx context.Context, arg 
 			if err != nil {
 				return false, err
 			}
-			slog.Info("Received contracts from ESI", "count", len(contracts), "characterID", characterID)
+			slog.Debug("Received contracts from ESI", "characterID", characterID, "count", len(contracts))
 			return contracts, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {

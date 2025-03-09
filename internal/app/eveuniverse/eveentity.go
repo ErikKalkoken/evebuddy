@@ -68,7 +68,7 @@ func (eu *EveUniverseService) AddMissingEveEntities(ctx context.Context, ids []i
 	missingIDs := missing.ToSlice()
 	slices.Sort(missingIDs)
 	if len(missingIDs) > 0 {
-		slog.Info("Trying to resolve EveEntity IDs from ESI", "ids", missingIDs)
+		slog.Debug("Trying to resolve EveEntity IDs from ESI", "ids", missingIDs)
 	}
 	var ee []esi.PostUniverseNames200Ok
 	var badIDs []int32
@@ -103,28 +103,28 @@ func (eu *EveUniverseService) AddMissingEveEntities(ctx context.Context, ids []i
 }
 
 func (eu *EveUniverseService) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostUniverseNames200Ok, []int32, error) {
-	slog.Info("Trying to resolve IDs", "count", len(ids))
+	slog.Debug("Trying to resolve IDs", "count", len(ids))
 	ee, resp, err := eu.esiClient.ESI.UniverseApi.PostUniverseNames(ctx, ids, nil)
 	if err != nil {
 		if resp != nil && resp.StatusCode == 404 {
 			if len(ids) == 1 {
 				slog.Warn("found unresolvable ID", "id", ids)
 				return []esi.PostUniverseNames200Ok{}, ids, nil
-			} else {
-				i := len(ids) / 2
-				ee1, bad1, err := eu.resolveIDs(ctx, ids[:i])
-				if err != nil {
-					return nil, nil, err
-				}
-				ee2, bad2, err := eu.resolveIDs(ctx, ids[i:])
-				if err != nil {
-					return nil, nil, err
-				}
-				return slices.Concat(ee1, ee2), slices.Concat(bad1, bad2), nil
 			}
+			i := len(ids) / 2
+			ee1, bad1, err := eu.resolveIDs(ctx, ids[:i])
+			if err != nil {
+				return nil, nil, err
+			}
+			ee2, bad2, err := eu.resolveIDs(ctx, ids[i:])
+			if err != nil {
+				return nil, nil, err
+			}
+			return slices.Concat(ee1, ee2), slices.Concat(bad1, bad2), nil
 		}
 		return nil, nil, err
 	}
+	slog.Info("Stored newly resolved EveEntities", "count", len(ee))
 	return ee, []int32{}, nil
 }
 

@@ -155,7 +155,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 func (a *AccountArea) showDeleteDialog(c accountCharacter) {
 	d1 := NewConfirmDialog(
 		"Delete Character",
-		fmt.Sprintf("Are you sure you want to delete character %s?", c.name),
+		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", c.name),
 		"Delete",
 		func(confirmed bool) {
 			if confirmed {

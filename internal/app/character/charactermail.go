@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"time"
 
@@ -28,6 +29,7 @@ func (s *CharacterService) DeleteCharacterMail(ctx context.Context, characterID,
 	if err != nil {
 		return err
 	}
+	slog.Info("Mail deleted", "characterID", characterID, "mailID", mailID)
 	return nil
 }
 
@@ -166,6 +168,7 @@ func (s *CharacterService) SendCharacterMail(ctx context.Context, characterID in
 	if err != nil {
 		return 0, err
 	}
+	slog.Info("Mail sent", "characterID", characterID, "mailID", mailID)
 	return mailID, nil
 }
 

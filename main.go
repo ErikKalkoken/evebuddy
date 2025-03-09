@@ -22,6 +22,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"github.com/antihax/goesi"
 	"github.com/chasinglogic/appdirs"
+	"github.com/gohugoio/httpcache"
 	"github.com/hashicorp/go-retryablehttp"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -35,9 +36,9 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	uidesktop "github.com/ErikKalkoken/evebuddy/internal/app/ui/desktop"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui/mobile"
-	"github.com/ErikKalkoken/evebuddy/internal/cache"
 	"github.com/ErikKalkoken/evebuddy/internal/deleteapp"
 	"github.com/ErikKalkoken/evebuddy/internal/eveimage"
+	"github.com/ErikKalkoken/evebuddy/internal/memcache"
 	"github.com/ErikKalkoken/evebuddy/internal/sso"
 )
 
@@ -183,11 +184,21 @@ func main() {
 	defer db.Close()
 	st := storage.New(db)
 
+	// Initialize caches
+	memCache := memcache.New()
+	defer memCache.Close()
+	pc := pcache.New(st, cacheCleanUpTimeout)
+	defer pc.Close()
+
 	// TODO: Add response logging for DEBUG log level
 	// Initialize shared HTTP client
 	// Automatically retries on connection and most server errors
 	// Logs requests on debug level and all HTTP error responses as warnings
 	rhc := retryablehttp.NewClient()
+	rhc.HTTPClient.Transport = &httpcache.Transport{
+		Cache:               newCacheAdapter(pc, "httpcache-", 24*time.Hour),
+		MarkCachedResponses: true,
+	}
 	rhc.Logger = slog.Default()
 	rhc.ResponseLogHook = func(l retryablehttp.Logger, r *http.Response) {
 		if r.StatusCode >= 400 {
@@ -199,8 +210,6 @@ func main() {
 	esiClient := goesi.NewAPIClient(rhc.StandardClient(), userAgent)
 
 	// Init StatusCache service
-	memCache := cache.New()
-	defer memCache.Close()
 	sc := statuscache.New(memCache)
 	if err := sc.InitCache(context.TODO(), st); err != nil {
 		slog.Error("Failed to init cache", "error", err)
@@ -223,18 +232,19 @@ func main() {
 	ssoService.OpenURL = fyneApp.OpenURL
 	cs.SSOService = ssoService
 
-	// PCache init
-	pc := pcache.New(st, cacheCleanUpTimeout)
-
 	// Init UI
 	ess := esistatus.New(esiClient)
 	eis := eveimage.New(pc, rhc.StandardClient(), *offlineFlag)
 	bu := ui.NewBaseUI(fyneApp)
-	bu.CacheService = memCache
+	bu.ClearCache = func() {
+		pc.Clear()
+		memCache.Clear()
+	}
 	bu.CharacterService = cs
 	bu.ESIStatusService = ess
 	bu.EveImageService = eis
 	bu.EveUniverseService = eu
+	bu.MemCache = memCache
 	bu.StatusCacheService = sc
 	bu.IsOffline = *offlineFlag
 	bu.IsUpdateTickerDisabled = *disableUpdatesFlag

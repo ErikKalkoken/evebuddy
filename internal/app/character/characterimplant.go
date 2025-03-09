@@ -2,6 +2,7 @@ package character
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
@@ -22,6 +23,7 @@ func (s *CharacterService) updateCharacterImplantsESI(ctx context.Context, arg U
 			if err != nil {
 				return false, err
 			}
+			slog.Debug("Received implants from ESI", "count", len(implants), "characterID", characterID)
 			return implants, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
@@ -40,6 +42,7 @@ func (s *CharacterService) updateCharacterImplantsESI(ctx context.Context, arg U
 			if err := s.st.ReplaceCharacterImplants(ctx, characterID, args); err != nil {
 				return err
 			}
+			slog.Info("Stored updated implants", "characterID", characterID, "count", len(implants))
 			return nil
 		})
 }

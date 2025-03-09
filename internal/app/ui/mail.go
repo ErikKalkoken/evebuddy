@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -19,6 +20,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -527,22 +529,35 @@ func (a *MailArea) MakeComposeMessageAction() (fyne.Resource, func()) {
 
 func (a *MailArea) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 	return theme.DeleteIcon(), func() {
-		s := fmt.Sprintf("Are you sure you want to delete this mail?\n\n%s", a.mail.Header())
-		d := NewConfirmDialog("Delete mail", s, "Delete", func(confirmed bool) {
-			if confirmed {
-				if err := a.u.CharacterService.DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID); err != nil {
-					t := "Failed to delete mail"
-					slog.Error(t, "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
-					d2 := NewErrorDialog(t, err, a.u.Window)
-					d2.Show()
-				} else {
+		d := NewConfirmDialog(
+			"Delete mail",
+			fmt.Sprintf("Are you sure you want to permanently delete this mail?\n\n%s", a.mail.Header()),
+			"Delete",
+			func(confirmed bool) {
+				if !confirmed {
+					return
+				}
+				m := kxmodal.NewProgressInfinite(
+					"Deleting mail...",
+					"",
+					func() error {
+						return a.u.CharacterService.DeleteCharacterMail(context.TODO(), a.mail.CharacterID, a.mail.MailID)
+					},
+					a.u.Window,
+				)
+				m.OnSuccess = func() {
 					a.headerRefresh()
 					if onSuccess != nil {
 						onSuccess()
 					}
+					a.u.Snackbar.Show(fmt.Sprintf("Mail \"%s\" deleted", a.mail.Subject))
 				}
-			}
-		}, a.u.Window)
+				m.OnError = func(err error) {
+					slog.Error("Failed to delete mail", "characterID", a.mail.CharacterID, "mailID", a.mail.MailID, "err", err)
+					a.u.Snackbar.Show(fmt.Sprintf("Failed to delete mail: %s", humanize.Error(err)))
+				}
+				m.Start()
+			}, a.u.Window)
 		d.Show()
 	}
 }
@@ -591,7 +606,7 @@ func (a *MailArea) setMail(mailID int32) {
 	a.mail, err = a.u.CharacterService.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
-		a.u.Snackbar.Show("Failed to fetch mail")
+		a.u.Snackbar.Show("ERROR: Failed to fetch mail")
 		return
 	}
 	if !a.u.IsOffline && !a.mail.IsRead {
@@ -599,7 +614,7 @@ func (a *MailArea) setMail(mailID int32) {
 			err = a.u.CharacterService.UpdateMailRead(ctx, characterID, a.mail.MailID)
 			if err != nil {
 				slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
-				a.u.Snackbar.Show("Failed to mark mail as read")
+				a.u.Snackbar.Show("ERROR: Failed to mark mail as read")
 				return
 			}
 			a.Refresh()

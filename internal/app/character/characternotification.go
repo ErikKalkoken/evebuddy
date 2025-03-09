@@ -81,6 +81,7 @@ func (s *CharacterService) updateCharacterNotificationsESI(ctx context.Context, 
 			if err != nil {
 				return false, err
 			}
+			slog.Debug("Received notifications from ESI", "characterID", characterID, "count", len(notifications))
 			return notifications, nil
 		},
 		func(ctx context.Context, characterID int32, data any) error {
