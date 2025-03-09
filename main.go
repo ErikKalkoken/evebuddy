@@ -233,11 +233,15 @@ func main() {
 	ess := esistatus.New(esiClient)
 	eis := eveimage.New(pc, rhc.StandardClient(), *offlineFlag)
 	bu := ui.NewBaseUI(fyneApp)
-	bu.CacheService = memCache
+	bu.ClearCache = func() {
+		pc.Clear()
+		memCache.Clear()
+	}
 	bu.CharacterService = cs
 	bu.ESIStatusService = ess
 	bu.EveImageService = eis
 	bu.EveUniverseService = eu
+	bu.MemCache = memCache
 	bu.StatusCacheService = sc
 	bu.IsOffline = *offlineFlag
 	bu.IsUpdateTickerDisabled = *disableUpdatesFlag

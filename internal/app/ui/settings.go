@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"maps"
 	"os"
@@ -19,6 +20,7 @@ import (
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
+	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -257,31 +259,36 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 	list := iwidget.NewSettingList(items)
 
 	clear := SettingAction{
-		"Clear the local image cache",
+		"Clear cache",
 		func() {
 			w := a.currentWindow()
-			m := kxmodal.NewProgressInfinite(
-				"Clearing cache...",
-				"",
-				func() error {
-					if err := a.u.EveImageService.ClearCache(); err != nil {
-						return err
+			d := dialog.NewConfirm(
+				"Clear Cache",
+				"Are you sure you want to clear the cache?",
+				func(confirmed bool) {
+					if !confirmed {
+						return
 					}
-					slog.Info("Cleared image cache")
-					return nil
-				},
-				w,
-			)
-			m.OnSuccess = func() {
-				d := dialog.NewInformation("Image cache", "Image cache cleared", w)
-				d.Show()
-			}
-			m.OnError = func(err error) {
-				slog.Error("Failed to clear image cache", "error", err)
-				d := NewErrorDialog("Failed to clear image cache", err, w)
-				d.Show()
-			}
-			m.Start()
+					m := kxmodal.NewProgressInfinite(
+						"Clearing cache...",
+						"",
+						func() error {
+							a.u.ClearCache()
+							return nil
+						},
+						w,
+					)
+					m.OnSuccess = func() {
+						slog.Info("Cleared cache")
+						a.u.Snackbar.Show("Cache cleared")
+					}
+					m.OnError = func(err error) {
+						slog.Error("Failed to clear cache", "error", err)
+						a.u.Snackbar.Show(fmt.Sprintf("Failed to clear cache: %s", humanize.Error(err)))
+					}
+					m.Start()
+				}, w)
+			d.Show()
 		}}
 	reset := SettingAction{
 		Label: "Reset to defaults",
