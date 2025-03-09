@@ -29,6 +29,7 @@ func (s *CharacterService) DeleteCharacterMail(ctx context.Context, characterID,
 	if err != nil {
 		return err
 	}
+	slog.Info("Mail deleted", "characterID", characterID, "mailID", mailID)
 	return nil
 }
 

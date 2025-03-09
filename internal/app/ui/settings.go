@@ -262,9 +262,10 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		"Clear cache",
 		func() {
 			w := a.currentWindow()
-			d := dialog.NewConfirm(
+			d := NewConfirmDialog(
 				"Clear Cache",
 				"Are you sure you want to clear the cache?",
+				"Clear",
 				func(confirmed bool) {
 					if !confirmed {
 						return
