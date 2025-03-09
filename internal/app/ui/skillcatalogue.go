@@ -51,7 +51,7 @@ type SkillCatalogueArea struct {
 	u              *BaseUI
 }
 
-func (u *BaseUI) NewSkillCatalogueArea() *SkillCatalogueArea {
+func NewSkillCatalogueArea(u *BaseUI) *SkillCatalogueArea {
 	a := &SkillCatalogueArea{
 		groups:         make([]skillGroupProgress, 0),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),

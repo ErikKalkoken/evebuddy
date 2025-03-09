@@ -43,7 +43,7 @@ type AccountArea struct {
 	u          *BaseUI
 }
 
-func (u *BaseUI) NewAccountArea() *AccountArea {
+func NewAccountArea(u *BaseUI) *AccountArea {
 	a := &AccountArea{
 		characters: make([]accountCharacter, 0),
 		snackbar:   u.Snackbar,

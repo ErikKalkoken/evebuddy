@@ -40,10 +40,10 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		w.Show()
 	}
 	u.ShowTypeInfoWindow = func(typeID, characterID int32, selectTab ui.TypeWindowTab) {
-		showItemWindow(u.NewItemInfoArea(typeID, characterID, 0, selectTab))
+		showItemWindow(ui.NewItemInfoArea(bui, typeID, characterID, 0, selectTab))
 	}
 	u.ShowLocationInfoWindow = func(locationID int64) {
-		showItemWindow(u.NewItemInfoArea(0, 0, locationID, ui.DescriptionTab))
+		showItemWindow(ui.NewItemInfoArea(bui, 0, 0, locationID, ui.DescriptionTab))
 	}
 
 	var navBar *iwidget.NavBar
@@ -60,7 +60,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
 	u.MailArea.OnSendMessage = func(character *app.Character, mode ui.SendMailMode, mail *app.CharacterMail) {
-		page, sendIcon, sendAction := u.MakeSendMailPage(character, mode, mail, u.Window)
+		page, sendIcon, sendAction := ui.MakeSendMailPage(bui, character, mode, mail, u.Window)
 		if mode != ui.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}

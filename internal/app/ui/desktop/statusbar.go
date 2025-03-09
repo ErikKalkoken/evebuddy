@@ -51,7 +51,7 @@ type statusBarArea struct {
 	updateStatus   *appwidget.StatusBarItem
 }
 
-func (u *DesktopUI) newStatusBarArea() *statusBarArea {
+func newStatusBarArea(u *DesktopUI) *statusBarArea {
 	a := &statusBarArea{
 		infoText:       widget.NewLabel(""),
 		newVersionHint: container.NewHBox(),

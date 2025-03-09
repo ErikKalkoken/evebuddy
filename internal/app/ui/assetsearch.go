@@ -63,7 +63,7 @@ type AssetSearchArea struct {
 	u               *BaseUI
 }
 
-func (u *BaseUI) NewAssetSearchArea() *AssetSearchArea {
+func NewAssetSearchArea(u *BaseUI) *AssetSearchArea {
 	a := &AssetSearchArea{
 		assetsFiltered: make([]*assetSearchRow, 0),
 		searchEntry:    widget.NewEntry(),

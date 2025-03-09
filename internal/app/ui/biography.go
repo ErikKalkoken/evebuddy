@@ -13,7 +13,7 @@ type BiographyArea struct {
 	u       *BaseUI
 }
 
-func (u *BaseUI) NewBiographyArea() *BiographyArea {
+func NewBiographyArea(u *BaseUI) *BiographyArea {
 	a := &BiographyArea{u: u, text: widget.NewLabel("")}
 	a.text.Wrapping = fyne.TextWrapBreak
 	a.Content = a.text

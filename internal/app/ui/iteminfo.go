@@ -202,7 +202,7 @@ type ItemInfoArea struct {
 	u              *BaseUI
 }
 
-func (u *BaseUI) NewItemInfoArea(typeID, characterID int32, locationID int64, selectTab TypeWindowTab) (*ItemInfoArea, error) {
+func NewItemInfoArea(u *BaseUI, typeID, characterID int32, locationID int64, selectTab TypeWindowTab) (*ItemInfoArea, error) {
 	ctx := context.TODO()
 	a := &ItemInfoArea{
 		u:      u,

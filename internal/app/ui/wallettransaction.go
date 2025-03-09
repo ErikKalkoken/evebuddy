@@ -34,7 +34,7 @@ type WalletTransactionArea struct {
 	u    *BaseUI
 }
 
-func (u *BaseUI) NewWalletTransactionArea() *WalletTransactionArea {
+func NewWalletTransactionArea(u *BaseUI) *WalletTransactionArea {
 	a := WalletTransactionArea{
 		top:  makeTopLabel(),
 		rows: make([]walletTransaction, 0),

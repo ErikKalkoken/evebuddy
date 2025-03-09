@@ -38,7 +38,7 @@ type ColoniesArea struct {
 	u    *BaseUI
 }
 
-func (u *BaseUI) NewColoniesArea() *ColoniesArea {
+func NewColoniesArea(u *BaseUI) *ColoniesArea {
 	a := ColoniesArea{
 		rows: make([]colonyRow, 0),
 		top:  makeTopLabel(),

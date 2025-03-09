@@ -37,7 +37,7 @@ type ShipsArea struct {
 	u               *BaseUI
 }
 
-func (u *BaseUI) newShipArea() *ShipsArea {
+func newShipArea(u *BaseUI) *ShipsArea {
 	a := ShipsArea{
 		ships:     make([]*app.CharacterShipAbility, 0),
 		top:       widget.NewLabel(""),

@@ -40,7 +40,7 @@ type OverviewArea struct {
 	u    *BaseUI
 }
 
-func (u *BaseUI) NewOverviewArea() *OverviewArea {
+func NewOverviewArea(u *BaseUI) *OverviewArea {
 	a := OverviewArea{
 		rows: make([]overviewCharacter, 0),
 		top:  makeTopLabel(),

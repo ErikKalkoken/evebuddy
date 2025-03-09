@@ -47,7 +47,7 @@ type NotificationsArea struct {
 	u                *BaseUI
 }
 
-func (u *BaseUI) NewNotificationsArea() *NotificationsArea {
+func NewNotificationsArea(u *BaseUI) *NotificationsArea {
 	a := NotificationsArea{
 		Groups:           make([]NotificationGroup, 0),
 		notifications:    make([]*app.CharacterNotification, 0),

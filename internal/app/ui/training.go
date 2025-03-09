@@ -32,7 +32,7 @@ type TrainingArea struct {
 	u    *BaseUI
 }
 
-func (u *BaseUI) NewTrainingArea() *TrainingArea {
+func NewTrainingArea(u *BaseUI) *TrainingArea {
 	a := TrainingArea{
 		rows: make([]trainingCharacter, 0),
 		top:  makeTopLabel(),

@@ -82,7 +82,7 @@ type AssetsArea struct {
 	u                *BaseUI
 }
 
-func (u *BaseUI) NewAssetsArea() *AssetsArea {
+func NewAssetsArea(u *BaseUI) *AssetsArea {
 	lp := widget.NewLabel("")
 	lp.Wrapping = fyne.TextWrapWord
 	a := AssetsArea{

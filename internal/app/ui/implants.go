@@ -28,7 +28,7 @@ type ImplantsArea struct {
 	u        *BaseUI
 }
 
-func (u *BaseUI) NewImplantsArea() *ImplantsArea {
+func NewImplantsArea(u *BaseUI) *ImplantsArea {
 	a := ImplantsArea{
 		implants: make([]*app.CharacterImplant, 0),
 		top:      makeTopLabel(),

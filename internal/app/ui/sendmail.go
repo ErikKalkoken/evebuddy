@@ -29,7 +29,8 @@ const (
 	SendMailForward
 )
 
-func (u *BaseUI) MakeSendMailPage(
+func MakeSendMailPage(
+	u *BaseUI,
 	character *app.Character,
 	mode SendMailMode,
 	mail *app.CharacterMail,
@@ -43,7 +44,7 @@ func (u *BaseUI) MakeSendMailPage(
 
 	var to *appwidget.EveEntityEntry
 	toButton := widget.NewButton("To", func() {
-		u.showAddDialog(character.ID, func(ee *app.EveEntity) {
+		showAddDialog(u, character.ID, func(ee *app.EveEntity) {
 			to.Add(ee)
 		}, w)
 	})
@@ -124,7 +125,7 @@ func (u *BaseUI) MakeSendMailPage(
 	return page, theme.MailSendIcon(), sendAction
 }
 
-func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
+func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
 	items := make([]*app.EveEntity, 0)
 	fallbackIcon := icon.Questionmark32Png

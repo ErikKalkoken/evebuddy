@@ -22,7 +22,7 @@ type toolbarArea struct {
 	u       *DesktopUI
 }
 
-func (u *DesktopUI) newToolbarArea() *toolbarArea {
+func newToolbarArea(u *DesktopUI) *toolbarArea {
 	i := kwidget.NewTappableImageWithMenu(icon.Characterplaceholder64Jpeg, fyne.NewMenu(""))
 	i.SetFillMode(canvas.ImageFillContain)
 	i.SetMinSize(fyne.NewSquareSize(ui.DefaultIconUnitSize))

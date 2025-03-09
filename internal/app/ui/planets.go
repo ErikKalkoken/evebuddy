@@ -29,7 +29,7 @@ type PlanetArea struct {
 	u       *BaseUI
 }
 
-func (u *BaseUI) NewPlanetArea() *PlanetArea {
+func NewPlanetArea(u *BaseUI) *PlanetArea {
 	a := PlanetArea{
 		planets: make([]*app.CharacterPlanet, 0),
 		top:     makeTopLabel(),

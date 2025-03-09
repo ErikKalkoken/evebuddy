@@ -66,7 +66,7 @@ type UpdateStatusArea struct {
 	u                 *BaseUI
 }
 
-func (u *BaseUI) NewUpdateStatusArea() *UpdateStatusArea {
+func NewUpdateStatusArea(u *BaseUI) *UpdateStatusArea {
 	a := &UpdateStatusArea{
 		charactersTop:     makeTopLabel(),
 		details:           make([]detailsItem, 0),

@@ -53,7 +53,7 @@ type WalletJournalArea struct {
 	u    *BaseUI
 }
 
-func (u *BaseUI) NewWalletJournalArea() *WalletJournalArea {
+func NewWalletJournalArea(u *BaseUI) *WalletJournalArea {
 	a := WalletJournalArea{
 		rows: make([]walletJournalEntry, 0),
 		top:  makeTopLabel(),

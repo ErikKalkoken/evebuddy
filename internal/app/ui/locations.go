@@ -44,7 +44,7 @@ type LocationsArea struct {
 	u    *BaseUI
 }
 
-func (u *BaseUI) NewLocationsArea() *LocationsArea {
+func NewLocationsArea(u *BaseUI) *LocationsArea {
 	a := LocationsArea{
 		rows: make([]locationCharacter, 0),
 		top:  widget.NewLabel(""),

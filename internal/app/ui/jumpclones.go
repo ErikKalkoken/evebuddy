@@ -57,7 +57,7 @@ type JumpClonesArea struct {
 	u          *BaseUI
 }
 
-func (u *BaseUI) NewJumpClonesArea() *JumpClonesArea {
+func NewJumpClonesArea(u *BaseUI) *JumpClonesArea {
 	a := JumpClonesArea{
 		top:      makeTopLabel(),
 		treeData: fynetree.New[jumpCloneNode](),

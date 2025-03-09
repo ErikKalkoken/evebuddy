@@ -135,7 +135,7 @@ type SettingsArea struct {
 	window   fyne.Window
 }
 
-func (u *BaseUI) NewSettingsArea() *SettingsArea {
+func NewSettingsArea(u *BaseUI) *SettingsArea {
 	a := &SettingsArea{
 		snackbar: u.Snackbar,
 		u:        u,

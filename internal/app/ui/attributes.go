@@ -38,7 +38,7 @@ type Attributes struct {
 	u          *BaseUI
 }
 
-func (u *BaseUI) NewAttributes() *Attributes {
+func NewAttributes(u *BaseUI) *Attributes {
 	a := Attributes{
 		attributes: make([]attribute, 0),
 		top:        makeTopLabel(),

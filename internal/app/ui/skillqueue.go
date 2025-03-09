@@ -29,7 +29,7 @@ type SkillqueueArea struct {
 	u     *BaseUI
 }
 
-func (u *BaseUI) NewSkillqueueArea() *SkillqueueArea {
+func NewSkillqueueArea(u *BaseUI) *SkillqueueArea {
 	a := SkillqueueArea{
 		total: makeTopLabel(),
 		u:     u,

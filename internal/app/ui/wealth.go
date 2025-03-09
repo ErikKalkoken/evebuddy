@@ -34,7 +34,7 @@ type WealthArea struct {
 	u      *BaseUI
 }
 
-func (u *BaseUI) NewWealthArea() *WealthArea {
+func NewWealthArea(u *BaseUI) *WealthArea {
 	a := &WealthArea{
 		top: makeTopLabel(),
 		u:   u,

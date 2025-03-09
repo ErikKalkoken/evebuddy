@@ -113,7 +113,7 @@ type MailArea struct {
 	u             *BaseUI
 }
 
-func (u *BaseUI) NewMailArea() *MailArea {
+func NewMailArea(u *BaseUI) *MailArea {
 	a := &MailArea{
 		body:       widget.NewLabel(""),
 		folderData: fynetree.New[FolderNode](),

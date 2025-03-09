@@ -46,7 +46,7 @@ type ContractsArea struct {
 	u         *BaseUI
 }
 
-func (u *BaseUI) NewContractsArea() *ContractsArea {
+func NewContractsArea(u *BaseUI) *ContractsArea {
 	a := ContractsArea{
 		contracts: make([]*app.CharacterContract, 0),
 		top:       makeTopLabel(),
