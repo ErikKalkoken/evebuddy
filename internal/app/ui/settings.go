@@ -325,7 +325,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 			a.showDeleteFileDialog("crash log", a.u.DataPaths["crashfile"])
 		},
 	}
-	actions := []SettingAction{reset, clear, exportAppLog, deleteAppLog, exportCrashLog, deleteCrashLog}
+	actions := []SettingAction{reset, clear, exportAppLog, exportCrashLog, deleteAppLog, deleteCrashLog}
 	if a.u.IsDesktop() {
 		actions = append(actions, SettingAction{
 			Label: "Resets main window size to defaults",

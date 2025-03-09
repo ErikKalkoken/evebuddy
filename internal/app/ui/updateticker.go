@@ -90,6 +90,7 @@ func (u *BaseUI) updateCharactersIfNeeded(ctx context.Context) error {
 	for _, c := range cc {
 		go u.UpdateCharacterAndRefreshIfNeeded(ctx, c.ID, false)
 	}
+	slog.Info("started update status characters") // FIXME: Reset to DEBUG
 	return nil
 }
 
@@ -99,9 +100,10 @@ func (u *BaseUI) notifyCharactersIfNeeded(ctx context.Context) error {
 		return err
 	}
 	for _, c := range cc {
-		u.notifyExpiredExtractionsIfNeeded(ctx, c.ID)
-		u.notifyExpiredTrainingIfneeded(ctx, c.ID)
+		go u.notifyExpiredExtractionsIfNeeded(ctx, c.ID)
+		go u.notifyExpiredTrainingIfneeded(ctx, c.ID)
 	}
+	slog.Info("started notify characters")
 	return nil
 }
 
@@ -121,13 +123,16 @@ func (u *BaseUI) UpdateCharacterAndRefreshIfNeeded(ctx context.Context, characte
 			sections = append(sections, app.SectionContracts)
 		}
 		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyMailsEnabled, settingNotifyMailsEnabledDefault) {
-			sections = append(sections, app.SectionContracts)
+			sections = append(sections, app.SectionMailLabels)
+			sections = append(sections, app.SectionMailLists)
+			sections = append(sections, app.SectionMails)
 		}
 		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyPIEnabled, settingNotifyPIEnabledDefault) {
 			sections = append(sections, app.SectionPlanets)
 		}
 		if u.FyneApp.Preferences().BoolWithFallback(settingNotifyTrainingEnabled, settingNotifyTrainingEnabledDefault) {
 			sections = append(sections, app.SectionSkillqueue)
+			sections = append(sections, app.SectionSkills)
 		}
 	} else {
 		sections = app.CharacterSections
