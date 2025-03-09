@@ -606,7 +606,7 @@ func (a *MailArea) setMail(mailID int32) {
 	a.mail, err = a.u.CharacterService.GetCharacterMail(ctx, characterID, mailID)
 	if err != nil {
 		slog.Error("Failed to fetch mail", "mailID", mailID, "error", err)
-		a.u.Snackbar.Show("Failed to fetch mail")
+		a.u.Snackbar.Show("ERROR: Failed to fetch mail")
 		return
 	}
 	if !a.u.IsOffline && !a.mail.IsRead {
@@ -614,7 +614,7 @@ func (a *MailArea) setMail(mailID int32) {
 			err = a.u.CharacterService.UpdateMailRead(ctx, characterID, a.mail.MailID)
 			if err != nil {
 				slog.Error("Failed to mark mail as read", "characterID", characterID, "mailID", a.mail.MailID, "error", err)
-				a.u.Snackbar.Show("Failed to mark mail as read")
+				a.u.Snackbar.Show("ERROR: Failed to mark mail as read")
 				return
 			}
 			a.Refresh()

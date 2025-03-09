@@ -338,29 +338,33 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 }
 
 func (a *SettingsArea) showDeleteFileDialog(name, path string) {
-	d := dialog.NewConfirm("Delete "+name, "Are you sure?", func(confirmed bool) {
-		if !confirmed {
-			return
-		}
-		err := func() error {
-			files, err := filepath.Glob(path)
-			if err != nil {
-				return err
+	d := NewConfirmDialog(
+		"Delete File",
+		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
+		"Delete",
+		func(confirmed bool) {
+			if !confirmed {
+				return
 			}
-			for _, f := range files {
-				if err := os.Truncate(f, 0); err != nil {
+			err := func() error {
+				files, err := filepath.Glob(path)
+				if err != nil {
 					return err
 				}
+				for _, f := range files {
+					if err := os.Truncate(f, 0); err != nil {
+						return err
+					}
+				}
+				return nil
+			}()
+			if err != nil {
+				slog.Error("delete "+name, "path", path, "error", err)
+				a.snackbar.Show("ERROR: Failed to delete " + name)
+			} else {
+				a.snackbar.Show(Titler.String(name) + " deleted")
 			}
-			return nil
-		}()
-		if err != nil {
-			slog.Error("delete "+name, "path", path, "error", err)
-			a.snackbar.Show("ERROR: Failed to delete " + name)
-		} else {
-			a.snackbar.Show(Titler.String(name) + " deleted")
-		}
-	}, a.window)
+		}, a.window)
 	d.Show()
 }
 
