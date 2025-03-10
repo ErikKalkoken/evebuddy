@@ -4,60 +4,69 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
+	"github.com/dustin/go-humanize"
+
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
+
+type corporationAttribute struct {
+	label string
+	value any
+}
 
 // CorporationInfoArea represents an area that shows public information about a character.
 type CorporationInfoArea struct {
 	Content fyne.CanvasObject
 
 	alliance        *widget.Label
-	history         *widget.List
-	corporationLogo *canvas.Image
 	allianceLogo    *canvas.Image
-	description     *widget.Label
+	attributes      []corporationAttribute
+	attributeList   *widget.List
 	corporation     *widget.Label
-	headquarters    *widget.Label
+	corporationLogo *canvas.Image
+	hq              *kxwidget.TappableLabel
+	historyList     *widget.List
 	historyItems    []app.CharacterCorporationHistoryItem
-
-	u *BaseUI
+	tabs            *container.AppTabs
+	u               *BaseUI
 }
 
 func NewCorporationInfoArea(u *BaseUI, corporationID int32) *CorporationInfoArea {
-	description := widget.NewLabel("Loading...")
-	description.Wrapping = fyne.TextWrapWord
 	alliance := widget.NewLabel("")
 	alliance.Truncation = fyne.TextTruncateEllipsis
 	corporation := widget.NewLabel("Loading...")
 	corporation.Truncation = fyne.TextTruncateEllipsis
-	title := widget.NewLabel("")
-	title.Truncation = fyne.TextTruncateEllipsis
+	hq := kxwidget.NewTappableLabel("", nil)
+	hq.Truncation = fyne.TextTruncateEllipsis
 	corporationLogo := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(DefaultIconUnitSize))
 	s := float32(DefaultIconPixelSize) * 1.3 / u.Window.Canvas().Scale()
 	corporationLogo.SetMinSize(fyne.NewSquareSize(s))
 	a := &CorporationInfoArea{
 		alliance:        alliance,
 		allianceLogo:    iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(DefaultIconUnitSize)),
+		attributes:      make([]corporationAttribute, 0),
 		corporationLogo: corporationLogo,
-		description:     description,
 		corporation:     corporation,
 		historyItems:    make([]app.CharacterCorporationHistoryItem, 0),
-		headquarters:    title,
+		hq:              hq,
 		u:               u,
 	}
 
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
 		a.corporation,
-		a.headquarters,
+		a.hq,
 		container.NewBorder(
 			nil,
 			nil,
@@ -66,14 +75,11 @@ func NewCorporationInfoArea(u *BaseUI, corporationID int32) *CorporationInfoArea
 			a.alliance,
 		),
 	)
-	a.history = a.makeHistory()
+	a.attributeList = a.makeAttributes()
+	a.historyList = a.makeHistory()
 	top := container.NewBorder(nil, nil, container.NewVBox(a.corporationLogo), nil, main)
-	tabs := container.NewAppTabs(
-		container.NewTabItem("Description", container.NewVScroll(a.description)),
-		container.NewTabItem("Attributes", widget.NewLabel("PLACEHOLDER")),
-		container.NewTabItem("Alliance History", container.NewVScroll(a.history)),
-	)
-	a.Content = container.NewBorder(top, nil, nil, nil, tabs)
+	a.tabs = container.NewAppTabs()
+	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
 		err := a.load(corporationID)
@@ -85,6 +91,86 @@ func NewCorporationInfoArea(u *BaseUI, corporationID int32) *CorporationInfoArea
 		}
 	}()
 	return a
+}
+
+func (a *CorporationInfoArea) makeAttributes() *widget.List {
+	l := widget.NewList(
+		func() int {
+			return len(a.attributes)
+		},
+		func() fyne.CanvasObject {
+			value := widget.NewLabel("Value")
+			value.Truncation = fyne.TextTruncateEllipsis
+			value.Alignment = fyne.TextAlignTrailing
+			icon := widget.NewIcon(theme.InfoIcon())
+			label := widget.NewLabel("Label")
+			return container.NewBorder(nil, nil, label, icon, value)
+		},
+		func(id widget.ListItemID, co fyne.CanvasObject) {
+			if id >= len(a.attributes) {
+				return
+			}
+			it := a.attributes[id]
+			border := co.(*fyne.Container).Objects
+			label := border[1].(*widget.Label)
+			label.SetText(it.label)
+			value := border[0].(*widget.Label)
+			icon := border[2]
+			icon.Hide()
+			var s string
+			var i widget.Importance
+			switch x := it.value.(type) {
+			case *app.EveEntity:
+				s = x.Name
+				if x.Category == app.EveEntityCharacter || x.Category == app.EveEntityCorporation {
+					icon.Show()
+				}
+			case *url.URL:
+				s = x.String()
+				i = widget.HighImportance
+			case float32:
+				s = fmt.Sprintf("%.1f %%", x*100)
+			case int:
+				s = humanize.Comma(int64(x))
+			case bool:
+				if x {
+					s = "yes"
+					i = widget.SuccessImportance
+				} else {
+					s = "no"
+					i = widget.DangerImportance
+				}
+			default:
+				s = fmt.Sprint(x)
+			}
+			value.Text = s
+			value.Importance = i
+			value.Refresh()
+		},
+	)
+	l.HideSeparators = true
+	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
+		if id >= len(a.attributes) {
+			return
+		}
+		it := a.attributes[id]
+		switch x := it.value.(type) {
+		case *app.EveEntity:
+			switch x.Category {
+			case app.EveEntityCharacter:
+				a.u.ShowCharacterInfoWindow(x.ID)
+			case app.EveEntityCorporation:
+				a.u.ShowCharacterInfoWindow(x.ID)
+			}
+		case *url.URL:
+			err := a.u.FyneApp.OpenURL(x)
+			if err != nil {
+				a.u.Snackbar.Show(fmt.Sprintf("ERROR: Failed to open URL: %s", ihumanize.Error(err)))
+			}
+		}
+	}
+	return l
 }
 
 func (a *CorporationInfoArea) makeHistory() *widget.List {
@@ -142,18 +228,8 @@ func (a *CorporationInfoArea) load(corporationID int32) error {
 		return err
 	}
 	a.corporation.SetText(c.Name)
-	if c.HasAlliance() {
+	if c.Alliance != nil {
 		a.alliance.SetText("Member of " + c.Alliance.Name)
-	} else {
-		a.alliance.Hide()
-	}
-	a.description.SetText(c.DescriptionPlain())
-	if c.HomeStation != nil {
-		a.headquarters.SetText("Headquarters: " + c.HomeStation.Name)
-	} else {
-		a.headquarters.Hide()
-	}
-	if c.HasAlliance() {
 		go func() {
 			r, err := a.u.EveImageService.AllianceLogo(c.Alliance.ID, DefaultIconPixelSize)
 			if err != nil {
@@ -163,7 +239,53 @@ func (a *CorporationInfoArea) load(corporationID int32) error {
 			a.allianceLogo.Resource = r
 			a.allianceLogo.Refresh()
 		}()
+	} else {
+		a.alliance.Hide()
+		a.allianceLogo.Hide()
 	}
+	desc := c.DescriptionPlain()
+	if desc != "" {
+		description := widget.NewLabel(desc)
+		description.Wrapping = fyne.TextWrapWord
+		a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(description)))
+	}
+	if c.HomeStation != nil {
+		a.hq.SetText("Headquarters: " + c.HomeStation.Name)
+		a.hq.OnTapped = func() {
+			a.u.ShowLocationInfoWindow(int64(c.HomeStation.ID))
+		}
+	} else {
+		a.hq.Hide()
+	}
+	a.attributes = make([]corporationAttribute, 0)
+	if c.Ceo != nil {
+		a.attributes = append(a.attributes, corporationAttribute{"CEO", c.Ceo})
+	}
+	if c.Creator != nil {
+		a.attributes = append(a.attributes, corporationAttribute{"Founder", c.Creator})
+	}
+	if c.Alliance != nil {
+		a.attributes = append(a.attributes, corporationAttribute{"Alliance", c.Alliance})
+	}
+	a.attributes = append(a.attributes, corporationAttribute{"Ticker Name", c.Ticker})
+	if c.Shares != 0 {
+		a.attributes = append(a.attributes, corporationAttribute{"Shares", c.Shares})
+	}
+	a.attributes = append(a.attributes, corporationAttribute{"Member Count", c.MemberCount})
+	if c.TaxRate != 0 {
+		a.attributes = append(a.attributes, corporationAttribute{"ISK Tax Rate", c.TaxRate})
+	}
+	a.attributes = append(a.attributes, corporationAttribute{"War Eligability", c.WarEligible})
+	if c.URL != "" {
+		u, err := url.ParseRequestURI(c.URL)
+		if err == nil {
+			a.attributes = append(a.attributes, corporationAttribute{"URL", u})
+		}
+	}
+	a.tabs.Append(container.NewTabItem("Attributes", a.attributeList))
+	a.tabs.Append(container.NewTabItem("Alliance History", a.historyList))
+	a.tabs.Refresh()
+
 	// go func() {
 	// 	history, err := a.u.CharacterService.CorporationHistory(ctx, corporationID)
 	// 	if err != nil {

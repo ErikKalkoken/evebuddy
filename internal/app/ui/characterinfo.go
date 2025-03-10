@@ -25,43 +25,38 @@ type CharacterInfoArea struct {
 	Content fyne.CanvasObject
 
 	alliance        *widget.Label
-	bio             *widget.Label
-	history         *widget.List
+	historyList     *widget.List
 	character       *widget.Label
 	corporationLogo *canvas.Image
-	description     *widget.Label
+	corporation     *kxwidget.TappableLabel
 	membership      *widget.Label
 	portrait        *kxwidget.TappableImage
 	security        *widget.Label
 	title           *widget.Label
 	historyItems    []app.CharacterCorporationHistoryItem
+	tabs            *container.AppTabs
 
 	u *BaseUI
 }
 
 func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
-	bio := widget.NewLabel("")
-	bio.Wrapping = fyne.TextWrapWord
-	description := widget.NewLabel("Loading...")
-	description.Wrapping = fyne.TextWrapWord
 	alliance := widget.NewLabel("")
 	alliance.Truncation = fyne.TextTruncateEllipsis
 	character := widget.NewLabel("Loading...")
 	character.Truncation = fyne.TextTruncateEllipsis
-	corporation := widget.NewLabel("")
+	corporation := kxwidget.NewTappableLabel("", nil)
 	corporation.Truncation = fyne.TextTruncateEllipsis
-	portrait := kxwidget.NewTappableImage(icon.Characterplaceholder64Jpeg, func() {})
+	portrait := kxwidget.NewTappableImage(icon.Characterplaceholder64Jpeg, nil)
 	portrait.SetFillMode(canvas.ImageFillContain)
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	title := widget.NewLabel("")
 	title.Truncation = fyne.TextTruncateEllipsis
 	a := &CharacterInfoArea{
 		alliance:        alliance,
-		bio:             bio,
 		character:       character,
 		corporationLogo: iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(DefaultIconUnitSize)),
-		description:     description,
-		membership:      corporation,
+		corporation:     corporation,
+		membership:      widget.NewLabel(""),
 		portrait:        portrait,
 		historyItems:    make([]app.CharacterCorporationHistoryItem, 0),
 		security:        widget.NewLabel(""),
@@ -77,20 +72,20 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 			nil,
 			a.corporationLogo,
 			nil,
-			a.membership,
+			container.New(
+				layout.NewCustomPaddedVBoxLayout(0),
+				a.corporation,
+				a.membership,
+			),
 		),
 		widget.NewSeparator(),
 		a.alliance,
 		a.security,
 	)
-	a.history = a.makeHistory()
+	a.historyList = a.makeHistory()
 	top := container.NewBorder(nil, nil, container.NewVBox(a.portrait), nil, main)
-	tabs := container.NewAppTabs(
-		container.NewTabItem("Bio", container.NewVScroll(a.bio)),
-		container.NewTabItem("Description", container.NewVScroll(a.description)),
-		container.NewTabItem("Employment History", container.NewVScroll(a.history)),
-	)
-	a.Content = container.NewBorder(top, nil, nil, nil, tabs)
+	a.tabs = container.NewAppTabs()
+	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
 		err := a.load(characterID)
@@ -126,12 +121,17 @@ func (a *CharacterInfoArea) makeHistory() *widget.List {
 			} else {
 				endDateStr = "this day"
 			}
+			var closed string
+			if it.IsDeleted {
+				closed = " (closed)"
+			}
 			text := fmt.Sprintf(
-				"%s **%s** to **%s** (%d days)",
+				"%s%s   **%s** to **%s** (%s days)",
 				it.Corporation.Name,
+				closed,
 				it.StartDate.Format(dateFormat),
 				endDateStr,
-				it.Days(),
+				humanize.Comma(int64(it.Days())),
 			)
 			co.(*widget.RichText).ParseMarkdown(text)
 		},
@@ -169,14 +169,10 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 		a.alliance.Hide()
 	}
 	a.security.SetText(fmt.Sprintf("Security Status: %.1f", c.SecurityStatus))
-	a.bio.SetText(c.DescriptionPlain())
-	a.description.SetText(c.RaceDescription())
-	if c.Title != "" {
-		a.title.SetText("Title: " + c.Title)
-	} else {
-		a.title.Hide()
+	a.corporation.SetText(fmt.Sprintf("Member of %s", c.Corporation.Name))
+	a.corporation.OnTapped = func() {
+		a.u.ShowCorporaitonInfoWindow(c.Corporation.ID)
 	}
-	a.membership.SetText(fmt.Sprintf("Member of %s\nfor %s", c.Corporation.Name, "?"))
 	a.portrait.OnTapped = func() {
 		w := a.u.FyneApp.NewWindow(a.u.MakeWindowTitle(c.Name))
 		size := 512
@@ -188,6 +184,21 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 		w.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), i))
 		w.Show()
 	}
+	bioText := c.DescriptionPlain()
+	if bioText != "" {
+		bio := widget.NewLabel(bioText)
+		bio.Wrapping = fyne.TextWrapWord
+		a.tabs.Append(container.NewTabItem("Bio", container.NewVScroll(bio)))
+	}
+	desc := widget.NewLabel(c.RaceDescription())
+	desc.Wrapping = fyne.TextWrapWord
+	a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(desc)))
+	if c.Title != "" {
+		a.title.SetText("Title: " + c.Title)
+	} else {
+		a.title.Hide()
+	}
+	a.tabs.Refresh()
 	go func() {
 		r, err := a.u.EveImageService.CorporationLogo(c.Corporation.ID, DefaultIconPixelSize)
 		if err != nil {
@@ -203,16 +214,16 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 			slog.Error("character info: Failed to load corporation history", "charaterID", characterID, "error", err)
 			return
 		}
-		var duration string
-		if len(history) > 0 {
-			current := history[0]
-			duration = humanize.RelTime(current.StartDate, time.Now(), "", "")
-		} else {
-			duration = "?"
+		if len(history) == 0 {
+			a.membership.Hide()
+			return
 		}
-		a.membership.SetText(fmt.Sprintf("Member of %s\nfor %s", c.Corporation.Name, duration))
+		current := history[0]
+		duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
+		a.membership.SetText(fmt.Sprintf("for %s", duration))
 		a.historyItems = history
-		a.history.Refresh()
+		a.tabs.Append(container.NewTabItem("Employment History", a.historyList))
+		a.tabs.Refresh()
 	}()
 	return nil
 }
