@@ -12,7 +12,13 @@ func (s *EveUniverseService) GetEveCorporation(ctx context.Context, corporationI
 	if err != nil {
 		return nil, err
 	}
-	ids := []int32{c.CreatorId, c.CeoId}
+	ids := make([]int32, 0)
+	if c.CeoId != 0 && c.CeoId != 1 {
+		ids = append(ids, c.CeoId)
+	}
+	if c.CreatorId != 0 && c.CreatorId != 1 {
+		ids = append(ids, c.CreatorId)
+	}
 	if c.AllianceId != 0 {
 		ids = append(ids, c.AllianceId)
 	}
@@ -39,13 +45,17 @@ func (s *EveUniverseService) GetEveCorporation(ctx context.Context, corporationI
 		WarEligible: c.WarEligible,
 		Timestamp:   time.Now().UTC(),
 	}
-	o.Ceo, err = s.GetEveEntity(ctx, c.CeoId)
-	if err != nil {
-		return nil, err
+	if c.CeoId != 0 && c.CeoId != 1 {
+		o.Ceo, err = s.GetEveEntity(ctx, c.CeoId)
+		if err != nil {
+			return nil, err
+		}
 	}
-	o.Creator, err = s.GetEveEntity(ctx, c.CreatorId)
-	if err != nil {
-		return nil, err
+	if c.CreatorId != 0 && c.CreatorId != 1 {
+		o.Creator, err = s.GetEveEntity(ctx, c.CreatorId)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if c.AllianceId != 0 {
 		o.Alliance, err = s.GetEveEntity(ctx, c.AllianceId)

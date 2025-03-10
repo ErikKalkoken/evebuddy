@@ -165,6 +165,27 @@ func TestAddMissingEveEntities(t *testing.T) {
 			assert.Equal(t, e.Category, app.EveEntityUnknown)
 		}
 	})
+	t.Run("should not call API with known invalid IDs", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		httpmock.RegisterResponder("POST", "https://esi.evetech.net/v3/universe/names/",
+			httpmock.NewStringResponder(404, ""))
+		// when
+		ids, err := s.AddMissingEveEntities(ctx, []int32{1})
+		// then
+		assert.GreaterOrEqual(t, 0, httpmock.GetTotalCallCount())
+		if assert.NoError(t, err) {
+			assert.Len(t, ids, 1)
+			assert.Equal(t, int32(1), ids[0])
+			e, err := r.GetEveEntity(ctx, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assert.Equal(t, e.Name, "?")
+			assert.Equal(t, e.Category, app.EveEntityUnknown)
+		}
+	})
 	t.Run("can deal with a mix of valid and invalid IDs", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)

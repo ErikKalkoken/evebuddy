@@ -17,6 +17,11 @@ import (
 var ErrEveEntityNameNoMatch = errors.New("no match found with that name")
 var ErrEveEntityNameMultipleMatches = errors.New("multiple matches with that name")
 
+// known invalid IDs
+var invalidEveEntityIDs = []int32{
+	1, // ID is used for fields, which are technically mandatory, but have no value (e.g. creator for NPC corps)
+}
+
 func (eu *EveUniverseService) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, error) {
 	return eu.st.GetEveEntity(ctx, id)
 }
@@ -69,13 +74,23 @@ func (eu *EveUniverseService) AddMissingEveEntities(ctx context.Context, ids []i
 	if missing.Size() == 0 {
 		return nil, nil
 	}
-	missingIDs := missing.ToSlice()
+
+	// Filter out known invalid IDs before calling API
+	var badIDs []int32
+	missing2 := missing.Clone()
+	for _, id := range invalidEveEntityIDs {
+		if missing2.Contains(id) {
+			badIDs = append(badIDs, 1)
+			missing2.Remove(1)
+		}
+	}
+
+	missingIDs := missing2.ToSlice()
 	slices.Sort(missingIDs)
 	if len(missingIDs) > 0 {
 		slog.Debug("Trying to resolve EveEntity IDs from ESI", "ids", missingIDs)
 	}
 	var ee []esi.PostUniverseNames200Ok
-	var badIDs []int32
 	for chunk := range slices.Chunk(missingIDs, 1000) { // PostUniverseNames max is 1000 IDs
 		eeChunk, badChunk, err := eu.resolveIDs(ctx, chunk)
 		if err != nil {
@@ -103,7 +118,7 @@ func (eu *EveUniverseService) AddMissingEveEntities(ctx context.Context, ids []i
 		}
 		slog.Warn("Marking unresolvable EveEntity IDs as unknown", "ids", badIDs)
 	}
-	return missingIDs, nil
+	return missing.ToSlice(), nil
 }
 
 func (eu *EveUniverseService) resolveIDs(ctx context.Context, ids []int32) ([]esi.PostUniverseNames200Ok, []int32, error) {
