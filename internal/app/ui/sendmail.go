@@ -38,7 +38,7 @@ func MakeSendMailPage(
 ) (fyne.CanvasObject, fyne.Resource, func() bool) {
 	const labelWith = 45
 
-	from := appwidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService)
+	from := appwidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService, u.ShowCharacterInfoWindow)
 	from.Set([]*app.EveEntity{{ID: character.ID, Name: character.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	from.Disable()
 
@@ -48,7 +48,7 @@ func MakeSendMailPage(
 			to.Add(ee)
 		}, w)
 	})
-	to = appwidget.NewEveEntityEntry(toButton, labelWith, u.EveImageService)
+	to = appwidget.NewEveEntityEntry(toButton, labelWith, u.EveImageService, u.ShowCharacterInfoWindow)
 	to.Placeholder = "Tap To-Button to add recipients..."
 
 	subject := widget.NewEntry()

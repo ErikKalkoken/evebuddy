@@ -33,18 +33,19 @@ type EveEntityEntry struct {
 
 	Placeholder string
 
-	eis         app.EveImageService
-	field       *canvas.Rectangle
-	hovered     bool
-	label       fyne.CanvasObject
-	labelWidth  float32
-	main        *fyne.Container
-	mu          sync.Mutex
-	placeholder *widget.RichText
-	s           []*app.EveEntity
+	eis            app.EveImageService
+	field          *canvas.Rectangle
+	hovered        bool
+	label          fyne.CanvasObject
+	labelWidth     float32
+	main           *fyne.Container
+	mu             sync.Mutex
+	placeholder    *widget.RichText
+	s              []*app.EveEntity
+	showInfoWindow func(int32)
 }
 
-func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis app.EveImageService) *EveEntityEntry {
+func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis app.EveImageService, showInfoWindow func(int32)) *EveEntityEntry {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
@@ -58,7 +59,8 @@ func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis app.EveI
 		placeholder: widget.NewRichText(&widget.TextSegment{
 			Style: widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder},
 		}),
-		s: make([]*app.EveEntity, 0),
+		s:              make([]*app.EveEntity, 0),
+		showInfoWindow: showInfoWindow,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -148,30 +150,32 @@ func (w *EveEntityEntry) update() {
 				label = layout.NewSpacer()
 			}
 			badge := newEveEntityBadge(ee, w.eis, nil)
-			if isDisabled {
-				badge.Disable()
-			} else {
-				badge.OnTapped = func() {
-					s := fmt.Sprintf("%s (%s)", ee.Name, ee.CategoryDisplay())
-					name := fyne.NewMenuItem(s, nil)
-					// name.Icon = fetchImage(w.eis, ee, w.FallbackIcon)
-					name.Disabled = true
-					remove := fyne.NewMenuItem("Remove", func() {
-						w.Remove(ee.ID)
-					})
-					remove.Icon = theme.DeleteIcon()
-					menu := fyne.NewMenu("",
-						name,
-						fyne.NewMenuItemSeparator(),
-						remove,
-					)
-					pm := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(badge))
-					pm.ShowAtRelativePosition(fyne.Position{}, badge)
-					// go func() {
-					// 	title.Icon = fetchImage(w.eis, ee, w.FallbackIcon)
-					// 	pm.Refresh()
-					// }()
+			badge.OnTapped = func() {
+				s := fmt.Sprintf("%s (%s)", ee.Name, ee.CategoryDisplay())
+				nameItem := fyne.NewMenuItem(s, nil)
+				nameItem.Icon = icon.Questionmark32Png
+				if ee.Category == app.EveEntityCharacter {
+					nameItem.Action = func() {
+						w.showInfoWindow(ee.ID)
+					}
 				}
+				removeItem := fyne.NewMenuItem("Remove", func() {
+					w.Remove(ee.ID)
+				})
+				removeItem.Icon = theme.DeleteIcon()
+				removeItem.Disabled = isDisabled
+				menu := fyne.NewMenu("", nameItem, fyne.NewMenuItemSeparator(), removeItem)
+				pm := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(badge))
+				pm.ShowAtRelativePosition(fyne.Position{}, badge)
+				go func() {
+					res, err := FetchEveEntityAvatar(w.eis, ee, icon.Questionmark32Png)
+					if err != nil {
+						slog.Error("fetch eve entity avatar", "error", err)
+						return
+					}
+					nameItem.Icon = res
+					pm.Refresh()
+				}()
 			}
 			w.main.Add(container.New(colums, label, badge))
 		}

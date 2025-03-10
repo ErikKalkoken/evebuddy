@@ -83,9 +83,8 @@ type BaseUI struct {
 	ShowMailIndicator  func()
 
 	// need to be implemented for each platform
-	ShowTypeInfoWindow      func(typeID, characterID int32, selectTab TypeWindowTab)
-	ShowLocationInfoWindow  func(int64)
-	ShowCharacterInfoWindow func(characterID int32)
+	ShowTypeInfoWindow     func(typeID, characterID int32, selectTab TypeWindowTab)
+	ShowLocationInfoWindow func(int64)
 
 	DeskApp  desktop.App
 	FyneApp  fyne.App
@@ -505,6 +504,15 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 		u.statusWindow = nil
 	})
 	u.statusWindow = w
+	w.Show()
+}
+
+func (u *BaseUI) ShowCharacterInfoWindow(id int32) {
+	a := NewCharacterInfoArea(u, id)
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle(a.Title()))
+	a.Window = w
+	w.SetContent(a.Content)
+	w.Resize(fyne.Size{Width: 500, Height: 500})
 	w.Show()
 }
 

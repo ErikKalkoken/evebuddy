@@ -46,13 +46,6 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 		showItemWindow(ui.NewItemInfoArea(bui, 0, 0, locationID, ui.DescriptionTab))
 	}
 
-	u.ShowCharacterInfoWindow = func(id int32) {
-		a := ui.NewCharacterInfoArea(bui, id)
-		w := u.FyneApp.NewWindow(a.Title())
-		w.SetContent(a.Content)
-		w.Show()
-	}
-
 	var navBar *iwidget.NavBar
 
 	// character destination

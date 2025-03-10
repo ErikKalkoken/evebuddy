@@ -149,15 +149,6 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 		showItemWindow(ui.NewItemInfoArea(bui, 0, 0, locationID, ui.DescriptionTab))
 	}
 
-	u.ShowCharacterInfoWindow = func(id int32) {
-		a := ui.NewCharacterInfoArea(bui, id)
-		w := u.FyneApp.NewWindow(u.MakeWindowTitle(a.Title()))
-		a.Window = w
-		w.SetContent(a.Content)
-		w.Resize(fyne.Size{Width: 500, Height: 500})
-		w.Show()
-	}
-
 	makeTitleWithCount := func(title string, count int) string {
 		if count > 0 {
 			title += fmt.Sprintf(" (%s)", humanize.Comma(int64(count)))
