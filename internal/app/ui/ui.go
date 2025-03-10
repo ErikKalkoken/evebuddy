@@ -36,6 +36,8 @@ const (
 	DefaultIconPixelSize = 64
 	DefaultIconUnitSize  = 32
 	MyFloatFormat        = "#,###.##"
+	infoWindowWidth      = 500
+	infoWindowHeight     = 500
 )
 
 // update info
@@ -504,7 +506,15 @@ func (u *BaseUI) ShowCharacterInfoWindow(id int32) {
 	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Character: Information"))
 	a := NewCharacterInfoArea(u, id)
 	w.SetContent(a.Content)
-	w.Resize(fyne.Size{Width: 500, Height: 500})
+	w.Resize(fyne.Size{Width: infoWindowWidth, Height: infoWindowHeight})
+	w.Show()
+}
+
+func (u *BaseUI) ShowCorporaitonInfoWindow(id int32) {
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Corporation: Information"))
+	a := NewCorporationInfoArea(u, id)
+	w.SetContent(a.Content)
+	w.Resize(fyne.Size{Width: infoWindowWidth, Height: infoWindowHeight})
 	w.Show()
 }
 
@@ -530,7 +540,7 @@ func (u *BaseUI) showItemWindow(iw *ItemInfoArea, err error) {
 	w := u.FyneApp.NewWindow(u.MakeWindowTitle(iw.MakeTitle("Information")))
 	iw.Window = w
 	w.SetContent(iw.Content)
-	w.Resize(fyne.Size{Width: 500, Height: 500})
+	w.Resize(fyne.Size{Width: infoWindowWidth, Height: infoWindowHeight})
 	w.Show()
 }
 

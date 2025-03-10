@@ -24,17 +24,17 @@ import (
 type CharacterInfoArea struct {
 	Content fyne.CanvasObject
 
-	alliance     *widget.Label
-	bio          *widget.Label
-	history      *widget.List
-	character    *widget.Label
-	corpIcon     *canvas.Image
-	description  *widget.Label
-	membership   *widget.Label
-	portrait     *kxwidget.TappableImage
-	security     *widget.Label
-	title        *widget.Label
-	historyItems []app.CharacterCorporationHistoryItem
+	alliance        *widget.Label
+	bio             *widget.Label
+	history         *widget.List
+	character       *widget.Label
+	corporationLogo *canvas.Image
+	description     *widget.Label
+	membership      *widget.Label
+	portrait        *kxwidget.TappableImage
+	security        *widget.Label
+	title           *widget.Label
+	historyItems    []app.CharacterCorporationHistoryItem
 
 	u *BaseUI
 }
@@ -56,17 +56,17 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 	title := widget.NewLabel("")
 	title.Truncation = fyne.TextTruncateEllipsis
 	a := &CharacterInfoArea{
-		alliance:     alliance,
-		bio:          bio,
-		character:    character,
-		corpIcon:     iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(DefaultIconUnitSize)),
-		description:  description,
-		membership:   corporation,
-		portrait:     portrait,
-		historyItems: make([]app.CharacterCorporationHistoryItem, 0),
-		security:     widget.NewLabel(""),
-		title:        title,
-		u:            u,
+		alliance:        alliance,
+		bio:             bio,
+		character:       character,
+		corporationLogo: iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(DefaultIconUnitSize)),
+		description:     description,
+		membership:      corporation,
+		portrait:        portrait,
+		historyItems:    make([]app.CharacterCorporationHistoryItem, 0),
+		security:        widget.NewLabel(""),
+		title:           title,
+		u:               u,
 	}
 
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
@@ -75,7 +75,7 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 		container.NewBorder(
 			nil,
 			nil,
-			a.corpIcon,
+			a.corporationLogo,
 			nil,
 			a.membership,
 		),
@@ -83,7 +83,29 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 		a.alliance,
 		a.security,
 	)
-	a.history = widget.NewList(
+	a.history = a.makeHistory()
+	top := container.NewBorder(nil, nil, container.NewVBox(a.portrait), nil, main)
+	tabs := container.NewAppTabs(
+		container.NewTabItem("Bio", container.NewVScroll(a.bio)),
+		container.NewTabItem("Description", container.NewVScroll(a.description)),
+		container.NewTabItem("Employment History", container.NewVScroll(a.history)),
+	)
+	a.Content = container.NewBorder(top, nil, nil, nil, tabs)
+
+	go func() {
+		err := a.load(characterID)
+		if err != nil {
+			slog.Error("character info update failed", "characterID", characterID, "error", err)
+			a.character.Text = fmt.Sprintf("ERROR: Failed to load character: %s", ihumanize.Error(err))
+			a.character.Importance = widget.DangerImportance
+			a.character.Refresh()
+		}
+	}()
+	return a
+}
+
+func (a *CharacterInfoArea) makeHistory() *widget.List {
+	l := widget.NewList(
 		func() int {
 			return len(a.historyItems)
 		},
@@ -114,28 +136,16 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 			co.(*widget.RichText).ParseMarkdown(text)
 		},
 	)
-	a.history.HideSeparators = true
-	a.history.OnSelected = func(id widget.ListItemID) {
-		a.history.UnselectAll()
-	}
-	top := container.NewBorder(nil, nil, container.NewVBox(a.portrait), nil, main)
-	tabs := container.NewAppTabs(
-		container.NewTabItem("Bio", container.NewVScroll(a.bio)),
-		container.NewTabItem("Description", container.NewVScroll(a.description)),
-		container.NewTabItem("Employment History", container.NewVScroll(a.history)),
-	)
-	a.Content = container.NewBorder(top, nil, nil, nil, tabs)
-
-	go func() {
-		err := a.load(characterID)
-		if err != nil {
-			slog.Error("character info update failed", "characterID", characterID, "error", err)
-			a.character.Text = fmt.Sprintf("ERROR: Failed to load character: %s", ihumanize.Error(err))
-			a.character.Importance = widget.DangerImportance
-			a.character.Refresh()
+	l.HideSeparators = true
+	l.OnSelected = func(id widget.ListItemID) {
+		defer l.UnselectAll()
+		if id >= len(a.historyItems) {
+			return
 		}
-	}()
-	return a
+		it := a.historyItems[id]
+		a.u.ShowCorporaitonInfoWindow(it.Corporation.ID)
+	}
+	return l
 }
 
 func (a *CharacterInfoArea) load(characterID int32) error {
@@ -154,7 +164,7 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 	}
 	a.character.SetText(c.Name)
 	if c.HasAlliance() {
-		a.alliance.SetText(c.AllianceName())
+		a.alliance.SetText(c.Alliance.Name)
 	} else {
 		a.alliance.Hide()
 	}
@@ -184,8 +194,8 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 			slog.Error("character info: Failed to load corp logo", "charaterID", characterID, "error", err)
 			return
 		}
-		a.corpIcon.Resource = r
-		a.corpIcon.Refresh()
+		a.corporationLogo.Resource = r
+		a.corporationLogo.Refresh()
 	}()
 	go func() {
 		history, err := a.u.CharacterService.CorporationHistory(ctx, characterID)
