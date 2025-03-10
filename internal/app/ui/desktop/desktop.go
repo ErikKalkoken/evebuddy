@@ -125,30 +125,6 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 		u.DeskApp.SetSystemTrayIcon(icon.IconPng)
 	}
 
-	showItemWindow := func(iw *ui.ItemInfoArea, err error) {
-		if err != nil {
-			t := "Failed to open info window"
-			slog.Error(t, "err", err)
-			d := ui.NewErrorDialog(t, err, u.Window)
-			d.Show()
-			return
-		}
-		if iw == nil {
-			return
-		}
-		w := u.FyneApp.NewWindow(u.MakeWindowTitle(iw.MakeTitle("Information")))
-		iw.Window = w
-		w.SetContent(iw.Content)
-		w.Resize(fyne.Size{Width: 500, Height: 500})
-		w.Show()
-	}
-	u.ShowTypeInfoWindow = func(typeID, characterID int32, selectTab ui.TypeWindowTab) {
-		showItemWindow(ui.NewItemInfoArea(bui, typeID, characterID, 0, selectTab))
-	}
-	u.ShowLocationInfoWindow = func(locationID int64) {
-		showItemWindow(ui.NewItemInfoArea(bui, 0, 0, locationID, ui.DescriptionTab))
-	}
-
 	makeTitleWithCount := func(title string, count int) string {
 		if count > 0 {
 			title += fmt.Sprintf(" (%s)", humanize.Comma(int64(count)))

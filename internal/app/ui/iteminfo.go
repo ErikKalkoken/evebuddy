@@ -202,6 +202,7 @@ type ItemInfoArea struct {
 	u              *BaseUI
 }
 
+// TODO: Restructure, so that window is first drawn empty and content loaded in background (same as character info windo)
 func NewItemInfoArea(u *BaseUI, typeID, characterID int32, locationID int64, selectTab TypeWindowTab) (*ItemInfoArea, error) {
 	ctx := context.TODO()
 	a := &ItemInfoArea{
@@ -264,7 +265,7 @@ func NewItemInfoArea(u *BaseUI, typeID, characterID int32, locationID int64, sel
 }
 
 func (a *ItemInfoArea) MakeTitle(suffix string) string {
-	return fmt.Sprintf("%s (%s): %s", a.et.Name, a.et.Group.Name, suffix)
+	return fmt.Sprintf("%s: %s", a.et.Group.Name, suffix)
 }
 
 func (a *ItemInfoArea) isLocation() bool {

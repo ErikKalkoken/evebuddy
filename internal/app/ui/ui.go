@@ -82,10 +82,6 @@ type BaseUI struct {
 	OnShowAndRun       func()
 	ShowMailIndicator  func()
 
-	// need to be implemented for each platform
-	ShowTypeInfoWindow     func(typeID, characterID int32, selectTab TypeWindowTab)
-	ShowLocationInfoWindow func(int64)
-
 	DeskApp  desktop.App
 	FyneApp  fyne.App
 	Snackbar *iwidget.Snackbar
@@ -126,13 +122,7 @@ type BaseUI struct {
 // Note:Types embedding BaseUI should define callbacks instead of overwriting methods.
 func NewBaseUI(fyneApp fyne.App) *BaseUI {
 	u := &BaseUI{
-		FyneApp: fyneApp,
-		ShowTypeInfoWindow: func(_, _ int32, _ TypeWindowTab) {
-			panic("not implemented")
-		},
-		ShowLocationInfoWindow: func(_ int64) {
-			panic("not implemented")
-		},
+		FyneApp:  fyneApp,
 		isMobile: fyne.CurrentDevice().IsMobile(),
 	}
 	u.Window = fyneApp.NewWindow(u.AppName())
@@ -225,6 +215,9 @@ func (u *BaseUI) IsMobile() bool {
 }
 
 func (u *BaseUI) MakeWindowTitle(subTitle string) string {
+	if u.IsMobile() {
+		return subTitle
+	}
 	return fmt.Sprintf("%s - %s", subTitle, u.AppName())
 }
 
@@ -508,10 +501,35 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 }
 
 func (u *BaseUI) ShowCharacterInfoWindow(id int32) {
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Character: Information"))
 	a := NewCharacterInfoArea(u, id)
-	w := u.FyneApp.NewWindow(u.MakeWindowTitle(a.Title()))
-	a.Window = w
 	w.SetContent(a.Content)
+	w.Resize(fyne.Size{Width: 500, Height: 500})
+	w.Show()
+}
+
+func (u *BaseUI) ShowTypeInfoWindow(typeID, characterID int32, selectTab TypeWindowTab) {
+	u.showItemWindow(NewItemInfoArea(u, typeID, characterID, 0, selectTab))
+}
+
+func (u *BaseUI) ShowLocationInfoWindow(locationID int64) {
+	u.showItemWindow(NewItemInfoArea(u, 0, 0, locationID, DescriptionTab))
+}
+
+func (u *BaseUI) showItemWindow(iw *ItemInfoArea, err error) {
+	if err != nil {
+		t := "Failed to open info window"
+		slog.Error(t, "err", err)
+		d := NewErrorDialog(t, err, u.Window)
+		d.Show()
+		return
+	}
+	if iw == nil {
+		return
+	}
+	w := u.FyneApp.NewWindow(u.MakeWindowTitle(iw.MakeTitle("Information")))
+	iw.Window = w
+	w.SetContent(iw.Content)
 	w.Resize(fyne.Size{Width: 500, Height: 500})
 	w.Show()
 }

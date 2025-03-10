@@ -20,9 +20,9 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
+// CharacterInfoArea represents an area that shows public information about a character.
 type CharacterInfoArea struct {
 	Content fyne.CanvasObject
-	Window  fyne.Window
 
 	alliance     *widget.Label
 	bio          *widget.Label
@@ -136,10 +136,6 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 		}
 	}()
 	return a
-}
-
-func (a *CharacterInfoArea) Title() string {
-	return "Character: Information"
 }
 
 func (a *CharacterInfoArea) load(characterID int32) error {

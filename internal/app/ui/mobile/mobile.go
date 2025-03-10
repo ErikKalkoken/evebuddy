@@ -27,24 +27,6 @@ type MobileUI struct {
 // NewUI build the UI and returns it.
 func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	u := &MobileUI{BaseUI: bui}
-	showItemWindow := func(iw *ui.ItemInfoArea, err error) {
-		if err != nil {
-			t := "Failed to show item info"
-			slog.Error(t, "err", err)
-			d := ui.NewErrorDialog(t, err, u.Window)
-			d.Show()
-			return
-		}
-		w := u.FyneApp.NewWindow("Information")
-		w.SetContent(iw.Content)
-		w.Show()
-	}
-	u.ShowTypeInfoWindow = func(typeID, characterID int32, selectTab ui.TypeWindowTab) {
-		showItemWindow(ui.NewItemInfoArea(bui, typeID, characterID, 0, selectTab))
-	}
-	u.ShowLocationInfoWindow = func(locationID int64) {
-		showItemWindow(ui.NewItemInfoArea(bui, 0, 0, locationID, ui.DescriptionTab))
-	}
 
 	var navBar *iwidget.NavBar
 
