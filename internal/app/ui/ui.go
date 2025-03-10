@@ -83,8 +83,9 @@ type BaseUI struct {
 	ShowMailIndicator  func()
 
 	// need to be implemented for each platform
-	ShowTypeInfoWindow     func(typeID, characterID int32, selectTab TypeWindowTab)
-	ShowLocationInfoWindow func(int64)
+	ShowTypeInfoWindow      func(typeID, characterID int32, selectTab TypeWindowTab)
+	ShowLocationInfoWindow  func(int64)
+	ShowCharacterInfoWindow func(characterID int32)
 
 	DeskApp  desktop.App
 	FyneApp  fyne.App

@@ -3,7 +3,6 @@ package ui
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 )
 
 // BiographyArea is the UI area that shows the skillqueue
@@ -26,7 +25,7 @@ func (a *BiographyArea) Refresh() {
 	if c == nil {
 		s = ""
 	} else {
-		s = evehtml.ToPlain(c.EveCharacter.Description)
+		s = c.EveCharacter.DescriptionPlain()
 	}
 	a.text.SetText(s)
 }

@@ -506,7 +506,8 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 			i := NewImageResourceAsync(icon.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 				return a.u.EveImageService.InventoryTypeRender(a.et.ID, size)
 			})
-			w.SetContent(i)
+			p := theme.Padding()
+			w.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), i))
 			w.Show()
 		})
 		render.SetFillMode(canvas.ImageFillContain)

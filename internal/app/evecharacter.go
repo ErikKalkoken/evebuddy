@@ -3,6 +3,8 @@ package app
 
 import (
 	"time"
+
+	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 )
 
 // An Eve Online character.
@@ -42,4 +44,15 @@ func (ec EveCharacter) HasAlliance() bool {
 // HasFaction reports wether the character is member of a faction.
 func (ec EveCharacter) HasFaction() bool {
 	return ec.Faction != nil
+}
+
+func (ec EveCharacter) DescriptionPlain() string {
+	return evehtml.ToPlain(ec.Description)
+}
+
+func (ec EveCharacter) RaceDescription() string {
+	if ec.Race == nil {
+		return ""
+	}
+	return ec.Race.Description
 }

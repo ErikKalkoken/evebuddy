@@ -17,6 +17,10 @@ import (
 var ErrEveEntityNameNoMatch = errors.New("no match found with that name")
 var ErrEveEntityNameMultipleMatches = errors.New("multiple matches with that name")
 
+func (eu *EveUniverseService) GetEveEntity(ctx context.Context, id int32) (*app.EveEntity, error) {
+	return eu.st.GetEveEntity(ctx, id)
+}
+
 func (eu *EveUniverseService) GetOrCreateEveEntityESI(ctx context.Context, id int32) (*app.EveEntity, error) {
 	o, err := eu.st.GetEveEntity(ctx, id)
 	if err == nil {

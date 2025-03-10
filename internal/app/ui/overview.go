@@ -98,10 +98,13 @@ func NewOverviewArea(u *BaseUI) *OverviewArea {
 		}
 		return text, align, importance
 	}
+	showCharacterInfo := func(oc overviewCharacter) {
+		u.ShowCharacterInfoWindow(oc.id)
+	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, showCharacterInfo)
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, showCharacterInfo)
 	}
 	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
 	return &a
