@@ -7,6 +7,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 )
 
+// TODO: Add Bloodline (e.g. to show in character description)
+
 // An Eve Online character.
 type EveCharacter struct {
 	Alliance       *EveEntity

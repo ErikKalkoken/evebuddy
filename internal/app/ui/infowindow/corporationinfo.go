@@ -17,7 +17,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -128,39 +127,39 @@ func (a *corporationInfoArea) load(corporationID int32) error {
 	} else {
 		a.hq.Hide()
 	}
-	attributes := make([]appwidget.AtributeItem, 0)
+	attributes := make([]AtributeItem, 0)
 	if o.Ceo != nil {
-		attributes = append(attributes, appwidget.NewAtributeItem("CEO", o.Ceo))
+		attributes = append(attributes, NewAtributeItem("CEO", o.Ceo))
 	}
 	if o.Creator != nil {
-		attributes = append(attributes, appwidget.NewAtributeItem("Founder", o.Creator))
+		attributes = append(attributes, NewAtributeItem("Founder", o.Creator))
 	}
 	if o.Alliance != nil {
-		attributes = append(attributes, appwidget.NewAtributeItem("Alliance", o.Alliance))
+		attributes = append(attributes, NewAtributeItem("Alliance", o.Alliance))
 	}
 	if o.Ticker != "" {
-		attributes = append(attributes, appwidget.NewAtributeItem("Ticker Name", o.Ticker))
+		attributes = append(attributes, NewAtributeItem("Ticker Name", o.Ticker))
 	}
 	if o.Faction != nil {
-		attributes = append(attributes, appwidget.NewAtributeItem("Faction", o.Faction))
+		attributes = append(attributes, NewAtributeItem("Faction", o.Faction))
 	}
 	if o.Shares != 0 {
-		attributes = append(attributes, appwidget.NewAtributeItem("Shares", o.Shares))
+		attributes = append(attributes, NewAtributeItem("Shares", o.Shares))
 	}
 	if o.MemberCount != 0 {
-		attributes = append(attributes, appwidget.NewAtributeItem("Member Count", o.MemberCount))
+		attributes = append(attributes, NewAtributeItem("Member Count", o.MemberCount))
 	}
 	if o.TaxRate != 0 {
-		attributes = append(attributes, appwidget.NewAtributeItem("ISK Tax Rate", o.TaxRate))
+		attributes = append(attributes, NewAtributeItem("ISK Tax Rate", o.TaxRate))
 	}
-	attributes = append(attributes, appwidget.NewAtributeItem("War Eligability", o.WarEligible))
+	attributes = append(attributes, NewAtributeItem("War Eligability", o.WarEligible))
 	if o.URL != "" {
 		u, err := url.ParseRequestURI(o.URL)
 		if err == nil {
-			attributes = append(attributes, appwidget.NewAtributeItem("URL", u))
+			attributes = append(attributes, NewAtributeItem("URL", u))
 		}
 	}
-	attributeList := appwidget.NewAttributeList()
+	attributeList := NewAttributeList()
 	attributeList.ShowInfoWindow = a.iw.ShowEveEntity
 	attributeList.Set(attributes)
 	a.tabs.Append(container.NewTabItem("Attributes", attributeList))
@@ -174,7 +173,7 @@ func (a *corporationInfoArea) load(corporationID int32) error {
 		if len(history) == 0 {
 			return
 		}
-		historyList := appwidget.NewMembershipHistoryList()
+		historyList := NewMembershipHistoryList()
 		historyList.IsFoundedShown = true
 		historyList.ShowInfoWindow = a.iw.ShowEveEntity
 		historyList.Set(slices.Collect(xiter.FilterSlice(history, func(v app.MembershipHistoryItem) bool {

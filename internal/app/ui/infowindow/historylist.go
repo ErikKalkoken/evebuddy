@@ -1,4 +1,4 @@
-package widget
+package infowindow
 
 import (
 	"fmt"

@@ -14,7 +14,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
@@ -162,7 +161,7 @@ func (a *characterInfoArea) load(characterID int32) error {
 		current := history[0]
 		duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
 		a.membership.SetText(fmt.Sprintf("for %s", duration))
-		historyList := appwidget.NewMembershipHistoryList()
+		historyList := NewMembershipHistoryList()
 		historyList.ShowInfoWindow = a.iw.ShowEveEntity
 		historyList.Set(history)
 		a.tabs.Append(container.NewTabItem("Employment History", historyList))

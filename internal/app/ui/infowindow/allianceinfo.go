@@ -13,7 +13,6 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
-	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -80,26 +79,26 @@ func (a *allianceInfoArea) load(allianceID int32) error {
 	a.name.SetText(o.Name)
 
 	// Attributes
-	attributes := make([]appwidget.AtributeItem, 0)
+	attributes := make([]AtributeItem, 0)
 	if o.ExecutorCorporation != nil {
-		attributes = append(attributes, appwidget.NewAtributeItem("Executor", o.ExecutorCorporation))
+		attributes = append(attributes, NewAtributeItem("Executor", o.ExecutorCorporation))
 	}
 	if o.Ticker != "" {
-		attributes = append(attributes, appwidget.NewAtributeItem("Short Name", o.Ticker))
+		attributes = append(attributes, NewAtributeItem("Short Name", o.Ticker))
 	}
 	if o.CreatorCorporation != nil {
-		attributes = append(attributes, appwidget.NewAtributeItem("Created By Corporation", o.CreatorCorporation))
+		attributes = append(attributes, NewAtributeItem("Created By Corporation", o.CreatorCorporation))
 	}
 	if o.Creator != nil {
-		attributes = append(attributes, appwidget.NewAtributeItem("Created By", o.Creator))
+		attributes = append(attributes, NewAtributeItem("Created By", o.Creator))
 	}
 	if !o.DateFounded.IsZero() {
-		attributes = append(attributes, appwidget.NewAtributeItem("Start Date", o.DateFounded))
+		attributes = append(attributes, NewAtributeItem("Start Date", o.DateFounded))
 	}
 	if o.Faction != nil {
-		attributes = append(attributes, appwidget.NewAtributeItem("Faction", o.Faction))
+		attributes = append(attributes, NewAtributeItem("Faction", o.Faction))
 	}
-	attributeList := appwidget.NewAttributeList()
+	attributeList := NewAttributeList()
 	attributeList.ShowInfoWindow = a.iw.ShowEveEntity
 	attributeList.Set(attributes)
 	a.tabs.Append(container.NewTabItem("Attributes", attributeList))
