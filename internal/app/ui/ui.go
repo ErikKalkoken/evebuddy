@@ -510,7 +510,7 @@ func (u *BaseUI) ShowCharacterInfoWindow(id int32) {
 	w.Show()
 }
 
-func (u *BaseUI) ShowCorporaitonInfoWindow(id int32) {
+func (u *BaseUI) ShowCorporationInfoWindow(id int32) {
 	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Corporation: Information"))
 	a := NewCorporationInfoArea(u, id)
 	w.SetContent(a.Content)

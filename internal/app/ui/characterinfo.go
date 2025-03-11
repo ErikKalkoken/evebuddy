@@ -12,12 +12,13 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/dustin/go-humanize"
+
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
-	"github.com/dustin/go-humanize"
 )
 
 // CharacterInfoArea represents an area that shows public information about a character.
@@ -25,7 +26,6 @@ type CharacterInfoArea struct {
 	Content fyne.CanvasObject
 
 	alliance        *widget.Label
-	historyList     *widget.List
 	character       *widget.Label
 	corporationLogo *canvas.Image
 	corporation     *kxwidget.TappableLabel
@@ -33,7 +33,6 @@ type CharacterInfoArea struct {
 	portrait        *kxwidget.TappableImage
 	security        *widget.Label
 	title           *widget.Label
-	historyItems    []app.MembershipHistoryItem
 	tabs            *container.AppTabs
 
 	u *BaseUI
@@ -58,7 +57,6 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 		corporation:     corporation,
 		membership:      widget.NewLabel(""),
 		portrait:        portrait,
-		historyItems:    make([]app.MembershipHistoryItem, 0),
 		security:        widget.NewLabel(""),
 		tabs:            container.NewAppTabs(),
 		title:           title,
@@ -83,7 +81,6 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 		a.alliance,
 		a.security,
 	)
-	a.historyList = a.makeHistory()
 	top := container.NewBorder(nil, nil, container.NewVBox(a.portrait), nil, main)
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
@@ -97,55 +94,6 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 		}
 	}()
 	return a
-}
-
-func (a *CharacterInfoArea) makeHistory() *widget.List {
-	l := widget.NewList(
-		func() int {
-			return len(a.historyItems)
-		},
-		func() fyne.CanvasObject {
-			l := widget.NewRichText()
-			l.Truncation = fyne.TextTruncateEllipsis
-			return l
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(a.historyItems) {
-				return
-			}
-			it := a.historyItems[id]
-			const dateFormat = "2006.01.02 15:04"
-			var endDateStr string
-			if !it.EndDate.IsZero() {
-				endDateStr = it.EndDate.Format(dateFormat)
-			} else {
-				endDateStr = "this day"
-			}
-			var closed string
-			if it.IsDeleted {
-				closed = " (closed)"
-			}
-			text := fmt.Sprintf(
-				"%s%s   **%s** to **%s** (%s days)",
-				it.Organization.Name,
-				closed,
-				it.StartDate.Format(dateFormat),
-				endDateStr,
-				humanize.Comma(int64(it.Days)),
-			)
-			co.(*widget.RichText).ParseMarkdown(text)
-		},
-	)
-	l.HideSeparators = true
-	l.OnSelected = func(id widget.ListItemID) {
-		defer l.UnselectAll()
-		if id >= len(a.historyItems) {
-			return
-		}
-		it := a.historyItems[id]
-		a.u.ShowCorporaitonInfoWindow(it.Organization.ID)
-	}
-	return l
 }
 
 func (a *CharacterInfoArea) load(characterID int32) error {
@@ -171,7 +119,7 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 	a.security.SetText(fmt.Sprintf("Security Status: %.1f", c.SecurityStatus))
 	a.corporation.SetText(fmt.Sprintf("Member of %s", c.Corporation.Name))
 	a.corporation.OnTapped = func() {
-		a.u.ShowCorporaitonInfoWindow(c.Corporation.ID)
+		a.u.ShowCorporationInfoWindow(c.Corporation.ID)
 	}
 	a.portrait.OnTapped = func() {
 		w := a.u.FyneApp.NewWindow(a.u.MakeWindowTitle(c.Name))
@@ -221,8 +169,10 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 		current := history[0]
 		duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
 		a.membership.SetText(fmt.Sprintf("for %s", duration))
-		a.historyItems = history
-		a.tabs.Append(container.NewTabItem("Employment History", a.historyList))
+		historyList := appwidget.NewMembershipHistoryList()
+		historyList.ShowInfoWindow = a.u.ShowCorporationInfoWindow
+		historyList.Set(history)
+		a.tabs.Append(container.NewTabItem("Employment History", historyList))
 		a.tabs.Refresh()
 	}()
 	return nil

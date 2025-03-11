@@ -19,6 +19,7 @@ import (
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -39,8 +40,6 @@ type CorporationInfoArea struct {
 	corporation     *widget.Label
 	corporationLogo *canvas.Image
 	hq              *kxwidget.TappableLabel
-	historyList     *widget.List
-	historyItems    []app.MembershipHistoryItem
 	tabs            *container.AppTabs
 	u               *BaseUI
 }
@@ -61,7 +60,6 @@ func NewCorporationInfoArea(u *BaseUI, corporationID int32) *CorporationInfoArea
 		attributes:      make([]corporationAttribute, 0),
 		corporation:     corporation,
 		corporationLogo: corporationLogo,
-		historyItems:    make([]app.MembershipHistoryItem, 0),
 		hq:              hq,
 		tabs:            container.NewAppTabs(),
 		u:               u,
@@ -79,7 +77,6 @@ func NewCorporationInfoArea(u *BaseUI, corporationID int32) *CorporationInfoArea
 		),
 	)
 	a.attributeList = a.makeAttributes()
-	a.historyList = a.makeHistory()
 	top := container.NewBorder(nil, nil, container.NewVBox(a.corporationLogo), nil, main)
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
@@ -175,50 +172,6 @@ func (a *CorporationInfoArea) makeAttributes() *widget.List {
 	return l
 }
 
-func (a *CorporationInfoArea) makeHistory() *widget.List {
-	l := widget.NewList(
-		func() int {
-			return len(a.historyItems)
-		},
-		func() fyne.CanvasObject {
-			l := widget.NewRichText()
-			l.Truncation = fyne.TextTruncateEllipsis
-			return l
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			if id >= len(a.historyItems) {
-				return
-			}
-			it := a.historyItems[id]
-			const dateFormat = "2006.01.02 15:04"
-			var endDateStr string
-			if !it.EndDate.IsZero() {
-				endDateStr = it.EndDate.Format(dateFormat)
-			} else {
-				endDateStr = "this day"
-			}
-			var closed string
-			if it.IsDeleted {
-				closed = " (closed)"
-			}
-			text := fmt.Sprintf(
-				"%s%s   **%s** to **%s** (%s days)",
-				it.Organization.Name,
-				closed,
-				it.StartDate.Format(dateFormat),
-				endDateStr,
-				humanize.Comma(int64(it.Days)),
-			)
-			co.(*widget.RichText).ParseMarkdown(text)
-		},
-	)
-	l.HideSeparators = true
-	l.OnSelected = func(id widget.ListItemID) {
-		l.UnselectAll()
-	}
-	return l
-}
-
 func (a *CorporationInfoArea) load(corporationID int32) error {
 	ctx := context.Background()
 	go func() {
@@ -290,7 +243,8 @@ func (a *CorporationInfoArea) load(corporationID int32) error {
 		}
 	}
 	a.tabs.Append(container.NewTabItem("Attributes", a.attributeList))
-	a.tabs.Append(container.NewTabItem("Alliance History", a.historyList))
+	historyList := appwidget.NewMembershipHistoryList()
+	a.tabs.Append(container.NewTabItem("Alliance History", historyList))
 	a.tabs.Refresh()
 
 	go func() {
@@ -299,10 +253,9 @@ func (a *CorporationInfoArea) load(corporationID int32) error {
 			slog.Error("corporation info: Failed to load alliance history", "corporationID", corporationID, "error", err)
 			return
 		}
-		a.historyItems = slices.Collect(xiter.FilterSlice(history, func(v app.MembershipHistoryItem) bool {
+		historyList.Set(slices.Collect(xiter.FilterSlice(history, func(v app.MembershipHistoryItem) bool {
 			return v.Organization != nil
-		}))
-		a.historyList.Refresh()
+		})))
 	}()
 	return nil
 }
