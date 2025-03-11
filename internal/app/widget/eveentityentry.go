@@ -31,21 +31,21 @@ const (
 type EveEntityEntry struct {
 	widget.DisableableWidget
 
-	Placeholder string
+	Placeholder    string
+	ShowInfoWindow func(*app.EveEntity)
 
-	eis            app.EveImageService
-	field          *canvas.Rectangle
-	hovered        bool
-	label          fyne.CanvasObject
-	labelWidth     float32
-	main           *fyne.Container
-	mu             sync.Mutex
-	placeholder    *widget.RichText
-	s              []*app.EveEntity
-	showInfoWindow func(int32)
+	eis         app.EveImageService
+	field       *canvas.Rectangle
+	hovered     bool
+	label       fyne.CanvasObject
+	labelWidth  float32
+	main        *fyne.Container
+	mu          sync.Mutex
+	placeholder *widget.RichText
+	s           []*app.EveEntity
 }
 
-func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis app.EveImageService, showInfoWindow func(int32)) *EveEntityEntry {
+func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis app.EveImageService) *EveEntityEntry {
 	bg := canvas.NewRectangle(theme.Color(theme.ColorNameInputBackground))
 	bg.StrokeColor = theme.Color(theme.ColorNameInputBorder)
 	bg.StrokeWidth = theme.Size(theme.SizeNameInputBorder)
@@ -59,8 +59,7 @@ func NewEveEntityEntry(label fyne.CanvasObject, labelWidth float32, eis app.EveI
 		placeholder: widget.NewRichText(&widget.TextSegment{
 			Style: widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder},
 		}),
-		s:              make([]*app.EveEntity, 0),
-		showInfoWindow: showInfoWindow,
+		s: make([]*app.EveEntity, 0),
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -154,9 +153,9 @@ func (w *EveEntityEntry) update() {
 				s := fmt.Sprintf("%s (%s)", ee.Name, ee.CategoryDisplay())
 				nameItem := fyne.NewMenuItem(s, nil)
 				nameItem.Icon = icon.Questionmark32Png
-				if ee.Category == app.EveEntityCharacter {
+				if ee.Category == app.EveEntityCharacter && w.ShowInfoWindow != nil {
 					nameItem.Action = func() {
-						w.showInfoWindow(ee.ID)
+						w.ShowInfoWindow(ee)
 					}
 				}
 				removeItem := fyne.NewMenuItem("Remove", func() {

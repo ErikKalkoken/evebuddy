@@ -46,7 +46,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 	}
 	key := fmt.Sprintf("Update-section-%s", section)
 	_, err, _ = s.sfg.Do(key, func() (any, error) {
-		slog.Info("Started updating eveuniverse section", "section", section)
+		slog.Debug("Started updating eveuniverse section", "section", section)
 		startedAt := optional.New(time.Now())
 		arg2 := storage.UpdateOrCreateGeneralSectionStatusParams{
 			Section:   section,
@@ -58,7 +58,7 @@ func (s *EveUniverseService) UpdateSection(ctx context.Context, section app.Gene
 		}
 		s.StatusCacheService.GeneralSectionSet(o)
 		err = f(ctx)
-		slog.Info("Finished updating eveuniverse section", "section", section)
+		slog.Debug("Finished updating eveuniverse section", "section", section)
 		return nil, err
 	})
 	if err != nil {

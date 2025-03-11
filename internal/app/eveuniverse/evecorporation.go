@@ -12,23 +12,7 @@ func (s *EveUniverseService) GetEveCorporationESI(ctx context.Context, corporati
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]int32, 0)
-	if c.CeoId != 0 && c.CeoId != 1 {
-		ids = append(ids, c.CeoId)
-	}
-	if c.CreatorId != 0 && c.CreatorId != 1 {
-		ids = append(ids, c.CreatorId)
-	}
-	if c.AllianceId != 0 {
-		ids = append(ids, c.AllianceId)
-	}
-	if c.FactionId != 0 {
-		ids = append(ids, c.FactionId)
-	}
-	if c.HomeStationId != 0 {
-		ids = append(ids, c.HomeStationId)
-	}
-	_, err = s.AddMissingEveEntities(ctx, ids)
+	_, err = s.AddMissingEveEntities(ctx, []int32{corporationID, c.CeoId, c.CreatorId, c.AllianceId, c.FactionId, c.HomeStationId})
 	if err != nil {
 		return nil, err
 	}
@@ -51,29 +35,21 @@ func (s *EveUniverseService) GetEveCorporationESI(ctx context.Context, corporati
 			return nil, err
 		}
 	}
-	if c.CreatorId != 0 && c.CreatorId != 1 {
-		o.Creator, err = s.GetEveEntity(ctx, c.CreatorId)
-		if err != nil {
-			return nil, err
-		}
+	o.Creator, err = s.getValidEveEntity(ctx, c.CreatorId)
+	if err != nil {
+		return nil, err
 	}
-	if c.AllianceId != 0 {
-		o.Alliance, err = s.GetEveEntity(ctx, c.AllianceId)
-		if err != nil {
-			return nil, err
-		}
+	o.Alliance, err = s.getValidEveEntity(ctx, c.AllianceId)
+	if err != nil {
+		return nil, err
 	}
-	if c.FactionId != 0 {
-		o.Faction, err = s.GetEveEntity(ctx, c.FactionId)
-		if err != nil {
-			return nil, err
-		}
+	o.Faction, err = s.getValidEveEntity(ctx, c.FactionId)
+	if err != nil {
+		return nil, err
 	}
-	if c.HomeStationId != 0 {
-		o.HomeStation, err = s.GetEveEntity(ctx, c.HomeStationId)
-		if err != nil {
-			return nil, err
-		}
+	o.HomeStation, err = s.getValidEveEntity(ctx, c.HomeStationId)
+	if err != nil {
+		return nil, err
 	}
 	return o, nil
 }

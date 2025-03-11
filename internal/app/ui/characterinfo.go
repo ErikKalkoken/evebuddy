@@ -25,7 +25,7 @@ import (
 type CharacterInfoArea struct {
 	Content fyne.CanvasObject
 
-	alliance        *widget.Label
+	alliance        *kxwidget.TappableLabel
 	character       *widget.Label
 	corporationLogo *canvas.Image
 	corporation     *kxwidget.TappableLabel
@@ -39,7 +39,7 @@ type CharacterInfoArea struct {
 }
 
 func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
-	alliance := widget.NewLabel("")
+	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Truncation = fyne.TextTruncateEllipsis
 	character := widget.NewLabel("Loading...")
 	character.Truncation = fyne.TextTruncateEllipsis
@@ -113,13 +113,16 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 	a.character.SetText(c.Name)
 	if c.HasAlliance() {
 		a.alliance.SetText(c.Alliance.Name)
+		a.alliance.OnTapped = func() {
+			a.u.ShowInfoWindow(c.Alliance)
+		}
 	} else {
 		a.alliance.Hide()
 	}
 	a.security.SetText(fmt.Sprintf("Security Status: %.1f", c.SecurityStatus))
 	a.corporation.SetText(fmt.Sprintf("Member of %s", c.Corporation.Name))
 	a.corporation.OnTapped = func() {
-		a.u.ShowCorporationInfoWindow(c.Corporation.ID)
+		a.u.ShowInfoWindow(c.Corporation)
 	}
 	a.portrait.OnTapped = func() {
 		w := a.u.FyneApp.NewWindow(a.u.MakeWindowTitle(c.Name))
@@ -170,7 +173,7 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 		duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
 		a.membership.SetText(fmt.Sprintf("for %s", duration))
 		historyList := appwidget.NewMembershipHistoryList()
-		historyList.ShowInfoWindow = a.u.ShowCorporationInfoWindow
+		historyList.ShowInfoWindow = a.u.ShowInfoWindow
 		historyList.Set(history)
 		a.tabs.Append(container.NewTabItem("Employment History", historyList))
 		a.tabs.Refresh()

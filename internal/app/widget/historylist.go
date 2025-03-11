@@ -4,16 +4,19 @@ import (
 	"fmt"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/dustin/go-humanize"
+
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 )
 
 // MembershipHistoryList represents a membership history in an organization.
 type MembershipHistoryList struct {
 	widget.BaseWidget
 
-	ShowInfoWindow func(int32)
+	ShowInfoWindow func(*app.EveEntity)
 	IsFoundedShown bool
 
 	items []app.MembershipHistoryItem
@@ -40,7 +43,7 @@ func (w *MembershipHistoryList) CreateRenderer() fyne.WidgetRenderer {
 		func() fyne.CanvasObject {
 			l := widget.NewRichText()
 			l.Truncation = fyne.TextTruncateEllipsis
-			return l
+			return container.NewBorder(nil, nil, nil, widget.NewIcon(theme.InfoIcon()), l)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(w.items) {
@@ -71,7 +74,8 @@ func (w *MembershipHistoryList) CreateRenderer() fyne.WidgetRenderer {
 					humanize.Comma(int64(it.Days)),
 				)
 			}
-			co.(*widget.RichText).ParseMarkdown(text)
+			border := co.(*fyne.Container).Objects
+			border[0].(*widget.RichText).ParseMarkdown(text)
 		},
 	)
 	l.HideSeparators = true
@@ -82,7 +86,7 @@ func (w *MembershipHistoryList) CreateRenderer() fyne.WidgetRenderer {
 		}
 		it := w.items[id]
 		if w.ShowInfoWindow != nil {
-			w.ShowInfoWindow(it.Organization.ID)
+			w.ShowInfoWindow(it.Organization)
 		}
 	}
 	return widget.NewSimpleRenderer(l)

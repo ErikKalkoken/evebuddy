@@ -176,14 +176,33 @@ func TestAddMissingEveEntities(t *testing.T) {
 		// then
 		assert.GreaterOrEqual(t, 0, httpmock.GetTotalCallCount())
 		if assert.NoError(t, err) {
-			assert.Len(t, ids, 1)
-			assert.Equal(t, int32(1), ids[0])
+			assert.Len(t, ids, 0)
 			e, err := r.GetEveEntity(ctx, 1)
 			if err != nil {
 				t.Fatal(err)
 			}
 			assert.Equal(t, e.Name, "?")
 			assert.Equal(t, e.Category, app.EveEntityUnknown)
+		}
+	})
+	t.Run("should do nothing with ID 0", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		httpmock.RegisterResponder("POST", "https://esi.evetech.net/v3/universe/names/",
+			httpmock.NewStringResponder(404, ""))
+		// when
+		ids, err := s.AddMissingEveEntities(ctx, []int32{0})
+		// then
+		assert.GreaterOrEqual(t, 0, httpmock.GetTotalCallCount())
+		if assert.NoError(t, err) {
+			assert.Len(t, ids, 0)
+			r := db.QueryRow("SELECT count(*) FROM eve_entities;")
+			var c int
+			if err := r.Scan(&c); err != nil {
+				t.Fatal(err)
+			}
+			assert.Equal(t, 0, c)
 		}
 	})
 	t.Run("can deal with a mix of valid and invalid IDs", func(t *testing.T) {

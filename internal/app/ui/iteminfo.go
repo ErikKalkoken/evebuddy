@@ -252,7 +252,7 @@ func NewItemInfoArea(u *BaseUI, typeID, characterID int32, locationID int64, sel
 	}
 	a.attributesData = a.calcAttributesData(ctx, attributes)
 	a.fittingData = a.calcFittingData(ctx, attributes)
-	if !a.isLocation() {
+	if !a.isLocation() && characterID != 0 {
 		skills, err := a.calcRequiredSkills(ctx, characterID, attributes)
 		if err != nil {
 			return nil, err

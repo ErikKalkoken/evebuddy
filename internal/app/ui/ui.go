@@ -502,22 +502,6 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 	w.Show()
 }
 
-func (u *BaseUI) ShowCharacterInfoWindow(id int32) {
-	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Character: Information"))
-	a := NewCharacterInfoArea(u, id)
-	w.SetContent(a.Content)
-	w.Resize(fyne.Size{Width: infoWindowWidth, Height: infoWindowHeight})
-	w.Show()
-}
-
-func (u *BaseUI) ShowCorporationInfoWindow(id int32) {
-	w := u.FyneApp.NewWindow(u.MakeWindowTitle("Corporation: Information"))
-	a := NewCorporationInfoArea(u, id)
-	w.SetContent(a.Content)
-	w.Resize(fyne.Size{Width: infoWindowWidth, Height: infoWindowHeight})
-	w.Show()
-}
-
 func (u *BaseUI) ShowTypeInfoWindow(typeID, characterID int32, selectTab TypeWindowTab) {
 	u.showItemWindow(NewItemInfoArea(u, typeID, characterID, 0, selectTab))
 }
@@ -542,6 +526,38 @@ func (u *BaseUI) showItemWindow(iw *ItemInfoArea, err error) {
 	w.SetContent(iw.Content)
 	w.Resize(fyne.Size{Width: infoWindowWidth, Height: infoWindowHeight})
 	w.Show()
+}
+
+func (u *BaseUI) ShowInfoWindow(o *app.EveEntity) {
+	showInfoWindow := func(category string, create func() fyne.CanvasObject) {
+		w := u.FyneApp.NewWindow(u.MakeWindowTitle(fmt.Sprintf("%s: Information", category)))
+		w.SetContent(create())
+		w.Resize(fyne.Size{Width: infoWindowWidth, Height: infoWindowHeight})
+		w.Show()
+	}
+	switch o.Category {
+	case app.EveEntityAlliance:
+		showInfoWindow("Alliance", func() fyne.CanvasObject {
+			a := NewAllianceInfoArea(u, o.ID)
+			return a.Content
+		})
+	case app.EveEntityCharacter:
+		showInfoWindow("Character", func() fyne.CanvasObject {
+			a := NewCharacterInfoArea(u, o.ID)
+			return a.Content
+		})
+	case app.EveEntityCorporation:
+		showInfoWindow("Corporation", func() fyne.CanvasObject {
+			a := NewCorporationInfoArea(u, o.ID)
+			return a.Content
+		})
+	case app.EveEntityStation:
+		u.ShowLocationInfoWindow(int64(o.ID))
+	case app.EveEntityInventoryType:
+		u.ShowTypeInfoWindow(o.ID, u.CharacterID(), DescriptionTab)
+	default:
+		u.Snackbar.Show(fmt.Sprintf("Can't show info window for %s", o.Category))
+	}
 }
 
 func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {
@@ -707,7 +723,7 @@ func (u *BaseUI) updateCharactersIfNeeded(ctx context.Context) error {
 	for _, c := range cc {
 		go u.UpdateCharacterAndRefreshIfNeeded(ctx, c.ID, false)
 	}
-	slog.Info("started update status characters") // FIXME: Reset to DEBUG
+	slog.Debug("started update status characters") // FIXME: Reset to DEBUG
 	return nil
 }
 
@@ -720,7 +736,7 @@ func (u *BaseUI) notifyCharactersIfNeeded(ctx context.Context) error {
 		go u.notifyExpiredExtractionsIfNeeded(ctx, c.ID)
 		go u.notifyExpiredTrainingIfneeded(ctx, c.ID)
 	}
-	slog.Info("started notify characters")
+	slog.Debug("started notify characters")
 	return nil
 }
 
