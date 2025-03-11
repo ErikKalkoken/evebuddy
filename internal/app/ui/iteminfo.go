@@ -504,7 +504,7 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 			w := a.u.FyneApp.NewWindow(a.u.MakeWindowTitle(a.MakeTitle("Render")))
 			size := 512
 			s := float32(size) / w.Canvas().Scale()
-			i := NewImageResourceAsync(icon.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
+			i := appwidget.NewImageResourceAsync(icon.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 				return a.u.EveImageService.InventoryTypeRender(a.et.ID, size)
 			})
 			p := theme.Padding()
@@ -533,7 +533,7 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 		}
 	} else {
 		s := float32(DefaultIconPixelSize) * 1.3 / a.u.Window.Canvas().Scale()
-		icon := NewImageResourceAsync(icon.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
+		icon := appwidget.NewImageResourceAsync(icon.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
 			if a.et.IsSKIN() {
 				return a.u.EveImageService.InventoryTypeSKIN(a.et.ID, DefaultIconPixelSize)
 			} else if a.et.IsBlueprint() {
@@ -548,7 +548,7 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 	ownerName := widget.NewLabel("")
 	ownerName.Wrapping = fyne.TextWrapWord
 	if a.owner != nil {
-		RefreshImageResourceAsync(ownerIcon, func() (fyne.Resource, error) {
+		appwidget.RefreshImageResourceAsync(ownerIcon, func() (fyne.Resource, error) {
 			switch a.owner.Category {
 			case app.EveEntityCharacter:
 				return a.u.EveImageService.CharacterPortrait(a.owner.ID, DefaultIconPixelSize)

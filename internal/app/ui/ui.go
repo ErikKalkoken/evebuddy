@@ -24,6 +24,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	"github.com/ErikKalkoken/evebuddy/internal/github"
@@ -538,17 +539,17 @@ func (u *BaseUI) ShowInfoWindow(o *app.EveEntity) {
 	switch o.Category {
 	case app.EveEntityAlliance:
 		showInfoWindow("Alliance", func() fyne.CanvasObject {
-			a := NewAllianceInfoArea(u, o.ID)
+			a := infowindow.NewAllianceInfoArea(u.EveUniverseService, u.EveImageService, u.ShowInfoWindow, o.ID)
 			return a.Content
 		})
 	case app.EveEntityCharacter:
 		showInfoWindow("Character", func() fyne.CanvasObject {
-			a := NewCharacterInfoArea(u, o.ID)
+			a := infowindow.NewCharacterInfoArea(u.EveUniverseService, u.EveImageService, u.ShowInfoWindow, o.ID)
 			return a.Content
 		})
 	case app.EveEntityCorporation:
 		showInfoWindow("Corporation", func() fyne.CanvasObject {
-			a := NewCorporationInfoArea(u, o.ID)
+			a := infowindow.NewCorporationInfoArea(u.EveUniverseService, u.EveImageService, u.ShowInfoWindow, o.ID)
 			return a.Content
 		})
 	case app.EveEntityStation:

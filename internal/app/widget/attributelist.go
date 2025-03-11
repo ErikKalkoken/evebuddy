@@ -26,14 +26,15 @@ type AttributeList struct {
 	widget.BaseWidget
 
 	ShowInfoWindow func(*app.EveEntity)
-	OpenURL        func(*url.URL) error
 
-	items []AtributeItem
+	items   []AtributeItem
+	openURL func(*url.URL) error
 }
 
 func NewAttributeList() *AttributeList {
 	w := &AttributeList{
-		items: make([]AtributeItem, 0),
+		items:   make([]AtributeItem, 0),
+		openURL: fyne.CurrentApp().OpenURL,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -112,9 +113,7 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 				w.ShowInfoWindow(x)
 			}
 		case *url.URL:
-			if w.OpenURL != nil {
-				w.OpenURL(x)
-			}
+			w.openURL(x)
 			// TODO
 			// if err != nil {
 			// 	a.u.Snackbar.Show(fmt.Sprintf("ERROR: Failed to open URL: %s", ihumanize.Error(err)))

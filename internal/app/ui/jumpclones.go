@@ -15,6 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
@@ -130,7 +131,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 				prefix.Show()
 				spacer.Show()
 			} else {
-				RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
+				appwidget.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
 					return a.u.EveImageService.InventoryTypeIcon(n.ImplantTypeID, DefaultIconPixelSize)
 				})
 				main.SetText(n.ImplantTypeName)

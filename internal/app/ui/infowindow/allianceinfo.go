@@ -1,4 +1,4 @@
-package ui
+package infowindow
 
 import (
 	"context"
@@ -10,11 +10,12 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
-
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
@@ -23,41 +24,52 @@ import (
 type AllianceInfoArea struct {
 	Content fyne.CanvasObject
 
-	alliance *widget.Label
-	logo     *canvas.Image
-	hq       *kxwidget.TappableLabel
-	tabs     *container.AppTabs
-	u        *BaseUI
+	eus            *eveuniverse.EveUniverseService
+	eis            app.EveImageService
+	showInfoWindow func(*app.EveEntity)
+
+	name *widget.Label
+	logo *canvas.Image
+	hq   *kxwidget.TappableLabel
+	tabs *container.AppTabs
 }
 
-func NewAllianceInfoArea(u *BaseUI, allianceID int32) *AllianceInfoArea {
+func NewAllianceInfoArea(
+	eus *eveuniverse.EveUniverseService,
+	eis app.EveImageService,
+	showInfoWindow func(*app.EveEntity),
+	allianceID int32,
+) *AllianceInfoArea {
 	alliance := widget.NewLabel("")
 	alliance.Truncation = fyne.TextTruncateEllipsis
 	corporation := widget.NewLabel("Loading...")
 	corporation.Truncation = fyne.TextTruncateEllipsis
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
-	corporationLogo := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(DefaultIconUnitSize))
-	s := float32(DefaultIconPixelSize) * 1.3 / u.Window.Canvas().Scale()
+	corporationLogo := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(defaultIconUnitSize))
+	s := float32(defaultIconPixelSize) * logoZoomFactor
 	corporationLogo.SetMinSize(fyne.NewSquareSize(s))
 	a := &AllianceInfoArea{
-		alliance: corporation,
-		logo:     corporationLogo,
-		hq:       hq,
-		tabs:     container.NewAppTabs(),
-		u:        u,
+		eis:            eis,
+		eus:            eus,
+		showInfoWindow: showInfoWindow,
+
+		name: corporation,
+		logo: corporationLogo,
+		hq:   hq,
+		tabs: container.NewAppTabs(),
 	}
 
-	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, a.alliance)
+	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, a.name)
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
 		err := a.load(allianceID)
 		if err != nil {
 			slog.Error("alliance info update failed", "id", allianceID, "error", err)
-			a.alliance.Text = fmt.Sprintf("ERROR: Failed to load alliance: %s", ihumanize.Error(err))
-			a.alliance.Importance = widget.DangerImportance
-			a.alliance.Refresh()
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load alliance: %s", ihumanize.Error(err))
+			a.name.Importance = widget.DangerImportance
+			a.name.Refresh()
 		}
 	}()
 	return a
@@ -66,7 +78,7 @@ func NewAllianceInfoArea(u *BaseUI, allianceID int32) *AllianceInfoArea {
 func (a *AllianceInfoArea) load(allianceID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.u.EveImageService.AllianceLogo(allianceID, DefaultIconPixelSize)
+		r, err := a.eis.AllianceLogo(allianceID, defaultIconPixelSize)
 		if err != nil {
 			slog.Error("alliance info: Failed to load logo", "allianceID", allianceID, "error", err)
 			return
@@ -74,11 +86,11 @@ func (a *AllianceInfoArea) load(allianceID int32) error {
 		a.logo.Resource = r
 		a.logo.Refresh()
 	}()
-	o, err := a.u.EveUniverseService.GetEveAllianceESI(ctx, allianceID)
+	o, err := a.eus.GetEveAllianceESI(ctx, allianceID)
 	if err != nil {
 		return err
 	}
-	a.alliance.SetText(o.Name)
+	a.name.SetText(o.Name)
 
 	// Attributes
 	attributes := make([]appwidget.AtributeItem, 0)
@@ -101,14 +113,13 @@ func (a *AllianceInfoArea) load(allianceID int32) error {
 		attributes = append(attributes, appwidget.NewAtributeItem("Faction", o.Faction))
 	}
 	attributeList := appwidget.NewAttributeList()
-	attributeList.ShowInfoWindow = a.u.ShowInfoWindow
-	attributeList.OpenURL = a.u.FyneApp.OpenURL
+	attributeList.ShowInfoWindow = a.showInfoWindow
 	attributeList.Set(attributes)
 	a.tabs.Append(container.NewTabItem("Attributes", attributeList))
 
 	// Members
 	go func() {
-		members, err := a.u.EveUniverseService.GetEveAllianceCorporationsESI(ctx, allianceID)
+		members, err := a.eus.GetEveAllianceCorporationsESI(ctx, allianceID)
 		if err != nil {
 			slog.Error("alliance info: Failed to load corporations", "allianceID", allianceID, "error", err)
 			return
@@ -134,7 +145,7 @@ func (a *AllianceInfoArea) load(allianceID int32) error {
 				l := border[0].(*kxwidget.TappableLabel)
 				l.SetText(m.Name)
 				l.OnTapped = func() {
-					a.u.ShowInfoWindow(m)
+					a.showInfoWindow(m)
 				}
 			},
 		)

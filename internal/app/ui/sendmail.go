@@ -156,7 +156,7 @@ func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEnti
 			row := co.(*fyne.Container).Objects
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
-			RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
+			appwidget.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
 				res, err := appwidget.FetchEveEntityAvatar(u.EveImageService, ee, fallbackIcon)
 				if err != nil {
 					return fallbackIcon, err

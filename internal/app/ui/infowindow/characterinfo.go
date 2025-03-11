@@ -1,4 +1,4 @@
-package ui
+package infowindow
 
 import (
 	"context"
@@ -10,10 +10,11 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
@@ -25,8 +26,12 @@ import (
 type CharacterInfoArea struct {
 	Content fyne.CanvasObject
 
+	eus            *eveuniverse.EveUniverseService
+	eis            app.EveImageService
+	showInfoWindow func(*app.EveEntity)
+
 	alliance        *kxwidget.TappableLabel
-	character       *widget.Label
+	name            *widget.Label
 	corporationLogo *canvas.Image
 	corporation     *kxwidget.TappableLabel
 	membership      *widget.Label
@@ -34,11 +39,14 @@ type CharacterInfoArea struct {
 	security        *widget.Label
 	title           *widget.Label
 	tabs            *container.AppTabs
-
-	u *BaseUI
 }
 
-func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
+func NewCharacterInfoArea(
+	eus *eveuniverse.EveUniverseService,
+	eis app.EveImageService,
+	showInfoWindow func(*app.EveEntity),
+	characterID int32,
+) *CharacterInfoArea {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Truncation = fyne.TextTruncateEllipsis
 	character := widget.NewLabel("Loading...")
@@ -51,20 +59,23 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 	title := widget.NewLabel("")
 	title.Truncation = fyne.TextTruncateEllipsis
 	a := &CharacterInfoArea{
+		eis:            eis,
+		eus:            eus,
+		showInfoWindow: showInfoWindow,
+
 		alliance:        alliance,
-		character:       character,
-		corporationLogo: iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(DefaultIconUnitSize)),
 		corporation:     corporation,
+		corporationLogo: iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(defaultIconUnitSize)),
 		membership:      widget.NewLabel(""),
+		name:            character,
 		portrait:        portrait,
 		security:        widget.NewLabel(""),
 		tabs:            container.NewAppTabs(),
 		title:           title,
-		u:               u,
 	}
 
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
-		a.character,
+		a.name,
 		a.title,
 		container.NewBorder(
 			nil,
@@ -88,9 +99,9 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 		err := a.load(characterID)
 		if err != nil {
 			slog.Error("character info update failed", "characterID", characterID, "error", err)
-			a.character.Text = fmt.Sprintf("ERROR: Failed to load character: %s", ihumanize.Error(err))
-			a.character.Importance = widget.DangerImportance
-			a.character.Refresh()
+			a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", ihumanize.Error(err))
+			a.name.Importance = widget.DangerImportance
+			a.name.Refresh()
 		}
 	}()
 	return a
@@ -99,22 +110,22 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 func (a *CharacterInfoArea) load(characterID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.u.EveImageService.CharacterPortrait(characterID, 256)
+		r, err := a.eis.CharacterPortrait(characterID, 256)
 		if err != nil {
 			slog.Error("character info: Failed to load portrait", "charaterID", characterID, "error", err)
 			return
 		}
 		a.portrait.SetResource(r)
 	}()
-	c, err := a.u.EveUniverseService.GetEveCharacterESI(ctx, characterID)
+	c, err := a.eus.GetEveCharacterESI(ctx, characterID)
 	if err != nil {
 		return err
 	}
-	a.character.SetText(c.Name)
+	a.name.SetText(c.Name)
 	if c.HasAlliance() {
 		a.alliance.SetText(c.Alliance.Name)
 		a.alliance.OnTapped = func() {
-			a.u.ShowInfoWindow(c.Alliance)
+			a.showInfoWindow(c.Alliance)
 		}
 	} else {
 		a.alliance.Hide()
@@ -122,18 +133,10 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 	a.security.SetText(fmt.Sprintf("Security Status: %.1f", c.SecurityStatus))
 	a.corporation.SetText(fmt.Sprintf("Member of %s", c.Corporation.Name))
 	a.corporation.OnTapped = func() {
-		a.u.ShowInfoWindow(c.Corporation)
+		a.showInfoWindow(c.Corporation)
 	}
 	a.portrait.OnTapped = func() {
-		w := a.u.FyneApp.NewWindow(a.u.MakeWindowTitle(c.Name))
-		size := 512
-		s := float32(size) / w.Canvas().Scale()
-		i := NewImageResourceAsync(icon.QuestionmarkSvg, fyne.NewSquareSize(s), func() (fyne.Resource, error) {
-			return a.u.EveImageService.CharacterPortrait(characterID, size)
-		})
-		p := theme.Padding()
-		w.SetContent(container.New(layout.NewCustomPaddedLayout(-p, -p, -p, -p), i))
-		w.Show()
+		showZoomWindow(c.Name, characterID, a.eis.CharacterPortrait)
 	}
 	bioText := c.DescriptionPlain()
 	if bioText != "" {
@@ -151,7 +154,7 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 	}
 	a.tabs.Refresh()
 	go func() {
-		r, err := a.u.EveImageService.CorporationLogo(c.Corporation.ID, DefaultIconPixelSize)
+		r, err := a.eis.CorporationLogo(c.Corporation.ID, defaultIconPixelSize)
 		if err != nil {
 			slog.Error("character info: Failed to load corp logo", "charaterID", characterID, "error", err)
 			return
@@ -160,7 +163,7 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 		a.corporationLogo.Refresh()
 	}()
 	go func() {
-		history, err := a.u.EveUniverseService.GetCharacterCorporationHistory(ctx, characterID)
+		history, err := a.eus.GetCharacterCorporationHistory(ctx, characterID)
 		if err != nil {
 			slog.Error("character info: Failed to load corporation history", "charaterID", characterID, "error", err)
 			return
@@ -173,7 +176,7 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 		duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
 		a.membership.SetText(fmt.Sprintf("for %s", duration))
 		historyList := appwidget.NewMembershipHistoryList()
-		historyList.ShowInfoWindow = a.u.ShowInfoWindow
+		historyList.ShowInfoWindow = a.showInfoWindow
 		historyList.Set(history)
 		a.tabs.Append(container.NewTabItem("Employment History", historyList))
 		a.tabs.Refresh()
