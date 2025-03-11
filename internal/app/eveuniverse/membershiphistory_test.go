@@ -21,10 +21,10 @@ func TestMembershipHistory(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
 	eu := eveuniverse.New(r, client)
-	eu.Now = func() time.Time { return time.Date(2016, 7, 30, 20, 0, 0, 0, time.UTC) }
 	ctx := context.Background()
-	t.Run("should return corporation membership", func(t *testing.T) {
+	t.Run("should return corporation membership history", func(t *testing.T) {
 		// given
+		eu.Now = func() time.Time { return time.Date(2016, 7, 30, 20, 0, 0, 0, time.UTC) }
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		c1 := factory.CreateEveEntityCorporation(app.EveEntity{ID: 90000001})
@@ -46,7 +46,7 @@ func TestMembershipHistory(t *testing.T) {
 				},
 			}))
 		// when
-		x, err := eu.CharacterCorporationHistory(ctx, 42)
+		x, err := eu.GetCharacterCorporationHistory(ctx, 42)
 		// then
 		if assert.NoError(t, err) {
 			assert.Len(t, x, 2)
@@ -64,6 +64,47 @@ func TestMembershipHistory(t *testing.T) {
 				Organization: c1,
 				RecordID:     500,
 				StartDate:    time.Date(2016, 6, 26, 20, 0, 0, 0, time.UTC),
+			}, x[1])
+		}
+	})
+	t.Run("should return alliance membership history", func(t *testing.T) {
+		// given
+		eu.Now = func() time.Time { return time.Date(2016, 10, 30, 20, 0, 0, 0, time.UTC) }
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		c1 := factory.CreateEveEntityAlliance(app.EveEntity{ID: 99000006})
+		httpmock.RegisterResponder(
+			"GET",
+			fmt.Sprintf("https://esi.evetech.net/v3/corporations/%d/alliancehistory/", 42),
+			httpmock.NewJsonResponderOrPanic(200, []map[string]any{
+				{
+					"alliance_id": 99000006,
+					"is_deleted":  true,
+					"record_id":   23,
+					"start_date":  "2016-10-25T14:46:00Z",
+				},
+				{
+					"record_id":  1,
+					"start_date": "2015-07-06T20:56:00Z",
+				},
+			}))
+		// when
+		x, err := eu.GetCorporationAllianceHistory(ctx, 42)
+		// then
+		if assert.NoError(t, err) {
+			assert.Len(t, x, 2)
+			assert.EqualValues(t, app.MembershipHistoryItem{
+				Days:         5,
+				IsDeleted:    true,
+				Organization: c1,
+				RecordID:     23,
+				StartDate:    time.Date(2016, 10, 25, 14, 46, 0, 0, time.UTC),
+			}, x[0])
+			assert.EqualValues(t, app.MembershipHistoryItem{
+				EndDate:   time.Date(2016, 10, 25, 14, 46, 0, 0, time.UTC),
+				Days:      476,
+				RecordID:  1,
+				StartDate: time.Date(2015, 7, 6, 20, 56, 0, 0, time.UTC),
 			}, x[1])
 		}
 	})

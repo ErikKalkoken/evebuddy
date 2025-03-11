@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -14,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 	"github.com/dustin/go-humanize"
 
@@ -57,10 +59,11 @@ func NewCorporationInfoArea(u *BaseUI, corporationID int32) *CorporationInfoArea
 		alliance:        alliance,
 		allianceLogo:    iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(DefaultIconUnitSize)),
 		attributes:      make([]corporationAttribute, 0),
-		corporationLogo: corporationLogo,
 		corporation:     corporation,
+		corporationLogo: corporationLogo,
 		historyItems:    make([]app.MembershipHistoryItem, 0),
 		hq:              hq,
+		tabs:            container.NewAppTabs(),
 		u:               u,
 	}
 
@@ -78,7 +81,6 @@ func NewCorporationInfoArea(u *BaseUI, corporationID int32) *CorporationInfoArea
 	a.attributeList = a.makeAttributes()
 	a.historyList = a.makeHistory()
 	top := container.NewBorder(nil, nil, container.NewVBox(a.corporationLogo), nil, main)
-	a.tabs = container.NewAppTabs()
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
@@ -195,12 +197,17 @@ func (a *CorporationInfoArea) makeHistory() *widget.List {
 			} else {
 				endDateStr = "this day"
 			}
+			var closed string
+			if it.IsDeleted {
+				closed = " (closed)"
+			}
 			text := fmt.Sprintf(
-				"%s **%s** to **%s** (%d days)",
+				"%s%s   **%s** to **%s** (%s days)",
 				it.Organization.Name,
+				closed,
 				it.StartDate.Format(dateFormat),
 				endDateStr,
-				it.Days,
+				humanize.Comma(int64(it.Days)),
 			)
 			co.(*widget.RichText).ParseMarkdown(text)
 		},
@@ -286,22 +293,16 @@ func (a *CorporationInfoArea) load(corporationID int32) error {
 	a.tabs.Append(container.NewTabItem("Alliance History", a.historyList))
 	a.tabs.Refresh()
 
-	// go func() {
-	// 	history, err := a.u.CharacterService.CorporationHistory(ctx, corporationID)
-	// 	if err != nil {
-	// 		slog.Error("corporation info: Failed to load corporation history", "corporationID", corporationID, "error", err)
-	// 		return
-	// 	}
-	// 	var duration string
-	// 	if len(history) > 0 {
-	// 		current := history[0]
-	// 		duration = humanize.RelTime(current.StartDate, time.Now(), "", "")
-	// 	} else {
-	// 		duration = "?"
-	// 	}
-	// 	a.corporation.SetText(fmt.Sprintf("Member of %s\nfor %s", c.Corporation.Name, duration))
-	// 	a.historyItems = history
-	// 	a.history.Refresh()
-	// }()
+	go func() {
+		history, err := a.u.EveUniverseService.GetCorporationAllianceHistory(ctx, corporationID)
+		if err != nil {
+			slog.Error("corporation info: Failed to load alliance history", "corporationID", corporationID, "error", err)
+			return
+		}
+		a.historyItems = slices.Collect(xiter.FilterSlice(history, func(v app.MembershipHistoryItem) bool {
+			return v.Organization != nil
+		}))
+		a.historyList.Refresh()
+	}()
 	return nil
 }

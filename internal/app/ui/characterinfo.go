@@ -60,6 +60,7 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 		portrait:        portrait,
 		historyItems:    make([]app.MembershipHistoryItem, 0),
 		security:        widget.NewLabel(""),
+		tabs:            container.NewAppTabs(),
 		title:           title,
 		u:               u,
 	}
@@ -84,7 +85,6 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 	)
 	a.historyList = a.makeHistory()
 	top := container.NewBorder(nil, nil, container.NewVBox(a.portrait), nil, main)
-	a.tabs = container.NewAppTabs()
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
@@ -209,7 +209,7 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 		a.corporationLogo.Refresh()
 	}()
 	go func() {
-		history, err := a.u.EveUniverseService.CharacterCorporationHistory(ctx, characterID)
+		history, err := a.u.EveUniverseService.GetCharacterCorporationHistory(ctx, characterID)
 		if err != nil {
 			slog.Error("character info: Failed to load corporation history", "charaterID", characterID, "error", err)
 			return
