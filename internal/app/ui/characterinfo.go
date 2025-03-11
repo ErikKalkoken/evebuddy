@@ -33,7 +33,7 @@ type CharacterInfoArea struct {
 	portrait        *kxwidget.TappableImage
 	security        *widget.Label
 	title           *widget.Label
-	historyItems    []app.CharacterCorporationHistoryItem
+	historyItems    []app.MembershipHistoryItem
 	tabs            *container.AppTabs
 
 	u *BaseUI
@@ -58,7 +58,7 @@ func NewCharacterInfoArea(u *BaseUI, characterID int32) *CharacterInfoArea {
 		corporation:     corporation,
 		membership:      widget.NewLabel(""),
 		portrait:        portrait,
-		historyItems:    make([]app.CharacterCorporationHistoryItem, 0),
+		historyItems:    make([]app.MembershipHistoryItem, 0),
 		security:        widget.NewLabel(""),
 		title:           title,
 		u:               u,
@@ -127,11 +127,11 @@ func (a *CharacterInfoArea) makeHistory() *widget.List {
 			}
 			text := fmt.Sprintf(
 				"%s%s   **%s** to **%s** (%s days)",
-				it.Corporation.Name,
+				it.Organization.Name,
 				closed,
 				it.StartDate.Format(dateFormat),
 				endDateStr,
-				humanize.Comma(int64(it.Days())),
+				humanize.Comma(int64(it.Days)),
 			)
 			co.(*widget.RichText).ParseMarkdown(text)
 		},
@@ -143,7 +143,7 @@ func (a *CharacterInfoArea) makeHistory() *widget.List {
 			return
 		}
 		it := a.historyItems[id]
-		a.u.ShowCorporaitonInfoWindow(it.Corporation.ID)
+		a.u.ShowCorporaitonInfoWindow(it.Organization.ID)
 	}
 	return l
 }
@@ -209,7 +209,7 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 		a.corporationLogo.Refresh()
 	}()
 	go func() {
-		history, err := a.u.CharacterService.CorporationHistory(ctx, characterID)
+		history, err := a.u.EveUniverseService.CharacterCorporationHistory(ctx, characterID)
 		if err != nil {
 			slog.Error("character info: Failed to load corporation history", "charaterID", characterID, "error", err)
 			return

@@ -38,7 +38,7 @@ type CorporationInfoArea struct {
 	corporationLogo *canvas.Image
 	hq              *kxwidget.TappableLabel
 	historyList     *widget.List
-	historyItems    []app.CharacterCorporationHistoryItem
+	historyItems    []app.MembershipHistoryItem
 	tabs            *container.AppTabs
 	u               *BaseUI
 }
@@ -59,7 +59,7 @@ func NewCorporationInfoArea(u *BaseUI, corporationID int32) *CorporationInfoArea
 		attributes:      make([]corporationAttribute, 0),
 		corporationLogo: corporationLogo,
 		corporation:     corporation,
-		historyItems:    make([]app.CharacterCorporationHistoryItem, 0),
+		historyItems:    make([]app.MembershipHistoryItem, 0),
 		hq:              hq,
 		u:               u,
 	}
@@ -197,10 +197,10 @@ func (a *CorporationInfoArea) makeHistory() *widget.List {
 			}
 			text := fmt.Sprintf(
 				"%s **%s** to **%s** (%d days)",
-				it.Corporation.Name,
+				it.Organization.Name,
 				it.StartDate.Format(dateFormat),
 				endDateStr,
-				it.Days(),
+				it.Days,
 			)
 			co.(*widget.RichText).ParseMarkdown(text)
 		},
