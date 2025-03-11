@@ -14,6 +14,7 @@ type MembershipHistoryList struct {
 	widget.BaseWidget
 
 	ShowInfoWindow func(int32)
+	IsFoundedShown bool
 
 	items []app.MembershipHistoryItem
 }
@@ -57,14 +58,19 @@ func (w *MembershipHistoryList) CreateRenderer() fyne.WidgetRenderer {
 			if it.IsDeleted {
 				closed = " (closed)"
 			}
-			text := fmt.Sprintf(
-				"%s%s   **%s** to **%s** (%s days)",
-				it.Organization.Name,
-				closed,
-				it.StartDate.Format(dateFormat),
-				endDateStr,
-				humanize.Comma(int64(it.Days)),
-			)
+			var text string
+			if w.IsFoundedShown && it.IsOldest {
+				text = fmt.Sprintf("Founded   **%s**", it.StartDate.Format(dateFormat))
+			} else {
+				text = fmt.Sprintf(
+					"%s%s   **%s** to **%s** (%s days)",
+					it.OrganizationName(),
+					closed,
+					it.StartDate.Format(dateFormat),
+					endDateStr,
+					humanize.Comma(int64(it.Days)),
+				)
+			}
 			co.(*widget.RichText).ParseMarkdown(text)
 		},
 	)

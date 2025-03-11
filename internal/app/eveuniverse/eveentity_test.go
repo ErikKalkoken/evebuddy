@@ -111,7 +111,7 @@ func TestAddMissingEveEntities(t *testing.T) {
 		ids := make([]int32, count)
 		data := make([]map[string]any, count)
 		for i := range count {
-			id := int32(i) + 1
+			id := int32(i) + 1000
 			ids[i] = id
 			obj := map[string]any{
 				"id":       id,

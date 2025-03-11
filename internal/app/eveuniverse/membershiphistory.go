@@ -82,6 +82,7 @@ func (s *EveUniverseService) makeMembershipHistory(ctx context.Context, items []
 			Days:      days,
 			EndDate:   endDate,
 			IsDeleted: it.IsDeleted,
+			IsOldest:  i == 0,
 			RecordID:  it.RecordID,
 			StartDate: it.StartDate,
 		}

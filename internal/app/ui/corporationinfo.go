@@ -244,6 +244,7 @@ func (a *CorporationInfoArea) load(corporationID int32) error {
 	}
 	a.tabs.Append(container.NewTabItem("Attributes", a.attributeList))
 	historyList := appwidget.NewMembershipHistoryList()
+	historyList.IsFoundedShown = true
 	a.tabs.Append(container.NewTabItem("Alliance History", historyList))
 	a.tabs.Refresh()
 
@@ -254,7 +255,7 @@ func (a *CorporationInfoArea) load(corporationID int32) error {
 			return
 		}
 		historyList.Set(slices.Collect(xiter.FilterSlice(history, func(v app.MembershipHistoryItem) bool {
-			return v.Organization != nil
+			return v.Organization != nil || v.IsOldest
 		})))
 	}()
 	return nil
