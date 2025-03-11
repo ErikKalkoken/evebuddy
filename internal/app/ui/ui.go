@@ -515,8 +515,7 @@ func (u *BaseUI) showItemWindow(iw *ItemInfoArea, err error) {
 	if err != nil {
 		t := "Failed to open info window"
 		slog.Error(t, "err", err)
-		d := NewErrorDialog(t, err, u.Window)
-		d.Show()
+		iwidget.ShowErrorDialog(t, err, u.Window)
 		return
 	}
 	if iw == nil {
@@ -529,36 +528,9 @@ func (u *BaseUI) showItemWindow(iw *ItemInfoArea, err error) {
 	w.Show()
 }
 
-func (u *BaseUI) ShowInfoWindow(o *app.EveEntity) {
-	showInfoWindow := func(category string, create func() fyne.CanvasObject) {
-		w := u.FyneApp.NewWindow(u.MakeWindowTitle(fmt.Sprintf("%s: Information", category)))
-		w.SetContent(create())
-		w.Resize(fyne.Size{Width: infoWindowWidth, Height: infoWindowHeight})
-		w.Show()
-	}
-	switch o.Category {
-	case app.EveEntityAlliance:
-		showInfoWindow("Alliance", func() fyne.CanvasObject {
-			a := infowindow.NewAllianceInfoArea(u.EveUniverseService, u.EveImageService, u.ShowInfoWindow, o.ID)
-			return a.Content
-		})
-	case app.EveEntityCharacter:
-		showInfoWindow("Character", func() fyne.CanvasObject {
-			a := infowindow.NewCharacterInfoArea(u.EveUniverseService, u.EveImageService, u.ShowInfoWindow, o.ID)
-			return a.Content
-		})
-	case app.EveEntityCorporation:
-		showInfoWindow("Corporation", func() fyne.CanvasObject {
-			a := infowindow.NewCorporationInfoArea(u.EveUniverseService, u.EveImageService, u.ShowInfoWindow, o.ID)
-			return a.Content
-		})
-	case app.EveEntityStation:
-		u.ShowLocationInfoWindow(int64(o.ID))
-	case app.EveEntityInventoryType:
-		u.ShowTypeInfoWindow(o.ID, u.CharacterID(), DescriptionTab)
-	default:
-		u.Snackbar.Show(fmt.Sprintf("Can't show info window for %s", o.Category))
-	}
+func (u *BaseUI) ShowEveEntityInfoWindow(o *app.EveEntity) {
+	iw := infowindow.New(u.EveUniverseService, u.EveImageService, u.Snackbar)
+	iw.ShowEveEntity(o)
 }
 
 func (u *BaseUI) AvailableUpdate() (github.VersionInfo, error) {

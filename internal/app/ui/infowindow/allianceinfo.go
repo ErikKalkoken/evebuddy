@@ -10,8 +10,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
-	"github.com/ErikKalkoken/evebuddy/internal/app/eveuniverse"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
@@ -20,26 +18,18 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-// AllianceInfoArea represents an area that shows public information about a character.
-type AllianceInfoArea struct {
+// allianceInfoArea represents an area that shows public information about a character.
+type allianceInfoArea struct {
 	Content fyne.CanvasObject
 
-	eus            *eveuniverse.EveUniverseService
-	eis            app.EveImageService
-	showInfoWindow func(*app.EveEntity)
-
-	name *widget.Label
-	logo *canvas.Image
 	hq   *kxwidget.TappableLabel
+	iw   InfoWindow
+	logo *canvas.Image
+	name *widget.Label
 	tabs *container.AppTabs
 }
 
-func NewAllianceInfoArea(
-	eus *eveuniverse.EveUniverseService,
-	eis app.EveImageService,
-	showInfoWindow func(*app.EveEntity),
-	allianceID int32,
-) *AllianceInfoArea {
+func newAllianceInfoArea(iw InfoWindow, allianceID int32) *allianceInfoArea {
 	alliance := widget.NewLabel("")
 	alliance.Truncation = fyne.TextTruncateEllipsis
 	corporation := widget.NewLabel("Loading...")
@@ -49,11 +39,8 @@ func NewAllianceInfoArea(
 	corporationLogo := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(defaultIconUnitSize))
 	s := float32(defaultIconPixelSize) * logoZoomFactor
 	corporationLogo.SetMinSize(fyne.NewSquareSize(s))
-	a := &AllianceInfoArea{
-		eis:            eis,
-		eus:            eus,
-		showInfoWindow: showInfoWindow,
-
+	a := &allianceInfoArea{
+		iw:   iw,
 		name: corporation,
 		logo: corporationLogo,
 		hq:   hq,
@@ -75,10 +62,10 @@ func NewAllianceInfoArea(
 	return a
 }
 
-func (a *AllianceInfoArea) load(allianceID int32) error {
+func (a *allianceInfoArea) load(allianceID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.eis.AllianceLogo(allianceID, defaultIconPixelSize)
+		r, err := a.iw.eis.AllianceLogo(allianceID, defaultIconPixelSize)
 		if err != nil {
 			slog.Error("alliance info: Failed to load logo", "allianceID", allianceID, "error", err)
 			return
@@ -86,7 +73,7 @@ func (a *AllianceInfoArea) load(allianceID int32) error {
 		a.logo.Resource = r
 		a.logo.Refresh()
 	}()
-	o, err := a.eus.GetEveAllianceESI(ctx, allianceID)
+	o, err := a.iw.eus.GetEveAllianceESI(ctx, allianceID)
 	if err != nil {
 		return err
 	}
@@ -113,13 +100,13 @@ func (a *AllianceInfoArea) load(allianceID int32) error {
 		attributes = append(attributes, appwidget.NewAtributeItem("Faction", o.Faction))
 	}
 	attributeList := appwidget.NewAttributeList()
-	attributeList.ShowInfoWindow = a.showInfoWindow
+	attributeList.ShowInfoWindow = a.iw.ShowEveEntity
 	attributeList.Set(attributes)
 	a.tabs.Append(container.NewTabItem("Attributes", attributeList))
 
 	// Members
 	go func() {
-		members, err := a.eus.GetEveAllianceCorporationsESI(ctx, allianceID)
+		members, err := a.iw.eus.GetEveAllianceCorporationsESI(ctx, allianceID)
 		if err != nil {
 			slog.Error("alliance info: Failed to load corporations", "allianceID", allianceID, "error", err)
 			return
@@ -145,7 +132,7 @@ func (a *AllianceInfoArea) load(allianceID int32) error {
 				l := border[0].(*kxwidget.TappableLabel)
 				l.SetText(m.Name)
 				l.OnTapped = func() {
-					a.showInfoWindow(m)
+					a.iw.ShowEveEntity(m)
 				}
 			},
 		)

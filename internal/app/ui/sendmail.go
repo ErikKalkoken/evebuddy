@@ -39,7 +39,7 @@ func MakeSendMailPage(
 	const labelWith = 45
 
 	from := appwidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService)
-	from.ShowInfoWindow = u.ShowInfoWindow
+	from.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	from.Set([]*app.EveEntity{{ID: character.ID, Name: character.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	from.Disable()
 
@@ -50,7 +50,7 @@ func MakeSendMailPage(
 		}, w)
 	})
 	to = appwidget.NewEveEntityEntry(toButton, labelWith, u.EveImageService)
-	to.ShowInfoWindow = u.ShowInfoWindow
+	to.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	to.Placeholder = "Tap To-Button to add recipients..."
 
 	subject := widget.NewEntry()

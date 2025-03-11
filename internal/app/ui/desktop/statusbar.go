@@ -21,6 +21,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 const (
@@ -190,7 +191,7 @@ func (a *statusBarArea) StartUpdateTicker() {
 					return
 				}
 				if err := a.u.FyneApp.OpenURL(u); err != nil {
-					d2 := ui.NewErrorDialog("Failed to open download page", err, a.u.Window)
+					d2 := iwidget.NewErrorDialog("Failed to open download page", err, a.u.Window)
 					d2.Show()
 				}
 			}, a.u.Window,

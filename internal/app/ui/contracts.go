@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type contractEntry struct {
@@ -293,7 +294,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		ctx := context.TODO()
 		total, err := a.u.CharacterService.CountCharacterContractBids(ctx, c.ID)
 		if err != nil {
-			d := NewErrorDialog("Failed to count contract bids", err, w)
+			d := iwidget.NewErrorDialog("Failed to count contract bids", err, w)
 			d.SetOnClosed(w.Hide)
 			d.Show()
 		}
@@ -303,7 +304,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		} else {
 			top, err := a.u.CharacterService.GetCharacterContractTopBid(ctx, c.ID)
 			if err != nil {
-				d := NewErrorDialog("Failed to get top bid", err, w)
+				d := iwidget.NewErrorDialog("Failed to get top bid", err, w)
 				d.SetOnClosed(w.Hide)
 				d.Show()
 			}
@@ -323,7 +324,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		vb := container.NewVBox()
 		items, err := a.u.CharacterService.ListCharacterContractItems(context.TODO(), c.ID)
 		if err != nil {
-			d := NewErrorDialog("Failed to fetch contract items", err, w)
+			d := iwidget.NewErrorDialog("Failed to fetch contract items", err, w)
 			d.SetOnClosed(w.Hide)
 			d.Show()
 		}

@@ -99,7 +99,7 @@ func NewOverviewArea(u *BaseUI) *OverviewArea {
 		return text, align, importance
 	}
 	showCharacterInfo := func(oc overviewCharacter) {
-		u.ShowInfoWindow(&app.EveEntity{ID: oc.id, Name: oc.name, Category: app.EveEntityCharacter})
+		u.ShowEveEntityInfoWindow(&app.EveEntity{ID: oc.id, Name: oc.name, Category: app.EveEntityCharacter})
 	}
 	if a.u.IsDesktop() {
 		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, showCharacterInfo)

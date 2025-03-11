@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 const (
@@ -53,8 +54,7 @@ func newShipArea(u *BaseUI) *ShipsArea {
 			return
 		}
 		if err := a.updateEntries(); err != nil {
-			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
-			d.Show()
+			iwidget.ShowErrorDialog("Failed to update ships", err, a.u.Window)
 		}
 		a.grid.Refresh()
 		a.grid.ScrollToTop()
@@ -63,8 +63,7 @@ func newShipArea(u *BaseUI) *ShipsArea {
 	a.groupSelect = widget.NewSelect([]string{}, func(s string) {
 		a.groupSelected = s
 		if err := a.updateEntries(); err != nil {
-			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
-			d.Show()
+			iwidget.ShowErrorDialog("Failed to update ships", err, a.u.Window)
 		}
 		a.grid.Refresh()
 		a.grid.ScrollToTop()
@@ -74,8 +73,7 @@ func newShipArea(u *BaseUI) *ShipsArea {
 	a.flyableSelect = widget.NewSelect([]string{}, func(s string) {
 		a.flyableSelected = s
 		if err := a.updateEntries(); err != nil {
-			d := NewErrorDialog("Failed to update ships", err, a.u.Window)
-			d.Show()
+			iwidget.ShowErrorDialog("Failed to update ships", err, a.u.Window)
 		}
 		a.grid.Refresh()
 		a.grid.ScrollToTop()

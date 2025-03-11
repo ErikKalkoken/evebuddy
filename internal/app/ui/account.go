@@ -153,7 +153,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 }
 
 func (a *AccountArea) showDeleteDialog(c accountCharacter) {
-	d1 := NewConfirmDialog(
+	d1 := iwidget.NewConfirmDialog(
 		"Delete Character",
 		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", c.name),
 		"Delete",
@@ -249,7 +249,7 @@ func (a *AccountArea) ShowAddCharacterDialog() {
 		d1.Hide()
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
-			d2 := NewErrorDialog("Failed add a new character", err, a.window)
+			d2 := iwidget.NewErrorDialog("Failed add a new character", err, a.window)
 			d2.Show()
 		}
 	}()

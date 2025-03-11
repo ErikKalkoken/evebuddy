@@ -262,7 +262,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		"Clear cache",
 		func() {
 			w := a.currentWindow()
-			d := NewConfirmDialog(
+			d := iwidget.NewConfirmDialog(
 				"Clear Cache",
 				"Are you sure you want to clear the cache?",
 				"Clear",
@@ -338,7 +338,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 }
 
 func (a *SettingsArea) showDeleteFileDialog(name, path string) {
-	d := NewConfirmDialog(
+	d := iwidget.NewConfirmDialog(
 		"Delete File",
 		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
 		"Delete",
@@ -375,7 +375,7 @@ func (a *SettingsArea) showExportFileDialog(path string) {
 		a.snackbar.Show("No file to export: " + filename)
 		return
 	} else if err != nil {
-		ShowErrorDialog("Failed to open "+filename, err, a.window)
+		iwidget.ShowErrorDialog("Failed to open "+filename, err, a.window)
 		return
 	}
 	d := dialog.NewFileSave(
@@ -395,7 +395,7 @@ func (a *SettingsArea) showExportFileDialog(path string) {
 				return nil
 			}()
 			if err2 != nil {
-				ShowErrorDialog("Failed to export "+filename, err, a.window)
+				iwidget.ShowErrorDialog("Failed to export "+filename, err, a.window)
 			}
 		}, a.window,
 	)
@@ -488,16 +488,14 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			if on {
 				err := a.u.CharacterService.EnableAllTrainingWatchers(ctx)
 				if err != nil {
-					d := NewErrorDialog("failed to enable training notification", err, a.currentWindow())
-					d.Show()
+					iwidget.ShowErrorDialog("failed to enable training notification", err, a.currentWindow())
 				} else {
 					a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, true)
 				}
 			} else {
 				err := a.u.CharacterService.DisableAllTrainingWatchers(ctx)
 				if err != nil {
-					d := NewErrorDialog("failed to disable training notification", err, a.currentWindow())
-					d.Show()
+					iwidget.ShowErrorDialog("failed to disable training notification", err, a.currentWindow())
 				} else {
 					a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, false)
 				}

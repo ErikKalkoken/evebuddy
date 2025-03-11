@@ -224,7 +224,7 @@ func (a *MailArea) Refresh() {
 	if err != nil {
 		t := "Failed to build folder tree"
 		slog.Error(t, "character", characterID, "error", err)
-		d := NewErrorDialog(t, err, a.u.Window)
+		d := iwidget.NewErrorDialog(t, err, a.u.Window)
 		d.Show()
 		return
 	}
@@ -529,7 +529,7 @@ func (a *MailArea) MakeComposeMessageAction() (fyne.Resource, func()) {
 
 func (a *MailArea) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 	return theme.DeleteIcon(), func() {
-		d := NewConfirmDialog(
+		d := iwidget.NewConfirmDialog(
 			"Delete mail",
 			fmt.Sprintf("Are you sure you want to permanently delete this mail?\n\n%s", a.mail.Header()),
 			"Delete",
