@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
+	"github.com/antihax/goesi/esi"
 )
 
 // GetCharacterCorporationHistory returns a list of all the corporations a character has been a member of in descending order.
@@ -33,15 +35,14 @@ func (s *EveUniverseService) GetCorporationAllianceHistory(ctx context.Context, 
 	if err != nil {
 		return nil, err
 	}
-	items2 := make([]organizationHistoryItem, len(items))
-	for i, it := range items {
-		items2[i] = organizationHistoryItem{
-			OrganizationID: it.AllianceId,
-			IsDeleted:      it.IsDeleted,
-			RecordID:       int(it.RecordId),
-			StartDate:      it.StartDate,
+	items2 := slices.Collect(xiter.MapSlice(items, func(x esi.GetCorporationsCorporationIdAlliancehistory200Ok) organizationHistoryItem {
+		return organizationHistoryItem{
+			OrganizationID: x.AllianceId,
+			IsDeleted:      x.IsDeleted,
+			RecordID:       int(x.RecordId),
+			StartDate:      x.StartDate,
 		}
-	}
+	}))
 	return s.makeMembershipHistory(ctx, items2)
 }
 
@@ -53,10 +54,9 @@ type organizationHistoryItem struct {
 }
 
 func (s *EveUniverseService) makeMembershipHistory(ctx context.Context, items []organizationHistoryItem) ([]app.MembershipHistoryItem, error) {
-	ids := make([]int32, 0)
-	for _, it := range items {
-		ids = append(ids, it.OrganizationID)
-	}
+	ids := slices.Collect(xiter.MapSlice(items, func(x organizationHistoryItem) int32 {
+		return x.OrganizationID
+	}))
 	_, err := s.AddMissingEveEntities(ctx, ids)
 	if err != nil {
 		return nil, err
