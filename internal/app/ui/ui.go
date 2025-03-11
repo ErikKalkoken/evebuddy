@@ -36,7 +36,7 @@ const (
 	DefaultIconPixelSize = 64
 	DefaultIconUnitSize  = 32
 	MyFloatFormat        = "#,###.##"
-	infoWindowWidth      = 500
+	infoWindowWidth      = 600
 	infoWindowHeight     = 500
 )
 

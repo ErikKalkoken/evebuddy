@@ -223,7 +223,7 @@ func (a *CorporationInfoArea) load(corporationID int32) error {
 		a.corporationLogo.Resource = r
 		a.corporationLogo.Refresh()
 	}()
-	c, err := a.u.EveUniverseService.GetEveCorporation(ctx, corporationID)
+	c, err := a.u.EveUniverseService.GetEveCorporationESI(ctx, corporationID)
 	if err != nil {
 		return err
 	}

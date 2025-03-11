@@ -158,7 +158,7 @@ func (a *CharacterInfoArea) load(characterID int32) error {
 		}
 		a.portrait.SetResource(r)
 	}()
-	c, err := a.u.EveUniverseService.GetOrCreateEveCharacterESI(ctx, characterID)
+	c, err := a.u.EveUniverseService.GetEveCharacterESI(ctx, characterID)
 	if err != nil {
 		return err
 	}
