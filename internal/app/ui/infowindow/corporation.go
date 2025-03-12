@@ -23,15 +23,15 @@ import (
 
 // corporationArea represents an area that shows public information about a character.
 type corporationArea struct {
-	Content         fyne.CanvasObject
-	iw              InfoWindow
-	alliance        *kxwidget.TappableLabel
-	allianceLogo    *canvas.Image
-	name            *widget.Label
-	corporationLogo *canvas.Image
-	hq              *kxwidget.TappableLabel
-	tabs            *container.AppTabs
-	w               fyne.Window
+	Content      fyne.CanvasObject
+	iw           InfoWindow
+	alliance     *kxwidget.TappableLabel
+	allianceLogo *canvas.Image
+	name         *widget.Label
+	logo         *canvas.Image
+	hq           *kxwidget.TappableLabel
+	tabs         *container.AppTabs
+	w            fyne.Window
 }
 
 func newCorporationArea(iw InfoWindow, corporation *app.EveEntity, w fyne.Window) *corporationArea {
@@ -41,18 +41,17 @@ func newCorporationArea(iw InfoWindow, corporation *app.EveEntity, w fyne.Window
 	name.Truncation = fyne.TextTruncateEllipsis
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
-	corporationLogo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(defaultIconUnitSize))
 	s := float32(defaultIconPixelSize) * logoZoomFactor
-	corporationLogo.SetMinSize(fyne.NewSquareSize(s))
+	logo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(s))
 	a := &corporationArea{
-		alliance:        alliance,
-		allianceLogo:    iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(defaultIconUnitSize)),
-		name:            name,
-		corporationLogo: corporationLogo,
-		hq:              hq,
-		tabs:            container.NewAppTabs(),
-		iw:              iw,
-		w:               w,
+		alliance:     alliance,
+		allianceLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(defaultIconUnitSize)),
+		name:         name,
+		logo:         logo,
+		hq:           hq,
+		tabs:         container.NewAppTabs(),
+		iw:           iw,
+		w:            w,
 	}
 
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
@@ -66,7 +65,7 @@ func newCorporationArea(iw InfoWindow, corporation *app.EveEntity, w fyne.Window
 			a.alliance,
 		),
 	)
-	top := container.NewBorder(nil, nil, container.NewVBox(a.corporationLogo), nil, main)
+	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
@@ -89,8 +88,8 @@ func (a *corporationArea) load(corporation *app.EveEntity) error {
 			slog.Error("corporation info: Failed to load logo", "corporationID", corporation, "error", err)
 			return
 		}
-		a.corporationLogo.Resource = r
-		a.corporationLogo.Refresh()
+		a.logo.Resource = r
+		a.logo.Refresh()
 	}()
 	o, err := a.iw.eus.GetEveCorporationESI(ctx, corporation.ID)
 	if err != nil {
@@ -186,8 +185,7 @@ func (a *corporationArea) load(corporation *app.EveEntity) error {
 			Category: "Corporation Founded",
 			Text:     fmt.Sprintf("**%s**", oldest.StartDate.Format(dateFormat)),
 		})
-		historyList := NewEntityListFromItems(items...)
-		historyList.ShowEveEntity = a.iw.ShowEveEntity
+		historyList := NewEntityListFromItems(a.iw.ShowEveEntity, items...)
 		a.tabs.Append(container.NewTabItem("Alliance History", historyList))
 		a.tabs.Refresh()
 	}()

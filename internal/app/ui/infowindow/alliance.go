@@ -113,8 +113,7 @@ func (a *allianceArea) load(allianceID int32) error {
 		if len(members) == 0 {
 			return
 		}
-		memberList := NewEntityListFromEntities(members...)
-		memberList.ShowEveEntity = a.iw.ShowEveEntity
+		memberList := NewEntityListFromEntities(a.iw.ShowEveEntity, members...)
 		a.tabs.Append(container.NewTabItem("Members", memberList))
 		a.tabs.Refresh()
 	}()

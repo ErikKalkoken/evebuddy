@@ -61,6 +61,11 @@ func (iw InfoWindow) ShowEveEntity(ee *app.EveEntity) {
 			a := newCorporationArea(iw, ee, w)
 			return a.Content
 		})
+	case app.EveEntitySolarSystem:
+		showWindow("Solar System", func(w fyne.Window) fyne.CanvasObject {
+			a := newSolarSystemArea(iw, ee, w)
+			return a.Content
+		})
 	case app.EveEntityStation:
 		iw.ShowLocation(int64(ee.ID))
 	default:
@@ -95,6 +100,16 @@ func (iw InfoWindow) showZoomWindow(title string, id int32, load func(int32, int
 	w2.Show()
 }
 
+func SupportedCategories() []app.EveEntityCategory {
+	return []app.EveEntityCategory{
+		app.EveEntityAlliance,
+		app.EveEntityCharacter,
+		app.EveEntityCorporation,
+		app.EveEntityStation,
+		app.EveEntitySolarSystem,
+	}
+}
+
 func historyItem2EntityItem(hi app.MembershipHistoryItem) EntityItem {
 	var endDateStr string
 	if !hi.EndDate.IsZero() {
@@ -120,13 +135,4 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) EntityItem {
 		)
 	}
 	return NewEntityItem(hi.Organization, text)
-}
-
-func SupportedCategories() []app.EveEntityCategory {
-	return []app.EveEntityCategory{
-		app.EveEntityAlliance,
-		app.EveEntityCharacter,
-		app.EveEntityCorporation,
-		app.EveEntityStation,
-	}
 }

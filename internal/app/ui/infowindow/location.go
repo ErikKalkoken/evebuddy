@@ -101,6 +101,7 @@ func (a *locationArea) load(locationID int64) error {
 		a.tabs.Append(container.NewTabItem("Description", container.NewVScroll(description)))
 	}
 	el := NewEntityListFromItems(
+		a.iw.ShowEveEntity,
 		NewEntityItem(o.SolarSystem.Constellation.Region.ToEveEntity(), ""),
 		NewEntityItem(o.SolarSystem.Constellation.ToEveEntity(), ""),
 		NewEntityItem(o.SolarSystem.ToEveEntity(), fmt.Sprintf("%.1f %s", o.SolarSystem.SecurityStatus, o.SolarSystem.Name)),

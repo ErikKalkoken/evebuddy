@@ -166,8 +166,7 @@ func (a *characterArea) load(character *app.EveEntity) error {
 		duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
 		a.membership.SetText(fmt.Sprintf("for %s", duration))
 		items := slices.Collect(xiter.MapSlice(history, historyItem2EntityItem))
-		historyList := NewEntityListFromItems(items...)
-		historyList.ShowEveEntity = a.iw.ShowEveEntity
+		historyList := NewEntityListFromItems(a.iw.ShowEveEntity, items...)
 		a.tabs.Append(container.NewTabItem("Employment History", historyList))
 		a.tabs.Refresh()
 	}()

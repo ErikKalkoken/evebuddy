@@ -31,28 +31,28 @@ func NewEntityItem(ee *app.EveEntity, text string) EntityItem {
 type EntitiyList struct {
 	widget.BaseWidget
 
-	ShowEveEntity func(*app.EveEntity)
-
-	items   []EntityItem
-	openURL func(*url.URL) error
+	items         []EntityItem
+	openURL       func(*url.URL) error
+	showEveEntity func(*app.EveEntity)
 }
 
-func NewEntityListFromEntities(s ...*app.EveEntity) *EntitiyList {
+func NewEntityListFromEntities(show func(*app.EveEntity), s ...*app.EveEntity) *EntitiyList {
 	items := slices.Collect(xiter.MapSlice(s, func(ee *app.EveEntity) EntityItem {
 		return NewEntityItem(ee, "")
 	}))
-	return NewEntityListFromItems(items...)
+	return NewEntityListFromItems(show, items...)
 }
 
-func NewEntityList() *EntitiyList {
+func NewEntityList(show func(*app.EveEntity)) *EntitiyList {
 	items := make([]EntityItem, 0)
-	return NewEntityListFromItems(items...)
+	return NewEntityListFromItems(show, items...)
 }
 
-func NewEntityListFromItems(items ...EntityItem) *EntitiyList {
+func NewEntityListFromItems(show func(*app.EveEntity), items ...EntityItem) *EntitiyList {
 	w := &EntitiyList{
-		items:   items,
-		openURL: fyne.CurrentApp().OpenURL,
+		items:         items,
+		openURL:       fyne.CurrentApp().OpenURL,
+		showEveEntity: show,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -118,9 +118,10 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			return
 		}
 		it := w.items[id]
-		if it.Entity != nil && slices.Contains(SupportedCategories(), it.Entity.Category) && w.ShowEveEntity != nil {
-			w.ShowEveEntity(it.Entity)
+		if it.Entity == nil || !slices.Contains(SupportedCategories(), it.Entity.Category) {
+			return
 		}
+		w.showEveEntity(it.Entity)
 	}
 	return widget.NewSimpleRenderer(l)
 }
