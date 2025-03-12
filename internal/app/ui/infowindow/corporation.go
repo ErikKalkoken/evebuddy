@@ -34,10 +34,10 @@ type corporationArea struct {
 	w            fyne.Window
 }
 
-func newCorporationArea(iw InfoWindow, corporation *app.EveEntity, w fyne.Window) *corporationArea {
+func newCorporationArea(iw InfoWindow, corporationID int32, w fyne.Window) *corporationArea {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Truncation = fyne.TextTruncateEllipsis
-	name := widget.NewLabel(corporation.Name)
+	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateEllipsis
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
@@ -69,9 +69,9 @@ func newCorporationArea(iw InfoWindow, corporation *app.EveEntity, w fyne.Window
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
-		err := a.load(corporation)
+		err := a.load(corporationID)
 		if err != nil {
-			slog.Error("corporation info update failed", "corporation", corporation, "error", err)
+			slog.Error("corporation info update failed", "corporation", corporationID, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load corporation: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
@@ -80,18 +80,18 @@ func newCorporationArea(iw InfoWindow, corporation *app.EveEntity, w fyne.Window
 	return a
 }
 
-func (a *corporationArea) load(corporation *app.EveEntity) error {
+func (a *corporationArea) load(corporationID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.eis.CorporationLogo(corporation.ID, defaultIconPixelSize)
+		r, err := a.iw.eis.CorporationLogo(corporationID, defaultIconPixelSize)
 		if err != nil {
-			slog.Error("corporation info: Failed to load logo", "corporationID", corporation, "error", err)
+			slog.Error("corporation info: Failed to load logo", "corporationID", corporationID, "error", err)
 			return
 		}
 		a.logo.Resource = r
 		a.logo.Refresh()
 	}()
-	o, err := a.iw.eus.GetEveCorporationESI(ctx, corporation.ID)
+	o, err := a.iw.eus.GetEveCorporationESI(ctx, corporationID)
 	if err != nil {
 		return err
 	}
@@ -166,9 +166,9 @@ func (a *corporationArea) load(corporation *app.EveEntity) error {
 	a.tabs.Append(container.NewTabItem("Attributes", attributeList))
 	a.tabs.Refresh()
 	go func() {
-		history, err := a.iw.eus.GetCorporationAllianceHistory(ctx, corporation.ID)
+		history, err := a.iw.eus.GetCorporationAllianceHistory(ctx, corporationID)
 		if err != nil {
-			slog.Error("corporation info: Failed to load alliance history", "corporationID", corporation, "error", err)
+			slog.Error("corporation info: Failed to load alliance history", "corporationID", corporationID, "error", err)
 			return
 		}
 		if len(history) == 0 {
@@ -185,7 +185,7 @@ func (a *corporationArea) load(corporation *app.EveEntity) error {
 			Category: "Corporation Founded",
 			Text:     fmt.Sprintf("**%s**", oldest.StartDate.Format(dateFormat)),
 		})
-		historyList := NewEntityListFromItems(a.iw.ShowEveEntity, items...)
+		historyList := NewEntityListFromItems(a.iw.Show, items...)
 		a.tabs.Append(container.NewTabItem("Alliance History", historyList))
 		a.tabs.Refresh()
 	}()

@@ -9,7 +9,6 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
@@ -29,8 +28,8 @@ type allianceArea struct {
 	w    fyne.Window
 }
 
-func newAlliancArea(iw InfoWindow, alliance *app.EveEntity, w fyne.Window) *allianceArea {
-	name := widget.NewLabel(alliance.Name)
+func newAlliancArea(iw InfoWindow, allianceID int32, w fyne.Window) *allianceArea {
+	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateEllipsis
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
@@ -50,9 +49,9 @@ func newAlliancArea(iw InfoWindow, alliance *app.EveEntity, w fyne.Window) *alli
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
-		err := a.load(alliance.ID)
+		err := a.load(allianceID)
 		if err != nil {
-			slog.Error("alliance info update failed", "alliance", alliance, "error", err)
+			slog.Error("alliance info update failed", "alliance", allianceID, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load alliance: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
@@ -113,7 +112,7 @@ func (a *allianceArea) load(allianceID int32) error {
 		if len(members) == 0 {
 			return
 		}
-		memberList := NewEntityListFromEntities(a.iw.ShowEveEntity, members...)
+		memberList := NewEntityListFromEntities(a.iw.Show, members...)
 		a.tabs.Append(container.NewTabItem("Members", memberList))
 		a.tabs.Refresh()
 	}()

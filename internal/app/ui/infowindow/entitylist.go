@@ -1,7 +1,6 @@
 package infowindow
 
 import (
-	"net/url"
 	"slices"
 
 	"fyne.io/fyne/v2"
@@ -16,43 +15,48 @@ import (
 )
 
 type EntityItem struct {
-	Entity   *app.EveEntity
+	ID       int64
+	Category string
 	Text     string
-	Category string // when set will be used instead of category from EveEntity
+	Variant  InfoVariant
 }
 
-func NewEntityItem(ee *app.EveEntity, text string) EntityItem {
+func NewEntityItemFromEveEntity(ee *app.EveEntity, text string) EntityItem {
 	if text == "" {
 		text = ee.Name
 	}
-	return EntityItem{Entity: ee, Text: text}
+	return EntityItem{
+		ID:       int64(ee.ID),
+		Category: ee.CategoryDisplay(),
+		Text:     text,
+		Variant:  eveEntity2InfoVariant(ee),
+	}
 }
 
+// EntitiyList is a list widget for showing entities.
 type EntitiyList struct {
 	widget.BaseWidget
 
-	items         []EntityItem
-	openURL       func(*url.URL) error
-	showEveEntity func(*app.EveEntity)
+	items    []EntityItem
+	showInfo func(InfoVariant, int64)
 }
 
-func NewEntityListFromEntities(show func(*app.EveEntity), s ...*app.EveEntity) *EntitiyList {
+func NewEntityListFromEntities(show func(InfoVariant, int64), s ...*app.EveEntity) *EntitiyList {
 	items := slices.Collect(xiter.MapSlice(s, func(ee *app.EveEntity) EntityItem {
-		return NewEntityItem(ee, "")
+		return NewEntityItemFromEveEntity(ee, "")
 	}))
 	return NewEntityListFromItems(show, items...)
 }
 
-func NewEntityList(show func(*app.EveEntity)) *EntitiyList {
+func NewEntityList(show func(InfoVariant, int64)) *EntitiyList {
 	items := make([]EntityItem, 0)
 	return NewEntityListFromItems(show, items...)
 }
 
-func NewEntityListFromItems(show func(*app.EveEntity), items ...EntityItem) *EntitiyList {
+func NewEntityListFromItems(show func(InfoVariant, int64), items ...EntityItem) *EntitiyList {
 	w := &EntitiyList{
-		items:         items,
-		openURL:       fyne.CurrentApp().OpenURL,
-		showEveEntity: show,
+		items:    items,
+		showInfo: show,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -94,18 +98,12 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			border2 := border1[0].(*fyne.Container).Objects
 			icon := border1[1]
 			category := border2[0].(*fyne.Container).Objects[0].(*iwidget.Label)
-			var s string
-			if it.Category != "" {
-				s = it.Category
-			} else if it.Entity != nil {
-				s = it.Entity.CategoryDisplay()
-			}
-			if it.Entity != nil && slices.Contains(SupportedCategories(), it.Entity.Category) {
-				icon.Show()
-			} else {
+			category.SetText(it.Category)
+			if it.Variant == Unknown {
 				icon.Hide()
+			} else {
+				icon.Show()
 			}
-			category.SetText(s)
 			text := border2[1].(*fyne.Container).Objects[0].(*widget.RichText)
 			text.ParseMarkdown(it.Text)
 			text.Refresh()
@@ -118,10 +116,10 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			return
 		}
 		it := w.items[id]
-		if it.Entity == nil || !slices.Contains(SupportedCategories(), it.Entity.Category) {
+		if it.Variant == Unknown {
 			return
 		}
-		w.showEveEntity(it.Entity)
+		w.showInfo(it.Variant, it.ID)
 	}
 	return widget.NewSimpleRenderer(l)
 }

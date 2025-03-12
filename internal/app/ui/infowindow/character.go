@@ -14,7 +14,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
-	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -39,10 +38,10 @@ type characterArea struct {
 	w               fyne.Window
 }
 
-func newCharacterArea(iw InfoWindow, character *app.EveEntity, w fyne.Window) *characterArea {
+func newCharacterArea(iw InfoWindow, characterID int32, w fyne.Window) *characterArea {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Truncation = fyne.TextTruncateEllipsis
-	name := widget.NewLabel(character.Name)
+	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateEllipsis
 	corporation := kxwidget.NewTappableLabel("", nil)
 	corporation.Truncation = fyne.TextTruncateEllipsis
@@ -87,9 +86,9 @@ func newCharacterArea(iw InfoWindow, character *app.EveEntity, w fyne.Window) *c
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
-		err := a.load(character)
+		err := a.load(characterID)
 		if err != nil {
-			slog.Error("character info update failed", "character", character, "error", err)
+			slog.Error("character info update failed", "character", characterID, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
@@ -98,17 +97,17 @@ func newCharacterArea(iw InfoWindow, character *app.EveEntity, w fyne.Window) *c
 	return a
 }
 
-func (a *characterArea) load(character *app.EveEntity) error {
+func (a *characterArea) load(characterID int32) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.eis.CharacterPortrait(character.ID, 256)
+		r, err := a.iw.eis.CharacterPortrait(characterID, 256)
 		if err != nil {
-			slog.Error("character info: Failed to load portrait", "charaterID", character, "error", err)
+			slog.Error("character info: Failed to load portrait", "charaterID", characterID, "error", err)
 			return
 		}
 		a.portrait.SetResource(r)
 	}()
-	c, err := a.iw.eus.GetEveCharacterESI(ctx, character.ID)
+	c, err := a.iw.eus.GetEveCharacterESI(ctx, characterID)
 	if err != nil {
 		return err
 	}
@@ -127,7 +126,7 @@ func (a *characterArea) load(character *app.EveEntity) error {
 		a.iw.ShowEveEntity(c.Corporation)
 	}
 	a.portrait.OnTapped = func() {
-		go a.iw.showZoomWindow(c.Name, character.ID, a.iw.eis.CharacterPortrait, a.w)
+		go a.iw.showZoomWindow(c.Name, characterID, a.iw.eis.CharacterPortrait, a.w)
 	}
 	if s := c.DescriptionPlain(); s != "" {
 		bio := widget.NewLabel(s)
@@ -146,16 +145,16 @@ func (a *characterArea) load(character *app.EveEntity) error {
 	go func() {
 		r, err := a.iw.eis.CorporationLogo(c.Corporation.ID, defaultIconPixelSize)
 		if err != nil {
-			slog.Error("character info: Failed to load corp logo", "charaterID", character, "error", err)
+			slog.Error("character info: Failed to load corp logo", "charaterID", characterID, "error", err)
 			return
 		}
 		a.corporationLogo.Resource = r
 		a.corporationLogo.Refresh()
 	}()
 	go func() {
-		history, err := a.iw.eus.GetCharacterCorporationHistory(ctx, character.ID)
+		history, err := a.iw.eus.GetCharacterCorporationHistory(ctx, characterID)
 		if err != nil {
-			slog.Error("character info: Failed to load corporation history", "charaterID", character, "error", err)
+			slog.Error("character info: Failed to load corporation history", "charaterID", characterID, "error", err)
 			return
 		}
 		if len(history) == 0 {
@@ -166,7 +165,7 @@ func (a *characterArea) load(character *app.EveEntity) error {
 		duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
 		a.membership.SetText(fmt.Sprintf("for %s", duration))
 		items := slices.Collect(xiter.MapSlice(history, historyItem2EntityItem))
-		historyList := NewEntityListFromItems(a.iw.ShowEveEntity, items...)
+		historyList := NewEntityListFromItems(a.iw.Show, items...)
 		a.tabs.Append(container.NewTabItem("Employment History", historyList))
 		a.tabs.Refresh()
 	}()

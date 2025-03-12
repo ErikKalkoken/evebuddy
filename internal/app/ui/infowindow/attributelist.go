@@ -3,6 +3,8 @@ package infowindow
 import (
 	"fmt"
 	"net/url"
+	"slices"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -74,7 +76,7 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 			switch x := it.Value.(type) {
 			case *app.EveEntity:
 				s = x.Name
-				if x.Category == app.EveEntityCharacter || x.Category == app.EveEntityCorporation {
+				if slices.Contains(eveEntitySupportedCategories(), x.Category) {
 					icon.Show()
 				}
 			case *url.URL:
@@ -82,6 +84,8 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 				i = widget.HighImportance
 			case float32:
 				s = fmt.Sprintf("%.1f %%", x*100)
+			case time.Time:
+				s = x.Format(dateFormat)
 			case int:
 				s = humanize.Comma(int64(x))
 			case bool:
@@ -109,7 +113,7 @@ func (w *AttributeList) CreateRenderer() fyne.WidgetRenderer {
 		it := w.items[id]
 		switch x := it.Value.(type) {
 		case *app.EveEntity:
-			if w.ShowInfoWindow != nil {
+			if slices.Contains(eveEntitySupportedCategories(), x.Category) && w.ShowInfoWindow != nil {
 				w.ShowInfoWindow(x)
 			}
 		case *url.URL:

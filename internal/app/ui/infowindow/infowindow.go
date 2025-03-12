@@ -2,6 +2,8 @@ package infowindow
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -26,6 +28,39 @@ const (
 	dateFormat           = "2006.01.02 15:04"
 )
 
+type InfoVariant uint
+
+const (
+	Unknown InfoVariant = iota
+	Alliance
+	Character
+	Corporation
+	Location
+	SolarSystem
+)
+
+var eveEntityCategory2InfoVariant = map[app.EveEntityCategory]InfoVariant{
+	app.EveEntityAlliance:    Alliance,
+	app.EveEntityCharacter:   Character,
+	app.EveEntityCorporation: Corporation,
+	app.EveEntitySolarSystem: SolarSystem,
+	app.EveEntityStation:     Location,
+}
+
+func eveEntity2InfoVariant(ee *app.EveEntity) InfoVariant {
+	v, ok := eveEntityCategory2InfoVariant[ee.Category]
+	if !ok {
+		return Unknown
+	}
+	return v
+
+}
+
+func eveEntitySupportedCategories() []app.EveEntityCategory {
+	return slices.Collect(maps.Keys(eveEntityCategory2InfoVariant))
+
+}
+
 // InfoWindow represents a dedicated window for showing information similar to the in-game info windows.
 type InfoWindow struct {
 	eus *eveuniverse.EveUniverseService
@@ -43,34 +78,38 @@ func New(eus *eveuniverse.EveUniverseService, eis app.EveImageService, sb *iwidg
 	return w
 }
 
+func (iw InfoWindow) Show(t InfoVariant, id int64) {
+	switch t {
+	case Alliance:
+		showWindow("Alliance", func(w fyne.Window) fyne.CanvasObject {
+			a := newAlliancArea(iw, int32(id), w)
+			return a.Content
+		})
+	case Character:
+		showWindow("Character", func(w fyne.Window) fyne.CanvasObject {
+			a := newCharacterArea(iw, int32(id), w)
+			return a.Content
+		})
+	case Corporation:
+		showWindow("Corporation", func(w fyne.Window) fyne.CanvasObject {
+			a := newCorporationArea(iw, int32(id), w)
+			return a.Content
+		})
+	case SolarSystem:
+		showWindow("Solar System", func(w fyne.Window) fyne.CanvasObject {
+			a := newSolarSystemArea(iw, int32(id), w)
+			return a.Content
+		})
+	case Location:
+		iw.ShowLocation(id)
+	default:
+		iw.sb.Show("Can't show info window for unknown category")
+	}
+}
+
 // Show shows a new info window for an EveEntity.
 func (iw InfoWindow) ShowEveEntity(ee *app.EveEntity) {
-	switch ee.Category {
-	case app.EveEntityAlliance:
-		showWindow("Alliance", func(w fyne.Window) fyne.CanvasObject {
-			a := newAlliancArea(iw, ee, w)
-			return a.Content
-		})
-	case app.EveEntityCharacter:
-		showWindow("Character", func(w fyne.Window) fyne.CanvasObject {
-			a := newCharacterArea(iw, ee, w)
-			return a.Content
-		})
-	case app.EveEntityCorporation:
-		showWindow("Corporation", func(w fyne.Window) fyne.CanvasObject {
-			a := newCorporationArea(iw, ee, w)
-			return a.Content
-		})
-	case app.EveEntitySolarSystem:
-		showWindow("Solar System", func(w fyne.Window) fyne.CanvasObject {
-			a := newSolarSystemArea(iw, ee, w)
-			return a.Content
-		})
-	case app.EveEntityStation:
-		iw.ShowLocation(int64(ee.ID))
-	default:
-		iw.sb.Show(fmt.Sprintf("Can't show info window for %s", ee.Category))
-	}
+	iw.Show(eveEntity2InfoVariant(ee), int64(ee.ID))
 }
 
 func (iw InfoWindow) ShowLocation(id int64) {
@@ -100,16 +139,6 @@ func (iw InfoWindow) showZoomWindow(title string, id int32, load func(int32, int
 	w2.Show()
 }
 
-func SupportedCategories() []app.EveEntityCategory {
-	return []app.EveEntityCategory{
-		app.EveEntityAlliance,
-		app.EveEntityCharacter,
-		app.EveEntityCorporation,
-		app.EveEntityStation,
-		app.EveEntitySolarSystem,
-	}
-}
-
 func historyItem2EntityItem(hi app.MembershipHistoryItem) EntityItem {
 	var endDateStr string
 	if !hi.EndDate.IsZero() {
@@ -134,5 +163,5 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) EntityItem {
 			humanize.Comma(int64(hi.Days)),
 		)
 	}
-	return NewEntityItem(hi.Organization, text)
+	return NewEntityItemFromEveEntity(hi.Organization, text)
 }

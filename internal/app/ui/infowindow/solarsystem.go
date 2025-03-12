@@ -35,12 +35,12 @@ type solarSystemArea struct {
 	tabs          *container.AppTabs
 }
 
-func newSolarSystemArea(iw InfoWindow, solarSystem *app.EveEntity, w fyne.Window) *solarSystemArea {
+func newSolarSystemArea(iw InfoWindow, solarSystemID int32, w fyne.Window) *solarSystemArea {
 	region := kxwidget.NewTappableLabel("", nil)
 	region.Truncation = fyne.TextTruncateEllipsis
 	constellation := kxwidget.NewTappableLabel("", nil)
 	constellation.Truncation = fyne.TextTruncateEllipsis
-	name := widget.NewLabel(solarSystem.Name)
+	name := widget.NewLabel("")
 	name.Truncation = fyne.TextTruncateEllipsis
 	s := float32(defaultIconPixelSize) * logoZoomFactor
 	logo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(s))
@@ -67,9 +67,9 @@ func newSolarSystemArea(iw InfoWindow, solarSystem *app.EveEntity, w fyne.Window
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
-		err := a.load(solarSystem)
+		err := a.load(solarSystemID)
 		if err != nil {
-			slog.Error("solar system info update failed", "solarSystem", solarSystem, "error", err)
+			slog.Error("solar system info update failed", "solarSystem", solarSystemID, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load solarSystem: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
@@ -78,21 +78,21 @@ func newSolarSystemArea(iw InfoWindow, solarSystem *app.EveEntity, w fyne.Window
 	return a
 }
 
-func (a *solarSystemArea) load(solarSystem *app.EveEntity) error {
+func (a *solarSystemArea) load(solarSystemID int32) error {
 	ctx := context.Background()
-	o, err := a.iw.eus.GetOrCreateEveSolarSystemESI2(ctx, solarSystem.ID)
+	o, err := a.iw.eus.GetOrCreateEveSolarSystemESI2(ctx, solarSystemID)
 	if err != nil {
 		return err
 	}
 	go func() {
 		typ, err := a.iw.eus.GetStarTypeESI(ctx, o.StarID)
 		if err != nil {
-			slog.Error("solar system info: Failed to load star", "solarSystem", solarSystem, "error", err)
+			slog.Error("solar system info: Failed to load star", "solarSystem", solarSystemID, "error", err)
 			return
 		}
 		r, err := a.iw.eis.InventoryTypeIcon(typ.ID, defaultIconPixelSize)
 		if err != nil {
-			slog.Error("solar system info: Failed to load logo", "solarSystem", solarSystem, "error", err)
+			slog.Error("solar system info: Failed to load logo", "solarSystem", solarSystemID, "error", err)
 			return
 		}
 		a.logo.Resource = r
@@ -111,15 +111,17 @@ func (a *solarSystemArea) load(solarSystem *app.EveEntity) error {
 	a.security.Importance = o.System.SecurityType().ToImportance()
 	a.security.Refresh()
 
-	stations := NewEntityListFromEntities(a.iw.ShowEveEntity, o.Stations...)
+	stations := NewEntityListFromEntities(a.iw.Show, o.Stations...)
 	a.tabs.Append(container.NewTabItem("Stations", stations))
 	xx := slices.Collect(xiter.MapSlice(o.Structures, func(x *app.EveLocation) EntityItem {
 		return EntityItem{
+			ID:       x.ID,
 			Text:     x.Name,
 			Category: "Structure",
+			Variant:  Location,
 		}
 	}))
-	structures := NewEntityListFromItems(a.iw.ShowEveEntity, xx...)
+	structures := NewEntityListFromItems(a.iw.Show, xx...)
 	note := widget.NewLabel("Only contains structures known through characters")
 	note.Importance = widget.LowImportance
 	a.tabs.Append(container.NewTabItem("Structures", container.NewBorder(
