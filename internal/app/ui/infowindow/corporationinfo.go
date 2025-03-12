@@ -31,26 +31,28 @@ type corporationArea struct {
 	corporationLogo *canvas.Image
 	hq              *kxwidget.TappableLabel
 	tabs            *container.AppTabs
+	w               fyne.Window
 }
 
-func newCorporationArea(iw InfoWindow, corporation *app.EveEntity) *corporationArea {
+func newCorporationArea(iw InfoWindow, corporation *app.EveEntity, w fyne.Window) *corporationArea {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Truncation = fyne.TextTruncateEllipsis
 	name := widget.NewLabel(corporation.Name)
 	name.Truncation = fyne.TextTruncateEllipsis
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
-	corporationLogo := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(defaultIconUnitSize))
+	corporationLogo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(defaultIconUnitSize))
 	s := float32(defaultIconPixelSize) * logoZoomFactor
 	corporationLogo.SetMinSize(fyne.NewSquareSize(s))
 	a := &corporationArea{
 		alliance:        alliance,
-		allianceLogo:    iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(defaultIconUnitSize)),
+		allianceLogo:    iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(defaultIconUnitSize)),
 		name:            name,
 		corporationLogo: corporationLogo,
 		hq:              hq,
 		tabs:            container.NewAppTabs(),
 		iw:              iw,
+		w:               w,
 	}
 
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
@@ -173,12 +175,19 @@ func (a *corporationArea) load(corporation *app.EveEntity) error {
 		if len(history) == 0 {
 			return
 		}
-		historyList := NewMembershipHistoryList()
-		historyList.IsFoundedShown = true
-		historyList.ShowInfoWindow = a.iw.ShowEveEntity
-		historyList.Set(slices.Collect(xiter.FilterSlice(history, func(v app.MembershipHistoryItem) bool {
-			return v.Organization != nil || v.IsOldest
-		})))
+		history2 := slices.Collect(xiter.FilterSlice(history, func(v app.MembershipHistoryItem) bool {
+			return v.Organization != nil
+		}))
+		items := slices.Collect(xiter.MapSlice(history2, historyItem2EntityItem))
+		oldest := slices.MinFunc(history, func(a, b app.MembershipHistoryItem) int {
+			return a.StartDate.Compare(b.StartDate)
+		})
+		items = append(items, EntityItem{
+			Category: "Founded",
+			Text:     fmt.Sprintf("**%s**", oldest.StartDate.Format(dateFormat)),
+		})
+		historyList := NewEntityListFromItems(items...)
+		historyList.ShowEveEntity = a.iw.ShowEveEntity
 		a.tabs.Append(container.NewTabItem("Alliance History", historyList))
 		a.tabs.Refresh()
 	}()

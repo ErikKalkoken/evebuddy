@@ -508,7 +508,8 @@ func (u *BaseUI) ShowTypeInfoWindow(typeID, characterID int32, selectTab TypeWin
 }
 
 func (u *BaseUI) ShowLocationInfoWindow(locationID int64) {
-	u.showItemWindow(NewItemInfoArea(u, 0, 0, locationID, DescriptionTab))
+	iw := infowindow.New(u.EveUniverseService, u.EveImageService, u.Snackbar)
+	iw.ShowLocation(locationID)
 }
 
 func (u *BaseUI) showItemWindow(iw *ItemInfoArea, err error) {

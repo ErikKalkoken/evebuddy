@@ -12,3 +12,7 @@ type EveAlliance struct {
 	Name                string
 	Ticker              string
 }
+
+func (x EveAlliance) ToEveEntity() *EveEntity {
+	return &EveEntity{ID: x.ID, Name: x.Name, Category: EveEntityAlliance}
+}

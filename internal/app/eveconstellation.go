@@ -6,3 +6,7 @@ type EveConstellation struct {
 	Name   string
 	Region *EveRegion
 }
+
+func (ec EveConstellation) ToEveEntity() *EveEntity {
+	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityConstellation}
+}

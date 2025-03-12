@@ -111,13 +111,22 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 			})
 		u.Window.Canvas().AddShortcut(
 			&desktop.CustomShortcut{
-				KeyName:  fyne.KeyX,
+				KeyName:  fyne.KeyC,
 				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl,
 			},
 			func(fyne.Shortcut) {
 				iw := infowindow.New(u.EveUniverseService, u.EveImageService, u.Snackbar)
 				ee, _ := u.EveUniverseService.GetOrCreateEveEntityESI(context.Background(), 93330670)
 				iw.ShowEveEntity(ee)
+			})
+		u.Window.Canvas().AddShortcut(
+			&desktop.CustomShortcut{
+				KeyName:  fyne.KeyL,
+				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl,
+			},
+			func(fyne.Shortcut) {
+				iw := infowindow.New(u.EveUniverseService, u.EveImageService, u.Snackbar)
+				iw.ShowLocation(1022167642188)
 			})
 	}
 	u.OnAppStopped = func() {

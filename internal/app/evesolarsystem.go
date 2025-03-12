@@ -49,3 +49,7 @@ func (es EveSolarSystem) SecurityType() SolarSystemSecurityType {
 	}
 	return NullSec
 }
+
+func (es EveSolarSystem) ToEveEntity() *EveEntity {
+	return &EveEntity{ID: es.ID, Name: es.Name, Category: EveEntitySolarSystem}
+}

@@ -85,15 +85,19 @@ func (et EveType) HasRender() bool {
 
 // Icon returns the icon for a type from the eveicon package
 // and whether and icon exists for this type.
-func (ep EveType) Icon() (fyne.Resource, bool) {
-	if ep.IconID == 0 {
+func (et EveType) Icon() (fyne.Resource, bool) {
+	if et.IconID == 0 {
 		return nil, false
 	}
-	res, ok := eveicon.GetResourceByIconID(ep.IconID)
+	res, ok := eveicon.GetResourceByIconID(et.IconID)
 	if !ok {
 		return nil, false
 	}
 	return res, true
+}
+
+func (et EveType) ToEveEntity() *EveEntity {
+	return &EveEntity{ID: et.ID, Name: et.Name, Category: EveEntityInventoryType}
 }
 
 type EveTypeDogmaAttribute struct {

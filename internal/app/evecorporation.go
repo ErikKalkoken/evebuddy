@@ -37,3 +37,7 @@ func (ec EveCorporation) HasFaction() bool {
 func (ec EveCorporation) DescriptionPlain() string {
 	return evehtml.ToPlain(ec.Description)
 }
+
+func (ec EveCorporation) ToEveEntity() *EveEntity {
+	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCorporation}
+}

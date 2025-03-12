@@ -58,3 +58,7 @@ func (ec EveCharacter) RaceDescription() string {
 	}
 	return ec.Race.Description
 }
+
+func (ec EveCharacter) ToEveEntity() *EveEntity {
+	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCharacter}
+}

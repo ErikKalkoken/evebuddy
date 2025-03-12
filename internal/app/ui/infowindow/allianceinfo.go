@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
@@ -27,14 +26,15 @@ type allianceArea struct {
 	logo *canvas.Image
 	name *widget.Label
 	tabs *container.AppTabs
+	w    fyne.Window
 }
 
-func newAlliancArea(iw InfoWindow, alliance *app.EveEntity) *allianceArea {
+func newAlliancArea(iw InfoWindow, alliance *app.EveEntity, w fyne.Window) *allianceArea {
 	name := widget.NewLabel(alliance.Name)
 	name.Truncation = fyne.TextTruncateEllipsis
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
-	logo := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(defaultIconUnitSize))
+	logo := iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(defaultIconUnitSize))
 	s := float32(defaultIconPixelSize) * logoZoomFactor
 	logo.SetMinSize(fyne.NewSquareSize(s))
 	a := &allianceArea{
@@ -43,6 +43,7 @@ func newAlliancArea(iw InfoWindow, alliance *app.EveEntity) *allianceArea {
 		logo: logo,
 		hq:   hq,
 		tabs: container.NewAppTabs(),
+		w:    w,
 	}
 
 	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, a.name)
@@ -112,28 +113,8 @@ func (a *allianceArea) load(allianceID int32) error {
 		if len(members) == 0 {
 			return
 		}
-		memberList := widget.NewList(
-			func() int {
-				return len(members)
-			},
-			func() fyne.CanvasObject {
-				name := kxwidget.NewTappableLabel("Template", nil)
-				name.Truncation = fyne.TextTruncateEllipsis
-				return container.NewBorder(nil, nil, nil, widget.NewIcon(theme.InfoIcon()), name)
-			},
-			func(id widget.ListItemID, co fyne.CanvasObject) {
-				if id >= len(members) {
-					return
-				}
-				m := members[id]
-				border := co.(*fyne.Container).Objects
-				l := border[0].(*kxwidget.TappableLabel)
-				l.SetText(m.Name)
-				l.OnTapped = func() {
-					a.iw.ShowEveEntity(m)
-				}
-			},
-		)
+		memberList := NewEntityListFromEntities(members...)
+		memberList.ShowEveEntity = a.iw.ShowEveEntity
 		a.tabs.Append(container.NewTabItem("Members", memberList))
 		a.tabs.Refresh()
 	}()

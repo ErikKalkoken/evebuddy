@@ -29,47 +29,47 @@ type EveLocation struct {
 }
 
 // DisplayName returns a user friendly name.
-func (lc EveLocation) DisplayName() string {
-	if lc.Name != "" {
-		return lc.Name
+func (el EveLocation) DisplayName() string {
+	if el.Name != "" {
+		return el.Name
 	}
-	return lc.alternativeName()
+	return el.alternativeName()
 }
 
 // DisplayName2 returns a user friendly name not including the location name.
-func (lc EveLocation) DisplayName2() string {
-	if lc.Name != "" {
-		if lc.Variant() != EveLocationStructure {
-			return lc.Name
+func (el EveLocation) DisplayName2() string {
+	if el.Name != "" {
+		if el.Variant() != EveLocationStructure {
+			return el.Name
 		}
-		p := strings.Split(lc.Name, " - ")
+		p := strings.Split(el.Name, " - ")
 		if len(p) < 2 {
-			return lc.Name
+			return el.Name
 		}
 		return p[1]
 	}
-	return lc.alternativeName()
+	return el.alternativeName()
 }
 
-func (lc EveLocation) alternativeName() string {
-	switch lc.Variant() {
+func (el EveLocation) alternativeName() string {
+	switch el.Variant() {
 	case EveLocationUnknown:
 		return "Unknown"
 	case EveLocationAssetSafety:
 		return "Asset Safety"
 	case EveLocationSolarSystem:
-		if lc.SolarSystem == nil {
-			return fmt.Sprintf("Unknown solar system #%d", lc.ID)
+		if el.SolarSystem == nil {
+			return fmt.Sprintf("Unknown solar system #%d", el.ID)
 		}
-		return lc.SolarSystem.Name
+		return el.SolarSystem.Name
 	case EveLocationStructure:
-		return fmt.Sprintf("Unknown structure #%d", lc.ID)
+		return fmt.Sprintf("Unknown structure #%d", el.ID)
 	}
-	return fmt.Sprintf("Unknown location #%d", lc.ID)
+	return fmt.Sprintf("Unknown location #%d", el.ID)
 }
 
-func (lc EveLocation) Variant() EveLocationVariant {
-	return LocationVariantFromID(lc.ID)
+func (el EveLocation) Variant() EveLocationVariant {
+	return LocationVariantFromID(el.ID)
 }
 
 func LocationVariantFromID(id int64) EveLocationVariant {
@@ -87,4 +87,14 @@ func LocationVariantFromID(id int64) EveLocationVariant {
 	default:
 		return EveLocationUnknown
 	}
+}
+
+func (el EveLocation) ToEveEntity() *EveEntity {
+	switch el.Variant() {
+	case EveLocationSolarSystem:
+		return &EveEntity{ID: int32(el.ID), Name: el.Name, Category: EveEntitySolarSystem}
+	case EveLocationStation:
+		return &EveEntity{ID: int32(el.ID), Name: el.Name, Category: EveEntityStation}
+	}
+	return nil
 }

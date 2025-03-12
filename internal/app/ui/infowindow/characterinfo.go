@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -17,6 +18,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
@@ -34,9 +36,10 @@ type characterArea struct {
 	title           *widget.Label
 	tabs            *container.AppTabs
 	iw              InfoWindow
+	w               fyne.Window
 }
 
-func newCharacterArea(iw InfoWindow, character *app.EveEntity) *characterArea {
+func newCharacterArea(iw InfoWindow, character *app.EveEntity, w fyne.Window) *characterArea {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Truncation = fyne.TextTruncateEllipsis
 	name := widget.NewLabel(character.Name)
@@ -51,7 +54,7 @@ func newCharacterArea(iw InfoWindow, character *app.EveEntity) *characterArea {
 	a := &characterArea{
 		alliance:        alliance,
 		corporation:     corporation,
-		corporationLogo: iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(defaultIconUnitSize)),
+		corporationLogo: iwidget.NewImageFromResource(icon.BlankSvg, fyne.NewSquareSize(defaultIconUnitSize)),
 		iw:              iw,
 		membership:      widget.NewLabel(""),
 		name:            name,
@@ -59,6 +62,7 @@ func newCharacterArea(iw InfoWindow, character *app.EveEntity) *characterArea {
 		security:        widget.NewLabel(""),
 		tabs:            container.NewAppTabs(),
 		title:           title,
+		w:               w,
 	}
 
 	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
@@ -123,11 +127,10 @@ func (a *characterArea) load(character *app.EveEntity) error {
 		a.iw.ShowEveEntity(c.Corporation)
 	}
 	a.portrait.OnTapped = func() {
-		showZoomWindow(c.Name, character.ID, a.iw.eis.CharacterPortrait)
+		go a.iw.showZoomWindow(c.Name, character.ID, a.iw.eis.CharacterPortrait, a.w)
 	}
-	bioText := c.DescriptionPlain()
-	if bioText != "" {
-		bio := widget.NewLabel(bioText)
+	if s := c.DescriptionPlain(); s != "" {
+		bio := widget.NewLabel(s)
 		bio.Wrapping = fyne.TextWrapWord
 		a.tabs.Append(container.NewTabItem("Bio", container.NewVScroll(bio)))
 	}
@@ -162,9 +165,9 @@ func (a *characterArea) load(character *app.EveEntity) error {
 		current := history[0]
 		duration := humanize.RelTime(current.StartDate, time.Now(), "", "")
 		a.membership.SetText(fmt.Sprintf("for %s", duration))
-		historyList := NewMembershipHistoryList()
-		historyList.ShowInfoWindow = a.iw.ShowEveEntity
-		historyList.Set(history)
+		items := slices.Collect(xiter.MapSlice(history, historyItem2EntityItem))
+		historyList := NewEntityListFromItems(items...)
+		historyList.ShowEveEntity = a.iw.ShowEveEntity
 		a.tabs.Append(container.NewTabItem("Employment History", historyList))
 		a.tabs.Refresh()
 	}()
