@@ -12,15 +12,16 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 )
 
 type overviewCharacter struct {
-	alliance      string
+	alliance      *app.EveEntity
 	assetValue    optional.Optional[float64]
 	birthday      time.Time
-	corporation   string
+	corporation   *app.EveEntity
 	home          *app.EntityShort[int64]
 	id            int32
 	lastLoginAt   optional.Optional[time.Time]
@@ -67,9 +68,11 @@ func NewOverviewArea(u *BaseUI) *OverviewArea {
 		case 0:
 			text = c.name
 		case 1:
-			text = c.corporation
+			text = c.corporation.Name
 		case 2:
-			text = c.alliance
+			if c.alliance != nil {
+				text = c.alliance.Name
+			}
 		case 3:
 			text = fmt.Sprintf("%.1f", c.security)
 			if c.security > 0 {
@@ -98,13 +101,29 @@ func NewOverviewArea(u *BaseUI) *OverviewArea {
 		}
 		return text, align, importance
 	}
-	showCharacterInfo := func(oc overviewCharacter) {
-		u.ShowEveEntityInfoWindow(&app.EveEntity{ID: oc.id, Name: oc.name, Category: app.EveEntityCharacter})
-	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, showCharacterInfo)
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(c int, oc overviewCharacter) {
+			switch c {
+			case 0:
+				u.ShowInfoWindow(infowindow.Character, int64(oc.id))
+			case 1:
+				if oc.corporation != nil {
+					u.ShowInfoWindow(infowindow.Corporation, int64(oc.corporation.ID))
+				}
+			case 2:
+				if oc.alliance != nil {
+					u.ShowInfoWindow(infowindow.Alliance, int64(oc.alliance.ID))
+				}
+			case 8:
+				if oc.home != nil {
+					u.ShowInfoWindow(infowindow.Location, int64(oc.home.ID))
+				}
+			}
+		})
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, showCharacterInfo)
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, func(oc overviewCharacter) {
+			u.ShowEveEntityInfoWindow(&app.EveEntity{ID: oc.id, Name: oc.name, Category: app.EveEntityCharacter})
+		})
 	}
 	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
 	return &a
@@ -158,9 +177,9 @@ func (a *OverviewArea) updateCharacters() (overviewTotals, error) {
 	cc := make([]overviewCharacter, len(mycc))
 	for i, m := range mycc {
 		c := overviewCharacter{
-			alliance:      m.EveCharacter.AllianceName(),
+			alliance:      m.EveCharacter.Alliance,
 			birthday:      m.EveCharacter.Birthday,
-			corporation:   m.EveCharacter.Corporation.Name,
+			corporation:   m.EveCharacter.Corporation,
 			lastLoginAt:   m.LastLoginAt,
 			id:            m.ID,
 			name:          m.EveCharacter.Name,

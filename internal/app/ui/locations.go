@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
 )
@@ -86,9 +87,22 @@ func NewLocationsArea(u *BaseUI) *LocationsArea {
 		return text, align, importance
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(c int, r locationCharacter) {
+			switch c {
+			case 0:
+				a.u.ShowInfoWindow(infowindow.Character, int64(r.id))
+			case 1:
+				a.u.ShowInfoWindow(infowindow.Location, int64(r.location.ID))
+			case 2:
+				a.u.ShowInfoWindow(infowindow.SolarSystem, int64(r.solarSystem.ID))
+			case 5:
+				a.u.ShowTypeInfoWindow(r.ship.ID, a.u.CharacterID(), DescriptionTab)
+			}
+		})
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, func(r locationCharacter) {
+			a.u.ShowInfoWindow(infowindow.Location, int64(r.location.ID))
+		})
 	}
 	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
 	return &a

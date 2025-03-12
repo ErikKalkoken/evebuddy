@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 )
 
 type colonyRow struct {
@@ -25,6 +26,8 @@ type colonyRow struct {
 	region             string
 	security           string
 	securityImportance widget.Importance
+	solarSystemID      int32
+	characterID        int32
 }
 
 // ColoniesArea is the UI area that shows the skillqueue
@@ -82,7 +85,14 @@ func NewColoniesArea(u *BaseUI) *ColoniesArea {
 		return text, align, importance
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(col int, r colonyRow) {
+			switch col {
+			case 0, 1, 2, 3, 4, 5, 6:
+				a.u.ShowInfoWindow(infowindow.SolarSystem, int64(r.solarSystemID))
+			case 7:
+				a.u.ShowInfoWindow(infowindow.Character, int64(r.characterID))
+			}
+		})
 	} else {
 		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
 	}
@@ -133,9 +143,11 @@ func (a *ColoniesArea) updateEntries() error {
 	for i, p := range pp {
 		r := colonyRow{
 			character:          a.u.StatusCacheService.CharacterName(p.CharacterID),
+			characterID:        p.CharacterID,
 			planet:             p.EvePlanet.Name,
 			planetType:         p.EvePlanet.TypeDisplay(),
 			region:             p.EvePlanet.SolarSystem.Constellation.Region.Name,
+			solarSystemID:      p.EvePlanet.SolarSystem.ID,
 			security:           fmt.Sprintf("%0.1f", p.EvePlanet.SolarSystem.SecurityStatus),
 			securityImportance: p.EvePlanet.SolarSystem.SecurityType().ToImportance(),
 		}

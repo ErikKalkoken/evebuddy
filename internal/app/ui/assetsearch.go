@@ -17,6 +17,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/assetcollection"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 )
 
@@ -115,13 +116,22 @@ func NewAssetSearchArea(u *BaseUI) *AssetSearchArea {
 		}
 		return t, a, i
 	}
-	onSelected := func(r *assetSearchRow) {
-		a.u.ShowTypeInfoWindow(r.typeID, a.u.CharacterID(), DescriptionTab)
-	}
 	if a.u.IsMobile() {
-		a.body = makeDataTableForMobile(headers, &a.assetsFiltered, makeDataLabel, onSelected)
+		a.body = makeDataTableForMobile(headers, &a.assetsFiltered, makeDataLabel, func(r *assetSearchRow) {
+			a.u.ShowTypeInfoWindow(r.typeID, a.u.CharacterID(), DescriptionTab)
+		})
 	} else {
-		a.body = a.makeTable(headers, makeDataLabel, onSelected)
+		// can't use helper here, because we also need sort
+		a.body = a.makeTable(headers, makeDataLabel, func(col int, r *assetSearchRow) {
+			switch col {
+			case 0:
+				a.u.ShowTypeInfoWindow(r.typeID, a.u.CharacterID(), DescriptionTab)
+			case 2:
+				a.u.ShowInfoWindow(infowindow.Location, r.locationID)
+			case 3:
+				a.u.ShowInfoWindow(infowindow.Character, int64(r.characterID))
+			}
+		})
 	}
 	a.Content = container.NewBorder(topBox, nil, nil, nil, a.body)
 	return a
@@ -134,7 +144,7 @@ func (a *AssetSearchArea) Focus() {
 func (a *AssetSearchArea) makeTable(
 	headers []headerDef,
 	makeDataLabel func(int, *assetSearchRow) (string, fyne.TextAlign, widget.Importance),
-	onSelected func(*assetSearchRow),
+	onSelected func(int, *assetSearchRow),
 ) *widget.Table {
 	a.colSort = make([]assetSortDir, len(headers))
 	for i := range headers {
@@ -193,7 +203,7 @@ func (a *AssetSearchArea) makeTable(
 			return
 		}
 		r := a.assetsFiltered[id.Row]
-		onSelected(r)
+		onSelected(id.Col, r)
 	}
 	return t
 }

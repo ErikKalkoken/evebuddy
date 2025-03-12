@@ -94,14 +94,16 @@ func NewWalletJournalArea(u *BaseUI) *WalletJournalArea {
 		}
 		return text, align, importance
 	}
-	showReasonDialog := func(row walletJournalEntry) {
-		if row.hasReason() {
-			dlg := dialog.NewCustom("Reason", "OK", widget.NewLabel(row.reason), a.u.Window)
+	showReasonDialog := func(r walletJournalEntry) {
+		if r.hasReason() {
+			dlg := dialog.NewCustom("Reason", "OK", widget.NewLabel(r.reason), a.u.Window)
 			dlg.Show()
 		}
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, showReasonDialog)
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(_ int, r walletJournalEntry) {
+			showReasonDialog(r)
+		})
 	} else {
 		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, showReasonDialog)
 	}

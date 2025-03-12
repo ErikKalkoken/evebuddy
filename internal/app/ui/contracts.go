@@ -100,13 +100,21 @@ func NewContractsArea(u *BaseUI) *ContractsArea {
 		}
 		return text, align, importance
 	}
-	onSelected := func(o *app.CharacterContract) {
-		a.showContract(o)
-	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.contracts, makeDataLabel, onSelected)
+		a.body = makeDataTableForDesktop(headers, &a.contracts, makeDataLabel, func(column int, r *app.CharacterContract) {
+			switch column {
+			case 0:
+				a.showContract(r)
+			case 2:
+				a.u.ShowEveEntityInfoWindow(r.Issuer)
+			case 3:
+				if r.Assignee != nil {
+					a.u.ShowEveEntityInfoWindow(r.Assignee)
+				}
+			}
+		})
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.contracts, makeDataLabel, onSelected)
+		a.body = makeDataTableForMobile(headers, &a.contracts, makeDataLabel, a.showContract)
 	}
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
