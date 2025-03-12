@@ -504,7 +504,7 @@ func (u *BaseUI) ShowUpdateStatusWindow() {
 }
 
 func (u *BaseUI) ShowTypeInfoWindow(typeID, characterID int32, selectTab TypeWindowTab) {
-	u.showItemWindow(NewItemInfoArea(u, typeID, characterID, 0, selectTab))
+	u.showItemWindow(NewItemInfoArea(u, typeID, characterID, selectTab))
 }
 
 func (u *BaseUI) ShowLocationInfoWindow(locationID int64) {

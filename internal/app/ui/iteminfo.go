@@ -193,7 +193,6 @@ type ItemInfoArea struct {
 	attributesData []attributeRow
 	et             *app.EveType
 	fittingData    []attributeRow
-	location       *app.EveLocation
 	metaLevel      int
 	owner          *app.EveEntity
 	price          *app.EveMarketPrice
@@ -203,32 +202,22 @@ type ItemInfoArea struct {
 }
 
 // TODO: Restructure, so that window is first drawn empty and content loaded in background (same as character info windo)
-func NewItemInfoArea(u *BaseUI, typeID, characterID int32, locationID int64, selectTab TypeWindowTab) (*ItemInfoArea, error) {
+func NewItemInfoArea(u *BaseUI, typeID, characterID int32, selectTab TypeWindowTab) (*ItemInfoArea, error) {
 	ctx := context.TODO()
 	a := &ItemInfoArea{
 		u:      u,
 		Window: u.Window,
 	}
-	if locationID != 0 {
-		location, err := u.EveUniverseService.GetEveLocation(ctx, locationID)
-		if err != nil {
-			return nil, err
-		}
-		a.location = location
-		a.et = location.Type
-		a.owner = a.location.Owner
-	} else {
-		et, err := u.EveUniverseService.GetEveType(ctx, typeID)
-		if err != nil {
-			return nil, err
-		}
-		a.et = et
-		owner, err := u.EveUniverseService.GetOrCreateEveEntityESI(ctx, characterID)
-		if err != nil {
-			return nil, err
-		}
-		a.owner = owner
+	et, err := u.EveUniverseService.GetEveType(ctx, typeID)
+	if err != nil {
+		return nil, err
 	}
+	a.et = et
+	owner, err := u.EveUniverseService.GetOrCreateEveEntityESI(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+	a.owner = owner
 	if a.et == nil {
 		return nil, nil
 	}
@@ -252,7 +241,7 @@ func NewItemInfoArea(u *BaseUI, typeID, characterID int32, locationID int64, sel
 	}
 	a.attributesData = a.calcAttributesData(ctx, attributes)
 	a.fittingData = a.calcFittingData(ctx, attributes)
-	if !a.isLocation() && characterID != 0 {
+	if characterID != 0 {
 		skills, err := a.calcRequiredSkills(ctx, characterID, attributes)
 		if err != nil {
 			return nil, err
@@ -266,10 +255,6 @@ func NewItemInfoArea(u *BaseUI, typeID, characterID int32, locationID int64, sel
 
 func (a *ItemInfoArea) MakeTitle(suffix string) string {
 	return fmt.Sprintf("%s: %s", a.et.Group.Name, suffix)
-}
-
-func (a *ItemInfoArea) isLocation() bool {
-	return a.location != nil
 }
 
 func calcLevels(attributes map[int32]*app.EveTypeDogmaAttribute) (int, int) {
@@ -479,11 +464,6 @@ func (a *ItemInfoArea) makeContent(selectTab TypeWindowTab) fyne.CanvasObject {
 			tabs.Select(t)
 		}
 	}
-	if a.isLocation() {
-		location := container.NewTabItem("Location", a.makeLocationTab())
-		tabs.Append(location)
-		tabs.Select(location)
-	}
 	if a.price != nil {
 		tabs.Append(container.NewTabItem("Market", a.makeMarketTab()))
 	}
@@ -576,11 +556,7 @@ func (a *ItemInfoArea) makeTop() fyne.CanvasObject {
 	}
 	title := widget.NewLabel("")
 	title.Wrapping = fyne.TextWrapWord
-	if a.isLocation() {
-		title.SetText(a.location.Name)
-	} else {
-		title.SetText(a.et.Name)
-	}
+	title.SetText(a.et.Name)
 	return container.NewBorder(
 		nil,
 		nil,
@@ -705,65 +681,4 @@ func (a *ItemInfoArea) makeRequirementsTab() fyne.CanvasObject {
 		l.UnselectAll()
 	}
 	return l
-}
-
-type infoRow struct {
-	label      string
-	importance widget.Importance
-	value      string
-}
-
-func (a *ItemInfoArea) makeLocationTab() fyne.CanvasObject {
-	data := makeLocationData(a.location)
-	l := widget.NewList(
-		func() int {
-			return len(data)
-		},
-		func() fyne.CanvasObject {
-			return container.NewHBox(
-				widget.NewLabel("Label"),
-				layout.NewSpacer(),
-				widget.NewLabel("Value"),
-			)
-		},
-		func(id widget.ListItemID, co fyne.CanvasObject) {
-			o := data[id]
-			row := co.(*fyne.Container).Objects
-			label := row[0].(*widget.Label)
-			value := row[2].(*widget.Label)
-			label.SetText(o.label)
-			value.Importance = o.importance
-			value.Text = o.value
-			value.Refresh()
-		},
-	)
-	l.OnSelected = func(id widget.ListItemID) {
-		l.UnselectAll()
-	}
-	return l
-}
-
-func makeLocationData(l *app.EveLocation) []infoRow {
-	if l.SolarSystem == nil {
-		return make([]infoRow, 0)
-	}
-	data := []infoRow{
-		{
-			label: "Region",
-			value: l.SolarSystem.Constellation.Region.Name,
-		},
-		{
-			label: "Constellation",
-			value: l.SolarSystem.Constellation.Name},
-		{
-			label: "Solar System",
-			value: l.SolarSystem.Name,
-		},
-		{
-			label:      "Security",
-			value:      fmt.Sprintf("%.1f", l.SolarSystem.SecurityStatus),
-			importance: l.SolarSystem.SecurityType().ToImportance(),
-		},
-	}
-	return data
 }
