@@ -183,7 +183,7 @@ func (a *corporationArea) load(corporation *app.EveEntity) error {
 			return a.StartDate.Compare(b.StartDate)
 		})
 		items = append(items, EntityItem{
-			Category: "Founded",
+			Category: "Corporation Founded",
 			Text:     fmt.Sprintf("**%s**", oldest.StartDate.Format(dateFormat)),
 		})
 		historyList := NewEntityListFromItems(items...)

@@ -100,7 +100,7 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			} else if it.Entity != nil {
 				s = it.Entity.CategoryDisplay()
 			}
-			if it.Entity != nil {
+			if it.Entity != nil && slices.Contains(SupportedCategories(), it.Entity.Category) {
 				icon.Show()
 			} else {
 				icon.Hide()
@@ -118,7 +118,7 @@ func (w *EntitiyList) CreateRenderer() fyne.WidgetRenderer {
 			return
 		}
 		it := w.items[id]
-		if it.Entity != nil && w.ShowEveEntity != nil {
+		if it.Entity != nil && slices.Contains(SupportedCategories(), it.Entity.Category) && w.ShowEveEntity != nil {
 			w.ShowEveEntity(it.Entity)
 		}
 	}

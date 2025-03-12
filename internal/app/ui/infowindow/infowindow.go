@@ -121,3 +121,12 @@ func historyItem2EntityItem(hi app.MembershipHistoryItem) EntityItem {
 	}
 	return NewEntityItem(hi.Organization, text)
 }
+
+func SupportedCategories() []app.EveEntityCategory {
+	return []app.EveEntityCategory{
+		app.EveEntityAlliance,
+		app.EveEntityCharacter,
+		app.EveEntityCorporation,
+		app.EveEntityStation,
+	}
+}
