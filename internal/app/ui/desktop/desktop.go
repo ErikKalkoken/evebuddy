@@ -2,6 +2,7 @@
 package desktop
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -24,6 +25,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 )
 
@@ -91,21 +93,32 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 			}()
 		}
 		go u.statusBarArea.StartUpdateTicker()
-		sc := &desktop.CustomShortcut{
-			KeyName:  fyne.KeyS,
-			Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl + fyne.KeyModifierShift,
-		}
-		u.Window.Canvas().AddShortcut(sc, func(shortcut fyne.Shortcut) {
-			u.Snackbar.Show(fmt.Sprintf(
-				"%s. This is a test snack bar at %s",
-				fake.WordsN(10),
-				time.Now().Format("15:04:05.999999999"),
-			))
-			u.Snackbar.Show(fmt.Sprintf(
-				"This is a test snack bar at %s",
-				time.Now().Format("15:04:05.999999999"),
-			))
-		})
+		u.Window.Canvas().AddShortcut(
+			&desktop.CustomShortcut{
+				KeyName:  fyne.KeyS,
+				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl,
+			},
+			func(fyne.Shortcut) {
+				u.Snackbar.Show(fmt.Sprintf(
+					"%s. This is a test snack bar at %s",
+					fake.WordsN(10),
+					time.Now().Format("15:04:05.999999999"),
+				))
+				u.Snackbar.Show(fmt.Sprintf(
+					"This is a test snack bar at %s",
+					time.Now().Format("15:04:05.999999999"),
+				))
+			})
+		u.Window.Canvas().AddShortcut(
+			&desktop.CustomShortcut{
+				KeyName:  fyne.KeyX,
+				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl,
+			},
+			func(fyne.Shortcut) {
+				iw := infowindow.New(u.EveUniverseService, u.EveImageService, u.Snackbar)
+				ee, _ := u.EveUniverseService.GetOrCreateEveEntityESI(context.Background(), 93330670)
+				iw.ShowEveEntity(ee)
+			})
 	}
 	u.OnAppStopped = func() {
 		u.saveAppState()

@@ -38,31 +38,31 @@ func New(eus *eveuniverse.EveUniverseService, eis app.EveImageService, sb *iwidg
 }
 
 // Show shows a new info window for an EveEntity.
-func (iw InfoWindow) ShowEveEntity(o *app.EveEntity) {
+func (iw InfoWindow) ShowEveEntity(ee *app.EveEntity) {
 	showWindow := func(category string, create func() fyne.CanvasObject) {
 		w := fyne.CurrentApp().NewWindow(fmt.Sprintf("%s: Information", category))
 		w.SetContent(create())
 		w.Resize(fyne.Size{Width: infoWindowWidth, Height: infoWindowHeight})
 		w.Show()
 	}
-	switch o.Category {
+	switch ee.Category {
 	case app.EveEntityAlliance:
 		showWindow("Alliance", func() fyne.CanvasObject {
-			a := newAllianceInfoArea(iw, o.ID)
+			a := newAlliancArea(iw, ee)
 			return a.Content
 		})
 	case app.EveEntityCharacter:
 		showWindow("Character", func() fyne.CanvasObject {
-			a := newCharacterInfoArea(iw, o.ID)
+			a := newCharacterArea(iw, ee)
 			return a.Content
 		})
 	case app.EveEntityCorporation:
 		showWindow("Corporation", func() fyne.CanvasObject {
-			a := newCorporationInfoArea(iw, o.ID)
+			a := newCorporationArea(iw, ee)
 			return a.Content
 		})
 	default:
-		iw.sb.Show(fmt.Sprintf("Can't show info window for %s", o.Category))
+		iw.sb.Show(fmt.Sprintf("Can't show info window for %s", ee.Category))
 	}
 }
 

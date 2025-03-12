@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 
@@ -17,8 +18,8 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-// allianceInfoArea represents an area that shows public information about a character.
-type allianceInfoArea struct {
+// allianceArea represents an area that shows public information about a character.
+type allianceArea struct {
 	Content fyne.CanvasObject
 
 	hq   *kxwidget.TappableLabel
@@ -28,20 +29,18 @@ type allianceInfoArea struct {
 	tabs *container.AppTabs
 }
 
-func newAllianceInfoArea(iw InfoWindow, allianceID int32) *allianceInfoArea {
-	alliance := widget.NewLabel("")
-	alliance.Truncation = fyne.TextTruncateEllipsis
-	corporation := widget.NewLabel("Loading...")
-	corporation.Truncation = fyne.TextTruncateEllipsis
+func newAlliancArea(iw InfoWindow, alliance *app.EveEntity) *allianceArea {
+	name := widget.NewLabel(alliance.Name)
+	name.Truncation = fyne.TextTruncateEllipsis
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
-	corporationLogo := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(defaultIconUnitSize))
+	logo := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(defaultIconUnitSize))
 	s := float32(defaultIconPixelSize) * logoZoomFactor
-	corporationLogo.SetMinSize(fyne.NewSquareSize(s))
-	a := &allianceInfoArea{
+	logo.SetMinSize(fyne.NewSquareSize(s))
+	a := &allianceArea{
 		iw:   iw,
-		name: corporation,
-		logo: corporationLogo,
+		name: name,
+		logo: logo,
 		hq:   hq,
 		tabs: container.NewAppTabs(),
 	}
@@ -50,9 +49,9 @@ func newAllianceInfoArea(iw InfoWindow, allianceID int32) *allianceInfoArea {
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
-		err := a.load(allianceID)
+		err := a.load(alliance.ID)
 		if err != nil {
-			slog.Error("alliance info update failed", "id", allianceID, "error", err)
+			slog.Error("alliance info update failed", "alliance", alliance, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load alliance: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
@@ -61,7 +60,7 @@ func newAllianceInfoArea(iw InfoWindow, allianceID int32) *allianceInfoArea {
 	return a
 }
 
-func (a *allianceInfoArea) load(allianceID int32) error {
+func (a *allianceArea) load(allianceID int32) error {
 	ctx := context.Background()
 	go func() {
 		r, err := a.iw.eis.AllianceLogo(allianceID, defaultIconPixelSize)

@@ -13,14 +13,15 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
 
-// characterInfoArea represents an area that shows public information about a character.
-type characterInfoArea struct {
+// characterArea represents an area that shows public information about a character.
+type characterArea struct {
 	Content fyne.CanvasObject
 
 	alliance        *kxwidget.TappableLabel
@@ -35,11 +36,11 @@ type characterInfoArea struct {
 	iw              InfoWindow
 }
 
-func newCharacterInfoArea(iw InfoWindow, characterID int32) *characterInfoArea {
+func newCharacterArea(iw InfoWindow, character *app.EveEntity) *characterArea {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Truncation = fyne.TextTruncateEllipsis
-	character := widget.NewLabel("Loading...")
-	character.Truncation = fyne.TextTruncateEllipsis
+	name := widget.NewLabel(character.Name)
+	name.Truncation = fyne.TextTruncateEllipsis
 	corporation := kxwidget.NewTappableLabel("", nil)
 	corporation.Truncation = fyne.TextTruncateEllipsis
 	portrait := kxwidget.NewTappableImage(icon.Characterplaceholder64Jpeg, nil)
@@ -47,13 +48,13 @@ func newCharacterInfoArea(iw InfoWindow, characterID int32) *characterInfoArea {
 	portrait.SetMinSize(fyne.NewSquareSize(128))
 	title := widget.NewLabel("")
 	title.Truncation = fyne.TextTruncateEllipsis
-	a := &characterInfoArea{
+	a := &characterArea{
 		alliance:        alliance,
 		corporation:     corporation,
 		corporationLogo: iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(defaultIconUnitSize)),
 		iw:              iw,
 		membership:      widget.NewLabel(""),
-		name:            character,
+		name:            name,
 		portrait:        portrait,
 		security:        widget.NewLabel(""),
 		tabs:            container.NewAppTabs(),
@@ -82,9 +83,9 @@ func newCharacterInfoArea(iw InfoWindow, characterID int32) *characterInfoArea {
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
-		err := a.load(characterID)
+		err := a.load(character)
 		if err != nil {
-			slog.Error("character info update failed", "characterID", characterID, "error", err)
+			slog.Error("character info update failed", "character", character, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load character: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
@@ -93,17 +94,17 @@ func newCharacterInfoArea(iw InfoWindow, characterID int32) *characterInfoArea {
 	return a
 }
 
-func (a *characterInfoArea) load(characterID int32) error {
+func (a *characterArea) load(character *app.EveEntity) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.eis.CharacterPortrait(characterID, 256)
+		r, err := a.iw.eis.CharacterPortrait(character.ID, 256)
 		if err != nil {
-			slog.Error("character info: Failed to load portrait", "charaterID", characterID, "error", err)
+			slog.Error("character info: Failed to load portrait", "charaterID", character, "error", err)
 			return
 		}
 		a.portrait.SetResource(r)
 	}()
-	c, err := a.iw.eus.GetEveCharacterESI(ctx, characterID)
+	c, err := a.iw.eus.GetEveCharacterESI(ctx, character.ID)
 	if err != nil {
 		return err
 	}
@@ -122,7 +123,7 @@ func (a *characterInfoArea) load(characterID int32) error {
 		a.iw.ShowEveEntity(c.Corporation)
 	}
 	a.portrait.OnTapped = func() {
-		showZoomWindow(c.Name, characterID, a.iw.eis.CharacterPortrait)
+		showZoomWindow(c.Name, character.ID, a.iw.eis.CharacterPortrait)
 	}
 	bioText := c.DescriptionPlain()
 	if bioText != "" {
@@ -142,16 +143,16 @@ func (a *characterInfoArea) load(characterID int32) error {
 	go func() {
 		r, err := a.iw.eis.CorporationLogo(c.Corporation.ID, defaultIconPixelSize)
 		if err != nil {
-			slog.Error("character info: Failed to load corp logo", "charaterID", characterID, "error", err)
+			slog.Error("character info: Failed to load corp logo", "charaterID", character, "error", err)
 			return
 		}
 		a.corporationLogo.Resource = r
 		a.corporationLogo.Refresh()
 	}()
 	go func() {
-		history, err := a.iw.eus.GetCharacterCorporationHistory(ctx, characterID)
+		history, err := a.iw.eus.GetCharacterCorporationHistory(ctx, character.ID)
 		if err != nil {
-			slog.Error("character info: Failed to load corporation history", "charaterID", characterID, "error", err)
+			slog.Error("character info: Failed to load corporation history", "charaterID", character, "error", err)
 			return
 		}
 		if len(history) == 0 {

@@ -21,8 +21,8 @@ import (
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
-// corporationInfoArea represents an area that shows public information about a character.
-type corporationInfoArea struct {
+// corporationArea represents an area that shows public information about a character.
+type corporationArea struct {
 	Content         fyne.CanvasObject
 	iw              InfoWindow
 	alliance        *kxwidget.TappableLabel
@@ -33,20 +33,20 @@ type corporationInfoArea struct {
 	tabs            *container.AppTabs
 }
 
-func newCorporationInfoArea(iw InfoWindow, corporationID int32) *corporationInfoArea {
+func newCorporationArea(iw InfoWindow, corporation *app.EveEntity) *corporationArea {
 	alliance := kxwidget.NewTappableLabel("", nil)
 	alliance.Truncation = fyne.TextTruncateEllipsis
-	corporation := widget.NewLabel("Loading...")
-	corporation.Truncation = fyne.TextTruncateEllipsis
+	name := widget.NewLabel(corporation.Name)
+	name.Truncation = fyne.TextTruncateEllipsis
 	hq := kxwidget.NewTappableLabel("", nil)
 	hq.Truncation = fyne.TextTruncateEllipsis
 	corporationLogo := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(defaultIconUnitSize))
 	s := float32(defaultIconPixelSize) * logoZoomFactor
 	corporationLogo.SetMinSize(fyne.NewSquareSize(s))
-	a := &corporationInfoArea{
+	a := &corporationArea{
 		alliance:        alliance,
 		allianceLogo:    iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(defaultIconUnitSize)),
-		name:            corporation,
+		name:            name,
 		corporationLogo: corporationLogo,
 		hq:              hq,
 		tabs:            container.NewAppTabs(),
@@ -68,9 +68,9 @@ func newCorporationInfoArea(iw InfoWindow, corporationID int32) *corporationInfo
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
 	go func() {
-		err := a.load(corporationID)
+		err := a.load(corporation)
 		if err != nil {
-			slog.Error("corporation info update failed", "id", corporationID, "error", err)
+			slog.Error("corporation info update failed", "corporation", corporation, "error", err)
 			a.name.Text = fmt.Sprintf("ERROR: Failed to load corporation: %s", ihumanize.Error(err))
 			a.name.Importance = widget.DangerImportance
 			a.name.Refresh()
@@ -79,18 +79,18 @@ func newCorporationInfoArea(iw InfoWindow, corporationID int32) *corporationInfo
 	return a
 }
 
-func (a *corporationInfoArea) load(corporationID int32) error {
+func (a *corporationArea) load(corporation *app.EveEntity) error {
 	ctx := context.Background()
 	go func() {
-		r, err := a.iw.eis.CorporationLogo(corporationID, defaultIconPixelSize)
+		r, err := a.iw.eis.CorporationLogo(corporation.ID, defaultIconPixelSize)
 		if err != nil {
-			slog.Error("corporation info: Failed to load logo", "corporationID", corporationID, "error", err)
+			slog.Error("corporation info: Failed to load logo", "corporationID", corporation, "error", err)
 			return
 		}
 		a.corporationLogo.Resource = r
 		a.corporationLogo.Refresh()
 	}()
-	o, err := a.iw.eus.GetEveCorporationESI(ctx, corporationID)
+	o, err := a.iw.eus.GetEveCorporationESI(ctx, corporation.ID)
 	if err != nil {
 		return err
 	}
@@ -165,9 +165,9 @@ func (a *corporationInfoArea) load(corporationID int32) error {
 	a.tabs.Append(container.NewTabItem("Attributes", attributeList))
 	a.tabs.Refresh()
 	go func() {
-		history, err := a.iw.eus.GetCorporationAllianceHistory(ctx, corporationID)
+		history, err := a.iw.eus.GetCorporationAllianceHistory(ctx, corporation.ID)
 		if err != nil {
-			slog.Error("corporation info: Failed to load alliance history", "corporationID", corporationID, "error", err)
+			slog.Error("corporation info: Failed to load alliance history", "corporationID", corporation, "error", err)
 			return
 		}
 		if len(history) == 0 {
