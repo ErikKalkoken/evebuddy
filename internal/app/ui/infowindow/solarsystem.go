@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
@@ -54,15 +55,18 @@ func newSolarSystemArea(iw InfoWindow, solarSystemID int32, w fyne.Window) *sola
 		tabs:          container.NewAppTabs(),
 		w:             w,
 	}
-	colums := kxlayout.NewColumns(100)
-	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
-		a.name,
-		widget.NewLabel("Solar System"),
-		layout.NewSpacer(),
-		container.New(colums, widget.NewLabel("Region"), a.region),
-		container.New(colums, widget.NewLabel("Constellation"), a.constellation),
-		container.New(colums, widget.NewLabel("Security"), a.security),
-	)
+	colums := kxlayout.NewColumns(120)
+	p := theme.Padding()
+	main := container.NewVBox(
+		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
+			a.name,
+			widget.NewLabel("Solar System"),
+		),
+		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
+			container.New(colums, widget.NewLabel("Region"), a.region),
+			container.New(colums, widget.NewLabel("Constellation"), a.constellation),
+			container.New(colums, widget.NewLabel("Security"), a.security),
+		))
 	top := container.NewBorder(nil, nil, container.NewVBox(a.logo), nil, main)
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
 
@@ -111,26 +115,30 @@ func (a *solarSystemArea) load(solarSystemID int32) error {
 	a.security.Importance = o.System.SecurityType().ToImportance()
 	a.security.Refresh()
 
-	stations := NewEntityListFromEntities(a.iw.Show, o.Stations...)
-	a.tabs.Append(container.NewTabItem("Stations", stations))
-	xx := slices.Collect(xiter.MapSlice(o.Structures, func(x *app.EveLocation) EntityItem {
-		return EntityItem{
-			ID:       x.ID,
-			Text:     x.Name,
-			Category: "Structure",
-			Variant:  Location,
-		}
-	}))
-	structures := NewEntityListFromItems(a.iw.Show, xx...)
-	note := widget.NewLabel("Only contains structures known through characters")
-	note.Importance = widget.LowImportance
-	a.tabs.Append(container.NewTabItem("Structures", container.NewBorder(
-		nil,
-		note,
-		nil,
-		nil,
-		structures,
-	)))
+	if len(o.Stations) > 0 {
+		stations := NewEntityListFromEntities(a.iw.Show, o.Stations...)
+		a.tabs.Append(container.NewTabItem("Stations", stations))
+	}
+	if len(o.Structures) > 0 {
+		xx := slices.Collect(xiter.MapSlice(o.Structures, func(x *app.EveLocation) EntityItem {
+			return EntityItem{
+				ID:       x.ID,
+				Text:     x.Name,
+				Category: "Structure",
+				Variant:  Location,
+			}
+		}))
+		structures := NewEntityListFromItems(a.iw.Show, xx...)
+		note := widget.NewLabel("Only contains structures known through characters")
+		note.Importance = widget.LowImportance
+		a.tabs.Append(container.NewTabItem("Structures", container.NewBorder(
+			nil,
+			note,
+			nil,
+			nil,
+			structures,
+		)))
+	}
 	a.tabs.Refresh()
 	return nil
 }

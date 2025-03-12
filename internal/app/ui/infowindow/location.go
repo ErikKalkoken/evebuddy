@@ -109,8 +109,9 @@ func (a *locationArea) load(locationID int64) error {
 			fmt.Sprintf("%.1f %s", o.SolarSystem.SecurityStatus, o.SolarSystem.Name),
 		),
 	)
-	a.tabs.Append(container.NewTabItem("Location", el))
-	a.tabs.SelectIndex(1)
+	locationTab := container.NewTabItem("Location", el)
+	a.tabs.Append(locationTab)
+	a.tabs.Select(locationTab)
 	a.tabs.Refresh()
 	go func() {
 		r, err := a.iw.eis.CorporationLogo(o.Owner.ID, defaultIconPixelSize)

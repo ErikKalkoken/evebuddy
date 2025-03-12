@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
@@ -53,10 +54,12 @@ func newCorporationArea(iw InfoWindow, corporationID int32, w fyne.Window) *corp
 		iw:           iw,
 		w:            w,
 	}
-
-	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
-		a.name,
-		a.hq,
+	p := theme.Padding()
+	main := container.NewVBox(
+		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
+			a.name,
+			a.hq,
+		),
 		container.NewBorder(
 			nil,
 			nil,
@@ -163,8 +166,9 @@ func (a *corporationArea) load(corporationID int32) error {
 	attributeList := NewAttributeList()
 	attributeList.ShowInfoWindow = a.iw.ShowEveEntity
 	attributeList.Set(attributes)
-	a.tabs.Append(container.NewTabItem("Attributes", attributeList))
-	a.tabs.Refresh()
+	attributesTab := container.NewTabItem("Attributes", attributeList)
+	a.tabs.Append(attributesTab)
+	a.tabs.Select(attributesTab)
 	go func() {
 		history, err := a.iw.eus.GetCorporationAllianceHistory(ctx, corporationID)
 		if err != nil {

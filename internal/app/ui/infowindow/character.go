@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
 
@@ -63,24 +64,28 @@ func newCharacterArea(iw InfoWindow, characterID int32, w fyne.Window) *characte
 		title:           title,
 		w:               w,
 	}
-
-	main := container.New(layout.NewCustomPaddedVBoxLayout(0),
-		a.name,
-		a.title,
+	p := theme.Padding()
+	main := container.NewVBox(
+		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
+			a.name,
+			a.title,
+		),
 		container.NewBorder(
 			nil,
 			nil,
 			a.corporationLogo,
 			nil,
 			container.New(
-				layout.NewCustomPaddedVBoxLayout(0),
+				layout.NewCustomPaddedVBoxLayout(-2*p),
 				a.corporation,
 				a.membership,
 			),
 		),
 		widget.NewSeparator(),
-		a.alliance,
-		a.security,
+		container.New(layout.NewCustomPaddedVBoxLayout(-2*p),
+			a.alliance,
+			a.security,
+		),
 	)
 	top := container.NewBorder(nil, nil, container.NewVBox(a.portrait), nil, main)
 	a.Content = container.NewBorder(top, nil, nil, nil, a.tabs)
