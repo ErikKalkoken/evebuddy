@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"context"
+	"slices"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage/testutil"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 func TestLocation(t *testing.T) {
@@ -117,6 +119,22 @@ func TestLocation(t *testing.T) {
 		if assert.NoError(t, err) {
 			want := []*app.EveLocation{l1, l2}
 			assert.Equal(t, want, got)
+		}
+	})
+	t.Run("can list locations in solar system", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		s := factory.CreateEveSolarSystem()
+		l1 := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{EveSolarSystemID: optional.New(s.ID)})
+		l2 := factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{EveSolarSystemID: optional.New(s.ID)})
+		factory.CreateLocationStructure()
+		// when
+		got, err := r.ListEveLocationInSolarSystem(ctx, s.ID)
+		if assert.NoError(t, err) {
+			gotIDs := slices.Collect(xiter.MapSlice(got, func(x *app.EveLocation) int64 {
+				return x.ID
+			}))
+			assert.ElementsMatch(t, []int64{l1.ID, l2.ID}, gotIDs)
 		}
 	})
 	t.Run("can return IDs of missing locations", func(t *testing.T) {

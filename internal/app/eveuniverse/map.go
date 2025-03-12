@@ -6,18 +6,14 @@ import (
 	"slices"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
-type Planet struct {
-	AsteroidBelts []int32
-	Moons         []int32
-	ID            int32
-}
-
 type SolarSystemPlus struct {
-	System   *app.EveSolarSystem
-	Stations []*app.EveEntity
-	StarID   int32
+	System     *app.EveSolarSystem
+	Stations   []*app.EveEntity
+	Structures []*app.EveLocation
+	StarID     int32
 }
 
 func (s *EveUniverseService) GetOrCreateEveSolarSystemESI2(ctx context.Context, solarSystemID int32) (SolarSystemPlus, error) {
@@ -47,6 +43,13 @@ func (s *EveUniverseService) GetOrCreateEveSolarSystemESI2(ctx context.Context, 
 	slices.SortFunc(r.Stations, func(a, b *app.EveEntity) int {
 		return cmp.Compare(a.Name, b.Name)
 	})
+	xx, err := s.st.ListEveLocationInSolarSystem(ctx, solarSystemID)
+	if err != nil {
+		return r, err
+	}
+	r.Structures = slices.Collect(xiter.FilterSlice(xx, func(x *app.EveLocation) bool {
+		return x.Variant() == app.EveLocationStructure
+	}))
 	return r, nil
 }
 
