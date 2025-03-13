@@ -51,7 +51,7 @@ type SkillCatalogueArea struct {
 	u              *BaseUI
 }
 
-func (u *BaseUI) NewSkillCatalogueArea() *SkillCatalogueArea {
+func NewSkillCatalogueArea(u *BaseUI) *SkillCatalogueArea {
 	a := &SkillCatalogueArea{
 		groups:         make([]skillGroupProgress, 0),
 		levelBlocked:   theme.NewErrorThemedResource(theme.MediaStopIcon()),
@@ -179,7 +179,7 @@ func (a *SkillCatalogueArea) makeSkillsGrid() fyne.CanvasObject {
 				return
 			}
 			skill := a.skills[id]
-			a.u.ShowTypeInfoWindow(skill.id, a.u.CharacterID(), DescriptionTab)
+			a.u.ShowTypeInfoWindow(skill.id)
 		}
 	}
 	return makeGridOrList(a.u.IsMobile(), length, makeCreateItem, updateItem, makeOnSelected)

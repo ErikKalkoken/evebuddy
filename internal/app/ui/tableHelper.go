@@ -36,7 +36,7 @@ func makeDataTableForDesktop[S ~[]E, E any](
 	headers []headerDef,
 	data *S,
 	makeLabel func(int, E) (string, fyne.TextAlign, widget.Importance),
-	onSelected func(E),
+	onSelected func(int, E),
 ) *widget.Table {
 	t := widget.NewTable(
 		func() (rows int, cols int) {
@@ -73,7 +73,7 @@ func makeDataTableForDesktop[S ~[]E, E any](
 				return
 			}
 			r := (*data)[tci.Row]
-			onSelected(r)
+			onSelected(tci.Col, r)
 		}
 	}
 	for i, h := range headers {

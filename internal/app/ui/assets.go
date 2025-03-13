@@ -82,7 +82,7 @@ type AssetsArea struct {
 	u                *BaseUI
 }
 
-func (u *BaseUI) NewAssetsArea() *AssetsArea {
+func NewAssetsArea(u *BaseUI) *AssetsArea {
 	lp := widget.NewLabel("")
 	lp.Wrapping = fyne.TextWrapWord
 	a := AssetsArea{
@@ -214,16 +214,16 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 		},
 		func() fyne.CanvasObject {
 			return appwidget.NewAsset(func(image *canvas.Image, ca *app.CharacterAsset) {
-				RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
+				appwidget.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
 					switch ca.Variant() {
 					case app.VariantSKIN:
-						return a.u.EveImageService.InventoryTypeSKIN(ca.EveType.ID, DefaultIconPixelSize)
+						return a.u.EveImageService.InventoryTypeSKIN(ca.EveType.ID, app.IconPixelSize)
 					case app.VariantBPO:
-						return a.u.EveImageService.InventoryTypeBPO(ca.EveType.ID, DefaultIconPixelSize)
+						return a.u.EveImageService.InventoryTypeBPO(ca.EveType.ID, app.IconPixelSize)
 					case app.VariantBPC:
-						return a.u.EveImageService.InventoryTypeBPC(ca.EveType.ID, DefaultIconPixelSize)
+						return a.u.EveImageService.InventoryTypeBPC(ca.EveType.ID, app.IconPixelSize)
 					default:
-						return a.u.EveImageService.InventoryTypeIcon(ca.EveType.ID, DefaultIconPixelSize)
+						return a.u.EveImageService.InventoryTypeIcon(ca.EveType.ID, app.IconPixelSize)
 					}
 				})
 			})
@@ -260,7 +260,7 @@ func (a *AssetsArea) makeAssetGrid() *widget.GridWrap {
 				}
 			}
 		} else {
-			a.u.ShowTypeInfoWindow(ca.EveType.ID, a.u.CharacterID(), DescriptionTab)
+			a.u.ShowTypeInfoWindow(ca.EveType.ID)
 		}
 	}
 	return g

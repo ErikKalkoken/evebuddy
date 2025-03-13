@@ -18,6 +18,7 @@ import (
 	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 	kmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/character"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
@@ -43,7 +44,7 @@ type AccountArea struct {
 	u          *BaseUI
 }
 
-func (u *BaseUI) NewAccountArea() *AccountArea {
+func NewAccountArea(u *BaseUI) *AccountArea {
 	a := &AccountArea{
 		characters: make([]accountCharacter, 0),
 		snackbar:   u.Snackbar,
@@ -97,7 +98,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 		func() fyne.CanvasObject {
 			portrait := iwidget.NewImageFromResource(
 				icon.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(DefaultIconUnitSize),
+				fyne.NewSquareSize(app.IconUnitSize),
 			)
 			name := widget.NewLabel("Template")
 			button := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {})
@@ -153,7 +154,7 @@ func (a *AccountArea) makeCharacterList() *widget.List {
 }
 
 func (a *AccountArea) showDeleteDialog(c accountCharacter) {
-	d1 := NewConfirmDialog(
+	d1 := iwidget.NewConfirmDialog(
 		"Delete Character",
 		fmt.Sprintf("Are you sure you want to delete %s with all it's locally stored data?", c.name),
 		"Delete",
@@ -249,7 +250,7 @@ func (a *AccountArea) ShowAddCharacterDialog() {
 		d1.Hide()
 		if err != nil {
 			slog.Error("Failed to add a new character", "error", err)
-			d2 := NewErrorDialog("Failed add a new character", err, a.window)
+			d2 := iwidget.NewErrorDialog("Failed add a new character", err, a.window)
 			d2.Show()
 		}
 	}()

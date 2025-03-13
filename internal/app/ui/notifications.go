@@ -47,7 +47,7 @@ type NotificationsArea struct {
 	u                *BaseUI
 }
 
-func (u *BaseUI) NewNotificationsArea() *NotificationsArea {
+func NewNotificationsArea(u *BaseUI) *NotificationsArea {
 	a := NotificationsArea{
 		Groups:           make([]NotificationGroup, 0),
 		notifications:    make([]*app.CharacterNotification, 0),
@@ -124,7 +124,7 @@ func (a *NotificationsArea) makeNotificationList() *widget.List {
 			return len(a.notifications)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewMailHeaderItem(a.u.EveImageService, app.TimeDefaultFormat)
+			return appwidget.NewMailHeaderItem(a.u.EveImageService)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.notifications) {
@@ -259,6 +259,7 @@ func (a *NotificationsArea) clearDetail() {
 	a.current = nil
 }
 
+// TODO: Refactor to avoid recreating the container every time
 func (a *NotificationsArea) setDetail(n *app.CharacterNotification) {
 	if n.RecipientName == "" && a.u.HasCharacter() {
 		n.RecipientName = a.u.CurrentCharacter().EveCharacter.Name
@@ -267,7 +268,9 @@ func (a *NotificationsArea) setDetail(n *app.CharacterNotification) {
 	subject := iwidget.NewLabelWithSize(n.TitleDisplay(), theme.SizeNameSubHeadingText)
 	subject.Wrapping = fyne.TextWrapWord
 	a.Detail.Add(subject)
-	a.Detail.Add(widget.NewLabel(n.Header()))
+	h := appwidget.NewMailHeader(a.u.ShowEveEntityInfoWindow)
+	h.Set(a.u.EveImageService, n.Sender, n.Timestamp, a.u.CurrentCharacter().EveCharacter.ToEveEntity())
+	a.Detail.Add(h)
 	body := widget.NewRichTextFromMarkdown(markdownStripLinks(n.Body.ValueOrZero()))
 	body.Wrapping = fyne.TextWrapWord
 	if n.Body.IsEmpty() {

@@ -15,6 +15,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
@@ -57,7 +58,7 @@ type JumpClonesArea struct {
 	u          *BaseUI
 }
 
-func (u *BaseUI) NewJumpClonesArea() *JumpClonesArea {
+func NewJumpClonesArea(u *BaseUI) *JumpClonesArea {
 	a := JumpClonesArea{
 		top:      makeTopLabel(),
 		treeData: fynetree.New[jumpCloneNode](),
@@ -80,7 +81,7 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 		func(branch bool) fyne.CanvasObject {
 			iconMain := iwidget.NewImageFromResource(
 				icon.Characterplaceholder64Jpeg,
-				fyne.NewSquareSize(DefaultIconUnitSize),
+				fyne.NewSquareSize(app.IconUnitSize),
 			)
 			main := widget.NewLabel("Template")
 			main.Truncation = fyne.TextTruncateEllipsis
@@ -130,12 +131,12 @@ func (a *JumpClonesArea) makeTree() *widget.Tree {
 				prefix.Show()
 				spacer.Show()
 			} else {
-				RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
-					return a.u.EveImageService.InventoryTypeIcon(n.ImplantTypeID, DefaultIconPixelSize)
+				appwidget.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
+					return a.u.EveImageService.InventoryTypeIcon(n.ImplantTypeID, app.IconPixelSize)
 				})
 				main.SetText(n.ImplantTypeName)
 				iconInfo.OnTapped = func() {
-					a.u.ShowTypeInfoWindow(n.ImplantTypeID, a.u.CharacterID(), DescriptionTab)
+					a.u.ShowTypeInfoWindow(n.ImplantTypeID)
 				}
 				prefix.Hide()
 				spacer.Hide()

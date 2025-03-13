@@ -58,7 +58,7 @@ func (cn *CharacterNotification) Header() string {
 		"From: %s\n"+
 			"Sent: %s",
 		cn.Sender.Name,
-		cn.Timestamp.Format(TimeDefaultFormat),
+		cn.Timestamp.Format(DateTimeFormat),
 	)
 	if cn.RecipientName != "" {
 		s += fmt.Sprintf("\nTo: %s", cn.RecipientName)

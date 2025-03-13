@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -12,64 +11,56 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
 )
-
-type walletTransaction struct {
-	client    string
-	date      time.Time
-	location  string
-	quantity  int32
-	total     float64
-	eveType   string
-	unitPrice float64
-}
 
 // WalletTransactionArea is the UI area that shows the skillqueue
 type WalletTransactionArea struct {
 	Content fyne.CanvasObject
 
-	rows []walletTransaction
+	rows []*app.CharacterWalletTransaction
 	body fyne.CanvasObject
 	top  *widget.Label
 	u    *BaseUI
 }
 
-func (u *BaseUI) NewWalletTransactionArea() *WalletTransactionArea {
+func NewWalletTransactionArea(u *BaseUI) *WalletTransactionArea {
 	a := WalletTransactionArea{
 		top:  makeTopLabel(),
-		rows: make([]walletTransaction, 0),
+		rows: make([]*app.CharacterWalletTransaction, 0),
 		u:    u,
 	}
-	makeDataLabel := func(col int, w walletTransaction) (string, fyne.TextAlign, widget.Importance) {
+	makeDataLabel := func(col int, r *app.CharacterWalletTransaction) (string, fyne.TextAlign, widget.Importance) {
 		var align fyne.TextAlign
 		var importance widget.Importance
 		var text string
 		switch col {
 		case 0:
-			text = w.date.Format(app.TimeDefaultFormat)
+			text = r.Date.Format(app.DateTimeFormat)
 		case 1:
 			align = fyne.TextAlignTrailing
-			text = humanize.Comma(int64(w.quantity))
+			text = humanize.Comma(int64(r.Quantity))
 		case 2:
-			text = w.eveType
+			text = r.EveType.Name
 		case 3:
 			align = fyne.TextAlignTrailing
-			text = humanize.FormatFloat(MyFloatFormat, w.unitPrice)
+			text = humanize.FormatFloat(app.FloatFormat, r.UnitPrice)
 		case 4:
+			total := r.UnitPrice * float64(r.Quantity)
 			align = fyne.TextAlignTrailing
-			text = humanize.FormatFloat(MyFloatFormat, w.total)
+			text = humanize.FormatFloat(app.FloatFormat, total)
 			switch {
-			case w.total < 0:
+			case total < 0:
 				importance = widget.DangerImportance
-			case w.total > 0:
+			case total > 0:
 				importance = widget.SuccessImportance
 			default:
 				importance = widget.MediumImportance
 			}
 		case 5:
-			text = w.client
+			text = r.Client.Name
 		case 6:
-			text = w.location
+			text = r.Location.Name
 		}
 		return text, align, importance
 	}
@@ -83,9 +74,20 @@ func (u *BaseUI) NewWalletTransactionArea() *WalletTransactionArea {
 		{"Where", 250},
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, nil)
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(column int, r *app.CharacterWalletTransaction) {
+			switch column {
+			case 2:
+				a.u.ShowTypeInfoWindow(r.EveType.ID)
+			case 5:
+				a.u.ShowEveEntityInfoWindow(r.Client)
+			case 6:
+				a.u.ShowInfoWindow(infowindow.Location, r.Location.ID)
+			}
+		})
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, nil)
+		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, func(r *app.CharacterWalletTransaction) {
+			a.u.ShowTypeInfoWindow(r.EveType.ID)
+		})
 	}
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
@@ -124,7 +126,7 @@ func (a *WalletTransactionArea) makeTopText() (string, widget.Importance) {
 
 func (a *WalletTransactionArea) updateEntries() error {
 	if !a.u.HasCharacter() {
-		a.rows = make([]walletTransaction, 0)
+		a.rows = make([]*app.CharacterWalletTransaction, 0)
 		return nil
 	}
 	characterID := a.u.CharacterID()
@@ -132,21 +134,6 @@ func (a *WalletTransactionArea) updateEntries() error {
 	if err != nil {
 		return err
 	}
-	transactions := make([]walletTransaction, len(ww))
-	for i, w := range ww {
-		var tx walletTransaction
-		tx.client = w.Client.Name
-		tx.date = w.Date
-		tx.eveType = w.EveType.Name
-		tx.location = w.Location.Name
-		tx.quantity = w.Quantity
-		tx.unitPrice = w.UnitPrice
-		tx.total = w.UnitPrice * float64(w.Quantity)
-		if w.IsBuy {
-			tx.total *= -1
-		}
-		transactions[i] = tx
-	}
-	a.rows = transactions
+	a.rows = ww
 	return nil
 }

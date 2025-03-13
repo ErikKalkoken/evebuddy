@@ -71,6 +71,22 @@ func (st *Storage) ListEveLocation(ctx context.Context) ([]*app.EveLocation, err
 	return oo, nil
 }
 
+func (st *Storage) ListEveLocationInSolarSystem(ctx context.Context, solarSystemID int32) ([]*app.EveLocation, error) {
+	rows, err := st.q.ListEveLocationsInSolarSystem(ctx, sql.NullInt64{Int64: int64(solarSystemID), Valid: true})
+	if err != nil {
+		return nil, fmt.Errorf("list eve locations in solar system: %w", err)
+	}
+	oo := make([]*app.EveLocation, len(rows))
+	for i, r := range rows {
+		o, err := st.eveLocationFromDBModel(ctx, r)
+		if err != nil {
+			return nil, err
+		}
+		oo[i] = o
+	}
+	return oo, nil
+}
+
 func (st *Storage) MissingEveLocations(ctx context.Context, ids []int64) ([]int64, error) {
 	currentIDs, err := st.q.ListLocationIDs(ctx)
 	if err != nil {

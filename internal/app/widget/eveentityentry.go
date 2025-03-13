@@ -31,7 +31,8 @@ const (
 type EveEntityEntry struct {
 	widget.DisableableWidget
 
-	Placeholder string
+	Placeholder    string
+	ShowInfoWindow func(*app.EveEntity)
 
 	eis         app.EveImageService
 	field       *canvas.Rectangle
@@ -148,30 +149,32 @@ func (w *EveEntityEntry) update() {
 				label = layout.NewSpacer()
 			}
 			badge := newEveEntityBadge(ee, w.eis, nil)
-			if isDisabled {
-				badge.Disable()
-			} else {
-				badge.OnTapped = func() {
-					s := fmt.Sprintf("%s (%s)", ee.Name, ee.CategoryDisplay())
-					name := fyne.NewMenuItem(s, nil)
-					// name.Icon = fetchImage(w.eis, ee, w.FallbackIcon)
-					name.Disabled = true
-					remove := fyne.NewMenuItem("Remove", func() {
-						w.Remove(ee.ID)
-					})
-					remove.Icon = theme.DeleteIcon()
-					menu := fyne.NewMenu("",
-						name,
-						fyne.NewMenuItemSeparator(),
-						remove,
-					)
-					pm := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(badge))
-					pm.ShowAtRelativePosition(fyne.Position{}, badge)
-					// go func() {
-					// 	title.Icon = fetchImage(w.eis, ee, w.FallbackIcon)
-					// 	pm.Refresh()
-					// }()
+			badge.OnTapped = func() {
+				s := fmt.Sprintf("%s (%s)", ee.Name, ee.CategoryDisplay())
+				nameItem := fyne.NewMenuItem(s, nil)
+				nameItem.Icon = icon.Questionmark32Png
+				if ee.Category == app.EveEntityCharacter && w.ShowInfoWindow != nil {
+					nameItem.Action = func() {
+						w.ShowInfoWindow(ee)
+					}
 				}
+				removeItem := fyne.NewMenuItem("Remove", func() {
+					w.Remove(ee.ID)
+				})
+				removeItem.Icon = theme.DeleteIcon()
+				removeItem.Disabled = isDisabled
+				menu := fyne.NewMenu("", nameItem, fyne.NewMenuItemSeparator(), removeItem)
+				pm := widget.NewPopUpMenu(menu, fyne.CurrentApp().Driver().CanvasForObject(badge))
+				pm.ShowAtRelativePosition(fyne.Position{}, badge)
+				go func() {
+					res, err := FetchEveEntityAvatar(w.eis, ee, icon.Questionmark32Png)
+					if err != nil {
+						slog.Error("fetch eve entity avatar", "error", err)
+						return
+					}
+					nameItem.Icon = res
+					pm.Refresh()
+				}()
 			}
 			w.main.Add(container.New(colums, label, badge))
 		}

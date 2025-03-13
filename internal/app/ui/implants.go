@@ -14,6 +14,7 @@ import (
 
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
+	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 	kxwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
@@ -28,7 +29,7 @@ type ImplantsArea struct {
 	u        *BaseUI
 }
 
-func (u *BaseUI) NewImplantsArea() *ImplantsArea {
+func NewImplantsArea(u *BaseUI) *ImplantsArea {
 	a := ImplantsArea{
 		implants: make([]*app.CharacterImplant, 0),
 		top:      makeTopLabel(),
@@ -77,12 +78,12 @@ func (a *ImplantsArea) makeImplantList() *widget.List {
 			slot := vbox[1].(*fyne.Container).Objects[0].(*widget.Label)
 			slot.SetText(fmt.Sprintf("Slot %d", o.SlotNum))
 			iconMain := row[1].(*canvas.Image)
-			RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
-				return a.u.EveImageService.InventoryTypeIcon(o.EveType.ID, DefaultIconPixelSize)
+			appwidget.RefreshImageResourceAsync(iconMain, func() (fyne.Resource, error) {
+				return a.u.EveImageService.InventoryTypeIcon(o.EveType.ID, app.IconPixelSize)
 			})
 			iconInfo := row[2].(*kxwidget.TappableIcon)
 			iconInfo.OnTapped = func() {
-				a.u.ShowTypeInfoWindow(o.EveType.ID, a.u.CharacterID(), DescriptionTab)
+				a.u.ShowTypeInfoWindow(o.EveType.ID)
 			}
 		})
 

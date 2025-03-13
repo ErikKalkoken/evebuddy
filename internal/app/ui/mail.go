@@ -100,7 +100,7 @@ type MailArea struct {
 	folderData    *fynetree.FyneTree[FolderNode]
 	folderSection fyne.CanvasObject
 	folderTree    *widget.Tree
-	header        *widget.Label
+	header        *appwidget.MailHeader
 	headerList    *widget.List
 	headers       []*app.CharacterMailHeader
 	headerTop     *widget.Label
@@ -113,11 +113,11 @@ type MailArea struct {
 	u             *BaseUI
 }
 
-func (u *BaseUI) NewMailArea() *MailArea {
+func NewMailArea(u *BaseUI) *MailArea {
 	a := &MailArea{
 		body:       widget.NewLabel(""),
 		folderData: fynetree.New[FolderNode](),
-		header:     widget.NewLabel(""),
+		header:     appwidget.NewMailHeader(u.ShowEveEntityInfoWindow),
 		headers:    make([]*app.CharacterMailHeader, 0),
 		headerTop:  widget.NewLabel(""),
 		subject:    iwidget.NewLabelWithSize("", theme.SizeNameSubHeadingText),
@@ -128,7 +128,6 @@ func (u *BaseUI) NewMailArea() *MailArea {
 	a.toolbar = a.makeToolbar()
 	a.toolbar.Hide()
 	a.subject.Truncation = fyne.TextTruncateClip
-	a.header.Truncation = fyne.TextTruncateClip
 	a.body.Wrapping = fyne.TextWrapWord
 	a.Detail = container.NewBorder(container.NewVBox(a.subject, a.header), nil, nil, nil, container.NewVScroll(a.body))
 	detailWithToolbar := container.NewBorder(a.toolbar, nil, nil, nil, a.Detail)
@@ -224,7 +223,7 @@ func (a *MailArea) Refresh() {
 	if err != nil {
 		t := "Failed to build folder tree"
 		slog.Error(t, "character", characterID, "error", err)
-		d := NewErrorDialog(t, err, a.u.Window)
+		d := iwidget.NewErrorDialog(t, err, a.u.Window)
 		d.Show()
 		return
 	}
@@ -399,7 +398,7 @@ func (a *MailArea) makeHeaderList() *widget.List {
 			return len(a.headers)
 		},
 		func() fyne.CanvasObject {
-			return appwidget.NewMailHeaderItem(a.u.EveImageService, app.TimeDefaultFormat)
+			return appwidget.NewMailHeaderItem(a.u.EveImageService)
 		},
 		func(id widget.ListItemID, co fyne.CanvasObject) {
 			if id >= len(a.headers) {
@@ -529,7 +528,7 @@ func (a *MailArea) MakeComposeMessageAction() (fyne.Resource, func()) {
 
 func (a *MailArea) MakeDeleteAction(onSuccess func()) (fyne.Resource, func()) {
 	return theme.DeleteIcon(), func() {
-		d := NewConfirmDialog(
+		d := iwidget.NewConfirmDialog(
 			"Delete mail",
 			fmt.Sprintf("Are you sure you want to permanently delete this mail?\n\n%s", a.mail.Header()),
 			"Delete",
@@ -595,7 +594,9 @@ func (a *MailArea) makeToolbar() *widget.Toolbar {
 }
 
 func (a *MailArea) clearMail() {
-	a.setMailContent("", "", "")
+	a.subject.SetText("")
+	a.header.Clear()
+	a.body.SetText("")
 	a.toolbar.Hide()
 }
 
@@ -622,12 +623,8 @@ func (a *MailArea) setMail(mailID int32) {
 			a.u.UpdateMailIndicator()
 		}()
 	}
-	a.setMailContent(a.mail.Subject, a.mail.Header(), a.mail.BodyPlain())
+	a.subject.SetText(a.mail.Subject)
+	a.header.Set(a.u.EveImageService, a.mail.From, a.mail.Timestamp, a.mail.Recipients...)
+	a.body.SetText(a.mail.BodyPlain())
 	a.toolbar.Show()
-}
-
-func (a *MailArea) setMailContent(s string, h string, b string) {
-	a.subject.SetText(s)
-	a.header.SetText(h)
-	a.body.SetText(b)
 }

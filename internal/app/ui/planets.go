@@ -29,7 +29,7 @@ type PlanetArea struct {
 	u       *BaseUI
 }
 
-func (u *BaseUI) NewPlanetArea() *PlanetArea {
+func NewPlanetArea(u *BaseUI) *PlanetArea {
 	a := PlanetArea{
 		planets: make([]*app.CharacterPlanet, 0),
 		top:     makeTopLabel(),
@@ -60,6 +60,11 @@ func (a *PlanetArea) makeList() *widget.List {
 	)
 	t.OnSelected = func(id widget.ListItemID) {
 		defer t.UnselectAll()
+		if id >= len(a.planets) || id < 0 {
+			return
+		}
+		p := a.planets[id]
+		a.u.ShowEveEntityInfoWindow(p.EvePlanet.SolarSystem.ToEveEntity())
 	}
 	return t
 }

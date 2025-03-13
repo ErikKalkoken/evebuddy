@@ -183,7 +183,7 @@ func (s *EveNotificationService) renderWarHQRemovedFromSpace(ctx context.Context
 		data.WarHQ,
 		makeEveEntityProfileLink(entities[data.DeclaredByID]),
 		makeEveEntityProfileLink(entities[data.AgainstID]),
-		fromLDAPTime(data.TimeDeclared).Format(app.TimeDefaultFormat),
+		fromLDAPTime(data.TimeDeclared).Format(app.DateTimeFormat),
 	)
 	body.Set(out)
 	return title, body, nil
@@ -249,7 +249,7 @@ func (s *EveNotificationService) renderWarInvalid(ctx context.Context, text stri
 			"Fighting must cease on %s.",
 		makeEveEntityProfileLink(entities[data.DeclaredByID]),
 		makeEveEntityProfileLink(entities[data.AgainstID]),
-		fromLDAPTime(data.EndDate).Format(app.TimeDefaultFormat),
+		fromLDAPTime(data.EndDate).Format(app.DateTimeFormat),
 	)
 	body.Set(out)
 	return title, body, nil
@@ -273,7 +273,7 @@ func (s *EveNotificationService) renderWarRetractedByConcord(ctx context.Context
 			"between those involved with full force.",
 		makeEveEntityProfileLink(entities[data.DeclaredByID]),
 		makeEveEntityProfileLink(entities[data.AgainstID]),
-		fromLDAPTime(data.EndDate).Format(app.TimeDefaultFormat),
+		fromLDAPTime(data.EndDate).Format(app.DateTimeFormat),
 	)
 	body.Set(out)
 	return title, body, nil

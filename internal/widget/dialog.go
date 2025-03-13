@@ -1,4 +1,4 @@
-package ui
+package widget
 
 import (
 	"fmt"
@@ -35,6 +35,7 @@ func NewErrorDialog(message string, err error, parent fyne.Window) dialog.Dialog
 	return d
 }
 
+// ShowErrorDialog shows a new custom error dialog.
 func ShowErrorDialog(message string, err error, parent fyne.Window) {
 	d := NewErrorDialog(message, err, parent)
 	d.Show()

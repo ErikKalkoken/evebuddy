@@ -78,7 +78,7 @@ func (w *Planet) Set(cp *app.CharacterPlanet) {
 		deadline = "?"
 		w.post.Hide()
 	} else {
-		deadline = expires.Format(app.TimeDefaultFormat)
+		deadline = expires.Format(app.DateTimeFormat)
 		if expires.Before(time.Now()) {
 			isExpired = true
 		}
@@ -121,11 +121,12 @@ func (w *Planet) CreateRenderer() fyne.WidgetRenderer {
 			w.bg,
 			container.NewBorder(nil, nil, w.security, nil, w.location),
 		),
-		widget.NewForm(
-			widget.NewFormItem("Extracting", w.extracting),
-			widget.NewFormItem("Extraction due", w.post),
-			widget.NewFormItem("Producing", w.producing),
-		),
+		container.NewBorder(nil, nil, nil, widget.NewIcon(theme.InfoIcon()),
+			widget.NewForm(
+				widget.NewFormItem("Extracting", w.extracting),
+				widget.NewFormItem("Extraction due", w.post),
+				widget.NewFormItem("Producing", w.producing),
+			)),
 	)
 	if fyne.CurrentDevice().IsMobile() {
 		return widget.NewSimpleRenderer(data)

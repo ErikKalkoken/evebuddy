@@ -171,7 +171,7 @@ func (s *EveNotificationService) renderSovStructureReinforced(ctx context.Contex
 			"and command nodes will begin decloaking at **%s**.",
 		structureTypeName,
 		makeSolarSystemLink(solarSystem),
-		fromLDAPTime(data.DecloakTime).Format(app.TimeDefaultFormat),
+		fromLDAPTime(data.DecloakTime).Format(app.DateTimeFormat),
 	))
 	return title, body, nil
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
+	"github.com/ErikKalkoken/evebuddy/internal/xiter"
 )
 
 const (
@@ -174,7 +175,7 @@ func (s *CharacterService) fetchCharacterAssetNamesESI(ctx context.Context, char
 	}
 	results := make([][]esi.PostCharactersCharacterIdAssetsNames200Ok, numResults)
 	g := new(errgroup.Group)
-	for num, chunk := range Count(slices.Chunk(ids, assetNamesMaxIDs), 0) {
+	for num, chunk := range xiter.Count(slices.Chunk(ids, assetNamesMaxIDs), 0) {
 		g.Go(func() error {
 			names, _, err := s.esiClient.ESI.AssetsApi.PostCharactersCharacterIdAssetsNames(ctx, characterID, chunk, nil)
 			if err != nil {

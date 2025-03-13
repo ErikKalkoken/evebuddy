@@ -36,41 +36,41 @@ func TestEveLocationOther(t *testing.T) {
 		owner := factory.CreateEveEntityCorporation(app.EveEntity{ID: 1000003})
 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000148})
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 1531})
-		data := `{
-			"max_dockable_ship_volume": 50000000,
-			"name": "Jakanerva III - Moon 15 - Prompt Delivery Storage",
-			"office_rental_cost": 10000,
-			"owner": 1000003,
-			"position": {
-			  "x": 165632286720,
-			  "y": 2771804160,
-			  "z": -2455331266560
-			},
-			"race_id": 1,
-			"reprocessing_efficiency": 0.5,
-			"reprocessing_stations_take": 0.05,
-			"services": [
-			  "courier-missions",
-			  "reprocessing-plant",
-			  "market",
-			  "repair-facilities",
-			  "fitting",
-			  "news",
-			  "storage",
-			  "insurance",
-			  "docking",
-			  "office-rental",
-			  "loyalty-point-store",
-			  "navy-offices"
-			],
-			"station_id": 60000277,
-			"system_id": 30000148,
-			"type_id": 1531
-		  }`
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v2/universe/stations/%d/", stationID),
-			httpmock.NewStringResponder(http.StatusOK, data).HeaderSet(http.Header{"Content-Type": []string{"application/json"}}))
+			httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{
+				"max_dockable_ship_volume": 50000000,
+				"name":                     "Jakanerva III - Moon 15 - Prompt Delivery Storage",
+				"office_rental_cost":       10000,
+				"owner":                    1000003,
+				"position": map[string]any{
+					"x": 165632286720,
+					"y": 2771804160,
+					"z": -2455331266560,
+				},
+				"race_id":                    1,
+				"reprocessing_efficiency":    0.5,
+				"reprocessing_stations_take": 0.05,
+				"services": []string{
+					"courier-missions",
+					"reprocessing-plant",
+					"market",
+					"repair-facilities",
+					"fitting",
+					"news",
+					"storage",
+					"insurance",
+					"docking",
+					"office-rental",
+					"loyalty-point-store",
+					"navy-offices",
+				},
+				"station_id": 60000277,
+				"system_id":  30000148,
+				"type_id":    1531,
+			}),
+		)
 		// when
 		x1, err := eu.GetOrCreateEveLocationESI(ctx, stationID)
 		// then
@@ -116,14 +116,13 @@ func TestLocationStructures(t *testing.T) {
 	defer httpmock.DeactivateAndReset()
 	client := goesi.NewAPIClient(nil, "")
 	eu := eveuniverse.New(r, client)
-	ctx := context.Background()
 	t.Run("should return existing structure", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
 		factory.CreateLocationStructure(storage.UpdateOrCreateLocationParams{ID: structureID, Name: "Alpha"})
 		// when
-		x, err := eu.GetOrCreateEveLocationESI(ctx, structureID)
+		x, err := eu.GetOrCreateEveLocationESI(context.Background(), structureID)
 		// then
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Alpha", x.Name)
@@ -136,23 +135,21 @@ func TestLocationStructures(t *testing.T) {
 		owner := factory.CreateEveEntityCorporation(app.EveEntity{ID: 109299958})
 		system := factory.CreateEveSolarSystem(storage.CreateEveSolarSystemParams{ID: 30000142})
 		myType := factory.CreateEveType(storage.CreateEveTypeParams{ID: 99})
-		data := `{
-			"name": "V-3YG7 VI - The Capital",
-			"owner_id": 109299958,
-			"solar_system_id": 30000142,
-			"type_id": 99,
-			"position": {
-				"x": 1.1,
-				"y": 2.2,
-				"z": 3.3
-			}
-		  }`
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v2/universe/structures/%d/", structureID),
-			httpmock.NewStringResponder(http.StatusOK, data).HeaderSet(
-				http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{
+				"name":            "V-3YG7 VI - The Capital",
+				"owner_id":        109299958,
+				"solar_system_id": 30000142,
+				"type_id":         99,
+				"position": map[string]any{
+					"x": 1.1,
+					"y": 2.2,
+					"z": 3.3,
+				}}),
+		)
+		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
 		// when
 		x1, err := eu.GetOrCreateEveLocationESI(ctx, structureID)
 		// then
@@ -168,19 +165,27 @@ func TestLocationStructures(t *testing.T) {
 			}
 		}
 	})
+	t.Run("should return error when trying to fetch structure without token", func(t *testing.T) {
+		// given
+		testutil.TruncateTables(db)
+		httpmock.Reset()
+		// when
+		_, err := eu.GetOrCreateEveLocationESI(context.Background(), structureID)
+		// then
+		assert.Error(t, err)
+	})
 	t.Run("should create empty structure from ESI when no access", func(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		data := `{
-			"error": "forbidden"
-			}`
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v2/universe/structures/%d/", structureID),
-			httpmock.NewStringResponder(http.StatusForbidden, data).HeaderSet(
-				http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(http.StatusForbidden, map[string]any{
+				"error": "forbidden",
+			}),
+		)
+		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
 		// when
 		x1, err := eu.GetOrCreateEveLocationESI(ctx, structureID)
 		// then
@@ -200,15 +205,14 @@ func TestLocationStructures(t *testing.T) {
 		// given
 		testutil.TruncateTables(db)
 		httpmock.Reset()
-		data := `{
-			"error": "xxx"
-			}`
 		httpmock.RegisterResponder(
 			"GET",
 			fmt.Sprintf("https://esi.evetech.net/v2/universe/structures/%d/", structureID),
-			httpmock.NewStringResponder(http.StatusNotFound, data).HeaderSet(
-				http.Header{"Content-Type": []string{"application/json"}}))
-
+			httpmock.NewJsonResponderOrPanic(http.StatusNotFound, map[string]any{
+				"error": "xxx",
+			}),
+		)
+		ctx := context.WithValue(context.Background(), goesi.ContextAccessToken, "DUMMY")
 		// when
 		_, err := eu.GetOrCreateEveLocationESI(ctx, structureID)
 		// then

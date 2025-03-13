@@ -4,12 +4,17 @@ package desktop
 import (
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"runtime"
+	"slices"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dustin/go-humanize"
@@ -19,6 +24,8 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
 	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
+	"github.com/ErikKalkoken/evebuddy/internal/app/ui/infowindow"
+	kxdialog "github.com/ErikKalkoken/fyne-kx/dialog"
 )
 
 // The DesktopUI is the root object of the DesktopUI and contains all DesktopUI areas.
@@ -85,21 +92,22 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 			}()
 		}
 		go u.statusBarArea.StartUpdateTicker()
-		sc := &desktop.CustomShortcut{
-			KeyName:  fyne.KeyS,
-			Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl + fyne.KeyModifierShift,
-		}
-		u.Window.Canvas().AddShortcut(sc, func(shortcut fyne.Shortcut) {
-			u.Snackbar.Show(fmt.Sprintf(
-				"%s. This is a test snack bar at %s",
-				fake.WordsN(10),
-				time.Now().Format("15:04:05.999999999"),
-			))
-			u.Snackbar.Show(fmt.Sprintf(
-				"This is a test snack bar at %s",
-				time.Now().Format("15:04:05.999999999"),
-			))
-		})
+		u.Window.Canvas().AddShortcut(
+			&desktop.CustomShortcut{
+				KeyName:  fyne.KeyS,
+				Modifier: fyne.KeyModifierAlt + fyne.KeyModifierControl,
+			},
+			func(fyne.Shortcut) {
+				u.Snackbar.Show(fmt.Sprintf(
+					"%s. This is a test snack bar at %s",
+					fake.WordsN(10),
+					time.Now().Format("15:04:05.999999999"),
+				))
+				u.Snackbar.Show(fmt.Sprintf(
+					"This is a test snack bar at %s",
+					time.Now().Format("15:04:05.999999999"),
+				))
+			})
 	}
 	u.OnAppStopped = func() {
 		u.saveAppState()
@@ -117,30 +125,6 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	}
 	u.HideMailIndicator = func() {
 		u.DeskApp.SetSystemTrayIcon(icon.IconPng)
-	}
-
-	showItemWindow := func(iw *ui.ItemInfoArea, err error) {
-		if err != nil {
-			t := "Failed to open info window"
-			slog.Error(t, "err", err)
-			d := ui.NewErrorDialog(t, err, u.Window)
-			d.Show()
-			return
-		}
-		if iw == nil {
-			return
-		}
-		w := u.FyneApp.NewWindow(u.MakeWindowTitle(iw.MakeTitle("Information")))
-		iw.Window = w
-		w.SetContent(iw.Content)
-		w.Resize(fyne.Size{Width: 500, Height: 500})
-		w.Show()
-	}
-	u.ShowTypeInfoWindow = func(typeID, characterID int32, selectTab ui.TypeWindowTab) {
-		showItemWindow(u.NewItemInfoArea(typeID, characterID, 0, selectTab))
-	}
-	u.ShowLocationInfoWindow = func(locationID int64) {
-		showItemWindow(u.NewItemInfoArea(0, 0, locationID, ui.DescriptionTab))
 	}
 
 	makeTitleWithCount := func(title string, count int) string {
@@ -235,8 +219,8 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	)
 	u.tabs.SetTabLocation(container.TabLocationLeading)
 
-	u.toolbarArea = u.newToolbarArea()
-	u.statusBarArea = u.newStatusBarArea()
+	u.toolbarArea = newToolbarArea(u)
+	u.statusBarArea = newStatusBarArea(u)
 	mainContent := container.NewBorder(u.toolbarArea.content, u.statusBarArea.content, nil, nil, u.tabs)
 	u.Window.SetContent(mainContent)
 
@@ -260,7 +244,7 @@ func NewDesktopUI(bui *ui.BaseUI) *DesktopUI {
 	}
 	u.HideMailIndicator() // init system tray icon
 
-	menu := makeMenu(u)
+	menu := u.makeMenu()
 	u.Window.SetMainMenu(menu)
 	u.Window.SetMaster()
 	return u
@@ -342,7 +326,7 @@ func (u *DesktopUI) showSettingsWindow() {
 func (u *DesktopUI) showSendMailWindow(character *app.Character, mode ui.SendMailMode, mail *app.CharacterMail) {
 	title := u.MakeWindowTitle(fmt.Sprintf("New message [%s]", character.EveCharacter.Name))
 	w := u.FyneApp.NewWindow(title)
-	page, icon, action := u.MakeSendMailPage(character, mode, mail, w)
+	page, icon, action := ui.MakeSendMailPage(u.BaseUI, character, mode, mail, w)
 	send := widget.NewButtonWithIcon("Send", icon, func() {
 		if action() {
 			w.Hide()
@@ -372,4 +356,195 @@ func (u *DesktopUI) showAccountWindow() {
 	u.AccountArea.OnSelectCharacter = func() {
 		w.Hide()
 	}
+}
+
+func (u *DesktopUI) makeMenu() *fyne.MainMenu {
+	// File menu
+	fileMenu := fyne.NewMenu("File")
+
+	// Info menu
+	characterItem := fyne.NewMenuItem("Current character...", func() {
+		characterID := u.CharacterID()
+		if characterID == 0 {
+			u.Snackbar.Show("ERROR: No character selected")
+			return
+		}
+		u.ShowInfoWindow(infowindow.Character, int64(characterID))
+	})
+	characterItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyC,
+		Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
+	}
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, characterItem)
+
+	locationItem := fyne.NewMenuItem("Current location...", func() {
+		c := u.CurrentCharacter()
+		if c == nil {
+			u.Snackbar.Show("ERROR: No character selected")
+			return
+		}
+		if c.Location == nil {
+			u.Snackbar.Show("ERROR: Missing location for current character.")
+			return
+		}
+		u.ShowInfoWindow(infowindow.Location, c.Location.ID)
+	})
+	locationItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyL,
+		Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
+	}
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, locationItem)
+
+	shipItem := fyne.NewMenuItem("Current ship...", func() {
+		c := u.CurrentCharacter()
+		if c == nil {
+			u.Snackbar.Show("ERROR: No character selected")
+			return
+		}
+		if c.Ship == nil {
+			u.Snackbar.Show("ERROR: Missing ship for current character.")
+			return
+		}
+		u.ShowTypeInfoWindow(c.Ship.ID)
+	})
+	shipItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyS,
+		Modifier: fyne.KeyModifierAlt + fyne.KeyModifierShift,
+	}
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, shipItem)
+
+	infoMenu := fyne.NewMenu(
+		"Info",
+		characterItem,
+		locationItem,
+		shipItem,
+	)
+
+	// Tools menu
+	settingsItem := fyne.NewMenuItem("Settings...", u.showSettingsWindow)
+	settingsItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyComma,
+		Modifier: fyne.KeyModifierControl,
+	}
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, settingsItem)
+
+	charactersItem := fyne.NewMenuItem("Manage characters...", u.showAccountWindow)
+	charactersItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyC,
+		Modifier: fyne.KeyModifierAlt,
+	}
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, charactersItem)
+
+	statusItem := fyne.NewMenuItem("Update status...", u.ShowUpdateStatusWindow)
+	statusItem.Shortcut = &desktop.CustomShortcut{
+		KeyName:  fyne.KeyU,
+		Modifier: fyne.KeyModifierAlt,
+	}
+	u.menuItemsWithShortcut = append(u.menuItemsWithShortcut, statusItem)
+
+	toolsMenu := fyne.NewMenu(
+		"Tools",
+		charactersItem,
+		fyne.NewMenuItemSeparator(),
+		statusItem,
+		fyne.NewMenuItemSeparator(),
+		settingsItem,
+	)
+
+	// Help menu
+	website := fyne.NewMenuItem("Website", func() {
+		if err := u.FyneApp.OpenURL(u.WebsiteRootURL()); err != nil {
+			slog.Error("open main website", "error", err)
+		}
+	})
+	report := fyne.NewMenuItem("Report a bug", func() {
+		url := u.WebsiteRootURL().JoinPath("issues")
+		if err := u.FyneApp.OpenURL(url); err != nil {
+			slog.Error("open issue website", "error", err)
+		}
+	})
+	if u.IsOffline {
+		website.Disabled = true
+		report.Disabled = true
+	}
+	helpMenu := fyne.NewMenu(
+		"Help",
+		website,
+		report,
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem("User data...", func() {
+			u.showUserDataDialog()
+		}), fyne.NewMenuItem("About...", func() {
+			u.showAboutDialog()
+		}),
+	)
+
+	u.enableMenuShortcuts()
+	main := fyne.NewMainMenu(fileMenu, infoMenu, toolsMenu, helpMenu)
+	return main
+}
+
+// enableMenuShortcuts enables all registered menu shortcuts.
+func (u *DesktopUI) enableMenuShortcuts() {
+	addShortcutFromMenuItem := func(item *fyne.MenuItem) (fyne.Shortcut, func(fyne.Shortcut)) {
+		return item.Shortcut, func(s fyne.Shortcut) {
+			item.Action()
+		}
+	}
+	for _, mi := range u.menuItemsWithShortcut {
+		u.Window.Canvas().AddShortcut(addShortcutFromMenuItem(mi))
+	}
+}
+
+// disableMenuShortcuts disabled all registered menu shortcuts.
+func (u *DesktopUI) disableMenuShortcuts() {
+	for _, mi := range u.menuItemsWithShortcut {
+		u.Window.Canvas().RemoveShortcut(mi.Shortcut)
+	}
+}
+
+func (u *DesktopUI) showAboutDialog() {
+	d := dialog.NewCustom("About", "Close", u.MakeAboutPage(), u.Window)
+	kxdialog.AddDialogKeyHandler(d, u.Window)
+	u.disableMenuShortcuts()
+	d.SetOnClosed(func() {
+		u.enableMenuShortcuts()
+	})
+	d.Show()
+}
+
+func (u *DesktopUI) showUserDataDialog() {
+	f := widget.NewForm()
+	type item struct {
+		name string
+		path string
+	}
+	items := make([]item, 0)
+	for n, p := range u.DataPaths {
+		items = append(items, item{n, p})
+	}
+	items = append(items, item{"settings", u.FyneApp.Storage().RootURI().Path()})
+	slices.SortFunc(items, func(a, b item) int {
+		return strings.Compare(a.name, b.name)
+	})
+	for _, it := range items {
+		f.Append(it.name, makePathEntry(u.Window.Clipboard(), it.path))
+	}
+	d := dialog.NewCustom("User data", "Close", f, u.Window)
+	kxdialog.AddDialogKeyHandler(d, u.Window)
+	u.disableMenuShortcuts()
+	d.SetOnClosed(func() {
+		u.enableMenuShortcuts()
+	})
+	d.Show()
+}
+
+func makePathEntry(cb fyne.Clipboard, path string) *fyne.Container {
+	p := filepath.Clean(path)
+	return container.NewHBox(
+		widget.NewLabel(p),
+		layout.NewSpacer(),
+		widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
+			cb.SetContent(p)
+		}))
 }

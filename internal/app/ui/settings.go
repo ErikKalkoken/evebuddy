@@ -19,6 +19,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	kxmodal "github.com/ErikKalkoken/fyne-kx/modal"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/evenotification"
 	"github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/set"
@@ -135,7 +136,7 @@ type SettingsArea struct {
 	window   fyne.Window
 }
 
-func (u *BaseUI) NewSettingsArea() *SettingsArea {
+func NewSettingsArea(u *BaseUI) *SettingsArea {
 	a := &SettingsArea{
 		snackbar: u.Snackbar,
 		u:        u,
@@ -262,7 +263,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 		"Clear cache",
 		func() {
 			w := a.currentWindow()
-			d := NewConfirmDialog(
+			d := iwidget.NewConfirmDialog(
 				"Clear Cache",
 				"Are you sure you want to clear the cache?",
 				"Clear",
@@ -325,7 +326,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 			a.showDeleteFileDialog("crash log", a.u.DataPaths["crashfile"])
 		},
 	}
-	actions := []SettingAction{reset, clear, exportAppLog, deleteAppLog, exportCrashLog, deleteCrashLog}
+	actions := []SettingAction{reset, clear, exportAppLog, exportCrashLog, deleteAppLog, deleteCrashLog}
 	if a.u.IsDesktop() {
 		actions = append(actions, SettingAction{
 			Label: "Resets main window size to defaults",
@@ -338,7 +339,7 @@ func (a *SettingsArea) makeGeneralSettingsPage() (fyne.CanvasObject, []SettingAc
 }
 
 func (a *SettingsArea) showDeleteFileDialog(name, path string) {
-	d := NewConfirmDialog(
+	d := iwidget.NewConfirmDialog(
 		"Delete File",
 		fmt.Sprintf("Are you sure you want to permanently delete this file?\n\n%s", name),
 		"Delete",
@@ -362,7 +363,7 @@ func (a *SettingsArea) showDeleteFileDialog(name, path string) {
 				slog.Error("delete "+name, "path", path, "error", err)
 				a.snackbar.Show("ERROR: Failed to delete " + name)
 			} else {
-				a.snackbar.Show(Titler.String(name) + " deleted")
+				a.snackbar.Show(app.Titler.String(name) + " deleted")
 			}
 		}, a.window)
 	d.Show()
@@ -375,7 +376,7 @@ func (a *SettingsArea) showExportFileDialog(path string) {
 		a.snackbar.Show("No file to export: " + filename)
 		return
 	} else if err != nil {
-		ShowErrorDialog("Failed to open "+filename, err, a.window)
+		iwidget.ShowErrorDialog("Failed to open "+filename, err, a.window)
 		return
 	}
 	d := dialog.NewFileSave(
@@ -395,7 +396,7 @@ func (a *SettingsArea) showExportFileDialog(path string) {
 				return nil
 			}()
 			if err2 != nil {
-				ShowErrorDialog("Failed to export "+filename, err, a.window)
+				iwidget.ShowErrorDialog("Failed to export "+filename, err, a.window)
 			}
 		}, a.window,
 	)
@@ -488,16 +489,14 @@ func (a *SettingsArea) makeNotificationPage() (fyne.CanvasObject, []SettingActio
 			if on {
 				err := a.u.CharacterService.EnableAllTrainingWatchers(ctx)
 				if err != nil {
-					d := NewErrorDialog("failed to enable training notification", err, a.currentWindow())
-					d.Show()
+					iwidget.ShowErrorDialog("failed to enable training notification", err, a.currentWindow())
 				} else {
 					a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, true)
 				}
 			} else {
 				err := a.u.CharacterService.DisableAllTrainingWatchers(ctx)
 				if err != nil {
-					d := NewErrorDialog("failed to disable training notification", err, a.currentWindow())
-					d.Show()
+					iwidget.ShowErrorDialog("failed to disable training notification", err, a.currentWindow())
 				} else {
 					a.u.FyneApp.Preferences().SetBool(settingNotifyTrainingEnabled, false)
 				}

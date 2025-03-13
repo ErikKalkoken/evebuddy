@@ -15,6 +15,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
 type contractEntry struct {
@@ -46,7 +47,7 @@ type ContractsArea struct {
 	u         *BaseUI
 }
 
-func (u *BaseUI) NewContractsArea() *ContractsArea {
+func NewContractsArea(u *BaseUI) *ContractsArea {
 	a := ContractsArea{
 		contracts: make([]*app.CharacterContract, 0),
 		top:       makeTopLabel(),
@@ -82,12 +83,12 @@ func (u *BaseUI) NewContractsArea() *ContractsArea {
 		case 4:
 			text = o.StatusDisplay()
 		case 5:
-			text = o.DateIssued.Format(app.TimeDefaultFormat)
+			text = o.DateIssued.Format(app.DateTimeFormat)
 		case 6:
 			if o.DateAccepted.IsEmpty() {
 				text = ""
 			} else {
-				text = o.DateAccepted.MustValue().Format(app.TimeDefaultFormat)
+				text = o.DateAccepted.MustValue().Format(app.DateTimeFormat)
 			}
 		case 7:
 			if o.IsExpired() {
@@ -99,13 +100,21 @@ func (u *BaseUI) NewContractsArea() *ContractsArea {
 		}
 		return text, align, importance
 	}
-	onSelected := func(o *app.CharacterContract) {
-		a.showContract(o)
-	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.contracts, makeDataLabel, onSelected)
+		a.body = makeDataTableForDesktop(headers, &a.contracts, makeDataLabel, func(column int, r *app.CharacterContract) {
+			switch column {
+			case 0:
+				a.showContract(r)
+			case 2:
+				a.u.ShowEveEntityInfoWindow(r.Issuer)
+			case 3:
+				if r.Assignee != nil {
+					a.u.ShowEveEntityInfoWindow(r.Assignee)
+				}
+			}
+		})
 	} else {
-		a.body = makeDataTableForMobile(headers, &a.contracts, makeDataLabel, onSelected)
+		a.body = makeDataTableForMobile(headers, &a.contracts, makeDataLabel, a.showContract)
 	}
 	top := container.NewVBox(a.top, widget.NewSeparator())
 	a.Content = container.NewBorder(top, nil, nil, nil, a.body)
@@ -213,7 +222,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 	w := a.u.FyneApp.NewWindow("Contract")
 	makeExpiresString := func(c *app.CharacterContract) string {
 		t := c.DateExpiredEffective()
-		ts := t.Format(app.TimeDefaultFormat)
+		ts := t.Format(app.DateTimeFormat)
 		var ds string
 		if c.IsExpired() {
 			ds = "EXPIRED"
@@ -250,7 +259,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		f.Append("Status", widget.NewLabel(c.StatusDisplay()))
 		f.Append("Location", makeLocation(c.StartLocation))
 		if c.Type == app.ContractTypeCourier || c.Type == app.ContractTypeItemExchange {
-			f.Append("Date Issued", widget.NewLabel(c.DateIssued.Format(app.TimeDefaultFormat)))
+			f.Append("Date Issued", widget.NewLabel(c.DateIssued.Format(app.DateTimeFormat)))
 			f.Append("Expiration Date", widget.NewLabel(makeExpiresString(c)))
 		}
 		return f
@@ -293,7 +302,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		ctx := context.TODO()
 		total, err := a.u.CharacterService.CountCharacterContractBids(ctx, c.ID)
 		if err != nil {
-			d := NewErrorDialog("Failed to count contract bids", err, w)
+			d := iwidget.NewErrorDialog("Failed to count contract bids", err, w)
 			d.SetOnClosed(w.Hide)
 			d.Show()
 		}
@@ -303,7 +312,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		} else {
 			top, err := a.u.CharacterService.GetCharacterContractTopBid(ctx, c.ID)
 			if err != nil {
-				d := NewErrorDialog("Failed to get top bid", err, w)
+				d := iwidget.NewErrorDialog("Failed to get top bid", err, w)
 				d.SetOnClosed(w.Hide)
 				d.Show()
 			}
@@ -323,7 +332,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		vb := container.NewVBox()
 		items, err := a.u.CharacterService.ListCharacterContractItems(context.TODO(), c.ID)
 		if err != nil {
-			d := NewErrorDialog("Failed to fetch contract items", err, w)
+			d := iwidget.NewErrorDialog("Failed to fetch contract items", err, w)
 			d.SetOnClosed(w.Hide)
 			d.Show()
 		}
@@ -337,7 +346,7 @@ func (a *ContractsArea) showContract(c *app.CharacterContract) {
 		}
 		makeItem := func(it *app.CharacterContractItem) fyne.CanvasObject {
 			x := NewCustomHyperlink(it.Type.Name, func() {
-				a.u.ShowTypeInfoWindow(it.Type.ID, c.CharacterID, 0)
+				a.u.ShowTypeInfoWindow(it.Type.ID)
 			})
 			return container.NewHBox(
 				x,

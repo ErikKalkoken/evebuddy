@@ -31,7 +31,7 @@ func (e walletJournalEntry) hasReason() bool {
 }
 
 func (e walletJournalEntry) refTypeOutput() string {
-	return Titler.String(strings.ReplaceAll(e.refType, "_", " "))
+	return app.Titler.String(strings.ReplaceAll(e.refType, "_", " "))
 }
 
 func (e walletJournalEntry) descriptionWithReason() string {
@@ -53,7 +53,7 @@ type WalletJournalArea struct {
 	u    *BaseUI
 }
 
-func (u *BaseUI) NewWalletJournalArea() *WalletJournalArea {
+func NewWalletJournalArea(u *BaseUI) *WalletJournalArea {
 	a := WalletJournalArea{
 		rows: make([]walletJournalEntry, 0),
 		top:  makeTopLabel(),
@@ -72,12 +72,12 @@ func (u *BaseUI) NewWalletJournalArea() *WalletJournalArea {
 		var text string
 		switch col {
 		case 0:
-			text = w.date.Format(app.TimeDefaultFormat)
+			text = w.date.Format(app.DateTimeFormat)
 		case 1:
 			text = w.refTypeOutput()
 		case 2:
 			align = fyne.TextAlignTrailing
-			text = humanize.FormatFloat(MyFloatFormat, w.amount)
+			text = humanize.FormatFloat(app.FloatFormat, w.amount)
 			switch {
 			case w.amount < 0:
 				importance = widget.DangerImportance
@@ -88,20 +88,22 @@ func (u *BaseUI) NewWalletJournalArea() *WalletJournalArea {
 			}
 		case 3:
 			align = fyne.TextAlignTrailing
-			text = humanize.FormatFloat(MyFloatFormat, w.balance)
+			text = humanize.FormatFloat(app.FloatFormat, w.balance)
 		case 4:
 			text = w.descriptionWithReason()
 		}
 		return text, align, importance
 	}
-	showReasonDialog := func(row walletJournalEntry) {
-		if row.hasReason() {
-			dlg := dialog.NewCustom("Reason", "OK", widget.NewLabel(row.reason), a.u.Window)
+	showReasonDialog := func(r walletJournalEntry) {
+		if r.hasReason() {
+			dlg := dialog.NewCustom("Reason", "OK", widget.NewLabel(r.reason), a.u.Window)
 			dlg.Show()
 		}
 	}
 	if a.u.IsDesktop() {
-		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, showReasonDialog)
+		a.body = makeDataTableForDesktop(headers, &a.rows, makeDataLabel, func(_ int, r walletJournalEntry) {
+			showReasonDialog(r)
+		})
 	} else {
 		a.body = makeDataTableForMobile(headers, &a.rows, makeDataLabel, showReasonDialog)
 	}

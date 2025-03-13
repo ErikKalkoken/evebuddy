@@ -8,8 +8,8 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/icon"
-	"github.com/ErikKalkoken/evebuddy/internal/app/ui"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetools"
 	kwidget "github.com/ErikKalkoken/fyne-kx/widget"
 )
@@ -22,10 +22,10 @@ type toolbarArea struct {
 	u       *DesktopUI
 }
 
-func (u *DesktopUI) newToolbarArea() *toolbarArea {
+func newToolbarArea(u *DesktopUI) *toolbarArea {
 	i := kwidget.NewTappableImageWithMenu(icon.Characterplaceholder64Jpeg, fyne.NewMenu(""))
 	i.SetFillMode(canvas.ImageFillContain)
-	i.SetMinSize(fyne.NewSquareSize(ui.DefaultIconUnitSize))
+	i.SetMinSize(fyne.NewSquareSize(app.IconUnitSize))
 	a := &toolbarArea{
 		icon: i,
 		name: widget.NewLabel(""),

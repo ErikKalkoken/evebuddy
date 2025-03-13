@@ -27,24 +27,6 @@ type MobileUI struct {
 // NewUI build the UI and returns it.
 func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	u := &MobileUI{BaseUI: bui}
-	showItemWindow := func(iw *ui.ItemInfoArea, err error) {
-		if err != nil {
-			t := "Failed to show item info"
-			slog.Error(t, "err", err)
-			d := ui.NewErrorDialog(t, err, u.Window)
-			d.Show()
-			return
-		}
-		w := u.FyneApp.NewWindow("Information")
-		w.SetContent(iw.Content)
-		w.Show()
-	}
-	u.ShowTypeInfoWindow = func(typeID, characterID int32, selectTab ui.TypeWindowTab) {
-		showItemWindow(u.NewItemInfoArea(typeID, characterID, 0, selectTab))
-	}
-	u.ShowLocationInfoWindow = func(locationID int64) {
-		showItemWindow(u.NewItemInfoArea(0, 0, locationID, ui.DescriptionTab))
-	}
 
 	var navBar *iwidget.NavBar
 
@@ -60,7 +42,7 @@ func NewMobileUI(bui *ui.BaseUI) *MobileUI {
 	mailMenu := fyne.NewMenu("")
 	communicationsMenu := fyne.NewMenu("")
 	u.MailArea.OnSendMessage = func(character *app.Character, mode ui.SendMailMode, mail *app.CharacterMail) {
-		page, sendIcon, sendAction := u.MakeSendMailPage(character, mode, mail, u.Window)
+		page, sendIcon, sendAction := ui.MakeSendMailPage(bui, character, mode, mail, u.Window)
 		if mode != ui.SendMailNew {
 			characterNav.Pop() // FIXME: Workaround to avoid pushing upon page w/o navbar
 		}

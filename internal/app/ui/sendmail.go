@@ -29,7 +29,8 @@ const (
 	SendMailForward
 )
 
-func (u *BaseUI) MakeSendMailPage(
+func MakeSendMailPage(
+	u *BaseUI,
 	character *app.Character,
 	mode SendMailMode,
 	mail *app.CharacterMail,
@@ -38,16 +39,18 @@ func (u *BaseUI) MakeSendMailPage(
 	const labelWith = 45
 
 	from := appwidget.NewEveEntityEntry(widget.NewLabel("From"), labelWith, u.EveImageService)
+	from.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	from.Set([]*app.EveEntity{{ID: character.ID, Name: character.EveCharacter.Name, Category: app.EveEntityCharacter}})
 	from.Disable()
 
 	var to *appwidget.EveEntityEntry
 	toButton := widget.NewButton("To", func() {
-		u.showAddDialog(character.ID, func(ee *app.EveEntity) {
+		showAddDialog(u, character.ID, func(ee *app.EveEntity) {
 			to.Add(ee)
 		}, w)
 	})
 	to = appwidget.NewEveEntityEntry(toButton, labelWith, u.EveImageService)
+	to.ShowInfoWindow = u.ShowEveEntityInfoWindow
 	to.Placeholder = "Tap To-Button to add recipients..."
 
 	subject := widget.NewEntry()
@@ -124,7 +127,7 @@ func (u *BaseUI) MakeSendMailPage(
 	return page, theme.MailSendIcon(), sendAction
 }
 
-func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
+func showAddDialog(u *BaseUI, characterID int32, onSelected func(ee *app.EveEntity), w fyne.Window) {
 	var modal *widget.PopUp
 	items := make([]*app.EveEntity, 0)
 	fallbackIcon := icon.Questionmark32Png
@@ -136,7 +139,7 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 			name := widget.NewLabel("Template")
 			name.Truncation = fyne.TextTruncateClip
 			category := iwidget.NewLabelWithSize("Template", theme.SizeNameCaptionText)
-			icon := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(DefaultIconUnitSize))
+			icon := iwidget.NewImageFromResource(icon.Questionmark32Png, fyne.NewSquareSize(app.IconUnitSize))
 			return container.NewBorder(
 				nil,
 				nil,
@@ -153,7 +156,7 @@ func (u *BaseUI) showAddDialog(characterID int32, onSelected func(ee *app.EveEnt
 			row := co.(*fyne.Container).Objects
 			row[0].(*widget.Label).SetText(ee.Name)
 			image := row[1].(*canvas.Image)
-			RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
+			appwidget.RefreshImageResourceAsync(image, func() (fyne.Resource, error) {
 				res, err := appwidget.FetchEveEntityAvatar(u.EveImageService, ee, fallbackIcon)
 				if err != nil {
 					return fallbackIcon, err

@@ -67,7 +67,7 @@ func (s *EveNotificationService) renderOrbital(ctx context.Context, type_ Type, 
 		t := fmt.Sprintf("has been reinforced and will come out at %s.\n\n"+
 			"Attacking Character: %s\n\n"+
 			"Attacking Corporation: %s",
-			fromLDAPTime(data.ReinforceExitTime).Format(app.TimeDefaultFormat),
+			fromLDAPTime(data.ReinforceExitTime).Format(app.DateTimeFormat),
 			makeEveEntityProfileLink(entities[data.AggressorID]),
 			makeEveEntityProfileLink(entities[data.AggressorCorpID]),
 		)

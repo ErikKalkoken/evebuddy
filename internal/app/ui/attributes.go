@@ -38,7 +38,7 @@ type Attributes struct {
 	u          *BaseUI
 }
 
-func (u *BaseUI) NewAttributes() *Attributes {
+func NewAttributes(u *BaseUI) *Attributes {
 	a := Attributes{
 		attributes: make([]attribute, 0),
 		top:        makeTopLabel(),
@@ -55,7 +55,7 @@ func (a *Attributes) makeAttributeList() *widget.List {
 			return len(a.attributes)
 		},
 		func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
+			icon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(app.IconUnitSize))
 			return container.NewHBox(
 				icon, widget.NewLabel("placeholder"), layout.NewSpacer(), widget.NewLabel("points"))
 		},

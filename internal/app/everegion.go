@@ -6,3 +6,7 @@ type EveRegion struct {
 	ID          int32
 	Name        string
 }
+
+func (er EveRegion) ToEveEntity() *EveEntity {
+	return &EveEntity{ID: er.ID, Name: er.Name, Category: EveEntityRegion}
+}

@@ -21,15 +21,14 @@ type MailHeaderItem struct {
 
 	FallbackIcon fyne.Resource
 
-	eis        app.EveImageService
-	from       *widget.Label
-	icon       *canvas.Image
-	subject    *iwidgets.Label
-	timestamp  *widget.Label
-	timeFormat string
+	eis       app.EveImageService
+	from      *widget.Label
+	icon      *canvas.Image
+	subject   *iwidgets.Label
+	timestamp *widget.Label
 }
 
-func NewMailHeaderItem(eis app.EveImageService, timeFormat string) *MailHeaderItem {
+func NewMailHeaderItem(eis app.EveImageService) *MailHeaderItem {
 	subject := iwidgets.NewLabelWithSize("", theme.SizeNameSubHeadingText)
 	subject.Truncation = fyne.TextTruncateEllipsis
 	from := widget.NewLabel("")
@@ -40,7 +39,6 @@ func NewMailHeaderItem(eis app.EveImageService, timeFormat string) *MailHeaderIt
 		FallbackIcon: icon.Questionmark32Png,
 		subject:      subject,
 		timestamp:    widget.NewLabel(""),
-		timeFormat:   timeFormat,
 	}
 	w.icon = iwidgets.NewImageFromResource(w.FallbackIcon, fyne.NewSquareSize(32))
 	w.ExtendBaseWidget(w)
@@ -50,7 +48,7 @@ func NewMailHeaderItem(eis app.EveImageService, timeFormat string) *MailHeaderIt
 func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time.Time, isRead bool) {
 	w.from.Text = from.Name
 	w.from.TextStyle = fyne.TextStyle{Bold: !isRead}
-	w.timestamp.Text = timestamp.Format(w.timeFormat)
+	w.timestamp.Text = timestamp.Format(app.VariableDateFormat(timestamp))
 	w.timestamp.TextStyle = fyne.TextStyle{Bold: !isRead}
 	w.subject.Text = subject
 	w.subject.TextStyle = fyne.TextStyle{Bold: !isRead}
@@ -64,7 +62,6 @@ func (w *MailHeaderItem) Set(from *app.EveEntity, subject string, timestamp time
 		w.icon.Resource = res
 		w.icon.Refresh()
 	}()
-
 }
 
 func (w *MailHeaderItem) Refresh() {

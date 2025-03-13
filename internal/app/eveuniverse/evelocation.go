@@ -10,6 +10,7 @@ import (
 	"github.com/ErikKalkoken/evebuddy/internal/app"
 	"github.com/ErikKalkoken/evebuddy/internal/app/storage"
 	"github.com/ErikKalkoken/evebuddy/internal/optional"
+	"github.com/antihax/goesi"
 )
 
 func (eu *EveUniverseService) GetEveLocation(ctx context.Context, id int64) (*app.EveLocation, error) {
@@ -108,6 +109,9 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 				arg.OwnerID = optional.New(station.Owner)
 			}
 		case app.EveLocationStructure:
+			if ctx.Value(goesi.ContextAccessToken) == nil {
+				return nil, fmt.Errorf("eve location: token not set for fetching structure: %d", id)
+			}
 			structure, r, err := eu.esiClient.ESI.UniverseApi.GetUniverseStructuresStructureId(ctx, id, nil)
 			if err != nil {
 				if r != nil && r.StatusCode == http.StatusForbidden {
@@ -138,7 +142,7 @@ func (eu *EveUniverseService) updateOrCreateEveLocationESI(ctx context.Context, 
 				arg.EveTypeID = optional.New(myType.ID)
 			}
 		default:
-			return nil, fmt.Errorf("can not update or create structure for invalid ID: %d", id)
+			return nil, fmt.Errorf("eve location: invalid ID in update or create: %d", id)
 		}
 		arg.UpdatedAt = time.Now()
 		if err := eu.st.UpdateOrCreateEveLocation(ctx, arg); err != nil {

@@ -3,7 +3,11 @@ package app
 
 import (
 	"time"
+
+	"github.com/ErikKalkoken/evebuddy/internal/evehtml"
 )
+
+// TODO: Add Bloodline (e.g. to show in character description)
 
 // An Eve Online character.
 type EveCharacter struct {
@@ -42,4 +46,19 @@ func (ec EveCharacter) HasAlliance() bool {
 // HasFaction reports wether the character is member of a faction.
 func (ec EveCharacter) HasFaction() bool {
 	return ec.Faction != nil
+}
+
+func (ec EveCharacter) DescriptionPlain() string {
+	return evehtml.ToPlain(ec.Description)
+}
+
+func (ec EveCharacter) RaceDescription() string {
+	if ec.Race == nil {
+		return ""
+	}
+	return ec.Race.Description
+}
+
+func (ec EveCharacter) ToEveEntity() *EveEntity {
+	return &EveEntity{ID: ec.ID, Name: ec.Name, Category: EveEntityCharacter}
 }

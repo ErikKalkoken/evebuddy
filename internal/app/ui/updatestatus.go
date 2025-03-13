@@ -66,7 +66,7 @@ type UpdateStatusArea struct {
 	u                 *BaseUI
 }
 
-func (u *BaseUI) NewUpdateStatusArea() *UpdateStatusArea {
+func NewUpdateStatusArea(u *BaseUI) *UpdateStatusArea {
 	a := &UpdateStatusArea{
 		charactersTop:     makeTopLabel(),
 		details:           make([]detailsItem, 0),
@@ -141,7 +141,7 @@ func (a *UpdateStatusArea) makeEntityList() *widget.List {
 			return len(a.sectionEntities)
 		},
 		func() fyne.CanvasObject {
-			icon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(DefaultIconUnitSize))
+			icon := iwidget.NewImageFromResource(icon.QuestionmarkSvg, fyne.NewSquareSize(app.IconUnitSize))
 			name := widget.NewLabel("Template")
 			status := widget.NewLabel("Template")
 			pb := widget.NewActivity()

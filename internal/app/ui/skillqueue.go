@@ -29,7 +29,7 @@ type SkillqueueArea struct {
 	u     *BaseUI
 }
 
-func (u *BaseUI) NewSkillqueueArea() *SkillqueueArea {
+func NewSkillqueueArea(u *BaseUI) *SkillqueueArea {
 	a := SkillqueueArea{
 		total: makeTopLabel(),
 		u:     u,
@@ -74,11 +74,11 @@ func (a *SkillqueueArea) makeSkillQueue() *widget.List {
 			value string
 			wrap  bool
 		}{
-			{"Name", SkillDisplayName(q.SkillName, q.FinishedLevel), false},
+			{"Name", app.SkillDisplayName(q.SkillName, q.FinishedLevel), false},
 			{"Group", q.GroupName, false},
 			{"Description", q.SkillDescription, true},
-			{"Start date", timeFormattedOrFallback(q.StartDate, app.TimeDefaultFormat, "?"), false},
-			{"Finish date", timeFormattedOrFallback(q.FinishDate, app.TimeDefaultFormat, "?"), false},
+			{"Start date", timeFormattedOrFallback(q.StartDate, app.DateTimeFormat, "?"), false},
+			{"Finish date", timeFormattedOrFallback(q.FinishDate, app.DateTimeFormat, "?"), false},
 			{"Duration", ihumanize.Optional(q.Duration(), "?"), false},
 			{"Remaining", ihumanize.Optional(q.Remaining(), "?"), false},
 			{"Completed", fmt.Sprintf("%.0f%%", q.CompletionP()*100), false},
