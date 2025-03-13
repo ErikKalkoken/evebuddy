@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image/color"
 	"log/slog"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -19,6 +20,7 @@ import (
 	appwidget "github.com/ErikKalkoken/evebuddy/internal/app/widget"
 	"github.com/ErikKalkoken/evebuddy/internal/eveicon"
 	"github.com/ErikKalkoken/evebuddy/internal/fynetree"
+	ihumanize "github.com/ErikKalkoken/evebuddy/internal/humanize"
 	iwidget "github.com/ErikKalkoken/evebuddy/internal/widget"
 )
 
@@ -233,13 +235,13 @@ func (a *JumpClonesArea) makeTopText(total int) (string, widget.Importance) {
 	} else if c.NextCloneJump.MustValue().IsZero() {
 		nextJump = "NOW"
 	} else {
-		nextJump = humanize.Time(c.NextCloneJump.MustValue())
+		nextJump = ihumanize.Duration(time.Until(c.NextCloneJump.MustValue()))
 	}
 	if x := c.LastCloneJumpAt.ValueOrZero(); x.IsZero() {
 		lastJump = "?"
 	} else {
 		lastJump = humanize.Time(x)
 	}
-	s := fmt.Sprintf("%d clones • Next jump %s [Last jump %s]", total, nextJump, lastJump)
+	s := fmt.Sprintf("%d clones • Next available jump: %s • Last jump: %s", total, nextJump, lastJump)
 	return s, widget.MediumImportance
 }

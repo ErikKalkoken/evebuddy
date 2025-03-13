@@ -159,10 +159,10 @@ func (st *Storage) UpdateCharacterIsTrainingWatched(ctx context.Context, charact
 	return nil
 }
 
-func (st *Storage) UpdateCharacterLastCloneJump(ctx context.Context, characterID int32, v time.Time) error {
+func (st *Storage) UpdateCharacterLastCloneJump(ctx context.Context, characterID int32, v optional.Optional[time.Time]) error {
 	arg := queries.UpdateCharacterLastCloneJumpParams{
 		ID:              int64(characterID),
-		LastCloneJumpAt: NewNullTimeFromTime(v),
+		LastCloneJumpAt: optional.ToNullTime(v),
 	}
 	if err := st.q.UpdateCharacterLastCloneJump(ctx, arg); err != nil {
 		return fmt.Errorf("update last clone jump for character %d: %w", characterID, err)
@@ -170,10 +170,10 @@ func (st *Storage) UpdateCharacterLastCloneJump(ctx context.Context, characterID
 	return nil
 }
 
-func (st *Storage) UpdateCharacterLastLoginAt(ctx context.Context, characterID int32, v time.Time) error {
+func (st *Storage) UpdateCharacterLastLoginAt(ctx context.Context, characterID int32, v optional.Optional[time.Time]) error {
 	arg := queries.UpdateCharacterLastLoginAtParams{
 		ID:          int64(characterID),
-		LastLoginAt: NewNullTimeFromTime(v),
+		LastLoginAt: optional.ToNullTime(v),
 	}
 	if err := st.q.UpdateCharacterLastLoginAt(ctx, arg); err != nil {
 		return fmt.Errorf("update last login for character %d: %w", characterID, err)

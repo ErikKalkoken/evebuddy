@@ -73,7 +73,7 @@ func (s *CharacterService) updateCharacterJumpClonesESI(ctx context.Context, arg
 			if err := s.st.UpdateCharacterHome(ctx, characterID, home); err != nil {
 				return err
 			}
-			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, clones.LastCloneJumpDate); err != nil {
+			if err := s.st.UpdateCharacterLastCloneJump(ctx, characterID, optional.New(clones.LastCloneJumpDate)); err != nil {
 				return err
 			}
 			args := make([]storage.CreateCharacterJumpCloneParams, len(clones.JumpClones))

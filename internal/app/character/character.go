@@ -226,7 +226,7 @@ func (s *CharacterService) updateCharacterOnlineESI(ctx context.Context, arg Upd
 		},
 		func(ctx context.Context, characterID int32, data any) error {
 			online := data.(esi.GetCharactersCharacterIdOnlineOk)
-			if err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, online.LastLogin); err != nil {
+			if err := s.st.UpdateCharacterLastLoginAt(ctx, characterID, optional.New(online.LastLogin)); err != nil {
 				return err
 			}
 			return nil
